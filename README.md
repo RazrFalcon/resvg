@@ -4,8 +4,6 @@
 
 *libresvg* is an [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) rendering library.
 
-**Warning:** this software is in an early stage of the development. It doesn't guarantee to build.
-
 ## The name
 
 It's called **lib-re-svg** and not **libre-svg**, because it's an alternative to
@@ -62,7 +60,7 @@ of the SVG Tiny 1.2 subset. In simple terms - it correctly renders only very sim
 
 ## SVG support
 
-Test results using [tests/images/svg](tests/images/svg):
+Test results using [tests/images](tests/images):
 
 [![Chart]](https://htmlpreview.github.io/?https://github.com/RazrFalcon/libresvg/blob/master/doc/support-chart.html)
 
@@ -88,7 +86,7 @@ TL;DR
 *libresvg* supports [Qt] and [cairo] backends.
 
 [Skia] backend is planned.
-q
+
 ## Build
 
 See [doc/build.md](doc/build.md) for details.

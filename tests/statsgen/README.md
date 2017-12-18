@@ -1,2 +1,5 @@
-- svg_test_suite.csv - contains all tests from [W3C SVG 1.1 TestSuite](http://www.w3.org/Graphics/SVG/Test/20110816/archives/W3C_SVG_11_TestSuite.tar.gz)
-- local_tests.csv - contains all tests from https://github.com/RazrFalcon/svg-tests
+### Usage
+
+```bash
+./statsgen.py tests.csv ../../doc/support-table-checked.html
+```
