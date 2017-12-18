@@ -4,6 +4,14 @@ version = "0.1.0"
 authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster"]
 license = "MPL-2.0"
+description = "An SVG rendering library."
+documentation = "https://docs.rs/resvg/"
+repository = "https://github.com/RazrFalcon/libresvg"
+readme = "README.md"
+categories = ["multimedia::images"]
+
+[badges]
+travis-ci = { repository = "RazrFalcon/libresvg" }
 
 [dependencies]
 base64 = "0.8"
