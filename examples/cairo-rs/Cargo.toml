@@ -1,0 +1,13 @@
+[package]
+name = "cairo-example"
+version = "0.1.0"
+authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
+
+[dependencies]
+gio = "0.3"
+gtk = "0.3"
+fern = "0.4"
+
+[dependencies.resvg]
+path = "../.."
+features = ["cairo-backend"]

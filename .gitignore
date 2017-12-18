@@ -1,0 +1,7 @@
+target
+.idea
+*.sublime-*
+Cargo.lock
+*.pro.user
+*.pro.user.*
+.qmake.stash

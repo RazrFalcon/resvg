@@ -1,0 +1,24 @@
+<svg id="svg-root" viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg">
+    <testCase>
+        <testDescription>
+            Invalid ellipses should not be rendered.
+        </testDescription>
+        <passCriteria>
+            Empty canvas.
+        </passCriteria>
+    </testCase>
+
+    <g fill="red" stroke="red" stroke-width="20" transform="translate(200 200)">
+        <ellipse rx="-1"/>
+        <ellipse rx="0"/>
+        <ellipse ry="-1"/>
+        <ellipse ry="0"/>
+        <ellipse rx="5" ry="0"/>
+        <ellipse rx="0" ry="5"/>
+        <ellipse rx="5" ry="-5"/>
+        <ellipse rx="-5" ry="5"/>
+        <ellipse rx="-5" ry="-5"/>
+    </g>
+
+    <rect x="1" y="1" width="478" height="358" fill="none" stroke="black"/>
+</svg>

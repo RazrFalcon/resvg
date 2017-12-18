@@ -1,0 +1,2934 @@
+<html>
+<style>
+/* based on: https://github.com/nst/JSONTestSuite/blob/master/results/style.css */
+
+table {
+    border-collapse: collapse;
+    font-family: monospace;
+    font-size: 12pt;
+}
+
+th.vertical {
+    /* Something you can count on */
+    height: 240px;
+    white-space: nowrap;
+}
+
+th.vertical > div {
+    transform:
+        translate(0px, 105px)
+        rotate(270deg); /* 360 - 90 */
+    width: 13pt;
+}
+
+.Ok {
+    border: 1px solid black;
+    background-color: #00E400;
+}
+
+.Error {
+    border: 1px solid black;
+    background-color: #FF0000;
+}
+
+.Crashed {
+    border: 1px solid black;
+    background-color: #FFAA00;
+}
+
+.OutOfScope {
+    border: 1px solid black;
+    background-color: #E5E5E5;
+}
+</style>
+<table>
+<tr>
+<th></th>
+<th class="vertical"><div>libresvg 0.1.0</div></th>
+<th class="vertical"><div>Chromium r508693</div></th>
+<th class="vertical"><div>Inkscape 0.92.2</div></th>
+<th class="vertical"><div>librsvg 2.40.18</div></th>
+<th class="vertical"><div>QtSvg 5.9.3</div></th>
+</tr>
+<tr>
+<td align="right">color-prof-01-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">color-prop-01-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">color-prop-02-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">color-prop-03-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">color-prop-05-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">conform-viewers-01-t.svgz&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">conform-viewers-02-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">coords-coord-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-coord-02-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-trans-01-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-trans-02-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-trans-03-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-trans-04-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-trans-05-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-trans-06-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-trans-07-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-trans-08-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-trans-09-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-trans-10-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-trans-11-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-trans-12-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-trans-13-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-trans-14-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-transformattr-01-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-transformattr-02-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-transformattr-03-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-transformattr-04-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-transformattr-05-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">coords-units-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">coords-units-02-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">coords-units-03-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">coords-units-1000-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">coords-units-1001-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">coords-viewattr-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">coords-viewattr-02-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">coords-viewattr-03-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">coords-viewattr-04-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-background-01-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-blend-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-color-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-color-02-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-composite-02-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-composite-03-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-composite-04-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-composite-05-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-comptran-01-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">filters-conv-01-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-conv-02-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-conv-04-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-conv-05-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-diffuse-01-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-displace-01-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-displace-02-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-example-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-felem-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-felem-02-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-gauss-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-gauss-02-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-gauss-03-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">filters-image-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-image-02-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-image-03-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-image-04-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-image-05-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-light-01-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-light-02-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-light-03-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-light-04-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-light-05-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-morph-01-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-offset-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-offset-02-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-overview-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-overview-02-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-overview-03-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-specular-01-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-tile-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-turb-01-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">filters-turb-02-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">imp-path-01-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">linking-a-01-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">linking-a-03-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">linking-a-04-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">linking-a-05-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">linking-a-07-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">linking-a-08-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">linking-a-09-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">linking-a-10-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">linking-frag-01-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">linking-uri-01-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">linking-uri-02-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">linking-uri-03-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">masking-filter-01-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-intro-01-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-mask-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-mask-02-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-opacity-01-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-path-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-path-02-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-path-03-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-path-04-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-path-05-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-path-06-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-path-07-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-path-08-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-path-10-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-path-11-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-path-13-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">masking-path-14-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">metadata-example-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">opacity-1000-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">opacity-1001-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">opacity-1002-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">painting-control-01-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">painting-control-02-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-control-03-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-control-04-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">painting-control-05-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">painting-control-06-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-fill-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-fill-02-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-fill-03-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-fill-04-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-fill-05-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-marker-01-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">painting-marker-02-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">painting-marker-03-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">painting-marker-04-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">painting-marker-05-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">painting-marker-06-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">painting-marker-07-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">painting-marker-properties-01-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">painting-render-01-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-render-02-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-stroke-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-stroke-02-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-stroke-03-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-stroke-04-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-stroke-05-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-stroke-06-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">painting-stroke-07-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-stroke-08-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-stroke-09-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">painting-stroke-10-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">painting-stroke-1000-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-02-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-03-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-04-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-05-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-06-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-07-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-08-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-09-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-10-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">paths-data-12-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-13-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-14-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-15-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-16-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-17-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-18-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-19-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">paths-data-20-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-01-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-02-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-03-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-04-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-05-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-06-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-07-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-08-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-09-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-10-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-11-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-12-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-13-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-14-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-15-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-16-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-17-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-18-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-20-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-21-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-22-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-23-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-24-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-1000-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-grad-stops-01-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-pattern-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-pattern-02-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-pattern-03-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-pattern-04-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-pattern-05-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-pattern-06-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">pservers-pattern-07-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-pattern-08-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">pservers-pattern-09-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">render-elems-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">render-elems-02-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">render-elems-03-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">render-elems-06-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">render-elems-07-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">render-elems-08-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">render-groups-01-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">render-groups-03-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">shapes-circle-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-circle-02-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-circle-1000-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">shapes-ellipse-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-ellipse-02-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">shapes-ellipse-03-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-ellipse-1000-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">shapes-grammar-01-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-intro-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">shapes-intro-02-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-line-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-line-02-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-line-1000-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-polygon-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-polygon-02-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-polygon-03-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-polygon-1000-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-polyline-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-polyline-02-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-rect-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-rect-02-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">shapes-rect-03-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">shapes-rect-04-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-rect-05-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-rect-06-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-rect-07-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">shapes-rect-1000-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">shapes-rect-1001-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-cond-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-cond-02-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-cond-03-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-cond-overview-02-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-cond-overview-03-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-cond-overview-04-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-cond-overview-05-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-defs-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-frag-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-frag-02-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-frag-03-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-frag-04-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-frag-05-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-frag-06-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-group-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-group-02-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-group-03-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-image-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-image-02-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-image-03-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-image-04-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-image-05-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-image-06-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-image-07-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-image-08-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-image-09-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-image-10-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-image-12-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-image-13-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-image-14-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-image-15-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-image-16-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-image-17-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-image-18-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-image-19-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-svg-03-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-svg-1000-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-svg-1001-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-svg-1002-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-svg-1003-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-symbol-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-use-01-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-use-03-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">struct-use-04-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-use-05-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-use-06-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-use-07-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-use-08-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Crashed"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-use-09-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-use-10-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-use-11-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-use-12-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Crashed"></td>
+</tr>
+<tr>
+<td align="right">struct-use-13-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-use-1000-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">struct-use-1001-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">styling-class-01-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">styling-css-01-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">styling-css-02-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">styling-css-03-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">styling-css-04-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">styling-css-05-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">styling-css-07-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">styling-css-08-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">styling-css-09-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">styling-css-10-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">styling-elem-01-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">styling-inherit-01-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">styling-pres-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">styling-pres-03-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">styling-pres-04-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">styling-pres-05-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-align-01-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-align-02-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-align-03-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-align-04-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-align-05-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-align-06-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-align-07-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-align-08-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-bidi-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-deco-01-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-deco-1000-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-fonts-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-fonts-02-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-fonts-03-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-fonts-04-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-fonts-05-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-fonts-1000-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-fonts-202-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-fonts-203-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-fonts-204-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-intro-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-intro-02-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-intro-03-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-intro-04-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-intro-05-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-intro-06-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-intro-07-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-intro-09-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-intro-10-f.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-intro-11-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-intro-12-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-path-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-path-02-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-spacing-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-text-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-text-03-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-text-04-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-text-05-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-text-06-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-text-07-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-text-08-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-text-09-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-text-10-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-text-11-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-text-12-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-tref-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-tref-02-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-tref-03-b.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-tspan-01-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-tspan-02-b.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">text-ws-01-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-ws-02-t.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">text-ws-03-t.svg&nbsp;</td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+<tr>
+<td align="right">types-basic-01-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+</tr>
+<tr>
+<td align="right">types-basic-02-f.svg&nbsp;</td>
+<td class="Ok"></td>
+<td class="Ok"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+<td class="Error"></td>
+</tr>
+</table>
+</html>

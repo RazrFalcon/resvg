@@ -1,0 +1,28 @@
+[package]
+name = "resvg-capi"
+version = "0.1.0"
+authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
+keywords = ["svg", "render", "raster", "capi"]
+license = "MPL-2.0"
+
+[lib]
+name = "resvg"
+crate-type = ["cdylib"]
+
+[dependencies]
+fern = "0.4"
+
+[dependencies.resvg]
+path = "../"
+
+[dependencies.glib]
+version = "0.4.0"
+optional = true
+
+[dependencies.cairo-sys-rs]
+version = "0.5.0"
+optional = true
+
+[features]
+cairo-backend = ["resvg/cairo-backend", "glib", "cairo-sys-rs"]
+qt-backend = ["resvg/qt-backend"]

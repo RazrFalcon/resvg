@@ -1,0 +1,45 @@
+language: rust
+rust:
+  - stable
+before_install:
+  - sudo add-apt-repository ppa:beineri/opt-qt562-trusty -y
+  - sudo apt-get update -qq
+install:
+  # we need gtk3 for capi/examples/cairo
+  - sudo apt-get install -y libpango1.0-dev libgtk-3-dev
+  - sudo apt-get install -qq qt56base
+  # prepare custom Qt
+  - source /opt/qt56/bin/qt56-env.sh;
+script:
+  # exit on error
+  - set -e
+  # test qt backend
+  - cd "$TRAVIS_BUILD_DIR"/tools/rendersvg
+  - cargo build --verbose --features="qt-backend"
+  - cd "$TRAVIS_BUILD_DIR"/tests/regression
+  - mkdir workdir-qt
+  - export QT_QPA_PLATFORM=offscreen
+  - sudo ln -s /usr/share/fonts /opt/qt56/lib/fonts
+  - cargo run --release -- --workdir=./workdir-qt --backend=qt --use-prev-commit
+  # test cairo backend
+  - cd "$TRAVIS_BUILD_DIR"/tools/rendersvg
+  - cargo build --verbose --features="cairo-backend"
+  - cd "$TRAVIS_BUILD_DIR"/tests/regression
+  - mkdir workdir-cairo
+  - cargo run --release -- --workdir=./workdir-cairo --backend=cairo --use-prev-commit
+  # try to build with all backends
+  - cd "$TRAVIS_BUILD_DIR"/tools/rendersvg
+  - cargo build --verbose --features="cairo-backend qt-backend"
+  # build C-API
+  - cd "$TRAVIS_BUILD_DIR"/capi
+  - cargo build --verbose --features="cairo-backend qt-backend"
+  # build cairo C example
+  - cd "$TRAVIS_BUILD_DIR"/examples/cairo-capi
+  - make
+  # build demo
+  - cd "$TRAVIS_BUILD_DIR"/demo
+  - qmake CONFIG+=debug
+  - make
+  # build cairo-rs example
+  - cd "$TRAVIS_BUILD_DIR"/examples/cairo-rs
+  - cargo build

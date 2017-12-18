@@ -1,0 +1,21 @@
+[package]
+name = "rendersvg"
+version = "0.1.0"
+authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
+keywords = ["svg", "render", "raster"]
+license = "MPL-2.0"
+
+[dependencies]
+fern = "0.4"
+derive-error = "0.0.4"
+
+[dependencies.resvg]
+path = "../../"
+
+[dependencies.clap]
+version = "2"
+default-features = false
+
+[features]
+cairo-backend = ["resvg/cairo-backend"]
+qt-backend = ["resvg/qt-backend"]

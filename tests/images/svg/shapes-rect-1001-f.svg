@@ -1,0 +1,23 @@
+<svg id="svg-root" viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg">
+    <testCase>
+        <testDescription>
+            Invalid rects should not be rendered.
+        </testDescription>
+        <passCriteria>
+            Empty canvas.
+        </passCriteria>
+    </testCase>
+
+    <g fill="red" stroke="red" stroke-width="20">
+        <!-- all this rects are invalid -->
+        <rect x="20" y="20" width="200"/>
+        <rect x="20" y="20" height="200"/>
+        <rect x="20" y="20" width="200" height="0"/>
+        <rect x="20" y="20" width="0" height="200"/>
+        <rect x="20" y="20" width="200" height="-200"/>
+        <rect x="20" y="20" width="-200" height="200"/>
+        <rect x="20" y="20" width="-200" height="-200"/>
+    </g>
+
+    <rect x="1" y="1" width="478" height="358" fill="none" stroke="black"/>
+</svg>

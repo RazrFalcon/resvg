@@ -1,0 +1,39 @@
+<svg viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <testCase>
+        <testDescription>
+            Test 'use' resolving in a random order.
+        </testDescription>
+        <passCriteria>
+            6 green rect's visible. No red.
+        </passCriteria>
+    </testCase>
+
+    <g>
+        <!-- use before definishtion -->
+        <rect x="10" y="10" width="50" height="50" fill="red"/>
+        <use xlink:href='#r1' x="-60"/>
+
+        <!-- original -->
+        <rect id="r1" x="70" y="10" width="50" height="50" fill="green"/>
+
+        <!-- basic use -->
+        <rect x="130" y="10" width="50" height="50" fill="red"/>
+        <use xlink:href='#r1' x="60"/>
+
+        <!-- basic use again -->
+        <rect x="190" y="10" width="50" height="50" fill="red"/>
+        <use xlink:href='#r1' x="120"/>
+
+        <g>
+            <!-- use on different depth -->
+            <rect x="250" y="10" width="50" height="50" fill="red"/>
+            <use xlink:href='#r1' x="180"/>
+        </g>
+    </g>
+
+    <!-- use on different depth -->
+    <rect x="310" y="10" width="50" height="50" fill="red"/>
+    <use xlink:href='#r1' x="240"/>
+
+    <rect x="1" y="1" width="478" height="358" fill="none" stroke="black"/>
+</svg>

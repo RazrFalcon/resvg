@@ -1,0 +1,21 @@
+<svg id="svg-root" viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg">
+    <testCase>
+        <testDescription>
+            This test validates the rx, ry attributes with negative values proccesing.
+        </testDescription>
+        <passCriteria>
+            Three black rectangles.
+        </passCriteria>
+    </testCase>
+
+    <rect x="25" y="25" width="200" height="100" rx="-1" ry="50" fill="red"/>
+    <rect x="25" y="25" width="200" height="100" rx="50" ry="50" fill="black"/>
+
+    <rect x="25" y="145" width="200" height="100" rx="50" ry="-1" fill="red"/>
+    <rect x="25" y="145" width="200" height="100" rx="50" ry="50" fill="black"/>
+
+    <rect x="25" y="255" width="200" height="100" rx="-1" ry="-1" fill="red"/>
+    <rect x="25" y="255" width="200" height="100" rx="0" ry="0" fill="black"/>
+
+    <rect x="1" y="1" width="478" height="358" fill="none" stroke="black"/>
+</svg>

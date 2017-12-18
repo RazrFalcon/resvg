@@ -1,0 +1,25 @@
+<svg height="360" viewBox="0 0 480 360" width="480" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <testCase>
+        <testDescription>
+            Test gradient proccesing with a percent length.
+        </testDescription>
+        <passCriteria>
+            Two rects with gradients.
+        </passCriteria>
+    </testCase>
+
+    <linearGradient id="lg1">
+        <stop stop-color="white" offset="0"/>
+        <stop stop-color="green" offset="1"/>
+    </linearGradient>
+
+    <linearGradient id="lg2" x1="20%" y1="50%" x2="80%" y2="90%">
+        <stop stop-color="white" offset="0"/>
+        <stop stop-color="green" offset="1"/>
+    </linearGradient>
+
+    <rect x="20" y="10" width="440" height="60" fill="url(#lg1)"/>
+    <rect x="20" y="80" width="440" height="60" fill="url(#lg2)"/>
+
+    <rect x="1" y="1" width="478" height="358" fill="none" stroke="black"/>
+</svg>

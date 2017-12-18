@@ -1,0 +1,17 @@
+<svg id="svg-root" viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg">
+    <testCase>
+        <testDescription>
+            Invalid circles should not be rendered.
+        </testDescription>
+        <passCriteria>
+            Empty canvas.
+        </passCriteria>
+    </testCase>
+
+    <g fill="red" stroke="red" stroke-width="20">
+        <circle cx="200" cy="200" r="-1"/>
+        <circle cx="200" cy="200" r="0"/>
+    </g>
+
+    <rect x="1" y="1" width="478" height="358" fill="none" stroke="black"/>
+</svg>

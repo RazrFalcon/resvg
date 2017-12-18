@@ -1,0 +1,52 @@
+[package]
+name = "resvg"
+version = "0.1.0"
+authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
+keywords = ["svg", "render", "raster"]
+license = "MPL-2.0"
+
+[dependencies]
+base64 = "0.8"
+log = "0.3"
+libflate = "0.1"
+
+[dependencies.error-chain]
+version = "0.11"
+default-features = false
+
+[dependencies.pango]
+version = "0.3"
+optional = true
+
+[dependencies.pangocairo]
+version = "0.4.1"
+optional = true
+
+[dependencies.resvg-qt]
+# git = "https://github.com/RazrFalcon/resvg-qt"
+version = "0.1.0"
+optional = true
+
+[dependencies.cairo-rs]
+version = "0.3"
+features = ["png"]
+optional = true
+
+[dependencies.svgdom]
+version = "0.9"
+# git = "https://github.com/RazrFalcon/libsvgdom.git"
+# branch = "devel"
+# path = "../svgdom"
+
+[dependencies.image]
+version = "0.18"
+default-features = false
+features = ["jpeg", "png_codec"]
+optional = true
+
+[features]
+cairo-backend = ["cairo-rs", "pango", "pangocairo", "image"]
+qt-backend = ["resvg-qt"]
+
+[lib]
+doctest = false
