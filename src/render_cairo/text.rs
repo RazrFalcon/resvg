@@ -16,7 +16,6 @@ use dom;
 
 use math::{
     Rect,
-    Point,
 };
 
 use super::{
@@ -55,12 +54,12 @@ pub fn draw(
             chunk_width += layout_width as f64;
         }
 
-        let mut pos = Point::new(chunk.x, chunk.y);
+        let (mut x, y) = (chunk.x, chunk.y);
 
-        pos.x = process_text_anchor(pos.x, chunk.anchor, chunk_width);
+        x = process_text_anchor(x, chunk.anchor, chunk_width);
 
         for tspan in &chunk.children {
-            pos.x += draw_tspan(doc, tspan, pos, cr);
+            x += draw_tspan(doc, tspan, x, y, cr);
         }
     }
 }
@@ -68,7 +67,8 @@ pub fn draw(
 fn draw_tspan(
     doc: &dom::Document,
     tspan: &dom::TSpan,
-    start_pos: Point,
+    x: f64,
+    mut y: f64,
     cr: &cairo::Context,
 ) -> f64
 {
@@ -85,21 +85,21 @@ fn draw_tspan(
 
     let font_metrics = pango_context.get_metrics(Some(&font), None).unwrap();
 
-    let mut pos = start_pos;
+//    let mut pos = start_pos;
 
     let mut layout_iter = layout.get_iter().unwrap();
     let baseline_offset = (layout_iter.get_baseline() / pango::SCALE) as f64;
-    pos.y -= baseline_offset;
+    y -= baseline_offset;
 
     // Contains only characters path bounding box,
     // so spaces around text are ignored.
-    let bbox = calc_layout_bbox(&layout, pos.x, pos.y);
+    let bbox = calc_layout_bbox(&layout, x, y);
 
     // Contains layout width including leading and trailing spaces.
     let layout_width = layout.get_size().0 as f64 / PANGO_SCALE_64;
 
     let mut line_rect = Rect {
-        x: pos.x,
+        x: x,
         y: 0.0,
         w: layout_width,
         h: font_metrics.get_underline_thickness() as f64 / PANGO_SCALE_64,
@@ -109,7 +109,7 @@ fn draw_tspan(
     //
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.underline {
-        line_rect.y = pos.y + baseline_offset
+        line_rect.y = y + baseline_offset
                       - font_metrics.get_underline_position() as f64 / PANGO_SCALE_64;
         draw_line(doc, &style.fill, &style.stroke, line_rect, cr);
     }
@@ -118,12 +118,12 @@ fn draw_tspan(
     //
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.overline {
-        line_rect.y = pos.y + font_metrics.get_underline_thickness() as f64 / PANGO_SCALE_64;
+        line_rect.y = y + font_metrics.get_underline_thickness() as f64 / PANGO_SCALE_64;
         draw_line(doc, &style.fill, &style.stroke, line_rect, cr);
     }
 
     // Draw text.
-    cr.move_to(pos.x, pos.y);
+    cr.move_to(x, y);
 
     fill::apply(doc, &tspan.fill, cr, &bbox);
     pc::update_layout(cr, &layout);
@@ -133,13 +133,13 @@ fn draw_tspan(
     pc::layout_path(cr, &layout);
     cr.stroke();
 
-    cr.move_to(-pos.x, -pos.y);
+    cr.move_to(-x, -y);
 
     // Draw line-through.
     //
     // Should be drawn after/over text.
     if let Some(ref style) = tspan.decoration.line_through {
-        line_rect.y = pos.y + baseline_offset
+        line_rect.y = y + baseline_offset
                       - font_metrics.get_strikethrough_position() as f64 / PANGO_SCALE_64;
         line_rect.h = font_metrics.get_strikethrough_thickness() as f64 / PANGO_SCALE_64;
         draw_line(doc, &style.fill, &style.stroke, line_rect, cr);

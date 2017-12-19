@@ -7,7 +7,6 @@ use qt;
 use dom;
 
 use math::{
-    Point,
     Rect,
 };
 
@@ -36,12 +35,12 @@ pub fn draw(
             chunk_width += font_metrics.width(&tspan.text);
         }
 
-        let mut pos = Point::new(chunk.x, chunk.y);
+        let (mut x, y) = (chunk.x, chunk.y);
 
-        pos.x = process_text_anchor(pos.x, chunk.anchor, chunk_width);
+        x = process_text_anchor(x, chunk.anchor, chunk_width);
 
         for tspan in &chunk.children {
-            pos.x += draw_tspan(doc, tspan, pos, p);
+            x += draw_tspan(doc, tspan, x, y, p);
         }
     }
 }
@@ -49,7 +48,8 @@ pub fn draw(
 fn draw_tspan(
     doc: &dom::Document,
     tspan: &dom::TSpan,
-    start_pos: Point,
+    x: f64,
+    mut y: f64,
     p: &qt::Painter,
 ) -> f64
 {
@@ -58,16 +58,14 @@ fn draw_tspan(
     p.set_font(&font);
     let font_metrics = p.font_metrics();
 
-    let mut pos = start_pos;
-
     let baseline_offset = font_metrics.ascent();
-    pos.y -= baseline_offset;
+    y -= baseline_offset;
 
     // Contains layout width including leading and trailing spaces.
     let layout_width = font_metrics.width(&tspan.text);
 
     let mut line_rect = Rect {
-        x: pos.x,
+        x: x,
         y: 0.0,
         w: layout_width,
         h: font_metrics.line_width(),
@@ -77,7 +75,7 @@ fn draw_tspan(
     //
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.underline {
-        line_rect.y = pos.y + font_metrics.height() - font_metrics.underline_pos();
+        line_rect.y = y + font_metrics.height() - font_metrics.underline_pos();
         draw_line(doc, &style.fill, &style.stroke, line_rect, p);
     }
 
@@ -85,7 +83,7 @@ fn draw_tspan(
     //
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.overline {
-        line_rect.y = pos.y + font_metrics.height() - font_metrics.overline_pos();
+        line_rect.y = y + font_metrics.height() - font_metrics.overline_pos();
         draw_line(doc, &style.fill, &style.stroke, line_rect, p);
     }
 
@@ -93,13 +91,13 @@ fn draw_tspan(
     fill::apply(doc, &tspan.fill, p);
     stroke::apply(doc, &tspan.stroke, p);
 
-    p.draw_text(pos.x, pos.y, &tspan.text);
+    p.draw_text(x, y, &tspan.text);
 
     // Draw line-through.
     //
     // Should be drawn after/over text.
     if let Some(ref style) = tspan.decoration.line_through {
-        line_rect.y = pos.y + baseline_offset - font_metrics.strikeout_pos();
+        line_rect.y = y + baseline_offset - font_metrics.strikeout_pos();
         draw_line(doc, &style.fill, &style.stroke, line_rect, p);
     }
 

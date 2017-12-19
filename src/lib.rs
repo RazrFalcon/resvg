@@ -44,12 +44,8 @@ mod render_utils;
 mod traits;
 
 
-use std::fs;
 use std::path::{
     Path,
-};
-use std::io::{
-    Read,
 };
 
 pub use svgdom::{
@@ -61,14 +57,11 @@ pub use error::{
     ErrorKind,
     Result,
 };
-pub use options::{
-    FitTo,
-    Options,
-};
-pub use dom::{
-    Document,
-};
+pub use options::*;
+pub use dom::*;
 pub use math::{
+    Line,
+    Size,
     Rect,
 };
 
@@ -108,6 +101,9 @@ pub fn parse_doc_from_file<P: AsRef<Path>>(path: P, opt: &Options) -> Result<dom
 }
 
 fn load_file(path: &Path) -> Result<String> {
+    use std::fs;
+    use std::io::Read;
+
     let mut file = fs::File::open(path)?;
     let length = file.metadata()?.len() as usize;
 

@@ -15,6 +15,7 @@ pub fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
 }
 
 /// Line representation.
+#[allow(missing_docs)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Line {
     pub x1: f64,
@@ -24,6 +25,7 @@ pub struct Line {
 }
 
 impl Line {
+    /// Creates a new line.
     pub fn new(x1: f64, y1: f64, x2: f64, y2: f64) -> Line {
         Line {
             x1,
@@ -33,12 +35,14 @@ impl Line {
         }
     }
 
+    /// Calculates the line length.
     pub fn length(&self) -> f64 {
         let x = self.x2 - self.x1;
         let y = self.y2 - self.y1;
         (x*x + y*y).sqrt()
     }
 
+    /// Sets the line length.
     pub fn set_length(&mut self, len: f64) {
         let x = self.x2 - self.x1;
         let y = self.y2 - self.y1;
@@ -54,35 +58,9 @@ impl Line {
 }
 
 
-/// Point representation.
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub struct Point {
-    pub x: f64,
-    pub y: f64,
-}
-
-impl Default for Point {
-    fn default() -> Point {
-        Point {
-            x: 0.0,
-            y: 0.0,
-        }
-    }
-}
-
-impl Point {
-    pub fn new(x: f64, y: f64) -> Point {
-        Point {
-            x,
-            y,
-        }
-    }
-}
-
-
 /// Size representation.
-#[derive(Debug, PartialEq, Copy, Clone)]
 #[allow(missing_docs)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Size {
     pub w: f64,
     pub h: f64,
@@ -112,8 +90,8 @@ impl Size {
 
 
 /// Rect representation.
-#[derive(Debug, PartialEq, Copy, Clone)]
 #[allow(missing_docs)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Rect {
     pub x: f64,
     pub y: f64,

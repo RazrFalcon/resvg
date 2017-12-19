@@ -17,12 +17,26 @@ use math::{
 use super::attribute::*;
 
 
+/// An element.
+///
+/// Represents an object, that should be rendered.
 pub struct Element {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Isn't automatically generated.
+    /// Can be empty.
+    ///
+    /// Currently, used only for SVG dump purposes.
     pub id: String,
+    /// Element kind.
     pub data: Type,
+    /// Element transform.
     pub transform: Transform,
 }
 
+/// An element kind.
+#[allow(missing_docs)]
 pub enum Type {
     Path(Path),
     Text(Text),
@@ -30,35 +44,177 @@ pub enum Type {
     Group(Group),
 }
 
+/// An element that can be referenced.
 pub struct RefElement {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Can't be empty.
+    ///
+    /// Currently, used only for SVG dump purposes.
+    ///
+    /// It isn't used for referencing itself, because we use indexes for that.
     pub id: String,
+    /// Element kind.
     pub data: RefType,
 }
 
+/// A referenced element kind.
+#[allow(missing_docs)]
 pub enum RefType {
     LinearGradient(LinearGradient),
     RadialGradient(RadialGradient),
 }
 
+/// A path element.
 pub struct Path {
+    /// Fill style.
     pub fill: Option<Fill>,
+    /// Stroke style.
     pub stroke: Option<Stroke>,
+    /// Segments list.
+    ///
     /// All segments are in absolute coordinates.
     pub d: Vec<PathSegment>,
 }
 
+/// A text element.
+///
+/// `text` element in the SVG.
+pub struct Text {
+    /// List of [text chunks](https://www.w3.org/TR/SVG11/text.html#TextChunk).
+    pub children: Vec<TextChunk>,
+}
+
+/// A text chunk.
+///
+/// Contains position and anchor of the next
+/// [text chunk](https://www.w3.org/TR/SVG11/text.html#TextChunk).
+///
+/// Doesn't represented in the SVG directly. Usually, it's a first `tspan` or text node
+/// and any `tspan` that defines either `x` or `y` coordinate and/or have `text-anchor`.
+pub struct TextChunk {
+    /// An absolute position on the X-axis.
+    pub x: f64,
+    /// An absolute position on the Y-axis.
+    pub y: f64,
+    /// A text anchor/align.
+    pub anchor: TextAnchor,
+    /// List of `Tspan`.
+    pub children: Vec<TSpan>
+}
+
+// TODO: dx, dy
+/// A text span.
+///
+/// `tspan` element in the SVG.
+#[derive(Clone)]
+pub struct TSpan {
+    /// Fill style.
+    pub fill: Option<Fill>,
+    /// Stroke style.
+    pub stroke: Option<Stroke>,
+    /// Font description.
+    pub font: Font,
+    /// Text decoration.
+    ///
+    /// Unlike `text-decoration` attribute from the SVG, this one has all styles resolved.
+    /// Basically, by the SVG `text-decoration` attribute can be defined on `tspan` element
+    /// and on any parent element. And all definitions should be combined.
+    /// The one that was defined by `tspan` uses the `tspan` style itself.
+    /// The one that was defined by any parent node uses the `text` element style.
+    /// So it's pretty hard to resolve.
+    ///
+    /// This property has all this stuff resolved.
+    pub decoration: TextDecoration,
+    /// An actual text line.
+    ///
+    /// SVG doesn't support multiline text, so this property doesn't have a new line inside of it.
+    /// All the spaces are already trimmed or preserved, depending on the `xml:space` attribute.
+    /// All characters references are already resolved, so there is no `&gt;` or `&#x50;`.
+    /// So this text should be rendered as is, without any postprocessing.
+    pub text: String,
+}
+
+/// A raster image element.
+///
+/// `image` element in the SVG.
+pub struct Image {
+    /// An image rectangle in which it should be fit.
+    pub rect: Rect,
+    /// Image data.
+    pub data: ImageData,
+}
+
+/// A raster image container.
+pub enum ImageData {
+    /// Path to the image.
+    ///
+    /// Preprocessor checks that file exists, but because it can be removed later,
+    /// there is no guarantee that this path is valid.
+    Path(PathBuf),
+    /// An image raw data.
+    ///
+    /// It's not a decoded image data, but the data that was decoded from base64.
+    /// So you still need a PNG and a JPEG decoding library.
+    Raw(Vec<u8>, ImageDataKind),
+}
+
+/// An image codec.
+#[allow(missing_docs)]
+#[derive(Copy,Clone,PartialEq)]
+pub enum ImageDataKind {
+    PNG,
+    JPEG,
+}
+
+// TODO: no need for a separate vector
+/// A group container.
+///
+/// The preprocessor will remove all groups that don't impact rendering.
+/// Those that left is just an indicator that a new canvas should be created.
+///
+/// Currently, it's needed only for `opacity`.
+///
+/// `g` element in the SVG.
+pub struct Group {
+    /// Group opacity.
+    ///
+    /// After the group is rendered we should combine
+    /// it with a parent group using the specified opacity.
+    pub opacity: Option<f64>,
+    /// List of children elements.
+    pub children: Vec<Element>,
+}
+
+/// A generic gradient.
 pub struct BaseGradient {
+    /// Coordinate system units.
+    ///
+    /// `gradientUnits` in the SVG.
     pub units: GradientUnits,
+    /// Gradient transform.
+    ///
+    /// `gradientTransform` in the SVG.
     pub transform: Transform,
+    /// Gradient spreading method.
+    ///
+    /// `spreadMethod` in the SVG.
     pub spread_method: SpreadMethod,
+    /// List of stop elements.
+    ///
+    /// Will always have more than two items.
     pub stops: Vec<Stop>,
 }
 
+/// A linear gradient.
+#[allow(missing_docs)]
 pub struct LinearGradient {
     pub x1: f64,
     pub y1: f64,
     pub x2: f64,
     pub y2: f64,
+    /// Base gradient data.
     pub d: BaseGradient,
 }
 
@@ -66,11 +222,11 @@ impl fmt::Debug for LinearGradient {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
             "LinearGradient(\n  \
-               x1: {} y1: {}\n  \
-               x2: {} y2: {}\n  \
-               units: {:?}\n  \
-               transform: {}\n  \
-               spread: {:?}\n",
+             x1: {} y1: {}\n  \
+             x2: {} y2: {}\n  \
+             units: {:?}\n  \
+             transform: {}\n  \
+             spread: {:?}\n",
             self.x1, self.y1, self.x2, self.y2,
             self.d.units, self.d.transform, self.d.spread_method
         )?;
@@ -83,12 +239,15 @@ impl fmt::Debug for LinearGradient {
     }
 }
 
+/// A radial gradient.
+#[allow(missing_docs)]
 pub struct RadialGradient {
     pub cx: f64,
     pub cy: f64,
     pub r: f64,
     pub fx: f64,
     pub fy: f64,
+    /// Base gradient data.
     pub d: BaseGradient,
 }
 
@@ -96,12 +255,12 @@ impl fmt::Debug for RadialGradient {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
             "RadialGradient(\n  \
-               cx: {} cy: {}\n  \
-               fx: {} fy: {}\n  \
-               r: {}\n  \
-               units: {:?}\n  \
-               transform: {}\n  \
-               spread: {:?}\n",
+             cx: {} cy: {}\n  \
+             fx: {} fy: {}\n  \
+             r: {}\n  \
+             units: {:?}\n  \
+             transform: {}\n  \
+             spread: {:?}\n",
             self.cx, self.cy, self.fx, self.fy, self.r,
             self.d.units, self.d.transform, self.d.spread_method
         )?;
@@ -114,6 +273,8 @@ impl fmt::Debug for RadialGradient {
     }
 }
 
+/// Gradient's stop element.
+#[allow(missing_docs)]
 pub struct Stop {
     pub offset: f64,
     pub color: Color,
@@ -125,47 +286,4 @@ impl fmt::Debug for Stop {
         write!(f, "Stop(offset: {:?}, color: {}, opacity: {:?})",
                self.offset, self.color, self.opacity)
     }
-}
-
-pub struct Text {
-    pub children: Vec<TextChunk>,
-}
-
-pub struct TextChunk {
-    pub x: f64,
-    pub y: f64,
-    pub anchor: TextAnchor,
-    pub children: Vec<TSpan>
-}
-
-// TODO: dx, dy
-#[derive(Clone)]
-pub struct TSpan {
-    pub fill: Option<Fill>,
-    pub stroke: Option<Stroke>,
-    pub font: Font,
-    pub decoration: TextDecoration,
-    pub text: String,
-}
-
-pub struct Image {
-    pub rect: Rect,
-    pub data: ImageData,
-}
-
-pub enum ImageData {
-    Path(PathBuf),
-    Raw(Vec<u8>, ImageDataKind),
-}
-
-#[derive(Copy,Clone,PartialEq)]
-pub enum ImageDataKind {
-    PNG,
-    JPEG,
-}
-
-// TODO: no need for a separate vector
-pub struct Group {
-    pub opacity: Option<f64>,
-    pub children: Vec<Element>,
 }
