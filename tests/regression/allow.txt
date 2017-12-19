@@ -1,0 +1,6 @@
+struct-image-19-f.svg
+struct-image-12-b.svg
+masking-path-06-b.svg
+struct-image-05-b.svg
+struct-image-17-b.svg
+struct-image-18-f.svg

@@ -98,11 +98,38 @@ fn get_href_data(href: &str, path: Option<&path::PathBuf>) -> Option<dom::ImageD
         };
 
         if path.exists() {
-            return Some(dom::ImageData::Path(path.to_owned()));
+            if is_valid_image_format(&path) {
+                return Some(dom::ImageData::Path(path.to_owned()));
+            } else {
+                warn!("'{}' is not a PNG or a JPEG image.", href);
+            }
+        } else {
+            warn!("Linked file does not exist: '{}'.", href);
         }
-
-        warn!("Linked file does not exist: '{}'.", href);
     }
 
     None
+}
+
+/// Checks that file has a PNG or a JPEG magic bytes.
+fn is_valid_image_format(path: &path::Path) -> bool {
+    use std::fs;
+    use std::io::Read;
+
+    macro_rules! try_bool {
+        ($e:expr) => {
+            match $e {
+                Ok(v) => v,
+                Err(_) => return false,
+            }
+        };
+    }
+
+    let mut file = try_bool!(fs::File::open(path));
+
+    let mut d = Vec::new();
+    d.resize(8, 0);
+    try_bool!(file.read_exact(&mut d));
+
+    d.starts_with(b"\x89PNG\r\n\x1a\n") || d.starts_with(&[0xff, 0xd8, 0xff])
 }
