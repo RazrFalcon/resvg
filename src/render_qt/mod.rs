@@ -77,7 +77,7 @@ pub fn render_to_canvas(painter: &qt::Painter, img_view: Rect, doc: &dom::Docume
         let (dx, dy, sx, sy) = render_utils::view_box_transform(&doc.view_box, &img_view);
         qt::Transform::new(sx, 0.0, 0.0, sy, dx, dy)
     };
-    painter.set_transform(&ts);
+    painter.apply_transform(&ts);
 
     render_group(doc, &doc.elements, &painter, &painter.get_transform(), img_view.size());
 }

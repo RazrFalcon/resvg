@@ -76,7 +76,7 @@ pub fn render_to_canvas(cr: &cairo::Context, img_view: Rect, doc: &dom::Document
         let (dx, dy, sx, sy) = render_utils::view_box_transform(&doc.view_box, &img_view);
         cairo::Matrix::new(sx, 0.0, 0.0, sy, dx, dy)
     };
-    cr.set_matrix(ts);
+    cr.transform(ts);
 
     render_group(doc, &doc.elements, &cr, &cr.get_matrix(), img_view.size());
 }
