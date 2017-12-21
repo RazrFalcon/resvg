@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use dom;
+
 use math::{
     Size,
     Rect,
@@ -42,4 +44,12 @@ pub fn view_box_transform(view_box: &Rect, img_view: &Rect) -> (f64, f64, f64, f
     let dy = -view_box.y * s + (img_view.h - view_box.h * s) / 2.0 + img_view.y;
 
     (dx, dy, s, s)
+}
+
+pub fn process_text_anchor(x: f64, a: dom::TextAnchor, text_width: f64) -> f64 {
+    match a {
+        dom::TextAnchor::Start =>  x, // Nothing.
+        dom::TextAnchor::Middle => x - text_width / 2.0,
+        dom::TextAnchor::End =>    x - text_width,
+    }
 }

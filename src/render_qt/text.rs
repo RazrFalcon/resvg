@@ -10,6 +10,8 @@ use math::{
     Rect,
 };
 
+use render_utils;
+
 use super::{
     fill,
     stroke,
@@ -21,53 +23,66 @@ pub fn draw(
     elem: &dom::Text,
     p: &qt::Painter,
 ) {
-    if elem.children.is_empty() {
-        return;
-    }
+    draw_tspan(elem, p, |tspan, x, y, w, font| _draw_tspan(doc, tspan, x, y, w, &font, p));
+}
 
+pub fn draw_tspan<DrawAt>(
+    elem: &dom::Text,
+    p: &qt::Painter,
+    mut draw_at: DrawAt
+)
+    where DrawAt: FnMut(&dom::TSpan, f64, f64, f64, &qt::Font)
+{
+    let mut font_list = Vec::new();
+    let mut tspan_w_list = Vec::new();
+    let mut tspan_list = Vec::new();
     for chunk in &elem.children {
+        tspan_w_list.clear();
         let mut chunk_width = 0.0;
 
         for tspan in &chunk.children {
             let font = init_font(&tspan.font);
             p.set_font(&font);
             let font_metrics = p.font_metrics();
-            chunk_width += font_metrics.width(&tspan.text);
+            let tspan_width = font_metrics.width(&tspan.text);
+
+            font_list.push(font);
+            chunk_width += tspan_width;
+            tspan_w_list.push(tspan_width);
         }
 
-        let (mut x, y) = (chunk.x, chunk.y);
+        let mut x = render_utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
 
-        x = process_text_anchor(x, chunk.anchor, chunk_width);
-
-        for tspan in &chunk.children {
-            x += draw_tspan(doc, tspan, x, y, p);
+        for (tspan, width) in chunk.children.iter().zip(&tspan_w_list) {
+            tspan_list.push((x, chunk.y, *width, tspan));
+            x += width;
         }
+    }
+
+    for (&(x, y, width, tspan), font) in tspan_list.iter().zip(font_list) {
+        draw_at(tspan, x, y, width, &font);
     }
 }
 
-fn draw_tspan(
+fn _draw_tspan(
     doc: &dom::Document,
     tspan: &dom::TSpan,
     x: f64,
     mut y: f64,
+    width: f64,
+    font: &qt::Font,
     p: &qt::Painter,
-) -> f64
-{
-    let font = init_font(&tspan.font);
-
+) {
     p.set_font(&font);
     let font_metrics = p.font_metrics();
 
     let baseline_offset = font_metrics.ascent();
     y -= baseline_offset;
 
-    // Contains layout width including leading and trailing spaces.
-    let layout_width = font_metrics.width(&tspan.text);
-
     let mut line_rect = Rect {
         x: x,
         y: 0.0,
-        w: layout_width,
+        w: width,
         h: font_metrics.line_width(),
     };
 
@@ -100,8 +115,6 @@ fn draw_tspan(
         line_rect.y = y + baseline_offset - font_metrics.strikeout_pos();
         draw_line(doc, &style.fill, &style.stroke, line_rect, p);
     }
-
-    layout_width
 }
 
 fn init_font(dom_font: &dom::Font) -> qt::Font {
@@ -177,12 +190,4 @@ fn draw_line(
     stroke::apply(doc, stroke, p);
 
     p.draw_path(p_path);
-}
-
-fn process_text_anchor(x: f64, a: dom::TextAnchor, text_width: f64) -> f64 {
-    match a {
-        dom::TextAnchor::Start =>  x, // Nothing.
-        dom::TextAnchor::Middle => x - text_width / 2.0,
-        dom::TextAnchor::End =>    x - text_width,
-    }
 }

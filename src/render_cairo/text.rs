@@ -18,6 +18,8 @@ use math::{
     Rect,
 };
 
+use render_utils;
+
 use super::{
     fill,
     stroke,
@@ -27,81 +29,93 @@ use super::{
 const PANGO_SCALE_64: f64 = pango::SCALE as f64;
 
 
+pub struct PangoData {
+    pub layout: pango::Layout,
+    pub context: pango::Context,
+    pub font: pango::FontDescription,
+}
+
 pub fn draw(
     doc: &dom::Document,
     elem: &dom::Text,
     cr: &cairo::Context,
 ) {
-    if elem.children.is_empty() {
-        return;
-    }
+    draw_tspan(doc, elem, cr,
+        |tspan, x, y, w, d| _draw_tspan(doc, tspan, x, y, w, d, cr));
+}
 
+pub fn draw_tspan<DrawAt>(
+    doc: &dom::Document,
+    elem: &dom::Text,
+    cr: &cairo::Context,
+    mut draw_at: DrawAt
+)
+    where DrawAt: FnMut(&dom::TSpan, f64, f64, f64, &PangoData)
+{
+    let mut pc_list = Vec::new();
+    let mut tspan_w_list = Vec::new();
+    let mut tspan_list = Vec::new();
     for chunk in &elem.children {
+        tspan_w_list.clear();
         let mut chunk_width = 0.0;
 
         for tspan in &chunk.children {
-            let pango_context = pc::create_context(cr).unwrap();
-            pc::context_set_resolution(&pango_context, doc.dpi);
+            let context = pc::create_context(cr).unwrap();
+            pc::update_context(cr, &context);
+            pc::context_set_resolution(&context, doc.dpi);
 
             let font = init_font(&tspan.font, doc.dpi);
 
-            let layout = pango::Layout::new(&pango_context);
+            let layout = pango::Layout::new(&context);
             layout.set_font_description(Some(&font));
             layout.set_text(&tspan.text);
+            let tspan_width = layout.get_size().0 as f64 / PANGO_SCALE_64;
 
-            let layout_width = layout.get_size().0 as f64 / PANGO_SCALE_64;
-
-            chunk_width += layout_width as f64;
+            pc_list.push(PangoData {
+                layout,
+                context,
+                font,
+            });
+            chunk_width += tspan_width;
+            tspan_w_list.push(tspan_width);
         }
 
-        let (mut x, y) = (chunk.x, chunk.y);
+        let mut x = render_utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
 
-        x = process_text_anchor(x, chunk.anchor, chunk_width);
-
-        for tspan in &chunk.children {
-            x += draw_tspan(doc, tspan, x, y, cr);
+        for (tspan, width) in chunk.children.iter().zip(&tspan_w_list) {
+            tspan_list.push((x, chunk.y, *width, tspan));
+            x += width;
         }
+    }
+
+    for (&(x, y, width, tspan), d) in tspan_list.iter().zip(pc_list) {
+        draw_at(tspan, x, y, width, &d);
     }
 }
 
-fn draw_tspan(
+fn _draw_tspan(
     doc: &dom::Document,
     tspan: &dom::TSpan,
     x: f64,
     mut y: f64,
+    width: f64,
+    pd: &PangoData,
     cr: &cairo::Context,
-) -> f64
-{
-    let pango_context = pc::create_context(cr).unwrap();
+) {
+    let font_metrics = pd.context.get_metrics(Some(&pd.font), None).unwrap();
 
-    pc::update_context(cr, &pango_context);
-    pc::context_set_resolution(&pango_context, doc.dpi);
-
-    let font = init_font(&tspan.font, doc.dpi);
-
-    let layout = pango::Layout::new(&pango_context);
-    layout.set_font_description(Some(&font));
-    layout.set_text(&tspan.text);
-
-    let font_metrics = pango_context.get_metrics(Some(&font), None).unwrap();
-
-//    let mut pos = start_pos;
-
-    let mut layout_iter = layout.get_iter().unwrap();
+    let mut layout_iter = pd.layout.get_iter().unwrap();
     let baseline_offset = (layout_iter.get_baseline() / pango::SCALE) as f64;
     y -= baseline_offset;
 
     // Contains only characters path bounding box,
     // so spaces around text are ignored.
-    let bbox = calc_layout_bbox(&layout, x, y);
-
-    // Contains layout width including leading and trailing spaces.
-    let layout_width = layout.get_size().0 as f64 / PANGO_SCALE_64;
+    let bbox = calc_layout_bbox(&pd.layout, x, y);
 
     let mut line_rect = Rect {
         x: x,
         y: 0.0,
-        w: layout_width,
+        w: width,
         h: font_metrics.get_underline_thickness() as f64 / PANGO_SCALE_64,
     };
 
@@ -126,11 +140,11 @@ fn draw_tspan(
     cr.move_to(x, y);
 
     fill::apply(doc, &tspan.fill, cr, &bbox);
-    pc::update_layout(cr, &layout);
-    pc::show_layout(cr, &layout);
+    pc::update_layout(cr, &pd.layout);
+    pc::show_layout(cr, &pd.layout);
 
     stroke::apply(doc, &tspan.stroke, cr, &bbox);
-    pc::layout_path(cr, &layout);
+    pc::layout_path(cr, &pd.layout);
     cr.stroke();
 
     cr.move_to(-x, -y);
@@ -144,8 +158,6 @@ fn draw_tspan(
         line_rect.h = font_metrics.get_strikethrough_thickness() as f64 / PANGO_SCALE_64;
         draw_line(doc, &style.fill, &style.stroke, line_rect, cr);
     }
-
-    layout_width
 }
 
 fn init_font(dom_font: &dom::Font, dpi: f64) -> pango::FontDescription {
@@ -234,12 +246,4 @@ fn draw_line(
     cr.fill_preserve();
     stroke::apply(doc, stroke, cr, &line_bbox);
     cr.stroke();
-}
-
-fn process_text_anchor(x: f64, a: dom::TextAnchor, text_width: f64) -> f64 {
-    match a {
-        dom::TextAnchor::Start =>  x, // Nothing.
-        dom::TextAnchor::Middle => x - text_width / 2.0,
-        dom::TextAnchor::End =>    x - text_width,
-    }
 }
