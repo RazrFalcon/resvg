@@ -91,17 +91,17 @@ fn render_group(
     for elem in elements {
         cr.apply_transform(&elem.transform);
 
-        match elem.data {
-            dom::Type::Path(ref path) => {
+        match elem.kind {
+            dom::ElementKind::Path(ref path) => {
                 path::draw(doc, path, cr);
             }
-            dom::Type::Text(ref text) => {
+            dom::ElementKind::Text(ref text) => {
                 text::draw(doc, text, cr);
             }
-            dom::Type::Image(ref img) => {
+            dom::ElementKind::Image(ref img) => {
                 image::draw(img, cr);
             }
-            dom::Type::Group(ref g) => {
+            dom::ElementKind::Group(ref g) => {
                 let sub_surface = cairo::ImageSurface::create(
                     cairo::Format::ARgb32,
                     img_size.w as i32,

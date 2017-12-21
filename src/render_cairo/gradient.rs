@@ -9,7 +9,7 @@ use cairo::{
 
 use dom::{
     self,
-    GradientUnits,
+    Units,
     SpreadMethod,
 };
 
@@ -42,7 +42,7 @@ fn prepare_base(g: &dom::BaseGradient, grad: &cairo::Gradient, opacity: f64, bbo
 
     let mut matrix = g.transform.to_matrix();
 
-    if g.units == GradientUnits::ObjectBoundingBox {
+    if g.units == Units::ObjectBoundingBox {
         let m = cairo::Matrix::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y);
         matrix = cairo::Matrix::multiply(&matrix, &m);
     }

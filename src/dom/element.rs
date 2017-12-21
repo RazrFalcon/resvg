@@ -30,14 +30,14 @@ pub struct Element {
     /// Currently, used only for SVG dump purposes.
     pub id: String,
     /// Element kind.
-    pub data: Type,
+    pub kind: ElementKind,
     /// Element transform.
     pub transform: Transform,
 }
 
 /// An element kind.
 #[allow(missing_docs)]
-pub enum Type {
+pub enum ElementKind {
     Path(Path),
     Text(Text),
     Image(Image),
@@ -56,12 +56,12 @@ pub struct RefElement {
     /// It isn't used for referencing itself, because we use indexes for that.
     pub id: String,
     /// Element kind.
-    pub data: RefType,
+    pub kind: RefElementKind,
 }
 
 /// A referenced element kind.
 #[allow(missing_docs)]
-pub enum RefType {
+pub enum RefElementKind {
     LinearGradient(LinearGradient),
     RadialGradient(RadialGradient),
 }
@@ -192,7 +192,7 @@ pub struct BaseGradient {
     /// Coordinate system units.
     ///
     /// `gradientUnits` in the SVG.
-    pub units: GradientUnits,
+    pub units: Units,
     /// Gradient transform.
     ///
     /// `gradientTransform` in the SVG.

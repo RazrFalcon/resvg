@@ -6,7 +6,7 @@ use qt;
 
 use dom::{
     self,
-    GradientUnits,
+    Units,
     SpreadMethod,
 };
 
@@ -45,7 +45,7 @@ fn prepare_base(g: &dom::BaseGradient, grad: &mut qt::Gradient, opacity: f64) {
     };
     grad.set_spread(spread_method);
 
-    if g.units == GradientUnits::ObjectBoundingBox {
+    if g.units == Units::ObjectBoundingBox {
         grad.set_units(qt::CoordinateMode::ObjectBoundingMode)
     }
 

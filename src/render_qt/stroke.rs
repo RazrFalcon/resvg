@@ -30,10 +30,10 @@ pub fn apply(
                     let ref_elem = doc.get_defs(id);
                     let mut brush = qt::Brush::new();
 
-                    match ref_elem.data {
-                        dom::RefType::LinearGradient(ref lg) =>
+                    match ref_elem.kind {
+                        dom::RefElementKind::LinearGradient(ref lg) =>
                             gradient::prepare_linear(lg, stroke.opacity, &mut brush),
-                        dom::RefType::RadialGradient(ref rg) =>
+                        dom::RefElementKind::RadialGradient(ref rg) =>
                             gradient::prepare_radial(rg, stroke.opacity, &mut brush),
                     }
 

@@ -49,7 +49,7 @@ pub fn convert(
 
     let elem = dom::Element {
         id: node.id().clone(),
-        data: dom::Type::Path(dom::Path {
+        kind: dom::ElementKind::Path(dom::Path {
             fill: fill,
             stroke: stroke,
             d: d,

@@ -20,17 +20,17 @@ use traits::{
 
 
 pub fn convert_linear(node: &svgdom::Node) -> Option<dom::RefElement> {
-    let attrs = node.attributes();
+    let ref attrs = node.attributes();
 
     if let Some(stops) = convert_stops(node) {
         let elem = dom::RefElement {
-            data: dom::RefType::LinearGradient(dom::LinearGradient {
+            kind: dom::RefElementKind::LinearGradient(dom::LinearGradient {
                 x1: attrs.get_number(AId::X1).unwrap_or(0.0),
                 y1: attrs.get_number(AId::Y1).unwrap_or(0.0),
                 x2: attrs.get_number(AId::X2).unwrap_or(1.0),
                 y2: attrs.get_number(AId::Y2).unwrap_or(0.0),
                 d: dom::BaseGradient {
-                    units: convert_grad_units(&attrs),
+                    units: super::convert_element_units(attrs, AId::GradientUnits),
                     transform: attrs.get_transform(AId::GradientTransform).unwrap_or_default(),
                     spread_method: convert_spread_method(&attrs),
                     stops,
@@ -46,18 +46,18 @@ pub fn convert_linear(node: &svgdom::Node) -> Option<dom::RefElement> {
 }
 
 pub fn convert_radial(node: &svgdom::Node) -> Option<dom::RefElement> {
-    let attrs = node.attributes();
+    let ref attrs = node.attributes();
 
     if let Some(stops) = convert_stops(node) {
         let elem = dom::RefElement {
-            data: dom::RefType::RadialGradient(dom::RadialGradient {
+            kind: dom::RefElementKind::RadialGradient(dom::RadialGradient {
                 cx: attrs.get_number(AId::Cx).unwrap_or(0.5),
                 cy: attrs.get_number(AId::Cy).unwrap_or(0.5),
                 r:  attrs.get_number(AId::R).unwrap_or(0.5),
                 fx: attrs.get_number(AId::Fx).unwrap_or(0.5),
                 fy: attrs.get_number(AId::Fy).unwrap_or(0.5),
                 d: dom::BaseGradient {
-                    units: convert_grad_units(&attrs),
+                    units: super::convert_element_units(attrs, AId::GradientUnits),
                     transform: attrs.get_transform(AId::GradientTransform).unwrap_or_default(),
                     spread_method: convert_spread_method(&attrs),
                     stops,
@@ -69,16 +69,6 @@ pub fn convert_radial(node: &svgdom::Node) -> Option<dom::RefElement> {
         Some(elem)
     } else {
         None
-    }
-}
-
-fn convert_grad_units(attrs: &svgdom::Attributes) -> dom::GradientUnits {
-    let av = attrs.get_predef(AId::GradientUnits).unwrap_or(svgdom::ValueId::UserSpaceOnUse);
-
-    match av {
-        svgdom::ValueId::UserSpaceOnUse => dom::GradientUnits::UserSpaceOnUse,
-        svgdom::ValueId::ObjectBoundingBox => dom::GradientUnits::ObjectBoundingBox,
-        _ => dom::GradientUnits::UserSpaceOnUse,
     }
 }
 

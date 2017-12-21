@@ -126,7 +126,7 @@ pub fn convert_nodes(
 
                 let elem = dom::Element {
                     id: node.id().clone(),
-                    data: dom::Type::Group(dom::Group {
+                    kind: dom::ElementKind::Group(dom::Group {
                         opacity,
                         children,
                     }),
@@ -210,4 +210,14 @@ fn get_view_box(svg: &svgdom::Node) -> Result<Rect> {
     );
 
     Ok(vbox)
+}
+
+fn convert_element_units(attrs: &svgdom::Attributes, aid: AId) -> dom::Units {
+    let av = attrs.get_predef(aid).unwrap_or(svgdom::ValueId::UserSpaceOnUse);
+
+    match av {
+        svgdom::ValueId::UserSpaceOnUse => dom::Units::UserSpaceOnUse,
+        svgdom::ValueId::ObjectBoundingBox => dom::Units::ObjectBoundingBox,
+        _ => dom::Units::UserSpaceOnUse,
+    }
 }

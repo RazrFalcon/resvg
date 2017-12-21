@@ -45,8 +45,8 @@ pub fn conv_doc(doc: &Document) -> svgdom::Document {
         svg.append(&defs);
 
         for e in &doc.defs {
-            match e.data {
-                element::RefType::LinearGradient(ref lg) => {
+            match e.kind {
+                element::RefElementKind::LinearGradient(ref lg) => {
                     let mut grad = new_doc.create_element(EId::LinearGradient);
                     defs.append(&grad);
                     defs_list.push(grad.clone());
@@ -58,9 +58,9 @@ pub fn conv_doc(doc: &Document) -> svgdom::Document {
                     grad.set_attribute((AId::X2, lg.x2));
                     grad.set_attribute((AId::Y2, lg.y2));
 
-                    conv_base_grad(&mut new_doc, &mut grad, &lg.d);
+                    conv_base_grad(&lg.d, &mut new_doc, &mut grad);
                 }
-                element::RefType::RadialGradient(ref rg) => {
+                element::RefElementKind::RadialGradient(ref rg) => {
                     let mut grad = new_doc.create_element(EId::RadialGradient);
                     defs.append(&grad);
                     defs_list.push(grad.clone());
@@ -73,7 +73,7 @@ pub fn conv_doc(doc: &Document) -> svgdom::Document {
                     grad.set_attribute((AId::Fx, rg.fx));
                     grad.set_attribute((AId::Fy, rg.fy));
 
-                    conv_base_grad(&mut new_doc, &mut grad, &rg.d);
+                    conv_base_grad(&rg.d, &mut new_doc, &mut grad);
                 }
             }
         }
@@ -98,8 +98,8 @@ fn conv_elements(
     );
 
     for e in elements {
-        match e.data {
-            element::Type::Path(ref p) => {
+        match e.kind {
+            element::ElementKind::Path(ref p) => {
                 let mut path_elem = new_doc.create_element(EId::Path);
                 root.append(&path_elem);
 
@@ -128,10 +128,10 @@ fn conv_elements(
 
                 path_elem.set_attribute((AId::D, path));
 
-                conv_fill(&p.fill, &mut path_elem, &defs_list);
-                conv_stroke(&p.stroke, &mut path_elem, &defs_list);
+                conv_fill(&p.fill, &defs_list, &mut path_elem);
+                conv_stroke(&p.stroke, &defs_list, &mut path_elem);
             }
-            element::Type::Text(ref text) => {
+            element::ElementKind::Text(ref text) => {
                 let mut text_elem = new_doc.create_element(EId::Text);
                 root.append(&text_elem);
 
@@ -163,15 +163,15 @@ fn conv_elements(
                         let text_node = new_doc.create_node(svgdom::NodeType::Text, &tspan.text);
                         tspan_elem.append(&text_node);
 
-                        conv_fill(&tspan.fill, &mut tspan_elem, &defs_list);
-                        conv_stroke(&tspan.stroke, &mut tspan_elem, &defs_list);
+                        conv_fill(&tspan.fill, &defs_list, &mut tspan_elem);
+                        conv_stroke(&tspan.stroke, &defs_list, &mut tspan_elem);
                         conv_font(&tspan.font, &mut tspan_elem);
 
                         // TODO: text-decoration
                     }
                 }
             }
-            element::Type::Image(ref img) => {
+            element::ElementKind::Image(ref img) => {
                 let mut img_elem = new_doc.create_element(EId::Image);
                 root.append(&img_elem);
 
@@ -201,7 +201,7 @@ fn conv_elements(
 
                 img_elem.set_attribute((AId::XlinkHref, href));
             }
-            element::Type::Group(ref g) => {
+            element::ElementKind::Group(ref g) => {
                 let mut g_elem = new_doc.create_element(EId::G);
                 root.append(&g_elem);
 
@@ -220,16 +220,14 @@ fn conv_elements(
 }
 
 fn conv_element(elem: &Element, node: &mut svgdom::Node) {
-    if !elem.transform.is_default() {
-        node.set_attribute((AId::Transform, elem.transform));
-    }
+    conv_transform(AId::Transform, &elem.transform, node);
 
     if !elem.id.is_empty() {
         node.set_id(elem.id.clone());
     }
 }
 
-fn conv_fill(fill: &Option<Fill>, node: &mut svgdom::Node, defs_list: &[svgdom::Node]) {
+fn conv_fill(fill: &Option<Fill>, defs_list: &[svgdom::Node], node: &mut svgdom::Node) {
     match *fill {
         Some(ref fill) => {
             match fill.paint {
@@ -251,7 +249,7 @@ fn conv_fill(fill: &Option<Fill>, node: &mut svgdom::Node, defs_list: &[svgdom::
     }
 }
 
-fn conv_stroke(stroke: &Option<Stroke>, node: &mut svgdom::Node, defs_list: &[svgdom::Node]) {
+fn conv_stroke(stroke: &Option<Stroke>, defs_list: &[svgdom::Node], node: &mut svgdom::Node) {
     match *stroke {
         Some(ref stroke) => {
             match stroke.paint {
@@ -305,13 +303,8 @@ fn conv_stroke(stroke: &Option<Stroke>, node: &mut svgdom::Node, defs_list: &[sv
     }
 }
 
-fn conv_base_grad(doc: &mut svgdom::Document, node: &mut svgdom::Node, g: &element::BaseGradient) {
-    node.set_attribute((AId::GradientUnits,
-        match g.units {
-            GradientUnits::UserSpaceOnUse => svgdom::ValueId::UserSpaceOnUse,
-            GradientUnits::ObjectBoundingBox => svgdom::ValueId::ObjectBoundingBox,
-        }
-    ));
+fn conv_base_grad(g: &element::BaseGradient, doc: &mut svgdom::Document, node: &mut svgdom::Node) {
+    conv_units(AId::GradientUnits, g.units, node);
 
     node.set_attribute((AId::SpreadMethod,
         match g.spread_method {
@@ -321,9 +314,7 @@ fn conv_base_grad(doc: &mut svgdom::Document, node: &mut svgdom::Node, g: &eleme
         }
     ));
 
-    if !g.transform.is_default() {
-        node.set_attribute((AId::GradientTransform, g.transform));
-    }
+    conv_transform(AId::GradientTransform, &g.transform, node);
 
     for s in &g.stops {
         let mut stop = doc.create_element(EId::Stop);
@@ -332,6 +323,21 @@ fn conv_base_grad(doc: &mut svgdom::Document, node: &mut svgdom::Node, g: &eleme
         stop.set_attribute((AId::Offset, s.offset));
         stop.set_attribute((AId::StopColor, s.color));
         stop.set_attribute((AId::StopOpacity, s.opacity));
+    }
+}
+
+fn conv_units(aid: AId, units: Units, node: &mut svgdom::Node) {
+    node.set_attribute((aid,
+        match units {
+            Units::UserSpaceOnUse => svgdom::ValueId::UserSpaceOnUse,
+            Units::ObjectBoundingBox => svgdom::ValueId::ObjectBoundingBox,
+        }
+    ));
+}
+
+fn conv_transform(aid: AId, ts: &svgdom::types::Transform, node: &mut svgdom::Node) {
+    if !ts.is_default() {
+        node.set_attribute((aid, *ts));
     }
 }
 

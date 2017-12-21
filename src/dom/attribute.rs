@@ -40,12 +40,10 @@ pub enum FillRule {
     EvenOdd,
 }
 
-/// A gradient units.
-///
-/// `gradientUnits` attribute in the SVG.
+/// An element units.
 #[allow(missing_docs)]
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum GradientUnits {
+pub enum Units {
     UserSpaceOnUse,
     ObjectBoundingBox,
 }

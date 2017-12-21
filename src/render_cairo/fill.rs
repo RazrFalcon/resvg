@@ -28,10 +28,10 @@ pub fn apply(
                 dom::Paint::Link(id) => {
                     let ref_elem = doc.get_defs(id);
 
-                    match ref_elem.data {
-                        dom::RefType::LinearGradient(ref lg) =>
+                    match ref_elem.kind {
+                        dom::RefElementKind::LinearGradient(ref lg) =>
                             gradient::prepare_linear(lg, fill.opacity, bbox, cr),
-                        dom::RefType::RadialGradient(ref rg) =>
+                        dom::RefElementKind::RadialGradient(ref rg) =>
                             gradient::prepare_radial(rg, fill.opacity, bbox, cr),
                     }
                 }

@@ -95,17 +95,17 @@ fn render_group(
         // Apply transform.
         p.apply_transform(&elem.transform.to_qtransform());
 
-        match elem.data {
-            dom::Type::Path(ref path) => {
+        match elem.kind {
+            dom::ElementKind::Path(ref path) => {
                 path::draw(doc, path, p);
             }
-            dom::Type::Text(ref text) => {
+            dom::ElementKind::Text(ref text) => {
                 text::draw(doc, text, p);
             }
-            dom::Type::Image(ref img) => {
+            dom::ElementKind::Image(ref img) => {
                 image::draw(img, p);
             }
-            dom::Type::Group(ref g) => {
+            dom::ElementKind::Group(ref g) => {
                 let sub_img = qt::Image::new(
                     img_size.w as u32,
                     img_size.h as u32
