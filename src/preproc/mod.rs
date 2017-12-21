@@ -99,7 +99,7 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) -> Result<()> {
     ungroup_a(doc);
 
     prepare_text_decoration(doc);
-    resolve_visibility(doc);
+    resolve_visibility(svg);
     resolve_style_attributes(doc);
 
     resolve_tref(doc);
