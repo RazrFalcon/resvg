@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+
 /// Bounds `f64` number.
 #[inline]
 pub fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
@@ -13,6 +14,25 @@ pub fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
 
     val
 }
+
+#[inline]
+fn f64_min(v1: f64, v2: f64) -> f64 {
+    if v1 < v2 {
+        v1
+    } else {
+        v2
+    }
+}
+
+#[inline]
+fn f64_max(v1: f64, v2: f64) -> f64 {
+    if v1 > v2 {
+        v1
+    } else {
+        v2
+    }
+}
+
 
 /// Line representation.
 #[allow(missing_docs)]
@@ -110,6 +130,12 @@ impl Default for Rect {
     }
 }
 
+impl From<(f64, f64, f64, f64)> for Rect {
+    fn from(v: (f64, f64, f64, f64)) -> Self {
+        Self::new(v.0, v.1, v.2, v.3)
+    }
+}
+
 impl Rect {
     /// Creates a new `Rect`.
     pub fn new(x: f64, y: f64, w: f64, h: f64) -> Rect {
@@ -124,11 +150,24 @@ impl Rect {
         }
     }
 
-    /// Returns the size of the rect.
+    /// Returns the size of the `Rect`.
     pub fn size(&self) -> Size {
         Size {
             w: self.w,
             h: self.h,
         }
+    }
+
+    /// Expands the `Rect` to the specified size.
+    pub fn expand(&mut self, x: f64, y: f64, w: f64, h: f64) {
+        self.x = f64_min(self.x, x);
+        self.y = f64_min(self.y, y);
+        self.w = f64_max(self.w, w);
+        self.h = f64_max(self.h, h);
+    }
+
+    /// Expands the `Rect` to the specified size.
+    pub fn expand_from_rect(&mut self, r: &Rect) {
+        self.expand(r.x, r.y, r.w, r.h);
     }
 }

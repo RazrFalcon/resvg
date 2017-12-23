@@ -25,7 +25,10 @@ use {
 };
 
 
-pub fn convert(node: &svgdom::Node, opt: &Options) -> Option<dom::Element> {
+pub fn convert(
+    node: &svgdom::Node,
+    opt: &Options
+) -> Option<dom::Element> {
     let attrs = node.attributes();
 
     let ts = attrs.get_transform(AId::Transform).unwrap_or_default();
@@ -52,11 +55,11 @@ pub fn convert(node: &svgdom::Node, opt: &Options) -> Option<dom::Element> {
     if let Some(data) = get_href_data(href, opt.path.as_ref()) {
         let elem = dom::Element {
             id: node.id().clone(),
+            transform: ts,
             kind: dom::ElementKind::Image(dom::Image {
                 rect: Rect::new(x, y, w, h),
                 data: data,
             }),
-            transform: ts,
         };
 
         Some(elem)

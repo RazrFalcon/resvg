@@ -35,10 +35,10 @@ pub fn convert(
     if let Some(chunks) = convert_chunks(defs, text_elem) {
         Some(dom::Element {
             id: String::new(),
+            transform: ts,
             kind: dom::ElementKind::Text(dom::Text {
                 children: chunks,
             }),
-            transform: ts,
         })
     } else {
         None

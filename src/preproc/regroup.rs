@@ -39,24 +39,29 @@ pub fn regroup_elements(doc: &mut Document, parent: &Node) {
             continue;
         }
 
-        if !node.has_attributes(&g_attrs) {
+        let opacity = node.attributes().get_number(AId::Opacity).unwrap_or(1.0);
+        if opacity.fuzzy_eq(&1.0) && !node.has_attributes(&g_attrs) {
             continue;
         }
 
-        let opacity = node.attributes().get_number(AId::Opacity).unwrap_or(1.0);
-        if opacity.fuzzy_eq(&1.0) {
+        if node.parents().any(|n| n.is_tag_name(EId::ClipPath)) {
             continue;
         }
 
         let mut g_node = doc.create_element(EId::G);
 
         {
-            let attrs = node.attributes_mut();
+            let attrs = node.attributes();
             for aid in &g_attrs {
                 if let Some(attr) = attrs.get(*aid) {
                     g_node.set_attribute(attr.clone());
                     ids.push(*aid);
                 }
+            }
+
+            if let Some(ts) = attrs.get(AId::Transform) {
+                g_node.set_attribute(ts.clone());
+                ids.push(AId::Transform);
             }
         }
         node.remove_attributes(&ids);

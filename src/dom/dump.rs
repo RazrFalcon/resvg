@@ -75,6 +75,16 @@ pub fn conv_doc(doc: &Document) -> svgdom::Document {
 
                     conv_base_grad(&rg.d, &mut new_doc, &mut grad);
                 }
+                element::RefElementKind::ClipPath(ref c) => {
+                    let mut clip = new_doc.create_element(EId::ClipPath);
+                    defs.append(&clip);
+                    defs_list.push(clip.clone());
+
+                    clip.set_id(e.id.clone());
+                    conv_units(AId::ClipPathUnits, c.units, &mut clip);
+                    conv_transform(AId::Transform, &c.transform, &mut clip);
+                    conv_elements(&c.children, &[], &mut new_doc, &mut clip);
+                }
             }
         }
     }
@@ -88,7 +98,7 @@ fn conv_elements(
     elements: &[Element],
     defs_list: &[svgdom::Node],
     new_doc: &mut svgdom::Document,
-    root: &mut svgdom::Node,
+    parent: &mut svgdom::Node,
 ) {
     let base64_conf = base64::Config::new(
         base64::CharacterSet::Standard,
@@ -101,7 +111,7 @@ fn conv_elements(
         match e.kind {
             element::ElementKind::Path(ref p) => {
                 let mut path_elem = new_doc.create_element(EId::Path);
-                root.append(&path_elem);
+                parent.append(&path_elem);
 
                 conv_element(e, &mut path_elem);
 
@@ -128,12 +138,12 @@ fn conv_elements(
 
                 path_elem.set_attribute((AId::D, path));
 
-                conv_fill(&p.fill, &defs_list, &mut path_elem);
+                conv_fill(&p.fill, parent, &defs_list, &mut path_elem);
                 conv_stroke(&p.stroke, &defs_list, &mut path_elem);
             }
             element::ElementKind::Text(ref text) => {
                 let mut text_elem = new_doc.create_element(EId::Text);
-                root.append(&text_elem);
+                parent.append(&text_elem);
 
                 conv_element(e, &mut text_elem);
 
@@ -163,7 +173,7 @@ fn conv_elements(
                         let text_node = new_doc.create_node(svgdom::NodeType::Text, &tspan.text);
                         tspan_elem.append(&text_node);
 
-                        conv_fill(&tspan.fill, &defs_list, &mut tspan_elem);
+                        conv_fill(&tspan.fill, parent, &defs_list, &mut tspan_elem);
                         conv_stroke(&tspan.stroke, &defs_list, &mut tspan_elem);
                         conv_font(&tspan.font, &mut tspan_elem);
 
@@ -173,7 +183,7 @@ fn conv_elements(
             }
             element::ElementKind::Image(ref img) => {
                 let mut img_elem = new_doc.create_element(EId::Image);
-                root.append(&img_elem);
+                parent.append(&img_elem);
 
                 conv_element(e, &mut img_elem);
 
@@ -203,9 +213,13 @@ fn conv_elements(
             }
             element::ElementKind::Group(ref g) => {
                 let mut g_elem = new_doc.create_element(EId::G);
-                root.append(&g_elem);
+                parent.append(&g_elem);
 
                 conv_element(e, &mut g_elem);
+
+                if let Some(id) = g.clip_path {
+                    g_elem.set_attribute((AId::ClipPath, defs_list[id].clone()));
+                }
 
                 if let Some(opacity) = g.opacity {
                     if opacity.fuzzy_ne(&1.0) {
@@ -227,7 +241,12 @@ fn conv_element(elem: &Element, node: &mut svgdom::Node) {
     }
 }
 
-fn conv_fill(fill: &Option<Fill>, defs_list: &[svgdom::Node], node: &mut svgdom::Node) {
+fn conv_fill(
+    fill: &Option<Fill>,
+    parent: &svgdom::Node,
+    defs_list: &[svgdom::Node],
+    node: &mut svgdom::Node
+) {
     match *fill {
         Some(ref fill) => {
             match fill.paint {
@@ -240,7 +259,11 @@ fn conv_fill(fill: &Option<Fill>, defs_list: &[svgdom::Node], node: &mut svgdom:
             }
 
             if fill.rule != FillRule::NonZero {
-                node.set_attribute((AId::FillRule, svgdom::ValueId::Evenodd));
+                if parent.is_tag_name(EId::ClipPath) {
+                    node.set_attribute((AId::ClipRule, svgdom::ValueId::Evenodd));
+                } else {
+                    node.set_attribute((AId::FillRule, svgdom::ValueId::Evenodd));
+                }
             }
         }
         None => {

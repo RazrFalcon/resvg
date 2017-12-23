@@ -72,9 +72,9 @@ fn resolve_inherit(parent: &Node) {
         //     resolve(&mut node, AId::ShapeRendering);
         // }
 
-        // if node.is_graphic() && node.parent().unwrap().has_tag_name(EId::ClipPath) {
-        //     resolve(&mut node, AId::ClipRule);
-        // }
+        if node.is_graphic() && node.parent().unwrap().is_tag_name(EId::ClipPath) {
+            resolve(&mut node, AId::ClipRule);
+        }
 
         // if node.parent().unwrap().has_tag_name(EId::Filter) {
         //     resolve(&mut node, AId::ColorInterpolationFilters);

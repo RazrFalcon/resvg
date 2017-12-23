@@ -3,20 +3,23 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use qt;
-use dom;
 
+use dom;
+use math::{
+    Rect,
+};
 
 pub fn draw(
     image: &dom::Image,
     p: &qt::Painter,
-) {
+) -> Rect {
     let img = match image.data {
         dom::ImageData::Path(ref path) => {
             match qt::Image::from_file(path) {
                 Some(v) => v,
                 None => {
                     warn!("Failed to load an external image: {:?}.", path);
-                    return;
+                    return image.rect;
                 }
             }
         }
@@ -25,7 +28,7 @@ pub fn draw(
                 Some(v) => v,
                 None => {
                     warn!("Failed to load an embedded image.");
-                    return;
+                    return image.rect;
                 }
             }
         }
@@ -35,9 +38,11 @@ pub fn draw(
         Some(v) => v,
         None => {
             warn!("Failed to scale an image.");
-            return;
+            return image.rect;
         }
     };
 
     p.draw_image(image.rect.x, image.rect.y, &img);
+
+    image.rect
 }

@@ -4,6 +4,8 @@
 
 //! Qt backend implementation.
 
+use std::f64;
+
 use qt;
 
 use dom;
@@ -24,6 +26,7 @@ use render_utils;
 
 mod ext;
 mod fill;
+mod clippath;
 mod gradient;
 mod image;
 mod path;
@@ -90,25 +93,26 @@ fn render_group(
     p: &qt::Painter,
     ts: &qt::Transform,
     img_size: Size,
-) {
+) -> Rect {
+    let mut g_bbox = Rect::new(f64::MAX, f64::MAX, 0.0, 0.0);
     for elem in elements {
         // Apply transform.
         p.apply_transform(&elem.transform.to_qtransform());
 
-        match elem.kind {
+        let bbox = match elem.kind {
             dom::ElementKind::Path(ref path) => {
-                path::draw(doc, path, p);
+                path::draw(doc, path, p)
             }
             dom::ElementKind::Text(ref text) => {
-                text::draw(doc, text, p);
+                text::draw(doc, text, p)
             }
             dom::ElementKind::Image(ref img) => {
-                image::draw(img, p);
+                image::draw(img, p)
             }
             dom::ElementKind::Group(ref g) => {
                 let sub_img = qt::Image::new(
                     img_size.w as u32,
-                    img_size.h as u32
+                    img_size.h as u32,
                 );
 
                 let mut sub_img = match sub_img {
@@ -124,25 +128,37 @@ fn render_group(
 
                 let sub_p = qt::Painter::new(&sub_img);
                 sub_p.set_transform(&p.get_transform());
+                let bbox = render_group(doc, &g.children, &sub_p, &p.get_transform(), img_size);
 
-                render_group(doc, &g.children, &sub_p, &p.get_transform(), img_size);
+                if let Some(idx) = g.clip_path {
+                    if let dom::RefElementKind::ClipPath(ref cp) = doc.get_defs(idx).kind {
+                        clippath::apply(doc, cp, &sub_p, &bbox, img_size);
+                    }
+                }
 
                 sub_p.end();
 
-                let curr_ts = p.get_transform();
-                p.set_transform(&qt::Transform::default());
                 if let Some(opacity) = g.opacity {
                     p.set_opacity(opacity);
                 }
+
+                let curr_ts = p.get_transform();
+                p.set_transform(&qt::Transform::default());
 
                 p.draw_image(0.0, 0.0, &sub_img);
 
                 p.set_opacity(1.0);
                 p.set_transform(&curr_ts);
+
+                bbox
             }
-        }
+        };
+
+        g_bbox.expand_from_rect(&bbox);
 
         // Revert transform.
         p.set_transform(ts);
     }
+
+    g_bbox
 }

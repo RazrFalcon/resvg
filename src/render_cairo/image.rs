@@ -6,19 +6,22 @@ use cairo;
 use image;
 
 use dom;
+use math::{
+    Rect,
+};
 
 
 pub fn draw(
     image: &dom::Image,
     cr: &cairo::Context,
-) {
+) -> Rect {
     let img = match image.data {
         dom::ImageData::Path(ref path) => {
             match image::open(path) {
                 Ok(v) => v,
                 Err(_) => {
                     warn!("Failed to load an external image: {:?}.", path);
-                    return;
+                    return image.rect;
                 }
             }
         }
@@ -27,7 +30,7 @@ pub fn draw(
                 Ok(v) => v,
                 Err(_) => {
                     warn!("Failed to load an embedded image.");
-                    return;
+                    return image.rect;
                 }
             }
         }
@@ -50,7 +53,7 @@ pub fn draw(
         Ok(v) => v,
         Err(_) => {
             warn!("Failed to create a surface for bitmap image.");
-            return;
+            return image.rect;
         }
     };
 
@@ -79,4 +82,6 @@ pub fn draw(
 
     cr.set_source_surface(&surface, image.rect.x, image.rect.y);
     cr.paint();
+
+    image.rect
 }

@@ -29,10 +29,10 @@ pub struct Element {
     ///
     /// Currently, used only for SVG dump purposes.
     pub id: String,
-    /// Element kind.
-    pub kind: ElementKind,
     /// Element transform.
     pub transform: Transform,
+    /// Element kind.
+    pub kind: ElementKind,
 }
 
 /// An element kind.
@@ -64,6 +64,7 @@ pub struct RefElement {
 pub enum RefElementKind {
     LinearGradient(LinearGradient),
     RadialGradient(RadialGradient),
+    ClipPath(ClipPath),
 }
 
 /// A path element.
@@ -183,6 +184,11 @@ pub struct Group {
     /// After the group is rendered we should combine
     /// it with a parent group using the specified opacity.
     pub opacity: Option<f64>,
+    /// Element clip path.
+    ///
+    /// The value is an index from the `Document::defs` list.
+    /// Use it via `Document::get_defs()` method.
+    pub clip_path: Option<usize>,
     /// List of children elements.
     pub children: Vec<Element>,
 }
@@ -208,6 +214,8 @@ pub struct BaseGradient {
 }
 
 /// A linear gradient.
+///
+/// `linearGradient` element in the SVG.
 #[allow(missing_docs)]
 pub struct LinearGradient {
     pub x1: f64,
@@ -240,6 +248,8 @@ impl fmt::Debug for LinearGradient {
 }
 
 /// A radial gradient.
+///
+/// `radialGradient` element in the SVG.
 #[allow(missing_docs)]
 pub struct RadialGradient {
     pub cx: f64,
@@ -274,6 +284,8 @@ impl fmt::Debug for RadialGradient {
 }
 
 /// Gradient's stop element.
+///
+/// `stop` element in the SVG.
 #[allow(missing_docs)]
 pub struct Stop {
     pub offset: f64,
@@ -286,4 +298,22 @@ impl fmt::Debug for Stop {
         write!(f, "Stop(offset: {:?}, color: {}, opacity: {:?})",
                self.offset, self.color, self.opacity)
     }
+}
+
+/// A clip-path element.
+///
+/// `clipPath` element in the SVG.
+pub struct ClipPath {
+    /// Coordinate system units.
+    ///
+    /// `clipPathUnits` in the SVG.
+    pub units: Units,
+    /// Clip path transform.
+    ///
+    /// `transform` in the SVG.
+    pub transform: Transform,
+    /// List of children elements.
+    ///
+    /// Contains only `Path` and `Text` elements.
+    pub children: Vec<Element>,
 }

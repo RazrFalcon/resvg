@@ -11,6 +11,7 @@ use dom;
 
 use short::{
     AId,
+    AValue,
     EId,
 };
 
@@ -33,6 +34,7 @@ use {
 mod fill;
 mod stroke;
 mod gradient;
+mod clippath;
 mod image;
 mod path;
 mod shapes;
@@ -84,6 +86,11 @@ pub fn convert_ref_nodes(parent: &svgdom::Node) -> Vec<dom::RefElement> {
                     defs.push(elem);
                 }
             }
+            EId::ClipPath => {
+                if let Some(elem) = clippath::convert(&node) {
+                    defs.push(elem);
+                }
+            }
             _ => {
                 warn!("Unsupported element '{}'.", id);
             }
@@ -116,7 +123,31 @@ pub fn convert_nodes(
             EId::G => {
                 debug_assert!(node.has_children(), "the 'g' element must contain nodes");
 
+                // TODO: maybe move to the separate module
+
                 let attrs = node.attributes();
+
+                let clip_path = if let Some(av) = attrs.get_type(AId::ClipPath) {
+                    let mut v = None;
+                    if let &AValue::FuncLink(ref link) = av {
+                        if link.is_tag_name(EId::ClipPath) {
+                            if let Some(idx) = defs.iter().position(|e| e.id == *link.id()) {
+                                v = Some(idx);
+                            }
+                        }
+                    }
+
+                    // If a linked clipPath is not found than it was invalid.
+                    // Elements linked to the invalid clipPath should be removed.
+                    // Since in resvg `clip-path` can be set only on a group - we skip such groups.
+                    if v.is_none() {
+                        continue;
+                    }
+
+                    v
+                } else {
+                    None
+                };
 
                 let ts = attrs.get_transform(AId::Transform).unwrap_or_default();
                 let opacity = attrs.get_number(AId::Opacity);
@@ -126,11 +157,12 @@ pub fn convert_nodes(
 
                 let elem = dom::Element {
                     id: node.id().clone(),
+                    transform: ts,
                     kind: dom::ElementKind::Group(dom::Group {
                         opacity,
+                        clip_path,
                         children,
                     }),
-                    transform: ts,
                 };
 
                 elements.push(elem);
@@ -142,7 +174,7 @@ pub fn convert_nodes(
             | EId::Circle
             | EId::Ellipse => {
                 if let Some(d) = shapes::convert(&node) {
-                    if let Ok(elem) = path::convert(defs, &node, d) {
+                    if let Ok(elem) = path::convert(defs, &node, d, false) {
                         elements.push(elem);
                     }
                 }
@@ -157,7 +189,7 @@ pub fn convert_nodes(
             EId::Path => {
                 let attrs = node.attributes();
                 if let Some(d) = attrs.get_path(AId::D) {
-                    if let Ok(elem) = path::convert(defs, &node, d.clone()) {
+                    if let Ok(elem) = path::convert(defs, &node, d.clone(), false) {
                         elements.push(elem);
                     }
                 }

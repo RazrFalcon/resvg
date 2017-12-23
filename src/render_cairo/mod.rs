@@ -4,6 +4,8 @@
 
 //! Cairo backend implementation.
 
+use std::f64;
+
 use cairo::{
     self,
     MatrixTrait,
@@ -28,6 +30,7 @@ use render_utils;
 mod ext;
 mod fill;
 mod gradient;
+mod clippath;
 mod image;
 mod path;
 mod stroke;
@@ -87,19 +90,20 @@ fn render_group(
     cr: &cairo::Context,
     matrix: &cairo::Matrix,
     img_size: Size,
-) {
+) -> Rect {
+    let mut g_bbox = Rect::new(f64::MAX, f64::MAX, 0.0, 0.0);
     for elem in elements {
         cr.apply_transform(&elem.transform);
 
-        match elem.kind {
+        let bbox = match elem.kind {
             dom::ElementKind::Path(ref path) => {
-                path::draw(doc, path, cr);
+                path::draw(doc, path, cr)
             }
             dom::ElementKind::Text(ref text) => {
-                text::draw(doc, text, cr);
+                text::draw(doc, text, cr)
             }
             dom::ElementKind::Image(ref img) => {
-                image::draw(img, cr);
+                image::draw(img, cr)
             }
             dom::ElementKind::Group(ref g) => {
                 let sub_surface = cairo::ImageSurface::create(
@@ -119,7 +123,13 @@ fn render_group(
                 let sub_cr = cairo::Context::new(&sub_surface);
                 sub_cr.set_matrix(cr.get_matrix());
 
-                render_group(doc, &g.children, &sub_cr, &cr.get_matrix(), img_size);
+                let bbox = render_group(doc, &g.children, &sub_cr, &cr.get_matrix(), img_size);
+
+                if let Some(idx) = g.clip_path {
+                    if let dom::RefElementKind::ClipPath(ref cp) = doc.get_defs(idx).kind {
+                        clippath::apply(doc, cp, &sub_cr, &bbox, img_size);
+                    }
+                }
 
                 let curr_matrix = cr.get_matrix();
                 cr.set_matrix(cairo::Matrix::identity());
@@ -133,9 +143,15 @@ fn render_group(
                 }
 
                 cr.set_matrix(curr_matrix);
+
+                bbox
             }
-        }
+        };
+
+        g_bbox.expand_from_rect(&bbox);
 
         cr.set_matrix(*matrix);
     }
+
+    g_bbox
 }

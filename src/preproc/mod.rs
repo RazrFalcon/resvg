@@ -77,6 +77,7 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) -> Result<()> {
     }
 
     // TODO: remove duplicated defs
+    // TODO: move all ref elems to defs
 
     resolve_inherit(doc);
     resolve_current_color(doc);

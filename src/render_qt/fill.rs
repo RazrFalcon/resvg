@@ -34,6 +34,7 @@ pub fn apply(
                             gradient::prepare_linear(lg, fill.opacity, &mut brush),
                         dom::RefElementKind::RadialGradient(ref rg) =>
                             gradient::prepare_radial(rg, fill.opacity, &mut brush),
+                        dom::RefElementKind::ClipPath(_) => {}
                     };
                 }
             }

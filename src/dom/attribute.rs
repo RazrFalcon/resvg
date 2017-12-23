@@ -41,6 +41,8 @@ pub enum FillRule {
 }
 
 /// An element units.
+///
+/// `*Units` attribute in the SVG.
 #[allow(missing_docs)]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Units {

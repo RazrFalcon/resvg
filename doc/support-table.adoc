@@ -73,7 +73,9 @@ text-tref-03-b
 |`stop` |Yes |? |? |? |
 |`pattern` |No |? |? |? |
 6+^|https://www.w3.org/TR/SVG/masking.html[Clipping, Masking and Compositing]
-|`clipPath` |No |Partial |No |? |
+|`clipPath` |Partial |Partial |Partial |No | masking-path-*
+| 5+|Not supported footnoteref:[not-supported]: +
+- the `clip-path` attribute inside a `clipPath` element (nested clipPaths)
 |`mask` |No |? |? |? |
 6+^|https://www.w3.org/TR/SVG/filters.html[Filter Effects]
 |`filter` |No |? |No |? |

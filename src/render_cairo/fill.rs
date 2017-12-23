@@ -33,6 +33,7 @@ pub fn apply(
                             gradient::prepare_linear(lg, fill.opacity, bbox, cr),
                         dom::RefElementKind::RadialGradient(ref rg) =>
                             gradient::prepare_radial(rg, fill.opacity, bbox, cr),
+                        dom::RefElementKind::ClipPath(_) => {}
                     }
                 }
             }

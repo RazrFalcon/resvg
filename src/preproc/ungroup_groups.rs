@@ -49,6 +49,11 @@ fn _ungroup_groups(parent: &Node, groups: &mut Vec<Node>) {
                 continue;
             }
 
+            // Groups with `clip-path` attribute can't be ungroupped.
+            if let Some(&AValue::FuncLink(_)) = node.attributes().get_type(AId::ClipPath) {
+                continue;
+            }
+
             // We can ungroup group with opacity only when it has only one child.
             if node.has_attribute(AId::Opacity) {
                 if node.children().count() != 1 {

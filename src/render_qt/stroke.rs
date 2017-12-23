@@ -35,6 +35,7 @@ pub fn apply(
                             gradient::prepare_linear(lg, stroke.opacity, &mut brush),
                         dom::RefElementKind::RadialGradient(ref rg) =>
                             gradient::prepare_radial(rg, stroke.opacity, &mut brush),
+                        dom::RefElementKind::ClipPath(_) => {}
                     }
 
                     pen.set_brush(brush);

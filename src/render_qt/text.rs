@@ -2,15 +2,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::f64;
+
 use qt;
 
 use dom;
-
+use render_utils;
 use math::{
     Rect,
 };
-
-use render_utils;
 
 use super::{
     fill,
@@ -22,17 +22,18 @@ pub fn draw(
     doc: &dom::Document,
     elem: &dom::Text,
     p: &qt::Painter,
-) {
-    draw_tspan(elem, p, |tspan, x, y, w, font| _draw_tspan(doc, tspan, x, y, w, &font, p));
+) -> Rect {
+    draw_tspan(elem, p, |tspan, x, y, w, font| _draw_tspan(doc, tspan, x, y, w, &font, p))
 }
 
 pub fn draw_tspan<DrawAt>(
     elem: &dom::Text,
     p: &qt::Painter,
     mut draw_at: DrawAt
-)
+) -> Rect
     where DrawAt: FnMut(&dom::TSpan, f64, f64, f64, &qt::Font)
 {
+    let mut bbox = Rect::new(f64::MAX, f64::MAX, 0.0, 0.0);
     let mut font_list = Vec::new();
     let mut tspan_w_list = Vec::new();
     let mut tspan_list = Vec::new();
@@ -49,6 +50,8 @@ pub fn draw_tspan<DrawAt>(
             font_list.push(font);
             chunk_width += tspan_width;
             tspan_w_list.push(tspan_width);
+
+            bbox.expand(chunk.x, chunk.y - font_metrics.ascent(), chunk_width, font_metrics.height());
         }
 
         let mut x = render_utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
@@ -62,6 +65,8 @@ pub fn draw_tspan<DrawAt>(
     for (&(x, y, width, tspan), font) in tspan_list.iter().zip(font_list) {
         draw_at(tspan, x, y, width, &font);
     }
+
+    bbox
 }
 
 fn _draw_tspan(
@@ -117,7 +122,7 @@ fn _draw_tspan(
     }
 }
 
-fn init_font(dom_font: &dom::Font) -> qt::Font {
+pub fn init_font(dom_font: &dom::Font) -> qt::Font {
     let mut font = qt::Font::new();
 
     font.set_family(&dom_font.family);
@@ -165,7 +170,6 @@ fn init_font(dom_font: &dom::Font) -> qt::Font {
     };
     font.set_stretch(font_stretch);
 
-
     font.set_size(dom_font.size);
 
     font
@@ -180,14 +184,14 @@ fn draw_line(
 ) {
     let mut p_path = qt::PainterPath::new();
 
-    p_path.move_to(line_bbox.x, line_bbox.y);
-    p_path.line_to(line_bbox.x + line_bbox.w, line_bbox.y);
-    p_path.line_to(line_bbox.x + line_bbox.w, line_bbox.y + line_bbox.h);
-    p_path.line_to(line_bbox.x, line_bbox.y + line_bbox.h);
+    p_path.move_to(line_bbox.x,  line_bbox.y);
+    p_path.line_to(line_bbox.x + line_bbox.w,  line_bbox.y);
+    p_path.line_to(line_bbox.x + line_bbox.w,  line_bbox.y + line_bbox.h);
+    p_path.line_to(line_bbox.x,  line_bbox.y + line_bbox.h);
     p_path.close_path();
 
     fill::apply(doc, fill, p);
     stroke::apply(doc, stroke, p);
 
-    p.draw_path(p_path);
+    p.draw_path(&p_path);
 }

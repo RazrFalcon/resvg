@@ -16,24 +16,8 @@ use super::{
 };
 
 
-pub fn draw(doc: &dom::Document, elem: &dom::Path, cr: &cairo::Context) {
-    for seg in &elem.d {
-        match *seg {
-            dom::PathSegment::MoveTo { x, y } => {
-                cr.new_sub_path();
-                cr.move_to(x, y);
-            }
-            dom::PathSegment::LineTo { x, y } => {
-                cr.line_to(x, y);
-            }
-            dom::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                cr.curve_to(x1, y1, x2, y2, x, y);
-            }
-            dom::PathSegment::ClosePath => {
-                cr.close_path();
-            }
-        }
-    }
+pub fn draw(doc: &dom::Document, elem: &dom::Path, cr: &cairo::Context) -> Rect {
+    init_path(&elem.d, cr);
 
     let bbox = {
         // TODO: set_tolerance(1.0)
@@ -53,8 +37,34 @@ pub fn draw(doc: &dom::Document, elem: &dom::Path, cr: &cairo::Context) {
     };
 
     fill::apply(doc, &elem.fill, cr, &bbox);
-    cr.fill_preserve();
+    if elem.stroke.is_some() {
+        cr.fill_preserve();
 
-    stroke::apply(doc, &elem.stroke, cr, &bbox);
-    cr.stroke();
+        stroke::apply(doc, &elem.stroke, cr, &bbox);
+        cr.stroke();
+    } else {
+        cr.fill();
+    }
+
+    bbox
+}
+
+pub fn init_path(list: &[dom::PathSegment], cr: &cairo::Context) {
+    for seg in list {
+        match *seg {
+            dom::PathSegment::MoveTo { x, y } => {
+                cr.new_sub_path();
+                cr.move_to(x, y);
+            }
+            dom::PathSegment::LineTo { x, y } => {
+                cr.line_to(x, y);
+            }
+            dom::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+                cr.curve_to(x1, y1, x2, y2, x, y);
+            }
+            dom::PathSegment::ClosePath => {
+                cr.close_path();
+            }
+        }
+    }
 }

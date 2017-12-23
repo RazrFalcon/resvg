@@ -6,15 +6,40 @@ use qt;
 
 use dom;
 
+use math::{
+    Rect,
+};
+
 use super::{
     fill,
     stroke,
 };
 
 
-pub fn draw(doc: &dom::Document, elem: &dom::Path, p: &qt::Painter) {
+pub fn draw(doc: &dom::Document, elem: &dom::Path, p: &qt::Painter) -> Rect {
     let mut p_path = qt::PainterPath::new();
 
+    let fill_rule = if let Some(fill) = elem.fill {
+        fill.rule
+    } else {
+        dom::FillRule::NonZero
+    };
+
+    convert_path(&elem.d, fill_rule, &mut p_path);
+
+    fill::apply(doc, &elem.fill, p);
+    stroke::apply(doc, &elem.stroke, p);
+
+    p.draw_path(&p_path);
+
+    p_path.bounding_box().into()
+}
+
+pub fn convert_path(
+    list: &[dom::PathSegment],
+    rule: dom::FillRule,
+    p_path: &mut qt::PainterPath,
+) {
     // Qt's QPainterPath automatically closes open subpaths if start and end positions are equal.
     // This is incorrect behaviour according to SVG.
     // So we have to shift the last segment a bit, to disable it.
@@ -32,17 +57,17 @@ pub fn draw(doc: &dom::Document, elem: &dom::Path, p: &qt::Painter) {
     let mut prev_mx = 0.0;
     let mut prev_my = 0.0;
 
-    let len = elem.d.len();
+    let len = list.len();
     let mut i = 0;
     while i < len {
-        let ref seg1 = elem.d[i];
+        let ref seg1 = list[i];
 
         // Check that current segment is the last segment of the subpath.
         let is_last_subpath_seg = {
             if i == len - 1 {
                 true
             } else {
-                if let dom::PathSegment::MoveTo{ .. } = elem.d[i + 1] {
+                if let dom::PathSegment::MoveTo{ .. } = list[i + 1] {
                     true
                 } else {
                     false
@@ -86,15 +111,8 @@ pub fn draw(doc: &dom::Document, elem: &dom::Path, p: &qt::Painter) {
         i += 1;
     }
 
-    if let Some(fill) = elem.fill {
-        match fill.rule {
-            dom::FillRule::NonZero => p_path.set_fill_rule(qt::FillRule::WindingFill),
-            dom::FillRule::EvenOdd => p_path.set_fill_rule(qt::FillRule::OddEvenFill),
-        }
+    match rule {
+        dom::FillRule::NonZero => p_path.set_fill_rule(qt::FillRule::WindingFill),
+        dom::FillRule::EvenOdd => p_path.set_fill_rule(qt::FillRule::OddEvenFill),
     }
-
-    fill::apply(doc, &elem.fill, p);
-    stroke::apply(doc, &elem.stroke, p);
-
-    p.draw_path(p_path);
 }

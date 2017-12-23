@@ -25,10 +25,20 @@ pub fn remove_invisible_elements(doc: &mut Document) {
 }
 
 fn rm_display_none(doc: &mut Document) {
+    // From the SVG spec:
+    //
+    // The `display` property does not apply to the `clipPath` element;
+    // thus, `clipPath` elements are not directly rendered even if the `display` property
+    // is set to a value other than none, and `clipPath` elements are
+    // available for referencing even when the `display` property on the
+    // `clipPath` element or any of its ancestors is set to `none`.
+
     doc.drain(|n| {
         if let Some(&AValue::PredefValue(id)) = n.attributes().get_value(AId::Display) {
             if id == ValueId::None {
-                return true;
+                if !n.is_tag_name(EId::ClipPath) {
+                    return true;
+                }
             }
         }
 
