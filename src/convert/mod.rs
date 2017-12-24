@@ -245,11 +245,13 @@ fn get_view_box(svg: &svgdom::Node) -> Result<Rect> {
 }
 
 fn convert_element_units(attrs: &svgdom::Attributes, aid: AId) -> dom::Units {
-    let av = attrs.get_predef(aid).unwrap_or(svgdom::ValueId::UserSpaceOnUse);
-
+    let av = attrs.get_predef(aid);
     match av {
-        svgdom::ValueId::UserSpaceOnUse => dom::Units::UserSpaceOnUse,
-        svgdom::ValueId::ObjectBoundingBox => dom::Units::ObjectBoundingBox,
-        _ => dom::Units::UserSpaceOnUse,
+        Some(svgdom::ValueId::UserSpaceOnUse) => dom::Units::UserSpaceOnUse,
+        Some(svgdom::ValueId::ObjectBoundingBox) => dom::Units::ObjectBoundingBox,
+        _ => {
+            warn!("{} must be already resolved.", aid);
+            dom::Units::UserSpaceOnUse
+        }
     }
 }

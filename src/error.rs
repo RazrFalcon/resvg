@@ -53,5 +53,12 @@ error_chain! {
         NoCanvas {
             display("the main canvas creation failed")
         }
+
+        /// An invalid file extension.
+        ///
+        /// The extension should be 'svg' or 'svgz' in any case.
+        InvalidFileExtension {
+            display("invalid file extension")
+        }
     }
 }

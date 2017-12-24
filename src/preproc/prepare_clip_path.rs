@@ -25,6 +25,10 @@ use traits::{
 // So to create it we have to draw all clipPath children with a black fill and without a stroke.
 pub fn prepare_clip_path(doc: &mut Document) {
     for mut node in doc.descendants().filter(|n| n.is_tag_name(EId::ClipPath)) {
+        let units = node.attributes().get_predef(AId::ClipPathUnits)
+                        .unwrap_or(ValueId::UserSpaceOnUse);
+        node.set_attribute((AId::ClipPathUnits, units));
+
         for (_, mut child) in node.descendants().svg() {
             // Set fill to black.
             child.set_attribute((AId::Fill, Color::new(0, 0, 0)));

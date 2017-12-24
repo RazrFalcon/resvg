@@ -17,6 +17,9 @@ And as an embeddable library to paint SVG on an application native canvas.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+// For error-chain.
+#![recursion_limit="128"]
+
 pub extern crate svgdom;
 extern crate base64;
 extern crate libflate;
@@ -107,22 +110,29 @@ fn load_file(path: &Path) -> Result<String> {
     let mut file = fs::File::open(path)?;
     let length = file.metadata()?.len() as usize;
 
-    // 'unwrap' is safe because we already checked the extension via 'clap'.
-    let ext = Path::new(path).extension().unwrap().to_str().unwrap().to_lowercase();
-
-    let s = if ext == "svgz" {
-        let mut decoder = libflate::gzip::Decoder::new(&file)?;
-        let mut decoded = Vec::new();
-        decoder.read_to_end(&mut decoded)?;
-
-        String::from_utf8(decoded)?
+    let ext = if let Some(ext) = Path::new(path).extension() {
+        ext.to_str().map(|s| s.to_lowercase()).unwrap_or(String::new())
     } else {
-        let mut s = String::with_capacity(length + 1);
-        file.read_to_string(&mut s)?;
-        s
+        String::new()
     };
 
-    Ok(s)
+    match ext.as_str() {
+        "svgz" => {
+            let mut decoder = libflate::gzip::Decoder::new(&file)?;
+            let mut decoded = Vec::new();
+            decoder.read_to_end(&mut decoded)?;
+
+            Ok(String::from_utf8(decoded)?)
+        }
+        "svg" => {
+            let mut s = String::with_capacity(length + 1);
+            file.read_to_string(&mut s)?;
+            Ok(s)
+        }
+        _ => {
+            Err(ErrorKind::InvalidFileExtension.into())
+        }
+    }
 }
 
 fn parse_svg(text: &str) -> Result<svgdom::Document> {
