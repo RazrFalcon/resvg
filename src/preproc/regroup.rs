@@ -44,7 +44,8 @@ pub fn regroup_elements(doc: &mut Document, parent: &Node) {
             continue;
         }
 
-        if node.parents().any(|n| n.is_tag_name(EId::ClipPath)) {
+        // TODO: check only for defs after we implement ref elems groupping
+        if node.parents_with_self().any(|n| n.is_tag_name(EId::ClipPath)) {
             continue;
         }
 

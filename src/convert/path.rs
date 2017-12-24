@@ -38,37 +38,17 @@ pub fn convert(
     defs: &[dom::RefElement],
     node: &svgdom::Node,
     d: Path,
-    is_clip_path: bool,
 ) -> Result<dom::Element> {
     let attrs = node.attributes();
 
-    let (fill, stroke) = if is_clip_path {
-        let clip_rule = match attrs.get_predef(AId::ClipRule).unwrap_or(svgdom::ValueId::Nonzero) {
-            svgdom::ValueId::Evenodd => dom::FillRule::EvenOdd,
-            _ => dom::FillRule::NonZero,
-        };
-
-        let fill = Some(dom::Fill {
-            paint: dom::Paint::Color(svgdom::types::Color::new(0, 0, 0)),
-            opacity: 1.0,
-            rule: clip_rule,
-        });
-
-        (fill, None)
-    } else {
-        let fill = fill::convert(defs, &attrs);
-        let stroke = stroke::convert(defs, &attrs);
-
-        (fill, stroke)
-    };
-
+    let fill = fill::convert(defs, &attrs);
+    let stroke = stroke::convert(defs, &attrs);
     let d = convert_path(d);
-
-    let ts = attrs.get_transform(AId::Transform).unwrap_or_default();
+    let transform = attrs.get_transform(AId::Transform).unwrap_or_default();
 
     let elem = dom::Element {
         id: node.id().clone(),
-        transform: ts,
+        transform,
         kind: dom::ElementKind::Path(dom::Path {
             fill,
             stroke,

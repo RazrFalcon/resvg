@@ -31,7 +31,7 @@ pub fn convert(node: &svgdom::Node) -> Option<dom::RefElement> {
             kind: dom::RefElementKind::ClipPath(dom::ClipPath {
                 units: super::convert_element_units(&attrs, AId::ClipPathUnits),
                 transform: attrs.get_transform(AId::Transform).unwrap_or_default(),
-                children: children,
+                children,
             }),
         };
 
@@ -54,7 +54,7 @@ fn convert_children(node: &svgdom::Node) -> Option<Vec<dom::Element>> {
             | EId::Circle
             | EId::Ellipse => {
                 if let Some(d) = shapes::convert(&node) {
-                    if let Ok(elem) = path::convert(&[], &node, d, true) {
+                    if let Ok(elem) = path::convert(&[], &node, d) {
                         nodes.push(elem);
                     }
                 }
@@ -62,7 +62,7 @@ fn convert_children(node: &svgdom::Node) -> Option<Vec<dom::Element>> {
             EId::Path => {
                 let attrs = node.attributes();
                 if let Some(d) = attrs.get_path(AId::D) {
-                    if let Ok(elem) = path::convert(&[], &node, d.clone(), true) {
+                    if let Ok(elem) = path::convert(&[], &node, d.clone()) {
                         nodes.push(elem);
                     }
                 }

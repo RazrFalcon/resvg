@@ -174,7 +174,7 @@ pub fn convert_nodes(
             | EId::Circle
             | EId::Ellipse => {
                 if let Some(d) = shapes::convert(&node) {
-                    if let Ok(elem) = path::convert(defs, &node, d, false) {
+                    if let Ok(elem) = path::convert(defs, &node, d) {
                         elements.push(elem);
                     }
                 }
@@ -189,7 +189,7 @@ pub fn convert_nodes(
             EId::Path => {
                 let attrs = node.attributes();
                 if let Some(d) = attrs.get_path(AId::D) {
-                    if let Ok(elem) = path::convert(defs, &node, d.clone(), false) {
+                    if let Ok(elem) = path::convert(defs, &node, d.clone()) {
                         elements.push(elem);
                     }
                 }
