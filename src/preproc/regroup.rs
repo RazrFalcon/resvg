@@ -23,7 +23,7 @@ use traits::{
 
 // TODO: images should not be grouped
 pub fn regroup_elements(doc: &mut Document, parent: &Node) {
-    let g_attrs = [AId::Mask, AId::ClipPath, AId::Filter, AId::Opacity];
+    let g_attrs = [AId::ClipPath, AId::Opacity];
 
     let mut ids = Vec::new();
     let mut curr_node = parent.first_child();
