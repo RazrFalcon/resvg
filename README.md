@@ -29,7 +29,7 @@ And as an embeddable library to paint SVG on an application native canvas.
 *libresvg* is trying to compete with [librsvg], [QtSvg]
 and [Inkscape] (only as a CLI SVG to PNG converter).
 
-One of the main difference from other rendering libraries is that *libresvg* do a lot
+One of the main difference from other rendering libraries is that *libresvg* does a lot
 of preprocessing before rendering. It converts shapes to paths, resolves attributes,
 ungroups groups, removes invisible elements, fixes a lot of issues in malformed SVG files
 and only then starts the rendering. So it's very easy to implement a new rendering backend.

@@ -91,8 +91,6 @@ fn convert_rect(node: &svgdom::Node) -> Option<path::Path> {
 
     // Conversion according to https://www.w3.org/TR/SVG/shapes.html#RectElement
     let path = if rx.fuzzy_eq(&0.0) {
-        debug_assert!(ry.fuzzy_eq(&0.0), "rx and ry should both be zero");
-
         path::Builder::with_capacity(5)
             .move_to(x, y)
             .hline_to(x + width)
