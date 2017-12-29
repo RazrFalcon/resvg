@@ -11,6 +11,7 @@ use {
 };
 
 mod conv_units;
+mod group_defs;
 mod prepare_clip_path;
 mod prepare_text_decoration;
 mod prepare_text_nodes;
@@ -34,6 +35,7 @@ mod ungroup_groups;
 mod ungroup_switch;
 
 use self::conv_units::convert_units;
+use self::group_defs::group_defs;
 use self::prepare_clip_path::prepare_clip_path;
 use self::prepare_text_decoration::prepare_text_decoration;
 use self::prepare_text_nodes::prepare_text_nodes;
@@ -83,6 +85,8 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) -> Result<()> {
 
     resolve_inherit(doc);
     resolve_current_color(doc);
+
+    group_defs(doc, svg);
 
     resolve_font_size(doc);
 

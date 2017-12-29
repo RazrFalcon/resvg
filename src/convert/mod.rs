@@ -63,15 +63,25 @@ pub fn convert_doc(svg_doc: &svgdom::Document, opt: &Options) -> Result<dom::Doc
     })
 }
 
-pub fn convert_ref_nodes(parent: &svgdom::Node) -> Vec<dom::RefElement> {
+pub fn convert_ref_nodes(svg: &svgdom::Node) -> Vec<dom::RefElement> {
     let mut defs: Vec<dom::RefElement> = Vec::new();
 
-    for (id, node) in parent.descendants().svg() {
-        if !node.is_referenced() {
-            continue;
+    let defs_elem = match svg.first_child() {
+        Some(child) => {
+            if child.is_tag_name(EId::Defs) {
+                child.clone()
+            } else {
+                warn!("The first child of the 'svg' element should be 'defs'. Found '{:?}' instead.",
+                      child.tag_name());
+                return defs;
+            }
         }
+        None => return defs,
+    };
 
-        if !node.is_used() {
+    for (id, node) in defs_elem.children().svg() {
+        // 'defs' can contain any elements, but here we interested only in referenced one.
+        if !node.is_referenced() {
             continue;
         }
 
