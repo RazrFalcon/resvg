@@ -102,7 +102,7 @@ fn _resolve_use(use_node: &mut Node, linked_node: &Node) {
     // Copy attributes from 'use'.
     for (aid, attr) in use_node.attributes().iter_svg() {
         // Do not replace existing attributes.
-        if !new_node.has_attribute(aid) {
+        if !new_node.has_visible_attribute(aid) {
             new_node.set_attribute(attr.clone());
         }
     }

@@ -70,7 +70,17 @@ pub fn _resolve_font_size(parent: &Node) {
             }
         };
 
+        let had_attr = node.has_attribute(AId::FontSize);
+
         node.set_attribute((AId::FontSize, font_size));
+
+        // We have to mark this attribute as invisible,
+        // otherwise it will break the 'use' resolving.
+        if !had_attr {
+            if let Some(ref mut attr) = node.attributes_mut().get_mut(AId::FontSize) {
+                attr.visible = false;
+            }
+        }
 
         if node.has_children() {
             _resolve_font_size(&mut node);

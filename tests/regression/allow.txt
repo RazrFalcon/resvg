@@ -1,1 +1,1 @@
-masking-path-1004-f.svg
+struct-use-01-t.svg

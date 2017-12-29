@@ -13,3 +13,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 - The `render_to_canvas` methods don't reset the global transform now.
+
+### Fixed
+- `font-size` attribute inheritance during `use` resolving.
