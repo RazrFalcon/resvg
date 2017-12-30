@@ -4,10 +4,8 @@
 
 use svgdom::{
     Document,
-    Node,
-};
-use svgdom::types::{
     FuzzyEq,
+    Node,
 };
 
 use short::{

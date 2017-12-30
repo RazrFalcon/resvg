@@ -4,12 +4,10 @@
 
 use svgdom::{
     Document,
+    Length,
     Node,
     NodeType,
     ValueId,
-};
-use svgdom::types::{
-    Length,
 };
 
 use short::{

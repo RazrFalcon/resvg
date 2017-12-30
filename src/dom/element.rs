@@ -5,7 +5,7 @@
 use std::fmt;
 use std::path::PathBuf;
 
-use svgdom::types::{
+use svgdom::{
     Transform,
     Color,
 };

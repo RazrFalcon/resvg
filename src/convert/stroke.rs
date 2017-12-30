@@ -5,9 +5,6 @@
 use svgdom::{
     self,
     ElementType,
-};
-
-use svgdom::types::{
     FuzzyEq,
     NumberList,
 };

@@ -6,17 +6,15 @@ use std::f64;
 use std::fmt::Display;
 
 use svgdom::{
-    Attributes,
-    Node,
-    ValueId,
-};
-use svgdom::types::{
     path,
+    Attributes,
     Color,
     Length,
     LengthList,
+    Node,
     NumberList,
     Transform,
+    ValueId,
 };
 
 use short::{

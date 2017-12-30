@@ -273,7 +273,7 @@ fn is_zoom(val: String) -> Result<(), String> {
 }
 
 fn is_color(val: String) -> Result<(), String> {
-    match svgdom::types::Color::from_str(&val) {
+    match svgdom::Color::from_str(&val) {
         Ok(_) => Ok(()),
         Err(_) => Err("Invalid color.".into()),
     }
@@ -292,7 +292,7 @@ fn fill_options(args: &ArgMatches) -> Options {
     let mut background = None;
     if args.is_present("background") {
         let s = args.value_of("background").unwrap();
-        background = Some(svgdom::types::Color::from_str(s).unwrap());
+        background = Some(svgdom::Color::from_str(s).unwrap());
     }
 
     Options {

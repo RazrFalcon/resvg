@@ -5,8 +5,6 @@
 use svgdom::{
     Document,
     Node,
-};
-use svgdom::types::{
     Transform,
 };
 

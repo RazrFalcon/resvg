@@ -7,7 +7,8 @@ use cairo::{
     Matrix,
     MatrixTrait,
 };
-use svgdom::types::{
+
+use svgdom::{
     Color,
     Transform,
 };

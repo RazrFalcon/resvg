@@ -4,7 +4,7 @@
 
 use std::path::PathBuf;
 
-use svgdom::types::{
+use svgdom::{
     Color,
 };
 

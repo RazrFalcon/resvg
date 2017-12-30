@@ -10,7 +10,7 @@ pub trait TransformToMatrix {
     fn to_qtransform(&self) -> qt::Transform;
 }
 
-impl TransformToMatrix for svgdom::types::Transform {
+impl TransformToMatrix for svgdom::Transform {
     fn to_qtransform(&self) -> qt::Transform {
         qt::Transform::new(self.a, self.b, self.c, self.d, self.e, self.f)
     }

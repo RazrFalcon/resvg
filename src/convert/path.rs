@@ -7,8 +7,8 @@ use std::f64;
 use svgdom;
 use dom;
 
-use svgdom::types::path::*;
-use svgdom::types::{
+use svgdom::path::*;
+use svgdom::{
     FuzzyEq
 };
 

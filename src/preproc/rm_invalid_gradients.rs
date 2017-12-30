@@ -3,13 +3,11 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use svgdom::{
+    Color,
     Document,
     Node,
     ValueId,
     ElementType,
-};
-use svgdom::types::{
-    Color,
 };
 
 use short::{

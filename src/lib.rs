@@ -70,10 +70,12 @@ pub use math::{
 
 /// Shorthand names for modules.
 mod short {
-    pub use svgdom::types::LengthUnit as Unit;
-    pub use svgdom::ElementId as EId;
-    pub use svgdom::AttributeId as AId;
-    pub use svgdom::AttributeValue as AValue;
+    pub use svgdom::{
+        LengthUnit as Unit,
+        ElementId as EId,
+        AttributeId as AId,
+        AttributeValue as AValue,
+    };
 }
 
 use preproc::{

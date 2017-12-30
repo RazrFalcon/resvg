@@ -4,12 +4,10 @@
 
 use svgdom::{
     ElementType,
-    Node,
-    ValueId,
-};
-use svgdom::types::{
     FuzzyEq,
     Length,
+    Node,
+    ValueId,
 };
 
 use short::{

@@ -3,9 +3,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use base64;
-use svgdom;
 
-use svgdom::types::{
+use svgdom::{
+    self,
     FuzzyEq,
 };
 
@@ -115,8 +115,8 @@ fn conv_elements(
 
                 conv_element(e, &mut path_elem);
 
-                use svgdom::types::path::Path as SvgDomPath;
-                use svgdom::types::path::Segment;
+                use svgdom::path::Path as SvgDomPath;
+                use svgdom::path::Segment;
 
                 let mut path = SvgDomPath::with_capacity(p.d.len());
                 for seg in &p.d {
@@ -358,7 +358,7 @@ fn conv_units(aid: AId, units: Units, node: &mut svgdom::Node) {
     ));
 }
 
-fn conv_transform(aid: AId, ts: &svgdom::types::Transform, node: &mut svgdom::Node) {
+fn conv_transform(aid: AId, ts: &svgdom::Transform, node: &mut svgdom::Node) {
     if !ts.is_default() {
         node.set_attribute((aid, *ts));
     }

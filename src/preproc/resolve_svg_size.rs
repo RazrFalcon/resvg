@@ -4,8 +4,6 @@
 
 use svgdom::{
     Node,
-};
-use svgdom::types::{
     Length,
 };
 

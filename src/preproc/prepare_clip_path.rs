@@ -7,7 +7,7 @@ use svgdom::{
     ValueId,
 };
 
-use svgdom::types::{
+use svgdom::{
     Color,
 };
 
