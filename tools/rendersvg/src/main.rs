@@ -306,10 +306,13 @@ fn fill_options(args: &ArgMatches) -> Options {
 fn dump_svg(doc: &Document, path: &str) -> Result<(), io::Error> {
     let mut f = fs::File::create(path)?;
 
-    let mut opt = svgdom::WriteOptions::default();
-    opt.indent = svgdom::Indent::Spaces(2);
-    opt.attributes_indent = svgdom::Indent::Spaces(3);
-    opt.write_hidden_attributes = true;
+    let opt = svgdom::WriteOptions {
+        indent: svgdom::Indent::Spaces(2),
+        attributes_indent: svgdom::Indent::Spaces(3),
+        write_hidden_attributes: true,
+        attributes_order: svgdom::AttributesOrder::Specification,
+        .. svgdom::WriteOptions::default()
+    };
 
     let svgdoc = doc.to_svgdom();
 

@@ -9,6 +9,7 @@ use svgdom::{
     path,
     Attributes,
     Color,
+    Document,
     Length,
     LengthList,
     Node,
@@ -50,6 +51,35 @@ impl GetViewBox for Node {
 
         Err(ErrorKind::InvalidViewBox(format!("{:?}",
                 self.attributes().get_value(AId::ViewBox))).into())
+    }
+}
+
+
+pub trait GetDefsNode {
+    fn defs_element(&self) -> Option<Node>;
+}
+
+impl GetDefsNode for Document {
+    fn defs_element(&self) -> Option<Node> {
+        let svg = match self.svg_element() {
+            Some(svg) => svg.clone(),
+            None => return None,
+        };
+
+        match svg.first_child() {
+            Some(child) => {
+                if child.is_tag_name(EId::Defs) {
+                    Some(child.clone())
+                } else {
+                    warn!("The first child of the 'svg' element should be 'defs'. Found '{:?}' instead.",
+                          child.tag_name());
+                    None
+                }
+            }
+            None => {
+                None
+            }
+        }
     }
 }
 

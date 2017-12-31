@@ -16,6 +16,7 @@ use short::{
 };
 
 use traits::{
+    GetDefsNode,
     GetValue,
     GetViewBox,
 };
@@ -52,7 +53,7 @@ pub fn convert_doc(svg_doc: &svgdom::Document, opt: &Options) -> Result<dom::Doc
         return Err(ErrorKind::MissingSvgNode.into());
     };
 
-    let defs = convert_ref_nodes(&svg);
+    let defs = convert_ref_nodes(&svg_doc);
 
     Ok(dom::Document {
         size: get_img_size(&svg)?,
@@ -63,19 +64,11 @@ pub fn convert_doc(svg_doc: &svgdom::Document, opt: &Options) -> Result<dom::Doc
     })
 }
 
-pub fn convert_ref_nodes(svg: &svgdom::Node) -> Vec<dom::RefElement> {
+pub fn convert_ref_nodes(doc: &svgdom::Document) -> Vec<dom::RefElement> {
     let mut defs: Vec<dom::RefElement> = Vec::new();
 
-    let defs_elem = match svg.first_child() {
-        Some(child) => {
-            if child.is_tag_name(EId::Defs) {
-                child.clone()
-            } else {
-                warn!("The first child of the 'svg' element should be 'defs'. Found '{:?}' instead.",
-                      child.tag_name());
-                return defs;
-            }
-        }
+    let defs_elem = match doc.defs_element() {
+        Some(e) => e.clone(),
         None => return defs,
     };
 

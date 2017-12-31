@@ -12,7 +12,6 @@ pub fn remove_unused_defs(svg: &mut Node) {
     remove_unused_defs_impl(svg);
 }
 
-// Returns true if tree structure has been changed.
 fn remove_unused_defs_impl(parent: &mut Node) {
     let mut mv_nodes = Vec::new();
     let mut rm_nodes = Vec::new();
