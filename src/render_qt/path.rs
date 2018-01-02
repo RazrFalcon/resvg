@@ -16,7 +16,11 @@ use super::{
 };
 
 
-pub fn draw(doc: &dom::Document, elem: &dom::Path, p: &qt::Painter) -> Rect {
+pub fn draw(
+    doc: &dom::Document,
+    elem: &dom::Path,
+    p: &qt::Painter,
+) -> Rect {
     let mut p_path = qt::PainterPath::new();
 
     let fill_rule = if let Some(fill) = elem.fill {
@@ -27,12 +31,14 @@ pub fn draw(doc: &dom::Document, elem: &dom::Path, p: &qt::Painter) -> Rect {
 
     convert_path(&elem.d, fill_rule, &mut p_path);
 
-    fill::apply(doc, &elem.fill, p);
-    stroke::apply(doc, &elem.stroke, p);
+    let bbox: Rect = p_path.bounding_box().into();
+
+    fill::apply(doc, &elem.fill, p, &bbox);
+    stroke::apply(doc, &elem.stroke, p, &bbox);
 
     p.draw_path(&p_path);
 
-    p_path.bounding_box().into()
+    bbox
 }
 
 pub fn convert_path(

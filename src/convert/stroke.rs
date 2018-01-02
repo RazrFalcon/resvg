@@ -14,6 +14,7 @@ use dom;
 use short::{
     AId,
     AValue,
+    EId,
 };
 
 use traits::{
@@ -38,7 +39,7 @@ pub fn convert(
             }
             AValue::FuncLink(ref link) => {
                 let mut p = None;
-                if link.is_gradient() {
+                if link.is_gradient() || link.is_tag_name(EId::Pattern) {
                     if let Some(idx) = defs.iter().position(|e| e.id == *link.id()) {
                         p = Some(dom::Paint::Link(idx));
                     }

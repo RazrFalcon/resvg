@@ -89,6 +89,23 @@ pub fn resolve_radial_gradient_attributes(doc: &Document) {
     }
 }
 
+/// Resolve attributes of `pattern` elements.
+pub fn resolve_pattern_attributes(doc: &Document) {
+    for node in &mut gen_order(doc, EId::Pattern) {
+        check_attr(node, AId::PatternUnits,
+                   Some(AValue::from(ValueId::ObjectBoundingBox)));
+        check_attr(node, AId::PatternContentUnits,
+                   Some(AValue::from(ValueId::UserSpaceOnUse)));
+        check_attr(node, AId::PatternTransform, None);
+        check_attr(node, AId::X, Some(AValue::from(0.0)));
+        check_attr(node, AId::Y, Some(AValue::from(0.0)));
+        check_attr(node, AId::Width, Some(AValue::from(0.0)));
+        check_attr(node, AId::Height, Some(AValue::from(0.0)));
+        check_attr(node, AId::PreserveAspectRatio, Some(AValue::from("xMidYMid meet")));
+        check_attr(node, AId::ViewBox, None);
+    }
+}
+
 /// Generates a list of elements from less used to most used.
 fn gen_order(doc: &Document, eid: EId) -> Vec<Node> {
     let nodes = doc.descendants().filter(|n| n.is_tag_name(eid))

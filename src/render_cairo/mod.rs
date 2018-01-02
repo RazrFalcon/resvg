@@ -35,12 +35,13 @@ use self::ext::{
 };
 
 
+mod clippath;
 mod ext;
 mod fill;
 mod gradient;
-mod clippath;
 mod image;
 mod path;
+mod pattern;
 mod stroke;
 mod text;
 

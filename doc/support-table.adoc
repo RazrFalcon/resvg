@@ -71,7 +71,9 @@ text-tref-03-b
 |`linearGradient` |Yes |? |? |? |
 |`radialGradient` |Yes |? |? |? |
 |`stop` |Yes |? |? |? |
-|`pattern` |No |? |? |? |
+|`pattern` |Partial |Yes |Yes |No |
+| 5+|Not supported footnoteref:[not-supported]: +
+- `preserveAspectRatio` attribute
 6+^|https://www.w3.org/TR/SVG/masking.html[Clipping, Masking and Compositing]
 |`clipPath` |Partial |Partial |Partial |No | masking-path-*
 | 5+|Not supported footnoteref:[not-supported]: +
@@ -155,9 +157,7 @@ text-tref-03-b
 |`display` |Yes |? |? |? |
 |`dominant-baseline` |No |? |? |? |
 |`enable-background` |No |? |? |? |
-|`fill` |Partial |? |? |? |
-| 5+|Not supported footnoteref:[not-supported]: +
-- filling with `pattern`
+|`fill` |Yes |Yes |Yes |Partial |
 |`fill-opacity` |Yes |Yes |Yes |Yes | opacity-1000-f
 |`fill-rule` |Yes |? |? |? |
 |`filter` |No |? |? |? |
@@ -192,9 +192,7 @@ text-text-08-b
 |`shape-rendering` |No |? |? |? |
 |`stop-color` |Yes |? |? |? |
 |`stop-opacity` |Yes |? |? |? |
-|`stroke` |Partial |? |? |? |
-| 5+|Not supported footnoteref:[not-supported]: +
-- stroking with `pattern`
+|`stroke` |Yes |Yes |Yes |Partial |
 |`stroke-dasharray` |Yes |Partial |Partial |Partial | painting-control-02-f +
 painting-stroke-*
 |`stroke-dashoffset` |Yes |? |? |? |

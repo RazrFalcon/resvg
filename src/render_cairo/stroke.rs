@@ -9,6 +9,7 @@ use math;
 
 use super::{
     gradient,
+    pattern,
 };
 
 use super::ext::{
@@ -37,6 +38,9 @@ pub fn apply(
                         dom::RefElementKind::RadialGradient(ref rg) =>
                             gradient::prepare_radial(rg, stroke.opacity, bbox, cr),
                         dom::RefElementKind::ClipPath(_) => {}
+                        dom::RefElementKind::Pattern(ref pattern) => {
+                            pattern::apply(doc, pattern, bbox, cr);
+                        }
                     }
                 }
             }

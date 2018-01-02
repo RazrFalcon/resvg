@@ -85,6 +85,28 @@ pub fn conv_doc(doc: &Document) -> svgdom::Document {
                     conv_transform(AId::Transform, &c.transform, &mut clip);
                     conv_elements(&c.children, &[], &mut new_doc, &mut clip);
                 }
+                element::RefElementKind::Pattern(ref pattern) => {
+                    let mut pattern_elem = new_doc.create_element(EId::Pattern);
+                    defs.append(&pattern_elem);
+                    defs_list.push(pattern_elem.clone());
+
+                    pattern_elem.set_id(e.id.clone());
+
+                    pattern_elem.set_attribute((AId::X, pattern.rect.x));
+                    pattern_elem.set_attribute((AId::Y, pattern.rect.y));
+                    pattern_elem.set_attribute((AId::Width, pattern.rect.w));
+                    pattern_elem.set_attribute((AId::Height, pattern.rect.h));
+
+                    if let Some(vbox) = pattern.view_box {
+                        let vbox_str = format!("{} {} {} {}", vbox.x, vbox.y, vbox.w, vbox.h);
+                        pattern_elem.set_attribute((AId::ViewBox, vbox_str));
+                    }
+
+                    conv_units(AId::PatternUnits, pattern.units, &mut pattern_elem);
+                    conv_units(AId::PatternContentUnits, pattern.content_units, &mut pattern_elem);
+                    conv_transform(AId::PatternTransform, &pattern.transform, &mut pattern_elem);
+                    conv_elements(&pattern.children, &[], &mut new_doc, &mut pattern_elem);
+                }
             }
         }
     }

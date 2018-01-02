@@ -60,6 +60,7 @@ pub enum RefElementKind {
     LinearGradient(LinearGradient),
     RadialGradient(RadialGradient),
     ClipPath(ClipPath),
+    Pattern(Pattern),
 }
 
 /// A path element.
@@ -307,6 +308,33 @@ pub struct ClipPath {
     ///
     /// `transform` in the SVG.
     pub transform: Transform,
+    /// List of children elements.
+    ///
+    /// Contains only `Path` and `Text` elements.
+    pub children: Vec<Element>,
+}
+
+
+/// A pattern element.
+///
+/// `pattern` element in the SVG.
+pub struct Pattern {
+    /// Coordinate system units.
+    ///
+    /// `patternUnits` in the SVG.
+    pub units: Units,
+    /// Content coordinate system units.
+    ///
+    /// `patternContentUnits` in the SVG.
+    pub content_units: Units,
+    /// Pattern transform.
+    ///
+    /// `patternTransform` in the SVG.
+    pub transform: Transform,
+    /// Pattern rectangle.
+    pub rect: Rect,
+    /// Pattern viewbox.
+    pub view_box: Option<Rect>,
     /// List of children elements.
     ///
     /// Contains only `Path` and `Text` elements.

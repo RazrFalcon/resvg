@@ -21,12 +21,14 @@ mod resolve_font_size;
 mod resolve_gradient_attrs;
 mod resolve_gradient_stops;
 mod resolve_inherit;
+mod resolve_pattern_children;
 mod resolve_style_attrs;
 mod resolve_svg_size;
 mod resolve_tref;
 mod resolve_use;
 mod resolve_visibility;
 mod rm_invalid_gradients;
+mod rm_invalid_patterns;
 mod rm_invalid_ts;
 mod rm_invisible_elems;
 mod rm_unused_defs;
@@ -45,12 +47,14 @@ use self::resolve_font_size::resolve_font_size;
 use self::resolve_gradient_attrs::*;
 use self::resolve_gradient_stops::resolve_gradient_stops;
 use self::resolve_inherit::resolve_inherit;
+use self::resolve_pattern_children::resolve_pattern_children;
 use self::resolve_style_attrs::resolve_style_attributes;
 use self::resolve_svg_size::resolve_svg_size;
 use self::resolve_tref::resolve_tref;
 use self::resolve_use::resolve_use;
 use self::resolve_visibility::resolve_visibility;
 use self::rm_invalid_gradients::remove_invalid_gradients;
+use self::rm_invalid_patterns::remove_invalid_patterns;
 use self::rm_invalid_ts::remove_invalid_transform;
 use self::rm_invisible_elems::remove_invisible_elements;
 use self::rm_unused_defs::remove_unused_defs;
@@ -96,6 +100,10 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) -> Result<()> {
     resolve_radial_gradient_attributes(doc);
     resolve_gradient_stops(doc);
     remove_invalid_gradients(doc);
+
+    resolve_pattern_attributes(doc);
+    resolve_pattern_children(doc);
+    remove_invalid_patterns(doc);
 
     remove_unused_defs(svg);
 

@@ -28,11 +28,12 @@ use traits::{
 use render_utils;
 
 
-mod fill;
 mod clippath;
+mod fill;
 mod gradient;
 mod image;
 mod path;
+mod pattern;
 mod stroke;
 mod text;
 

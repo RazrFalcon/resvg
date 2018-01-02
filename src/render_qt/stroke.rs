@@ -5,10 +5,14 @@
 use qt;
 
 use dom;
-use math;
+use math::{
+    self,
+    Rect,
+};
 
 use super::{
     gradient,
+    pattern,
 };
 
 
@@ -16,6 +20,7 @@ pub fn apply(
     doc: &dom::Document,
     stroke: &Option<dom::Stroke>,
     p: &qt::Painter,
+    bbox: &Rect,
 ) {
     match *stroke {
         Some(ref stroke) => {
@@ -36,6 +41,9 @@ pub fn apply(
                         dom::RefElementKind::RadialGradient(ref rg) =>
                             gradient::prepare_radial(rg, stroke.opacity, &mut brush),
                         dom::RefElementKind::ClipPath(_) => {}
+                        dom::RefElementKind::Pattern(ref pattern) => {
+                            pattern::apply(doc, p.get_transform(), bbox, pattern, &mut brush);
+                        }
                     }
 
                     pen.set_brush(brush);

@@ -5,10 +5,14 @@
 use qt;
 
 use dom;
-use math;
+use math::{
+    self,
+    Rect,
+};
 
 use super::{
     gradient,
+    pattern,
 };
 
 
@@ -16,6 +20,7 @@ pub fn apply(
     doc: &dom::Document,
     fill: &Option<dom::Fill>,
     p: &qt::Painter,
+    bbox: &Rect,
 ) {
     match *fill {
         Some(ref fill) => {
@@ -27,15 +32,18 @@ pub fn apply(
                     brush.set_color(c.red, c.green, c.blue, a);
                 }
                 dom::Paint::Link(id) => {
-                    let ref_elem = doc.get_defs(id);
-
-                    match ref_elem.kind {
-                        dom::RefElementKind::LinearGradient(ref lg) =>
-                            gradient::prepare_linear(lg, fill.opacity, &mut brush),
-                        dom::RefElementKind::RadialGradient(ref rg) =>
-                            gradient::prepare_radial(rg, fill.opacity, &mut brush),
+                    match doc.get_defs(id).kind {
+                        dom::RefElementKind::LinearGradient(ref lg) => {
+                            gradient::prepare_linear(lg, fill.opacity, &mut brush);
+                        }
+                        dom::RefElementKind::RadialGradient(ref rg) => {
+                            gradient::prepare_radial(rg, fill.opacity, &mut brush);
+                        }
                         dom::RefElementKind::ClipPath(_) => {}
-                    };
+                        dom::RefElementKind::Pattern(ref pattern) => {
+                            pattern::apply(doc, p.get_transform(), bbox, pattern, &mut brush);
+                        }
+                    }
                 }
             }
 

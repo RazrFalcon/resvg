@@ -20,8 +20,8 @@ use svgdom::{
 
 use short::{
     AId,
-    EId,
     AValue,
+    EId,
 };
 
 use math::{
@@ -40,8 +40,6 @@ pub trait GetViewBox {
 
 impl GetViewBox for Node {
     fn get_viewbox(&self) -> Result<Rect> {
-        debug_assert!(self.is_tag_name(EId::Svg));
-
         let attrs = self.attributes();
         if let Some(list) = attrs.get_number_list(AId::ViewBox) {
             if list.len() == 4 {

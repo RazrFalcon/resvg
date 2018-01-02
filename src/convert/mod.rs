@@ -32,13 +32,14 @@ use {
     Result,
 };
 
-mod fill;
-mod stroke;
-mod gradient;
 mod clippath;
+mod fill;
+mod gradient;
 mod image;
 mod path;
+mod pattern;
 mod shapes;
+mod stroke;
 mod text;
 
 
@@ -53,7 +54,7 @@ pub fn convert_doc(svg_doc: &svgdom::Document, opt: &Options) -> Result<dom::Doc
         return Err(ErrorKind::MissingSvgNode.into());
     };
 
-    let defs = convert_ref_nodes(&svg_doc);
+    let defs = convert_ref_nodes(svg_doc, opt);
 
     Ok(dom::Document {
         size: get_img_size(&svg)?,
@@ -64,8 +65,17 @@ pub fn convert_doc(svg_doc: &svgdom::Document, opt: &Options) -> Result<dom::Doc
     })
 }
 
-pub fn convert_ref_nodes(doc: &svgdom::Document) -> Vec<dom::RefElement> {
+pub fn convert_ref_nodes(
+    doc: &svgdom::Document,
+    opt: &Options,
+) -> Vec<dom::RefElement> {
     let mut defs: Vec<dom::RefElement> = Vec::new();
+
+    // We can't convert elements with children which can refer other elements.
+    // So we have to create a list of defs first and then convert children.
+    //
+    // This list contains nodes which children should be converted later.
+    let mut defs_data: Vec<(usize, svgdom::Node)> = Vec::new();
 
     let defs_elem = match doc.defs_element() {
         Some(e) => e.clone(),
@@ -94,9 +104,36 @@ pub fn convert_ref_nodes(doc: &svgdom::Document) -> Vec<dom::RefElement> {
                     defs.push(elem);
                 }
             }
+            EId::Pattern => {
+                if let Some(elem) = pattern::convert(&node) {
+                    defs_data.push((defs.len(), node));
+                    defs.push(elem);
+                }
+            }
             _ => {
                 warn!("Unsupported element '{}'.", id);
             }
+        }
+    }
+
+    // Process deferred elements.
+    for (idx, node) in defs_data {
+        let eid = match defs[idx].kind {
+            dom::RefElementKind::Pattern(_) => {
+                EId::Pattern
+            }
+            _ => continue,
+        };
+
+        match eid {
+            EId::Pattern => {
+                let children = convert_nodes(&node, &defs, opt);
+
+                if let dom::RefElementKind::Pattern(ref mut pattern) = defs[idx].kind {
+                    pattern.children = children;
+                };
+            }
+            _ => continue,
         }
     }
 

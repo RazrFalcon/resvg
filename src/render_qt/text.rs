@@ -107,9 +107,11 @@ fn _draw_tspan(
         draw_line(doc, &style.fill, &style.stroke, line_rect, p);
     }
 
+    let bbox = Rect::new(0.0, 0.0, width, font_metrics.height());
+
     // Draw text.
-    fill::apply(doc, &tspan.fill, p);
-    stroke::apply(doc, &tspan.stroke, p);
+    fill::apply(doc, &tspan.fill, p, &bbox);
+    stroke::apply(doc, &tspan.stroke, p, &bbox);
 
     p.draw_text(x, y, &tspan.text);
 
@@ -190,8 +192,8 @@ fn draw_line(
     p_path.line_to(line_bbox.x,  line_bbox.y + line_bbox.h);
     p_path.close_path();
 
-    fill::apply(doc, fill, p);
-    stroke::apply(doc, stroke, p);
+    fill::apply(doc, fill, p, &line_bbox);
+    stroke::apply(doc, stroke, p, &line_bbox);
 
     p.draw_path(&p_path);
 }

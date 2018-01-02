@@ -31,7 +31,7 @@ pub fn apply(
     let mut clip_img = qt::Image::new(
         img_size.w as u32,
         img_size.h as u32,
-    ).unwrap();
+    ).unwrap(); // TODO: remove
 
     clip_img.fill(0, 0, 0, 255);
     clip_img.set_dpi(doc.dpi);

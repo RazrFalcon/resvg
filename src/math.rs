@@ -95,6 +95,12 @@ impl Default for Size {
     }
 }
 
+impl From<(f64, f64)> for Size {
+    fn from(v: (f64, f64)) -> Self {
+        Self::new(v.0, v.1)
+    }
+}
+
 impl Size {
     /// Creates a new `Size`.
     pub fn new(w: f64, h: f64) -> Size {
