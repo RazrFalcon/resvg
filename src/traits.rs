@@ -190,3 +190,9 @@ impl FindAttribute for Node {
         None
     }
 }
+
+
+pub trait ConvTransform<T> {
+    fn to_native(&self) -> T;
+    fn from_native(&T) -> Self;
+}

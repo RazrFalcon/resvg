@@ -12,7 +12,10 @@ use math::{
     Rect,
 };
 
-use super::ext::*;
+use traits::{
+    ConvTransform,
+};
+
 use super::{
     path,
     text,
@@ -36,7 +39,7 @@ pub fn apply(
     clip_cr.set_source_rgba(0.0, 0.0, 0.0, 1.0);
     clip_cr.paint();
     clip_cr.set_matrix(cr.get_matrix());
-    clip_cr.transform(cp.transform.to_matrix());
+    clip_cr.transform(cp.transform.to_native());
 
     if cp.units == dom::Units::ObjectBoundingBox {
         let m = cairo::Matrix::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y);
@@ -47,7 +50,7 @@ pub fn apply(
 
     let matrix = clip_cr.get_matrix();
     for elem in &cp.children {
-        clip_cr.apply_transform(&elem.transform);
+        clip_cr.transform(elem.transform.to_native());
 
         match elem.kind {
             dom::ElementKind::Path(ref path_elem) => {

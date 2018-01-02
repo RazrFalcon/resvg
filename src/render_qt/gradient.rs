@@ -10,7 +10,9 @@ use dom::{
     SpreadMethod,
 };
 
-use super::ext::TransformToMatrix;
+use traits::{
+    ConvTransform,
+};
 
 
 pub fn prepare_linear(
@@ -22,7 +24,7 @@ pub fn prepare_linear(
     prepare_base(&g.d, &mut grad, opacity);
 
     brush.set_linear_gradient(grad);
-    brush.set_transform(g.d.transform.to_qtransform());
+    brush.set_transform(g.d.transform.to_native());
 }
 
 pub fn prepare_radial(
@@ -34,7 +36,7 @@ pub fn prepare_radial(
     prepare_base(&g.d, &mut grad, opacity);
 
     brush.set_radial_gradient(grad);
-    brush.set_transform(g.d.transform.to_qtransform());
+    brush.set_transform(g.d.transform.to_native());
 }
 
 fn prepare_base(g: &dom::BaseGradient, grad: &mut qt::Gradient, opacity: f64) {

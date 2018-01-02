@@ -17,7 +17,9 @@ use math::{
     Rect,
 };
 
-use super::TransformToMatrix;
+use traits::{
+    ConvTransform,
+};
 
 
 pub fn prepare_linear(g: &dom::LinearGradient, opacity: f64, bbox: &Rect, cr: &cairo::Context) {
@@ -40,7 +42,7 @@ fn prepare_base(g: &dom::BaseGradient, grad: &cairo::Gradient, opacity: f64, bbo
     };
     grad.set_extend(spread_method);
 
-    let mut matrix = g.transform.to_matrix();
+    let mut matrix = g.transform.to_native();
 
     if g.units == Units::ObjectBoundingBox {
         let m = cairo::Matrix::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y);

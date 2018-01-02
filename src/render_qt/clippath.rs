@@ -11,9 +11,10 @@ use math::{
     Rect,
 };
 
-use super::ext::{
-    TransformToMatrix,
+use traits::{
+    ConvTransform,
 };
+
 use super::{
     path,
     text,
@@ -37,7 +38,7 @@ pub fn apply(
 
     let clip_p = qt::Painter::new(&clip_img);
     clip_p.set_transform(&p.get_transform());
-    clip_p.apply_transform(&cp.transform.to_qtransform());
+    clip_p.apply_transform(&cp.transform.to_native());
 
     if cp.units == dom::Units::ObjectBoundingBox {
         clip_p.apply_transform(&qt::Transform::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y));
@@ -47,7 +48,7 @@ pub fn apply(
 
     let ts = clip_p.get_transform();
     for elem in &cp.children {
-        clip_p.apply_transform(&elem.transform.to_qtransform());
+        clip_p.apply_transform(&elem.transform.to_native());
 
         match elem.kind {
             dom::ElementKind::Path(ref path_elem) => {

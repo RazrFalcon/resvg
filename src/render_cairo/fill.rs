@@ -9,6 +9,9 @@ use math;
 
 use super::{
     gradient,
+};
+
+use super::ext::{
     ReCairoContextExt,
 };
 

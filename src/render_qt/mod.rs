@@ -7,6 +7,7 @@
 use std::f64;
 
 use qt;
+use svgdom;
 
 use dom;
 
@@ -21,10 +22,13 @@ use math::{
     Rect,
 };
 
+use traits::{
+    ConvTransform,
+};
+
 use render_utils;
 
 
-mod ext;
 mod fill;
 mod clippath;
 mod gradient;
@@ -33,9 +37,17 @@ mod path;
 mod stroke;
 mod text;
 
-use self::ext::{
-    TransformToMatrix,
-};
+
+impl ConvTransform<qt::Transform> for svgdom::Transform {
+    fn to_native(&self) -> qt::Transform {
+        qt::Transform::new(self.a, self.b, self.c, self.d, self.e, self.f)
+    }
+
+    fn from_native(ts: &qt::Transform) -> svgdom::Transform {
+        let d = ts.data();
+        svgdom::Transform::new(d.0, d.1, d.2, d.3, d.4, d.5)
+    }
+}
 
 
 /// Renders SVG to image.
@@ -97,7 +109,7 @@ fn render_group(
     let mut g_bbox = Rect::new(f64::MAX, f64::MAX, 0.0, 0.0);
     for elem in elements {
         // Apply transform.
-        p.apply_transform(&elem.transform.to_qtransform());
+        p.apply_transform(&elem.transform.to_native());
 
         let bbox = match elem.kind {
             dom::ElementKind::Path(ref path) => {

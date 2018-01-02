@@ -6,6 +6,8 @@
 
 use std::f64;
 
+use svgdom;
+
 use cairo::{
     self,
     MatrixTrait,
@@ -18,6 +20,10 @@ use math::{
     Rect,
 };
 
+use traits::{
+    ConvTransform,
+};
+
 use {
     ErrorKind,
     Options,
@@ -25,6 +31,10 @@ use {
 };
 
 use render_utils;
+
+use self::ext::{
+    ReCairoContextExt,
+};
 
 
 mod ext;
@@ -36,7 +46,16 @@ mod path;
 mod stroke;
 mod text;
 
-use self::ext::*;
+
+impl ConvTransform<cairo::Matrix> for svgdom::Transform {
+    fn to_native(&self) -> cairo::Matrix {
+        cairo::Matrix::new(self.a, self.b, self.c, self.d, self.e, self.f)
+    }
+
+    fn from_native(ts: &cairo::Matrix) -> svgdom::Transform {
+        svgdom::Transform::new(ts.xx, ts.yx, ts.xy, ts.yy, ts.x0, ts.y0)
+    }
+}
 
 
 /// Renders SVG to image.
@@ -93,7 +112,7 @@ fn render_group(
 ) -> Rect {
     let mut g_bbox = Rect::new(f64::MAX, f64::MAX, 0.0, 0.0);
     for elem in elements {
-        cr.apply_transform(&elem.transform);
+        cr.transform(elem.transform.to_native());
 
         let bbox = match elem.kind {
             dom::ElementKind::Path(ref path) => {
