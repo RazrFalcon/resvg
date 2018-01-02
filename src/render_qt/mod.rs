@@ -7,7 +7,6 @@
 use std::f64;
 
 use qt;
-use svgdom;
 
 use dom;
 
@@ -38,14 +37,14 @@ mod stroke;
 mod text;
 
 
-impl ConvTransform<qt::Transform> for svgdom::Transform {
+impl ConvTransform<qt::Transform> for dom::Transform {
     fn to_native(&self) -> qt::Transform {
         qt::Transform::new(self.a, self.b, self.c, self.d, self.e, self.f)
     }
 
-    fn from_native(ts: &qt::Transform) -> svgdom::Transform {
+    fn from_native(ts: &qt::Transform) -> dom::Transform {
         let d = ts.data();
-        svgdom::Transform::new(d.0, d.1, d.2, d.3, d.4, d.5)
+        dom::Transform::new(d.0, d.1, d.2, d.3, d.4, d.5)
     }
 }
 

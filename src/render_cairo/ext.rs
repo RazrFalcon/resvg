@@ -3,16 +3,16 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use cairo;
-use svgdom;
+use dom;
 
 
 pub trait ReCairoContextExt {
-    fn set_source_color(&self, color: &svgdom::Color, opacity: f64);
+    fn set_source_color(&self, color: &dom::Color, opacity: f64);
     fn reset_source_rgba(&self);
 }
 
 impl ReCairoContextExt for cairo::Context {
-    fn set_source_color(&self, color: &svgdom::Color, opacity: f64) {
+    fn set_source_color(&self, color: &dom::Color, opacity: f64) {
         self.set_source_rgba(color.red as f64 / 255.0,
                              color.green as f64 / 255.0,
                              color.blue as f64 / 255.0,

@@ -5,11 +5,6 @@
 use std::fmt;
 use std::path::PathBuf;
 
-use svgdom::{
-    Transform,
-    Color,
-};
-
 use math::{
     Rect,
 };

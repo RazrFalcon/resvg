@@ -6,8 +6,6 @@
 
 use std::f64;
 
-use svgdom;
-
 use cairo::{
     self,
     MatrixTrait,
@@ -47,13 +45,13 @@ mod stroke;
 mod text;
 
 
-impl ConvTransform<cairo::Matrix> for svgdom::Transform {
+impl ConvTransform<cairo::Matrix> for dom::Transform {
     fn to_native(&self) -> cairo::Matrix {
         cairo::Matrix::new(self.a, self.b, self.c, self.d, self.e, self.f)
     }
 
-    fn from_native(ts: &cairo::Matrix) -> svgdom::Transform {
-        svgdom::Transform::new(ts.xx, ts.yx, ts.xy, ts.yy, ts.x0, ts.y0)
+    fn from_native(ts: &cairo::Matrix) -> dom::Transform {
+        dom::Transform::new(ts.xx, ts.yx, ts.xy, ts.yy, ts.x0, ts.y0)
     }
 }
 
