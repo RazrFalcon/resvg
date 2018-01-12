@@ -32,7 +32,7 @@ macro_rules! clone {
 fn main() {
     fern::Dispatch::new()
         .format(log_format)
-        .level(resvg::log::LogLevelFilter::Warn)
+        .level(resvg::log::LevelFilter::Warn)
         .chain(std::io::stderr())
         .apply().unwrap();
 
@@ -80,22 +80,22 @@ fn build_ui(application: &gtk::Application, file_path: &Path) {
     window.show_all();
 }
 
-fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &resvg::log::LogRecord) {
-    use resvg::log::LogLevel;
+fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &resvg::log::Record) {
+    use resvg::log;
 
     let lvl = match record.level() {
-        LogLevel::Error => "Error",
-        LogLevel::Warn => "Warning",
-        LogLevel::Info => "Info",
-        LogLevel::Debug => "Debug",
-        LogLevel::Trace => "Trace",
+        log::Level::Error => "Error",
+        log::Level::Warn => "Warning",
+        log::Level::Info => "Info",
+        log::Level::Debug => "Debug",
+        log::Level::Trace => "Trace",
     };
 
     out.finish(format_args!(
         "{} (in {}:{}): {}",
         lvl,
         record.target(),
-        record.location().line(),
+        record.line().unwrap_or(0),
         message
     ))
 }
