@@ -71,7 +71,7 @@ fn main() {
 fn process() -> Result<(), Error> {
     fern::Dispatch::new()
         .format(log_format)
-        .level(log::LogLevelFilter::Warn)
+        .level(log::LevelFilter::Warn)
         .chain(std::io::stderr())
         .apply().unwrap();
 
@@ -323,22 +323,20 @@ fn dump_svg(doc: &Document, path: &str) -> Result<(), io::Error> {
     Ok(())
 }
 
-fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &log::LogRecord) {
-    use log::LogLevel;
-
+fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &log::Record) {
     let lvl = match record.level() {
-        LogLevel::Error => "Error",
-        LogLevel::Warn => "Warning",
-        LogLevel::Info => "Info",
-        LogLevel::Debug => "Debug",
-        LogLevel::Trace => "Trace",
+        log::Level::Error => "Error",
+        log::Level::Warn => "Warning",
+        log::Level::Info => "Info",
+        log::Level::Debug => "Debug",
+        log::Level::Trace => "Trace",
     };
 
     out.finish(format_args!(
         "{} (in {}:{}): {}",
         lvl,
         record.target(),
-        record.location().line(),
+        record.line().unwrap_or(0),
         message
     ))
 }

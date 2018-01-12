@@ -6,7 +6,7 @@ keywords = ["svg", "render", "raster"]
 license = "MPL-2.0"
 
 [dependencies]
-fern = "0.4"
+fern = "0.5"
 derive-error = "0.0.4"
 
 [dependencies.resvg]

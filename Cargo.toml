@@ -14,8 +14,8 @@ categories = ["multimedia::images"]
 travis-ci = { repository = "RazrFalcon/libresvg" }
 
 [dependencies]
-base64 = "0.8"
-log = "0.3"
+base64 = "0.9"
+log = "0.4"
 libflate = "0.1"
 
 [dependencies.error-chain]
