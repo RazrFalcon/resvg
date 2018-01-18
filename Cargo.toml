@@ -42,8 +42,8 @@ features = ["png"]
 optional = true
 
 [dependencies.svgdom]
-# version = "0.9"
-git = "https://github.com/RazrFalcon/libsvgdom.git"
+version = "0.10"
+# git = "https://github.com/RazrFalcon/libsvgdom.git"
 # branch = "devel"
 # path = "../svgdom"
 
