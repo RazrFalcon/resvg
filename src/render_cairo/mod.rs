@@ -51,8 +51,8 @@ impl ConvTransform<cairo::Matrix> for dom::Transform {
         cairo::Matrix::new(self.a, self.b, self.c, self.d, self.e, self.f)
     }
 
-    fn from_native(ts: &cairo::Matrix) -> dom::Transform {
-        dom::Transform::new(ts.xx, ts.yx, ts.xy, ts.yy, ts.x0, ts.y0)
+    fn from_native(ts: &cairo::Matrix) -> Self {
+        Self::new(ts.xx, ts.yx, ts.xy, ts.yy, ts.x0, ts.y0)
     }
 }
 

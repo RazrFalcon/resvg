@@ -43,9 +43,9 @@ impl ConvTransform<qt::Transform> for dom::Transform {
         qt::Transform::new(self.a, self.b, self.c, self.d, self.e, self.f)
     }
 
-    fn from_native(ts: &qt::Transform) -> dom::Transform {
+    fn from_native(ts: &qt::Transform) -> Self {
         let d = ts.data();
-        dom::Transform::new(d.0, d.1, d.2, d.3, d.4, d.5)
+        Self::new(d.0, d.1, d.2, d.3, d.4, d.5)
     }
 }
 
