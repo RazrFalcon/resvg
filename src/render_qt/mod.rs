@@ -113,64 +113,75 @@ fn render_group(
 
         let bbox = match elem.kind {
             dom::ElementKind::Path(ref path) => {
-                path::draw(doc, path, p)
+                Some(path::draw(doc, path, p))
             }
             dom::ElementKind::Text(ref text) => {
-                text::draw(doc, text, p)
+                Some(text::draw(doc, text, p))
             }
             dom::ElementKind::Image(ref img) => {
-                image::draw(img, p)
+                Some(image::draw(img, p))
             }
             dom::ElementKind::Group(ref g) => {
-                let sub_img = qt::Image::new(
-                    img_size.w as u32,
-                    img_size.h as u32,
-                );
-
-                let mut sub_img = match sub_img {
-                    Some(img) => img,
-                    None => {
-                        warn!("Subimage creation failed.");
-                        continue;
-                    }
-                };
-
-                sub_img.fill(0, 0, 0, 0);
-                sub_img.set_dpi(doc.dpi);
-
-                let sub_p = qt::Painter::new(&sub_img);
-                sub_p.set_transform(&p.get_transform());
-                let bbox = render_group(doc, &g.children, &sub_p, &p.get_transform(), img_size);
-
-                if let Some(idx) = g.clip_path {
-                    if let dom::RefElementKind::ClipPath(ref cp) = doc.get_defs(idx).kind {
-                        clippath::apply(doc, cp, &sub_p, &bbox, img_size);
-                    }
-                }
-
-                sub_p.end();
-
-                if let Some(opacity) = g.opacity {
-                    p.set_opacity(opacity);
-                }
-
-                let curr_ts = p.get_transform();
-                p.set_transform(&qt::Transform::default());
-
-                p.draw_image(0.0, 0.0, &sub_img);
-
-                p.set_opacity(1.0);
-                p.set_transform(&curr_ts);
-
-                bbox
+                render_group_impl(doc, g, p, img_size)
             }
         };
 
-        g_bbox.expand_from_rect(&bbox);
+        if let Some(bbox) = bbox {
+            g_bbox.expand_from_rect(&bbox);
+        }
 
         // Revert transform.
         p.set_transform(ts);
     }
 
     g_bbox
+}
+
+fn render_group_impl(
+    doc: &dom::Document,
+    g: &dom::Group,
+    p: &qt::Painter,
+    img_size: Size,
+) -> Option<Rect> {
+    let sub_img = qt::Image::new(
+        img_size.w as u32,
+        img_size.h as u32,
+    );
+
+    let mut sub_img = match sub_img {
+        Some(img) => img,
+        None => {
+            warn!("Subimage creation failed.");
+            return None;
+        }
+    };
+
+    sub_img.fill(0, 0, 0, 0);
+    sub_img.set_dpi(doc.dpi);
+
+    let sub_p = qt::Painter::new(&sub_img);
+    sub_p.set_transform(&p.get_transform());
+    let bbox = render_group(doc, &g.children, &sub_p, &p.get_transform(), img_size);
+
+    if let Some(idx) = g.clip_path {
+        if let dom::RefElementKind::ClipPath(ref cp) = doc.get_defs(idx).kind {
+            clippath::apply(doc, cp, &sub_p, &bbox, img_size);
+        }
+    }
+
+    sub_p.end();
+
+    if let Some(opacity) = g.opacity {
+        p.set_opacity(opacity);
+    }
+
+    let curr_ts = p.get_transform();
+    p.set_transform(&qt::Transform::default());
+
+    p.draw_image(0.0, 0.0, &sub_img);
+
+    p.set_opacity(1.0);
+    p.set_transform(&curr_ts);
+
+    Some(bbox)
 }

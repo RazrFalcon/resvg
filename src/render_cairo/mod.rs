@@ -115,61 +115,72 @@ fn render_group(
 
         let bbox = match elem.kind {
             dom::ElementKind::Path(ref path) => {
-                path::draw(doc, path, cr)
+                Some(path::draw(doc, path, cr))
             }
             dom::ElementKind::Text(ref text) => {
-                text::draw(doc, text, cr)
+                Some(text::draw(doc, text, cr))
             }
             dom::ElementKind::Image(ref img) => {
-                image::draw(img, cr)
+                Some(image::draw(img, cr))
             }
             dom::ElementKind::Group(ref g) => {
-                let sub_surface = cairo::ImageSurface::create(
-                    cairo::Format::ARgb32,
-                    img_size.w as i32,
-                    img_size.h as i32
-                );
-
-                let sub_surface = match sub_surface {
-                    Ok(surf) => surf,
-                    Err(_) => {
-                        warn!("Subsurface creation failed.");
-                        continue;
-                    }
-                };
-
-                let sub_cr = cairo::Context::new(&sub_surface);
-                sub_cr.set_matrix(cr.get_matrix());
-
-                let bbox = render_group(doc, &g.children, &sub_cr, &cr.get_matrix(), img_size);
-
-                if let Some(idx) = g.clip_path {
-                    if let dom::RefElementKind::ClipPath(ref cp) = doc.get_defs(idx).kind {
-                        clippath::apply(doc, cp, &sub_cr, &bbox, img_size);
-                    }
-                }
-
-                let curr_matrix = cr.get_matrix();
-                cr.set_matrix(cairo::Matrix::identity());
-
-                cr.set_source_surface(&sub_surface, 0.0, 0.0);
-
-                if let Some(opacity) = g.opacity {
-                    cr.paint_with_alpha(opacity);
-                } else {
-                    cr.paint();
-                }
-
-                cr.set_matrix(curr_matrix);
-
-                bbox
+                render_group_impl(doc, g, cr, img_size)
             }
         };
 
-        g_bbox.expand_from_rect(&bbox);
+        if let Some(bbox) = bbox {
+            g_bbox.expand_from_rect(&bbox);
+        }
 
         cr.set_matrix(*matrix);
     }
 
     g_bbox
+}
+
+fn render_group_impl(
+    doc: &dom::Document,
+    g: &dom::Group,
+    cr: &cairo::Context,
+    img_size: Size,
+) -> Option<Rect> {
+    let sub_surface = cairo::ImageSurface::create(
+        cairo::Format::ARgb32,
+        img_size.w as i32,
+        img_size.h as i32
+    );
+
+    let sub_surface = match sub_surface {
+        Ok(surf) => surf,
+        Err(_) => {
+            warn!("Subsurface creation failed.");
+            return None;
+        }
+    };
+
+    let sub_cr = cairo::Context::new(&sub_surface);
+    sub_cr.set_matrix(cr.get_matrix());
+
+    let bbox = render_group(doc, &g.children, &sub_cr, &cr.get_matrix(), img_size);
+
+    if let Some(idx) = g.clip_path {
+        if let dom::RefElementKind::ClipPath(ref cp) = doc.get_defs(idx).kind {
+            clippath::apply(doc, cp, &sub_cr, &bbox, img_size);
+        }
+    }
+
+    let curr_matrix = cr.get_matrix();
+    cr.set_matrix(cairo::Matrix::identity());
+
+    cr.set_source_surface(&sub_surface, 0.0, 0.0);
+
+    if let Some(opacity) = g.opacity {
+        cr.paint_with_alpha(opacity);
+    } else {
+        cr.paint();
+    }
+
+    cr.set_matrix(curr_matrix);
+
+    Some(bbox)
 }
