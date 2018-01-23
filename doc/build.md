@@ -21,6 +21,7 @@ Also, you can build *libresvg* without any backends if you what too.
 ### Qt backend
 
 Qt backend requires only `QtCore` and `QtGui` libraries.
+And the JPEG image format plugin (eg. `plugins/imageformats/libqjpeg.so`).
 
 Technically, any Qt 5 version should work, but we support only Qt >= 5.6.
 
