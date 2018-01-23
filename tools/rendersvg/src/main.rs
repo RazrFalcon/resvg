@@ -9,9 +9,11 @@ extern crate derive_error;
 extern crate resvg;
 extern crate fern;
 
+
 use std::str::FromStr;
 use std::fs;
 use std::fmt;
+use std::path;
 use std::io::{
     self,
     Write,
@@ -29,6 +31,7 @@ use resvg::cairo;
 use resvg::{
     log,
     svgdom,
+    Backend,
     Document,
     FitTo,
     Options,
@@ -39,6 +42,15 @@ use svgdom::{
     WriteBuffer,
 };
 
+
+struct Args {
+    in_svg: path::PathBuf,
+    out_png: path::PathBuf,
+    dump: Option<path::PathBuf>,
+    pretend: bool,
+    backend: Backend,
+}
+
 #[derive(Debug, Error)]
 enum Error {
     Resvg(resvg::Error),
@@ -47,6 +59,7 @@ enum Error {
     #[cfg(feature = "cairo-backend")]
     Cairo(cairo::IoError),
 }
+
 
 fn main() {
     #[cfg(all(not(feature = "cairo-backend"), not(feature = "qt-backend")))]
@@ -75,6 +88,37 @@ fn process() -> Result<(), Error> {
         .chain(std::io::stderr())
         .apply().unwrap();
 
+    let (args, opt) = parse_args();
+
+    // load file
+    let doc = resvg::parse_doc_from_file(args.in_svg, &opt)?;
+
+    if let Some(ref dump_path) = args.dump {
+        dump_svg(&doc, dump_path)?;
+    }
+
+    if args.pretend {
+        return Ok(());
+    }
+
+    match args.backend {
+        #[cfg(feature = "cairo-backend")]
+        Backend::Cairo => {
+            let img = resvg::render_cairo::render_to_image(&doc, &opt)?;
+            let mut buffer = fs::File::create(args.out_png)?;
+            img.write_to_png(&mut buffer)?;
+        }
+        #[cfg(feature = "qt-backend")]
+        Backend::Qt => {
+            let img = resvg::render_qt::render_to_image(&doc, &opt)?;
+            img.save(args.out_png.to_str().unwrap());
+        }
+    }
+
+    Ok(())
+}
+
+fn parse_args() -> (Args, Options) {
     let app = prepare_app();
     let args = match app.get_matches_safe() {
         Ok(a) => a,
@@ -87,42 +131,7 @@ fn process() -> Result<(), Error> {
         }
     };
 
-    let opt = fill_options(&args);
-
-    let in_file  = args.value_of("in-svg").unwrap();
-    let out_file = args.value_of("out-png").unwrap();
-
-    // load file
-    let doc = resvg::parse_doc_from_file(in_file, &opt)?;
-
-    if args.is_present("dump-svg") {
-        dump_svg(&doc, args.value_of("dump-svg").unwrap())?;
-    }
-
-    if args.is_present("pretend") {
-        return Ok(());
-    }
-
-    match args.value_of("backend").unwrap() {
-        "cairo" => {
-            #[cfg(feature = "cairo-backend")]
-            {
-                let img = resvg::render_cairo::render_to_image(&doc, &opt)?;
-                let mut buffer = fs::File::create(out_file)?;
-                img.write_to_png(&mut buffer)?;
-            }
-        }
-        "qt" => {
-            #[cfg(feature = "qt-backend")]
-            {
-                let img = resvg::render_qt::render_to_image(&doc, &opt)?;
-                img.save(out_file);
-            }
-        }
-        _ => unreachable!(),
-    }
-
-    Ok(())
+    (fill_args(&args), fill_options(&args))
 }
 
 fn prepare_app<'a, 'b>() -> App<'a, 'b> {
@@ -172,7 +181,7 @@ fn prepare_app<'a, 'b>() -> App<'a, 'b> {
             .validator(is_color))
         .arg(Arg::with_name("backend")
             .long("backend")
-            .help("Sets the rendering backend")
+            .help("Sets the rendering backend.\nHas no effect if built with only one backend")
             .takes_value(true)
             .default_value(default_backend())
             .possible_values(&backends()))
@@ -279,6 +288,33 @@ fn is_color(val: String) -> Result<(), String> {
     }
 }
 
+fn fill_args(args: &ArgMatches) -> Args {
+    let in_svg  = args.value_of("in-svg").unwrap().into();
+    let out_png = args.value_of("out-png").unwrap().into();
+
+    let dump = if args.is_present("dump-svg") {
+        Some(args.value_of("dump-svg").unwrap().into())
+    } else {
+        None
+    };
+
+    let backend = match args.value_of("backend").unwrap() {
+        #[cfg(feature = "cairo-backend")]
+        "cairo" => Backend::Cairo,
+        #[cfg(feature = "qt-backend")]
+        "qt" => Backend::Qt,
+        _ => unreachable!(),
+    };
+
+    Args {
+        in_svg,
+        out_png,
+        dump,
+        pretend: args.is_present("dump-svg"),
+        backend,
+    }
+}
+
 fn fill_options(args: &ArgMatches) -> Options {
     let mut fit_to = FitTo::Original;
     if args.is_present("width") {
@@ -303,7 +339,7 @@ fn fill_options(args: &ArgMatches) -> Options {
     }
 }
 
-fn dump_svg(doc: &Document, path: &str) -> Result<(), io::Error> {
+fn dump_svg(doc: &Document, path: &path::Path) -> Result<(), io::Error> {
     let mut f = fs::File::create(path)?;
 
     let opt = svgdom::WriteOptions {

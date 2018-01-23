@@ -84,6 +84,18 @@ use preproc::{
 };
 
 
+/// A list of supported backends.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum Backend {
+    /// [Cairo](https://cairographics.org/) backend.
+    #[cfg(feature = "cairo-backend")]
+    Cairo,
+    /// [Qt](https://www.qt.io/) backend.
+    #[cfg(feature = "qt-backend")]
+    Qt,
+}
+
+
 /// Creates `Document` from SVG data.
 pub fn parse_doc_from_data(text: &str, opt: &Options) -> Result<dom::Document> {
     let mut doc = parse_svg(text)?;
