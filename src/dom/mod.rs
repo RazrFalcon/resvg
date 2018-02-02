@@ -36,8 +36,6 @@ pub struct Document {
     /// Has the same value as `Options::dpi`. Used for text rendering.
     pub dpi: f64,
     /// List of all referenced elements.
-    ///
-    /// Currently, can contain only `linearGradient` and `radialGradient`.
     pub defs: Vec<RefElement>,
     /// List of all elements.
     ///
