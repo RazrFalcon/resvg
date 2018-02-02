@@ -310,7 +310,7 @@ fn fill_args(args: &ArgMatches) -> Args {
         in_svg,
         out_png,
         dump,
-        pretend: args.is_present("dump-svg"),
+        pretend: args.is_present("pretend"),
         backend,
     }
 }
