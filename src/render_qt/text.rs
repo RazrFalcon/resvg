@@ -6,7 +6,7 @@ use std::f64;
 
 use qt;
 
-use dom;
+use tree;
 use render_utils;
 use math::{
     Rect,
@@ -19,8 +19,8 @@ use super::{
 
 
 pub fn draw(
-    doc: &dom::Document,
-    node: dom::NodeRef,
+    doc: &tree::RenderTree,
+    node: tree::NodeRef,
     p: &qt::Painter,
 ) -> Rect {
     draw_tspan(node, p,
@@ -28,11 +28,11 @@ pub fn draw(
 }
 
 pub fn draw_tspan<DrawAt>(
-    node: dom::NodeRef,
+    node: tree::NodeRef,
     p: &qt::Painter,
     mut draw_at: DrawAt
 ) -> Rect
-    where DrawAt: FnMut(&dom::TSpan, f64, f64, f64, &qt::Font)
+    where DrawAt: FnMut(&tree::TSpan, f64, f64, f64, &qt::Font)
 {
     let mut bbox = Rect::new(f64::MAX, f64::MAX, 0.0, 0.0);
     let mut font_list = Vec::new();
@@ -67,8 +67,8 @@ pub fn draw_tspan<DrawAt>(
 }
 
 fn _draw_tspan(
-    doc: &dom::Document,
-    tspan: &dom::TSpan,
+    doc: &tree::RenderTree,
+    tspan: &tree::TSpan,
     x: f64,
     mut y: f64,
     width: f64,
@@ -121,51 +121,51 @@ fn _draw_tspan(
     }
 }
 
-pub fn init_font(dom_font: &dom::Font) -> qt::Font {
+pub fn init_font(dom_font: &tree::Font) -> qt::Font {
     let mut font = qt::Font::new();
 
     font.set_family(&dom_font.family);
 
     let font_style = match dom_font.style {
-        dom::FontStyle::Normal => qt::FontStyle::StyleNormal,
-        dom::FontStyle::Italic => qt::FontStyle::StyleItalic,
-        dom::FontStyle::Oblique => qt::FontStyle::StyleOblique,
+        tree::FontStyle::Normal => qt::FontStyle::StyleNormal,
+        tree::FontStyle::Italic => qt::FontStyle::StyleItalic,
+        tree::FontStyle::Oblique => qt::FontStyle::StyleOblique,
     };
     font.set_style(font_style);
 
-    if dom_font.variant == dom::FontVariant::SmallCaps {
+    if dom_font.variant == tree::FontVariant::SmallCaps {
         font.set_small_caps(true);
     }
 
     let font_weight = match dom_font.weight {
-        dom::FontWeight::W100       => qt::FontWeight::Thin,
-        dom::FontWeight::W200       => qt::FontWeight::ExtraLight,
-        dom::FontWeight::W300       => qt::FontWeight::Light,
-        dom::FontWeight::W400       => qt::FontWeight::Normal,
-        dom::FontWeight::W500       => qt::FontWeight::Medium,
-        dom::FontWeight::W600       => qt::FontWeight::DemiBold,
-        dom::FontWeight::W700       => qt::FontWeight::Bold,
-        dom::FontWeight::W800       => qt::FontWeight::ExtraBold,
-        dom::FontWeight::W900       => qt::FontWeight::Black,
-        dom::FontWeight::Normal     => qt::FontWeight::Normal,
-        dom::FontWeight::Bold       => qt::FontWeight::Bold,
-        dom::FontWeight::Bolder     => qt::FontWeight::ExtraBold,
-        dom::FontWeight::Lighter    => qt::FontWeight::Light,
+        tree::FontWeight::W100       => qt::FontWeight::Thin,
+        tree::FontWeight::W200       => qt::FontWeight::ExtraLight,
+        tree::FontWeight::W300       => qt::FontWeight::Light,
+        tree::FontWeight::W400       => qt::FontWeight::Normal,
+        tree::FontWeight::W500       => qt::FontWeight::Medium,
+        tree::FontWeight::W600       => qt::FontWeight::DemiBold,
+        tree::FontWeight::W700       => qt::FontWeight::Bold,
+        tree::FontWeight::W800       => qt::FontWeight::ExtraBold,
+        tree::FontWeight::W900       => qt::FontWeight::Black,
+        tree::FontWeight::Normal     => qt::FontWeight::Normal,
+        tree::FontWeight::Bold       => qt::FontWeight::Bold,
+        tree::FontWeight::Bolder     => qt::FontWeight::ExtraBold,
+        tree::FontWeight::Lighter    => qt::FontWeight::Light,
     };
     font.set_weight(font_weight);
 
     let font_stretch = match dom_font.stretch {
-        dom::FontStretch::Normal         => qt::FontStretch::Unstretched,
-        dom::FontStretch::Narrower |
-        dom::FontStretch::Condensed      => qt::FontStretch::Condensed,
-        dom::FontStretch::UltraCondensed => qt::FontStretch::UltraCondensed,
-        dom::FontStretch::ExtraCondensed => qt::FontStretch::ExtraCondensed,
-        dom::FontStretch::SemiCondensed  => qt::FontStretch::SemiCondensed,
-        dom::FontStretch::SemiExpanded   => qt::FontStretch::SemiExpanded,
-        dom::FontStretch::Wider |
-        dom::FontStretch::Expanded       => qt::FontStretch::Expanded,
-        dom::FontStretch::ExtraExpanded  => qt::FontStretch::ExtraExpanded,
-        dom::FontStretch::UltraExpanded  => qt::FontStretch::UltraExpanded,
+        tree::FontStretch::Normal         => qt::FontStretch::Unstretched,
+        tree::FontStretch::Narrower |
+        tree::FontStretch::Condensed      => qt::FontStretch::Condensed,
+        tree::FontStretch::UltraCondensed => qt::FontStretch::UltraCondensed,
+        tree::FontStretch::ExtraCondensed => qt::FontStretch::ExtraCondensed,
+        tree::FontStretch::SemiCondensed  => qt::FontStretch::SemiCondensed,
+        tree::FontStretch::SemiExpanded   => qt::FontStretch::SemiExpanded,
+        tree::FontStretch::Wider |
+        tree::FontStretch::Expanded       => qt::FontStretch::Expanded,
+        tree::FontStretch::ExtraExpanded  => qt::FontStretch::ExtraExpanded,
+        tree::FontStretch::UltraExpanded  => qt::FontStretch::UltraExpanded,
     };
     font.set_stretch(font_stretch);
 
@@ -175,9 +175,9 @@ pub fn init_font(dom_font: &dom::Font) -> qt::Font {
 }
 
 fn draw_line(
-    doc: &dom::Document,
-    fill: &Option<dom::Fill>,
-    stroke: &Option<dom::Stroke>,
+    doc: &tree::RenderTree,
+    fill: &Option<tree::Fill>,
+    stroke: &Option<tree::Stroke>,
     line_bbox: Rect,
     p: &qt::Painter,
 ) {

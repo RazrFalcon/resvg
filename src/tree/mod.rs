@@ -27,14 +27,14 @@ struct NodeData {
 ///
 /// Unlike svgdom's `Document` this one is immutable for a backend code
 /// and contains only supported, resolved elements and attributes.
-pub struct Document {
+pub struct RenderTree {
     nodes: Vec<NodeData>,
 }
 
-impl Document {
-    /// Creates a new `Document`.
+impl RenderTree {
+    /// Creates a new `RenderTree`.
     pub fn new(svg: Svg) -> Self {
-        let mut doc = Document {
+        let mut doc = RenderTree {
             nodes: Vec::new(),
         };
 
@@ -109,7 +109,7 @@ impl Document {
     }
 }
 
-impl fmt::Debug for Document {
+impl fmt::Debug for RenderTree {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "Document start")?;
         for node in &self.nodes {

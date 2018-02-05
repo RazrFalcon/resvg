@@ -28,7 +28,7 @@ use resvg::cairo;
 
 
 #[repr(C)]
-pub struct resvg_document(resvg::dom::Document);
+pub struct resvg_document(resvg::tree::RenderTree);
 
 macro_rules! on_err {
     ($err:expr, $msg:expr) => ({

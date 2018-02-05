@@ -7,7 +7,7 @@ use svgdom::{
     FuzzyEq,
 };
 
-use dom;
+use tree;
 
 use short::{
     AId,
@@ -30,7 +30,7 @@ use {
 pub fn convert(
     node: &svgdom::Node,
     opt: &Options,
-    doc: &mut dom::Document,
+    doc: &mut tree::RenderTree,
 ) {
     let ref attrs = node.attributes();
 
@@ -38,7 +38,7 @@ pub fn convert(
     debug_assert!(!rect.w.is_fuzzy_zero());
     debug_assert!(!rect.h.is_fuzzy_zero());
 
-    doc.append_node(dom::DEFS_DEPTH, dom::NodeKind::Pattern(dom::Pattern {
+    doc.append_node(tree::DEFS_DEPTH, tree::NodeKind::Pattern(tree::Pattern {
         id: node.id().clone(),
         units: super::convert_element_units(&attrs, AId::PatternUnits),
         content_units: super::convert_element_units(&attrs, AId::PatternContentUnits),
@@ -47,7 +47,7 @@ pub fn convert(
         view_box: node.get_viewbox().ok(),
     }));
 
-    super::convert_nodes(node, opt, dom::DEFS_DEPTH + 1, doc);
+    super::convert_nodes(node, opt, tree::DEFS_DEPTH + 1, doc);
 }
 
 pub fn convert_rect(attrs: &svgdom::Attributes) -> Rect {

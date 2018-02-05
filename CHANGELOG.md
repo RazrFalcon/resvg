@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Partial `clipPath` support.
 
 ### Changed
+- `dom` -> `tree`.
+- `dom::Document` -> `tree::RenderTree`.
+- New render tree implementation.
 - The `render_to_canvas` methods don't reset the global transform now.
 
 ### Fixed

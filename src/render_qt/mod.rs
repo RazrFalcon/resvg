@@ -8,7 +8,7 @@ use std::f64;
 
 use qt;
 
-use dom;
+use tree;
 
 use {
     ErrorKind,
@@ -38,7 +38,7 @@ mod stroke;
 mod text;
 
 
-impl ConvTransform<qt::Transform> for dom::Transform {
+impl ConvTransform<qt::Transform> for tree::Transform {
     fn to_native(&self) -> qt::Transform {
         qt::Transform::new(self.a, self.b, self.c, self.d, self.e, self.f)
     }
@@ -51,7 +51,7 @@ impl ConvTransform<qt::Transform> for dom::Transform {
 
 
 /// Renders SVG to image.
-pub fn render_to_image(doc: &dom::Document, opt: &Options) -> Result<qt::Image> {
+pub fn render_to_image(doc: &tree::RenderTree, opt: &Options) -> Result<qt::Image> {
     let _app = qt::GuiApp::new("resvg");
 
     let svg = doc.svg_node();
@@ -88,7 +88,7 @@ pub fn render_to_image(doc: &dom::Document, opt: &Options) -> Result<qt::Image> 
 }
 
 /// Renders SVG to canvas.
-pub fn render_to_canvas(painter: &qt::Painter, img_view: Rect, doc: &dom::Document) {
+pub fn render_to_canvas(painter: &qt::Painter, img_view: Rect, doc: &tree::RenderTree) {
     let svg = doc.svg_node();
 
     // Apply viewBox.
@@ -104,8 +104,8 @@ pub fn render_to_canvas(painter: &qt::Painter, img_view: Rect, doc: &dom::Docume
 // TODO: render groups backward to reduce memory usage
 //       current implementation keeps parent canvas until all children are rendered
 fn render_group(
-    doc: &dom::Document,
-    node: dom::NodeRef,
+    doc: &tree::RenderTree,
+    node: tree::NodeRef,
     p: &qt::Painter,
     ts: &qt::Transform,
     img_size: Size,
@@ -116,16 +116,16 @@ fn render_group(
         p.apply_transform(&node.kind().transform().to_native());
 
         let bbox = match node.kind() {
-            dom::NodeKindRef::Path(ref path) => {
+            tree::NodeKindRef::Path(ref path) => {
                 Some(path::draw(doc, path, p))
             }
-            dom::NodeKindRef::Text(_) => {
+            tree::NodeKindRef::Text(_) => {
                 Some(text::draw(doc, node, p))
             }
-            dom::NodeKindRef::Image(ref img) => {
+            tree::NodeKindRef::Image(ref img) => {
                 Some(image::draw(img, p))
             }
-            dom::NodeKindRef::Group(ref g) => {
+            tree::NodeKindRef::Group(ref g) => {
                 render_group_impl(doc, node, g, p, img_size)
             }
         };
@@ -142,9 +142,9 @@ fn render_group(
 }
 
 fn render_group_impl(
-    doc: &dom::Document,
-    node: dom::NodeRef,
-    g: &dom::Group,
+    doc: &tree::RenderTree,
+    node: tree::NodeRef,
+    g: &tree::Group,
     p: &qt::Painter,
     img_size: Size,
 ) -> Option<Rect> {
@@ -170,7 +170,7 @@ fn render_group_impl(
 
     if let Some(idx) = g.clip_path {
         let clip_node = doc.defs_at(idx);
-        if let dom::DefsNodeKindRef::ClipPath(ref cp) = clip_node.kind() {
+        if let tree::DefsNodeKindRef::ClipPath(ref cp) = clip_node.kind() {
             clippath::apply(doc, clip_node, cp, &sub_p, &bbox, img_size);
         }
     }

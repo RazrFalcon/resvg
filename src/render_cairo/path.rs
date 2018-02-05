@@ -4,7 +4,7 @@
 
 use cairo;
 
-use dom;
+use tree;
 
 use math::{
     Rect,
@@ -16,7 +16,7 @@ use super::{
 };
 
 
-pub fn draw(doc: &dom::Document, elem: &dom::Path, cr: &cairo::Context) -> Rect {
+pub fn draw(doc: &tree::RenderTree, elem: &tree::Path, cr: &cairo::Context) -> Rect {
     init_path(&elem.d, cr);
 
     let bbox = {
@@ -49,20 +49,20 @@ pub fn draw(doc: &dom::Document, elem: &dom::Path, cr: &cairo::Context) -> Rect 
     bbox
 }
 
-pub fn init_path(list: &[dom::PathSegment], cr: &cairo::Context) {
+pub fn init_path(list: &[tree::PathSegment], cr: &cairo::Context) {
     for seg in list {
         match *seg {
-            dom::PathSegment::MoveTo { x, y } => {
+            tree::PathSegment::MoveTo { x, y } => {
                 cr.new_sub_path();
                 cr.move_to(x, y);
             }
-            dom::PathSegment::LineTo { x, y } => {
+            tree::PathSegment::LineTo { x, y } => {
                 cr.line_to(x, y);
             }
-            dom::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+            tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
                 cr.curve_to(x1, y1, x2, y2, x, y);
             }
-            dom::PathSegment::ClosePath => {
+            tree::PathSegment::ClosePath => {
                 cr.close_path();
             }
         }

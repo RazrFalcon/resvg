@@ -11,7 +11,7 @@ use cairo::{
     MatrixTrait,
 };
 
-use dom;
+use tree;
 
 use math::{
     Size,
@@ -46,7 +46,7 @@ mod stroke;
 mod text;
 
 
-impl ConvTransform<cairo::Matrix> for dom::Transform {
+impl ConvTransform<cairo::Matrix> for tree::Transform {
     fn to_native(&self) -> cairo::Matrix {
         cairo::Matrix::new(self.a, self.b, self.c, self.d, self.e, self.f)
     }
@@ -58,7 +58,7 @@ impl ConvTransform<cairo::Matrix> for dom::Transform {
 
 
 /// Renders SVG to image.
-pub fn render_to_image(doc: &dom::Document, opt: &Options) -> Result<cairo::ImageSurface> {
+pub fn render_to_image(doc: &tree::RenderTree, opt: &Options) -> Result<cairo::ImageSurface> {
     let img_size = render_utils::fit_to(&doc.svg_node().size, opt.fit_to);
 
     debug_assert!(img_size.w as i32 > 0 && img_size.h as i32 > 0);
@@ -91,7 +91,7 @@ pub fn render_to_image(doc: &dom::Document, opt: &Options) -> Result<cairo::Imag
 }
 
 /// Renders SVG to canvas.
-pub fn render_to_canvas(cr: &cairo::Context, img_view: Rect, doc: &dom::Document) {
+pub fn render_to_canvas(cr: &cairo::Context, img_view: Rect, doc: &tree::RenderTree) {
     // Apply viewBox.
     let ts = {
         let (dx, dy, sx, sy) = render_utils::view_box_transform(&doc.svg_node().view_box, &img_view);
@@ -103,8 +103,8 @@ pub fn render_to_canvas(cr: &cairo::Context, img_view: Rect, doc: &dom::Document
 }
 
 fn render_group(
-    doc: &dom::Document,
-    node: dom::NodeRef,
+    doc: &tree::RenderTree,
+    node: tree::NodeRef,
     cr: &cairo::Context,
     matrix: &cairo::Matrix,
     img_size: Size,
@@ -114,16 +114,16 @@ fn render_group(
         cr.transform(node.kind().transform().to_native());
 
         let bbox = match node.kind() {
-            dom::NodeKindRef::Path(ref path) => {
+            tree::NodeKindRef::Path(ref path) => {
                 Some(path::draw(doc, path, cr))
             }
-            dom::NodeKindRef::Text(_) => {
+            tree::NodeKindRef::Text(_) => {
                 Some(text::draw(doc, node, cr))
             }
-            dom::NodeKindRef::Image(ref img) => {
+            tree::NodeKindRef::Image(ref img) => {
                 Some(image::draw(img, cr))
             }
-            dom::NodeKindRef::Group(ref g) => {
+            tree::NodeKindRef::Group(ref g) => {
                 render_group_impl(doc, node, g, cr, img_size)
             }
         };
@@ -139,9 +139,9 @@ fn render_group(
 }
 
 fn render_group_impl(
-    doc: &dom::Document,
-    node: dom::NodeRef,
-    g: &dom::Group,
+    doc: &tree::RenderTree,
+    node: tree::NodeRef,
+    g: &tree::Group,
     cr: &cairo::Context,
     img_size: Size,
 ) -> Option<Rect> {
@@ -166,7 +166,7 @@ fn render_group_impl(
 
     if let Some(idx) = g.clip_path {
         let clip_node = doc.defs_at(idx);
-        if let dom::DefsNodeKindRef::ClipPath(ref cp) = clip_node.kind() {
+        if let tree::DefsNodeKindRef::ClipPath(ref cp) = clip_node.kind() {
             clippath::apply(doc, clip_node, cp, &sub_cr, &bbox, img_size);
         }
     }

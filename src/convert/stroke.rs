@@ -9,7 +9,7 @@ use svgdom::{
     NumberList,
 };
 
-use dom;
+use tree;
 
 use short::{
     AId,
@@ -23,9 +23,9 @@ use traits::{
 
 
 pub fn convert(
-    doc: &dom::Document,
+    doc: &tree::RenderTree,
     attrs: &svgdom::Attributes,
-) -> Option<dom::Stroke> {
+) -> Option<tree::Stroke> {
     let dashoffset  = attrs.get_number(AId::StrokeDashoffset).unwrap_or(0.0);
     let miterlimit  = attrs.get_number(AId::StrokeMiterlimit).unwrap_or(4.0);
     let opacity     = attrs.get_number(AId::StrokeOpacity).unwrap_or(1.0);
@@ -34,13 +34,13 @@ pub fn convert(
     let paint = if let Some(stroke) = attrs.get_type(AId::Stroke) {
         match *stroke {
             AValue::Color(c) => {
-                dom::Paint::Color(c)
+                tree::Paint::Color(c)
             }
             AValue::FuncLink(ref link) => {
                 let mut p = None;
                 if link.is_gradient() || link.is_tag_name(EId::Pattern) {
                     if let Some(idx) = doc.defs_index(&link.id()) {
-                        p = Some(dom::Paint::Link(idx));
+                        p = Some(tree::Paint::Link(idx));
                     }
                 }
 
@@ -66,23 +66,23 @@ pub fn convert(
 
     let linecap = attrs.get_predef(AId::StrokeLinecap).unwrap_or(svgdom::ValueId::Butt);
     let linecap = match linecap {
-        svgdom::ValueId::Butt => dom::LineCap::Butt,
-        svgdom::ValueId::Round => dom::LineCap::Round,
-        svgdom::ValueId::Square => dom::LineCap::Square,
-        _ => dom::LineCap::Butt,
+        svgdom::ValueId::Butt => tree::LineCap::Butt,
+        svgdom::ValueId::Round => tree::LineCap::Round,
+        svgdom::ValueId::Square => tree::LineCap::Square,
+        _ => tree::LineCap::Butt,
     };
 
     let linejoin = attrs.get_predef(AId::StrokeLinejoin).unwrap_or(svgdom::ValueId::Miter);
     let linejoin = match linejoin {
-        svgdom::ValueId::Miter => dom::LineJoin::Miter,
-        svgdom::ValueId::Round => dom::LineJoin::Round,
-        svgdom::ValueId::Bevel => dom::LineJoin::Bevel,
-        _ => dom::LineJoin::Miter,
+        svgdom::ValueId::Miter => tree::LineJoin::Miter,
+        svgdom::ValueId::Round => tree::LineJoin::Round,
+        svgdom::ValueId::Bevel => tree::LineJoin::Bevel,
+        _ => tree::LineJoin::Miter,
     };
 
     let dasharray = conv_dasharray(attrs.get_value(AId::StrokeDasharray));
 
-    let stroke = dom::Stroke {
+    let stroke = tree::Stroke {
         paint,
         dasharray,
         dashoffset,

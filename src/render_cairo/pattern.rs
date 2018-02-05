@@ -8,7 +8,7 @@ use cairo::{
     Pattern,
 };
 
-use dom;
+use tree;
 use math::{
     Size,
     Rect,
@@ -22,15 +22,15 @@ use render_utils;
 
 
 pub fn apply(
-    doc: &dom::Document,
-    node: dom::DefsNodeRef,
-    pattern: &dom::Pattern,
+    doc: &tree::RenderTree,
+    node: tree::DefsNodeRef,
+    pattern: &tree::Pattern,
     bbox: &Rect,
     cr: &cairo::Context,
 ) {
-    let r = if pattern.units == dom::Units::ObjectBoundingBox {
+    let r = if pattern.units == tree::Units::ObjectBoundingBox {
         let mut pr = pattern.rect;
-        let ts = dom::Transform::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y);
+        let ts = tree::Transform::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y);
         ts.apply_ref(&mut pr.x, &mut pr.y);
         ts.apply_ref(&mut pr.w, &mut pr.h);
         pr
@@ -38,7 +38,7 @@ pub fn apply(
         pattern.rect
     };
 
-    let global_ts = dom::Transform::from_native(&cr.get_matrix());
+    let global_ts = tree::Transform::from_native(&cr.get_matrix());
     let (sx, sy) = global_ts.get_scale();
 
     let img_size = Size::new(r.w * sx, r.h * sy);
@@ -64,13 +64,13 @@ pub fn apply(
         let (dx, dy, sx2, sy2) = render_utils::view_box_transform(&vbox, &img_view);
         sub_cr.transform(cairo::Matrix::new(sx2, 0.0, 0.0, sy2, dx, dy));
     }
-    if pattern.content_units == dom::Units::ObjectBoundingBox {
+    if pattern.content_units == tree::Units::ObjectBoundingBox {
         sub_cr.transform(cairo::Matrix::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y));
     }
 
     super::render_group(doc, node.to_node_ref(), &sub_cr, &sub_cr.get_matrix(), img_size);
 
-    let mut ts = dom::Transform::default();
+    let mut ts = tree::Transform::default();
     ts.append(&pattern.transform);
     ts.translate(r.x, r.y);
     ts.scale(1.0 / sx, 1.0 / sy);

@@ -5,18 +5,18 @@
 use cairo;
 use image;
 
-use dom;
+use tree;
 use math::{
     Rect,
 };
 
 
 pub fn draw(
-    image: &dom::Image,
+    image: &tree::Image,
     cr: &cairo::Context,
 ) -> Rect {
     let img = match image.data {
-        dom::ImageData::Path(ref path) => {
+        tree::ImageData::Path(ref path) => {
             match image::open(path) {
                 Ok(v) => v,
                 Err(_) => {
@@ -25,7 +25,7 @@ pub fn draw(
                 }
             }
         }
-        dom::ImageData::Raw(ref data, _) => {
+        tree::ImageData::Raw(ref data, _) => {
             match image::load_from_memory(data) {
                 Ok(v) => v,
                 Err(_) => {

@@ -4,7 +4,7 @@
 
 use svgdom;
 
-use dom;
+use tree;
 
 use short::{
     AId,
@@ -24,11 +24,11 @@ use super::{
 
 pub fn convert(
     node: &svgdom::Node,
-    doc: &mut dom::Document,
+    doc: &mut tree::RenderTree,
 ) {
     let attrs = node.attributes();
 
-    let idx = doc.append_node(dom::DEFS_DEPTH, dom::NodeKind::ClipPath(dom::ClipPath {
+    let idx = doc.append_node(tree::DEFS_DEPTH, tree::NodeKind::ClipPath(tree::ClipPath {
         id: node.id().clone(),
         units: super::convert_element_units(&attrs, AId::ClipPathUnits),
         transform: attrs.get_transform(AId::Transform).unwrap_or_default(),
@@ -44,9 +44,9 @@ pub fn convert(
 
 fn convert_children(
     node: &svgdom::Node,
-    doc: &mut dom::Document,
+    doc: &mut tree::RenderTree,
 ) {
-    let depth = dom::DEFS_DEPTH + 1;
+    let depth = tree::DEFS_DEPTH + 1;
 
     for (id, node) in node.children().svg() {
         match id {

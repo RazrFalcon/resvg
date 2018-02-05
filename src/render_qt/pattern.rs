@@ -4,7 +4,7 @@
 
 use qt;
 
-use dom;
+use tree;
 use math::{
     Size,
     Rect,
@@ -18,16 +18,16 @@ use render_utils;
 
 
 pub fn apply(
-    doc: &dom::Document,
+    doc: &tree::RenderTree,
     global_ts: qt::Transform,
     bbox: &Rect,
-    pattern_node: dom::DefsNodeRef,
-    pattern: &dom::Pattern,
+    pattern_node: tree::DefsNodeRef,
+    pattern: &tree::Pattern,
     brush: &mut qt::Brush,
 ) {
-    let r = if pattern.units == dom::Units::ObjectBoundingBox {
+    let r = if pattern.units == tree::Units::ObjectBoundingBox {
         let mut pr = pattern.rect;
-        let ts = dom::Transform::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y);
+        let ts = tree::Transform::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y);
         ts.apply_ref(&mut pr.x, &mut pr.y);
         ts.apply_ref(&mut pr.w, &mut pr.h);
         pr
@@ -35,7 +35,7 @@ pub fn apply(
         pattern.rect
     };
 
-    let global_ts = dom::Transform::from_native(&global_ts);
+    let global_ts = tree::Transform::from_native(&global_ts);
     let (sx, sy) = global_ts.get_scale();
 
     let img_size = Size::new(r.w * sx, r.h * sy);
@@ -60,7 +60,7 @@ pub fn apply(
         let (dx, dy, sx2, sy2) = render_utils::view_box_transform(&vbox, &img_view);
         p.apply_transform(&qt::Transform::new(sx2, 0.0, 0.0, sy2, dx, dy));
     }
-    if pattern.content_units == dom::Units::ObjectBoundingBox {
+    if pattern.content_units == tree::Units::ObjectBoundingBox {
         p.apply_transform(&qt::Transform::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y));
     }
 
@@ -69,7 +69,7 @@ pub fn apply(
 
     brush.set_pattern(img);
 
-    let mut ts = dom::Transform::default();
+    let mut ts = tree::Transform::default();
     ts.append(&pattern.transform);
     ts.translate(r.x, r.y);
     ts.scale(1.0 / sx, 1.0 / sy);

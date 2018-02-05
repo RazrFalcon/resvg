@@ -5,7 +5,7 @@
 use std::f64;
 
 use svgdom;
-use dom;
+use tree;
 
 use svgdom::path::*;
 use svgdom::{
@@ -34,7 +34,7 @@ pub fn convert(
     node: &svgdom::Node,
     d: Path,
     depth: usize,
-    doc: &mut dom::Document,
+    doc: &mut tree::RenderTree,
 ) {
     let attrs = node.attributes();
 
@@ -43,7 +43,7 @@ pub fn convert(
     let d = convert_path(d);
     let transform = attrs.get_transform(AId::Transform).unwrap_or_default();
 
-    doc.append_node(depth, dom::NodeKind::Path(dom::Path {
+    doc.append_node(depth, tree::NodeKind::Path(tree::Path {
         id: node.id().clone(),
         transform,
         fill,
@@ -52,7 +52,7 @@ pub fn convert(
     }));
 }
 
-fn convert_path(mut path: Path) -> Vec<dom::PathSegment> {
+fn convert_path(mut path: Path) -> Vec<tree::PathSegment> {
     let mut new_path = Vec::with_capacity(path.d.len());
 
     path.conv_to_absolute();
@@ -72,19 +72,19 @@ fn convert_path(mut path: Path) -> Vec<dom::PathSegment> {
     for seg in path.d.iter() {
         match *seg.data() {
             SegmentData::MoveTo { x, y } => {
-                new_path.push(dom::PathSegment::MoveTo { x, y });
+                new_path.push(tree::PathSegment::MoveTo { x, y });
             }
             SegmentData::LineTo { x, y } => {
-                new_path.push(dom::PathSegment::LineTo { x, y });
+                new_path.push(tree::PathSegment::LineTo { x, y });
             }
             SegmentData::HorizontalLineTo { x } => {
-                new_path.push(dom::PathSegment::LineTo { x, y: py });
+                new_path.push(tree::PathSegment::LineTo { x, y: py });
             }
             SegmentData::VerticalLineTo { y } => {
-                new_path.push(dom::PathSegment::LineTo { x: px, y });
+                new_path.push(tree::PathSegment::LineTo { x: px, y });
             }
             SegmentData::CurveTo { x1, y1, x2, y2, x, y } => {
-                new_path.push(dom::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
+                new_path.push(tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
             }
             SegmentData::SmoothCurveTo { x2, y2, x, y } => {
                 // 'The first control point is assumed to be the reflection of the second control
@@ -96,7 +96,7 @@ fn convert_path(mut path: Path) -> Vec<dom::PathSegment> {
                 let new_y1;
                 if let Some(seg) = new_path.last().cloned() {
                     match seg {
-                        dom::PathSegment::CurveTo { x2, y2, x, y, .. } => {
+                        tree::PathSegment::CurveTo { x2, y2, x, y, .. } => {
                             new_x1 = x * 2.0 - x2;
                             new_y1 = y * 2.0 - y2;
                         }
@@ -106,7 +106,7 @@ fn convert_path(mut path: Path) -> Vec<dom::PathSegment> {
                         }
                     }
 
-                    new_path.push(dom::PathSegment::CurveTo { x1: new_x1, y1: new_y1, x2, y2, x, y });
+                    new_path.push(tree::PathSegment::CurveTo { x1: new_x1, y1: new_y1, x2, y2, x, y });
                 }
             }
             SegmentData::Quadratic { x1, y1, x, y } => {
@@ -142,28 +142,28 @@ fn convert_path(mut path: Path) -> Vec<dom::PathSegment> {
                 arc_to_curve(px, py, rx, ry, x_axis_rotation, large_arc, sweep, x, y, &mut new_path)
             }
             SegmentData::ClosePath => {
-                new_path.push(dom::PathSegment::ClosePath);
+                new_path.push(tree::PathSegment::ClosePath);
             }
         }
 
         // Remember last position.
         if let Some(seg) = new_path.last() {
             match *seg {
-                dom::PathSegment::MoveTo { x, y } => {
+                tree::PathSegment::MoveTo { x, y } => {
                     px = x;
                     py = y;
                     pmx = x;
                     pmy = y;
                 }
-                dom::PathSegment::LineTo { x, y } => {
+                tree::PathSegment::LineTo { x, y } => {
                     px = x;
                     py = y;
                 }
-                dom::PathSegment::CurveTo { x, y, .. } => {
+                tree::PathSegment::CurveTo { x, y, .. } => {
                     px = x;
                     py = y;
                 }
-                dom::PathSegment::ClosePath => {
+                tree::PathSegment::ClosePath => {
                     // ClosePath moves us to the last MoveTo coordinate,
                     // not previous.
                     px = pmx;
@@ -183,14 +183,14 @@ fn quad_to_curve(
     y1: f64,
     x: f64,
     y: f64
-) -> dom::PathSegment {
+) -> tree::PathSegment {
     let nx1 = (px + 2.0 * x1) / 3.0;
     let ny1 = (py + 2.0 * y1) / 3.0;
 
     let nx2 = (x + 2.0 * x1) / 3.0;
     let ny2 = (y + 2.0 * y1) / 3.0;
 
-    dom::PathSegment::CurveTo { x1: nx1, y1: ny1, x2: nx2, y2: ny2, x, y }
+    tree::PathSegment::CurveTo { x1: nx1, y1: ny1, x2: nx2, y2: ny2, x, y }
 }
 
 // http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
@@ -205,7 +205,7 @@ fn arc_to_curve(
     sweep_flag: bool,
     x2: f64,
     y2: f64,
-    path: &mut Vec<dom::PathSegment>,
+    path: &mut Vec<tree::PathSegment>,
 ) {
     if x1.fuzzy_eq(&x2) && y1.fuzzy_eq(&y2) {
         return;
@@ -220,7 +220,7 @@ fn arc_to_curve(
     ry = ry.abs();
 
     if rx < f64::EPSILON || ry < f64::EPSILON {
-        path.push(dom::PathSegment::LineTo { x: x2, y: y2 });
+        path.push(tree::PathSegment::LineTo { x: x2, y: y2 });
         return;
     }
 
@@ -313,7 +313,7 @@ fn _arc_to_curve(
     rx: f64,
     ry: f64,
     x_axis_rotation: f64,
-    path: &mut Vec<dom::PathSegment>,
+    path: &mut Vec<tree::PathSegment>,
 ) {
     let f = x_axis_rotation * f64::consts::PI / 180.0;
     let sinf = f.sin();
@@ -328,7 +328,7 @@ fn _arc_to_curve(
     let x2 = x3 + rx * ( t * th1.sin());
     let y2 = y3 + ry * (-t * th1.cos());
 
-    let seg = dom::PathSegment::CurveTo {
+    let seg = tree::PathSegment::CurveTo {
         x1: xc + cosf * x1 - sinf * y1, y1: yc + sinf * x1 + cosf * y1,
         x2: xc + cosf * x2 - sinf * y2, y2: yc + sinf * x2 + cosf * y2,
         x:  xc + cosf * x3 - sinf * y3, y:  yc + sinf * x3 + cosf * y3

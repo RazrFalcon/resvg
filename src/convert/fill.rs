@@ -7,7 +7,7 @@ use svgdom::{
     ElementType
 };
 
-use dom;
+use tree;
 
 use short::{
     AId,
@@ -21,19 +21,19 @@ use traits::{
 
 
 pub fn convert(
-    doc: &dom::Document,
+    doc: &tree::RenderTree,
     attrs: &svgdom::Attributes,
-) -> Option<dom::Fill> {
+) -> Option<tree::Fill> {
     let paint = if let Some(fill) = attrs.get_type(AId::Fill) {
         match *fill {
             AValue::Color(c) => {
-                dom::Paint::Color(c)
+                tree::Paint::Color(c)
             }
             AValue::FuncLink(ref link) => {
                 let mut p = None;
                 if link.is_gradient() || link.is_tag_name(EId::Pattern) {
                     if let Some(idx) = doc.defs_index(&link.id()) {
-                        p = Some(dom::Paint::Link(idx));
+                        p = Some(tree::Paint::Link(idx));
                     }
                 }
 
@@ -60,11 +60,11 @@ pub fn convert(
     let fill_opacity = attrs.get_number(AId::FillOpacity).unwrap_or(1.0);
 
     let fill_rule = match attrs.get_predef(AId::FillRule).unwrap_or(svgdom::ValueId::Nonzero) {
-        svgdom::ValueId::Evenodd => dom::FillRule::EvenOdd,
-        _ => dom::FillRule::NonZero,
+        svgdom::ValueId::Evenodd => tree::FillRule::EvenOdd,
+        _ => tree::FillRule::NonZero,
     };
 
-    let fill = dom::Fill {
+    let fill = tree::Fill {
         paint: paint,
         opacity: fill_opacity,
         rule: fill_rule,

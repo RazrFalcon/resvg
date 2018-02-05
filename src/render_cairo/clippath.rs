@@ -5,7 +5,7 @@
 use cairo;
 use cairo::MatrixTrait;
 
-use dom;
+use tree;
 
 use math::{
     Size,
@@ -23,9 +23,9 @@ use super::{
 
 
 pub fn apply(
-    doc: &dom::Document,
-    node: dom::DefsNodeRef,
-    cp: &dom::ClipPath,
+    doc: &tree::RenderTree,
+    node: tree::DefsNodeRef,
+    cp: &tree::ClipPath,
     cr: &cairo::Context,
     bbox: &Rect,
     img_size: Size,
@@ -42,7 +42,7 @@ pub fn apply(
     clip_cr.set_matrix(cr.get_matrix());
     clip_cr.transform(cp.transform.to_native());
 
-    if cp.units == dom::Units::ObjectBoundingBox {
+    if cp.units == tree::Units::ObjectBoundingBox {
         let m = cairo::Matrix::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y);
         clip_cr.transform(m);
     }
@@ -54,10 +54,10 @@ pub fn apply(
         clip_cr.transform(node.kind().transform().to_native());
 
         match node.kind() {
-            dom::NodeKindRef::Path(ref path_elem) => {
+            tree::NodeKindRef::Path(ref path_elem) => {
                 path::draw(doc, path_elem, &clip_cr);
             }
-            dom::NodeKindRef::Text(_) => {
+            tree::NodeKindRef::Text(_) => {
                 text::draw(doc, node, &clip_cr);
             }
             _ => {}

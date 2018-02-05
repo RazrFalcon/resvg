@@ -4,7 +4,7 @@
 
 use cairo;
 
-use dom;
+use tree;
 use math;
 
 use super::{
@@ -18,26 +18,26 @@ use super::ext::{
 
 
 pub fn apply(
-    doc: &dom::Document,
-    fill: &Option<dom::Fill>,
+    doc: &tree::RenderTree,
+    fill: &Option<tree::Fill>,
     cr: &cairo::Context,
     bbox: &math::Rect,
 ) {
     match *fill {
         Some(ref fill) => {
             match fill.paint {
-                dom::Paint::Color(c) => {
+                tree::Paint::Color(c) => {
                     cr.set_source_color(&c, fill.opacity);
                 }
-                dom::Paint::Link(id) => {
+                tree::Paint::Link(id) => {
                     let node = doc.defs_at(id);
                     match node.kind() {
-                        dom::DefsNodeKindRef::LinearGradient(ref lg) =>
+                        tree::DefsNodeKindRef::LinearGradient(ref lg) =>
                             gradient::prepare_linear(node, lg, fill.opacity, bbox, cr),
-                        dom::DefsNodeKindRef::RadialGradient(ref rg) =>
+                        tree::DefsNodeKindRef::RadialGradient(ref rg) =>
                             gradient::prepare_radial(node, rg, fill.opacity, bbox, cr),
-                        dom::DefsNodeKindRef::ClipPath(_) => {}
-                        dom::DefsNodeKindRef::Pattern(ref pattern) => {
+                        tree::DefsNodeKindRef::ClipPath(_) => {}
+                        tree::DefsNodeKindRef::Pattern(ref pattern) => {
                             pattern::apply(doc, node, pattern, bbox, cr);
                         }
                     }
@@ -45,8 +45,8 @@ pub fn apply(
             }
 
             match fill.rule {
-                dom::FillRule::NonZero => cr.set_fill_rule(cairo::FillRule::Winding),
-                dom::FillRule::EvenOdd => cr.set_fill_rule(cairo::FillRule::EvenOdd),
+                tree::FillRule::NonZero => cr.set_fill_rule(cairo::FillRule::Winding),
+                tree::FillRule::EvenOdd => cr.set_fill_rule(cairo::FillRule::EvenOdd),
             }
         }
         None => {

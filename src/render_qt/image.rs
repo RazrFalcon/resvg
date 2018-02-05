@@ -4,17 +4,17 @@
 
 use qt;
 
-use dom;
+use tree;
 use math::{
     Rect,
 };
 
 pub fn draw(
-    image: &dom::Image,
+    image: &tree::Image,
     p: &qt::Painter,
 ) -> Rect {
     let img = match image.data {
-        dom::ImageData::Path(ref path) => {
+        tree::ImageData::Path(ref path) => {
             match qt::Image::from_file(path) {
                 Some(v) => v,
                 None => {
@@ -23,7 +23,7 @@ pub fn draw(
                 }
             }
         }
-        dom::ImageData::Raw(ref data, _) => {
+        tree::ImageData::Raw(ref data, _) => {
             match qt::Image::from_data(data) {
                 Some(v) => v,
                 None => {

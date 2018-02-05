@@ -19,7 +19,7 @@ use short::{
 
 // TODO: xml:space
 
-pub fn conv_doc(doc: &Document) -> svgdom::Document {
+pub fn conv_doc(doc: &RenderTree) -> svgdom::Document {
     let mut new_doc = svgdom::Document::new();
 
     let mut svg = new_doc.create_element(EId::Svg);
@@ -48,7 +48,7 @@ pub fn conv_doc(doc: &Document) -> svgdom::Document {
 }
 
 fn conv_defs(
-    doc: &Document,
+    doc: &RenderTree,
     new_doc: &mut svgdom::Document,
     defs: &mut svgdom::Node,
 ) {

@@ -4,7 +4,7 @@
 
 use qt;
 
-use dom;
+use tree;
 
 use math::{
     Size,
@@ -22,9 +22,9 @@ use super::{
 
 
 pub fn apply(
-    doc: &dom::Document,
-    node: dom::DefsNodeRef,
-    cp: &dom::ClipPath,
+    doc: &tree::RenderTree,
+    node: tree::DefsNodeRef,
+    cp: &tree::ClipPath,
     p: &qt::Painter,
     bbox: &Rect,
     img_size: Size,
@@ -41,7 +41,7 @@ pub fn apply(
     clip_p.set_transform(&p.get_transform());
     clip_p.apply_transform(&cp.transform.to_native());
 
-    if cp.units == dom::Units::ObjectBoundingBox {
+    if cp.units == tree::Units::ObjectBoundingBox {
         clip_p.apply_transform(&qt::Transform::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y));
     }
 
@@ -52,10 +52,10 @@ pub fn apply(
         clip_p.apply_transform(&node.kind().transform().to_native());
 
         match node.kind() {
-            dom::NodeKindRef::Path(ref path_elem) => {
+            tree::NodeKindRef::Path(ref path_elem) => {
                 path::draw(doc, path_elem, &clip_p);
             }
-            dom::NodeKindRef::Text(_) => {
+            tree::NodeKindRef::Text(_) => {
                 text::draw(doc, node, &clip_p);
             }
             _ => {}

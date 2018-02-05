@@ -37,9 +37,9 @@ extern crate libflate;
 #[cfg(feature = "cairo-backend")] pub mod render_cairo;
 #[cfg(feature = "qt-backend")] pub mod render_qt;
 
+pub mod tree;
 mod math;
 mod convert;
-pub mod dom;
 mod error;
 mod options;
 mod preproc;
@@ -95,8 +95,8 @@ pub enum Backend {
 }
 
 
-/// Creates `Document` from SVG data.
-pub fn parse_doc_from_data(text: &str, opt: &Options) -> Result<dom::Document> {
+/// Creates `RenderTree` from SVG data.
+pub fn parse_doc_from_data(text: &str, opt: &Options) -> Result<tree::RenderTree> {
     let mut doc = parse_svg(text)?;
     preproc::prepare_doc(&mut doc, opt)?;
     let re_doc = convert::convert_doc(&doc, opt)?;
@@ -104,10 +104,10 @@ pub fn parse_doc_from_data(text: &str, opt: &Options) -> Result<dom::Document> {
     Ok(re_doc)
 }
 
-/// Creates `Document` from file.
+/// Creates `RenderTree` from file.
 ///
 /// `.svg` and `.svgz` files are supported.
-pub fn parse_doc_from_file<P: AsRef<Path>>(path: P, opt: &Options) -> Result<dom::Document> {
+pub fn parse_doc_from_file<P: AsRef<Path>>(path: P, opt: &Options) -> Result<tree::RenderTree> {
     let text = load_file(path.as_ref())?;
     let mut doc = parse_svg(&text)?;
     preproc::prepare_doc(&mut doc, opt)?;

@@ -7,7 +7,7 @@ use svgdom::{
     ElementType,
 };
 
-use dom;
+use tree;
 
 use short::{
     AId,
@@ -46,7 +46,7 @@ mod text;
 pub fn convert_doc(
     svg_doc: &svgdom::Document,
     opt: &Options,
-) -> Result<dom::Document> {
+) -> Result<tree::RenderTree> {
     let svg = if let Some(svg) = svg_doc.svg_element() {
         svg
     } else {
@@ -57,13 +57,13 @@ pub fn convert_doc(
         return Err(ErrorKind::MissingSvgNode.into());
     };
 
-    let svg_kind = dom::Svg {
+    let svg_kind = tree::Svg {
         size: get_img_size(&svg)?,
         view_box: get_view_box(&svg)?,
         dpi: opt.dpi,
     };
 
-    let mut doc = dom::Document::new(svg_kind);
+    let mut doc = tree::RenderTree::new(svg_kind);
 
     convert_ref_nodes(svg_doc, opt, &mut doc);
     convert_nodes(&svg, opt, 1, &mut doc);
@@ -75,7 +75,7 @@ pub fn convert_doc(
 fn convert_ref_nodes(
     svg_doc: &svgdom::Document,
     opt: &Options,
-    doc: &mut dom::Document,
+    doc: &mut tree::RenderTree,
 ) {
     let defs_elem = match svg_doc.defs_element() {
         Some(e) => e.clone(),
@@ -113,7 +113,7 @@ pub fn convert_nodes(
     parent: &svgdom::Node,
     opt: &Options,
     depth: usize,
-    doc: &mut dom::Document,
+    doc: &mut tree::RenderTree,
 ) {
     for (id, node) in parent.children().svg() {
         if node.is_referenced() {
@@ -160,7 +160,7 @@ pub fn convert_nodes(
                 let ts = attrs.get_transform(AId::Transform).unwrap_or_default();
                 let opacity = attrs.get_number(AId::Opacity);
 
-                doc.append_node(depth, dom::NodeKind::Group(dom::Group {
+                doc.append_node(depth, tree::NodeKind::Group(tree::Group {
                     id: node.id().clone(),
                     transform: ts,
                     opacity,
@@ -238,14 +238,14 @@ fn get_view_box(svg: &svgdom::Node) -> Result<Rect> {
     Ok(vbox)
 }
 
-fn convert_element_units(attrs: &svgdom::Attributes, aid: AId) -> dom::Units {
+fn convert_element_units(attrs: &svgdom::Attributes, aid: AId) -> tree::Units {
     let av = attrs.get_predef(aid);
     match av {
-        Some(svgdom::ValueId::UserSpaceOnUse) => dom::Units::UserSpaceOnUse,
-        Some(svgdom::ValueId::ObjectBoundingBox) => dom::Units::ObjectBoundingBox,
+        Some(svgdom::ValueId::UserSpaceOnUse) => tree::Units::UserSpaceOnUse,
+        Some(svgdom::ValueId::ObjectBoundingBox) => tree::Units::ObjectBoundingBox,
         _ => {
             warn!("{} must be already resolved.", aid);
-            dom::Units::UserSpaceOnUse
+            tree::Units::UserSpaceOnUse
         }
     }
 }

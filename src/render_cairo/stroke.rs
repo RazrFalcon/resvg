@@ -4,7 +4,7 @@
 
 use cairo;
 
-use dom;
+use tree;
 use math;
 
 use super::{
@@ -18,26 +18,26 @@ use super::ext::{
 
 
 pub fn apply(
-    doc: &dom::Document,
-    stroke: &Option<dom::Stroke>,
+    doc: &tree::RenderTree,
+    stroke: &Option<tree::Stroke>,
     cr: &cairo::Context,
     bbox: &math::Rect,
 ) {
     match *stroke {
         Some(ref stroke) => {
             match stroke.paint {
-                dom::Paint::Color(c) => {
+                tree::Paint::Color(c) => {
                     cr.set_source_color(&c, stroke.opacity);
                 }
-                dom::Paint::Link(id) => {
+                tree::Paint::Link(id) => {
                     let node = doc.defs_at(id);
                     match node.kind() {
-                        dom::DefsNodeKindRef::LinearGradient(ref lg) =>
+                        tree::DefsNodeKindRef::LinearGradient(ref lg) =>
                             gradient::prepare_linear(node, lg, stroke.opacity, bbox, cr),
-                        dom::DefsNodeKindRef::RadialGradient(ref rg) =>
+                        tree::DefsNodeKindRef::RadialGradient(ref rg) =>
                             gradient::prepare_radial(node, rg, stroke.opacity, bbox, cr),
-                        dom::DefsNodeKindRef::ClipPath(_) => {}
-                        dom::DefsNodeKindRef::Pattern(ref pattern) => {
+                        tree::DefsNodeKindRef::ClipPath(_) => {}
+                        tree::DefsNodeKindRef::Pattern(ref pattern) => {
                             pattern::apply(doc, node, pattern, bbox, cr);
                         }
                     }
@@ -45,16 +45,16 @@ pub fn apply(
             }
 
             let linecap = match stroke.linecap {
-                dom::LineCap::Butt => cairo::LineCap::Butt,
-                dom::LineCap::Round => cairo::LineCap::Round,
-                dom::LineCap::Square => cairo::LineCap::Square,
+                tree::LineCap::Butt => cairo::LineCap::Butt,
+                tree::LineCap::Round => cairo::LineCap::Round,
+                tree::LineCap::Square => cairo::LineCap::Square,
             };
             cr.set_line_cap(linecap);
 
             let linejoin = match stroke.linejoin {
-                dom::LineJoin::Miter => cairo::LineJoin::Miter,
-                dom::LineJoin::Round => cairo::LineJoin::Round,
-                dom::LineJoin::Bevel => cairo::LineJoin::Bevel,
+                tree::LineJoin::Miter => cairo::LineJoin::Miter,
+                tree::LineJoin::Round => cairo::LineJoin::Round,
+                tree::LineJoin::Bevel => cairo::LineJoin::Bevel,
             };
             cr.set_line_join(linejoin);
 

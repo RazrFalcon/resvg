@@ -4,7 +4,7 @@
 
 use qt;
 
-use dom::{
+use tree::{
     self,
     Units,
     SpreadMethod,
@@ -16,8 +16,8 @@ use traits::{
 
 
 pub fn prepare_linear(
-    node: dom::DefsNodeRef,
-    g: &dom::LinearGradient,
+    node: tree::DefsNodeRef,
+    g: &tree::LinearGradient,
     opacity: f64,
     brush: &mut qt::Brush,
 ) {
@@ -29,8 +29,8 @@ pub fn prepare_linear(
 }
 
 pub fn prepare_radial(
-    node: dom::DefsNodeRef,
-    g: &dom::RadialGradient,
+    node: tree::DefsNodeRef,
+    g: &tree::RadialGradient,
     opacity: f64,
     brush: &mut qt::Brush,
 ) {
@@ -42,8 +42,8 @@ pub fn prepare_radial(
 }
 
 fn prepare_base(
-    node: dom::DefsNodeRef,
-    g: &dom::BaseGradient,
+    node: tree::DefsNodeRef,
+    g: &tree::BaseGradient,
     grad: &mut qt::Gradient,
     opacity: f64,
 ) {

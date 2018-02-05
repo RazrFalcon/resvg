@@ -4,7 +4,7 @@
 
 use qt;
 
-use dom;
+use tree;
 use math::{
     self,
     Rect,
@@ -17,8 +17,8 @@ use super::{
 
 
 pub fn apply(
-    doc: &dom::Document,
-    stroke: &Option<dom::Stroke>,
+    doc: &tree::RenderTree,
+    stroke: &Option<tree::Stroke>,
     p: &qt::Painter,
     bbox: &Rect,
 ) {
@@ -27,21 +27,21 @@ pub fn apply(
             let mut pen = qt::Pen::new();
 
             match stroke.paint {
-                dom::Paint::Color(c) => {
+                tree::Paint::Color(c) => {
                     let a = math::f64_bound(0.0, stroke.opacity * 255.0, 255.0) as u8;
                     pen.set_color(c.red, c.green, c.blue, a);
                 }
-                dom::Paint::Link(id) => {
+                tree::Paint::Link(id) => {
                     let node = doc.defs_at(id);
                     let mut brush = qt::Brush::new();
 
                     match node.kind() {
-                        dom::DefsNodeKindRef::LinearGradient(ref lg) =>
+                        tree::DefsNodeKindRef::LinearGradient(ref lg) =>
                             gradient::prepare_linear(node, lg, stroke.opacity, &mut brush),
-                        dom::DefsNodeKindRef::RadialGradient(ref rg) =>
+                        tree::DefsNodeKindRef::RadialGradient(ref rg) =>
                             gradient::prepare_radial(node, rg, stroke.opacity, &mut brush),
-                        dom::DefsNodeKindRef::ClipPath(_) => {}
-                        dom::DefsNodeKindRef::Pattern(ref pattern) => {
+                        tree::DefsNodeKindRef::ClipPath(_) => {}
+                        tree::DefsNodeKindRef::Pattern(ref pattern) => {
                             pattern::apply(doc, p.get_transform(), bbox, node, pattern, &mut brush);
                         }
                     }
@@ -51,16 +51,16 @@ pub fn apply(
             }
 
             let linecap = match stroke.linecap {
-                dom::LineCap::Butt => qt::LineCap::FlatCap,
-                dom::LineCap::Round => qt::LineCap::RoundCap,
-                dom::LineCap::Square => qt::LineCap::SquareCap,
+                tree::LineCap::Butt => qt::LineCap::FlatCap,
+                tree::LineCap::Round => qt::LineCap::RoundCap,
+                tree::LineCap::Square => qt::LineCap::SquareCap,
             };
             pen.set_line_cap(linecap);
 
             let linejoin = match stroke.linejoin {
-                dom::LineJoin::Miter => qt::LineJoin::MiterJoin,
-                dom::LineJoin::Round => qt::LineJoin::RoundJoin,
-                dom::LineJoin::Bevel => qt::LineJoin::BevelJoin,
+                tree::LineJoin::Miter => qt::LineJoin::MiterJoin,
+                tree::LineJoin::Round => qt::LineJoin::RoundJoin,
+                tree::LineJoin::Bevel => qt::LineJoin::BevelJoin,
             };
             pen.set_line_join(linejoin);
 

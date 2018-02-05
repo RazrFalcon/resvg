@@ -4,7 +4,7 @@
 
 use qt;
 
-use dom;
+use tree;
 
 use math::{
     Rect,
@@ -17,8 +17,8 @@ use super::{
 
 
 pub fn draw(
-    doc: &dom::Document,
-    elem: &dom::Path,
+    doc: &tree::RenderTree,
+    elem: &tree::Path,
     p: &qt::Painter,
 ) -> Rect {
     let mut p_path = qt::PainterPath::new();
@@ -26,7 +26,7 @@ pub fn draw(
     let fill_rule = if let Some(fill) = elem.fill {
         fill.rule
     } else {
-        dom::FillRule::NonZero
+        tree::FillRule::NonZero
     };
 
     convert_path(&elem.d, fill_rule, &mut p_path);
@@ -42,8 +42,8 @@ pub fn draw(
 }
 
 pub fn convert_path(
-    list: &[dom::PathSegment],
-    rule: dom::FillRule,
+    list: &[tree::PathSegment],
+    rule: tree::FillRule,
     p_path: &mut qt::PainterPath,
 ) {
     // Qt's QPainterPath automatically closes open subpaths if start and end positions are equal.
@@ -73,7 +73,7 @@ pub fn convert_path(
             if i == len - 1 {
                 true
             } else {
-                if let dom::PathSegment::MoveTo{ .. } = list[i + 1] {
+                if let tree::PathSegment::MoveTo{ .. } = list[i + 1] {
                     true
                 } else {
                     false
@@ -82,14 +82,14 @@ pub fn convert_path(
         };
 
         match *seg1 {
-            dom::PathSegment::MoveTo { x, y } => {
+            tree::PathSegment::MoveTo { x, y } => {
                 p_path.move_to(x, y);
 
                 // Remember subpath start position.
                 prev_mx = x;
                 prev_my = y;
             }
-            dom::PathSegment::LineTo { mut x, y } => {
+            tree::PathSegment::LineTo { mut x, y } => {
                 if is_last_subpath_seg {
                     // No need to use fuzzy compare because Qt doesn't use it too.
                     if x == prev_mx && y == prev_my {
@@ -100,7 +100,7 @@ pub fn convert_path(
 
                 p_path.line_to(x, y);
             }
-            dom::PathSegment::CurveTo { x1, y1, x2, y2, mut x, y } => {
+            tree::PathSegment::CurveTo { x1, y1, x2, y2, mut x, y } => {
                 if is_last_subpath_seg {
                     if x == prev_mx && y == prev_my {
                         x -= 0.000001;
@@ -109,7 +109,7 @@ pub fn convert_path(
 
                 p_path.curve_to(x1, y1, x2, y2, x, y);
             }
-            dom::PathSegment::ClosePath => {
+            tree::PathSegment::ClosePath => {
                 p_path.close_path();
             }
         }
@@ -118,7 +118,7 @@ pub fn convert_path(
     }
 
     match rule {
-        dom::FillRule::NonZero => p_path.set_fill_rule(qt::FillRule::WindingFill),
-        dom::FillRule::EvenOdd => p_path.set_fill_rule(qt::FillRule::OddEvenFill),
+        tree::FillRule::NonZero => p_path.set_fill_rule(qt::FillRule::WindingFill),
+        tree::FillRule::EvenOdd => p_path.set_fill_rule(qt::FillRule::OddEvenFill),
     }
 }

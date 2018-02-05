@@ -14,7 +14,7 @@ use pango::{
 
 use pangocairo::functions as pc;
 
-use dom;
+use tree;
 use render_utils;
 use math::{
     Rect,
@@ -36,8 +36,8 @@ pub struct PangoData {
 }
 
 pub fn draw(
-    doc: &dom::Document,
-    node: dom::NodeRef,
+    doc: &tree::RenderTree,
+    node: tree::NodeRef,
     cr: &cairo::Context,
 ) -> Rect {
     draw_tspan(doc, node, cr,
@@ -45,12 +45,12 @@ pub fn draw(
 }
 
 pub fn draw_tspan<DrawAt>(
-    doc: &dom::Document,
-    node: dom::NodeRef,
+    doc: &tree::RenderTree,
+    node: tree::NodeRef,
     cr: &cairo::Context,
     mut draw_at: DrawAt,
 ) -> Rect
-    where DrawAt: FnMut(&dom::TSpan, f64, f64, f64, &PangoData)
+    where DrawAt: FnMut(&tree::TSpan, f64, f64, f64, &PangoData)
 {
     let mut bbox = Rect::new(f64::MAX, f64::MAX, 0.0, 0.0);
     let mut pc_list = Vec::new();
@@ -98,8 +98,8 @@ pub fn draw_tspan<DrawAt>(
 }
 
 fn _draw_tspan(
-    doc: &dom::Document,
-    tspan: &dom::TSpan,
+    doc: &tree::RenderTree,
+    tspan: &tree::TSpan,
     x: f64,
     y: f64,
     width: f64,
@@ -163,53 +163,53 @@ fn _draw_tspan(
     }
 }
 
-fn init_font(dom_font: &dom::Font, dpi: f64) -> pango::FontDescription {
+fn init_font(dom_font: &tree::Font, dpi: f64) -> pango::FontDescription {
     let mut font = pango::FontDescription::new();
 
     font.set_family(&dom_font.family);
 
     let font_style = match dom_font.style {
-        dom::FontStyle::Normal => pango::Style::Normal,
-        dom::FontStyle::Italic => pango::Style::Italic,
-        dom::FontStyle::Oblique => pango::Style::Oblique,
+        tree::FontStyle::Normal => pango::Style::Normal,
+        tree::FontStyle::Italic => pango::Style::Italic,
+        tree::FontStyle::Oblique => pango::Style::Oblique,
     };
     font.set_style(font_style);
 
     let font_variant = match dom_font.variant {
-        dom::FontVariant::Normal => pango::Variant::Normal,
-        dom::FontVariant::SmallCaps => pango::Variant::SmallCaps,
+        tree::FontVariant::Normal => pango::Variant::Normal,
+        tree::FontVariant::SmallCaps => pango::Variant::SmallCaps,
     };
     font.set_variant(font_variant);
 
     let font_weight = match dom_font.weight {
-        dom::FontWeight::W100       => pango::Weight::Thin,
-        dom::FontWeight::W200       => pango::Weight::Ultralight,
-        dom::FontWeight::W300       => pango::Weight::Light,
-        dom::FontWeight::W400       => pango::Weight::Normal,
-        dom::FontWeight::W500       => pango::Weight::Medium,
-        dom::FontWeight::W600       => pango::Weight::Semibold,
-        dom::FontWeight::W700       => pango::Weight::Bold,
-        dom::FontWeight::W800       => pango::Weight::Ultrabold,
-        dom::FontWeight::W900       => pango::Weight::Heavy,
-        dom::FontWeight::Normal     => pango::Weight::Normal,
-        dom::FontWeight::Bold       => pango::Weight::Bold,
-        dom::FontWeight::Bolder     => pango::Weight::Ultrabold,
-        dom::FontWeight::Lighter    => pango::Weight::Light,
+        tree::FontWeight::W100       => pango::Weight::Thin,
+        tree::FontWeight::W200       => pango::Weight::Ultralight,
+        tree::FontWeight::W300       => pango::Weight::Light,
+        tree::FontWeight::W400       => pango::Weight::Normal,
+        tree::FontWeight::W500       => pango::Weight::Medium,
+        tree::FontWeight::W600       => pango::Weight::Semibold,
+        tree::FontWeight::W700       => pango::Weight::Bold,
+        tree::FontWeight::W800       => pango::Weight::Ultrabold,
+        tree::FontWeight::W900       => pango::Weight::Heavy,
+        tree::FontWeight::Normal     => pango::Weight::Normal,
+        tree::FontWeight::Bold       => pango::Weight::Bold,
+        tree::FontWeight::Bolder     => pango::Weight::Ultrabold,
+        tree::FontWeight::Lighter    => pango::Weight::Light,
     };
     font.set_weight(font_weight);
 
     let font_stretch = match dom_font.stretch {
-        dom::FontStretch::Normal         => pango::Stretch::Normal,
-        dom::FontStretch::Narrower |
-        dom::FontStretch::Condensed      => pango::Stretch::Condensed,
-        dom::FontStretch::UltraCondensed => pango::Stretch::UltraCondensed,
-        dom::FontStretch::ExtraCondensed => pango::Stretch::ExtraCondensed,
-        dom::FontStretch::SemiCondensed  => pango::Stretch::SemiCondensed,
-        dom::FontStretch::SemiExpanded   => pango::Stretch::SemiExpanded,
-        dom::FontStretch::Wider |
-        dom::FontStretch::Expanded       => pango::Stretch::Expanded,
-        dom::FontStretch::ExtraExpanded  => pango::Stretch::ExtraExpanded,
-        dom::FontStretch::UltraExpanded  => pango::Stretch::UltraExpanded,
+        tree::FontStretch::Normal         => pango::Stretch::Normal,
+        tree::FontStretch::Narrower |
+        tree::FontStretch::Condensed      => pango::Stretch::Condensed,
+        tree::FontStretch::UltraCondensed => pango::Stretch::UltraCondensed,
+        tree::FontStretch::ExtraCondensed => pango::Stretch::ExtraCondensed,
+        tree::FontStretch::SemiCondensed  => pango::Stretch::SemiCondensed,
+        tree::FontStretch::SemiExpanded   => pango::Stretch::SemiExpanded,
+        tree::FontStretch::Wider |
+        tree::FontStretch::Expanded       => pango::Stretch::Expanded,
+        tree::FontStretch::ExtraExpanded  => pango::Stretch::ExtraExpanded,
+        tree::FontStretch::UltraExpanded  => pango::Stretch::UltraExpanded,
     };
     font.set_stretch(font_stretch);
 
@@ -232,9 +232,9 @@ fn calc_layout_bbox(layout: &pango::Layout, x: f64, y: f64) -> Rect {
 }
 
 fn draw_line(
-    doc: &dom::Document,
-    fill: &Option<dom::Fill>,
-    stroke: &Option<dom::Stroke>,
+    doc: &tree::RenderTree,
+    fill: &Option<tree::Fill>,
+    stroke: &Option<tree::Stroke>,
     line_bbox: Rect,
     cr: &cairo::Context,
 ) {

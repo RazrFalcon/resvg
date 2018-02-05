@@ -8,7 +8,7 @@ use base64;
 use svgdom;
 
 
-use dom;
+use tree;
 
 use short::{
     AId,
@@ -31,7 +31,7 @@ pub fn convert(
     node: &svgdom::Node,
     opt: &Options,
     depth: usize,
-    doc: &mut dom::Document,
+    doc: &mut tree::RenderTree,
 ) {
     let attrs = node.attributes();
 
@@ -57,7 +57,7 @@ pub fn convert(
     let href: &String = get_attr!(AId::XlinkHref);
 
     if let Some(data) = get_href_data(href, opt.path.as_ref()) {
-        doc.append_node(depth, dom::NodeKind::Image(dom::Image {
+        doc.append_node(depth, tree::NodeKind::Image(tree::Image {
             id: node.id().clone(),
             transform: ts,
             rect: Rect::new(x, y, w, h),
@@ -66,13 +66,13 @@ pub fn convert(
     }
 }
 
-fn get_href_data(href: &str, path: Option<&path::PathBuf>) -> Option<dom::ImageData> {
+fn get_href_data(href: &str, path: Option<&path::PathBuf>) -> Option<tree::ImageData> {
     if href.starts_with("data:image") {
         if let Some(idx) = href.find(',') {
             let kind = if href[..idx].contains("image/jpg") {
-                dom::ImageDataKind::JPEG
+                tree::ImageDataKind::JPEG
             } else if href[..idx].contains("image/png") {
-                dom::ImageDataKind::PNG
+                tree::ImageDataKind::PNG
             } else {
                 return None;
             };
@@ -87,7 +87,7 @@ fn get_href_data(href: &str, path: Option<&path::PathBuf>) -> Option<dom::ImageD
             );
 
             if let Ok(data) = base64::decode_config(base_data, conf) {
-                return Some(dom::ImageData::Raw(data.to_owned(), kind));
+                return Some(tree::ImageData::Raw(data.to_owned(), kind));
             }
         }
 
@@ -100,7 +100,7 @@ fn get_href_data(href: &str, path: Option<&path::PathBuf>) -> Option<dom::ImageD
 
         if path.exists() {
             if is_valid_image_format(&path) {
-                return Some(dom::ImageData::Path(path.to_owned()));
+                return Some(tree::ImageData::Path(path.to_owned()));
             } else {
                 warn!("'{}' is not a PNG or a JPEG image.", href);
             }
