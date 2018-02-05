@@ -2,21 +2,20 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// external
 use svgdom::{
     self,
     ElementType,
     FuzzyEq,
-    NumberList,
 };
 
+// self
 use tree;
-
 use short::{
     AId,
     AValue,
     EId,
 };
-
 use traits::{
     GetValue,
 };
@@ -102,7 +101,7 @@ pub fn convert(
 // Tested by:
 // - painting-stroke-06-t.svg
 // - painting-stroke-1000-t.svg
-fn conv_dasharray(av: Option<&AValue>) -> Option<NumberList> {
+fn conv_dasharray(av: Option<&AValue>) -> Option<svgdom::NumberList> {
     if let Some(&AValue::NumberList(ref list)) = av {
         // `A negative value is an error`
         if list.iter().any(|n| n.is_sign_negative()) {

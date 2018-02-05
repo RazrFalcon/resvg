@@ -2,19 +2,18 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// external
 use svgdom;
 
+// self
 use tree;
-
 use short::{
     AId,
     EId,
 };
-
 use traits::{
     GetValue,
 };
-
 use super::{
     path,
     text,
@@ -28,11 +27,14 @@ pub fn convert(
 ) {
     let attrs = node.attributes();
 
-    let idx = doc.append_node(tree::DEFS_DEPTH, tree::NodeKind::ClipPath(tree::ClipPath {
-        id: node.id().clone(),
-        units: super::convert_element_units(&attrs, AId::ClipPathUnits),
-        transform: attrs.get_transform(AId::Transform).unwrap_or_default(),
-    }));
+    let idx = doc.append_node(
+        tree::DEFS_DEPTH,
+        tree::NodeKind::ClipPath(tree::ClipPath {
+            id: node.id().clone(),
+            units: super::convert_element_units(&attrs, AId::ClipPathUnits),
+            transform: attrs.get_transform(AId::Transform).unwrap_or_default(),
+        })
+    );
 
     convert_children(node, doc);
 

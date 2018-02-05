@@ -359,11 +359,15 @@ fn dump_svg(doc: &tree::RenderTree, path: &path::Path) -> Result<(), io::Error> 
     Ok(())
 }
 
-fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &log::Record) {
+fn log_format(
+    out: fern::FormatCallback,
+    message: &fmt::Arguments,
+    record: &log::Record,
+) {
     let lvl = match record.level() {
         log::Level::Error => "Error",
-        log::Level::Warn => "Warning",
-        log::Level::Info => "Info",
+        log::Level::Warn  => "Warning",
+        log::Level::Info  => "Info",
         log::Level::Debug => "Debug",
         log::Level::Trace => "Trace",
     };

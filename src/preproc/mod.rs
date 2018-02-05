@@ -2,13 +2,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// external
 use svgdom;
 
+// self
 use {
     ErrorKind,
     Options,
     Result,
 };
+
 
 mod conv_units;
 mod fix_gradient_stops;
@@ -36,6 +39,7 @@ mod rm_unused_defs;
 mod ungroup_a;
 mod ungroup_groups;
 mod ungroup_switch;
+
 
 use self::conv_units::convert_units;
 use self::fix_gradient_stops::fix_gradient_stops;

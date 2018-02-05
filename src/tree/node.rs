@@ -4,12 +4,13 @@
 
 use std::path::PathBuf;
 
+// self
 use math::{
     Size,
     Rect,
 };
-
 use super::attribute::*;
+
 
 #[allow(missing_docs)]
 pub(crate) enum NodeKind {
@@ -48,6 +49,7 @@ impl NodeKind {
     }
 }
 
+
 /// A list of all shape-based nodes.
 ///
 /// The nodes that will be rendered.
@@ -81,6 +83,7 @@ impl<'a> NodeKindRef<'a> {
     }
 }
 
+
 /// An SVG root element.
 pub struct Svg {
     /// Image size.
@@ -97,6 +100,7 @@ pub struct Svg {
     /// Has the same value as `Options::dpi`. Used for text rendering.
     pub dpi: f64,
 }
+
 
 /// A path element.
 pub struct Path {
@@ -120,6 +124,7 @@ pub struct Path {
     pub d: Vec<PathSegment>,
 }
 
+
 /// A text element.
 ///
 /// `text` element in the SVG.
@@ -136,6 +141,7 @@ pub struct Text {
     pub transform: Transform,
 }
 
+
 /// A text chunk.
 ///
 /// Contains position and anchor of the next
@@ -151,6 +157,7 @@ pub struct TextChunk {
     /// A text anchor/align.
     pub anchor: TextAnchor,
 }
+
 
 // TODO: dx, dy
 /// A text span.
@@ -184,6 +191,7 @@ pub struct TSpan {
     pub text: String,
 }
 
+
 /// A raster image element.
 ///
 /// `image` element in the SVG.
@@ -204,6 +212,7 @@ pub struct Image {
     pub data: ImageData,
 }
 
+
 /// A raster image container.
 pub enum ImageData {
     /// Path to the image.
@@ -218,6 +227,7 @@ pub enum ImageData {
     Raw(Vec<u8>, ImageDataKind),
 }
 
+
 /// An image codec.
 #[allow(missing_docs)]
 #[derive(Copy,Clone,PartialEq)]
@@ -225,6 +235,7 @@ pub enum ImageDataKind {
     PNG,
     JPEG,
 }
+
 
 // TODO: no need for a separate vector
 /// A group container.
@@ -257,6 +268,7 @@ pub struct Group {
     /// Use it via `Document::get_defs()` method.
     pub clip_path: Option<usize>,
 }
+
 
 /// A list of all `defs` nodes.
 ///
@@ -291,6 +303,7 @@ impl<'a> DefsNodeKindRef<'a> {
     }
 }
 
+
 /// A generic gradient.
 pub struct BaseGradient {
     /// Coordinate system units.
@@ -306,6 +319,7 @@ pub struct BaseGradient {
     /// `spreadMethod` in the SVG.
     pub spread_method: SpreadMethod,
 }
+
 
 /// A linear gradient.
 ///
@@ -328,6 +342,7 @@ pub struct LinearGradient {
     /// Base gradient data.
     pub d: BaseGradient,
 }
+
 
 /// A radial gradient.
 ///
@@ -352,6 +367,7 @@ pub struct RadialGradient {
     pub d: BaseGradient,
 }
 
+
 /// Gradient's stop element.
 ///
 /// `stop` element in the SVG.
@@ -362,6 +378,7 @@ pub struct Stop {
     pub color: Color,
     pub opacity: f64,
 }
+
 
 /// A clip-path element.
 ///
@@ -385,6 +402,7 @@ pub struct ClipPath {
     /// `transform` in the SVG.
     pub transform: Transform,
 }
+
 
 /// A pattern element.
 ///

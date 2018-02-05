@@ -2,14 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// external
 use qt;
 
-use tree::{
-    self,
-    Units,
-    SpreadMethod,
-};
-
+// self
+use tree;
 use traits::{
     ConvTransform,
 };
@@ -48,13 +45,13 @@ fn prepare_base(
     opacity: f64,
 ) {
     let spread_method = match g.spread_method {
-        SpreadMethod::Pad => qt::Spread::PadSpread,
-        SpreadMethod::Reflect => qt::Spread::ReflectSpread,
-        SpreadMethod::Repeat => qt::Spread::RepeatSpread,
+        tree::SpreadMethod::Pad => qt::Spread::PadSpread,
+        tree::SpreadMethod::Reflect => qt::Spread::ReflectSpread,
+        tree::SpreadMethod::Repeat => qt::Spread::RepeatSpread,
     };
     grad.set_spread(spread_method);
 
-    if g.units == Units::ObjectBoundingBox {
+    if g.units == tree::Units::ObjectBoundingBox {
         grad.set_units(qt::CoordinateMode::ObjectBoundingMode)
     }
 

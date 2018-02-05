@@ -4,24 +4,21 @@
 
 use std::path;
 
+// external
 use base64;
 use svgdom;
 
-
+// self
 use tree;
-
 use short::{
     AId,
 };
-
 use traits::{
     GetValue,
 };
-
 use math::{
     Rect,
 };
-
 use {
     Options,
 };

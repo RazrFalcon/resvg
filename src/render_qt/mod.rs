@@ -6,25 +6,23 @@
 
 use std::f64;
 
+// external
 use qt;
 
+// self
 use tree;
-
+use math::{
+    Size,
+    Rect,
+};
+use traits::{
+    ConvTransform,
+};
 use {
     ErrorKind,
     Options,
     Result,
 };
-
-use math::{
-    Size,
-    Rect,
-};
-
-use traits::{
-    ConvTransform,
-};
-
 use render_utils;
 
 

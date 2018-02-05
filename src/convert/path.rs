@@ -4,26 +4,24 @@
 
 use std::f64;
 
-use svgdom;
-use tree;
-
+// external
 use svgdom::path::*;
 use svgdom::{
-    FuzzyEq
+    self,
+    FuzzyEq,
 };
 
+// self
+use tree;
 use short::{
     AId,
 };
-
 use traits::{
     GetValue,
 };
-
 use math::{
     f64_bound,
 };
-
 use super::{
     fill,
     stroke,

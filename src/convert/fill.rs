@@ -2,19 +2,19 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// external
 use svgdom::{
     self,
     ElementType
 };
 
+// self
 use tree;
-
 use short::{
     AId,
     AValue,
     EId,
 };
-
 use traits::{
     GetValue,
 };
@@ -40,7 +40,8 @@ pub fn convert(
                 match p {
                     Some(p) => p,
                     None => {
-                        warn!("Filling with {:?} is not supported.", link.tag_id().unwrap());
+                        warn!("Filling with {:?} is not supported.",
+                              link.tag_id().unwrap());
                         return None;
                     }
                 }
@@ -59,13 +60,15 @@ pub fn convert(
 
     let fill_opacity = attrs.get_number(AId::FillOpacity).unwrap_or(1.0);
 
-    let fill_rule = match attrs.get_predef(AId::FillRule).unwrap_or(svgdom::ValueId::Nonzero) {
+    let fill_rule = attrs.get_predef(AId::FillRule)
+                         .unwrap_or(svgdom::ValueId::Nonzero);
+    let fill_rule = match fill_rule {
         svgdom::ValueId::Evenodd => tree::FillRule::EvenOdd,
         _ => tree::FillRule::NonZero,
     };
 
     let fill = tree::Fill {
-        paint: paint,
+        paint,
         opacity: fill_opacity,
         rule: fill_rule,
     };

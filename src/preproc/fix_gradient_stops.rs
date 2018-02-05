@@ -4,19 +4,19 @@
 
 use std::f64;
 
+// external
 use svgdom::{
     Document,
     ElementType,
     Node,
 };
 
+// self
 use math;
-
 use short::{
     AId,
     EId,
 };
-
 use traits::{
     GetValue,
 };

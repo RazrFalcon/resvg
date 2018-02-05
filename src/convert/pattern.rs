@@ -2,26 +2,24 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// external
 use svgdom::{
     self,
     FuzzyEq,
 };
 
+// self
 use tree;
-
 use short::{
     AId,
 };
-
 use math::{
     Rect,
 };
-
 use traits::{
     GetValue,
     GetViewBox,
 };
-
 use {
     Options,
 };

@@ -2,20 +2,21 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use cairo;
-use cairo::MatrixTrait;
+// external
+use cairo::{
+    self,
+    MatrixTrait,
+};
 
+// self
 use tree;
-
 use math::{
     Size,
     Rect,
 };
-
 use traits::{
     ConvTransform,
 };
-
 use super::{
     path,
     text,

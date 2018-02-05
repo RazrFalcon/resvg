@@ -4,14 +4,15 @@
 
 use std::f64;
 
+// external
 use qt;
 
+// self
 use tree;
 use render_utils;
 use math::{
     Rect,
 };
-
 use super::{
     fill,
     stroke,

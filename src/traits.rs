@@ -5,6 +5,7 @@
 use std::f64;
 use std::fmt::Display;
 
+// external
 use svgdom::{
     path,
     Attributes,
@@ -18,16 +19,15 @@ use svgdom::{
     ValueId,
 };
 
+// self
 use short::{
     AId,
     AValue,
     EId,
 };
-
 use math::{
     Rect,
 };
-
 use {
     ErrorKind,
     Result,

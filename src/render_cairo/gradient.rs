@@ -2,21 +2,17 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// external
 use cairo::{
     self,
     MatrixTrait,
 };
 
-use tree::{
-    self,
-    Units,
-    SpreadMethod,
-};
-
+// self
+use tree;
 use math::{
     Rect,
 };
-
 use traits::{
     ConvTransform,
 };
@@ -54,15 +50,15 @@ fn prepare_base(
     bbox: &Rect,
 ) {
     let spread_method = match g.spread_method {
-        SpreadMethod::Pad => cairo::Extend::Pad,
-        SpreadMethod::Reflect => cairo::Extend::Reflect,
-        SpreadMethod::Repeat => cairo::Extend::Repeat,
+        tree::SpreadMethod::Pad => cairo::Extend::Pad,
+        tree::SpreadMethod::Reflect => cairo::Extend::Reflect,
+        tree::SpreadMethod::Repeat => cairo::Extend::Repeat,
     };
     grad.set_extend(spread_method);
 
     let mut matrix = g.transform.to_native();
 
-    if g.units == Units::ObjectBoundingBox {
+    if g.units == tree::Units::ObjectBoundingBox {
         let m = cairo::Matrix::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y);
         matrix = cairo::Matrix::multiply(&matrix, &m);
     }

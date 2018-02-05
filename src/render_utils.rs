@@ -3,12 +3,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use tree;
-
 use math::{
     Size,
     Rect,
 };
-
 use {
     FitTo,
 };

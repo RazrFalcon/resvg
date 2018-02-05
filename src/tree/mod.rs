@@ -6,22 +6,28 @@
 
 use std::fmt;
 
+// external
 use svgdom;
+
+// self
+pub use self::node::*;
+pub use self::attribute::*;
+
 
 mod attribute;
 mod dump;
 mod node;
 
-pub use self::node::*;
-pub use self::attribute::*;
 
 pub(crate) const DEFS_DEPTH: usize = 2;
 const DEFS_IDX: usize = 1;
+
 
 struct NodeData {
     depth: usize,
     kind: NodeKind,
 }
+
 
 /// Container for a preprocessed SVG.
 ///
@@ -138,6 +144,7 @@ impl fmt::Debug for RenderTree {
     }
 }
 
+
 /// A reference to a `Document` node.
 #[derive(Clone, Copy)]
 pub struct NodeRef<'a> {
@@ -205,6 +212,7 @@ impl<'a> NodeRef<'a> {
     }
 }
 
+
 /// A reference to a defs child node.
 ///
 /// Will contain only nodes that can be represented as `DefsNodeKindRef`.
@@ -270,6 +278,7 @@ impl<'a> DefsNodeRef<'a> {
     }
 }
 
+
 /// An iterator of `NodeRef`s to the children of a given node.
 ///
 /// Returns only nodes that can be represented via `NodeKindRef`.
@@ -311,6 +320,7 @@ impl<'a> Iterator for Children<'a> {
     }
 }
 
+
 /// An iterator of `DefsNodeRef`s to the children of a `defs` node.
 pub struct DefsChildren<'a> {
     nodes: &'a [NodeData],
@@ -347,6 +357,7 @@ impl<'a> Iterator for DefsChildren<'a> {
     }
 }
 
+
 /// An iterator of `Stop`s to the children of a gradient node.
 pub struct Stops<'a> {
     nodes: &'a [NodeData],
@@ -373,6 +384,7 @@ impl<'a> Iterator for Stops<'a> {
         }
     }
 }
+
 
 /// An iterator of `TextChunk`s to the children of a `Text` node.
 pub struct TextChunks<'a> {
@@ -415,6 +427,7 @@ impl<'a> Iterator for TextChunks<'a> {
         }
     }
 }
+
 
 /// An iterator of `TSpan`s to the children of a `TextChunk` node.
 pub struct TextSpans<'a> {

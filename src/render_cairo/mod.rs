@@ -6,30 +6,27 @@
 
 use std::f64;
 
+// external
 use cairo::{
     self,
     MatrixTrait,
 };
 
+// self
 use tree;
-
 use math::{
     Size,
     Rect,
 };
-
 use traits::{
     ConvTransform,
 };
-
 use {
     ErrorKind,
     Options,
     Result,
 };
-
 use render_utils;
-
 use self::ext::{
     ReCairoContextExt,
 };

@@ -4,22 +4,21 @@
 
 use std::f64;
 
+// external
 use cairo;
-
 use pango::{
     self,
     LayoutExt,
     ContextExt,
 };
-
 use pangocairo::functions as pc;
 
+// self
 use tree;
 use render_utils;
 use math::{
     Rect,
 };
-
 use super::{
     fill,
     stroke,

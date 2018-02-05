@@ -66,7 +66,10 @@ pub use math::{
     Size,
     Rect,
 };
-
+use preproc::{
+    DEFAULT_FONT_FAMILY,
+    DEFAULT_FONT_SIZE,
+};
 /// Shorthand names for modules.
 mod short {
     pub use svgdom::{
@@ -76,11 +79,6 @@ mod short {
         AttributeValue as AValue,
     };
 }
-
-use preproc::{
-    DEFAULT_FONT_FAMILY,
-    DEFAULT_FONT_SIZE,
-};
 
 
 /// A list of supported backends.
