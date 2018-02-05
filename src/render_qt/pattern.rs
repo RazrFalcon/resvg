@@ -21,6 +21,7 @@ pub fn apply(
     doc: &dom::Document,
     global_ts: qt::Transform,
     bbox: &Rect,
+    pattern_node: dom::DefsNodeRef,
     pattern: &dom::Pattern,
     brush: &mut qt::Brush,
 ) {
@@ -48,7 +49,7 @@ pub fn apply(
         }
     };
 
-    img.set_dpi(doc.dpi);
+    img.set_dpi(doc.svg_node().dpi);
     img.fill(0, 0, 0, 0);
 
     let p = qt::Painter::new(&img);
@@ -63,7 +64,7 @@ pub fn apply(
         p.apply_transform(&qt::Transform::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y));
     }
 
-    super::render_group(doc, &pattern.children, &p, &p.get_transform(), img_size);
+    super::render_group(doc, pattern_node.to_node_ref(), &p, &p.get_transform(), img_size);
     p.end();
 
     brush.set_pattern(img);

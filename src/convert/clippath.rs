@@ -22,28 +22,31 @@ use super::{
 };
 
 
-pub fn convert(node: &svgdom::Node) -> Option<dom::RefElement> {
+pub fn convert(
+    node: &svgdom::Node,
+    doc: &mut dom::Document,
+) {
     let attrs = node.attributes();
 
-    if let Some(children) = convert_children(node) {
-        let elem = dom::RefElement {
-            id: node.id().clone(),
-            kind: dom::RefElementKind::ClipPath(dom::ClipPath {
-                units: super::convert_element_units(&attrs, AId::ClipPathUnits),
-                transform: attrs.get_transform(AId::Transform).unwrap_or_default(),
-                children,
-            }),
-        };
+    let idx = doc.append_node(dom::DEFS_DEPTH, dom::NodeKind::ClipPath(dom::ClipPath {
+        id: node.id().clone(),
+        units: super::convert_element_units(&attrs, AId::ClipPathUnits),
+        transform: attrs.get_transform(AId::Transform).unwrap_or_default(),
+    }));
 
-        Some(elem)
-    } else {
+    convert_children(node, doc);
+
+    if doc.node_at(idx).children().count() == 0 {
         warn!("The '{}' clipPath has no valid children. Skipped.", node.id());
-        None
+        doc.remove_node(idx);
     }
 }
 
-fn convert_children(node: &svgdom::Node) -> Option<Vec<dom::Element>> {
-    let mut nodes: Vec<dom::Element> = Vec::new();
+fn convert_children(
+    node: &svgdom::Node,
+    doc: &mut dom::Document,
+) {
+    let depth = dom::DEFS_DEPTH + 1;
 
     for (id, node) in node.children().svg() {
         match id {
@@ -54,34 +57,23 @@ fn convert_children(node: &svgdom::Node) -> Option<Vec<dom::Element>> {
             | EId::Circle
             | EId::Ellipse => {
                 if let Some(d) = shapes::convert(&node) {
-                    if let Ok(elem) = path::convert(&[], &node, d) {
-                        nodes.push(elem);
-                    }
+                    path::convert(&node, d, depth, doc);
                 }
             }
             EId::Path => {
                 let attrs = node.attributes();
                 if let Some(d) = attrs.get_path(AId::D) {
-                    if let Ok(elem) = path::convert(&[], &node, d.clone()) {
-                        nodes.push(elem);
-                    }
+                    path::convert(&node, d.clone(), depth, doc);
                 }
             }
             EId::Text => {
-                if let Some(elem) = text::convert(&[], &node) {
-                    nodes.push(elem);
-                }
+                text::convert(&node, depth, doc);
             }
             _ => {
-                warn!("Skipping the '{}' clipPath invalid child element '{}'.", node.id(), id);
+                warn!("Skipping the '{}' clipPath invalid child element '{}'.",
+                      node.id(), id);
                 continue;
             }
         }
     }
-
-    if nodes.is_empty() {
-        return None;
-    }
-
-    Some(nodes)
 }

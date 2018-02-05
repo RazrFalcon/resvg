@@ -6,6 +6,8 @@ use std::path;
 
 use base64;
 use svgdom;
+
+
 use dom;
 
 use short::{
@@ -27,8 +29,10 @@ use {
 
 pub fn convert(
     node: &svgdom::Node,
-    opt: &Options
-) -> Option<dom::Element> {
+    opt: &Options,
+    depth: usize,
+    doc: &mut dom::Document,
+) {
     let attrs = node.attributes();
 
     let ts = attrs.get_transform(AId::Transform).unwrap_or_default();
@@ -42,7 +46,7 @@ pub fn convert(
                 v
             } else {
                 warn!("The 'image' element lacks '{}' attribute. Skipped.", $aid);
-                return None;
+                return;
             }
         )
     }
@@ -53,18 +57,12 @@ pub fn convert(
     let href: &String = get_attr!(AId::XlinkHref);
 
     if let Some(data) = get_href_data(href, opt.path.as_ref()) {
-        let elem = dom::Element {
+        doc.append_node(depth, dom::NodeKind::Image(dom::Image {
             id: node.id().clone(),
             transform: ts,
-            kind: dom::ElementKind::Image(dom::Image {
-                rect: Rect::new(x, y, w, h),
-                data: data,
-            }),
-        };
-
-        Some(elem)
-    } else {
-        None
+            rect: Rect::new(x, y, w, h),
+            data: data,
+        }));
     }
 }
 

@@ -2,12 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::f64;
-
 use svgdom;
 
 use dom;
-use math;
 
 use short::{
     AId,
@@ -19,60 +16,54 @@ use traits::{
 };
 
 
-pub fn convert_linear(node: &svgdom::Node) -> Option<dom::RefElement> {
+pub fn convert_linear(
+    node: &svgdom::Node,
+    doc: &mut dom::Document,
+) {
     let ref attrs = node.attributes();
 
-    if let Some(stops) = convert_stops(node) {
-        let elem = dom::RefElement {
-            kind: dom::RefElementKind::LinearGradient(dom::LinearGradient {
-                x1: attrs.get_number(AId::X1).unwrap_or(0.0),
-                y1: attrs.get_number(AId::Y1).unwrap_or(0.0),
-                x2: attrs.get_number(AId::X2).unwrap_or(1.0),
-                y2: attrs.get_number(AId::Y2).unwrap_or(0.0),
-                d: dom::BaseGradient {
-                    units: super::convert_element_units(attrs, AId::GradientUnits),
-                    transform: attrs.get_transform(AId::GradientTransform).unwrap_or_default(),
-                    spread_method: convert_spread_method(&attrs),
-                    stops,
-                }
-            }),
-            id: node.id().clone(),
-        };
+    doc.append_node(dom::DEFS_DEPTH, dom::NodeKind::LinearGradient(dom::LinearGradient {
+        id: node.id().clone(),
+        x1: attrs.get_number(AId::X1).unwrap_or(0.0),
+        y1: attrs.get_number(AId::Y1).unwrap_or(0.0),
+        x2: attrs.get_number(AId::X2).unwrap_or(1.0),
+        y2: attrs.get_number(AId::Y2).unwrap_or(0.0),
+        d: dom::BaseGradient {
+            units: super::convert_element_units(attrs, AId::GradientUnits),
+            transform: attrs.get_transform(AId::GradientTransform).unwrap_or_default(),
+            spread_method: convert_spread_method(&attrs),
+        }
+    }));
 
-        Some(elem)
-    } else {
-        None
-    }
+    convert_stops(node, doc);
 }
 
-pub fn convert_radial(node: &svgdom::Node) -> Option<dom::RefElement> {
+pub fn convert_radial(
+    node: &svgdom::Node,
+    doc: &mut dom::Document,
+) {
     let ref attrs = node.attributes();
 
-    if let Some(stops) = convert_stops(node) {
-        let elem = dom::RefElement {
-            kind: dom::RefElementKind::RadialGradient(dom::RadialGradient {
-                cx: attrs.get_number(AId::Cx).unwrap_or(0.5),
-                cy: attrs.get_number(AId::Cy).unwrap_or(0.5),
-                r:  attrs.get_number(AId::R).unwrap_or(0.5),
-                fx: attrs.get_number(AId::Fx).unwrap_or(0.5),
-                fy: attrs.get_number(AId::Fy).unwrap_or(0.5),
-                d: dom::BaseGradient {
-                    units: super::convert_element_units(attrs, AId::GradientUnits),
-                    transform: attrs.get_transform(AId::GradientTransform).unwrap_or_default(),
-                    spread_method: convert_spread_method(&attrs),
-                    stops,
-                }
-            }),
-            id: node.id().clone(),
-        };
+    doc.append_node(dom::DEFS_DEPTH, dom::NodeKind::RadialGradient(dom::RadialGradient {
+        id: node.id().clone(),
+        cx: attrs.get_number(AId::Cx).unwrap_or(0.5),
+        cy: attrs.get_number(AId::Cy).unwrap_or(0.5),
+        r:  attrs.get_number(AId::R).unwrap_or(0.5),
+        fx: attrs.get_number(AId::Fx).unwrap_or(0.5),
+        fy: attrs.get_number(AId::Fy).unwrap_or(0.5),
+        d: dom::BaseGradient {
+            units: super::convert_element_units(attrs, AId::GradientUnits),
+            transform: attrs.get_transform(AId::GradientTransform).unwrap_or_default(),
+            spread_method: convert_spread_method(&attrs),
+        }
+    }));
 
-        Some(elem)
-    } else {
-        None
-    }
+    convert_stops(node, doc);
 }
 
-fn convert_spread_method(attrs: &svgdom::Attributes) -> dom::SpreadMethod {
+fn convert_spread_method(
+    attrs: &svgdom::Attributes
+) -> dom::SpreadMethod {
     let av = attrs.get_predef(AId::SpreadMethod).unwrap_or(svgdom::ValueId::Pad);
 
     match av {
@@ -83,10 +74,10 @@ fn convert_spread_method(attrs: &svgdom::Attributes) -> dom::SpreadMethod {
     }
 }
 
-fn convert_stops(node: &svgdom::Node) -> Option<Vec<dom::Stop>> {
-    let mut stops: Vec<dom::Stop> = Vec::new();
-    let mut prev_offset = 0.0;
-
+fn convert_stops(
+    node: &svgdom::Node,
+    doc: &mut dom::Document,
+) {
     for s in node.children() {
         if !s.is_tag_name(EId::Stop) {
             debug!("Invalid gradient child: '{:?}'.", s.tag_id().unwrap());
@@ -95,35 +86,16 @@ fn convert_stops(node: &svgdom::Node) -> Option<Vec<dom::Stop>> {
 
         let attrs = s.attributes();
 
-        let mut offset = attrs.get_number(AId::Offset).unwrap_or(0.0);
-        offset = math::f64_bound(0.0, offset, 1.0);
-        // Next offset must be smaller then previous.
-        if offset < prev_offset {
-            if let Some(ref mut prev) = stops.last_mut() {
-                // Make previous offset a bit smaller.
-                prev.offset = prev_offset - f64::EPSILON;
-            }
-
-            offset = prev_offset;
-        }
-        prev_offset = offset;
-
         // Tested by:
         // - pservers-grad-18-b.svg
+        let offset = attrs.get_number(AId::Offset).unwrap_or(0.0);
         let color = attrs.get_color(AId::StopColor).unwrap_or(svgdom::Color::new(0, 0, 0));
         let opacity = attrs.get_number(AId::StopOpacity).unwrap_or(1.0);
 
-        stops.push(dom::Stop {
+        doc.append_node(dom::DEFS_DEPTH + 1, dom::NodeKind::Stop(dom::Stop {
             offset,
             color,
             opacity,
-        });
+        }));
     }
-
-    if stops.len() < 2 {
-        warn!("Gradient '{}' contains less than 2 stop children. Skipped.", node.id());
-        return None;
-    }
-
-    Some(stops)
 }

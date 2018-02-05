@@ -22,19 +22,37 @@ use traits::{
 };
 
 
-pub fn prepare_linear(g: &dom::LinearGradient, opacity: f64, bbox: &Rect, cr: &cairo::Context) {
+pub fn prepare_linear(
+    node: dom::DefsNodeRef,
+    g: &dom::LinearGradient,
+    opacity: f64,
+    bbox: &Rect,
+    cr: &cairo::Context,
+) {
     let grad = cairo::LinearGradient::new(g.x1, g.y1, g.x2, g.y2);
-    prepare_base(&g.d, &grad, opacity, bbox);
+    prepare_base(node, &g.d, &grad, opacity, bbox);
     cr.set_source(&grad);
 }
 
-pub fn prepare_radial(g: &dom::RadialGradient, opacity: f64, bbox: &Rect, cr: &cairo::Context) {
+pub fn prepare_radial(
+    node: dom::DefsNodeRef,
+    g: &dom::RadialGradient,
+    opacity: f64,
+    bbox: &Rect,
+    cr: &cairo::Context
+) {
     let grad = cairo::RadialGradient::new(g.fx, g.fy, 0.0, g.cx, g.cy, g.r);
-    prepare_base(&g.d, &grad, opacity, bbox);
+    prepare_base(node, &g.d, &grad, opacity, bbox);
     cr.set_source(&grad);
 }
 
-fn prepare_base(g: &dom::BaseGradient, grad: &cairo::Gradient, opacity: f64, bbox: &Rect) {
+fn prepare_base(
+    node: dom::DefsNodeRef,
+    g: &dom::BaseGradient,
+    grad: &cairo::Gradient,
+    opacity: f64,
+    bbox: &Rect,
+) {
     let spread_method = match g.spread_method {
         SpreadMethod::Pad => cairo::Extend::Pad,
         SpreadMethod::Reflect => cairo::Extend::Reflect,
@@ -52,8 +70,7 @@ fn prepare_base(g: &dom::BaseGradient, grad: &cairo::Gradient, opacity: f64, bbo
     matrix.invert();
     grad.set_matrix(matrix);
 
-
-    for stop in &g.stops {
+    for stop in node.stops() {
         grad.add_color_stop_rgba(
             stop.offset,
             stop.color.red as f64 / 255.0,

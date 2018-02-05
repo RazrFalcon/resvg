@@ -32,16 +32,17 @@ pub fn apply(
                     brush.set_color(c.red, c.green, c.blue, a);
                 }
                 dom::Paint::Link(id) => {
-                    match doc.get_defs(id).kind {
-                        dom::RefElementKind::LinearGradient(ref lg) => {
-                            gradient::prepare_linear(lg, fill.opacity, &mut brush);
+                    let node = doc.defs_at(id);
+                    match node.kind() {
+                        dom::DefsNodeKindRef::LinearGradient(ref lg) => {
+                            gradient::prepare_linear(node, lg, fill.opacity, &mut brush);
                         }
-                        dom::RefElementKind::RadialGradient(ref rg) => {
-                            gradient::prepare_radial(rg, fill.opacity, &mut brush);
+                        dom::DefsNodeKindRef::RadialGradient(ref rg) => {
+                            gradient::prepare_radial(node, rg, fill.opacity, &mut brush);
                         }
-                        dom::RefElementKind::ClipPath(_) => {}
-                        dom::RefElementKind::Pattern(ref pattern) => {
-                            pattern::apply(doc, p.get_transform(), bbox, pattern, &mut brush);
+                        dom::DefsNodeKindRef::ClipPath(_) => {}
+                        dom::DefsNodeKindRef::Pattern(ref pattern) => {
+                            pattern::apply(doc, p.get_transform(), bbox, node, pattern, &mut brush);
                         }
                     }
                 }

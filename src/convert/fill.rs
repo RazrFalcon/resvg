@@ -21,10 +21,9 @@ use traits::{
 
 
 pub fn convert(
-    defs: &[dom::RefElement],
+    doc: &dom::Document,
     attrs: &svgdom::Attributes,
-) -> Option<dom::Fill>
-{
+) -> Option<dom::Fill> {
     let paint = if let Some(fill) = attrs.get_type(AId::Fill) {
         match *fill {
             AValue::Color(c) => {
@@ -33,7 +32,7 @@ pub fn convert(
             AValue::FuncLink(ref link) => {
                 let mut p = None;
                 if link.is_gradient() || link.is_tag_name(EId::Pattern) {
-                    if let Some(idx) = defs.iter().position(|e| e.id == *link.id()) {
+                    if let Some(idx) = doc.defs_index(&link.id()) {
                         p = Some(dom::Paint::Link(idx));
                     }
                 }

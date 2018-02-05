@@ -39,7 +39,7 @@ extern crate libflate;
 
 mod math;
 mod convert;
-mod dom;
+pub mod dom;
 mod error;
 mod options;
 mod preproc;
@@ -61,7 +61,6 @@ pub use error::{
     Result,
 };
 pub use options::*;
-pub use dom::*;
 pub use math::{
     Line,
     Size,
@@ -99,8 +98,8 @@ pub enum Backend {
 /// Creates `Document` from SVG data.
 pub fn parse_doc_from_data(text: &str, opt: &Options) -> Result<dom::Document> {
     let mut doc = parse_svg(text)?;
-    prepare_doc(&mut doc, opt)?;
-    let re_doc = convert_doc(&doc, opt)?;
+    preproc::prepare_doc(&mut doc, opt)?;
+    let re_doc = convert::convert_doc(&doc, opt)?;
 
     Ok(re_doc)
 }
@@ -111,8 +110,8 @@ pub fn parse_doc_from_data(text: &str, opt: &Options) -> Result<dom::Document> {
 pub fn parse_doc_from_file<P: AsRef<Path>>(path: P, opt: &Options) -> Result<dom::Document> {
     let text = load_file(path.as_ref())?;
     let mut doc = parse_svg(&text)?;
-    prepare_doc(&mut doc, opt)?;
-    let re_doc = convert_doc(&doc, opt)?;
+    preproc::prepare_doc(&mut doc, opt)?;
+    let re_doc = convert::convert_doc(&doc, opt)?;
 
     Ok(re_doc)
 }
@@ -164,12 +163,4 @@ fn parse_svg(text: &str) -> Result<svgdom::Document> {
 
     let doc = svgdom::Document::from_str_with_opt(&text, &opt)?;
     Ok(doc)
-}
-
-fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) -> Result<()> {
-    preproc::prepare_doc(doc, opt)
-}
-
-fn convert_doc(doc: &svgdom::Document, opt: &Options) -> Result<dom::Document> {
-    convert::convert_doc(doc, opt)
 }

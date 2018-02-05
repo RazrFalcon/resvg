@@ -16,30 +16,37 @@ use traits::{
 
 
 pub fn prepare_linear(
+    node: dom::DefsNodeRef,
     g: &dom::LinearGradient,
     opacity: f64,
     brush: &mut qt::Brush,
 ) {
     let mut grad = qt::LinearGradient::new(g.x1, g.y1, g.x2, g.y2);
-    prepare_base(&g.d, &mut grad, opacity);
+    prepare_base(node, &g.d, &mut grad, opacity);
 
     brush.set_linear_gradient(grad);
     brush.set_transform(g.d.transform.to_native());
 }
 
 pub fn prepare_radial(
+    node: dom::DefsNodeRef,
     g: &dom::RadialGradient,
     opacity: f64,
     brush: &mut qt::Brush,
 ) {
     let mut grad = qt::RadialGradient::new(g.cx, g.cy, g.fx, g.fy, g.r);
-    prepare_base(&g.d, &mut grad, opacity);
+    prepare_base(node, &g.d, &mut grad, opacity);
 
     brush.set_radial_gradient(grad);
     brush.set_transform(g.d.transform.to_native());
 }
 
-fn prepare_base(g: &dom::BaseGradient, grad: &mut qt::Gradient, opacity: f64) {
+fn prepare_base(
+    node: dom::DefsNodeRef,
+    g: &dom::BaseGradient,
+    grad: &mut qt::Gradient,
+    opacity: f64,
+) {
     let spread_method = match g.spread_method {
         SpreadMethod::Pad => qt::Spread::PadSpread,
         SpreadMethod::Reflect => qt::Spread::ReflectSpread,
@@ -51,7 +58,7 @@ fn prepare_base(g: &dom::BaseGradient, grad: &mut qt::Gradient, opacity: f64) {
         grad.set_units(qt::CoordinateMode::ObjectBoundingMode)
     }
 
-    for stop in &g.stops {
+    for stop in node.stops() {
         grad.set_color_at(
             stop.offset,
             stop.color.red,

@@ -31,8 +31,8 @@ use resvg::cairo;
 use resvg::{
     log,
     svgdom,
+    dom,
     Backend,
-    Document,
     FitTo,
     Options,
 };
@@ -339,7 +339,7 @@ fn fill_options(args: &ArgMatches) -> Options {
     }
 }
 
-fn dump_svg(doc: &Document, path: &path::Path) -> Result<(), io::Error> {
+fn dump_svg(doc: &dom::Document, path: &path::Path) -> Result<(), io::Error> {
     let mut f = fs::File::create(path)?;
 
     let opt = svgdom::WriteOptions {

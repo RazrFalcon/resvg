@@ -20,14 +20,15 @@ use super::{
 
 pub fn draw(
     doc: &dom::Document,
-    elem: &dom::Text,
+    node: dom::NodeRef,
     p: &qt::Painter,
 ) -> Rect {
-    draw_tspan(elem, p, |tspan, x, y, w, font| _draw_tspan(doc, tspan, x, y, w, &font, p))
+    draw_tspan(node, p,
+        |tspan, x, y, w, font| _draw_tspan(doc, tspan, x, y, w, &font, p))
 }
 
 pub fn draw_tspan<DrawAt>(
-    elem: &dom::Text,
+    node: dom::NodeRef,
     p: &qt::Painter,
     mut draw_at: DrawAt
 ) -> Rect
@@ -36,12 +37,12 @@ pub fn draw_tspan<DrawAt>(
     let mut bbox = Rect::new(f64::MAX, f64::MAX, 0.0, 0.0);
     let mut font_list = Vec::new();
     let mut tspan_w_list = Vec::new();
-    let mut tspan_list = Vec::new();
-    for chunk in &elem.children {
+    for (child, chunk) in node.text_chunks() {
+        font_list.clear();
         tspan_w_list.clear();
         let mut chunk_width = 0.0;
 
-        for tspan in &chunk.children {
+        for tspan in child.text_spans() {
             let font = init_font(&tspan.font);
             p.set_font(&font);
             let font_metrics = p.font_metrics();
@@ -56,14 +57,10 @@ pub fn draw_tspan<DrawAt>(
 
         let mut x = render_utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
 
-        for (tspan, width) in chunk.children.iter().zip(&tspan_w_list) {
-            tspan_list.push((x, chunk.y, *width, tspan));
+        for ((tspan, width), font) in child.text_spans().zip(&tspan_w_list).zip(&font_list) {
+            draw_at(tspan, x, chunk.y, *width, &font);
             x += width;
         }
-    }
-
-    for (&(x, y, width, tspan), font) in tspan_list.iter().zip(font_list) {
-        draw_at(tspan, x, y, width, &font);
     }
 
     bbox

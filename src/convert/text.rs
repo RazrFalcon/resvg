@@ -25,38 +25,35 @@ use super::{
 
 
 pub fn convert(
-    defs: &[dom::RefElement],
     text_elem: &svgdom::Node,
-) -> Option<dom::Element>
-{
+    depth: usize,
+    doc: &mut dom::Document,
+) {
     let attrs = text_elem.attributes();
     let ts = attrs.get_transform(AId::Transform).unwrap_or_default();
 
-    if let Some(chunks) = convert_chunks(defs, text_elem) {
-        Some(dom::Element {
-            id: String::new(),
-            transform: ts,
-            kind: dom::ElementKind::Text(dom::Text {
-                children: chunks,
-            }),
-        })
-    } else {
-        None
-    }
+    doc.append_node(depth, dom::NodeKind::Text(dom::Text {
+        id: text_elem.id().clone(),
+        transform: ts,
+    }));
+
+    convert_chunks(text_elem, depth + 1, doc);
 }
 
 fn convert_chunks(
-    defs: &[dom::RefElement],
     text_elem: &svgdom::Node,
-) -> Option<Vec<dom::TextChunk>> {
-    let mut chunks = Vec::new();
-    let mut tspans = Vec::new();
-
+    depth: usize,
+    doc: &mut dom::Document,
+) {
     let ref root_attrs = text_elem.attributes();
     let mut prev_x = resolve_pos(root_attrs, AId::X).unwrap_or(0.0);
     let mut prev_y = resolve_pos(root_attrs, AId::Y).unwrap_or(0.0);
 
-    let mut first_chunk = text_elem.clone();
+    doc.append_node(depth, dom::NodeKind::TextChunk(dom::TextChunk {
+        x: prev_x,
+        y: prev_y,
+        anchor: conv_text_anchor(root_attrs),
+    }));
 
     for tspan in text_elem.children() {
         debug_assert!(tspan.is_tag_name(EId::Tspan));
@@ -73,38 +70,38 @@ fn convert_chunks(
         let y = resolve_pos(attrs, AId::Y);
 
         if x.is_some() || y.is_some() {
-            let tx = x.unwrap_or(0.0);
-            let ty = y.unwrap_or(0.0);
+            let tx = x.unwrap_or(prev_x);
+            let ty = y.unwrap_or(prev_y);
 
-            if !tspans.is_empty() {
-                if tx.fuzzy_ne(&prev_x) || ty.fuzzy_ne(&prev_y) {
-                    chunks.push(create_text_chunk(prev_x, prev_y, &tspans, &first_chunk));
-                    tspans.clear();
-                }
+            if tx.fuzzy_ne(&prev_x) || ty.fuzzy_ne(&prev_y) {
+                doc.append_node(depth, dom::NodeKind::TextChunk(dom::TextChunk {
+                    x: tx,
+                    y: ty,
+                    anchor: conv_text_anchor(attrs),
+                }));
             }
 
-            prev_x = x.unwrap_or(prev_x);
-            prev_y = y.unwrap_or(prev_y);
-            first_chunk = tspan.clone();
+            prev_x = tx;
+            prev_y = ty;
         }
 
-        tspans.push(dom::TSpan {
-            fill: fill::convert(defs, attrs),
-            stroke: stroke::convert(defs, attrs),
+        let fill = fill::convert(doc, attrs);
+        let stroke = stroke::convert(doc, attrs);
+        let decoration = conv_tspan_decoration2(doc, text_elem, &tspan);
+        doc.append_node(depth + 1, dom::NodeKind::TSpan(dom::TSpan {
+            fill,
+            stroke,
             font: convert_font(attrs),
-            decoration: conv_tspan_decoration2(defs, text_elem, &tspan),
-            text: text,
-        });
+            decoration,
+            text,
+        }));
     }
-
-    if !tspans.is_empty() {
-        chunks.push(create_text_chunk(prev_x, prev_y, &tspans, &first_chunk));
-    }
-
-    Some(chunks)
 }
 
-fn resolve_pos(attrs: &svgdom::Attributes, aid: AId) -> Option<f64> {
+fn resolve_pos(
+    attrs: &svgdom::Attributes,
+    aid: AId,
+) -> Option<f64> {
     if let Some(ref list) = attrs.get_number_list(aid) {
         if !list.is_empty() {
             if list.len() > 1 {
@@ -116,22 +113,6 @@ fn resolve_pos(attrs: &svgdom::Attributes, aid: AId) -> Option<f64> {
     }
 
     None
-}
-
-fn create_text_chunk(
-    x: f64,
-    y: f64,
-    tspans: &[dom::TSpan],
-    chunk_node: &svgdom::Node,
-) -> dom::TextChunk {
-    let ref attrs = chunk_node.attributes();
-
-    dom::TextChunk {
-        x,
-        y,
-        anchor: conv_text_anchor(attrs),
-        children: tspans.into(),
-    }
 }
 
 struct TextDecoTypes {
@@ -181,7 +162,7 @@ fn conv_tspan_decoration(tspan: &svgdom::Node) -> TextDecoTypes {
 }
 
 fn conv_tspan_decoration2(
-    defs: &[dom::RefElement],
+    doc: &dom::Document,
     node: &svgdom::Node,
     tspan: &svgdom::Node
 ) -> dom::TextDecoration {
@@ -198,8 +179,8 @@ fn conv_tspan_decoration2(
         };
 
         let ref attrs = n.attributes();
-        let fill = fill::convert(defs, attrs);
-        let stroke = stroke::convert(defs, attrs);
+        let fill = fill::convert(doc, attrs);
+        let stroke = stroke::convert(doc, attrs);
 
         Some(dom::TextDecorationStyle {
             fill,

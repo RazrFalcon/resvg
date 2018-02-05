@@ -30,16 +30,15 @@ pub fn apply(
                     cr.set_source_color(&c, stroke.opacity);
                 }
                 dom::Paint::Link(id) => {
-                    let ref_elem = doc.get_defs(id);
-
-                    match ref_elem.kind {
-                        dom::RefElementKind::LinearGradient(ref lg) =>
-                            gradient::prepare_linear(lg, stroke.opacity, bbox, cr),
-                        dom::RefElementKind::RadialGradient(ref rg) =>
-                            gradient::prepare_radial(rg, stroke.opacity, bbox, cr),
-                        dom::RefElementKind::ClipPath(_) => {}
-                        dom::RefElementKind::Pattern(ref pattern) => {
-                            pattern::apply(doc, pattern, bbox, cr);
+                    let node = doc.defs_at(id);
+                    match node.kind() {
+                        dom::DefsNodeKindRef::LinearGradient(ref lg) =>
+                            gradient::prepare_linear(node, lg, stroke.opacity, bbox, cr),
+                        dom::DefsNodeKindRef::RadialGradient(ref rg) =>
+                            gradient::prepare_radial(node, rg, stroke.opacity, bbox, cr),
+                        dom::DefsNodeKindRef::ClipPath(_) => {}
+                        dom::DefsNodeKindRef::Pattern(ref pattern) => {
+                            pattern::apply(doc, node, pattern, bbox, cr);
                         }
                     }
                 }

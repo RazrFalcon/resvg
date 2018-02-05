@@ -37,35 +37,35 @@ pub struct PangoData {
 
 pub fn draw(
     doc: &dom::Document,
-    elem: &dom::Text,
+    node: dom::NodeRef,
     cr: &cairo::Context,
 ) -> Rect {
-    draw_tspan(doc, elem, cr,
+    draw_tspan(doc, node, cr,
         |tspan, x, y, w, d| _draw_tspan(doc, tspan, x, y, w, d, cr))
 }
 
 pub fn draw_tspan<DrawAt>(
     doc: &dom::Document,
-    elem: &dom::Text,
+    node: dom::NodeRef,
     cr: &cairo::Context,
-    mut draw_at: DrawAt
+    mut draw_at: DrawAt,
 ) -> Rect
     where DrawAt: FnMut(&dom::TSpan, f64, f64, f64, &PangoData)
 {
     let mut bbox = Rect::new(f64::MAX, f64::MAX, 0.0, 0.0);
     let mut pc_list = Vec::new();
     let mut tspan_w_list = Vec::new();
-    let mut tspan_list = Vec::new();
-    for chunk in &elem.children {
+    for (child, chunk) in node.text_chunks() {
+        pc_list.clear();
         tspan_w_list.clear();
         let mut chunk_width = 0.0;
 
-        for tspan in &chunk.children {
+        for tspan in child.text_spans() {
             let context = pc::create_context(cr).unwrap();
             pc::update_context(cr, &context);
-            pc::context_set_resolution(&context, doc.dpi);
+            pc::context_set_resolution(&context, doc.svg_node().dpi);
 
-            let font = init_font(&tspan.font, doc.dpi);
+            let font = init_font(&tspan.font, doc.svg_node().dpi);
 
             let layout = pango::Layout::new(&context);
             layout.set_font_description(Some(&font));
@@ -88,14 +88,10 @@ pub fn draw_tspan<DrawAt>(
 
         let mut x = render_utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
 
-        for (tspan, &(width, ascent)) in chunk.children.iter().zip(&tspan_w_list) {
-            tspan_list.push((x, chunk.y - ascent, width, tspan));
+        for ((tspan, &(width, ascent)), d) in child.text_spans().zip(&tspan_w_list).zip(&pc_list) {
+            draw_at(tspan, x, chunk.y - ascent, width, d);
             x += width;
         }
-    }
-
-    for (&(x, y, width, tspan), d) in tspan_list.iter().zip(pc_list) {
-        draw_at(tspan, x, y, width, &d);
     }
 
     bbox

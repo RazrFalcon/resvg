@@ -23,6 +23,7 @@ use super::{
 
 pub fn apply(
     doc: &dom::Document,
+    node: dom::DefsNodeRef,
     cp: &dom::ClipPath,
     p: &qt::Painter,
     bbox: &Rect,
@@ -34,7 +35,7 @@ pub fn apply(
     ).unwrap(); // TODO: remove
 
     clip_img.fill(0, 0, 0, 255);
-    clip_img.set_dpi(doc.dpi);
+    clip_img.set_dpi(doc.svg_node().dpi);
 
     let clip_p = qt::Painter::new(&clip_img);
     clip_p.set_transform(&p.get_transform());
@@ -47,15 +48,15 @@ pub fn apply(
     clip_p.set_composition_mode(qt::CompositionMode::CompositionMode_Clear);
 
     let ts = clip_p.get_transform();
-    for elem in &cp.children {
-        clip_p.apply_transform(&elem.transform.to_native());
+    for node in node.children() {
+        clip_p.apply_transform(&node.kind().transform().to_native());
 
-        match elem.kind {
-            dom::ElementKind::Path(ref path_elem) => {
+        match node.kind() {
+            dom::NodeKindRef::Path(ref path_elem) => {
                 path::draw(doc, path_elem, &clip_p);
             }
-            dom::ElementKind::Text(ref text_elem) => {
-                text::draw(doc, text_elem, &clip_p);
+            dom::NodeKindRef::Text(_) => {
+                text::draw(doc, node, &clip_p);
             }
             _ => {}
         }

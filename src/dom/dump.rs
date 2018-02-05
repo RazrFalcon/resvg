@@ -25,100 +25,99 @@ pub fn conv_doc(doc: &Document) -> svgdom::Document {
     let mut svg = new_doc.create_element(EId::Svg);
     new_doc.append(&svg);
 
-    let view_box = format!("{} {} {} {}", doc.view_box.x, doc.view_box.y,
-                                          doc.view_box.w, doc.view_box.h);
+    let svg_node = doc.svg_node();
+
+    let view_box = format!("{} {} {} {}", svg_node.view_box.x, svg_node.view_box.y,
+                                          svg_node.view_box.w, svg_node.view_box.h);
 
     svg.set_attribute((AId::Xmlns, "http://www.w3.org/2000/svg"));
-    if !doc.defs.is_empty() {
-        svg.set_attribute((AId::XmlnsXlink, "http://www.w3.org/1999/xlink"));
-    }
-    svg.set_attribute((AId::Width,  doc.size.w));
-    svg.set_attribute((AId::Height, doc.size.h));
+    svg.set_attribute((AId::Width,  svg_node.size.w));
+    svg.set_attribute((AId::Height, svg_node.size.h));
     svg.set_attribute((AId::ViewBox, view_box));
+    svg.set_attribute((AId::XmlnsXlink, "http://www.w3.org/1999/xlink"));
     svg.set_attribute(("xmlns:resvg", "https://github.com/RazrFalcon/libresvg"));
     svg.set_attribute(("resvg:version", env!("CARGO_PKG_VERSION")));
 
-    let mut defs_list = Vec::new();
+    let mut defs = new_doc.create_element(EId::Defs);
+    svg.append(&defs);
 
-    if !doc.defs.is_empty() {
-        let mut defs = new_doc.create_element(EId::Defs);
-        svg.append(&defs);
-
-        for e in &doc.defs {
-            match e.kind {
-                element::RefElementKind::LinearGradient(ref lg) => {
-                    let mut grad = new_doc.create_element(EId::LinearGradient);
-                    defs.append(&grad);
-                    defs_list.push(grad.clone());
-
-                    grad.set_id(e.id.clone());
-
-                    grad.set_attribute((AId::X1, lg.x1));
-                    grad.set_attribute((AId::Y1, lg.y1));
-                    grad.set_attribute((AId::X2, lg.x2));
-                    grad.set_attribute((AId::Y2, lg.y2));
-
-                    conv_base_grad(&lg.d, &mut new_doc, &mut grad);
-                }
-                element::RefElementKind::RadialGradient(ref rg) => {
-                    let mut grad = new_doc.create_element(EId::RadialGradient);
-                    defs.append(&grad);
-                    defs_list.push(grad.clone());
-
-                    grad.set_id(e.id.clone());
-
-                    grad.set_attribute((AId::Cx, rg.cx));
-                    grad.set_attribute((AId::Cy, rg.cy));
-                    grad.set_attribute((AId::R,  rg.r));
-                    grad.set_attribute((AId::Fx, rg.fx));
-                    grad.set_attribute((AId::Fy, rg.fy));
-
-                    conv_base_grad(&rg.d, &mut new_doc, &mut grad);
-                }
-                element::RefElementKind::ClipPath(ref c) => {
-                    let mut clip = new_doc.create_element(EId::ClipPath);
-                    defs.append(&clip);
-                    defs_list.push(clip.clone());
-
-                    clip.set_id(e.id.clone());
-                    conv_units(AId::ClipPathUnits, c.units, &mut clip);
-                    conv_transform(AId::Transform, &c.transform, &mut clip);
-                    conv_elements(&c.children, &[], &mut new_doc, &mut clip);
-                }
-                element::RefElementKind::Pattern(ref pattern) => {
-                    let mut pattern_elem = new_doc.create_element(EId::Pattern);
-                    defs.append(&pattern_elem);
-                    defs_list.push(pattern_elem.clone());
-
-                    pattern_elem.set_id(e.id.clone());
-
-                    pattern_elem.set_attribute((AId::X, pattern.rect.x));
-                    pattern_elem.set_attribute((AId::Y, pattern.rect.y));
-                    pattern_elem.set_attribute((AId::Width, pattern.rect.w));
-                    pattern_elem.set_attribute((AId::Height, pattern.rect.h));
-
-                    if let Some(vbox) = pattern.view_box {
-                        let vbox_str = format!("{} {} {} {}", vbox.x, vbox.y, vbox.w, vbox.h);
-                        pattern_elem.set_attribute((AId::ViewBox, vbox_str));
-                    }
-
-                    conv_units(AId::PatternUnits, pattern.units, &mut pattern_elem);
-                    conv_units(AId::PatternContentUnits, pattern.content_units, &mut pattern_elem);
-                    conv_transform(AId::PatternTransform, &pattern.transform, &mut pattern_elem);
-                    conv_elements(&pattern.children, &[], &mut new_doc, &mut pattern_elem);
-                }
-            }
-        }
-    }
-
-    conv_elements(&doc.elements, &defs_list, &mut new_doc, &mut svg);
+    conv_defs(doc, &mut new_doc, &mut defs);
+    conv_elements(doc.root(), &defs, &mut new_doc, &mut svg);
 
     new_doc
 }
 
+fn conv_defs(
+    doc: &Document,
+    new_doc: &mut svgdom::Document,
+    defs: &mut svgdom::Node,
+) {
+    for n in doc.defs() {
+        match n.kind() {
+            DefsNodeKindRef::LinearGradient(ref lg) => {
+                let mut grad_elem = new_doc.create_element(EId::LinearGradient);
+                defs.append(&grad_elem);
+
+                grad_elem.set_id(lg.id.clone());
+
+                grad_elem.set_attribute((AId::X1, lg.x1));
+                grad_elem.set_attribute((AId::Y1, lg.y1));
+                grad_elem.set_attribute((AId::X2, lg.x2));
+                grad_elem.set_attribute((AId::Y2, lg.y2));
+
+                conv_base_grad(n, &lg.d, new_doc, &mut grad_elem);
+            }
+            DefsNodeKindRef::RadialGradient(ref rg) => {
+                let mut grad_elem = new_doc.create_element(EId::RadialGradient);
+                defs.append(&grad_elem);
+
+                grad_elem.set_id(rg.id.clone());
+
+                grad_elem.set_attribute((AId::Cx, rg.cx));
+                grad_elem.set_attribute((AId::Cy, rg.cy));
+                grad_elem.set_attribute((AId::R,  rg.r));
+                grad_elem.set_attribute((AId::Fx, rg.fx));
+                grad_elem.set_attribute((AId::Fy, rg.fy));
+
+                conv_base_grad(n, &rg.d, new_doc, &mut grad_elem);
+            }
+            DefsNodeKindRef::ClipPath(ref clip) => {
+                let mut clip_elem = new_doc.create_element(EId::ClipPath);
+                defs.append(&clip_elem);
+
+                clip_elem.set_id(clip.id.clone());
+                conv_units(AId::ClipPathUnits, clip.units, &mut clip_elem);
+                conv_transform(AId::Transform, &clip.transform, &mut clip_elem);
+                conv_elements(n.to_node_ref(), defs, new_doc, &mut clip_elem);
+            }
+            DefsNodeKindRef::Pattern(ref pattern) => {
+                let mut pattern_elem = new_doc.create_element(EId::Pattern);
+                defs.append(&pattern_elem);
+
+                pattern_elem.set_id(pattern.id.clone());
+
+                pattern_elem.set_attribute((AId::X, pattern.rect.x));
+                pattern_elem.set_attribute((AId::Y, pattern.rect.y));
+                pattern_elem.set_attribute((AId::Width, pattern.rect.w));
+                pattern_elem.set_attribute((AId::Height, pattern.rect.h));
+
+                if let Some(vbox) = pattern.view_box {
+                    let vbox_str = format!("{} {} {} {}", vbox.x, vbox.y, vbox.w, vbox.h);
+                    pattern_elem.set_attribute((AId::ViewBox, vbox_str));
+                }
+
+                conv_units(AId::PatternUnits, pattern.units, &mut pattern_elem);
+                conv_units(AId::PatternContentUnits, pattern.content_units, &mut pattern_elem);
+                conv_transform(AId::PatternTransform, &pattern.transform, &mut pattern_elem);
+                conv_elements(n.to_node_ref(), defs, new_doc, &mut pattern_elem);
+            }
+        }
+    }
+}
+
 fn conv_elements(
-    elements: &[Element],
-    defs_list: &[svgdom::Node],
+    root: NodeRef,
+    defs: &svgdom::Node,
     new_doc: &mut svgdom::Document,
     parent: &mut svgdom::Node,
 ) {
@@ -129,13 +128,13 @@ fn conv_elements(
         base64::LineWrap::Wrap(64, base64::LineEnding::LF),
     );
 
-    for e in elements {
-        match e.kind {
-            element::ElementKind::Path(ref p) => {
+    for n in root.children() {
+        match n.kind() {
+            NodeKindRef::Path(ref p) => {
                 let mut path_elem = new_doc.create_element(EId::Path);
                 parent.append(&path_elem);
 
-                conv_element(e, &mut path_elem);
+                conv_element(n.kind(), &mut path_elem);
 
                 use svgdom::path::Path as SvgDomPath;
                 use svgdom::path::Segment;
@@ -160,18 +159,18 @@ fn conv_elements(
 
                 path_elem.set_attribute((AId::D, path));
 
-                conv_fill(&p.fill, parent, &defs_list, &mut path_elem);
-                conv_stroke(&p.stroke, &defs_list, &mut path_elem);
+                conv_fill(&p.fill, defs, parent, &mut path_elem);
+                conv_stroke(&p.stroke, defs, &mut path_elem);
             }
-            element::ElementKind::Text(ref text) => {
+            NodeKindRef::Text(_) => {
                 let mut text_elem = new_doc.create_element(EId::Text);
                 parent.append(&text_elem);
 
-                conv_element(e, &mut text_elem);
+                conv_element(n.kind(), &mut text_elem);
 
                 // conv_text_decoration(&text.decoration, &mut text_elem);
 
-                for chunk in &text.children {
+                for (child, chunk) in n.text_chunks() {
                     let mut chunk_tspan_elem = new_doc.create_element(EId::Tspan);
                     text_elem.append(&chunk_tspan_elem);
 
@@ -188,26 +187,29 @@ fn conv_elements(
                         ));
                     }
 
-                    for tspan in &chunk.children {
+                    for tspan in child.text_spans() {
                         let mut tspan_elem = new_doc.create_element(EId::Tspan);
                         chunk_tspan_elem.append(&tspan_elem);
 
-                        let text_node = new_doc.create_node(svgdom::NodeType::Text, &tspan.text);
+                        let text_node = new_doc.create_node(
+                            svgdom::NodeType::Text,
+                            &tspan.text,
+                        );
                         tspan_elem.append(&text_node);
 
-                        conv_fill(&tspan.fill, parent, &defs_list, &mut tspan_elem);
-                        conv_stroke(&tspan.stroke, &defs_list, &mut tspan_elem);
+                        conv_fill(&tspan.fill, defs, parent, &mut tspan_elem);
+                        conv_stroke(&tspan.stroke, defs, &mut tspan_elem);
                         conv_font(&tspan.font, &mut tspan_elem);
 
                         // TODO: text-decoration
                     }
                 }
             }
-            element::ElementKind::Image(ref img) => {
+            NodeKindRef::Image(ref img) => {
                 let mut img_elem = new_doc.create_element(EId::Image);
                 parent.append(&img_elem);
 
-                conv_element(e, &mut img_elem);
+                conv_element(n.kind(), &mut img_elem);
 
                 img_elem.set_attribute((AId::X, img.rect.x));
                 img_elem.set_attribute((AId::Y, img.rect.y));
@@ -233,14 +235,15 @@ fn conv_elements(
 
                 img_elem.set_attribute((AId::XlinkHref, href));
             }
-            element::ElementKind::Group(ref g) => {
+            NodeKindRef::Group(ref g) => {
                 let mut g_elem = new_doc.create_element(EId::G);
                 parent.append(&g_elem);
 
-                conv_element(e, &mut g_elem);
+                conv_element(n.kind(), &mut g_elem);
 
                 if let Some(id) = g.clip_path {
-                    g_elem.set_attribute((AId::ClipPath, defs_list[id].clone()));
+                    let link = defs.children().nth(id).unwrap();
+                    g_elem.set_attribute((AId::ClipPath, link));
                 }
 
                 if let Some(opacity) = g.opacity {
@@ -249,31 +252,34 @@ fn conv_elements(
                     }
                 }
 
-                conv_elements(&g.children, &defs_list, new_doc, &mut g_elem);
+                conv_elements(n, defs, new_doc, &mut g_elem);
             }
         }
     }
 }
 
-fn conv_element(elem: &Element, node: &mut svgdom::Node) {
-    conv_transform(AId::Transform, &elem.transform, node);
-
-    if !elem.id.is_empty() {
-        node.set_id(elem.id.clone());
-    }
+fn conv_element(
+    elem: NodeKindRef,
+    node: &mut svgdom::Node,
+) {
+    conv_transform(AId::Transform, &elem.transform(), node);
+    node.set_id(elem.id().clone());
 }
 
 fn conv_fill(
     fill: &Option<Fill>,
+    defs: &svgdom::Node,
     parent: &svgdom::Node,
-    defs_list: &[svgdom::Node],
-    node: &mut svgdom::Node
+    node: &mut svgdom::Node,
 ) {
     match *fill {
         Some(ref fill) => {
             match fill.paint {
                 Paint::Color(c) => node.set_attribute((AId::Fill, c)),
-                Paint::Link(id) => node.set_attribute((AId::Fill, defs_list[id].clone())),
+                Paint::Link(id) => {
+                    let link = defs.children().nth(id).unwrap();
+                    node.set_attribute((AId::Fill, link))
+                }
             }
 
             if fill.opacity.fuzzy_ne(&1.0) {
@@ -294,12 +300,19 @@ fn conv_fill(
     }
 }
 
-fn conv_stroke(stroke: &Option<Stroke>, defs_list: &[svgdom::Node], node: &mut svgdom::Node) {
+fn conv_stroke(
+    stroke: &Option<Stroke>,
+    defs: &svgdom::Node,
+    node: &mut svgdom::Node,
+) {
     match *stroke {
         Some(ref stroke) => {
             match stroke.paint {
                 Paint::Color(c) => node.set_attribute((AId::Stroke, c)),
-                Paint::Link(id) => node.set_attribute((AId::Stroke, defs_list[id].clone())),
+                Paint::Link(id) => {
+                    let link = defs.children().nth(id).unwrap();
+                    node.set_attribute((AId::Stroke, link))
+                }
             }
 
             if stroke.opacity.fuzzy_ne(&1.0) {
@@ -348,7 +361,12 @@ fn conv_stroke(stroke: &Option<Stroke>, defs_list: &[svgdom::Node], node: &mut s
     }
 }
 
-fn conv_base_grad(g: &element::BaseGradient, doc: &mut svgdom::Document, node: &mut svgdom::Node) {
+fn conv_base_grad(
+    g_node: DefsNodeRef,
+    g: &BaseGradient,
+    doc: &mut svgdom::Document,
+    node: &mut svgdom::Node,
+) {
     conv_units(AId::GradientUnits, g.units, node);
 
     node.set_attribute((AId::SpreadMethod,
@@ -361,7 +379,7 @@ fn conv_base_grad(g: &element::BaseGradient, doc: &mut svgdom::Document, node: &
 
     conv_transform(AId::GradientTransform, &g.transform, node);
 
-    for s in &g.stops {
+    for s in g_node.stops() {
         let mut stop = doc.create_element(EId::Stop);
         node.append(&stop);
 
@@ -371,7 +389,11 @@ fn conv_base_grad(g: &element::BaseGradient, doc: &mut svgdom::Document, node: &
     }
 }
 
-fn conv_units(aid: AId, units: Units, node: &mut svgdom::Node) {
+fn conv_units(
+    aid: AId,
+    units: Units,
+    node: &mut svgdom::Node,
+) {
     node.set_attribute((aid,
         match units {
             Units::UserSpaceOnUse => svgdom::ValueId::UserSpaceOnUse,
@@ -380,13 +402,20 @@ fn conv_units(aid: AId, units: Units, node: &mut svgdom::Node) {
     ));
 }
 
-fn conv_transform(aid: AId, ts: &svgdom::Transform, node: &mut svgdom::Node) {
+fn conv_transform(
+    aid: AId,
+    ts: &svgdom::Transform,
+    node: &mut svgdom::Node,
+) {
     if !ts.is_default() {
         node.set_attribute((aid, *ts));
     }
 }
 
-fn conv_font(font: &Font, node: &mut svgdom::Node) {
+fn conv_font(
+    font: &Font,
+    node: &mut svgdom::Node,
+) {
     node.set_attribute((AId::FontFamily, font.family.clone()));
     node.set_attribute((AId::FontSize, font.size));
 

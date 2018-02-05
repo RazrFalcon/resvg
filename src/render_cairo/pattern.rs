@@ -23,6 +23,7 @@ use render_utils;
 
 pub fn apply(
     doc: &dom::Document,
+    node: dom::DefsNodeRef,
     pattern: &dom::Pattern,
     bbox: &Rect,
     cr: &cairo::Context,
@@ -67,7 +68,7 @@ pub fn apply(
         sub_cr.transform(cairo::Matrix::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y));
     }
 
-    super::render_group(doc, &pattern.children, &sub_cr, &sub_cr.get_matrix(), img_size);
+    super::render_group(doc, node.to_node_ref(), &sub_cr, &sub_cr.get_matrix(), img_size);
 
     let mut ts = dom::Transform::default();
     ts.append(&pattern.transform);

@@ -2,20 +2,104 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::fmt;
 use std::path::PathBuf;
 
 use math::{
+    Size,
     Rect,
 };
 
 use super::attribute::*;
 
+#[allow(missing_docs)]
+pub(crate) enum NodeKind {
+    Svg(Svg),
+    Defs,
+    LinearGradient(LinearGradient),
+    RadialGradient(RadialGradient),
+    Stop(Stop),
+    ClipPath(ClipPath),
+    Pattern(Pattern),
+    Path(Path),
+    Text(Text),
+    TextChunk(TextChunk),
+    TSpan(TSpan),
+    Image(Image),
+    Group(Group),
+}
 
-/// An element.
+impl NodeKind {
+    pub(crate) fn is_shape(&self) -> bool {
+        match *self {
+              NodeKind::Svg(_)
+            | NodeKind::Defs
+            | NodeKind::LinearGradient(_)
+            | NodeKind::RadialGradient(_)
+            | NodeKind::Stop(_)
+            | NodeKind::ClipPath(_)
+            | NodeKind::Pattern(_)
+            | NodeKind::TextChunk(_)
+            | NodeKind::TSpan(_) => false,
+              NodeKind::Path(_)
+            | NodeKind::Text(_)
+            | NodeKind::Image(_)
+            | NodeKind::Group(_) => true,
+        }
+    }
+}
+
+/// A list of all shape-based nodes.
 ///
-/// Represents an object, that should be rendered.
-pub struct Element {
+/// The nodes that will be rendered.
+#[allow(missing_docs)]
+pub enum NodeKindRef<'a> {
+    Path(&'a Path),
+    Text(&'a Text),
+    Image(&'a Image),
+    Group(&'a Group),
+}
+
+impl<'a> NodeKindRef<'a> {
+    /// Returns node's ID.
+    pub fn id(&self) -> &str {
+        match *self {
+            NodeKindRef::Path(ref e) => e.id.as_str(),
+            NodeKindRef::Text(ref e) => e.id.as_str(),
+            NodeKindRef::Image(ref e) => e.id.as_str(),
+            NodeKindRef::Group(ref e) => e.id.as_str(),
+        }
+    }
+
+    /// Returns node's transform.
+    pub fn transform(&self) -> &Transform {
+        match *self {
+            NodeKindRef::Path(ref e) => &e.transform,
+            NodeKindRef::Text(ref e) => &e.transform,
+            NodeKindRef::Image(ref e) => &e.transform,
+            NodeKindRef::Group(ref e) => &e.transform,
+        }
+    }
+}
+
+/// An SVG root element.
+pub struct Svg {
+    /// Image size.
+    ///
+    /// Size of an image that should be created to fit the S
+    pub size: Size,
+    /// SVG viewbox.
+    ///
+    /// Specifies which part of the SVG image should be rendered.
+    pub view_box: Rect,
+    // TODO: remove
+    /// Image DPI.
+    ///
+    /// Has the same value as `Options::dpi`. Used for text rendering.
+    pub dpi: f64,
+}
+
+/// A path element.
+pub struct Path {
     /// Element's ID.
     ///
     /// Taken from the SVG itself.
@@ -26,45 +110,6 @@ pub struct Element {
     pub id: String,
     /// Element transform.
     pub transform: Transform,
-    /// Element kind.
-    pub kind: ElementKind,
-}
-
-/// An element kind.
-#[allow(missing_docs)]
-pub enum ElementKind {
-    Path(Path),
-    Text(Text),
-    Image(Image),
-    Group(Group),
-}
-
-/// An element that can be referenced.
-pub struct RefElement {
-    /// Element's ID.
-    ///
-    /// Taken from the SVG itself.
-    /// Can't be empty.
-    ///
-    /// Currently, used only for SVG dump purposes.
-    ///
-    /// It isn't used for referencing itself, because we use indexes for that.
-    pub id: String,
-    /// Element kind.
-    pub kind: RefElementKind,
-}
-
-/// A referenced element kind.
-#[allow(missing_docs)]
-pub enum RefElementKind {
-    LinearGradient(LinearGradient),
-    RadialGradient(RadialGradient),
-    ClipPath(ClipPath),
-    Pattern(Pattern),
-}
-
-/// A path element.
-pub struct Path {
     /// Fill style.
     pub fill: Option<Fill>,
     /// Stroke style.
@@ -79,8 +124,16 @@ pub struct Path {
 ///
 /// `text` element in the SVG.
 pub struct Text {
-    /// List of [text chunks](https://www.w3.org/TR/SVG11/text.html#TextChunk).
-    pub children: Vec<TextChunk>,
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Isn't automatically generated.
+    /// Can be empty.
+    ///
+    /// Currently, used only for SVG dump purposes.
+    pub id: String,
+    /// Element transform.
+    pub transform: Transform,
 }
 
 /// A text chunk.
@@ -97,8 +150,6 @@ pub struct TextChunk {
     pub y: f64,
     /// A text anchor/align.
     pub anchor: TextAnchor,
-    /// List of `Tspan`.
-    pub children: Vec<TSpan>
 }
 
 // TODO: dx, dy
@@ -137,6 +188,16 @@ pub struct TSpan {
 ///
 /// `image` element in the SVG.
 pub struct Image {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Isn't automatically generated.
+    /// Can be empty.
+    ///
+    /// Currently, used only for SVG dump purposes.
+    pub id: String,
+    /// Element transform.
+    pub transform: Transform,
     /// An image rectangle in which it should be fit.
     pub rect: Rect,
     /// Image data.
@@ -175,6 +236,16 @@ pub enum ImageDataKind {
 ///
 /// `g` element in the SVG.
 pub struct Group {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Isn't automatically generated.
+    /// Can be empty.
+    ///
+    /// Currently, used only for SVG dump purposes.
+    pub id: String,
+    /// Element transform.
+    pub transform: Transform,
     /// Group opacity.
     ///
     /// After the group is rendered we should combine
@@ -185,8 +256,39 @@ pub struct Group {
     /// The value is an index from the `Document::defs` list.
     /// Use it via `Document::get_defs()` method.
     pub clip_path: Option<usize>,
-    /// List of children elements.
-    pub children: Vec<Element>,
+}
+
+/// A list of all `defs` nodes.
+///
+/// The nodes that will be used indirectly.
+#[allow(missing_docs)]
+pub enum DefsNodeKindRef<'a> {
+    LinearGradient(&'a LinearGradient),
+    RadialGradient(&'a RadialGradient),
+    ClipPath(&'a ClipPath),
+    Pattern(&'a Pattern),
+}
+
+impl<'a> DefsNodeKindRef<'a> {
+    /// Returns node's ID.
+    pub fn id(&self) -> &str {
+        match *self {
+            DefsNodeKindRef::LinearGradient(ref e) => e.id.as_str(),
+            DefsNodeKindRef::RadialGradient(ref e) => e.id.as_str(),
+            DefsNodeKindRef::ClipPath(ref e) => e.id.as_str(),
+            DefsNodeKindRef::Pattern(ref e) => e.id.as_str(),
+        }
+    }
+
+    /// Returns node's transform.
+    pub fn transform(&self) -> &Transform {
+        match *self {
+            DefsNodeKindRef::LinearGradient(ref e) => &e.d.transform,
+            DefsNodeKindRef::RadialGradient(ref e) => &e.d.transform,
+            DefsNodeKindRef::ClipPath(ref e) => &e.transform,
+            DefsNodeKindRef::Pattern(ref e) => &e.transform,
+        }
+    }
 }
 
 /// A generic gradient.
@@ -203,10 +305,6 @@ pub struct BaseGradient {
     ///
     /// `spreadMethod` in the SVG.
     pub spread_method: SpreadMethod,
-    /// List of stop elements.
-    ///
-    /// Will always have more than two items.
-    pub stops: Vec<Stop>,
 }
 
 /// A linear gradient.
@@ -214,6 +312,15 @@ pub struct BaseGradient {
 /// `linearGradient` element in the SVG.
 #[allow(missing_docs)]
 pub struct LinearGradient {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Can't be empty.
+    ///
+    /// Currently, used only for SVG dump purposes.
+    ///
+    /// It isn't used for referencing itself, because we use indexes for that.
+    pub id: String,
     pub x1: f64,
     pub y1: f64,
     pub x2: f64,
@@ -222,32 +329,20 @@ pub struct LinearGradient {
     pub d: BaseGradient,
 }
 
-impl fmt::Debug for LinearGradient {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,
-            "LinearGradient(\n  \
-             x1: {} y1: {}\n  \
-             x2: {} y2: {}\n  \
-             units: {:?}\n  \
-             transform: {}\n  \
-             spread: {:?}\n",
-            self.x1, self.y1, self.x2, self.y2,
-            self.d.units, self.d.transform, self.d.spread_method
-        )?;
-
-        for stop in &self.d.stops {
-            write!(f, "    {:?}\n", stop)?;
-        }
-
-        write!(f, ")")
-    }
-}
-
 /// A radial gradient.
 ///
 /// `radialGradient` element in the SVG.
 #[allow(missing_docs)]
 pub struct RadialGradient {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Can't be empty.
+    ///
+    /// Currently, used only for SVG dump purposes.
+    ///
+    /// It isn't used for referencing itself, because we use indexes for that.
+    pub id: String,
     pub cx: f64,
     pub cy: f64,
     pub r: f64,
@@ -257,31 +352,10 @@ pub struct RadialGradient {
     pub d: BaseGradient,
 }
 
-impl fmt::Debug for RadialGradient {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,
-            "RadialGradient(\n  \
-             cx: {} cy: {}\n  \
-             fx: {} fy: {}\n  \
-             r: {}\n  \
-             units: {:?}\n  \
-             transform: {}\n  \
-             spread: {:?}\n",
-            self.cx, self.cy, self.fx, self.fy, self.r,
-            self.d.units, self.d.transform, self.d.spread_method
-        )?;
-
-        for stop in &self.d.stops {
-            write!(f, "    {:?}\n", stop)?;
-        }
-
-        write!(f, ")")
-    }
-}
-
 /// Gradient's stop element.
 ///
 /// `stop` element in the SVG.
+#[derive(Clone, Copy)]
 #[allow(missing_docs)]
 pub struct Stop {
     pub offset: f64,
@@ -289,17 +363,19 @@ pub struct Stop {
     pub opacity: f64,
 }
 
-impl fmt::Debug for Stop {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Stop(offset: {:?}, color: {}, opacity: {:?})",
-               self.offset, self.color, self.opacity)
-    }
-}
-
 /// A clip-path element.
 ///
 /// `clipPath` element in the SVG.
 pub struct ClipPath {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Can't be empty.
+    ///
+    /// Currently, used only for SVG dump purposes.
+    ///
+    /// It isn't used for referencing itself, because we use indexes for that.
+    pub id: String,
     /// Coordinate system units.
     ///
     /// `clipPathUnits` in the SVG.
@@ -308,17 +384,21 @@ pub struct ClipPath {
     ///
     /// `transform` in the SVG.
     pub transform: Transform,
-    /// List of children elements.
-    ///
-    /// Contains only `Path` and `Text` elements.
-    pub children: Vec<Element>,
 }
-
 
 /// A pattern element.
 ///
 /// `pattern` element in the SVG.
 pub struct Pattern {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Can't be empty.
+    ///
+    /// Currently, used only for SVG dump purposes.
+    ///
+    /// It isn't used for referencing itself, because we use indexes for that.
+    pub id: String,
     /// Coordinate system units.
     ///
     /// `patternUnits` in the SVG.
@@ -335,8 +415,4 @@ pub struct Pattern {
     pub rect: Rect,
     /// Pattern viewbox.
     pub view_box: Option<Rect>,
-    /// List of children elements.
-    ///
-    /// Contains only `Path` and `Text` elements.
-    pub children: Vec<Element>,
 }

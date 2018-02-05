@@ -22,29 +22,32 @@ use traits::{
     GetViewBox,
 };
 
+use {
+    Options,
+};
+
 
 pub fn convert(
     node: &svgdom::Node,
-) -> Option<dom::RefElement> {
+    opt: &Options,
+    doc: &mut dom::Document,
+) {
     let ref attrs = node.attributes();
 
     let rect = convert_rect(attrs);
     debug_assert!(!rect.w.is_fuzzy_zero());
     debug_assert!(!rect.h.is_fuzzy_zero());
 
-    let elem = dom::RefElement {
+    doc.append_node(dom::DEFS_DEPTH, dom::NodeKind::Pattern(dom::Pattern {
         id: node.id().clone(),
-        kind: dom::RefElementKind::Pattern(dom::Pattern {
-            units: super::convert_element_units(&attrs, AId::PatternUnits),
-            content_units: super::convert_element_units(&attrs, AId::PatternContentUnits),
-            transform: attrs.get_transform(AId::PatternTransform).unwrap_or_default(),
-            rect,
-            view_box: node.get_viewbox().ok(),
-            children: Vec::new(), // children will be converted later
-        }),
-    };
+        units: super::convert_element_units(&attrs, AId::PatternUnits),
+        content_units: super::convert_element_units(&attrs, AId::PatternContentUnits),
+        transform: attrs.get_transform(AId::PatternTransform).unwrap_or_default(),
+        rect,
+        view_box: node.get_viewbox().ok(),
+    }));
 
-    Some(elem)
+    super::convert_nodes(node, opt, dom::DEFS_DEPTH + 1, doc);
 }
 
 pub fn convert_rect(attrs: &svgdom::Attributes) -> Rect {

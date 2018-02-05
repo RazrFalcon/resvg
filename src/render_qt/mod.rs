@@ -54,7 +54,9 @@ impl ConvTransform<qt::Transform> for dom::Transform {
 pub fn render_to_image(doc: &dom::Document, opt: &Options) -> Result<qt::Image> {
     let _app = qt::GuiApp::new("resvg");
 
-    let img_size = render_utils::fit_to(&doc.size, opt.fit_to);
+    let svg = doc.svg_node();
+
+    let img_size = render_utils::fit_to(&svg.size, opt.fit_to);
 
     debug_assert!(img_size.w as i32 > 0 && img_size.h as i32 > 0);
 
@@ -87,42 +89,44 @@ pub fn render_to_image(doc: &dom::Document, opt: &Options) -> Result<qt::Image> 
 
 /// Renders SVG to canvas.
 pub fn render_to_canvas(painter: &qt::Painter, img_view: Rect, doc: &dom::Document) {
+    let svg = doc.svg_node();
+
     // Apply viewBox.
     let ts = {
-        let (dx, dy, sx, sy) = render_utils::view_box_transform(&doc.view_box, &img_view);
+        let (dx, dy, sx, sy) = render_utils::view_box_transform(&svg.view_box, &img_view);
         qt::Transform::new(sx, 0.0, 0.0, sy, dx, dy)
     };
     painter.apply_transform(&ts);
 
-    render_group(doc, &doc.elements, &painter, &painter.get_transform(), img_view.size());
+    render_group(doc, doc.root(), &painter, &painter.get_transform(), img_view.size());
 }
 
 // TODO: render groups backward to reduce memory usage
 //       current implementation keeps parent canvas until all children are rendered
 fn render_group(
     doc: &dom::Document,
-    elements: &[dom::Element],
+    node: dom::NodeRef,
     p: &qt::Painter,
     ts: &qt::Transform,
     img_size: Size,
 ) -> Rect {
     let mut g_bbox = Rect::new(f64::MAX, f64::MAX, 0.0, 0.0);
-    for elem in elements {
+    for node in node.children() {
         // Apply transform.
-        p.apply_transform(&elem.transform.to_native());
+        p.apply_transform(&node.kind().transform().to_native());
 
-        let bbox = match elem.kind {
-            dom::ElementKind::Path(ref path) => {
+        let bbox = match node.kind() {
+            dom::NodeKindRef::Path(ref path) => {
                 Some(path::draw(doc, path, p))
             }
-            dom::ElementKind::Text(ref text) => {
-                Some(text::draw(doc, text, p))
+            dom::NodeKindRef::Text(_) => {
+                Some(text::draw(doc, node, p))
             }
-            dom::ElementKind::Image(ref img) => {
+            dom::NodeKindRef::Image(ref img) => {
                 Some(image::draw(img, p))
             }
-            dom::ElementKind::Group(ref g) => {
-                render_group_impl(doc, g, p, img_size)
+            dom::NodeKindRef::Group(ref g) => {
+                render_group_impl(doc, node, g, p, img_size)
             }
         };
 
@@ -139,6 +143,7 @@ fn render_group(
 
 fn render_group_impl(
     doc: &dom::Document,
+    node: dom::NodeRef,
     g: &dom::Group,
     p: &qt::Painter,
     img_size: Size,
@@ -157,15 +162,16 @@ fn render_group_impl(
     };
 
     sub_img.fill(0, 0, 0, 0);
-    sub_img.set_dpi(doc.dpi);
+    sub_img.set_dpi(doc.svg_node().dpi);
 
     let sub_p = qt::Painter::new(&sub_img);
     sub_p.set_transform(&p.get_transform());
-    let bbox = render_group(doc, &g.children, &sub_p, &p.get_transform(), img_size);
+    let bbox = render_group(doc, node, &sub_p, &p.get_transform(), img_size);
 
     if let Some(idx) = g.clip_path {
-        if let dom::RefElementKind::ClipPath(ref cp) = doc.get_defs(idx).kind {
-            clippath::apply(doc, cp, &sub_p, &bbox, img_size);
+        let clip_node = doc.defs_at(idx);
+        if let dom::DefsNodeKindRef::ClipPath(ref cp) = clip_node.kind() {
+            clippath::apply(doc, clip_node, cp, &sub_p, &bbox, img_size);
         }
     }
 

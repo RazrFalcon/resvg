@@ -24,10 +24,6 @@ use math::{
     f64_bound,
 };
 
-use {
-    Result,
-};
-
 use super::{
     fill,
     stroke,
@@ -35,28 +31,25 @@ use super::{
 
 
 pub fn convert(
-    defs: &[dom::RefElement],
     node: &svgdom::Node,
     d: Path,
-) -> Result<dom::Element> {
+    depth: usize,
+    doc: &mut dom::Document,
+) {
     let attrs = node.attributes();
 
-    let fill = fill::convert(defs, &attrs);
-    let stroke = stroke::convert(defs, &attrs);
+    let fill = fill::convert(doc, &attrs);
+    let stroke = stroke::convert(doc, &attrs);
     let d = convert_path(d);
     let transform = attrs.get_transform(AId::Transform).unwrap_or_default();
 
-    let elem = dom::Element {
+    doc.append_node(depth, dom::NodeKind::Path(dom::Path {
         id: node.id().clone(),
         transform,
-        kind: dom::ElementKind::Path(dom::Path {
-            fill,
-            stroke,
-            d,
-        }),
-    };
-
-    Ok(elem)
+        fill,
+        stroke,
+        d,
+    }));
 }
 
 fn convert_path(mut path: Path) -> Vec<dom::PathSegment> {
@@ -146,7 +139,7 @@ fn convert_path(mut path: Path) -> Vec<dom::PathSegment> {
                 new_path.push(quad_to_curve(px, py, new_x1, new_y1, x, y));
             }
             SegmentData::EllipticalArc { rx, ry, x_axis_rotation, large_arc, sweep, x, y } => {
-                arc_to_curve(&mut new_path, px, py, rx, ry, x_axis_rotation, large_arc, sweep, x, y)
+                arc_to_curve(px, py, rx, ry, x_axis_rotation, large_arc, sweep, x, y, &mut new_path)
             }
             SegmentData::ClosePath => {
                 new_path.push(dom::PathSegment::ClosePath);
@@ -203,7 +196,6 @@ fn quad_to_curve(
 // http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
 // Based on librsvg implementation.
 fn arc_to_curve(
-    path: &mut Vec<dom::PathSegment>,
     x1: f64,
     y1: f64,
     mut rx: f64,
@@ -212,7 +204,8 @@ fn arc_to_curve(
     large_arc_flag: bool,
     sweep_flag: bool,
     x2: f64,
-    y2: f64
+    y2: f64,
+    path: &mut Vec<dom::PathSegment>,
 ) {
     if x1.fuzzy_eq(&x2) && y1.fuzzy_eq(&y2) {
         return;
@@ -302,25 +295,25 @@ fn arc_to_curve(
 
     for i in 0..(n_segs as usize) {
         _arc_to_curve(
-            path,
             cx, cy,
             theta1 + i as f64 * delta_theta / n_segs,
             theta1 + (i as f64 + 1.0) * delta_theta / n_segs,
             rx, ry,
-            x_axis_rotation
+            x_axis_rotation,
+            path,
         );
     }
 }
 
 fn _arc_to_curve(
-    path: &mut Vec<dom::PathSegment>,
     xc: f64,
     yc: f64,
     th0: f64,
     th1: f64,
     rx: f64,
     ry: f64,
-    x_axis_rotation: f64
+    x_axis_rotation: f64,
+    path: &mut Vec<dom::PathSegment>,
 ) {
     let f = x_axis_rotation * f64::consts::PI / 180.0;
     let sinf = f.sin();

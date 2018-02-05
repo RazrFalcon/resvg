@@ -43,7 +43,10 @@ mod stroke;
 mod text;
 
 
-pub fn convert_doc(svg_doc: &svgdom::Document, opt: &Options) -> Result<dom::Document> {
+pub fn convert_doc(
+    svg_doc: &svgdom::Document,
+    opt: &Options,
+) -> Result<dom::Document> {
     let svg = if let Some(svg) = svg_doc.svg_element() {
         svg
     } else {
@@ -54,100 +57,64 @@ pub fn convert_doc(svg_doc: &svgdom::Document, opt: &Options) -> Result<dom::Doc
         return Err(ErrorKind::MissingSvgNode.into());
     };
 
-    let defs = convert_ref_nodes(svg_doc, opt);
-
-    Ok(dom::Document {
+    let svg_kind = dom::Svg {
         size: get_img_size(&svg)?,
         view_box: get_view_box(&svg)?,
         dpi: opt.dpi,
-        elements: convert_nodes(&svg, &defs, opt),
-        defs: defs,
-    })
+    };
+
+    let mut doc = dom::Document::new(svg_kind);
+
+    convert_ref_nodes(svg_doc, opt, &mut doc);
+    convert_nodes(&svg, opt, 1, &mut doc);
+
+    Ok(doc)
 }
 
-pub fn convert_ref_nodes(
-    doc: &svgdom::Document,
+// TODO: defs children can reference other defs
+fn convert_ref_nodes(
+    svg_doc: &svgdom::Document,
     opt: &Options,
-) -> Vec<dom::RefElement> {
-    let mut defs: Vec<dom::RefElement> = Vec::new();
-
-    // We can't convert elements with children which can refer other elements.
-    // So we have to create a list of defs first and then convert children.
-    //
-    // This list contains nodes which children should be converted later.
-    let mut defs_data: Vec<(usize, svgdom::Node)> = Vec::new();
-
-    let defs_elem = match doc.defs_element() {
+    doc: &mut dom::Document,
+) {
+    let defs_elem = match svg_doc.defs_element() {
         Some(e) => e.clone(),
-        None => return defs,
+        None => return,
     };
 
     for (id, node) in defs_elem.children().svg() {
-        // 'defs' can contain any elements, but here we interested only in referenced one.
+        // 'defs' can contain any elements, but here we interested only
+        // in referenced one.
         if !node.is_referenced() {
             continue;
         }
 
         match id {
             EId::LinearGradient => {
-                if let Some(elem) = gradient::convert_linear(&node) {
-                    defs.push(elem);
-                }
+                gradient::convert_linear(&node, doc);
             }
             EId::RadialGradient => {
-                if let Some(elem) = gradient::convert_radial(&node) {
-                    defs.push(elem);
-                }
+                gradient::convert_radial(&node, doc);
             }
             EId::ClipPath => {
-                if let Some(elem) = clippath::convert(&node) {
-                    defs.push(elem);
-                }
+                clippath::convert(&node, doc);
             }
             EId::Pattern => {
-                if let Some(elem) = pattern::convert(&node) {
-                    defs_data.push((defs.len(), node));
-                    defs.push(elem);
-                }
+                pattern::convert(&node, opt, doc);
             }
             _ => {
                 warn!("Unsupported element '{}'.", id);
             }
         }
     }
-
-    // Process deferred elements.
-    for (idx, node) in defs_data {
-        let eid = match defs[idx].kind {
-            dom::RefElementKind::Pattern(_) => {
-                EId::Pattern
-            }
-            _ => continue,
-        };
-
-        match eid {
-            EId::Pattern => {
-                let children = convert_nodes(&node, &defs, opt);
-
-                if let dom::RefElementKind::Pattern(ref mut pattern) = defs[idx].kind {
-                    pattern.children = children;
-                };
-            }
-            _ => continue,
-        }
-    }
-
-    defs
 }
 
 pub fn convert_nodes(
     parent: &svgdom::Node,
-    defs: &[dom::RefElement],
     opt: &Options,
-) -> Vec<dom::Element>
-{
-    let mut elements: Vec<dom::Element> = Vec::new();
-
+    depth: usize,
+    doc: &mut dom::Document,
+) {
     for (id, node) in parent.children().svg() {
         if node.is_referenced() {
             continue;
@@ -171,7 +138,7 @@ pub fn convert_nodes(
                     let mut v = None;
                     if let &AValue::FuncLink(ref link) = av {
                         if link.is_tag_name(EId::ClipPath) {
-                            if let Some(idx) = defs.iter().position(|e| e.id == *link.id()) {
+                            if let Some(idx) = doc.defs_index(&link.id()) {
                                 v = Some(idx);
                             }
                         }
@@ -179,7 +146,8 @@ pub fn convert_nodes(
 
                     // If a linked clipPath is not found than it was invalid.
                     // Elements linked to the invalid clipPath should be removed.
-                    // Since in resvg `clip-path` can be set only on a group - we skip such groups.
+                    // Since in resvg `clip-path` can be set only on
+                    // a group - we skip such groups.
                     if v.is_none() {
                         continue;
                     }
@@ -191,21 +159,17 @@ pub fn convert_nodes(
 
                 let ts = attrs.get_transform(AId::Transform).unwrap_or_default();
                 let opacity = attrs.get_number(AId::Opacity);
-                let children = convert_nodes(&node, defs, opt);
 
-                // TODO: check that opacity != 1.0
-
-                let elem = dom::Element {
+                doc.append_node(depth, dom::NodeKind::Group(dom::Group {
                     id: node.id().clone(),
                     transform: ts,
-                    kind: dom::ElementKind::Group(dom::Group {
-                        opacity,
-                        clip_path,
-                        children,
-                    }),
-                };
+                    opacity,
+                    clip_path,
+                }));
 
-                elements.push(elem);
+                convert_nodes(&node, opt, depth + 1, doc);
+
+                // TODO: check that opacity != 1.0
             }
               EId::Line
             | EId::Rect
@@ -214,9 +178,7 @@ pub fn convert_nodes(
             | EId::Circle
             | EId::Ellipse => {
                 if let Some(d) = shapes::convert(&node) {
-                    if let Ok(elem) = path::convert(defs, &node, d) {
-                        elements.push(elem);
-                    }
+                    path::convert(&node, d, depth, doc);
                 }
             }
               EId::Use
@@ -229,28 +191,20 @@ pub fn convert_nodes(
             EId::Path => {
                 let attrs = node.attributes();
                 if let Some(d) = attrs.get_path(AId::D) {
-                    if let Ok(elem) = path::convert(defs, &node, d.clone()) {
-                        elements.push(elem);
-                    }
+                    path::convert(&node, d.clone(), depth, doc);
                 }
             }
             EId::Text => {
-                if let Some(elem) = text::convert(defs, &node) {
-                    elements.push(elem);
-                }
+                text::convert(&node, depth, doc);
             }
             EId::Image => {
-                if let Some(elem) = image::convert(&node, opt) {
-                    elements.push(elem);
-                }
+                image::convert(&node, opt, depth, doc);
             }
             _ => {
                 warn!("Unsupported element '{}'.", id);
             }
         }
     }
-
-    elements
 }
 
 fn get_img_size(svg: &svgdom::Node) -> Result<Size> {

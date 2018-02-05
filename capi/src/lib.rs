@@ -28,7 +28,7 @@ use resvg::cairo;
 
 
 #[repr(C)]
-pub struct resvg_document(resvg::Document);
+pub struct resvg_document(resvg::dom::Document);
 
 macro_rules! on_err {
     ($err:expr, $msg:expr) => ({
@@ -207,8 +207,10 @@ pub extern fn resvg_get_image_size(
         &mut *doc
     };
 
+    let size = doc.0.svg_node().size;
+
     unsafe {
-        *width = doc.0.size.w;
-        *height = doc.0.size.h;
+        *width = size.w;
+        *height = size.h;
     }
 }

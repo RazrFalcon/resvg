@@ -24,6 +24,7 @@ use super::{
 
 pub fn apply(
     doc: &dom::Document,
+    node: dom::DefsNodeRef,
     cp: &dom::ClipPath,
     cr: &cairo::Context,
     bbox: &Rect,
@@ -49,15 +50,15 @@ pub fn apply(
     clip_cr.set_operator(cairo::Operator::Clear);
 
     let matrix = clip_cr.get_matrix();
-    for elem in &cp.children {
-        clip_cr.transform(elem.transform.to_native());
+    for node in node.children() {
+        clip_cr.transform(node.kind().transform().to_native());
 
-        match elem.kind {
-            dom::ElementKind::Path(ref path_elem) => {
+        match node.kind() {
+            dom::NodeKindRef::Path(ref path_elem) => {
                 path::draw(doc, path_elem, &clip_cr);
             }
-            dom::ElementKind::Text(ref text_elem) => {
-                text::draw(doc, text_elem, &clip_cr);
+            dom::NodeKindRef::Text(_) => {
+                text::draw(doc, node, &clip_cr);
             }
             _ => {}
         }
