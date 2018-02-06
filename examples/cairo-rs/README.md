@@ -1,4 +1,4 @@
-A simple example that shows how to use *libresvg* from `gtk-rs`.
+A simple example that shows how to use *resvg* from `gtk-rs`.
 
 ## Run
 

@@ -3,9 +3,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 /*!
-*libresvg* is an [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) rendering library.
+*resvg* is an [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) rendering library.
 
-*libresvg* can be used to render SVG files based on a
+*resvg* can be used to render SVG files based on a
 [static](http://www.w3.org/TR/SVG11/feature#SVG-static)
 [SVG Full 1.1](https://www.w3.org/TR/SVG/Overview.html) subset.
 In simple terms: no animations and scripting.

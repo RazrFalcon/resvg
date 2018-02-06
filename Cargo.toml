@@ -6,12 +6,12 @@ keywords = ["svg", "render", "raster"]
 license = "MPL-2.0"
 description = "An SVG rendering library."
 documentation = "https://docs.rs/resvg/"
-repository = "https://github.com/RazrFalcon/libresvg"
+repository = "https://github.com/RazrFalcon/resvg"
 readme = "README.md"
 categories = ["multimedia::images"]
 
 [badges]
-travis-ci = { repository = "RazrFalcon/libresvg" }
+travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
 base64 = "0.9"

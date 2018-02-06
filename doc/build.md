@@ -1,8 +1,8 @@
-# How to build libresvg
+# How to build resvg
 
 ## General
 
-Currently, *libresvg* supports only two backend: Qt and cairo.
+Currently, *resvg* supports only two backend: Qt and cairo.
 
 You can build them separately or together.
 
@@ -16,7 +16,7 @@ cargo build --release --features="cairo-backend"
 cargo build --release --features="qt-backend cairo-backend"
 ```
 
-Also, you can build *libresvg* without any backends if you what too.
+Also, you can build *resvg* without any backends if you what too.
 
 ### Qt backend
 

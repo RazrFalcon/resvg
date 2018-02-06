@@ -1,6 +1,6 @@
 A simple demo with a Qt backend.
 
-Shows how to use the *libresvg* C-API.
+Shows how to use the *resvg* C-API.
 
 ## Dependencies
 

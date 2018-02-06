@@ -1,4 +1,4 @@
-A simple example that shows how to use *libresvg* from GTK+ through C-API.
+A simple example that shows how to use *resvg* from GTK+ through C-API.
 
 I'm not good with C and GTK+ so any suggestions are welcome.
 

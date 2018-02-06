@@ -35,7 +35,7 @@ pub fn conv_doc(doc: &RenderTree) -> svgdom::Document {
     svg.set_attribute((AId::Height, svg_node.size.h));
     svg.set_attribute((AId::ViewBox, view_box));
     svg.set_attribute((AId::XmlnsXlink, "http://www.w3.org/1999/xlink"));
-    svg.set_attribute(("xmlns:resvg", "https://github.com/RazrFalcon/libresvg"));
+    svg.set_attribute(("xmlns:resvg", "https://github.com/RazrFalcon/resvg"));
     svg.set_attribute(("resvg:version", env!("CARGO_PKG_VERSION")));
 
     let mut defs = new_doc.create_element(EId::Defs);

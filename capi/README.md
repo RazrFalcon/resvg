@@ -1,4 +1,4 @@
-C interface for *libresvg*.
+C interface for *resvg*.
 
 ## Build
 

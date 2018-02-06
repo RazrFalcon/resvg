@@ -150,8 +150,8 @@ fn process(mut data: Data) -> Result<()> {
 }
 
 fn build_prev_version(data: &Data) -> Result<PathBuf> {
-    let url = "https://github.com/RazrFalcon/libresvg";
-    let repo_path = Path::new(data.work_dir).join("libresvg");
+    let url = "https://github.com/RazrFalcon/resvg";
+    let repo_path = Path::new(data.work_dir).join("resvg");
 
     let repo = if repo_path.exists() {
         let repo = git::Repository::open(&repo_path)?;

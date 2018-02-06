@@ -3,7 +3,7 @@
 
 == Intro
 
-One of the core ideas of the _libresvg_ is that the input SVG will be
+One of the core ideas of the _resvg_ is that the input SVG will be
 converted into as simple SVG as possible before rendering.
 Which helps to implement a new backend easily.
 
@@ -14,7 +14,7 @@ Even through it doesn't follow the SVG spec and supports only a tiny
 SVG subset - it's still a completely valid SVG structure, that can be
 easily dumped into the SVG file.
 
-And it makes _libresvg_ preprocessor easier to understand and debug when
+And it makes _resvg_ preprocessor easier to understand and debug when
 you can see the resulting structure via usual SVG data.
 
 == Example
@@ -29,7 +29,7 @@ preprocessing.
    width="300"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:xlink="http://www.w3.org/1999/xlink"
-   xmlns:resvg="https://github.com/RazrFalcon/libresvg"
+   xmlns:resvg="https://github.com/RazrFalcon/resvg"
    resvg:version="0.1.0">
   <defs>
     <linearGradient
@@ -162,13 +162,13 @@ The group element indicates that a new canvas should be created.
 All groups children elements will be rendered on it and then merged to
 the parent canvas.
 
-Since it's pretty expensive, especially memory wise, _libresvg_
+Since it's pretty expensive, especially memory wise, _resvg_
 will remove as many groups as possible.
 All the remaining one will indicate that a new canvas must be created.
 
 === path
 
-First, the _libresvg_ preprocessor will convert all the shapes into paths.
+First, the _resvg_ preprocessor will convert all the shapes into paths.
 Then it will simplify path's data so it will contain only absolute
 MoveTo, LineTo, CurveTo and ClosePath segments.
 
@@ -178,7 +178,7 @@ The `path` element can have <<fill_attrs, filling>> and
 === text
 
 The text is one of the most complex parts of the SVG.
-_libresvg_ will modify the input element and its children a lot.
+_resvg_ will modify the input element and its children a lot.
 
 The simplest `text` element like `<text>Text</text>` will be converted to:
 
@@ -198,7 +198,7 @@ The simplest `text` element like `<text>Text</text>` will be converted to:
 </text>
 ```
 
-In _libresvg_, the `text` element is just a container for
+In _resvg_, the `text` element is just a container for
 https://www.w3.org/TR/SVG11/text.html#TextChunk[text chunks],
 represented via `tspan`.
 So all `text` elements will have a three-level structure:

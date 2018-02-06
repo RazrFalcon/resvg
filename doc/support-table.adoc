@@ -4,10 +4,10 @@
 == Elements
 
 |===
-|Element |libresvg |Inkscape |librsvg |QtSvg |Tests
+|Element |resvg |Inkscape |librsvg |QtSvg |Tests
 6+^|https://www.w3.org/TR/SVG/struct.html[Document Structure]
 |`svg` |Partial |? |? |? |
-| 5+|Not supported footnoteref:[not-supported,Related only to libresvg]: +
+| 5+|Not supported footnoteref:[not-supported,Related only to resvg]: +
 - Nested `svg` elements
 |`g` |Yes |Yes |Yes |Partial |
 |`defs` |Yes |Yes |Yes |Yes |
@@ -141,7 +141,7 @@ text-tref-03-b
 
 [width=100%]
 |===
-|Attribute |libresvg |Inkscape |librsvg |QtSvg |Tests
+|Attribute |resvg |Inkscape |librsvg |QtSvg |Tests
 |`alignment-baseline` |No |? |? |? |
 |`baseline-shift` |No |Yes |Partial |No |text-align-02-b
 |`clip` |No |? |? |? |
@@ -219,7 +219,7 @@ text-deco-1000-f
 === Other
 
 |===
-|Attribute |libresvg |Inkscape |librsvg |QtSvg |Tests
+|Attribute |resvg |Inkscape |librsvg |QtSvg |Tests
 |`preserveAspectRatio` |No |Yes |? |No |
 |`xml:space` |Yes |Partial |Partial |No |
 |`requiredFeatures` |Partial |? |? |? |
@@ -236,7 +236,7 @@ text-deco-1000-f
 === Paint value
 
 |===
-|Spec |Example |libresvg |Inkscape |librsvg |QtSvg |Tests
+|Spec |Example |resvg |Inkscape |librsvg |QtSvg |Tests
 |`none` |`none` |Yes |? |? |? |
 |`currentColor` |`currentColor` |Yes |? |? |? |
 |`<color>` |`red` |Yes |? |? |? |
@@ -251,7 +251,7 @@ text-deco-1000-f
 == Other
 
 |===
-|Name |libresvg |Inkscape |librsvg |QtSvg |Tests
+|Name |resvg |Inkscape |librsvg |QtSvg |Tests
 |Custom namespace |No |? |? |? |
 |Non-UTF-8 encoding |No |? |? |? |
 |Element referencing from ENTITY |No |No |Yes |? | coords-viewattr-01-b.svg
