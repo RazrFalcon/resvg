@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 extern crate resvg;
+extern crate log;
 extern crate fern;
 
 #[cfg(feature = "cairo-backend")]
@@ -58,14 +59,12 @@ macro_rules! from_raw_str {
 pub extern fn resvg_init_log() {
     fern::Dispatch::new()
         .format(log_format)
-        .level(resvg::log::LevelFilter::Warn)
+        .level(log::LevelFilter::Warn)
         .chain(std::io::stderr())
         .apply().unwrap();
 }
 
-fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &resvg::log::Record) {
-    use resvg::log;
-
+fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &log::Record) {
     let lvl = match record.level() {
         log::Level::Error => "Error",
         log::Level::Warn => "Warning",

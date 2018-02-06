@@ -8,6 +8,7 @@ extern crate clap;
 extern crate derive_error;
 extern crate resvg;
 extern crate fern;
+extern crate log;
 
 
 use std::str::FromStr;
@@ -29,7 +30,6 @@ use clap::{
 use resvg::cairo;
 
 use resvg::{
-    log,
     svgdom,
     tree,
     Backend,

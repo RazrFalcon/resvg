@@ -23,7 +23,7 @@ And as an embeddable library to paint SVG on an application native canvas.
 pub extern crate svgdom;
 extern crate base64;
 extern crate libflate;
-#[macro_use] pub extern crate log;
+#[macro_use] extern crate log;
 #[macro_use] extern crate error_chain;
 
 #[cfg(feature = "cairo-backend")] pub extern crate cairo;

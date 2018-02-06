@@ -6,6 +6,7 @@ authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
 [dependencies]
 gio = "0.3"
 gtk = "0.3"
+log = "0.4"
 fern = "0.5"
 
 [dependencies.resvg]

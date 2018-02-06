@@ -10,6 +10,7 @@ name = "resvg"
 crate-type = ["cdylib"]
 
 [dependencies]
+log = "0.4"
 fern = "0.5"
 
 [dependencies.resvg]

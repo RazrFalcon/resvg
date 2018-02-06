@@ -1,6 +1,7 @@
 extern crate gio;
 extern crate gtk;
 extern crate resvg;
+extern crate log;
 extern crate fern;
 
 use std::fmt;
@@ -32,7 +33,7 @@ macro_rules! clone {
 fn main() {
     fern::Dispatch::new()
         .format(log_format)
-        .level(resvg::log::LevelFilter::Warn)
+        .level(log::LevelFilter::Warn)
         .chain(std::io::stderr())
         .apply().unwrap();
 
@@ -80,9 +81,7 @@ fn build_ui(application: &gtk::Application, file_path: &Path) {
     window.show_all();
 }
 
-fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &resvg::log::Record) {
-    use resvg::log;
-
+fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &log::Record) {
     let lvl = match record.level() {
         log::Level::Error => "Error",
         log::Level::Warn => "Warning",
