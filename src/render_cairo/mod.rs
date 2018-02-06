@@ -55,8 +55,11 @@ impl ConvTransform<cairo::Matrix> for tree::Transform {
 
 
 /// Renders SVG to image.
-pub fn render_to_image(doc: &tree::RenderTree, opt: &Options) -> Result<cairo::ImageSurface> {
-    let img_size = render_utils::fit_to(&doc.svg_node().size, opt.fit_to);
+pub fn render_to_image(
+    rtree: &tree::RenderTree,
+    opt: &Options,
+) -> Result<cairo::ImageSurface> {
+    let img_size = render_utils::fit_to(&rtree.svg_node().size, opt.fit_to);
 
     debug_assert!(img_size.w as i32 > 0 && img_size.h as i32 > 0);
 
@@ -82,25 +85,30 @@ pub fn render_to_image(doc: &tree::RenderTree, opt: &Options) -> Result<cairo::I
         cr.paint();
     }
 
-    render_to_canvas(&cr, img_view, doc);
+    render_to_canvas(&cr, img_view, rtree);
 
     Ok(surface)
 }
 
 /// Renders SVG to canvas.
-pub fn render_to_canvas(cr: &cairo::Context, img_view: Rect, doc: &tree::RenderTree) {
+pub fn render_to_canvas(
+    cr: &cairo::Context,
+    img_view: Rect,
+    rtree: &tree::RenderTree,
+) {
     // Apply viewBox.
     let ts = {
-        let (dx, dy, sx, sy) = render_utils::view_box_transform(&doc.svg_node().view_box, &img_view);
+        let vbox = rtree.svg_node().view_box;
+        let (dx, dy, sx, sy) = render_utils::view_box_transform(&vbox, &img_view);
         cairo::Matrix::new(sx, 0.0, 0.0, sy, dx, dy)
     };
     cr.transform(ts);
 
-    render_group(doc, doc.root(), &cr, &cr.get_matrix(), img_view.size());
+    render_group(rtree, rtree.root(), &cr, &cr.get_matrix(), img_view.size());
 }
 
 fn render_group(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     node: tree::NodeRef,
     cr: &cairo::Context,
     matrix: &cairo::Matrix,
@@ -112,16 +120,16 @@ fn render_group(
 
         let bbox = match node.kind() {
             tree::NodeKindRef::Path(ref path) => {
-                Some(path::draw(doc, path, cr))
+                Some(path::draw(rtree, path, cr))
             }
             tree::NodeKindRef::Text(_) => {
-                Some(text::draw(doc, node, cr))
+                Some(text::draw(rtree, node, cr))
             }
             tree::NodeKindRef::Image(ref img) => {
                 Some(image::draw(img, cr))
             }
             tree::NodeKindRef::Group(ref g) => {
-                render_group_impl(doc, node, g, cr, img_size)
+                render_group_impl(rtree, node, g, cr, img_size)
             }
         };
 
@@ -136,7 +144,7 @@ fn render_group(
 }
 
 fn render_group_impl(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     node: tree::NodeRef,
     g: &tree::Group,
     cr: &cairo::Context,
@@ -159,12 +167,12 @@ fn render_group_impl(
     let sub_cr = cairo::Context::new(&sub_surface);
     sub_cr.set_matrix(cr.get_matrix());
 
-    let bbox = render_group(doc, node, &sub_cr, &cr.get_matrix(), img_size);
+    let bbox = render_group(rtree, node, &sub_cr, &cr.get_matrix(), img_size);
 
     if let Some(idx) = g.clip_path {
-        let clip_node = doc.defs_at(idx);
+        let clip_node = rtree.defs_at(idx);
         if let tree::DefsNodeKindRef::ClipPath(ref cp) = clip_node.kind() {
-            clippath::apply(doc, clip_node, cp, &sub_cr, &bbox, img_size);
+            clippath::apply(rtree, clip_node, cp, &sub_cr, &bbox, img_size);
         }
     }
 

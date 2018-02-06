@@ -18,7 +18,7 @@ use super::{
 
 
 pub fn apply(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     stroke: &Option<tree::Stroke>,
     p: &qt::Painter,
     bbox: &Rect,
@@ -33,7 +33,7 @@ pub fn apply(
                     pen.set_color(c.red, c.green, c.blue, a);
                 }
                 tree::Paint::Link(id) => {
-                    let node = doc.defs_at(id);
+                    let node = rtree.defs_at(id);
                     let mut brush = qt::Brush::new();
 
                     match node.kind() {
@@ -43,7 +43,14 @@ pub fn apply(
                             gradient::prepare_radial(node, rg, stroke.opacity, &mut brush),
                         tree::DefsNodeKindRef::ClipPath(_) => {}
                         tree::DefsNodeKindRef::Pattern(ref pattern) => {
-                            pattern::apply(doc, p.get_transform(), bbox, node, pattern, &mut brush);
+                            pattern::apply(
+                                rtree,
+                                p.get_transform(),
+                                bbox,
+                                node,
+                                pattern,
+                                &mut brush,
+                            );
                         }
                     }
 

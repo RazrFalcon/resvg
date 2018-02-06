@@ -6,6 +6,12 @@ set -ev
 WORK_DIR="."
 PKG_DIR="$TRAVIS_BUILD_DIR"
 
+if [ "$1" == "--no-regression" ]; then
+    WITH_REGRESSION=false
+else
+    WITH_REGRESSION=true
+fi
+
 # if a local run
 if [ -z "$TRAVIS_BUILD_DIR" ]; then
     PKG_DIR=$(pwd)"/.."
@@ -13,23 +19,30 @@ if [ -z "$TRAVIS_BUILD_DIR" ]; then
     WORK_DIR="/tmp/"
 fi
 
+
 # test qt backend
 cd "$PKG_DIR"/tools/rendersvg
 cargo build --verbose --features="qt-backend"
-cd "$PKG_DIR"/tests/regression
-if [ -z "$LOCAL_TEST" ]; then
-    export QT_QPA_PLATFORM=offscreen
-    sudo ln -s /usr/share/fonts /opt/qt56/lib/fonts
+# regression testing
+if [ "$WITH_REGRESSION" = true ]; then
+    cd "$PKG_DIR"/tests/regression
+    if [ -z "$LOCAL_TEST" ]; then
+        export QT_QPA_PLATFORM=offscreen
+        sudo ln -s /usr/share/fonts /opt/qt56/lib/fonts
+    fi
+    mkdir -p "$WORK_DIR"/workdir-qt
+    cargo run --release -- --workdir="$WORK_DIR"/workdir-qt --backend=qt --use-prev-commit
 fi
-mkdir -p "$WORK_DIR"/workdir-qt
-cargo run --release -- --workdir="$WORK_DIR"/workdir-qt --backend=qt --use-prev-commit
 
 # test cairo backend
 cd "$PKG_DIR"/tools/rendersvg
 cargo build --verbose --features="cairo-backend"
-cd "$PKG_DIR"/tests/regression
-mkdir -p "$WORK_DIR"/workdir-cairo
-cargo run --release -- --workdir="$WORK_DIR"/workdir-cairo --backend=cairo --use-prev-commit
+# regression testing
+if [ "$WITH_REGRESSION" = true ]; then
+    cd "$PKG_DIR"/tests/regression
+    mkdir -p "$WORK_DIR"/workdir-cairo
+    cargo run --release -- --workdir="$WORK_DIR"/workdir-cairo --backend=cairo --use-prev-commit
+fi
 
 # try to build with all backends
 cd "$PKG_DIR"/tools/rendersvg

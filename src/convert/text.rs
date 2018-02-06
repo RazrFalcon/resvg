@@ -26,29 +26,29 @@ use super::{
 pub fn convert(
     text_elem: &svgdom::Node,
     depth: usize,
-    doc: &mut tree::RenderTree,
+    rtree: &mut tree::RenderTree,
 ) {
     let attrs = text_elem.attributes();
     let ts = attrs.get_transform(AId::Transform).unwrap_or_default();
 
-    doc.append_node(depth, tree::NodeKind::Text(tree::Text {
+    rtree.append_node(depth, tree::NodeKind::Text(tree::Text {
         id: text_elem.id().clone(),
         transform: ts,
     }));
 
-    convert_chunks(text_elem, depth + 1, doc);
+    convert_chunks(text_elem, depth + 1, rtree);
 }
 
 fn convert_chunks(
     text_elem: &svgdom::Node,
     depth: usize,
-    doc: &mut tree::RenderTree,
+    rtree: &mut tree::RenderTree,
 ) {
     let ref root_attrs = text_elem.attributes();
     let mut prev_x = resolve_pos(root_attrs, AId::X).unwrap_or(0.0);
     let mut prev_y = resolve_pos(root_attrs, AId::Y).unwrap_or(0.0);
 
-    doc.append_node(depth, tree::NodeKind::TextChunk(tree::TextChunk {
+    rtree.append_node(depth, tree::NodeKind::TextChunk(tree::TextChunk {
         x: prev_x,
         y: prev_y,
         anchor: conv_text_anchor(root_attrs),
@@ -73,7 +73,7 @@ fn convert_chunks(
             let ty = y.unwrap_or(prev_y);
 
             if tx.fuzzy_ne(&prev_x) || ty.fuzzy_ne(&prev_y) {
-                doc.append_node(depth, tree::NodeKind::TextChunk(tree::TextChunk {
+                rtree.append_node(depth, tree::NodeKind::TextChunk(tree::TextChunk {
                     x: tx,
                     y: ty,
                     anchor: conv_text_anchor(attrs),
@@ -84,10 +84,10 @@ fn convert_chunks(
             prev_y = ty;
         }
 
-        let fill = fill::convert(doc, attrs);
-        let stroke = stroke::convert(doc, attrs);
-        let decoration = conv_tspan_decoration2(doc, text_elem, &tspan);
-        doc.append_node(depth + 1, tree::NodeKind::TSpan(tree::TSpan {
+        let fill = fill::convert(rtree, attrs);
+        let stroke = stroke::convert(rtree, attrs);
+        let decoration = conv_tspan_decoration2(rtree, text_elem, &tspan);
+        rtree.append_node(depth + 1, tree::NodeKind::TSpan(tree::TSpan {
             fill,
             stroke,
             font: convert_font(attrs),
@@ -161,7 +161,7 @@ fn conv_tspan_decoration(tspan: &svgdom::Node) -> TextDecoTypes {
 }
 
 fn conv_tspan_decoration2(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     node: &svgdom::Node,
     tspan: &svgdom::Node
 ) -> tree::TextDecoration {
@@ -178,8 +178,8 @@ fn conv_tspan_decoration2(
         };
 
         let ref attrs = n.attributes();
-        let fill = fill::convert(doc, attrs);
-        let stroke = stroke::convert(doc, attrs);
+        let fill = fill::convert(rtree, attrs);
+        let stroke = stroke::convert(rtree, attrs);
 
         Some(tree::TextDecorationStyle {
             fill,

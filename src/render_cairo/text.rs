@@ -35,16 +35,16 @@ pub struct PangoData {
 }
 
 pub fn draw(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     node: tree::NodeRef,
     cr: &cairo::Context,
 ) -> Rect {
-    draw_tspan(doc, node, cr,
-        |tspan, x, y, w, d| _draw_tspan(doc, tspan, x, y, w, d, cr))
+    draw_tspan(rtree, node, cr,
+        |tspan, x, y, w, d| _draw_tspan(rtree, tspan, x, y, w, d, cr))
 }
 
 pub fn draw_tspan<DrawAt>(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     node: tree::NodeRef,
     cr: &cairo::Context,
     mut draw_at: DrawAt,
@@ -62,9 +62,9 @@ pub fn draw_tspan<DrawAt>(
         for tspan in child.text_spans() {
             let context = pc::create_context(cr).unwrap();
             pc::update_context(cr, &context);
-            pc::context_set_resolution(&context, doc.svg_node().dpi);
+            pc::context_set_resolution(&context, rtree.svg_node().dpi);
 
-            let font = init_font(&tspan.font, doc.svg_node().dpi);
+            let font = init_font(&tspan.font, rtree.svg_node().dpi);
 
             let layout = pango::Layout::new(&context);
             layout.set_font_description(Some(&font));
@@ -97,7 +97,7 @@ pub fn draw_tspan<DrawAt>(
 }
 
 fn _draw_tspan(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     tspan: &tree::TSpan,
     x: f64,
     y: f64,
@@ -127,7 +127,7 @@ fn _draw_tspan(
     if let Some(ref style) = tspan.decoration.underline {
         line_rect.y = y + baseline_offset
                       - font_metrics.get_underline_position() as f64 / PANGO_SCALE_64;
-        draw_line(doc, &style.fill, &style.stroke, line_rect, cr);
+        draw_line(rtree, &style.fill, &style.stroke, line_rect, cr);
     }
 
     // Draw overline.
@@ -135,17 +135,17 @@ fn _draw_tspan(
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.overline {
         line_rect.y = y + font_metrics.get_underline_thickness() as f64 / PANGO_SCALE_64;
-        draw_line(doc, &style.fill, &style.stroke, line_rect, cr);
+        draw_line(rtree, &style.fill, &style.stroke, line_rect, cr);
     }
 
     // Draw text.
     cr.move_to(x, y);
 
-    fill::apply(doc, &tspan.fill, cr, &bbox);
+    fill::apply(rtree, &tspan.fill, cr, &bbox);
     pc::update_layout(cr, &pd.layout);
     pc::show_layout(cr, &pd.layout);
 
-    stroke::apply(doc, &tspan.stroke, cr, &bbox);
+    stroke::apply(rtree, &tspan.stroke, cr, &bbox);
     pc::layout_path(cr, &pd.layout);
     cr.stroke();
 
@@ -158,7 +158,7 @@ fn _draw_tspan(
         line_rect.y = y + baseline_offset
                       - font_metrics.get_strikethrough_position() as f64 / PANGO_SCALE_64;
         line_rect.h = font_metrics.get_strikethrough_thickness() as f64 / PANGO_SCALE_64;
-        draw_line(doc, &style.fill, &style.stroke, line_rect, cr);
+        draw_line(rtree, &style.fill, &style.stroke, line_rect, cr);
     }
 }
 
@@ -231,7 +231,7 @@ fn calc_layout_bbox(layout: &pango::Layout, x: f64, y: f64) -> Rect {
 }
 
 fn draw_line(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     fill: &Option<tree::Fill>,
     stroke: &Option<tree::Stroke>,
     line_bbox: Rect,
@@ -244,11 +244,11 @@ fn draw_line(
     cr.rel_line_to(-line_bbox.w, 0.0);
     cr.close_path();
 
-    fill::apply(doc, fill, cr, &line_bbox);
+    fill::apply(rtree, fill, cr, &line_bbox);
     if stroke.is_some() {
         cr.fill_preserve();
 
-        stroke::apply(doc, &stroke, cr, &line_bbox);
+        stroke::apply(rtree, &stroke, cr, &line_bbox);
         cr.stroke();
     } else {
         cr.fill();

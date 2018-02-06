@@ -49,10 +49,13 @@ impl ConvTransform<qt::Transform> for tree::Transform {
 
 
 /// Renders SVG to image.
-pub fn render_to_image(doc: &tree::RenderTree, opt: &Options) -> Result<qt::Image> {
+pub fn render_to_image(
+    rtree: &tree::RenderTree,
+    opt: &Options,
+) -> Result<qt::Image> {
     let _app = qt::GuiApp::new("resvg");
 
-    let svg = doc.svg_node();
+    let svg = rtree.svg_node();
 
     let img_size = render_utils::fit_to(&svg.size, opt.fit_to);
 
@@ -78,7 +81,7 @@ pub fn render_to_image(doc: &tree::RenderTree, opt: &Options) -> Result<qt::Imag
     let img_view = Rect::new(0.0, 0.0, img_size.w, img_size.h);
     let painter = qt::Painter::new(&img);
 
-    render_to_canvas(&painter, img_view, doc);
+    render_to_canvas(&painter, img_view, rtree);
 
     painter.end();
 
@@ -86,8 +89,12 @@ pub fn render_to_image(doc: &tree::RenderTree, opt: &Options) -> Result<qt::Imag
 }
 
 /// Renders SVG to canvas.
-pub fn render_to_canvas(painter: &qt::Painter, img_view: Rect, doc: &tree::RenderTree) {
-    let svg = doc.svg_node();
+pub fn render_to_canvas(
+    painter: &qt::Painter,
+    img_view: Rect,
+    rtree: &tree::RenderTree,
+) {
+    let svg = rtree.svg_node();
 
     // Apply viewBox.
     let ts = {
@@ -96,13 +103,13 @@ pub fn render_to_canvas(painter: &qt::Painter, img_view: Rect, doc: &tree::Rende
     };
     painter.apply_transform(&ts);
 
-    render_group(doc, doc.root(), &painter, &painter.get_transform(), img_view.size());
+    render_group(rtree, rtree.root(), &painter, &painter.get_transform(), img_view.size());
 }
 
 // TODO: render groups backward to reduce memory usage
 //       current implementation keeps parent canvas until all children are rendered
 fn render_group(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     node: tree::NodeRef,
     p: &qt::Painter,
     ts: &qt::Transform,
@@ -115,16 +122,16 @@ fn render_group(
 
         let bbox = match node.kind() {
             tree::NodeKindRef::Path(ref path) => {
-                Some(path::draw(doc, path, p))
+                Some(path::draw(rtree, path, p))
             }
             tree::NodeKindRef::Text(_) => {
-                Some(text::draw(doc, node, p))
+                Some(text::draw(rtree, node, p))
             }
             tree::NodeKindRef::Image(ref img) => {
                 Some(image::draw(img, p))
             }
             tree::NodeKindRef::Group(ref g) => {
-                render_group_impl(doc, node, g, p, img_size)
+                render_group_impl(rtree, node, g, p, img_size)
             }
         };
 
@@ -140,7 +147,7 @@ fn render_group(
 }
 
 fn render_group_impl(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     node: tree::NodeRef,
     g: &tree::Group,
     p: &qt::Painter,
@@ -160,16 +167,16 @@ fn render_group_impl(
     };
 
     sub_img.fill(0, 0, 0, 0);
-    sub_img.set_dpi(doc.svg_node().dpi);
+    sub_img.set_dpi(rtree.svg_node().dpi);
 
     let sub_p = qt::Painter::new(&sub_img);
     sub_p.set_transform(&p.get_transform());
-    let bbox = render_group(doc, node, &sub_p, &p.get_transform(), img_size);
+    let bbox = render_group(rtree, node, &sub_p, &p.get_transform(), img_size);
 
     if let Some(idx) = g.clip_path {
-        let clip_node = doc.defs_at(idx);
+        let clip_node = rtree.defs_at(idx);
         if let tree::DefsNodeKindRef::ClipPath(ref cp) = clip_node.kind() {
-            clippath::apply(doc, clip_node, cp, &sub_p, &bbox, img_size);
+            clippath::apply(rtree, clip_node, cp, &sub_p, &bbox, img_size);
         }
     }
 

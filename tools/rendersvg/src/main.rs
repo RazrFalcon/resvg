@@ -91,10 +91,10 @@ fn process() -> Result<(), Error> {
     let (args, opt) = parse_args();
 
     // load file
-    let doc = resvg::parse_doc_from_file(args.in_svg, &opt)?;
+    let rtree = resvg::parse_doc_from_file(args.in_svg, &opt)?;
 
     if let Some(ref dump_path) = args.dump {
-        dump_svg(&doc, dump_path)?;
+        dump_svg(&rtree, dump_path)?;
     }
 
     if args.pretend {
@@ -104,13 +104,13 @@ fn process() -> Result<(), Error> {
     match args.backend {
         #[cfg(feature = "cairo-backend")]
         Backend::Cairo => {
-            let img = resvg::render_cairo::render_to_image(&doc, &opt)?;
+            let img = resvg::render_cairo::render_to_image(&rtree, &opt)?;
             let mut buffer = fs::File::create(args.out_png)?;
             img.write_to_png(&mut buffer)?;
         }
         #[cfg(feature = "qt-backend")]
         Backend::Qt => {
-            let img = resvg::render_qt::render_to_image(&doc, &opt)?;
+            let img = resvg::render_qt::render_to_image(&rtree, &opt)?;
             img.save(args.out_png.to_str().unwrap());
         }
     }
@@ -339,7 +339,7 @@ fn fill_options(args: &ArgMatches) -> Options {
     }
 }
 
-fn dump_svg(doc: &tree::RenderTree, path: &path::Path) -> Result<(), io::Error> {
+fn dump_svg(rtree: &tree::RenderTree, path: &path::Path) -> Result<(), io::Error> {
     let mut f = fs::File::create(path)?;
 
     let opt = svgdom::WriteOptions {
@@ -350,7 +350,7 @@ fn dump_svg(doc: &tree::RenderTree, path: &path::Path) -> Result<(), io::Error> 
         .. svgdom::WriteOptions::default()
     };
 
-    let svgdoc = doc.to_svgdom();
+    let svgdoc = rtree.to_svgdom();
 
     let mut out = Vec::new();
     svgdoc.write_buf_opt(&opt, &mut out);

@@ -18,12 +18,12 @@ use traits::{
 
 pub fn convert_linear(
     node: &svgdom::Node,
-    doc: &mut tree::RenderTree,
+    rtree: &mut tree::RenderTree,
 ) {
     let ref attrs = node.attributes();
     let transform = attrs.get_transform(AId::GradientTransform).unwrap_or_default();
 
-    doc.append_node(
+    rtree.append_node(
         tree::DEFS_DEPTH,
         tree::NodeKind::LinearGradient(tree::LinearGradient {
             id: node.id().clone(),
@@ -39,17 +39,17 @@ pub fn convert_linear(
         })
     );
 
-    convert_stops(node, doc);
+    convert_stops(node, rtree);
 }
 
 pub fn convert_radial(
     node: &svgdom::Node,
-    doc: &mut tree::RenderTree,
+    rtree: &mut tree::RenderTree,
 ) {
     let ref attrs = node.attributes();
     let transform = attrs.get_transform(AId::GradientTransform).unwrap_or_default();
 
-    doc.append_node(
+    rtree.append_node(
         tree::DEFS_DEPTH,
         tree::NodeKind::RadialGradient(tree::RadialGradient {
             id: node.id().clone(),
@@ -66,7 +66,7 @@ pub fn convert_radial(
         })
     );
 
-    convert_stops(node, doc);
+    convert_stops(node, rtree);
 }
 
 fn convert_spread_method(
@@ -84,7 +84,7 @@ fn convert_spread_method(
 
 fn convert_stops(
     node: &svgdom::Node,
-    doc: &mut tree::RenderTree,
+    rtree: &mut tree::RenderTree,
 ) {
     for s in node.children() {
         if !s.is_tag_name(EId::Stop) {
@@ -100,7 +100,7 @@ fn convert_stops(
         let color = attrs.get_color(AId::StopColor).unwrap_or(svgdom::Color::new(0, 0, 0));
         let opacity = attrs.get_number(AId::StopOpacity).unwrap_or(1.0);
 
-        doc.append_node(tree::DEFS_DEPTH + 1, tree::NodeKind::Stop(tree::Stop {
+        rtree.append_node(tree::DEFS_DEPTH + 1, tree::NodeKind::Stop(tree::Stop {
             offset,
             color,
             opacity,

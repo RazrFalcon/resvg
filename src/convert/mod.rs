@@ -62,19 +62,19 @@ pub fn convert_doc(
         dpi: opt.dpi,
     };
 
-    let mut doc = tree::RenderTree::new(svg_kind);
+    let mut rtree = tree::RenderTree::new(svg_kind);
 
-    convert_ref_nodes(svg_doc, opt, &mut doc);
-    convert_nodes(&svg, opt, 1, &mut doc);
+    convert_ref_nodes(svg_doc, opt, &mut rtree);
+    convert_nodes(&svg, opt, 1, &mut rtree);
 
-    Ok(doc)
+    Ok(rtree)
 }
 
 // TODO: defs children can reference other defs
 fn convert_ref_nodes(
     svg_doc: &svgdom::Document,
     opt: &Options,
-    doc: &mut tree::RenderTree,
+    rtree: &mut tree::RenderTree,
 ) {
     let defs_elem = match svg_doc.defs_element() {
         Some(e) => e.clone(),
@@ -90,16 +90,16 @@ fn convert_ref_nodes(
 
         match id {
             EId::LinearGradient => {
-                gradient::convert_linear(&node, doc);
+                gradient::convert_linear(&node, rtree);
             }
             EId::RadialGradient => {
-                gradient::convert_radial(&node, doc);
+                gradient::convert_radial(&node, rtree);
             }
             EId::ClipPath => {
-                clippath::convert(&node, doc);
+                clippath::convert(&node, rtree);
             }
             EId::Pattern => {
-                pattern::convert(&node, opt, doc);
+                pattern::convert(&node, opt, rtree);
             }
             _ => {
                 warn!("Unsupported element '{}'.", id);
@@ -112,7 +112,7 @@ pub fn convert_nodes(
     parent: &svgdom::Node,
     opt: &Options,
     depth: usize,
-    doc: &mut tree::RenderTree,
+    rtree: &mut tree::RenderTree,
 ) {
     for (id, node) in parent.children().svg() {
         if node.is_referenced() {
@@ -138,7 +138,7 @@ pub fn convert_nodes(
                     let mut v = None;
                     if let &AValue::FuncLink(ref link) = av {
                         if link.is_tag_name(EId::ClipPath) {
-                            if let Some(idx) = doc.defs_index(&link.id()) {
+                            if let Some(idx) = rtree.defs_index(&link.id()) {
                                 v = Some(idx);
                             }
                         }
@@ -160,14 +160,14 @@ pub fn convert_nodes(
                 let ts = attrs.get_transform(AId::Transform).unwrap_or_default();
                 let opacity = attrs.get_number(AId::Opacity);
 
-                doc.append_node(depth, tree::NodeKind::Group(tree::Group {
+                rtree.append_node(depth, tree::NodeKind::Group(tree::Group {
                     id: node.id().clone(),
                     transform: ts,
                     opacity,
                     clip_path,
                 }));
 
-                convert_nodes(&node, opt, depth + 1, doc);
+                convert_nodes(&node, opt, depth + 1, rtree);
 
                 // TODO: check that opacity != 1.0
             }
@@ -178,7 +178,7 @@ pub fn convert_nodes(
             | EId::Circle
             | EId::Ellipse => {
                 if let Some(d) = shapes::convert(&node) {
-                    path::convert(&node, d, depth, doc);
+                    path::convert(&node, d, depth, rtree);
                 }
             }
               EId::Use
@@ -191,14 +191,14 @@ pub fn convert_nodes(
             EId::Path => {
                 let attrs = node.attributes();
                 if let Some(d) = attrs.get_path(AId::D) {
-                    path::convert(&node, d.clone(), depth, doc);
+                    path::convert(&node, d.clone(), depth, rtree);
                 }
             }
             EId::Text => {
-                text::convert(&node, depth, doc);
+                text::convert(&node, depth, rtree);
             }
             EId::Image => {
-                image::convert(&node, opt, depth, doc);
+                image::convert(&node, opt, depth, rtree);
             }
             _ => {
                 warn!("Unsupported element '{}'.", id);

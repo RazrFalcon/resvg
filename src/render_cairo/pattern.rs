@@ -22,7 +22,7 @@ use render_utils;
 
 
 pub fn apply(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     node: tree::DefsNodeRef,
     pattern: &tree::Pattern,
     bbox: &Rect,
@@ -68,7 +68,7 @@ pub fn apply(
         sub_cr.transform(cairo::Matrix::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y));
     }
 
-    super::render_group(doc, node.to_node_ref(), &sub_cr, &sub_cr.get_matrix(), img_size);
+    super::render_group(rtree, node.to_node_ref(), &sub_cr, &sub_cr.get_matrix(), img_size);
 
     let mut ts = tree::Transform::default();
     ts.append(&pattern.transform);

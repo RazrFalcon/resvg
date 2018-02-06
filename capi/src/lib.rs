@@ -28,6 +28,7 @@ use resvg::qt;
 use resvg::cairo;
 
 
+// TODO: rename to resvg_render_tree (_t ?)
 #[repr(C)]
 pub struct resvg_document(resvg::tree::RenderTree);
 
@@ -161,7 +162,7 @@ pub extern fn resvg_qt_render_to_canvas(
     height: f64,
     doc: *mut resvg_document,
 ) {
-    let doc = unsafe {
+    let rtree = unsafe {
         assert!(!doc.is_null());
         &mut *doc
     };
@@ -169,7 +170,7 @@ pub extern fn resvg_qt_render_to_canvas(
     let painter = unsafe { qt::Painter::from_raw(painter) };
     let rect = resvg::Rect::new(x, y, width, height);
 
-    resvg::render_qt::render_to_canvas(&painter, rect, &doc.0);
+    resvg::render_qt::render_to_canvas(&painter, rect, &rtree.0);
 }
 
 #[cfg(feature = "cairo-backend")]
@@ -182,7 +183,7 @@ pub extern fn resvg_cairo_render_to_canvas(
     height: f64,
     doc: *mut resvg_document,
 ) {
-    let doc = unsafe {
+    let rtree = unsafe {
         assert!(!doc.is_null());
         &mut *doc
     };
@@ -192,7 +193,7 @@ pub extern fn resvg_cairo_render_to_canvas(
     let cr = unsafe { cairo::Context::from_glib_none(cr) };
     let rect = resvg::Rect::new(x, y, width, height);
 
-    resvg::render_cairo::render_to_canvas(&cr, rect, &doc.0);
+    resvg::render_cairo::render_to_canvas(&cr, rect, &rtree.0);
 }
 
 #[no_mangle]
@@ -201,12 +202,12 @@ pub extern fn resvg_get_image_size(
     width: *mut f64,
     height: *mut f64,
 ) {
-    let doc = unsafe {
+    let rtree = unsafe {
         assert!(!doc.is_null());
         &mut *doc
     };
 
-    let size = doc.0.svg_node().size;
+    let size = rtree.0.svg_node().size;
 
     unsafe {
         *width = size.w;

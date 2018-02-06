@@ -21,7 +21,7 @@ use traits::{
 
 
 pub fn convert(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     attrs: &svgdom::Attributes,
 ) -> Option<tree::Fill> {
     let paint = if let Some(fill) = attrs.get_type(AId::Fill) {
@@ -32,7 +32,7 @@ pub fn convert(
             AValue::FuncLink(ref link) => {
                 let mut p = None;
                 if link.is_gradient() || link.is_tag_name(EId::Pattern) {
-                    if let Some(idx) = doc.defs_index(&link.id()) {
+                    if let Some(idx) = rtree.defs_index(&link.id()) {
                         p = Some(tree::Paint::Link(idx));
                     }
                 }

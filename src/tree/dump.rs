@@ -19,13 +19,13 @@ use short::{
 
 // TODO: xml:space
 
-pub fn conv_doc(doc: &RenderTree) -> svgdom::Document {
+pub fn conv_doc(rtree: &RenderTree) -> svgdom::Document {
     let mut new_doc = svgdom::Document::new();
 
     let mut svg = new_doc.create_element(EId::Svg);
     new_doc.append(&svg);
 
-    let svg_node = doc.svg_node();
+    let svg_node = rtree.svg_node();
 
     let view_box = format!("{} {} {} {}", svg_node.view_box.x, svg_node.view_box.y,
                                           svg_node.view_box.w, svg_node.view_box.h);
@@ -41,18 +41,18 @@ pub fn conv_doc(doc: &RenderTree) -> svgdom::Document {
     let mut defs = new_doc.create_element(EId::Defs);
     svg.append(&defs);
 
-    conv_defs(doc, &mut new_doc, &mut defs);
-    conv_elements(doc.root(), &defs, &mut new_doc, &mut svg);
+    conv_defs(rtree, &mut new_doc, &mut defs);
+    conv_elements(rtree.root(), &defs, &mut new_doc, &mut svg);
 
     new_doc
 }
 
 fn conv_defs(
-    doc: &RenderTree,
+    rtree: &RenderTree,
     new_doc: &mut svgdom::Document,
     defs: &mut svgdom::Node,
 ) {
-    for n in doc.defs() {
+    for n in rtree.defs() {
         match n.kind() {
             DefsNodeKindRef::LinearGradient(ref lg) => {
                 let mut grad_elem = new_doc.create_element(EId::LinearGradient);

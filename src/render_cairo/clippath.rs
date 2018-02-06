@@ -24,7 +24,7 @@ use super::{
 
 
 pub fn apply(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     node: tree::DefsNodeRef,
     cp: &tree::ClipPath,
     cr: &cairo::Context,
@@ -56,10 +56,10 @@ pub fn apply(
 
         match node.kind() {
             tree::NodeKindRef::Path(ref path_elem) => {
-                path::draw(doc, path_elem, &clip_cr);
+                path::draw(rtree, path_elem, &clip_cr);
             }
             tree::NodeKindRef::Text(_) => {
-                text::draw(doc, node, &clip_cr);
+                text::draw(rtree, node, &clip_cr);
             }
             _ => {}
         }

@@ -32,16 +32,16 @@ pub fn convert(
     node: &svgdom::Node,
     d: Path,
     depth: usize,
-    doc: &mut tree::RenderTree,
+    rtree: &mut tree::RenderTree,
 ) {
     let attrs = node.attributes();
 
-    let fill = fill::convert(doc, &attrs);
-    let stroke = stroke::convert(doc, &attrs);
+    let fill = fill::convert(rtree, &attrs);
+    let stroke = stroke::convert(rtree, &attrs);
     let d = convert_path(d);
     let transform = attrs.get_transform(AId::Transform).unwrap_or_default();
 
-    doc.append_node(depth, tree::NodeKind::Path(tree::Path {
+    rtree.append_node(depth, tree::NodeKind::Path(tree::Path {
         id: node.id().clone(),
         transform,
         fill,

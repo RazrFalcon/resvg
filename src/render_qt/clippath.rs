@@ -21,7 +21,7 @@ use super::{
 
 
 pub fn apply(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     node: tree::DefsNodeRef,
     cp: &tree::ClipPath,
     p: &qt::Painter,
@@ -34,7 +34,7 @@ pub fn apply(
     ).unwrap(); // TODO: remove
 
     clip_img.fill(0, 0, 0, 255);
-    clip_img.set_dpi(doc.svg_node().dpi);
+    clip_img.set_dpi(rtree.svg_node().dpi);
 
     let clip_p = qt::Painter::new(&clip_img);
     clip_p.set_transform(&p.get_transform());
@@ -52,10 +52,10 @@ pub fn apply(
 
         match node.kind() {
             tree::NodeKindRef::Path(ref path_elem) => {
-                path::draw(doc, path_elem, &clip_p);
+                path::draw(rtree, path_elem, &clip_p);
             }
             tree::NodeKindRef::Text(_) => {
-                text::draw(doc, node, &clip_p);
+                text::draw(rtree, node, &clip_p);
             }
             _ => {}
         }

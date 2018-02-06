@@ -18,7 +18,7 @@ use render_utils;
 
 
 pub fn apply(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     global_ts: qt::Transform,
     bbox: &Rect,
     pattern_node: tree::DefsNodeRef,
@@ -49,7 +49,7 @@ pub fn apply(
         }
     };
 
-    img.set_dpi(doc.svg_node().dpi);
+    img.set_dpi(rtree.svg_node().dpi);
     img.fill(0, 0, 0, 0);
 
     let p = qt::Painter::new(&img);
@@ -64,7 +64,7 @@ pub fn apply(
         p.apply_transform(&qt::Transform::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y));
     }
 
-    super::render_group(doc, pattern_node.to_node_ref(), &p, &p.get_transform(), img_size);
+    super::render_group(rtree, pattern_node.to_node_ref(), &p, &p.get_transform(), img_size);
     p.end();
 
     brush.set_pattern(img);

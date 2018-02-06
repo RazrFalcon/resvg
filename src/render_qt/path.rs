@@ -17,7 +17,7 @@ use super::{
 
 
 pub fn draw(
-    doc: &tree::RenderTree,
+    tree: &tree::RenderTree,
     elem: &tree::Path,
     p: &qt::Painter,
 ) -> Rect {
@@ -33,8 +33,8 @@ pub fn draw(
 
     let bbox: Rect = p_path.bounding_box().into();
 
-    fill::apply(doc, &elem.fill, p, &bbox);
-    stroke::apply(doc, &elem.stroke, p, &bbox);
+    fill::apply(tree, &elem.fill, p, &bbox);
+    stroke::apply(tree, &elem.stroke, p, &bbox);
 
     p.draw_path(&p_path);
 

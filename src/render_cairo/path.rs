@@ -17,7 +17,11 @@ use super::{
 };
 
 
-pub fn draw(doc: &tree::RenderTree, elem: &tree::Path, cr: &cairo::Context) -> Rect {
+pub fn draw(
+    rtree: &tree::RenderTree,
+    elem: &tree::Path,
+    cr: &cairo::Context,
+) -> Rect {
     init_path(&elem.d, cr);
 
     let bbox = {
@@ -37,11 +41,11 @@ pub fn draw(doc: &tree::RenderTree, elem: &tree::Path, cr: &cairo::Context) -> R
         Rect::new(x1, y1, x2 - x1, y2 - y1)
     };
 
-    fill::apply(doc, &elem.fill, cr, &bbox);
+    fill::apply(rtree, &elem.fill, cr, &bbox);
     if elem.stroke.is_some() {
         cr.fill_preserve();
 
-        stroke::apply(doc, &elem.stroke, cr, &bbox);
+        stroke::apply(rtree, &elem.stroke, cr, &bbox);
         cr.stroke();
     } else {
         cr.fill();
@@ -50,7 +54,10 @@ pub fn draw(doc: &tree::RenderTree, elem: &tree::Path, cr: &cairo::Context) -> R
     bbox
 }
 
-pub fn init_path(list: &[tree::PathSegment], cr: &cairo::Context) {
+pub fn init_path(
+    list: &[tree::PathSegment],
+    cr: &cairo::Context,
+) {
     for seg in list {
         match *seg {
             tree::PathSegment::MoveTo { x, y } => {

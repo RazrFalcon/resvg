@@ -28,7 +28,7 @@ pub fn convert(
     node: &svgdom::Node,
     opt: &Options,
     depth: usize,
-    doc: &mut tree::RenderTree,
+    rtree: &mut tree::RenderTree,
 ) {
     let attrs = node.attributes();
 
@@ -54,7 +54,7 @@ pub fn convert(
     let href: &String = get_attr!(AId::XlinkHref);
 
     if let Some(data) = get_href_data(href, opt.path.as_ref()) {
-        doc.append_node(depth, tree::NodeKind::Image(tree::Image {
+        rtree.append_node(depth, tree::NodeKind::Image(tree::Image {
             id: node.id().clone(),
             transform: ts,
             rect: Rect::new(x, y, w, h),
@@ -63,7 +63,10 @@ pub fn convert(
     }
 }
 
-fn get_href_data(href: &str, path: Option<&path::PathBuf>) -> Option<tree::ImageData> {
+fn get_href_data(
+    href: &str,
+    path: Option<&path::PathBuf>,
+) -> Option<tree::ImageData> {
     if href.starts_with("data:image") {
         if let Some(idx) = href.find(',') {
             let kind = if href[..idx].contains("image/jpg") {

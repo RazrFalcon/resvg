@@ -18,7 +18,7 @@ use super::ext::{
 
 
 pub fn apply(
-    doc: &tree::RenderTree,
+    rtree: &tree::RenderTree,
     fill: &Option<tree::Fill>,
     cr: &cairo::Context,
     bbox: &math::Rect,
@@ -30,7 +30,7 @@ pub fn apply(
                     cr.set_source_color(&c, fill.opacity);
                 }
                 tree::Paint::Link(id) => {
-                    let node = doc.defs_at(id);
+                    let node = rtree.defs_at(id);
                     match node.kind() {
                         tree::DefsNodeKindRef::LinearGradient(ref lg) =>
                             gradient::prepare_linear(node, lg, fill.opacity, bbox, cr),
@@ -38,7 +38,7 @@ pub fn apply(
                             gradient::prepare_radial(node, rg, fill.opacity, bbox, cr),
                         tree::DefsNodeKindRef::ClipPath(_) => {}
                         tree::DefsNodeKindRef::Pattern(ref pattern) => {
-                            pattern::apply(doc, node, pattern, bbox, cr);
+                            pattern::apply(rtree, node, pattern, bbox, cr);
                         }
                     }
                 }

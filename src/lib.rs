@@ -94,24 +94,30 @@ pub enum Backend {
 
 
 /// Creates `RenderTree` from SVG data.
-pub fn parse_doc_from_data(text: &str, opt: &Options) -> Result<tree::RenderTree> {
+pub fn parse_doc_from_data(
+    text: &str,
+    opt: &Options,
+) -> Result<tree::RenderTree> {
     let mut doc = parse_svg(text)?;
     preproc::prepare_doc(&mut doc, opt)?;
-    let re_doc = convert::convert_doc(&doc, opt)?;
+    let rtree = convert::convert_doc(&doc, opt)?;
 
-    Ok(re_doc)
+    Ok(rtree)
 }
 
 /// Creates `RenderTree` from file.
 ///
 /// `.svg` and `.svgz` files are supported.
-pub fn parse_doc_from_file<P: AsRef<Path>>(path: P, opt: &Options) -> Result<tree::RenderTree> {
+pub fn parse_doc_from_file<P: AsRef<Path>>(
+    path: P,
+    opt: &Options,
+) -> Result<tree::RenderTree> {
     let text = load_file(path.as_ref())?;
     let mut doc = parse_svg(&text)?;
     preproc::prepare_doc(&mut doc, opt)?;
-    let re_doc = convert::convert_doc(&doc, opt)?;
+    let rtree = convert::convert_doc(&doc, opt)?;
 
-    Ok(re_doc)
+    Ok(rtree)
 }
 
 fn load_file(path: &Path) -> Result<String> {
