@@ -8,9 +8,7 @@ use cairo;
 // self
 
 use tree;
-use math::{
-    Rect,
-};
+use math::*;
 use super::{
     fill,
     stroke,
@@ -38,14 +36,14 @@ pub fn draw(
             if s_y2 > y2 { y2 = s_y2; }
         }
 
-        Rect::new(x1, y1, x2 - x1, y2 - y1)
+        Rect::from_xywh(x1, y1, x2 - x1, y2 - y1)
     };
 
-    fill::apply(rtree, &elem.fill, cr, &bbox);
+    fill::apply(rtree, &elem.fill, cr, bbox);
     if elem.stroke.is_some() {
         cr.fill_preserve();
 
-        stroke::apply(rtree, &elem.stroke, cr, &bbox);
+        stroke::apply(rtree, &elem.stroke, cr, bbox);
         cr.stroke();
     } else {
         cr.fill();

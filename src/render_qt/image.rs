@@ -7,9 +7,7 @@ use qt;
 
 // self
 use tree;
-use math::{
-    Rect,
-};
+use math::*;
 
 pub fn draw(
     image: &tree::Image,
@@ -36,7 +34,8 @@ pub fn draw(
         }
     };
 
-    let img = match img.resize(image.rect.w as i32, image.rect.h as i32) {
+    let size = image.rect.size.to_i32();
+    let img = match img.resize(size.width, size.height) {
         Some(v) => v,
         None => {
             warn!("Failed to scale an image.");
@@ -44,7 +43,7 @@ pub fn draw(
         }
     };
 
-    p.draw_image(image.rect.x, image.rect.y, &img);
+    p.draw_image(image.rect.x(), image.rect.y(), &img);
 
     image.rect
 }

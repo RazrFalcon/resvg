@@ -11,12 +11,10 @@ use qt;
 
 // self
 use tree;
-use math::{
-    Size,
-    Rect,
-};
+use math::*;
 use traits::{
     ConvTransform,
+    TransformFromBBox,
 };
 use {
     ErrorKind,
@@ -47,6 +45,12 @@ impl ConvTransform<qt::Transform> for tree::Transform {
     }
 }
 
+impl TransformFromBBox for qt::Transform {
+    fn from_bbox(bbox: Rect) -> Self {
+        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
+    }
+}
+
 
 /// Renders SVG to image.
 pub fn render_to_image(
@@ -57,11 +61,11 @@ pub fn render_to_image(
 
     let svg = rtree.svg_node();
 
-    let img_size = render_utils::fit_to(&svg.size, opt.fit_to);
+    let img_size = render_utils::fit_to(svg.size, opt.fit_to);
 
-    debug_assert!(img_size.w as i32 > 0 && img_size.h as i32 > 0);
+    debug_assert!(!img_size.is_empty_or_negative());
 
-    let img = qt::Image::new(img_size.w as u32, img_size.h as u32);
+    let img = qt::Image::new(img_size.width as u32, img_size.height as u32);
 
     let mut img = match img {
         Some(v) => v,
@@ -78,7 +82,7 @@ pub fn render_to_image(
     }
     img.set_dpi(opt.dpi);
 
-    let img_view = Rect::new(0.0, 0.0, img_size.w, img_size.h);
+    let img_view = Rect::new(Point::new(0.0, 0.0), img_size);
     let painter = qt::Painter::new(&img);
 
     render_to_canvas(&painter, img_view, rtree);
@@ -98,12 +102,12 @@ pub fn render_to_canvas(
 
     // Apply viewBox.
     let ts = {
-        let (dx, dy, sx, sy) = render_utils::view_box_transform(&svg.view_box, &img_view);
+        let (dx, dy, sx, sy) = render_utils::view_box_transform(svg.view_box, img_view);
         qt::Transform::new(sx, 0.0, 0.0, sy, dx, dy)
     };
     painter.apply_transform(&ts);
 
-    render_group(rtree, rtree.root(), &painter, &painter.get_transform(), img_view.size());
+    render_group(rtree, rtree.root(), &painter, &painter.get_transform(), img_view.size);
 }
 
 // TODO: render groups backward to reduce memory usage
@@ -115,7 +119,7 @@ fn render_group(
     ts: &qt::Transform,
     img_size: Size,
 ) -> Rect {
-    let mut g_bbox = Rect::new(f64::MAX, f64::MAX, 0.0, 0.0);
+    let mut g_bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
     for node in node.children() {
         // Apply transform.
         p.apply_transform(&node.kind().transform().to_native());
@@ -136,7 +140,7 @@ fn render_group(
         };
 
         if let Some(bbox) = bbox {
-            g_bbox.expand_from_rect(&bbox);
+            g_bbox.expand_from_rect(bbox);
         }
 
         // Revert transform.
@@ -154,8 +158,8 @@ fn render_group_impl(
     img_size: Size,
 ) -> Option<Rect> {
     let sub_img = qt::Image::new(
-        img_size.w as u32,
-        img_size.h as u32,
+        img_size.width as u32,
+        img_size.height as u32,
     );
 
     let mut sub_img = match sub_img {
@@ -176,7 +180,7 @@ fn render_group_impl(
     if let Some(idx) = g.clip_path {
         let clip_node = rtree.defs_at(idx);
         if let tree::DefsNodeKindRef::ClipPath(ref cp) = clip_node.kind() {
-            clippath::apply(rtree, clip_node, cp, &sub_p, &bbox, img_size);
+            clippath::apply(rtree, clip_node, cp, &sub_p, bbox, img_size);
         }
     }
 

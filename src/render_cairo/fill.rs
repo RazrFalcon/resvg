@@ -12,16 +12,14 @@ use super::{
     gradient,
     pattern,
 };
-use super::ext::{
-    ReCairoContextExt,
-};
+use super::ext::*;
 
 
 pub fn apply(
     rtree: &tree::RenderTree,
     fill: &Option<tree::Fill>,
     cr: &cairo::Context,
-    bbox: &math::Rect,
+    bbox: math::Rect,
 ) {
     match *fill {
         Some(ref fill) => {

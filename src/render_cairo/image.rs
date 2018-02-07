@@ -8,9 +8,7 @@ use image;
 
 // self
 use tree;
-use math::{
-    Rect,
-};
+use math::*;
 
 
 pub fn draw(
@@ -39,8 +37,8 @@ pub fn draw(
     };
 
     let img = img.resize(
-        image.rect.w as u32,
-        image.rect.h as u32,
+        image.rect.width() as u32,
+        image.rect.height() as u32,
         image::FilterType::Lanczos3
     );
     let img = img.to_rgba();
@@ -82,7 +80,7 @@ pub fn draw(
         }
     }
 
-    cr.set_source_surface(&surface, image.rect.x, image.rect.y);
+    cr.set_source_surface(&surface, image.rect.x(), image.rect.y());
     cr.paint();
 
     image.rect

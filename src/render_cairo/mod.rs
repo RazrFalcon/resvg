@@ -14,12 +14,10 @@ use cairo::{
 
 // self
 use tree;
-use math::{
-    Size,
-    Rect,
-};
+use math::*;
 use traits::{
     ConvTransform,
+    TransformFromBBox,
 };
 use {
     ErrorKind,
@@ -27,9 +25,7 @@ use {
     Result,
 };
 use render_utils;
-use self::ext::{
-    ReCairoContextExt,
-};
+use self::ext::*;
 
 
 mod clippath;
@@ -53,20 +49,26 @@ impl ConvTransform<cairo::Matrix> for tree::Transform {
     }
 }
 
+impl TransformFromBBox for cairo::Matrix {
+    fn from_bbox(bbox: Rect) -> Self {
+        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
+    }
+}
+
 
 /// Renders SVG to image.
 pub fn render_to_image(
     rtree: &tree::RenderTree,
     opt: &Options,
 ) -> Result<cairo::ImageSurface> {
-    let img_size = render_utils::fit_to(&rtree.svg_node().size, opt.fit_to);
+    let img_size = render_utils::fit_to(rtree.svg_node().size, opt.fit_to);
 
-    debug_assert!(img_size.w as i32 > 0 && img_size.h as i32 > 0);
+    debug_assert!(!img_size.is_empty_or_negative());
 
     let surface = cairo::ImageSurface::create(
         cairo::Format::ARgb32,
-        img_size.w as i32,
-        img_size.h as i32
+        img_size.width as i32,
+        img_size.height as i32
     );
 
     let surface = match surface {
@@ -76,7 +78,7 @@ pub fn render_to_image(
         }
     };
 
-    let img_view = Rect::new(0.0, 0.0, img_size.w, img_size.h);
+    let img_view = Rect::new(Point::new(0.0, 0.0), img_size);
     let cr = cairo::Context::new(&surface);
 
     // Fill background.
@@ -99,12 +101,12 @@ pub fn render_to_canvas(
     // Apply viewBox.
     let ts = {
         let vbox = rtree.svg_node().view_box;
-        let (dx, dy, sx, sy) = render_utils::view_box_transform(&vbox, &img_view);
+        let (dx, dy, sx, sy) = render_utils::view_box_transform(vbox, img_view);
         cairo::Matrix::new(sx, 0.0, 0.0, sy, dx, dy)
     };
     cr.transform(ts);
 
-    render_group(rtree, rtree.root(), &cr, &cr.get_matrix(), img_view.size());
+    render_group(rtree, rtree.root(), &cr, &cr.get_matrix(), img_view.size);
 }
 
 fn render_group(
@@ -114,7 +116,7 @@ fn render_group(
     matrix: &cairo::Matrix,
     img_size: Size,
 ) -> Rect {
-    let mut g_bbox = Rect::new(f64::MAX, f64::MAX, 0.0, 0.0);
+    let mut g_bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
     for node in node.children() {
         cr.transform(node.kind().transform().to_native());
 
@@ -134,7 +136,7 @@ fn render_group(
         };
 
         if let Some(bbox) = bbox {
-            g_bbox.expand_from_rect(&bbox);
+            g_bbox.expand_from_rect(bbox);
         }
 
         cr.set_matrix(*matrix);
@@ -152,8 +154,8 @@ fn render_group_impl(
 ) -> Option<Rect> {
     let sub_surface = cairo::ImageSurface::create(
         cairo::Format::ARgb32,
-        img_size.w as i32,
-        img_size.h as i32
+        img_size.width as i32,
+        img_size.height as i32
     );
 
     let sub_surface = match sub_surface {
@@ -172,7 +174,7 @@ fn render_group_impl(
     if let Some(idx) = g.clip_path {
         let clip_node = rtree.defs_at(idx);
         if let tree::DefsNodeKindRef::ClipPath(ref cp) = clip_node.kind() {
-            clippath::apply(rtree, clip_node, cp, &sub_cr, &bbox, img_size);
+            clippath::apply(rtree, clip_node, cp, &sub_cr, bbox, img_size);
         }
     }
 

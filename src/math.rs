@@ -2,6 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// external
+use euclid;
+
+// self
+use tree;
+
 
 /// Bounds `f64` number.
 #[inline]
@@ -77,103 +83,77 @@ impl Line {
     }
 }
 
+/// Alias for euclid::Point2D<f64>.
+pub type Point = euclid::Point2D<f64>;
 
-/// Size representation.
-#[allow(missing_docs)]
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub struct Size {
-    pub w: f64,
-    pub h: f64,
-}
+/// Alias for euclid::Size2D<f64>.
+pub type Size = euclid::Size2D<f64>;
 
-impl Default for Size {
-    fn default() -> Size {
-        Size {
-            w: 0.0,
-            h: 0.0,
-        }
-    }
-}
+/// Alias for euclid::Rect<f64>.
+pub type Rect = euclid::Rect<f64>;
 
-impl From<(f64, f64)> for Size {
-    fn from(v: (f64, f64)) -> Self {
-        Self::new(v.0, v.1)
-    }
-}
+/// Additional `Rect` methods.
+pub trait RectExt {
+    /// Creates `Rect` from values.
+    fn from_xywh(x: f64, y: f64, w: f64, h: f64) -> Self;
 
-impl Size {
-    /// Creates a new `Size`.
-    pub fn new(w: f64, h: f64) -> Size {
-        debug_assert!(w.is_sign_positive());
-        debug_assert!(h.is_sign_positive());
+    /// Returns `x` position.
+    fn x(&self) -> f64;
 
-        Size {
-            w,
-            h,
-        }
-    }
-}
+    /// Returns `y` position.
+    fn y(&self) -> f64;
 
+    /// Returns width.
+    fn width(&self) -> f64;
 
-/// Rect representation.
-#[allow(missing_docs)]
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub struct Rect {
-    pub x: f64,
-    pub y: f64,
-    pub w: f64,
-    pub h: f64,
-}
-
-impl Default for Rect {
-    fn default() -> Rect {
-        Rect {
-            x: 0.0,
-            y: 0.0,
-            w: 0.0,
-            h: 0.0,
-        }
-    }
-}
-
-impl From<(f64, f64, f64, f64)> for Rect {
-    fn from(v: (f64, f64, f64, f64)) -> Self {
-        Self::new(v.0, v.1, v.2, v.3)
-    }
-}
-
-impl Rect {
-    /// Creates a new `Rect`.
-    pub fn new(x: f64, y: f64, w: f64, h: f64) -> Rect {
-        debug_assert!(w.is_sign_positive());
-        debug_assert!(h.is_sign_positive());
-
-        Rect {
-            x,
-            y,
-            w,
-            h,
-        }
-    }
-
-    /// Returns the size of the `Rect`.
-    pub fn size(&self) -> Size {
-        Size {
-            w: self.w,
-            h: self.h,
-        }
-    }
+    /// Returns height.
+    fn height(&self) -> f64;
 
     /// Expands the `Rect` to the specified size.
-    pub fn expand(&mut self, x: f64, y: f64, w: f64, h: f64) {
-        self.x = f64_min(self.x, x);
-        self.y = f64_min(self.y, y);
-        self.w = f64_max(self.w, w);
-        self.h = f64_max(self.h, h);
-    }
+    fn expand(&mut self, x: f64, y: f64, w: f64, h: f64);
 
     /// Expands the `Rect` to the specified size.
-    pub fn expand_from_rect(&mut self, r: &Rect) {
-        self.expand(r.x, r.y, r.w, r.h);
+    fn expand_from_rect(&mut self, r: Rect);
+
+    /// Returns transformed rect.
+    fn transform(&self, ts: tree::Transform) -> Self;
+}
+
+impl RectExt for Rect {
+    fn from_xywh(x: f64, y: f64, w: f64, h: f64) -> Self {
+        Rect::new(Point::new(x, y), Size::new(w, h))
+    }
+
+    fn x(&self) -> f64 {
+        self.origin.x
+    }
+
+    fn y(&self) -> f64 {
+        self.origin.y
+    }
+
+    fn width(&self) -> f64 {
+        self.size.width
+    }
+
+    fn height(&self) -> f64 {
+        self.size.height
+    }
+
+    fn expand(&mut self, x: f64, y: f64, w: f64, h: f64) {
+        self.origin.x = f64_min(self.x(), x);
+        self.origin.y = f64_min(self.y(), y);
+        self.size.width = f64_max(self.width(), w);
+        self.size.height = f64_max(self.height(), h);
+    }
+
+    fn expand_from_rect(&mut self, r: Rect) {
+        self.expand(r.x(), r.y(), r.width(), r.height());
+    }
+
+    fn transform(&self, ts: tree::Transform) -> Self {
+        let (x, y) = ts.apply(self.x(), self.y());
+        let (w, h) = ts.apply(self.width(), self.height());
+        Self::from_xywh(x, y, w, h)
     }
 }

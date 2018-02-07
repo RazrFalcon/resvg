@@ -23,6 +23,7 @@ And as an embeddable library to paint SVG on an application native canvas.
 pub extern crate svgdom;
 extern crate base64;
 extern crate libflate;
+extern crate euclid;
 #[macro_use] extern crate log;
 #[macro_use] extern crate error_chain;
 
@@ -61,11 +62,7 @@ pub use error::{
     Result,
 };
 pub use options::*;
-pub use math::{
-    Line,
-    Size,
-    Rect,
-};
+pub use math::*;
 use preproc::{
     DEFAULT_FONT_FAMILY,
     DEFAULT_FONT_SIZE,

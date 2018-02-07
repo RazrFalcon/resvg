@@ -10,12 +10,10 @@ use cairo::{
 
 // self
 use tree;
-use math::{
-    Size,
-    Rect,
-};
+use math::*;
 use traits::{
     ConvTransform,
+    TransformFromBBox,
 };
 use super::{
     path,
@@ -28,13 +26,13 @@ pub fn apply(
     node: tree::DefsNodeRef,
     cp: &tree::ClipPath,
     cr: &cairo::Context,
-    bbox: &Rect,
+    bbox: Rect,
     img_size: Size,
 ) {
     let clip_surface = cairo::ImageSurface::create(
         cairo::Format::ARgb32,
-        img_size.w as i32,
-        img_size.h as i32
+        img_size.width as i32,
+        img_size.height as i32
     ).unwrap();
 
     let clip_cr = cairo::Context::new(&clip_surface);
@@ -44,7 +42,7 @@ pub fn apply(
     clip_cr.transform(cp.transform.to_native());
 
     if cp.units == tree::Units::ObjectBoundingBox {
-        let m = cairo::Matrix::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y);
+        let m = cairo::Matrix::from_bbox(bbox);
         clip_cr.transform(m);
     }
 

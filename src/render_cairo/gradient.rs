@@ -10,11 +10,10 @@ use cairo::{
 
 // self
 use tree;
-use math::{
-    Rect,
-};
+use math::*;
 use traits::{
     ConvTransform,
+    TransformFromBBox,
 };
 
 
@@ -22,7 +21,7 @@ pub fn prepare_linear(
     node: tree::DefsNodeRef,
     g: &tree::LinearGradient,
     opacity: f64,
-    bbox: &Rect,
+    bbox: Rect,
     cr: &cairo::Context,
 ) {
     let grad = cairo::LinearGradient::new(g.x1, g.y1, g.x2, g.y2);
@@ -34,7 +33,7 @@ pub fn prepare_radial(
     node: tree::DefsNodeRef,
     g: &tree::RadialGradient,
     opacity: f64,
-    bbox: &Rect,
+    bbox: Rect,
     cr: &cairo::Context
 ) {
     let grad = cairo::RadialGradient::new(g.fx, g.fy, 0.0, g.cx, g.cy, g.r);
@@ -47,7 +46,7 @@ fn prepare_base(
     g: &tree::BaseGradient,
     grad: &cairo::Gradient,
     opacity: f64,
-    bbox: &Rect,
+    bbox: Rect,
 ) {
     let spread_method = match g.spread_method {
         tree::SpreadMethod::Pad => cairo::Extend::Pad,
@@ -59,7 +58,7 @@ fn prepare_base(
     let mut matrix = g.transform.to_native();
 
     if g.units == tree::Units::ObjectBoundingBox {
-        let m = cairo::Matrix::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y);
+        let m = cairo::Matrix::from_bbox(bbox);
         matrix = cairo::Matrix::multiply(&matrix, &m);
     }
 

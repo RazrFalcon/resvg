@@ -7,9 +7,7 @@ use qt;
 
 // self
 use tree;
-use math::{
-    Rect,
-};
+use math::*;
 use super::{
     fill,
     stroke,
@@ -31,10 +29,13 @@ pub fn draw(
 
     convert_path(&elem.d, fill_rule, &mut p_path);
 
-    let bbox: Rect = p_path.bounding_box().into();
+    let bbox = {
+        let (x, y, w, h) = p_path.bounding_box();
+        Rect::from_xywh(x, y, w, h)
+    };
 
-    fill::apply(tree, &elem.fill, p, &bbox);
-    stroke::apply(tree, &elem.stroke, p, &bbox);
+    fill::apply(tree, &elem.fill, p, bbox);
+    stroke::apply(tree, &elem.stroke, p, bbox);
 
     p.draw_path(&p_path);
 

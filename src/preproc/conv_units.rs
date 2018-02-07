@@ -23,9 +23,7 @@ use traits::{
     GetViewBox,
     FindAttribute,
 };
-use math::{
-    Rect,
-};
+use math::*;
 use {
     Options,
 };
@@ -45,13 +43,15 @@ pub fn convert_units(svg: &mut Node, opt: &Options) {
 
     let view_box = resolve_view_box(svg, opt.dpi);
 
-    let vb_len = (view_box.w * view_box.w + view_box.h * view_box.h).sqrt() / (2.0 as f64).sqrt();
+    let vb_len = (
+        view_box.width() * view_box.width() + view_box.height() * view_box.height()
+    ).sqrt() / 2.0_f64.sqrt();
 
     let convert_len = |len: Length, aid: AId, font_size: f64| {
         if len.unit == Unit::Percent {
             match aid {
-                AId::X | AId::Cx | AId::Width  => convert_percent(len, view_box.w),
-                AId::Y | AId::Cy | AId::Height => convert_percent(len, view_box.h),
+                AId::X | AId::Cx | AId::Width  => convert_percent(len, view_box.width()),
+                AId::Y | AId::Cy | AId::Height => convert_percent(len, view_box.height()),
                 _ => convert_percent(len, vb_len),
             }
         } else {
@@ -154,7 +154,7 @@ fn resolve_view_box(svg: &mut Node, dpi: f64) -> Rect {
             let vb = vec![0.0, 0.0, width, height];
             svg.set_attribute((AId::ViewBox, vb));
 
-            Rect::new(0.0, 0.0, width, height)
+            Rect::from_xywh(0.0, 0.0, width, height)
         }
     }
 }

@@ -25,9 +25,8 @@ use short::{
     AValue,
     EId,
 };
-use math::{
-    Rect,
-};
+use math::*;
+use tree;
 use {
     ErrorKind,
     Result,
@@ -43,7 +42,7 @@ impl GetViewBox for Node {
         let attrs = self.attributes();
         if let Some(list) = attrs.get_number_list(AId::ViewBox) {
             if list.len() == 4 {
-                return Ok(Rect::new(list[0], list[1], list[2], list[3]))
+                return Ok(Rect::from_xywh(list[0], list[1], list[2], list[3]))
             }
         }
 
@@ -193,4 +192,15 @@ impl FindAttribute for Node {
 pub trait ConvTransform<T> {
     fn to_native(&self) -> T;
     fn from_native(&T) -> Self;
+}
+
+
+pub trait TransformFromBBox {
+    fn from_bbox(bbox: Rect) -> Self;
+}
+
+impl TransformFromBBox for tree::Transform {
+    fn from_bbox(bbox: Rect) -> Self {
+        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
+    }
 }

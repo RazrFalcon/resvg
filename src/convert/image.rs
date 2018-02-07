@@ -16,9 +16,7 @@ use short::{
 use traits::{
     GetValue,
 };
-use math::{
-    Rect,
-};
+use math::*;
 use {
     Options,
 };
@@ -57,7 +55,7 @@ pub fn convert(
         rtree.append_node(depth, tree::NodeKind::Image(tree::Image {
             id: node.id().clone(),
             transform: ts,
-            rect: Rect::new(x, y, w, h),
+            rect: Rect::from_xywh(x, y, w, h),
             data: data,
         }));
     }

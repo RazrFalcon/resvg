@@ -21,7 +21,7 @@ pub fn apply(
     rtree: &tree::RenderTree,
     fill: &Option<tree::Fill>,
     p: &qt::Painter,
-    bbox: &Rect,
+    bbox: Rect,
 ) {
     match *fill {
         Some(ref fill) => {

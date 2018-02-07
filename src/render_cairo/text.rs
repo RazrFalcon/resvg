@@ -16,9 +16,7 @@ use pangocairo::functions as pc;
 // self
 use tree;
 use render_utils;
-use math::{
-    Rect,
-};
+use math::*;
 use super::{
     fill,
     stroke,
@@ -51,7 +49,7 @@ pub fn draw_tspan<DrawAt>(
 ) -> Rect
     where DrawAt: FnMut(&tree::TSpan, f64, f64, f64, &PangoData)
 {
-    let mut bbox = Rect::new(f64::MAX, f64::MAX, 0.0, 0.0);
+    let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
     let mut pc_list = Vec::new();
     let mut tspan_w_list = Vec::new();
     for (child, chunk) in node.text_chunks() {
@@ -114,19 +112,19 @@ fn _draw_tspan(
     // so spaces around text are ignored.
     let bbox = calc_layout_bbox(&pd.layout, x, y);
 
-    let mut line_rect = Rect {
-        x: x,
-        y: 0.0,
-        w: width,
-        h: font_metrics.get_underline_thickness() as f64 / PANGO_SCALE_64,
-    };
+    let mut line_rect = Rect::from_xywh(
+        x,
+        0.0,
+        width,
+        font_metrics.get_underline_thickness() as f64 / PANGO_SCALE_64,
+    );
 
     // Draw underline.
     //
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.underline {
-        line_rect.y = y + baseline_offset
-                      - font_metrics.get_underline_position() as f64 / PANGO_SCALE_64;
+        line_rect.origin.y = y + baseline_offset
+                             - font_metrics.get_underline_position() as f64 / PANGO_SCALE_64;
         draw_line(rtree, &style.fill, &style.stroke, line_rect, cr);
     }
 
@@ -134,18 +132,18 @@ fn _draw_tspan(
     //
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.overline {
-        line_rect.y = y + font_metrics.get_underline_thickness() as f64 / PANGO_SCALE_64;
+        line_rect.origin.y = y + font_metrics.get_underline_thickness() as f64 / PANGO_SCALE_64;
         draw_line(rtree, &style.fill, &style.stroke, line_rect, cr);
     }
 
     // Draw text.
     cr.move_to(x, y);
 
-    fill::apply(rtree, &tspan.fill, cr, &bbox);
+    fill::apply(rtree, &tspan.fill, cr, bbox);
     pc::update_layout(cr, &pd.layout);
     pc::show_layout(cr, &pd.layout);
 
-    stroke::apply(rtree, &tspan.stroke, cr, &bbox);
+    stroke::apply(rtree, &tspan.stroke, cr, bbox);
     pc::layout_path(cr, &pd.layout);
     cr.stroke();
 
@@ -155,9 +153,9 @@ fn _draw_tspan(
     //
     // Should be drawn after/over text.
     if let Some(ref style) = tspan.decoration.line_through {
-        line_rect.y = y + baseline_offset
-                      - font_metrics.get_strikethrough_position() as f64 / PANGO_SCALE_64;
-        line_rect.h = font_metrics.get_strikethrough_thickness() as f64 / PANGO_SCALE_64;
+        line_rect.origin.y = y + baseline_offset
+                             - font_metrics.get_strikethrough_position() as f64 / PANGO_SCALE_64;
+        line_rect.size.height = font_metrics.get_strikethrough_thickness() as f64 / PANGO_SCALE_64;
         draw_line(rtree, &style.fill, &style.stroke, line_rect, cr);
     }
 }
@@ -222,12 +220,12 @@ fn init_font(dom_font: &tree::Font, dpi: f64) -> pango::FontDescription {
 fn calc_layout_bbox(layout: &pango::Layout, x: f64, y: f64) -> Rect {
     let (ink_rect, _) = layout.get_extents();
 
-    Rect {
-        x: x + ink_rect.x  as f64 / PANGO_SCALE_64,
-        y: y + ink_rect.y  as f64 / PANGO_SCALE_64,
-        w: ink_rect.width  as f64 / PANGO_SCALE_64,
-        h: ink_rect.height as f64 / PANGO_SCALE_64,
-    }
+    Rect::from_xywh(
+        x + ink_rect.x  as f64 / PANGO_SCALE_64,
+        y + ink_rect.y  as f64 / PANGO_SCALE_64,
+        ink_rect.width  as f64 / PANGO_SCALE_64,
+        ink_rect.height as f64 / PANGO_SCALE_64,
+    )
 }
 
 fn draw_line(
@@ -238,17 +236,17 @@ fn draw_line(
     cr: &cairo::Context,
 ) {
     cr.new_sub_path();
-    cr.move_to(line_bbox.x, line_bbox.y);
-    cr.rel_line_to(line_bbox.w, 0.0);
-    cr.rel_line_to(0.0, line_bbox.h);
-    cr.rel_line_to(-line_bbox.w, 0.0);
+    cr.move_to(line_bbox.x(), line_bbox.y());
+    cr.rel_line_to(line_bbox.width(), 0.0);
+    cr.rel_line_to(0.0, line_bbox.height());
+    cr.rel_line_to(-line_bbox.width(), 0.0);
     cr.close_path();
 
-    fill::apply(rtree, fill, cr, &line_bbox);
+    fill::apply(rtree, fill, cr, line_bbox);
     if stroke.is_some() {
         cr.fill_preserve();
 
-        stroke::apply(rtree, &stroke, cr, &line_bbox);
+        stroke::apply(rtree, &stroke, cr, line_bbox);
         cr.stroke();
     } else {
         cr.fill();

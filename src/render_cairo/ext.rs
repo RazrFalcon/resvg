@@ -8,7 +8,6 @@ use cairo;
 // self
 use tree;
 
-
 pub trait ReCairoContextExt {
     fn set_source_color(&self, color: &tree::Color, opacity: f64);
     fn reset_source_rgba(&self);

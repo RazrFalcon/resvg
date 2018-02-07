@@ -11,6 +11,7 @@ use svgdom::{
 
 // self
 use super::*;
+use math::*;
 use short::{
     AId,
     EId,
@@ -27,13 +28,10 @@ pub fn conv_doc(rtree: &RenderTree) -> svgdom::Document {
 
     let svg_node = rtree.svg_node();
 
-    let view_box = format!("{} {} {} {}", svg_node.view_box.x, svg_node.view_box.y,
-                                          svg_node.view_box.w, svg_node.view_box.h);
-
     svg.set_attribute((AId::Xmlns, "http://www.w3.org/2000/svg"));
-    svg.set_attribute((AId::Width,  svg_node.size.w));
-    svg.set_attribute((AId::Height, svg_node.size.h));
-    svg.set_attribute((AId::ViewBox, view_box));
+    svg.set_attribute((AId::Width,  svg_node.size.width));
+    svg.set_attribute((AId::Height, svg_node.size.height));
+    conv_viewbox(svg_node.view_box, &mut svg);
     svg.set_attribute((AId::XmlnsXlink, "http://www.w3.org/1999/xlink"));
     svg.set_attribute(("xmlns:resvg", "https://github.com/RazrFalcon/resvg"));
     svg.set_attribute(("resvg:version", env!("CARGO_PKG_VERSION")));
@@ -96,14 +94,10 @@ fn conv_defs(
 
                 pattern_elem.set_id(pattern.id.clone());
 
-                pattern_elem.set_attribute((AId::X, pattern.rect.x));
-                pattern_elem.set_attribute((AId::Y, pattern.rect.y));
-                pattern_elem.set_attribute((AId::Width, pattern.rect.w));
-                pattern_elem.set_attribute((AId::Height, pattern.rect.h));
+                conv_rect(pattern.rect, &mut pattern_elem);
 
                 if let Some(vbox) = pattern.view_box {
-                    let vbox_str = format!("{} {} {} {}", vbox.x, vbox.y, vbox.w, vbox.h);
-                    pattern_elem.set_attribute((AId::ViewBox, vbox_str));
+                    conv_viewbox(vbox, &mut pattern_elem);
                 }
 
                 conv_units(AId::PatternUnits, pattern.units, &mut pattern_elem);
@@ -210,11 +204,7 @@ fn conv_elements(
                 parent.append(&img_elem);
 
                 conv_element(n.kind(), &mut img_elem);
-
-                img_elem.set_attribute((AId::X, img.rect.x));
-                img_elem.set_attribute((AId::Y, img.rect.y));
-                img_elem.set_attribute((AId::Width, img.rect.w));
-                img_elem.set_attribute((AId::Height, img.rect.h));
+                conv_rect(img.rect, &mut img_elem);
 
                 let href = match img.data {
                     ImageData::Path(ref path) => path.to_str().unwrap().to_owned(),
@@ -256,6 +246,25 @@ fn conv_elements(
             }
         }
     }
+}
+
+fn conv_viewbox(
+    view_box: Rect,
+    node: &mut svgdom::Node,
+) {
+    let view_box = format!("{} {} {} {}", view_box.x(), view_box.y(),
+                                          view_box.width(), view_box.height());
+    node.set_attribute((AId::ViewBox, view_box));
+}
+
+fn conv_rect(
+    r: Rect,
+    node: &mut svgdom::Node,
+) {
+    node.set_attribute((AId::X, r.x()));
+    node.set_attribute((AId::Y, r.y()));
+    node.set_attribute((AId::Width, r.width()));
+    node.set_attribute((AId::Height, r.height()));
 }
 
 fn conv_element(

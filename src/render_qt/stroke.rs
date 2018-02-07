@@ -21,7 +21,7 @@ pub fn apply(
     rtree: &tree::RenderTree,
     stroke: &Option<tree::Stroke>,
     p: &qt::Painter,
-    bbox: &Rect,
+    bbox: Rect,
 ) {
     match *stroke {
         Some(ref stroke) => {

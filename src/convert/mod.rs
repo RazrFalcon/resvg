@@ -20,10 +20,7 @@ use traits::{
     GetValue,
     GetViewBox,
 };
-use math::{
-    Rect,
-    Size,
-};
+use math::*;
 use {
     ErrorKind,
     Options,
@@ -228,14 +225,7 @@ fn get_img_size(svg: &svgdom::Node) -> Result<Size> {
 }
 
 fn get_view_box(svg: &svgdom::Node) -> Result<Rect> {
-    let vbox = svg.get_viewbox()?;
-
-    let vbox = Rect::new(
-        vbox.x.round(), vbox.y.round(),
-        vbox.w.round(), vbox.h.round()
-    );
-
-    Ok(vbox)
+    Ok(svg.get_viewbox()?.round())
 }
 
 fn convert_element_units(attrs: &svgdom::Attributes, aid: AId) -> tree::Units {

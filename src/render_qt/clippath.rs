@@ -13,6 +13,7 @@ use math::{
 };
 use traits::{
     ConvTransform,
+    TransformFromBBox,
 };
 use super::{
     path,
@@ -25,12 +26,12 @@ pub fn apply(
     node: tree::DefsNodeRef,
     cp: &tree::ClipPath,
     p: &qt::Painter,
-    bbox: &Rect,
+    bbox: Rect,
     img_size: Size,
 ) {
     let mut clip_img = qt::Image::new(
-        img_size.w as u32,
-        img_size.h as u32,
+        img_size.width as u32,
+        img_size.height as u32,
     ).unwrap(); // TODO: remove
 
     clip_img.fill(0, 0, 0, 255);
@@ -41,7 +42,7 @@ pub fn apply(
     clip_p.apply_transform(&cp.transform.to_native());
 
     if cp.units == tree::Units::ObjectBoundingBox {
-        clip_p.apply_transform(&qt::Transform::new(bbox.w, 0.0, 0.0, bbox.h, bbox.x, bbox.y));
+        clip_p.apply_transform(&qt::Transform::from_bbox(bbox));
     }
 
     clip_p.set_composition_mode(qt::CompositionMode::CompositionMode_Clear);

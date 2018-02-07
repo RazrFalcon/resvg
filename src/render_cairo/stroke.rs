@@ -21,7 +21,7 @@ pub fn apply(
     rtree: &tree::RenderTree,
     stroke: &Option<tree::Stroke>,
     cr: &cairo::Context,
-    bbox: &math::Rect,
+    bbox: math::Rect,
 ) {
     match *stroke {
         Some(ref stroke) => {

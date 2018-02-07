@@ -9,6 +9,7 @@ use svgdom::{
 };
 
 // self
+use math::*;
 use short::{
     AId,
     Unit,
@@ -37,12 +38,12 @@ pub fn resolve_svg_size(svg: &mut Node) -> bool {
 
     if let Some(vbox) = view_box {
         if width.unit == Unit::Percent {
-            let num = vbox.w * (width.num / 100.0);
+            let num = vbox.width() * (width.num / 100.0);
             svg.set_attribute((AId::Width, Length::new_number(num)));
         }
 
         if height.unit == Unit::Percent {
-            let num = vbox.h * (height.num / 100.0);
+            let num = vbox.height() * (height.num / 100.0);
             svg.set_attribute((AId::Height, Length::new_number(num)));
         }
     }
