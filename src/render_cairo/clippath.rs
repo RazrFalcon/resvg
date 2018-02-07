@@ -9,7 +9,10 @@ use cairo::{
 };
 
 // self
-use tree;
+use tree::{
+    self,
+    NodeExt,
+};
 use math::*;
 use traits::{
     ConvTransform,
@@ -23,7 +26,7 @@ use super::{
 
 pub fn apply(
     rtree: &tree::RenderTree,
-    node: tree::DefsNodeRef,
+    node: tree::NodeRef,
     cp: &tree::ClipPath,
     cr: &cairo::Context,
     bbox: Rect,
@@ -50,13 +53,13 @@ pub fn apply(
 
     let matrix = clip_cr.get_matrix();
     for node in node.children() {
-        clip_cr.transform(node.kind().transform().to_native());
+        clip_cr.transform(node.transform().to_native());
 
-        match node.kind() {
-            tree::NodeKindRef::Path(ref path_elem) => {
-                path::draw(rtree, path_elem, &clip_cr);
+        match *node.value() {
+            tree::NodeKind::Path(ref p) => {
+                path::draw(rtree, p, &clip_cr);
             }
-            tree::NodeKindRef::Text(_) => {
+            tree::NodeKind::Text(_) => {
                 text::draw(rtree, node, &clip_cr);
             }
             _ => {}

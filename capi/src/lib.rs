@@ -27,6 +27,8 @@ use resvg::qt;
 #[cfg(feature = "cairo-backend")]
 use resvg::cairo;
 
+use resvg::RectExt;
+
 
 // TODO: rename to resvg_render_tree (_t ?)
 #[repr(C)]
@@ -168,7 +170,7 @@ pub extern fn resvg_qt_render_to_canvas(
     };
 
     let painter = unsafe { qt::Painter::from_raw(painter) };
-    let rect = resvg::Rect::new(x, y, width, height);
+    let rect = resvg::Rect::from_xywh(x, y, width, height);
 
     resvg::render_qt::render_to_canvas(&painter, rect, &rtree.0);
 }
@@ -191,7 +193,7 @@ pub extern fn resvg_cairo_render_to_canvas(
     use glib::translate::FromGlibPtrNone;
 
     let cr = unsafe { cairo::Context::from_glib_none(cr) };
-    let rect = resvg::Rect::new(x, y, width, height);
+    let rect = resvg::Rect::from_xywh(x, y, width, height);
 
     resvg::render_cairo::render_to_canvas(&cr, rect, &rtree.0);
 }
@@ -210,7 +212,7 @@ pub extern fn resvg_get_image_size(
     let size = rtree.0.svg_node().size;
 
     unsafe {
-        *width = size.w;
-        *height = size.h;
+        *width = size.width;
+        *height = size.height;
     }
 }

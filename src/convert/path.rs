@@ -28,10 +28,10 @@ use super::{
 };
 
 
-pub fn convert(
+pub(super) fn convert(
     node: &svgdom::Node,
     d: Path,
-    depth: usize,
+    parent: tree::NodeId,
     rtree: &mut tree::RenderTree,
 ) {
     let attrs = node.attributes();
@@ -41,7 +41,7 @@ pub fn convert(
     let d = convert_path(d);
     let transform = attrs.get_transform(AId::Transform).unwrap_or_default();
 
-    rtree.append_node(depth, tree::NodeKind::Path(tree::Path {
+    rtree.append_child(parent, tree::NodeKind::Path(tree::Path {
         id: node.id().clone(),
         transform,
         fill,

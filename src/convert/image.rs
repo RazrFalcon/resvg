@@ -22,10 +22,10 @@ use {
 };
 
 
-pub fn convert(
+pub(super) fn convert(
     node: &svgdom::Node,
     opt: &Options,
-    depth: usize,
+    parent: tree::NodeId,
     rtree: &mut tree::RenderTree,
 ) {
     let attrs = node.attributes();
@@ -52,7 +52,7 @@ pub fn convert(
     let href: &String = get_attr!(AId::XlinkHref);
 
     if let Some(data) = get_href_data(href, opt.path.as_ref()) {
-        rtree.append_node(depth, tree::NodeKind::Image(tree::Image {
+        rtree.append_child(parent, tree::NodeKind::Image(tree::Image {
             id: node.id().clone(),
             transform: ts,
             rect: Rect::from_xywh(x, y, w, h),

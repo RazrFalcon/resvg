@@ -13,7 +13,10 @@ use cairo::{
 };
 
 // self
-use tree;
+use tree::{
+    self,
+    NodeExt,
+};
 use math::*;
 use traits::{
     ConvTransform,
@@ -117,22 +120,24 @@ fn render_group(
     img_size: Size,
 ) -> Rect {
     let mut g_bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
-    for node in node.children() {
-        cr.transform(node.kind().transform().to_native());
 
-        let bbox = match node.kind() {
-            tree::NodeKindRef::Path(ref path) => {
+    for node in node.children() {
+        cr.transform(node.transform().to_native());
+
+        let bbox = match *node.value() {
+            tree::NodeKind::Path(ref path) => {
                 Some(path::draw(rtree, path, cr))
             }
-            tree::NodeKindRef::Text(_) => {
+            tree::NodeKind::Text(_) => {
                 Some(text::draw(rtree, node, cr))
             }
-            tree::NodeKindRef::Image(ref img) => {
+            tree::NodeKind::Image(ref img) => {
                 Some(image::draw(img, cr))
             }
-            tree::NodeKindRef::Group(ref g) => {
+            tree::NodeKind::Group(ref g) => {
                 render_group_impl(rtree, node, g, cr, img_size)
             }
+            _ => None,
         };
 
         if let Some(bbox) = bbox {
@@ -173,7 +178,7 @@ fn render_group_impl(
 
     if let Some(idx) = g.clip_path {
         let clip_node = rtree.defs_at(idx);
-        if let tree::DefsNodeKindRef::ClipPath(ref cp) = clip_node.kind() {
+        if let tree::NodeKind::ClipPath(ref cp) = *clip_node.value() {
             clippath::apply(rtree, clip_node, cp, &sub_cr, bbox, img_size);
         }
     }

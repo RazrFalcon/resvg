@@ -19,7 +19,7 @@ pub fn apply(
     rtree: &tree::RenderTree,
     global_ts: qt::Transform,
     bbox: Rect,
-    pattern_node: tree::DefsNodeRef,
+    pattern_node: tree::NodeRef,
     pattern: &tree::Pattern,
     brush: &mut qt::Brush,
 ) {
@@ -58,7 +58,7 @@ pub fn apply(
         p.apply_transform(&qt::Transform::from_bbox(bbox));
     }
 
-    super::render_group(rtree, pattern_node.to_node_ref(), &p, &p.get_transform(), img_size);
+    super::render_group(rtree, pattern_node, &p, &p.get_transform(), img_size);
     p.end();
 
     brush.set_pattern(img);

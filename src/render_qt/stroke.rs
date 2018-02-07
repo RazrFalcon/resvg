@@ -36,13 +36,14 @@ pub fn apply(
                     let node = rtree.defs_at(id);
                     let mut brush = qt::Brush::new();
 
-                    match node.kind() {
-                        tree::DefsNodeKindRef::LinearGradient(ref lg) =>
-                            gradient::prepare_linear(node, lg, stroke.opacity, &mut brush),
-                        tree::DefsNodeKindRef::RadialGradient(ref rg) =>
-                            gradient::prepare_radial(node, rg, stroke.opacity, &mut brush),
-                        tree::DefsNodeKindRef::ClipPath(_) => {}
-                        tree::DefsNodeKindRef::Pattern(ref pattern) => {
+                    match *node.value() {
+                        tree::NodeKind::LinearGradient(ref lg) => {
+                            gradient::prepare_linear(node, lg, stroke.opacity, &mut brush);
+                        }
+                        tree::NodeKind::RadialGradient(ref rg) => {
+                            gradient::prepare_radial(node, rg, stroke.opacity, &mut brush);
+                        }
+                        tree::NodeKind::Pattern(ref pattern) => {
                             pattern::apply(
                                 rtree,
                                 p.get_transform(),
@@ -52,6 +53,7 @@ pub fn apply(
                                 &mut brush,
                             );
                         }
+                        _ => {}
                     }
 
                     pen.set_brush(brush);

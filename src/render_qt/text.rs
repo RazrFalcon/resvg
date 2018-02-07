@@ -36,30 +36,39 @@ pub fn draw_tspan<DrawAt>(
     let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
     let mut font_list = Vec::new();
     let mut tspan_w_list = Vec::new();
-    for (child, chunk) in node.text_chunks() {
+    for chunk_node in node.children() {
         font_list.clear();
         tspan_w_list.clear();
         let mut chunk_width = 0.0;
 
-        for tspan in child.text_spans() {
-            let font = init_font(&tspan.font);
-            p.set_font(&font);
-            let font_metrics = p.font_metrics();
-            let tspan_width = font_metrics.width(&tspan.text);
+        if let tree::NodeKind::TextChunk(ref chunk) = *chunk_node.value() {
+            for tspan_node in chunk_node.children() {
+                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.value() {
+                    let font = init_font(&tspan.font);
+                    p.set_font(&font);
+                    let font_metrics = p.font_metrics();
+                    let tspan_width = font_metrics.width(&tspan.text);
 
-            font_list.push(font);
-            chunk_width += tspan_width;
-            tspan_w_list.push(tspan_width);
+                    font_list.push(font);
+                    chunk_width += tspan_width;
+                    tspan_w_list.push(tspan_width);
 
-            bbox.expand(chunk.x, chunk.y - font_metrics.ascent(),
-                        chunk_width, font_metrics.height());
-        }
+                    bbox.expand(chunk.x, chunk.y - font_metrics.ascent(),
+                                chunk_width, font_metrics.height());
+                }
+            }
 
-        let mut x = render_utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
+            let mut x = render_utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
 
-        for ((tspan, width), font) in child.text_spans().zip(&tspan_w_list).zip(&font_list) {
-            draw_at(tspan, x, chunk.y, *width, &font);
-            x += width;
+            for (idx, tspan_node) in chunk_node.children().enumerate() {
+                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.value() {
+                    let width = tspan_w_list[idx];
+                    let font = &font_list[idx];
+
+                    draw_at(tspan, x, chunk.y, width, font);
+                    x += width;
+                }
+            }
         }
     }
 

@@ -10,7 +10,10 @@ use std::f64;
 use qt;
 
 // self
-use tree;
+use tree::{
+    self,
+    NodeExt,
+};
 use math::*;
 use traits::{
     ConvTransform,
@@ -122,21 +125,22 @@ fn render_group(
     let mut g_bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
     for node in node.children() {
         // Apply transform.
-        p.apply_transform(&node.kind().transform().to_native());
+        p.apply_transform(&node.transform().to_native());
 
-        let bbox = match node.kind() {
-            tree::NodeKindRef::Path(ref path) => {
+        let bbox = match *node.value() {
+            tree::NodeKind::Path(ref path) => {
                 Some(path::draw(rtree, path, p))
             }
-            tree::NodeKindRef::Text(_) => {
+            tree::NodeKind::Text(_) => {
                 Some(text::draw(rtree, node, p))
             }
-            tree::NodeKindRef::Image(ref img) => {
+            tree::NodeKind::Image(ref img) => {
                 Some(image::draw(img, p))
             }
-            tree::NodeKindRef::Group(ref g) => {
+            tree::NodeKind::Group(ref g) => {
                 render_group_impl(rtree, node, g, p, img_size)
             }
+            _ => None,
         };
 
         if let Some(bbox) = bbox {
@@ -179,7 +183,7 @@ fn render_group_impl(
 
     if let Some(idx) = g.clip_path {
         let clip_node = rtree.defs_at(idx);
-        if let tree::DefsNodeKindRef::ClipPath(ref cp) = clip_node.kind() {
+        if let tree::NodeKind::ClipPath(ref cp) = *clip_node.value() {
             clippath::apply(rtree, clip_node, cp, &sub_p, bbox, img_size);
         }
     }

@@ -31,15 +31,17 @@ pub fn apply(
                 }
                 tree::Paint::Link(id) => {
                     let node = rtree.defs_at(id);
-                    match node.kind() {
-                        tree::DefsNodeKindRef::LinearGradient(ref lg) =>
-                            gradient::prepare_linear(node, lg, stroke.opacity, bbox, cr),
-                        tree::DefsNodeKindRef::RadialGradient(ref rg) =>
-                            gradient::prepare_radial(node, rg, stroke.opacity, bbox, cr),
-                        tree::DefsNodeKindRef::ClipPath(_) => {}
-                        tree::DefsNodeKindRef::Pattern(ref pattern) => {
+                    match *node.value() {
+                        tree::NodeKind::LinearGradient(ref lg) => {
+                            gradient::prepare_linear(node, lg, stroke.opacity, bbox, cr);
+                        }
+                        tree::NodeKind::RadialGradient(ref rg) => {
+                            gradient::prepare_radial(node, rg, stroke.opacity, bbox, cr);
+                        }
+                        tree::NodeKind::Pattern(ref pattern) => {
                             pattern::apply(rtree, node, pattern, bbox, cr);
                         }
+                        _ => {}
                     }
                 }
             }

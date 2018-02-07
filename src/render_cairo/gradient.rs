@@ -18,7 +18,7 @@ use traits::{
 
 
 pub fn prepare_linear(
-    node: tree::DefsNodeRef,
+    node: tree::NodeRef,
     g: &tree::LinearGradient,
     opacity: f64,
     bbox: Rect,
@@ -30,7 +30,7 @@ pub fn prepare_linear(
 }
 
 pub fn prepare_radial(
-    node: tree::DefsNodeRef,
+    node: tree::NodeRef,
     g: &tree::RadialGradient,
     opacity: f64,
     bbox: Rect,
@@ -42,7 +42,7 @@ pub fn prepare_radial(
 }
 
 fn prepare_base(
-    node: tree::DefsNodeRef,
+    node: tree::NodeRef,
     g: &tree::BaseGradient,
     grad: &cairo::Gradient,
     opacity: f64,
@@ -65,13 +65,15 @@ fn prepare_base(
     matrix.invert();
     grad.set_matrix(matrix);
 
-    for stop in node.stops() {
-        grad.add_color_stop_rgba(
-            stop.offset,
-            stop.color.red as f64 / 255.0,
-            stop.color.green as f64 / 255.0,
-            stop.color.blue as f64 / 255.0,
-            stop.opacity * opacity,
-        );
+    for node in node.children() {
+        if let tree::NodeKind::Stop(stop) = *node.value() {
+            grad.add_color_stop_rgba(
+                stop.offset,
+                stop.color.red as f64 / 255.0,
+                stop.color.green as f64 / 255.0,
+                stop.color.blue as f64 / 255.0,
+                stop.opacity * opacity,
+            );
+        }
     }
 }

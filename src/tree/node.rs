@@ -10,10 +10,11 @@ use math::{
     Rect,
 };
 use super::attribute::*;
+use super::NodeId;
 
 
 #[allow(missing_docs)]
-pub(crate) enum NodeKind {
+pub enum NodeKind {
     Svg(Svg),
     Defs,
     LinearGradient(LinearGradient),
@@ -30,55 +31,47 @@ pub(crate) enum NodeKind {
 }
 
 impl NodeKind {
-    pub(crate) fn is_shape(&self) -> bool {
-        match *self {
-              NodeKind::Svg(_)
-            | NodeKind::Defs
-            | NodeKind::LinearGradient(_)
-            | NodeKind::RadialGradient(_)
-            | NodeKind::Stop(_)
-            | NodeKind::ClipPath(_)
-            | NodeKind::Pattern(_)
-            | NodeKind::TextChunk(_)
-            | NodeKind::TSpan(_) => false,
-              NodeKind::Path(_)
-            | NodeKind::Text(_)
-            | NodeKind::Image(_)
-            | NodeKind::Group(_) => true,
-        }
-    }
-}
-
-
-/// A list of all shape-based nodes.
-///
-/// The nodes that will be rendered.
-#[allow(missing_docs)]
-pub enum NodeKindRef<'a> {
-    Path(&'a Path),
-    Text(&'a Text),
-    Image(&'a Image),
-    Group(&'a Group),
-}
-
-impl<'a> NodeKindRef<'a> {
     /// Returns node's ID.
+    ///
+    /// If a current node doesn't support ID - an empty string
+    /// will be returned.
     pub fn id(&self) -> &str {
         match *self {
-            NodeKindRef::Path(ref e) => e.id.as_str(),
-            NodeKindRef::Text(ref e) => e.id.as_str(),
-            NodeKindRef::Image(ref e) => e.id.as_str(),
-            NodeKindRef::Group(ref e) => e.id.as_str(),
+            NodeKind::Svg(_) => "",
+            NodeKind::Defs => "",
+            NodeKind::LinearGradient(ref e) => e.id.as_str(),
+            NodeKind::RadialGradient(ref e) => e.id.as_str(),
+            NodeKind::Stop(_) => "",
+            NodeKind::ClipPath(ref e) => e.id.as_str(),
+            NodeKind::Pattern(ref e) => e.id.as_str(),
+            NodeKind::Path(ref e) => e.id.as_str(),
+            NodeKind::Text(ref e) => e.id.as_str(),
+            NodeKind::TextChunk(_) => "",
+            NodeKind::TSpan(_) => "",
+            NodeKind::Image(ref e) => e.id.as_str(),
+            NodeKind::Group(ref e) => e.id.as_str(),
         }
     }
 
     /// Returns node's transform.
-    pub fn transform(&self) -> &Transform {
+    ///
+    /// If a current node doesn't support transformation - a default
+    /// transform will be returned.
+    pub fn transform(&self) -> Transform {
         match *self {
-            NodeKindRef::Path(ref e) => &e.transform,
-            NodeKindRef::Text(ref e) => &e.transform,
-            NodeKindRef::Image(ref e) => &e.transform,
-            NodeKindRef::Group(ref e) => &e.transform,
+            NodeKind::Svg(_) => Transform::default(),
+            NodeKind::Defs => Transform::default(),
+            NodeKind::LinearGradient(ref e) => e.d.transform,
+            NodeKind::RadialGradient(ref e) => e.d.transform,
+            NodeKind::Stop(_) => Transform::default(),
+            NodeKind::ClipPath(ref e) => e.transform,
+            NodeKind::Pattern(ref e) => e.transform,
+            NodeKind::Path(ref e) => e.transform,
+            NodeKind::Text(ref e) => e.transform,
+            NodeKind::TextChunk(_) => Transform::default(),
+            NodeKind::TSpan(_) => Transform::default(),
+            NodeKind::Image(ref e) => e.transform,
+            NodeKind::Group(ref e) => e.transform,
         }
     }
 }
@@ -266,41 +259,7 @@ pub struct Group {
     ///
     /// The value is an index from the `Document::defs` list.
     /// Use it via `Document::get_defs()` method.
-    pub clip_path: Option<usize>,
-}
-
-
-/// A list of all `defs` nodes.
-///
-/// The nodes that will be used indirectly.
-#[allow(missing_docs)]
-pub enum DefsNodeKindRef<'a> {
-    LinearGradient(&'a LinearGradient),
-    RadialGradient(&'a RadialGradient),
-    ClipPath(&'a ClipPath),
-    Pattern(&'a Pattern),
-}
-
-impl<'a> DefsNodeKindRef<'a> {
-    /// Returns node's ID.
-    pub fn id(&self) -> &str {
-        match *self {
-            DefsNodeKindRef::LinearGradient(ref e) => e.id.as_str(),
-            DefsNodeKindRef::RadialGradient(ref e) => e.id.as_str(),
-            DefsNodeKindRef::ClipPath(ref e) => e.id.as_str(),
-            DefsNodeKindRef::Pattern(ref e) => e.id.as_str(),
-        }
-    }
-
-    /// Returns node's transform.
-    pub fn transform(&self) -> &Transform {
-        match *self {
-            DefsNodeKindRef::LinearGradient(ref e) => &e.d.transform,
-            DefsNodeKindRef::RadialGradient(ref e) => &e.d.transform,
-            DefsNodeKindRef::ClipPath(ref e) => &e.transform,
-            DefsNodeKindRef::Pattern(ref e) => &e.transform,
-        }
-    }
+    pub clip_path: Option<NodeId>,
 }
 
 

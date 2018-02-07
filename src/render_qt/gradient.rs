@@ -13,7 +13,7 @@ use traits::{
 
 
 pub fn prepare_linear(
-    node: tree::DefsNodeRef,
+    node: tree::NodeRef,
     g: &tree::LinearGradient,
     opacity: f64,
     brush: &mut qt::Brush,
@@ -26,7 +26,7 @@ pub fn prepare_linear(
 }
 
 pub fn prepare_radial(
-    node: tree::DefsNodeRef,
+    node: tree::NodeRef,
     g: &tree::RadialGradient,
     opacity: f64,
     brush: &mut qt::Brush,
@@ -39,7 +39,7 @@ pub fn prepare_radial(
 }
 
 fn prepare_base(
-    node: tree::DefsNodeRef,
+    node: tree::NodeRef,
     g: &tree::BaseGradient,
     grad: &mut qt::Gradient,
     opacity: f64,
@@ -55,13 +55,15 @@ fn prepare_base(
         grad.set_units(qt::CoordinateMode::ObjectBoundingMode)
     }
 
-    for stop in node.stops() {
-        grad.set_color_at(
-            stop.offset,
-            stop.color.red,
-            stop.color.green,
-            stop.color.blue,
-            ((stop.opacity * opacity) * 255.0) as u8,
-        );
+    for node in node.children() {
+        if let tree::NodeKind::Stop(stop) = *node.value() {
+            grad.set_color_at(
+                stop.offset,
+                stop.color.red,
+                stop.color.green,
+                stop.color.blue,
+                ((stop.opacity * opacity) * 255.0) as u8,
+            );
+        }
     }
 }

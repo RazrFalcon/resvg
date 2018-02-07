@@ -62,7 +62,7 @@ pub fn convert_doc(
     let mut rtree = tree::RenderTree::new(svg_kind);
 
     convert_ref_nodes(svg_doc, opt, &mut rtree);
-    convert_nodes(&svg, opt, 1, &mut rtree);
+    convert_nodes(&svg, opt, rtree.root().id(), &mut rtree);
 
     Ok(rtree)
 }
@@ -105,10 +105,10 @@ fn convert_ref_nodes(
     }
 }
 
-pub fn convert_nodes(
+pub(super) fn convert_nodes(
     parent: &svgdom::Node,
     opt: &Options,
-    depth: usize,
+    parent_node: tree::NodeId,
     rtree: &mut tree::RenderTree,
 ) {
     for (id, node) in parent.children().svg() {
@@ -135,7 +135,7 @@ pub fn convert_nodes(
                     let mut v = None;
                     if let &AValue::FuncLink(ref link) = av {
                         if link.is_tag_name(EId::ClipPath) {
-                            if let Some(idx) = rtree.defs_index(&link.id()) {
+                            if let Some(idx) = rtree.defs_id(&link.id()) {
                                 v = Some(idx);
                             }
                         }
@@ -157,14 +157,14 @@ pub fn convert_nodes(
                 let ts = attrs.get_transform(AId::Transform).unwrap_or_default();
                 let opacity = attrs.get_number(AId::Opacity);
 
-                rtree.append_node(depth, tree::NodeKind::Group(tree::Group {
+                let g_node = rtree.append_child(parent_node, tree::NodeKind::Group(tree::Group {
                     id: node.id().clone(),
                     transform: ts,
                     opacity,
                     clip_path,
                 }));
 
-                convert_nodes(&node, opt, depth + 1, rtree);
+                convert_nodes(&node, opt, g_node, rtree);
 
                 // TODO: check that opacity != 1.0
             }
@@ -175,7 +175,7 @@ pub fn convert_nodes(
             | EId::Circle
             | EId::Ellipse => {
                 if let Some(d) = shapes::convert(&node) {
-                    path::convert(&node, d, depth, rtree);
+                    path::convert(&node, d, parent_node, rtree);
                 }
             }
               EId::Use
@@ -188,14 +188,14 @@ pub fn convert_nodes(
             EId::Path => {
                 let attrs = node.attributes();
                 if let Some(d) = attrs.get_path(AId::D) {
-                    path::convert(&node, d.clone(), depth, rtree);
+                    path::convert(&node, d.clone(), parent_node, rtree);
                 }
             }
             EId::Text => {
-                text::convert(&node, depth, rtree);
+                text::convert(&node, parent_node, rtree);
             }
             EId::Image => {
-                image::convert(&node, opt, depth, rtree);
+                image::convert(&node, opt, parent_node, rtree);
             }
             _ => {
                 warn!("Unsupported element '{}'.", id);

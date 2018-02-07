@@ -9,6 +9,9 @@ pub use svgdom::{
     Transform,
 };
 
+// self
+use super::NodeId;
+
 
 /// A line cap.
 ///
@@ -171,10 +174,7 @@ pub enum Paint {
     /// Paint with a color.
     Color(Color),
     /// Paint using a referenced element.
-    ///
-    /// The value is an index from the `Document::defs` list.
-    /// Use it via `Document::get_defs()` method.
-    Link(usize),
+    Link(NodeId),
 }
 
 /// A fill style.

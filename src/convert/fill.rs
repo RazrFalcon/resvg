@@ -32,8 +32,8 @@ pub fn convert(
             AValue::FuncLink(ref link) => {
                 let mut p = None;
                 if link.is_gradient() || link.is_tag_name(EId::Pattern) {
-                    if let Some(idx) = rtree.defs_index(&link.id()) {
-                        p = Some(tree::Paint::Link(idx));
+                    if let Some(id) = rtree.defs_id(&link.id()) {
+                        p = Some(tree::Paint::Link(id));
                     }
                 }
 

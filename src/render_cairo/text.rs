@@ -52,42 +52,51 @@ pub fn draw_tspan<DrawAt>(
     let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
     let mut pc_list = Vec::new();
     let mut tspan_w_list = Vec::new();
-    for (child, chunk) in node.text_chunks() {
+    for chunk_node in node.children() {
         pc_list.clear();
         tspan_w_list.clear();
         let mut chunk_width = 0.0;
 
-        for tspan in child.text_spans() {
-            let context = pc::create_context(cr).unwrap();
-            pc::update_context(cr, &context);
-            pc::context_set_resolution(&context, rtree.svg_node().dpi);
+        if let tree::NodeKind::TextChunk(ref chunk) = *chunk_node.value() {
+            for tspan_node in chunk_node.children() {
+                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.value() {
+                    let context = pc::create_context(cr).unwrap();
+                    pc::update_context(cr, &context);
+                    pc::context_set_resolution(&context, rtree.svg_node().dpi);
 
-            let font = init_font(&tspan.font, rtree.svg_node().dpi);
+                    let font = init_font(&tspan.font, rtree.svg_node().dpi);
 
-            let layout = pango::Layout::new(&context);
-            layout.set_font_description(Some(&font));
-            layout.set_text(&tspan.text);
-            let tspan_width = layout.get_size().0 as f64 / PANGO_SCALE_64;
+                    let layout = pango::Layout::new(&context);
+                    layout.set_font_description(Some(&font));
+                    layout.set_text(&tspan.text);
+                    let tspan_width = layout.get_size().0 as f64 / PANGO_SCALE_64;
 
-            let mut layout_iter = layout.get_iter().unwrap();
-            let ascent = (layout_iter.get_baseline() / pango::SCALE) as f64;
-            let text_h = (layout.get_height() / pango::SCALE) as f64;
-            bbox.expand(chunk.x, chunk.y - ascent, chunk_width, text_h);
+                    let mut layout_iter = layout.get_iter().unwrap();
+                    let ascent = (layout_iter.get_baseline() / pango::SCALE) as f64;
+                    let text_h = (layout.get_height() / pango::SCALE) as f64;
+                    bbox.expand(chunk.x, chunk.y - ascent, chunk_width, text_h);
 
-            pc_list.push(PangoData {
-                layout,
-                context,
-                font,
-            });
-            chunk_width += tspan_width;
-            tspan_w_list.push((tspan_width, ascent));
-        }
+                    pc_list.push(PangoData {
+                        layout,
+                        context,
+                        font,
+                    });
+                    chunk_width += tspan_width;
+                    tspan_w_list.push((tspan_width, ascent));
+                }
+            }
 
-        let mut x = render_utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
+            let mut x = render_utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
 
-        for ((tspan, &(width, ascent)), d) in child.text_spans().zip(&tspan_w_list).zip(&pc_list) {
-            draw_at(tspan, x, chunk.y - ascent, width, d);
-            x += width;
+            for (idx, tspan_node) in chunk_node.children().enumerate() {
+                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.value() {
+                    let (width, ascent) = tspan_w_list[idx];
+                    let pc = &pc_list[idx];
+
+                    draw_at(tspan, x, chunk.y - ascent, width, pc);
+                    x += width;
+                }
+            }
         }
     }
 

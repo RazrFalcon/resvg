@@ -24,6 +24,7 @@ extern crate svgdom;
 extern crate base64;
 extern crate libflate;
 extern crate euclid;
+extern crate ego_tree;
 #[macro_use] extern crate log;
 #[macro_use] extern crate error_chain;
 
@@ -50,10 +51,6 @@ mod traits;
 
 use std::path::{
     Path,
-};
-
-pub use svgdom::{
-    ChainedErrorExt,
 };
 
 pub use error::{

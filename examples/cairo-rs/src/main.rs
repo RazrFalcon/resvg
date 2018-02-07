@@ -12,6 +12,8 @@ use gio::prelude::*;
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
+use resvg::RectExt;
+
 // make moving clones into closures more convenient
 macro_rules! clone {
     (@param _) => ( _ );
@@ -62,7 +64,7 @@ fn build_ui(application: &gtk::Application, file_path: &Path) {
     let svg_doc = resvg::parse_doc_from_file(file_path, &opt).unwrap();
 
     drawing_area.connect_draw(move |w, cr| {
-        let r = resvg::Rect::new(
+        let r = resvg::Rect::from_xywh(
             0.0, 0.0,
             w.get_allocated_width() as f64, w.get_allocated_height() as f64
         );

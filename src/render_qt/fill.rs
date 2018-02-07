@@ -34,15 +34,14 @@ pub fn apply(
                 }
                 tree::Paint::Link(id) => {
                     let node = rtree.defs_at(id);
-                    match node.kind() {
-                        tree::DefsNodeKindRef::LinearGradient(ref lg) => {
+                    match *node.value() {
+                        tree::NodeKind::LinearGradient(ref lg) => {
                             gradient::prepare_linear(node, lg, fill.opacity, &mut brush);
                         }
-                        tree::DefsNodeKindRef::RadialGradient(ref rg) => {
+                        tree::NodeKind::RadialGradient(ref rg) => {
                             gradient::prepare_radial(node, rg, fill.opacity, &mut brush);
                         }
-                        tree::DefsNodeKindRef::ClipPath(_) => {}
-                        tree::DefsNodeKindRef::Pattern(ref pattern) => {
+                        tree::NodeKind::Pattern(ref pattern) => {
                             pattern::apply(
                                 rtree,
                                 p.get_transform(),
@@ -52,6 +51,7 @@ pub fn apply(
                                 &mut brush,
                             );
                         }
+                        _ => {}
                     }
                 }
             }

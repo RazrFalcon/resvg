@@ -48,6 +48,9 @@ fi
 cd "$PKG_DIR"/tools/rendersvg
 cargo build --verbose --features="cairo-backend qt-backend"
 
+# unit tests
+cargo test --verbose --all-features
+
 # build demo
 #
 # build C-API for demo

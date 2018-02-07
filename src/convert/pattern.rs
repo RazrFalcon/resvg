@@ -34,7 +34,7 @@ pub fn convert(
     debug_assert!(!rect.width().is_fuzzy_zero());
     debug_assert!(!rect.height().is_fuzzy_zero());
 
-    rtree.append_node(tree::DEFS_DEPTH, tree::NodeKind::Pattern(tree::Pattern {
+    let patt_node = rtree.append_defs(tree::NodeKind::Pattern(tree::Pattern {
         id: node.id().clone(),
         units: super::convert_element_units(&attrs, AId::PatternUnits),
         content_units: super::convert_element_units(&attrs, AId::PatternContentUnits),
@@ -43,7 +43,7 @@ pub fn convert(
         view_box: node.get_viewbox().ok(),
     }));
 
-    super::convert_nodes(node, opt, tree::DEFS_DEPTH + 1, rtree);
+    super::convert_nodes(node, opt, patt_node, rtree);
 }
 
 pub fn convert_rect(attrs: &svgdom::Attributes) -> Rect {

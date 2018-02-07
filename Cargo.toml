@@ -18,6 +18,7 @@ base64 = "0.9"
 log = "0.4"
 libflate = "0.1"
 euclid = "0.17"
+ego-tree = "0.2"
 
 [dependencies.error-chain]
 version = "0.11"
