@@ -9,6 +9,7 @@ license = "MPL-2.0"
 log = "0.4"
 fern = "0.5"
 derive-error = "0.0.4"
+svgdom = "0.10"
 
 [dependencies.resvg]
 path = "../../"

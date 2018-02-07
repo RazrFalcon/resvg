@@ -20,7 +20,7 @@ And as an embeddable library to paint SVG on an application native canvas.
 // For error-chain.
 #![recursion_limit="128"]
 
-pub extern crate svgdom;
+extern crate svgdom;
 extern crate base64;
 extern crate libflate;
 extern crate euclid;

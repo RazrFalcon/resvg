@@ -7,6 +7,7 @@ extern crate clap;
 #[macro_use]
 extern crate derive_error;
 extern crate resvg;
+extern crate svgdom;
 extern crate fern;
 extern crate log;
 
@@ -30,7 +31,6 @@ use clap::{
 use resvg::cairo;
 
 use resvg::{
-    svgdom,
     tree,
     Backend,
     FitTo,
