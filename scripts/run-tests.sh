@@ -55,13 +55,17 @@ cargo test --features="cairo-backend"
 cargo test --features="qt-backend"
 
 # rendersvg unit tests
-cd "$PKG_DIR"/tools/rendersvg
 #
-cargo build --features="cairo-backend"
-cargo test --features="cairo-backend"
-#
-cargo build --features="qt-backend"
-cargo test --features="qt-backend"
+# run only locally, because bboxes depend on freetype settings
+if [ "$LOCAL_TEST" ]; then
+    cd "$PKG_DIR"/tools/rendersvg
+    #
+    cargo build --features="cairo-backend"
+    cargo test --features="cairo-backend"
+    #
+    cargo build --features="qt-backend"
+    cargo test --features="qt-backend"
+fi
 
 
 # build demo
