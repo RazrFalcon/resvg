@@ -22,21 +22,25 @@ use super::{
     path,
     text,
 };
+use {
+    Options,
+};
 
 
 pub fn apply(
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
     cp: &tree::ClipPath,
-    cr: &cairo::Context,
+    opt: &Options,
     bbox: Rect,
     img_size: Size,
+    cr: &cairo::Context,
 ) {
     let clip_surface = cairo::ImageSurface::create(
         cairo::Format::ARgb32,
         img_size.width as i32,
         img_size.height as i32
-    ).unwrap();
+    ).unwrap(); // TODO: remove
 
     let clip_cr = cairo::Context::new(&clip_surface);
     clip_cr.set_source_rgba(0.0, 0.0, 0.0, 1.0);
@@ -57,10 +61,10 @@ pub fn apply(
 
         match *node.value() {
             tree::NodeKind::Path(ref p) => {
-                path::draw(rtree, p, &clip_cr);
+                path::draw(rtree, p, opt, &clip_cr);
             }
             tree::NodeKind::Text(_) => {
-                text::draw(rtree, node, &clip_cr);
+                text::draw(rtree, node, opt, &clip_cr);
             }
             _ => {}
         }

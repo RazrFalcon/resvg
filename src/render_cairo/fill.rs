@@ -13,13 +13,17 @@ use super::{
     pattern,
 };
 use super::ext::*;
+use {
+    Options,
+};
 
 
 pub fn apply(
     rtree: &tree::RenderTree,
     fill: &Option<tree::Fill>,
-    cr: &cairo::Context,
+    opt: &Options,
     bbox: math::Rect,
+    cr: &cairo::Context,
 ) {
     match *fill {
         Some(ref fill) => {
@@ -37,7 +41,7 @@ pub fn apply(
                             gradient::prepare_radial(node, rg, fill.opacity, bbox, cr);
                         }
                         tree::NodeKind::Pattern(ref pattern) => {
-                            pattern::apply(rtree, node, pattern, bbox, cr);
+                            pattern::apply(rtree, node, pattern, opt, bbox, cr);
                         }
                         _ => {}
                     }

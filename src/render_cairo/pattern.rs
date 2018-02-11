@@ -17,12 +17,16 @@ use traits::{
     TransformFromBBox,
 };
 use utils;
+use {
+    Options,
+};
 
 
 pub fn apply(
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
     pattern: &tree::Pattern,
+    opt: &Options,
     bbox: Rect,
     cr: &cairo::Context,
 ) {
@@ -62,7 +66,7 @@ pub fn apply(
         sub_cr.transform(cairo::Matrix::from_bbox(bbox));
     }
 
-    super::render_group(rtree, node, &sub_cr, &sub_cr.get_matrix(), img_size);
+    super::render_group(rtree, node, opt, img_size, &sub_cr);
 
     let mut ts = tree::Transform::default();
     ts.append(&pattern.transform);

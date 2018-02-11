@@ -87,11 +87,6 @@ pub struct Svg {
     ///
     /// Specifies which part of the SVG image should be rendered.
     pub view_box: Rect,
-    // TODO: remove
-    /// Image DPI.
-    ///
-    /// Has the same value as `Options::dpi`. Used for text rendering.
-    pub dpi: f64,
 }
 
 

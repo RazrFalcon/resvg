@@ -29,10 +29,16 @@ use resvg::cairo;
 
 use resvg::RectExt;
 
-
-// TODO: rename to resvg_render_tree (_t ?)
 #[repr(C)]
-pub struct resvg_document(resvg::tree::RenderTree);
+pub struct Rect {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+}
+
+#[repr(C)]
+pub struct resvg_render_tree(resvg::tree::RenderTree);
 
 macro_rules! on_err {
     ($err:expr, $msg:expr) => ({
@@ -86,11 +92,11 @@ fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &log:
 }
 
 #[no_mangle]
-pub extern fn resvg_parse_doc_from_file(
+pub extern fn resvg_parse_rtree_from_file(
     file_path: *const c_char,
     dpi: f64,
     error: *mut *mut c_char,
-) -> *mut resvg_document {
+) -> *mut resvg_render_tree {
     let file_path = from_raw_str!(
         file_path,
         error,
@@ -103,21 +109,21 @@ pub extern fn resvg_parse_doc_from_file(
         .. resvg::Options::default()
     };
 
-    let doc = match resvg::parse_doc_from_file(file_path, &opt) {
-        Ok(doc) => doc,
+    let rtree = match resvg::parse_rtree_from_file(file_path, &opt) {
+        Ok(rtree) => rtree,
         Err(e) => on_err!(error, e.to_string()),
     };
 
-    let doc_box = Box::new(resvg_document(doc));
-    Box::into_raw(doc_box)
+    let rtree_box = Box::new(resvg_render_tree(rtree));
+    Box::into_raw(rtree_box)
 }
 
 #[no_mangle]
-pub extern fn resvg_parse_doc_from_data(
+pub extern fn resvg_parse_rtree_from_data(
     text: *const c_char,
     dpi: f64,
     error: *mut *mut c_char,
-) -> *mut resvg_document {
+) -> *mut resvg_render_tree {
     let text = from_raw_str!(
         text,
         error,
@@ -129,13 +135,13 @@ pub extern fn resvg_parse_doc_from_data(
         .. resvg::Options::default()
     };
 
-    let doc = match resvg::parse_doc_from_data(text, &opt) {
-        Ok(doc) => doc,
+    let rtree = match resvg::parse_rtree_from_data(text, &opt) {
+        Ok(rtree) => rtree,
         Err(e) => on_err!(error, e.to_string()),
     };
 
-    let doc_box = Box::new(resvg_document(doc));
-    Box::into_raw(doc_box)
+    let rtree_box = Box::new(resvg_render_tree(rtree));
+    Box::into_raw(rtree_box)
 }
 
 #[no_mangle]
@@ -147,66 +153,66 @@ pub extern fn resvg_error_msg_destroy(msg: *mut c_char) {
 }
 
 #[no_mangle]
-pub extern fn resvg_doc_destroy(doc: *mut resvg_document) {
+pub extern fn resvg_rtree_destroy(rtree: *mut resvg_render_tree) {
     unsafe {
-        assert!(!doc.is_null());
-        Box::from_raw(doc)
+        assert!(!rtree.is_null());
+        Box::from_raw(rtree)
     };
 }
 
 #[cfg(feature = "qt-backend")]
 #[no_mangle]
 pub extern fn resvg_qt_render_to_canvas(
+    rtree: *mut resvg_render_tree,
+    view: Rect,
     painter: *mut qt::qtc_qpainter,
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
-    doc: *mut resvg_document,
 ) {
     let rtree = unsafe {
-        assert!(!doc.is_null());
-        &mut *doc
+        assert!(!rtree.is_null());
+        &mut *rtree
     };
 
     let painter = unsafe { qt::Painter::from_raw(painter) };
-    let rect = resvg::Rect::from_xywh(x, y, width, height);
+    let rect = resvg::Rect::from_xywh(view.x, view.y, view.width, view.height);
 
-    resvg::render_qt::render_to_canvas(&painter, rect, &rtree.0);
+    // TODO: to a proper options
+    let opt = resvg::Options::default();
+
+    resvg::render_qt::render_to_canvas(&rtree.0, &opt, rect, &painter);
 }
 
 #[cfg(feature = "cairo-backend")]
 #[no_mangle]
 pub extern fn resvg_cairo_render_to_canvas(
+    rtree: *mut resvg_render_tree,
+    view: Rect,
     cr: *mut cairo_sys::cairo_t,
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
-    doc: *mut resvg_document,
 ) {
     let rtree = unsafe {
-        assert!(!doc.is_null());
-        &mut *doc
+        assert!(!rtree.is_null());
+        &mut *rtree
     };
 
     use glib::translate::FromGlibPtrNone;
 
     let cr = unsafe { cairo::Context::from_glib_none(cr) };
-    let rect = resvg::Rect::from_xywh(x, y, width, height);
+    let rect = resvg::Rect::from_xywh(view.x, view.y, view.width, view.height);
 
-    resvg::render_cairo::render_to_canvas(&cr, rect, &rtree.0);
+    // TODO: to a proper options
+    let opt = resvg::Options::default();
+
+    resvg::render_cairo::render_to_canvas(&rtree.0, &opt, rect, &cr);
 }
 
 #[no_mangle]
 pub extern fn resvg_get_image_size(
-    doc: *mut resvg_document,
+    rtree: *mut resvg_render_tree,
     width: *mut f64,
     height: *mut f64,
 ) {
     let rtree = unsafe {
-        assert!(!doc.is_null());
-        &mut *doc
+        assert!(!rtree.is_null());
+        &mut *rtree
     };
 
     let size = rtree.0.svg_node().size;

@@ -15,13 +15,17 @@ use super::{
     gradient,
     pattern,
 };
+use {
+    Options,
+};
 
 
 pub fn apply(
     rtree: &tree::RenderTree,
     fill: &Option<tree::Fill>,
-    p: &qt::Painter,
+    opt: &Options,
     bbox: Rect,
+    p: &qt::Painter,
 ) {
     match *fill {
         Some(ref fill) => {
@@ -42,14 +46,8 @@ pub fn apply(
                             gradient::prepare_radial(node, rg, fill.opacity, &mut brush);
                         }
                         tree::NodeKind::Pattern(ref pattern) => {
-                            pattern::apply(
-                                rtree,
-                                p.get_transform(),
-                                bbox,
-                                node,
-                                pattern,
-                                &mut brush,
-                            );
+                            let ts = p.get_transform();
+                            pattern::apply(rtree, node, pattern, opt, ts, bbox, &mut brush);
                         }
                         _ => {}
                     }

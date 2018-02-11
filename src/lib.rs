@@ -173,7 +173,7 @@ pub fn default_backend() -> Box<Render> {
 }
 
 /// Creates `RenderTree` from SVG data.
-pub fn parse_doc_from_data(
+pub fn parse_rtree_from_data(
     text: &str,
     opt: &Options,
 ) -> Result<tree::RenderTree> {
@@ -187,12 +187,12 @@ pub fn parse_doc_from_data(
 /// Creates `RenderTree` from file.
 ///
 /// `.svg` and `.svgz` files are supported.
-pub fn parse_doc_from_file<P: AsRef<Path>>(
+pub fn parse_rtree_from_file<P: AsRef<Path>>(
     path: P,
     opt: &Options,
 ) -> Result<tree::RenderTree> {
     let text = load_file(path.as_ref())?;
-    parse_doc_from_data(&text, opt)
+    parse_rtree_from_data(&text, opt)
 }
 
 fn load_file(path: &Path) -> Result<String> {

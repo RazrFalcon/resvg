@@ -56,7 +56,6 @@ pub fn convert_doc(
     let svg_kind = tree::Svg {
         size: get_img_size(&svg)?,
         view_box: get_view_box(&svg)?,
-        dpi: opt.dpi,
     };
 
     let mut rtree = tree::RenderTree::new(svg_kind);

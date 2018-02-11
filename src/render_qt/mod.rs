@@ -22,9 +22,9 @@ use traits::{
 use {
     ErrorKind,
     Options,
-    Result,
-    Render,
     OutputImage,
+    Render,
+    Result,
 };
 use utils;
 
@@ -81,11 +81,11 @@ impl Render for Backend {
 
     fn calc_node_bbox(
         &self,
-        rtree: &tree::RenderTree,
+        _: &tree::RenderTree,
         node: tree::NodeRef,
-        _: &Options,
+        opt: &Options,
     ) -> Option<Rect> {
-        calc_node_bbox(rtree, node)
+        calc_node_bbox(node, opt)
     }
 }
 
@@ -104,7 +104,7 @@ pub fn render_to_image(
     let (img, img_view) = create_image(rtree.svg_node().size, opt)?;
 
     let painter = qt::Painter::new(&img);
-    render_to_canvas(&painter, img_view, rtree);
+    render_to_canvas(rtree, opt, img_view, &painter);
     painter.end();
 
     Ok(img)
@@ -116,7 +116,7 @@ pub fn render_node_to_image(
     node: tree::NodeRef,
     opt: &Options,
 ) -> Result<qt::Image> {
-    let node_bbox = if let Some(bbox) = calc_node_bbox(rtree, node) {
+    let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
         bbox
     } else {
         warn!("Node {:?} has zero size.", node.svg_id());
@@ -127,7 +127,7 @@ pub fn render_node_to_image(
 
     let painter = qt::Painter::new(&img);
     apply_viewbox_transform(node_bbox, img_view, &painter);
-    render_node_to_canvas(&painter, img_view, rtree, node);
+    render_node_to_canvas(rtree, node, opt, img_view, &painter);
     painter.end();
 
     Ok(img)
@@ -165,27 +165,29 @@ fn create_image(
 
 /// Renders SVG to canvas.
 pub fn render_to_canvas(
-    painter: &qt::Painter,
-    img_view: Rect,
     rtree: &tree::RenderTree,
+    opt: &Options,
+    img_view: Rect,
+    painter: &qt::Painter,
 ) {
     apply_viewbox_transform(rtree.svg_node().view_box, img_view, painter);
-    render_group(rtree, rtree.root(), &painter, &painter.get_transform(), img_view.size);
+    render_group(rtree, rtree.root(), opt, img_view.size, &painter);
 }
 
 /// Renders SVG node to canvas.
 pub fn render_node_to_canvas(
-    painter: &qt::Painter,
-    img_view: Rect,
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
+    opt: &Options,
+    img_view: Rect,
+    painter: &qt::Painter,
 ) {
     let curr_ts = painter.get_transform();
     let mut ts = utils::abs_transform(node);
     ts.append(&node.transform());
 
     painter.apply_transform(&ts.to_native());
-    render_node(rtree, node, painter, img_view.size);
+    render_node(rtree, node, opt, img_view.size, painter);
     painter.set_transform(&curr_ts);
 }
 
@@ -207,24 +209,25 @@ pub fn apply_viewbox_transform(
 fn render_group(
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
-    p: &qt::Painter,
-    ts: &qt::Transform,
+    opt: &Options,
     img_size: Size,
+    p: &qt::Painter,
 ) -> Rect {
+    let curr_ts = p.get_transform();
     let mut g_bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
 
     for node in node.children() {
         // Apply transform.
         p.apply_transform(&node.transform().to_native());
 
-        let bbox = render_node(rtree, node, p, img_size);
+        let bbox = render_node(rtree, node, opt, img_size, p);
 
         if let Some(bbox) = bbox {
             g_bbox.expand_from_rect(bbox);
         }
 
         // Revert transform.
-        p.set_transform(ts);
+        p.set_transform(&curr_ts);
     }
 
     g_bbox
@@ -234,8 +237,9 @@ fn render_group_impl(
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
     g: &tree::Group,
-    p: &qt::Painter,
+    opt: &Options,
     img_size: Size,
+    p: &qt::Painter,
 ) -> Option<Rect> {
     let sub_img = qt::Image::new(
         img_size.width as u32,
@@ -251,16 +255,16 @@ fn render_group_impl(
     };
 
     sub_img.fill(0, 0, 0, 0);
-    sub_img.set_dpi(rtree.svg_node().dpi);
+    sub_img.set_dpi(opt.dpi);
 
     let sub_p = qt::Painter::new(&sub_img);
     sub_p.set_transform(&p.get_transform());
-    let bbox = render_group(rtree, node, &sub_p, &p.get_transform(), img_size);
+    let bbox = render_group(rtree, node, opt, img_size, &sub_p);
 
     if let Some(idx) = g.clip_path {
         let clip_node = rtree.defs_at(idx);
         if let tree::NodeKind::ClipPath(ref cp) = *clip_node.value() {
-            clippath::apply(rtree, clip_node, cp, &sub_p, bbox, img_size);
+            clippath::apply(rtree, clip_node, cp, opt, bbox, img_size, &sub_p);
         }
     }
 
@@ -284,21 +288,22 @@ fn render_group_impl(
 fn render_node(
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
-    p: &qt::Painter,
+    opt: &Options,
     img_size: Size,
+    p: &qt::Painter,
 ) -> Option<Rect> {
     match *node.value() {
         tree::NodeKind::Path(ref path) => {
-            Some(path::draw(rtree, path, p))
+            Some(path::draw(rtree, path, opt, p))
         }
         tree::NodeKind::Text(_) => {
-            Some(text::draw(rtree, node, p))
+            Some(text::draw(rtree, node, opt, p))
         }
         tree::NodeKind::Image(ref img) => {
             Some(image::draw(img, p))
         }
         tree::NodeKind::Group(ref g) => {
-            render_group_impl(rtree, node, g, p, img_size)
+            render_group_impl(rtree, node, g, opt, img_size, p)
         }
         _ => None,
     }
@@ -308,21 +313,21 @@ fn render_node(
 ///
 /// Note: this method can be pretty expensive.
 pub fn calc_node_bbox(
-    rtree: &tree::RenderTree,
     node: tree::NodeRef,
+    opt: &Options,
 ) -> Option<Rect> {
     let mut img = qt::Image::new(1, 1).unwrap();
-    img.set_dpi(rtree.svg_node().dpi);
+    img.set_dpi(opt.dpi);
     let p = qt::Painter::new(&img);
 
     let abs_ts = utils::abs_transform(node);
-    _calc_node_bbox(&p, node, abs_ts)
+    _calc_node_bbox(node, abs_ts, &p)
 }
 
 fn _calc_node_bbox(
-    p: &qt::Painter,
     node: tree::NodeRef,
     ts: tree::Transform,
+    p: &qt::Painter,
 ) -> Option<Rect> {
     let mut ts2 = ts;
     ts2.append(&node.transform());
@@ -357,7 +362,7 @@ fn _calc_node_bbox(
             let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
 
             for child in node.children() {
-                if let Some(c_bbox) = _calc_node_bbox(p, child, ts2) {
+                if let Some(c_bbox) = _calc_node_bbox(child, ts2, p) {
                     bbox.expand_from_rect(c_bbox);
                 }
             }

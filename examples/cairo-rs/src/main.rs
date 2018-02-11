@@ -61,14 +61,14 @@ fn build_ui(application: &gtk::Application, file_path: &Path) {
         .. resvg::Options::default()
     };
 
-    let svg_doc = resvg::parse_doc_from_file(file_path, &opt).unwrap();
+    let rtree = resvg::parse_rtree_from_file(file_path, &opt).unwrap();
 
     drawing_area.connect_draw(move |w, cr| {
         let r = resvg::Rect::from_xywh(
             0.0, 0.0,
             w.get_allocated_width() as f64, w.get_allocated_height() as f64
         );
-        resvg::render_cairo::render_to_canvas(cr, r, &svg_doc);
+        resvg::render_cairo::render_to_canvas(&rtree, &opt, r, cr);
 
         Inhibit(false)
     });

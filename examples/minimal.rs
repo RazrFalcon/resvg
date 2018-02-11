@@ -19,7 +19,7 @@ fn main() {
         .. resvg::Options::default()
     };
 
-    let rtree = resvg::parse_doc_from_file(&args[1], &opt).unwrap();
+    let rtree = resvg::parse_rtree_from_file(&args[1], &opt).unwrap();
     let backend = resvg::default_backend();
     let img = backend.render_to_image(&rtree, &opt).unwrap();
     img.save(Path::new(&args[2]));

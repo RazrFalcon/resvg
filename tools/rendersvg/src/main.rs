@@ -93,7 +93,7 @@ fn process() -> Result<(), Error> {
     let _resvg = resvg::init();
 
     // load file
-    let rtree = resvg::parse_doc_from_file(&args.in_svg, &opt)?;
+    let rtree = resvg::parse_rtree_from_file(&args.in_svg, &opt)?;
 
     if args.query_all {
         query_all(&rtree, &args, &opt);

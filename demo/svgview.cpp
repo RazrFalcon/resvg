@@ -43,8 +43,8 @@ SvgView::SvgView(QWidget *parent)
 
 SvgView::~SvgView()
 {
-    if (m_doc) {
-        resvg_doc_destroy(m_doc);
+    if (m_rtree) {
+        resvg_rtree_destroy(m_rtree);
     }
 }
 
@@ -63,7 +63,7 @@ void SvgView::setRenderToImage(bool flag)
         return;
     }
 
-    if (!m_doc) {
+    if (!m_rtree) {
         return;
     }
 
@@ -71,7 +71,7 @@ void SvgView::setRenderToImage(bool flag)
     const auto ratio = screen->devicePixelRatio();
 
     double width, height;
-    resvg_get_image_size(m_doc, &width, &height);
+    resvg_get_image_size(m_rtree, &width, &height);
     width *= ratio;
     height *= ratio;
 
@@ -82,7 +82,8 @@ void SvgView::setRenderToImage(bool flag)
     QPainter p;
     p.begin(&img);
     p.setRenderHint(QPainter::Antialiasing);
-    resvg_qt_render_to_canvas(&p, 0, 0, width, height, m_doc);
+    resvg_rect r { 0, 0, width, height };
+    resvg_qt_render_to_canvas(m_rtree, r, &p);
     p.end();
 
     img.setDevicePixelRatio(ratio);
@@ -117,16 +118,16 @@ void SvgView::setDrawImageBorder(bool flag)
 
 void SvgView::loadData(const QByteArray &ba)
 {
-    if (m_doc) {
-        resvg_doc_destroy(m_doc);
+    if (m_rtree) {
+        resvg_rtree_destroy(m_rtree);
     }
 
     const auto *screen = qApp->screens().first();
     const double dpi = screen->logicalDotsPerInch() * screen->devicePixelRatio();
 
     char *err = nullptr;
-    m_doc = resvg_parse_doc_from_data(ba.constData(), dpi, &err);
-    if (!m_doc) {
+    m_rtree = resvg_parse_rtree_from_data(ba.constData(), dpi, &err);
+    if (!m_rtree) {
         emit loadError(QString::fromUtf8(err));
         resvg_error_msg_destroy(err);
     }
@@ -136,8 +137,8 @@ void SvgView::loadData(const QByteArray &ba)
 
 void SvgView::loadFile(const QString &path)
 {
-    if (m_doc) {
-        resvg_doc_destroy(m_doc);
+    if (m_rtree) {
+        resvg_rtree_destroy(m_rtree);
     }
 
     const auto *screen = qApp->screens().first();
@@ -145,8 +146,8 @@ void SvgView::loadFile(const QString &path)
 
     char *err = nullptr;
     std::string utf8Path = path.toUtf8().constData();
-    m_doc = resvg_parse_doc_from_file(utf8Path.c_str(), dpi, &err);
-    if (!m_doc) {
+    m_rtree = resvg_parse_rtree_from_file(utf8Path.c_str(), dpi, &err);
+    if (!m_rtree) {
         emit loadError(QString::fromUtf8(err));
         resvg_error_msg_destroy(err);
     }
@@ -156,7 +157,7 @@ void SvgView::loadFile(const QString &path)
 
 void SvgView::paintEvent(QPaintEvent *e)
 {
-    if (!m_doc) {
+    if (!m_rtree) {
         QPainter p(this);
         p.drawText(rect(), Qt::AlignCenter, "Drop an SVG image here.");
 
@@ -192,7 +193,7 @@ void SvgView::paintEvent(QPaintEvent *e)
             img_width = r.width();
             img_height = r.height();
         } else {
-            resvg_get_image_size(m_doc, &img_width, &img_height);
+            resvg_get_image_size(m_rtree, &img_width, &img_height);
 
             img_width *= m_zoom;
             img_height *= m_zoom;
@@ -201,7 +202,8 @@ void SvgView::paintEvent(QPaintEvent *e)
             y = (r.height() - img_height)/2;
         }
 
-        resvg_qt_render_to_canvas(&p, x, y, img_width, img_height, m_doc);
+        resvg_rect rr { x, y, img_width, img_height };
+        resvg_qt_render_to_canvas(m_rtree, rr, &p);
         p.setTransform(QTransform());
 
         imgRect = QRect(x, y, img_width, img_height);

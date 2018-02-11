@@ -2,7 +2,7 @@
 
 #include <QFrame>
 
-struct resvg_document;
+struct resvg_render_tree;
 
 class SvgView : public QFrame
 {
@@ -43,7 +43,7 @@ protected:
 private:
     const QImage m_checkboardImg;
 
-    resvg_document *m_doc = nullptr;
+    resvg_render_tree *m_rtree = nullptr;
 
     bool m_isFitToView = true;
     float m_zoom = 1.0f;

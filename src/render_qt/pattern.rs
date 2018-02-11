@@ -13,14 +13,17 @@ use traits::{
     TransformFromBBox,
 };
 use utils;
-
+use {
+    Options,
+};
 
 pub fn apply(
     rtree: &tree::RenderTree,
-    global_ts: qt::Transform,
-    bbox: Rect,
     pattern_node: tree::NodeRef,
     pattern: &tree::Pattern,
+    opt: &Options,
+    global_ts: qt::Transform,
+    bbox: Rect,
     brush: &mut qt::Brush,
 ) {
     let r = if pattern.units == tree::Units::ObjectBoundingBox {
@@ -43,7 +46,7 @@ pub fn apply(
         }
     };
 
-    img.set_dpi(rtree.svg_node().dpi);
+    img.set_dpi(opt.dpi);
     img.fill(0, 0, 0, 0);
 
     let p = qt::Painter::new(&img);
@@ -58,7 +61,7 @@ pub fn apply(
         p.apply_transform(&qt::Transform::from_bbox(bbox));
     }
 
-    super::render_group(rtree, pattern_node, &p, &p.get_transform(), img_size);
+    super::render_group(rtree, pattern_node, opt, img_size, &p);
     p.end();
 
     brush.set_pattern(img);

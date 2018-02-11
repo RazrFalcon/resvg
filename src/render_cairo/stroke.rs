@@ -15,13 +15,17 @@ use super::{
 use super::ext::{
     ReCairoContextExt,
 };
+use {
+    Options,
+};
 
 
 pub fn apply(
     rtree: &tree::RenderTree,
     stroke: &Option<tree::Stroke>,
-    cr: &cairo::Context,
+    opt: &Options,
     bbox: math::Rect,
+    cr: &cairo::Context,
 ) {
     match *stroke {
         Some(ref stroke) => {
@@ -39,7 +43,7 @@ pub fn apply(
                             gradient::prepare_radial(node, rg, stroke.opacity, bbox, cr);
                         }
                         tree::NodeKind::Pattern(ref pattern) => {
-                            pattern::apply(rtree, node, pattern, bbox, cr);
+                            pattern::apply(rtree, node, pattern, opt, bbox, cr);
                         }
                         _ => {}
                     }

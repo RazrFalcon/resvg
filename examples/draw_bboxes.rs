@@ -37,7 +37,7 @@ fn main() {
         .. Options::default()
     };
 
-    let mut rtree = resvg::parse_doc_from_file(&args[1], &opt).unwrap();
+    let mut rtree = resvg::parse_rtree_from_file(&args[1], &opt).unwrap();
 
     let mut bboxes = Vec::new();
     for node in rtree.root().descendants() {

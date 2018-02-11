@@ -15,10 +15,12 @@ pub trait ReCairoContextExt {
 
 impl ReCairoContextExt for cairo::Context {
     fn set_source_color(&self, color: &tree::Color, opacity: f64) {
-        self.set_source_rgba(color.red as f64 / 255.0,
-                             color.green as f64 / 255.0,
-                             color.blue as f64 / 255.0,
-                             opacity);
+        self.set_source_rgba(
+            color.red as f64 / 255.0,
+            color.green as f64 / 255.0,
+            color.blue as f64 / 255.0,
+            opacity,
+        );
     }
 
     fn reset_source_rgba(&self) {

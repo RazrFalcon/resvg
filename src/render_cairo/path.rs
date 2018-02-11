@@ -13,20 +13,24 @@ use super::{
     fill,
     stroke,
 };
+use {
+    Options,
+};
 
 
 pub fn draw(
     rtree: &tree::RenderTree,
-    elem: &tree::Path,
+    path: &tree::Path,
+    opt: &Options,
     cr: &cairo::Context,
 ) -> Rect {
-    init_path(&elem.segments, cr);
+    init_path(&path.segments, cr);
 
     let bbox = {
         // TODO: set_tolerance(1.0)
         let (mut x1, mut y1, mut x2, mut y2) = cr.fill_extents();
 
-        if elem.stroke.is_some() {
+        if path.stroke.is_some() {
             let (s_x1, s_y1, s_x2, s_y2) = cr.stroke_extents();
 
             // expand coordinates
@@ -39,11 +43,11 @@ pub fn draw(
         Rect::from_xywh(x1, y1, x2 - x1, y2 - y1)
     };
 
-    fill::apply(rtree, &elem.fill, cr, bbox);
-    if elem.stroke.is_some() {
+    fill::apply(rtree, &path.fill, opt, bbox, cr);
+    if path.stroke.is_some() {
         cr.fill_preserve();
 
-        stroke::apply(rtree, &elem.stroke, cr, bbox);
+        stroke::apply(rtree, &path.stroke, opt, bbox, cr);
         cr.stroke();
     } else {
         cr.fill();

@@ -22,15 +22,19 @@ use super::{
     path,
     text,
 };
+use {
+    Options,
+};
 
 
 pub fn apply(
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
     cp: &tree::ClipPath,
-    p: &qt::Painter,
+    opt: &Options,
     bbox: Rect,
     img_size: Size,
+    p: &qt::Painter,
 ) {
     let mut clip_img = qt::Image::new(
         img_size.width as u32,
@@ -38,7 +42,7 @@ pub fn apply(
     ).unwrap(); // TODO: remove
 
     clip_img.fill(0, 0, 0, 255);
-    clip_img.set_dpi(rtree.svg_node().dpi);
+    clip_img.set_dpi(opt.dpi);
 
     let clip_p = qt::Painter::new(&clip_img);
     clip_p.set_transform(&p.get_transform());
@@ -56,10 +60,10 @@ pub fn apply(
 
         match *node.value() {
             tree::NodeKind::Path(ref path_node) => {
-                path::draw(rtree, path_node, &clip_p);
+                path::draw(rtree, path_node, opt, &clip_p);
             }
             tree::NodeKind::Text(_) => {
-                text::draw(rtree, node, &clip_p);
+                text::draw(rtree, node, opt, &clip_p);
             }
             _ => {}
         }

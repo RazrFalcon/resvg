@@ -15,15 +15,19 @@ use super::{
     fill,
     stroke,
 };
+use {
+    Options,
+};
 
 
 pub fn draw(
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
+    opt: &Options,
     p: &qt::Painter,
 ) -> Rect {
     draw_tspan(node, p,
-        |tspan, x, y, w, font| _draw_tspan(rtree, tspan, x, y, w, &font, p))
+        |tspan, x, y, w, font| _draw_tspan(rtree, tspan, opt, x, y, w, &font, p))
 }
 
 pub fn draw_tspan<DrawAt>(
@@ -78,6 +82,7 @@ pub fn draw_tspan<DrawAt>(
 fn _draw_tspan(
     rtree: &tree::RenderTree,
     tspan: &tree::TSpan,
+    opt: &Options,
     x: f64,
     mut y: f64,
     width: f64,
@@ -102,7 +107,7 @@ fn _draw_tspan(
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.underline {
         line_rect.origin.y = y + font_metrics.height() - font_metrics.underline_pos();
-        draw_line(rtree, &style.fill, &style.stroke, line_rect, p);
+        draw_line(rtree, line_rect, &style.fill, &style.stroke, opt, p);
     }
 
     // Draw overline.
@@ -110,14 +115,14 @@ fn _draw_tspan(
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.overline {
         line_rect.origin.y = y + font_metrics.height() - font_metrics.overline_pos();
-        draw_line(rtree, &style.fill, &style.stroke, line_rect, p);
+        draw_line(rtree, line_rect, &style.fill, &style.stroke, opt, p);
     }
 
     let bbox = Rect::from_xywh(0.0, 0.0, width, font_metrics.height());
 
     // Draw text.
-    fill::apply(rtree, &tspan.fill, p, bbox);
-    stroke::apply(rtree, &tspan.stroke, p, bbox);
+    fill::apply(rtree, &tspan.fill, opt, bbox, p);
+    stroke::apply(rtree, &tspan.stroke, opt, bbox, p);
 
     p.draw_text(x, y, &tspan.text);
 
@@ -126,7 +131,7 @@ fn _draw_tspan(
     // Should be drawn after/over text.
     if let Some(ref style) = tspan.decoration.line_through {
         line_rect.origin.y = y + baseline_offset - font_metrics.strikeout_pos();
-        draw_line(rtree, &style.fill, &style.stroke, line_rect, p);
+        draw_line(rtree, line_rect, &style.fill, &style.stroke, opt, p);
     }
 }
 
@@ -185,9 +190,10 @@ pub fn init_font(dom_font: &tree::Font) -> qt::Font {
 
 fn draw_line(
     rtree: &tree::RenderTree,
+    line_bbox: Rect,
     fill: &Option<tree::Fill>,
     stroke: &Option<tree::Stroke>,
-    line_bbox: Rect,
+    opt: &Options,
     p: &qt::Painter,
 ) {
     // TODO: to rect
@@ -198,8 +204,8 @@ fn draw_line(
     p_path.line_to(line_bbox.x(),  line_bbox.y() + line_bbox.height());
     p_path.close_path();
 
-    fill::apply(rtree, fill, p, line_bbox);
-    stroke::apply(rtree, stroke, p, line_bbox);
+    fill::apply(rtree, fill, opt, line_bbox, p);
+    stroke::apply(rtree, stroke, opt, line_bbox, p);
 
     p.draw_path(&p_path);
 }

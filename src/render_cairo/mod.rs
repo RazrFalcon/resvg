@@ -26,9 +26,9 @@ use traits::{
 use {
     ErrorKind,
     Options,
-    Result,
-    Render,
     OutputImage,
+    Render,
+    Result,
 };
 use utils;
 use self::ext::*;
@@ -124,7 +124,7 @@ pub fn render_to_image(
         cr.paint();
     }
 
-    render_to_canvas(&cr, img_view, rtree);
+    render_to_canvas(rtree, opt, img_view, &cr);
 
     Ok(surface)
 }
@@ -152,35 +152,37 @@ pub fn render_node_to_image(
         cr.paint();
     }
 
-    apply_viewbox_transform(&cr, node_bbox, img_view);
-    render_node_to_canvas(&cr, img_view, rtree, node);
+    apply_viewbox_transform(node_bbox, img_view, &cr);
+    render_node_to_canvas(rtree, node, opt, img_view.size, &cr);
 
     Ok(surface)
 }
 
 /// Renders SVG to canvas.
 pub fn render_to_canvas(
-    cr: &cairo::Context,
-    img_view: Rect,
     rtree: &tree::RenderTree,
+    opt: &Options,
+    img_view: Rect,
+    cr: &cairo::Context,
 ) {
-    apply_viewbox_transform(cr, rtree.svg_node().view_box, img_view);
-    render_group(rtree, rtree.root(), &cr, &cr.get_matrix(), img_view.size);
+    apply_viewbox_transform(rtree.svg_node().view_box, img_view, cr);
+    render_group(rtree, rtree.root(), opt, img_view.size, &cr);
 }
 
 /// Renders SVG node to canvas.
 pub fn render_node_to_canvas(
-    cr: &cairo::Context,
-    img_view: Rect,
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
+    opt: &Options,
+    img_size: Size,
+    cr: &cairo::Context,
 ) {
     let curr_ts = cr.get_matrix();
     let mut ts = utils::abs_transform(node);
     ts.append(&node.transform());
 
     cr.transform(ts.to_native());
-    render_node(rtree, node, cr, img_view.size);
+    render_node(rtree, node, opt, img_size, cr);
     cr.set_matrix(curr_ts);
 }
 
@@ -212,9 +214,9 @@ fn create_surface(
 
 /// Applies viewbox transformation to the painter.
 fn apply_viewbox_transform(
-    cr: &cairo::Context,
     view_box: Rect,
     img_view: Rect,
+    cr: &cairo::Context,
 ) {
     let ts = {
         let (dx, dy, sx, sy) = utils::view_box_transform(view_box, img_view);
@@ -226,22 +228,23 @@ fn apply_viewbox_transform(
 fn render_group(
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
-    cr: &cairo::Context,
-    matrix: &cairo::Matrix,
+    opt: &Options,
     img_size: Size,
+    cr: &cairo::Context,
 ) -> Rect {
+    let curr_ts = cr.get_matrix();
     let mut g_bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
 
     for node in node.children() {
         cr.transform(node.transform().to_native());
 
-        let bbox = render_node(rtree, node, cr, img_size);
+        let bbox = render_node(rtree, node, opt, img_size, cr);
 
         if let Some(bbox) = bbox {
             g_bbox.expand_from_rect(bbox);
         }
 
-        cr.set_matrix(*matrix);
+        cr.set_matrix(curr_ts);
     }
 
     g_bbox
@@ -251,8 +254,9 @@ fn render_group_impl(
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
     g: &tree::Group,
-    cr: &cairo::Context,
+    opt: &Options,
     img_size: Size,
+    cr: &cairo::Context,
 ) -> Option<Rect> {
     let sub_surface = cairo::ImageSurface::create(
         cairo::Format::ARgb32,
@@ -271,12 +275,12 @@ fn render_group_impl(
     let sub_cr = cairo::Context::new(&sub_surface);
     sub_cr.set_matrix(cr.get_matrix());
 
-    let bbox = render_group(rtree, node, &sub_cr, &cr.get_matrix(), img_size);
+    let bbox = render_group(rtree, node, opt, img_size, &sub_cr);
 
     if let Some(idx) = g.clip_path {
         let clip_node = rtree.defs_at(idx);
         if let tree::NodeKind::ClipPath(ref cp) = *clip_node.value() {
-            clippath::apply(rtree, clip_node, cp, &sub_cr, bbox, img_size);
+            clippath::apply(rtree, clip_node, cp, opt, bbox, img_size, &sub_cr);
         }
     }
 
@@ -299,21 +303,22 @@ fn render_group_impl(
 fn render_node(
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
-    cr: &cairo::Context,
+    opt: &Options,
     img_size: Size,
+    cr: &cairo::Context,
 ) -> Option<Rect> {
     match *node.value() {
         tree::NodeKind::Path(ref path) => {
-            Some(path::draw(rtree, path, cr))
+            Some(path::draw(rtree, path, opt, cr))
         }
         tree::NodeKind::Text(_) => {
-            Some(text::draw(rtree, node, cr))
+            Some(text::draw(rtree, node, opt, cr))
         }
         tree::NodeKind::Image(ref img) => {
             Some(image::draw(img, cr))
         }
         tree::NodeKind::Group(ref g) => {
-            render_group_impl(rtree, node, g, cr, img_size)
+            render_group_impl(rtree, node, g, opt, img_size, cr)
         }
         _ => None,
     }
@@ -334,17 +339,18 @@ pub fn calc_node_bbox(
 
     // We also have to apply the viewbox transform,
     // otherwise text hinting will be different and bbox will be different too.
-    apply_viewbox_transform(&cr, rtree.svg_node().view_box, img_view);
+    apply_viewbox_transform(rtree.svg_node().view_box, img_view, &cr);
 
     let abs_ts = utils::abs_transform(node);
-    _calc_node_bbox(&cr, rtree, node, abs_ts)
+    _calc_node_bbox(rtree, node, opt, abs_ts, &cr)
 }
 
 fn _calc_node_bbox(
-    cr: &cairo::Context,
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
+    opt: &Options,
     ts: tree::Transform,
+    cr: &cairo::Context,
 ) -> Option<Rect> {
     let mut ts2 = ts;
     ts2.append(&node.transform());
@@ -356,7 +362,7 @@ fn _calc_node_bbox(
         tree::NodeKind::Text(_) => {
             let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
 
-            text::draw_tspan(rtree, node, cr, |tspan, x, y, _, pd| {
+            text::draw_tspan(node, opt, cr, |tspan, x, y, _, pd| {
                 cr.new_path();
 
                 pc::layout_path(cr, &pd.layout);
@@ -384,7 +390,7 @@ fn _calc_node_bbox(
             let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
 
             for child in node.children() {
-                if let Some(c_bbox) = _calc_node_bbox(cr, rtree, child, ts2) {
+                if let Some(c_bbox) = _calc_node_bbox(rtree, child, opt, ts2, cr) {
                     bbox.expand_from_rect(c_bbox);
                 }
             }

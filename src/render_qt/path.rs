@@ -12,30 +12,34 @@ use super::{
     fill,
     stroke,
 };
+use {
+    Options
+};
 
 
 pub fn draw(
     tree: &tree::RenderTree,
-    elem: &tree::Path,
+    path: &tree::Path,
+    opt: &Options,
     p: &qt::Painter,
 ) -> Rect {
     let mut p_path = qt::PainterPath::new();
 
-    let fill_rule = if let Some(fill) = elem.fill {
+    let fill_rule = if let Some(fill) = path.fill {
         fill.rule
     } else {
         tree::FillRule::NonZero
     };
 
-    convert_path(&elem.segments, fill_rule, &mut p_path);
+    convert_path(&path.segments, fill_rule, &mut p_path);
 
     let bbox = {
         let (x, y, w, h) = p_path.bounding_box();
         Rect::from_xywh(x, y, w, h)
     };
 
-    fill::apply(tree, &elem.fill, p, bbox);
-    stroke::apply(tree, &elem.stroke, p, bbox);
+    fill::apply(tree, &path.fill, opt, bbox, p);
+    stroke::apply(tree, &path.stroke, opt, bbox, p);
 
     p.draw_path(&p_path);
 
