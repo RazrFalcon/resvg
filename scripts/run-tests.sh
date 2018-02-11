@@ -25,7 +25,7 @@ cd "$PKG_DIR"/tools/rendersvg
 cargo build --verbose --features="qt-backend"
 # regression testing
 if [ "$WITH_REGRESSION" = true ]; then
-    cd "$PKG_DIR"/tests/regression
+    cd "$PKG_DIR"/testing_tools/regression
     if [ -z "$LOCAL_TEST" ]; then
         export QT_QPA_PLATFORM=offscreen
         sudo ln -s /usr/share/fonts /opt/qt56/lib/fonts
@@ -39,7 +39,7 @@ cd "$PKG_DIR"/tools/rendersvg
 cargo build --verbose --features="cairo-backend"
 # regression testing
 if [ "$WITH_REGRESSION" = true ]; then
-    cd "$PKG_DIR"/tests/regression
+    cd "$PKG_DIR"/testing_tools/regression
     mkdir -p "$WORK_DIR"/workdir-cairo
     cargo run --release -- --workdir="$WORK_DIR"/workdir-cairo --backend=cairo --use-prev-commit
 fi
@@ -49,7 +49,20 @@ cd "$PKG_DIR"/tools/rendersvg
 cargo build --verbose --features="cairo-backend qt-backend"
 
 # unit tests
-cargo test --verbose --all-features
+cd "$PKG_DIR"
+cargo test --all-features
+cargo test --features="cairo-backend"
+cargo test --features="qt-backend"
+
+# rendersvg unit tests
+cd "$PKG_DIR"/tools/rendersvg
+#
+cargo build --features="cairo-backend"
+cargo test --features="cairo-backend"
+#
+cargo build --features="qt-backend"
+cargo test --features="qt-backend"
+
 
 # build demo
 #

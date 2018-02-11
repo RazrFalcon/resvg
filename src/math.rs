@@ -30,15 +30,6 @@ fn f64_min(v1: f64, v2: f64) -> f64 {
     }
 }
 
-#[inline]
-fn f64_max(v1: f64, v2: f64) -> f64 {
-    if v1 > v2 {
-        v1
-    } else {
-        v2
-    }
-}
-
 
 /// Line representation.
 #[allow(missing_docs)]
@@ -141,10 +132,20 @@ impl RectExt for Rect {
     }
 
     fn expand(&mut self, x: f64, y: f64, w: f64, h: f64) {
+        if w <= 0.0 || h <= 0.0 {
+            return;
+        }
+
         self.origin.x = f64_min(self.x(), x);
         self.origin.y = f64_min(self.y(), y);
-        self.size.width = f64_max(self.width(), w);
-        self.size.height = f64_max(self.height(), h);
+
+        if self.x() + self.width() < x + w {
+            self.size.width = x + w - self.x();
+        }
+
+        if self.y() + self.height() < y + h {
+            self.size.height = y + h - self.y();
+        }
     }
 
     fn expand_from_rect(&mut self, r: Rect) {

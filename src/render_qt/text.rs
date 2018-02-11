@@ -9,7 +9,7 @@ use qt;
 
 // self
 use tree;
-use render_utils;
+use utils;
 use math::*;
 use super::{
     fill,
@@ -58,7 +58,7 @@ pub fn draw_tspan<DrawAt>(
                 }
             }
 
-            let mut x = render_utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
+            let mut x = utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
 
             for (idx, tspan_node) in chunk_node.children().enumerate() {
                 if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.value() {
@@ -190,8 +190,8 @@ fn draw_line(
     line_bbox: Rect,
     p: &qt::Painter,
 ) {
+    // TODO: to rect
     let mut p_path = qt::PainterPath::new();
-
     p_path.move_to(line_bbox.x(),  line_bbox.y());
     p_path.line_to(line_bbox.x() + line_bbox.width(),  line_bbox.y());
     p_path.line_to(line_bbox.x() + line_bbox.width(),  line_bbox.y() + line_bbox.height());

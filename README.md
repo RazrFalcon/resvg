@@ -53,7 +53,7 @@ of the SVG Tiny 1.2 subset. In simple terms - it correctly renders only very sim
 
 ## SVG support
 
-Test results using [tests/images](tests/images):
+Test results using [testing_tools/images](testing_tools/images):
 
 [![Chart]](https://htmlpreview.github.io/?https://github.com/RazrFalcon/resvg/blob/master/doc/support-chart.html)
 

@@ -46,7 +46,7 @@ pub(super) fn convert(
         transform,
         fill,
         stroke,
-        d,
+        segments: d,
     }));
 }
 

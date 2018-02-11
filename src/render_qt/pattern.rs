@@ -12,7 +12,7 @@ use traits::{
     ConvTransform,
     TransformFromBBox,
 };
-use render_utils;
+use utils;
 
 
 pub fn apply(
@@ -51,7 +51,7 @@ pub fn apply(
     p.apply_transform(&qt::Transform::new(sx, 0.0, 0.0, sy, 0.0, 0.0));
     if let Some(vbox) = pattern.view_box {
         let img_view = Rect::from_xywh(0.0, 0.0, r.width(), r.height());
-        let (dx, dy, sx2, sy2) = render_utils::view_box_transform(vbox, img_view);
+        let (dx, dy, sx2, sy2) = utils::view_box_transform(vbox, img_view);
         p.apply_transform(&qt::Transform::new(sx2, 0.0, 0.0, sy2, dx, dy));
     }
     if pattern.content_units == tree::Units::ObjectBoundingBox {

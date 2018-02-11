@@ -17,6 +17,7 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 base64 = "0.9"
 log = "0.4"
 libflate = "0.1"
+lyon_geom = "0.9"
 euclid = "0.17"
 ego-tree = "0.2"
 

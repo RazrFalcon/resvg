@@ -38,11 +38,12 @@ pub fn regroup_elements(doc: &mut Document, parent: &Node) {
         }
 
         let opacity = node.attributes().get_number(AId::Opacity).unwrap_or(1.0);
-        if opacity.fuzzy_eq(&1.0) && !node.has_attributes(&g_attrs) {
+        if opacity.fuzzy_eq(&1.0) && !node.has_attribute(AId::ClipPath) {
             continue;
         }
 
         // TODO: check only for defs after we implement ref elems groupping
+        // Do not group elements inside the clipPath.
         if node.parents_with_self().any(|n| n.is_tag_name(EId::ClipPath)) {
             continue;
         }

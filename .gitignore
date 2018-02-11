@@ -5,3 +5,4 @@ Cargo.lock
 *.pro.user
 *.pro.user.*
 .qmake.stash
+/*.png

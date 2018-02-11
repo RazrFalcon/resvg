@@ -25,6 +25,7 @@ pub fn prepare_text_nodes(doc: &mut Document) {
         }
 
         let mut new_text_elem = doc.create_element(EId::Text);
+        new_text_elem.set_id(node.id().clone());
         prepare_text_elem(doc, &node, &mut new_text_elem);
 
         rm_nodes.push(node.clone());

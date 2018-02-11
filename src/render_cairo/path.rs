@@ -20,7 +20,7 @@ pub fn draw(
     elem: &tree::Path,
     cr: &cairo::Context,
 ) -> Rect {
-    init_path(&elem.d, cr);
+    init_path(&elem.segments, cr);
 
     let bbox = {
         // TODO: set_tolerance(1.0)

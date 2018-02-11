@@ -27,14 +27,13 @@ use clap::{
     ArgMatches,
 };
 
-#[cfg(feature = "cairo-backend")]
-use resvg::cairo;
-
 use resvg::{
     tree,
-    Backend,
     FitTo,
     Options,
+    NodeExt,
+    RectExt,
+    Render,
 };
 
 use svgdom::{
@@ -45,19 +44,18 @@ use svgdom::{
 
 struct Args {
     in_svg: path::PathBuf,
-    out_png: path::PathBuf,
+    out_png: Option<path::PathBuf>,
     dump: Option<path::PathBuf>,
+    export_id: Option<String>,
+    query_all: bool,
     pretend: bool,
-    backend: Backend,
+    backend: Box<Render>,
 }
 
 #[derive(Debug, Error)]
 enum Error {
     Resvg(resvg::Error),
     Io(io::Error),
-
-    #[cfg(feature = "cairo-backend")]
-    Cairo(cairo::IoError),
 }
 
 
@@ -72,9 +70,6 @@ fn main() {
         match e {
             Error::Resvg(ref e) => eprintln!("{}.", e.full_chain()),
             Error::Io(ref e) => eprintln!("Error: {}.", e),
-
-            #[cfg(feature = "cairo-backend")]
-            Error::Cairo(ref e) => eprintln!("Error: {}.", e),
         }
 
         std::process::exit(1);
@@ -82,16 +77,28 @@ fn main() {
 }
 
 fn process() -> Result<(), Error> {
-    fern::Dispatch::new()
-        .format(log_format)
-        .level(log::LevelFilter::Warn)
-        .chain(std::io::stderr())
-        .apply().unwrap();
-
     let (args, opt) = parse_args();
 
+    // Do not print warning during the ID querying.
+    //
+    // Some crates still can print to stdout/stderr, but we can't do anything about it.
+    if !args.query_all {
+        fern::Dispatch::new()
+            .format(log_format)
+            .level(log::LevelFilter::Warn)
+            .chain(std::io::stderr())
+            .apply().unwrap();
+    }
+
+    let _resvg = resvg::init();
+
     // load file
-    let rtree = resvg::parse_doc_from_file(args.in_svg, &opt)?;
+    let rtree = resvg::parse_doc_from_file(&args.in_svg, &opt)?;
+
+    if args.query_all {
+        query_all(&rtree, &args, &opt);
+        return Ok(());
+    }
 
     if let Some(ref dump_path) = args.dump {
         dump_svg(&rtree, dump_path)?;
@@ -101,21 +108,55 @@ fn process() -> Result<(), Error> {
         return Ok(());
     }
 
-    match args.backend {
-        #[cfg(feature = "cairo-backend")]
-        Backend::Cairo => {
-            let img = resvg::render_cairo::render_to_image(&rtree, &opt)?;
-            let mut buffer = fs::File::create(args.out_png)?;
-            img.write_to_png(&mut buffer)?;
-        }
-        #[cfg(feature = "qt-backend")]
-        Backend::Qt => {
-            let img = resvg::render_qt::render_to_image(&rtree, &opt)?;
-            img.save(args.out_png.to_str().unwrap());
+    // Render.
+    if let Some(out_png) = args.out_png {
+        if let Some(ref id) = args.export_id {
+            if let Some(node) = rtree.root().descendants().find(|n| n.svg_id() == id) {
+                let img = args.backend.render_node_to_image(&rtree, node, &opt)?;
+                img.save(&out_png);
+            } else {
+                eprintln!("Error: Input file does not contain id {:?}.", id);
+            }
+        } else {
+            let img = args.backend.render_to_image(&rtree, &opt)?;
+            img.save(&out_png);
         }
     }
 
     Ok(())
+}
+
+fn query_all(
+    rtree: &tree::RenderTree,
+    args: &Args,
+    opt: &Options,
+) {
+    let mut count = 0;
+    for node in rtree.root().descendants() {
+        if rtree.is_in_defs(node) {
+            continue;
+        }
+
+        if node.svg_id().is_empty() {
+            continue;
+        }
+
+        count += 1;
+
+        fn round_len(v: f64) -> f64 {
+            (v * 1000.0).round() / 1000.0
+        }
+
+        if let Some(bbox) = args.backend.calc_node_bbox(&rtree, node, &opt) {
+            println!("{},{},{},{},{}", node.svg_id(),
+                     round_len(bbox.x()), round_len(bbox.y()),
+                     round_len(bbox.width()), round_len(bbox.height()));
+        }
+    }
+
+    if count == 0 {
+        eprintln!("Error: The file has no valid ID's.");
+    }
 }
 
 fn parse_args() -> (Args, Options) {
@@ -144,7 +185,7 @@ fn prepare_app<'a, 'b>() -> App<'a, 'b> {
             .validator(is_svg))
         .arg(Arg::with_name("out-png")
             .help("Output file")
-            .required(true)
+            .required_unless_one(&["query-all"])
             .index(2)
             .validator(is_png))
         .arg(Arg::with_name("dpi")
@@ -185,13 +226,20 @@ fn prepare_app<'a, 'b>() -> App<'a, 'b> {
             .takes_value(true)
             .default_value(default_backend())
             .possible_values(&backends()))
+        .arg(Arg::with_name("query-all")
+            .long("query-all")
+            .help("Queries all valid SVG ids with bounding boxes"))
+        .arg(Arg::with_name("export-id")
+            .long("export-id")
+            .help("Renders an object only with a specified ID")
+            .value_name("ID"))
         .arg(Arg::with_name("dump-svg")
             .long("dump-svg")
             .help("Saves a preprocessed SVG to the selected file")
             .value_name("PATH"))
         .arg(Arg::with_name("pretend")
             .long("pretend")
-            .help("Do all the steps except rendering"))
+            .help("Does all the steps except rendering"))
 }
 
 fn backends() -> Vec<&'static str> {
@@ -225,6 +273,7 @@ fn default_backend() -> &'static str {
     unreachable!();
 }
 
+// TODO: simplify is_* methods
 fn is_svg(val: String) -> Result<(), String> {
     let val = val.to_lowercase();
     if val.ends_with(".svg") || val.ends_with(".svgz") {
@@ -290,7 +339,11 @@ fn is_color(val: String) -> Result<(), String> {
 
 fn fill_args(args: &ArgMatches) -> Args {
     let in_svg  = args.value_of("in-svg").unwrap().into();
-    let out_png = args.value_of("out-png").unwrap().into();
+    let out_png = if args.is_present("out-png") {
+        Some(args.value_of("out-png").unwrap().into())
+    } else {
+        None
+    };
 
     let dump = if args.is_present("dump-svg") {
         Some(args.value_of("dump-svg").unwrap().into())
@@ -298,11 +351,17 @@ fn fill_args(args: &ArgMatches) -> Args {
         None
     };
 
-    let backend = match args.value_of("backend").unwrap() {
+    let export_id = if args.is_present("export-id") {
+        Some(args.value_of("export-id").unwrap().into())
+    } else {
+        None
+    };
+
+    let backend: Box<Render> = match args.value_of("backend").unwrap() {
         #[cfg(feature = "cairo-backend")]
-        "cairo" => Backend::Cairo,
+        "cairo" => Box::new(resvg::render_cairo::Backend),
         #[cfg(feature = "qt-backend")]
-        "qt" => Backend::Qt,
+        "qt" => Box::new(resvg::render_qt::Backend),
         _ => unreachable!(),
     };
 
@@ -310,6 +369,8 @@ fn fill_args(args: &ArgMatches) -> Args {
         in_svg,
         out_png,
         dump,
+        export_id,
+        query_all: args.is_present("query-all"),
         pretend: args.is_present("pretend"),
         backend,
     }
@@ -336,6 +397,7 @@ fn fill_options(args: &ArgMatches) -> Options {
         dpi: value_t!(args.value_of("dpi"), u16).unwrap() as f64,
         fit_to,
         background,
+        keep_named_groups: true,
     }
 }
 

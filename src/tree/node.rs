@@ -114,7 +114,7 @@ pub struct Path {
     /// Segments list.
     ///
     /// All segments are in absolute coordinates.
-    pub d: Vec<PathSegment>,
+    pub segments: Vec<PathSegment>,
 }
 
 

@@ -18,12 +18,16 @@ use traits::{
     GetValue,
 };
 
+use {
+    Options,
+};
 
-pub fn ungroup_groups(svg: &Node) {
+
+pub fn ungroup_groups(svg: &Node, opt: &Options) {
     let mut groups = Vec::with_capacity(16);
 
     loop {
-        _ungroup_groups(&svg, &mut groups);
+        _ungroup_groups(&svg, opt, &mut groups);
 
         if groups.is_empty() {
             break;
@@ -36,15 +40,19 @@ pub fn ungroup_groups(svg: &Node) {
     }
 }
 
-fn _ungroup_groups(parent: &Node, groups: &mut Vec<Node>) {
+fn _ungroup_groups(parent: &Node, opt: &Options, groups: &mut Vec<Node>) {
     for node in parent.children() {
         if node.has_children() {
-            _ungroup_groups(&node, groups);
+            _ungroup_groups(&node, opt, groups);
         }
 
         if node.is_tag_name(EId::G) {
             if !node.has_children() {
                 groups.push(node.clone());
+                continue;
+            }
+
+            if opt.keep_named_groups && node.has_id() {
                 continue;
             }
 

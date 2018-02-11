@@ -15,7 +15,7 @@ use pangocairo::functions as pc;
 
 // self
 use tree;
-use render_utils;
+use utils;
 use math::*;
 use super::{
     fill,
@@ -86,7 +86,7 @@ pub fn draw_tspan<DrawAt>(
                 }
             }
 
-            let mut x = render_utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
+            let mut x = utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
 
             for (idx, tspan_node) in chunk_node.children().enumerate() {
                 if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.value() {
@@ -226,7 +226,7 @@ fn init_font(dom_font: &tree::Font, dpi: f64) -> pango::FontDescription {
     font
 }
 
-fn calc_layout_bbox(layout: &pango::Layout, x: f64, y: f64) -> Rect {
+pub fn calc_layout_bbox(layout: &pango::Layout, x: f64, y: f64) -> Rect {
     let (ink_rect, _) = layout.get_extents();
 
     Rect::from_xywh(
@@ -244,6 +244,7 @@ fn draw_line(
     line_bbox: Rect,
     cr: &cairo::Context,
 ) {
+    // TODO: to rect
     cr.new_sub_path();
     cr.move_to(line_bbox.x(), line_bbox.y());
     cr.rel_line_to(line_bbox.width(), 0.0);

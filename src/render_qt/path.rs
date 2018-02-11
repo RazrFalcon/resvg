@@ -27,7 +27,7 @@ pub fn draw(
         tree::FillRule::NonZero
     };
 
-    convert_path(&elem.d, fill_rule, &mut p_path);
+    convert_path(&elem.segments, fill_rule, &mut p_path);
 
     let bbox = {
         let (x, y, w, h) = p_path.bounding_box();

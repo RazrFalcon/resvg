@@ -200,9 +200,27 @@ pub struct Stroke {
     pub linejoin: LineJoin,
 }
 
+// TODO: default for all attributes
+// TODO: debug for all attributes
+
+impl Default for Stroke {
+    fn default() -> Self {
+        Stroke {
+            paint: Paint::Color(Color::new(0, 0, 0)),
+            dasharray: None,
+            dashoffset: 0.0,
+            miterlimit: 4.0,
+            opacity: 1.0,
+            width: 1.0,
+            linecap: LineCap::Butt,
+            linejoin: LineJoin::Miter,
+        }
+    }
+}
+
 /// A font description.
 #[allow(missing_docs)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Font {
     /// Font family.
     ///
@@ -221,7 +239,7 @@ pub struct Font {
 /// Unlike the SVG spec can contain only `M`, `L`, `C` and `Z` segments.
 /// All other segments will be converted to this one.
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum PathSegment {
     MoveTo {
         x: f64,

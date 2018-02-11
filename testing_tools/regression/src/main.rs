@@ -127,6 +127,8 @@ fn main() {
     }
 }
 
+// TODO: split per backend
+// TODO: skip comments
 fn load_allowed_file_list() -> Vec<String> {
     if let Ok(f) = fs::File::open("allow.txt") {
         return io::BufReader::new(&f).lines().map(|l| l.unwrap()).collect();

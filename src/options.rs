@@ -42,6 +42,14 @@ pub struct Options {
     ///
     /// `None` equals to transparent.
     pub background: Option<Color>,
+
+    /// Keep named groups.
+    ///
+    /// If set to `true`, all non-empty groups with `id` attribute will not
+    /// be removed.
+    ///
+    /// Used to render nodes by ID.
+    pub keep_named_groups: bool,
 }
 
 impl Default for Options {
@@ -51,6 +59,7 @@ impl Default for Options {
             dpi: 96.0,
             fit_to: FitTo::Original,
             background: None,
+            keep_named_groups: false,
         }
     }
 }

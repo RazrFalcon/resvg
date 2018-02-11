@@ -266,6 +266,6 @@ text-deco-1000-f
 
 == Tests
 
-All mentioned tests can be found at `tests/images/svg`.
+All mentioned tests can be found at `testing_tools/images/svg`.
 
-Rendering can be checked using `tests/vdiff` application.
+Rendering can be checked using `testing_tools/vdiff` application.

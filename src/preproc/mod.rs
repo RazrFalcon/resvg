@@ -133,7 +133,7 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) -> Result<()> {
     remove_invalid_transform(doc);
     remove_invisible_elements(doc);
 
-    ungroup_groups(svg);
+    ungroup_groups(svg, opt);
     regroup_elements(doc, svg);
 
     prepare_text_nodes(doc);

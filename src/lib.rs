@@ -23,6 +23,7 @@ And as an embeddable library to paint SVG on an application native canvas.
 extern crate svgdom;
 extern crate base64;
 extern crate libflate;
+extern crate lyon_geom;
 extern crate euclid;
 extern crate ego_tree;
 #[macro_use] extern crate log;
@@ -40,12 +41,12 @@ extern crate ego_tree;
 #[cfg(feature = "qt-backend")] pub mod render_qt;
 
 pub mod tree;
+pub mod utils;
 mod math;
 mod convert;
 mod error;
 mod options;
 mod preproc;
-mod render_utils;
 mod traits;
 
 
@@ -58,12 +59,13 @@ pub use error::{
     ErrorKind,
     Result,
 };
+// reexport traits
+pub use tree::{
+    NodeExt,
+};
 pub use options::*;
 pub use math::*;
-use preproc::{
-    DEFAULT_FONT_FAMILY,
-    DEFAULT_FONT_SIZE,
-};
+
 /// Shorthand names for modules.
 mod short {
     pub use svgdom::{
@@ -74,18 +76,101 @@ mod short {
     };
 }
 
+use preproc::{
+    DEFAULT_FONT_FAMILY,
+    DEFAULT_FONT_SIZE,
+};
 
-/// A list of supported backends.
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum Backend {
-    /// [Cairo](https://cairographics.org/) backend.
-    #[cfg(feature = "cairo-backend")]
-    Cairo,
-    /// [Qt](https://www.qt.io/) backend.
-    #[cfg(feature = "qt-backend")]
-    Qt,
+
+/// A generic interface for image rendering.
+///
+/// Instead of using backend implementation directly, you can
+/// use this trait to write backend-independent code.
+pub trait Render {
+    /// Renders SVG to image.
+    fn render_to_image(
+        &self,
+        rtree: &tree::RenderTree,
+        opt: &Options,
+    ) -> Result<Box<OutputImage>>;
+
+    /// Renders SVG node to image.
+    fn render_node_to_image(
+        &self,
+        rtree: &tree::RenderTree,
+        node: tree::NodeRef,
+        opt: &Options,
+    ) -> Result<Box<OutputImage>>;
+
+    /// Calculates node's bounding box.
+    ///
+    /// Note: this method can be pretty expensive.
+    fn calc_node_bbox(
+        &self,
+        rtree: &tree::RenderTree,
+        node: tree::NodeRef,
+        opt: &Options,
+    ) -> Option<Rect>;
 }
 
+/// A generic interface for output image.
+pub trait OutputImage {
+    /// Saves rendered image to the selected path.
+    fn save(&self, path: &Path) -> bool;
+}
+
+
+/// Global library handle.
+pub struct InitObject {
+    #[cfg(feature = "qt-backend")]
+    #[allow(dead_code)]
+    handle: qt::GuiApp,
+}
+
+/// Creates a global library handle.
+///
+/// Must be invoked before any other `resvg` code.
+///
+/// Currently, handles `QGuiApplication` object which must be created
+/// in order to draw anything.
+///
+/// Does nothing when only `cairo` backend is enabled.
+///
+/// # Example
+///
+/// ```
+/// let _resvg = resvg::init();
+///
+/// // other code
+/// ```
+///
+/// Also, take a look at `examples/minimal.rs`.
+pub fn init() -> InitObject {
+    InitObject {
+        #[cfg(feature = "qt-backend")]
+        handle: qt::GuiApp::new("resvg"),
+    }
+}
+
+/// Returns default backend.
+///
+/// - If both backends are enabled - cairo backend will be returned.
+/// - If no backends are enabled - will panic.
+/// - Otherwise will return a corresponding backend.
+#[allow(unreachable_code)]
+pub fn default_backend() -> Box<Render> {
+    #[cfg(feature = "cairo-backend")]
+    {
+        return Box::new(render_cairo::Backend);
+    }
+
+    #[cfg(feature = "qt-backend")]
+    {
+        return Box::new(render_qt::Backend);
+    }
+
+    unreachable!("at least one backend must be enabled")
+}
 
 /// Creates `RenderTree` from SVG data.
 pub fn parse_doc_from_data(
@@ -107,11 +192,7 @@ pub fn parse_doc_from_file<P: AsRef<Path>>(
     opt: &Options,
 ) -> Result<tree::RenderTree> {
     let text = load_file(path.as_ref())?;
-    let mut doc = parse_svg(&text)?;
-    preproc::prepare_doc(&mut doc, opt)?;
-    let rtree = convert::convert_doc(&doc, opt)?;
-
-    Ok(rtree)
+    parse_doc_from_data(&text, opt)
 }
 
 fn load_file(path: &Path) -> Result<String> {

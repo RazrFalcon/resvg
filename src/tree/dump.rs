@@ -136,8 +136,8 @@ fn conv_elements(
                 use svgdom::path::Path as SvgDomPath;
                 use svgdom::path::Segment;
 
-                let mut path = SvgDomPath::with_capacity(p.d.len());
-                for seg in &p.d {
+                let mut path = SvgDomPath::with_capacity(p.segments.len());
+                for seg in &p.segments {
                     match *seg {
                         PathSegment::MoveTo { x, y } => {
                             path.d.push(Segment::new_move_to(x, y));
@@ -252,6 +252,10 @@ fn conv_elements(
                     if opacity.fuzzy_ne(&1.0) {
                         g_elem.set_attribute((AId::Opacity, opacity));
                     }
+                }
+
+                if !g_elem.has_id() && g_elem.attributes().len() == 0 {
+                    warn!("Group must have at least one attribute otherwise it's pointless.");
                 }
 
                 conv_elements(rtree, n, defs, new_doc, &mut g_elem);

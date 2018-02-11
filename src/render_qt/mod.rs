@@ -23,8 +23,10 @@ use {
     ErrorKind,
     Options,
     Result,
+    Render,
+    OutputImage,
 };
-use render_utils;
+use utils;
 
 
 mod clippath;
@@ -54,17 +56,88 @@ impl TransformFromBBox for qt::Transform {
     }
 }
 
+/// Cairo backend handle.
+pub struct Backend;
+
+impl Render for Backend {
+    fn render_to_image(
+        &self,
+        rtree: &tree::RenderTree,
+        opt: &Options,
+    ) -> Result<Box<OutputImage>> {
+        let img = render_to_image(rtree, opt)?;
+        Ok(Box::new(img))
+    }
+
+    fn render_node_to_image(
+        &self,
+        rtree: &tree::RenderTree,
+        node: tree::NodeRef,
+        opt: &Options,
+    ) -> Result<Box<OutputImage>> {
+        let img = render_node_to_image(rtree, node, opt)?;
+        Ok(Box::new(img))
+    }
+
+    fn calc_node_bbox(
+        &self,
+        rtree: &tree::RenderTree,
+        node: tree::NodeRef,
+        _: &Options,
+    ) -> Option<Rect> {
+        calc_node_bbox(rtree, node)
+    }
+}
+
+impl OutputImage for qt::Image {
+    fn save(&self, path: &::std::path::Path) -> bool {
+        self.save(path.to_str().unwrap())
+    }
+}
+
 
 /// Renders SVG to image.
 pub fn render_to_image(
     rtree: &tree::RenderTree,
     opt: &Options,
 ) -> Result<qt::Image> {
-    let _app = qt::GuiApp::new("resvg");
+    let (img, img_view) = create_image(rtree.svg_node().size, opt)?;
 
-    let svg = rtree.svg_node();
+    let painter = qt::Painter::new(&img);
+    render_to_canvas(&painter, img_view, rtree);
+    painter.end();
 
-    let img_size = render_utils::fit_to(svg.size, opt.fit_to);
+    Ok(img)
+}
+
+/// Renders SVG node to image.
+pub fn render_node_to_image(
+    rtree: &tree::RenderTree,
+    node: tree::NodeRef,
+    opt: &Options,
+) -> Result<qt::Image> {
+    let node_bbox = if let Some(bbox) = calc_node_bbox(rtree, node) {
+        bbox
+    } else {
+        warn!("Node {:?} has zero size.", node.svg_id());
+        return Err(ErrorKind::NoCanvas.into());
+    };
+
+    let (img, img_view) = create_image(node_bbox.size, opt)?;
+
+    let painter = qt::Painter::new(&img);
+    apply_viewbox_transform(node_bbox, img_view, &painter);
+    render_node_to_canvas(&painter, img_view, rtree, node);
+    painter.end();
+
+    Ok(img)
+}
+
+fn create_image(
+    size: Size,
+    opt: &Options,
+) -> Result<(qt::Image, Rect)> {
+    let img_size = utils::fit_to(size, opt.fit_to);
 
     debug_assert!(!img_size.is_empty_or_negative());
 
@@ -86,13 +159,8 @@ pub fn render_to_image(
     img.set_dpi(opt.dpi);
 
     let img_view = Rect::new(Point::new(0.0, 0.0), img_size);
-    let painter = qt::Painter::new(&img);
 
-    render_to_canvas(&painter, img_view, rtree);
-
-    painter.end();
-
-    Ok(img)
+    Ok((img, img_view))
 }
 
 /// Renders SVG to canvas.
@@ -101,16 +169,37 @@ pub fn render_to_canvas(
     img_view: Rect,
     rtree: &tree::RenderTree,
 ) {
-    let svg = rtree.svg_node();
+    apply_viewbox_transform(rtree.svg_node().view_box, img_view, painter);
+    render_group(rtree, rtree.root(), &painter, &painter.get_transform(), img_view.size);
+}
 
-    // Apply viewBox.
+/// Renders SVG node to canvas.
+pub fn render_node_to_canvas(
+    painter: &qt::Painter,
+    img_view: Rect,
+    rtree: &tree::RenderTree,
+    node: tree::NodeRef,
+) {
+    let curr_ts = painter.get_transform();
+    let mut ts = utils::abs_transform(node);
+    ts.append(&node.transform());
+
+    painter.apply_transform(&ts.to_native());
+    render_node(rtree, node, painter, img_view.size);
+    painter.set_transform(&curr_ts);
+}
+
+/// Applies viewbox transformation to the painter.
+pub fn apply_viewbox_transform(
+    view_box: Rect,
+    img_view: Rect,
+    painter: &qt::Painter,
+) {
     let ts = {
-        let (dx, dy, sx, sy) = render_utils::view_box_transform(svg.view_box, img_view);
+        let (dx, dy, sx, sy) = utils::view_box_transform(view_box, img_view);
         qt::Transform::new(sx, 0.0, 0.0, sy, dx, dy)
     };
     painter.apply_transform(&ts);
-
-    render_group(rtree, rtree.root(), &painter, &painter.get_transform(), img_view.size);
 }
 
 // TODO: render groups backward to reduce memory usage
@@ -123,25 +212,12 @@ fn render_group(
     img_size: Size,
 ) -> Rect {
     let mut g_bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
+
     for node in node.children() {
         // Apply transform.
         p.apply_transform(&node.transform().to_native());
 
-        let bbox = match *node.value() {
-            tree::NodeKind::Path(ref path) => {
-                Some(path::draw(rtree, path, p))
-            }
-            tree::NodeKind::Text(_) => {
-                Some(text::draw(rtree, node, p))
-            }
-            tree::NodeKind::Image(ref img) => {
-                Some(image::draw(img, p))
-            }
-            tree::NodeKind::Group(ref g) => {
-                render_group_impl(rtree, node, g, p, img_size)
-            }
-            _ => None,
-        };
+        let bbox = render_node(rtree, node, p, img_size);
 
         if let Some(bbox) = bbox {
             g_bbox.expand_from_rect(bbox);
@@ -203,4 +279,120 @@ fn render_group_impl(
     p.set_transform(&curr_ts);
 
     Some(bbox)
+}
+
+fn render_node(
+    rtree: &tree::RenderTree,
+    node: tree::NodeRef,
+    p: &qt::Painter,
+    img_size: Size,
+) -> Option<Rect> {
+    match *node.value() {
+        tree::NodeKind::Path(ref path) => {
+            Some(path::draw(rtree, path, p))
+        }
+        tree::NodeKind::Text(_) => {
+            Some(text::draw(rtree, node, p))
+        }
+        tree::NodeKind::Image(ref img) => {
+            Some(image::draw(img, p))
+        }
+        tree::NodeKind::Group(ref g) => {
+            render_group_impl(rtree, node, g, p, img_size)
+        }
+        _ => None,
+    }
+}
+
+/// Calculates node's bounding box.
+///
+/// Note: this method can be pretty expensive.
+pub fn calc_node_bbox(
+    rtree: &tree::RenderTree,
+    node: tree::NodeRef,
+) -> Option<Rect> {
+    let mut img = qt::Image::new(1, 1).unwrap();
+    img.set_dpi(rtree.svg_node().dpi);
+    let p = qt::Painter::new(&img);
+
+    let abs_ts = utils::abs_transform(node);
+    _calc_node_bbox(&p, node, abs_ts)
+}
+
+fn _calc_node_bbox(
+    p: &qt::Painter,
+    node: tree::NodeRef,
+    ts: tree::Transform,
+) -> Option<Rect> {
+    let mut ts2 = ts;
+    ts2.append(&node.transform());
+
+    match *node.value() {
+        tree::NodeKind::Path(ref path) => {
+            Some(utils::path_bbox(&path.segments, &path.stroke, &ts2))
+        }
+        tree::NodeKind::Text(_) => {
+            let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
+
+            text::draw_tspan(node, p, |tspan, x, y, _, font| {
+                let mut p_path = qt::PainterPath::new();
+                p_path.add_text(x, y, font, &tspan.text);
+
+                let segments = from_qt_path(&p_path);
+
+                if !segments.is_empty() {
+                    let c_bbox = utils::path_bbox(&segments, &tspan.stroke, &ts2);
+
+                    bbox.expand_from_rect(c_bbox);
+                }
+            });
+
+            Some(bbox)
+        }
+        tree::NodeKind::Image(ref img) => {
+            let segments = utils::rect_to_path(img.rect);
+            Some(utils::path_bbox(&segments, &None, &ts2))
+        }
+        tree::NodeKind::Group(_) => {
+            let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
+
+            for child in node.children() {
+                if let Some(c_bbox) = _calc_node_bbox(p, child, ts2) {
+                    bbox.expand_from_rect(c_bbox);
+                }
+            }
+
+            Some(bbox)
+        }
+        _ => None
+    }
+}
+
+fn from_qt_path(p_path: &qt::PainterPath) -> Vec<tree::PathSegment> {
+    let mut segments = Vec::with_capacity(p_path.len() as usize);
+    let p_path_len = p_path.len();
+    let mut i = 0;
+    while i < p_path_len {
+        let (kind, x, y) = p_path.get(i);
+        match kind {
+            qt::PathSegmentType::MoveToSegment => {
+                segments.push(tree::PathSegment::MoveTo { x, y });
+            }
+            qt::PathSegmentType::LineToSegment => {
+                segments.push(tree::PathSegment::LineTo { x, y });
+            }
+            qt::PathSegmentType::CurveToSegment => {
+                let (_, x1, y1) = p_path.get(i + 1);
+                let (_, x2, y2) = p_path.get(i + 2);
+
+                segments.push(tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
+
+                i += 2;
+            }
+        }
+
+        i += 1;
+    }
+
+    segments
 }
