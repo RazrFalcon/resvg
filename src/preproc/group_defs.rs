@@ -25,6 +25,7 @@ pub fn group_defs(doc: &mut Document, svg: &mut Node) {
 
     // Make 'defs' a first child of the 'svg'.
     if svg.first_child() != Some(defs.clone()) {
+        defs.detach();
         svg.prepend(&defs);
     }
 
