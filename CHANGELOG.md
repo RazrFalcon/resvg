@@ -21,4 +21,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/svgcleaner/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.1.0...HEAD

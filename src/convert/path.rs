@@ -6,10 +6,8 @@ use std::f64;
 
 // external
 use svgdom::path::*;
-use svgdom::{
-    self,
-    FuzzyEq,
-};
+use svgdom;
+use lyon_geom;
 
 // self
 use tree;
@@ -19,9 +17,7 @@ use short::{
 use traits::{
     GetValue,
 };
-use math::{
-    f64_bound,
-};
+
 use super::{
     fill,
     stroke,
@@ -137,7 +133,24 @@ fn convert_path(mut path: Path) -> Vec<tree::PathSegment> {
                 new_path.push(quad_to_curve(px, py, new_x1, new_y1, x, y));
             }
             SegmentData::EllipticalArc { rx, ry, x_axis_rotation, large_arc, sweep, x, y } => {
-                arc_to_curve(px, py, rx, ry, x_axis_rotation, large_arc, sweep, x, y, &mut new_path)
+                let arc = lyon_geom::SvgArc {
+                    from: [px as f32, py as f32].into(),
+                    to: [x as f32, y as f32].into(),
+                    radii: [rx as f32, ry as f32].into(),
+                    x_rotation: lyon_geom::math::Angle::degrees(x_axis_rotation as f32),
+                    flags: lyon_geom::ArcFlags { large_arc, sweep },
+                };
+
+                arc.for_each_quadratic_bezier(&mut |quad| {
+                    let cubic = quad.to_cubic();
+                    let curve = tree::PathSegment::CurveTo {
+                        x1: cubic.ctrl1.x as f64, y1: cubic.ctrl1.y as f64,
+                        x2: cubic.ctrl2.x as f64, y2: cubic.ctrl2.y as f64,
+                        x:  cubic.to.x as f64,    y:  cubic.to.y as f64,
+                    };
+
+                    new_path.push(curve);
+                });
             }
             SegmentData::ClosePath => {
                 new_path.push(tree::PathSegment::ClosePath);
@@ -182,154 +195,17 @@ fn quad_to_curve(
     x: f64,
     y: f64
 ) -> tree::PathSegment {
-    let nx1 = (px + 2.0 * x1) / 3.0;
-    let ny1 = (py + 2.0 * y1) / 3.0;
-
-    let nx2 = (x + 2.0 * x1) / 3.0;
-    let ny2 = (y + 2.0 * y1) / 3.0;
-
-    tree::PathSegment::CurveTo { x1: nx1, y1: ny1, x2: nx2, y2: ny2, x, y }
-}
-
-// http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
-// Based on librsvg implementation.
-fn arc_to_curve(
-    x1: f64,
-    y1: f64,
-    mut rx: f64,
-    mut ry: f64,
-    x_axis_rotation: f64,
-    large_arc_flag: bool,
-    sweep_flag: bool,
-    x2: f64,
-    y2: f64,
-    path: &mut Vec<tree::PathSegment>,
-) {
-    if x1.fuzzy_eq(&x2) && y1.fuzzy_eq(&y2) {
-        return;
-    }
-
-    // X-axis
-    let f = x_axis_rotation * f64::consts::PI / 180.0;
-    let sinf = f.sin();
-    let cosf = f.cos();
-
-    rx = rx.abs();
-    ry = ry.abs();
-
-    if rx < f64::EPSILON || ry < f64::EPSILON {
-        path.push(tree::PathSegment::LineTo { x: x2, y: y2 });
-        return;
-    }
-
-    let k1 = (x1 - x2) / 2.0;
-    let k2 = (y1 - y2) / 2.0;
-
-    let x1_ = cosf * k1 + sinf * k2;
-    let y1_ = -sinf * k1 + cosf * k2;
-
-    let gamma = (x1_ * x1_) / (rx * rx) + (y1_ * y1_) / (ry * ry);
-    if gamma > 1.0 {
-        rx *= gamma.sqrt();
-        ry *= gamma.sqrt();
-    }
-
-    // compute the center
-    let k1 = rx * rx * y1_ * y1_ + ry * ry * x1_ * x1_;
-    if k1.fuzzy_eq(&0.0) {
-        return;
-    }
-
-    let mut k1 = ((rx * rx * ry * ry) / k1 - 1.0).abs().sqrt();
-    if sweep_flag == large_arc_flag {
-        k1 = -k1;
-    }
-
-    let cx_ = k1 * rx * y1_ / ry;
-    let cy_ = -k1 * ry * x1_ / rx;
-
-    let cx = cosf * cx_ - sinf * cy_ + (x1 + x2) / 2.0;
-    let cy = sinf * cx_ + cosf * cy_ + (y1 + y2) / 2.0;
-
-    // compute start angle
-    let k1 = (x1_ - cx_) / rx;
-    let k2 = (y1_ - cy_) / ry;
-    let k3 = (-x1_ - cx_) / rx;
-    let k4 = (-y1_ - cy_) / ry;
-
-    let mut k5 = (k1 * k1 + k2 * k2).abs().sqrt();
-    if k5.fuzzy_eq(&0.0) {
-        return;
-    }
-
-    k5 = k1 / k5;
-    k5 = f64_bound(-1.0, k5, 1.0);
-    let mut theta1 = k5.acos();
-    if k2 < 0.0 {
-        theta1 = -theta1;
-    }
-
-    // compute delta_theta
-    k5 = ((k1 * k1 + k2 * k2) * (k3 * k3 + k4 * k4)).abs().sqrt();
-    if k5.fuzzy_eq(&0.0) {
-        return;
-    }
-
-    k5 = (k1 * k3 + k2 * k4) / k5;
-    k5 = f64_bound(-1.0, k5, 1.0);
-    let mut delta_theta = k5.acos();
-    if k1 * k4 - k3 * k2 < 0.0 {
-        delta_theta = -delta_theta;
-    }
-
-    if sweep_flag && delta_theta < 0.0 {
-        delta_theta += f64::consts::PI * 2.0;
-    } else if !sweep_flag && delta_theta > 0.0 {
-        delta_theta -= f64::consts::PI * 2.0;
-    }
-
-    // gen curves
-    let n_segs = (delta_theta / (f64::consts::PI * 0.5 + 0.001)).abs().ceil();
-
-    for i in 0..(n_segs as usize) {
-        _arc_to_curve(
-            cx, cy,
-            theta1 + i as f64 * delta_theta / n_segs,
-            theta1 + (i as f64 + 1.0) * delta_theta / n_segs,
-            rx, ry,
-            x_axis_rotation,
-            path,
-        );
-    }
-}
-
-fn _arc_to_curve(
-    xc: f64,
-    yc: f64,
-    th0: f64,
-    th1: f64,
-    rx: f64,
-    ry: f64,
-    x_axis_rotation: f64,
-    path: &mut Vec<tree::PathSegment>,
-) {
-    let f = x_axis_rotation * f64::consts::PI / 180.0;
-    let sinf = f.sin();
-    let cosf = f.cos();
-
-    let th_half = 0.5 * (th1 - th0);
-    let t = (8.0 / 3.0) * (th_half * 0.5).sin() * (th_half * 0.5).sin() / th_half.sin();
-    let x1 = rx * (th0.cos() - t * th0.sin());
-    let y1 = ry * (th0.sin() + t * th0.cos());
-    let x3 = rx * th1.cos();
-    let y3 = ry * th1.sin();
-    let x2 = x3 + rx * ( t * th1.sin());
-    let y2 = y3 + ry * (-t * th1.cos());
-
-    let seg = tree::PathSegment::CurveTo {
-        x1: xc + cosf * x1 - sinf * y1, y1: yc + sinf * x1 + cosf * y1,
-        x2: xc + cosf * x2 - sinf * y2, y2: yc + sinf * x2 + cosf * y2,
-        x:  xc + cosf * x3 - sinf * y3, y:  yc + sinf * x3 + cosf * y3
+    let quad = lyon_geom::QuadraticBezierSegment {
+        from: [px as f32, py as f32].into(),
+        ctrl: [x1 as f32, y1 as f32].into(),
+        to:   [x as f32,   y as f32].into(),
     };
-    path.push(seg);
+
+    let cubic = quad.to_cubic();
+
+    tree::PathSegment::CurveTo {
+        x1: cubic.ctrl1.x as f64, y1: cubic.ctrl1.y as f64,
+        x2: cubic.ctrl2.x as f64, y2: cubic.ctrl2.y as f64,
+        x:  cubic.to.x as f64,    y:  cubic.to.y as f64,
+    }
 }
