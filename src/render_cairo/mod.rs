@@ -366,9 +366,7 @@ fn _calc_node_bbox(
                 cr.new_path();
 
                 pc::layout_path(cr, &pd.layout);
-                // We are using `copy_path_flat` instead of `copy_path`
-                // because the last one produces an invalid bbox.
-                let path = cr.copy_path_flat();
+                let path = cr.copy_path();
                 let segments = from_cairo_path(&path);
 
                 let mut t = ts2;

@@ -7,7 +7,7 @@ import argparse
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('svg', help='Input file')
-    parser.add_argument('out_dir', help='Output folded')
+    parser.add_argument('out_dir', help='Output directory')
     parser.add_argument('-b, --backend', dest='backend', help='Sets backend', required=True)
     parser.add_argument('-z, --zoom', dest='zoom', help='Sets zoom', default=1)
     args = parser.parse_args()

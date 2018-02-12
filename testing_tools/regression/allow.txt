@@ -1,7 +1,0 @@
-masking-path-07-b.svg
-metadata-example-01-t.svg
-opacity-1001-f.svg
-text-path-02-b.svg
-coords-units-03-b.svg
-coords-trans-01-b.svg
-filters-overview-03-b.svg
