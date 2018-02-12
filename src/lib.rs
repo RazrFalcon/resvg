@@ -132,9 +132,12 @@ pub struct InitObject {
 /// Must be invoked before any other `resvg` code.
 ///
 /// Currently, handles `QGuiApplication` object which must be created
-/// in order to draw anything.
+/// in order to draw text. If you don't plan to draw text - it's better to skip
+/// the initialization.
 ///
 /// Does nothing when only `cairo` backend is enabled.
+///
+/// Note: `QGuiApplication` initialization is pretty slow (up to 100ms).
 ///
 /// # Example
 ///

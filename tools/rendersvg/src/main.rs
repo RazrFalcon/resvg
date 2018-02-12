@@ -47,6 +47,8 @@ struct Args {
     in_svg: path::PathBuf,
     out_png: Option<path::PathBuf>,
     backend: Box<Render>,
+    #[allow(dead_code)]
+    backend_name: String,
     query_all: bool,
     export_id: Option<String>,
     dump: Option<path::PathBuf>,
@@ -97,11 +99,14 @@ fn process() -> Result<(), Error> {
             .apply().unwrap();
     }
 
-    let _resvg = resvg::init();
-
     // Load file.
     let rtree = run_task(args.perf, "Parsing",
         || resvg::parse_rtree_from_file(&args.in_svg, &opt))?;
+
+
+    // We have to init only Qt backend.
+    #[cfg(feature = "qt-backend")]
+    let _resvg = run_task(args.perf, "Backend init", || init_qt_gui(&rtree, &args));
 
     if args.query_all {
         query_all(&rtree, &args, &opt);
@@ -133,6 +138,31 @@ fn process() -> Result<(), Error> {
     };
 
     Ok(())
+}
+
+// Qt backend initialization is pretty slow
+// and needed only for files with text nodes.
+// So we skip it file doesn't have one.
+#[cfg(feature = "qt-backend")]
+fn init_qt_gui(
+    rtree: &tree::RenderTree,
+    args: &Args,
+) -> Option<resvg::InitObject> {
+    if args.backend_name != "qt" {
+        return None;
+    }
+
+    // Check that rtree has any text nodes.
+    let has_text = rtree.root().descendants().any(|n|
+        if let &tree::NodeKind::Text { .. } = n.value() { true } else { false }
+    );
+
+    if has_text {
+        // Init Qt backend.
+        Some(resvg::init())
+    } else {
+        None
+    }
 }
 
 fn query_all(
@@ -383,7 +413,8 @@ fn fill_args(args: &ArgMatches) -> Args {
         None
     };
 
-    let backend: Box<Render> = match args.value_of("backend").unwrap() {
+    let backend_name = args.value_of("backend").unwrap().to_string();
+    let backend: Box<Render> = match backend_name.as_str() {
         #[cfg(feature = "cairo-backend")]
         "cairo" => Box::new(resvg::render_cairo::Backend),
         #[cfg(feature = "qt-backend")]
@@ -395,6 +426,7 @@ fn fill_args(args: &ArgMatches) -> Args {
         in_svg,
         out_png,
         backend,
+        backend_name,
         query_all: args.is_present("query-all"),
         export_id,
         dump,
