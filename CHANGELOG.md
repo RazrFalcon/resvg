@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - (svg) Partial `pattern` support.
   - `preserveAspectRatio` attribute is not supported.
 - (cli) Added `--query-all` and `--export-id` arguments to render SVG items by ID.
+- (cli) Added `--perf` argument for a simple performance stats.
 
 ### Changed
 - (lib) API is completely new.

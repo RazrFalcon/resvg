@@ -10,6 +10,7 @@ extern crate resvg;
 extern crate svgdom;
 extern crate fern;
 extern crate log;
+extern crate time;
 
 
 use std::str::FromStr;
@@ -45,15 +46,18 @@ use svgdom::{
 struct Args {
     in_svg: path::PathBuf,
     out_png: Option<path::PathBuf>,
-    dump: Option<path::PathBuf>,
-    export_id: Option<String>,
-    query_all: bool,
-    pretend: bool,
     backend: Box<Render>,
+    query_all: bool,
+    export_id: Option<String>,
+    dump: Option<path::PathBuf>,
+    pretend: bool,
+    perf: bool,
 }
 
 #[derive(Debug, Error)]
 enum Error {
+    #[error(msg_embedded, no_from, non_std)]
+    InvalidId(String),
     Resvg(resvg::Error),
     Io(io::Error),
 }
@@ -68,6 +72,9 @@ fn main() {
 
     if let Err(e) = process() {
         match e {
+            Error::InvalidId(ref id) => {
+                eprintln!("Error: Input file does not contain ID {:?}.", id);
+            }
             Error::Resvg(ref e) => eprintln!("{}.", e.full_chain()),
             Error::Io(ref e) => eprintln!("Error: {}.", e),
         }
@@ -92,8 +99,9 @@ fn process() -> Result<(), Error> {
 
     let _resvg = resvg::init();
 
-    // load file
-    let rtree = resvg::parse_rtree_from_file(&args.in_svg, &opt)?;
+    // Load file.
+    let rtree = run_task(args.perf, "Parsing",
+        || resvg::parse_rtree_from_file(&args.in_svg, &opt))?;
 
     if args.query_all {
         query_all(&rtree, &args, &opt);
@@ -109,19 +117,20 @@ fn process() -> Result<(), Error> {
     }
 
     // Render.
-    if let Some(out_png) = args.out_png {
-        if let Some(ref id) = args.export_id {
+    if let Some(ref out_png) = args.out_png {
+        let img = if let Some(ref id) = args.export_id {
             if let Some(node) = rtree.root().descendants().find(|n| n.svg_id() == id) {
-                let img = args.backend.render_node_to_image(&rtree, node, &opt)?;
-                img.save(&out_png);
+                args.backend.render_node_to_image(&rtree, node, &opt)
             } else {
-                eprintln!("Error: Input file does not contain id {:?}.", id);
+                return Err(Error::InvalidId(id.clone()));
             }
         } else {
-            let img = args.backend.render_to_image(&rtree, &opt)?;
-            img.save(&out_png);
-        }
-    }
+            run_task(args.perf, "Rendering",
+                || args.backend.render_to_image(&rtree, &opt))
+        }?;
+
+        run_task(args.perf, "Saving", || img.save(out_png));
+    };
 
     Ok(())
 }
@@ -156,6 +165,20 @@ fn query_all(
 
     if count == 0 {
         eprintln!("Error: The file has no valid ID's.");
+    }
+}
+
+fn run_task<P, T>(perf: bool, title: &str, p: P) -> T
+    where P: FnOnce() -> T
+{
+    if perf {
+        let start = time::precise_time_ns();
+        let res = p();
+        let end = time::precise_time_ns();
+        println!("{}: {:.2}ms", title, (end - start) as f64 / 1_000_000.0);
+        res
+    } else {
+        p()
     }
 }
 
@@ -240,6 +263,9 @@ fn prepare_app<'a, 'b>() -> App<'a, 'b> {
         .arg(Arg::with_name("pretend")
             .long("pretend")
             .help("Does all the steps except rendering"))
+        .arg(Arg::with_name("perf")
+            .long("perf")
+            .help("Prints performance stats"))
 }
 
 fn backends() -> Vec<&'static str> {
@@ -368,11 +394,12 @@ fn fill_args(args: &ArgMatches) -> Args {
     Args {
         in_svg,
         out_png,
-        dump,
-        export_id,
-        query_all: args.is_present("query-all"),
-        pretend: args.is_present("pretend"),
         backend,
+        query_all: args.is_present("query-all"),
+        export_id,
+        dump,
+        pretend: args.is_present("pretend"),
+        perf: args.is_present("perf"),
     }
 }
 
