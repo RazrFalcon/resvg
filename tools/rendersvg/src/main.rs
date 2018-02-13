@@ -225,7 +225,9 @@ fn parse_args() -> (Args, Options) {
         }
     };
 
-    (fill_args(&args), fill_options(&args))
+    let app_args = fill_args(&args);
+    let opt = fill_options(&args, &app_args);
+    (app_args, opt)
 }
 
 fn prepare_app<'a, 'b>() -> App<'a, 'b> {
@@ -435,7 +437,7 @@ fn fill_args(args: &ArgMatches) -> Args {
     }
 }
 
-fn fill_options(args: &ArgMatches) -> Options {
+fn fill_options(args: &ArgMatches, app_args: &Args) -> Options {
     let mut fit_to = FitTo::Original;
     if args.is_present("width") {
         fit_to = FitTo::Width(value_t!(args.value_of("width"), u32).unwrap());
@@ -451,12 +453,16 @@ fn fill_options(args: &ArgMatches) -> Options {
         background = Some(svgdom::Color::from_str(s).unwrap());
     }
 
+    // We don't have to keep named groups when we don't need them
+    // because it will slow down rendering.
+    let keep_named_groups = app_args.query_all || app_args.export_id.is_some();
+
     Options {
         path: Some(args.value_of("in-svg").unwrap().into()),
         dpi: value_t!(args.value_of("dpi"), u16).unwrap() as f64,
         fit_to,
         background,
-        keep_named_groups: true,
+        keep_named_groups,
     }
 }
 

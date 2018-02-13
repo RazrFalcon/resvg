@@ -49,6 +49,8 @@ pub struct Options {
     /// be removed.
     ///
     /// Used to render nodes by ID.
+    ///
+    /// Note: will slow down the rendering.
     pub keep_named_groups: bool,
 }
 
