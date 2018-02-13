@@ -16,7 +16,7 @@ cargo build --release --features="cairo-backend"
 cargo build --release --features="qt-backend cairo-backend"
 ```
 
-Also, you can build *resvg* without any backends if you what too.
+Also, you can build *resvg* without any backends if you want too.
 
 ### Qt backend
 
