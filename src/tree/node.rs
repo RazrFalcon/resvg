@@ -97,8 +97,6 @@ pub struct Path {
     /// Taken from the SVG itself.
     /// Isn't automatically generated.
     /// Can be empty.
-    ///
-    /// Currently, used only for SVG dump purposes.
     pub id: String,
     /// Element transform.
     pub transform: Transform,
@@ -122,8 +120,6 @@ pub struct Text {
     /// Taken from the SVG itself.
     /// Isn't automatically generated.
     /// Can be empty.
-    ///
-    /// Currently, used only for SVG dump purposes.
     pub id: String,
     /// Element transform.
     pub transform: Transform,
@@ -189,8 +185,6 @@ pub struct Image {
     /// Taken from the SVG itself.
     /// Isn't automatically generated.
     /// Can be empty.
-    ///
-    /// Currently, used only for SVG dump purposes.
     pub id: String,
     /// Element transform.
     pub transform: Transform,
@@ -225,7 +219,6 @@ pub enum ImageDataKind {
 }
 
 
-// TODO: no need for a separate vector
 /// A group container.
 ///
 /// The preprocessor will remove all groups that don't impact rendering.
@@ -240,8 +233,6 @@ pub struct Group {
     /// Taken from the SVG itself.
     /// Isn't automatically generated.
     /// Can be empty.
-    ///
-    /// Currently, used only for SVG dump purposes.
     pub id: String,
     /// Element transform.
     pub transform: Transform,
@@ -251,9 +242,6 @@ pub struct Group {
     /// it with a parent group using the specified opacity.
     pub opacity: Option<f64>,
     /// Element clip path.
-    ///
-    /// The value is an index from the `Document::defs` list.
-    /// Use it via `Document::get_defs()` method.
     pub clip_path: Option<NodeId>,
 }
 
@@ -284,10 +272,6 @@ pub struct LinearGradient {
     ///
     /// Taken from the SVG itself.
     /// Can't be empty.
-    ///
-    /// Currently, used only for SVG dump purposes.
-    ///
-    /// It isn't used for referencing itself, because we use indexes for that.
     pub id: String,
     pub x1: f64,
     pub y1: f64,
@@ -307,10 +291,6 @@ pub struct RadialGradient {
     ///
     /// Taken from the SVG itself.
     /// Can't be empty.
-    ///
-    /// Currently, used only for SVG dump purposes.
-    ///
-    /// It isn't used for referencing itself, because we use indexes for that.
     pub id: String,
     pub cx: f64,
     pub cy: f64,
@@ -342,10 +322,6 @@ pub struct ClipPath {
     ///
     /// Taken from the SVG itself.
     /// Can't be empty.
-    ///
-    /// Currently, used only for SVG dump purposes.
-    ///
-    /// It isn't used for referencing itself, because we use indexes for that.
     pub id: String,
     /// Coordinate system units.
     ///
@@ -366,10 +342,6 @@ pub struct Pattern {
     ///
     /// Taken from the SVG itself.
     /// Can't be empty.
-    ///
-    /// Currently, used only for SVG dump purposes.
-    ///
-    /// It isn't used for referencing itself, because we use indexes for that.
     pub id: String,
     /// Coordinate system units.
     ///
@@ -384,6 +356,8 @@ pub struct Pattern {
     /// `patternTransform` in the SVG.
     pub transform: Transform,
     /// Pattern rectangle.
+    ///
+    /// `x`, `y`, `width` and `height` in the SVG.
     pub rect: Rect,
     /// Pattern viewbox.
     pub view_box: Option<Rect>,
