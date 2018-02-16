@@ -33,7 +33,7 @@ pub fn apply(
     cp: &tree::ClipPath,
     opt: &Options,
     bbox: Rect,
-    img_size: Size,
+    img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
     let clip_surface = cairo::ImageSurface::create(

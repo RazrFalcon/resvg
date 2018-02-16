@@ -39,7 +39,7 @@ pub fn apply(
     let global_ts = tree::Transform::from_native(&cr.get_matrix());
     let (sx, sy) = global_ts.get_scale();
 
-    let img_size = Size::new(r.width() * sx, r.height() * sy);
+    let img_size = Size::new(r.width() * sx, r.height() * sy).to_screen_size();
     let surface = cairo::ImageSurface::create(
         cairo::Format::ARgb32,
         img_size.width as i32,

@@ -78,7 +78,7 @@ pub fn draw_tspan<DrawAt>(
                     let mut layout_iter = layout.get_iter().unwrap();
                     let ascent = (layout_iter.get_baseline() / pango::SCALE) as f64;
                     let text_h = (layout.get_height() / pango::SCALE) as f64;
-                    bbox.expand(chunk.x, chunk.y - ascent, chunk_width, text_h);
+                    bbox.expand(Rect::from_xywh(chunk.x, chunk.y - ascent, chunk_width, text_h));
 
                     pc_list.push(PangoData {
                         layout,

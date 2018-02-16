@@ -114,7 +114,10 @@ pub fn render_to_image(
     rtree: &tree::RenderTree,
     opt: &Options,
 ) -> Result<cairo::ImageSurface> {
-    let (surface, img_view) = create_surface(rtree.svg_node().size, opt)?;
+    let (surface, img_view) = create_surface(
+        rtree.svg_node().size.to_screen_size(),
+        opt,
+    )?;
 
     let cr = cairo::Context::new(&surface);
 
@@ -142,7 +145,7 @@ pub fn render_node_to_image(
         return Err(ErrorKind::NoCanvas.into());
     };
 
-    let (surface, img_view) = create_surface(node_bbox.size, opt)?;
+    let (surface, img_view) = create_surface(node_bbox.to_screen_size(), opt)?;
 
     let cr = cairo::Context::new(&surface);
 
@@ -153,7 +156,7 @@ pub fn render_node_to_image(
     }
 
     apply_viewbox_transform(node_bbox, img_view, &cr);
-    render_node_to_canvas(rtree, node, opt, img_view.size, &cr);
+    render_node_to_canvas(rtree, node, opt, img_view.to_screen_size(), &cr);
 
     Ok(surface)
 }
@@ -166,7 +169,7 @@ pub fn render_to_canvas(
     cr: &cairo::Context,
 ) {
     apply_viewbox_transform(rtree.svg_node().view_box, img_view, cr);
-    render_group(rtree, rtree.root(), opt, img_view.size, &cr);
+    render_group(rtree, rtree.root(), opt, img_view.to_screen_size(), &cr);
 }
 
 /// Renders SVG node to canvas.
@@ -174,7 +177,7 @@ pub fn render_node_to_canvas(
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
     opt: &Options,
-    img_size: Size,
+    img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
     let curr_ts = cr.get_matrix();
@@ -187,7 +190,7 @@ pub fn render_node_to_canvas(
 }
 
 fn create_surface(
-    size: Size,
+    size: ScreenSize,
     opt: &Options,
 ) -> Result<(cairo::ImageSurface, Rect)> {
     let img_size = utils::fit_to(size, opt.fit_to);
@@ -207,7 +210,7 @@ fn create_surface(
         }
     };
 
-    let img_view = Rect::new(Point::new(0.0, 0.0), img_size);
+    let img_view = Rect::new(Point::new(0.0, 0.0), img_size.to_f64());
 
     Ok((surface, img_view))
 }
@@ -229,7 +232,7 @@ fn render_group(
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
     opt: &Options,
-    img_size: Size,
+    img_size: ScreenSize,
     cr: &cairo::Context,
 ) -> Rect {
     let curr_ts = cr.get_matrix();
@@ -241,7 +244,7 @@ fn render_group(
         let bbox = render_node(rtree, node, opt, img_size, cr);
 
         if let Some(bbox) = bbox {
-            g_bbox.expand_from_rect(bbox);
+            g_bbox.expand(bbox);
         }
 
         cr.set_matrix(curr_ts);
@@ -255,7 +258,7 @@ fn render_group_impl(
     node: tree::NodeRef,
     g: &tree::Group,
     opt: &Options,
-    img_size: Size,
+    img_size: ScreenSize,
     cr: &cairo::Context,
 ) -> Option<Rect> {
     let sub_surface = cairo::ImageSurface::create(
@@ -304,7 +307,7 @@ fn render_node(
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
     opt: &Options,
-    img_size: Size,
+    img_size: ScreenSize,
     cr: &cairo::Context,
 ) -> Option<Rect> {
     match *node.value() {
@@ -334,7 +337,10 @@ pub fn calc_node_bbox(
 ) -> Option<Rect> {
     // We can't use 1x1 image, like in Qt backend because otherwise
     // text layouts will be truncated.
-    let (surface, img_view) = create_surface(rtree.svg_node().size, opt).unwrap();
+    let (surface, img_view) = create_surface(
+        rtree.svg_node().size.to_screen_size(),
+        opt,
+    ).unwrap();
     let cr = cairo::Context::new(&surface);
 
     // We also have to apply the viewbox transform,
@@ -374,7 +380,7 @@ fn _calc_node_bbox(
 
                 if !segments.is_empty() {
                     let c_bbox = utils::path_bbox(&segments, &tspan.stroke, &t);
-                    bbox.expand_from_rect(c_bbox);
+                    bbox.expand(c_bbox);
                 }
             });
 
@@ -389,7 +395,7 @@ fn _calc_node_bbox(
 
             for child in node.children() {
                 if let Some(c_bbox) = _calc_node_bbox(rtree, child, opt, ts2, cr) {
-                    bbox.expand_from_rect(c_bbox);
+                    bbox.expand(c_bbox);
                 }
             }
 

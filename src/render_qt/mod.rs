@@ -101,7 +101,7 @@ pub fn render_to_image(
     rtree: &tree::RenderTree,
     opt: &Options,
 ) -> Result<qt::Image> {
-    let (img, img_view) = create_image(rtree.svg_node().size, opt)?;
+    let (img, img_view) = create_image(rtree.svg_node().size.to_screen_size(), opt)?;
 
     let painter = qt::Painter::new(&img);
     render_to_canvas(rtree, opt, img_view, &painter);
@@ -123,7 +123,7 @@ pub fn render_node_to_image(
         return Err(ErrorKind::NoCanvas.into());
     };
 
-    let (img, img_view) = create_image(node_bbox.size, opt)?;
+    let (img, img_view) = create_image(node_bbox.size.to_screen_size(), opt)?;
 
     let painter = qt::Painter::new(&img);
     apply_viewbox_transform(node_bbox, img_view, &painter);
@@ -134,7 +134,7 @@ pub fn render_node_to_image(
 }
 
 fn create_image(
-    size: Size,
+    size: ScreenSize,
     opt: &Options,
 ) -> Result<(qt::Image, Rect)> {
     let img_size = utils::fit_to(size, opt.fit_to);
@@ -158,7 +158,7 @@ fn create_image(
     }
     img.set_dpi(opt.dpi);
 
-    let img_view = Rect::new(Point::new(0.0, 0.0), img_size);
+    let img_view = Rect::new(Point::new(0.0, 0.0), img_size.to_f64());
 
     Ok((img, img_view))
 }
@@ -171,7 +171,7 @@ pub fn render_to_canvas(
     painter: &qt::Painter,
 ) {
     apply_viewbox_transform(rtree.svg_node().view_box, img_view, painter);
-    render_group(rtree, rtree.root(), opt, img_view.size, &painter);
+    render_group(rtree, rtree.root(), opt, img_view.to_screen_size(), &painter);
 }
 
 /// Renders SVG node to canvas.
@@ -187,7 +187,7 @@ pub fn render_node_to_canvas(
     ts.append(&node.transform());
 
     painter.apply_transform(&ts.to_native());
-    render_node(rtree, node, opt, img_view.size, painter);
+    render_node(rtree, node, opt, img_view.to_screen_size(), painter);
     painter.set_transform(&curr_ts);
 }
 
@@ -210,7 +210,7 @@ fn render_group(
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
     opt: &Options,
-    img_size: Size,
+    img_size: ScreenSize,
     p: &qt::Painter,
 ) -> Rect {
     let curr_ts = p.get_transform();
@@ -223,7 +223,7 @@ fn render_group(
         let bbox = render_node(rtree, node, opt, img_size, p);
 
         if let Some(bbox) = bbox {
-            g_bbox.expand_from_rect(bbox);
+            g_bbox.expand(bbox);
         }
 
         // Revert transform.
@@ -238,7 +238,7 @@ fn render_group_impl(
     node: tree::NodeRef,
     g: &tree::Group,
     opt: &Options,
-    img_size: Size,
+    img_size: ScreenSize,
     p: &qt::Painter,
 ) -> Option<Rect> {
     let sub_img = qt::Image::new(
@@ -289,7 +289,7 @@ fn render_node(
     rtree: &tree::RenderTree,
     node: tree::NodeRef,
     opt: &Options,
-    img_size: Size,
+    img_size: ScreenSize,
     p: &qt::Painter,
 ) -> Option<Rect> {
     match *node.value() {
@@ -348,7 +348,7 @@ fn _calc_node_bbox(
                 if !segments.is_empty() {
                     let c_bbox = utils::path_bbox(&segments, &tspan.stroke, &ts2);
 
-                    bbox.expand_from_rect(c_bbox);
+                    bbox.expand(c_bbox);
                 }
             });
 
@@ -363,7 +363,7 @@ fn _calc_node_bbox(
 
             for child in node.children() {
                 if let Some(c_bbox) = _calc_node_bbox(child, ts2, p) {
-                    bbox.expand_from_rect(c_bbox);
+                    bbox.expand(c_bbox);
                 }
             }
 

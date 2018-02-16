@@ -80,8 +80,23 @@ pub type Point = euclid::Point2D<f64>;
 /// Alias for euclid::Size2D<f64>.
 pub type Size = euclid::Size2D<f64>;
 
+/// Alias for euclid::Size2D<u32>.
+pub type ScreenSize = euclid::Size2D<u32>;
+
 /// Alias for euclid::Rect<f64>.
 pub type Rect = euclid::Rect<f64>;
+
+/// Additional `Size` methods.
+pub trait SizeExt {
+    /// Converts `Size` to `ScreenSize`.
+    fn to_screen_size(&self) -> ScreenSize;
+}
+
+impl SizeExt for Size {
+    fn to_screen_size(&self) -> ScreenSize {
+        ScreenSize::new(self.width as u32, self.height as u32)
+    }
+}
 
 /// Additional `Rect` methods.
 pub trait RectExt {
@@ -101,18 +116,18 @@ pub trait RectExt {
     fn height(&self) -> f64;
 
     /// Expands the `Rect` to the specified size.
-    fn expand(&mut self, x: f64, y: f64, w: f64, h: f64);
-
-    /// Expands the `Rect` to the specified size.
-    fn expand_from_rect(&mut self, r: Rect);
+    fn expand(&mut self, r: Rect);
 
     /// Returns transformed rect.
     fn transform(&self, ts: tree::Transform) -> Self;
+
+    /// Returns rect's size in screen units.
+    fn to_screen_size(&self) -> ScreenSize;
 }
 
 impl RectExt for Rect {
     fn from_xywh(x: f64, y: f64, w: f64, h: f64) -> Self {
-        Rect::new(Point::new(x, y), Size::new(w, h))
+        Self::new(Point::new(x, y), Size::new(w, h))
     }
 
     fn x(&self) -> f64 {
@@ -131,30 +146,30 @@ impl RectExt for Rect {
         self.size.height
     }
 
-    fn expand(&mut self, x: f64, y: f64, w: f64, h: f64) {
-        if w <= 0.0 || h <= 0.0 {
+    fn expand(&mut self, r: Rect) {
+        if r.width() <= 0.0 || r.height() <= 0.0 {
             return;
         }
 
-        self.origin.x = f64_min(self.x(), x);
-        self.origin.y = f64_min(self.y(), y);
+        self.origin.x = f64_min(self.x(), r.x());
+        self.origin.y = f64_min(self.y(), r.y());
 
-        if self.x() + self.width() < x + w {
-            self.size.width = x + w - self.x();
+        if self.x() + self.width() < r.x() + r.width() {
+            self.size.width = r.x() + r.width() - self.x();
         }
 
-        if self.y() + self.height() < y + h {
-            self.size.height = y + h - self.y();
+        if self.y() + self.height() < r.y() + r.height() {
+            self.size.height = r.y() + r.height() - self.y();
         }
-    }
-
-    fn expand_from_rect(&mut self, r: Rect) {
-        self.expand(r.x(), r.y(), r.width(), r.height());
     }
 
     fn transform(&self, ts: tree::Transform) -> Self {
         let (x, y) = ts.apply(self.x(), self.y());
         let (w, h) = ts.apply(self.width(), self.height());
         Self::from_xywh(x, y, w, h)
+    }
+
+    fn to_screen_size(&self) -> ScreenSize {
+        self.size.to_screen_size()
     }
 }

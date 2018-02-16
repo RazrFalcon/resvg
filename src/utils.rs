@@ -15,21 +15,23 @@ use {
 
 
 /// Returns `size` preprocessed according to `FitTo`.
-pub fn fit_to(size: Size, fit: FitTo) -> Size {
+pub fn fit_to(size: ScreenSize, fit: FitTo) -> ScreenSize {
+    let sizef = size.to_f64();
+
     match fit {
         FitTo::Original => {
             size
         }
         FitTo::Width(w) => {
-            let h = (w as f64 * size.height / size.width).ceil();
-            Size::new(w as f64, h)
+            let h = (w as f64 * sizef.height / sizef.width).ceil();
+            ScreenSize::new(w, h as u32)
         }
         FitTo::Height(h) => {
-            let w = (h as f64 * size.width / size.height).ceil();
-            Size::new(w, h as f64)
+            let w = (h as f64 * sizef.width / sizef.height).ceil();
+            ScreenSize::new(w as u32, h)
         }
         FitTo::Zoom(z) => {
-            Size::new(size.width * z as f64, size.height * z as f64)
+            Size::new(sizef.width * z as f64, sizef.height * z as f64).to_screen_size()
         }
     }
 }

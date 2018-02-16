@@ -57,8 +57,8 @@ pub fn draw_tspan<DrawAt>(
                     chunk_width += tspan_width;
                     tspan_w_list.push(tspan_width);
 
-                    bbox.expand(chunk.x, chunk.y - font_metrics.ascent(),
-                                chunk_width, font_metrics.height());
+                    bbox.expand(Rect::from_xywh(chunk.x, chunk.y - font_metrics.ascent(),
+                                                chunk_width, font_metrics.height()));
                 }
             }
 

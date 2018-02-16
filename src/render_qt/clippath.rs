@@ -10,10 +10,7 @@ use tree::{
     self,
     NodeExt,
 };
-use math::{
-    Size,
-    Rect,
-};
+use math::*;
 use traits::{
     ConvTransform,
     TransformFromBBox,
@@ -33,7 +30,7 @@ pub fn apply(
     cp: &tree::ClipPath,
     opt: &Options,
     bbox: Rect,
-    img_size: Size,
+    img_size: ScreenSize,
     p: &qt::Painter,
 ) {
     let mut clip_img = qt::Image::new(

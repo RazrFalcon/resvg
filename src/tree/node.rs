@@ -81,7 +81,7 @@ impl NodeKind {
 pub struct Svg {
     /// Image size.
     ///
-    /// Size of an image that should be created to fit the S
+    /// Size of an image that should be created to fit the SVG.
     pub size: Size,
     /// SVG viewbox.
     ///
