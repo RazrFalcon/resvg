@@ -42,9 +42,9 @@ error_chain! {
             display("invalid SVG size")
         }
 
-        /// An invalid `viewBox` attribute content.
-        InvalidViewBox(s: String) {
-            display("invalid 'viewBox' attribute value: '{}'", s)
+        /// `viewBox` attribute must be resolved.
+        MissingViewBox {
+            display("'viewBox' was not resolved")
         }
 
         /// Failed to allocate an image.

@@ -9,8 +9,13 @@ license = "MPL-2.0"
 log = "0.4"
 fern = "0.5"
 derive-error = "0.0.4"
-svgdom = "0.10"
 time = "0.1"
+
+[dependencies.svgdom]
+# version = "0.10"
+git = "https://github.com/RazrFalcon/libsvgdom.git"
+branch = "devel"
+# path = "../svgdom"
 
 [dependencies.resvg]
 path = "../../"

@@ -9,6 +9,7 @@ use svgdom::{
     Length,
     Node,
     ValueId,
+    ViewBox,
 };
 
 // self
@@ -138,8 +139,8 @@ fn convert_font_size(svg: &Node, dpi: f64) {
 
 fn resolve_view_box(svg: &mut Node, dpi: f64) -> Rect {
     match svg.get_viewbox() {
-        Ok(vb) => vb,
-        Err(_) => {
+        Some(vb) => vb,
+        None => {
             debug_assert!(svg.has_attribute(AId::FontSize));
 
             let font_size = svg.attributes().get_number(AId::FontSize).unwrap();
@@ -151,7 +152,7 @@ fn resolve_view_box(svg: &mut Node, dpi: f64) -> Rect {
             let width = convert(width, font_size, dpi);
             let height = convert(height, font_size, dpi);
 
-            let vb = vec![0.0, 0.0, width, height];
+            let vb = ViewBox::new(0.0, 0.0, width, height);
             svg.set_attribute((AId::ViewBox, vb));
 
             Rect::from_xywh(0.0, 0.0, width, height)

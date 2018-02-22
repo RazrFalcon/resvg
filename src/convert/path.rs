@@ -47,7 +47,7 @@ pub(super) fn convert(
 }
 
 fn convert_path(mut path: Path) -> Vec<tree::PathSegment> {
-    let mut new_path = Vec::with_capacity(path.d.len());
+    let mut new_path = Vec::with_capacity(path.len());
 
     path.conv_to_absolute();
 
@@ -63,7 +63,7 @@ fn convert_path(mut path: Path) -> Vec<tree::PathSegment> {
     let mut ptx = None;
     let mut pty = None;
 
-    for seg in path.d.iter() {
+    for seg in path.iter() {
         match *seg.data() {
             SegmentData::MoveTo { x, y } => {
                 new_path.push(tree::PathSegment::MoveTo { x, y });

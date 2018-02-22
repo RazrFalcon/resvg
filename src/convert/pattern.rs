@@ -40,7 +40,7 @@ pub fn convert(
         content_units: super::convert_element_units(&attrs, AId::PatternContentUnits),
         transform: attrs.get_transform(AId::PatternTransform).unwrap_or_default(),
         rect,
-        view_box: node.get_viewbox().ok(),
+        view_box: node.get_viewbox(),
     }));
 
     super::convert_nodes(node, opt, patt_node, rtree);

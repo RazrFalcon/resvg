@@ -28,7 +28,7 @@ pub fn resolve_svg_size(svg: &mut Node) -> bool {
     let width = get_length(&svg, AId::Width);
     let height = get_length(&svg, AId::Height);
 
-    let view_box = svg.get_viewbox().ok();
+    let view_box = svg.get_viewbox();
 
     if (width.unit == Unit::Percent || height.unit == Unit::Percent) && view_box.is_none() {
         // TODO: it this case we should detect the bounding box of all elements,

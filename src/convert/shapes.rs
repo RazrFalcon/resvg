@@ -85,6 +85,8 @@ fn convert_rect(node: &svgdom::Node) -> Option<path::Path> {
     };
 
     // Clamp rx/ry to the half of the width/height.
+    //
+    // Should be done only after resolving.
     if rx > width  / 2.0 { rx = width  / 2.0; }
     if ry > height / 2.0 { ry = height / 2.0; }
 
@@ -139,7 +141,7 @@ fn convert_polyline(node: &svgdom::Node) -> Option<path::Path> {
 
 fn convert_polygon(node: &svgdom::Node) -> Option<path::Path> {
     if let Some(mut path) = points_to_path(node, "Polygon") {
-        path.d.push(path::Segment::new_close_path());
+        path.push(path::Segment::new_close_path());
         Some(path)
     } else {
         None
@@ -149,33 +151,28 @@ fn convert_polygon(node: &svgdom::Node) -> Option<path::Path> {
 /// Tested by:
 /// - shapes-polygon-1000-t.svg
 fn points_to_path(node: &svgdom::Node, eid: &str) -> Option<path::Path> {
-    let mut path = path::Path::new();
-
     let attrs = node.attributes();
-    let points = if let Some(p) = attrs.get_number_list(AId::Points) {
+    let points = if let Some(p) = attrs.get_points(AId::Points) {
         p
     } else {
         warn!("{} '{}' has an invalid 'points' value. Skipped.", eid, node.id());
         return None;
     };
 
-    // 'polyline' and 'polygon' elements must contain at least 4 coordinates.
-    if points.len() < 4 {
-        warn!("{} '{}' has less than 4 points. Skipped.", eid, node.id());
+    // 'polyline' and 'polygon' elements must contain at least 2 points.
+    if points.len() < 2 {
+        warn!("{} '{}' has less than 2 points. Skipped.", eid, node.id());
         return None;
     }
 
-    let len = points.len() - points.len() % 2;
-    let mut i = 0;
-    while i < len {
+    let mut path = path::Path::new();
+    for (i, &(x, y)) in points.iter().enumerate() {
         let seg = if i == 0 {
-            path::Segment::new_move_to(points[i], points[i+1])
+            path::Segment::new_move_to(x, y)
         } else {
-            path::Segment::new_line_to(points[i], points[i+1])
+            path::Segment::new_line_to(x, y)
         };
-        path.d.push(seg);
-
-        i += 2;
+        path.push(seg);
     }
 
     Some(path)

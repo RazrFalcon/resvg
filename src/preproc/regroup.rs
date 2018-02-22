@@ -42,7 +42,6 @@ pub fn regroup_elements(doc: &mut Document, parent: &Node) {
             continue;
         }
 
-        // TODO: check only for defs after we implement ref elems groupping
         // Do not group elements inside the clipPath.
         if node.parents_with_self().any(|n| n.is_tag_name(EId::ClipPath)) {
             continue;

@@ -86,6 +86,7 @@ pub struct Svg {
     /// SVG viewbox.
     ///
     /// Specifies which part of the SVG image should be rendered.
+    // TODO: maybe to Rect<i32>
     pub view_box: Rect,
 }
 

@@ -15,8 +15,10 @@ use svgdom::{
     LengthList,
     Node,
     NumberList,
+    Points,
     Transform,
     ValueId,
+    ViewBox,
 };
 
 // self
@@ -27,27 +29,17 @@ use short::{
 };
 use math::*;
 use tree;
-use {
-    ErrorKind,
-    Result,
-};
 
 
 pub trait GetViewBox {
-    fn get_viewbox(&self) -> Result<Rect>;
+    fn get_viewbox(&self) -> Option<Rect>;
 }
 
 impl GetViewBox for Node {
-    fn get_viewbox(&self) -> Result<Rect> {
-        let attrs = self.attributes();
-        if let Some(list) = attrs.get_number_list(AId::ViewBox) {
-            if list.len() == 4 {
-                return Ok(Rect::from_xywh(list[0], list[1], list[2], list[3]))
-            }
-        }
-
-        Err(ErrorKind::InvalidViewBox(format!("{:?}",
-                self.attributes().get_value(AId::ViewBox))).into())
+    fn get_viewbox(&self) -> Option<Rect> {
+        self.attributes()
+            .get_type::<ViewBox>(AId::ViewBox)
+            .map(|vb| Rect::from_xywh(vb.x, vb.y, vb.w, vb.h))
     }
 }
 
@@ -104,6 +96,8 @@ impl_from_value!(path::Path, Path);
 impl_from_value!(String, String);
 impl_from_value!(Transform, Transform);
 impl_from_value!(ValueId, PredefValue);
+impl_from_value!(ViewBox, ViewBox);
+impl_from_value!(Points, Points);
 
 impl FromValue for AValue {
     fn get(v: &AValue) -> Option<&Self> {
@@ -140,6 +134,10 @@ pub trait GetValue {
     }
 
     fn get_path(&self, id: AId) -> Option<&path::Path> {
+        self.get_type(id)
+    }
+
+    fn get_points(&self, id: AId) -> Option<&Points> {
         self.get_type(id)
     }
 

@@ -224,7 +224,10 @@ fn get_img_size(svg: &svgdom::Node) -> Result<Size> {
 }
 
 fn get_view_box(svg: &svgdom::Node) -> Result<Rect> {
-    Ok(svg.get_viewbox()?.round())
+    match svg.get_viewbox() {
+        Some(vb) => Ok(vb),
+        None => Err(ErrorKind::MissingViewBox.into()),
+    }
 }
 
 fn convert_element_units(attrs: &svgdom::Attributes, aid: AId) -> tree::Units {

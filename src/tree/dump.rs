@@ -140,16 +140,16 @@ fn conv_elements(
                 for seg in &p.segments {
                     match *seg {
                         PathSegment::MoveTo { x, y } => {
-                            path.d.push(Segment::new_move_to(x, y));
+                            path.push(Segment::new_move_to(x, y));
                         }
                         PathSegment::LineTo { x, y } => {
-                            path.d.push(Segment::new_line_to(x, y));
+                            path.push(Segment::new_line_to(x, y));
                         }
                         PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                            path.d.push(Segment::new_curve_to(x1, y1, x2, y2, x, y));
+                            path.push(Segment::new_curve_to(x1, y1, x2, y2, x, y));
                         }
                         PathSegment::ClosePath => {
-                            path.d.push(Segment::new_close_path());
+                            path.push(Segment::new_close_path());
                         }
                     }
                 }
@@ -269,9 +269,12 @@ fn conv_viewbox(
     view_box: Rect,
     node: &mut svgdom::Node,
 ) {
-    let view_box = format!("{} {} {} {}", view_box.x(), view_box.y(),
-                                          view_box.width(), view_box.height());
-    node.set_attribute((AId::ViewBox, view_box));
+    let vb = svgdom::ViewBox::new(
+        view_box.x(), view_box.y(),
+        view_box.width(), view_box.height(),
+    );
+
+    node.set_attribute((AId::ViewBox, vb));
 }
 
 fn conv_rect(
