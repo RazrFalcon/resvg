@@ -29,13 +29,13 @@ use clap::{
 };
 
 use resvg::{
-    tree,
     FitTo,
     Options,
     NodeExt,
     RectExt,
     Render,
 };
+use resvg::tree::prelude::*;
 
 use svgdom::{
     ChainedErrorExt,
@@ -125,7 +125,7 @@ fn process() -> Result<(), Error> {
     if let Some(ref out_png) = args.out_png {
         let img = if let Some(ref id) = args.export_id {
             if let Some(node) = rtree.root().descendants().find(|n| n.svg_id() == id) {
-                args.backend.render_node_to_image(&rtree, node, &opt)
+                args.backend.render_node_to_image(node, &opt)
             } else {
                 return Err(Error::InvalidId(id.clone()));
             }
@@ -186,7 +186,7 @@ fn query_all(
             (v * 1000.0).round() / 1000.0
         }
 
-        if let Some(bbox) = args.backend.calc_node_bbox(&rtree, node, &opt) {
+        if let Some(bbox) = args.backend.calc_node_bbox(node, &opt) {
             println!("{},{},{},{},{}", node.svg_id(),
                      round_len(bbox.x()), round_len(bbox.y()),
                      round_len(bbox.width()), round_len(bbox.height()));

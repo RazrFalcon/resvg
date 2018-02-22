@@ -6,7 +6,7 @@
 use svgdom;
 
 // self
-use tree;
+use tree::prelude::*;
 use short::{
     AId,
     EId,
@@ -23,7 +23,7 @@ pub fn convert_linear(
     let ref attrs = node.attributes();
     let transform = attrs.get_transform(AId::GradientTransform).unwrap_or_default();
 
-    let grad = rtree.append_defs(
+    let grad = rtree.append_to_defs(
         tree::NodeKind::LinearGradient(tree::LinearGradient {
             id: node.id().clone(),
             x1: attrs.get_number(AId::X1).unwrap_or(0.0),
@@ -48,7 +48,7 @@ pub fn convert_radial(
     let ref attrs = node.attributes();
     let transform = attrs.get_transform(AId::GradientTransform).unwrap_or_default();
 
-    let grad = rtree.append_defs(
+    let grad = rtree.append_to_defs(
         tree::NodeKind::RadialGradient(tree::RadialGradient {
             id: node.id().clone(),
             cx: attrs.get_number(AId::Cx).unwrap_or(0.5),

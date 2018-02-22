@@ -97,7 +97,6 @@ pub trait Render {
     /// Renders SVG node to image.
     fn render_node_to_image(
         &self,
-        rtree: &tree::RenderTree,
         node: tree::NodeRef,
         opt: &Options,
     ) -> Result<Box<OutputImage>>;
@@ -107,7 +106,6 @@ pub trait Render {
     /// Note: this method can be pretty expensive.
     fn calc_node_bbox(
         &self,
-        rtree: &tree::RenderTree,
         node: tree::NodeRef,
         opt: &Options,
     ) -> Option<Rect>;

@@ -18,7 +18,6 @@ use {
 };
 
 pub fn apply(
-    rtree: &tree::RenderTree,
     pattern_node: tree::NodeRef,
     pattern: &tree::Pattern,
     opt: &Options,
@@ -61,7 +60,7 @@ pub fn apply(
         p.apply_transform(&qt::Transform::from_bbox(bbox));
     }
 
-    super::render_group(rtree, pattern_node, opt, img_size, &p);
+    super::render_group(pattern_node, opt, img_size, &p);
     p.end();
 
     brush.set_pattern(img);

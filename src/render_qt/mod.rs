@@ -10,10 +10,7 @@ use std::f64;
 use qt;
 
 // self
-use tree::{
-    self,
-    NodeExt,
-};
+use tree::prelude::*;
 use math::*;
 use traits::{
     ConvTransform,
@@ -71,17 +68,15 @@ impl Render for Backend {
 
     fn render_node_to_image(
         &self,
-        rtree: &tree::RenderTree,
         node: tree::NodeRef,
         opt: &Options,
     ) -> Result<Box<OutputImage>> {
-        let img = render_node_to_image(rtree, node, opt)?;
+        let img = render_node_to_image(node, opt)?;
         Ok(Box::new(img))
     }
 
     fn calc_node_bbox(
         &self,
-        _: &tree::RenderTree,
         node: tree::NodeRef,
         opt: &Options,
     ) -> Option<Rect> {
@@ -112,7 +107,6 @@ pub fn render_to_image(
 
 /// Renders SVG node to image.
 pub fn render_node_to_image(
-    rtree: &tree::RenderTree,
     node: tree::NodeRef,
     opt: &Options,
 ) -> Result<qt::Image> {
@@ -127,7 +121,7 @@ pub fn render_node_to_image(
 
     let painter = qt::Painter::new(&img);
     apply_viewbox_transform(node_bbox, img_view, &painter);
-    render_node_to_canvas(rtree, node, opt, img_view, &painter);
+    render_node_to_canvas(node, opt, img_view, &painter);
     painter.end();
 
     Ok(img)
@@ -171,12 +165,11 @@ pub fn render_to_canvas(
     painter: &qt::Painter,
 ) {
     apply_viewbox_transform(rtree.svg_node().view_box, img_view, painter);
-    render_group(rtree, rtree.root(), opt, img_view.to_screen_size(), &painter);
+    render_group(rtree.root(), opt, img_view.to_screen_size(), &painter);
 }
 
 /// Renders SVG node to canvas.
 pub fn render_node_to_canvas(
-    rtree: &tree::RenderTree,
     node: tree::NodeRef,
     opt: &Options,
     img_view: Rect,
@@ -187,7 +180,7 @@ pub fn render_node_to_canvas(
     ts.append(&node.transform());
 
     painter.apply_transform(&ts.to_native());
-    render_node(rtree, node, opt, img_view.to_screen_size(), painter);
+    render_node(node, opt, img_view.to_screen_size(), painter);
     painter.set_transform(&curr_ts);
 }
 
@@ -207,7 +200,6 @@ pub fn apply_viewbox_transform(
 // TODO: render groups backward to reduce memory usage
 //       current implementation keeps parent canvas until all children are rendered
 fn render_group(
-    rtree: &tree::RenderTree,
     node: tree::NodeRef,
     opt: &Options,
     img_size: ScreenSize,
@@ -220,7 +212,7 @@ fn render_group(
         // Apply transform.
         p.apply_transform(&node.transform().to_native());
 
-        let bbox = render_node(rtree, node, opt, img_size, p);
+        let bbox = render_node(node, opt, img_size, p);
 
         if let Some(bbox) = bbox {
             g_bbox.expand(bbox);
@@ -234,7 +226,6 @@ fn render_group(
 }
 
 fn render_group_impl(
-    rtree: &tree::RenderTree,
     node: tree::NodeRef,
     g: &tree::Group,
     opt: &Options,
@@ -259,12 +250,12 @@ fn render_group_impl(
 
     let sub_p = qt::Painter::new(&sub_img);
     sub_p.set_transform(&p.get_transform());
-    let bbox = render_group(rtree, node, opt, img_size, &sub_p);
+    let bbox = render_group(node, opt, img_size, &sub_p);
 
     if let Some(idx) = g.clip_path {
-        let clip_node = rtree.defs_at(idx);
+        let clip_node = node.tree().defs_at(idx);
         if let tree::NodeKind::ClipPath(ref cp) = *clip_node.value() {
-            clippath::apply(rtree, clip_node, cp, opt, bbox, img_size, &sub_p);
+            clippath::apply(clip_node, cp, opt, bbox, img_size, &sub_p);
         }
     }
 
@@ -286,7 +277,6 @@ fn render_group_impl(
 }
 
 fn render_node(
-    rtree: &tree::RenderTree,
     node: tree::NodeRef,
     opt: &Options,
     img_size: ScreenSize,
@@ -294,16 +284,16 @@ fn render_node(
 ) -> Option<Rect> {
     match *node.value() {
         tree::NodeKind::Path(ref path) => {
-            Some(path::draw(rtree, path, opt, p))
+            Some(path::draw(node.tree(), path, opt, p))
         }
         tree::NodeKind::Text(_) => {
-            Some(text::draw(rtree, node, opt, p))
+            Some(text::draw(node, opt, p))
         }
         tree::NodeKind::Image(ref img) => {
             Some(image::draw(img, p))
         }
         tree::NodeKind::Group(ref g) => {
-            render_group_impl(rtree, node, g, opt, img_size, p)
+            render_group_impl(node, g, opt, img_size, p)
         }
         _ => None,
     }

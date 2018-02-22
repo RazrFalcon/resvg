@@ -9,7 +9,7 @@ use svgdom::{
 };
 
 // self
-use tree;
+use tree::prelude::*;
 use short::{
     AId,
     AValue,
@@ -58,7 +58,7 @@ pub fn convert_doc(
         view_box: get_view_box(&svg)?,
     };
 
-    let mut rtree = tree::RenderTree::new(svg_kind);
+    let mut rtree = tree::RenderTree::create(svg_kind);
 
     convert_ref_nodes(svg_doc, opt, &mut rtree);
     convert_nodes(&svg, opt, rtree.root().id(), &mut rtree);

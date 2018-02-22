@@ -10,7 +10,7 @@ use svgdom;
 use lyon_geom;
 
 // self
-use tree;
+use tree::prelude::*;
 use short::{
     AId,
 };

@@ -6,7 +6,7 @@
 use svgdom;
 
 // self
-use tree;
+use tree::prelude::*;
 use short::{
     AId,
     EId,
@@ -27,7 +27,7 @@ pub fn convert(
 ) {
     let attrs = node.attributes();
 
-    let clip_node = rtree.append_defs(
+    let clip_node = rtree.append_to_defs(
         tree::NodeKind::ClipPath(tree::ClipPath {
             id: node.id().clone(),
             units: super::convert_element_units(&attrs, AId::ClipPathUnits),

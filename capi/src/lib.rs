@@ -28,6 +28,7 @@ use resvg::qt;
 use resvg::cairo;
 
 use resvg::RectExt;
+use resvg::tree::prelude::*;
 
 #[repr(C)]
 pub struct Rect {

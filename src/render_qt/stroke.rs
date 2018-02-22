@@ -6,7 +6,7 @@
 use qt;
 
 // self
-use tree;
+use tree::prelude::*;
 use math::{
     self,
     Rect,
@@ -49,7 +49,7 @@ pub fn apply(
                         }
                         tree::NodeKind::Pattern(ref pattern) => {
                             let ts = p.get_transform();
-                            pattern::apply(rtree, node, pattern, opt, ts, bbox, &mut brush);
+                            pattern::apply(node, pattern, opt, ts, bbox, &mut brush);
                         }
                         _ => {}
                     }

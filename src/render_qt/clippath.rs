@@ -25,7 +25,6 @@ use {
 
 
 pub fn apply(
-    rtree: &tree::RenderTree,
     node: tree::NodeRef,
     cp: &tree::ClipPath,
     opt: &Options,
@@ -57,10 +56,10 @@ pub fn apply(
 
         match *node.value() {
             tree::NodeKind::Path(ref path_node) => {
-                path::draw(rtree, path_node, opt, &clip_p);
+                path::draw(node.tree(), path_node, opt, &clip_p);
             }
             tree::NodeKind::Text(_) => {
-                text::draw(rtree, node, opt, &clip_p);
+                text::draw(node, opt, &clip_p);
             }
             _ => {}
         }

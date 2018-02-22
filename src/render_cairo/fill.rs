@@ -6,7 +6,10 @@
 use cairo;
 
 // self
-use tree;
+use tree::{
+    self,
+    TreeExt,
+};
 use math;
 use super::{
     gradient,
@@ -41,7 +44,7 @@ pub fn apply(
                             gradient::prepare_radial(node, rg, fill.opacity, bbox, cr);
                         }
                         tree::NodeKind::Pattern(ref pattern) => {
-                            pattern::apply(rtree, node, pattern, opt, bbox, cr);
+                            pattern::apply(node, pattern, opt, bbox, cr);
                         }
                         _ => {}
                     }

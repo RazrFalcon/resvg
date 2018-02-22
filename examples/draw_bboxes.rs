@@ -4,11 +4,10 @@ use std::env;
 use std::path::Path;
 
 use resvg::{
-    tree,
     utils,
     Options,
-    NodeExt,
 };
+use resvg::tree::prelude::*;
 
 // TODO: write doc
 
@@ -42,7 +41,7 @@ fn main() {
     let mut bboxes = Vec::new();
     for node in rtree.root().descendants() {
         if !rtree.is_in_defs(node) {
-            if let Some(bbox) = backend.calc_node_bbox(&rtree, node, &opt) {
+            if let Some(bbox) = backend.calc_node_bbox(node, &opt) {
                 bboxes.push(bbox);
             }
         }

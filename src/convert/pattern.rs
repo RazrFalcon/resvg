@@ -9,7 +9,7 @@ use svgdom::{
 };
 
 // self
-use tree;
+use tree::prelude::*;
 use short::{
     AId,
 };
@@ -34,7 +34,7 @@ pub fn convert(
     debug_assert!(!rect.width().is_fuzzy_zero());
     debug_assert!(!rect.height().is_fuzzy_zero());
 
-    let patt_node = rtree.append_defs(tree::NodeKind::Pattern(tree::Pattern {
+    let patt_node = rtree.append_to_defs(tree::NodeKind::Pattern(tree::Pattern {
         id: node.id().clone(),
         units: super::convert_element_units(&attrs, AId::PatternUnits),
         content_units: super::convert_element_units(&attrs, AId::PatternContentUnits),

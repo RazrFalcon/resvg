@@ -20,7 +20,8 @@ libflate = "0.1"
 # lyon_geom = "0.9"
 lyon_geom = { git = "https://github.com/nical/lyon.git" }
 euclid = "0.17"
-ego-tree = "0.2"
+# ego-tree = "0.2"
+ego-tree = { git = "https://github.com/programble/ego-tree" }
 
 [dependencies.error-chain]
 version = "0.11"
