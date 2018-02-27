@@ -65,14 +65,19 @@ fn get_href_data(
     href: &str,
     path: Option<&path::PathBuf>,
 ) -> Option<tree::ImageData> {
-    if href.starts_with("data:image") {
+    if href.starts_with("data:image/") {
         if let Some(idx) = href.find(',') {
-            let kind = if href[..idx].contains("image/jpg") {
-                tree::ImageDataKind::JPEG
-            } else if href[..idx].contains("image/png") {
-                tree::ImageDataKind::PNG
-            } else {
-                return None;
+            let start_idx = 11; // data:image/
+            let kind = match &href[start_idx..idx] {
+                "jpg;base64" | "jpeg;base64" => {
+                    tree::ImageDataKind::JPEG
+                }
+                "png;base64" => {
+                    tree::ImageDataKind::PNG
+                }
+                _ => {
+                    return None;
+                }
             };
 
             let base_data = &href[(idx + 1)..];
