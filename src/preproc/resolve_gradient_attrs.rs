@@ -79,6 +79,17 @@ pub fn resolve_radial_gradient_attributes(doc: &Document) {
         check_attr(node, AId::Cy, Some(AValue::from(0.5)));
         check_attr(node, AId::R,  Some(AValue::from(0.5)));
 
+        // Replace negative `r` with zero
+        // otherwise `fx` and `fy` may became NaN.
+        //
+        // Note: negative `r` is an error and UB, so we can resolve it
+        // in whatever way we want.
+        // By replacing it with zero we will get the same behavior as on Chrome.
+        let r = node.attributes().get_number(AId::R).unwrap();
+        if r < 0.0 {
+            node.set_attribute((AId::R, 0.0));
+        }
+
         let cx = node.attributes().get_value(AId::Cx).cloned();
         let cy = node.attributes().get_value(AId::Cy).cloned();
         check_attr(node, AId::Fx, cx);
