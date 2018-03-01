@@ -47,4 +47,3 @@ pub fn fix_gradient_stops(doc: &Document) {
         }
     }
 }
-

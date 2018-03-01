@@ -22,6 +22,7 @@ use traits::{
     GetValue,
 };
 
+// TODO: rename mod
 
 /// Resolve attributes of `linearGradient` elements.
 ///

@@ -15,6 +15,7 @@ use {
 
 mod conv_units;
 mod fix_gradient_stops;
+mod fix_xlinks;
 mod group_defs;
 mod prepare_clip_path;
 mod prepare_text_decoration;
@@ -43,6 +44,7 @@ mod ungroup_switch;
 
 use self::conv_units::convert_units;
 use self::fix_gradient_stops::fix_gradient_stops;
+use self::fix_xlinks::fix_xlinks;
 use self::group_defs::group_defs;
 use self::prepare_clip_path::prepare_clip_path;
 use self::prepare_text_decoration::prepare_text_decoration;
@@ -100,6 +102,8 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) -> Result<()> {
     resolve_font_size(doc);
 
     convert_units(svg, opt);
+
+    fix_xlinks(doc);
 
     resolve_linear_gradient_attributes(doc);
     resolve_radial_gradient_attributes(doc);
