@@ -8,6 +8,7 @@ use std::f64;
 use svgdom::{
     Document,
     ElementType,
+    FuzzyEq,
     Node,
 };
 
@@ -31,7 +32,7 @@ pub fn fix_gradient_stops(doc: &Document) {
             offset = math::f64_bound(0.0, offset, 1.0);
 
             // Next offset must be smaller then previous.
-            if offset < prev_offset {
+            if offset < prev_offset || offset.fuzzy_eq(&prev_offset) {
                 if let Some(mut prev_stop) = prev_stop {
                     // Make previous offset a bit smaller.
                     let new_offset = prev_offset - f64::EPSILON;
