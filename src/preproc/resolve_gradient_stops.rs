@@ -34,6 +34,11 @@ pub fn resolve_gradient_stops(doc: &Document) {
 }
 
 fn resolve(gradient: &mut Node, linked_gradient: &Node) {
+    // We can resolve `stop` elements only from gradients.
+    if !linked_gradient.is_gradient() {
+        return;
+    }
+
     let av = linked_gradient.attributes().get_value(AId::XlinkHref).cloned();
     match av {
         Some(av) => {

@@ -146,33 +146,143 @@ fn gen_order(doc: &Document, eid: EId) -> Vec<Node> {
 
 fn check_attr(node: &mut Node, id: AId, def_value: Option<AValue>) {
     if !node.has_attribute(id) {
-        if let Some(v) = resolve_attribute(node, id, def_value) {
+        let eid = node.tag_id().unwrap();
+
+        let v = match eid {
+            EId::LinearGradient => resolve_lg_attr(node, id, def_value),
+            EId::RadialGradient => resolve_rg_attr(node, id, def_value),
+            EId::Pattern => resolve_patt_attr(node, id, def_value),
+            _ => None,
+        };
+
+        if let Some(v) = v {
             node.set_attribute((id, v));
         }
     }
 }
 
-fn resolve_attribute(node: &Node, id: AId, def_value: Option<AValue>) -> Option<AValue> {
-    if node.has_attribute(id) {
-        return node.attributes().get_value(id).cloned();
+fn resolve_lg_attr(
+    node: &Node,
+    aid: AId,
+    def_value: Option<AValue>,
+) -> Option<AValue> {
+    if node.has_attribute(aid) {
+        return node.attributes().get_value(aid).cloned();
     }
 
-    match node.attributes().get_value(AId::XlinkHref) {
-        Some(av) => {
-            match *av {
-                AValue::Link(ref ref_node) => resolve_attribute(ref_node, id, def_value),
-                _ => {
-                    warn!("'xlink:href' attribute should have Link value type.");
-                    None
-                }
-            }
-        }
-        None => {
-            match node.attributes().get_value(id) {
+    // Check for referenced element first.
+    let link = match node.attributes().get_value(AId::XlinkHref) {
+        Some(&AValue::Link(ref link)) => link.clone(),
+        _ => {
+            // Use current element.
+            return match node.attributes().get_value(aid) {
                 Some(v) => Some(v.clone()),
                 None => def_value,
-            }
+            };
         }
+    };
+
+    // If `link` is not an SVG element - return `def_value`.
+    let eid = match link.tag_id() {
+        Some(eid) => eid,
+        None => return def_value,
+    };
+
+    match (aid, eid) {
+        // Coordinates can be resolved only from
+        // ref element with the same type.
+          (AId::X1, EId::LinearGradient)
+        | (AId::Y1, EId::LinearGradient)
+        | (AId::X2, EId::LinearGradient)
+        | (AId::Y2, EId::LinearGradient)
+        // Other attributes can be resolved
+        // from any kind of gradient.
+        | (AId::GradientUnits, EId::LinearGradient)
+        | (AId::GradientUnits, EId::RadialGradient)
+        | (AId::SpreadMethod, EId::LinearGradient)
+        | (AId::SpreadMethod, EId::RadialGradient)
+        | (AId::GradientTransform, EId::LinearGradient)
+        | (AId::GradientTransform, EId::RadialGradient) => {
+            resolve_lg_attr(&link, aid, def_value)
+        }
+        _ => def_value
+    }
+}
+
+fn resolve_rg_attr(
+    node: &Node,
+    aid: AId,
+    def_value: Option<AValue>,
+) -> Option<AValue> {
+    if node.has_attribute(aid) {
+        return node.attributes().get_value(aid).cloned();
+    }
+
+    // Check for referenced element first.
+    let link = match node.attributes().get_value(AId::XlinkHref) {
+        Some(&AValue::Link(ref link)) => link.clone(),
+        _ => {
+            // Use current element.
+            return match node.attributes().get_value(aid) {
+                Some(v) => Some(v.clone()),
+                None => def_value,
+            };
+        }
+    };
+
+    // If `link` is not an SVG element - return `def_value`.
+    let eid = match link.tag_id() {
+        Some(eid) => eid,
+        None => return def_value,
+    };
+
+    match (aid, eid) {
+        // Coordinates can be resolved only from
+        // ref element with the same type.
+          (AId::Cx, EId::RadialGradient)
+        | (AId::Cy, EId::RadialGradient)
+        | (AId::R,  EId::RadialGradient)
+        | (AId::Fx, EId::RadialGradient)
+        | (AId::Fy, EId::RadialGradient)
+        // Other attributes can be resolved
+        // from any kind of gradient.
+        | (AId::GradientUnits, EId::LinearGradient)
+        | (AId::GradientUnits, EId::RadialGradient)
+        | (AId::SpreadMethod, EId::LinearGradient)
+        | (AId::SpreadMethod, EId::RadialGradient)
+        | (AId::GradientTransform, EId::LinearGradient)
+        | (AId::GradientTransform, EId::RadialGradient) => {
+            resolve_rg_attr(&link, aid, def_value)
+        }
+        _ => def_value
+    }
+}
+
+fn resolve_patt_attr(
+    node: &Node,
+    aid: AId,
+    def_value: Option<AValue>,
+) -> Option<AValue> {
+    if node.has_attribute(aid) {
+        return node.attributes().get_value(aid).cloned();
+    }
+
+    // Check for referenced element first.
+    let link = match node.attributes().get_value(AId::XlinkHref) {
+        Some(&AValue::Link(ref link)) => link.clone(),
+        _ => {
+            // Use current element.
+            return match node.attributes().get_value(aid) {
+                Some(v) => Some(v.clone()),
+                None => def_value,
+            };
+        }
+    };
+
+    // If `link` is not an SVG element - return `def_value`.
+    match link.tag_id() {
+        Some(EId::Pattern) => resolve_patt_attr(&link, aid, def_value),
+        _ => return def_value,
     }
 }
 
