@@ -32,6 +32,7 @@ mod resolve_svg_size;
 mod resolve_tref;
 mod resolve_use;
 mod resolve_visibility;
+mod rm_invalid_font_size;
 mod rm_invalid_gradients;
 mod rm_invalid_patterns;
 mod rm_invalid_ts;
@@ -61,6 +62,7 @@ use self::resolve_svg_size::resolve_svg_size;
 use self::resolve_tref::resolve_tref;
 use self::resolve_use::resolve_use;
 use self::resolve_visibility::resolve_visibility;
+use self::rm_invalid_font_size::remove_invalid_font_size;
 use self::rm_invalid_gradients::remove_invalid_gradients;
 use self::rm_invalid_patterns::remove_invalid_patterns;
 use self::rm_invalid_ts::remove_invalid_transform;
@@ -140,6 +142,7 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) -> Result<()> {
     regroup_elements(doc, svg);
 
     prepare_text_nodes(doc);
+    remove_invalid_font_size(doc);
 
     Ok(())
 }

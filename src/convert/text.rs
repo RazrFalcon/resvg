@@ -76,6 +76,8 @@ fn convert_chunks(
             let ty = y.unwrap_or(prev_y);
 
             if tx.fuzzy_ne(&prev_x) || ty.fuzzy_ne(&prev_y) {
+                debug_assert!(rtree.get(chunk_node).children().count() > 0);
+
                 chunk_node = rtree.append_child(
                     parent,
                     tree::NodeKind::TextChunk(tree::TextChunk {
@@ -101,6 +103,8 @@ fn convert_chunks(
             text,
         }));
     }
+
+    debug_assert!(rtree.get(chunk_node).children().count() > 0);
 }
 
 fn resolve_pos(
