@@ -10,12 +10,13 @@
 [static](http://www.w3.org/TR/SVG11/feature#SVG-static)
 [SVG Full 1.1](https://www.w3.org/TR/SVG/Overview.html) subset, excluding
 [fonts support](https://www.w3.org/TR/SVG11/feature#Font).
-In simple terms: no animations, scripting and fonts.
+In simple terms: no animations, scripting and embedded fonts.
 
-The core idea is to make a fast, portable, small, multiple backend library.
+The core idea is to make a fast, portable, small, multiple backend library
+designed for edge-cases.
 
-It can be used as a simple SVG to PNG converted.
-And as an embeddable library to paint SVG on an application native canvas.
+It can be used as a simple SVG to PNG converter
+and as an embeddable library to paint SVG on an application native canvas.
 
 ## Why a new library?
 
@@ -24,7 +25,7 @@ and [Inkscape] (only as a CLI SVG to PNG converter).
 
 One of the main difference from other rendering libraries is that *resvg* does a lot
 of preprocessing before rendering. It converts shapes to paths, resolves attributes,
-ungroups groups, removes invisible elements, fixes a lot of issues in malformed SVG files
+removes groups, removes invisible elements, fixes a lot of issues in malformed SVG files
 and only then starts the rendering. So it's very easy to implement a new rendering backend.
 
 More details [here](doc/svgdom.adoc).
@@ -37,19 +38,20 @@ rewritten in Rust, as *resvg*, the architecture of the library is completely dif
 - *librsvg*, currently, is heavily tied to [cairo] library, unlike *resvg*
 - *librsvg* is heavily tied to [GNOME] which makes it painful to distribute outside the Linux ecosystem
 - *librsvg* doesn't really preprocess input files, rendering them as is
-- *librsvg* has a minimal support of the edge cases, which leads to rendering errors
+- *librsvg* has a minimal support of the edge-cases, which leads to rendering errors
 
 ### resvg vs Inkscape
 
 Inkscape is often used to convert SVG to PNG, but it's not an actual competitor to *resvg*,
-because it's still a complete SVG editor, not a tiny library.
+because it's still a complete SVG editor, not a tiny library. 
+Also, it's very slow.
 But it has the best SVG support amongst other.
 
 ### resvg vs QtSvg
 
 Without a doubt, [QtSvg] is heavily used in [Qt] applications.
 But [QtSvg] itself is very limited. It officially supports only a tiny portion
-of the SVG Tiny 1.2 subset. In simple terms - it correctly renders only very simple SVG images.
+of the SVG Tiny 1.2 subset. In simple terms - it correctly renders only primitive SVG images.
 
 ## SVG support
 
@@ -68,11 +70,9 @@ It also includes alternative libraries.
 TL;DR
 
 - no `filter`
-- no `clipPath`
 - no `mask`
 - no `marker`
 - no `symbol`
-- no `pattern`
 
 ## Backends
 
