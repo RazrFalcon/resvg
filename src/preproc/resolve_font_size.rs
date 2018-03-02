@@ -59,7 +59,7 @@ pub fn _resolve_font_size(parent: &Node) {
                 }
             }
             AValue::PredefValue(id) => {
-                process_named_font_size(id, &font_size)
+                process_named_font_size(parent, id, &font_size)
             }
             _ => {
                 // Technically unreachable, because 'svgparser' should validate it.
@@ -100,7 +100,7 @@ fn process_percent_font_size(parent: &Node, len: Length) -> Length {
     }
 }
 
-fn process_named_font_size(id: ValueId, font_size: &AValue) -> Length {
+fn process_named_font_size(parent: &Node, id: ValueId, font_size: &AValue) -> Length {
     let factor = match id {
         ValueId::XxSmall => -3,
         ValueId::XSmall => -2,
@@ -118,8 +118,11 @@ fn process_named_font_size(id: ValueId, font_size: &AValue) -> Length {
         }
     };
 
+    let parent_len = parent.find_attribute(AId::FontSize)
+                           .unwrap_or(Length::new_number(DEFAULT_FONT_SIZE));
+
     // 'On a computer screen a scaling factor of 1.2
     // is suggested between adjacent indexes'
-    let n = DEFAULT_FONT_SIZE * 1.2f64.powi(factor);
+    let n = parent_len.num * 1.2f64.powi(factor);
     Length::new(n, Unit::None)
 }
