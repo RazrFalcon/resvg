@@ -76,16 +76,25 @@ fn convert_chunks(
             let ty = y.unwrap_or(prev_y);
 
             if tx.fuzzy_ne(&prev_x) || ty.fuzzy_ne(&prev_y) {
-                debug_assert!(rtree.get(chunk_node).children().count() > 0);
-
-                chunk_node = rtree.append_child(
-                    parent,
-                    tree::NodeKind::TextChunk(tree::TextChunk {
-                        x: tx,
-                        y: ty,
-                        anchor: conv_text_anchor(attrs),
-                    })
-                );
+                if rtree.get(chunk_node).children().count() > 0 {
+                    // Create new if current text chunk has children.
+                    chunk_node = rtree.append_child(
+                        parent,
+                        tree::NodeKind::TextChunk(tree::TextChunk {
+                            x: tx,
+                            y: ty,
+                            anchor: conv_text_anchor(attrs),
+                        })
+                    );
+                } else {
+                    // Update existing chunk.
+                    let mut v = rtree.get_mut(chunk_node);
+                    if let &mut tree::NodeKind::TextChunk(ref mut d) = v.value() {
+                        d.x = tx;
+                        d.y = ty;
+                        d.anchor = conv_text_anchor(attrs);
+                    }
+                }
             }
 
             prev_x = tx;
