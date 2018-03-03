@@ -19,6 +19,7 @@ mod node;
 /// Basic modules and traits for tree manipulation.
 pub mod prelude {
     pub use tree;
+    pub use tree::FuzzyEq;
     pub use super::NodeExt;
     pub use super::TreeExt;
 }

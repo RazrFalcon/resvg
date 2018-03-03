@@ -6,7 +6,7 @@
 use qt;
 
 // self
-use tree;
+use tree::prelude::*;
 use math::*;
 use traits::{
     ConvTransform,
@@ -23,6 +23,7 @@ pub fn apply(
     opt: &Options,
     global_ts: qt::Transform,
     bbox: Rect,
+    opacity: f64,
     brush: &mut qt::Brush,
 ) {
     let r = if pattern.units == tree::Units::ObjectBoundingBox {
@@ -62,6 +63,32 @@ pub fn apply(
 
     super::render_group(pattern_node, opt, img_size, &p);
     p.end();
+
+    let img = if opacity.fuzzy_ne(&1.0) {
+        // If `opacity` isn't `1` then we have to make image semitransparent.
+        // The only way to do this is by making a new image and rendering
+        // the pattern on it with transparency.
+
+        // TODO: to macro
+        let img2 = qt::Image::new(img_size.width as u32, img_size.height as u32);
+        let mut img2 = match img2 {
+            Some(img2) => img2,
+            None => {
+                warn!("Subimage creation failed.");
+                return;
+            }
+        };
+        img2.fill(0, 0, 0, 0);
+
+        let p2 = qt::Painter::new(&img2);
+        p2.set_opacity(opacity);
+        p2.draw_image(0.0, 0.0, &img);
+        p2.end();
+
+        img2
+    } else {
+        img
+    };
 
     brush.set_pattern(img);
 

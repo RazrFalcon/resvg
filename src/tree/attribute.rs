@@ -7,6 +7,7 @@ pub use svgdom::{
     Color,
     NumberList,
     Transform,
+    FuzzyEq,
 };
 
 // self

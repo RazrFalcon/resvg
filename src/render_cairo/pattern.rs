@@ -10,7 +10,7 @@ use cairo::{
 };
 
 // self
-use tree;
+use tree::prelude::*;
 use math::*;
 use traits::{
     ConvTransform,
@@ -26,6 +26,7 @@ pub fn apply(
     node: tree::NodeRef,
     pattern: &tree::Pattern,
     opt: &Options,
+    opacity: f64,
     bbox: Rect,
     cr: &cairo::Context,
 ) {
@@ -44,7 +45,6 @@ pub fn apply(
         img_size.width as i32,
         img_size.height as i32
     );
-
     let surface = match surface {
         Ok(surf) => surf,
         Err(_) => {
@@ -71,6 +71,35 @@ pub fn apply(
     ts.append(&pattern.transform);
     ts.translate(r.x(), r.y());
     ts.scale(1.0 / sx, 1.0 / sy);
+
+
+    let surface = if opacity.fuzzy_ne(&1.0) {
+        // If `opacity` isn't `1` then we have to make image semitransparent.
+        // The only way to do this is by making a new image and rendering
+        // the pattern on it with transparency.
+
+        let surface2 = cairo::ImageSurface::create(
+            cairo::Format::ARgb32,
+            img_size.width as i32,
+            img_size.height as i32
+        );
+        let surface2 = match surface2 {
+            Ok(surf) => surf,
+            Err(_) => {
+                warn!("Subsurface creation failed.");
+                return;
+            }
+        };
+
+        let sub_cr2 = cairo::Context::new(&surface2);
+        sub_cr2.set_source_surface(&surface, 0.0, 0.0);
+        sub_cr2.paint_with_alpha(opacity);
+
+        surface2
+    } else {
+        surface
+    };
+
 
     let patt = cairo::SurfacePattern::create(&surface);
     patt.set_extend(cairo::Extend::Repeat);

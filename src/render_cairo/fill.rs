@@ -44,7 +44,7 @@ pub fn apply(
                             gradient::prepare_radial(node, rg, fill.opacity, bbox, cr);
                         }
                         tree::NodeKind::Pattern(ref pattern) => {
-                            pattern::apply(node, pattern, opt, bbox, cr);
+                            pattern::apply(node, pattern, opt, fill.opacity, bbox, cr);
                         }
                         _ => {}
                     }

@@ -30,10 +30,11 @@ pub fn apply(
     match *stroke {
         Some(ref stroke) => {
             let mut pen = qt::Pen::new();
+            let opacity = stroke.opacity;
 
             match stroke.paint {
                 tree::Paint::Color(c) => {
-                    let a = math::f64_bound(0.0, stroke.opacity * 255.0, 255.0) as u8;
+                    let a = math::f64_bound(0.0, opacity * 255.0, 255.0) as u8;
                     pen.set_color(c.red, c.green, c.blue, a);
                 }
                 tree::Paint::Link(id) => {
@@ -42,14 +43,14 @@ pub fn apply(
 
                     match *node.value() {
                         tree::NodeKind::LinearGradient(ref lg) => {
-                            gradient::prepare_linear(node, lg, stroke.opacity, &mut brush);
+                            gradient::prepare_linear(node, lg, opacity, &mut brush);
                         }
                         tree::NodeKind::RadialGradient(ref rg) => {
-                            gradient::prepare_radial(node, rg, stroke.opacity, &mut brush);
+                            gradient::prepare_radial(node, rg, opacity, &mut brush);
                         }
                         tree::NodeKind::Pattern(ref pattern) => {
                             let ts = p.get_transform();
-                            pattern::apply(node, pattern, opt, ts, bbox, &mut brush);
+                            pattern::apply(node, pattern, opt, ts, bbox, opacity, &mut brush);
                         }
                         _ => {}
                     }
