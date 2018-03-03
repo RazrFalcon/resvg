@@ -30,6 +30,10 @@ pub fn convert(
     let opacity     = attrs.get_number(AId::StrokeOpacity).unwrap_or(1.0);
     let width       = attrs.get_number(AId::StrokeWidth).unwrap_or(1.0);
 
+    if !(width > 0.0) {
+        return None;
+    }
+
     let paint = if let Some(stroke) = attrs.get_type(AId::Stroke) {
         match *stroke {
             AValue::Color(c) => {

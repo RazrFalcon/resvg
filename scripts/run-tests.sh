@@ -31,7 +31,12 @@ if [ "$WITH_REGRESSION" = true ]; then
         sudo ln -s /usr/share/fonts /opt/qt56/lib/fonts
     fi
     mkdir -p "$WORK_DIR"/workdir-qt
-    cargo run --release -- --workdir="$WORK_DIR"/workdir-qt --backend=qt --use-prev-commit
+
+    if [ "$LOCAL_TEST" = true ]; then
+        cargo run --release -- --workdir="$WORK_DIR"/workdir-qt --backend=qt
+    else
+        cargo run --release -- --workdir="$WORK_DIR"/workdir-qt --backend=qt --use-prev-commit
+    fi
 fi
 
 # test cairo backend
@@ -41,7 +46,12 @@ cargo build --verbose --features="cairo-backend"
 if [ "$WITH_REGRESSION" = true ]; then
     cd "$PKG_DIR"/testing_tools/regression
     mkdir -p "$WORK_DIR"/workdir-cairo
-    cargo run --release -- --workdir="$WORK_DIR"/workdir-cairo --backend=cairo --use-prev-commit
+
+    if [ "$LOCAL_TEST" = true ]; then
+        cargo run --release -- --workdir="$WORK_DIR"/workdir-cairo --backend=cairo
+    else
+        cargo run --release -- --workdir="$WORK_DIR"/workdir-cairo --backend=cairo --use-prev-commit
+    fi
 fi
 
 # try to build with all backends
