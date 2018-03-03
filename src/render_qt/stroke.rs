@@ -76,9 +76,9 @@ pub fn apply(
             pen.set_miter_limit(stroke.miterlimit);
             pen.set_width(stroke.width);
 
-            if let Some(ref list ) = stroke.dasharray {
-                pen.set_dash_array(list);
+            if let Some(ref list) = stroke.dasharray {
                 pen.set_dash_offset(stroke.dashoffset);
+                pen.set_dash_array(list);
             }
 
             p.set_pen(pen);

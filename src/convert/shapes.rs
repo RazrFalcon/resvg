@@ -220,25 +220,13 @@ fn convert_ellipse(node: &svgdom::Node) -> Option<path::Path> {
     Some(ellipse_to_path(cx, cy, rx, ry))
 }
 
-// 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1
-const ARC_MAGIC: f64 = 0.5522847498;
-
-// Based on librsvg implementation.
 fn ellipse_to_path(cx: f64, cy: f64, rx: f64, ry: f64) -> path::Path {
     path::Builder::with_capacity(6)
         .move_to(cx + rx, cy)
-        .curve_to(cx + rx, cy - ARC_MAGIC * ry,
-                  cx + ARC_MAGIC * rx, cy - ry,
-                  cx, cy - ry)
-        .curve_to(cx - ARC_MAGIC * rx, cy - ry,
-                  cx - rx, cy - ARC_MAGIC * ry,
-                  cx - rx, cy)
-        .curve_to(cx - rx, cy + ARC_MAGIC * ry,
-                  cx - ARC_MAGIC * rx, cy + ry,
-                  cx, cy + ry)
-        .curve_to(cx + ARC_MAGIC * rx, cy + ry,
-                  cx + rx, cy + ARC_MAGIC * ry,
-                  cx + rx, cy)
+        .arc_to(rx, ry, 0.0, false, true, cx, cy + ry)
+        .arc_to(rx, ry, 0.0, false, true, cx - rx, cy)
+        .arc_to(rx, ry, 0.0, false, true, cx, cy - ry)
+        .arc_to(rx, ry, 0.0, false, true, cx + rx, cy)
         .close_path()
         .finalize()
 }
