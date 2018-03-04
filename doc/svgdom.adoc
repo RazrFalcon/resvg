@@ -7,7 +7,7 @@ One of the core ideas of the _resvg_ is that the input SVG will be
 converted into as simple SVG as possible before rendering.
 Which helps to implement a new backend easily.
 
-This SVG represented via `Document` structure.
+This SVG represented via `RenderTree` structure.
 It's an immutable container with all elements and attributes resolved.
 
 Even through it doesn't follow the SVG spec and supports only a tiny
@@ -128,7 +128,7 @@ You can generate it by yourself using:
 rendersvg doc/complete.svg --pretend --dump-svg dump.svg
 ```
 
-*Note:* `xml:space` and `text-decoration` attributes doesn't exported for now.
+*Note:* `xml:space` and `text-decoration` attributes isn't exported now.
 
 == Elements
 
@@ -137,13 +137,11 @@ rendersvg doc/complete.svg --pretend --dump-svg dump.svg
 The `svg` element is the root element of the document.
 It's defined only once and can't be nested, unlike by the SVG spec.
 
-Supported children: `defs`, `g`, `path`, `text`, `image`.
-
-All of these elements, except `defs`, can have a `transform` attribute.
+Supported children: `defs`, `g`, `path`, `text` and `image`.
 
 === defs
 
-Supported children: `linearGradient`, `radialGradient`.
+Supported children: `linearGradient`, `radialGradient`, `clipPath` and `pattern`.
 
 === linearGradient
 
@@ -155,6 +153,18 @@ are already resolved and copied to the gradient.
 === radialGradient
 
 See `linearGradient`.
+
+=== pattern
+
+Pattern defines a texture image that can be used by `fill` and `stroke`.
+
+Supported children: `g`, `path`, `text` and `image`.
+
+=== clipPath
+
+`clipPath` defines a 1-bit mask using children elements.
+
+Supported children: `path` and `text`.
 
 === g
 
