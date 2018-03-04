@@ -160,10 +160,6 @@ pub fn init_font(dom_font: &tree::Font) -> qt::Font {
         tree::FontWeight::W700       => qt::FontWeight::Bold,
         tree::FontWeight::W800       => qt::FontWeight::ExtraBold,
         tree::FontWeight::W900       => qt::FontWeight::Black,
-        tree::FontWeight::Normal     => qt::FontWeight::Normal,
-        tree::FontWeight::Bold       => qt::FontWeight::Bold,
-        tree::FontWeight::Bolder     => qt::FontWeight::ExtraBold,
-        tree::FontWeight::Lighter    => qt::FontWeight::Light,
     };
     font.set_weight(font_weight);
 

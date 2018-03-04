@@ -201,10 +201,6 @@ fn init_font(dom_font: &tree::Font, dpi: f64) -> pango::FontDescription {
         tree::FontWeight::W700       => pango::Weight::Bold,
         tree::FontWeight::W800       => pango::Weight::Ultrabold,
         tree::FontWeight::W900       => pango::Weight::Heavy,
-        tree::FontWeight::Normal     => pango::Weight::Normal,
-        tree::FontWeight::Bold       => pango::Weight::Bold,
-        tree::FontWeight::Bolder     => pango::Weight::Ultrabold,
-        tree::FontWeight::Lighter    => pango::Weight::Light,
     };
     font.set_weight(font_weight);
 

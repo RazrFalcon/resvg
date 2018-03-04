@@ -132,10 +132,6 @@ pub enum FontVariant {
 #[allow(missing_docs)]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum FontWeight {
-    Normal,
-    Bold,
-    Bolder,
-    Lighter,
     W100,
     W200,
     W300,

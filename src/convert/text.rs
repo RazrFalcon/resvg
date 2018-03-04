@@ -242,10 +242,8 @@ fn convert_font(attrs: &svgdom::Attributes) -> tree::Font {
 
     let weight = attrs.get_predef(AId::FontWeight).unwrap_or(svgdom::ValueId::Normal);
     let weight = match weight {
-        svgdom::ValueId::Normal => tree::FontWeight::Normal,
-        svgdom::ValueId::Bold => tree::FontWeight::Bold,
-        svgdom::ValueId::Bolder => tree::FontWeight::Bolder,
-        svgdom::ValueId::Lighter => tree::FontWeight::Lighter,
+        svgdom::ValueId::Normal => tree::FontWeight::W400,
+        svgdom::ValueId::Bold => tree::FontWeight::W700,
         svgdom::ValueId::N100 => tree::FontWeight::W100,
         svgdom::ValueId::N200 => tree::FontWeight::W200,
         svgdom::ValueId::N300 => tree::FontWeight::W300,
@@ -255,7 +253,11 @@ fn convert_font(attrs: &svgdom::Attributes) -> tree::Font {
         svgdom::ValueId::N700 => tree::FontWeight::W700,
         svgdom::ValueId::N800 => tree::FontWeight::W800,
         svgdom::ValueId::N900 => tree::FontWeight::W900,
-        _ => tree::FontWeight::Normal,
+        svgdom::ValueId::Bolder | svgdom::ValueId::Lighter => {
+            warn!("'bolder' and 'lighter' font-weight must be already resolved.");
+            tree::FontWeight::W400
+        }
+        _ => tree::FontWeight::W400,
     };
 
     let stretch = attrs.get_predef(AId::FontStretch).unwrap_or(svgdom::ValueId::Normal);

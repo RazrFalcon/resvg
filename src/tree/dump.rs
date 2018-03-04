@@ -467,13 +467,9 @@ fn conv_font(
         ));
     }
 
-    if font.weight != FontWeight::Normal {
+    if font.weight != FontWeight::W400 {
         node.set_attribute((AId::FontWeight,
             match font.weight {
-                FontWeight::Normal => svgdom::ValueId::Normal,
-                FontWeight::Bold => svgdom::ValueId::Bold,
-                FontWeight::Bolder => svgdom::ValueId::Bolder,
-                FontWeight::Lighter => svgdom::ValueId::Lighter,
                 FontWeight::W100 => svgdom::ValueId::N100,
                 FontWeight::W200 => svgdom::ValueId::N200,
                 FontWeight::W300 => svgdom::ValueId::N300,

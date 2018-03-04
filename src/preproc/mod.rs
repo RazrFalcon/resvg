@@ -23,6 +23,7 @@ mod prepare_text_nodes;
 mod regroup;
 mod resolve_curr_color;
 mod resolve_font_size;
+mod resolve_font_weight;
 mod resolve_gradient_attrs;
 mod resolve_gradient_stops;
 mod resolve_inherit;
@@ -53,6 +54,7 @@ use self::prepare_text_nodes::prepare_text_nodes;
 use self::regroup::regroup_elements;
 use self::resolve_curr_color::resolve_current_color;
 use self::resolve_font_size::resolve_font_size;
+use self::resolve_font_weight::resolve_font_weight;
 use self::resolve_gradient_attrs::*;
 use self::resolve_gradient_stops::resolve_gradient_stops;
 use self::resolve_inherit::resolve_inherit;
@@ -102,6 +104,7 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) -> Result<()> {
     group_defs(doc, svg);
 
     resolve_font_size(doc);
+    resolve_font_weight(doc);
 
     convert_units(svg, opt);
 
