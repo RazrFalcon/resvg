@@ -24,27 +24,19 @@ use super::{
 pub fn convert(
     node: &svgdom::Node,
     rtree: &mut tree::RenderTree,
-) {
+) -> tree::NodeId {
     let attrs = node.attributes();
 
-    let clip_node = rtree.append_to_defs(
+    rtree.append_to_defs(
         tree::NodeKind::ClipPath(tree::ClipPath {
             id: node.id().clone(),
             units: super::convert_element_units(&attrs, AId::ClipPathUnits),
             transform: attrs.get_transform(AId::Transform).unwrap_or_default(),
         })
-    );
-
-    convert_children(node, clip_node, rtree);
-
-    // TODO: this
-//    if rtree.node_at(idx).children().count() == 0 {
-//        warn!("The '{}' clipPath has no valid children. Skipped.", node.id());
-//        rtree.remove_node(idx);
-//    }
+    )
 }
 
-fn convert_children(
+pub fn convert_children(
     node: &svgdom::Node,
     parent: tree::NodeId,
     rtree: &mut tree::RenderTree,

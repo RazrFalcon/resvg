@@ -18,32 +18,26 @@ use traits::{
     GetValue,
     GetViewBox,
 };
-use {
-    Options,
-};
 
 
 pub fn convert(
     node: &svgdom::Node,
-    opt: &Options,
     rtree: &mut tree::RenderTree,
-) {
+) -> tree::NodeId {
     let ref attrs = node.attributes();
 
     let rect = convert_rect(attrs);
     debug_assert!(!rect.width().is_fuzzy_zero());
     debug_assert!(!rect.height().is_fuzzy_zero());
 
-    let patt_node = rtree.append_to_defs(tree::NodeKind::Pattern(tree::Pattern {
+    rtree.append_to_defs(tree::NodeKind::Pattern(tree::Pattern {
         id: node.id().clone(),
         units: super::convert_element_units(&attrs, AId::PatternUnits),
         content_units: super::convert_element_units(&attrs, AId::PatternContentUnits),
         transform: attrs.get_transform(AId::PatternTransform).unwrap_or_default(),
         rect,
         view_box: node.get_viewbox(),
-    }));
-
-    super::convert_nodes(node, opt, patt_node, rtree);
+    }))
 }
 
 pub fn convert_rect(attrs: &svgdom::Attributes) -> Rect {

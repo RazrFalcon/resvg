@@ -61,12 +61,11 @@ pub fn convert_doc(
     let mut rtree = tree::RenderTree::create(svg_kind);
 
     convert_ref_nodes(svg_doc, opt, &mut rtree);
-    convert_nodes(&svg, opt, rtree.root().id(), &mut rtree);
+    convert_nodes(&svg, rtree.root().id(), opt, &mut rtree);
 
     Ok(rtree)
 }
 
-// TODO: defs children can reference other defs
 fn convert_ref_nodes(
     svg_doc: &svgdom::Document,
     opt: &Options,
@@ -76,6 +75,8 @@ fn convert_ref_nodes(
         Some(e) => e.clone(),
         None => return,
     };
+
+    let mut later_nodes = Vec::new();
 
     for (id, node) in defs_elem.children().svg() {
         // 'defs' can contain any elements, but here we interested only
@@ -92,22 +93,32 @@ fn convert_ref_nodes(
                 gradient::convert_radial(&node, rtree);
             }
             EId::ClipPath => {
-                clippath::convert(&node, rtree);
+                let new_node = clippath::convert(&node, rtree);
+                later_nodes.push((node, new_node));
             }
             EId::Pattern => {
-                pattern::convert(&node, opt, rtree);
+                let new_node = pattern::convert(&node, rtree);
+                later_nodes.push((node, new_node));
             }
             _ => {
                 warn!("Unsupported element '{}'.", id);
             }
         }
     }
+
+    for (node, new_node) in later_nodes {
+        if node.is_tag_name(EId::ClipPath) {
+            clippath::convert_children(&node, new_node, rtree);
+        } else if node.is_tag_name(EId::Pattern) {
+            convert_nodes(&node, new_node, opt, rtree);
+        }
+    }
 }
 
 pub(super) fn convert_nodes(
     parent: &svgdom::Node,
-    opt: &Options,
     parent_node: tree::NodeId,
+    opt: &Options,
     rtree: &mut tree::RenderTree,
 ) {
     for (id, node) in parent.children().svg() {
@@ -163,7 +174,7 @@ pub(super) fn convert_nodes(
                     clip_path,
                 }));
 
-                convert_nodes(&node, opt, g_node, rtree);
+                convert_nodes(&node, g_node, opt, rtree);
 
                 // TODO: check that opacity != 1.0
             }

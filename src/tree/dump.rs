@@ -50,6 +50,8 @@ fn conv_defs(
     new_doc: &mut svgdom::Document,
     defs: &mut svgdom::Node,
 ) {
+    let mut later_nodes = Vec::new();
+
     for n in rtree.defs().children() {
         match *n.value() {
             NodeKind::LinearGradient(ref lg) => {
@@ -86,7 +88,7 @@ fn conv_defs(
                 clip_elem.set_id(clip.id.clone());
                 conv_units(AId::ClipPathUnits, clip.units, &mut clip_elem);
                 conv_transform(AId::Transform, &clip.transform, &mut clip_elem);
-                conv_elements(rtree, n, defs, new_doc, &mut clip_elem);
+                later_nodes.push((n, clip_elem.clone()));
             }
             NodeKind::Pattern(ref pattern) => {
                 let mut pattern_elem = new_doc.create_element(EId::Pattern);
@@ -103,10 +105,14 @@ fn conv_defs(
                 conv_units(AId::PatternUnits, pattern.units, &mut pattern_elem);
                 conv_units(AId::PatternContentUnits, pattern.content_units, &mut pattern_elem);
                 conv_transform(AId::PatternTransform, &pattern.transform, &mut pattern_elem);
-                conv_elements(rtree, n, defs, new_doc, &mut pattern_elem);
+                later_nodes.push((n, pattern_elem.clone()));
             }
             _ => {}
         }
+    }
+
+    for (rnode, mut elem) in later_nodes {
+        conv_elements(rtree, rnode, defs, new_doc, &mut elem);
     }
 }
 
