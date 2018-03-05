@@ -50,7 +50,8 @@ pub fn convert(
                 match p {
                     Some(p) => p,
                     None => {
-                        warn!("Stroking with {:?} is not supported.", link.tag_name().unwrap());
+                        warn!("'{:?}' cannot be used for stroking.",
+                              link.tag_name().unwrap());
                         return None;
                     }
                 }

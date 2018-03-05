@@ -35,18 +35,19 @@ pub fn apply(
                     cr.set_source_color(&c, fill.opacity);
                 }
                 tree::Paint::Link(id) => {
-                    let node = rtree.defs_at(id);
-                    match *node.value() {
-                        tree::NodeKind::LinearGradient(ref lg) => {
-                            gradient::prepare_linear(node, lg, fill.opacity, bbox, cr);
+                    if let Some(node) = rtree.defs_at(id) {
+                        match *node.value() {
+                            tree::NodeKind::LinearGradient(ref lg) => {
+                                gradient::prepare_linear(node, lg, fill.opacity, bbox, cr);
+                            }
+                            tree::NodeKind::RadialGradient(ref rg) => {
+                                gradient::prepare_radial(node, rg, fill.opacity, bbox, cr);
+                            }
+                            tree::NodeKind::Pattern(ref pattern) => {
+                                pattern::apply(node, pattern, opt, fill.opacity, bbox, cr);
+                            }
+                            _ => {}
                         }
-                        tree::NodeKind::RadialGradient(ref rg) => {
-                            gradient::prepare_radial(node, rg, fill.opacity, bbox, cr);
-                        }
-                        tree::NodeKind::Pattern(ref pattern) => {
-                            pattern::apply(node, pattern, opt, fill.opacity, bbox, cr);
-                        }
-                        _ => {}
                     }
                 }
             }

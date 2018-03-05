@@ -38,21 +38,22 @@ pub fn apply(
                     pen.set_color(c.red, c.green, c.blue, a);
                 }
                 tree::Paint::Link(id) => {
-                    let node = rtree.defs_at(id);
                     let mut brush = qt::Brush::new();
 
-                    match *node.value() {
-                        tree::NodeKind::LinearGradient(ref lg) => {
-                            gradient::prepare_linear(node, lg, opacity, &mut brush);
+                    if let Some(node) = rtree.defs_at(id) {
+                        match *node.value() {
+                            tree::NodeKind::LinearGradient(ref lg) => {
+                                gradient::prepare_linear(node, lg, opacity, &mut brush);
+                            }
+                            tree::NodeKind::RadialGradient(ref rg) => {
+                                gradient::prepare_radial(node, rg, opacity, &mut brush);
+                            }
+                            tree::NodeKind::Pattern(ref pattern) => {
+                                let ts = p.get_transform();
+                                pattern::apply(node, pattern, opt, ts, bbox, opacity, &mut brush);
+                            }
+                            _ => {}
                         }
-                        tree::NodeKind::RadialGradient(ref rg) => {
-                            gradient::prepare_radial(node, rg, opacity, &mut brush);
-                        }
-                        tree::NodeKind::Pattern(ref pattern) => {
-                            let ts = p.get_transform();
-                            pattern::apply(node, pattern, opt, ts, bbox, opacity, &mut brush);
-                        }
-                        _ => {}
                     }
 
                     pen.set_brush(brush);

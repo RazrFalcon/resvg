@@ -242,10 +242,11 @@ fn conv_elements(
                 g_elem.set_id(g.id.clone());
 
                 if let Some(id) = g.clip_path {
-                    let defs_id = rtree.defs_at(id);
-                    let defs_id = defs_id.svg_id();
-                    let link = defs.children().find(|n| *n.id() == defs_id).unwrap();
-                    g_elem.set_attribute((AId::ClipPath, link));
+                    if let Some(defs_id) = rtree.defs_at(id) {
+                        let defs_id = defs_id.svg_id();
+                        let link = defs.children().find(|n| *n.id() == defs_id).unwrap();
+                        g_elem.set_attribute((AId::ClipPath, link));
+                    }
                 }
 
                 if let Some(opacity) = g.opacity {
@@ -299,10 +300,11 @@ fn conv_fill(
             match fill.paint {
                 Paint::Color(c) => node.set_attribute((AId::Fill, c)),
                 Paint::Link(id) => {
-                    let defs_id = rtree.defs_at(id);
-                    let defs_id = defs_id.svg_id();
-                    let link = defs.children().find(|n| *n.id() == defs_id).unwrap();
-                    node.set_attribute((AId::Fill, link))
+                    if let Some(defs_id) = rtree.defs_at(id) {
+                        let defs_id = defs_id.svg_id();
+                        let link = defs.children().find(|n| *n.id() == defs_id).unwrap();
+                        node.set_attribute((AId::Fill, link));
+                    }
                 }
             }
 
@@ -335,10 +337,11 @@ fn conv_stroke(
             match stroke.paint {
                 Paint::Color(c) => node.set_attribute((AId::Stroke, c)),
                 Paint::Link(id) => {
-                    let defs_id = rtree.defs_at(id);
-                    let defs_id = defs_id.svg_id();
-                    let link = defs.children().find(|n| *n.id() == defs_id).unwrap();
-                    node.set_attribute((AId::Stroke, link))
+                    if let Some(defs_id) = rtree.defs_at(id) {
+                        let defs_id = defs_id.svg_id();
+                        let link = defs.children().find(|n| *n.id() == defs_id).unwrap();
+                        node.set_attribute((AId::Stroke, link));
+                    }
                 }
             }
 

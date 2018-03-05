@@ -40,7 +40,7 @@ pub fn convert(
                 match p {
                     Some(p) => p,
                     None => {
-                        warn!("Filling with {:?} is not supported.",
+                        warn!("'{:?}' cannot be used for filling.",
                               link.tag_id().unwrap());
                         return None;
                     }

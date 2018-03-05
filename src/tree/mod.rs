@@ -61,7 +61,7 @@ pub trait TreeExt {
     fn append_child(&mut self, parent: NodeId, kind: NodeKind) -> NodeId;
 
     /// Returns `Defs` node child by `NodeId`.
-    fn defs_at(&self, id: NodeId) -> NodeRef;
+    fn defs_at(&self, id: NodeId) -> Option<NodeRef>;
 
     /// Searches for `NodeId` in `Defs` children by ID.
     fn defs_id(&self, id: &str) -> Option<NodeId>;
@@ -106,14 +106,15 @@ impl TreeExt for RenderTree {
         parent.append(kind).id()
     }
 
-    fn defs_at(&self, id: NodeId) -> NodeRef {
+    fn defs_at(&self, id: NodeId) -> Option<NodeRef> {
         for n in self.defs().children() {
             if n.id() == id {
-                return n;
+                return Some(n);
             }
         }
 
-        unreachable!();
+        warn!("Node was not found in defs.");
+        None
     }
 
     fn defs_id(&self, id: &str) -> Option<NodeId> {
@@ -123,7 +124,8 @@ impl TreeExt for RenderTree {
             }
         }
 
-        unreachable!();
+        warn!("Node '{}' was not found in defs.", id);
+        None
     }
 
     fn to_svgdom(&self) -> svgdom::Document {

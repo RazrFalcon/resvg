@@ -253,9 +253,10 @@ fn render_group_impl(
     let bbox = render_group(node, opt, img_size, &sub_p);
 
     if let Some(idx) = g.clip_path {
-        let clip_node = node.tree().defs_at(idx);
-        if let tree::NodeKind::ClipPath(ref cp) = *clip_node.value() {
-            clippath::apply(clip_node, cp, opt, bbox, img_size, &sub_p);
+        if let Some(clip_node) = node.tree().defs_at(idx) {
+            if let tree::NodeKind::ClipPath(ref cp) = *clip_node.value() {
+                clippath::apply(clip_node, cp, opt, bbox, img_size, &sub_p);
+            }
         }
     }
 
