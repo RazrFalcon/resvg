@@ -226,7 +226,7 @@ fn apply_viewbox_transform(
 }
 
 fn render_group(
-    node: tree::NodeRef,
+    parent: tree::NodeRef,
     opt: &Options,
     img_size: ScreenSize,
     cr: &cairo::Context,
@@ -234,7 +234,7 @@ fn render_group(
     let curr_ts = cr.get_matrix();
     let mut g_bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
 
-    for node in node.children() {
+    for node in parent.children() {
         cr.transform(node.transform().to_native());
 
         let bbox = render_node(node, opt, img_size, cr);

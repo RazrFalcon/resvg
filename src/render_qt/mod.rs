@@ -200,7 +200,7 @@ pub fn apply_viewbox_transform(
 // TODO: render groups backward to reduce memory usage
 //       current implementation keeps parent canvas until all children are rendered
 fn render_group(
-    node: tree::NodeRef,
+    parent: tree::NodeRef,
     opt: &Options,
     img_size: ScreenSize,
     p: &qt::Painter,
@@ -208,7 +208,7 @@ fn render_group(
     let curr_ts = p.get_transform();
     let mut g_bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
 
-    for node in node.children() {
+    for node in parent.children() {
         // Apply transform.
         p.apply_transform(&node.transform().to_native());
 

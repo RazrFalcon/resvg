@@ -56,10 +56,12 @@ pub fn apply(
         let img_view = Rect::from_xywh(0.0, 0.0, r.width(), r.height());
         let (dx, dy, sx2, sy2) = utils::view_box_transform(vbox, img_view);
         p.apply_transform(&qt::Transform::new(sx2, 0.0, 0.0, sy2, dx, dy));
-    }
+    } else if pattern.content_units == tree::Units::ObjectBoundingBox {
+        // 'Note that this attribute has no effect if attribute `viewBox` is specified.'
 
-    if pattern.content_units == tree::Units::ObjectBoundingBox {
-        p.apply_transform(&qt::Transform::from_bbox(bbox));
+        // We don't use Transform::from_bbox(bbox) because `x` and `y` should be
+        // ignored for some reasons...
+        p.apply_transform(&qt::Transform::new(bbox.width(), 0.0, 0.0, bbox.height(), 0.0, 0.0));
     }
 
     super::render_group(pattern_node, opt, img_size, &p);

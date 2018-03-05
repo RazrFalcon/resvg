@@ -60,9 +60,12 @@ pub fn apply(
         let img_view = Rect::from_xywh(0.0, 0.0, r.width(), r.height());
         let (dx, dy, sx2, sy2) = utils::view_box_transform(vbox, img_view);
         sub_cr.transform(cairo::Matrix::new(sx2, 0.0, 0.0, sy2, dx, dy));
-    }
-    if pattern.content_units == tree::Units::ObjectBoundingBox {
-        sub_cr.transform(cairo::Matrix::from_bbox(bbox));
+    } else if pattern.content_units == tree::Units::ObjectBoundingBox {
+        // 'Note that this attribute has no effect if attribute `viewBox` is specified.'
+
+        // We don't use Transform::from_bbox(bbox) because `x` and `y` should be
+        // ignored for some reasons...
+        sub_cr.transform(cairo::Matrix::new(bbox.width(), 0.0, 0.0, bbox.height(), 0.0, 0.0));
     }
 
     super::render_group(node, opt, img_size, &sub_cr);
