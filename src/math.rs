@@ -165,7 +165,8 @@ impl RectExt for Rect {
 
     fn transform(&self, ts: tree::Transform) -> Self {
         let (x, y) = ts.apply(self.x(), self.y());
-        let (w, h) = ts.apply(self.width(), self.height());
+        let (sx, sy) = ts.get_scale();
+        let (w, h) = (self.width() * sx, self.height() * sy);
         Self::from_xywh(x, y, w, h)
     }
 

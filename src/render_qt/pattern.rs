@@ -57,6 +57,7 @@ pub fn apply(
         let (dx, dy, sx2, sy2) = utils::view_box_transform(vbox, img_view);
         p.apply_transform(&qt::Transform::new(sx2, 0.0, 0.0, sy2, dx, dy));
     }
+
     if pattern.content_units == tree::Units::ObjectBoundingBox {
         p.apply_transform(&qt::Transform::from_bbox(bbox));
     }
