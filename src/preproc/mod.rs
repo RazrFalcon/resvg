@@ -15,6 +15,7 @@ use {
 
 mod conv_units;
 mod fix_gradient_stops;
+mod fix_recursive_pattern;
 mod fix_xlinks;
 mod group_defs;
 mod prepare_clip_path;
@@ -46,6 +47,7 @@ mod ungroup_switch;
 
 use self::conv_units::convert_units;
 use self::fix_gradient_stops::fix_gradient_stops;
+use self::fix_recursive_pattern::fix_recursive_pattern;
 use self::fix_xlinks::fix_xlinks;
 use self::group_defs::group_defs;
 use self::prepare_clip_path::prepare_clip_path;
@@ -119,6 +121,7 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) -> Result<()> {
     resolve_pattern_attributes(doc);
     resolve_pattern_children(doc);
     remove_invalid_patterns(doc);
+    fix_recursive_pattern(doc);
 
     remove_unused_defs(svg);
 
