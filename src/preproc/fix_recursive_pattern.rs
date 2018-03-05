@@ -16,10 +16,10 @@ use short::{
 };
 
 
-// If a pattern child has a link to the pattern itself
-// then we have to replace it with `none`.
-// Otherwise we will get endless loop/recursion and stack overflow.
 pub fn fix_recursive_pattern(doc: &Document) {
+    // If a pattern child has a link to the pattern itself
+    // then we have to replace it with `none`.
+    // Otherwise we will get endless loop/recursion and stack overflow.
     for pattern_node in doc.descendants().filter(|n| n.is_tag_name(EId::Pattern)) {
         for mut node in pattern_node.descendants() {
             let mut check_attr = |aid: AId| {
@@ -27,6 +27,16 @@ pub fn fix_recursive_pattern(doc: &Document) {
                 if let Some(AValue::FuncLink(link)) = av {
                     if link == pattern_node {
                         node.set_attribute((aid, ValueId::None));
+                    } else {
+                        // Check that linked node children doesn't link this pattern.
+                        for mut node2 in link.descendants() {
+                            let av2 = node2.attributes().get_value(aid).cloned();
+                            if let Some(AValue::FuncLink(link2)) = av2 {
+                                if link2 == pattern_node {
+                                    node.set_attribute((aid, ValueId::None));
+                                }
+                            }
+                        }
                     }
                 }
             };
