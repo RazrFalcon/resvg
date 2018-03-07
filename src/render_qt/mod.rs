@@ -49,6 +49,9 @@ impl ConvTransform<qt::Transform> for tree::Transform {
 
 impl TransformFromBBox for qt::Transform {
     fn from_bbox(bbox: Rect) -> Self {
+        debug_assert!(!bbox.width().is_fuzzy_zero());
+        debug_assert!(!bbox.height().is_fuzzy_zero());
+
         Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
     }
 }
@@ -209,7 +212,6 @@ fn render_group(
     let mut g_bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
 
     for node in parent.children() {
-        // Apply transform.
         p.apply_transform(&node.transform().to_native());
 
         let bbox = render_node(node, opt, img_size, p);
@@ -250,6 +252,7 @@ fn render_group_impl(
 
     let sub_p = qt::Painter::new(&sub_img);
     sub_p.set_transform(&p.get_transform());
+
     let bbox = render_group(node, opt, img_size, &sub_p);
 
     if let Some(idx) = g.clip_path {
@@ -325,7 +328,7 @@ fn _calc_node_bbox(
 
     match *node.value() {
         tree::NodeKind::Path(ref path) => {
-            Some(utils::path_bbox(&path.segments, &path.stroke, &ts2))
+            Some(utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2))
         }
         tree::NodeKind::Text(_) => {
             let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
@@ -337,7 +340,7 @@ fn _calc_node_bbox(
                 let segments = from_qt_path(&p_path);
 
                 if !segments.is_empty() {
-                    let c_bbox = utils::path_bbox(&segments, &tspan.stroke, &ts2);
+                    let c_bbox = utils::path_bbox(&segments, tspan.stroke.as_ref(), &ts2);
 
                     bbox.expand(c_bbox);
                 }
@@ -347,7 +350,7 @@ fn _calc_node_bbox(
         }
         tree::NodeKind::Image(ref img) => {
             let segments = utils::rect_to_path(img.rect);
-            Some(utils::path_bbox(&segments, &None, &ts2))
+            Some(utils::path_bbox(&segments, None, &ts2))
         }
         tree::NodeKind::Group(_) => {
             let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);

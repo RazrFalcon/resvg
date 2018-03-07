@@ -111,14 +111,16 @@ fn main() {
         return;
     }
 
+    let backend = m.value_of("backend").unwrap();
+
     let data = Data {
         work_dir: Path::new(m.value_of("workdir").unwrap()),
         input_dir: Path::new("../images/svg"),
         prev_render: None,
         curr_render: render,
         is_use_prev_commit: m.is_present("use-prev-commit"),
-        backend: m.value_of("backend").unwrap(),
-        allowed_files: load_allowed_file_list(),
+        backend: backend,
+        allowed_files: load_allowed_file_list(backend),
     };
 
     if let Err(e) = process(data) {
@@ -127,10 +129,9 @@ fn main() {
     }
 }
 
-// TODO: split per backend
 // TODO: skip comments
-fn load_allowed_file_list() -> Vec<String> {
-    if let Ok(f) = fs::File::open("allow.txt") {
+fn load_allowed_file_list(backend: &str) -> Vec<String> {
+    if let Ok(f) = fs::File::open(&format!("allow-{}.txt", backend)) {
         return io::BufReader::new(&f).lines().map(|l| l.unwrap()).collect();
     }
 
@@ -193,29 +194,21 @@ fn build_prev_version(data: &Data) -> Result<PathBuf> {
 }
 
 fn run_tests(data: &Data) -> Result<()> {
-    let mut total = 0;
+    let mut files = Vec::new();
     for entry in dir_iter!(data.input_dir) {
         if entry.file_type().is_file() {
-            total += 1;
+            files.push(entry.path().to_owned());
         }
     }
 
+    files.sort();
+
     let mut idx = 1;
-    for entry in dir_iter!(data.input_dir) {
-        if entry.file_type().is_dir() {
-            continue;
-        }
-
-        // skip symlinks
-        if !entry.file_type().is_file() {
-            continue;
-        }
-
-        let file_path = entry.path();
+    for file_path in &files {
         let sub_path: String = file_path.strip_prefix(data.input_dir).unwrap()
                                         .to_str().unwrap().into();
 
-        println!("Test {} of {}: {}", idx, total, sub_path);
+        println!("Test {} of {}: {}", idx, files.len(), sub_path);
 
         run_test(data, &file_path)?;
 

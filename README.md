@@ -73,6 +73,7 @@ TL;DR
 - no `mask`
 - no `marker`
 - no `symbol`
+- CSS support is minimal
 
 ## Backends
 

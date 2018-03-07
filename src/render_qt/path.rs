@@ -13,7 +13,8 @@ use super::{
     stroke,
 };
 use {
-    Options
+    utils,
+    Options,
 };
 
 
@@ -33,10 +34,7 @@ pub fn draw(
 
     convert_path(&path.segments, fill_rule, &mut p_path);
 
-    let bbox = {
-        let (x, y, w, h) = p_path.bounding_box();
-        Rect::from_xywh(x, y, w, h)
-    };
+    let bbox = utils::path_bbox(&path.segments, None, &tree::Transform::default());
 
     fill::apply(tree, &path.fill, opt, bbox, p);
     stroke::apply(tree, &path.stroke, opt, bbox, p);

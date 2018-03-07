@@ -14,6 +14,7 @@ use super::{
     stroke,
 };
 use {
+    utils,
     Options,
 };
 
@@ -26,22 +27,7 @@ pub fn draw(
 ) -> Rect {
     init_path(&path.segments, cr);
 
-    let bbox = {
-        // TODO: set_tolerance(1.0)
-        let (mut x1, mut y1, mut x2, mut y2) = cr.fill_extents();
-
-        if path.stroke.is_some() {
-            let (s_x1, s_y1, s_x2, s_y2) = cr.stroke_extents();
-
-            // expand coordinates
-            if s_x1 < x1 { x1 = s_x1; }
-            if s_y1 < y1 { y1 = s_y1; }
-            if s_x2 > x2 { x2 = s_x2; }
-            if s_y2 > y2 { y2 = s_y2; }
-        }
-
-        Rect::from_xywh(x1, y1, x2 - x1, y2 - y1)
-    };
+    let bbox = utils::path_bbox(&path.segments, None, &tree::Transform::default());
 
     fill::apply(rtree, &path.fill, opt, bbox, cr);
     if path.stroke.is_some() {

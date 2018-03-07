@@ -38,8 +38,8 @@ static FEATURES: &[&str] = &[
     // "http://www.w3.org/TR/SVG11/feature#Marker", // not yet
     // "http://www.w3.org/TR/SVG11/feature#ColorProfile", // not yet
     "http://www.w3.org/TR/SVG11/feature#Gradient",
-    // "http://www.w3.org/TR/SVG11/feature#Pattern", // not yet
-    // "http://www.w3.org/TR/SVG11/feature#Clip", // not yet
+    "http://www.w3.org/TR/SVG11/feature#Pattern",
+    "http://www.w3.org/TR/SVG11/feature#Clip",
     // "http://www.w3.org/TR/SVG11/feature#Mask", // not yet
     // "http://www.w3.org/TR/SVG11/feature#Filter", // not yet
     // "http://www.w3.org/TR/SVG11/feature#BasicFilter", // not yet

@@ -84,37 +84,47 @@ pub fn abs_transform(
 }
 
 /// Calculates path's bounding box.
+///
+/// Minimum size is 1x1.
 pub fn path_bbox(
     segments: &[tree::PathSegment],
-    stroke: &Option<tree::Stroke>,
+    stroke: Option<&tree::Stroke>,
     ts: &tree::Transform,
 ) -> Rect {
     debug_assert!(!segments.is_empty());
 
     use lyon_geom;
 
-    let mut new_path = Vec::with_capacity(segments.len());
-    for seg in segments {
-        match *seg {
-            tree::PathSegment::MoveTo { x, y } => {
-                let (x, y) = ts.apply(x, y);
-                new_path.push(tree::PathSegment::MoveTo { x, y });
-            }
-            tree::PathSegment::LineTo { x, y } => {
-                let (x, y) = ts.apply(x, y);
-                new_path.push(tree::PathSegment::LineTo { x, y });
-            }
-            tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                let (x1, y1) = ts.apply(x1, y1);
-                let (x2, y2) = ts.apply(x2, y2);
-                let (x, y) = ts.apply(x, y);
-                new_path.push(tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
-            }
-            tree::PathSegment::ClosePath => {
-                new_path.push(tree::PathSegment::ClosePath);
+    let mut path_buf = Vec::new();
+    let new_path = if !ts.is_default() {
+        // Allocate only when transform is required.
+        path_buf.reserve(segments.len());
+        for seg in segments {
+            match *seg {
+                tree::PathSegment::MoveTo { x, y } => {
+                    let (x, y) = ts.apply(x, y);
+                    path_buf.push(tree::PathSegment::MoveTo { x, y });
+                }
+                tree::PathSegment::LineTo { x, y } => {
+                    let (x, y) = ts.apply(x, y);
+                    path_buf.push(tree::PathSegment::LineTo { x, y });
+                }
+                tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+                    let (x1, y1) = ts.apply(x1, y1);
+                    let (x2, y2) = ts.apply(x2, y2);
+                    let (x, y) = ts.apply(x, y);
+                    path_buf.push(tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
+                }
+                tree::PathSegment::ClosePath => {
+                    path_buf.push(tree::PathSegment::ClosePath);
+                }
             }
         }
-    }
+
+        &path_buf
+    } else {
+        segments
+    };
 
     let (mut prev_x, mut prev_y, mut minx, mut miny, mut maxx, mut maxy) = {
         if let tree::PathSegment::MoveTo { x, y } = new_path[0] {
@@ -124,7 +134,7 @@ pub fn path_bbox(
         }
     };
 
-    for seg in &new_path {
+    for seg in new_path {
         match *seg {
               tree::PathSegment::MoveTo { x, y }
             | tree::PathSegment::LineTo { x, y } => {
@@ -174,7 +184,7 @@ pub fn path_bbox(
 
     // TODO: find a better way
     // It's an approximation, but it's better than nothing.
-    if let Some(ref stroke) = *stroke {
+    if let Some(ref stroke) = stroke {
         let w = (stroke.width / 2.0) as f32;
         minx -= w;
         miny -= w;
@@ -182,7 +192,13 @@ pub fn path_bbox(
         maxy += w;
     }
 
-    Rect::from_xywh(minx as f64, miny as f64, (maxx - minx) as f64, (maxy - miny) as f64)
+    let mut width = maxx - minx;
+    if width < 1.0 { width = 1.0; }
+
+    let mut height = maxy - miny;
+    if height < 1.0 { height = 1.0; }
+
+    Rect::from_xywh(minx as f64, miny as f64, width as f64, height as f64)
 }
 
 /// Converts `rect` to path segments.

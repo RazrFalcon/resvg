@@ -14,11 +14,7 @@ use cairo::{
 use pangocairo::functions as pc;
 
 // self
-use tree::{
-    self,
-    TreeExt,
-    NodeExt,
-};
+use tree::prelude::*;
 use math::*;
 use traits::{
     ConvTransform,
@@ -58,6 +54,9 @@ impl ConvTransform<cairo::Matrix> for tree::Transform {
 
 impl TransformFromBBox for cairo::Matrix {
     fn from_bbox(bbox: Rect) -> Self {
+        debug_assert!(!bbox.width().is_fuzzy_zero());
+        debug_assert!(!bbox.height().is_fuzzy_zero());
+
         Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
     }
 }
@@ -243,6 +242,7 @@ fn render_group(
             g_bbox.expand(bbox);
         }
 
+        // Revert transform.
         cr.set_matrix(curr_ts);
     }
 
@@ -356,7 +356,7 @@ fn _calc_node_bbox(
 
     match *node.value() {
         tree::NodeKind::Path(ref path) => {
-            Some(utils::path_bbox(&path.segments, &path.stroke, &ts2))
+            Some(utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2))
         }
         tree::NodeKind::Text(_) => {
             let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
@@ -372,7 +372,7 @@ fn _calc_node_bbox(
                 t.append(&tree::Transform::new(1.0, 0.0, 0.0, 1.0, x, y));
 
                 if !segments.is_empty() {
-                    let c_bbox = utils::path_bbox(&segments, &tspan.stroke, &t);
+                    let c_bbox = utils::path_bbox(&segments, tspan.stroke.as_ref(), &t);
                     bbox.expand(c_bbox);
                 }
             });
@@ -381,7 +381,7 @@ fn _calc_node_bbox(
         }
         tree::NodeKind::Image(ref img) => {
             let segments = utils::rect_to_path(img.rect);
-            Some(utils::path_bbox(&segments, &None, &ts2))
+            Some(utils::path_bbox(&segments, None, &ts2))
         }
         tree::NodeKind::Group(_) => {
             let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
