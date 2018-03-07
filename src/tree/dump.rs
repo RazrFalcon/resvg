@@ -32,9 +32,9 @@ pub fn conv_doc(rtree: &RenderTree) -> svgdom::Document {
     svg.set_attribute((AId::Width,  svg_node.size.width));
     svg.set_attribute((AId::Height, svg_node.size.height));
     conv_viewbox(svg_node.view_box, &mut svg);
-    svg.set_attribute((AId::XmlnsXlink, "http://www.w3.org/1999/xlink"));
-    svg.set_attribute(("xmlns:resvg", "https://github.com/RazrFalcon/resvg"));
-    svg.set_attribute(("resvg:version", env!("CARGO_PKG_VERSION")));
+    svg.set_attribute((("xmlns", AId::Xlink), "http://www.w3.org/1999/xlink"));
+    svg.set_attribute((("xmlns", "resvg"), "https://github.com/RazrFalcon/resvg"));
+    svg.set_attribute((("resvg", "version"), env!("CARGO_PKG_VERSION")));
 
     let mut defs = new_doc.create_element(EId::Defs);
     svg.append(&defs);
@@ -238,7 +238,7 @@ fn conv_elements(
                     }
                 };
 
-                img_elem.set_attribute((AId::XlinkHref, href));
+                img_elem.set_attribute((("xlink", AId::Href), href));
             }
             NodeKind::Group(ref g) => {
                 let mut g_elem = new_doc.create_element(EId::G);

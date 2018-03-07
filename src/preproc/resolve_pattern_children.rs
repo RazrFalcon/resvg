@@ -18,7 +18,7 @@ use short::{
 
 pub fn resolve_pattern_children(doc: &Document) {
     let iter = doc.descendants().filter(|n| n.is_tag_name(EId::Pattern))
-        .filter(|n| n.has_attribute(AId::XlinkHref))
+        .filter(|n| n.has_attribute(("xlink", AId::Href)))
         .filter(|n| !n.has_children());
     for mut node in iter {
         let link = node.clone();
@@ -27,14 +27,14 @@ pub fn resolve_pattern_children(doc: &Document) {
 
     // Remove 'xlink:href' in patterns, because we already resolved everything.
     let iter = doc.descendants().filter(|n| n.is_tag_name(EId::Pattern))
-        .filter(|n| n.has_attribute(AId::XlinkHref));
+        .filter(|n| n.has_attribute(("xlink", AId::Href)));
     for mut node in iter {
-        node.remove_attribute(AId::XlinkHref);
+        node.remove_attribute(("xlink", AId::Href));
     }
 }
 
 fn resolve(pattern: &mut Node, linked_pattern: &Node) {
-    let av = linked_pattern.attributes().get_value(AId::XlinkHref).cloned();
+    let av = linked_pattern.attributes().get_value(("xlink", AId::Href)).cloned();
     match av {
         Some(av) => {
             match av {

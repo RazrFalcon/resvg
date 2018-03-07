@@ -19,7 +19,7 @@ use short::{
 
 pub fn resolve_tref(doc: &mut Document) {
     for mut tref in doc.descendants().filter(|n| n.is_tag_name(EId::Tref)) {
-        let av = tref.attributes().get_value(AId::XlinkHref).cloned();
+        let av = tref.attributes().get_value(("xlink", AId::Href)).cloned();
         let text_elem = if let Some(AValue::Link(ref link)) = av {
             link.clone()
         } else {
@@ -39,7 +39,7 @@ pub fn resolve_tref(doc: &mut Document) {
         tref.append(&text_node);
 
         tref.set_tag_name(EId::Tspan);
-        tref.remove_attribute(AId::XlinkHref);
+        tref.remove_attribute(("xlink", AId::Href));
 
         for (aid, attr) in text_elem.attributes().iter_svg() {
             if !tref.has_attribute(aid) && attr.is_inheritable() {

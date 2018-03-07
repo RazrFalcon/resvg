@@ -43,7 +43,7 @@ rewritten in Rust, as *resvg*, the architecture of the library is completely dif
 ### resvg vs Inkscape
 
 Inkscape is often used to convert SVG to PNG, but it's not an actual competitor to *resvg*,
-because it's still a complete SVG editor, not a tiny library. 
+because it's still a complete SVG editor, not a tiny library.
 Also, it's very slow.
 But it has the best SVG support amongst other.
 
@@ -77,8 +77,6 @@ TL;DR
 ## Backends
 
 *resvg* supports [Qt] and [cairo] backends.
-
-[Skia] backend is planned.
 
 ## Build
 

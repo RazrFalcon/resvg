@@ -63,7 +63,10 @@ pub fn regroup_elements(doc: &mut Document, parent: &Node) {
                 ids.push(AId::Transform);
             }
         }
-        node.remove_attributes(&ids);
+
+        for id in ids.iter() {
+            node.remove_attribute(*id);
+        }
 
         node.insert_before(&g_node);
         node.detach();

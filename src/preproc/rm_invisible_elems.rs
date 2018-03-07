@@ -52,13 +52,13 @@ fn rm_use(doc: &mut Document) {
     fn _rm(doc: &mut Document) -> usize {
         doc.drain(|n| {
             if n.is_tag_name(EId::Use) {
-                if !n.has_attribute(AId::XlinkHref) {
+                if !n.has_attribute(("xlink", AId::Href)) {
                     // remove 'use' element without the 'xlink:href' attribute
                     return true;
                 } else {
                     // remove 'use' element with invalid 'xlink:href' attribute value
                     let attrs = n.attributes();
-                    if let Some(&AValue::Link(_)) = attrs.get_value(AId::XlinkHref) {
+                    if let Some(&AValue::Link(_)) = attrs.get_value(("xlink", AId::Href)) {
                         // nothing
                     } else {
                         // NOTE: actually, an attribute with 'String' type is valid

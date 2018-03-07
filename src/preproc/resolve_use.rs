@@ -33,7 +33,7 @@ pub fn resolve_use(doc: &Document) {
         nodes.clear();
 
         for mut node in doc.descendants().filter(|n| n.is_tag_name(EId::Use)) {
-            let av = node.attributes().get_value(AId::XlinkHref).cloned();
+            let av = node.attributes().get_value(("xlink", AId::Href)).cloned();
             if let Some(AValue::Link(link)) = av {
                 // Ignore 'use' elements linked to other 'use' elements.
                 if link.is_tag_name(EId::Use) {
@@ -69,7 +69,7 @@ pub fn resolve_use(doc: &Document) {
 
 fn _resolve_use(use_node: &mut Node, linked_node: &Node) {
     // Unlink 'use'.
-    use_node.remove_attribute(AId::XlinkHref);
+    use_node.remove_attribute(("xlink", AId::Href));
 
     {
         // 'use' element support 'x', 'y' and 'transform' attributes
@@ -111,7 +111,7 @@ fn _resolve_use(use_node: &mut Node, linked_node: &Node) {
 
     // Relink linked nodes to the new node.
     for mut n in use_node.linked_nodes().collect::<Vec<Node>>() {
-        n.set_attribute((AId::XlinkHref, new_node.clone()));
+        n.set_attribute((("xlink", AId::Href), new_node.clone()));
     }
 
     // Remove resolved 'use'.

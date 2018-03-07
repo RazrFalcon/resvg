@@ -12,6 +12,7 @@ use svgdom;
 use tree::prelude::*;
 use short::{
     AId,
+    AValue,
 };
 use traits::{
     GetValue,
@@ -49,7 +50,13 @@ pub(super) fn convert(
     let w: f64 = *get_attr!(AId::Width);
     let h: f64 = *get_attr!(AId::Height);
 
-    let href: &String = get_attr!(AId::XlinkHref);
+    let href = match attrs.get_value(("xlink", AId::Href)) {
+        Some(&AValue::String(ref s)) => s,
+        _ => {
+            warn!("The 'image' element lacks '{}' attribute. Skipped.", "xlink:href");
+            return;
+        }
+    };
 
     if let Some(data) = get_href_data(href, opt.path.as_ref()) {
         rtree.append_child(parent, tree::NodeKind::Image(tree::Image {

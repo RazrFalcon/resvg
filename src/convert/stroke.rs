@@ -51,7 +51,7 @@ pub fn convert(
                     Some(p) => p,
                     None => {
                         warn!("'{:?}' cannot be used for stroking.",
-                              link.tag_name().unwrap());
+                              link.tag_name());
                         return None;
                     }
                 }

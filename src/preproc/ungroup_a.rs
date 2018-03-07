@@ -23,7 +23,7 @@ pub fn ungroup_a(doc: &Document) {
             continue;
         }
 
-        node.remove_attribute(AId::XlinkHref);
+        node.remove_attribute(("xlink", AId::Href));
 
         if node.parents().any(|n| n.is_tag_name(EId::Text)) {
             node.set_tag_name(EId::Tspan);

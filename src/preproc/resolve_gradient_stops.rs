@@ -18,7 +18,7 @@ use short::{
 
 pub fn resolve_gradient_stops(doc: &Document) {
     let iter = doc.descendants().filter(|n| n.is_gradient())
-                                .filter(|n| n.has_attribute(AId::XlinkHref))
+                                .filter(|n| n.has_attribute(("xlink", AId::Href)))
                                 .filter(|n| !n.has_children());
     for mut node in iter {
         let link = node.clone();
@@ -27,9 +27,9 @@ pub fn resolve_gradient_stops(doc: &Document) {
 
     // Remove 'xlink:href' in gradients, because we already resolved everything.
     let iter = doc.descendants().filter(|n| n.is_gradient())
-                                .filter(|n| n.has_attribute(AId::XlinkHref));
+                                .filter(|n| n.has_attribute(("xlink", AId::Href)));
     for mut node in iter {
-        node.remove_attribute(AId::XlinkHref);
+        node.remove_attribute(("xlink", AId::Href));
     }
 }
 
@@ -39,7 +39,7 @@ fn resolve(gradient: &mut Node, linked_gradient: &Node) {
         return;
     }
 
-    let av = linked_gradient.attributes().get_value(AId::XlinkHref).cloned();
+    let av = linked_gradient.attributes().get_value(("xlink", AId::Href)).cloned();
     match av {
         Some(av) => {
             match av {

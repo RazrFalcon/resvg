@@ -19,12 +19,12 @@ use short::{
 // Except `image` element.
 pub fn fix_xlinks(doc: &Document) {
     for mut node in doc.descendants().filter(|n| !n.is_tag_name(EId::Image)) {
-        let av = node.attributes().get_value(AId::XlinkHref).cloned();
+        let av = node.attributes().get_value(("xlink", AId::Href)).cloned();
         if let Some(av) = av {
             match av {
                 AValue::Link(_) => {}
                 _ => {
-                    node.remove_attribute(AId::XlinkHref);
+                    node.remove_attribute(("xlink", AId::Href));
                 }
             }
         }

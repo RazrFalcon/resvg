@@ -15,7 +15,7 @@ time = "0.1"
 # version = "0.10"
 git = "https://github.com/RazrFalcon/libsvgdom.git"
 branch = "devel"
-# path = "../svgdom"
+# path = "../../../svgdom"
 
 [dependencies.resvg]
 path = "../../"

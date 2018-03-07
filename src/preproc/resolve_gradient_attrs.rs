@@ -171,7 +171,7 @@ fn resolve_lg_attr(
     }
 
     // Check for referenced element first.
-    let link = match node.attributes().get_value(AId::XlinkHref) {
+    let link = match node.attributes().get_value(("xlink", AId::Href)) {
         Some(&AValue::Link(ref link)) => link.clone(),
         _ => {
             // Use current element.
@@ -219,7 +219,7 @@ fn resolve_rg_attr(
     }
 
     // Check for referenced element first.
-    let link = match node.attributes().get_value(AId::XlinkHref) {
+    let link = match node.attributes().get_value(("xlink", AId::Href)) {
         Some(&AValue::Link(ref link)) => link.clone(),
         _ => {
             // Use current element.
@@ -268,7 +268,7 @@ fn resolve_patt_attr(
     }
 
     // Check for referenced element first.
-    let link = match node.attributes().get_value(AId::XlinkHref) {
+    let link = match node.attributes().get_value(("xlink", AId::Href)) {
         Some(&AValue::Link(ref link)) => link.clone(),
         _ => {
             // Use current element.
