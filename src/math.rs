@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::f64;
+
 // external
 use euclid;
 
@@ -103,6 +105,11 @@ pub trait RectExt {
     /// Creates `Rect` from values.
     fn from_xywh(x: f64, y: f64, w: f64, h: f64) -> Self;
 
+    /// Creates a new `Rect` for bounding box calculation.
+    ///
+    /// Shorthand for `Rect::from_xywh(f64::MAX, f64::MAX, 1.0, 1.0)`.
+    fn new_bbox() -> Self;
+
     /// Returns `x` position.
     fn x(&self) -> f64;
 
@@ -128,6 +135,10 @@ pub trait RectExt {
 impl RectExt for Rect {
     fn from_xywh(x: f64, y: f64, w: f64, h: f64) -> Self {
         Self::new(Point::new(x, y), Size::new(w, h))
+    }
+
+    fn new_bbox() -> Self {
+        Self::from_xywh(f64::MAX, f64::MAX, 1.0, 1.0)
     }
 
     fn x(&self) -> f64 {

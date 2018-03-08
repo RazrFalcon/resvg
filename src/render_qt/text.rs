@@ -36,7 +36,7 @@ pub fn draw_tspan<DrawAt>(
 ) -> Rect
     where DrawAt: FnMut(&tree::TSpan, f64, f64, f64, &qt::Font)
 {
-    let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
+    let mut bbox = Rect::new_bbox();
     let mut font_list = Vec::new();
     let mut tspan_w_list = Vec::new();
     for chunk_node in node.children() {

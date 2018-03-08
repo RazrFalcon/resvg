@@ -4,8 +4,6 @@
 
 //! Cairo backend implementation.
 
-use std::f64;
-
 // external
 use cairo::{
     self,
@@ -231,7 +229,7 @@ fn render_group(
     cr: &cairo::Context,
 ) -> Rect {
     let curr_ts = cr.get_matrix();
-    let mut g_bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
+    let mut g_bbox = Rect::new_bbox();
 
     for node in parent.children() {
         cr.transform(node.transform().to_native());
@@ -359,7 +357,7 @@ fn _calc_node_bbox(
             Some(utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2))
         }
         tree::NodeKind::Text(_) => {
-            let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
+            let mut bbox = Rect::new_bbox();
 
             text::draw_tspan(node, opt, cr, |tspan, x, y, _, pd| {
                 cr.new_path();
@@ -384,7 +382,7 @@ fn _calc_node_bbox(
             Some(utils::path_bbox(&segments, None, &ts2))
         }
         tree::NodeKind::Group(_) => {
-            let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
+            let mut bbox = Rect::new_bbox();
 
             for child in node.children() {
                 if let Some(c_bbox) = _calc_node_bbox(child, opt, ts2, cr) {

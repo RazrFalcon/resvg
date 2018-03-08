@@ -52,7 +52,7 @@ pub fn draw_tspan<DrawAt>(
 ) -> Rect
     where DrawAt: FnMut(&tree::TSpan, f64, f64, f64, &PangoData)
 {
-    let mut bbox = Rect::from_xywh(f64::MAX, f64::MAX, 0.0, 0.0);
+    let mut bbox = Rect::new_bbox();
     let mut pc_list = Vec::new();
     let mut tspan_w_list = Vec::new();
     for chunk_node in node.children() {
@@ -76,8 +76,7 @@ pub fn draw_tspan<DrawAt>(
 
                     let mut layout_iter = layout.get_iter().unwrap();
                     let ascent = (layout_iter.get_baseline() / pango::SCALE) as f64;
-                    let text_h = (layout.get_height() / pango::SCALE) as f64;
-                    bbox.expand(Rect::from_xywh(chunk.x, chunk.y - ascent, chunk_width, text_h));
+                    let text_h = layout.get_size().1 as f64 / PANGO_SCALE_64;
 
                     pc_list.push(PangoData {
                         layout,
@@ -86,6 +85,8 @@ pub fn draw_tspan<DrawAt>(
                     });
                     chunk_width += tspan_width;
                     tspan_w_list.push((tspan_width, ascent));
+
+                    bbox.expand(Rect::from_xywh(chunk.x, chunk.y - ascent, chunk_width, text_h));
                 }
             }
 
@@ -102,6 +103,9 @@ pub fn draw_tspan<DrawAt>(
             }
         }
     }
+
+    if bbox.x() == f64::MAX { bbox.origin.x = 0.0; }
+    if bbox.y() == f64::MAX { bbox.origin.y = 0.0; }
 
     bbox
 }
