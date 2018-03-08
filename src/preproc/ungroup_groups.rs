@@ -56,6 +56,12 @@ fn _ungroup_groups(parent: &Node, opt: &Options, groups: &mut Vec<Node>) {
                 continue;
             }
 
+            // Do not ungroup groups inside `clipPath`.
+            // They will be removed during conversion.
+            if node.parents().any(|n| n.is_tag_name(EId::ClipPath)) {
+                continue;
+            }
+
             // Groups with `clip-path` attribute can't be ungroupped.
             if let Some(&AValue::FuncLink(_)) = node.attributes().get_type(AId::ClipPath) {
                 continue;
