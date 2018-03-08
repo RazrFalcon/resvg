@@ -1,7 +1,0 @@
-coords-units-01-b.svg
-filters-conv-04-f.svg
-filters-overview-03-b.svg
-opacity-1001-f.svg
-pservers-grad-13-b.svg
-pservers-grad-17-b.svg
-pservers-grad-20-b.svg
