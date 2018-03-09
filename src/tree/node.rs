@@ -78,6 +78,7 @@ impl NodeKind {
 
 
 /// An SVG root element.
+#[derive(Clone, Copy, Debug)]
 pub struct Svg {
     /// Image size.
     ///
@@ -86,12 +87,12 @@ pub struct Svg {
     /// SVG viewbox.
     ///
     /// Specifies which part of the SVG image should be rendered.
-    // TODO: maybe to Rect<i32>
     pub view_box: Rect,
 }
 
 
 /// A path element.
+#[derive(Clone)]
 pub struct Path {
     /// Element's ID.
     ///
@@ -134,6 +135,7 @@ pub struct Text {
 ///
 /// Doesn't represented in the SVG directly. Usually, it's a first `tspan` or text node
 /// and any `tspan` that defines either `x` or `y` coordinate and/or have `text-anchor`.
+#[derive(Clone, Copy)]
 pub struct TextChunk {
     /// An absolute position on the X-axis.
     pub x: f64,
@@ -213,7 +215,7 @@ pub enum ImageData {
 
 /// An image codec.
 #[allow(missing_docs)]
-#[derive(Copy,Clone,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum ImageDataKind {
     PNG,
     JPEG,
@@ -248,6 +250,7 @@ pub struct Group {
 
 
 /// A generic gradient.
+#[derive(Clone, Copy)]
 pub struct BaseGradient {
     /// Coordinate system units.
     ///

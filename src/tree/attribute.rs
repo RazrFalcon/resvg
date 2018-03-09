@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::fmt;
+
 // external
 pub use svgdom::{
     Color,
@@ -18,7 +20,7 @@ use super::NodeId;
 ///
 /// `stroke-linecap` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum LineCap {
     Butt,
     Round,
@@ -29,7 +31,7 @@ pub enum LineCap {
 ///
 /// `stroke-linejoin` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum LineJoin {
     Miter,
     Round,
@@ -40,7 +42,7 @@ pub enum LineJoin {
 ///
 /// `fill-rule` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum FillRule {
     NonZero,
     EvenOdd,
@@ -50,7 +52,7 @@ pub enum FillRule {
 ///
 /// `*Units` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Units {
     UserSpaceOnUse,
     ObjectBoundingBox,
@@ -60,25 +62,36 @@ pub enum Units {
 ///
 /// `spreadMethod` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum SpreadMethod {
     Pad,
     Reflect,
     Repeat,
 }
 
+
 /// A text decoration style.
 ///
 /// Defines the style of the line that should be rendered.
 #[allow(missing_docs)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TextDecorationStyle {
     pub fill: Option<Fill>,
     pub stroke: Option<Stroke>,
 }
 
+impl Default for TextDecorationStyle {
+    fn default() -> Self {
+        TextDecorationStyle {
+            fill: None,
+            stroke: None,
+        }
+    }
+}
+
+
 /// A text decoration.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TextDecoration {
     /// Draw underline using specified style.
     ///
@@ -94,11 +107,22 @@ pub struct TextDecoration {
     pub line_through: Option<TextDecorationStyle>,
 }
 
+impl Default for TextDecoration {
+    fn default() -> Self {
+        TextDecoration {
+            underline: None,
+            overline: None,
+            line_through: None,
+        }
+    }
+}
+
+
 /// A text anchor.
 ///
 /// `text-anchor` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum TextAnchor {
     Start,
     Middle,
@@ -109,7 +133,7 @@ pub enum TextAnchor {
 ///
 /// `font-style` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum FontStyle {
     Normal,
     Italic,
@@ -120,7 +144,7 @@ pub enum FontStyle {
 ///
 /// `font-variant` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum FontVariant {
     Normal,
     SmallCaps,
@@ -130,7 +154,7 @@ pub enum FontVariant {
 ///
 /// `font-weight` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum FontWeight {
     W100,
     W200,
@@ -147,7 +171,7 @@ pub enum FontWeight {
 ///
 /// `font-stretch` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum FontStretch {
     Normal,
     Wider,
@@ -162,11 +186,12 @@ pub enum FontStretch {
     UltraExpanded,
 }
 
+
 /// A paint style.
 ///
 /// `paint` value type in the SVG.
 #[allow(missing_docs)]
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 pub enum Paint {
     /// Paint with a color.
     Color(Color),
@@ -174,18 +199,39 @@ pub enum Paint {
     Link(NodeId),
 }
 
+impl fmt::Debug for Paint {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Paint::Color(c) => write!(f, "Color({})", c),
+            Paint::Link(_) => write!(f, "Link"),
+        }
+    }
+}
+
+
 /// A fill style.
 #[allow(missing_docs)]
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy, Debug)]
 pub struct Fill {
     pub paint: Paint,
     pub opacity: f64,
     pub rule: FillRule,
 }
 
+impl Default for Fill {
+    fn default() -> Self {
+        Fill {
+            paint: Paint::Color(Color::new(0, 0, 0)),
+            opacity: 1.0,
+            rule: FillRule::NonZero,
+        }
+    }
+}
+
+
 /// A stroke style.
 #[allow(missing_docs)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Stroke {
     pub paint: Paint,
     pub dasharray: Option<NumberList>,
@@ -196,9 +242,6 @@ pub struct Stroke {
     pub linecap: LineCap,
     pub linejoin: LineJoin,
 }
-
-// TODO: default for all attributes
-// TODO: debug for all attributes
 
 impl Default for Stroke {
     fn default() -> Self {
@@ -214,6 +257,7 @@ impl Default for Stroke {
         }
     }
 }
+
 
 /// A font description.
 #[allow(missing_docs)]
@@ -231,12 +275,26 @@ pub struct Font {
     pub stretch: FontStretch,
 }
 
+impl Default for Font {
+    fn default() -> Self {
+        Font {
+            family: ::DEFAULT_FONT_FAMILY.to_owned(),
+            size: ::DEFAULT_FONT_SIZE,
+            style: FontStyle::Normal,
+            variant: FontVariant::Normal,
+            weight: FontWeight::W400,
+            stretch: FontStretch::Normal,
+        }
+    }
+}
+
+
 /// A path absolute segment.
 ///
 /// Unlike the SVG spec can contain only `M`, `L`, `C` and `Z` segments.
 /// All other segments will be converted to this one.
 #[allow(missing_docs)]
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum PathSegment {
     MoveTo {
         x: f64,

@@ -55,6 +55,7 @@ impl TransformFromBBox for qt::Transform {
 }
 
 /// Cairo backend handle.
+#[derive(Clone, Copy)]
 pub struct Backend;
 
 impl Render for Backend {

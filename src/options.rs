@@ -10,7 +10,7 @@ use svgdom::{
 
 
 /// Image fit options.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum FitTo {
     /// Keep original size.
     Original,

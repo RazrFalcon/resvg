@@ -60,6 +60,7 @@ impl TransformFromBBox for cairo::Matrix {
 }
 
 /// Cairo backend handle.
+#[derive(Clone, Copy)]
 pub struct Backend;
 
 impl Render for Backend {

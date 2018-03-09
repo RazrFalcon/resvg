@@ -16,6 +16,8 @@ And as an embeddable library to paint SVG on an application native canvas.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
+//#![warn(missing_debug_implementations)]
+#![warn(missing_copy_implementations)]
 
 // For error-chain.
 #![recursion_limit="128"]

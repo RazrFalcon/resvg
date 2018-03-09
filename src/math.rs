@@ -35,7 +35,7 @@ fn f64_min(v1: f64, v2: f64) -> f64 {
 
 /// Line representation.
 #[allow(missing_docs)]
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Line {
     pub x1: f64,
     pub y1: f64,

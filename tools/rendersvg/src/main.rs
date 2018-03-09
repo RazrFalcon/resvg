@@ -56,7 +56,7 @@ struct Args {
     perf: bool,
 }
 
-#[derive(Debug, Error)]
+#[derive(Error, Debug)]
 enum Error {
     #[error(msg_embedded, no_from, non_std)]
     InvalidId(String),
