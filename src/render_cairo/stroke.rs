@@ -34,6 +34,9 @@ pub fn apply(
                     cr.set_source_color(&c, stroke.opacity);
                 }
                 tree::Paint::Link(id) => {
+                    // a-stroke-002.svg
+                    // a-stroke-003.svg
+                    // a-stroke-004.svg
                     if let Some(node) = rtree.defs_at(id) {
                         match *node.value() {
                             tree::NodeKind::LinearGradient(ref lg) => {
@@ -51,6 +54,9 @@ pub fn apply(
                 }
             }
 
+            // a-stroke-linecap-001.svg
+            // a-stroke-linecap-002.svg
+            // a-stroke-linecap-003.svg
             let linecap = match stroke.linecap {
                 tree::LineCap::Butt => cairo::LineCap::Butt,
                 tree::LineCap::Round => cairo::LineCap::Round,
@@ -58,6 +64,9 @@ pub fn apply(
             };
             cr.set_line_cap(linecap);
 
+            // a-stroke-linejoin-001.svg
+            // a-stroke-linejoin-002.svg
+            // a-stroke-linejoin-003.svg
             let linejoin = match stroke.linejoin {
                 tree::LineJoin::Miter => cairo::LineJoin::Miter,
                 tree::LineJoin::Round => cairo::LineJoin::Round,
@@ -65,15 +74,23 @@ pub fn apply(
             };
             cr.set_line_join(linejoin);
 
+            // a-stroke-dasharray-001.svg
+            // a-stroke-dasharray-002.svg
+            // a-stroke-dashoffset-001.svg
+            // a-stroke-dashoffset-002.svg
+            // a-stroke-dashoffset-006.svg
             match stroke.dasharray {
                 Some(ref list) => cr.set_dash(list, stroke.dashoffset),
                 None => cr.set_dash(&[], 0.0),
             }
 
+            // a-stroke-miterlimit-002.svg
             cr.set_miter_limit(stroke.miterlimit);
             cr.set_line_width(stroke.width);
         }
         None => {
+            // a-stroke-006.svg
+
             // reset stroke properties
             cr.reset_source_rgba();
             cr.set_line_cap(cairo::LineCap::Butt);

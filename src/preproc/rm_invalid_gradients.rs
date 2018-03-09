@@ -23,9 +23,6 @@ use traits::{
 };
 
 
-// Tested by:
-// - pservers-grad-16-b.svg
-// - pservers-grad-stops-01-f.svg
 pub fn remove_invalid_gradients(doc: &mut Document) {
     let mut ids = Vec::new();
     let mut nodes = Vec::new();

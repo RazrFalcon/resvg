@@ -29,6 +29,8 @@ pub fn resolve_font_size(doc: &Document) {
     _resolve_font_size(&doc.root());
 }
 
+// a-font-size-002.svg
+// a-font-size-006.svg
 pub fn _resolve_font_size(parent: &Node) {
     for (_, mut node) in parent.children().svg() {
         // We have to resolve 'font-size' for all elements
@@ -88,6 +90,10 @@ pub fn _resolve_font_size(parent: &Node) {
 
 // If 'font-size' has percent units that it's value
 // is relative to the parent node 'font-size'.
+//
+// a-font-size-003.svg
+// a-font-size-004.svg
+// a-font-size-007.svg
 fn process_percent_font_size(parent: &Node, len: Length) -> Length {
     if parent.node_type() == NodeType::Root {
         Length::new(DEFAULT_FONT_SIZE, Unit::None)
@@ -100,6 +106,8 @@ fn process_percent_font_size(parent: &Node, len: Length) -> Length {
     }
 }
 
+// a-font-size-005.svg
+// a-font-size-008.svg
 fn process_named_font_size(parent: &Node, id: ValueId, font_size: &AValue) -> Length {
     let factor = match id {
         ValueId::XxSmall => -3,

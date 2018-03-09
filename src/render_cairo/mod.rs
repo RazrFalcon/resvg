@@ -415,5 +415,9 @@ fn from_cairo_path(path: &cairo::Path) -> Vec<tree::PathSegment> {
         }
     }
 
+    if segments.len() < 2 {
+        segments.clear();
+    }
+
     segments
 }

@@ -30,6 +30,10 @@ pub fn convert(
                 tree::Paint::Color(c)
             }
             AValue::FuncLink(ref link) => {
+                // a-fill-016.svg
+                // a-fill-017.svg
+                // a-fill-018.svg
+
                 let mut p = None;
                 if link.is_gradient() || link.is_tag_name(EId::Pattern) {
                     if let Some(id) = rtree.defs_id(&link.id()) {
@@ -40,6 +44,7 @@ pub fn convert(
                 match p {
                     Some(p) => p,
                     None => {
+                        // a-fill-023.svg
                         warn!("'{:?}' cannot be used for filling.",
                               link.tag_id().unwrap());
                         return None;
@@ -47,6 +52,7 @@ pub fn convert(
                 }
             }
             AValue::PredefValue(svgdom::ValueId::None) => {
+                // a-fill-020.svg
                 return None;
             }
             _ => {

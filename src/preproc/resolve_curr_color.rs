@@ -20,6 +20,8 @@ use short::{
 /// Resolve 'currentColor' attribute.
 ///
 /// The function will fallback to a default value when possible.
+//
+// a-fill-022.svg
 pub fn resolve_current_color(doc: &Document) {
     let mut ids = Vec::new();
 

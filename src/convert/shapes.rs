@@ -31,45 +31,53 @@ pub fn convert(node: &svgdom::Node) -> Option<path::Path> {
     }
 }
 
-// Tested by:
-// - shapes-rect-02-f.svg
-// - shapes-rect-03-f.svg
-// - shapes-rect-04-f.svg
-// - shapes-rect-06-f.svg
-// - shapes-rect-07-f.svg
-// - shapes-rect-1000-f.svg
+// e-rect-001.svg
 fn convert_rect(node: &svgdom::Node) -> Option<path::Path> {
     let attrs = node.attributes();
 
     // 'width' and 'height' attributes must be positive and non-zero.
+    //
+    // e-rect-007.svg
+    // e-rect-008.svg
+    // e-rect-009.svg
+    // e-rect-010.svg
+    // e-rect-011.svg
+    // e-rect-012.svg
     let width  = attrs.get_number(AId::Width).unwrap_or(0.0);
     let height = attrs.get_number(AId::Height).unwrap_or(0.0);
     if !(width > 0.0) {
         warn!("Rect '{}' has an invalid 'width' value. Skipped.", node.id());
         return None;
     }
-
     if !(height > 0.0) {
         warn!("Rect '{}' has an invalid 'height' value. Skipped.", node.id());
         return None;
     }
 
 
+    // e-rect-002.svg
+    // e-rect-003.svg
     let x = attrs.get_number(AId::X).unwrap_or(0.0);
     let y = attrs.get_number(AId::Y).unwrap_or(0.0);
 
 
     // Resolve rx, ry.
+    //
+    // e-rect-005.svg
+    // e-rect-006.svg
     let mut rx_opt = attrs.get_number(AId::Rx);
     let mut ry_opt = attrs.get_number(AId::Ry);
 
     // Remove negative values first.
+    //
+    // e-rect-013.svg
+    // e-rect-014.svg
+    // e-rect-015.svg
     if let Some(v) = rx_opt {
         if v.is_sign_negative() {
             rx_opt = None;
         }
     }
-
     if let Some(v) = ry_opt {
         if v.is_sign_negative() {
             ry_opt = None;
@@ -87,6 +95,10 @@ fn convert_rect(node: &svgdom::Node) -> Option<path::Path> {
     // Clamp rx/ry to the half of the width/height.
     //
     // Should be done only after resolving.
+    //
+    // e-rect-018.svg
+    // e-rect-019.svg
+    // e-rect-020.svg
     if rx > width  / 2.0 { rx = width  / 2.0; }
     if ry > height / 2.0 { ry = height / 2.0; }
 
@@ -101,6 +113,7 @@ fn convert_rect(node: &svgdom::Node) -> Option<path::Path> {
             .close_path()
             .finalize()
     } else {
+        // e-rect-004.svg
         path::Builder::with_capacity(9)
             .move_to(x + rx, y)
             .line_to(x + width - rx, y)
@@ -117,8 +130,6 @@ fn convert_rect(node: &svgdom::Node) -> Option<path::Path> {
     Some(path)
 }
 
-// Tested by:
-// - shapes-line-1000-f.svg
 fn convert_line(node: &svgdom::Node) -> Option<path::Path> {
     let attrs = node.attributes();
 
@@ -148,8 +159,6 @@ fn convert_polygon(node: &svgdom::Node) -> Option<path::Path> {
     }
 }
 
-/// Tested by:
-/// - shapes-polygon-1000-t.svg
 fn points_to_path(node: &svgdom::Node, eid: &str) -> Option<path::Path> {
     let attrs = node.attributes();
     let points = if let Some(p) = attrs.get_points(AId::Points) {
@@ -178,9 +187,6 @@ fn points_to_path(node: &svgdom::Node, eid: &str) -> Option<path::Path> {
     Some(path)
 }
 
-// Tested by:
-// - shapes-circle-02-t.svg
-// - shapes-circle-1000-t.svg
 fn convert_circle(node: &svgdom::Node) -> Option<path::Path> {
     let attrs = node.attributes();
 
@@ -196,9 +202,6 @@ fn convert_circle(node: &svgdom::Node) -> Option<path::Path> {
     Some(ellipse_to_path(cx, cy, r, r))
 }
 
-// Tested by:
-// - shapes-ellipse-02-t.svg
-// - shapes-ellipse-1000-t.svg
 fn convert_ellipse(node: &svgdom::Node) -> Option<path::Path> {
     let attrs = node.attributes();
 

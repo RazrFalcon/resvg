@@ -20,6 +20,12 @@ use traits::{
 // Remove any text/tspan nodes with `font-size` <= 0.
 //
 // Must be ran only after text prepossessing.
+//
+// a-font-size-009.svg
+// a-font-size-010.svg
+// a-font-size-011.svg
+// a-font-size-012.svg
+// a-font-size-013.svg
 pub fn remove_invalid_font_size(doc: &mut Document) {
     let mut rm_nodes = Vec::new();
 

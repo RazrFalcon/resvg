@@ -178,6 +178,7 @@ pub fn init_font(dom_font: &tree::Font) -> qt::Font {
     };
     font.set_stretch(font_stretch);
 
+    // a-font-size-001.svg
     font.set_size(dom_font.size);
 
     font

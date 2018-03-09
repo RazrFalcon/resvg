@@ -57,6 +57,7 @@ fn resolve_inherit(parent: &Node) {
 
         if node.is_shape() || node.is_text_content() || id == EId::G {
             resolve(&mut node, AId::Fill);
+            // a-fill-opacity-005.svg
             resolve(&mut node, AId::FillOpacity);
             resolve(&mut node, AId::FillRule);
             resolve(&mut node, AId::Stroke);

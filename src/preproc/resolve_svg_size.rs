@@ -20,8 +20,6 @@ use traits::{
 };
 
 
-/// Tested by:
-/// - struct-svg-*.svg
 pub fn resolve_svg_size(svg: &mut Node) -> bool {
     // We doesn't converted units yet, so operate on Length.
 

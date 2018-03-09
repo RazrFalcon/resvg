@@ -391,5 +391,9 @@ fn from_qt_path(p_path: &qt::PainterPath) -> Vec<tree::PathSegment> {
         i += 1;
     }
 
+    if segments.len() < 2 {
+        segments.clear();
+    }
+
     segments
 }

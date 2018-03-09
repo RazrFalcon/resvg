@@ -35,8 +35,12 @@ use super::{
 
 // Convert units according to: https://www.w3.org/TR/SVG/coords.html#Units
 //
-// Tested by:
-// - coords-units-*.svg
+// a-stroke-dasharray-004.svg
+// a-stroke-dasharray-005.svg
+// a-stroke-dasharray-006.svg
+// a-stroke-dashoffset-003.svg
+// a-stroke-dashoffset-004.svg
+// a-stroke-dashoffset-005.svg
 pub fn convert_units(svg: &mut Node, opt: &Options) {
     // We should convert 'font-size' before all other attributes,
     // because it's value used for 'em'/'ex' conversion.

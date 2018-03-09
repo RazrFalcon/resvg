@@ -55,13 +55,6 @@ pub fn convert_path(
     //
     // 'A closed path has coinciding start and end points.'
     // https://doc.qt.io/qt-5/qpainterpath.html#details
-    //
-    // Tested by:
-    //  paths-data-10-t.svg
-    //  painting-stroke-10-t.svg
-    //  painting-control-04-f.svg
-    //  shapes-polyline-01-t.svg
-    //  shapes-polyline-02-t.svg
 
     let mut prev_mx = 0.0;
     let mut prev_my = 0.0;
@@ -120,6 +113,8 @@ pub fn convert_path(
         i += 1;
     }
 
+    // a-fill-rule-001.svg
+    // a-fill-rule-002.svg
     match rule {
         tree::FillRule::NonZero => p_path.set_fill_rule(qt::FillRule::WindingFill),
         tree::FillRule::EvenOdd => p_path.set_fill_rule(qt::FillRule::OddEvenFill),

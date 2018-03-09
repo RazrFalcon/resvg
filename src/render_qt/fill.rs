@@ -34,10 +34,13 @@ pub fn apply(
 
             match fill.paint {
                 tree::Paint::Color(c) => {
+                    // a-fill-opacity-001.svg
                     let a = math::f64_bound(0.0, opacity * 255.0, 255.0) as u8;
                     brush.set_color(c.red, c.green, c.blue, a);
                 }
                 tree::Paint::Link(id) => {
+                    // a-fill-opacity-003.svg
+                    // a-fill-opacity-004.svg
                     if let Some(node) = rtree.defs_at(id) {
                         match *node.value() {
                             tree::NodeKind::LinearGradient(ref lg) => {

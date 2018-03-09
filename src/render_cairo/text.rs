@@ -223,7 +223,7 @@ fn init_font(dom_font: &tree::Font, dpi: f64) -> pango::FontDescription {
     };
     font.set_stretch(font_stretch);
 
-
+    // a-font-size-001.svg
     let font_size = dom_font.size * PANGO_SCALE_64 / dpi * 72.0;
     font.set_size(font_size as i32);
 

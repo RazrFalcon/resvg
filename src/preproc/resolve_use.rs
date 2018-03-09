@@ -20,8 +20,6 @@ use traits::{
 };
 
 
-// Tested by:
-// - struct-use-*.svg
 pub fn resolve_use(doc: &Document) {
     let mut nodes = Vec::new();
 

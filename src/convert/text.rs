@@ -276,7 +276,7 @@ fn convert_font(attrs: &svgdom::Attributes) -> tree::Font {
         _ => tree::FontStretch::Normal,
     };
 
-    // TODO: remove text nodes with font-size <= 0
+    // a-font-size-001.svg
     let size = attrs.get_number(AId::FontSize).unwrap_or(::DEFAULT_FONT_SIZE);
     debug_assert!(size > 0.0);
 

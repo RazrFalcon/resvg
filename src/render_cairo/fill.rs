@@ -32,9 +32,12 @@ pub fn apply(
         Some(ref fill) => {
             match fill.paint {
                 tree::Paint::Color(c) => {
+                    // a-fill-opacity-001.svg
                     cr.set_source_color(&c, fill.opacity);
                 }
                 tree::Paint::Link(id) => {
+                    // a-fill-opacity-003.svg
+                    // a-fill-opacity-004.svg
                     if let Some(node) = rtree.defs_at(id) {
                         match *node.value() {
                             tree::NodeKind::LinearGradient(ref lg) => {
@@ -52,6 +55,8 @@ pub fn apply(
                 }
             }
 
+            // a-fill-rule-001.svg
+            // a-fill-rule-002.svg
             match fill.rule {
                 tree::FillRule::NonZero => cr.set_fill_rule(cairo::FillRule::Winding),
                 tree::FillRule::EvenOdd => cr.set_fill_rule(cairo::FillRule::EvenOdd),

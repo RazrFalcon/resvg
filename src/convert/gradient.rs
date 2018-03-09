@@ -93,8 +93,6 @@ fn convert_stops(
 
         let attrs = s.attributes();
 
-        // Tested by:
-        // - pservers-grad-18-b.svg
         let offset = attrs.get_number(AId::Offset).unwrap_or(0.0);
         let color = attrs.get_color(AId::StopColor).unwrap_or(svgdom::Color::new(0, 0, 0));
         let opacity = attrs.get_number(AId::StopOpacity).unwrap_or(1.0);

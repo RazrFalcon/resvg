@@ -92,8 +92,13 @@ struct Data<'a> {
 
 fn main() {
     let m = App::new("files-testing")
+        .arg(Arg::with_name("inputdir")
+            .help("Sets input dir")
+            .index(1)
+            .required(true))
         .arg(Arg::with_name("workdir")
-            .long("workdir").help("Sets path to the work dir")
+            .help("Sets path to the work dir")
+            .index(2)
             .value_name("DIR")
             .required(true))
         .arg(Arg::with_name("backend")
@@ -115,7 +120,7 @@ fn main() {
 
     let data = Data {
         work_dir: Path::new(m.value_of("workdir").unwrap()),
-        input_dir: Path::new("../images/svg"),
+        input_dir: Path::new(m.value_of("inputdir").unwrap()),
         prev_render: None,
         curr_render: render,
         is_use_prev_commit: m.is_present("use-prev-commit"),
@@ -266,11 +271,15 @@ fn svg_to_png(workdir: &Path, path: &Path, suffix: &str) -> PathBuf {
 }
 
 fn render(exe: &Path, in_svg: &Path, out_png: &Path, backend: &str) -> Result<()> {
+    // Use double scale to test non-original size,
+    // because some stuff can break in this case.
     let o = Exec::cmd(exe)
         .arg(in_svg)
         .arg(out_png)
         .arg("--backend")
         .arg(backend)
+        .arg("--zoom")
+        .arg("2")
         .capture()?;
 
     if o.exit_status == subprocess::ExitStatus::Exited(1) {

@@ -30,10 +30,7 @@ use traits::{
 //
 // There is no simpler way to express 'text-decoration' property
 // without groups than collect all the options to the string.
-// It's not by the SVG spec, but easier than keepeng all the groups.
-//
-// Tested by:
-// - text-deco-*.svg
+// It's not by the SVG spec, but easier than keeping all the groups.
 pub fn prepare_text_decoration(doc: &mut Document) {
     for mut node in doc.descendants().filter(|n| n.is_tag_name(EId::Text)) {
         let mut td = String::new();

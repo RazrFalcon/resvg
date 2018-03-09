@@ -20,6 +20,8 @@ use short::{
 /// Resolve 'inherit' attributes.
 ///
 /// The function will fallback to a default value when possible.
+//
+// a-fill-021.svg
 pub fn resolve_inherit(doc: &Document) {
     let mut ids = Vec::new();
 

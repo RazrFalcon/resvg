@@ -26,6 +26,7 @@ pub fn convert(
     attrs: &svgdom::Attributes,
 ) -> Option<tree::Stroke> {
     let dashoffset  = attrs.get_number(AId::StrokeDashoffset).unwrap_or(0.0);
+    // a-stroke-miterlimit-001.svg
     let miterlimit  = attrs.get_number(AId::StrokeMiterlimit).unwrap_or(4.0);
     let opacity     = attrs.get_number(AId::StrokeOpacity).unwrap_or(1.0);
     let width       = attrs.get_number(AId::StrokeWidth).unwrap_or(1.0);
@@ -33,6 +34,11 @@ pub fn convert(
     if !(width > 0.0) {
         return None;
     }
+
+    // Must be bigger than 1.
+    //
+    // a-stroke-miterlimit-003.svg
+    let miterlimit = if miterlimit < 1.0 { 1.0 } else { miterlimit };
 
     let paint = if let Some(stroke) = attrs.get_type(AId::Stroke) {
         match *stroke {
@@ -102,19 +108,19 @@ pub fn convert(
 
 // Prepare the 'stroke-dasharray' according to:
 // https://www.w3.org/TR/SVG/painting.html#StrokeDasharrayProperty
-//
-// Tested by:
-// - painting-stroke-06-t.svg
-// - painting-stroke-1000-t.svg
 fn conv_dasharray(av: Option<&AValue>) -> Option<svgdom::NumberList> {
     if let Some(&AValue::NumberList(ref list)) = av {
         // `A negative value is an error`
+        //
+        // a-stroke-dasharray-007.svg
         if list.iter().any(|n| n.is_sign_negative()) {
             return None;
         }
 
         // `If the sum of the values is zero, then the stroke is rendered
         // as if a value of none were specified.`
+        //
+        // a-stroke-dasharray-008.svg
         {
             // no Iter::sum(), because of f64
 
@@ -130,6 +136,8 @@ fn conv_dasharray(av: Option<&AValue>) -> Option<svgdom::NumberList> {
 
         // `If an odd number of values is provided, then the list of values
         // is repeated to yield an even number of values.`
+        //
+        // a-stroke-dasharray-003.svg
         if list.len() % 2 != 0 {
             let mut tmp_list = list.clone();
             tmp_list.extend_from_slice(&list);

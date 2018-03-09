@@ -5,9 +5,14 @@ before_install:
   - sudo add-apt-repository ppa:beineri/opt-qt562-trusty -y
   - sudo apt-get update -qq
 install:
-  # we need gtk3 for capi/examples/cairo
-  - sudo apt-get install -y libpango1.0-dev libgtk-3-dev
+  # for cairo backend
+  - sudo apt-get install -y libpango1.0-dev
+  # for capi/examples/cairo
+  - sudo apt-get install -y libgtk-3-dev
+  # for travis script
+  - sudo apt-get install python3
+  # for qt backend
   - sudo apt-get install -qq qt56base
   # prepare custom Qt
   - source /opt/qt56/bin/qt56-env.sh;
-script: ./scripts/run-tests.sh
+script: ./scripts/run-tests.py

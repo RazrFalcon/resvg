@@ -1,0 +1,5 @@
+a-stroke-miterlimit-003.svg
+e-clipPath-016.svg
+e-tspan-009.svg
+e-tspan-010.svg
+e-tspan-011.svg
