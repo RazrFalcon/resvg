@@ -180,11 +180,8 @@ pub fn parse_rtree_from_data(
     text: &str,
     opt: &Options,
 ) -> Result<tree::RenderTree> {
-    let mut doc = parse_svg(text)?;
-    preproc::prepare_doc(&mut doc, opt)?;
-    let rtree = convert::convert_doc(&doc, opt)?;
-
-    Ok(rtree)
+    let doc = parse_svg(text)?;
+    parse_rtree_from_dom(doc, opt)
 }
 
 /// Creates `RenderTree` from file.
@@ -196,6 +193,17 @@ pub fn parse_rtree_from_file<P: AsRef<Path>>(
 ) -> Result<tree::RenderTree> {
     let text = load_file(path.as_ref())?;
     parse_rtree_from_data(&text, opt)
+}
+
+/// Creates `RenderTree` from `svgdom::Document`.
+pub fn parse_rtree_from_dom(
+    mut doc: svgdom::Document,
+    opt: &Options,
+) -> Result<tree::RenderTree> {
+    preproc::prepare_doc(&mut doc, opt)?;
+    let rtree = convert::convert_doc(&doc, opt)?;
+
+    Ok(rtree)
 }
 
 fn load_file(path: &Path) -> Result<String> {
