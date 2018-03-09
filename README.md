@@ -57,15 +57,11 @@ of the SVG Tiny 1.2 subset. In simple terms - it correctly renders only primitiv
 
 Results of the [SVG test suite](https://www.w3.org/Graphics/SVG/Test/20110816/):
 
-[![Chart]](https://htmlpreview.github.io/?https://github.com/RazrFalcon/resvg/blob/master/doc/support-chart.html)
-
-[Chart]: doc/support-chart.png
+![Chart1](https://github.com/RazrFalcon/resvg-test-suite/blob/master/site/images/official_chart.svg)
 
 Results of the [resvg test suite](https://github.com/RazrFalcon/resvg-test-suite):
 
 ![Chart2](https://github.com/RazrFalcon/resvg-test-suite/blob/master/site/images/chart.svg)
-
-https://github.com/RazrFalcon/resvg-test-suite/blob/master/site/images/chart.svg
 
 You can find a complete table of supported features
 [here](https://razrfalcon.github.io/resvg-test-suite/svg-support-table.html).
