@@ -3,6 +3,7 @@
 #include <QFrame>
 
 struct resvg_render_tree;
+struct resvg_options;
 
 class SvgView : public QFrame
 {
@@ -43,6 +44,7 @@ protected:
 private:
     const QImage m_checkboardImg;
 
+    resvg_options *m_opt = nullptr;
     resvg_render_tree *m_rtree = nullptr;
 
     bool m_isFitToView = true;

@@ -46,6 +46,10 @@ SvgView::~SvgView()
     if (m_rtree) {
         resvg_rtree_destroy(m_rtree);
     }
+
+    if (m_opt) {
+        delete m_opt;
+    }
 }
 
 void SvgView::init()
@@ -83,7 +87,7 @@ void SvgView::setRenderToImage(bool flag)
     p.begin(&img);
     p.setRenderHint(QPainter::Antialiasing);
     resvg_rect r { 0, 0, width, height };
-    resvg_qt_render_to_canvas(m_rtree, r, &p);
+    resvg_qt_render_to_canvas(m_rtree, m_opt, r, &p);
     p.end();
 
     img.setDevicePixelRatio(ratio);
@@ -125,9 +129,14 @@ void SvgView::loadData(const QByteArray &ba)
     const auto *screen = qApp->screens().first();
     const double dpi = screen->logicalDotsPerInch() * screen->devicePixelRatio();
 
+    m_opt = new resvg_options;
+    resvg_init_options(m_opt);
+    m_opt->dpi = dpi;
+
     char *err = nullptr;
-    m_rtree = resvg_parse_rtree_from_data(ba.constData(), dpi, &err);
+    m_rtree = resvg_parse_rtree_from_data(ba.constData(), m_opt, &err);
     if (!m_rtree) {
+        m_opt = nullptr;
         emit loadError(QString::fromUtf8(err));
         resvg_error_msg_destroy(err);
     }
@@ -144,10 +153,15 @@ void SvgView::loadFile(const QString &path)
     const auto *screen = qApp->screens().first();
     const double dpi = screen->logicalDotsPerInch() * screen->devicePixelRatio();
 
+    m_opt = new resvg_options;
+    resvg_init_options(m_opt);
+    m_opt->dpi = dpi;
+
     char *err = nullptr;
     std::string utf8Path = path.toUtf8().constData();
-    m_rtree = resvg_parse_rtree_from_file(utf8Path.c_str(), dpi, &err);
+    m_rtree = resvg_parse_rtree_from_file(utf8Path.c_str(), m_opt, &err);
     if (!m_rtree) {
+        m_opt = nullptr;
         emit loadError(QString::fromUtf8(err));
         resvg_error_msg_destroy(err);
     }
@@ -203,7 +217,7 @@ void SvgView::paintEvent(QPaintEvent *e)
         }
 
         resvg_rect rr { x, y, img_width, img_height };
-        resvg_qt_render_to_canvas(m_rtree, rr, &p);
+        resvg_qt_render_to_canvas(m_rtree, m_opt, rr, &p);
         p.setTransform(QTransform());
 
         imgRect = QRect(x, y, img_width, img_height);

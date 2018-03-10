@@ -2,8 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#![allow(non_camel_case_types)]
+
 extern crate resvg;
-extern crate log;
+#[macro_use] extern crate log;
 extern crate fern;
 
 #[cfg(feature = "cairo-backend")]
@@ -12,6 +14,7 @@ extern crate glib;
 extern crate cairo_sys;
 
 use std::fmt;
+use std::path;
 use std::ptr;
 use std::ffi::{
     CStr,
@@ -30,16 +33,61 @@ use resvg::cairo;
 use resvg::RectExt;
 use resvg::tree::prelude::*;
 
+
 #[repr(C)]
-pub struct Rect {
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
+pub struct resvg_options {
+    pub path: *const c_char,
+    pub dpi: f64,
+    pub fit_to: resvg_fit_to,
+    pub draw_background: bool,
+    pub background: resvg_color,
+    pub keep_named_groups: bool,
+}
+
+#[repr(C)]
+pub struct resvg_color {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+}
+
+#[repr(C)]
+pub enum resvg_fit_to_type {
+    RESVG_FIT_TO_ORIGINAL,
+    RESVG_FIT_TO_WIDTH,
+    RESVG_FIT_TO_HEIGHT,
+    RESVG_FIT_TO_ZOOM,
+}
+
+#[repr(C)]
+pub struct resvg_fit_to {
+    kind: resvg_fit_to_type,
+    value: f32,
+}
+
+#[repr(C)]
+pub struct resvg_rect {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+#[repr(C)]
+pub struct resvg_transform {
+    pub a: f64,
+    pub b: f64,
+    pub c: f64,
+    pub d: f64,
+    pub e: f64,
+    pub f: f64,
 }
 
 #[repr(C)]
 pub struct resvg_render_tree(resvg::tree::RenderTree);
+
+#[repr(C)]
+pub struct resvg_handle(resvg::InitObject);
 
 macro_rules! on_err {
     ($err:expr, $msg:expr) => ({
@@ -49,20 +97,18 @@ macro_rules! on_err {
     })
 }
 
-macro_rules! from_raw_str {
-    ($raw_str:expr, $err:expr, $msg:expr) => ({
-        let rstr = unsafe {
-            assert!(!$raw_str.is_null());
-            CStr::from_ptr($raw_str)
-        };
+#[no_mangle]
+pub extern fn resvg_init() -> *mut resvg_handle {
+    let handle = Box::new(resvg_handle(resvg::init()));
+    Box::into_raw(handle)
+}
 
-        let rstr = match rstr.to_str() {
-            Ok(rstr) => rstr,
-            Err(_) => on_err!($err, $msg),
-        };
-
-        rstr
-    })
+#[no_mangle]
+pub extern fn resvg_destroy(handle: *mut resvg_handle) {
+    unsafe {
+        assert!(!handle.is_null());
+        Box::from_raw(handle)
+    };
 }
 
 #[no_mangle]
@@ -92,23 +138,66 @@ fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &log:
     ))
 }
 
+fn to_native_opt(opt: &resvg_options) -> resvg::Options {
+    let mut path: Option<path::PathBuf> = None;
+
+    if !opt.path.is_null() {
+        if let Some(p) = cstr_to_str(opt.path) {
+            if !p.is_empty() {
+                path = Some(p.into());
+            }
+        }
+    };
+
+    let fit_to = match opt.fit_to.kind {
+        resvg_fit_to_type::RESVG_FIT_TO_ORIGINAL => {
+            resvg::FitTo::Original
+        }
+        resvg_fit_to_type::RESVG_FIT_TO_WIDTH => {
+            assert!(opt.fit_to.value > 0.0);
+            resvg::FitTo::Width(opt.fit_to.value as u32)
+        }
+        resvg_fit_to_type::RESVG_FIT_TO_HEIGHT => {
+            assert!(opt.fit_to.value > 0.0);
+            resvg::FitTo::Height(opt.fit_to.value as u32)
+        }
+        resvg_fit_to_type::RESVG_FIT_TO_ZOOM => {
+            assert!(opt.fit_to.value > 0.0);
+            resvg::FitTo::Zoom(opt.fit_to.value)
+        }
+    };
+
+    let background = if opt.draw_background {
+        Some(resvg::tree::Color::new(
+            opt.background.r,
+            opt.background.g,
+            opt.background.b,
+        ))
+    } else {
+        None
+    };
+
+    resvg::Options {
+        path,
+        dpi: opt.dpi,
+        fit_to,
+        background,
+        keep_named_groups: opt.keep_named_groups,
+    }
+}
+
 #[no_mangle]
 pub extern fn resvg_parse_rtree_from_file(
     file_path: *const c_char,
-    dpi: f64,
+    opt: *const resvg_options,
     error: *mut *mut c_char,
 ) -> *mut resvg_render_tree {
-    let file_path = from_raw_str!(
-        file_path,
-        error,
-        "Error: the file path is not an UTF-8 string."
-    );
-
-    let opt = resvg::Options {
-        path: Some(file_path.into()),
-        dpi: dpi,
-        .. resvg::Options::default()
+    let file_path = match cstr_to_str(file_path) {
+        Some(v) => v,
+        None => on_err!(error, "Error: file path is not an UTF-8 string."),
     };
+
+    let opt = to_native_opt(unsafe { &*opt });
 
     let rtree = match resvg::parse_rtree_from_file(file_path, &opt) {
         Ok(rtree) => rtree,
@@ -122,19 +211,15 @@ pub extern fn resvg_parse_rtree_from_file(
 #[no_mangle]
 pub extern fn resvg_parse_rtree_from_data(
     text: *const c_char,
-    dpi: f64,
+    opt: *const resvg_options,
     error: *mut *mut c_char,
 ) -> *mut resvg_render_tree {
-    let text = from_raw_str!(
-        text,
-        error,
-        "Error: the SVG data is not an UTF-8 string."
-    );
-
-    let opt = resvg::Options {
-        dpi: dpi,
-        .. resvg::Options::default()
+    let text = match cstr_to_str(text) {
+        Some(v) => v,
+        None => on_err!(error, "Error: SVG data is not an UTF-8 string."),
     };
+
+    let opt = to_native_opt(unsafe { &*opt });
 
     let rtree = match resvg::parse_rtree_from_data(text, &opt) {
         Ok(rtree) => rtree,
@@ -161,37 +246,128 @@ pub extern fn resvg_rtree_destroy(rtree: *mut resvg_render_tree) {
     };
 }
 
+fn cstr_to_str(text: *const c_char) -> Option<&'static str> {
+    let text = unsafe {
+        assert!(!text.is_null());
+        CStr::from_ptr(text)
+    };
+
+    text.to_str().ok()
+}
+
+#[cfg(feature = "qt-backend")]
+#[no_mangle]
+pub extern fn resvg_qt_render_to_image(
+    rtree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    file_path: *const c_char,
+) -> bool {
+    let backend = Box::new(resvg::render_qt::Backend);
+    render_to_image(rtree, opt, file_path, backend)
+}
+
+#[cfg(feature = "cairo-backend")]
+#[no_mangle]
+pub extern fn resvg_cairo_render_to_image(
+    rtree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    file_path: *const c_char,
+) -> bool {
+    let backend = Box::new(resvg::render_cairo::Backend);
+    render_to_image(rtree, opt, file_path, backend)
+}
+
+fn render_to_image(
+    rtree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    file_path: *const c_char,
+    backend: Box<resvg::Render>,
+) -> bool {
+    let rtree = unsafe {
+        assert!(!rtree.is_null());
+        &*rtree
+    };
+
+    let file_path = match cstr_to_str(file_path) {
+        Some(v) => v,
+        None => return false,
+    };
+
+    let opt = to_native_opt(unsafe { &*opt });
+
+    let img = backend.render_to_image(&rtree.0, &opt);
+    let img = match img {
+        Ok(img) => img,
+        Err(e) => {
+            warn!("{}", e);
+            return false;
+        }
+    };
+
+    img.save(path::Path::new(file_path))
+}
+
 #[cfg(feature = "qt-backend")]
 #[no_mangle]
 pub extern fn resvg_qt_render_to_canvas(
-    rtree: *mut resvg_render_tree,
-    view: Rect,
+    rtree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    view: resvg_rect,
     painter: *mut qt::qtc_qpainter,
 ) {
     let rtree = unsafe {
         assert!(!rtree.is_null());
-        &mut *rtree
+        &*rtree
     };
 
     let painter = unsafe { qt::Painter::from_raw(painter) };
     let rect = resvg::Rect::from_xywh(view.x, view.y, view.width, view.height);
 
-    // TODO: to a proper options
-    let opt = resvg::Options::default();
+    let opt = to_native_opt(unsafe { &*opt });
 
     resvg::render_qt::render_to_canvas(&rtree.0, &opt, rect, &painter);
+}
+
+#[cfg(feature = "qt-backend")]
+#[no_mangle]
+pub extern fn resvg_qt_render_to_canvas_by_id(
+    rtree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    view: resvg_rect,
+    id: *const c_char,
+    painter: *mut qt::qtc_qpainter,
+) {
+    let rtree = unsafe {
+        assert!(!rtree.is_null());
+        &*rtree
+    };
+
+    let painter = unsafe { qt::Painter::from_raw(painter) };
+    let rect = resvg::Rect::from_xywh(view.x, view.y, view.width, view.height);
+
+    let opt = to_native_opt(unsafe { &*opt });
+
+    let id = match cstr_to_str(id) {
+        Some(v) => v,
+        None => return,
+    };
+
+    if let Some(node) = node_by_id(&rtree.0, id) {
+        resvg::render_qt::render_node_to_canvas(node, &opt, rect.to_screen_size(), &painter);
+    }
 }
 
 #[cfg(feature = "cairo-backend")]
 #[no_mangle]
 pub extern fn resvg_cairo_render_to_canvas(
-    rtree: *mut resvg_render_tree,
-    view: Rect,
+    rtree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    view: resvg_rect,
     cr: *mut cairo_sys::cairo_t,
 ) {
     let rtree = unsafe {
         assert!(!rtree.is_null());
-        &mut *rtree
+        &*rtree
     };
 
     use glib::translate::FromGlibPtrNone;
@@ -199,21 +375,51 @@ pub extern fn resvg_cairo_render_to_canvas(
     let cr = unsafe { cairo::Context::from_glib_none(cr) };
     let rect = resvg::Rect::from_xywh(view.x, view.y, view.width, view.height);
 
-    // TODO: to a proper options
-    let opt = resvg::Options::default();
+    let opt = to_native_opt(unsafe { &*opt });
 
     resvg::render_cairo::render_to_canvas(&rtree.0, &opt, rect, &cr);
 }
 
+#[cfg(feature = "cairo-backend")]
+#[no_mangle]
+pub extern fn resvg_cairo_render_to_canvas_by_id(
+    rtree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    view: resvg_rect,
+    id: *const c_char,
+    cr: *mut cairo_sys::cairo_t,
+) {
+    let rtree = unsafe {
+        assert!(!rtree.is_null());
+        &*rtree
+    };
+
+    let id = match cstr_to_str(id) {
+        Some(v) => v,
+        None => return,
+    };
+
+    use glib::translate::FromGlibPtrNone;
+
+    let cr = unsafe { cairo::Context::from_glib_none(cr) };
+    let rect = resvg::Rect::from_xywh(view.x, view.y, view.width, view.height);
+
+    let opt = to_native_opt(unsafe { &*opt });
+
+    if let Some(node) = node_by_id(&rtree.0, id) {
+        resvg::render_cairo::render_node_to_canvas(node, &opt, rect.to_screen_size(), &cr);
+    }
+}
+
 #[no_mangle]
 pub extern fn resvg_get_image_size(
-    rtree: *mut resvg_render_tree,
+    rtree: *const resvg_render_tree,
     width: *mut f64,
     height: *mut f64,
 ) {
     let rtree = unsafe {
         assert!(!rtree.is_null());
-        &mut *rtree
+        &*rtree
     };
 
     let size = rtree.0.svg_node().size;
@@ -222,4 +428,159 @@ pub extern fn resvg_get_image_size(
         *width = size.width;
         *height = size.height;
     }
+}
+
+#[cfg(feature = "qt-backend")]
+#[no_mangle]
+pub extern fn resvg_qt_get_node_bbox(
+    rtree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    id: *const c_char,
+    bbox: *mut resvg_rect,
+) -> bool {
+    let backend = Box::new(resvg::render_qt::Backend);
+    get_node_bbox(rtree, opt, id, bbox, backend)
+}
+
+#[cfg(feature = "cairo-backend")]
+#[no_mangle]
+pub extern fn resvg_cairo_get_node_bbox(
+    rtree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    id: *const c_char,
+    bbox: *mut resvg_rect,
+) -> bool {
+    let backend = Box::new(resvg::render_cairo::Backend);
+    get_node_bbox(rtree, opt, id, bbox, backend)
+}
+
+fn get_node_bbox(
+    rtree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    id: *const c_char,
+    bbox: *mut resvg_rect,
+    backend: Box<resvg::Render>,
+) -> bool {
+    let id = match cstr_to_str(id) {
+        Some(v) => v,
+        None => {
+            warn!("Provided ID is no an UTF-8 string.");
+            return false;
+        }
+    };
+
+    if id.is_empty() {
+        warn!("Node ID must not be empty.");
+        return false;
+    }
+
+    let rtree = unsafe {
+        assert!(!rtree.is_null());
+        &*rtree
+    };
+
+
+    let opt = to_native_opt(unsafe { &*opt });
+
+    match node_by_id(&rtree.0, id) {
+        Some(node) => {
+            if let Some(r) = backend.calc_node_bbox(node, &opt) {
+                unsafe {
+                    (*bbox).x = r.x();
+                    (*bbox).y = r.y();
+                    (*bbox).width = r.width();
+                    (*bbox).height = r.height();
+                }
+
+                true
+            } else {
+                false
+            }
+        }
+        None => {
+            warn!("No node with '{}' ID in the tree.", id);
+            false
+        }
+    }
+}
+
+#[no_mangle]
+pub extern fn resvg_node_exists(
+    rtree: *const resvg_render_tree,
+    id: *const c_char,
+) -> bool {
+    let id = match cstr_to_str(id) {
+        Some(v) => v,
+        None => {
+            warn!("Provided ID is no an UTF-8 string.");
+            return false;
+        }
+    };
+
+    if id.is_empty() {
+        return false;
+    }
+
+    let rtree = unsafe {
+        assert!(!rtree.is_null());
+        &*rtree
+    };
+
+    node_by_id(&rtree.0, id).is_some()
+}
+
+#[no_mangle]
+pub extern fn resvg_get_node_transform(
+    rtree: *const resvg_render_tree,
+    id: *const c_char,
+    ts: *mut resvg_transform,
+) -> bool {
+    let id = match cstr_to_str(id) {
+        Some(v) => v,
+        None => {
+            warn!("Provided ID is no an UTF-8 string.");
+            return false;
+        }
+    };
+
+    if id.is_empty() {
+        return false;
+    }
+
+    let rtree = unsafe {
+        assert!(!rtree.is_null());
+        &*rtree
+    };
+
+    if let Some(node) = node_by_id(&rtree.0, id) {
+        let abs_ts = resvg::utils::abs_transform(node);
+
+        unsafe {
+            (*ts).a = abs_ts.a;
+            (*ts).b = abs_ts.b;
+            (*ts).c = abs_ts.c;
+            (*ts).d = abs_ts.d;
+            (*ts).e = abs_ts.e;
+            (*ts).f = abs_ts.f;
+        }
+
+        return true;
+    }
+
+    false
+}
+
+fn node_by_id<'a>(
+    rtree: &'a resvg::tree::RenderTree,
+    id: &str
+) -> Option<resvg::tree::NodeRef<'a>> {
+    for node in rtree.root().descendants() {
+        if !rtree.is_in_defs(node) {
+            if node.svg_id() == id {
+                return Some(node);
+            }
+        }
+    }
+
+    None
 }

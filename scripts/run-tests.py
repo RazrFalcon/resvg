@@ -92,6 +92,12 @@ with cd('tools/rendersvg'):
     proc.check_call(['cargo', 'build', '--features', 'cairo-backend qt-backend'])
 
 
+# build cargo examples
+proc.check_call(['cargo', 'test', '--all-features'])
+proc.check_call(['cargo', 'test', '--features', 'cairo-backend'])
+proc.check_call(['cargo', 'test', '--features', 'qt-backend'])
+
+
 # rendersvg unit tests
 #
 # run only locally, because bboxes depend on freetype settings
@@ -108,6 +114,7 @@ with cd('capi'):
     proc.check_call(['cargo', 'build', '--features', 'qt-backend'])
 
 with cd('demo'):
+    proc.call(['make', 'distclean'])
     proc.check_call(['qmake', 'CONFIG+=debug'], env=dict(os.environ, QT_SELECT="5"))
     proc.check_call(['make'])
 
@@ -119,6 +126,7 @@ with cd('capi'):
     proc.check_call(['cargo', 'build', '--features', 'cairo-backend'])
 
 with cd('examples/cairo-capi'):
+    proc.call(['make', 'clean'])
     proc.check_call(['make'])
 
 

@@ -17,7 +17,7 @@ And as an embeddable library to paint SVG on an application native canvas.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 //#![warn(missing_debug_implementations)]
-#![warn(missing_copy_implementations)]
+//#![warn(missing_copy_implementations)]
 
 // For error-chain.
 #![recursion_limit="128"]
@@ -103,7 +103,7 @@ pub trait Render {
         opt: &Options,
     ) -> Result<Box<OutputImage>>;
 
-    /// Calculates node's bounding box.
+    /// Calculates node's absolute bounding box.
     ///
     /// Note: this method can be pretty expensive.
     fn calc_node_bbox(

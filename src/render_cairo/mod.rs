@@ -321,7 +321,7 @@ fn render_node(
     }
 }
 
-/// Calculates node's bounding box.
+/// Calculates node's absolute bounding box.
 ///
 /// Note: this method can be pretty expensive.
 pub fn calc_node_bbox(

@@ -123,7 +123,7 @@ pub fn render_node_to_image(
 
     let painter = qt::Painter::new(&img);
     apply_viewbox_transform(node_bbox, img_view, &painter);
-    render_node_to_canvas(node, opt, img_view, &painter);
+    render_node_to_canvas(node, opt, img_view.to_screen_size(), &painter);
     painter.end();
 
     Ok(img)
@@ -174,7 +174,7 @@ pub fn render_to_canvas(
 pub fn render_node_to_canvas(
     node: tree::NodeRef,
     opt: &Options,
-    img_view: Rect,
+    img_size: ScreenSize,
     painter: &qt::Painter,
 ) {
     let curr_ts = painter.get_transform();
@@ -182,7 +182,7 @@ pub fn render_node_to_canvas(
     ts.append(&node.transform());
 
     painter.apply_transform(&ts.to_native());
-    render_node(node, opt, img_view.to_screen_size(), painter);
+    render_node(node, opt, img_size, painter);
     painter.set_transform(&curr_ts);
 }
 
@@ -302,7 +302,7 @@ fn render_node(
     }
 }
 
-/// Calculates node's bounding box.
+/// Calculates node's absolute bounding box.
 ///
 /// Note: this method can be pretty expensive.
 pub fn calc_node_bbox(
