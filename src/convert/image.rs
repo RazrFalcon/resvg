@@ -17,7 +17,6 @@ use short::{
 use traits::{
     GetValue,
 };
-use math::*;
 use {
     Options,
 };
@@ -29,26 +28,14 @@ pub(super) fn convert(
     parent: tree::NodeId,
     rtree: &mut tree::RenderTree,
 ) {
-    let attrs = node.attributes();
+    let ref attrs = node.attributes();
 
-    let ts = attrs.get_transform(AId::Transform).unwrap_or_default();
+    let transform = attrs.get_transform(AId::Transform).unwrap_or_default();
 
-    let x = attrs.get_number(AId::X).unwrap_or(0.0);
-    let y = attrs.get_number(AId::Y).unwrap_or(0.0);
-
-    macro_rules! get_attr {
-        ($aid:expr) => (
-            if let Some(v) = attrs.get_type($aid) {
-                v
-            } else {
-                warn!("The 'image' element lacks '{}' attribute. Skipped.", $aid);
-                return;
-            }
-        )
-    }
-
-    let w: f64 = *get_attr!(AId::Width);
-    let h: f64 = *get_attr!(AId::Height);
+    let view_box = tree::ViewBox {
+        rect: super::convert_rect(attrs),
+        aspect: super::convert_aspect(attrs),
+    };
 
     let href = match attrs.get_value(("xlink", AId::Href)) {
         Some(&AValue::String(ref s)) => s,
@@ -61,9 +48,9 @@ pub(super) fn convert(
     if let Some(data) = get_href_data(href, opt.path.as_ref()) {
         rtree.append_child(parent, tree::NodeKind::Image(tree::Image {
             id: node.id().clone(),
-            transform: ts,
-            rect: Rect::from_xywh(x, y, w, h),
-            data: data,
+            transform,
+            view_box,
+            data,
         }));
     }
 }

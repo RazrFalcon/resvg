@@ -6,14 +6,19 @@ use std::fmt;
 
 // external
 pub use svgdom::{
+    Align,
+    AspectRatio,
     Color,
+    FuzzyEq,
     NumberList,
     Transform,
-    FuzzyEq,
 };
 
 // self
 use super::NodeId;
+use math::{
+    Rect,
+};
 
 
 /// A line cap.
@@ -286,6 +291,16 @@ impl Default for Font {
             stretch: FontStretch::Normal,
         }
     }
+}
+
+
+/// View box.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct ViewBox {
+    /// Value of the `viewBox` attribute.
+    pub rect: Rect,
+    /// Value of the `preserveAspectRatio` attribute.
+    pub aspect: AspectRatio,
 }
 
 

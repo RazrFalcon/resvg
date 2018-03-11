@@ -15,11 +15,11 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
 base64 = "0.9"
-log = "0.4"
-libflate = "0.1"
-lyon_geom = "0.10"
-euclid = "0.17"
 ego-tree = "0.3"
+euclid = "0.17"
+libflate = "0.1"
+log = "0.4"
+lyon_geom = "0.10"
 
 [dependencies.error-chain]
 version = "0.11"

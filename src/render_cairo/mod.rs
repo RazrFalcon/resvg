@@ -28,6 +28,18 @@ use {
 use utils;
 use self::ext::*;
 
+macro_rules! try_create_surface {
+    ($size:expr, $ret:expr) => {
+        try_opt_warn!(
+            cairo::ImageSurface::create(cairo::Format::ARgb32,
+                $size.width as i32, $size.height as i32,
+            ).ok(),
+            $ret,
+            "Failed to create a {}x{} surface.", $size.width, $size.height
+        );
+    };
+}
+
 
 mod clippath;
 mod ext;
@@ -191,19 +203,7 @@ fn create_surface(
     let img_size = utils::fit_to(size, opt.fit_to);
 
     debug_assert!(!img_size.is_empty_or_negative());
-
-    let surface = cairo::ImageSurface::create(
-        cairo::Format::ARgb32,
-        img_size.width as i32,
-        img_size.height as i32
-    );
-
-    let surface = match surface {
-        Ok(v) => v,
-        Err(_) => {
-            return Err(ErrorKind::NoCanvas.into());
-        }
-    };
+    let surface = try_create_surface!(img_size, Err(ErrorKind::NoCanvas.into()));
 
     let img_view = Rect::new(Point::new(0.0, 0.0), img_size.to_f64());
 
@@ -255,19 +255,7 @@ fn render_group_impl(
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) -> Option<Rect> {
-    let sub_surface = cairo::ImageSurface::create(
-        cairo::Format::ARgb32,
-        img_size.width as i32,
-        img_size.height as i32
-    );
-
-    let sub_surface = match sub_surface {
-        Ok(surf) => surf,
-        Err(_) => {
-            warn!("Subsurface creation failed.");
-            return None;
-        }
-    };
+    let sub_surface = try_create_surface!(img_size, None);
 
     let sub_cr = cairo::Context::new(&sub_surface);
     sub_cr.set_matrix(cr.get_matrix());
@@ -379,7 +367,7 @@ fn _calc_node_bbox(
             Some(bbox)
         }
         tree::NodeKind::Image(ref img) => {
-            let segments = utils::rect_to_path(img.rect);
+            let segments = utils::rect_to_path(img.view_box.rect);
             Some(utils::path_bbox(&segments, None, &ts2))
         }
         tree::NodeKind::Group(_) => {

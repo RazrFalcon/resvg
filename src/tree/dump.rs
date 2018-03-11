@@ -219,7 +219,7 @@ fn conv_elements(
 
                 conv_transform(AId::Transform, &img.transform, &mut img_elem);
                 img_elem.set_id(img.id.clone());
-                conv_rect(img.rect, &mut img_elem);
+                conv_viewbox2(&img.view_box, &mut img_elem);
 
                 let href = match img.data {
                     ImageData::Path(ref path) => path.to_str().unwrap().to_owned(),
@@ -292,6 +292,17 @@ fn conv_rect(
     node.set_attribute((AId::Y, r.y()));
     node.set_attribute((AId::Width, r.width()));
     node.set_attribute((AId::Height, r.height()));
+}
+
+fn conv_viewbox2(
+    vb: &ViewBox,
+    node: &mut svgdom::Node,
+) {
+    node.set_attribute((AId::X, vb.rect.x()));
+    node.set_attribute((AId::Y, vb.rect.y()));
+    node.set_attribute((AId::Width, vb.rect.width()));
+    node.set_attribute((AId::Height, vb.rect.height()));
+    node.set_attribute((AId::PreserveAspectRatio, vb.aspect));
 }
 
 fn conv_fill(

@@ -39,6 +39,29 @@ extern crate ego_tree;
 #[cfg(feature = "qt-backend")] pub extern crate resvg_qt as qt;
 
 
+/// Task, return value, warning message.
+macro_rules! try_opt_warn {
+    ($task:expr, $ret:expr, $fmt:expr) => {
+        match $task {
+            Some(v) => v,
+            None => {
+                warn!($fmt);
+                return $ret;
+            }
+        }
+    };
+    ($task:expr, $ret:expr, $fmt:expr, $($arg:tt)*) => {
+        match $task {
+            Some(v) => v,
+            None => {
+                warn!($fmt, $($arg)*);
+                return $ret;
+            }
+        }
+    };
+}
+
+
 #[cfg(feature = "cairo-backend")] pub mod render_cairo;
 #[cfg(feature = "qt-backend")] pub mod render_qt;
 

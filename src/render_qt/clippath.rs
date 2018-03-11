@@ -32,11 +32,7 @@ pub fn apply(
     img_size: ScreenSize,
     p: &qt::Painter,
 ) {
-    let mut clip_img = qt::Image::new(
-        img_size.width as u32,
-        img_size.height as u32,
-    ).unwrap(); // TODO: remove
-
+    let mut clip_img = try_create_image!(img_size, ());
     clip_img.fill(0, 0, 0, 255);
     clip_img.set_dpi(opt.dpi);
 

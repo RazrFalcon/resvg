@@ -40,18 +40,7 @@ pub fn apply(
     let (sx, sy) = global_ts.get_scale();
 
     let img_size = Size::new(r.width() * sx, r.height() * sy).to_screen_size();
-    let surface = cairo::ImageSurface::create(
-        cairo::Format::ARgb32,
-        img_size.width as i32,
-        img_size.height as i32
-    );
-    let surface = match surface {
-        Ok(surf) => surf,
-        Err(_) => {
-            warn!("Subsurface creation failed.");
-            return;
-        }
-    };
+    let surface = try_create_surface!(img_size, ());
 
     let sub_cr = cairo::Context::new(&surface);
     sub_cr.transform(cairo::Matrix::new(sx, 0.0, 0.0, sy, 0.0, 0.0));
@@ -81,19 +70,7 @@ pub fn apply(
         // The only way to do this is by making a new image and rendering
         // the pattern on it with transparency.
 
-        let surface2 = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
-            img_size.width as i32,
-            img_size.height as i32
-        );
-        let surface2 = match surface2 {
-            Ok(surf) => surf,
-            Err(_) => {
-                warn!("Subsurface creation failed.");
-                return;
-            }
-        };
-
+        let surface2 = try_create_surface!(img_size, ());
         let sub_cr2 = cairo::Context::new(&surface2);
         sub_cr2.set_source_surface(&surface, 0.0, 0.0);
         sub_cr2.paint_with_alpha(opacity);

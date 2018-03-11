@@ -100,6 +100,35 @@ impl SizeExt for Size {
     }
 }
 
+/// Additional `Size` methods.
+pub trait SizeScale {
+    /// Scales current size to specified size.
+    fn scale_to(&self, to: Self) -> Self;
+    /// Expands current size to specified size.
+    fn expand_to(&self, to: Self) -> Self;
+}
+
+impl SizeScale for ScreenSize {
+    fn scale_to(&self, to: Self) -> Self {
+        size_scale(*self, to, false)
+    }
+
+    fn expand_to(&self, to: ScreenSize) -> ScreenSize {
+        size_scale(*self, to, true)
+    }
+}
+
+fn size_scale(s1: ScreenSize, s2: ScreenSize, expand: bool) -> ScreenSize {
+    let rw = (s2.height as f64 * s1.width as f64 / s1.height as f64).ceil() as u32;
+    let with_h = if expand { rw <= s2.width } else { rw >= s2.width };
+    if !with_h {
+        ScreenSize::new(rw, s2.height)
+    } else {
+        let h = (s2.width as f64 * s1.height as f64 / s1.width as f64).ceil() as u32;
+        ScreenSize::new(s2.width, h)
+    }
+}
+
 /// Additional `Rect` methods.
 pub trait RectExt {
     /// Creates `Rect` from values.

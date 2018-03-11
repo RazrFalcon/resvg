@@ -66,6 +66,33 @@ pub(crate) fn process_text_anchor(x: f64, a: tree::TextAnchor, text_width: f64) 
     }
 }
 
+pub(crate) fn apply_view_box(vb: &tree::ViewBox, img_size: ScreenSize) -> ScreenSize {
+    if vb.aspect.align == tree::Align::None {
+        vb.rect.size.to_screen_size()
+    } else {
+        if vb.aspect.slice {
+            img_size.expand_to(vb.rect.size.to_screen_size())
+        } else {
+            img_size.scale_to(vb.rect.size.to_screen_size())
+        }
+    }
+}
+
+pub(crate) fn aligned_pos(align: tree::Align, x: f64, y: f64, w: f64, h: f64) -> Point {
+    match align {
+        tree::Align::None     => Point::new(x,           y          ),
+        tree::Align::XMinYMin => Point::new(x,           y          ),
+        tree::Align::XMidYMin => Point::new(x + w / 2.0, y          ),
+        tree::Align::XMaxYMin => Point::new(x + w,       y          ),
+        tree::Align::XMinYMid => Point::new(x,           y + h / 2.0),
+        tree::Align::XMidYMid => Point::new(x + w / 2.0, y + h / 2.0),
+        tree::Align::XMaxYMid => Point::new(x + w,       y + h / 2.0),
+        tree::Align::XMinYMax => Point::new(x,           y + h      ),
+        tree::Align::XMidYMax => Point::new(x + w / 2.0, y + h      ),
+        tree::Align::XMaxYMax => Point::new(x + w,       y + h      ),
+    }
+}
+
 /// Returns node's absolute transform.
 pub fn abs_transform(
     node: tree::NodeRef,

@@ -35,11 +35,7 @@ pub fn apply(
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
-    let clip_surface = cairo::ImageSurface::create(
-        cairo::Format::ARgb32,
-        img_size.width as i32,
-        img_size.height as i32
-    ).unwrap(); // TODO: remove
+    let clip_surface = try_create_surface!(img_size, ());
 
     let clip_cr = cairo::Context::new(&clip_surface);
     clip_cr.set_source_rgba(0.0, 0.0, 0.0, 1.0);

@@ -192,7 +192,10 @@ pub struct Image {
     /// Element transform.
     pub transform: Transform,
     /// An image rectangle in which it should be fit.
-    pub rect: Rect,
+    ///
+    /// Combination of the `x`, `y`, `width`, `height` and `preserveAspectRatio`
+    /// attributes.
+    pub view_box: ViewBox,
     /// Image data.
     pub data: ImageData,
 }
@@ -351,6 +354,7 @@ pub struct Pattern {
     ///
     /// `patternUnits` in the SVG.
     pub units: Units,
+    // TODO: should not be accessible when `viewBox` is present.
     /// Content coordinate system units.
     ///
     /// `patternContentUnits` in the SVG.

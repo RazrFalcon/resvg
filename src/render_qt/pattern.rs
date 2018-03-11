@@ -36,15 +36,7 @@ pub fn apply(
     let (sx, sy) = global_ts.get_scale();
 
     let img_size = Size::new(r.width() * sx, r.height() * sy).to_screen_size();
-    let img = qt::Image::new(img_size.width as u32, img_size.height as u32);
-    let mut img = match img {
-        Some(img) => img,
-        None => {
-            // TODO: add expected image size
-            warn!("Subimage creation failed.");
-            return;
-        }
-    };
+    let mut img = try_create_image!(img_size, ());
 
     img.set_dpi(opt.dpi);
     img.fill(0, 0, 0, 0);
@@ -72,15 +64,7 @@ pub fn apply(
         // The only way to do this is by making a new image and rendering
         // the pattern on it with transparency.
 
-        // TODO: to macro
-        let img2 = qt::Image::new(img_size.width as u32, img_size.height as u32);
-        let mut img2 = match img2 {
-            Some(img2) => img2,
-            None => {
-                warn!("Subimage creation failed.");
-                return;
-            }
-        };
+        let mut img2 = try_create_image!(img_size, ());
         img2.fill(0, 0, 0, 0);
 
         let p2 = qt::Painter::new(&img2);

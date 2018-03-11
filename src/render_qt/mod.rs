@@ -24,6 +24,17 @@ use {
 use utils;
 
 
+macro_rules! try_create_image {
+    ($size:expr, $ret:expr) => {
+        try_opt_warn!(
+            qt::Image::new($size.width as u32, $size.height as u32),
+            $ret,
+            "Failed to create a {}x{} image.", $size.width, $size.height
+        );
+    };
+}
+
+
 mod clippath;
 mod fill;
 mod gradient;
@@ -137,14 +148,7 @@ fn create_image(
 
     debug_assert!(!img_size.is_empty_or_negative());
 
-    let img = qt::Image::new(img_size.width as u32, img_size.height as u32);
-
-    let mut img = match img {
-        Some(v) => v,
-        None => {
-            return Err(ErrorKind::NoCanvas.into());
-        }
-    };
+    let mut img = try_create_image!(img_size, Err(ErrorKind::NoCanvas.into()));
 
     // Fill background.
     if let Some(c) = opt.background {
@@ -233,18 +237,7 @@ fn render_group_impl(
     img_size: ScreenSize,
     p: &qt::Painter,
 ) -> Option<Rect> {
-    let sub_img = qt::Image::new(
-        img_size.width as u32,
-        img_size.height as u32,
-    );
-
-    let mut sub_img = match sub_img {
-        Some(img) => img,
-        None => {
-            warn!("Subimage creation failed.");
-            return None;
-        }
-    };
+    let mut sub_img = try_create_image!(img_size, None);
 
     sub_img.fill(0, 0, 0, 0);
     sub_img.set_dpi(opt.dpi);
@@ -309,6 +302,8 @@ pub fn calc_node_bbox(
     node: tree::NodeRef,
     opt: &Options,
 ) -> Option<Rect> {
+    // Unwrap can't fail, because `None` will be returned only on OOM,
+    // and we cannot hit it with a such small image.
     let mut img = qt::Image::new(1, 1).unwrap();
     img.set_dpi(opt.dpi);
     let p = qt::Painter::new(&img);
@@ -348,7 +343,7 @@ fn _calc_node_bbox(
             Some(bbox)
         }
         tree::NodeKind::Image(ref img) => {
-            let segments = utils::rect_to_path(img.rect);
+            let segments = utils::rect_to_path(img.view_box.rect);
             Some(utils::path_bbox(&segments, None, &ts2))
         }
         tree::NodeKind::Group(_) => {

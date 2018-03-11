@@ -8,6 +8,7 @@ use std::fmt::Display;
 // external
 use svgdom::{
     path,
+    AspectRatio,
     Attributes,
     Color,
     Document,
@@ -98,6 +99,7 @@ impl_from_value!(Transform, Transform);
 impl_from_value!(ValueId, PredefValue);
 impl_from_value!(ViewBox, ViewBox);
 impl_from_value!(Points, Points);
+impl_from_value!(AspectRatio, AspectRatio);
 
 impl FromValue for AValue {
     fn get(v: &AValue) -> Option<&Self> {
