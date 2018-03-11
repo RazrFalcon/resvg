@@ -18,10 +18,8 @@ base64 = "0.9"
 log = "0.4"
 libflate = "0.1"
 lyon_geom = "0.10"
-# lyon_geom = { git = "https://github.com/nical/lyon.git" }
 euclid = "0.17"
-# ego-tree = "0.2"
-ego-tree = { git = "https://github.com/programble/ego-tree" }
+ego-tree = "0.3"
 
 [dependencies.error-chain]
 version = "0.11"
