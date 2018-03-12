@@ -87,7 +87,7 @@ pub struct Svg {
     /// SVG viewbox.
     ///
     /// Specifies which part of the SVG image should be rendered.
-    pub view_box: Rect,
+    pub view_box: ViewBox,
 }
 
 
@@ -368,5 +368,5 @@ pub struct Pattern {
     /// `x`, `y`, `width` and `height` in the SVG.
     pub rect: Rect,
     /// Pattern viewbox.
-    pub view_box: Option<Rect>,
+    pub view_box: Option<ViewBox>,
 }

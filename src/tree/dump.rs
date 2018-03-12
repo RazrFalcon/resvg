@@ -31,7 +31,7 @@ pub fn conv_doc(rtree: &RenderTree) -> svgdom::Document {
     svg.set_attribute((AId::Xmlns, "http://www.w3.org/2000/svg"));
     svg.set_attribute((AId::Width,  svg_node.size.width));
     svg.set_attribute((AId::Height, svg_node.size.height));
-    conv_viewbox(svg_node.view_box, &mut svg);
+    conv_viewbox(&svg_node.view_box, &mut svg);
     svg.set_attribute((("xmlns", AId::Xlink), "http://www.w3.org/1999/xlink"));
     svg.set_attribute((("xmlns", "resvg"), "https://github.com/RazrFalcon/resvg"));
     svg.set_attribute((("resvg", "version"), env!("CARGO_PKG_VERSION")));
@@ -99,7 +99,7 @@ fn conv_defs(
                 conv_rect(pattern.rect, &mut pattern_elem);
 
                 if let Some(vbox) = pattern.view_box {
-                    conv_viewbox(vbox, &mut pattern_elem);
+                    conv_viewbox(&vbox, &mut pattern_elem);
                 }
 
                 conv_units(AId::PatternUnits, pattern.units, &mut pattern_elem);
@@ -273,15 +273,16 @@ fn conv_elements(
 }
 
 fn conv_viewbox(
-    view_box: Rect,
+    view_box: &ViewBox,
     node: &mut svgdom::Node,
 ) {
     let vb = svgdom::ViewBox::new(
-        view_box.x(), view_box.y(),
-        view_box.width(), view_box.height(),
+        view_box.rect.x(), view_box.rect.y(),
+        view_box.rect.width(), view_box.rect.height(),
     );
-
     node.set_attribute((AId::ViewBox, vb));
+
+    node.set_attribute((AId::PreserveAspectRatio, view_box.aspect));
 }
 
 fn conv_rect(
@@ -298,10 +299,7 @@ fn conv_viewbox2(
     vb: &ViewBox,
     node: &mut svgdom::Node,
 ) {
-    node.set_attribute((AId::X, vb.rect.x()));
-    node.set_attribute((AId::Y, vb.rect.y()));
-    node.set_attribute((AId::Width, vb.rect.width()));
-    node.set_attribute((AId::Height, vb.rect.height()));
+    conv_rect(vb.rect, node);
     node.set_attribute((AId::PreserveAspectRatio, vb.aspect));
 }
 

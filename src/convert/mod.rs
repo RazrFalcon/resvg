@@ -53,9 +53,17 @@ pub fn convert_doc(
         return Err(ErrorKind::MissingSvgNode.into());
     };
 
+    let view_box = {
+        let ref attrs = svg.attributes();
+        tree::ViewBox {
+            rect: get_view_box(&svg)?,
+            aspect: convert_aspect(attrs),
+        }
+    };
+
     let svg_kind = tree::Svg {
         size: get_img_size(&svg)?,
-        view_box: get_view_box(&svg)?,
+        view_box,
     };
 
     let mut rtree = tree::RenderTree::create(svg_kind);

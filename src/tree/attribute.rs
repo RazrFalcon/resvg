@@ -16,9 +16,7 @@ pub use svgdom::{
 
 // self
 use super::NodeId;
-use math::{
-    Rect,
-};
+use math::*;
 
 
 /// A line cap.
@@ -301,6 +299,19 @@ pub struct ViewBox {
     pub rect: Rect,
     /// Value of the `preserveAspectRatio` attribute.
     pub aspect: AspectRatio,
+}
+
+impl Default for ViewBox {
+    fn default() -> Self {
+        ViewBox {
+            rect: Rect::from_xywh(0.0, 0.0, 0.0, 0.0),
+            aspect: AspectRatio {
+                defer: false,
+                align: Align::XMidYMid,
+                slice: false,
+            }
+        }
+    }
 }
 
 

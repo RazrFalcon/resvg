@@ -130,10 +130,15 @@ pub fn render_node_to_image(
         return Err(ErrorKind::NoCanvas.into());
     };
 
+    let vbox = tree::ViewBox {
+        rect: node_bbox,
+        .. tree::ViewBox::default()
+    };
+
     let (img, img_view) = create_image(node_bbox.size.to_screen_size(), opt)?;
 
     let painter = qt::Painter::new(&img);
-    apply_viewbox_transform(node_bbox, img_view, &painter);
+    apply_viewbox_transform(vbox, img_view, &painter);
     render_node_to_canvas(node, opt, img_view.to_screen_size(), &painter);
     painter.end();
 
@@ -192,7 +197,7 @@ pub fn render_node_to_canvas(
 
 /// Applies viewbox transformation to the painter.
 pub fn apply_viewbox_transform(
-    view_box: Rect,
+    view_box: tree::ViewBox,
     img_view: Rect,
     painter: &qt::Painter,
 ) {

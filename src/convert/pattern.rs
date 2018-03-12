@@ -22,6 +22,13 @@ pub fn convert(
 ) -> tree::NodeId {
     let ref attrs = node.attributes();
 
+    let view_box = node.get_viewbox().map(|vb|
+        tree::ViewBox {
+            rect: vb,
+            aspect: super::convert_aspect(attrs),
+        }
+    );
+
     let rect = super::convert_rect(attrs);
 
     rtree.append_to_defs(tree::NodeKind::Pattern(tree::Pattern {
@@ -30,6 +37,6 @@ pub fn convert(
         content_units: super::convert_element_units(&attrs, AId::PatternContentUnits),
         transform: attrs.get_transform(AId::PatternTransform).unwrap_or_default(),
         rect,
-        view_box: node.get_viewbox(),
+        view_box,
     }))
 }

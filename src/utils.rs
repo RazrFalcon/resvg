@@ -43,19 +43,32 @@ pub fn fit_to(size: ScreenSize, fit: FitTo) -> ScreenSize {
 /// - offset by Y axis
 /// - scale by X axis
 /// - scale by Y axis
-///
-/// Note: currently, scaling is proportional.
-pub fn view_box_transform(view_box: Rect, img_view: Rect) -> (f64, f64, f64, f64) {
-    let sx = img_view.width() / view_box.width();
-    let sy = img_view.height() / view_box.height();
+pub fn view_box_transform(view_box: tree::ViewBox, img_view: Rect) -> (f64, f64, f64, f64) {
+    let vr = view_box.rect;
 
-    // Use proportional scaling for now.
-    let s = if sx > sy { sy } else { sx };
+    let sx = img_view.width() / vr.width();
+    let sy = img_view.height() / vr.height();
 
-    let dx = -view_box.x() * s + (img_view.width() - view_box.width() * s) / 2.0 + img_view.x();
-    let dy = -view_box.y() * s + (img_view.height() - view_box.height() * s) / 2.0 + img_view.y();
+    let (sx, sy) = if view_box.aspect.align == tree::Align::None {
+        (sx, sy)
+    } else {
+        let s = if view_box.aspect.slice {
+            if sx < sy { sy } else { sx }
+        } else {
+            if sx > sy { sy } else { sx }
+        };
 
-    (dx, dy, s, s)
+        (s, s)
+    };
+
+    let x = -vr.x() * sx;
+    let y = -vr.y() * sy;
+    let w = img_view.width() - vr.width() * sx;
+    let h = img_view.height() - vr.height() * sy;
+
+    let pos = aligned_pos(view_box.aspect.align, x, y, w, h);
+
+    (pos.x, pos.y, sx, sy)
 }
 
 pub(crate) fn process_text_anchor(x: f64, a: tree::TextAnchor, text_width: f64) -> f64 {

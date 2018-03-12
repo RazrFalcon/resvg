@@ -155,6 +155,11 @@ pub fn render_node_to_image(
 
     let (surface, img_view) = create_surface(node_bbox.to_screen_size(), opt)?;
 
+    let vbox = tree::ViewBox {
+        rect: node_bbox,
+        .. tree::ViewBox::default()
+    };
+
     let cr = cairo::Context::new(&surface);
 
     // Fill background.
@@ -163,7 +168,7 @@ pub fn render_node_to_image(
         cr.paint();
     }
 
-    apply_viewbox_transform(node_bbox, img_view, &cr);
+    apply_viewbox_transform(vbox, img_view, &cr);
     render_node_to_canvas(node, opt, img_view.to_screen_size(), &cr);
 
     Ok(surface)
@@ -212,7 +217,7 @@ fn create_surface(
 
 /// Applies viewbox transformation to the painter.
 fn apply_viewbox_transform(
-    view_box: Rect,
+    view_box: tree::ViewBox,
     img_view: Rect,
     cr: &cairo::Context,
 ) {
