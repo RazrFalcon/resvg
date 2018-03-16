@@ -109,10 +109,10 @@ pub fn render_to_image(
     rtree: &tree::RenderTree,
     opt: &Options,
 ) -> Result<qt::Image> {
-    let (img, img_view) = create_image(rtree.svg_node().size.to_screen_size(), opt)?;
+    let (img, img_size) = create_image(rtree.svg_node().size.to_screen_size(), opt)?;
 
     let painter = qt::Painter::new(&img);
-    render_to_canvas(rtree, opt, img_view, &painter);
+    render_to_canvas(rtree, opt, img_size, &painter);
     painter.end();
 
     Ok(img)
@@ -126,6 +126,7 @@ pub fn render_node_to_image(
     let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
         bbox
     } else {
+        // TODO: custom error
         warn!("Node {:?} has zero size.", node.svg_id());
         return Err(ErrorKind::NoCanvas.into());
     };
@@ -135,11 +136,10 @@ pub fn render_node_to_image(
         .. tree::ViewBox::default()
     };
 
-    let (img, img_view) = create_image(node_bbox.size.to_screen_size(), opt)?;
+    let (img, img_size) = create_image(node_bbox.size.to_screen_size(), opt)?;
 
     let painter = qt::Painter::new(&img);
-    apply_viewbox_transform(vbox, img_view, &painter);
-    render_node_to_canvas(node, opt, img_view.to_screen_size(), &painter);
+    render_node_to_canvas(node, opt, vbox, img_size, &painter);
     painter.end();
 
     Ok(img)
@@ -148,7 +148,7 @@ pub fn render_node_to_image(
 fn create_image(
     size: ScreenSize,
     opt: &Options,
-) -> Result<(qt::Image, Rect)> {
+) -> Result<(qt::Image, ScreenSize)> {
     let img_size = utils::fit_to(size, opt.fit_to);
 
     debug_assert!(!img_size.is_empty_or_negative());
@@ -163,29 +163,30 @@ fn create_image(
     }
     img.set_dpi(opt.dpi);
 
-    let img_view = Rect::new(Point::new(0.0, 0.0), img_size.to_f64());
-
-    Ok((img, img_view))
+    Ok((img, img_size))
 }
 
 /// Renders SVG to canvas.
 pub fn render_to_canvas(
     rtree: &tree::RenderTree,
     opt: &Options,
-    img_view: Rect,
+    img_size: ScreenSize,
     painter: &qt::Painter,
 ) {
-    apply_viewbox_transform(rtree.svg_node().view_box, img_view, painter);
-    render_group(rtree.root(), opt, img_view.to_screen_size(), &painter);
+    apply_viewbox_transform(rtree.svg_node().view_box, img_size, painter);
+    render_group(rtree.root(), opt, img_size, &painter);
 }
 
 /// Renders SVG node to canvas.
 pub fn render_node_to_canvas(
     node: tree::NodeRef,
     opt: &Options,
+    view_box: tree::ViewBox,
     img_size: ScreenSize,
     painter: &qt::Painter,
 ) {
+    apply_viewbox_transform(view_box, img_size, &painter);
+
     let curr_ts = painter.get_transform();
     let mut ts = utils::abs_transform(node);
     ts.append(&node.transform());
@@ -198,11 +199,11 @@ pub fn render_node_to_canvas(
 /// Applies viewbox transformation to the painter.
 pub fn apply_viewbox_transform(
     view_box: tree::ViewBox,
-    img_view: Rect,
+    img_size: ScreenSize,
     painter: &qt::Painter,
 ) {
     let ts = {
-        let (dx, dy, sx, sy) = utils::view_box_transform(view_box, img_view);
+        let (dx, dy, sx, sy) = utils::view_box_transform(view_box, img_size);
         qt::Transform::new(sx, 0.0, 0.0, sy, dx, dy)
     };
     painter.apply_transform(&ts);

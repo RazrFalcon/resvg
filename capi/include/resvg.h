@@ -49,6 +49,11 @@ typedef struct resvg_rect {
     double height;
 } resvg_rect;
 
+typedef struct resvg_size {
+    unsigned int width;
+    unsigned int height;
+} resvg_size;
+
 typedef struct resvg_transform {
     double a;
     double b;
@@ -128,12 +133,12 @@ bool resvg_cairo_render_to_image(const resvg_render_tree *rtree,
 
 void resvg_cairo_render_to_canvas(const resvg_render_tree *rtree,
                                   const resvg_options *opt,
-                                  resvg_rect view,
+                                  resvg_size size,
                                   cairo_t *cr);
 
 void resvg_cairo_render_to_canvas_by_id(const resvg_render_tree *rtree,
                                         const resvg_options *opt,
-                                        resvg_rect view,
+                                        resvg_size size,
                                         const char *id,
                                         void *painter);
 #endif
@@ -150,12 +155,12 @@ bool resvg_qt_render_to_image(const resvg_render_tree *rtree,
 
 void resvg_qt_render_to_canvas(const resvg_render_tree *rtree,
                                const resvg_options *opt,
-                               resvg_rect view,
+                               resvg_size size,
                                void *painter);
 
 void resvg_qt_render_to_canvas_by_id(const resvg_render_tree *rtree,
                                      const resvg_options *opt,
-                                     resvg_rect view,
+                                     resvg_size size,
                                      const char *id,
                                      void *painter);
 #endif

@@ -14,8 +14,8 @@ draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data)
     gtk_widget_get_allocation(widget, &alloc);
 
     if (rtree) {
-        resvg_rect r = { 0, 0, alloc.width, alloc.height };
-        resvg_cairo_render_to_canvas(rtree, &opt, r, cr);
+        resvg_size s = { alloc.width, alloc.height };
+        resvg_cairo_render_to_canvas(rtree, &opt, s, cr);
     }
 
     return FALSE;

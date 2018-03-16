@@ -125,7 +125,8 @@ fn process() -> Result<(), Error> {
     if let Some(ref out_png) = args.out_png {
         let img = if let Some(ref id) = args.export_id {
             if let Some(node) = rtree.root().descendants().find(|n| n.svg_id() == id) {
-                args.backend.render_node_to_image(node, &opt)
+                run_task(args.perf, "Rendering",
+                    || args.backend.render_node_to_image(node, &opt))
             } else {
                 return Err(Error::InvalidId(id.clone()));
             }

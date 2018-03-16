@@ -86,8 +86,8 @@ void SvgView::setRenderToImage(bool flag)
     QPainter p;
     p.begin(&img);
     p.setRenderHint(QPainter::Antialiasing);
-    resvg_rect r { 0, 0, width, height };
-    resvg_qt_render_to_canvas(m_rtree, m_opt, r, &p);
+    resvg_size s { (uint)width, (uint)height };
+    resvg_qt_render_to_canvas(m_rtree, m_opt, s, &p);
     p.end();
 
     img.setDevicePixelRatio(ratio);
@@ -216,8 +216,9 @@ void SvgView::paintEvent(QPaintEvent *e)
             y = (r.height() - img_height)/2;
         }
 
-        resvg_rect rr { x, y, img_width, img_height };
-        resvg_qt_render_to_canvas(m_rtree, m_opt, rr, &p);
+        p.translate(x, y);
+        resvg_size s { (uint)img_width, (uint)img_height };
+        resvg_qt_render_to_canvas(m_rtree, m_opt, s, &p);
         p.setTransform(QTransform());
 
         imgRect = QRect(x, y, img_width, img_height);

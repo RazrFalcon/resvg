@@ -153,7 +153,7 @@ pub fn render_node_to_image(
         return Err(ErrorKind::NoCanvas.into());
     };
 
-    let (surface, img_view) = create_surface(node_bbox.to_screen_size(), opt)?;
+    let (surface, img_size) = create_surface(node_bbox.to_screen_size(), opt)?;
 
     let vbox = tree::ViewBox {
         rect: node_bbox,
@@ -168,8 +168,7 @@ pub fn render_node_to_image(
         cr.paint();
     }
 
-    apply_viewbox_transform(vbox, img_view, &cr);
-    render_node_to_canvas(node, opt, img_view.to_screen_size(), &cr);
+    render_node_to_canvas(node, opt, vbox, img_size, &cr);
 
     Ok(surface)
 }
@@ -178,20 +177,23 @@ pub fn render_node_to_image(
 pub fn render_to_canvas(
     rtree: &tree::RenderTree,
     opt: &Options,
-    img_view: Rect,
+    img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
-    apply_viewbox_transform(rtree.svg_node().view_box, img_view, cr);
-    render_group(rtree.root(), opt, img_view.to_screen_size(), &cr);
+    apply_viewbox_transform(rtree.svg_node().view_box, img_size, cr);
+    render_group(rtree.root(), opt, img_size, &cr);
 }
 
 /// Renders SVG node to canvas.
 pub fn render_node_to_canvas(
     node: tree::NodeRef,
     opt: &Options,
+    view_box: tree::ViewBox,
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
+    apply_viewbox_transform(view_box, img_size, &cr);
+
     let curr_ts = cr.get_matrix();
     let mut ts = utils::abs_transform(node);
     ts.append(&node.transform());
@@ -204,25 +206,23 @@ pub fn render_node_to_canvas(
 fn create_surface(
     size: ScreenSize,
     opt: &Options,
-) -> Result<(cairo::ImageSurface, Rect)> {
+) -> Result<(cairo::ImageSurface, ScreenSize)> {
     let img_size = utils::fit_to(size, opt.fit_to);
 
     debug_assert!(!img_size.is_empty_or_negative());
     let surface = try_create_surface!(img_size, Err(ErrorKind::NoCanvas.into()));
 
-    let img_view = Rect::new(Point::new(0.0, 0.0), img_size.to_f64());
-
-    Ok((surface, img_view))
+    Ok((surface, img_size))
 }
 
 /// Applies viewbox transformation to the painter.
 fn apply_viewbox_transform(
     view_box: tree::ViewBox,
-    img_view: Rect,
+    img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
     let ts = {
-        let (dx, dy, sx, sy) = utils::view_box_transform(view_box, img_view);
+        let (dx, dy, sx, sy) = utils::view_box_transform(view_box, img_size);
         cairo::Matrix::new(sx, 0.0, 0.0, sy, dx, dy)
     };
     cr.transform(ts);

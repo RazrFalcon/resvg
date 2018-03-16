@@ -153,7 +153,7 @@ pub(super) fn convert_nodes(
                     let mut v = None;
                     if let &AValue::FuncLink(ref link) = av {
                         if link.is_tag_name(EId::ClipPath) {
-                            if let Some(idx) = rtree.defs_id(&link.id()) {
+                            if let Some(idx) = rtree.defs_by_svg_id(&link.id()) {
                                 v = Some(idx);
                             }
                         }

@@ -31,6 +31,7 @@ extern crate ego_tree;
 #[macro_use] extern crate log;
 #[macro_use] extern crate error_chain;
 
+// TODO: move to modules
 #[cfg(feature = "cairo-backend")] pub extern crate cairo;
 #[cfg(feature = "cairo-backend")] extern crate pango;
 #[cfg(feature = "cairo-backend")] extern crate pangocairo;

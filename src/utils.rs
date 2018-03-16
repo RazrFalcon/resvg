@@ -43,11 +43,11 @@ pub fn fit_to(size: ScreenSize, fit: FitTo) -> ScreenSize {
 /// - offset by Y axis
 /// - scale by X axis
 /// - scale by Y axis
-pub fn view_box_transform(view_box: tree::ViewBox, img_view: Rect) -> (f64, f64, f64, f64) {
+pub fn view_box_transform(view_box: tree::ViewBox, img_size: ScreenSize) -> (f64, f64, f64, f64) {
     let vr = view_box.rect;
 
-    let sx = img_view.width() / vr.width();
-    let sy = img_view.height() / vr.height();
+    let sx = img_size.width as f64 / vr.width();
+    let sy = img_size.height as f64 / vr.height();
 
     let (sx, sy) = if view_box.aspect.align == tree::Align::None {
         (sx, sy)
@@ -63,8 +63,8 @@ pub fn view_box_transform(view_box: tree::ViewBox, img_view: Rect) -> (f64, f64,
 
     let x = -vr.x() * sx;
     let y = -vr.y() * sy;
-    let w = img_view.width() - vr.width() * sx;
-    let h = img_view.height() - vr.height() * sy;
+    let w = img_size.width as f64 - vr.width() * sx;
+    let h = img_size.height as f64 - vr.height() * sy;
 
     let pos = aligned_pos(view_box.aspect.align, x, y, w, h);
 

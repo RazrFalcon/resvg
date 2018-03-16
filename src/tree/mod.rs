@@ -64,7 +64,13 @@ pub trait TreeExt {
     fn defs_at(&self, id: NodeId) -> Option<NodeRef>;
 
     /// Searches for `NodeId` in `Defs` children by ID.
-    fn defs_id(&self, id: &str) -> Option<NodeId>;
+    fn defs_by_svg_id(&self, id: &str) -> Option<NodeId>;
+
+    /// Returns renderable node by ID.
+    ///
+    /// If an empty ID is provided, than this method will always return `None`.
+    /// Even if tree has nodes with empty ID.
+    fn node_by_svg_id(&self, id: &str) -> Option<NodeRef>;
 
     /// Converts the document to `svgdom::Document`.
     ///
@@ -117,7 +123,7 @@ impl TreeExt for RenderTree {
         None
     }
 
-    fn defs_id(&self, id: &str) -> Option<NodeId> {
+    fn defs_by_svg_id(&self, id: &str) -> Option<NodeId> {
         for n in self.defs().children() {
             if n.svg_id() == id {
                 return Some(n.id());
@@ -125,6 +131,22 @@ impl TreeExt for RenderTree {
         }
 
         warn!("Node '{}' was not found in defs.", id);
+        None
+    }
+
+    fn node_by_svg_id(&self, id: &str) -> Option<NodeRef> {
+        if id.is_empty() {
+            return None;
+        }
+
+        for node in self.root().descendants() {
+            if !self.is_in_defs(node) {
+                if node.svg_id() == id {
+                    return Some(node);
+                }
+            }
+        }
+
         None
     }
 
