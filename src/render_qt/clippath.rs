@@ -18,6 +18,7 @@ use traits::{
 use super::{
     path,
     text,
+    QtLayers,
 };
 use {
     Options,
@@ -29,12 +30,12 @@ pub fn apply(
     cp: &tree::ClipPath,
     opt: &Options,
     bbox: Rect,
-    img_size: ScreenSize,
+    layers: &mut QtLayers,
     p: &qt::Painter,
 ) {
-    let mut clip_img = try_create_image!(img_size, ());
+    let clip_img = try_opt!(layers.get(), ());
+    let mut clip_img = clip_img.borrow_mut();
     clip_img.fill(0, 0, 0, 255);
-    clip_img.set_dpi(opt.dpi);
 
     let clip_p = qt::Painter::new(&clip_img);
     clip_p.set_transform(&p.get_transform());
@@ -68,4 +69,6 @@ pub fn apply(
     p.set_transform(&qt::Transform::default());
     p.set_composition_mode(qt::CompositionMode::CompositionMode_DestinationOut);
     p.draw_image(0.0, 0.0, &clip_img);
+
+    layers.release();
 }

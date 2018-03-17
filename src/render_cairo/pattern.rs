@@ -56,7 +56,8 @@ pub fn apply(
         sub_cr.transform(cairo::Matrix::new(bbox.width(), 0.0, 0.0, bbox.height(), 0.0, 0.0));
     }
 
-    super::render_group(node, opt, img_size, &sub_cr);
+    let mut layers = super::create_layers(img_size, opt);
+    super::render_group(node, opt, &mut layers, &sub_cr);
 
     let mut ts = tree::Transform::default();
     ts.append(&pattern.transform);

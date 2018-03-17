@@ -14,6 +14,9 @@ use traits::{
     ConvTransform,
     TransformFromBBox,
 };
+use layers::{
+    Layers,
+};
 use {
     ErrorKind,
     Options,
@@ -103,13 +106,14 @@ impl OutputImage for qt::Image {
     }
 }
 
+type QtLayers<'a> = Layers<'a, qt::Image>;
 
 /// Renders SVG to image.
 pub fn render_to_image(
     rtree: &tree::RenderTree,
     opt: &Options,
 ) -> Result<qt::Image> {
-    let (img, img_size) = create_image(rtree.svg_node().size.to_screen_size(), opt)?;
+    let (img, img_size) = create_root_image(rtree.svg_node().size.to_screen_size(), opt)?;
 
     let painter = qt::Painter::new(&img);
     render_to_canvas(rtree, opt, img_size, &painter);
@@ -136,7 +140,7 @@ pub fn render_node_to_image(
         .. tree::ViewBox::default()
     };
 
-    let (img, img_size) = create_image(node_bbox.size.to_screen_size(), opt)?;
+    let (img, img_size) = create_root_image(node_bbox.size.to_screen_size(), opt)?;
 
     let painter = qt::Painter::new(&img);
     render_node_to_canvas(node, opt, vbox, img_size, &painter);
@@ -145,7 +149,39 @@ pub fn render_node_to_image(
     Ok(img)
 }
 
-fn create_image(
+/// Renders SVG to canvas.
+pub fn render_to_canvas(
+    rtree: &tree::RenderTree,
+    opt: &Options,
+    img_size: ScreenSize,
+    painter: &qt::Painter,
+) {
+    render_node_to_canvas(rtree.root(), opt, rtree.svg_node().view_box,
+                          img_size, painter);
+}
+
+/// Renders SVG node to canvas.
+pub fn render_node_to_canvas(
+    node: tree::NodeRef,
+    opt: &Options,
+    view_box: tree::ViewBox,
+    img_size: ScreenSize,
+    painter: &qt::Painter,
+) {
+    let mut layers = create_layers(img_size, opt);
+
+    apply_viewbox_transform(view_box, img_size, &painter);
+
+    let curr_ts = painter.get_transform();
+    let mut ts = utils::abs_transform(node);
+    ts.append(&node.transform());
+
+    painter.apply_transform(&ts.to_native());
+    render_node(node, opt, &mut layers, painter);
+    painter.set_transform(&curr_ts);
+}
+
+fn create_root_image(
     size: ScreenSize,
     opt: &Options,
 ) -> Result<(qt::Image, ScreenSize)> {
@@ -166,38 +202,8 @@ fn create_image(
     Ok((img, img_size))
 }
 
-/// Renders SVG to canvas.
-pub fn render_to_canvas(
-    rtree: &tree::RenderTree,
-    opt: &Options,
-    img_size: ScreenSize,
-    painter: &qt::Painter,
-) {
-    apply_viewbox_transform(rtree.svg_node().view_box, img_size, painter);
-    render_group(rtree.root(), opt, img_size, &painter);
-}
-
-/// Renders SVG node to canvas.
-pub fn render_node_to_canvas(
-    node: tree::NodeRef,
-    opt: &Options,
-    view_box: tree::ViewBox,
-    img_size: ScreenSize,
-    painter: &qt::Painter,
-) {
-    apply_viewbox_transform(view_box, img_size, &painter);
-
-    let curr_ts = painter.get_transform();
-    let mut ts = utils::abs_transform(node);
-    ts.append(&node.transform());
-
-    painter.apply_transform(&ts.to_native());
-    render_node(node, opt, img_size, painter);
-    painter.set_transform(&curr_ts);
-}
-
 /// Applies viewbox transformation to the painter.
-pub fn apply_viewbox_transform(
+fn apply_viewbox_transform(
     view_box: tree::ViewBox,
     img_size: ScreenSize,
     painter: &qt::Painter,
@@ -209,12 +215,38 @@ pub fn apply_viewbox_transform(
     painter.apply_transform(&ts);
 }
 
+fn render_node(
+    node: tree::NodeRef,
+    opt: &Options,
+    layers: &mut QtLayers,
+    p: &qt::Painter,
+) -> Option<Rect> {
+    match *node.value() {
+        tree::NodeKind::Svg(_) => {
+            Some(render_group(node, opt, layers, p))
+        }
+        tree::NodeKind::Path(ref path) => {
+            Some(path::draw(node.tree(), path, opt, p))
+        }
+        tree::NodeKind::Text(_) => {
+            Some(text::draw(node, opt, p))
+        }
+        tree::NodeKind::Image(ref img) => {
+            Some(image::draw(img, p))
+        }
+        tree::NodeKind::Group(ref g) => {
+            render_group_impl(node, g, opt, layers, p)
+        }
+        _ => None,
+    }
+}
+
 // TODO: render groups backward to reduce memory usage
 //       current implementation keeps parent canvas until all children are rendered
 fn render_group(
     parent: tree::NodeRef,
     opt: &Options,
-    img_size: ScreenSize,
+    layers: &mut QtLayers,
     p: &qt::Painter,
 ) -> Rect {
     let curr_ts = p.get_transform();
@@ -223,8 +255,7 @@ fn render_group(
     for node in parent.children() {
         p.apply_transform(&node.transform().to_native());
 
-        let bbox = render_node(node, opt, img_size, p);
-
+        let bbox = render_node(node, opt, layers, p);
         if let Some(bbox) = bbox {
             g_bbox.expand(bbox);
         }
@@ -240,23 +271,21 @@ fn render_group_impl(
     node: tree::NodeRef,
     g: &tree::Group,
     opt: &Options,
-    img_size: ScreenSize,
+    layers: &mut QtLayers,
     p: &qt::Painter,
 ) -> Option<Rect> {
-    let mut sub_img = try_create_image!(img_size, None);
-
-    sub_img.fill(0, 0, 0, 0);
-    sub_img.set_dpi(opt.dpi);
+    let sub_img = layers.get()?;
+    let sub_img = sub_img.borrow_mut();
 
     let sub_p = qt::Painter::new(&sub_img);
     sub_p.set_transform(&p.get_transform());
 
-    let bbox = render_group(node, opt, img_size, &sub_p);
+    let bbox = render_group(node, opt, layers, &sub_p);
 
     if let Some(idx) = g.clip_path {
         if let Some(clip_node) = node.tree().defs_at(idx) {
             if let tree::NodeKind::ClipPath(ref cp) = *clip_node.value() {
-                clippath::apply(clip_node, cp, opt, bbox, img_size, &sub_p);
+                clippath::apply(clip_node, cp, opt, bbox, layers, &sub_p);
             }
         }
     }
@@ -275,30 +304,9 @@ fn render_group_impl(
     p.set_opacity(1.0);
     p.set_transform(&curr_ts);
 
-    Some(bbox)
-}
+    layers.release();
 
-fn render_node(
-    node: tree::NodeRef,
-    opt: &Options,
-    img_size: ScreenSize,
-    p: &qt::Painter,
-) -> Option<Rect> {
-    match *node.value() {
-        tree::NodeKind::Path(ref path) => {
-            Some(path::draw(node.tree(), path, opt, p))
-        }
-        tree::NodeKind::Text(_) => {
-            Some(text::draw(node, opt, p))
-        }
-        tree::NodeKind::Image(ref img) => {
-            Some(image::draw(img, p))
-        }
-        tree::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, img_size, p)
-        }
-        _ => None,
-    }
+    Some(bbox)
 }
 
 /// Calculates node's absolute bounding box.
@@ -398,4 +406,24 @@ fn from_qt_path(p_path: &qt::PainterPath) -> Vec<tree::PathSegment> {
     }
 
     segments
+}
+
+fn create_layers(img_size: ScreenSize, opt: &Options) -> QtLayers {
+    Layers::new(img_size, opt, create_subimage, clear_image)
+}
+
+fn create_subimage(
+    size: ScreenSize,
+    opt: &Options,
+) -> Option<qt::Image> {
+    let mut img = try_create_image!(size, None);
+
+    img.fill(0, 0, 0, 0);
+    img.set_dpi(opt.dpi);
+
+    Some(img)
+}
+
+fn clear_image(img: &mut qt::Image) {
+    img.fill(0, 0, 0, 0);
 }

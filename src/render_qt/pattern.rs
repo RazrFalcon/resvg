@@ -55,7 +55,8 @@ pub fn apply(
         p.apply_transform(&qt::Transform::new(bbox.width(), 0.0, 0.0, bbox.height(), 0.0, 0.0));
     }
 
-    super::render_group(pattern_node, opt, img_size, &p);
+    let mut layers = super::create_layers(img_size, opt);
+    super::render_group(pattern_node, opt, &mut layers, &p);
     p.end();
 
     let img = if opacity.fuzzy_ne(&1.0) {

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
+import argparse
 import os
 import platform
 import subprocess as proc
-import argparse
 from contextlib import contextmanager
 
 
@@ -20,7 +20,9 @@ def cd(path):
 
 def regression_testing(backend):
     regress_dir = work_dir + '/workdir-' + backend
-    os.mkdir(regress_dir)
+
+    if not os.path.exists(regress_dir):
+        os.mkdir(regress_dir)
 
     cargo_args = [
         'cargo', 'run', '--release', '--',
@@ -74,7 +76,10 @@ if not args.no_regression:
             os.environ['QT_QPA_PLATFORM'] = 'offscreen'
             proc.check_call(['sudo', 'ln', '-s', '/usr/share/fonts', '/opt/qt56/lib/fonts'])
 
-        regression_testing('qt')
+        try:
+            regression_testing('qt')
+        except proc.CalledProcessError:
+            exit(1)
 
 
 # build cairo backend
@@ -84,7 +89,10 @@ with cd('tools/rendersvg'):
 # regression testing of the cairo backend
 if not args.no_regression:
     with cd('testing_tools/regression'):
-        regression_testing('cairo')
+        try:
+            regression_testing('cairo')
+        except proc.CalledProcessError:
+            exit(1)
 
 
 # try to build with all backends
@@ -92,7 +100,7 @@ with cd('tools/rendersvg'):
     proc.check_call(['cargo', 'build', '--features', 'cairo-backend qt-backend'])
 
 
-# build cargo examples
+# build examples
 proc.check_call(['cargo', 'test', '--all-features'])
 proc.check_call(['cargo', 'test', '--features', 'cairo-backend'])
 proc.check_call(['cargo', 'test', '--features', 'qt-backend'])

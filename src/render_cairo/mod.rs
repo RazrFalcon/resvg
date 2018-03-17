@@ -18,6 +18,9 @@ use traits::{
     ConvTransform,
     TransformFromBBox,
 };
+use layers::{
+    Layers,
+};
 use {
     ErrorKind,
     Options,
@@ -117,6 +120,7 @@ impl OutputImage for cairo::ImageSurface {
     }
 }
 
+type CairoLayers<'a> = Layers<'a, cairo::ImageSurface>;
 
 /// Renders SVG to image.
 pub fn render_to_image(
@@ -180,8 +184,8 @@ pub fn render_to_canvas(
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
-    apply_viewbox_transform(rtree.svg_node().view_box, img_size, cr);
-    render_group(rtree.root(), opt, img_size, &cr);
+    render_node_to_canvas(rtree.root(), opt, rtree.svg_node().view_box,
+                          img_size, cr);
 }
 
 /// Renders SVG node to canvas.
@@ -192,6 +196,8 @@ pub fn render_node_to_canvas(
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
+    let mut layers = create_layers(img_size, opt);
+
     apply_viewbox_transform(view_box, img_size, &cr);
 
     let curr_ts = cr.get_matrix();
@@ -199,7 +205,7 @@ pub fn render_node_to_canvas(
     ts.append(&node.transform());
 
     cr.transform(ts.to_native());
-    render_node(node, opt, img_size, cr);
+    render_node(node, opt, &mut layers, cr);
     cr.set_matrix(curr_ts);
 }
 
@@ -228,10 +234,36 @@ fn apply_viewbox_transform(
     cr.transform(ts);
 }
 
+fn render_node(
+    node: tree::NodeRef,
+    opt: &Options,
+    layers: &mut CairoLayers,
+    cr: &cairo::Context,
+) -> Option<Rect> {
+    match *node.value() {
+        tree::NodeKind::Svg(_) => {
+            Some(render_group(node, opt, layers, cr))
+        }
+        tree::NodeKind::Path(ref path) => {
+            Some(path::draw(node.tree(), path, opt, cr))
+        }
+        tree::NodeKind::Text(_) => {
+            Some(text::draw(node, opt, cr))
+        }
+        tree::NodeKind::Image(ref img) => {
+            Some(image::draw(img, cr))
+        }
+        tree::NodeKind::Group(ref g) => {
+            render_group_impl(node, g, opt, layers, cr)
+        }
+        _ => None,
+    }
+}
+
 fn render_group(
     parent: tree::NodeRef,
     opt: &Options,
-    img_size: ScreenSize,
+    layers: &mut CairoLayers,
     cr: &cairo::Context,
 ) -> Rect {
     let curr_ts = cr.get_matrix();
@@ -240,7 +272,7 @@ fn render_group(
     for node in parent.children() {
         cr.transform(node.transform().to_native());
 
-        let bbox = render_node(node, opt, img_size, cr);
+        let bbox = render_node(node, opt, layers, cr);
 
         if let Some(bbox) = bbox {
             g_bbox.expand(bbox);
@@ -257,20 +289,21 @@ fn render_group_impl(
     node: tree::NodeRef,
     g: &tree::Group,
     opt: &Options,
-    img_size: ScreenSize,
+    layers: &mut CairoLayers,
     cr: &cairo::Context,
 ) -> Option<Rect> {
-    let sub_surface = try_create_surface!(img_size, None);
+    let sub_surface = layers.get()?;
+    let sub_surface = sub_surface.borrow_mut();
 
-    let sub_cr = cairo::Context::new(&sub_surface);
+    let sub_cr = cairo::Context::new(&*sub_surface);
     sub_cr.set_matrix(cr.get_matrix());
 
-    let bbox = render_group(node, opt, img_size, &sub_cr);
+    let bbox = render_group(node, opt, layers, &sub_cr);
 
     if let Some(idx) = g.clip_path {
         if let Some(clip_node) = node.tree().defs_at(idx) {
             if let tree::NodeKind::ClipPath(ref cp) = *clip_node.value() {
-                clippath::apply(clip_node, cp, opt, bbox, img_size, &sub_cr);
+                clippath::apply(clip_node, cp, opt, bbox, layers, &sub_cr);
             }
         }
     }
@@ -278,7 +311,7 @@ fn render_group_impl(
     let curr_matrix = cr.get_matrix();
     cr.set_matrix(cairo::Matrix::identity());
 
-    cr.set_source_surface(&sub_surface, 0.0, 0.0);
+    cr.set_source_surface(&*sub_surface, 0.0, 0.0);
 
     if let Some(opacity) = g.opacity {
         cr.paint_with_alpha(opacity);
@@ -288,30 +321,9 @@ fn render_group_impl(
 
     cr.set_matrix(curr_matrix);
 
-    Some(bbox)
-}
+    layers.release();
 
-fn render_node(
-    node: tree::NodeRef,
-    opt: &Options,
-    img_size: ScreenSize,
-    cr: &cairo::Context,
-) -> Option<Rect> {
-    match *node.value() {
-        tree::NodeKind::Path(ref path) => {
-            Some(path::draw(node.tree(), path, opt, cr))
-        }
-        tree::NodeKind::Text(_) => {
-            Some(text::draw(node, opt, cr))
-        }
-        tree::NodeKind::Image(ref img) => {
-            Some(image::draw(img, cr))
-        }
-        tree::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, img_size, cr)
-        }
-        _ => None,
-    }
+    Some(bbox)
 }
 
 /// Calculates node's absolute bounding box.
@@ -414,4 +426,21 @@ fn from_cairo_path(path: &cairo::Path) -> Vec<tree::PathSegment> {
     }
 
     segments
+}
+
+fn create_layers(img_size: ScreenSize, opt: &Options) -> CairoLayers {
+    Layers::new(img_size, opt, create_subsurface, clear_subsurface)
+}
+
+fn create_subsurface(
+    size: ScreenSize,
+    _: &Options,
+) -> Option<cairo::ImageSurface> {
+    Some(try_create_surface!(size, None))
+}
+
+fn clear_subsurface(surface: &mut cairo::ImageSurface) {
+    let cr = cairo::Context::new(&surface);
+    cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
+    cr.paint();
 }

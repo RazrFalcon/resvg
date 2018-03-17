@@ -22,16 +22,15 @@ And as an embeddable library to paint SVG on an application native canvas.
 // For error-chain.
 #![recursion_limit="128"]
 
-extern crate svgdom;
 extern crate base64;
+extern crate ego_tree;
+extern crate euclid;
 extern crate libflate;
 extern crate lyon_geom;
-extern crate euclid;
-extern crate ego_tree;
-#[macro_use] extern crate log;
+extern crate svgdom;
 #[macro_use] extern crate error_chain;
+#[macro_use] extern crate log;
 
-// TODO: move to modules
 #[cfg(feature = "cairo-backend")] pub extern crate cairo;
 #[cfg(feature = "cairo-backend")] extern crate pango;
 #[cfg(feature = "cairo-backend")] extern crate pangocairo;
@@ -39,6 +38,15 @@ extern crate ego_tree;
 
 #[cfg(feature = "qt-backend")] pub extern crate resvg_qt as qt;
 
+
+macro_rules! try_opt {
+    ($task:expr, $ret:expr) => {
+        match $task {
+            Some(v) => v,
+            None => return $ret,
+        }
+    };
+}
 
 /// Task, return value, warning message.
 macro_rules! try_opt_warn {
@@ -68,9 +76,10 @@ macro_rules! try_opt_warn {
 
 pub mod tree;
 pub mod utils;
-mod math;
 mod convert;
 mod error;
+mod layers;
+mod math;
 mod options;
 mod preproc;
 mod traits;

@@ -21,6 +21,7 @@ use traits::{
 use super::{
     path,
     text,
+    CairoLayers,
 };
 use {
     Options,
@@ -32,12 +33,13 @@ pub fn apply(
     cp: &tree::ClipPath,
     opt: &Options,
     bbox: Rect,
-    img_size: ScreenSize,
+    layers: &mut CairoLayers,
     cr: &cairo::Context,
 ) {
-    let clip_surface = try_create_surface!(img_size, ());
+    let clip_surface = try_opt!(layers.get(), ());
+    let clip_surface = clip_surface.borrow_mut();
 
-    let clip_cr = cairo::Context::new(&clip_surface);
+    let clip_cr = cairo::Context::new(&*clip_surface);
     clip_cr.set_source_rgba(0.0, 0.0, 0.0, 1.0);
     clip_cr.paint();
     clip_cr.set_matrix(cr.get_matrix());
@@ -70,7 +72,9 @@ pub fn apply(
     clip_cr.set_operator(cairo::Operator::Over);
 
     cr.set_matrix(cairo::Matrix::identity());
-    cr.set_source_surface(&clip_surface, 0.0, 0.0);
+    cr.set_source_surface(&*clip_surface, 0.0, 0.0);
     cr.set_operator(cairo::Operator::DestOut);
     cr.paint();
+
+    layers.release();
 }
