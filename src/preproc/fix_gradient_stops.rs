@@ -12,7 +12,7 @@ use svgdom::{
 };
 
 // self
-use math;
+use geom::*;
 use short::{
     AId,
     AValue,
@@ -30,7 +30,7 @@ pub fn fix_gradient_stops(doc: &Document) {
             let mut attrs = stop.attributes_mut();
             let av = attrs.get_value_mut(AId::Offset);
             if let Some(&mut AValue::Number(ref mut offset)) = av {
-                *offset = math::f64_bound(0.0, *offset, 1.0);
+                *offset = f64_bound(0.0, *offset, 1.0);
             }
         }
     }

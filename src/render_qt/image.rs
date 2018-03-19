@@ -7,7 +7,7 @@ use qt;
 
 // self
 use tree::prelude::*;
-use math::*;
+use geom::*;
 use utils;
 
 pub fn draw(

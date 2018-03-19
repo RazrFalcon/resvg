@@ -13,7 +13,7 @@ use pangocairo::functions as pc;
 
 // self
 use tree::prelude::*;
-use math::*;
+use geom::*;
 use traits::{
     ConvTransform,
     TransformFromBBox,

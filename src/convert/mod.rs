@@ -20,7 +20,7 @@ use traits::{
     GetValue,
     GetViewBox,
 };
-use math::*;
+use geom::*;
 use {
     ErrorKind,
     Options,

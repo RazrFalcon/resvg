@@ -8,7 +8,7 @@ use cairo;
 // self
 
 use tree;
-use math::*;
+use geom::*;
 use super::{
     fill,
     stroke,

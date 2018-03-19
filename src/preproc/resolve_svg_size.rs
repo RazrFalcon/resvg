@@ -9,7 +9,7 @@ use svgdom::{
 };
 
 // self
-use math::*;
+use geom::*;
 use short::{
     AId,
     Unit,

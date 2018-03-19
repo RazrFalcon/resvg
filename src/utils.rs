@@ -7,7 +7,7 @@
 use std::f64;
 
 use tree;
-use math::*;
+use geom::*;
 use {
     FitTo,
     NodeExt,

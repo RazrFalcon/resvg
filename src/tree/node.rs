@@ -5,10 +5,7 @@
 use std::path::PathBuf;
 
 // self
-use math::{
-    Size,
-    Rect,
-};
+use geom::*;
 use super::attribute::*;
 use super::NodeId;
 

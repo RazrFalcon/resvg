@@ -11,7 +11,7 @@ use cairo::{
 
 // self
 use tree::prelude::*;
-use math::*;
+use geom::*;
 use traits::{
     ConvTransform,
     TransformFromBBox,

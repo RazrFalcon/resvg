@@ -7,10 +7,7 @@ use qt;
 
 // self
 use tree::prelude::*;
-use math::{
-    self,
-    Rect,
-};
+use geom::*;
 use super::{
     gradient,
     pattern,
@@ -34,7 +31,7 @@ pub fn apply(
 
             match stroke.paint {
                 tree::Paint::Color(c) => {
-                    let a = math::f64_bound(0.0, opacity * 255.0, 255.0) as u8;
+                    let a = f64_bound(0.0, opacity * 255.0, 255.0) as u8;
                     pen.set_color(c.red, c.green, c.blue, a);
                 }
                 tree::Paint::Link(id) => {

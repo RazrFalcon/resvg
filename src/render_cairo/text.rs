@@ -16,7 +16,7 @@ use pangocairo::functions as pc;
 // self
 use tree;
 use utils;
-use math::*;
+use geom::*;
 use super::{
     fill,
     stroke,

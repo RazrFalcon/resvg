@@ -15,7 +15,7 @@ use short::{
     AValue,
     EId,
 };
-use math::{
+use geom::{
     Line,
 };
 use traits::{

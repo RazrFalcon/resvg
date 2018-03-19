@@ -11,7 +11,7 @@ use image::{
 
 // self
 use tree;
-use math::*;
+use geom::*;
 use utils;
 
 

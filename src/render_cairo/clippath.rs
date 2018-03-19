@@ -13,7 +13,7 @@ use tree::{
     self,
     NodeExt,
 };
-use math::*;
+use geom::*;
 use traits::{
     ConvTransform,
     TransformFromBBox,

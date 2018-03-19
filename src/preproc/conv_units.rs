@@ -24,7 +24,7 @@ use traits::{
     GetViewBox,
     FindAttribute,
 };
-use math::*;
+use geom::*;
 use {
     Options,
 };

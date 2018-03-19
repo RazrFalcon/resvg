@@ -79,7 +79,7 @@ pub mod utils;
 mod convert;
 mod error;
 mod layers;
-mod math;
+mod geom;
 mod options;
 mod preproc;
 mod traits;
@@ -99,7 +99,7 @@ pub use tree::{
     NodeExt,
 };
 pub use options::*;
-pub use math::*;
+pub use geom::*;
 
 /// Shorthand names for modules.
 mod short {

@@ -28,7 +28,7 @@ use short::{
     AValue,
     EId,
 };
-use math::*;
+use geom::*;
 use tree;
 
 

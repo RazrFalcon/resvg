@@ -10,7 +10,7 @@ use tree::{
     self,
     TreeExt,
 };
-use math;
+use geom::*;
 use super::{
     gradient,
     pattern,
@@ -25,7 +25,7 @@ pub fn apply(
     rtree: &tree::RenderTree,
     fill: &Option<tree::Fill>,
     opt: &Options,
-    bbox: math::Rect,
+    bbox: Rect,
     cr: &cairo::Context,
 ) {
     match *fill {

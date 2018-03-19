@@ -11,7 +11,7 @@ use svgdom::{
 
 // self
 use super::*;
-use math::*;
+use geom::*;
 use short::{
     AId,
     EId,

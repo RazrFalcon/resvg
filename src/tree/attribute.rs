@@ -16,7 +16,7 @@ pub use svgdom::{
 
 // self
 use super::NodeId;
-use math::*;
+use geom::*;
 
 
 /// A line cap.

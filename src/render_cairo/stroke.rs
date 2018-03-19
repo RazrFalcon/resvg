@@ -7,7 +7,7 @@ use cairo;
 
 // self
 use tree::prelude::*;
-use math;
+use geom::*;
 use super::{
     gradient,
     pattern,
@@ -24,7 +24,7 @@ pub fn apply(
     rtree: &tree::RenderTree,
     stroke: &Option<tree::Stroke>,
     opt: &Options,
-    bbox: math::Rect,
+    bbox: Rect,
     cr: &cairo::Context,
 ) {
     match *stroke {
