@@ -213,7 +213,7 @@ pub fn parse_rtree_from_data(
     text: &str,
     opt: &Options,
 ) -> Result<tree::RenderTree> {
-    let doc = parse_svg(text)?;
+    let doc = parse_dom(text)?;
     parse_rtree_from_dom(doc, opt)
 }
 
@@ -239,7 +239,13 @@ pub fn parse_rtree_from_dom(
     Ok(rtree)
 }
 
-fn load_file(path: &Path) -> Result<String> {
+/// Load an SVG file.
+///
+/// - `svg` files will be loaded as is.
+/// - `svgz` files will be decompressed.
+///
+/// **Note**: this is a low-level API. Use `parse_rtree_from_*` instead.
+pub fn load_file(path: &Path) -> Result<String> {
     use std::fs;
     use std::io::Read;
 
@@ -271,7 +277,10 @@ fn load_file(path: &Path) -> Result<String> {
     }
 }
 
-fn parse_svg(text: &str) -> Result<svgdom::Document> {
+/// Parses `svgdom::Document` object from the string data.
+///
+/// **Note**: this is a low-level API. Use `parse_rtree_from_*` instead.
+pub fn parse_dom(text: &str) -> Result<svgdom::Document> {
     let opt = svgdom::ParseOptions {
         parse_comments: false,
         parse_declarations: false,
@@ -286,4 +295,26 @@ fn parse_svg(text: &str) -> Result<svgdom::Document> {
 
     let doc = svgdom::Document::from_str_with_opt(&text, &opt)?;
     Ok(doc)
+}
+
+/// Preprocesses a provided `svgdom::Document`.
+///
+/// Prepares an input `svgdom::Document` for conversion via `convert_dom_to_rtree`.
+///
+/// **Note**: this is a low-level API. Use `parse_rtree_from_*` instead.
+pub fn preprocess_dom(
+    doc: &mut svgdom::Document,
+    opt: &Options,
+) -> Result<()> {
+    preproc::prepare_doc(doc, opt)
+}
+
+/// Converts a provided `svgdom::Document` to `tree::RenderTree`.
+///
+/// **Note**: this is a low-level API. Use `parse_rtree_from_*` instead.
+pub fn convert_dom_to_rtree(
+    doc: &svgdom::Document,
+    opt: &Options,
+) -> Result<tree::RenderTree> {
+    convert::convert_doc(doc, opt)
 }

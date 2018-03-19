@@ -99,14 +99,21 @@ fn process() -> Result<(), Error> {
             .apply().unwrap();
     }
 
-    // Load file.
-    let rtree = run_task(args.perf, "Parsing",
-        || resvg::parse_rtree_from_file(&args.in_svg, &opt))?;
+    macro_rules! timed {
+        ($name:expr, $task:expr) => { run_task(args.perf, $name, || $task) };
+    }
 
+    // Load file.
+    let rtree = {
+        let data = timed!("File loading", resvg::load_file(&args.in_svg))?;
+        let mut dom = timed!("Parsing", resvg::parse_dom(&data))?;
+        timed!("Preprocessing", resvg::preprocess_dom(&mut dom, &opt))?;
+        timed!("Conversion", resvg::convert_dom_to_rtree(&dom, &opt))?
+    };
 
     // We have to init only Qt backend.
     #[cfg(feature = "qt-backend")]
-    let _resvg = run_task(args.perf, "Backend init", || init_qt_gui(&rtree, &args));
+    let _resvg = timed!("Backend init", init_qt_gui(&rtree, &args));
 
     if args.query_all {
         query_all(&rtree, &args, &opt);
@@ -125,17 +132,15 @@ fn process() -> Result<(), Error> {
     if let Some(ref out_png) = args.out_png {
         let img = if let Some(ref id) = args.export_id {
             if let Some(node) = rtree.root().descendants().find(|n| n.svg_id() == id) {
-                run_task(args.perf, "Rendering",
-                    || args.backend.render_node_to_image(node, &opt))
+                timed!("Rendering", args.backend.render_node_to_image(node, &opt))
             } else {
                 return Err(Error::InvalidId(id.clone()));
             }
         } else {
-            run_task(args.perf, "Rendering",
-                || args.backend.render_to_image(&rtree, &opt))
+            timed!("Rendering", args.backend.render_to_image(&rtree, &opt))
         }?;
 
-        run_task(args.perf, "Saving", || img.save(out_png));
+        timed!("Saving", img.save(out_png));
     };
 
     Ok(())
