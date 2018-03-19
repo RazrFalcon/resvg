@@ -100,7 +100,7 @@ with cd('tools/rendersvg'):
     proc.check_call(['cargo', 'build', '--features', 'cairo-backend qt-backend'])
 
 
-# build examples
+# run tests and build examples
 proc.check_call(['cargo', 'test', '--all-features'])
 proc.check_call(['cargo', 'test', '--features', 'cairo-backend'])
 proc.check_call(['cargo', 'test', '--features', 'qt-backend'])
