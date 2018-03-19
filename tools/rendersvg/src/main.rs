@@ -54,6 +54,7 @@ struct Args {
     dump: Option<path::PathBuf>,
     pretend: bool,
     perf: bool,
+    quiet: bool,
 }
 
 #[derive(Error, Debug)]
@@ -91,7 +92,7 @@ fn process() -> Result<(), Error> {
     // Do not print warning during the ID querying.
     //
     // Some crates still can print to stdout/stderr, but we can't do anything about it.
-    if !args.query_all {
+    if !(args.query_all || args.quiet) {
         fern::Dispatch::new()
             .format(log_format)
             .level(log::LevelFilter::Warn)
@@ -304,6 +305,9 @@ fn prepare_app<'a, 'b>() -> App<'a, 'b> {
         .arg(Arg::with_name("perf")
             .long("perf")
             .help("Prints performance stats"))
+        .arg(Arg::with_name("quiet")
+            .long("quiet")
+            .help("Disables warnings"))
 }
 
 fn backends() -> Vec<&'static str> {
@@ -440,6 +444,7 @@ fn fill_args(args: &ArgMatches) -> Args {
         dump,
         pretend: args.is_present("pretend"),
         perf: args.is_present("perf"),
+        quiet: args.is_present("quiet"),
     }
 }
 
