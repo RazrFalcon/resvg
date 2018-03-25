@@ -54,10 +54,8 @@ fn build_ui(application: &gtk::Application, file_path: &Path) {
     let window = gtk::ApplicationWindow::new(application);
     let drawing_area = Box::new(DrawingArea::new)();
 
-    let opt = resvg::Options {
-        path: Some(file_path.into()),
-        .. resvg::Options::default()
-    };
+    let mut opt = resvg::Options::default();
+    opt.usvg.path = Some(file_path.into());
 
     let rtree = resvg::parse_rtree_from_file(file_path, &opt).unwrap();
 

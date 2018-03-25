@@ -6,9 +6,9 @@
 
 // external
 use qt;
+use usvg::tree::prelude::*;
 
 // self
-use tree::prelude::*;
 use geom::*;
 use traits::{
     ConvTransform,
@@ -75,10 +75,10 @@ pub struct Backend;
 impl Render for Backend {
     fn render_to_image(
         &self,
-        rtree: &tree::RenderTree,
+        tree: &tree::Tree,
         opt: &Options,
     ) -> Result<Box<OutputImage>> {
-        let img = render_to_image(rtree, opt)?;
+        let img = render_to_image(tree, opt)?;
         Ok(Box::new(img))
     }
 
@@ -110,13 +110,13 @@ type QtLayers<'a> = Layers<'a, qt::Image>;
 
 /// Renders SVG to image.
 pub fn render_to_image(
-    rtree: &tree::RenderTree,
+    tree: &tree::Tree,
     opt: &Options,
 ) -> Result<qt::Image> {
-    let (img, img_size) = create_root_image(rtree.svg_node().size.to_screen_size(), opt)?;
+    let (img, img_size) = create_root_image(tree.svg_node().size.to_screen_size(), opt)?;
 
     let painter = qt::Painter::new(&img);
-    render_to_canvas(rtree, opt, img_size, &painter);
+    render_to_canvas(tree, opt, img_size, &painter);
     painter.end();
 
     Ok(img)
@@ -151,12 +151,12 @@ pub fn render_node_to_image(
 
 /// Renders SVG to canvas.
 pub fn render_to_canvas(
-    rtree: &tree::RenderTree,
+    tree: &tree::Tree,
     opt: &Options,
     img_size: ScreenSize,
     painter: &qt::Painter,
 ) {
-    render_node_to_canvas(rtree.root(), opt, rtree.svg_node().view_box,
+    render_node_to_canvas(tree.root(), opt, tree.svg_node().view_box,
                           img_size, painter);
 }
 
@@ -197,7 +197,7 @@ fn create_root_image(
     } else {
         img.fill(0, 0, 0, 0);
     }
-    img.set_dpi(opt.dpi);
+    img.set_dpi(opt.usvg.dpi);
 
     Ok((img, img_size))
 }
@@ -293,7 +293,7 @@ fn render_group_impl(
     sub_p.end();
 
     if let Some(opacity) = g.opacity {
-        p.set_opacity(opacity);
+        p.set_opacity(*opacity);
     }
 
     let curr_ts = p.get_transform();
@@ -319,7 +319,7 @@ pub fn calc_node_bbox(
     // Unwrap can't fail, because `None` will be returned only on OOM,
     // and we cannot hit it with a such small image.
     let mut img = qt::Image::new(1, 1).unwrap();
-    img.set_dpi(opt.dpi);
+    img.set_dpi(opt.usvg.dpi);
     let p = qt::Painter::new(&img);
 
     let abs_ts = utils::abs_transform(node);
@@ -419,7 +419,7 @@ fn create_subimage(
     let mut img = try_create_image!(size, None);
 
     img.fill(0, 0, 0, 0);
-    img.set_dpi(opt.dpi);
+    img.set_dpi(opt.usvg.dpi);
 
     Some(img)
 }

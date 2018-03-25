@@ -6,11 +6,13 @@
 
 use std::f64;
 
-use tree;
+// external
+use usvg::tree::prelude::*;
+
+// self
 use geom::*;
 use {
     FitTo,
-    NodeExt,
 };
 
 

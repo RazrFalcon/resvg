@@ -28,7 +28,7 @@ of preprocessing before rendering. It converts shapes to paths, resolves attribu
 removes groups, removes invisible elements, fixes a lot of issues in malformed SVG files
 and only then starts the rendering. So it's very easy to implement a new rendering backend.
 
-More details [here](doc/svgdom.adoc).
+More details [here](https://github.com/RazrFalcon/usvg/blob/master/docs/usvg_spec.adoc).
 
 ### resvg vs librsvg
 

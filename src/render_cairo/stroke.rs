@@ -4,9 +4,9 @@
 
 // external
 use cairo;
+use usvg::tree::prelude::*;
 
 // self
-use tree::prelude::*;
 use geom::*;
 use super::{
     gradient,
@@ -21,7 +21,7 @@ use {
 
 
 pub fn apply(
-    rtree: &tree::RenderTree,
+    tree: &tree::Tree,
     stroke: &Option<tree::Stroke>,
     opt: &Options,
     bbox: Rect,
@@ -37,7 +37,7 @@ pub fn apply(
                     // a-stroke-002.svg
                     // a-stroke-003.svg
                     // a-stroke-004.svg
-                    if let Some(node) = rtree.defs_at(id) {
+                    if let Some(node) = tree.defs_at(id) {
                         match *node.value() {
                             tree::NodeKind::LinearGradient(ref lg) => {
                                 gradient::prepare_linear(node, lg, stroke.opacity, bbox, cr);

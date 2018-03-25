@@ -4,12 +4,9 @@
 
 // external
 use cairo;
+use usvg::tree::prelude::*;
 
 // self
-use tree::{
-    self,
-    TreeExt,
-};
 use geom::*;
 use super::{
     gradient,
@@ -22,7 +19,7 @@ use {
 
 
 pub fn apply(
-    rtree: &tree::RenderTree,
+    tree: &tree::Tree,
     fill: &Option<tree::Fill>,
     opt: &Options,
     bbox: Rect,
@@ -38,7 +35,7 @@ pub fn apply(
                 tree::Paint::Link(id) => {
                     // a-fill-opacity-003.svg
                     // a-fill-opacity-004.svg
-                    if let Some(node) = rtree.defs_at(id) {
+                    if let Some(node) = tree.defs_at(id) {
                         match *node.value() {
                             tree::NodeKind::LinearGradient(ref lg) => {
                                 gradient::prepare_linear(node, lg, fill.opacity, bbox, cr);

@@ -8,9 +8,9 @@ use image::{
     self,
     GenericImage,
 };
+use usvg::tree;
 
 // self
-use tree;
 use geom::*;
 use utils;
 

@@ -21,6 +21,7 @@ use svgdom::{
     ValueId,
     ViewBox,
 };
+use usvg::tree;
 
 // self
 use short::{
@@ -29,7 +30,6 @@ use short::{
     EId,
 };
 use geom::*;
-use tree;
 
 
 pub trait GetViewBox {

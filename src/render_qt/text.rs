@@ -6,9 +6,9 @@ use std::f64;
 
 // external
 use qt;
+use usvg::tree;
 
 // self
-use tree;
 use utils;
 use geom::*;
 use super::{
@@ -185,7 +185,7 @@ pub fn init_font(dom_font: &tree::Font) -> qt::Font {
 }
 
 fn draw_line(
-    rtree: &tree::RenderTree,
+    tree: &tree::Tree,
     line_bbox: Rect,
     fill: &Option<tree::Fill>,
     stroke: &Option<tree::Stroke>,
@@ -194,14 +194,14 @@ fn draw_line(
 ) {
     // TODO: to rect
     let mut p_path = qt::PainterPath::new();
-    p_path.move_to(line_bbox.x(),  line_bbox.y());
-    p_path.line_to(line_bbox.x() + line_bbox.width(),  line_bbox.y());
-    p_path.line_to(line_bbox.x() + line_bbox.width(),  line_bbox.y() + line_bbox.height());
-    p_path.line_to(line_bbox.x(),  line_bbox.y() + line_bbox.height());
+    p_path.move_to(line_bbox.x(), line_bbox.y());
+    p_path.line_to(line_bbox.x() + line_bbox.width(), line_bbox.y());
+    p_path.line_to(line_bbox.x() + line_bbox.width(), line_bbox.y() + line_bbox.height());
+    p_path.line_to(line_bbox.x(), line_bbox.y() + line_bbox.height());
     p_path.close_path();
 
-    fill::apply(rtree, fill, opt, line_bbox, p);
-    stroke::apply(rtree, stroke, opt, line_bbox, p);
+    fill::apply(tree, fill, opt, line_bbox, p);
+    stroke::apply(tree, stroke, opt, line_bbox, p);
 
     p.draw_path(&p_path);
 }

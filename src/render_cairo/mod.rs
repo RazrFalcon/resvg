@@ -10,9 +10,9 @@ use cairo::{
     MatrixTrait,
 };
 use pangocairo::functions as pc;
+use usvg::tree::prelude::*;
 
 // self
-use tree::prelude::*;
 use geom::*;
 use traits::{
     ConvTransform,
@@ -81,10 +81,10 @@ pub struct Backend;
 impl Render for Backend {
     fn render_to_image(
         &self,
-        rtree: &tree::RenderTree,
+        tree: &tree::Tree,
         opt: &Options,
     ) -> Result<Box<OutputImage>> {
-        let img = render_to_image(rtree, opt)?;
+        let img = render_to_image(tree, opt)?;
         Ok(Box::new(img))
     }
 
@@ -124,11 +124,11 @@ type CairoLayers<'a> = Layers<'a, cairo::ImageSurface>;
 
 /// Renders SVG to image.
 pub fn render_to_image(
-    rtree: &tree::RenderTree,
+    tree: &tree::Tree,
     opt: &Options,
 ) -> Result<cairo::ImageSurface> {
     let (surface, img_view) = create_surface(
-        rtree.svg_node().size.to_screen_size(),
+        tree.svg_node().size.to_screen_size(),
         opt,
     )?;
 
@@ -136,11 +136,11 @@ pub fn render_to_image(
 
     // Fill background.
     if let Some(color) = opt.background {
-        cr.set_source_color(&color, 1.0);
+        cr.set_source_color(&color, 1.0.into());
         cr.paint();
     }
 
-    render_to_canvas(rtree, opt, img_view, &cr);
+    render_to_canvas(tree, opt, img_view, &cr);
 
     Ok(surface)
 }
@@ -168,7 +168,7 @@ pub fn render_node_to_image(
 
     // Fill background.
     if let Some(color) = opt.background {
-        cr.set_source_color(&color, 1.0);
+        cr.set_source_color(&color, 1.0.into());
         cr.paint();
     }
 
@@ -179,12 +179,12 @@ pub fn render_node_to_image(
 
 /// Renders SVG to canvas.
 pub fn render_to_canvas(
-    rtree: &tree::RenderTree,
+    tree: &tree::Tree,
     opt: &Options,
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
-    render_node_to_canvas(rtree.root(), opt, rtree.svg_node().view_box,
+    render_node_to_canvas(tree.root(), opt, tree.svg_node().view_box,
                           img_size, cr);
 }
 
@@ -314,7 +314,7 @@ fn render_group_impl(
     cr.set_source_surface(&*sub_surface, 0.0, 0.0);
 
     if let Some(opacity) = g.opacity {
-        cr.paint_with_alpha(opacity);
+        cr.paint_with_alpha(*opacity);
     } else {
         cr.paint();
     }

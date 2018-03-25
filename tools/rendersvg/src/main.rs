@@ -29,9 +29,9 @@ use clap::{
 };
 
 use resvg::{
+    usvg,
     FitTo,
     Options,
-    NodeExt,
     RectExt,
     Render,
 };
@@ -105,24 +105,19 @@ fn process() -> Result<(), Error> {
     }
 
     // Load file.
-    let rtree = {
-        let data = timed!("File loading", resvg::load_file(&args.in_svg))?;
-        let mut dom = timed!("Parsing", resvg::parse_dom(&data))?;
-        timed!("Preprocessing", resvg::preprocess_dom(&mut dom, &opt))?;
-        timed!("Conversion", resvg::convert_dom_to_rtree(&dom, &opt))?
-    };
+    let tree = timed!("Preprocessing", resvg::parse_rtree_from_file(&args.in_svg, &opt))?;
 
     // We have to init only Qt backend.
     #[cfg(feature = "qt-backend")]
-    let _resvg = timed!("Backend init", init_qt_gui(&rtree, &args));
+    let _resvg = timed!("Backend init", init_qt_gui(&tree, &args));
 
     if args.query_all {
-        query_all(&rtree, &args, &opt);
+        query_all(&tree, &args, &opt);
         return Ok(());
     }
 
     if let Some(ref dump_path) = args.dump {
-        dump_svg(&rtree, dump_path)?;
+        dump_svg(&tree, dump_path)?;
     }
 
     if args.pretend {
@@ -132,13 +127,13 @@ fn process() -> Result<(), Error> {
     // Render.
     if let Some(ref out_png) = args.out_png {
         let img = if let Some(ref id) = args.export_id {
-            if let Some(node) = rtree.root().descendants().find(|n| n.svg_id() == id) {
+            if let Some(node) = tree.root().descendants().find(|n| n.svg_id() == id) {
                 timed!("Rendering", args.backend.render_node_to_image(node, &opt))
             } else {
                 return Err(Error::InvalidId(id.clone()));
             }
         } else {
-            timed!("Rendering", args.backend.render_to_image(&rtree, &opt))
+            timed!("Rendering", args.backend.render_to_image(&tree, &opt))
         }?;
 
         timed!("Saving", img.save(out_png));
@@ -152,15 +147,15 @@ fn process() -> Result<(), Error> {
 // So we skip it file doesn't have one.
 #[cfg(feature = "qt-backend")]
 fn init_qt_gui(
-    rtree: &tree::RenderTree,
+    tree: &tree::Tree,
     args: &Args,
 ) -> Option<resvg::InitObject> {
     if args.backend_name != "qt" {
         return None;
     }
 
-    // Check that rtree has any text nodes.
-    let has_text = rtree.root().descendants().any(|n|
+    // Check that tree has any text nodes.
+    let has_text = tree.root().descendants().any(|n|
         if let &tree::NodeKind::Text { .. } = n.value() { true } else { false }
     );
 
@@ -173,13 +168,13 @@ fn init_qt_gui(
 }
 
 fn query_all(
-    rtree: &tree::RenderTree,
+    tree: &tree::Tree,
     args: &Args,
     opt: &Options,
 ) {
     let mut count = 0;
-    for node in rtree.root().descendants() {
-        if rtree.is_in_defs(node) {
+    for node in tree.root().descendants() {
+        if tree.is_in_defs(node) {
             continue;
         }
 
@@ -399,7 +394,7 @@ fn is_zoom(val: String) -> Result<(), String> {
 }
 
 fn is_color(val: String) -> Result<(), String> {
-    match svgdom::Color::from_str(&val) {
+    match usvg::tree::Color::from_str(&val) {
         Ok(_) => Ok(()),
         Err(_) => Err("Invalid color.".into()),
     }
@@ -461,7 +456,7 @@ fn fill_options(args: &ArgMatches, app_args: &Args) -> Options {
     let mut background = None;
     if args.is_present("background") {
         let s = args.value_of("background").unwrap();
-        background = Some(svgdom::Color::from_str(s).unwrap());
+        background = Some(usvg::tree::Color::from_str(s).unwrap());
     }
 
     // We don't have to keep named groups when we don't need them
@@ -469,15 +464,17 @@ fn fill_options(args: &ArgMatches, app_args: &Args) -> Options {
     let keep_named_groups = app_args.query_all || app_args.export_id.is_some();
 
     Options {
-        path: Some(args.value_of("in-svg").unwrap().into()),
-        dpi: value_t!(args.value_of("dpi"), u16).unwrap() as f64,
+        usvg: usvg::Options {
+            path: Some(args.value_of("in-svg").unwrap().into()),
+            dpi: value_t!(args.value_of("dpi"), u16).unwrap() as f64,
+            keep_named_groups,
+        },
         fit_to,
         background,
-        keep_named_groups,
     }
 }
 
-fn dump_svg(rtree: &tree::RenderTree, path: &path::Path) -> Result<(), io::Error> {
+fn dump_svg(tree: &tree::Tree, path: &path::Path) -> Result<(), io::Error> {
     let mut f = fs::File::create(path)?;
 
     let opt = svgdom::WriteOptions {
@@ -488,7 +485,7 @@ fn dump_svg(rtree: &tree::RenderTree, path: &path::Path) -> Result<(), io::Error
         .. svgdom::WriteOptions::default()
     };
 
-    let svgdoc = rtree.to_svgdom();
+    let svgdoc = tree.to_svgdom();
 
     let mut out = Vec::new();
     svgdoc.write_buf_opt(&opt, &mut out);

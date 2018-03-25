@@ -2,11 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::path::PathBuf;
-
-use svgdom::{
-    Color,
-};
+use usvg;
+use tree::Color;
 
 
 /// Image fit options.
@@ -24,44 +21,28 @@ pub enum FitTo {
 
 /// Rendering options.
 pub struct Options {
-    /// SVG image path.
-    ///
-    /// Used to resolve relative image paths.
-    pub path: Option<PathBuf>,
-    /// Target DPI.
-    ///
-    /// Impact units converting and text rendering.
-    pub dpi: f64,
+    /// `usvg` preprocessor options.
+    pub usvg: usvg::Options,
+
     /// Fits image to the specified height.
     ///
     /// Does not affect rendering to canvas.
     pub fit_to: FitTo,
+
     /// Image background color.
     ///
     /// Sets image background color. Does not affect rendering to canvas.
     ///
     /// `None` equals to transparent.
     pub background: Option<Color>,
-
-    /// Keep named groups.
-    ///
-    /// If set to `true`, all non-empty groups with `id` attribute will not
-    /// be removed.
-    ///
-    /// Used to render nodes by ID.
-    ///
-    /// Note: will slow down the rendering.
-    pub keep_named_groups: bool,
 }
 
 impl Default for Options {
     fn default() -> Options {
         Options {
-            path: None,
-            dpi: 96.0,
+            usvg: usvg::Options::default(),
             fit_to: FitTo::Original,
             background: None,
-            keep_named_groups: false,
         }
     }
 }

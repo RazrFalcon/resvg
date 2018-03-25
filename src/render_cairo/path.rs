@@ -4,10 +4,9 @@
 
 // external
 use cairo;
+use usvg::tree;
 
 // self
-
-use tree;
 use geom::*;
 use super::{
     fill,
@@ -20,7 +19,7 @@ use {
 
 
 pub fn draw(
-    rtree: &tree::RenderTree,
+    tree: &tree::Tree,
     path: &tree::Path,
     opt: &Options,
     cr: &cairo::Context,
@@ -29,11 +28,11 @@ pub fn draw(
 
     let bbox = utils::path_bbox(&path.segments, None, &tree::Transform::default());
 
-    fill::apply(rtree, &path.fill, opt, bbox, cr);
+    fill::apply(tree, &path.fill, opt, bbox, cr);
     if path.stroke.is_some() {
         cr.fill_preserve();
 
-        stroke::apply(rtree, &path.stroke, opt, bbox, cr);
+        stroke::apply(tree, &path.stroke, opt, bbox, cr);
         cr.stroke();
     } else {
         cr.fill();

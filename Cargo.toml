@@ -33,21 +33,27 @@ optional = true
 version = "0.4.1"
 optional = true
 
-[dependencies.resvg-qt]
-git = "https://github.com/RazrFalcon/resvg-qt"
-# path = "../resvg-qt"
-# version = "0.1.0"
-optional = true
-
 [dependencies.cairo-rs]
 version = "0.3"
 features = ["png"]
 optional = true
 
+[dependencies.resvg-qt]
+git = "https://github.com/RazrFalcon/resvg-qt"
+# path = "../resvg-qt"
+# version = "0.1.0"
+rev = "9a5b017"
+optional = true
+
+[dependencies.usvg]
+git = "https://github.com/RazrFalcon/usvg"
+rev = "71d9273"
+#path = "../usvg"
+
 [dependencies.svgdom]
 # version = "0.10"
-git = "https://github.com/RazrFalcon/libsvgdom.git"
-branch = "devel"
+git = "https://github.com/RazrFalcon/libsvgdom"
+rev = "c390d40"
 # path = "../svgdom"
 
 [dependencies.image]

@@ -4,9 +4,9 @@
 
 // external
 use qt;
+use usvg::tree::prelude::*;
 
 // self
-use tree::prelude::*;
 use geom::*;
 use super::{
     gradient,
@@ -18,7 +18,7 @@ use {
 
 
 pub fn apply(
-    rtree: &tree::RenderTree,
+    tree: &tree::Tree,
     stroke: &Option<tree::Stroke>,
     opt: &Options,
     bbox: Rect,
@@ -31,7 +31,7 @@ pub fn apply(
 
             match stroke.paint {
                 tree::Paint::Color(c) => {
-                    let a = f64_bound(0.0, opacity * 255.0, 255.0) as u8;
+                    let a = f64_bound(0.0, *opacity * 255.0, 255.0) as u8;
                     pen.set_color(c.red, c.green, c.blue, a);
                 }
                 tree::Paint::Link(id) => {
@@ -40,7 +40,7 @@ pub fn apply(
                     // a-stroke-004.svg
                     let mut brush = qt::Brush::new();
 
-                    if let Some(node) = rtree.defs_at(id) {
+                    if let Some(node) = tree.defs_at(id) {
                         match *node.value() {
                             tree::NodeKind::LinearGradient(ref lg) => {
                                 gradient::prepare_linear(node, lg, opacity, &mut brush);

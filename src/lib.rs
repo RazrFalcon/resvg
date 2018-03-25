@@ -16,8 +16,6 @@ And as an embeddable library to paint SVG on an application native canvas.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
-//#![warn(missing_debug_implementations)]
-//#![warn(missing_copy_implementations)]
 
 // For error-chain.
 #![recursion_limit="128"]
@@ -28,6 +26,7 @@ extern crate euclid;
 extern crate libflate;
 extern crate lyon_geom;
 extern crate svgdom;
+pub extern crate usvg;
 #[macro_use] extern crate error_chain;
 #[macro_use] extern crate log;
 
@@ -50,11 +49,11 @@ macro_rules! try_opt {
 
 /// Task, return value, warning message.
 macro_rules! try_opt_warn {
-    ($task:expr, $ret:expr, $fmt:expr) => {
+    ($task:expr, $ret:expr, $msg:expr) => {
         match $task {
             Some(v) => v,
             None => {
-                warn!($fmt);
+                warn!($msg);
                 return $ret;
             }
         }
@@ -74,14 +73,11 @@ macro_rules! try_opt_warn {
 #[cfg(feature = "cairo-backend")] pub mod render_cairo;
 #[cfg(feature = "qt-backend")] pub mod render_qt;
 
-pub mod tree;
 pub mod utils;
-mod convert;
+pub mod geom;
 mod error;
 mod layers;
-mod geom;
 mod options;
-mod preproc;
 mod traits;
 
 
@@ -93,10 +89,6 @@ pub use error::{
     Error,
     ErrorKind,
     Result,
-};
-// reexport traits
-pub use tree::{
-    NodeExt,
 };
 pub use options::*;
 pub use geom::*;
@@ -111,10 +103,7 @@ mod short {
     };
 }
 
-use preproc::{
-    DEFAULT_FONT_FAMILY,
-    DEFAULT_FONT_SIZE,
-};
+pub use usvg::tree;
 
 
 /// A generic interface for image rendering.
@@ -125,7 +114,7 @@ pub trait Render {
     /// Renders SVG to image.
     fn render_to_image(
         &self,
-        rtree: &tree::RenderTree,
+        tree: &tree::Tree,
         opt: &Options,
     ) -> Result<Box<OutputImage>>;
 
@@ -212,9 +201,9 @@ pub fn default_backend() -> Box<Render> {
 pub fn parse_rtree_from_data(
     text: &str,
     opt: &Options,
-) -> Result<tree::RenderTree> {
-    let doc = parse_dom(text)?;
-    parse_rtree_from_dom(doc, opt)
+) -> Result<tree::Tree> {
+    let tree = usvg::parse_tree_from_data(text, &opt.usvg)?;
+    Ok(tree)
 }
 
 /// Creates `RenderTree` from file.
@@ -223,98 +212,16 @@ pub fn parse_rtree_from_data(
 pub fn parse_rtree_from_file<P: AsRef<Path>>(
     path: P,
     opt: &Options,
-) -> Result<tree::RenderTree> {
-    let text = load_file(path.as_ref())?;
-    parse_rtree_from_data(&text, opt)
+) -> Result<tree::Tree> {
+    let tree = usvg::parse_tree_from_file(path, &opt.usvg)?;
+    Ok(tree)
 }
 
 /// Creates `RenderTree` from `svgdom::Document`.
 pub fn parse_rtree_from_dom(
-    mut doc: svgdom::Document,
+    doc: svgdom::Document,
     opt: &Options,
-) -> Result<tree::RenderTree> {
-    preproc::prepare_doc(&mut doc, opt)?;
-    let rtree = convert::convert_doc(&doc, opt)?;
-
-    Ok(rtree)
-}
-
-/// Load an SVG file.
-///
-/// - `svg` files will be loaded as is.
-/// - `svgz` files will be decompressed.
-///
-/// **Note**: this is a low-level API. Use `parse_rtree_from_*` instead.
-pub fn load_file(path: &Path) -> Result<String> {
-    use std::fs;
-    use std::io::Read;
-
-    let mut file = fs::File::open(path)?;
-    let length = file.metadata()?.len() as usize;
-
-    let ext = if let Some(ext) = Path::new(path).extension() {
-        ext.to_str().map(|s| s.to_lowercase()).unwrap_or(String::new())
-    } else {
-        String::new()
-    };
-
-    match ext.as_str() {
-        "svgz" => {
-            let mut decoder = libflate::gzip::Decoder::new(&file)?;
-            let mut decoded = Vec::new();
-            decoder.read_to_end(&mut decoded)?;
-
-            Ok(String::from_utf8(decoded)?)
-        }
-        "svg" => {
-            let mut s = String::with_capacity(length + 1);
-            file.read_to_string(&mut s)?;
-            Ok(s)
-        }
-        _ => {
-            Err(ErrorKind::InvalidFileExtension.into())
-        }
-    }
-}
-
-/// Parses `svgdom::Document` object from the string data.
-///
-/// **Note**: this is a low-level API. Use `parse_rtree_from_*` instead.
-pub fn parse_dom(text: &str) -> Result<svgdom::Document> {
-    let opt = svgdom::ParseOptions {
-        parse_comments: false,
-        parse_declarations: false,
-        parse_unknown_elements: false,
-        parse_unknown_attributes: false,
-        parse_px_unit: false,
-        skip_invalid_attributes: true,
-        skip_invalid_css: true,
-        skip_paint_fallback: true,
-        .. svgdom::ParseOptions::default()
-    };
-
-    let doc = svgdom::Document::from_str_with_opt(&text, &opt)?;
-    Ok(doc)
-}
-
-/// Preprocesses a provided `svgdom::Document`.
-///
-/// Prepares an input `svgdom::Document` for conversion via `convert_dom_to_rtree`.
-///
-/// **Note**: this is a low-level API. Use `parse_rtree_from_*` instead.
-pub fn preprocess_dom(
-    doc: &mut svgdom::Document,
-    opt: &Options,
-) -> Result<()> {
-    preproc::prepare_doc(doc, opt)
-}
-
-/// Converts a provided `svgdom::Document` to `tree::RenderTree`.
-///
-/// **Note**: this is a low-level API. Use `parse_rtree_from_*` instead.
-pub fn convert_dom_to_rtree(
-    doc: &svgdom::Document,
-    opt: &Options,
-) -> Result<tree::RenderTree> {
-    convert::convert_doc(doc, opt)
+) -> Result<tree::Tree> {
+    let tree = usvg::parse_tree_from_dom(doc, &opt.usvg)?;
+    Ok(tree)
 }

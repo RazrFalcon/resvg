@@ -4,9 +4,10 @@
 
 // external
 use qt;
+use usvg::tree::prelude::*;
+use usvg::tree::Opacity;
 
 // self
-use tree::prelude::*;
 use geom::*;
 use traits::{
     ConvTransform,
@@ -23,7 +24,7 @@ pub fn apply(
     opt: &Options,
     global_ts: qt::Transform,
     bbox: Rect,
-    opacity: f64,
+    opacity: Opacity,
     brush: &mut qt::Brush,
 ) {
     let r = if pattern.units == tree::Units::ObjectBoundingBox {
@@ -38,7 +39,7 @@ pub fn apply(
     let img_size = Size::new(r.width() * sx, r.height() * sy).to_screen_size();
     let mut img = try_create_image!(img_size, ());
 
-    img.set_dpi(opt.dpi);
+    img.set_dpi(opt.usvg.dpi);
     img.fill(0, 0, 0, 0);
 
     let p = qt::Painter::new(&img);
@@ -68,7 +69,7 @@ pub fn apply(
         img2.fill(0, 0, 0, 0);
 
         let p2 = qt::Painter::new(&img2);
-        p2.set_opacity(opacity);
+        p2.set_opacity(*opacity);
         p2.draw_image(0.0, 0.0, &img);
         p2.end();
 

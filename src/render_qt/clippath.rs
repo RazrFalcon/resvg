@@ -4,12 +4,9 @@
 
 // external
 use qt;
+use usvg::tree::prelude::*;
 
 // self
-use tree::{
-    self,
-    NodeExt,
-};
 use geom::*;
 use traits::{
     ConvTransform,

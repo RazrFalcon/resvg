@@ -4,9 +4,9 @@
 
 // external
 use qt;
+use usvg::tree;
 
 // self
-use tree;
 use geom::*;
 use super::{
     fill,
@@ -19,7 +19,7 @@ use {
 
 
 pub fn draw(
-    tree: &tree::RenderTree,
+    tree: &tree::Tree,
     path: &tree::Path,
     opt: &Options,
     p: &qt::Painter,

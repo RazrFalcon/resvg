@@ -4,22 +4,24 @@
 
 // external
 use cairo;
+use usvg::tree::{
+    self,
+    Opacity,
+};
 
-// self
-use tree;
 
 pub trait ReCairoContextExt {
-    fn set_source_color(&self, color: &tree::Color, opacity: f64);
+    fn set_source_color(&self, color: &tree::Color, opacity: Opacity);
     fn reset_source_rgba(&self);
 }
 
 impl ReCairoContextExt for cairo::Context {
-    fn set_source_color(&self, color: &tree::Color, opacity: f64) {
+    fn set_source_color(&self, color: &tree::Color, opacity: Opacity) {
         self.set_source_rgba(
             color.red as f64 / 255.0,
             color.green as f64 / 255.0,
             color.blue as f64 / 255.0,
-            opacity,
+            *opacity,
         );
     }
 

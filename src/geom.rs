@@ -2,18 +2,20 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+//! 2D geometric primitives.
+
 use std::f64;
 
 // external
 use euclid;
+use usvg::tree;
 
 // self
-use tree;
 
 
 /// Bounds `f64` number.
 #[inline]
-pub fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
+pub(crate) fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
     if val > max {
         return max;
     } else if val < min {

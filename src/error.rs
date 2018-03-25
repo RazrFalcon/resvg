@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use svgdom;
+use usvg;
 
 error_chain! {
     types {
@@ -10,7 +10,7 @@ error_chain! {
     }
 
     links {
-        SvgDom(svgdom::Error, svgdom::ErrorKind) #[doc = "'svgdom' errors"];
+        USvg(usvg::Error, usvg::ErrorKind) #[doc = "'usvg' errors"];
     }
 
     foreign_links {
@@ -19,46 +19,11 @@ error_chain! {
     }
 
     errors {
-        /// Failed to find an SVG size.
-        ///
-        /// SVG size must be explicitly defined.
-        /// Automatic image size determination is not supported.
-        SizeDeterminationUnsupported {
-            display("file doesn't have 'width', 'height' and 'viewBox' attributes. \
-                     Automatic image size determination is not supported")
-        }
-
-        /// The `svg` node is missing.
-        ///
-        /// This error indicates an error in the preprocessor.
-        MissingSvgNode {
-            display("the root svg node is missing")
-        }
-
-        /// SVG size is not resolved.
-        ///
-        /// This error indicates an error in the preprocessor.
-        InvalidSize {
-            display("invalid SVG size")
-        }
-
-        /// `viewBox` attribute must be resolved.
-        MissingViewBox {
-            display("'viewBox' was not resolved")
-        }
-
         /// Failed to allocate an image.
         ///
         /// Probably because it's too big or there is not enough memory.
         NoCanvas {
             display("the main canvas creation failed")
-        }
-
-        /// An invalid file extension.
-        ///
-        /// The extension should be 'svg' or 'svgz' in any case.
-        InvalidFileExtension {
-            display("invalid file extension")
         }
     }
 }

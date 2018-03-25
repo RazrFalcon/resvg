@@ -12,9 +12,9 @@ use pango::{
     ContextExt,
 };
 use pangocairo::functions as pc;
+use usvg::tree;
 
 // self
-use tree;
 use utils;
 use geom::*;
 use super::{
@@ -65,9 +65,9 @@ pub fn draw_tspan<DrawAt>(
                 if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.value() {
                     let context = pc::create_context(cr).unwrap();
                     pc::update_context(cr, &context);
-                    pc::context_set_resolution(&context, opt.dpi);
+                    pc::context_set_resolution(&context, opt.usvg.dpi);
 
-                    let font = init_font(&tspan.font, opt.dpi);
+                    let font = init_font(&tspan.font, opt.usvg.dpi);
 
                     let layout = pango::Layout::new(&context);
                     layout.set_font_description(Some(&font));
@@ -242,7 +242,7 @@ pub fn calc_layout_bbox(layout: &pango::Layout, x: f64, y: f64) -> Rect {
 }
 
 fn draw_line(
-    rtree: &tree::RenderTree,
+    tree: &tree::Tree,
     line_bbox: Rect,
     fill: &Option<tree::Fill>,
     stroke: &Option<tree::Stroke>,
@@ -257,11 +257,11 @@ fn draw_line(
     cr.rel_line_to(-line_bbox.width(), 0.0);
     cr.close_path();
 
-    fill::apply(rtree, fill, opt, line_bbox, cr);
+    fill::apply(tree, fill, opt, line_bbox, cr);
     if stroke.is_some() {
         cr.fill_preserve();
 
-        stroke::apply(rtree, &stroke, opt, line_bbox, cr);
+        stroke::apply(tree, &stroke, opt, line_bbox, cr);
         cr.stroke();
     } else {
         cr.fill();

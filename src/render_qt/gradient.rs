@@ -4,9 +4,12 @@
 
 // external
 use qt;
+use usvg::tree::{
+    self,
+    Opacity,
+};
 
 // self
-use tree;
 use traits::{
     ConvTransform,
 };
@@ -15,7 +18,7 @@ use traits::{
 pub fn prepare_linear(
     node: tree::NodeRef,
     g: &tree::LinearGradient,
-    opacity: f64,
+    opacity: Opacity,
     brush: &mut qt::Brush,
 ) {
     let mut grad = qt::LinearGradient::new(g.x1, g.y1, g.x2, g.y2);
@@ -28,7 +31,7 @@ pub fn prepare_linear(
 pub fn prepare_radial(
     node: tree::NodeRef,
     g: &tree::RadialGradient,
-    opacity: f64,
+    opacity: Opacity,
     brush: &mut qt::Brush,
 ) {
     let mut grad = qt::RadialGradient::new(g.cx, g.cy, g.fx, g.fy, g.r);
@@ -42,7 +45,7 @@ fn prepare_base(
     node: tree::NodeRef,
     g: &tree::BaseGradient,
     grad: &mut qt::Gradient,
-    opacity: f64,
+    opacity: Opacity,
 ) {
     let spread_method = match g.spread_method {
         tree::SpreadMethod::Pad => qt::Spread::PadSpread,
@@ -58,11 +61,11 @@ fn prepare_base(
     for node in node.children() {
         if let tree::NodeKind::Stop(stop) = *node.value() {
             grad.set_color_at(
-                stop.offset,
+                *stop.offset,
                 stop.color.red,
                 stop.color.green,
                 stop.color.blue,
-                ((stop.opacity * opacity) * 255.0) as u8,
+                ((*stop.opacity * *opacity) * 255.0) as u8,
             );
         }
     }

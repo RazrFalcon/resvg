@@ -14,10 +14,8 @@ fn main() {
 
     let _resvg = resvg::init();
 
-    let opt = resvg::Options {
-        path: Some(args[1].clone().into()),
-        .. resvg::Options::default()
-    };
+    let mut opt = resvg::Options::default();
+    opt.usvg.path = Some(args[1].clone().into());
 
     let rtree = resvg::parse_rtree_from_file(&args[1], &opt).unwrap();
     let backend = resvg::default_backend();

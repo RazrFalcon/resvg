@@ -8,9 +8,10 @@ use cairo::{
     MatrixTrait,
     Pattern,
 };
+use usvg::tree::prelude::*;
+use usvg::tree::Opacity;
 
 // self
-use tree::prelude::*;
 use geom::*;
 use traits::{
     ConvTransform,
@@ -26,7 +27,7 @@ pub fn apply(
     node: tree::NodeRef,
     pattern: &tree::Pattern,
     opt: &Options,
-    opacity: f64,
+    opacity: Opacity,
     bbox: Rect,
     cr: &cairo::Context,
 ) {
@@ -73,7 +74,7 @@ pub fn apply(
         let surface2 = try_create_surface!(img_size, ());
         let sub_cr2 = cairo::Context::new(&surface2);
         sub_cr2.set_source_surface(&surface, 0.0, 0.0);
-        sub_cr2.paint_with_alpha(opacity);
+        sub_cr2.paint_with_alpha(*opacity);
 
         surface2
     } else {

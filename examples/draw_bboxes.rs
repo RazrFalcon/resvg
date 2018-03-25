@@ -29,12 +29,10 @@ fn main() {
         1.0
     };
 
-    let opt = Options {
-        path: Some(args[1].clone().into()),
-        keep_named_groups: true,
-        fit_to: resvg::FitTo::Zoom(zoom as f32),
-        .. Options::default()
-    };
+    let mut opt = Options::default();
+    opt.usvg.path = Some(args[1].clone().into());
+    opt.usvg.keep_named_groups = true;
+    opt.fit_to = resvg::FitTo::Zoom(zoom as f32);
 
     let mut rtree = resvg::parse_rtree_from_file(&args[1], &opt).unwrap();
 
@@ -49,7 +47,7 @@ fn main() {
 
     let stroke = Some(tree::Stroke {
         paint: tree::Paint::Color(tree::Color::new(255, 0, 0)),
-        opacity: 0.5,
+        opacity: 0.5.into(),
         .. tree::Stroke::default()
     });
 

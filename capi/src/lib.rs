@@ -30,7 +30,8 @@ use resvg::qt;
 #[cfg(feature = "cairo-backend")]
 use resvg::cairo;
 
-use resvg::RectExt;
+use resvg::usvg;
+use resvg::geom::*;
 use resvg::tree::prelude::*;
 
 
@@ -90,7 +91,7 @@ pub struct resvg_transform {
 }
 
 #[repr(C)]
-pub struct resvg_render_tree(resvg::tree::RenderTree);
+pub struct resvg_render_tree(resvg::tree::Tree);
 
 #[repr(C)]
 pub struct resvg_handle(resvg::InitObject);
@@ -572,10 +573,12 @@ fn to_native_opt(opt: &resvg_options) -> resvg::Options {
     };
 
     resvg::Options {
-        path,
-        dpi: opt.dpi,
+        usvg: usvg::Options {
+            path,
+            dpi: opt.dpi,
+            keep_named_groups: opt.keep_named_groups,
+        },
         fit_to,
         background,
-        keep_named_groups: opt.keep_named_groups,
     }
 }
