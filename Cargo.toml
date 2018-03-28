@@ -17,7 +17,9 @@ members = [
 ]
 exclude = [
     "examples/cairo-rs",
-    "testing_tools"
+    "testing_tools",
+    "workdir-qt", # for CI tests
+    "workdir-cairo" # for CI tests
 ]
 
 [badges]
