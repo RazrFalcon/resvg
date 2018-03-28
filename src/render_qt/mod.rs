@@ -221,7 +221,7 @@ fn render_node(
     layers: &mut QtLayers,
     p: &qt::Painter,
 ) -> Option<Rect> {
-    match *node.value() {
+    match *node.kind() {
         tree::NodeKind::Svg(_) => {
             Some(render_group(node, opt, layers, p))
         }
@@ -284,7 +284,7 @@ fn render_group_impl(
 
     if let Some(idx) = g.clip_path {
         if let Some(clip_node) = node.tree().defs_at(idx) {
-            if let tree::NodeKind::ClipPath(ref cp) = *clip_node.value() {
+            if let tree::NodeKind::ClipPath(ref cp) = *clip_node.kind() {
                 clippath::apply(clip_node, cp, opt, bbox, layers, &sub_p);
             }
         }
@@ -334,7 +334,7 @@ fn _calc_node_bbox(
     let mut ts2 = ts;
     ts2.append(&node.transform());
 
-    match *node.value() {
+    match *node.kind() {
         tree::NodeKind::Path(ref path) => {
             Some(utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2))
         }

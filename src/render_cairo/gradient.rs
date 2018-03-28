@@ -7,10 +7,7 @@ use cairo::{
     self,
     MatrixTrait,
 };
-use usvg::tree::{
-    self,
-    Opacity,
-};
+use usvg::tree::prelude::*;
 
 // self
 use geom::*;
@@ -23,7 +20,7 @@ use traits::{
 pub fn prepare_linear(
     node: tree::NodeRef,
     g: &tree::LinearGradient,
-    opacity: Opacity,
+    opacity: tree::Opacity,
     bbox: Rect,
     cr: &cairo::Context,
 ) {
@@ -35,7 +32,7 @@ pub fn prepare_linear(
 pub fn prepare_radial(
     node: tree::NodeRef,
     g: &tree::RadialGradient,
-    opacity: Opacity,
+    opacity: tree::Opacity,
     bbox: Rect,
     cr: &cairo::Context
 ) {
@@ -48,7 +45,7 @@ fn prepare_base(
     node: tree::NodeRef,
     g: &tree::BaseGradient,
     grad: &cairo::Gradient,
-    opacity: Opacity,
+    opacity: tree::Opacity,
     bbox: Rect,
 ) {
     let spread_method = match g.spread_method {
@@ -69,7 +66,7 @@ fn prepare_base(
     grad.set_matrix(matrix);
 
     for node in node.children() {
-        if let tree::NodeKind::Stop(stop) = *node.value() {
+        if let tree::NodeKind::Stop(stop) = *node.kind() {
             grad.add_color_stop_rgba(
                 *stop.offset,
                 stop.color.red as f64 / 255.0,

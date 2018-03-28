@@ -25,7 +25,6 @@ extern crate ego_tree;
 extern crate euclid;
 extern crate libflate;
 extern crate lyon_geom;
-extern crate svgdom;
 pub extern crate usvg;
 #[macro_use] extern crate error_chain;
 #[macro_use] extern crate log;
@@ -72,6 +71,8 @@ macro_rules! try_opt_warn {
 
 #[cfg(feature = "cairo-backend")] pub mod render_cairo;
 #[cfg(feature = "qt-backend")] pub mod render_qt;
+
+pub use usvg::svgdom;
 
 pub mod utils;
 pub mod geom;

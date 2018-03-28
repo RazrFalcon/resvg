@@ -9,7 +9,6 @@ use cairo::{
     Pattern,
 };
 use usvg::tree::prelude::*;
-use usvg::tree::Opacity;
 
 // self
 use geom::*;
@@ -27,7 +26,7 @@ pub fn apply(
     node: tree::NodeRef,
     pattern: &tree::Pattern,
     opt: &Options,
-    opacity: Opacity,
+    opacity: tree::Opacity,
     bbox: Rect,
     cr: &cairo::Context,
 ) {

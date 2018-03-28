@@ -53,7 +53,7 @@ pub fn apply(
     for node in node.children() {
         clip_cr.transform(node.transform().to_native());
 
-        match *node.value() {
+        match *node.kind() {
             tree::NodeKind::Path(ref p) => {
                 path::draw(node.tree(), p, opt, &clip_cr);
             }

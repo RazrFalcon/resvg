@@ -38,7 +38,7 @@ pub fn apply(
                     // a-stroke-003.svg
                     // a-stroke-004.svg
                     if let Some(node) = tree.defs_at(id) {
-                        match *node.value() {
+                        match *node.kind() {
                             tree::NodeKind::LinearGradient(ref lg) => {
                                 gradient::prepare_linear(node, lg, stroke.opacity, bbox, cr);
                             }

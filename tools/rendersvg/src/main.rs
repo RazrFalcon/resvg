@@ -7,7 +7,6 @@ extern crate clap;
 #[macro_use]
 extern crate derive_error;
 extern crate resvg;
-extern crate svgdom;
 extern crate fern;
 extern crate log;
 extern crate time;
@@ -30,6 +29,7 @@ use clap::{
 
 use resvg::{
     usvg,
+    svgdom,
     FitTo,
     Options,
     RectExt,
@@ -156,7 +156,7 @@ fn init_qt_gui(
 
     // Check that tree has any text nodes.
     let has_text = tree.root().descendants().any(|n|
-        if let &tree::NodeKind::Text { .. } = n.value() { true } else { false }
+        if let tree::NodeKind::Text { .. } = *n.kind() { true } else { false }
     );
 
     if has_text {

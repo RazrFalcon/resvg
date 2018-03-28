@@ -195,6 +195,8 @@ fn build_prev_version(data: &Data) -> Result<PathBuf> {
 
     let bin_path = repo_path.join("target/debug/rendersvg");
 
+    assert!(bin_path.exists(), format!("{:?} doesn't exists", bin_path));
+
     Ok(bin_path)
 }
 

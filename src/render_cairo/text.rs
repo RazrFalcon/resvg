@@ -12,7 +12,7 @@ use pango::{
     ContextExt,
 };
 use pangocairo::functions as pc;
-use usvg::tree;
+use usvg::tree::prelude::*;
 
 // self
 use utils;
@@ -60,9 +60,9 @@ pub fn draw_tspan<DrawAt>(
         tspan_w_list.clear();
         let mut chunk_width = 0.0;
 
-        if let tree::NodeKind::TextChunk(ref chunk) = *chunk_node.value() {
+        if let tree::NodeKind::TextChunk(ref chunk) = *chunk_node.kind() {
             for tspan_node in chunk_node.children() {
-                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.value() {
+                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.kind() {
                     let context = pc::create_context(cr).unwrap();
                     pc::update_context(cr, &context);
                     pc::context_set_resolution(&context, opt.usvg.dpi);
@@ -93,7 +93,7 @@ pub fn draw_tspan<DrawAt>(
             let mut x = utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
 
             for (idx, tspan_node) in chunk_node.children().enumerate() {
-                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.value() {
+                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.kind() {
                     let (width, ascent) = tspan_w_list[idx];
                     let pc = &pc_list[idx];
 

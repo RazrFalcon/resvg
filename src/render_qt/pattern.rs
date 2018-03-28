@@ -5,7 +5,6 @@
 // external
 use qt;
 use usvg::tree::prelude::*;
-use usvg::tree::Opacity;
 
 // self
 use geom::*;
@@ -24,7 +23,7 @@ pub fn apply(
     opt: &Options,
     global_ts: qt::Transform,
     bbox: Rect,
-    opacity: Opacity,
+    opacity: tree::Opacity,
     brush: &mut qt::Brush,
 ) {
     let r = if pattern.units == tree::Units::ObjectBoundingBox {

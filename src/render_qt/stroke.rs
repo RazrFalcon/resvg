@@ -41,7 +41,7 @@ pub fn apply(
                     let mut brush = qt::Brush::new();
 
                     if let Some(node) = tree.defs_at(id) {
-                        match *node.value() {
+                        match *node.kind() {
                             tree::NodeKind::LinearGradient(ref lg) => {
                                 gradient::prepare_linear(node, lg, opacity, &mut brush);
                             }

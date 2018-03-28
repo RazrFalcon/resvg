@@ -59,14 +59,8 @@ optional = true
 
 [dependencies.usvg]
 git = "https://github.com/RazrFalcon/usvg"
-rev = "299a382"
+rev = "d0e6484"
 #path = "../usvg"
-
-[dependencies.svgdom]
-# version = "0.10"
-git = "https://github.com/RazrFalcon/libsvgdom"
-rev = "c390d40"
-# path = "../svgdom"
 
 [dependencies.image]
 version = "0.18"

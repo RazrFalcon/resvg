@@ -48,7 +48,7 @@ pub fn apply(
     for node in node.children() {
         clip_p.apply_transform(&node.transform().to_native());
 
-        match *node.value() {
+        match *node.kind() {
             tree::NodeKind::Path(ref path_node) => {
                 path::draw(node.tree(), path_node, opt, &clip_p);
             }
