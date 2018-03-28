@@ -110,10 +110,10 @@ fn main() {
             .long("use-prev-commit").help("Use previous git commit as a reference"))
         .get_matches();
 
-    let render = Path::new("../../tools/rendersvg/target/debug/rendersvg");
+    let render = Path::new("../../target/debug/rendersvg");
     if !render.exists() {
         println!("Error: {:?} not found.", render);
-        return;
+        std::process::exit(1);
     }
 
     let backend = m.value_of("backend").unwrap();

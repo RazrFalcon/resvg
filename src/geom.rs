@@ -15,6 +15,7 @@ use usvg::tree;
 
 /// Bounds `f64` number.
 #[inline]
+#[allow(dead_code)]
 pub(crate) fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
     if val > max {
         return max;

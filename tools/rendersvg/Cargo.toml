@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster"]
 license = "MPL-2.0"
+workspace = "../../"
 
 [dependencies]
 log = "0.4"

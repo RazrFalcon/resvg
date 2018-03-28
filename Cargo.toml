@@ -10,6 +10,16 @@ repository = "https://github.com/RazrFalcon/resvg"
 readme = "README.md"
 categories = ["multimedia::images"]
 
+[workspace]
+members = [
+    "capi",
+    "tools/rendersvg"
+]
+exclude = [
+    "examples/cairo-rs",
+    "testing_tools"
+]
+
 [badges]
 travis-ci = { repository = "RazrFalcon/resvg" }
 
@@ -47,7 +57,7 @@ optional = true
 
 [dependencies.usvg]
 git = "https://github.com/RazrFalcon/usvg"
-rev = "71d9273"
+rev = "299a382"
 #path = "../usvg"
 
 [dependencies.svgdom]

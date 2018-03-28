@@ -1,5 +1,5 @@
 TARGET = example
-LIBS = -lm -L../../capi/target/debug -lresvg `pkg-config --libs gtk+-3.0`
+LIBS = -lm -L../../target/debug -lresvg `pkg-config --libs gtk+-3.0`
 CC = gcc
 CFLAGS = -g -Wall `pkg-config --cflags gtk+-3.0` -I../../capi/include -DRESVG_CAIRO_BACKEND
 

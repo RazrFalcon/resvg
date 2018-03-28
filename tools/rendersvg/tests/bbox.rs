@@ -6,7 +6,7 @@ extern crate indoc;
 use assert_cli::Assert;
 
 
-const APP_PATH: &str = "target/debug/rendersvg";
+const APP_PATH: &str = "../../target/debug/rendersvg";
 
 
 #[test]

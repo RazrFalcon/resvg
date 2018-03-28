@@ -19,8 +19,8 @@ FORMS += \
 RESOURCES += \
     resources.qrc
 
-CONFIG(release, debug|release): LIBS += -L$$PWD/../capi/target/release/ -lresvg
-else:CONFIG(debug, debug|release): LIBS += -L$$PWD/../capi/target/debug/ -lresvg
+CONFIG(release, debug|release): LIBS += -L$$PWD/../target/release/ -lresvg
+else:CONFIG(debug, debug|release): LIBS += -L$$PWD/../target/debug/ -lresvg
 
 INCLUDEPATH += $$PWD/../capi/include
 DEPENDPATH += $$PWD/../capi/include
