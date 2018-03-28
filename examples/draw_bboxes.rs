@@ -53,13 +53,13 @@ fn main() {
 
     for bbox in bboxes {
         let mut root = rtree.root_mut();
-        root.append(tree::NodeKind::Path(tree::Path {
+        root.append(Box::new(tree::NodeKind::Path(tree::Path {
             id: String::new(),
             transform: tree::Transform::default(),
             fill: None,
             stroke: stroke.clone(),
             segments: utils::rect_to_path(bbox),
-        }));
+        })));
     }
 
     let img = backend.render_to_image(&rtree, &opt).unwrap();
