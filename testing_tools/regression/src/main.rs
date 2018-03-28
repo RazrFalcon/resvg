@@ -193,7 +193,7 @@ fn build_prev_version(data: &Data) -> Result<PathBuf> {
         .arg(data.backend.to_owned() + "-backend")
         .join()?;
 
-    let bin_path = repo_path.join("tools/rendersvg/target/debug/rendersvg");
+    let bin_path = repo_path.join("target/debug/rendersvg");
 
     Ok(bin_path)
 }
