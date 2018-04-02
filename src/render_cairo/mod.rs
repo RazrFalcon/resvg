@@ -22,7 +22,7 @@ use layers::{
     Layers,
 };
 use {
-    ErrorKind,
+    Error,
     Options,
     OutputImage,
     Render,
@@ -90,7 +90,7 @@ impl Render for Backend {
 
     fn render_node_to_image(
         &self,
-        node: tree::NodeRef,
+        node: &tree::Node,
         opt: &Options,
     ) -> Result<Box<OutputImage>> {
         let img = render_node_to_image(node, opt)?;
@@ -99,7 +99,7 @@ impl Render for Backend {
 
     fn calc_node_bbox(
         &self,
-        node: tree::NodeRef,
+        node: &tree::Node,
         opt: &Options,
     ) -> Option<Rect> {
         calc_node_bbox(node, opt)
@@ -147,14 +147,14 @@ pub fn render_to_image(
 
 /// Renders SVG to image.
 pub fn render_node_to_image(
-    node: tree::NodeRef,
+    node: &tree::Node,
     opt: &Options,
 ) -> Result<cairo::ImageSurface> {
     let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
         bbox
     } else {
-        warn!("Node {:?} has zero size.", node.svg_id());
-        return Err(ErrorKind::NoCanvas.into());
+        warn!("Node {:?} has zero size.", node.id());
+        return Err(Error::NoCanvas);
     };
 
     let (surface, img_size) = create_surface(node_bbox.to_screen_size(), opt)?;
@@ -184,13 +184,13 @@ pub fn render_to_canvas(
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
-    render_node_to_canvas(tree.root(), opt, tree.svg_node().view_box,
+    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box,
                           img_size, cr);
 }
 
 /// Renders SVG node to canvas.
 pub fn render_node_to_canvas(
-    node: tree::NodeRef,
+    node: &tree::Node,
     opt: &Options,
     view_box: tree::ViewBox,
     img_size: ScreenSize,
@@ -216,7 +216,7 @@ fn create_surface(
     let img_size = utils::fit_to(size, opt.fit_to);
 
     debug_assert!(!img_size.is_empty_or_negative());
-    let surface = try_create_surface!(img_size, Err(ErrorKind::NoCanvas.into()));
+    let surface = try_create_surface!(img_size, Err(Error::NoCanvas));
 
     Ok((surface, img_size))
 }
@@ -235,7 +235,7 @@ fn apply_viewbox_transform(
 }
 
 fn render_node(
-    node: tree::NodeRef,
+    node: &tree::Node,
     opt: &Options,
     layers: &mut CairoLayers,
     cr: &cairo::Context,
@@ -245,7 +245,7 @@ fn render_node(
             Some(render_group(node, opt, layers, cr))
         }
         tree::NodeKind::Path(ref path) => {
-            Some(path::draw(node.tree(), path, opt, cr))
+            Some(path::draw(&node.tree(), path, opt, cr))
         }
         tree::NodeKind::Text(_) => {
             Some(text::draw(node, opt, cr))
@@ -261,7 +261,7 @@ fn render_node(
 }
 
 fn render_group(
-    parent: tree::NodeRef,
+    parent: &tree::Node,
     opt: &Options,
     layers: &mut CairoLayers,
     cr: &cairo::Context,
@@ -272,7 +272,7 @@ fn render_group(
     for node in parent.children() {
         cr.transform(node.transform().to_native());
 
-        let bbox = render_node(node, opt, layers, cr);
+        let bbox = render_node(&node, opt, layers, cr);
 
         if let Some(bbox) = bbox {
             g_bbox.expand(bbox);
@@ -286,7 +286,7 @@ fn render_group(
 }
 
 fn render_group_impl(
-    node: tree::NodeRef,
+    node: &tree::Node,
     g: &tree::Group,
     opt: &Options,
     layers: &mut CairoLayers,
@@ -300,10 +300,10 @@ fn render_group_impl(
 
     let bbox = render_group(node, opt, layers, &sub_cr);
 
-    if let Some(idx) = g.clip_path {
-        if let Some(clip_node) = node.tree().defs_at(idx) {
+    if let Some(ref id) = g.clip_path {
+        if let Some(clip_node) = node.tree().defs_by_id(id) {
             if let tree::NodeKind::ClipPath(ref cp) = *clip_node.kind() {
-                clippath::apply(clip_node, cp, opt, bbox, layers, &sub_cr);
+                clippath::apply(&clip_node, cp, opt, bbox, layers, &sub_cr);
             }
         }
     }
@@ -330,27 +330,29 @@ fn render_group_impl(
 ///
 /// Note: this method can be pretty expensive.
 pub fn calc_node_bbox(
-    node: tree::NodeRef,
+    node: &tree::Node,
     opt: &Options,
 ) -> Option<Rect> {
+    let tree = node.tree();
+
     // We can't use 1x1 image, like in Qt backend because otherwise
     // text layouts will be truncated.
     let (surface, img_view) = create_surface(
-        node.tree().svg_node().size.to_screen_size(),
+        tree.svg_node().size.to_screen_size(),
         opt,
     ).unwrap();
     let cr = cairo::Context::new(&surface);
 
     // We also have to apply the viewbox transform,
     // otherwise text hinting will be different and bbox will be different too.
-    apply_viewbox_transform(node.tree().svg_node().view_box, img_view, &cr);
+    apply_viewbox_transform(tree.svg_node().view_box, img_view, &cr);
 
     let abs_ts = utils::abs_transform(node);
     _calc_node_bbox(node, opt, abs_ts, &cr)
 }
 
 fn _calc_node_bbox(
-    node: tree::NodeRef,
+    node: &tree::Node,
     opt: &Options,
     ts: tree::Transform,
     cr: &cairo::Context,
@@ -391,7 +393,7 @@ fn _calc_node_bbox(
             let mut bbox = Rect::new_bbox();
 
             for child in node.children() {
-                if let Some(c_bbox) = _calc_node_bbox(child, opt, ts2, cr) {
+                if let Some(c_bbox) = _calc_node_bbox(&child, opt, ts2, cr) {
                     bbox.expand(c_bbox);
                 }
             }

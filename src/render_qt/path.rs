@@ -26,7 +26,7 @@ pub fn draw(
 ) -> Rect {
     let mut p_path = qt::PainterPath::new();
 
-    let fill_rule = if let Some(fill) = path.fill {
+    let fill_rule = if let Some(ref fill) = path.fill {
         fill.rule
     } else {
         tree::FillRule::NonZero

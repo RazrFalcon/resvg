@@ -7,9 +7,10 @@ license = "MPL-2.0"
 workspace = "../../"
 
 [dependencies]
-log = "0.4"
+failure = "0.1.1"
 fern = "0.5"
-derive-error = "0.0.4"
+libflate = "0.1"
+log = "0.4"
 time = "0.1"
 
 [dependencies.resvg]

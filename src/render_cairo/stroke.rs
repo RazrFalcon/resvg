@@ -33,20 +33,20 @@ pub fn apply(
                 tree::Paint::Color(c) => {
                     cr.set_source_color(&c, stroke.opacity);
                 }
-                tree::Paint::Link(id) => {
+                tree::Paint::Link(ref id) => {
                     // a-stroke-002.svg
                     // a-stroke-003.svg
                     // a-stroke-004.svg
-                    if let Some(node) = tree.defs_at(id) {
+                    if let Some(node) = tree.defs_by_id(id) {
                         match *node.kind() {
                             tree::NodeKind::LinearGradient(ref lg) => {
-                                gradient::prepare_linear(node, lg, stroke.opacity, bbox, cr);
+                                gradient::prepare_linear(&node, lg, stroke.opacity, bbox, cr);
                             }
                             tree::NodeKind::RadialGradient(ref rg) => {
-                                gradient::prepare_radial(node, rg, stroke.opacity, bbox, cr);
+                                gradient::prepare_radial(&node, rg, stroke.opacity, bbox, cr);
                             }
                             tree::NodeKind::Pattern(ref pattern) => {
-                                pattern::apply(node, pattern, opt, stroke.opacity, bbox, cr);
+                                pattern::apply(&node, pattern, opt, stroke.opacity, bbox, cr);
                             }
                             _ => {}
                         }

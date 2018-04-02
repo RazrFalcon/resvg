@@ -21,7 +21,7 @@ use {
 
 
 pub fn draw(
-    node: tree::NodeRef,
+    node: &tree::Node,
     opt: &Options,
     p: &qt::Painter,
 ) -> Rect {
@@ -30,7 +30,7 @@ pub fn draw(
 }
 
 pub fn draw_tspan<DrawAt>(
-    node: tree::NodeRef,
+    node: &tree::Node,
     p: &qt::Painter,
     mut draw_at: DrawAt
 ) -> Rect
@@ -79,7 +79,7 @@ pub fn draw_tspan<DrawAt>(
 }
 
 fn _draw_tspan(
-    node: tree::NodeRef,
+    node: &tree::Node,
     tspan: &tree::TSpan,
     opt: &Options,
     x: f64,
@@ -106,7 +106,7 @@ fn _draw_tspan(
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.underline {
         line_rect.origin.y = y + font_metrics.height() - font_metrics.underline_pos();
-        draw_line(node.tree(), line_rect, &style.fill, &style.stroke, opt, p);
+        draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, p);
     }
 
     // Draw overline.
@@ -114,14 +114,14 @@ fn _draw_tspan(
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.overline {
         line_rect.origin.y = y + font_metrics.height() - font_metrics.overline_pos();
-        draw_line(node.tree(), line_rect, &style.fill, &style.stroke, opt, p);
+        draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, p);
     }
 
     let bbox = Rect::from_xywh(0.0, 0.0, width, font_metrics.height());
 
     // Draw text.
-    fill::apply(node.tree(), &tspan.fill, opt, bbox, p);
-    stroke::apply(node.tree(), &tspan.stroke, opt, bbox, p);
+    fill::apply(&node.tree(), &tspan.fill, opt, bbox, p);
+    stroke::apply(&node.tree(), &tspan.stroke, opt, bbox, p);
 
     p.draw_text(x, y, &tspan.text);
 
@@ -130,7 +130,7 @@ fn _draw_tspan(
     // Should be drawn after/over text.
     if let Some(ref style) = tspan.decoration.line_through {
         line_rect.origin.y = y + baseline_offset - font_metrics.strikeout_pos();
-        draw_line(node.tree(), line_rect, &style.fill, &style.stroke, opt, p);
+        draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, p);
     }
 }
 

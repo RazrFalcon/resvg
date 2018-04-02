@@ -18,7 +18,7 @@ use layers::{
     Layers,
 };
 use {
-    ErrorKind,
+    Error,
     Options,
     OutputImage,
     Render,
@@ -84,7 +84,7 @@ impl Render for Backend {
 
     fn render_node_to_image(
         &self,
-        node: tree::NodeRef,
+        node: &tree::Node,
         opt: &Options,
     ) -> Result<Box<OutputImage>> {
         let img = render_node_to_image(node, opt)?;
@@ -93,7 +93,7 @@ impl Render for Backend {
 
     fn calc_node_bbox(
         &self,
-        node: tree::NodeRef,
+        node: &tree::Node,
         opt: &Options,
     ) -> Option<Rect> {
         calc_node_bbox(node, opt)
@@ -124,15 +124,15 @@ pub fn render_to_image(
 
 /// Renders SVG node to image.
 pub fn render_node_to_image(
-    node: tree::NodeRef,
+    node: &tree::Node,
     opt: &Options,
 ) -> Result<qt::Image> {
     let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
         bbox
     } else {
         // TODO: custom error
-        warn!("Node {:?} has zero size.", node.svg_id());
-        return Err(ErrorKind::NoCanvas.into());
+        warn!("Node '{}' has zero size.", node.id());
+        return Err(Error::NoCanvas);
     };
 
     let vbox = tree::ViewBox {
@@ -156,13 +156,13 @@ pub fn render_to_canvas(
     img_size: ScreenSize,
     painter: &qt::Painter,
 ) {
-    render_node_to_canvas(tree.root(), opt, tree.svg_node().view_box,
+    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box,
                           img_size, painter);
 }
 
 /// Renders SVG node to canvas.
 pub fn render_node_to_canvas(
-    node: tree::NodeRef,
+    node: &tree::Node,
     opt: &Options,
     view_box: tree::ViewBox,
     img_size: ScreenSize,
@@ -189,7 +189,7 @@ fn create_root_image(
 
     debug_assert!(!img_size.is_empty_or_negative());
 
-    let mut img = try_create_image!(img_size, Err(ErrorKind::NoCanvas.into()));
+    let mut img = try_create_image!(img_size, Err(Error::NoCanvas));
 
     // Fill background.
     if let Some(c) = opt.background {
@@ -216,7 +216,7 @@ fn apply_viewbox_transform(
 }
 
 fn render_node(
-    node: tree::NodeRef,
+    node: &tree::Node,
     opt: &Options,
     layers: &mut QtLayers,
     p: &qt::Painter,
@@ -226,7 +226,7 @@ fn render_node(
             Some(render_group(node, opt, layers, p))
         }
         tree::NodeKind::Path(ref path) => {
-            Some(path::draw(node.tree(), path, opt, p))
+            Some(path::draw(&node.tree(), path, opt, p))
         }
         tree::NodeKind::Text(_) => {
             Some(text::draw(node, opt, p))
@@ -244,7 +244,7 @@ fn render_node(
 // TODO: render groups backward to reduce memory usage
 //       current implementation keeps parent canvas until all children are rendered
 fn render_group(
-    parent: tree::NodeRef,
+    parent: &tree::Node,
     opt: &Options,
     layers: &mut QtLayers,
     p: &qt::Painter,
@@ -255,7 +255,7 @@ fn render_group(
     for node in parent.children() {
         p.apply_transform(&node.transform().to_native());
 
-        let bbox = render_node(node, opt, layers, p);
+        let bbox = render_node(&node, opt, layers, p);
         if let Some(bbox) = bbox {
             g_bbox.expand(bbox);
         }
@@ -268,7 +268,7 @@ fn render_group(
 }
 
 fn render_group_impl(
-    node: tree::NodeRef,
+    node: &tree::Node,
     g: &tree::Group,
     opt: &Options,
     layers: &mut QtLayers,
@@ -282,10 +282,10 @@ fn render_group_impl(
 
     let bbox = render_group(node, opt, layers, &sub_p);
 
-    if let Some(idx) = g.clip_path {
-        if let Some(clip_node) = node.tree().defs_at(idx) {
+    if let Some(ref id) = g.clip_path {
+        if let Some(clip_node) = node.tree().defs_by_id(id) {
             if let tree::NodeKind::ClipPath(ref cp) = *clip_node.kind() {
-                clippath::apply(clip_node, cp, opt, bbox, layers, &sub_p);
+                clippath::apply(&clip_node, cp, opt, bbox, layers, &sub_p);
             }
         }
     }
@@ -313,7 +313,7 @@ fn render_group_impl(
 ///
 /// Note: this method can be pretty expensive.
 pub fn calc_node_bbox(
-    node: tree::NodeRef,
+    node: &tree::Node,
     opt: &Options,
 ) -> Option<Rect> {
     // Unwrap can't fail, because `None` will be returned only on OOM,
@@ -327,7 +327,7 @@ pub fn calc_node_bbox(
 }
 
 fn _calc_node_bbox(
-    node: tree::NodeRef,
+    node: &tree::Node,
     ts: tree::Transform,
     p: &qt::Painter,
 ) -> Option<Rect> {
@@ -364,7 +364,7 @@ fn _calc_node_bbox(
             let mut bbox = Rect::new_bbox();
 
             for child in node.children() {
-                if let Some(c_bbox) = _calc_node_bbox(child, ts2, p) {
+                if let Some(c_bbox) = _calc_node_bbox(&child, ts2, p) {
                     bbox.expand(c_bbox);
                 }
             }

@@ -34,23 +34,23 @@ pub fn apply(
                     let a = f64_bound(0.0, *opacity * 255.0, 255.0) as u8;
                     pen.set_color(c.red, c.green, c.blue, a);
                 }
-                tree::Paint::Link(id) => {
+                tree::Paint::Link(ref id) => {
                     // a-stroke-002.svg
                     // a-stroke-003.svg
                     // a-stroke-004.svg
                     let mut brush = qt::Brush::new();
 
-                    if let Some(node) = tree.defs_at(id) {
+                    if let Some(node) = tree.defs_by_id(id) {
                         match *node.kind() {
                             tree::NodeKind::LinearGradient(ref lg) => {
-                                gradient::prepare_linear(node, lg, opacity, &mut brush);
+                                gradient::prepare_linear(&node, lg, opacity, &mut brush);
                             }
                             tree::NodeKind::RadialGradient(ref rg) => {
-                                gradient::prepare_radial(node, rg, opacity, &mut brush);
+                                gradient::prepare_radial(&node, rg, opacity, &mut brush);
                             }
                             tree::NodeKind::Pattern(ref pattern) => {
                                 let ts = p.get_transform();
-                                pattern::apply(node, pattern, opt, ts, bbox, opacity, &mut brush);
+                                pattern::apply(&node, pattern, opt, ts, bbox, opacity, &mut brush);
                             }
                             _ => {}
                         }

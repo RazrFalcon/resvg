@@ -36,7 +36,7 @@ pub struct PangoData {
 }
 
 pub fn draw(
-    node: tree::NodeRef,
+    node: &tree::Node,
     opt: &Options,
     cr: &cairo::Context,
 ) -> Rect {
@@ -45,7 +45,7 @@ pub fn draw(
 }
 
 pub fn draw_tspan<DrawAt>(
-    node: tree::NodeRef,
+    node: &tree::Node,
     opt: &Options,
     cr: &cairo::Context,
     mut draw_at: DrawAt,
@@ -111,7 +111,7 @@ pub fn draw_tspan<DrawAt>(
 }
 
 fn _draw_tspan(
-    node: tree::NodeRef,
+    node: &tree::Node,
     tspan: &tree::TSpan,
     opt: &Options,
     x: f64,
@@ -142,7 +142,7 @@ fn _draw_tspan(
     if let Some(ref style) = tspan.decoration.underline {
         line_rect.origin.y = y + baseline_offset
                              - font_metrics.get_underline_position() as f64 / PANGO_SCALE_64;
-        draw_line(node.tree(), line_rect, &style.fill, &style.stroke, opt, cr);
+        draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, cr);
     }
 
     // Draw overline.
@@ -150,17 +150,17 @@ fn _draw_tspan(
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.overline {
         line_rect.origin.y = y + font_metrics.get_underline_thickness() as f64 / PANGO_SCALE_64;
-        draw_line(node.tree(), line_rect, &style.fill, &style.stroke, opt, cr);
+        draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, cr);
     }
 
     // Draw text.
     cr.move_to(x, y);
 
-    fill::apply(node.tree(), &tspan.fill, opt, bbox, cr);
+    fill::apply(&node.tree(), &tspan.fill, opt, bbox, cr);
     pc::update_layout(cr, &pd.layout);
     pc::show_layout(cr, &pd.layout);
 
-    stroke::apply(node.tree(), &tspan.stroke, opt, bbox, cr);
+    stroke::apply(&node.tree(), &tspan.stroke, opt, bbox, cr);
     pc::layout_path(cr, &pd.layout);
     cr.stroke();
 
@@ -173,7 +173,7 @@ fn _draw_tspan(
         line_rect.origin.y = y + baseline_offset
                              - font_metrics.get_strikethrough_position() as f64 / PANGO_SCALE_64;
         line_rect.size.height = font_metrics.get_strikethrough_thickness() as f64 / PANGO_SCALE_64;
-        draw_line(node.tree(), line_rect, &style.fill, &style.stroke, opt, cr);
+        draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, cr);
     }
 }
 

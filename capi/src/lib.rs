@@ -180,10 +180,7 @@ pub extern fn resvg_parse_rtree_from_data(
 
     let opt = to_native_opt(unsafe { &*opt });
 
-    let rtree = match resvg::parse_rtree_from_data(text, &opt) {
-        Ok(rtree) => rtree,
-        Err(e) => on_err!(error, e.to_string()),
-    };
+    let rtree = resvg::parse_rtree_from_data(text, &opt);
 
     let rtree_box = Box::new(resvg_render_tree(rtree));
     Box::into_raw(rtree_box)
@@ -324,13 +321,13 @@ pub extern fn resvg_qt_render_to_canvas_by_id(
     };
 
     if let Some(node) = rtree.0.node_by_svg_id(id) {
-        if let Some(bbox) = resvg::render_qt::calc_node_bbox(node, &opt) {
+        if let Some(bbox) = resvg::render_qt::calc_node_bbox(&node, &opt) {
             let vbox = tree::ViewBox {
                 rect: bbox,
                 .. tree::ViewBox::default()
             };
 
-            resvg::render_qt::render_node_to_canvas(node, &opt, vbox, size, &painter);
+            resvg::render_qt::render_node_to_canvas(&node, &opt, vbox, size, &painter);
         }
     }
 }
@@ -362,13 +359,13 @@ pub extern fn resvg_cairo_render_to_canvas_by_id(
     let opt = to_native_opt(unsafe { &*opt });
 
     if let Some(node) = rtree.0.node_by_svg_id(id) {
-        if let Some(bbox) = resvg::render_cairo::calc_node_bbox(node, &opt) {
+        if let Some(bbox) = resvg::render_cairo::calc_node_bbox(&node, &opt) {
             let vbox = tree::ViewBox {
                 rect: bbox,
                 .. tree::ViewBox::default()
             };
 
-            resvg::render_cairo::render_node_to_canvas(node, &opt, vbox, size, &cr);
+            resvg::render_cairo::render_node_to_canvas(&node, &opt, vbox, size, &cr);
         }
     }
 }
@@ -446,7 +443,7 @@ fn get_node_bbox(
 
     match rtree.0.node_by_svg_id(id) {
         Some(node) => {
-            if let Some(r) = backend.calc_node_bbox(node, &opt) {
+            if let Some(r) = backend.calc_node_bbox(&node, &opt) {
                 unsafe {
                     (*bbox).x = r.x();
                     (*bbox).y = r.y();
@@ -507,7 +504,7 @@ pub extern fn resvg_get_node_transform(
     };
 
     if let Some(node) = rtree.0.node_by_svg_id(id) {
-        let abs_ts = resvg::utils::abs_transform(node);
+        let abs_ts = resvg::utils::abs_transform(&node);
 
         unsafe {
             (*ts).a = abs_ts.a;

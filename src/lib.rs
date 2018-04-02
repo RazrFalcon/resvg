@@ -17,16 +17,10 @@ And as an embeddable library to paint SVG on an application native canvas.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
-// For error-chain.
-#![recursion_limit="128"]
-
-extern crate base64;
-extern crate ego_tree;
 extern crate euclid;
-extern crate libflate;
 extern crate lyon_geom;
 pub extern crate usvg;
-#[macro_use] extern crate error_chain;
+#[macro_use] extern crate failure;
 #[macro_use] extern crate log;
 
 #[cfg(feature = "cairo-backend")] pub extern crate cairo;
@@ -86,11 +80,7 @@ use std::path::{
     Path,
 };
 
-pub use error::{
-    Error,
-    ErrorKind,
-    Result,
-};
+pub use error::*;
 pub use options::*;
 pub use geom::*;
 
@@ -122,7 +112,7 @@ pub trait Render {
     /// Renders SVG node to image.
     fn render_node_to_image(
         &self,
-        node: tree::NodeRef,
+        node: &tree::Node,
         opt: &Options,
     ) -> Result<Box<OutputImage>>;
 
@@ -131,7 +121,7 @@ pub trait Render {
     /// Note: this method can be pretty expensive.
     fn calc_node_bbox(
         &self,
-        node: tree::NodeRef,
+        node: &tree::Node,
         opt: &Options,
     ) -> Option<Rect>;
 }
@@ -202,27 +192,22 @@ pub fn default_backend() -> Box<Render> {
 pub fn parse_rtree_from_data(
     text: &str,
     opt: &Options,
-) -> Result<tree::Tree> {
-    let tree = usvg::parse_tree_from_data(text, &opt.usvg)?;
-    Ok(tree)
-}
-
-/// Creates `RenderTree` from file.
-///
-/// `.svg` and `.svgz` files are supported.
-pub fn parse_rtree_from_file<P: AsRef<Path>>(
-    path: P,
-    opt: &Options,
-) -> Result<tree::Tree> {
-    let tree = usvg::parse_tree_from_file(path, &opt.usvg)?;
-    Ok(tree)
+) -> tree::Tree {
+    usvg::parse_tree_from_data(text, &opt.usvg)
 }
 
 /// Creates `RenderTree` from `svgdom::Document`.
 pub fn parse_rtree_from_dom(
     doc: svgdom::Document,
     opt: &Options,
+) -> tree::Tree {
+    usvg::parse_tree_from_dom(doc, &opt.usvg)
+}
+
+/// Creates `RenderTree` from `svgdom::Document`.
+pub fn parse_rtree_from_file<P: AsRef<Path>>(
+    path: P,
+    opt: &Options,
 ) -> Result<tree::Tree> {
-    let tree = usvg::parse_tree_from_dom(doc, &opt.usvg)?;
-    Ok(tree)
+    Ok(usvg::parse_tree_from_file(path, &opt.usvg)?)
 }

@@ -26,16 +26,10 @@ exclude = [
 travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
-base64 = "0.9"
-ego-tree = "0.3"
 euclid = "0.17"
-libflate = "0.1"
+failure = "0.1.1"
 log = "0.4"
 lyon_geom = "0.10"
-
-[dependencies.error-chain]
-version = "0.11"
-default-features = false
 
 [dependencies.pango]
 version = "0.3"
@@ -59,7 +53,7 @@ optional = true
 
 [dependencies.usvg]
 git = "https://github.com/RazrFalcon/usvg"
-rev = "d0e6484"
+rev = "ea54584"
 #path = "../usvg"
 
 [dependencies.image]

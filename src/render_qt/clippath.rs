@@ -23,7 +23,7 @@ use {
 
 
 pub fn apply(
-    node: tree::NodeRef,
+    node: &tree::Node,
     cp: &tree::ClipPath,
     opt: &Options,
     bbox: Rect,
@@ -50,10 +50,10 @@ pub fn apply(
 
         match *node.kind() {
             tree::NodeKind::Path(ref path_node) => {
-                path::draw(node.tree(), path_node, opt, &clip_p);
+                path::draw(&node.tree(), path_node, opt, &clip_p);
             }
             tree::NodeKind::Text(_) => {
-                text::draw(node, opt, &clip_p);
+                text::draw(&node, opt, &clip_p);
             }
             _ => {}
         }

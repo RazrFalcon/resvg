@@ -110,10 +110,10 @@ pub(crate) fn aligned_pos(align: tree::Align, x: f64, y: f64, w: f64, h: f64) ->
 
 /// Returns node's absolute transform.
 pub fn abs_transform(
-    node: tree::NodeRef,
+    node: &tree::Node,
 ) -> tree::Transform {
     let mut ts_list = Vec::new();
-    for p in node.ancestors() {
+    for p in node.ancestors().skip(1) {
         ts_list.push(p.transform());
     }
 

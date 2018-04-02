@@ -32,19 +32,19 @@ pub fn apply(
                     // a-fill-opacity-001.svg
                     cr.set_source_color(&c, fill.opacity);
                 }
-                tree::Paint::Link(id) => {
+                tree::Paint::Link(ref id) => {
                     // a-fill-opacity-003.svg
                     // a-fill-opacity-004.svg
-                    if let Some(node) = tree.defs_at(id) {
+                    if let Some(node) = tree.defs_by_id(id) {
                         match *node.kind() {
                             tree::NodeKind::LinearGradient(ref lg) => {
-                                gradient::prepare_linear(node, lg, fill.opacity, bbox, cr);
+                                gradient::prepare_linear(&node, lg, fill.opacity, bbox, cr);
                             }
                             tree::NodeKind::RadialGradient(ref rg) => {
-                                gradient::prepare_radial(node, rg, fill.opacity, bbox, cr);
+                                gradient::prepare_radial(&node, rg, fill.opacity, bbox, cr);
                             }
                             tree::NodeKind::Pattern(ref pattern) => {
-                                pattern::apply(node, pattern, opt, fill.opacity, bbox, cr);
+                                pattern::apply(&node, pattern, opt, fill.opacity, bbox, cr);
                             }
                             _ => {}
                         }

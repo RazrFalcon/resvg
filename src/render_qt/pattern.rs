@@ -18,7 +18,7 @@ use {
 };
 
 pub fn apply(
-    pattern_node: tree::NodeRef,
+    pattern_node: &tree::Node,
     pattern: &tree::Pattern,
     opt: &Options,
     global_ts: qt::Transform,

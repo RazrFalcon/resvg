@@ -23,7 +23,7 @@ use {
 
 
 pub fn apply(
-    node: tree::NodeRef,
+    node: &tree::Node,
     pattern: &tree::Pattern,
     opt: &Options,
     opacity: tree::Opacity,

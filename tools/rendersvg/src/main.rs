@@ -5,27 +5,21 @@
 #[macro_use]
 extern crate clap;
 #[macro_use]
-extern crate derive_error;
+extern crate failure;
 extern crate resvg;
 extern crate fern;
 extern crate log;
 extern crate time;
+extern crate libflate;
 
 
 use std::str::FromStr;
 use std::fs;
 use std::fmt;
 use std::path;
-use std::io::{
-    self,
-    Write,
-};
+use std::io::{ self, Write };
 
-use clap::{
-    App,
-    Arg,
-    ArgMatches,
-};
+use clap::{ App, Arg, ArgMatches };
 
 use resvg::{
     usvg,
@@ -37,10 +31,7 @@ use resvg::{
 };
 use resvg::tree::prelude::*;
 
-use svgdom::{
-    ChainedErrorExt,
-    WriteBuffer,
-};
+use svgdom::WriteBuffer;
 
 
 struct Args {
@@ -57,31 +48,44 @@ struct Args {
     quiet: bool,
 }
 
-#[derive(Error, Debug)]
-enum Error {
-    #[error(msg_embedded, no_from, non_std)]
+/// Errors list.
+#[derive(Fail, Debug)]
+pub enum Error {
+    /// An invalid node's ID.
+    #[fail(display = "SVG doesn't have '{}' ID", _0)]
     InvalidId(String),
+
+    /// `resvg` errors.
+    #[fail(display = "{}", _0)]
     Resvg(resvg::Error),
-    Io(io::Error),
+
+    /// IO errors.
+    #[fail(display = "{}", _0)]
+    Io(::std::io::Error),
+}
+
+impl From<resvg::Error> for Error {
+    fn from(value: resvg::Error) -> Error {
+        Error::Resvg(value)
+    }
+}
+
+impl From<::std::io::Error> for Error {
+    fn from(value: ::std::io::Error) -> Error {
+        Error::Io(value)
+    }
 }
 
 
 fn main() {
     #[cfg(all(not(feature = "cairo-backend"), not(feature = "qt-backend")))]
     {
-        eprintln!("Error: rendersvg has been build without any backend.");
+        eprintln!("Error: rendersvg has been built without any backends.");
         return;
     }
 
     if let Err(e) = process() {
-        match e {
-            Error::InvalidId(ref id) => {
-                eprintln!("Error: Input file does not contain ID {:?}.", id);
-            }
-            Error::Resvg(ref e) => eprintln!("{}.", e.full_chain()),
-            Error::Io(ref e) => eprintln!("Error: {}.", e),
-        }
-
+        eprintln!("Error: {}.", e);
         std::process::exit(1);
     }
 }
@@ -127,8 +131,8 @@ fn process() -> Result<(), Error> {
     // Render.
     if let Some(ref out_png) = args.out_png {
         let img = if let Some(ref id) = args.export_id {
-            if let Some(node) = tree.root().descendants().find(|n| n.svg_id() == id) {
-                timed!("Rendering", args.backend.render_node_to_image(node, &opt))
+            if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
+                timed!("Rendering", args.backend.render_node_to_image(&node, &opt))
             } else {
                 return Err(Error::InvalidId(id.clone()));
             }
@@ -174,11 +178,11 @@ fn query_all(
 ) {
     let mut count = 0;
     for node in tree.root().descendants() {
-        if tree.is_in_defs(node) {
+        if tree.is_in_defs(&node) {
             continue;
         }
 
-        if node.svg_id().is_empty() {
+        if node.id().is_empty() {
             continue;
         }
 
@@ -188,8 +192,8 @@ fn query_all(
             (v * 1000.0).round() / 1000.0
         }
 
-        if let Some(bbox) = args.backend.calc_node_bbox(node, &opt) {
-            println!("{},{},{},{},{}", node.svg_id(),
+        if let Some(bbox) = args.backend.calc_node_bbox(&node, &opt) {
+            println!("{},{},{},{},{}", node.id(),
                      round_len(bbox.x()), round_len(bbox.y()),
                      round_len(bbox.width()), round_len(bbox.height()));
         }

@@ -13,7 +13,7 @@ use traits::{
 
 
 pub fn prepare_linear(
-    node: tree::NodeRef,
+    node: &tree::Node,
     g: &tree::LinearGradient,
     opacity: tree::Opacity,
     brush: &mut qt::Brush,
@@ -26,7 +26,7 @@ pub fn prepare_linear(
 }
 
 pub fn prepare_radial(
-    node: tree::NodeRef,
+    node: &tree::Node,
     g: &tree::RadialGradient,
     opacity: tree::Opacity,
     brush: &mut qt::Brush,
@@ -39,7 +39,7 @@ pub fn prepare_radial(
 }
 
 fn prepare_base(
-    node: tree::NodeRef,
+    node: &tree::Node,
     g: &tree::BaseGradient,
     grad: &mut qt::Gradient,
     opacity: tree::Opacity,

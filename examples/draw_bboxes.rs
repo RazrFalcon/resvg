@@ -34,12 +34,12 @@ fn main() {
     opt.usvg.keep_named_groups = true;
     opt.fit_to = resvg::FitTo::Zoom(zoom as f32);
 
-    let mut rtree = resvg::parse_rtree_from_file(&args[1], &opt).unwrap();
+    let rtree = resvg::parse_rtree_from_file(&args[1], &opt).unwrap();
 
     let mut bboxes = Vec::new();
     for node in rtree.root().descendants() {
-        if !rtree.is_in_defs(node) {
-            if let Some(bbox) = backend.calc_node_bbox(node, &opt) {
+        if !rtree.is_in_defs(&node) {
+            if let Some(bbox) = backend.calc_node_bbox(&node, &opt) {
                 bboxes.push(bbox);
             }
         }
@@ -52,14 +52,13 @@ fn main() {
     });
 
     for bbox in bboxes {
-        let mut root = rtree.root_mut();
-        root.append(Box::new(tree::NodeKind::Path(tree::Path {
+        rtree.root().append_kind(tree::NodeKind::Path(tree::Path {
             id: String::new(),
             transform: tree::Transform::default(),
             fill: None,
             stroke: stroke.clone(),
             segments: utils::rect_to_path(bbox),
-        })));
+        }));
     }
 
     let img = backend.render_to_image(&rtree, &opt).unwrap();

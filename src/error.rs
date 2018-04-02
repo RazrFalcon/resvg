@@ -4,26 +4,27 @@
 
 use usvg;
 
-error_chain! {
-    types {
-        Error, ErrorKind, ResultExt, Result;
-    }
+/// Errors list.
+#[derive(Fail, Debug)]
+pub enum Error {
+    /// Failed to allocate an image.
+    ///
+    /// Probably because it's too big or there is not enough memory.
+    #[fail(display = "the main canvas creation failed")]
+    NoCanvas,
 
-    links {
-        USvg(usvg::Error, usvg::ErrorKind) #[doc = "'usvg' errors"];
-    }
+    /// `usvg` file read errors.
+    #[fail(display = "{}", _0)]
+    FileReadError(usvg::FileReadError),
+}
 
-    foreign_links {
-        Io(::std::io::Error) #[doc = "io errors"];
-        UTF8(::std::string::FromUtf8Error) #[doc = "UTF-8 errors"];
-    }
-
-    errors {
-        /// Failed to allocate an image.
-        ///
-        /// Probably because it's too big or there is not enough memory.
-        NoCanvas {
-            display("the main canvas creation failed")
-        }
+impl From<usvg::FileReadError> for Error {
+    fn from(value: usvg::FileReadError) -> Error {
+        Error::FileReadError(value)
     }
 }
+
+/// A specialized `Result` type where the error is hard-wired to [`Error`].
+///
+/// [`Error`]: enum.Error.html
+pub(crate) type Result<T> = ::std::result::Result<T, Error>;
