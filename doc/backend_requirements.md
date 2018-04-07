@@ -1,0 +1,53 @@
+# Backend requirements
+
+List of features required from the 2D graphics library to implement a backend for `resvg`.
+
+- Composition modes:
+  - Clear
+  - DestinationOut
+- Filling:
+  - With color
+  - With linear or radial gradient
+  - With pattern (texture/image)
+  - Fill rules:
+    - NonZero/Winding
+    - EvenOdd/OddEven
+  - Opacity
+- Stroking:
+  - With color
+  - With linear or radial gradient
+  - With pattern (texture/image)
+  - Dasharray + Dashoffset
+  - Miterlimit
+  - Opacity
+  - Width
+  - LineCap: *butt*, *round* and *square*
+  - LineJoin: *miter*, *round* and *bevel*
+- Bézier paths:
+  - Anti-aliasing
+  - Required segments support:
+    - MoveTo
+    - LineTo
+    - CurveTo (cubic)
+    - ClosePath
+- Text
+  - Anti-aliasing
+  - Font properties:
+    - Family resolving (like `'Arial', monospace`)
+    - Style: *normal*, *italic* and *oblique*
+    - Weight
+    - Stretch
+    - Variant: *normal*, *small cap*
+    - Size
+  - Font metrics:
+    - Text bounding box
+    - Ascent/baseline
+    - Overline position and thickness (optional*) 
+    - Strikeout position and thickness (optional*)
+    - Underline position and thickness (optional*)
+- Raster images:
+  - Formats: 
+    - PNG
+    - JPEG
+  - Loading from file and memory 
+  - Smooth scaling
