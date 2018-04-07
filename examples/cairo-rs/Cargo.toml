@@ -4,8 +4,8 @@ version = "0.1.0"
 authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
 
 [dependencies]
-gio = "0.3"
-gtk = "0.3"
+gio = "0.4"
+gtk = "0.4"
 log = "0.4"
 fern = "0.5"
 
