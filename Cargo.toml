@@ -53,7 +53,7 @@ optional = true
 
 [dependencies.usvg]
 git = "https://github.com/RazrFalcon/usvg"
-rev = "ea54584"
+rev = "3eef07c"
 #path = "../usvg"
 
 [dependencies.image]
