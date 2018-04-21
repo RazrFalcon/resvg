@@ -4,7 +4,7 @@
 
 // external
 use cairo;
-use image::{
+use piston_image::{
     self,
     GenericImage,
 };
@@ -23,11 +23,11 @@ pub fn draw(
 
     let img = match image.data {
         tree::ImageData::Path(ref path) => {
-            try_opt_warn!(image::open(path).ok(), r,
+            try_opt_warn!(piston_image::open(path).ok(), r,
                 "Failed to load an external image: {:?}.", path)
         }
         tree::ImageData::Raw(ref data, _) => {
-            try_opt_warn!(image::load_from_memory(data).ok(), r,
+            try_opt_warn!(piston_image::load_from_memory(data).ok(), r,
                 "Failed to load an embedded image.")
         }
     };
@@ -36,7 +36,7 @@ pub fn draw(
         &image.view_box,
         ScreenSize::new(img.width(), img.height()),
     );
-    let img = img.resize_exact(new_size.width, new_size.height, image::FilterType::Triangle);
+    let img = img.resize_exact(new_size.width, new_size.height, piston_image::FilterType::Triangle);
     let img = img.to_rgba();
 
     let mut surface = try_create_surface!(new_size, r);
