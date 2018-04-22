@@ -55,7 +55,7 @@ of the SVG Tiny 1.2 subset. In simple terms - it correctly renders only primitiv
 
 ## SVG support
 
-Results of the [SVG test suite](https://www.w3.org/Graphics/SVG/Test/20110816/):
+Results of the static subset of the [SVG test suite](https://www.w3.org/Graphics/SVG/Test/20110816/):
 
 ![Chart1](https://github.com/RazrFalcon/resvg-test-suite/blob/master/site/images/official_chart.svg)
 
@@ -70,7 +70,6 @@ It also includes alternative libraries.
 TL;DR
 
 - no `filter`
-- no `mask`
 - no `marker`
 - no `symbol`
 - CSS support is minimal
@@ -78,6 +77,16 @@ TL;DR
 ## Backends
 
 *resvg* supports [Qt] and [cairo] backends.
+
+## Project structure
+
+- `resvg` - rendering backends implementation.
+  - [`usvg`](https://github.com/RazrFalcon/usvg) - an SVG simplification tool
+    - [`svgdom`](https://github.com/RazrFalcon/svgdom) - a DOM-like SVG tree
+    - [`rctree`](https://github.com/RazrFalcon/rctree) - a DOM-like tree
+  - [`resvg-qt`](https://github.com/RazrFalcon/resvg-qt) - a minimal bindings for [Qt].
+
+All other dependencies aren't written by me for this project.
 
 ## Build
 
