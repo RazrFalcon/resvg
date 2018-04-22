@@ -72,7 +72,7 @@ impl<'a, T> Layers<'a, T> {
         }
     }
 
-    /// Marks last layer as free.
+    /// Marks the last layer as free.
     pub fn release(&mut self) {
         self.idx -= 1;
     }

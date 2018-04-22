@@ -19,6 +19,7 @@ use super::{
     path,
     text,
     CairoLayers,
+    ReCairoContextExt,
 };
 use {
     Options,
@@ -66,12 +67,16 @@ pub fn apply(
         clip_cr.set_matrix(matrix);
     }
 
-    clip_cr.set_operator(cairo::Operator::Over);
-
     cr.set_matrix(cairo::Matrix::identity());
     cr.set_source_surface(&*clip_surface, 0.0, 0.0);
     cr.set_operator(cairo::Operator::DestOut);
     cr.paint();
+
+    // Reset operator.
+    cr.set_operator(cairo::Operator::Over);
+
+    // Reset source to unborrow the `clip_surface` from the `Context`.
+    cr.reset_source_rgba();
 
     layers.release();
 }

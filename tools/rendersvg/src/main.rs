@@ -120,6 +120,7 @@ fn process() -> Result<(), Error> {
         return Ok(());
     }
 
+    // Dump before rendering in case of panic.
     if let Some(ref dump_path) = args.dump {
         dump_svg(&tree, dump_path)?;
     }
