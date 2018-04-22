@@ -443,6 +443,7 @@ fn create_subsurface(
 
 fn clear_subsurface(surface: &mut cairo::ImageSurface) {
     let cr = cairo::Context::new(&surface);
+    cr.set_operator(cairo::Operator::Clear);
     cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
     cr.paint();
 }
