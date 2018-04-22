@@ -42,6 +42,7 @@ mod clippath;
 mod fill;
 mod gradient;
 mod image;
+mod mask;
 mod path;
 mod pattern;
 mod stroke;
@@ -286,6 +287,14 @@ fn render_group_impl(
         if let Some(clip_node) = node.tree().defs_by_id(id) {
             if let tree::NodeKind::ClipPath(ref cp) = *clip_node.kind() {
                 clippath::apply(&clip_node, cp, opt, bbox, layers, &sub_p);
+            }
+        }
+    }
+
+    if let Some(ref id) = g.mask {
+        if let Some(mask_node) = node.tree().defs_by_id(id) {
+            if let tree::NodeKind::Mask(ref mask) = *mask_node.kind() {
+                mask::apply(&mask_node, mask, opt, bbox, layers, &sub_p, p);
             }
         }
     }

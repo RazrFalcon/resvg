@@ -49,6 +49,7 @@ mod ext;
 mod fill;
 mod gradient;
 mod image;
+mod mask;
 mod path;
 mod pattern;
 mod stroke;
@@ -310,13 +311,21 @@ fn render_group_impl(
 
     let curr_matrix = cr.get_matrix();
     cr.set_matrix(cairo::Matrix::identity());
-
     cr.set_source_surface(&*sub_surface, 0.0, 0.0);
 
-    if let Some(opacity) = g.opacity {
-        cr.paint_with_alpha(*opacity);
+    if let Some(ref id) = g.mask {
+        if let Some(mask_node) = node.tree().defs_by_id(id) {
+            if let tree::NodeKind::Mask(ref mask) = *mask_node.kind() {
+                cr.set_matrix(curr_matrix);
+                mask::apply(&mask_node, mask, opt, bbox, g.opacity, layers, cr);
+            }
+        }
     } else {
-        cr.paint();
+        if let Some(opacity) = g.opacity {
+            cr.paint_with_alpha(*opacity);
+        } else {
+            cr.paint();
+        }
     }
 
     cr.set_matrix(curr_matrix);

@@ -45,6 +45,11 @@ impl<'a, T> Layers<'a, T> {
         }
     }
 
+    /// Returns a layer size.
+    pub fn image_size(&self) -> ScreenSize {
+        self.img_size
+    }
+
     /// Returns a first free layer to draw on.
     ///
     /// - If there are no free layers - will create a new one.

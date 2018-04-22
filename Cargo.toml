@@ -30,12 +30,14 @@ euclid = "0.17"
 failure = "0.1.1"
 log = "0.4"
 lyon_geom = "0.10"
+usvg = { git = "https://github.com/RazrFalcon/usvg", rev = "22eec3d" }
+# cairo backend
+cairo-rs = { version = "0.4.1", features = ["png"], optional = true }
+image = { version = "0.18", default-features = false, features = ["jpeg", "png_codec"], optional = true }
 pango = { version = "0.4", optional = true }
 pangocairo = { version = "0.5", optional = true }
-cairo-rs = { version = "0.4.1", features = ["png"], optional = true }
-resvg-qt = { git = "https://github.com/RazrFalcon/resvg-qt", rev = "9a5b017", optional = true }
-usvg = { git = "https://github.com/RazrFalcon/usvg", rev = "3eef07c" }
-image = { version = "0.18", default-features = false, features = ["jpeg", "png_codec"], optional = true }
+# qt backend
+resvg-qt = { git = "https://github.com/RazrFalcon/resvg-qt", rev = "355fa41", optional = true }
 
 [features]
 cairo-backend = ["cairo-rs", "pango", "pangocairo", "image"]
