@@ -32,8 +32,8 @@ close_window(void)
 static void
 parse_doc(const char *path)
 {
+    resvg_init_options(&opt);
     opt.path = path;
-    opt.dpi = 96;
 
     char *error;
     rtree = resvg_parse_rtree_from_file(path, &opt, &error);

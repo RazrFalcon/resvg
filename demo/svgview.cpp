@@ -74,20 +74,18 @@ void SvgView::setRenderToImage(bool flag)
     const auto *screen = qApp->screens().first();
     const auto ratio = screen->devicePixelRatio();
 
-    double width, height;
-    resvg_get_image_size(m_rtree, &width, &height);
-    width *= ratio;
-    height *= ratio;
+    auto size = resvg_get_image_size(m_rtree);
+    size.width *= ratio;
+    size.height *= ratio;
 
-    QImage img(width, height, QImage::Format_ARGB32_Premultiplied);
+    QImage img(size.width, size.height, QImage::Format_ARGB32_Premultiplied);
     img.fill(Qt::transparent);
 
 
     QPainter p;
     p.begin(&img);
     p.setRenderHint(QPainter::Antialiasing);
-    resvg_size s { (uint)width, (uint)height };
-    resvg_qt_render_to_canvas(m_rtree, m_opt, s, &p);
+    resvg_qt_render_to_canvas(m_rtree, m_opt, size, &p);
     p.end();
 
     img.setDevicePixelRatio(ratio);
@@ -207,10 +205,9 @@ void SvgView::paintEvent(QPaintEvent *e)
             img_width = r.width();
             img_height = r.height();
         } else {
-            resvg_get_image_size(m_rtree, &img_width, &img_height);
-
-            img_width *= m_zoom;
-            img_height *= m_zoom;
+            const auto size = resvg_get_image_size(m_rtree);
+            img_width = size.width * m_zoom;
+            img_height = size.height * m_zoom;
 
             x = (r.width() - img_width)/2;
             y = (r.height() - img_height)/2;

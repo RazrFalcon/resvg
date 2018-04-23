@@ -16,13 +16,8 @@ extern crate cairo_sys;
 use std::fmt;
 use std::path;
 use std::ptr;
-use std::ffi::{
-    CStr,
-    CString,
-};
-use std::os::raw::{
-    c_char,
-};
+use std::ffi::{ CStr, CString };
+use std::os::raw::c_char;
 
 #[cfg(feature = "qt-backend")]
 use resvg::qt;
@@ -156,7 +151,10 @@ pub extern fn resvg_parse_rtree_from_file(
         None => on_err!(error, "Error: file path is not an UTF-8 string."),
     };
 
-    let opt = to_native_opt(unsafe { &*opt });
+    let opt = to_native_opt(unsafe {
+        assert!(!opt.is_null());
+        &*opt
+    });
 
     let rtree = match resvg::parse_rtree_from_file(file_path, &opt) {
         Ok(rtree) => rtree,
@@ -178,7 +176,10 @@ pub extern fn resvg_parse_rtree_from_data(
         None => on_err!(error, "Error: SVG data is not an UTF-8 string."),
     };
 
-    let opt = to_native_opt(unsafe { &*opt });
+    let opt = to_native_opt(unsafe {
+        assert!(!opt.is_null());
+        &*opt
+    });
 
     let rtree = resvg::parse_rtree_from_data(text, &opt);
 
@@ -240,7 +241,10 @@ fn render_to_image(
         None => return false,
     };
 
-    let opt = to_native_opt(unsafe { &*opt });
+    let opt = to_native_opt(unsafe {
+        assert!(!opt.is_null());
+        &*opt
+    });
 
     let img = backend.render_to_image(&rtree.0, &opt);
     let img = match img {
@@ -269,7 +273,10 @@ pub extern fn resvg_qt_render_to_canvas(
 
     let painter = unsafe { qt::Painter::from_raw(painter) };
     let size = resvg::ScreenSize::new(size.width, size.height);
-    let opt = to_native_opt(unsafe { &*opt });
+    let opt = to_native_opt(unsafe {
+        assert!(!opt.is_null());
+        &*opt
+    });
 
     resvg::render_qt::render_to_canvas(&rtree.0, &opt, size, &painter);
 }
@@ -292,7 +299,10 @@ pub extern fn resvg_cairo_render_to_canvas(
     let cr = unsafe { cairo::Context::from_glib_none(cr) };
     let size = resvg::ScreenSize::new(size.width, size.height);
 
-    let opt = to_native_opt(unsafe { &*opt });
+    let opt = to_native_opt(unsafe {
+        assert!(!opt.is_null());
+        &*opt
+    });
 
     resvg::render_cairo::render_to_canvas(&rtree.0, &opt, size, &cr);
 }
@@ -313,22 +323,34 @@ pub extern fn resvg_qt_render_to_canvas_by_id(
 
     let painter = unsafe { qt::Painter::from_raw(painter) };
     let size = resvg::ScreenSize::new(size.width, size.height);
-    let opt = to_native_opt(unsafe { &*opt });
+    let opt = to_native_opt(unsafe {
+        assert!(!opt.is_null());
+        &*opt
+    });
 
     let id = match cstr_to_str(id) {
         Some(v) => v,
         None => return,
     };
 
+    if id.is_empty() {
+        warn!("Node with an empty ID can not be painted.");
+        return;
+    }
+
     if let Some(node) = rtree.0.node_by_svg_id(id) {
         if let Some(bbox) = resvg::render_qt::calc_node_bbox(&node, &opt) {
             let vbox = tree::ViewBox {
                 rect: bbox,
-                .. tree::ViewBox::default()
+                aspect: tree::AspectRatio::default(),
             };
 
             resvg::render_qt::render_node_to_canvas(&node, &opt, vbox, size, &painter);
+        } else {
+            warn!("A node with '{}' ID doesn't have a valid bounding box.", id);
         }
+    } else {
+        warn!("A node with '{}' ID wasn't found.", id);
     }
 }
 
@@ -351,31 +373,41 @@ pub extern fn resvg_cairo_render_to_canvas_by_id(
         None => return,
     };
 
+    if id.is_empty() {
+        warn!("Node with an empty ID can not be painted.");
+        return;
+    }
+
     use glib::translate::FromGlibPtrNone;
 
     let cr = unsafe { cairo::Context::from_glib_none(cr) };
     let size = resvg::ScreenSize::new(size.width, size.height);
 
-    let opt = to_native_opt(unsafe { &*opt });
+    let opt = to_native_opt(unsafe {
+        assert!(!opt.is_null());
+        &*opt
+    });
 
     if let Some(node) = rtree.0.node_by_svg_id(id) {
         if let Some(bbox) = resvg::render_cairo::calc_node_bbox(&node, &opt) {
             let vbox = tree::ViewBox {
                 rect: bbox,
-                .. tree::ViewBox::default()
+                aspect: tree::AspectRatio::default(),
             };
 
             resvg::render_cairo::render_node_to_canvas(&node, &opt, vbox, size, &cr);
+        } else {
+            warn!("A node with '{}' ID doesn't have a valid bounding box.", id);
         }
+    } else {
+        warn!("A node with '{}' ID wasn't found.", id);
     }
 }
 
 #[no_mangle]
 pub extern fn resvg_get_image_size(
     rtree: *const resvg_render_tree,
-    width: *mut f64,
-    height: *mut f64,
-) {
+) -> resvg_size {
     let rtree = unsafe {
         assert!(!rtree.is_null());
         &*rtree
@@ -383,9 +415,28 @@ pub extern fn resvg_get_image_size(
 
     let size = rtree.0.svg_node().size;
 
-    unsafe {
-        *width = size.width;
-        *height = size.height;
+    resvg_size {
+        width: size.width as u32,
+        height: size.height as u32,
+    }
+}
+
+#[no_mangle]
+pub extern fn resvg_get_image_viewbox(
+    rtree: *const resvg_render_tree,
+) -> resvg_rect {
+    let rtree = unsafe {
+        assert!(!rtree.is_null());
+        &*rtree
+    };
+
+    let r = rtree.0.svg_node().view_box.rect;
+
+    resvg_rect {
+        x: r.x(),
+        y: r.y(),
+        width: r.width(),
+        height: r.height(),
     }
 }
 
@@ -439,7 +490,10 @@ fn get_node_bbox(
     };
 
 
-    let opt = to_native_opt(unsafe { &*opt });
+    let opt = to_native_opt(unsafe {
+        assert!(!opt.is_null());
+        &*opt
+    });
 
     match rtree.0.node_by_svg_id(id) {
         Some(node) => {

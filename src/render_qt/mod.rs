@@ -138,7 +138,7 @@ pub fn render_node_to_image(
 
     let vbox = tree::ViewBox {
         rect: node_bbox,
-        .. tree::ViewBox::default()
+        aspect: tree::AspectRatio::default(),
     };
 
     let (img, img_size) = create_root_image(node_bbox.size.to_screen_size(), opt)?;

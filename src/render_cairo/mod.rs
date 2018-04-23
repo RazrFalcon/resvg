@@ -162,7 +162,7 @@ pub fn render_node_to_image(
 
     let vbox = tree::ViewBox {
         rect: node_bbox,
-        .. tree::ViewBox::default()
+        aspect: tree::AspectRatio::default(),
     };
 
     let cr = cairo::Context::new(&surface);

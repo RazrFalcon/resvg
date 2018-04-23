@@ -24,14 +24,14 @@ pub struct Options {
     /// `usvg` preprocessor options.
     pub usvg: usvg::Options,
 
-    /// Fits image to the specified height.
+    /// Fits the image using specified options.
     ///
     /// Does not affect rendering to canvas.
     pub fit_to: FitTo,
 
-    /// Image background color.
+    /// An image background color.
     ///
-    /// Sets image background color. Does not affect rendering to canvas.
+    /// Sets an image background color. Does not affect rendering to canvas.
     ///
     /// `None` equals to transparent.
     pub background: Option<Color>,
