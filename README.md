@@ -75,6 +75,16 @@ TL;DR
 - no `view`
 - CSS support is minimal
 
+## Performance
+
+![Chart3](https://github.com/RazrFalcon/resvg-test-suite/blob/master/site/images/perf.svg)
+
+- Oxygen Icon Theme 4.12
+- All images are converted from `.svgz` to `.svg`.
+- `librsvg` is slower than `resvg` because those icons are using Gaussian blur heavily, which is expensive.
+- Qt is suspiciously slow for no reasons. Source code can be found
+  [here](https://github.com/RazrFalcon/resvg-test-suite/tree/master/tools/qtsvgrender).
+
 ## Backends
 
 *resvg* supports [Qt] and [cairo] backends.
