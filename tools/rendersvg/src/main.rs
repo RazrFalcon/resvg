@@ -252,7 +252,7 @@ fn prepare_app<'a, 'b>() -> App<'a, 'b> {
             .validator(is_png))
         .arg(Arg::with_name("dpi")
             .long("dpi")
-            .help("Sets the resolution [72..4000]")
+            .help("Sets the resolution [10..4000]")
             .value_name("DPI")
             .default_value("96")
             .validator(is_dpi))
@@ -273,7 +273,7 @@ fn prepare_app<'a, 'b>() -> App<'a, 'b> {
         .arg(Arg::with_name("zoom")
             .short("z")
             .long("zoom")
-            .value_name("ZOOM")
+            .value_name("FACTOR")
             .help("Zooms the image by a factor")
             .conflicts_with_all(&["width", "height"])
             .validator(is_zoom))
@@ -284,7 +284,7 @@ fn prepare_app<'a, 'b>() -> App<'a, 'b> {
             .validator(is_color))
         .arg(Arg::with_name("backend")
             .long("backend")
-            .help("Sets the rendering backend.\nHas no effect if built with only one backend")
+            .help("Sets the rendering backend. Has no effect if built with only one backend")
             .takes_value(true)
             .default_value(default_backend())
             .possible_values(&backends()))
@@ -365,7 +365,7 @@ fn is_dpi(val: String) -> Result<(), String> {
         Err(e) => return Err(format!("{}", e)),
     };
 
-    if n >= 72 && n <= 4000 {
+    if n >= 10 && n <= 4000 {
         Ok(())
     } else {
         Err(String::from("Invalid DPI value."))

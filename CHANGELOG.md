@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - (svg) Partial `clipPath` support.
 - (svg) Partial `mask` support.
 - (svg) Partial `pattern` support.
+- (svg) `preserveAspectRatio` support.
 - (svg) Check that an external image is PNG or JPEG.
 - (cli) Added `--query-all` and `--export-id` arguments to render SVG items by ID.
 - (cli) Added `--perf` argument for a simple performance stats.
