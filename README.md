@@ -84,8 +84,9 @@ TL;DR
 - All images are converted from `.svgz` to `.svg`.
 - In the `resvg` >80% of the time is spent during PNG generation.
 - The `librsvg` is slower than `resvg` because those icons are using Gaussian blur heavily, which is expensive.
-- Qt is suspiciously slow for no reasons. Source code can be found
+- QtSvg is suspiciously slow for no reasons. Source code can be found
   [here](https://github.com/RazrFalcon/resvg-test-suite/tree/master/tools/qtsvgrender).
+- ["Benchmark" source code](https://github.com/RazrFalcon/resvg-test-suite/tree/master/tools/perf).
 
 ## Backends
 
@@ -93,11 +94,13 @@ TL;DR
 
 ## Project structure
 
-- `resvg` - rendering backends implementation.
+- `resvg` - rendering backends implementation
   - [`usvg`](https://github.com/RazrFalcon/usvg) - an SVG simplification tool
     - [`svgdom`](https://github.com/RazrFalcon/svgdom) - a DOM-like SVG tree
+      - [`svgtypes`](https://github.com/RazrFalcon/svgtypes) - SVG types parser and writer
+      - [`xmlparser`](https://github.com/RazrFalcon/xmlparser) - an XML parser
     - [`rctree`](https://github.com/RazrFalcon/rctree) - a DOM-like tree
-  - [`resvg-qt`](https://github.com/RazrFalcon/resvg-qt) - a minimal bindings for [Qt].
+  - [`resvg-qt`](https://github.com/RazrFalcon/resvg-qt) - a minimal bindings for [Qt]
 
 All other dependencies aren't written by me for this project.
 

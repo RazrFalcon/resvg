@@ -1,8 +1,1 @@
-e-linearGradient-018.svg
-e-linearGradient-019.svg
-e-pattern-022.svg
-e-radialGradient-018.svg
-e-radialGradient-019.svg
-e-use-010.svg
-e-use-011.svg
-e-use-012.svg
+e-use-013.svg

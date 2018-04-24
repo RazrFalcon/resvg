@@ -217,7 +217,9 @@ fn run_tests(data: &Data) -> Result<()> {
 
         println!("Test {} of {}: {}", idx, files.len(), sub_path);
 
-        run_test(data, &file_path)?;
+        if !data.allowed_files.contains(&sub_path) {
+            run_test(data, &file_path)?;
+        }
 
         idx += 1;
     }
@@ -245,29 +247,10 @@ fn run_test(data: &Data, svg_path: &Path) -> Result<()> {
     render(data.curr_render, svg_path, &png_path_curr, data.backend)?;
 
     let diff_path = svg_to_png(data.work_dir, svg_path, "_diff");
-    let sub_path: String = svg_path.strip_prefix(data.input_dir).unwrap()
-                                   .to_str().unwrap().into();
 
-    let diff = match compare_imgs(&png_path_prev, &png_path_curr, &diff_path) {
-        Ok(v) => v,
-        Err(e) => {
-            if let Error::SizeMismatch(_, _) = e {
-                if data.allowed_files.contains(&sub_path) {
-                    // Mask as valid.
-                    0
-                } else {
-                    return Err(e);
-                }
-            } else {
-                return Err(e);
-            }
-        }
-    };
-
-    if !data.allowed_files.contains(&sub_path) {
-        if diff > 20 { // No need to be that strict.
-            return Err(Error::Different);
-        }
+    let diff = compare_imgs(&png_path_prev, &png_path_curr, &diff_path)?;
+    if diff > 20 { // No need to be that strict.
+        return Err(Error::Different);
     }
 
     fs::remove_file(png_path_curr)?;
