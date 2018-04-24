@@ -14,6 +14,8 @@ It can be used as a simple SVG to PNG converted.
 And as an embeddable library to paint SVG on an application native canvas.
 */
 
+#![doc(html_root_url = "https://docs.rs/resvg/0.2.0")]
+
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
