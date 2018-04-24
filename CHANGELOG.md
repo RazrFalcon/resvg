@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2018-04-24
 ### Added
 - (svg) Partial `clipPath` support.
 - (svg) Partial `mask` support.
@@ -21,4 +22,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/RazrFalcon/xmlparser/compare/0.1.0...0.2.0
