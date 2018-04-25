@@ -4,6 +4,11 @@
 
 *resvg* is an [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) rendering library.
 
+It can be used:
+- As Rust library.
+- As C library (see [capi](./capi)).
+- As CLI application (see [tools/rendersvg](./tools/rendersvg)).
+
 ## Purpose
 
 *resvg* can be used to render SVG files based on a
