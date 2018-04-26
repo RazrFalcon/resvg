@@ -31,7 +31,7 @@ use resvg::geom::*;
 
 
 #[repr(C)]
-pub struct resvg_options {q
+pub struct resvg_options {
     pub path: *const c_char,
     pub dpi: f64,
     pub fit_to: resvg_fit_to,
