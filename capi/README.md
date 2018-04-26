@@ -13,5 +13,11 @@ cargo build --release --features="qt-backend cairo-backend"
 
 See [doc/build.md](../doc/build.md) for details.
 
-This will build a dynamic library. There is no point in building a static
-library since it still will depend on Qt/cairo.
+This will build a dynamic library. There is no point in building the static
+library since it will depend on Qt/cairo anyway.
+
+## Examples
+
+A usage example with a *cairo* backend can be found at [examples/cairo-capi](../examples/cairo-capi).
+
+A usage example with a *qt* backend can be found in the [demo](../demo) app.

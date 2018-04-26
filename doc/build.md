@@ -16,7 +16,9 @@ cargo build --release --features="cairo-backend"
 cargo build --release --features="qt-backend cairo-backend"
 ```
 
-Also, you can build *resvg* without any backends if you want too.
+### Rust
+
+The library requires the latest stable Rust.
 
 ### Qt backend
 
@@ -75,6 +77,12 @@ Install Qt 5 using your distributive package manager.
 
 ```
 cargo build --release --features "qt-backend"
+```
+
+If you don't want to use the system Qt you can alter it with the `PKG_CONFIG_PATH` variable.
+
+```
+PKG_CONFIG_PATH='/path_to_qt/lib/pkgconfig' cargo build --release --features "qt-backend"
 ```
 
 ### cairo backend

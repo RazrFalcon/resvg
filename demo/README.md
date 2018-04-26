@@ -16,7 +16,7 @@ cargo build --release --features "qt-backend"
 cd ../demo
 qmake
 make
-LD_LIBRARY_PATH=../capi/target/release ./demo
+LD_LIBRARY_PATH=../target/release ./demo
 ```
 
 See [doc/build.md](../doc/build.md) for details.
