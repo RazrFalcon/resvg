@@ -7,7 +7,7 @@ use cairo::{
     self,
     MatrixTrait,
 };
-use usvg::tree::prelude::*;
+use usvg::tree;
 
 // self
 use geom::*;

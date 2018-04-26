@@ -8,6 +8,7 @@ use cairo::{
     MatrixTrait,
     Pattern,
 };
+use usvg::tree;
 use usvg::tree::prelude::*;
 
 // self

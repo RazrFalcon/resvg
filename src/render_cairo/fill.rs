@@ -4,6 +4,7 @@
 
 // external
 use cairo;
+use usvg::tree;
 use usvg::tree::prelude::*;
 
 // self

@@ -7,6 +7,7 @@
 use std::f64;
 
 // external
+use usvg::tree;
 use usvg::tree::prelude::*;
 
 // self
@@ -41,6 +42,7 @@ pub fn fit_to(size: ScreenSize, fit: FitTo) -> ScreenSize {
 /// Calculates viewbox transform.
 ///
 /// Returns:
+///
 /// - offset by X axis
 /// - offset by Y axis
 /// - scale by X axis

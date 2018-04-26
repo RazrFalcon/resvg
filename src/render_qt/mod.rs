@@ -6,6 +6,7 @@
 
 // external
 use qt;
+use usvg::tree;
 use usvg::tree::prelude::*;
 
 // self

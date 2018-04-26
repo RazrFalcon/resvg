@@ -29,6 +29,7 @@ use resvg::{
     RectExt,
     Render,
 };
+use resvg::tree;
 use resvg::tree::prelude::*;
 
 use svgdom::WriteBuffer;

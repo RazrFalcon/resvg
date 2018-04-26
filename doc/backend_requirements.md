@@ -4,6 +4,7 @@ List of features required from the 2D graphics library to implement a backend fo
 
 - Composition modes:
   - Clear
+  - DestinationIn
   - DestinationOut
 - Filling:
   - With color
@@ -42,12 +43,12 @@ List of features required from the 2D graphics library to implement a backend fo
   - Font metrics:
     - Text bounding box
     - Ascent/baseline
-    - Overline position and thickness (optional*) 
-    - Strikeout position and thickness (optional*)
-    - Underline position and thickness (optional*)
+    - Overline position and thickness (optional)
+    - Strikeout position and thickness (optional)
+    - Underline position and thickness (optional)
 - Raster images:
-  - Formats: 
+  - Formats:
     - PNG
     - JPEG
-  - Loading from file and memory 
+  - Loading from file and memory
   - Smooth scaling

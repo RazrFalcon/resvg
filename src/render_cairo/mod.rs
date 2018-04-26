@@ -10,6 +10,7 @@ use cairo::{
     MatrixTrait,
 };
 use pangocairo::functions as pc;
+use usvg::tree;
 use usvg::tree::prelude::*;
 
 // self

@@ -4,7 +4,7 @@
 
 // external
 use qt;
-use usvg::tree::prelude::*;
+use usvg::tree;
 
 // self
 use geom::*;
