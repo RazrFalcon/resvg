@@ -26,12 +26,12 @@ use resvg::qt;
 use resvg::cairo;
 
 use resvg::usvg;
+use resvg::tree;
 use resvg::geom::*;
-use resvg::tree::prelude::*;
 
 
 #[repr(C)]
-pub struct resvg_options {
+pub struct resvg_options {q
     pub path: *const c_char,
     pub dpi: f64,
     pub fit_to: resvg_fit_to,

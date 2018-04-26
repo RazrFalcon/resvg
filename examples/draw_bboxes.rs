@@ -4,6 +4,7 @@ use std::env;
 use std::path::Path;
 
 use resvg::{
+    tree,
     utils,
     Options,
 };

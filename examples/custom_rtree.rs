@@ -3,6 +3,7 @@ extern crate resvg;
 use std::path::Path;
 
 use resvg::{
+    tree,
     utils,
     Options,
 };
