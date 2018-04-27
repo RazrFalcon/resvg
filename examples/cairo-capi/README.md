@@ -10,7 +10,7 @@ cd ../../capi
 cargo build --features="cairo-backend"
 cd ../examples/cairo-capi
 make
-LD_LIBRARY_PATH=../../capi/target/debug ./example ../../demo/Ghostscript_Tiger.svg
+LD_LIBRARY_PATH=../../target/debug ./example ../../demo/Ghostscript_Tiger.svg
 ```
 
 See [doc/build.md](../../../doc/build.md) for details.

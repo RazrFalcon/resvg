@@ -84,14 +84,7 @@ TL;DR
 
 ![Chart3](https://github.com/RazrFalcon/resvg-test-suite/blob/master/site/images/perf.svg)
 
-- Oxygen Icon Theme 4.12
-- Contains 4947 files.
-- All images are converted from `.svgz` to `.svg`.
-- In the `resvg` >80% of the time is spent during PNG generation.
-- The `librsvg` is slower than `resvg` because those icons are using Gaussian blur heavily, which is expensive.
-- QtSvg is suspiciously slow for no reasons. Source code can be found
-  [here](https://github.com/RazrFalcon/resvg-test-suite/tree/master/tools/qtsvgrender).
-- ["Benchmark" source code](https://github.com/RazrFalcon/resvg-test-suite/tree/master/tools/perf).
+[Details.](https://github.com/RazrFalcon/resvg-test-suite/blob/master/tools/perf/README.md)
 
 ## Backends
 
