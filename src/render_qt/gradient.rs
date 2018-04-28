@@ -8,8 +8,10 @@ use usvg::tree;
 use usvg::tree::prelude::*;
 
 // self
+use geom::*;
 use traits::{
     ConvTransform,
+    TransformFromBBox,
 };
 
 
@@ -17,33 +19,35 @@ pub fn prepare_linear(
     node: &tree::Node,
     g: &tree::LinearGradient,
     opacity: tree::Opacity,
+    bbox: Rect,
     brush: &mut qt::Brush,
 ) {
     let mut grad = qt::LinearGradient::new(g.x1, g.y1, g.x2, g.y2);
-    prepare_base(node, &g.d, &mut grad, opacity);
+    prepare_base(node, &g.d, opacity, &mut grad);
 
     brush.set_linear_gradient(grad);
-    brush.set_transform(g.d.transform.to_native());
+    apply_ts(&g.d, bbox, brush);
 }
 
 pub fn prepare_radial(
     node: &tree::Node,
     g: &tree::RadialGradient,
     opacity: tree::Opacity,
+    bbox: Rect,
     brush: &mut qt::Brush,
 ) {
     let mut grad = qt::RadialGradient::new(g.cx, g.cy, g.fx, g.fy, g.r);
-    prepare_base(node, &g.d, &mut grad, opacity);
+    prepare_base(node, &g.d, opacity, &mut grad);
 
     brush.set_radial_gradient(grad);
-    brush.set_transform(g.d.transform.to_native());
+    apply_ts(&g.d, bbox, brush);
 }
 
 fn prepare_base(
     node: &tree::Node,
     g: &tree::BaseGradient,
-    grad: &mut qt::Gradient,
     opacity: tree::Opacity,
+    grad: &mut qt::Gradient,
 ) {
     let spread_method = match g.spread_method {
         tree::SpreadMethod::Pad => qt::Spread::PadSpread,
@@ -51,10 +55,6 @@ fn prepare_base(
         tree::SpreadMethod::Repeat => qt::Spread::RepeatSpread,
     };
     grad.set_spread(spread_method);
-
-    if g.units == tree::Units::ObjectBoundingBox {
-        grad.set_units(qt::CoordinateMode::ObjectBoundingMode)
-    }
 
     for node in node.children() {
         if let tree::NodeKind::Stop(stop) = *node.kind() {
@@ -66,5 +66,22 @@ fn prepare_base(
                 ((*stop.opacity * *opacity) * 255.0) as u8,
             );
         }
+    }
+}
+
+fn apply_ts(
+    g: &tree::BaseGradient,
+    bbox: Rect,
+    brush: &mut qt::Brush,
+) {
+    // We doesn't use `QGradient::setCoordinateMode` because it works incorrectly.
+    // https://bugreports.qt.io/browse/QTBUG-67995
+
+    if g.units == tree::Units::ObjectBoundingBox {
+        let mut ts = tree::Transform::from_bbox(bbox);
+        ts.append(&g.transform);
+        brush.set_transform(ts.to_native());
+    } else {
+        brush.set_transform(g.transform.to_native());
     }
 }

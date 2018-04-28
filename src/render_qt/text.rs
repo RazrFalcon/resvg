@@ -118,7 +118,7 @@ fn _draw_tspan(
         draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, p);
     }
 
-    let bbox = Rect::from_xywh(0.0, 0.0, width, font_metrics.height());
+    let bbox = Rect::from_xywh(x, y, width, font_metrics.height());
 
     // Draw text.
     fill::apply(&node.tree(), &tspan.fill, opt, bbox, p);

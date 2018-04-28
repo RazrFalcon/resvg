@@ -44,10 +44,10 @@ pub fn apply(
                     if let Some(node) = tree.defs_by_id(id) {
                         match *node.kind() {
                             tree::NodeKind::LinearGradient(ref lg) => {
-                                gradient::prepare_linear(&node, lg, opacity, &mut brush);
+                                gradient::prepare_linear(&node, lg, opacity, bbox, &mut brush);
                             }
                             tree::NodeKind::RadialGradient(ref rg) => {
-                                gradient::prepare_radial(&node, rg, opacity, &mut brush);
+                                gradient::prepare_radial(&node, rg, opacity, bbox, &mut brush);
                             }
                             tree::NodeKind::Pattern(ref pattern) => {
                                 let ts = p.get_transform();

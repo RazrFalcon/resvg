@@ -1,0 +1,10 @@
+a-fill-031.svg
+a-fill-032.svg
+a-stroke-007.svg
+a-stroke-008.svg
+e-linearGradient-020.svg
+e-linearGradient-021.svg
+e-mask-016.svg
+e-pattern-024.svg
+e-radialGradient-020.svg
+e-radialGradient-021.svg
