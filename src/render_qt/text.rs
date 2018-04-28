@@ -45,9 +45,9 @@ pub fn draw_tspan<DrawAt>(
         tspan_w_list.clear();
         let mut chunk_width = 0.0;
 
-        if let tree::NodeKind::TextChunk(ref chunk) = *chunk_node.kind() {
+        if let tree::NodeKind::TextChunk(ref chunk) = *chunk_node.borrow() {
             for tspan_node in chunk_node.children() {
-                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.kind() {
+                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.borrow() {
                     let font = init_font(&tspan.font);
                     p.set_font(&font);
                     let font_metrics = p.font_metrics();
@@ -65,7 +65,7 @@ pub fn draw_tspan<DrawAt>(
             let mut x = utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
 
             for (idx, tspan_node) in chunk_node.children().enumerate() {
-                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.kind() {
+                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.borrow() {
                     let width = tspan_w_list[idx];
                     let font = &font_list[idx];
 

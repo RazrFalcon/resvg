@@ -5,7 +5,6 @@
 // external
 use qt;
 use usvg::tree;
-use usvg::tree::prelude::*;
 
 // self
 use geom::*;
@@ -57,7 +56,7 @@ fn prepare_base(
     grad.set_spread(spread_method);
 
     for node in node.children() {
-        if let tree::NodeKind::Stop(stop) = *node.kind() {
+        if let tree::NodeKind::Stop(stop) = *node.borrow() {
             grad.set_color_at(
                 *stop.offset,
                 stop.color.red,

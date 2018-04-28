@@ -27,11 +27,10 @@ exclude = [
 travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
-euclid = "0.17"
 failure = "0.1.1"
 log = "0.4"
 lyon_geom = "0.10"
-usvg = "0.1.1"
+usvg = { git = "https://github.com/RazrFalcon/usvg", rev = "fd83724" }
 # cairo backend
 cairo-rs = { version = "0.4.1", features = ["png"], optional = true }
 image = { version = "0.18", default-features = false, features = ["jpeg", "png_codec"], optional = true }

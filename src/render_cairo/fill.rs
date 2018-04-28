@@ -5,7 +5,6 @@
 // external
 use cairo;
 use usvg::tree;
-use usvg::tree::prelude::*;
 
 // self
 use geom::*;
@@ -37,7 +36,7 @@ pub fn apply(
                     // a-fill-opacity-003.svg
                     // a-fill-opacity-004.svg
                     if let Some(node) = tree.defs_by_id(id) {
-                        match *node.kind() {
+                        match *node.borrow() {
                             tree::NodeKind::LinearGradient(ref lg) => {
                                 gradient::prepare_linear(&node, lg, fill.opacity, bbox, cr);
                             }

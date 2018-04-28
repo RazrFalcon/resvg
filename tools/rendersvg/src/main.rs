@@ -162,7 +162,7 @@ fn init_qt_gui(
 
     // Check that tree has any text nodes.
     let has_text = tree.root().descendants().any(|n|
-        if let tree::NodeKind::Text { .. } = *n.kind() { true } else { false }
+        if let tree::NodeKind::Text { .. } = *n.borrow() { true } else { false }
     );
 
     if has_text {

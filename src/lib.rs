@@ -19,7 +19,6 @@ And as an embeddable library to paint SVG on an application native canvas.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
-extern crate euclid;
 extern crate lyon_geom;
 pub extern crate usvg;
 #[macro_use] extern crate failure;
@@ -69,6 +68,7 @@ macro_rules! try_opt_warn {
 #[cfg(feature = "qt-backend")] pub mod render_qt;
 
 pub use usvg::svgdom;
+use lyon_geom::euclid;
 
 pub mod utils;
 pub mod geom;

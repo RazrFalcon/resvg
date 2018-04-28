@@ -8,7 +8,6 @@ use cairo::{
     MatrixTrait,
 };
 use usvg::tree;
-use usvg::tree::prelude::*;
 
 // self
 use geom::*;
@@ -67,7 +66,7 @@ fn prepare_base(
     grad.set_matrix(matrix);
 
     for node in node.children() {
-        if let tree::NodeKind::Stop(stop) = *node.kind() {
+        if let tree::NodeKind::Stop(stop) = *node.borrow() {
             grad.add_color_stop_rgba(
                 *stop.offset,
                 stop.color.red as f64 / 255.0,

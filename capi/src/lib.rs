@@ -338,7 +338,7 @@ pub extern fn resvg_qt_render_to_canvas_by_id(
         return;
     }
 
-    if let Some(node) = rtree.0.node_by_svg_id(id) {
+    if let Some(node) = rtree.0.node_by_id(id) {
         if let Some(bbox) = resvg::render_qt::calc_node_bbox(&node, &opt) {
             let vbox = tree::ViewBox {
                 rect: bbox,
@@ -388,7 +388,7 @@ pub extern fn resvg_cairo_render_to_canvas_by_id(
         &*opt
     });
 
-    if let Some(node) = rtree.0.node_by_svg_id(id) {
+    if let Some(node) = rtree.0.node_by_id(id) {
         if let Some(bbox) = resvg::render_cairo::calc_node_bbox(&node, &opt) {
             let vbox = tree::ViewBox {
                 rect: bbox,
@@ -495,7 +495,7 @@ fn get_node_bbox(
         &*opt
     });
 
-    match rtree.0.node_by_svg_id(id) {
+    match rtree.0.node_by_id(id) {
         Some(node) => {
             if let Some(r) = backend.calc_node_bbox(&node, &opt) {
                 unsafe {
@@ -535,7 +535,7 @@ pub extern fn resvg_node_exists(
         &*rtree
     };
 
-    rtree.0.node_by_svg_id(id).is_some()
+    rtree.0.node_by_id(id).is_some()
 }
 
 #[no_mangle]
@@ -557,7 +557,7 @@ pub extern fn resvg_get_node_transform(
         &*rtree
     };
 
-    if let Some(node) = rtree.0.node_by_svg_id(id) {
+    if let Some(node) = rtree.0.node_by_id(id) {
         let abs_ts = resvg::utils::abs_transform(&node);
 
         unsafe {
