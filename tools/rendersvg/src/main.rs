@@ -486,7 +486,6 @@ fn dump_svg(tree: &tree::Tree, path: &path::Path) -> Result<(), io::Error> {
     let opt = svgdom::WriteOptions {
         indent: svgdom::Indent::Spaces(2),
         attributes_indent: svgdom::Indent::Spaces(3),
-        write_hidden_attributes: true,
         attributes_order: svgdom::AttributesOrder::Specification,
         .. svgdom::WriteOptions::default()
     };
