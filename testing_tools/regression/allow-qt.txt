@@ -1,2 +1,3 @@
-e-svg-018.svg
-e-svg-020.svg
+e-linearGradient-025.svg
+e-linearGradient-026.svg
+e-linearGradient-027.svg
