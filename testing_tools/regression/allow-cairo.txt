@@ -1,3 +1,5 @@
-e-linearGradient-025.svg
-e-linearGradient-026.svg
-e-linearGradient-027.svg
+e-use-015.svg
+e-use-016.svg
+e-use-017.svg
+e-use-018.svg
+e-use-019.svg
