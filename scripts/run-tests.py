@@ -19,20 +19,16 @@ def cd(path):
 
 
 def regression_testing(backend):
-    regress_dir = work_dir + '/workdir-' + backend
+    reg_work_dir = os.path.join(work_dir, 'workdir-' + backend)
 
-    if not os.path.exists(regress_dir):
-        os.mkdir(regress_dir)
+    if not os.path.exists(reg_work_dir):
+        os.mkdir(reg_work_dir)
 
-    cargo_args = [
-        'cargo', 'run', '--release', '--',
-        tests_dir, regress_dir, '--backend', backend,
-    ]
-
+    regression_args = ['./regression.py', tests_dir, reg_work_dir, '--backend', backend]
     if not local_test:
-        cargo_args.append('--use-prev-commit')
+        regression_args.append('--use-prev-commit')
 
-    proc.check_call(cargo_args)
+    proc.check_call(regression_args)
 
 
 if platform.system() != 'Linux':

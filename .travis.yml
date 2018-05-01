@@ -11,6 +11,8 @@ install:
   - sudo apt-get install -y libgtk-3-dev
   # for travis script
   - sudo apt-get install python3
+  # for testing_tools/regression/regression.py
+  - sudo apt-get install python3-pil
   # for qt backend
   - sudo apt-get install -qq qt56base
   # prepare custom Qt
