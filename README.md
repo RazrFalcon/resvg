@@ -1,6 +1,7 @@
-## resvg [![Build Status]](https://travis-ci.org/RazrFalcon/resvg)
-
-[Build Status]: https://travis-ci.org/RazrFalcon/resvg.svg?branch=master
+## resvg
+[![Build Status](https://travis-ci.org/RazrFalcon/resvg.svg?branch=master)](https://travis-ci.org/RazrFalcon/resvg)
+[![Crates.io](https://img.shields.io/crates/v/resvg.svg)](https://crates.io/crates/resvg)
+[![Documentation](https://docs.rs/resvg/badge.svg)](https://docs.rs/resvg)
 
 *resvg* is an [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) rendering library.
 

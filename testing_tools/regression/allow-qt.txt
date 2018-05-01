@@ -1,7 +1,0 @@
-e-symbol-001.svg
-e-symbol-002.svg
-e-symbol-003.svg
-e-symbol-004.svg
-e-symbol-005.svg
-e-symbol-006.svg
-e-use-020.svg
