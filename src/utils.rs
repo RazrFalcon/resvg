@@ -9,6 +9,7 @@ use std::f64;
 // external
 use usvg::tree;
 use usvg::tree::prelude::*;
+pub use usvg::utils::*;
 
 // self
 use geom::*;
@@ -39,42 +40,6 @@ pub fn fit_to(size: ScreenSize, fit: FitTo) -> ScreenSize {
     }
 }
 
-/// Calculates viewbox transform.
-///
-/// Returns:
-///
-/// - offset by X axis
-/// - offset by Y axis
-/// - scale by X axis
-/// - scale by Y axis
-pub fn view_box_transform(view_box: tree::ViewBox, img_size: ScreenSize) -> (f64, f64, f64, f64) {
-    let vr = view_box.rect;
-
-    let sx = img_size.width as f64 / vr.width();
-    let sy = img_size.height as f64 / vr.height();
-
-    let (sx, sy) = if view_box.aspect.align == tree::Align::None {
-        (sx, sy)
-    } else {
-        let s = if view_box.aspect.slice {
-            if sx < sy { sy } else { sx }
-        } else {
-            if sx > sy { sy } else { sx }
-        };
-
-        (s, s)
-    };
-
-    let x = -vr.x() * sx;
-    let y = -vr.y() * sy;
-    let w = img_size.width as f64 - vr.width() * sx;
-    let h = img_size.height as f64 - vr.height() * sy;
-
-    let pos = aligned_pos(view_box.aspect.align, x, y, w, h);
-
-    (pos.x, pos.y, sx, sy)
-}
-
 pub(crate) fn process_text_anchor(x: f64, a: tree::TextAnchor, text_width: f64) -> f64 {
     match a {
         tree::TextAnchor::Start =>  x, // Nothing.
@@ -92,21 +57,6 @@ pub(crate) fn apply_view_box(vb: &tree::ViewBox, img_size: ScreenSize) -> Screen
         } else {
             img_size.scale_to(vb.rect.size.to_screen_size())
         }
-    }
-}
-
-pub(crate) fn aligned_pos(align: tree::Align, x: f64, y: f64, w: f64, h: f64) -> Point {
-    match align {
-        tree::Align::None     => Point::new(x,           y          ),
-        tree::Align::XMinYMin => Point::new(x,           y          ),
-        tree::Align::XMidYMin => Point::new(x + w / 2.0, y          ),
-        tree::Align::XMaxYMin => Point::new(x + w,       y          ),
-        tree::Align::XMinYMid => Point::new(x,           y + h / 2.0),
-        tree::Align::XMidYMid => Point::new(x + w / 2.0, y + h / 2.0),
-        tree::Align::XMaxYMid => Point::new(x + w,       y + h / 2.0),
-        tree::Align::XMinYMax => Point::new(x,           y + h      ),
-        tree::Align::XMidYMax => Point::new(x + w / 2.0, y + h      ),
-        tree::Align::XMaxYMax => Point::new(x + w,       y + h      ),
     }
 }
 

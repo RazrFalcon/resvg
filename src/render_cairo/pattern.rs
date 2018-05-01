@@ -47,8 +47,8 @@ pub fn apply(
     sub_cr.transform(cairo::Matrix::new(sx, 0.0, 0.0, sy, 0.0, 0.0));
 
     if let Some(vbox) = pattern.view_box {
-        let (dx, dy, sx2, sy2) = utils::view_box_transform(vbox, r.to_screen_size());
-        sub_cr.transform(cairo::Matrix::new(sx2, 0.0, 0.0, sy2, dx, dy));
+        let ts = utils::view_box_to_transform(vbox.rect, vbox.aspect, r.size);
+        sub_cr.transform(ts.to_native());
     } else if pattern.content_units == tree::Units::ObjectBoundingBox {
         // 'Note that this attribute has no effect if attribute `viewBox` is specified.'
 

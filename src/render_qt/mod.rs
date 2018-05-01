@@ -210,11 +210,8 @@ fn apply_viewbox_transform(
     img_size: ScreenSize,
     painter: &qt::Painter,
 ) {
-    let ts = {
-        let (dx, dy, sx, sy) = utils::view_box_transform(view_box, img_size);
-        qt::Transform::new(sx, 0.0, 0.0, sy, dx, dy)
-    };
-    painter.apply_transform(&ts);
+    let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_f64());
+    painter.apply_transform(&ts.to_native());
 }
 
 fn render_node(

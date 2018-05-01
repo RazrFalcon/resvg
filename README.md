@@ -76,8 +76,6 @@ TL;DR
 
 - no `filter`
 - no `marker`
-- no `symbol`
-- no `view`
 - CSS support is minimal
 
 ## Performance

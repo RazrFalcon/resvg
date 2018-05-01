@@ -229,11 +229,8 @@ fn apply_viewbox_transform(
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
-    let ts = {
-        let (dx, dy, sx, sy) = utils::view_box_transform(view_box, img_size);
-        cairo::Matrix::new(sx, 0.0, 0.0, sy, dx, dy)
-    };
-    cr.transform(ts);
+    let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_f64());
+    cr.transform(ts.to_native());
 }
 
 fn render_node(

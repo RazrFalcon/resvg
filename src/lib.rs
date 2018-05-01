@@ -20,7 +20,7 @@ And as an embeddable library to paint SVG on an application native canvas.
 #![warn(missing_docs)]
 
 extern crate lyon_geom;
-pub extern crate usvg;
+#[macro_use] pub extern crate usvg;
 #[macro_use] extern crate failure;
 #[macro_use] extern crate log;
 
@@ -32,43 +32,12 @@ pub extern crate usvg;
 #[cfg(feature = "qt-backend")] pub extern crate resvg_qt as qt;
 
 
-macro_rules! try_opt {
-    ($task:expr, $ret:expr) => {
-        match $task {
-            Some(v) => v,
-            None => return $ret,
-        }
-    };
-}
-
-/// Task, return value, warning message.
-macro_rules! try_opt_warn {
-    ($task:expr, $ret:expr, $msg:expr) => {
-        match $task {
-            Some(v) => v,
-            None => {
-                warn!($msg);
-                return $ret;
-            }
-        }
-    };
-    ($task:expr, $ret:expr, $fmt:expr, $($arg:tt)*) => {
-        match $task {
-            Some(v) => v,
-            None => {
-                warn!($fmt, $($arg)*);
-                return $ret;
-            }
-        }
-    };
-}
+pub use usvg::svgdom;
+use lyon_geom::euclid;
 
 
 #[cfg(feature = "cairo-backend")] pub mod render_cairo;
 #[cfg(feature = "qt-backend")] pub mod render_qt;
-
-pub use usvg::svgdom;
-use lyon_geom::euclid;
 
 pub mod utils;
 pub mod geom;
