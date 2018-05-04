@@ -4,11 +4,11 @@ use std::env;
 use std::path::Path;
 
 use resvg::{
-    tree,
+    usvg,
     utils,
     Options,
 };
-use resvg::tree::prelude::*;
+use usvg::prelude::*;
 
 // TODO: write doc
 
@@ -35,7 +35,7 @@ fn main() {
     opt.usvg.keep_named_groups = true;
     opt.fit_to = resvg::FitTo::Zoom(zoom as f32);
 
-    let rtree = resvg::parse_tree_from_file(&args[1], &opt.usvg).unwrap();
+    let rtree = usvg::Tree::from_file(&args[1], &opt.usvg).unwrap();
 
     let mut bboxes = Vec::new();
     for node in rtree.root().descendants() {
@@ -46,16 +46,16 @@ fn main() {
         }
     }
 
-    let stroke = Some(tree::Stroke {
-        paint: tree::Paint::Color(tree::Color::new(255, 0, 0)),
+    let stroke = Some(usvg::Stroke {
+        paint: usvg::Paint::Color(usvg::Color::new(255, 0, 0)),
         opacity: 0.5.into(),
-        .. tree::Stroke::default()
+        .. usvg::Stroke::default()
     });
 
     for bbox in bboxes {
-        rtree.root().append_kind(tree::NodeKind::Path(tree::Path {
+        rtree.root().append_kind(usvg::NodeKind::Path(usvg::Path {
             id: String::new(),
-            transform: tree::Transform::default(),
+            transform: usvg::Transform::default(),
             fill: None,
             stroke: stroke.clone(),
             segments: utils::rect_to_path(bbox),

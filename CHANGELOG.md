@@ -14,8 +14,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - (c-api) `resvg_parse_tree_from_file`, `resvg_parse_tree_from_data`
   `resvg_cairo_render_to_image` and `resvg_qt_render_to_image`
   will return an error code now.
-- (lib) Rename `parse_rtree_*` to `parse_tree_*`.
-- (lib) `resvg_parse_tree_from_data` accepts GZip compressed data now.
 - (lib) `Render::render_to_image` and `Render::render_node_to_image` will return
   `Option` and not `Result` now.
 
@@ -26,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Removed
 - (c-api) `resvg_error_msg_destroy`.
+- (lib) `parse_rtree_*` methods. Use `usvg::Tree::from_` instead.
 - (lib) `Error`.
 
 ## [0.2.0] - 2018-04-24

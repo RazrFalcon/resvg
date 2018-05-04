@@ -4,7 +4,7 @@
 
 // external
 use qt;
-use usvg::tree;
+use usvg;
 
 // self
 use geom::*;
@@ -18,8 +18,8 @@ use {
 
 
 pub fn apply(
-    tree: &tree::Tree,
-    stroke: &Option<tree::Stroke>,
+    tree: &usvg::Tree,
+    stroke: &Option<usvg::Stroke>,
     opt: &Options,
     bbox: Rect,
     p: &qt::Painter,
@@ -30,11 +30,11 @@ pub fn apply(
             let opacity = stroke.opacity;
 
             match stroke.paint {
-                tree::Paint::Color(c) => {
+                usvg::Paint::Color(c) => {
                     let a = f64_bound(0.0, *opacity * 255.0, 255.0) as u8;
                     pen.set_color(c.red, c.green, c.blue, a);
                 }
-                tree::Paint::Link(ref id) => {
+                usvg::Paint::Link(ref id) => {
                     // a-stroke-002.svg
                     // a-stroke-003.svg
                     // a-stroke-004.svg
@@ -42,13 +42,13 @@ pub fn apply(
 
                     if let Some(node) = tree.defs_by_id(id) {
                         match *node.borrow() {
-                            tree::NodeKind::LinearGradient(ref lg) => {
+                            usvg::NodeKind::LinearGradient(ref lg) => {
                                 gradient::prepare_linear(&node, lg, opacity, bbox, &mut brush);
                             }
-                            tree::NodeKind::RadialGradient(ref rg) => {
+                            usvg::NodeKind::RadialGradient(ref rg) => {
                                 gradient::prepare_radial(&node, rg, opacity, bbox, &mut brush);
                             }
-                            tree::NodeKind::Pattern(ref pattern) => {
+                            usvg::NodeKind::Pattern(ref pattern) => {
                                 let ts = p.get_transform();
                                 pattern::apply(&node, pattern, opt, ts, bbox, opacity, &mut brush);
                             }
@@ -64,9 +64,9 @@ pub fn apply(
             // a-stroke-linecap-002.svg
             // a-stroke-linecap-003.svg
             let linecap = match stroke.linecap {
-                tree::LineCap::Butt => qt::LineCap::FlatCap,
-                tree::LineCap::Round => qt::LineCap::RoundCap,
-                tree::LineCap::Square => qt::LineCap::SquareCap,
+                usvg::LineCap::Butt => qt::LineCap::FlatCap,
+                usvg::LineCap::Round => qt::LineCap::RoundCap,
+                usvg::LineCap::Square => qt::LineCap::SquareCap,
             };
             pen.set_line_cap(linecap);
 
@@ -74,9 +74,9 @@ pub fn apply(
             // a-stroke-linejoin-002.svg
             // a-stroke-linejoin-003.svg
             let linejoin = match stroke.linejoin {
-                tree::LineJoin::Miter => qt::LineJoin::MiterJoin,
-                tree::LineJoin::Round => qt::LineJoin::RoundJoin,
-                tree::LineJoin::Bevel => qt::LineJoin::BevelJoin,
+                usvg::LineJoin::Miter => qt::LineJoin::MiterJoin,
+                usvg::LineJoin::Round => qt::LineJoin::RoundJoin,
+                usvg::LineJoin::Bevel => qt::LineJoin::BevelJoin,
             };
             pen.set_line_join(linejoin);
 

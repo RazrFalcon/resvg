@@ -6,8 +6,8 @@
 
 // external
 use qt;
-use usvg::tree;
-use usvg::tree::prelude::*;
+use usvg;
+use usvg::prelude::*;
 
 // self
 use geom::*;
@@ -48,7 +48,7 @@ mod stroke;
 mod text;
 
 
-impl ConvTransform<qt::Transform> for tree::Transform {
+impl ConvTransform<qt::Transform> for usvg::Transform {
     fn to_native(&self) -> qt::Transform {
         qt::Transform::new(self.a, self.b, self.c, self.d, self.e, self.f)
     }
@@ -75,7 +75,7 @@ pub struct Backend;
 impl Render for Backend {
     fn render_to_image(
         &self,
-        tree: &tree::Tree,
+        tree: &usvg::Tree,
         opt: &Options,
     ) -> Option<Box<OutputImage>> {
         let img = render_to_image(tree, opt)?;
@@ -84,7 +84,7 @@ impl Render for Backend {
 
     fn render_node_to_image(
         &self,
-        node: &tree::Node,
+        node: &usvg::Node,
         opt: &Options,
     ) -> Option<Box<OutputImage>> {
         let img = render_node_to_image(node, opt)?;
@@ -93,7 +93,7 @@ impl Render for Backend {
 
     fn calc_node_bbox(
         &self,
-        node: &tree::Node,
+        node: &usvg::Node,
         opt: &Options,
     ) -> Option<Rect> {
         calc_node_bbox(node, opt)
@@ -110,7 +110,7 @@ type QtLayers<'a> = Layers<'a, qt::Image>;
 
 /// Renders SVG to image.
 pub fn render_to_image(
-    tree: &tree::Tree,
+    tree: &usvg::Tree,
     opt: &Options,
 ) -> Option<qt::Image> {
     let (img, img_size) = create_root_image(tree.svg_node().size.to_screen_size(), opt)?;
@@ -124,7 +124,7 @@ pub fn render_to_image(
 
 /// Renders SVG node to image.
 pub fn render_node_to_image(
-    node: &tree::Node,
+    node: &usvg::Node,
     opt: &Options,
 ) -> Option<qt::Image> {
     let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
@@ -134,9 +134,9 @@ pub fn render_node_to_image(
         return None;
     };
 
-    let vbox = tree::ViewBox {
+    let vbox = usvg::ViewBox {
         rect: node_bbox,
-        aspect: tree::AspectRatio::default(),
+        aspect: usvg::AspectRatio::default(),
     };
 
     let (img, img_size) = create_root_image(node_bbox.size.to_screen_size(), opt)?;
@@ -150,7 +150,7 @@ pub fn render_node_to_image(
 
 /// Renders SVG to canvas.
 pub fn render_to_canvas(
-    tree: &tree::Tree,
+    tree: &usvg::Tree,
     opt: &Options,
     img_size: ScreenSize,
     painter: &qt::Painter,
@@ -161,9 +161,9 @@ pub fn render_to_canvas(
 
 /// Renders SVG node to canvas.
 pub fn render_node_to_canvas(
-    node: &tree::Node,
+    node: &usvg::Node,
     opt: &Options,
-    view_box: tree::ViewBox,
+    view_box: usvg::ViewBox,
     img_size: ScreenSize,
     painter: &qt::Painter,
 ) {
@@ -203,7 +203,7 @@ fn create_root_image(
 
 /// Applies viewbox transformation to the painter.
 fn apply_viewbox_transform(
-    view_box: tree::ViewBox,
+    view_box: usvg::ViewBox,
     img_size: ScreenSize,
     painter: &qt::Painter,
 ) {
@@ -212,25 +212,25 @@ fn apply_viewbox_transform(
 }
 
 fn render_node(
-    node: &tree::Node,
+    node: &usvg::Node,
     opt: &Options,
     layers: &mut QtLayers,
     p: &qt::Painter,
 ) -> Option<Rect> {
     match *node.borrow() {
-        tree::NodeKind::Svg(_) => {
+        usvg::NodeKind::Svg(_) => {
             Some(render_group(node, opt, layers, p))
         }
-        tree::NodeKind::Path(ref path) => {
+        usvg::NodeKind::Path(ref path) => {
             Some(path::draw(&node.tree(), path, opt, p))
         }
-        tree::NodeKind::Text(_) => {
+        usvg::NodeKind::Text(_) => {
             Some(text::draw(node, opt, p))
         }
-        tree::NodeKind::Image(ref img) => {
+        usvg::NodeKind::Image(ref img) => {
             Some(image::draw(img, p))
         }
-        tree::NodeKind::Group(ref g) => {
+        usvg::NodeKind::Group(ref g) => {
             render_group_impl(node, g, opt, layers, p)
         }
         _ => None,
@@ -240,7 +240,7 @@ fn render_node(
 // TODO: render groups backward to reduce memory usage
 //       current implementation keeps parent canvas until all children are rendered
 fn render_group(
-    parent: &tree::Node,
+    parent: &usvg::Node,
     opt: &Options,
     layers: &mut QtLayers,
     p: &qt::Painter,
@@ -264,8 +264,8 @@ fn render_group(
 }
 
 fn render_group_impl(
-    node: &tree::Node,
-    g: &tree::Group,
+    node: &usvg::Node,
+    g: &usvg::Group,
     opt: &Options,
     layers: &mut QtLayers,
     p: &qt::Painter,
@@ -280,7 +280,7 @@ fn render_group_impl(
 
     if let Some(ref id) = g.clip_path {
         if let Some(clip_node) = node.tree().defs_by_id(id) {
-            if let tree::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
+            if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
                 clippath::apply(&clip_node, cp, opt, bbox, layers, &sub_p);
             }
         }
@@ -288,7 +288,7 @@ fn render_group_impl(
 
     if let Some(ref id) = g.mask {
         if let Some(mask_node) = node.tree().defs_by_id(id) {
-            if let tree::NodeKind::Mask(ref mask) = *mask_node.borrow() {
+            if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
                 mask::apply(&mask_node, mask, opt, bbox, layers, &sub_p, p);
             }
         }
@@ -317,7 +317,7 @@ fn render_group_impl(
 ///
 /// Note: this method can be pretty expensive.
 pub fn calc_node_bbox(
-    node: &tree::Node,
+    node: &usvg::Node,
     opt: &Options,
 ) -> Option<Rect> {
     // Unwrap can't fail, because `None` will be returned only on OOM,
@@ -331,18 +331,18 @@ pub fn calc_node_bbox(
 }
 
 fn _calc_node_bbox(
-    node: &tree::Node,
-    ts: tree::Transform,
+    node: &usvg::Node,
+    ts: usvg::Transform,
     p: &qt::Painter,
 ) -> Option<Rect> {
     let mut ts2 = ts;
     ts2.append(&node.transform());
 
     match *node.borrow() {
-        tree::NodeKind::Path(ref path) => {
+        usvg::NodeKind::Path(ref path) => {
             Some(utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2))
         }
-        tree::NodeKind::Text(_) => {
+        usvg::NodeKind::Text(_) => {
             let mut bbox = Rect::new_bbox();
 
             text::draw_tspan(node, p, |tspan, x, y, _, font| {
@@ -360,11 +360,11 @@ fn _calc_node_bbox(
 
             Some(bbox)
         }
-        tree::NodeKind::Image(ref img) => {
+        usvg::NodeKind::Image(ref img) => {
             let segments = utils::rect_to_path(img.view_box.rect);
             Some(utils::path_bbox(&segments, None, &ts2))
         }
-        tree::NodeKind::Group(_) => {
+        usvg::NodeKind::Group(_) => {
             let mut bbox = Rect::new_bbox();
 
             for child in node.children() {
@@ -379,7 +379,7 @@ fn _calc_node_bbox(
     }
 }
 
-fn from_qt_path(p_path: &qt::PainterPath) -> Vec<tree::PathSegment> {
+fn from_qt_path(p_path: &qt::PainterPath) -> Vec<usvg::PathSegment> {
     let mut segments = Vec::with_capacity(p_path.len() as usize);
     let p_path_len = p_path.len();
     let mut i = 0;
@@ -387,16 +387,16 @@ fn from_qt_path(p_path: &qt::PainterPath) -> Vec<tree::PathSegment> {
         let (kind, x, y) = p_path.get(i);
         match kind {
             qt::PathSegmentType::MoveToSegment => {
-                segments.push(tree::PathSegment::MoveTo { x, y });
+                segments.push(usvg::PathSegment::MoveTo { x, y });
             }
             qt::PathSegmentType::LineToSegment => {
-                segments.push(tree::PathSegment::LineTo { x, y });
+                segments.push(usvg::PathSegment::LineTo { x, y });
             }
             qt::PathSegmentType::CurveToSegment => {
                 let (_, x1, y1) = p_path.get(i + 1);
                 let (_, x2, y2) = p_path.get(i + 2);
 
-                segments.push(tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
+                segments.push(usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
 
                 i += 2;
             }

@@ -63,8 +63,6 @@ mod short {
     };
 }
 
-pub use usvg::tree;
-
 
 /// A generic interface for image rendering.
 ///
@@ -76,7 +74,7 @@ pub trait Render {
     /// Returns `None` if an image allocation failed.
     fn render_to_image(
         &self,
-        tree: &tree::Tree,
+        tree: &usvg::Tree,
         opt: &Options,
     ) -> Option<Box<OutputImage>>;
 
@@ -85,7 +83,7 @@ pub trait Render {
     /// Returns `None` if an image allocation failed.
     fn render_node_to_image(
         &self,
-        node: &tree::Node,
+        node: &usvg::Node,
         opt: &Options,
     ) -> Option<Box<OutputImage>>;
 
@@ -94,7 +92,7 @@ pub trait Render {
     /// Note: this method can be pretty expensive.
     fn calc_node_bbox(
         &self,
-        node: &tree::Node,
+        node: &usvg::Node,
         opt: &Options,
     ) -> Option<Rect>;
 }
@@ -160,8 +158,3 @@ pub fn default_backend() -> Box<Render> {
 
     unreachable!("at least one backend must be enabled")
 }
-
-pub use usvg::parse_tree_from_data;
-pub use usvg::parse_tree_from_str;
-pub use usvg::parse_tree_from_dom;
-pub use usvg::parse_tree_from_file;

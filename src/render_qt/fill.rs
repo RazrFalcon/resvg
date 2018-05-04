@@ -4,7 +4,7 @@
 
 // external
 use qt;
-use usvg::tree;
+use usvg;
 
 // self
 use geom::*;
@@ -18,8 +18,8 @@ use {
 
 
 pub fn apply(
-    tree: &tree::Tree,
-    fill: &Option<tree::Fill>,
+    tree: &usvg::Tree,
+    fill: &Option<usvg::Fill>,
     opt: &Options,
     bbox: Rect,
     p: &qt::Painter,
@@ -30,23 +30,23 @@ pub fn apply(
             let opacity = fill.opacity;
 
             match fill.paint {
-                tree::Paint::Color(c) => {
+                usvg::Paint::Color(c) => {
                     // a-fill-opacity-001.svg
                     let a = f64_bound(0.0, *opacity * 255.0, 255.0) as u8;
                     brush.set_color(c.red, c.green, c.blue, a);
                 }
-                tree::Paint::Link(ref id) => {
+                usvg::Paint::Link(ref id) => {
                     // a-fill-opacity-003.svg
                     // a-fill-opacity-004.svg
                     if let Some(node) = tree.defs_by_id(id) {
                         match *node.borrow() {
-                            tree::NodeKind::LinearGradient(ref lg) => {
+                            usvg::NodeKind::LinearGradient(ref lg) => {
                                 gradient::prepare_linear(&node, lg, opacity, bbox, &mut brush);
                             }
-                            tree::NodeKind::RadialGradient(ref rg) => {
+                            usvg::NodeKind::RadialGradient(ref rg) => {
                                 gradient::prepare_radial(&node, rg, opacity, bbox, &mut brush);
                             }
-                            tree::NodeKind::Pattern(ref pattern) => {
+                            usvg::NodeKind::Pattern(ref pattern) => {
                                 let ts = p.get_transform();
                                 pattern::apply(&node, pattern, opt, ts, bbox, opacity, &mut brush);
                             }

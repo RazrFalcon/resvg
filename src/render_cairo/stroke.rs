@@ -4,7 +4,7 @@
 
 // external
 use cairo;
-use usvg::tree;
+use usvg;
 
 // self
 use geom::*;
@@ -21,8 +21,8 @@ use {
 
 
 pub fn apply(
-    tree: &tree::Tree,
-    stroke: &Option<tree::Stroke>,
+    tree: &usvg::Tree,
+    stroke: &Option<usvg::Stroke>,
     opt: &Options,
     bbox: Rect,
     cr: &cairo::Context,
@@ -30,22 +30,22 @@ pub fn apply(
     match *stroke {
         Some(ref stroke) => {
             match stroke.paint {
-                tree::Paint::Color(c) => {
+                usvg::Paint::Color(c) => {
                     cr.set_source_color(&c, stroke.opacity);
                 }
-                tree::Paint::Link(ref id) => {
+                usvg::Paint::Link(ref id) => {
                     // a-stroke-002.svg
                     // a-stroke-003.svg
                     // a-stroke-004.svg
                     if let Some(node) = tree.defs_by_id(id) {
                         match *node.borrow() {
-                            tree::NodeKind::LinearGradient(ref lg) => {
+                            usvg::NodeKind::LinearGradient(ref lg) => {
                                 gradient::prepare_linear(&node, lg, stroke.opacity, bbox, cr);
                             }
-                            tree::NodeKind::RadialGradient(ref rg) => {
+                            usvg::NodeKind::RadialGradient(ref rg) => {
                                 gradient::prepare_radial(&node, rg, stroke.opacity, bbox, cr);
                             }
-                            tree::NodeKind::Pattern(ref pattern) => {
+                            usvg::NodeKind::Pattern(ref pattern) => {
                                 pattern::apply(&node, pattern, opt, stroke.opacity, bbox, cr);
                             }
                             _ => {}
@@ -58,9 +58,9 @@ pub fn apply(
             // a-stroke-linecap-002.svg
             // a-stroke-linecap-003.svg
             let linecap = match stroke.linecap {
-                tree::LineCap::Butt => cairo::LineCap::Butt,
-                tree::LineCap::Round => cairo::LineCap::Round,
-                tree::LineCap::Square => cairo::LineCap::Square,
+                usvg::LineCap::Butt => cairo::LineCap::Butt,
+                usvg::LineCap::Round => cairo::LineCap::Round,
+                usvg::LineCap::Square => cairo::LineCap::Square,
             };
             cr.set_line_cap(linecap);
 
@@ -68,9 +68,9 @@ pub fn apply(
             // a-stroke-linejoin-002.svg
             // a-stroke-linejoin-003.svg
             let linejoin = match stroke.linejoin {
-                tree::LineJoin::Miter => cairo::LineJoin::Miter,
-                tree::LineJoin::Round => cairo::LineJoin::Round,
-                tree::LineJoin::Bevel => cairo::LineJoin::Bevel,
+                usvg::LineJoin::Miter => cairo::LineJoin::Miter,
+                usvg::LineJoin::Round => cairo::LineJoin::Round,
+                usvg::LineJoin::Bevel => cairo::LineJoin::Bevel,
             };
             cr.set_line_join(linejoin);
 

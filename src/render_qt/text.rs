@@ -6,8 +6,8 @@ use std::f64;
 
 // external
 use qt;
-use usvg::tree;
-use usvg::tree::prelude::*;
+use usvg;
+use usvg::prelude::*;
 
 // self
 use utils;
@@ -22,7 +22,7 @@ use {
 
 
 pub fn draw(
-    node: &tree::Node,
+    node: &usvg::Node,
     opt: &Options,
     p: &qt::Painter,
 ) -> Rect {
@@ -31,11 +31,11 @@ pub fn draw(
 }
 
 pub fn draw_tspan<DrawAt>(
-    node: &tree::Node,
+    node: &usvg::Node,
     p: &qt::Painter,
     mut draw_at: DrawAt
 ) -> Rect
-    where DrawAt: FnMut(&tree::TSpan, f64, f64, f64, &qt::Font)
+    where DrawAt: FnMut(&usvg::TSpan, f64, f64, f64, &qt::Font)
 {
     let mut bbox = Rect::new_bbox();
     let mut font_list = Vec::new();
@@ -45,9 +45,9 @@ pub fn draw_tspan<DrawAt>(
         tspan_w_list.clear();
         let mut chunk_width = 0.0;
 
-        if let tree::NodeKind::TextChunk(ref chunk) = *chunk_node.borrow() {
+        if let usvg::NodeKind::TextChunk(ref chunk) = *chunk_node.borrow() {
             for tspan_node in chunk_node.children() {
-                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.borrow() {
+                if let usvg::NodeKind::TSpan(ref tspan) = *tspan_node.borrow() {
                     let font = init_font(&tspan.font);
                     p.set_font(&font);
                     let font_metrics = p.font_metrics();
@@ -65,7 +65,7 @@ pub fn draw_tspan<DrawAt>(
             let mut x = utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
 
             for (idx, tspan_node) in chunk_node.children().enumerate() {
-                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.borrow() {
+                if let usvg::NodeKind::TSpan(ref tspan) = *tspan_node.borrow() {
                     let width = tspan_w_list[idx];
                     let font = &font_list[idx];
 
@@ -80,8 +80,8 @@ pub fn draw_tspan<DrawAt>(
 }
 
 fn _draw_tspan(
-    node: &tree::Node,
-    tspan: &tree::TSpan,
+    node: &usvg::Node,
+    tspan: &usvg::TSpan,
     opt: &Options,
     x: f64,
     mut y: f64,
@@ -135,47 +135,47 @@ fn _draw_tspan(
     }
 }
 
-pub fn init_font(dom_font: &tree::Font) -> qt::Font {
+pub fn init_font(dom_font: &usvg::Font) -> qt::Font {
     let mut font = qt::Font::new();
 
     font.set_family(&dom_font.family);
 
     let font_style = match dom_font.style {
-        tree::FontStyle::Normal => qt::FontStyle::StyleNormal,
-        tree::FontStyle::Italic => qt::FontStyle::StyleItalic,
-        tree::FontStyle::Oblique => qt::FontStyle::StyleOblique,
+        usvg::FontStyle::Normal => qt::FontStyle::StyleNormal,
+        usvg::FontStyle::Italic => qt::FontStyle::StyleItalic,
+        usvg::FontStyle::Oblique => qt::FontStyle::StyleOblique,
     };
     font.set_style(font_style);
 
-    if dom_font.variant == tree::FontVariant::SmallCaps {
+    if dom_font.variant == usvg::FontVariant::SmallCaps {
         font.set_small_caps(true);
     }
 
     let font_weight = match dom_font.weight {
-        tree::FontWeight::W100       => qt::FontWeight::Thin,
-        tree::FontWeight::W200       => qt::FontWeight::ExtraLight,
-        tree::FontWeight::W300       => qt::FontWeight::Light,
-        tree::FontWeight::W400       => qt::FontWeight::Normal,
-        tree::FontWeight::W500       => qt::FontWeight::Medium,
-        tree::FontWeight::W600       => qt::FontWeight::DemiBold,
-        tree::FontWeight::W700       => qt::FontWeight::Bold,
-        tree::FontWeight::W800       => qt::FontWeight::ExtraBold,
-        tree::FontWeight::W900       => qt::FontWeight::Black,
+        usvg::FontWeight::W100       => qt::FontWeight::Thin,
+        usvg::FontWeight::W200       => qt::FontWeight::ExtraLight,
+        usvg::FontWeight::W300       => qt::FontWeight::Light,
+        usvg::FontWeight::W400       => qt::FontWeight::Normal,
+        usvg::FontWeight::W500       => qt::FontWeight::Medium,
+        usvg::FontWeight::W600       => qt::FontWeight::DemiBold,
+        usvg::FontWeight::W700       => qt::FontWeight::Bold,
+        usvg::FontWeight::W800       => qt::FontWeight::ExtraBold,
+        usvg::FontWeight::W900       => qt::FontWeight::Black,
     };
     font.set_weight(font_weight);
 
     let font_stretch = match dom_font.stretch {
-        tree::FontStretch::Normal         => qt::FontStretch::Unstretched,
-        tree::FontStretch::Narrower |
-        tree::FontStretch::Condensed      => qt::FontStretch::Condensed,
-        tree::FontStretch::UltraCondensed => qt::FontStretch::UltraCondensed,
-        tree::FontStretch::ExtraCondensed => qt::FontStretch::ExtraCondensed,
-        tree::FontStretch::SemiCondensed  => qt::FontStretch::SemiCondensed,
-        tree::FontStretch::SemiExpanded   => qt::FontStretch::SemiExpanded,
-        tree::FontStretch::Wider |
-        tree::FontStretch::Expanded       => qt::FontStretch::Expanded,
-        tree::FontStretch::ExtraExpanded  => qt::FontStretch::ExtraExpanded,
-        tree::FontStretch::UltraExpanded  => qt::FontStretch::UltraExpanded,
+        usvg::FontStretch::Normal         => qt::FontStretch::Unstretched,
+        usvg::FontStretch::Narrower |
+        usvg::FontStretch::Condensed      => qt::FontStretch::Condensed,
+        usvg::FontStretch::UltraCondensed => qt::FontStretch::UltraCondensed,
+        usvg::FontStretch::ExtraCondensed => qt::FontStretch::ExtraCondensed,
+        usvg::FontStretch::SemiCondensed  => qt::FontStretch::SemiCondensed,
+        usvg::FontStretch::SemiExpanded   => qt::FontStretch::SemiExpanded,
+        usvg::FontStretch::Wider |
+        usvg::FontStretch::Expanded       => qt::FontStretch::Expanded,
+        usvg::FontStretch::ExtraExpanded  => qt::FontStretch::ExtraExpanded,
+        usvg::FontStretch::UltraExpanded  => qt::FontStretch::UltraExpanded,
     };
     font.set_stretch(font_stretch);
 
@@ -186,10 +186,10 @@ pub fn init_font(dom_font: &tree::Font) -> qt::Font {
 }
 
 fn draw_line(
-    tree: &tree::Tree,
+    tree: &usvg::Tree,
     line_bbox: Rect,
-    fill: &Option<tree::Fill>,
-    stroke: &Option<tree::Stroke>,
+    fill: &Option<usvg::Fill>,
+    stroke: &Option<usvg::Stroke>,
     opt: &Options,
     p: &qt::Painter,
 ) {

@@ -4,7 +4,7 @@
 
 // external
 use qt;
-use usvg::tree;
+use usvg;
 
 // self
 use geom::*;
@@ -15,9 +15,9 @@ use traits::{
 
 
 pub fn prepare_linear(
-    node: &tree::Node,
-    g: &tree::LinearGradient,
-    opacity: tree::Opacity,
+    node: &usvg::Node,
+    g: &usvg::LinearGradient,
+    opacity: usvg::Opacity,
     bbox: Rect,
     brush: &mut qt::Brush,
 ) {
@@ -29,9 +29,9 @@ pub fn prepare_linear(
 }
 
 pub fn prepare_radial(
-    node: &tree::Node,
-    g: &tree::RadialGradient,
-    opacity: tree::Opacity,
+    node: &usvg::Node,
+    g: &usvg::RadialGradient,
+    opacity: usvg::Opacity,
     bbox: Rect,
     brush: &mut qt::Brush,
 ) {
@@ -43,20 +43,20 @@ pub fn prepare_radial(
 }
 
 fn prepare_base(
-    node: &tree::Node,
-    g: &tree::BaseGradient,
-    opacity: tree::Opacity,
+    node: &usvg::Node,
+    g: &usvg::BaseGradient,
+    opacity: usvg::Opacity,
     grad: &mut qt::Gradient,
 ) {
     let spread_method = match g.spread_method {
-        tree::SpreadMethod::Pad => qt::Spread::PadSpread,
-        tree::SpreadMethod::Reflect => qt::Spread::ReflectSpread,
-        tree::SpreadMethod::Repeat => qt::Spread::RepeatSpread,
+        usvg::SpreadMethod::Pad => qt::Spread::PadSpread,
+        usvg::SpreadMethod::Reflect => qt::Spread::ReflectSpread,
+        usvg::SpreadMethod::Repeat => qt::Spread::RepeatSpread,
     };
     grad.set_spread(spread_method);
 
     for node in node.children() {
-        if let tree::NodeKind::Stop(stop) = *node.borrow() {
+        if let usvg::NodeKind::Stop(stop) = *node.borrow() {
             grad.set_color_at(
                 *stop.offset,
                 stop.color.red,
@@ -69,15 +69,15 @@ fn prepare_base(
 }
 
 fn apply_ts(
-    g: &tree::BaseGradient,
+    g: &usvg::BaseGradient,
     bbox: Rect,
     brush: &mut qt::Brush,
 ) {
     // We doesn't use `QGradient::setCoordinateMode` because it works incorrectly.
     // https://bugreports.qt.io/browse/QTBUG-67995
 
-    if g.units == tree::Units::ObjectBoundingBox {
-        let mut ts = tree::Transform::from_bbox(bbox);
+    if g.units == usvg::Units::ObjectBoundingBox {
+        let mut ts = usvg::Transform::from_bbox(bbox);
         ts.append(&g.transform);
         brush.set_transform(ts.to_native());
     } else {

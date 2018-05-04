@@ -7,7 +7,7 @@ use cairo::{
     self,
     MatrixTrait,
 };
-use usvg::tree;
+use usvg;
 
 // self
 use geom::*;
@@ -18,9 +18,9 @@ use traits::{
 
 
 pub fn prepare_linear(
-    node: &tree::Node,
-    g: &tree::LinearGradient,
-    opacity: tree::Opacity,
+    node: &usvg::Node,
+    g: &usvg::LinearGradient,
+    opacity: usvg::Opacity,
     bbox: Rect,
     cr: &cairo::Context,
 ) {
@@ -30,9 +30,9 @@ pub fn prepare_linear(
 }
 
 pub fn prepare_radial(
-    node: &tree::Node,
-    g: &tree::RadialGradient,
-    opacity: tree::Opacity,
+    node: &usvg::Node,
+    g: &usvg::RadialGradient,
+    opacity: usvg::Opacity,
     bbox: Rect,
     cr: &cairo::Context
 ) {
@@ -42,22 +42,22 @@ pub fn prepare_radial(
 }
 
 fn prepare_base(
-    node: &tree::Node,
-    g: &tree::BaseGradient,
+    node: &usvg::Node,
+    g: &usvg::BaseGradient,
     grad: &cairo::Gradient,
-    opacity: tree::Opacity,
+    opacity: usvg::Opacity,
     bbox: Rect,
 ) {
     let spread_method = match g.spread_method {
-        tree::SpreadMethod::Pad => cairo::Extend::Pad,
-        tree::SpreadMethod::Reflect => cairo::Extend::Reflect,
-        tree::SpreadMethod::Repeat => cairo::Extend::Repeat,
+        usvg::SpreadMethod::Pad => cairo::Extend::Pad,
+        usvg::SpreadMethod::Reflect => cairo::Extend::Reflect,
+        usvg::SpreadMethod::Repeat => cairo::Extend::Repeat,
     };
     grad.set_extend(spread_method);
 
     let mut matrix = g.transform.to_native();
 
-    if g.units == tree::Units::ObjectBoundingBox {
+    if g.units == usvg::Units::ObjectBoundingBox {
         let m = cairo::Matrix::from_bbox(bbox);
         matrix = cairo::Matrix::multiply(&matrix, &m);
     }
@@ -66,7 +66,7 @@ fn prepare_base(
     grad.set_matrix(matrix);
 
     for node in node.children() {
-        if let tree::NodeKind::Stop(stop) = *node.borrow() {
+        if let usvg::NodeKind::Stop(stop) = *node.borrow() {
             grad.add_color_stop_rgba(
                 *stop.offset,
                 stop.color.red as f64 / 255.0,

@@ -4,7 +4,7 @@
 
 // external
 use cairo;
-use usvg::tree;
+use usvg;
 
 // self
 use geom::*;
@@ -19,8 +19,8 @@ use {
 
 
 pub fn apply(
-    tree: &tree::Tree,
-    fill: &Option<tree::Fill>,
+    tree: &usvg::Tree,
+    fill: &Option<usvg::Fill>,
     opt: &Options,
     bbox: Rect,
     cr: &cairo::Context,
@@ -28,22 +28,22 @@ pub fn apply(
     match *fill {
         Some(ref fill) => {
             match fill.paint {
-                tree::Paint::Color(c) => {
+                usvg::Paint::Color(c) => {
                     // a-fill-opacity-001.svg
                     cr.set_source_color(&c, fill.opacity);
                 }
-                tree::Paint::Link(ref id) => {
+                usvg::Paint::Link(ref id) => {
                     // a-fill-opacity-003.svg
                     // a-fill-opacity-004.svg
                     if let Some(node) = tree.defs_by_id(id) {
                         match *node.borrow() {
-                            tree::NodeKind::LinearGradient(ref lg) => {
+                            usvg::NodeKind::LinearGradient(ref lg) => {
                                 gradient::prepare_linear(&node, lg, fill.opacity, bbox, cr);
                             }
-                            tree::NodeKind::RadialGradient(ref rg) => {
+                            usvg::NodeKind::RadialGradient(ref rg) => {
                                 gradient::prepare_radial(&node, rg, fill.opacity, bbox, cr);
                             }
-                            tree::NodeKind::Pattern(ref pattern) => {
+                            usvg::NodeKind::Pattern(ref pattern) => {
                                 pattern::apply(&node, pattern, opt, fill.opacity, bbox, cr);
                             }
                             _ => {}
@@ -55,8 +55,8 @@ pub fn apply(
             // a-fill-rule-001.svg
             // a-fill-rule-002.svg
             match fill.rule {
-                tree::FillRule::NonZero => cr.set_fill_rule(cairo::FillRule::Winding),
-                tree::FillRule::EvenOdd => cr.set_fill_rule(cairo::FillRule::EvenOdd),
+                usvg::FillRule::NonZero => cr.set_fill_rule(cairo::FillRule::Winding),
+                usvg::FillRule::EvenOdd => cr.set_fill_rule(cairo::FillRule::EvenOdd),
             }
         }
         None => {

@@ -4,7 +4,7 @@
 
 // external
 use cairo;
-use usvg::tree;
+use usvg;
 
 // self
 use geom::*;
@@ -19,14 +19,14 @@ use {
 
 
 pub fn draw(
-    tree: &tree::Tree,
-    path: &tree::Path,
+    tree: &usvg::Tree,
+    path: &usvg::Path,
     opt: &Options,
     cr: &cairo::Context,
 ) -> Rect {
     init_path(&path.segments, cr);
 
-    let bbox = utils::path_bbox(&path.segments, None, &tree::Transform::default());
+    let bbox = utils::path_bbox(&path.segments, None, &usvg::Transform::default());
 
     fill::apply(tree, &path.fill, opt, bbox, cr);
     if path.stroke.is_some() {
@@ -42,22 +42,22 @@ pub fn draw(
 }
 
 pub fn init_path(
-    list: &[tree::PathSegment],
+    list: &[usvg::PathSegment],
     cr: &cairo::Context,
 ) {
     for seg in list {
         match *seg {
-            tree::PathSegment::MoveTo { x, y } => {
+            usvg::PathSegment::MoveTo { x, y } => {
                 cr.new_sub_path();
                 cr.move_to(x, y);
             }
-            tree::PathSegment::LineTo { x, y } => {
+            usvg::PathSegment::LineTo { x, y } => {
                 cr.line_to(x, y);
             }
-            tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+            usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
                 cr.curve_to(x1, y1, x2, y2, x, y);
             }
-            tree::PathSegment::ClosePath => {
+            usvg::PathSegment::ClosePath => {
                 cr.close_path();
             }
         }

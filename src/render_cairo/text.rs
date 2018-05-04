@@ -12,8 +12,8 @@ use pango::{
     ContextExt,
 };
 use pangocairo::functions as pc;
-use usvg::tree;
-use usvg::tree::prelude::*;
+use usvg;
+use usvg::prelude::*;
 
 // self
 use utils;
@@ -37,7 +37,7 @@ pub struct PangoData {
 }
 
 pub fn draw(
-    node: &tree::Node,
+    node: &usvg::Node,
     opt: &Options,
     cr: &cairo::Context,
 ) -> Rect {
@@ -46,12 +46,12 @@ pub fn draw(
 }
 
 pub fn draw_tspan<DrawAt>(
-    node: &tree::Node,
+    node: &usvg::Node,
     opt: &Options,
     cr: &cairo::Context,
     mut draw_at: DrawAt,
 ) -> Rect
-    where DrawAt: FnMut(&tree::TSpan, f64, f64, f64, &PangoData)
+    where DrawAt: FnMut(&usvg::TSpan, f64, f64, f64, &PangoData)
 {
     let mut bbox = Rect::new_bbox();
     let mut pc_list = Vec::new();
@@ -61,9 +61,9 @@ pub fn draw_tspan<DrawAt>(
         tspan_w_list.clear();
         let mut chunk_width = 0.0;
 
-        if let tree::NodeKind::TextChunk(ref chunk) = *chunk_node.borrow() {
+        if let usvg::NodeKind::TextChunk(ref chunk) = *chunk_node.borrow() {
             for tspan_node in chunk_node.children() {
-                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.borrow() {
+                if let usvg::NodeKind::TSpan(ref tspan) = *tspan_node.borrow() {
                     let context = pc::create_context(cr).unwrap();
                     pc::update_context(cr, &context);
                     pc::context_set_resolution(&context, opt.usvg.dpi);
@@ -94,7 +94,7 @@ pub fn draw_tspan<DrawAt>(
             let mut x = utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
 
             for (idx, tspan_node) in chunk_node.children().enumerate() {
-                if let tree::NodeKind::TSpan(ref tspan) = *tspan_node.borrow() {
+                if let usvg::NodeKind::TSpan(ref tspan) = *tspan_node.borrow() {
                     let (width, ascent) = tspan_w_list[idx];
                     let pc = &pc_list[idx];
 
@@ -112,8 +112,8 @@ pub fn draw_tspan<DrawAt>(
 }
 
 fn _draw_tspan(
-    node: &tree::Node,
-    tspan: &tree::TSpan,
+    node: &usvg::Node,
+    tspan: &usvg::TSpan,
     opt: &Options,
     x: f64,
     y: f64,
@@ -178,49 +178,49 @@ fn _draw_tspan(
     }
 }
 
-fn init_font(dom_font: &tree::Font, dpi: f64) -> pango::FontDescription {
+fn init_font(dom_font: &usvg::Font, dpi: f64) -> pango::FontDescription {
     let mut font = pango::FontDescription::new();
 
     font.set_family(&dom_font.family);
 
     let font_style = match dom_font.style {
-        tree::FontStyle::Normal => pango::Style::Normal,
-        tree::FontStyle::Italic => pango::Style::Italic,
-        tree::FontStyle::Oblique => pango::Style::Oblique,
+        usvg::FontStyle::Normal => pango::Style::Normal,
+        usvg::FontStyle::Italic => pango::Style::Italic,
+        usvg::FontStyle::Oblique => pango::Style::Oblique,
     };
     font.set_style(font_style);
 
     let font_variant = match dom_font.variant {
-        tree::FontVariant::Normal => pango::Variant::Normal,
-        tree::FontVariant::SmallCaps => pango::Variant::SmallCaps,
+        usvg::FontVariant::Normal => pango::Variant::Normal,
+        usvg::FontVariant::SmallCaps => pango::Variant::SmallCaps,
     };
     font.set_variant(font_variant);
 
     let font_weight = match dom_font.weight {
-        tree::FontWeight::W100       => pango::Weight::Thin,
-        tree::FontWeight::W200       => pango::Weight::Ultralight,
-        tree::FontWeight::W300       => pango::Weight::Light,
-        tree::FontWeight::W400       => pango::Weight::Normal,
-        tree::FontWeight::W500       => pango::Weight::Medium,
-        tree::FontWeight::W600       => pango::Weight::Semibold,
-        tree::FontWeight::W700       => pango::Weight::Bold,
-        tree::FontWeight::W800       => pango::Weight::Ultrabold,
-        tree::FontWeight::W900       => pango::Weight::Heavy,
+        usvg::FontWeight::W100       => pango::Weight::Thin,
+        usvg::FontWeight::W200       => pango::Weight::Ultralight,
+        usvg::FontWeight::W300       => pango::Weight::Light,
+        usvg::FontWeight::W400       => pango::Weight::Normal,
+        usvg::FontWeight::W500       => pango::Weight::Medium,
+        usvg::FontWeight::W600       => pango::Weight::Semibold,
+        usvg::FontWeight::W700       => pango::Weight::Bold,
+        usvg::FontWeight::W800       => pango::Weight::Ultrabold,
+        usvg::FontWeight::W900       => pango::Weight::Heavy,
     };
     font.set_weight(font_weight);
 
     let font_stretch = match dom_font.stretch {
-        tree::FontStretch::Normal         => pango::Stretch::Normal,
-        tree::FontStretch::Narrower |
-        tree::FontStretch::Condensed      => pango::Stretch::Condensed,
-        tree::FontStretch::UltraCondensed => pango::Stretch::UltraCondensed,
-        tree::FontStretch::ExtraCondensed => pango::Stretch::ExtraCondensed,
-        tree::FontStretch::SemiCondensed  => pango::Stretch::SemiCondensed,
-        tree::FontStretch::SemiExpanded   => pango::Stretch::SemiExpanded,
-        tree::FontStretch::Wider |
-        tree::FontStretch::Expanded       => pango::Stretch::Expanded,
-        tree::FontStretch::ExtraExpanded  => pango::Stretch::ExtraExpanded,
-        tree::FontStretch::UltraExpanded  => pango::Stretch::UltraExpanded,
+        usvg::FontStretch::Normal         => pango::Stretch::Normal,
+        usvg::FontStretch::Narrower |
+        usvg::FontStretch::Condensed      => pango::Stretch::Condensed,
+        usvg::FontStretch::UltraCondensed => pango::Stretch::UltraCondensed,
+        usvg::FontStretch::ExtraCondensed => pango::Stretch::ExtraCondensed,
+        usvg::FontStretch::SemiCondensed  => pango::Stretch::SemiCondensed,
+        usvg::FontStretch::SemiExpanded   => pango::Stretch::SemiExpanded,
+        usvg::FontStretch::Wider |
+        usvg::FontStretch::Expanded       => pango::Stretch::Expanded,
+        usvg::FontStretch::ExtraExpanded  => pango::Stretch::ExtraExpanded,
+        usvg::FontStretch::UltraExpanded  => pango::Stretch::UltraExpanded,
     };
     font.set_stretch(font_stretch);
 
@@ -243,10 +243,10 @@ pub fn calc_layout_bbox(layout: &pango::Layout, x: f64, y: f64) -> Rect {
 }
 
 fn draw_line(
-    tree: &tree::Tree,
+    tree: &usvg::Tree,
     line_bbox: Rect,
-    fill: &Option<tree::Fill>,
-    stroke: &Option<tree::Stroke>,
+    fill: &Option<usvg::Fill>,
+    stroke: &Option<usvg::Stroke>,
     opt: &Options,
     cr: &cairo::Context,
 ) {

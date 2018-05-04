@@ -3,11 +3,11 @@ extern crate resvg;
 use std::path::Path;
 
 use resvg::{
-    tree,
+    usvg,
     utils,
     Options,
 };
-use resvg::tree::prelude::*;
+use usvg::prelude::*;
 use resvg::geom::*;
 
 // TODO: write doc
@@ -19,50 +19,50 @@ fn main() {
     let opt = Options::default();
 
     let size = Size::new(200.0, 200.0);
-    let view_box = tree::ViewBox {
+    let view_box = usvg::ViewBox {
         rect: Rect::new(Point::new(0.0, 0.0), size),
-        aspect: tree::AspectRatio::default(),
+        aspect: usvg::AspectRatio::default(),
     };
 
-    let mut rtree = tree::Tree::create(tree::Svg {
+    let mut rtree = usvg::Tree::create(usvg::Svg {
         size,
         view_box,
     });
 
-    let mut grad = rtree.append_to_defs(tree::NodeKind::LinearGradient(tree::LinearGradient {
+    let mut grad = rtree.append_to_defs(usvg::NodeKind::LinearGradient(usvg::LinearGradient {
         id: "lg1".into(),
         x1: 0.0,
         y1: 0.0,
         x2: 1.0,
         y2: 0.0,
-        d: tree::BaseGradient {
-            units: tree::Units::ObjectBoundingBox,
-            transform: tree::Transform::default(),
-            spread_method: tree::SpreadMethod::Pad,
+        d: usvg::BaseGradient {
+            units: usvg::Units::ObjectBoundingBox,
+            transform: usvg::Transform::default(),
+            spread_method: usvg::SpreadMethod::Pad,
         },
     }));
 
-    grad.append_kind(tree::NodeKind::Stop(tree::Stop {
-        offset: tree::StopOffset::new(0.0),
-        color: tree::Color::new(0, 255, 0),
-        opacity: tree::Opacity::new(1.0),
+    grad.append_kind(usvg::NodeKind::Stop(usvg::Stop {
+        offset: usvg::StopOffset::new(0.0),
+        color: usvg::Color::new(0, 255, 0),
+        opacity: usvg::Opacity::new(1.0),
     }));
 
-    grad.append_kind(tree::NodeKind::Stop(tree::Stop {
-        offset: tree::StopOffset::new(1.0),
-        color: tree::Color::new(0, 255, 0),
-        opacity: tree::Opacity::new(0.0),
+    grad.append_kind(usvg::NodeKind::Stop(usvg::Stop {
+        offset: usvg::StopOffset::new(1.0),
+        color: usvg::Color::new(0, 255, 0),
+        opacity: usvg::Opacity::new(0.0),
     }));
 
 
-    let fill = Some(tree::Fill {
-        paint: tree::Paint::Link("lg1".into()),
-        .. tree::Fill::default()
+    let fill = Some(usvg::Fill {
+        paint: usvg::Paint::Link("lg1".into()),
+        .. usvg::Fill::default()
     });
 
-    rtree.root().append_kind(tree::NodeKind::Path(tree::Path {
+    rtree.root().append_kind(usvg::NodeKind::Path(usvg::Path {
         id: String::new(),
-        transform: tree::Transform::default(),
+        transform: usvg::Transform::default(),
         fill,
         stroke: None,
         segments: utils::rect_to_path(Rect::from_xywh(20.0, 20.0, 160.0, 160.0)),

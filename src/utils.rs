@@ -7,8 +7,8 @@
 use std::f64;
 
 // external
-use usvg::tree;
-use usvg::tree::prelude::*;
+use usvg;
+use usvg::prelude::*;
 pub use usvg::utils::*;
 
 // self
@@ -40,16 +40,16 @@ pub fn fit_to(size: ScreenSize, fit: FitTo) -> ScreenSize {
     }
 }
 
-pub(crate) fn process_text_anchor(x: f64, a: tree::TextAnchor, text_width: f64) -> f64 {
+pub(crate) fn process_text_anchor(x: f64, a: usvg::TextAnchor, text_width: f64) -> f64 {
     match a {
-        tree::TextAnchor::Start =>  x, // Nothing.
-        tree::TextAnchor::Middle => x - text_width / 2.0,
-        tree::TextAnchor::End =>    x - text_width,
+        usvg::TextAnchor::Start =>  x, // Nothing.
+        usvg::TextAnchor::Middle => x - text_width / 2.0,
+        usvg::TextAnchor::End =>    x - text_width,
     }
 }
 
-pub(crate) fn apply_view_box(vb: &tree::ViewBox, img_size: ScreenSize) -> ScreenSize {
-    if vb.aspect.align == tree::Align::None {
+pub(crate) fn apply_view_box(vb: &usvg::ViewBox, img_size: ScreenSize) -> ScreenSize {
+    if vb.aspect.align == usvg::Align::None {
         vb.rect.size.to_screen_size()
     } else {
         if vb.aspect.slice {
@@ -64,14 +64,14 @@ pub(crate) fn apply_view_box(vb: &tree::ViewBox, img_size: ScreenSize) -> Screen
 ///
 /// Does not include the node's transform itself.
 pub fn abs_transform(
-    node: &tree::Node,
-) -> tree::Transform {
+    node: &usvg::Node,
+) -> usvg::Transform {
     let mut ts_list = Vec::new();
     for p in node.ancestors().skip(1) {
         ts_list.push(p.transform());
     }
 
-    let mut root_ts = tree::Transform::default();
+    let mut root_ts = usvg::Transform::default();
     for ts in ts_list.iter().rev() {
         root_ts.append(ts);
     }
@@ -83,9 +83,9 @@ pub fn abs_transform(
 ///
 /// Minimum size is 1x1.
 pub fn path_bbox(
-    segments: &[tree::PathSegment],
-    stroke: Option<&tree::Stroke>,
-    ts: &tree::Transform,
+    segments: &[usvg::PathSegment],
+    stroke: Option<&usvg::Stroke>,
+    ts: &usvg::Transform,
 ) -> Rect {
     debug_assert!(!segments.is_empty());
 
@@ -97,22 +97,22 @@ pub fn path_bbox(
         path_buf.reserve(segments.len());
         for seg in segments {
             match *seg {
-                tree::PathSegment::MoveTo { x, y } => {
+                usvg::PathSegment::MoveTo { x, y } => {
                     let (x, y) = ts.apply(x, y);
-                    path_buf.push(tree::PathSegment::MoveTo { x, y });
+                    path_buf.push(usvg::PathSegment::MoveTo { x, y });
                 }
-                tree::PathSegment::LineTo { x, y } => {
+                usvg::PathSegment::LineTo { x, y } => {
                     let (x, y) = ts.apply(x, y);
-                    path_buf.push(tree::PathSegment::LineTo { x, y });
+                    path_buf.push(usvg::PathSegment::LineTo { x, y });
                 }
-                tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+                usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
                     let (x1, y1) = ts.apply(x1, y1);
                     let (x2, y2) = ts.apply(x2, y2);
                     let (x, y) = ts.apply(x, y);
-                    path_buf.push(tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
+                    path_buf.push(usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
                 }
-                tree::PathSegment::ClosePath => {
-                    path_buf.push(tree::PathSegment::ClosePath);
+                usvg::PathSegment::ClosePath => {
+                    path_buf.push(usvg::PathSegment::ClosePath);
                 }
             }
         }
@@ -123,7 +123,7 @@ pub fn path_bbox(
     };
 
     let (mut prev_x, mut prev_y, mut minx, mut miny, mut maxx, mut maxy) = {
-        if let tree::PathSegment::MoveTo { x, y } = new_path[0] {
+        if let usvg::PathSegment::MoveTo { x, y } = new_path[0] {
             (x as f32, y as f32, x as f32, y as f32, x as f32, y as f32)
         } else {
             unreachable!();
@@ -132,8 +132,8 @@ pub fn path_bbox(
 
     for seg in new_path {
         match *seg {
-              tree::PathSegment::MoveTo { x, y }
-            | tree::PathSegment::LineTo { x, y } => {
+              usvg::PathSegment::MoveTo { x, y }
+            | usvg::PathSegment::LineTo { x, y } => {
                 let x = x as f32;
                 let y = y as f32;
                 prev_x = x;
@@ -151,7 +151,7 @@ pub fn path_bbox(
                     miny = y;
                 }
             }
-            tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+            usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
                 let x = x as f32;
                 let y = y as f32;
 
@@ -174,7 +174,7 @@ pub fn path_bbox(
                 if r.min_y() < miny { miny = r.min_y(); }
                 if bottom > maxy { maxy = bottom; }
             }
-            tree::PathSegment::ClosePath => {}
+            usvg::PathSegment::ClosePath => {}
         }
     }
 
@@ -198,21 +198,21 @@ pub fn path_bbox(
 }
 
 /// Converts `rect` to path segments.
-pub fn rect_to_path(rect: Rect) -> Vec<tree::PathSegment> {
+pub fn rect_to_path(rect: Rect) -> Vec<usvg::PathSegment> {
     vec![
-        tree::PathSegment::MoveTo {
+        usvg::PathSegment::MoveTo {
             x: rect.x(), y: rect.y()
         },
-        tree::PathSegment::LineTo {
+        usvg::PathSegment::LineTo {
             x: rect.x() + rect.width(), y: rect.y()
         },
-        tree::PathSegment::LineTo {
+        usvg::PathSegment::LineTo {
             x: rect.x() + rect.width(), y: rect.y() + rect.height()
         },
-        tree::PathSegment::LineTo {
+        usvg::PathSegment::LineTo {
             x: rect.x(), y: rect.y() + rect.height()
         },
-        tree::PathSegment::ClosePath,
+        usvg::PathSegment::ClosePath,
     ]
 }
 
@@ -220,7 +220,7 @@ pub fn rect_to_path(rect: Rect) -> Vec<tree::PathSegment> {
 pub(crate) fn image_to_mask(
     data: &mut [u8],
     img_size: ScreenSize,
-    opacity: Option<tree::Opacity>,
+    opacity: Option<usvg::Opacity>,
 ) {
     let width = img_size.width;
     let height = img_size.height;

@@ -8,7 +8,7 @@ use std::f64;
 
 // external
 use euclid;
-use usvg::tree;
+use usvg;
 
 // self
 
@@ -158,7 +158,7 @@ pub trait RectExt {
     fn expand(&mut self, r: Rect);
 
     /// Returns transformed rect.
-    fn transform(&self, ts: tree::Transform) -> Self;
+    fn transform(&self, ts: usvg::Transform) -> Self;
 
     /// Returns rect's size in screen units.
     fn to_screen_size(&self) -> ScreenSize;
@@ -206,7 +206,7 @@ impl RectExt for Rect {
         }
     }
 
-    fn transform(&self, ts: tree::Transform) -> Self {
+    fn transform(&self, ts: usvg::Transform) -> Self {
         let (x, y) = ts.apply(self.x(), self.y());
         let (sx, sy) = ts.get_scale();
         let (w, h) = (self.width() * sx, self.height() * sy);

@@ -12,6 +12,8 @@ use gio::prelude::*;
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
+use resvg::usvg;
+
 // make moving clones into closures more convenient
 macro_rules! clone {
     (@param _) => ( _ );
@@ -57,14 +59,14 @@ fn build_ui(application: &gtk::Application, file_path: &Path) {
     let mut opt = resvg::Options::default();
     opt.usvg.path = Some(file_path.into());
 
-    let rtree = resvg::parse_tree_from_file(file_path, &opt.usvg).unwrap();
+    let tree = usvg::Tree::from_file(file_path, &opt.usvg).unwrap();
 
     drawing_area.connect_draw(move |w, cr| {
         let s = resvg::ScreenSize::new(
             w.get_allocated_width() as u32,
             w.get_allocated_height() as u32,
         );
-        resvg::render_cairo::render_to_canvas(&rtree, &opt, s, cr);
+        resvg::render_cairo::render_to_canvas(&tree, &opt, s, cr);
 
         Inhibit(false)
     });

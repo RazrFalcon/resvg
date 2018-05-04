@@ -8,7 +8,7 @@ use piston_image::{
     self,
     GenericImage,
 };
-use usvg::tree;
+use usvg;
 
 // self
 use geom::*;
@@ -16,17 +16,17 @@ use utils;
 
 
 pub fn draw(
-    image: &tree::Image,
+    image: &usvg::Image,
     cr: &cairo::Context,
 ) -> Rect {
     let r = image.view_box.rect;
 
     let img = match image.data {
-        tree::ImageData::Path(ref path) => {
+        usvg::ImageData::Path(ref path) => {
             try_opt_warn!(piston_image::open(path).ok(), r,
                 "Failed to load an external image: {:?}.", path)
         }
-        tree::ImageData::Raw(ref data, _) => {
+        usvg::ImageData::Raw(ref data, _) => {
             try_opt_warn!(piston_image::load_from_memory(data).ok(), r,
                 "Failed to load an embedded image.")
         }

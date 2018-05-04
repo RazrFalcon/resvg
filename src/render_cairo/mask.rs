@@ -7,7 +7,7 @@ use cairo::{
     self,
     MatrixTrait,
 };
-use usvg::tree;
+use usvg;
 
 // self
 use geom::*;
@@ -24,11 +24,11 @@ use {
 
 
 pub fn apply(
-    node: &tree::Node,
-    mask: &tree::Mask,
+    node: &usvg::Node,
+    mask: &usvg::Mask,
     opt: &Options,
     bbox: Rect,
-    opacity: Option<tree::Opacity>,
+    opacity: Option<usvg::Opacity>,
     layers: &mut CairoLayers,
     cr: &cairo::Context,
 ) {
@@ -39,8 +39,8 @@ pub fn apply(
         let mask_cr = cairo::Context::new(&*mask_surface);
         mask_cr.set_matrix(cr.get_matrix());
 
-        let r = if mask.units == tree::Units::ObjectBoundingBox {
-            mask.rect.transform(tree::Transform::from_bbox(bbox))
+        let r = if mask.units == usvg::Units::ObjectBoundingBox {
+            mask.rect.transform(usvg::Transform::from_bbox(bbox))
         } else {
             mask.rect
         };
@@ -48,7 +48,7 @@ pub fn apply(
         mask_cr.rectangle(r.x(), r.y(), r.width(), r.height());
         mask_cr.clip();
 
-        if mask.content_units == tree::Units::ObjectBoundingBox {
+        if mask.content_units == usvg::Units::ObjectBoundingBox {
             mask_cr.transform(cairo::Matrix::from_bbox(bbox));
         }
 

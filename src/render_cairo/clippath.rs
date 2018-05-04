@@ -7,8 +7,8 @@ use cairo::{
     self,
     MatrixTrait,
 };
-use usvg::tree;
-use usvg::tree::prelude::*;
+use usvg;
+use usvg::prelude::*;
 
 // self
 use geom::*;
@@ -28,8 +28,8 @@ use {
 
 
 pub fn apply(
-    node: &tree::Node,
-    cp: &tree::ClipPath,
+    node: &usvg::Node,
+    cp: &usvg::ClipPath,
     opt: &Options,
     bbox: Rect,
     layers: &mut CairoLayers,
@@ -44,7 +44,7 @@ pub fn apply(
     clip_cr.set_matrix(cr.get_matrix());
     clip_cr.transform(cp.transform.to_native());
 
-    if cp.units == tree::Units::ObjectBoundingBox {
+    if cp.units == usvg::Units::ObjectBoundingBox {
         let m = cairo::Matrix::from_bbox(bbox);
         clip_cr.transform(m);
     }
@@ -56,10 +56,10 @@ pub fn apply(
         clip_cr.transform(node.transform().to_native());
 
         match *node.borrow() {
-            tree::NodeKind::Path(ref p) => {
+            usvg::NodeKind::Path(ref p) => {
                 path::draw(&node.tree(), p, opt, &clip_cr);
             }
-            tree::NodeKind::Text(_) => {
+            usvg::NodeKind::Text(_) => {
                 text::draw(&node, opt, &clip_cr);
             }
             _ => {}

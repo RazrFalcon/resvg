@@ -4,24 +4,24 @@
 
 // external
 use qt;
-use usvg::tree;
+use usvg;
 
 // self
 use geom::*;
 use utils;
 
 pub fn draw(
-    image: &tree::Image,
+    image: &usvg::Image,
     p: &qt::Painter,
 ) -> Rect {
     let r = image.view_box.rect;
 
     let img = match image.data {
-        tree::ImageData::Path(ref path) => {
+        usvg::ImageData::Path(ref path) => {
             try_opt_warn!(qt::Image::from_file(path), r,
                 "Failed to load an external image: {:?}.", path)
         }
-        tree::ImageData::Raw(ref data, _) => {
+        usvg::ImageData::Raw(ref data, _) => {
             try_opt_warn!(qt::Image::from_data(data), r,
                 "Failed to load an embedded image.")
         }

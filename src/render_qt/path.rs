@@ -4,7 +4,7 @@
 
 // external
 use qt;
-use usvg::tree;
+use usvg;
 
 // self
 use geom::*;
@@ -19,8 +19,8 @@ use {
 
 
 pub fn draw(
-    tree: &tree::Tree,
-    path: &tree::Path,
+    tree: &usvg::Tree,
+    path: &usvg::Path,
     opt: &Options,
     p: &qt::Painter,
 ) -> Rect {
@@ -29,12 +29,12 @@ pub fn draw(
     let fill_rule = if let Some(ref fill) = path.fill {
         fill.rule
     } else {
-        tree::FillRule::NonZero
+        usvg::FillRule::NonZero
     };
 
     convert_path(&path.segments, fill_rule, &mut p_path);
 
-    let bbox = utils::path_bbox(&path.segments, None, &tree::Transform::default());
+    let bbox = utils::path_bbox(&path.segments, None, &usvg::Transform::default());
 
     fill::apply(tree, &path.fill, opt, bbox, p);
     stroke::apply(tree, &path.stroke, opt, bbox, p);
@@ -45,8 +45,8 @@ pub fn draw(
 }
 
 pub fn convert_path(
-    list: &[tree::PathSegment],
-    rule: tree::FillRule,
+    list: &[usvg::PathSegment],
+    rule: usvg::FillRule,
     p_path: &mut qt::PainterPath,
 ) {
     // Qt's QPainterPath automatically closes open subpaths if start and end positions are equal.
@@ -69,7 +69,7 @@ pub fn convert_path(
             if i == len - 1 {
                 true
             } else {
-                if let tree::PathSegment::MoveTo{ .. } = list[i + 1] {
+                if let usvg::PathSegment::MoveTo{ .. } = list[i + 1] {
                     true
                 } else {
                     false
@@ -78,14 +78,14 @@ pub fn convert_path(
         };
 
         match *seg1 {
-            tree::PathSegment::MoveTo { x, y } => {
+            usvg::PathSegment::MoveTo { x, y } => {
                 p_path.move_to(x, y);
 
                 // Remember subpath start position.
                 prev_mx = x;
                 prev_my = y;
             }
-            tree::PathSegment::LineTo { mut x, y } => {
+            usvg::PathSegment::LineTo { mut x, y } => {
                 if is_last_subpath_seg {
                     // No need to use fuzzy compare because Qt doesn't use it too.
                     if x == prev_mx && y == prev_my {
@@ -96,7 +96,7 @@ pub fn convert_path(
 
                 p_path.line_to(x, y);
             }
-            tree::PathSegment::CurveTo { x1, y1, x2, y2, mut x, y } => {
+            usvg::PathSegment::CurveTo { x1, y1, x2, y2, mut x, y } => {
                 if is_last_subpath_seg {
                     if x == prev_mx && y == prev_my {
                         x -= 0.000001;
@@ -105,7 +105,7 @@ pub fn convert_path(
 
                 p_path.curve_to(x1, y1, x2, y2, x, y);
             }
-            tree::PathSegment::ClosePath => {
+            usvg::PathSegment::ClosePath => {
                 p_path.close_path();
             }
         }
@@ -116,7 +116,7 @@ pub fn convert_path(
     // a-fill-rule-001.svg
     // a-fill-rule-002.svg
     match rule {
-        tree::FillRule::NonZero => p_path.set_fill_rule(qt::FillRule::WindingFill),
-        tree::FillRule::EvenOdd => p_path.set_fill_rule(qt::FillRule::OddEvenFill),
+        usvg::FillRule::NonZero => p_path.set_fill_rule(qt::FillRule::WindingFill),
+        usvg::FillRule::EvenOdd => p_path.set_fill_rule(qt::FillRule::OddEvenFill),
     }
 }

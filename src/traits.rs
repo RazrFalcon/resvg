@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // external
-use usvg::tree;
+use usvg;
 
 // self
 use geom::*;
@@ -19,7 +19,7 @@ pub trait TransformFromBBox {
     fn from_bbox(bbox: Rect) -> Self;
 }
 
-impl TransformFromBBox for tree::Transform {
+impl TransformFromBBox for usvg::Transform {
     fn from_bbox(bbox: Rect) -> Self {
         Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
     }

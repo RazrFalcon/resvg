@@ -26,9 +26,8 @@ use resvg::qt;
 use resvg::cairo;
 
 use resvg::usvg;
-use resvg::tree;
-use resvg::tree::NodeExt;
 use resvg::geom::*;
+use usvg::prelude::*;
 
 
 #[repr(C)]
@@ -97,7 +96,7 @@ pub struct resvg_transform {
 }
 
 #[repr(C)]
-pub struct resvg_render_tree(resvg::tree::Tree);
+pub struct resvg_render_tree(resvg::usvg::Tree);
 
 #[repr(C)]
 pub struct resvg_handle(resvg::InitObject);
@@ -160,7 +159,7 @@ pub extern fn resvg_parse_tree_from_file(
         &*opt
     });
 
-    let tree = match resvg::parse_tree_from_file(file_path, &opt.usvg) {
+    let tree = match usvg::Tree::from_file(file_path, &opt.usvg) {
         Ok(tree) => tree,
         Err(e) => return convert_error(e) as i32,
     };
@@ -185,7 +184,7 @@ pub extern fn resvg_parse_tree_from_data(
         &*opt
     });
 
-    let tree = match resvg::parse_tree_from_data(data, &opt.usvg) {
+    let tree = match usvg::Tree::from_data(data, &opt.usvg) {
         Ok(tree) => tree,
         Err(e) => return convert_error(e) as i32,
     };
@@ -343,9 +342,9 @@ pub extern fn resvg_qt_render_to_canvas_by_id(
 
     if let Some(node) = tree.0.node_by_id(id) {
         if let Some(bbox) = resvg::render_qt::calc_node_bbox(&node, &opt) {
-            let vbox = tree::ViewBox {
+            let vbox = usvg::ViewBox {
                 rect: bbox,
-                aspect: tree::AspectRatio::default(),
+                aspect: usvg::AspectRatio::default(),
             };
 
             resvg::render_qt::render_node_to_canvas(&node, &opt, vbox, size, &painter);
@@ -393,9 +392,9 @@ pub extern fn resvg_cairo_render_to_canvas_by_id(
 
     if let Some(node) = tree.0.node_by_id(id) {
         if let Some(bbox) = resvg::render_cairo::calc_node_bbox(&node, &opt) {
-            let vbox = tree::ViewBox {
+            let vbox = usvg::ViewBox {
                 rect: bbox,
-                aspect: tree::AspectRatio::default(),
+                aspect: usvg::AspectRatio::default(),
             };
 
             resvg::render_cairo::render_node_to_canvas(&node, &opt, vbox, size, &cr);
@@ -630,7 +629,7 @@ fn to_native_opt(opt: &resvg_options) -> resvg::Options {
     };
 
     let background = if opt.draw_background {
-        Some(resvg::tree::Color::new(
+        Some(resvg::usvg::Color::new(
             opt.background.r,
             opt.background.g,
             opt.background.b,

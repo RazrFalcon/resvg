@@ -4,7 +4,7 @@
 
 // external
 use qt;
-use usvg::tree;
+use usvg;
 
 // self
 use geom::*;
@@ -21,8 +21,8 @@ use {
 
 
 pub fn apply(
-    node: &tree::Node,
-    mask: &tree::Mask,
+    node: &usvg::Node,
+    mask: &usvg::Mask,
     opt: &Options,
     bbox: Rect,
     layers: &mut QtLayers,
@@ -36,8 +36,8 @@ pub fn apply(
         let mask_p = qt::Painter::new(&mask_img);
         mask_p.set_transform(&p.get_transform());
 
-        let r = if mask.units == tree::Units::ObjectBoundingBox {
-            mask.rect.transform(tree::Transform::from_bbox(bbox))
+        let r = if mask.units == usvg::Units::ObjectBoundingBox {
+            mask.rect.transform(usvg::Transform::from_bbox(bbox))
         } else {
             mask.rect
         };
@@ -52,7 +52,7 @@ pub fn apply(
         // TODO: use clip_rect
         mask_p.set_clip_path(&p_path);
 
-        if mask.content_units == tree::Units::ObjectBoundingBox {
+        if mask.content_units == usvg::Units::ObjectBoundingBox {
             mask_p.apply_transform(&qt::Transform::from_bbox(bbox));
         }
 

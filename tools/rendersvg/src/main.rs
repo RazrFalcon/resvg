@@ -29,8 +29,7 @@ use resvg::{
     RectExt,
     Render,
 };
-use resvg::tree;
-use resvg::tree::prelude::*;
+use usvg::prelude::*;
 
 use svgdom::WriteBuffer;
 
@@ -110,7 +109,7 @@ fn process() -> Result<(), Error> {
     }
 
     // Load file.
-    let tree = timed!("Preprocessing", usvg::parse_tree_from_file(&args.in_svg, &opt.usvg))?;
+    let tree = timed!("Preprocessing", usvg::Tree::from_file(&args.in_svg, &opt.usvg))?;
 
     // We have to init only Qt backend.
     #[cfg(feature = "qt-backend")]
@@ -155,7 +154,7 @@ fn process() -> Result<(), Error> {
 // So we skip it file doesn't have one.
 #[cfg(feature = "qt-backend")]
 fn init_qt_gui(
-    tree: &tree::Tree,
+    tree: &usvg::Tree,
     args: &Args,
 ) -> Option<resvg::InitObject> {
     if args.backend_name != "qt" {
@@ -164,7 +163,7 @@ fn init_qt_gui(
 
     // Check that tree has any text nodes.
     let has_text = tree.root().descendants().any(|n|
-        if let tree::NodeKind::Text { .. } = *n.borrow() { true } else { false }
+        if let usvg::NodeKind::Text { .. } = *n.borrow() { true } else { false }
     );
 
     if has_text {
@@ -176,7 +175,7 @@ fn init_qt_gui(
 }
 
 fn query_all(
-    tree: &tree::Tree,
+    tree: &usvg::Tree,
     args: &Args,
     opt: &Options,
 ) {
@@ -402,7 +401,7 @@ fn is_zoom(val: String) -> Result<(), String> {
 }
 
 fn is_color(val: String) -> Result<(), String> {
-    match usvg::tree::Color::from_str(&val) {
+    match usvg::Color::from_str(&val) {
         Ok(_) => Ok(()),
         Err(_) => Err("Invalid color.".into()),
     }
@@ -464,7 +463,7 @@ fn fill_options(args: &ArgMatches, app_args: &Args) -> Options {
     let mut background = None;
     if args.is_present("background") {
         let s = args.value_of("background").unwrap();
-        background = Some(usvg::tree::Color::from_str(s).unwrap());
+        background = Some(usvg::Color::from_str(s).unwrap());
     }
 
     // We don't have to keep named groups when we don't need them
@@ -482,7 +481,7 @@ fn fill_options(args: &ArgMatches, app_args: &Args) -> Options {
     }
 }
 
-fn dump_svg(tree: &tree::Tree, path: &path::Path) -> Result<(), io::Error> {
+fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), io::Error> {
     let mut f = fs::File::create(path)?;
 
     let opt = svgdom::WriteOptions {

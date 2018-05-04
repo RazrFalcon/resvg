@@ -8,8 +8,8 @@ use cairo::{
     MatrixTrait,
     Pattern,
 };
-use usvg::tree;
-use usvg::tree::prelude::*;
+use usvg;
+use usvg::prelude::*;
 
 // self
 use geom::*;
@@ -24,20 +24,20 @@ use {
 
 
 pub fn apply(
-    node: &tree::Node,
-    pattern: &tree::Pattern,
+    node: &usvg::Node,
+    pattern: &usvg::Pattern,
     opt: &Options,
-    opacity: tree::Opacity,
+    opacity: usvg::Opacity,
     bbox: Rect,
     cr: &cairo::Context,
 ) {
-    let r = if pattern.units == tree::Units::ObjectBoundingBox {
-        pattern.rect.transform(tree::Transform::from_bbox(bbox))
+    let r = if pattern.units == usvg::Units::ObjectBoundingBox {
+        pattern.rect.transform(usvg::Transform::from_bbox(bbox))
     } else {
         pattern.rect
     };
 
-    let global_ts = tree::Transform::from_native(&cr.get_matrix());
+    let global_ts = usvg::Transform::from_native(&cr.get_matrix());
     let (sx, sy) = global_ts.get_scale();
 
     let img_size = Size::new(r.width() * sx, r.height() * sy).to_screen_size();
@@ -49,7 +49,7 @@ pub fn apply(
     if let Some(vbox) = pattern.view_box {
         let ts = utils::view_box_to_transform(vbox.rect, vbox.aspect, r.size);
         sub_cr.transform(ts.to_native());
-    } else if pattern.content_units == tree::Units::ObjectBoundingBox {
+    } else if pattern.content_units == usvg::Units::ObjectBoundingBox {
         // 'Note that this attribute has no effect if attribute `viewBox` is specified.'
 
         // We don't use Transform::from_bbox(bbox) because `x` and `y` should be
@@ -60,7 +60,7 @@ pub fn apply(
     let mut layers = super::create_layers(img_size, opt);
     super::render_group(node, opt, &mut layers, &sub_cr);
 
-    let mut ts = tree::Transform::default();
+    let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);
     ts.translate(r.x(), r.y());
     ts.scale(1.0 / sx, 1.0 / sy);

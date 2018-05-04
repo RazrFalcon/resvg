@@ -4,8 +4,8 @@
 
 // external
 use qt;
-use usvg::tree;
-use usvg::tree::prelude::*;
+use usvg;
+use usvg::prelude::*;
 
 // self
 use geom::*;
@@ -24,8 +24,8 @@ use {
 
 
 pub fn apply(
-    node: &tree::Node,
-    cp: &tree::ClipPath,
+    node: &usvg::Node,
+    cp: &usvg::ClipPath,
     opt: &Options,
     bbox: Rect,
     layers: &mut QtLayers,
@@ -39,7 +39,7 @@ pub fn apply(
     clip_p.set_transform(&p.get_transform());
     clip_p.apply_transform(&cp.transform.to_native());
 
-    if cp.units == tree::Units::ObjectBoundingBox {
+    if cp.units == usvg::Units::ObjectBoundingBox {
         clip_p.apply_transform(&qt::Transform::from_bbox(bbox));
     }
 
@@ -50,10 +50,10 @@ pub fn apply(
         clip_p.apply_transform(&node.transform().to_native());
 
         match *node.borrow() {
-            tree::NodeKind::Path(ref path_node) => {
+            usvg::NodeKind::Path(ref path_node) => {
                 path::draw(&node.tree(), path_node, opt, &clip_p);
             }
-            tree::NodeKind::Text(_) => {
+            usvg::NodeKind::Text(_) => {
                 text::draw(&node, opt, &clip_p);
             }
             _ => {}

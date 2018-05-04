@@ -3,6 +3,8 @@ extern crate resvg;
 use std::env;
 use std::path::Path;
 
+use resvg::usvg;
+
 // TODO: write doc
 
 fn main() {
@@ -17,7 +19,7 @@ fn main() {
     let mut opt = resvg::Options::default();
     opt.usvg.path = Some(args[1].clone().into());
 
-    let rtree = resvg::parse_tree_from_file(&args[1], &opt.usvg).unwrap();
+    let rtree = usvg::Tree::from_file(&args[1], &opt.usvg).unwrap();
     let backend = resvg::default_backend();
     let img = backend.render_to_image(&rtree, &opt).unwrap();
     img.save(Path::new(&args[2]));
