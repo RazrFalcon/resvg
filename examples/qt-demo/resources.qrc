@@ -1,5 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>Ghostscript_Tiger.svg</file>
+        <file>svg-logo.svg</file>
     </qresource>
 </RCC>

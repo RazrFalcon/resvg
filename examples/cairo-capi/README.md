@@ -6,11 +6,9 @@ I'm not good with C and GTK+ so any suggestions are welcome.
 
 ```bash
 # build C-API with a cairo backend first
-cd ../../capi
-cargo build --features="cairo-backend"
-cd ../examples/cairo-capi
+cargo build --release --features "cairo-backend" --manifest-path ../../capi/Cargo.toml
 make
-LD_LIBRARY_PATH=../../target/debug ./example ../../demo/Ghostscript_Tiger.svg
+LD_LIBRARY_PATH=../../target/debug ./example ../qt-demo/svg-logo.svg
 ```
 
 See [doc/build.md](../../../doc/build.md) for details.

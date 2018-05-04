@@ -42,7 +42,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::onStart()
 {
-    QFile file(":/Ghostscript_Tiger.svg");
+    QFile file(":/svg-logo.svg");
     file.open(QFile::ReadOnly);
 
     const QByteArray ba = file.readAll();
