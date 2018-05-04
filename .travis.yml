@@ -14,7 +14,7 @@ install:
   # for testing_tools/regression/regression.py
   - sudo apt-get install python3-pil
   # for qt backend
-  - sudo apt-get install -qq qt56base
+  - sudo apt-get install -qq qt56base qt56svg
   # prepare custom Qt
   - source /opt/qt56/bin/qt56-env.sh;
 script: ./scripts/run-tests.py
