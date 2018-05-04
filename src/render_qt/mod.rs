@@ -19,11 +19,9 @@ use layers::{
     Layers,
 };
 use {
-    Error,
     Options,
     OutputImage,
     Render,
-    Result,
 };
 use utils;
 
@@ -79,18 +77,18 @@ impl Render for Backend {
         &self,
         tree: &tree::Tree,
         opt: &Options,
-    ) -> Result<Box<OutputImage>> {
+    ) -> Option<Box<OutputImage>> {
         let img = render_to_image(tree, opt)?;
-        Ok(Box::new(img))
+        Some(Box::new(img))
     }
 
     fn render_node_to_image(
         &self,
         node: &tree::Node,
         opt: &Options,
-    ) -> Result<Box<OutputImage>> {
+    ) -> Option<Box<OutputImage>> {
         let img = render_node_to_image(node, opt)?;
-        Ok(Box::new(img))
+        Some(Box::new(img))
     }
 
     fn calc_node_bbox(
@@ -114,27 +112,26 @@ type QtLayers<'a> = Layers<'a, qt::Image>;
 pub fn render_to_image(
     tree: &tree::Tree,
     opt: &Options,
-) -> Result<qt::Image> {
+) -> Option<qt::Image> {
     let (img, img_size) = create_root_image(tree.svg_node().size.to_screen_size(), opt)?;
 
     let painter = qt::Painter::new(&img);
     render_to_canvas(tree, opt, img_size, &painter);
     painter.end();
 
-    Ok(img)
+    Some(img)
 }
 
 /// Renders SVG node to image.
 pub fn render_node_to_image(
     node: &tree::Node,
     opt: &Options,
-) -> Result<qt::Image> {
+) -> Option<qt::Image> {
     let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
         bbox
     } else {
-        // TODO: custom error
         warn!("Node '{}' has zero size.", node.id());
-        return Err(Error::NoCanvas);
+        return None;
     };
 
     let vbox = tree::ViewBox {
@@ -148,7 +145,7 @@ pub fn render_node_to_image(
     render_node_to_canvas(node, opt, vbox, img_size, &painter);
     painter.end();
 
-    Ok(img)
+    Some(img)
 }
 
 /// Renders SVG to canvas.
@@ -186,12 +183,12 @@ pub fn render_node_to_canvas(
 fn create_root_image(
     size: ScreenSize,
     opt: &Options,
-) -> Result<(qt::Image, ScreenSize)> {
+) -> Option<(qt::Image, ScreenSize)> {
     let img_size = utils::fit_to(size, opt.fit_to);
 
     debug_assert!(!img_size.is_empty_or_negative());
 
-    let mut img = try_create_image!(img_size, Err(Error::NoCanvas));
+    let mut img = try_create_image!(img_size, None);
 
     // Fill background.
     if let Some(c) = opt.background {
@@ -201,7 +198,7 @@ fn create_root_image(
     }
     img.set_dpi(opt.usvg.dpi);
 
-    Ok((img, img_size))
+    Some((img, img_size))
 }
 
 /// Applies viewbox transformation to the painter.

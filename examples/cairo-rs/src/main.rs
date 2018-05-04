@@ -57,7 +57,7 @@ fn build_ui(application: &gtk::Application, file_path: &Path) {
     let mut opt = resvg::Options::default();
     opt.usvg.path = Some(file_path.into());
 
-    let rtree = resvg::parse_rtree_from_file(file_path, &opt).unwrap();
+    let rtree = resvg::parse_tree_from_file(file_path, &opt.usvg).unwrap();
 
     drawing_area.connect_draw(move |w, cr| {
         let s = resvg::ScreenSize::new(

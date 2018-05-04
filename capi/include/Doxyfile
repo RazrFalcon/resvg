@@ -1,5 +1,0 @@
-PROJECT_NAME           = "resvg C-API"
-OPTIMIZE_OUTPUT_FOR_C  = YES
-QUIET                  = YES
-GENERATE_LATEX         = NO
-ENABLE_PREPROCESSING   = NO

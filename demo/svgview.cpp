@@ -8,12 +8,6 @@
 #include <QMimeData>
 #include <QDebug>
 
-#define RESVG_QT_BACKEND
-
-extern "C" {
-#include <resvg.h>
-}
-
 #include "svgview.h"
 
 static QImage genCheckedTexture()
@@ -41,20 +35,9 @@ SvgView::SvgView(QWidget *parent)
     setMinimumSize(10, 10);
 }
 
-SvgView::~SvgView()
-{
-    if (m_rtree) {
-        resvg_rtree_destroy(m_rtree);
-    }
-
-    if (m_opt) {
-        delete m_opt;
-    }
-}
-
 void SvgView::init()
 {
-    resvg_init_log();
+    ResvgRenderer::initLog();
 }
 
 void SvgView::setRenderToImage(bool flag)
@@ -67,25 +50,21 @@ void SvgView::setRenderToImage(bool flag)
         return;
     }
 
-    if (!m_rtree) {
+    if (!m_renderer.isValid()) {
         return;
     }
 
     const auto *screen = qApp->screens().first();
     const auto ratio = screen->devicePixelRatio();
 
-    auto size = resvg_get_image_size(m_rtree);
-    size.width *= ratio;
-    size.height *= ratio;
-
-    QImage img(size.width, size.height, QImage::Format_ARGB32_Premultiplied);
+    QImage img(m_renderer.defaultSize() * ratio, QImage::Format_ARGB32_Premultiplied);
     img.fill(Qt::transparent);
 
 
     QPainter p;
     p.begin(&img);
     p.setRenderHint(QPainter::Antialiasing);
-    resvg_qt_render_to_canvas(m_rtree, m_opt, size, &p);
+    m_renderer.render(&p);
     p.end();
 
     img.setDevicePixelRatio(ratio);
@@ -120,23 +99,8 @@ void SvgView::setDrawImageBorder(bool flag)
 
 void SvgView::loadData(const QByteArray &ba)
 {
-    if (m_rtree) {
-        resvg_rtree_destroy(m_rtree);
-    }
-
-    const auto *screen = qApp->screens().first();
-    const double dpi = screen->logicalDotsPerInch() * screen->devicePixelRatio();
-
-    m_opt = new resvg_options;
-    resvg_init_options(m_opt);
-    m_opt->dpi = dpi;
-
-    char *err = nullptr;
-    m_rtree = resvg_parse_rtree_from_data(ba.constData(), m_opt, &err);
-    if (!m_rtree) {
-        m_opt = nullptr;
-        emit loadError(QString::fromUtf8(err));
-        resvg_error_msg_destroy(err);
+    if (!m_renderer.load(ba)) {
+        emit loadError(m_renderer.errorString());
     }
 
     update();
@@ -144,24 +108,8 @@ void SvgView::loadData(const QByteArray &ba)
 
 void SvgView::loadFile(const QString &path)
 {
-    if (m_rtree) {
-        resvg_rtree_destroy(m_rtree);
-    }
-
-    const auto *screen = qApp->screens().first();
-    const double dpi = screen->logicalDotsPerInch() * screen->devicePixelRatio();
-
-    m_opt = new resvg_options;
-    resvg_init_options(m_opt);
-    m_opt->dpi = dpi;
-
-    char *err = nullptr;
-    std::string utf8Path = path.toUtf8().constData();
-    m_rtree = resvg_parse_rtree_from_file(utf8Path.c_str(), m_opt, &err);
-    if (!m_rtree) {
-        m_opt = nullptr;
-        emit loadError(QString::fromUtf8(err));
-        resvg_error_msg_destroy(err);
+    if (!m_renderer.load(path)) {
+        emit loadError(m_renderer.errorString());
     }
 
     update();
@@ -169,7 +117,7 @@ void SvgView::loadFile(const QString &path)
 
 void SvgView::paintEvent(QPaintEvent *e)
 {
-    if (!m_rtree) {
+    if (!m_renderer.isValid()) {
         QPainter p(this);
         p.drawText(rect(), Qt::AlignCenter, "Drop an SVG image here.");
 
@@ -201,24 +149,29 @@ void SvgView::paintEvent(QPaintEvent *e)
         double x = r.x();
         double y = r.y();
         double img_width, img_height;
-        if (m_isFitToView) {
-            img_width = r.width();
-            img_height = r.height();
-        } else {
-            const auto size = resvg_get_image_size(m_rtree);
-            img_width = size.width * m_zoom;
-            img_height = size.height * m_zoom;
 
-            x = (r.width() - img_width)/2;
-            y = (r.height() - img_height)/2;
+        if (m_isFitToView) {
+            auto size = m_renderer.defaultSizeF();
+            size.scale(r.size(), Qt::KeepAspectRatio);
+            img_width = size.width();
+            img_height = size.height();
+
+            x = (r.width() - img_width)/4;
+            y = (r.height() - img_height)/4;
+        } else {
+            const auto size = m_renderer.defaultSizeF();
+            img_width = size.width() * m_zoom;
+            img_height = size.height() * m_zoom;
+
+            x = (r.width() - img_width)/4;
+            y = (r.height() - img_height)/4;
         }
 
-        p.translate(x, y);
-        resvg_size s { (uint)img_width, (uint)img_height };
-        resvg_qt_render_to_canvas(m_rtree, m_opt, s, &p);
-        p.setTransform(QTransform());
-
         imgRect = QRect(x, y, img_width, img_height);
+
+        p.translate(x, y);
+        m_renderer.render(&p, imgRect);
+        p.setTransform(QTransform());
     } else {
         const auto ratio = m_pix.devicePixelRatio();
 

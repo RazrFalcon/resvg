@@ -15,6 +15,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #ifdef RESVG_CAIRO_BACKEND
 #include <cairo.h>
@@ -42,6 +43,26 @@ typedef struct resvg_handle resvg_handle;
  * @brief An opaque pointer to the rendering tree.
  */
 typedef struct resvg_render_tree resvg_render_tree;
+
+/**
+ * @brief List of possible errors.
+ */
+typedef enum resvg_error {
+    /** Everything is ok. */
+    RESVG_OK = 0,
+    /** Only UTF-8 content are supported. */
+    RESVG_ERROR_NOT_AN_UTF8_STR,
+    /** Failed to open the provided file. */
+    RESVG_ERROR_FILE_OPEN_FAILED,
+    /** Failed to write to the provided file. */
+    RESVG_ERROR_FILE_WRITE_FAILED,
+    /** Only \b svg and \b svgz suffixes are supported. */
+    RESVG_ERROR_INVALID_FILE_SUFFIX,
+    /** Compressed SVG must use the GZip algorithm. */
+    RESVG_ERROR_MALFORMED_GZIP,
+    /** Failed to allocate an image. */
+    RESVG_ERROR_NO_CANVAS,
+} resvg_error;
 
 /**
  * @brief An RGB color representation.
@@ -76,19 +97,24 @@ typedef struct resvg_fit_to {
  * @brief Rendering options.
  */
 typedef struct resvg_options {
-    /// SVG image path. Used to resolve relative image paths.
+    /** SVG image path. Used to resolve relative image paths. */
     const char *path;
-    /// Output DPI. Default: 96.
+    /** Output DPI. Default: 96. */
     double dpi;
-    /// Fits the image using specified options.
-    /// Default: \b RESVG_FIT_TO_ORIGINAL.
+    /**
+     * Fits the image using specified options.
+     *
+     * Default: \b RESVG_FIT_TO_ORIGINAL.
+     */
     resvg_fit_to fit_to;
-    /// Draw background. Default: false.
+    /** Draw background. Default: false. */
     bool draw_background;
-    /// Background color.
+    /** Background color. */
     resvg_color background;
-    /// Keep named groups. If set to \b true, all non-empty
-    /// groups with \b id attribute will not be removed.
+    /**
+     * Keep named groups. If set to \b true, all non-empty
+     * groups with \b id attribute will not be removed.
+     */
     bool keep_named_groups;
 } resvg_options;
 
@@ -143,6 +169,8 @@ void resvg_destroy(resvg_handle *handle);
  *
  * Use it if you want to see any warnings.
  *
+ * Must be called only once.
+ *
  * All warnings will be printed to the \b stderr.
  */
 void resvg_init_log();
@@ -168,85 +196,100 @@ void resvg_init_options(resvg_options *opt)
  *
  * .svg and .svgz files are supported.
  *
+ * See #resvg_is_image_empty for details.
+ *
  * @param file_path UTF-8 file path.
  * @param opt Rendering options.
- * @param error The error string if NULL was returned. Should be destroyed via #resvg_error_msg_destroy.
- * @return Parsed render tree. NULL on error. Should be destroyed via #resvg_rtree_destroy.
+ * @param tree Parsed render tree. Should be destroyed via #resvg_tree_destroy.
+ * @return #resvg_error
  */
-resvg_render_tree *resvg_parse_rtree_from_file(const char *file_path,
-                                               const resvg_options *opt,
-                                               char **error);
+int resvg_parse_tree_from_file(const char *file_path,
+                               const resvg_options *opt,
+                               resvg_render_tree **tree);
 
 /**
- * @brief Creates #resvg_render_tree from UTF-8 string.
+ * @brief Creates #resvg_render_tree from data.
  *
- * @param text UTF-8 string.
+ * See #resvg_is_image_empty for details.
+ *
+ * @param data SVG data. Can contain SVG string or gzip compressed data.
+ * @param len Data length.
  * @param opt Rendering options.
- * @param error The error string if NULL was returned. Should be destroyed via #resvg_error_msg_destroy.
- * @return Parsed render tree. NULL on error. Should be destroyed via #resvg_rtree_destroy.
+ * @param tree Parsed render tree. Should be destroyed via #resvg_tree_destroy.
+ * @return #resvg_error
  */
-resvg_render_tree *resvg_parse_rtree_from_data(const char *text,
-                                               const resvg_options *opt,
-                                               char **error);
+int resvg_parse_tree_from_data(const char *data,
+                               const size_t len,
+                               const resvg_options *opt,
+                               resvg_render_tree **tree);
+
+/**
+ * @brief Checks that tree has any nodes.
+ *
+ * #resvg_parse_tree_from_file and #resvg_parse_tree_from_data methods
+ * will return an error only if a file does not exist or it has a non-UTF-8 encoding.
+ * All other errors will result in an empty tree with a 100x100px size.
+ *
+ * @param tree Render tree.
+ * @return Returns \b true if tree has any nodes.
+ */
+bool resvg_is_image_empty(const resvg_render_tree *tree);
 
 /**
  * @brief Returns an image size.
  *
- * @param rtree Render tree.
+ * @param tree Render tree.
  * @return Image size.
  */
-resvg_size resvg_get_image_size(const resvg_render_tree *rtree);
+resvg_size resvg_get_image_size(const resvg_render_tree *tree);
 
 /**
  * @brief Returns an image viewbox.
  *
- * @param rtree Render tree.
+ * @param tree Render tree.
  * @return Image viewbox.
  */
-resvg_rect resvg_get_image_viewbox(const resvg_render_tree *rtree);
+resvg_rect resvg_get_image_viewbox(const resvg_render_tree *tree);
 
 /**
- * @brief Returns \b true if a node with such an ID exists.
+ * @brief Returns \b true if a renderable node with such an ID exists.
  *
- * @param rtree Render tree.
+ * @param tree Render tree.
  * @param id Node's ID. UTF-8 string.
- * @return \b true if a node exists. \b false if a node doesn't exist or ID isn't a UTF-8 string.
+ * @return \b true if a node exists.
+ * @return \b false if a node doesn't exist or ID isn't a UTF-8 string.
+ * @return \b false if a node exists, but not renderable.
  */
-bool resvg_node_exists(const resvg_render_tree *rtree,
+bool resvg_node_exists(const resvg_render_tree *tree,
                        const char *id);
 
 /**
  * @brief Returns node's transform by ID.
  *
- * @param rtree Render tree.
+ * @param tree Render tree.
  * @param id Node's ID. UTF-8 string.
  * @param ts Node's transform.
- * @return \b false if a node with such an ID does not exist or ID isn't a UTF-8 string.
+ * @return \b true if a node exists.
+ * @return \b false if a node doesn't exist or ID isn't a UTF-8 string.
+ * @return \b false if a node exists, but not renderable.
  */
-bool resvg_get_node_transform(const resvg_render_tree *rtree,
+bool resvg_get_node_transform(const resvg_render_tree *tree,
                               const char *id,
                               resvg_transform *ts);
 
 /**
  * @brief Destroys the #resvg_render_tree.
  *
- * @param rtree Render tree.
+ * @param tree Render tree.
  */
-void resvg_rtree_destroy(resvg_render_tree *rtree);
-
-/**
- * @brief Destroys the error message.
- *
- * @param msg Error message.
- */
-void resvg_error_msg_destroy(char *msg);
+void resvg_tree_destroy(resvg_render_tree *tree);
 
 
 #ifdef RESVG_CAIRO_BACKEND
 /**
  * @brief Returns node's bounding box by ID.
  *
- * @param rtree Render tree.
+ * @param tree Render tree.
  * @param opt Rendering options.
  * @param id Node's ID.
  * @param bbox Node's bounding box.
@@ -254,7 +297,7 @@ void resvg_error_msg_destroy(char *msg);
  * @return \b false if ID isn't a UTF-8 string.
  * @return \b false if ID is an empty string
  */
-bool resvg_cairo_get_node_bbox(const resvg_render_tree *rtree,
+bool resvg_cairo_get_node_bbox(const resvg_render_tree *tree,
                                const resvg_options *opt,
                                const char *id,
                                resvg_rect *bbox);
@@ -262,26 +305,24 @@ bool resvg_cairo_get_node_bbox(const resvg_render_tree *rtree,
 /**
  * @brief Renders the #resvg_render_tree to file.
  *
- * @param rtree Render tree.
+ * @param tree Render tree.
  * @param opt Rendering options.
  * @param file_path File path.
- * @return \b false if \b file_path isn't an UTF-8 string.
- * @return \b false on "Out of memory".
- * @return \b false on file write error.
+ * @return #resvg_error
  */
-bool resvg_cairo_render_to_image(const resvg_render_tree *rtree,
-                                 const resvg_options *opt,
-                                 const char *file_path);
+int resvg_cairo_render_to_image(const resvg_render_tree *tree,
+                                const resvg_options *opt,
+                                const char *file_path);
 
 /**
  * @brief Renders the #resvg_render_tree to canvas.
  *
- * @param rtree Render tree.
+ * @param tree Render tree.
  * @param opt Rendering options.
  * @param size Canvas size.
  * @param cr Canvas.
  */
-void resvg_cairo_render_to_canvas(const resvg_render_tree *rtree,
+void resvg_cairo_render_to_canvas(const resvg_render_tree *tree,
                                   const resvg_options *opt,
                                   resvg_size size,
                                   cairo_t *cr);
@@ -291,31 +332,31 @@ void resvg_cairo_render_to_canvas(const resvg_render_tree *rtree,
  *
  * Does nothing on error.
  *
- * @param rtree Render tree.
+ * @param tree Render tree.
  * @param opt Rendering options.
  * @param size Canvas size.
  * @param id Node's ID.
  * @param cr Canvas.
  */
-void resvg_cairo_render_to_canvas_by_id(const resvg_render_tree *rtree,
+void resvg_cairo_render_to_canvas_by_id(const resvg_render_tree *tree,
                                         const resvg_options *opt,
                                         resvg_size size,
                                         const char *id,
                                         cairo_t *cr);
-#endif // RESVG_CAIRO_BACKEND
+#endif /* RESVG_CAIRO_BACKEND */
 
 #ifdef RESVG_QT_BACKEND
 /**
  * @brief Returns node's bounding box by ID.
  *
- * @param rtree Render tree.
+ * @param tree Render tree.
  * @param opt Rendering options.
  * @param id Node's ID.
  * @param bbox Node's bounding box.
  * @return \b false if a node with such an ID does not exist,
  *         ID is an empty string or ID isn't a UTF-8 string.
  */
-bool resvg_qt_get_node_bbox(const resvg_render_tree *rtree,
+bool resvg_qt_get_node_bbox(const resvg_render_tree *tree,
                             const resvg_options *opt,
                             const char *id,
                             resvg_rect *bbox);
@@ -323,26 +364,24 @@ bool resvg_qt_get_node_bbox(const resvg_render_tree *rtree,
 /**
  * @brief Renders the #resvg_render_tree to file.
  *
- * @param rtree Render tree.
+ * @param tree Render tree.
  * @param opt Rendering options.
  * @param file_path File path.
- * @return \b false if \b file_path isn't an UTF-8 string.
- * @return \b false on "Out of memory".
- * @return \b false on file write error.
+ * @return #resvg_error
  */
-bool resvg_qt_render_to_image(const resvg_render_tree *rtree,
-                              const resvg_options *opt,
-                              const char *file_path);
+int resvg_qt_render_to_image(const resvg_render_tree *tree,
+                             const resvg_options *opt,
+                             const char *file_path);
 
 /**
  * @brief Renders the #resvg_render_tree to canvas.
  *
- * @param rtree Render tree.
+ * @param tree Render tree.
  * @param opt Rendering options.
  * @param size Canvas size.
  * @param painter Canvas.
  */
-void resvg_qt_render_to_canvas(const resvg_render_tree *rtree,
+void resvg_qt_render_to_canvas(const resvg_render_tree *tree,
                                const resvg_options *opt,
                                resvg_size size,
                                void *painter);
@@ -352,17 +391,17 @@ void resvg_qt_render_to_canvas(const resvg_render_tree *rtree,
  *
  * Does nothing on error.
  *
- * @param rtree Render tree.
+ * @param tree Render tree.
  * @param opt Rendering options.
  * @param size Canvas size.
  * @param id Node's ID.
  * @param painter Canvas.
  */
-void resvg_qt_render_to_canvas_by_id(const resvg_render_tree *rtree,
+void resvg_qt_render_to_canvas_by_id(const resvg_render_tree *tree,
                                      const resvg_options *opt,
                                      resvg_size size,
                                      const char *id,
                                      void *painter);
-#endif // RESVG_QT_BACKEND
+#endif /* RESVG_QT_BACKEND */
 
-#endif // RESVG_H
+#endif /* RESVG_H */

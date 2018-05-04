@@ -52,27 +52,27 @@ struct Args {
 /// Errors list.
 #[derive(Fail, Debug)]
 pub enum Error {
-    /// An invalid node's ID.
     #[fail(display = "SVG doesn't have '{}' ID", _0)]
     InvalidId(String),
 
-    /// `resvg` errors.
-    #[fail(display = "{}", _0)]
-    Resvg(resvg::Error),
+    #[fail(display = "Failed to allocate an image")]
+    NoCanvas,
 
-    /// IO errors.
+    #[fail(display = "{}", _0)]
+    USvg(usvg::Error),
+
     #[fail(display = "{}", _0)]
     Io(::std::io::Error),
 }
 
-impl From<resvg::Error> for Error {
-    fn from(value: resvg::Error) -> Error {
-        Error::Resvg(value)
+impl From<usvg::Error> for Error {
+    fn from(value: usvg::Error) -> Self {
+        Error::USvg(value)
     }
 }
 
 impl From<::std::io::Error> for Error {
-    fn from(value: ::std::io::Error) -> Error {
+    fn from(value: ::std::io::Error) -> Self {
         Error::Io(value)
     }
 }
@@ -110,7 +110,7 @@ fn process() -> Result<(), Error> {
     }
 
     // Load file.
-    let tree = timed!("Preprocessing", resvg::parse_rtree_from_file(&args.in_svg, &opt))?;
+    let tree = timed!("Preprocessing", usvg::parse_tree_from_file(&args.in_svg, &opt.usvg))?;
 
     // We have to init only Qt backend.
     #[cfg(feature = "qt-backend")]
@@ -134,12 +134,14 @@ fn process() -> Result<(), Error> {
     if let Some(ref out_png) = args.out_png {
         let img = if let Some(ref id) = args.export_id {
             if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
-                timed!("Rendering", args.backend.render_node_to_image(&node, &opt))
+                timed!("Rendering", args.backend.render_node_to_image(&node, &opt)
+                                        .ok_or(Error::NoCanvas))
             } else {
                 return Err(Error::InvalidId(id.clone()));
             }
         } else {
-            timed!("Rendering", args.backend.render_to_image(&tree, &opt))
+            timed!("Rendering", args.backend.render_to_image(&tree, &opt)
+                                    .ok_or(Error::NoCanvas))
         }?;
 
         timed!("Saving", img.save(out_png));

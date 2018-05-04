@@ -5,9 +5,28 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+### Added
+- (c-api) `resvg_is_image_empty`.
+- (c-api) `resvg_error` enum.
+- (c-api) Qt wrapper.
+
+### Changed
+- (c-api) `resvg_parse_tree_from_file`, `resvg_parse_tree_from_data`
+  `resvg_cairo_render_to_image` and `resvg_qt_render_to_image`
+  will return an error code now.
+- (lib) Rename `parse_rtree_*` to `parse_tree_*`.
+- (lib) `resvg_parse_tree_from_data` accepts GZip compressed data now.
+- (lib) `Render::render_to_image` and `Render::render_node_to_image` will return
+  `Option` and not `Result` now.
+
 ### Fixed
 - (qt-backend) Gradient with `objectBoundingBox` rendering.
 - (qt-backend) Text bounding box detection during the rendering.
+- (c-api) `resvg_get_node_transform` will return a correct transform now.
+
+### Removed
+- (c-api) `resvg_error_msg_destroy`.
+- (lib) `Error`.
 
 ## [0.2.0] - 2018-04-24
 ### Added
@@ -26,4 +45,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `font-size` attribute inheritance during `use` resolving.
 
 [Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/RazrFalcon/xmlparser/compare/0.1.0...0.2.0
+[0.2.0]: https://github.com/RazrFalcon/resvg/compare/0.1.0...0.2.0

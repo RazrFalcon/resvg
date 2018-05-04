@@ -6,3 +6,10 @@ Cargo.lock
 *.pro.user.*
 .qmake.stash
 /*.png
+Makefile
+*.o
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+build-*

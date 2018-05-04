@@ -21,7 +21,6 @@ And as an embeddable library to paint SVG on an application native canvas.
 
 extern crate lyon_geom;
 #[macro_use] pub extern crate usvg;
-#[macro_use] extern crate failure;
 #[macro_use] extern crate log;
 
 #[cfg(feature = "cairo-backend")] pub extern crate cairo;
@@ -33,6 +32,7 @@ extern crate lyon_geom;
 
 
 pub use usvg::svgdom;
+pub use usvg::Error;
 use lyon_geom::euclid;
 
 
@@ -41,7 +41,6 @@ use lyon_geom::euclid;
 
 pub mod utils;
 pub mod geom;
-mod error;
 mod layers;
 mod options;
 mod traits;
@@ -51,7 +50,6 @@ use std::path::{
     Path,
 };
 
-pub use error::*;
 pub use options::*;
 pub use geom::*;
 
@@ -74,18 +72,22 @@ pub use usvg::tree;
 /// use this trait to write backend-independent code.
 pub trait Render {
     /// Renders SVG to image.
+    ///
+    /// Returns `None` if an image allocation failed.
     fn render_to_image(
         &self,
         tree: &tree::Tree,
         opt: &Options,
-    ) -> Result<Box<OutputImage>>;
+    ) -> Option<Box<OutputImage>>;
 
     /// Renders SVG node to image.
+    ///
+    /// Returns `None` if an image allocation failed.
     fn render_node_to_image(
         &self,
         node: &tree::Node,
         opt: &Options,
-    ) -> Result<Box<OutputImage>>;
+    ) -> Option<Box<OutputImage>>;
 
     /// Calculates node's absolute bounding box.
     ///
@@ -159,26 +161,7 @@ pub fn default_backend() -> Box<Render> {
     unreachable!("at least one backend must be enabled")
 }
 
-/// Creates `RenderTree` from SVG data.
-pub fn parse_rtree_from_data(
-    text: &str,
-    opt: &Options,
-) -> tree::Tree {
-    usvg::parse_tree_from_data(text, &opt.usvg)
-}
-
-/// Creates `RenderTree` from `svgdom::Document`.
-pub fn parse_rtree_from_dom(
-    doc: svgdom::Document,
-    opt: &Options,
-) -> tree::Tree {
-    usvg::parse_tree_from_dom(doc, &opt.usvg)
-}
-
-/// Creates `RenderTree` from `svgdom::Document`.
-pub fn parse_rtree_from_file<P: AsRef<Path>>(
-    path: P,
-    opt: &Options,
-) -> Result<tree::Tree> {
-    Ok(usvg::parse_tree_from_file(path, &opt.usvg)?)
-}
+pub use usvg::parse_tree_from_data;
+pub use usvg::parse_tree_from_str;
+pub use usvg::parse_tree_from_dom;
+pub use usvg::parse_tree_from_file;

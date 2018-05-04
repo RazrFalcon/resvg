@@ -2,8 +2,7 @@
 
 #include <QFrame>
 
-struct resvg_render_tree;
-struct resvg_options;
+#include <ResvgQt.h>
 
 class SvgView : public QFrame
 {
@@ -18,7 +17,6 @@ public:
     };
 
     explicit SvgView(QWidget *parent = nullptr);
-    ~SvgView();
 
     static void init();
 
@@ -44,8 +42,7 @@ protected:
 private:
     const QImage m_checkboardImg;
 
-    resvg_options *m_opt = nullptr;
-    resvg_render_tree *m_rtree = nullptr;
+    ResvgRenderer m_renderer;
 
     bool m_isFitToView = true;
     float m_zoom = 1.0f;

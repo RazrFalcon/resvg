@@ -15,9 +15,9 @@ extern crate cairo_sys;
 
 use std::fmt;
 use std::path;
-use std::ptr;
-use std::ffi::{ CStr, CString };
+use std::ffi::CStr;
 use std::os::raw::c_char;
+use std::slice;
 
 #[cfg(feature = "qt-backend")]
 use resvg::qt;
@@ -27,6 +27,7 @@ use resvg::cairo;
 
 use resvg::usvg;
 use resvg::tree;
+use resvg::tree::NodeExt;
 use resvg::geom::*;
 
 
@@ -38,6 +39,16 @@ pub struct resvg_options {
     pub draw_background: bool,
     pub background: resvg_color,
     pub keep_named_groups: bool,
+}
+
+enum ErrorId {
+    Ok = 0,
+    NotAnUtf8Str,
+    FileOpenFailed,
+    FileWriteFailed,
+    InvalidFileSuffix,
+    MalformedGZip,
+    NoCanvas,
 }
 
 #[repr(C)]
@@ -91,13 +102,6 @@ pub struct resvg_render_tree(resvg::tree::Tree);
 #[repr(C)]
 pub struct resvg_handle(resvg::InitObject);
 
-macro_rules! on_err {
-    ($err:expr, $msg:expr) => ({
-        let c_str = CString::new($msg).unwrap();
-        unsafe { *$err = c_str.into_raw(); }
-        return ptr::null_mut();
-    })
-}
 
 #[no_mangle]
 pub extern fn resvg_init() -> *mut resvg_handle {
@@ -141,14 +145,14 @@ fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &log:
 }
 
 #[no_mangle]
-pub extern fn resvg_parse_rtree_from_file(
+pub extern fn resvg_parse_tree_from_file(
     file_path: *const c_char,
     opt: *const resvg_options,
-    error: *mut *mut c_char,
-) -> *mut resvg_render_tree {
+    raw_tree: *mut *mut resvg_render_tree,
+) -> i32 {
     let file_path = match cstr_to_str(file_path) {
         Some(v) => v,
-        None => on_err!(error, "Error: file path is not an UTF-8 string."),
+        None => return ErrorId::NotAnUtf8Str as i32,
     };
 
     let opt = to_native_opt(unsafe {
@@ -156,89 +160,86 @@ pub extern fn resvg_parse_rtree_from_file(
         &*opt
     });
 
-    let rtree = match resvg::parse_rtree_from_file(file_path, &opt) {
-        Ok(rtree) => rtree,
-        Err(e) => on_err!(error, e.to_string()),
+    let tree = match resvg::parse_tree_from_file(file_path, &opt.usvg) {
+        Ok(tree) => tree,
+        Err(e) => return convert_error(e) as i32,
     };
 
-    let rtree_box = Box::new(resvg_render_tree(rtree));
-    Box::into_raw(rtree_box)
+    let tree_box = Box::new(resvg_render_tree(tree));
+    unsafe { *raw_tree = Box::into_raw(tree_box); }
+
+    ErrorId::Ok as i32
 }
 
 #[no_mangle]
-pub extern fn resvg_parse_rtree_from_data(
-    text: *const c_char,
+pub extern fn resvg_parse_tree_from_data(
+    data: *const c_char,
+    len: usize,
     opt: *const resvg_options,
-    error: *mut *mut c_char,
-) -> *mut resvg_render_tree {
-    let text = match cstr_to_str(text) {
-        Some(v) => v,
-        None => on_err!(error, "Error: SVG data is not an UTF-8 string."),
-    };
+    raw_tree: *mut *mut resvg_render_tree,
+) -> i32 {
+    let data = unsafe { slice::from_raw_parts(data as *const u8, len) };
 
     let opt = to_native_opt(unsafe {
         assert!(!opt.is_null());
         &*opt
     });
 
-    let rtree = resvg::parse_rtree_from_data(text, &opt);
-
-    let rtree_box = Box::new(resvg_render_tree(rtree));
-    Box::into_raw(rtree_box)
-}
-
-#[no_mangle]
-pub extern fn resvg_error_msg_destroy(msg: *mut c_char) {
-    unsafe {
-        assert!(!msg.is_null());
-        CString::from_raw(msg)
+    let tree = match resvg::parse_tree_from_data(data, &opt.usvg) {
+        Ok(tree) => tree,
+        Err(e) => return convert_error(e) as i32,
     };
+
+    let tree_box = Box::new(resvg_render_tree(tree));
+    unsafe { *raw_tree = Box::into_raw(tree_box); }
+
+    ErrorId::Ok as i32
 }
 
 #[no_mangle]
-pub extern fn resvg_rtree_destroy(rtree: *mut resvg_render_tree) {
+pub extern fn resvg_tree_destroy(tree: *mut resvg_render_tree) {
     unsafe {
-        assert!(!rtree.is_null());
-        Box::from_raw(rtree)
+        assert!(!tree.is_null());
+        Box::from_raw(tree)
     };
 }
 
 #[cfg(feature = "qt-backend")]
 #[no_mangle]
 pub extern fn resvg_qt_render_to_image(
-    rtree: *const resvg_render_tree,
+    tree: *const resvg_render_tree,
     opt: *const resvg_options,
     file_path: *const c_char,
-) -> bool {
+) -> i32 {
     let backend = Box::new(resvg::render_qt::Backend);
-    render_to_image(rtree, opt, file_path, backend)
+    render_to_image(tree, opt, file_path, backend)
 }
 
 #[cfg(feature = "cairo-backend")]
 #[no_mangle]
 pub extern fn resvg_cairo_render_to_image(
-    rtree: *const resvg_render_tree,
+    tree: *const resvg_render_tree,
     opt: *const resvg_options,
     file_path: *const c_char,
-) -> bool {
+) -> i32 {
     let backend = Box::new(resvg::render_cairo::Backend);
-    render_to_image(rtree, opt, file_path, backend)
+    render_to_image(tree, opt, file_path, backend)
 }
 
 fn render_to_image(
-    rtree: *const resvg_render_tree,
+    tree: *const resvg_render_tree,
     opt: *const resvg_options,
     file_path: *const c_char,
     backend: Box<resvg::Render>,
-) -> bool {
-    let rtree = unsafe {
-        assert!(!rtree.is_null());
-        &*rtree
+) -> i32 {
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
     };
 
     let file_path = match cstr_to_str(file_path) {
         Some(v) => v,
-        None => return false,
+        None => return ErrorId::NotAnUtf8Str as i32,
     };
 
     let opt = to_native_opt(unsafe {
@@ -246,29 +247,31 @@ fn render_to_image(
         &*opt
     });
 
-    let img = backend.render_to_image(&rtree.0, &opt);
+    let img = backend.render_to_image(&tree.0, &opt);
     let img = match img {
-        Ok(img) => img,
-        Err(e) => {
-            warn!("{}", e);
-            return false;
+        Some(img) => img,
+        None => {
+            return ErrorId::NoCanvas as i32;
         }
     };
 
-    img.save(path::Path::new(file_path))
+    match img.save(path::Path::new(file_path)) {
+        true => ErrorId::Ok as i32,
+        false => ErrorId::FileWriteFailed as i32,
+    }
 }
 
 #[cfg(feature = "qt-backend")]
 #[no_mangle]
 pub extern fn resvg_qt_render_to_canvas(
-    rtree: *const resvg_render_tree,
+    tree: *const resvg_render_tree,
     opt: *const resvg_options,
     size: resvg_size,
     painter: *mut qt::qtc_qpainter,
 ) {
-    let rtree = unsafe {
-        assert!(!rtree.is_null());
-        &*rtree
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
     };
 
     let painter = unsafe { qt::Painter::from_raw(painter) };
@@ -278,20 +281,20 @@ pub extern fn resvg_qt_render_to_canvas(
         &*opt
     });
 
-    resvg::render_qt::render_to_canvas(&rtree.0, &opt, size, &painter);
+    resvg::render_qt::render_to_canvas(&tree.0, &opt, size, &painter);
 }
 
 #[cfg(feature = "cairo-backend")]
 #[no_mangle]
 pub extern fn resvg_cairo_render_to_canvas(
-    rtree: *const resvg_render_tree,
+    tree: *const resvg_render_tree,
     opt: *const resvg_options,
     size: resvg_size,
     cr: *mut cairo_sys::cairo_t,
 ) {
-    let rtree = unsafe {
-        assert!(!rtree.is_null());
-        &*rtree
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
     };
 
     use glib::translate::FromGlibPtrNone;
@@ -304,21 +307,21 @@ pub extern fn resvg_cairo_render_to_canvas(
         &*opt
     });
 
-    resvg::render_cairo::render_to_canvas(&rtree.0, &opt, size, &cr);
+    resvg::render_cairo::render_to_canvas(&tree.0, &opt, size, &cr);
 }
 
 #[cfg(feature = "qt-backend")]
 #[no_mangle]
 pub extern fn resvg_qt_render_to_canvas_by_id(
-    rtree: *const resvg_render_tree,
+    tree: *const resvg_render_tree,
     opt: *const resvg_options,
     size: resvg_size,
     id: *const c_char,
     painter: *mut qt::qtc_qpainter,
 ) {
-    let rtree = unsafe {
-        assert!(!rtree.is_null());
-        &*rtree
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
     };
 
     let painter = unsafe { qt::Painter::from_raw(painter) };
@@ -338,7 +341,7 @@ pub extern fn resvg_qt_render_to_canvas_by_id(
         return;
     }
 
-    if let Some(node) = rtree.0.node_by_id(id) {
+    if let Some(node) = tree.0.node_by_id(id) {
         if let Some(bbox) = resvg::render_qt::calc_node_bbox(&node, &opt) {
             let vbox = tree::ViewBox {
                 rect: bbox,
@@ -357,15 +360,15 @@ pub extern fn resvg_qt_render_to_canvas_by_id(
 #[cfg(feature = "cairo-backend")]
 #[no_mangle]
 pub extern fn resvg_cairo_render_to_canvas_by_id(
-    rtree: *const resvg_render_tree,
+    tree: *const resvg_render_tree,
     opt: *const resvg_options,
     size: resvg_size,
     id: *const c_char,
     cr: *mut cairo_sys::cairo_t,
 ) {
-    let rtree = unsafe {
-        assert!(!rtree.is_null());
-        &*rtree
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
     };
 
     let id = match cstr_to_str(id) {
@@ -388,7 +391,7 @@ pub extern fn resvg_cairo_render_to_canvas_by_id(
         &*opt
     });
 
-    if let Some(node) = rtree.0.node_by_id(id) {
+    if let Some(node) = tree.0.node_by_id(id) {
         if let Some(bbox) = resvg::render_cairo::calc_node_bbox(&node, &opt) {
             let vbox = tree::ViewBox {
                 rect: bbox,
@@ -406,14 +409,14 @@ pub extern fn resvg_cairo_render_to_canvas_by_id(
 
 #[no_mangle]
 pub extern fn resvg_get_image_size(
-    rtree: *const resvg_render_tree,
+    tree: *const resvg_render_tree,
 ) -> resvg_size {
-    let rtree = unsafe {
-        assert!(!rtree.is_null());
-        &*rtree
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
     };
 
-    let size = rtree.0.svg_node().size;
+    let size = tree.0.svg_node().size;
 
     resvg_size {
         width: size.width as u32,
@@ -423,14 +426,14 @@ pub extern fn resvg_get_image_size(
 
 #[no_mangle]
 pub extern fn resvg_get_image_viewbox(
-    rtree: *const resvg_render_tree,
+    tree: *const resvg_render_tree,
 ) -> resvg_rect {
-    let rtree = unsafe {
-        assert!(!rtree.is_null());
-        &*rtree
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
     };
 
-    let r = rtree.0.svg_node().view_box.rect;
+    let r = tree.0.svg_node().view_box.rect;
 
     resvg_rect {
         x: r.x(),
@@ -440,32 +443,44 @@ pub extern fn resvg_get_image_viewbox(
     }
 }
 
+#[no_mangle]
+pub extern fn resvg_is_image_empty(
+    tree: *const resvg_render_tree,
+) -> bool {
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
+    };
+
+    tree.0.root().has_children()
+}
+
 #[cfg(feature = "qt-backend")]
 #[no_mangle]
 pub extern fn resvg_qt_get_node_bbox(
-    rtree: *const resvg_render_tree,
+    tree: *const resvg_render_tree,
     opt: *const resvg_options,
     id: *const c_char,
     bbox: *mut resvg_rect,
 ) -> bool {
     let backend = Box::new(resvg::render_qt::Backend);
-    get_node_bbox(rtree, opt, id, bbox, backend)
+    get_node_bbox(tree, opt, id, bbox, backend)
 }
 
 #[cfg(feature = "cairo-backend")]
 #[no_mangle]
 pub extern fn resvg_cairo_get_node_bbox(
-    rtree: *const resvg_render_tree,
+    tree: *const resvg_render_tree,
     opt: *const resvg_options,
     id: *const c_char,
     bbox: *mut resvg_rect,
 ) -> bool {
     let backend = Box::new(resvg::render_cairo::Backend);
-    get_node_bbox(rtree, opt, id, bbox, backend)
+    get_node_bbox(tree, opt, id, bbox, backend)
 }
 
 fn get_node_bbox(
-    rtree: *const resvg_render_tree,
+    tree: *const resvg_render_tree,
     opt: *const resvg_options,
     id: *const c_char,
     bbox: *mut resvg_rect,
@@ -484,9 +499,9 @@ fn get_node_bbox(
         return false;
     }
 
-    let rtree = unsafe {
-        assert!(!rtree.is_null());
-        &*rtree
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
     };
 
 
@@ -495,7 +510,7 @@ fn get_node_bbox(
         &*opt
     });
 
-    match rtree.0.node_by_id(id) {
+    match tree.0.node_by_id(id) {
         Some(node) => {
             if let Some(r) = backend.calc_node_bbox(&node, &opt) {
                 unsafe {
@@ -519,7 +534,7 @@ fn get_node_bbox(
 
 #[no_mangle]
 pub extern fn resvg_node_exists(
-    rtree: *const resvg_render_tree,
+    tree: *const resvg_render_tree,
     id: *const c_char,
 ) -> bool {
     let id = match cstr_to_str(id) {
@@ -530,17 +545,17 @@ pub extern fn resvg_node_exists(
         }
     };
 
-    let rtree = unsafe {
-        assert!(!rtree.is_null());
-        &*rtree
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
     };
 
-    rtree.0.node_by_id(id).is_some()
+    tree.0.node_by_id(id).is_some()
 }
 
 #[no_mangle]
 pub extern fn resvg_get_node_transform(
-    rtree: *const resvg_render_tree,
+    tree: *const resvg_render_tree,
     id: *const c_char,
     ts: *mut resvg_transform,
 ) -> bool {
@@ -552,13 +567,14 @@ pub extern fn resvg_get_node_transform(
         }
     };
 
-    let rtree = unsafe {
-        assert!(!rtree.is_null());
-        &*rtree
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
     };
 
-    if let Some(node) = rtree.0.node_by_id(id) {
-        let abs_ts = resvg::utils::abs_transform(&node);
+    if let Some(node) = tree.0.node_by_id(id) {
+        let mut abs_ts = resvg::utils::abs_transform(&node);
+        abs_ts.append(&node.transform());
 
         unsafe {
             (*ts).a = abs_ts.a;
@@ -631,5 +647,14 @@ fn to_native_opt(opt: &resvg_options) -> resvg::Options {
         },
         fit_to,
         background,
+    }
+}
+
+fn convert_error(e: usvg::Error) -> ErrorId {
+    match e {
+        usvg::Error::InvalidFileSuffix => ErrorId::InvalidFileSuffix,
+        usvg::Error::FileOpenFailed => ErrorId::FileOpenFailed,
+        usvg::Error::NotAnUtf8Str => ErrorId::NotAnUtf8Str,
+        usvg::Error::MalformedGZip => ErrorId::MalformedGZip,
     }
 }

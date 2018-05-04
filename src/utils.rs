@@ -61,6 +61,8 @@ pub(crate) fn apply_view_box(vb: &tree::ViewBox, img_size: ScreenSize) -> Screen
 }
 
 /// Returns node's absolute transform.
+///
+/// Does not include the node's transform itself.
 pub fn abs_transform(
     node: &tree::Node,
 ) -> tree::Transform {

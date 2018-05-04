@@ -23,11 +23,9 @@ use layers::{
     Layers,
 };
 use {
-    Error,
     Options,
     OutputImage,
     Render,
-    Result,
 };
 use utils;
 use self::ext::*;
@@ -85,18 +83,18 @@ impl Render for Backend {
         &self,
         tree: &tree::Tree,
         opt: &Options,
-    ) -> Result<Box<OutputImage>> {
+    ) -> Option<Box<OutputImage>> {
         let img = render_to_image(tree, opt)?;
-        Ok(Box::new(img))
+        Some(Box::new(img))
     }
 
     fn render_node_to_image(
         &self,
         node: &tree::Node,
         opt: &Options,
-    ) -> Result<Box<OutputImage>> {
+    ) -> Option<Box<OutputImage>> {
         let img = render_node_to_image(node, opt)?;
-        Ok(Box::new(img))
+        Some(Box::new(img))
     }
 
     fn calc_node_bbox(
@@ -128,7 +126,7 @@ type CairoLayers<'a> = Layers<'a, cairo::ImageSurface>;
 pub fn render_to_image(
     tree: &tree::Tree,
     opt: &Options,
-) -> Result<cairo::ImageSurface> {
+) -> Option<cairo::ImageSurface> {
     let (surface, img_view) = create_surface(
         tree.svg_node().size.to_screen_size(),
         opt,
@@ -144,19 +142,19 @@ pub fn render_to_image(
 
     render_to_canvas(tree, opt, img_view, &cr);
 
-    Ok(surface)
+    Some(surface)
 }
 
 /// Renders SVG to image.
 pub fn render_node_to_image(
     node: &tree::Node,
     opt: &Options,
-) -> Result<cairo::ImageSurface> {
+) -> Option<cairo::ImageSurface> {
     let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
         bbox
     } else {
         warn!("Node {:?} has zero size.", node.id());
-        return Err(Error::NoCanvas);
+        return None;
     };
 
     let (surface, img_size) = create_surface(node_bbox.to_screen_size(), opt)?;
@@ -176,7 +174,7 @@ pub fn render_node_to_image(
 
     render_node_to_canvas(node, opt, vbox, img_size, &cr);
 
-    Ok(surface)
+    Some(surface)
 }
 
 /// Renders SVG to canvas.
@@ -214,13 +212,13 @@ pub fn render_node_to_canvas(
 fn create_surface(
     size: ScreenSize,
     opt: &Options,
-) -> Result<(cairo::ImageSurface, ScreenSize)> {
+) -> Option<(cairo::ImageSurface, ScreenSize)> {
     let img_size = utils::fit_to(size, opt.fit_to);
 
     debug_assert!(!img_size.is_empty_or_negative());
-    let surface = try_create_surface!(img_size, Err(Error::NoCanvas));
+    let surface = try_create_surface!(img_size, None);
 
-    Ok((surface, img_size))
+    Some((surface, img_size))
 }
 
 /// Applies viewbox transformation to the painter.

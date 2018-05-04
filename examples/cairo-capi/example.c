@@ -4,7 +4,7 @@
 
 #include <resvg.h>
 
-static resvg_render_tree *rtree = NULL;
+static resvg_render_tree *tree = NULL;
 static resvg_options opt;
 
 static gboolean
@@ -13,9 +13,9 @@ draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data)
     GtkAllocation alloc;
     gtk_widget_get_allocation(widget, &alloc);
 
-    if (rtree) {
+    if (tree) {
         resvg_size s = { alloc.width, alloc.height };
-        resvg_cairo_render_to_canvas(rtree, &opt, s, cr);
+        resvg_cairo_render_to_canvas(tree, &opt, s, cr);
     }
 
     return FALSE;
@@ -24,8 +24,8 @@ draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data)
 static void
 close_window(void)
 {
-    if (rtree) {
-        resvg_rtree_destroy(rtree);
+    if (tree) {
+        resvg_tree_destroy(tree);
     }
 }
 
@@ -35,11 +35,9 @@ parse_doc(const char *path)
     resvg_init_options(&opt);
     opt.path = path;
 
-    char *error;
-    rtree = resvg_parse_rtree_from_file(path, &opt, &error);
-    if (!rtree) {
-        printf("%s\n", error);
-        resvg_error_msg_destroy(error);
+    int err = resvg_parse_tree_from_file(path, &opt, &tree);
+    if (err != RESVG_OK) {
+        printf("Error id: %i\n", err);
         abort();
     }
 }

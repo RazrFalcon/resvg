@@ -35,7 +35,7 @@ fn main() {
     opt.usvg.keep_named_groups = true;
     opt.fit_to = resvg::FitTo::Zoom(zoom as f32);
 
-    let rtree = resvg::parse_rtree_from_file(&args[1], &opt).unwrap();
+    let rtree = resvg::parse_tree_from_file(&args[1], &opt.usvg).unwrap();
 
     let mut bboxes = Vec::new();
     for node in rtree.root().descendants() {

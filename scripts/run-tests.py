@@ -36,8 +36,7 @@ if platform.system() != 'Linux':
     exit(1)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--no-regression', help='Do not run regression testing',
-                    action='store_true')
+parser.add_argument('--no-regression', help='Do not run regression testing', action='store_true')
 args = parser.parse_args()
 
 if os.getcwd().endswith('scripts'):
@@ -111,13 +110,24 @@ if local_test:
         proc.check_call(['cargo', 'test', '--features', 'cairo-backend'])
 
 
-# build demo
+# test Qt C-API
 #
 # build C-API for demo
 with cd('capi'):
     proc.check_call(['cargo', 'build', '--features', 'qt-backend'])
 
+# test Qt C-API wrapper
+with cd('capi/qtests'):
+    proc.check_call(['qmake', 'CONFIG+=debug'], env=dict(os.environ, QT_SELECT="5"))
+    proc.check_call(['make'])
+    proc.check_call(['./tst_resvgqt'], env=dict(os.environ, LD_LIBRARY_PATH="../../target/debug"))
+
 with cd('demo'):
+    proc.call(['make', 'distclean'])
+    proc.check_call(['qmake', 'CONFIG+=debug'], env=dict(os.environ, QT_SELECT="5"))
+    proc.check_call(['make'])
+
+with cd('examples/resvg-vs-qtsvg'):
     proc.call(['make', 'distclean'])
     proc.check_call(['qmake', 'CONFIG+=debug'], env=dict(os.environ, QT_SELECT="5"))
     proc.check_call(['make'])
