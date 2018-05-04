@@ -34,15 +34,11 @@ public:
 
     /**
      * @brief Constructs a new renderer and loads the contents of the SVG(Z) file.
-     *
-     * @param filePath File path.
      */
     ResvgRenderer(const QString &filePath);
 
     /**
      * @brief Constructs a new renderer and loads the SVG data.
-     *
-     * @param data SVG data. Must be already unzipped.
      */
     ResvgRenderer(const QByteArray &data);
 
@@ -58,8 +54,6 @@ public:
 
     /**
      * @brief Loads the SVG data.
-     *
-     * @param data SVG data. Must be already unzipped.
      */
     bool load(const QByteArray &data);
 

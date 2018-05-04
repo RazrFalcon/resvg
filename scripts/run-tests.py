@@ -118,7 +118,8 @@ with cd('capi'):
 
 # test Qt C-API wrapper
 with cd('capi/qtests'):
-    proc.check_call(['qmake', 'CONFIG+=debug'], env=dict(os.environ, QT_SELECT="5"))
+    defines = 'DEFINES+=LOCAL_BUILD' if local_test else ''
+    proc.check_call(['qmake', 'CONFIG+=debug', defines], env=dict(os.environ, QT_SELECT="5"))
     proc.check_call(['make'])
     proc.check_call(['./tst_resvgqt'], env=dict(os.environ, LD_LIBRARY_PATH="../../target/debug"))
 

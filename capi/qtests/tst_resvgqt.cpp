@@ -41,6 +41,7 @@ void ResvgQtTests::test_parseInvalidFile()
 
 void ResvgQtTests::test_renderFile()
 {
+#ifdef LOCAL_BUILD
     ResvgRenderer render(localPath("test.svg"));
     QVERIFY(!render.isEmpty());
     QCOMPARE(render.defaultSize(), QSize(200, 200));
@@ -55,6 +56,7 @@ void ResvgQtTests::test_renderFile()
     img.save("test_renderFile.png");
 
     QCOMPARE(img, QImage(localPath("test_renderFile_result.png")));
+#endif
 }
 
 void ResvgQtTests::test_elementExists()
