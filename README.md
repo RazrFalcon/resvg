@@ -103,7 +103,7 @@ All other dependencies aren't written by me for this project.
 
 ## Build
 
-See [doc/build.md](doc/build.md) for details.
+See [docs/build.md](docs/build.md) for details.
 
 ## License
 

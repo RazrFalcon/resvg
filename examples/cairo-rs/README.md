@@ -6,4 +6,4 @@ A simple example that shows how to use *resvg* from `gtk-rs`.
 cargo run -- ../qt-demo/svg-logo.svg
 ```
 
-See [doc/build.md](../../doc/build.md) for details.
+See [docs/build.md](../../docs/build.md) for details.

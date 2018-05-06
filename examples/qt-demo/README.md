@@ -17,4 +17,4 @@ make
 LD_LIBRARY_PATH=../../target/release ./demo
 ```
 
-See [doc/build.md](../../doc/build.md) for details.
+See [docs/build.md](../../docs/build.md) for details.

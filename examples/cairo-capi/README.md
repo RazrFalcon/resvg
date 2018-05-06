@@ -11,4 +11,4 @@ make
 LD_LIBRARY_PATH=../../target/debug ./example ../qt-demo/svg-logo.svg
 ```
 
-See [doc/build.md](../../../doc/build.md) for details.
+See [docs/build.md](../../docs/build.md) for details.
