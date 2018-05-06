@@ -39,7 +39,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--no-regression', help='Do not run regression testing', action='store_true')
 args = parser.parse_args()
 
-if os.getcwd().endswith('scripts'):
+if os.getcwd().endswith('testing_tools'):
     os.chdir('..')
 
 if 'TRAVIS_BUILD_DIR' in os.environ:
