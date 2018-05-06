@@ -17,4 +17,4 @@ install:
   - sudo apt-get install -qq qt56base qt56svg
   # prepare custom Qt
   - source /opt/qt56/bin/qt56-env.sh;
-script: ./scripts/run-tests.py
+script: ./testing_tools/run-tests.py
