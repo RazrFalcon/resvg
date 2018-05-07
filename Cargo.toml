@@ -28,8 +28,7 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
 log = "0.4"
-lyon_geom = "0.10"
-usvg = { git = "https://github.com/RazrFalcon/usvg", rev = "ac32f78" }
+usvg = { git = "https://github.com/RazrFalcon/usvg", rev = "ac0dfb4" }
 #usvg = { path = "../usvg" }
 # cairo backend
 cairo-rs = { version = "0.4.1", features = ["png"], optional = true }

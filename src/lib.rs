@@ -19,7 +19,6 @@ And as an embeddable library to paint SVG on an application native canvas.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
-extern crate lyon_geom;
 #[macro_use] pub extern crate usvg;
 #[macro_use] extern crate log;
 
@@ -31,8 +30,11 @@ extern crate lyon_geom;
 #[cfg(feature = "qt-backend")] pub extern crate resvg_qt as qt;
 
 
-pub use usvg::svgdom;
-pub use usvg::Error;
+pub use usvg::{
+    svgdom,
+    lyon_geom,
+    Error,
+};
 use lyon_geom::euclid;
 
 
