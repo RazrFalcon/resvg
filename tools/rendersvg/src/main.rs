@@ -8,6 +8,7 @@ extern crate resvg;
 extern crate fern;
 extern crate log;
 extern crate time;
+extern crate getopts;
 
 
 use std::fs;
