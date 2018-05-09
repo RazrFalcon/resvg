@@ -40,7 +40,7 @@ def change_ext(path, suffix, new_ext):
 def render_svg(render_path, in_svg, out_png):
     # Render with zoom by default to test scaling.
     # Images may render differently depending on scale.
-    return subprocess.call([render_path, in_svg, out_png, '--backend', args.backend, '--zoom', '2'],
+    return subprocess.call([render_path, '--backend', args.backend, '--zoom', '2', in_svg, out_png],
                            cwd=args.work_dir)
 
 

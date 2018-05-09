@@ -117,20 +117,23 @@ with cd('capi'):
     proc.check_call(['cargo', 'build', '--features', 'qt-backend'])
 
 # test Qt C-API wrapper
+qmake_env = os.environ if local_test else dict(os.environ, QT_SELECT="5")
+
 with cd('capi/qtests'):
     defines = 'DEFINES+=LOCAL_BUILD' if local_test else ''
-    proc.check_call(['qmake', 'CONFIG+=debug', defines], env=dict(os.environ, QT_SELECT="5"))
+    proc.call(['make', 'distclean'])
+    proc.check_call(['qmake', 'CONFIG+=debug', defines], env=qmake_env)
     proc.check_call(['make'])
     proc.check_call(['./tst_resvgqt'], env=dict(os.environ, LD_LIBRARY_PATH="../../target/debug"))
 
 with cd('examples/qt-demo'):
     proc.call(['make', 'distclean'])
-    proc.check_call(['qmake', 'CONFIG+=debug'], env=dict(os.environ, QT_SELECT="5"))
+    proc.check_call(['qmake', 'CONFIG+=debug'], env=qmake_env)
     proc.check_call(['make'])
 
 with cd('examples/resvg-vs-qtsvg'):
     proc.call(['make', 'distclean'])
-    proc.check_call(['qmake', 'CONFIG+=debug'], env=dict(os.environ, QT_SELECT="5"))
+    proc.check_call(['qmake', 'CONFIG+=debug'], env=qmake_env)
     proc.check_call(['make'])
 
 

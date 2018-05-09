@@ -11,13 +11,7 @@ failure = "0.1.1"
 fern = "0.5"
 log = "0.4"
 time = "0.1"
-
-[dependencies.resvg]
-path = "../../"
-
-[dependencies.clap]
-version = "2"
-default-features = false
+resvg = { path = "../../" }
 
 [features]
 cairo-backend = ["resvg/cairo-backend"]

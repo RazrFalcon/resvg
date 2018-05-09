@@ -3,8 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #[macro_use]
-extern crate clap;
-#[macro_use]
 extern crate failure;
 extern crate resvg;
 extern crate fern;
@@ -12,18 +10,14 @@ extern crate log;
 extern crate time;
 
 
-use std::str::FromStr;
 use std::fs;
 use std::fmt;
 use std::path;
 use std::io::{ self, Write };
 
-use clap::{ App, Arg, ArgMatches };
-
 use resvg::{
     usvg,
     svgdom,
-    FitTo,
     Options,
     RectExt,
     Render,
@@ -32,20 +26,8 @@ use usvg::prelude::*;
 
 use svgdom::WriteBuffer;
 
+mod args;
 
-struct Args {
-    in_svg: path::PathBuf,
-    out_png: Option<path::PathBuf>,
-    backend: Box<Render>,
-    #[allow(dead_code)]
-    backend_name: String,
-    query_all: bool,
-    export_id: Option<String>,
-    dump: Option<path::PathBuf>,
-    pretend: bool,
-    perf: bool,
-    quiet: bool,
-}
 
 /// Errors list.
 #[derive(Fail, Debug)]
@@ -61,6 +43,9 @@ pub enum Error {
 
     #[fail(display = "{}", _0)]
     Io(::std::io::Error),
+
+    #[fail(display = "{}", _0)]
+    String(String),
 }
 
 impl From<usvg::Error> for Error {
@@ -72,6 +57,12 @@ impl From<usvg::Error> for Error {
 impl From<::std::io::Error> for Error {
     fn from(value: ::std::io::Error) -> Self {
         Error::Io(value)
+    }
+}
+
+impl From<String> for Error {
+    fn from(value: String) -> Self {
+        Error::String(value)
     }
 }
 
@@ -90,7 +81,14 @@ fn main() {
 }
 
 fn process() -> Result<(), Error> {
-    let (args, opt) = parse_args();
+    let (args, opt) = match args::parse() {
+        Ok((args, opt)) => (args, opt),
+        Err(e) => {
+            args::print_help();
+            println!();
+            return Err(e.into());
+        }
+    };
 
     // Do not print warning during the ID querying.
     //
@@ -102,6 +100,14 @@ fn process() -> Result<(), Error> {
             .chain(std::io::stderr())
             .apply().unwrap();
     }
+
+    let backend: Box<Render> = match args.backend_name.as_str() {
+        #[cfg(feature = "cairo-backend")]
+        "cairo" => Box::new(resvg::render_cairo::Backend),
+        #[cfg(feature = "qt-backend")]
+        "qt" => Box::new(resvg::render_qt::Backend),
+        _ => return Err(format!("Unknown backend").into()),
+    };
 
     macro_rules! timed {
         ($name:expr, $task:expr) => { run_task(args.perf, $name, || $task) };
@@ -115,7 +121,7 @@ fn process() -> Result<(), Error> {
     let _resvg = timed!("Backend init", init_qt_gui(&tree, &args));
 
     if args.query_all {
-        query_all(&tree, &args, &opt);
+        query_all(backend, &tree, &opt);
         return Ok(());
     }
 
@@ -132,14 +138,14 @@ fn process() -> Result<(), Error> {
     if let Some(ref out_png) = args.out_png {
         let img = if let Some(ref id) = args.export_id {
             if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
-                timed!("Rendering", args.backend.render_node_to_image(&node, &opt)
-                                        .ok_or(Error::NoCanvas))
+                timed!("Rendering", backend.render_node_to_image(&node, &opt)
+                                           .ok_or(Error::NoCanvas))
             } else {
                 return Err(Error::InvalidId(id.clone()));
             }
         } else {
-            timed!("Rendering", args.backend.render_to_image(&tree, &opt)
-                                    .ok_or(Error::NoCanvas))
+            timed!("Rendering", backend.render_to_image(&tree, &opt)
+                                       .ok_or(Error::NoCanvas))
         }?;
 
         timed!("Saving", img.save(out_png));
@@ -154,7 +160,7 @@ fn process() -> Result<(), Error> {
 #[cfg(feature = "qt-backend")]
 fn init_qt_gui(
     tree: &usvg::Tree,
-    args: &Args,
+    args: &args::Args,
 ) -> Option<resvg::InitObject> {
     if args.backend_name != "qt" {
         return None;
@@ -174,8 +180,8 @@ fn init_qt_gui(
 }
 
 fn query_all(
+    backend: Box<Render>,
     tree: &usvg::Tree,
-    args: &Args,
     opt: &Options,
 ) {
     let mut count = 0;
@@ -194,7 +200,7 @@ fn query_all(
             (v * 1000.0).round() / 1000.0
         }
 
-        if let Some(bbox) = args.backend.calc_node_bbox(&node, &opt) {
+        if let Some(bbox) = backend.calc_node_bbox(&node, &opt) {
             println!("{},{},{},{},{}", node.id(),
                      round_len(bbox.x()), round_len(bbox.y()),
                      round_len(bbox.width()), round_len(bbox.height()));
@@ -217,266 +223,6 @@ fn run_task<P, T>(perf: bool, title: &str, p: P) -> T
         res
     } else {
         p()
-    }
-}
-
-fn parse_args() -> (Args, Options) {
-    let app = prepare_app();
-    let args = match app.get_matches_safe() {
-        Ok(a) => a,
-        Err(mut e) => {
-            // change case before printing an error
-            if e.message.starts_with("error:") {
-                e.message = e.message.replace("error:", "Error:");
-            }
-            e.exit();
-        }
-    };
-
-    let app_args = fill_args(&args);
-    let opt = fill_options(&args, &app_args);
-    (app_args, opt)
-}
-
-fn prepare_app<'a, 'b>() -> App<'a, 'b> {
-    App::new("rendersvg")
-        .version(env!("CARGO_PKG_VERSION"))
-        .arg(Arg::with_name("in-svg")
-            .help("Input file")
-            .required(true)
-            .index(1)
-            .validator(is_svg))
-        .arg(Arg::with_name("out-png")
-            .help("Output file")
-            .required_unless_one(&["query-all"])
-            .index(2)
-            .validator(is_png))
-        .arg(Arg::with_name("dpi")
-            .long("dpi")
-            .help("Sets the resolution [10..4000]")
-            .value_name("DPI")
-            .default_value("96")
-            .validator(is_dpi))
-        .arg(Arg::with_name("width")
-            .short("w")
-            .long("width")
-            .value_name("LENGTH")
-            .help("Sets the width in pixels")
-            .conflicts_with_all(&["height", "zoom"])
-            .validator(is_length))
-        .arg(Arg::with_name("height")
-            .short("h")
-            .long("height")
-            .value_name("LENGTH")
-            .help("Sets the height in pixels")
-            .conflicts_with_all(&["width", "zoom"])
-            .validator(is_length))
-        .arg(Arg::with_name("zoom")
-            .short("z")
-            .long("zoom")
-            .value_name("FACTOR")
-            .help("Zooms the image by a factor")
-            .conflicts_with_all(&["width", "height"])
-            .validator(is_zoom))
-        .arg(Arg::with_name("background")
-            .long("background")
-            .value_name("COLOR")
-            .help("Sets the background color")
-            .validator(is_color))
-        .arg(Arg::with_name("backend")
-            .long("backend")
-            .help("Sets the rendering backend. Has no effect if built with only one backend")
-            .takes_value(true)
-            .default_value(default_backend())
-            .possible_values(&backends()))
-        .arg(Arg::with_name("query-all")
-            .long("query-all")
-            .help("Queries all valid SVG ids with bounding boxes"))
-        .arg(Arg::with_name("export-id")
-            .long("export-id")
-            .help("Renders an object only with a specified ID")
-            .value_name("ID"))
-        .arg(Arg::with_name("dump-svg")
-            .long("dump-svg")
-            .help("Saves a preprocessed SVG to the selected file")
-            .value_name("PATH"))
-        .arg(Arg::with_name("pretend")
-            .long("pretend")
-            .help("Does all the steps except rendering"))
-        .arg(Arg::with_name("perf")
-            .long("perf")
-            .help("Prints performance stats"))
-        .arg(Arg::with_name("quiet")
-            .long("quiet")
-            .help("Disables warnings"))
-}
-
-fn backends() -> Vec<&'static str> {
-    let mut list = Vec::new();
-
-    #[cfg(feature = "cairo-backend")]
-    {
-        list.push("cairo");
-    }
-
-    #[cfg(feature = "qt-backend")]
-    {
-        list.push("qt");
-    }
-
-    list
-}
-
-#[allow(unreachable_code)]
-fn default_backend() -> &'static str {
-    #[cfg(feature = "cairo-backend")]
-    {
-        return "cairo"
-    }
-
-    #[cfg(feature = "qt-backend")]
-    {
-        return "qt"
-    }
-
-    unreachable!();
-}
-
-// TODO: simplify is_* methods
-fn is_svg(val: String) -> Result<(), String> {
-    let val = val.to_lowercase();
-    if val.ends_with(".svg") || val.ends_with(".svgz") {
-        Ok(())
-    } else {
-        Err(String::from("The input file format must be SVG(Z)."))
-    }
-}
-
-fn is_png(val: String) -> Result<(), String> {
-    if val.ends_with(".png") || val.ends_with(".PNG") {
-        Ok(())
-    } else {
-        Err(String::from("The output file format must be PNG."))
-    }
-}
-
-fn is_dpi(val: String) -> Result<(), String> {
-    let n = match val.parse::<u32>() {
-        Ok(v) => v,
-        Err(e) => return Err(format!("{}", e)),
-    };
-
-    if n >= 10 && n <= 4000 {
-        Ok(())
-    } else {
-        Err(String::from("Invalid DPI value."))
-    }
-}
-
-fn is_length(val: String) -> Result<(), String> {
-    let n = match val.parse::<u32>() {
-        Ok(v) => v,
-        Err(e) => return Err(format!("{}", e)),
-    };
-
-    if n > 0 {
-        Ok(())
-    } else {
-        Err(String::from("Invalid length value."))
-    }
-}
-
-fn is_zoom(val: String) -> Result<(), String> {
-    let n = match val.parse::<f32>() {
-        Ok(v) => v,
-        Err(e) => return Err(format!("{}", e)),
-    };
-
-    if n > 0.0 {
-        Ok(())
-    } else {
-        Err(String::from("Invalid zoom value."))
-    }
-}
-
-fn is_color(val: String) -> Result<(), String> {
-    match usvg::Color::from_str(&val) {
-        Ok(_) => Ok(()),
-        Err(_) => Err("Invalid color.".into()),
-    }
-}
-
-fn fill_args(args: &ArgMatches) -> Args {
-    let in_svg  = args.value_of("in-svg").unwrap().into();
-    let out_png = if args.is_present("out-png") {
-        Some(args.value_of("out-png").unwrap().into())
-    } else {
-        None
-    };
-
-    let dump = if args.is_present("dump-svg") {
-        Some(args.value_of("dump-svg").unwrap().into())
-    } else {
-        None
-    };
-
-    let export_id = if args.is_present("export-id") {
-        Some(args.value_of("export-id").unwrap().into())
-    } else {
-        None
-    };
-
-    let backend_name = args.value_of("backend").unwrap().to_string();
-    let backend: Box<Render> = match backend_name.as_str() {
-        #[cfg(feature = "cairo-backend")]
-        "cairo" => Box::new(resvg::render_cairo::Backend),
-        #[cfg(feature = "qt-backend")]
-        "qt" => Box::new(resvg::render_qt::Backend),
-        _ => unreachable!(),
-    };
-
-    Args {
-        in_svg,
-        out_png,
-        backend,
-        backend_name,
-        query_all: args.is_present("query-all"),
-        export_id,
-        dump,
-        pretend: args.is_present("pretend"),
-        perf: args.is_present("perf"),
-        quiet: args.is_present("quiet"),
-    }
-}
-
-fn fill_options(args: &ArgMatches, app_args: &Args) -> Options {
-    let mut fit_to = FitTo::Original;
-    if args.is_present("width") {
-        fit_to = FitTo::Width(value_t!(args.value_of("width"), u32).unwrap());
-    } else if args.is_present("height") {
-        fit_to = FitTo::Height(value_t!(args.value_of("height"), u32).unwrap());
-    } else if args.is_present("zoom") {
-        fit_to = FitTo::Zoom(value_t!(args.value_of("zoom"), f32).unwrap());
-    }
-
-    let mut background = None;
-    if args.is_present("background") {
-        let s = args.value_of("background").unwrap();
-        background = Some(usvg::Color::from_str(s).unwrap());
-    }
-
-    // We don't have to keep named groups when we don't need them
-    // because it will slow down rendering.
-    let keep_named_groups = app_args.query_all || app_args.export_id.is_some();
-
-    Options {
-        usvg: usvg::Options {
-            path: Some(args.value_of("in-svg").unwrap().into()),
-            dpi: value_t!(args.value_of("dpi"), u16).unwrap() as f64,
-            keep_named_groups,
-        },
-        fit_to,
-        background,
     }
 }
 

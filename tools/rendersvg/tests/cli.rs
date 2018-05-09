@@ -2,19 +2,16 @@ extern crate assert_cli;
 #[macro_use]
 extern crate indoc;
 
-
 use assert_cli::Assert;
 
-
 const APP_PATH: &str = "../../target/debug/rendersvg";
-
 
 #[test]
 fn query_all() {
     let args = &[
         APP_PATH,
-        "tests/images/bbox.svg",
         "--query-all",
+        "tests/images/bbox.svg",
     ];
 
     #[cfg(feature = "cairo-backend")]
@@ -25,10 +22,10 @@ fn query_all() {
         rect4,7.182,242.5,133.868,55
         rect5,9.584,329.203,70.711,70.711
         long_text,10.281,441.953,550.594,10.047
-        text1,200.703,23,55.406,22
+        text1,200.703,23,54.406,22
         text2,200.875,102,32.172,28
-        text3,202.311,178,57.692,22
-        text4,195.703,243,65.406,32
+        text3,202.311,178,56.692,22
+        text4,195.703,243,64.406,32
         g1,350,20,100,50
         g2,350,95,120,70
     ");
@@ -61,8 +58,8 @@ fn query_all() {
 fn query_file_with_warnings() {
     let args = &[
         APP_PATH,
-        "tests/images/bbox_with_warnings.svg",
         "--query-all",
+        "tests/images/bbox_with_warnings.svg",
     ];
 
     let output = indoc!("
@@ -79,8 +76,8 @@ fn query_file_with_warnings() {
 fn query_file_without_ids() {
     let args = &[
         APP_PATH,
-        "tests/images/bbox_without_ids.svg",
         "--query-all",
+        "tests/images/bbox_without_ids.svg",
     ];
 
     Assert::command(args)

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - (c-api) `resvg_is_image_empty`.
 - (c-api) `resvg_error` enum.
 - (c-api) Qt wrapper.
+- (rendersvg) Custom args parser to reduce the executable size.
 
 ### Changed
 - (c-api) `resvg_parse_tree_from_file`, `resvg_parse_tree_from_data`
