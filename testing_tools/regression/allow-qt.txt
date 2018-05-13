@@ -1,10 +1,1 @@
-e-svg-022.svg
-e-svg-023.svg
-e-svg-024.svg
-e-svg-025.svg
-e-svg-026.svg
-e-svg-027.svg
-e-svg-028.svg
-e-svg-029.svg
-e-svg-030.svg
-e-symbol-007.svg
+e-linearGradient-028.svg
