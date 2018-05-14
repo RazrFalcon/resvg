@@ -67,10 +67,10 @@ pub fn draw_raster(
         let (start_x, start_y, end_x, end_y) = if image.view_box.aspect.slice {
             let pos = utils::aligned_pos(
                 image.view_box.aspect.align,
-                0.0, 0.0, new_size.width as f64 - r.width(), new_size.height as f64 - r.height(),
+                0.0, 0.0, new_size.width as f64 - r.width, new_size.height as f64 - r.height,
             );
 
-            (pos.x as u32, pos.y as u32, (pos.x + r.width()) as u32, (pos.y + r.height()) as u32)
+            (pos.x as u32, pos.y as u32, (pos.x + r.width) as u32, (pos.y + r.height) as u32)
         } else {
             (0, 0, img.width(), img.height())
         };
@@ -108,7 +108,7 @@ pub fn draw_raster(
 
     let pos = utils::aligned_pos(
         image.view_box.aspect.align,
-        r.x(), r.y(), r.width() - img.width() as f64, r.height() - img.height() as f64,
+        r.x, r.y, r.width - img.width() as f64, r.height - img.height() as f64,
     );
 
     cr.set_source_surface(&surface, pos.x, pos.y);
@@ -126,7 +126,7 @@ fn draw_svg(
     let (ts, clip) = utils::prepare_sub_svg_geom(image, img_size);
 
     if let Some(clip) = clip {
-        cr.rectangle(clip.x(), clip.y(), clip.width(), clip.height());
+        cr.rectangle(clip.x, clip.y, clip.width, clip.height);
         cr.clip();
     }
 

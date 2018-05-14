@@ -42,7 +42,7 @@ pub fn apply(
             mask.rect
         };
 
-        mask_p.set_clip_rect(r.x(), r.y(), r.width(), r.height());
+        mask_p.set_clip_rect(r.x, r.y, r.width, r.height);
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {
             mask_p.apply_transform(&qt::Transform::from_bbox(bbox));

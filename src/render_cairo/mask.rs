@@ -45,7 +45,7 @@ pub fn apply(
             mask.rect
         };
 
-        mask_cr.rectangle(r.x(), r.y(), r.width(), r.height());
+        mask_cr.rectangle(r.x, r.y, r.width, r.height);
         mask_cr.clip();
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {

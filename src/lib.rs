@@ -35,7 +35,6 @@ pub use usvg::{
     lyon_geom,
     Error,
 };
-use lyon_geom::euclid;
 
 
 #[cfg(feature = "cairo-backend")] pub mod render_cairo;

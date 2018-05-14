@@ -36,7 +36,7 @@ pub fn apply(
     let global_ts = usvg::Transform::from_native(&global_ts);
     let (sx, sy) = global_ts.get_scale();
 
-    let img_size = Size::new(r.width() * sx, r.height() * sy).to_screen_size();
+    let img_size = Size::new(r.width * sx, r.height * sy).to_screen_size();
     let mut img = try_create_image!(img_size, ());
 
     img.set_dpi(opt.usvg.dpi);
@@ -46,14 +46,14 @@ pub fn apply(
 
     p.apply_transform(&qt::Transform::new(sx, 0.0, 0.0, sy, 0.0, 0.0));
     if let Some(vbox) = pattern.view_box {
-        let ts = utils::view_box_to_transform(vbox.rect, vbox.aspect, r.size);
+        let ts = utils::view_box_to_transform(vbox.rect, vbox.aspect, r.size());
         p.apply_transform(&ts.to_native());
     } else if pattern.content_units == usvg::Units::ObjectBoundingBox {
         // 'Note that this attribute has no effect if attribute `viewBox` is specified.'
 
         // We don't use Transform::from_bbox(bbox) because `x` and `y` should be
         // ignored for some reasons...
-        p.apply_transform(&qt::Transform::new(bbox.width(), 0.0, 0.0, bbox.height(), 0.0, 0.0));
+        p.scale(bbox.width, bbox.height);
     }
 
     let mut layers = super::create_layers(img_size, opt);
@@ -82,7 +82,7 @@ pub fn apply(
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);
-    ts.translate(r.x(), r.y());
+    ts.translate(r.x, r.y);
     ts.scale(1.0 / sx, 1.0 / sy);
     brush.set_transform(ts.to_native());
 }

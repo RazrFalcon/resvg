@@ -67,10 +67,10 @@ impl ConvTransform<cairo::Matrix> for usvg::Transform {
 
 impl TransformFromBBox for cairo::Matrix {
     fn from_bbox(bbox: Rect) -> Self {
-        debug_assert!(!bbox.width().is_fuzzy_zero());
-        debug_assert!(!bbox.height().is_fuzzy_zero());
+        debug_assert!(!bbox.width.is_fuzzy_zero());
+        debug_assert!(!bbox.height.is_fuzzy_zero());
 
-        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
+        Self::new(bbox.width, 0.0, 0.0, bbox.height, bbox.x, bbox.y)
     }
 }
 
@@ -215,7 +215,8 @@ fn create_surface(
 ) -> Option<(cairo::ImageSurface, ScreenSize)> {
     let img_size = utils::fit_to(size, opt.fit_to);
 
-    debug_assert!(!img_size.is_empty_or_negative());
+    debug_assert_ne!(img_size.width, 0);
+    debug_assert_ne!(img_size.height, 0);
     let surface = try_create_surface!(img_size, None);
 
     Some((surface, img_size))
@@ -227,7 +228,7 @@ fn apply_viewbox_transform(
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
-    let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_f64());
+    let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_size());
     cr.transform(ts.to_native());
 }
 
