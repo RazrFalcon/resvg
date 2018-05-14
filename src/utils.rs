@@ -15,6 +15,7 @@ pub use usvg::utils::*;
 use geom::*;
 use {
     FitTo,
+    Options,
 };
 
 
@@ -249,4 +250,62 @@ pub(crate) fn image_to_mask(
             data[idx + 3] = f64_bound(0.0, luma * 255.0, 255.0) as u8;
         }
     }
+}
+
+pub(crate) fn load_sub_svg(
+    image: &usvg::Image,
+    opt: &Options,
+) -> Option<(usvg::Tree, Options)> {
+    let mut sub_opt = Options {
+        usvg: usvg::Options {
+            path: None,
+            dpi: opt.usvg.dpi,
+            keep_named_groups: false,
+        },
+        fit_to: FitTo::Original,
+        background: None,
+    };
+
+    let tree = match image.data {
+        usvg::ImageData::Path(ref path) => {
+            sub_opt.usvg.path = Some(path.into());
+            usvg::Tree::from_file(path, &sub_opt.usvg).ok()?
+        }
+        usvg::ImageData::Raw(ref data) => {
+            usvg::Tree::from_data(data, &sub_opt.usvg).ok()?
+        }
+    };
+
+    Some((tree, sub_opt))
+}
+
+pub(crate) fn prepare_sub_svg_geom(
+    image: &usvg::Image,
+    img_size: ScreenSize,
+) -> (usvg::Transform, Option<Rect>) {
+    let new_size = apply_view_box(&image.view_box, img_size);
+    let r = image.view_box.rect;
+
+    let (tx, ty, clip) = if image.view_box.aspect.slice {
+        let pos = aligned_pos(
+            image.view_box.aspect.align,
+            0.0, 0.0, new_size.width as f64 - r.width(), new_size.height as f64 - r.height(),
+        );
+
+        let r = Rect::from_xywh(r.x(), r.y(), r.width(), r.height());
+        (r.x() - pos.x, r.y() - pos.y, Some(r))
+    } else {
+        let pos = aligned_pos(
+            image.view_box.aspect.align,
+            r.x(), r.y(), r.width() - new_size.width as f64, r.height() - new_size.height as f64,
+        );
+
+        (pos.x, pos.y, None)
+    };
+
+    let sx = new_size.width as f64 / img_size.width as f64;
+    let sy = new_size.height as f64 / img_size.height as f64;
+    let ts = usvg::Transform::new(sx, 0.0, 0.0, sy, tx, ty);
+
+    (ts, clip)
 }

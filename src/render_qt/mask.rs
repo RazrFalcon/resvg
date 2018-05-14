@@ -42,15 +42,7 @@ pub fn apply(
             mask.rect
         };
 
-        let mut p_path = qt::PainterPath::new();
-        p_path.move_to(r.x(), r.y());
-        p_path.line_to(r.x() + r.width(), r.y());
-        p_path.line_to(r.x() + r.width(), r.y() + r.height());
-        p_path.line_to(r.x(), r.y() + r.height());
-        p_path.close_path();
-
-        // TODO: use clip_rect
-        mask_p.set_clip_path(&p_path);
+        mask_p.set_clip_rect(r.x(), r.y(), r.width(), r.height());
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {
             mask_p.apply_transform(&qt::Transform::from_bbox(bbox));

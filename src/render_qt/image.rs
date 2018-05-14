@@ -9,20 +9,41 @@ use usvg;
 // self
 use geom::*;
 use utils;
+use traits::{
+    ConvTransform,
+};
+use {
+    Options,
+};
+
 
 pub fn draw(
     image: &usvg::Image,
+    opt: &Options,
     p: &qt::Painter,
 ) -> Rect {
+    if image.format == usvg::ImageFormat::SVG {
+        draw_svg(image, opt, p);
+    } else {
+        draw_raster(image, p);
+    }
+
+    image.view_box.rect
+}
+
+fn draw_raster(
+    image: &usvg::Image,
+    p: &qt::Painter,
+) {
     let r = image.view_box.rect;
 
     let img = match image.data {
         usvg::ImageData::Path(ref path) => {
-            try_opt_warn!(qt::Image::from_file(path), r,
+            try_opt_warn!(qt::Image::from_file(path), (),
                 "Failed to load an external image: {:?}.", path)
         }
-        usvg::ImageData::Raw(ref data, _) => {
-            try_opt_warn!(qt::Image::from_data(data), r,
+        usvg::ImageData::Raw(ref data) => {
+            try_opt_warn!(qt::Image::from_data(data), (),
                 "Failed to load an embedded image.")
         }
     };
@@ -33,7 +54,7 @@ pub fn draw(
     );
 
     let img = try_opt_warn!(
-        img.resize(new_size.width, new_size.height, qt::AspectRatioMode::IgnoreAspectRatio), r,
+        img.resize(new_size.width, new_size.height, qt::AspectRatioMode::IgnoreAspectRatio), (),
         "Failed to scale an image.",
     );
 
@@ -47,7 +68,7 @@ pub fn draw(
         );
 
         let img = try_opt_warn!(
-            img.copy(pos.x as u32, pos.y as u32, r.width() as u32, r.height() as u32), r,
+            img.copy(pos.x as u32, pos.y as u32, r.width() as u32, r.height() as u32), (),
             "Failed to copy a part of an image."
         );
 
@@ -60,6 +81,23 @@ pub fn draw(
 
         p.draw_image(pos.x, pos.y, &img);
     }
+}
 
-    r
+fn draw_svg(
+    image: &usvg::Image,
+    opt: &Options,
+    p: &qt::Painter,
+) {
+    let (tree, sub_opt) = try_opt!(utils::load_sub_svg(image, opt), ());
+
+    let img_size = tree.svg_node().size.to_screen_size();
+    let (ts, clip) = utils::prepare_sub_svg_geom(image, img_size);
+
+    if let Some(clip) = clip {
+        p.set_clip_rect(clip.x(), clip.y(), clip.width(), clip.height());
+    }
+
+    p.apply_transform(&ts.to_native());
+    super::render_to_canvas(&tree, &sub_opt, img_size, p);
+    p.reset_clip_path();
 }

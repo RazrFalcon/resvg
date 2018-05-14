@@ -13,21 +13,41 @@ use usvg;
 // self
 use geom::*;
 use utils;
+use traits::{
+    ConvTransform,
+};
+use {
+    Options,
+};
 
 
 pub fn draw(
     image: &usvg::Image,
+    opt: &Options,
     cr: &cairo::Context,
 ) -> Rect {
+    if image.format == usvg::ImageFormat::SVG {
+        draw_svg(image, opt, cr);
+    } else {
+        draw_raster(image, cr);
+    }
+
+    image.view_box.rect
+}
+
+pub fn draw_raster(
+    image: &usvg::Image,
+    cr: &cairo::Context,
+) {
     let r = image.view_box.rect;
 
     let img = match image.data {
         usvg::ImageData::Path(ref path) => {
-            try_opt_warn!(piston_image::open(path).ok(), r,
+            try_opt_warn!(piston_image::open(path).ok(), (),
                 "Failed to load an external image: {:?}.", path)
         }
-        usvg::ImageData::Raw(ref data, _) => {
-            try_opt_warn!(piston_image::load_from_memory(data).ok(), r,
+        usvg::ImageData::Raw(ref data) => {
+            try_opt_warn!(piston_image::load_from_memory(data).ok(), (),
                 "Failed to load an embedded image.")
         }
     };
@@ -39,7 +59,7 @@ pub fn draw(
     let img = img.resize_exact(new_size.width, new_size.height, piston_image::FilterType::Triangle);
     let img = img.to_rgba();
 
-    let mut surface = try_create_surface!(new_size, r);
+    let mut surface = try_create_surface!(new_size, ());
 
     {
         // Scaled image will be bigger than viewbox, so we have to
@@ -93,6 +113,24 @@ pub fn draw(
 
     cr.set_source_surface(&surface, pos.x, pos.y);
     cr.paint();
+}
 
-    r
+fn draw_svg(
+    image: &usvg::Image,
+    opt: &Options,
+    cr: &cairo::Context,
+) {
+    let (tree, sub_opt) = try_opt!(utils::load_sub_svg(image, opt), ());
+
+    let img_size = tree.svg_node().size.to_screen_size();
+    let (ts, clip) = utils::prepare_sub_svg_geom(image, img_size);
+
+    if let Some(clip) = clip {
+        cr.rectangle(clip.x(), clip.y(), clip.width(), clip.height());
+        cr.clip();
+    }
+
+    cr.transform(ts.to_native());
+    super::render_to_canvas(&tree, &sub_opt, img_size, cr);
+    cr.reset_clip();
 }

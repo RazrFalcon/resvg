@@ -248,7 +248,7 @@ fn render_node(
             Some(text::draw(node, opt, cr))
         }
         usvg::NodeKind::Image(ref img) => {
-            Some(image::draw(img, cr))
+            Some(image::draw(img, opt, cr))
         }
         usvg::NodeKind::Group(ref g) => {
             render_group_impl(node, g, opt, layers, cr)
