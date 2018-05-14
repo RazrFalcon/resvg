@@ -64,6 +64,4 @@ pub fn apply(
     sub_p.set_transform(&qt::Transform::default());
     sub_p.set_composition_mode(qt::CompositionMode::CompositionMode_DestinationIn);
     sub_p.draw_image(0.0, 0.0, &mask_img);
-
-    layers.release();
 }

@@ -2,19 +2,23 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::ops::Deref;
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use ScreenSize;
 
 
+type LayerData<T> = Rc<RefCell<T>>;
+
 /// Stack of image layers.
 ///
 /// Instead of creating a new layer each time we need one,
 /// we are reusing an existing one.
 pub struct Layers<T> {
-    d: Vec<Rc<RefCell<T>>>,
-    idx: usize,
+    d: Vec<LayerData<T>>,
+    /// Use Rc as a shared counter.
+    counter: Rc<()>,
     img_size: ScreenSize,
     dpi: f64,
     new_img_fn: Box<Fn(ScreenSize, f64) -> Option<T>>,
@@ -34,7 +38,7 @@ impl<T> Layers<T> {
     {
         Layers {
             d: Vec::new(),
-            idx: 0,
+            counter: Rc::new(()),
             img_size,
             dpi,
             new_img_fn: Box::new(new_img_fn),
@@ -51,13 +55,16 @@ impl<T> Layers<T> {
     ///
     /// - If there are no free layers - will create a new one.
     /// - If there is a free layer - it will clear it before return.
-    pub fn get(&mut self) -> Option<Rc<RefCell<T>>> {
-        if self.idx == self.d.len() {
+    pub fn get(&mut self) -> Option<Layer<T>> {
+        let used_layers = Rc::strong_count(&self.counter) - 1;
+        if used_layers == self.d.len() {
             match (self.new_img_fn)(self.img_size, self.dpi) {
                 Some(img) => {
                     self.d.push(Rc::new(RefCell::new(img)));
-                    self.idx += 1;
-                    Some(self.d[self.idx - 1].clone())
+                    Some(Layer {
+                        d: self.d[self.d.len() - 1].clone(),
+                        _counter_holder: self.counter.clone(),
+                    })
                 }
                 None => {
                     None
@@ -65,23 +72,35 @@ impl<T> Layers<T> {
             }
         } else {
             {
-                let img = self.d[self.idx].clone();
+                let img = self.d[used_layers].clone();
                 (self.clear_img_fn)(&mut img.borrow_mut());
             }
 
-            self.idx += 1;
-            Some(self.d[self.idx - 1].clone())
+            Some(Layer {
+                d: self.d[used_layers].clone(),
+                _counter_holder: self.counter.clone(),
+            })
         }
-    }
-
-    /// Marks the last layer as free.
-    pub fn release(&mut self) {
-        self.idx -= 1;
     }
 }
 
 impl<T> Drop for Layers<T> {
     fn drop(&mut self) {
-        debug_assert!(self.idx == 0);
+        debug_assert!(Rc::strong_count(&self.counter) == 1);
+    }
+}
+
+/// The layer object.
+pub struct Layer<T> {
+    d: LayerData<T>,
+    // When Layer goes out of scope, Layers::counter will be automatically decreased.
+    _counter_holder: Rc<()>,
+}
+
+impl<T> Deref for Layer<T> {
+    type Target = LayerData<T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.d
     }
 }

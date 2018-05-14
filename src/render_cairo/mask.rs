@@ -56,8 +56,7 @@ pub fn apply(
     }
 
     {
-        let mut data = try_opt_warn!(mask_surface.get_data().ok(),
-                                     { layers.release(); () },
+        let mut data = try_opt_warn!(mask_surface.get_data().ok(), (),
                                      "Failed to borrow a surface for mask: {:?}.", mask.id);
         utils::image_to_mask(&mut data, layers.image_size(), opacity);
     }
@@ -65,6 +64,4 @@ pub fn apply(
     let patt = cairo::SurfacePattern::create(&*mask_surface);
     cr.set_matrix(cairo::Matrix::identity());
     cr.mask(&patt);
-
-    layers.release();
 }

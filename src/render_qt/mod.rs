@@ -308,8 +308,6 @@ fn render_group_impl(
     p.set_opacity(1.0);
     p.set_transform(&curr_ts);
 
-    layers.release();
-
     Some(bbox)
 }
 

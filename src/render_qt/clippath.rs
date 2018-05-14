@@ -67,6 +67,4 @@ pub fn apply(
     p.set_transform(&qt::Transform::default());
     p.set_composition_mode(qt::CompositionMode::CompositionMode_DestinationOut);
     p.draw_image(0.0, 0.0, &clip_img);
-
-    layers.release();
 }

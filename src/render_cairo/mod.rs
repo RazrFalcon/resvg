@@ -326,8 +326,6 @@ fn render_group_impl(
 
     cr.set_matrix(curr_matrix);
 
-    layers.release();
-
     Some(bbox)
 }
 

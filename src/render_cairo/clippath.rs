@@ -78,6 +78,4 @@ pub fn apply(
 
     // Reset source to unborrow the `clip_surface` from the `Context`.
     cr.reset_source_rgba();
-
-    layers.release();
 }
