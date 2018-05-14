@@ -12,15 +12,7 @@ use usvg;
 use usvg::prelude::*;
 
 // self
-use geom::*;
-use traits::{
-    ConvTransform,
-    TransformFromBBox,
-};
-use utils;
-use {
-    Options,
-};
+use super::prelude::*;
 
 
 pub fn apply(

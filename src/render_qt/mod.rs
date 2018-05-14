@@ -10,20 +10,12 @@ use usvg;
 use usvg::prelude::*;
 
 // self
-use geom::*;
-use traits::{
-    ConvTransform,
-    TransformFromBBox,
-};
-use layers::{
-    Layers,
-};
+use prelude::*;
 use {
-    Options,
+    layers,
     OutputImage,
     Render,
 };
-use utils;
 
 
 macro_rules! try_create_image {
@@ -47,6 +39,13 @@ mod pattern;
 mod stroke;
 mod text;
 
+mod prelude {
+    pub use super::super::prelude::*;
+    pub type QtLayers = super::layers::Layers<super::qt::Image>;
+}
+
+
+type QtLayers = layers::Layers<qt::Image>;
 
 impl ConvTransform<qt::Transform> for usvg::Transform {
     fn to_native(&self) -> qt::Transform {
@@ -105,8 +104,6 @@ impl OutputImage for qt::Image {
         self.save(path.to_str().unwrap())
     }
 }
-
-type QtLayers = Layers<qt::Image>;
 
 /// Renders SVG to image.
 pub fn render_to_image(
@@ -412,7 +409,7 @@ fn from_qt_path(p_path: &qt::PainterPath) -> Vec<usvg::PathSegment> {
 }
 
 fn create_layers(img_size: ScreenSize, opt: &Options) -> QtLayers {
-    Layers::new(img_size, opt.usvg.dpi, create_subimage, clear_image)
+    layers::Layers::new(img_size, opt.usvg.dpi, create_subimage, clear_image)
 }
 
 fn create_subimage(

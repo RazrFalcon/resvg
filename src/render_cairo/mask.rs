@@ -10,17 +10,7 @@ use cairo::{
 use usvg;
 
 // self
-use geom::*;
-use traits::{
-    TransformFromBBox,
-};
-use super::{
-    CairoLayers,
-};
-use {
-    utils,
-    Options,
-};
+use super::prelude::*;
 
 
 pub fn apply(

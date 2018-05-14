@@ -14,20 +14,12 @@ use usvg;
 use usvg::prelude::*;
 
 // self
-use geom::*;
-use traits::{
-    ConvTransform,
-    TransformFromBBox,
-};
-use layers::{
-    Layers,
-};
+use prelude::*;
 use {
-    Options,
+    layers,
     OutputImage,
     Render,
 };
-use utils;
 use self::ext::*;
 
 macro_rules! try_create_surface {
@@ -54,6 +46,15 @@ mod pattern;
 mod stroke;
 mod text;
 
+mod prelude {
+    pub use super::super::prelude::*;
+    pub type CairoLayers = super::layers::Layers<super::cairo::ImageSurface>;
+    pub use super::ext::*;
+}
+
+
+type CairoLayers = layers::Layers<cairo::ImageSurface>;
+
 
 impl ConvTransform<cairo::Matrix> for usvg::Transform {
     fn to_native(&self) -> cairo::Matrix {
@@ -73,6 +74,7 @@ impl TransformFromBBox for cairo::Matrix {
         Self::new(bbox.width, 0.0, 0.0, bbox.height, bbox.x, bbox.y)
     }
 }
+
 
 /// Cairo backend handle.
 #[derive(Clone, Copy)]
@@ -120,7 +122,6 @@ impl OutputImage for cairo::ImageSurface {
     }
 }
 
-type CairoLayers = Layers<cairo::ImageSurface>;
 
 /// Renders SVG to image.
 pub fn render_to_image(
@@ -435,7 +436,7 @@ fn from_cairo_path(path: &cairo::Path) -> Vec<usvg::PathSegment> {
 }
 
 fn create_layers(img_size: ScreenSize, opt: &Options) -> CairoLayers {
-    Layers::new(img_size, opt.usvg.dpi, create_subsurface, clear_subsurface)
+    layers::Layers::new(img_size, opt.usvg.dpi, create_subsurface, clear_subsurface)
 }
 
 fn create_subsurface(

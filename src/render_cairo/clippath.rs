@@ -11,19 +11,10 @@ use usvg;
 use usvg::prelude::*;
 
 // self
-use geom::*;
-use traits::{
-    ConvTransform,
-    TransformFromBBox,
-};
+use super::prelude::*;
 use super::{
     path,
     text,
-    CairoLayers,
-    ReCairoContextExt,
-};
-use {
-    Options,
 };
 
 

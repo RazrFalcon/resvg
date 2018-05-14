@@ -10,14 +10,10 @@ use usvg;
 use usvg::prelude::*;
 
 // self
-use utils;
-use geom::*;
+use super::prelude::*;
 use super::{
     fill,
     stroke,
-};
-use {
-    Options,
 };
 
 

@@ -46,6 +46,13 @@ mod layers;
 mod options;
 mod traits;
 
+mod prelude {
+    pub use geom::*;
+    pub use traits::*;
+    pub use utils;
+    pub use Options;
+}
+
 
 use std::path::{
     Path,

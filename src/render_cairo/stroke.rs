@@ -7,16 +7,10 @@ use cairo;
 use usvg;
 
 // self
-use geom::*;
+use super::prelude::*;
 use super::{
     gradient,
     pattern,
-};
-use super::ext::{
-    ReCairoContextExt,
-};
-use {
-    Options,
 };
 
 

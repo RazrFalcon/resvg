@@ -7,17 +7,7 @@ use qt;
 use usvg;
 
 // self
-use geom::*;
-use traits::{
-    TransformFromBBox,
-};
-use super::{
-    QtLayers,
-};
-use {
-    utils,
-    Options,
-};
+use super::prelude::*;
 
 
 pub fn apply(

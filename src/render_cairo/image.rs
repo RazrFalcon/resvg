@@ -11,14 +11,7 @@ use piston_image::{
 use usvg;
 
 // self
-use geom::*;
-use utils;
-use traits::{
-    ConvTransform,
-};
-use {
-    Options,
-};
+use super::prelude::*;
 
 
 pub fn draw(

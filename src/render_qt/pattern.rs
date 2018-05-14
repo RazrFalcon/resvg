@@ -8,15 +8,7 @@ use usvg;
 use usvg::prelude::*;
 
 // self
-use geom::*;
-use traits::{
-    ConvTransform,
-    TransformFromBBox,
-};
-use utils;
-use {
-    Options,
-};
+use super::prelude::*;
 
 pub fn apply(
     pattern_node: &usvg::Node,
@@ -44,7 +36,7 @@ pub fn apply(
 
     let p = qt::Painter::new(&img);
 
-    p.apply_transform(&qt::Transform::new(sx, 0.0, 0.0, sy, 0.0, 0.0));
+    p.scale(sx, sy);
     if let Some(vbox) = pattern.view_box {
         let ts = utils::view_box_to_transform(vbox.rect, vbox.aspect, r.size());
         p.apply_transform(&ts.to_native());
