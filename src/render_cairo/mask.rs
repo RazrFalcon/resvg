@@ -10,17 +10,7 @@ use cairo::{
 use usvg;
 
 // self
-use geom::*;
-use traits::{
-    TransformFromBBox,
-};
-use super::{
-    CairoLayers,
-};
-use {
-    utils,
-    Options,
-};
+use super::prelude::*;
 
 
 pub fn apply(
@@ -45,7 +35,7 @@ pub fn apply(
             mask.rect
         };
 
-        mask_cr.rectangle(r.x(), r.y(), r.width(), r.height());
+        mask_cr.rectangle(r.x, r.y, r.width, r.height);
         mask_cr.clip();
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {

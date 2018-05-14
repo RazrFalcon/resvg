@@ -21,6 +21,6 @@ pub trait TransformFromBBox {
 
 impl TransformFromBBox for usvg::Transform {
     fn from_bbox(bbox: Rect) -> Self {
-        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
+        Self::new(bbox.width, 0.0, 0.0, bbox.height, bbox.x, bbox.y)
     }
 }

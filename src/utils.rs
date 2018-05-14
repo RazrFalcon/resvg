@@ -21,7 +21,7 @@ use {
 
 /// Returns `size` preprocessed according to `FitTo`.
 pub fn fit_to(size: ScreenSize, fit: FitTo) -> ScreenSize {
-    let sizef = size.to_f64();
+    let sizef = size.to_size();
 
     match fit {
         FitTo::Original => {
@@ -51,12 +51,12 @@ pub(crate) fn process_text_anchor(x: f64, a: usvg::TextAnchor, text_width: f64) 
 
 pub(crate) fn apply_view_box(vb: &usvg::ViewBox, img_size: ScreenSize) -> ScreenSize {
     if vb.aspect.align == usvg::Align::None {
-        vb.rect.size.to_screen_size()
+        vb.rect.to_screen_size()
     } else {
         if vb.aspect.slice {
-            img_size.expand_to(vb.rect.size.to_screen_size())
+            img_size.expand_to(vb.rect.to_screen_size())
         } else {
-            img_size.scale_to(vb.rect.size.to_screen_size())
+            img_size.scale_to(vb.rect.to_screen_size())
         }
     }
 }
@@ -195,23 +195,23 @@ pub fn path_bbox(
     let mut height = maxy - miny;
     if height < 1.0 { height = 1.0; }
 
-    Rect::from_xywh(minx as f64, miny as f64, width as f64, height as f64)
+    (minx as f64, miny as f64, width as f64, height as f64).into()
 }
 
 /// Converts `rect` to path segments.
 pub fn rect_to_path(rect: Rect) -> Vec<usvg::PathSegment> {
     vec![
         usvg::PathSegment::MoveTo {
-            x: rect.x(), y: rect.y()
+            x: rect.x, y: rect.y
         },
         usvg::PathSegment::LineTo {
-            x: rect.x() + rect.width(), y: rect.y()
+            x: rect.x + rect.width, y: rect.y
         },
         usvg::PathSegment::LineTo {
-            x: rect.x() + rect.width(), y: rect.y() + rect.height()
+            x: rect.x + rect.width, y: rect.y + rect.height
         },
         usvg::PathSegment::LineTo {
-            x: rect.x(), y: rect.y() + rect.height()
+            x: rect.x, y: rect.y + rect.height
         },
         usvg::PathSegment::ClosePath,
     ]
@@ -289,15 +289,15 @@ pub(crate) fn prepare_sub_svg_geom(
     let (tx, ty, clip) = if image.view_box.aspect.slice {
         let pos = aligned_pos(
             image.view_box.aspect.align,
-            0.0, 0.0, new_size.width as f64 - r.width(), new_size.height as f64 - r.height(),
+            0.0, 0.0, new_size.width as f64 - r.width, new_size.height as f64 - r.height,
         );
 
-        let r = Rect::from_xywh(r.x(), r.y(), r.width(), r.height());
-        (r.x() - pos.x, r.y() - pos.y, Some(r))
+        let r = Rect::new(r.x, r.y, r.width, r.height);
+        (r.x - pos.x, r.y - pos.y, Some(r))
     } else {
         let pos = aligned_pos(
             image.view_box.aspect.align,
-            r.x(), r.y(), r.width() - new_size.width as f64, r.height() - new_size.height as f64,
+            r.x, r.y, r.width - new_size.width as f64, r.height - new_size.height as f64,
         );
 
         (pos.x, pos.y, None)

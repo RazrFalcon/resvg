@@ -10,20 +10,12 @@ use usvg;
 use usvg::prelude::*;
 
 // self
-use geom::*;
-use traits::{
-    ConvTransform,
-    TransformFromBBox,
-};
-use layers::{
-    Layers,
-};
+use prelude::*;
 use {
-    Options,
+    layers,
     OutputImage,
     Render,
 };
-use utils;
 
 
 macro_rules! try_create_image {
@@ -47,6 +39,13 @@ mod pattern;
 mod stroke;
 mod text;
 
+mod prelude {
+    pub use super::super::prelude::*;
+    pub type QtLayers = super::layers::Layers<super::qt::Image>;
+}
+
+
+type QtLayers = layers::Layers<qt::Image>;
 
 impl ConvTransform<qt::Transform> for usvg::Transform {
     fn to_native(&self) -> qt::Transform {
@@ -61,10 +60,10 @@ impl ConvTransform<qt::Transform> for usvg::Transform {
 
 impl TransformFromBBox for qt::Transform {
     fn from_bbox(bbox: Rect) -> Self {
-        debug_assert!(!bbox.width().is_fuzzy_zero());
-        debug_assert!(!bbox.height().is_fuzzy_zero());
+        debug_assert!(!bbox.width.is_fuzzy_zero());
+        debug_assert!(!bbox.height.is_fuzzy_zero());
 
-        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
+        Self::new(bbox.width, 0.0, 0.0, bbox.height, bbox.x, bbox.y)
     }
 }
 
@@ -106,8 +105,6 @@ impl OutputImage for qt::Image {
     }
 }
 
-type QtLayers = Layers<qt::Image>;
-
 /// Renders SVG to image.
 pub fn render_to_image(
     tree: &usvg::Tree,
@@ -139,7 +136,7 @@ pub fn render_node_to_image(
         aspect: usvg::AspectRatio::default(),
     };
 
-    let (img, img_size) = create_root_image(node_bbox.size.to_screen_size(), opt)?;
+    let (img, img_size) = create_root_image(node_bbox.size().to_screen_size(), opt)?;
 
     let painter = qt::Painter::new(&img);
     render_node_to_canvas(node, opt, vbox, img_size, &painter);
@@ -186,7 +183,8 @@ fn create_root_image(
 ) -> Option<(qt::Image, ScreenSize)> {
     let img_size = utils::fit_to(size, opt.fit_to);
 
-    debug_assert!(!img_size.is_empty_or_negative());
+    debug_assert_ne!(img_size.width, 0);
+    debug_assert_ne!(img_size.height, 0);
 
     let mut img = try_create_image!(img_size, None);
 
@@ -207,7 +205,7 @@ fn apply_viewbox_transform(
     img_size: ScreenSize,
     painter: &qt::Painter,
 ) {
-    let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_f64());
+    let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_size());
     painter.apply_transform(&ts.to_native());
 }
 
@@ -411,7 +409,7 @@ fn from_qt_path(p_path: &qt::PainterPath) -> Vec<usvg::PathSegment> {
 }
 
 fn create_layers(img_size: ScreenSize, opt: &Options) -> QtLayers {
-    Layers::new(img_size, opt.usvg.dpi, create_subimage, clear_image)
+    layers::Layers::new(img_size, opt.usvg.dpi, create_subimage, clear_image)
 }
 
 fn create_subimage(

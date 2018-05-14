@@ -26,7 +26,6 @@ use resvg::qt;
 use resvg::cairo;
 
 use resvg::usvg;
-use resvg::geom::*;
 use usvg::prelude::*;
 
 
@@ -435,10 +434,10 @@ pub extern fn resvg_get_image_viewbox(
     let r = tree.0.svg_node().view_box.rect;
 
     resvg_rect {
-        x: r.x(),
-        y: r.y(),
-        width: r.width(),
-        height: r.height(),
+        x: r.x,
+        y: r.y,
+        width: r.width,
+        height: r.height,
     }
 }
 
@@ -513,10 +512,10 @@ fn get_node_bbox(
         Some(node) => {
             if let Some(r) = backend.calc_node_bbox(&node, &opt) {
                 unsafe {
-                    (*bbox).x = r.x();
-                    (*bbox).y = r.y();
-                    (*bbox).width = r.width();
-                    (*bbox).height = r.height();
+                    (*bbox).x = r.x;
+                    (*bbox).y = r.y;
+                    (*bbox).width = r.width;
+                    (*bbox).height = r.height;
                 }
 
                 true

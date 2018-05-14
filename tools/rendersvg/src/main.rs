@@ -20,7 +20,6 @@ use resvg::{
     usvg,
     svgdom,
     Options,
-    RectExt,
     Render,
 };
 use usvg::prelude::*;
@@ -203,8 +202,8 @@ fn query_all(
 
         if let Some(bbox) = backend.calc_node_bbox(&node, &opt) {
             println!("{},{},{},{},{}", node.id(),
-                     round_len(bbox.x()), round_len(bbox.y()),
-                     round_len(bbox.width()), round_len(bbox.height()));
+                     round_len(bbox.x), round_len(bbox.y),
+                     round_len(bbox.width), round_len(bbox.height));
         }
     }
 

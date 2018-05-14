@@ -7,14 +7,10 @@ use cairo;
 use usvg;
 
 // self
-use geom::*;
+use super::prelude::*;
 use super::{
     fill,
     stroke,
-};
-use {
-    utils,
-    Options,
 };
 
 

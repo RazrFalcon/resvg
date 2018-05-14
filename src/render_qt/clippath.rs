@@ -8,18 +8,10 @@ use usvg;
 use usvg::prelude::*;
 
 // self
-use geom::*;
-use traits::{
-    ConvTransform,
-    TransformFromBBox,
-};
+use super::prelude::*;
 use super::{
     path,
     text,
-    QtLayers,
-};
-use {
-    Options,
 };
 
 

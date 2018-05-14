@@ -14,20 +14,12 @@ use usvg;
 use usvg::prelude::*;
 
 // self
-use geom::*;
-use traits::{
-    ConvTransform,
-    TransformFromBBox,
-};
-use layers::{
-    Layers,
-};
+use prelude::*;
 use {
-    Options,
+    layers,
     OutputImage,
     Render,
 };
-use utils;
 use self::ext::*;
 
 macro_rules! try_create_surface {
@@ -54,6 +46,15 @@ mod pattern;
 mod stroke;
 mod text;
 
+mod prelude {
+    pub use super::super::prelude::*;
+    pub type CairoLayers = super::layers::Layers<super::cairo::ImageSurface>;
+    pub use super::ext::*;
+}
+
+
+type CairoLayers = layers::Layers<cairo::ImageSurface>;
+
 
 impl ConvTransform<cairo::Matrix> for usvg::Transform {
     fn to_native(&self) -> cairo::Matrix {
@@ -67,12 +68,13 @@ impl ConvTransform<cairo::Matrix> for usvg::Transform {
 
 impl TransformFromBBox for cairo::Matrix {
     fn from_bbox(bbox: Rect) -> Self {
-        debug_assert!(!bbox.width().is_fuzzy_zero());
-        debug_assert!(!bbox.height().is_fuzzy_zero());
+        debug_assert!(!bbox.width.is_fuzzy_zero());
+        debug_assert!(!bbox.height.is_fuzzy_zero());
 
-        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
+        Self::new(bbox.width, 0.0, 0.0, bbox.height, bbox.x, bbox.y)
     }
 }
+
 
 /// Cairo backend handle.
 #[derive(Clone, Copy)]
@@ -120,7 +122,6 @@ impl OutputImage for cairo::ImageSurface {
     }
 }
 
-type CairoLayers = Layers<cairo::ImageSurface>;
 
 /// Renders SVG to image.
 pub fn render_to_image(
@@ -215,7 +216,8 @@ fn create_surface(
 ) -> Option<(cairo::ImageSurface, ScreenSize)> {
     let img_size = utils::fit_to(size, opt.fit_to);
 
-    debug_assert!(!img_size.is_empty_or_negative());
+    debug_assert_ne!(img_size.width, 0);
+    debug_assert_ne!(img_size.height, 0);
     let surface = try_create_surface!(img_size, None);
 
     Some((surface, img_size))
@@ -227,7 +229,7 @@ fn apply_viewbox_transform(
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
-    let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_f64());
+    let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_size());
     cr.transform(ts.to_native());
 }
 
@@ -434,7 +436,7 @@ fn from_cairo_path(path: &cairo::Path) -> Vec<usvg::PathSegment> {
 }
 
 fn create_layers(img_size: ScreenSize, opt: &Options) -> CairoLayers {
-    Layers::new(img_size, opt.usvg.dpi, create_subsurface, clear_subsurface)
+    layers::Layers::new(img_size, opt.usvg.dpi, create_subsurface, clear_subsurface)
 }
 
 fn create_subsurface(

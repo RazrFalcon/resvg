@@ -20,7 +20,7 @@ fn main() {
 
     let size = Size::new(200.0, 200.0);
     let view_box = usvg::ViewBox {
-        rect: Rect::new(Point::new(0.0, 0.0), size),
+        rect: size.to_rect(0.0, 0.0),
         aspect: usvg::AspectRatio::default(),
     };
 
@@ -65,7 +65,7 @@ fn main() {
         transform: usvg::Transform::default(),
         fill,
         stroke: None,
-        segments: utils::rect_to_path(Rect::from_xywh(20.0, 20.0, 160.0, 160.0)),
+        segments: utils::rect_to_path(Rect::new(20.0, 20.0, 160.0, 160.0)),
     }));
 
     println!("{}", rtree.to_svgdom());

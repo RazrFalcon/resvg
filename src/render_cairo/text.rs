@@ -16,18 +16,22 @@ use usvg;
 use usvg::prelude::*;
 
 // self
-use utils;
-use geom::*;
+use super::prelude::*;
 use super::{
     fill,
     stroke,
 };
-use {
-    Options
-};
 
 
-const PANGO_SCALE_64: f64 = pango::SCALE as f64;
+trait PangoScale {
+    fn scale(&self) -> f64;
+}
+
+impl PangoScale for i32 {
+    fn scale(&self) -> f64 {
+        (self / pango::SCALE) as f64
+    }
+}
 
 
 pub struct PangoData {
@@ -73,11 +77,11 @@ pub fn draw_tspan<DrawAt>(
                     let layout = pango::Layout::new(&context);
                     layout.set_font_description(Some(&font));
                     layout.set_text(&tspan.text);
-                    let tspan_width = layout.get_size().0 as f64 / PANGO_SCALE_64;
+                    let tspan_width = layout.get_size().0.scale();
 
                     let mut layout_iter = layout.get_iter().unwrap();
-                    let ascent = (layout_iter.get_baseline() / pango::SCALE) as f64;
-                    let text_h = layout.get_size().1 as f64 / PANGO_SCALE_64;
+                    let ascent = layout_iter.get_baseline().scale();
+                    let text_h = layout.get_size().1.scale();
 
                     pc_list.push(PangoData {
                         layout,
@@ -87,7 +91,7 @@ pub fn draw_tspan<DrawAt>(
                     chunk_width += tspan_width;
                     tspan_w_list.push((tspan_width, ascent));
 
-                    bbox.expand(Rect::from_xywh(chunk.x, chunk.y - ascent, chunk_width, text_h));
+                    bbox.expand((chunk.x, chunk.y - ascent, chunk_width, text_h).into());
                 }
             }
 
@@ -105,8 +109,8 @@ pub fn draw_tspan<DrawAt>(
         }
     }
 
-    if bbox.x() == f64::MAX { bbox.origin.x = 0.0; }
-    if bbox.y() == f64::MAX { bbox.origin.y = 0.0; }
+    if bbox.x == f64::MAX { bbox.x = 0.0; }
+    if bbox.y == f64::MAX { bbox.y = 0.0; }
 
     bbox
 }
@@ -124,25 +128,25 @@ fn _draw_tspan(
     let font_metrics = pd.context.get_metrics(Some(&pd.font), None).unwrap();
 
     let mut layout_iter = pd.layout.get_iter().unwrap();
-    let baseline_offset = (layout_iter.get_baseline() / pango::SCALE) as f64;
+    let baseline_offset = layout_iter.get_baseline().scale();
 
     // Contains only characters path bounding box,
     // so spaces around text are ignored.
     let bbox = calc_layout_bbox(&pd.layout, x, y);
 
-    let mut line_rect = Rect::from_xywh(
+    let mut line_rect = Rect::new(
         x,
         0.0,
         width,
-        font_metrics.get_underline_thickness() as f64 / PANGO_SCALE_64,
+        font_metrics.get_underline_thickness().scale(),
     );
 
     // Draw underline.
     //
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.underline {
-        line_rect.origin.y = y + baseline_offset
-                             - font_metrics.get_underline_position() as f64 / PANGO_SCALE_64;
+        line_rect.y = y + baseline_offset
+                        - font_metrics.get_underline_position().scale();
         draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, cr);
     }
 
@@ -150,7 +154,7 @@ fn _draw_tspan(
     //
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.overline {
-        line_rect.origin.y = y + font_metrics.get_underline_thickness() as f64 / PANGO_SCALE_64;
+        line_rect.y = y + font_metrics.get_underline_thickness().scale();
         draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, cr);
     }
 
@@ -171,9 +175,8 @@ fn _draw_tspan(
     //
     // Should be drawn after/over text.
     if let Some(ref style) = tspan.decoration.line_through {
-        line_rect.origin.y = y + baseline_offset
-                             - font_metrics.get_strikethrough_position() as f64 / PANGO_SCALE_64;
-        line_rect.size.height = font_metrics.get_strikethrough_thickness() as f64 / PANGO_SCALE_64;
+        line_rect.y = y + baseline_offset - font_metrics.get_strikethrough_position().scale();
+        line_rect.height = font_metrics.get_strikethrough_thickness().scale();
         draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, cr);
     }
 }
@@ -225,7 +228,7 @@ fn init_font(dom_font: &usvg::Font, dpi: f64) -> pango::FontDescription {
     font.set_stretch(font_stretch);
 
     // a-font-size-001.svg
-    let font_size = dom_font.size * PANGO_SCALE_64 / dpi * 72.0;
+    let font_size = dom_font.size * (pango::SCALE as f64) / dpi * 72.0;
     font.set_size(font_size as i32);
 
     font
@@ -234,12 +237,12 @@ fn init_font(dom_font: &usvg::Font, dpi: f64) -> pango::FontDescription {
 pub fn calc_layout_bbox(layout: &pango::Layout, x: f64, y: f64) -> Rect {
     let (ink_rect, _) = layout.get_extents();
 
-    Rect::from_xywh(
-        x + ink_rect.x  as f64 / PANGO_SCALE_64,
-        y + ink_rect.y  as f64 / PANGO_SCALE_64,
-        ink_rect.width  as f64 / PANGO_SCALE_64,
-        ink_rect.height as f64 / PANGO_SCALE_64,
-    )
+    (
+        x + ink_rect.x.scale(),
+        y + ink_rect.y.scale(),
+        ink_rect.width.scale(),
+        ink_rect.height.scale(),
+    ).into()
 }
 
 fn draw_line(
@@ -250,13 +253,7 @@ fn draw_line(
     opt: &Options,
     cr: &cairo::Context,
 ) {
-    // TODO: to rect
-    cr.new_sub_path();
-    cr.move_to(line_bbox.x(), line_bbox.y());
-    cr.rel_line_to(line_bbox.width(), 0.0);
-    cr.rel_line_to(0.0, line_bbox.height());
-    cr.rel_line_to(-line_bbox.width(), 0.0);
-    cr.close_path();
+    cr.rectangle(line_bbox.x, line_bbox.y, line_bbox.width, line_bbox.height);
 
     fill::apply(tree, fill, opt, line_bbox, cr);
     if stroke.is_some() {

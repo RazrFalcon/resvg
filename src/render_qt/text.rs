@@ -10,14 +10,10 @@ use usvg;
 use usvg::prelude::*;
 
 // self
-use utils;
-use geom::*;
+use super::prelude::*;
 use super::{
     fill,
     stroke,
-};
-use {
-    Options,
 };
 
 
@@ -57,8 +53,8 @@ pub fn draw_tspan<DrawAt>(
                     chunk_width += tspan_width;
                     tspan_w_list.push(tspan_width);
 
-                    bbox.expand(Rect::from_xywh(chunk.x, chunk.y - font_metrics.ascent(),
-                                                chunk_width, font_metrics.height()));
+                    bbox.expand((chunk.x, chunk.y - font_metrics.ascent(),
+                                 chunk_width, font_metrics.height()).into());
                 }
             }
 
@@ -95,7 +91,7 @@ fn _draw_tspan(
     let baseline_offset = font_metrics.ascent();
     y -= baseline_offset;
 
-    let mut line_rect = Rect::from_xywh(
+    let mut line_rect = Rect::new(
         x,
         0.0,
         width,
@@ -106,7 +102,7 @@ fn _draw_tspan(
     //
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.underline {
-        line_rect.origin.y = y + font_metrics.height() - font_metrics.underline_pos();
+        line_rect.y = y + font_metrics.height() - font_metrics.underline_pos();
         draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, p);
     }
 
@@ -114,11 +110,11 @@ fn _draw_tspan(
     //
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.overline {
-        line_rect.origin.y = y + font_metrics.height() - font_metrics.overline_pos();
+        line_rect.y = y + font_metrics.height() - font_metrics.overline_pos();
         draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, p);
     }
 
-    let bbox = Rect::from_xywh(x, y, width, font_metrics.height());
+    let bbox = Rect::new(x, y, width, font_metrics.height());
 
     // Draw text.
     fill::apply(&node.tree(), &tspan.fill, opt, bbox, p);
@@ -130,7 +126,7 @@ fn _draw_tspan(
     //
     // Should be drawn after/over text.
     if let Some(ref style) = tspan.decoration.line_through {
-        line_rect.origin.y = y + baseline_offset - font_metrics.strikeout_pos();
+        line_rect.y = y + baseline_offset - font_metrics.strikeout_pos();
         draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, p);
     }
 }
@@ -195,10 +191,10 @@ fn draw_line(
 ) {
     // TODO: to rect
     let mut p_path = qt::PainterPath::new();
-    p_path.move_to(line_bbox.x(), line_bbox.y());
-    p_path.line_to(line_bbox.x() + line_bbox.width(), line_bbox.y());
-    p_path.line_to(line_bbox.x() + line_bbox.width(), line_bbox.y() + line_bbox.height());
-    p_path.line_to(line_bbox.x(), line_bbox.y() + line_bbox.height());
+    p_path.move_to(line_bbox.x, line_bbox.y);
+    p_path.line_to(line_bbox.x + line_bbox.width, line_bbox.y);
+    p_path.line_to(line_bbox.x + line_bbox.width, line_bbox.y + line_bbox.height);
+    p_path.line_to(line_bbox.x, line_bbox.y + line_bbox.height);
     p_path.close_path();
 
     fill::apply(tree, fill, opt, line_bbox, p);

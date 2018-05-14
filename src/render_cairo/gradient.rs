@@ -10,11 +10,7 @@ use cairo::{
 use usvg;
 
 // self
-use geom::*;
-use traits::{
-    ConvTransform,
-    TransformFromBBox,
-};
+use super::prelude::*;
 
 
 pub fn prepare_linear(

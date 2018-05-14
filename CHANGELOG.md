@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   will return an error code now.
 - (lib) `Render::render_to_image` and `Render::render_node_to_image` will return
   `Option` and not `Result` now.
+- (lib) New geometry primitives implementation.
 
 ### Fixed
 - (qt-backend) Gradient with `objectBoundingBox` rendering.

@@ -35,7 +35,6 @@ pub use usvg::{
     lyon_geom,
     Error,
 };
-use lyon_geom::euclid;
 
 
 #[cfg(feature = "cairo-backend")] pub mod render_cairo;
@@ -46,6 +45,13 @@ pub mod geom;
 mod layers;
 mod options;
 mod traits;
+
+mod prelude {
+    pub use geom::*;
+    pub use traits::*;
+    pub use utils;
+    pub use Options;
+}
 
 
 use std::path::{

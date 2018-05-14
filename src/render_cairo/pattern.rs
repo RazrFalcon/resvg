@@ -12,15 +12,7 @@ use usvg;
 use usvg::prelude::*;
 
 // self
-use geom::*;
-use traits::{
-    ConvTransform,
-    TransformFromBBox,
-};
-use utils;
-use {
-    Options,
-};
+use super::prelude::*;
 
 
 pub fn apply(
@@ -40,21 +32,21 @@ pub fn apply(
     let global_ts = usvg::Transform::from_native(&cr.get_matrix());
     let (sx, sy) = global_ts.get_scale();
 
-    let img_size = Size::new(r.width() * sx, r.height() * sy).to_screen_size();
+    let img_size = Size::new(r.width * sx, r.height * sy).to_screen_size();
     let surface = try_create_surface!(img_size, ());
 
     let sub_cr = cairo::Context::new(&surface);
     sub_cr.transform(cairo::Matrix::new(sx, 0.0, 0.0, sy, 0.0, 0.0));
 
     if let Some(vbox) = pattern.view_box {
-        let ts = utils::view_box_to_transform(vbox.rect, vbox.aspect, r.size);
+        let ts = utils::view_box_to_transform(vbox.rect, vbox.aspect, r.size());
         sub_cr.transform(ts.to_native());
     } else if pattern.content_units == usvg::Units::ObjectBoundingBox {
         // 'Note that this attribute has no effect if attribute `viewBox` is specified.'
 
         // We don't use Transform::from_bbox(bbox) because `x` and `y` should be
         // ignored for some reasons...
-        sub_cr.transform(cairo::Matrix::new(bbox.width(), 0.0, 0.0, bbox.height(), 0.0, 0.0));
+        sub_cr.scale(bbox.width, bbox.height);
     }
 
     let mut layers = super::create_layers(img_size, opt);
@@ -62,7 +54,7 @@ pub fn apply(
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);
-    ts.translate(r.x(), r.y());
+    ts.translate(r.x, r.y);
     ts.scale(1.0 / sx, 1.0 / sy);
 
 
