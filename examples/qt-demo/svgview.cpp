@@ -169,7 +169,6 @@ void SvgView::paintEvent(QPaintEvent *e)
 
         imgRect = QRect(x, y, img_width, img_height);
 
-        p.translate(x, y);
         m_renderer.render(&p, imgRect);
         p.setTransform(QTransform());
     } else {
