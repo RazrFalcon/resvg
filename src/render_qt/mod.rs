@@ -106,7 +106,7 @@ impl OutputImage for qt::Image {
     }
 }
 
-type QtLayers<'a> = Layers<'a, qt::Image>;
+type QtLayers = Layers<qt::Image>;
 
 /// Renders SVG to image.
 pub fn render_to_image(
@@ -413,17 +413,17 @@ fn from_qt_path(p_path: &qt::PainterPath) -> Vec<usvg::PathSegment> {
 }
 
 fn create_layers(img_size: ScreenSize, opt: &Options) -> QtLayers {
-    Layers::new(img_size, opt, create_subimage, clear_image)
+    Layers::new(img_size, opt.usvg.dpi, create_subimage, clear_image)
 }
 
 fn create_subimage(
     size: ScreenSize,
-    opt: &Options,
+    dpi: f64,
 ) -> Option<qt::Image> {
     let mut img = try_create_image!(size, None);
 
     img.fill(0, 0, 0, 0);
-    img.set_dpi(opt.usvg.dpi);
+    img.set_dpi(dpi);
 
     Some(img)
 }

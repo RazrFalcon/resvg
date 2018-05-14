@@ -120,7 +120,7 @@ impl OutputImage for cairo::ImageSurface {
     }
 }
 
-type CairoLayers<'a> = Layers<'a, cairo::ImageSurface>;
+type CairoLayers = Layers<cairo::ImageSurface>;
 
 /// Renders SVG to image.
 pub fn render_to_image(
@@ -436,12 +436,12 @@ fn from_cairo_path(path: &cairo::Path) -> Vec<usvg::PathSegment> {
 }
 
 fn create_layers(img_size: ScreenSize, opt: &Options) -> CairoLayers {
-    Layers::new(img_size, opt, create_subsurface, clear_subsurface)
+    Layers::new(img_size, opt.usvg.dpi, create_subsurface, clear_subsurface)
 }
 
 fn create_subsurface(
     size: ScreenSize,
-    _: &Options,
+    _: f64,
 ) -> Option<cairo::ImageSurface> {
     Some(try_create_surface!(size, None))
 }
