@@ -46,8 +46,8 @@ pub fn convert_path(
     p_path: &mut qt::PainterPath,
 ) {
     // Qt's QPainterPath automatically closes open subpaths if start and end positions are equal.
-    // This is incorrect behaviour according to SVG.
-    // So we have to shift the last segment a bit, to disable it.
+    // This is incorrect behaviour according to the SVG.
+    // So we have to shift the last segment a bit, to prevent such behaviour.
     //
     // 'A closed path has coinciding start and end points.'
     // https://doc.qt.io/qt-5/qpainterpath.html#details

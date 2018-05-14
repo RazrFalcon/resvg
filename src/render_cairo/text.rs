@@ -23,7 +23,15 @@ use super::{
 };
 
 
-const PANGO_SCALE_64: f64 = pango::SCALE as f64;
+trait PangoScale {
+    fn scale(&self) -> f64;
+}
+
+impl PangoScale for i32 {
+    fn scale(&self) -> f64 {
+        (self / pango::SCALE) as f64
+    }
+}
 
 
 pub struct PangoData {
@@ -69,11 +77,11 @@ pub fn draw_tspan<DrawAt>(
                     let layout = pango::Layout::new(&context);
                     layout.set_font_description(Some(&font));
                     layout.set_text(&tspan.text);
-                    let tspan_width = layout.get_size().0 as f64 / PANGO_SCALE_64;
+                    let tspan_width = layout.get_size().0.scale();
 
                     let mut layout_iter = layout.get_iter().unwrap();
-                    let ascent = (layout_iter.get_baseline() / pango::SCALE) as f64;
-                    let text_h = layout.get_size().1 as f64 / PANGO_SCALE_64;
+                    let ascent = layout_iter.get_baseline().scale();
+                    let text_h = layout.get_size().1.scale();
 
                     pc_list.push(PangoData {
                         layout,
@@ -120,7 +128,7 @@ fn _draw_tspan(
     let font_metrics = pd.context.get_metrics(Some(&pd.font), None).unwrap();
 
     let mut layout_iter = pd.layout.get_iter().unwrap();
-    let baseline_offset = (layout_iter.get_baseline() / pango::SCALE) as f64;
+    let baseline_offset = layout_iter.get_baseline().scale();
 
     // Contains only characters path bounding box,
     // so spaces around text are ignored.
@@ -130,7 +138,7 @@ fn _draw_tspan(
         x,
         0.0,
         width,
-        font_metrics.get_underline_thickness() as f64 / PANGO_SCALE_64,
+        font_metrics.get_underline_thickness().scale(),
     );
 
     // Draw underline.
@@ -138,7 +146,7 @@ fn _draw_tspan(
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.underline {
         line_rect.y = y + baseline_offset
-                        - font_metrics.get_underline_position() as f64 / PANGO_SCALE_64;
+                        - font_metrics.get_underline_position().scale();
         draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, cr);
     }
 
@@ -146,7 +154,7 @@ fn _draw_tspan(
     //
     // Should be drawn before/under text.
     if let Some(ref style) = tspan.decoration.overline {
-        line_rect.y = y + font_metrics.get_underline_thickness() as f64 / PANGO_SCALE_64;
+        line_rect.y = y + font_metrics.get_underline_thickness().scale();
         draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, cr);
     }
 
@@ -167,9 +175,8 @@ fn _draw_tspan(
     //
     // Should be drawn after/over text.
     if let Some(ref style) = tspan.decoration.line_through {
-        line_rect.y = y + baseline_offset
-                        - font_metrics.get_strikethrough_position() as f64 / PANGO_SCALE_64;
-        line_rect.height = font_metrics.get_strikethrough_thickness() as f64 / PANGO_SCALE_64;
+        line_rect.y = y + baseline_offset - font_metrics.get_strikethrough_position().scale();
+        line_rect.height = font_metrics.get_strikethrough_thickness().scale();
         draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, cr);
     }
 }
@@ -221,7 +228,7 @@ fn init_font(dom_font: &usvg::Font, dpi: f64) -> pango::FontDescription {
     font.set_stretch(font_stretch);
 
     // a-font-size-001.svg
-    let font_size = dom_font.size * PANGO_SCALE_64 / dpi * 72.0;
+    let font_size = dom_font.size * (pango::SCALE as f64) / dpi * 72.0;
     font.set_size(font_size as i32);
 
     font
@@ -231,10 +238,10 @@ pub fn calc_layout_bbox(layout: &pango::Layout, x: f64, y: f64) -> Rect {
     let (ink_rect, _) = layout.get_extents();
 
     (
-        x + ink_rect.x  as f64 / PANGO_SCALE_64,
-        y + ink_rect.y  as f64 / PANGO_SCALE_64,
-        ink_rect.width  as f64 / PANGO_SCALE_64,
-        ink_rect.height as f64 / PANGO_SCALE_64,
+        x + ink_rect.x.scale(),
+        y + ink_rect.y.scale(),
+        ink_rect.width.scale(),
+        ink_rect.height.scale(),
     ).into()
 }
 
