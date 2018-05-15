@@ -54,4 +54,5 @@ pub fn apply(
     let patt = cairo::SurfacePattern::create(&*mask_surface);
     cr.set_matrix(cairo::Matrix::identity());
     cr.mask(&patt);
+    cr.reset_source_rgba();
 }

@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - (qt-backend) Gradient with `objectBoundingBox` rendering.
 - (qt-backend) Text bounding box detection during the rendering.
 - (cairo-backend) `image` element clipping.
+- (cairo-backend) Layers management.
 - (c-api) `resvg_get_node_transform` will return a correct transform now.
 - (lib) `text-decoration` thickness.
 

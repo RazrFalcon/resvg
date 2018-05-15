@@ -327,6 +327,7 @@ fn render_group_impl(
     }
 
     cr.set_matrix(curr_matrix);
+    cr.reset_source_rgba();
 
     Some(bbox)
 }
