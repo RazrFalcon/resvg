@@ -78,7 +78,7 @@ fn draw_raster(
         let mut i = 0;
         let mut x = 0;
         let mut y = 0;
-        for p in img.read_pixel_bytes().unwrap().chunks(channels) {
+        for p in unsafe { img.get_pixels().chunks(channels) } {
             if x >= start_x && y >= start_y && x <= end_x && y <= end_y {
                 // NOTE: will not work on big endian.
                 if channels == 4 {
