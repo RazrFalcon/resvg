@@ -171,7 +171,6 @@ void SvgView::paintEvent(QPaintEvent *e)
 
         p.translate(x, y);
         m_renderer.render(&p, imgRect);
-        p.setTransform(QTransform());
     } else {
         const auto ratio = m_pix.devicePixelRatio();
 
