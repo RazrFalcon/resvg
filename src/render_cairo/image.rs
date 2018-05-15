@@ -117,8 +117,15 @@ fn draw_raster(
         r.x, r.y, r.width - img.get_width() as f64, r.height - img.get_height() as f64,
     );
 
+    // We have to clip the image before rendering otherwise it will be
+    // blurred outside the viewbox if `cr` has a transform.
+    cr.rectangle(r.x, r.y, r.width, r.height);
+    cr.clip();
+
     cr.set_source_surface(&surface, pos.x, pos.y);
     cr.paint();
+
+    cr.reset_clip();
 }
 
 fn load_raster_data(data: &[u8]) -> Option<gdk_pixbuf::Pixbuf> {
