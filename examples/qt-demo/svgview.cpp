@@ -142,12 +142,14 @@ void SvgView::paintEvent(QPaintEvent *e)
         } break;
     }
 
+    double x;
+    double y;
     QRect imgRect;
     if (m_pix.isNull()) {
         p.setRenderHint(QPainter::Antialiasing);
 
-        double x = r.x();
-        double y = r.y();
+        x = r.x();
+        y = r.y();
         double img_width, img_height;
 
         if (m_isFitToView) {
@@ -174,8 +176,8 @@ void SvgView::paintEvent(QPaintEvent *e)
     } else {
         const auto ratio = m_pix.devicePixelRatio();
 
-        double x = (r.width() - m_pix.width() / ratio)/2;
-        double y = (r.height() - m_pix.height() / ratio)/2;
+        x = (r.width() - m_pix.width() / ratio)/2;
+        y = (r.height() - m_pix.height() / ratio)/2;
 
         p.drawPixmap(x, y, m_pix);
 
@@ -184,6 +186,7 @@ void SvgView::paintEvent(QPaintEvent *e)
 
     emit renderTime(timer.nsecsElapsed());
 
+    p.translate(x, y);
     if (m_isDrawImageBorder) {
         p.setRenderHint(QPainter::Antialiasing, false);
         p.setPen(Qt::green);
