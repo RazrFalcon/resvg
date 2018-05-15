@@ -73,41 +73,43 @@ fn draw_raster(
 
         let mut surface_data = surface.get_data().unwrap();
 
-        let channels = img.get_n_channels() as usize;
+        let channels = img.get_n_channels() as u32;
         let w = img.get_width() as u32;
+        let h = img.get_height() as u32;
+        let stride = img.get_rowstride() as u32;
+        let img_pixels = unsafe { img.get_pixels() };
+        // We can't iterate over pixels directly, because width may not be equal to stride.
         let mut i = 0;
-        let mut x = 0;
-        let mut y = 0;
-        for p in unsafe { img.get_pixels().chunks(channels) } {
-            if x >= start_x && y >= start_y && x <= end_x && y <= end_y {
-                // NOTE: will not work on big endian.
-                if channels == 4 {
-                    let r = p[0] as u32;
-                    let g = p[1] as u32;
-                    let b = p[2] as u32;
-                    let a = p[3] as u32;
+        for y in 0..h {
+            for x in 0..w {
+                if x >= start_x && y >= start_y && x <= end_x && y <= end_y {
+                    let idx = (y * stride + x * channels) as usize;
 
-                    // https://www.cairographics.org/manual/cairo-Image-Surfaces.html#cairo-format-t
-                    let tr = a * r + 0x80;
-                    let tg = a * g + 0x80;
-                    let tb = a * b + 0x80;
-                    surface_data[i + 0] = (((tb >> 8) + tb) >> 8) as u8;
-                    surface_data[i + 1] = (((tg >> 8) + tg) >> 8) as u8;
-                    surface_data[i + 2] = (((tr >> 8) + tr) >> 8) as u8;
-                    surface_data[i + 3] = a as u8;
-                } else {
-                    surface_data[i + 0] = p[2];
-                    surface_data[i + 1] = p[1];
-                    surface_data[i + 2] = p[0];
-                    surface_data[i + 3] = 255;
+                    // NOTE: will not work on big endian.
+                    if channels == 4 {
+                        let r = img_pixels[idx + 0] as u32;
+                        let g = img_pixels[idx + 1] as u32;
+                        let b = img_pixels[idx + 2] as u32;
+                        let a = img_pixels[idx + 3] as u32;
+
+                        // https://www.cairographics.org/manual/cairo-Image-Surfaces.html#cairo-format-t
+                        let tr = a * r + 0x80;
+                        let tg = a * g + 0x80;
+                        let tb = a * b + 0x80;
+                        surface_data[i + 0] = (((tb >> 8) + tb) >> 8) as u8;
+                        surface_data[i + 1] = (((tg >> 8) + tg) >> 8) as u8;
+                        surface_data[i + 2] = (((tr >> 8) + tr) >> 8) as u8;
+                        surface_data[i + 3] = a as u8;
+                    } else {
+                        surface_data[i + 0] = img_pixels[idx + 2];
+                        surface_data[i + 1] = img_pixels[idx + 1];
+                        surface_data[i + 2] = img_pixels[idx + 0];
+                        surface_data[i + 3] = 255;
+                    }
                 }
-            }
 
-            i += 4;
-            x += 1;
-            if x == w {
-                x = 0;
-                y += 1;
+                // Surface is always ARGB.
+                i += 4;
             }
         }
     }
