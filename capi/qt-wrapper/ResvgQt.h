@@ -99,6 +99,13 @@ public:
     QRectF viewBoxF() const;
 
     /**
+     * @brief Returns bounding rectangle of the item with the given \b id.
+     *        The transformation matrix of parent elements is not affecting
+     *        the bounds of the element.
+     */
+    QRectF boundsOnElement(const QString &id) const;
+
+    /**
      * @brief Returns \b true if element with such an ID exists.
      */
     bool elementExists(const QString &id) const;

@@ -104,7 +104,7 @@ ResvgRenderer::~ResvgRenderer() {}
 bool ResvgRenderer::load(const QString &filePath)
 {
     // Check for Qt resource path.
-    if (filePath.startsWith(":/")) {
+    if (filePath.startsWith(QLatin1String(":/"))) {
         QFile file(filePath);
         if (file.open(QFile::ReadOnly)) {
             return load(file.readAll());
@@ -201,6 +201,20 @@ QRectF ResvgRenderer::viewBoxF() const
         return QRectF();
 }
 
+QRectF ResvgRenderer::boundsOnElement(const QString &id) const
+{
+    if (d->tree) {
+        const auto utf8Str = id.toUtf8();
+        const auto rawId = utf8Str.constData();
+        resvg_rect bbox;
+        if (resvg_qt_get_node_bbox(d->tree, &d->opt, rawId, &bbox)) {
+            return QRectF(bbox.x, bbox.y, bbox.height, bbox.width);
+        }
+    }
+
+    return QRectF();
+}
+
 bool ResvgRenderer::elementExists(const QString &id) const
 {
     if (d->tree) {
@@ -262,7 +276,7 @@ void ResvgRenderer::render(QPainter *p, const QString &elementId, const QRectF &
 
     resvg_rect bbox;
     if (!resvg_qt_get_node_bbox(d->tree, &d->opt, rawId, &bbox)) {
-        qWarning() << QString("Element '%1' has no bounding box.").arg(elementId);
+        qWarning() << QString(QStringLiteral("Element '%1' has no bounding box.")).arg(elementId);
         return;
     }
 
