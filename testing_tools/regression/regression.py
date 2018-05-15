@@ -4,7 +4,6 @@ import argparse
 import os
 import subprocess
 import fnmatch
-from PIL import Image, ImageChops
 
 
 RESVG_URL = 'https://github.com/RazrFalcon/resvg'
@@ -84,10 +83,12 @@ if __name__ == '__main__':
             print('Error: rendersvg returned non-zero exit status.')
             exit(1)
 
-        img_diff = ImageChops.difference(Image.open(png_path_prev), Image.open(png_path_curr))
-        if img_diff.getbbox():
-            print('Error: images are different.')
-            img_diff.save(diff_path)
+        try:
+            diff_val = subprocess.check_output(['compare', '-metric', 'AE',
+                                               png_path_prev, png_path_curr, diff_path],
+                                               stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            print('Error: images are different: {}.'.format(e.stdout.decode('ascii')))
             exit(1)
 
         os.remove(png_path_prev)

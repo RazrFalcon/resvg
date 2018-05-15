@@ -12,7 +12,7 @@ install:
   # for travis script
   - sudo apt-get install python3
   # for testing_tools/regression/regression.py
-  - sudo apt-get install python3-pil
+  - sudo apt-get install imagemagick
   # for qt backend
   - sudo apt-get install -qq qt56base qt56svg
   # prepare custom Qt
