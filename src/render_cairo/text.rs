@@ -247,19 +247,19 @@ pub fn calc_layout_bbox(layout: &pango::Layout, x: f64, y: f64) -> Rect {
 
 fn draw_line(
     tree: &usvg::Tree,
-    line_bbox: Rect,
+    r: Rect,
     fill: &Option<usvg::Fill>,
     stroke: &Option<usvg::Stroke>,
     opt: &Options,
     cr: &cairo::Context,
 ) {
-    cr.rectangle(line_bbox.x, line_bbox.y, line_bbox.width, line_bbox.height);
+    cr.rectangle(r.x, r.y, r.width, r.height);
 
-    fill::apply(tree, fill, opt, line_bbox, cr);
+    fill::apply(tree, fill, opt, r, cr);
     if stroke.is_some() {
         cr.fill_preserve();
 
-        stroke::apply(tree, &stroke, opt, line_bbox, cr);
+        stroke::apply(tree, &stroke, opt, r, cr);
         cr.stroke();
     } else {
         cr.fill();

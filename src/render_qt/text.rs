@@ -183,22 +183,13 @@ pub fn init_font(dom_font: &usvg::Font) -> qt::Font {
 
 fn draw_line(
     tree: &usvg::Tree,
-    line_bbox: Rect,
+    r: Rect,
     fill: &Option<usvg::Fill>,
     stroke: &Option<usvg::Stroke>,
     opt: &Options,
     p: &qt::Painter,
 ) {
-    // TODO: to rect
-    let mut p_path = qt::PainterPath::new();
-    p_path.move_to(line_bbox.x, line_bbox.y);
-    p_path.line_to(line_bbox.x + line_bbox.width, line_bbox.y);
-    p_path.line_to(line_bbox.x + line_bbox.width, line_bbox.y + line_bbox.height);
-    p_path.line_to(line_bbox.x, line_bbox.y + line_bbox.height);
-    p_path.close_path();
-
-    fill::apply(tree, fill, opt, line_bbox, p);
-    stroke::apply(tree, stroke, opt, line_bbox, p);
-
-    p.draw_path(&p_path);
+    fill::apply(tree, fill, opt, r, p);
+    stroke::apply(tree, stroke, opt, r, p);
+    p.draw_rect(r.x, r.y, r.width, r.height);
 }
