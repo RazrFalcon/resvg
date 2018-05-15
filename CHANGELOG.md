@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - (c-api) `resvg_parse_tree_from_file`, `resvg_parse_tree_from_data`
   `resvg_cairo_render_to_image` and `resvg_qt_render_to_image`
   will return an error code now.
+- (cairo-backend) Use `gdk-pixbuf` crate instead of `image`.
 - (lib) `Render::render_to_image` and `Render::render_node_to_image` will return
   `Option` and not `Result` now.
 - (lib) New geometry primitives implementation.

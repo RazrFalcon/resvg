@@ -4,9 +4,10 @@
 
 // external
 use cairo;
-use piston_image::{
+use gdk_pixbuf::{
     self,
-    GenericImage,
+    PixbufExt,
+    PixbufLoaderExt,
 };
 use usvg;
 
@@ -28,7 +29,7 @@ pub fn draw(
     image.view_box.rect
 }
 
-pub fn draw_raster(
+fn draw_raster(
     image: &usvg::Image,
     cr: &cairo::Context,
 ) {
@@ -36,21 +37,23 @@ pub fn draw_raster(
 
     let img = match image.data {
         usvg::ImageData::Path(ref path) => {
-            try_opt_warn!(piston_image::open(path).ok(), (),
+            try_opt_warn!(gdk_pixbuf::Pixbuf::new_from_file(path).ok(), (),
                 "Failed to load an external image: {:?}.", path)
         }
         usvg::ImageData::Raw(ref data) => {
-            try_opt_warn!(piston_image::load_from_memory(data).ok(), (),
+            try_opt_warn!(load_raster_data(data), (),
                 "Failed to load an embedded image.")
         }
     };
 
     let new_size = utils::apply_view_box(
         &image.view_box,
-        ScreenSize::new(img.width(), img.height()),
+        ScreenSize::new(img.get_width() as u32, img.get_height() as u32),
     );
-    let img = img.resize_exact(new_size.width, new_size.height, piston_image::FilterType::Triangle);
-    let img = img.to_rgba();
+
+    let img = img.scale_simple(new_size.width as i32, new_size.height as i32,
+                               gdk_pixbuf::InterpType::Bilinear);
+    let img = try_opt_warn!(img, (), "Failed to scale an image.");
 
     let mut surface = try_create_surface!(new_size, ());
 
@@ -65,34 +68,44 @@ pub fn draw_raster(
 
             (pos.x as u32, pos.y as u32, (pos.x + r.width) as u32, (pos.y + r.height) as u32)
         } else {
-            (0, 0, img.width(), img.height())
+            (0, 0, img.get_width() as u32, img.get_height() as u32)
         };
 
         let mut surface_data = surface.get_data().unwrap();
 
+        let channels = img.get_n_channels() as usize;
+        let w = img.get_width() as u32;
         let mut i = 0;
         let mut x = 0;
         let mut y = 0;
-        for p in img.chunks(4) {
+        for p in img.read_pixel_bytes().unwrap().chunks(channels) {
             if x >= start_x && y >= start_y && x <= end_x && y <= end_y {
-                let r = p[0] as u32;
-                let g = p[1] as u32;
-                let b = p[2] as u32;
-                let a = p[3] as u32;
+                // NOTE: will not work on big endian.
+                if channels == 4 {
+                    let r = p[0] as u32;
+                    let g = p[1] as u32;
+                    let b = p[2] as u32;
+                    let a = p[3] as u32;
 
-                // https://www.cairographics.org/manual/cairo-Image-Surfaces.html#cairo-format-t
-                let tr = a * r + 0x80;
-                let tg = a * g + 0x80;
-                let tb = a * b + 0x80;
-                surface_data[i + 0] = (((tb >> 8) + tb) >> 8) as u8;
-                surface_data[i + 1] = (((tg >> 8) + tg) >> 8) as u8;
-                surface_data[i + 2] = (((tr >> 8) + tr) >> 8) as u8;
-                surface_data[i + 3] = a as u8;
+                    // https://www.cairographics.org/manual/cairo-Image-Surfaces.html#cairo-format-t
+                    let tr = a * r + 0x80;
+                    let tg = a * g + 0x80;
+                    let tb = a * b + 0x80;
+                    surface_data[i + 0] = (((tb >> 8) + tb) >> 8) as u8;
+                    surface_data[i + 1] = (((tg >> 8) + tg) >> 8) as u8;
+                    surface_data[i + 2] = (((tr >> 8) + tr) >> 8) as u8;
+                    surface_data[i + 3] = a as u8;
+                } else {
+                    surface_data[i + 0] = p[2];
+                    surface_data[i + 1] = p[1];
+                    surface_data[i + 2] = p[0];
+                    surface_data[i + 3] = 255;
+                }
             }
 
             i += 4;
             x += 1;
-            if x == img.width() {
+            if x == w {
                 x = 0;
                 y += 1;
             }
@@ -101,11 +114,18 @@ pub fn draw_raster(
 
     let pos = utils::aligned_pos(
         image.view_box.aspect.align,
-        r.x, r.y, r.width - img.width() as f64, r.height - img.height() as f64,
+        r.x, r.y, r.width - img.get_width() as f64, r.height - img.get_height() as f64,
     );
 
     cr.set_source_surface(&surface, pos.x, pos.y);
     cr.paint();
+}
+
+fn load_raster_data(data: &[u8]) -> Option<gdk_pixbuf::Pixbuf> {
+    let loader = gdk_pixbuf::PixbufLoader::new();
+    loader.write(data).ok()?;
+    loader.close().ok()?;
+    loader.get_pixbuf()
 }
 
 fn draw_svg(

@@ -88,7 +88,7 @@ if __name__ == '__main__':
                                                png_path_prev, png_path_curr, diff_path],
                                                stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            print('Error: images are different: {}.'.format(e.stdout.decode('ascii')))
+            print('Error: images are different by {} pixels.'.format(e.stdout.decode('ascii')))
             exit(1)
 
         os.remove(png_path_prev)

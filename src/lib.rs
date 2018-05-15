@@ -25,7 +25,7 @@ And as an embeddable library to paint SVG on an application native canvas.
 #[cfg(feature = "cairo-backend")] pub extern crate cairo;
 #[cfg(feature = "cairo-backend")] extern crate pango;
 #[cfg(feature = "cairo-backend")] extern crate pangocairo;
-#[cfg(feature = "cairo-backend")] extern crate image as piston_image;
+#[cfg(feature = "cairo-backend")] extern crate gdk_pixbuf;
 
 #[cfg(feature = "qt-backend")] pub extern crate resvg_qt as qt;
 
