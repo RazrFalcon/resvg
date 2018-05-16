@@ -1,5 +1,6 @@
 language: rust
 rust:
+  - 1.22.0
   - stable
 before_install:
   - sudo add-apt-repository ppa:beineri/opt-qt562-trusty -y
