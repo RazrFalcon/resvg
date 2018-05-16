@@ -327,6 +327,9 @@ fn render_group_impl(
     }
 
     cr.set_matrix(curr_matrix);
+
+    // All layers must be unlinked from the main context/cr after used.
+    // TODO: find a way to automate this
     cr.reset_source_rgba();
 
     Some(bbox)
