@@ -1,1 +1,5 @@
-e-switch-004.svg
+a-fill-025.svg
+a-fill-034.svg
+a-fill-035.svg
+a-fill-036.svg
+a-fill-037.svg
