@@ -1,6 +1,0 @@
-a-stroke-010.svg
-a-stroke-011.svg
-a-stroke-012.svg
-a-stroke-013.svg
-a-stroke-014.svg
-a-stroke-015.svg

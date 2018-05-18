@@ -31,6 +31,8 @@ pub fn apply(
 
     let global_ts = usvg::Transform::from_native(&cr.get_matrix());
     let (sx, sy) = global_ts.get_scale();
+    // Only integer scaling is allowed.
+    let (sx, sy) = (sx.round(), sy.round());
 
     let img_size = Size::new(r.width * sx, r.height * sy).to_screen_size();
     let surface = try_create_surface!(img_size, ());

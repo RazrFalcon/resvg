@@ -27,6 +27,8 @@ pub fn apply(
 
     let global_ts = usvg::Transform::from_native(&global_ts);
     let (sx, sy) = global_ts.get_scale();
+    // Only integer scaling is allowed.
+    let (sx, sy) = (sx.round(), sy.round());
 
     let img_size = Size::new(r.width * sx, r.height * sy).to_screen_size();
     let mut img = try_create_image!(img_size, ());

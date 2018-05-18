@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - (cairo-backend) Layers management.
 - (c-api) `resvg_get_node_transform` will return a correct transform now.
 - (lib) `text-decoration` thickness.
+- (lib) `pattern` scaling.
 
 ### Removed
 - (c-api) `resvg_error_msg_destroy`.
