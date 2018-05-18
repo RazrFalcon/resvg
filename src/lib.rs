@@ -37,8 +37,8 @@ pub use usvg::{
 };
 
 
-#[cfg(feature = "cairo-backend")] pub mod render_cairo;
-#[cfg(feature = "qt-backend")] pub mod render_qt;
+#[cfg(feature = "cairo-backend")] pub mod backend_cairo;
+#[cfg(feature = "qt-backend")] pub mod backend_qt;
 
 pub mod utils;
 pub mod geom;
@@ -156,12 +156,12 @@ pub fn init() -> InitObject {
 pub fn default_backend() -> Box<Render> {
     #[cfg(feature = "cairo-backend")]
     {
-        return Box::new(render_cairo::Backend);
+        return Box::new(backend_cairo::Backend);
     }
 
     #[cfg(feature = "qt-backend")]
     {
-        return Box::new(render_qt::Backend);
+        return Box::new(backend_qt::Backend);
     }
 
     unreachable!("at least one backend must be enabled")

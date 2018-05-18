@@ -103,9 +103,9 @@ fn process() -> Result<(), Error> {
 
     let backend: Box<Render> = match args.backend_name.as_str() {
         #[cfg(feature = "cairo-backend")]
-        "cairo" => Box::new(resvg::render_cairo::Backend),
+        "cairo" => Box::new(resvg::backend_cairo::Backend),
         #[cfg(feature = "qt-backend")]
-        "qt" => Box::new(resvg::render_qt::Backend),
+        "qt" => Box::new(resvg::backend_qt::Backend),
         _ => return Err(format!("Unknown backend").into()),
     };
 

@@ -209,7 +209,7 @@ pub extern fn resvg_qt_render_to_image(
     opt: *const resvg_options,
     file_path: *const c_char,
 ) -> i32 {
-    let backend = Box::new(resvg::render_qt::Backend);
+    let backend = Box::new(resvg::backend_qt::Backend);
     render_to_image(tree, opt, file_path, backend)
 }
 
@@ -220,7 +220,7 @@ pub extern fn resvg_cairo_render_to_image(
     opt: *const resvg_options,
     file_path: *const c_char,
 ) -> i32 {
-    let backend = Box::new(resvg::render_cairo::Backend);
+    let backend = Box::new(resvg::backend_cairo::Backend);
     render_to_image(tree, opt, file_path, backend)
 }
 
@@ -279,7 +279,7 @@ pub extern fn resvg_qt_render_to_canvas(
         &*opt
     });
 
-    resvg::render_qt::render_to_canvas(&tree.0, &opt, size, &painter);
+    resvg::backend_qt::render_to_canvas(&tree.0, &opt, size, &painter);
 }
 
 #[cfg(feature = "cairo-backend")]
@@ -305,7 +305,7 @@ pub extern fn resvg_cairo_render_to_canvas(
         &*opt
     });
 
-    resvg::render_cairo::render_to_canvas(&tree.0, &opt, size, &cr);
+    resvg::backend_cairo::render_to_canvas(&tree.0, &opt, size, &cr);
 }
 
 #[cfg(feature = "qt-backend")]
@@ -340,13 +340,13 @@ pub extern fn resvg_qt_render_to_canvas_by_id(
     }
 
     if let Some(node) = tree.0.node_by_id(id) {
-        if let Some(bbox) = resvg::render_qt::calc_node_bbox(&node, &opt) {
+        if let Some(bbox) = resvg::backend_qt::calc_node_bbox(&node, &opt) {
             let vbox = usvg::ViewBox {
                 rect: bbox,
                 aspect: usvg::AspectRatio::default(),
             };
 
-            resvg::render_qt::render_node_to_canvas(&node, &opt, vbox, size, &painter);
+            resvg::backend_qt::render_node_to_canvas(&node, &opt, vbox, size, &painter);
         } else {
             warn!("A node with '{}' ID doesn't have a valid bounding box.", id);
         }
@@ -390,13 +390,13 @@ pub extern fn resvg_cairo_render_to_canvas_by_id(
     });
 
     if let Some(node) = tree.0.node_by_id(id) {
-        if let Some(bbox) = resvg::render_cairo::calc_node_bbox(&node, &opt) {
+        if let Some(bbox) = resvg::backend_cairo::calc_node_bbox(&node, &opt) {
             let vbox = usvg::ViewBox {
                 rect: bbox,
                 aspect: usvg::AspectRatio::default(),
             };
 
-            resvg::render_cairo::render_node_to_canvas(&node, &opt, vbox, size, &cr);
+            resvg::backend_cairo::render_node_to_canvas(&node, &opt, vbox, size, &cr);
         } else {
             warn!("A node with '{}' ID doesn't have a valid bounding box.", id);
         }
@@ -461,7 +461,7 @@ pub extern fn resvg_qt_get_node_bbox(
     id: *const c_char,
     bbox: *mut resvg_rect,
 ) -> bool {
-    let backend = Box::new(resvg::render_qt::Backend);
+    let backend = Box::new(resvg::backend_qt::Backend);
     get_node_bbox(tree, opt, id, bbox, backend)
 }
 
@@ -473,7 +473,7 @@ pub extern fn resvg_cairo_get_node_bbox(
     id: *const c_char,
     bbox: *mut resvg_rect,
 ) -> bool {
-    let backend = Box::new(resvg::render_cairo::Backend);
+    let backend = Box::new(resvg::backend_cairo::Backend);
     get_node_bbox(tree, opt, id, bbox, backend)
 }
 
