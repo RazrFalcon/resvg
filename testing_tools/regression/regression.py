@@ -52,7 +52,7 @@ if __name__ == '__main__':
     parser.add_argument('work_dir', help='Sets working directory')
     args = parser.parse_args()
 
-    render_path = os.path.abspath("../../target/debug/rendersvg")
+    render_path = os.path.abspath('../../target/debug/rendersvg')
     if not os.path.exists(render_path):
         raise RuntimeError('rendersvg executable not found')
 
@@ -72,9 +72,9 @@ if __name__ == '__main__':
             continue
 
         svg_path = os.path.join(args.in_dir, file)
-        png_path_prev = os.path.join(args.work_dir, change_ext(file, "_prev", 'png'))
-        png_path_curr = os.path.join(args.work_dir, change_ext(file, "_curr", 'png'))
-        diff_path = os.path.join(args.work_dir, change_ext(file, "_diff", 'png'))
+        png_path_prev = os.path.join(args.work_dir, change_ext(file, '_prev', 'png'))
+        png_path_curr = os.path.join(args.work_dir, change_ext(file, '_curr', 'png'))
+        diff_path = os.path.join(args.work_dir, change_ext(file, '_diff', 'png'))
 
         if render_svg(prev_render_path, svg_path, png_path_prev) != 0:
             continue

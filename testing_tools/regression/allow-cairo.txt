@@ -1,5 +1,6 @@
-a-fill-025.svg
-a-fill-034.svg
-a-fill-035.svg
-a-fill-036.svg
-a-fill-037.svg
+a-stroke-010.svg
+a-stroke-011.svg
+a-stroke-012.svg
+a-stroke-013.svg
+a-stroke-014.svg
+a-stroke-015.svg

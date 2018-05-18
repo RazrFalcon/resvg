@@ -140,17 +140,11 @@ pub fn path_bbox(
                 prev_x = x;
                 prev_y = y;
 
-                if x > maxx {
-                    maxx = x;
-                } else if x < minx {
-                    minx = x;
-                }
+                     if x > maxx { maxx = x; }
+                else if x < minx { minx = x; }
 
-                if y > maxy {
-                    maxy = y;
-                } else if y < miny {
-                    miny = y;
-                }
+                     if y > maxy { maxy = y; }
+                else if y < miny { miny = y; }
             }
             usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
                 let x = x as f32;
