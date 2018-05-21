@@ -94,13 +94,13 @@ pub fn draw_blocks<DrawAt>(
             let layout = pango::Layout::new(&context);
             layout.set_font_description(&font);
 
-            let mut iter = UnicodeSegmentation::graphemes(tspan.text.as_str(), true);
+            let iter = UnicodeSegmentation::graphemes(tspan.text.as_str(), true);
             for (i, c) in iter.enumerate() {
                 let mut has_custom_offset = i == 0;
 
                 {
                     let mut number_at = |list: &Option<usvg::NumberList>| -> Option<f64> {
-                        if let Some(ref list) = list {
+                        if let &Some(ref list) = list {
                             if let Some(n) = list.get(grapheme_idx) {
                                 has_custom_offset = true;
                                 return Some(*n);
@@ -139,7 +139,7 @@ pub fn draw_blocks<DrawAt>(
                     layout.set_text(c);
                     let width = layout.get_size().0.scale();
 
-                    let mut bbox = Rect { x, y: yy, width, height };
+                    let bbox = Rect { x, y: yy, width, height };
                     x += width;
 
                     blocks.push(TextBlock {
@@ -161,7 +161,7 @@ pub fn draw_blocks<DrawAt>(
             chunk_w += blocks[i].bbox.width;
         }
 
-        let mut adx = utils::process_text_anchor(chunk.anchor, chunk_w);
+        let adx = utils::process_text_anchor(chunk.anchor, chunk_w);
         for i in start_idx..blocks.len() {
             blocks[i].bbox.x -= adx;
         }
