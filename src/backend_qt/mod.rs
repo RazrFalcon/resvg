@@ -341,15 +341,16 @@ fn _calc_node_bbox(
         usvg::NodeKind::Text(_) => {
             let mut bbox = Rect::new_bbox();
 
-            text::draw_tspan(node, p, |tspan, x, y, _, font| {
+            text::draw_blocks(node, p, |block| {
                 let mut p_path = qt::PainterPath::new();
-                p_path.add_text(x, y, font, &tspan.text);
+
+                p.set_font(&block.font);
+                let y = block.bbox.y + p.font_metrics().ascent();
+                p_path.add_text(block.bbox.x, y, &block.font, &block.text);
 
                 let segments = from_qt_path(&p_path);
-
                 if !segments.is_empty() {
-                    let c_bbox = utils::path_bbox(&segments, tspan.stroke.as_ref(), &ts2);
-
+                    let c_bbox = utils::path_bbox(&segments, block.stroke.as_ref(), &ts2);
                     bbox.expand(c_bbox);
                 }
             });

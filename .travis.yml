@@ -4,14 +4,15 @@ rust:
   - stable
 before_install:
   - sudo add-apt-repository ppa:beineri/opt-qt562-trusty -y
+  - sudo add-apt-repository ppa:deadsnakes/ppa
   - sudo apt-get update -qq
 install:
   # for cairo backend
   - sudo apt-get install -y libpango1.0-dev
   # for capi/examples/cairo
   - sudo apt-get install -y libgtk-3-dev
-  # for travis script
-  - sudo apt-get install python3
+  # for travis script and regression.py
+  - sudo apt-get install python3.6
   # for testing_tools/regression/regression.py
   - sudo apt-get install imagemagick
   # for qt backend

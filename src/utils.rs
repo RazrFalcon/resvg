@@ -41,11 +41,11 @@ pub fn fit_to(size: ScreenSize, fit: FitTo) -> ScreenSize {
     }
 }
 
-pub(crate) fn process_text_anchor(x: f64, a: usvg::TextAnchor, text_width: f64) -> f64 {
+pub(crate) fn process_text_anchor(a: usvg::TextAnchor, text_width: f64) -> f64 {
     match a {
-        usvg::TextAnchor::Start =>  x, // Nothing.
-        usvg::TextAnchor::Middle => x - text_width / 2.0,
-        usvg::TextAnchor::End =>    x - text_width,
+        usvg::TextAnchor::Start =>  0.0, // Nothing.
+        usvg::TextAnchor::Middle => text_width / 2.0,
+        usvg::TextAnchor::End =>    text_width,
     }
 }
 

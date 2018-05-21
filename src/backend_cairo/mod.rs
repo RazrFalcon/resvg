@@ -376,18 +376,21 @@ fn _calc_node_bbox(
         usvg::NodeKind::Text(_) => {
             let mut bbox = Rect::new_bbox();
 
-            text::draw_tspan(node, opt, cr, |tspan, x, y, _, pd| {
+            text::draw_blocks(node, opt, cr, |block| {
                 cr.new_path();
 
-                pc::layout_path(cr, &pd.layout);
+                let context = text::init_pango_context(opt, cr);
+                let layout = text::init_pango_layout(&block.text, &block.font, &context);
+
+                pc::layout_path(cr, &layout);
                 let path = cr.copy_path();
                 let segments = from_cairo_path(&path);
 
                 let mut t = ts2;
-                t.append(&usvg::Transform::new(1.0, 0.0, 0.0, 1.0, x, y));
+                t.append(&usvg::Transform::new(1.0, 0.0, 0.0, 1.0, block.bbox.x, block.bbox.y));
 
                 if !segments.is_empty() {
-                    let c_bbox = utils::path_bbox(&segments, tspan.stroke.as_ref(), &t);
+                    let c_bbox = utils::path_bbox(&segments, block.stroke.as_ref(), &t);
                     bbox.expand(c_bbox);
                 }
             });

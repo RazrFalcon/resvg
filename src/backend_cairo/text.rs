@@ -5,6 +5,7 @@
 use std::f64;
 
 // external
+use unicode_segmentation::UnicodeSegmentation;
 use cairo;
 use pango::{
     self,
@@ -34,10 +35,13 @@ impl PangoScale for i32 {
 }
 
 
-pub struct PangoData {
-    pub layout: pango::Layout,
-    pub context: pango::Context,
+pub struct TextBlock {
+    pub text: String,
+    pub bbox: Rect,
+    pub fill: Option<usvg::Fill>,
+    pub stroke: Option<usvg::Stroke>,
     pub font: pango::FontDescription,
+    pub decoration: usvg::TextDecoration,
 }
 
 pub fn draw(
@@ -45,68 +49,131 @@ pub fn draw(
     opt: &Options,
     cr: &cairo::Context,
 ) -> Rect {
-    draw_tspan(node, opt, cr,
-        |tspan, x, y, w, d| _draw_tspan(node, tspan, opt, x, y, w, d, cr))
+    let tree = &node.tree();
+    draw_blocks(node, opt, cr, |block| draw_block(tree, block, opt, cr))
 }
 
-pub fn draw_tspan<DrawAt>(
+// TODO: find a way to merge this with a Qt backend
+pub fn draw_blocks<DrawAt>(
     node: &usvg::Node,
     opt: &Options,
     cr: &cairo::Context,
-    mut draw_at: DrawAt,
+    mut draw: DrawAt,
 ) -> Rect
-    where DrawAt: FnMut(&usvg::TSpan, f64, f64, f64, &PangoData)
+    where DrawAt: FnMut(&TextBlock)
 {
-    let mut bbox = Rect::new_bbox();
-    let mut pc_list = Vec::new();
-    let mut tspan_w_list = Vec::new();
+    fn first_number_or(list: &Option<usvg::NumberList>, def: f64) -> f64 {
+        list.as_ref().map(|list| list[0]).unwrap_or(def)
+    }
+
+    let mut blocks: Vec<TextBlock> = Vec::new();
+    let mut last_x = 0.0;
+    let mut last_y = 0.0;
     for chunk_node in node.children() {
-        pc_list.clear();
-        tspan_w_list.clear();
-        let mut chunk_width = 0.0;
+        let kind = chunk_node.borrow();
+        let chunk = match *kind {
+            usvg::NodeKind::TextChunk(ref chunk) => chunk,
+            _ => continue,
+        };
 
-        if let usvg::NodeKind::TextChunk(ref chunk) = *chunk_node.borrow() {
-            for tspan_node in chunk_node.children() {
-                if let usvg::NodeKind::TSpan(ref tspan) = *tspan_node.borrow() {
-                    let context = pc::create_context(cr).unwrap();
-                    pc::update_context(cr, &context);
-                    pc::context_set_resolution(&context, opt.usvg.dpi);
+        let chunk_x = first_number_or(&chunk.x, last_x);
+        let mut x = chunk_x;
+        let mut y = first_number_or(&chunk.y, last_y);
+        let start_idx = blocks.len();
+        let mut grapheme_idx = 0;
 
-                    let font = init_font(&tspan.font, opt.usvg.dpi);
+        for tspan_node in chunk_node.children() {
+            let kind = tspan_node.borrow();
+            let tspan = match *kind {
+                usvg::NodeKind::TSpan(ref tspan) => tspan,
+                _ => continue,
+            };
 
-                    let layout = pango::Layout::new(&context);
-                    layout.set_font_description(Some(&font));
-                    layout.set_text(&tspan.text);
-                    let tspan_width = layout.get_size().0.scale();
+            let context = init_pango_context(opt, cr);
+            let font = init_font(&tspan.font, opt.usvg.dpi);
+            let layout = pango::Layout::new(&context);
+            layout.set_font_description(&font);
 
+            let mut iter = UnicodeSegmentation::graphemes(tspan.text.as_str(), true);
+            for (i, c) in iter.enumerate() {
+                let mut has_custom_offset = i == 0;
+
+                {
+                    let mut number_at = |list: &Option<usvg::NumberList>| -> Option<f64> {
+                        if let Some(ref list) = list {
+                            if let Some(n) = list.get(grapheme_idx) {
+                                has_custom_offset = true;
+                                return Some(*n);
+                            }
+                        }
+
+                        None
+                    };
+
+                    if let Some(n) = number_at(&chunk.x) { x = n; }
+                    if let Some(n) = number_at(&chunk.y) { y = n; }
+                    if let Some(n) = number_at(&chunk.dx) { x += n; }
+                    if let Some(n) = number_at(&chunk.dy) { y += n; }
+                }
+
+                let can_merge = !blocks.is_empty() && !has_custom_offset;
+                if can_merge {
+                    let prev_idx = blocks.len() - 1;
+                    blocks[prev_idx].text.push_str(c);
+
+                    layout.set_text(&blocks[prev_idx].text);
+                    let w = layout.get_size().0.scale();
+                    blocks[prev_idx].bbox.width = w;
+
+                    let mut new_w = chunk_x;
+                    for i in start_idx..blocks.len() {
+                        new_w += blocks[i].bbox.width;
+                    }
+
+                    x = new_w;
+                } else {
                     let mut layout_iter = layout.get_iter().unwrap();
-                    let ascent = layout_iter.get_baseline().scale();
-                    let text_h = layout.get_size().1.scale();
+                    let yy = y - layout_iter.get_baseline().scale();
+                    let height = layout.get_size().1.scale();
 
-                    pc_list.push(PangoData {
-                        layout,
-                        context,
-                        font,
-                    });
-                    chunk_width += tspan_width;
-                    tspan_w_list.push((tspan_width, ascent));
+                    layout.set_text(c);
+                    let width = layout.get_size().0.scale();
 
-                    bbox.expand((chunk.x, chunk.y - ascent, chunk_width, text_h).into());
-                }
-            }
-
-            let mut x = utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
-
-            for (idx, tspan_node) in chunk_node.children().enumerate() {
-                if let usvg::NodeKind::TSpan(ref tspan) = *tspan_node.borrow() {
-                    let (width, ascent) = tspan_w_list[idx];
-                    let pc = &pc_list[idx];
-
-                    draw_at(tspan, x, chunk.y - ascent, width, pc);
+                    let mut bbox = Rect { x, y: yy, width, height };
                     x += width;
+
+                    blocks.push(TextBlock {
+                        text: c.to_string(),
+                        bbox,
+                        fill: tspan.fill.clone(),
+                        stroke: tspan.stroke.clone(),
+                        font: font.clone(),
+                        decoration: tspan.decoration.clone(),
+                    });
                 }
+
+                grapheme_idx += 1;
             }
         }
+
+        let mut chunk_w = 0.0;
+        for i in start_idx..blocks.len() {
+            chunk_w += blocks[i].bbox.width;
+        }
+
+        let mut adx = utils::process_text_anchor(chunk.anchor, chunk_w);
+        for i in start_idx..blocks.len() {
+            blocks[i].bbox.x -= adx;
+        }
+
+        last_x = chunk_x + chunk_w - adx;
+        last_y = y;
+    }
+
+    let mut bbox = Rect::new_bbox();
+    for block in blocks {
+        bbox.expand(block.bbox);
+        draw(&block);
     }
 
     if bbox.x == f64::MAX { bbox.x = 0.0; }
@@ -115,69 +182,87 @@ pub fn draw_tspan<DrawAt>(
     bbox
 }
 
-fn _draw_tspan(
-    node: &usvg::Node,
-    tspan: &usvg::TSpan,
+pub fn init_pango_context(opt: &Options, cr: &cairo::Context) -> pango::Context {
+    let context = pc::create_context(cr).unwrap();
+    pc::update_context(cr, &context);
+    pc::context_set_resolution(&context, opt.usvg.dpi);
+    context
+}
+
+pub fn init_pango_layout(
+    text: &str,
+    font: &pango::FontDescription,
+    context: &pango::Context,
+) -> pango::Layout {
+    let layout = pango::Layout::new(&context);
+    layout.set_font_description(font);
+    layout.set_text(text);
+    layout
+}
+
+fn draw_block(
+    tree: &usvg::Tree,
+    block: &TextBlock,
     opt: &Options,
-    x: f64,
-    y: f64,
-    width: f64,
-    pd: &PangoData,
     cr: &cairo::Context,
 ) {
-    let font_metrics = pd.context.get_metrics(Some(&pd.font), None).unwrap();
+    let context = init_pango_context(opt, cr);
+    let layout = init_pango_layout(&block.text, &block.font, &context);
 
-    let mut layout_iter = pd.layout.get_iter().unwrap();
+    let fm = context.get_metrics(&block.font, None).unwrap();
+
+    let mut layout_iter = layout.get_iter().unwrap();
     let baseline_offset = layout_iter.get_baseline().scale();
+
+    let bbox = block.bbox;
 
     // Contains only characters path bounding box,
     // so spaces around text are ignored.
-    let bbox = calc_layout_bbox(&pd.layout, x, y);
+    let inner_bbox = calc_layout_bbox(&layout, bbox.x, bbox.y);
 
     let mut line_rect = Rect::new(
-        x,
+        bbox.x,
         0.0,
-        width,
-        font_metrics.get_underline_thickness().scale(),
+        bbox.width,
+        fm.get_underline_thickness().scale(),
     );
 
     // Draw underline.
     //
     // Should be drawn before/under text.
-    if let Some(ref style) = tspan.decoration.underline {
-        line_rect.y = y + baseline_offset
-                        - font_metrics.get_underline_position().scale();
-        draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, cr);
+    if let Some(ref style) = block.decoration.underline {
+        line_rect.y = bbox.y + baseline_offset - fm.get_underline_position().scale();
+        draw_line(tree, line_rect, &style.fill, &style.stroke, opt, cr);
     }
 
     // Draw overline.
     //
     // Should be drawn before/under text.
-    if let Some(ref style) = tspan.decoration.overline {
-        line_rect.y = y + font_metrics.get_underline_thickness().scale();
-        draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, cr);
+    if let Some(ref style) = block.decoration.overline {
+        line_rect.y = bbox.y + fm.get_underline_thickness().scale();
+        draw_line(tree, line_rect, &style.fill, &style.stroke, opt, cr);
     }
 
     // Draw text.
-    cr.move_to(x, y);
+    cr.move_to(bbox.x, bbox.y);
 
-    fill::apply(&node.tree(), &tspan.fill, opt, bbox, cr);
-    pc::update_layout(cr, &pd.layout);
-    pc::show_layout(cr, &pd.layout);
+    fill::apply(tree, &block.fill, opt, inner_bbox, cr);
+    pc::update_layout(cr, &layout);
+    pc::show_layout(cr, &layout);
 
-    stroke::apply(&node.tree(), &tspan.stroke, opt, bbox, cr);
-    pc::layout_path(cr, &pd.layout);
+    stroke::apply(tree, &block.stroke, opt, inner_bbox, cr);
+    pc::layout_path(cr, &layout);
     cr.stroke();
 
-    cr.move_to(-x, -y);
+    cr.move_to(-bbox.x, -bbox.y);
 
     // Draw line-through.
     //
     // Should be drawn after/over text.
-    if let Some(ref style) = tspan.decoration.line_through {
-        line_rect.y = y + baseline_offset - font_metrics.get_strikethrough_position().scale();
-        line_rect.height = font_metrics.get_strikethrough_thickness().scale();
-        draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, cr);
+    if let Some(ref style) = block.decoration.line_through {
+        line_rect.y = bbox.y + baseline_offset - fm.get_strikethrough_position().scale();
+        line_rect.height = fm.get_strikethrough_thickness().scale();
+        draw_line(tree, line_rect, &style.fill, &style.stroke, opt, cr);
     }
 }
 

@@ -2,9 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::f64;
-
 // external
+use unicode_segmentation::UnicodeSegmentation;
 use qt;
 use usvg;
 use usvg::prelude::*;
@@ -16,122 +15,192 @@ use super::{
     stroke,
 };
 
+pub struct TextBlock {
+    pub text: String,
+    pub bbox: Rect,
+    pub fill: Option<usvg::Fill>,
+    pub stroke: Option<usvg::Stroke>,
+    pub font: qt::Font,
+    pub decoration: usvg::TextDecoration,
+}
 
 pub fn draw(
     node: &usvg::Node,
     opt: &Options,
     p: &qt::Painter,
 ) -> Rect {
-    draw_tspan(node, p,
-        |tspan, x, y, w, font| _draw_tspan(node, tspan, opt, x, y, w, &font, p))
+    let tree = &node.tree();
+    draw_blocks(node, p, |block| draw_block(tree, block, opt, p))
 }
 
-pub fn draw_tspan<DrawAt>(
+// TODO: find a way to merge this with a cairo backend
+pub fn draw_blocks<DrawAt>(
     node: &usvg::Node,
     p: &qt::Painter,
-    mut draw_at: DrawAt
+    mut draw: DrawAt
 ) -> Rect
-    where DrawAt: FnMut(&usvg::TSpan, f64, f64, f64, &qt::Font)
+    where DrawAt: FnMut(&TextBlock)
 {
-    let mut bbox = Rect::new_bbox();
-    let mut font_list = Vec::new();
-    let mut tspan_w_list = Vec::new();
+    fn first_number_or(list: &Option<usvg::NumberList>, def: f64) -> f64 {
+        list.as_ref().map(|list| list[0]).unwrap_or(def)
+    }
+
+    let mut blocks: Vec<TextBlock> = Vec::new();
+    let mut last_x = 0.0;
+    let mut last_y = 0.0;
     for chunk_node in node.children() {
-        font_list.clear();
-        tspan_w_list.clear();
-        let mut chunk_width = 0.0;
+        let kind = chunk_node.borrow();
+        let chunk = match *kind {
+            usvg::NodeKind::TextChunk(ref chunk) => chunk,
+            _ => continue,
+        };
 
-        if let usvg::NodeKind::TextChunk(ref chunk) = *chunk_node.borrow() {
-            for tspan_node in chunk_node.children() {
-                if let usvg::NodeKind::TSpan(ref tspan) = *tspan_node.borrow() {
-                    let font = init_font(&tspan.font);
-                    p.set_font(&font);
-                    let font_metrics = p.font_metrics();
-                    let tspan_width = font_metrics.width(&tspan.text);
+        let chunk_x = first_number_or(&chunk.x, last_x);
+        let mut x = chunk_x;
+        let mut y = first_number_or(&chunk.y, last_y);
+        let start_idx = blocks.len();
+        let mut grapheme_idx = 0;
 
-                    font_list.push(font);
-                    chunk_width += tspan_width;
-                    tspan_w_list.push(tspan_width);
+        for tspan_node in chunk_node.children() {
+            let kind = tspan_node.borrow();
+            let tspan = match *kind {
+                usvg::NodeKind::TSpan(ref tspan) => tspan,
+                _ => continue,
+            };
 
-                    bbox.expand((chunk.x, chunk.y - font_metrics.ascent(),
-                                 chunk_width, font_metrics.height()).into());
+            let font = init_font(&tspan.font);
+            p.set_font(&font);
+            let font_metrics = p.font_metrics();
+
+            let mut iter = UnicodeSegmentation::graphemes(tspan.text.as_str(), true);
+            for (i, c) in iter.enumerate() {
+                let mut has_custom_offset = i == 0;
+
+                {
+                    let mut number_at = |list: &Option<usvg::NumberList>| -> Option<f64> {
+                        if let Some(ref list) = list {
+                            if let Some(n) = list.get(grapheme_idx) {
+                                has_custom_offset = true;
+                                return Some(*n);
+                            }
+                        }
+
+                        None
+                    };
+
+                    if let Some(n) = number_at(&chunk.x) { x = n; }
+                    if let Some(n) = number_at(&chunk.y) { y = n; }
+                    if let Some(n) = number_at(&chunk.dx) { x += n; }
+                    if let Some(n) = number_at(&chunk.dy) { y += n; }
                 }
-            }
 
-            let mut x = utils::process_text_anchor(chunk.x, chunk.anchor, chunk_width);
+                let can_merge = !blocks.is_empty() && !has_custom_offset;
+                if can_merge {
+                    let prev_idx = blocks.len() - 1;
+                    blocks[prev_idx].text.push_str(c);
+                    let w = font_metrics.width(&blocks[prev_idx].text);
+                    blocks[prev_idx].bbox.width = w;
 
-            for (idx, tspan_node) in chunk_node.children().enumerate() {
-                if let usvg::NodeKind::TSpan(ref tspan) = *tspan_node.borrow() {
-                    let width = tspan_w_list[idx];
-                    let font = &font_list[idx];
+                    let mut new_w = chunk_x;
+                    for i in start_idx..blocks.len() {
+                        new_w += blocks[i].bbox.width;
+                    }
 
-                    draw_at(tspan, x, chunk.y, width, font);
+                    x = new_w;
+                } else {
+                    let yy = y - font_metrics.ascent();
+                    let height = font_metrics.height();
+                    let width = font_metrics.width(c);
+                    let mut bbox = Rect { x, y: yy, width, height };
                     x += width;
+
+                    blocks.push(TextBlock {
+                        text: c.to_string(),
+                        bbox,
+                        fill: tspan.fill.clone(),
+                        stroke: tspan.stroke.clone(),
+                        font: init_font(&tspan.font), // TODO: clone
+                        decoration: tspan.decoration.clone(),
+                    });
                 }
+
+                grapheme_idx += 1;
             }
         }
+
+        let mut chunk_w = 0.0;
+        for i in start_idx..blocks.len() {
+            chunk_w += blocks[i].bbox.width;
+        }
+
+        let mut adx = utils::process_text_anchor(chunk.anchor, chunk_w);
+        for i in start_idx..blocks.len() {
+            blocks[i].bbox.x -= adx;
+        }
+
+        last_x = chunk_x + chunk_w - adx;
+        last_y = y;
+    }
+
+    let mut bbox = Rect::new_bbox();
+    for block in blocks {
+        bbox.expand(block.bbox);
+        draw(&block);
     }
 
     bbox
 }
 
-fn _draw_tspan(
-    node: &usvg::Node,
-    tspan: &usvg::TSpan,
+fn draw_block(
+    tree: &usvg::Tree,
+    block: &TextBlock,
     opt: &Options,
-    x: f64,
-    mut y: f64,
-    width: f64,
-    font: &qt::Font,
     p: &qt::Painter,
 ) {
-    p.set_font(&font);
+    p.set_font(&block.font);
     let font_metrics = p.font_metrics();
 
-    let baseline_offset = font_metrics.ascent();
-    y -= baseline_offset;
+    let bbox = block.bbox;
 
     let mut line_rect = Rect::new(
-        x,
+        bbox.x,
         0.0,
-        width,
+        bbox.width,
         font_metrics.line_width(),
     );
 
     // Draw underline.
     //
     // Should be drawn before/under text.
-    if let Some(ref style) = tspan.decoration.underline {
-        line_rect.y = y + font_metrics.height() - font_metrics.underline_pos();
-        draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, p);
+    if let Some(ref style) = block.decoration.underline {
+        line_rect.y = bbox.y + font_metrics.height() - font_metrics.underline_pos();
+        draw_line(tree, line_rect, &style.fill, &style.stroke, opt, p);
     }
 
     // Draw overline.
     //
     // Should be drawn before/under text.
-    if let Some(ref style) = tspan.decoration.overline {
-        line_rect.y = y + font_metrics.height() - font_metrics.overline_pos();
-        draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, p);
+    if let Some(ref style) = block.decoration.overline {
+        line_rect.y = bbox.y + font_metrics.height() - font_metrics.overline_pos();
+        draw_line(tree, line_rect, &style.fill, &style.stroke, opt, p);
     }
 
-    let bbox = Rect::new(x, y, width, font_metrics.height());
-
     // Draw text.
-    fill::apply(&node.tree(), &tspan.fill, opt, bbox, p);
-    stroke::apply(&node.tree(), &tspan.stroke, opt, bbox, p);
+    fill::apply(tree, &block.fill, opt, bbox, p);
+    stroke::apply(tree, &block.stroke, opt, bbox, p);
 
-    p.draw_text(x, y, &tspan.text);
+    p.draw_text(bbox.x, bbox.y, &block.text);
 
     // Draw line-through.
     //
     // Should be drawn after/over text.
-    if let Some(ref style) = tspan.decoration.line_through {
-        line_rect.y = y + baseline_offset - font_metrics.strikeout_pos();
-        draw_line(&node.tree(), line_rect, &style.fill, &style.stroke, opt, p);
+    if let Some(ref style) = block.decoration.line_through {
+        line_rect.y = bbox.y + font_metrics.ascent() - font_metrics.strikeout_pos();
+        draw_line(tree, line_rect, &style.fill, &style.stroke, opt, p);
     }
 }
 
-pub fn init_font(dom_font: &usvg::Font) -> qt::Font {
+fn init_font(dom_font: &usvg::Font) -> qt::Font {
     let mut font = qt::Font::new();
 
     font.set_family(&dom_font.family);
