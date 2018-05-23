@@ -33,8 +33,6 @@ fn draw_raster(
     image: &usvg::Image,
     cr: &cairo::Context,
 ) {
-    let r = image.view_box.rect;
-
     let img = match image.data {
         usvg::ImageData::Path(ref path) => {
             try_opt_warn!(gdk_pixbuf::Pixbuf::new_from_file(path).ok(), (),
@@ -46,10 +44,12 @@ fn draw_raster(
         }
     };
 
-    let new_size = utils::apply_view_box(
-        &image.view_box,
-        ScreenSize::new(img.get_width() as u32, img.get_height() as u32),
-    );
+    let img_size = ScreenSize::new(img.get_width() as u32, img.get_height() as u32);
+    let mut view_box = image.view_box;
+    utils::prepare_image_viewbox(img_size, &mut view_box);
+    let r = view_box.rect;
+
+    let new_size = utils::apply_view_box(&view_box, img_size);
 
     let img = img.scale_simple(new_size.width as i32, new_size.height as i32,
                                gdk_pixbuf::InterpType::Bilinear);
@@ -60,9 +60,9 @@ fn draw_raster(
     {
         // Scaled image will be bigger than viewbox, so we have to
         // cut only the part specified by align rule.
-        let (start_x, start_y, end_x, end_y) = if image.view_box.aspect.slice {
+        let (start_x, start_y, end_x, end_y) = if view_box.aspect.slice {
             let pos = utils::aligned_pos(
-                image.view_box.aspect.align,
+                view_box.aspect.align,
                 0.0, 0.0, new_size.width as f64 - r.width, new_size.height as f64 - r.height,
             );
 
@@ -115,7 +115,7 @@ fn draw_raster(
     }
 
     let pos = utils::aligned_pos(
-        image.view_box.aspect.align,
+        view_box.aspect.align,
         r.x, r.y, r.width - img.get_width() as f64, r.height - img.get_height() as f64,
     );
 

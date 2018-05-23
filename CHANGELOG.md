@@ -40,6 +40,7 @@ This changelog also contains an important changes in dependencies.
 - (c-api) `resvg_get_node_transform` will return a correct transform now.
 - (resvg) `text-decoration` thickness.
 - (resvg) `pattern` scaling.
+- (resvg) `image` without size rendering.
 - (usvg) Panic during `visibility` resolving.
 - (usvg) Gradients with one stop resolving.
 - (usvg) `use` attributes resolving.

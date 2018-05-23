@@ -28,8 +28,6 @@ fn draw_raster(
     image: &usvg::Image,
     p: &qt::Painter,
 ) {
-    let r = image.view_box.rect;
-
     let img = match image.data {
         usvg::ImageData::Path(ref path) => {
             try_opt_warn!(qt::Image::from_file(path), (),
@@ -41,22 +39,24 @@ fn draw_raster(
         }
     };
 
-    let new_size = utils::apply_view_box(
-        &image.view_box,
-        ScreenSize::new(img.width(), img.height()),
-    );
+    let img_size = ScreenSize::new(img.width(), img.height());
+    let mut view_box = image.view_box;
+    utils::prepare_image_viewbox(img_size, &mut view_box);
+    let r = view_box.rect;
+
+    let new_size = utils::apply_view_box(&view_box, img_size);
 
     let img = try_opt_warn!(
         img.resize(new_size.width, new_size.height, qt::AspectRatioMode::IgnoreAspectRatio), (),
         "Failed to scale an image.",
     );
 
-    if image.view_box.aspect.slice {
+    if view_box.aspect.slice {
         // Scaled image will be bigger than viewbox, so we have to
         // cut only the part specified by align rule.
 
         let pos = utils::aligned_pos(
-            image.view_box.aspect.align,
+            view_box.aspect.align,
             0.0, 0.0, new_size.width as f64 - r.width, new_size.height as f64 - r.height,
         );
 
@@ -68,7 +68,7 @@ fn draw_raster(
         p.draw_image(r.x, r.y, &img);
     } else {
         let pos = utils::aligned_pos(
-            image.view_box.aspect.align,
+            view_box.aspect.align,
             r.x, r.y, r.width - new_size.width as f64, r.height - new_size.height as f64,
         );
 

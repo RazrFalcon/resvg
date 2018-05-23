@@ -273,16 +273,27 @@ pub(crate) fn load_sub_svg(
     Some((tree, sub_opt))
 }
 
+pub(crate) fn prepare_image_viewbox(img_size: ScreenSize, view_box: &mut usvg::ViewBox) {
+    let mut r = view_box.rect;
+    // If viewbox w/h is not set - use the one from image.
+    if r.width.is_fuzzy_zero() { r.width = img_size.width as f64; }
+    if r.height.is_fuzzy_zero() { r.height = img_size.height as f64; }
+    view_box.rect = r;
+}
+
 pub(crate) fn prepare_sub_svg_geom(
     image: &usvg::Image,
     img_size: ScreenSize,
 ) -> (usvg::Transform, Option<Rect>) {
-    let new_size = apply_view_box(&image.view_box, img_size);
-    let r = image.view_box.rect;
+    let mut view_box = image.view_box;
+    prepare_image_viewbox(img_size, &mut view_box);
+    let r = view_box.rect;
 
-    let (tx, ty, clip) = if image.view_box.aspect.slice {
+    let new_size = apply_view_box(&view_box, img_size);
+
+    let (tx, ty, clip) = if view_box.aspect.slice {
         let pos = aligned_pos(
-            image.view_box.aspect.align,
+            view_box.aspect.align,
             0.0, 0.0, new_size.width as f64 - r.width, new_size.height as f64 - r.height,
         );
 
@@ -290,7 +301,7 @@ pub(crate) fn prepare_sub_svg_geom(
         (r.x - pos.x, r.y - pos.y, Some(r))
     } else {
         let pos = aligned_pos(
-            image.view_box.aspect.align,
+            view_box.aspect.align,
             r.x, r.y, r.width - new_size.width as f64, r.height - new_size.height as f64,
         );
 

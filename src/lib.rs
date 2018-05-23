@@ -48,6 +48,8 @@ mod options;
 mod traits;
 
 mod prelude {
+    pub use usvg::FuzzyEq;
+    pub use usvg::FuzzyZero;
     pub use geom::*;
     pub use traits::*;
     pub use utils;
