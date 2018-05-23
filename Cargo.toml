@@ -1,6 +1,6 @@
 [package]
 name = "resvg"
-# When updating version, also modify html_root_url in the lib.rs and in the README
+# When updating version, also modify html_root_url in the lib.rs, in the README and in the rendersvg
 version = "0.3.0"
 authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster"]
