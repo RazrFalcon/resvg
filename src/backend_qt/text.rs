@@ -282,5 +282,5 @@ fn draw_line(
 ) {
     fill::apply(tree, fill, opt, r, p);
     stroke::apply(tree, stroke, opt, r, p);
-    p.draw_rect(r.x, r.y, r.width, r.height); // TODO: r.width + 1.0
+    p.draw_rect(r.x, r.y, r.width + 1.0, r.height);
 }
