@@ -62,7 +62,7 @@ pub fn draw_blocks<DrawAt>(
             _ => continue,
         };
 
-        let chunk_x = first_number_or(&chunk.x, last_x);
+        let mut chunk_x = first_number_or(&chunk.x, last_x);
         let mut x = chunk_x;
         let mut y = first_number_or(&chunk.y, last_y);
         let start_idx = blocks.len();
@@ -99,6 +99,11 @@ pub fn draw_blocks<DrawAt>(
                     if let Some(n) = number_at(&chunk.y) { y = n; }
                     if let Some(n) = number_at(&chunk.dx) { x += n; }
                     if let Some(n) = number_at(&chunk.dy) { y += n; }
+
+                    if i == 0 {
+                        if let Some(n) = number_at(&chunk.x) { chunk_x = n; }
+                        if let Some(n) = number_at(&chunk.dx) { chunk_x += n; }
+                    }
                 }
 
                 if text_kind.rotate.is_some() {
