@@ -18,7 +18,7 @@ cargo build --release --features="qt-backend cairo-backend"
 
 ### Rust
 
-The library requires the latest stable Rust.
+The library requires Rust >= 1.22.
 
 ### Qt backend
 

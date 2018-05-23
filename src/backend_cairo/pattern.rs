@@ -34,6 +34,10 @@ pub fn apply(
     // Only integer scaling is allowed.
     let (sx, sy) = (sx.round(), sy.round());
 
+    if sx.is_fuzzy_zero() || sy.is_fuzzy_zero() {
+        return;
+    }
+
     let img_size = Size::new(r.width * sx, r.height * sy).to_screen_size();
     let surface = try_create_surface!(img_size, ());
 
