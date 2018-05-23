@@ -4,23 +4,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+This changelog also contains an important changes in dependencies.
+
 ## [Unreleased]
 ### Added
 - (c-api) `resvg_is_image_empty`.
 - (c-api) `resvg_error` enum.
 - (c-api) Qt wrapper.
-- (rendersvg) Use `getopts` instead of `clap` to reduce the executable size.
 - (resvg) Advanced text layout support (lists of x, y, dx, dy and rotate).
+- (resvg) SVG support for `image` element.
+- (usvg) `symbol` element support.
+- (usvg) Nested `svg` elements support.
+- (usvg) Paint fallback resolving.
+- (usvg) Bbox validation for shapes that use painting servers.
+- (svgdom) Elements from ENTITY resolving.
 
 ### Changed
 - (c-api) `resvg_parse_tree_from_file`, `resvg_parse_tree_from_data`
   `resvg_cairo_render_to_image` and `resvg_qt_render_to_image`
   will return an error code now.
 - (cairo-backend) Use `gdk-pixbuf` crate instead of `image`.
-- (lib) `Render::render_to_image` and `Render::render_node_to_image` will return
+- (resvg) `Render::render_to_image` and `Render::render_node_to_image` will return
   `Option` and not `Result` now.
-- (lib) New geometry primitives implementation.
-- (lib) Rename `render_*` modules to `backend_`.
+- (resvg) New geometry primitives implementation.
+- (resvg) Rename `render_*` modules to `backend_`.
+- (rendersvg) Use `getopts` instead of `clap` to reduce the executable size.
+- (svgtypes) `StreamExt::parse_iri` and `StreamExt::parse_func_iri` will parse
+  not only well-formed data now.
 
 ### Fixed
 - (qt-backend) Gradient with `objectBoundingBox` rendering.
@@ -28,13 +38,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - (cairo-backend) `image` element clipping.
 - (cairo-backend) Layers management.
 - (c-api) `resvg_get_node_transform` will return a correct transform now.
-- (lib) `text-decoration` thickness.
-- (lib) `pattern` scaling.
+- (resvg) `text-decoration` thickness.
+- (resvg) `pattern` scaling.
+- (usvg) Panic during `visibility` resolving.
+- (usvg) Gradients with one stop resolving.
+- (usvg) `use` attributes resolving.
+- (usvg) `clipPath` and `mask` attributes resolving.
+- (usvg) `offset` attribute in `stop` element resolving.
+- (usvg) Incorrect `font-size` attribute resolving.
+- (usvg) Gradient stops resolving.
+- (usvg) `switch` element resolving.
+- (svgdom) Mixed `xml:space` processing.
+- (svgtypes) `Paint::from_span` poor performance.
 
 ### Removed
 - (c-api) `resvg_error_msg_destroy`.
-- (lib) `parse_rtree_*` methods. Use `usvg::Tree::from_` instead.
-- (lib) `Error`.
+- (resvg) `parse_rtree_*` methods. Use `usvg::Tree::from_` instead.
+- (resvg) `Error`.
 
 ## [0.2.0] - 2018-04-24
 ### Added
@@ -47,7 +67,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - (cli) Added `--perf` argument for a simple performance stats.
 
 ### Changed
-- (lib) API is completely new.
+- (resvg) API is completely new.
 
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.

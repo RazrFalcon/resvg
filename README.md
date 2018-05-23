@@ -77,6 +77,7 @@ TL;DR
 
 - no `filter`
 - no `marker`
+- no `textPath`
 - CSS support is minimal
 
 ## Performance
