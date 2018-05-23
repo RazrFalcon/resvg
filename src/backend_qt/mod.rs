@@ -338,10 +338,10 @@ fn _calc_node_bbox(
         usvg::NodeKind::Path(ref path) => {
             Some(utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2))
         }
-        usvg::NodeKind::Text(_) => {
+        usvg::NodeKind::Text(ref text) => {
             let mut bbox = Rect::new_bbox();
 
-            text::draw_blocks(node, p, |block| {
+            text::draw_blocks(text, node, p, |block| {
                 let mut p_path = qt::PainterPath::new();
 
                 p.set_font(&block.font);

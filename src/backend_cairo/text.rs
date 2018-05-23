@@ -38,6 +38,7 @@ impl PangoScale for i32 {
 pub struct TextBlock {
     pub text: String,
     pub bbox: Rect,
+    pub rotate: f64,
     pub fill: Option<usvg::Fill>,
     pub stroke: Option<usvg::Stroke>,
     pub font: pango::FontDescription,
@@ -50,11 +51,16 @@ pub fn draw(
     cr: &cairo::Context,
 ) -> Rect {
     let tree = &node.tree();
-    draw_blocks(node, opt, cr, |block| draw_block(tree, block, opt, cr))
+    if let usvg::NodeKind::Text(ref text) = *node.borrow() {
+        draw_blocks(text, node, opt, cr, |block| draw_block(tree, block, opt, cr))
+    } else {
+        unreachable!();
+    }
 }
 
 // TODO: find a way to merge this with a Qt backend
 pub fn draw_blocks<DrawAt>(
+    text_kind: &usvg::Text,
     node: &usvg::Node,
     opt: &Options,
     cr: &cairo::Context,
@@ -116,6 +122,10 @@ pub fn draw_blocks<DrawAt>(
                     if let Some(n) = number_at(&chunk.dy) { y += n; }
                 }
 
+                if text_kind.rotate.is_some() {
+                    has_custom_offset = true;
+                }
+
                 let can_merge = !blocks.is_empty() && !has_custom_offset;
                 if can_merge {
                     let prev_idx = blocks.len() - 1;
@@ -142,9 +152,15 @@ pub fn draw_blocks<DrawAt>(
                     let bbox = Rect { x, y: yy, width, height };
                     x += width;
 
+                    let rotate = match text_kind.rotate {
+                        Some(ref list) => { list[blocks.len()] }
+                        None => 0.0,
+                    };
+
                     blocks.push(TextBlock {
                         text: c.to_string(),
                         bbox,
+                        rotate,
                         fill: tspan.fill.clone(),
                         stroke: tspan.stroke.clone(),
                         font: font.clone(),
@@ -218,14 +234,16 @@ fn draw_block(
 
     // Contains only characters path bounding box,
     // so spaces around text are ignored.
-    let inner_bbox = calc_layout_bbox(&layout, bbox.x, bbox.y);
+    let inner_bbox = get_layout_bbox(&layout, bbox.x, bbox.y);
 
-    let mut line_rect = Rect::new(
-        bbox.x,
-        0.0,
-        bbox.width,
-        fm.get_underline_thickness().scale(),
-    );
+    let mut line_rect = Rect::new(bbox.x, 0.0, bbox.width, fm.get_underline_thickness().scale());
+
+    let old_ts = cr.get_matrix();
+    if !block.rotate.is_fuzzy_zero() {
+        let mut ts = usvg::Transform::default();
+        ts.rotate_at(block.rotate, bbox.x, bbox.y + baseline_offset);
+        cr.transform(ts.to_native());
+    }
 
     // Draw underline.
     //
@@ -264,6 +282,8 @@ fn draw_block(
         line_rect.height = fm.get_strikethrough_thickness().scale();
         draw_line(tree, line_rect, &style.fill, &style.stroke, opt, cr);
     }
+
+    cr.set_matrix(old_ts);
 }
 
 fn init_font(dom_font: &usvg::Font, dpi: f64) -> pango::FontDescription {
@@ -319,7 +339,7 @@ fn init_font(dom_font: &usvg::Font, dpi: f64) -> pango::FontDescription {
     font
 }
 
-pub fn calc_layout_bbox(layout: &pango::Layout, x: f64, y: f64) -> Rect {
+pub fn get_layout_bbox(layout: &pango::Layout, x: f64, y: f64) -> Rect {
     let (ink_rect, _) = layout.get_extents();
 
     (

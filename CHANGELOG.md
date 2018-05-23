@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - (c-api) `resvg_error` enum.
 - (c-api) Qt wrapper.
 - (rendersvg) Use `getopts` instead of `clap` to reduce the executable size.
-- (resvg) Advanced text layout support (lists of x, y, dx, dy, coordinates).
+- (resvg) Advanced text layout support (lists of x, y, dx, dy and rotate).
 
 ### Changed
 - (c-api) `resvg_parse_tree_from_file`, `resvg_parse_tree_from_data`

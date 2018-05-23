@@ -18,6 +18,7 @@ use super::{
 pub struct TextBlock {
     pub text: String,
     pub bbox: Rect,
+    pub rotate: f64,
     pub fill: Option<usvg::Fill>,
     pub stroke: Option<usvg::Stroke>,
     pub font: qt::Font,
@@ -30,11 +31,17 @@ pub fn draw(
     p: &qt::Painter,
 ) -> Rect {
     let tree = &node.tree();
-    draw_blocks(node, p, |block| draw_block(tree, block, opt, p))
+
+    if let usvg::NodeKind::Text(ref text) = *node.borrow() {
+        draw_blocks(text, node, p, |block| draw_block(tree, block, opt, p))
+    } else {
+        unreachable!();
+    }
 }
 
 // TODO: find a way to merge this with a cairo backend
 pub fn draw_blocks<DrawAt>(
+    text_kind: &usvg::Text,
     node: &usvg::Node,
     p: &qt::Painter,
     mut draw: DrawAt
@@ -94,6 +101,10 @@ pub fn draw_blocks<DrawAt>(
                     if let Some(n) = number_at(&chunk.dy) { y += n; }
                 }
 
+                if text_kind.rotate.is_some() {
+                    has_custom_offset = true;
+                }
+
                 let can_merge = !blocks.is_empty() && !has_custom_offset;
                 if can_merge {
                     let prev_idx = blocks.len() - 1;
@@ -114,9 +125,15 @@ pub fn draw_blocks<DrawAt>(
                     let bbox = Rect { x, y: yy, width, height };
                     x += width;
 
+                    let rotate = match text_kind.rotate {
+                        Some(ref list) => { list[blocks.len()] }
+                        None => 0.0,
+                    };
+
                     blocks.push(TextBlock {
                         text: c.to_string(),
                         bbox,
+                        rotate,
                         fill: tspan.fill.clone(),
                         stroke: tspan.stroke.clone(),
                         font: init_font(&tspan.font), // TODO: clone
@@ -162,12 +179,15 @@ fn draw_block(
 
     let bbox = block.bbox;
 
-    let mut line_rect = Rect::new(
-        bbox.x,
-        0.0,
-        bbox.width,
-        font_metrics.line_width(),
-    );
+    let old_ts = p.get_transform();
+
+    if !block.rotate.is_fuzzy_zero() {
+        let mut ts = usvg::Transform::default();
+        ts.rotate_at(block.rotate, bbox.x, bbox.y + font_metrics.ascent());
+        p.apply_transform(&ts.to_native());
+    }
+
+    let mut line_rect = Rect::new(bbox.x, 0.0, bbox.width, font_metrics.line_width());
 
     // Draw underline.
     //
@@ -198,6 +218,8 @@ fn draw_block(
         line_rect.y = bbox.y + font_metrics.ascent() - font_metrics.strikeout_pos();
         draw_line(tree, line_rect, &style.fill, &style.stroke, opt, p);
     }
+
+    p.set_transform(&old_ts);
 }
 
 fn init_font(dom_font: &usvg::Font) -> qt::Font {
@@ -260,5 +282,5 @@ fn draw_line(
 ) {
     fill::apply(tree, fill, opt, r, p);
     stroke::apply(tree, stroke, opt, r, p);
-    p.draw_rect(r.x, r.y, r.width, r.height);
+    p.draw_rect(r.x, r.y, r.width, r.height); // TODO: r.width + 1.0
 }
