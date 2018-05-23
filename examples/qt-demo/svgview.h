@@ -1,8 +1,41 @@
 #pragma once
 
 #include <QFrame>
+#include <QSvgRenderer>
+#include <QMutex>
 
 #include <ResvgQt.h>
+
+enum class RenderBackend
+{
+    Resvg,
+    QtSvg,
+};
+
+class SvgViewWorker : public QObject
+{
+    Q_OBJECT
+
+public:
+    SvgViewWorker(QObject *parent = nullptr);
+
+    QRect viewBox() const;
+
+public slots:
+    void loadData(const QByteArray &data);
+    void loadFile(const QString &path);
+    void render(const QSize &viewSize, RenderBackend backend);
+
+signals:
+    void rendered(QImage);
+    void errorMsg(QString);
+
+private:
+    const float m_dpiRatio;
+    mutable QMutex m_mutex;
+    ResvgRenderer m_renderer;
+    QSvgRenderer m_qtRenderer;
+};
 
 class SvgView : public QFrame
 {
@@ -17,20 +50,19 @@ public:
     };
 
     explicit SvgView(QWidget *parent = nullptr);
+    ~SvgView();
 
     static void init();
 
-    void setRenderToImage(bool flag);
     void setFitToView(bool flag);
-    void setZoom(float zoom);
     void setBackgound(Backgound backgound);
     void setDrawImageBorder(bool flag);
+    void setBackend(RenderBackend backend);
 
-    void loadData(const QByteArray &ba);
+    void loadData(const QByteArray &data);
     void loadFile(const QString &path);
 
 signals:
-    void renderTime(qint64);
     void loadError(QString);
 
 protected:
@@ -38,18 +70,23 @@ protected:
     void dragEnterEvent(QDragEnterEvent *event);
     void dragMoveEvent(QDragMoveEvent *event);
     void dropEvent(QDropEvent *event);
+    void resizeEvent(QResizeEvent *);
+
+private:
+    void requestUpdate();
+
+private slots:
+    void onRendered(const QImage &img);
 
 private:
     const QImage m_checkboardImg;
+    SvgViewWorker * const m_worker;
 
-    ResvgRenderer m_renderer;
-
+    QString m_path;
+    RenderBackend m_backend = RenderBackend::Resvg;
+    float m_dpiRatio = 1.0;
     bool m_isFitToView = true;
-    float m_zoom = 1.0f;
     Backgound m_backgound = Backgound::CheckBoard;
     bool m_isDrawImageBorder = false;
-
-    bool m_isRenderToImage = false;
-    QPixmap m_pix;
-
+    QImage m_img;
 };

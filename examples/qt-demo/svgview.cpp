@@ -6,9 +6,93 @@
 #include <QPainter>
 #include <QFileInfo>
 #include <QMimeData>
+#include <QTimer>
+#include <QThread>
+#include <QSvgRenderer>
 #include <QDebug>
 
 #include "svgview.h"
+
+SvgViewWorker::SvgViewWorker(QObject *parent)
+    : QObject(parent)
+    , m_dpiRatio(qApp->screens().first()->devicePixelRatio())
+{
+}
+
+QRect SvgViewWorker::viewBox() const
+{
+    QMutexLocker lock(&m_mutex);
+    return m_renderer.viewBox();
+}
+
+void SvgViewWorker::loadData(const QByteArray &data)
+{
+    QMutexLocker lock(&m_mutex);
+
+    m_renderer.load(data);
+    if (!m_renderer.isValid()) {
+        emit errorMsg(m_renderer.errorString());
+    }
+
+    m_qtRenderer.load(data);
+}
+
+void SvgViewWorker::loadFile(const QString &path)
+{
+    QMutexLocker lock(&m_mutex);
+
+    m_renderer.load(path);
+    if (!m_renderer.isValid()) {
+        emit errorMsg(m_renderer.errorString());
+    }
+
+    m_qtRenderer.load(path);
+}
+
+void SvgViewWorker::render(const QSize &viewSize, RenderBackend backend)
+{
+    Q_ASSERT(QThread::currentThread() != qApp->thread());
+
+    QMutexLocker lock(&m_mutex);
+
+    if (backend == RenderBackend::Resvg) {
+        if (m_renderer.isEmpty()) {
+            return;
+        }
+
+        const auto s = m_renderer.defaultSize().scaled(viewSize, Qt::KeepAspectRatio);
+        QImage img(s * m_dpiRatio, QImage::Format_ARGB32_Premultiplied);
+        img.fill(Qt::transparent);
+
+        QPainter p;
+        p.begin(&img);
+        p.setRenderHint(QPainter::Antialiasing);
+        m_renderer.render(&p);
+        p.end();
+
+        img.setDevicePixelRatio(m_dpiRatio);
+
+        emit rendered(img);
+    } else {
+        if (!m_qtRenderer.isValid()) {
+            return;
+        }
+
+        const auto s = m_qtRenderer.defaultSize().scaled(viewSize, Qt::KeepAspectRatio);
+        QImage img(s * m_dpiRatio, QImage::Format_ARGB32_Premultiplied);
+        img.fill(Qt::transparent);
+
+        QPainter p;
+        p.begin(&img);
+        p.setRenderHint(QPainter::Antialiasing);
+        m_qtRenderer.render(&p);
+        p.end();
+
+        img.setDevicePixelRatio(m_dpiRatio);
+
+        emit rendered(img);
+    }
+}
 
 static QImage genCheckedTexture()
 {
@@ -30,9 +114,27 @@ static QImage genCheckedTexture()
 SvgView::SvgView(QWidget *parent)
     : QFrame(parent)
     , m_checkboardImg(genCheckedTexture())
+    , m_worker(new SvgViewWorker())
 {
     setAcceptDrops(true);
     setMinimumSize(10, 10);
+
+    QThread *th = new QThread(this);
+    m_worker->moveToThread(th);
+    th->start();
+
+    const auto *screen = qApp->screens().first();
+    m_dpiRatio = screen->devicePixelRatio();
+
+    connect(m_worker, &SvgViewWorker::rendered, this, &SvgView::onRendered);
+}
+
+SvgView::~SvgView()
+{
+    QThread *th = m_worker->thread();
+    th->quit();
+    th->wait(10000);
+    delete m_worker;
 }
 
 void SvgView::init()
@@ -40,49 +142,10 @@ void SvgView::init()
     ResvgRenderer::initLog();
 }
 
-void SvgView::setRenderToImage(bool flag)
-{
-    m_isRenderToImage = flag;
-
-    if (!flag) {
-        m_pix = QPixmap();
-        update();
-        return;
-    }
-
-    if (!m_renderer.isValid()) {
-        return;
-    }
-
-    const auto *screen = qApp->screens().first();
-    const auto ratio = screen->devicePixelRatio();
-
-    QImage img(m_renderer.defaultSize() * ratio, QImage::Format_ARGB32_Premultiplied);
-    img.fill(Qt::transparent);
-
-
-    QPainter p;
-    p.begin(&img);
-    p.setRenderHint(QPainter::Antialiasing);
-    m_renderer.render(&p);
-    p.end();
-
-    img.setDevicePixelRatio(ratio);
-
-    m_pix = QPixmap::fromImage(img);
-    update();
-}
-
 void SvgView::setFitToView(bool flag)
 {
     m_isFitToView = flag;
-    update();
-}
-
-void SvgView::setZoom(float zoom)
-{
-    m_zoom = zoom;
-    update();
+    requestUpdate();
 }
 
 void SvgView::setBackgound(SvgView::Backgound backgound)
@@ -97,36 +160,33 @@ void SvgView::setDrawImageBorder(bool flag)
     update();
 }
 
+void SvgView::setBackend(RenderBackend backend)
+{
+    m_backend = backend;
+    requestUpdate();
+}
+
 void SvgView::loadData(const QByteArray &ba)
 {
-    if (!m_renderer.load(ba)) {
-        emit loadError(m_renderer.errorString());
-    }
-
-    update();
+    m_worker->loadData(ba);
+    requestUpdate();
 }
 
 void SvgView::loadFile(const QString &path)
 {
-    if (!m_renderer.load(path)) {
-        emit loadError(m_renderer.errorString());
-    }
-
-    update();
+    m_worker->loadFile(path);
+    requestUpdate();
 }
 
 void SvgView::paintEvent(QPaintEvent *e)
 {
-    if (!m_renderer.isValid()) {
+    if (m_img.isNull()) {
         QPainter p(this);
         p.drawText(rect(), Qt::AlignCenter, "Drop an SVG image here.");
 
         QFrame::paintEvent(e);
         return;
     }
-
-    QElapsedTimer timer;
-    timer.start();
 
     QPainter p(this);
     const auto r = contentsRect();
@@ -142,47 +202,12 @@ void SvgView::paintEvent(QPaintEvent *e)
         } break;
     }
 
-    QRect imgRect;
-    if (m_pix.isNull()) {
-        p.setRenderHint(QPainter::Antialiasing);
+    const QRect imgRect(0, 0, m_img.width() / m_dpiRatio, m_img.height() / m_dpiRatio);
 
-        double x = r.x();
-        double y = r.y();
-        double img_width, img_height;
+    p.translate(r.x() + (r.width() - imgRect.width())/ 2,
+                r.y() + (r.height() - imgRect.height()) / 2);
 
-        if (m_isFitToView) {
-            auto size = m_renderer.defaultSizeF();
-            size.scale(r.size(), Qt::KeepAspectRatio);
-            img_width = size.width();
-            img_height = size.height();
-
-            x = (r.width() - img_width)/4;
-            y = (r.height() - img_height)/4;
-        } else {
-            const auto size = m_renderer.defaultSizeF();
-            img_width = size.width() * m_zoom;
-            img_height = size.height() * m_zoom;
-
-            x = (r.width() - img_width)/4;
-            y = (r.height() - img_height)/4;
-        }
-
-        imgRect = QRect(x, y, img_width, img_height);
-
-        p.translate(x, y);
-        m_renderer.render(&p, imgRect);
-    } else {
-        const auto ratio = m_pix.devicePixelRatio();
-
-        double x = (r.width() - m_pix.width() / ratio)/2;
-        double y = (r.height() - m_pix.height() / ratio)/2;
-
-        p.drawPixmap(x, y, m_pix);
-
-        imgRect = QRect(x, y, m_pix.width() / ratio, m_pix.height() / ratio);
-    }
-
-    emit renderTime(timer.nsecsElapsed());
+    p.drawImage(0, 0, m_img);
 
     if (m_isDrawImageBorder) {
         p.setRenderHint(QPainter::Antialiasing, false);
@@ -236,3 +261,25 @@ void SvgView::dropEvent(QDropEvent *event)
 
     event->acceptProposedAction();
 }
+
+void SvgView::resizeEvent(QResizeEvent *)
+{
+    requestUpdate();
+}
+
+void SvgView::requestUpdate()
+{
+    const auto s = m_isFitToView ? size() : m_worker->viewBox().size();
+
+    // Run method in the m_worker thread scope.
+    QTimer::singleShot(1, m_worker, [=](){
+        m_worker->render(s, m_backend);
+    });
+}
+
+void SvgView::onRendered(const QImage &img)
+{
+    m_img = img;
+    update();
+}
+

@@ -27,36 +27,6 @@
     <property name="bottomMargin">
      <number>2</number>
     </property>
-    <item row="1" column="0">
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <widget class="QLabel" name="label">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Render time:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="lblTime">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>0ms</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
     <item row="0" column="0">
      <widget class="SvgView" name="svgView">
       <property name="sizePolicy">
@@ -91,7 +61,7 @@
        <item>
         <widget class="QLabel" name="label_2">
          <property name="text">
-          <string>Render to:</string>
+          <string>Render via:</string>
          </property>
         </widget>
        </item>
@@ -111,7 +81,7 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="QRadioButton" name="rBtnRenderToWidget">
+           <widget class="QRadioButton" name="rBtnRenderViaResvg">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -119,7 +89,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>Widget</string>
+             <string>resvg</string>
             </property>
             <property name="checked">
              <bool>true</bool>
@@ -127,9 +97,9 @@
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="rBtnRenderToImage">
+           <widget class="QRadioButton" name="rBtnRenderViaQtSvg">
             <property name="text">
-             <string>Image</string>
+             <string>QtSvg</string>
             </property>
            </widget>
           </item>
@@ -188,16 +158,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="label_4">
-         <property name="text">
-          <string>Zoom:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="cmbBoxZoom"/>
-       </item>
-       <item>
         <widget class="QLabel" name="label_5">
          <property name="text">
           <string>Background:</string>
@@ -244,6 +204,22 @@
         </spacer>
        </item>
       </layout>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="label_6">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="text">
+       <string>You can drag and drop your SVG file on a view above.</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
      </widget>
     </item>
    </layout>
