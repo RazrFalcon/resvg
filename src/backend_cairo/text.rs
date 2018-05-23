@@ -30,7 +30,7 @@ trait PangoScale {
 
 impl PangoScale for i32 {
     fn scale(&self) -> f64 {
-        (self / pango::SCALE) as f64
+        *self as f64 / pango::SCALE as f64
     }
 }
 
@@ -358,6 +358,8 @@ fn draw_line(
     opt: &Options,
     cr: &cairo::Context,
 ) {
+    debug_assert!(!r.height.is_fuzzy_zero());
+
     cr.rectangle(r.x, r.y, r.width, r.height);
 
     fill::apply(tree, fill, opt, r, cr);
