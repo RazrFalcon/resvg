@@ -10,7 +10,7 @@ from pathlib import Path
 
 RESVG_URL = 'https://github.com/RazrFalcon/resvg'
 
-# List of files that should not
+# List of files that should be skipped.
 CRASH_ALLOWED = [
     'e-svg-007.svg'
 ]
