@@ -3,19 +3,21 @@ rust:
   - 1.22.0
   - stable
 before_install:
+  # Qt 5.6
   - sudo add-apt-repository ppa:beineri/opt-qt562-trusty -y
+  # python 3.6
   - sudo add-apt-repository ppa:deadsnakes/ppa -y
   - sudo apt-get update -qq
 install:
   # for cairo backend
   - sudo apt-get install -y libpango1.0-dev
-  # for capi/examples/cairo
+  # for capi/examples/cairo-*
   - sudo apt-get install -y libgtk-3-dev
   # for travis script and regression.py
   - sudo apt-get install python3.6
   # for testing_tools/regression/regression.py
   - sudo apt-get install imagemagick
-  # for qt backend
+  # for Qt backend
   - sudo apt-get install -qq qt56base qt56svg
   # prepare custom Qt
   - source /opt/qt56/bin/qt56-env.sh;

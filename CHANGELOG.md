@@ -76,5 +76,5 @@ This changelog also contains an important changes in dependencies.
 - `font-size` attribute inheritance during `use` resolving.
 
 [Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.3.0...HEAD
-[0.3.0]: https://github.com/RazrFalcon/resvg/compare/0.2.0...0.3.0
-[0.2.0]: https://github.com/RazrFalcon/resvg/compare/0.1.0...0.2.0
+[0.3.0]: https://github.com/RazrFalcon/resvg/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/RazrFalcon/resvg/compare/v0.1.0...v0.2.0
