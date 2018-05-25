@@ -33,8 +33,11 @@ extern crate unicode_segmentation;
 
 pub use usvg::{
     svgdom,
-    lyon_geom,
     Error,
+};
+
+use usvg::{
+    lyon_geom,
 };
 
 
