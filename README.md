@@ -82,7 +82,10 @@ It also includes alternative libraries.
 
 ![Chart3](./.github/perf.svg)
 
-[Details.](https://github.com/RazrFalcon/resvg-test-suite/blob/master/tools/perf/README.md)
+- `librsvg` is slower than `resvg` because Oxygen Icon Theme is using Gaussian blur heavily, which is expensive.
+- QtSvg is fast because it doesn't support Gaussian blur, clipPath, mask and pattern that are heavily used in the Oxygen Icon Theme.
+- Inkscape and Batik are slow just because.
+- [More details.](https://github.com/RazrFalcon/resvg-test-suite/blob/master/tools/perf/README.md)
 
 ## Backends
 
