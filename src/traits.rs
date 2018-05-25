@@ -9,13 +9,13 @@ use usvg;
 use geom::*;
 
 
-pub trait ConvTransform<T> {
+pub(crate) trait ConvTransform<T> {
     fn to_native(&self) -> T;
     fn from_native(&T) -> Self;
 }
 
 
-pub trait TransformFromBBox {
+pub(crate) trait TransformFromBBox {
     fn from_bbox(bbox: Rect) -> Self;
 }
 

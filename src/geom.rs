@@ -7,8 +7,11 @@
 use std::f64;
 use std::fmt;
 
-pub use usvg::{
+pub(crate) use usvg::{
     f64_bound,
+};
+
+pub use usvg::{
     Point,
     Size,
     Rect,

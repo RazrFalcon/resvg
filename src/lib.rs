@@ -45,24 +45,22 @@ use usvg::{
 #[cfg(feature = "qt-backend")] pub mod backend_qt;
 
 pub mod utils;
-pub mod geom;
+mod geom;
 mod layers;
 mod options;
 mod traits;
 
-mod prelude {
-    pub use usvg::FuzzyEq;
-    pub use usvg::FuzzyZero;
+/// Commonly used types and traits.
+pub mod prelude {
+    pub use usvg::prelude::*;
     pub use geom::*;
-    pub use traits::*;
+    pub(crate) use traits::*;
     pub use utils;
     pub use Options;
 }
 
 
-use std::path::{
-    Path,
-};
+use std::path;
 
 pub use options::*;
 pub use geom::*;
@@ -114,11 +112,11 @@ pub trait Render {
 /// A generic interface for output image.
 pub trait OutputImage {
     /// Saves rendered image to the selected path.
-    fn save(&self, path: &Path) -> bool;
+    fn save(&self, path: &path::Path) -> bool;
 }
 
 
-/// Global library handle.
+/// A global library handle.
 pub struct InitObject {
     #[cfg(feature = "qt-backend")]
     #[allow(dead_code)]

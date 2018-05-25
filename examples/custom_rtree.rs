@@ -2,13 +2,8 @@ extern crate resvg;
 
 use std::path::Path;
 
-use resvg::{
-    usvg,
-    utils,
-    Options,
-};
-use usvg::prelude::*;
-use resvg::geom::*;
+use resvg::usvg;
+use resvg::prelude::*;
 
 // TODO: write doc
 
