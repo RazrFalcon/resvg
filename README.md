@@ -5,34 +5,34 @@
 
 *resvg* is an [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) rendering library.
 
-It can be used:
-- As Rust library.
-- As C library (see [capi](./capi)).
-- As CLI application (see [tools/rendersvg](./tools/rendersvg)).
-
 ## Purpose
 
-*resvg* can be used to render SVG files based on a
-[static](http://www.w3.org/TR/SVG11/feature#SVG-static)
-[SVG Full 1.1](https://www.w3.org/TR/SVG/Overview.html) subset, excluding
-[fonts support](https://www.w3.org/TR/SVG11/feature#Font).
-In simple terms: no animations, scripting and embedded fonts.
+*resvg* can be used as:
 
-The core idea is to make a fast, portable, small, multiple backend library
+- a Rust library
+- a C library (see [capi](./capi))
+- a CLI application (see [tools/rendersvg](./tools/rendersvg))
+
+too render SVG files based on a
+[static](http://www.w3.org/TR/SVG11/feature#SVG-static)
+[SVG Full 1.1](https://www.w3.org/TR/SVG/Overview.html) subset
+(see [SVG support](#svg-support) for details).
+
+The core idea is to make a fast, small, portable, multiple backend SVG library
 designed for edge-cases.
 
-It can be used as a simple SVG to PNG converter
-and as an embeddable library to paint SVG on an application native canvas.
+SVG can be rendered to a raster image or to a backend's canvas (like to QWidget via QPainter).
 
 ## Why a new library?
 
 *resvg* is trying to compete with [librsvg], [QtSvg]
 and [Inkscape] (only as a CLI SVG to PNG converter).
 
-One of the main difference from other rendering libraries is that *resvg* does a lot
+One of the main differences from other rendering libraries is that *resvg* does a lot
 of preprocessing before rendering. It converts shapes to paths, resolves attributes,
-removes groups, removes invisible elements, fixes a lot of issues in malformed SVG files
-and only then starts the rendering. So it's very easy to implement a new rendering backend.
+removes groups and invisible elements, fixes a lot of issues in malformed SVG files.
+Then it creates a simple rendering tree with all elements and attributes resolved.
+And only then starts to render. So it's very easy to implement a new rendering backend.
 
 More details [here](https://github.com/RazrFalcon/usvg/blob/master/docs/usvg_spec.adoc).
 
@@ -50,8 +50,7 @@ rewritten in Rust, as *resvg*, the architecture of the library is completely dif
 
 Inkscape is often used to convert SVG to PNG, but it's not an actual competitor to *resvg*,
 because it's still a complete SVG editor, not a tiny library.
-Also, it's very slow.
-But it has the best SVG support amongst other.
+Also, it's very slow. But it has the best SVG support amongst others.
 
 ### resvg vs QtSvg
 
@@ -60,6 +59,12 @@ But [QtSvg] itself is very limited. It officially supports only a tiny portion
 of the SVG Tiny 1.2 subset. In simple terms - it correctly renders only primitive SVG images.
 
 ## SVG support
+
+*resvg* is aiming to support only the [static](http://www.w3.org/TR/SVG11/feature#SVG-static)
+SVG subset. E.g. no `a`, `script`, `view`, `cursor` elements and no animations.
+
+Also, `filter`, `marker`, `textPath` and
+[embedded fonts](https://www.w3.org/TR/SVG11/feature#Font) are not yet implemented.
 
 Results of the static subset of the [SVG test suite](https://www.w3.org/Graphics/SVG/Test/20110816/):
 
@@ -72,13 +77,6 @@ Results of the [resvg test suite](https://github.com/RazrFalcon/resvg-test-suite
 You can find a complete table of supported features
 [here](https://razrfalcon.github.io/resvg-test-suite/svg-support-table.html).
 It also includes alternative libraries.
-
-TL;DR
-
-- no `filter`
-- no `marker`
-- no `textPath`
-- CSS support is minimal
 
 ## Performance
 
