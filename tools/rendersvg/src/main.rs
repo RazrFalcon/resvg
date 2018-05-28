@@ -14,7 +14,9 @@ extern crate getopts;
 use std::fs;
 use std::fmt;
 use std::path;
-use std::io::{ self, Write };
+use std::io::Write;
+
+use failure::Error;
 
 use resvg::{
     usvg,
@@ -29,51 +31,7 @@ use svgdom::WriteBuffer;
 mod args;
 
 
-/// Errors list.
-#[derive(Fail, Debug)]
-pub enum Error {
-    #[fail(display = "SVG doesn't have '{}' ID", _0)]
-    InvalidId(String),
-
-    #[fail(display = "Failed to allocate an image")]
-    NoCanvas,
-
-    #[fail(display = "{}", _0)]
-    USvg(usvg::Error),
-
-    #[fail(display = "{}", _0)]
-    Io(::std::io::Error),
-
-    #[fail(display = "{}", _0)]
-    String(String),
-}
-
-impl From<usvg::Error> for Error {
-    fn from(value: usvg::Error) -> Self {
-        Error::USvg(value)
-    }
-}
-
-impl From<::std::io::Error> for Error {
-    fn from(value: ::std::io::Error) -> Self {
-        Error::Io(value)
-    }
-}
-
-impl From<String> for Error {
-    fn from(value: String) -> Self {
-        Error::String(value)
-    }
-}
-
-
 fn main() {
-    #[cfg(all(not(feature = "cairo-backend"), not(feature = "qt-backend")))]
-    {
-        eprintln!("Error: rendersvg has been built without any backends.");
-        return;
-    }
-
     if let Err(e) = process() {
         eprintln!("Error: {}.", e);
         std::process::exit(1);
@@ -81,12 +39,17 @@ fn main() {
 }
 
 fn process() -> Result<(), Error> {
+    #[cfg(all(not(feature = "cairo-backend"), not(feature = "qt-backend")))]
+    {
+        bail!("rendersvg has been built without any backends")
+    }
+
     let (args, opt) = match args::parse() {
         Ok((args, opt)) => (args, opt),
         Err(e) => {
             args::print_help();
             println!();
-            return Err(e.into());
+            bail!(e)
         }
     };
 
@@ -106,7 +69,7 @@ fn process() -> Result<(), Error> {
         "cairo" => Box::new(resvg::backend_cairo::Backend),
         #[cfg(feature = "qt-backend")]
         "qt" => Box::new(resvg::backend_qt::Backend),
-        _ => return Err(format!("Unknown backend").into()),
+        _ => bail!("unknown backend"),
     };
 
     macro_rules! timed {
@@ -121,8 +84,7 @@ fn process() -> Result<(), Error> {
     let _resvg = timed!("Backend init", init_qt_gui(&tree, &args));
 
     if args.query_all {
-        query_all(backend, &tree, &opt);
-        return Ok(());
+        return query_all(backend, &tree, &opt);
     }
 
     // Dump before rendering in case of panic.
@@ -138,17 +100,18 @@ fn process() -> Result<(), Error> {
     if let Some(ref out_png) = args.out_png {
         let img = if let Some(ref id) = args.export_id {
             if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
-                timed!("Rendering", backend.render_node_to_image(&node, &opt)
-                                           .ok_or(Error::NoCanvas))
+                timed!("Rendering", backend.render_node_to_image(&node, &opt))
             } else {
-                return Err(Error::InvalidId(id.clone()));
+                bail!("SVG doesn't have '{}' ID")
             }
         } else {
-            timed!("Rendering", backend.render_to_image(&tree, &opt)
-                                       .ok_or(Error::NoCanvas))
-        }?;
+            timed!("Rendering", backend.render_to_image(&tree, &opt))
+        };
 
-        timed!("Saving", img.save(out_png));
+        match img {
+            Some(img) => { timed!("Saving", img.save(out_png)); }
+            None => { bail!("failed to allocate an image") }
+        }
     };
 
     Ok(())
@@ -183,7 +146,7 @@ fn query_all(
     backend: Box<Render>,
     tree: &usvg::Tree,
     opt: &Options,
-) {
+) -> Result<(), Error> {
     let mut count = 0;
     for node in tree.root().descendants() {
         if tree.is_in_defs(&node) {
@@ -208,8 +171,10 @@ fn query_all(
     }
 
     if count == 0 {
-        eprintln!("Error: The file has no valid ID's.");
+        bail!("Error: the file has no valid ID's.");
     }
+
+    Ok(())
 }
 
 fn run_task<P, T>(perf: bool, title: &str, p: P) -> T
@@ -226,7 +191,7 @@ fn run_task<P, T>(perf: bool, title: &str, p: P) -> T
     }
 }
 
-fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), io::Error> {
+fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), Error> {
     let mut f = fs::File::create(path)?;
 
     let opt = svgdom::WriteOptions {
