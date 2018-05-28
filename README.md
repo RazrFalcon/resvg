@@ -13,7 +13,7 @@
 - a C library (see [capi](./capi))
 - a CLI application (see [tools/rendersvg](./tools/rendersvg))
 
-too render SVG files based on a
+to render SVG files based on a
 [static](http://www.w3.org/TR/SVG11/feature#SVG-static)
 [SVG Full 1.1](https://www.w3.org/TR/SVG/Overview.html) subset
 (see [SVG support](#svg-support) for details).
@@ -21,7 +21,7 @@ too render SVG files based on a
 The core idea is to make a fast, small, portable, multiple backend SVG library
 designed for edge-cases.
 
-SVG can be rendered to a raster image or to a backend's canvas (like to QWidget via QPainter).
+SVG can be rendered to a raster image or to a backend's canvas (e.g. to a QWidget via QPainter).
 
 ## Why a new library?
 
@@ -30,9 +30,9 @@ and [Inkscape] (only as a CLI SVG to PNG converter).
 
 One of the main differences from other rendering libraries is that *resvg* does a lot
 of preprocessing before rendering. It converts shapes to paths, resolves attributes,
-removes groups and invisible elements, fixes a lot of issues in malformed SVG files.
+removes groups and invisible elements and fixes a lot of issues in malformed SVG files.
 Then it creates a simple rendering tree with all elements and attributes resolved.
-And only then starts to render. So it's very easy to implement a new rendering backend.
+And only then it starts to render. So it's very easy to implement a new rendering backend.
 
 More details [here](https://github.com/RazrFalcon/usvg/blob/master/docs/usvg_spec.adoc).
 
@@ -41,7 +41,7 @@ More details [here](https://github.com/RazrFalcon/usvg/blob/master/docs/usvg_spe
 *librsvg* is the main competitor to the *resvg*. And even though that *librsvg* itself is being
 rewritten in Rust, as *resvg*, the architecture of the library is completely different:
 
-- *librsvg*, currently, is heavily tied to [cairo] library, unlike *resvg*
+- *librsvg*, currently, is heavily tied to the [cairo] library, unlike *resvg*
 - *librsvg* is heavily tied to [GNOME] which makes it painful to distribute outside the Linux ecosystem
 - *librsvg* doesn't really preprocess input files, rendering them as is
 - *librsvg* has a minimal support of the edge-cases, which leads to rendering errors
