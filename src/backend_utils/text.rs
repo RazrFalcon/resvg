@@ -8,7 +8,6 @@ use usvg;
 
 // self
 use geom::*;
-use utils;
 
 
 pub struct TextBlock<Font> {
@@ -29,14 +28,30 @@ pub trait FontMetrics<Font> {
     fn height(&self) -> f64;
 }
 
-pub fn draw_blocks<Font, DrawAt>(
+pub fn draw_blocks<Font, Draw>(
     text_kind: &usvg::Text,
     node: &usvg::Node,
     font_metrics: &mut FontMetrics<Font>,
-    mut draw: DrawAt
+    mut draw: Draw,
 ) -> Rect
-    where DrawAt: FnMut(&TextBlock<Font>)
+    where Draw: FnMut(&TextBlock<Font>)
 {
+    let blocks = prepare_blocks(text_kind, node, font_metrics);
+
+    let mut bbox = Rect::new_bbox();
+    for block in blocks {
+        bbox.expand(block.bbox);
+        draw(&block);
+    }
+
+    bbox
+}
+
+fn prepare_blocks<Font>(
+    text_kind: &usvg::Text,
+    node: &usvg::Node,
+    font_metrics: &mut FontMetrics<Font>,
+) -> Vec<TextBlock<Font>> {
     fn first_number_or(list: &Option<usvg::NumberList>, def: f64) -> f64 {
         list.as_ref().map(|list| list[0]).unwrap_or(def)
     }
@@ -142,7 +157,7 @@ pub fn draw_blocks<Font, DrawAt>(
             chunk_w += blocks[i].bbox.width;
         }
 
-        let adx = utils::process_text_anchor(chunk.anchor, chunk_w);
+        let adx = process_text_anchor(chunk.anchor, chunk_w);
         for i in start_idx..blocks.len() {
             blocks[i].bbox.x -= adx;
         }
@@ -151,11 +166,13 @@ pub fn draw_blocks<Font, DrawAt>(
         last_y = y;
     }
 
-    let mut bbox = Rect::new_bbox();
-    for block in blocks {
-        bbox.expand(block.bbox);
-        draw(&block);
-    }
+    blocks
+}
 
-    bbox
+fn process_text_anchor(a: usvg::TextAnchor, text_width: f64) -> f64 {
+    match a {
+        usvg::TextAnchor::Start =>  0.0, // Nothing.
+        usvg::TextAnchor::Middle => text_width / 2.0,
+        usvg::TextAnchor::End =>    text_width,
+    }
 }

@@ -38,14 +38,6 @@ pub fn fit_to(size: ScreenSize, fit: FitTo) -> ScreenSize {
     }
 }
 
-pub(crate) fn process_text_anchor(a: usvg::TextAnchor, text_width: f64) -> f64 {
-    match a {
-        usvg::TextAnchor::Start =>  0.0, // Nothing.
-        usvg::TextAnchor::Middle => text_width / 2.0,
-        usvg::TextAnchor::End =>    text_width,
-    }
-}
-
 pub(crate) fn apply_view_box(vb: &usvg::ViewBox, img_size: ScreenSize) -> ScreenSize {
     if vb.aspect.align == usvg::Align::None {
         vb.rect.to_screen_size()
