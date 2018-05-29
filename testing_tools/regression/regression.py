@@ -16,7 +16,7 @@ CRASH_ALLOWED = [
 ]
 
 
-def build_prev_version() -> Path:
+def build_prev_version():
     prev_resvg_dir = args.work_dir / 'resvg'
     if prev_resvg_dir.exists():
         print('Warning: previous resvg version already exists')
@@ -34,7 +34,7 @@ def build_prev_version() -> Path:
     return prev_resvg_dir / 'target/debug/rendersvg'
 
 
-def change_ext(path: str, suffix: str, new_ext: str) -> str:
+def change_ext(path, suffix, new_ext):
     return Path(path).stem + suffix + '.' + new_ext
 
 
@@ -53,13 +53,13 @@ def load_last_pos():
     return 0
 
 
-def save_last_pos(pos: int):
+def save_last_pos(pos):
     path = args.work_dir / 'pos.txt'
     with open(path, 'w') as out:
         out.write(str(pos) + '\n')
 
 
-def rm_file(file_path: Path):
+def rm_file(file_path):
     if file_path.exists():
         os.remove(file_path)
 
