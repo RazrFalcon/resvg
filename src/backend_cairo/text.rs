@@ -5,7 +5,6 @@
 use std::f64;
 
 // external
-use unicode_segmentation::UnicodeSegmentation;
 use cairo;
 use pango::{
     self,
@@ -18,11 +17,16 @@ use usvg::prelude::*;
 
 // self
 use super::prelude::*;
+use backend_utils::text::{
+    self,
+    FontMetrics,
+};
 use super::{
     fill,
     stroke,
 };
 
+pub use backend_utils::text::draw_blocks;
 
 trait PangoScale {
     fn scale(&self) -> f64;
@@ -34,15 +38,42 @@ impl PangoScale for i32 {
     }
 }
 
+pub struct PangoFontMetrics {
+    layout: pango::Layout,
+    dpi: f64,
+}
 
-pub struct TextBlock {
-    pub text: String,
-    pub bbox: Rect,
-    pub rotate: f64,
-    pub fill: Option<usvg::Fill>,
-    pub stroke: Option<usvg::Stroke>,
-    pub font: pango::FontDescription,
-    pub decoration: usvg::TextDecoration,
+impl PangoFontMetrics {
+    pub fn new(opt: &Options, cr: &cairo::Context) -> Self {
+        let context = init_pango_context(opt, cr);
+        let layout = pango::Layout::new(&context);
+        PangoFontMetrics { layout, dpi: opt.usvg.dpi }
+    }
+}
+
+impl FontMetrics<pango::FontDescription> for PangoFontMetrics {
+    fn set_font(&mut self, font: &usvg::Font) {
+        let font = init_font(font, self.dpi);
+        self.layout.set_font_description(&font);
+    }
+
+    fn font(&self) -> pango::FontDescription {
+        self.layout.get_font_description().unwrap()
+    }
+
+    fn width(&self, text: &str) -> f64 {
+        self.layout.set_text(text);
+        self.layout.get_size().0.scale()
+    }
+
+    fn ascent(&self) -> f64 {
+        let mut layout_iter = self.layout.get_iter().unwrap();
+        layout_iter.get_baseline().scale()
+    }
+
+    fn height(&self) -> f64 {
+        self.layout.get_size().1.scale()
+    }
 }
 
 pub fn draw(
@@ -51,156 +82,13 @@ pub fn draw(
     cr: &cairo::Context,
 ) -> Rect {
     let tree = &node.tree();
+    let mut fm = PangoFontMetrics::new(opt, cr);
+
     if let usvg::NodeKind::Text(ref text) = *node.borrow() {
-        draw_blocks(text, node, opt, cr, |block| draw_block(tree, block, opt, cr))
+        draw_blocks(text, node, &mut fm, |block| draw_block(tree, block, opt, cr))
     } else {
         unreachable!();
     }
-}
-
-// TODO: find a way to merge this with a Qt backend
-pub fn draw_blocks<DrawAt>(
-    text_kind: &usvg::Text,
-    node: &usvg::Node,
-    opt: &Options,
-    cr: &cairo::Context,
-    mut draw: DrawAt,
-) -> Rect
-    where DrawAt: FnMut(&TextBlock)
-{
-    fn first_number_or(list: &Option<usvg::NumberList>, def: f64) -> f64 {
-        list.as_ref().map(|list| list[0]).unwrap_or(def)
-    }
-
-    let mut blocks: Vec<TextBlock> = Vec::new();
-    let mut last_x = 0.0;
-    let mut last_y = 0.0;
-    for chunk_node in node.children() {
-        let kind = chunk_node.borrow();
-        let chunk = match *kind {
-            usvg::NodeKind::TextChunk(ref chunk) => chunk,
-            _ => continue,
-        };
-
-        let mut chunk_x = first_number_or(&chunk.x, last_x);
-        let mut x = chunk_x;
-        let mut y = first_number_or(&chunk.y, last_y);
-        let start_idx = blocks.len();
-        let mut grapheme_idx = 0;
-
-        for tspan_node in chunk_node.children() {
-            let kind = tspan_node.borrow();
-            let tspan = match *kind {
-                usvg::NodeKind::TSpan(ref tspan) => tspan,
-                _ => continue,
-            };
-
-            let context = init_pango_context(opt, cr);
-            let font = init_font(&tspan.font, opt.usvg.dpi);
-            let layout = pango::Layout::new(&context);
-            layout.set_font_description(&font);
-
-            let iter = UnicodeSegmentation::graphemes(tspan.text.as_str(), true);
-            for (i, c) in iter.enumerate() {
-                let mut has_custom_offset = i == 0;
-
-                {
-                    let mut number_at = |list: &Option<usvg::NumberList>| -> Option<f64> {
-                        if let &Some(ref list) = list {
-                            if let Some(n) = list.get(grapheme_idx) {
-                                has_custom_offset = true;
-                                return Some(*n);
-                            }
-                        }
-
-                        None
-                    };
-
-                    if let Some(n) = number_at(&chunk.x) { x = n; }
-                    if let Some(n) = number_at(&chunk.y) { y = n; }
-                    if let Some(n) = number_at(&chunk.dx) { x += n; }
-                    if let Some(n) = number_at(&chunk.dy) { y += n; }
-
-                    if i == 0 {
-                        if let Some(n) = number_at(&chunk.x) { chunk_x = n; }
-                        if let Some(n) = number_at(&chunk.dx) { chunk_x += n; }
-                    }
-                }
-
-                if text_kind.rotate.is_some() {
-                    has_custom_offset = true;
-                }
-
-                let can_merge = !blocks.is_empty() && !has_custom_offset;
-                if can_merge {
-                    let prev_idx = blocks.len() - 1;
-                    blocks[prev_idx].text.push_str(c);
-
-                    layout.set_text(&blocks[prev_idx].text);
-                    let w = layout.get_size().0.scale();
-                    blocks[prev_idx].bbox.width = w;
-
-                    let mut new_w = chunk_x;
-                    for i in start_idx..blocks.len() {
-                        new_w += blocks[i].bbox.width;
-                    }
-
-                    x = new_w;
-                } else {
-                    let mut layout_iter = layout.get_iter().unwrap();
-                    let yy = y - layout_iter.get_baseline().scale();
-                    let height = layout.get_size().1.scale();
-
-                    layout.set_text(c);
-                    let width = layout.get_size().0.scale();
-
-                    let bbox = Rect { x, y: yy, width, height };
-                    x += width;
-
-                    let rotate = match text_kind.rotate {
-                        Some(ref list) => { list[blocks.len()] }
-                        None => 0.0,
-                    };
-
-                    blocks.push(TextBlock {
-                        text: c.to_string(),
-                        bbox,
-                        rotate,
-                        fill: tspan.fill.clone(),
-                        stroke: tspan.stroke.clone(),
-                        font: font.clone(),
-                        decoration: tspan.decoration.clone(),
-                    });
-                }
-
-                grapheme_idx += 1;
-            }
-        }
-
-        let mut chunk_w = 0.0;
-        for i in start_idx..blocks.len() {
-            chunk_w += blocks[i].bbox.width;
-        }
-
-        let adx = utils::process_text_anchor(chunk.anchor, chunk_w);
-        for i in start_idx..blocks.len() {
-            blocks[i].bbox.x -= adx;
-        }
-
-        last_x = chunk_x + chunk_w - adx;
-        last_y = y;
-    }
-
-    let mut bbox = Rect::new_bbox();
-    for block in blocks {
-        bbox.expand(block.bbox);
-        draw(&block);
-    }
-
-    if bbox.x == f64::MAX { bbox.x = 0.0; }
-    if bbox.y == f64::MAX { bbox.y = 0.0; }
-
-    bbox
 }
 
 pub fn init_pango_context(opt: &Options, cr: &cairo::Context) -> pango::Context {
@@ -223,7 +111,7 @@ pub fn init_pango_layout(
 
 fn draw_block(
     tree: &usvg::Tree,
-    block: &TextBlock,
+    block: &text::TextBlock<pango::FontDescription>,
     opt: &Options,
     cr: &cairo::Context,
 ) {

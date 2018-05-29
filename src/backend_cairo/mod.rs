@@ -375,8 +375,9 @@ fn _calc_node_bbox(
         }
         usvg::NodeKind::Text(ref text) => {
             let mut bbox = Rect::new_bbox();
+            let mut fm = text::PangoFontMetrics::new(opt, cr);
 
-            text::draw_blocks(text, node, opt, cr, |block| {
+            text::draw_blocks(text, node, &mut fm, |block| {
                 cr.new_path();
 
                 let context = text::init_pango_context(opt, cr);

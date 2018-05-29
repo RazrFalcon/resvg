@@ -323,12 +323,13 @@ pub fn calc_node_bbox(
     let p = qt::Painter::new(&img);
 
     let abs_ts = utils::abs_transform(node);
-    _calc_node_bbox(node, abs_ts, &p)
+    _calc_node_bbox(node, abs_ts, opt, &p)
 }
 
 fn _calc_node_bbox(
     node: &usvg::Node,
     ts: usvg::Transform,
+    opt: &Options,
     p: &qt::Painter,
 ) -> Option<Rect> {
     let mut ts2 = ts;
@@ -340,8 +341,9 @@ fn _calc_node_bbox(
         }
         usvg::NodeKind::Text(ref text) => {
             let mut bbox = Rect::new_bbox();
+            let mut fm = text::QtFontMetrics::new(p);
 
-            text::draw_blocks(text, node, p, |block| {
+            text::draw_blocks(text, node, &mut fm, |block| {
                 let mut p_path = qt::PainterPath::new();
 
                 p.set_font(&block.font);
@@ -365,7 +367,7 @@ fn _calc_node_bbox(
             let mut bbox = Rect::new_bbox();
 
             for child in node.children() {
-                if let Some(c_bbox) = _calc_node_bbox(&child, ts2, p) {
+                if let Some(c_bbox) = _calc_node_bbox(&child, ts2, opt, p) {
                     bbox.expand(c_bbox);
                 }
             }

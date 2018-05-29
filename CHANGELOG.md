@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains an important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- (cairo-backend) Text layout.
 
 ## [0.3.0] - 2018-05-23
 ### Added
