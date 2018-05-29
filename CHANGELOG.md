@@ -9,6 +9,7 @@ This changelog also contains an important changes in dependencies.
 ## [Unreleased]
 ### Fixed
 - (cairo-backend) Text layout.
+- (resvg) Recursive SVG images via `image` tag.
 
 ### Removed
 - (rendersvg) `failure`.

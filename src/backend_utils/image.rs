@@ -38,7 +38,35 @@ pub fn load_sub_svg(
         }
     };
 
+    sanitize_sub_svg(&tree);
+
     Some((tree, sub_opt))
+}
+
+fn sanitize_sub_svg(tree: &usvg::Tree) {
+    // Remove all Image nodes.
+    //
+    // The referenced SVG image cannot have any 'image' elements by itself.
+    // Not only recursive. Any. Don't know why.
+
+    // TODO: implement drain or something to the rctree.
+    let mut changed = true;
+    while changed {
+        changed = false;
+
+        for mut node in tree.root().descendants() {
+            let mut rm = false;
+            if let usvg::NodeKind::Image(_) = *node.borrow() {
+                rm = true;
+            };
+
+            if rm {
+                node.detach();
+                changed = true;
+                break;
+            }
+        }
+    }
 }
 
 pub fn prepare_image_viewbox(img_size: ScreenSize, view_box: &mut usvg::ViewBox) {

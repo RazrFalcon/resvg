@@ -1,7 +1,2 @@
-e-text-025.svg
-e-text-026.svg
-e-text-027.svg
-e-text-028.svg
-e-text-029.svg
-e-text-031.svg
-e-text-034.svg
+e-image-033.svg
+e-image-034.svg

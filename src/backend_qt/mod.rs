@@ -235,8 +235,6 @@ fn render_node(
     }
 }
 
-// TODO: render groups backward to reduce memory usage
-//       current implementation keeps parent canvas until all children are rendered
 fn render_group(
     parent: &usvg::Node,
     opt: &Options,
