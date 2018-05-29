@@ -10,6 +10,9 @@ This changelog also contains an important changes in dependencies.
 ### Fixed
 - (cairo-backend) Text layout.
 
+### Removed
+- (rendersvg) `failure`.
+
 ## [0.3.0] - 2018-05-23
 ### Added
 - (c-api) `resvg_is_image_empty`.

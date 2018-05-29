@@ -2,21 +2,17 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#[macro_use]
-extern crate failure;
-extern crate resvg;
 extern crate fern;
-extern crate log;
-extern crate time;
 extern crate getopts;
+extern crate log;
+extern crate resvg;
+extern crate time;
 
 
-use std::fs;
 use std::fmt;
-use std::path;
+use std::fs;
 use std::io::Write;
-
-use failure::Error;
+use std::path;
 
 use resvg::{
     usvg,
@@ -31,6 +27,16 @@ use svgdom::WriteBuffer;
 mod args;
 
 
+macro_rules! bail {
+    ($msg:expr) => {
+        return Err(format!("{}", $msg));
+    };
+    ($fmt:expr, $($arg:tt)*) => {
+        return Err(format!($fmt, $($arg)*));
+    };
+}
+
+
 fn main() {
     if let Err(e) = process() {
         eprintln!("Error: {}.", e);
@@ -38,7 +44,7 @@ fn main() {
     }
 }
 
-fn process() -> Result<(), Error> {
+fn process() -> Result<(), String> {
     #[cfg(all(not(feature = "cairo-backend"), not(feature = "qt-backend")))]
     {
         bail!("rendersvg has been built without any backends")
@@ -77,7 +83,9 @@ fn process() -> Result<(), Error> {
     }
 
     // Load file.
-    let tree = timed!("Preprocessing", usvg::Tree::from_file(&args.in_svg, &opt.usvg))?;
+    let tree = timed!("Preprocessing", {
+        usvg::Tree::from_file(&args.in_svg, &opt.usvg).map_err(|e| e.to_string())
+    })?;
 
     // We have to init only Qt backend.
     #[cfg(feature = "qt-backend")]
@@ -102,7 +110,7 @@ fn process() -> Result<(), Error> {
             if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
                 timed!("Rendering", backend.render_node_to_image(&node, &opt))
             } else {
-                bail!("SVG doesn't have '{}' ID")
+                bail!("SVG doesn't have '{}' ID", id)
             }
         } else {
             timed!("Rendering", backend.render_to_image(&tree, &opt))
@@ -146,7 +154,7 @@ fn query_all(
     backend: Box<Render>,
     tree: &usvg::Tree,
     opt: &Options,
-) -> Result<(), Error> {
+) -> Result<(), String> {
     let mut count = 0;
     for node in tree.root().descendants() {
         if tree.is_in_defs(&node) {
@@ -191,8 +199,9 @@ fn run_task<P, T>(perf: bool, title: &str, p: P) -> T
     }
 }
 
-fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), Error> {
-    let mut f = fs::File::create(path)?;
+fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), String> {
+    let mut f = fs::File::create(path)
+                   .map_err(|_| format!("failed to create a file {:?}", path))?;
 
     let opt = svgdom::WriteOptions {
         indent: svgdom::Indent::Spaces(2),
@@ -205,7 +214,7 @@ fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), Error> {
 
     let mut out = Vec::new();
     svgdoc.write_buf_opt(&opt, &mut out);
-    f.write_all(&out)?;
+    f.write_all(&out).map_err(|_| format!("failed to write a file {:?}", path))?;
 
     Ok(())
 }
