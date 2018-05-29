@@ -171,7 +171,7 @@ fn query_all(
     }
 
     if count == 0 {
-        bail!("Error: the file has no valid ID's.");
+        bail!("the file has no valid ID's");
     }
 
     Ok(())
