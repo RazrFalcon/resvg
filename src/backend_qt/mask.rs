@@ -8,6 +8,7 @@ use usvg;
 
 // self
 use super::prelude::*;
+use backend_utils::mask;
 
 
 pub fn apply(
@@ -41,7 +42,7 @@ pub fn apply(
         super::render_group(node, opt, layers, &mask_p);
     }
 
-    utils::image_to_mask(&mut mask_img.data_mut(), layers.image_size(), None);
+    mask::image_to_mask(&mut mask_img.data_mut(), layers.image_size(), None);
 
     sub_p.set_transform(&qt::Transform::default());
     sub_p.set_composition_mode(qt::CompositionMode::CompositionMode_DestinationIn);

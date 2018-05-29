@@ -13,10 +13,7 @@ pub use usvg::utils::*;
 
 // self
 use geom::*;
-use {
-    FitTo,
-    Options,
-};
+use FitTo;
 
 
 /// Returns `size` preprocessed according to `FitTo`.
@@ -209,108 +206,4 @@ pub fn rect_to_path(rect: Rect) -> Vec<usvg::PathSegment> {
         },
         usvg::PathSegment::ClosePath,
     ]
-}
-
-/// Converts an image to an alpha mask.
-pub(crate) fn image_to_mask(
-    data: &mut [u8],
-    img_size: ScreenSize,
-    opacity: Option<usvg::Opacity>,
-) {
-    let width = img_size.width;
-    let height = img_size.height;
-    let stride = width * 4;
-
-    let coeff_r = 0.2125 / 255.0;
-    let coeff_g = 0.7154 / 255.0;
-    let coeff_b = 0.0721 / 255.0;
-
-    for y in 0..height {
-        for x in 0..width {
-            let idx = (y * stride + x * 4) as usize;
-
-            let r = data[idx + 2] as f64;
-            let g = data[idx + 1] as f64;
-            let b = data[idx + 0] as f64;
-
-            let mut luma = r * coeff_r + g * coeff_g + b * coeff_b;
-            if let Some(opacity) = opacity {
-                luma *= opacity.value();
-            }
-
-            data[idx + 0] = 0;
-            data[idx + 1] = 0;
-            data[idx + 2] = 0;
-            data[idx + 3] = f64_bound(0.0, luma * 255.0, 255.0) as u8;
-        }
-    }
-}
-
-pub(crate) fn load_sub_svg(
-    image: &usvg::Image,
-    opt: &Options,
-) -> Option<(usvg::Tree, Options)> {
-    let mut sub_opt = Options {
-        usvg: usvg::Options {
-            path: None,
-            dpi: opt.usvg.dpi,
-            keep_named_groups: false,
-        },
-        fit_to: FitTo::Original,
-        background: None,
-    };
-
-    let tree = match image.data {
-        usvg::ImageData::Path(ref path) => {
-            sub_opt.usvg.path = Some(path.into());
-            usvg::Tree::from_file(path, &sub_opt.usvg).ok()?
-        }
-        usvg::ImageData::Raw(ref data) => {
-            usvg::Tree::from_data(data, &sub_opt.usvg).ok()?
-        }
-    };
-
-    Some((tree, sub_opt))
-}
-
-pub(crate) fn prepare_image_viewbox(img_size: ScreenSize, view_box: &mut usvg::ViewBox) {
-    let mut r = view_box.rect;
-    // If viewbox w/h is not set - use the one from image.
-    if r.width.is_fuzzy_zero() { r.width = img_size.width as f64; }
-    if r.height.is_fuzzy_zero() { r.height = img_size.height as f64; }
-    view_box.rect = r;
-}
-
-pub(crate) fn prepare_sub_svg_geom(
-    image: &usvg::Image,
-    img_size: ScreenSize,
-) -> (usvg::Transform, Option<Rect>) {
-    let mut view_box = image.view_box;
-    prepare_image_viewbox(img_size, &mut view_box);
-    let r = view_box.rect;
-
-    let new_size = apply_view_box(&view_box, img_size);
-
-    let (tx, ty, clip) = if view_box.aspect.slice {
-        let pos = aligned_pos(
-            view_box.aspect.align,
-            0.0, 0.0, new_size.width as f64 - r.width, new_size.height as f64 - r.height,
-        );
-
-        let r = Rect::new(r.x, r.y, r.width, r.height);
-        (r.x - pos.x, r.y - pos.y, Some(r))
-    } else {
-        let pos = aligned_pos(
-            view_box.aspect.align,
-            r.x, r.y, r.width - new_size.width as f64, r.height - new_size.height as f64,
-        );
-
-        (pos.x, pos.y, None)
-    };
-
-    let sx = new_size.width as f64 / img_size.width as f64;
-    let sy = new_size.height as f64 / img_size.height as f64;
-    let ts = usvg::Transform::new(sx, 0.0, 0.0, sy, tx, ty);
-
-    (ts, clip)
 }

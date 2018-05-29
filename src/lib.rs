@@ -45,6 +45,7 @@ use usvg::{
 #[cfg(feature = "qt-backend")] pub mod backend_qt;
 
 pub mod utils;
+mod backend_utils;
 mod geom;
 mod layers;
 mod options;

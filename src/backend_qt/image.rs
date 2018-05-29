@@ -8,6 +8,7 @@ use usvg;
 
 // self
 use super::prelude::*;
+use backend_utils::image;
 
 
 pub fn draw(
@@ -41,7 +42,7 @@ fn draw_raster(
 
     let img_size = ScreenSize::new(img.width(), img.height());
     let mut view_box = image.view_box;
-    utils::prepare_image_viewbox(img_size, &mut view_box);
+    image::prepare_image_viewbox(img_size, &mut view_box);
     let r = view_box.rect;
 
     let new_size = utils::apply_view_box(&view_box, img_size);
@@ -81,10 +82,10 @@ fn draw_svg(
     opt: &Options,
     p: &qt::Painter,
 ) {
-    let (tree, sub_opt) = try_opt!(utils::load_sub_svg(image, opt), ());
+    let (tree, sub_opt) = try_opt!(image::load_sub_svg(image, opt), ());
 
     let img_size = tree.svg_node().size.to_screen_size();
-    let (ts, clip) = utils::prepare_sub_svg_geom(image, img_size);
+    let (ts, clip) = image::prepare_sub_svg_geom(image, img_size);
 
     if let Some(clip) = clip {
         p.set_clip_rect(clip.x, clip.y, clip.width, clip.height);

@@ -11,6 +11,7 @@ use usvg;
 
 // self
 use super::prelude::*;
+use backend_utils::mask;
 
 
 pub fn apply(
@@ -48,7 +49,7 @@ pub fn apply(
     {
         let mut data = try_opt_warn!(mask_surface.get_data().ok(), (),
                                      "Failed to borrow a surface for mask: {:?}.", mask.id);
-        utils::image_to_mask(&mut data, layers.image_size(), opacity);
+        mask::image_to_mask(&mut data, layers.image_size(), opacity);
     }
 
     let patt = cairo::SurfacePattern::create(&*mask_surface);
