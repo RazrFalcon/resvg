@@ -21,7 +21,7 @@ def cd(path):
 
 
 def regression_testing(backend):
-    reg_work_dir = work_dir / 'workdir-' + backend
+    reg_work_dir = Path(work_dir) / ('workdir-' + backend)
 
     if not reg_work_dir.exists():
         os.mkdir(reg_work_dir)
