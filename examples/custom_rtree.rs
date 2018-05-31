@@ -24,31 +24,30 @@ fn main() {
         view_box,
     });
 
-    let mut grad = rtree.append_to_defs(usvg::NodeKind::LinearGradient(usvg::LinearGradient {
+    rtree.append_to_defs(usvg::NodeKind::LinearGradient(usvg::LinearGradient {
         id: "lg1".into(),
         x1: 0.0,
         y1: 0.0,
         x2: 1.0,
         y2: 0.0,
-        d: usvg::BaseGradient {
+        base: usvg::BaseGradient {
             units: usvg::Units::ObjectBoundingBox,
             transform: usvg::Transform::default(),
             spread_method: usvg::SpreadMethod::Pad,
+            stops: vec![
+                usvg::Stop {
+                    offset: usvg::StopOffset::new(0.0),
+                    color: usvg::Color::new(0, 255, 0),
+                    opacity: usvg::Opacity::new(1.0),
+                },
+                usvg::Stop {
+                    offset: usvg::StopOffset::new(1.0),
+                    color: usvg::Color::new(0, 255, 0),
+                    opacity: usvg::Opacity::new(0.0),
+                },
+            ],
         },
     }));
-
-    grad.append_kind(usvg::NodeKind::Stop(usvg::Stop {
-        offset: usvg::StopOffset::new(0.0),
-        color: usvg::Color::new(0, 255, 0),
-        opacity: usvg::Opacity::new(1.0),
-    }));
-
-    grad.append_kind(usvg::NodeKind::Stop(usvg::Stop {
-        offset: usvg::StopOffset::new(1.0),
-        color: usvg::Color::new(0, 255, 0),
-        opacity: usvg::Opacity::new(0.0),
-    }));
-
 
     let fill = Some(usvg::Fill {
         paint: usvg::Paint::Link("lg1".into()),
