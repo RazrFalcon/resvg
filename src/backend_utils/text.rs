@@ -30,13 +30,12 @@ pub trait FontMetrics<Font> {
 
 pub fn draw_blocks<Font, Draw>(
     text_kind: &usvg::Text,
-    node: &usvg::Node,
     font_metrics: &mut FontMetrics<Font>,
     mut draw: Draw,
 ) -> Rect
     where Draw: FnMut(&TextBlock<Font>)
 {
-    let blocks = prepare_blocks(text_kind, node, font_metrics);
+    let blocks = prepare_blocks(text_kind, font_metrics);
 
     let mut bbox = Rect::new_bbox();
     for block in blocks {
@@ -49,7 +48,6 @@ pub fn draw_blocks<Font, Draw>(
 
 fn prepare_blocks<Font>(
     text_kind: &usvg::Text,
-    node: &usvg::Node,
     font_metrics: &mut FontMetrics<Font>,
 ) -> Vec<TextBlock<Font>> {
     fn first_number_or(list: &Option<usvg::NumberList>, def: f64) -> f64 {
@@ -59,26 +57,14 @@ fn prepare_blocks<Font>(
     let mut blocks: Vec<TextBlock<Font>> = Vec::new();
     let mut last_x = 0.0;
     let mut last_y = 0.0;
-    for chunk_node in node.children() {
-        let kind = chunk_node.borrow();
-        let chunk = match *kind {
-            usvg::NodeKind::TextChunk(ref chunk) => chunk,
-            _ => continue,
-        };
-
+    for chunk in &text_kind.chunks {
         let mut chunk_x = first_number_or(&chunk.x, last_x);
         let mut x = chunk_x;
         let mut y = first_number_or(&chunk.y, last_y);
         let start_idx = blocks.len();
         let mut grapheme_idx = 0;
 
-        for tspan_node in chunk_node.children() {
-            let kind = tspan_node.borrow();
-            let tspan = match *kind {
-                usvg::NodeKind::TSpan(ref tspan) => tspan,
-                _ => continue,
-            };
-
+        for tspan in &chunk.spans {
             font_metrics.set_font(&tspan.font);
 
             let iter = UnicodeSegmentation::graphemes(tspan.text.as_str(), true);

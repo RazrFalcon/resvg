@@ -246,8 +246,8 @@ fn render_node(
         usvg::NodeKind::Path(ref path) => {
             Some(path::draw(&node.tree(), path, opt, cr))
         }
-        usvg::NodeKind::Text(_) => {
-            Some(text::draw(node, opt, cr))
+        usvg::NodeKind::Text(ref text) => {
+            Some(text::draw(&node.tree(), text, opt, cr))
         }
         usvg::NodeKind::Image(ref img) => {
             Some(image::draw(img, opt, cr))
@@ -377,7 +377,7 @@ fn _calc_node_bbox(
             let mut bbox = Rect::new_bbox();
             let mut fm = text::PangoFontMetrics::new(opt, cr);
 
-            text::draw_blocks(text, node, &mut fm, |block| {
+            text::draw_blocks(text, &mut fm, |block| {
                 cr.new_path();
 
                 let context = text::init_pango_context(opt, cr);

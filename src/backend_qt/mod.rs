@@ -222,8 +222,8 @@ fn render_node(
         usvg::NodeKind::Path(ref path) => {
             Some(path::draw(&node.tree(), path, opt, p))
         }
-        usvg::NodeKind::Text(_) => {
-            Some(text::draw(node, opt, p))
+        usvg::NodeKind::Text(ref text) => {
+            Some(text::draw(&node.tree(), text, opt, p))
         }
         usvg::NodeKind::Image(ref img) => {
             Some(image::draw(img, opt, p))
@@ -341,7 +341,7 @@ fn _calc_node_bbox(
             let mut bbox = Rect::new_bbox();
             let mut fm = text::QtFontMetrics::new(p);
 
-            text::draw_blocks(text, node, &mut fm, |block| {
+            text::draw_blocks(text, &mut fm, |block| {
                 let mut p_path = qt::PainterPath::new();
 
                 p.set_font(&block.font);

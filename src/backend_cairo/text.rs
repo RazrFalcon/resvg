@@ -77,18 +77,13 @@ impl FontMetrics<pango::FontDescription> for PangoFontMetrics {
 }
 
 pub fn draw(
-    node: &usvg::Node,
+    tree: &usvg::Tree,
+    text_node: &usvg::Text,
     opt: &Options,
     cr: &cairo::Context,
 ) -> Rect {
-    let tree = &node.tree();
     let mut fm = PangoFontMetrics::new(opt, cr);
-
-    if let usvg::NodeKind::Text(ref text) = *node.borrow() {
-        draw_blocks(text, node, &mut fm, |block| draw_block(tree, block, opt, cr))
-    } else {
-        unreachable!();
-    }
+    draw_blocks(text_node, &mut fm, |block| draw_block(tree, block, opt, cr))
 }
 
 pub fn init_pango_context(opt: &Options, cr: &cairo::Context) -> pango::Context {

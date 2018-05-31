@@ -11,35 +11,32 @@ use super::prelude::*;
 
 
 pub fn prepare_linear(
-    node: &usvg::Node,
     g: &usvg::LinearGradient,
     opacity: usvg::Opacity,
     bbox: Rect,
     brush: &mut qt::Brush,
 ) {
     let mut grad = qt::LinearGradient::new(g.x1, g.y1, g.x2, g.y2);
-    prepare_base(node, &g.d, opacity, &mut grad);
+    prepare_base(&g.base, opacity, &mut grad);
 
     brush.set_linear_gradient(grad);
-    apply_ts(&g.d, bbox, brush);
+    apply_ts(&g.base, bbox, brush);
 }
 
 pub fn prepare_radial(
-    node: &usvg::Node,
     g: &usvg::RadialGradient,
     opacity: usvg::Opacity,
     bbox: Rect,
     brush: &mut qt::Brush,
 ) {
     let mut grad = qt::RadialGradient::new(g.cx, g.cy, g.fx, g.fy, g.r);
-    prepare_base(node, &g.d, opacity, &mut grad);
+    prepare_base(&g.base, opacity, &mut grad);
 
     brush.set_radial_gradient(grad);
-    apply_ts(&g.d, bbox, brush);
+    apply_ts(&g.base, bbox, brush);
 }
 
 fn prepare_base(
-    node: &usvg::Node,
     g: &usvg::BaseGradient,
     opacity: usvg::Opacity,
     grad: &mut qt::Gradient,
@@ -51,16 +48,14 @@ fn prepare_base(
     };
     grad.set_spread(spread_method);
 
-    for node in node.children() {
-        if let usvg::NodeKind::Stop(stop) = *node.borrow() {
-            grad.set_color_at(
-                *stop.offset,
-                stop.color.red,
-                stop.color.green,
-                stop.color.blue,
-                ((*stop.opacity * *opacity) * 255.0) as u8,
-            );
-        }
+    for stop in &g.stops {
+        grad.set_color_at(
+            *stop.offset,
+            stop.color.red,
+            stop.color.green,
+            stop.color.blue,
+            ((*stop.opacity * *opacity) * 255.0) as u8,
+        );
     }
 }
 

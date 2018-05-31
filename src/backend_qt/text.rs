@@ -55,18 +55,13 @@ impl<'a> FontMetrics<qt::Font> for QtFontMetrics<'a> {
 }
 
 pub fn draw(
-    node: &usvg::Node,
+    tree: &usvg::Tree,
+    text_node: &usvg::Text,
     opt: &Options,
     p: &qt::Painter,
 ) -> Rect {
-    let tree = &node.tree();
     let mut fm = QtFontMetrics::new(p);
-
-    if let usvg::NodeKind::Text(ref text) = *node.borrow() {
-        draw_blocks(text, node, &mut fm, |block| draw_block(tree, block, opt, p))
-    } else {
-        unreachable!();
-    }
+    draw_blocks(text_node, &mut fm, |block| draw_block(tree, block, opt, p))
 }
 
 fn draw_block(

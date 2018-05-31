@@ -50,8 +50,8 @@ pub fn apply(
             usvg::NodeKind::Path(ref p) => {
                 path::draw(&node.tree(), p, opt, &clip_cr);
             }
-            usvg::NodeKind::Text(_) => {
-                text::draw(&node, opt, &clip_cr);
+            usvg::NodeKind::Text(ref text) => {
+                text::draw(&node.tree(), text, opt, &clip_cr);
             }
             _ => {}
         }

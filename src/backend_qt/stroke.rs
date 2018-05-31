@@ -40,10 +40,10 @@ pub fn apply(
                     if let Some(node) = tree.defs_by_id(id) {
                         match *node.borrow() {
                             usvg::NodeKind::LinearGradient(ref lg) => {
-                                gradient::prepare_linear(&node, lg, opacity, bbox, &mut brush);
+                                gradient::prepare_linear(lg, opacity, bbox, &mut brush);
                             }
                             usvg::NodeKind::RadialGradient(ref rg) => {
-                                gradient::prepare_radial(&node, rg, opacity, bbox, &mut brush);
+                                gradient::prepare_radial(rg, opacity, bbox, &mut brush);
                             }
                             usvg::NodeKind::Pattern(ref pattern) => {
                                 let ts = p.get_transform();
