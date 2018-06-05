@@ -26,15 +26,22 @@ pub fn apply(
     layers: &mut CairoLayers,
     cr: &cairo::Context,
 ) {
+    // a-clip-path-001.svg
+    // e-clipPath-001.svg
+
     let clip_surface = try_opt!(layers.get(), ());
     let clip_surface = clip_surface.borrow_mut();
 
     let clip_cr = cairo::Context::new(&*clip_surface);
     clip_cr.set_source_rgba(0.0, 0.0, 0.0, 1.0);
     clip_cr.paint();
+    // e-clipPath-006.svg
+    // e-clipPath-007.svg
     clip_cr.set_matrix(cr.get_matrix());
+    // e-clipPath-008.svg
     clip_cr.transform(cp.transform.to_native());
 
+    // e-clipPath-005.svg
     if cp.units == usvg::Units::ObjectBoundingBox {
         let m = cairo::Matrix::from_bbox(bbox);
         clip_cr.transform(m);
@@ -43,6 +50,8 @@ pub fn apply(
     clip_cr.set_operator(cairo::Operator::Clear);
 
     let matrix = clip_cr.get_matrix();
+    // e-clipPath-015.svg
+    // e-clipPath-017.svg
     for node in node.children() {
         clip_cr.transform(node.transform().to_native());
 
@@ -51,6 +60,10 @@ pub fn apply(
                 path::draw(&node.tree(), p, opt, &clip_cr);
             }
             usvg::NodeKind::Text(ref text) => {
+                // e-clipPath-009.svg
+                // e-clipPath-010.svg
+                // e-clipPath-011.svg
+                // e-clipPath-012.svg
                 text::draw(&node.tree(), text, opt, &clip_cr);
             }
             _ => {}

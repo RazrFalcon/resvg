@@ -25,12 +25,18 @@ pub fn apply(
         Some(ref stroke) => {
             match stroke.paint {
                 usvg::Paint::Color(c) => {
+                    // a-stroke-opacity-001.svg
+                    // a-stroke-opacity-002.svg
+                    // a-stroke-opacity-006.svg
                     cr.set_source_color(&c, stroke.opacity);
                 }
                 usvg::Paint::Link(ref id) => {
                     // a-stroke-002.svg
                     // a-stroke-003.svg
                     // a-stroke-004.svg
+                    // a-stroke-007.svg
+                    // a-stroke-008.svg
+                    // a-stroke-009.svg
                     if let Some(node) = tree.defs_by_id(id) {
                         match *node.borrow() {
                             usvg::NodeKind::LinearGradient(ref lg) => {
@@ -80,6 +86,7 @@ pub fn apply(
 
             // a-stroke-miterlimit-002.svg
             cr.set_miter_limit(stroke.miterlimit);
+            // a-stroke-width-002.svg
             cr.set_line_width(stroke.width);
         }
         None => {

@@ -48,6 +48,10 @@ fn prepare_base(
     };
     grad.set_spread(spread_method);
 
+    // a-fill-opacity-003.svg
+    // a-stop-color-001.svg
+    // a-stop-opacity-001.svg
+    // a-stroke-opacity-003.svg
     for stop in &g.stops {
         grad.set_color_at(
             *stop.offset,

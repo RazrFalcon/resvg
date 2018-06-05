@@ -18,6 +18,8 @@ use resvg::{
 
 pub fn print_help() {
     print!("\
+rendersvg is an SVG rendering application.
+
 USAGE:
     rendersvg [OPTIONS] <in-svg> <out-png>
 
@@ -142,19 +144,19 @@ pub fn parse() -> Result<(Args, Options), String> {
     let mut fit_to = FitTo::Original;
     if let Some(w) = get_type(&args, "width", "LENGTH")? {
         if w == 0 {
-            return Err(format!("Invalid LENGTH"));
+            return Err(format!("invalid LENGTH"));
         }
 
         fit_to = FitTo::Width(w);
     } else if let Some(h) = get_type(&args, "height", "LENGTH")? {
         if h == 0 {
-            return Err(format!("Invalid LENGTH"));
+            return Err(format!("invalid LENGTH"));
         }
 
         fit_to = FitTo::Height(h);
     } else if let Some(z) = get_type(&args, "zoom", "FACTOR")? {
         if !(z > 0.0) {
-            return Err(format!("Invalid FACTOR"));
+            return Err(format!("invalid FACTOR"));
         }
 
         fit_to = FitTo::Zoom(z);
@@ -183,7 +185,7 @@ pub fn parse() -> Result<(Args, Options), String> {
 fn get_type<T: FromStr>(args: &getopts::Matches, name: &str, type_name: &str) -> Result<Option<T>, String> {
     match args.opt_str(name) {
         Some(v) => {
-            let t = v.parse().map_err(|_| format!("Invalid {}: '{}'", type_name, v))?;
+            let t = v.parse().map_err(|_| format!("invalid {}: '{}'", type_name, v))?;
             Ok(Some(t))
         }
         None => Ok(None),

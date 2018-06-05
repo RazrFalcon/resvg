@@ -88,6 +88,9 @@ fn draw_block(
     // Draw underline.
     //
     // Should be drawn before/under text.
+    //
+    // a-text-decoration-001.svg
+    // a-text-decoration-009.svg
     if let Some(ref style) = block.decoration.underline {
         line_rect.y = bbox.y + font_metrics.height() - font_metrics.underline_pos();
         draw_line(tree, line_rect, &style.fill, &style.stroke, opt, p);
@@ -96,6 +99,8 @@ fn draw_block(
     // Draw overline.
     //
     // Should be drawn before/under text.
+    //
+    // a-text-decoration-002.svg
     if let Some(ref style) = block.decoration.overline {
         line_rect.y = bbox.y + font_metrics.height() - font_metrics.overline_pos();
         draw_line(tree, line_rect, &style.fill, &style.stroke, opt, p);
@@ -110,6 +115,8 @@ fn draw_block(
     // Draw line-through.
     //
     // Should be drawn after/over text.
+    //
+    // a-text-decoration-003.svg
     if let Some(ref style) = block.decoration.line_through {
         line_rect.y = bbox.y + font_metrics.ascent() - font_metrics.strikeout_pos();
         draw_line(tree, line_rect, &style.fill, &style.stroke, opt, p);
@@ -121,8 +128,20 @@ fn draw_block(
 fn init_font(dom_font: &usvg::Font) -> qt::Font {
     let mut font = qt::Font::new();
 
+    // a-font-family-001.svg
+    // a-font-family-002.svg
+    // a-font-family-003.svg
+    // a-font-family-004.svg
+    // a-font-family-005.svg
+    // a-font-family-006.svg
+    // a-font-family-007.svg
+    // a-font-family-008.svg
+    // a-font-family-009.svg
+    // a-font-family-010.svg
     font.set_family(&dom_font.family);
 
+    // a-font-style-001.svg
+    // a-font-style-002.svg
     let font_style = match dom_font.style {
         usvg::FontStyle::Normal => qt::FontStyle::StyleNormal,
         usvg::FontStyle::Italic => qt::FontStyle::StyleItalic,
@@ -130,10 +149,12 @@ fn init_font(dom_font: &usvg::Font) -> qt::Font {
     };
     font.set_style(font_style);
 
+    // a-font-variant-001.svg
     if dom_font.variant == usvg::FontVariant::SmallCaps {
         font.set_small_caps(true);
     }
 
+    // a-font-weight-009.svg
     let font_weight = match dom_font.weight {
         usvg::FontWeight::W100       => qt::FontWeight::Thin,
         usvg::FontWeight::W200       => qt::FontWeight::ExtraLight,
@@ -147,6 +168,7 @@ fn init_font(dom_font: &usvg::Font) -> qt::Font {
     };
     font.set_weight(font_weight);
 
+    // a-font-stretch-001.svg
     let font_stretch = match dom_font.stretch {
         usvg::FontStretch::Normal         => qt::FontStretch::Unstretched,
         usvg::FontStretch::Narrower |

@@ -26,11 +26,17 @@ pub fn apply(
             match fill.paint {
                 usvg::Paint::Color(c) => {
                     // a-fill-opacity-001.svg
+                    // a-fill-opacity-002.svg
+                    // a-fill-opacity-006.svg
                     cr.set_source_color(&c, fill.opacity);
                 }
                 usvg::Paint::Link(ref id) => {
                     // a-fill-opacity-003.svg
                     // a-fill-opacity-004.svg
+                    // a-fill-031.svg
+                    // a-fill-032.svg
+                    // a-fill-033.svg
+
                     if let Some(node) = tree.defs_by_id(id) {
                         match *node.borrow() {
                             usvg::NodeKind::LinearGradient(ref lg) => {
@@ -50,6 +56,8 @@ pub fn apply(
 
             // a-fill-rule-001.svg
             // a-fill-rule-002.svg
+            // e-clipPath-013.svg
+            // e-clipPath-014.svg
             match fill.rule {
                 usvg::FillRule::NonZero => cr.set_fill_rule(cairo::FillRule::Winding),
                 usvg::FillRule::EvenOdd => cr.set_fill_rule(cairo::FillRule::EvenOdd),

@@ -23,14 +23,21 @@ pub fn apply(
     layers: &mut QtLayers,
     p: &qt::Painter,
 ) {
+    // a-clip-path-001.svg
+    // e-clipPath-001.svg
+
     let clip_img = try_opt!(layers.get(), ());
     let mut clip_img = clip_img.borrow_mut();
     clip_img.fill(0, 0, 0, 255);
 
     let clip_p = qt::Painter::new(&clip_img);
+    // e-clipPath-006.svg
+    // e-clipPath-007.svg
     clip_p.set_transform(&p.get_transform());
+    // e-clipPath-008.svg
     clip_p.apply_transform(&cp.transform.to_native());
 
+    // e-clipPath-005.svg
     if cp.units == usvg::Units::ObjectBoundingBox {
         clip_p.apply_transform(&qt::Transform::from_bbox(bbox));
     }
@@ -38,6 +45,8 @@ pub fn apply(
     clip_p.set_composition_mode(qt::CompositionMode::CompositionMode_Clear);
 
     let ts = clip_p.get_transform();
+    // e-clipPath-015.svg
+    // e-clipPath-017.svg
     for node in node.children() {
         clip_p.apply_transform(&node.transform().to_native());
 

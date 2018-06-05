@@ -62,6 +62,8 @@ pub fn apply(
         // If `opacity` isn't `1` then we have to make image semitransparent.
         // The only way to do this is by making a new image and rendering
         // the pattern on it with transparency.
+        //
+        // a-stroke-opacity-004.svg
 
         let mut img2 = try_create_image!(img_size, ());
         img2.fill(0, 0, 0, 0);
