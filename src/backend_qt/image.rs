@@ -19,7 +19,7 @@ pub fn draw(
     if image.format == usvg::ImageFormat::SVG {
         draw_svg(image, opt, p);
     } else {
-        draw_raster(image, p);
+        draw_raster(image, opt, p);
     }
 
     image.view_box.rect
@@ -27,11 +27,13 @@ pub fn draw(
 
 fn draw_raster(
     image: &usvg::Image,
+    opt: &Options,
     p: &qt::Painter,
 ) {
     let img = match image.data {
         usvg::ImageData::Path(ref path) => {
-            try_opt_warn!(qt::Image::from_file(path), (),
+            let path = image::get_abs_path(path, opt);
+            try_opt_warn!(qt::Image::from_file(&path), (),
                 "Failed to load an external image: {:?}.", path)
         }
         usvg::ImageData::Raw(ref data) => {

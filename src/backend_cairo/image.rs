@@ -24,7 +24,7 @@ pub fn draw(
     if image.format == usvg::ImageFormat::SVG {
         draw_svg(image, opt, cr);
     } else {
-        draw_raster(image, cr);
+        draw_raster(image, opt, cr);
     }
 
     image.view_box.rect
@@ -32,11 +32,13 @@ pub fn draw(
 
 fn draw_raster(
     image: &usvg::Image,
+    opt: &Options,
     cr: &cairo::Context,
 ) {
     let img = match image.data {
         usvg::ImageData::Path(ref path) => {
-            try_opt_warn!(gdk_pixbuf::Pixbuf::new_from_file(path).ok(), (),
+            let path = image::get_abs_path(path, opt);
+            try_opt_warn!(gdk_pixbuf::Pixbuf::new_from_file(path.clone()).ok(), (),
                 "Failed to load an external image: {:?}.", path)
         }
         usvg::ImageData::Raw(ref data) => {

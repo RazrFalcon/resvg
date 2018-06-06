@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::path;
+
 // external
 use usvg;
 use usvg::prelude::*;
@@ -30,7 +32,8 @@ pub fn load_sub_svg(
 
     let tree = match image.data {
         usvg::ImageData::Path(ref path) => {
-            sub_opt.usvg.path = Some(path.into());
+            let path = get_abs_path(path, opt);
+            sub_opt.usvg.path = Some(path.clone());
             usvg::Tree::from_file(path, &sub_opt.usvg).ok()?
         }
         usvg::ImageData::Raw(ref data) => {
@@ -109,4 +112,14 @@ pub fn prepare_sub_svg_geom(
     let ts = usvg::Transform::new(sx, 0.0, 0.0, sy, tx, ty);
 
     (ts, clip)
+}
+
+pub fn get_abs_path(
+    rel_path: &path::Path,
+    opt: &Options,
+) -> path::PathBuf {
+    match opt.usvg.path {
+        Some(ref path) => path.parent().unwrap().join(rel_path),
+        None => rel_path.into(),
+    }
 }
