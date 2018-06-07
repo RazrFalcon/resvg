@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains an important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- (c-api) `RESVG_ERROR_PARSING_FAILED`.
+
 ### Fixed
 - (cairo-backend) Text layout.
 - (resvg) Recursive SVG images via `image` tag.
+- (qt-api) SVG from QByteArray loading when data is invalid.
 
 ### Removed
 - (rendersvg) `failure`.

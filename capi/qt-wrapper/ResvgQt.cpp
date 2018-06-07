@@ -75,6 +75,8 @@ static QString errorToString(const int err)
             return QLatin1Literal("Invalid file suffix."); break;
         case RESVG_ERROR_MALFORMED_GZIP :
             return QLatin1Literal("Not a GZip compressed data."); break;
+        case RESVG_ERROR_PARSING_FAILED :
+            return QLatin1Literal("Failed to parse an SVG data."); break;
         case RESVG_ERROR_NO_CANVAS :
             return QLatin1Literal("Failed to allocate the canvas."); break;
     }
@@ -114,23 +116,17 @@ bool ResvgRenderer::load(const QString &filePath)
     }
 
     d->reset();
-
-    resvg_options opt;
-    initOptions(opt);
+    initOptions(d->opt);
 
     const auto utf8Str = filePath.toUtf8();
     const auto rawFilePath = utf8Str.constData();
-    opt.path = qstrdup(rawFilePath);
+    d->opt.path = qstrdup(rawFilePath);
 
-    resvg_render_tree *tree = NULL;
-    const auto err = resvg_parse_tree_from_file(opt.path, &opt, &tree);
+    const auto err = resvg_parse_tree_from_file(rawFilePath, &d->opt, &d->tree);
     if (err != RESVG_OK) {
         d->errMsg = errorToString(err);
         return false;
     }
-
-    d->tree = tree;
-    d->opt = opt;
 
     const auto r = resvg_get_image_viewbox(d->tree);
     d->viewBox = QRectF(r.x, r.y, r.width, r.height);
@@ -141,15 +137,13 @@ bool ResvgRenderer::load(const QString &filePath)
 bool ResvgRenderer::load(const QByteArray &data)
 {
     d->reset();
+    initOptions(d->opt);
 
-    resvg_options opt;
-    initOptions(opt);
-
-    resvg_render_tree *tree = NULL;
-    resvg_parse_tree_from_data(data.constData(), data.size(), &opt, &tree);
-
-    d->tree = tree;
-    d->opt = opt;
+    const auto err = resvg_parse_tree_from_data(data.constData(), data.size(), &d->opt, &d->tree);
+    if (err != RESVG_OK) {
+        d->errMsg = errorToString(err);
+        return false;
+    }
 
     const auto r = resvg_get_image_viewbox(d->tree);
     d->viewBox = QRectF(r.x, r.y, r.width, r.height);

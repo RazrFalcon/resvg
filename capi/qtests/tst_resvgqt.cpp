@@ -34,9 +34,8 @@ void ResvgQtTests::test_parseFile()
 void ResvgQtTests::test_parseInvalidFile()
 {
     ResvgRenderer render(localPath("invalid.svg"));
-    QVERIFY(render.isValid());
-    QCOMPARE(render.defaultSize(), QSize(100, 100));
-    QVERIFY(!render.isEmpty());
+    QVERIFY(!render.isValid());
+    QVERIFY(render.isEmpty());
 }
 
 void ResvgQtTests::test_renderFile()

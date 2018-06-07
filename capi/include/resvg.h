@@ -60,6 +60,8 @@ typedef enum resvg_error {
     RESVG_ERROR_INVALID_FILE_SUFFIX,
     /** Compressed SVG must use the GZip algorithm. */
     RESVG_ERROR_MALFORMED_GZIP,
+    /** Failed to parse an SVG data. */
+    RESVG_ERROR_PARSING_FAILED,
     /** Failed to allocate an image. */
     RESVG_ERROR_NO_CANVAS,
 } resvg_error;
