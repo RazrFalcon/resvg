@@ -18,6 +18,17 @@ extern "C" {
 #include <QDebug>
 
 
+static void initOptions(resvg_options &opt)
+{
+    resvg_init_options(&opt);
+
+    const auto screens = qApp->screens();
+    if (!screens.isEmpty()) {
+        const auto screen = screens.at(0);
+        opt.dpi = screen->logicalDotsPerInch() * screen->devicePixelRatio();
+    }
+}
+
 class ResvgRendererPrivate
 {
 public:
@@ -38,6 +49,7 @@ public:
             opt.path = NULL;
         }
 
+        initOptions(opt);
         viewBox = QRectF();
         errMsg = QString();
     }
@@ -47,18 +59,6 @@ public:
     QRectF viewBox;
     QString errMsg;
 };
-
-
-static void initOptions(resvg_options &opt)
-{
-    resvg_init_options(&opt);
-
-    const auto screens = qApp->screens();
-    if (!screens.isEmpty()) {
-        const auto screen = screens.at(0);
-        opt.dpi = screen->logicalDotsPerInch() * screen->devicePixelRatio();
-    }
-}
 
 static QString errorToString(const int err)
 {
@@ -116,7 +116,6 @@ bool ResvgRenderer::load(const QString &filePath)
     }
 
     d->reset();
-    initOptions(d->opt);
 
     const auto utf8Str = filePath.toUtf8();
     const auto rawFilePath = utf8Str.constData();
@@ -137,7 +136,6 @@ bool ResvgRenderer::load(const QString &filePath)
 bool ResvgRenderer::load(const QByteArray &data)
 {
     d->reset();
-    initOptions(d->opt);
 
     const auto err = resvg_parse_tree_from_data(data.constData(), data.size(), &d->opt, &d->tree);
     if (err != RESVG_OK) {

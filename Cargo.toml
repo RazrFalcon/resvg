@@ -39,7 +39,7 @@ pangocairo = { version = "0.5", optional = true }
 # qt backend
 #resvg-qt = { version = "0.3", optional = true }
 #resvg-qt = { path = "../resvg-qt", optional = true }
-resvg-qt = { git = "https://github.com/RazrFalcon/resvg-qt", rev = "716fe9e", optional = true }
+resvg-qt = { git = "https://github.com/RazrFalcon/resvg-qt", rev = "fd0ed4f", optional = true }
 unicode-segmentation = "1.2.1"
 
 [features]

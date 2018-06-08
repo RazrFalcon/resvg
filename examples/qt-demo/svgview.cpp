@@ -8,7 +8,6 @@
 #include <QMimeData>
 #include <QTimer>
 #include <QThread>
-#include <QSvgRenderer>
 #include <QDebug>
 
 #include "svgview.h"
