@@ -11,9 +11,7 @@ QMAKE_CXXFLAGS += -Wextra -Wpedantic
 QMAKE_CXXFLAGS += -fsanitize=address
 QMAKE_LFLAGS += -fsanitize=address
 
-SOURCES += \
-    tst_resvgqt.cpp \
-    $$PWD/../qt-wrapper/ResvgQt.cpp
+SOURCES += tst_resvgqt.cpp
 
 DEFINES += SRCDIR=\\\"$$PWD\\\"
 
@@ -22,5 +20,3 @@ else:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../target/debug/ -lresvg
 
 INCLUDEPATH += $$PWD/../include
 DEPENDPATH += $$PWD/../include
-
-INCLUDEPATH += $$PWD/../qt-wrapper

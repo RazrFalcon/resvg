@@ -5,8 +5,7 @@ TEMPLATE = app
 SOURCES += \
     main.cpp \
     svgview.cpp \
-    mainwindow.cpp \
-    ../../capi/qt-wrapper/ResvgQt.cpp
+    mainwindow.cpp
 
 HEADERS += \
     svgview.h \
@@ -23,5 +22,3 @@ else:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../target/debug/ -lresvg
 
 INCLUDEPATH += $$PWD/../../capi/include
 DEPENDPATH += $$PWD/../../capi/include
-
-INCLUDEPATH += $$PWD/../../capi/qt-wrapper

@@ -180,18 +180,7 @@ void resvg_init_log();
 /**
  * @brief Initializes the #resvg_options structure.
  */
-void resvg_init_options(resvg_options *opt)
-{
-    opt->path = NULL;
-    opt->dpi = 96;
-    opt->fit_to.type = RESVG_FIT_TO_ORIGINAL;
-    opt->fit_to.value = 0;
-    opt->draw_background = false;
-    opt->background.r = 0;
-    opt->background.g = 0;
-    opt->background.b = 0;
-    opt->keep_named_groups = false;
-}
+void resvg_init_options(resvg_options *opt);
 
 /**
  * @brief Creates #resvg_render_tree from file.
@@ -227,10 +216,6 @@ int resvg_parse_tree_from_data(const char *data,
 
 /**
  * @brief Checks that tree has any nodes.
- *
- * #resvg_parse_tree_from_file and #resvg_parse_tree_from_data methods
- * will return an error only if a file does not exist or it has a non-UTF-8 encoding.
- * All other errors will result in an empty tree with a 100x100px size.
  *
  * @param tree Render tree.
  * @return Returns \b true if tree has any nodes.

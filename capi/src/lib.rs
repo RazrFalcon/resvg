@@ -18,6 +18,7 @@ use std::path;
 use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::slice;
+use std::ptr;
 
 #[cfg(feature = "qt-backend")]
 use resvg::qt;
@@ -141,6 +142,23 @@ fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &log:
         record.line().unwrap_or(0),
         message
     ))
+}
+
+#[no_mangle]
+pub extern fn resvg_init_options(opt: *mut resvg_options) {
+    unsafe {
+        (*opt).path = ptr::null();
+        (*opt).dpi = 96.0;
+        (*opt).fit_to = resvg_fit_to {
+            kind: resvg_fit_to_type::RESVG_FIT_TO_ORIGINAL,
+            value: 0.0,
+        };
+        (*opt).draw_background = false;
+        (*opt).background.r = 0;
+        (*opt).background.g = 0;
+        (*opt).background.b = 0;
+        (*opt).keep_named_groups = false;
+    }
 }
 
 #[no_mangle]

@@ -7,8 +7,7 @@ CONFIG += C++11
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
-    svgview.cpp \
-    ../../capi/qt-wrapper/ResvgQt.cpp
+    svgview.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -25,5 +24,3 @@ else:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../target/debug/ -lresvg
 
 INCLUDEPATH += $$PWD/../../capi/include
 DEPENDPATH += $$PWD/../../capi/include
-
-INCLUDEPATH += $$PWD/../../capi/qt-wrapper

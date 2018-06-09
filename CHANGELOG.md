@@ -10,6 +10,9 @@ This changelog also contains an important changes in dependencies.
 ### Added
 - (c-api) `RESVG_ERROR_PARSING_FAILED`.
 
+### Changed
+- (c-api) Qt wrapper is header-only now.
+
 ### Fixed
 - (cairo-backend) Text layout.
 - (resvg) Recursive SVG images via `image` tag.
