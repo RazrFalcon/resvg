@@ -2,6 +2,7 @@
 name = "cairo-example"
 version = "0.2.0"
 authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
+workspace = "../.."
 
 [dependencies]
 gio = "0.4"

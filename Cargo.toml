@@ -14,13 +14,14 @@ categories = ["multimedia::images"]
 [workspace]
 members = [
     "capi",
-    "tools/rendersvg"
+    "tools/rendersvg",
+    "examples/cairo-rs",
 ]
 exclude = [
     "examples/cairo-rs",
     "testing_tools",
     "workdir-qt", # for CI tests
-    "workdir-cairo" # for CI tests
+    "workdir-cairo", # for CI tests
 ]
 
 [badges]
