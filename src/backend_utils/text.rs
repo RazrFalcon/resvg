@@ -17,6 +17,7 @@ pub struct TextBlock<Font> {
     pub fill: Option<usvg::Fill>,
     pub stroke: Option<usvg::Stroke>,
     pub font: Font,
+    pub font_ascent: f64,
     pub decoration: usvg::TextDecoration,
 }
 
@@ -130,6 +131,7 @@ fn prepare_blocks<Font>(
                         fill: tspan.fill.clone(),
                         stroke: tspan.stroke.clone(),
                         font: font_metrics.font(),
+                        font_ascent: font_metrics.ascent(),
                         decoration: tspan.decoration.clone(),
                     });
                 }

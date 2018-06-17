@@ -327,13 +327,13 @@ pub fn calc_node_bbox(
     let p = qt::Painter::new(&img);
 
     let abs_ts = utils::abs_transform(node);
-    _calc_node_bbox(node, abs_ts, opt, &p)
+    _calc_node_bbox(node, opt, abs_ts, &p)
 }
 
 fn _calc_node_bbox(
     node: &usvg::Node,
-    ts: usvg::Transform,
     opt: &Options,
+    ts: usvg::Transform,
     p: &qt::Painter,
 ) -> Option<Rect> {
     let mut ts2 = ts;
@@ -349,14 +349,19 @@ fn _calc_node_bbox(
 
             text::draw_blocks(text, &mut fm, |block| {
                 let mut p_path = qt::PainterPath::new();
+                p_path.add_text(0.0, 0.0, &block.font, &block.text);
 
-                p.set_font(&block.font);
-                let y = block.bbox.y + p.font_metrics().ascent();
-                p_path.add_text(block.bbox.x, y, &block.font, &block.text);
+                let y = block.bbox.y + block.font_ascent;
+
+                let mut t = ts2;
+                if !block.rotate.is_fuzzy_zero() {
+                    t.rotate_at(block.rotate, block.bbox.x, y);
+                }
+                t.translate(block.bbox.x, y);
 
                 let segments = from_qt_path(&p_path);
                 if !segments.is_empty() {
-                    let c_bbox = utils::path_bbox(&segments, block.stroke.as_ref(), &ts2);
+                    let c_bbox = utils::path_bbox(&segments, block.stroke.as_ref(), &t);
                     bbox.expand(c_bbox);
                 }
             });
@@ -371,7 +376,7 @@ fn _calc_node_bbox(
             let mut bbox = Rect::new_bbox();
 
             for child in node.children() {
-                if let Some(c_bbox) = _calc_node_bbox(&child, ts2, opt, p) {
+                if let Some(c_bbox) = _calc_node_bbox(&child, opt, ts2, p) {
                     bbox.expand(c_bbox);
                 }
             }

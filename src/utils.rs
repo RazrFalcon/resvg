@@ -81,32 +81,11 @@ pub fn path_bbox(
 
     use lyon_geom;
 
-    let mut path_buf = Vec::new();
+    let mut path_buf;
     let new_path = if !ts.is_default() {
-        // Allocate only when transform is required.
-        path_buf.reserve(segments.len());
-        for seg in segments {
-            match *seg {
-                usvg::PathSegment::MoveTo { x, y } => {
-                    let (x, y) = ts.apply(x, y);
-                    path_buf.push(usvg::PathSegment::MoveTo { x, y });
-                }
-                usvg::PathSegment::LineTo { x, y } => {
-                    let (x, y) = ts.apply(x, y);
-                    path_buf.push(usvg::PathSegment::LineTo { x, y });
-                }
-                usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                    let (x1, y1) = ts.apply(x1, y1);
-                    let (x2, y2) = ts.apply(x2, y2);
-                    let (x, y) = ts.apply(x, y);
-                    path_buf.push(usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
-                }
-                usvg::PathSegment::ClosePath => {
-                    path_buf.push(usvg::PathSegment::ClosePath);
-                }
-            }
-        }
-
+        // Clone only when transform is required.
+        path_buf = segments.to_vec();
+        transform_path(&mut path_buf, ts);
         &path_buf
     } else {
         segments
@@ -179,6 +158,27 @@ pub fn path_bbox(
     if height < 1.0 { height = 1.0; }
 
     (minx as f64, miny as f64, width as f64, height as f64).into()
+}
+
+/// Applies the transform to the path segments.
+pub fn transform_path(segments: &mut [usvg::PathSegment], ts: &usvg::Transform) {
+    for seg in segments {
+        match *seg {
+            usvg::PathSegment::MoveTo { ref mut x, ref mut y } => {
+                ts.apply_to(x, y);
+            }
+            usvg::PathSegment::LineTo { ref mut x, ref mut y } => {
+                ts.apply_to(x, y);
+            }
+            usvg::PathSegment::CurveTo { ref mut x1, ref mut y1, ref mut x2,
+                                         ref mut y2, ref mut x, ref mut y } => {
+                ts.apply_to(x1, y1);
+                ts.apply_to(x2, y2);
+                ts.apply_to(x, y);
+            }
+            usvg::PathSegment::ClosePath => {}
+        }
+    }
 }
 
 /// Converts `rect` to path segments.

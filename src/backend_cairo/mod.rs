@@ -22,6 +22,7 @@ use {
 };
 use self::ext::*;
 
+
 macro_rules! try_create_surface {
     ($size:expr, $ret:expr) => {
         try_opt_warn!(
@@ -394,7 +395,10 @@ fn _calc_node_bbox(
                 let segments = from_cairo_path(&path);
 
                 let mut t = ts2;
-                t.append(&usvg::Transform::new(1.0, 0.0, 0.0, 1.0, block.bbox.x, block.bbox.y));
+                if !block.rotate.is_fuzzy_zero() {
+                    t.rotate_at(block.rotate, block.bbox.x, block.bbox.y + block.font_ascent);
+                }
+                t.translate(block.bbox.x, block.bbox.y);
 
                 if !segments.is_empty() {
                     let c_bbox = utils::path_bbox(&segments, block.stroke.as_ref(), &t);

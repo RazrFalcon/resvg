@@ -16,6 +16,7 @@ This changelog also contains an important changes in dependencies.
 ### Fixed
 - (cairo-backend) Text layout.
 - (resvg) Recursive SVG images via `image` tag.
+- (resvg) Bbox calculation of the text with rotate.
 - (qt-api) SVG from QByteArray loading when data is invalid.
 
 ### Removed
