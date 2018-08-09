@@ -20,4 +20,4 @@ library since it will depend on Qt/cairo anyway.
 
 A usage example with a *cairo* backend can be found at [examples/cairo-capi](../examples/cairo-capi).
 
-A usage example with a *qt* backend can be found in the [demo](../demo) app.
+A usage example with a *qt* backend can be found in the [examples/qt-demo](../examples/qt-demo) app.

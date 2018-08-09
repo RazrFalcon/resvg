@@ -61,10 +61,15 @@ QT_DIR=/c/Qt/5.9.3/mingw53_32 cargo.exe build --release --features "qt-backend"
 Install GTK+ dependencies using MSYS2 as explained
 [here](http://gtk-rs.org/docs/requirements.html#windows).
 
-We no need the whole GTK+, so we can install only `pango`, which will install
-`cairo` too.
+We do not need the whole GTK+, so we can install only `pango` (which will install
+`cairo` too) and `gdk-pixbuf2`:
+
+```
+pacman -S mingw-w64-i686-pango mingw-w64-i686-gdk-pixbuf2
+```
 
 Then run this command in the MSYS2 MinGW Shell:
+
 ```
 cargo.exe build --release --features "cairo-backend"
 ```
@@ -87,9 +92,9 @@ PKG_CONFIG_PATH='/path_to_qt/lib/pkgconfig' cargo build --release --features "qt
 
 ### cairo backend
 
-Install `cairo` and `pango`(with `pangocairo`) using your distributive package manager.
+Install `cairo`, `pango`(with `pangocairo`) and `gdk-pixbuf` using your distributive's package manager.
 
-For Ubuntu you need only `libpango1.0-dev`.
+For Ubuntu its `libpango1.0-dev` and `libgdk-pixbuf2.0-dev`.
 
 ```
 cargo build --release --features "cairo-backend"
