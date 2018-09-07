@@ -106,7 +106,13 @@ cargo build --release --features "cairo-backend"
 
 ### Qt backend
 
-Install Qt using an
+Install Qt with [homebrew](https://brew.sh/): `brew install qt`
+
+```bash
+QT_DIR=/usr/local/opt/qt cargo build --release --features "qt-backend"
+```
+
+Or, install Qt using an
 [official installer](http://download.qt.io/official_releases/online_installers/qt-unified-mac-x64-online.dmg).
 
 ```
