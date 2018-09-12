@@ -28,9 +28,9 @@ exclude = [
 travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
-log = "0.4"
+log = "0.4.5"
 #usvg = "0.2"
-usvg = { git = "https://github.com/RazrFalcon/usvg", rev = "803c4f7" }
+usvg = { git = "https://github.com/RazrFalcon/usvg", rev = "043d974" }
 #usvg = { path = "../usvg" }
 # cairo backend
 cairo-rs = { version = "0.4.1", features = ["png"], optional = true }
