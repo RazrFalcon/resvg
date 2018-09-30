@@ -121,4 +121,15 @@ QT_DIR=/Users/$USER/Qt/5.9.3/clang_64 cargo build --release --features "qt-backe
 
 ### cairo backend
 
-Not supported.
+`cargo build --release --features "cairo-backend"`
+
+For C API:
+Install `gdk-pixbuf`, `pango`, and `cairo` with [homebrew](https://brew.sh/):
+```
+brew install gdk-pixbuf
+brew install pango
+brew install cairo
+
+cd capi && cargo build --release --features "cairo-backend"
+```
+Which generates target/release/libresvg.dylib
