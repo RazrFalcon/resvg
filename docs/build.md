@@ -3,10 +3,10 @@
 ## General
 
 Currently, *resvg* supports only two backend: Qt and cairo.
-
 You can build them separately or together.
 
 To enable a backend use the `--features` option of the `cargo`:
+
 ```bash
 # Build with a Qt backend
 cargo build --release --features="qt-backend"
@@ -23,31 +23,31 @@ The library requires Rust >= 1.22.
 ### Qt backend
 
 Qt backend requires only `QtCore` and `QtGui` libraries.
-And the JPEG image format plugin (eg. `plugins/imageformats/libqjpeg.so`).
+And the JPEG image format plugin (eg. `plugins/imageformats/libqjpeg.(dll/so/dylib)`).
 
-Technically, any Qt 5 version should work, but we support only Qt >= 5.6.
+Technically, any Qt 5 version should work, but we only support Qt >= 5.6.
 
 ### cairo backend
 
-We use `pango` for text rendering, so you have to install/build it too
-with a `pangocairo` library.
+We are using `pango` for text rendering, so you have to build it too.
+With a `pangocairo` library (part of the `pango`).
 
 ## Windows
 
 1. [Install Rust](https://www.rust-lang.org/en-US/install.html) with a
-`stable-i686-pc-windows-gnu` target.
+`stable-i686-pc-windows-gnu` target. MSVS is not supported.
 1. Install [MSYS2](http://www.msys2.org/).
 
 ### Qt backend
 
-Only MinGW 32bit version is supported. MSVS should work too, but it is not tested.
+Only MinGW 32bit version is supported.
 
 Install Qt MinGW 32bit using an
 [official installer](http://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe).
 
 In the MSYS2 Shell:
 ```bash
-# We use Qt 5.9.3 for example.
+# We are using Qt 5.9.3 for example.
 
 # Prepare PATH.
 export PATH="/c/Qt/5.9.3/mingw53_32/bin:/c/Qt/Tools/mingw530_32/bin:/c/Users/$USER/.cargo/bin:$PATH"
@@ -64,29 +64,31 @@ Install GTK+ dependencies using MSYS2 as explained
 We do not need the whole GTK+, so we can install only `pango` (which will install
 `cairo` too) and `gdk-pixbuf2`:
 
-```
+```bash
 pacman -S mingw-w64-i686-pango mingw-w64-i686-gdk-pixbuf2
 ```
 
-Then run this command in the MSYS2 MinGW Shell:
+Then we can build *resvg*:
 
-```
+```bash
 cargo.exe build --release --features "cairo-backend"
 ```
 
 ## Linux
 
+[Install Rust](https://www.rust-lang.org/en-US/install.html).
+
 ### Qt backend
 
 Install Qt 5 using your distributive package manager.
 
-```
+```bash
 cargo build --release --features "qt-backend"
 ```
 
-If you don't want to use the system Qt you can alter it with the `PKG_CONFIG_PATH` variable.
+If you don't want to use a system Qt you can alter it with the `PKG_CONFIG_PATH` variable.
 
-```
+```bash
 PKG_CONFIG_PATH='/path_to_qt/lib/pkgconfig' cargo build --release --features "qt-backend"
 ```
 
@@ -96,7 +98,7 @@ Install `cairo`, `pango`(with `pangocairo`) and `gdk-pixbuf` using your distribu
 
 For Ubuntu its `libpango1.0-dev` and `libgdk-pixbuf2.0-dev`.
 
-```
+```bash
 cargo build --release --features "cairo-backend"
 ```
 
@@ -106,30 +108,27 @@ cargo build --release --features "cairo-backend"
 
 ### Qt backend
 
-Install Qt with [homebrew](https://brew.sh/): `brew install qt`
+Using [homebrew](https://brew.sh/):
 
 ```bash
+brew install qt
+
 QT_DIR=/usr/local/opt/qt cargo build --release --features "qt-backend"
 ```
 
-Or, install Qt using an
-[official installer](http://download.qt.io/official_releases/online_installers/qt-unified-mac-x64-online.dmg).
+Or an
+[official installer](http://download.qt.io/official_releases/online_installers/qt-unified-mac-x64-online.dmg):
 
-```
+```bash
 QT_DIR=/Users/$USER/Qt/5.9.3/clang_64 cargo build --release --features "qt-backend"
 ```
 
 ### cairo backend
 
-`cargo build --release --features "cairo-backend"`
+Using [homebrew](https://brew.sh/):
 
-For C API:
-Install `gdk-pixbuf`, `pango`, and `cairo` with [homebrew](https://brew.sh/):
-```
-brew install gdk-pixbuf
-brew install pango
-brew install cairo
+```bash
+brew install gdk-pixbuf pango cairo
 
-cd capi && cargo build --release --features "cairo-backend"
+cargo build --release --features "cairo-backend"
 ```
-Which generates target/release/libresvg.dylib
