@@ -21,7 +21,7 @@ pub fn prepare_linear(
 ) {
     let grad = cairo::LinearGradient::new(g.x1, g.y1, g.x2, g.y2);
     prepare_base(&g.base, &grad, opacity, bbox);
-    cr.set_source(&grad);
+    cr.set_source(&cairo::Pattern::LinearGradient(grad));
 }
 
 pub fn prepare_radial(
@@ -32,15 +32,15 @@ pub fn prepare_radial(
 ) {
     let grad = cairo::RadialGradient::new(g.fx, g.fy, 0.0, g.cx, g.cy, g.r);
     prepare_base(&g.base, &grad, opacity, bbox);
-    cr.set_source(&grad);
+    cr.set_source(&cairo::Pattern::RadialGradient(grad));
 }
 
-fn prepare_base(
+fn prepare_base<G>(
     g: &usvg::BaseGradient,
-    grad: &cairo::Gradient,
+    grad: &G,
     opacity: usvg::Opacity,
     bbox: Rect,
-) {
+) where G: cairo::Gradient {
     let spread_method = match g.spread_method {
         usvg::SpreadMethod::Pad => cairo::Extend::Pad,
         usvg::SpreadMethod::Reflect => cairo::Extend::Reflect,
