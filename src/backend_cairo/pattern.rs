@@ -6,7 +6,7 @@
 use cairo::{
     self,
     MatrixTrait,
-    Pattern,
+    PatternTrait,
 };
 use usvg;
 use usvg::prelude::*;
@@ -90,5 +90,5 @@ pub fn apply(
     m.invert();
     patt.set_matrix(m);
 
-    cr.set_source(&patt);
+    cr.set_source(&cairo::Pattern::SurfacePattern(patt));
 }
