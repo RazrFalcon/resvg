@@ -86,7 +86,7 @@ pub fn apply(
             // a-stroke-miterlimit-002.svg
             pen.set_miter_limit(stroke.miterlimit);
             // a-stroke-width-002.svg
-            pen.set_width(stroke.width);
+            pen.set_width(stroke.width.value());
 
             // a-stroke-dasharray-001.svg
             // a-stroke-dasharray-002.svg

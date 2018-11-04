@@ -24,6 +24,8 @@ pub fn load_sub_svg(
         usvg: usvg::Options {
             path: None,
             dpi: opt.usvg.dpi,
+            font_family: opt.usvg.font_family.clone(),
+            font_size: opt.usvg.font_size,
             keep_named_groups: false,
         },
         fit_to: FitTo::Original,

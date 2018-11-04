@@ -144,7 +144,7 @@ pub fn path_bbox(
     // TODO: find a better way
     // It's an approximation, but it's better than nothing.
     if let Some(ref stroke) = stroke {
-        let w = (stroke.width / 2.0) as f32;
+        let w = (stroke.width.value() / 2.0) as f32;
         minx -= w;
         miny -= w;
         maxx += w;

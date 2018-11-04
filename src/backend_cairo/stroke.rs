@@ -87,7 +87,7 @@ pub fn apply(
             // a-stroke-miterlimit-002.svg
             cr.set_miter_limit(stroke.miterlimit);
             // a-stroke-width-002.svg
-            cr.set_line_width(stroke.width);
+            cr.set_line_width(stroke.width.value());
         }
         None => {
             // a-stroke-006.svg

@@ -173,6 +173,8 @@ pub fn parse() -> Result<(Args, Options), String> {
         usvg: usvg::Options {
             path: Some(in_svg.into()),
             dpi: dpi as f64,
+            font_family: "Times New Roman".to_string(),
+            font_size: 12.0,
             keep_named_groups,
         },
         fit_to,

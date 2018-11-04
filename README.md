@@ -96,8 +96,9 @@ It also includes alternative libraries.
 - `resvg` - rendering backends implementation
   - [`usvg`](https://github.com/RazrFalcon/usvg) - an SVG simplification tool
     - [`svgdom`](https://github.com/RazrFalcon/svgdom) - a DOM-like SVG tree
+      - [`roxmltree`](https://github.com/RazrFalcon/roxmltree) - a DOM-like XML tree
+        - [`xmlparser`](https://github.com/RazrFalcon/xmlparser) - an XML parser
       - [`svgtypes`](https://github.com/RazrFalcon/svgtypes) - SVG types parser and writer
-      - [`xmlparser`](https://github.com/RazrFalcon/xmlparser) - an XML parser
     - [`rctree`](https://github.com/RazrFalcon/rctree) - a DOM-like tree
   - [`resvg-qt`](https://github.com/RazrFalcon/resvg-qt) - a minimal bindings for [Qt]
 
