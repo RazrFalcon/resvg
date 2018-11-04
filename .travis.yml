@@ -1,6 +1,5 @@
 language: rust
 rust:
-  - 1.22.0
   - stable
 before_install:
   # Qt 5.6
