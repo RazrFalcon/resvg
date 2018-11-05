@@ -6,9 +6,8 @@
 
 use std::process;
 use std::path;
-use std::str::FromStr;
 
-use getopts;
+use gumdrop::Options as CliOptions;
 
 use resvg::{
     usvg,
@@ -58,6 +57,88 @@ ARGS:
    backends().join(", "));
 }
 
+#[derive(Debug, CliOptions)]
+struct CliArgs {
+    #[options(no_short)]
+    help: bool,
+
+    #[options(short = "V")]
+    version: bool,
+
+    #[options(no_short)]
+    perf: bool,
+
+    #[options(no_short)]
+    pretend: bool,
+
+    #[options(no_short)]
+    quiet: bool,
+
+    #[options(no_short, meta = "PATH")]
+    dump_svg: Option<String>,
+
+    #[options(no_short)]
+    query_all: bool,
+
+    #[options(no_short, meta = "ID")]
+    export_id: Option<String>,
+
+    #[options(no_short, meta = "BACKEND")]
+    backend: Option<String>,
+
+    #[options(no_short, meta = "COLOR", parse(try_from_str = "parse_color"))]
+    background: Option<usvg::Color>,
+
+    #[options(no_short, meta = "DPI", default = "96", parse(try_from_str = "parse_dpi"))]
+    dpi: u32,
+
+    #[options(short = "w", meta = "LENGTH", parse(try_from_str = "parse_length"))]
+    width: Option<u32>,
+
+    #[options(short = "h", meta = "LENGTH", parse(try_from_str = "parse_length"))]
+    height: Option<u32>,
+
+    #[options(short = "z", meta = "ZOOM", parse(try_from_str = "parse_zoom"))]
+    zoom: Option<f32>,
+
+    #[options(free)]
+    free: Vec<String>,
+}
+
+fn parse_color(s: &str) -> Result<usvg::Color, &'static str> {
+    s.parse().map_err(|_| "invalid zoom factor")
+}
+
+fn parse_dpi(s: &str) -> Result<u32, &'static str> {
+    let n: u32 = s.parse().map_err(|_| "invalid number")?;
+
+    if n >= 10 && n <= 4000 {
+        Ok(n)
+    } else {
+        Err("DPI out of bounds")
+    }
+}
+
+fn parse_length(s: &str) -> Result<u32, &'static str> {
+    let n: u32 = s.parse().map_err(|_| "invalid length")?;
+
+    if n > 0 {
+        Ok(n)
+    } else {
+        Err("LENGTH cannot be zero")
+    }
+}
+
+fn parse_zoom(s: &str) -> Result<f32, &'static str> {
+    let n: f32 = s.parse().map_err(|_| "invalid zoom factor")?;
+
+    if !(n > 0.0) {
+        Ok(n)
+    } else {
+        Err("ZOOM should be positive")
+    }
+}
+
 pub struct Args {
     pub in_svg: path::PathBuf,
     pub out_png: Option<path::PathBuf>,
@@ -72,42 +153,22 @@ pub struct Args {
 
 pub fn parse() -> Result<(Args, Options), String> {
     let args: Vec<String> = ::std::env::args().collect();
-
-    let mut opts = getopts::Options::new();
-    opts.optflag("", "help", "");
-    opts.optflag("V", "version", "");
-
-    opts.optflag("", "perf", "");
-    opts.optflag("", "pretend", "");
-    opts.optflag("", "quiet", "");
-    opts.optopt("", "dump-svg", "", "");
-
-    opts.optflag("", "query-all", "");
-    opts.optopt("", "export-id", "", "");
-
-    opts.optopt("", "backend", "", "");
-    opts.optopt("", "background", "", "");
-    opts.optopt("", "dpi", "", "");
-    opts.optopt("w", "width", "", "");
-    opts.optopt("h", "height", "", "");
-    opts.optopt("z", "zoom", "", "");
-
-    let args = match opts.parse(&args[1..]) {
+    let args = match CliArgs::parse_args_default(&args[1..]) {
         Ok(v) => v,
-        Err(e) => return Err(e.to_string().into()),
+        Err(e) => return Err(format!("{}", e)),
     };
 
-    if args.opt_present("help") {
+    if args.help {
         print_help();
         process::exit(0);
     }
 
-    if args.opt_present("version") {
+    if args.version {
         println!("{}", env!("CARGO_PKG_VERSION"));
         process::exit(0);
     }
 
-    let positional_count = if args.opt_present("query-all") { 1 } else { 2 };
+    let positional_count = if args.query_all { 1 } else { 2 };
 
     if args.free.len() != positional_count {
         return Err(format!("<in-svg> and <out-png> must be set"));
@@ -115,26 +176,26 @@ pub fn parse() -> Result<(Args, Options), String> {
 
     let in_svg: path::PathBuf = args.free[0].to_string().into();
 
-    let out_png = if !args.opt_present("query-all") {
+    let out_png = if !args.query_all {
         Some(args.free[1].to_string().into())
     } else {
         None
     };
 
-    let backend_name = args.opt_str("backend").unwrap_or(default_backend().to_string());
-    let dump = args.opt_str("dump-svg").map(|v| v.into());
-    let export_id = args.opt_str("export-id").map(|v| v.to_string());
+    let backend_name = args.backend.unwrap_or(default_backend().to_string());
+    let dump = args.dump_svg.map(|v| v.into());
+    let export_id = args.export_id.map(|v| v.to_string());
 
     let app_args = Args {
         in_svg: in_svg.clone(),
         out_png,
         backend_name,
-        query_all: args.opt_present("query-all"),
+        query_all: args.query_all,
         export_id,
         dump,
-        pretend: args.opt_present("pretend"),
-        perf: args.opt_present("perf"),
-        quiet: args.opt_present("quiet"),
+        pretend: args.pretend,
+        perf: args.perf,
+        quiet: args.quiet,
     };
 
     // We don't have to keep named groups when we don't need them
@@ -142,56 +203,27 @@ pub fn parse() -> Result<(Args, Options), String> {
     let keep_named_groups = app_args.query_all || app_args.export_id.is_some();
 
     let mut fit_to = FitTo::Original;
-    if let Some(w) = get_type(&args, "width", "LENGTH")? {
-        if w == 0 {
-            return Err(format!("invalid LENGTH"));
-        }
-
+    if let Some(w) = args.width {
         fit_to = FitTo::Width(w);
-    } else if let Some(h) = get_type(&args, "height", "LENGTH")? {
-        if h == 0 {
-            return Err(format!("invalid LENGTH"));
-        }
-
+    } else if let Some(h) = args.height {
         fit_to = FitTo::Height(h);
-    } else if let Some(z) = get_type(&args, "zoom", "FACTOR")? {
-        if !(z > 0.0) {
-            return Err(format!("invalid FACTOR"));
-        }
-
+    } else if let Some(z) = args.zoom {
         fit_to = FitTo::Zoom(z);
-    }
-
-    let background = get_type(&args, "background", "COLOR")?;
-
-    let dpi = get_type(&args, "dpi", "DPI")?.unwrap_or(96);
-    if dpi < 10 || dpi > 4000 {
-        return Err(format!("DPI out of bounds"));
     }
 
     let opt = Options {
         usvg: usvg::Options {
             path: Some(in_svg.into()),
-            dpi: dpi as f64,
+            dpi: args.dpi as f64,
             font_family: "Times New Roman".to_string(),
             font_size: 12.0,
             keep_named_groups,
         },
         fit_to,
-        background,
+        background: args.background,
     };
 
     Ok((app_args, opt))
-}
-
-fn get_type<T: FromStr>(args: &getopts::Matches, name: &str, type_name: &str) -> Result<Option<T>, String> {
-    match args.opt_str(name) {
-        Some(v) => {
-            let t = v.parse().map_err(|_| format!("invalid {}: '{}'", type_name, v))?;
-            Ok(Some(t))
-        }
-        None => Ok(None),
-    }
 }
 
 #[allow(unreachable_code)]

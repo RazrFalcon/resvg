@@ -8,7 +8,7 @@ workspace = "../../"
 
 [dependencies]
 fern = "0.5"
-getopts = "0.2"
+gumdrop = "0.5"
 log = "0.4"
 resvg = { path = "../../" }
 time = "0.1"

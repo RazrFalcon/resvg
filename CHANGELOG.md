@@ -13,6 +13,7 @@ This changelog also contains an important changes in dependencies.
 - (usvg) Default font family and size is configurable now.
 
 ### Changed
+- (rendersvg) Use `gumdrop` instead of `getopts`.
 - (c-api) Qt wrapper is header-only now.
 
 ### Fixed
@@ -83,8 +84,8 @@ This changelog also contains an important changes in dependencies.
 - (svg) Partial `pattern` support.
 - (svg) `preserveAspectRatio` support.
 - (svg) Check that an external image is PNG or JPEG.
-- (cli) Added `--query-all` and `--export-id` arguments to render SVG items by ID.
-- (cli) Added `--perf` argument for a simple performance stats.
+- (rendersvg) Added `--query-all` and `--export-id` arguments to render SVG items by ID.
+- (rendersvg) Added `--perf` argument for a simple performance stats.
 
 ### Changed
 - (resvg) API is completely new.
