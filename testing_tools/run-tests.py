@@ -62,34 +62,36 @@ if not local_test:
     run(['git', 'clone', TESTS_URL, '--depth', '1'], check=True)
 
 
-# build qt backend
-with cd('tools/rendersvg'):
-    run(['cargo', 'build', '--features', 'qt-backend'], check=True)
+if 'RESVG_QT_BACKEND' in os.environ:
+    # build qt backend
+    with cd('tools/rendersvg'):
+        run(['cargo', 'build', '--features', 'qt-backend'], check=True)
 
-# regression testing of the qt backend
-if not args.no_regression:
-    with cd('testing_tools/regression'):
-        if not local_test:
-            os.environ['QT_QPA_PLATFORM'] = 'offscreen'
-            run(['sudo', 'ln', '-s', '/usr/share/fonts', '/opt/qt56/lib/fonts'], check=True)
+    # regression testing of the qt backend
+    if not args.no_regression:
+        with cd('testing_tools/regression'):
+            if not local_test:
+                os.environ['QT_QPA_PLATFORM'] = 'offscreen'
+                run(['sudo', 'ln', '-s', '/usr/share/fonts', '/opt/qt56/lib/fonts'], check=True)
 
-        try:
-            regression_testing('qt')
-        except proc.CalledProcessError:
-            exit(1)
+            try:
+                regression_testing('qt')
+            except proc.CalledProcessError:
+                exit(1)
 
 
-# build cairo backend
-with cd('tools/rendersvg'):
-    run(['cargo', 'build', '--features', 'cairo-backend'], check=True)
+if 'RESVG_CAIRO_BACKEND' in os.environ:
+    # build cairo backend
+    with cd('tools/rendersvg'):
+        run(['cargo', 'build', '--features', 'cairo-backend'], check=True)
 
-# regression testing of the cairo backend
-if not args.no_regression:
-    with cd('testing_tools/regression'):
-        try:
-            regression_testing('cairo')
-        except proc.CalledProcessError:
-            exit(1)
+    # regression testing of the cairo backend
+    if not args.no_regression:
+        with cd('testing_tools/regression'):
+            try:
+                regression_testing('cairo')
+            except proc.CalledProcessError:
+                exit(1)
 
 
 # try to build with all backends
@@ -112,44 +114,45 @@ if local_test:
         run(['cargo', 'test', '--features', 'cairo-backend'], check=True)
 
 
-# test Qt C-API
-#
-# build C-API for demo
-with cd('capi'):
-    run(['cargo', 'build', '--features', 'qt-backend'], check=True)
+if 'RESVG_QT_BACKEND' in os.environ:
+    # test Qt C-API
+    #
+    # build C-API for demo
+    with cd('capi'):
+        run(['cargo', 'build', '--features', 'qt-backend'], check=True)
 
-# test Qt C-API wrapper
-qmake_env = os.environ if local_test else dict(os.environ, QT_SELECT="5")
+    # test Qt C-API wrapper
+    qmake_env = os.environ if local_test else dict(os.environ, QT_SELECT="5")
 
-with cd('capi/qtests'):
-    defines = 'DEFINES+=LOCAL_BUILD' if local_test else ''
-    run(['make', 'distclean'])
-    run(['qmake', 'CONFIG+=debug', defines], env=qmake_env, check=True)
-    run(['make'], check=True)
-    run(['./tst_resvgqt'], env=dict(os.environ, LD_LIBRARY_PATH="../../target/debug"), check=True)
+    with cd('capi/qtests'):
+        defines = 'DEFINES+=LOCAL_BUILD' if local_test else ''
+        run(['make', 'distclean'])
+        run(['qmake', 'CONFIG+=debug', defines], env=qmake_env, check=True)
+        run(['make'], check=True)
+        run(['./tst_resvgqt'], env=dict(os.environ, LD_LIBRARY_PATH="../../target/debug"), check=True)
 
-with cd('examples/qt-demo'):
-    run(['make', 'distclean'])
-    run(['qmake', 'CONFIG+=debug'], env=qmake_env, check=True)
-    run(['make'], check=True)
+    with cd('examples/qt-demo'):
+        run(['make', 'distclean'])
+        run(['qmake', 'CONFIG+=debug'], env=qmake_env, check=True)
+        run(['make'], check=True)
 
-with cd('examples/resvg-vs-qtsvg'):
-    run(['make', 'distclean'])
-    run(['qmake', 'CONFIG+=debug'], env=qmake_env, check=True)
-    run(['make'], check=True)
-
-
-# build cairo C example
-#
-# build C-API for cairo-capi
-with cd('capi'):
-    run(['cargo', 'build', '--features', 'cairo-backend'], check=True)
-
-with cd('examples/cairo-capi'):
-    run(['make', 'clean'], check=True)
-    run(['make'], check=True)
+    with cd('examples/resvg-vs-qtsvg'):
+        run(['make', 'distclean'])
+        run(['qmake', 'CONFIG+=debug'], env=qmake_env, check=True)
+        run(['make'], check=True)
 
 
-# build cairo-rs example
-with cd('examples/cairo-rs'):
-    run(['cargo', 'build'], check=True)
+if 'RESVG_CAIRO_BACKEND' in os.environ:
+    # build cairo C example
+    #
+    # build C-API for cairo-capi
+    with cd('capi'):
+        run(['cargo', 'build', '--features', 'cairo-backend'], check=True)
+
+    with cd('examples/cairo-capi'):
+        run(['make', 'clean'], check=True)
+        run(['make'], check=True)
+
+    # build cairo-rs example
+    with cd('examples/cairo-rs'):
+        run(['cargo', 'build'], check=True)

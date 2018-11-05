@@ -21,3 +21,7 @@ install:
   # prepare custom Qt
   - source /opt/qt56/bin/qt56-env.sh;
 script: ./testing_tools/run-tests.py
+env:
+  matrix:
+    - RESVG_QT_BACKEND=true
+    - RESVG_CAIRO_BACKEND=true
