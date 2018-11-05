@@ -9,6 +9,8 @@ This changelog also contains an important changes in dependencies.
 ## [Unreleased]
 ### Added
 - (c-api) `RESVG_ERROR_PARSING_FAILED`.
+- (c-api) `resvg_options::font_family` and `resvg_options::font_size`.
+- (usvg) Default font family and size is configurable now.
 
 ### Changed
 - (c-api) Qt wrapper is header-only now.
@@ -18,9 +20,10 @@ This changelog also contains an important changes in dependencies.
 - (resvg) Recursive SVG images via `image` tag.
 - (resvg) Bbox calculation of the text with rotate.
 - (qt-api) SVG from QByteArray loading when data is invalid.
+- (usvg) `display` attribute processing.
 
 ### Removed
-- (rendersvg) `failure`.
+- (rendersvg) `failure` dependency.
 
 ## [0.3.0] - 2018-05-23
 ### Added

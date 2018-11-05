@@ -30,10 +30,14 @@ use resvg::usvg;
 use usvg::prelude::*;
 
 
+const DEFAULT_FONT_FAMILY: &str = "Times New Roman";
+
 #[repr(C)]
 pub struct resvg_options {
     pub path: *const c_char,
     pub dpi: f64,
+    pub font_family: *const c_char,
+    pub font_size: f64,
     pub fit_to: resvg_fit_to,
     pub draw_background: bool,
     pub background: resvg_color,
@@ -149,6 +153,8 @@ pub extern fn resvg_init_options(opt: *mut resvg_options) {
     unsafe {
         (*opt).path = ptr::null();
         (*opt).dpi = 96.0;
+        (*opt).font_family = b"Times New Roman\0".as_ptr() as *const _;
+        (*opt).font_size = 12.0;
         (*opt).fit_to = resvg_fit_to {
             kind: resvg_fit_to_type::RESVG_FIT_TO_ORIGINAL,
             value: 0.0,
@@ -656,10 +662,28 @@ fn to_native_opt(opt: &resvg_options) -> resvg::Options {
         None
     };
 
+    let ff = DEFAULT_FONT_FAMILY;
+    let font_family = match cstr_to_str(opt.font_family) {
+        Some(v) => {
+            if v.is_empty() {
+                warn!("Provided 'font_family' is empty. Fallback to '{}'.", ff);
+                ff
+            } else {
+                v
+            }
+        }
+        None => {
+            warn!("Provided 'font_family' is no an UTF-8 string. Fallback to '{}'.", ff);
+            ff
+        }
+    };
+
     resvg::Options {
         usvg: usvg::Options {
             path,
             dpi: opt.dpi,
+            font_family: font_family.to_string(),
+            font_size: opt.font_size,
             keep_named_groups: opt.keep_named_groups,
         },
         fit_to,

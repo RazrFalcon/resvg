@@ -103,6 +103,10 @@ typedef struct resvg_options {
     const char *path;
     /** Output DPI. Default: 96. */
     double dpi;
+    /** Default font family. Default: 'Timer New Roman'. */
+    const char *font_family;
+    /** Default font size. Default: 12. */
+    double font_size;
     /**
      * Fits the image using specified options.
      *
