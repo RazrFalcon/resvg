@@ -132,7 +132,7 @@ fn parse_length(s: &str) -> Result<u32, &'static str> {
 fn parse_zoom(s: &str) -> Result<f32, &'static str> {
     let n: f32 = s.parse().map_err(|_| "invalid zoom factor")?;
 
-    if !(n > 0.0) {
+    if n > 0.0 {
         Ok(n)
     } else {
         Err("ZOOM should be positive")
