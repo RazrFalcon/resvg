@@ -9,8 +9,10 @@ This changelog also contains an important changes in dependencies.
 ## [Unreleased]
 ### Added
 - (c-api) `RESVG_ERROR_PARSING_FAILED`.
-- (c-api) `resvg_options::font_family` and `resvg_options::font_size`.
+- (c-api) `font_family`, `font_size` and `languages` to `resvg_options`.
 - (usvg) Default font family and size is configurable now.
+- (usvg) `systemLanguage` attribute support.
+- (rendersvg) `font-family`, `font-size` and `languages` to args.
 
 ### Changed
 - (rendersvg) Use `gumdrop` instead of `getopts`.

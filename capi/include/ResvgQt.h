@@ -31,15 +31,11 @@ extern "C" {
 
 namespace ResvgPrivate {
 
-static void initOptions(resvg_options &opt)
+static const char* toCStr(const QString &text)
 {
-    resvg_init_options(&opt);
-
-    const auto screens = qApp->screens();
-    if (!screens.isEmpty()) {
-        const auto screen = screens.at(0);
-        opt.dpi = screen->logicalDotsPerInch() * screen->devicePixelRatio();
-    }
+    const auto utf8 = text.toUtf8();
+    const auto data = utf8.constData();
+    return qstrdup(data);
 }
 
 class Data
@@ -47,15 +43,44 @@ class Data
 public:
     Data()
     {
-        resvg_init_options(&opt);
+        init();
     }
 
     ~Data()
     {
-        reset();
+        clear();
     }
 
     void reset()
+    {
+        clear();
+        init();
+    }
+
+    resvg_render_tree *tree = nullptr;
+    resvg_options opt;
+    QRectF viewBox;
+    QString errMsg;
+
+private:
+    void init()
+    {
+        resvg_init_options(&opt);
+
+        QFont font;
+        opt.font_family = toCStr(font.family());
+        opt.font_size = font.pointSize();
+
+        opt.languages = toCStr(QLocale().bcp47Name());
+
+        const auto screens = qApp->screens();
+        if (!screens.isEmpty()) {
+            const auto screen = screens.at(0);
+            opt.dpi = screen->logicalDotsPerInch() * screen->devicePixelRatio();
+        }
+    }
+
+    void clear()
     {
         if (tree) {
             resvg_tree_destroy(tree);
@@ -67,15 +92,19 @@ public:
             opt.path = NULL;
         }
 
-        initOptions(opt);
+        if (opt.font_family) {
+            delete[] opt.font_family; // do not use free() because was allocated via qstrdup()
+            opt.font_family = NULL;
+        }
+
+        if (opt.languages) {
+            delete[] opt.languages; // do not use free() because was allocated via qstrdup()
+            opt.languages = NULL;
+        }
+
         viewBox = QRectF();
         errMsg = QString();
     }
-
-    resvg_render_tree *tree = nullptr;
-    resvg_options opt;
-    QRectF viewBox;
-    QString errMsg;
 };
 
 static QString errorToString(const int err)
@@ -269,11 +298,9 @@ inline bool ResvgRenderer::load(const QString &filePath)
 
     d->reset();
 
-    const auto utf8Str = filePath.toUtf8();
-    const auto rawFilePath = utf8Str.constData();
-    d->opt.path = qstrdup(rawFilePath);
+    d->opt.path = ResvgPrivate::toCStr(filePath);
 
-    const auto err = resvg_parse_tree_from_file(rawFilePath, &d->opt, &d->tree);
+    const auto err = resvg_parse_tree_from_file(d->opt.path, &d->opt, &d->tree);
     if (err != RESVG_OK) {
         d->errMsg = ResvgPrivate::errorToString(err);
         return false;

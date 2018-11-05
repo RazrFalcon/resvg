@@ -99,27 +99,60 @@ typedef struct resvg_fit_to {
  * @brief Rendering options.
  */
 typedef struct resvg_options {
-    /** SVG image path. Used to resolve relative image paths. */
+    /** SVG image path. Used to resolve relative image paths.
+     *
+     * Default: NULL
+     */
     const char *path;
-    /** Output DPI. Default: 96. */
+
+    /** Output DPI.
+     *
+     * Default: 96.
+     */
     double dpi;
-    /** Default font family. Default: 'Timer New Roman'. */
+
+    /** Default font family.
+     *
+     * Default: NULL.
+     */
     const char *font_family;
-    /** Default font size. Default: 12. */
+
+    /** Default font size.
+     *
+     * Default: 12.
+     */
     double font_size;
+
+    /**
+     * Sets a comma-separated list of languages that will be used
+     * during the 'systemLanguage' attribute resolving.
+     * Examples: 'en-US', 'en-US, ru-RU', 'en, ru'
+     *
+     * Default: NULL.
+     */
+    const char *languages;
+
     /**
      * Fits the image using specified options.
      *
      * Default: \b RESVG_FIT_TO_ORIGINAL.
      */
     resvg_fit_to fit_to;
-    /** Draw background. Default: false. */
+
+    /** Draw background.
+     *
+     * Default: false.
+     */
     bool draw_background;
+
     /** Background color. */
     resvg_color background;
+
     /**
      * Keep named groups. If set to \b true, all non-empty
      * groups with \b id attribute will not be removed.
+     *
+     * Default: false
      */
     bool keep_named_groups;
 } resvg_options;

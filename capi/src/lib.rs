@@ -38,6 +38,7 @@ pub struct resvg_options {
     pub dpi: f64,
     pub font_family: *const c_char,
     pub font_size: f64,
+    pub languages: *const c_char,
     pub fit_to: resvg_fit_to,
     pub draw_background: bool,
     pub background: resvg_color,
@@ -153,8 +154,9 @@ pub extern fn resvg_init_options(opt: *mut resvg_options) {
     unsafe {
         (*opt).path = ptr::null();
         (*opt).dpi = 96.0;
-        (*opt).font_family = b"Times New Roman\0".as_ptr() as *const _;
+        (*opt).font_family = ptr::null();
         (*opt).font_size = 12.0;
+        (*opt).languages = ptr::null();
         (*opt).fit_to = resvg_fit_to {
             kind: resvg_fit_to_type::RESVG_FIT_TO_ORIGINAL,
             value: 0.0,
@@ -666,17 +668,37 @@ fn to_native_opt(opt: &resvg_options) -> resvg::Options {
     let font_family = match cstr_to_str(opt.font_family) {
         Some(v) => {
             if v.is_empty() {
-                warn!("Provided 'font_family' is empty. Fallback to '{}'.", ff);
+                warn!("Provided 'font_family' option is empty. Fallback to '{}'.", ff);
                 ff
             } else {
                 v
             }
         }
         None => {
-            warn!("Provided 'font_family' is no an UTF-8 string. Fallback to '{}'.", ff);
+            warn!("Provided 'font_family' option is no an UTF-8 string. Fallback to '{}'.", ff);
             ff
         }
     };
+
+
+    let languages_str = match cstr_to_str(opt.languages) {
+        Some(v) => v,
+        None => {
+            warn!("Provided 'languages' option is no an UTF-8 string. Fallback to 'en'.");
+            "en"
+        }
+    };
+
+    let mut languages = Vec::new();
+    for lang in languages_str.split(',') {
+        languages.push(lang.trim().to_string());
+    }
+
+    if languages.is_empty() {
+        warn!("Provided 'languages' option is empty. Fallback to 'en'.");
+        languages = vec!["en".to_string()]
+    }
+
 
     resvg::Options {
         usvg: usvg::Options {
@@ -684,6 +706,7 @@ fn to_native_opt(opt: &resvg_options) -> resvg::Options {
             dpi: opt.dpi,
             font_family: font_family.to_string(),
             font_size: opt.font_size,
+            languages,
             keep_named_groups: opt.keep_named_groups,
         },
         fit_to,

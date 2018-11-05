@@ -30,25 +30,34 @@ OPTIONS:
         --help                  Prints help information
     -V, --version               Prints version information
 
+        --backend BACKEND       Sets the rendering backend.
+                                Has no effect if built with only one backend
+                                [default: {}] [possible values: {}]
+
+    -w, --width LENGTH          Sets the width in pixels
+    -h, --height LENGTH         Sets the height in pixels
+    -z, --zoom FACTOR           Zooms the image by a factor
+        --dpi DPI               Sets the resolution
+                                [default: 96] [possible values: 10..4000]
+
+        --background COLOR      Sets the background color.
+                                Examples: red, #fff, #fff000
+        --font-family FAMILY    Sets the default font family
+                                [default: 'Times New Roman']
+        --font-size SIZE        Sets the default font size
+                                [default: 12] [possible values: 1..192]
+        --languages LANG        Sets a comma-separated list of languages that will be used
+                                during the 'systemLanguage' attribute resolving.
+                                Examples: 'en-US', 'en-US, ru-RU', 'en, ru'
+                                [default: 'en']
+
+        --query-all             Queries all valid SVG ids with bounding boxes
+        --export-id ID          Renders an object only with a specified ID
+
         --perf                  Prints performance stats
         --pretend               Does all the steps except rendering
         --quiet                 Disables warnings
         --dump-svg=<PATH>       Saves the preprocessed SVG to the selected file
-
-        --query-all             Queries all valid SVG ids with bounding boxes
-        --export-id=<ID>        Renders an object only with a specified ID
-
-        --backend=<BACKEND>     Sets the rendering backend.
-                                Has no effect if built with only one backend
-                                [default: {}] [possible values: {}]
-
-        --background=<COLOR>    Sets the background color.
-                                Examples: red, #fff, #fff000
-        --dpi=<DPI>             Sets the resolution
-                                [default: 96] [possible values: 10..4000]
-    -w, --width=<LENGTH>        Sets the width in pixels
-    -h, --height=<LENGTH>       Sets the height in pixels
-    -z, --zoom=<FACTOR>         Zooms the image by a factor
 
 ARGS:
     <in-svg>                    Input file
@@ -65,6 +74,39 @@ struct CliArgs {
     #[options(short = "V")]
     version: bool,
 
+    #[options(no_short, meta = "BACKEND")]
+    backend: Option<String>,
+
+    #[options(short = "w", meta = "LENGTH", parse(try_from_str = "parse_length"))]
+    width: Option<u32>,
+
+    #[options(short = "h", meta = "LENGTH", parse(try_from_str = "parse_length"))]
+    height: Option<u32>,
+
+    #[options(short = "z", meta = "ZOOM", parse(try_from_str = "parse_zoom"))]
+    zoom: Option<f32>,
+
+    #[options(no_short, meta = "DPI", default = "96", parse(try_from_str = "parse_dpi"))]
+    dpi: u32,
+
+    #[options(no_short, meta = "COLOR", parse(try_from_str = "parse_color"))]
+    background: Option<usvg::Color>,
+
+    #[options(no_short, meta = "FAMILY", default = "Times New Roman")]
+    font_family: String,
+
+    #[options(no_short, meta = "SIZE", default = "12", parse(try_from_str = "parse_font_size"))]
+    font_size: u32,
+
+    #[options(no_short, meta = "LANG", parse(try_from_str = "parse_languages"))]
+    languages: Option<Vec<String>>,
+
+    #[options(no_short)]
+    query_all: bool,
+
+    #[options(no_short, meta = "ID")]
+    export_id: Option<String>,
+
     #[options(no_short)]
     perf: bool,
 
@@ -76,30 +118,6 @@ struct CliArgs {
 
     #[options(no_short, meta = "PATH")]
     dump_svg: Option<String>,
-
-    #[options(no_short)]
-    query_all: bool,
-
-    #[options(no_short, meta = "ID")]
-    export_id: Option<String>,
-
-    #[options(no_short, meta = "BACKEND")]
-    backend: Option<String>,
-
-    #[options(no_short, meta = "COLOR", parse(try_from_str = "parse_color"))]
-    background: Option<usvg::Color>,
-
-    #[options(no_short, meta = "DPI", default = "96", parse(try_from_str = "parse_dpi"))]
-    dpi: u32,
-
-    #[options(short = "w", meta = "LENGTH", parse(try_from_str = "parse_length"))]
-    width: Option<u32>,
-
-    #[options(short = "h", meta = "LENGTH", parse(try_from_str = "parse_length"))]
-    height: Option<u32>,
-
-    #[options(short = "z", meta = "ZOOM", parse(try_from_str = "parse_zoom"))]
-    zoom: Option<f32>,
 
     #[options(free)]
     free: Vec<String>,
@@ -137,6 +155,29 @@ fn parse_zoom(s: &str) -> Result<f32, &'static str> {
     } else {
         Err("ZOOM should be positive")
     }
+}
+
+fn parse_font_size(s: &str) -> Result<u32, &'static str> {
+    let n: u32 = s.parse().map_err(|_| "invalid number")?;
+
+    if n > 0 && n <= 192 {
+        Ok(n)
+    } else {
+        Err("font size out of bounds")
+    }
+}
+
+fn parse_languages(s: &str) -> Result<Vec<String>, &'static str> {
+    let mut langs = Vec::new();
+    for lang in s.split(',') {
+        langs.push(lang.trim().to_string());
+    }
+
+    if langs.is_empty() {
+        return Err("languages list cannot be empty");
+    }
+
+    Ok(langs)
 }
 
 pub struct Args {
@@ -211,12 +252,18 @@ pub fn parse() -> Result<(Args, Options), String> {
         fit_to = FitTo::Zoom(z);
     }
 
+    let languages = match args.languages.as_ref() {
+        Some(v) => v.clone(),
+        None => vec!["en".to_string()], // TODO: use system language
+    };
+
     let opt = Options {
         usvg: usvg::Options {
             path: Some(in_svg.into()),
             dpi: args.dpi as f64,
-            font_family: "Times New Roman".to_string(),
-            font_size: 12.0,
+            font_family: args.font_family.clone(),
+            font_size: args.font_size as f64,
+            languages,
             keep_named_groups,
         },
         fit_to,
