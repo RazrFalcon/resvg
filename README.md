@@ -61,7 +61,7 @@ of the SVG Tiny 1.2 subset. In simple terms - it correctly renders only primitiv
 ## SVG support
 
 *resvg* is aiming to support only the [static](http://www.w3.org/TR/SVG11/feature#SVG-static)
-SVG subset. E.g. no `a`, `script`, `view`, `cursor` elements and no animations.
+SVG subset. E.g. no `a`, `script`, `view`, `cursor` elements and no events and animations.
 
 Also, `filter`, `marker`, `textPath` and
 [embedded fonts](https://www.w3.org/TR/SVG11/feature#Font) are not yet implemented.

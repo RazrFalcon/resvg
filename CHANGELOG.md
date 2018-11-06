@@ -24,6 +24,7 @@ This changelog also contains an important changes in dependencies.
 - (resvg) Bbox calculation of the text with rotate.
 - (qt-api) SVG from QByteArray loading when data is invalid.
 - (usvg) `display` attribute processing.
+- (usvg) Recursive `mask` resolving.
 
 ### Removed
 - (rendersvg) `failure` dependency.
