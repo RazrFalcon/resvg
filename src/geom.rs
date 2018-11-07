@@ -12,9 +12,10 @@ pub(crate) use usvg::{
 };
 
 pub use usvg::{
+    Line,
     Point,
-    Size,
     Rect,
+    Size,
 };
 
 

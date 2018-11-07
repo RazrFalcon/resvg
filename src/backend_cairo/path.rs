@@ -20,7 +20,12 @@ pub fn draw(
     opt: &Options,
     cr: &cairo::Context,
 ) -> Rect {
-    init_path(&path.segments, cr);
+    let mut is_square_cap = false;
+    if let Some(ref stroke) = path.stroke {
+        is_square_cap = stroke.linecap == usvg::LineCap::Square;
+    }
+
+    draw_path(&path.segments, is_square_cap, cr);
 
     let bbox = utils::path_bbox(&path.segments, None, &usvg::Transform::default());
 
@@ -37,25 +42,89 @@ pub fn draw(
     bbox
 }
 
-pub fn init_path(
-    list: &[usvg::PathSegment],
+fn draw_path(
+    segments: &[usvg::PathSegment],
+    is_square_cap: bool,
     cr: &cairo::Context,
 ) {
-    for seg in list {
-        match *seg {
-            usvg::PathSegment::MoveTo { x, y } => {
-                cr.new_sub_path();
-                cr.move_to(x, y);
-            }
-            usvg::PathSegment::LineTo { x, y } => {
-                cr.line_to(x, y);
-            }
-            usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                cr.curve_to(x1, y1, x2, y2, x, y);
+    let mut i = 0;
+    loop {
+        let subpath = get_subpath(i, segments);
+        if subpath.is_empty() {
+            break;
+        }
+
+        draw_subpath(subpath, is_square_cap, cr);
+        i += subpath.len();
+    }
+}
+
+fn get_subpath(start: usize, segments: &[usvg::PathSegment]) -> &[usvg::PathSegment] {
+    let mut i = start;
+    while i < segments.len() {
+        match segments[i] {
+            usvg::PathSegment::MoveTo { .. } => {
+                if i != start {
+                    break;
+                }
             }
             usvg::PathSegment::ClosePath => {
-                cr.close_path();
+                i += 1;
+                break;
             }
+            _ => {}
+        }
+
+        i += 1;
+    }
+
+    &segments[start..i]
+}
+
+fn draw_subpath(
+    segments: &[usvg::PathSegment],
+    is_square_cap: bool,
+    cr: &cairo::Context,
+) {
+    assert_ne!(segments.len(), 0);
+
+    // This is a workaround for a cairo bug(?).
+    //
+    // Buy the SVG spec, a zero length subpath with a square cap should be
+    // rendered as a square/rect, but it's not (at least on 1.14.12/1.15.12).
+    // And this is probably a bug, since round cap is rendered correctly.
+    let mut is_zero_path = false;
+    if is_square_cap {
+        if utils::path_length(segments).is_fuzzy_zero() {
+            is_zero_path = true;
+        }
+    }
+
+    if !is_zero_path {
+        for seg in segments {
+            match *seg {
+                usvg::PathSegment::MoveTo { x, y } => {
+                    cr.new_sub_path();
+                    cr.move_to(x, y);
+                }
+                usvg::PathSegment::LineTo { x, y } => {
+                    cr.line_to(x, y);
+                }
+                usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+                    cr.curve_to(x1, y1, x2, y2, x, y);
+                }
+                usvg::PathSegment::ClosePath => {
+                    cr.close_path();
+                }
+            }
+        }
+    } else {
+        if let usvg::PathSegment::MoveTo { x, y } = segments[0] {
+            // Draw zero length path.
+            let shift = 0.001; // Purely empirical.
+            cr.new_sub_path();
+            cr.move_to(x, y);
+            cr.line_to(x + shift, y);
         }
     }
 }

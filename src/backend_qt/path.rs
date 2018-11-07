@@ -40,7 +40,7 @@ pub fn draw(
     bbox
 }
 
-pub fn convert_path(
+fn convert_path(
     list: &[usvg::PathSegment],
     rule: usvg::FillRule,
     p_path: &mut qt::PainterPath,
