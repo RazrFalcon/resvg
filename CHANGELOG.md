@@ -8,11 +8,12 @@ This changelog also contains an important changes in dependencies.
 
 ## [Unreleased]
 ### Added
+- (resvg) Nested `clipPath` support.
+- (rendersvg) `font-family`, `font-size` and `languages` to args.
+- (usvg) `systemLanguage` attribute support.
+- (usvg) Default font family and size is configurable now.
 - (c-api) `RESVG_ERROR_PARSING_FAILED`.
 - (c-api) `font_family`, `font_size` and `languages` to `resvg_options`.
-- (usvg) Default font family and size is configurable now.
-- (usvg) `systemLanguage` attribute support.
-- (rendersvg) `font-family`, `font-size` and `languages` to args.
 
 ### Changed
 - (rendersvg) Use `gumdrop` instead of `getopts`.
