@@ -245,10 +245,6 @@ fn render_group(
     let mut g_bbox = Rect::new_bbox();
 
     for node in parent.children() {
-        // a-transform-001.svg
-        // a-transform-010.svg
-        // a-transform-016.svg
-        // e-line-009.svg
         p.apply_transform(&node.transform().to_native());
 
         let bbox = render_node(&node, opt, layers, p);
@@ -296,8 +292,6 @@ fn render_group_impl(
 
     sub_p.end();
 
-    // a-opacity-001.svg
-    // a-stroke-opacity-002.svg
     if let Some(opacity) = g.opacity {
         p.set_opacity(*opacity);
     }

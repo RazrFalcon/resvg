@@ -20,8 +20,6 @@ pub fn apply(
     sub_p: &qt::Painter,
     p: &qt::Painter,
 ) {
-    // a-mask-001.svg
-
     let mask_img = try_opt!(layers.get(), ());
     let mut mask_img = mask_img.borrow_mut();
 

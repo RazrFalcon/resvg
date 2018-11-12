@@ -68,8 +68,6 @@ pub fn apply(
         // If `opacity` isn't `1` then we have to make image semitransparent.
         // The only way to do this is by making a new image and rendering
         // the pattern on it with transparency.
-        //
-        // a-stroke-opacity-004.svg
 
         let surface2 = try_create_surface!(img_size, ());
         let sub_cr2 = cairo::Context::new(&surface2);

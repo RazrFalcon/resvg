@@ -136,9 +136,6 @@ fn draw_block(
     // Draw underline.
     //
     // Should be drawn before/under text.
-    //
-    // a-text-decoration-001.svg
-    // a-text-decoration-009.svg
     if let Some(ref style) = block.decoration.underline {
         line_rect.y = bbox.y + baseline_offset - fm.get_underline_position().scale();
         draw_line(tree, line_rect, &style.fill, &style.stroke, opt, cr);
@@ -147,8 +144,6 @@ fn draw_block(
     // Draw overline.
     //
     // Should be drawn before/under text.
-    //
-    // a-text-decoration-002.svg
     if let Some(ref style) = block.decoration.overline {
         line_rect.y = bbox.y + fm.get_underline_thickness().scale();
         draw_line(tree, line_rect, &style.fill, &style.stroke, opt, cr);
@@ -170,8 +165,6 @@ fn draw_block(
     // Draw line-through.
     //
     // Should be drawn after/over text.
-    //
-    // a-text-decoration-003.svg
     if let Some(ref style) = block.decoration.line_through {
         line_rect.y = bbox.y + baseline_offset - fm.get_strikethrough_position().scale();
         line_rect.height = fm.get_strikethrough_thickness().scale();
@@ -184,20 +177,8 @@ fn draw_block(
 fn init_font(dom_font: &usvg::Font, dpi: f64) -> pango::FontDescription {
     let mut font = pango::FontDescription::new();
 
-    // a-font-family-001.svg
-    // a-font-family-002.svg
-    // a-font-family-003.svg
-    // a-font-family-004.svg
-    // a-font-family-005.svg
-    // a-font-family-006.svg
-    // a-font-family-007.svg
-    // a-font-family-008.svg
-    // a-font-family-009.svg
-    // a-font-family-010.svg
     font.set_family(&dom_font.family);
 
-    // a-font-style-001.svg
-    // a-font-style-002.svg
     let font_style = match dom_font.style {
         usvg::FontStyle::Normal => pango::Style::Normal,
         usvg::FontStyle::Italic => pango::Style::Italic,
@@ -205,14 +186,12 @@ fn init_font(dom_font: &usvg::Font, dpi: f64) -> pango::FontDescription {
     };
     font.set_style(font_style);
 
-    // a-font-variant-001.svg
     let font_variant = match dom_font.variant {
         usvg::FontVariant::Normal => pango::Variant::Normal,
         usvg::FontVariant::SmallCaps => pango::Variant::SmallCaps,
     };
     font.set_variant(font_variant);
 
-    // a-font-weight-009.svg
     let font_weight = match dom_font.weight {
         usvg::FontWeight::W100       => pango::Weight::Thin,
         usvg::FontWeight::W200       => pango::Weight::Ultralight,
@@ -226,7 +205,6 @@ fn init_font(dom_font: &usvg::Font, dpi: f64) -> pango::FontDescription {
     };
     font.set_weight(font_weight);
 
-    // a-font-stretch-001.svg
     let font_stretch = match dom_font.stretch {
         usvg::FontStretch::Normal         => pango::Stretch::Normal,
         usvg::FontStretch::Narrower |
@@ -242,7 +220,6 @@ fn init_font(dom_font: &usvg::Font, dpi: f64) -> pango::FontDescription {
     };
     font.set_stretch(font_stretch);
 
-    // a-font-size-001.svg
     let font_size = dom_font.size * (pango::SCALE as f64) / dpi * 72.0;
     font.set_size(font_size as i32);
 

@@ -58,10 +58,6 @@ fn prepare_base<G>(
     matrix.invert();
     grad.set_matrix(matrix);
 
-    // a-fill-opacity-003.svg
-    // a-stop-color-001.svg
-    // a-stop-opacity-001.svg
-    // a-stroke-opacity-003.svg
     for stop in &g.stops {
         grad.add_color_stop_rgba(
             *stop.offset,

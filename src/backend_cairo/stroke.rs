@@ -25,18 +25,9 @@ pub fn apply(
         Some(ref stroke) => {
             match stroke.paint {
                 usvg::Paint::Color(c) => {
-                    // a-stroke-opacity-001.svg
-                    // a-stroke-opacity-002.svg
-                    // a-stroke-opacity-006.svg
                     cr.set_source_color(&c, stroke.opacity);
                 }
                 usvg::Paint::Link(ref id) => {
-                    // a-stroke-002.svg
-                    // a-stroke-003.svg
-                    // a-stroke-004.svg
-                    // a-stroke-007.svg
-                    // a-stroke-008.svg
-                    // a-stroke-009.svg
                     if let Some(node) = tree.defs_by_id(id) {
                         match *node.borrow() {
                             usvg::NodeKind::LinearGradient(ref lg) => {
@@ -54,9 +45,6 @@ pub fn apply(
                 }
             }
 
-            // a-stroke-linecap-001.svg
-            // a-stroke-linecap-002.svg
-            // a-stroke-linecap-003.svg
             let linecap = match stroke.linecap {
                 usvg::LineCap::Butt => cairo::LineCap::Butt,
                 usvg::LineCap::Round => cairo::LineCap::Round,
@@ -64,9 +52,6 @@ pub fn apply(
             };
             cr.set_line_cap(linecap);
 
-            // a-stroke-linejoin-001.svg
-            // a-stroke-linejoin-002.svg
-            // a-stroke-linejoin-003.svg
             let linejoin = match stroke.linejoin {
                 usvg::LineJoin::Miter => cairo::LineJoin::Miter,
                 usvg::LineJoin::Round => cairo::LineJoin::Round,
@@ -74,24 +59,15 @@ pub fn apply(
             };
             cr.set_line_join(linejoin);
 
-            // a-stroke-dasharray-001.svg
-            // a-stroke-dasharray-002.svg
-            // a-stroke-dashoffset-001.svg
-            // a-stroke-dashoffset-002.svg
-            // a-stroke-dashoffset-006.svg
             match stroke.dasharray {
                 Some(ref list) => cr.set_dash(list, stroke.dashoffset),
                 None => cr.set_dash(&[], 0.0),
             }
 
-            // a-stroke-miterlimit-002.svg
             cr.set_miter_limit(stroke.miterlimit);
-            // a-stroke-width-002.svg
             cr.set_line_width(stroke.width.value());
         }
         None => {
-            // a-stroke-006.svg
-
             // reset stroke properties
             cr.reset_source_rgba();
             cr.set_line_cap(cairo::LineCap::Butt);

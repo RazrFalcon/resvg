@@ -51,10 +51,6 @@ fn convert_path(
     //
     // 'A closed path has coinciding start and end points.'
     // https://doc.qt.io/qt-5/qpainterpath.html#details
-    //
-    // a-stroke-linecap-007.svg
-    // a-stroke-linecap-008.svg
-    // a-stroke-linecap-009.svg
 
     let mut prev_mx = 0.0;
     let mut prev_my = 0.0;
@@ -113,10 +109,6 @@ fn convert_path(
         i += 1;
     }
 
-    // a-fill-rule-001.svg
-    // a-fill-rule-002.svg
-    // e-clipPath-013.svg
-    // e-clipPath-014.svg
     match rule {
         usvg::FillRule::NonZero => p_path.set_fill_rule(qt::FillRule::WindingFill),
         usvg::FillRule::EvenOdd => p_path.set_fill_rule(qt::FillRule::OddEvenFill),

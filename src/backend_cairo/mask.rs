@@ -23,8 +23,6 @@ pub fn apply(
     layers: &mut CairoLayers,
     cr: &cairo::Context,
 ) {
-    // a-mask-001.svg
-
     let mask_surface = try_opt!(layers.get(), ());
     let mut mask_surface = mask_surface.borrow_mut();
 

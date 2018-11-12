@@ -145,11 +145,6 @@ fn prepare_blocks<Font>(
             chunk_w += blocks[i].bbox.width;
         }
 
-        // a-text-anchor-001.svg
-        // a-text-anchor-002.svg
-        // a-text-anchor-003.svg
-        // a-text-anchor-005.svg
-        // a-text-anchor-006.svg
         let adx = process_text_anchor(chunk.anchor, chunk_w);
         for i in start_idx..blocks.len() {
             blocks[i].bbox.x -= adx;

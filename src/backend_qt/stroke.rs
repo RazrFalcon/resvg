@@ -28,19 +28,10 @@ pub fn apply(
 
             match stroke.paint {
                 usvg::Paint::Color(c) => {
-                    // a-stroke-opacity-001.svg
-                    // a-stroke-opacity-002.svg
-                    // a-stroke-opacity-006.svg
                     let a = f64_bound(0.0, *opacity * 255.0, 255.0) as u8;
                     pen.set_color(c.red, c.green, c.blue, a);
                 }
                 usvg::Paint::Link(ref id) => {
-                    // a-stroke-002.svg
-                    // a-stroke-003.svg
-                    // a-stroke-004.svg
-                    // a-stroke-007.svg
-                    // a-stroke-008.svg
-                    // a-stroke-009.svg
                     let mut brush = qt::Brush::new();
 
                     if let Some(node) = tree.defs_by_id(id) {
@@ -63,9 +54,6 @@ pub fn apply(
                 }
             }
 
-            // a-stroke-linecap-001.svg
-            // a-stroke-linecap-002.svg
-            // a-stroke-linecap-003.svg
             let linecap = match stroke.linecap {
                 usvg::LineCap::Butt => qt::LineCap::FlatCap,
                 usvg::LineCap::Round => qt::LineCap::RoundCap,
@@ -73,9 +61,6 @@ pub fn apply(
             };
             pen.set_line_cap(linecap);
 
-            // a-stroke-linejoin-001.svg
-            // a-stroke-linejoin-002.svg
-            // a-stroke-linejoin-003.svg
             let linejoin = match stroke.linejoin {
                 usvg::LineJoin::Miter => qt::LineJoin::MiterJoin,
                 usvg::LineJoin::Round => qt::LineJoin::RoundJoin,
@@ -83,16 +68,9 @@ pub fn apply(
             };
             pen.set_line_join(linejoin);
 
-            // a-stroke-miterlimit-002.svg
             pen.set_miter_limit(stroke.miterlimit);
-            // a-stroke-width-002.svg
             pen.set_width(stroke.width.value());
 
-            // a-stroke-dasharray-001.svg
-            // a-stroke-dasharray-002.svg
-            // a-stroke-dashoffset-001.svg
-            // a-stroke-dashoffset-002.svg
-            // a-stroke-dashoffset-006.svg
             if let Some(ref list) = stroke.dasharray {
                 pen.set_dash_offset(stroke.dashoffset);
                 pen.set_dash_array(list);
@@ -101,7 +79,6 @@ pub fn apply(
             p.set_pen(pen);
         }
         None => {
-            // a-stroke-006.svg
             p.reset_pen();
         }
     }

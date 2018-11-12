@@ -28,15 +28,10 @@ pub fn apply(
 
             match fill.paint {
                 usvg::Paint::Color(c) => {
-                    // a-fill-opacity-001.svg
-                    // a-fill-opacity-002.svg
-                    // a-fill-opacity-006.svg
                     let a = f64_bound(0.0, *opacity * 255.0, 255.0) as u8;
                     brush.set_color(c.red, c.green, c.blue, a);
                 }
                 usvg::Paint::Link(ref id) => {
-                    // a-fill-opacity-003.svg
-                    // a-fill-opacity-004.svg
                     if let Some(node) = tree.defs_by_id(id) {
                         match *node.borrow() {
                             usvg::NodeKind::LinearGradient(ref lg) => {
