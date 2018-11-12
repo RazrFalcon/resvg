@@ -30,8 +30,9 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 [dependencies]
 log = "0.4.5"
 #usvg = "0.2"
-usvg = { git = "https://github.com/RazrFalcon/usvg", rev = "f0890e5" }
+usvg = { git = "https://github.com/RazrFalcon/usvg", rev = "485a0fb" }
 #usvg = { path = "../usvg" }
+unicode-segmentation = "1.2.1"
 # cairo backend
 cairo-rs = { version = "0.5", features = ["png"], optional = true }
 gdk-pixbuf = { version = "0.5", optional = true }
@@ -41,7 +42,6 @@ pangocairo = { version = "0.6", optional = true }
 #resvg-qt = { version = "0.3", optional = true }
 #resvg-qt = { path = "../resvg-qt", optional = true }
 resvg-qt = { git = "https://github.com/RazrFalcon/resvg-qt", rev = "fd0ed4f", optional = true }
-unicode-segmentation = "1.2.1"
 
 [features]
 cairo-backend = ["cairo-rs", "pango", "pangocairo", "gdk-pixbuf"]

@@ -1,1 +1,2 @@
-a-stroke-linecap-005.svg
+e-stop-012.svg
+e-stop-013.svg

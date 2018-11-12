@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-This changelog also contains an important changes in dependencies.
+This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
@@ -27,6 +27,7 @@ This changelog also contains an important changes in dependencies.
 - (qt-api) SVG from QByteArray loading when data is invalid.
 - (usvg) `display` attribute processing.
 - (usvg) Recursive `mask` resolving.
+- (usvg) `inherit` attribute value resolving.
 
 ### Removed
 - (rendersvg) `failure` dependency.
