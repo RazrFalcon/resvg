@@ -16,6 +16,10 @@ pub fn draw(
     opt: &Options,
     p: &qt::Painter,
 ) -> Rect {
+    if image.visibility != usvg::Visibility::Visible {
+        return image.view_box.rect;
+    }
+
     if image.format == usvg::ImageFormat::SVG {
         draw_svg(image, opt, p);
     } else {

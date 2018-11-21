@@ -29,6 +29,10 @@ pub fn draw(
 
     let bbox = utils::path_bbox(&path.segments, None, &usvg::Transform::default());
 
+    if path.visibility != usvg::Visibility::Visible {
+        return bbox;
+    }
+
     fill::apply(tree, &path.fill, opt, bbox, cr);
     if path.stroke.is_some() {
         cr.fill_preserve();
@@ -47,6 +51,9 @@ fn draw_path(
     is_square_cap: bool,
     cr: &cairo::Context,
 ) {
+    // Reset path, in case something was left from the previous paint pass.
+    cr.new_path();
+
     let mut i = 0;
     loop {
         let subpath = get_subpath(i, segments);

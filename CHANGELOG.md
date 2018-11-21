@@ -24,6 +24,7 @@ This changelog also contains important changes in dependencies.
 - (cairo-backend) Rendering of a zero length subpath with a square cap.
 - (resvg) Recursive SVG images via `image` tag.
 - (resvg) Bbox calculation of the text with rotate.
+- (resvg) Invisible elements processing.
 - (qt-api) SVG from QByteArray loading when data is invalid.
 - (usvg) `display` attribute processing.
 - (usvg) Recursive `mask` resolving.

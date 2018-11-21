@@ -32,6 +32,10 @@ pub fn draw(
 
     let bbox = utils::path_bbox(&path.segments, None, &usvg::Transform::default());
 
+    if path.visibility != usvg::Visibility::Visible {
+        return bbox;
+    }
+
     fill::apply(tree, &path.fill, opt, bbox, p);
     stroke::apply(tree, &path.stroke, opt, bbox, p);
 

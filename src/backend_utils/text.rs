@@ -12,6 +12,7 @@ use geom::*;
 
 pub struct TextBlock<Font> {
     pub text: String,
+    pub is_visible: bool,
     pub bbox: Rect,
     pub rotate: f64,
     pub fill: Option<usvg::Fill>,
@@ -41,7 +42,10 @@ pub fn draw_blocks<Font, Draw>(
     let mut bbox = Rect::new_bbox();
     for block in blocks {
         bbox.expand(block.bbox);
-        draw(&block);
+
+        if block.is_visible {
+            draw(&block);
+        }
     }
 
     bbox
@@ -126,6 +130,7 @@ fn prepare_blocks<Font>(
 
                     blocks.push(TextBlock {
                         text: c.to_string(),
+                        is_visible: tspan.visibility == usvg::Visibility::Visible,
                         bbox,
                         rotate,
                         fill: tspan.fill.clone(),

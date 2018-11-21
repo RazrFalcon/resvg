@@ -21,6 +21,10 @@ pub fn draw(
     opt: &Options,
     cr: &cairo::Context,
 ) -> Rect {
+    if image.visibility != usvg::Visibility::Visible {
+        return image.view_box.rect;
+    }
+
     if image.format == usvg::ImageFormat::SVG {
         draw_svg(image, opt, cr);
     } else {
