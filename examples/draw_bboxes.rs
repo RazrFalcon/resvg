@@ -52,6 +52,7 @@ fn main() {
         rtree.root().append_kind(usvg::NodeKind::Path(usvg::Path {
             id: String::new(),
             transform: usvg::Transform::default(),
+            visibility: usvg::Visibility::Visible,
             fill: None,
             stroke: stroke.clone(),
             segments: utils::rect_to_path(bbox),
