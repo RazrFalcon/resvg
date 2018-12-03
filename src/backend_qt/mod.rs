@@ -12,6 +12,7 @@ use usvg::prelude::*;
 // self
 use prelude::*;
 use {
+    backend_utils,
     layers,
     OutputImage,
     Render,
@@ -21,7 +22,7 @@ use {
 macro_rules! try_create_image {
     ($size:expr, $ret:expr) => {
         try_opt_warn!(
-            qt::Image::new($size.width as u32, $size.height as u32),
+            qt::Image::new_rgba_premultiplied($size.width as u32, $size.height as u32),
             $ret,
             "Failed to create a {}x{} image.", $size.width, $size.height
         );
@@ -110,10 +111,10 @@ pub fn render_to_image(
     tree: &usvg::Tree,
     opt: &Options,
 ) -> Option<qt::Image> {
-    let (img, img_size) = create_root_image(tree.svg_node().size.to_screen_size(), opt)?;
+    let (mut img, img_size) = create_root_image(tree.svg_node().size.to_screen_size(), opt)?;
 
-    let painter = qt::Painter::new(&img);
-    render_to_canvas(tree, opt, img_size, &painter);
+    let mut painter = qt::Painter::new(&mut img);
+    render_to_canvas(tree, opt, img_size, &mut painter);
     painter.end();
 
     Some(img)
@@ -136,10 +137,10 @@ pub fn render_node_to_image(
         aspect: usvg::AspectRatio::default(),
     };
 
-    let (img, img_size) = create_root_image(node_bbox.size().to_screen_size(), opt)?;
+    let (mut img, img_size) = create_root_image(node_bbox.size().to_screen_size(), opt)?;
 
-    let painter = qt::Painter::new(&img);
-    render_node_to_canvas(node, opt, vbox, img_size, &painter);
+    let mut painter = qt::Painter::new(&mut img);
+    render_node_to_canvas(node, opt, vbox, img_size, &mut painter);
     painter.end();
 
     Some(img)
@@ -150,7 +151,7 @@ pub fn render_to_canvas(
     tree: &usvg::Tree,
     opt: &Options,
     img_size: ScreenSize,
-    painter: &qt::Painter,
+    painter: &mut qt::Painter,
 ) {
     render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box,
                           img_size, painter);
@@ -162,11 +163,11 @@ pub fn render_node_to_canvas(
     opt: &Options,
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
-    painter: &qt::Painter,
+    painter: &mut qt::Painter,
 ) {
     let mut layers = create_layers(img_size, opt);
 
-    apply_viewbox_transform(view_box, img_size, &painter);
+    apply_viewbox_transform(view_box, img_size, painter);
 
     let curr_ts = painter.get_transform();
     let mut ts = utils::abs_transform(node);
@@ -203,7 +204,7 @@ fn create_root_image(
 fn apply_viewbox_transform(
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
-    painter: &qt::Painter,
+    painter: &mut qt::Painter,
 ) {
     let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_size());
     painter.apply_transform(&ts.to_native());
@@ -213,7 +214,7 @@ fn render_node(
     node: &usvg::Node,
     opt: &Options,
     layers: &mut QtLayers,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) -> Option<Rect> {
     match *node.borrow() {
         usvg::NodeKind::Svg(_) => {
@@ -239,7 +240,7 @@ fn render_group(
     parent: &usvg::Node,
     opt: &Options,
     layers: &mut QtLayers,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) -> Rect {
     let curr_ts = p.get_transform();
     let mut g_bbox = Rect::new_bbox();
@@ -264,20 +265,20 @@ fn render_group_impl(
     g: &usvg::Group,
     opt: &Options,
     layers: &mut QtLayers,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) -> Option<Rect> {
     let sub_img = layers.get()?;
-    let sub_img = sub_img.borrow_mut();
+    let mut sub_img = sub_img.borrow_mut();
 
-    let sub_p = qt::Painter::new(&sub_img);
+    let mut sub_p = qt::Painter::new(&mut sub_img);
     sub_p.set_transform(&p.get_transform());
 
-    let bbox = render_group(node, opt, layers, &sub_p);
+    let bbox = render_group(node, opt, layers, &mut sub_p);
 
     if let Some(ref id) = g.clip_path {
         if let Some(clip_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                clippath::apply(&clip_node, cp, opt, bbox, layers, &sub_p);
+                clippath::apply(&clip_node, cp, opt, bbox, layers, &mut sub_p);
             }
         }
     }
@@ -285,7 +286,7 @@ fn render_group_impl(
     if let Some(ref id) = g.mask {
         if let Some(mask_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                mask::apply(&mask_node, mask, opt, bbox, layers, &sub_p, p);
+                mask::apply(&mask_node, mask, opt, bbox, layers, &mut sub_p, p);
             }
         }
     }
@@ -316,19 +317,19 @@ pub fn calc_node_bbox(
 ) -> Option<Rect> {
     // Unwrap can't fail, because `None` will be returned only on OOM,
     // and we cannot hit it with a such small image.
-    let mut img = qt::Image::new(1, 1).unwrap();
+    let mut img = qt::Image::new_rgba_premultiplied(1, 1).unwrap();
     img.set_dpi(opt.usvg.dpi);
-    let p = qt::Painter::new(&img);
+    let mut p = qt::Painter::new(&mut img);
 
     let abs_ts = utils::abs_transform(node);
-    _calc_node_bbox(node, opt, abs_ts, &p)
+    _calc_node_bbox(node, opt, abs_ts, &mut p)
 }
 
 fn _calc_node_bbox(
     node: &usvg::Node,
     opt: &Options,
     ts: usvg::Transform,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) -> Option<Rect> {
     let mut ts2 = ts;
     ts2.append(&node.transform());
@@ -340,8 +341,8 @@ fn _calc_node_bbox(
         usvg::NodeKind::Text(ref text) => {
             let mut bbox = Rect::new_bbox();
             let mut fm = text::QtFontMetrics::new(p);
-
-            text::draw_blocks(text, &mut fm, |block| {
+            let blocks = backend_utils::text::prepare_blocks(text, &mut fm);
+            backend_utils::text::draw_blocks(blocks, |block| {
                 let mut p_path = qt::PainterPath::new();
                 p_path.add_text(0.0, 0.0, &block.font, &block.text);
 

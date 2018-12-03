@@ -19,7 +19,7 @@ pub fn apply(
     stroke: &Option<usvg::Stroke>,
     opt: &Options,
     bbox: Rect,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) {
     match *stroke {
         Some(ref stroke) => {

@@ -19,7 +19,7 @@ pub fn apply(
     fill: &Option<usvg::Fill>,
     opt: &Options,
     bbox: Rect,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) {
     match *fill {
         Some(ref fill) => {

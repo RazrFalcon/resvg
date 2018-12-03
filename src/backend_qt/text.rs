@@ -18,15 +18,13 @@ use super::{
     stroke,
 };
 
-pub use backend_utils::text::draw_blocks;
-
 
 pub struct QtFontMetrics<'a> {
-    p: &'a qt::Painter,
+    p: &'a mut qt::Painter,
 }
 
 impl<'a> QtFontMetrics<'a> {
-    pub fn new(p: &'a qt::Painter) -> Self {
+    pub fn new(p: &'a mut qt::Painter) -> Self {
         QtFontMetrics { p }
     }
 }
@@ -58,17 +56,17 @@ pub fn draw(
     tree: &usvg::Tree,
     text_node: &usvg::Text,
     opt: &Options,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) -> Rect {
-    let mut fm = QtFontMetrics::new(p);
-    draw_blocks(text_node, &mut fm, |block| draw_block(tree, block, opt, p))
+    let blocks = text::prepare_blocks(text_node, &mut QtFontMetrics::new(p));
+    text::draw_blocks(blocks, |block| draw_block(tree, block, opt, p))
 }
 
 fn draw_block(
     tree: &usvg::Tree,
     block: &text::TextBlock<qt::Font>,
     opt: &Options,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) {
     p.set_font(&block.font);
     let font_metrics = p.font_metrics();
@@ -173,7 +171,7 @@ fn draw_line(
     fill: &Option<usvg::Fill>,
     stroke: &Option<usvg::Stroke>,
     opt: &Options,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) {
     fill::apply(tree, fill, opt, r, p);
     stroke::apply(tree, stroke, opt, r, p);

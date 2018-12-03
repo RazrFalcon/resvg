@@ -16,6 +16,7 @@ use usvg::prelude::*;
 // self
 use prelude::*;
 use {
+    backend_utils,
     layers,
     OutputImage,
     Render,
@@ -377,8 +378,8 @@ fn _calc_node_bbox(
         usvg::NodeKind::Text(ref text) => {
             let mut bbox = Rect::new_bbox();
             let mut fm = text::PangoFontMetrics::new(opt, cr);
-
-            text::draw_blocks(text, &mut fm, |block| {
+            let blocks = backend_utils::text::prepare_blocks(text, &mut fm);
+            backend_utils::text::draw_blocks(blocks, |block| {
                 cr.new_path();
 
                 let context = text::init_pango_context(opt, cr);

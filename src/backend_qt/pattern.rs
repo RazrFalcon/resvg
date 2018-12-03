@@ -40,7 +40,7 @@ pub fn apply(
     img.set_dpi(opt.usvg.dpi);
     img.fill(0, 0, 0, 0);
 
-    let p = qt::Painter::new(&img);
+    let mut p = qt::Painter::new(&mut img);
 
     p.scale(sx, sy);
     if let Some(vbox) = pattern.view_box {
@@ -55,7 +55,7 @@ pub fn apply(
     }
 
     let mut layers = super::create_layers(img_size, opt);
-    super::render_group(pattern_node, opt, &mut layers, &p);
+    super::render_group(pattern_node, opt, &mut layers, &mut p);
     p.end();
 
     let img = if opacity.fuzzy_ne(&1.0) {
@@ -66,7 +66,7 @@ pub fn apply(
         let mut img2 = try_create_image!(img_size, ());
         img2.fill(0, 0, 0, 0);
 
-        let p2 = qt::Painter::new(&img2);
+        let mut p2 = qt::Painter::new(&mut img2);
         p2.set_opacity(*opacity);
         p2.draw_image(0.0, 0.0, &img);
         p2.end();

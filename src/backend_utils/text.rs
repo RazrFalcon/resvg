@@ -31,14 +31,11 @@ pub trait FontMetrics<Font> {
 }
 
 pub fn draw_blocks<Font, Draw>(
-    text_kind: &usvg::Text,
-    font_metrics: &mut FontMetrics<Font>,
+    blocks: Vec<TextBlock<Font>>,
     mut draw: Draw,
 ) -> Rect
     where Draw: FnMut(&TextBlock<Font>)
 {
-    let blocks = prepare_blocks(text_kind, font_metrics);
-
     let mut bbox = Rect::new_bbox();
     for block in blocks {
         bbox.expand(block.bbox);
@@ -51,7 +48,7 @@ pub fn draw_blocks<Font, Draw>(
     bbox
 }
 
-fn prepare_blocks<Font>(
+pub fn prepare_blocks<Font>(
     text_kind: &usvg::Text,
     font_metrics: &mut FontMetrics<Font>,
 ) -> Vec<TextBlock<Font>> {

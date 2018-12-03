@@ -14,7 +14,7 @@ use backend_utils::image;
 pub fn draw(
     image: &usvg::Image,
     opt: &Options,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) -> Rect {
     if image.visibility != usvg::Visibility::Visible {
         return image.view_box.rect;
@@ -32,7 +32,7 @@ pub fn draw(
 fn draw_raster(
     image: &usvg::Image,
     opt: &Options,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) {
     let img = match image.data {
         usvg::ImageData::Path(ref path) => {
@@ -86,7 +86,7 @@ fn draw_raster(
 fn draw_svg(
     image: &usvg::Image,
     opt: &Options,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) {
     let (tree, sub_opt) = try_opt!(image::load_sub_svg(image, opt), ());
 

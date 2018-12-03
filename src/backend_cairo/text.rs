@@ -26,7 +26,6 @@ use super::{
     stroke,
 };
 
-pub use backend_utils::text::draw_blocks;
 
 trait PangoScale {
     fn scale(&self) -> f64;
@@ -83,7 +82,8 @@ pub fn draw(
     cr: &cairo::Context,
 ) -> Rect {
     let mut fm = PangoFontMetrics::new(opt, cr);
-    draw_blocks(text_node, &mut fm, |block| draw_block(tree, block, opt, cr))
+    let blocks = text::prepare_blocks(text_node, &mut fm);
+    text::draw_blocks(blocks, |block| draw_block(tree, block, opt, cr))
 }
 
 pub fn init_pango_context(opt: &Options, cr: &cairo::Context) -> pango::Context {

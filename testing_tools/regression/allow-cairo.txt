@@ -1,7 +1,0 @@
-a-opacity-002.svg
-a-visibility-003.svg
-a-visibility-004.svg
-a-visibility-005.svg
-a-visibility-006.svg
-a-visibility-007.svg
-e-use-022.svg

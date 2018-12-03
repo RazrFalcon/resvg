@@ -21,13 +21,13 @@ pub fn apply(
     opt: &Options,
     bbox: Rect,
     layers: &mut QtLayers,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) {
     let clip_img = try_opt!(layers.get(), ());
     let mut clip_img = clip_img.borrow_mut();
     clip_img.fill(0, 0, 0, 255);
 
-    let clip_p = qt::Painter::new(&clip_img);
+    let mut clip_p = qt::Painter::new(&mut clip_img);
     clip_p.set_transform(&p.get_transform());
     clip_p.apply_transform(&cp.transform.to_native());
 
@@ -43,13 +43,13 @@ pub fn apply(
 
         match *node.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                path::draw(&node.tree(), path_node, opt, &clip_p);
+                path::draw(&node.tree(), path_node, opt, &mut clip_p);
             }
             usvg::NodeKind::Text(ref text) => {
-                text::draw(&node.tree(), text, opt, &clip_p);
+                text::draw(&node.tree(), text, opt, &mut clip_p);
             }
             usvg::NodeKind::Group(ref g) => {
-                clip_group(&node, g, opt, bbox, layers, &clip_p);
+                clip_group(&node, g, opt, bbox, layers, &mut clip_p);
             }
             _ => {}
         }
@@ -62,7 +62,7 @@ pub fn apply(
     if let Some(ref id) = cp.clip_path {
         if let Some(ref clip_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                apply(clip_node, cp, opt, bbox, layers, &p);
+                apply(clip_node, cp, opt, bbox, layers, p);
             }
         }
     }
@@ -78,7 +78,7 @@ fn clip_group(
     opt: &Options,
     bbox: Rect,
     layers: &mut QtLayers,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) {
     if let Some(ref id) = g.clip_path {
         if let Some(ref clip_node) = node.tree().defs_by_id(id) {
@@ -91,11 +91,11 @@ fn clip_group(
                 let mut clip_img = clip_img.borrow_mut();
                 clip_img.fill(0, 0, 0, 0);
 
-                let clip_p = qt::Painter::new(&clip_img);
+                let mut clip_p = qt::Painter::new(&mut clip_img);
                 clip_p.set_transform(&p.get_transform());
-                draw_group_child(&node, opt, &clip_p);
+                draw_group_child(&node, opt, &mut clip_p);
 
-                apply(clip_node, cp, opt, bbox, layers, &clip_p);
+                apply(clip_node, cp, opt, bbox, layers, &mut clip_p);
                 clip_p.end();
 
                 p.set_transform(&qt::Transform::default());
@@ -111,7 +111,7 @@ fn clip_group(
 fn draw_group_child(
     node: &usvg::Node,
     opt: &Options,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) {
     if let Some(child) = node.first_child() {
         p.apply_transform(&child.transform().to_native());

@@ -17,14 +17,14 @@ pub fn apply(
     opt: &Options,
     bbox: Rect,
     layers: &mut QtLayers,
-    sub_p: &qt::Painter,
-    p: &qt::Painter,
+    sub_p: &mut qt::Painter,
+    p: &mut qt::Painter,
 ) {
     let mask_img = try_opt!(layers.get(), ());
     let mut mask_img = mask_img.borrow_mut();
 
     {
-        let mask_p = qt::Painter::new(&mask_img);
+        let mut mask_p = qt::Painter::new(&mut mask_img);
         mask_p.set_transform(&p.get_transform());
 
         let r = if mask.units == usvg::Units::ObjectBoundingBox {
@@ -39,7 +39,7 @@ pub fn apply(
             mask_p.apply_transform(&qt::Transform::from_bbox(bbox));
         }
 
-        super::render_group(node, opt, layers, &mask_p);
+        super::render_group(node, opt, layers, &mut mask_p);
     }
 
     mask::image_to_mask(&mut mask_img.data_mut(), layers.image_size(), None);

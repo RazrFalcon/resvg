@@ -18,7 +18,7 @@ pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
     opt: &Options,
-    p: &qt::Painter,
+    p: &mut qt::Painter,
 ) -> Rect {
     let mut p_path = qt::PainterPath::new();
 
