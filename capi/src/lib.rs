@@ -299,14 +299,14 @@ pub extern fn resvg_qt_render_to_canvas(
         &*tree
     };
 
-    let painter = unsafe { qt::Painter::from_raw(painter) };
+    let mut painter = unsafe { qt::Painter::from_raw(painter) };
     let size = resvg::ScreenSize::new(size.width, size.height);
     let opt = to_native_opt(unsafe {
         assert!(!opt.is_null());
         &*opt
     });
 
-    resvg::backend_qt::render_to_canvas(&tree.0, &opt, size, &painter);
+    resvg::backend_qt::render_to_canvas(&tree.0, &opt, size, &mut painter);
 }
 
 #[cfg(feature = "cairo-backend")]
@@ -349,7 +349,7 @@ pub extern fn resvg_qt_render_to_canvas_by_id(
         &*tree
     };
 
-    let painter = unsafe { qt::Painter::from_raw(painter) };
+    let mut painter = unsafe { qt::Painter::from_raw(painter) };
     let size = resvg::ScreenSize::new(size.width, size.height);
     let opt = to_native_opt(unsafe {
         assert!(!opt.is_null());
@@ -373,7 +373,7 @@ pub extern fn resvg_qt_render_to_canvas_by_id(
                 aspect: usvg::AspectRatio::default(),
             };
 
-            resvg::backend_qt::render_node_to_canvas(&node, &opt, vbox, size, &painter);
+            resvg::backend_qt::render_node_to_canvas(&node, &opt, vbox, size, &mut painter);
         } else {
             warn!("A node with '{}' ID doesn't have a valid bounding box.", id);
         }

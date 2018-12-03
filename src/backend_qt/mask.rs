@@ -45,6 +45,6 @@ pub fn apply(
     mask::image_to_mask(&mut mask_img.data_mut(), layers.image_size(), None);
 
     sub_p.set_transform(&qt::Transform::default());
-    sub_p.set_composition_mode(qt::CompositionMode::CompositionMode_DestinationIn);
+    sub_p.set_composition_mode(qt::CompositionMode::DestinationIn);
     sub_p.draw_image(0.0, 0.0, &mask_img);
 }

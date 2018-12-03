@@ -114,7 +114,7 @@ fn convert_path(
     }
 
     match rule {
-        usvg::FillRule::NonZero => p_path.set_fill_rule(qt::FillRule::WindingFill),
-        usvg::FillRule::EvenOdd => p_path.set_fill_rule(qt::FillRule::OddEvenFill),
+        usvg::FillRule::NonZero => p_path.set_fill_rule(qt::FillRule::Winding),
+        usvg::FillRule::EvenOdd => p_path.set_fill_rule(qt::FillRule::OddEven),
     }
 }

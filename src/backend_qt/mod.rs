@@ -389,13 +389,13 @@ fn from_qt_path(p_path: &qt::PainterPath) -> Vec<usvg::PathSegment> {
     while i < p_path_len {
         let (kind, x, y) = p_path.get(i);
         match kind {
-            qt::PathSegmentType::MoveToSegment => {
+            qt::PathSegmentType::MoveTo => {
                 segments.push(usvg::PathSegment::MoveTo { x, y });
             }
-            qt::PathSegmentType::LineToSegment => {
+            qt::PathSegmentType::LineTo => {
                 segments.push(usvg::PathSegment::LineTo { x, y });
             }
-            qt::PathSegmentType::CurveToSegment => {
+            qt::PathSegmentType::CurveTo => {
                 let (_, x1, y1) = p_path.get(i + 1);
                 let (_, x2, y2) = p_path.get(i + 2);
 

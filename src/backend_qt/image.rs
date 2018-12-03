@@ -54,7 +54,7 @@ fn draw_raster(
     let new_size = utils::apply_view_box(&view_box, img_size);
 
     let img = try_opt_warn!(
-        img.resize(new_size.width, new_size.height, qt::AspectRatioMode::IgnoreAspectRatio), (),
+        img.resize(new_size.width, new_size.height, qt::AspectRatioMode::Ignore), (),
         "Failed to scale an image.",
     );
 

@@ -55,16 +55,16 @@ pub fn apply(
             }
 
             let linecap = match stroke.linecap {
-                usvg::LineCap::Butt => qt::LineCap::FlatCap,
-                usvg::LineCap::Round => qt::LineCap::RoundCap,
-                usvg::LineCap::Square => qt::LineCap::SquareCap,
+                usvg::LineCap::Butt => qt::LineCap::Flat,
+                usvg::LineCap::Round => qt::LineCap::Round,
+                usvg::LineCap::Square => qt::LineCap::Square,
             };
             pen.set_line_cap(linecap);
 
             let linejoin = match stroke.linejoin {
-                usvg::LineJoin::Miter => qt::LineJoin::MiterJoin,
-                usvg::LineJoin::Round => qt::LineJoin::RoundJoin,
-                usvg::LineJoin::Bevel => qt::LineJoin::BevelJoin,
+                usvg::LineJoin::Miter => qt::LineJoin::Miter,
+                usvg::LineJoin::Round => qt::LineJoin::Round,
+                usvg::LineJoin::Bevel => qt::LineJoin::Bevel,
             };
             pen.set_line_join(linejoin);
 

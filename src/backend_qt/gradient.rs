@@ -42,9 +42,9 @@ fn prepare_base(
     grad: &mut qt::Gradient,
 ) {
     let spread_method = match g.spread_method {
-        usvg::SpreadMethod::Pad => qt::Spread::PadSpread,
-        usvg::SpreadMethod::Reflect => qt::Spread::ReflectSpread,
-        usvg::SpreadMethod::Repeat => qt::Spread::RepeatSpread,
+        usvg::SpreadMethod::Pad => qt::Spread::Pad,
+        usvg::SpreadMethod::Reflect => qt::Spread::Reflect,
+        usvg::SpreadMethod::Repeat => qt::Spread::Repeat,
     };
     grad.set_spread(spread_method);
 

@@ -122,9 +122,9 @@ fn init_font(dom_font: &usvg::Font) -> qt::Font {
     font.set_family(&dom_font.family);
 
     let font_style = match dom_font.style {
-        usvg::FontStyle::Normal => qt::FontStyle::StyleNormal,
-        usvg::FontStyle::Italic => qt::FontStyle::StyleItalic,
-        usvg::FontStyle::Oblique => qt::FontStyle::StyleOblique,
+        usvg::FontStyle::Normal => qt::FontStyle::Normal,
+        usvg::FontStyle::Italic => qt::FontStyle::Italic,
+        usvg::FontStyle::Oblique => qt::FontStyle::Oblique,
     };
     font.set_style(font_style);
 

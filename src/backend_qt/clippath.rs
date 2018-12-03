@@ -35,7 +35,7 @@ pub fn apply(
         clip_p.apply_transform(&qt::Transform::from_bbox(bbox));
     }
 
-    clip_p.set_composition_mode(qt::CompositionMode::CompositionMode_Clear);
+    clip_p.set_composition_mode(qt::CompositionMode::Clear);
 
     let ts = clip_p.get_transform();
     for node in node.children() {
@@ -68,7 +68,7 @@ pub fn apply(
     }
 
     p.set_transform(&qt::Transform::default());
-    p.set_composition_mode(qt::CompositionMode::CompositionMode_DestinationOut);
+    p.set_composition_mode(qt::CompositionMode::DestinationOut);
     p.draw_image(0.0, 0.0, &clip_img);
 }
 
@@ -99,7 +99,7 @@ fn clip_group(
                 clip_p.end();
 
                 p.set_transform(&qt::Transform::default());
-                p.set_composition_mode(qt::CompositionMode::CompositionMode_Xor);
+                p.set_composition_mode(qt::CompositionMode::Xor);
                 p.draw_image(0.0, 0.0, &clip_img);
             }
         }
