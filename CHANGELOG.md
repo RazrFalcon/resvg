@@ -22,6 +22,7 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - (cairo-backend) Text layout.
 - (cairo-backend) Rendering of a zero length subpath with a square cap.
+- (qt-backend) Transform retrieving via Qt bindings.
 - (resvg) Recursive SVG images via `image` tag.
 - (resvg) Bbox calculation of the text with rotate.
 - (resvg) Invisible elements processing.
