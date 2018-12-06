@@ -25,7 +25,7 @@ pub fn apply(
         Some(ref stroke) => {
             match stroke.paint {
                 usvg::Paint::Color(c) => {
-                    cr.set_source_color(&c, stroke.opacity);
+                    cr.set_source_color(c, stroke.opacity);
                 }
                 usvg::Paint::Link(ref id) => {
                     if let Some(node) = tree.defs_by_id(id) {

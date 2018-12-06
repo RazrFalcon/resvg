@@ -19,8 +19,8 @@ pub fn apply(
     mask: &usvg::Mask,
     opt: &Options,
     bbox: Rect,
-    opacity: Option<usvg::Opacity>,
     layers: &mut CairoLayers,
+    sub_cr: &cairo::Context,
     cr: &cairo::Context,
 ) {
     let mask_surface = try_opt!(layers.get(), ());
@@ -49,11 +49,17 @@ pub fn apply(
     {
         let mut data = try_opt_warn!(mask_surface.get_data().ok(), (),
                                      "Failed to borrow a surface for mask: {:?}.", mask.id);
-        mask::image_to_mask(&mut data, layers.image_size(), opacity);
+        mask::image_to_mask(&mut data, layers.image_size());
     }
 
-    let patt = cairo::SurfacePattern::create(&*mask_surface);
-    cr.set_matrix(cairo::Matrix::identity());
-    cr.mask(&cairo::Pattern::SurfacePattern(patt));
-    cr.reset_source_rgba();
+    sub_cr.set_matrix(cairo::Matrix::identity());
+    sub_cr.set_source_surface(&*mask_surface, 0.0, 0.0);
+    sub_cr.set_operator(cairo::Operator::DestIn);
+    sub_cr.paint();
+
+    // Reset operator.
+    sub_cr.set_operator(cairo::Operator::Over);
+
+    // Reset source to unborrow the `mask_surface` from the `Context`.
+    sub_cr.reset_source_rgba();
 }

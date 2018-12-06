@@ -139,7 +139,7 @@ pub fn render_to_image(
 
     // Fill background.
     if let Some(color) = opt.background {
-        cr.set_source_color(&color, 1.0.into());
+        cr.set_source_color(color, 1.0.into());
         cr.paint();
     }
 
@@ -171,7 +171,7 @@ pub fn render_node_to_image(
 
     // Fill background.
     if let Some(color) = opt.background {
-        cr.set_source_color(&color, 1.0.into());
+        cr.set_source_color(color, 1.0.into());
         cr.paint();
     }
 
@@ -309,23 +309,21 @@ fn render_group_impl(
         }
     }
 
-    let curr_matrix = cr.get_matrix();
-    cr.set_matrix(cairo::Matrix::identity());
-    cr.set_source_surface(&*sub_surface, 0.0, 0.0);
-
     if let Some(ref id) = g.mask {
         if let Some(mask_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                cr.set_matrix(curr_matrix);
-                mask::apply(&mask_node, mask, opt, bbox, g.opacity, layers, cr);
+                mask::apply(&mask_node, mask, opt, bbox, layers, &sub_cr, cr);
             }
         }
+    }
+
+    let curr_matrix = cr.get_matrix();
+    cr.set_matrix(cairo::Matrix::identity());
+    cr.set_source_surface(&*sub_surface, 0.0, 0.0);
+    if let Some(opacity) = g.opacity {
+        cr.paint_with_alpha(*opacity);
     } else {
-        if let Some(opacity) = g.opacity {
-            cr.paint_with_alpha(*opacity);
-        } else {
-            cr.paint();
-        }
+        cr.paint();
     }
 
     cr.set_matrix(curr_matrix);

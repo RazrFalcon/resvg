@@ -2,9 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use usvg;
-
 // self
 use geom::*;
 
@@ -13,7 +10,6 @@ use geom::*;
 pub fn image_to_mask(
     data: &mut [u8],
     img_size: ScreenSize,
-    opacity: Option<usvg::Opacity>,
 ) {
     let width = img_size.width;
     let height = img_size.height;
@@ -31,10 +27,7 @@ pub fn image_to_mask(
             let g = data[idx + 1] as f64;
             let b = data[idx + 0] as f64;
 
-            let mut luma = r * coeff_r + g * coeff_g + b * coeff_b;
-            if let Some(opacity) = opacity {
-                luma *= opacity.value();
-            }
+            let luma = r * coeff_r + g * coeff_g + b * coeff_b;
 
             data[idx + 0] = 0;
             data[idx + 1] = 0;

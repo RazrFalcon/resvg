@@ -8,12 +8,12 @@ use usvg;
 
 
 pub trait ReCairoContextExt {
-    fn set_source_color(&self, color: &usvg::Color, opacity: usvg::Opacity);
+    fn set_source_color(&self, color: usvg::Color, opacity: usvg::Opacity);
     fn reset_source_rgba(&self);
 }
 
 impl ReCairoContextExt for cairo::Context {
-    fn set_source_color(&self, color: &usvg::Color, opacity: usvg::Opacity) {
+    fn set_source_color(&self, color: usvg::Color, opacity: usvg::Opacity) {
         self.set_source_rgba(
             color.red as f64 / 255.0,
             color.green as f64 / 255.0,

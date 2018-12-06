@@ -18,7 +18,7 @@ pub fn apply(
     bbox: Rect,
     layers: &mut QtLayers,
     sub_p: &mut qt::Painter,
-    p: &mut qt::Painter,
+    p: &qt::Painter,
 ) {
     let mask_img = try_opt!(layers.get(), ());
     let mut mask_img = mask_img.borrow_mut();
@@ -42,7 +42,7 @@ pub fn apply(
         super::render_group(node, opt, layers, &mut mask_p);
     }
 
-    mask::image_to_mask(&mut mask_img.data_mut(), layers.image_size(), None);
+    mask::image_to_mask(&mut mask_img.data_mut(), layers.image_size());
 
     sub_p.set_transform(&qt::Transform::default());
     sub_p.set_composition_mode(qt::CompositionMode::DestinationIn);
