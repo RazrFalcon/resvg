@@ -4,6 +4,7 @@
 
 //! 2D geometric primitives.
 
+use std::cmp;
 use std::f64;
 use std::fmt;
 
@@ -91,6 +92,7 @@ fn size_scale(s1: ScreenSize, s2: ScreenSize, expand: bool) -> ScreenSize {
     }
 }
 
+
 /// Additional `Rect` methods.
 pub trait RectExt {
     /// Creates a new `Rect` for bounding box calculation.
@@ -103,6 +105,9 @@ pub trait RectExt {
 
     /// Returns rect's size in screen units.
     fn to_screen_size(&self) -> ScreenSize;
+
+    /// Returns rect in screen units.
+    fn to_screen_rect(&self) -> ScreenRect;
 }
 
 impl RectExt for Rect {
@@ -130,7 +135,105 @@ impl RectExt for Rect {
     fn to_screen_size(&self) -> ScreenSize {
         self.size().to_screen_size()
     }
+
+    fn to_screen_rect(&self) -> ScreenRect {
+        ScreenRect::new(self.x as i32, self.y as i32,
+                        cmp::max(0, self.width as i32) as u32,
+                        cmp::max(0, self.height as i32) as u32)
+    }
 }
+
+
+/// A 2D screen rect representation.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq)]
+pub struct ScreenRect {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+}
+
+impl ScreenRect {
+    /// Creates a new `Rect` from values.
+    pub fn new(x: i32, y: i32, width: u32, height: u32) -> Self {
+        ScreenRect { x, y, width, height }
+    }
+
+    /// Returns rect's size.
+    pub fn size(&self) -> ScreenSize {
+        ScreenSize::new(self.width, self.height)
+    }
+
+    pub fn left(&self) -> i32 {
+        self.x
+    }
+
+    pub fn right(&self) -> i32 {
+        self.x + self.width as i32
+    }
+
+    pub fn top(&self) -> i32 {
+        self.y
+    }
+
+    pub fn bottom(&self) -> i32 {
+        self.y + self.height as i32
+    }
+
+    /// Checks that rect contains a point.
+    pub fn contains(&self, x: i32, y: i32) -> bool {
+        if x < self.x || x > self.x + self.width as i32 - 1 {
+            return false;
+        }
+
+        if y < self.y || y > self.y + self.height as i32 - 1 {
+            return false;
+        }
+
+        true
+    }
+
+    pub fn fit_to_rect(&self, bounds: ScreenRect) -> Self {
+        let mut r = *self;
+
+        if r.x < 0 { r.x = 0; }
+        if r.y < 0 { r.y = 0; }
+
+        if r.right() > bounds.width as i32 {
+            r.width = cmp::max(0, bounds.width as i32 - r.x) as u32;
+        }
+
+        if r.bottom() > bounds.height as i32 {
+            r.height = cmp::max(0, bounds.height as i32 - r.y) as u32;
+        }
+
+        r
+    }
+
+    pub fn to_rect(&self) -> Rect {
+        Rect::new(self.x as f64, self.y as f64, self.width as f64, self.height as f64)
+    }
+}
+
+impl fmt::Debug for ScreenRect {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ScreenRect({} {} {} {})", self.x, self.y, self.width, self.height)
+    }
+}
+
+impl fmt::Display for ScreenRect {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl From<(i32, i32, u32, u32)> for ScreenRect {
+    fn from(v: (i32, i32, u32, u32)) -> Self {
+        Self::new(v.0, v.1, v.2, v.3)
+    }
+}
+
 
 #[inline]
 fn f64_min(v1: f64, v2: f64) -> f64 {

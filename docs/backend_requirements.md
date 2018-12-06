@@ -4,8 +4,17 @@ List of features required from the 2D graphics library to implement a backend fo
 
 - Composition modes:
   - Clear
+  - Darken
   - DestinationIn
   - DestinationOut
+  - Lighten
+  - Multiply
+  - Screen
+  - SourceAtop
+  - SourceIn
+  - SourceOut
+  - SourceOver
+  - Xor
 - Filling:
   - With color
   - With linear or radial gradient
@@ -34,7 +43,7 @@ List of features required from the 2D graphics library to implement a backend fo
 - Text
   - Anti-aliasing
   - Font properties:
-    - Family resolving (like `'Arial', monospace`)
+    - Family resolving (like `'Timer New Roman', monospace`)
     - Style: *normal*, *italic* and *oblique*
     - Weight
     - Stretch

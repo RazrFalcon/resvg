@@ -29,6 +29,7 @@ This changelog also contains important changes in dependencies.
 - (qt-api) SVG from QByteArray loading when data is invalid.
 - (usvg) `display` attribute processing.
 - (usvg) Recursive `mask` resolving.
+- (svgdom) Namespaces resolving.
 - (usvg) `inherit` attribute value resolving.
 
 ### Removed

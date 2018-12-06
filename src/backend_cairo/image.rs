@@ -106,7 +106,7 @@ fn draw_raster(
                         surface_data[i + 0] = (((tb >> 8) + tb) >> 8) as u8;
                         surface_data[i + 1] = (((tg >> 8) + tg) >> 8) as u8;
                         surface_data[i + 2] = (((tr >> 8) + tr) >> 8) as u8;
-                        surface_data[i + 3] = a as u8;
+                        surface_data[i + 3] = a as u8; // TODO: is needed?
                     } else {
                         surface_data[i + 0] = img_pixels[idx + 2];
                         surface_data[i + 1] = img_pixels[idx + 1];

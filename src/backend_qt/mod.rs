@@ -32,6 +32,7 @@ macro_rules! try_create_image {
 
 mod clippath;
 mod fill;
+mod filter;
 mod gradient;
 mod image;
 mod mask;
@@ -170,6 +171,7 @@ pub fn render_node_to_canvas(
     apply_viewbox_transform(view_box, img_size, painter);
 
     let curr_ts = painter.get_transform();
+
     let mut ts = utils::abs_transform(node);
     ts.append(&node.transform());
 
@@ -292,6 +294,15 @@ fn render_group_impl(
     }
 
     sub_p.end();
+
+    if let Some(ref id) = g.filter {
+        if let Some(filter_node) = node.tree().defs_by_id(id) {
+            if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
+                let ts = usvg::Transform::from_native(&p.get_transform());
+                filter::apply(filter, bbox, &ts, &mut sub_img);
+            }
+        }
+    }
 
     if let Some(opacity) = g.opacity {
         p.set_opacity(*opacity);

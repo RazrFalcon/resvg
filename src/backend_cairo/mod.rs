@@ -40,6 +40,7 @@ macro_rules! try_create_surface {
 mod clippath;
 mod ext;
 mod fill;
+mod filter;
 mod gradient;
 mod image;
 mod mask;
@@ -294,7 +295,7 @@ fn render_group_impl(
     cr: &cairo::Context,
 ) -> Option<Rect> {
     let sub_surface = layers.get()?;
-    let sub_surface = sub_surface.borrow_mut();
+    let mut sub_surface = sub_surface.borrow_mut();
 
     let sub_cr = cairo::Context::new(&*sub_surface);
     sub_cr.set_matrix(cr.get_matrix());
@@ -313,6 +314,15 @@ fn render_group_impl(
         if let Some(mask_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
                 mask::apply(&mask_node, mask, opt, bbox, layers, &sub_cr, cr);
+            }
+        }
+    }
+
+    if let Some(ref id) = g.filter {
+        if let Some(filter_node) = node.tree().defs_by_id(id) {
+            if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
+                let ts = usvg::Transform::from_native(&cr.get_matrix());
+                filter::apply(filter, bbox, &ts, &mut *sub_surface);
             }
         }
     }
