@@ -12,6 +12,7 @@ This changelog also contains important changes in dependencies.
 - (rendersvg) `font-family`, `font-size` and `languages` to args.
 - (usvg) `systemLanguage` attribute support.
 - (usvg) Default font family and size is configurable now.
+- (usvg) `mask` attribute on `mask` element support.
 - (c-api) `RESVG_ERROR_PARSING_FAILED`.
 - (c-api) `font_family`, `font_size` and `languages` to `resvg_options`.
 
@@ -29,8 +30,8 @@ This changelog also contains important changes in dependencies.
 - (qt-api) SVG from QByteArray loading when data is invalid.
 - (usvg) `display` attribute processing.
 - (usvg) Recursive `mask` resolving.
-- (svgdom) Namespaces resolving.
 - (usvg) `inherit` attribute value resolving.
+- (svgdom) Namespaces resolving.
 
 ### Removed
 - (rendersvg) `failure` dependency.

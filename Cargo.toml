@@ -32,7 +32,7 @@ log = "0.4.5"
 palette = { version = "0.4.1", default-features = false }
 rgb = "0.8.9"
 #usvg = "0.2"
-usvg = { git = "https://github.com/RazrFalcon/usvg", rev = "99bfc15" }
+usvg = { git = "https://github.com/RazrFalcon/usvg", rev = "5bb30d9" }
 #usvg = { path = "../usvg" }
 unicode-segmentation = "1.2.1"
 
