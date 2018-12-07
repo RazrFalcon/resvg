@@ -65,6 +65,7 @@ SVG subset. E.g. no `a`, `script`, `view`, `cursor` elements, no events and no a
 
 Also, `marker`, `textPath` and
 [embedded fonts](https://www.w3.org/TR/SVG11/feature#Font) are not yet implemented.
+A full list can be found [here](docs/unsupported.md).
 
 Results of the static subset of the [SVG test suite](https://www.w3.org/Graphics/SVG/Test/20110816/):
 

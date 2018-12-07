@@ -8,7 +8,7 @@
   - `feSpecularLighting`
   - `feDistantLight`
   - `fePointLight`
- - `feSpotLight`
+  - `feSpotLight`
 - Font based
   - `font`
   - `glyph`
@@ -20,16 +20,43 @@
   - `font-face-uri`
   - `font-face-format`
   - `font-face-name`
-- `marker`
+  - `altGlyph`
+  - `altGlyphDef`
+  - `altGlyphItem`
+  - `glyphRef`
 - `color-profile`
+- `marker`
+- `textPath`
 
 ### Attributes
 
-- [enable-background](https://www.w3.org/TR/SVG11/filters.html#EnableBackgroundProperty) (deprecated)
-- [in](https://www.w3.org/TR/SVG11/filters.html#FilterPrimitiveInAttribute)
+- `alignment-baseline`
+- `baseline-shift`
+- `clip` (deprecated)
+- `color-interpolation`
+- `color-profile`
+- `color-rendering`
+- `direction`
+- `dominant-baseline`
+- [`enable-background`](https://www.w3.org/TR/SVG11/filters.html#EnableBackgroundProperty) (deprecated)
+- `font`
+- `font-size-adjust`
+- `glyph-orientation-horizontal`
+- `glyph-orientation-vertical`
+- [`in`](https://www.w3.org/TR/SVG11/filters.html#FilterPrimitiveInAttribute)
   with `BackgroundImage`, `BackgroundAlpha`, `FillPaint`, `StrokePaint`
 - `image-rendering`
+- `kerning`
+- `letter-spacing`
+- `lighting-color`
+- `marker-start`
+- `marker-mid`
+- `marker-end`
 - `shape-rendering`
 - `text-rendering`
-- clip (deprecated)
-- color-interpolation
+- `unicode-bidi`
+- `word-spacing`
+- `writing-mode`
+
+**Note:** this list does not include elements and attributes outside the
+[static SVG](http://www.w3.org/TR/SVG11/feature#SVG-static) subset.
