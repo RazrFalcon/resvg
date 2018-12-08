@@ -18,14 +18,13 @@ pub fn apply(
     bbox: Rect,
     layers: &mut QtLayers,
     sub_p: &mut qt::Painter,
-    p: &qt::Painter,
 ) {
     let mask_img = try_opt!(layers.get(), ());
     let mut mask_img = mask_img.borrow_mut();
 
     {
         let mut mask_p = qt::Painter::new(&mut mask_img);
-        mask_p.set_transform(&p.get_transform());
+        mask_p.set_transform(&sub_p.get_transform());
 
         let r = if mask.units == usvg::Units::ObjectBoundingBox {
             mask.rect.transform(usvg::Transform::from_bbox(bbox))

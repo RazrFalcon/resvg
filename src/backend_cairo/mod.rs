@@ -297,14 +297,30 @@ fn render_group_impl(
     let sub_surface = layers.get()?;
     let mut sub_surface = sub_surface.borrow_mut();
 
-    let sub_cr = cairo::Context::new(&*sub_surface);
-    sub_cr.set_matrix(cr.get_matrix());
+    let curr_ts = cr.get_matrix();
 
-    let bbox = render_group(node, opt, layers, &sub_cr);
+    let bbox = {
+        let sub_cr = cairo::Context::new(&*sub_surface);
+        sub_cr.set_matrix(curr_ts);
+
+        render_group(node, opt, layers, &sub_cr)
+    };
+
+    if let Some(ref id) = g.filter {
+        if let Some(filter_node) = node.tree().defs_by_id(id) {
+            if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
+                let ts = usvg::Transform::from_native(&curr_ts);
+                filter::apply(filter, bbox, &ts, &mut *sub_surface);
+            }
+        }
+    }
 
     if let Some(ref id) = g.clip_path {
         if let Some(clip_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
+                let sub_cr = cairo::Context::new(&*sub_surface);
+                sub_cr.set_matrix(curr_ts);
+
                 clippath::apply(&clip_node, cp, opt, bbox, layers, &sub_cr);
             }
         }
@@ -313,16 +329,10 @@ fn render_group_impl(
     if let Some(ref id) = g.mask {
         if let Some(mask_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                mask::apply(&mask_node, mask, opt, bbox, layers, &sub_cr, cr);
-            }
-        }
-    }
+                let sub_cr = cairo::Context::new(&*sub_surface);
+                sub_cr.set_matrix(curr_ts);
 
-    if let Some(ref id) = g.filter {
-        if let Some(filter_node) = node.tree().defs_by_id(id) {
-            if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
-                let ts = usvg::Transform::from_native(&cr.get_matrix());
-                filter::apply(filter, bbox, &ts, &mut *sub_surface);
+                mask::apply(&mask_node, mask, opt, bbox, layers, &sub_cr);
             }
         }
     }

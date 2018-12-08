@@ -272,14 +272,30 @@ fn render_group_impl(
     let sub_img = layers.get()?;
     let mut sub_img = sub_img.borrow_mut();
 
-    let mut sub_p = qt::Painter::new(&mut sub_img);
-    sub_p.set_transform(&p.get_transform());
+    let curr_ts = p.get_transform();
 
-    let bbox = render_group(node, opt, layers, &mut sub_p);
+    let bbox = {
+        let mut sub_p = qt::Painter::new(&mut sub_img);
+        sub_p.set_transform(&curr_ts);
+
+        render_group(node, opt, layers, &mut sub_p)
+    };
+
+    if let Some(ref id) = g.filter {
+        if let Some(filter_node) = node.tree().defs_by_id(id) {
+            if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
+                let ts = usvg::Transform::from_native(&curr_ts);
+                filter::apply(filter, bbox, &ts, &mut sub_img);
+            }
+        }
+    }
 
     if let Some(ref id) = g.clip_path {
         if let Some(clip_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
+                let mut sub_p = qt::Painter::new(&mut sub_img);
+                sub_p.set_transform(&curr_ts);
+
                 clippath::apply(&clip_node, cp, opt, bbox, layers, &mut sub_p);
             }
         }
@@ -288,18 +304,10 @@ fn render_group_impl(
     if let Some(ref id) = g.mask {
         if let Some(mask_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                mask::apply(&mask_node, mask, opt, bbox, layers, &mut sub_p, p);
-            }
-        }
-    }
+                let mut sub_p = qt::Painter::new(&mut sub_img);
+                sub_p.set_transform(&curr_ts);
 
-    sub_p.end();
-
-    if let Some(ref id) = g.filter {
-        if let Some(filter_node) = node.tree().defs_by_id(id) {
-            if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
-                let ts = usvg::Transform::from_native(&p.get_transform());
-                filter::apply(filter, bbox, &ts, &mut sub_img);
+                mask::apply(&mask_node, mask, opt, bbox, layers, &mut sub_p);
             }
         }
     }

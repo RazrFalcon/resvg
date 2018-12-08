@@ -21,14 +21,13 @@ pub fn apply(
     bbox: Rect,
     layers: &mut CairoLayers,
     sub_cr: &cairo::Context,
-    cr: &cairo::Context,
 ) {
     let mask_surface = try_opt!(layers.get(), ());
     let mut mask_surface = mask_surface.borrow_mut();
 
     {
         let mask_cr = cairo::Context::new(&*mask_surface);
-        mask_cr.set_matrix(cr.get_matrix());
+        mask_cr.set_matrix(sub_cr.get_matrix());
 
         let r = if mask.units == usvg::Units::ObjectBoundingBox {
             mask.rect.transform(usvg::Transform::from_bbox(bbox))
