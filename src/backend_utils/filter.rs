@@ -527,24 +527,24 @@ fn calc_region(
     ts: &usvg::Transform,
     canvas_rect: ScreenRect,
 ) -> Result<ScreenRect, Error> {
-    let region = if filter.units == usvg::Units::ObjectBoundingBox {
+    let path = utils::rect_to_path(filter.rect);
+
+    let region_ts = if filter.units == usvg::Units::ObjectBoundingBox {
         // Not 0.0, because bbox min size is 1x1.
         // See utils::path_bbox().
         if bbox.width.fuzzy_eq(&1.0) || bbox.height.fuzzy_eq(&1.0) {
             return Err(Error::ZeroSizedObject);
         }
 
-        Rect::new(
-            bbox.x + bbox.width * filter.rect.x,
-            bbox.y + bbox.height * filter.rect.y,
-            bbox.width * filter.rect.width,
-            bbox.height * filter.rect.height,
-        )
+        let mut ts2 = ts.clone();
+        ts2.append(&usvg::Transform::from_bbox(bbox));
+        ts2
     } else {
-        filter.rect
+        *ts
     };
 
-    let region = region.transform(*ts).to_screen_rect().fit_to_rect(canvas_rect);
+    let region = utils::path_bbox(&path, None, &region_ts);
+    let region = region.to_screen_rect().fit_to_rect(canvas_rect);
 
     if region.width == 0 || region.height == 0 {
         return Err(Error::InvalidRegion);
