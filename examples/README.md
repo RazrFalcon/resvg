@@ -1,4 +1,4 @@
-See [docs/build.md](../docs/build.md) first.
+See [BUILD.adoc](../BUILD.adoc) first.
 
 Note: we are using *qt-backend* just for example.
 

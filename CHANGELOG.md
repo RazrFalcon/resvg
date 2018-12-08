@@ -9,6 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - (resvg) Nested `clipPath` support.
+- (resvg) MSVC support.
 - (rendersvg) `font-family`, `font-size` and `languages` to args.
 - (usvg) `systemLanguage` attribute support.
 - (usvg) Default font family and size is configurable now.

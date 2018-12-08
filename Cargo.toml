@@ -44,7 +44,7 @@ pangocairo = { version = "0.6", optional = true }
 
 # qt backend
 #resvg-qt = { version = "0.3", optional = true }
-resvg-qt = { git = "https://github.com/RazrFalcon/resvg-qt", rev = "6e616b4", optional = true }
+resvg-qt = { git = "https://github.com/RazrFalcon/resvg-qt", rev = "0fde4c9", optional = true }
 #resvg-qt = { path = "../resvg-qt", optional = true }
 
 [features]

@@ -88,10 +88,6 @@ It also includes alternative libraries.
 - Inkscape and Batik are slow just because.
 - [More details.](https://github.com/RazrFalcon/resvg-test-suite/blob/master/tools/perf/README.md)
 
-## Backends
-
-*resvg* supports [Qt] and [cairo] backends.
-
 ## Project structure
 
 - `resvg` - rendering backends implementation
@@ -104,10 +100,6 @@ It also includes alternative libraries.
   - [`resvg-qt`](https://github.com/RazrFalcon/resvg-qt) - a minimal bindings for [Qt]
 
 All other dependencies aren't written by me for this project.
-
-## Build
-
-See [docs/build.md](docs/build.md) for details.
 
 ## License
 

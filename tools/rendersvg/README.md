@@ -13,7 +13,7 @@ cargo build --release --features="cairo-backend"
 cargo build --release --features="qt-backend cairo-backend"
 ```
 
-See [docs/build.md](../../docs/build.md) for details.
+See [BUILD.adoc](../../BUILD.adoc) for details.
 
 ## Usage
 
