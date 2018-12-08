@@ -121,7 +121,7 @@ impl Filter<qt::Image> for QtFilter {
             }
             Some(usvg::FilterInput::SourceAlpha) => {
                 let image = copy_image(canvas, region)?;
-                let mut image = image.to_rgba().ok_or(Error::AllocFailed)?; // TODO: optional
+                let mut image = image.to_rgba().ok_or(Error::AllocFailed)?;
 
                 // Set RGB to black. Keep alpha as is.
                 for p in image.data_mut().chunks_mut(4) {

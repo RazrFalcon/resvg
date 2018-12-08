@@ -117,8 +117,6 @@ fn clip_group(
             }
         }
     }
-
-    // TODO: mask
 }
 
 fn draw_group_child(
