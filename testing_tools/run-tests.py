@@ -105,15 +105,6 @@ run(['cargo', 'test', '--features', 'cairo-backend'], check=True)
 run(['cargo', 'test', '--features', 'qt-backend'], check=True)
 
 
-# rendersvg unit tests
-#
-# run only locally, because bboxes depend on freetype settings
-if local_test:
-    with cd('tools/rendersvg'):
-        run(['cargo', 'test', '--features', 'qt-backend'], check=True)
-        run(['cargo', 'test', '--features', 'cairo-backend'], check=True)
-
-
 if 'RESVG_QT_BACKEND' in os.environ:
     # test Qt C-API
     #

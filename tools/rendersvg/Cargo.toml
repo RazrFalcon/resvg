@@ -16,7 +16,3 @@ time = "0.1"
 [features]
 cairo-backend = ["resvg/cairo-backend"]
 qt-backend = ["resvg/qt-backend"]
-
-[dev-dependencies]
-assert_cli = "0.5"
-indoc = "0.2"
