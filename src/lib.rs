@@ -23,7 +23,6 @@ And as an embeddable library to paint SVG on an application native canvas.
 #[macro_use] extern crate log;
 extern crate unicode_segmentation;
 extern crate rgb;
-extern crate palette;
 
 #[cfg(feature = "cairo-backend")] pub extern crate cairo;
 #[cfg(feature = "cairo-backend")] extern crate pango;

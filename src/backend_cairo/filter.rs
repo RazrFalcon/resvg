@@ -76,12 +76,9 @@ impl ImageExt for cairo::ImageSurface {
         from_premultiplied(data);
 
         for p in data.as_bgra_mut() {
-            let linear_color: palette::LinSrgb = palette::LinSrgb::new(p.r, p.g, p.b).into_format();
-            let color = palette::Srgb::from_linear(linear_color).into_format();
-
-            p.r = color.red;
-            p.g = color.green;
-            p.b = color.blue;
+            p.r = filter::LINEAR_RGB_TO_SRGB_TABLE[p.r as usize];
+            p.g = filter::LINEAR_RGB_TO_SRGB_TABLE[p.g as usize];
+            p.b = filter::LINEAR_RGB_TO_SRGB_TABLE[p.b as usize];
         }
 
         into_premultiplied(data);
@@ -93,14 +90,9 @@ impl ImageExt for cairo::ImageSurface {
         from_premultiplied(data);
 
         for p in data.as_bgra_mut() {
-            let color = palette::Srgb::new(p.r, p.g, p.b)
-                .into_format::<f32>()
-                .into_linear()
-                .into_format();
-
-            p.r = color.red;
-            p.g = color.green;
-            p.b = color.blue;
+            p.r = filter::SRGB_TO_LINEAR_RGB_TABLE[p.r as usize];
+            p.g = filter::SRGB_TO_LINEAR_RGB_TABLE[p.g as usize];
+            p.b = filter::SRGB_TO_LINEAR_RGB_TABLE[p.b as usize];
         }
 
         into_premultiplied(data);
