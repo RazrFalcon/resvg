@@ -17,7 +17,7 @@ And as an embeddable library to paint SVG on an application native canvas.
 #![doc(html_root_url = "https://docs.rs/resvg/0.3.0")]
 
 //#![forbid(unsafe_code)]
-//#![warn(missing_docs)]
+#![warn(missing_docs)]
 
 #[macro_use] pub extern crate usvg;
 #[macro_use] extern crate log;

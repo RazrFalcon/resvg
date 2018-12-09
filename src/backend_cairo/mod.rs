@@ -310,7 +310,7 @@ fn render_group_impl(
         if let Some(filter_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(&curr_ts);
-                filter::apply(filter, bbox, &ts, &mut *sub_surface);
+                filter::apply(filter, bbox, &ts, opt, &mut *sub_surface);
             }
         }
     }

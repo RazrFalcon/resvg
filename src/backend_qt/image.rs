@@ -21,20 +21,21 @@ pub fn draw(
     }
 
     if image.format == usvg::ImageFormat::SVG {
-        draw_svg(image, opt, p);
+        draw_svg(&image.data, image.view_box, opt, p);
     } else {
-        draw_raster(image, opt, p);
+        draw_raster(&image.data, image.view_box, opt, p);
     }
 
     image.view_box.rect
 }
 
-fn draw_raster(
-    image: &usvg::Image,
+pub fn draw_raster(
+    data: &usvg::ImageData,
+    mut view_box: usvg::ViewBox,
     opt: &Options,
     p: &mut qt::Painter,
 ) {
-    let img = match image.data {
+    let img = match data {
         usvg::ImageData::Path(ref path) => {
             let path = image::get_abs_path(path, opt);
             try_opt_warn!(qt::Image::from_file(&path), (),
@@ -47,7 +48,6 @@ fn draw_raster(
     };
 
     let img_size = ScreenSize::new(img.width(), img.height());
-    let mut view_box = image.view_box;
     image::prepare_image_viewbox(img_size, &mut view_box);
     let r = view_box.rect;
 
@@ -83,15 +83,16 @@ fn draw_raster(
     }
 }
 
-fn draw_svg(
-    image: &usvg::Image,
+pub fn draw_svg(
+    data: &usvg::ImageData,
+    view_box: usvg::ViewBox,
     opt: &Options,
     p: &mut qt::Painter,
 ) {
-    let (tree, sub_opt) = try_opt!(image::load_sub_svg(image, opt), ());
+    let (tree, sub_opt) = try_opt!(image::load_sub_svg(data, opt), ());
 
     let img_size = tree.svg_node().size.to_screen_size();
-    let (ts, clip) = image::prepare_sub_svg_geom(image, img_size);
+    let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);
 
     if let Some(clip) = clip {
         p.set_clip_rect(clip.x, clip.y, clip.width, clip.height);

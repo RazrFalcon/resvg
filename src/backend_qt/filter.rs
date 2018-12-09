@@ -28,9 +28,10 @@ pub fn apply(
     filter: &usvg::Filter,
     bbox: Rect,
     ts: &usvg::Transform,
+    opt: &Options,
     canvas: &mut qt::Image,
 ) {
-    QtFilter::apply(filter, bbox, ts, canvas);
+    QtFilter::apply(filter, bbox, ts, opt, canvas);
 }
 
 
@@ -314,6 +315,40 @@ impl Filter<qt::Image> for QtFilter {
         p.reset_pen();
         p.set_brush(brush);
         p.draw_rect(0.0, 0.0, region.width as f64, region.height as f64);
+
+        Ok(Image::from_image(buffer, ColorSpace::SRGB))
+    }
+
+    fn apply_image(
+        fe: &usvg::FeImage,
+        region: ScreenRect,
+        subregion: ScreenRect,
+        opt: &Options,
+    ) -> Result<Image, Error> {
+        let mut buffer = create_image(region.width, region.height)?;
+
+        match fe.data {
+            usvg::FeImageKind::None => {}
+            usvg::FeImageKind::Image(ref data, format) => {
+                let mut p = qt::Painter::new(&mut buffer);
+
+                let dx = (subregion.x - region.x) as f64;
+                let dy = (subregion.y - region.y) as f64;
+                p.translate(dx, dy);
+
+                let view_box = usvg::ViewBox {
+                    rect: ScreenRect::new(0, 0, subregion.width, subregion.height).to_rect(),
+                    aspect: fe.aspect,
+                };
+
+                if format == usvg::ImageFormat::SVG {
+                    super::image::draw_svg(data, view_box, opt, &mut p);
+                } else {
+                    super::image::draw_raster(data, view_box, opt, &mut p);
+                }
+            }
+            usvg::FeImageKind::Use => {}
+        }
 
         Ok(Image::from_image(buffer, ColorSpace::SRGB))
     }

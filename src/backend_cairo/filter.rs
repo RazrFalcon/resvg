@@ -32,9 +32,10 @@ pub fn apply(
     filter: &usvg::Filter,
     bbox: Rect,
     ts: &usvg::Transform,
+    opt: &Options,
     canvas: &mut cairo::ImageSurface,
 ) {
-    CairoFilter::apply(filter, bbox, ts, canvas);
+    CairoFilter::apply(filter, bbox, ts, opt, canvas);
 }
 
 
@@ -379,6 +380,40 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         cr.set_source(&cairo::Pattern::SurfacePattern(patt));
         cr.rectangle(0.0, 0.0, region.width as f64, region.height as f64);
         cr.fill();
+
+        Ok(Image::from_image(buffer, ColorSpace::SRGB))
+    }
+
+    fn apply_image(
+        fe: &usvg::FeImage,
+        region: ScreenRect,
+        subregion: ScreenRect,
+        opt: &Options,
+    ) -> Result<Image, Error> {
+        let buffer = create_image(region.width, region.height)?;
+
+        match fe.data {
+            usvg::FeImageKind::None => {}
+            usvg::FeImageKind::Image(ref data, format) => {
+                let cr = cairo::Context::new(&buffer);
+
+                let dx = (subregion.x - region.x) as f64;
+                let dy = (subregion.y - region.y) as f64;
+                cr.translate(dx, dy);
+
+                let view_box = usvg::ViewBox {
+                    rect: ScreenRect::new(0, 0, subregion.width, subregion.height).to_rect(),
+                    aspect: fe.aspect,
+                };
+
+                if format == usvg::ImageFormat::SVG {
+                    super::image::draw_svg(data, view_box, opt, &cr);
+                } else {
+                    super::image::draw_raster(data, view_box, opt, &cr);
+                }
+            }
+            usvg::FeImageKind::Use => {}
+        }
 
         Ok(Image::from_image(buffer, ColorSpace::SRGB))
     }

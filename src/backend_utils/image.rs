@@ -17,7 +17,7 @@ use {
 };
 
 pub fn load_sub_svg(
-    image: &usvg::Image,
+    data: &usvg::ImageData,
     opt: &Options,
 ) -> Option<(usvg::Tree, Options)> {
     let mut sub_opt = Options {
@@ -33,7 +33,7 @@ pub fn load_sub_svg(
         background: None,
     };
 
-    let tree = match image.data {
+    let tree = match data {
         usvg::ImageData::Path(ref path) => {
             let path = get_abs_path(path, opt);
             sub_opt.usvg.path = Some(path.clone());
@@ -84,10 +84,9 @@ pub fn prepare_image_viewbox(img_size: ScreenSize, view_box: &mut usvg::ViewBox)
 }
 
 pub fn prepare_sub_svg_geom(
-    image: &usvg::Image,
+    mut view_box: usvg::ViewBox,
     img_size: ScreenSize,
 ) -> (usvg::Transform, Option<Rect>) {
-    let mut view_box = image.view_box;
     prepare_image_viewbox(img_size, &mut view_box);
     let r = view_box.rect;
 

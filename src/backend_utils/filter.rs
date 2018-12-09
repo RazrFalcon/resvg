@@ -125,9 +125,10 @@ pub trait Filter<T: ImageExt> {
         filter: &usvg::Filter,
         bbox: Rect,
         ts: &usvg::Transform,
+        opt: &Options,
         canvas: &mut T,
     ) {
-        match Self::_apply(filter, bbox, ts, canvas) {
+        match Self::_apply(filter, bbox, ts, opt, canvas) {
             Ok(_) => {}
             Err(Error::AllocFailed) =>
                 warn!("Memory allocation failed while processing the '{}' filter. Skipped.", filter.id),
@@ -142,6 +143,7 @@ pub trait Filter<T: ImageExt> {
         filter: &usvg::Filter,
         bbox: Rect,
         ts: &usvg::Transform,
+        opt: &Options,
         canvas: &mut T,
     ) -> Result<(), Error> {
         let mut results = Vec::new();
@@ -152,6 +154,7 @@ pub trait Filter<T: ImageExt> {
         for primitive in &filter.children {
             let input = &primitive.filter_input;
             let cs = primitive.color_interpolation;
+            let subregion = calc_subregion(filter, primitive, bbox, region, ts, &results);
 
             let mut result = match primitive.kind {
                 usvg::FilterKind::FeBlend(ref fe) => {
@@ -182,9 +185,11 @@ pub trait Filter<T: ImageExt> {
                     let input = Self::get_input(input, region, &results, canvas)?;
                     Self::apply_tile(input, region)
                 }
+                usvg::FilterKind::FeImage(ref fe) => {
+                    Self::apply_image(fe, region, subregion, opt)
+                }
             }?;
 
-            let subregion = calc_subregion(filter, primitive, region, ts, &results);
             if region != subregion {
                 // Clip result.
 
@@ -272,6 +277,13 @@ pub trait Filter<T: ImageExt> {
     fn apply_tile(
         input: Image<T>,
         region: ScreenRect,
+    ) -> Result<Image<T>, Error>;
+
+    fn apply_image(
+        fe: &usvg::FeImage,
+        region: ScreenRect,
+        subregion: ScreenRect,
+        opt: &Options,
     ) -> Result<Image<T>, Error>;
 
     fn apply_to_canvas(
@@ -557,33 +569,49 @@ fn calc_region(
 fn calc_subregion<T: ImageExt>(
     filter: &usvg::Filter,
     primitive: &usvg::FilterPrimitive,
+    bbox: Rect,
     filter_region: ScreenRect,
     ts: &usvg::Transform,
     results: &[FilterResult<T>],
 ) -> ScreenRect {
-    let region = if let usvg::FilterKind::FeOffset(..) = primitive.kind {
-        // `feOffset` inherits it's region from the input.
-        match primitive.filter_input {
-            Some(usvg::FilterInput::Reference(ref name)) => {
-                match results.iter().rev().find(|v| v.name == *name) {
-                    Some(ref res) => res.image.region,
-                    None => filter_region,
+    let region = match primitive.kind {
+        usvg::FilterKind::FeOffset(..) => {
+            // `feOffset` inherits it's region from the input.
+            match primitive.filter_input {
+                Some(usvg::FilterInput::Reference(ref name)) => {
+                    match results.iter().rev().find(|v| v.name == *name) {
+                        Some(ref res) => res.image.region,
+                        None => filter_region,
+                    }
+                }
+                None => {
+                    match results.last() {
+                        Some(ref res) => res.image.region,
+                        None => filter_region,
+                    }
+                }
+                _ => {
+                    filter_region
                 }
             }
-            None => {
-                match results.last() {
-                    Some(ref res) => res.image.region,
-                    None => filter_region,
-                }
-            }
-            _ => {
+        }
+        usvg::FilterKind::FeImage(..) => {
+            // `feImage` uses the object bbox.
+            if filter.primitive_units == usvg::Units::ObjectBoundingBox {
+                return Rect::new(
+                    bbox.x + bbox.width * primitive.x.unwrap_or(0.0),
+                    bbox.y + bbox.height * primitive.y.unwrap_or(0.0),
+                    bbox.width * primitive.width.unwrap_or(1.0),
+                    bbox.height * primitive.height.unwrap_or(1.0),
+                ).transform(*ts).to_screen_rect();
+            } else {
                 filter_region
             }
         }
-    } else {
-        filter_region
+        _ => filter_region,
     };
 
+    // TODO: Wrong! Does not account rotate and skew.
     let subregion = if filter.primitive_units == usvg::Units::ObjectBoundingBox {
         let subregion_bbox = Rect::new(
             primitive.x.unwrap_or(0.0),
@@ -595,10 +623,11 @@ fn calc_subregion<T: ImageExt>(
 
         region.to_rect().transform(ts)
     } else {
+        let (dx, dy) = ts.get_translate();
         let (sx, sy) = ts.get_scale();
         Rect::new(
-            primitive.x.map(|n| n * sx).unwrap_or(region.x as f64),
-            primitive.y.map(|n| n * sy).unwrap_or(region.y as f64),
+            primitive.x.map(|n| n * sx + dx).unwrap_or(region.x as f64),
+            primitive.y.map(|n| n * sy + dy).unwrap_or(region.y as f64),
             primitive.width.map(|n| n * sx).unwrap_or(region.width as f64),
             primitive.height.map(|n| n * sy).unwrap_or(region.height as f64),
         )

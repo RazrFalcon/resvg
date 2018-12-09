@@ -165,18 +165,22 @@ impl ScreenRect {
         ScreenSize::new(self.width, self.height)
     }
 
+    /// Returns rect's left edge position.
     pub fn left(&self) -> i32 {
         self.x
     }
 
+    /// Returns rect's right edge position.
     pub fn right(&self) -> i32 {
         self.x + self.width as i32
     }
 
+    /// Returns rect's top edge position.
     pub fn top(&self) -> i32 {
         self.y
     }
 
+    /// Returns rect's bottom edge position.
     pub fn bottom(&self) -> i32 {
         self.y + self.height as i32
     }
@@ -194,6 +198,7 @@ impl ScreenRect {
         true
     }
 
+    /// Fits the current rect into the specified bounds.
     pub fn fit_to_rect(&self, bounds: ScreenRect) -> Self {
         let mut r = *self;
 
@@ -211,6 +216,7 @@ impl ScreenRect {
         r
     }
 
+    /// Converts into `Rect`.
     pub fn to_rect(&self) -> Rect {
         Rect::new(self.x as f64, self.y as f64, self.width as f64, self.height as f64)
     }

@@ -26,20 +26,21 @@ pub fn draw(
     }
 
     if image.format == usvg::ImageFormat::SVG {
-        draw_svg(image, opt, cr);
+        draw_svg(&image.data, image.view_box, opt, cr);
     } else {
-        draw_raster(image, opt, cr);
+        draw_raster(&image.data, image.view_box, opt, cr);
     }
 
     image.view_box.rect
 }
 
-fn draw_raster(
-    image: &usvg::Image,
+pub fn draw_raster(
+    data: &usvg::ImageData,
+    mut view_box: usvg::ViewBox,
     opt: &Options,
     cr: &cairo::Context,
 ) {
-    let img = match image.data {
+    let img = match data {
         usvg::ImageData::Path(ref path) => {
             let path = image::get_abs_path(path, opt);
             try_opt_warn!(gdk_pixbuf::Pixbuf::new_from_file(path.clone()).ok(), (),
@@ -52,7 +53,6 @@ fn draw_raster(
     };
 
     let img_size = ScreenSize::new(img.get_width() as u32, img.get_height() as u32);
-    let mut view_box = image.view_box;
     image::prepare_image_viewbox(img_size, &mut view_box);
     let r = view_box.rect;
 
@@ -144,15 +144,16 @@ fn load_raster_data(data: &[u8]) -> Option<gdk_pixbuf::Pixbuf> {
     loader.get_pixbuf()
 }
 
-fn draw_svg(
-    image: &usvg::Image,
+pub fn draw_svg(
+    data: &usvg::ImageData,
+    view_box: usvg::ViewBox,
     opt: &Options,
     cr: &cairo::Context,
 ) {
-    let (tree, sub_opt) = try_opt!(image::load_sub_svg(image, opt), ());
+    let (tree, sub_opt) = try_opt!(image::load_sub_svg(data, opt), ());
 
     let img_size = tree.svg_node().size.to_screen_size();
-    let (ts, clip) = image::prepare_sub_svg_geom(image, img_size);
+    let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);
 
     if let Some(clip) = clip {
         cr.rectangle(clip.x, clip.y, clip.width, clip.height);
