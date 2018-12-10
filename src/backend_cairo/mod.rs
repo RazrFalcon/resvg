@@ -369,7 +369,7 @@ pub fn calc_node_bbox(
     let (surface, img_view) = create_surface(
         tree.svg_node().size.to_screen_size(),
         opt,
-    ).unwrap();
+    )?;
     let cr = cairo::Context::new(&surface);
 
     // We also have to apply the viewbox transform,

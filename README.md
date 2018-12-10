@@ -101,6 +101,13 @@ It also includes alternative libraries.
 
 All other dependencies aren't written by me for this project.
 
+## Safety
+
+- The library must not panic. Any panic should be considered a critical bug and reported.
+  There are only few methods that can produce a panic.
+- The core library structure (see above) does not use any `unsafe`,
+  but since all backends are implemented via FFI, we are stuck with the `unsafe` anyway.
+
 ## License
 
 *resvg* is licensed under the [MPLv2.0](https://www.mozilla.org/en-US/MPL/).

@@ -78,6 +78,7 @@ pub fn draw_raster(
             (0, 0, img.get_width() as u32, img.get_height() as u32)
         };
 
+        // Unwrap is safe, because no one uses the surface.
         let mut surface_data = surface.get_data().unwrap();
 
         let channels = img.get_n_channels() as u32;

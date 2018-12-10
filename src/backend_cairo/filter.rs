@@ -72,31 +72,35 @@ impl ImageExt for cairo::ImageSurface {
     }
 
     fn into_srgb(&mut self) {
-        let data = &mut self.get_data().unwrap();
+        if let Ok(ref mut data) = self.get_data() {
+            from_premultiplied(data);
 
-        from_premultiplied(data);
+            for p in data.as_bgra_mut() {
+                p.r = filter::LINEAR_RGB_TO_SRGB_TABLE[p.r as usize];
+                p.g = filter::LINEAR_RGB_TO_SRGB_TABLE[p.g as usize];
+                p.b = filter::LINEAR_RGB_TO_SRGB_TABLE[p.b as usize];
+            }
 
-        for p in data.as_bgra_mut() {
-            p.r = filter::LINEAR_RGB_TO_SRGB_TABLE[p.r as usize];
-            p.g = filter::LINEAR_RGB_TO_SRGB_TABLE[p.g as usize];
-            p.b = filter::LINEAR_RGB_TO_SRGB_TABLE[p.b as usize];
+            into_premultiplied(data);
+        } else {
+            warn!("Cairo surface is already borrowed.");
         }
-
-        into_premultiplied(data);
     }
 
     fn into_linear_rgb(&mut self) {
-        let data = &mut self.get_data().unwrap();
+        if let Ok(ref mut data) = self.get_data() {
+            from_premultiplied(data);
 
-        from_premultiplied(data);
+            for p in data.as_bgra_mut() {
+                p.r = filter::SRGB_TO_LINEAR_RGB_TABLE[p.r as usize];
+                p.g = filter::SRGB_TO_LINEAR_RGB_TABLE[p.g as usize];
+                p.b = filter::SRGB_TO_LINEAR_RGB_TABLE[p.b as usize];
+            }
 
-        for p in data.as_bgra_mut() {
-            p.r = filter::SRGB_TO_LINEAR_RGB_TABLE[p.r as usize];
-            p.g = filter::SRGB_TO_LINEAR_RGB_TABLE[p.g as usize];
-            p.b = filter::SRGB_TO_LINEAR_RGB_TABLE[p.b as usize];
+            into_premultiplied(data);
+        } else {
+            warn!("Cairo surface is already borrowed.");
         }
-
-        into_premultiplied(data);
     }
 }
 
@@ -163,10 +167,14 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
                 let mut image = copy_image(canvas, region)?;
 
                 // Set RGB to black. Keep alpha as is.
-                for p in image.get_data().unwrap().chunks_mut(4) {
-                    p[0] = 0;
-                    p[1] = 0;
-                    p[2] = 0;
+                if let Ok(ref mut data) = image.get_data() {
+                    for p in data.chunks_mut(4) {
+                        p[0] = 0;
+                        p[1] = 0;
+                        p[2] = 0;
+                    }
+                } else {
+                    warn!("Cairo surface is already borrowed.");
                 }
 
                 Ok(Image {
@@ -212,8 +220,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
 
         let (w, h) = (buffer.width(), buffer.height());
 
-        {
-            let data = &mut buffer.get_data().unwrap(); // TODO: remove unwrap()
+        if let Ok(ref mut data) = buffer.get_data() {
             from_premultiplied(data);
             filter::blur::apply(data, w, h, std_dx, std_dy, 4);
             into_premultiplied(data);
