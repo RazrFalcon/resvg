@@ -73,6 +73,7 @@ private:
 
         opt.languages = toCStr(QLocale().bcp47Name());
 
+        // TODO: should be set manually
         const auto screens = qApp->screens();
         if (!screens.isEmpty()) {
             const auto screen = screens.at(0);

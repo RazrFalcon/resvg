@@ -51,6 +51,14 @@ pub fn apply(
         mask::image_to_mask(&mut data, layers.image_size());
     }
 
+    if let Some(ref id) = mask.mask {
+        if let Some(ref mask_node) = node.tree().defs_by_id(id) {
+            if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
+                apply(mask_node, mask, opt, bbox, layers, sub_cr);
+            }
+        }
+    }
+
     sub_cr.set_matrix(cairo::Matrix::identity());
     sub_cr.set_source_surface(&*mask_surface, 0.0, 0.0);
     sub_cr.set_operator(cairo::Operator::DestIn);

@@ -8,12 +8,11 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
-- (resvg) Nested `clipPath` support.
+- (resvg) Nested `clipPath` and `mask` support.
 - (resvg) MSVC support.
 - (rendersvg) `font-family`, `font-size` and `languages` to args.
 - (usvg) `systemLanguage` attribute support.
 - (usvg) Default font family and size is configurable now.
-- (usvg) `mask` attribute on `mask` element support.
 - (c-api) `RESVG_ERROR_PARSING_FAILED`.
 - (c-api) `font_family`, `font_size` and `languages` to `resvg_options`.
 

@@ -43,6 +43,14 @@ pub fn apply(
 
     mask::image_to_mask(&mut mask_img.data_mut(), layers.image_size());
 
+    if let Some(ref id) = mask.mask {
+        if let Some(ref mask_node) = node.tree().defs_by_id(id) {
+            if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
+                apply(mask_node, mask, opt, bbox, layers, sub_p);
+            }
+        }
+    }
+
     sub_p.set_transform(&qt::Transform::default());
     sub_p.set_composition_mode(qt::CompositionMode::DestinationIn);
     sub_p.draw_image(0.0, 0.0, &mask_img);
