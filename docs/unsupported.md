@@ -9,6 +9,7 @@
   - `feDistantLight`
   - `fePointLight`
   - `feSpotLight`
+  - `feImage` with a reference to an element
 - Font based
   - `font`
   - `glyph`
@@ -27,6 +28,7 @@
 - `color-profile`
 - `marker`
 - `textPath`
+- `use` with a reference to an external SVG
 
 ### Attributes
 

@@ -574,6 +574,8 @@ fn calc_subregion<T: ImageExt>(
     ts: &usvg::Transform,
     results: &[FilterResult<T>],
 ) -> ScreenRect {
+    // TODO: rewrite/simplify/explain/whatever
+
     let region = match primitive.kind {
         usvg::FilterKind::FeOffset(..) => {
             // `feOffset` inherits it's region from the input.
