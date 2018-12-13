@@ -347,7 +347,7 @@ impl Filter<qt::Image> for QtFilter {
                     super::image::draw_raster(data, view_box, opt, &mut p);
                 }
             }
-            usvg::FeImageKind::Use => {}
+            usvg::FeImageKind::Use(..) => {}
         }
 
         Ok(Image::from_image(buffer, ColorSpace::SRGB))

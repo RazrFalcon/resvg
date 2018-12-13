@@ -31,7 +31,7 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 log = "0.4.5"
 rgb = "0.8.9"
 #usvg = "0.2"
-usvg = { git = "https://github.com/RazrFalcon/usvg", rev = "371f76b" }
+usvg = { git = "https://github.com/RazrFalcon/usvg", rev = "1f298f6" }
 #usvg = { path = "../usvg" }
 unicode-segmentation = "1.2.1"
 

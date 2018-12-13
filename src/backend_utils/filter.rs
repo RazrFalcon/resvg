@@ -193,9 +193,19 @@ pub trait Filter<T: ImageExt> {
             if region != subregion {
                 // Clip result.
 
-                let mut subregion2 = subregion;
-                subregion2.x -= region.x;
-                subregion2.y -= region.y;
+                // TODO: explain
+                let subregion2 = if let usvg::FilterKind::FeOffset(..) = primitive.kind {
+                    // We do not support clipping on feOffset.
+                    let mut subregion2 = region;
+                    subregion2.x = 0;
+                    subregion2.y = 0;
+                    subregion2
+                } else {
+                    let mut subregion2 = subregion;
+                    subregion2.x -= region.x;
+                    subregion2.y -= region.y;
+                    subregion2
+                };
 
                 let color_space = result.color_space;
                 let mut buffer = result.take()?;
