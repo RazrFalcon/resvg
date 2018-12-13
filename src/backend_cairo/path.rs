@@ -128,7 +128,7 @@ fn draw_subpath(
     } else {
         if let usvg::PathSegment::MoveTo { x, y } = segments[0] {
             // Draw zero length path.
-            let shift = 0.001; // Purely empirical.
+            let shift = 0.002; // Purely empirical.
             cr.new_sub_path();
             cr.move_to(x, y);
             cr.line_to(x + shift, y);
