@@ -15,6 +15,7 @@ This changelog also contains important changes in dependencies.
 - (usvg) Default font family and size is configurable now.
 - (c-api) `RESVG_ERROR_PARSING_FAILED`.
 - (c-api) `font_family`, `font_size` and `languages` to `resvg_options`.
+- (qt-api) `ResvgRenderer::setDevicePixelRatio`.
 
 ### Changed
 - (rendersvg) Use `gumdrop` instead of `getopts`.

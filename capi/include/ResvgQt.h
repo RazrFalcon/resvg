@@ -59,6 +59,7 @@ public:
 
     resvg_render_tree *tree = nullptr;
     resvg_options opt;
+    qreal scaleFactor = 1.0;
     QRectF viewBox;
     QString errMsg;
 
@@ -73,12 +74,7 @@ private:
 
         opt.languages = toCStr(QLocale().bcp47Name());
 
-        // TODO: should be set manually
-        const auto screens = qApp->screens();
-        if (!screens.isEmpty()) {
-            const auto screen = screens.at(0);
-            opt.dpi = screen->logicalDotsPerInch() * screen->devicePixelRatio();
-        }
+        opt.dpi = 96 * scaleFactor;
     }
 
     void clear()
@@ -226,6 +222,11 @@ public:
      * @brief Returns element's transform.
      */
     QTransform transformForElement(const QString &id) const;
+
+    /**
+     * @brief Sets the device pixel ratio for the image.
+     */
+    void setDevicePixelRatio(qreal scaleFactor);
 
     /**
      * @brief Renders the SVG data to canvas.
@@ -411,6 +412,11 @@ inline QTransform ResvgRenderer::transformForElement(const QString &id) const
     }
 
     return QTransform();
+}
+
+inline void ResvgRenderer::setDevicePixelRatio(qreal scaleFactor)
+{
+    d->scaleFactor = scaleFactor;
 }
 
 inline void ResvgRenderer::render(QPainter *p)
