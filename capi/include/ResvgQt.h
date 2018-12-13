@@ -429,17 +429,16 @@ inline void ResvgRenderer::render(QPainter *p, const QRectF &bounds)
     if (!d->tree)
         return;
 
-    const auto r = bounds.isValid() ? bounds : p->viewport();
+    if (bounds.isValid()) {
+        Q_UNIMPLEMENTED();
+        return;
+    }
 
     p->save();
     p->setRenderHint(QPainter::Antialiasing);
 
-    const double sx = (double)r.width() / d->viewBox.width();
-    const double sy = (double)r.height() / d->viewBox.height();
-
-    p->setTransform(QTransform(sx, 0, 0, sy, r.x(), r.y()), true);
-
-    resvg_size imgSize { (uint)d->viewBox.width(), (uint)d->viewBox.height() };
+    const auto r = p->viewport();
+    resvg_size imgSize { (uint)r.width(), (uint)r.height() };
     resvg_qt_render_to_canvas(d->tree, &d->opt, imgSize, p);
 
     p->restore();
@@ -447,31 +446,8 @@ inline void ResvgRenderer::render(QPainter *p, const QRectF &bounds)
 
 inline void ResvgRenderer::render(QPainter *p, const QString &elementId, const QRectF &bounds)
 {
-    if (!d->tree)
-        return;
-
-    const auto utf8Str = elementId.toUtf8();
-    const auto rawId = utf8Str.constData();
-
-    resvg_rect bbox;
-    if (!resvg_qt_get_node_bbox(d->tree, &d->opt, rawId, &bbox)) {
-        qWarning() << QString(QStringLiteral("Element '%1' has no bounding box.")).arg(elementId);
-        return;
-    }
-
-    p->save();
-    p->setRenderHint(QPainter::Antialiasing);
-
-    const auto r = bounds.isValid() ? bounds : p->viewport();
-
-    const double sx = (double)r.width() / bbox.width;
-    const double sy = (double)r.height() / bbox.height;
-    p->setTransform(QTransform(sx, 0, 0, sy, bounds.x(), bounds.y()), true);
-
-    resvg_size imgSize { (uint)bbox.width, (uint)bbox.height };
-    resvg_qt_render_to_canvas_by_id(d->tree, &d->opt, imgSize, rawId, p);
-
-    p->restore();
+    Q_UNUSED(p) Q_UNUSED(elementId) Q_UNUSED(bounds)
+    Q_UNIMPLEMENTED();
 }
 
 inline void ResvgRenderer::initLog()
