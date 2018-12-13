@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.4.0] - 2018-12-13
 ### Added
+- (resvg) Initial filters support.
 - (resvg) Nested `clipPath` and `mask` support.
 - (resvg) MSVC support.
 - (rendersvg) `font-family`, `font-size` and `languages` to args.
@@ -32,7 +35,7 @@ This changelog also contains important changes in dependencies.
 - (usvg) `display` attribute processing.
 - (usvg) Recursive `mask` resolving.
 - (usvg) `inherit` attribute value resolving.
-- (svgdom) Namespaces resolving.
+- (svgdom) XML namespaces resolving.
 
 ### Removed
 - (rendersvg) `failure` dependency.
