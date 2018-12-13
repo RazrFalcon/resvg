@@ -1,7 +1,6 @@
 .directory
 target
 .idea
-Cargo.lock
 *.pro.user
 *.pro.user.*
 .qmake.stash
