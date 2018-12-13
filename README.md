@@ -81,12 +81,23 @@ It also includes alternative libraries.
 
 ## Performance
 
-![Chart3](./.github/perf.svg)
+Note that all tested applications have a different SVG support, which impacts the performance.
 
-- `librsvg` is slower than `resvg` because Oxygen Icon Theme is using Gaussian blur heavily, which is expensive.
-- QtSvg is fast because it doesn't support Gaussian blur, clipPath, mask and pattern that are heavily used in the Oxygen Icon Theme.
-- Inkscape and Batik are slow just because.
-- [More details.](https://github.com/RazrFalcon/resvg-test-suite/blob/master/tools/perf/README.md)
+Also, we do not test against Chrome, Firefox, Inkscape and Batik because they have a huge startup time.
+
+![Chart3](./.github/perf-elementary.svg)
+
+- Elementary Icon Theme contains 3417 files.
+- resvg-qt is slow for unknown reasons.
+
+![Chart4](./.github/perf-oxygen.svg)
+
+- Oxygen Icon Theme contains 4947 files.
+- All images were converted from `.svgz` to `.svg` beforehand.
+- `resvg` is slower than `librsvg` because Oxygen Icon Theme is using Gaussian blur heavily, which is expensive. 
+  And `librsvg` uses box blur optimization and multithreading, while `resvg` always uses a single-threaded IIR blur (at least for now).
+- QtSvg doesn't support `filter`, `clipPath`, `mask` and `pattern` that are heavily used in the Oxygen Icon Theme. 
+  So it's actually very slow.
 
 ## Project structure
 
@@ -106,7 +117,7 @@ All other dependencies aren't written by me for this project.
 - The library must not panic. Any panic should be considered a critical bug and reported.
   There are only few methods that can produce a panic.
 - The core library structure (see above) does not use any `unsafe`,
-  but since all backends are implemented via FFI, we are stuck with the `unsafe` anyway.
+  but since all backends are implemented via FFI, we are stuck with `unsafe` anyway.
 
 ## License
 
