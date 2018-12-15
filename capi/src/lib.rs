@@ -708,6 +708,7 @@ fn to_native_opt(opt: &resvg_options) -> resvg::Options {
             font_size: opt.font_size,
             languages,
             keep_named_groups: opt.keep_named_groups,
+            keep_invisible_shapes: false,
         },
         fit_to,
         background,
