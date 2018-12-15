@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- (usvg) `offset` attribute resolving inside the `stop` element.
+- (svgdom) `stroke-miterlimit` attribute parsing.
+- (svgdom) `number` attribute type parsing.
+- (svgdom) `offset` attribute parsing.
 
 ## [0.4.0] - 2018-12-13
 ### Added
