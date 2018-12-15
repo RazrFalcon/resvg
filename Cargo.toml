@@ -30,7 +30,9 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 [dependencies]
 log = "0.4.5"
 rgb = "0.8.9"
-usvg = "0.4"
+#usvg = "0.4"
+usvg = { git = "https://github.com/RazrFalcon/usvg.git", rev = "5892ebe" }
+#usvg = { path = "../usvg" }
 unicode-segmentation = "1.2.1"
 
 # cairo backend

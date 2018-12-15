@@ -97,11 +97,14 @@ fn size_scale(s1: ScreenSize, s2: ScreenSize, expand: bool) -> ScreenSize {
 pub trait RectExt {
     /// Creates a new `Rect` for bounding box calculation.
     ///
-    /// Shorthand for `Rect::from_xywh(f64::MAX, f64::MAX, 1.0, 1.0)`.
+    /// Shorthand for `Rect::new(f64::MAX, f64::MAX, 1.0, 1.0)`.
     fn new_bbox() -> Self;
 
-    /// Expands the `Rect` to the specified size.
+    /// Expands the `Rect` to the provided size.
     fn expand(&mut self, r: Rect);
+
+    /// Transforms the `Rect` using the provided `bbox`.
+    fn bbox_transform(&self, bbox: Rect) -> Self;
 
     /// Returns rect's size in screen units.
     fn to_screen_size(&self) -> ScreenSize;
@@ -130,6 +133,15 @@ impl RectExt for Rect {
         if self.y + self.height < r.y + r.height {
             self.height = r.y + r.height - self.y;
         }
+    }
+
+    fn bbox_transform(&self, bbox: Rect) -> Self {
+        let x = self.x * bbox.width + bbox.x;
+        let y = self.y * bbox.height + bbox.y;
+        let w = self.width * bbox.width;
+        let h = self.height * bbox.height;
+
+        Self::new(x, y, w, h)
     }
 
     fn to_screen_size(&self) -> ScreenSize {
@@ -244,4 +256,18 @@ impl From<(i32, i32, u32, u32)> for ScreenRect {
 #[inline]
 fn f64_min(v1: f64, v2: f64) -> f64 {
     if v1 < v2 { v1 } else { v2 }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use usvg::FuzzyEq;
+
+    #[test]
+    fn bbox_transform_1() {
+        let r = Rect::new(10.0, 20.0, 30.0, 40.0);
+        assert!(r.bbox_transform(Rect::new(0.2, 0.3, 0.4, 0.5))
+                 .fuzzy_eq(&Rect::new(4.2, 10.3, 12.0, 20.0)));
+    }
 }

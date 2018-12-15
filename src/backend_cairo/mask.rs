@@ -30,7 +30,7 @@ pub fn apply(
         mask_cr.set_matrix(sub_cr.get_matrix());
 
         let r = if mask.units == usvg::Units::ObjectBoundingBox {
-            mask.rect.transform(usvg::Transform::from_bbox(bbox))
+            mask.rect.bbox_transform(bbox)
         } else {
             mask.rect
         };

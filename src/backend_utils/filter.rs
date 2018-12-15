@@ -610,12 +610,17 @@ fn calc_subregion<T: ImageExt>(
         usvg::FilterKind::FeImage(..) => {
             // `feImage` uses the object bbox.
             if filter.primitive_units == usvg::Units::ObjectBoundingBox {
-                return Rect::new(
-                    bbox.x + bbox.width * primitive.x.unwrap_or(0.0),
-                    bbox.y + bbox.height * primitive.y.unwrap_or(0.0),
-                    bbox.width * primitive.width.unwrap_or(1.0),
-                    bbox.height * primitive.height.unwrap_or(1.0),
-                ).transform(*ts).to_screen_rect();
+                // TODO: wrong
+                let ts_bbox = Rect::new(ts.e, ts.f, ts.a, ts.d);
+
+                let r = Rect::new(
+                    primitive.x.unwrap_or(0.0),
+                    primitive.y.unwrap_or(0.0),
+                    primitive.width.unwrap_or(1.0),
+                    primitive.height.unwrap_or(1.0),
+                );
+
+                return r.bbox_transform(bbox).bbox_transform(ts_bbox).to_screen_rect();
             } else {
                 filter_region
             }
@@ -631,9 +636,8 @@ fn calc_subregion<T: ImageExt>(
             primitive.width.unwrap_or(1.0),
             primitive.height.unwrap_or(1.0),
         );
-        let ts = usvg::Transform::from_bbox(subregion_bbox);
 
-        region.to_rect().transform(ts)
+        region.to_rect().bbox_transform(subregion_bbox)
     } else {
         let (dx, dy) = ts.get_translate();
         let (sx, sy) = ts.get_scale();

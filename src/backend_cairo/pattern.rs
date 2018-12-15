@@ -24,7 +24,7 @@ pub fn apply(
     cr: &cairo::Context,
 ) {
     let r = if pattern.units == usvg::Units::ObjectBoundingBox {
-        pattern.rect.transform(usvg::Transform::from_bbox(bbox))
+        pattern.rect.bbox_transform(bbox)
     } else {
         pattern.rect
     };

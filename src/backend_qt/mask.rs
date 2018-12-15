@@ -27,7 +27,7 @@ pub fn apply(
         mask_p.set_transform(&sub_p.get_transform());
 
         let r = if mask.units == usvg::Units::ObjectBoundingBox {
-            mask.rect.transform(usvg::Transform::from_bbox(bbox))
+            mask.rect.bbox_transform(bbox)
         } else {
             mask.rect
         };
