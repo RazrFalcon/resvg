@@ -220,7 +220,7 @@ fn init_font(dom_font: &usvg::Font, dpi: f64) -> pango::FontDescription {
     };
     font.set_stretch(font_stretch);
 
-    let font_size = dom_font.size * (pango::SCALE as f64) / dpi * 72.0;
+    let font_size = dom_font.size.value() * (pango::SCALE as f64) / dpi * 72.0;
     font.set_size(font_size as i32);
 
     font

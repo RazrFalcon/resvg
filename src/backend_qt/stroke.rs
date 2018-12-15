@@ -68,7 +68,7 @@ pub fn apply(
             };
             pen.set_line_join(linejoin);
 
-            pen.set_miter_limit(stroke.miterlimit);
+            pen.set_miter_limit(stroke.miterlimit.value());
             pen.set_width(stroke.width.value());
 
             if let Some(ref list) = stroke.dasharray {

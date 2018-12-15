@@ -29,7 +29,7 @@ pub fn prepare_radial(
     bbox: Rect,
     brush: &mut qt::Brush,
 ) {
-    let mut grad = qt::RadialGradient::new(g.cx, g.cy, g.fx, g.fy, g.r);
+    let mut grad = qt::RadialGradient::new(g.cx, g.cy, g.fx, g.fy, *g.r);
     prepare_base(&g.base, opacity, &mut grad);
 
     brush.set_radial_gradient(grad);

@@ -30,7 +30,7 @@ pub fn prepare_radial(
     bbox: Rect,
     cr: &cairo::Context
 ) {
-    let grad = cairo::RadialGradient::new(g.fx, g.fy, 0.0, g.cx, g.cy, g.r);
+    let grad = cairo::RadialGradient::new(g.fx, g.fy, 0.0, g.cx, g.cy, *g.r);
     prepare_base(&g.base, &grad, opacity, bbox);
     cr.set_source(&cairo::Pattern::RadialGradient(grad));
 }

@@ -64,7 +64,7 @@ pub fn apply(
                 None => cr.set_dash(&[], 0.0),
             }
 
-            cr.set_miter_limit(stroke.miterlimit);
+            cr.set_miter_limit(stroke.miterlimit.value());
             cr.set_line_width(stroke.width.value());
         }
         None => {

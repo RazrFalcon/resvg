@@ -160,7 +160,7 @@ fn init_font(dom_font: &usvg::Font) -> qt::Font {
     };
     font.set_stretch(font_stretch);
 
-    font.set_size(dom_font.size);
+    font.set_size(dom_font.size.value());
 
     font
 }
