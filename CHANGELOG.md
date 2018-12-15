@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- (resvg) Keep invisible shapes during *export by ID*.
+  Required for a proper bbox resolving.
+
 ### Fixed
 - (usvg) `offset` attribute resolving inside the `stop` element.
 - (svgdom) `stroke-miterlimit` attribute parsing.

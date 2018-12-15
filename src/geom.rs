@@ -77,7 +77,7 @@ pub trait SizeExt {
 
 impl SizeExt for Size {
     fn to_screen_size(&self) -> ScreenSize {
-        ScreenSize::new(self.width as u32, self.height as u32)
+        ScreenSize::new(self.width.round() as u32, self.height.round() as u32)
     }
 }
 

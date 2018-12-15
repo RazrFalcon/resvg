@@ -28,6 +28,7 @@ pub fn load_sub_svg(
             font_size: opt.usvg.font_size,
             languages: opt.usvg.languages.clone(),
             keep_named_groups: false,
+            keep_invisible_shapes: false,
         },
         fit_to: FitTo::Original,
         background: None,
