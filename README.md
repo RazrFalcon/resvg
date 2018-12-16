@@ -94,15 +94,15 @@ Also, we do not test against Chrome, Firefox, Inkscape and Batik because they ha
 
 - Oxygen Icon Theme contains 4947 files.
 - All images were converted from `.svgz` to `.svg` beforehand.
-- `resvg` is slower than `librsvg` because Oxygen Icon Theme is using Gaussian blur heavily, which is expensive. 
+- `resvg` is slower than `librsvg` because Oxygen Icon Theme is using Gaussian blur heavily, which is expensive.
   And `librsvg` uses box blur optimization and multithreading, while `resvg` always uses a single-threaded IIR blur (at least for now).
-- QtSvg doesn't support `filter`, `clipPath`, `mask` and `pattern` that are heavily used in the Oxygen Icon Theme. 
+- QtSvg doesn't support `filter`, `clipPath`, `mask` and `pattern` that are heavily used in the Oxygen Icon Theme.
   So it's actually very slow.
 
 ## Project structure
 
 - `resvg` - rendering backends implementation
-  - [`usvg`](https://github.com/RazrFalcon/usvg) - an SVG simplification tool
+  - [`usvg`](./usvg) - an SVG simplification tool
     - [`svgdom`](https://github.com/RazrFalcon/svgdom) - a DOM-like SVG tree
       - [`roxmltree`](https://github.com/RazrFalcon/roxmltree) - a DOM-like XML tree
         - [`xmlparser`](https://github.com/RazrFalcon/xmlparser) - an XML parser

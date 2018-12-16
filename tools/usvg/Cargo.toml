@@ -1,0 +1,19 @@
+[package]
+name = "usvg-cli"
+version = "0.4.0"
+authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
+keywords = ["svg"]
+license = "MPL-2.0"
+description = "An SVG simplification tool."
+categories = ["multimedia::images"]
+workspace = "../../"
+
+[dependencies]
+fern = "0.5"
+gumdrop = "0.5"
+log = "0.4"
+usvg = { path = "../../usvg" }
+
+[[bin]]
+name = "usvg"
+path = "src/main.rs"

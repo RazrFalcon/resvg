@@ -1,0 +1,33 @@
+[package]
+name = "usvg"
+# When updating version, also modify html_root_url in the lib.rs and in the cli/Cargo.toml
+version = "0.4.0"
+authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
+keywords = ["svg"]
+license = "MPL-2.0"
+description = "An SVG simplification library."
+categories = ["multimedia::images"]
+repository = "https://github.com/RazrFalcon/resvg"
+documentation = "https://docs.rs/usvg/"
+readme = "README.md"
+workspace = ".."
+
+[dependencies]
+base64 = "0.9" # Do not update, because a lot of important code was removed.
+libflate = "0.1"
+log = "0.4"
+lyon_geom = "0.12"
+rctree = "0.2.1"
+svgdom = { git = "https://github.com/RazrFalcon/svgdom", rev = "f69fc2a" }
+#svgdom = { path = "../svgdom" }
+unicode-segmentation = "1.2.1"
+
+[dev-dependencies]
+assert_cli = "0.6"
+pretty_assertions = "0.5.1"
+rustc-test = "0.3"
+rustc_version = "0.2.2"
+serde = "1.0.34"
+serde_derive = "1.0.34"
+tempdir = "0.3"
+toml = "0.4.5"

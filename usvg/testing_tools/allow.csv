@@ -1,0 +1,164 @@
+a-display-002,25284,chrome bug
+a-display-003,25284,chrome bug
+a-display-004,31852,chrome bug
+a-display-005,2018,bug
+a-display-006,25,bug
+a-display-007,27184,chrome bug
+a-display-008,326
+a-fill-025,25604,chrome bug
+a-fill-034,25604,chrome bug
+a-font-size-005,824,chrome uses different coefficients
+a-font-size-007,1538,UA dependent
+a-font-size-008,656,UA dependent
+a-font-size-013,189,UB #10
+a-font-size-016,1510,UA dependent
+a-font-size-017,1088,UA dependent
+a-font-size-019,649,bug
+a-font-weight-003,484,chrome bug
+a-font-weight-012,714,chrome bug
+a-opacity-001,580
+a-opacity-002,137
+a-stroke-dasharray-012,244
+a-stroke-width-004,960,chrome bug
+a-systemLanguage-001,25604,chrome bug
+a-systemLanguage-002,25604,chrome bug
+a-systemLanguage-003,25604,chrome bug
+a-systemLanguage-005,25604,chrome bug
+a-systemLanguage-006,25284,chrome bug
+a-systemLanguage-008,31852,chrome bug
+a-systemLanguage-009,2018,chrome bug
+a-systemLanguage-010,27184,chrome bug
+a-text-anchor-006,792,chrome or freetype bug
+a-text-anchor-008,846,bug #11
+a-text-decoration-001,363,unimplemented #4
+a-text-decoration-002,450,unimplemented #4
+a-text-decoration-003,361,unimplemented #4
+a-text-decoration-004,1166,unimplemented #4
+a-text-decoration-005,364,unimplemented #4
+a-text-decoration-006,364,unimplemented #4
+a-text-decoration-007,363,unimplemented #4
+a-text-decoration-008,242,unimplemented #4
+a-text-decoration-009,295,unimplemented #4
+a-visibility-005,137
+a-visibility-006,137
+a-visibility-007,27
+e-circle-001,519
+e-circle-002,538
+e-circle-003,262
+e-circle-004,266
+e-circle-005,134
+e-circle-006,538
+e-clipPath-005,122
+e-clipPath-006,215
+e-clipPath-007,31
+e-clipPath-008,230
+e-clipPath-015,57
+e-clipPath-017,397
+e-clipPath-019,97
+e-clipPath-020,97
+e-clipPath-021,97
+e-clipPath-029,66
+e-clipPath-030,50
+e-clipPath-031,191
+e-clipPath-034,114
+e-clipPath-035,50
+e-clipPath-036,97
+e-clipPath-037,66
+e-ellipse-001,464
+e-ellipse-002,11499,chrome bug
+e-ellipse-003,20329,chrome bug
+e-ellipse-005,223
+e-ellipse-006,246
+e-ellipse-007,123
+e-feImage-006,14408,unsupported
+e-feImage-011,119
+e-filter-017,17534,chrome bug
+e-filter-018,10127,chrome bug
+e-filter-019,21903,chrome bug
+e-image-006,15169,chrome quirks
+e-image-008,15169,chrome quirks
+e-image-025,19951,bug #13
+e-image-026,22690,bug #13
+e-image-027,22690,bug #13
+e-image-028,22690,bug #13
+e-image-029,24795,bug #13
+e-image-030,18864,bug #13
+e-image-031,18864,bug #13
+e-mask-015,38
+e-mask-017,22344,bug #14
+e-mask-020,12804,bug
+e-mask-022,21564,UB
+e-path-010,42
+e-path-011,130
+e-path-032,142
+e-path-033,153
+e-path-034,135
+e-path-035,135
+e-path-036,138
+e-path-037,135
+e-path-038,131
+e-path-039,135
+e-pattern-001,170
+e-pattern-002,173
+e-pattern-003,170
+e-pattern-004,170
+e-pattern-005,3687
+e-pattern-006,168
+e-pattern-009,172
+e-pattern-011,173
+e-pattern-012,175
+e-pattern-013,175
+e-pattern-014,335
+e-pattern-015,335
+e-pattern-016,335
+e-pattern-017,175
+e-pattern-018,1262
+e-pattern-020,684
+e-pattern-021,2956,UA dependent
+e-pattern-022,174
+e-pattern-023,174
+e-pattern-024,174
+e-pattern-026,19086,bug
+e-radialGradient-031,38237,fixes chrome bug
+e-rect-004,96
+e-rect-005,106
+e-rect-006,106
+e-rect-013,106
+e-rect-014,106
+e-rect-018,521
+e-rect-019,521
+e-rect-020,390
+e-rect-021,289
+e-rect-022,291
+e-rect-023,3322,chrome uses different coefficients
+e-rect-024,138
+e-style-004,39208,CSS support
+e-style-006,39208,CSS support
+e-svg-002,25604,svgdom bug
+e-svg-003,1284,svgdom bug
+e-svg-008,592
+e-svg-022,538
+e-svg-023,538
+e-svg-024,68
+e-svg-025,42
+e-svg-026,61
+e-svg-027,28
+e-svg-028,375
+e-svg-029,375
+e-svg-030,68
+e-switch-002,25604,unsupported #15
+e-switch-005,25604,chrome bug
+e-switch-006,25604,chrome bug
+e-switch-007,25604,chrome bug
+e-switch-009,25604,chrome bug
+e-symbol-006,58
+e-text-016,1551,chrome uses different coefficients
+e-text-032,552,unsupported #4
+e-text-033,361,unsupported #4
+e-tref-001,2005,chrome bug
+e-tref-002,1189,chrome bug
+e-tref-005,2005,chrome bug
+e-tref-006,25,bug
+e-tref-007,2005,chrome bug
+e-tref-008,720,bug
+e-tspan-015,3283,bug

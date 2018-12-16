@@ -1,0 +1,26 @@
+input = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1">
+    <clipPath id="clip1">
+        <rect/>
+        <line/>
+        <polyline/>
+        <polygon/>
+        <circle/>
+        <ellipse/>
+        <path/>
+    </clipPath>
+    <rect clip-path="url(#clip1)" width="10" height="10"/>
+</svg>
+'''
+output = '''
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="1"
+    height="1"
+    viewBox="0 0 1 1"
+    preserveAspectRatio="xMidYMid"
+    xmlns:usvg="https://github.com/RazrFalcon/usvg"
+    usvg:version="0.4.0">
+    <defs/>
+</svg>
+'''

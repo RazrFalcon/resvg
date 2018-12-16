@@ -1,0 +1,174 @@
+# All supported elements should be listed.
+# We keep id's even if `keep_named_groups` is disabled.
+# ID on `svg`, `defs`, `stop` and `tspan` is ignored because they can't be rendered directly.
+input = '''
+<svg id="svg1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1">
+    <defs id="defs1">
+        <linearGradient id="lg1">
+            <stop id="stop1" offset="0" stop-color="white"/>
+            <stop offset="1" stop-color="black"/>
+        </linearGradient>
+        <radialGradient id="rg1">
+            <stop offset="0" stop-color="white"/>
+            <stop offset="1" stop-color="black"/>
+        </radialGradient>
+        <clipPath id="clip1">
+            <rect id="rect2" width="10" height="10"/>
+        </clipPath>
+        <pattern id="patt1" width="1" height="1">
+            <rect width="10" height="10"/>
+        </pattern>
+    </defs>
+    <rect id="rect1" fill="url(#lg1)" stroke="url(#rg1)" clip-path="url(#clip1)" width="10" height="10"/>
+    <path id="path1" fill="url(#patt1)" d="M 10 20 30 40"/>
+    <text id="text1">Some text</text>
+    <text id="text2"><tspan id="tspan2">Some text</tspan></text>
+    <image id="image1" width="1" height="1" xlink:href="data:image/png;base64,
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAB3RJTUUH4gMLDwAjrsLbtwAAAAlw
+        SFlzAAAuIwAALiMBeKU/dgAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAAG
+        UExURQAA/xjQP14JpdQAAAABYktHRACIBR1IAAAAFklEQVR42mMAgvp/IJTAhgdB1ADVAgDvdAnx
+        N1Ib1gAAAABJRU5ErkJggg=="/>
+</svg>
+'''
+output = '''
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    width="1"
+    height="1"
+    viewBox="0 0 1 1"
+    preserveAspectRatio="xMidYMid"
+    xmlns:usvg="https://github.com/RazrFalcon/usvg"
+    usvg:version="0.4.0">
+    <defs>
+        <linearGradient
+            id="lg1"
+            x1="0"
+            y1="0"
+            x2="1"
+            y2="0"
+            gradientUnits="objectBoundingBox"
+            spreadMethod="pad">
+            <stop
+                stop-color="#ffffff"
+                stop-opacity="1"
+                offset="0"/>
+            <stop
+                stop-color="#000000"
+                stop-opacity="1"
+                offset="1"/>
+        </linearGradient>
+        <radialGradient
+            id="rg1"
+            cx="0.5"
+            cy="0.5"
+            r="0.5"
+            fx="0.5"
+            fy="0.5"
+            gradientUnits="objectBoundingBox"
+            spreadMethod="pad">
+            <stop
+                stop-color="#ffffff"
+                stop-opacity="1"
+                offset="0"/>
+            <stop
+                stop-color="#000000"
+                stop-opacity="1"
+                offset="1"/>
+        </radialGradient>
+        <clipPath
+            id="clip1"
+            clipPathUnits="userSpaceOnUse">
+            <path
+                id="rect2"
+                fill="#000000"
+                fill-opacity="1"
+                stroke="none"
+                clip-rule="nonzero"
+                visibility="visible"
+                d="M 0 0 L 10 0 L 10 10 L 0 10 Z"/>
+        </clipPath>
+        <pattern
+            id="patt1"
+            x="0"
+            y="0"
+            width="1"
+            height="1"
+            patternUnits="objectBoundingBox"
+            patternContentUnits="userSpaceOnUse">
+            <path
+                fill="#000000"
+                fill-opacity="1"
+                fill-rule="nonzero"
+                stroke="none"
+                visibility="visible"
+                d="M 0 0 L 10 0 L 10 10 L 0 10 Z"/>
+        </pattern>
+    </defs>
+    <g
+        clip-path="url(#clip1)">
+        <path
+            id="rect1"
+            fill="url(#lg1)"
+            fill-opacity="1"
+            fill-rule="nonzero"
+            stroke="url(#rg1)"
+            stroke-dasharray="none"
+            stroke-dashoffset="0"
+            stroke-linecap="butt"
+            stroke-linejoin="miter"
+            stroke-miterlimit="4"
+            stroke-opacity="1"
+            stroke-width="1"
+            visibility="visible"
+            d="M 0 0 L 10 0 L 10 10 L 0 10 Z"/>
+    </g>
+    <path
+        id="path1"
+        fill="url(#patt1)"
+        fill-opacity="1"
+        fill-rule="nonzero"
+        stroke="none"
+        visibility="visible"
+        d="M 10 20 L 30 40"/>
+    <text
+        id="text1"><tspan><tspan
+        fill="#000000"
+        fill-opacity="1"
+        fill-rule="nonzero"
+        stroke="none"
+        font-family="Times New Roman"
+        font-size="12"
+        font-stretch="normal"
+        font-style="normal"
+        font-variant="normal"
+        font-weight="400"
+        visibility="visible">Some text</tspan></tspan></text>
+    <text
+        id="text2"><tspan><tspan
+        fill="#000000"
+        fill-opacity="1"
+        fill-rule="nonzero"
+        stroke="none"
+        font-family="Times New Roman"
+        font-size="12"
+        font-stretch="normal"
+        font-style="normal"
+        font-variant="normal"
+        font-weight="400"
+        visibility="visible">Some text</tspan></tspan></text>
+    <image
+        id="image1"
+        visibility="visible"
+        preserveAspectRatio="xMidYMid"
+        x="0"
+        y="0"
+        width="1"
+        height="1"
+        xlink:href="data:image/png;base64,
+iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAB3RJTUUH4gMLDwAj
+rsLbtwAAAAlwSFlzAAAuIwAALiMBeKU/dgAAABl0RVh0Q29tbWVudABDcmVhdGVk
+IHdpdGggR0lNUFeBDhcAAAAGUExURQAA/xjQP14JpdQAAAABYktHRACIBR1IAAAA
+FklEQVR42mMAgvp/IJTAhgdB1ADVAgDvdAnxN1Ib1gAAAABJRU5ErkJggg=="/>
+</svg>
+'''

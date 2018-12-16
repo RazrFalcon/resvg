@@ -15,13 +15,13 @@ categories = ["multimedia::images"]
 members = [
     "capi",
     "tools/rendersvg",
+    "tools/usvg",
     "examples/cairo-rs",
+    "usvg",
 ]
 exclude = [
     "examples/cairo-rs",
     "testing_tools",
-    "workdir-qt", # for CI tests
-    "workdir-cairo", # for CI tests
 ]
 
 [badges]
@@ -30,8 +30,8 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 [dependencies]
 log = "0.4.5"
 rgb = "0.8.9"
-usvg = { git = "https://github.com/RazrFalcon/usvg", rev = "5346684" }
-#usvg = { path = "../usvg" }
+#usvg = { git = "https://github.com/RazrFalcon/usvg", rev = "5346684" }
+usvg = { path = "./usvg" }
 unicode-segmentation = "1.2.1"
 
 # cairo backend
@@ -44,7 +44,7 @@ pangocairo = { version = "0.6", optional = true }
 resvg-qt = { version = "0.4", optional = true }
 
 [features]
-cairo-backend = ["cairo-rs", "pango", "pangocairo", "gdk-pixbuf"]
+cairo-backend = ["cairo-rs", "gdk-pixbuf", "pango", "pangocairo"]
 qt-backend = ["resvg-qt"]
 
 [lib]

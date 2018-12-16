@@ -1,0 +1,246 @@
+= Micro SVG Document Structure
+:toc:
+
+:1H: #
+
+== Elements
+
+=== svg
+
+The `svg` element is the root element of the document.
+It's defined only once and can't be nested, unlike the SVG spec.
+
+Children: `defs`, `g`, `path`, `text` and `image`.
+
+Attributes: `width`, `height`, `viewBox` and `preserveAspectRatio`.
+
+=== defs
+
+Children: `linearGradient`, `radialGradient`, `clipPath`, `mask` and `pattern`.
+
+[[linearGradient_elem]]
+
+=== linearGradient
+
+Gradient has all attributes resolved and at least two `stop` children.
+
+`stop` children will always have unique, ordered `offset` values.
+
+Gradient doesn't have `xlink:href` attribute because all attributes and `stop` children
+are already resolved and copied to the gradient.
+
+Children: `<<stop_elem,stop>>`.
+
+Attributes: `id`, `x1`, `y1`, `x2`, `y2`, `gradientUnits`, `spreadMethod`,
+`gradientTransform`.
+
+* `id` is always set and never empty.
+* See `<<transform_attr,transform>>` for `gradientTransform`.
+
+=== radialGradient
+
+See `<<linearGradient_elem,linearGradient>>`.
+
+Children: `<<stop_elem,stop>>`.
+
+Attributes: `id`, `cx`, `cy`, `r`, `fx`, `fy`, `gradientUnits`, `spreadMethod`,
+`gradientTransform`.
+
+* `id` is always set and never empty.
+* `r` always > 0.
+* `fx` and `fy` are always inside the circle defined by `cx`, `cy` and `r`.
+* See `<<transform_attr,transform>>` for `gradientTransform`.
+
+[[stop_elem]]
+
+=== stop
+
+Attributes: `offset`, `stop-color`, `stop-opacity`.
+
+* `offset` and `stop-opacity` are always in 0..1 range.
+* `stop-color` is always a valid {1H}RRGGBB color.
+
+=== pattern
+
+Pattern defines a texture image that can be used by `fill` and `stroke`.
+
+Children: `g`, `path`, `text` and `image`.
+
+Attributes: `id`, `patternUnits`, `patternContentUnits`, `transform`,
+`x`, `y`, `width`, `height`, `viewBox` and `preserveAspectRatio`.
+
+* `id` is always set and never empty.
+* `width` and `height` are always > 0.
+
+=== clipPath
+
+`clipPath` defines a 1-bit mask using children elements.
+
+Children: `path` and `text`.
+
+Attributes: `id`, `clipPathUnits`, `transform` and `clip-path`.
+
+* `id` is always set and never empty.
+
+=== mask
+
+Children: `g`, `path`, `text` and `image`.
+
+Attributes: `id`, `maskUnits`, `maskContentUnits`, `x`, `y`, `width` and `height`.
+
+* `id` is always set and never empty.
+
+=== g
+
+The group element indicates that a new canvas should be created.
+All groups children elements will be rendered on it and then merged to
+the parent canvas.
+
+Since it's pretty expensive, especially memory wise, _usvg_
+will remove as many groups as possible.
+All the remaining one will indicate that a new canvas must be created.
+
+A group can be empty when it has `filter` attribute.
+
+Children: `g`, `path`, `text` and `image`.
+
+Attributes: `id`, `transform`, `opacity`, `clip-path` and `mask`.
+
+* `id` is optional but never empty.
+
+=== path
+
+First, the _usvg_ preprocessor will convert all the shapes into paths.
+Then it will simplify path's data so it will contain only absolute
+MoveTo, LineTo, CurveTo and ClosePath segments.
+
+Attributes: `id`, <<fill_attrs, filling>>, <<stroke_attrs,stroking>>,
+`clip-rule` (when inside the `clipPath`), `clip-path` (when inside the `clipPath`),
+`visibility` and `transform`.
+
+* `id` is optional but never empty.
+
+=== text
+
+The text is one of the most complex parts of the SVG.
+_usvg_ will modify the input element and its children a lot.
+
+The simplest `text` element like `<text>Text</text>` will be converted to:
+
+```xml
+<text>
+  <tspan
+     x="0"
+     y="0">
+    <tspan
+       fill="#000000"
+       font-family="Times New Roman"
+       font-size="12"
+       stroke="none">
+      Text
+    </tspan>
+  </tspan>
+</text>
+```
+
+In _usvg_, the `text` element is just a container for
+https://www.w3.org/TR/SVG11/text.html#TextChunk[text chunks],
+represented via `tspan`.
+So all `text` elements will have a three-level structure:
+
+* `text` - container
+** `tspan` - text chunk
+*** `tspan` - text container
+
+The `text` itself can have only `id`, `transform`, `rotate`, `xml:space`
+and `clip-path` (when inside the `clipPath`) attributes.
+
+_Text chunk_ can have `x`, `y`, `dx`, `dy` and `text-anchor` attributes.
+
+And the _text container_ can have <<fill_attrs, filling>>,
+<<stroke_attrs,stroking>>, <<font_attrs,font>>, `text-decoration`,
+`visibility` and `clip-rule` (when inside the `clipPath`) attributes.
+
+* `id` is optional but never empty.
+
+*Note:* `text-decoration` is currently ignored.
+
+// TODO: explain text-decoration
+
+=== image
+
+An image can have base64 encoded data or a path to an image.
+
+Attributes: `id`, `x`, `y`, `width`, `height`, `preserveAspectRatio`, `xlink:href`,
+`visibility` and `transform`.
+
+* `id` is optional but never empty.
+
+== Attributes
+
+All attributes can't have `inherit`, invalid or empty value.
+
+Numeric attributes can't have https://www.w3.org/TR/SVG11/coords.html#Units[units].
+
+[[fill_attrs]]
+
+=== Filling attributes
+
+Filling attributes refers to:
+
+[[fill_attr]]
+
+* `fill`
+** Possible values: `none`, `{1H}RRGGBB`, `url({1H}id)`.
+** Impossible values: `currentColor`, icccolor, FuncIRI with a fallback color.
+** FuncIRI is always valid and points to an existing element.
+* `fill-opacity`
+** Possible values: 0..1.
+* `fill-rule`
+
+[[stroke_attrs]]
+
+=== Stroking attributes
+
+Stroking attributes refers to:
+
+* `stroke`
+** See `<<fill_attr,fill>>` attribute.
+* `stroke-dasharray`
+** Possible values: `none`, list of numbers.
+** Impossible values: odd amount of numbers.
+* `stroke-dashoffset`
+* `stroke-miterlimit`
+** Possible values: number > 1.
+* `stroke-opacity`
+** Possible values: 0..1.
+* `stroke-width`
+** Possible values: number > 0.
+* `stroke-linecap`
+* `stroke-linejoin`
+
+[[font_attrs]]
+
+=== Font attributes
+
+Font attributes refers to:
+
+* `font-family`
+* `font-size`
+** Possible values: number > 0.
+** Impossible values: number < 0, 0, number%, `xx-small`, `x-small`, `small` +
+`medium`, `large`, `x-large`, `xx-large`, `larger`, `smaller`.
+* `font-style`
+* `font-variant`
+* `font-weight`
+** Possible values: `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`.
+** Impossible values: `normal`, `bold`, `bolder`, `lighter`.
+* `font-stretch`
+
+=== Other attributes
+
+[[transform_attr]]
+
+* `transform`
+** `transform` always a `matrix`. Never `translate`, `scale`, etc.
+** Can be skipped.

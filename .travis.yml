@@ -25,3 +25,4 @@ env:
   matrix:
     - RESVG_QT_BACKEND=true
     - RESVG_CAIRO_BACKEND=true
+    - USVG_TESTING=true

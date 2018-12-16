@@ -47,7 +47,7 @@ if os.getcwd().endswith('testing_tools'):
 if 'TRAVIS_BUILD_DIR' in os.environ:
     local_test = False
     work_dir = Path('.').resolve()
-    tests_dir = Path('./resvg-test-suite/svg').resolve()
+    tests_dir = Path('./target/resvg-test-suite/svg').resolve()
 else:
     local_test = True
     work_dir = '/tmp'
@@ -59,7 +59,7 @@ print('tests_dir:', tests_dir)
 
 # clone tests on CI
 if not local_test:
-    run(['git', 'clone', TESTS_URL, '--depth', '1'], check=True)
+    run(['git', 'clone', TESTS_URL, '--depth', '1', './target/resvg-test-suite'], check=True)
 
 
 if 'RESVG_QT_BACKEND' in os.environ:
@@ -147,3 +147,15 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
     # build cairo-rs example
     with cd('examples/cairo-rs'):
         run(['cargo', 'build'], check=True)
+
+
+if 'USVG_TESTING' in os.environ:
+    with cd('tools/usvg'):
+        run(['cargo', 'build'], check=True)
+
+    with cd('usvg'):
+        run(['cargo', 'test'], check=True)
+
+    with cd('usvg/testing_tools'):
+        run(['./regression.py', '--ci-mode', '../../target/resvg-test-suite/svg',
+             '../../target/test-suite-temp'], check=True)
