@@ -242,7 +242,6 @@ pub fn parse() -> Result<(Args, Options), String> {
     // We don't have to keep named groups when we don't need them
     // because it will slow down rendering.
     let keep_named_groups = app_args.query_all || app_args.export_id.is_some();
-    let keep_invisible_shapes = keep_named_groups;
 
     let mut fit_to = FitTo::Original;
     if let Some(w) = args.width {
@@ -266,7 +265,6 @@ pub fn parse() -> Result<(Args, Options), String> {
             font_size: args.font_size as f64,
             languages,
             keep_named_groups,
-            keep_invisible_shapes,
         },
         fit_to,
         background: args.background,

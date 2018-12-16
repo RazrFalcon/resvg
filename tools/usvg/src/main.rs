@@ -92,9 +92,6 @@ struct Args {
     #[options(no_short)]
     keep_named_groups: bool,
 
-    #[options(no_short)]
-    keep_invisible_shapes: bool,
-
     #[options(no_short, meta = "DPI", default = "96", parse(try_from_str = "parse_dpi"))]
     dpi: u32,
 
@@ -165,7 +162,6 @@ OPTIONS:
     -V, --version               Prints version information
     -c                          Prints the output SVG to the stdout
         --keep-named-groups     Disables removing of groups with non-empty ID
-        --keep-invisible-shapes Disables removing of invisible shapes
         --dpi DPI               Sets the resolution
                                 [default: 96] [possible values: 10..4000]
         --font-family FAMILY    Sets the default font family
@@ -231,7 +227,6 @@ fn process(args: &Args) -> Result<(), String> {
         font_size: args.font_size as f64,
         languages,
         keep_named_groups: args.keep_named_groups,
-        keep_invisible_shapes: args.keep_invisible_shapes,
     };
 
     let input_str = match in_svg {

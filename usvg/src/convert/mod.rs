@@ -297,7 +297,7 @@ pub(super) fn convert_nodes(
             | EId::Circle
             | EId::Ellipse => {
                 if let Some(d) = shapes::convert(&node) {
-                    path::convert(&node, d, opt, parent_node.clone(), tree);
+                    path::convert(&node, d, parent_node.clone(), tree);
                 }
             }
               EId::Use
@@ -308,7 +308,7 @@ pub(super) fn convert_nodes(
             EId::Path => {
                 let attrs = node.attributes();
                 if let Some(d) = attrs.get_path(AId::D) {
-                    path::convert(&node, d.clone(), opt, parent_node.clone(), tree);
+                    path::convert(&node, d.clone(), parent_node.clone(), tree);
                 }
             }
             EId::Text => {

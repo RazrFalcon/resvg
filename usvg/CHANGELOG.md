@@ -8,9 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Implement `FuzzyEq` for `Rect`, `Size` and `Point`.
 - `StrokeMiterlimit` and `FontSize` wrappers for `f64`.
-- `Options::keep_invisible_shapes` and `--keep-invisible-shapes` to CLI.
 
 ### Changed
+- Shapes without fill and stroke will no longer be removed.
 - `FilterPrimitive::filter_input` was removed and each filter primitive that can
   have an input has it's own `filter_input` field now.
 - Rename `filter_input` fields into `input`.

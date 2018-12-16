@@ -1,8 +1,8 @@
 [package]
 name = "usvg"
-# When updating version, also modify html_root_url in the lib.rs and in the cli/Cargo.toml
+# When updating version, also modify html_root_url in the lib.rs and in the ../tools/Cargo.toml
 version = "0.4.0"
-authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
+authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg"]
 license = "MPL-2.0"
 description = "An SVG simplification library."

@@ -21,7 +21,6 @@ use super::{
 pub fn convert(
     node: &svgdom::Node,
     d: svgdom::Path,
-    opt: &Options,
     mut parent: tree::Node,
     tree: &mut tree::Tree,
 ) {
@@ -35,7 +34,7 @@ pub fn convert(
     let fill = fill::convert(tree, &attrs, has_bbox);
     let stroke = stroke::convert(tree, &attrs, has_bbox);
     let transform = attrs.get_transform(AId::Transform).unwrap_or_default();
-    let visibility = super::convert_visibility(&attrs);
+    let mut visibility = super::convert_visibility(&attrs);
 
     // Shapes without a bbox cannot be filled,
     // and if there is no stroke than there is nothing to render.
@@ -43,8 +42,10 @@ pub fn convert(
         return;
     }
 
-    if fill.is_none() && stroke.is_none() && !opt.keep_invisible_shapes {
-        return;
+    // If a path doesn't have a fill or a stroke than it's invisible.
+    // By setting `visibility` to `hidden` we are disabling the rendering of this path.
+    if fill.is_none() && stroke.is_none() {
+        visibility = tree::Visibility::Hidden
     }
 
     parent.append_kind(tree::NodeKind::Path(tree::Path {

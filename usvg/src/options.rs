@@ -35,9 +35,6 @@ pub struct Options {
     /// If set to `true`, all non-empty groups with `id` attribute will not
     /// be removed.
     pub keep_named_groups: bool,
-
-    /// Keep invisible shapes.
-    pub keep_invisible_shapes: bool,
 }
 
 impl Default for Options {
@@ -50,7 +47,6 @@ impl Default for Options {
             font_size: 12.0,
             languages: vec!["en".to_string()],
             keep_named_groups: false,
-            keep_invisible_shapes: false,
         }
     }
 }
