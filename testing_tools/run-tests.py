@@ -150,11 +150,12 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
 
 
 if 'USVG_TESTING' in os.environ:
-    with cd('tools/usvg'):
-        run(['cargo', 'build'], check=True)
-
     with cd('usvg'):
         run(['cargo', 'test'], check=True)
+
+    # usvg/testing_tools/regression.py uses tools/usvg
+    with cd('tools/usvg'):
+        run(['cargo', 'build'], check=True)
 
     with cd('usvg/testing_tools'):
         run(['./regression.py', '--ci-mode', '../../target/resvg-test-suite/svg',

@@ -23,11 +23,4 @@ svgdom = { git = "https://github.com/RazrFalcon/svgdom", rev = "f69fc2a" }
 unicode-segmentation = "1.2.1"
 
 [dev-dependencies]
-assert_cli = "0.6"
 pretty_assertions = "0.5.1"
-rustc-test = "0.3"
-rustc_version = "0.2.2"
-serde = "1.0.34"
-serde_derive = "1.0.34"
-tempdir = "0.3"
-toml = "0.4.5"
