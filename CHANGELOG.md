@@ -14,7 +14,7 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - (usvg) `offset` attribute resolving inside the `stop` element.
 - (svgdom) `stroke-miterlimit` attribute parsing.
-- (svgdom) `number` attribute type parsing.
+- (svgdom) `length` and `number` attribute types parsing.
 - (svgdom) `offset` attribute parsing.
 
 ## [0.4.0] - 2018-12-13
