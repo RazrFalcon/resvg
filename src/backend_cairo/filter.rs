@@ -148,13 +148,13 @@ struct CairoFilter;
 
 impl Filter<cairo::ImageSurface> for CairoFilter {
     fn get_input(
-        input: &Option<usvg::FilterInput>,
+        input: &usvg::FilterInput,
         region: ScreenRect,
         results: &[FilterResult],
         canvas: &cairo::ImageSurface,
     ) -> Result<Image, Error> {
         match input {
-            Some(usvg::FilterInput::SourceGraphic) => {
+            usvg::FilterInput::SourceGraphic => {
                 let image = copy_image(canvas, region)?;
 
                 Ok(Image {
@@ -163,7 +163,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
                     color_space: ColorSpace::SRGB,
                 })
             }
-            Some(usvg::FilterInput::SourceAlpha) => {
+            usvg::FilterInput::SourceAlpha => {
                 let mut image = copy_image(canvas, region)?;
 
                 // Set RGB to black. Keep alpha as is.
@@ -183,24 +183,18 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
                     color_space: ColorSpace::SRGB,
                 })
             }
-            Some(usvg::FilterInput::Reference(ref name)) => {
+            usvg::FilterInput::Reference(ref name) => {
                 if let Some(ref v) = results.iter().rev().find(|v| v.name == *name) {
                     Ok(v.image.clone())
                 } else {
+                    // Technically unreachable.
                     warn!("Unknown filter primitive reference '{}'.", name);
-                    Self::get_input(&Some(usvg::FilterInput::SourceGraphic), region, results, canvas)
+                    Self::get_input(&usvg::FilterInput::SourceGraphic, region, results, canvas)
                 }
             }
-            Some(input) => {
+            _ => {
                 warn!("Filter input '{}' is not supported.", input.to_string());
-                Self::get_input(&Some(usvg::FilterInput::SourceGraphic), region, results, canvas)
-            }
-            None => {
-                if let Some(ref v) = results.last() {
-                    Ok(v.image.clone())
-                } else {
-                    Self::get_input(&Some(usvg::FilterInput::SourceGraphic), region, results, canvas)
-                }
+                Self::get_input(&usvg::FilterInput::SourceGraphic, region, results, canvas)
             }
         }
     }

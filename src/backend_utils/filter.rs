@@ -152,37 +152,36 @@ pub trait Filter<T: ImageExt> {
         let region = calc_region(filter, bbox, ts, canvas_rect)?;
 
         for primitive in &filter.children {
-            let input = &primitive.filter_input;
             let cs = primitive.color_interpolation;
             let subregion = calc_subregion(filter, primitive, bbox, region, ts, &results);
 
             let mut result = match primitive.kind {
                 usvg::FilterKind::FeBlend(ref fe) => {
-                    let input1 = Self::get_input(input, region, &results, canvas)?;
-                    let input2 = Self::get_input(&fe.filter_input2, region, &results, canvas)?;
+                    let input1 = Self::get_input(&fe.input1, region, &results, canvas)?;
+                    let input2 = Self::get_input(&fe.input2, region, &results, canvas)?;
                     Self::apply_blend(fe, cs, region, input1, input2)
                 }
                 usvg::FilterKind::FeFlood(ref fe) => {
                     Self::apply_flood(fe, region)
                 }
                 usvg::FilterKind::FeGaussianBlur(ref fe) => {
-                    let input = Self::get_input(input, region, &results, canvas)?;
+                    let input = Self::get_input(&fe.input, region, &results, canvas)?;
                     Self::apply_blur(fe, filter.primitive_units, cs, bbox, ts, input)
                 }
                 usvg::FilterKind::FeOffset(ref fe) => {
-                    let input = Self::get_input(input, region, &results, canvas)?;
+                    let input = Self::get_input(&fe.input, region, &results, canvas)?;
                     Self::apply_offset(filter, fe, bbox, ts, input)
                 }
                 usvg::FilterKind::FeComposite(ref fe) => {
-                    let input1 = Self::get_input(input, region, &results, canvas)?;
-                    let input2 = Self::get_input(&fe.filter_input2, region, &results, canvas)?;
+                    let input1 = Self::get_input(&fe.input1, region, &results, canvas)?;
+                    let input2 = Self::get_input(&fe.input2, region, &results, canvas)?;
                     Self::apply_composite(fe, cs, region, input1, input2)
                 }
                 usvg::FilterKind::FeMerge(ref fe) => {
                     Self::apply_merge(fe, cs, region, &results, canvas)
                 }
-                usvg::FilterKind::FeTile => {
-                    let input = Self::get_input(input, region, &results, canvas)?;
+                usvg::FilterKind::FeTile(ref fe) => {
+                    let input = Self::get_input(&fe.input, region, &results, canvas)?;
                     Self::apply_tile(input, region)
                 }
                 usvg::FilterKind::FeImage(ref fe) => {
@@ -219,7 +218,7 @@ pub trait Filter<T: ImageExt> {
             }
 
             results.push(FilterResult {
-                name: primitive.filter_result.as_ref().unwrap_or(&String::new()).clone(),
+                name: primitive.result.clone(),
                 image: result,
             });
         }
@@ -232,7 +231,7 @@ pub trait Filter<T: ImageExt> {
     }
 
     fn get_input(
-        input: &Option<usvg::FilterInput>,
+        input: &usvg::FilterInput,
         region: ScreenRect,
         results: &[FilterResult<T>],
         canvas: &T,
@@ -587,17 +586,11 @@ fn calc_subregion<T: ImageExt>(
     // TODO: rewrite/simplify/explain/whatever
 
     let region = match primitive.kind {
-        usvg::FilterKind::FeOffset(..) => {
+        usvg::FilterKind::FeOffset(ref fe) => {
             // `feOffset` inherits it's region from the input.
-            match primitive.filter_input {
-                Some(usvg::FilterInput::Reference(ref name)) => {
+            match fe.input {
+                usvg::FilterInput::Reference(ref name) => {
                     match results.iter().rev().find(|v| v.name == *name) {
-                        Some(ref res) => res.image.region,
-                        None => filter_region,
-                    }
-                }
-                None => {
-                    match results.last() {
                         Some(ref res) => res.image.region,
                         None => filter_region,
                     }

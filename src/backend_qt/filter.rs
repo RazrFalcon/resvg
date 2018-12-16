@@ -96,13 +96,13 @@ struct QtFilter;
 
 impl Filter<qt::Image> for QtFilter {
     fn get_input(
-        input: &Option<usvg::FilterInput>,
+        input: &usvg::FilterInput,
         region: ScreenRect,
         results: &[FilterResult],
         canvas: &qt::Image,
     ) -> Result<Image, Error> {
         match input {
-            Some(usvg::FilterInput::SourceGraphic) => {
+            usvg::FilterInput::SourceGraphic => {
                 let image = copy_image(canvas, region)?;
                 let image = image.to_rgba().ok_or(Error::AllocFailed)?; // TODO: optional
 
@@ -112,7 +112,7 @@ impl Filter<qt::Image> for QtFilter {
                     color_space: ColorSpace::SRGB,
                 })
             }
-            Some(usvg::FilterInput::SourceAlpha) => {
+            usvg::FilterInput::SourceAlpha => {
                 let image = copy_image(canvas, region)?;
                 let mut image = image.to_rgba().ok_or(Error::AllocFailed)?;
 
@@ -129,24 +129,18 @@ impl Filter<qt::Image> for QtFilter {
                     color_space: ColorSpace::SRGB,
                 })
             }
-            Some(usvg::FilterInput::Reference(ref name)) => {
+            usvg::FilterInput::Reference(ref name) => {
                 if let Some(ref v) = results.iter().rev().find(|v| v.name == *name) {
                     Ok(v.image.clone())
                 } else {
+                    // Technically unreachable.
                     warn!("Unknown filter primitive reference '{}'.", name);
-                    Self::get_input(&Some(usvg::FilterInput::SourceGraphic), region, results, canvas)
+                    Self::get_input(&usvg::FilterInput::SourceGraphic, region, results, canvas)
                 }
             }
-            Some(input) => {
+            _ => {
                 warn!("Filter input '{}' is not supported.", input.to_string());
-                Self::get_input(&Some(usvg::FilterInput::SourceGraphic), region, results, canvas)
-            }
-            None => {
-                if let Some(ref v) = results.last() {
-                    Ok(v.image.clone())
-                } else {
-                    Self::get_input(&Some(usvg::FilterInput::SourceGraphic), region, results, canvas)
-                }
+                Self::get_input(&usvg::FilterInput::SourceGraphic, region, results, canvas)
             }
         }
     }
