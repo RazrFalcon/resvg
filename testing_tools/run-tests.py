@@ -94,15 +94,13 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
                 exit(1)
 
 
-# try to build with all backends
-with cd('tools/rendersvg'):
-    run(['cargo', 'build', '--features', 'cairo-backend qt-backend'], check=True)
-
-
-# run tests and build examples
-run(['cargo', 'test', '--all-features'], check=True)
-run(['cargo', 'test', '--features', 'cairo-backend'], check=True)
-run(['cargo', 'test', '--features', 'qt-backend'], check=True)
+# # try to build with all backends
+# with cd('tools/rendersvg'):
+#     run(['cargo', 'build', '--all-features'], check=True)
+#
+#
+# # run tests and build examples
+# run(['cargo', 'test', '--all-features'], check=True)
 
 
 if 'RESVG_QT_BACKEND' in os.environ:
@@ -111,6 +109,9 @@ if 'RESVG_QT_BACKEND' in os.environ:
     # build C-API for demo
     with cd('capi'):
         run(['cargo', 'build', '--features', 'qt-backend'], check=True)
+
+    # run tests and build examples
+    run(['cargo', 'test', '--features', 'qt-backend'], check=True)
 
     # test Qt C-API wrapper
     qmake_env = os.environ if local_test else dict(os.environ, QT_SELECT="5")
@@ -139,6 +140,9 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
     # build C-API for cairo-capi
     with cd('capi'):
         run(['cargo', 'build', '--features', 'cairo-backend'], check=True)
+
+    # run tests and build examples
+    run(['cargo', 'test', '--features', 'cairo-backend'], check=True)
 
     with cd('examples/cairo-capi'):
         run(['make', 'clean'], check=True)
