@@ -674,13 +674,6 @@ fn conv_image_data(
     data: &ImageData,
     format: ImageFormat,
 ) -> String {
-    let base64_conf = base64::Config::new(
-        base64::CharacterSet::Standard,
-        true,
-        true,
-        base64::LineWrap::Wrap(64, base64::LineEnding::LF),
-    );
-
     match data {
         ImageData::Path(ref path) => path.to_str().unwrap().to_owned(),
         ImageData::Raw(ref data) => {
@@ -692,8 +685,8 @@ fn conv_image_data(
                 ImageFormat::JPEG => d.push_str("jpg"),
                 ImageFormat::SVG => d.push_str("svg+xml"),
             }
-            d.push_str(";base64,\n");
-            d.push_str(&base64::encode_config(data, base64_conf));
+            d.push_str(";base64, ");
+            d.push_str(&base64::encode(data));
 
             d
         }

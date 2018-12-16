@@ -13,7 +13,7 @@ readme = "README.md"
 workspace = ".."
 
 [dependencies]
-base64 = "0.9" # Do not update, because a lot of important code was removed.
+base64 = "0.10"
 libflate = "0.1"
 log = "0.4"
 lyon_geom = "0.12"

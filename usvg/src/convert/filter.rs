@@ -259,7 +259,7 @@ fn convert_fe_image(
         }
     };
 
-    let (img_data, format) = match super::image::get_href_data(href, opt.path.as_ref()) {
+    let (img_data, format) = match super::image::get_href_data(&*fe.id(), href, opt.path.as_ref()) {
         Some((data, format)) => (data, format),
         None => {
             return tree::FilterKind::FeImage(tree::FeImage {

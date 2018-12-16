@@ -3,7 +3,7 @@
 import argparse
 import os
 import platform
-import subprocess as proc
+import subprocess
 from subprocess import run
 from contextlib import contextmanager
 from pathlib import Path
@@ -76,7 +76,7 @@ if 'RESVG_QT_BACKEND' in os.environ:
 
             try:
                 regression_testing('qt')
-            except proc.CalledProcessError:
+            except subprocess.CalledProcessError:
                 exit(1)
 
 
@@ -90,7 +90,7 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
         with cd('testing_tools/regression'):
             try:
                 regression_testing('cairo')
-            except proc.CalledProcessError:
+            except subprocess.CalledProcessError:
                 exit(1)
 
 

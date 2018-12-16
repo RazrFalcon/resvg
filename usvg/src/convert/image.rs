@@ -37,7 +37,7 @@ pub fn convert(
         }
     };
 
-    if let Some((data, format)) = get_href_data(href, opt.path.as_ref()) {
+    if let Some((data, format)) = get_href_data(&*node.id(), href, opt.path.as_ref()) {
         parent.append_kind(tree::NodeKind::Image(tree::Image {
             id: node.id().clone(),
             transform,
@@ -50,6 +50,7 @@ pub fn convert(
 }
 
 pub fn get_href_data(
+    element_id: &str,
     href: &str,
     path: Option<&path::PathBuf>,
 ) -> Option<(tree::ImageData, tree::ImageFormat)> {
@@ -71,21 +72,15 @@ pub fn get_href_data(
                 }
             };
 
-            let base_data = &href[(idx + 1)..];
+            let mut base_data = href[(idx + 1)..].to_string();
+            base_data.retain(|c| c != ' ');
 
-            let conf = base64::Config::new(
-                base64::CharacterSet::Standard,
-                true,
-                true,
-                base64::LineWrap::NoWrap,
-            );
-
-            if let Ok(data) = base64::decode_config(base_data, conf) {
+            if let Ok(data) = base64::decode(&base_data) {
                 return Some((tree::ImageData::Raw(data.to_owned()), format));
             }
         }
 
-        warn!("Invalid 'xlink:href' content.");
+        warn!("Image '{}' has an invalid 'xlink:href' content.", element_id);
     } else {
         let path = match path {
             Some(path) => path.parent().unwrap().join(href),
