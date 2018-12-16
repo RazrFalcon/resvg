@@ -472,7 +472,7 @@ dependencies = [
  "resvg-qt 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rgb 0.8.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-segmentation 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "usvg 0.4.0 (git+https://github.com/RazrFalcon/usvg?rev=070df8b)",
+ "usvg 0.4.0 (git+https://github.com/RazrFalcon/usvg?rev=4046b56)",
 ]
 
 [[package]]
@@ -582,7 +582,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "usvg"
 version = "0.4.0"
-source = "git+https://github.com/RazrFalcon/usvg?rev=070df8b#070df8bc71cad026d17f6913accbb73b9b7f00d1"
+source = "git+https://github.com/RazrFalcon/usvg?rev=4046b56#4046b5637799e5eb99ad1be2fbb1f150d40895cf"
 dependencies = [
  "base64 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "libflate 0.1.19 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -677,7 +677,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum time 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)" = "d825be0eb33fda1a7e68012d51e9c7f451dc1a69391e7fdc197060bb8c56667b"
 "checksum unicode-segmentation 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "aa6024fc12ddfd1c6dbc14a80fa2324d4568849869b779f6bd37e5e4c03344d1"
 "checksum unicode-xid 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fc72304796d0818e357ead4e000d19c9c174ab23dc11093ac919054d20a6a7fc"
-"checksum usvg 0.4.0 (git+https://github.com/RazrFalcon/usvg?rev=070df8b)" = "<none>"
+"checksum usvg 0.4.0 (git+https://github.com/RazrFalcon/usvg?rev=4046b56)" = "<none>"
 "checksum winapi 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)" = "92c1eb33641e276cfa214a0522acad57be5c56b10cb348b3c5117db75f3ac4b0"
 "checksum winapi-i686-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
 "checksum winapi-x86_64-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
