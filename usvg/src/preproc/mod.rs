@@ -27,6 +27,7 @@ mod resolve_attrs_via_xlink;
 mod resolve_children_via_xlink;
 mod resolve_conditional;
 mod resolve_curr_color;
+mod resolve_display;
 mod resolve_font_size;
 mod resolve_font_weight;
 mod resolve_inherit;
@@ -37,7 +38,6 @@ mod resolve_use;
 mod rm_invalid_font_size;
 mod rm_invalid_gradients;
 mod rm_invalid_ts;
-mod rm_invisible_elems;
 mod rm_non_svg_data;
 mod rm_unused_defs;
 mod ungroup_a;
@@ -46,8 +46,8 @@ mod ungroup_groups;
 
 use self::conv_units::*;
 use self::fix_gradient_stops::*;
-use self::fix_recursive_links::*;
 use self::fix_links::*;
+use self::fix_recursive_links::*;
 use self::group_defs::*;
 use self::prepare_clip_path::*;
 use self::prepare_mask::*;
@@ -59,6 +59,7 @@ use self::resolve_attrs_via_xlink::*;
 use self::resolve_children_via_xlink::*;
 use self::resolve_conditional::*;
 use self::resolve_curr_color::*;
+use self::resolve_display::*;
 use self::resolve_font_size::*;
 use self::resolve_font_weight::*;
 use self::resolve_inherit::*;
@@ -69,7 +70,6 @@ use self::resolve_use::*;
 use self::rm_invalid_font_size::*;
 use self::rm_invalid_gradients::*;
 use self::rm_invalid_ts::*;
-use self::rm_invisible_elems::*;
 use self::rm_non_svg_data::*;
 use self::rm_unused_defs::*;
 use self::ungroup_a::*;
@@ -188,7 +188,7 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) {
     resolve_conditional(doc, opt);
 
     remove_invalid_transform(doc);
-    remove_invisible_elements(doc);
+    resolve_display(doc);
 
     prepare_clip_path_children(doc);
 

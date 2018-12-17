@@ -88,6 +88,8 @@ pub fn resolve_use(doc: &mut Document, opt: &Options) {
             doc.remove_node(node.clone());
         }
     }
+
+    remove_invalid_use(doc);
 }
 
 fn _resolve_use(
@@ -177,4 +179,36 @@ fn resolve_symbol(
         // Set the original transform back to the 'use' itself.
         use_node.prepend_transform(orig_ts);
     }
+}
+
+fn remove_invalid_use(doc: &mut Document) {
+    fn _rm(doc: &mut Document) -> usize {
+        let root = doc.root();
+        doc.drain(root, |n| {
+            if n.is_tag_name(EId::Use) {
+                if !n.has_attribute(AId::Href) {
+                    // Remove 'use' elements without an 'xlink:href' attribute.
+                    return true;
+                } else {
+                    // Remove 'use' elements with an invalid 'xlink:href' attribute.
+                    let attrs = n.attributes();
+                    if let Some(&AValue::Link(_)) = attrs.get_value(AId::Href) {
+                        // Nothing.
+                    } else {
+                        // NOTE: actually, an attribute with 'String' type is valid
+                        // if it contain a path to an external file, like '../img.svg#rect1',
+                        // but we don't support external SVG, so we treat them as invalid.
+                        return true;
+                    }
+                }
+            }
+
+            false
+        })
+    }
+
+    // 'use' can be linked to another 'use' and if it was removed
+    // the first one will became invalid, so we need to check DOM again.
+    // Loop until there are no drained elements.
+    while _rm(doc) > 0 {}
 }
