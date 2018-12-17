@@ -189,6 +189,9 @@ pub struct TextSpan {
     /// Font description.
     pub font: Font,
 
+    /// Baseline shift.
+    pub baseline_shift: BaselineShift,
+
     /// Text decoration.
     ///
     /// Unlike `text-decoration` attribute from the SVG, this one has all styles resolved.

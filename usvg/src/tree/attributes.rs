@@ -488,3 +488,15 @@ pub enum FeImageKind {
     /// Not supported yet.
     Use(String),
 }
+
+
+/// A baseline shift value.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, Debug)]
+pub enum BaselineShift {
+    Baseline,
+    Subscript,
+    Superscript,
+    Percent(f64),
+    Number(f64),
+}

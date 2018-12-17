@@ -81,6 +81,11 @@ pub fn convert_units(svg: &mut Node, opt: &Options) {
                 } else if aid == AId::Offset && len.unit == Unit::Percent {
                     // The `offset` % value does not depend on viewBox.
                     len.num / 100.0
+                } else if aid == AId::BaselineShift && len.unit == Unit::Percent {
+                    // `baseline-shift` should be kept as is, because it's % value
+                    // corresponds to a fraction of the line height.
+                    // And we don't know it.
+                    continue;
                 } else {
                     // In other elements % units are depend on viewBox.
                     convert_len(len, aid, font_size)

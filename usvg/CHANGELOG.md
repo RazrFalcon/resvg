@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Implement `FuzzyEq` for `Rect`, `Size` and `Point`.
 - `StrokeMiterlimit` and `FontSize` wrappers for `f64`.
+- Partial `baseline-shift` support.
+- `TextSpan::baseline_shift`.
 
 ### Changed
 - Shapes without fill and stroke will no longer be removed.

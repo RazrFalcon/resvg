@@ -115,9 +115,6 @@ fn draw_block(
 
     let fm = context.get_metrics(&block.font, None).unwrap();
 
-    let mut layout_iter = layout.get_iter().unwrap();
-    let baseline_offset = layout_iter.get_baseline().scale();
-
     let bbox = block.bbox;
 
     // Contains only characters path bounding box,
@@ -129,7 +126,7 @@ fn draw_block(
     let old_ts = cr.get_matrix();
     if !block.rotate.is_fuzzy_zero() {
         let mut ts = usvg::Transform::default();
-        ts.rotate_at(block.rotate, bbox.x, bbox.y + baseline_offset);
+        ts.rotate_at(block.rotate, bbox.x, bbox.y + block.font_ascent);
         cr.transform(ts.to_native());
     }
 
@@ -137,7 +134,7 @@ fn draw_block(
     //
     // Should be drawn before/under text.
     if let Some(ref style) = block.decoration.underline {
-        line_rect.y = bbox.y + baseline_offset - fm.get_underline_position().scale();
+        line_rect.y = bbox.y + block.font_ascent - fm.get_underline_position().scale();
         draw_line(tree, line_rect, &style.fill, &style.stroke, opt, cr);
     }
 
@@ -166,7 +163,7 @@ fn draw_block(
     //
     // Should be drawn after/over text.
     if let Some(ref style) = block.decoration.line_through {
-        line_rect.y = bbox.y + baseline_offset - fm.get_strikethrough_position().scale();
+        line_rect.y = bbox.y + block.font_ascent - fm.get_strikethrough_position().scale();
         line_rect.height = fm.get_strikethrough_thickness().scale();
         draw_line(tree, line_rect, &style.fill, &style.stroke, opt, cr);
     }

@@ -114,14 +114,24 @@ pub fn prepare_blocks<Font>(
 
                     x = new_w;
                 } else {
+                    let baseline_shift = match tspan.baseline_shift {
+                        usvg::BaselineShift::Baseline => 0.0,
+                        usvg::BaselineShift::Subscript => font_metrics.height() / 2.0,
+                        usvg::BaselineShift::Superscript => -font_metrics.height() / 2.0,
+                        usvg::BaselineShift::Percent(n) => -font_metrics.height() * (n / 100.0),
+                        usvg::BaselineShift::Number(n) => -n,
+                    };
+
+                    let font_ascent = font_metrics.ascent();
                     let width = font_metrics.width(c);
-                    let yy = y - font_metrics.ascent();
+                    let yy = y - font_ascent + baseline_shift;
                     let height = font_metrics.height();
                     let bbox = Rect { x, y: yy, width, height };
                     x += width;
 
+                    // TODO: rewrite, explain
                     let rotate = match text_kind.rotate {
-                        Some(ref list) => { list[blocks.len()] }
+                        Some(ref list) => list[blocks.len()],
                         None => 0.0,
                     };
 
@@ -133,7 +143,7 @@ pub fn prepare_blocks<Font>(
                         fill: tspan.fill.clone(),
                         stroke: tspan.stroke.clone(),
                         font: font_metrics.font(),
-                        font_ascent: font_metrics.ascent(),
+                        font_ascent,
                         decoration: tspan.decoration.clone(),
                     });
                 }

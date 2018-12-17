@@ -33,7 +33,7 @@
 ### Attributes
 
 - `alignment-baseline`
-- `baseline-shift`
+- Nested `baseline-shift`
 - `clip` (deprecated)
 - `color-interpolation`
 - `color-profile`

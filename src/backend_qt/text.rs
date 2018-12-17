@@ -77,7 +77,7 @@ fn draw_block(
 
     if !block.rotate.is_fuzzy_zero() {
         let mut ts = usvg::Transform::default();
-        ts.rotate_at(block.rotate, bbox.x, bbox.y + font_metrics.ascent());
+        ts.rotate_at(block.rotate, bbox.x, bbox.y + block.font_ascent);
         p.apply_transform(&ts.to_native());
     }
 

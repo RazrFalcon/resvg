@@ -158,7 +158,7 @@ and `clip-path` (when inside the `clipPath`) attributes.
 _Text chunk_ can have `x`, `y`, `dx`, `dy` and `text-anchor` attributes.
 
 And the _text container_ can have <<fill_attrs, filling>>,
-<<stroke_attrs,stroking>>, <<font_attrs,font>>, `text-decoration`,
+<<stroke_attrs,stroking>>, <<font_attrs,font>>, `baseline-shift`, `text-decoration`,
 `visibility` and `clip-rule` (when inside the `clipPath`) attributes.
 
 * `id` is optional but never empty.

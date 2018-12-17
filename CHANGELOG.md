@@ -8,6 +8,7 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
+- (resvg) Partial `baseline-shift` support.
 - (resvg) Keep invisible shapes during *export by ID*.
   Required for a proper bbox resolving.
 
