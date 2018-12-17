@@ -88,12 +88,11 @@ fn _ungroup_groups(parent: &Node, opt: &Options, groups: &mut Vec<Node>) {
 fn ungroup_group(g: &mut Node) {
     for (aid, attr) in g.attributes().iter().svg() {
         for (_, mut child) in g.children().svg() {
-            // Not all attributes can be copied directly.
-            if prepare_attribute(g, &mut child, aid) {
-                continue;
+            if aid.is_inheritable() {
+                child.set_attribute_if_none((aid, attr.value.clone()));
+            } else {
+                copy_non_inheritable_attribute(g, &mut child, aid);
             }
-
-            child.set_attribute_if_none((aid, attr.value.clone()));
         }
     }
 
@@ -111,33 +110,30 @@ fn ungroup_group(g: &mut Node) {
     }
 }
 
-fn prepare_attribute(g_node: &Node, child_node: &mut Node, aid: AId) -> bool {
-    if aid == AId::Opacity {
-        if child_node.has_attribute(aid) {
+fn copy_non_inheritable_attribute(g_node: &Node, child_node: &mut Node, aid: AId) {
+    match aid {
+        AId::Opacity => {
             // We can't just replace 'opacity' attribute,
             // we should multiply it.
             let op1 = g_node.attributes().get_number_or(aid, 1.0);
             let op2 = child_node.attributes().get_number_or(aid, 1.0);
             child_node.set_attribute((aid, op1 * op2));
-            return true;
         }
-    }
-
-    if aid == AId::Transform {
-        if child_node.has_attribute(aid) {
+        AId::Transform => {
             // We should multiply transform matrices.
             let ts = g_node.attributes().get_transform(aid).unwrap_or_default();
             child_node.prepend_transform(ts);
-            return true;
         }
+        AId::Display => {
+            // Display attribute has a priority during rendering, so we must
+            // copy it even if a child has it already.
+            g_node.copy_attribute_to(aid, child_node);
+        }
+        AId::Visibility => {
+            if let Some(av) = g_node.attributes().get_value(aid) {
+                child_node.set_attribute_if_none((aid, av.clone()));
+            }
+        }
+        _ => {}
     }
-
-    if aid == AId::Display {
-        // Display attribute has a priority during rendering, so we must
-        // copy it even if a child has it already.
-        g_node.copy_attribute_to(aid, child_node);
-        return true;
-    }
-
-    false
 }

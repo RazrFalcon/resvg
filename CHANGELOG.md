@@ -13,6 +13,7 @@ This changelog also contains important changes in dependencies.
 
 ### Fixed
 - (usvg) `offset` attribute resolving inside the `stop` element.
+- (usvg) Ungrouping of groups with non-inheritable attributes.
 - (svgdom) `stroke-miterlimit` attribute parsing.
 - (svgdom) `length` and `number` attribute types parsing.
 - (svgdom) `offset` attribute parsing.
