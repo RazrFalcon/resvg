@@ -75,6 +75,10 @@ fn resolve_rotate(parent: &Node, mut offset: usize, list: &mut Vec<f64>) {
 
                     offset += chars_count;
                 }
+            } else {
+                for _ in 0..chars_count {
+                    list.push(0.0);
+                }
             }
         } else if child.is_tag_name(EId::Tspan) {
             // Use parent rotate list if it is not set.
