@@ -7,7 +7,6 @@
 use std::f64;
 
 // external
-use usvg;
 pub use usvg::utils::*;
 
 // self

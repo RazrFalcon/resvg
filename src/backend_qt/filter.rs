@@ -8,7 +8,6 @@ use std::rc::Rc;
 // external
 use qt;
 use rgb::FromSlice;
-use usvg;
 use usvg::ColorInterpolation as ColorSpace;
 
 // self

@@ -9,7 +9,6 @@ use gdk_pixbuf::{
     PixbufExt,
     PixbufLoaderExt,
 };
-use usvg;
 
 // self
 use super::prelude::*;

@@ -10,15 +10,12 @@ use cairo::{
     MatrixTrait,
 };
 use pangocairo::functions as pc;
-use usvg;
 
 // self
 use prelude::*;
 use {
     backend_utils,
     layers,
-    OutputImage,
-    Render,
 };
 
 

@@ -4,7 +4,6 @@
 
 // external
 use cairo;
-use usvg;
 
 // self
 use super::prelude::*;

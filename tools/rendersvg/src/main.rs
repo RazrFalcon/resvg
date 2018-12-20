@@ -17,13 +17,8 @@ use std::fs;
 use std::io::Write;
 use std::path;
 
-use resvg::{
-    usvg,
-    svgdom,
-    Options,
-    Render,
-};
 use resvg::prelude::*;
+use resvg::svgdom;
 
 use svgdom::WriteBuffer;
 

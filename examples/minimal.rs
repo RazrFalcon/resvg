@@ -3,7 +3,7 @@ extern crate resvg;
 use std::env;
 use std::path::Path;
 
-use resvg::usvg;
+use resvg::prelude::*;
 
 // TODO: write doc
 

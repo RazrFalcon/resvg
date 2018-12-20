@@ -5,13 +5,11 @@
 #![allow(non_camel_case_types)]
 
 extern crate resvg;
-#[macro_use] extern crate log;
 extern crate fern;
+#[macro_use] extern crate log;
 
-#[cfg(feature = "cairo-backend")]
-extern crate glib;
-#[cfg(feature = "cairo-backend")]
-extern crate cairo_sys;
+#[cfg(feature = "cairo-backend")] extern crate glib;
+#[cfg(feature = "cairo-backend")] extern crate cairo_sys;
 
 use std::fmt;
 use std::path;
@@ -20,15 +18,9 @@ use std::os::raw::c_char;
 use std::slice;
 use std::ptr;
 
-#[cfg(feature = "qt-backend")]
-use resvg::qt;
-
-#[cfg(feature = "cairo-backend")]
-use resvg::cairo;
-
-use resvg::usvg;
+#[cfg(feature = "qt-backend")] use resvg::qt;
+#[cfg(feature = "cairo-backend")] use resvg::cairo;
 use resvg::prelude::*;
-
 
 const DEFAULT_FONT_FAMILY: &str = "Times New Roman";
 

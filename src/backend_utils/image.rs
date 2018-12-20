@@ -4,11 +4,8 @@
 
 use std::path;
 
-// external
-use usvg;
-
 // self
-use super::super::prelude::*;
+use super::prelude::*;
 use {
     FitTo,
     Options,

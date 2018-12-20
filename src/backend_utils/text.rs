@@ -4,10 +4,9 @@
 
 // external
 use unicode_segmentation::UnicodeSegmentation;
-use usvg;
 
 // self
-use geom::*;
+use super::prelude::*;
 
 
 pub struct TextBlock<Font> {

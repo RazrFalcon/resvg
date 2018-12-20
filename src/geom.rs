@@ -8,15 +8,16 @@ use std::cmp;
 use std::f64;
 use std::fmt;
 
-pub(crate) use usvg::{
-    f64_bound,
-};
-
+// external
 pub use usvg::{
     Line,
     Point,
     Rect,
     Size,
+};
+
+pub(crate) use usvg::{
+    f64_bound,
 };
 
 

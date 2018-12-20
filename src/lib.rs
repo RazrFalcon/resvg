@@ -37,9 +37,7 @@ pub use usvg::{
     Error,
 };
 
-use usvg::{
-    lyon_geom,
-};
+use usvg::lyon_geom;
 
 
 #[cfg(feature = "cairo-backend")] pub mod backend_cairo;
@@ -54,11 +52,14 @@ mod traits;
 
 /// Commonly used types and traits.
 pub mod prelude {
+    pub use usvg;
     pub use usvg::prelude::*;
     pub use geom::*;
     pub(crate) use traits::*;
     pub use utils;
     pub use Options;
+    pub use Render;
+    pub use OutputImage;
 }
 
 

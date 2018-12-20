@@ -8,7 +8,7 @@ use std::rc::Rc;
 use usvg::ColorInterpolation as ColorSpace;
 
 // self
-use super::super::prelude::*;
+use super::prelude::*;
 
 
 pub enum Error {

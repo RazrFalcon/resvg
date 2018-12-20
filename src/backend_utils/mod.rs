@@ -6,3 +6,7 @@ pub mod filter;
 pub mod image;
 pub mod mask;
 pub mod text;
+
+mod prelude {
+    pub use super::super::prelude::*;
+}

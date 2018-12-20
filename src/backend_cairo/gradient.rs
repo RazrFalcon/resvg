@@ -7,7 +7,6 @@ use cairo::{
     self,
     MatrixTrait,
 };
-use usvg;
 
 // self
 use super::prelude::*;

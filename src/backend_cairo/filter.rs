@@ -12,7 +12,6 @@ use cairo::{
     PatternTrait,
 };
 use rgb::FromSlice;
-use usvg;
 use usvg::ColorInterpolation as ColorSpace;
 
 // self

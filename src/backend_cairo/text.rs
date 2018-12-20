@@ -12,7 +12,6 @@ use pango::{
     ContextExt,
 };
 use pangocairo::functions as pc;
-use usvg;
 
 // self
 use super::prelude::*;
