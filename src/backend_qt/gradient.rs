@@ -63,7 +63,7 @@ fn apply_ts(
     bbox: Rect,
     brush: &mut qt::Brush,
 ) {
-    // We doesn't use `QGradient::setCoordinateMode` because it works incorrectly.
+    // We don't use `QGradient::setCoordinateMode` because it works incorrectly.
     // https://bugreports.qt.io/browse/QTBUG-67995
 
     if g.units == usvg::Units::ObjectBoundingBox {

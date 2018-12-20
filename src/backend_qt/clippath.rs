@@ -87,7 +87,6 @@ fn clip_group(
 
                 let clip_img = try_opt!(layers.get(), ());
                 let mut clip_img = clip_img.borrow_mut();
-                clip_img.fill(0, 0, 0, 0);
 
                 let mut clip_p = qt::Painter::new(&mut clip_img);
                 clip_p.set_transform(&p.get_transform());
