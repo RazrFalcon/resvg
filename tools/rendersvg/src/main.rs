@@ -23,7 +23,7 @@ use resvg::{
     Options,
     Render,
 };
-use usvg::prelude::*;
+use resvg::prelude::*;
 
 use svgdom::WriteBuffer;
 

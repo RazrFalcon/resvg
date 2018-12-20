@@ -9,7 +9,6 @@ use cairo::{
     PatternTrait,
 };
 use usvg;
-use usvg::prelude::*;
 
 // self
 use super::prelude::*;

@@ -7,7 +7,6 @@
 // external
 use qt;
 use usvg;
-use usvg::prelude::*;
 
 // self
 use prelude::*;
@@ -427,7 +426,7 @@ fn from_qt_path(p_path: &qt::PainterPath) -> Vec<usvg::PathSegment> {
         i += 1;
     }
 
-    if segments.len() < 2 {
+    if segments.len() == 1 {
         segments.clear();
     }
 

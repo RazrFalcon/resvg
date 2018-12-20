@@ -27,7 +27,7 @@ use resvg::qt;
 use resvg::cairo;
 
 use resvg::usvg;
-use usvg::prelude::*;
+use resvg::prelude::*;
 
 
 const DEFAULT_FONT_FAMILY: &str = "Times New Roman";

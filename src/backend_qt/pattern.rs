@@ -5,7 +5,6 @@
 // external
 use qt;
 use usvg;
-use usvg::prelude::*;
 
 // self
 use super::prelude::*;

@@ -11,7 +11,6 @@ use cairo::{
 };
 use pangocairo::functions as pc;
 use usvg;
-use usvg::prelude::*;
 
 // self
 use prelude::*;
@@ -21,7 +20,6 @@ use {
     OutputImage,
     Render,
 };
-use self::ext::*;
 
 
 macro_rules! try_create_surface {
@@ -38,7 +36,6 @@ macro_rules! try_create_surface {
 
 
 mod clippath;
-mod ext;
 mod fill;
 mod filter;
 mod gradient;
@@ -52,7 +49,10 @@ mod text;
 mod prelude {
     pub use super::super::prelude::*;
     pub type CairoLayers = super::layers::Layers<super::cairo::ImageSurface>;
-    pub use super::ext::*;
+
+    // It's actually used. Rust bug?
+    #[allow(unused_imports)]
+    pub(super) use super::ReCairoContextExt;
 }
 
 
@@ -75,6 +75,26 @@ impl TransformFromBBox for cairo::Matrix {
         debug_assert!(!bbox.height.is_fuzzy_zero());
 
         Self::new(bbox.width, 0.0, 0.0, bbox.height, bbox.x, bbox.y)
+    }
+}
+
+pub(crate) trait ReCairoContextExt {
+    fn set_source_color(&self, color: usvg::Color, opacity: usvg::Opacity);
+    fn reset_source_rgba(&self);
+}
+
+impl ReCairoContextExt for cairo::Context {
+    fn set_source_color(&self, color: usvg::Color, opacity: usvg::Opacity) {
+        self.set_source_rgba(
+            color.red as f64 / 255.0,
+            color.green as f64 / 255.0,
+            color.blue as f64 / 255.0,
+            *opacity,
+        );
+    }
+
+    fn reset_source_rgba(&self) {
+        self.set_source_rgba(0.0, 0.0, 0.0, 0.0);
     }
 }
 
@@ -459,7 +479,7 @@ fn from_cairo_path(path: &cairo::Path) -> Vec<usvg::PathSegment> {
         }
     }
 
-    if segments.len() < 2 {
+    if segments.len() == 1 {
         segments.clear();
     }
 

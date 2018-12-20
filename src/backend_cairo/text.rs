@@ -13,7 +13,6 @@ use pango::{
 };
 use pangocairo::functions as pc;
 use usvg;
-use usvg::prelude::*;
 
 // self
 use super::prelude::*;

@@ -8,11 +8,10 @@ use std::f64;
 
 // external
 use usvg;
-use usvg::prelude::*;
 pub use usvg::utils::*;
 
 // self
-use geom::*;
+use super::prelude::*;
 use FitTo;
 
 

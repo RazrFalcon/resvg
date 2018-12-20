@@ -6,11 +6,9 @@ use std::path;
 
 // external
 use usvg;
-use usvg::prelude::*;
 
 // self
-use utils;
-use geom::*;
+use super::super::prelude::*;
 use {
     FitTo,
     Options,
