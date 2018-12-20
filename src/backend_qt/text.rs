@@ -5,7 +5,6 @@
 // external
 use qt;
 use usvg;
-use usvg::prelude::*;
 
 // self
 use super::prelude::*;
@@ -75,9 +74,8 @@ fn draw_block(
 
     let old_ts = p.get_transform();
 
-    if !block.rotate.is_fuzzy_zero() {
-        let mut ts = usvg::Transform::default();
-        ts.rotate_at(block.rotate, bbox.x, bbox.y + block.font_ascent);
+    if let Some(rotate) = block.rotate {
+        let ts = usvg::Transform::new_rotate_at(rotate, bbox.x, bbox.y + block.font_ascent);
         p.apply_transform(&ts.to_native());
     }
 

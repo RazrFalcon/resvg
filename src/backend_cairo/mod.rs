@@ -408,8 +408,8 @@ fn _calc_node_bbox(
                 let segments = from_cairo_path(&path);
 
                 let mut t = ts2;
-                if !block.rotate.is_fuzzy_zero() {
-                    t.rotate_at(block.rotate, block.bbox.x, block.bbox.y + block.font_ascent);
+                if let Some(rotate) = block.rotate {
+                    t.rotate_at(rotate, block.bbox.x, block.bbox.y + block.font_ascent);
                 }
                 t.translate(block.bbox.x, block.bbox.y);
 

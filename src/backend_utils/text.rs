@@ -14,7 +14,7 @@ pub struct TextBlock<Font> {
     pub text: String,
     pub is_visible: bool,
     pub bbox: Rect,
-    pub rotate: f64,
+    pub rotate: Option<f64>,
     pub fill: Option<usvg::Fill>,
     pub stroke: Option<usvg::Stroke>,
     pub font: Font,
@@ -131,8 +131,8 @@ pub fn prepare_blocks<Font>(
 
                     // TODO: rewrite, explain
                     let rotate = match text_kind.rotate {
-                        Some(ref list) => list[blocks.len()],
-                        None => 0.0,
+                        Some(ref list) => Some(list[blocks.len()]),
+                        None => None,
                     };
 
                     blocks.push(TextBlock {

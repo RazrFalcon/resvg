@@ -124,9 +124,8 @@ fn draw_block(
     let mut line_rect = Rect::new(bbox.x, 0.0, bbox.width, fm.get_underline_thickness().scale());
 
     let old_ts = cr.get_matrix();
-    if !block.rotate.is_fuzzy_zero() {
-        let mut ts = usvg::Transform::default();
-        ts.rotate_at(block.rotate, bbox.x, bbox.y + block.font_ascent);
+    if let Some(rotate) = block.rotate {
+        let ts = usvg::Transform::new_rotate_at(rotate, bbox.x, bbox.y + block.font_ascent);
         cr.transform(ts.to_native());
     }
 

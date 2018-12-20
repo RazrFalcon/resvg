@@ -368,8 +368,8 @@ fn _calc_node_bbox(
                 let y = block.bbox.y + block.font_ascent;
 
                 let mut t = ts2;
-                if !block.rotate.is_fuzzy_zero() {
-                    t.rotate_at(block.rotate, block.bbox.x, y);
+                if let Some(rotate) = block.rotate {
+                    t.rotate_at(rotate, block.bbox.x, y);
                 }
                 t.translate(block.bbox.x, y);
 
