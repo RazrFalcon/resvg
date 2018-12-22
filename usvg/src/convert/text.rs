@@ -79,14 +79,16 @@ fn convert_chunks(
 
         let fill = fill::convert(tree, attrs, true);
         let stroke = stroke::convert(tree, attrs, true);
+        let font = conv_font(attrs, opt);
         let decoration = conv_tspan_decoration2(tree, text_elem, &tspan);
         let visibility = super::convert_visibility(attrs);
         let baseline_shift = conv_baseline_shift(attrs);
+
         let span = tree::TextSpan {
             visibility,
             fill,
             stroke,
-            font: conv_font(attrs, opt),
+            font,
             baseline_shift,
             decoration,
             text,
@@ -289,6 +291,9 @@ fn conv_font(attrs: &svgdom::Attributes, opt: &Options) -> tree::Font {
         _ => tree::FontStretch::Normal,
     };
 
+    let letter_spacing = attrs.get_number(AId::LetterSpacing);
+    let word_spacing = attrs.get_number(AId::WordSpacing);
+
     // TODO: what to do when <= 0?
     let size = attrs.get_number_or(AId::FontSize, opt.font_size);
     let size = if !(size > 0.0) { opt.font_size } else { size };
@@ -303,5 +308,7 @@ fn conv_font(attrs: &svgdom::Attributes, opt: &Options) -> tree::Font {
         variant,
         weight,
         stretch,
+        letter_spacing,
+        word_spacing,
     }
 }

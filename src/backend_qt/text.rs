@@ -157,6 +157,14 @@ fn init_font(dom_font: &usvg::Font) -> qt::Font {
     };
     font.set_stretch(font_stretch);
 
+    if let Some(letter_spacing) = dom_font.letter_spacing {
+        font.set_letter_spacing(letter_spacing);
+    }
+
+    if let Some(word_spacing) = dom_font.word_spacing {
+        font.set_word_spacing(word_spacing);
+    }
+
     font.set_size(dom_font.size.value());
 
     font

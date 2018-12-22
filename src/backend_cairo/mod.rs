@@ -418,7 +418,7 @@ fn _calc_node_bbox(
                 cr.new_path();
 
                 let context = text::init_pango_context(opt, cr);
-                let layout = text::init_pango_layout(&block.text, &block.font, &context);
+                let layout = text::init_pango_layout(&block, &context);
 
                 pc::layout_path(cr, &layout);
                 let path = cr.copy_path();

@@ -9,6 +9,9 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - (resvg) Partial `baseline-shift` support.
+- (resvg) `letter-spacing` support.
+- (qt-backend) `word-spacing` support.
+  Does not work on the cairo backend.
 - (resvg) Keep invisible shapes during *export by ID*.
   Required for a proper bbox resolving.
 

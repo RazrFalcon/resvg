@@ -393,7 +393,9 @@ test!(preserve_id, false,
         font-style='normal'
         font-variant='normal'
         font-weight='400'
-        visibility='visible'>Some text</tspan></tspan></text>
+        letter-spacing='normal'
+        visibility='visible'
+        word-spacing='normal'>Some text</tspan></tspan></text>
     <text
         id='text2'><tspan><tspan
         fill='#000000'
@@ -407,7 +409,9 @@ test!(preserve_id, false,
         font-style='normal'
         font-variant='normal'
         font-weight='400'
-        visibility='visible'>Some text</tspan></tspan></text>
+        letter-spacing='normal'
+        visibility='visible'
+        word-spacing='normal'>Some text</tspan></tspan></text>
     <image
         id='image1'
         visibility='visible'

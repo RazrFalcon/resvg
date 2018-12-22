@@ -301,6 +301,16 @@ pub struct Font {
     pub variant: FontVariant,
     pub weight: FontWeight,
     pub stretch: FontStretch,
+
+    /// Letter spacing.
+    ///
+    /// None == `normal`
+    pub letter_spacing: Option<f64>,
+
+    /// Word spacing.
+    ///
+    /// None == `normal`
+    pub word_spacing: Option<f64>,
 }
 
 

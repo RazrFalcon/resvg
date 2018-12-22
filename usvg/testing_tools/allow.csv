@@ -16,6 +16,8 @@ a-font-size-017,1088,UA dependent
 a-font-size-019,649,bug
 a-font-weight-003,484,chrome bug
 a-font-weight-012,714,chrome bug
+a-letter-spacing-005,2171,chrome bug
+a-word-spacing-005,730,chrome bug
 a-opacity-001,580
 a-opacity-002,137
 a-stroke-dasharray-012,244

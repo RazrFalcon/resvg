@@ -490,7 +490,7 @@ dependencies = [
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "pango 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pangocairo 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "resvg-qt 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "resvg-qt 0.4.0 (git+https://github.com/RazrFalcon/libresvg-qt?rev=4dd0b40)",
  "rgb 0.8.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-segmentation 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "usvg 0.4.0",
@@ -510,7 +510,7 @@ dependencies = [
 [[package]]
 name = "resvg-qt"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/RazrFalcon/libresvg-qt?rev=4dd0b40#4dd0b406574aaffd23104dbc772d4d33190b56f3"
 dependencies = [
  "cc 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -547,7 +547,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "svgdom"
 version = "0.15.0"
-source = "git+https://github.com/RazrFalcon/svgdom?rev=dc62f70#dc62f70353ca6154aec3af0c37af74ffc0c3162e"
+source = "git+https://github.com/RazrFalcon/svgdom?rev=f53af72#f53af72283fbc6fdfc3ff00a3238f3e4b3e053c1"
 dependencies = [
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "roxmltree 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -605,7 +605,7 @@ dependencies = [
  "lyon_geom 0.12.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "pretty_assertions 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rctree 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "svgdom 0.15.0 (git+https://github.com/RazrFalcon/svgdom?rev=dc62f70)",
+ "svgdom 0.15.0 (git+https://github.com/RazrFalcon/svgdom?rev=f53af72)",
  "unicode-segmentation 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -693,13 +693,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum quote 0.6.10 (registry+https://github.com/rust-lang/crates.io-index)" = "53fa22a1994bd0f9372d7a816207d8a2677ad0325b073f5c5332760f0fb62b5c"
 "checksum rctree 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "1817e0f0056f95bce0d6ab1a5be62ca24bd756b5547c20637ef47cc9a2065f4b"
 "checksum redox_syscall 0.1.44 (registry+https://github.com/rust-lang/crates.io-index)" = "a84bcd297b87a545980a2d25a0beb72a1f490c31f0a9fde52fca35bfbb1ceb70"
-"checksum resvg-qt 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0c2efacc41fc639ff3bf9c02c923a69a1cff354ef4fffbb772be45fbfdeb7f30"
+"checksum resvg-qt 0.4.0 (git+https://github.com/RazrFalcon/libresvg-qt?rev=4dd0b40)" = "<none>"
 "checksum rgb 0.8.11 (registry+https://github.com/rust-lang/crates.io-index)" = "002bebda58b24482d6911a59512e8a17fa1defecf5a2162521113b7cc5422dd1"
 "checksum roxmltree 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "869a77456372218c6cd28ae457bedbc338af19866290e71d71965cc992e2654b"
 "checksum simplecss 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "135685097a85a64067df36e28a243e94a94f76d829087ce0be34eeb014260c0e"
 "checksum siphasher 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "0b8de496cf83d4ed58b6be86c3a275b8602f6ffe98d3024a869e124147a9a3ac"
 "checksum slab 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "5f9776d6b986f77b35c6cf846c11ad986ff128fe0b2b63a3628e3755e8d3102d"
-"checksum svgdom 0.15.0 (git+https://github.com/RazrFalcon/svgdom?rev=dc62f70)" = "<none>"
+"checksum svgdom 0.15.0 (git+https://github.com/RazrFalcon/svgdom?rev=f53af72)" = "<none>"
 "checksum svgtypes 0.3.0 (git+https://github.com/RazrFalcon/svgtypes?rev=3034692)" = "<none>"
 "checksum syn 0.14.9 (registry+https://github.com/rust-lang/crates.io-index)" = "261ae9ecaa397c42b960649561949d69311f08eeaea86a65696e6e46517cf741"
 "checksum time 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)" = "847da467bf0db05882a9e2375934a8a55cffdc9db0d128af1518200260ba1f6c"

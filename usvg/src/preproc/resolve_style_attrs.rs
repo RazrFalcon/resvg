@@ -19,6 +19,8 @@ fn resolve_inherit(parent: &Node, opt: &Options) {
             resolve(&mut node, AId::FontVariant);
             resolve(&mut node, AId::FontWeight);
             resolve(&mut node, AId::TextAnchor);
+            resolve(&mut node, AId::LetterSpacing);
+            resolve(&mut node, AId::WordSpacing);
             resolve_font_family(&mut node, opt);
         }
 

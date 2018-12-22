@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Implement `FuzzyEq` for `Rect`, `Size` and `Point`.
 - `StrokeMiterlimit` and `FontSize` wrappers for `f64`.
+- `letter-spacing` and `word-spacing` support.
 - Partial `baseline-shift` support.
 - `TextSpan::baseline_shift`.
 

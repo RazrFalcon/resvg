@@ -18,6 +18,8 @@ pub struct TextBlock<Font> {
     pub stroke: Option<usvg::Stroke>,
     pub font: Font,
     pub font_ascent: f64,
+    pub letter_spacing: Option<f64>,
+    pub word_spacing: Option<f64>,
     pub decoration: usvg::TextDecoration,
 }
 
@@ -143,6 +145,8 @@ pub fn prepare_blocks<Font>(
                         stroke: tspan.stroke.clone(),
                         font: font_metrics.font(),
                         font_ascent,
+                        letter_spacing: tspan.font.letter_spacing,
+                        word_spacing: tspan.font.word_spacing,
                         decoration: tspan.decoration.clone(),
                     });
                 }

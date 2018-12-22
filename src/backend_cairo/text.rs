@@ -25,15 +25,27 @@ use super::{
 };
 
 
-trait PangoScale {
-    fn scale(&self) -> f64;
+trait FromPangoScale {
+    fn from_pango(&self) -> f64;
 }
 
-impl PangoScale for i32 {
-    fn scale(&self) -> f64 {
+impl FromPangoScale for i32 {
+    fn from_pango(&self) -> f64 {
         *self as f64 / pango::SCALE as f64
     }
 }
+
+
+trait ToPangoScale {
+    fn to_pango(&self) -> i32;
+}
+
+impl ToPangoScale for f64 {
+    fn to_pango(&self) -> i32 {
+        (*self * pango::SCALE as f64) as i32
+    }
+}
+
 
 pub struct PangoFontMetrics {
     layout: pango::Layout,
@@ -50,8 +62,8 @@ impl PangoFontMetrics {
 
 impl FontMetrics<pango::FontDescription> for PangoFontMetrics {
     fn set_font(&mut self, font: &usvg::Font) {
-        let font = init_font(font, self.dpi);
-        self.layout.set_font_description(&font);
+        set_text_spacing(font.letter_spacing, &self.layout);
+        self.layout.set_font_description(&init_font(font, self.dpi));
     }
 
     fn font(&self) -> pango::FontDescription {
@@ -60,16 +72,16 @@ impl FontMetrics<pango::FontDescription> for PangoFontMetrics {
 
     fn width(&self, text: &str) -> f64 {
         self.layout.set_text(text);
-        self.layout.get_size().0.scale()
+        self.layout.get_size().0.from_pango()
     }
 
     fn ascent(&self) -> f64 {
         let mut layout_iter = self.layout.get_iter().unwrap();
-        layout_iter.get_baseline().scale()
+        layout_iter.get_baseline().from_pango()
     }
 
     fn height(&self) -> f64 {
-        self.layout.get_size().1.scale()
+        self.layout.get_size().1.from_pango()
     }
 }
 
@@ -92,14 +104,27 @@ pub fn init_pango_context(opt: &Options, cr: &cairo::Context) -> pango::Context 
 }
 
 pub fn init_pango_layout(
-    text: &str,
-    font: &pango::FontDescription,
+    block: &text::TextBlock<pango::FontDescription>,
     context: &pango::Context,
 ) -> pango::Layout {
     let layout = pango::Layout::new(&context);
-    layout.set_font_description(font);
-    layout.set_text(text);
+    layout.set_font_description(&block.font);
+    set_text_spacing(block.letter_spacing, &layout);
+    layout.set_text(&block.text);
     layout
+}
+
+fn set_text_spacing(
+    letter_spacing: Option<f64>,
+    layout: &pango::Layout,
+) {
+    let attr_list = pango::AttrList::new();
+
+    if let Some(letter_spacing) = letter_spacing {
+        attr_list.insert(pango::Attribute::new_letter_spacing(letter_spacing.to_pango()).unwrap());
+    }
+
+    layout.set_attributes(&attr_list);
 }
 
 fn draw_block(
@@ -109,7 +134,7 @@ fn draw_block(
     cr: &cairo::Context,
 ) {
     let context = init_pango_context(opt, cr);
-    let layout = init_pango_layout(&block.text, &block.font, &context);
+    let layout = init_pango_layout(&block, &context);
 
     let fm = context.get_metrics(&block.font, None).unwrap();
 
@@ -119,7 +144,8 @@ fn draw_block(
     // so spaces around text are ignored.
     let inner_bbox = get_layout_bbox(&layout, bbox.x, bbox.y);
 
-    let mut line_rect = Rect::new(bbox.x, 0.0, bbox.width, fm.get_underline_thickness().scale());
+    let underline_height = fm.get_underline_thickness().from_pango();
+    let mut line_rect = Rect::new(bbox.x, 0.0, bbox.width, underline_height);
 
     let old_ts = cr.get_matrix();
     if let Some(rotate) = block.rotate {
@@ -131,7 +157,7 @@ fn draw_block(
     //
     // Should be drawn before/under text.
     if let Some(ref style) = block.decoration.underline {
-        line_rect.y = bbox.y + block.font_ascent - fm.get_underline_position().scale();
+        line_rect.y = bbox.y + block.font_ascent - fm.get_underline_position().from_pango();
         draw_line(tree, line_rect, &style.fill, &style.stroke, opt, cr);
     }
 
@@ -139,7 +165,7 @@ fn draw_block(
     //
     // Should be drawn before/under text.
     if let Some(ref style) = block.decoration.overline {
-        line_rect.y = bbox.y + fm.get_underline_thickness().scale();
+        line_rect.y = bbox.y + underline_height;
         draw_line(tree, line_rect, &style.fill, &style.stroke, opt, cr);
     }
 
@@ -160,8 +186,8 @@ fn draw_block(
     //
     // Should be drawn after/over text.
     if let Some(ref style) = block.decoration.line_through {
-        line_rect.y = bbox.y + block.font_ascent - fm.get_strikethrough_position().scale();
-        line_rect.height = fm.get_strikethrough_thickness().scale();
+        line_rect.y = bbox.y + block.font_ascent - fm.get_strikethrough_position().from_pango();
+        line_rect.height = fm.get_strikethrough_thickness().from_pango();
         draw_line(tree, line_rect, &style.fill, &style.stroke, opt, cr);
     }
 
@@ -214,7 +240,7 @@ fn init_font(dom_font: &usvg::Font, dpi: f64) -> pango::FontDescription {
     };
     font.set_stretch(font_stretch);
 
-    let font_size = dom_font.size.value() * (pango::SCALE as f64) / dpi * 72.0;
+    let font_size = dom_font.size.value().to_pango() as f64 / dpi * 72.0;
     font.set_size(font_size as i32);
 
     font
@@ -224,10 +250,10 @@ pub fn get_layout_bbox(layout: &pango::Layout, x: f64, y: f64) -> Rect {
     let (ink_rect, _) = layout.get_extents();
 
     (
-        x + ink_rect.x.scale(),
-        y + ink_rect.y.scale(),
-        ink_rect.width.scale(),
-        ink_rect.height.scale(),
+        x + ink_rect.x.from_pango(),
+        y + ink_rect.y.from_pango(),
+        ink_rect.width.from_pango(),
+        ink_rect.height.from_pango(),
     ).into()
 }
 

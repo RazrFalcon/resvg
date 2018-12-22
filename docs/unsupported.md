@@ -34,22 +34,21 @@
 
 - `alignment-baseline`
 - Nested `baseline-shift`
-- `clip` (deprecated)
+- `clip` (deprecated in the SVG 2)
 - `color-interpolation`
 - `color-profile`
 - `color-rendering`
 - `direction`
 - `dominant-baseline`
-- [`enable-background`](https://www.w3.org/TR/SVG11/filters.html#EnableBackgroundProperty) (deprecated)
+- [`enable-background`](https://www.w3.org/TR/SVG11/filters.html#EnableBackgroundProperty) (deprecated in the SVG 2)
 - `font`
 - `font-size-adjust`
-- `glyph-orientation-horizontal`
-- `glyph-orientation-vertical`
+- `glyph-orientation-horizontal` (removed in the SVG 2)
+- `glyph-orientation-vertical` (deprecated in the SVG 2)
 - [`in`](https://www.w3.org/TR/SVG11/filters.html#FilterPrimitiveInAttribute)
   with `BackgroundImage`, `BackgroundAlpha`, `FillPaint`, `StrokePaint`
 - `image-rendering`
 - `kerning`
-- `letter-spacing`
 - `lighting-color`
 - `marker-start`
 - `marker-mid`
@@ -57,7 +56,7 @@
 - `shape-rendering`
 - `text-rendering`
 - `unicode-bidi`
-- `word-spacing`
+- `word-spacing` (unsupported only on the cairo backend)
 - `writing-mode`
 
 **Note:** this list does not include elements and attributes outside the

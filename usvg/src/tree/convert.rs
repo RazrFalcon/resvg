@@ -636,6 +636,9 @@ fn conv_font(
             FontStretch::UltraExpanded => "ultra-expanded",
         }
     ));
+
+    conv_text_spacing(font.letter_spacing, AId::LetterSpacing, node);
+    conv_text_spacing(font.word_spacing, AId::WordSpacing, node);
 }
 
 fn conv_baseline_shift(
@@ -651,6 +654,19 @@ fn conv_baseline_shift(
     };
 
     node.set_attribute((AId::BaselineShift, av));
+}
+
+fn conv_text_spacing(
+    spacing: Option<f64>,
+    aid: AId,
+    node: &mut svgdom::Node,
+) {
+    let spacing: AValue = match spacing {
+        Some(n) => n.into(),
+        None => "normal".into(),
+    };
+
+    node.set_attribute((aid, spacing));
 }
 
 fn conv_link(
