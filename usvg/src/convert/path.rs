@@ -36,17 +36,18 @@ pub fn convert(
     let transform = attrs.get_transform(AId::Transform).unwrap_or_default();
     let mut visibility = super::convert_visibility(&attrs);
 
-    // Shapes without a bbox cannot be filled,
-    // and if there is no stroke than there is nothing to render.
-    if !has_bbox && stroke.is_none() {
-        return;
-    }
-
     // If a path doesn't have a fill or a stroke than it's invisible.
     // By setting `visibility` to `hidden` we are disabling the rendering of this path.
     if fill.is_none() && stroke.is_none() {
         visibility = tree::Visibility::Hidden
     }
+
+    let marker = Box::new(tree::PathMarker {
+        start: conv_marker(AId::MarkerStart, node, tree),
+        mid: conv_marker(AId::MarkerMid, node, tree),
+        end: conv_marker(AId::MarkerEnd, node, tree),
+        stroke: conv_stroke_width(&attrs),
+    });
 
     parent.append_kind(tree::NodeKind::Path(tree::Path {
         id: node.id().clone(),
@@ -54,6 +55,7 @@ pub fn convert(
         visibility,
         fill,
         stroke,
+        marker,
         segments: d,
     }));
 }
@@ -302,4 +304,31 @@ fn has_bbox(segments: &[tree::PathSegment]) -> bool {
     }
 
     false
+}
+
+fn conv_marker(
+    aid: AId,
+    node: &svgdom::Node,
+    tree: &tree::Tree,
+) -> Option<String> {
+    let attrs = node.attributes();
+    if let Some(&AValue::FuncLink(ref link)) = attrs.get_type(aid) {
+        if link.is_tag_name(EId::Marker) {
+            if let Some(node) = tree.defs_by_id(&link.id()) {
+                return Some(node.id().to_string());
+            }
+        }
+    }
+
+    None
+}
+
+fn conv_stroke_width(attrs: &svgdom::Attributes) -> Option<tree::StrokeWidth> {
+    let width = attrs.get_number_or(AId::StrokeWidth, 1.0);
+
+    if !(width > 0.0) {
+        return None;
+    }
+
+    Some(tree::StrokeWidth::new(width))
 }

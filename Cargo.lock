@@ -547,19 +547,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "svgdom"
 version = "0.15.0"
-source = "git+https://github.com/RazrFalcon/svgdom?rev=f53af72#f53af72283fbc6fdfc3ff00a3238f3e4b3e053c1"
+source = "git+https://github.com/RazrFalcon/svgdom?rev=6ff5579#6ff557934d84be85f25223c626057df8ebb9004c"
 dependencies = [
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "roxmltree 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "simplecss 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "slab 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "svgtypes 0.3.0 (git+https://github.com/RazrFalcon/svgtypes?rev=3034692)",
+ "svgtypes 0.3.0 (git+https://github.com/RazrFalcon/svgtypes?rev=63fc6da)",
 ]
 
 [[package]]
 name = "svgtypes"
 version = "0.3.0"
-source = "git+https://github.com/RazrFalcon/svgtypes?rev=3034692#3034692f4ef2dc31f6da62d23c3d363029aeeaca"
+source = "git+https://github.com/RazrFalcon/svgtypes?rev=63fc6da#63fc6da5b1cb226b056344db546510ef8b923923"
 dependencies = [
  "float-cmp 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "phf 0.7.23 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -605,7 +605,7 @@ dependencies = [
  "lyon_geom 0.12.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "pretty_assertions 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rctree 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "svgdom 0.15.0 (git+https://github.com/RazrFalcon/svgdom?rev=f53af72)",
+ "svgdom 0.15.0 (git+https://github.com/RazrFalcon/svgdom?rev=6ff5579)",
  "unicode-segmentation 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -699,8 +699,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum simplecss 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "135685097a85a64067df36e28a243e94a94f76d829087ce0be34eeb014260c0e"
 "checksum siphasher 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "0b8de496cf83d4ed58b6be86c3a275b8602f6ffe98d3024a869e124147a9a3ac"
 "checksum slab 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "5f9776d6b986f77b35c6cf846c11ad986ff128fe0b2b63a3628e3755e8d3102d"
-"checksum svgdom 0.15.0 (git+https://github.com/RazrFalcon/svgdom?rev=f53af72)" = "<none>"
-"checksum svgtypes 0.3.0 (git+https://github.com/RazrFalcon/svgtypes?rev=3034692)" = "<none>"
+"checksum svgdom 0.15.0 (git+https://github.com/RazrFalcon/svgdom?rev=6ff5579)" = "<none>"
+"checksum svgtypes 0.3.0 (git+https://github.com/RazrFalcon/svgtypes?rev=63fc6da)" = "<none>"
 "checksum syn 0.14.9 (registry+https://github.com/rust-lang/crates.io-index)" = "261ae9ecaa397c42b960649561949d69311f08eeaea86a65696e6e46517cf741"
 "checksum time 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)" = "847da467bf0db05882a9e2375934a8a55cffdc9db0d128af1518200260ba1f6c"
 "checksum unicode-segmentation 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "aa6024fc12ddfd1c6dbc14a80fa2324d4568849869b779f6bd37e5e4c03344d1"

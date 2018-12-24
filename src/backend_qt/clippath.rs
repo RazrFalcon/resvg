@@ -41,7 +41,7 @@ pub fn apply(
 
         match *node.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                path::draw(&node.tree(), path_node, opt, &mut clip_p);
+                path::draw(&node.tree(), path_node, opt, layers, &mut clip_p);
             }
             usvg::NodeKind::Text(ref text) => {
                 text::draw(&node.tree(), text, opt, &mut clip_p);
@@ -90,7 +90,7 @@ fn clip_group(
 
                 let mut clip_p = qt::Painter::new(&mut clip_img);
                 clip_p.set_transform(&p.get_transform());
-                draw_group_child(&node, opt, &mut clip_p);
+                draw_group_child(&node, opt, layers, &mut clip_p);
 
                 apply(clip_node, cp, opt, bbox, layers, &mut clip_p);
                 clip_p.end();
@@ -106,6 +106,7 @@ fn clip_group(
 fn draw_group_child(
     node: &usvg::Node,
     opt: &Options,
+    layers: &mut QtLayers,
     p: &mut qt::Painter,
 ) {
     if let Some(child) = node.first_child() {
@@ -113,7 +114,7 @@ fn draw_group_child(
 
         match *child.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                path::draw(&child.tree(), path_node, opt, p);
+                path::draw(&child.tree(), path_node, opt, layers, p);
             }
             usvg::NodeKind::Text(ref text) => {
                 text::draw(&child.tree(), text, opt, p);

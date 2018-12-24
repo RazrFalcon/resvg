@@ -33,6 +33,7 @@ mod fill;
 mod filter;
 mod gradient;
 mod image;
+mod marker;
 mod mask;
 mod path;
 mod pattern;
@@ -154,6 +155,11 @@ fn convert_ref_nodes(
                     later_nodes.push((node, new_node));
                 }
             }
+            EId::Marker => {
+                if let Some(new_node) = marker::convert(&node, tree) {
+                    later_nodes.push((node, new_node));
+                }
+            }
             EId::Filter => {
                 filter::convert(&node, opt, tree);
             }
@@ -183,6 +189,13 @@ fn convert_ref_nodes(
 
             if !new_node.has_children() {
                 warn!("Mask '{}' has no children. Skipped.", node.id());
+                new_node.detach();
+            }
+        } else if node.is_tag_name(EId::Marker) {
+            convert_nodes(&node, &mut new_node, opt, tree);
+
+            if !new_node.has_children() {
+                warn!("Marker '{}' has no children. Skipped.", node.id());
                 new_node.detach();
             }
         } else if node.is_tag_name(EId::Pattern) {

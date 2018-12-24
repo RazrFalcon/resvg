@@ -7,6 +7,7 @@ use super::prelude::*;
 
 pub fn fix_recursive_links(doc: &Document) {
     fix_pattern(doc);
+    fix_marker(doc);
     fix_func_iri(doc, EId::ClipPath, AId::ClipPath);
     fix_func_iri(doc, EId::Mask, AId::Mask);
     fix_func_iri(doc, EId::Filter, AId::Filter);
@@ -39,6 +40,38 @@ fn fix_pattern(doc: &Document) {
 
             check_attr(AId::Fill);
             check_attr(AId::Stroke);
+        }
+    }
+}
+
+fn fix_marker(doc: &Document) {
+    for marker_node in doc.root().descendants().filter(|n| n.is_tag_name(EId::Marker)) {
+        for mut node in marker_node.descendants() {
+            let mut check_attr = |aid: AId| {
+                let av = node.attributes().get_value(aid).cloned();
+                if let Some(AValue::FuncLink(link)) = av {
+                    if link == marker_node {
+                        // If a marker child has a link to the marker itself
+                        // then we have to remove it.
+                        // Otherwise we will get endless loop/recursion and stack overflow.
+                        node.remove_attribute(aid);
+                    } else {
+                        // Check that linked node children doesn't link this marker.
+                        for node2 in link.descendants() {
+                            let av2 = node2.attributes().get_value(aid).cloned();
+                            if let Some(AValue::FuncLink(link2)) = av2 {
+                                if link2 == marker_node {
+                                    node.remove_attribute(aid);
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            check_attr(AId::MarkerStart);
+            check_attr(AId::MarkerMid);
+            check_attr(AId::MarkerEnd);
         }
     }
 }

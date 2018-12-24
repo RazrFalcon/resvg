@@ -46,7 +46,7 @@ pub fn apply(
 
         match *node.borrow() {
             usvg::NodeKind::Path(ref p) => {
-                path::draw(&node.tree(), p, opt, &clip_cr);
+                path::draw(&node.tree(), p, opt, layers, &clip_cr);
             }
             usvg::NodeKind::Text(ref text) => {
                 text::draw(&node.tree(), text, opt, &clip_cr);
@@ -103,7 +103,7 @@ fn clip_group(
                 clip_cr.paint();
                 clip_cr.set_matrix(cr.get_matrix());
 
-                draw_group_child(&node, opt, &clip_cr);
+                draw_group_child(&node, opt, layers, &clip_cr);
 
                 apply(clip_node, cp, opt, bbox, layers, &clip_cr);
 
@@ -120,6 +120,7 @@ fn clip_group(
 fn draw_group_child(
     node: &usvg::Node,
     opt: &Options,
+    layers: &mut CairoLayers,
     cr: &cairo::Context,
 ) {
     if let Some(child) = node.first_child() {
@@ -127,7 +128,7 @@ fn draw_group_child(
 
         match *child.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                path::draw(&child.tree(), path_node, opt, cr);
+                path::draw(&child.tree(), path_node, opt, layers, cr);
             }
             usvg::NodeKind::Text(ref text) => {
                 text::draw(&child.tree(), text, opt, cr);

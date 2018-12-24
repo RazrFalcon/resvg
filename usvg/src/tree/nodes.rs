@@ -20,6 +20,7 @@ pub enum NodeKind {
     ClipPath(ClipPath),
     Mask(Mask),
     Pattern(Pattern),
+    Marker(Marker),
     Filter(Filter),
     Path(Path),
     Text(Text),
@@ -41,6 +42,7 @@ impl NodeKind {
             NodeKind::ClipPath(ref e) => e.id.as_str(),
             NodeKind::Mask(ref e) => e.id.as_str(),
             NodeKind::Pattern(ref e) => e.id.as_str(),
+            NodeKind::Marker(ref e) => e.id.as_str(),
             NodeKind::Filter(ref e) => e.id.as_str(),
             NodeKind::Path(ref e) => e.id.as_str(),
             NodeKind::Text(ref e) => e.id.as_str(),
@@ -62,6 +64,7 @@ impl NodeKind {
             NodeKind::ClipPath(ref e) => e.transform,
             NodeKind::Mask(_) => Transform::default(),
             NodeKind::Pattern(ref e) => e.transform,
+            NodeKind::Marker(_) => Transform::default(),
             NodeKind::Filter(_) => Transform::default(),
             NodeKind::Path(ref e) => e.transform,
             NodeKind::Text(ref e) => e.transform,
@@ -112,6 +115,9 @@ pub struct Path {
 
     /// Stroke style.
     pub stroke: Option<Stroke>,
+
+    /// Marker.
+    pub marker: Box<PathMarker>,
 
     /// Segments list.
     ///
@@ -482,6 +488,42 @@ pub struct Pattern {
 
     /// Pattern viewbox.
     pub view_box: Option<ViewBox>,
+}
+
+
+/// A marker element.
+///
+/// `marker` element in SVG.
+#[derive(Clone, Debug)]
+pub struct Marker {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Can't be empty.
+    pub id: String,
+
+    /// Coordinate system units.
+    ///
+    /// `markerUnits` in SVG.
+    pub units: MarkerUnits,
+
+    /// Marker rectangle.
+    ///
+    /// `refX`, `refY`, `markerWidth` and `markerHeight` in SVG.
+    pub rect: Rect,
+
+    /// Marker viewbox.
+    pub view_box: Option<ViewBox>,
+
+    /// Marker orientation.
+    ///
+    /// `orient` in SVG.
+    pub orientation: MarkerOrientation,
+
+    /// Marker overflow.
+    ///
+    /// `overflow` in SVG.
+    pub overflow: Overflow,
 }
 
 

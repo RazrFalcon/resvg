@@ -57,13 +57,31 @@ pub enum FillRule {
 
 
 /// An element units.
-///
-/// `*Units` attribute in the SVG.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Units {
     UserSpaceOnUse,
     ObjectBoundingBox,
+}
+
+
+/// A marker units.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum MarkerUnits {
+    StrokeWidth,
+    UserSpaceOnUse,
+}
+
+
+/// A marker orientation.
+#[derive(Clone, Copy, Debug)]
+pub enum MarkerOrientation {
+    /// Requires an automatic rotation.
+    Auto,
+
+    /// A rotation angle in degrees.
+    Angle(f64),
 }
 
 
@@ -88,6 +106,30 @@ pub enum Visibility {
     Visible,
     Hidden,
     Collapse,
+}
+
+
+/// An overflow property.
+///
+/// `overflow` attribute in the SVG.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum Overflow {
+    Visible,
+    Hidden,
+    Scroll,
+    Auto,
+}
+
+impl ToString for Overflow {
+    fn to_string(&self) -> String {
+        match self {
+            Overflow::Visible   => "visible",
+            Overflow::Hidden    => "hidden",
+            Overflow::Scroll    => "scroll",
+            Overflow::Auto      => "auto",
+        }.to_string()
+    }
 }
 
 
@@ -263,7 +305,7 @@ impl Default for Fill {
 pub struct Stroke {
     pub paint: Paint,
     pub dasharray: Option<NumberList>,
-    pub dashoffset: f64,
+    pub dashoffset: f32,
     pub miterlimit: StrokeMiterlimit,
     pub opacity: Opacity,
     pub width: StrokeWidth,
@@ -327,8 +369,8 @@ pub struct ViewBox {
 
 /// A path absolute segment.
 ///
-/// Unlike the SVG spec can contain only `M`, `L`, `C` and `Z` segments.
-/// All other segments will be converted to this one.
+/// Unlike the SVG spec, can contain only `M`, `L`, `C` and `Z` segments.
+/// All other segments will be converted into this one.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, Debug)]
 pub enum PathSegment {
@@ -509,4 +551,32 @@ pub enum BaselineShift {
     Superscript,
     Percent(f64),
     Number(f64),
+}
+
+
+/// A path marker properties.
+#[derive(Clone, Debug)]
+pub struct PathMarker {
+    /// Start marker.
+    ///
+    /// `marker-start` in SVG.
+    pub start: Option<String>,
+
+    /// Middle marker
+    ///
+    /// `marker-mid` in SVG.
+    pub mid: Option<String>,
+
+    /// End marker
+    ///
+    /// `marker-end` in SVG.
+    pub end: Option<String>,
+
+    /// Marker stroke.
+    ///
+    /// This value contains a copy of the `stroke-width` value.
+    /// `usvg` will set `Path::stroke` to `None` if a path doesn't have a stroke,
+    /// but marker rendering still relies on the `stroke-width` value, even when `stroke=none`.
+    /// So we have to store it separately.
+    pub stroke: Option<StrokeWidth>,
 }

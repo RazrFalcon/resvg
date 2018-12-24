@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
+- Added marker support.
 - Implement `FuzzyEq` for `Rect`, `Size` and `Point`.
 - `StrokeMiterlimit` and `FontSize` wrappers for `f64`.
 - `letter-spacing` and `word-spacing` support.
@@ -18,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   have an input has it's own `filter_input` field now.
 - Rename `filter_input` fields into `input`.
 - Filter primitives inputs and results will be resolved now.
+- `Stroke::dashoffset` is `f32` and not `f64` now.
 
 ### Fixed
 - `offset` attribute resolving inside the `stop` element.

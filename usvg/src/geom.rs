@@ -192,7 +192,7 @@ impl Rect {
         self.y + self.height
     }
 
-    /// Checks that rect contains a point.
+    /// Checks that the rect contains a point.
     pub fn contains(&self, p: Point) -> bool {
         if p.x < self.x || p.x > self.x + self.width - 1.0 {
             return false;
@@ -203,6 +203,11 @@ impl Rect {
         }
 
         true
+    }
+
+    /// Checks that the rect has a valid size.
+    pub fn is_valid(&self) -> bool {
+        self.width > 0.0 && self.height > 0.0
     }
 }
 

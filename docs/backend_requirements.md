@@ -49,6 +49,8 @@ List of features required from the 2D graphics library to implement a backend fo
     - Stretch
     - Variant: *normal*, *small cap*
     - Size
+    - Letter spacing
+    - Word spacing
   - Font metrics:
     - Text bounding box
     - Ascent/baseline

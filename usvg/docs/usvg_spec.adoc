@@ -2,6 +2,7 @@
 :toc:
 
 :1H: #
+:star: *
 
 == Elements
 
@@ -104,7 +105,7 @@ A group can be empty when it has `filter` attribute.
 
 Children: `g`, `path`, `text` and `image`.
 
-Attributes: `id`, `transform`, `opacity`, `clip-path` and `mask`.
+Attributes: `id`, `transform`, `opacity`, `clip-path`, `mask` and `filter`.
 
 * `id` is optional but never empty.
 
@@ -116,9 +117,13 @@ MoveTo, LineTo, CurveTo and ClosePath segments.
 
 Attributes: `id`, <<fill_attrs, filling>>, <<stroke_attrs,stroking>>,
 `clip-rule` (when inside the `clipPath`), `clip-path` (when inside the `clipPath`),
-`visibility` and `transform`.
+`visibility`, `marker-start`, `marker-mid`, `marker-end` and `transform`.
 
 * `id` is optional but never empty.
+* `marker-{star}` attributes will be set only on paths that were originally
+  `path`, `line`, `polyline` or `polygon`.
+* If a path contains an ArcTo segment and a marker - it will be rendered incorrectly,
+  because `usvg` will convert ArcTo into series of CurveTo's.
 
 === text
 

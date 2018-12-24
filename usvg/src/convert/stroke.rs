@@ -15,7 +15,7 @@ pub fn convert(
     attrs: &svgdom::Attributes,
     has_bbox: bool,
 ) -> Option<tree::Stroke> {
-    let dashoffset  = attrs.get_number_or(AId::StrokeDashoffset, 0.0);
+    let dashoffset  = attrs.get_number_or(AId::StrokeDashoffset, 0.0) as f32;
     let miterlimit  = attrs.get_number_or(AId::StrokeMiterlimit, 4.0);
     let opacity     = attrs.get_number_or(AId::StrokeOpacity, 1.0).into();
     let width       = attrs.get_number_or(AId::StrokeWidth, 1.0);

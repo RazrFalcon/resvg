@@ -8,17 +8,18 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
-- (resvg) Partial `baseline-shift` support.
-- (resvg) `letter-spacing` support.
+- Added marker support.
+- Partial `baseline-shift` support.
+- `letter-spacing` support.
 - (qt-backend) `word-spacing` support.
   Does not work on the cairo backend.
-- (resvg) Keep invisible shapes during *export by ID*.
-  Required for a proper bbox resolving.
 
 ### Fixed
 - (usvg) `offset` attribute resolving inside the `stop` element.
 - (usvg) Ungrouping of groups with non-inheritable attributes.
 - (usvg) `rotate` attribute resolving.
+- (usvg) Paths without stroke and fill will no longer be removed.
+  Required for a proper bbox resolving.
 - (svgdom) `stroke-miterlimit` attribute parsing.
 - (svgdom) `length` and `number` attribute types parsing.
 - (svgdom) `offset` attribute parsing.

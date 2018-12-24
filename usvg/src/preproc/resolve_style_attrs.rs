@@ -38,6 +38,12 @@ fn resolve_inherit(parent: &Node, opt: &Options) {
             resolve(&mut node, AId::StrokeWidth);
         }
 
+        if node.is_shape() {
+            resolve(&mut node, AId::MarkerStart);
+            resolve(&mut node, AId::MarkerMid);
+            resolve(&mut node, AId::MarkerEnd);
+        }
+
         if node.is_graphic() && node.parent().unwrap().is_tag_name(EId::ClipPath) {
             resolve(&mut node, AId::ClipRule);
         }

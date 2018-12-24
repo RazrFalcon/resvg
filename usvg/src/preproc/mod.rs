@@ -42,6 +42,7 @@ mod rm_non_svg_data;
 mod rm_unused_defs;
 mod ungroup_a;
 mod ungroup_groups;
+mod prepare_marker;
 
 
 use self::conv_units::*;
@@ -74,6 +75,7 @@ use self::rm_non_svg_data::*;
 use self::rm_unused_defs::*;
 use self::ungroup_a::*;
 use self::ungroup_groups::*;
+use self::prepare_marker::*;
 
 
 mod prelude {
@@ -177,6 +179,8 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) {
 
     prepare_text_decoration(doc);
     resolve_style_attributes(doc, opt);
+
+    rm_marker_attributes(doc);
 
     // Should be done only after style resolving.
     remove_invalid_gradients(doc);

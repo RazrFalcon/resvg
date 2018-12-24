@@ -20,6 +20,8 @@ a-letter-spacing-005,2171,chrome bug
 a-word-spacing-005,730,chrome bug
 a-opacity-001,580
 a-opacity-002,137
+a-overflow-001,299
+a-overflow-003,299
 a-stroke-dasharray-012,244
 a-stroke-width-004,960,chrome bug
 a-systemLanguage-001,25604,chrome bug
@@ -86,6 +88,9 @@ e-image-028,22690,bug #13
 e-image-029,24795,bug #13
 e-image-030,18864,bug #13
 e-image-031,18864,bug #13
+e-marker-015,846
+e-marker-030,704
+e-marker-035,1155,bug
 e-mask-015,38
 e-mask-017,22344,bug #14
 e-mask-020,12804,bug

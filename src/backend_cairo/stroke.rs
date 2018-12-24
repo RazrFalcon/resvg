@@ -59,7 +59,7 @@ pub fn apply(
             cr.set_line_join(linejoin);
 
             match stroke.dasharray {
-                Some(ref list) => cr.set_dash(list, stroke.dashoffset),
+                Some(ref list) => cr.set_dash(list, stroke.dashoffset as f64),
                 None => cr.set_dash(&[], 0.0),
             }
 

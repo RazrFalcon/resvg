@@ -26,7 +26,6 @@
   - `altGlyphItem`
   - `glyphRef`
 - `color-profile`
-- `marker`
 - `textPath`
 - `use` with a reference to an external SVG
 
@@ -49,10 +48,6 @@
   with `BackgroundImage`, `BackgroundAlpha`, `FillPaint`, `StrokePaint`
 - `image-rendering`
 - `kerning`
-- `lighting-color`
-- `marker-start`
-- `marker-mid`
-- `marker-end`
 - `shape-rendering`
 - `text-rendering`
 - `unicode-bidi`
