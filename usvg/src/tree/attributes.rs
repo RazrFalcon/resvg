@@ -580,3 +580,14 @@ pub struct PathMarker {
     /// So we have to store it separately.
     pub stroke: Option<StrokeWidth>,
 }
+
+impl Default for PathMarker {
+    fn default() -> Self {
+        PathMarker {
+            start: None,
+            mid: None,
+            end: None,
+            stroke: None,
+        }
+    }
+}
