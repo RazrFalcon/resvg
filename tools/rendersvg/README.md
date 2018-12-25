@@ -15,12 +15,6 @@ cargo build --release --features="qt-backend cairo-backend"
 
 See [BUILD.adoc](../../BUILD.adoc) for details.
 
-## Usage
-
-```bash
-rendersvg in.svg out.png
-```
-
 ## License
 
 *rendersvg* is licensed under the [MPLv2.0](https://www.mozilla.org/en-US/MPL/).
