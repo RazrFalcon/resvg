@@ -335,17 +335,9 @@ fn conv_elements(
                 conv_fill(tree, &p.fill, defs, parent, &mut path_elem);
                 conv_stroke(tree, &p.stroke, defs, &mut path_elem);
 
-                if let Some(ref id) = p.marker.start {
-                    conv_link(tree, defs, AId::MarkerStart, id, &mut path_elem);
-                }
-
-                if let Some(ref id) = p.marker.mid {
-                    conv_link(tree, defs, AId::MarkerMid, id, &mut path_elem);
-                }
-
-                if let Some(ref id) = p.marker.end {
-                    conv_link(tree, defs, AId::MarkerEnd, id, &mut path_elem);
-                }
+                conv_opt_link(tree, defs, AId::MarkerStart, &p.marker.start, &mut path_elem);
+                conv_opt_link(tree, defs, AId::MarkerMid, &p.marker.mid, &mut path_elem);
+                conv_opt_link(tree, defs, AId::MarkerEnd, &p.marker.end, &mut path_elem);
 
                 // Set `stroke-width` if path has a marker.
                 // Even if `stroke` is not set, the `stroke-width` attribute
@@ -458,20 +450,13 @@ fn conv_elements(
                 conv_transform(AId::Transform, &g.transform, &mut g_elem);
                 g_elem.set_id(g.id.clone());
 
-                if let Some(ref id) = g.clip_path {
-                    conv_link(tree, defs, AId::ClipPath, id, &mut g_elem);
-                }
+                conv_opt_link(tree, defs, AId::ClipPath, &g.clip_path, &mut g_elem);
+                conv_opt_link(tree, defs, AId::Mask, &g.mask, &mut g_elem);
+                conv_opt_link(tree, defs, AId::Filter, &g.filter, &mut g_elem);
 
-                if let Some(ref id) = g.mask {
-                    conv_link(tree, defs, AId::Mask, id, &mut g_elem);
-                }
-
-                if let Some(ref id) = g.filter {
-                    conv_link(tree, defs, AId::Filter, id, &mut g_elem);
-                }
-
-                if let Some(opacity) = g.opacity {
-                    g_elem.set_attribute((AId::Opacity, opacity.value()));
+                match g.opacity {
+                    Some(opacity) => g_elem.set_attribute((AId::Opacity, opacity.value())),
+                    None => g_elem.set_attribute((AId::Opacity, 1.0)),
                 }
 
                 if !g_elem.has_id() && g_elem.attributes().len() == 0 {
@@ -724,6 +709,20 @@ fn conv_text_spacing(
     };
 
     node.set_attribute((aid, spacing));
+}
+
+fn conv_opt_link(
+    tree: &Tree,
+    defs: &svgdom::Node,
+    aid: AId,
+    id: &Option<String>,
+    node: &mut svgdom::Node,
+) {
+    if let Some(id) = id {
+        conv_link(tree, defs, aid, id, node);
+    } else {
+        node.set_attribute((aid, AValue::None));
+    }
 }
 
 fn conv_link(

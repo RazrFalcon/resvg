@@ -17,7 +17,8 @@ Attributes: `width`, `height`, `viewBox` and `preserveAspectRatio`.
 
 === defs
 
-Children: `linearGradient`, `radialGradient`, `clipPath`, `mask` and `pattern`.
+Children: `linearGradient`, `radialGradient`, `clipPath`, `mask`, `pattern`,
+`marker` and `filter`.
 
 [[linearGradient_elem]]
 
@@ -111,7 +112,7 @@ Attributes: `id`, `transform`, `opacity`, `clip-path`, `mask` and `filter`.
 
 === path
 
-First, the _usvg_ preprocessor will convert all the shapes into paths.
+First, the _usvg_ preprocessor will convert all shapes into paths.
 Then it will simplify path's data so it will contain only absolute
 MoveTo, LineTo, CurveTo and ClosePath segments.
 

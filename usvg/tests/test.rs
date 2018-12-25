@@ -58,6 +58,9 @@ test!(minimal, false,
         fill-opacity='1'
         fill-rule='nonzero'
         stroke='none'
+        marker-end='none'
+        marker-mid='none'
+        marker-start='none'
         visibility='visible'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
@@ -86,6 +89,9 @@ test!(groups, false,
         fill-opacity='1'
         fill-rule='nonzero'
         stroke='none'
+        marker-end='none'
+        marker-mid='none'
+        marker-start='none'
         visibility='visible'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
@@ -159,17 +165,26 @@ test!(group_clippath, false,
                 fill-opacity='1'
                 stroke='none'
                 clip-rule='nonzero'
+                marker-end='none'
+                marker-mid='none'
+                marker-start='none'
                 visibility='visible'
                 d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
         </clipPath>
     </defs>
     <g
-        clip-path='url(#clip1)'>
+        clip-path='url(#clip1)'
+        filter='none'
+        mask='none'
+        opacity='1'>
         <path
             fill='#000000'
             fill-opacity='1'
             fill-rule='nonzero'
             stroke='none'
+            marker-end='none'
+            marker-mid='none'
+            marker-start='none'
             visibility='visible'
             d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
     </g>
@@ -198,6 +213,9 @@ test!(ignore_groups_with_id, false,
         fill-opacity='1'
         fill-rule='nonzero'
         stroke='none'
+        marker-end='none'
+        marker-mid='none'
+        marker-start='none'
         visibility='visible'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
@@ -222,6 +240,9 @@ test!(pattern_with_invalid_child, false,
     <path
         fill='none'
         stroke='none'
+        marker-end='none'
+        marker-mid='none'
+        marker-start='none'
         visibility='hidden'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
@@ -244,6 +265,9 @@ test!(pattern_without_children, false,
     <path
         fill='none'
         stroke='none'
+        marker-end='none'
+        marker-mid='none'
+        marker-start='none'
         visibility='hidden'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
@@ -334,6 +358,9 @@ test!(preserve_id, false,
                 fill-opacity='1'
                 stroke='none'
                 clip-rule='nonzero'
+                marker-end='none'
+                marker-mid='none'
+                marker-start='none'
                 visibility='visible'
                 d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
         </clipPath>
@@ -350,12 +377,18 @@ test!(preserve_id, false,
                 fill-opacity='1'
                 fill-rule='nonzero'
                 stroke='none'
+                marker-end='none'
+                marker-mid='none'
+                marker-start='none'
                 visibility='visible'
                 d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
         </pattern>
     </defs>
     <g
-        clip-path='url(#clip1)'>
+        clip-path='url(#clip1)'
+        filter='none'
+        mask='none'
+        opacity='1'>
         <path
             id='rect1'
             fill='url(#lg1)'
@@ -369,6 +402,9 @@ test!(preserve_id, false,
             stroke-miterlimit='4'
             stroke-opacity='1'
             stroke-width='1'
+            marker-end='none'
+            marker-mid='none'
+            marker-start='none'
             visibility='visible'
             d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
     </g>
@@ -378,6 +414,9 @@ test!(preserve_id, false,
         fill-opacity='1'
         fill-rule='nonzero'
         stroke='none'
+        marker-end='none'
+        marker-mid='none'
+        marker-start='none'
         visibility='visible'
         d='M 10 20 L 30 40'/>
     <text
@@ -461,12 +500,19 @@ test!(keep_groups_with_id, true,
     usvg:version='0.4.0'>
     <defs/>
     <g
-        id='some_group'>
+        id='some_group'
+        clip-path='none'
+        filter='none'
+        mask='none'
+        opacity='1'>
         <path
             fill='#000000'
             fill-opacity='1'
             fill-rule='nonzero'
             stroke='none'
+            marker-end='none'
+            marker-mid='none'
+            marker-start='none'
             visibility='visible'
             d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
     </g>
