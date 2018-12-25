@@ -11,11 +11,17 @@
 The `svg` element is the root element of the document.
 It's defined only once and can't be nested, unlike the SVG spec.
 
+Always present.
+
 Children: `defs`, `g`, `path`, `text` and `image`.
 
 Attributes: `width`, `height`, `viewBox` and `preserveAspectRatio`.
 
 === defs
+
+Always present.
+
+All `defs` children have an `id` attribute. It always set and newer empty.
 
 Children: `linearGradient`, `radialGradient`, `clipPath`, `mask`, `pattern`,
 `marker` and `filter`.
@@ -31,29 +37,25 @@ Gradient has all attributes resolved and at least two `stop` children.
 Gradient doesn't have `xlink:href` attribute because all attributes and `stop` children
 are already resolved and copied to the gradient.
 
-Children: `<<stop_elem,stop>>`.
+Children: `stop`.
 
 Attributes: `id`, `x1`, `y1`, `x2`, `y2`, `gradientUnits`, `spreadMethod`,
 `gradientTransform`.
 
-* `id` is always set and never empty.
 * See `<<transform_attr,transform>>` for `gradientTransform`.
 
 === radialGradient
 
 See `<<linearGradient_elem,linearGradient>>`.
 
-Children: `<<stop_elem,stop>>`.
+Children: `stop`.
 
 Attributes: `id`, `cx`, `cy`, `r`, `fx`, `fy`, `gradientUnits`, `spreadMethod`,
 `gradientTransform`.
 
-* `id` is always set and never empty.
 * `r` always > 0.
 * `fx` and `fy` are always inside the circle defined by `cx`, `cy` and `r`.
 * See `<<transform_attr,transform>>` for `gradientTransform`.
-
-[[stop_elem]]
 
 === stop
 
@@ -71,9 +73,6 @@ Children: `g`, `path`, `text` and `image`.
 Attributes: `id`, `patternUnits`, `patternContentUnits`, `transform`,
 `x`, `y`, `width`, `height`, `viewBox` and `preserveAspectRatio`.
 
-* `id` is always set and never empty.
-* `width` and `height` are always > 0.
-
 === clipPath
 
 `clipPath` defines a 1-bit mask using children elements.
@@ -82,27 +81,33 @@ Children: `path` and `text`.
 
 Attributes: `id`, `clipPathUnits`, `transform` and `clip-path`.
 
-* `id` is always set and never empty.
-
 === mask
 
 Children: `g`, `path`, `text` and `image`.
 
 Attributes: `id`, `maskUnits`, `maskContentUnits`, `x`, `y`, `width` and `height`.
 
-* `id` is always set and never empty.
+=== marker
+
+Children: `g`, `path`, `text` and `image`.
+
+Attributes: `id`, `markerUnits`, `refX`, `refY`, `markerWidth`, `markerHeight`
+`viewBox`, `preserveAspectRatio`, `orient` and `overflow`.
+
+* `orient` is either `auto` or an angle in degrees.
+* `viewBox` and `preserveAspectRatio` are optional.
 
 === g
 
 The group element indicates that a new canvas should be created.
-All groups children elements will be rendered on it and then merged to
+All groups children elements will be rendered on it and then merged into
 the parent canvas.
 
 Since it's pretty expensive, especially memory wise, _usvg_
 will remove as many groups as possible.
 All the remaining one will indicate that a new canvas must be created.
 
-A group can be empty when it has `filter` attribute.
+A group can be empty when it has a `filter` attribute.
 
 Children: `g`, `path`, `text` and `image`.
 
@@ -123,6 +128,7 @@ Attributes: `id`, <<fill_attrs, filling>>, <<stroke_attrs,stroking>>,
 * `id` is optional but never empty.
 * `marker-{star}` attributes will be set only on paths that were originally
   `path`, `line`, `polyline` or `polygon`.
+* `marker-{star}` attributes will be removed inside the `clipPath`.
 * If a path contains an ArcTo segment and a marker - it will be rendered incorrectly,
   because `usvg` will convert ArcTo into series of CurveTo's.
 
@@ -175,7 +181,7 @@ And the _text container_ can have <<fill_attrs, filling>>,
 
 === image
 
-An image can have base64 encoded data or a path to an image.
+An image can have a base64 encoded data or a path to an image.
 
 Attributes: `id`, `x`, `y`, `width`, `height`, `preserveAspectRatio`, `xlink:href`,
 `visibility` and `transform`.
@@ -248,5 +254,9 @@ Font attributes refers to:
 [[transform_attr]]
 
 * `transform`
-** `transform` always a `matrix`. Never `translate`, `scale`, etc.
+** `transform` is always a `matrix`. Never `translate`, `scale`, etc.
 ** Can be skipped.
+* `viewBox`
+** Can be skipped, because doesn't have a default value.
+* `preserveAspectRatio`
+** Will be set only when `viewBox` is set.
