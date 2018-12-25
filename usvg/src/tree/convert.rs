@@ -82,7 +82,7 @@ fn conv_defs(
                 defs.append(clip_elem.clone());
 
                 clip_elem.set_id(clip.id.clone());
-                conv_units(AId::ClipPathUnits, clip.units, &mut clip_elem);
+                clip_elem.set_attribute((AId::ClipPathUnits, clip.units.to_string()));
                 conv_transform(AId::Transform, &clip.transform, &mut clip_elem);
 
                 if let Some(ref id) = clip.clip_path {
@@ -96,8 +96,8 @@ fn conv_defs(
                 defs.append(mask_elem.clone());
 
                 mask_elem.set_id(mask.id.clone());
-                conv_units(AId::MaskUnits, mask.units, &mut mask_elem);
-                conv_units(AId::MaskContentUnits, mask.content_units, &mut mask_elem);
+                mask_elem.set_attribute((AId::MaskUnits, mask.units.to_string()));
+                mask_elem.set_attribute((AId::MaskContentUnits, mask.content_units.to_string()));
                 conv_rect(mask.rect, &mut mask_elem);
 
                 if let Some(ref id) = mask.mask {
@@ -118,8 +118,8 @@ fn conv_defs(
                     conv_viewbox(&vbox, &mut pattern_elem);
                 }
 
-                conv_units(AId::PatternUnits, pattern.units, &mut pattern_elem);
-                conv_units(AId::PatternContentUnits, pattern.content_units, &mut pattern_elem);
+                pattern_elem.set_attribute((AId::PatternUnits, pattern.units.to_string()));
+                pattern_elem.set_attribute((AId::PatternContentUnits, pattern.content_units.to_string()));
                 conv_transform(AId::PatternTransform, &pattern.transform, &mut pattern_elem);
                 later_nodes.push((n.clone(), pattern_elem.clone()));
             }
@@ -129,13 +129,7 @@ fn conv_defs(
 
                 marker_elem.set_id(marker.id.clone());
 
-                marker_elem.set_attribute((AId::MarkerUnits,
-                    match marker.units {
-                        MarkerUnits::UserSpaceOnUse => "userSpaceOnUse",
-                        MarkerUnits::StrokeWidth => "strokeWidth",
-                    }
-                ));
-
+                marker_elem.set_attribute((AId::MarkerUnits, marker.units.to_string()));
                 marker_elem.set_attribute((AId::RefX, marker.rect.x));
                 marker_elem.set_attribute((AId::RefY, marker.rect.y));
                 marker_elem.set_attribute((AId::MarkerWidth, marker.rect.width));
@@ -163,8 +157,8 @@ fn conv_defs(
 
                 conv_rect(filter.rect, &mut filter_elem);
 
-                conv_units(AId::FilterUnits, filter.units, &mut filter_elem);
-                conv_units(AId::PrimitiveUnits, filter.primitive_units, &mut filter_elem);
+                filter_elem.set_attribute((AId::FilterUnits, filter.units.to_string()));
+                filter_elem.set_attribute((AId::PrimitiveUnits, filter.primitive_units.to_string()));
 
                 for fe in &filter.children {
                     let mut fe_elem = match fe.kind {
@@ -306,7 +300,7 @@ fn conv_elements(
                 parent.append(path_elem.clone());
 
                 conv_transform(AId::Transform, &p.transform, &mut path_elem);
-                conv_visibility(p.visibility, &mut path_elem);
+                path_elem.set_attribute((AId::Visibility, p.visibility.to_string()));
                 path_elem.set_id(p.id.clone());
 
                 use svgdom::Path as SvgDomPath;
@@ -389,13 +383,7 @@ fn conv_elements(
                     }
 
                     if chunk.anchor != TextAnchor::Start {
-                        chunk_tspan_elem.set_attribute((AId::TextAnchor,
-                            match chunk.anchor {
-                                TextAnchor::Start => "start",
-                                TextAnchor::Middle => "middle",
-                                TextAnchor::End => "end",
-                            }
-                        ));
+                        chunk_tspan_elem.set_attribute((AId::TextAnchor, chunk.anchor.to_string()));
                     }
 
                     for tspan in &chunk.spans {
@@ -408,7 +396,7 @@ fn conv_elements(
                         );
                         tspan_elem.append(text_node.clone());
 
-                        conv_visibility(tspan.visibility, &mut tspan_elem);
+                        tspan_elem.set_attribute((AId::Visibility, tspan.visibility.to_string()));
                         conv_fill(tree, &tspan.fill, defs, parent, &mut tspan_elem);
                         conv_stroke(tree, &tspan.stroke, defs, &mut tspan_elem);
                         conv_font(&tspan.font, &mut tspan_elem);
@@ -431,7 +419,7 @@ fn conv_elements(
                 parent.append(img_elem.clone());
 
                 conv_transform(AId::Transform, &img.transform, &mut img_elem);
-                conv_visibility(img.visibility, &mut img_elem);
+                img_elem.set_attribute((AId::Visibility, img.visibility.to_string()));
                 img_elem.set_id(img.id.clone());
                 conv_viewbox2(&img.view_box, &mut img_elem);
 
@@ -517,13 +505,12 @@ fn conv_fill(
 
             node.set_attribute((AId::FillOpacity, fill.opacity.value()));
 
-            let rule = if fill.rule == FillRule::NonZero { "nonzero" } else { "evenodd" };
             let rule_aid = if parent.is_tag_name(EId::ClipPath) {
                 AId::ClipRule
             } else {
                 AId::FillRule
             };
-            node.set_attribute((rule_aid, rule));
+            node.set_attribute((rule_aid, fill.rule.to_string()));
         }
         None => {
             node.set_attribute((AId::Fill, AValue::None));
@@ -548,22 +535,8 @@ fn conv_stroke(
             node.set_attribute((AId::StrokeDashoffset, stroke.dashoffset as f64));
             node.set_attribute((AId::StrokeMiterlimit, stroke.miterlimit.value()));
             node.set_attribute((AId::StrokeWidth, stroke.width.value()));
-
-            node.set_attribute((AId::StrokeLinecap,
-                match stroke.linecap {
-                    LineCap::Butt => "butt",
-                    LineCap::Round => "round",
-                    LineCap::Square => "square",
-                }
-            ));
-
-            node.set_attribute((AId::StrokeLinejoin,
-                match stroke.linejoin {
-                    LineJoin::Miter => "miter",
-                    LineJoin::Round => "round",
-                    LineJoin::Bevel => "bevel",
-                }
-            ));
+            node.set_attribute((AId::StrokeLinecap, stroke.linecap.to_string()));
+            node.set_attribute((AId::StrokeLinejoin, stroke.linejoin.to_string()));
 
             if let Some(ref array) = stroke.dasharray {
                 node.set_attribute((AId::StrokeDasharray, array.clone()));
@@ -582,15 +555,8 @@ fn conv_base_grad(
     doc: &mut svgdom::Document,
     node: &mut svgdom::Node,
 ) {
-    conv_units(AId::GradientUnits, g.units, node);
-
-    node.set_attribute((AId::SpreadMethod,
-        match g.spread_method {
-            SpreadMethod::Pad => "pad",
-            SpreadMethod::Reflect => "reflect",
-            SpreadMethod::Repeat => "repeat",
-        }
-    ));
+    node.set_attribute((AId::GradientUnits, g.units.to_string()));
+    node.set_attribute((AId::SpreadMethod, g.spread_method.to_string()));
 
     conv_transform(AId::GradientTransform, &g.transform, node);
 
@@ -602,19 +568,6 @@ fn conv_base_grad(
         stop.set_attribute((AId::StopColor, s.color));
         stop.set_attribute((AId::StopOpacity, s.opacity.value()));
     }
-}
-
-fn conv_units(
-    aid: AId,
-    units: Units,
-    node: &mut svgdom::Node,
-) {
-    node.set_attribute((aid,
-        match units {
-            Units::UserSpaceOnUse => "userSpaceOnUse",
-            Units::ObjectBoundingBox => "objectBoundingBox",
-        }
-    ));
 }
 
 fn conv_transform(
@@ -633,52 +586,10 @@ fn conv_font(
 ) {
     node.set_attribute((AId::FontFamily, font.family.clone()));
     node.set_attribute((AId::FontSize, font.size.value()));
-
-    node.set_attribute((AId::FontStyle,
-        match font.style {
-            FontStyle::Normal => "normal",
-            FontStyle::Italic => "italic",
-            FontStyle::Oblique => "oblique",
-        }
-    ));
-
-    node.set_attribute((AId::FontVariant,
-        match font.variant {
-            FontVariant::Normal => "normal",
-            FontVariant::SmallCaps => "small-caps",
-        }
-    ));
-
-    node.set_attribute((AId::FontWeight,
-        match font.weight {
-            FontWeight::W100 => "100",
-            FontWeight::W200 => "200",
-            FontWeight::W300 => "300",
-            FontWeight::W400 => "400",
-            FontWeight::W500 => "500",
-            FontWeight::W600 => "600",
-            FontWeight::W700 => "700",
-            FontWeight::W800 => "800",
-            FontWeight::W900 => "900",
-        }
-    ));
-
-    node.set_attribute((AId::FontStretch,
-        match font.stretch {
-            FontStretch::Normal => "normal",
-            FontStretch::Wider => "wider",
-            FontStretch::Narrower => "narrower",
-            FontStretch::UltraCondensed => "ultra-condensed",
-            FontStretch::ExtraCondensed => "extra-condensed",
-            FontStretch::Condensed => "condensed",
-            FontStretch::SemiCondensed => "semi-condensed",
-            FontStretch::SemiExpanded => "semi-expanded",
-            FontStretch::Expanded => "expanded",
-            FontStretch::ExtraExpanded => "extra-expanded",
-            FontStretch::UltraExpanded => "ultra-expanded",
-        }
-    ));
-
+    node.set_attribute((AId::FontStyle, font.style.to_string()));
+    node.set_attribute((AId::FontVariant, font.variant.to_string()));
+    node.set_attribute((AId::FontWeight, font.weight.to_string()));
+    node.set_attribute((AId::FontStretch, font.stretch.to_string()));
     conv_text_spacing(font.letter_spacing, AId::LetterSpacing, node);
     conv_text_spacing(font.word_spacing, AId::WordSpacing, node);
 }
@@ -743,19 +654,6 @@ fn conv_link(
         };
         node.set_attribute((aid, link));
     }
-}
-
-fn conv_visibility(
-    value: Visibility,
-    node: &mut svgdom::Node,
-) {
-    let s = match value {
-        Visibility::Visible     => "visible",
-        Visibility::Hidden      => "hidden",
-        Visibility::Collapse    => "collapse",
-    };
-
-    node.set_attribute((AId::Visibility, s));
 }
 
 fn conv_image_data(

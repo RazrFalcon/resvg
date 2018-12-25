@@ -32,6 +32,16 @@ pub enum LineCap {
     Square,
 }
 
+impl ToString for LineCap {
+    fn to_string(&self) -> String {
+        match self {
+            LineCap::Butt   => "butt",
+            LineCap::Round  => "round",
+            LineCap::Square => "square",
+        }.to_string()
+    }
+}
+
 
 /// A line join.
 ///
@@ -42,6 +52,16 @@ pub enum LineJoin {
     Miter,
     Round,
     Bevel,
+}
+
+impl ToString for LineJoin {
+    fn to_string(&self) -> String {
+        match self {
+            LineJoin::Miter => "miter",
+            LineJoin::Round => "round",
+            LineJoin::Bevel => "bevel",
+        }.to_string()
+    }
 }
 
 
@@ -55,6 +75,15 @@ pub enum FillRule {
     EvenOdd,
 }
 
+impl ToString for FillRule {
+    fn to_string(&self) -> String {
+        match self {
+            FillRule::NonZero => "nonzero",
+            FillRule::EvenOdd => "evenodd",
+        }.to_string()
+    }
+}
+
 
 /// An element units.
 #[allow(missing_docs)]
@@ -64,6 +93,15 @@ pub enum Units {
     ObjectBoundingBox,
 }
 
+impl ToString for Units {
+    fn to_string(&self) -> String {
+        match self {
+            Units::UserSpaceOnUse       => "userSpaceOnUse",
+            Units::ObjectBoundingBox    => "objectBoundingBox",
+        }.to_string()
+    }
+}
+
 
 /// A marker units.
 #[allow(missing_docs)]
@@ -71,6 +109,15 @@ pub enum Units {
 pub enum MarkerUnits {
     StrokeWidth,
     UserSpaceOnUse,
+}
+
+impl ToString for MarkerUnits {
+    fn to_string(&self) -> String {
+        match self {
+            MarkerUnits::UserSpaceOnUse => "userSpaceOnUse",
+            MarkerUnits::StrokeWidth    => "strokeWidth",
+        }.to_string()
+    }
 }
 
 
@@ -96,6 +143,16 @@ pub enum SpreadMethod {
     Repeat,
 }
 
+impl ToString for SpreadMethod {
+    fn to_string(&self) -> String {
+        match self {
+            SpreadMethod::Pad       => "pad",
+            SpreadMethod::Reflect   => "reflect",
+            SpreadMethod::Repeat    => "repeat",
+        }.to_string()
+    }
+}
+
 
 /// A visibility property.
 ///
@@ -106,6 +163,16 @@ pub enum Visibility {
     Visible,
     Hidden,
     Collapse,
+}
+
+impl ToString for Visibility {
+    fn to_string(&self) -> String {
+        match self {
+            Visibility::Visible     => "visible",
+            Visibility::Hidden      => "hidden",
+            Visibility::Collapse    => "collapse",
+        }.to_string()
+    }
 }
 
 
@@ -194,6 +261,16 @@ pub enum TextAnchor {
     End,
 }
 
+impl ToString for TextAnchor {
+    fn to_string(&self) -> String {
+        match self {
+            TextAnchor::Start   => "start",
+            TextAnchor::Middle  => "middle",
+            TextAnchor::End     => "end",
+        }.to_string()
+    }
+}
+
 
 /// A font style.
 ///
@@ -206,6 +283,16 @@ pub enum FontStyle {
     Oblique,
 }
 
+impl ToString for FontStyle {
+    fn to_string(&self) -> String {
+        match self {
+            FontStyle::Normal   => "normal",
+            FontStyle::Italic   => "italic",
+            FontStyle::Oblique  => "oblique",
+        }.to_string()
+    }
+}
+
 
 /// A font variant.
 ///
@@ -215,6 +302,15 @@ pub enum FontStyle {
 pub enum FontVariant {
     Normal,
     SmallCaps,
+}
+
+impl ToString for FontVariant {
+    fn to_string(&self) -> String {
+        match self {
+            FontVariant::Normal     => "normal",
+            FontVariant::SmallCaps  => "small-caps",
+        }.to_string()
+    }
 }
 
 
@@ -235,6 +331,22 @@ pub enum FontWeight {
     W900,
 }
 
+impl ToString for FontWeight {
+    fn to_string(&self) -> String {
+        match self {
+            FontWeight::W100 => "100",
+            FontWeight::W200 => "200",
+            FontWeight::W300 => "300",
+            FontWeight::W400 => "400",
+            FontWeight::W500 => "500",
+            FontWeight::W600 => "600",
+            FontWeight::W700 => "700",
+            FontWeight::W800 => "800",
+            FontWeight::W900 => "900",
+        }.to_string()
+    }
+}
+
 
 /// A font stretch.
 ///
@@ -253,6 +365,24 @@ pub enum FontStretch {
     Expanded,
     ExtraExpanded,
     UltraExpanded,
+}
+
+impl ToString for FontStretch {
+    fn to_string(&self) -> String {
+        match self {
+            FontStretch::Normal         => "normal",
+            FontStretch::Wider          => "wider",
+            FontStretch::Narrower       => "narrower",
+            FontStretch::UltraCondensed => "ultra-condensed",
+            FontStretch::ExtraCondensed => "extra-condensed",
+            FontStretch::Condensed      => "condensed",
+            FontStretch::SemiCondensed  => "semi-condensed",
+            FontStretch::SemiExpanded   => "semi-expanded",
+            FontStretch::Expanded       => "expanded",
+            FontStretch::ExtraExpanded  => "extra-expanded",
+            FontStretch::UltraExpanded  => "ultra-expanded",
+        }.to_string()
+    }
 }
 
 
@@ -305,7 +435,7 @@ impl Default for Fill {
 pub struct Stroke {
     pub paint: Paint,
     pub dasharray: Option<NumberList>,
-    pub dashoffset: f32,
+    pub dashoffset: f32, // f32 and not f64 to reduce the struct size.
     pub miterlimit: StrokeMiterlimit,
     pub opacity: Opacity,
     pub width: StrokeWidth,
