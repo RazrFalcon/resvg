@@ -7,12 +7,12 @@
 use std::process;
 use std::path;
 
-use gumdrop::Options as CliOptions;
+use gumdrop::Options;
 
 use resvg::{
+    self,
     usvg,
     FitTo,
-    Options,
 };
 
 pub fn print_help() {
@@ -66,7 +66,7 @@ ARGS:
    backends().join(", "));
 }
 
-#[derive(Debug, CliOptions)]
+#[derive(Debug, Options)]
 struct CliArgs {
     #[options(no_short)]
     help: bool,
@@ -192,7 +192,7 @@ pub struct Args {
     pub quiet: bool,
 }
 
-pub fn parse() -> Result<(Args, Options), String> {
+pub fn parse() -> Result<(Args, resvg::Options), String> {
     let args: Vec<String> = ::std::env::args().collect();
     let args = match CliArgs::parse_args_default(&args[1..]) {
         Ok(v) => v,
@@ -257,7 +257,7 @@ pub fn parse() -> Result<(Args, Options), String> {
         None => vec!["en".to_string()], // TODO: use system language
     };
 
-    let opt = Options {
+    let opt = resvg::Options {
         usvg: usvg::Options {
             path: Some(in_svg.into()),
             dpi: args.dpi as f64,

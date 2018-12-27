@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::f64;
+
 // external
 use svgdom;
 
@@ -71,7 +73,7 @@ fn convert_orientation(attrs: &svgdom::Attributes) -> tree::MarkerOrientation {
             let a = match angle.unit {
                 svgdom::AngleUnit::Degrees => angle.num,
                 svgdom::AngleUnit::Gradians => angle.num * 180.0 / 200.0,
-                svgdom::AngleUnit::Radians => angle.num * 180.0 / std::f64::consts::PI,
+                svgdom::AngleUnit::Radians => angle.num * 180.0 / f64::consts::PI,
             };
 
             tree::MarkerOrientation::Angle(a)

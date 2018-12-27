@@ -108,20 +108,20 @@ Also, we do not test against Chrome, Firefox, Inkscape and Batik because they ha
         - [`xmlparser`](https://github.com/RazrFalcon/xmlparser) - an XML parser
       - [`svgtypes`](https://github.com/RazrFalcon/svgtypes) - SVG types parser and writer
     - [`rctree`](https://github.com/RazrFalcon/rctree) - a DOM-like tree
-  - [`resvg-qt`](https://github.com/RazrFalcon/resvg-qt) - a minimal bindings for [Qt]
+  - [`resvg-qt`](./resvg-qt) - a minimal bindings to [Qt]
 
 All other dependencies aren't written by me for this project.
 
 ## Directory structure
 
 - `capi` - C/FFI interface for *resvg*
-- `docs` - Basic documentation
+- `docs` - basic documentation
 - `examples` - *resvg* as a library usage examples
-- `resvg-qt` - A minimal bindings to Qt used by *resvg*
-- `src` - Source code
-- `testing_tools` - Scripts used for testing
-- `tools` - Useful CLI tools
-- `usvg` - An SVG simplification library used by *resvg*
+- `resvg-qt` - a minimal bindings to Qt used by *resvg*
+- `src` - source code
+- `testing_tools` - scripts used for testing
+- `tools` - useful CLI tools
+- `usvg` - an SVG simplification library used by *resvg*
 
 ## Safety
 

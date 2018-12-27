@@ -11,6 +11,7 @@ use std::path;
 
 // external
 use svgdom;
+use libflate;
 
 // self
 pub use self::nodes::*;
