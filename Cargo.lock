@@ -490,7 +490,7 @@ dependencies = [
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "pango 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pangocairo 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "resvg-qt 0.4.0 (git+https://github.com/RazrFalcon/libresvg-qt?rev=4dd0b40)",
+ "resvg-qt 0.4.0",
  "rgb 0.8.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-segmentation 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "usvg 0.4.0",
@@ -510,7 +510,6 @@ dependencies = [
 [[package]]
 name = "resvg-qt"
 version = "0.4.0"
-source = "git+https://github.com/RazrFalcon/libresvg-qt?rev=4dd0b40#4dd0b406574aaffd23104dbc772d4d33190b56f3"
 dependencies = [
  "cc 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -693,7 +692,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum quote 0.6.10 (registry+https://github.com/rust-lang/crates.io-index)" = "53fa22a1994bd0f9372d7a816207d8a2677ad0325b073f5c5332760f0fb62b5c"
 "checksum rctree 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "1817e0f0056f95bce0d6ab1a5be62ca24bd756b5547c20637ef47cc9a2065f4b"
 "checksum redox_syscall 0.1.44 (registry+https://github.com/rust-lang/crates.io-index)" = "a84bcd297b87a545980a2d25a0beb72a1f490c31f0a9fde52fca35bfbb1ceb70"
-"checksum resvg-qt 0.4.0 (git+https://github.com/RazrFalcon/libresvg-qt?rev=4dd0b40)" = "<none>"
 "checksum rgb 0.8.11 (registry+https://github.com/rust-lang/crates.io-index)" = "002bebda58b24482d6911a59512e8a17fa1defecf5a2162521113b7cc5422dd1"
 "checksum roxmltree 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "869a77456372218c6cd28ae457bedbc338af19866290e71d71965cc992e2654b"
 "checksum simplecss 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "135685097a85a64067df36e28a243e94a94f76d829087ce0be34eeb014260c0e"
