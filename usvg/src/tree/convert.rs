@@ -45,8 +45,7 @@ fn conv_defs(
     defs: &mut svgdom::Node,
 ) {
     let mut later_nodes = Vec::new();
-    let mut link_clip_later = Vec::new();
-    let mut link_mask_later = Vec::new();
+    let mut link_later = Vec::new();
 
     for n in tree.defs().children() {
         match *n.borrow() {
@@ -85,8 +84,9 @@ fn conv_defs(
                 clip_elem.set_attribute((AId::ClipPathUnits, clip.units.to_string()));
                 conv_transform(AId::Transform, &clip.transform, &mut clip_elem);
 
-                if let Some(ref id) = clip.clip_path {
-                    link_clip_later.push((id.clone(), clip_elem.clone()));
+                match clip.clip_path {
+                    Some(ref id) => link_later.push((id.clone(), AId::ClipPath, clip_elem.clone())),
+                    None => clip_elem.set_attribute((AId::ClipPath, AValue::None)),
                 }
 
                 later_nodes.push((n.clone(), clip_elem.clone()));
@@ -100,8 +100,9 @@ fn conv_defs(
                 mask_elem.set_attribute((AId::MaskContentUnits, mask.content_units.to_string()));
                 conv_rect(mask.rect, &mut mask_elem);
 
-                if let Some(ref id) = mask.mask {
-                    link_mask_later.push((id.clone(), mask_elem.clone()));
+                match mask.mask {
+                    Some(ref id) => link_later.push((id.clone(), AId::Mask, mask_elem.clone())),
+                    None => mask_elem.set_attribute((AId::Mask, AValue::None)),
                 }
 
                 later_nodes.push((n.clone(), mask_elem.clone()));
@@ -273,12 +274,8 @@ fn conv_defs(
         }
     }
 
-    for (id, mut elem) in link_clip_later {
-        conv_link(tree, defs, AId::ClipPath, &id, &mut elem);
-    }
-
-    for (id, mut elem) in link_mask_later {
-        conv_link(tree, defs, AId::Mask, &id, &mut elem);
+    for (id, aid, mut elem) in link_later {
+        conv_link(tree, defs, aid, &id, &mut elem);
     }
 
     for (rnode, mut elem) in later_nodes {
@@ -382,9 +379,7 @@ fn conv_elements(
                         chunk_tspan_elem.set_attribute((AId::Dy, dy.clone()));
                     }
 
-                    if chunk.anchor != TextAnchor::Start {
-                        chunk_tspan_elem.set_attribute((AId::TextAnchor, chunk.anchor.to_string()));
-                    }
+                    chunk_tspan_elem.set_attribute((AId::TextAnchor, chunk.anchor.to_string()));
 
                     for tspan in &chunk.spans {
                         let mut tspan_elem = new_doc.create_element(EId::Tspan);

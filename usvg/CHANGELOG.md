@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - Shapes without fill and stroke will no longer be removed.
 - `clip-path`, `mask`, `filter` and `opacity` attributes will always be set on groups.
+- `text-anchor` attribute will always be set on `tspan`.
+- `clip-path` attribute will always be set on `clipPath`.
+- `mask` attribute will always be set on `mask`.
 - `FilterPrimitive::filter_input` was removed and each filter primitive that can
   have an input has it's own `filter_input` field now.
 - Rename `filter_input` fields into `input`.

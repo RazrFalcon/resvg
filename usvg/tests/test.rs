@@ -159,6 +159,7 @@ test!(group_clippath, false,
     <defs>
         <clipPath
             id='clip1'
+            clip-path='none'
             clipPathUnits='userSpaceOnUse'>
             <path
                 fill='#000000'
@@ -273,6 +274,7 @@ test!(pattern_without_children, false,
 </svg>
 ");
 
+// TODO: add mask, filter, marker
 // All supported elements should be listed.
 // We keep id's even if `keep_named_groups` is disabled.
 // ID on `svg`, `defs`, `stop` and `tspan` is ignored because they can't be rendered
@@ -351,6 +353,7 @@ test!(preserve_id, false,
         </radialGradient>
         <clipPath
             id='clip1'
+            clip-path='none'
             clipPathUnits='userSpaceOnUse'>
             <path
                 id='rect2'
@@ -420,7 +423,8 @@ test!(preserve_id, false,
         visibility='visible'
         d='M 10 20 L 30 40'/>
     <text
-        id='text1'><tspan><tspan
+        id='text1'><tspan
+        text-anchor='start'><tspan
         fill='#000000'
         fill-opacity='1'
         fill-rule='nonzero'
@@ -436,7 +440,8 @@ test!(preserve_id, false,
         visibility='visible'
         word-spacing='normal'>Some text</tspan></tspan></text>
     <text
-        id='text2'><tspan><tspan
+        id='text2'><tspan
+        text-anchor='start'><tspan
         fill='#000000'
         fill-opacity='1'
         fill-rule='nonzero'

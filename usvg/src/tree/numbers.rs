@@ -50,6 +50,12 @@ impl Opacity {
     }
 }
 
+impl Default for Opacity {
+    fn default() -> Self {
+        Opacity::new(1.0)
+    }
+}
+
 wrap!(Opacity);
 
 
