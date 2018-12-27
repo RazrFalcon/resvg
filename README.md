@@ -112,6 +112,17 @@ Also, we do not test against Chrome, Firefox, Inkscape and Batik because they ha
 
 All other dependencies aren't written by me for this project.
 
+## Directory structure
+
+- `capi` - C/FFI interface for *resvg*
+- `docs` - Basic documentation
+- `examples` - *resvg* as a library usage examples
+- `resvg-qt` - A minimal bindings to Qt used by *resvg*
+- `src` - Source code
+- `testing_tools` - Scripts used for testing
+- `tools` - Useful CLI tools
+- `usvg` - An SVG simplification library used by *resvg*
+
 ## Safety
 
 - The library must not panic. Any panic should be considered a critical bug and reported.
