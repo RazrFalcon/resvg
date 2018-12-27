@@ -523,3 +523,29 @@ test!(keep_groups_with_id, true,
     </g>
 </svg>
 ");
+
+test!(simplify_paths_1, false,
+"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'>
+    <path d='M 10 20 L 10 30 Z Z Z'/>
+</svg>",
+"<svg
+    xmlns='http://www.w3.org/2000/svg'
+    width='1'
+    height='1'
+    viewBox='0 0 1 1'
+    preserveAspectRatio='xMidYMid'
+    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    usvg:version='0.4.0'>
+    <defs/>
+    <path
+        fill='#000000'
+        fill-opacity='1'
+        fill-rule='nonzero'
+        stroke='none'
+        marker-end='none'
+        marker-mid='none'
+        marker-start='none'
+        visibility='visible'
+        d='M 10 20 L 10 30 Z'/>
+</svg>
+");

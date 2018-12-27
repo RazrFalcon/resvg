@@ -167,7 +167,11 @@ fn convert_path(mut path: svgdom::Path) -> Vec<tree::PathSegment> {
                 });
             }
             svgdom::PathSegment::ClosePath { .. } => {
-                new_path.push(tree::PathSegment::ClosePath);
+                if let Some(tree::PathSegment::ClosePath) = new_path.last() {
+                    // Do not add sequential ClosePath segments.
+                } else {
+                    new_path.push(tree::PathSegment::ClosePath);
+                }
             }
         }
 

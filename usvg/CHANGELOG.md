@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `letter-spacing` and `word-spacing` support.
 - Partial `baseline-shift` support.
 - `TextSpan::baseline_shift`.
+- Remove sequential ClosePath segments from paths.
 
 ### Changed
 - Shapes without fill and stroke will no longer be removed.
