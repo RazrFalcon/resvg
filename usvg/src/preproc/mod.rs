@@ -145,7 +145,18 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) {
     resolve_use_attributes(doc);
     resolve_svg_attributes(doc);
 
+    resolve_linear_gradient_attributes(doc);
+    resolve_radial_gradient_attributes(doc);
+
+    resolve_pattern_attributes(doc);
+    resolve_pattern_children(doc);
+
+    resolve_filter_attributes(doc);
+    resolve_filter_children(doc);
+
     convert_units(svg, opt);
+
+    fix_radial_gradient_attributes(doc);
 
     // `use` should be resolved before style attributes,
     // because `use` can propagate own style.
@@ -158,16 +169,8 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) {
 
     group_defs(doc, svg);
 
-    resolve_linear_gradient_attributes(doc);
-    resolve_radial_gradient_attributes(doc);
     resolve_gradient_stops(doc);
     fix_gradient_stops(doc);
-
-    resolve_pattern_attributes(doc);
-    resolve_pattern_children(doc);
-
-    resolve_filter_attributes(doc);
-    resolve_filter_children(doc);
 
     resolve_clip_path_attributes(doc);
 

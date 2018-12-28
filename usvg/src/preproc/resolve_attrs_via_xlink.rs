@@ -4,6 +4,7 @@
 
 use svgdom::{
     AspectRatio,
+    Length,
 };
 
 use super::prelude::*;
@@ -16,9 +17,11 @@ pub fn resolve_linear_gradient_attributes(doc: &Document) {
         resolve_attr(node, AId::SpreadMethod, Some(AValue::from("pad")));
         resolve_attr(node, AId::X1, Some(AValue::from(0.0)));
         resolve_attr(node, AId::Y1, Some(AValue::from(0.0)));
-        resolve_attr(node, AId::X2, Some(AValue::from(1.0)));
+        resolve_attr(node, AId::X2, Some(AValue::from(Length::new(100.0, Unit::Percent))));
         resolve_attr(node, AId::Y2, Some(AValue::from(0.0)));
         resolve_attr(node, AId::GradientTransform, None);
+
+        fix_units(node, AId::GradientUnits, "objectBoundingBox");
     }
 }
 
@@ -27,22 +30,10 @@ pub fn resolve_radial_gradient_attributes(doc: &Document) {
     for node in &mut gen_order(doc, EId::RadialGradient) {
         resolve_attr(node, AId::GradientUnits, Some(AValue::from("objectBoundingBox")));
         resolve_attr(node, AId::SpreadMethod, Some(AValue::from("pad")));
-        resolve_attr(node, AId::Cx, Some(AValue::from(0.5)));
-        resolve_attr(node, AId::Cy, Some(AValue::from(0.5)));
-        resolve_attr(node, AId::R, Some(AValue::from(0.5)));
+        resolve_attr(node, AId::Cx, Some(AValue::from(Length::new(50.0, Unit::Percent))));
+        resolve_attr(node, AId::Cy, Some(AValue::from(Length::new(50.0, Unit::Percent))));
+        resolve_attr(node, AId::R, Some(AValue::from(Length::new(50.0, Unit::Percent))));
         resolve_attr(node, AId::GradientTransform, None);
-
-        // Replace negative `r` with zero
-        // otherwise `fx` and `fy` may became NaN.
-        //
-        // Note: negative `r` is an error and UB, so we can resolve it
-        // in whatever way we want.
-        // By replacing it with zero we will get the same behavior as Chrome.
-        let r = node.attributes().get_number(AId::R).unwrap();
-        if r < 0.0 {
-            node.set_attribute((AId::R, 0.0));
-        }
-
 
         // If `fx` is not found then set it to `cx`.
         let cx = node.attributes().get_value(AId::Cx).cloned();
@@ -51,6 +42,24 @@ pub fn resolve_radial_gradient_attributes(doc: &Document) {
         // If `fy` is not found then set it to `cy`.
         let cy = node.attributes().get_value(AId::Cy).cloned();
         resolve_attr(node, AId::Fy, cy);
+
+        fix_units(node, AId::GradientUnits, "objectBoundingBox");
+    }
+}
+
+// Should be done after `convert_units`.
+pub fn fix_radial_gradient_attributes(doc: &Document) {
+    for node in &mut gen_order(doc, EId::RadialGradient) {
+        // Replace negative `r` with zero
+        // otherwise `fx` and `fy` may became NaN.
+        //
+        // Note: negative `r` is an error and UB, so we can resolve it
+        // in whatever way we want.
+        // By replacing it with zero we will get the same behavior as in Chrome.
+        let r = node.attributes().get_number(AId::R).unwrap();
+        if r < 0.0 {
+            node.set_attribute((AId::R, 0.0));
+        }
 
         prepare_focal(node);
     }
@@ -68,6 +77,9 @@ pub fn resolve_pattern_attributes(doc: &Document) {
         resolve_attr(node, AId::Height, Some(AValue::from(0.0)));
         resolve_attr(node, AId::PreserveAspectRatio, Some(AValue::from(AspectRatio::default())));
         resolve_attr(node, AId::ViewBox, None);
+
+        fix_units(node, AId::PatternUnits, "objectBoundingBox");
+        fix_units(node, AId::PatternContentUnits, "userSpaceOnUse");
     }
 }
 
@@ -76,21 +88,25 @@ pub fn resolve_filter_attributes(doc: &Document) {
     for node in &mut gen_order(doc, EId::Filter) {
         resolve_attr(node, AId::FilterUnits, Some(AValue::from("objectBoundingBox")));
         resolve_attr(node, AId::PrimitiveUnits, Some(AValue::from("userSpaceOnUse")));
-        resolve_attr(node, AId::X, Some(AValue::from(-0.1)));
-        resolve_attr(node, AId::Y, Some(AValue::from(-0.1)));
-        resolve_attr(node, AId::Width, Some(AValue::from(1.2)));
-        resolve_attr(node, AId::Height, Some(AValue::from(1.2)));
+        resolve_attr(node, AId::X, Some(AValue::from(Length::new(-10.0, Unit::Percent))));
+        resolve_attr(node, AId::Y, Some(AValue::from(Length::new(-10.0, Unit::Percent))));
+        resolve_attr(node, AId::Width, Some(AValue::from(Length::new(120.0, Unit::Percent))));
+        resolve_attr(node, AId::Height, Some(AValue::from(Length::new(120.0, Unit::Percent))));
 
-        // TODO: do this for other elements
-        let is_valid_filter_units = {
-            let attrs = node.attributes();
-            let filter_units = attrs.get_str_or(AId::FilterUnits, "");
-            filter_units == "objectBoundingBox" || filter_units == "userSpaceOnUse"
-        };
+        fix_units(node, AId::FilterUnits, "objectBoundingBox");
+        fix_units(node, AId::PrimitiveUnits, "userSpaceOnUse");
+    }
+}
 
-        if !is_valid_filter_units {
-            node.set_attribute((AId::FilterUnits, "objectBoundingBox"));
-        }
+fn fix_units(node: &mut Node, aid: AId, default: &str) {
+    let is_valid_filter_units = {
+        let attrs = node.attributes();
+        let filter_units = attrs.get_str_or(aid, "");
+        filter_units == "objectBoundingBox" || filter_units == "userSpaceOnUse"
+    };
+
+    if !is_valid_filter_units {
+        node.set_attribute((aid, default));
     }
 }
 

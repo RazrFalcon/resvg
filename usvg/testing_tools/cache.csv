@@ -342,8 +342,8 @@ e-feImage-008,53820d08
 e-feImage-009,5fab46e6
 e-feImage-010,da6f1fb1
 e-feImage-011,df29e4e7
-e-feMerge-001,9c2179ad
-e-feMerge-002,3a7a0cef
+e-feMerge-001,6201ebfe
+e-feMerge-002,6821d1e7
 e-feOffset-001,8a5594e2
 e-feOffset-002,8e4d17ef
 e-feOffset-003,8ffab3d0
@@ -461,7 +461,7 @@ e-linearGradient-002,f333c639
 e-linearGradient-003,b090e2e6
 e-linearGradient-004,6153c036
 e-linearGradient-005,f333c639
-e-linearGradient-006,21ddd0e3
+e-linearGradient-006,5733e899
 e-linearGradient-007,b4355cce
 e-linearGradient-008,d4f15dbe
 e-linearGradient-009,669371f5
@@ -484,7 +484,7 @@ e-linearGradient-025,3f79d317
 e-linearGradient-026,d35ddf9b
 e-linearGradient-027,14d5b02d
 e-linearGradient-028,2c0481ec
-e-linearGradient-029,a6794538
+e-linearGradient-029,1abb06ee
 e-linearGradient-030,10fb99ae
 e-mask-001,07db0d65
 e-mask-002,80a2b74c
@@ -598,7 +598,7 @@ e-radialGradient-002,9728d6a9
 e-radialGradient-003,13efda6a
 e-radialGradient-004,b4a20272
 e-radialGradient-005,9728d6a9
-e-radialGradient-006,ca610e24
+e-radialGradient-006,41752492
 e-radialGradient-007,10b899b4
 e-radialGradient-008,1659756f
 e-radialGradient-009,dd98bb2c
@@ -929,3 +929,7 @@ e-marker-055,92588210
 e-marker-056,1aa62c2b
 e-tspan-018,2ddc5037
 e-use-023,967b9e79
+e-filter-057,a2b786f1
+e-linearGradient-031,3fd79268
+e-pattern-027,f3fbe960
+e-radialGradient-039,f0ad4b80

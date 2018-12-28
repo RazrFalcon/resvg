@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Ungrouping of groups with non-inheritable attributes.
 - `rotate` attribute resolving.
 - `color` on `use` resolving.
+- Coordinates resolving when units are `userSpaceOnUse`.
 
 ### Removed
 - `Rect::transform`.

@@ -21,6 +21,7 @@ This changelog also contains important changes in dependencies.
 - (usvg) `rotate` attribute resolving.
 - (usvg) Paths without stroke and fill will no longer be removed.
   Required for a proper bbox resolving.
+- (usvg) Coordinates resolving when units are `userSpaceOnUse`.
 - (svgdom) `stroke-miterlimit` attribute parsing.
 - (svgdom) `length` and `number` attribute types parsing.
 - (svgdom) `offset` attribute parsing.
