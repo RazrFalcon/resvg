@@ -150,3 +150,30 @@ brew install cairo pango gdk-pixbuf
 
 cargo build --release --features "cairo-backend"
 ```
+
+== For maintainers
+
+*resvg* consists of 4 parts:
+
+- the Rust library (link:./src[src])
+- the C library/bindings (link:./capi[capi])
+- the CLI tool to render SVG (link:./tools/rendersvg[tools/rendersvg])
+- the CLI tool to simplify SVG (link:./tools/usvg[tools/usvg])
+
+All of them are optional and each one, except `usvg`, can be built with a specific backend.
+
+No need to build `rendersvg` for each backend separately since it has a CLI switch
+to choose which one to use in runtime.
+Not sure how the Rust library can be packaged, but the C libraries should probably be built
+separately.
+
+So the final package can look like this:
+
+```
+/bin/rendersvg (does not depend on *.so)
+/bin/usvg (completely optional)
+/include/resvg.h (from capi/include)
+/include/ResvgQt.h (from capi/include)
+/lib/libresvg-cairo.so
+/lib/libresvg-qt.so
+```
