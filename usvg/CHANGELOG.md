@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `offset` attribute resolving inside the `stop` element.
 - Ungrouping of groups with non-inheritable attributes.
 - `rotate` attribute resolving.
+- `color` on `use` resolving.
 
 ### Removed
 - `Rect::transform`.

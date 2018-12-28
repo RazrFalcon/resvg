@@ -52,7 +52,7 @@ pub fn resolve_current_color(doc: &Document) {
                     }
                 }
                 None => {
-                    warn!("Failed to resolve currentColor for: {}. Removing it.", id);
+                    warn!("Failed to resolve currentColor for '{}'. Removing it.", id);
                     node.remove_attribute(*id);
                 }
             }

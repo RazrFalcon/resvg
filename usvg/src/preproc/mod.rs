@@ -138,19 +138,25 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) {
     fix_links(doc);
     fix_xlinks(doc);
 
-    resolve_inherit(doc);
-    resolve_current_color(doc);
-
-    group_defs(doc, svg);
+    resolve_font_size(doc, opt);
+    resolve_font_weight(doc);
 
     resolve_mask_attributes(doc);
     resolve_use_attributes(doc);
     resolve_svg_attributes(doc);
 
-    resolve_font_size(doc, opt);
-    resolve_font_weight(doc);
-
     convert_units(svg, opt);
+
+    // `use` should be resolved before style attributes,
+    // because `use` can propagate own style.
+    resolve_use(doc, opt);
+
+    prepare_nested_svg(doc, svg);
+
+    resolve_inherit(doc);
+    resolve_current_color(doc);
+
+    group_defs(doc, svg);
 
     resolve_linear_gradient_attributes(doc);
     resolve_radial_gradient_attributes(doc);
@@ -168,12 +174,6 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) {
     fix_recursive_links(doc);
 
     remove_unused_defs(doc);
-
-    prepare_nested_svg(doc, svg);
-
-    // `use` should be resolved before style attributes,
-    // because `use` can propagate own style.
-    resolve_use(doc, opt);
 
     ungroup_a(doc);
 

@@ -20,8 +20,6 @@ use super::prelude::*;
 //   <elem/>
 // </g>
 pub fn clip_element(doc: &mut Document, target_node: &mut Node) -> Option<Node> {
-    let mut defs_node = try_opt!(doc.defs_element(), None);
-
     // No need to clip elements with overflow:visible.
     {
         let attrs = target_node.attributes();
@@ -43,7 +41,7 @@ pub fn clip_element(doc: &mut Document, target_node: &mut Node) -> Option<Node> 
         let mut clip_node = doc.create_element(EId::ClipPath);
         clip_node.set_id(gen_clip_path_id(doc));
         clip_node.set_attribute((AId::ClipPathUnits, "userSpaceOnUse"));
-        defs_node.append(clip_node.clone());
+        g_node.insert_before(clip_node.clone());
 
         let mut rect_node = doc.create_element(EId::Rect);
 
