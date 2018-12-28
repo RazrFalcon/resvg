@@ -1,7 +1,1 @@
-e-filter-057.svg
-e-linearGradient-006.svg
-e-linearGradient-029.svg
-e-linearGradient-031.svg
-e-pattern-027.svg
-e-radialGradient-006.svg
-e-radialGradient-039.svg
+e-stop-028.svg

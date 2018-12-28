@@ -81,43 +81,6 @@ fn _fix_gradient_stops(grad: &Node, stops: &mut Vec<Node>, doc: &mut Document) {
         }
     }
 
-    // Shift equal offsets.
-    //
-    // From:
-    // offset="0.5"
-    // offset="0.7"
-    // offset="0.7"
-    //
-    // To:
-    // offset="0.5"
-    // offset="0.699999999"
-    // offset="0.7"
-    {
-        let mut prev_offset = 0.0;
-        for mut stop in grad.children() {
-            let mut offset = stop.attributes().get_number_or(AId::Offset, 0.0);
-
-            if offset.is_fuzzy_zero() {
-                prev_offset = 0.0;
-                continue;
-            }
-
-            // Next offset must be smaller then previous.
-            if offset < prev_offset || offset.fuzzy_eq(&prev_offset) {
-                if let Some(mut prev_stop) = stop.previous_sibling() {
-                    // Make previous offset a bit smaller.
-                    let new_offset = prev_offset - f64::EPSILON;
-                    prev_stop.set_attribute((AId::Offset, new_offset));
-                }
-
-                offset = prev_offset;
-            }
-
-            stop.set_attribute((AId::Offset, offset));
-            prev_offset = offset;
-        }
-    }
-
     // Remove zeros.
     //
     // From:
@@ -144,6 +107,38 @@ fn _fix_gradient_stops(grad: &Node, stops: &mut Vec<Node>, doc: &mut Document) {
             } else {
                 break;
             }
+        }
+    }
+
+    // Shift equal offsets.
+    //
+    // From:
+    // offset="0.5"
+    // offset="0.7"
+    // offset="0.7"
+    //
+    // To:
+    // offset="0.5"
+    // offset="0.699999999"
+    // offset="0.7"
+    {
+        let mut prev_offset = 0.0;
+        for mut stop in grad.children() {
+            let mut offset = stop.attributes().get_number_or(AId::Offset, 0.0);
+
+            // Next offset must be smaller then previous.
+            if offset < prev_offset || offset.fuzzy_eq(&prev_offset) {
+                if let Some(mut prev_stop) = stop.previous_sibling() {
+                    // Make previous offset a bit smaller.
+                    let new_offset = prev_offset - f64::EPSILON;
+                    prev_stop.set_attribute((AId::Offset, new_offset));
+                }
+
+                offset = prev_offset;
+            }
+
+            stop.set_attribute((AId::Offset, offset));
+            prev_offset = offset;
         }
     }
 }
