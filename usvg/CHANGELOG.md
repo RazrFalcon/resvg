@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `rotate` attribute resolving.
 - `color` on `use` resolving.
 - Coordinates resolving when units are `userSpaceOnUse`.
+- Groups regrouping.
 
 ### Removed
 - `Rect::transform`.

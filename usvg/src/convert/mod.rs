@@ -345,7 +345,7 @@ enum IriResolveResult {
 
 fn resolve_iri(node: &svgdom::Node, eid: EId, aid: AId, tree: &tree::Tree) -> IriResolveResult {
     let attrs = node.attributes();
-    if let Some(&AValue::FuncLink(ref link)) = attrs.get_type(aid) {
+    if let Some(&AValue::FuncLink(ref link)) = attrs.get_value(aid) {
         if link.is_tag_name(eid) {
             if let Some(node) = tree.defs_by_id(&link.id()) {
                 return IriResolveResult::Id(node.id().to_string());

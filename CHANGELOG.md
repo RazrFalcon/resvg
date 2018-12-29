@@ -22,6 +22,8 @@ This changelog also contains important changes in dependencies.
 - (usvg) Paths without stroke and fill will no longer be removed.
   Required for a proper bbox resolving.
 - (usvg) Coordinates resolving when units are `userSpaceOnUse`.
+- (usvg) Groups regrouping. Caused an incorrect rendering of `clipPath`
+  that had `filter` on a child.
 - (qt-backend) Stroking of LineTo specified as CurveTo.
 - (svgdom) `stroke-miterlimit` attribute parsing.
 - (svgdom) `length` and `number` attribute types parsing.

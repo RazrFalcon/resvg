@@ -24,12 +24,13 @@ pub fn resolve_clip_path_attributes(doc: &Document) {
 /// with a black fill and without a stroke.
 pub fn prepare_clip_path_children(doc: &Document) {
     for node in doc.root().descendants().filter(|n| n.is_tag_name(EId::ClipPath)) {
-        for (_, mut child) in node.descendants().svg() {
+        for (_, mut child) in node.descendants().svg().skip(1) {
             // Set fill to black.
             child.set_attribute((AId::Fill, Color::black()));
 
-            // Remove stroke.
             child.set_attribute((AId::Stroke, AValue::None));
+            child.set_attribute((AId::Mask, AValue::None));
+            child.set_attribute((AId::Filter, AValue::None));
 
             // Disable opacity.
             child.set_attribute((AId::Opacity, 1.0));

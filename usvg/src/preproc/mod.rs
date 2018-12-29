@@ -204,4 +204,6 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) {
 
     prepare_text_nodes(doc);
     remove_invalid_font_size(doc, opt);
+
+    remove_unused_defs(doc);
 }

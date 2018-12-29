@@ -23,7 +23,7 @@ pub fn convert(
     }
 
     let mut mask = None;
-    if let Some(&AValue::FuncLink(ref link)) = attrs.get_type(AId::Mask) {
+    if let Some(&AValue::FuncLink(ref link)) = attrs.get_value(AId::Mask) {
         if link.is_tag_name(EId::Mask) {
             mask = Some(link.id().to_string());
         }

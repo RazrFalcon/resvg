@@ -44,7 +44,7 @@ pub fn resolve_paint(
     aid: AId,
     has_bbox: bool,
 ) -> Option<tree::Paint> {
-    match attrs.get_type(aid) {
+    match attrs.get_value(aid) {
         Some(&AValue::Color(c)) => {
             Some(tree::Paint::Color(c))
         }

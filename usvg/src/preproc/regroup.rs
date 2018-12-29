@@ -27,11 +27,7 @@ pub fn regroup_elements(doc: &mut Document, parent: &Node) {
         }
 
         let opacity = node.attributes().get_number_or(AId::Opacity, 1.0);
-        if      opacity.fuzzy_eq(&1.0)
-            && !node.has_attribute(AId::ClipPath)
-            && !node.has_attribute(AId::Mask)
-            && !node.has_attribute(AId::Filter)
-        {
+        if opacity.fuzzy_eq(&1.0) && !has_links(&node) {
             continue;
         }
 
@@ -64,4 +60,20 @@ pub fn regroup_elements(doc: &mut Document, parent: &Node) {
         node.detach();
         g_node.append(node.clone());
     }
+}
+
+fn has_links(node: &Node) -> bool {
+    if let Some(&AValue::FuncLink(_)) = node.attributes().get_value(AId::ClipPath) {
+        return true;
+    }
+
+    if let Some(&AValue::FuncLink(_)) = node.attributes().get_value(AId::Mask) {
+        return true;
+    }
+
+    if let Some(&AValue::FuncLink(_)) = node.attributes().get_value(AId::Filter) {
+        return true;
+    }
+
+    false
 }

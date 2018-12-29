@@ -316,7 +316,7 @@ fn conv_marker(
     tree: &tree::Tree,
 ) -> Option<String> {
     let attrs = node.attributes();
-    if let Some(&AValue::FuncLink(ref link)) = attrs.get_type(aid) {
+    if let Some(&AValue::FuncLink(ref link)) = attrs.get_value(aid) {
         if link.is_tag_name(EId::Marker) {
             if let Some(node) = tree.defs_by_id(&link.id()) {
                 return Some(node.id().to_string());

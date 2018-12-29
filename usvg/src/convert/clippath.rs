@@ -24,7 +24,7 @@ pub fn convert(
     let attrs = node.attributes();
 
     let mut clip_path = None;
-    if let Some(&AValue::FuncLink(ref link)) = attrs.get_type(AId::ClipPath) {
+    if let Some(&AValue::FuncLink(ref link)) = attrs.get_value(AId::ClipPath) {
         if link.is_tag_name(EId::ClipPath) {
             clip_path = Some(link.id().to_string());
         }

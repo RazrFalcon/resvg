@@ -37,7 +37,7 @@ fn _ungroup_groups(parent: &Node, opt: &Options, groups: &mut Vec<Node>) {
                 //   <feFlood flood-color="green"/>
                 // </filter>
                 // <g filter="url(#filter1)"/>
-                if let Some(&AValue::FuncLink(_)) = node.attributes().get_type(AId::Filter) {
+                if let Some(&AValue::FuncLink(_)) = node.attributes().get_value(AId::Filter) {
                     continue;
                 }
 
@@ -59,17 +59,17 @@ fn _ungroup_groups(parent: &Node, opt: &Options, groups: &mut Vec<Node>) {
             }
 
             // Groups with a `clip-path` attribute can't be ungroupped.
-            if let Some(&AValue::FuncLink(_)) = node.attributes().get_type(AId::ClipPath) {
+            if let Some(&AValue::FuncLink(_)) = node.attributes().get_value(AId::ClipPath) {
                 continue;
             }
 
             // Groups with a `mask` attribute can't be ungroupped.
-            if let Some(&AValue::FuncLink(_)) = node.attributes().get_type(AId::Mask) {
+            if let Some(&AValue::FuncLink(_)) = node.attributes().get_value(AId::Mask) {
                 continue;
             }
 
             // Groups with a `filter` attribute can't be ungroupped.
-            if let Some(&AValue::FuncLink(_)) = node.attributes().get_type(AId::Filter) {
+            if let Some(&AValue::FuncLink(_)) = node.attributes().get_value(AId::Filter) {
                 continue;
             }
 
