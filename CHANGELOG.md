@@ -22,6 +22,7 @@ This changelog also contains important changes in dependencies.
 - (usvg) Paths without stroke and fill will no longer be removed.
   Required for a proper bbox resolving.
 - (usvg) Coordinates resolving when units are `userSpaceOnUse`.
+- (qt-backend) Stroking of LineTo specified as CurveTo.
 - (svgdom) `stroke-miterlimit` attribute parsing.
 - (svgdom) `length` and `number` attribute types parsing.
 - (svgdom) `offset` attribute parsing.

@@ -64,7 +64,8 @@ fn apply_ts(
     brush: &mut qt::Brush,
 ) {
     // We don't use `QGradient::setCoordinateMode` because it works incorrectly.
-    // https://bugreports.qt.io/browse/QTBUG-67995
+    //
+    // See QTBUG-67995
 
     if g.units == usvg::Units::ObjectBoundingBox {
         let mut ts = usvg::Transform::from_bbox(bbox);

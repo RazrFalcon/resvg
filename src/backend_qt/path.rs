@@ -61,6 +61,8 @@ fn convert_path(
 
     let mut prev_mx = 0.0;
     let mut prev_my = 0.0;
+    let mut prev_x = 0.0;
+    let mut prev_y = 0.0;
 
     let len = list.len();
     let mut i = 0;
@@ -87,6 +89,8 @@ fn convert_path(
                 // Remember subpath start position.
                 prev_mx = x;
                 prev_my = y;
+                prev_x = x;
+                prev_y = y;
             }
             usvg::PathSegment::LineTo { mut x, y } => {
                 if is_last_subpath_seg {
@@ -98,6 +102,9 @@ fn convert_path(
                 }
 
                 p_path.line_to(x, y);
+
+                prev_x = x;
+                prev_y = y;
             }
             usvg::PathSegment::CurveTo { x1, y1, x2, y2, mut x, y } => {
                 if is_last_subpath_seg {
@@ -106,7 +113,14 @@ fn convert_path(
                     }
                 }
 
-                p_path.curve_to(x1, y1, x2, y2, x, y);
+                if is_line(prev_x, prev_y, x1, y1, x2, y2, x, y) {
+                    p_path.line_to(x, y);
+                } else {
+                    p_path.curve_to(x1, y1, x2, y2, x, y);
+                }
+
+                prev_x = x;
+                prev_y = y;
             }
             usvg::PathSegment::ClosePath => {
                 p_path.close_path();
@@ -120,4 +134,15 @@ fn convert_path(
         usvg::FillRule::NonZero => p_path.set_fill_rule(qt::FillRule::Winding),
         usvg::FillRule::EvenOdd => p_path.set_fill_rule(qt::FillRule::OddEven),
     }
+}
+
+// If CurveTo is approximately a LineTo than we should draw it as LineTo,
+// otherwise Qt will draw it incorrectly.
+//
+// See QTBUG-72796
+fn is_line(px: f64, py: f64, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64) -> bool {
+       (px - x1).abs() < 0.001
+    && (py - y1).abs() < 0.001
+    && (x2 -  x).abs() < 0.001
+    && (y2 -  y).abs() < 0.001
 }

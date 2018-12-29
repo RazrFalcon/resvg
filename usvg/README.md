@@ -57,7 +57,6 @@ Full spec can be found [here](docs/usvg_spec.adoc).
 - Unsupported elements:
   - some filter-based elements
   - font-based elements
-  - `marker`
 
 ## Dependency
 
