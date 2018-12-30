@@ -74,7 +74,8 @@ fn _ungroup_groups(parent: &Node, opt: &Options, groups: &mut Vec<Node>) {
             }
 
             // We can ungroup group with opacity only when it has only one child.
-            if node.has_attribute(AId::Opacity) {
+            let opacity = node.attributes().get_number_or(AId::Opacity, 1.0);
+            if opacity.fuzzy_ne(&1.0) {
                 if node.children().count() != 1 {
                     continue;
                 }

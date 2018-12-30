@@ -233,6 +233,11 @@ impl ScreenRect {
     pub fn to_rect(&self) -> Rect {
         Rect::new(self.x as f64, self.y as f64, self.width as f64, self.height as f64)
     }
+
+    /// Checks that the rect has a valid size.
+    pub fn is_valid(&self) -> bool {
+        self.width > 0 && self.height > 0
+    }
 }
 
 impl fmt::Debug for ScreenRect {

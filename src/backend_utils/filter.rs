@@ -567,7 +567,7 @@ fn calc_region(
     let region = utils::path_bbox(&path, None, &region_ts);
     let region = region.to_screen_rect().fit_to_rect(canvas_rect);
 
-    if region.width == 0 || region.height == 0 {
+    if !region.is_valid() {
         return Err(Error::InvalidRegion);
     }
 
