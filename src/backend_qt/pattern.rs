@@ -23,11 +23,8 @@ pub fn apply(
         pattern.rect
     };
 
-    // TODO: wrong
     let global_ts = usvg::Transform::from_native(&global_ts);
     let (sx, sy) = global_ts.get_scale();
-    // Only integer scaling is allowed.
-    let (sx, sy) = (sx.round(), sy.round());
 
     if sx.is_fuzzy_zero() || sy.is_fuzzy_zero() {
         return;
