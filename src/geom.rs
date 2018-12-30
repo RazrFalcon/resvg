@@ -9,6 +9,9 @@ use std::f64;
 use std::fmt;
 
 // external
+use usvg::{
+    FuzzyEq
+};
 pub use usvg::{
     Line,
     Point,
@@ -128,19 +131,23 @@ impl RectExt for Rect {
     }
 
     fn expand(&mut self, r: Rect) {
-        if r.width <= 0.0 || r.height <= 0.0 {
+        if !r.is_valid() {
             return;
         }
 
-        self.x = f64_min(self.x, r.x);
-        self.y = f64_min(self.y, r.y);
+        if self.fuzzy_eq(&Rect::new_bbox()) {
+            *self = r;
+        } else {
+            let x1 = f64_min(self.x, r.x);
+            let y1 = f64_min(self.y, r.y);
 
-        if self.x + self.width < r.x + r.width {
-            self.width = r.x + r.width - self.x;
-        }
+            let x2 = f64_max(self.right(), r.right());
+            let y2 = f64_max(self.bottom(), r.bottom());
 
-        if self.y + self.height < r.y + r.height {
-            self.height = r.y + r.height - self.y;
+            self.x = x1;
+            self.y = y1;
+            self.width = x2 - x1;
+            self.height = y2 - y1;
         }
     }
 
@@ -294,6 +301,11 @@ impl From<(i32, i32, u32, u32)> for ScreenRect {
 #[inline]
 fn f64_min(v1: f64, v2: f64) -> f64 {
     if v1 < v2 { v1 } else { v2 }
+}
+
+#[inline]
+fn f64_max(v1: f64, v2: f64) -> f64 {
+    if v1 > v2 { v1 } else { v2 }
 }
 
 
