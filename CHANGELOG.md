@@ -15,6 +15,7 @@ This changelog also contains important changes in dependencies.
   Does not work on the cairo backend.
 
 ### Fixed
+- Object bounding box calculation.
 - (usvg) `color` on `use` resolving.
 - (usvg) `offset` attribute resolving inside the `stop` element.
 - (usvg) Ungrouping of groups with non-inheritable attributes.

@@ -20,6 +20,9 @@ pub(crate) use usvg::{
     f64_bound,
 };
 
+// self
+use utils;
+
 
 /// A 2D screen size representation.
 #[allow(missing_docs)]
@@ -107,6 +110,11 @@ pub trait RectExt {
     /// Transforms the `Rect` using the provided `bbox`.
     fn bbox_transform(&self, bbox: Rect) -> Self;
 
+    /// Transforms the `Rect` using the provided `Transform`.
+    ///
+    /// This method is expensive.
+    fn transform(&self, ts: &usvg::Transform) -> Self;
+
     /// Returns rect's size in screen units.
     fn to_screen_size(&self) -> ScreenSize;
 
@@ -143,6 +151,30 @@ impl RectExt for Rect {
         let h = self.height * bbox.height;
 
         Self::new(x, y, w, h)
+    }
+
+    fn transform(&self, ts: &usvg::Transform) -> Self {
+        if !ts.is_default() {
+            let path = &[
+                usvg::PathSegment::MoveTo {
+                    x: self.x, y: self.y
+                },
+                usvg::PathSegment::LineTo {
+                    x: self.right(), y: self.y
+                },
+                usvg::PathSegment::LineTo {
+                    x: self.right(), y: self.bottom()
+                },
+                usvg::PathSegment::LineTo {
+                    x: self.x, y: self.bottom()
+                },
+                usvg::PathSegment::ClosePath,
+            ];
+
+            utils::path_bbox(path, None, ts)
+        } else {
+            *self
+        }
     }
 
     fn to_screen_size(&self) -> ScreenSize {

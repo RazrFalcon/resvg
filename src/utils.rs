@@ -79,26 +79,27 @@ pub fn path_bbox(
 
     use lyon_geom;
 
-    let mut path_buf;
-    let new_path = if !ts.is_default() {
-        // Clone only when transform is required.
-        path_buf = segments.to_vec();
-        transform_path(&mut path_buf, ts);
-        &path_buf
-    } else {
-        segments
-    };
+    let mut prev_x = 0.0;
+    let mut prev_y = 0.0;
+    let mut minx = 0.0;
+    let mut miny = 0.0;
+    let mut maxx = 0.0;
+    let mut maxy = 0.0;
 
-    let (mut prev_x, mut prev_y, mut minx, mut miny, mut maxx, mut maxy) = {
-        if let usvg::PathSegment::MoveTo { x, y } = new_path[0] {
-            (x as f32, y as f32, x as f32, y as f32, x as f32, y as f32)
-        } else {
-            unreachable!();
-        }
-    };
+    if let Some(usvg::PathSegment::MoveTo { x, y }) = TransformedPath::new(segments, *ts).next() {
+        let x = x as f32;
+        let y = y as f32;
 
-    for seg in new_path {
-        match *seg {
+        prev_x = x;
+        prev_y = y;
+        minx = x;
+        miny = y;
+        maxx = x;
+        maxy = y;
+    }
+
+    for seg in TransformedPath::new(segments, *ts) {
+        match seg {
               usvg::PathSegment::MoveTo { x, y }
             | usvg::PathSegment::LineTo { x, y } => {
                 let x = x as f32;
@@ -242,6 +243,59 @@ pub fn transform_path(segments: &mut [usvg::PathSegment], ts: &usvg::Transform) 
     }
 }
 
+
+/// An iterator over transformed path segments.
+pub struct TransformedPath<'a> {
+    segments: &'a [usvg::PathSegment],
+    ts: usvg::Transform,
+    idx: usize,
+}
+
+impl<'a> TransformedPath<'a> {
+    /// Creates a new `TransformedPath` iterator.
+    pub fn new(segments: &'a [usvg::PathSegment], ts: usvg::Transform) -> Self {
+        TransformedPath { segments, ts, idx: 0 }
+    }
+}
+
+impl<'a> Iterator for TransformedPath<'a> {
+    type Item = usvg::PathSegment;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.idx == self.segments.len() {
+            return None;
+        }
+
+        if self.ts.is_default() {
+            self.idx += 1;
+            return self.segments.get(self.idx - 1).cloned();
+        }
+
+        let seg = match self.segments[self.idx] {
+            usvg::PathSegment::MoveTo { x, y } => {
+                let (x, y) = self.ts.apply(x, y);
+                usvg::PathSegment::MoveTo { x, y }
+            }
+            usvg::PathSegment::LineTo { x, y } => {
+                let (x, y) = self.ts.apply(x, y);
+                usvg::PathSegment::LineTo { x, y }
+            }
+            usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+                let (x1, y1) = self.ts.apply(x1, y1);
+                let (x2, y2) = self.ts.apply(x2, y2);
+                let (x,  y)  = self.ts.apply(x, y);
+                usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y }
+            }
+            usvg::PathSegment::ClosePath => usvg::PathSegment::ClosePath,
+        };
+
+        self.idx += 1;
+
+        Some(seg)
+    }
+}
+
+
 /// Converts `rect` to path segments.
 pub fn rect_to_path(rect: Rect) -> Vec<usvg::PathSegment> {
     vec![
@@ -249,13 +303,13 @@ pub fn rect_to_path(rect: Rect) -> Vec<usvg::PathSegment> {
             x: rect.x, y: rect.y
         },
         usvg::PathSegment::LineTo {
-            x: rect.x + rect.width, y: rect.y
+            x: rect.right(), y: rect.y
         },
         usvg::PathSegment::LineTo {
-            x: rect.x + rect.width, y: rect.y + rect.height
+            x: rect.right(), y: rect.bottom()
         },
         usvg::PathSegment::LineTo {
-            x: rect.x, y: rect.y + rect.height
+            x: rect.x, y: rect.bottom()
         },
         usvg::PathSegment::ClosePath,
     ]

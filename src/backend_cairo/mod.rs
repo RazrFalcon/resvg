@@ -295,6 +295,7 @@ fn render_group(
         let bbox = render_node(&node, opt, layers, cr);
 
         if let Some(bbox) = bbox {
+            let bbox = bbox.transform(&node.transform());
             g_bbox.expand(bbox);
         }
 
