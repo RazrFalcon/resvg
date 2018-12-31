@@ -30,6 +30,7 @@ This changelog also contains important changes in dependencies.
 - (svgdom) `stroke-miterlimit` attribute parsing.
 - (svgdom) `length` and `number` attribute types parsing.
 - (svgdom) `offset` attribute parsing.
+- (svgdom) IRI resolving order when SVG has duplicated ID's.
 
 ## [0.4.0] - 2018-12-13
 ### Added
