@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `color` on `use` resolving.
 - Coordinates resolving when units are `userSpaceOnUse`.
 - Groups regrouping.
+- Style attributes resolving on the root `svg` element.
 
 ### Removed
 - `Rect::transform`.

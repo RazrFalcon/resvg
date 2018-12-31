@@ -243,11 +243,17 @@ impl AppendTransform for Node {
 }
 
 
-pub trait CopyAttribute {
+pub trait AttributeExt {
+    fn move_attribute_to(&mut self, aid: AId, to: &mut Self);
     fn copy_attribute_to(&self, aid: AId, to: &mut Self);
 }
 
-impl CopyAttribute for Node {
+impl AttributeExt for Node {
+    fn move_attribute_to(&mut self, aid: AId, to: &mut Self) {
+        self.copy_attribute_to(aid, to);
+        self.remove_attribute(aid);
+    }
+
     fn copy_attribute_to(&self, aid: AId, to: &mut Self) {
         match self.attributes().get(aid) {
             Some(attr) => to.set_attribute(attr.clone()),

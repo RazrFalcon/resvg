@@ -4,6 +4,38 @@
 
 use super::prelude::*;
 
+/// Resolves the root `svg` element attributes.
+///
+/// In the `usvg`, the root `svg` element can't have any style attributes,
+/// so we have to create a new root group and move all non-inheritable attributes into it.
+pub fn resolve_root_style_attributes(doc: &mut Document, svg: &mut Node) {
+    // Create a new group only when needed.
+    let has_any =
+           svg.has_attribute(AId::ClipPath)
+        || svg.has_attribute(AId::Filter)
+        || svg.has_attribute(AId::Mask)
+        || svg.has_attribute(AId::Opacity)
+        || svg.has_attribute(AId::Transform);
+
+    if !has_any {
+        return;
+    }
+
+    let mut g = doc.create_element(EId::G);
+
+    let children: Vec<_> = svg.children().collect();
+    for child in children {
+        g.append(child);
+    }
+
+    svg.append(g.clone());
+
+    svg.move_attribute_to(AId::ClipPath, &mut g);
+    svg.move_attribute_to(AId::Filter, &mut g);
+    svg.move_attribute_to(AId::Mask, &mut g);
+    svg.move_attribute_to(AId::Opacity, &mut g);
+    svg.move_attribute_to(AId::Transform, &mut g);
+}
 
 pub fn resolve_style_attributes(doc: &Document, opt: &Options) {
     resolve_inherit(&doc.root(), opt);

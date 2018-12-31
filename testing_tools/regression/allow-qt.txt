@@ -1,1 +1,4 @@
-e-use-024.svg
+a-opacity-007.svg
+e-clipPath-041.svg
+e-clipPath-042.svg
+e-filter-060.svg

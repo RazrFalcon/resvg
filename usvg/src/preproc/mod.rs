@@ -135,6 +135,8 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) {
     remove_non_svg_data(doc);
     remove_descriptive_elements(doc);
 
+    resolve_root_style_attributes(doc, svg);
+
     fix_links(doc);
     fix_xlinks(doc);
 
