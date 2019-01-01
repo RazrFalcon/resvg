@@ -34,7 +34,8 @@ pub fn apply(
     clip_cr.transform(cp.transform.to_native());
 
     if cp.units == usvg::Units::ObjectBoundingBox {
-        let m = cairo::Matrix::from_bbox(bbox);
+        let m = try_opt_warn!(cairo::Matrix::from_bbox(bbox), (),
+                              "ClipPath '{}' cannot be used on a zero-sized object.", cp.id);
         clip_cr.transform(m);
     }
 

@@ -22,7 +22,8 @@ pub fn apply(
     cr: &cairo::Context,
 ) {
     let r = if pattern.units == usvg::Units::ObjectBoundingBox {
-        pattern.rect.bbox_transform(bbox)
+        try_opt_warn!(pattern.rect.bbox_transform(bbox), (),
+                      "Pattern '{}' cannot be used on a zero-sized object.", pattern.id)
     } else {
         pattern.rect
     };
@@ -48,7 +49,11 @@ pub fn apply(
 
         // We don't use Transform::from_bbox(bbox) because `x` and `y` should be
         // ignored for some reasons...
-        sub_cr.scale(bbox.width, bbox.height);
+        if bbox.is_valid() {
+            sub_cr.scale(bbox.width, bbox.height);
+        } else {
+            return;
+        }
     }
 
     let mut layers = super::create_layers(img_size, opt);

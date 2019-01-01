@@ -29,7 +29,8 @@ pub fn apply(
         mask_cr.set_matrix(sub_cr.get_matrix());
 
         let r = if mask.units == usvg::Units::ObjectBoundingBox {
-            mask.rect.bbox_transform(bbox)
+            try_opt_warn!(mask.rect.bbox_transform(bbox), (),
+                          "Mask '{}' cannot be used on a zero-sized object.", mask.id)
         } else {
             mask.rect
         };
@@ -38,7 +39,9 @@ pub fn apply(
         mask_cr.clip();
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {
-            mask_cr.transform(cairo::Matrix::from_bbox(bbox));
+            let m = try_opt_warn!(cairo::Matrix::from_bbox(bbox), (),
+                                  "Mask '{}' cannot be used on a zero-sized object.", mask.id);
+            mask_cr.transform(m);
         }
 
         super::render_group(node, opt, layers, &mask_cr);
@@ -46,7 +49,7 @@ pub fn apply(
 
     {
         let mut data = try_opt_warn!(mask_surface.get_data().ok(), (),
-                                     "Failed to borrow a surface for mask: {:?}.", mask.id);
+                                     "Failed to borrow a surface for mask '{}'.", mask.id);
         mask::image_to_mask(&mut data, layers.image_size());
     }
 

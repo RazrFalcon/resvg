@@ -17,6 +17,7 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - Object bounding box calculation.
 - Pattern scaling.
+- Nested `objectBoundigBox` support.
 - (usvg) `color` on `use` resolving.
 - (usvg) `offset` attribute resolving inside the `stop` element.
 - (usvg) Ungrouping of groups with non-inheritable attributes.

@@ -30,7 +30,9 @@ pub fn apply(
     clip_p.apply_transform(&cp.transform.to_native());
 
     if cp.units == usvg::Units::ObjectBoundingBox {
-        clip_p.apply_transform(&qt::Transform::from_bbox(bbox));
+        let ts = try_opt_warn!(qt::Transform::from_bbox(bbox), (),
+                              "ClipPath '{}' cannot be used on a zero-sized object.", cp.id);
+        clip_p.apply_transform(&ts);
     }
 
     clip_p.set_composition_mode(qt::CompositionMode::Clear);

@@ -69,7 +69,7 @@ pub fn abs_transform(
 
 /// Calculates path's bounding box.
 ///
-/// Minimum size is 1x1.
+/// Width and/or height can be zero.
 pub fn path_bbox(
     segments: &[usvg::PathSegment],
     stroke: Option<&usvg::Stroke>,
@@ -150,11 +150,8 @@ pub fn path_bbox(
         maxy += w;
     }
 
-    let mut width = maxx - minx;
-    if width < 1.0 { width = 1.0; }
-
-    let mut height = maxy - miny;
-    if height < 1.0 { height = 1.0; }
+    let width = maxx - minx;
+    let height = maxy - miny;
 
     (minx as f64, miny as f64, width as f64, height as f64).into()
 }

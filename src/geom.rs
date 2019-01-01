@@ -101,7 +101,7 @@ fn size_scale(s1: ScreenSize, s2: ScreenSize, expand: bool) -> ScreenSize {
 
 
 /// Additional `Rect` methods.
-pub trait RectExt {
+pub trait RectExt: Sized {
     /// Creates a new `Rect` for bounding box calculation.
     ///
     /// Shorthand for `Rect::new(f64::MAX, f64::MAX, 1.0, 1.0)`.
@@ -111,7 +111,7 @@ pub trait RectExt {
     fn expand(&mut self, r: Rect);
 
     /// Transforms the `Rect` using the provided `bbox`.
-    fn bbox_transform(&self, bbox: Rect) -> Self;
+    fn bbox_transform(&self, bbox: Rect) -> Option<Self>;
 
     /// Transforms the `Rect` using the provided `Transform`.
     ///
@@ -151,13 +151,17 @@ impl RectExt for Rect {
         }
     }
 
-    fn bbox_transform(&self, bbox: Rect) -> Self {
-        let x = self.x * bbox.width + bbox.x;
-        let y = self.y * bbox.height + bbox.y;
-        let w = self.width * bbox.width;
-        let h = self.height * bbox.height;
+    fn bbox_transform(&self, bbox: Rect) -> Option<Self> {
+        if bbox.is_valid() {
+            let x = self.x * bbox.width + bbox.x;
+            let y = self.y * bbox.height + bbox.y;
+            let w = self.width * bbox.width;
+            let h = self.height * bbox.height;
 
-        Self::new(x, y, w, h)
+            Some(Self::new(x, y, w, h))
+        } else {
+            None
+        }
     }
 
     fn transform(&self, ts: &usvg::Transform) -> Self {

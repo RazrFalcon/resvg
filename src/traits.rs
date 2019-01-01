@@ -15,12 +15,16 @@ pub(crate) trait ConvTransform<T> {
 }
 
 
-pub(crate) trait TransformFromBBox {
-    fn from_bbox(bbox: Rect) -> Self;
+pub(crate) trait TransformFromBBox: Sized {
+    fn from_bbox(bbox: Rect) -> Option<Self>;
 }
 
 impl TransformFromBBox for usvg::Transform {
-    fn from_bbox(bbox: Rect) -> Self {
-        Self::new(bbox.width, 0.0, 0.0, bbox.height, bbox.x, bbox.y)
+    fn from_bbox(bbox: Rect) -> Option<Self> {
+        if bbox.is_valid() {
+            Some(Self::new(bbox.width, 0.0, 0.0, bbox.height, bbox.x, bbox.y))
+        } else {
+            None
+        }
     }
 }

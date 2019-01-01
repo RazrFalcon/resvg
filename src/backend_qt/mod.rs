@@ -60,11 +60,12 @@ impl ConvTransform<qt::Transform> for usvg::Transform {
 }
 
 impl TransformFromBBox for qt::Transform {
-    fn from_bbox(bbox: Rect) -> Self {
-        debug_assert!(!bbox.width.is_fuzzy_zero());
-        debug_assert!(!bbox.height.is_fuzzy_zero());
-
-        Self::new(bbox.width, 0.0, 0.0, bbox.height, bbox.x, bbox.y)
+    fn from_bbox(bbox: Rect) -> Option<Self> {
+        if bbox.is_valid() {
+            Some(Self::new(bbox.width, 0.0, 0.0, bbox.height, bbox.x, bbox.y))
+        } else {
+            None
+        }
     }
 }
 

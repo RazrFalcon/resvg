@@ -43,11 +43,11 @@ impl ImageExt for qt::Image {
         self.height()
     }
 
-    fn clone_image(&self) -> Result<Self, Error> {
+    fn try_clone(&self) -> Result<Self, Error> {
         self.try_clone().ok_or(Error::AllocFailed)
     }
 
-    fn clip_image(&mut self, region: ScreenRect) {
+    fn clip(&mut self, region: ScreenRect) {
         let mut brush = qt::Brush::new();
         brush.set_color(0, 0, 0, 0);
 
@@ -59,6 +59,10 @@ impl ImageExt for qt::Image {
         p.draw_rect(0.0, 0.0, region.x as f64, self.height() as f64);
         p.draw_rect(region.right() as f64, 0.0, self.width() as f64, self.height() as f64);
         p.draw_rect(0.0, region.bottom() as f64, self.width() as f64, self.height() as f64);
+    }
+
+    fn clear(&mut self) {
+        self.fill(0, 0, 0, 0);
     }
 
     fn into_srgb(&mut self) {
@@ -164,23 +168,13 @@ impl Filter<qt::Image> for QtFilter {
     }
 
     fn apply_offset(
-        filter: &usvg::Filter,
         fe: &usvg::FeOffset,
+        units: usvg::Units,
         bbox: Rect,
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (sx, sy) = ts.get_scale();
-
-        let (dx, dy) = if filter.primitive_units == usvg::Units::ObjectBoundingBox {
-            (fe.dx * sx * bbox.width, fe.dy * sy * bbox.height)
-        } else {
-            (fe.dx * sx, fe.dy * sy)
-        };
-
-        if dx.is_fuzzy_zero() && dy.is_fuzzy_zero() {
-            return Ok(input);
-        }
+        let (dx, dy) = try_opt!(Self::resolve_offset(fe, units, bbox, ts), Ok(input));
 
         // TODO: do not use an additional buffer
         let mut buffer = create_image(input.width(), input.height())?;

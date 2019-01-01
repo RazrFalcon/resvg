@@ -47,7 +47,7 @@ impl ImageExt for cairo::ImageSurface {
         self.get_height() as u32
     }
 
-    fn clone_image(&self) -> Result<Self, Error> {
+    fn try_clone(&self) -> Result<Self, Error> {
         let new_image = create_image(self.width(), self.height())?;
 
         let cr = cairo::Context::new(&new_image);
@@ -57,7 +57,7 @@ impl ImageExt for cairo::ImageSurface {
         Ok(new_image)
     }
 
-    fn clip_image(&mut self, region: ScreenRect) {
+    fn clip(&mut self, region: ScreenRect) {
         let cr = cairo::Context::new(self);
         cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
         cr.set_operator(cairo::Operator::Clear);
@@ -68,6 +68,13 @@ impl ImageExt for cairo::ImageSurface {
         cr.rectangle(0.0, region.bottom() as f64, self.width() as f64, self.height() as f64);
 
         cr.fill();
+    }
+
+    fn clear(&mut self) {
+        let cr = cairo::Context::new(self);
+        cr.set_operator(cairo::Operator::Clear);
+        cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
+        cr.paint();
     }
 
     fn into_srgb(&mut self) {
@@ -223,23 +230,13 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
     }
 
     fn apply_offset(
-        filter: &usvg::Filter,
         fe: &usvg::FeOffset,
+        units: usvg::Units,
         bbox: Rect,
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (sx, sy) = ts.get_scale();
-
-        let (dx, dy) = if filter.primitive_units == usvg::Units::ObjectBoundingBox {
-            (fe.dx * sx * bbox.width, fe.dy * sy * bbox.height)
-        } else {
-            (fe.dx * sx, fe.dy * sy)
-        };
-
-        if dx.is_fuzzy_zero() && dy.is_fuzzy_zero() {
-            return Ok(input);
-        }
+        let (dx, dy) = try_opt!(Self::resolve_offset(fe, units, bbox, ts), Ok(input));
 
         // TODO: do not use an additional buffer
         let mut buffer = create_image(input.width(), input.height())?;

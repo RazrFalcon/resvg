@@ -24,8 +24,9 @@ pub trait ImageExt
     fn width(&self) -> u32;
     fn height(&self) -> u32;
 
-    fn clone_image(&self) -> Result<Self, Error>;
-    fn clip_image(&mut self, region: ScreenRect);
+    fn try_clone(&self) -> Result<Self, Error>;
+    fn clip(&mut self, region: ScreenRect);
+    fn clear(&mut self);
 
     fn into_srgb(&mut self);
     fn into_linear_rgb(&mut self);
@@ -85,7 +86,7 @@ impl<T: ImageExt> Image<T> {
     pub fn take(self) -> Result<T, Error> {
         match Rc::try_unwrap(self.image) {
             Ok(v) => Ok(v),
-            Err(v) => v.clone_image(),
+            Err(v) => v.try_clone(),
         }
     }
 
@@ -128,12 +129,20 @@ pub trait Filter<T: ImageExt> {
         opt: &Options,
         canvas: &mut T,
     ) {
-        match Self::_apply(filter, bbox, ts, opt, canvas) {
+        let res = Self::_apply(filter, bbox, ts, opt, canvas);
+
+        // Clear on error.
+        if res.is_err() {
+            canvas.clear();
+        }
+
+        match res {
             Ok(_) => {}
             Err(Error::AllocFailed) =>
                 warn!("Memory allocation failed while processing the '{}' filter. Skipped.", filter.id),
-            Err(Error::InvalidRegion) =>
-                warn!("Filter '{}' has an invalid region.", filter.id),
+            Err(Error::InvalidRegion) => {
+                warn!("Filter '{}' has an invalid region.", filter.id);
+            }
             Err(Error::ZeroSizedObject) =>
                 warn!("Filter '{}' cannot be used on a zero-sized object.", filter.id),
         }
@@ -170,7 +179,7 @@ pub trait Filter<T: ImageExt> {
                 }
                 usvg::FilterKind::FeOffset(ref fe) => {
                     let input = Self::get_input(&fe.input, region, &results, canvas)?;
-                    Self::apply_offset(filter, fe, bbox, ts, input)
+                    Self::apply_offset(fe, filter.primitive_units, bbox, ts, input)
                 }
                 usvg::FilterKind::FeComposite(ref fe) => {
                     let input1 = Self::get_input(&fe.input1, region, &results, canvas)?;
@@ -208,7 +217,7 @@ pub trait Filter<T: ImageExt> {
 
                 let color_space = result.color_space;
                 let mut buffer = result.take()?;
-                buffer.clip_image(subregion2);
+                buffer.clip(subregion2);
 
                 result = Image {
                     image: Rc::new(buffer),
@@ -247,8 +256,8 @@ pub trait Filter<T: ImageExt> {
     ) -> Result<Image<T>, Error>;
 
     fn apply_offset(
-        filter: &usvg::Filter,
         fe: &usvg::FeOffset,
+        units: usvg::Units,
         bbox: Rect,
         ts: &usvg::Transform,
         input: Image<T>,
@@ -315,11 +324,38 @@ pub trait Filter<T: ImageExt> {
 
         let (sx, sy) = ts.get_scale();
 
-        Some(if units == usvg::Units::ObjectBoundingBox {
+        let (std_dx, std_dy) = if units == usvg::Units::ObjectBoundingBox {
             (*fe.std_dev_x * sx * bbox.width, *fe.std_dev_y * sy * bbox.height)
         } else {
             (*fe.std_dev_x * sx, *fe.std_dev_y * sy)
-        })
+        };
+
+        if std_dx.is_fuzzy_zero() && std_dy.is_fuzzy_zero() {
+            None
+        } else {
+            Some((std_dx, std_dy))
+        }
+    }
+
+    fn resolve_offset(
+        fe: &usvg::FeOffset,
+        units: usvg::Units,
+        bbox: Rect,
+        ts: &usvg::Transform,
+    ) -> Option<(f64, f64)> {
+        let (sx, sy) = ts.get_scale();
+
+        let (dx, dy) = if units == usvg::Units::ObjectBoundingBox {
+            (fe.dx * sx * bbox.width, fe.dy * sy * bbox.height)
+        } else {
+            (fe.dx * sx, fe.dy * sy)
+        };
+
+        if dx.is_fuzzy_zero() && dy.is_fuzzy_zero() {
+            None
+        } else {
+            Some((dx, dy))
+        }
     }
 }
 
@@ -551,14 +587,13 @@ fn calc_region(
     let path = utils::rect_to_path(filter.rect);
 
     let region_ts = if filter.units == usvg::Units::ObjectBoundingBox {
-        // Not 0.0, because bbox min size is 1x1.
-        // See utils::path_bbox().
-        if bbox.width.fuzzy_eq(&1.0) || bbox.height.fuzzy_eq(&1.0) {
-            return Err(Error::ZeroSizedObject);
-        }
+        let bbox_ts = match usvg::Transform::from_bbox(bbox) {
+            Some(v) => v,
+            None => return Err(Error::ZeroSizedObject),
+        };
 
         let mut ts2 = ts.clone();
-        ts2.append(&usvg::Transform::from_bbox(bbox));
+        ts2.append(&bbox_ts);
         ts2
     } else {
         *ts
@@ -613,7 +648,9 @@ fn calc_subregion<T: ImageExt>(
                     primitive.height.unwrap_or(1.0),
                 );
 
-                return r.bbox_transform(bbox).bbox_transform(ts_bbox).to_screen_rect();
+                return r.bbox_transform(bbox).unwrap()
+                        .bbox_transform(ts_bbox).unwrap()
+                        .to_screen_rect();
             } else {
                 filter_region
             }
@@ -630,7 +667,7 @@ fn calc_subregion<T: ImageExt>(
             primitive.height.unwrap_or(1.0),
         );
 
-        region.to_rect().bbox_transform(subregion_bbox)
+        region.to_rect().bbox_transform(subregion_bbox).unwrap_or(filter_region.to_rect())
     } else {
         let (dx, dy) = ts.get_translate();
         let (sx, sy) = ts.get_scale();

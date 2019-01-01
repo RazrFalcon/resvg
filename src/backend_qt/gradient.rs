@@ -19,7 +19,7 @@ pub fn prepare_linear(
     prepare_base(&g.base, opacity, &mut grad);
 
     brush.set_linear_gradient(grad);
-    apply_ts(&g.base, bbox, brush);
+    apply_ts(&g.base, bbox, &g.id, brush);
 }
 
 pub fn prepare_radial(
@@ -32,7 +32,7 @@ pub fn prepare_radial(
     prepare_base(&g.base, opacity, &mut grad);
 
     brush.set_radial_gradient(grad);
-    apply_ts(&g.base, bbox, brush);
+    apply_ts(&g.base, bbox, &g.id, brush);
 }
 
 fn prepare_base(
@@ -61,6 +61,7 @@ fn prepare_base(
 fn apply_ts(
     g: &usvg::BaseGradient,
     bbox: Rect,
+    id: &str,
     brush: &mut qt::Brush,
 ) {
     // We don't use `QGradient::setCoordinateMode` because it works incorrectly.
@@ -68,7 +69,9 @@ fn apply_ts(
     // See QTBUG-67995
 
     if g.units == usvg::Units::ObjectBoundingBox {
-        let mut ts = usvg::Transform::from_bbox(bbox);
+        let mut ts = try_opt_warn!(usvg::Transform::from_bbox(bbox), (),
+                                   "Gradient '{}' cannot be used on a zero-sized object.", id);
+
         ts.append(&g.transform);
         brush.set_transform(ts.to_native());
     } else {

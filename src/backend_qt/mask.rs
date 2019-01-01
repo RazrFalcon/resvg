@@ -26,7 +26,8 @@ pub fn apply(
         mask_p.set_transform(&sub_p.get_transform());
 
         let r = if mask.units == usvg::Units::ObjectBoundingBox {
-            mask.rect.bbox_transform(bbox)
+            try_opt_warn!(mask.rect.bbox_transform(bbox), (),
+                          "Mask '{}' cannot be used on a zero-sized object.", mask.id)
         } else {
             mask.rect
         };
@@ -34,7 +35,9 @@ pub fn apply(
         mask_p.set_clip_rect(r.x, r.y, r.width, r.height);
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {
-            mask_p.apply_transform(&qt::Transform::from_bbox(bbox));
+            let ts = try_opt_warn!(qt::Transform::from_bbox(bbox), (),
+                                   "Mask '{}' cannot be used on a zero-sized object.", mask.id);
+            mask_p.apply_transform(&ts);
         }
 
         super::render_group(node, opt, layers, &mut mask_p);
