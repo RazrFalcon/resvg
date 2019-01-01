@@ -321,7 +321,7 @@ mod tests {
     #[test]
     fn bbox_transform_1() {
         let r = Rect::new(10.0, 20.0, 30.0, 40.0);
-        assert!(r.bbox_transform(Rect::new(0.2, 0.3, 0.4, 0.5))
+        assert!(r.bbox_transform(Rect::new(0.2, 0.3, 0.4, 0.5)).unwrap()
                  .fuzzy_eq(&Rect::new(4.2, 10.3, 12.0, 20.0)));
     }
 }
