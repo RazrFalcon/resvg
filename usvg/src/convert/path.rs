@@ -74,10 +74,10 @@ fn convert_path(mut path: svgdom::Path) -> Vec<tree::PathSegment> {
     let mut py = 0.0;
 
     // Previous SmoothQuadratic coordinates.
-    let mut ptx = None;
-    let mut pty = None;
+    let mut ptx = 0.0;
+    let mut pty = 0.0;
 
-    for seg in path.iter() {
+    for (idx, seg) in path.iter().enumerate() {
         match *seg {
             svgdom::PathSegment::MoveTo { x, y, .. } => {
                 new_path.push(tree::PathSegment::MoveTo { x, y });
@@ -100,28 +100,21 @@ fn convert_path(mut path: svgdom::Path) -> Vec<tree::PathSegment> {
                 // (If there is no previous command or if the previous command
                 // was not an C, c, S or s, assume the first control point is
                 // coincident with the current point.)'
-                let new_x1;
-                let new_y1;
-                if let Some(seg) = new_path.last().cloned() {
-                    match seg {
-                        tree::PathSegment::CurveTo { x2, y2, x, y, .. } => {
-                            new_x1 = x * 2.0 - x2;
-                            new_y1 = y * 2.0 - y2;
+                if let Some(prev_seg) = path.get(idx - 1).cloned() {
+                    let (x1, y1) = match prev_seg {
+                        svgdom::PathSegment::CurveTo { x2, y2, x, y, .. } |
+                        svgdom::PathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
+                            (x * 2.0 - x2, y * 2.0 - y2)
                         }
                         _ => {
-                            new_x1 = px;
-                            new_y1 = py;
+                            (px, py)
                         }
-                    }
+                    };
 
-                    new_path.push(tree::PathSegment::CurveTo { x1: new_x1, y1: new_y1, x2, y2, x, y });
+                    new_path.push(tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
                 }
             }
             svgdom::PathSegment::Quadratic { x1, y1, x, y, .. } => {
-                // Remember last control point.
-                ptx = Some(x * 2.0 - x1);
-                pty = Some(y * 2.0 - y1);
-
                 new_path.push(quad_to_curve(px, py, x1, y1, x, y));
             }
             svgdom::PathSegment::SmoothQuadratic { x, y, .. } => {
@@ -130,21 +123,24 @@ fn convert_path(mut path: svgdom::Path) -> Vec<tree::PathSegment> {
                 // the current point. (If there is no previous command or
                 // if the previous command was not a Q, q, T or t, assume
                 // the control point is coincident with the current point.)'
-                let new_x1;
-                let new_y1;
-                if let (Some(tx), Some(ty)) = (ptx, pty) {
-                    new_x1 = tx;
-                    new_y1 = ty;
+                if let Some(prev_seg) = path.get(idx - 1).cloned() {
+                    let (x1, y1) = match prev_seg {
+                        svgdom::PathSegment::Quadratic { x1, y1, x, y, .. } => {
+                            (x * 2.0 - x1, y * 2.0 - y1)
+                        }
+                        svgdom::PathSegment::SmoothQuadratic { x, y, .. } => {
+                            (x * 2.0 - ptx, y * 2.0 - pty)
+                        }
+                        _ => {
+                            (px, py)
+                        }
+                    };
 
-                    // Reset control point.
-                    ptx = Some(x * 2.0 - tx);
-                    pty = Some(y * 2.0 - ty);
-                } else {
-                    new_x1 = px;
-                    new_y1 = py;
+                    ptx = x1;
+                    pty = y1;
+
+                    new_path.push(quad_to_curve(px, py, x1, y1, x, y));
                 }
-
-                new_path.push(quad_to_curve(px, py, new_x1, new_y1, x, y));
             }
             svgdom::PathSegment::EllipticalArc { rx, ry, x_axis_rotation, large_arc, sweep, x, y, .. } => {
                 let arc = lyon_geom::SvgArc {

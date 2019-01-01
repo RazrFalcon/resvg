@@ -1,4 +1,2 @@
-e-filter-061.svg
-e-filter-062.svg
-e-mask-016.svg
-e-pattern-024.svg
+e-path-044.svg
+e-path-045.svg

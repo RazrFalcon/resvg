@@ -28,6 +28,7 @@ This changelog also contains important changes in dependencies.
 - (usvg) Groups regrouping. Caused an incorrect rendering of `clipPath`
   that had `filter` on a child.
 - (usvg) Style attributes resolving on the root `svg` element.
+- (usvg) `SmoothCurveTo` and `SmoothQuadratic` conversion.
 - (qt-backend) Stroking of LineTo specified as CurveTo.
 - (svgdom) `stroke-miterlimit` attribute parsing.
 - (svgdom) `length` and `number` attribute types parsing.
