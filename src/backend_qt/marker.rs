@@ -63,9 +63,8 @@ fn _apply(
         if let Some(vbox) = marker.view_box {
             let size = Size::new(r.width * stroke_scale, r.height * stroke_scale);
             let ts = utils::view_box_to_transform(vbox.rect, vbox.aspect, size);
-            p.apply_transform(&ts.to_native());
-
-            p.translate(vbox.rect.x, vbox.rect.y);
+            let (sx, sy) = ts.get_scale();
+            p.scale(sx, sy);
         } else {
             p.scale(stroke_scale, stroke_scale);
         }
