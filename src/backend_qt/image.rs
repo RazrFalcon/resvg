@@ -38,11 +38,11 @@ pub fn draw_raster(
         usvg::ImageData::Path(ref path) => {
             let path = image::get_abs_path(path, opt);
             try_opt_warn!(qt::Image::from_file(&path), (),
-                "Failed to load an external image: {:?}.", path)
+                          "Failed to load an external image: {:?}.", path)
         }
         usvg::ImageData::Raw(ref data) => {
             try_opt_warn!(qt::Image::from_data(data), (),
-                "Failed to load an embedded image.")
+                          "Failed to load an embedded image.")
         }
     };
 

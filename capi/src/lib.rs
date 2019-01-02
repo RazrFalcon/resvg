@@ -354,7 +354,7 @@ pub extern fn resvg_qt_render_to_canvas_by_id(
     };
 
     if id.is_empty() {
-        warn!("Node with an empty ID can not be painted.");
+        warn!("Node with an empty ID cannot be painted.");
         return;
     }
 
@@ -394,7 +394,7 @@ pub extern fn resvg_cairo_render_to_canvas_by_id(
     };
 
     if id.is_empty() {
-        warn!("Node with an empty ID can not be painted.");
+        warn!("Node with an empty ID cannot be painted.");
         return;
     }
 
@@ -543,7 +543,7 @@ fn get_node_bbox(
             }
         }
         None => {
-            warn!("No node with '{}' ID in the tree.", id);
+            warn!("No node with '{}' ID is in the tree.", id);
             false
         }
     }

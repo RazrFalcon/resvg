@@ -12,6 +12,9 @@ documentation = "https://docs.rs/usvg/"
 readme = "README.md"
 workspace = ".."
 
+[badges]
+travis-ci = { repository = "RazrFalcon/resvg" }
+
 [dependencies]
 base64 = "0.10"
 libflate = "0.1"

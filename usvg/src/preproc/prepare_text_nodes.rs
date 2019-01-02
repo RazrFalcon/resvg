@@ -101,7 +101,7 @@ fn prepare_text_elem(doc: &mut Document, elem: &Node, new_elem: &mut Node) {
 
         if let Some(id) = text_parent.tag_id() {
             if id != EId::Text && id != EId::Tspan {
-                warn!("Unsupported text child: {:?}.", id);
+                warn!("Unsupported text child: {}.", id);
                 continue;
             }
         } else {

@@ -176,7 +176,7 @@ pub fn render_node_to_image(
     let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
         bbox
     } else {
-        warn!("Node {:?} has zero size.", node.id());
+        warn!("Node '{}' has a zero size.", node.id());
         return None;
     };
 

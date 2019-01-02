@@ -81,7 +81,7 @@ fn process_negative_r(
     ids: &mut Vec<AId>,
 ) -> bool {
     let r = try_opt_warn!(gradient.attributes().get_number(AId::R), false,
-                "'r' attribute in 'radialGradient' should be already resolved.");
+                          "'r' attribute in 'radialGradient' should be already resolved.");
 
     if !r.is_fuzzy_zero() {
         return false;

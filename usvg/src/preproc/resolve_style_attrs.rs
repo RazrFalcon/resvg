@@ -108,7 +108,7 @@ fn resolve_default(node: &mut Node, aid: AId) {
         Some(v) => v,
         None => {
             // Technically unreachable.
-            warn!("'{:?}' doesn't have a default value.", aid);
+            warn!("'{}' doesn't have a default value.", aid);
             return;
         }
     };

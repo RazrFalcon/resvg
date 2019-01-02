@@ -31,7 +31,7 @@ pub fn apply(
 
     if cp.units == usvg::Units::ObjectBoundingBox {
         let ts = try_opt_warn!(qt::Transform::from_bbox(bbox), (),
-                              "ClipPath '{}' cannot be used on a zero-sized object.", cp.id);
+                               "ClipPath '{}' cannot be used on a zero-sized object.", cp.id);
         clip_p.apply_transform(&ts);
     }
 

@@ -140,9 +140,8 @@ pub trait Filter<T: ImageExt> {
             Ok(_) => {}
             Err(Error::AllocFailed) =>
                 warn!("Memory allocation failed while processing the '{}' filter. Skipped.", filter.id),
-            Err(Error::InvalidRegion) => {
-                warn!("Filter '{}' has an invalid region.", filter.id);
-            }
+            Err(Error::InvalidRegion) =>
+                warn!("Filter '{}' has an invalid region.", filter.id),
             Err(Error::ZeroSizedObject) =>
                 warn!("Filter '{}' cannot be used on a zero-sized object.", filter.id),
         }

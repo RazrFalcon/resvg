@@ -52,7 +52,7 @@ fn resolve_impl(node: &mut Node, attr: AId) {
         Some(a) => node.set_attribute((attr, a.value)),
         None => {
             warn!("Failed to resolve attribute: {}. Removing it.",
-                    node.attributes().get(attr).unwrap());
+                  node.attributes().get(attr).unwrap());
             node.remove_attribute(attr);
         }
     }
