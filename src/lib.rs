@@ -134,7 +134,7 @@ pub struct InitObject {
 /// in order to draw text. If you don't plan to draw text - it's better to skip
 /// the initialization.
 ///
-/// Does nothing when only `cairo` backend is enabled.
+/// Does nothing when only the `cairo` backend is enabled.
 ///
 /// Note: `QGuiApplication` initialization is pretty slow (up to 100ms).
 ///
@@ -147,6 +147,8 @@ pub struct InitObject {
 /// ```
 ///
 /// Also, take a look at `examples/minimal.rs`.
+///
+/// **Warning**: this method is not thread-safe.
 pub fn init() -> InitObject {
     InitObject {
         #[cfg(feature = "qt-backend")]
