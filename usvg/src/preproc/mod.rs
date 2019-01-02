@@ -201,7 +201,7 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) {
 
     prepare_clip_path_children(doc);
 
-    ungroup_groups(doc, svg, opt);
+    ungroup_groups(doc, opt);
     regroup_elements(doc, svg);
 
     prepare_text_nodes(doc);

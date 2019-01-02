@@ -5,85 +5,70 @@
 use super::prelude::*;
 
 
-pub fn ungroup_groups(doc: &mut Document, svg: &Node, opt: &Options) {
-    let mut groups = Vec::with_capacity(16);
-
-    loop {
-        _ungroup_groups(svg, opt, &mut groups);
-
-        if groups.is_empty() {
-            break;
-        }
-
-        while let Some(mut g) = groups.pop() {
-            ungroup_group(&mut g);
-            doc.remove_node(g);
-        }
+pub fn ungroup_groups(doc: &mut Document, opt: &Options) {
+    while let Some(mut g) = find_group(doc, opt) {
+        ungroup_group(&mut g);
+        doc.remove_node(g);
     }
 }
 
-fn _ungroup_groups(parent: &Node, opt: &Options, groups: &mut Vec<Node>) {
-    for node in parent.children() {
-        if node.has_children() {
-            _ungroup_groups(&node, opt, groups);
-        }
-
-        if node.is_tag_name(EId::G) {
-            if !node.has_children() {
-                // Groups with a `filter` attribute can't be ungroupped.
-                //
-                // Because this is a valid SVG:
-                // <filter id="filter1" filterUnits="userSpaceOnUse" x="20" y="20" width="160" height="160">
-                //   <feFlood flood-color="green"/>
-                // </filter>
-                // <g filter="url(#filter1)"/>
-                if let Some(&AValue::FuncLink(_)) = node.attributes().get_value(AId::Filter) {
-                    continue;
-                }
-
-                groups.push(node.clone());
-                continue;
-            }
-
-            if opt.keep_named_groups && node.has_id() {
-                continue;
-            }
-
-            // Do not ungroup groups inside `clipPath`.
-            // They will be removed during conversion.
-            if node.ancestors().skip(1).any(|n| n.is_tag_name(EId::ClipPath)) {
-                // Groups that was created from 'use' can be ungroupped.
-                if !node.has_attribute("usvg-group") {
-                    continue;
-                }
-            }
-
-            // Groups with a `clip-path` attribute can't be ungroupped.
-            if let Some(&AValue::FuncLink(_)) = node.attributes().get_value(AId::ClipPath) {
-                continue;
-            }
-
-            // Groups with a `mask` attribute can't be ungroupped.
-            if let Some(&AValue::FuncLink(_)) = node.attributes().get_value(AId::Mask) {
-                continue;
-            }
-
+fn find_group(doc: &Document, opt: &Options) -> Option<Node> {
+    for node in doc.root().descendants().filter(|n| n.is_tag_name(EId::G)) {
+        if !node.has_children() {
             // Groups with a `filter` attribute can't be ungroupped.
+            //
+            // Because this is a valid SVG:
+            // <filter id="filter1" filterUnits="userSpaceOnUse" x="20" y="20" width="160" height="160">
+            //   <feFlood flood-color="green"/>
+            // </filter>
+            // <g filter="url(#filter1)"/>
             if let Some(&AValue::FuncLink(_)) = node.attributes().get_value(AId::Filter) {
                 continue;
             }
 
-            // We can ungroup group with opacity only when it has only one child.
-            let opacity = node.attributes().get_number_or(AId::Opacity, 1.0);
-            if opacity.fuzzy_ne(&1.0) {
-                if node.children().count() != 1 {
-                    continue;
-                }
-            }
-
-            groups.push(node.clone());
+            return Some(node.clone());
         }
+
+        if opt.keep_named_groups && node.has_id() {
+            continue;
+        }
+
+        // Groups with a `clip-path` attribute can't be ungroupped.
+        if let Some(&AValue::FuncLink(_)) = node.attributes().get_value(AId::ClipPath) {
+            continue;
+        }
+
+        // Groups with a `mask` attribute can't be ungroupped.
+        if let Some(&AValue::FuncLink(_)) = node.attributes().get_value(AId::Mask) {
+            continue;
+        }
+
+        // Groups with a `filter` attribute can't be ungroupped.
+        if let Some(&AValue::FuncLink(_)) = node.attributes().get_value(AId::Filter) {
+            continue;
+        }
+
+        // We can ungroup group with opacity only when it has only one child.
+        let opacity = node.attributes().get_number_or(AId::Opacity, 1.0);
+        if opacity.fuzzy_ne(&1.0) {
+            if node.children().count() != 1 {
+                continue;
+            }
+        }
+
+        // Do not ungroup groups inside `clipPath`.
+        // They will be removed during conversion.
+        if node.ancestors().skip(1).any(|n| n.is_tag_name(EId::ClipPath)) {
+            // Groups that was created from 'use' can be ungroupped.
+            if !node.has_attribute("usvg-group") {
+                continue;
+            }
+        }
+
+        return Some(node.clone());
     }
+
+    None
 }
 
 fn ungroup_group(g: &mut Node) {
