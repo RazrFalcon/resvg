@@ -1,2 +1,1 @@
-e-path-044.svg
-e-path-045.svg
+e-symbol-009.svg

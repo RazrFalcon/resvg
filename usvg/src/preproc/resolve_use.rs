@@ -175,6 +175,20 @@ fn resolve_symbol(
         // If 'clipPath' was created we have to set the original transform
         // to the group that contains 'clip-path' attribute.
         g_node.set_attribute((AId::Transform, orig_ts));
+
+        // Swap ID's.
+        g_node.set_id(use_node.id().as_str());
+        use_node.set_id(String::new());
+
+        // Relink the node.
+        for mut node in doc.root().descendants().filter(|n| n.is_tag_name(EId::Use)) {
+            let av = node.attributes().get_value(AId::Href).cloned();
+            if let Some(AValue::Link(link)) = av {
+                if link == *use_node {
+                    node.set_attribute((AId::Href, g_node.clone()));
+                }
+            }
+        }
     } else {
         // Set the original transform back to the 'use' itself.
         use_node.prepend_transform(orig_ts);

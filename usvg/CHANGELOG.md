@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Groups regrouping.
 - Style attributes resolving on the root `svg` element.
 - `SmoothCurveTo` and `SmoothQuadratic` conversion.
+- `symbol` resolving.
 
 ### Removed
 - `Rect::transform`.
