@@ -41,7 +41,7 @@ impl<'a> FontMetrics<qt::Font> for QtFontMetrics<'a> {
         self.p.font_metrics().width(text)
     }
 
-    fn ascent(&self) -> f64 {
+    fn ascent(&self, _: &str) -> f64 {
         self.p.font_metrics().ascent()
     }
 

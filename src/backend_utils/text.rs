@@ -27,7 +27,7 @@ pub trait FontMetrics<Font> {
     fn set_font(&mut self, font: &usvg::Font);
     fn font(&self) -> Font;
     fn width(&self, text: &str) -> f64;
-    fn ascent(&self) -> f64;
+    fn ascent(&self, text: &str) -> f64;
     fn height(&self) -> f64;
 }
 
@@ -123,7 +123,7 @@ pub fn prepare_blocks<Font>(
                         usvg::BaselineShift::Number(n) => -n,
                     };
 
-                    let font_ascent = font_metrics.ascent();
+                    let font_ascent = font_metrics.ascent(c);
                     let width = font_metrics.width(c);
                     let yy = y - font_ascent + baseline_shift;
                     let height = font_metrics.height();

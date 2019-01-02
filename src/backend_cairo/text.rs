@@ -75,7 +75,8 @@ impl FontMetrics<pango::FontDescription> for PangoFontMetrics {
         self.layout.get_size().0.from_pango()
     }
 
-    fn ascent(&self) -> f64 {
+    fn ascent(&self, text: &str) -> f64 {
+        self.layout.set_text(text);
         let mut layout_iter = self.layout.get_iter().unwrap();
         layout_iter.get_baseline().from_pango()
     }
