@@ -1,6 +1,6 @@
-QT += core gui widgets svg
+QT += core gui widgets
 
-TARGET = demo
+TARGET = viewsvg
 TEMPLATE = app
 CONFIG += C++11
 
@@ -15,9 +15,6 @@ HEADERS += \
 
 FORMS += \
     mainwindow.ui
-
-RESOURCES += \
-    resources.qrc
 
 CONFIG(release, debug|release): LIBS += -L$$PWD/../../target/release/ -lresvg
 else:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../target/debug/ -lresvg

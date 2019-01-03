@@ -120,7 +120,7 @@ All other dependencies aren't written by me for this project.
 - `resvg-qt` - a minimal bindings to Qt used by *resvg*
 - `src` - source code
 - `testing_tools` - scripts used for testing
-- `tools` - useful CLI tools
+- `tools` - useful tools
 - `usvg` - an SVG simplification library used by *resvg*
 
 ## Safety

@@ -2,24 +2,21 @@
 
 #include <QMainWindow>
 
-namespace Ui {
-class MainWindow;
-}
+namespace Ui { class MainWindow; }
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
 private slots:
     void onStart();
-    void on_rBtnFitSize_toggled(bool checked);
-    void on_cmbBoxBackground_currentIndexChanged(int index);
+    void on_cmbBoxBackground_activated(int index);
     void on_chBoxDrawBorder_toggled(bool checked);
-    void on_rBtnRenderViaResvg_toggled(bool checked);
+    void on_cmbBoxSize_activated(int index);
 
 private:
     Ui::MainWindow *ui;

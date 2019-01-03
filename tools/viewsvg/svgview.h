@@ -1,16 +1,10 @@
 #pragma once
 
 #include <QFrame>
-#include <QSvgRenderer>
 #include <QMutex>
+#include <QBasicTimer>
 
 #include <ResvgQt.h>
-
-enum class RenderBackend
-{
-    Resvg,
-    QtSvg,
-};
 
 class SvgViewWorker : public QObject
 {
@@ -22,19 +16,17 @@ public:
     QRect viewBox() const;
 
 public slots:
-    void loadData(const QByteArray &data);
-    void loadFile(const QString &path);
-    void render(const QSize &viewSize, RenderBackend backend);
+    QString loadData(const QByteArray &data);
+    QString loadFile(const QString &path);
+    void render(const QSize &viewSize);
 
 signals:
     void rendered(QImage);
-    void errorMsg(QString);
 
 private:
     const float m_dpiRatio;
     mutable QMutex m_mutex;
     ResvgRenderer m_renderer;
-    QSvgRenderer m_qtRenderer;
 };
 
 class SvgView : public QFrame
@@ -57,7 +49,6 @@ public:
     void setFitToView(bool flag);
     void setBackgound(Backgound backgound);
     void setDrawImageBorder(bool flag);
-    void setBackend(RenderBackend backend);
 
     void loadData(const QByteArray &data);
     void loadFile(const QString &path);
@@ -71,9 +62,12 @@ protected:
     void dragMoveEvent(QDragMoveEvent *event);
     void dropEvent(QDropEvent *event);
     void resizeEvent(QResizeEvent *);
+    void timerEvent(QTimerEvent *);
 
 private:
     void requestUpdate();
+    void afterLoad(const QString &errMsg);
+    void drawSpinner(QPainter &p);
 
 private slots:
     void onRendered(const QImage &img);
@@ -81,12 +75,16 @@ private slots:
 private:
     const QImage m_checkboardImg;
     SvgViewWorker * const m_worker;
+    QTimer * const m_resizeTimer;
 
     QString m_path;
-    RenderBackend m_backend = RenderBackend::Resvg;
     float m_dpiRatio = 1.0;
     bool m_isFitToView = true;
     Backgound m_backgound = Backgound::CheckBoard;
     bool m_isDrawImageBorder = false;
+    bool m_isHasImage = false;
     QImage m_img;
+
+    QBasicTimer m_timer;
+    int m_angle = 0;
 };

@@ -123,7 +123,7 @@ if 'RESVG_QT_BACKEND' in os.environ:
         run(['make'], check=True)
         run(['./tst_resvgqt'], env=dict(os.environ, LD_LIBRARY_PATH="../../target/debug"), check=True)
 
-    with cd('examples/qt-demo'):
+    with cd('tools/viewsvg'):
         run(['make', 'distclean'])
         run(['qmake', 'CONFIG+=debug'], env=qmake_env, check=True)
         run(['make'], check=True)

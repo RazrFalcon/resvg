@@ -1,7 +1,6 @@
 #include <QMessageBox>
 #include <QTimer>
 #include <QFile>
-#include <QDebug>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -14,7 +13,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     SvgView::init();
 
+    ui->cmbBoxSize->setCurrentIndex(1);
     ui->cmbBoxBackground->setCurrentIndex(1);
+
+    ui->svgView->setFitToView(true);
+    ui->svgView->setBackgound(SvgView::Backgound::White);
 
     connect(ui->svgView, &SvgView::loadError, this, [this](const QString &msg){
         QMessageBox::critical(this, "Error", msg);
@@ -30,24 +33,22 @@ MainWindow::~MainWindow()
 
 void MainWindow::onStart()
 {
-    QFile file(":/hello-resvg.svg");
-    file.open(QFile::ReadOnly);
+    ui->svgView->setFocus();
 
-    const QByteArray ba = file.readAll();
-    ui->svgView->loadData(ba);
+    const auto args = QCoreApplication::arguments();
+    if (args.size() != 2) {
+        return;
+    }
+
+    ui->svgView->loadFile(args.at(1));
 }
 
-void MainWindow::on_rBtnRenderViaResvg_toggled(bool checked)
+void MainWindow::on_cmbBoxSize_activated(int index)
 {
-    ui->svgView->setBackend(checked ? RenderBackend::Resvg : RenderBackend::QtSvg);
+    ui->svgView->setFitToView(index == 1);
 }
 
-void MainWindow::on_rBtnFitSize_toggled(bool checked)
-{
-    ui->svgView->setFitToView(checked);
-}
-
-void MainWindow::on_cmbBoxBackground_currentIndexChanged(int index)
+void MainWindow::on_cmbBoxBackground_activated(int index)
 {
     ui->svgView->setBackgound(SvgView::Backgound(index));
 }

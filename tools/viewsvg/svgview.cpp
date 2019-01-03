@@ -1,14 +1,10 @@
-#include <QMessageBox>
-#include <QGuiApplication>
-#include <QScreen>
-#include <QElapsedTimer>
-#include <QTextLayout>
-#include <QPainter>
+#include <QDropEvent>
 #include <QFileInfo>
+#include <QMessageBox>
 #include <QMimeData>
-#include <QTimer>
+#include <QPainter>
 #include <QThread>
-#include <QDebug>
+#include <QTimer>
 
 #include "svgview.h"
 
@@ -24,73 +20,53 @@ QRect SvgViewWorker::viewBox() const
     return m_renderer.viewBox();
 }
 
-void SvgViewWorker::loadData(const QByteArray &data)
+QString SvgViewWorker::loadData(const QByteArray &data)
 {
     QMutexLocker lock(&m_mutex);
 
     m_renderer.load(data);
     if (!m_renderer.isValid()) {
-        emit errorMsg(m_renderer.errorString());
+        return m_renderer.errorString();
     }
 
-    m_qtRenderer.load(data);
+    return QString();
 }
 
-void SvgViewWorker::loadFile(const QString &path)
+QString SvgViewWorker::loadFile(const QString &path)
 {
     QMutexLocker lock(&m_mutex);
 
     m_renderer.load(path);
     if (!m_renderer.isValid()) {
-        emit errorMsg(m_renderer.errorString());
+        return m_renderer.errorString();
     }
 
-    m_qtRenderer.load(path);
+    return QString();
 }
 
-void SvgViewWorker::render(const QSize &viewSize, RenderBackend backend)
+void SvgViewWorker::render(const QSize &viewSize)
 {
     Q_ASSERT(QThread::currentThread() != qApp->thread());
 
     QMutexLocker lock(&m_mutex);
 
-    if (backend == RenderBackend::Resvg) {
-        if (m_renderer.isEmpty()) {
-            return;
-        }
-
-        const auto s = m_renderer.defaultSize().scaled(viewSize, Qt::KeepAspectRatio);
-        QImage img(s * m_dpiRatio, QImage::Format_ARGB32_Premultiplied);
-        img.fill(Qt::transparent);
-
-        QPainter p;
-        p.begin(&img);
-        p.setRenderHint(QPainter::Antialiasing);
-        m_renderer.render(&p);
-        p.end();
-
-        img.setDevicePixelRatio(m_dpiRatio);
-
-        emit rendered(img);
-    } else {
-        if (!m_qtRenderer.isValid()) {
-            return;
-        }
-
-        const auto s = m_qtRenderer.defaultSize().scaled(viewSize, Qt::KeepAspectRatio);
-        QImage img(s * m_dpiRatio, QImage::Format_ARGB32_Premultiplied);
-        img.fill(Qt::transparent);
-
-        QPainter p;
-        p.begin(&img);
-        p.setRenderHint(QPainter::Antialiasing);
-        m_qtRenderer.render(&p);
-        p.end();
-
-        img.setDevicePixelRatio(m_dpiRatio);
-
-        emit rendered(img);
+    if (m_renderer.isEmpty()) {
+        return;
     }
+
+    const auto s = m_renderer.defaultSize().scaled(viewSize, Qt::KeepAspectRatio);
+    QImage img(s * m_dpiRatio, QImage::Format_ARGB32_Premultiplied);
+    img.fill(Qt::transparent);
+
+    QPainter p;
+    p.begin(&img);
+    p.setRenderHint(QPainter::Antialiasing);
+    m_renderer.render(&p);
+    p.end();
+
+    img.setDevicePixelRatio(m_dpiRatio);
+
+    emit rendered(img);
 }
 
 static QImage genCheckedTexture()
@@ -114,6 +90,7 @@ SvgView::SvgView(QWidget *parent)
     : QFrame(parent)
     , m_checkboardImg(genCheckedTexture())
     , m_worker(new SvgViewWorker())
+    , m_resizeTimer(new QTimer(this))
 {
     setAcceptDrops(true);
     setMinimumSize(10, 10);
@@ -126,6 +103,9 @@ SvgView::SvgView(QWidget *parent)
     m_dpiRatio = screen->devicePixelRatio();
 
     connect(m_worker, &SvgViewWorker::rendered, this, &SvgView::onRendered);
+
+    m_resizeTimer->setSingleShot(true);
+    connect(m_resizeTimer, &QTimer::timeout, this, &SvgView::requestUpdate);
 }
 
 SvgView::~SvgView()
@@ -159,34 +139,58 @@ void SvgView::setDrawImageBorder(bool flag)
     update();
 }
 
-void SvgView::setBackend(RenderBackend backend)
-{
-    m_backend = backend;
-    requestUpdate();
-}
-
 void SvgView::loadData(const QByteArray &ba)
 {
-    m_worker->loadData(ba);
-    requestUpdate();
+    const QString errMsg = m_worker->loadData(ba);
+    afterLoad(errMsg);
 }
 
 void SvgView::loadFile(const QString &path)
 {
-    m_worker->loadFile(path);
-    requestUpdate();
+    const QString errMsg = m_worker->loadFile(path);
+    afterLoad(errMsg);
+}
+
+void SvgView::afterLoad(const QString &errMsg)
+{
+    m_img = QImage();
+
+    if (errMsg.isEmpty()) {
+        m_isHasImage = true;
+        requestUpdate();
+    } else {
+        emit loadError(errMsg);
+        m_isHasImage = false;
+        update();
+    }
+}
+
+void SvgView::drawSpinner(QPainter &p)
+{
+    const int outerRadius = 20;
+    const int innerRadius = outerRadius * 0.45;
+
+    const int capsuleHeight = outerRadius - innerRadius;
+    const int capsuleWidth  = capsuleHeight * 0.35;
+    const int capsuleRadius = capsuleWidth / 2;
+
+    for (int i = 0; i < 12; ++i) {
+        QColor color = Qt::black;
+        color.setAlphaF(1.0f - (i / 12.0f));
+        p.setRenderHint(QPainter::Antialiasing);
+        p.setPen(Qt::NoPen);
+        p.setBrush(color);
+        p.save();
+        p.translate(width()/2, height()/2);
+        p.rotate(m_angle - i * 30.0f);
+        p.drawRoundedRect(-capsuleWidth * 0.5, -(innerRadius + capsuleHeight), capsuleWidth,
+                           capsuleHeight, capsuleRadius, capsuleRadius);
+        p.restore();
+    }
 }
 
 void SvgView::paintEvent(QPaintEvent *e)
 {
-    if (m_img.isNull()) {
-        QPainter p(this);
-        p.drawText(rect(), Qt::AlignCenter, "Drop an SVG image here.");
-
-        QFrame::paintEvent(e);
-        return;
-    }
-
     QPainter p(this);
     const auto r = contentsRect();
     p.setClipRect(r);
@@ -201,18 +205,25 @@ void SvgView::paintEvent(QPaintEvent *e)
         } break;
     }
 
-    const QRect imgRect(0, 0, m_img.width() / m_dpiRatio, m_img.height() / m_dpiRatio);
+    if (m_img.isNull() && !m_timer.isActive()) {
+        p.setPen(Qt::black);
+        p.drawText(rect(), Qt::AlignCenter, "Drop an SVG image here.");
+    } else if (m_timer.isActive()) {
+        drawSpinner(p);
+    } else {
+        const QRect imgRect(0, 0, m_img.width() / m_dpiRatio, m_img.height() / m_dpiRatio);
 
-    p.translate(r.x() + (r.width() - imgRect.width())/ 2,
-                r.y() + (r.height() - imgRect.height()) / 2);
+        p.translate(r.x() + (r.width() - imgRect.width())/ 2,
+                    r.y() + (r.height() - imgRect.height()) / 2);
 
-    p.drawImage(0, 0, m_img);
+        p.drawImage(0, 0, m_img);
 
-    if (m_isDrawImageBorder) {
-        p.setRenderHint(QPainter::Antialiasing, false);
-        p.setPen(Qt::green);
-        p.setBrush(Qt::NoBrush);
-        p.drawRect(imgRect);
+        if (m_isDrawImageBorder) {
+            p.setRenderHint(QPainter::Antialiasing, false);
+            p.setPen(Qt::green);
+            p.setBrush(Qt::NoBrush);
+            p.drawRect(imgRect);
+        }
     }
 
     QFrame::paintEvent(e);
@@ -243,12 +254,9 @@ void SvgView::dropEvent(QDropEvent *event)
 
         QString path = url.toLocalFile();
         QFileInfo fi = QFileInfo(path);
-        if (fi.isSymLink()) {
-            continue;
-        }
 
         if (fi.isFile()) {
-            QString suffix = QFileInfo(path).suffix().toLower();
+            QString suffix = fi.suffix().toLower();
             if (suffix == "svg" || suffix == "svgz") {
                 loadFile(path);
             } else {
@@ -263,21 +271,43 @@ void SvgView::dropEvent(QDropEvent *event)
 
 void SvgView::resizeEvent(QResizeEvent *)
 {
-    requestUpdate();
+    m_resizeTimer->start(200);
+}
+
+void SvgView::timerEvent(QTimerEvent *event)
+{
+    if (event->timerId() == m_timer.timerId()) {
+        m_angle = (m_angle + 30) % 360;
+        update();
+    } else {
+        QWidget::timerEvent(event);
+    }
 }
 
 void SvgView::requestUpdate()
 {
+    if (!m_isHasImage) {
+        return;
+    }
+
     const auto s = m_isFitToView ? size() : m_worker->viewBox().size();
+
+    if (s * m_dpiRatio == m_img.size()) {
+        return;
+    }
+
+    m_timer.start(100, this);
 
     // Run method in the m_worker thread scope.
     QTimer::singleShot(1, m_worker, [=](){
-        m_worker->render(s, m_backend);
+        m_worker->render(s);
     });
 }
 
 void SvgView::onRendered(const QImage &img)
 {
+    m_timer.stop();
+
     m_img = img;
     update();
 }

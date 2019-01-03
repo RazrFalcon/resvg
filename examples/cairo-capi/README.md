@@ -8,7 +8,7 @@ I'm not good with C and GTK+ so any suggestions are welcome.
 # build C-API with a cairo backend first
 cargo build --release --features "cairo-backend" --manifest-path ../../capi/Cargo.toml
 make
-LD_LIBRARY_PATH=../../target/debug ./example ../qt-demo/hello-resvg.svg
+LD_LIBRARY_PATH=../../target/debug ./example image.svg
 ```
 
 See [BUILD.adoc](../../BUILD.adoc) for details.

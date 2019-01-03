@@ -1,6 +1,6 @@
-A simple demo with a Qt backend.
+# viewsvg
 
-Shows how to use the *resvg* C-API.
+A simple SVG viewer using Qt and *resvg* C-API.
 
 ## Dependencies
 
@@ -11,10 +11,11 @@ Shows how to use the *resvg* C-API.
 ```bash
 # build C-API first
 cargo build --release --features "qt-backend" --manifest-path ../../capi/Cargo.toml
-# build demo
+# build viewsvg
 qmake
 make
-LD_LIBRARY_PATH=../../target/release ./demo
+# run
+LD_LIBRARY_PATH=../../target/release ./viewsvg
 ```
 
 See [BUILD.adoc](../../BUILD.adoc) for details.
