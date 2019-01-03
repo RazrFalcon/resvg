@@ -6,7 +6,7 @@ A simple SVG viewer using Qt and *resvg* C-API.
 
 - Qt >= 5.6
 
-## Run
+## Build
 
 ```bash
 # build C-API first
