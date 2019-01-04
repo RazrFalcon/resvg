@@ -13,13 +13,13 @@ An SVG thumbnails generator for the Windows Explorer.
 ```batch
 "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
 set PATH=%userprofile%\.cargo\bin;C:\Qt\5.12.0\msvc2015_64\bin;%PATH%
-# build C-API first
+rem build C-API first
 set QT_DIR=C:\Qt\5.12.0\msvc2015_64
 cargo build --release --features "qt-backend" --manifest-path ../../capi/Cargo.toml
-# build thumbnailer
+rem build thumbnailer
 qmake
 nmake
-# prepare files for installer
+rem prepare files for installer
 windeployqt --no-translations release\SVGThumbnailExtension.dll
 ```
 

@@ -20,6 +20,9 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../../capi/include
 )
 
+# TODO: doesn't work
+#find_library(RESVG_LIBRARY NAMES "libresvg.a" PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../../target/release NO_DEFAULT_PATH)
+
 set(resvgthumbnailer_PART_SRCS
     resvgthumbnailer.cpp
 )

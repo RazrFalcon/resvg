@@ -1,7 +1,6 @@
 [package]
 name = "resvg"
-# When updating version, also modify html_root_url in the lib.rs, in the README and in the rendersvg
-version = "0.4.0"
+version = "0.5.0"
 authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster"]
 license = "MPL-2.0"
@@ -27,7 +26,7 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 [dependencies]
 log = "0.4.5"
 rgb = "0.8.9"
-usvg = { path = "usvg", version = "0.4.0" }
+usvg = { path = "usvg", version = "0.5.0" }
 unicode-segmentation = "1.2.1" # TODO: reexport?
 
 # cairo backend
@@ -37,7 +36,7 @@ pango = { version = "0.5", optional = true }
 pangocairo = { version = "0.6", optional = true }
 
 # qt backend
-resvg-qt = { path = "resvg-qt", version = "0.4.0", optional = true }
+resvg-qt = { path = "resvg-qt", version = "0.5.0", optional = true }
 
 [features]
 cairo-backend = ["cairo-rs", "gdk-pixbuf", "pango", "pangocairo"]

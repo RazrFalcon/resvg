@@ -51,7 +51,7 @@ test!(minimal, false,
     viewBox='0 0 1 1'
     preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
-    usvg:version='0.4.0'>
+    usvg:version='0.5.0'>
     <defs/>
     <path
         fill='#000000'
@@ -82,7 +82,7 @@ test!(groups, false,
     viewBox='0 0 1 1'
     preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
-    usvg:version='0.4.0'>
+    usvg:version='0.5.0'>
     <defs/>
     <path
         fill='#000000'
@@ -111,7 +111,7 @@ test!(clippath_with_invalid_child, false,
     viewBox='0 0 1 1'
     preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
-    usvg:version='0.4.0'>
+    usvg:version='0.5.0'>
     <defs/>
 </svg>
 ");
@@ -136,7 +136,7 @@ test!(clippath_with_invalid_children, false,
     viewBox='0 0 1 1'
     preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
-    usvg:version='0.4.0'>
+    usvg:version='0.5.0'>
     <defs/>
 </svg>
 ");
@@ -155,7 +155,7 @@ test!(group_clippath, false,
     viewBox='0 0 1 1'
     preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
-    usvg:version='0.4.0'>
+    usvg:version='0.5.0'>
     <defs>
         <clipPath
             id='clip1'
@@ -206,7 +206,7 @@ test!(ignore_groups_with_id, false,
     viewBox='0 0 1 1'
     preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
-    usvg:version='0.4.0'>
+    usvg:version='0.5.0'>
     <defs/>
     <path
         id='some_group'
@@ -236,7 +236,7 @@ test!(pattern_with_invalid_child, false,
     viewBox='0 0 1 1'
     preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
-    usvg:version='0.4.0'>
+    usvg:version='0.5.0'>
     <defs/>
     <path
         fill='none'
@@ -261,7 +261,7 @@ test!(pattern_without_children, false,
     viewBox='0 0 1 1'
     preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
-    usvg:version='0.4.0'>
+    usvg:version='0.5.0'>
     <defs/>
     <path
         fill='none'
@@ -314,7 +314,7 @@ test!(preserve_id, false,
     viewBox='0 0 1 1'
     preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
-    usvg:version='0.4.0'>
+    usvg:version='0.5.0'>
     <defs>
         <linearGradient
             id='lg1'
@@ -484,7 +484,7 @@ test!(ignore_empty_groups_with_id, true,
     viewBox='0 0 1 1'
     preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
-    usvg:version='0.4.0'>
+    usvg:version='0.5.0'>
     <defs/>
 </svg>
 ");
@@ -502,7 +502,7 @@ test!(keep_groups_with_id, true,
     viewBox='0 0 1 1'
     preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
-    usvg:version='0.4.0'>
+    usvg:version='0.5.0'>
     <defs/>
     <g
         id='some_group'
@@ -535,7 +535,7 @@ test!(simplify_paths_1, false,
     viewBox='0 0 1 1'
     preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
-    usvg:version='0.4.0'>
+    usvg:version='0.5.0'>
     <defs/>
     <path
         fill='#000000'
@@ -564,7 +564,7 @@ test!(group_with_default_opacity, false,
     viewBox='0 0 1 1'
     preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
-    usvg:version='0.4.0'>
+    usvg:version='0.5.0'>
     <defs/>
     <path
         fill='#000000'

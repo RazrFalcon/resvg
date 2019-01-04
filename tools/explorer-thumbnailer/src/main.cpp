@@ -42,6 +42,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDll, DWORD dwReason, LPVOID pvReserved)
         // At the moment, the installer will disallow the install directory change.
         QCoreApplication::addLibraryPath("C:/Program Files/reSVG Explorer Extension");
 
+        // TODO: Doesn't need when the SVG doesn't have any text.
         int argc = 1;
         new QGuiApplication(argc, nullptr);
     }

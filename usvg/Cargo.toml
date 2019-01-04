@@ -1,7 +1,7 @@
 [package]
 name = "usvg"
 # When updating version, also modify html_root_url in the lib.rs and in the ../tools/Cargo.toml
-version = "0.4.0"
+version = "0.5.0"
 authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg"]
 license = "MPL-2.0"

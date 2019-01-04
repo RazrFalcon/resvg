@@ -7,12 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.5.0] - 2018-01-04
 ### Added
-- Added marker support.
+- `marker` support.
 - Partial `baseline-shift` support.
 - `letter-spacing` support.
 - (qt-backend) `word-spacing` support.
   Does not work on the cairo backend.
+- tools/explorer-thumbnailer
+- tools/kde-dolphin-thumbnailer
 
 ### Fixed
 - Object bounding box calculation.
@@ -136,7 +140,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/RazrFalcon/resvg/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/RazrFalcon/resvg/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/RazrFalcon/resvg/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/RazrFalcon/resvg/compare/v0.1.0...v0.2.0
