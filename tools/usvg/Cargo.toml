@@ -8,11 +8,14 @@ description = "An SVG simplification tool."
 categories = ["multimedia::images"]
 workspace = "../../"
 
+[badges]
+travis-ci = { repository = "RazrFalcon/resvg" }
+
 [dependencies]
 fern = "0.5"
 gumdrop = "0.5"
 log = "0.4"
-usvg = { path = "../../usvg" }
+usvg = { version = "0.5.0", path = "../../usvg" }
 
 [[bin]]
 name = "usvg"
