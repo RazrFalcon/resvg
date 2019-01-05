@@ -178,14 +178,7 @@ pub trait GetValue {
 
 impl GetValue for Attributes {
     fn get_type<T: FromValue + ?Sized>(&self, id: AId) -> Option<&T> {
-        match self.get_value(id) {
-            Some(av) => {
-                FromValue::get(av)
-            }
-            None => {
-                None
-            }
-        }
+        self.get_value(id).and_then(|av| FromValue::get(av))
     }
 }
 
@@ -199,11 +192,7 @@ impl FindAttribute for Node {
     fn find_attribute<T: FromValue + Display + Clone>(&self, id: AId) -> Option<T> {
         for n in self.ancestors() {
             if n.has_attribute(id) {
-                let v = FromValue::get(n.attributes().get_value(id).unwrap()).cloned();
-                return match v {
-                    Some(v) => Some(v),
-                    None => None,
-                };
+                return FromValue::get(n.attributes().get_value(id).unwrap()).cloned();
             }
         }
 

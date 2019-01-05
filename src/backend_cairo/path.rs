@@ -102,7 +102,7 @@ fn draw_subpath(
     //
     // Buy the SVG spec, a zero length subpath with a square cap should be
     // rendered as a square/rect, but it's not (at least on 1.14.12/1.15.12).
-    // And this is probably a bug, since round cap is rendered correctly.
+    // And this is probably a bug, since round caps are rendered correctly.
     let mut is_zero_path = false;
     if is_square_cap {
         if utils::path_length(segments).is_fuzzy_zero() {

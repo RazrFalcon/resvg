@@ -77,20 +77,13 @@ fn convert_chunks(
             chunks.push(chunk_node);
         }
 
-        let fill = fill::convert(tree, attrs, true);
-        let stroke = stroke::convert(tree, attrs, true);
-        let font = conv_font(attrs, opt);
-        let decoration = conv_tspan_decoration2(tree, text_elem, &tspan);
-        let visibility = super::convert_visibility(attrs);
-        let baseline_shift = conv_baseline_shift(attrs);
-
         let span = tree::TextSpan {
-            visibility,
-            fill,
-            stroke,
-            font,
-            baseline_shift,
-            decoration,
+            visibility: super::convert_visibility(attrs),
+            fill: fill::convert(tree, attrs, true),
+            stroke: stroke::convert(tree, attrs, true),
+            font: conv_font(attrs, opt),
+            baseline_shift: conv_baseline_shift(attrs),
+            decoration: conv_tspan_decoration2(tree, text_elem, &tspan),
             text,
         };
 

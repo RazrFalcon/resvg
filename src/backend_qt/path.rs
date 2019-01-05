@@ -53,7 +53,7 @@ fn convert_path(
     p_path: &mut qt::PainterPath,
 ) {
     // Qt's QPainterPath automatically closes open subpaths if start and end positions are equal.
-    // This is incorrect behaviour according to the SVG.
+    // This is an incorrect behaviour according to the SVG.
     // So we have to shift the last segment a bit, to prevent such behaviour.
     //
     // 'A closed path has coinciding start and end points.'
@@ -136,7 +136,7 @@ fn convert_path(
     }
 }
 
-// If CurveTo is approximately a LineTo than we should draw it as LineTo,
+// If a CurveTo is approximately a LineTo than we should draw it as a LineTo,
 // otherwise Qt will draw it incorrectly.
 //
 // See QTBUG-72796
