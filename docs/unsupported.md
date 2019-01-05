@@ -32,7 +32,6 @@
 ### Attributes
 
 - `alignment-baseline`
-- Nested `baseline-shift`
 - `clip` (deprecated in the SVG 2)
 - `color-interpolation`
 - `color-profile`

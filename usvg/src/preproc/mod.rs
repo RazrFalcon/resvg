@@ -202,7 +202,7 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) {
     ungroup_groups(doc, opt);
     regroup_elements(doc, svg);
 
-    prepare_text_nodes(doc);
+    prepare_text_nodes(doc, opt);
     remove_invalid_font_size(doc, opt);
 
     remove_unused_defs(doc);

@@ -60,7 +60,52 @@ fn has_decoration_attr(root: &Node, decoration_id: &str) -> bool {
 }
 
 
-pub fn prepare_text_nodes(doc: &mut Document) {
+fn prepare_baseline_shift(doc: &Document, opt: &Options) {
+    let mut resolved = Vec::new();
+
+    for node in doc.root().descendants().filter(|n| n.is_tag_name(EId::Text)) {
+        for text_node in node.descendants().filter(|n| n.is_text()) {
+            let mut shift = 0.0;
+
+            for tspan in text_node.ancestors().take_while(|n| !n.is_tag_name(EId::Text)) {
+                let attrs = tspan.attributes();
+
+                let av = attrs.get_value(AId::BaselineShift);
+                let font_size = attrs.get_number(AId::FontSize).unwrap_or(opt.font_size);
+
+                match av {
+                    Some(AValue::String(ref s)) => {
+                        match s.as_str() {
+                            "baseline" => {}
+                            "sub" => shift += font_size * -0.2,
+                            "super" => shift += font_size * 0.4,
+                            _ => {}
+                        }
+                    }
+                    Some(AValue::Length(len)) => {
+                        if len.unit == Unit::Percent {
+                            shift += font_size * (len.num / 100.0);
+                        }
+                    }
+                    Some(AValue::Number(n)) => shift += n,
+                    _ => {}
+                }
+            }
+
+            let mut tspan = text_node.parent().unwrap();
+            resolved.push((tspan, shift));
+        }
+    }
+
+    for (mut node, shift) in resolved {
+        node.set_attribute((AId::BaselineShift, shift));
+    }
+}
+
+
+pub fn prepare_text_nodes(doc: &mut Document, opt: &Options) {
+    prepare_baseline_shift(doc, opt);
+
     // Resolve rotation for each character before any preprocessing,
     // because rotate angles depend on text children tree structure.
     {

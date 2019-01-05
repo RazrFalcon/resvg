@@ -395,7 +395,8 @@ fn conv_elements(
                         conv_fill(tree, &tspan.fill, defs, parent, &mut tspan_elem);
                         conv_stroke(tree, &tspan.stroke, defs, &mut tspan_elem);
                         conv_font(&tspan.font, &mut tspan_elem);
-                        conv_baseline_shift(tspan.baseline_shift, &mut tspan_elem);
+
+                        tspan_elem.set_attribute((AId::BaselineShift, tspan.baseline_shift));
 
                         if tspan.text.contains("  ") {
                             is_preserve_required = true;
@@ -587,21 +588,6 @@ fn conv_font(
     node.set_attribute((AId::FontStretch, font.stretch.to_string()));
     conv_text_spacing(font.letter_spacing, AId::LetterSpacing, node);
     conv_text_spacing(font.word_spacing, AId::WordSpacing, node);
-}
-
-fn conv_baseline_shift(
-    baseline_shift: BaselineShift,
-    node: &mut svgdom::Node,
-) {
-    let av: AValue = match baseline_shift {
-        BaselineShift::Baseline => "baseline".into(),
-        BaselineShift::Subscript => "sub".into(),
-        BaselineShift::Superscript => "super".into(),
-        BaselineShift::Percent(n) => svgdom::Length::new(n, svgdom::LengthUnit::Percent).into(),
-        BaselineShift::Number(n) => n.into(),
-    };
-
-    node.set_attribute((AId::BaselineShift, av));
 }
 
 fn conv_text_spacing(

@@ -115,17 +115,9 @@ pub fn prepare_blocks<Font>(
 
                     x = new_w;
                 } else {
-                    let baseline_shift = match tspan.baseline_shift {
-                        usvg::BaselineShift::Baseline => 0.0,
-                        usvg::BaselineShift::Subscript => font_metrics.height() / 2.0,
-                        usvg::BaselineShift::Superscript => -font_metrics.height() / 2.0,
-                        usvg::BaselineShift::Percent(n) => -font_metrics.height() * (n / 100.0),
-                        usvg::BaselineShift::Number(n) => -n,
-                    };
-
                     let font_ascent = font_metrics.ascent(c);
                     let width = font_metrics.width(c);
-                    let yy = y - font_ascent + baseline_shift;
+                    let yy = y - font_ascent - tspan.baseline_shift;
                     let height = font_metrics.height();
                     let bbox = Rect { x, y: yy, width, height };
                     x += width;

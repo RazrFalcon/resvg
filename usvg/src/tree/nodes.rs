@@ -196,7 +196,7 @@ pub struct TextSpan {
     pub font: Font,
 
     /// Baseline shift.
-    pub baseline_shift: BaselineShift,
+    pub baseline_shift: f64,
 
     /// Text decoration.
     ///

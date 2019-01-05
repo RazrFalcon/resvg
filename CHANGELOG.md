@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- Nested `baseline-shift` support.
+
+### Changed
+- `baseline-shift` with `sub`, `super` and percent values calculation.
 
 ## [0.5.0] - 2018-01-04
 ### Added

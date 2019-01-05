@@ -82,7 +82,7 @@ fn convert_chunks(
             fill: fill::convert(tree, attrs, true),
             stroke: stroke::convert(tree, attrs, true),
             font: conv_font(attrs, opt),
-            baseline_shift: conv_baseline_shift(attrs),
+            baseline_shift: attrs.get_number_or(AId::BaselineShift, 0.0),
             decoration: conv_tspan_decoration2(tree, text_elem, &tspan),
             text,
         };
@@ -186,49 +186,6 @@ fn conv_text_anchor(attrs: &svgdom::Attributes) -> tree::TextAnchor {
         "middle" => tree::TextAnchor::Middle,
         "end" => tree::TextAnchor::End,
         _ => tree::TextAnchor::Start,
-    }
-}
-
-fn conv_baseline_shift(attrs: &svgdom::Attributes) -> tree::BaselineShift {
-    let av = attrs.get_value(AId::BaselineShift);
-    match av {
-        Some(AValue::String(ref s)) => {
-            match s.as_str() {
-                "baseline" => tree::BaselineShift::Baseline,
-                "sub" => tree::BaselineShift::Subscript,
-                "super" => tree::BaselineShift::Superscript,
-                _ => {
-                    warn!("An invalid 'baseline-shift' value: '{}'. Fallback to 'baseline'.", s);
-                    tree::BaselineShift::Baseline
-                }
-            }
-        }
-        Some(AValue::Length(len)) => {
-            if len.num.is_fuzzy_zero() {
-                tree::BaselineShift::Baseline
-            } else {
-                match len.unit {
-                    Unit::Percent => {
-                        tree::BaselineShift::Percent(len.num)
-                    }
-                    _ => {
-                        warn!("'baseline-shift' value must be a number or a percent.");
-                        tree::BaselineShift::Baseline
-                    }
-                }
-            }
-        }
-        Some(AValue::Number(n)) => {
-            tree::BaselineShift::Number(*n)
-        }
-        None => {
-            // Fallback to a default value.
-            tree::BaselineShift::Baseline
-        }
-        _ => {
-            warn!("An invalid 'baseline-shift' value: '{:?}'. Fallback to 'baseline'.", av);
-            tree::BaselineShift::Baseline
-        }
     }
 }
 

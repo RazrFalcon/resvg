@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
+- Nested `baseline-shift` support.
+
+### Changed
+- `baseline-shift` with `sub`, `super` and percent values calculation.
+- `TextSpan::baseline_shift` is `f64` now.
+
+### Removed
+- `BaselineShift` enum.
+
+## [0.5.0] - 2018-01-04
+### Added
 - Added marker support.
 - Implement `FuzzyEq` for `Rect`, `Size` and `Point`.
 - `StrokeMiterlimit` and `FontSize` wrappers for `f64`.
@@ -125,7 +136,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Gradient stops resolving.
 - `switch` element resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/usvg/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/usvg/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/RazrFalcon/usvg/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/RazrFalcon/usvg/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/RazrFalcon/usvg/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/RazrFalcon/usvg/compare/v0.1.1...v0.2.0
