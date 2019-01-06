@@ -198,7 +198,9 @@ fn draw_block(
 fn init_font(dom_font: &usvg::Font, dpi: f64) -> pango::FontDescription {
     let mut font = pango::FontDescription::new();
 
-    font.set_family(&dom_font.family);
+    // We have to remove quotes, because `pango` doesn't support them.
+    let font_family = dom_font.family.replace('\'', "");
+    font.set_family(&font_family);
 
     let font_style = match dom_font.style {
         usvg::FontStyle::Normal => pango::Style::Normal,
