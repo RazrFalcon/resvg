@@ -14,6 +14,7 @@ This changelog also contains important changes in dependencies.
 - `baseline-shift` with `sub`, `super` and percent values calculation.
 
 ### Fixed
+- (usvg) `filter:none` processing.
 - (svgtypes) Style with comments parsing.
 
 ## [0.5.0] - 2018-01-04

@@ -79,7 +79,7 @@ pub fn fix_links(doc: &mut Document) {
 
 fn is_valid_func_link(node: &Node, aid: AId) -> bool {
     match node.attributes().get_value(aid) {
-        Some(AValue::FuncLink(_)) | None => true,
+        Some(AValue::FuncLink(_)) | Some(AValue::None) | None => true,
         _ => false,
     }
 }

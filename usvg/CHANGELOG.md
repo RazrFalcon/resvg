@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `baseline-shift` with `sub`, `super` and percent values calculation.
 - `TextSpan::baseline_shift` is `f64` now.
 
+### Fixed
+- `filter:none` processing.
+
 ### Removed
 - `BaselineShift` enum.
 
