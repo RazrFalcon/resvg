@@ -13,6 +13,9 @@ This changelog also contains important changes in dependencies.
 ### Changed
 - `baseline-shift` with `sub`, `super` and percent values calculation.
 
+### Fixed
+- (svgtypes) Style with comments parsing.
+
 ## [0.5.0] - 2018-01-04
 ### Added
 - `marker` support.
