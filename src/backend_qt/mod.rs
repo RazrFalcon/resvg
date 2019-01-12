@@ -38,7 +38,6 @@ mod mask;
 mod path;
 mod pattern;
 mod stroke;
-mod text;
 
 mod prelude {
     pub use super::super::prelude::*;
@@ -359,29 +358,9 @@ fn _calc_node_bbox(
             Some(utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2))
         }
         usvg::NodeKind::Text(ref text) => {
-            let mut bbox = Rect::new_bbox();
-            let mut fm = text::QtFontMetrics::new(p);
-            let blocks = backend_utils::text::prepare_blocks(text, &mut fm);
-            backend_utils::text::draw_blocks(blocks, |block| {
-                let mut p_path = qt::PainterPath::new();
-                p_path.add_text(0.0, 0.0, &block.font, &block.text);
-
-                let y = block.bbox.y + block.font_ascent;
-
-                let mut t = ts2;
-                if let Some(rotate) = block.rotate {
-                    t.rotate_at(rotate, block.bbox.x, y);
-                }
-                t.translate(block.bbox.x, y);
-
-                let segments = from_qt_path(&p_path);
-                if !segments.is_empty() {
-                    let c_bbox = utils::path_bbox(&segments, block.stroke.as_ref(), &t);
-                    bbox.expand(c_bbox);
-                }
-            });
-
-            Some(bbox)
+            Some(backend_utils::text::draw_text(text, |segments, _, stroke, _| {
+                utils::path_bbox(segments, stroke.as_ref(), &usvg::Transform::default())
+            }))
         }
         usvg::NodeKind::Image(ref img) => {
             let segments = utils::rect_to_path(img.view_box.rect);
@@ -402,37 +381,19 @@ fn _calc_node_bbox(
     }
 }
 
-fn from_qt_path(p_path: &qt::PainterPath) -> Vec<usvg::PathSegment> {
-    let mut segments = Vec::with_capacity(p_path.len() as usize);
-    let p_path_len = p_path.len();
-    let mut i = 0;
-    while i < p_path_len {
-        let (kind, x, y) = p_path.get(i);
-        match kind {
-            qt::PathSegmentType::MoveTo => {
-                segments.push(usvg::PathSegment::MoveTo { x, y });
-            }
-            qt::PathSegmentType::LineTo => {
-                segments.push(usvg::PathSegment::LineTo { x, y });
-            }
-            qt::PathSegmentType::CurveTo => {
-                let (_, x1, y1) = p_path.get(i + 1);
-                let (_, x2, y2) = p_path.get(i + 2);
+mod text {
+    use super::*;
 
-                segments.push(usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
-
-                i += 2;
-            }
-        }
-
-        i += 1;
+    pub fn draw(
+        tree: &usvg::Tree,
+        text_node: &usvg::Text,
+        opt: &Options,
+        p: &mut qt::Painter,
+    ) -> Rect {
+        backend_utils::text::draw_text(text_node, |segments, fill, stroke, visibility| {
+            path::draw_segments(tree, segments, fill, stroke, visibility, opt, p)
+        })
     }
-
-    if segments.len() == 1 {
-        segments.clear();
-    }
-
-    segments
 }
 
 fn create_layers(img_size: ScreenSize, opt: &Options) -> QtLayers {

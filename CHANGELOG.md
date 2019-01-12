@@ -8,15 +8,23 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
+- [`harfbuzz`](https://github.com/harfbuzz/harfbuzz) dependency.
 - Nested `baseline-shift` support.
+- (cairo-backend) `word-spacing` support.
 
 ### Changed
 - `baseline-shift` with `sub`, `super` and percent values calculation.
 
 ### Fixed
+- Text shaping (distance between characters) when text has a `rotate` attribute.
 - (cairo-backend) `font-family` parsing.
 - (usvg) `filter:none` processing.
 - (svgtypes) Style with comments parsing.
+
+### Removed
+- `InitObject` and `init()` because no longer needed.
+- (c-api) `resvg_handle`, `resvg_init`, `resvg_destroy`.
+- (cairo-backend) `pango` dependency.
 
 ## [0.5.0] - 2018-01-04
 ### Added

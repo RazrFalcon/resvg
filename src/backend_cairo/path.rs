@@ -21,30 +21,42 @@ pub fn draw(
     layers: &mut CairoLayers,
     cr: &cairo::Context,
 ) -> Rect {
-    let mut is_square_cap = false;
-    if let Some(ref stroke) = path.stroke {
-        is_square_cap = stroke.linecap == usvg::LineCap::Square;
-    }
+    let bbox = draw_segments(tree, &path.segments, &path.fill, &path.stroke, path.visibility, opt, cr);
+    marker::apply(tree, path, opt, layers, cr);
+    bbox
+}
 
-    draw_path(&path.segments, is_square_cap, cr);
+pub fn draw_segments(
+    tree: &usvg::Tree,
+    segments: &[usvg::PathSegment],
+    fill: &Option<usvg::Fill>,
+    stroke: &Option<usvg::Stroke>,
+    visibility: usvg::Visibility,
+    opt: &Options,
+    cr: &cairo::Context,
+) -> Rect {
+    let bbox = utils::path_bbox(segments, None, &usvg::Transform::default());
 
-    let bbox = utils::path_bbox(&path.segments, None, &usvg::Transform::default());
-
-    if path.visibility != usvg::Visibility::Visible {
+    if visibility != usvg::Visibility::Visible {
         return bbox;
     }
 
-    fill::apply(tree, &path.fill, opt, bbox, cr);
-    if path.stroke.is_some() {
+    let mut is_square_cap = false;
+    if let Some(ref stroke) = stroke {
+        is_square_cap = stroke.linecap == usvg::LineCap::Square;
+    }
+
+    draw_path(segments, is_square_cap, cr);
+
+    fill::apply(tree, fill, opt, bbox, cr);
+    if stroke.is_some() {
         cr.fill_preserve();
 
-        stroke::apply(tree, &path.stroke, opt, bbox, cr);
+        stroke::apply(tree, stroke, opt, bbox, cr);
         cr.stroke();
     } else {
         cr.fill();
     }
-
-    marker::apply(tree, path, opt, layers, cr);
 
     bbox
 }

@@ -22,11 +22,14 @@ And as an embeddable library to paint SVG on an application native canvas.
 #[macro_use] pub extern crate usvg;
 #[macro_use] extern crate log;
 extern crate unicode_segmentation;
+extern crate unicode_bidi;
+extern crate unicode_script;
 extern crate rgb;
+extern crate lyon_path;
+extern crate harfbuzz_rs as harfbuzz;
+extern crate font_kit;
 
 #[cfg(feature = "cairo-backend")] pub extern crate cairo;
-#[cfg(feature = "cairo-backend")] extern crate pango;
-#[cfg(feature = "cairo-backend")] extern crate pangocairo;
 #[cfg(feature = "cairo-backend")] extern crate gdk_pixbuf;
 
 #[cfg(feature = "qt-backend")] pub extern crate resvg_qt as qt;
@@ -118,43 +121,6 @@ pub trait OutputImage {
     fn save(&self, path: &path::Path) -> bool;
 }
 
-
-/// A global library handle.
-pub struct InitObject {
-    #[cfg(feature = "qt-backend")]
-    #[allow(dead_code)]
-    handle: qt::GuiApp,
-}
-
-/// Creates a global library handle.
-///
-/// Must be invoked before any other `resvg` code.
-///
-/// Currently, handles `QGuiApplication` object which must be created
-/// in order to draw text. If you don't plan to draw text - it's better to skip
-/// the initialization.
-///
-/// Does nothing when only the `cairo` backend is enabled.
-///
-/// Note: `QGuiApplication` initialization is pretty slow (up to 100ms).
-///
-/// # Example
-///
-/// ```
-/// let _resvg = resvg::init();
-///
-/// // other code
-/// ```
-///
-/// Also, take a look at `examples/minimal.rs`.
-///
-/// **Warning**: this method is not thread-safe.
-pub fn init() -> InitObject {
-    InitObject {
-        #[cfg(feature = "qt-backend")]
-        handle: qt::GuiApp::new("resvg"),
-    }
-}
 
 /// Returns default backend.
 ///

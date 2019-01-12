@@ -21,28 +21,40 @@ pub fn draw(
     layers: &mut QtLayers,
     p: &mut qt::Painter,
 ) -> Rect {
+    let bbox = draw_segments(tree, &path.segments, &path.fill, &path.stroke, path.visibility, opt, p);
+    marker::apply(tree, path, opt, layers, p);
+    bbox
+}
+
+pub fn draw_segments(
+    tree: &usvg::Tree,
+    segments: &[usvg::PathSegment],
+    fill: &Option<usvg::Fill>,
+    stroke: &Option<usvg::Stroke>,
+    visibility: usvg::Visibility,
+    opt: &Options,
+    p: &mut qt::Painter,
+) -> Rect {
     let mut p_path = qt::PainterPath::new();
 
-    let fill_rule = if let Some(ref fill) = path.fill {
+    let fill_rule = if let Some(ref fill) = fill {
         fill.rule
     } else {
         usvg::FillRule::NonZero
     };
 
-    convert_path(&path.segments, fill_rule, &mut p_path);
+    convert_path(segments, fill_rule, &mut p_path);
 
-    let bbox = utils::path_bbox(&path.segments, None, &usvg::Transform::default());
+    let bbox = utils::path_bbox(segments, None, &usvg::Transform::default());
 
-    if path.visibility != usvg::Visibility::Visible {
+    if visibility != usvg::Visibility::Visible {
         return bbox;
     }
 
-    fill::apply(tree, &path.fill, opt, bbox, p);
-    stroke::apply(tree, &path.stroke, opt, bbox, p);
+    fill::apply(tree, fill, opt, bbox, p);
+    stroke::apply(tree, stroke, opt, bbox, p);
 
     p.draw_path(&p_path);
-
-    marker::apply(tree, path, opt, layers, p);
 
     bbox
 }

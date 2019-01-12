@@ -233,11 +233,6 @@ pub type intmax_t = __intmax_t;
 pub type uintmax_t = __uintmax_t;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct qtc_qguiapp {
-    _unused: [u8; 0],
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct qtc_qimage {
     _unused: [u8; 0],
 }
@@ -274,16 +269,6 @@ pub struct qtc_qlineargradient {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct qtc_qradialgradient {
-    _unused: [u8; 0],
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct qtc_qfont {
-    _unused: [u8; 0],
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct qtc_qfontmetricsf {
     _unused: [u8; 0],
 }
 #[repr(C)]
@@ -430,60 +415,6 @@ fn bindgen_test_layout_qtc_transform() {
         )
     );
 }
-pub const PathSegmentType_MoveToSegment: PathSegmentType = 0;
-pub const PathSegmentType_LineToSegment: PathSegmentType = 1;
-pub const PathSegmentType_CurveToSegment: PathSegmentType = 2;
-pub type PathSegmentType = u32;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct PathSegment {
-    pub kind: PathSegmentType,
-    pub x: f64,
-    pub y: f64,
-}
-#[test]
-fn bindgen_test_layout_PathSegment() {
-    assert_eq!(
-        ::std::mem::size_of::<PathSegment>(),
-        24usize,
-        concat!("Size of: ", stringify!(PathSegment))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<PathSegment>(),
-        8usize,
-        concat!("Alignment of ", stringify!(PathSegment))
-    );
-    assert_eq!(
-        unsafe { &(*(::std::ptr::null::<PathSegment>())).kind as *const _ as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(PathSegment),
-            "::",
-            stringify!(kind)
-        )
-    );
-    assert_eq!(
-        unsafe { &(*(::std::ptr::null::<PathSegment>())).x as *const _ as usize },
-        8usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(PathSegment),
-            "::",
-            stringify!(x)
-        )
-    );
-    assert_eq!(
-        unsafe { &(*(::std::ptr::null::<PathSegment>())).y as *const _ as usize },
-        16usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(PathSegment),
-            "::",
-            stringify!(y)
-        )
-    );
-}
 pub const PenCapStyle_FlatCap: PenCapStyle = 0;
 pub const PenCapStyle_SquareCap: PenCapStyle = 16;
 pub const PenCapStyle_RoundCap: PenCapStyle = 32;
@@ -499,30 +430,6 @@ pub const Spread_PadSpread: Spread = 0;
 pub const Spread_ReflectSpread: Spread = 1;
 pub const Spread_RepeatSpread: Spread = 2;
 pub type Spread = u32;
-pub const FontStyle_StyleNormal: FontStyle = 0;
-pub const FontStyle_StyleItalic: FontStyle = 1;
-pub const FontStyle_StyleOblique: FontStyle = 2;
-pub type FontStyle = u32;
-pub const FontWeight_Thin: FontWeight = 0;
-pub const FontWeight_ExtraLight: FontWeight = 12;
-pub const FontWeight_Light: FontWeight = 25;
-pub const FontWeight_Normal: FontWeight = 50;
-pub const FontWeight_Medium: FontWeight = 57;
-pub const FontWeight_DemiBold: FontWeight = 63;
-pub const FontWeight_Bold: FontWeight = 75;
-pub const FontWeight_ExtraBold: FontWeight = 81;
-pub const FontWeight_Black: FontWeight = 87;
-pub type FontWeight = u32;
-pub const FontStretch_UltraCondensed: FontStretch = 50;
-pub const FontStretch_ExtraCondensed: FontStretch = 62;
-pub const FontStretch_Condensed: FontStretch = 75;
-pub const FontStretch_SemiCondensed: FontStretch = 87;
-pub const FontStretch_Unstretched: FontStretch = 100;
-pub const FontStretch_SemiExpanded: FontStretch = 112;
-pub const FontStretch_Expanded: FontStretch = 125;
-pub const FontStretch_ExtraExpanded: FontStretch = 150;
-pub const FontStretch_UltraExpanded: FontStretch = 200;
-pub type FontStretch = u32;
 pub const CompositionMode_CompositionMode_SourceOver: CompositionMode = 0;
 pub const CompositionMode_CompositionMode_DestinationOver: CompositionMode = 1;
 pub const CompositionMode_CompositionMode_Clear: CompositionMode = 2;
@@ -552,12 +459,6 @@ pub const AspectRatioMode_IgnoreAspectRatio: AspectRatioMode = 0;
 pub const AspectRatioMode_KeepAspectRatio: AspectRatioMode = 1;
 pub const AspectRatioMode_KeepAspectRatioByExpanding: AspectRatioMode = 2;
 pub type AspectRatioMode = u32;
-extern "C" {
-    pub fn qtc_create_gui(app_name: *mut ::std::os::raw::c_char) -> *mut qtc_qguiapp;
-}
-extern "C" {
-    pub fn qtc_destroy_gui(c_app: *mut qtc_qguiapp);
-}
 extern "C" {
     pub fn qtc_qimage_create_rgba_premultiplied(width: u32, height: u32) -> *mut qtc_qimage;
 }
@@ -618,12 +519,6 @@ extern "C" {
     pub fn qtc_qpainter_create(c_img: *mut qtc_qimage) -> *mut qtc_qpainter;
 }
 extern "C" {
-    pub fn qtc_qpainter_get_font(c_p: *mut qtc_qpainter) -> *mut qtc_qfont;
-}
-extern "C" {
-    pub fn qtc_qpainter_set_font(c_p: *mut qtc_qpainter, c_f: *mut qtc_qfont);
-}
-extern "C" {
     pub fn qtc_qpainter_set_pen(c_p: *mut qtc_qpainter, c_pen: *mut qtc_qpen);
 }
 extern "C" {
@@ -643,14 +538,6 @@ extern "C" {
 }
 extern "C" {
     pub fn qtc_qpainter_draw_image(c_p: *mut qtc_qpainter, x: f64, y: f64, c_img: *mut qtc_qimage);
-}
-extern "C" {
-    pub fn qtc_qpainter_draw_text(
-        c_p: *mut qtc_qpainter,
-        x: f64,
-        y: f64,
-        c_text: *const ::std::os::raw::c_char,
-    );
 }
 extern "C" {
     pub fn qtc_qpainter_draw_rect(c_p: *mut qtc_qpainter, x: f64, y: f64, w: f64, h: f64);
@@ -684,9 +571,6 @@ extern "C" {
     pub fn qtc_qpainter_set_composition_mode(c_p: *mut qtc_qpainter, mode: CompositionMode);
 }
 extern "C" {
-    pub fn qtc_qpainter_get_fontmetricsf(c_p: *mut qtc_qpainter) -> *mut qtc_qfontmetricsf;
-}
-extern "C" {
     pub fn qtc_qpainter_end(c_p: *mut qtc_qpainter);
 }
 extern "C" {
@@ -716,28 +600,7 @@ extern "C" {
     pub fn qtc_qpainterpath_close_path(c_pp: *mut qtc_qpainterpath);
 }
 extern "C" {
-    pub fn qtc_qpainterpath_add_text(
-        c_pp: *mut qtc_qpainterpath,
-        x: f64,
-        y: f64,
-        c_f: *mut qtc_qfont,
-        text: *const ::std::os::raw::c_char,
-    );
-}
-extern "C" {
     pub fn qtc_qpainterpath_set_fill_rule(c_pp: *mut qtc_qpainterpath, rule: FillRule);
-}
-extern "C" {
-    pub fn qtc_qpainterpath_element_count(c_pp: *mut qtc_qpainterpath) -> ::std::os::raw::c_int;
-}
-extern "C" {
-    pub fn qtc_qpainterpath_element_at(
-        c_pp: *mut qtc_qpainterpath,
-        i: ::std::os::raw::c_int,
-    ) -> PathSegment;
-}
-extern "C" {
-    pub fn qtc_qpainterpath_get_bbox(c_pp: *mut qtc_qpainterpath) -> qtc_rect_f;
 }
 extern "C" {
     pub fn qtc_qpainterpath_destroy(c_pp: *mut qtc_qpainterpath);
@@ -864,79 +727,4 @@ extern "C" {
 }
 extern "C" {
     pub fn qtc_qradialgradient_destroy(c_rg: *mut qtc_qradialgradient);
-}
-extern "C" {
-    pub fn qtc_qfont_create() -> *mut qtc_qfont;
-}
-extern "C" {
-    pub fn qtc_qfont_clone(c_f: *mut qtc_qfont) -> *mut qtc_qfont;
-}
-extern "C" {
-    pub fn qtc_qfont_set_family(c_f: *mut qtc_qfont, family: *const ::std::os::raw::c_char);
-}
-extern "C" {
-    pub fn qtc_qfont_set_style(c_f: *mut qtc_qfont, style: FontStyle);
-}
-extern "C" {
-    pub fn qtc_qfont_set_small_caps(c_f: *mut qtc_qfont, flag: bool);
-}
-extern "C" {
-    pub fn qtc_qfont_set_weight(c_f: *mut qtc_qfont, weight: FontWeight);
-}
-extern "C" {
-    pub fn qtc_qfont_set_stretch(c_f: *mut qtc_qfont, stretch: FontStretch);
-}
-extern "C" {
-    pub fn qtc_qfont_set_size(c_f: *mut qtc_qfont, size: f64);
-}
-extern "C" {
-    pub fn qtc_qfont_set_letter_spacing(c_f: *mut qtc_qfont, size: f64);
-}
-extern "C" {
-    pub fn qtc_qfont_set_word_spacing(c_f: *mut qtc_qfont, size: f64);
-}
-extern "C" {
-    pub fn qtc_qfont_print_debug(c_f: *mut qtc_qfont);
-}
-extern "C" {
-    pub fn qtc_qfont_destroy(c_f: *mut qtc_qfont);
-}
-extern "C" {
-    pub fn qtc_qfontmetricsf_height(c_fm: *mut qtc_qfontmetricsf) -> f64;
-}
-extern "C" {
-    pub fn qtc_qfontmetricsf_width(
-        c_fm: *mut qtc_qfontmetricsf,
-        text: *const ::std::os::raw::c_char,
-    ) -> f64;
-}
-extern "C" {
-    pub fn qtc_qfontmetricsf_full_width(
-        c_fm: *mut qtc_qfontmetricsf,
-        text: *const ::std::os::raw::c_char,
-    ) -> f64;
-}
-extern "C" {
-    pub fn qtc_qfontmetricsf_get_bbox(
-        c_fm: *mut qtc_qfontmetricsf,
-        text: *const ::std::os::raw::c_char,
-    ) -> qtc_rect_f;
-}
-extern "C" {
-    pub fn qtc_qfontmetricsf_get_ascent(c_fm: *mut qtc_qfontmetricsf) -> f64;
-}
-extern "C" {
-    pub fn qtc_qfontmetricsf_get_underline_pos(c_fm: *mut qtc_qfontmetricsf) -> f64;
-}
-extern "C" {
-    pub fn qtc_qfontmetricsf_get_overline_pos(c_fm: *mut qtc_qfontmetricsf) -> f64;
-}
-extern "C" {
-    pub fn qtc_qfontmetricsf_get_strikeout_pos(c_fm: *mut qtc_qfontmetricsf) -> f64;
-}
-extern "C" {
-    pub fn qtc_qfontmetricsf_get_line_width(c_fm: *mut qtc_qfontmetricsf) -> f64;
-}
-extern "C" {
-    pub fn qtc_qfontmetricsf_destroy(c_fm: *mut qtc_qfontmetricsf);
 }

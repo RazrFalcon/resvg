@@ -96,23 +96,6 @@ pub struct resvg_transform {
 #[repr(C)]
 pub struct resvg_render_tree(resvg::usvg::Tree);
 
-#[repr(C)]
-pub struct resvg_handle(resvg::InitObject);
-
-
-#[no_mangle]
-pub extern fn resvg_init() -> *mut resvg_handle {
-    let handle = Box::new(resvg_handle(resvg::init()));
-    Box::into_raw(handle)
-}
-
-#[no_mangle]
-pub extern fn resvg_destroy(handle: *mut resvg_handle) {
-    unsafe {
-        assert!(!handle.is_null());
-        Box::from_raw(handle)
-    };
-}
 
 #[no_mangle]
 pub extern fn resvg_init_log() {

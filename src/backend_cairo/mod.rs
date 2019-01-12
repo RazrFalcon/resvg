@@ -9,7 +9,6 @@ use cairo::{
     self,
     MatrixTrait,
 };
-use pangocairo::functions as pc;
 
 // self
 use prelude::*;
@@ -42,7 +41,6 @@ mod mask;
 mod path;
 mod pattern;
 mod stroke;
-mod text;
 
 mod prelude {
     pub use super::super::prelude::*;
@@ -414,32 +412,9 @@ fn _calc_node_bbox(
             Some(utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2))
         }
         usvg::NodeKind::Text(ref text) => {
-            let mut bbox = Rect::new_bbox();
-            let mut fm = text::PangoFontMetrics::new(opt, cr);
-            let blocks = backend_utils::text::prepare_blocks(text, &mut fm);
-            backend_utils::text::draw_blocks(blocks, |block| {
-                cr.new_path();
-
-                let context = text::init_pango_context(opt, cr);
-                let layout = text::init_pango_layout(&block, &context);
-
-                pc::layout_path(cr, &layout);
-                let path = cr.copy_path();
-                let segments = from_cairo_path(&path);
-
-                let mut t = ts2;
-                if let Some(rotate) = block.rotate {
-                    t.rotate_at(rotate, block.bbox.x, block.bbox.y + block.font_ascent);
-                }
-                t.translate(block.bbox.x, block.bbox.y);
-
-                if !segments.is_empty() {
-                    let c_bbox = utils::path_bbox(&segments, block.stroke.as_ref(), &t);
-                    bbox.expand(c_bbox);
-                }
-            });
-
-            Some(bbox)
+            Some(backend_utils::text::draw_text(text, |segments, _, stroke, _| {
+                utils::path_bbox(segments, stroke.as_ref(), &usvg::Transform::default())
+            }))
         }
         usvg::NodeKind::Image(ref img) => {
             let segments = utils::rect_to_path(img.view_box.rect);
@@ -460,30 +435,19 @@ fn _calc_node_bbox(
     }
 }
 
-fn from_cairo_path(path: &cairo::Path) -> Vec<usvg::PathSegment> {
-    let mut segments = Vec::new();
-    for seg in path.iter() {
-        match seg {
-            cairo::PathSegment::MoveTo((x, y)) => {
-                segments.push(usvg::PathSegment::MoveTo { x, y });
-            }
-            cairo::PathSegment::LineTo((x, y)) => {
-                segments.push(usvg::PathSegment::LineTo { x, y });
-            }
-            cairo::PathSegment::CurveTo((x1, y1), (x2, y2), (x, y)) => {
-                segments.push(usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
-            }
-            cairo::PathSegment::ClosePath => {
-                segments.push(usvg::PathSegment::ClosePath);
-            }
-        }
-    }
+mod text {
+    use super::*;
 
-    if segments.len() == 1 {
-        segments.clear();
+    pub fn draw(
+        tree: &usvg::Tree,
+        text_node: &usvg::Text,
+        opt: &Options,
+        cr: &cairo::Context,
+    ) -> Rect {
+        backend_utils::text::draw_text(text_node, |segments, fill, stroke, visibility| {
+            path::draw_segments(tree, segments, fill, stroke, visibility, opt, cr)
+        })
     }
-
-    segments
 }
 
 fn create_layers(img_size: ScreenSize, opt: &Options) -> CairoLayers {

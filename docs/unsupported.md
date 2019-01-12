@@ -40,7 +40,7 @@
 - `dominant-baseline`
 - [`enable-background`](https://www.w3.org/TR/SVG11/filters.html#EnableBackgroundProperty) (deprecated in the SVG 2)
 - `font`
-- `font-variant` (unsupported only by cairo backend)
+- `font-variant`
 - `font-size-adjust`
 - `glyph-orientation-horizontal` (removed in the SVG 2)
 - `glyph-orientation-vertical` (deprecated in the SVG 2)
@@ -51,7 +51,6 @@
 - `shape-rendering`
 - `text-rendering`
 - `unicode-bidi`
-- `word-spacing` (unsupported only by cairo backend)
 - `writing-mode`
 
 **Note:** this list does not include elements and attributes outside the

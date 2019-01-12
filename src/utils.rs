@@ -73,7 +73,7 @@ pub fn abs_transform(
 pub fn path_bbox(
     segments: &[usvg::PathSegment],
     stroke: Option<&usvg::Stroke>,
-    ts: &usvg::Transform,
+    ts: &usvg::Transform, // TODO: to Option
 ) -> Rect {
     debug_assert!(!segments.is_empty());
 
@@ -310,4 +310,13 @@ pub fn rect_to_path(rect: Rect) -> Vec<usvg::PathSegment> {
         },
         usvg::PathSegment::ClosePath,
     ]
+}
+
+/// Converts `rect` to path segments.
+pub fn rect_to_path_slice(rect: Rect, path: &mut [usvg::PathSegment]) {
+    path[0] = usvg::PathSegment::MoveTo { x: rect.x, y: rect.y };
+    path[1] = usvg::PathSegment::LineTo { x: rect.right(), y: rect.y };
+    path[2] = usvg::PathSegment::LineTo { x: rect.right(), y: rect.bottom() };
+    path[3] = usvg::PathSegment::LineTo { x: rect.x, y: rect.bottom() };
+    path[4] = usvg::PathSegment::ClosePath;
 }

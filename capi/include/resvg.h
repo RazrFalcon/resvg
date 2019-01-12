@@ -23,23 +23,6 @@
 
 
 /**
- * @brief An opaque pointer to the global library handle.
- *
- * Must be invoked before any other \b resvg code.
- *
- * Currently, handles \b QGuiApplication object which must be created
- * in order to draw text. If you don't plan to draw text - it's better to skip
- * the initialization.
- *
- * If you are using this library from an existing Qt application you can skip it.
- *
- * Does nothing when only \b cairo backend is enabled/used.
- *
- * \b Note: \b QGuiApplication initialization is pretty slow (up to 100ms).
- */
-typedef struct resvg_handle resvg_handle;
-
-/**
  * @brief An opaque pointer to the rendering tree.
  */
 typedef struct resvg_render_tree resvg_render_tree;
@@ -186,22 +169,6 @@ typedef struct resvg_transform {
     double e; /**< \b e value */
     double f; /**< \b f value */
 } resvg_transform;
-
-/**
- * @brief Initializes the library.
- *
- * See #resvg_handle for details.
- *
- * @return Library handle.
- */
-resvg_handle* resvg_init();
-
-/**
- * @brief Destroys the #resvg_handle.
- *
- * @param handle Library handle.
- */
-void resvg_destroy(resvg_handle *handle);
 
 /**
  * @brief Initializes the library log.
