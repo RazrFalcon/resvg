@@ -104,6 +104,7 @@ fn prepare_baseline_shift(doc: &Document, opt: &Options) {
 
 
 pub fn prepare_text_nodes(doc: &mut Document, opt: &Options) {
+    sanitize_text(doc.root(), doc);
     prepare_baseline_shift(doc, opt);
 
     // Resolve rotation for each character before any preprocessing,
@@ -144,6 +145,20 @@ pub fn prepare_text_nodes(doc: &mut Document, opt: &Options) {
 
     for node in rm_nodes {
         doc.remove_node(node);
+    }
+}
+
+// Removes `text` inside `text`, since it should be ignored.
+fn sanitize_text(parent: Node, doc: &mut Document) {
+    for node in parent.children() {
+        if node.is_tag_name(EId::Text) {
+            doc.drain(node, |n| n.is_tag_name(EId::Text));
+            continue;
+        }
+
+        if node.has_children() {
+            sanitize_text(node, doc);
+        }
     }
 }
 

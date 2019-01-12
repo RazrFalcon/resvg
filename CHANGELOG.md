@@ -16,6 +16,7 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - (cairo-backend) `font-family` parsing.
 - (usvg) `filter:none` processing.
+- (usvg) `text` inside `text` processing.
 - (svgtypes) Style with comments parsing.
 
 ## [0.5.0] - 2018-01-04
