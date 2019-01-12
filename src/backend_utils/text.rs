@@ -547,6 +547,8 @@ fn outline_glyph(
 }
 
 fn script_supports_letter_spacing(script: unicode_script::Script) -> bool {
+    // Details https://www.w3.org/TR/css-text-3/#cursive-tracking
+    //
     // List from https://github.com/harfbuzz/harfbuzz/issues/64
 
     use unicode_script::Script;
