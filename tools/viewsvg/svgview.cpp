@@ -58,9 +58,7 @@ void SvgViewWorker::render(const QSize &viewSize)
     QImage img(s * m_dpiRatio, QImage::Format_ARGB32_Premultiplied);
     img.fill(Qt::transparent);
 
-    QPainter p;
-    p.begin(&img);
-    p.setRenderHint(QPainter::Antialiasing);
+    QPainter p(&img);
     m_renderer.render(&p);
     p.end();
 

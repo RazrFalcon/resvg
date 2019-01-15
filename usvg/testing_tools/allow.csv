@@ -176,11 +176,15 @@ e-symbol-006,58
 e-text-016,1551,chrome uses different coefficients
 e-text-032,552,unsupported #4
 e-text-033,361,unsupported #4
+e-text-038,1959,chrome bug
 e-tref-001,2005,chrome bug
-e-tref-002,1189,chrome bug
+e-tref-002,1180,chrome bug
 e-tref-005,2005,chrome bug
 e-tref-006,25,bug
 e-tref-007,2005,chrome bug
 e-tref-008,720,bug
 e-tspan-015,3283,bug
 e-tspan-018,280,chrome bug
+e-tspan-020,1989,chrome bug
+e-tspan-021,2005,chrome bug
+e-tspan-022,6588,chrome bug

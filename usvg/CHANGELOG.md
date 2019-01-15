@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 - `filter:none` processing.
+- `text` inside `text` processing.
 
 ### Removed
 - `BaselineShift` enum.

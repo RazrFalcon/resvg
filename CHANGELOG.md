@@ -11,14 +11,17 @@ This changelog also contains important changes in dependencies.
 - [`harfbuzz`](https://github.com/harfbuzz/harfbuzz) dependency.
 - Nested `baseline-shift` support.
 - (cairo-backend) `word-spacing` support.
+- (qt-api) `renderToImage`.
 
 ### Changed
 - `baseline-shift` with `sub`, `super` and percent values calculation.
+- (qt-api) `render` methods are `const` now.
 
 ### Fixed
 - Text shaping (distance between characters) when text has a `rotate` attribute.
 - (cairo-backend) `font-family` parsing.
 - (usvg) `filter:none` processing.
+- (usvg) `text` inside `text` processing.
 - (svgtypes) Style with comments parsing.
 
 ### Removed
