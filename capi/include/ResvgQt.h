@@ -231,7 +231,7 @@ public:
     /**
      * @brief Renders the SVG data to canvas.
      */
-    void render(QPainter *p);
+    void render(QPainter *p) const;
 
     /**
      * @brief Renders the SVG data to canvas with the specified \b bounds.
@@ -239,7 +239,7 @@ public:
      * If the bounding rectangle is not specified
      * the SVG file is mapped to the whole paint device.
      */
-    void render(QPainter *p, const QRectF &bounds);
+    void render(QPainter *p, const QRectF &bounds) const;
 
     /**
      * @brief Renders the given element with \b elementId on the specified \b bounds.
@@ -247,8 +247,14 @@ public:
      * If the bounding rectangle is not specified
      * the SVG element is mapped to the whole paint device.
      */
-    void render(QPainter *p, const QString &elementId,
-                const QRectF &bounds = QRectF());
+    void render(QPainter *p, const QString &elementId, const QRectF &bounds = QRectF()) const;
+
+    /**
+     * @brief Renders the SVG data to \b QImage with a specified \b size.
+     *
+     * If \b size is not set, the \b defaultSize() will be used.
+     */
+    QImage renderToImage(const QSize &size = QSize()) const;
 
     /**
      * @brief Initializes the library log.
@@ -419,12 +425,12 @@ inline void ResvgRenderer::setDevicePixelRatio(qreal scaleFactor)
     d->scaleFactor = scaleFactor;
 }
 
-inline void ResvgRenderer::render(QPainter *p)
+inline void ResvgRenderer::render(QPainter *p) const
 {
     render(p, QRectF());
 }
 
-inline void ResvgRenderer::render(QPainter *p, const QRectF &bounds)
+inline void ResvgRenderer::render(QPainter *p, const QRectF &bounds) const
 {
     if (!d->tree)
         return;
@@ -444,10 +450,23 @@ inline void ResvgRenderer::render(QPainter *p, const QRectF &bounds)
     p->restore();
 }
 
-inline void ResvgRenderer::render(QPainter *p, const QString &elementId, const QRectF &bounds)
+inline void ResvgRenderer::render(QPainter *p, const QString &elementId, const QRectF &bounds) const
 {
     Q_UNUSED(p) Q_UNUSED(elementId) Q_UNUSED(bounds)
     Q_UNIMPLEMENTED();
+}
+
+inline QImage ResvgRenderer::renderToImage(const QSize &size) const
+{
+    const auto s = size.isValid() ? size : defaultSize();
+    QImage img(s, QImage::Format_ARGB32_Premultiplied);
+    img.fill(Qt::transparent);
+
+    QPainter p(&img);
+    render(&p);
+    p.end();
+
+    return img;
 }
 
 inline void ResvgRenderer::initLog()

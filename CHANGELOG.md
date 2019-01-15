@@ -9,9 +9,11 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - Nested `baseline-shift` support.
+- (qt-api) `renderToImage`.
 
 ### Changed
 - `baseline-shift` with `sub`, `super` and percent values calculation.
+- (qt-api) `render` methods are `const` now.
 
 ### Fixed
 - (cairo-backend) `font-family` parsing.

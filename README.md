@@ -88,7 +88,7 @@ Also, we do not test against Chrome, Firefox, Inkscape and Batik because they ha
 ![Chart3](./.github/perf-elementary.svg)
 
 - Elementary Icon Theme contains 3417 files.
-- resvg-qt is slow for unknown reasons.
+- Qt backend is slow because `QRasterPaintEngine` is slow.
 
 ![Chart4](./.github/perf-oxygen.svg)
 
