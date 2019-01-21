@@ -5,16 +5,13 @@
 #include <QPainter>
 #include <QThread>
 #include <QTimer>
-#include <QWindow>
 
 #include "svgview.h"
 
-SvgViewWorker::SvgViewWorker(QWidget *parent)
+SvgViewWorker::SvgViewWorker(QObject *parent, const float dpi)
     : QObject(parent)
-    , m_window(parent->windowHandle())
-    , m_dpiRatio(qApp->primaryScreen()->devicePixelRatio())
+    , m_dpiRatio(dpi)
 {
-    connect(m_window, &QWindow::screenChanged, this, &SvgViewWorker::setScreenDPI);
 }
 
 QRect SvgViewWorker::viewBox() const
@@ -45,11 +42,6 @@ QString SvgViewWorker::loadFile(const QString &path)
     }
 
     return QString();
-}
-
-void SvgViewWorker::setScreenDPI(const QScreen *screen)
-{
-    m_dpiRatio = screen->devicePixelRatio();
 }
 
 void SvgViewWorker::render(const QSize &viewSize)
@@ -95,7 +87,7 @@ static QImage genCheckedTexture()
 SvgView::SvgView(QWidget *parent)
     : QFrame(parent)
     , m_checkboardImg(genCheckedTexture())
-    , m_worker(new SvgViewWorker(this))
+    , m_worker(new SvgViewWorker())
     , m_resizeTimer(new QTimer(this))
 {
     setAcceptDrops(true);

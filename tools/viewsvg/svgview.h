@@ -11,7 +11,7 @@ class SvgViewWorker : public QObject
     Q_OBJECT
 
 public:
-    SvgViewWorker(QWidget *parent = nullptr);
+    SvgViewWorker(QObject *parent = nullptr, const float dpi = qApp->primaryScreen()->devicePixelRatio());
 
     QRect viewBox() const;
 
@@ -20,15 +20,11 @@ public slots:
     QString loadFile(const QString &path);
     void render(const QSize &viewSize);
 
-private slots:
-    void setScreenDPI(const QScreen *screen);
-
 signals:
     void rendered(QImage);
 
 private:
-    const QWindow *m_window;
-    mutable double m_dpiRatio;
+    const float m_dpiRatio;
     mutable QMutex m_mutex;
     ResvgRenderer m_renderer;
 };
