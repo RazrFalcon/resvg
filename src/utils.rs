@@ -219,27 +219,6 @@ pub fn path_length(segments: &[usvg::PathSegment]) -> f64 {
     length
 }
 
-/// Applies the transform to the path segments.
-pub fn transform_path(segments: &mut [usvg::PathSegment], ts: &usvg::Transform) {
-    for seg in segments {
-        match *seg {
-            usvg::PathSegment::MoveTo { ref mut x, ref mut y } => {
-                ts.apply_to(x, y);
-            }
-            usvg::PathSegment::LineTo { ref mut x, ref mut y } => {
-                ts.apply_to(x, y);
-            }
-            usvg::PathSegment::CurveTo { ref mut x1, ref mut y1, ref mut x2,
-                                         ref mut y2, ref mut x, ref mut y } => {
-                ts.apply_to(x1, y1);
-                ts.apply_to(x2, y2);
-                ts.apply_to(x, y);
-            }
-            usvg::PathSegment::ClosePath => {}
-        }
-    }
-}
-
 
 /// An iterator over transformed path segments.
 pub struct TransformedPath<'a> {

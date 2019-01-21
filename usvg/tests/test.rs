@@ -277,7 +277,7 @@ test!(pattern_without_children, false,
 // TODO: add mask, filter, marker
 // All supported elements should be listed.
 // We keep id's even if `keep_named_groups` is disabled.
-// ID on `svg`, `defs`, `stop` and `tspan` is ignored because they can't be rendered
+// ID on `svg`, `defs`, `stop` is ignored because they can't be rendered
 test!(preserve_id, false,
 "<svg id='svg1' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'>
     <defs id='defs1'>
@@ -298,8 +298,8 @@ test!(preserve_id, false,
     </defs>
     <rect id='rect1' fill='url(#lg1)' stroke='url(#rg1)' clip-path='url(#clip1)' width='10' height='10'/>
     <path id='path1' fill='url(#patt1)' d='M 10 20 30 40'/>
-    <text id='text1'>Some text</text>
-    <text id='text2'><tspan id='tspan2'>Some text</tspan></text>
+    <text id='text1' font-family='Arial'>A</text>
+    <text id='text2' font-family='Arial'><tspan id='tspan2'>A</tspan></text>
     <image id='image1' width='1' height='1' xlink:href='data:image/png;base64,
         iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAB3RJTUUH4gMLDwAjrsLbtwAAAAlw
         SFlzAAAuIwAALiMBeKU/dgAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAAG
@@ -422,40 +422,36 @@ test!(preserve_id, false,
         marker-start='none'
         visibility='visible'
         d='M 10 20 L 30 40'/>
-    <text
-        id='text1'><tspan
-        text-anchor='start'><tspan
+    <path
+        id='text1'
         fill='#000000'
         fill-opacity='1'
         fill-rule='nonzero'
         stroke='none'
-        baseline-shift='0'
-        font-family='Times New Roman'
-        font-size='12'
-        font-stretch='normal'
-        font-style='normal'
-        font-variant='normal'
-        font-weight='400'
-        letter-spacing='normal'
+        marker-end='none'
+        marker-mid='none'
+        marker-start='none'
         visibility='visible'
-        word-spacing='normal'>Some text</tspan></tspan></text>
-    <text
-        id='text2'><tspan
-        text-anchor='start'><tspan
+        d='M -0.017578125 0 L 3.28125 -8.58984375 L 4.505859375 -8.58984375 L 8.021484375 0 \
+        L 6.7265625 0 L 5.724609375 -2.6015625 L 2.1328125 -2.6015625 L 1.189453125 0 Z \
+        M 2.4609375 -3.52734375 L 5.373046875 -3.52734375 L 4.4765625 -5.90625 \
+        C 4.20312488079 -6.62890648842 4.00000011921 -7.22265601158 3.8671875 -7.6875 \
+        C 3.75781238079 -7.13671875 3.603515625 -6.58984351158 3.404296875 -6.046875 Z'/>
+    <path
+        id='text2'
         fill='#000000'
         fill-opacity='1'
         fill-rule='nonzero'
         stroke='none'
-        baseline-shift='0'
-        font-family='Times New Roman'
-        font-size='12'
-        font-stretch='normal'
-        font-style='normal'
-        font-variant='normal'
-        font-weight='400'
-        letter-spacing='normal'
+        marker-end='none'
+        marker-mid='none'
+        marker-start='none'
         visibility='visible'
-        word-spacing='normal'>Some text</tspan></tspan></text>
+        d='M -0.017578125 0 L 3.28125 -8.58984375 L 4.505859375 -8.58984375 L 8.021484375 0 \
+        L 6.7265625 0 L 5.724609375 -2.6015625 L 2.1328125 -2.6015625 L 1.189453125 0 Z \
+        M 2.4609375 -3.52734375 L 5.373046875 -3.52734375 L 4.4765625 -5.90625 \
+        C 4.20312488079 -6.62890648842 4.00000011921 -7.22265601158 3.8671875 -7.6875 \
+        C 3.75781238079 -7.13671875 3.603515625 -6.58984351158 3.404296875 -6.046875 Z'/>
     <image
         id='image1'
         visibility='visible'
@@ -464,11 +460,10 @@ test!(preserve_id, false,
         y='0'
         width='1'
         height='1'
-        xlink:href='data:image/png;base64, \
-iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAB3RJTUUH4gMLDwAj\
-rsLbtwAAAAlwSFlzAAAuIwAALiMBeKU/dgAAABl0RVh0Q29tbWVudABDcmVhdGVk\
-IHdpdGggR0lNUFeBDhcAAAAGUExURQAA/xjQP14JpdQAAAABYktHRACIBR1IAAAA\
-FklEQVR42mMAgvp/IJTAhgdB1ADVAgDvdAnxN1Ib1gAAAABJRU5ErkJggg=='/>
+        xlink:href='data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAB3RJT\
+        UUH4gMLDwAjrsLbtwAAAAlwSFlzAAAuIwAALiMBeKU/dgAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNU\
+        FeBDhcAAAAGUExURQAA/xjQP14JpdQAAAABYktHRACIBR1IAAAAFklEQVR42mMAgvp/IJTAhgdB1ADVAgDvdAnxN\
+        1Ib1gAAAABJRU5ErkJggg=='/>
 </svg>
 ");
 

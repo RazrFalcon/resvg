@@ -325,7 +325,7 @@ pub(super) fn convert_nodes(
                 }
             }
             EId::Text => {
-                text::convert(&node, opt, parent_node.clone(), tree);
+                text::convert(&node, parent_node.clone(), tree);
             }
             EId::Image => {
                 image::convert(&node, opt, parent_node.clone());

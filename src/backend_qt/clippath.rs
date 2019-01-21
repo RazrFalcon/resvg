@@ -7,10 +7,6 @@ use qt;
 
 // self
 use super::prelude::*;
-use super::{
-    path,
-    text,
-};
 
 
 pub fn apply(
@@ -43,10 +39,7 @@ pub fn apply(
 
         match *node.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                path::draw(&node.tree(), path_node, opt, layers, &mut clip_p);
-            }
-            usvg::NodeKind::Text(ref text) => {
-                text::draw(&node.tree(), text, opt, &mut clip_p);
+                super::path::draw(&node.tree(), path_node, opt, layers, &mut clip_p);
             }
             usvg::NodeKind::Group(ref g) => {
                 clip_group(&node, g, opt, bbox, layers, &mut clip_p);
@@ -114,14 +107,8 @@ fn draw_group_child(
     if let Some(child) = node.first_child() {
         p.apply_transform(&child.transform().to_native());
 
-        match *child.borrow() {
-            usvg::NodeKind::Path(ref path_node) => {
-                path::draw(&child.tree(), path_node, opt, layers, p);
-            }
-            usvg::NodeKind::Text(ref text) => {
-                text::draw(&child.tree(), text, opt, p);
-            }
-            _ => {}
+        if let usvg::NodeKind::Path(ref path_node) = *child.borrow() {
+            super::path::draw(&child.tree(), path_node, opt, layers, p);
         }
     }
 }

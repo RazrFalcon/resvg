@@ -21,13 +21,7 @@ And as an embeddable library to paint SVG on an application native canvas.
 
 #[macro_use] pub extern crate usvg;
 #[macro_use] extern crate log;
-extern crate unicode_segmentation;
-extern crate unicode_bidi;
-extern crate unicode_script;
 extern crate rgb;
-extern crate lyon_path;
-extern crate harfbuzz_rs as harfbuzz;
-extern crate font_kit;
 
 #[cfg(feature = "cairo-backend")] pub extern crate cairo;
 #[cfg(feature = "cairo-backend")] extern crate gdk_pixbuf;

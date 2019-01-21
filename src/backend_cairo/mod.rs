@@ -12,10 +12,7 @@ use cairo::{
 
 // self
 use prelude::*;
-use {
-    backend_utils,
-    layers,
-};
+use layers;
 
 
 macro_rules! try_create_surface {
@@ -266,9 +263,6 @@ fn render_node(
         usvg::NodeKind::Path(ref path) => {
             Some(path::draw(&node.tree(), path, opt, layers, cr))
         }
-        usvg::NodeKind::Text(ref text) => {
-            Some(text::draw(&node.tree(), text, opt, cr))
-        }
         usvg::NodeKind::Image(ref img) => {
             Some(image::draw(img, opt, cr))
         }
@@ -411,11 +405,6 @@ fn _calc_node_bbox(
         usvg::NodeKind::Path(ref path) => {
             Some(utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2))
         }
-        usvg::NodeKind::Text(ref text) => {
-            Some(backend_utils::text::draw_text(text, |segments, _, stroke, _| {
-                utils::path_bbox(segments, stroke.as_ref(), &usvg::Transform::default())
-            }))
-        }
         usvg::NodeKind::Image(ref img) => {
             let segments = utils::rect_to_path(img.view_box.rect);
             Some(utils::path_bbox(&segments, None, &ts2))
@@ -432,21 +421,6 @@ fn _calc_node_bbox(
             Some(bbox)
         }
         _ => None
-    }
-}
-
-mod text {
-    use super::*;
-
-    pub fn draw(
-        tree: &usvg::Tree,
-        text_node: &usvg::Text,
-        opt: &Options,
-        cr: &cairo::Context,
-    ) -> Rect {
-        backend_utils::text::draw_text(text_node, |segments, fill, stroke, visibility| {
-            path::draw_segments(tree, segments, fill, stroke, visibility, opt, cr)
-        })
     }
 }
 

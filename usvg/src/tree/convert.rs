@@ -343,73 +343,6 @@ fn conv_elements(
                     }
                 }
             }
-            NodeKind::Text(ref text) => {
-                let mut text_elem = new_doc.create_element(EId::Text);
-                parent.append(text_elem.clone());
-
-                conv_transform(AId::Transform, &text.transform, &mut text_elem);
-                text_elem.set_id(text.id.clone());
-
-
-                if let Some(ref rotate) = text.rotate {
-                    text_elem.set_attribute((AId::Rotate, rotate.clone()));
-                }
-
-                // conv_text_decoration(&text.decoration, &mut text_elem);
-
-                let mut is_preserve_required = false;
-
-                for chunk in &text.chunks {
-                    let mut chunk_tspan_elem = new_doc.create_element(EId::Tspan);
-                    text_elem.append(chunk_tspan_elem.clone());
-
-                    if let Some(ref x) = chunk.x {
-                        chunk_tspan_elem.set_attribute((AId::X, x.clone()));
-                    }
-
-                    if let Some(ref y) = chunk.y {
-                        chunk_tspan_elem.set_attribute((AId::Y, y.clone()));
-                    }
-
-                    if let Some(ref dx) = chunk.dx {
-                        chunk_tspan_elem.set_attribute((AId::Dx, dx.clone()));
-                    }
-
-                    if let Some(ref dy) = chunk.dy {
-                        chunk_tspan_elem.set_attribute((AId::Dy, dy.clone()));
-                    }
-
-                    chunk_tspan_elem.set_attribute((AId::TextAnchor, chunk.anchor.to_string()));
-
-                    for tspan in &chunk.spans {
-                        let mut tspan_elem = new_doc.create_element(EId::Tspan);
-                        chunk_tspan_elem.append(tspan_elem.clone());
-
-                        let text_node = new_doc.create_node(
-                            svgdom::NodeType::Text,
-                            tspan.text.clone(),
-                        );
-                        tspan_elem.append(text_node.clone());
-
-                        tspan_elem.set_attribute((AId::Visibility, tspan.visibility.to_string()));
-                        conv_fill(tree, &tspan.fill, defs, parent, &mut tspan_elem);
-                        conv_stroke(tree, &tspan.stroke, defs, &mut tspan_elem);
-                        conv_font(&tspan.font, &mut tspan_elem);
-
-                        tspan_elem.set_attribute((AId::BaselineShift, tspan.baseline_shift));
-
-                        if tspan.text.contains("  ") {
-                            is_preserve_required = true;
-                        }
-
-                        // TODO: text-decoration
-                    }
-                }
-
-                if is_preserve_required {
-                    text_elem.set_attribute((AId::Space, "preserve"));
-                }
-            }
             NodeKind::Image(ref img) => {
                 let mut img_elem = new_doc.create_element(EId::Image);
                 parent.append(img_elem.clone());
@@ -574,33 +507,6 @@ fn conv_transform(
     if !ts.is_default() {
         node.set_attribute((aid, *ts));
     }
-}
-
-fn conv_font(
-    font: &Font,
-    node: &mut svgdom::Node,
-) {
-    node.set_attribute((AId::FontFamily, font.family.clone()));
-    node.set_attribute((AId::FontSize, font.size.value()));
-    node.set_attribute((AId::FontStyle, font.style.to_string()));
-    node.set_attribute((AId::FontVariant, font.variant.to_string()));
-    node.set_attribute((AId::FontWeight, font.weight.to_string()));
-    node.set_attribute((AId::FontStretch, font.stretch.to_string()));
-    conv_text_spacing(font.letter_spacing, AId::LetterSpacing, node);
-    conv_text_spacing(font.word_spacing, AId::WordSpacing, node);
-}
-
-fn conv_text_spacing(
-    spacing: Option<f64>,
-    aid: AId,
-    node: &mut svgdom::Node,
-) {
-    let spacing: AValue = match spacing {
-        Some(n) => n.into(),
-        None => "normal".into(),
-    };
-
-    node.set_attribute((aid, spacing));
 }
 
 fn conv_opt_link(

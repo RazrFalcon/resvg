@@ -71,7 +71,12 @@ Full spec can be found [here](https://github.com/RazrFalcon/usvg/blob/master/doc
 pub extern crate svgdom;
 pub extern crate lyon_geom;
 extern crate base64;
+extern crate font_kit;
+extern crate harfbuzz_rs as harfbuzz;
 extern crate libflate;
+extern crate lyon_path;
+extern crate unicode_bidi;
+extern crate unicode_script;
 extern crate unicode_segmentation;
 #[macro_use] extern crate log;
 

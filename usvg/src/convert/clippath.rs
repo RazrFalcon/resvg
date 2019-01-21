@@ -11,7 +11,6 @@ use tree::NodeExt;
 use super::prelude::*;
 use super::{
     path,
-    text,
     shapes,
     IriResolveResult,
 };
@@ -62,9 +61,6 @@ pub fn convert_children(
                 if let Some(d) = attrs.get_path(AId::D) {
                     path::convert(&node, d.clone(), parent.clone(), tree);
                 }
-            }
-            EId::Text => {
-                text::convert(&node, opt, parent.clone(), tree);
             }
             EId::Line => {
                 // `line` doesn't impact rendering because stroke is always disabled

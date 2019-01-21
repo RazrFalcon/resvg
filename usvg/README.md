@@ -26,6 +26,7 @@ and an XML library with some small amount of code.
 
 ## Key features of the simplified SVG
 
+- `text` will be converted into paths
 - No basic shapes (rect, circle, etc). Only paths
 - Simple paths:
   - Only *MoveTo*, *LineTo*, *CurveTo* and *ClosePath* will be produced

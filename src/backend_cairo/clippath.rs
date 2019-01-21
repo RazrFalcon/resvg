@@ -10,10 +10,6 @@ use cairo::{
 
 // self
 use super::prelude::*;
-use super::{
-    path,
-    text,
-};
 
 
 pub fn apply(
@@ -47,10 +43,7 @@ pub fn apply(
 
         match *node.borrow() {
             usvg::NodeKind::Path(ref p) => {
-                path::draw(&node.tree(), p, opt, layers, &clip_cr);
-            }
-            usvg::NodeKind::Text(ref text) => {
-                text::draw(&node.tree(), text, opt, &clip_cr);
+                super::path::draw(&node.tree(), p, opt, layers, &clip_cr);
             }
             usvg::NodeKind::Group(ref g) => {
                 clip_group(&node, g, opt, bbox, layers, &clip_cr);
@@ -127,14 +120,8 @@ fn draw_group_child(
     if let Some(child) = node.first_child() {
         cr.transform(child.transform().to_native());
 
-        match *child.borrow() {
-            usvg::NodeKind::Path(ref path_node) => {
-                path::draw(&child.tree(), path_node, opt, layers, cr);
-            }
-            usvg::NodeKind::Text(ref text) => {
-                text::draw(&child.tree(), text, opt, cr);
-            }
-            _ => {}
+        if let usvg::NodeKind::Path(ref path_node) = *child.borrow() {
+            super::path::draw(&child.tree(), path_node, opt, layers, cr);
         }
     }
 }

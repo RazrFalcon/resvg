@@ -6,9 +6,7 @@
 use svgdom;
 
 // self
-use {
-    Options,
-};
+use Options;
 
 
 mod clip_element;
@@ -18,6 +16,7 @@ mod fix_links;
 mod fix_recursive_links;
 mod group_defs;
 mod prepare_clip_path;
+mod prepare_marker;
 mod prepare_mask;
 mod prepare_nested_svg;
 mod prepare_text;
@@ -34,14 +33,12 @@ mod resolve_style_attrs;
 mod resolve_svg_size;
 mod resolve_tref;
 mod resolve_use;
-mod rm_invalid_font_size;
 mod rm_invalid_gradients;
 mod rm_invalid_ts;
 mod rm_non_svg_data;
 mod rm_unused_defs;
 mod ungroup_a;
 mod ungroup_groups;
-mod prepare_marker;
 
 
 use self::conv_units::*;
@@ -50,6 +47,7 @@ use self::fix_links::*;
 use self::fix_recursive_links::*;
 use self::group_defs::*;
 use self::prepare_clip_path::*;
+use self::prepare_marker::*;
 use self::prepare_mask::*;
 use self::prepare_nested_svg::*;
 use self::prepare_text::*;
@@ -66,14 +64,12 @@ use self::resolve_style_attrs::*;
 use self::resolve_svg_size::*;
 use self::resolve_tref::*;
 use self::resolve_use::*;
-use self::rm_invalid_font_size::*;
 use self::rm_invalid_gradients::*;
 use self::rm_invalid_ts::*;
 use self::rm_non_svg_data::*;
 use self::rm_unused_defs::*;
 use self::ungroup_a::*;
 use self::ungroup_groups::*;
-use self::prepare_marker::*;
 
 
 mod prelude {
@@ -202,8 +198,7 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) {
     ungroup_groups(doc, opt);
     regroup_elements(doc, svg);
 
-    prepare_text_nodes(doc, opt);
-    remove_invalid_font_size(doc, opt);
+    prepare_text(doc, opt);
 
     remove_unused_defs(doc);
 }

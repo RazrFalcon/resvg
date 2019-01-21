@@ -23,7 +23,6 @@ pub enum NodeKind {
     Marker(Marker),
     Filter(Filter),
     Path(Path),
-    Text(Text),
     Image(Image),
     Group(Group),
 }
@@ -45,7 +44,6 @@ impl NodeKind {
             NodeKind::Marker(ref e) => e.id.as_str(),
             NodeKind::Filter(ref e) => e.id.as_str(),
             NodeKind::Path(ref e) => e.id.as_str(),
-            NodeKind::Text(ref e) => e.id.as_str(),
             NodeKind::Image(ref e) => e.id.as_str(),
             NodeKind::Group(ref e) => e.id.as_str(),
         }
@@ -67,7 +65,6 @@ impl NodeKind {
             NodeKind::Marker(_) => Transform::default(),
             NodeKind::Filter(_) => Transform::default(),
             NodeKind::Path(ref e) => e.transform,
-            NodeKind::Text(ref e) => e.transform,
             NodeKind::Image(ref e) => e.transform,
             NodeKind::Group(ref e) => e.transform,
         }
@@ -123,100 +120,6 @@ pub struct Path {
     ///
     /// All segments are in absolute coordinates.
     pub segments: Vec<PathSegment>,
-}
-
-
-/// A text element.
-///
-/// `text` element in SVG.
-#[derive(Clone, Debug)]
-pub struct Text {
-    /// Element's ID.
-    ///
-    /// Taken from the SVG itself.
-    /// Isn't automatically generated.
-    /// Can be empty.
-    pub id: String,
-
-    /// Element transform.
-    pub transform: Transform,
-
-    /// Rotate list.
-    pub rotate: Option<NumberList>,
-
-    /// A list of text chunks.
-    pub chunks: Vec<TextChunk>,
-}
-
-
-/// A text chunk.
-///
-/// Contains position and anchor of the next
-/// [text chunk](https://www.w3.org/TR/SVG11/text.html#TextChunk).
-///
-/// Doesn't represented in SVG directly. Usually, it's a first `tspan` or text node
-/// and any `tspan` that defines either `x` or `y` coordinates.
-#[derive(Clone, Debug)]
-pub struct TextChunk {
-    /// A list of absolute positions along the X-axis.
-    pub x: Option<NumberList>,
-
-    /// A list of absolute positions along the Y-axis.
-    pub y: Option<NumberList>,
-
-    /// A list of relative positions along the X-axis.
-    pub dx: Option<NumberList>,
-
-    /// A list of relative positions along the Y-axis.
-    pub dy: Option<NumberList>,
-
-    /// A text anchor/align.
-    pub anchor: TextAnchor,
-
-    /// A list of text spans.
-    pub spans: Vec<TextSpan>,
-}
-
-
-/// A text span.
-///
-/// `tspan` element in SVG.
-#[derive(Clone, Debug)]
-pub struct TextSpan {
-    /// Element visibility.
-    pub visibility: Visibility,
-
-    /// Fill style.
-    pub fill: Option<Fill>,
-
-    /// Stroke style.
-    pub stroke: Option<Stroke>,
-
-    /// Font description.
-    pub font: Font,
-
-    /// Baseline shift.
-    pub baseline_shift: f64,
-
-    /// Text decoration.
-    ///
-    /// Unlike `text-decoration` attribute from the SVG, this one has all styles resolved.
-    /// Basically, by the SVG `text-decoration` attribute can be defined on `tspan` element
-    /// and on any parent element. And all definitions should be combined.
-    /// The one that was defined by `tspan` uses the `tspan` style itself.
-    /// The one that was defined by any parent node uses the `text` element style.
-    /// So it's pretty hard to resolve.
-    ///
-    /// This property has all this stuff resolved.
-    pub decoration: TextDecoration,
-
-    /// An actual text line.
-    ///
-    /// SVG doesn't support multiline text, so this property doesn't have a new line inside of it.
-    /// All the spaces are already trimmed or preserved, depending on the `xml:space` attribute.
-    /// All characters references are already resolved, so there is no `&gt;` or `&#x50;`.
-    /// So this text should be rendered as is, without any postprocessing.
-    pub text: String,
 }
 
 
