@@ -15,14 +15,8 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
-    <property name="spacing">
-     <number>6</number>
-    </property>
     <property name="leftMargin">
      <number>0</number>
-    </property>
-    <property name="topMargin">
-     <number>6</number>
     </property>
     <property name="rightMargin">
      <number>0</number>
@@ -33,7 +27,7 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <property name="leftMargin">
-       <number>2</number>
+       <number>6</number>
       </property>
       <item>
        <widget class="QLabel" name="label_3">
@@ -151,10 +145,10 @@
        </sizepolicy>
       </property>
       <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
+       <enum>QFrame::NoFrame</enum>
       </property>
       <property name="frameShadow">
-       <enum>QFrame::Sunken</enum>
+       <enum>QFrame::Plain</enum>
       </property>
      </widget>
     </item>
