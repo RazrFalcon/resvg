@@ -8,9 +8,13 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
+- New text layout implementation.
+- [Text BIDI reordering.](http://www.unicode.org/reports/tr9/)
+- Better text shaping.
+- Text will be converted to paths on the `usvg` side now.
 - [`harfbuzz`](https://github.com/harfbuzz/harfbuzz) dependency.
 - Nested `baseline-shift` support.
-- (cairo-backend) `word-spacing` support.
+- `word-spacing` is supported for all backends now.
 - (qt-api) `renderToImage`.
 
 ### Changed
@@ -18,8 +22,8 @@ This changelog also contains important changes in dependencies.
 - (qt-api) `render` methods are `const` now.
 
 ### Fixed
-- Text shaping (distance between characters) when text has a `rotate` attribute.
-- (cairo-backend) `font-family` parsing.
+- `letter-spacing` on cursive scripts (like Arabic).
+- `text-anchor` handling.
 - (usvg) `filter:none` processing.
 - (usvg) `text` inside `text` processing.
 - (svgtypes) Style with comments parsing.

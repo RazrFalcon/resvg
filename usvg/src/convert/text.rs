@@ -9,7 +9,6 @@ use std::mem;
 use svgdom;
 use harfbuzz;
 use unicode_bidi;
-use unicode_segmentation::UnicodeSegmentation;
 use unicode_script;
 
 mod fk {
@@ -30,6 +29,73 @@ use super::prelude::*;
 // TODO: word spacing
 // TODO: visibility on text and tspan
 // TODO: glyph fallback
+// TODO: group when Options::keep_named_groups is set
+
+
+// TODO: remove Debug
+
+#[derive(Clone, Debug)]
+struct FontStyle {
+    font: fk::Handle,
+    size: f64,
+    letter_spacing: f64,
+    word_spacing: f64,
+}
+
+#[derive(Clone, Debug)]
+struct Glyph {
+    byte_idx: usize,
+    x: f64,
+    y: f64,
+    rotate: f64,
+    path: Vec<tree::PathSegment>,
+    width: f64,
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum TextAnchor {
+    Start,
+    Middle,
+    End,
+}
+
+#[derive(Clone, Debug)]
+struct TextChunk {
+    x: Option<f64>,
+    y: Option<f64>,
+    anchor: TextAnchor,
+    spans: Vec<TextSpan>,
+    text: String,
+}
+
+#[derive(Clone, Debug)]
+struct TextSpan {
+    id: String,
+    fill: Option<tree::Fill>,
+    stroke: Option<tree::Stroke>,
+    font: FontStyle,
+    baseline_shift: f64,
+    visibility: tree::Visibility,
+    start: usize,
+    end: usize,
+}
+
+impl TextSpan {
+    fn contains(&self, byte_offset: usize) -> bool {
+        byte_offset >= self.start && byte_offset < self.end
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct CharacterPosition {
+    x: Option<f64>,
+    y: Option<f64>,
+    dx: Option<f64>,
+    dy: Option<f64>,
+}
+
+type PositionsList = Vec<CharacterPosition>;
+type RotateList = Vec<f64>;
 
 pub fn convert(
     text_elem: &svgdom::Node,
@@ -43,52 +109,32 @@ pub fn convert(
         stroke: None,
     });
 
-    let lists = {
-        let mut total = 0;
-        for child in text_elem.descendants().filter(|n| n.is_text()) {
-            total += UnicodeSegmentation::graphemes(child.text().as_str(), true).count();
-        }
+    let pos_list = resolve_positions_list(text_elem);
 
-        let mut lists = Lists {
-            x: vec![None; total],
-            y: vec![None; total],
-            dx: vec![None; total],
-            dy: vec![None; total],
-            rotate: Vec::new(),
-        };
+    let mut rotate_list = RotateList::new();
+    resolve_rotate(&text_elem, 0, &mut rotate_list);
 
-        resolve_list(&text_elem, AId::X,  0, &mut lists.x);
-        resolve_list(&text_elem, AId::Y,  0, &mut lists.y);
-        resolve_list(&text_elem, AId::Dx, 0, &mut lists.dx);
-        resolve_list(&text_elem, AId::Dy, 0, &mut lists.dy);
-
-        resolve_rotate(&text_elem, 0, &mut lists.rotate);
-
-        debug_assert_eq!(lists.x.len(), lists.rotate.len());
-
-        lists
-    };
+    debug_assert_eq!(pos_list.len(), rotate_list.len());
 
     let text_ts = text_elem.attributes().get_transform(AId::Transform).unwrap_or_default();
 
-    let mut chunks = process_text_children(&text_elem, tree, lists);
-
+    let mut chunks = process_text_children(&text_elem, tree, &pos_list);
+    let mut glyphs = Vec::new();
+    let mut char_offset = 0;
     let mut x = 0.0;
     let mut y = 0.0;
     for chunk in &mut chunks {
         x = chunk.x.unwrap_or(x);
         y = chunk.y.unwrap_or(y);
 
-        let mut chunk_x = 0.0;
-        let mut chunk_y = 0.0;
-
-        render_text_chunk(chunk);
+        glyphs.clear();
+        // TODO: mixed fonts
+        render_text_chunk(&chunk.text, &chunk.spans[0].font, &mut glyphs);
+        resolve_glyph_positions(&chunk.text, char_offset, &pos_list, &rotate_list, &mut glyphs);
 
         let mut width = 0.0;
-        for span in &chunk.spans {
-            for character in &span.characters {
-                width += character.offset.x + character.width;
-            }
+        for glyph in &glyphs {
+            width += glyph.width;
         }
 
         x -= process_text_anchor(chunk.anchor, width);
@@ -96,24 +142,20 @@ pub fn convert(
         for span in &mut chunk.spans {
             let mut segments = Vec::new();
 
-            for character in &mut span.characters {
-                chunk_x += character.offset.x;
-                chunk_y += character.offset.y;
+            for glyph in &mut glyphs {
+                if span.contains(glyph.byte_idx) {
+                    let mut path = mem::replace(&mut glyph.path, Vec::new());
+                    let mut transform = tree::Transform::new_translate(glyph.x, glyph.y);
+                    if !glyph.rotate.is_fuzzy_zero() {
+                        transform.rotate(glyph.rotate);
+                    }
 
-                let mut path = mem::replace(&mut character.path, Vec::new());
+                    transform_path(&mut path, &transform);
 
-                let mut transform = tree::Transform::new_translate(chunk_x, chunk_y);
-                if !character.rotate.is_fuzzy_zero() {
-                    transform.rotate(character.rotate);
+                    if !path.is_empty() {
+                        segments.extend_from_slice(&path);
+                    }
                 }
-
-                transform_path(&mut path, &transform);
-
-                if !path.is_empty() {
-                    segments.extend_from_slice(&path);
-                }
-
-                chunk_x += character.width;
             }
 
             if segments.is_empty() {
@@ -134,111 +176,66 @@ pub fn convert(
             };
 
             mem::swap(&mut path.id, &mut span.id);
+
+            // TODO: fill and stroke with a gradient/pattern that has objectBoundingBox
+            //       should use the text element bbox and not the tspan bbox.
             mem::swap(&mut path.fill, &mut span.fill);
             mem::swap(&mut path.stroke, &mut span.stroke);
 
             parent.append_kind(tree::NodeKind::Path(path));
         }
 
+        char_offset += chunk.text.chars().count();
         x += width;
     }
 }
 
-// TODO: remove Debug
+// According to the https://github.com/w3c/svgwg/issues/537
+// 'Assignment of multi-value text layout attributes (x, y, dx, dy, rotate) should be
+// according to Unicode code point characters.'
+fn resolve_positions_list(text_elem: &svgdom::Node) -> PositionsList {
+    let total = count_chars(text_elem);
 
-#[derive(Clone, Debug)]
-struct FontStyle {
-    font: fk::Handle,
-    size: f64,
-    letter_spacing: f64,
-    word_spacing: f64,
-}
+    let mut list = vec![CharacterPosition {
+        x: None,
+        y: None,
+        dx: None,
+        dy: None,
+    }; total];
 
-#[derive(Clone, Debug)]
-struct Character {
-    offset: Point, // dx/dy
-    rotate: f64,
-    text: String,
-    path: Vec<tree::PathSegment>,
-    width: f64,
-}
-
-#[derive(Clone, Copy, PartialEq, Debug)]
-enum TextAnchor {
-    Start,
-    Middle,
-    End,
-}
-
-#[derive(Clone, Debug)]
-struct TextChunk {
-    x: Option<f64>,
-    y: Option<f64>,
-    anchor: TextAnchor,
-    spans: Vec<TextSpan>,
-}
-
-#[derive(Clone, Debug)]
-struct TextSpan {
-    id: String,
-    fill: Option<tree::Fill>,
-    stroke: Option<tree::Stroke>,
-    font: FontStyle,
-    baseline_shift: f64,
-    visibility: tree::Visibility,
-    characters: Vec<Character>,
-}
-
-type NumList = Vec<Option<f64>>;
-
-struct Lists {
-    x: NumList,
-    y: NumList,
-    dx: NumList,
-    dy: NumList,
-    rotate: Vec<f64>,
-}
-
-// TODO: run UnicodeSegmentation::graphemes only once
-fn resolve_list(parent: &svgdom::Node, aid: AId, mut offset: usize, list: &mut NumList) -> usize {
-    if parent.is_tag_name(EId::Text) {
-        let attrs = parent.attributes();
-        if let Some(num_list) = attrs.get_number_list(aid) {
-            let len = cmp::min(num_list.len(), list.len());
-            for i in 0..len {
-                list[offset + i] = Some(num_list[i]);
-            }
-        }
-    }
-
-    for child in parent.children() {
+    let mut offset = 0;
+    for child in text_elem.descendants() {
         if child.is_element() {
-            let attrs = child.attributes();
-            if let Some(num_list) = attrs.get_number_list(aid) {
-                let mut total = 0;
-                for child2 in child.descendants().filter(|n| n.is_text()) {
-                    total += UnicodeSegmentation::graphemes(child2.text().as_str(), true).count();
-                }
+            let total = count_chars(&child);
+            let ref attrs = child.attributes();
 
-                let len = cmp::min(num_list.len(), total);
-                for i in 0..len {
-                    list[offset + i] = Some(num_list[i]);
-                }
+            macro_rules! push_list {
+                ($aid:expr, $field:ident) => {
+                    if let Some(num_list) = attrs.get_number_list($aid) {
+                        let len = cmp::min(num_list.len(), total);
+                        for i in 0..len {
+                            list[offset + i].$field = Some(num_list[i]);
+                        }
+                    }
+                };
             }
 
-            offset = resolve_list(&child, aid, offset, list);
-        } else if child.is_text() {
-            offset += UnicodeSegmentation::graphemes(child.text().as_str(), true).count();
+            push_list!(AId::X, x);
+            push_list!(AId::Y, y);
+            push_list!(AId::Dx, dx);
+            push_list!(AId::Dy, dy);
+        } else {
+            offset += child.text().chars().count();
         }
     }
 
-    offset
+    list
 }
 
-fn resolve_rotate(parent: &svgdom::Node, mut offset: usize, list: &mut Vec<f64>) {
+fn resolve_rotate(parent: &svgdom::Node, mut offset: usize, list: &mut RotateList) {
     for child in parent.children() {
         if child.is_text() {
-            let chars_count = UnicodeSegmentation::graphemes(child.text().as_str(), true).count();
+            let chars_count = child.text().chars().count();
             // TODO: should stop at the root 'text'
             if let Some(p) = child.find_node_with_attribute(AId::Rotate) {
                 let attrs = p.attributes();
@@ -247,7 +244,7 @@ fn resolve_rotate(parent: &svgdom::Node, mut offset: usize, list: &mut Vec<f64>)
                         let r = match rotate_list.get(i + offset) {
                             Some(r) => *r,
                             None => {
-                                // Use last angle if the index is out of bounds.
+                                // Use the last angle if the index is out of bounds.
                                 *rotate_list.last().unwrap_or(&0.0)
                             }
                         };
@@ -268,19 +265,29 @@ fn resolve_rotate(parent: &svgdom::Node, mut offset: usize, list: &mut Vec<f64>)
             resolve_rotate(&child, sub_offset, list);
 
             // TODO: why?
-            // 'tspan' represent a single char.
+            // 'tspan' represents a single char.
             offset += 1;
         }
     }
 }
 
+fn count_chars(node: &svgdom::Node) -> usize {
+    let mut total = 0;
+    for child in node.descendants().filter(|n| n.is_text()) {
+        total += child.text().chars().count();
+    }
+
+    total
+}
+
 fn process_text_children(
     parent: &svgdom::Node,
     tree: &tree::Tree,
-    lists: Lists,
+    pos_list: &PositionsList,
 ) -> Vec<TextChunk> {
     let mut chunks = Vec::new();
-    let mut char_idx = 0; // aka grapheme index
+    let mut char_idx = 0;
+    let mut chunk_byte_idx = 0;
     for child in parent.descendants().filter(|n| n.is_text()) {
         let text_parent = child.parent().unwrap();
         let attrs = text_parent.attributes();
@@ -291,198 +298,76 @@ fn process_text_children(
             Some(v) => v,
             None => {
                 // Skip this span.
-                char_idx += UnicodeSegmentation::graphemes(child.text().as_str(), true).count();
-                continue
+                char_idx += child.text().chars().count();
+                continue;
             }
         };
 
         let span = TextSpan {
             id: parent.id().clone(),
-            characters: Vec::new(),
             fill: super::fill::convert(tree, &attrs, true),
             stroke: super::stroke::convert(tree, &attrs, true),
             font,
             visibility: super::convert_visibility(&attrs),
             baseline_shift,
+            start: 0,
+            end: 0,
         };
 
         let mut is_new_span = true;
-        for c in UnicodeSegmentation::graphemes(child.text().as_str(), true) {
-            let offset = Point::new(
-                lists.dx[char_idx].unwrap_or(0.0),
-                lists.dy[char_idx].unwrap_or(0.0),
-            );
+        for c in child.text().chars() {
+            if pos_list[char_idx].x.is_some() || pos_list[char_idx].y.is_some() || chunks.is_empty() {
+                let x = pos_list[char_idx].x;
+                let y = pos_list[char_idx].y;
 
-            let rotate = lists.rotate[char_idx];
-
-            let character = Character {
-                offset,
-                rotate,
-                text: c.to_string(),
-                path: Vec::new(),
-                width: 0.0,
-            };
-
-            if lists.x[char_idx].is_some() || lists.y[char_idx].is_some() || chunks.is_empty() {
-                let x = lists.x[char_idx];
-                let y = lists.y[char_idx];
+                chunk_byte_idx = 0;
 
                 let mut span2 = span.clone();
-                span2.characters.push(character);
+                span2.start = 0;
+                span2.end = c.len_utf8();
 
                 chunks.push(TextChunk {
                     x,
                     y,
                     anchor,
                     spans: vec![span2],
+                    text: c.to_string(),
                 });
             } else if is_new_span {
                 let mut span2 = span.clone();
-                span2.characters.push(character);
+                span2.start = chunk_byte_idx;
+                span2.end = chunk_byte_idx + c.len_utf8();
 
                 if let Some(chunk) = chunks.last_mut() {
+                    chunk.text.push(c);
                     chunk.spans.push(span2);
                 }
             } else {
                 if let Some(chunk) = chunks.last_mut() {
+                    chunk.text.push(c);
                     if let Some(span) = chunk.spans.last_mut() {
-                        span.characters.push(character);
+                        debug_assert_ne!(span.end, 0);
+                        span.end += c.len_utf8();
                     }
                 }
             }
 
             is_new_span = false;
             char_idx += 1;
+            chunk_byte_idx += c.len_utf8();
         }
     }
 
     chunks
 }
 
-fn resolve_text_anchor(node: &svgdom::Node) -> TextAnchor {
-    let attrs = node.attributes();
-    match attrs.get_str_or(AId::TextAnchor, "start") {
-        "start"  => TextAnchor::Start,
-        "middle" => TextAnchor::Middle,
-        "end"    => TextAnchor::End,
-        _        => TextAnchor::Start,
-    }
-}
-
-fn convert_font(
-    attrs: &svgdom::Attributes,
-) -> Option<FontStyle> {
-    let style = attrs.get_str_or(AId::FontStyle, "normal");
-    let style = match style {
-        "normal"  => fk::Style::Normal,
-        "italic"  => fk::Style::Italic,
-        "oblique" => fk::Style::Oblique,
-        _         => fk::Style::Normal,
-    };
-
-    let weight = attrs.get_str_or(AId::FontWeight, "normal");
-    let weight = match weight {
-        "normal" => fk::Weight::NORMAL,
-        "bold"   => fk::Weight::BOLD,
-        "100"    => fk::Weight::THIN,
-        "200"    => fk::Weight::EXTRA_LIGHT,
-        "300"    => fk::Weight::LIGHT,
-        "400"    => fk::Weight::NORMAL,
-        "500"    => fk::Weight::MEDIUM,
-        "600"    => fk::Weight::SEMIBOLD,
-        "700"    => fk::Weight::BOLD,
-        "800"    => fk::Weight::EXTRA_BOLD,
-        "900"    => fk::Weight::BLACK,
-        "bolder" | "lighter" => {
-            warn!("'bolder' and 'lighter' font-weight must be already resolved.");
-            fk::Weight::NORMAL
-        }
-        _ => fk::Weight::NORMAL,
-    };
-
-    let stretch = attrs.get_str_or(AId::FontStretch, "normal");
-    let stretch = match stretch {
-        "normal"                 => fk::Stretch::NORMAL,
-        "ultra-condensed"        => fk::Stretch::ULTRA_CONDENSED,
-        "extra-condensed"        => fk::Stretch::EXTRA_CONDENSED,
-        "narrower" | "condensed" => fk::Stretch::CONDENSED,
-        "semi-condensed"         => fk::Stretch::SEMI_CONDENSED,
-        "semi-expanded"          => fk::Stretch::SEMI_EXPANDED,
-        "wider" | "expanded"     => fk::Stretch::EXPANDED,
-        "extra-expanded"         => fk::Stretch::EXTRA_EXPANDED,
-        "ultra-expanded"         => fk::Stretch::ULTRA_EXPANDED,
-        _                        => fk::Stretch::NORMAL,
-    };
-
-    let mut font_list = Vec::new();
-    let font_family = attrs.get_str_or(AId::FontFamily, "");
-    for family in font_family.split(',') {
-        let family = family.replace('\'', "");
-
-        let name = match family.as_ref() {
-            "serif"      => fk::FamilyName::Serif,
-            "sans-serif" => fk::FamilyName::SansSerif,
-            "monospace"  => fk::FamilyName::Monospace,
-            "cursive"    => fk::FamilyName::Cursive,
-            "fantasy"    => fk::FamilyName::Fantasy,
-            _            => fk::FamilyName::Title(family)
-        };
-
-        font_list.push(name);
-    }
-
-    let size = attrs.get_number_or(AId::FontSize, 0.0);
-    if !(size > 0.0) {
-        return None;
-    }
-
-    let letter_spacing = attrs.get_number_or(AId::LetterSpacing, 0.0);
-    let word_spacing = attrs.get_number_or(AId::WordSpacing, 0.0);
-
-    let properties = fk::Properties { style, weight, stretch };
-    let font = match fk::SystemSource::new().select_best_match(&font_list, &properties) {
-        Ok(v) => v,
-        Err(_) => {
-            // TODO: Select any font.
-            warn!("No match for {:?} font-family.", font_family);
-            return None;
-        }
-    };
-
-    Some(FontStyle {
-        font,
-        size,
-        letter_spacing,
-        word_spacing,
-    })
-}
-
-fn render_text_chunk(chunk: &mut TextChunk) {
-    let mut text = String::new();
-    let mut span_idx = 0;
-    while span_idx < chunk.spans.len() {
-        for character in &chunk.spans[span_idx].characters {
-            text.push_str(&character.text);
-        }
-
-        if !text.is_empty() {
-            // TODO: wrong, we should apply bidi reordering and text shaping to a whole chunk
-            render_text_span(&text, &mut chunk.spans[span_idx]);
-            text.clear();
-        }
-
-        span_idx += 1;
-    }
-}
-
-fn render_text_span(
+fn render_text_chunk(
     text: &str,
-    span: &mut TextSpan,
+    font_style: &FontStyle,
+    glyphs: &mut Vec<Glyph>,
 ) {
-    debug_assert!(!span.characters.is_empty());
-
     // TODO: font caching
-    let font = match span.font.font.load() {
+    let font = match font_style.font.load() {
         Ok(v) => v,
         Err(_) => {
 //            warn!("Failed to load font for {:?} font-family.", style.family);
@@ -492,7 +377,7 @@ fn render_text_span(
 
     let font_metrics = font.metrics();
 
-    let scale = span.font.size / font_metrics.units_per_em as f64;
+    let scale = font_style.size / font_metrics.units_per_em as f64;
 
     let font_data = try_opt!(font.copy_font_data(), ());
     let hb_face = harfbuzz::Face::from_bytes(&font_data, 0);
@@ -502,8 +387,6 @@ fn render_text_span(
     let paragraph = &bidi_info.paragraphs[0];
     let line = paragraph.range.clone();
 
-    let mut char_idx = 0;
-    let mut path = Vec::new();
     let (levels, runs) = bidi_info.visual_runs(&paragraph, line);
     for run in runs.iter() {
         let sub_text = &text[run.clone()];
@@ -511,20 +394,24 @@ fn render_text_span(
             continue;
         }
 
-        let mut letter_spacing = span.font.letter_spacing;
+        // TODO: do after, like resolve_glyph_positions
+        let mut letter_spacing = font_style.letter_spacing;
         // TODO: rewrite
         let text_script = unicode_script::get_script(sub_text.chars().nth(0).unwrap());
         if !script_supports_letter_spacing(text_script) {
             letter_spacing = 0.0;
         }
 
-        let mut buffer = harfbuzz::UnicodeBuffer::new().add_str(sub_text);
-
-        if levels[run.start].is_rtl() {
-            buffer = buffer.set_direction(harfbuzz::Direction::Rtl);
+        let is_rtl = levels[run.start].is_rtl();
+        let hb_direction = if is_rtl {
+            harfbuzz::Direction::Rtl
         } else {
-            buffer = buffer.set_direction(harfbuzz::Direction::Ltr);
-        }
+            harfbuzz::Direction::Ltr
+        };
+
+        let buffer = harfbuzz::UnicodeBuffer::new()
+            .add_str(sub_text)
+            .set_direction(hb_direction);
 
         // TODO: feature smcp / small cups
         let output = harfbuzz::shape(&hb_font, buffer, &[]);
@@ -532,8 +419,7 @@ fn render_text_span(
         let positions = output.get_glyph_positions();
         let infos = output.get_glyph_infos();
 
-        let mut prev_cluster = None;
-        for (p, info) in positions.iter().zip(infos) {
+        for (pos, info) in positions.iter().zip(infos) {
             let mut glyph = outline_glyph(&font, info.codepoint);
 
             // Mirror and scale to the `font-size`.
@@ -542,9 +428,9 @@ fn render_text_span(
                 transform_path(&mut glyph, &ts);
             }
 
-            let offset = Point::new(p.x_offset as f64 * scale, p.y_offset as f64 * scale);
-            let advance = Size::new(p.x_advance as f64 * scale + letter_spacing,
-                                    p.y_advance as f64 * scale);
+            let offset = Point::new(pos.x_offset as f64 * scale, pos.y_offset as f64 * scale);
+            let advance = Size::new(pos.x_advance as f64 * scale + letter_spacing,
+                                    pos.y_advance as f64 * scale);
 
             // TODO: word-spacing via UnicodeSegmentation::unicode_words
 
@@ -554,40 +440,19 @@ fn render_text_span(
                 transform_path(&mut glyph, &ts);
             }
 
-            path.extend_from_slice(&glyph);
-
-            if prev_cluster.is_some() && prev_cluster != Some(info.cluster) {
-                char_idx += 1;
-            }
-
-            // TODO: note that characters and paths are mismatched, because of BIDI reordering
-            if prev_cluster != Some(info.cluster) {
-                span.characters[char_idx].path = path.clone();
-                span.characters[char_idx].width = advance.width;
-            } else {
-                debug_assert!(!span.characters[char_idx].path.is_empty());
-                span.characters[char_idx].path.extend_from_slice(&path);
-                span.characters[char_idx].width += advance.width;
-            }
-
-            prev_cluster = Some(info.cluster);
-
-            path.clear();
+            glyphs.push(Glyph {
+                byte_idx: run.start + info.cluster as usize,
+                x: 0.0,
+                y: 0.0,
+                rotate: 0.0,
+                path: glyph,
+                width: advance.width,
+            });
         }
 
-        char_idx += 1;
-
-        if let Some(ref mut character) = span.characters.last_mut() {
-            character.width -= letter_spacing;
+        if let Some(ref mut glyph) = glyphs.last_mut() {
+            glyph.width -= letter_spacing;
         }
-    }
-}
-
-fn process_text_anchor(a: TextAnchor, text_width: f64) -> f64 {
-    match a {
-        TextAnchor::Start =>  0.0, // Nothing.
-        TextAnchor::Middle => text_width / 2.0,
-        TextAnchor::End =>    text_width,
     }
 }
 
@@ -696,4 +561,152 @@ fn transform_path(segments: &mut [tree::PathSegment], ts: &tree::Transform) {
             tree::PathSegment::ClosePath => {}
         }
     }
+}
+
+fn resolve_glyph_positions(
+    text: &str,
+    offset: usize,
+    pos_list: &PositionsList,
+    rotate_list: &RotateList,
+    glyphs: &mut Vec<Glyph>,
+) {
+    let mut x = 0.0;
+    let mut y = 0.0;
+
+    for glyph in glyphs {
+        glyph.x = x;
+        glyph.y = y;
+
+        let cp = offset + byte_to_code_point(text, glyph.byte_idx);
+        if let Some(pos) = pos_list.get(cp) {
+            glyph.x += pos.dx.unwrap_or(0.0);
+            glyph.y += pos.dy.unwrap_or(0.0);
+        }
+
+        if let Some(angle) = rotate_list.get(cp) {
+            glyph.rotate = *angle;
+        }
+
+        x = glyph.x + glyph.width;
+        y = glyph.y;
+    }
+}
+
+fn byte_to_code_point(text: &str, byte: usize) -> usize {
+    let mut idx = 0;
+    for (i, c) in text.char_indices() {
+        if byte >= i && byte < i + c.len_utf8() {
+            break;
+        }
+
+        idx += 1;
+    }
+
+    idx
+}
+
+fn resolve_text_anchor(node: &svgdom::Node) -> TextAnchor {
+    let attrs = node.attributes();
+    match attrs.get_str_or(AId::TextAnchor, "start") {
+        "start"  => TextAnchor::Start,
+        "middle" => TextAnchor::Middle,
+        "end"    => TextAnchor::End,
+        _        => TextAnchor::Start,
+    }
+}
+
+fn process_text_anchor(a: TextAnchor, text_width: f64) -> f64 {
+    match a {
+        TextAnchor::Start =>  0.0, // Nothing.
+        TextAnchor::Middle => text_width / 2.0,
+        TextAnchor::End =>    text_width,
+    }
+}
+
+fn convert_font(
+    attrs: &svgdom::Attributes,
+) -> Option<FontStyle> {
+    let style = attrs.get_str_or(AId::FontStyle, "normal");
+    let style = match style {
+        "normal"  => fk::Style::Normal,
+        "italic"  => fk::Style::Italic,
+        "oblique" => fk::Style::Oblique,
+        _         => fk::Style::Normal,
+    };
+
+    let weight = attrs.get_str_or(AId::FontWeight, "normal");
+    let weight = match weight {
+        "normal" => fk::Weight::NORMAL,
+        "bold"   => fk::Weight::BOLD,
+        "100"    => fk::Weight::THIN,
+        "200"    => fk::Weight::EXTRA_LIGHT,
+        "300"    => fk::Weight::LIGHT,
+        "400"    => fk::Weight::NORMAL,
+        "500"    => fk::Weight::MEDIUM,
+        "600"    => fk::Weight::SEMIBOLD,
+        "700"    => fk::Weight::BOLD,
+        "800"    => fk::Weight::EXTRA_BOLD,
+        "900"    => fk::Weight::BLACK,
+        "bolder" | "lighter" => {
+            warn!("'bolder' and 'lighter' font-weight must be already resolved.");
+            fk::Weight::NORMAL
+        }
+        _ => fk::Weight::NORMAL,
+    };
+
+    let stretch = attrs.get_str_or(AId::FontStretch, "normal");
+    let stretch = match stretch {
+        "normal"                 => fk::Stretch::NORMAL,
+        "ultra-condensed"        => fk::Stretch::ULTRA_CONDENSED,
+        "extra-condensed"        => fk::Stretch::EXTRA_CONDENSED,
+        "narrower" | "condensed" => fk::Stretch::CONDENSED,
+        "semi-condensed"         => fk::Stretch::SEMI_CONDENSED,
+        "semi-expanded"          => fk::Stretch::SEMI_EXPANDED,
+        "wider" | "expanded"     => fk::Stretch::EXPANDED,
+        "extra-expanded"         => fk::Stretch::EXTRA_EXPANDED,
+        "ultra-expanded"         => fk::Stretch::ULTRA_EXPANDED,
+        _                        => fk::Stretch::NORMAL,
+    };
+
+    let mut font_list = Vec::new();
+    let font_family = attrs.get_str_or(AId::FontFamily, "");
+    for family in font_family.split(',') {
+        let family = family.replace('\'', "");
+
+        let name = match family.as_ref() {
+            "serif"      => fk::FamilyName::Serif,
+            "sans-serif" => fk::FamilyName::SansSerif,
+            "monospace"  => fk::FamilyName::Monospace,
+            "cursive"    => fk::FamilyName::Cursive,
+            "fantasy"    => fk::FamilyName::Fantasy,
+            _            => fk::FamilyName::Title(family)
+        };
+
+        font_list.push(name);
+    }
+
+    let size = attrs.get_number_or(AId::FontSize, 0.0);
+    if !(size > 0.0) {
+        return None;
+    }
+
+    let letter_spacing = attrs.get_number_or(AId::LetterSpacing, 0.0);
+    let word_spacing = attrs.get_number_or(AId::WordSpacing, 0.0);
+
+    let properties = fk::Properties { style, weight, stretch };
+    let font = match fk::SystemSource::new().select_best_match(&font_list, &properties) {
+        Ok(v) => v,
+        Err(_) => {
+            // TODO: Select any font.
+            warn!("No match for {:?} font-family.", font_family);
+            return None;
+        }
+    };
+
+    Some(FontStyle {
+        font,
+        size,
+        letter_spacing,
+        word_spacing,
+    })
 }
