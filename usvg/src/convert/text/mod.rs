@@ -461,63 +461,97 @@ fn render_chunk(
     }
 }
 
-// TODO: too many allocations
+mod svgdom_path_builder {
+    use lyon_geom::math::*;
+
+    pub struct Builder(pub svgdom::Path);
+
+    impl lyon_path::builder::FlatPathBuilder for Builder {
+        type PathType = svgdom::Path;
+
+        fn move_to(&mut self, to: Point) {
+            self.0.push(svgdom::PathSegment::MoveTo { abs: true, x: to.x as f64, y: to.y as f64 });
+        }
+
+        fn line_to(&mut self, to: Point) {
+            self.0.push(svgdom::PathSegment::LineTo { abs: true, x: to.x as f64, y: to.y as f64 });
+        }
+
+        fn close(&mut self) {
+            self.0.push(svgdom::PathSegment::ClosePath { abs: true });
+        }
+
+        fn build(self) -> Self::PathType {
+            self.0
+        }
+
+        fn build_and_reset(&mut self) -> Self::PathType {
+            let p = self.0.clone();
+            self.0.clear();
+            p
+        }
+
+        fn current_position(&self) -> Point {
+            warn!("unsupported");
+            lyon_geom::math::Point::new(0.0, 0.0)
+        }
+    }
+
+    impl lyon_path::builder::PathBuilder for Builder {
+        fn quadratic_bezier_to(&mut self, ctrl: Point, to: Point) {
+            self.0.push(svgdom::PathSegment::Quadratic {
+                abs: true,
+                x1: ctrl.x as f64,
+                y1: ctrl.y as f64,
+                x: to.x as f64,
+                y: to.y as f64,
+            });
+        }
+
+        fn cubic_bezier_to(&mut self, ctrl1: Point, ctrl2: Point, to: Point) {
+            self.0.push(svgdom::PathSegment::CurveTo {
+                abs: true,
+                x1: ctrl1.x as f64,
+                y1: ctrl1.y as f64,
+                x2: ctrl2.x as f64,
+                y2: ctrl2.y as f64,
+                x: to.x as f64,
+                y: to.y as f64,
+            });
+        }
+
+        fn arc(&mut self, _center: Point, _radii: Vector, _sweep_angle: Angle, _x_rotation: Angle) {
+//            let arc = lyon_geom::arc::Arc { center, radii, sweep_angle, x_rotation };
+//            let arc = arc.to_svg_arc();
+//
+//            self.0.push(svgdom::PathSegment::EllipticalArc {
+//                abs: true,
+//                rx: arc.radii.x as f64,
+//                ry: arc.radii.y as f64,
+//                x_axis_rotation: arc.x_rotation as f64,
+//                large_arc: arc.flags.large_arc,
+//                sweep: arc.flags.sweep,
+//                x: arc.to.x as f64,
+//                y: arc.to.y as f64,
+//            });
+        }
+    }
+}
+
 fn outline_glyph(
     font: &fk::Font,
     glyph_id: u32,
 ) -> Vec<tree::PathSegment> {
     use lyon_path::builder::FlatPathBuilder;
-    use lyon_path::PathEvent;
-    use svgdom::PathSegment;
 
-    let mut path = lyon_path::default::Path::builder();
+    let mut path = svgdom_path_builder::Builder(svgdom::Path::new());
 
     if let Err(_) = font.outline(glyph_id, fk::HintingOptions::None, &mut path) {
         warn!("Glyph {} not found in the font.", glyph_id);
         return Vec::new();
     }
 
-    let path = path.build();
-
-    let mut segments = Vec::new();
-
-    for event in &path {
-        let seg = match event {
-            PathEvent::MoveTo(p) => {
-                PathSegment::MoveTo { abs: true, x: p.x as f64, y: p.y as f64 }
-            }
-            PathEvent::LineTo(p) => {
-                PathSegment::LineTo { abs: true, x: p.x as f64, y: p.y as f64 }
-            }
-            PathEvent::QuadraticTo(p1, p) => {
-                PathSegment::Quadratic {
-                    abs: true,
-                    x1: p1.x as f64, y1: p1.y as f64,
-                    x:  p.x as f64,  y:  p.y as f64,
-                }
-            }
-            PathEvent::CubicTo(p1, p2, p) => {
-                PathSegment::CurveTo {
-                    abs: true,
-                    x1: p1.x as f64, y1: p1.y as f64,
-                    x2: p2.x as f64, y2: p2.y as f64,
-                    x:  p.x as f64,  y:  p.y as f64,
-                }
-            }
-            PathEvent::Arc(..) => {
-                // TODO: this
-                warn!("Arc in glyphs is not supported.");
-                continue;
-            }
-            PathEvent::Close => {
-                PathSegment::ClosePath { abs: true }
-            }
-        };
-
-        segments.push(seg);
-    }
-
-    super::path::convert_path(svgdom::Path(segments))
+    super::path::convert_path(path.build())
 }
 
 /// Applies the transform to the path segments.
