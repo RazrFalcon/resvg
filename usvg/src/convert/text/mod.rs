@@ -240,7 +240,7 @@ fn render_chunk(
             if span.contains(raw_glyph.byte_idx) {
                 for (raw_glyph, font) in &list {
                     if font_eq(&span.font, font) {
-                        glyphs.push(outline_glyph2(font, &raw_glyph[i]));
+                        glyphs.push(outline_glyph(font, &raw_glyph[i]));
                         break;
                     }
                 }
@@ -312,9 +312,8 @@ fn shape_text(
         let positions = output.get_glyph_positions();
         let infos = output.get_glyph_infos();
 
+        // TODO: merge clusters?
         for (pos, info) in positions.iter().zip(infos) {
-            // TODO: merge clusters?
-
             glyphs.push(RawGlyph {
                 byte_idx: run.start + info.cluster as usize,
                 id: info.codepoint,
@@ -431,28 +430,23 @@ mod svgdom_path_builder {
 }
 
 fn outline_glyph(
-    font: &fk::Font,
-    glyph_id: u32,
-) -> Vec<tree::PathSegment> {
-    use lyon_path::builder::FlatPathBuilder;
-
-    let mut path = svgdom_path_builder::Builder::new();
-
-    if let Err(_) = font.outline(glyph_id, fk::HintingOptions::None, &mut path) {
-        warn!("Glyph {} not found in the font.", glyph_id);
-        return Vec::new();
-    }
-
-    super::path::convert_path(path.build())
-}
-
-fn outline_glyph2(
     font: &Font,
     raw_glyph: &RawGlyph,
 ) -> Glyph {
     let scale = font.size / font.units_per_em as f64;
 
-    let mut glyph = outline_glyph(&font.font, raw_glyph.id);
+    use lyon_path::builder::FlatPathBuilder;
+
+    let mut builder = svgdom_path_builder::Builder::new();
+    let mut glyph = match font.font.outline(raw_glyph.id, fk::HintingOptions::None, &mut builder) {
+        Ok(_) => {
+            super::path::convert_path(builder.build())
+        }
+        Err(_) => {
+            warn!("Glyph {} not found in the font.", raw_glyph.id);
+            Vec::new()
+        }
+    };
 
     // Mirror and scale to the `font-size`.
     if !glyph.is_empty() {
@@ -538,9 +532,9 @@ fn byte_to_code_point(text: &str, byte: usize) -> usize {
 
 fn process_anchor(a: TextAnchor, text_width: f64) -> f64 {
     match a {
-        TextAnchor::Start =>  0.0, // Nothing.
-        TextAnchor::Middle => text_width / 2.0,
-        TextAnchor::End =>    text_width,
+        TextAnchor::Start   => 0.0, // Nothing.
+        TextAnchor::Middle  => text_width / 2.0,
+        TextAnchor::End     => text_width,
     }
 }
 
