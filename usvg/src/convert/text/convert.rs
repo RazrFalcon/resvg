@@ -10,6 +10,7 @@ mod fk {
     pub use font_kit::properties::*;
     pub use font_kit::family_name::FamilyName;
     pub use font_kit::font::Font;
+    pub use font_kit::handle::Handle;
 }
 
 // self
@@ -27,6 +28,8 @@ pub enum TextAnchor {
 #[derive(Clone)]
 pub struct Font {
     pub font: fk::Font,
+    pub path: String,
+    pub index: u32,
     pub size: f64,
     pub units_per_em: u32,
     pub ascent: f64,
@@ -44,8 +47,118 @@ pub struct CharacterPosition {
     pub dy: Option<f64>,
 }
 
+#[derive(Clone)]
+pub struct TextChunk {
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+    pub anchor: TextAnchor,
+    pub spans: Vec<TextSpan>,
+    pub text: String,
+}
+
+#[derive(Clone)]
+pub struct TextSpan {
+    pub start: usize,
+    pub end: usize,
+    pub id: String,
+    pub fill: Option<tree::Fill>,
+    pub stroke: Option<tree::Stroke>,
+    pub font: Font,
+    pub decoration: TextDecoration,
+    pub baseline_shift: f64,
+    pub visibility: tree::Visibility,
+}
+
+impl TextSpan {
+    pub fn contains(&self, byte_offset: usize) -> bool {
+        byte_offset >= self.start && byte_offset < self.end
+    }
+}
+
 pub type PositionsList = Vec<CharacterPosition>;
 pub type RotateList = Vec<f64>;
+
+pub fn resolve_chunks(
+    tree: &tree::Tree,
+    text_elem: &svgdom::Node,
+    pos_list: &PositionsList,
+) -> Vec<TextChunk> {
+    let mut chunks = Vec::new();
+    let mut char_idx = 0;
+    let mut chunk_byte_idx = 0;
+    for child in text_elem.descendants().filter(|n| n.is_text()) {
+        let text_parent = child.parent().unwrap();
+        let attrs = text_parent.attributes();
+        let baseline_shift = text_parent.attributes().get_number_or(AId::BaselineShift, 0.0);
+        let anchor = resolve_text_anchor(&text_parent);
+
+        let font = match resolve_font(&attrs) {
+            Some(v) => v,
+            None => {
+                // Skip this span.
+                char_idx += child.text().chars().count();
+                continue;
+            }
+        };
+
+        let span = TextSpan {
+            start: 0,
+            end: 0,
+            id: text_elem.id().clone(),
+            fill: super::super::fill::convert(tree, &attrs, true),
+            stroke: super::super::stroke::convert(tree, &attrs, true),
+            font,
+            decoration: resolve_decoration(tree, text_elem, &text_parent),
+            visibility: super::super::convert_visibility(&attrs),
+            baseline_shift,
+        };
+
+        let mut is_new_span = true;
+        for c in child.text().chars() {
+            if pos_list[char_idx].x.is_some() || pos_list[char_idx].y.is_some() || chunks.is_empty() {
+                let x = pos_list[char_idx].x;
+                let y = pos_list[char_idx].y;
+
+                chunk_byte_idx = 0;
+
+                let mut span2 = span.clone();
+                span2.start = 0;
+                span2.end = c.len_utf8();
+
+                chunks.push(TextChunk {
+                    x,
+                    y,
+                    anchor,
+                    spans: vec![span2],
+                    text: c.to_string(),
+                });
+            } else if is_new_span {
+                let mut span2 = span.clone();
+                span2.start = chunk_byte_idx;
+                span2.end = chunk_byte_idx + c.len_utf8();
+
+                if let Some(chunk) = chunks.last_mut() {
+                    chunk.text.push(c);
+                    chunk.spans.push(span2);
+                }
+            } else {
+                if let Some(chunk) = chunks.last_mut() {
+                    chunk.text.push(c);
+                    if let Some(span) = chunk.spans.last_mut() {
+                        debug_assert_ne!(span.end, 0);
+                        span.end += c.len_utf8();
+                    }
+                }
+            }
+
+            is_new_span = false;
+            char_idx += 1;
+            chunk_byte_idx += c.len_utf8();
+        }
+    }
+
+    chunks
+}
 
 pub fn resolve_font(
     attrs: &svgdom::Attributes,
@@ -127,6 +240,13 @@ pub fn resolve_font(
         }
     };
 
+    let (path, index) = match handle {
+        fk::Handle::Path { ref path, font_index } => {
+            (path.to_str().unwrap().to_owned(), font_index)
+        }
+        _ => (String::new(), 0),
+    };
+
     // TODO: font caching
     let font = match handle.load() {
         Ok(v) => v,
@@ -141,6 +261,8 @@ pub fn resolve_font(
 
     Some(Font {
         font,
+        path,
+        index,
         size,
         units_per_em: metrics.units_per_em,
         ascent: metrics.ascent as f64 * scale,

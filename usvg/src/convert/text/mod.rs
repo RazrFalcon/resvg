@@ -8,7 +8,7 @@ use std::mem;
 use svgdom;
 use harfbuzz;
 use unicode_bidi;
-use unicode_script;
+//use unicode_script;
 
 mod fk {
     pub use font_kit::hinting::HintingOptions;
@@ -22,11 +22,21 @@ use tree::prelude::*;
 use super::prelude::*;
 use self::convert::*;
 
+// TODO: letter spacing
 // TODO: word spacing
 // TODO: visibility on text and tspan
 // TODO: glyph fallback
 // TODO: group when Options::keep_named_groups is set
 
+
+#[derive(Clone)]
+struct RawGlyph {
+    id: u32,
+    byte_idx: usize,
+    dx: f64,
+    dy: f64,
+    width: f64,
+}
 
 #[derive(Clone)]
 struct Glyph {
@@ -39,31 +49,17 @@ struct Glyph {
     path: Vec<tree::PathSegment>,
 }
 
-#[derive(Clone)]
-struct TextChunk {
-    x: Option<f64>,
-    y: Option<f64>,
-    anchor: TextAnchor,
-    spans: Vec<TextSpan>,
-    text: String,
-}
-
-#[derive(Clone)]
-struct TextSpan {
-    start: usize,
-    end: usize,
-    id: String,
-    fill: Option<tree::Fill>,
-    stroke: Option<tree::Stroke>,
-    font: Font,
-    decoration: TextDecoration,
-    baseline_shift: f64,
-    visibility: tree::Visibility,
-}
-
-impl TextSpan {
-    fn contains(&self, byte_offset: usize) -> bool {
-        byte_offset >= self.start && byte_offset < self.end
+impl Default for Glyph {
+    fn default() -> Self {
+        Glyph {
+            byte_idx: 0,
+            x: 0.0,
+            y: 0.0,
+            rotate: 0.0,
+            width: 0.0,
+            has_relative_shift: false,
+            path: Vec::new(),
+        }
     }
 }
 
@@ -90,7 +86,6 @@ pub fn convert(
     let text_ts = text_elem.attributes().get_transform(AId::Transform).unwrap_or_default();
 
     let mut chunks = resolve_chunks(tree, &text_elem, &pos_list);
-    let mut glyphs = Vec::new();
     let mut char_offset = 0;
     let mut x = 0.0;
     let mut y = 0.0;
@@ -98,9 +93,7 @@ pub fn convert(
         x = chunk.x.unwrap_or(x);
         y = chunk.y.unwrap_or(y);
 
-        glyphs.clear();
-        // TODO: mixed fonts
-        render_chunk(&chunk.text, &chunk.spans[0].font, &mut glyphs);
+        let mut glyphs = render_chunk(&chunk);
         resolve_glyph_positions(&chunk.text, char_offset, &pos_list, &rotate_list, &mut glyphs);
 
         let width = glyphs.iter().fold(0.0, |w, glyph| w + glyph.width);
@@ -143,6 +136,33 @@ pub fn convert(
     }
 }
 
+use std::slice::IterMut;
+
+struct SpanGlyphsMut<'a> {
+    span: &'a TextSpan,
+    glyphs: IterMut<'a, Glyph>,
+}
+
+impl<'a> SpanGlyphsMut<'a> {
+    fn new(span: &'a TextSpan, glyphs: &'a mut [Glyph]) -> Self {
+        SpanGlyphsMut { span, glyphs: glyphs.iter_mut() }
+    }
+}
+
+impl<'a> Iterator for SpanGlyphsMut<'a> {
+    type Item = &'a mut Glyph;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(g) = self.glyphs.next() {
+            if self.span.contains(g.byte_idx) {
+                return Some(g);
+            }
+        }
+
+        None
+    }
+}
+
 fn convert_span(
     x: f64,
     y: f64,
@@ -152,19 +172,17 @@ fn convert_span(
 ) -> Option<tree::NodeKind> {
     let mut segments = Vec::new();
 
-    for glyph in glyphs {
-        if span.contains(glyph.byte_idx) {
-            let mut path = mem::replace(&mut glyph.path, Vec::new());
-            let mut transform = tree::Transform::new_translate(glyph.x, glyph.y);
-            if !glyph.rotate.is_fuzzy_zero() {
-                transform.rotate(glyph.rotate);
-            }
+    for glyph in SpanGlyphsMut::new(span, glyphs) {
+        let mut path = mem::replace(&mut glyph.path, Vec::new());
+        let mut transform = tree::Transform::new_translate(glyph.x, glyph.y);
+        if !glyph.rotate.is_fuzzy_zero() {
+            transform.rotate(glyph.rotate);
+        }
 
-            transform_path(&mut path, &transform);
+        transform_path(&mut path, &transform);
 
-            if !path.is_empty() {
-                segments.extend_from_slice(&path);
-            }
+        if !path.is_empty() {
+            segments.extend_from_slice(&path);
         }
     }
 
@@ -195,201 +213,81 @@ fn convert_span(
     Some(tree::NodeKind::Path(path))
 }
 
-fn collect_decoration_spans(
-    span: &TextSpan,
-    glyphs: &[Glyph],
-) -> Vec<DecorationSpan> {
-    let mut spans = Vec::new();
-
-    let mut started = false;
-    let mut x = 0.0;
-    let mut y = 0.0;
-    let mut width = 0.0;
-    let mut angle = 0.0;
-    for glyph in glyphs {
-        if span.contains(glyph.byte_idx) {
-            if started && (glyph.has_relative_shift || !glyph.rotate.is_fuzzy_zero()) {
-                started = false;
-                spans.push(DecorationSpan { x, y, width, angle });
-            }
-
-            if !started {
-                x = glyph.x;
-                y = glyph.y;
-                width = glyph.x + glyph.width - x;
-                angle = glyph.rotate;
-                started = true;
-            } else {
-                width = glyph.x + glyph.width - x;
-            }
-        } else if started {
-            spans.push(DecorationSpan { x, y, width, angle });
-            started = false;
-        }
-    }
-
-    if started {
-        spans.push(DecorationSpan { x, y, width, angle });
-    }
-
-    spans
-}
-
-fn convert_decoration(
-    x: f64,
-    y: f64,
-    span: &TextSpan,
-    decoration: &TextDecorationStyle,
-    decoration_spans: &[DecorationSpan],
-    transform: tree::Transform,
-) -> tree::NodeKind {
-    debug_assert!(!decoration_spans.is_empty());
-
-    let mut segments = Vec::new();
-    for dec_span in decoration_spans {
-        let tx = x + dec_span.x;
-        let ty = y + dec_span.y - span.baseline_shift - span.font.underline_thickness / 2.0;
-
-        let rect = Rect::new(
-            0.0,
-            0.0,
-            dec_span.width,
-            span.font.underline_thickness,
-        );
-
-        let start_idx = segments.len();
-        add_rect_to_path(rect, &mut segments);
-
-        let mut ts = tree::Transform::new_translate(tx, ty);
-        ts.rotate(dec_span.angle);
-        transform_path(&mut segments[start_idx..], &ts);
-    }
-
-    tree::NodeKind::Path(tree::Path {
-        id: String::new(),
-        transform,
-        visibility: span.visibility,
-        fill: decoration.fill.clone(),
-        stroke: decoration.stroke.clone(),
-        marker: Box::new(tree::PathMarker::default()),
-        segments,
-    })
-}
-
-fn add_rect_to_path(rect: Rect, path: &mut Vec<tree::PathSegment>) {
-    path.extend_from_slice(&[
-        tree::PathSegment::MoveTo {
-            x: rect.x, y: rect.y
-        },
-        tree::PathSegment::LineTo {
-            x: rect.right(), y: rect.y
-        },
-        tree::PathSegment::LineTo {
-            x: rect.right(), y: rect.bottom()
-        },
-        tree::PathSegment::LineTo {
-            x: rect.x, y: rect.bottom()
-        },
-        tree::PathSegment::ClosePath,
-    ]);
-}
-
-fn resolve_chunks(
-    tree: &tree::Tree,
-    text_elem: &svgdom::Node,
-    pos_list: &PositionsList,
-) -> Vec<TextChunk> {
-    let mut chunks = Vec::new();
-    let mut char_idx = 0;
-    let mut chunk_byte_idx = 0;
-    for child in text_elem.descendants().filter(|n| n.is_text()) {
-        let text_parent = child.parent().unwrap();
-        let attrs = text_parent.attributes();
-        let baseline_shift = text_parent.attributes().get_number_or(AId::BaselineShift, 0.0);
-        let anchor = resolve_text_anchor(&text_parent);
-
-        let font = match resolve_font(&attrs) {
-            Some(v) => v,
-            None => {
-                // Skip this span.
-                char_idx += child.text().chars().count();
-                continue;
-            }
-        };
-
-        let span = TextSpan {
-            start: 0,
-            end: 0,
-            id: text_elem.id().clone(),
-            fill: super::fill::convert(tree, &attrs, true),
-            stroke: super::stroke::convert(tree, &attrs, true),
-            font,
-            decoration: resolve_decoration(tree, text_elem, &text_parent),
-            visibility: super::convert_visibility(&attrs),
-            baseline_shift,
-        };
-
-        let mut is_new_span = true;
-        for c in child.text().chars() {
-            if pos_list[char_idx].x.is_some() || pos_list[char_idx].y.is_some() || chunks.is_empty() {
-                let x = pos_list[char_idx].x;
-                let y = pos_list[char_idx].y;
-
-                chunk_byte_idx = 0;
-
-                let mut span2 = span.clone();
-                span2.start = 0;
-                span2.end = c.len_utf8();
-
-                chunks.push(TextChunk {
-                    x,
-                    y,
-                    anchor,
-                    spans: vec![span2],
-                    text: c.to_string(),
-                });
-            } else if is_new_span {
-                let mut span2 = span.clone();
-                span2.start = chunk_byte_idx;
-                span2.end = chunk_byte_idx + c.len_utf8();
-
-                if let Some(chunk) = chunks.last_mut() {
-                    chunk.text.push(c);
-                    chunk.spans.push(span2);
-                }
-            } else {
-                if let Some(chunk) = chunks.last_mut() {
-                    chunk.text.push(c);
-                    if let Some(span) = chunk.spans.last_mut() {
-                        debug_assert_ne!(span.end, 0);
-                        span.end += c.len_utf8();
-                    }
-                }
-            }
-
-            is_new_span = false;
-            char_idx += 1;
-            chunk_byte_idx += c.len_utf8();
-        }
-    }
-
-    chunks
+fn font_eq(f1: &Font, f2: &Font) -> bool {
+    f1.path == f2.path && f1.index == f2.index && f1.size == f2.size
 }
 
 fn render_chunk(
+    chunk: &TextChunk,
+) -> Vec<Glyph> {
+    let fonts = collect_unique_fonts(chunk);
+
+    let mut list = Vec::new();
+    for font in &fonts {
+        let raw_glyphs = shape_text(&chunk.text, font);
+        list.push((raw_glyphs, font));
+    }
+
+    let mut glyphs = Vec::new();
+
+    if list.is_empty() {
+        return glyphs;
+    }
+
+    // TODO: rewrite because it's scary
+    for (i, raw_glyph) in list[0].0.iter().enumerate() {
+        for span in &chunk.spans {
+            if span.contains(raw_glyph.byte_idx) {
+                for (raw_glyph, font) in &list {
+                    if font_eq(&span.font, font) {
+                        glyphs.push(outline_glyph2(font, &raw_glyph[i]));
+                        break;
+                    }
+                }
+
+                break;
+            }
+        }
+    }
+
+    glyphs
+}
+
+fn collect_unique_fonts(
+    chunk: &TextChunk,
+) -> Vec<Font> {
+    let mut list = Vec::new();
+
+    for span in &chunk.spans {
+        let mut exists = false;
+        for font in &list {
+            if font_eq(font, &span.font) {
+                exists = true;
+                break;
+            }
+        }
+
+        if !exists {
+            list.push(span.font.clone());
+        }
+    }
+
+    list
+}
+
+fn shape_text(
     text: &str,
     font: &Font,
-    glyphs: &mut Vec<Glyph>,
-) {
-    let scale = font.size / font.units_per_em as f64;
-
-    let font_data = try_opt!(font.font.copy_font_data(), ());
-    let hb_face = harfbuzz::Face::from_bytes(&font_data, 0);
+) -> Vec<RawGlyph> {
+    let font_data = try_opt!(font.font.copy_font_data(), Vec::new());
+    let hb_face = harfbuzz::Face::from_bytes(&font_data, font.index);
     let hb_font = harfbuzz::Font::new(hb_face);
 
     let bidi_info = unicode_bidi::BidiInfo::new(text, Some(unicode_bidi::Level::ltr()));
     let paragraph = &bidi_info.paragraphs[0];
     let line = paragraph.range.clone();
+
+    let mut glyphs = Vec::new();
 
     let (levels, runs) = bidi_info.visual_runs(&paragraph, line);
     for run in runs.iter() {
@@ -398,16 +296,7 @@ fn render_chunk(
             continue;
         }
 
-        // TODO: do after, like resolve_glyph_positions
-        let mut letter_spacing = font.letter_spacing;
-        // TODO: rewrite
-        let text_script = unicode_script::get_script(sub_text.chars().nth(0).unwrap());
-        if !script_supports_letter_spacing(text_script) {
-            letter_spacing = 0.0;
-        }
-
-        let is_rtl = levels[run.start].is_rtl();
-        let hb_direction = if is_rtl {
+        let hb_direction = if levels[run.start].is_rtl() {
             harfbuzz::Direction::Rtl
         } else {
             harfbuzz::Direction::Ltr
@@ -424,41 +313,19 @@ fn render_chunk(
         let infos = output.get_glyph_infos();
 
         for (pos, info) in positions.iter().zip(infos) {
-            let mut glyph = outline_glyph(&font.font, info.codepoint);
+            // TODO: merge clusters?
 
-            // Mirror and scale to the `font-size`.
-            if !glyph.is_empty() {
-                let ts = svgdom::Transform::new_scale(scale, -scale);
-                transform_path(&mut glyph, &ts);
-            }
-
-            let offset = Point::new(pos.x_offset as f64 * scale, pos.y_offset as f64 * scale);
-            let advance = Size::new(pos.x_advance as f64 * scale + letter_spacing,
-                                    pos.y_advance as f64 * scale);
-
-            // TODO: word-spacing via UnicodeSegmentation::unicode_words
-
-            // TODO: to glyph_offset?
-            if !glyph.is_empty() && (!offset.x.is_fuzzy_zero() || !offset.y.is_fuzzy_zero()) {
-                let ts = svgdom::Transform::new_translate(offset.x, -offset.y);
-                transform_path(&mut glyph, &ts);
-            }
-
-            glyphs.push(Glyph {
+            glyphs.push(RawGlyph {
                 byte_idx: run.start + info.cluster as usize,
-                x: 0.0,
-                y: 0.0,
-                rotate: 0.0,
-                path: glyph,
-                width: advance.width,
-                has_relative_shift: false,
+                id: info.codepoint,
+                dx: pos.x_offset as f64,
+                dy: pos.y_offset as f64,
+                width: pos.x_advance as f64,
             });
         }
-
-        if let Some(ref mut glyph) = glyphs.last_mut() {
-            glyph.width -= letter_spacing;
-        }
     }
+
+    glyphs
 }
 
 mod svgdom_path_builder {
@@ -579,6 +446,33 @@ fn outline_glyph(
     super::path::convert_path(path.build())
 }
 
+fn outline_glyph2(
+    font: &Font,
+    raw_glyph: &RawGlyph,
+) -> Glyph {
+    let scale = font.size / font.units_per_em as f64;
+
+    let mut glyph = outline_glyph(&font.font, raw_glyph.id);
+
+    // Mirror and scale to the `font-size`.
+    if !glyph.is_empty() {
+        let ts = svgdom::Transform::new_scale(scale, -scale);
+        transform_path(&mut glyph, &ts);
+    }
+
+    if !glyph.is_empty() && (!raw_glyph.dx.is_fuzzy_zero() || !raw_glyph.dy.is_fuzzy_zero()) {
+        let ts = svgdom::Transform::new_translate(raw_glyph.dx * scale, -raw_glyph.dy * scale);
+        transform_path(&mut glyph, &ts);
+    }
+
+    Glyph {
+        byte_idx: raw_glyph.byte_idx,
+        path: glyph,
+        width: raw_glyph.width * scale,
+        .. Glyph::default()
+    }
+}
+
 /// Applies the transform to the path segments.
 fn transform_path(segments: &mut [tree::PathSegment], ts: &tree::Transform) {
     for seg in segments {
@@ -650,30 +544,129 @@ fn process_anchor(a: TextAnchor, text_width: f64) -> f64 {
     }
 }
 
-fn script_supports_letter_spacing(script: unicode_script::Script) -> bool {
-    // Details https://www.w3.org/TR/css-text-3/#cursive-tracking
-    //
-    // List from https://github.com/harfbuzz/harfbuzz/issues/64
+fn collect_decoration_spans(
+    span: &TextSpan,
+    glyphs: &[Glyph],
+) -> Vec<DecorationSpan> {
+    let mut spans = Vec::new();
 
-    use unicode_script::Script;
+    let mut started = false;
+    let mut x = 0.0;
+    let mut y = 0.0;
+    let mut width = 0.0;
+    let mut angle = 0.0;
+    for glyph in glyphs {
+        if span.contains(glyph.byte_idx) {
+            if started && (glyph.has_relative_shift || !glyph.rotate.is_fuzzy_zero()) {
+                started = false;
+                spans.push(DecorationSpan { x, y, width, angle });
+            }
 
-    match script {
-          Script::Arabic
-        | Script::Syriac
-        | Script::Nko
-        | Script::Manichaean
-        | Script::Psalter_Pahlavi
-        | Script::Mandaic
-        | Script::Mongolian
-        | Script::Phags_Pa
-        | Script::Devanagari
-        | Script::Bengali
-        | Script::Gurmukhi
-        | Script::Modi
-        | Script::Sharada
-        | Script::Syloti_Nagri
-        | Script::Tirhuta
-        | Script::Ogham => false,
-        _ => true,
+            if !started {
+                x = glyph.x;
+                y = glyph.y;
+                width = glyph.x + glyph.width - x;
+                angle = glyph.rotate;
+                started = true;
+            } else {
+                width = glyph.x + glyph.width - x;
+            }
+        } else if started {
+            spans.push(DecorationSpan { x, y, width, angle });
+            started = false;
+        }
     }
+
+    if started {
+        spans.push(DecorationSpan { x, y, width, angle });
+    }
+
+    spans
 }
+
+fn convert_decoration(
+    x: f64,
+    y: f64,
+    span: &TextSpan,
+    decoration: &TextDecorationStyle,
+    decoration_spans: &[DecorationSpan],
+    transform: tree::Transform,
+) -> tree::NodeKind {
+    debug_assert!(!decoration_spans.is_empty());
+
+    let mut segments = Vec::new();
+    for dec_span in decoration_spans {
+        let tx = x + dec_span.x;
+        let ty = y + dec_span.y - span.baseline_shift - span.font.underline_thickness / 2.0;
+
+        let rect = Rect::new(
+            0.0,
+            0.0,
+            dec_span.width,
+            span.font.underline_thickness,
+        );
+
+        let start_idx = segments.len();
+        add_rect_to_path(rect, &mut segments);
+
+        let mut ts = tree::Transform::new_translate(tx, ty);
+        ts.rotate(dec_span.angle);
+        transform_path(&mut segments[start_idx..], &ts);
+    }
+
+    tree::NodeKind::Path(tree::Path {
+        id: String::new(),
+        transform,
+        visibility: span.visibility,
+        fill: decoration.fill.clone(),
+        stroke: decoration.stroke.clone(),
+        marker: Box::new(tree::PathMarker::default()),
+        segments,
+    })
+}
+
+fn add_rect_to_path(rect: Rect, path: &mut Vec<tree::PathSegment>) {
+    path.extend_from_slice(&[
+        tree::PathSegment::MoveTo {
+            x: rect.x, y: rect.y
+        },
+        tree::PathSegment::LineTo {
+            x: rect.right(), y: rect.y
+        },
+        tree::PathSegment::LineTo {
+            x: rect.right(), y: rect.bottom()
+        },
+        tree::PathSegment::LineTo {
+            x: rect.x, y: rect.bottom()
+        },
+        tree::PathSegment::ClosePath,
+    ]);
+}
+
+//fn script_supports_letter_spacing(script: unicode_script::Script) -> bool {
+//    // Details https://www.w3.org/TR/css-text-3/#cursive-tracking
+//    //
+//    // List from https://github.com/harfbuzz/harfbuzz/issues/64
+//
+//    use unicode_script::Script;
+//
+//    match script {
+//          Script::Arabic
+//        | Script::Syriac
+//        | Script::Nko
+//        | Script::Manichaean
+//        | Script::Psalter_Pahlavi
+//        | Script::Mandaic
+//        | Script::Mongolian
+//        | Script::Phags_Pa
+//        | Script::Devanagari
+//        | Script::Bengali
+//        | Script::Gurmukhi
+//        | Script::Modi
+//        | Script::Sharada
+//        | Script::Syloti_Nagri
+//        | Script::Tirhuta
+//        | Script::Ogham => false,
+//        _ => true,
+//    }
+//}
