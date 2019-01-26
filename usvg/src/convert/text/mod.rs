@@ -125,7 +125,7 @@ pub fn convert(
             if let Some(decoration) = span.decoration.line_through.take() {
                 // TODO: line-through pos from font
                 parent.append_kind(convert_decoration(
-                    x, y - span.font.ascent / 2.0,
+                    x, y - span.font.ascent / 3.0,
                     &span, &decoration, &decoration_spans, text_ts.clone(),
                 ));
             }
@@ -133,33 +133,6 @@ pub fn convert(
 
         char_offset += chunk.text.chars().count();
         x += width;
-    }
-}
-
-use std::slice::IterMut;
-
-struct SpanGlyphsMut<'a> {
-    span: &'a TextSpan,
-    glyphs: IterMut<'a, Glyph>,
-}
-
-impl<'a> SpanGlyphsMut<'a> {
-    fn new(span: &'a TextSpan, glyphs: &'a mut [Glyph]) -> Self {
-        SpanGlyphsMut { span, glyphs: glyphs.iter_mut() }
-    }
-}
-
-impl<'a> Iterator for SpanGlyphsMut<'a> {
-    type Item = &'a mut Glyph;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some(g) = self.glyphs.next() {
-            if self.span.contains(g.byte_idx) {
-                return Some(g);
-            }
-        }
-
-        None
     }
 }
 
@@ -172,17 +145,19 @@ fn convert_span(
 ) -> Option<tree::NodeKind> {
     let mut segments = Vec::new();
 
-    for glyph in SpanGlyphsMut::new(span, glyphs) {
-        let mut path = mem::replace(&mut glyph.path, Vec::new());
-        let mut transform = tree::Transform::new_translate(glyph.x, glyph.y);
-        if !glyph.rotate.is_fuzzy_zero() {
-            transform.rotate(glyph.rotate);
-        }
+    for glyph in glyphs {
+        if span.contains(glyph.byte_idx) {
+            let mut path = mem::replace(&mut glyph.path, Vec::new());
+            let mut transform = tree::Transform::new_translate(glyph.x, glyph.y);
+            if !glyph.rotate.is_fuzzy_zero() {
+                transform.rotate(glyph.rotate);
+            }
 
-        transform_path(&mut path, &transform);
+            transform_path(&mut path, &transform);
 
-        if !path.is_empty() {
-            segments.extend_from_slice(&path);
+            if !path.is_empty() {
+                segments.extend_from_slice(&path);
+            }
         }
     }
 
