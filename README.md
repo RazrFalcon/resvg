@@ -34,7 +34,7 @@ removes groups and invisible elements, fixes a lot of issues in malformed SVG fi
 Then it creates a simple render tree with all elements and attributes resolved.
 And only then it starts to render. So it's very easy to implement a new rendering backend.
 
-More details [here](https://github.com/RazrFalcon/usvg/blob/master/docs/usvg_spec.adoc).
+More details [here](https://github.com/RazrFalcon/resvg/blob/master/docs/usvg_spec.adoc).
 
 ### resvg vs librsvg
 
