@@ -106,7 +106,7 @@ pub fn convert(
             if let Some(decoration) = span.decoration.underline.take() {
                 parent.append_kind(convert_decoration(
                     x, y - span.font.underline_position,
-                    &span, &decoration, &decoration_spans, text_ts.clone(),
+                    &span, &decoration, &decoration_spans, text_ts,
                 ));
             }
 
@@ -114,7 +114,7 @@ pub fn convert(
                 // TODO: overline pos from font
                 parent.append_kind(convert_decoration(
                     x, y - span.font.ascent,
-                    &span, &decoration, &decoration_spans, text_ts.clone(),
+                    &span, &decoration, &decoration_spans, text_ts,
                 ));
             }
 
@@ -126,7 +126,7 @@ pub fn convert(
                 // TODO: line-through pos from font
                 parent.append_kind(convert_decoration(
                     x, y - span.font.ascent / 3.0,
-                    &span, &decoration, &decoration_spans, text_ts.clone(),
+                    &span, &decoration, &decoration_spans, text_ts,
                 ));
             }
         }
@@ -215,7 +215,7 @@ fn render_chunk(
             if span.contains(raw_glyph.byte_idx) {
                 for (raw_glyph, font) in &list {
                     if font_eq(&span.font, font) {
-                        glyphs.push(outline_glyph(font, &raw_glyph[i]));
+                        glyphs.push(outline_glyph(font, &raw_glyph[i..]));
                         break;
                     }
                 }
@@ -302,142 +302,55 @@ fn shape_text(
     glyphs
 }
 
-mod svgdom_path_builder {
-    use lyon_geom::math::*;
-    use lyon_path::builder::FlatPathBuilder;
-
-    pub struct Builder {
-        path: svgdom::Path,
-        current_position: Point,
-        first_position: Point,
-    }
-
-    impl Builder {
-        pub fn new() -> Self {
-            Builder {
-                path: svgdom::Path::new(),
-                current_position: Point::new(0.0, 0.0),
-                first_position: Point::new(0.0, 0.0),
-            }
-        }
-    }
-
-    impl FlatPathBuilder for Builder {
-        type PathType = svgdom::Path;
-
-        fn move_to(&mut self, to: Point) {
-            self.first_position = to;
-            self.current_position = to;
-            self.path.push(svgdom::PathSegment::MoveTo { abs: true, x: to.x as f64, y: to.y as f64 });
-        }
-
-        fn line_to(&mut self, to: Point) {
-            self.current_position = to;
-            self.path.push(svgdom::PathSegment::LineTo { abs: true, x: to.x as f64, y: to.y as f64 });
-        }
-
-        fn close(&mut self) {
-            self.current_position = self.first_position;
-            self.path.push(svgdom::PathSegment::ClosePath { abs: true });
-        }
-
-        fn build(self) -> Self::PathType {
-            self.path
-        }
-
-        fn build_and_reset(&mut self) -> Self::PathType {
-            let p = self.path.clone();
-            self.path.clear();
-            self.current_position = Point::new(0.0, 0.0);
-            self.first_position = Point::new(0.0, 0.0);
-            p
-        }
-
-        fn current_position(&self) -> Point {
-            self.current_position
-        }
-    }
-
-    impl lyon_path::builder::PathBuilder for Builder {
-        fn quadratic_bezier_to(&mut self, ctrl: Point, to: Point) {
-            self.current_position = to;
-            self.path.push(svgdom::PathSegment::Quadratic {
-                abs: true,
-                x1: ctrl.x as f64,
-                y1: ctrl.y as f64,
-                x: to.x as f64,
-                y: to.y as f64,
-            });
-        }
-
-        fn cubic_bezier_to(&mut self, ctrl1: Point, ctrl2: Point, to: Point) {
-            self.current_position = to;
-            self.path.push(svgdom::PathSegment::CurveTo {
-                abs: true,
-                x1: ctrl1.x as f64,
-                y1: ctrl1.y as f64,
-                x2: ctrl2.x as f64,
-                y2: ctrl2.y as f64,
-                x: to.x as f64,
-                y: to.y as f64,
-            });
-        }
-
-        fn arc(&mut self, center: Point, radii: Vector, sweep_angle: Angle, x_rotation: Angle) {
-            let arc = lyon_geom::arc::Arc {
-                start_angle: (self.current_position() - center).angle_from_x_axis() - x_rotation,
-                center, radii, sweep_angle, x_rotation,
-            };
-            let arc = arc.to_svg_arc();
-
-            self.path.push(svgdom::PathSegment::EllipticalArc {
-                abs: true,
-                rx: arc.radii.x as f64,
-                ry: arc.radii.y as f64,
-                x_axis_rotation: arc.x_rotation.to_degrees() as f64,
-                large_arc: arc.flags.large_arc,
-                sweep: arc.flags.sweep,
-                x: arc.to.x as f64,
-                y: arc.to.y as f64,
-            });
-        }
-    }
-}
-
 fn outline_glyph(
     font: &Font,
-    raw_glyph: &RawGlyph,
+    raw_glyphs: &[RawGlyph],
 ) -> Glyph {
-    let scale = font.size / font.units_per_em as f64;
-
     use lyon_path::builder::FlatPathBuilder;
 
-    let mut builder = svgdom_path_builder::Builder::new();
-    let mut glyph = match font.font.outline(raw_glyph.id, fk::HintingOptions::None, &mut builder) {
-        Ok(_) => {
-            super::path::convert_path(builder.build())
-        }
-        Err(_) => {
-            warn!("Glyph {} not found in the font.", raw_glyph.id);
-            Vec::new()
-        }
-    };
+    debug_assert!(!raw_glyphs.is_empty());
 
-    // Mirror and scale to the `font-size`.
-    if !glyph.is_empty() {
-        let ts = svgdom::Transform::new_scale(scale, -scale);
-        transform_path(&mut glyph, &ts);
-    }
+    let scale = font.size / font.units_per_em as f64;
+    let byte_idx = raw_glyphs[0].byte_idx;
 
-    if !glyph.is_empty() && (!raw_glyph.dx.is_fuzzy_zero() || !raw_glyph.dy.is_fuzzy_zero()) {
-        let ts = svgdom::Transform::new_translate(raw_glyph.dx * scale, -raw_glyph.dy * scale);
-        transform_path(&mut glyph, &ts);
+    let mut path = Vec::new();
+    let mut width = 0.0;
+
+    for raw_glyph in raw_glyphs {
+        if byte_idx != raw_glyph.byte_idx {
+            break;
+        }
+
+        let mut builder = svgdom_path_builder::Builder::new();
+        let mut glyph = match font.font.outline(raw_glyph.id, fk::HintingOptions::None, &mut builder) {
+            Ok(_) => {
+                super::path::convert_path(builder.build())
+            }
+            Err(_) => {
+                warn!("Glyph {} not found in the font.", raw_glyph.id);
+                Vec::new()
+            }
+        };
+
+        // Mirror and scale to the `font-size`.
+        if !glyph.is_empty() {
+            let ts = svgdom::Transform::new_scale(scale, -scale);
+            transform_path(&mut glyph, &ts);
+        }
+
+        if !glyph.is_empty() && (!raw_glyph.dx.is_fuzzy_zero() || !raw_glyph.dy.is_fuzzy_zero()) {
+            let ts = svgdom::Transform::new_translate(raw_glyph.dx * scale, -raw_glyph.dy * scale);
+            transform_path(&mut glyph, &ts);
+        }
+
+        path.extend_from_slice(&glyph);
+        width += raw_glyph.width * scale;
     }
 
     Glyph {
-        byte_idx: raw_glyph.byte_idx,
-        path: glyph,
-        width: raw_glyph.width * scale,
+        byte_idx: raw_glyphs[0].byte_idx,
+        path,
+        width,
         .. Glyph::default()
     }
 }
@@ -639,3 +552,105 @@ fn add_rect_to_path(rect: Rect, path: &mut Vec<tree::PathSegment>) {
 //        _ => true,
 //    }
 //}
+
+mod svgdom_path_builder {
+    use lyon_geom::math::*;
+    use lyon_path::builder::FlatPathBuilder;
+
+    pub struct Builder {
+        path: svgdom::Path,
+        current_position: Point,
+        first_position: Point,
+    }
+
+    impl Builder {
+        pub fn new() -> Self {
+            Builder {
+                path: svgdom::Path::new(),
+                current_position: Point::new(0.0, 0.0),
+                first_position: Point::new(0.0, 0.0),
+            }
+        }
+    }
+
+    impl FlatPathBuilder for Builder {
+        type PathType = svgdom::Path;
+
+        fn move_to(&mut self, to: Point) {
+            self.first_position = to;
+            self.current_position = to;
+            self.path.push(svgdom::PathSegment::MoveTo { abs: true, x: to.x as f64, y: to.y as f64 });
+        }
+
+        fn line_to(&mut self, to: Point) {
+            self.current_position = to;
+            self.path.push(svgdom::PathSegment::LineTo { abs: true, x: to.x as f64, y: to.y as f64 });
+        }
+
+        fn close(&mut self) {
+            self.current_position = self.first_position;
+            self.path.push(svgdom::PathSegment::ClosePath { abs: true });
+        }
+
+        fn build(self) -> Self::PathType {
+            self.path
+        }
+
+        fn build_and_reset(&mut self) -> Self::PathType {
+            let p = self.path.clone();
+            self.path.clear();
+            self.current_position = Point::new(0.0, 0.0);
+            self.first_position = Point::new(0.0, 0.0);
+            p
+        }
+
+        fn current_position(&self) -> Point {
+            self.current_position
+        }
+    }
+
+    impl lyon_path::builder::PathBuilder for Builder {
+        fn quadratic_bezier_to(&mut self, ctrl: Point, to: Point) {
+            self.current_position = to;
+            self.path.push(svgdom::PathSegment::Quadratic {
+                abs: true,
+                x1: ctrl.x as f64,
+                y1: ctrl.y as f64,
+                x: to.x as f64,
+                y: to.y as f64,
+            });
+        }
+
+        fn cubic_bezier_to(&mut self, ctrl1: Point, ctrl2: Point, to: Point) {
+            self.current_position = to;
+            self.path.push(svgdom::PathSegment::CurveTo {
+                abs: true,
+                x1: ctrl1.x as f64,
+                y1: ctrl1.y as f64,
+                x2: ctrl2.x as f64,
+                y2: ctrl2.y as f64,
+                x: to.x as f64,
+                y: to.y as f64,
+            });
+        }
+
+        fn arc(&mut self, center: Point, radii: Vector, sweep_angle: Angle, x_rotation: Angle) {
+            let arc = lyon_geom::arc::Arc {
+                start_angle: (self.current_position() - center).angle_from_x_axis() - x_rotation,
+                center, radii, sweep_angle, x_rotation,
+            };
+            let arc = arc.to_svg_arc();
+
+            self.path.push(svgdom::PathSegment::EllipticalArc {
+                abs: true,
+                rx: arc.radii.x as f64,
+                ry: arc.radii.y as f64,
+                x_axis_rotation: arc.x_rotation.to_degrees() as f64,
+                large_arc: arc.flags.large_arc,
+                sweep: arc.flags.sweep,
+                x: arc.to.x as f64,
+                y: arc.to.y as f64,
+            });
+        }
+    }
+}
