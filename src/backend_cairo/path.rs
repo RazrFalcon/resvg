@@ -10,7 +10,6 @@ use super::prelude::*;
 use super::{
     fill,
     stroke,
-    marker,
 };
 
 
@@ -18,7 +17,6 @@ pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
     opt: &Options,
-    layers: &mut CairoLayers,
     cr: &cairo::Context,
 ) -> Rect {
     let mut is_square_cap = false;
@@ -43,8 +41,6 @@ pub fn draw(
     } else {
         cr.fill();
     }
-
-    marker::apply(tree, path, opt, layers, cr);
 
     bbox
 }

@@ -155,15 +155,10 @@ fn convert_ref_nodes(
                     later_nodes.push((node, new_node));
                 }
             }
-            EId::Marker => {
-                if let Some(new_node) = marker::convert(&node, tree) {
-                    later_nodes.push((node, new_node));
-                }
-            }
             EId::Filter => {
                 filter::convert(&node, opt, tree);
             }
-            EId::Symbol => {
+            EId::Marker | EId::Symbol => {
                 // Already resolved. Skip it.
             }
             _ => {
@@ -189,13 +184,6 @@ fn convert_ref_nodes(
 
             if !new_node.has_children() {
                 warn!("Mask '{}' has no children. Skipped.", node.id());
-                new_node.detach();
-            }
-        } else if node.is_tag_name(EId::Marker) {
-            convert_nodes(&node, &mut new_node, opt, tree);
-
-            if !new_node.has_children() {
-                warn!("Marker '{}' has no children. Skipped.", node.id());
                 new_node.detach();
             }
         } else if node.is_tag_name(EId::Pattern) {
@@ -310,7 +298,7 @@ pub(super) fn convert_nodes(
             | EId::Circle
             | EId::Ellipse => {
                 if let Some(d) = shapes::convert(&node) {
-                    path::convert(&node, d, parent_node.clone(), tree);
+                    path::convert(&node, d, opt, parent_node.clone(), tree);
                 }
             }
               EId::Use
@@ -321,7 +309,7 @@ pub(super) fn convert_nodes(
             EId::Path => {
                 let attrs = node.attributes();
                 if let Some(d) = attrs.get_path(AId::D) {
-                    path::convert(&node, d.clone(), parent_node.clone(), tree);
+                    path::convert(&node, d.clone(), opt, parent_node.clone(), tree);
                 }
             }
             EId::Text => {

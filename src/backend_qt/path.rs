@@ -10,7 +10,6 @@ use super::prelude::*;
 use super::{
     fill,
     stroke,
-    marker,
 };
 
 
@@ -18,7 +17,6 @@ pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
     opt: &Options,
-    layers: &mut QtLayers,
     p: &mut qt::Painter,
 ) -> Rect {
     let mut p_path = qt::PainterPath::new();
@@ -41,8 +39,6 @@ pub fn draw(
     stroke::apply(tree, &path.stroke, opt, bbox, p);
 
     p.draw_path(&p_path);
-
-    marker::apply(tree, path, opt, layers, p);
 
     bbox
 }

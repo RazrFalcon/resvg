@@ -54,7 +54,6 @@ fn main() {
             visibility: usvg::Visibility::Visible,
             fill: None,
             stroke: stroke.clone(),
-            marker: Box::new(usvg::PathMarker::default()),
             segments: utils::rect_to_path(bbox),
         }));
     }

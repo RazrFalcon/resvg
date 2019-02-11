@@ -59,7 +59,6 @@ fn main() {
         visibility: usvg::Visibility::Visible,
         fill,
         stroke: None,
-        marker: Box::new(usvg::PathMarker::default()),
         segments: utils::rect_to_path(Rect::new(20.0, 20.0, 160.0, 160.0)),
     }));
 

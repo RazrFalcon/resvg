@@ -124,32 +124,6 @@ fn conv_defs(
                 conv_transform(AId::PatternTransform, &pattern.transform, &mut pattern_elem);
                 later_nodes.push((n.clone(), pattern_elem.clone()));
             }
-            NodeKind::Marker(ref marker) => {
-                let mut marker_elem = new_doc.create_element(EId::Marker);
-                defs.append(marker_elem.clone());
-
-                marker_elem.set_id(marker.id.clone());
-
-                marker_elem.set_attribute((AId::MarkerUnits, marker.units.to_string()));
-                marker_elem.set_attribute((AId::RefX, marker.rect.x));
-                marker_elem.set_attribute((AId::RefY, marker.rect.y));
-                marker_elem.set_attribute((AId::MarkerWidth, marker.rect.width));
-                marker_elem.set_attribute((AId::MarkerHeight, marker.rect.height));
-
-                if let Some(vbox) = marker.view_box {
-                    conv_viewbox(&vbox, &mut marker_elem);
-                }
-
-                let orientation: AValue = match marker.orientation {
-                    MarkerOrientation::Auto => "auto".into(),
-                    MarkerOrientation::Angle(a) => a.into(),
-                };
-                marker_elem.set_attribute((AId::Orient, orientation));
-
-                marker_elem.set_attribute((AId::Overflow, marker.overflow.to_string()));
-
-                later_nodes.push((n.clone(), marker_elem.clone()));
-            }
             NodeKind::Filter(ref filter) => {
                 let mut filter_elem = new_doc.create_element(EId::Filter);
                 defs.append(filter_elem.clone());
@@ -325,23 +299,6 @@ fn conv_elements(
 
                 conv_fill(tree, &p.fill, defs, parent, &mut path_elem);
                 conv_stroke(tree, &p.stroke, defs, &mut path_elem);
-
-                conv_opt_link(tree, defs, AId::MarkerStart, &p.marker.start, &mut path_elem);
-                conv_opt_link(tree, defs, AId::MarkerMid, &p.marker.mid, &mut path_elem);
-                conv_opt_link(tree, defs, AId::MarkerEnd, &p.marker.end, &mut path_elem);
-
-                // Set `stroke-width` if path has a marker.
-                // Even if `stroke` is not set, the `stroke-width` attribute
-                // will still affect the marker rendering.
-                let has_marker =    p.marker.start.is_some()
-                                 || p.marker.mid.is_some()
-                                 || p.marker.end.is_some();
-
-                if p.stroke.is_none() && has_marker {
-                    if let Some(sw) = p.marker.stroke {
-                        path_elem.set_attribute((AId::StrokeWidth, sw.value()));
-                    }
-                }
             }
             NodeKind::Text(ref text) => {
                 let mut text_elem = new_doc.create_element(EId::Text);

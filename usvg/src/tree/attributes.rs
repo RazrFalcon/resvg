@@ -103,35 +103,6 @@ impl ToString for Units {
 }
 
 
-/// A marker units.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum MarkerUnits {
-    StrokeWidth,
-    UserSpaceOnUse,
-}
-
-impl ToString for MarkerUnits {
-    fn to_string(&self) -> String {
-        match self {
-            MarkerUnits::UserSpaceOnUse => "userSpaceOnUse",
-            MarkerUnits::StrokeWidth    => "strokeWidth",
-        }.to_string()
-    }
-}
-
-
-/// A marker orientation.
-#[derive(Clone, Copy, Debug)]
-pub enum MarkerOrientation {
-    /// Requires an automatic rotation.
-    Auto,
-
-    /// A rotation angle in degrees.
-    Angle(f64),
-}
-
-
 /// A spread method.
 ///
 /// `spreadMethod` attribute in the SVG.
@@ -171,30 +142,6 @@ impl ToString for Visibility {
             Visibility::Visible     => "visible",
             Visibility::Hidden      => "hidden",
             Visibility::Collapse    => "collapse",
-        }.to_string()
-    }
-}
-
-
-/// An overflow property.
-///
-/// `overflow` attribute in the SVG.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum Overflow {
-    Visible,
-    Hidden,
-    Scroll,
-    Auto,
-}
-
-impl ToString for Overflow {
-    fn to_string(&self) -> String {
-        match self {
-            Overflow::Visible   => "visible",
-            Overflow::Hidden    => "hidden",
-            Overflow::Scroll    => "scroll",
-            Overflow::Auto      => "auto",
         }.to_string()
     }
 }
@@ -669,43 +616,4 @@ pub enum FeImageKind {
     ///
     /// Not supported yet.
     Use(String),
-}
-
-
-/// A path marker properties.
-#[derive(Clone, Debug)]
-pub struct PathMarker {
-    /// Start marker.
-    ///
-    /// `marker-start` in SVG.
-    pub start: Option<String>,
-
-    /// Middle marker
-    ///
-    /// `marker-mid` in SVG.
-    pub mid: Option<String>,
-
-    /// End marker
-    ///
-    /// `marker-end` in SVG.
-    pub end: Option<String>,
-
-    /// Marker stroke.
-    ///
-    /// This value contains a copy of the `stroke-width` value.
-    /// `usvg` will set `Path::stroke` to `None` if a path doesn't have a stroke,
-    /// but marker rendering still relies on the `stroke-width` value, even when `stroke=none`.
-    /// So we have to store it separately.
-    pub stroke: Option<StrokeWidth>,
-}
-
-impl Default for PathMarker {
-    fn default() -> Self {
-        PathMarker {
-            start: None,
-            mid: None,
-            end: None,
-            stroke: None,
-        }
-    }
 }

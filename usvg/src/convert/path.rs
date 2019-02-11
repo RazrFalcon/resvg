@@ -15,21 +15,23 @@ use super::prelude::*;
 use super::{
     fill,
     stroke,
+    marker,
 };
 
 
 pub fn convert(
     node: &svgdom::Node,
     d: svgdom::Path,
+    opt: &Options,
     mut parent: tree::Node,
     tree: &mut tree::Tree,
 ) {
-    let d = convert_path(d);
-    if d.len() < 2 {
+    let segments = convert_path(d);
+    if segments.len() < 2 {
         return;
     }
 
-    let has_bbox = has_bbox(&d);
+    let has_bbox = has_bbox(&segments);
     let attrs = node.attributes();
     let fill = fill::convert(tree, &attrs, has_bbox);
     let stroke = stroke::convert(tree, &attrs, has_bbox);
@@ -42,25 +44,21 @@ pub fn convert(
         visibility = tree::Visibility::Hidden
     }
 
-    let marker = Box::new(tree::PathMarker {
-        start: conv_marker(AId::MarkerStart, node, tree),
-        mid: conv_marker(AId::MarkerMid, node, tree),
-        end: conv_marker(AId::MarkerEnd, node, tree),
-        stroke: conv_stroke_width(&attrs),
-    });
-
     parent.append_kind(tree::NodeKind::Path(tree::Path {
         id: node.id().clone(),
         transform,
         visibility,
         fill,
         stroke,
-        marker,
-        segments: d,
+        segments: segments.clone(), // TODO: remove
     }));
+
+    if visibility == tree::Visibility::Visible {
+        marker::convert(node, &segments, opt, &mut parent, tree)
+    }
 }
 
-fn convert_path(mut path: svgdom::Path) -> Vec<tree::PathSegment> {
+pub fn convert_path(mut path: svgdom::Path) -> Vec<tree::PathSegment> {
     let mut new_path = Vec::with_capacity(path.len());
 
     path.conv_to_absolute();
@@ -257,7 +255,7 @@ fn has_bbox(segments: &[tree::PathSegment]) -> bool {
 
     for seg in segments {
         match *seg {
-            tree::PathSegment::MoveTo { x, y }
+              tree::PathSegment::MoveTo { x, y }
             | tree::PathSegment::LineTo { x, y } => {
                 let x = x as f32;
                 let y = y as f32;
@@ -304,31 +302,4 @@ fn has_bbox(segments: &[tree::PathSegment]) -> bool {
     }
 
     false
-}
-
-fn conv_marker(
-    aid: AId,
-    node: &svgdom::Node,
-    tree: &tree::Tree,
-) -> Option<String> {
-    let attrs = node.attributes();
-    if let Some(&AValue::FuncLink(ref link)) = attrs.get_value(aid) {
-        if link.is_tag_name(EId::Marker) {
-            if let Some(node) = tree.defs_by_id(&link.id()) {
-                return Some(node.id().to_string());
-            }
-        }
-    }
-
-    None
-}
-
-fn conv_stroke_width(attrs: &svgdom::Attributes) -> Option<tree::StrokeWidth> {
-    let width = attrs.get_number_or(AId::StrokeWidth, 1.0);
-
-    if !(width > 0.0) {
-        return None;
-    }
-
-    Some(tree::StrokeWidth::new(width))
 }

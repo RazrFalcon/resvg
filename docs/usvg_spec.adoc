@@ -23,8 +23,7 @@ Always present.
 
 All `defs` children have an `id` attribute. It always set and newer empty.
 
-Children: `linearGradient`, `radialGradient`, `clipPath`, `mask`, `pattern`,
-`marker` and `filter`.
+Children: `linearGradient`, `radialGradient`, `clipPath`, `mask`, `pattern` and `filter`.
 
 [[linearGradient_elem]]
 
@@ -87,16 +86,6 @@ Children: `g`, `path`, `text` and `image`.
 
 Attributes: `id`, `maskUnits`, `maskContentUnits`, `x`, `y`, `width` and `height`.
 
-=== marker
-
-Children: `g`, `path`, `text` and `image`.
-
-Attributes: `id`, `markerUnits`, `refX`, `refY`, `markerWidth`, `markerHeight`
-`viewBox`, `preserveAspectRatio`, `orient` and `overflow`.
-
-* `orient` is either `auto` or an angle in degrees.
-* `viewBox` and `preserveAspectRatio` are optional.
-
 === g
 
 The group element indicates that a new canvas should be created.
@@ -123,14 +112,9 @@ MoveTo, LineTo, CurveTo and ClosePath segments.
 
 Attributes: `id`, <<fill_attrs, filling>>, <<stroke_attrs,stroking>>,
 `clip-rule` (when inside the `clipPath`), `clip-path` (when inside the `clipPath`),
-`visibility`, `marker-start`, `marker-mid`, `marker-end` and `transform`.
+`visibility` and `transform`.
 
 * `id` is optional but never empty.
-* `marker-{star}` attributes will be set only on paths that were originally
-  `path`, `line`, `polyline` or `polygon`.
-* `marker-{star}` attributes will be removed inside the `clipPath`.
-* If a path contains an ArcTo segment and a marker - it will be rendered incorrectly,
-  because `usvg` will convert ArcTo into series of CurveTo's.
 
 === text
 

@@ -54,13 +54,13 @@ pub fn convert_children(
             | EId::Circle
             | EId::Ellipse => {
                 if let Some(d) = shapes::convert(&node) {
-                    path::convert(&node, d, parent.clone(), tree);
+                    path::convert(&node, d, opt, parent.clone(), tree);
                 }
             }
             EId::Path => {
                 let attrs = node.attributes();
                 if let Some(d) = attrs.get_path(AId::D) {
-                    path::convert(&node, d.clone(), parent.clone(), tree);
+                    path::convert(&node, d.clone(), opt, parent.clone(), tree);
                 }
             }
             EId::Text => {

@@ -33,7 +33,6 @@ mod fill;
 mod filter;
 mod gradient;
 mod image;
-mod marker;
 mod mask;
 mod path;
 mod pattern;
@@ -223,7 +222,7 @@ fn render_node(
             Some(render_group(node, opt, layers, p))
         }
         usvg::NodeKind::Path(ref path) => {
-            Some(path::draw(&node.tree(), path, opt, layers, p))
+            Some(path::draw(&node.tree(), path, opt, p))
         }
         usvg::NodeKind::Text(ref text) => {
             Some(text::draw(&node.tree(), text, opt, p))
