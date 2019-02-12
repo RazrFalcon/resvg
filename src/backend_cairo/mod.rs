@@ -87,7 +87,7 @@ impl ReCairoContextExt for cairo::Context {
             color.red as f64 / 255.0,
             color.green as f64 / 255.0,
             color.blue as f64 / 255.0,
-            *opacity,
+            opacity.value(),
         );
     }
 
@@ -359,8 +359,8 @@ fn render_group_impl(
     let curr_matrix = cr.get_matrix();
     cr.set_matrix(cairo::Matrix::identity());
     cr.set_source_surface(&*sub_surface, 0.0, 0.0);
-    if let Some(opacity) = g.opacity {
-        cr.paint_with_alpha(*opacity);
+    if !g.opacity.is_default() {
+        cr.paint_with_alpha(g.opacity.value());
     } else {
         cr.paint();
     }

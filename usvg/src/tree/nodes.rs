@@ -268,7 +268,7 @@ pub struct Group {
     ///
     /// After the group is rendered we should combine
     /// it with a parent group using the specified opacity.
-    pub opacity: Option<Opacity>,
+    pub opacity: Opacity,
 
     /// Element clip path.
     pub clip_path: Option<String>,

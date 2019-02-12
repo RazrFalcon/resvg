@@ -65,7 +65,7 @@ pub fn apply(
     ts.scale(1.0 / sx, 1.0 / sy);
 
 
-    let surface = if opacity.fuzzy_ne(&1.0) {
+    let surface = if !opacity.is_default() {
         // If `opacity` isn't `1` then we have to make image semitransparent.
         // The only way to do this is by making a new image and rendering
         // the pattern on it with transparency.
@@ -73,7 +73,7 @@ pub fn apply(
         let surface2 = try_create_surface!(img_size, ());
         let sub_cr2 = cairo::Context::new(&surface2);
         sub_cr2.set_source_surface(&surface, 0.0, 0.0);
-        sub_cr2.paint_with_alpha(*opacity);
+        sub_cr2.paint_with_alpha(opacity.value());
 
         surface2
     } else {

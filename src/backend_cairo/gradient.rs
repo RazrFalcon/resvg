@@ -29,7 +29,7 @@ pub fn prepare_radial(
     bbox: Rect,
     cr: &cairo::Context
 ) {
-    let grad = cairo::RadialGradient::new(g.fx, g.fy, 0.0, g.cx, g.cy, *g.r);
+    let grad = cairo::RadialGradient::new(g.fx, g.fy, 0.0, g.cx, g.cy, g.r.value());
     prepare_base(&g.base, &grad, opacity, bbox, &g.id);
     cr.set_source(&cairo::Pattern::RadialGradient(grad));
 }
@@ -61,11 +61,11 @@ fn prepare_base<G>(
 
     for stop in &g.stops {
         grad.add_color_stop_rgba(
-            *stop.offset,
+            stop.offset.value(),
             stop.color.red as f64 / 255.0,
             stop.color.green as f64 / 255.0,
             stop.color.blue as f64 / 255.0,
-            (*stop.opacity) * (*opacity),
+            stop.opacity.value() * opacity.value(),
         );
     }
 }

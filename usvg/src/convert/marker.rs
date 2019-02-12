@@ -147,7 +147,7 @@ fn resolve(
         let mut g_node = parent.append_kind(tree::NodeKind::Group(tree::Group {
             id: String::new(),
             transform: ts,
-            opacity: None,
+            opacity: tree::Opacity::default(),
             clip_path: clip_path.clone(),
             mask: None,
             filter: None,

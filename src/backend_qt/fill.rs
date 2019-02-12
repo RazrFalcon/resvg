@@ -27,7 +27,7 @@ pub fn apply(
 
             match fill.paint {
                 usvg::Paint::Color(c) => {
-                    let a = f64_bound(0.0, *opacity * 255.0, 255.0) as u8;
+                    let a = f64_bound(0.0, opacity.value() * 255.0, 255.0) as u8;
                     brush.set_color(c.red, c.green, c.blue, a);
                 }
                 usvg::Paint::Link(ref id) => {

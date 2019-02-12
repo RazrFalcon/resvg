@@ -8,6 +8,7 @@ use svgdom;
 
 // self
 use super::*;
+use traits::IsDefault;
 use geom::*;
 use short::{
     AId,
@@ -16,7 +17,7 @@ use short::{
 };
 
 
-pub fn conv_doc(tree: &Tree) -> svgdom::Document {
+pub fn convert(tree: &Tree) -> svgdom::Document {
     let mut new_doc = svgdom::Document::new();
 
     let mut svg = new_doc.create_element(EId::Svg);
@@ -81,12 +82,13 @@ fn conv_defs(
                 defs.append(clip_elem.clone());
 
                 clip_elem.set_id(clip.id.clone());
-                clip_elem.set_attribute((AId::ClipPathUnits, clip.units.to_string()));
+
+                conv_units(AId::ClipPathUnits, clip.units, Units::UserSpaceOnUse, &mut clip_elem);
+
                 conv_transform(AId::Transform, &clip.transform, &mut clip_elem);
 
-                match clip.clip_path {
-                    Some(ref id) => link_later.push((id.clone(), AId::ClipPath, clip_elem.clone())),
-                    None => clip_elem.set_attribute((AId::ClipPath, AValue::None)),
+                if let Some(ref id) = clip.clip_path {
+                    link_later.push((id.clone(), AId::ClipPath, clip_elem.clone()));
                 }
 
                 later_nodes.push((n.clone(), clip_elem.clone()));
@@ -96,13 +98,12 @@ fn conv_defs(
                 defs.append(mask_elem.clone());
 
                 mask_elem.set_id(mask.id.clone());
-                mask_elem.set_attribute((AId::MaskUnits, mask.units.to_string()));
-                mask_elem.set_attribute((AId::MaskContentUnits, mask.content_units.to_string()));
+                conv_units(AId::MaskUnits, mask.units, Units::ObjectBoundingBox, &mut mask_elem);
+                conv_units(AId::MaskContentUnits, mask.content_units, Units::UserSpaceOnUse, &mut mask_elem);
                 conv_rect(mask.rect, &mut mask_elem);
 
-                match mask.mask {
-                    Some(ref id) => link_later.push((id.clone(), AId::Mask, mask_elem.clone())),
-                    None => mask_elem.set_attribute((AId::Mask, AValue::None)),
+                if let Some(ref id) = mask.mask {
+                    link_later.push((id.clone(), AId::Mask, mask_elem.clone()));
                 }
 
                 later_nodes.push((n.clone(), mask_elem.clone()));
@@ -119,8 +120,9 @@ fn conv_defs(
                     conv_viewbox(&vbox, &mut pattern_elem);
                 }
 
-                pattern_elem.set_attribute((AId::PatternUnits, pattern.units.to_string()));
-                pattern_elem.set_attribute((AId::PatternContentUnits, pattern.content_units.to_string()));
+                conv_units(AId::PatternUnits, pattern.units, Units::ObjectBoundingBox, &mut pattern_elem);
+                conv_units(AId::PatternContentUnits, pattern.content_units, Units::UserSpaceOnUse, &mut pattern_elem);
+
                 conv_transform(AId::PatternTransform, &pattern.transform, &mut pattern_elem);
                 later_nodes.push((n.clone(), pattern_elem.clone()));
             }
@@ -132,8 +134,8 @@ fn conv_defs(
 
                 conv_rect(filter.rect, &mut filter_elem);
 
-                filter_elem.set_attribute((AId::FilterUnits, filter.units.to_string()));
-                filter_elem.set_attribute((AId::PrimitiveUnits, filter.primitive_units.to_string()));
+                conv_units(AId::FilterUnits, filter.units, Units::ObjectBoundingBox, &mut filter_elem);
+                conv_units(AId::PrimitiveUnits, filter.primitive_units, Units::UserSpaceOnUse, &mut filter_elem);
 
                 for fe in &filter.children {
                     let mut fe_elem = match fe.kind {
@@ -271,7 +273,7 @@ fn conv_elements(
                 parent.append(path_elem.clone());
 
                 conv_transform(AId::Transform, &p.transform, &mut path_elem);
-                path_elem.set_attribute((AId::Visibility, p.visibility.to_string()));
+                path_elem.set_enum_attribute(AId::Visibility, p.visibility);
                 path_elem.set_id(p.id.clone());
 
                 use svgdom::Path as SvgDomPath;
@@ -336,7 +338,7 @@ fn conv_elements(
                         chunk_tspan_elem.set_attribute((AId::Dy, dy.clone()));
                     }
 
-                    chunk_tspan_elem.set_attribute((AId::TextAnchor, chunk.anchor.to_string()));
+                    chunk_tspan_elem.set_enum_attribute(AId::TextAnchor, chunk.anchor);
 
                     for tspan in &chunk.spans {
                         let mut tspan_elem = new_doc.create_element(EId::Tspan);
@@ -348,12 +350,15 @@ fn conv_elements(
                         );
                         tspan_elem.append(text_node.clone());
 
-                        tspan_elem.set_attribute((AId::Visibility, tspan.visibility.to_string()));
+                        tspan_elem.set_enum_attribute(AId::Visibility, tspan.visibility);
+
                         conv_fill(tree, &tspan.fill, defs, parent, &mut tspan_elem);
                         conv_stroke(tree, &tspan.stroke, defs, &mut tspan_elem);
                         conv_font(&tspan.font, &mut tspan_elem);
 
-                        tspan_elem.set_attribute((AId::BaselineShift, tspan.baseline_shift));
+                        if !tspan.baseline_shift.is_fuzzy_zero() {
+                            tspan_elem.set_attribute((AId::BaselineShift, tspan.baseline_shift));
+                        }
 
                         if tspan.text.contains("  ") {
                             is_preserve_required = true;
@@ -372,7 +377,7 @@ fn conv_elements(
                 parent.append(img_elem.clone());
 
                 conv_transform(AId::Transform, &img.transform, &mut img_elem);
-                img_elem.set_attribute((AId::Visibility, img.visibility.to_string()));
+                img_elem.set_enum_attribute(AId::Visibility, img.visibility);
                 img_elem.set_id(img.id.clone());
                 conv_viewbox2(&img.view_box, &mut img_elem);
 
@@ -395,9 +400,8 @@ fn conv_elements(
                 conv_opt_link(tree, defs, AId::Mask, &g.mask, &mut g_elem);
                 conv_opt_link(tree, defs, AId::Filter, &g.filter, &mut g_elem);
 
-                match g.opacity {
-                    Some(opacity) => g_elem.set_attribute((AId::Opacity, opacity.value())),
-                    None => g_elem.set_attribute((AId::Opacity, 1.0)),
+                if !g.opacity.is_default() {
+                    g_elem.set_attribute((AId::Opacity, g.opacity.value()));
                 }
 
                 if !g_elem.has_id() && g_elem.attributes().len() == 0 {
@@ -421,7 +425,20 @@ fn conv_viewbox(
     let vb = svgdom::ViewBox::new(r.x, r.y, r.width, r.height);
     node.set_attribute((AId::ViewBox, vb));
 
-    node.set_attribute((AId::PreserveAspectRatio, view_box.aspect));
+    if !view_box.aspect.is_default() {
+        node.set_attribute((AId::PreserveAspectRatio, view_box.aspect));
+    }
+}
+
+fn conv_viewbox2(
+    view_box: &ViewBox,
+    node: &mut svgdom::Node,
+) {
+    conv_rect(view_box.rect, node);
+
+    if !view_box.aspect.is_default() {
+        node.set_attribute((AId::PreserveAspectRatio, view_box.aspect));
+    }
 }
 
 fn conv_rect(
@@ -434,12 +451,15 @@ fn conv_rect(
     node.set_attribute((AId::Height, r.height));
 }
 
-fn conv_viewbox2(
-    vb: &ViewBox,
+fn conv_units(
+    aid: AId,
+    units: Units,
+    def: Units,
     node: &mut svgdom::Node,
 ) {
-    conv_rect(vb.rect, node);
-    node.set_attribute((AId::PreserveAspectRatio, vb.aspect));
+    if units != def {
+        node.set_attribute((aid, units.to_string()));
+    }
 }
 
 fn conv_fill(
@@ -452,18 +472,29 @@ fn conv_fill(
     match *fill {
         Some(ref fill) => {
             match fill.paint {
-                Paint::Color(c) => node.set_attribute((AId::Fill, c)),
-                Paint::Link(ref id) => conv_link(tree, defs, AId::Fill, id, node),
+                Paint::Color(c) => {
+                    if c != Color::black() {
+                        node.set_attribute((AId::Fill, c))
+                    }
+                }
+                Paint::Link(ref id) => {
+                    conv_link(tree, defs, AId::Fill, id, node)
+                }
             }
 
-            node.set_attribute((AId::FillOpacity, fill.opacity.value()));
+            if !fill.opacity.is_default() {
+                node.set_attribute((AId::FillOpacity, fill.opacity.value()));
+            }
 
-            let rule_aid = if parent.is_tag_name(EId::ClipPath) {
-                AId::ClipRule
-            } else {
-                AId::FillRule
-            };
-            node.set_attribute((rule_aid, fill.rule.to_string()));
+            if !fill.rule.is_default() {
+                let rule_aid = if parent.is_tag_name(EId::ClipPath) {
+                    AId::ClipRule
+                } else {
+                    AId::FillRule
+                };
+
+                node.set_attribute((rule_aid, fill.rule.to_string()));
+            }
         }
         None => {
             node.set_attribute((AId::Fill, AValue::None));
@@ -477,28 +508,33 @@ fn conv_stroke(
     defs: &svgdom::Node,
     node: &mut svgdom::Node,
 ) {
-    match *stroke {
-        Some(ref stroke) => {
-            match stroke.paint {
-                Paint::Color(c) => node.set_attribute((AId::Stroke, c)),
-                Paint::Link(ref id) => conv_link(tree, defs, AId::Stroke, id, node),
-            }
-
-            node.set_attribute((AId::StrokeOpacity, stroke.opacity.value()));
-            node.set_attribute((AId::StrokeDashoffset, stroke.dashoffset as f64));
-            node.set_attribute((AId::StrokeMiterlimit, stroke.miterlimit.value()));
-            node.set_attribute((AId::StrokeWidth, stroke.width.value()));
-            node.set_attribute((AId::StrokeLinecap, stroke.linecap.to_string()));
-            node.set_attribute((AId::StrokeLinejoin, stroke.linejoin.to_string()));
-
-            if let Some(ref array) = stroke.dasharray {
-                node.set_attribute((AId::StrokeDasharray, array.clone()));
-            } else {
-                node.set_attribute((AId::StrokeDasharray, AValue::None));
-            }
+    if let Some(ref stroke) = stroke {
+        match stroke.paint {
+            Paint::Color(c) => node.set_attribute((AId::Stroke, c)),
+            Paint::Link(ref id) => conv_link(tree, defs, AId::Stroke, id, node),
         }
-        None => {
-            node.set_attribute((AId::Stroke, AValue::None));
+
+        if !stroke.opacity.is_default() {
+            node.set_attribute((AId::StrokeOpacity, stroke.opacity.value()));
+        }
+
+        if !(stroke.dashoffset as f64).is_fuzzy_zero() {
+            node.set_attribute((AId::StrokeDashoffset, stroke.dashoffset as f64));
+        }
+
+        if !stroke.miterlimit.is_default() {
+            node.set_attribute((AId::StrokeMiterlimit, stroke.miterlimit.value()));
+        }
+
+        if !stroke.width.is_default() {
+            node.set_attribute((AId::StrokeWidth, stroke.width.value()));
+        }
+
+        node.set_enum_attribute(AId::StrokeLinecap, stroke.linecap);
+        node.set_enum_attribute(AId::StrokeLinejoin, stroke.linejoin);
+
+        if let Some(ref array) = stroke.dasharray {
+            node.set_attribute((AId::StrokeDasharray, array.clone()));
         }
     }
 }
@@ -508,8 +544,11 @@ fn conv_base_grad(
     doc: &mut svgdom::Document,
     node: &mut svgdom::Node,
 ) {
-    node.set_attribute((AId::GradientUnits, g.units.to_string()));
-    node.set_attribute((AId::SpreadMethod, g.spread_method.to_string()));
+    if g.units != Units::ObjectBoundingBox {
+        node.set_attribute((AId::GradientUnits, g.units.to_string()));
+    }
+
+    node.set_enum_attribute(AId::SpreadMethod, g.spread_method);
 
     conv_transform(AId::GradientTransform, &g.transform, node);
 
@@ -519,7 +558,10 @@ fn conv_base_grad(
 
         stop.set_attribute((AId::Offset, s.offset.value()));
         stop.set_attribute((AId::StopColor, s.color));
-        stop.set_attribute((AId::StopOpacity, s.opacity.value()));
+
+        if !s.opacity.is_default() {
+            stop.set_attribute((AId::StopOpacity, s.opacity.value()));
+        }
     }
 }
 
@@ -539,10 +581,10 @@ fn conv_font(
 ) {
     node.set_attribute((AId::FontFamily, font.family.clone()));
     node.set_attribute((AId::FontSize, font.size.value()));
-    node.set_attribute((AId::FontStyle, font.style.to_string()));
-    node.set_attribute((AId::FontVariant, font.variant.to_string()));
-    node.set_attribute((AId::FontWeight, font.weight.to_string()));
-    node.set_attribute((AId::FontStretch, font.stretch.to_string()));
+    node.set_enum_attribute(AId::FontStyle, font.style);
+    node.set_enum_attribute(AId::FontVariant, font.variant);
+    node.set_enum_attribute(AId::FontWeight, font.weight);
+    node.set_enum_attribute(AId::FontStretch, font.stretch);
     conv_text_spacing(font.letter_spacing, AId::LetterSpacing, node);
     conv_text_spacing(font.word_spacing, AId::WordSpacing, node);
 }
@@ -552,12 +594,9 @@ fn conv_text_spacing(
     aid: AId,
     node: &mut svgdom::Node,
 ) {
-    let spacing: AValue = match spacing {
-        Some(n) => n.into(),
-        None => "normal".into(),
-    };
-
-    node.set_attribute((aid, spacing));
+    if let Some(spacing) = spacing {
+        node.set_attribute((aid, spacing));
+    }
 }
 
 fn conv_opt_link(
@@ -569,8 +608,6 @@ fn conv_opt_link(
 ) {
     if let Some(id) = id {
         conv_link(tree, defs, aid, id, node);
-    } else {
-        node.set_attribute((aid, AValue::None));
     }
 }
 
@@ -613,6 +650,22 @@ fn conv_image_data(
             d.push_str(&base64::encode(data));
 
             d
+        }
+    }
+}
+
+
+// TODO: find a way to do this for numbers too
+trait SetEnumAttribute<T> {
+    fn set_enum_attribute(&mut self, aid: AId, value: T);
+}
+
+impl<T> SetEnumAttribute<T> for svgdom::Node
+    where T: IsDefault + ToString
+{
+    fn set_enum_attribute(&mut self, aid: AId, value: T) {
+        if !value.is_default() {
+            self.set_attribute((aid, value.to_string()));
         }
     }
 }

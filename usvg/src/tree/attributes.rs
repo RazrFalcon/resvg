@@ -21,6 +21,17 @@ use geom::*;
 pub use super::numbers::*;
 
 
+macro_rules! enum_default {
+    ($name:ident, $def_value:ident) => {
+        impl Default for $name {
+            fn default() -> Self {
+                $name::$def_value
+            }
+        }
+    };
+}
+
+
 /// A line cap.
 ///
 /// `stroke-linecap` attribute in the SVG.
@@ -31,6 +42,8 @@ pub enum LineCap {
     Round,
     Square,
 }
+
+enum_default!(LineCap, Butt);
 
 impl ToString for LineCap {
     fn to_string(&self) -> String {
@@ -54,6 +67,8 @@ pub enum LineJoin {
     Bevel,
 }
 
+enum_default!(LineJoin, Miter);
+
 impl ToString for LineJoin {
     fn to_string(&self) -> String {
         match self {
@@ -74,6 +89,8 @@ pub enum FillRule {
     NonZero,
     EvenOdd,
 }
+
+enum_default!(FillRule, NonZero);
 
 impl ToString for FillRule {
     fn to_string(&self) -> String {
@@ -114,6 +131,8 @@ pub enum SpreadMethod {
     Repeat,
 }
 
+enum_default!(SpreadMethod, Pad);
+
 impl ToString for SpreadMethod {
     fn to_string(&self) -> String {
         match self {
@@ -136,6 +155,8 @@ pub enum Visibility {
     Collapse,
 }
 
+enum_default!(Visibility, Visible);
+
 impl ToString for Visibility {
     fn to_string(&self) -> String {
         match self {
@@ -151,24 +172,15 @@ impl ToString for Visibility {
 ///
 /// Defines the style of the line that should be rendered.
 #[allow(missing_docs)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct TextDecorationStyle {
     pub fill: Option<Fill>,
     pub stroke: Option<Stroke>,
 }
 
-impl Default for TextDecorationStyle {
-    fn default() -> Self {
-        TextDecorationStyle {
-            fill: None,
-            stroke: None,
-        }
-    }
-}
-
 
 /// A text decoration.
-#[derive(Clone, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct TextDecoration {
     /// Draw underline using specified style.
     ///
@@ -186,16 +198,6 @@ pub struct TextDecoration {
     pub line_through: Option<TextDecorationStyle>,
 }
 
-impl Default for TextDecoration {
-    fn default() -> Self {
-        TextDecoration {
-            underline: None,
-            overline: None,
-            line_through: None,
-        }
-    }
-}
-
 
 /// A text anchor.
 ///
@@ -207,6 +209,8 @@ pub enum TextAnchor {
     Middle,
     End,
 }
+
+enum_default!(TextAnchor, Start);
 
 impl ToString for TextAnchor {
     fn to_string(&self) -> String {
@@ -230,6 +234,8 @@ pub enum FontStyle {
     Oblique,
 }
 
+enum_default!(FontStyle, Normal);
+
 impl ToString for FontStyle {
     fn to_string(&self) -> String {
         match self {
@@ -250,6 +256,8 @@ pub enum FontVariant {
     Normal,
     SmallCaps,
 }
+
+enum_default!(FontVariant, Normal);
 
 impl ToString for FontVariant {
     fn to_string(&self) -> String {
@@ -277,6 +285,8 @@ pub enum FontWeight {
     W800,
     W900,
 }
+
+enum_default!(FontWeight, W400);
 
 impl ToString for FontWeight {
     fn to_string(&self) -> String {
@@ -313,6 +323,8 @@ pub enum FontStretch {
     ExtraExpanded,
     UltraExpanded,
 }
+
+enum_default!(FontStretch, Normal);
 
 impl ToString for FontStretch {
     fn to_string(&self) -> String {
@@ -369,8 +381,8 @@ impl Default for Fill {
     fn default() -> Self {
         Fill {
             paint: Paint::Color(Color::black()),
-            opacity: 1.0.into(),
-            rule: FillRule::NonZero,
+            opacity: Opacity::default(),
+            rule: FillRule::default(),
         }
     }
 }
@@ -393,14 +405,16 @@ pub struct Stroke {
 impl Default for Stroke {
     fn default() -> Self {
         Stroke {
+            // The actual default color is `none`,
+            // but to simplify the `Stroke` object creation we use `black`.
             paint: Paint::Color(Color::black()),
             dasharray: None,
             dashoffset: 0.0,
             miterlimit: StrokeMiterlimit::default(),
-            opacity: 1.0.into(),
+            opacity: Opacity::default(),
             width: StrokeWidth::default(),
-            linecap: LineCap::Butt,
-            linejoin: LineJoin::Miter,
+            linecap: LineCap::default(),
+            linejoin: LineJoin::default(),
         }
     }
 }

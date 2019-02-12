@@ -272,7 +272,7 @@ pub(super) fn convert_nodes(
 
                 let has_filter = filter.is_some();
                 let ts = attrs.get_transform(AId::Transform).unwrap_or_default();
-                let opacity = attrs.get_number(AId::Opacity).map(|v| v.into());
+                let opacity = attrs.get_number(AId::Opacity).map(|v| v.into()).unwrap_or_default();
 
                 let mut g_node = parent_node.append_kind(tree::NodeKind::Group(tree::Group {
                     id: node.id().clone(),

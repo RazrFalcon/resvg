@@ -15,6 +15,7 @@ This changelog also contains important changes in dependencies.
 - `baseline-shift` with `sub`, `super` and percent values calculation.
 - (qt-api) `render` methods are `const` now.
 - Marker resolving moved completely to `usvg`.
+- (usvg) Disable default attributes exporting.
 
 ### Removed
 - (usvg) Marker element and attributes. Markers will be resolved just like `use` now.

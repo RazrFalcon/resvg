@@ -147,3 +147,4 @@ pub use error::*;
 pub use geom::*;
 pub use options::*;
 pub use tree::*;
+pub use traits::IsDefault;

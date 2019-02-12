@@ -79,7 +79,7 @@ pub fn convert_children(
 
                 let attrs = node.attributes();
                 let ts = attrs.get_transform(AId::Transform).unwrap_or_default();
-                let opacity = attrs.get_number(AId::Opacity).map(|v| v.into());
+                let opacity = attrs.get_number(AId::Opacity).map(|v| v.into()).unwrap_or_default();
 
                 let clip_path = match super::resolve_iri(&node, EId::ClipPath, AId::ClipPath, tree) {
                     IriResolveResult::Id(id) => Some(id),

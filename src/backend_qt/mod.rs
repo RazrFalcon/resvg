@@ -312,8 +312,8 @@ fn render_group_impl(
         }
     }
 
-    if let Some(opacity) = g.opacity {
-        p.set_opacity(*opacity);
+    if !g.opacity.is_default() {
+        p.set_opacity(g.opacity.value());
     }
 
     let curr_ts = p.get_transform();
