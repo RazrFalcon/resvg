@@ -59,7 +59,7 @@ pub fn apply(
     super::render_group(pattern_node, opt, &mut layers, &mut p);
     p.end();
 
-    let img = if opacity.fuzzy_ne(&1.0) {
+    let img = if !opacity.is_default() {
         // If `opacity` isn't `1` then we have to make image semitransparent.
         // The only way to do this is by making a new image and rendering
         // the pattern on it with transparency.
@@ -68,7 +68,7 @@ pub fn apply(
         img2.fill(0, 0, 0, 0);
 
         let mut p2 = qt::Painter::new(&mut img2);
-        p2.set_opacity(*opacity);
+        p2.set_opacity(opacity.value());
         p2.draw_image(0.0, 0.0, &img);
         p2.end();
 

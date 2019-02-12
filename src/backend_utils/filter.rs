@@ -324,9 +324,9 @@ pub trait Filter<T: ImageExt> {
         let (sx, sy) = ts.get_scale();
 
         let (std_dx, std_dy) = if units == usvg::Units::ObjectBoundingBox {
-            (*fe.std_dev_x * sx * bbox.width, *fe.std_dev_y * sy * bbox.height)
+            (fe.std_dev_x.value() * sx * bbox.width, fe.std_dev_y.value() * sy * bbox.height)
         } else {
-            (*fe.std_dev_x * sx, *fe.std_dev_y * sy)
+            (fe.std_dev_x.value() * sx, fe.std_dev_y.value() * sy)
         };
 
         if std_dx.is_fuzzy_zero() && std_dy.is_fuzzy_zero() {

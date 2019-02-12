@@ -4,7 +4,6 @@
 
 pub mod filter;
 pub mod image;
-pub mod marker;
 pub mod mask;
 
 mod prelude {

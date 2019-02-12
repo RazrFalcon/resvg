@@ -22,12 +22,13 @@ use {
 };
 
 mod attributes;
-mod convert;
+mod export;
 mod nodes;
 mod numbers;
 
 /// Basic traits for tree manipulations.
 pub mod prelude {
+    pub use traits::IsDefault;
     pub use tree::FuzzyEq;
     pub use tree::FuzzyZero;
     pub use super::NodeExt;
@@ -168,7 +169,7 @@ impl Tree {
     ///
     /// Used to save document to file for debug purposes.
     pub fn to_svgdom(&self) -> svgdom::Document {
-        convert::conv_doc(self)
+        export::convert(self)
     }
 }
 

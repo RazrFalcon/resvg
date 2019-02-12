@@ -275,7 +275,7 @@ impl Filter<qt::Image> for QtFilter {
         region: ScreenRect,
     ) -> Result<Image, Error> {
         let c = fe.color;
-        let alpha = f64_bound(0.0, *fe.opacity * 255.0, 255.0) as u8;
+        let alpha = f64_bound(0.0, fe.opacity.value() * 255.0, 255.0) as u8;
 
         let mut buffer = create_image(region.width, region.height)?;
         buffer.fill(c.red, c.green, c.blue, alpha);

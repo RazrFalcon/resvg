@@ -21,6 +21,17 @@ use geom::*;
 pub use super::numbers::*;
 
 
+macro_rules! enum_default {
+    ($name:ident, $def_value:ident) => {
+        impl Default for $name {
+            fn default() -> Self {
+                $name::$def_value
+            }
+        }
+    };
+}
+
+
 /// A line cap.
 ///
 /// `stroke-linecap` attribute in the SVG.
@@ -31,6 +42,8 @@ pub enum LineCap {
     Round,
     Square,
 }
+
+enum_default!(LineCap, Butt);
 
 impl ToString for LineCap {
     fn to_string(&self) -> String {
@@ -54,6 +67,8 @@ pub enum LineJoin {
     Bevel,
 }
 
+enum_default!(LineJoin, Miter);
+
 impl ToString for LineJoin {
     fn to_string(&self) -> String {
         match self {
@@ -74,6 +89,8 @@ pub enum FillRule {
     NonZero,
     EvenOdd,
 }
+
+enum_default!(FillRule, NonZero);
 
 impl ToString for FillRule {
     fn to_string(&self) -> String {
@@ -103,35 +120,6 @@ impl ToString for Units {
 }
 
 
-/// A marker units.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum MarkerUnits {
-    StrokeWidth,
-    UserSpaceOnUse,
-}
-
-impl ToString for MarkerUnits {
-    fn to_string(&self) -> String {
-        match self {
-            MarkerUnits::UserSpaceOnUse => "userSpaceOnUse",
-            MarkerUnits::StrokeWidth    => "strokeWidth",
-        }.to_string()
-    }
-}
-
-
-/// A marker orientation.
-#[derive(Clone, Copy, Debug)]
-pub enum MarkerOrientation {
-    /// Requires an automatic rotation.
-    Auto,
-
-    /// A rotation angle in degrees.
-    Angle(f64),
-}
-
-
 /// A spread method.
 ///
 /// `spreadMethod` attribute in the SVG.
@@ -142,6 +130,8 @@ pub enum SpreadMethod {
     Reflect,
     Repeat,
 }
+
+enum_default!(SpreadMethod, Pad);
 
 impl ToString for SpreadMethod {
     fn to_string(&self) -> String {
@@ -165,36 +155,14 @@ pub enum Visibility {
     Collapse,
 }
 
+enum_default!(Visibility, Visible);
+
 impl ToString for Visibility {
     fn to_string(&self) -> String {
         match self {
             Visibility::Visible     => "visible",
             Visibility::Hidden      => "hidden",
             Visibility::Collapse    => "collapse",
-        }.to_string()
-    }
-}
-
-
-/// An overflow property.
-///
-/// `overflow` attribute in the SVG.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum Overflow {
-    Visible,
-    Hidden,
-    Scroll,
-    Auto,
-}
-
-impl ToString for Overflow {
-    fn to_string(&self) -> String {
-        match self {
-            Overflow::Visible   => "visible",
-            Overflow::Hidden    => "hidden",
-            Overflow::Scroll    => "scroll",
-            Overflow::Auto      => "auto",
         }.to_string()
     }
 }
@@ -236,8 +204,8 @@ impl Default for Fill {
     fn default() -> Self {
         Fill {
             paint: Paint::Color(Color::black()),
-            opacity: 1.0.into(),
-            rule: FillRule::NonZero,
+            opacity: Opacity::default(),
+            rule: FillRule::default(),
         }
     }
 }
@@ -260,14 +228,16 @@ pub struct Stroke {
 impl Default for Stroke {
     fn default() -> Self {
         Stroke {
+            // The actual default color is `none`,
+            // but to simplify the `Stroke` object creation we use `black`.
             paint: Paint::Color(Color::black()),
             dasharray: None,
             dashoffset: 0.0,
             miterlimit: StrokeMiterlimit::default(),
-            opacity: 1.0.into(),
+            opacity: Opacity::default(),
             width: StrokeWidth::default(),
-            linecap: LineCap::Butt,
-            linejoin: LineJoin::Miter,
+            linecap: LineCap::default(),
+            linejoin: LineJoin::default(),
         }
     }
 }
@@ -456,43 +426,4 @@ pub enum FeImageKind {
     ///
     /// Not supported yet.
     Use(String),
-}
-
-
-/// A path marker properties.
-#[derive(Clone, Debug)]
-pub struct PathMarker {
-    /// Start marker.
-    ///
-    /// `marker-start` in SVG.
-    pub start: Option<String>,
-
-    /// Middle marker
-    ///
-    /// `marker-mid` in SVG.
-    pub mid: Option<String>,
-
-    /// End marker
-    ///
-    /// `marker-end` in SVG.
-    pub end: Option<String>,
-
-    /// Marker stroke.
-    ///
-    /// This value contains a copy of the `stroke-width` value.
-    /// `usvg` will set `Path::stroke` to `None` if a path doesn't have a stroke,
-    /// but marker rendering still relies on the `stroke-width` value, even when `stroke=none`.
-    /// So we have to store it separately.
-    pub stroke: Option<StrokeWidth>,
-}
-
-impl Default for PathMarker {
-    fn default() -> Self {
-        PathMarker {
-            start: None,
-            mid: None,
-            end: None,
-            stroke: None,
-        }
-    }
 }

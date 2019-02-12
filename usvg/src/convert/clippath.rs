@@ -53,13 +53,13 @@ pub fn convert_children(
             | EId::Circle
             | EId::Ellipse => {
                 if let Some(d) = shapes::convert(&node) {
-                    path::convert(&node, d, parent.clone(), tree);
+                    path::convert(&node, d, opt, parent.clone(), tree);
                 }
             }
             EId::Path => {
                 let attrs = node.attributes();
                 if let Some(d) = attrs.get_path(AId::D) {
-                    path::convert(&node, d.clone(), parent.clone(), tree);
+                    path::convert(&node, d.clone(), opt, parent.clone(), tree);
                 }
             }
             EId::Line => {
@@ -75,7 +75,7 @@ pub fn convert_children(
 
                 let attrs = node.attributes();
                 let ts = attrs.get_transform(AId::Transform).unwrap_or_default();
-                let opacity = attrs.get_number(AId::Opacity).map(|v| v.into());
+                let opacity = attrs.get_number(AId::Opacity).map(|v| v.into()).unwrap_or_default();
 
                 let clip_path = match super::resolve_iri(&node, EId::ClipPath, AId::ClipPath, tree) {
                     IriResolveResult::Id(id) => Some(id),

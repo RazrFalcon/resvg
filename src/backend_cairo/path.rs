@@ -10,7 +10,6 @@ use super::prelude::*;
 use super::{
     fill,
     stroke,
-    marker,
 };
 
 
@@ -18,12 +17,9 @@ pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
     opt: &Options,
-    layers: &mut CairoLayers,
     cr: &cairo::Context,
 ) -> Rect {
-    let bbox = draw_segments(tree, &path.segments, &path.fill, &path.stroke, path.visibility, opt, cr);
-    marker::apply(tree, path, opt, layers, cr);
-    bbox
+    draw_segments(tree, &path.segments, &path.fill, &path.stroke, path.visibility, opt, cr)
 }
 
 pub fn draw_segments(

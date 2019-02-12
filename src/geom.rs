@@ -10,7 +10,8 @@ use std::fmt;
 
 // external
 use usvg::{
-    FuzzyEq
+    self,
+    FuzzyEq,
 };
 pub use usvg::{
     Line,

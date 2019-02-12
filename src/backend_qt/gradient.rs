@@ -28,7 +28,7 @@ pub fn prepare_radial(
     bbox: Rect,
     brush: &mut qt::Brush,
 ) {
-    let mut grad = qt::RadialGradient::new(g.cx, g.cy, g.fx, g.fy, *g.r);
+    let mut grad = qt::RadialGradient::new(g.cx, g.cy, g.fx, g.fy, g.r.value());
     prepare_base(&g.base, opacity, &mut grad);
 
     brush.set_radial_gradient(grad);
@@ -49,11 +49,11 @@ fn prepare_base(
 
     for stop in &g.stops {
         grad.set_color_at(
-            *stop.offset,
+            stop.offset.value(),
             stop.color.red,
             stop.color.green,
             stop.color.blue,
-            ((*stop.opacity * *opacity) * 255.0) as u8,
+            (stop.opacity.value() * opacity.value() * 255.0) as u8,
         );
     }
 }

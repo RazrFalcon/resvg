@@ -250,3 +250,16 @@ impl AttributeExt for Node {
         }
     }
 }
+
+
+/// Checks that type has a default value.
+pub trait IsDefault: Default {
+    /// Checks that type has a default value.
+    fn is_default(&self) -> bool;
+}
+
+impl<T: Default + PartialEq + Copy> IsDefault for T {
+    fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+}

@@ -49,19 +49,10 @@ test!(minimal, false,
     width='1'
     height='1'
     viewBox='0 0 1 1'
-    preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.5.0'>
     <defs/>
     <path
-        fill='#000000'
-        fill-opacity='1'
-        fill-rule='nonzero'
-        stroke='none'
-        marker-end='none'
-        marker-mid='none'
-        marker-start='none'
-        visibility='visible'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
 ");
@@ -80,19 +71,10 @@ test!(groups, false,
     width='1'
     height='1'
     viewBox='0 0 1 1'
-    preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.5.0'>
     <defs/>
     <path
-        fill='#000000'
-        fill-opacity='1'
-        fill-rule='nonzero'
-        stroke='none'
-        marker-end='none'
-        marker-mid='none'
-        marker-start='none'
-        visibility='visible'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
 ");
@@ -109,7 +91,6 @@ test!(clippath_with_invalid_child, false,
     width='1'
     height='1'
     viewBox='0 0 1 1'
-    preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.5.0'>
     <defs/>
@@ -134,7 +115,6 @@ test!(clippath_with_invalid_children, false,
     width='1'
     height='1'
     viewBox='0 0 1 1'
-    preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.5.0'>
     <defs/>
@@ -153,40 +133,18 @@ test!(group_clippath, false,
     width='1'
     height='1'
     viewBox='0 0 1 1'
-    preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.5.0'>
     <defs>
         <clipPath
-            id='clip1'
-            clip-path='none'
-            clipPathUnits='userSpaceOnUse'>
+            id='clip1'>
             <path
-                fill='#000000'
-                fill-opacity='1'
-                stroke='none'
-                clip-rule='nonzero'
-                marker-end='none'
-                marker-mid='none'
-                marker-start='none'
-                visibility='visible'
                 d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
         </clipPath>
     </defs>
     <g
-        clip-path='url(#clip1)'
-        filter='none'
-        mask='none'
-        opacity='1'>
+        clip-path='url(#clip1)'>
         <path
-            fill='#000000'
-            fill-opacity='1'
-            fill-rule='nonzero'
-            stroke='none'
-            marker-end='none'
-            marker-mid='none'
-            marker-start='none'
-            visibility='visible'
             d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
     </g>
 </svg>
@@ -204,20 +162,11 @@ test!(ignore_groups_with_id, false,
     width='1'
     height='1'
     viewBox='0 0 1 1'
-    preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.5.0'>
     <defs/>
     <path
         id='some_group'
-        fill='#000000'
-        fill-opacity='1'
-        fill-rule='nonzero'
-        stroke='none'
-        marker-end='none'
-        marker-mid='none'
-        marker-start='none'
-        visibility='visible'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
 ");
@@ -234,16 +183,11 @@ test!(pattern_with_invalid_child, false,
     width='1'
     height='1'
     viewBox='0 0 1 1'
-    preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.5.0'>
     <defs/>
     <path
         fill='none'
-        stroke='none'
-        marker-end='none'
-        marker-mid='none'
-        marker-start='none'
         visibility='hidden'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
@@ -259,16 +203,11 @@ test!(pattern_without_children, false,
     width='1'
     height='1'
     viewBox='0 0 1 1'
-    preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.5.0'>
     <defs/>
     <path
         fill='none'
-        stroke='none'
-        marker-end='none'
-        marker-mid='none'
-        marker-start='none'
         visibility='hidden'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
@@ -312,7 +251,6 @@ test!(preserve_id, false,
     width='1'
     height='1'
     viewBox='0 0 1 1'
-    preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.5.0'>
     <defs>
@@ -321,16 +259,12 @@ test!(preserve_id, false,
             x1='0'
             y1='0'
             x2='1'
-            y2='0'
-            gradientUnits='objectBoundingBox'
-            spreadMethod='pad'>
+            y2='0'>
             <stop
                 stop-color='#ffffff'
-                stop-opacity='1'
                 offset='0'/>
             <stop
                 stop-color='#000000'
-                stop-opacity='1'
                 offset='1'/>
         </linearGradient>
         <radialGradient
@@ -339,32 +273,18 @@ test!(preserve_id, false,
             cy='0.5'
             r='0.5'
             fx='0.5'
-            fy='0.5'
-            gradientUnits='objectBoundingBox'
-            spreadMethod='pad'>
+            fy='0.5'>
             <stop
                 stop-color='#ffffff'
-                stop-opacity='1'
                 offset='0'/>
             <stop
                 stop-color='#000000'
-                stop-opacity='1'
                 offset='1'/>
         </radialGradient>
         <clipPath
-            id='clip1'
-            clip-path='none'
-            clipPathUnits='userSpaceOnUse'>
+            id='clip1'>
             <path
                 id='rect2'
-                fill='#000000'
-                fill-opacity='1'
-                stroke='none'
-                clip-rule='nonzero'
-                marker-end='none'
-                marker-mid='none'
-                marker-start='none'
-                visibility='visible'
                 d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
         </clipPath>
         <pattern
@@ -372,66 +292,25 @@ test!(preserve_id, false,
             x='0'
             y='0'
             width='1'
-            height='1'
-            patternUnits='objectBoundingBox'
-            patternContentUnits='userSpaceOnUse'>
+            height='1'>
             <path
-                fill='#000000'
-                fill-opacity='1'
-                fill-rule='nonzero'
-                stroke='none'
-                marker-end='none'
-                marker-mid='none'
-                marker-start='none'
-                visibility='visible'
                 d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
         </pattern>
     </defs>
     <g
-        clip-path='url(#clip1)'
-        filter='none'
-        mask='none'
-        opacity='1'>
+        clip-path='url(#clip1)'>
         <path
             id='rect1'
             fill='url(#lg1)'
-            fill-opacity='1'
-            fill-rule='nonzero'
             stroke='url(#rg1)'
-            stroke-dasharray='none'
-            stroke-dashoffset='0'
-            stroke-linecap='butt'
-            stroke-linejoin='miter'
-            stroke-miterlimit='4'
-            stroke-opacity='1'
-            stroke-width='1'
-            marker-end='none'
-            marker-mid='none'
-            marker-start='none'
-            visibility='visible'
             d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
     </g>
     <path
         id='path1'
         fill='url(#patt1)'
-        fill-opacity='1'
-        fill-rule='nonzero'
-        stroke='none'
-        marker-end='none'
-        marker-mid='none'
-        marker-start='none'
-        visibility='visible'
         d='M 10 20 L 30 40'/>
     <path
         id='text1'
-        fill='#000000'
-        fill-opacity='1'
-        fill-rule='nonzero'
-        stroke='none'
-        marker-end='none'
-        marker-mid='none'
-        marker-start='none'
-        visibility='visible'
         d='M -0.017578125 0 L 3.28125 -8.58984375 L 4.505859375 -8.58984375 L 8.021484375 0 \
         L 6.7265625 0 L 5.724609375 -2.6015625 L 2.1328125 -2.6015625 L 1.189453125 0 Z \
         M 2.4609375 -3.52734375 L 5.373046875 -3.52734375 L 4.4765625 -5.90625 \
@@ -439,14 +318,6 @@ test!(preserve_id, false,
         C 3.75781238079 -7.13671875 3.603515625 -6.58984351158 3.404296875 -6.046875 Z'/>
     <path
         id='text2'
-        fill='#000000'
-        fill-opacity='1'
-        fill-rule='nonzero'
-        stroke='none'
-        marker-end='none'
-        marker-mid='none'
-        marker-start='none'
-        visibility='visible'
         d='M -0.017578125 0 L 3.28125 -8.58984375 L 4.505859375 -8.58984375 L 8.021484375 0 \
         L 6.7265625 0 L 5.724609375 -2.6015625 L 2.1328125 -2.6015625 L 1.189453125 0 Z \
         M 2.4609375 -3.52734375 L 5.373046875 -3.52734375 L 4.4765625 -5.90625 \
@@ -454,8 +325,6 @@ test!(preserve_id, false,
         C 3.75781238079 -7.13671875 3.603515625 -6.58984351158 3.404296875 -6.046875 Z'/>
     <image
         id='image1'
-        visibility='visible'
-        preserveAspectRatio='xMidYMid'
         x='0'
         y='0'
         width='1'
@@ -477,7 +346,6 @@ test!(ignore_empty_groups_with_id, true,
     width='1'
     height='1'
     viewBox='0 0 1 1'
-    preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.5.0'>
     <defs/>
@@ -495,25 +363,12 @@ test!(keep_groups_with_id, true,
     width='1'
     height='1'
     viewBox='0 0 1 1'
-    preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.5.0'>
     <defs/>
     <g
-        id='some_group'
-        clip-path='none'
-        filter='none'
-        mask='none'
-        opacity='1'>
+        id='some_group'>
         <path
-            fill='#000000'
-            fill-opacity='1'
-            fill-rule='nonzero'
-            stroke='none'
-            marker-end='none'
-            marker-mid='none'
-            marker-start='none'
-            visibility='visible'
             d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
     </g>
 </svg>
@@ -528,19 +383,10 @@ test!(simplify_paths_1, false,
     width='1'
     height='1'
     viewBox='0 0 1 1'
-    preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.5.0'>
     <defs/>
     <path
-        fill='#000000'
-        fill-opacity='1'
-        fill-rule='nonzero'
-        stroke='none'
-        marker-end='none'
-        marker-mid='none'
-        marker-start='none'
-        visibility='visible'
         d='M 10 20 L 10 30 Z'/>
 </svg>
 ");
@@ -557,29 +403,45 @@ test!(group_with_default_opacity, false,
     width='1'
     height='1'
     viewBox='0 0 1 1'
-    preserveAspectRatio='xMidYMid'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.5.0'>
     <defs/>
     <path
-        fill='#000000'
-        fill-opacity='1'
-        fill-rule='nonzero'
-        stroke='none'
-        marker-end='none'
-        marker-mid='none'
-        marker-start='none'
-        visibility='visible'
         d='M 10 20 L 10 30'/>
     <path
-        fill='#000000'
-        fill-opacity='1'
-        fill-rule='nonzero'
-        stroke='none'
-        marker-end='none'
-        marker-mid='none'
-        marker-start='none'
-        visibility='visible'
         d='M 10 20 L 10 30'/>
 </svg>
 ");
+
+//// Marker resolving should not produce a group.
+//test!(marker_with_visible_overflow, false,
+//"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'>
+//    <marker id='marker1' overflow='visible'>
+//        <rect width='10' height='10'/>
+//    </marker>
+//    <path d='M 10 10 L 20 20' marker-start='url(#marker1)'/>
+//</svg>",
+//"<svg
+//    xmlns='http://www.w3.org/2000/svg'
+//    width='1'
+//    height='1'
+//    viewBox='0 0 1 1'
+//    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+//    usvg:version='0.5.0'>
+//    <defs/>
+//    <path
+//        fill='#000000'
+//        fill-opacity='1'
+//        fill-rule='nonzero'
+//        stroke='none'
+//        visibility='visible'
+//        d='M 10 10 L 20 20'/>
+//    <path
+//        fill='#000000'
+//        fill-opacity='1'
+//        fill-rule='nonzero'
+//        stroke='none'
+//        visibility='visible'
+//        d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
+//</svg>
+//");

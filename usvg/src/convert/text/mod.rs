@@ -174,7 +174,6 @@ fn convert_span(
         visibility: span.visibility,
         fill: None,
         stroke: None,
-        marker: Box::new(tree::PathMarker::default()),
         segments,
     };
 
@@ -502,7 +501,6 @@ fn convert_decoration(
         visibility: span.visibility,
         fill: decoration.fill.clone(),
         stroke: decoration.stroke.clone(),
-        marker: Box::new(tree::PathMarker::default()),
         segments,
     })
 }

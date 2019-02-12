@@ -16,7 +16,6 @@ mod fix_links;
 mod fix_recursive_links;
 mod group_defs;
 mod prepare_clip_path;
-mod prepare_marker;
 mod prepare_mask;
 mod prepare_nested_svg;
 mod prepare_text;
@@ -47,7 +46,6 @@ use self::fix_links::*;
 use self::fix_recursive_links::*;
 use self::group_defs::*;
 use self::prepare_clip_path::*;
-use self::prepare_marker::*;
 use self::prepare_mask::*;
 use self::prepare_nested_svg::*;
 use self::prepare_text::*;
@@ -178,8 +176,6 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) {
 
     prepare_text_decoration(doc);
     resolve_style_attributes(doc, opt);
-
-    rm_marker_attributes(doc);
 
     // Should be done only after style resolving.
     remove_invalid_gradients(doc);

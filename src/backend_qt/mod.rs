@@ -28,7 +28,6 @@ mod fill;
 mod filter;
 mod gradient;
 mod image;
-mod marker;
 mod mask;
 mod path;
 mod pattern;
@@ -217,7 +216,7 @@ fn render_node(
             Some(render_group(node, opt, layers, p))
         }
         usvg::NodeKind::Path(ref path) => {
-            Some(path::draw(&node.tree(), path, opt, layers, p))
+            Some(path::draw(&node.tree(), path, opt, p))
         }
         usvg::NodeKind::Image(ref img) => {
             Some(image::draw(img, opt, p))
@@ -304,8 +303,8 @@ fn render_group_impl(
         }
     }
 
-    if let Some(opacity) = g.opacity {
-        p.set_opacity(*opacity);
+    if !g.opacity.is_default() {
+        p.set_opacity(g.opacity.value());
     }
 
     let curr_ts = p.get_transform();

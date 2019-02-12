@@ -101,9 +101,27 @@ e-image-028,22690,bug #13
 e-image-029,24795,bug #13
 e-image-030,18864,bug #13
 e-image-031,18864,bug #13
+e-marker-008,48
 e-marker-015,846
 e-marker-030,704
-e-marker-035,1155,bug
+e-marker-032,144,UB
+e-marker-035,1183,bug
+e-marker-037,44
+e-marker-038,44
+e-marker-039,39
+e-marker-040,54
+e-marker-041,49
+e-marker-043,24
+e-marker-044,23
+e-marker-046,23
+e-marker-047,22
+e-marker-050,23
+e-marker-051,183
+e-marker-052,23
+e-marker-053,24
+e-marker-054,24
+e-marker-055,126,chrome bug
+e-marker-056,126,chrome bug
 e-mask-015,38
 e-mask-017,22344,bug #14
 e-mask-020,12804,bug

@@ -2,10 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::ops::Deref;
+//use std::ops::Deref;
 
 // external
-use svgdom::FuzzyZero;
+use svgdom::{
+    FuzzyEq,
+    FuzzyZero,
+};
 
 // self
 use geom::f64_bound;
@@ -19,11 +22,9 @@ macro_rules! wrap {
             }
         }
 
-        impl Deref for $name {
-            type Target = f64;
-
-            fn deref(&self) -> &Self::Target {
-                &self.0
+        impl PartialEq for $name {
+            fn eq(&self, other: &Self) -> bool {
+                self.0.fuzzy_eq(&other.0)
             }
         }
     };
