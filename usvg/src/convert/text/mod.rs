@@ -29,7 +29,7 @@ use self::convert::*;
 // TODO: group when Options::keep_named_groups is set
 
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 struct RawGlyph {
     id: u32,
     byte_idx: usize,
@@ -85,7 +85,7 @@ pub fn convert(
 
     let text_ts = text_elem.attributes().get_transform(AId::Transform).unwrap_or_default();
 
-    let mut chunks = resolve_chunks(tree, &text_elem, &pos_list);
+    let mut chunks = collect_text_chunks(tree, &text_elem, &pos_list);
     let mut char_offset = 0;
     let mut x = 0.0;
     let mut y = 0.0;
@@ -199,7 +199,7 @@ fn render_chunk(
     let mut list = Vec::new();
     for font in &fonts {
         let raw_glyphs = shape_text(&chunk.text, font);
-        list.push((raw_glyphs, font));
+        list.push((font, raw_glyphs));
     }
 
     let mut glyphs = Vec::new();
@@ -208,13 +208,19 @@ fn render_chunk(
         return glyphs;
     }
 
-    // TODO: rewrite because it's scary
-    for (i, raw_glyph) in list[0].0.iter().enumerate() {
+    {
+        let base = list[0].1.len();
+        for (_, raw_glyphs) in &list {
+            debug_assert_eq!(raw_glyphs.len(), base);
+        }
+    }
+
+    for (i, raw_glyph) in list[0].1.iter().enumerate() {
         for span in &chunk.spans {
             if span.contains(raw_glyph.byte_idx) {
-                for (raw_glyph, font) in &list {
+                for (font, raw_glyphs) in &list {
                     if font_eq(&span.font, font) {
-                        glyphs.push(outline_glyph(font, &raw_glyph[i..]));
+                        glyphs.push(outline_glyph(font, raw_glyphs[i]));
                         break;
                     }
                 }
@@ -303,51 +309,42 @@ fn shape_text(
 
 fn outline_glyph(
     font: &Font,
-    raw_glyphs: &[RawGlyph],
+    raw_glyph: RawGlyph,
 ) -> Glyph {
     use lyon_path::builder::FlatPathBuilder;
 
-    debug_assert!(!raw_glyphs.is_empty());
-
     let scale = font.size / font.units_per_em as f64;
-    let byte_idx = raw_glyphs[0].byte_idx;
 
     let mut path = Vec::new();
     let mut width = 0.0;
 
-    for raw_glyph in raw_glyphs {
-        if byte_idx != raw_glyph.byte_idx {
-            break;
+    let mut builder = svgdom_path_builder::Builder::new();
+    let mut glyph = match font.font.outline(raw_glyph.id, fk::HintingOptions::None, &mut builder) {
+        Ok(_) => {
+            super::path::convert_path(builder.build())
         }
-
-        let mut builder = svgdom_path_builder::Builder::new();
-        let mut glyph = match font.font.outline(raw_glyph.id, fk::HintingOptions::None, &mut builder) {
-            Ok(_) => {
-                super::path::convert_path(builder.build())
-            }
-            Err(_) => {
-                warn!("Glyph {} not found in the font.", raw_glyph.id);
-                Vec::new()
-            }
-        };
-
-        // Mirror and scale to the `font-size`.
-        if !glyph.is_empty() {
-            let ts = svgdom::Transform::new_scale(scale, -scale);
-            transform_path(&mut glyph, &ts);
+        Err(_) => {
+            warn!("Glyph {} not found in the font.", raw_glyph.id);
+            Vec::new()
         }
+    };
 
-        if !glyph.is_empty() && (!raw_glyph.dx.is_fuzzy_zero() || !raw_glyph.dy.is_fuzzy_zero()) {
-            let ts = svgdom::Transform::new_translate(raw_glyph.dx * scale, -raw_glyph.dy * scale);
-            transform_path(&mut glyph, &ts);
-        }
-
-        path.extend_from_slice(&glyph);
-        width += raw_glyph.width * scale;
+    // Mirror and scale to the `font-size`.
+    if !glyph.is_empty() {
+        let ts = svgdom::Transform::new_scale(scale, -scale);
+        transform_path(&mut glyph, &ts);
     }
 
+    if !glyph.is_empty() && (!raw_glyph.dx.is_fuzzy_zero() || !raw_glyph.dy.is_fuzzy_zero()) {
+        let ts = svgdom::Transform::new_translate(raw_glyph.dx * scale, -raw_glyph.dy * scale);
+        transform_path(&mut glyph, &ts);
+    }
+
+    path.extend_from_slice(&glyph);
+    width += raw_glyph.width * scale;
+
     Glyph {
-        byte_idx: raw_glyphs[0].byte_idx,
+        byte_idx: raw_glyph.byte_idx,
         path,
         width,
         .. Glyph::default()
@@ -553,7 +550,7 @@ fn add_rect_to_path(rect: Rect, path: &mut Vec<tree::PathSegment>) {
 
 mod svgdom_path_builder {
     use lyon_geom::math::*;
-    use lyon_path::builder::FlatPathBuilder;
+    use lyon_path::builder::{FlatPathBuilder, PathBuilder};
 
     pub struct Builder {
         path: svgdom::Path,
@@ -607,7 +604,7 @@ mod svgdom_path_builder {
         }
     }
 
-    impl lyon_path::builder::PathBuilder for Builder {
+    impl PathBuilder for Builder {
         fn quadratic_bezier_to(&mut self, ctrl: Point, to: Point) {
             self.current_position = to;
             self.path.push(svgdom::PathSegment::Quadratic {

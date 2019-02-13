@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::cmp;
+use std::rc::Rc;
 
 // external
 mod fk {
@@ -25,8 +26,9 @@ pub enum TextAnchor {
     End,
 }
 
-#[derive(Clone)]
-pub struct Font {
+pub type Font = Rc<FontData>;
+
+pub struct FontData {
     pub font: fk::Font,
     pub path: String,
     pub index: u32,
@@ -47,7 +49,6 @@ pub struct CharacterPosition {
     pub dy: Option<f64>,
 }
 
-#[derive(Clone)]
 pub struct TextChunk {
     pub x: Option<f64>,
     pub y: Option<f64>,
@@ -78,7 +79,7 @@ impl TextSpan {
 pub type PositionsList = Vec<CharacterPosition>;
 pub type RotateList = Vec<f64>;
 
-pub fn resolve_chunks(
+pub fn collect_text_chunks(
     tree: &tree::Tree,
     text_elem: &svgdom::Node,
     pos_list: &PositionsList,
@@ -104,7 +105,7 @@ pub fn resolve_chunks(
         let span = TextSpan {
             start: 0,
             end: 0,
-            id: text_elem.id().clone(),
+            id: text_parent.id().clone(),
             fill: super::super::fill::convert(tree, &attrs, true),
             stroke: super::super::stroke::convert(tree, &attrs, true),
             font,
@@ -163,9 +164,13 @@ pub fn resolve_chunks(
 pub fn resolve_font(
     attrs: &svgdom::Attributes,
 ) -> Option<Font> {
+    let size = attrs.get_number_or(AId::FontSize, 0.0);
+    if !(size > 0.0) {
+        return None;
+    }
+
     let style = attrs.get_str_or(AId::FontStyle, "normal");
     let style = match style {
-        "normal"  => fk::Style::Normal,
         "italic"  => fk::Style::Italic,
         "oblique" => fk::Style::Oblique,
         _         => fk::Style::Normal,
@@ -173,7 +178,6 @@ pub fn resolve_font(
 
     let weight = attrs.get_str_or(AId::FontWeight, "normal");
     let weight = match weight {
-        "normal" => fk::Weight::NORMAL,
         "bold"   => fk::Weight::BOLD,
         "100"    => fk::Weight::THIN,
         "200"    => fk::Weight::EXTRA_LIGHT,
@@ -193,7 +197,6 @@ pub fn resolve_font(
 
     let stretch = attrs.get_str_or(AId::FontStretch, "normal");
     let stretch = match stretch {
-        "normal"                 => fk::Stretch::NORMAL,
         "ultra-condensed"        => fk::Stretch::ULTRA_CONDENSED,
         "extra-condensed"        => fk::Stretch::EXTRA_CONDENSED,
         "narrower" | "condensed" => fk::Stretch::CONDENSED,
@@ -222,19 +225,11 @@ pub fn resolve_font(
         font_list.push(name);
     }
 
-    let size = attrs.get_number_or(AId::FontSize, 0.0);
-    if !(size > 0.0) {
-        return None;
-    }
-
-    let letter_spacing = attrs.get_number_or(AId::LetterSpacing, 0.0);
-    let word_spacing = attrs.get_number_or(AId::WordSpacing, 0.0);
-
     let properties = fk::Properties { style, weight, stretch };
     let handle = match fk::SystemSource::new().select_best_match(&font_list, &properties) {
         Ok(v) => v,
         Err(_) => {
-            // TODO: Select any font.
+            // TODO: Select any font?
             warn!("No match for {:?} font-family.", font_family);
             return None;
         }
@@ -244,7 +239,7 @@ pub fn resolve_font(
         fk::Handle::Path { ref path, font_index } => {
             (path.to_str().unwrap().to_owned(), font_index)
         }
-        _ => (String::new(), 0),
+        _ => return None,
     };
 
     // TODO: font caching
@@ -259,7 +254,7 @@ pub fn resolve_font(
     let metrics = font.metrics();
     let scale = size / metrics.units_per_em as f64;
 
-    Some(Font {
+    Some(Rc::new(FontData {
         font,
         path,
         index,
@@ -268,15 +263,14 @@ pub fn resolve_font(
         ascent: metrics.ascent as f64 * scale,
         underline_position: metrics.underline_position as f64 * scale,
         underline_thickness: metrics.underline_thickness as f64 * scale,
-        letter_spacing,
-        word_spacing,
-    })
+        letter_spacing: attrs.get_number_or(AId::LetterSpacing, 0.0),
+        word_spacing: attrs.get_number_or(AId::WordSpacing, 0.0),
+    }))
 }
 
 pub fn resolve_text_anchor(node: &svgdom::Node) -> TextAnchor {
     let attrs = node.attributes();
     match attrs.get_str_or(AId::TextAnchor, "start") {
-        "start"  => TextAnchor::Start,
         "middle" => TextAnchor::Middle,
         "end"    => TextAnchor::End,
         _        => TextAnchor::Start,
@@ -375,69 +369,67 @@ fn count_chars(node: &svgdom::Node) -> usize {
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct TextDecorationStyle {
     pub fill: Option<tree::Fill>,
     pub stroke: Option<tree::Stroke>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct TextDecoration {
     pub underline: Option<TextDecorationStyle>,
     pub overline: Option<TextDecorationStyle>,
     pub line_through: Option<TextDecorationStyle>,
 }
 
-pub fn resolve_decoration(
+// TODO: explain how it works
+fn resolve_decoration(
     tree: &tree::Tree,
-    node: &svgdom::Node,
+    text: &svgdom::Node,
     tspan: &svgdom::Node
 ) -> TextDecoration {
-    let text_dec = conv_text_decoration(node);
+    let text_dec = conv_text_decoration(text);
     let tspan_dec = conv_tspan_decoration(tspan);
 
     let gen_style = |in_tspan: bool, in_text: bool| {
         let n = if in_tspan {
             tspan.clone()
         } else if in_text {
-            node.clone()
+            text.clone()
         } else {
             return None;
         };
 
         let ref attrs = n.attributes();
-        let fill = super::super::fill::convert(tree, attrs, true);
-        let stroke = super::super::stroke::convert(tree, attrs, true);
-
         Some(TextDecorationStyle {
-            fill,
-            stroke,
+            fill: super::super::fill::convert(tree, attrs, true),
+            stroke: super::super::stroke::convert(tree, attrs, true),
         })
     };
 
     TextDecoration {
-        underline: gen_style(tspan_dec.has_underline, text_dec.has_underline),
-        overline: gen_style(tspan_dec.has_overline, text_dec.has_overline),
+        underline:    gen_style(tspan_dec.has_underline,    text_dec.has_underline),
+        overline:     gen_style(tspan_dec.has_overline,     text_dec.has_overline),
         line_through: gen_style(tspan_dec.has_line_through, text_dec.has_line_through),
     }
 }
 
-struct TextDecoTypes {
+struct TextDecorationTypes {
     has_underline: bool,
     has_overline: bool,
     has_line_through: bool,
 }
 
-// 'text-decoration' defined in the 'text' element
-// should be generated by 'prepare_text_decoration'.
-fn conv_text_decoration(node: &svgdom::Node) -> TextDecoTypes {
+// 'text-decoration' defined on the 'text' element
+// should be generated by 'preproc::prepare_text::prepare_text_decoration'.
+fn conv_text_decoration(node: &svgdom::Node) -> TextDecorationTypes {
     debug_assert!(node.is_tag_name(EId::Text));
 
     let attrs = node.attributes();
 
     let text = attrs.get_str_or(AId::TextDecoration, "");
 
-    TextDecoTypes {
+    TextDecorationTypes {
         has_underline: text.contains("underline"),
         has_overline: text.contains("overline"),
         has_line_through: text.contains("line-through"),
@@ -445,7 +437,7 @@ fn conv_text_decoration(node: &svgdom::Node) -> TextDecoTypes {
 }
 
 // 'text-decoration' in 'tspan' does not depend on parent elements.
-fn conv_tspan_decoration(tspan: &svgdom::Node) -> TextDecoTypes {
+fn conv_tspan_decoration(tspan: &svgdom::Node) -> TextDecorationTypes {
     let attrs = tspan.attributes();
 
     let has_attr = |decoration_id: &str| {
@@ -458,7 +450,7 @@ fn conv_tspan_decoration(tspan: &svgdom::Node) -> TextDecoTypes {
         false
     };
 
-    TextDecoTypes {
+    TextDecorationTypes {
         has_underline: has_attr("underline"),
         has_overline: has_attr("overline"),
         has_line_through: has_attr("line-through"),
