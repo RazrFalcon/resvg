@@ -77,7 +77,6 @@ extern crate libflate;
 extern crate lyon_path;
 extern crate unicode_bidi;
 extern crate unicode_script;
-extern crate unicode_segmentation;
 #[macro_use] extern crate log;
 
 

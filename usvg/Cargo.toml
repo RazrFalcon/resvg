@@ -28,7 +28,6 @@ rctree = "0.2.1"
 svgdom = "0.16"
 unicode-bidi = "0.3.4"
 unicode-script = "0.2.0"
-unicode-segmentation = "1.2.1"
 
 [dev-dependencies]
 pretty_assertions = "0.5.1"

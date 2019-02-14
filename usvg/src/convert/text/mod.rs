@@ -29,29 +29,54 @@ use self::convert::*;
 // TODO: group when Options::keep_named_groups is set
 
 
+/// A raw glyph.
+///
+/// Basically, a glyph ID in the font and it's metrics.
 #[derive(Clone, Copy)]
 struct RawGlyph {
+    /// The glyph ID in the font.
     id: u32,
+
+    /// Position in bytes in the original string.
     byte_idx: usize,
+
     dx: f64,
+
     dy: f64,
+
     width: f64,
 }
 
 #[derive(Clone)]
-struct Glyph {
+struct OutlinedGlyph {
+    /// Position in bytes in the original string.
     byte_idx: usize,
+
     x: f64,
+
     y: f64,
+
     rotate: f64,
+
+    /// The glyph width.
+    ///
+    /// It's not the outline width, but the width specified in the font.
+    /// So `width` != `path` bbox width.
     width: f64,
-    has_relative_shift: bool, // via dx/dy
+
+    /// Indicates that this glyph was affected by the relative shift (via dx/dy attributes)
+    /// during the text layouting.
+    ///
+    /// Used during the `text-decoration` processing.
+    has_relative_shift: bool,
+
+    /// The actual outline.
     path: Vec<tree::PathSegment>,
 }
 
-impl Default for Glyph {
+impl Default for OutlinedGlyph {
     fn default() -> Self {
-        Glyph {
+        OutlinedGlyph {
             byte_idx: 0,
             x: 0.0,
             y: 0.0,
@@ -63,9 +88,13 @@ impl Default for Glyph {
     }
 }
 
+/// A text decoration span.
+///
+/// Basically a horizontal line, that will be used for underline, overline and line-through.
+/// It doesn't have a height, since it depends on the font metrics.
 struct DecorationSpan {
     x: f64,
-    y: f64,
+    baseline: f64,
     width: f64,
     angle: f64,
 }
@@ -84,10 +113,10 @@ pub fn convert(
     let mut chunks = collect_text_chunks(tree, &text_elem, &pos_list);
     let mut char_offset = 0;
     let mut x = 0.0;
-    let mut y = 0.0;
+    let mut baseline = 0.0;
     for chunk in &mut chunks {
         x = chunk.x.unwrap_or(x);
-        y = chunk.y.unwrap_or(y);
+        baseline = chunk.y.unwrap_or(baseline);
 
         let mut glyphs = render_chunk(&chunk);
         resolve_glyph_positions(&chunk.text, char_offset, &pos_list, &rotate_list, &mut glyphs);
@@ -101,7 +130,7 @@ pub fn convert(
 
             if let Some(decoration) = span.decoration.underline.take() {
                 parent.append_kind(convert_decoration(
-                    x, y - span.font.underline_position,
+                    x, baseline - span.font.underline_position,
                     &span, decoration, &decoration_spans, text_ts,
                 ));
             }
@@ -109,19 +138,19 @@ pub fn convert(
             if let Some(decoration) = span.decoration.overline.take() {
                 // TODO: overline pos from font
                 parent.append_kind(convert_decoration(
-                    x, y - span.font.ascent,
+                    x, baseline - span.font.ascent,
                     &span, decoration, &decoration_spans, text_ts,
                 ));
             }
 
-            if let Some(path) = convert_span(x, y, span, &mut glyphs, &text_ts) {
+            if let Some(path) = convert_span(x, baseline, span, &mut glyphs, &text_ts) {
                 parent.append_kind(path);
             }
 
             if let Some(decoration) = span.decoration.line_through.take() {
                 // TODO: line-through pos from font
                 parent.append_kind(convert_decoration(
-                    x, y - span.font.ascent / 3.0,
+                    x, baseline - span.font.ascent / 3.0,
                     &span, decoration, &decoration_spans, text_ts,
                 ));
             }
@@ -134,9 +163,9 @@ pub fn convert(
 
 fn convert_span(
     x: f64,
-    y: f64,
+    baseline: f64,
     span: &mut TextSpan,
-    glyphs: &mut [Glyph],
+    glyphs: &mut [OutlinedGlyph],
     text_ts: &tree::Transform,
 ) -> Option<tree::NodeKind> {
     let mut segments = Vec::new();
@@ -162,7 +191,7 @@ fn convert_span(
     }
 
     let mut transform = text_ts.clone();
-    transform.translate(x, y - span.baseline_shift);
+    transform.translate(x, baseline - span.baseline_shift);
 
     // TODO: fill and stroke with a gradient/pattern that has objectBoundingBox
     //       should use the text element bbox and not the tspan bbox.
@@ -182,13 +211,25 @@ fn convert_span(
 }
 
 fn font_eq(f1: &Font, f2: &Font) -> bool {
-    f1.path == f2.path && f1.index == f2.index && f1.size == f2.size
+       f1.path  == f2.path
+    && f1.index == f2.index
+    && f1.size  == f2.size
 }
 
+/// Converts a text chunk into a list of outlined glyphs.
+///
+/// This function will do the BIDI reordering, text shaping and glyphs outlining,
+/// but not the text layouting. So all glyphs are in 0x0 position.
 fn render_chunk(
     chunk: &TextChunk,
-) -> Vec<Glyph> {
+) -> Vec<OutlinedGlyph> {
+    // Shape the text using all fonts in the chunk.
+    //
+    // I'm not sure if this can be optimized, but it's probably pretty expensive.
     let fonts = collect_unique_fonts(chunk);
+    if fonts.is_empty() {
+        return Vec::new();
+    }
 
     let mut list = Vec::new();
     for font in &fonts {
@@ -196,24 +237,24 @@ fn render_chunk(
         list.push((font, raw_glyphs));
     }
 
+    // TODO: is this even possible?
+    // Check that all glyphs lists have the same length.
+    if !list.iter().all(|v| v.1.len() == list[0].1.len()) {
+        warn!("Text layouting failed.");
+        return Vec::new();
+    }
+
+    // TODO: We assume, that all glyphs lists have the same clusters,
+    //       so if a char was converted into one glyph in one font,
+    //       it will be true for all fonts
+    //       And I'm not sure of that.
     let mut glyphs = Vec::new();
-
-    if list.is_empty() {
-        return glyphs;
-    }
-
-    {
-        let base = list[0].1.len();
-        for (_, raw_glyphs) in &list {
-            debug_assert_eq!(raw_glyphs.len(), base);
-        }
-    }
-
     for (i, raw_glyph) in list[0].1.iter().enumerate() {
         for span in &chunk.spans {
             if span.contains(raw_glyph.byte_idx) {
                 for (font, raw_glyphs) in &list {
                     if font_eq(&span.font, font) {
+                        // TODO: outline cluster
                         glyphs.push(outline_glyph(font, raw_glyphs[i]));
                         break;
                     }
@@ -227,6 +268,7 @@ fn render_chunk(
     glyphs
 }
 
+/// Returns a list of unique fonts in the specified chunk.
 fn collect_unique_fonts(
     chunk: &TextChunk,
 ) -> Vec<Font> {
@@ -249,6 +291,9 @@ fn collect_unique_fonts(
     list
 }
 
+/// Converts a text into a list of glyph IDs.
+///
+/// This function will do the BIDI reordering and text shaping.
 fn shape_text(
     text: &str,
     font: &Font,
@@ -304,13 +349,10 @@ fn shape_text(
 fn outline_glyph(
     font: &Font,
     raw_glyph: RawGlyph,
-) -> Glyph {
+) -> OutlinedGlyph {
     use lyon_path::builder::FlatPathBuilder;
 
     let scale = font.size / font.units_per_em as f64;
-
-    let mut path = Vec::new();
-    let mut width = 0.0;
 
     let mut builder = svgdom_path_builder::Builder::new();
     let mut glyph = match font.font.outline(raw_glyph.id, fk::HintingOptions::None, &mut builder) {
@@ -323,25 +365,20 @@ fn outline_glyph(
         }
     };
 
-    // Mirror and scale to the `font-size`.
     if !glyph.is_empty() {
-        let ts = svgdom::Transform::new_scale(scale, -scale);
+        // Mirror and scale to the `font-size`.
+        let mut ts = svgdom::Transform::new_scale(scale, -scale);
+        // Apply offset.
+        ts.translate(raw_glyph.dx, raw_glyph.dy);
+
         transform_path(&mut glyph, &ts);
     }
 
-    if !glyph.is_empty() && (!raw_glyph.dx.is_fuzzy_zero() || !raw_glyph.dy.is_fuzzy_zero()) {
-        let ts = svgdom::Transform::new_translate(raw_glyph.dx * scale, -raw_glyph.dy * scale);
-        transform_path(&mut glyph, &ts);
-    }
-
-    path.extend_from_slice(&glyph);
-    width += raw_glyph.width * scale;
-
-    Glyph {
+    OutlinedGlyph {
         byte_idx: raw_glyph.byte_idx,
-        path,
-        width,
-        .. Glyph::default()
+        path: glyph,
+        width: raw_glyph.width * scale,
+        .. OutlinedGlyph::default()
     }
 }
 
@@ -370,7 +407,7 @@ fn resolve_glyph_positions(
     offset: usize,
     pos_list: &PositionsList,
     rotate_list: &RotateList,
-    glyphs: &mut Vec<Glyph>,
+    glyphs: &mut Vec<OutlinedGlyph>,
 ) {
     let mut x = 0.0;
     let mut y = 0.0;
@@ -386,8 +423,8 @@ fn resolve_glyph_positions(
             glyph.has_relative_shift = pos.dx.is_some() || pos.dy.is_some();
         }
 
-        if let Some(angle) = rotate_list.get(cp) {
-            glyph.rotate = *angle;
+        if let Some(angle) = rotate_list.get(cp).cloned() {
+            glyph.rotate = angle;
         }
 
         x = glyph.x + glyph.width;
@@ -395,10 +432,11 @@ fn resolve_glyph_positions(
     }
 }
 
+/// Converts byte position into code point position.
 fn byte_to_code_point(text: &str, byte: usize) -> usize {
     let mut idx = 0;
-    for (i, c) in text.char_indices() {
-        if byte >= i && byte < i + c.len_utf8() {
+    for (i, _) in text.char_indices() {
+        if byte == i {
             break;
         }
 
@@ -418,7 +456,7 @@ fn process_anchor(a: TextAnchor, text_width: f64) -> f64 {
 
 fn collect_decoration_spans(
     span: &TextSpan,
-    glyphs: &[Glyph],
+    glyphs: &[OutlinedGlyph],
 ) -> Vec<DecorationSpan> {
     let mut spans = Vec::new();
 
@@ -431,7 +469,7 @@ fn collect_decoration_spans(
         if span.contains(glyph.byte_idx) {
             if started && (glyph.has_relative_shift || !glyph.rotate.is_fuzzy_zero()) {
                 started = false;
-                spans.push(DecorationSpan { x, y, width, angle });
+                spans.push(DecorationSpan { x, baseline: y, width, angle });
             }
 
             if !started {
@@ -444,13 +482,13 @@ fn collect_decoration_spans(
                 width = glyph.x + glyph.width - x;
             }
         } else if started {
-            spans.push(DecorationSpan { x, y, width, angle });
+            spans.push(DecorationSpan { x, baseline: y, width, angle });
             started = false;
         }
     }
 
     if started {
-        spans.push(DecorationSpan { x, y, width, angle });
+        spans.push(DecorationSpan { x, baseline: y, width, angle });
     }
 
     spans
@@ -458,7 +496,7 @@ fn collect_decoration_spans(
 
 fn convert_decoration(
     x: f64,
-    y: f64,
+    baseline: f64,
     span: &TextSpan,
     mut decoration: TextDecorationStyle,
     decoration_spans: &[DecorationSpan],
@@ -469,7 +507,8 @@ fn convert_decoration(
     let mut segments = Vec::new();
     for dec_span in decoration_spans {
         let tx = x + dec_span.x;
-        let ty = y + dec_span.y - span.baseline_shift - span.font.underline_thickness / 2.0;
+        let ty = baseline + dec_span.baseline - span.baseline_shift
+                 - span.font.underline_thickness / 2.0;
 
         let rect = Rect::new(
             0.0,
@@ -542,6 +581,7 @@ fn add_rect_to_path(rect: Rect, path: &mut Vec<tree::PathSegment>) {
 //    }
 //}
 
+/// Implements an ability to outline a glyph directly into the `svgdom::Path`.
 mod svgdom_path_builder {
     use lyon_geom::math::*;
     use lyon_path::builder::{FlatPathBuilder, PathBuilder};
