@@ -19,7 +19,7 @@ use tree;
 use super::super::prelude::*;
 
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum TextAnchor {
     Start,
     Middle,
@@ -49,6 +49,9 @@ pub struct CharacterPosition {
     pub dy: Option<f64>,
 }
 
+/// A text chunk.
+///
+/// Text alignment and BIDI reordering can be done only inside a text chunk.
 pub struct TextChunk {
     pub x: Option<f64>,
     pub y: Option<f64>,
@@ -79,6 +82,7 @@ impl TextSpan {
 pub type PositionsList = Vec<CharacterPosition>;
 pub type RotateList = Vec<f64>;
 
+
 pub fn collect_text_chunks(
     tree: &tree::Tree,
     text_elem: &svgdom::Node,
@@ -91,7 +95,7 @@ pub fn collect_text_chunks(
         let text_parent = child.parent().unwrap();
         let attrs = text_parent.attributes();
         let baseline_shift = text_parent.attributes().get_number_or(AId::BaselineShift, 0.0);
-        let anchor = resolve_text_anchor(&text_parent);
+        let anchor = convert_text_anchor(&text_parent);
 
         let font = match resolve_font(&attrs) {
             Some(v) => v,
@@ -116,10 +120,10 @@ pub fn collect_text_chunks(
 
         let mut is_new_span = true;
         for c in child.text().chars() {
+            // Create a new chunk if:
+            // - this is the first span
+            // - text character has an absolute coordinate assigned to it (via x/y attribute)
             if pos_list[char_idx].x.is_some() || pos_list[char_idx].y.is_some() || chunks.is_empty() {
-                let x = pos_list[char_idx].x;
-                let y = pos_list[char_idx].y;
-
                 chunk_byte_idx = 0;
 
                 let mut span2 = span.clone();
@@ -127,8 +131,8 @@ pub fn collect_text_chunks(
                 span2.end = c.len_utf8();
 
                 chunks.push(TextChunk {
-                    x,
-                    y,
+                    x: pos_list[char_idx].x,
+                    y: pos_list[char_idx].y,
                     anchor,
                     spans: vec![span2],
                     text: c.to_string(),
@@ -161,7 +165,7 @@ pub fn collect_text_chunks(
     chunks
 }
 
-pub fn resolve_font(
+fn resolve_font(
     attrs: &svgdom::Attributes,
 ) -> Option<Font> {
     let size = attrs.get_number_or(AId::FontSize, 0.0);
@@ -268,38 +272,93 @@ pub fn resolve_font(
     }))
 }
 
-pub fn resolve_text_anchor(node: &svgdom::Node) -> TextAnchor {
-    let attrs = node.attributes();
-    match attrs.get_str_or(AId::TextAnchor, "start") {
+fn convert_text_anchor(node: &svgdom::Node) -> TextAnchor {
+    match node.attributes().get_str_or(AId::TextAnchor, "start") {
         "middle" => TextAnchor::Middle,
         "end"    => TextAnchor::End,
         _        => TextAnchor::Start,
     }
 }
 
-// According to the https://github.com/w3c/svgwg/issues/537
-// 'Assignment of multi-value text layout attributes (x, y, dx, dy, rotate) should be
-// according to Unicode code point characters.'
+/// Resolves text's character positions.
+///
+/// This includes: x, y, dx, dy.
+///
+/// # The character
+///
+/// The first problem with this task is that the *character* itself
+/// is basically undefined in the SVG spec. Sometimes it's an *XML character*,
+/// sometimes a *glyph*, and sometimes just a *character*.
+///
+/// There is an ongoing [discussion](https://github.com/w3c/svgwg/issues/537)
+/// on the SVG working group that addresses this by stating that a character
+/// is a Unicode code point. But it's not final, not in the spec, and may change any time.
+///
+/// Anyway, we treat a character as a Unicode code point.
+///
+/// # Algorithm
+///
+/// To resolve positions, we have to iterate over descendant nodes and
+/// if the current node is a `tspan` and has x/y/dx/dy attribute,
+/// than the positions from this attribute should be assigned to the characters
+/// of this `tspan` and it's descendants.
+///
+/// Positions list can have more values than characters in the `tspan`,
+/// so we have to clamp it, because values should not overlap, e.g.:
+///
+/// (we ignore whitespaces for example purposes,
+/// so the `text` content is `Text` and not `T ex t`)
+///
+/// ```text
+/// <text>
+///   a
+///   <tspan x="10 20 30">
+///     bc
+///   </tspan>
+///   d
+/// </text>
+/// ```
+///
+/// In this example, the `d` position should not be set to `30`.
+/// And the result should be: `[None, 10, 20, None]`
+///
+/// Another example:
+///
+/// ```text
+/// <text>
+///   <tspan x="100 110 120 130">
+///     a
+///     <tspan x="50">
+///       bc
+///     </tspan>
+///   </tspan>
+///   d
+/// </text>
+/// ```
+///
+/// The result should be: `[100, 50, 120, None]`
 pub fn resolve_positions_list(text_elem: &svgdom::Node) -> PositionsList {
-    let total = count_chars(text_elem);
-
+    // Allocate a list that has all characters positions set to `None`.
+    let total_chars = count_chars(text_elem);
     let mut list = vec![CharacterPosition {
         x: None,
         y: None,
         dx: None,
         dy: None,
-    }; total];
+    }; total_chars];
 
     let mut offset = 0;
     for child in text_elem.descendants() {
         if child.is_element() {
-            let total = count_chars(&child);
+            let child_chars = count_chars(&child);
             let ref attrs = child.attributes();
 
             macro_rules! push_list {
                 ($aid:expr, $field:ident) => {
                     if let Some(num_list) = attrs.get_number_list($aid) {
-                        let len = cmp::min(num_list.len(), total);
+                        // Note that we are using not the total count,
+                        // but the amount of characters in the current `tspan` (with children).
+                        let len = cmp::min(num_list.len(), child_chars);
                         for i in 0..len {
                             list[offset + i].$field = Some(num_list[i]);
                         }
@@ -311,7 +370,8 @@ pub fn resolve_positions_list(text_elem: &svgdom::Node) -> PositionsList {
             push_list!(AId::Y, y);
             push_list!(AId::Dx, dx);
             push_list!(AId::Dy, dy);
-        } else {
+        } else if child.is_text() {
+            // Advance the offset.
             offset += child.text().chars().count();
         }
     }
@@ -319,44 +379,40 @@ pub fn resolve_positions_list(text_elem: &svgdom::Node) -> PositionsList {
     list
 }
 
-// TODO: simplify
-pub fn resolve_rotate(parent: &svgdom::Node, mut offset: usize, list: &mut RotateList) {
-    for child in parent.children() {
-        if child.is_text() {
-            let chars_count = child.text().chars().count();
-            // TODO: should stop at the root 'text'
-            if let Some(p) = child.find_node_with_attribute(AId::Rotate) {
-                let attrs = p.attributes();
-                if let Some(rotate_list) = attrs.get_number_list(AId::Rotate) {
-                    for i in 0..chars_count {
-                        let r = match rotate_list.get(i + offset) {
-                            Some(r) => *r,
-                            None => {
-                                // Use the last angle if the index is out of bounds.
-                                *rotate_list.last().unwrap_or(&0.0)
-                            }
-                        };
-
-                        list.push(r);
+/// Resolves characters rotation.
+///
+/// The algorithm is well explained
+/// [in the SVG spec](https://www.w3.org/TR/SVG11/text.html#TSpanElement) (scroll down a bit).
+///
+/// ![](https://www.w3.org/TR/SVG11/images/text/tspan05-diagram.png)
+///
+/// Note: this algorithm differs from the position resolving one.
+pub fn resolve_rotate(text_elem: &svgdom::Node) -> RotateList {
+    // Allocate a list that has all characters angles set to `0.0`.
+    let mut list = vec![0.0; count_chars(text_elem)];
+    let mut last = 0.0;
+    let mut offset = 0;
+    for child in text_elem.descendants() {
+        if child.is_element() {
+            if let Some(num_list) = child.attributes().get_number_list(AId::Rotate) {
+                for i in 0..count_chars(&child) {
+                    if let Some(a) = num_list.get(i).cloned() {
+                        list[offset + i] = a;
+                        last = a;
+                    } else {
+                        // If the rotate list doesn't specify the rotation for
+                        // this character - use the last one.
+                        list[offset + i] = last;
                     }
-
-                    offset += chars_count;
-                }
-            } else {
-                for _ in 0..chars_count {
-                    list.push(0.0);
                 }
             }
-        } else if child.is_element() {
-            // Use parent rotate list if it is not set.
-            let sub_offset = if child.has_attribute(AId::Rotate) { 0 } else { offset };
-            resolve_rotate(&child, sub_offset, list);
-
-            // TODO: why?
-            // 'tspan' represents a single char.
-            offset += 1;
+        } else if child.is_text() {
+            // Advance the offset.
+            offset += child.text().chars().count();
         }
     }
+
+    list
 }
 
 fn count_chars(node: &svgdom::Node) -> usize {

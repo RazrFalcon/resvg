@@ -70,7 +70,7 @@ mod prelude {
 /// In worst case scenario return an empty tree, but not an error.
 ///
 /// Must not panic!
-pub fn convert_doc(
+pub fn convert(
     svg_doc: &svgdom::Document,
     opt: &Options,
 ) -> tree::Tree {

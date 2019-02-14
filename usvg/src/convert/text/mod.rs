@@ -77,9 +77,7 @@ pub fn convert(
     tree: &mut tree::Tree,
 ) {
     let pos_list = resolve_positions_list(text_elem);
-
-    let mut rotate_list = RotateList::new();
-    resolve_rotate(&text_elem, 0, &mut rotate_list);
+    let rotate_list = resolve_rotate(text_elem);
 
     debug_assert_eq!(pos_list.len(), rotate_list.len());
 

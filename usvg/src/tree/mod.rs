@@ -78,7 +78,7 @@ impl Tree {
     /// An empty `Tree` will be returned on any error.
     pub fn from_dom(mut doc: svgdom::Document, opt: &Options) -> Self {
         super::preproc::prepare_doc(&mut doc, opt);
-        super::convert::convert_doc(&doc, opt)
+        super::convert::convert(&doc, opt)
     }
 
     /// Parses `Tree` from the file.
