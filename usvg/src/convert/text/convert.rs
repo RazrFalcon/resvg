@@ -17,6 +17,7 @@ mod fk {
 // self
 use tree;
 use super::super::prelude::*;
+use super::super::{fill, stroke};
 
 
 #[derive(Clone, Copy, PartialEq)]
@@ -89,19 +90,18 @@ pub fn collect_text_chunks(
     pos_list: &PositionsList,
 ) -> Vec<TextChunk> {
     let mut chunks = Vec::new();
-    let mut char_idx = 0;
-    let mut chunk_byte_idx = 0;
+    let mut chars_count = 0;
+    let mut chunk_bytes_count = 0;
     for child in text_elem.descendants().filter(|n| n.is_text()) {
-        let text_parent = child.parent().unwrap();
-        let attrs = text_parent.attributes();
-        let baseline_shift = text_parent.attributes().get_number_or(AId::BaselineShift, 0.0);
-        let anchor = convert_text_anchor(&text_parent);
+        let ref parent = child.parent().unwrap();
+        let ref attrs = parent.attributes();
+        let anchor = convert_text_anchor(parent);
 
-        let font = match resolve_font(&attrs) {
+        let font = match resolve_font(attrs) {
             Some(v) => v,
             None => {
                 // Skip this span.
-                char_idx += child.text().chars().count();
+                chars_count += child.text().chars().count();
                 continue;
             }
         };
@@ -109,56 +109,64 @@ pub fn collect_text_chunks(
         let span = TextSpan {
             start: 0,
             end: 0,
-            id: text_parent.id().clone(),
-            fill: super::super::fill::convert(tree, &attrs, true),
-            stroke: super::super::stroke::convert(tree, &attrs, true),
+            id: parent.id().clone(),
+            fill: fill::convert(tree, attrs, true),
+            stroke: stroke::convert(tree, attrs, true),
             font,
-            decoration: resolve_decoration(tree, text_elem, &text_parent),
-            visibility: super::super::convert_visibility(&attrs),
-            baseline_shift,
+            decoration: resolve_decoration(tree, text_elem, parent),
+            visibility: super::super::convert_visibility(attrs),
+            baseline_shift: parent.attributes().get_number_or(AId::BaselineShift, 0.0),
         };
 
         let mut is_new_span = true;
         for c in child.text().chars() {
+            let char_len = c.len_utf8();
+
             // Create a new chunk if:
-            // - this is the first span
+            // - this is the first span (yes, position can be None)
             // - text character has an absolute coordinate assigned to it (via x/y attribute)
-            if pos_list[char_idx].x.is_some() || pos_list[char_idx].y.is_some() || chunks.is_empty() {
-                chunk_byte_idx = 0;
+            let is_new_chunk =    pos_list[chars_count].x.is_some()
+                               || pos_list[chars_count].y.is_some()
+                               || chunks.is_empty();
+
+            if is_new_chunk {
+                chunk_bytes_count = 0;
 
                 let mut span2 = span.clone();
                 span2.start = 0;
-                span2.end = c.len_utf8();
+                span2.end = char_len;
 
                 chunks.push(TextChunk {
-                    x: pos_list[char_idx].x,
-                    y: pos_list[char_idx].y,
+                    x: pos_list[chars_count].x,
+                    y: pos_list[chars_count].y,
                     anchor,
                     spans: vec![span2],
                     text: c.to_string(),
                 });
             } else if is_new_span {
+                // Add this span to the last text chunk.
                 let mut span2 = span.clone();
-                span2.start = chunk_byte_idx;
-                span2.end = chunk_byte_idx + c.len_utf8();
+                span2.start = chunk_bytes_count;
+                span2.end = chunk_bytes_count + char_len;
 
                 if let Some(chunk) = chunks.last_mut() {
                     chunk.text.push(c);
                     chunk.spans.push(span2);
                 }
             } else {
+                // Extend the last span.
                 if let Some(chunk) = chunks.last_mut() {
                     chunk.text.push(c);
                     if let Some(span) = chunk.spans.last_mut() {
                         debug_assert_ne!(span.end, 0);
-                        span.end += c.len_utf8();
+                        span.end += char_len;
                     }
                 }
             }
 
             is_new_span = false;
-            char_idx += 1;
-            chunk_byte_idx += c.len_utf8();
+            chars_count += 1;
+            chunk_bytes_count += char_len;
         }
     }
 
@@ -458,8 +466,8 @@ fn resolve_decoration(
 
         let ref attrs = n.attributes();
         Some(TextDecorationStyle {
-            fill: super::super::fill::convert(tree, attrs, true),
-            stroke: super::super::stroke::convert(tree, attrs, true),
+            fill: fill::convert(tree, attrs, true),
+            stroke: stroke::convert(tree, attrs, true),
         })
     };
 

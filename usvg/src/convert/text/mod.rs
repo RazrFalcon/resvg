@@ -79,8 +79,6 @@ pub fn convert(
     let pos_list = resolve_positions_list(text_elem);
     let rotate_list = resolve_rotate(text_elem);
 
-    debug_assert_eq!(pos_list.len(), rotate_list.len());
-
     let text_ts = text_elem.attributes().get_transform(AId::Transform).unwrap_or_default();
 
     let mut chunks = collect_text_chunks(tree, &text_elem, &pos_list);
@@ -104,7 +102,7 @@ pub fn convert(
             if let Some(decoration) = span.decoration.underline.take() {
                 parent.append_kind(convert_decoration(
                     x, y - span.font.underline_position,
-                    &span, &decoration, &decoration_spans, text_ts,
+                    &span, decoration, &decoration_spans, text_ts,
                 ));
             }
 
@@ -112,7 +110,7 @@ pub fn convert(
                 // TODO: overline pos from font
                 parent.append_kind(convert_decoration(
                     x, y - span.font.ascent,
-                    &span, &decoration, &decoration_spans, text_ts,
+                    &span, decoration, &decoration_spans, text_ts,
                 ));
             }
 
@@ -124,7 +122,7 @@ pub fn convert(
                 // TODO: line-through pos from font
                 parent.append_kind(convert_decoration(
                     x, y - span.font.ascent / 3.0,
-                    &span, &decoration, &decoration_spans, text_ts,
+                    &span, decoration, &decoration_spans, text_ts,
                 ));
             }
         }
@@ -166,21 +164,19 @@ fn convert_span(
     let mut transform = text_ts.clone();
     transform.translate(x, y - span.baseline_shift);
 
+    // TODO: fill and stroke with a gradient/pattern that has objectBoundingBox
+    //       should use the text element bbox and not the tspan bbox.
+
     let mut path = tree::Path {
         id: String::new(),
         transform,
         visibility: span.visibility,
-        fill: None,
-        stroke: None,
+        fill: span.fill.take(),
+        stroke: span.stroke.take(),
         segments,
     };
 
     mem::swap(&mut path.id, &mut span.id);
-
-    // TODO: fill and stroke with a gradient/pattern that has objectBoundingBox
-    //       should use the text element bbox and not the tspan bbox.
-    mem::swap(&mut path.fill, &mut span.fill);
-    mem::swap(&mut path.stroke, &mut span.stroke);
 
     Some(tree::NodeKind::Path(path))
 }
@@ -464,7 +460,7 @@ fn convert_decoration(
     x: f64,
     y: f64,
     span: &TextSpan,
-    decoration: &TextDecorationStyle,
+    mut decoration: TextDecorationStyle,
     decoration_spans: &[DecorationSpan],
     transform: tree::Transform,
 ) -> tree::NodeKind {
@@ -494,8 +490,8 @@ fn convert_decoration(
         id: String::new(),
         transform,
         visibility: span.visibility,
-        fill: decoration.fill.clone(),
-        stroke: decoration.stroke.clone(),
+        fill: decoration.fill.take(),
+        stroke: decoration.stroke.take(),
         segments,
     })
 }
