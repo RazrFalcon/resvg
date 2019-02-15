@@ -9,9 +9,9 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - New text layout implementation.
-- [Text BIDI reordering.](http://www.unicode.org/reports/tr9/)
+- [Text BIDI reordering](http://www.unicode.org/reports/tr9/).
 - Better text shaping.
-- Text will be converted to paths on the `usvg` side now.
+- Text will be converted into paths on the `usvg` side now.
 - [`harfbuzz`](https://github.com/harfbuzz/harfbuzz) dependency.
 - Nested `baseline-shift` support.
 - `word-spacing` is supported for all backends now.

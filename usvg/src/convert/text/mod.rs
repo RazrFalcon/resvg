@@ -391,12 +391,7 @@ fn shape_text(
         let positions = output.get_glyph_positions();
         let infos = output.get_glyph_infos();
 
-        // TODO: merge clusters?
         for (pos, info) in positions.iter().zip(infos) {
-//            println!("{}x{} {}x{} {}", pos.x_offset, pos.y_offset,
-//                     pos.x_advance, pos.y_advance,
-//                     run.start + info.cluster as usize);
-
             glyphs.push(RawGlyph {
                 byte_idx: run.start + info.cluster as usize,
                 id: info.codepoint,
