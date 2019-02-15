@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::cmp;
 use std::mem;
 
 // external
@@ -11,7 +12,7 @@ use unicode_bidi;
 //use unicode_script;
 
 mod fk {
-    pub use font_kit::hinting::HintingOptions;
+    pub use font_kit::hinting::HintingOptions as Hinting;
     pub use font_kit::font::Font;
 }
 
@@ -29,6 +30,8 @@ use self::convert::*;
 // TODO: group when Options::keep_named_groups is set
 
 
+type Range = std::ops::Range<usize>;
+
 /// A raw glyph.
 ///
 /// Basically, a glyph ID in the font and it's metrics.
@@ -38,18 +41,32 @@ struct RawGlyph {
     id: u32,
 
     /// Position in bytes in the original string.
+    ///
+    /// We use it to match a glyph with a character in the text chunk and therefore with the style.
     byte_idx: usize,
 
-    dx: f64,
+    dx: i32,
 
-    dy: f64,
+    dy: i32,
 
-    width: f64,
+    width: i32,
 }
 
+
+/// An outlined cluster.
+///
+/// Cluster/grapheme is a single, unbroken, renderable character.
+/// It can be positioned, rotated, spaced, etc.
+///
+/// Let's say we have `й` which is *CYRILLIC SMALL LETTER I* and *COMBINING BREVE*.
+///
+/// It consists of two code points, will be shaped (via harfbuzz) as two glyphs in one cluster,
+/// and then will be combined into the one `OutlinedCluster`.
 #[derive(Clone)]
-struct OutlinedGlyph {
+struct OutlinedCluster {
     /// Position in bytes in the original string.
+    ///
+    /// We use it to match a glyph with a character in the text chunk and therefore with the style.
     byte_idx: usize,
 
     x: f64,
@@ -74,9 +91,9 @@ struct OutlinedGlyph {
     path: Vec<tree::PathSegment>,
 }
 
-impl Default for OutlinedGlyph {
+impl Default for OutlinedCluster {
     fn default() -> Self {
-        OutlinedGlyph {
+        OutlinedCluster {
             byte_idx: 0,
             x: 0.0,
             y: 0.0,
@@ -165,7 +182,7 @@ fn convert_span(
     x: f64,
     baseline: f64,
     span: &mut TextSpan,
-    glyphs: &mut [OutlinedGlyph],
+    glyphs: &mut [OutlinedCluster],
     text_ts: &tree::Transform,
 ) -> Option<tree::NodeKind> {
     let mut segments = Vec::new();
@@ -216,13 +233,13 @@ fn font_eq(f1: &Font, f2: &Font) -> bool {
     && f1.size  == f2.size
 }
 
-/// Converts a text chunk into a list of outlined glyphs.
+/// Converts a text chunk into a list of outlined clusters.
 ///
 /// This function will do the BIDI reordering, text shaping and glyphs outlining,
 /// but not the text layouting. So all glyphs are in 0x0 position.
 fn render_chunk(
     chunk: &TextChunk,
-) -> Vec<OutlinedGlyph> {
+) -> Vec<OutlinedCluster> {
     // Shape the text using all fonts in the chunk.
     //
     // I'm not sure if this can be optimized, but it's probably pretty expensive.
@@ -231,42 +248,85 @@ fn render_chunk(
         return Vec::new();
     }
 
-    let mut list = Vec::new();
+    let mut lists_of_glyphs = Vec::new();
     for font in &fonts {
         let raw_glyphs = shape_text(&chunk.text, font);
-        list.push((font, raw_glyphs));
+        lists_of_glyphs.push(raw_glyphs);
     }
 
-    // TODO: is this even possible?
     // Check that all glyphs lists have the same length.
-    if !list.iter().all(|v| v.1.len() == list[0].1.len()) {
+    if !lists_of_glyphs.iter().all(|v| v.len() == lists_of_glyphs[0].len()) {
         warn!("Text layouting failed.");
         return Vec::new();
     }
 
-    // TODO: We assume, that all glyphs lists have the same clusters,
-    //       so if a char was converted into one glyph in one font,
-    //       it will be true for all fonts
-    //       And I'm not sure of that.
-    let mut glyphs = Vec::new();
-    for (i, raw_glyph) in list[0].1.iter().enumerate() {
-        for span in &chunk.spans {
-            if span.contains(raw_glyph.byte_idx) {
-                for (font, raw_glyphs) in &list {
-                    if font_eq(&span.font, font) {
-                        // TODO: outline cluster
-                        glyphs.push(outline_glyph(font, raw_glyphs[i]));
-                        break;
-                    }
-                }
+    // Check that glyph clusters in all lists are the same.
+    //
+    // For example, if one font supports ligatures and the other don't.
+    // Not sure what to do in this case, so we should stop here for now.
+    for glyphs in lists_of_glyphs.iter().skip(1) {
+        let iter = RawGlyphClusters::new(glyphs)
+                       .zip(RawGlyphClusters::new(&lists_of_glyphs[0]));
+        for (g1, g2) in iter {
+            if g1 != g2 {
+                warn!("Text layouting failed.");
+                return Vec::new();
+            }
+        }
+    }
 
-                break;
+    let mut glyphs = Vec::new();
+    for (range, byte_idx) in RawGlyphClusters::new(&lists_of_glyphs[0]) {
+        if let Some(span) = chunk.span_at(byte_idx) {
+            for (font, raw_glyphs) in fonts.iter().zip(&lists_of_glyphs) {
+                if font_eq(&span.font, font) {
+                    glyphs.push(outline_cluster(font, &raw_glyphs[range]));
+                    break;
+                }
             }
         }
     }
 
     glyphs
 }
+
+/// An iterator over glyph clusters.
+///
+/// Input:  0 2 2 2 3 4 4 5 5
+/// Result: 0 1     4 5   7
+struct RawGlyphClusters<'a> {
+    data: &'a [RawGlyph],
+    idx: usize,
+}
+
+impl<'a> RawGlyphClusters<'a> {
+    fn new(data: &'a [RawGlyph]) -> Self {
+        RawGlyphClusters { data, idx: 0 }
+    }
+}
+
+impl<'a> Iterator for RawGlyphClusters<'a> {
+    type Item = (Range, usize);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.idx == self.data.len() {
+            return None;
+        }
+
+        let start = self.idx;
+        let cluster = self.data[self.idx].byte_idx;
+        for g in &self.data[self.idx..] {
+            if g.byte_idx != cluster {
+                break;
+            }
+
+            self.idx += 1;
+        }
+
+        Some((start..self.idx, cluster))
+    }
+}
+
 
 /// Returns a list of unique fonts in the specified chunk.
 fn collect_unique_fonts(
@@ -333,12 +393,16 @@ fn shape_text(
 
         // TODO: merge clusters?
         for (pos, info) in positions.iter().zip(infos) {
+//            println!("{}x{} {}x{} {}", pos.x_offset, pos.y_offset,
+//                     pos.x_advance, pos.y_advance,
+//                     run.start + info.cluster as usize);
+
             glyphs.push(RawGlyph {
                 byte_idx: run.start + info.cluster as usize,
                 id: info.codepoint,
-                dx: pos.x_offset as f64,
-                dy: pos.y_offset as f64,
-                width: pos.x_advance as f64,
+                dx: pos.x_offset,
+                dy: pos.y_offset,
+                width: pos.x_advance,
             });
         }
     }
@@ -346,39 +410,61 @@ fn shape_text(
     glyphs
 }
 
-fn outline_glyph(
+/// Outlines a glyph cluster.
+///
+/// Uses one or more `RawGlyph`s to construct an `OutlinedCluster`.
+fn outline_cluster(
     font: &Font,
-    raw_glyph: RawGlyph,
-) -> OutlinedGlyph {
+    raw_glyphs: &[RawGlyph],
+) -> OutlinedCluster {
+    debug_assert!(!raw_glyphs.is_empty());
+
     use lyon_path::builder::FlatPathBuilder;
 
     let scale = font.size / font.units_per_em as f64;
 
-    let mut builder = svgdom_path_builder::Builder::new();
-    let mut glyph = match font.font.outline(raw_glyph.id, fk::HintingOptions::None, &mut builder) {
-        Ok(_) => {
-            super::path::convert_path(builder.build())
-        }
-        Err(_) => {
-            warn!("Glyph {} not found in the font.", raw_glyph.id);
-            Vec::new()
-        }
-    };
+    let mut path = Vec::new();
+    let mut width = 0;
+    let mut x = 0.0;
 
-    if !glyph.is_empty() {
-        // Mirror and scale to the `font-size`.
-        let mut ts = svgdom::Transform::new_scale(scale, -scale);
-        // Apply offset.
-        ts.translate(raw_glyph.dx, raw_glyph.dy);
+    for raw_glyph in raw_glyphs {
+        let mut builder = svgdom_path_builder::Builder::new();
+        let mut glyph = match font.font.outline(raw_glyph.id, fk::Hinting::None, &mut builder) {
+            Ok(_) => {
+                super::path::convert_path(builder.build())
+            }
+            Err(_) => {
+                warn!("Glyph {} not found in the font.", raw_glyph.id);
+                Vec::new()
+            }
+        };
 
-        transform_path(&mut glyph, &ts);
+        if !glyph.is_empty() {
+            // Mirror and scale to the `font-size`.
+            let mut ts = svgdom::Transform::new_scale(scale, -scale);
+
+            // Apply offset.
+            //
+            // The first glyph in the cluster will have an offset from 0x0,
+            // but the later one will have an offset from the "current position".
+            // So we have to keep an advance.
+            // TODO: vertical advance?
+            ts.translate(x + raw_glyph.dx as f64, raw_glyph.dy as f64);
+
+            transform_path(&mut glyph, &ts);
+
+            path.extend_from_slice(&glyph);
+        }
+
+        x += raw_glyph.width as f64;
+        width = cmp::max(raw_glyph.width, width);
     }
 
-    OutlinedGlyph {
-        byte_idx: raw_glyph.byte_idx,
-        path: glyph,
-        width: raw_glyph.width * scale,
-        .. OutlinedGlyph::default()
+    OutlinedCluster {
+        byte_idx: raw_glyphs[0].byte_idx,
+        path,
+        width: width as f64 * scale,
+        .. OutlinedCluster::default()
     }
 }
 
@@ -407,7 +493,7 @@ fn resolve_glyph_positions(
     offset: usize,
     pos_list: &PositionsList,
     rotate_list: &RotateList,
-    glyphs: &mut Vec<OutlinedGlyph>,
+    glyphs: &mut Vec<OutlinedCluster>,
 ) {
     let mut x = 0.0;
     let mut y = 0.0;
@@ -456,7 +542,7 @@ fn process_anchor(a: TextAnchor, text_width: f64) -> f64 {
 
 fn collect_decoration_spans(
     span: &TextSpan,
-    glyphs: &[OutlinedGlyph],
+    glyphs: &[OutlinedCluster],
 ) -> Vec<DecorationSpan> {
     let mut spans = Vec::new();
 

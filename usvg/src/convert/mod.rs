@@ -315,6 +315,9 @@ pub(super) fn convert_nodes(
             EId::Text => {
                 text::convert(&node, parent_node.clone(), tree);
             }
+            EId::Tspan => {
+                // Already resolved.
+            }
             EId::Image => {
                 image::convert(&node, opt, parent_node.clone());
             }

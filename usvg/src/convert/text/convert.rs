@@ -61,6 +61,19 @@ pub struct TextChunk {
     pub text: String,
 }
 
+impl TextChunk {
+    pub fn span_at(&self, byte_offset: usize) -> Option<&TextSpan> {
+        for span in &self.spans {
+            if span.contains(byte_offset) {
+                return Some(span);
+            }
+        }
+
+        None
+    }
+}
+
+/// Spans do not overlap.
 #[derive(Clone)]
 pub struct TextSpan {
     pub start: usize,
