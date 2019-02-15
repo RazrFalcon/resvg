@@ -9,7 +9,7 @@ use std::mem;
 use svgdom;
 use harfbuzz;
 use unicode_bidi;
-//use unicode_script;
+use unicode_script;
 
 mod fk {
     pub use font_kit::hinting::HintingOptions as Hinting;
@@ -23,10 +23,8 @@ use tree::prelude::*;
 use super::prelude::*;
 use self::convert::*;
 
-// TODO: letter spacing
 // TODO: word spacing
 // TODO: visibility on text and tspan
-// TODO: glyph fallback
 // TODO: group when Options::keep_named_groups is set
 
 
@@ -105,6 +103,7 @@ impl Default for OutlinedCluster {
     }
 }
 
+
 /// A text decoration span.
 ///
 /// Basically a horizontal line, that will be used for underline, overline and line-through.
@@ -135,15 +134,16 @@ pub fn convert(
         x = chunk.x.unwrap_or(x);
         baseline = chunk.y.unwrap_or(baseline);
 
-        let mut glyphs = render_chunk(&chunk);
-        resolve_glyph_positions(&chunk.text, char_offset, &pos_list, &rotate_list, &mut glyphs);
+        let mut clusters = render_chunk(&chunk);
+        apply_letter_spacing(&chunk, &mut clusters);
+        resolve_glyph_positions(&chunk.text, char_offset, &pos_list, &rotate_list, &mut clusters);
 
-        let width = glyphs.iter().fold(0.0, |w, glyph| w + glyph.width);
+        let width = clusters.iter().fold(0.0, |w, glyph| w + glyph.width);
 
         x -= process_anchor(chunk.anchor, width);
 
         for span in &mut chunk.spans {
-            let decoration_spans = collect_decoration_spans(span, &glyphs);
+            let decoration_spans = collect_decoration_spans(span, &clusters);
 
             if let Some(decoration) = span.decoration.underline.take() {
                 parent.append_kind(convert_decoration(
@@ -160,7 +160,7 @@ pub fn convert(
                 ));
             }
 
-            if let Some(path) = convert_span(x, baseline, span, &mut glyphs, &text_ts) {
+            if let Some(path) = convert_span(x, baseline, span, &mut clusters, &text_ts) {
                 parent.append_kind(path);
             }
 
@@ -182,17 +182,17 @@ fn convert_span(
     x: f64,
     baseline: f64,
     span: &mut TextSpan,
-    glyphs: &mut [OutlinedCluster],
+    clusters: &mut [OutlinedCluster],
     text_ts: &tree::Transform,
 ) -> Option<tree::NodeKind> {
     let mut segments = Vec::new();
 
-    for glyph in glyphs {
-        if span.contains(glyph.byte_idx) {
-            let mut path = mem::replace(&mut glyph.path, Vec::new());
-            let mut transform = tree::Transform::new_translate(glyph.x, glyph.y);
-            if !glyph.rotate.is_fuzzy_zero() {
-                transform.rotate(glyph.rotate);
+    for cluster in clusters {
+        if span.contains(cluster.byte_idx) {
+            let mut path = mem::replace(&mut cluster.path, Vec::new());
+            let mut transform = tree::Transform::new_translate(cluster.x, cluster.y);
+            if !cluster.rotate.is_fuzzy_zero() {
+                transform.rotate(cluster.rotate);
             }
 
             transform_path(&mut path, &transform);
@@ -230,7 +230,7 @@ fn convert_span(
 fn font_eq(f1: &Font, f2: &Font) -> bool {
        f1.path  == f2.path
     && f1.index == f2.index
-    && f1.size  == f2.size
+    && f1.size  == f2.size // TODO: size can be skipped, for performance benefits
 }
 
 /// Converts a text chunk into a list of outlined clusters.
@@ -275,19 +275,19 @@ fn render_chunk(
         }
     }
 
-    let mut glyphs = Vec::new();
+    let mut clusters = Vec::new();
     for (range, byte_idx) in RawGlyphClusters::new(&lists_of_glyphs[0]) {
         if let Some(span) = chunk.span_at(byte_idx) {
             for (font, raw_glyphs) in fonts.iter().zip(&lists_of_glyphs) {
                 if font_eq(&span.font, font) {
-                    glyphs.push(outline_cluster(font, &raw_glyphs[range]));
+                    clusters.push(outline_cluster(font, &raw_glyphs[range]));
                     break;
                 }
             }
         }
     }
 
-    glyphs
+    clusters
 }
 
 /// An iterator over glyph clusters.
@@ -488,32 +488,55 @@ fn resolve_glyph_positions(
     offset: usize,
     pos_list: &PositionsList,
     rotate_list: &RotateList,
-    glyphs: &mut Vec<OutlinedCluster>,
+    clusters: &mut Vec<OutlinedCluster>,
 ) {
     let mut x = 0.0;
     let mut y = 0.0;
 
-    for glyph in glyphs {
-        glyph.x = x;
-        glyph.y = y;
+    for cluster in clusters {
+        cluster.x = x;
+        cluster.y = y;
 
-        let cp = offset + byte_to_code_point(text, glyph.byte_idx);
+        let cp = offset + byte_to_code_point(text, cluster.byte_idx);
         if let Some(pos) = pos_list.get(cp) {
-            glyph.x += pos.dx.unwrap_or(0.0);
-            glyph.y += pos.dy.unwrap_or(0.0);
-            glyph.has_relative_shift = pos.dx.is_some() || pos.dy.is_some();
+            cluster.x += pos.dx.unwrap_or(0.0);
+            cluster.y += pos.dy.unwrap_or(0.0);
+            cluster.has_relative_shift = pos.dx.is_some() || pos.dy.is_some();
         }
 
         if let Some(angle) = rotate_list.get(cp).cloned() {
-            glyph.rotate = angle;
+            cluster.rotate = angle;
         }
 
-        x = glyph.x + glyph.width;
-        y = glyph.y;
+        x = cluster.x + cluster.width;
+        y = cluster.y;
     }
 }
 
-/// Converts byte position into code point position.
+/// Applies the `letter-spacing` property to a text chunk clusters.
+///
+/// [In the CSS spec](https://www.w3.org/TR/css-text-3/#letter-spacing-property).
+fn apply_letter_spacing(
+    chunk: &TextChunk,
+    clusters: &mut Vec<OutlinedCluster>,
+) {
+    for cluster in clusters {
+        if let Some(c) = byte_to_char(&chunk.text, cluster.byte_idx) {
+            // Spacing must be applied only to characters that belongs to the script
+            // that supports spacing.
+            let script = unicode_script::get_script(c);
+            if script_supports_letter_spacing(script) {
+                if let Some(span) = chunk.span_at(cluster.byte_idx) {
+                    // Technically, we should ignore spacing on the last character,
+                    // but it doesn't affect us in any way, so we are ignoring this.
+                    cluster.width += span.font.letter_spacing;
+                }
+            }
+        }
+    }
+}
+
+/// Converts byte position into a code point position.
 fn byte_to_code_point(text: &str, byte: usize) -> usize {
     let mut idx = 0;
     for (i, _) in text.char_indices() {
@@ -527,6 +550,12 @@ fn byte_to_code_point(text: &str, byte: usize) -> usize {
     idx
 }
 
+/// Converts byte position into a character.
+fn byte_to_char(text: &str, byte: usize) -> Option<char> {
+    text[byte..].chars().next()
+//    text.char_indices().find(|(i, _)| *i == byte).map(|(_, c)| c)
+}
+
 fn process_anchor(a: TextAnchor, text_width: f64) -> f64 {
     match a {
         TextAnchor::Start   => 0.0, // Nothing.
@@ -537,7 +566,7 @@ fn process_anchor(a: TextAnchor, text_width: f64) -> f64 {
 
 fn collect_decoration_spans(
     span: &TextSpan,
-    glyphs: &[OutlinedCluster],
+    clusters: &[OutlinedCluster],
 ) -> Vec<DecorationSpan> {
     let mut spans = Vec::new();
 
@@ -546,21 +575,21 @@ fn collect_decoration_spans(
     let mut y = 0.0;
     let mut width = 0.0;
     let mut angle = 0.0;
-    for glyph in glyphs {
-        if span.contains(glyph.byte_idx) {
-            if started && (glyph.has_relative_shift || !glyph.rotate.is_fuzzy_zero()) {
+    for cluster in clusters {
+        if span.contains(cluster.byte_idx) {
+            if started && (cluster.has_relative_shift || !cluster.rotate.is_fuzzy_zero()) {
                 started = false;
                 spans.push(DecorationSpan { x, baseline: y, width, angle });
             }
 
             if !started {
-                x = glyph.x;
-                y = glyph.y;
-                width = glyph.x + glyph.width - x;
-                angle = glyph.rotate;
+                x = cluster.x;
+                y = cluster.y;
+                width = cluster.x + cluster.width - x;
+                angle = cluster.rotate;
                 started = true;
             } else {
-                width = glyph.x + glyph.width - x;
+                width = cluster.x + cluster.width - x;
             }
         } else if started {
             spans.push(DecorationSpan { x, baseline: y, width, angle });
@@ -634,33 +663,33 @@ fn add_rect_to_path(rect: Rect, path: &mut Vec<tree::PathSegment>) {
     ]);
 }
 
-//fn script_supports_letter_spacing(script: unicode_script::Script) -> bool {
-//    // Details https://www.w3.org/TR/css-text-3/#cursive-tracking
-//    //
-//    // List from https://github.com/harfbuzz/harfbuzz/issues/64
-//
-//    use unicode_script::Script;
-//
-//    match script {
-//          Script::Arabic
-//        | Script::Syriac
-//        | Script::Nko
-//        | Script::Manichaean
-//        | Script::Psalter_Pahlavi
-//        | Script::Mandaic
-//        | Script::Mongolian
-//        | Script::Phags_Pa
-//        | Script::Devanagari
-//        | Script::Bengali
-//        | Script::Gurmukhi
-//        | Script::Modi
-//        | Script::Sharada
-//        | Script::Syloti_Nagri
-//        | Script::Tirhuta
-//        | Script::Ogham => false,
-//        _ => true,
-//    }
-//}
+fn script_supports_letter_spacing(script: unicode_script::Script) -> bool {
+    // Details https://www.w3.org/TR/css-text-3/#cursive-tracking
+    //
+    // List from https://github.com/harfbuzz/harfbuzz/issues/64
+
+    use unicode_script::Script;
+
+    match script {
+          Script::Arabic
+        | Script::Syriac
+        | Script::Nko
+        | Script::Manichaean
+        | Script::Psalter_Pahlavi
+        | Script::Mandaic
+        | Script::Mongolian
+        | Script::Phags_Pa
+        | Script::Devanagari
+        | Script::Bengali
+        | Script::Gurmukhi
+        | Script::Modi
+        | Script::Sharada
+        | Script::Syloti_Nagri
+        | Script::Tirhuta
+        | Script::Ogham => false,
+        _ => true,
+    }
+}
 
 /// Implements an ability to outline a glyph directly into the `svgdom::Path`.
 mod svgdom_path_builder {
