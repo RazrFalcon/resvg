@@ -20,6 +20,23 @@ use super::super::prelude::*;
 use super::super::{fill, stroke};
 
 
+/// A read-only text index in bytes.
+///
+/// Guarantee to be on a char boundary and in text bounds.
+#[derive(Clone, Copy, PartialEq)]
+pub struct ByteIndex(usize);
+
+impl ByteIndex {
+    pub fn new(i: usize) -> Self {
+        ByteIndex(i)
+    }
+
+    pub fn value(&self) -> usize {
+        self.0
+    }
+}
+
+
 #[derive(Clone, Copy, PartialEq)]
 pub enum TextAnchor {
     Start,
@@ -62,7 +79,7 @@ pub struct TextChunk {
 }
 
 impl TextChunk {
-    pub fn span_at(&self, byte_offset: usize) -> Option<&TextSpan> {
+    pub fn span_at(&self, byte_offset: ByteIndex) -> Option<&TextSpan> {
         for span in &self.spans {
             if span.contains(byte_offset) {
                 return Some(span);
@@ -88,8 +105,8 @@ pub struct TextSpan {
 }
 
 impl TextSpan {
-    pub fn contains(&self, byte_offset: usize) -> bool {
-        byte_offset >= self.start && byte_offset < self.end
+    pub fn contains(&self, byte_offset: ByteIndex) -> bool {
+        byte_offset.value() >= self.start && byte_offset.value() < self.end
     }
 }
 
@@ -101,6 +118,7 @@ pub fn collect_text_chunks(
     tree: &tree::Tree,
     text_elem: &svgdom::Node,
     pos_list: &PositionsList,
+    opt: &Options,
 ) -> Vec<TextChunk> {
     let mut chunks = Vec::new();
     let mut chars_count = 0;
@@ -110,7 +128,7 @@ pub fn collect_text_chunks(
         let ref attrs = parent.attributes();
         let anchor = convert_text_anchor(parent);
 
-        let font = match resolve_font(attrs) {
+        let font = match resolve_font(attrs, opt) {
             Some(v) => v,
             None => {
                 // Skip this span.
@@ -188,6 +206,7 @@ pub fn collect_text_chunks(
 
 fn resolve_font(
     attrs: &svgdom::Attributes,
+    opt: &Options,
 ) -> Option<Font> {
     let size = attrs.get_number_or(AId::FontSize, 0.0);
     if !(size > 0.0) {
@@ -233,29 +252,54 @@ fn resolve_font(
         _                        => fk::Stretch::NORMAL,
     };
 
-    let mut font_list = Vec::new();
+    let mut name_list = Vec::new();
     let font_family = attrs.get_str_or(AId::FontFamily, "");
     for family in font_family.split(',') {
         let family = family.replace('\'', "");
+        let family = family.trim();
 
-        let name = match family.as_ref() {
+        let name = match family {
             "serif"      => fk::FamilyName::Serif,
             "sans-serif" => fk::FamilyName::SansSerif,
             "monospace"  => fk::FamilyName::Monospace,
             "cursive"    => fk::FamilyName::Cursive,
             "fantasy"    => fk::FamilyName::Fantasy,
-            _            => fk::FamilyName::Title(family)
+            _            => fk::FamilyName::Title(family.to_string())
         };
 
-        font_list.push(name);
+        name_list.push(name);
+    }
+
+    // Add the default font, if not set, as a possible fallback.
+    let default_font = fk::FamilyName::Title(opt.font_family.clone());
+    if !name_list.contains(&default_font) {
+        name_list.push(default_font);
+    }
+
+    // Add `serif`, if not set, as a possible fallback.
+    if !name_list.contains(&fk::FamilyName::Serif) {
+        name_list.push(fk::FamilyName::Serif);
     }
 
     let properties = fk::Properties { style, weight, stretch };
-    let handle = match fk::SystemSource::new().select_best_match(&font_list, &properties) {
+    let handle = match fk::SystemSource::new().select_best_match(&name_list, &properties) {
         Ok(v) => v,
         Err(_) => {
             // TODO: Select any font?
-            warn!("No match for {:?} font-family.", font_family);
+
+            let mut families = Vec::new();
+            for name in name_list {
+                families.push(match name {
+                    fk::FamilyName::Serif           => "serif".to_string(),
+                    fk::FamilyName::SansSerif       => "sans-serif".to_string(),
+                    fk::FamilyName::Monospace       => "monospace".to_string(),
+                    fk::FamilyName::Cursive         => "cursive".to_string(),
+                    fk::FamilyName::Fantasy         => "fantasy".to_string(),
+                    fk::FamilyName::Title(ref name) => name.clone(),
+                });
+            }
+
+            warn!("No match for {:?} font-family.", families.join(", "));
             return None;
         }
     };
@@ -271,7 +315,7 @@ fn resolve_font(
     let font = match handle.load() {
         Ok(v) => v,
         Err(_) => {
-            warn!("Failed to load font for {:?} font-family.", font_family);
+            warn!("Failed to load '{}'.", path);
             return None;
         }
     };

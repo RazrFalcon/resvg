@@ -153,7 +153,7 @@ fn resolve(
             filter: None,
         }));
 
-        super::convert_nodes(marker_node, &mut g_node, opt, tree);
+        super::convert_nodes(marker_node, opt, &mut g_node, tree);
 
         if !g_node.has_children() {
             g_node.detach();

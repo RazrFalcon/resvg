@@ -113,7 +113,7 @@ pub fn convert(
     let mut tree = tree::Tree::create(svg_kind);
 
     convert_ref_nodes(svg_doc, opt, &mut tree);
-    convert_nodes(&svg, &mut tree.root(), opt, &mut tree);
+    convert_nodes(&svg, opt, &mut tree.root(), &mut tree);
 
     tree
 }
@@ -173,21 +173,21 @@ fn convert_ref_nodes(
     // This is because reference elements children can reference other reference elements.
     for (node, mut new_node) in later_nodes {
         if node.is_tag_name(EId::ClipPath) {
-            clippath::convert_children(&node, &mut new_node, opt, tree);
+            clippath::convert_children(&node, opt, &mut new_node, tree);
 
             if !new_node.has_children() {
                 warn!("ClipPath '{}' has no children. Skipped.", node.id());
                 new_node.detach();
             }
         } else if node.is_tag_name(EId::Mask) {
-            convert_nodes(&node, &mut new_node, opt, tree);
+            convert_nodes(&node, opt, &mut new_node, tree);
 
             if !new_node.has_children() {
                 warn!("Mask '{}' has no children. Skipped.", node.id());
                 new_node.detach();
             }
         } else if node.is_tag_name(EId::Pattern) {
-            convert_nodes(&node, &mut new_node.clone(), opt, tree);
+            convert_nodes(&node, opt, &mut new_node.clone(), tree);
 
             if !new_node.has_children() {
                 warn!("Pattern '{}' has no children. Skipped.", node.id());
@@ -227,8 +227,8 @@ fn convert_ref_nodes(
 
 pub(super) fn convert_nodes(
     parent: &svgdom::Node,
-    parent_node: &mut tree::Node,
     opt: &Options,
+    parent_node: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
     for (id, node) in parent.children().svg() {
@@ -283,7 +283,7 @@ pub(super) fn convert_nodes(
                     filter,
                 }));
 
-                convert_nodes(&node, &mut g_node, opt, tree);
+                convert_nodes(&node, opt, &mut g_node, tree);
 
                 if !g_node.has_children() && !has_filter {
                     g_node.detach();
@@ -313,7 +313,7 @@ pub(super) fn convert_nodes(
                 }
             }
             EId::Text => {
-                text::convert(&node, parent_node.clone(), tree);
+                text::convert(&node, opt, parent_node.clone(), tree);
             }
             EId::Tspan => {
                 // Already resolved.

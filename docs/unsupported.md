@@ -39,8 +39,8 @@
 - `direction`
 - `dominant-baseline`
 - [`enable-background`](https://www.w3.org/TR/SVG11/filters.html#EnableBackgroundProperty) (deprecated in the SVG 2)
-- `font`
-- `font-variant`
+- `font` (this is just a rarely used shorthand)
+- `font-variant` (aka small cups)
 - `font-size-adjust`
 - `glyph-orientation-horizontal` (removed in the SVG 2)
 - `glyph-orientation-vertical` (deprecated in the SVG 2)

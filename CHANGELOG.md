@@ -25,6 +25,7 @@ This changelog also contains important changes in dependencies.
 
 ### Removed
 - (usvg) Marker element and attributes. Markers will be resolved just like `use` now.
+- (usvg) All text related structures and enums. Text will be converted into `Path` now.
 
 ### Fixed
 - `letter-spacing` on cursive scripts (like Arabic).

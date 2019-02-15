@@ -26,8 +26,8 @@ lyon_geom = "0.12"
 lyon_path = "0.12"
 rctree = "0.2.1"
 svgdom = "0.16"
-unicode-bidi = "0.3.4"
-unicode-script = "0.2.0"
+unicode-bidi = "0.3"
+unicode-script = "0.2"
 
 [dev-dependencies]
-pretty_assertions = "0.5.1"
+pretty_assertions = "0.5"

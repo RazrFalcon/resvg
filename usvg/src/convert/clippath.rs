@@ -41,8 +41,8 @@ pub fn convert(
 
 pub fn convert_children(
     parent_svg: &svgdom::Node,
-    parent: &mut tree::Node,
     opt: &Options,
+    parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
     for (id, node) in parent_svg.children().svg() {
@@ -108,7 +108,7 @@ pub fn convert_children(
                     filter,
                 }));
 
-                convert_children(&node, &mut g_node, opt, tree);
+                convert_children(&node, opt, &mut g_node, tree);
             }
             _ => {
                 warn!("Skipping the '{}' clipPath invalid child element '{}'.",

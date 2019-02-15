@@ -23,7 +23,6 @@ use tree::prelude::*;
 use super::prelude::*;
 use self::convert::*;
 
-// TODO: word spacing
 // TODO: visibility on text and tspan
 // TODO: group when Options::keep_named_groups is set
 
@@ -41,12 +40,15 @@ struct RawGlyph {
     /// Position in bytes in the original string.
     ///
     /// We use it to match a glyph with a character in the text chunk and therefore with the style.
-    byte_idx: usize,
+    byte_idx: ByteIndex,
 
+    /// The glyph offset in font units.
     dx: i32,
 
+    /// The glyph offset in font units.
     dy: i32,
 
+    /// The glyph width / X-advance in font units.
     width: i32,
 }
 
@@ -64,22 +66,27 @@ struct RawGlyph {
 struct OutlinedCluster {
     /// Position in bytes in the original string.
     ///
-    /// We use it to match a glyph with a character in the text chunk and therefore with the style.
-    byte_idx: usize,
+    /// We use it to match a cluster with a character in the text chunk and therefore with the style.
+    byte_idx: ByteIndex,
 
+    /// The cluster position in SVG coordinates.
     x: f64,
 
+    /// The cluster position in SVG coordinates.
     y: f64,
 
+    /// The rotation angle.
     rotate: f64,
 
-    /// The glyph width.
+    /// The cluster width.
     ///
     /// It's not the outline width, but the width specified in the font.
     /// So `width` != `path` bbox width.
+    ///
+    /// Can be negative.
     width: f64,
 
-    /// Indicates that this glyph was affected by the relative shift (via dx/dy attributes)
+    /// Indicates that this cluster was affected by the relative shift (via dx/dy attributes)
     /// during the text layouting.
     ///
     /// Used during the `text-decoration` processing.
@@ -89,25 +96,12 @@ struct OutlinedCluster {
     path: Vec<tree::PathSegment>,
 }
 
-impl Default for OutlinedCluster {
-    fn default() -> Self {
-        OutlinedCluster {
-            byte_idx: 0,
-            x: 0.0,
-            y: 0.0,
-            rotate: 0.0,
-            width: 0.0,
-            has_relative_shift: false,
-            path: Vec::new(),
-        }
-    }
-}
-
 
 /// A text decoration span.
 ///
 /// Basically a horizontal line, that will be used for underline, overline and line-through.
 /// It doesn't have a height, since it depends on the font metrics.
+#[derive(Clone, Copy)]
 struct DecorationSpan {
     x: f64,
     baseline: f64,
@@ -118,15 +112,15 @@ struct DecorationSpan {
 
 pub fn convert(
     text_elem: &svgdom::Node,
+    opt: &Options,
     mut parent: tree::Node,
     tree: &mut tree::Tree,
 ) {
     let pos_list = resolve_positions_list(text_elem);
     let rotate_list = resolve_rotate(text_elem);
-
     let text_ts = text_elem.attributes().get_transform(AId::Transform).unwrap_or_default();
 
-    let mut chunks = collect_text_chunks(tree, &text_elem, &pos_list);
+    let mut chunks = collect_text_chunks(tree, &text_elem, &pos_list, opt);
     let mut char_offset = 0;
     let mut x = 0.0;
     let mut baseline = 0.0;
@@ -136,7 +130,8 @@ pub fn convert(
 
         let mut clusters = render_chunk(&chunk);
         apply_letter_spacing(&chunk, &mut clusters);
-        resolve_glyph_positions(&chunk.text, char_offset, &pos_list, &rotate_list, &mut clusters);
+        apply_word_spacing(&chunk, &mut clusters);
+        resolve_clusters_positions(&chunk.text, char_offset, &pos_list, &rotate_list, &mut clusters);
 
         let width = clusters.iter().fold(0.0, |w, glyph| w + glyph.width);
 
@@ -306,7 +301,7 @@ impl<'a> RawGlyphClusters<'a> {
 }
 
 impl<'a> Iterator for RawGlyphClusters<'a> {
-    type Item = (Range, usize);
+    type Item = (Range, ByteIndex);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.idx == self.data.len() {
@@ -386,14 +381,21 @@ fn shape_text(
             .set_direction(hb_direction);
 
         // TODO: feature smcp / small cups
+        //       simply setting the `smcp` doesn't work for some reasons
+
+        // TODO: if the output has missing glyphs, we should fetch them from other fonts
+        //       no idea how to implement this
         let output = harfbuzz::shape(&hb_font, buffer, &[]);
 
         let positions = output.get_glyph_positions();
         let infos = output.get_glyph_infos();
 
         for (pos, info) in positions.iter().zip(infos) {
+            let idx = run.start + info.cluster as usize;
+            debug_assert!(text.get(idx..).is_some());
+
             glyphs.push(RawGlyph {
-                byte_idx: run.start + info.cluster as usize,
+                byte_idx: ByteIndex::new(idx),
                 id: info.codepoint,
                 dx: pos.x_offset,
                 dy: pos.y_offset,
@@ -457,9 +459,12 @@ fn outline_cluster(
 
     OutlinedCluster {
         byte_idx: raw_glyphs[0].byte_idx,
-        path,
+        x: 0.0,
+        y: 0.0,
         width: width as f64 * scale,
-        .. OutlinedCluster::default()
+        rotate: 0.0,
+        has_relative_shift: false,
+        path,
     }
 }
 
@@ -483,7 +488,7 @@ fn transform_path(segments: &mut [tree::PathSegment], ts: &tree::Transform) {
     }
 }
 
-fn resolve_glyph_positions(
+fn resolve_clusters_positions(
     text: &str,
     offset: usize,
     pos_list: &PositionsList,
@@ -524,36 +529,96 @@ fn apply_letter_spacing(
         if let Some(c) = byte_to_char(&chunk.text, cluster.byte_idx) {
             // Spacing must be applied only to characters that belongs to the script
             // that supports spacing.
+            // We are checking only the first code point, since it should be enough.
             let script = unicode_script::get_script(c);
             if script_supports_letter_spacing(script) {
                 if let Some(span) = chunk.span_at(cluster.byte_idx) {
                     // Technically, we should ignore spacing on the last character,
                     // but it doesn't affect us in any way, so we are ignoring this.
                     cluster.width += span.font.letter_spacing;
+
+                    // If the cluster width became negative - clear it.
+                    // This is an UB and we can do whatever we want, so we mimic the Chrome behavior.
+                    if !(cluster.width > 0.0) {
+                        cluster.width = 0.0;
+                        cluster.path.clear();
+                    }
                 }
             }
         }
     }
 }
 
-/// Converts byte position into a code point position.
-fn byte_to_code_point(text: &str, byte: usize) -> usize {
-    let mut idx = 0;
-    for (i, _) in text.char_indices() {
-        if byte == i {
-            break;
-        }
+/// Checks that selected script supports letter spacing.
+///
+/// [In the CSS spec](https://www.w3.org/TR/css-text-3/#cursive-tracking).
+///
+/// The list itself is from: https://github.com/harfbuzz/harfbuzz/issues/64
+fn script_supports_letter_spacing(script: unicode_script::Script) -> bool {
+    use unicode_script::Script;
 
-        idx += 1;
+    match script {
+          Script::Arabic
+        | Script::Syriac
+        | Script::Nko
+        | Script::Manichaean
+        | Script::Psalter_Pahlavi
+        | Script::Mandaic
+        | Script::Mongolian
+        | Script::Phags_Pa
+        | Script::Devanagari
+        | Script::Bengali
+        | Script::Gurmukhi
+        | Script::Modi
+        | Script::Sharada
+        | Script::Syloti_Nagri
+        | Script::Tirhuta
+        | Script::Ogham => false,
+        _ => true,
     }
+}
 
-    idx
+/// Applies the `word-spacing` property to a text chunk clusters.
+///
+/// [In the CSS spec](https://www.w3.org/TR/css-text-3/#propdef-word-spacing).
+fn apply_word_spacing(
+    chunk: &TextChunk,
+    clusters: &mut Vec<OutlinedCluster>,
+) {
+    for cluster in clusters {
+        if let Some(c) = byte_to_char(&chunk.text, cluster.byte_idx) {
+            if is_word_separator_characters(c) {
+                if let Some(span) = chunk.span_at(cluster.byte_idx) {
+                    // Technically, word spacing 'should be applied half on each
+                    // side of the character', but it doesn't affect us in any way,
+                    // so we are ignoring this.
+                    cluster.width += span.font.word_spacing;
+
+                    // After word spacing, `width` can be negative.
+                }
+            }
+        }
+    }
+}
+
+/// Checks that the selected character is a word separator.
+///
+/// According to: https://www.w3.org/TR/css-text-3/#word-separator
+fn is_word_separator_characters(c: char) -> bool {
+    match c as u32 {
+        0x0020 | 0x00A0 | 0x1361 | 0x010100 | 0x010101 | 0x01039F | 0x01091F => true,
+        _ => false,
+    }
+}
+
+/// Converts byte position into a code point position.
+fn byte_to_code_point(text: &str, byte: ByteIndex) -> usize {
+    text.char_indices().take_while(|(i, _)| *i != byte.value()).count()
 }
 
 /// Converts byte position into a character.
-fn byte_to_char(text: &str, byte: usize) -> Option<char> {
-    text[byte..].chars().next()
-//    text.char_indices().find(|(i, _)| *i == byte).map(|(_, c)| c)
+fn byte_to_char(text: &str, byte: ByteIndex) -> Option<char> {
+    text[byte.value()..].chars().next()
 }
 
 fn process_anchor(a: TextAnchor, text_width: f64) -> f64 {
@@ -647,48 +712,12 @@ fn convert_decoration(
 
 fn add_rect_to_path(rect: Rect, path: &mut Vec<tree::PathSegment>) {
     path.extend_from_slice(&[
-        tree::PathSegment::MoveTo {
-            x: rect.x, y: rect.y
-        },
-        tree::PathSegment::LineTo {
-            x: rect.right(), y: rect.y
-        },
-        tree::PathSegment::LineTo {
-            x: rect.right(), y: rect.bottom()
-        },
-        tree::PathSegment::LineTo {
-            x: rect.x, y: rect.bottom()
-        },
+        tree::PathSegment::MoveTo { x: rect.x,       y: rect.y },
+        tree::PathSegment::LineTo { x: rect.right(), y: rect.y },
+        tree::PathSegment::LineTo { x: rect.right(), y: rect.bottom() },
+        tree::PathSegment::LineTo { x: rect.x,       y: rect.bottom() },
         tree::PathSegment::ClosePath,
     ]);
-}
-
-fn script_supports_letter_spacing(script: unicode_script::Script) -> bool {
-    // Details https://www.w3.org/TR/css-text-3/#cursive-tracking
-    //
-    // List from https://github.com/harfbuzz/harfbuzz/issues/64
-
-    use unicode_script::Script;
-
-    match script {
-          Script::Arabic
-        | Script::Syriac
-        | Script::Nko
-        | Script::Manichaean
-        | Script::Psalter_Pahlavi
-        | Script::Mandaic
-        | Script::Mongolian
-        | Script::Phags_Pa
-        | Script::Devanagari
-        | Script::Bengali
-        | Script::Gurmukhi
-        | Script::Modi
-        | Script::Sharada
-        | Script::Syloti_Nagri
-        | Script::Tirhuta
-        | Script::Ogham => false,
-        _ => true,
-    }
 }
 
 /// Implements an ability to outline a glyph directly into the `svgdom::Path`.
