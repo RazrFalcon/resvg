@@ -47,9 +47,12 @@
 - [`in`](https://www.w3.org/TR/SVG11/filters.html#FilterPrimitiveInAttribute)
   with `BackgroundImage`, `BackgroundAlpha`, `FillPaint`, `StrokePaint`
 - `image-rendering`
-- `kerning`
+- `kerning` (removed in the SVG 2)
+- `lengthAdjust`
+- `line-height`
 - `shape-rendering`
 - `text-rendering`
+- `textLength`
 - `unicode-bidi`
 - `word-spacing` (unsupported only by cairo backend)
 - `writing-mode`

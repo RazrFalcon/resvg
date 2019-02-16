@@ -67,6 +67,9 @@ Also, `textPath` and
 [embedded fonts](https://www.w3.org/TR/SVG11/feature#Font) are not yet implemented.
 A full list can be found [here](docs/unsupported.md).
 
+[SVG Tiny 1.2](https://www.w3.org/TR/SVGTiny12/) and [SVG 2.0](https://www.w3.org/TR/SVG2/)
+are not supported and not planned.
+
 Results of the static subset of the [SVG test suite](https://www.w3.org/Graphics/SVG/Test/20110816/):
 
 ![Chart1](./.github/official_chart.svg)
