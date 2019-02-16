@@ -5,18 +5,31 @@
 use super::prelude::*;
 
 
-// <g fill="red" text-decoration="underline">
-//   <g fill="blue" text-decoration="overline">
-//     <text fill="green" text-decoration="line-through">Text</text>
-//   </g>
-// </g>
-//
-// In this example 'text' element will have all decorators enabled, but color
-// will be green for all of them.
-//
-// There is no simpler way to express 'text-decoration' property
-// without groups than collect all the options to the string.
-// It's not by the SVG spec, but easier than keeping all the groups.
+/// Resolves the `text-decoration` property before the tree modification.
+///
+/// ```text
+/// <g fill="red" text-decoration="underline">
+///   <g fill="blue" text-decoration="overline">
+///     <text fill="green" text-decoration="line-through">Text</text>
+///   </g>
+/// </g>
+/// ```
+///
+/// In this example, the `text` element will have all decorations enabled, but `fill`
+/// will be set to `green` for all of them. Because only the `text` style will be used.
+///
+/// And since we will remove such groups, we have to resolve the `text-decoration` property
+/// beforehand.
+///
+/// There are no simpler way to do this, rather than collecting them in the `text`'s
+/// `text-decoration` property.
+/// It's against the SVG spec, but easier than keeping all the groups.
+///
+/// So the result will be:
+///
+/// ```text
+/// <text fill="green" text-decoration="line-through;overline;underline">Text</text>
+/// ```
 pub fn prepare_text_decoration(doc: &Document) {
     for mut node in doc.root().descendants().filter(|n| n.is_tag_name(EId::Text)) {
         let mut td = String::new();
@@ -33,7 +46,7 @@ pub fn prepare_text_decoration(doc: &Document) {
         }
 
         if !td.is_empty() {
-            td.pop();
+            td.pop(); // Remove `;`
             node.set_attribute((AId::TextDecoration, td));
         }
     }

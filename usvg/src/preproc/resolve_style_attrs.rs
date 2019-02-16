@@ -46,13 +46,15 @@ fn resolve_inherit(parent: &Node, opt: &Options) {
         // Commented stuff is not supported yet, so there is no point in resolving it.
 
         if node.is_text_content() {
+            resolve(&mut node, AId::Direction);
             resolve(&mut node, AId::FontStretch);
             resolve(&mut node, AId::FontStyle);
             resolve(&mut node, AId::FontVariant);
             resolve(&mut node, AId::FontWeight);
-            resolve(&mut node, AId::TextAnchor);
             resolve(&mut node, AId::LetterSpacing);
+            resolve(&mut node, AId::TextAnchor);
             resolve(&mut node, AId::WordSpacing);
+            resolve(&mut node, AId::WritingMode);
             resolve_font_family(&mut node, opt);
         }
 

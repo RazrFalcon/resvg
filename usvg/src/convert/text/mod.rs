@@ -25,15 +25,16 @@ use self::convert::*;
 
 // TODO: visibility on text and tspan
 // TODO: group when Options::keep_named_groups is set
+// TODO: `fill-rule` must be set to `nonzero` for text
 
 
 type Range = std::ops::Range<usize>;
 
-/// A raw glyph.
+/// A glyph.
 ///
-/// Basically, a glyph ID in the font and it's metrics.
+/// Basically, a glyph ID and it's metrics.
 #[derive(Clone, Copy)]
-struct RawGlyph {
+struct Glyph {
     /// The glyph ID in the font.
     id: u32,
 
@@ -78,13 +79,10 @@ struct OutlinedCluster {
     /// The rotation angle.
     rotate: f64,
 
-    /// The cluster width.
-    ///
-    /// It's not the outline width, but the width specified in the font.
-    /// So `width` != `path` bbox width.
+    /// An advance along the X axis.
     ///
     /// Can be negative.
-    width: f64,
+    advance: f64,
 
     /// Indicates that this cluster was affected by the relative shift (via dx/dy attributes)
     /// during the text layouting.
@@ -117,7 +115,7 @@ pub fn convert(
     tree: &mut tree::Tree,
 ) {
     let pos_list = resolve_positions_list(text_elem);
-    let rotate_list = resolve_rotate(text_elem);
+    let rotate_list = resolve_rotate_list(text_elem);
     let text_ts = text_elem.attributes().get_transform(AId::Transform).unwrap_or_default();
 
     let mut chunks = collect_text_chunks(tree, &text_elem, &pos_list, opt);
@@ -129,11 +127,12 @@ pub fn convert(
         baseline = chunk.y.unwrap_or(baseline);
 
         let mut clusters = render_chunk(&chunk);
+        scale_clusters(&chunk, &mut clusters);
         apply_letter_spacing(&chunk, &mut clusters);
         apply_word_spacing(&chunk, &mut clusters);
         resolve_clusters_positions(&chunk.text, char_offset, &pos_list, &rotate_list, &mut clusters);
 
-        let width = clusters.iter().fold(0.0, |w, glyph| w + glyph.width);
+        let width = clusters.iter().fold(0.0, |w, glyph| w + glyph.advance);
 
         x -= process_anchor(chunk.anchor, width);
 
@@ -225,7 +224,6 @@ fn convert_span(
 fn font_eq(f1: &Font, f2: &Font) -> bool {
        f1.path  == f2.path
     && f1.index == f2.index
-    && f1.size  == f2.size // TODO: size can be skipped, for performance benefits
 }
 
 /// Converts a text chunk into a list of outlined clusters.
@@ -245,8 +243,8 @@ fn render_chunk(
 
     let mut lists_of_glyphs = Vec::new();
     for font in &fonts {
-        let raw_glyphs = shape_text(&chunk.text, font);
-        lists_of_glyphs.push(raw_glyphs);
+        let glyphs = shape_text(&chunk.text, font);
+        lists_of_glyphs.push(glyphs);
     }
 
     // Check that all glyphs lists have the same length.
@@ -260,8 +258,8 @@ fn render_chunk(
     // For example, if one font supports ligatures and the other don't.
     // Not sure what to do in this case, so we should stop here for now.
     for glyphs in lists_of_glyphs.iter().skip(1) {
-        let iter = RawGlyphClusters::new(glyphs)
-                       .zip(RawGlyphClusters::new(&lists_of_glyphs[0]));
+        let iter = GlyphClusters::new(glyphs)
+                       .zip(GlyphClusters::new(&lists_of_glyphs[0]));
         for (g1, g2) in iter {
             if g1 != g2 {
                 warn!("Text layouting failed.");
@@ -271,11 +269,11 @@ fn render_chunk(
     }
 
     let mut clusters = Vec::new();
-    for (range, byte_idx) in RawGlyphClusters::new(&lists_of_glyphs[0]) {
+    for (range, byte_idx) in GlyphClusters::new(&lists_of_glyphs[0]) {
         if let Some(span) = chunk.span_at(byte_idx) {
-            for (font, raw_glyphs) in fonts.iter().zip(&lists_of_glyphs) {
+            for (font, glyphs) in fonts.iter().zip(&lists_of_glyphs) {
                 if font_eq(&span.font, font) {
-                    clusters.push(outline_cluster(font, &raw_glyphs[range]));
+                    clusters.push(outline_cluster(font, &glyphs[range]));
                     break;
                 }
             }
@@ -289,18 +287,18 @@ fn render_chunk(
 ///
 /// Input:  0 2 2 2 3 4 4 5 5
 /// Result: 0 1     4 5   7
-struct RawGlyphClusters<'a> {
-    data: &'a [RawGlyph],
+struct GlyphClusters<'a> {
+    data: &'a [Glyph],
     idx: usize,
 }
 
-impl<'a> RawGlyphClusters<'a> {
-    fn new(data: &'a [RawGlyph]) -> Self {
-        RawGlyphClusters { data, idx: 0 }
+impl<'a> GlyphClusters<'a> {
+    fn new(data: &'a [Glyph]) -> Self {
+        GlyphClusters { data, idx: 0 }
     }
 }
 
-impl<'a> Iterator for RawGlyphClusters<'a> {
+impl<'a> Iterator for GlyphClusters<'a> {
     type Item = (Range, ByteIndex);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -352,7 +350,7 @@ fn collect_unique_fonts(
 fn shape_text(
     text: &str,
     font: &Font,
-) -> Vec<RawGlyph> {
+) -> Vec<Glyph> {
     let font_data = try_opt!(font.font.copy_font_data(), Vec::new());
     let hb_face = harfbuzz::Face::from_bytes(&font_data, font.index);
     let hb_font = harfbuzz::Font::new(hb_face);
@@ -394,7 +392,7 @@ fn shape_text(
             let idx = run.start + info.cluster as usize;
             debug_assert!(text.get(idx..).is_some());
 
-            glyphs.push(RawGlyph {
+            glyphs.push(Glyph {
                 byte_idx: ByteIndex::new(idx),
                 id: info.codepoint,
                 dx: pos.x_offset,
@@ -409,36 +407,34 @@ fn shape_text(
 
 /// Outlines a glyph cluster.
 ///
-/// Uses one or more `RawGlyph`s to construct an `OutlinedCluster`.
+/// Uses one or more `Glyph`s to construct an `OutlinedCluster`.
 fn outline_cluster(
     font: &Font,
-    raw_glyphs: &[RawGlyph],
+    glyphs: &[Glyph],
 ) -> OutlinedCluster {
-    debug_assert!(!raw_glyphs.is_empty());
+    debug_assert!(!glyphs.is_empty());
 
     use lyon_path::builder::FlatPathBuilder;
-
-    let scale = font.size / font.units_per_em as f64;
 
     let mut path = Vec::new();
     let mut width = 0;
     let mut x = 0.0;
 
-    for raw_glyph in raw_glyphs {
+    for glyph in glyphs {
         let mut builder = svgdom_path_builder::Builder::new();
-        let mut glyph = match font.font.outline(raw_glyph.id, fk::Hinting::None, &mut builder) {
+        let mut outline = match font.font.outline(glyph.id, fk::Hinting::None, &mut builder) {
             Ok(_) => {
                 super::path::convert_path(builder.build())
             }
             Err(_) => {
-                warn!("Glyph {} not found in the font.", raw_glyph.id);
+                warn!("Glyph {} not found in the font.", glyph.id);
                 Vec::new()
             }
         };
 
-        if !glyph.is_empty() {
-            // Mirror and scale to the `font-size`.
-            let mut ts = svgdom::Transform::new_scale(scale, -scale);
+        if !outline.is_empty() {
+            // By default, glyphs are upside-down, so we have to mirror them.
+            let mut ts = svgdom::Transform::new_scale(1.0, -1.0);
 
             // Apply offset.
             //
@@ -446,22 +442,23 @@ fn outline_cluster(
             // but the later one will have an offset from the "current position".
             // So we have to keep an advance.
             // TODO: vertical advance?
-            ts.translate(x + raw_glyph.dx as f64, raw_glyph.dy as f64);
+            // TODO: should be done only inside a single text span
+            ts.translate(x + glyph.dx as f64, glyph.dy as f64);
 
-            transform_path(&mut glyph, &ts);
+            transform_path(&mut outline, &ts);
 
-            path.extend_from_slice(&glyph);
+            path.extend_from_slice(&outline);
         }
 
-        x += raw_glyph.width as f64;
-        width = cmp::max(raw_glyph.width, width);
+        x += glyph.width as f64;
+        width = cmp::max(glyph.width, width);
     }
 
     OutlinedCluster {
-        byte_idx: raw_glyphs[0].byte_idx,
+        byte_idx: glyphs[0].byte_idx,
         x: 0.0,
         y: 0.0,
-        width: width as f64 * scale,
+        advance: width as f64,
         rotate: 0.0,
         has_relative_shift: false,
         path,
@@ -513,8 +510,22 @@ fn resolve_clusters_positions(
             cluster.rotate = angle;
         }
 
-        x = cluster.x + cluster.width;
+        x = cluster.x + cluster.advance;
         y = cluster.y;
+    }
+}
+
+/// Scales clusters to the specified `font-size`.
+fn scale_clusters(
+    chunk: &TextChunk,
+    clusters: &mut Vec<OutlinedCluster>,
+) {
+    for cluster in clusters {
+        if let Some(span) = chunk.span_at(cluster.byte_idx) {
+            let scale = span.font.size / span.font.units_per_em as f64;
+            cluster.advance *= scale;
+            transform_path(&mut cluster.path, &tree::Transform::new_scale(scale, scale));
+        }
     }
 }
 
@@ -525,6 +536,11 @@ fn apply_letter_spacing(
     chunk: &TextChunk,
     clusters: &mut Vec<OutlinedCluster>,
 ) {
+    // At least one span should have a non-zero spacing.
+    if !chunk.spans.iter().any(|span| !span.font.letter_spacing.is_fuzzy_zero()) {
+        return;
+    }
+
     for cluster in clusters {
         if let Some(c) = byte_to_char(&chunk.text, cluster.byte_idx) {
             // Spacing must be applied only to characters that belongs to the script
@@ -535,12 +551,12 @@ fn apply_letter_spacing(
                 if let Some(span) = chunk.span_at(cluster.byte_idx) {
                     // Technically, we should ignore spacing on the last character,
                     // but it doesn't affect us in any way, so we are ignoring this.
-                    cluster.width += span.font.letter_spacing;
+                    cluster.advance += span.font.letter_spacing;
 
-                    // If the cluster width became negative - clear it.
+                    // If the cluster advance became negative - clear it.
                     // This is an UB and we can do whatever we want, so we mimic the Chrome behavior.
-                    if !(cluster.width > 0.0) {
-                        cluster.width = 0.0;
+                    if !(cluster.advance > 0.0) {
+                        cluster.advance = 0.0;
                         cluster.path.clear();
                     }
                 }
@@ -585,6 +601,11 @@ fn apply_word_spacing(
     chunk: &TextChunk,
     clusters: &mut Vec<OutlinedCluster>,
 ) {
+    // At least one span should have a non-zero spacing.
+    if !chunk.spans.iter().any(|span| !span.font.word_spacing.is_fuzzy_zero()) {
+        return;
+    }
+
     for cluster in clusters {
         if let Some(c) = byte_to_char(&chunk.text, cluster.byte_idx) {
             if is_word_separator_characters(c) {
@@ -592,9 +613,9 @@ fn apply_word_spacing(
                     // Technically, word spacing 'should be applied half on each
                     // side of the character', but it doesn't affect us in any way,
                     // so we are ignoring this.
-                    cluster.width += span.font.word_spacing;
+                    cluster.advance += span.font.word_spacing;
 
-                    // After word spacing, `width` can be negative.
+                    // After word spacing, `advance` can be negative.
                 }
             }
         }
@@ -650,11 +671,11 @@ fn collect_decoration_spans(
             if !started {
                 x = cluster.x;
                 y = cluster.y;
-                width = cluster.x + cluster.width - x;
+                width = cluster.x + cluster.advance - x;
                 angle = cluster.rotate;
                 started = true;
             } else {
-                width = cluster.x + cluster.width - x;
+                width = cluster.x + cluster.advance - x;
             }
         } else if started {
             spans.push(DecorationSpan { x, baseline: y, width, angle });
