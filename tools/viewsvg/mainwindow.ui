@@ -143,18 +143,12 @@
      </layout>
     </item>
     <item>
-     <widget class="SvgView" name="svgView">
+     <widget class="SvgView" name="svgView" native="true">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Sunken</enum>
       </property>
      </widget>
     </item>
@@ -165,7 +159,7 @@
  <customwidgets>
   <customwidget>
    <class>SvgView</class>
-   <extends>QFrame</extends>
+   <extends>QWidget</extends>
    <header>svgview.h</header>
    <container>1</container>
   </customwidget>

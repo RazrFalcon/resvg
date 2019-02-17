@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QFrame>
+#include <QWidget>
 #include <QMutex>
 #include <QBasicTimer>
 
@@ -29,7 +29,7 @@ private:
     ResvgRenderer m_renderer;
 };
 
-class SvgView : public QFrame
+class SvgView : public QWidget
 {
     Q_OBJECT
 

@@ -85,7 +85,7 @@ static QImage genCheckedTexture()
 }
 
 SvgView::SvgView(QWidget *parent)
-    : QFrame(parent)
+    : QWidget(parent)
     , m_checkboardImg(genCheckedTexture())
     , m_worker(new SvgViewWorker())
     , m_resizeTimer(new QTimer(this))
@@ -224,7 +224,7 @@ void SvgView::paintEvent(QPaintEvent *e)
         }
     }
 
-    QFrame::paintEvent(e);
+    QWidget::paintEvent(e);
 }
 
 void SvgView::dragEnterEvent(QDragEnterEvent *event)
