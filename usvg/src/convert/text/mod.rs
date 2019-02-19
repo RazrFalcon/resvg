@@ -378,11 +378,12 @@ fn shape_text(
             .add_str(sub_text)
             .set_direction(hb_direction);
 
-        // TODO: feature smcp / small cups
+        // TODO: feature smcp / small caps
         //       simply setting the `smcp` doesn't work for some reasons
 
         // TODO: if the output has missing glyphs, we should fetch them from other fonts
         //       no idea how to implement this
+
         let output = harfbuzz::shape(&hb_font, buffer, &[]);
 
         let positions = output.get_glyph_positions();

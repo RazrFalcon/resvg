@@ -8,7 +8,7 @@ sudo apt-get update -qq
 sudo apt-get install python3.6
 
 if [ "$RESVG_CAIRO_BACKEND" = true ]; then
-    sudo apt-get install -y libcairo2-dev
+    sudo apt-get install -y libcairo2-dev libharfbuzz-dev
     # for capi/examples/cairo-*
     sudo apt-get install -y libgtk-3-dev
 fi
