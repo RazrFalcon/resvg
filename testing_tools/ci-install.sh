@@ -7,6 +7,9 @@ sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt-get update -qq
 sudo apt-get install python3.6
 
+sudo apt-get install ttf-mscorefonts-installer
+sudo fc-cache
+
 if [ "$RESVG_CAIRO_BACKEND" = true ]; then
     sudo apt-get install -y libcairo2-dev libharfbuzz-dev
     # for capi/examples/cairo-*
