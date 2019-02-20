@@ -57,6 +57,7 @@ pub struct FontData {
     pub underline_thickness: f64,
 }
 
+
 /// A text chunk.
 ///
 /// Text alignment and BIDI reordering can be done only inside a text chunk.
@@ -80,6 +81,7 @@ impl TextChunk {
     }
 }
 
+
 /// Spans do not overlap.
 #[derive(Clone)]
 pub struct TextSpan {
@@ -100,6 +102,7 @@ impl TextSpan {
         byte_offset.value() >= self.start && byte_offset.value() < self.end
     }
 }
+
 
 pub type PositionsList = Vec<CharacterPosition>;
 pub type RotateList = Vec<f64>;
@@ -334,6 +337,7 @@ fn convert_text_anchor(node: &svgdom::Node) -> TextAnchor {
         _        => TextAnchor::Start,
     }
 }
+
 
 #[derive(Clone, Copy)]
 pub struct CharacterPosition {
