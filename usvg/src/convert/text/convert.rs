@@ -55,16 +55,6 @@ pub struct FontData {
     pub ascent: f64,
     pub underline_position: f64,
     pub underline_thickness: f64,
-    pub letter_spacing: f64,
-    pub word_spacing: f64,
-}
-
-#[derive(Clone, Copy)]
-pub struct CharacterPosition {
-    pub x: Option<f64>,
-    pub y: Option<f64>,
-    pub dx: Option<f64>,
-    pub dy: Option<f64>,
 }
 
 /// A text chunk.
@@ -102,6 +92,8 @@ pub struct TextSpan {
     pub decoration: TextDecoration,
     pub baseline_shift: f64,
     pub visibility: tree::Visibility,
+    pub letter_spacing: f64,
+    pub word_spacing: f64,
 }
 
 impl TextSpan {
@@ -147,6 +139,8 @@ pub fn collect_text_chunks(
             decoration: resolve_decoration(tree, text_elem, parent),
             visibility: super::super::convert_visibility(attrs),
             baseline_shift: parent.attributes().get_number_or(AId::BaselineShift, 0.0),
+            letter_spacing: attrs.get_number_or(AId::LetterSpacing, 0.0),
+            word_spacing: attrs.get_number_or(AId::WordSpacing, 0.0),
         };
 
         let mut is_new_span = true;
@@ -255,6 +249,7 @@ fn resolve_font(
     let mut name_list = Vec::new();
     let font_family = attrs.get_str_or(AId::FontFamily, "");
     for family in font_family.split(',') {
+        // TODO: to a proper parser
         let family = family.replace('\'', "");
         let family = family.trim();
 
@@ -327,11 +322,10 @@ fn resolve_font(
         index,
         size,
         units_per_em: metrics.units_per_em,
+        // TODO: do not scale
         ascent: metrics.ascent as f64 * scale,
         underline_position: metrics.underline_position as f64 * scale,
         underline_thickness: metrics.underline_thickness as f64 * scale,
-        letter_spacing: attrs.get_number_or(AId::LetterSpacing, 0.0),
-        word_spacing: attrs.get_number_or(AId::WordSpacing, 0.0),
     }))
 }
 
@@ -341,6 +335,14 @@ fn convert_text_anchor(node: &svgdom::Node) -> TextAnchor {
         "end"    => TextAnchor::End,
         _        => TextAnchor::Start,
     }
+}
+
+#[derive(Clone, Copy)]
+pub struct CharacterPosition {
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+    pub dx: Option<f64>,
+    pub dy: Option<f64>,
 }
 
 /// Resolves text's character positions.

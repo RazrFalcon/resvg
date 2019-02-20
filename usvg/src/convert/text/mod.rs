@@ -538,7 +538,7 @@ fn apply_letter_spacing(
     clusters: &mut Vec<OutlinedCluster>,
 ) {
     // At least one span should have a non-zero spacing.
-    if !chunk.spans.iter().any(|span| !span.font.letter_spacing.is_fuzzy_zero()) {
+    if !chunk.spans.iter().any(|span| !span.letter_spacing.is_fuzzy_zero()) {
         return;
     }
 
@@ -552,7 +552,7 @@ fn apply_letter_spacing(
                 if let Some(span) = chunk.span_at(cluster.byte_idx) {
                     // Technically, we should ignore spacing on the last character,
                     // but it doesn't affect us in any way, so we are ignoring this.
-                    cluster.advance += span.font.letter_spacing;
+                    cluster.advance += span.letter_spacing;
 
                     // If the cluster advance became negative - clear it.
                     // This is an UB and we can do whatever we want, so we mimic the Chrome behavior.
@@ -603,7 +603,7 @@ fn apply_word_spacing(
     clusters: &mut Vec<OutlinedCluster>,
 ) {
     // At least one span should have a non-zero spacing.
-    if !chunk.spans.iter().any(|span| !span.font.word_spacing.is_fuzzy_zero()) {
+    if !chunk.spans.iter().any(|span| !span.word_spacing.is_fuzzy_zero()) {
         return;
     }
 
@@ -614,7 +614,7 @@ fn apply_word_spacing(
                     // Technically, word spacing 'should be applied half on each
                     // side of the character', but it doesn't affect us in any way,
                     // so we are ignoring this.
-                    cluster.advance += span.font.word_spacing;
+                    cluster.advance += span.word_spacing;
 
                     // After word spacing, `advance` can be negative.
                 }
