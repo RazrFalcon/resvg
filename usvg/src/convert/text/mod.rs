@@ -207,7 +207,7 @@ fn convert_span(
     // TODO: fill and stroke with a gradient/pattern that has objectBoundingBox
     //       should use the text element bbox and not the tspan bbox.
 
-    let mut path = tree::Path {
+    let path = tree::Path {
         id: String::new(),
         transform,
         visibility: span.visibility,
@@ -215,8 +215,6 @@ fn convert_span(
         stroke: span.stroke.take(),
         segments,
     };
-
-    mem::swap(&mut path.id, &mut span.id);
 
     Some(tree::NodeKind::Path(path))
 }

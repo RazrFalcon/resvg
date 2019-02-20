@@ -85,7 +85,6 @@ impl TextChunk {
 pub struct TextSpan {
     pub start: usize,
     pub end: usize,
-    pub id: String,
     pub fill: Option<tree::Fill>,
     pub stroke: Option<tree::Stroke>,
     pub font: Font,
@@ -132,7 +131,6 @@ pub fn collect_text_chunks(
         let span = TextSpan {
             start: 0,
             end: 0,
-            id: parent.id().clone(),
             fill: fill::convert(tree, attrs, true),
             stroke: stroke::convert(tree, attrs, true),
             font,
