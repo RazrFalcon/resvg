@@ -141,7 +141,7 @@ pub fn convert(
 
             if let Some(decoration) = span.decoration.underline.take() {
                 parent.append_kind(convert_decoration(
-                    x, baseline - span.font.underline_position,
+                    x, baseline - span.font.underline_position(span.font_size),
                     &span, decoration, &decoration_spans, text_ts,
                 ));
             }
@@ -149,7 +149,7 @@ pub fn convert(
             if let Some(decoration) = span.decoration.overline.take() {
                 // TODO: overline pos from font
                 parent.append_kind(convert_decoration(
-                    x, baseline - span.font.ascent,
+                    x, baseline - span.font.ascent(span.font_size),
                     &span, decoration, &decoration_spans, text_ts,
                 ));
             }
@@ -161,7 +161,7 @@ pub fn convert(
             if let Some(decoration) = span.decoration.line_through.take() {
                 // TODO: line-through pos from font
                 parent.append_kind(convert_decoration(
-                    x, baseline - span.font.ascent / 3.0,
+                    x, baseline - span.font.ascent(span.font_size) / 3.0,
                     &span, decoration, &decoration_spans, text_ts,
                 ));
             }
@@ -521,7 +521,7 @@ fn scale_clusters(
 ) {
     for cluster in clusters {
         if let Some(span) = chunk.span_at(cluster.byte_idx) {
-            let scale = span.font.size / span.font.units_per_em as f64;
+            let scale = span.font.scale(span.font_size);
             cluster.advance *= scale;
             transform_path(&mut cluster.path, &tree::Transform::new_scale(scale, scale));
         }
@@ -703,13 +703,13 @@ fn convert_decoration(
     for dec_span in decoration_spans {
         let tx = x + dec_span.x;
         let ty = baseline + dec_span.baseline - span.baseline_shift
-                 - span.font.underline_thickness / 2.0;
+                 - span.font.underline_thickness(span.font_size) / 2.0;
 
         let rect = Rect::new(
             0.0,
             0.0,
             dec_span.width,
-            span.font.underline_thickness,
+            span.font.underline_thickness(span.font_size),
         );
 
         let start_idx = segments.len();

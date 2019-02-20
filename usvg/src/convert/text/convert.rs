@@ -44,17 +44,35 @@ pub enum TextAnchor {
     End,
 }
 
+
 pub type Font = Rc<FontData>;
 
 pub struct FontData {
     pub font: fk::Font,
     pub path: String,
     pub index: u32,
-    pub size: f64,
-    pub units_per_em: u32,
-    pub ascent: f64,
-    pub underline_position: f64,
-    pub underline_thickness: f64,
+    units_per_em: u32,
+    ascent: f32,
+    underline_position: f32,
+    underline_thickness: f32,
+}
+
+impl FontData {
+    pub fn scale(&self, font_size: f64) -> f64 {
+        font_size / self.units_per_em as f64
+    }
+
+    pub fn ascent(&self, font_size: f64) -> f64 {
+        self.ascent as f64 * self.scale(font_size)
+    }
+
+    pub fn underline_position(&self, font_size: f64) -> f64 {
+        self.underline_position as f64 * self.scale(font_size)
+    }
+
+    pub fn underline_thickness(&self, font_size: f64) -> f64 {
+        self.underline_thickness as f64 * self.scale(font_size)
+    }
 }
 
 
@@ -90,6 +108,7 @@ pub struct TextSpan {
     pub fill: Option<tree::Fill>,
     pub stroke: Option<tree::Stroke>,
     pub font: Font,
+    pub font_size: f64,
     pub decoration: TextDecoration,
     pub baseline_shift: f64,
     pub visibility: tree::Visibility,
@@ -122,6 +141,13 @@ pub fn collect_text_chunks(
         let ref attrs = parent.attributes();
         let anchor = convert_text_anchor(parent);
 
+        let font_size = attrs.get_number_or(AId::FontSize, 0.0);
+        if !(font_size > 0.0) {
+            // Skip this span.
+            chars_count += child.text().chars().count();
+            continue;
+        }
+
         let font = match resolve_font(attrs, opt) {
             Some(v) => v,
             None => {
@@ -137,6 +163,7 @@ pub fn collect_text_chunks(
             fill: fill::convert(tree, attrs, true),
             stroke: stroke::convert(tree, attrs, true),
             font,
+            font_size,
             decoration: resolve_decoration(tree, text_elem, parent),
             visibility: super::super::convert_visibility(attrs),
             baseline_shift: parent.attributes().get_number_or(AId::BaselineShift, 0.0),
@@ -203,11 +230,6 @@ fn resolve_font(
     attrs: &svgdom::Attributes,
     opt: &Options,
 ) -> Option<Font> {
-    let size = attrs.get_number_or(AId::FontSize, 0.0);
-    if !(size > 0.0) {
-        return None;
-    }
-
     let style = attrs.get_str_or(AId::FontStyle, "normal");
     let style = match style {
         "italic"  => fk::Style::Italic,
@@ -315,18 +337,15 @@ fn resolve_font(
     };
 
     let metrics = font.metrics();
-    let scale = size / metrics.units_per_em as f64;
 
     Some(Rc::new(FontData {
         font,
         path,
         index,
-        size,
         units_per_em: metrics.units_per_em,
-        // TODO: do not scale
-        ascent: metrics.ascent as f64 * scale,
-        underline_position: metrics.underline_position as f64 * scale,
-        underline_thickness: metrics.underline_thickness as f64 * scale,
+        ascent: metrics.ascent,
+        underline_position: metrics.underline_position,
+        underline_thickness: metrics.underline_thickness,
     }))
 }
 
