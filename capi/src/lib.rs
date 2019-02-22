@@ -8,7 +8,6 @@ extern crate resvg;
 extern crate fern;
 #[macro_use] extern crate log;
 
-#[cfg(feature = "cairo-backend")] extern crate glib;
 #[cfg(feature = "cairo-backend")] extern crate cairo_sys;
 
 use std::fmt;
@@ -314,9 +313,7 @@ pub extern fn resvg_cairo_render_to_canvas(
         &*tree
     };
 
-    use glib::translate::FromGlibPtrNone;
-
-    let cr = unsafe { cairo::Context::from_glib_none(cr) };
+    let cr = unsafe { cairo::Context::from_raw_none(cr) };
     let size = resvg::ScreenSize::new(size.width, size.height);
 
     let opt = to_native_opt(unsafe {
@@ -398,9 +395,7 @@ pub extern fn resvg_cairo_render_to_canvas_by_id(
         return;
     }
 
-    use glib::translate::FromGlibPtrNone;
-
-    let cr = unsafe { cairo::Context::from_glib_none(cr) };
+    let cr = unsafe { cairo::Context::from_raw_none(cr) };
     let size = resvg::ScreenSize::new(size.width, size.height);
 
     let opt = to_native_opt(unsafe {

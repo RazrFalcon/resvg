@@ -15,9 +15,8 @@ fern = "0.5"
 log = "0.4"
 resvg = { path = "../" }
 # cairo backend
-glib = { version = "0.6.0", optional = true }
-cairo-sys-rs = { version = "0.7.0", optional = true }
+cairo-sys-rs = { version = "0.8.0", optional = true }
 
 [features]
-cairo-backend = ["resvg/cairo-backend", "glib", "cairo-sys-rs"]
+cairo-backend = ["resvg/cairo-backend", "cairo-sys-rs"]
 qt-backend = ["resvg/qt-backend"]

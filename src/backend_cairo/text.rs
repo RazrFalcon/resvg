@@ -108,7 +108,7 @@ pub fn init_pango_layout(
     block: &text::TextBlock<pango::FontDescription>,
     context: &pango::Context,
 ) -> pango::Layout {
-    let layout = pango::Layout::new(&context);
+    let layout = pango::Layout::new(context);
     layout.set_font_description(&block.font);
     set_text_spacing(block.letter_spacing, &layout);
     layout.set_text(&block.text);

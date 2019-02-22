@@ -34,6 +34,8 @@ parse_doc(const char *path)
 {
     resvg_init_options(&opt);
     opt.path = path;
+    opt.font_family = "Times New Roman";
+    opt.languages = "en";
 
     int err = resvg_parse_tree_from_file(path, &opt, &tree);
     if (err != RESVG_OK) {

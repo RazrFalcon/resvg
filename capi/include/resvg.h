@@ -113,6 +113,8 @@ typedef struct resvg_options {
 
     /** Default font family.
      *
+     * Must be set before passing to rendering functions.
+     *
      * Default: NULL.
      */
     const char *font_family;
@@ -127,6 +129,8 @@ typedef struct resvg_options {
      * Sets a comma-separated list of languages that will be used
      * during the 'systemLanguage' attribute resolving.
      * Examples: 'en-US', 'en-US, ru-RU', 'en, ru'
+     *
+     * Must be set before passing to rendering functions.
      *
      * Default: NULL.
      */

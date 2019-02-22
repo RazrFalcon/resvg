@@ -6,7 +6,6 @@
 use cairo;
 use gdk_pixbuf::{
     self,
-    PixbufExt,
     PixbufLoaderExt,
 };
 

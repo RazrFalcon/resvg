@@ -5,8 +5,8 @@ authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
 workspace = "../.."
 
 [dependencies]
-gio = "0.5"
-gtk = "0.5"
+gio = "0.6"
+gtk = "0.6"
 log = "0.4"
 fern = "0.5"
 
