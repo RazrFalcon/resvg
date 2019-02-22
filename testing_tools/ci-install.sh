@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -ex
+set -e
 
 # python 3.6 for travis script and regression.py
 sudo add-apt-repository ppa:deadsnakes/ppa -y
@@ -14,7 +14,7 @@ if [ "$RESVG_CAIRO_BACKEND" = true ]; then
 fi
 
 if [ "$RESVG_QT_BACKEND" = true ]; then
-    sudo add-apt-repository ppa:beineri/opt-qt562-trusty -y
+    sudo add-apt-repository ppa:beineri/opt-qt563-xenial -y
     sudo apt-get update -qq
     sudo apt-get install -qq qt56base qt56svg
 fi
