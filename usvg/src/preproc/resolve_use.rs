@@ -56,11 +56,18 @@ pub fn resolve_use(doc: &mut Document, opt: &Options) {
                 // <use xlink:href="#g1" id="use1"/>
                 //
                 // `use2` should be removed.
+                //
+                // Also, child should not reference its parent:
+                // <g id="g1">
+                //     <use xlink:href="#g1" id="use1"/>
+                // </g>
+                //
+                // `use1` should be removed.
                 let mut is_recursive = false;
                 for link_child in link.descendants().skip(1).filter(|n| n.is_tag_name(EId::Use)) {
                     let av = link_child.attributes().get_value(AId::Href).cloned();
                     if let Some(AValue::Link(link2)) = av {
-                        if link2 == node {
+                        if link2 == node || link2 == link {
                             is_recursive = true;
                             break;
                         }
@@ -77,9 +84,6 @@ pub fn resolve_use(doc: &mut Document, opt: &Options) {
 
                 is_any_resolved = true;
             }
-
-            // 'use' elements without 'xlink:href' attribute will be removed
-            // by 'remove_invisible_elements()'.
         }
 
         // Remove unresolved 'use' elements, since there is not need
