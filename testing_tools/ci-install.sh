@@ -17,4 +17,6 @@ if [ "$RESVG_QT_BACKEND" = true ]; then
     sudo add-apt-repository ppa:beineri/opt-qt563-xenial -y
     sudo apt-get update -qq
     sudo apt-get install -qq qt56base qt56svg
+    # to fix the -lGL linking
+    sudo apt-get install -y libgl1-mesa-dev
 fi
