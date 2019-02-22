@@ -27,10 +27,31 @@ pub fn resolve_use(doc: &mut Document, opt: &Options) {
     // so we have to process the tree until all 'use' are solved.
     let mut is_any_resolved = true;
     while is_any_resolved {
-        is_any_resolved = false;
         rm_nodes.clear();
 
-        for mut node in doc.root().descendants().filter(|n| n.is_tag_name(EId::Use)) {
+        let root = doc.root().clone();
+        is_any_resolved = _resolve_use(doc, root, opt, &mut rm_nodes);
+
+        // Remove unresolved 'use' elements, since there is not need
+        // to keep them around and they will be skipped anyway.
+        for node in &mut rm_nodes {
+            doc.remove_node(node.clone());
+        }
+    }
+
+    remove_invalid_use(doc);
+}
+
+fn _resolve_use(
+    doc: &mut Document,
+    parent: Node,
+    opt: &Options,
+    rm_nodes: &mut Vec<Node>,
+) -> bool {
+    let mut is_any_resolved = false;
+
+    for mut node in parent.children() {
+        if node.is_tag_name(EId::Use) {
             let av = node.attributes().get_value(AId::Href).cloned();
             if let Some(AValue::Link(mut link)) = av {
                 // Ignore 'use' elements linked to other 'use' elements.
@@ -80,23 +101,20 @@ pub fn resolve_use(doc: &mut Document, opt: &Options) {
                     continue;
                 }
 
-                _resolve_use(doc, &mut node, &mut link, opt);
-
+                __resolve_use(doc, &mut node, &mut link, opt);
                 is_any_resolved = true;
             }
         }
 
-        // Remove unresolved 'use' elements, since there is not need
-        // to keep them around and they will be skipped anyway.
-        for node in &mut rm_nodes {
-            doc.remove_node(node.clone());
+        if _resolve_use(doc, node, opt, rm_nodes) {
+            is_any_resolved = true;
         }
     }
 
-    remove_invalid_use(doc);
+    is_any_resolved
 }
 
-fn _resolve_use(
+fn __resolve_use(
     doc: &mut Document,
     use_node: &mut Node,
     linked_node: &mut Node,

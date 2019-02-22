@@ -25,6 +25,7 @@ This changelog also contains important changes in dependencies.
 - (usvg) `filter:none` processing.
 - (usvg) `text` inside `text` processing.
 - (usvg) Endless loop during `use` resolving.
+- (usvg) Panic during `use` resolving.
 - (svgtypes) Style with comments parsing.
 
 ## [0.5.0] - 2018-01-04
