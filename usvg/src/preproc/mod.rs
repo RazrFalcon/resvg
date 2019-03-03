@@ -169,7 +169,7 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) {
     group_defs(doc, svg);
 
     resolve_gradient_stops(doc);
-    fix_gradient_stops(doc);
+    fix_gradients_stops(doc);
 
     resolve_clip_path_attributes(doc);
 

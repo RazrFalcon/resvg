@@ -7,27 +7,21 @@ use std::f64;
 use super::prelude::*;
 
 
-pub fn fix_gradient_stops(doc: &mut Document) {
+pub fn fix_gradients_stops(doc: &mut Document) {
+    // Remove any gradients children which are not `stop`.
+    let root = doc.root().clone();
+    doc.drain(root, |n| {
+            n.parent().map_or(false, |n| n.is_gradient()) // parent is a gradient
+        && !n.is_tag_name(EId::Stop)
+    });
+
     let mut stops = Vec::new();
     for gradient in doc.root().descendants().filter(|n| n.is_gradient()) {
-        // Remove any non-`stop` children, so we can skip tag name checks in the code below.
-        {
-            let mut stop_opt = gradient.first_child();
-            while let Some(stop) = stop_opt {
-                stop_opt = stop.next_sibling();
-
-                if !stop.is_tag_name(EId::Stop) {
-                    doc.remove_node(stop);
-                }
-            }
-        }
-
-        stops.clear();
-        _fix_gradient_stops(&gradient, &mut stops, doc);
+        fix_gradient_stops(&gradient, &mut stops, doc);
     }
 }
 
-fn _fix_gradient_stops(grad: &Node, stops: &mut Vec<Node>, doc: &mut Document) {
+fn fix_gradient_stops(grad: &Node, stops: &mut Vec<Node>, doc: &mut Document) {
     // Resolve missing offsets.
     {
         let mut prev_offset = 0.0;
