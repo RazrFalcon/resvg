@@ -18,11 +18,7 @@ pub fn regroup_elements(doc: &mut Document, parent: &Node) {
             regroup_elements(doc, &node);
         }
 
-        if     node.is_tag_name(EId::G)
-            || node.is_tag_name(EId::Defs)
-            || node.is_tag_name(EId::ClipPath)
-            || node.is_tag_name(EId::Mask)
-        {
+        if !node.is_graphic() {
             continue;
         }
 

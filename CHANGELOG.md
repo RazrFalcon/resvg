@@ -26,6 +26,7 @@ This changelog also contains important changes in dependencies.
 - (usvg) `text` inside `text` processing.
 - (usvg) Endless loop during `use` resolving.
 - (usvg) Panic during `use` resolving.
+- (usvg) Groups regrouping.
 - (svgtypes) Style with comments parsing.
 
 ## [0.5.0] - 2018-01-04
