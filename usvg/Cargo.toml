@@ -22,7 +22,7 @@ libflate = "0.1"
 log = "0.4"
 lyon_geom = "0.12"
 rctree = "0.2.1"
-svgdom = { git = "https://github.com/RazrFalcon/svgdom", rev = "abcaeb8" }
+svgdom = { git = "https://github.com/RazrFalcon/svgdom", rev = "75f6fbe" }
 unicode-segmentation = "1.2.1"
 
 [dev-dependencies]

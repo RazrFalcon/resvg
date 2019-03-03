@@ -4,16 +4,18 @@
 
 use super::prelude::*;
 
+// TODO: join with fix_links
+// TODO: run before preprocessing
 
 pub fn fix_recursive_links(doc: &Document) {
-    fix_pattern(doc);
-    fix_marker(doc);
+    fix_patterns(doc);
+    fix_markers(doc);
     fix_func_iri(doc, EId::ClipPath, AId::ClipPath);
     fix_func_iri(doc, EId::Mask, AId::Mask);
     fix_func_iri(doc, EId::Filter, AId::Filter);
 }
 
-fn fix_pattern(doc: &Document) {
+fn fix_patterns(doc: &Document) {
     for pattern_node in doc.root().descendants().filter(|n| n.is_tag_name(EId::Pattern)) {
         for mut node in pattern_node.descendants() {
             let mut check_attr = |aid: AId| {
@@ -44,7 +46,7 @@ fn fix_pattern(doc: &Document) {
     }
 }
 
-fn fix_marker(doc: &Document) {
+fn fix_markers(doc: &Document) {
     for marker_node in doc.root().descendants().filter(|n| n.is_tag_name(EId::Marker)) {
         for mut node in marker_node.descendants() {
             let mut check_attr = |aid: AId| {
@@ -82,12 +84,12 @@ fn fix_func_iri(doc: &Document, eid: EId, aid: AId) {
             let av = child.attributes().get_value(aid).cloned();
             if let Some(AValue::FuncLink(link)) = av {
                 if link == node {
-                    // If a mask child has a link to the mask itself
+                    // If an element child has a link to the element itself
                     // then we have to replace it with `none`.
                     // Otherwise we will get endless loop/recursion and stack overflow.
                     child.remove_attribute(aid);
                 } else {
-                    // Check that linked node children doesn't link this mask.
+                    // Check that linked node children doesn't link this element.
                     for mut node2 in link.descendants() {
                         let av2 = node2.attributes().get_value(aid).cloned();
                         if let Some(AValue::FuncLink(link2)) = av2 {

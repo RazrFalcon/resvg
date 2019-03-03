@@ -25,9 +25,11 @@ This changelog also contains important changes in dependencies.
 - (usvg) `filter:none` processing.
 - (usvg) `text` inside `text` processing.
 - (usvg) Endless loop during `use` resolving.
+- (usvg) Endless loop when SVG has indirect recursive `xlink:href` links.
 - (usvg) Panic during `use` resolving.
 - (usvg) Groups regrouping.
 - (svgtypes) Style with comments parsing.
+- (roxmltree) Namespace resolving.
 
 ## [0.5.0] - 2018-01-04
 ### Added

@@ -218,7 +218,7 @@ test!(pattern_without_children, false,
 // We keep id's even if `keep_named_groups` is disabled.
 // ID on `svg`, `defs`, `stop` and `tspan` is ignored because they can't be rendered
 test!(preserve_id, false,
-"<svg id='svg1' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'>
+"<svg id='svg1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 1 1'>
     <defs id='defs1'>
         <linearGradient id='lg1'>
             <stop id='stop1' offset='0' stop-color='white'/>

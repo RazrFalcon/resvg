@@ -43,6 +43,27 @@ pub fn fix_xlinks(doc: &Document) {
             }
         }
     }
+
+
+    // Remove recursive xlinks.
+    fn has_link_to_itself(root: &Node, link: &Node) -> bool {
+        let av = link.attributes().get_value(AId::Href).cloned();
+        if let Some(AValue::Link(link_next)) = av {
+            if link_next == *root {
+                return true;
+            } else {
+                return has_link_to_itself(root, &link_next);
+            }
+        }
+
+        false
+    }
+
+    for mut node in doc.root().descendants().filter(|n| n.has_attribute(AId::Href)) {
+        if has_link_to_itself(&node, &node) {
+            node.remove_attribute(AId::Href);
+        }
+    }
 }
 
 // Removes all `xlink:href` attributes because we already resolved everything.
