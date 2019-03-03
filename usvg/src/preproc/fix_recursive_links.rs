@@ -9,7 +9,6 @@ use super::prelude::*;
 
 pub fn fix_recursive_links(doc: &Document) {
     fix_patterns(doc);
-    fix_markers(doc);
     fix_func_iri(doc, EId::ClipPath, AId::ClipPath);
     fix_func_iri(doc, EId::Mask, AId::Mask);
     fix_func_iri(doc, EId::Filter, AId::Filter);
@@ -46,9 +45,9 @@ fn fix_patterns(doc: &Document) {
     }
 }
 
-fn fix_markers(doc: &Document) {
+pub fn fix_recursive_markers(doc: &Document) {
     for marker_node in doc.root().descendants().filter(|n| n.is_tag_name(EId::Marker)) {
-        for mut node in marker_node.descendants() {
+        for mut node in marker_node.descendants().skip(1) {
             let mut check_attr = |aid: AId| {
                 let av = node.attributes().get_value(aid).cloned();
                 if let Some(AValue::FuncLink(link)) = av {

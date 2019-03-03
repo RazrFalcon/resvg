@@ -182,6 +182,10 @@ pub fn prepare_doc(doc: &mut svgdom::Document, opt: &Options) {
     prepare_text_decoration(doc);
     resolve_style_attributes(doc, opt);
 
+    // `marker-*` attributes are inheritable, so we have to resolve recursive marker links
+    // after `resolve_style_attributes`.
+    fix_recursive_markers(doc);
+
     // Should be done only after style resolving.
     remove_invalid_gradients(doc);
 
