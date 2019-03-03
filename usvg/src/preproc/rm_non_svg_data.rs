@@ -36,3 +36,11 @@ pub fn remove_descriptive_elements(doc: &mut Document) {
                         || n.is_tag_name(EId::Desc)
                         || n.is_tag_name(EId::Metadata));
 }
+
+/// Removes all text nodes that are not inside the `text` element.
+pub fn remove_useless_text(doc: &mut Document) {
+    let root = doc.root().clone();
+    doc.drain(root, |n| {
+        n.is_text() && !n.ancestors().any(|p| p.is_tag_name(EId::Text))
+    });
+}
