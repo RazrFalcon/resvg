@@ -8,6 +8,7 @@ use std::fmt::Display;
 // external
 use svgdom::{
     AspectRatio,
+    Attribute,
     Attributes,
     Color,
     Document,
@@ -235,6 +236,7 @@ impl AppendTransform for Node {
 pub trait AttributeExt {
     fn move_attribute_to(&mut self, aid: AId, to: &mut Self);
     fn copy_attribute_to(&self, aid: AId, to: &mut Self);
+    fn try_set_attribute(&mut self, attr: &Attribute);
 }
 
 impl AttributeExt for Node {
@@ -247,6 +249,16 @@ impl AttributeExt for Node {
         match self.attributes().get(aid) {
             Some(attr) => to.set_attribute(attr.clone()),
             None => to.remove_attribute(aid),
+        }
+    }
+
+    fn try_set_attribute(&mut self, attr: &Attribute) {
+        match self.set_attribute_checked(attr.clone()) {
+            Ok(_) => {}
+            Err(_) => {
+                let id = if self.has_id() { format!("#{}", self.id()) } else { String::new() };
+                warn!("Failed to set {} on {}{}.", attr, self.tag_name(), id);
+            }
         }
     }
 }

@@ -96,7 +96,7 @@ fn resolve(node: &mut Node, aid: AId) {
     if !node.has_attribute(aid) {
         if let Some(n) = node.ancestors().skip(1).find(|n| n.has_attribute(aid)) {
             // Unwrap is safe, because we know that node contains an attribute.
-            node.set_attribute(n.attributes().get(aid).cloned().unwrap());
+            node.try_set_attribute(n.attributes().get(aid).unwrap());
         } else {
             resolve_default(node, aid);
         }

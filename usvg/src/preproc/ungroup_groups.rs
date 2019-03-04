@@ -75,7 +75,9 @@ fn ungroup_group(g: &mut Node) {
     for (aid, attr) in g.attributes().iter().svg() {
         for (_, mut child) in g.children().svg() {
             if aid.is_inheritable() {
-                child.set_attribute_if_none((aid, attr.value.clone()));
+                if !child.has_attribute(aid) {
+                    child.try_set_attribute(attr);
+                }
             } else {
                 copy_non_inheritable_attribute(g, &mut child, aid);
             }

@@ -28,6 +28,7 @@ This changelog also contains important changes in dependencies.
 - (usvg) Endless loop when SVG has indirect recursive `xlink:href` links.
 - (usvg) Endless loop when SVG has recursive `marker-*` links.
 - (usvg) Panic during `use` resolving.
+- (usvg) Panic during inherited attributes resolving.
 - (usvg) Groups regrouping.
 - (svgtypes) Style with comments parsing.
 - (roxmltree) Namespaces resolving.
