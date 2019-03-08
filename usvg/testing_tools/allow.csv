@@ -45,6 +45,7 @@ a-systemLanguage-009,2018,chrome bug
 a-systemLanguage-010,27184,chrome bug
 a-text-anchor-006,792,chrome or freetype bug
 a-text-anchor-008,846,bug #11
+a-text-anchor-012,901,bug
 a-text-decoration-001,363,unimplemented #4
 a-text-decoration-002,450,unimplemented #4
 a-text-decoration-003,361,unimplemented #4
@@ -54,6 +55,11 @@ a-text-decoration-006,364,unimplemented #4
 a-text-decoration-007,363,unimplemented #4
 a-text-decoration-008,242,unimplemented #4
 a-text-decoration-009,295,unimplemented #4
+a-text-decoration-010,295,unimplemented #4
+a-text-decoration-011,399,unimplemented #4
+a-text-decoration-012,334,unimplemented #4
+a-text-decoration-013,456,unimplemented #4
+a-text-decoration-014,270,unimplemented #4
 a-visibility-005,137
 a-visibility-006,137
 a-visibility-007,27
@@ -207,3 +213,4 @@ e-tspan-018,280,chrome bug
 e-tspan-020,1989,chrome bug
 e-tspan-021,2005,chrome bug
 e-tspan-022,6588,chrome bug
+e-tspan-027,3572,bug #122
