@@ -66,13 +66,13 @@ Full spec can be found [here](https://github.com/RazrFalcon/usvg/blob/master/doc
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_copy_implementations)]
+#![allow(dead_code)]
 
 
 pub extern crate svgdom;
 pub extern crate lyon_geom;
 extern crate base64;
 extern crate libflate;
-extern crate unicode_segmentation;
 #[macro_use] extern crate log;
 
 
@@ -128,8 +128,6 @@ mod convert;
 mod error;
 mod geom;
 mod options;
-mod preproc;
-mod traits;
 mod tree;
 
 /// Shorthand names for modules.
@@ -147,4 +145,4 @@ pub use error::*;
 pub use geom::*;
 pub use options::*;
 pub use tree::*;
-pub use traits::IsDefault;
+pub use convert::IsDefault;

@@ -10,8 +10,10 @@ This changelog also contains important changes in dependencies.
 ### Added
 - Nested `baseline-shift` support.
 - (qt-api) `renderToImage`.
+- (usvg) A better algorithm for unused defs (`defs` element children, like gradients) removal.
 
 ### Changed
+- (usvg) A major rewrite.
 - `baseline-shift` with `sub`, `super` and percent values calculation.
 - (qt-api) `render` methods are `const` now.
 - Marker resolving moved completely to `usvg`.
@@ -30,6 +32,8 @@ This changelog also contains important changes in dependencies.
 - (usvg) Panic during `use` resolving.
 - (usvg) Panic during inherited attributes resolving.
 - (usvg) Groups regrouping.
+- (usvg) `dx`/`dy` processing on `text`.
+- (usvg) `textAnchor` resolving.
 - (svgtypes) Style with comments parsing.
 - (roxmltree) Namespaces resolving.
 

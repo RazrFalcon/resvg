@@ -16,16 +16,16 @@ use super::prelude::*;
 
 pub fn convert(
     node: &svgdom::Node,
-    opt: &Options,
-    mut parent: tree::Node,
+    state: &State,
+    parent: &mut tree::Node,
 ) {
     let ref attrs = node.attributes();
 
-    let transform = attrs.get_transform(AId::Transform).unwrap_or_default();
-    let visibility = super::convert_visibility(&attrs);
+    let transform = attrs.get_transform(AId::Transform);
+    let visibility = super::convert_visibility(node);
 
     let view_box = tree::ViewBox {
-        rect: super::convert_rect(attrs),
+        rect: super::convert_rect(node, state),
         aspect: super::convert_aspect(attrs),
     };
 
@@ -37,7 +37,7 @@ pub fn convert(
         }
     };
 
-    if let Some((data, format)) = get_href_data(&*node.id(), href, opt.path.as_ref()) {
+    if let Some((data, format)) = get_href_data(&*node.id(), href, state.opt.path.as_ref()) {
         parent.append_kind(tree::NodeKind::Image(tree::Image {
             id: node.id().clone(),
             transform,

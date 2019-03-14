@@ -10,35 +10,68 @@ use svgdom;
 // self
 use tree;
 use super::prelude::*;
+use super::paint_server::{
+    resolve_number,
+    convert_units,
+};
 
 
 pub fn convert(
     node: &svgdom::Node,
-    opt: &Options,
+    state: &State,
     tree: &mut tree::Tree,
-) {
-    let ref attrs = node.attributes();
-
-    let rect = super::convert_rect(attrs);
-    if !(rect.width > 0.0 && rect.height > 0.0) {
-        warn!("Filter '{}' has an invalid region. Skipped.", node.id());
-        return;
+) -> Option<String> {
+    if tree.defs_by_id(node.id().as_str()).is_some() {
+        return Some(node.id().clone());
     }
 
-    let children = collect_children(node, opt);
+    let units = convert_units(node, AId::FilterUnits, tree::Units::ObjectBoundingBox);
+    let primitive_units = convert_units(node, AId::PrimitiveUnits, tree::Units::UserSpaceOnUse);
+
+    let rect = Rect::new(
+        resolve_number(node, AId::X, units, state, Length::new(-10.0, Unit::Percent)),
+        resolve_number(node, AId::Y, units, state, Length::new(-10.0, Unit::Percent)),
+        resolve_number(node, AId::Width, units, state, Length::new(120.0, Unit::Percent)),
+        resolve_number(node, AId::Height, units, state, Length::new(120.0, Unit::Percent)),
+    );
+    if !rect.is_valid() {
+        warn!("Filter '{}' has an invalid region. Skipped.", node.id());
+        return None;
+    }
+
+    let node_with_children = find_filter_with_children(node)?;
+    let children = collect_children(&node_with_children, primitive_units, state);
     if children.is_empty() {
-        return;
+        return None;
     }
 
     tree.append_to_defs(
         tree::NodeKind::Filter(tree::Filter {
             id: node.id().clone(),
-            units: super::convert_element_units(&attrs, AId::FilterUnits),
-            primitive_units: super::convert_element_units(&attrs, AId::PrimitiveUnits),
+            units,
+            primitive_units,
             rect,
             children,
         })
     );
+
+    Some(node.id().clone())
+}
+
+fn find_filter_with_children(node: &svgdom::Node) -> Option<svgdom::Node> {
+    for link in node.href_iter() {
+        if !link.is_tag_name(EId::Filter) {
+            warn!("Filter '{}' cannot reference '{}' via 'xlink:href'.",
+                  node.id(), link.tag_id().unwrap());
+            return None;
+        }
+
+        if link.has_children() {
+            return Some(link.clone());
+        }
+    }
+
+    None
 }
 
 struct FilterResults {
@@ -48,7 +81,8 @@ struct FilterResults {
 
 fn collect_children(
     filter: &svgdom::Node,
-    opt: &Options,
+    units: tree::Units,
+    state: &State,
 ) -> Vec<tree::FilterPrimitive> {
     let mut primitives = Vec::new();
 
@@ -63,7 +97,7 @@ fn collect_children(
                 convert_fe_gaussian_blur(&child, &primitives)
             }
             Some(EId::FeOffset) => {
-                convert_fe_offset(&child, &primitives)
+                convert_fe_offset(&child, &primitives, state)
             }
             Some(EId::FeBlend) => {
                 convert_fe_blend(&child, &primitives)
@@ -81,7 +115,7 @@ fn collect_children(
                 convert_fe_tile(&child, &primitives)
             }
             Some(EId::FeImage) => {
-                convert_fe_image(&child, opt)
+                convert_fe_image(&child, state)
             }
             Some(_) => {
                 warn!("Filter with '{}' child is not supported.", child.tag_name());
@@ -90,7 +124,7 @@ fn collect_children(
             None => continue,
         };
 
-        let fe = convert_primitive(&child, kind, &mut results);
+        let fe = convert_primitive(&child, kind, units, state, &mut results);
         primitives.push(fe);
     }
 
@@ -100,21 +134,17 @@ fn collect_children(
 fn convert_primitive(
     fe: &svgdom::Node,
     kind: tree::FilterKind,
+    units: tree::Units,
+    state: &State,
     results: &mut FilterResults,
 ) -> tree::FilterPrimitive {
-    let attrs = fe.attributes();
-
-    let color_interpolation = super::convert_color_interpolation(
-        &attrs, AId::ColorInterpolationFilters, tree::ColorInterpolation::LinearRGB
-    );
-
     tree::FilterPrimitive {
-        x: attrs.get_number(AId::X),
-        y: attrs.get_number(AId::Y),
+        x: fe.try_convert_length(AId::X, units, state),
+        y: fe.try_convert_length(AId::Y, units, state),
         // TODO: validate and test
-        width: attrs.get_number(AId::Width),
-        height: attrs.get_number(AId::Height),
-        color_interpolation,
+        width: fe.try_convert_length(AId::Width, units, state),
+        height: fe.try_convert_length(AId::Height, units, state),
+        color_interpolation: convert_color_interpolation(fe),
         result: gen_result(fe, results),
         kind,
     }
@@ -156,12 +186,12 @@ fn convert_fe_gaussian_blur(
 fn convert_fe_offset(
     fe: &svgdom::Node,
     primitives: &[tree::FilterPrimitive],
+    state: &State,
 ) -> tree::FilterKind {
-    let attrs = fe.attributes();
     tree::FilterKind::FeOffset(tree::FeOffset {
         input: resolve_input(fe, AId::In, primitives),
-        dx: attrs.get_number_or(AId::Dx, 0.0),
-        dy: attrs.get_number_or(AId::Dy, 0.0),
+        dx: fe.convert_user_length(AId::Dx, state, Length::zero()),
+        dy: fe.convert_user_length(AId::Dy, state, Length::zero()),
     })
 }
 
@@ -193,11 +223,11 @@ fn convert_fe_flood(fe: &svgdom::Node) -> tree::FilterKind {
     let attrs = fe.attributes();
 
     let color = attrs.get_color(AId::FloodColor).unwrap_or(tree::Color::black());
-    let opacity = f64_bound(0.0, attrs.get_number_or(AId::FloodOpacity, 1.0), 1.0);
+    let opacity = fe.convert_opacity(AId::FloodOpacity);
 
     tree::FilterKind::FeFlood(tree::FeFlood {
         color,
-        opacity: tree::Opacity::new(opacity),
+        opacity,
     })
 }
 
@@ -242,7 +272,7 @@ fn convert_fe_merge(
 
 fn convert_fe_image(
     fe: &svgdom::Node,
-    opt: &Options,
+    state: &State,
 ) -> tree::FilterKind {
     let ref attrs = fe.attributes();
 
@@ -259,7 +289,7 @@ fn convert_fe_image(
         }
     };
 
-    let (img_data, format) = match super::image::get_href_data(&*fe.id(), href, opt.path.as_ref()) {
+    let (img_data, format) = match super::image::get_href_data(&*fe.id(), href, state.opt.path.as_ref()) {
         Some((data, format)) => (data, format),
         None => {
             return tree::FilterKind::FeImage(tree::FeImage {
@@ -357,4 +387,17 @@ fn gen_result(node: &svgdom::Node, results: &mut FilterResults) -> String {
             }
         }
     }
+}
+
+
+fn convert_color_interpolation(
+    node: &svgdom::Node,
+) -> tree::ColorInterpolation {
+    node.find_str(AId::ColorInterpolationFilters, "auto", |value| {
+        match value {
+            "sRGB"      => tree::ColorInterpolation::SRGB,
+            "linearRGB" => tree::ColorInterpolation::LinearRGB,
+            _ =>           tree::ColorInterpolation::LinearRGB,
+        }
+    })
 }

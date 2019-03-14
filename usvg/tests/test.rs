@@ -166,7 +166,6 @@ test!(ignore_groups_with_id, false,
     usvg:version='0.5.0'>
     <defs/>
     <path
-        id='some_group'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
 ");
@@ -254,6 +253,12 @@ test!(preserve_id, false,
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.5.0'>
     <defs>
+        <clipPath
+            id='clip1'>
+            <path
+                id='rect2'
+                d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
+        </clipPath>
         <linearGradient
             id='lg1'
             x1='0'
@@ -281,12 +286,6 @@ test!(preserve_id, false,
                 stop-color='#000000'
                 offset='1'/>
         </radialGradient>
-        <clipPath
-            id='clip1'>
-            <path
-                id='rect2'
-                d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
-        </clipPath>
         <pattern
             id='patt1'
             x='0'
@@ -407,6 +406,94 @@ test!(group_with_default_opacity, false,
         d='M 10 20 L 10 30'/>
 </svg>
 ");
+
+test!(group_with_an_invalid_child, false,
+"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'>
+    <g opacity='0.5'>
+        <rect/>
+    </g>
+</svg>",
+"<svg
+    xmlns='http://www.w3.org/2000/svg'
+    width='1'
+    height='1'
+    viewBox='0 0 1 1'
+    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    usvg:version='0.5.0'>
+    <defs/>
+</svg>
+");
+
+test!(nested_group_with_an_invalid_child, false,
+"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'>
+    <g opacity='0.5'>
+        <g opacity='0.5'>
+            <rect/>
+        </g>
+    </g>
+</svg>",
+"<svg
+    xmlns='http://www.w3.org/2000/svg'
+    width='1'
+    height='1'
+    viewBox='0 0 1 1'
+    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    usvg:version='0.5.0'>
+    <defs/>
+</svg>
+");
+
+test!(simple_switch, false,
+"<svg viewBox='0 0 1 1' xmlns='http://www.w3.org/2000/svg'>
+    <switch>
+        <rect id='rect1' x='20' y='20' width='160' height='160' fill='red'
+              requiredExtensions='http://example.org/bogus'/>
+        <rect id='rect2' x='20' y='20' width='160' height='160' fill='green'/>
+        <rect id='rect3' x='20' y='20' width='160' height='160' fill='red'/>
+    </switch>
+</svg>",
+"<svg
+    xmlns='http://www.w3.org/2000/svg'
+    width='1'
+    height='1'
+    viewBox='0 0 1 1'
+    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    usvg:version='0.5.0'>
+    <defs/>
+    <path
+        id='rect2'
+        fill='#008000'
+        d='M 20 20 L 180 20 L 180 180 L 20 180 Z'/>
+</svg>
+");
+
+test!(switch_with_opacity, false,
+"<svg viewBox='0 0 1 1' xmlns='http://www.w3.org/2000/svg'>
+    <switch opacity='0.5'>
+        <rect id='rect1' x='20' y='20' width='160' height='160' fill='red'
+              requiredExtensions='http://example.org/bogus'/>
+        <rect id='rect2' x='20' y='20' width='160' height='160' fill='green'/>
+        <rect id='rect3' x='20' y='20' width='160' height='160' fill='red'/>
+    </switch>
+</svg>",
+"<svg
+    xmlns='http://www.w3.org/2000/svg'
+    width='1'
+    height='1'
+    viewBox='0 0 1 1'
+    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    usvg:version='0.5.0'>
+    <defs/>
+    <g
+        opacity='0.5'>
+        <path
+            id='rect2'
+            fill='#008000'
+            d='M 20 20 L 180 20 L 180 180 L 20 180 Z'/>
+    </g>
+</svg>
+");
+
 
 //// Marker resolving should not produce a group.
 //test!(marker_with_visible_overflow, false,

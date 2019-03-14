@@ -10,53 +10,8 @@ use lyon_geom;
 
 // self
 use tree;
-use tree::prelude::*;
 use super::prelude::*;
-use super::{
-    fill,
-    stroke,
-    marker,
-};
 
-
-pub fn convert(
-    node: &svgdom::Node,
-    d: svgdom::Path,
-    opt: &Options,
-    mut parent: tree::Node,
-    tree: &mut tree::Tree,
-) {
-    let segments = convert_path(d);
-    if segments.len() < 2 {
-        return;
-    }
-
-    let has_bbox = has_bbox(&segments);
-    let attrs = node.attributes();
-    let fill = fill::convert(tree, &attrs, has_bbox);
-    let stroke = stroke::convert(tree, &attrs, has_bbox);
-    let transform = attrs.get_transform(AId::Transform).unwrap_or_default();
-    let mut visibility = super::convert_visibility(&attrs);
-
-    // If a path doesn't have a fill or a stroke than it's invisible.
-    // By setting `visibility` to `hidden` we are disabling the rendering of this path.
-    if fill.is_none() && stroke.is_none() {
-        visibility = tree::Visibility::Hidden
-    }
-
-    parent.append_kind(tree::NodeKind::Path(tree::Path {
-        id: node.id().clone(),
-        transform,
-        visibility,
-        fill,
-        stroke,
-        segments: segments.clone(), // TODO: remove
-    }));
-
-    if visibility == tree::Visibility::Visible {
-        marker::convert(node, &segments, opt, &mut parent, tree)
-    }
-}
 
 pub fn convert_path(mut path: svgdom::Path) -> Vec<tree::PathSegment> {
     let mut new_path = Vec::with_capacity(path.len());
@@ -196,7 +151,7 @@ pub fn convert_path(mut path: svgdom::Path) -> Vec<tree::PathSegment> {
         }
     }
 
-// TODO: find a better way
+//    // TODO: find a better way
 //    if stroke.is_some() {
 //        // If the controls point coordinate is too close to the end point
 //        // we have to snap it to the end point. Otherwise, it will produce rendering errors.
@@ -242,7 +197,7 @@ fn quad_to_curve(
     }
 }
 
-fn has_bbox(segments: &[tree::PathSegment]) -> bool {
+pub fn has_bbox(segments: &[tree::PathSegment]) -> bool {
     debug_assert!(!segments.is_empty());
 
     let (mut prev_x, mut prev_y, mut minx, mut miny, mut maxx, mut maxy) = {
@@ -255,17 +210,17 @@ fn has_bbox(segments: &[tree::PathSegment]) -> bool {
 
     for seg in segments {
         match *seg {
-              tree::PathSegment::MoveTo { x, y }
+            tree::PathSegment::MoveTo { x, y }
             | tree::PathSegment::LineTo { x, y } => {
                 let x = x as f32;
                 let y = y as f32;
                 prev_x = x;
                 prev_y = y;
 
-                     if x > maxx { maxx = x; }
+                if x > maxx { maxx = x; }
                 else if x < minx { minx = x; }
 
-                     if y > maxy { maxy = y; }
+                if y > maxy { maxy = y; }
                 else if y < miny { miny = y; }
             }
             tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {

@@ -119,6 +119,11 @@ impl Size {
         Size { width, height }
     }
 
+    /// Checks that size is valid.
+    pub fn is_valid(&self) -> bool {
+        self.width > 0.0 && self.height > 0.0
+    }
+
     /// Converts the current size to `Rect` at provided position.
     pub fn to_rect(&self, x: f64, y: f64) -> Rect {
         Rect::new(x, y, self.width, self.height)
@@ -162,6 +167,7 @@ pub struct Rect {
 }
 
 impl Rect {
+    // TODO: return option?
     /// Creates a new `Rect` from values.
     pub fn new(x: f64, y: f64, width: f64, height: f64) -> Self {
         Rect { x, y, width, height }

@@ -12,7 +12,6 @@ pub use svgdom::{
     Color,
     FuzzyEq,
     FuzzyZero,
-    NumberList,
     Transform,
 };
 
@@ -393,7 +392,7 @@ impl Default for Fill {
 #[derive(Clone, Debug)]
 pub struct Stroke {
     pub paint: Paint,
-    pub dasharray: Option<NumberList>,
+    pub dasharray: Option<Vec<f64>>,
     pub dashoffset: f32, // f32 and not f64 to reduce the struct size.
     pub miterlimit: StrokeMiterlimit,
     pub opacity: Opacity,

@@ -2,9 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use unicode_segmentation::UnicodeSegmentation;
-
 // self
 use super::prelude::*;
 
@@ -53,49 +50,22 @@ pub fn prepare_blocks<Font>(
     text_kind: &usvg::Text,
     font_metrics: &mut FontMetrics<Font>,
 ) -> Vec<TextBlock<Font>> {
-    fn first_number_or(list: &Option<usvg::NumberList>, def: f64) -> f64 {
-        list.as_ref().map(|list| list[0]).unwrap_or(def)
-    }
-
+    let mut buf_str = String::with_capacity(4);
     let mut blocks: Vec<TextBlock<Font>> = Vec::new();
     let mut last_x = 0.0;
     let mut last_y = 0.0;
+    let mut char_idx = 0;
     for chunk in &text_kind.chunks {
-        let mut chunk_x = first_number_or(&chunk.x, last_x);
+        let mut chunk_x = chunk.x.unwrap_or(last_x) + chunk.dx.unwrap_or(0.0);
         let mut x = chunk_x;
-        let mut y = first_number_or(&chunk.y, last_y);
+        let mut y = chunk.y.unwrap_or(last_y) + chunk.dy.unwrap_or(0.0);
         let start_idx = blocks.len();
-        let mut grapheme_idx = 0;
 
         for tspan in &chunk.spans {
             font_metrics.set_font(&tspan.font);
 
-            let iter = UnicodeSegmentation::graphemes(tspan.text.as_str(), true);
-            for (i, c) in iter.enumerate() {
+            for (i, c) in tspan.text.chars().enumerate() {
                 let mut has_custom_offset = i == 0;
-
-                {
-                    let mut number_at = |list: &Option<usvg::NumberList>| -> Option<f64> {
-                        if let &Some(ref list) = list {
-                            if let Some(n) = list.get(grapheme_idx) {
-                                has_custom_offset = true;
-                                return Some(*n);
-                            }
-                        }
-
-                        None
-                    };
-
-                    if let Some(n) = number_at(&chunk.x) { x = n; }
-                    if let Some(n) = number_at(&chunk.y) { y = n; }
-                    if let Some(n) = number_at(&chunk.dx) { x += n; }
-                    if let Some(n) = number_at(&chunk.dy) { y += n; }
-
-                    if i == 0 {
-                        if let Some(n) = number_at(&chunk.x) { chunk_x = n; }
-                        if let Some(n) = number_at(&chunk.dx) { chunk_x += n; }
-                    }
-                }
 
                 if text_kind.rotate.is_some() {
                     has_custom_offset = true;
@@ -104,7 +74,7 @@ pub fn prepare_blocks<Font>(
                 let can_merge = !blocks.is_empty() && !has_custom_offset;
                 if can_merge {
                     let prev_idx = blocks.len() - 1;
-                    blocks[prev_idx].text.push_str(c);
+                    blocks[prev_idx].text.push(c);
                     let w = font_metrics.width(&blocks[prev_idx].text);
                     blocks[prev_idx].bbox.width = w;
 
@@ -115,8 +85,11 @@ pub fn prepare_blocks<Font>(
 
                     x = new_w;
                 } else {
-                    let font_ascent = font_metrics.ascent(c);
-                    let width = font_metrics.width(c);
+                    buf_str.clear();
+                    buf_str.push(c);
+
+                    let font_ascent = font_metrics.ascent(&buf_str);
+                    let width = font_metrics.width(&buf_str);
                     let yy = y - font_ascent - tspan.baseline_shift;
                     let height = font_metrics.height();
                     let bbox = Rect { x, y: yy, width, height };
@@ -124,7 +97,7 @@ pub fn prepare_blocks<Font>(
 
                     // TODO: rewrite, explain
                     let rotate = match text_kind.rotate {
-                        Some(ref list) => Some(list[blocks.len()]),
+                        Some(ref list) => Some(list[char_idx]),
                         None => None,
                     };
 
@@ -143,7 +116,7 @@ pub fn prepare_blocks<Font>(
                     });
                 }
 
-                grapheme_idx += 1;
+                char_idx += 1;
             }
         }
 

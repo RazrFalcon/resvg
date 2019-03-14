@@ -6,27 +6,53 @@
 use svgdom;
 
 // self
+use tree;
+use utils;
 use super::prelude::*;
+use super::{
+    path,
+    units,
+};
 
 
-pub fn convert(node: &svgdom::Node) -> Option<svgdom::Path> {
-    match node.tag_id().unwrap() {
-        EId::Rect =>     convert_rect(node),
-        EId::Line =>     convert_line(node),
+pub fn convert(
+    node: &svgdom::Node,
+    state: &State,
+) -> Option<Vec<tree::PathSegment>> {
+    match node.tag_id()? {
+        EId::Rect => convert_rect(node, state),
+        EId::Circle => convert_circle(node, state),
+        EId::Ellipse => convert_ellipse(node, state),
+        EId::Line => convert_line(node, state),
         EId::Polyline => convert_polyline(node),
-        EId::Polygon =>  convert_polygon(node),
-        EId::Circle =>   convert_circle(node),
-        EId::Ellipse =>  convert_ellipse(node),
-        _ => unreachable!(),
+        EId::Polygon => convert_polygon(node),
+        EId::Path => convert_path(node),
+        _ => None,
     }
 }
 
-fn convert_rect(node: &svgdom::Node) -> Option<svgdom::Path> {
+pub fn convert_path(
+    node: &svgdom::Node,
+) -> Option<Vec<tree::PathSegment>> {
+    if let Some(AValue::Path(path)) = node.attributes().get_value(AId::D).cloned() {
+        let new_path = super::path::convert_path(path);
+        if new_path.len() >= 2 {
+            return Some(new_path);
+        }
+    }
+
+    None
+}
+
+pub fn convert_rect(
+    node: &svgdom::Node,
+    state: &State,
+) -> Option<Vec<tree::PathSegment>> {
     let attrs = node.attributes();
 
     // 'width' and 'height' attributes must be positive and non-zero.
-    let width  = attrs.get_number_or(AId::Width, 0.0);
-    let height = attrs.get_number_or(AId::Height, 0.0);
+    let width  = node.convert_user_length(AId::Width, state, Length::zero());
+    let height = node.convert_user_length(AId::Height, state, Length::zero());
     if !(width > 0.0) {
         warn!("Rect '{}' has an invalid 'width' value. Skipped.", node.id());
         return None;
@@ -37,33 +63,36 @@ fn convert_rect(node: &svgdom::Node) -> Option<svgdom::Path> {
     }
 
 
-    let x = attrs.get_number_or(AId::X, 0.0);
-    let y = attrs.get_number_or(AId::Y, 0.0);
+    let x = node.convert_user_length(AId::X, state, Length::zero());
+    let y = node.convert_user_length(AId::Y, state, Length::zero());
 
 
     // Resolve rx, ry.
-    let mut rx_opt = attrs.get_number(AId::Rx);
-    let mut ry_opt = attrs.get_number(AId::Ry);
+    let mut rx_opt = attrs.get_length(AId::Rx);
+    let mut ry_opt = attrs.get_length(AId::Ry);
 
     // Remove negative values first.
     if let Some(v) = rx_opt {
-        if v.is_sign_negative() {
+        if v.num.is_sign_negative() {
             rx_opt = None;
         }
     }
     if let Some(v) = ry_opt {
-        if v.is_sign_negative() {
+        if v.num.is_sign_negative() {
             ry_opt = None;
         }
     }
 
     // Resolve.
-    let (mut rx, mut ry) = match (rx_opt, ry_opt) {
-        (None,     None)     => (0.0, 0.0),
+    let (rx, ry) = match (rx_opt, ry_opt) {
+        (None,     None)     => (Length::zero(), Length::zero()),
         (Some(rx), None)     => (rx, rx),
         (None,     Some(ry)) => (ry, ry),
         (Some(rx), Some(ry)) => (rx, ry),
     };
+
+    let mut rx = units::convert_length(rx, node, AId::Rx, tree::Units::UserSpaceOnUse, state);
+    let mut ry = units::convert_length(ry, node, AId::Ry, tree::Units::UserSpaceOnUse, state);
 
     // Clamp rx/ry to the half of the width/height.
     //
@@ -74,15 +103,9 @@ fn convert_rect(node: &svgdom::Node) -> Option<svgdom::Path> {
 
     // Conversion according to https://www.w3.org/TR/SVG11/shapes.html#RectElement
     let path = if rx.fuzzy_eq(&0.0) {
-        svgdom::PathBuilder::with_capacity(5)
-            .move_to(x, y)
-            .hline_to(x + width)
-            .vline_to(y + height)
-            .hline_to(x)
-            .close_path()
-            .finalize()
+        utils::rect_to_path(Rect::new(x, y, width, height))
     } else {
-        svgdom::PathBuilder::with_capacity(9)
+        let p = svgdom::PathBuilder::with_capacity(9)
             .move_to(x + rx, y)
             .line_to(x + width - rx, y)
             .arc_to(rx, ry, 0.0, false, true, x + width, y + ry)
@@ -92,48 +115,62 @@ fn convert_rect(node: &svgdom::Node) -> Option<svgdom::Path> {
             .arc_to(rx, ry, 0.0, false, true, x, y + height - ry)
             .line_to(x, y + ry)
             .arc_to(rx, ry, 0.0, false, true, x + rx, y)
-            .finalize()
+            .finalize();
+
+        path::convert_path(p)
     };
 
     Some(path)
 }
 
-fn convert_line(node: &svgdom::Node) -> Option<svgdom::Path> {
-    let attrs = node.attributes();
+pub fn convert_line(
+    node: &svgdom::Node,
+    state: &State,
+) -> Option<Vec<tree::PathSegment>> {
+    let x1 = node.convert_user_length(AId::X1, state, Length::zero());
+    let y1 = node.convert_user_length(AId::Y1, state, Length::zero());
+    let x2 = node.convert_user_length(AId::X2, state, Length::zero());
+    let y2 = node.convert_user_length(AId::Y2, state, Length::zero());
 
-    let x1 = attrs.get_number_or(AId::X1, 0.0);
-    let y1 = attrs.get_number_or(AId::Y1, 0.0);
-    let x2 = attrs.get_number_or(AId::X2, 0.0);
-    let y2 = attrs.get_number_or(AId::Y2, 0.0);
-
-    let path = svgdom::PathBuilder::new()
-        .move_to(x1, y1)
-        .line_to(x2, y2)
-        .finalize();
+    let path = vec![
+        tree::PathSegment::MoveTo { x: x1, y: y1 },
+        tree::PathSegment::LineTo { x: x2, y: y2 },
+    ];
 
     Some(path)
 }
 
-fn convert_polyline(node: &svgdom::Node) -> Option<svgdom::Path> {
+pub fn convert_polyline(
+    node: &svgdom::Node,
+) -> Option<Vec<tree::PathSegment>> {
     points_to_path(node, "Polyline")
 }
 
-fn convert_polygon(node: &svgdom::Node) -> Option<svgdom::Path> {
+pub fn convert_polygon(
+    node: &svgdom::Node,
+) -> Option<Vec<tree::PathSegment>> {
     if let Some(mut path) = points_to_path(node, "Polygon") {
-        path.push(svgdom::PathSegment::ClosePath { abs: true } );
+        path.push(tree::PathSegment::ClosePath);
         Some(path)
     } else {
         None
     }
 }
 
-fn points_to_path(node: &svgdom::Node, eid: &str) -> Option<svgdom::Path> {
+fn points_to_path(
+    node: &svgdom::Node,
+    eid: &str,
+) -> Option<Vec<tree::PathSegment>> {
     let attrs = node.attributes();
-    let points = if let Some(p) = attrs.get_points(AId::Points) {
-        p
-    } else {
-        warn!("{} '{}' has an invalid 'points' value. Skipped.", eid, node.id());
-        return None;
+
+    let points = match attrs.get_value(AId::Points) {
+        Some(&AValue::Points(ref points)) => {
+            points
+        }
+        _ => {
+            warn!("{} '{}' has an invalid 'points' value. Skipped.", eid, node.id());
+            return None;
+        }
     };
 
     // 'polyline' and 'polygon' elements must contain at least 2 points.
@@ -142,12 +179,12 @@ fn points_to_path(node: &svgdom::Node, eid: &str) -> Option<svgdom::Path> {
         return None;
     }
 
-    let mut path = svgdom::Path::new();
+    let mut path = Vec::with_capacity(points.len());
     for (i, &(x, y)) in points.iter().enumerate() {
         let seg = if i == 0 {
-            svgdom::PathSegment::MoveTo { abs: true, x, y }
+            tree::PathSegment::MoveTo { x, y }
         } else {
-            svgdom::PathSegment::LineTo { abs: true, x, y }
+            tree::PathSegment::LineTo { x, y }
         };
         path.push(seg);
     }
@@ -155,12 +192,13 @@ fn points_to_path(node: &svgdom::Node, eid: &str) -> Option<svgdom::Path> {
     Some(path)
 }
 
-fn convert_circle(node: &svgdom::Node) -> Option<svgdom::Path> {
-    let attrs = node.attributes();
-
-    let cx = attrs.get_number_or(AId::Cx, 0.0);
-    let cy = attrs.get_number_or(AId::Cy, 0.0);
-    let r  = attrs.get_number_or(AId::R, 0.0);
+pub fn convert_circle(
+    node: &svgdom::Node,
+    state: &State,
+) -> Option<Vec<tree::PathSegment>> {
+    let cx = node.convert_user_length(AId::Cx, state, Length::zero());
+    let cy = node.convert_user_length(AId::Cy, state, Length::zero());
+    let r  = node.convert_user_length(AId::R,  state, Length::zero());
 
     if !(r > 0.0) {
         warn!("Circle '{}' has an invalid 'r' value. Skipped.", node.id());
@@ -170,13 +208,14 @@ fn convert_circle(node: &svgdom::Node) -> Option<svgdom::Path> {
     Some(ellipse_to_path(cx, cy, r, r))
 }
 
-fn convert_ellipse(node: &svgdom::Node) -> Option<svgdom::Path> {
-    let attrs = node.attributes();
-
-    let cx = attrs.get_number_or(AId::Cx, 0.0);
-    let cy = attrs.get_number_or(AId::Cy, 0.0);
-    let rx = attrs.get_number_or(AId::Rx, 0.0);
-    let ry = attrs.get_number_or(AId::Ry, 0.0);
+pub fn convert_ellipse(
+    node: &svgdom::Node,
+    state: &State,
+) -> Option<Vec<tree::PathSegment>> {
+    let cx = node.convert_user_length(AId::Cx, state, Length::zero());
+    let cy = node.convert_user_length(AId::Cy, state, Length::zero());
+    let rx = node.convert_user_length(AId::Rx, state, Length::zero());
+    let ry = node.convert_user_length(AId::Ry, state, Length::zero());
 
     if !(rx > 0.0) {
         warn!("Ellipse '{}' has an invalid 'rx' value. Skipped.", node.id());
@@ -191,13 +230,13 @@ fn convert_ellipse(node: &svgdom::Node) -> Option<svgdom::Path> {
     Some(ellipse_to_path(cx, cy, rx, ry))
 }
 
-fn ellipse_to_path(cx: f64, cy: f64, rx: f64, ry: f64) -> svgdom::Path {
-    svgdom::PathBuilder::with_capacity(6)
+fn ellipse_to_path(cx: f64, cy: f64, rx: f64, ry: f64) -> Vec<tree::PathSegment> {
+    path::convert_path(svgdom::PathBuilder::with_capacity(6)
         .move_to(cx + rx, cy)
         .arc_to(rx, ry, 0.0, false, true, cx,      cy + ry)
         .arc_to(rx, ry, 0.0, false, true, cx - rx, cy)
         .arc_to(rx, ry, 0.0, false, true, cx,      cy - ry)
         .arc_to(rx, ry, 0.0, false, true, cx + rx, cy)
         .close_path()
-        .finalize()
+        .finalize())
 }

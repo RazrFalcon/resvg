@@ -10,11 +10,13 @@ use tree;
 use tree::prelude::*;
 use tree::PathSegment as Segment;
 use super::prelude::*;
+use super::use_node;
+
 
 pub fn convert(
     node: &svgdom::Node,
     segments: &[tree::PathSegment],
-    opt: &Options,
+    state: &State,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
@@ -39,9 +41,23 @@ pub fn convert(
     ];
 
     for (aid, kind) in &list {
-        let av = node.attributes().get_value(*aid).cloned();
-        if let Some(AValue::FuncLink(link)) = av {
-            resolve(node, segments, &link, *kind, opt, parent, tree);
+        let mut marker = None;
+        for n in node.ancestors() {
+            let attrs = n.attributes();
+            if let Some(&AValue::FuncLink(ref link)) = attrs.get_value(*aid) {
+                if link.is_tag_name(EId::Marker) {
+                    marker = Some(link.clone());
+                }
+            }
+        }
+
+        if let Some(marker) = marker {
+            // Check for recursive marker.
+            if state.current_root == marker {
+                continue;
+            }
+
+            resolve(node, segments, &marker, *kind, state, parent, tree);
         }
     }
 }
@@ -63,13 +79,13 @@ fn resolve(
     segments: &[tree::PathSegment],
     marker_node: &svgdom::Node,
     marker_kind: MarkerKind,
-    opt: &Options,
+    state: &State,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    let stroke_scale = try_opt!(stroke_scale(shape_node, marker_node), ());
+    let stroke_scale = try_opt!(stroke_scale(shape_node, marker_node, state), ());
 
-    let r = convert_rect(&*marker_node.attributes());
+    let r = convert_rect(marker_node, state);
     if !r.is_valid() {
         return;
     }
@@ -94,7 +110,7 @@ fn resolve(
             Rect::new(0.0, 0.0, r.width, r.height)
         };
 
-        let id = gen_clip_path_id(tree);
+        let id = use_node::gen_clip_path_id(shape_node, tree);
 
         let mut clip_path = tree.append_to_defs(
             tree::NodeKind::ClipPath(tree::ClipPath {
@@ -111,7 +127,7 @@ fn resolve(
             visibility: tree::Visibility::Visible,
             fill: Some(tree::Fill::default()),
             stroke: None,
-            segments: rect_to_path(clip_rect),
+            segments: utils::rect_to_path(clip_rect),
         }));
 
         Some(id)
@@ -153,7 +169,9 @@ fn resolve(
             filter: None,
         }));
 
-        super::convert_nodes(marker_node, &mut g_node, opt, tree);
+        let mut marker_state = state.clone();
+        marker_state.current_root = marker_node.clone();
+        super::convert_children(marker_node, &marker_state, &mut g_node, tree);
 
         if !g_node.has_children() {
             g_node.detach();
@@ -166,11 +184,12 @@ fn resolve(
 fn stroke_scale(
     path_node: &svgdom::Node,
     marker_node: &svgdom::Node,
+    state: &State,
 ) -> Option<f64> {
     match marker_node.attributes().get_str_or(AId::MarkerUnits, "strokeWidth") {
         "userSpaceOnUse" => Some(1.0),
         _ => {
-            let sw = path_node.attributes().get_number_or(AId::StrokeWidth, 1.0);
+            let sw = path_node.resolve_length(AId::StrokeWidth, state, 1.0);
             if !(sw > 0.0) {
                 None
             } else {
@@ -434,12 +453,12 @@ fn get_prev_vertex(segments: &[Segment], idx: usize) -> (f64, f64) {
     }
 }
 
-fn convert_rect(attrs: &svgdom::Attributes) -> Rect {
+fn convert_rect(node: &svgdom::Node, state: &State) -> Rect {
     Rect::new(
-        attrs.get_number_or(AId::RefX, 0.0),
-        attrs.get_number_or(AId::RefY, 0.0),
-        attrs.get_number_or(AId::MarkerWidth, 3.0),
-        attrs.get_number_or(AId::MarkerHeight, 3.0),
+        node.convert_user_length(AId::RefX, state, Length::zero()),
+        node.convert_user_length(AId::RefY, state, Length::zero()),
+        node.convert_user_length(AId::MarkerWidth, state, Length::new_number(3.0)),
+        node.convert_user_length(AId::MarkerHeight, state, Length::new_number(3.0)),
     )
 }
 
@@ -461,37 +480,4 @@ fn convert_orientation(attrs: &svgdom::Attributes) -> MarkerOrientation {
             MarkerOrientation::Angle(0.0)
         }
     }
-}
-
-/// Creates a free id for `clipPath`.
-fn gen_clip_path_id(tree: &tree::Tree) -> String {
-    // TODO: speedup
-
-    let mut idx = 1;
-    let mut id = format!("clipPath{}", idx);
-    while tree.defs().descendants().any(|n| *n.id() == id) {
-        idx += 1;
-        id = format!("clipPath{}", idx);
-    }
-
-    id
-}
-
-/// Converts `rect` to path segments.
-fn rect_to_path(rect: Rect) -> Vec<tree::PathSegment> {
-    vec![
-        tree::PathSegment::MoveTo {
-            x: rect.x, y: rect.y
-        },
-        tree::PathSegment::LineTo {
-            x: rect.right(), y: rect.y
-        },
-        tree::PathSegment::LineTo {
-            x: rect.right(), y: rect.bottom()
-        },
-        tree::PathSegment::LineTo {
-            x: rect.x, y: rect.bottom()
-        },
-        tree::PathSegment::ClosePath,
-    ]
 }

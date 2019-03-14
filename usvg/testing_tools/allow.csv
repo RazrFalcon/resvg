@@ -1,6 +1,6 @@
 a-baseline-shift-002,637
 a-baseline-shift-003,547
-a-baseline-shift-010,634
+a-baseline-shift-010,1254
 a-baseline-shift-011,1113
 a-baseline-shift-012,547
 a-baseline-shift-013,1397
@@ -13,7 +13,7 @@ a-display-002,25284,chrome bug
 a-display-003,25284,chrome bug
 a-display-004,31852,chrome bug
 a-display-005,2018,bug
-a-display-006,25,bug
+a-display-006,1997,chrome bug
 a-display-007,27184,chrome bug
 a-display-008,326
 a-fill-025,25604,chrome bug
@@ -45,6 +45,7 @@ a-systemLanguage-009,2018,chrome bug
 a-systemLanguage-010,27184,chrome bug
 a-text-anchor-006,792,chrome or freetype bug
 a-text-anchor-008,846,bug #11
+a-text-anchor-009,272,bug
 a-text-anchor-012,901,bug
 a-text-decoration-001,363,unimplemented #4
 a-text-decoration-002,450,unimplemented #4
@@ -54,12 +55,12 @@ a-text-decoration-005,364,unimplemented #4
 a-text-decoration-006,364,unimplemented #4
 a-text-decoration-007,363,unimplemented #4
 a-text-decoration-008,242,unimplemented #4
-a-text-decoration-009,295,unimplemented #4
-a-text-decoration-010,295,unimplemented #4
-a-text-decoration-011,399,unimplemented #4
-a-text-decoration-012,334,unimplemented #4
-a-text-decoration-013,456,unimplemented #4
-a-text-decoration-014,270,unimplemented #4
+a-text-decoration-009,1476,unimplemented #4
+a-text-decoration-010,1474,unimplemented #4
+a-text-decoration-011,1881,unimplemented
+a-text-decoration-012,1535,unimplemented
+a-text-decoration-013,1966,unimplemented
+a-text-decoration-014,270,unimplemented
 a-visibility-005,137
 a-visibility-006,137
 a-visibility-007,27
@@ -163,7 +164,7 @@ e-pattern-021,2956,UA dependent
 e-pattern-022,174
 e-pattern-023,174
 e-pattern-024,174
-e-pattern-026,19086,bug
+e-pattern-026,172
 e-pattern-027,171
 e-radialGradient-031,38237,fixes chrome bug
 e-rect-004,96
@@ -198,17 +199,32 @@ e-switch-006,25604,chrome bug
 e-switch-007,25604,chrome bug
 e-switch-009,25604,chrome bug
 e-symbol-006,58
+e-text-003,972,invalid chunks
+e-text-006,1993,invalid chunks
+e-text-007,1960,invalid chunks
+e-text-008,1993,invalid chunks
+e-text-011,1974,invalid chunks
+e-text-012,2009,invalid chunks
+e-text-013,2097,invalid chunks
+e-text-014,2009,invalid chunks
 e-text-016,1551,chrome uses different coefficients
+e-text-024,1954,invalid chunks
+e-text-026,731,invalid chunks
+e-text-029,1772,invalid chunks
+e-text-030,198,invalid chunks
 e-text-032,552,unsupported #4
-e-text-033,361,unsupported #4
+e-text-033,1312,unsupported #4
+e-text-034,471,unsupported #4
+e-text-036,1513,?
 e-text-038,1959,chrome bug
 e-tref-001,2005,chrome bug
 e-tref-002,1180,chrome bug
 e-tref-005,2005,chrome bug
-e-tref-006,25,bug
+e-tref-006,2005,chrome bug
 e-tref-007,2005,chrome bug
 e-tref-008,720,bug
 e-tspan-015,3283,bug
+e-tspan-017,1019,invalid chunks
 e-tspan-018,280,chrome bug
 e-tspan-020,1989,chrome bug
 e-tspan-021,2005,chrome bug

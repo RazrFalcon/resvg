@@ -8,6 +8,8 @@ use std::ops::Deref;
 use geom::*;
 use super::attributes::*;
 
+// TODO: implement Default for all
+
 
 /// Node's kind.
 #[allow(missing_docs)]
@@ -119,6 +121,19 @@ pub struct Path {
     pub segments: Vec<PathSegment>,
 }
 
+impl Default for Path {
+    fn default() -> Self {
+        Path {
+            id: String::new(),
+            transform: Transform::default(),
+            visibility: Visibility::Visible,
+            fill: None,
+            stroke: None,
+            segments: Vec::new(),
+        }
+    }
+}
+
 
 /// A text element.
 ///
@@ -136,7 +151,9 @@ pub struct Text {
     pub transform: Transform,
 
     /// Rotate list.
-    pub rotate: Option<NumberList>,
+    ///
+    /// If set, contains a list of rotation angles for each *code point* in the `text`.
+    pub rotate: Option<Vec<f64>>,
 
     /// A list of text chunks.
     pub chunks: Vec<TextChunk>,
@@ -150,19 +167,26 @@ pub struct Text {
 ///
 /// Doesn't represented in SVG directly. Usually, it's a first `tspan` or text node
 /// and any `tspan` that defines either `x` or `y` coordinates.
+///
+/// *Note:* `usvg` text chunk isn't strictly the same as an SVG one,
+/// because text chunk should be defined only by `x` or `y` coordinates.
+/// But since `resvg` backends doesn't have a direct access to glyphs/graphemes
+/// we have to create chunks on `dx`, `dy` and non-zero `rotate` to simulate this.
+/// This is incorrect, since it breaks text shaping
+/// and BIDI reordering (resvg doesn't support this one anyway).
 #[derive(Clone, Debug)]
 pub struct TextChunk {
-    /// A list of absolute positions along the X-axis.
-    pub x: Option<NumberList>,
+    /// An optional absolute positions along the X-axis.
+    pub x: Option<f64>,
 
-    /// A list of absolute positions along the Y-axis.
-    pub y: Option<NumberList>,
+    /// An optional absolute positions along the Y-axis.
+    pub y: Option<f64>,
 
-    /// A list of relative positions along the X-axis.
-    pub dx: Option<NumberList>,
+    /// An optional relative positions along the X-axis.
+    pub dx: Option<f64>,
 
-    /// A list of relative positions along the Y-axis.
-    pub dy: Option<NumberList>,
+    /// An optional relative positions along the Y-axis.
+    pub dy: Option<f64>,
 
     /// A text anchor/align.
     pub anchor: TextAnchor,
@@ -278,6 +302,19 @@ pub struct Group {
 
     /// Element filter.
     pub filter: Option<String>,
+}
+
+impl Default for Group {
+    fn default() -> Self {
+        Group {
+            id: String::new(),
+            transform: Transform::default(),
+            opacity: Opacity::default(),
+            clip_path: None,
+            mask: None,
+            filter: None,
+        }
+    }
 }
 
 
@@ -412,6 +449,17 @@ pub struct ClipPath {
     ///
     /// `clip-path` in SVG.
     pub clip_path: Option<String>,
+}
+
+impl Default for ClipPath {
+    fn default() -> Self {
+        ClipPath {
+            id: String::new(),
+            units: Units::UserSpaceOnUse,
+            transform: Transform::default(),
+            clip_path: None,
+        }
+    }
 }
 
 

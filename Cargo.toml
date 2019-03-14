@@ -27,7 +27,6 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 log = "0.4.5"
 rgb = "0.8.9"
 usvg = { path = "usvg", version = "0.5.0" }
-unicode-segmentation = "1.2.1" # TODO: reexport?
 
 # cairo backend
 cairo-rs = { version = "0.6", features = ["png"], optional = true }

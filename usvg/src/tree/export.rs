@@ -4,17 +4,20 @@
 
 // external
 use base64;
-use svgdom;
+use svgdom::{
+    self,
+    NumberList,
+};
 
 // self
 use super::*;
-use traits::IsDefault;
 use geom::*;
 use short::{
     AId,
     AValue,
     EId,
 };
+use IsDefault;
 
 
 pub fn convert(tree: &Tree) -> svgdom::Document {
@@ -311,7 +314,7 @@ fn conv_elements(
 
 
                 if let Some(ref rotate) = text.rotate {
-                    text_elem.set_attribute((AId::Rotate, rotate.clone()));
+                    text_elem.set_attribute((AId::Rotate, NumberList(rotate.clone())));
                 }
 
                 // conv_text_decoration(&text.decoration, &mut text_elem);
@@ -322,20 +325,20 @@ fn conv_elements(
                     let mut chunk_tspan_elem = new_doc.create_element(EId::Tspan);
                     text_elem.append(chunk_tspan_elem.clone());
 
-                    if let Some(ref x) = chunk.x {
-                        chunk_tspan_elem.set_attribute((AId::X, x.clone()));
+                    if let Some(x) = chunk.x {
+                        chunk_tspan_elem.set_attribute((AId::X, x));
                     }
 
-                    if let Some(ref y) = chunk.y {
-                        chunk_tspan_elem.set_attribute((AId::Y, y.clone()));
+                    if let Some(y) = chunk.y {
+                        chunk_tspan_elem.set_attribute((AId::Y, y));
                     }
 
-                    if let Some(ref dx) = chunk.dx {
-                        chunk_tspan_elem.set_attribute((AId::Dx, dx.clone()));
+                    if let Some(dx) = chunk.dx {
+                        chunk_tspan_elem.set_attribute((AId::Dx, dx));
                     }
 
-                    if let Some(ref dy) = chunk.dy {
-                        chunk_tspan_elem.set_attribute((AId::Dy, dy.clone()));
+                    if let Some(dy) = chunk.dy {
+                        chunk_tspan_elem.set_attribute((AId::Dy, dy));
                     }
 
                     chunk_tspan_elem.set_enum_attribute(AId::TextAnchor, chunk.anchor);
@@ -534,7 +537,7 @@ fn conv_stroke(
         node.set_enum_attribute(AId::StrokeLinejoin, stroke.linejoin);
 
         if let Some(ref array) = stroke.dasharray {
-            node.set_attribute((AId::StrokeDasharray, array.clone()));
+            node.set_attribute((AId::StrokeDasharray, NumberList(array.clone())));
         }
     }
 }

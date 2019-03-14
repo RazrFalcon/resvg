@@ -291,23 +291,3 @@ impl<'a> Iterator for TransformedPath<'a> {
         Some(seg)
     }
 }
-
-
-/// Converts `rect` to path segments.
-pub fn rect_to_path(rect: Rect) -> Vec<usvg::PathSegment> {
-    vec![
-        usvg::PathSegment::MoveTo {
-            x: rect.x, y: rect.y
-        },
-        usvg::PathSegment::LineTo {
-            x: rect.right(), y: rect.y
-        },
-        usvg::PathSegment::LineTo {
-            x: rect.right(), y: rect.bottom()
-        },
-        usvg::PathSegment::LineTo {
-            x: rect.x, y: rect.bottom()
-        },
-        usvg::PathSegment::ClosePath,
-    ]
-}

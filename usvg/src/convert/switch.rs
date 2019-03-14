@@ -2,13 +2,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use svgdom::Attributes;
+// external
+use svgdom;
 
+// self
+use tree;
 use super::prelude::*;
 
 
 // Full list can be found here: https://www.w3.org/TR/SVG11/feature.html
-
 static FEATURES: &[&str] = &[
     "http://www.w3.org/TR/SVG11/feature#SVGDOM-static",
     "http://www.w3.org/TR/SVG11/feature#SVG-static",
@@ -42,76 +44,28 @@ static FEATURES: &[&str] = &[
     // "http://www.w3.org/TR/SVG11/feature#BasicFont",
 ];
 
-pub fn resolve_conditional(doc: &mut Document, opt: &Options) {
-    resolve_conditional_attrs(doc, opt);
-    resolve_switch(doc, opt);
-}
 
-fn resolve_conditional_attrs(doc: &mut Document, opt: &Options) {
-    let root = doc.root();
-    doc.drain(root, |node| {
-        // Process `switch` separately.
-        if node.is_tag_name(EId::Switch) {
-            return false;
+pub fn convert(
+    node: &svgdom::Node,
+    state: &State,
+    parent: &mut tree::Node,
+    tree: &mut tree::Tree,
+) {
+    // TODO: display:none on a child?
+    let child = try_opt!(node.children().find(|n| is_condition_passed(&n, state.opt)), ());
+
+    match super::convert_group(&node, state, false, parent, tree) {
+        super::GroupKind::Keep(mut g) => {
+            super::convert_element(&child, state, &mut g, tree);
         }
-        if node.parent().unwrap().is_tag_name(EId::Switch) {
-            return false;
+        super::GroupKind::Skip => {
+            super::convert_element(&child, state, parent, tree);
         }
-
-        // Technically, conditional attributes can be set on any element,
-        // but they can affect only one that will be rendered.
-        // Just like `display`.
-        let flag =    node.is_graphic()
-                   || node.is_text_content_child()
-                   || node.is_tag_name(EId::Svg)
-                   || node.is_tag_name(EId::G)
-                   || node.is_tag_name(EId::Switch)
-                   || node.is_tag_name(EId::A)
-                   || node.is_tag_name(EId::ForeignObject);
-
-        if !flag {
-            return false;
-        }
-
-        !is_valid_child(node, opt)
-    });
-}
-
-fn resolve_switch(doc: &mut Document, opt: &Options) {
-    let mut rm_nodes = Vec::with_capacity(16);
-
-    for mut node in doc.root().descendants().filter(|n| n.is_tag_name(EId::Switch)) {
-        let mut valid_child = None;
-
-        // Find first valid node.
-        for (_, child) in node.children().svg() {
-            if is_valid_child(&child, opt) {
-                valid_child = Some(child.clone());
-                break;
-            }
-        }
-
-        let valid_child = match valid_child {
-            Some(v) => v,
-            None => continue,
-        };
-
-        // Remove all invalid nodes.
-        for child in node.children().filter(|n| *n != valid_child) {
-            rm_nodes.push(child.clone());
-        }
-        rm_nodes.iter_mut().for_each(|n| doc.remove_node(n.clone()));
-        rm_nodes.clear();
-
-        // 'switch' -> 'g'
-        node.set_tag_name(EId::G);
-
-        // Remember that this group was 'switch' before.
-        node.set_attribute(("usvg-group", 1));
+        super::GroupKind::Ignore => {}
     }
 }
 
-fn is_valid_child(node: &Node, opt: &Options) -> bool {
+pub fn is_condition_passed(node: &svgdom::Node, opt: &Options) -> bool {
     let ref attrs = node.attributes();
 
     if attrs.contains(AId::RequiredExtensions) {
@@ -139,7 +93,7 @@ fn is_valid_child(node: &Node, opt: &Options) -> bool {
 }
 
 /// SVG spec 5.8.5
-fn is_valid_sys_lang(attrs: &Attributes, opt: &Options) -> bool {
+fn is_valid_sys_lang(attrs: &svgdom::Attributes, opt: &Options) -> bool {
     // 'The attribute value is a comma-separated list of language names
     // as defined in BCP 47.'
     //

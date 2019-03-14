@@ -21,7 +21,6 @@ And as an embeddable library to paint SVG on an application native canvas.
 
 #[macro_use] pub extern crate usvg;
 #[macro_use] extern crate log;
-extern crate unicode_segmentation;
 extern crate rgb;
 
 #[cfg(feature = "cairo-backend")] pub extern crate cairo;

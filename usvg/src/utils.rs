@@ -13,6 +13,7 @@ use svgdom::{
 
 // self
 use geom::*;
+use tree;
 
 
 /// Converts `viewBox` to `Transform`.
@@ -61,4 +62,23 @@ pub fn aligned_pos(align: Align, x: f64, y: f64, w: f64, h: f64) -> Point {
         Align::XMidYMax => Point::new(x + w / 2.0, y + h      ),
         Align::XMaxYMax => Point::new(x + w,       y + h      ),
     }
+}
+
+/// Converts `rect` to path segments.
+pub fn rect_to_path(rect: Rect) -> Vec<tree::PathSegment> {
+    vec![
+        tree::PathSegment::MoveTo {
+            x: rect.x, y: rect.y
+        },
+        tree::PathSegment::LineTo {
+            x: rect.right(), y: rect.y
+        },
+        tree::PathSegment::LineTo {
+            x: rect.right(), y: rect.bottom()
+        },
+        tree::PathSegment::LineTo {
+            x: rect.x, y: rect.bottom()
+        },
+        tree::PathSegment::ClosePath,
+    ]
 }

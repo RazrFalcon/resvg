@@ -28,7 +28,7 @@ mod numbers;
 
 /// Basic traits for tree manipulations.
 pub mod prelude {
-    pub use traits::IsDefault;
+    pub use IsDefault;
     pub use tree::FuzzyEq;
     pub use tree::FuzzyZero;
     pub use super::NodeExt;
@@ -77,7 +77,7 @@ impl Tree {
     ///
     /// An empty `Tree` will be returned on any error.
     pub fn from_dom(mut doc: svgdom::Document, opt: &Options) -> Self {
-        super::preproc::prepare_doc(&mut doc, opt);
+        super::convert::prepare_doc(&mut doc);
         super::convert::convert_doc(&doc, opt)
     }
 
@@ -129,6 +129,9 @@ impl Tree {
 
     /// Appends `NodeKind` to the `Defs` node.
     pub fn append_to_defs(&mut self, kind: NodeKind) -> Node {
+        debug_assert!(self.defs_by_id(kind.id()).is_none(),
+                      "Element #{} already exists in 'defs'.", kind.id());
+
         let new_node = Node::new(kind);
         self.defs().append(new_node.clone());
         new_node
