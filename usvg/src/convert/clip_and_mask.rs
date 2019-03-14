@@ -19,6 +19,10 @@ pub fn convert_clip(
         return None;
     }
 
+    if !node.is_valid_transform(AId::Transform) {
+        return None;
+    }
+
     if tree.defs_by_id(node.id().as_str()).is_some() {
         return Some(node.id().clone());
     }

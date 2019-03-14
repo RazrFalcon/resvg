@@ -51,7 +51,6 @@ pub fn convert(
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    // TODO: display:none on a child?
     let child = try_opt!(node.children().find(|n| is_condition_passed(&n, state.opt)), ());
 
     match super::convert_group(&node, state, false, parent, tree) {
@@ -66,6 +65,10 @@ pub fn convert(
 }
 
 pub fn is_condition_passed(node: &svgdom::Node, opt: &Options) -> bool {
+    if !node.is_svg_element() {
+        return false;
+    }
+
     let ref attrs = node.attributes();
 
     if attrs.contains(AId::RequiredExtensions) {

@@ -232,16 +232,7 @@ fn conv_dasharray(node: &svgdom::Node, state: &State) -> Option<Vec<f64>> {
 pub fn is_visible_element(node: &svgdom::Node, opt: &Options) -> bool {
     let display = node.attributes().get_value(AId::Display) != Some(&AValue::None);
 
-    let is_valid_ts = {
-        if let Some(AValue::Transform(ts)) = node.attributes().get_value(AId::Transform) {
-            let (sx, sy) = ts.get_scale();
-            sx.fuzzy_ne(&0.0) && sy.fuzzy_ne(&0.0)
-        } else {
-            true
-        }
-    };
-
        display
-    && is_valid_ts
+    && node.is_valid_transform(AId::Transform)
     && switch::is_condition_passed(&node, opt)
 }

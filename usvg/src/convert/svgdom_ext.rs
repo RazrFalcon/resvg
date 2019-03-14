@@ -26,6 +26,7 @@ pub trait SvgNodeExt {
     fn copy_attribute_to(&self, aid: AId, to: &mut Self);
     fn try_set_attribute(&mut self, attr: &svgdom::Attribute);
     fn get_viewbox(&self) -> Option<Rect>;
+    fn is_valid_transform(&self, aid: AId) -> bool;
 }
 
 impl SvgNodeExt for svgdom::Node {
@@ -154,6 +155,17 @@ impl SvgNodeExt for svgdom::Node {
         self.attributes()
             .get_type::<svgdom::ViewBox>(AId::ViewBox)
             .map(|vb| (vb.x, vb.y, vb.w, vb.h).into())
+    }
+
+    fn is_valid_transform(&self, aid: AId) -> bool {
+        if let Some(AValue::Transform(ts)) = self.attributes().get_value(aid).cloned() {
+            let (sx, sy) = ts.get_scale();
+            if sx.fuzzy_eq(&0.0) || sy.fuzzy_eq(&0.0) {
+                return false;
+            }
+        }
+
+        true
     }
 }
 

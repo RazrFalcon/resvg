@@ -1,11 +1,2 @@
-a-text-anchor-008.svg
-a-text-anchor-009.svg
-a-text-anchor-012.svg
-e-filter-053.svg
-e-filter-054.svg
-e-linearGradient-036.svg
-e-pattern-026.svg
-e-text-026.svg
-e-text-034.svg
-e-text-036.svg
-e-tspan-027.svg
+e-clipPath-043.svg
+e-switch-013.svg

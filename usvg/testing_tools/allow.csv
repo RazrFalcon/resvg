@@ -109,6 +109,7 @@ e-image-029,24795,bug #13
 e-image-030,18864,bug #13
 e-image-031,18864,bug #13
 e-linearGradient-036,25364,UB
+e-linearGradient-037,25284,UB
 e-marker-008,48
 e-marker-015,846
 e-marker-030,704
@@ -166,7 +167,9 @@ e-pattern-023,174
 e-pattern-024,174
 e-pattern-026,172
 e-pattern-027,171
+e-pattern-028,12763,UB
 e-radialGradient-031,38237,fixes chrome bug
+e-radialGradient-040,19573,UB
 e-rect-004,96
 e-rect-005,106
 e-rect-006,106
@@ -198,6 +201,7 @@ e-switch-005,25604,chrome bug
 e-switch-006,25604,chrome bug
 e-switch-007,25604,chrome bug
 e-switch-009,25604,chrome bug
+e-switch-012,25604,chrome bug
 e-symbol-006,58
 e-text-003,972,invalid chunks
 e-text-006,1993,invalid chunks
@@ -209,7 +213,7 @@ e-text-013,2097,invalid chunks
 e-text-014,2009,invalid chunks
 e-text-016,1551,chrome uses different coefficients
 e-text-024,1954,invalid chunks
-e-text-026,731,invalid chunks
+e-text-026,144,invalid chunks
 e-text-029,1772,invalid chunks
 e-text-030,198,invalid chunks
 e-text-032,552,unsupported #4
