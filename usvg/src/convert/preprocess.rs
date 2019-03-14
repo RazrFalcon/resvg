@@ -515,8 +515,6 @@ fn __resolve_use(
     // Remember that this group was 'use' before.
     use_node.set_attribute(("usvg-use", 1));
 
-    // TODO: validate linked nodes
-
     if linked_node.is_tag_name(EId::Symbol) {
         use_node.set_attribute(("usvg-symbol", 1));
 
