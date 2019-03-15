@@ -494,6 +494,25 @@ test!(switch_with_opacity, false,
 </svg>
 ");
 
+// `fill-rule` cannot be set on `text`.
+test!(fill_rule_on_text, false,
+"<svg viewBox='0 0 1 1' xmlns='http://www.w3.org/2000/svg'>
+    <text fill-rule='evenodd'>Text</text>
+</svg>",
+"<svg
+    xmlns='http://www.w3.org/2000/svg'
+    width='1'
+    height='1'
+    viewBox='0 0 1 1'
+    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    usvg:version='0.5.0'>
+    <defs/>
+    <text><tspan><tspan
+        font-family='Times New Roman'
+        font-size='12'>Text</tspan></tspan></text>
+</svg>
+");
+
 
 //// Marker resolving should not produce a group.
 //test!(marker_with_visible_overflow, false,

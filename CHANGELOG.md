@@ -36,6 +36,7 @@ This changelog also contains important changes in dependencies.
 - (usvg) Groups regrouping.
 - (usvg) `dx`/`dy` processing on `text`.
 - (usvg) `textAnchor` resolving.
+- (usvg) Ignore `fill-rule` on `text`.
 - (svgtypes) Style with comments parsing.
 - (roxmltree) Namespaces resolving.
 

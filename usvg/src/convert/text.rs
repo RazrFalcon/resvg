@@ -58,6 +58,10 @@ fn collect_text_chunks(
     state: &State,
     tree: &mut tree::Tree,
 ) -> Vec<tree::TextChunk> {
+    // Update state for a proper fill-rule resolving.
+    let mut text_state = state.clone();
+    text_state.current_root = text_elem.clone();
+
     let mut chunks = Vec::new();
     let mut chars_count = 0;
     for child in text_elem.descendants().filter(|n| n.is_text()) {
@@ -79,7 +83,7 @@ fn collect_text_chunks(
         let anchor = convert_text_anchor(parent);
         let span = tree::TextSpan {
             visibility: super::convert_visibility(parent),
-            fill: style::resolve_fill(parent, true, state, tree),
+            fill: style::resolve_fill(parent, true, &text_state, tree),
             stroke: style::resolve_stroke(parent, true, state, tree),
             font,
             baseline_shift: resolve_baseline_shift(parent, state),

@@ -1,8 +1,0 @@
-a-fill-031.svg
-a-fill-032.svg
-a-stroke-007.svg
-a-stroke-008.svg
-a-text-decoration-011.svg
-a-text-decoration-013.svg
-e-tspan-025.svg
-e-tspan-026.svg

@@ -1,4 +1,0 @@
-a-text-decoration-011.svg
-a-text-decoration-013.svg
-e-tspan-025.svg
-e-tspan-026.svg
