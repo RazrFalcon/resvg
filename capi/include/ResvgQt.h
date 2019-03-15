@@ -19,15 +19,15 @@ extern "C" {
 #include <resvg.h>
 }
 
-#include <QString>
-#include <QScopedPointer>
-#include <QRectF>
-#include <QTransform>
-#include <QGuiApplication>
-#include <QScreen>
-#include <QPainter>
-#include <QFile>
 #include <QDebug>
+#include <QFile>
+#include <QGuiApplication>
+#include <QPainter>
+#include <QRectF>
+#include <QScopedPointer>
+#include <QScreen>
+#include <QString>
+#include <QTransform>
 
 namespace ResvgPrivate {
 
@@ -236,22 +236,6 @@ public:
     void render(QPainter *p) const;
 
     /**
-     * @brief Renders the SVG data to canvas with the specified \b bounds.
-     *
-     * If the bounding rectangle is not specified
-     * the SVG file is mapped to the whole paint device.
-     */
-    void render(QPainter *p, const QRectF &bounds) const;
-
-    /**
-     * @brief Renders the given element with \b elementId on the specified \b bounds.
-     *
-     * If the bounding rectangle is not specified
-     * the SVG element is mapped to the whole paint device.
-     */
-    void render(QPainter *p, const QString &elementId, const QRectF &bounds = QRectF()) const;
-
-    /**
      * @brief Renders the SVG data to \b QImage with a specified \b size.
      *
      * If \b size is not set, the \b defaultSize() will be used.
@@ -390,9 +374,8 @@ inline QRectF ResvgRenderer::boundsOnElement(const QString &id) const
     const auto utf8Str = id.toUtf8();
     const auto rawId = utf8Str.constData();
     resvg_rect bbox;
-    if (resvg_qt_get_node_bbox(d->tree, &d->opt, rawId, &bbox)) {
+    if (resvg_qt_get_node_bbox(d->tree, &d->opt, rawId, &bbox))
         return QRectF(bbox.x, bbox.y, bbox.height, bbox.width);
-    }
 
     return QRectF();
 }
@@ -415,9 +398,8 @@ inline QTransform ResvgRenderer::transformForElement(const QString &id) const
     const auto utf8Str = id.toUtf8();
     const auto rawId = utf8Str.constData();
     resvg_transform ts;
-    if (resvg_get_node_transform(d->tree, rawId, &ts)) {
+    if (resvg_get_node_transform(d->tree, rawId, &ts))
         return QTransform(ts.a, ts.b, ts.c, ts.d, ts.e, ts.f);
-    }
 
     return QTransform();
 }
@@ -429,18 +411,8 @@ inline void ResvgRenderer::setDevicePixelRatio(qreal scaleFactor)
 
 inline void ResvgRenderer::render(QPainter *p) const
 {
-    render(p, QRectF());
-}
-
-inline void ResvgRenderer::render(QPainter *p, const QRectF &bounds) const
-{
     if (!d->tree)
         return;
-
-    if (bounds.isValid()) {
-        Q_UNIMPLEMENTED();
-        return;
-    }
 
     p->save();
     p->setRenderHint(QPainter::Antialiasing);
@@ -450,12 +422,6 @@ inline void ResvgRenderer::render(QPainter *p, const QRectF &bounds) const
     resvg_qt_render_to_canvas(d->tree, &d->opt, imgSize, p);
 
     p->restore();
-}
-
-inline void ResvgRenderer::render(QPainter *p, const QString &elementId, const QRectF &bounds) const
-{
-    Q_UNUSED(p) Q_UNUSED(elementId) Q_UNUSED(bounds)
-    Q_UNIMPLEMENTED();
 }
 
 inline QImage ResvgRenderer::renderToImage(const QSize &size) const
