@@ -1,2 +1,4 @@
-e-clipPath-043.svg
-e-switch-013.svg
+a-text-decoration-011.svg
+a-text-decoration-013.svg
+e-tspan-025.svg
+e-tspan-026.svg

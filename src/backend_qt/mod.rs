@@ -360,7 +360,7 @@ fn _calc_node_bbox(
         usvg::NodeKind::Text(ref text) => {
             let mut bbox = Rect::new_bbox();
             let mut fm = text::QtFontMetrics::new(p);
-            let blocks = backend_utils::text::prepare_blocks(text, &mut fm);
+            let (blocks, _) = backend_utils::text::prepare_blocks(text, &mut fm);
             backend_utils::text::draw_blocks(blocks, |block| {
                 let mut p_path = qt::PainterPath::new();
                 p_path.add_text(0.0, 0.0, &block.font, &block.text);

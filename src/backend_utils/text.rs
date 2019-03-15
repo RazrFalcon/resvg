@@ -31,25 +31,20 @@ pub trait FontMetrics<Font> {
 pub fn draw_blocks<Font, Draw>(
     blocks: Vec<TextBlock<Font>>,
     mut draw: Draw,
-) -> Rect
+)
     where Draw: FnMut(&TextBlock<Font>)
 {
-    let mut bbox = Rect::new_bbox();
     for block in blocks {
-        bbox.expand(block.bbox);
-
         if block.is_visible {
             draw(&block);
         }
     }
-
-    bbox
 }
 
 pub fn prepare_blocks<Font>(
     text_kind: &usvg::Text,
     font_metrics: &mut FontMetrics<Font>,
-) -> Vec<TextBlock<Font>> {
+) -> (Vec<TextBlock<Font>>, Rect) {
     let mut buf_str = String::with_capacity(4);
     let mut blocks: Vec<TextBlock<Font>> = Vec::new();
     let mut last_x = 0.0;
@@ -95,11 +90,14 @@ pub fn prepare_blocks<Font>(
                     let bbox = Rect { x, y: yy, width, height };
                     x += width;
 
-                    // TODO: rewrite, explain
-                    let rotate = match text_kind.rotate {
-                        Some(ref list) => Some(list[char_idx]),
-                        None => None,
-                    };
+                    let mut rotate = None;
+                    if let Some(ref list) = text_kind.rotate {
+                        if let Some(angle) = list.get(char_idx) {
+                            if !angle.is_fuzzy_zero() {
+                                rotate = Some(*angle);
+                            }
+                        }
+                    }
 
                     blocks.push(TextBlock {
                         text: c.to_string(),
@@ -134,7 +132,12 @@ pub fn prepare_blocks<Font>(
         last_y = y;
     }
 
-    blocks
+    let mut text_bbox = Rect::new_bbox();
+    for block in &blocks {
+        text_bbox.expand(block.bbox);
+    }
+
+    (blocks, text_bbox)
 }
 
 fn process_text_anchor(a: usvg::TextAnchor, text_width: f64) -> f64 {

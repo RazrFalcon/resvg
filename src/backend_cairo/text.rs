@@ -93,8 +93,9 @@ pub fn draw(
     cr: &cairo::Context,
 ) -> Rect {
     let mut fm = PangoFontMetrics::new(opt, cr);
-    let blocks = text::prepare_blocks(text_node, &mut fm);
-    text::draw_blocks(blocks, |block| draw_block(tree, block, opt, cr))
+    let (blocks, text_bbox) = text::prepare_blocks(text_node, &mut fm);
+    text::draw_blocks(blocks, |block| draw_block(tree, block, text_bbox, opt, cr));
+    text_bbox
 }
 
 pub fn init_pango_context(opt: &Options, cr: &cairo::Context) -> pango::Context {
@@ -131,19 +132,19 @@ fn set_text_spacing(
 fn draw_block(
     tree: &usvg::Tree,
     block: &text::TextBlock<pango::FontDescription>,
+    text_bbox: Rect,
     opt: &Options,
     cr: &cairo::Context,
 ) {
+    // `tspan` doesn't have a bbox by the SVG spec and should use the whole `text` bbox.
+    // That's why we are using `text_bbox` instead of `block.bbox`.
+
     let context = init_pango_context(opt, cr);
     let layout = init_pango_layout(&block, &context);
 
     let fm = context.get_metrics(&block.font, None).unwrap();
 
     let bbox = block.bbox;
-
-    // Contains only characters path bounding box,
-    // so spaces around text are ignored.
-    let inner_bbox = get_layout_bbox(&layout, bbox.x, bbox.y);
 
     let underline_height = fm.get_underline_thickness().from_pango();
     let mut line_rect = Rect::new(bbox.x, 0.0, bbox.width, underline_height);
@@ -159,7 +160,7 @@ fn draw_block(
     // Should be drawn before/under text.
     if let Some(ref style) = block.decoration.underline {
         line_rect.y = bbox.y + block.font_ascent - fm.get_underline_position().from_pango();
-        draw_line(tree, line_rect, &style.fill, &style.stroke, opt, cr);
+        draw_line(tree, line_rect, text_bbox, &style.fill, &style.stroke, opt, cr);
     }
 
     // Draw overline.
@@ -167,17 +168,17 @@ fn draw_block(
     // Should be drawn before/under text.
     if let Some(ref style) = block.decoration.overline {
         line_rect.y = bbox.y + underline_height;
-        draw_line(tree, line_rect, &style.fill, &style.stroke, opt, cr);
+        draw_line(tree, line_rect, text_bbox, &style.fill, &style.stroke, opt, cr);
     }
 
     // Draw text.
     cr.move_to(bbox.x, bbox.y);
 
-    fill::apply(tree, &block.fill, opt, inner_bbox, cr);
+    fill::apply(tree, &block.fill, opt, text_bbox, cr);
     pc::update_layout(cr, &layout);
     pc::show_layout(cr, &layout);
 
-    stroke::apply(tree, &block.stroke, opt, inner_bbox, cr);
+    stroke::apply(tree, &block.stroke, opt, text_bbox, cr);
     pc::layout_path(cr, &layout);
     cr.stroke();
 
@@ -189,7 +190,7 @@ fn draw_block(
     if let Some(ref style) = block.decoration.line_through {
         line_rect.y = bbox.y + block.font_ascent - fm.get_strikethrough_position().from_pango();
         line_rect.height = fm.get_strikethrough_thickness().from_pango();
-        draw_line(tree, line_rect, &style.fill, &style.stroke, opt, cr);
+        draw_line(tree, line_rect, text_bbox, &style.fill, &style.stroke, opt, cr);
     }
 
     cr.set_matrix(old_ts);
@@ -249,20 +250,10 @@ fn init_font(dom_font: &usvg::Font, dpi: f64) -> pango::FontDescription {
     font
 }
 
-pub fn get_layout_bbox(layout: &pango::Layout, x: f64, y: f64) -> Rect {
-    let (ink_rect, _) = layout.get_extents();
-
-    (
-        x + ink_rect.x.from_pango(),
-        y + ink_rect.y.from_pango(),
-        ink_rect.width.from_pango(),
-        ink_rect.height.from_pango(),
-    ).into()
-}
-
 fn draw_line(
     tree: &usvg::Tree,
     r: Rect,
+    text_bbox: Rect,
     fill: &Option<usvg::Fill>,
     stroke: &Option<usvg::Stroke>,
     opt: &Options,
@@ -272,11 +263,11 @@ fn draw_line(
 
     cr.rectangle(r.x, r.y, r.width, r.height);
 
-    fill::apply(tree, fill, opt, r, cr);
+    fill::apply(tree, fill, opt, text_bbox, cr);
     if stroke.is_some() {
         cr.fill_preserve();
 
-        stroke::apply(tree, &stroke, opt, r, cr);
+        stroke::apply(tree, &stroke, opt, text_bbox, cr);
         cr.stroke();
     } else {
         cr.fill();

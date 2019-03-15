@@ -56,16 +56,21 @@ pub fn draw(
     opt: &Options,
     p: &mut qt::Painter,
 ) -> Rect {
-    let blocks = text::prepare_blocks(text_node, &mut QtFontMetrics::new(p));
-    text::draw_blocks(blocks, |block| draw_block(tree, block, opt, p))
+    let (blocks, text_bbox) = text::prepare_blocks(text_node, &mut QtFontMetrics::new(p));
+    text::draw_blocks(blocks, |block| draw_block(tree, block, text_bbox, opt, p));
+    text_bbox
 }
 
 fn draw_block(
     tree: &usvg::Tree,
     block: &text::TextBlock<qt::Font>,
+    text_bbox: Rect,
     opt: &Options,
     p: &mut qt::Painter,
 ) {
+    // `tspan` doesn't have a bbox by the SVG spec and should use the whole `text` bbox.
+    // That's why we are using `text_bbox` instead of `block.bbox`.
+
     p.set_font(&block.font);
     let font_metrics = p.font_metrics();
 
@@ -85,7 +90,7 @@ fn draw_block(
     // Should be drawn before/under text.
     if let Some(ref style) = block.decoration.underline {
         line_rect.y = bbox.y + font_metrics.height() - font_metrics.underline_pos();
-        draw_line(tree, line_rect, &style.fill, &style.stroke, opt, p);
+        draw_line(tree, line_rect, text_bbox, &style.fill, &style.stroke, opt, p);
     }
 
     // Draw overline.
@@ -93,12 +98,12 @@ fn draw_block(
     // Should be drawn before/under text.
     if let Some(ref style) = block.decoration.overline {
         line_rect.y = bbox.y + font_metrics.height() - font_metrics.overline_pos();
-        draw_line(tree, line_rect, &style.fill, &style.stroke, opt, p);
+        draw_line(tree, line_rect, text_bbox, &style.fill, &style.stroke, opt, p);
     }
 
     // Draw text.
-    fill::apply(tree, &block.fill, opt, bbox, p);
-    stroke::apply(tree, &block.stroke, opt, bbox, p);
+    fill::apply(tree, &block.fill, opt, text_bbox, p);
+    stroke::apply(tree, &block.stroke, opt, text_bbox, p);
 
     p.draw_text(bbox.x, bbox.y, &block.text);
 
@@ -107,7 +112,7 @@ fn draw_block(
     // Should be drawn after/over text.
     if let Some(ref style) = block.decoration.line_through {
         line_rect.y = bbox.y + font_metrics.ascent() - font_metrics.strikeout_pos();
-        draw_line(tree, line_rect, &style.fill, &style.stroke, opt, p);
+        draw_line(tree, line_rect, text_bbox, &style.fill, &style.stroke, opt, p);
     }
 
     p.set_transform(&old_ts);
@@ -173,12 +178,13 @@ fn init_font(dom_font: &usvg::Font) -> qt::Font {
 fn draw_line(
     tree: &usvg::Tree,
     r: Rect,
+    text_bbox: Rect,
     fill: &Option<usvg::Fill>,
     stroke: &Option<usvg::Stroke>,
     opt: &Options,
     p: &mut qt::Painter,
 ) {
-    fill::apply(tree, fill, opt, r, p);
-    stroke::apply(tree, stroke, opt, r, p);
+    fill::apply(tree, fill, opt, text_bbox, p);
+    stroke::apply(tree, stroke, opt, text_bbox, p);
     p.draw_rect(r.x, r.y, r.width + 1.0, r.height);
 }

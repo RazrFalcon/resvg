@@ -23,6 +23,8 @@ This changelog also contains important changes in dependencies.
 - (usvg) Marker element and attributes. Markers will be resolved just like `use` now.
 
 ### Fixed
+- (resvg) During the `tspan` rendering, the `text` bbox will be used instead
+  of the `tspan` bbox itself. This is the correct behaviour by the SVG spec.
 - (cairo-backend) `font-family` parsing.
 - (usvg) `filter:none` processing.
 - (usvg) `text` inside `text` processing.

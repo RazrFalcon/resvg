@@ -415,7 +415,7 @@ fn _calc_node_bbox(
         usvg::NodeKind::Text(ref text) => {
             let mut bbox = Rect::new_bbox();
             let mut fm = text::PangoFontMetrics::new(opt, cr);
-            let blocks = backend_utils::text::prepare_blocks(text, &mut fm);
+            let (blocks, _) = backend_utils::text::prepare_blocks(text, &mut fm);
             backend_utils::text::draw_blocks(blocks, |block| {
                 cr.new_path();
 
