@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.6.0] - 2019-03-16
 ### Added
 - Nested `baseline-shift` support.
 - (qt-api) `renderToImage`.
@@ -44,7 +46,7 @@ This changelog also contains important changes in dependencies.
 - (svgtypes) Style with comments parsing.
 - (roxmltree) Namespaces resolving.
 
-## [0.5.0] - 2018-01-04
+## [0.5.0] - 2019-01-04
 ### Added
 - `marker` support.
 - Partial `baseline-shift` support.
@@ -176,7 +178,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/RazrFalcon/resvg/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/RazrFalcon/resvg/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/RazrFalcon/resvg/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/RazrFalcon/resvg/compare/v0.2.0...v0.3.0

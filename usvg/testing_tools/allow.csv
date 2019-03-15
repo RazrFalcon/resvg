@@ -15,7 +15,7 @@ a-display-004,31852,chrome bug
 a-display-005,2018,bug
 a-display-006,1997,chrome bug
 a-display-007,27184,chrome bug
-a-display-008,326
+a-display-008,335
 a-fill-025,25604,chrome bug
 a-fill-034,25604,chrome bug
 a-font-size-005,824,chrome uses different coefficients
@@ -29,12 +29,12 @@ a-font-weight-003,484,chrome bug
 a-font-weight-012,714,chrome bug
 a-letter-spacing-005,2171,chrome bug
 a-word-spacing-005,730,chrome bug
-a-opacity-001,580
+a-opacity-001,591
 a-opacity-002,137
-a-overflow-001,299
-a-overflow-003,299
+a-overflow-001,25
+a-overflow-003,25
 a-stroke-dasharray-012,244
-a-stroke-width-004,960,chrome bug
+a-stroke-width-004,964,chrome bug
 a-systemLanguage-001,25604,chrome bug
 a-systemLanguage-002,25604,chrome bug
 a-systemLanguage-003,25604,chrome bug
@@ -59,30 +59,30 @@ a-text-decoration-009,1476,unimplemented #4
 a-text-decoration-010,1474,unimplemented #4
 a-text-decoration-011,1881,unimplemented
 a-text-decoration-012,1535,unimplemented
-a-text-decoration-013,1966,unimplemented
+a-text-decoration-013,1947,unimplemented
 a-text-decoration-014,270,unimplemented
 a-visibility-005,137
 a-visibility-006,137
-a-visibility-007,27
+a-visibility-007,29
 e-circle-001,519
 e-circle-002,538
 e-circle-003,262
 e-circle-004,266
 e-circle-005,134
 e-circle-006,538
-e-clipPath-005,122
-e-clipPath-006,215
-e-clipPath-007,31
-e-clipPath-008,230
-e-clipPath-015,57
+e-clipPath-005,124
+e-clipPath-006,211
+e-clipPath-007,54
+e-clipPath-008,254
+e-clipPath-015,54
 e-clipPath-017,397
 e-clipPath-019,97
 e-clipPath-020,97
 e-clipPath-021,97
 e-clipPath-029,66
 e-clipPath-030,50
-e-clipPath-031,191
-e-clipPath-034,114
+e-clipPath-031,199
+e-clipPath-034,99
 e-clipPath-035,50
 e-clipPath-036,97
 e-clipPath-037,66
@@ -97,17 +97,17 @@ e-ellipse-007,123
 e-feImage-006,14408,unsupported
 e-feImage-011,119
 e-filter-017,17534,chrome bug
-e-filter-018,10127,chrome bug
+e-filter-018,10131,chrome bug
 e-filter-019,21903,chrome bug
-e-image-006,15169,chrome quirks
+e-image-006,15233,chrome quirks
 e-image-008,15169,chrome quirks
 e-image-025,19951,bug #13
-e-image-026,22690,bug #13
-e-image-027,22690,bug #13
-e-image-028,22690,bug #13
+e-image-026,22684,bug #13
+e-image-027,22684,bug #13
+e-image-028,22684,bug #13
 e-image-029,24795,bug #13
-e-image-030,18864,bug #13
-e-image-031,18864,bug #13
+e-image-030,18844,bug #13
+e-image-031,18844,bug #13
 e-linearGradient-036,25364,UB
 e-linearGradient-037,25284,UB
 e-marker-008,48
@@ -132,19 +132,19 @@ e-marker-054,24
 e-marker-055,126,chrome bug
 e-marker-056,126,chrome bug
 e-mask-015,38
-e-mask-017,22344,bug #14
+e-mask-017,22324,bug #14
 e-mask-020,12804,bug
 e-mask-022,21564,UB
 e-path-010,42
-e-path-011,130
-e-path-032,142
-e-path-033,153
-e-path-034,135
-e-path-035,135
-e-path-036,138
-e-path-037,135
-e-path-038,131
-e-path-039,135
+e-path-011,125
+e-path-032,132
+e-path-033,134
+e-path-034,131
+e-path-035,134
+e-path-036,130
+e-path-037,129
+e-path-038,129
+e-path-039,129
 e-pattern-001,170
 e-pattern-002,173
 e-pattern-003,170
@@ -169,6 +169,10 @@ e-pattern-026,172
 e-pattern-027,171
 e-pattern-028,12763,UB
 e-radialGradient-031,38237,fixes chrome bug
+e-radialGradient-032,25604,fixes chrome bug
+e-radialGradient-033,25604,fixes chrome bug
+e-radialGradient-036,24340,fixes chrome bug
+e-radialGradient-037,12804,fixes chrome bug
 e-radialGradient-040,19573,UB
 e-rect-004,96
 e-rect-005,106
@@ -177,7 +181,7 @@ e-rect-013,106
 e-rect-014,106
 e-rect-018,521
 e-rect-019,521
-e-rect-020,390
+e-rect-020,407
 e-rect-021,289
 e-rect-022,291
 e-rect-023,3322,chrome uses different coefficients
@@ -190,9 +194,9 @@ e-svg-008,592
 e-svg-022,538
 e-svg-023,538
 e-svg-024,68
-e-svg-025,42
-e-svg-026,61
-e-svg-027,28
+e-svg-025,46
+e-svg-026,59
+e-svg-027,24
 e-svg-028,375
 e-svg-029,375
 e-svg-030,68
