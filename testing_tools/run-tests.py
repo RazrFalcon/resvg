@@ -128,11 +128,6 @@ if 'RESVG_QT_BACKEND' in os.environ:
         run(['qmake', 'CONFIG+=debug'], env=qmake_env, check=True)
         run(['make'], check=True)
 
-    with cd('examples/resvg-vs-qtsvg'):
-        run(['make', 'distclean'])
-        run(['qmake', 'CONFIG+=debug'], env=qmake_env, check=True)
-        run(['make'], check=True)
-
 
 if 'RESVG_CAIRO_BACKEND' in os.environ:
     # build cairo C example

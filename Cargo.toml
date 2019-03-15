@@ -24,9 +24,9 @@ members = [
 travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
-log = "0.4.5"
-rgb = "0.8.9"
-usvg = { path = "usvg", version = "0.5.0" }
+log = "0.4"
+rgb = "0.8"
+usvg = { path = "usvg", version = "0.5" }
 
 # cairo backend
 cairo-rs = { version = "0.6", features = ["png"], optional = true }
@@ -35,7 +35,7 @@ pango = { version = "0.6", optional = true }
 pangocairo = { version = "0.7", optional = true }
 
 # qt backend
-resvg-qt = { path = "resvg-qt", version = "0.5.0", optional = true }
+resvg-qt = { path = "resvg-qt", version = "0.5", optional = true }
 
 [features]
 cairo-backend = ["cairo-rs", "gdk-pixbuf", "pango", "pangocairo"]

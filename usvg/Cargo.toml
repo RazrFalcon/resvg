@@ -22,7 +22,7 @@ libflate = "0.1"
 log = "0.4"
 lyon_geom = "0.12"
 rctree = "0.2.1"
-svgdom = { git = "https://github.com/RazrFalcon/svgdom", rev = "75f6fbe" }
+svgdom = "0.16.1"
 
 [dev-dependencies]
-pretty_assertions = "0.5.1"
+pretty_assertions = "0.6"
