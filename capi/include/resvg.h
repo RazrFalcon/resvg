@@ -60,6 +60,15 @@ typedef enum resvg_error {
     RESVG_ERROR_INVALID_FILE_SUFFIX,
     /** Compressed SVG must use the GZip algorithm. */
     RESVG_ERROR_MALFORMED_GZIP,
+    /**
+     * SVG doesn't have a valid size.
+     *
+     * Occurs when width and/or height are <= 0.
+     *
+     * Also occurs if width, height and viewBox are not set.
+     * This is against the SVG spec, but an automatic size detection is not supported yet.
+     */
+    RESVG_ERROR_INVALID_SIZE,
     /** Failed to parse an SVG data. */
     RESVG_ERROR_PARSING_FAILED,
     /** Failed to allocate an image. */

@@ -70,13 +70,13 @@ impl Tree {
         let doc = svgdom::Document::from_str_with_opt(text, &dom_opt)
             .map_err(|e| Error::ParsingFailed(e))?;
 
-        Ok(Self::from_dom(doc, &opt))
+        Self::from_dom(doc, &opt)
     }
 
     /// Parses `Tree` from the `svgdom::Document`.
     ///
     /// An empty `Tree` will be returned on any error.
-    pub fn from_dom(mut doc: svgdom::Document, opt: &Options) -> Self {
+    pub fn from_dom(mut doc: svgdom::Document, opt: &Options) -> Result<Self, Error> {
         super::convert::prepare_doc(&mut doc);
         super::convert::convert_doc(&doc, opt)
     }

@@ -5,9 +5,9 @@
 // external
 use svgdom::{
     self,
-    Length,
     ElementType,
     FilterSvg,
+    Length,
 };
 
 // self
@@ -15,7 +15,10 @@ use tree;
 use tree::prelude::*;
 use short::*;
 use geom::*;
-use Options;
+use {
+    Error,
+    Options,
+};
 pub use self::preprocess::prepare_doc;
 pub use self::svgdom_ext::IsDefault;
 
@@ -28,9 +31,9 @@ mod path;
 mod preprocess;
 mod shapes;
 mod style;
+mod svgdom_ext;
 mod switch;
 mod text;
-mod svgdom_ext;
 mod units;
 mod use_node;
 
@@ -70,22 +73,16 @@ impl<'a> State<'a> {
 }
 
 
-/// Converts an input `Document` into the `Tree`.
+/// Converts an input `Document` into a `Tree`.
 ///
 /// # Errors
 ///
 /// - If `Document` doesn't have an SVG node - returns an empty tree.
-/// - If `Document` doesn't have a valid size - it will be set to 100x100.
-/// - If `Document` doesn't have a valid viewbox - it will be set to '0 0 W H'.
-///
-/// Basically, any error, even a critical one, should be recoverable.
-/// In worst case scenario return an empty tree, but not an error.
-///
-/// Must not panic!
+/// - If `Document` doesn't have a valid size - returns `Error::InvalidSize`.
 pub fn convert_doc(
     svg_doc: &svgdom::Document,
     opt: &Options,
-) -> tree::Tree {
+) -> Result<tree::Tree, Error> {
     let svg = if let Some(svg) = svg_doc.svg_element() {
         svg
     } else {
@@ -95,22 +92,10 @@ pub fn convert_doc(
         // Or if someone passed an invalid document directly though API.
 
         warn!("An invalid SVG structure. An empty tree will be produced.");
-        return gen_empty_tree();
+        return Ok(gen_empty_tree());
     };
 
-    // Detect the image size. If it failed there is no point in continuing.
-    let size = if let Some(size) = resolve_svg_size(&svg, opt) {
-        size
-    } else {
-        warn!("File doesn't have 'width', 'height' and 'viewBox' attributes. \
-               Automatic image size determination is not supported. \
-               An empty tree will be produced.");
-        return gen_empty_tree();
-    };
-
-    if !style::is_visible_element(&svg, opt) {
-        return gen_empty_tree();
-    }
+    let size = resolve_svg_size(&svg, opt)?;
 
     let view_box = {
         let attrs = svg.attributes();
@@ -119,6 +104,15 @@ pub fn convert_doc(
             aspect: convert_aspect(&attrs),
         }
     };
+
+    if !style::is_visible_element(&svg, opt) {
+        let svg_kind = tree::Svg {
+            size,
+            view_box,
+        };
+
+        return Ok(tree::Tree::create(svg_kind));
+    }
 
     let svg_kind = tree::Svg {
         size,
@@ -140,11 +134,11 @@ pub fn convert_doc(
     ungroup_groups(&mut tree, opt);
     remove_unused_defs(&mut tree);
 
-    tree
+    Ok(tree)
 }
 
-fn resolve_svg_size(svg: &svgdom::Node, opt: &Options) -> Option<Size> {
-    let state = State {
+fn resolve_svg_size(svg: &svgdom::Node, opt: &Options) -> Result<Size, Error> {
+    let mut state = State {
         current_root: svg.clone(),
         size: Size::new(100.0, 100.0),
         view_box: Rect::new(0.0, 0.0, 100.0, 100.0),
@@ -160,12 +154,14 @@ fn resolve_svg_size(svg: &svgdom::Node, opt: &Options) -> Option<Size> {
     if (width.unit == Unit::Percent || height.unit == Unit::Percent) && view_box.is_none() {
         // TODO: it this case we should detect the bounding box of all elements,
         //       which is currently impossible
-        return None;
+        return Err(Error::InvalidSize);
     }
 
-    if let Some(vbox) = view_box {
+    let size = if let Some(vbox) = view_box {
+        state.view_box = vbox;
+
         let w = if width.unit == Unit::Percent {
-            vbox.height * (width.num / 100.0)
+            vbox.width * (width.num / 100.0)
         } else {
             svg.convert_user_length(AId::Width, &state, def)
         };
@@ -176,22 +172,25 @@ fn resolve_svg_size(svg: &svgdom::Node, opt: &Options) -> Option<Size> {
             svg.convert_user_length(AId::Height, &state, def)
         };
 
-        Some(Size::new(w, h))
+        Size::new(w, h)
     } else {
-        Some(Size::new(
+        Size::new(
             svg.convert_user_length(AId::Width, &state, def),
             svg.convert_user_length(AId::Height, &state, def),
-        ))
+        )
+    };
+
+    if size.is_valid() {
+        Ok(size)
+    } else {
+        Err(Error::InvalidSize)
     }
 }
 
 fn get_view_box(svg: &svgdom::Node, size: Size) -> Rect {
     match svg.get_viewbox() {
         Some(vb) => vb,
-        None => {
-            warn!("Invalid SVG viewBox. Reset to '0 0 {} {}'.", size.width, size.height);
-            size.to_rect(0.0, 0.0)
-        }
+        None => size.to_rect(0.0, 0.0),
     }
 }
 

@@ -119,6 +119,8 @@ static QString errorToString(const int err)
             return QLatin1Literal("Invalid file suffix."); break;
         case RESVG_ERROR_MALFORMED_GZIP :
             return QLatin1Literal("Not a GZip compressed data."); break;
+        case RESVG_ERROR_INVALID_SIZE :
+            return QLatin1Literal("SVG doesn't have a valid size."); break;
         case RESVG_ERROR_PARSING_FAILED :
             return QLatin1Literal("Failed to parse an SVG data."); break;
         case RESVG_ERROR_NO_CANVAS :

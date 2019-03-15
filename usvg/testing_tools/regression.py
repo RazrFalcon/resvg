@@ -14,6 +14,9 @@ from subprocess import run
 # List of files that should be skipped.
 CRASH_ALLOWED = [
     'e-svg-007.svg',  # non-UTF8 encoding
+    'e-svg-034.svg',  # invalid size
+    'e-svg-035.svg',  # invalid size
+    'e-svg-036.svg',  # invalid size
 ]
 
 CACHE_FILENAME = 'cache.csv'

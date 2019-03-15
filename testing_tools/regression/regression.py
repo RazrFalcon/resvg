@@ -12,7 +12,8 @@ RESVG_URL = 'https://github.com/RazrFalcon/resvg'
 
 # List of files that should be skipped.
 CRASH_ALLOWED = [
-    'e-svg-007.svg'
+    'e-svg-007.svg',
+    'e-svg-036.svg',
 ]
 
 

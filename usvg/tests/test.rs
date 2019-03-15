@@ -513,6 +513,46 @@ test!(fill_rule_on_text, false,
 </svg>
 ");
 
+macro_rules! test_size {
+    ($name:ident, $input:expr, $expected:expr) => {
+        #[test]
+        fn $name() {
+            use usvg::FuzzyEq;
+            let tree = usvg::Tree::from_str($input, &usvg::Options::default()).unwrap();
+            assert!(tree.svg_node().size.fuzzy_eq(&$expected));
+        }
+    };
+}
+
+test_size!(size_detection_1,
+    "<svg viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>",
+    usvg::Size::new(10.0, 20.0)
+);
+
+test_size!(size_detection_2,
+    "<svg width='30' height='40' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>",
+    usvg::Size::new(30.0, 40.0)
+);
+
+test_size!(size_detection_3,
+    "<svg width='50%' height='100%' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>",
+    usvg::Size::new(5.0, 20.0)
+);
+
+macro_rules! test_size_err {
+    ($name:ident, $input:expr) => {
+        #[test]
+        fn $name() {
+            assert!(usvg::Tree::from_str($input, &usvg::Options::default()).is_err());
+        }
+    };
+}
+
+test_size_err!(size_detection_err_1,
+    "<svg width='50%' height='100%' xmlns='http://www.w3.org/2000/svg'>");
+
+test_size_err!(size_detection_err_2,
+    "<svg width='0' height='0' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>");
 
 //// Marker resolving should not produce a group.
 //test!(marker_with_visible_overflow, false,

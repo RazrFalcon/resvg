@@ -22,6 +22,14 @@ pub enum Error {
     /// Compressed SVG must use the GZip algorithm.
     MalformedGZip,
 
+    /// SVG doesn't have a valid size.
+    ///
+    /// Occurs when width and/or height are <= 0.
+    ///
+    /// Also occurs if width, height and viewBox are not set.
+    /// This is against the SVG spec, but an automatic size detection is not supported yet.
+    InvalidSize,
+
     /// Failed to parse an SVG data.
     ParsingFailed(svgdom::ParserError),
 }
@@ -40,6 +48,9 @@ impl fmt::Display for Error {
             }
             Error::MalformedGZip => {
                 write!(f, "provided data has a malformed GZip content")
+            }
+            Error::InvalidSize => {
+                write!(f, "SVG has an invalid size")
             }
             Error::ParsingFailed(ref e) => {
                 write!(f, "SVG data parsing failed cause {}", e)

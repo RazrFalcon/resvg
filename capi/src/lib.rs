@@ -43,6 +43,7 @@ enum ErrorId {
     FileWriteFailed,
     InvalidFileSuffix,
     MalformedGZip,
+    InvalidSize,
     ParsingFailed,
     NoCanvas,
 }
@@ -707,6 +708,7 @@ fn convert_error(e: usvg::Error) -> ErrorId {
         usvg::Error::FileOpenFailed => ErrorId::FileOpenFailed,
         usvg::Error::NotAnUtf8Str => ErrorId::NotAnUtf8Str,
         usvg::Error::MalformedGZip => ErrorId::MalformedGZip,
+        usvg::Error::InvalidSize => ErrorId::InvalidSize,
         usvg::Error::ParsingFailed(_) => ErrorId::ParsingFailed,
     }
 }

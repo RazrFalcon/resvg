@@ -11,12 +11,16 @@ This changelog also contains important changes in dependencies.
 - Nested `baseline-shift` support.
 - (qt-api) `renderToImage`.
 - (usvg) A better algorithm for unused defs (`defs` element children, like gradients) removal.
+- (usvg) `Error::InvalidSize`.
+- (c-api) `RESVG_ERROR_INVALID_SIZE`.
 
 ### Changed
 - (usvg) A major rewrite.
 - `baseline-shift` with `sub`, `super` and percent values calculation.
-- (qt-api) `render` methods are `const` now.
 - Marker resolving moved completely to `usvg`.
+- If an SVG doesn't have a valid size than an error will occur.
+  Previously, an empty tree was produced.
+- (qt-api) `render` methods are `const` now.
 - (usvg) Disable default attributes exporting.
 
 ### Removed
