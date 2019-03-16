@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- (usvg) `transform` multiplication.
 
 ## [0.6.0] - 2019-03-16
 ### Added
