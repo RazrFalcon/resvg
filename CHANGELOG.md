@@ -9,6 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Fixed
 - (usvg) `transform` multiplication.
+- (usvg) `use` inside `clipPath` resolving.
 
 ## [0.6.0] - 2019-03-16
 ### Added

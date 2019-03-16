@@ -138,6 +138,11 @@ fn prepare_clip_path(doc: &mut Document) {
                 }
             };
 
+            // Keep manually generated groups.
+            if eid == EId::G && n.has_attribute("usvg-use") {
+                continue;
+            }
+
             // `line` doesn't impact rendering because stroke is always disabled
             // for `clipPath` children. So we should remove it.
             match eid {
