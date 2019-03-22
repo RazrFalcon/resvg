@@ -43,6 +43,3 @@ qt-backend = ["resvg-qt"]
 
 [lib]
 doctest = false
-
-[profile.release]
-lto = true
