@@ -16,8 +16,8 @@ use super::units;
 pub trait SvgNodeExt {
     fn find_attribute<T: FromValue + Clone>(&self, aid: AId) -> Option<T>;
     fn find_node_with_attribute(&self, aid: AId) -> Option<svgdom::Node>;
-    fn find_str<R, F: Fn(&str) -> R>(&self, aid: AId, def: &str, f: F) -> R;
-    fn find_enum<T: FromStr>(&self, aid: AId) -> Option<T>;
+    fn try_find_enum<T: FromStr>(&self, aid: AId) -> Option<T>;
+    fn find_enum<T: FromStr + Default>(&self, aid: AId) -> T;
     fn resolve_length(&self, aid: AId, state: &State, def: f64) -> f64;
     fn convert_length(&self, aid: AId, object_units: tree::Units, state: &State, def: Length) -> f64;
     fn try_convert_length(&self, aid: AId, object_units: tree::Units, state: &State) -> Option<f64>;
@@ -53,20 +53,7 @@ impl SvgNodeExt for svgdom::Node {
         None
     }
 
-    fn find_str<R, F>(&self, aid: AId, def: &str, f: F) -> R
-        where F: Fn(&str) -> R
-    {
-        for n in self.ancestors() {
-            if n.has_attribute(aid) {
-                let attrs = n.attributes();
-                return f(attrs.get_str_or(aid, def));
-            }
-        }
-
-        f(def)
-    }
-
-    fn find_enum<T: FromStr>(&self, aid: AId) -> Option<T> {
+    fn try_find_enum<T: FromStr>(&self, aid: AId) -> Option<T> {
         for n in self.ancestors() {
             if n.has_attribute(aid) {
                 let attrs = n.attributes();
@@ -82,6 +69,10 @@ impl SvgNodeExt for svgdom::Node {
         }
 
         None
+    }
+
+    fn find_enum<T: FromStr + Default>(&self, aid: AId) -> T {
+        self.try_find_enum(aid).unwrap_or_default()
     }
 
     fn resolve_length(&self, aid: AId, state: &State, def: f64) -> f64 {

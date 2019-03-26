@@ -570,8 +570,8 @@ fn convert_path(
     let fill = style::resolve_fill(node, has_bbox, state, tree);
     let stroke = style::resolve_stroke(node, has_bbox, state, tree);
     let transform = attrs.get_transform(AId::Transform);
-    let mut visibility = convert_visibility(node);
-    let rendering_mode = node.find_enum(AId::ShapeRendering)
+    let mut visibility = node.find_enum(AId::Visibility);
+    let rendering_mode = node.try_find_enum(AId::ShapeRendering)
                              .unwrap_or(state.opt.shape_rendering);
 
     // If a path doesn't have a fill or a stroke than it's invisible.
@@ -607,16 +607,6 @@ fn convert_aspect(attrs: &svgdom::Attributes) -> tree::AspectRatio {
             }
         }
     }
-}
-
-fn convert_visibility(node: &svgdom::Node) -> tree::Visibility {
-    node.find_str(AId::Visibility, "visible", |value| {
-        match value {
-            "hidden" =>   tree::Visibility::Hidden,
-            "collapse" => tree::Visibility::Collapse,
-            _ =>          tree::Visibility::Visible,
-        }
-    })
 }
 
 fn convert_rect(node: &svgdom::Node, state: &State) -> Rect {

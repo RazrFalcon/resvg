@@ -31,6 +31,33 @@ macro_rules! enum_default {
     };
 }
 
+macro_rules! enum_from_str {
+    ($name:ident, $($string:pat => $result:expr),+) => {
+        impl FromStr for $name {
+            type Err = &'static str;
+
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                match s {
+                    $($string => Ok($result)),+,
+                    _ => Err("invalid value"),
+                }
+            }
+        }
+    };
+}
+
+macro_rules! enum_to_string {
+    ($name:ident, $($value:pat => $string:expr),+) => {
+        impl ToString for $name {
+            fn to_string(&self) -> String {
+                match self {
+                    $($value => $string),+,
+                }.to_string()
+            }
+        }
+    };
+}
+
 
 /// A line cap.
 ///
@@ -45,15 +72,17 @@ pub enum LineCap {
 
 enum_default!(LineCap, Butt);
 
-impl ToString for LineCap {
-    fn to_string(&self) -> String {
-        match self {
-            LineCap::Butt   => "butt",
-            LineCap::Round  => "round",
-            LineCap::Square => "square",
-        }.to_string()
-    }
-}
+enum_from_str!(LineCap,
+    "butt"      => LineCap::Butt,
+    "round"     => LineCap::Round,
+    "square"    => LineCap::Square
+);
+
+enum_to_string!(LineCap,
+    LineCap::Butt   => "butt",
+    LineCap::Round  => "round",
+    LineCap::Square => "square"
+);
 
 
 /// A line join.
@@ -69,15 +98,17 @@ pub enum LineJoin {
 
 enum_default!(LineJoin, Miter);
 
-impl ToString for LineJoin {
-    fn to_string(&self) -> String {
-        match self {
-            LineJoin::Miter => "miter",
-            LineJoin::Round => "round",
-            LineJoin::Bevel => "bevel",
-        }.to_string()
-    }
-}
+enum_from_str!(LineJoin,
+    "miter" => LineJoin::Miter,
+    "round" => LineJoin::Round,
+    "bevel" => LineJoin::Bevel
+);
+
+enum_to_string!(LineJoin,
+    LineJoin::Miter => "miter",
+    LineJoin::Round => "round",
+    LineJoin::Bevel => "bevel"
+);
 
 
 /// A fill rule.
@@ -92,14 +123,15 @@ pub enum FillRule {
 
 enum_default!(FillRule, NonZero);
 
-impl ToString for FillRule {
-    fn to_string(&self) -> String {
-        match self {
-            FillRule::NonZero => "nonzero",
-            FillRule::EvenOdd => "evenodd",
-        }.to_string()
-    }
-}
+enum_from_str!(FillRule,
+    "nonzero" => FillRule::NonZero,
+    "evenodd" => FillRule::EvenOdd
+);
+
+enum_to_string!(FillRule,
+    FillRule::NonZero => "nonzero",
+    FillRule::EvenOdd => "evenodd"
+);
 
 
 /// An element units.
@@ -110,14 +142,10 @@ pub enum Units {
     ObjectBoundingBox,
 }
 
-impl ToString for Units {
-    fn to_string(&self) -> String {
-        match self {
-            Units::UserSpaceOnUse       => "userSpaceOnUse",
-            Units::ObjectBoundingBox    => "objectBoundingBox",
-        }.to_string()
-    }
-}
+enum_to_string!(Units,
+    Units::UserSpaceOnUse       => "userSpaceOnUse",
+    Units::ObjectBoundingBox    => "objectBoundingBox"
+);
 
 
 /// A spread method.
@@ -133,15 +161,11 @@ pub enum SpreadMethod {
 
 enum_default!(SpreadMethod, Pad);
 
-impl ToString for SpreadMethod {
-    fn to_string(&self) -> String {
-        match self {
-            SpreadMethod::Pad       => "pad",
-            SpreadMethod::Reflect   => "reflect",
-            SpreadMethod::Repeat    => "repeat",
-        }.to_string()
-    }
-}
+enum_to_string!(SpreadMethod,
+    SpreadMethod::Pad       => "pad",
+    SpreadMethod::Reflect   => "reflect",
+    SpreadMethod::Repeat    => "repeat"
+);
 
 
 /// A visibility property.
@@ -157,15 +181,17 @@ pub enum Visibility {
 
 enum_default!(Visibility, Visible);
 
-impl ToString for Visibility {
-    fn to_string(&self) -> String {
-        match self {
-            Visibility::Visible     => "visible",
-            Visibility::Hidden      => "hidden",
-            Visibility::Collapse    => "collapse",
-        }.to_string()
-    }
-}
+enum_from_str!(Visibility,
+    "visible"   => Visibility::Visible,
+    "hidden"    => Visibility::Hidden,
+    "collapse"  => Visibility::Collapse
+);
+
+enum_to_string!(Visibility,
+    Visibility::Visible     => "visible",
+    Visibility::Hidden      => "hidden",
+    Visibility::Collapse    => "collapse"
+);
 
 
 /// A text decoration style.
@@ -212,15 +238,17 @@ pub enum TextAnchor {
 
 enum_default!(TextAnchor, Start);
 
-impl ToString for TextAnchor {
-    fn to_string(&self) -> String {
-        match self {
-            TextAnchor::Start   => "start",
-            TextAnchor::Middle  => "middle",
-            TextAnchor::End     => "end",
-        }.to_string()
-    }
-}
+enum_from_str!(TextAnchor,
+    "start"     => TextAnchor::Start,
+    "middle"    => TextAnchor::Middle,
+    "end"       => TextAnchor::End
+);
+
+enum_to_string!(TextAnchor,
+    TextAnchor::Start   => "start",
+    TextAnchor::Middle  => "middle",
+    TextAnchor::End     => "end"
+);
 
 
 /// A font style.
@@ -236,15 +264,17 @@ pub enum FontStyle {
 
 enum_default!(FontStyle, Normal);
 
-impl ToString for FontStyle {
-    fn to_string(&self) -> String {
-        match self {
-            FontStyle::Normal   => "normal",
-            FontStyle::Italic   => "italic",
-            FontStyle::Oblique  => "oblique",
-        }.to_string()
-    }
-}
+enum_from_str!(FontStyle,
+    "normal"    => FontStyle::Normal,
+    "italic"    => FontStyle::Italic,
+    "oblique"   => FontStyle::Oblique
+);
+
+enum_to_string!(FontStyle,
+    FontStyle::Normal   => "normal",
+    FontStyle::Italic   => "italic",
+    FontStyle::Oblique  => "oblique"
+);
 
 
 /// A font variant.
@@ -259,14 +289,15 @@ pub enum FontVariant {
 
 enum_default!(FontVariant, Normal);
 
-impl ToString for FontVariant {
-    fn to_string(&self) -> String {
-        match self {
-            FontVariant::Normal     => "normal",
-            FontVariant::SmallCaps  => "small-caps",
-        }.to_string()
-    }
-}
+enum_from_str!(FontVariant,
+    "normal"        => FontVariant::Normal,
+    "small-caps"    => FontVariant::SmallCaps
+);
+
+enum_to_string!(FontVariant,
+    FontVariant::Normal     => "normal",
+    FontVariant::SmallCaps  => "small-caps"
+);
 
 
 /// A font weight.
@@ -288,21 +319,17 @@ pub enum FontWeight {
 
 enum_default!(FontWeight, W400);
 
-impl ToString for FontWeight {
-    fn to_string(&self) -> String {
-        match self {
-            FontWeight::W100 => "100",
-            FontWeight::W200 => "200",
-            FontWeight::W300 => "300",
-            FontWeight::W400 => "400",
-            FontWeight::W500 => "500",
-            FontWeight::W600 => "600",
-            FontWeight::W700 => "700",
-            FontWeight::W800 => "800",
-            FontWeight::W900 => "900",
-        }.to_string()
-    }
-}
+enum_to_string!(FontWeight,
+    FontWeight::W100 => "100",
+    FontWeight::W200 => "200",
+    FontWeight::W300 => "300",
+    FontWeight::W400 => "400",
+    FontWeight::W500 => "500",
+    FontWeight::W600 => "600",
+    FontWeight::W700 => "700",
+    FontWeight::W800 => "800",
+    FontWeight::W900 => "900"
+);
 
 
 /// A font stretch.
@@ -326,23 +353,33 @@ pub enum FontStretch {
 
 enum_default!(FontStretch, Normal);
 
-impl ToString for FontStretch {
-    fn to_string(&self) -> String {
-        match self {
-            FontStretch::Normal         => "normal",
-            FontStretch::Wider          => "wider",
-            FontStretch::Narrower       => "narrower",
-            FontStretch::UltraCondensed => "ultra-condensed",
-            FontStretch::ExtraCondensed => "extra-condensed",
-            FontStretch::Condensed      => "condensed",
-            FontStretch::SemiCondensed  => "semi-condensed",
-            FontStretch::SemiExpanded   => "semi-expanded",
-            FontStretch::Expanded       => "expanded",
-            FontStretch::ExtraExpanded  => "extra-expanded",
-            FontStretch::UltraExpanded  => "ultra-expanded",
-        }.to_string()
-    }
-}
+enum_from_str!(FontStretch,
+    "normal"            => FontStretch::Normal,
+    "wider"             => FontStretch::Wider,
+    "narrower"          => FontStretch::Narrower,
+    "ultra-condensed"   => FontStretch::UltraCondensed,
+    "extra-condensed"   => FontStretch::ExtraCondensed,
+    "condensed"         => FontStretch::Condensed,
+    "semi-condensed"    => FontStretch::SemiCondensed,
+    "semi-expanded"     => FontStretch::SemiExpanded,
+    "expanded"          => FontStretch::Expanded,
+    "extra-expanded"    => FontStretch::ExtraExpanded,
+    "ultra-expanded"    => FontStretch::UltraExpanded
+);
+
+enum_to_string!(FontStretch,
+    FontStretch::Normal         => "normal",
+    FontStretch::Wider          => "wider",
+    FontStretch::Narrower       => "narrower",
+    FontStretch::UltraCondensed => "ultra-condensed",
+    FontStretch::ExtraCondensed => "extra-condensed",
+    FontStretch::Condensed      => "condensed",
+    FontStretch::SemiCondensed  => "semi-condensed",
+    FontStretch::SemiExpanded   => "semi-expanded",
+    FontStretch::Expanded       => "expanded",
+    FontStretch::ExtraExpanded  => "extra-expanded",
+    FontStretch::UltraExpanded  => "ultra-expanded"
+);
 
 
 /// A paint style.
@@ -498,19 +535,15 @@ pub enum FilterInput {
     Reference(String),
 }
 
-impl ToString for FilterInput {
-    fn to_string(&self) -> String {
-        match self {
-            FilterInput::SourceGraphic      => "SourceGraphic",
-            FilterInput::SourceAlpha        => "SourceAlpha",
-            FilterInput::BackgroundImage    => "BackgroundImage",
-            FilterInput::BackgroundAlpha    => "BackgroundAlpha",
-            FilterInput::FillPaint          => "FillPaint",
-            FilterInput::StrokePaint        => "StrokePaint",
-            FilterInput::Reference(ref s)   => s,
-        }.to_string()
-    }
-}
+enum_to_string!(FilterInput,
+    FilterInput::SourceGraphic      => "SourceGraphic",
+    FilterInput::SourceAlpha        => "SourceAlpha",
+    FilterInput::BackgroundImage    => "BackgroundImage",
+    FilterInput::BackgroundAlpha    => "BackgroundAlpha",
+    FilterInput::FillPaint          => "FillPaint",
+    FilterInput::StrokePaint        => "StrokePaint",
+    FilterInput::Reference(ref s)   => s
+);
 
 
 /// A color interpolation mode.
@@ -521,14 +554,17 @@ pub enum ColorInterpolation {
     LinearRGB,
 }
 
-impl ToString for ColorInterpolation {
-    fn to_string(&self) -> String {
-        match self {
-            ColorInterpolation::SRGB        => "sRGB",
-            ColorInterpolation::LinearRGB   => "linearRGB",
-        }.to_string()
-    }
-}
+enum_default!(ColorInterpolation, LinearRGB);
+
+enum_from_str!(ColorInterpolation,
+    "sRGB"      => ColorInterpolation::SRGB,
+    "linearRGB" => ColorInterpolation::LinearRGB
+);
+
+enum_to_string!(ColorInterpolation,
+    ColorInterpolation::SRGB        => "sRGB",
+    ColorInterpolation::LinearRGB   => "linearRGB"
+);
 
 
 /// A raster image container.
@@ -571,17 +607,13 @@ pub enum FeBlendMode {
     Lighten,
 }
 
-impl ToString for FeBlendMode {
-    fn to_string(&self) -> String {
-        match self {
-            FeBlendMode::Normal     => "normal",
-            FeBlendMode::Multiply   => "multiply",
-            FeBlendMode::Screen     => "screen",
-            FeBlendMode::Darken     => "darken",
-            FeBlendMode::Lighten    => "lighten",
-        }.to_string()
-    }
-}
+enum_to_string!(FeBlendMode,
+    FeBlendMode::Normal     => "normal",
+    FeBlendMode::Multiply   => "multiply",
+    FeBlendMode::Screen     => "screen",
+    FeBlendMode::Darken     => "darken",
+    FeBlendMode::Lighten    => "lighten"
+);
 
 
 /// An images compositing operation.
@@ -596,18 +628,14 @@ pub enum FeCompositeOperator {
     Arithmetic,
 }
 
-impl ToString for FeCompositeOperator {
-    fn to_string(&self) -> String {
-        match self {
-            FeCompositeOperator::Over       => "over",
-            FeCompositeOperator::In         => "in",
-            FeCompositeOperator::Out        => "out",
-            FeCompositeOperator::Atop       => "atop",
-            FeCompositeOperator::Xor        => "xor",
-            FeCompositeOperator::Arithmetic => "arithmetic",
-        }.to_string()
-    }
-}
+enum_to_string!(FeCompositeOperator,
+    FeCompositeOperator::Over       => "over",
+    FeCompositeOperator::In         => "in",
+    FeCompositeOperator::Out        => "out",
+    FeCompositeOperator::Atop       => "atop",
+    FeCompositeOperator::Xor        => "xor",
+    FeCompositeOperator::Arithmetic => "arithmetic"
+);
 
 
 /// Kind of the `feImage` data.
@@ -646,27 +674,17 @@ pub enum ShapeRendering {
 
 enum_default!(ShapeRendering, GeometricPrecision);
 
-impl FromStr for ShapeRendering {
-    type Err = &'static str;
+enum_from_str!(ShapeRendering,
+    "optimizeSpeed"         => ShapeRendering::OptimizeSpeed,
+    "crispEdges"            => ShapeRendering::CrispEdges,
+    "geometricPrecision"    => ShapeRendering::GeometricPrecision
+);
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "optimizeSpeed"         => ShapeRendering::OptimizeSpeed,
-            "crispEdges"            => ShapeRendering::CrispEdges,
-            _                       => ShapeRendering::GeometricPrecision,
-        })
-    }
-}
-
-impl ToString for ShapeRendering {
-    fn to_string(&self) -> String {
-        match self {
-            ShapeRendering::OptimizeSpeed       => "optimizeSpeed",
-            ShapeRendering::CrispEdges          => "crispEdges",
-            ShapeRendering::GeometricPrecision  => "geometricPrecision",
-        }.to_string()
-    }
-}
+enum_to_string!(ShapeRendering,
+    ShapeRendering::OptimizeSpeed       => "optimizeSpeed",
+    ShapeRendering::CrispEdges          => "crispEdges",
+    ShapeRendering::GeometricPrecision  => "geometricPrecision"
+);
 
 
 /// A text rendering method.
@@ -682,27 +700,17 @@ pub enum TextRendering {
 
 enum_default!(TextRendering, OptimizeLegibility);
 
-impl FromStr for TextRendering {
-    type Err = &'static str;
+enum_from_str!(TextRendering,
+    "optimizeSpeed"         => TextRendering::OptimizeSpeed,
+    "optimizeLegibility"    => TextRendering::OptimizeLegibility,
+    "geometricPrecision"    => TextRendering::GeometricPrecision
+);
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "optimizeSpeed"         => TextRendering::OptimizeSpeed,
-            "geometricPrecision"    => TextRendering::GeometricPrecision,
-            _                       => TextRendering::OptimizeLegibility,
-        })
-    }
-}
-
-impl ToString for TextRendering {
-    fn to_string(&self) -> String {
-        match self {
-            TextRendering::OptimizeSpeed       => "optimizeSpeed",
-            TextRendering::OptimizeLegibility  => "optimizeLegibility",
-            TextRendering::GeometricPrecision  => "geometricPrecision",
-        }.to_string()
-    }
-}
+enum_to_string!(TextRendering,
+    TextRendering::OptimizeSpeed       => "optimizeSpeed",
+    TextRendering::OptimizeLegibility  => "optimizeLegibility",
+    TextRendering::GeometricPrecision  => "geometricPrecision"
+);
 
 
 /// An image rendering method.
@@ -717,22 +725,12 @@ pub enum ImageRendering {
 
 enum_default!(ImageRendering, OptimizeQuality);
 
-impl FromStr for ImageRendering {
-    type Err = &'static str;
+enum_from_str!(ImageRendering,
+    "optimizeQuality"   => ImageRendering::OptimizeQuality,
+    "optimizeSpeed"     => ImageRendering::OptimizeSpeed
+);
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "optimizeSpeed" => ImageRendering::OptimizeSpeed,
-            _               => ImageRendering::OptimizeQuality,
-        })
-    }
-}
-
-impl ToString for ImageRendering {
-    fn to_string(&self) -> String {
-        match self {
-            ImageRendering::OptimizeQuality => "optimizeQuality",
-            ImageRendering::OptimizeSpeed   => "optimizeSpeed",
-        }.to_string()
-    }
-}
+enum_to_string!(ImageRendering,
+    ImageRendering::OptimizeQuality => "optimizeQuality",
+    ImageRendering::OptimizeSpeed   => "optimizeSpeed"
+);

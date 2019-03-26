@@ -38,7 +38,7 @@ pub fn convert(
         None
     };
 
-    let rendering_mode = node.find_enum(AId::TextRendering)
+    let rendering_mode = node.try_find_enum(AId::TextRendering)
                              .unwrap_or(state.opt.text_rendering);
 
     parent.append_kind(tree::NodeKind::Text(tree::Text {
@@ -84,9 +84,9 @@ fn collect_text_chunks(
             }
         };
 
-        let anchor = convert_text_anchor(parent);
+        let anchor = parent.find_enum(AId::TextAnchor);
         let span = tree::TextSpan {
-            visibility: super::convert_visibility(parent),
+            visibility: parent.find_enum(AId::Visibility),
             fill: style::resolve_fill(parent, true, &text_state, tree),
             stroke: style::resolve_stroke(parent, true, state, tree),
             font,
@@ -150,38 +150,10 @@ fn resolve_font(
     node: &svgdom::Node,
     state: &State,
 ) -> Option<tree::Font> {
-    let style = node.find_str(AId::FontStyle, "normal", |value| {
-        match value {
-            "italic" =>  tree::FontStyle::Italic,
-            "oblique" => tree::FontStyle::Oblique,
-            _ =>         tree::FontStyle::Normal,
-        }
-    });
-
-    let variant = node.find_str(AId::FontVariant, "normal", |value| {
-        match value {
-            "small-caps" => tree::FontVariant::SmallCaps,
-            _ =>            tree::FontVariant::Normal,
-        }
-    });
-
+    let style = node.find_enum(AId::FontStyle);
+    let variant = node.find_enum(AId::FontVariant);
+    let stretch = node.find_enum(AId::FontStretch);
     let weight = resolve_font_weight(node);
-
-    let stretch = node.find_str(AId::FontStretch, "normal", |value| {
-        match value {
-            "wider" =>           tree::FontStretch::Wider,
-            "narrower" =>        tree::FontStretch::Narrower,
-            "ultra-condensed" => tree::FontStretch::UltraCondensed,
-            "extra-condensed" => tree::FontStretch::ExtraCondensed,
-            "condensed" =>       tree::FontStretch::Condensed,
-            "semi-condensed" =>  tree::FontStretch::SemiCondensed,
-            "semi-expanded" =>   tree::FontStretch::SemiExpanded,
-            "expanded" =>        tree::FontStretch::Expanded,
-            "extra-expanded" =>  tree::FontStretch::ExtraExpanded,
-            "ultra-expanded" =>  tree::FontStretch::UltraExpanded,
-            _ =>                 tree::FontStretch::Normal,
-        }
-    });
 
     let letter_spacing = node.resolve_length(AId::LetterSpacing, state, 0.0);
     let letter_spacing = if letter_spacing.is_fuzzy_zero() { None } else { Some(letter_spacing) };
@@ -213,17 +185,6 @@ fn resolve_font(
         word_spacing,
     })
 }
-
-fn convert_text_anchor(node: &svgdom::Node) -> tree::TextAnchor {
-    node.find_str(AId::TextAnchor, "start", |value| {
-        match value {
-            "middle" => tree::TextAnchor::Middle,
-            "end"    => tree::TextAnchor::End,
-            _        => tree::TextAnchor::Start,
-        }
-    })
-}
-
 
 #[derive(Clone, Copy)]
 struct CharacterPosition {

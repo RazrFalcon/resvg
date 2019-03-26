@@ -22,18 +22,10 @@ pub fn resolve_fill(
 ) -> Option<tree::Fill> {
     if state.is_in_clip_path() {
         // A `clipPath` child can be filled only with a black color.
-
-        let clip_rule = node.find_str(AId::ClipRule, "nonzero", |value| {
-            match value {
-                "evenodd" => tree::FillRule::EvenOdd,
-                _ => tree::FillRule::NonZero,
-            }
-        });
-
         return Some(tree::Fill {
             paint: tree::Paint::Color(tree::Color::black()),
             opacity: tree::Opacity::default(),
-            rule: clip_rule,
+            rule: node.find_enum(AId::ClipRule),
         });
     }
 
@@ -47,12 +39,7 @@ pub fn resolve_fill(
 
     let fill_opacity = node.resolve_length(AId::FillOpacity, state, 1.0) * sub_opacity.value();
 
-    let mut fill_rule = node.find_str(AId::FillRule, "nonzero", |value| {
-        match value {
-            "evenodd" => tree::FillRule::EvenOdd,
-            _ => tree::FillRule::NonZero,
-        }
-    });
+    let mut fill_rule = node.find_enum(AId::FillRule);
 
     // The `fill-rule` should be ignored.
     // https://www.w3.org/TR/SVG2/text.html#TextRenderingOrder
@@ -104,22 +91,8 @@ pub fn resolve_stroke(
     let miterlimit = if miterlimit < 1.0 { 1.0 } else { miterlimit };
     let miterlimit = tree::StrokeMiterlimit::new(miterlimit);
 
-    let linecap = node.find_str(AId::StrokeLinecap, "butt", |value| {
-        match value {
-            "round" =>  tree::LineCap::Round,
-            "square" => tree::LineCap::Square,
-            _ =>        tree::LineCap::Butt,
-        }
-    });
-
-    let linejoin = node.find_str(AId::StrokeLinejoin, "miter", |value| {
-        match value {
-            "round" => tree::LineJoin::Round,
-            "bevel" => tree::LineJoin::Bevel,
-            _ =>       tree::LineJoin::Miter,
-        }
-    });
-
+    let linecap = node.find_enum(AId::StrokeLinecap);
+    let linejoin = node.find_enum(AId::StrokeLinejoin);
     let dasharray = conv_dasharray(node, state);
 
     let stroke = tree::Stroke {

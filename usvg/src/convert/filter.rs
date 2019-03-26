@@ -144,7 +144,7 @@ fn convert_primitive(
         // TODO: validate and test
         width: fe.try_convert_length(AId::Width, units, state),
         height: fe.try_convert_length(AId::Height, units, state),
-        color_interpolation: convert_color_interpolation(fe),
+        color_interpolation: fe.find_enum(AId::ColorInterpolationFilters),
         result: gen_result(fe, results),
         kind,
     }
@@ -277,7 +277,8 @@ fn convert_fe_image(
     let ref attrs = fe.attributes();
 
     let aspect = super::convert_aspect(attrs);
-    let rendering_mode = fe.find_enum(AId::ImageRendering).unwrap_or(state.opt.image_rendering);
+    let rendering_mode = fe.try_find_enum(AId::ImageRendering)
+                           .unwrap_or(state.opt.image_rendering);
 
     let href = match attrs.get_value(AId::Href) {
         Some(&AValue::String(ref s)) => s,
@@ -391,17 +392,4 @@ fn gen_result(node: &svgdom::Node, results: &mut FilterResults) -> String {
             }
         }
     }
-}
-
-
-fn convert_color_interpolation(
-    node: &svgdom::Node,
-) -> tree::ColorInterpolation {
-    node.find_str(AId::ColorInterpolationFilters, "auto", |value| {
-        match value {
-            "sRGB"      => tree::ColorInterpolation::SRGB,
-            "linearRGB" => tree::ColorInterpolation::LinearRGB,
-            _ =>           tree::ColorInterpolation::LinearRGB,
-        }
-    })
 }
