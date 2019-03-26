@@ -172,8 +172,8 @@ So the final package can look like this:
 ```
 /bin/rendersvg (does not depend on *.so)
 /bin/usvg (completely optional)
-/include/resvg.h (from capi/include)
-/include/ResvgQt.h (from capi/include)
+/include/resvg/resvg.h (from capi/include)
+/include/resvg/ResvgQt.h (from capi/include)
 /lib/libresvg-cairo.so
 /lib/libresvg-qt.so
 ```

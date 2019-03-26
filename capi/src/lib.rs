@@ -30,6 +30,9 @@ pub struct resvg_options {
     pub font_family: *const c_char,
     pub font_size: f64,
     pub languages: *const c_char,
+    pub shape_rendering: resvg_shape_rendering,
+    pub text_rendering: resvg_text_rendering,
+    pub image_rendering: resvg_image_rendering,
     pub fit_to: resvg_fit_to,
     pub draw_background: bool,
     pub background: resvg_color,
@@ -53,6 +56,26 @@ pub struct resvg_color {
     pub r: u8,
     pub g: u8,
     pub b: u8,
+}
+
+#[repr(C)]
+pub enum resvg_shape_rendering {
+    RESVG_SHAPE_RENDERING_OPTIMIZE_SPEED,
+    RESVG_SHAPE_RENDERING_CRISP_EDGES,
+    RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION,
+}
+
+#[repr(C)]
+pub enum resvg_text_rendering {
+    RESVG_TEXT_RENDERING_OPTIMIZE_SPEED,
+    RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY,
+    RESVG_TEXT_RENDERING_GEOMETRIC_PRECISION,
+}
+
+#[repr(C)]
+pub enum resvg_image_rendering {
+    RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY,
+    RESVG_IMAGE_RENDERING_OPTIMIZE_SPEED,
 }
 
 #[repr(C)]
@@ -94,7 +117,7 @@ pub struct resvg_transform {
 }
 
 #[repr(C)]
-pub struct resvg_render_tree(resvg::usvg::Tree);
+pub struct resvg_render_tree(usvg::Tree);
 
 #[repr(C)]
 pub struct resvg_handle(resvg::InitObject);
@@ -149,6 +172,9 @@ pub extern fn resvg_init_options(opt: *mut resvg_options) {
         (*opt).font_family = ptr::null();
         (*opt).font_size = 12.0;
         (*opt).languages = ptr::null();
+        (*opt).shape_rendering = resvg_shape_rendering::RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION;
+        (*opt).text_rendering = resvg_text_rendering::RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY;
+        (*opt).image_rendering = resvg_image_rendering::RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY;
         (*opt).fit_to = resvg_fit_to {
             kind: resvg_fit_to_type::RESVG_FIT_TO_ORIGINAL,
             value: 0.0,
@@ -643,13 +669,38 @@ fn to_native_opt(opt: &resvg_options) -> resvg::Options {
     };
 
     let background = if opt.draw_background {
-        Some(resvg::usvg::Color::new(
+        Some(usvg::Color::new(
             opt.background.r,
             opt.background.g,
             opt.background.b,
         ))
     } else {
         None
+    };
+
+    let shape_rendering = match opt.shape_rendering {
+        resvg_shape_rendering::RESVG_SHAPE_RENDERING_OPTIMIZE_SPEED =>
+            usvg::ShapeRendering::OptimizeSpeed,
+        resvg_shape_rendering::RESVG_SHAPE_RENDERING_CRISP_EDGES =>
+            usvg::ShapeRendering::CrispEdges,
+        resvg_shape_rendering::RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION =>
+            usvg::ShapeRendering::GeometricPrecision,
+    };
+
+    let text_rendering = match opt.text_rendering {
+        resvg_text_rendering::RESVG_TEXT_RENDERING_OPTIMIZE_SPEED =>
+            usvg::TextRendering::OptimizeSpeed,
+        resvg_text_rendering::RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY =>
+            usvg::TextRendering::OptimizeLegibility,
+        resvg_text_rendering::RESVG_TEXT_RENDERING_GEOMETRIC_PRECISION =>
+            usvg::TextRendering::GeometricPrecision,
+    };
+
+    let image_rendering = match opt.image_rendering {
+        resvg_image_rendering::RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY =>
+            usvg::ImageRendering::OptimizeQuality,
+        resvg_image_rendering::RESVG_IMAGE_RENDERING_OPTIMIZE_SPEED =>
+            usvg::ImageRendering::OptimizeSpeed,
     };
 
     let ff = DEFAULT_FONT_FAMILY;
@@ -695,6 +746,9 @@ fn to_native_opt(opt: &resvg_options) -> resvg::Options {
             font_family: font_family.to_string(),
             font_size: opt.font_size,
             languages,
+            shape_rendering,
+            text_rendering,
+            image_rendering,
             keep_named_groups: opt.keep_named_groups,
         },
         fit_to,

@@ -4,6 +4,7 @@
 
 use std::fmt;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 // external
 pub use svgdom::{
@@ -361,7 +362,7 @@ impl fmt::Debug for Paint {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Paint::Color(c) => write!(f, "Color({})", c),
-            Paint::Link(_) => write!(f, "Link"),
+            Paint::Link(_)  => write!(f, "Link"),
         }
     }
 }
@@ -629,4 +630,109 @@ pub enum FeImageKind {
     ///
     /// Not supported yet.
     Use(String),
+}
+
+
+/// A shape rendering method.
+///
+/// `shape-rendering` attribute in the SVG.
+#[derive(Clone, Copy, PartialEq, Debug)]
+#[allow(missing_docs)]
+pub enum ShapeRendering {
+    OptimizeSpeed,
+    CrispEdges,
+    GeometricPrecision,
+}
+
+enum_default!(ShapeRendering, GeometricPrecision);
+
+impl FromStr for ShapeRendering {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "optimizeSpeed"         => ShapeRendering::OptimizeSpeed,
+            "crispEdges"            => ShapeRendering::CrispEdges,
+            _                       => ShapeRendering::GeometricPrecision,
+        })
+    }
+}
+
+impl ToString for ShapeRendering {
+    fn to_string(&self) -> String {
+        match self {
+            ShapeRendering::OptimizeSpeed       => "optimizeSpeed",
+            ShapeRendering::CrispEdges          => "crispEdges",
+            ShapeRendering::GeometricPrecision  => "geometricPrecision",
+        }.to_string()
+    }
+}
+
+
+/// A text rendering method.
+///
+/// `text-rendering` attribute in the SVG.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum TextRendering {
+    OptimizeSpeed,
+    OptimizeLegibility,
+    GeometricPrecision,
+}
+
+enum_default!(TextRendering, OptimizeLegibility);
+
+impl FromStr for TextRendering {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "optimizeSpeed"         => TextRendering::OptimizeSpeed,
+            "geometricPrecision"    => TextRendering::GeometricPrecision,
+            _                       => TextRendering::OptimizeLegibility,
+        })
+    }
+}
+
+impl ToString for TextRendering {
+    fn to_string(&self) -> String {
+        match self {
+            TextRendering::OptimizeSpeed       => "optimizeSpeed",
+            TextRendering::OptimizeLegibility  => "optimizeLegibility",
+            TextRendering::GeometricPrecision  => "geometricPrecision",
+        }.to_string()
+    }
+}
+
+
+/// An image rendering method.
+///
+/// `image-rendering` attribute in the SVG.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum ImageRendering {
+    OptimizeQuality,
+    OptimizeSpeed,
+}
+
+enum_default!(ImageRendering, OptimizeQuality);
+
+impl FromStr for ImageRendering {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "optimizeSpeed" => ImageRendering::OptimizeSpeed,
+            _               => ImageRendering::OptimizeQuality,
+        })
+    }
+}
+
+impl ToString for ImageRendering {
+    fn to_string(&self) -> String {
+        match self {
+            ImageRendering::OptimizeQuality => "optimizeQuality",
+            ImageRendering::OptimizeSpeed   => "optimizeSpeed",
+        }.to_string()
+    }
 }

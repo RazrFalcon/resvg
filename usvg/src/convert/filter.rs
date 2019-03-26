@@ -277,6 +277,7 @@ fn convert_fe_image(
     let ref attrs = fe.attributes();
 
     let aspect = super::convert_aspect(attrs);
+    let rendering_mode = fe.find_enum(AId::ImageRendering).unwrap_or(state.opt.image_rendering);
 
     let href = match attrs.get_value(AId::Href) {
         Some(&AValue::String(ref s)) => s,
@@ -284,6 +285,7 @@ fn convert_fe_image(
             warn!("The 'feImage' element lacks the 'xlink:href' attribute. Skipped.");
             return tree::FilterKind::FeImage(tree::FeImage {
                 aspect,
+                rendering_mode,
                 data: tree::FeImageKind::None,
             });
         }
@@ -294,6 +296,7 @@ fn convert_fe_image(
         None => {
             return tree::FilterKind::FeImage(tree::FeImage {
                 aspect,
+                rendering_mode,
                 data: tree::FeImageKind::None,
             });
         }
@@ -301,7 +304,8 @@ fn convert_fe_image(
 
 
     tree::FilterKind::FeImage(tree::FeImage {
-        aspect: super::convert_aspect(attrs),
+        aspect,
+        rendering_mode,
         data: tree::FeImageKind::Image(img_data, format),
     })
 }

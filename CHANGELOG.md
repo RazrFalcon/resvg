@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- `shape-rendering`, `text-rendering` and `image-rendering` support.
+
+### Changed
+- (qt-backend) Text will always be rendered as path now.
+  Previously, `QPainter::drawText` was used for simple text.
 
 ## [0.6.1] - 2019-03-16
 ### Fixed

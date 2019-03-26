@@ -7,6 +7,7 @@ use qt;
 
 // self
 use super::prelude::*;
+use backend_utils;
 use backend_utils::text::{
     self,
     FontMetrics,
@@ -52,12 +53,18 @@ impl<'a> FontMetrics<qt::Font> for QtFontMetrics<'a> {
 
 pub fn draw(
     tree: &usvg::Tree,
-    text_node: &usvg::Text,
+    text: &usvg::Text,
     opt: &Options,
     p: &mut qt::Painter,
 ) -> Rect {
-    let (blocks, text_bbox) = text::prepare_blocks(text_node, &mut QtFontMetrics::new(p));
+    p.set_antialiasing(backend_utils::use_text_antialiasing(text.rendering_mode));
+
+    let (blocks, text_bbox) = text::prepare_blocks(text, &mut QtFontMetrics::new(p));
     text::draw_blocks(blocks, |block| draw_block(tree, block, text_bbox, opt, p));
+
+    // Revert anti-aliasing.
+    p.set_antialiasing(true);
+
     text_bbox
 }
 

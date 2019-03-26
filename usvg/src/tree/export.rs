@@ -232,6 +232,7 @@ fn conv_defs(
                             }
 
                             fe_elem.set_attribute((AId::PreserveAspectRatio, img.aspect));
+                            fe_elem.set_enum_attribute(AId::ImageRendering, img.rendering_mode);
 
                             fe_elem
                         }
@@ -277,6 +278,7 @@ fn conv_elements(
 
                 conv_transform(AId::Transform, &p.transform, &mut path_elem);
                 path_elem.set_enum_attribute(AId::Visibility, p.visibility);
+                path_elem.set_enum_attribute(AId::ShapeRendering, p.rendering_mode);
                 path_elem.set_id(p.id.clone());
 
                 use svgdom::Path as SvgDomPath;
@@ -310,8 +312,8 @@ fn conv_elements(
                 parent.append(text_elem.clone());
 
                 conv_transform(AId::Transform, &text.transform, &mut text_elem);
+                text_elem.set_enum_attribute(AId::TextRendering, text.rendering_mode);
                 text_elem.set_id(text.id.clone());
-
 
                 if let Some(ref rotate) = text.rotate {
                     text_elem.set_attribute((AId::Rotate, NumberList(rotate.clone())));
@@ -381,6 +383,7 @@ fn conv_elements(
 
                 conv_transform(AId::Transform, &img.transform, &mut img_elem);
                 img_elem.set_enum_attribute(AId::Visibility, img.visibility);
+                img_elem.set_enum_attribute(AId::ImageRendering, img.rendering_mode);
                 img_elem.set_id(img.id.clone());
                 conv_viewbox2(&img.view_box, &mut img_elem);
 

@@ -11,6 +11,7 @@ use super::{
     fill,
     stroke,
 };
+use backend_utils;
 
 
 pub fn draw(
@@ -32,6 +33,10 @@ pub fn draw(
         return bbox;
     }
 
+    if !backend_utils::use_shape_antialiasing(path.rendering_mode) {
+        cr.set_antialias(cairo::Antialias::None);
+    }
+
     fill::apply(tree, &path.fill, opt, bbox, cr);
     if path.stroke.is_some() {
         cr.fill_preserve();
@@ -41,6 +46,9 @@ pub fn draw(
     } else {
         cr.fill();
     }
+
+    // Revert anti-aliasing.
+    cr.set_antialias(cairo::Antialias::Default);
 
     bbox
 }

@@ -38,10 +38,14 @@ pub fn convert(
         None
     };
 
+    let rendering_mode = node.find_enum(AId::TextRendering)
+                             .unwrap_or(state.opt.text_rendering);
+
     parent.append_kind(tree::NodeKind::Text(tree::Text {
         id: node.id().clone(),
         transform: text_ts,
         rotate,
+        rendering_mode,
         chunks,
     }));
 }

@@ -571,6 +571,8 @@ fn convert_path(
     let stroke = style::resolve_stroke(node, has_bbox, state, tree);
     let transform = attrs.get_transform(AId::Transform);
     let mut visibility = convert_visibility(node);
+    let rendering_mode = node.find_enum(AId::ShapeRendering)
+                             .unwrap_or(state.opt.shape_rendering);
 
     // If a path doesn't have a fill or a stroke than it's invisible.
     // By setting `visibility` to `hidden` we are disabling the rendering of this path.
@@ -584,6 +586,7 @@ fn convert_path(
         visibility,
         fill,
         stroke,
+        rendering_mode,
         segments: segments.clone(), // TODO: remove
     }));
 

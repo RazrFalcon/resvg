@@ -59,6 +59,7 @@ fn main() {
         visibility: usvg::Visibility::Visible,
         fill,
         stroke: None,
+        rendering_mode: usvg::ShapeRendering::default(),
         segments: utils::rect_to_path(Rect::new(20.0, 20.0, 160.0, 160.0)),
     }));
 

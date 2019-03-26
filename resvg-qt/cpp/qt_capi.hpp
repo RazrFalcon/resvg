@@ -158,7 +158,8 @@ qtc_qimage* qtc_qimage_from_file(const char *path);
 qtc_qimage* qtc_qimage_from_data(const uint8_t *data, int size);
 uint8_t* qtc_qimage_get_data(qtc_qimage *c_img);
 uint32_t qtc_qimage_get_byte_count(qtc_qimage *c_img);
-qtc_qimage* qtc_qimage_resize(qtc_qimage *c_img, uint32_t width, uint32_t height, AspectRatioMode ratio);
+qtc_qimage* qtc_qimage_resize(qtc_qimage *c_img, uint32_t width, uint32_t height, AspectRatioMode ratio,
+                              bool smoothTransformation);
 qtc_qimage* qtc_qimage_copy(qtc_qimage *c_img, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 void qtc_qimage_fill(qtc_qimage *c_img, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 void qtc_qimage_set_dpi(qtc_qimage *c_img, double dpi);
@@ -171,6 +172,8 @@ void qtc_qimage_destroy(qtc_qimage *c_img);
 
 // QPainter
 qtc_qpainter* qtc_qpainter_create(qtc_qimage *c_img);
+void qtc_qpainter_set_antialiasing(qtc_qpainter *c_p, bool flag);
+void qtc_qpainter_set_smooth_pixmap_transform(qtc_qpainter *c_p, bool flag);
 qtc_qfont* qtc_qpainter_get_font(qtc_qpainter *c_p);
 void qtc_qpainter_set_font(qtc_qpainter *c_p, qtc_qfont *c_f);
 void qtc_qpainter_set_pen(qtc_qpainter *c_p, qtc_qpen *c_pen);

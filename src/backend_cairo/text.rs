@@ -15,6 +15,7 @@ use pangocairo::functions as pc;
 
 // self
 use super::prelude::*;
+use backend_utils;
 use backend_utils::text::{
     self,
     FontMetrics,
@@ -88,13 +89,26 @@ impl FontMetrics<pango::FontDescription> for PangoFontMetrics {
 
 pub fn draw(
     tree: &usvg::Tree,
-    text_node: &usvg::Text,
+    text: &usvg::Text,
     opt: &Options,
     cr: &cairo::Context,
 ) -> Rect {
+    let mut font_opt = cr.get_font_options();
+    if !backend_utils::use_text_antialiasing(text.rendering_mode) {
+        cr.set_antialias(cairo::Antialias::None);
+        font_opt.set_antialias(cairo::Antialias::None);
+        cr.set_font_options(&font_opt);
+    }
+
     let mut fm = PangoFontMetrics::new(opt, cr);
-    let (blocks, text_bbox) = text::prepare_blocks(text_node, &mut fm);
+    let (blocks, text_bbox) = text::prepare_blocks(text, &mut fm);
     text::draw_blocks(blocks, |block| draw_block(tree, block, text_bbox, opt, cr));
+
+    // Revert anti-aliasing.
+    cr.set_antialias(cairo::Antialias::Default);
+    font_opt.set_antialias(cairo::Antialias::Default);
+    cr.set_font_options(&font_opt);
+
     text_bbox
 }
 

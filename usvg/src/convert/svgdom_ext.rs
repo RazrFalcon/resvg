@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::str::FromStr;
+
 // external
 use svgdom;
 
@@ -15,6 +17,7 @@ pub trait SvgNodeExt {
     fn find_attribute<T: FromValue + Clone>(&self, aid: AId) -> Option<T>;
     fn find_node_with_attribute(&self, aid: AId) -> Option<svgdom::Node>;
     fn find_str<R, F: Fn(&str) -> R>(&self, aid: AId, def: &str, f: F) -> R;
+    fn find_enum<T: FromStr>(&self, aid: AId) -> Option<T>;
     fn resolve_length(&self, aid: AId, state: &State, def: f64) -> f64;
     fn convert_length(&self, aid: AId, object_units: tree::Units, state: &State, def: Length) -> f64;
     fn try_convert_length(&self, aid: AId, object_units: tree::Units, state: &State) -> Option<f64>;
@@ -61,6 +64,24 @@ impl SvgNodeExt for svgdom::Node {
         }
 
         f(def)
+    }
+
+    fn find_enum<T: FromStr>(&self, aid: AId) -> Option<T> {
+        for n in self.ancestors() {
+            if n.has_attribute(aid) {
+                let attrs = n.attributes();
+                if let Some(s) = attrs.get_str(aid) {
+                    if let Ok(v) = T::from_str(s) {
+                        return Some(v);
+                    }
+                }
+
+                // No reason to go further.
+                break;
+            }
+        }
+
+        None
     }
 
     fn resolve_length(&self, aid: AId, state: &State, def: f64) -> f64 {

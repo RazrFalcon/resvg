@@ -1,0 +1,9 @@
+a-image-rendering-001.svg
+a-image-rendering-003.svg
+a-shape-rendering-002.svg
+a-shape-rendering-003.svg
+a-shape-rendering-006.svg
+a-shape-rendering-007.svg
+a-shape-rendering-008.svg
+a-text-rendering-001.svg
+a-text-rendering-005.svg

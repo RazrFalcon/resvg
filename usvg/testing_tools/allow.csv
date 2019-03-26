@@ -33,6 +33,11 @@ a-opacity-001,591
 a-opacity-002,137
 a-overflow-001,25
 a-overflow-003,25
+a-shape-rendering-001,538
+a-shape-rendering-002,93
+a-shape-rendering-003,93
+a-shape-rendering-004,538
+a-shape-rendering-008,164
 a-stroke-dasharray-012,244
 a-stroke-width-004,964,chrome bug
 a-systemLanguage-001,25604,chrome bug
@@ -61,6 +66,7 @@ a-text-decoration-011,1881,unimplemented
 a-text-decoration-012,1535,unimplemented
 a-text-decoration-013,1947,unimplemented
 a-text-decoration-014,270,unimplemented
+a-text-rendering-005,313,#95
 a-visibility-005,137
 a-visibility-006,137
 a-visibility-007,29

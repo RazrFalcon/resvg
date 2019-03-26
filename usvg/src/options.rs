@@ -4,6 +4,12 @@
 
 use std::path::PathBuf;
 
+use {
+    ImageRendering,
+    ShapeRendering,
+    TextRendering,
+};
+
 
 /// Processing options.
 #[derive(Clone, Debug)]
@@ -30,6 +36,21 @@ pub struct Options {
     /// Format: en, en-US.
     pub languages: Vec<String>,
 
+    /// Specifies the default shape rendering method.
+    ///
+    /// Will be used when an SVG element's `shape-rendering` property is set to `auto`.
+    pub shape_rendering: ShapeRendering,
+
+    /// Specifies the default text rendering method.
+    ///
+    /// Will be used when an SVG element's `text-rendering` property is set to `auto`.
+    pub text_rendering: TextRendering,
+
+    /// Specifies the default image rendering method.
+    ///
+    /// Will be used when an SVG element's `image-rendering` property is set to `auto`.
+    pub image_rendering: ImageRendering,
+
     /// Keep named groups.
     ///
     /// If set to `true`, all non-empty groups with `id` attribute will not
@@ -46,6 +67,9 @@ impl Default for Options {
             font_family: "Times New Roman".to_owned(),
             font_size: 12.0,
             languages: vec!["en".to_string()],
+            shape_rendering: ShapeRendering::default(),
+            text_rendering: TextRendering::default(),
+            image_rendering: ImageRendering::default(),
             keep_named_groups: false,
         }
     }

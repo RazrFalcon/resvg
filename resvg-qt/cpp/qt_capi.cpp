@@ -90,11 +90,11 @@ uint32_t qtc_qimage_get_byte_count(qtc_qimage *c_img)
     return IMAGE_CAST->byteCount();
 }
 
-qtc_qimage* qtc_qimage_resize(qtc_qimage *c_img, uint32_t width, uint32_t height, AspectRatioMode ratio)
+qtc_qimage* qtc_qimage_resize(qtc_qimage *c_img, uint32_t width, uint32_t height, AspectRatioMode ratio,
+                              bool smoothTransformation)
 {
-    const QImage rImg = IMAGE_CAST->scaled(width, height, Qt::AspectRatioMode(ratio),
-                                           Qt::SmoothTransformation);
-
+    const auto mode = smoothTransformation ? Qt::SmoothTransformation : Qt::FastTransformation;
+    const QImage rImg = IMAGE_CAST->scaled(width, height, Qt::AspectRatioMode(ratio), mode);
     return reinterpret_cast<qtc_qimage*>(new QImage(rImg));
 }
 
@@ -152,10 +152,19 @@ qtc_qpainter *qtc_qpainter_create(qtc_qimage *c_img)
     p->setPen(Qt::NoPen);
     p->setBrush(Qt::NoBrush);
     p->setRenderHint(QPainter::Antialiasing, true);
-    p->setRenderHint(QPainter::TextAntialiasing, true);
     p->setRenderHint(QPainter::SmoothPixmapTransform, true);
 
     return reinterpret_cast<qtc_qpainter*>(p);
+}
+
+void qtc_qpainter_set_antialiasing(qtc_qpainter *c_p, bool flag)
+{
+    PAINTER_CAST->setRenderHint(QPainter::Antialiasing, flag);
+}
+
+void qtc_qpainter_set_smooth_pixmap_transform(qtc_qpainter *c_p, bool flag)
+{
+    PAINTER_CAST->setRenderHint(QPainter::SmoothPixmapTransform, flag);
 }
 
 qtc_qfont* qtc_qpainter_get_font(qtc_qpainter *c_p)
@@ -203,30 +212,15 @@ void qtc_qpainter_draw_image(qtc_qpainter *c_p, double x, double y, qtc_qimage *
     PAINTER_CAST->drawImage(QPointF(x, y), *IMAGE_CAST);
 }
 
-static bool is_simple_style(QPainter *p)
-{
-    if (p->pen() == Qt::NoPen && p->brush().style() == Qt::SolidPattern) {
-        return true;
-    }
-
-    return false;
-}
-
 void qtc_qpainter_draw_text(qtc_qpainter *c_p, double x, double y, const char *c_text)
 {
     auto p = PAINTER_CAST;
 
     const QString text = QString::fromUtf8(c_text);
 
-    if (is_simple_style(p)) {
-        p->setPen(QPen(p->brush().color(), 1));
-
-        p->drawText(QPointF(x, y + p->fontMetrics().ascent()), text);
-    } else {
-        QPainterPath path;
-        path.addText(QPointF(x, y + p->fontMetrics().ascent()), p->font(), text);
-        p->drawPath(path);
-    }
+    QPainterPath path;
+    path.addText(QPointF(x, y + p->fontMetrics().ascent()), p->font(), text);
+    p->drawPath(path);
 }
 
 void qtc_qpainter_draw_rect(qtc_qpainter *c_p, double x, double y, double w, double h)

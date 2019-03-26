@@ -176,10 +176,16 @@ impl Image {
         unsafe { ffi::qtc_qimage_save(self.0, c_path.as_ptr()) }
     }
 
-    pub fn resize(&self, width: u32, height: u32, ratio: AspectRatioMode) -> Option<Image> {
+    pub fn resize(
+        &self,
+        width: u32,
+        height: u32,
+        ratio: AspectRatioMode,
+        smooth: bool,
+    ) -> Option<Image> {
         unsafe {
             Self::from_ptr(ffi::qtc_qimage_resize(self.0, width, height,
-                                                  ratio as ffi::AspectRatioMode))
+                                                  ratio as ffi::AspectRatioMode, smooth))
         }
     }
 
@@ -257,6 +263,14 @@ impl Painter {
 
     pub unsafe fn from_raw(ptr: *mut ffi::qtc_qpainter) -> Painter {
         Painter(ptr, false)
+    }
+
+    pub fn set_antialiasing(&self, flag: bool) {
+        unsafe { ffi::qtc_qpainter_set_antialiasing(self.0, flag); }
+    }
+
+    pub fn set_smooth_pixmap_transform(&self, flag: bool) {
+        unsafe { ffi::qtc_qpainter_set_smooth_pixmap_transform(self.0, flag); }
     }
 
     pub fn font(&self) -> Font {

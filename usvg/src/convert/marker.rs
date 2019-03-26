@@ -122,12 +122,9 @@ fn resolve(
         );
 
         clip_path.append_kind(tree::NodeKind::Path(tree::Path {
-            id: String::new(),
-            transform: tree::Transform::default(),
-            visibility: tree::Visibility::Visible,
             fill: Some(tree::Fill::default()),
-            stroke: None,
             segments: utils::rect_to_path(clip_rect),
+            ..tree::Path::default()
         }));
 
         Some(id)

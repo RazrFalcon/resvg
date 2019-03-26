@@ -115,6 +115,11 @@ pub struct Path {
     /// Stroke style.
     pub stroke: Option<Stroke>,
 
+    /// Rendering mode.
+    ///
+    /// `shape-rendering` in SVG.
+    pub rendering_mode: ShapeRendering,
+
     /// Segments list.
     ///
     /// All segments are in absolute coordinates.
@@ -129,6 +134,7 @@ impl Default for Path {
             visibility: Visibility::Visible,
             fill: None,
             stroke: None,
+            rendering_mode: ShapeRendering::default(),
             segments: Vec::new(),
         }
     }
@@ -154,6 +160,11 @@ pub struct Text {
     ///
     /// If set, contains a list of rotation angles for each *code point* in the `text`.
     pub rotate: Option<Vec<f64>>,
+
+    /// Rendering mode.
+    ///
+    /// `text-rendering` in SVG.
+    pub rendering_mode: TextRendering,
 
     /// A list of text chunks.
     pub chunks: Vec<TextChunk>,
@@ -261,6 +272,11 @@ pub struct Image {
     /// Combination of the `x`, `y`, `width`, `height` and `preserveAspectRatio`
     /// attributes.
     pub view_box: ViewBox,
+
+    /// Rendering mode.
+    ///
+    /// `image-rendering` in SVG.
+    pub rendering_mode: ImageRendering,
 
     /// Image data.
     pub data: ImageData,
@@ -729,6 +745,11 @@ pub struct FeMerge {
 pub struct FeImage {
     /// Value of the `preserveAspectRatio` attribute.
     pub aspect: AspectRatio,
+
+    /// Rendering method.
+    ///
+    /// `image-rendering` in SVG.
+    pub rendering_mode: ImageRendering,
 
     /// Image data.
     pub data: FeImageKind,

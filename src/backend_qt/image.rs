@@ -22,7 +22,7 @@ pub fn draw(
     if image.format == usvg::ImageFormat::SVG {
         draw_svg(&image.data, image.view_box, opt, p);
     } else {
-        draw_raster(&image.data, image.view_box, opt, p);
+        draw_raster(&image.data, image.view_box, image.rendering_mode, opt, p);
     }
 
     image.view_box.rect
@@ -31,6 +31,7 @@ pub fn draw(
 pub fn draw_raster(
     data: &usvg::ImageData,
     mut view_box: usvg::ViewBox,
+    rendering_mode: usvg::ImageRendering,
     opt: &Options,
     p: &mut qt::Painter,
 ) {
@@ -52,9 +53,15 @@ pub fn draw_raster(
 
     let new_size = utils::apply_view_box(&view_box, img_size);
 
+    let smooth_scaling = rendering_mode == usvg::ImageRendering::OptimizeQuality;
+
+    if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
+        p.set_smooth_pixmap_transform(smooth_scaling);
+    }
+
     let img = try_opt_warn!(
-        img.resize(new_size.width, new_size.height, qt::AspectRatioMode::Ignore), (),
-        "Failed to scale an image.",
+        img.resize(new_size.width, new_size.height, qt::AspectRatioMode::Ignore, smooth_scaling),
+        (), "Failed to scale an image.",
     );
 
     if view_box.aspect.slice {
@@ -80,6 +87,10 @@ pub fn draw_raster(
 
         p.draw_image(pos.x, pos.y, &img);
     }
+
+    // Revert.
+    p.set_antialiasing(true);
+    p.set_smooth_pixmap_transform(true);
 }
 
 pub fn draw_svg(

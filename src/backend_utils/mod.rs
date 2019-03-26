@@ -10,3 +10,23 @@ pub mod text;
 mod prelude {
     pub use super::super::prelude::*;
 }
+
+pub fn use_shape_antialiasing(
+    mode: usvg::ShapeRendering,
+) -> bool {
+    match mode {
+        usvg::ShapeRendering::OptimizeSpeed         => false,
+        usvg::ShapeRendering::CrispEdges            => false,
+        usvg::ShapeRendering::GeometricPrecision    => true,
+    }
+}
+
+pub fn use_text_antialiasing(
+    mode: usvg::TextRendering,
+) -> bool {
+    match mode {
+        usvg::TextRendering::OptimizeSpeed         => false,
+        usvg::TextRendering::OptimizeLegibility    => true,
+        usvg::TextRendering::GeometricPrecision    => true,
+    }
+}

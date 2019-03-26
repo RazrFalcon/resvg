@@ -582,6 +582,7 @@ extern "C" {
         width: u32,
         height: u32,
         ratio: AspectRatioMode,
+        smoothTransformation: bool,
     ) -> *mut qtc_qimage;
 }
 extern "C" {
@@ -616,6 +617,12 @@ extern "C" {
 }
 extern "C" {
     pub fn qtc_qpainter_create(c_img: *mut qtc_qimage) -> *mut qtc_qpainter;
+}
+extern "C" {
+    pub fn qtc_qpainter_set_antialiasing(c_p: *mut qtc_qpainter, flag: bool);
+}
+extern "C" {
+    pub fn qtc_qpainter_set_smooth_pixmap_transform(c_p: *mut qtc_qpainter, flag: bool);
 }
 extern "C" {
     pub fn qtc_qpainter_get_font(c_p: *mut qtc_qpainter) -> *mut qtc_qfont;

@@ -111,6 +111,32 @@ typedef struct resvg_fit_to {
 } resvg_fit_to;
 
 /**
+ * @brief A shape rendering method.
+ */
+typedef enum resvg_shape_rendering {
+    RESVG_SHAPE_RENDERING_OPTIMIZE_SPEED,
+    RESVG_SHAPE_RENDERING_CRISP_EDGES,
+    RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION,
+} resvg_shape_rendering;
+
+/**
+ * @brief A text rendering method.
+ */
+typedef enum resvg_text_rendering {
+    RESVG_TEXT_RENDERING_OPTIMIZE_SPEED,
+    RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY,
+    RESVG_TEXT_RENDERING_GEOMETRIC_PRECISION,
+} resvg_text_rendering;
+
+/**
+ * @brief An image rendering method.
+ */
+typedef enum resvg_image_rendering {
+    RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY,
+    RESVG_IMAGE_RENDERING_OPTIMIZE_SPEED,
+} resvg_image_rendering;
+
+/**
  * @brief Rendering options.
  */
 typedef struct resvg_options {
@@ -150,6 +176,33 @@ typedef struct resvg_options {
      * Default: NULL.
      */
     const char *languages;
+
+    /**
+     * Specifies the default shape rendering method.
+     *
+     * Will be used when an SVG element's \b shape-rendering property is set to \b auto.
+     *
+     * Default: \b RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION.
+     */
+    resvg_shape_rendering shape_rendering;
+
+    /**
+     * Specifies the default text rendering method.
+     *
+     * Will be used when an SVG element's \b text-rendering property is set to \b auto.
+     *
+     * Default: \b RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY.
+     */
+    resvg_text_rendering text_rendering;
+
+    /**
+     * Specifies the default image rendering method.
+     *
+     * Will be used when an SVG element's \b image-rendering property is set to \b auto.
+     *
+     * Default: \b RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY.
+     */
+    resvg_image_rendering image_rendering;
 
     /**
      * Fits the image using specified options.

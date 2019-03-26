@@ -3,7 +3,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // external
-use cairo;
+use cairo::{
+    self,
+    PatternTrait,
+};
 use gdk_pixbuf::{
     self,
     PixbufLoaderExt,
@@ -26,7 +29,7 @@ pub fn draw(
     if image.format == usvg::ImageFormat::SVG {
         draw_svg(&image.data, image.view_box, opt, cr);
     } else {
-        draw_raster(&image.data, image.view_box, opt, cr);
+        draw_raster(&image.data, image.view_box, image.rendering_mode, opt, cr);
     }
 
     image.view_box.rect
@@ -35,6 +38,7 @@ pub fn draw(
 pub fn draw_raster(
     data: &usvg::ImageData,
     mut view_box: usvg::ViewBox,
+    rendering_mode: usvg::ImageRendering,
     opt: &Options,
     cr: &cairo::Context,
 ) {
@@ -56,8 +60,12 @@ pub fn draw_raster(
 
     let new_size = utils::apply_view_box(&view_box, img_size);
 
-    let img = img.scale_simple(new_size.width as i32, new_size.height as i32,
-                               gdk_pixbuf::InterpType::Bilinear);
+    let scaling_mode = match rendering_mode {
+        usvg::ImageRendering::OptimizeQuality => gdk_pixbuf::InterpType::Bilinear,
+        usvg::ImageRendering::OptimizeSpeed   => gdk_pixbuf::InterpType::Nearest,
+    };
+
+    let img = img.scale_simple(new_size.width as i32, new_size.height as i32, scaling_mode);
     let img = try_opt_warn!(img, (), "Failed to scale an image.");
 
     let mut surface = try_create_surface!(new_size, ());
@@ -130,7 +138,22 @@ pub fn draw_raster(
     cr.rectangle(r.x, r.y, r.width, r.height);
     cr.clip();
 
-    cr.set_source_surface(&surface, pos.x, pos.y);
+    cr.translate(pos.x, pos.y);
+
+    let filter_mode = match rendering_mode {
+        usvg::ImageRendering::OptimizeQuality => cairo::Filter::Gaussian,
+        usvg::ImageRendering::OptimizeSpeed   => cairo::Filter::Nearest,
+    };
+
+    // Use `SurfacePattern` instead of `cairo::Context::set_source_surface`,
+    // so we can disable smooth scaling.
+    let patt = cairo::SurfacePattern::create(&surface);
+    patt.set_extend(cairo::Extend::None);
+    patt.set_filter(filter_mode);
+    cr.set_source(&cairo::Pattern::SurfacePattern(patt));
+
+    cr.translate(-pos.x, -pos.y);
+
     cr.paint();
 
     cr.reset_clip();

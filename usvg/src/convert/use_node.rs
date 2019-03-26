@@ -119,7 +119,6 @@ fn clip_element(
     }));
 
     clip_path.append_kind(tree::NodeKind::Path(tree::Path {
-        id: String::new(),
         fill: Some(tree::Fill::default()),
         segments: utils::rect_to_path(clip_rect),
         ..tree::Path::default()

@@ -11,6 +11,7 @@ use super::{
     fill,
     stroke,
 };
+use backend_utils;
 
 
 pub fn draw(
@@ -37,8 +38,12 @@ pub fn draw(
 
     fill::apply(tree, &path.fill, opt, bbox, p);
     stroke::apply(tree, &path.stroke, opt, bbox, p);
+    p.set_antialiasing(backend_utils::use_shape_antialiasing(path.rendering_mode));
 
     p.draw_path(&p_path);
+
+    // Revert anti-aliasing.
+    p.set_antialiasing(true);
 
     bbox
 }

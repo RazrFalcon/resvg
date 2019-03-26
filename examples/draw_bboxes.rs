@@ -54,6 +54,7 @@ fn main() {
             visibility: usvg::Visibility::Visible,
             fill: None,
             stroke: stroke.clone(),
+            rendering_mode: usvg::ShapeRendering::default(),
             segments: utils::rect_to_path(bbox),
         }));
     }

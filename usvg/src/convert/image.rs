@@ -23,6 +23,8 @@ pub fn convert(
 
     let transform = attrs.get_transform(AId::Transform);
     let visibility = super::convert_visibility(node);
+    let rendering_mode = node.find_enum(AId::ImageRendering)
+                             .unwrap_or(state.opt.image_rendering);
 
     let view_box = tree::ViewBox {
         rect: super::convert_rect(node, state),
@@ -43,6 +45,7 @@ pub fn convert(
             transform,
             visibility,
             view_box,
+            rendering_mode,
             data,
             format,
         }));

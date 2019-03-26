@@ -46,10 +46,23 @@ OPTIONS:
                                 [default: 'Times New Roman']
         --font-size SIZE        Sets the default font size
                                 [default: 12] [possible values: 1..192]
-        --languages LANG        Sets a comma-separated list of languages that will be used
-                                during the 'systemLanguage' attribute resolving.
+        --languages LANG        Sets a comma-separated list of languages that
+                                will be used during the 'systemLanguage'
+                                attribute resolving.
                                 Examples: 'en-US', 'en-US, ru-RU', 'en, ru'
                                 [default: 'en']
+        --shape-rendering HINT  Selects the default shape rendering method.
+                                [default: geometricPrecision]
+                                [possible values: optimizeSpeed, crispEdges,
+                                geometricPrecision]
+        --text-rendering HINT   Selects the default text rendering method.
+                                [default: optimizeLegibility]
+                                [possible values: optimizeSpeed,
+                                optimizeLegibility, geometricPrecision]
+        --image-rendering HINT  Selects the default image rendering method.
+                                [default: optimizeQuality]
+                                [possible values: optimizeQuality,
+                                optimizeSpeed]
 
         --query-all             Queries all valid SVG ids with bounding boxes
         --export-id ID          Renders an object only with a specified ID
@@ -57,7 +70,7 @@ OPTIONS:
         --perf                  Prints performance stats
         --pretend               Does all the steps except rendering
         --quiet                 Disables warnings
-        --dump-svg=<PATH>       Saves the preprocessed SVG to the selected file
+        --dump-svg <PATH>       Saves the preprocessed SVG to the selected file
 
 ARGS:
     <in-svg>                    Input file
@@ -100,6 +113,15 @@ struct CliArgs {
 
     #[options(no_short, meta = "LANG", parse(try_from_str = "parse_languages"))]
     languages: Option<Vec<String>>,
+
+    #[options(no_short, meta = "HINT", default = "geometricPrecision", parse(try_from_str))]
+    shape_rendering: usvg::ShapeRendering,
+
+    #[options(no_short, meta = "HINT", default = "optimizeLegibility", parse(try_from_str))]
+    text_rendering: usvg::TextRendering,
+
+    #[options(no_short, meta = "HINT", default = "optimizeQuality", parse(try_from_str))]
+    image_rendering: usvg::ImageRendering,
 
     #[options(no_short)]
     query_all: bool,
@@ -264,6 +286,9 @@ pub fn parse() -> Result<(Args, resvg::Options), String> {
             font_family: args.font_family.clone(),
             font_size: args.font_size as f64,
             languages,
+            shape_rendering: args.shape_rendering,
+            text_rendering: args.text_rendering,
+            image_rendering: args.image_rendering,
             keep_named_groups,
         },
         fit_to,
