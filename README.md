@@ -41,9 +41,9 @@ More details [here](https://github.com/RazrFalcon/resvg/blob/master/docs/usvg_sp
 *librsvg* is the main competitor to the *resvg*. And even though that *librsvg* itself is being
 rewritten in Rust, as *resvg*, the architecture of the library is completely different:
 
-- *librsvg*, currently, is heavily tied to the [cairo] library, unlike *resvg*
+- *librsvg* is heavily tied to the [cairo] library
 - *librsvg* is heavily tied to [GNOME] which makes it painful to distribute outside the Linux ecosystem
-- *librsvg* doesn't really preprocess input files, rendering them as is
+- *librsvg* doesn't produce an intermediate rendering tree
 - *librsvg* has a minimal support of the edge-cases, which leads to rendering errors
 
 ### resvg vs Inkscape
@@ -57,6 +57,7 @@ Also, it's very slow. But it has the best SVG support amongst others.
 Without a doubt, [QtSvg] is heavily used in [Qt] applications.
 But [QtSvg] itself is very limited. It officially supports only a tiny portion
 of the SVG Tiny 1.2 subset. In simple terms - it correctly renders only primitive SVG images.
+Also, it's [deprecated](https://wiki.qt.io/Qt_Modules_Maturity_Level).
 
 ## SVG support
 

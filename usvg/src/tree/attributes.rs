@@ -495,7 +495,7 @@ pub struct ViewBox {
 }
 
 
-/// A path absolute segment.
+/// A path's absolute segment.
 ///
 /// Unlike the SVG spec, can contain only `M`, `L`, `C` and `Z` segments.
 /// All other segments will be converted into this one.
