@@ -1,0 +1,18 @@
+[package]
+name = "resvg-convert"
+version = "0.6.1"
+authors = ["Damian Kaczmarek <rush@rushbase.net>"]
+keywords = ["svg", "render", "raster"]
+license = "MPL-2.0"
+workspace = "../../"
+
+[dependencies]
+fern = "0.5"
+gumdrop = "0.5"
+log = "0.4"
+resvg = { path = "../../" }
+time = "0.1"
+
+[features]
+cairo-backend = ["resvg/cairo-backend"]
+

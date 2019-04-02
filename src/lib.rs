@@ -85,6 +85,8 @@ pub enum RenderFormat {
     SVG,
     PNG,
     PDF,
+    EPS,
+    PS,
 }
 
 /// A generic interface for image rendering.
@@ -110,10 +112,19 @@ pub trait Render {
         opt: &Options,
     ) -> Option<Box<OutputImage>>;
 
-    /// Renders SVG node to data stream
+    /// Renders SVG tree to data stream
     fn render_to_stream(
         &self,
         tree: &usvg::Tree,
+        opt: &Options,
+        format: RenderFormat,
+        writer: &mut dyn Write
+    ) -> bool;
+
+    /// Renders SVG node to data stream
+    fn render_node_to_stream(
+        &self,
+        node: &usvg::Node,
         opt: &Options,
         format: RenderFormat,
         writer: &mut dyn Write

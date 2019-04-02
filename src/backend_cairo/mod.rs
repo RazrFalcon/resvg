@@ -150,6 +150,16 @@ impl Render for Backend {
     ) -> bool {
         render_to_stream(tree, opt, format,writer)
     }
+
+    fn render_node_to_stream(
+        &self,
+        node: &usvg::Node,
+        opt: &Options,
+        format: RenderFormat,
+        writer: &mut dyn Write
+    ) -> bool {
+        render_node_to_stream(node, opt, format, writer)
+    }
 }
 
 impl OutputImage for cairo::ImageSurface {
@@ -176,9 +186,56 @@ pub fn render_to_stream(
     format: RenderFormat,
     writer: &mut dyn Write
 ) -> bool {
+    let size = tree.svg_node().size;
+    let screen_size = tree.svg_node().size.to_screen_size();
+    render_to_stream_common(
+        &tree.root(),
+        opt,
+        format,
+        tree.svg_node().size.to_screen_size(),
+        tree.svg_node().view_box,
+        writer
+    )
+}
 
-    let size = tree.svg_node().size.to_screen_size();
+pub fn render_node_to_stream(
+    node: &usvg::Node,
+    opt: &Options,
+    format: RenderFormat,
+    writer: &mut dyn Write
+) -> bool {
+    let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
+        bbox
+    } else {
+        warn!("Node '{}' has a zero size.", node.id());
+        return false;
+    };
+    let vbox = usvg::ViewBox {
+        rect: node_bbox,
+        aspect: usvg::AspectRatio::default(),
+    };
+    let size = node_bbox;
+    let screen_size = size.to_screen_size();
 
+    render_to_stream_common(
+        &node,
+        opt,
+        format,
+        screen_size,
+        vbox,
+        writer
+    )
+}
+
+
+fn render_to_stream_common(
+    node: &usvg::Node,
+    opt: &Options,
+    format: RenderFormat,
+    size: ScreenSize,
+    view_box: usvg::ViewBox,
+    writer: &mut dyn Write
+) -> bool {
     let mut state = State { writer: writer };
     let state_ptr: *mut c_void = &mut state as *mut _ as *mut c_void;
 
@@ -186,25 +243,47 @@ pub fn render_to_stream(
         let data: &mut State = unsafe { &mut *(data as *mut State) };
         let slice = std::slice::from_raw_parts(buffer, len as usize);
         data.writer.write(slice);
-        0
+        cairo_sys::STATUS_SUCCESS
     }
 
-    let fun = match format {
-        RenderFormat::SVG => cairo_sys::cairo_svg_surface_create_for_stream,
-        RenderFormat::PDF => cairo_sys::cairo_pdf_surface_create_for_stream,
+    let surface = unsafe { match format  {
+        RenderFormat::PNG => {
+            let image_surface = cairo_sys::cairo_image_surface_create(
+                cairo::Format::ARgb32.into(),
+                size.width as i32,
+                size.height as i32,
+            );
+            cairo::Surface::from_raw_full(image_surface)
+        },
+        RenderFormat::SVG | RenderFormat::PDF | RenderFormat::EPS | RenderFormat::PS => {
+            let surface_create_for_stream = match format {
+                RenderFormat::SVG => cairo_sys::cairo_svg_surface_create_for_stream,
+                RenderFormat::PDF => cairo_sys::cairo_pdf_surface_create_for_stream,
+                RenderFormat::PS | RenderFormat::EPS => {
+                    cairo_sys::cairo_ps_surface_create_for_stream
+                },
+                _ => panic!("Unrecognized format")
+            };
+
+            let surface_ptr = surface_create_for_stream(
+                Some(output_to_stdout),
+                state_ptr,
+                size.width.into(),
+                size.height.into()
+            );
+
+            match format {
+                RenderFormat::EPS => cairo_sys::cairo_ps_surface_set_eps(
+                    surface_ptr,
+                    cairo_sys::cairo_bool_t::from(true)
+                ),
+                _ => {}
+            };
+
+            cairo::Surface::from_raw_full(surface_ptr)
+        },
         _ => panic!("Unrecognized format")
-    };
-
-    let surface = unsafe {
-        let surface_ptr = fun(
-            Some(output_to_stdout),
-            state_ptr,
-            size.width.into(),
-            size.height.into()
-        );
-
-        cairo::Surface::from_raw_full(surface_ptr)
-    };
+    } };
 
     let cr = cairo::Context::new(&surface);
 
@@ -214,13 +293,20 @@ pub fn render_to_stream(
         cr.paint();
     }
 
-    render_to_canvas(tree, opt, size, &cr);
+    render_node_to_canvas(node, opt, view_box, size, &cr);
 
-    unsafe {
-        cairo_sys::cairo_show_page(cr.to_raw_none());
-    }
-
-    true
+    unsafe { match format {
+        RenderFormat::PNG => {
+            cairo_sys::cairo_surface_write_to_png_stream(
+                surface.to_raw_none(),
+                Some(output_to_stdout),
+                state_ptr) == cairo_sys::STATUS_SUCCESS
+        },
+        RenderFormat::SVG | RenderFormat::PDF | RenderFormat::EPS | RenderFormat::PS => {
+            cairo_sys::cairo_show_page(cr.to_raw_none());
+            true
+        }
+    } }
 }
 
 

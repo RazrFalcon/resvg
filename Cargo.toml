@@ -31,7 +31,7 @@ usvg = { path = "usvg", version = "0.6" }
 c_vec = "^1.0.0"
 
 # cairo backend
-cairo-rs = { version = "0.6", features = ["png", "svg", "pdf"], optional = true }
+cairo-rs = { version = "0.6", features = ["png", "svg", "pdf", "ps"], optional = true }
 cairo-sys-rs = { version = "0.8.0", optional = true }
 gdk-pixbuf = { version = "0.6", optional = true }
 pango = { version = "0.6", optional = true }
