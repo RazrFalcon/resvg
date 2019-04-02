@@ -11,6 +11,8 @@ use cairo::{
 };
 use pangocairo::functions as pc;
 
+extern crate cairo_sys;
+
 // self
 use prelude::*;
 use {
@@ -18,6 +20,17 @@ use {
     layers,
 };
 
+use std::ffi::CString;
+
+use std::ffi::{ c_void };
+use std::os::raw::{ c_uchar, c_uint, c_int };
+
+use std::io;
+use std::io::Write;
+
+use self::cairo_sys::{ cairo_status_t, cairo_write_func_t };
+
+use { RenderFormat };
 
 macro_rules! try_create_surface {
     ($size:expr, $ret:expr) => {
@@ -127,6 +140,16 @@ impl Render for Backend {
     ) -> Option<Rect> {
         calc_node_bbox(node, opt)
     }
+
+    fn render_to_stream(
+        &self,
+        tree: &usvg::Tree,
+        opt: &Options,
+        format: RenderFormat,
+        writer: &mut dyn Write
+    ) -> bool {
+        render_to_stream(tree, opt, format,writer)
+    }
 }
 
 impl OutputImage for cairo::ImageSurface {
@@ -143,16 +166,45 @@ impl OutputImage for cairo::ImageSurface {
     }
 }
 
+struct State<'a> {
+    writer: &'a mut dyn Write,
+}
 
-/// Renders SVG to image.
-pub fn render_to_image(
+pub fn render_to_stream(
     tree: &usvg::Tree,
     opt: &Options,
-) -> Option<cairo::ImageSurface> {
-    let (surface, img_view) = create_surface(
-        tree.svg_node().size.to_screen_size(),
-        opt,
-    )?;
+    format: RenderFormat,
+    writer: &mut dyn Write
+) -> bool {
+
+    let size = tree.svg_node().size.to_screen_size();
+
+    let mut state = State { writer: writer };
+    let state_ptr: *mut c_void = &mut state as *mut _ as *mut c_void;
+
+    unsafe extern "C" fn output_to_stdout(data: *mut c_void, buffer: *mut c_uchar, len: c_uint) -> cairo_status_t {
+        let data: &mut State = unsafe { &mut *(data as *mut State) };
+        let slice = std::slice::from_raw_parts(buffer, len as usize);
+        data.writer.write(slice);
+        0
+    }
+
+    let fun = match format {
+        RenderFormat::SVG => cairo_sys::cairo_svg_surface_create_for_stream,
+        RenderFormat::PDF => cairo_sys::cairo_pdf_surface_create_for_stream,
+        _ => panic!("Unrecognized format")
+    };
+
+    let surface = unsafe {
+        let surface_ptr = fun(
+            Some(output_to_stdout),
+            state_ptr,
+            size.width.into(),
+            size.height.into()
+        );
+
+        cairo::Surface::from_raw_full(surface_ptr)
+    };
 
     let cr = cairo::Context::new(&surface);
 
@@ -162,24 +214,73 @@ pub fn render_to_image(
         cr.paint();
     }
 
-    render_to_canvas(tree, opt, img_view, &cr);
+    render_to_canvas(tree, opt, size, &cr);
 
-    Some(surface)
+    unsafe {
+        cairo_sys::cairo_show_page(cr.to_raw_none());
+    }
+
+    true
+}
+
+
+/// Renders SVG to image.
+pub fn render_to_image(
+    tree: &usvg::Tree,
+    opt: &Options,
+) -> Option<cairo::ImageSurface> {
+    // let (surface, img_view) = create_surface(
+    //     tree.svg_node().size.to_screen_size(),
+    //     opt,
+    // )?;
+    let out = CString::new("out.svg").expect("CString::new failed");
+    let ptr = out.as_ptr();
+    let size = tree.svg_node().size.to_screen_size();
+    let surface = unsafe {
+         let surface_ptr = cairo_sys::cairo_svg_surface_create(
+            ptr,
+            size.width.into(),
+            size.height.into()
+        );
+
+        cairo::Surface::from_raw_full(surface_ptr)
+    };
+
+    let cr = cairo::Context::new(&surface);
+
+    // Fill background.
+    if let Some(color) = opt.background {
+        cr.set_source_color(color, 1.0.into());
+        cr.paint();
+    }
+
+    render_to_canvas(tree, opt, size, &cr);
+
+    println!("SHOW PAGE");
+    unsafe {
+        cairo_sys::cairo_show_page(cr.to_raw_none());
+    }
+
+    None
+    // Some(surface)
 }
 
 /// Renders SVG to image.
-pub fn render_node_to_image(
+pub fn render_node_to_surface(
     node: &usvg::Node,
     opt: &Options,
-) -> Option<cairo::ImageSurface> {
+    surface: &cairo::Surface
+) -> bool {
     let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
         bbox
     } else {
         warn!("Node '{}' has a zero size.", node.id());
-        return None;
+        return false;
     };
 
-    let (surface, img_size) = create_surface(node_bbox.to_screen_size(), opt)?;
+    //let (surface, img_size) = create_surface(node_bbox.to_screen_size(), opt)?;
+    let size = node_bbox.to_screen_size();
+    let img_size = utils::fit_to(size, opt.fit_to);
 
     let vbox = usvg::ViewBox {
         rect: node_bbox,
@@ -196,7 +297,42 @@ pub fn render_node_to_image(
 
     render_node_to_canvas(node, opt, vbox, img_size, &cr);
 
-    Some(surface)
+    true
+}
+
+/// Renders SVG to image.
+pub fn render_node_to_image(
+    node: &usvg::Node,
+    opt: &Options,
+) -> Option<cairo::ImageSurface> {
+    let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
+        bbox
+    } else {
+        warn!("Node '{}' has a zero size.", node.id());
+        return None;
+    };
+    // let (surface, img_size) = create_surface(node_bbox.to_screen_size(), opt)?;
+    let out = CString::new("out.svg").expect("CString::new failed");
+    let ptr = out.as_ptr();
+
+    println!("Hello {0}", node_bbox);
+    let surface = unsafe {
+         let surface_ptr = cairo_sys::cairo_svg_surface_create(
+            ptr,
+            node_bbox.width,
+            node_bbox.height
+        );
+
+        cairo::Surface::from_raw_full(surface_ptr)
+    };
+
+    let status = render_node_to_surface(node, opt, &surface);
+    if !status {
+        return None
+    }
+
+    None
+    // Some(surface)
 }
 
 /// Renders SVG to canvas.

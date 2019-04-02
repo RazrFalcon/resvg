@@ -22,6 +22,7 @@ And as an embeddable library to paint SVG on an application native canvas.
 #[macro_use] pub extern crate usvg;
 #[macro_use] extern crate log;
 extern crate rgb;
+extern crate c_vec;
 
 #[cfg(feature = "cairo-backend")] pub extern crate cairo;
 #[cfg(feature = "cairo-backend")] extern crate pango;
@@ -48,6 +49,8 @@ mod geom;
 mod layers;
 mod options;
 mod traits;
+
+use std::io::Write;
 
 /// Commonly used types and traits.
 pub mod prelude {
@@ -77,6 +80,12 @@ mod short {
     };
 }
 
+/// Specifies types for image rendering
+pub enum RenderFormat {
+    SVG,
+    PNG,
+    PDF,
+}
 
 /// A generic interface for image rendering.
 ///
@@ -100,6 +109,15 @@ pub trait Render {
         node: &usvg::Node,
         opt: &Options,
     ) -> Option<Box<OutputImage>>;
+
+    /// Renders SVG node to data stream
+    fn render_to_stream(
+        &self,
+        tree: &usvg::Tree,
+        opt: &Options,
+        format: RenderFormat,
+        writer: &mut dyn Write
+    ) -> bool;
 
     /// Calculates node's absolute bounding box.
     ///
