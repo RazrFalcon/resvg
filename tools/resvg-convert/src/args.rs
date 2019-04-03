@@ -211,7 +211,7 @@ fn parse_languages(s: &str) -> Result<Vec<String>, &'static str> {
 }
 
 pub struct Args {
-    pub in_svg: path::PathBuf,
+    pub in_svg: String,
     pub out_file: String,
     pub out_format: String,
     pub backend_name: String,
@@ -240,14 +240,7 @@ pub fn parse() -> Result<(Args, resvg::Options), String> {
         process::exit(0);
     }
 
-    let positional_count = 1;
-
-    if args.free.len() != positional_count {
-        return Err(format!("<in-svg>"));
-    }
-
-    let in_svg: path::PathBuf = args.free[0].to_string().into();
-
+    let in_svg = if args.free.len() > 0 { args.free[0].to_string() } else { String::from("-") };
     let out_file = args.output.unwrap_or(String::from("-"));
     let backend_name = args.backend.unwrap_or(default_backend().to_string());
     let dump = args.dump_svg.map(|v| v.into());

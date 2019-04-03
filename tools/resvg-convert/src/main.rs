@@ -14,7 +14,7 @@ extern crate time;
 
 use std::fmt;
 use std::fs::{File};
-use std::io::{self, Write};
+use std::io::{self, Write, Read};
 use std::path;
 
 use resvg::prelude::*;
@@ -80,9 +80,19 @@ fn process() -> Result<(), String> {
     }
 
     // Load file.
-    let tree = timed!("Preprocessing", {
-        usvg::Tree::from_file(&args.in_svg, &opt.usvg).map_err(|e| e.to_string())
-    })?;
+    let tree = if !args.in_svg.eq("-") {
+        timed!("Preprocessing", {
+            usvg::Tree::from_file(&args.in_svg, &opt.usvg)
+                .map_err(|e| e.to_string())
+        })?
+    } else {
+        let mut buffer = String::new();
+        io::stdin().read_to_string(&mut buffer).expect("Cannot read string");
+        timed!("Preprocessing", {
+            usvg::Tree::from_str(&buffer, &opt.usvg)
+                    .map_err(|e| e.to_string())
+        })?
+    };
 
     if args.query_all {
         return query_all(backend, &tree, &opt);
