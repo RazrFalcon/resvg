@@ -70,21 +70,36 @@ pub fn prepare_blocks<Font>(
                 if can_merge {
                     let prev_idx = blocks.len() - 1;
                     blocks[prev_idx].text.push(c);
-                    let w = font_metrics.width(&blocks[prev_idx].text);
-                    blocks[prev_idx].bbox.width = w;
 
-                    let mut new_w = chunk_x;
-                    for i in start_idx..blocks.len() {
-                        new_w += blocks[i].bbox.width;
+                    let mut width = font_metrics.width(&blocks[prev_idx].text);
+
+                    // Width can be negative when letter-spacing is negative.
+                    // Not sure what should be done in this case.
+                    if !width.is_valid_length() {
+                        width = 1.0;
                     }
 
-                    x = new_w;
+                    blocks[prev_idx].bbox.width = width;
+
+                    let mut new_width = chunk_x;
+                    for i in start_idx..blocks.len() {
+                        new_width += blocks[i].bbox.width;
+                    }
+
+                    x = new_width;
                 } else {
                     buf_str.clear();
                     buf_str.push(c);
 
+                    let mut width = font_metrics.width(&buf_str);
+
+                    // Width can be negative when letter-spacing is negative.
+                    // Not sure what should be done in this case.
+                    if !width.is_valid_length() {
+                        width = 1.0;
+                    }
+
                     let font_ascent = font_metrics.ascent(&buf_str);
-                    let width = font_metrics.width(&buf_str);
                     let yy = y - font_ascent - tspan.baseline_shift;
                     let height = font_metrics.height();
                     let bbox = Rect { x, y: yy, width, height };

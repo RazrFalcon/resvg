@@ -29,6 +29,7 @@ mod numbers;
 /// Basic traits for tree manipulations.
 pub mod prelude {
     pub use IsDefault;
+    pub use IsValidLength;
     pub use tree::FuzzyEq;
     pub use tree::FuzzyZero;
     pub use super::NodeExt;

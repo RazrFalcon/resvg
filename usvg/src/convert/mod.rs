@@ -20,7 +20,10 @@ use {
     Options,
 };
 pub use self::preprocess::prepare_doc;
-pub use self::svgdom_ext::IsDefault;
+pub use self::svgdom_ext::{
+    IsDefault,
+    IsValidLength,
+};
 
 mod clip_and_mask;
 mod filter;

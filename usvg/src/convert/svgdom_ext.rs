@@ -316,7 +316,9 @@ impl<T: Default + PartialEq + Copy> IsDefault for T {
 }
 
 
+/// Checks that the current number is > 0.
 pub trait IsValidLength {
+    /// Checks that the current number is > 0.
     fn is_valid_length(&self) -> bool;
 }
 
