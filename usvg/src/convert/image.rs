@@ -26,8 +26,11 @@ pub fn convert(
     let rendering_mode = node.try_find_enum(AId::ImageRendering)
                              .unwrap_or(state.opt.image_rendering);
 
+    let rect = try_opt_warn!(get_image_rect(node, state), (),
+        "Image has an invalid size. Skipped.");
+
     let view_box = tree::ViewBox {
-        rect: super::convert_rect(node, state),
+        rect,
         aspect: super::convert_aspect(attrs),
     };
 
@@ -136,4 +139,23 @@ fn get_image_format(path: &path::Path) -> Option<tree::ImageFormat> {
     } else {
         None
     }
+}
+
+fn get_image_rect(
+    node: &svgdom::Node,
+    state: &State,
+) -> Option<Rect> {
+    let width = node.convert_user_length(AId::Width, state, Length::zero());
+    let height = node.convert_user_length(AId::Height, state, Length::zero());
+
+    if !width.is_valid_length() || !height.is_valid_length() {
+        return None;
+    }
+
+    Some(Rect::new(
+        node.convert_user_length(AId::X, state, Length::zero()),
+        node.convert_user_length(AId::Y, state, Length::zero()),
+        width,
+        height,
+    ))
 }

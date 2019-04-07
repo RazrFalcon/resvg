@@ -37,7 +37,7 @@ pub fn draw(
 
 pub fn draw_raster(
     data: &usvg::ImageData,
-    mut view_box: usvg::ViewBox,
+    view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
     opt: &Options,
     cr: &cairo::Context,
@@ -55,7 +55,6 @@ pub fn draw_raster(
     };
 
     let img_size = ScreenSize::new(img.get_width() as u32, img.get_height() as u32);
-    image::prepare_image_viewbox(img_size, &mut view_box);
     let r = view_box.rect;
 
     let new_size = utils::apply_view_box(&view_box, img_size);

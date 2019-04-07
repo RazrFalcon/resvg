@@ -314,3 +314,14 @@ impl<T: Default + PartialEq + Copy> IsDefault for T {
         *self == Self::default()
     }
 }
+
+
+pub trait IsValidLength {
+    fn is_valid_length(&self) -> bool;
+}
+
+impl IsValidLength for f64 {
+    fn is_valid_length(&self) -> bool {
+        *self > 0.0
+    }
+}

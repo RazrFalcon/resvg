@@ -608,12 +608,3 @@ fn convert_aspect(attrs: &svgdom::Attributes) -> tree::AspectRatio {
         }
     }
 }
-
-fn convert_rect(node: &svgdom::Node, state: &State) -> Rect {
-    Rect::new(
-        node.convert_user_length(AId::X, state, Length::zero()),
-        node.convert_user_length(AId::Y, state, Length::zero()),
-        node.convert_user_length(AId::Width, state, Length::zero()),
-        node.convert_user_length(AId::Height, state, Length::zero()),
-    )
-}

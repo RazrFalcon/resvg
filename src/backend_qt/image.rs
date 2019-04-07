@@ -30,7 +30,7 @@ pub fn draw(
 
 pub fn draw_raster(
     data: &usvg::ImageData,
-    mut view_box: usvg::ViewBox,
+    view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
     opt: &Options,
     p: &mut qt::Painter,
@@ -48,7 +48,6 @@ pub fn draw_raster(
     };
 
     let img_size = ScreenSize::new(img.width(), img.height());
-    image::prepare_image_viewbox(img_size, &mut view_box);
     let r = view_box.rect;
 
     let new_size = utils::apply_view_box(&view_box, img_size);

@@ -73,19 +73,10 @@ fn sanitize_sub_svg(tree: &usvg::Tree) {
     }
 }
 
-pub fn prepare_image_viewbox(img_size: ScreenSize, view_box: &mut usvg::ViewBox) {
-    let mut r = view_box.rect;
-    // If viewbox w/h is not set - use the one from image.
-    if r.width.is_fuzzy_zero() { r.width = img_size.width as f64; }
-    if r.height.is_fuzzy_zero() { r.height = img_size.height as f64; }
-    view_box.rect = r;
-}
-
 pub fn prepare_sub_svg_geom(
-    mut view_box: usvg::ViewBox,
+    view_box: usvg::ViewBox,
     img_size: ScreenSize,
 ) -> (usvg::Transform, Option<Rect>) {
-    prepare_image_viewbox(img_size, &mut view_box);
     let r = view_box.rect;
 
     let new_size = utils::apply_view_box(&view_box, img_size);
