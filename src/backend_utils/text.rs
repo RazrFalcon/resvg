@@ -79,11 +79,15 @@ pub fn prepare_blocks<Font>(
                         width = 1.0;
                     }
 
-                    blocks[prev_idx].bbox.width = width;
+                    {
+                        let r = blocks[prev_idx].bbox;
+                        let r = Rect::new(r.x(), r.y(), width, r.height()).unwrap();
+                        blocks[prev_idx].bbox = r;
+                    }
 
                     let mut new_width = chunk_x;
                     for i in start_idx..blocks.len() {
-                        new_width += blocks[i].bbox.width;
+                        new_width += blocks[i].bbox.width();
                     }
 
                     x = new_width;
@@ -102,7 +106,7 @@ pub fn prepare_blocks<Font>(
                     let font_ascent = font_metrics.ascent(&buf_str);
                     let yy = y - font_ascent - tspan.baseline_shift;
                     let height = font_metrics.height();
-                    let bbox = Rect { x, y: yy, width, height };
+                    let bbox = Rect::new(x, yy, width, height).unwrap();
                     x += width;
 
                     let mut rotate = None;
@@ -135,12 +139,12 @@ pub fn prepare_blocks<Font>(
 
         let mut chunk_w = 0.0;
         for i in start_idx..blocks.len() {
-            chunk_w += blocks[i].bbox.width;
+            chunk_w += blocks[i].bbox.width();
         }
 
         let adx = process_text_anchor(chunk.anchor, chunk_w);
         for i in start_idx..blocks.len() {
-            blocks[i].bbox.x -= adx;
+            blocks[i].bbox = blocks[i].bbox.translate(-adx, 0.0);
         }
 
         last_x = chunk_x + chunk_w - adx;
@@ -149,7 +153,7 @@ pub fn prepare_blocks<Font>(
 
     let mut text_bbox = Rect::new_bbox();
     for block in &blocks {
-        text_bbox.expand(block.bbox);
+        text_bbox = text_bbox.expand(block.bbox);
     }
 
     (blocks, text_bbox)

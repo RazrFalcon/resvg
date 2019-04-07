@@ -11,8 +11,8 @@ pub fn image_to_mask(
     data: &mut [u8],
     img_size: ScreenSize,
 ) {
-    let width = img_size.width;
-    let height = img_size.height;
+    let width = img_size.width();
+    let height = img_size.height();
     let stride = width * 4;
 
     let coeff_r = 0.2125 / 255.0;

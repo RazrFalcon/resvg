@@ -318,7 +318,7 @@ pub extern fn resvg_qt_render_to_canvas(
     };
 
     let mut painter = unsafe { qt::Painter::from_raw(painter) };
-    let size = resvg::ScreenSize::new(size.width, size.height);
+    let size = resvg::ScreenSize::new(size.width, size.height).unwrap();
     let opt = to_native_opt(unsafe {
         assert!(!opt.is_null());
         &*opt
@@ -341,7 +341,7 @@ pub extern fn resvg_cairo_render_to_canvas(
     };
 
     let cr = unsafe { cairo::Context::from_raw_none(cr) };
-    let size = resvg::ScreenSize::new(size.width, size.height);
+    let size = resvg::ScreenSize::new(size.width, size.height).unwrap();
 
     let opt = to_native_opt(unsafe {
         assert!(!opt.is_null());
@@ -366,7 +366,7 @@ pub extern fn resvg_qt_render_to_canvas_by_id(
     };
 
     let mut painter = unsafe { qt::Painter::from_raw(painter) };
-    let size = resvg::ScreenSize::new(size.width, size.height);
+    let size = resvg::ScreenSize::new(size.width, size.height).unwrap();
     let opt = to_native_opt(unsafe {
         assert!(!opt.is_null());
         &*opt
@@ -423,7 +423,7 @@ pub extern fn resvg_cairo_render_to_canvas_by_id(
     }
 
     let cr = unsafe { cairo::Context::from_raw_none(cr) };
-    let size = resvg::ScreenSize::new(size.width, size.height);
+    let size = resvg::ScreenSize::new(size.width, size.height).unwrap();
 
     let opt = to_native_opt(unsafe {
         assert!(!opt.is_null());
@@ -458,8 +458,8 @@ pub extern fn resvg_get_image_size(
     let size = tree.0.svg_node().size;
 
     resvg_size {
-        width: size.width as u32,
-        height: size.height as u32,
+        width: size.width() as u32,
+        height: size.height() as u32,
     }
 }
 
@@ -475,10 +475,10 @@ pub extern fn resvg_get_image_viewbox(
     let r = tree.0.svg_node().view_box.rect;
 
     resvg_rect {
-        x: r.x,
-        y: r.y,
-        width: r.width,
-        height: r.height,
+        x: r.x(),
+        y: r.y(),
+        width: r.width(),
+        height: r.height(),
     }
 }
 
@@ -553,10 +553,10 @@ fn get_node_bbox(
         Some(node) => {
             if let Some(r) = backend.calc_node_bbox(&node, &opt) {
                 unsafe {
-                    (*bbox).x = r.x;
-                    (*bbox).y = r.y;
-                    (*bbox).width = r.width;
-                    (*bbox).height = r.height;
+                    (*bbox).x = r.x();
+                    (*bbox).y = r.y();
+                    (*bbox).width = r.width();
+                    (*bbox).height = r.height();
                 }
 
                 true

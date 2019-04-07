@@ -35,8 +35,8 @@ pub trait SvgNodeExt {
 impl SvgNodeExt for svgdom::Node {
     fn find_attribute<T: FromValue + Clone>(&self, aid: AId) -> Option<T> {
         for n in self.ancestors() {
-            if n.has_attribute(aid) {
-                return FromValue::get(n.attributes().get_value(aid).unwrap()).cloned();
+            if let Some(v) = n.attributes().get_value(aid) {
+                return FromValue::get(v).cloned();
             }
         }
 
@@ -164,9 +164,8 @@ impl SvgNodeExt for svgdom::Node {
     }
 
     fn get_viewbox(&self) -> Option<Rect> {
-        self.attributes()
-            .get_type::<svgdom::ViewBox>(AId::ViewBox)
-            .map(|vb| (vb.x, vb.y, vb.w, vb.h).into())
+        let vb: svgdom::ViewBox = self.attributes().get_type(AId::ViewBox).cloned()?;
+        Rect::new(vb.x, vb.y, vb.w, vb.h)
     }
 
     fn is_valid_transform(&self, aid: AId) -> bool {

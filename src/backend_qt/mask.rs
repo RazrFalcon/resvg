@@ -26,18 +26,15 @@ pub fn apply(
         mask_p.set_transform(&sub_p.get_transform());
 
         let r = if mask.units == usvg::Units::ObjectBoundingBox {
-            try_opt_warn!(mask.rect.bbox_transform(bbox), (),
-                          "Mask '{}' cannot be used on a zero-sized object.", mask.id)
+            mask.rect.bbox_transform(bbox)
         } else {
             mask.rect
         };
 
-        mask_p.set_clip_rect(r.x, r.y, r.width, r.height);
+        mask_p.set_clip_rect(r.x(), r.y(), r.width(), r.height());
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {
-            let ts = try_opt_warn!(qt::Transform::from_bbox(bbox), (),
-                                   "Mask '{}' cannot be used on a zero-sized object.", mask.id);
-            mask_p.apply_transform(&ts);
+            mask_p.apply_transform(&qt::Transform::from_bbox(bbox));
         }
 
         super::render_group(node, opt, layers, &mut mask_p);

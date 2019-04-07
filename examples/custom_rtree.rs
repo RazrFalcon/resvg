@@ -12,7 +12,7 @@ fn main() {
 
     let opt = Options::default();
 
-    let size = Size::new(200.0, 200.0);
+    let size = Size::new(200.0, 200.0).unwrap();
     let view_box = usvg::ViewBox {
         rect: size.to_rect(0.0, 0.0),
         aspect: usvg::AspectRatio::default(),
@@ -60,7 +60,7 @@ fn main() {
         fill,
         stroke: None,
         rendering_mode: usvg::ShapeRendering::default(),
-        segments: utils::rect_to_path(Rect::new(20.0, 20.0, 160.0, 160.0)),
+        segments: utils::rect_to_path(Rect::new(20.0, 20.0, 160.0, 160.0).unwrap()),
     }));
 
     println!("{}", rtree.to_svgdom());

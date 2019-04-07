@@ -14,7 +14,6 @@ use super::prelude::*;
 pub enum Error {
     AllocFailed,
     InvalidRegion,
-    ZeroSizedObject,
 }
 
 
@@ -57,7 +56,7 @@ impl<T: ImageExt> Image<T> {
         let (w, h) = (image.width(), image.height());
         Image {
             image: Rc::new(image),
-            region: ScreenRect::new(0, 0, w, h),
+            region: ScreenRect::new(0, 0, w, h).unwrap(),
             color_space,
         }
     }
@@ -142,8 +141,6 @@ pub trait Filter<T: ImageExt> {
                 warn!("Memory allocation failed while processing the '{}' filter. Skipped.", filter.id),
             Err(Error::InvalidRegion) =>
                 warn!("Filter '{}' has an invalid region.", filter.id),
-            Err(Error::ZeroSizedObject) =>
-                warn!("Filter '{}' cannot be used on a zero-sized object.", filter.id),
         }
     }
 
@@ -156,12 +153,12 @@ pub trait Filter<T: ImageExt> {
     ) -> Result<(), Error> {
         let mut results = Vec::new();
 
-        let canvas_rect = ScreenRect::new(0, 0, canvas.width(), canvas.height());
+        let canvas_rect = ScreenRect::new(0, 0, canvas.width(), canvas.height()).unwrap();
         let region = calc_region(filter, bbox, ts, canvas_rect)?;
 
         for primitive in &filter.children {
             let cs = primitive.color_interpolation;
-            let subregion = calc_subregion(filter, primitive, bbox, region, ts, &results);
+            let subregion = calc_subregion(filter, primitive, bbox, region, ts, &results)?;
 
             let mut result = match primitive.kind {
                 usvg::FilterKind::FeBlend(ref fe) => {
@@ -203,15 +200,9 @@ pub trait Filter<T: ImageExt> {
                 // TODO: explain
                 let subregion2 = if let usvg::FilterKind::FeOffset(..) = primitive.kind {
                     // We do not support clipping on feOffset.
-                    let mut subregion2 = region;
-                    subregion2.x = 0;
-                    subregion2.y = 0;
-                    subregion2
+                    region.translate_to(0, 0)
                 } else {
-                    let mut subregion2 = subregion;
-                    subregion2.x -= region.x;
-                    subregion2.y -= region.y;
-                    subregion2
+                    subregion.translate(-region.x(), -region.y())
                 };
 
                 let color_space = result.color_space;
@@ -324,7 +315,7 @@ pub trait Filter<T: ImageExt> {
         let (sx, sy) = ts.get_scale();
 
         let (std_dx, std_dy) = if units == usvg::Units::ObjectBoundingBox {
-            (fe.std_dev_x.value() * sx * bbox.width, fe.std_dev_y.value() * sy * bbox.height)
+            (fe.std_dev_x.value() * sx * bbox.width(), fe.std_dev_y.value() * sy * bbox.height())
         } else {
             (fe.std_dev_x.value() * sx, fe.std_dev_y.value() * sy)
         };
@@ -345,7 +336,7 @@ pub trait Filter<T: ImageExt> {
         let (sx, sy) = ts.get_scale();
 
         let (dx, dy) = if units == usvg::Units::ObjectBoundingBox {
-            (fe.dx * sx * bbox.width, fe.dy * sy * bbox.height)
+            (fe.dx * sx * bbox.width(), fe.dy * sy * bbox.height())
         } else {
             (fe.dx * sx, fe.dy * sy)
         };
@@ -586,11 +577,7 @@ fn calc_region(
     let path = utils::rect_to_path(filter.rect);
 
     let region_ts = if filter.units == usvg::Units::ObjectBoundingBox {
-        let bbox_ts = match usvg::Transform::from_bbox(bbox) {
-            Some(v) => v,
-            None => return Err(Error::ZeroSizedObject),
-        };
-
+        let bbox_ts = usvg::Transform::from_bbox(bbox);
         let mut ts2 = ts.clone();
         ts2.append(&bbox_ts);
         ts2
@@ -598,12 +585,10 @@ fn calc_region(
         *ts
     };
 
-    let region = utils::path_bbox(&path, None, &region_ts);
-    let region = region.to_screen_rect().fit_to_rect(canvas_rect);
-
-    if !region.is_valid() {
-        return Err(Error::InvalidRegion);
-    }
+    let region = utils::path_bbox(&path, None, &region_ts)
+                       .ok_or_else(|| Error::InvalidRegion)?
+                       .to_screen_rect()
+                       .fit_to_rect(canvas_rect);
 
     Ok(region)
 }
@@ -616,7 +601,7 @@ fn calc_subregion<T: ImageExt>(
     filter_region: ScreenRect,
     ts: &usvg::Transform,
     results: &[FilterResult<T>],
-) -> ScreenRect {
+) -> Result<ScreenRect, Error> {
     // TODO: rewrite/simplify/explain/whatever
 
     let region = match primitive.kind {
@@ -638,18 +623,20 @@ fn calc_subregion<T: ImageExt>(
             // `feImage` uses the object bbox.
             if filter.primitive_units == usvg::Units::ObjectBoundingBox {
                 // TODO: wrong
-                let ts_bbox = Rect::new(ts.e, ts.f, ts.a, ts.d);
+                let ts_bbox = Rect::new(ts.e, ts.f, ts.a, ts.d).unwrap();
 
                 let r = Rect::new(
                     primitive.x.unwrap_or(0.0),
                     primitive.y.unwrap_or(0.0),
                     primitive.width.unwrap_or(1.0),
                     primitive.height.unwrap_or(1.0),
-                );
+                ).ok_or_else(|| Error::InvalidRegion)?;
 
-                return r.bbox_transform(bbox).unwrap()
-                        .bbox_transform(ts_bbox).unwrap()
-                        .to_screen_rect();
+                let r = r.bbox_transform(bbox)
+                         .bbox_transform(ts_bbox)
+                         .to_screen_rect();
+
+                return Ok(r);
             } else {
                 filter_region
             }
@@ -664,21 +651,21 @@ fn calc_subregion<T: ImageExt>(
             primitive.y.unwrap_or(0.0),
             primitive.width.unwrap_or(1.0),
             primitive.height.unwrap_or(1.0),
-        );
+        ).ok_or_else(|| Error::InvalidRegion)?;
 
-        region.to_rect().bbox_transform(subregion_bbox).unwrap_or(filter_region.to_rect())
+        region.to_rect().bbox_transform(subregion_bbox)
     } else {
         let (dx, dy) = ts.get_translate();
         let (sx, sy) = ts.get_scale();
         Rect::new(
-            primitive.x.map(|n| n * sx + dx).unwrap_or(region.x as f64),
-            primitive.y.map(|n| n * sy + dy).unwrap_or(region.y as f64),
-            primitive.width.map(|n| n * sx).unwrap_or(region.width as f64),
-            primitive.height.map(|n| n * sy).unwrap_or(region.height as f64),
-        )
+            primitive.x.map(|n| n * sx + dx).unwrap_or(region.x() as f64),
+            primitive.y.map(|n| n * sy + dy).unwrap_or(region.y() as f64),
+            primitive.width.map(|n| n * sx).unwrap_or(region.width() as f64),
+            primitive.height.map(|n| n * sy).unwrap_or(region.height() as f64),
+        ).ok_or_else(|| Error::InvalidRegion)?
     };
 
-    subregion.to_screen_rect()
+    Ok(subregion.to_screen_rect())
 }
 
 /// Precomputed sRGB to LinearRGB table.

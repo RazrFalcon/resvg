@@ -7,6 +7,8 @@ use std::fmt;
 
 use svgdom::FuzzyEq;
 
+use IsValidLength;
+
 
 /// Bounds `f64` number.
 #[inline]
@@ -106,33 +108,37 @@ impl FuzzyEq for Point {
 
 
 /// A 2D size representation.
-#[allow(missing_docs)]
+///
+/// Width and height are guarantee to be > 0.
 #[derive(Clone, Copy)]
 pub struct Size {
-    pub width: f64,
-    pub height: f64,
+    width: f64,
+    height: f64,
 }
 
 impl Size {
     /// Creates a new `Size` from values.
-    pub fn new(width: f64, height: f64) -> Self {
-        Size { width, height }
+    pub fn new(width: f64, height: f64) -> Option<Self> {
+        if width.is_valid_length() && height.is_valid_length() {
+            Some(Size { width, height })
+        } else {
+            None
+        }
     }
 
-    /// Checks that size is valid.
-    pub fn is_valid(&self) -> bool {
-        self.width > 0.0 && self.height > 0.0
+    /// Returns width.
+    pub fn width(&self) -> f64 {
+        self.width
+    }
+
+    /// Returns height.
+    pub fn height(&self) -> f64 {
+        self.height
     }
 
     /// Converts the current size to `Rect` at provided position.
     pub fn to_rect(&self, x: f64, y: f64) -> Rect {
-        Rect::new(x, y, self.width, self.height)
-    }
-}
-
-impl From<(f64, f64)> for Size {
-    fn from(v: (f64, f64)) -> Self {
-        Size::new(v.0, v.1)
+        Rect::new(x, y, self.width, self.height).unwrap()
     }
 }
 
@@ -157,25 +163,49 @@ impl FuzzyEq for Size {
 
 
 /// A rect representation.
-#[allow(missing_docs)]
+///
+/// Width and height are guarantee to be > 0.
 #[derive(Clone, Copy)]
 pub struct Rect {
-    pub x: f64,
-    pub y: f64,
-    pub width: f64,
-    pub height: f64,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
 }
 
 impl Rect {
-    // TODO: return option?
     /// Creates a new `Rect` from values.
-    pub fn new(x: f64, y: f64, width: f64, height: f64) -> Self {
-        Rect { x, y, width, height }
+    pub fn new(x: f64, y: f64, width: f64, height: f64) -> Option<Self> {
+        if width.is_valid_length() && height.is_valid_length() {
+            Some(Rect { x, y, width, height })
+        } else {
+            None
+        }
     }
 
     /// Returns rect's size.
     pub fn size(&self) -> Size {
-        Size::new(self.width, self.height)
+        Size::new(self.width, self.height).unwrap()
+    }
+
+    /// Returns rect's X position.
+    pub fn x(&self) -> f64 {
+        self.x
+    }
+
+    /// Returns rect's Y position.
+    pub fn y(&self) -> f64 {
+        self.y
+    }
+
+    /// Returns rect's width.
+    pub fn width(&self) -> f64 {
+        self.width
+    }
+
+    /// Returns rect's height.
+    pub fn height(&self) -> f64 {
+        self.height
     }
 
     /// Returns rect's left edge position.
@@ -198,6 +228,26 @@ impl Rect {
         self.y + self.height
     }
 
+    /// Translates the rect by the specified offset.
+    pub fn translate(&self, tx: f64, ty: f64) -> Self {
+        Rect {
+            x: self.x + tx,
+            y: self.y + ty,
+            width: self.width,
+            height: self.height,
+        }
+    }
+
+    /// Translates the rect to the specified position.
+    pub fn translate_to(&self, x: f64, y: f64) -> Self {
+        Rect {
+            x,
+            y,
+            width: self.width,
+            height: self.height,
+        }
+    }
+
     /// Checks that the rect contains a point.
     pub fn contains(&self, p: Point) -> bool {
         if p.x < self.x || p.x > self.x + self.width - 1.0 {
@@ -209,11 +259,6 @@ impl Rect {
         }
 
         true
-    }
-
-    /// Checks that the rect has a valid size.
-    pub fn is_valid(&self) -> bool {
-        self.width > 0.0 && self.height > 0.0
     }
 }
 
@@ -235,11 +280,5 @@ impl fmt::Debug for Rect {
 impl fmt::Display for Rect {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
-    }
-}
-
-impl From<(f64, f64, f64, f64)> for Rect {
-    fn from(v: (f64, f64, f64, f64)) -> Self {
-        Rect::new(v.0, v.1, v.2, v.3)
     }
 }

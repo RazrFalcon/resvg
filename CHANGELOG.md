@@ -15,6 +15,7 @@ This changelog also contains important changes in dependencies.
   Previously, `QPainter::drawText` was used for simple text.
 - An `image` element with a zero or negative size will be skipped now.
   Previously, a linked image size was used, which is incorrect.
+- Geometry primitives (`Rect`, `Size`, etc) are immutable and always valid now.
 
 ## [0.6.1] - 2019-03-16
 ### Fixed

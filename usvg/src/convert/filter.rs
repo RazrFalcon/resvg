@@ -34,10 +34,7 @@ pub fn convert(
         resolve_number(node, AId::Width, units, state, Length::new(120.0, Unit::Percent)),
         resolve_number(node, AId::Height, units, state, Length::new(120.0, Unit::Percent)),
     );
-    if !rect.is_valid() {
-        warn!("Filter '{}' has an invalid region. Skipped.", node.id());
-        return None;
-    }
+    let rect = try_opt_warn!(rect, None, "Filter '{}' has an invalid region. Skipped.", node.id());
 
     let node_with_children = find_filter_with_children(node)?;
     let children = collect_children(&node_with_children, primitive_units, state);

@@ -19,7 +19,7 @@ pub fn prepare_linear(
     cr: &cairo::Context,
 ) {
     let grad = cairo::LinearGradient::new(g.x1, g.y1, g.x2, g.y2);
-    prepare_base(&g.base, &grad, opacity, bbox, &g.id);
+    prepare_base(&g.base, &grad, opacity, bbox);
     cr.set_source(&cairo::Pattern::LinearGradient(grad));
 }
 
@@ -30,17 +30,16 @@ pub fn prepare_radial(
     cr: &cairo::Context
 ) {
     let grad = cairo::RadialGradient::new(g.fx, g.fy, 0.0, g.cx, g.cy, g.r.value());
-    prepare_base(&g.base, &grad, opacity, bbox, &g.id);
+    prepare_base(&g.base, &grad, opacity, bbox);
     cr.set_source(&cairo::Pattern::RadialGradient(grad));
 }
 
-fn prepare_base<G>(
+fn prepare_base<G: cairo::Gradient>(
     g: &usvg::BaseGradient,
     grad: &G,
     opacity: usvg::Opacity,
     bbox: Rect,
-    id: &str,
-) where G: cairo::Gradient {
+) {
     let spread_method = match g.spread_method {
         usvg::SpreadMethod::Pad => cairo::Extend::Pad,
         usvg::SpreadMethod::Reflect => cairo::Extend::Reflect,
@@ -51,8 +50,7 @@ fn prepare_base<G>(
     let mut matrix = g.transform.to_native();
 
     if g.units == usvg::Units::ObjectBoundingBox {
-        let m = try_opt_warn!(cairo::Matrix::from_bbox(bbox), (),
-                              "Gradient '{}' cannot be used on a zero-sized object.", id);
+        let m = cairo::Matrix::from_bbox(bbox);
         matrix = cairo::Matrix::multiply(&matrix, &m);
     }
 

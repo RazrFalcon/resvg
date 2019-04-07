@@ -86,40 +86,41 @@ fn draw_block(
     let old_ts = p.get_transform();
 
     if let Some(rotate) = block.rotate {
-        let ts = usvg::Transform::new_rotate_at(rotate, bbox.x, bbox.y + block.font_ascent);
+        let ts = usvg::Transform::new_rotate_at(rotate, bbox.x(), bbox.y() + block.font_ascent);
         p.apply_transform(&ts.to_native());
     }
 
-    let mut line_rect = Rect::new(bbox.x, 0.0, bbox.width, font_metrics.line_width());
+    let line_rect = Rect::new(bbox.x(), bbox.y(), bbox.width(), font_metrics.line_width());
+    let line_rect = try_opt!(line_rect, ());
 
     // Draw underline.
     //
     // Should be drawn before/under text.
     if let Some(ref style) = block.decoration.underline {
-        line_rect.y = bbox.y + font_metrics.height() - font_metrics.underline_pos();
-        draw_line(tree, line_rect, text_bbox, &style.fill, &style.stroke, opt, p);
+        let ty = font_metrics.height() - font_metrics.underline_pos();
+        draw_line(tree, line_rect.translate(0.0, ty), text_bbox, &style.fill, &style.stroke, opt, p);
     }
 
     // Draw overline.
     //
     // Should be drawn before/under text.
     if let Some(ref style) = block.decoration.overline {
-        line_rect.y = bbox.y + font_metrics.height() - font_metrics.overline_pos();
-        draw_line(tree, line_rect, text_bbox, &style.fill, &style.stroke, opt, p);
+        let ty = font_metrics.height() - font_metrics.overline_pos();
+        draw_line(tree, line_rect.translate(0.0, ty), text_bbox, &style.fill, &style.stroke, opt, p);
     }
 
     // Draw text.
     fill::apply(tree, &block.fill, opt, text_bbox, p);
     stroke::apply(tree, &block.stroke, opt, text_bbox, p);
 
-    p.draw_text(bbox.x, bbox.y, &block.text);
+    p.draw_text(bbox.x(), bbox.y(), &block.text);
 
     // Draw line-through.
     //
     // Should be drawn after/over text.
     if let Some(ref style) = block.decoration.line_through {
-        line_rect.y = bbox.y + font_metrics.ascent() - font_metrics.strikeout_pos();
-        draw_line(tree, line_rect, text_bbox, &style.fill, &style.stroke, opt, p);
+        let ty = font_metrics.ascent() - font_metrics.strikeout_pos();
+        draw_line(tree, line_rect.translate(0.0, ty), text_bbox, &style.fill, &style.stroke, opt, p);
     }
 
     p.set_transform(&old_ts);
@@ -193,5 +194,5 @@ fn draw_line(
 ) {
     fill::apply(tree, fill, opt, text_bbox, p);
     stroke::apply(tree, stroke, opt, text_bbox, p);
-    p.draw_rect(r.x, r.y, r.width + 1.0, r.height);
+    p.draw_rect(r.x(), r.y(), r.width() + 1.0, r.height());
 }

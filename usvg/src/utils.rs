@@ -24,8 +24,8 @@ pub fn view_box_to_transform(
 ) -> Transform {
     let vr = view_box;
 
-    let sx = img_size.width / vr.width;
-    let sy = img_size.height / vr.height;
+    let sx = img_size.width() / vr.width();
+    let sy = img_size.height() / vr.height();
 
     let (sx, sy) = if aspect.align == Align::None {
         (sx, sy)
@@ -39,10 +39,10 @@ pub fn view_box_to_transform(
         (s, s)
     };
 
-    let x = -vr.x * sx;
-    let y = -vr.y * sy;
-    let w = img_size.width - vr.width * sx;
-    let h = img_size.height - vr.height * sy;
+    let x = -vr.x() * sx;
+    let y = -vr.y() * sy;
+    let w = img_size.width() - vr.width() * sx;
+    let h = img_size.height() - vr.height() * sy;
 
     let pos = aligned_pos(aspect.align, x, y, w, h);
     Transform::new(sx, 0.0, 0.0, sy, pos.x, pos.y)
@@ -68,16 +68,16 @@ pub fn aligned_pos(align: Align, x: f64, y: f64, w: f64, h: f64) -> Point {
 pub fn rect_to_path(rect: Rect) -> Vec<tree::PathSegment> {
     vec![
         tree::PathSegment::MoveTo {
-            x: rect.x, y: rect.y
+            x: rect.x(), y: rect.y()
         },
         tree::PathSegment::LineTo {
-            x: rect.right(), y: rect.y
+            x: rect.right(), y: rect.y()
         },
         tree::PathSegment::LineTo {
             x: rect.right(), y: rect.bottom()
         },
         tree::PathSegment::LineTo {
-            x: rect.x, y: rect.bottom()
+            x: rect.x(), y: rect.bottom()
         },
         tree::PathSegment::ClosePath,
     ]

@@ -1,4 +1,1 @@
-a-letter-spacing-010.svg
-a-word-spacing-007.svg
-e-text-029.svg
-e-text-034.svg
+e-filter-027.svg

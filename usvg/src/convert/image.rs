@@ -145,17 +145,10 @@ fn get_image_rect(
     node: &svgdom::Node,
     state: &State,
 ) -> Option<Rect> {
-    let width = node.convert_user_length(AId::Width, state, Length::zero());
-    let height = node.convert_user_length(AId::Height, state, Length::zero());
-
-    if !width.is_valid_length() || !height.is_valid_length() {
-        return None;
-    }
-
-    Some(Rect::new(
+    Rect::new(
         node.convert_user_length(AId::X, state, Length::zero()),
         node.convert_user_length(AId::Y, state, Length::zero()),
-        width,
-        height,
-    ))
+        node.convert_user_length(AId::Width, state, Length::zero()),
+        node.convert_user_length(AId::Height, state, Length::zero()),
+    )
 }

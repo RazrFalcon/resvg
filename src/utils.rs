@@ -15,35 +15,38 @@ use FitTo;
 
 
 /// Returns `size` preprocessed according to `FitTo`.
-pub fn fit_to(size: ScreenSize, fit: FitTo) -> ScreenSize {
+pub fn fit_to(size: ScreenSize, fit: FitTo) -> Option<ScreenSize> {
     let sizef = size.to_size();
 
     match fit {
         FitTo::Original => {
-            size
+            Some(size)
         }
         FitTo::Width(w) => {
-            let h = (w as f64 * sizef.height / sizef.width).ceil();
+            let h = (w as f64 * sizef.height() / sizef.width()).ceil();
             ScreenSize::new(w, h as u32)
         }
         FitTo::Height(h) => {
-            let w = (h as f64 * sizef.width / sizef.height).ceil();
+            let w = (h as f64 * sizef.width() / sizef.height()).ceil();
             ScreenSize::new(w as u32, h)
         }
         FitTo::Zoom(z) => {
-            Size::new(sizef.width * z as f64, sizef.height * z as f64).to_screen_size()
+            Size::new(sizef.width() * z as f64, sizef.height() * z as f64)
+                 .map(|s| s.to_screen_size())
         }
     }
 }
 
 pub(crate) fn apply_view_box(vb: &usvg::ViewBox, img_size: ScreenSize) -> ScreenSize {
+    let s = vb.rect.to_screen_size();
+
     if vb.aspect.align == usvg::Align::None {
-        vb.rect.to_screen_size()
+        s
     } else {
         if vb.aspect.slice {
-            img_size.expand_to(vb.rect.to_screen_size())
+            img_size.expand_to(s)
         } else {
-            img_size.scale_to(vb.rect.to_screen_size())
+            img_size.scale_to(s)
         }
     }
 }
@@ -74,7 +77,7 @@ pub fn path_bbox(
     segments: &[usvg::PathSegment],
     stroke: Option<&usvg::Stroke>,
     ts: &usvg::Transform,
-) -> Rect {
+) -> Option<Rect> {
     debug_assert!(!segments.is_empty());
 
     use lyon_geom;
@@ -153,7 +156,7 @@ pub fn path_bbox(
     let width = maxx - minx;
     let height = maxy - miny;
 
-    (minx as f64, miny as f64, width as f64, height as f64).into()
+    Rect::new(minx as f64, miny as f64, width as f64, height as f64)
 }
 
 /// Calculates path's length.

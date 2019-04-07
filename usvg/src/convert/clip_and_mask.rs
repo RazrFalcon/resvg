@@ -81,10 +81,7 @@ pub fn convert_mask(
         node.convert_user_length(AId::Width, state, Length::new(120.0, Unit::Percent)),
         node.convert_user_length(AId::Height, state, Length::new(120.0, Unit::Percent)),
     );
-    if !rect.is_valid() {
-        warn!("Mask '{}' has an invalid size. Skipped.", node.id());
-        return None;
-    }
+    let rect = try_opt_warn!(rect, None, "Mask '{}' has an invalid size. Skipped.", node.id());
 
     let ref attrs = node.attributes();
 

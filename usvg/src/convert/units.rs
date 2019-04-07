@@ -32,14 +32,15 @@ pub fn convert_length(
 
                 match aid {
                     AId::X | AId::Cx | AId::Width  => {
-                        convert_percent(length, view_box.width)
+                        convert_percent(length, view_box.width())
                     }
                     AId::Y | AId::Cy | AId::Height => {
-                        convert_percent(length, view_box.height)
+                        convert_percent(length, view_box.height())
                     }
                     _ => {
                         let vb_len = (
-                            view_box.width * view_box.width + view_box.height * view_box.height
+                              view_box.width() * view_box.width()
+                            + view_box.height() * view_box.height()
                         ).sqrt() / 2.0_f64.sqrt();
 
                         convert_percent(length, vb_len)

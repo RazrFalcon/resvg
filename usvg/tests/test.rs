@@ -526,17 +526,17 @@ macro_rules! test_size {
 
 test_size!(size_detection_1,
     "<svg viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>",
-    usvg::Size::new(10.0, 20.0)
+    usvg::Size::new(10.0, 20.0).unwrap()
 );
 
 test_size!(size_detection_2,
     "<svg width='30' height='40' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>",
-    usvg::Size::new(30.0, 40.0)
+    usvg::Size::new(30.0, 40.0).unwrap()
 );
 
 test_size!(size_detection_3,
     "<svg width='50%' height='100%' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>",
-    usvg::Size::new(5.0, 20.0)
+    usvg::Size::new(5.0, 20.0).unwrap()
 );
 
 macro_rules! test_size_err {

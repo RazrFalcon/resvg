@@ -54,7 +54,7 @@ pub fn draw_raster(
         }
     };
 
-    let img_size = ScreenSize::new(img.get_width() as u32, img.get_height() as u32);
+    let img_size = try_opt!(ScreenSize::new(img.get_width() as u32, img.get_height() as u32), ());
     let r = view_box.rect;
 
     let new_size = utils::apply_view_box(&view_box, img_size);
@@ -64,7 +64,7 @@ pub fn draw_raster(
         usvg::ImageRendering::OptimizeSpeed   => gdk_pixbuf::InterpType::Nearest,
     };
 
-    let img = img.scale_simple(new_size.width as i32, new_size.height as i32, scaling_mode);
+    let img = img.scale_simple(new_size.width() as i32, new_size.height() as i32, scaling_mode);
     let img = try_opt_warn!(img, (), "Failed to scale an image.");
 
     let mut surface = try_create_surface!(new_size, ());
@@ -75,10 +75,10 @@ pub fn draw_raster(
         let (start_x, start_y, end_x, end_y) = if view_box.aspect.slice {
             let pos = utils::aligned_pos(
                 view_box.aspect.align,
-                0.0, 0.0, new_size.width as f64 - r.width, new_size.height as f64 - r.height,
+                0.0, 0.0, new_size.width() as f64 - r.width(), new_size.height() as f64 - r.height(),
             );
 
-            (pos.x as u32, pos.y as u32, (pos.x + r.width) as u32, (pos.y + r.height) as u32)
+            (pos.x as u32, pos.y as u32, (pos.x + r.width()) as u32, (pos.y + r.height()) as u32)
         } else {
             (0, 0, img.get_width() as u32, img.get_height() as u32)
         };
@@ -129,12 +129,12 @@ pub fn draw_raster(
 
     let pos = utils::aligned_pos(
         view_box.aspect.align,
-        r.x, r.y, r.width - img.get_width() as f64, r.height - img.get_height() as f64,
+        r.x(), r.y(), r.width() - img.get_width() as f64, r.height() - img.get_height() as f64,
     );
 
     // We have to clip the image before rendering otherwise it will be
     // blurred outside the viewbox if `cr` has a transform.
-    cr.rectangle(r.x, r.y, r.width, r.height);
+    cr.rectangle(r.x(), r.y(), r.width(), r.height());
     cr.clip();
 
     cr.translate(pos.x, pos.y);
@@ -177,7 +177,7 @@ pub fn draw_svg(
     let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);
 
     if let Some(clip) = clip {
-        cr.rectangle(clip.x, clip.y, clip.width, clip.height);
+        cr.rectangle(clip.x(), clip.y(), clip.width(), clip.height());
         cr.clip();
     }
 

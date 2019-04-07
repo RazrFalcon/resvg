@@ -187,10 +187,7 @@ fn convert_pattern(
         resolve_number(node, AId::Width, units, state, Length::zero()),
         resolve_number(node, AId::Height, units, state, Length::zero()),
     );
-    if !rect.is_valid() {
-        warn!("Pattern '{}' has an invalid size. Skipped.", node.id());
-        return None;
-    }
+    let rect = try_opt_warn!(rect, None, "Pattern '{}' has an invalid size. Skipped.", node.id());
 
     let mut patt = tree.append_to_defs(tree::NodeKind::Pattern(tree::Pattern {
         id: node.id().clone(),

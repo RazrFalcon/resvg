@@ -85,10 +85,7 @@ fn resolve(
 ) {
     let stroke_scale = try_opt!(stroke_scale(shape_node, marker_node, state), ());
 
-    let r = convert_rect(marker_node, state);
-    if !r.is_valid() {
-        return;
-    }
+    let r = try_opt!(convert_rect(marker_node, state), ());
 
     let view_box = marker_node.get_viewbox().map(|vb|
         tree::ViewBox {
@@ -105,9 +102,9 @@ fn resolve(
 
     let clip_path = if has_overflow {
         let clip_rect = if let Some(vbox) = view_box {
-            Rect::new(vbox.rect.x, vbox.rect.y, vbox.rect.width, vbox.rect.height)
+            vbox.rect
         } else {
-            Rect::new(0.0, 0.0, r.width, r.height)
+            r.size().to_rect(0.0, 0.0)
         };
 
         let id = use_node::gen_clip_path_id(shape_node, tree);
@@ -145,7 +142,7 @@ fn resolve(
         }
 
         if let Some(vbox) = view_box {
-            let size = Size::new(r.width * stroke_scale, r.height * stroke_scale);
+            let size = Size::new(r.width() * stroke_scale, r.height() * stroke_scale).unwrap();
             let vbox_ts = utils::view_box_to_transform(vbox.rect, vbox.aspect, size);
             let (sx, sy) = vbox_ts.get_scale();
             ts.scale(sx, sy);
@@ -153,7 +150,7 @@ fn resolve(
             ts.scale(stroke_scale, stroke_scale);
         }
 
-        ts.translate(-r.x, -r.y);
+        ts.translate(-r.x(), -r.y());
 
 
         // TODO: do not create a group when no clipPath
@@ -450,7 +447,7 @@ fn get_prev_vertex(segments: &[Segment], idx: usize) -> (f64, f64) {
     }
 }
 
-fn convert_rect(node: &svgdom::Node, state: &State) -> Rect {
+fn convert_rect(node: &svgdom::Node, state: &State) -> Option<Rect> {
     Rect::new(
         node.convert_user_length(AId::RefX, state, Length::zero()),
         node.convert_user_length(AId::RefY, state, Length::zero()),

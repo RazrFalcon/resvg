@@ -28,8 +28,8 @@ pub fn convert(tree: &Tree) -> svgdom::Document {
 
     let svg_node = tree.svg_node();
 
-    svg.set_attribute((AId::Width,  svg_node.size.width));
-    svg.set_attribute((AId::Height, svg_node.size.height));
+    svg.set_attribute((AId::Width,  svg_node.size.width()));
+    svg.set_attribute((AId::Height, svg_node.size.height()));
     conv_viewbox(&svg_node.view_box, &mut svg);
     svg.set_attribute((("xmlns:usvg"), "https://github.com/RazrFalcon/usvg"));
     svg.set_attribute((("usvg:version"), env!("CARGO_PKG_VERSION")));
@@ -385,7 +385,11 @@ fn conv_elements(
                 img_elem.set_enum_attribute(AId::Visibility, img.visibility);
                 img_elem.set_enum_attribute(AId::ImageRendering, img.rendering_mode);
                 img_elem.set_id(img.id.clone());
-                conv_viewbox2(&img.view_box, &mut img_elem);
+                conv_rect(img.view_box.rect, &mut img_elem);
+
+                if !img.view_box.aspect.is_default() {
+                    img_elem.set_attribute((AId::PreserveAspectRatio, img.view_box.aspect));
+                }
 
                 img_elem.set_attribute((AId::Href, conv_image_data(&img.data, img.format)));
             }
@@ -428,19 +432,8 @@ fn conv_viewbox(
     node: &mut svgdom::Node,
 ) {
     let r = view_box.rect;
-    let vb = svgdom::ViewBox::new(r.x, r.y, r.width, r.height);
+    let vb = svgdom::ViewBox::new(r.x(), r.y(), r.width(), r.height());
     node.set_attribute((AId::ViewBox, vb));
-
-    if !view_box.aspect.is_default() {
-        node.set_attribute((AId::PreserveAspectRatio, view_box.aspect));
-    }
-}
-
-fn conv_viewbox2(
-    view_box: &ViewBox,
-    node: &mut svgdom::Node,
-) {
-    conv_rect(view_box.rect, node);
 
     if !view_box.aspect.is_default() {
         node.set_attribute((AId::PreserveAspectRatio, view_box.aspect));
@@ -451,10 +444,10 @@ fn conv_rect(
     r: Rect,
     node: &mut svgdom::Node,
 ) {
-    node.set_attribute((AId::X, r.x));
-    node.set_attribute((AId::Y, r.y));
-    node.set_attribute((AId::Width, r.width));
-    node.set_attribute((AId::Height, r.height));
+    node.set_attribute((AId::X, r.x()));
+    node.set_attribute((AId::Y, r.y()));
+    node.set_attribute((AId::Width, r.width()));
+    node.set_attribute((AId::Height, r.height()));
 }
 
 fn conv_units(

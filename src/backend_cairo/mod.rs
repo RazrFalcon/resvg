@@ -23,10 +23,10 @@ macro_rules! try_create_surface {
     ($size:expr, $ret:expr) => {
         try_opt_warn!(
             cairo::ImageSurface::create(cairo::Format::ARgb32,
-                $size.width as i32, $size.height as i32,
+                $size.width() as i32, $size.height() as i32,
             ).ok(),
             $ret,
-            "Failed to create a {}x{} surface.", $size.width, $size.height
+            "Failed to create a {}x{} surface.", $size.width(), $size.height()
         );
     };
 }
@@ -67,12 +67,8 @@ impl ConvTransform<cairo::Matrix> for usvg::Transform {
 }
 
 impl TransformFromBBox for cairo::Matrix {
-    fn from_bbox(bbox: Rect) -> Option<Self> {
-        if bbox.is_valid() {
-            Some(Self::new(bbox.width, 0.0, 0.0, bbox.height, bbox.x, bbox.y))
-        } else {
-            None
-        }
+    fn from_bbox(bbox: Rect) -> Self {
+        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
     }
 }
 
@@ -235,10 +231,8 @@ fn create_surface(
     size: ScreenSize,
     opt: &Options,
 ) -> Option<(cairo::ImageSurface, ScreenSize)> {
-    let img_size = utils::fit_to(size, opt.fit_to);
+    let img_size = utils::fit_to(size, opt.fit_to)?;
 
-    debug_assert_ne!(img_size.width, 0);
-    debug_assert_ne!(img_size.height, 0);
     let surface = try_create_surface!(img_size, None);
 
     Some((surface, img_size))
@@ -265,7 +259,7 @@ fn render_node(
             Some(render_group(node, opt, layers, cr))
         }
         usvg::NodeKind::Path(ref path) => {
-            Some(path::draw(&node.tree(), path, opt, cr))
+            path::draw(&node.tree(), path, opt, cr)
         }
         usvg::NodeKind::Text(ref text) => {
             Some(text::draw(&node.tree(), text, opt, cr))
@@ -295,8 +289,8 @@ fn render_group(
         let bbox = render_node(&node, opt, layers, cr);
 
         if let Some(bbox) = bbox {
-            let bbox = bbox.transform(&node.transform());
-            g_bbox.expand(bbox);
+            let bbox = bbox.transform(&node.transform()).unwrap();
+            g_bbox = g_bbox.expand(bbox);
         }
 
         // Revert transform.
@@ -410,7 +404,7 @@ fn _calc_node_bbox(
 
     match *node.borrow() {
         usvg::NodeKind::Path(ref path) => {
-            Some(utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2))
+            utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2)
         }
         usvg::NodeKind::Text(ref text) => {
             let mut bbox = Rect::new_bbox();
@@ -428,13 +422,15 @@ fn _calc_node_bbox(
 
                 let mut t = ts2;
                 if let Some(rotate) = block.rotate {
-                    t.rotate_at(rotate, block.bbox.x, block.bbox.y + block.font_ascent);
+                    t.rotate_at(rotate, block.bbox.x(), block.bbox.y() + block.font_ascent);
                 }
-                t.translate(block.bbox.x, block.bbox.y);
+                t.translate(block.bbox.x(), block.bbox.y());
 
                 if !segments.is_empty() {
                     let c_bbox = utils::path_bbox(&segments, block.stroke.as_ref(), &t);
-                    bbox.expand(c_bbox);
+                    if let Some(c_bbox) = c_bbox {
+                        bbox = bbox.expand(c_bbox);
+                    }
                 }
             });
 
@@ -442,14 +438,14 @@ fn _calc_node_bbox(
         }
         usvg::NodeKind::Image(ref img) => {
             let segments = utils::rect_to_path(img.view_box.rect);
-            Some(utils::path_bbox(&segments, None, &ts2))
+            utils::path_bbox(&segments, None, &ts2)
         }
         usvg::NodeKind::Group(_) => {
             let mut bbox = Rect::new_bbox();
 
             for child in node.children() {
                 if let Some(c_bbox) = _calc_node_bbox(&child, opt, ts2, cr) {
-                    bbox.expand(c_bbox);
+                    bbox = bbox.expand(c_bbox);
                 }
             }
 

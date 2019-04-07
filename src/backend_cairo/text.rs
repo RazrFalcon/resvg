@@ -161,11 +161,11 @@ fn draw_block(
     let bbox = block.bbox;
 
     let underline_height = fm.get_underline_thickness().from_pango();
-    let mut line_rect = Rect::new(bbox.x, 0.0, bbox.width, underline_height);
+    let line_rect = try_opt!(Rect::new(bbox.x(), bbox.y(), bbox.width(), underline_height), ());
 
     let old_ts = cr.get_matrix();
     if let Some(rotate) = block.rotate {
-        let ts = usvg::Transform::new_rotate_at(rotate, bbox.x, bbox.y + block.font_ascent);
+        let ts = usvg::Transform::new_rotate_at(rotate, bbox.x(), bbox.y() + block.font_ascent);
         cr.transform(ts.to_native());
     }
 
@@ -173,20 +173,20 @@ fn draw_block(
     //
     // Should be drawn before/under text.
     if let Some(ref style) = block.decoration.underline {
-        line_rect.y = bbox.y + block.font_ascent - fm.get_underline_position().from_pango();
-        draw_line(tree, line_rect, text_bbox, &style.fill, &style.stroke, opt, cr);
+        let ty = block.font_ascent - fm.get_underline_position().from_pango();
+        draw_line(tree, line_rect.translate(0.0, ty), text_bbox, &style.fill, &style.stroke, opt, cr);
     }
 
     // Draw overline.
     //
     // Should be drawn before/under text.
     if let Some(ref style) = block.decoration.overline {
-        line_rect.y = bbox.y + underline_height;
-        draw_line(tree, line_rect, text_bbox, &style.fill, &style.stroke, opt, cr);
+        let ty = underline_height;
+        draw_line(tree, line_rect.translate(0.0, ty), text_bbox, &style.fill, &style.stroke, opt, cr);
     }
 
     // Draw text.
-    cr.move_to(bbox.x, bbox.y);
+    cr.move_to(bbox.x(), bbox.y());
 
     fill::apply(tree, &block.fill, opt, text_bbox, cr);
     pc::update_layout(cr, &layout);
@@ -196,14 +196,20 @@ fn draw_block(
     pc::layout_path(cr, &layout);
     cr.stroke();
 
-    cr.move_to(-bbox.x, -bbox.y);
+    cr.move_to(-bbox.x(), -bbox.y());
 
     // Draw line-through.
     //
     // Should be drawn after/over text.
     if let Some(ref style) = block.decoration.line_through {
-        line_rect.y = bbox.y + block.font_ascent - fm.get_strikethrough_position().from_pango();
-        line_rect.height = fm.get_strikethrough_thickness().from_pango();
+        let line_rect = Rect::new(
+            bbox.x(),
+            bbox.y() + block.font_ascent - fm.get_strikethrough_position().from_pango(),
+            bbox.width(),
+            fm.get_strikethrough_thickness().from_pango(),
+        );
+        let line_rect = try_opt!(line_rect, ());
+
         draw_line(tree, line_rect, text_bbox, &style.fill, &style.stroke, opt, cr);
     }
 
@@ -273,9 +279,7 @@ fn draw_line(
     opt: &Options,
     cr: &cairo::Context,
 ) {
-    debug_assert!(!r.height.is_fuzzy_zero());
-
-    cr.rectangle(r.x, r.y, r.width, r.height);
+    cr.rectangle(r.x(), r.y(), r.width(), r.height());
 
     fill::apply(tree, fill, opt, text_bbox, cr);
     if stroke.is_some() {

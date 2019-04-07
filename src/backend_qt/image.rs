@@ -47,7 +47,7 @@ pub fn draw_raster(
         }
     };
 
-    let img_size = ScreenSize::new(img.width(), img.height());
+    let img_size = try_opt!(ScreenSize::new(img.width(), img.height()), ());
     let r = view_box.rect;
 
     let new_size = utils::apply_view_box(&view_box, img_size);
@@ -59,7 +59,7 @@ pub fn draw_raster(
     }
 
     let img = try_opt_warn!(
-        img.resize(new_size.width, new_size.height, qt::AspectRatioMode::Ignore, smooth_scaling),
+        img.resize(new_size.width(), new_size.height(), qt::AspectRatioMode::Ignore, smooth_scaling),
         (), "Failed to scale an image.",
     );
 
@@ -69,19 +69,19 @@ pub fn draw_raster(
 
         let pos = utils::aligned_pos(
             view_box.aspect.align,
-            0.0, 0.0, new_size.width as f64 - r.width, new_size.height as f64 - r.height,
+            0.0, 0.0, new_size.width() as f64 - r.width(), new_size.height() as f64 - r.height(),
         );
 
         let img = try_opt_warn!(
-            img.copy(pos.x as u32, pos.y as u32, r.width as u32, r.height as u32), (),
+            img.copy(pos.x as u32, pos.y as u32, r.width() as u32, r.height() as u32), (),
             "Failed to copy a part of an image."
         );
 
-        p.draw_image(r.x, r.y, &img);
+        p.draw_image(r.x(), r.y(), &img);
     } else {
         let pos = utils::aligned_pos(
             view_box.aspect.align,
-            r.x, r.y, r.width - new_size.width as f64, r.height - new_size.height as f64,
+            r.x(), r.y(), r.width() - new_size.width() as f64, r.height() - new_size.height() as f64,
         );
 
         p.draw_image(pos.x, pos.y, &img);
@@ -104,7 +104,7 @@ pub fn draw_svg(
     let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);
 
     if let Some(clip) = clip {
-        p.set_clip_rect(clip.x, clip.y, clip.width, clip.height);
+        p.set_clip_rect(clip.x(), clip.y(), clip.width(), clip.height());
     }
 
     p.apply_transform(&ts.to_native());

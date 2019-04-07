@@ -184,11 +184,11 @@ fn get_clip_rect(
 
     // TODO: add a test case
     // Clip rect is not needed when it has the same size as a whole image.
-    if w.fuzzy_eq(&state.size.width) && h.fuzzy_eq(&state.size.height) {
+    if w.fuzzy_eq(&state.size.width()) && h.fuzzy_eq(&state.size.height()) {
         return None;
     }
 
-    Some(Rect::new(x, y, w, h))
+    Rect::new(x, y, w, h)
 }
 
 /// Creates a free id for `clipPath`.
@@ -219,11 +219,7 @@ fn viewbox_transform(
         let w = node.convert_user_length(AId::Width, state, Length::new(100.0, Unit::Percent));
         let h = node.convert_user_length(AId::Height, state, Length::new(100.0, Unit::Percent));
         Size::new(w, h)
-    };
-
-    if !size.is_valid() {
-        return None;
-    }
+    }?;
 
     let vb = linked.get_viewbox()?;
     let aspect = match linked.attributes().get_value(AId::PreserveAspectRatio) {

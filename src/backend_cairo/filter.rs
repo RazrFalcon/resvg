@@ -62,8 +62,8 @@ impl ImageExt for cairo::ImageSurface {
         cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
         cr.set_operator(cairo::Operator::Clear);
 
-        cr.rectangle(0.0, 0.0, self.width() as f64, region.y as f64);
-        cr.rectangle(0.0, 0.0, region.x as f64, self.height() as f64);
+        cr.rectangle(0.0, 0.0, self.width() as f64, region.y() as f64);
+        cr.rectangle(0.0, 0.0, region.x() as f64, self.height() as f64);
         cr.rectangle(region.right() as f64, 0.0, self.width() as f64, self.height() as f64);
         cr.rectangle(0.0, region.bottom() as f64, self.width() as f64, self.height() as f64);
 
@@ -116,10 +116,10 @@ fn create_image(width: u32, height: u32) -> Result<cairo::ImageSurface, Error> {
 }
 
 fn copy_image(image: &cairo::ImageSurface, region: ScreenRect) -> Result<cairo::ImageSurface, Error> {
-    let x = cmp::max(0, region.x) as f64;
-    let y = cmp::max(0, region.y) as f64;
+    let x = cmp::max(0, region.x()) as f64;
+    let y = cmp::max(0, region.y()) as f64;
 
-    let new_image = create_image(region.width, region.height)?;
+    let new_image = create_image(region.width(), region.height())?;
 
     let cr = cairo::Context::new(&new_image);
     cr.set_source_surface(&*image, -x, -y);
@@ -165,7 +165,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
 
                 Ok(Image {
                     image: Rc::new(image),
-                    region: ScreenRect::new(0, 0, region.width, region.height),
+                    region: region.translate_to(0, 0),
                     color_space: ColorSpace::SRGB,
                 })
             }
@@ -185,7 +185,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
 
                 Ok(Image {
                     image: Rc::new(image),
-                    region: ScreenRect::new(0, 0, region.width, region.height),
+                    region: region.translate_to(0, 0),
                     color_space: ColorSpace::SRGB,
                 })
             }
@@ -258,7 +258,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         let input1 = input1.into_color_space(cs)?;
         let input2 = input2.into_color_space(cs)?;
 
-        let mut buffer = create_image(region.width, region.height)?;
+        let mut buffer = create_image(region.width(), region.height())?;
         let cr = cairo::Context::new(&mut buffer);
 
         cr.set_source_surface(input2.as_ref(), 0.0, 0.0);
@@ -289,7 +289,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         let input1 = input1.into_color_space(cs)?;
         let input2 = input2.into_color_space(cs)?;
 
-        let mut buffer = create_image(region.width, region.height)?;
+        let mut buffer = create_image(region.width(), region.height())?;
 
         if fe.operator == Operator::Arithmetic {
             warn!("feComposite with 'arithmetic' operator is not supported.");
@@ -325,7 +325,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         results: &[FilterResult],
         canvas: &cairo::ImageSurface,
     ) -> Result<Image, Error> {
-        let mut buffer = create_image(region.width, region.height)?;
+        let mut buffer = create_image(region.width(), region.height())?;
         let cr = cairo::Context::new(&mut buffer);
 
         for input in &fe.inputs {
@@ -343,7 +343,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         fe: &usvg::FeFlood,
         region: ScreenRect,
     ) -> Result<Image, Error> {
-        let buffer = create_image(region.width, region.height)?;
+        let buffer = create_image(region.width(), region.height())?;
 
         let cr = cairo::Context::new(&buffer);
         cr.set_source_color(fe.color, fe.opacity);
@@ -356,14 +356,12 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         input: Image,
         region: ScreenRect,
     ) -> Result<Image, Error> {
-        let buffer = create_image(region.width, region.height)?;
+        let buffer = create_image(region.width(), region.height())?;
 
-        let mut subregion = input.region;
-        subregion.x -= region.x;
-        subregion.y -= region.y;
+        let subregion = input.region.translate(-region.x(), -region.y());
 
         let tile = copy_image(&input.image, subregion)?;
-        let brush_ts = usvg::Transform::new_translate(subregion.x as f64, subregion.y as f64);
+        let brush_ts = usvg::Transform::new_translate(subregion.x() as f64, subregion.y() as f64);
 
         let patt = cairo::SurfacePattern::create(&tile);
         patt.set_extend(cairo::Extend::Repeat);
@@ -375,7 +373,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         patt.set_matrix(m);
 
         cr.set_source(&cairo::Pattern::SurfacePattern(patt));
-        cr.rectangle(0.0, 0.0, region.width as f64, region.height as f64);
+        cr.rectangle(0.0, 0.0, region.width() as f64, region.height() as f64);
         cr.fill();
 
         Ok(Image::from_image(buffer, ColorSpace::SRGB))
@@ -387,19 +385,19 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         subregion: ScreenRect,
         opt: &Options,
     ) -> Result<Image, Error> {
-        let buffer = create_image(region.width, region.height)?;
+        let buffer = create_image(region.width(), region.height())?;
 
         match fe.data {
             usvg::FeImageKind::None => {}
             usvg::FeImageKind::Image(ref data, format) => {
                 let cr = cairo::Context::new(&buffer);
 
-                let dx = (subregion.x - region.x) as f64;
-                let dy = (subregion.y - region.y) as f64;
+                let dx = (subregion.x() - region.x()) as f64;
+                let dy = (subregion.y() - region.y()) as f64;
                 cr.translate(dx, dy);
 
                 let view_box = usvg::ViewBox {
-                    rect: ScreenRect::new(0, 0, subregion.width, subregion.height).to_rect(),
+                    rect: subregion.translate_to(0, 0).to_rect(),
                     aspect: fe.aspect,
                 };
 
@@ -429,7 +427,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         cr.paint();
 
         cr.set_operator(cairo::Operator::Over);
-        cr.set_source_surface(input.as_ref(), region.x as f64, region.y as f64);
+        cr.set_source_surface(input.as_ref(), region.x() as f64, region.y() as f64);
         cr.paint();
 
         Ok(())

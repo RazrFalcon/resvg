@@ -1,2 +1,1 @@
-a-letter-spacing-010.svg
-e-text-034.svg
+e-filter-027.svg

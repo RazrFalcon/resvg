@@ -29,19 +29,16 @@ pub fn apply(
         mask_cr.set_matrix(sub_cr.get_matrix());
 
         let r = if mask.units == usvg::Units::ObjectBoundingBox {
-            try_opt_warn!(mask.rect.bbox_transform(bbox), (),
-                          "Mask '{}' cannot be used on a zero-sized object.", mask.id)
+            mask.rect.bbox_transform(bbox)
         } else {
             mask.rect
         };
 
-        mask_cr.rectangle(r.x, r.y, r.width, r.height);
+        mask_cr.rectangle(r.x(), r.y(), r.width(), r.height());
         mask_cr.clip();
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {
-            let m = try_opt_warn!(cairo::Matrix::from_bbox(bbox), (),
-                                  "Mask '{}' cannot be used on a zero-sized object.", mask.id);
-            mask_cr.transform(m);
+            mask_cr.transform(cairo::Matrix::from_bbox(bbox));
         }
 
         super::render_group(node, opt, layers, &mask_cr);

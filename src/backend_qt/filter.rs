@@ -55,8 +55,8 @@ impl ImageExt for qt::Image {
         p.set_composition_mode(qt::CompositionMode::Clear);
         p.reset_pen();
         p.set_brush(brush);
-        p.draw_rect(0.0, 0.0, self.width() as f64, region.y as f64);
-        p.draw_rect(0.0, 0.0, region.x as f64, self.height() as f64);
+        p.draw_rect(0.0, 0.0, self.width() as f64, region.y() as f64);
+        p.draw_rect(0.0, 0.0, region.x() as f64, self.height() as f64);
         p.draw_rect(region.right() as f64, 0.0, self.width() as f64, self.height() as f64);
         p.draw_rect(0.0, region.bottom() as f64, self.width() as f64, self.height() as f64);
     }
@@ -89,10 +89,10 @@ fn create_image(width: u32, height: u32) -> Result<qt::Image, Error> {
 }
 
 fn copy_image(image: &qt::Image, region: ScreenRect) -> Result<qt::Image, Error> {
-    let x = cmp::max(0, region.x) as u32;
-    let y = cmp::max(0, region.y) as u32;
+    let x = cmp::max(0, region.x()) as u32;
+    let y = cmp::max(0, region.y()) as u32;
 
-    image.copy(x, y, region.width, region.height).ok_or(Error::AllocFailed)
+    image.copy(x, y, region.width(), region.height()).ok_or(Error::AllocFailed)
 }
 
 struct QtFilter;
@@ -111,7 +111,7 @@ impl Filter<qt::Image> for QtFilter {
 
                 Ok(Image {
                     image: Rc::new(image),
-                    region: ScreenRect::new(0, 0, region.width, region.height),
+                    region: region.translate_to(0, 0),
                     color_space: ColorSpace::SRGB,
                 })
             }
@@ -128,7 +128,7 @@ impl Filter<qt::Image> for QtFilter {
 
                 Ok(Image {
                     image: Rc::new(image),
-                    region: ScreenRect::new(0, 0, region.width, region.height),
+                    region: region.translate_to(0, 0),
                     color_space: ColorSpace::SRGB,
                 })
             }
@@ -196,7 +196,7 @@ impl Filter<qt::Image> for QtFilter {
         let input1 = input1.into_color_space(cs)?;
         let input2 = input2.into_color_space(cs)?;
 
-        let mut buffer = create_image(region.width, region.height)?;
+        let mut buffer = create_image(region.width(), region.height())?;
         let mut p = qt::Painter::new(&mut buffer);
 
         p.draw_image(0.0, 0.0, input2.as_ref());
@@ -224,7 +224,7 @@ impl Filter<qt::Image> for QtFilter {
         let input1 = input1.into_color_space(cs)?;
         let input2 = input2.into_color_space(cs)?;
 
-        let mut buffer = create_image(region.width, region.height)?;
+        let mut buffer = create_image(region.width(), region.height())?;
 
         if fe.operator == Operator::Arithmetic {
             warn!("feComposite with 'arithmetic' operator is not supported.");
@@ -257,7 +257,7 @@ impl Filter<qt::Image> for QtFilter {
         results: &[FilterResult],
         canvas: &qt::Image,
     ) -> Result<Image, Error> {
-        let mut buffer = create_image(region.width, region.height)?;
+        let mut buffer = create_image(region.width(), region.height())?;
         let mut p = qt::Painter::new(&mut buffer);
 
         for input in &fe.inputs {
@@ -277,7 +277,7 @@ impl Filter<qt::Image> for QtFilter {
         let c = fe.color;
         let alpha = f64_bound(0.0, fe.opacity.value() * 255.0, 255.0) as u8;
 
-        let mut buffer = create_image(region.width, region.height)?;
+        let mut buffer = create_image(region.width(), region.height())?;
         buffer.fill(c.red, c.green, c.blue, alpha);
 
         Ok(Image::from_image(buffer, ColorSpace::SRGB))
@@ -287,21 +287,19 @@ impl Filter<qt::Image> for QtFilter {
         input: Image,
         region: ScreenRect,
     ) -> Result<Image, Error> {
-        let mut buffer = create_image(region.width, region.height)?;
+        let mut buffer = create_image(region.width(), region.height())?;
 
-        let mut subregion = input.region;
-        subregion.x -= region.x;
-        subregion.y -= region.y;
+        let subregion = input.region.translate(-region.x(), -region.y());
 
         let mut brush = qt::Brush::new();
         brush.set_pattern(copy_image(&input.image, subregion)?);
-        let brush_ts = usvg::Transform::new_translate(subregion.x as f64, subregion.y as f64);
+        let brush_ts = usvg::Transform::new_translate(subregion.x() as f64, subregion.y() as f64);
         brush.set_transform(brush_ts.to_native());
 
         let mut p = qt::Painter::new(&mut buffer);
         p.reset_pen();
         p.set_brush(brush);
-        p.draw_rect(0.0, 0.0, region.width as f64, region.height as f64);
+        p.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64);
 
         Ok(Image::from_image(buffer, ColorSpace::SRGB))
     }
@@ -312,19 +310,19 @@ impl Filter<qt::Image> for QtFilter {
         subregion: ScreenRect,
         opt: &Options,
     ) -> Result<Image, Error> {
-        let mut buffer = create_image(region.width, region.height)?;
+        let mut buffer = create_image(region.width(), region.height())?;
 
         match fe.data {
             usvg::FeImageKind::None => {}
             usvg::FeImageKind::Image(ref data, format) => {
                 let mut p = qt::Painter::new(&mut buffer);
 
-                let dx = (subregion.x - region.x) as f64;
-                let dy = (subregion.y - region.y) as f64;
+                let dx = (subregion.x() - region.x()) as f64;
+                let dy = (subregion.y() - region.y()) as f64;
                 p.translate(dx, dy);
 
                 let view_box = usvg::ViewBox {
-                    rect: ScreenRect::new(0, 0, subregion.width, subregion.height).to_rect(),
+                    rect: subregion.translate_to(0, 0).to_rect(),
                     aspect: fe.aspect,
                 };
 
@@ -351,7 +349,7 @@ impl Filter<qt::Image> for QtFilter {
         canvas.fill(0, 0, 0, 0);
 
         let mut p = qt::Painter::new(canvas);
-        p.draw_image(region.x as f64, region.y as f64, input.as_ref());
+        p.draw_image(region.x() as f64, region.y() as f64, input.as_ref());
 
         Ok(())
     }

@@ -143,8 +143,8 @@ pub fn convert_doc(
 fn resolve_svg_size(svg: &svgdom::Node, opt: &Options) -> Result<Size, Error> {
     let mut state = State {
         current_root: svg.clone(),
-        size: Size::new(100.0, 100.0),
-        view_box: Rect::new(0.0, 0.0, 100.0, 100.0),
+        size: Size::new(100.0, 100.0).unwrap(),
+        view_box: Rect::new(0.0, 0.0, 100.0, 100.0).unwrap(),
         opt,
     };
 
@@ -164,13 +164,13 @@ fn resolve_svg_size(svg: &svgdom::Node, opt: &Options) -> Result<Size, Error> {
         state.view_box = vbox;
 
         let w = if width.unit == Unit::Percent {
-            vbox.width * (width.num / 100.0)
+            vbox.width() * (width.num / 100.0)
         } else {
             svg.convert_user_length(AId::Width, &state, def)
         };
 
         let h = if height.unit == Unit::Percent {
-            vbox.height * (height.num / 100.0)
+            vbox.height() * (height.num / 100.0)
         } else {
             svg.convert_user_length(AId::Height, &state, def)
         };
@@ -183,7 +183,7 @@ fn resolve_svg_size(svg: &svgdom::Node, opt: &Options) -> Result<Size, Error> {
         )
     };
 
-    if size.is_valid() {
+    if let Some(size) = size {
         Ok(size)
     } else {
         Err(Error::InvalidSize)
@@ -199,9 +199,9 @@ fn get_view_box(svg: &svgdom::Node, size: Size) -> Rect {
 
 fn gen_empty_tree() -> tree::Tree {
     let svg_kind = tree::Svg {
-        size: Size::new(100.0, 100.0),
+        size: Size::new(100.0, 100.0).unwrap(),
         view_box: tree::ViewBox {
-            rect: (0.0, 0.0, 100.0, 100.0).into(),
+            rect: Rect::new(0.0, 0.0, 100.0, 100.0).unwrap(),
             aspect: tree::AspectRatio::default(),
         },
     };

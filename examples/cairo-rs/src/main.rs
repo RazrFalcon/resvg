@@ -65,7 +65,7 @@ fn build_ui(application: &gtk::Application, file_path: &Path) {
         let s = resvg::ScreenSize::new(
             w.get_allocated_width() as u32,
             w.get_allocated_height() as u32,
-        );
+        ).unwrap();
         resvg::backend_cairo::render_to_canvas(&tree, &opt, s, cr);
 
         Inhibit(false)

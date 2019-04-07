@@ -18,8 +18,7 @@ pub fn apply(
     brush: &mut qt::Brush,
 ) {
     let r = if pattern.units == usvg::Units::ObjectBoundingBox {
-        try_opt_warn!(pattern.rect.bbox_transform(bbox), (),
-                      "Pattern '{}' cannot be used on a zero-sized object.", pattern.id)
+        pattern.rect.bbox_transform(bbox)
     } else {
         pattern.rect
     };
@@ -27,11 +26,7 @@ pub fn apply(
     let global_ts = usvg::Transform::from_native(&global_ts);
     let (sx, sy) = global_ts.get_scale();
 
-    if sx.is_fuzzy_zero() || sy.is_fuzzy_zero() {
-        return;
-    }
-
-    let img_size = Size::new(r.width * sx, r.height * sy).to_screen_size();
+    let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy), ()).to_screen_size();
     let mut img = try_create_image!(img_size, ());
 
     img.set_dpi(opt.usvg.dpi);
@@ -48,11 +43,7 @@ pub fn apply(
 
         // We don't use Transform::from_bbox(bbox) because `x` and `y` should be
         // ignored for some reasons...
-        if bbox.is_valid() {
-            p.scale(bbox.width, bbox.height);
-        } else {
-            return;
-        }
+        p.scale(bbox.width(), bbox.height());
     }
 
     let mut layers = super::create_layers(img_size, opt);
@@ -81,7 +72,7 @@ pub fn apply(
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);
-    ts.translate(r.x, r.y);
+    ts.translate(r.x(), r.y());
     ts.scale(1.0 / sx, 1.0 / sy);
     brush.set_transform(ts.to_native());
 }

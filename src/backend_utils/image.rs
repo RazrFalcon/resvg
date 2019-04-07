@@ -84,22 +84,21 @@ pub fn prepare_sub_svg_geom(
     let (tx, ty, clip) = if view_box.aspect.slice {
         let pos = utils::aligned_pos(
             view_box.aspect.align,
-            0.0, 0.0, new_size.width as f64 - r.width, new_size.height as f64 - r.height,
+            0.0, 0.0, new_size.width() as f64 - r.width(), new_size.height() as f64 - r.height(),
         );
 
-        let r = Rect::new(r.x, r.y, r.width, r.height);
-        (r.x - pos.x, r.y - pos.y, Some(r))
+        (r.x() - pos.x, r.y() - pos.y, Some(r))
     } else {
         let pos = utils::aligned_pos(
             view_box.aspect.align,
-            r.x, r.y, r.width - new_size.width as f64, r.height - new_size.height as f64,
+            r.x(), r.y(), r.width() - new_size.width() as f64, r.height() - new_size.height() as f64,
         );
 
         (pos.x, pos.y, None)
     };
 
-    let sx = new_size.width as f64 / img_size.width as f64;
-    let sy = new_size.height as f64 / img_size.height as f64;
+    let sx = new_size.width() as f64 / img_size.width() as f64;
+    let sy = new_size.height() as f64 / img_size.height() as f64;
     let ts = usvg::Transform::new(sx, 0.0, 0.0, sy, tx, ty);
 
     (ts, clip)

@@ -103,7 +103,7 @@ pub fn convert_rect(
 
     // Conversion according to https://www.w3.org/TR/SVG11/shapes.html#RectElement
     let path = if rx.fuzzy_eq(&0.0) {
-        utils::rect_to_path(Rect::new(x, y, width, height))
+        utils::rect_to_path(Rect::new(x, y, width, height)?)
     } else {
         let p = svgdom::PathBuilder::with_capacity(9)
             .move_to(x + rx, y)
