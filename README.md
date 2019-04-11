@@ -18,33 +18,33 @@ to render SVG files based on a
 [SVG Full 1.1](https://www.w3.org/TR/SVG/Overview.html) subset
 (see [SVG support](#svg-support) for details).
 
-The core idea is to make a fast, small, portable, multiple backend SVG library
+The core idea is to make a fast, small, portable, multiple-backend SVG library
 designed for edge-cases.
 
 SVG can be rendered to a raster image or to a backend's canvas (e.g. to a QWidget via QPainter).
 
 ## Why a new library?
 
-*resvg* is trying to compete with [librsvg], [QtSvg]
-and [Inkscape] (only as a CLI SVG to PNG converter).
+*resvg* is competing with [librsvg], [QtSvg]
+and [Inkscape] (only as a CLI SVG-to-PNG converter).
 
 One of the major differences from other rendering libraries is that *resvg* does a lot
 of preprocessing before rendering. It converts shapes to paths, resolves attributes,
 removes groups and invisible elements, fixes a lot of issues in malformed SVG files.
 Then it creates a simple render tree with all elements and attributes resolved.
-And only then it starts to render. So it's very easy to implement a new rendering backend.
+And only then it begins rendering. So it's very easy to implement a new rendering backend.
 
 More details [here](https://github.com/RazrFalcon/resvg/blob/master/docs/usvg_spec.adoc).
 
 ### resvg vs librsvg
 
-*librsvg* is the main competitor to the *resvg*. And even though that *librsvg* itself is being
+*librsvg* is the main competitor to *resvg*. And even though *librsvg* itself is being
 rewritten in Rust, as *resvg*, the architecture of the library is completely different:
 
 - *librsvg* is heavily tied to the [cairo] library
-- *librsvg* is heavily tied to [GNOME] which makes it painful to distribute outside the Linux ecosystem
+- *librsvg* is heavily tied to [GNOME], which makes it painful to distribute outside the Linux ecosystem
 - *librsvg* doesn't produce an intermediate rendering tree
-- *librsvg* has a minimal support of the edge-cases, which leads to rendering errors
+- *librsvg* has minimal support for edge cases, which leads to rendering errors
 
 ### resvg vs Inkscape
 
@@ -56,13 +56,13 @@ Also, it's very slow. But it has the best SVG support amongst others.
 
 Without a doubt, [QtSvg] is heavily used in [Qt] applications.
 But [QtSvg] itself is very limited. It officially supports only a tiny portion
-of the SVG Tiny 1.2 subset. In simple terms - it correctly renders only primitive SVG images.
+of the SVG Tiny 1.2 subset. In simple terms – it correctly renders only primitive SVG images.
 Also, it's [deprecated](https://wiki.qt.io/Qt_Modules_Maturity_Level).
 
 ## SVG support
 
 *resvg* is aiming to support only the [static](http://www.w3.org/TR/SVG11/feature#SVG-static)
-SVG subset. E.g. no `a`, `script`, `view`, `cursor` elements, no events and no animations.
+SVG subset; e.g. no `a`, `script`, `view` or `cursor` elements, no events and no animations.
 
 Also, `textPath` and
 [embedded fonts](https://www.w3.org/TR/SVG11/feature#Font) are not yet implemented.
@@ -96,41 +96,41 @@ Also, we do not test against Chrome, Firefox, Inkscape and Batik because they ha
 
 ![Chart4](./.github/perf-oxygen.svg)
 
-- Oxygen Icon Theme contains 4947 files.
+- The Oxygen icon theme contains 4947 files.
 - All images were converted from `.svgz` to `.svg` beforehand.
-- `resvg` is slower than `librsvg` because Oxygen Icon Theme is using Gaussian blur heavily, which is expensive.
+- `resvg` is slower than `librsvg` because the Oxygen icon theme uses Gaussian blur heavily, which is expensive.
   And `librsvg` uses box blur optimization and multithreading, while `resvg` always uses a single-threaded IIR blur (at least for now).
-- QtSvg doesn't support `filter`, `clipPath`, `mask` and `pattern` that are heavily used in the Oxygen Icon Theme.
+- QtSvg doesn't support `filter`, `clipPath`, `mask` and `pattern` that are heavily used in the Oxygen icon theme.
   So it's actually very slow.
 
 ## Project structure
 
-- `resvg` - rendering backends implementation
-  - [`usvg`](./usvg) - an SVG simplification tool
-    - [`svgdom`](https://github.com/RazrFalcon/svgdom) - a DOM-like SVG tree
-      - [`roxmltree`](https://github.com/RazrFalcon/roxmltree) - a DOM-like XML tree
-        - [`xmlparser`](https://github.com/RazrFalcon/xmlparser) - an XML parser
-      - [`svgtypes`](https://github.com/RazrFalcon/svgtypes) - SVG types parser and writer
-    - [`rctree`](https://github.com/RazrFalcon/rctree) - a DOM-like tree
-  - [`resvg-qt`](./resvg-qt) - a minimal bindings to [Qt]
+- `resvg` – rendering backends implementation
+  - [`usvg`](./usvg) – an SVG simplification tool
+    - [`svgdom`](https://github.com/RazrFalcon/svgdom) – a DOM-like SVG tree
+      - [`roxmltree`](https://github.com/RazrFalcon/roxmltree) – a DOM-like XML tree
+        - [`xmlparser`](https://github.com/RazrFalcon/xmlparser) – an XML parser
+      - [`svgtypes`](https://github.com/RazrFalcon/svgtypes) – SVG types parser and writer
+    - [`rctree`](https://github.com/RazrFalcon/rctree) – a DOM-like tree
+  - [`resvg-qt`](./resvg-qt) – minimal bindings to [Qt]
 
 All other dependencies aren't written by me for this project.
 
 ## Directory structure
 
-- `capi` - C/FFI interface for *resvg*
-- `docs` - basic documentation
-- `examples` - *resvg* as a library usage examples
-- `resvg-qt` - a minimal bindings to Qt used by *resvg*
-- `src` - source code
-- `testing_tools` - scripts used for testing
-- `tools` - useful tools
-- `usvg` - an SVG simplification library used by *resvg*
+- `capi` – C/FFI interface for *resvg*
+- `docs` – basic documentation
+- `examples` – usage examples for *resvg* as a library
+- `resvg-qt` – minimal bindings to Qt used by *resvg*
+- `src` – source code
+- `testing_tools` – scripts used for testing
+- `tools` – useful tools
+- `usvg` – an SVG simplification library used by *resvg*
 
 ## Safety
 
-- The library must not panic. Any panic should be considered a critical bug and reported.
-  There are only few methods that can produce a panic.
+- The library must not panic. Any panic should be considered a critical bug and should be reported.
+  There are only a few methods that can produce a panic.
 - The core library structure (see above) does not use any `unsafe`,
   but since all backends are implemented via FFI, we are stuck with `unsafe` anyway.
 
