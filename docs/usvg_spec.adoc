@@ -1,127 +1,337 @@
 = Micro SVG Document Structure
 :toc:
 
-:1H: #
-:star: *
+== Intro
+
+SVG Micro represents a strip down SVG Full 1.1 subset.
+
+Here is the main differences between SVG Full and SVG Micro.
+
+- No XML DTD.
+- No CSS.
+- `use`, `marker` and nested `svg` will be resolved.
+- Simplified path notation. Only absolute MoveTo, LineTo, CurveTo
+  and ClosePath segments are allowed.
+- No inheritable attributes.
+- No `xlink:href`, except the `image` element.
+- No recursive references.
+- Only valid elements and attributes.
+- No unused elements.
+- No redundant groups.
+- No units.
+- No `style` attribute.
+- Default attributes are implicit.
+
+You can use
+https://github.com/RazrFalcon/resvg/tree/master/usvg[usvg]
+to convert a random SVG into a SVG Micro almost losslessly.
+
+Note: the current version supports the `text` element,
+but eventually text will be converted into paths.
+To make SVG Micro even simpler.
 
 == Elements
 
-=== svg
+[[svg-element]]
+
+=== The `svg` element
 
 The `svg` element is the root element of the document.
-It's defined only once and can't be nested, unlike the SVG spec.
+It's defined only once and can't be nested, unlike by the SVG spec.
 
-Always present.
+*Children:*
 
-Children: `defs`, `g`, `path`, `text` and `image`.
+* <<defs-element,defs>>
+* <<g-element,g>>
+* <<path-element,path>>
+* <<text-element,text>>
+* <<image-element,image>>
 
-Attributes: `width`, `height`, `viewBox` and `preserveAspectRatio`.
+*Attributes:*
 
-=== defs
+* `width` = <<positive-number-type,<positive-number> >> +
+  The width of the rectangular region into which the referenced document is placed.
+* `height` = <<positive-number-type,<positive-number> >> +
+  The height of the rectangular region into which the referenced document is placed.
+* `viewBox` = <<viewBox-type,<viewBox> >>
+* `preserveAspectRatio` = <<preserveAspectRatio-type,<preserveAspectRatio> >>?
 
-Always present.
+[[defs-element]]
 
-All `defs` children have an `id` attribute. It always set and newer empty.
+=== The `defs` element
 
-Children: `linearGradient`, `radialGradient`, `clipPath`, `mask`, `pattern` and `filter`.
+Always present. Always the first `svg` child. Can be empty.
 
-[[linearGradient_elem]]
+*Children:*
 
-=== linearGradient
+* <<linearGradient-element,linearGradient>>
+* <<radialGradient-element,radialGradient>>
+* <<clipPath-element,clipPath>>
+* <<mask-element,mask>>
+* <<pattern-element,pattern>>
+* <<filter-element,filter>>
 
-Gradient has all attributes resolved and at least two `stop` children.
+*Attributes:*
 
-`stop` children will always have unique, ordered `offset` values.
+* none
 
-Gradient doesn't have `xlink:href` attribute because all attributes and `stop` children
-are already resolved and copied to the gradient.
+[[linearGradient-element]]
 
-Children: `stop`.
+=== The `linearGradient` element
 
-Attributes: `id`, `x1`, `y1`, `x2`, `y2`, `gradientUnits`, `spreadMethod`,
-`gradientTransform`.
+Doesn't have a `xlink:href` attribute because all attributes and `stop`
+children will be resolved.
 
-* See `<<transform_attr,transform>>` for `gradientTransform`.
+*Children:*
 
-=== radialGradient
+* At least two <<stop-element,stop>>
 
-See `<<linearGradient_elem,linearGradient>>`.
+*Attributes:*
 
-Children: `stop`.
+* `id` = <<string-type,<string> >> +
+  The element ID. Always set. Guarantee to be unique.
+* `x1` = <<number-type,<number> >>
+* `y1` = <<number-type,<number> >>
+* `x2` = <<number-type,<number> >>
+* `y2` = <<number-type,<number> >>
+* `gradientUnits` = `userSpaceOnUse`?
+* `spreadMethod` = `reflect | repeat`?
+* `gradientTransform` = <<transform-type,<transform> >>?
 
-Attributes: `id`, `cx`, `cy`, `r`, `fx`, `fy`, `gradientUnits`, `spreadMethod`,
-`gradientTransform`.
+[[radialGradient-element]]
 
-* `r` always > 0.
-* `fx` and `fy` are always inside the circle defined by `cx`, `cy` and `r`.
-* See `<<transform_attr,transform>>` for `gradientTransform`.
+=== The `radialGradient` element
 
-=== stop
+Doesn't have a `xlink:href` attribute because all attributes and `stop`
+children will be resolved.
 
-Attributes: `offset`, `stop-color`, `stop-opacity`.
+*Children:*
 
-* `offset` and `stop-opacity` are always in 0..1 range.
-* `stop-color` is always a valid {1H}RRGGBB color.
+* At least two <<stop-element,stop>>
 
-=== pattern
+*Attributes:*
 
-Pattern defines a texture image that can be used by `fill` and `stroke`.
+* `id` = <<string-type,<string> >> +
+  The element ID. Always set. Guarantee to be unique.
+* `cx` = <<number-type,<number> >>
+* `cy` = <<number-type,<number> >>
+* `fx` = <<number-type,<number> >> +
+  Guarantee to be the circle defined by `cx`, `cy` and `r`.
+* `fy` = <<number-type,<number> >> +
+  Guarantee to be inside the circle defined by `cx`, `cy` and `r`.
+* `r` = <<positive-number-type,<positive-number> >>
+* `gradientUnits` = `userSpaceOnUse`?
+* `spreadMethod` = `reflect | repeat`?
+* `gradientTransform` = <<transform-type,<transform> >>?
 
-Children: `g`, `path`, `text` and `image`.
+[[stop-element]]
 
-Attributes: `id`, `patternUnits`, `patternContentUnits`, `transform`,
-`x`, `y`, `width`, `height`, `viewBox` and `preserveAspectRatio`.
+=== The `stop` element
 
-=== clipPath
+Gradient's `stop` children will always have unique, ordered `offset` values
+in the 0..1 range.
 
-`clipPath` defines a 1-bit mask using children elements.
+*Children:*
 
-Children: `path` and `text`.
+* none
 
-Attributes: `id`, `clipPathUnits`, `transform` and `clip-path`.
+*Attributes:*
 
-=== mask
+* `offset` = <<offset-type,<offset> >>
+* `stop-color` = <<color-type,<color> >>
+* `stop-opacity` = <<opacity-type,<opacity> >>? +
+  Default: 1
 
-Children: `g`, `path`, `text` and `image`.
+[[pattern-element]]
 
-Attributes: `id`, `maskUnits`, `maskContentUnits`, `x`, `y`, `width` and `height`.
+=== The `pattern` element
 
-=== g
+Doesn't have a `xlink:href` attribute because all attributes and children will be resolved.
+
+*Children:*
+
+* `g`
+* `path`
+* `text`
+* `image`
+
+*Attributes:*
+
+* `id` = <<string-type,<string> >> +
+  The element ID. Always set. Guarantee to be unique.
+* `x` = <<number-type,<number> >>
+* `y` = <<number-type,<number> >>
+* `width` = <<positive-number-type,<positive-number> >>
+* `height` = <<positive-number-type,<positive-number> >>
+* `viewBox` = <<viewBox-type,<viewBox> >>?
+* `preserveAspectRatio` = <<preserveAspectRatio-type,<preserveAspectRatio> >>?
+* `patternUnits` = `userSpaceOnUse`? +
+  Default: objectBoundingBox
+* `patternContentUnits` = `objectBoundingBox`? +
+  Default: userSpaceOnUse
+* `patternTransform` = <<transform-type,<transform> >>?
+
+[[clipPath-element]]
+
+=== The `clipPath` element
+
+*Children:*
+
+* `path`
+* `text`
+
+*Attributes:*
+
+* `id` = <<string-type,<string> >> +
+  The element ID. Always set. Guarantee to be unique.
+* `clip-path` = <<func-iri-type,<FuncIRI> >>? +
+  An optional reference to a supplemental `clipPath`. +
+  Default: none
+* `clipPathUnits` = `objectBoundingBox`? +
+  Default: userSpaceOnUse
+* `transform` = <<transform-type,<transform> >>?
+
+[[mask-element]]
+
+=== The `mask` element
+
+*Children:*
+
+* `g`
+* `path`
+* `text`
+* `image`
+
+*Attributes:*
+
+* `id` = <<string-type,<string> >> +
+  The element ID. Always set. Guarantee to be unique.
+* `mask` = <<func-iri-type,<FuncIRI> >>? +
+  An optional reference to a supplemental `mask`. +
+  Default: none
+* `x` = <<number-type,<number> >>
+* `y` = <<number-type,<number> >>
+* `width` = <<positive-number-type,<positive-number> >>
+* `height` = <<positive-number-type,<positive-number> >>
+* `maskUnits` = `userSpaceOnUse`? +
+  Default: objectBoundingBox
+* `maskContentUnits` = `objectBoundingBox`? +
+  Default: userSpaceOnUse
+
+[[filter-element]]
+
+=== The `filter` element
+
+Doesn't have a `xlink:href` attribute because all attributes and children will be resolved.
+
+*Children:*
+
+* <<Filter primitives>>
+
+*Attributes:*
+
+* `id` = <<string-type,<string> >> +
+  The element ID. Always set. Guarantee to be unique.
+* `x` = <<number-type,<number> >>
+* `y` = <<number-type,<number> >>
+* `width` = <<positive-number-type,<positive-number> >>
+* `height` = <<positive-number-type,<positive-number> >>
+* `filterUnits` = `userSpaceOnUse`? +
+  Default: objectBoundingBox
+* `primitiveUnits` = `objectBoundingBox`? +
+  Default: userSpaceOnUse
+
+[[g-element]]
+
+=== The `g` element
 
 The group element indicates that a new canvas should be created.
-All groups children elements will be rendered on it and then merged into
+All group's children elements will be rendered on it and then merged into
 the parent canvas.
 
 Since it's pretty expensive, especially memory wise, _usvg_
 will remove as many groups as possible.
-All the remaining one will indicate that a new canvas must be created.
+And all the remaining one will indicate that a new canvas must be created.
 
-A group can be empty when it has a `filter` attribute.
+A group can have no children when it has a `filter` attribute.
 
-Children: `g`, `path`, `text` and `image`.
+A group will have at least one of the attributes present.
 
-Attributes: `id`, `transform`, `opacity`, `clip-path`, `mask` and `filter`.
+*Children:*
 
-* `id` is optional but never empty.
+* <<g-element,g>>
+* <<path-element,path>>
+* <<text-element,text>>
+* <<image-element,image>>
 
-=== path
+*Attributes:*
 
-First, the _usvg_ preprocessor will convert all shapes into paths.
-Then it will simplify path's data so it will contain only absolute
-MoveTo, LineTo, CurveTo and ClosePath segments.
+* `id` = <<string-type,<string> >>? +
+  An optional, but never empty, element ID.
+* `opacity` = <<opacity-type,<opacity> >>?
+* `clip-path` = <<func-iri-type,<FuncIRI> >>? +
+  Cannot be set to `none`.
+* `mask` = <<func-iri-type,<FuncIRI> >>? +
+  Cannot be set to `none`.
+* `filter` = <<func-iri-type,<FuncIRI> >>? +
+  Cannot be set to `none`.
+* `transform` = <<transform-type,<transform> >>?
 
-Attributes: `id`, <<fill_attrs, filling>>, <<stroke_attrs,stroking>>,
-`clip-rule` (when inside the `clipPath`), `clip-path` (when inside the `clipPath`),
-`visibility` and `transform`.
+[[path-element]]
 
-* `id` is optional but never empty.
+=== The `path` element
 
-=== text
+*Children:*
+
+* none
+
+*Attributes:*
+
+* `id` = <<string-type,<string> >>? +
+  An optional, but never empty, element ID.
+* `d` = <<path-data-type,<path-data> >> +
+* `fill` = `none` | <<color-type,<color> >> | <<func-iri-type,<FuncIRI> >>? +
+  If not set, than all fill-* attributes will not be set too. +
+  Default: black
+* `fill-opacity` = <<opacity-type,<opacity> >>? +
+  Default: 1
+* `fill-rule` = `evenodd`? +
+  Default: nonzero
+* `stroke` = <<color-type,<color> >> | <<func-iri-type,<FuncIRI> >>? +
+  If not set, than all stroke-* attributes will not be set too. +
+  Default: none
+* `stroke-width` = <<positive-number-type,<positive-number> >>? +
+  Default: 1
+* `stroke-linecap` = `round | square`? +
+  Default: butt
+* `stroke-linejoin` = `round | bevel`? +
+  Default: miter
+* `stroke-miterlimit` = <<positive-number-type,<positive-number> >>? +
+  Guarantee to be > 1. +
+  Default: 4
+* `stroke-dasharray` = `<list-of-numbers>`? +
+  Guarantee to have even amount of numbers. +
+  Default: none
+* `stroke-dashoffset` = <<number-type,<number> >>?
+* `stroke-opacity` = <<opacity-type,<opacity> >>? +
+  Default: 1
+* `clip-rule` = `evenodd`? +
+  Will be set only inside the <<clipPath-element,clipPath>>, instead of `fill-rule`.
+* `clip-path` = <<func-iri-type,<FuncIRI> >>? +
+  Available only inside the <<clipPath-element,clipPath>>.
+* `shape-rendering` = `optimizeSpeed | crispEdges`? +
+  Default: geometricPrecision
+* `visibility` = `hidden | collapse`? +
+  Default: visible
+* `transform` = <<transform-type,<transform> >>?
+
+[[text-element]]
+
+=== The `text` element
 
 The text is one of the most complex parts of the SVG.
-_usvg_ will modify the input element and its children a lot.
-
-The simplest `text` element like `<text>Text</text>` will be converted to:
+_usvg_ will modify the `text` element and its children a lot.
+The simplest `text` element like `<text>Text</text>` will be converted into:
 
 ```xml
 <text>
@@ -148,99 +358,338 @@ So all `text` elements will have a three-level structure:
 ** `tspan` - text chunk
 *** `tspan` - text container
 
-The `text` itself can have only `id`, `transform`, `rotate`, `xml:space`
-and `clip-path` (when inside the `clipPath`) attributes.
+*Container attributes:*
 
-_Text chunk_ can have `x`, `y`, `dx`, `dy` and `text-anchor` attributes.
+* `id` = <<string-type,<string> >>? +
+  An optional, but never empty, element ID.
+* `rotate` = `<list-of-numbers>`?
+* `xml:space` = `preserve`? +
+  Default: default
+* `clip-rule` = `evenodd`? +
+  Will be set only inside the <<clipPath-element,clipPath>>, instead of `fill-rule`.
+* `clip-path` = <<func-iri-type,<FuncIRI> >>? +
+  Available only inside the <<clipPath-element,clipPath>>.
+* `text-rendering` = `optimizeSpeed | geometricPrecision` +
+  Default: optimizeLegibility
+* `transform` = <<transform-type,<transform> >>?
 
-And the _text container_ can have <<fill_attrs, filling>>,
-<<stroke_attrs,stroking>>, <<font_attrs,font>>, `baseline-shift`, `letter-spacing`, `word-spacing`,
-`text-decoration`, `visibility` and `clip-rule` (when inside the `clipPath`) attributes.
+*Text chunk attributes:*
 
-* `id` is optional but never empty.
+* `x` = <<number-type,<number> >>?
+* `y` = <<number-type,<number> >>?
+* `dx` = <<number-type,<number> >>?
+* `dy` = <<number-type,<number> >>?
+* `text-anchor` = `middle | end`? +
+  Default: start
 
-*Note:* `text-decoration` is currently ignored.
+*Text container attributes:*
 
-// TODO: explain text-decoration
+* `fill` = `none` | <<color-type,<color> >> | <<func-iri-type,<FuncIRI> >>? +
+  If not set, than all fill-* attributes will not be set too. +
+  Default: black
+* `fill-opacity` = <<opacity-type,<opacity> >>? +
+  Default: 1
+* `fill-rule` = `evenodd`? +
+  Default: nonzero
+* `stroke` = <<color-type,<color> >> | <<func-iri-type,<FuncIRI> >>? +
+  If not set, than all stroke-* attributes will not be set too. +
+  Default: none
+* `stroke-width` = <<positive-number-type,<positive-number> >>? +
+  Default: 1
+* `stroke-linecap` = `round | square`? +
+  Default: butt
+* `stroke-linejoin` = `round | bevel`? +
+  Default: miter
+* `stroke-miterlimit` = <<positive-number-type,<positive-number> >>? +
+  Guarantee to be > 1. +
+  Default: 4
+* `stroke-dasharray` = `<list-of-numbers>`? +
+  Guarantee to have even amount of numbers. +
+  Default: none
+* `stroke-dashoffset` = <<number-type,<number> >>?
+* `stroke-opacity` = <<opacity-type,<opacity> >>? +
+  Default: 1
+* `font-family` = <<string-type,<string> >>
+* `font-size` = <<positive-number-type,<positive-number> >>
+* `font-style` = `italic | oblique`? +
+  Default: normal
+* `font-variant` = `small-caps`? +
+  Default: normal
+* `font-weight` = `100 | 200 | 300 | 500 | 600 | 700 | 800 | 900`? +
+  Default: 400
+* `font-stretch` = `wider | narrower | ultra-condensed | extra-condensed` +
+  `| condensed | semi-condensed | semi-expanded | expanded` +
+  `| extra-expanded | ultra-expanded` ? +
+  Default: normal
+* `baseline-shift` = <<number-type,<number> >>? +
+  Default: baseline
+* `letter-spacing` = <<number-type,<number> >>? +
+  Default: normal
+* `word-spacing` = <<number-type,<number> >>? +
+  Default: normal
+* `visibility` = `hidden | collapse`? +
+  Default: visible
 
-=== image
+[[image-element]]
 
-An image can have a base64 encoded data or a path to an image.
+=== The `image` element
 
-Attributes: `id`, `x`, `y`, `width`, `height`, `preserveAspectRatio`, `xlink:href`,
-`visibility` and `transform`.
+*Children:*
 
-* `id` is optional but never empty.
+* none
 
-== Attributes
+*Attributes:*
 
-All attributes can't have `inherit`, invalid or empty value.
+* `id` = <<string-type,<string> >>? +
+  An optional, but never empty, element ID.
+* `xlink:href` = <<iri-type,<IRI> >> +
+  The IRI contains a file path or base64 encoded image.
+* `x` = <<number-type,<number> >>
+* `y` = <<number-type,<number> >>
+* `width` = <<positive-number-type,<positive-number> >>
+* `height` = <<positive-number-type,<positive-number> >>
+* `preserveAspectRatio` = <<preserveAspectRatio-type,<preserveAspectRatio> >>?
+* `image-rendering` = `optimizeSpeed`? +
+  Default: optimizeQuality
+* `visibility` = `hidden | collapse`? +
+  Default: visible
+* `transform` = <<transform-type,<transform> >>?
 
-Numeric attributes can't have https://www.w3.org/TR/SVG11/coords.html#Units[units].
+== Filter primitives
 
-[[fill_attrs]]
+[[feGaussianBlur-element]]
 
-=== Filling attributes
+=== Filter primitive attributes
 
-Filling attributes refers to:
+The attributes below are the same for all filter primitives.
 
-[[fill_attr]]
+* `color-interpolation-filters` = `sRGB`? +
+  Default: linearRGB
+* `x` = <<number-type,<number> >>?
+* `y` = <<number-type,<number> >>?
+* `width` = <<number-type,<number> >>?
+* `height` = <<number-type,<number> >>?
+* `result` = <<string-type,<string> >>
 
-* `fill`
-** Possible values: `none`, `{1H}RRGGBB`, `url({1H}id)`.
-** Impossible values: `currentColor`, icccolor, FuncIRI with a fallback color.
-** FuncIRI is always valid and points to an existing element.
-* `fill-opacity`
-** Possible values: 0..1.
-* `fill-rule`
+The `x`, `y`, `width` and `height` attributes can be omited.
+SVG has a pretty complex
+https://www.w3.org/TR/SVG11/filters.html#FilterPrimitiveSubRegion[rules of resolving them]
+and I don't fully understand them yet.
+Neither do others, because they are pretty poorly implemented.
 
-[[stroke_attrs]]
+=== Filter primitive `feBlend`
 
-=== Stroking attributes
+*Attributes:*
 
-Stroking attributes refers to:
+* `in` = <<filter-input-type,<filter-input> >>
+* `in2` = <<filter-input-type,<filter-input> >>
+* `mode` = `normal | multiply | screen | darken | lighten`
+* <<Filter primitive attributes>>
 
-* `stroke`
-** See `<<fill_attr,fill>>` attribute.
-* `stroke-dasharray`
-** Possible values: `none`, list of numbers.
-** Impossible values: odd amount of numbers.
-* `stroke-dashoffset`
-* `stroke-miterlimit`
-** Possible values: number > 1.
-* `stroke-opacity`
-** Possible values: 0..1.
-* `stroke-width`
-** Possible values: number > 0.
-* `stroke-linecap`
-* `stroke-linejoin`
+=== Filter primitive `feComposite`
 
-[[font_attrs]]
+*Attributes:*
 
-=== Font attributes
+* `in` = <<filter-input-type,<filter-input> >>
+* `in2` = <<filter-input-type,<filter-input> >>
+* `operator` = `over | in | out | atop | xor` +
+  The `arithmetic` operator is not supported.
+* <<Filter primitive attributes>>
 
-Font attributes refers to:
+=== Filter primitive `feFlood`
 
-* `font-family`
-* `font-size`
-** Possible values: number > 0.
-** Impossible values: number < 0, 0, number%, `xx-small`, `x-small`, `small` +
-`medium`, `large`, `x-large`, `xx-large`, `larger`, `smaller`.
-* `font-style`
-* `font-variant`
-* `font-weight`
-** Possible values: `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`.
-** Impossible values: `normal`, `bold`, `bolder`, `lighter`.
-* `font-stretch`
+*Attributes:*
 
-=== Other attributes
+* `flood-color` = <<color-type,<color> >>
+* `flood-opacity` = <<opacity-type,<opacity> >>
+* <<Filter primitive attributes>>
 
-[[transform_attr]]
+=== Filter primitive `feGaussianBlur`
 
-* `transform`
-** `transform` is always a `matrix`. Never `translate`, `scale`, etc.
-** Can be skipped.
-* `viewBox`
-** Can be skipped, because doesn't have a default value.
-* `preserveAspectRatio`
-** Will be set only when `viewBox` is set.
+*Attributes:*
+
+* `in` = <<filter-input-type,<filter-input> >>
+* `stdDeviation` = <<positive-number-type,<positive-number> >> " " <<positive-number-type,<positive-number> >>
+* <<Filter primitive attributes>>
+
+=== Filter primitive `feImage`
+
+*Attributes:*
+
+* `preserveAspectRatio` = <<preserveAspectRatio-type,<preserveAspectRatio> >>
+* `image-rendering` = `optimizeSpeed`? +
+  Default: optimizeQuality
+* `xlink:href` = <<iri-type,<IRI> >>? +
+  The IRI contains a file path or base64 encoded image.
+  Link to an element (like in `use`) is not supported. +
+  Unlike the `image` element, `feImage` can be without the `href` attribute.
+  In this case the filter primitive is an empty canvas.
+* <<Filter primitive attributes>>
+
+=== Filter primitive `feMerge`
+
+*Children:*
+
+* `feMergeNode`
+
+*Attributes:*
+
+* <<Filter primitive attributes>>
+
+*`feMergeNode` attributes:*
+
+* `in` = <<filter-input-type,<filter-input> >>
+
+=== Filter primitive `feOffset`
+
+*Attributes:*
+
+* `in` = <<filter-input-type,<filter-input> >>
+* `dx` = <<number-type,<number> >>
+* `dy` = <<number-type,<number> >>
+* <<Filter primitive attributes>>
+
+=== Filter primitive `feTile`
+
+*Attributes:*
+
+* `in` = <<filter-input-type,<filter-input> >>
+* <<Filter primitive attributes>>
+
+== Data types
+
+If an attribute has the `?` symbol after the type that's mean that
+that this attribute is optional.
+
+[[string-type]]
+
+*<string>* - A Unicode string.
+
+
+[[number-type]]
+
+*<number>* - A real number. +
+`number ::= [-]? [0-9]* "." [0-9]+`
+
+
+[[positive-number-type]]
+
+*<positive-number>* - A positive, non-zero real <<number-type,number>>. +
+`positive-number ::= [0-9]* "." [0-9]+`
+
+
+[[opacity-type]]
+
+*<opacity>* - A real <<number-type,number>> in a 0..1 range. +
+`opacity ::= positive-number`
+
+
+[[offset-type]]
+
+*<offset>* - A real <<number-type,number>> in a 0..1 range. +
+`offset ::= positive-number`
+
+
+[[color-type]]
+
+*<color>* - A hex-encoded RGB color.
+```
+color    ::= "#" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit
+hexdigit ::= [0-9a-f]
+```
+
+
+[[iri-type]]
+
+*<IRI>* - An Internationalized Resource Identifier.
+Always a valid, local reference. +
+`IRI ::= string`
+
+
+[[func-iri-type]]
+
+*<FuncIRI>* - Functional notation for an <<iri-type,IRI>>.
+Always a valid, local reference. +
+`FuncIRI ::= url( <IRI> )`
+
+
+[[filter-input-type]]
+
+*<filter-input>* - A filter source. A reference to a _result_ guarantee to be valid.
+
+```
+filter-input ::= SourceGraphic | SourceAlpha | BackgroundImage
+                 | BackgroundAlpha | FillPaint | StrokePaint
+                 | <string>
+```
+
+
+[[viewBox-type]]
+
+*<viewBox>* - Defines an element viewBox.
+`viewBox ::= <number> " " <number> " " <positive-number> " " <positive-number>`
+
+
+[[preserveAspectRatio-type]]
+
+*<preserveAspectRatio>* - A scaling method definition.
+Works exactly the same
+https://www.w3.org/TR/SVG11/coords.html#PreserveAspectRatioAttribute[as described]
+in the SVG spec.
+
+
+[[transform-type]]
+
+*<transform>* - A transformation matrix.
+Always a `matrix` and not `translate`, `scale`, etc.
+Numbers are space-separated. +
+`transform ::= matrix( <number> " " <number> " " <number> " " <number> " " <number> " " <number> )`
+
+
+[[path-data-type]]
+
+*<path-data>* - A path data.
+
+* Contains only absolute MoveTo, LineTo, CurveTo and ClosePath segments.
+* All segments are explicit.
+* The first segment is guarantee to be MoveTo.
+* Segments, commands and coordinates are separated only by space.
+* Path and all subpaths are guarantee to have at least two segments.
+
+Grammar:
+
+```
+svg-path:
+    moveto-drawto-command-groups
+moveto-drawto-command-groups:
+    moveto-drawto-command-group
+    | moveto-drawto-command-group " " moveto-drawto-command-groups
+moveto-drawto-command-group:
+    moveto " " drawto-commands
+drawto-commands:
+    drawto-command
+    | drawto-command " " drawto-commands
+drawto-command:
+    closepath
+    | lineto
+    | curveto
+moveto:
+    "M " coordinate-pair
+lineto:
+    "L " coordinate-pair
+curveto:
+    "C " coordinate-pair " " coordinate-pair " " coordinate-pair
+closepath:
+    "Z"
+coordinate-pair:
+    coordinate " " coordinate
+coordinate:
+    sign? digit-sequence "." digit-sequence
+sign:
+    "-"
+digit-sequence:
+    digit
+    | digit digit-sequence
+digit:
+    "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+```
