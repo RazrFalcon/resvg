@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 extern crate usvg;
 extern crate fern;
 extern crate log;
@@ -17,18 +21,99 @@ use usvg::svgdom;
 use svgdom::WriteBuffer;
 
 
-#[derive(Clone, PartialEq, Debug)]
-enum InputFrom<'a> {
-    Stdin,
-    File(&'a str),
+fn print_help() {
+    print!("\
+usvg (micro SVG) is an SVG simplification tool.
+
+USAGE:
+    usvg [OPTIONS] <in-svg> <out-svg> # from file to file
+    usvg [OPTIONS] -c <in-svg>        # from file to stdout
+    usvg [OPTIONS] <out-svg> -        # from stdin to file
+    usvg [OPTIONS] -c -               # from stdin to stdout
+
+OPTIONS:
+    -h, --help                  Prints help information
+    -V, --version               Prints version information
+    -c                          Prints the output SVG to the stdout
+        --keep-named-groups     Disables removing of groups with non-empty ID
+        --dpi DPI               Sets the resolution
+                                [default: 96] [possible values: 10..4000]
+        --font-family FAMILY    Sets the default font family
+                                [default: 'Times New Roman']
+        --font-size SIZE        Sets the default font size
+                                [default: 12] [possible values: 1..192]
+        --languages LANG        Sets a comma-separated list of languages that
+                                will be used during the 'systemLanguage'
+                                attribute resolving.
+                                Examples: 'en-US', 'en-US, ru-RU', 'en, ru'
+                                [default: 'en']
+        --shape-rendering HINT  Selects the default shape rendering method.
+                                [default: geometricPrecision]
+                                [possible values: optimizeSpeed, crispEdges,
+                                geometricPrecision]
+        --text-rendering HINT   Selects the default text rendering method.
+                                [default: optimizeLegibility]
+                                [possible values: optimizeSpeed,
+                                optimizeLegibility, geometricPrecision]
+        --image-rendering HINT  Selects the default image rendering method.
+                                [default: optimizeQuality]
+                                [possible values: optimizeQuality,
+                                optimizeSpeed]
+        --indent INDENT         Sets the XML nodes indent
+                                [values: none, 0, 1, 2, 3, 4, tabs] [default: 4]
+        --attrs-indent INDENT   Sets the XML attributes indent
+                                [values: none, 0, 1, 2, 3, 4, tabs] [default: none]
+
+ARGS:
+    <in-svg>                    Input file
+    <out-svg>                   Output file
+");
 }
 
-#[derive(Clone, PartialEq, Debug)]
-enum OutputTo<'a> {
-    Stdout,
-    File(&'a str),
-}
+#[derive(Debug, Options)]
+struct Args {
+    #[options()]
+    help: bool,
 
+    #[options(short = "V")]
+    version: bool,
+
+    #[options(short = "c", no_long)]
+    stdout: bool,
+
+    #[options(no_short)]
+    keep_named_groups: bool,
+
+    #[options(no_short, meta = "DPI", default = "96", parse(try_from_str = "parse_dpi"))]
+    dpi: u32,
+
+    #[options(no_short, meta = "FAMILY", default = "Times New Roman")]
+    font_family: String,
+
+    #[options(no_short, meta = "SIZE", default = "12", parse(try_from_str = "parse_font_size"))]
+    font_size: u32,
+
+    #[options(no_short, meta = "LANG", parse(try_from_str = "parse_languages"))]
+    languages: Option<Vec<String>>,
+
+    #[options(no_short, meta = "HINT", default = "geometricPrecision", parse(try_from_str))]
+    shape_rendering: usvg::ShapeRendering,
+
+    #[options(no_short, meta = "HINT", default = "optimizeLegibility", parse(try_from_str))]
+    text_rendering: usvg::TextRendering,
+
+    #[options(no_short, meta = "HINT", default = "optimizeQuality", parse(try_from_str))]
+    image_rendering: usvg::ImageRendering,
+
+    #[options(no_short, meta = "INDENT", default = "4", parse(try_from_str = "parse_indent"))]
+    indent: svgdom::Indent,
+
+    #[options(no_short, meta = "INDENT", default = "none", parse(try_from_str = "parse_indent"))]
+    attrs_indent: svgdom::Indent,
+
+    #[options(free)]
+    free: Vec<String>,
+}
 
 fn parse_dpi(s: &str) -> Result<u32, &'static str> {
     let n: u32 = s.parse().map_err(|_| "invalid number")?;
@@ -78,49 +163,16 @@ fn parse_indent(s: &str) -> Result<svgdom::Indent, &'static str> {
     Ok(indent)
 }
 
-#[derive(Debug, Options)]
-struct Args {
-    #[options()]
-    help: bool,
+#[derive(Clone, PartialEq, Debug)]
+enum InputFrom<'a> {
+    Stdin,
+    File(&'a str),
+}
 
-    #[options(short = "V")]
-    version: bool,
-
-    #[options(short = "c", no_long)]
-    stdout: bool,
-
-    #[options(no_short)]
-    keep_named_groups: bool,
-
-    #[options(no_short, meta = "DPI", default = "96", parse(try_from_str = "parse_dpi"))]
-    dpi: u32,
-
-    #[options(no_short, meta = "FAMILY", default = "Times New Roman")]
-    font_family: String,
-
-    #[options(no_short, meta = "SIZE", default = "12", parse(try_from_str = "parse_font_size"))]
-    font_size: u32,
-
-    #[options(no_short, meta = "LANG", parse(try_from_str = "parse_languages"))]
-    languages: Option<Vec<String>>,
-
-    #[options(no_short, meta = "HINT", default = "geometricPrecision", parse(try_from_str))]
-    shape_rendering: usvg::ShapeRendering,
-
-    #[options(no_short, meta = "HINT", default = "optimizeLegibility", parse(try_from_str))]
-    text_rendering: usvg::TextRendering,
-
-    #[options(no_short, meta = "HINT", default = "optimizeQuality", parse(try_from_str))]
-    image_rendering: usvg::ImageRendering,
-
-    #[options(no_short, meta = "INDENT", default = "4", parse(try_from_str = "parse_indent"))]
-    indent: svgdom::Indent,
-
-    #[options(no_short, meta = "INDENT", default = "none", parse(try_from_str = "parse_indent"))]
-    attrs_indent: svgdom::Indent,
-
-    #[options(free)]
-    free: Vec<String>,
+#[derive(Clone, PartialEq, Debug)]
+enum OutputTo<'a> {
+    Stdout,
+    File(&'a str),
 }
 
 
@@ -154,55 +206,6 @@ fn main() {
         eprintln!("Error: {}.", e.to_string());
         std::process::exit(1);
     }
-}
-
-fn print_help() {
-    print!("\
-usvg (micro SVG) is an SVG simplification tool.
-
-USAGE:
-    usvg [OPTIONS] <in-svg> <out-svg> # from file to file
-    usvg [OPTIONS] -c <in-svg>        # from file to stdout
-    usvg [OPTIONS] <out-svg> -        # from stdin to file
-    usvg [OPTIONS] -c -               # from stdin to stdout
-
-OPTIONS:
-    -h, --help                  Prints help information
-    -V, --version               Prints version information
-    -c                          Prints the output SVG to the stdout
-        --keep-named-groups     Disables removing of groups with non-empty ID
-        --dpi DPI               Sets the resolution
-                                [default: 96] [possible values: 10..4000]
-        --font-family FAMILY    Sets the default font family
-                                [default: 'Times New Roman']
-        --font-size SIZE        Sets the default font size
-                                [default: 12] [possible values: 1..192]
-        --languages LANG        Sets a comma-separated list of languages that
-                                will be used during the 'systemLanguage'
-                                attribute resolving.
-                                Examples: 'en-US', 'en-US, ru-RU', 'en, ru'
-                                [default: 'en']
-        --shape-rendering HINT  Selects the default shape rendering method.
-                                [default: geometricPrecision]
-                                [possible values: optimizeSpeed, crispEdges,
-                                geometricPrecision]
-        --text-rendering HINT   Selects the default text rendering method.
-                                [default: optimizeLegibility]
-                                [possible values: optimizeSpeed,
-                                optimizeLegibility, geometricPrecision]
-        --image-rendering HINT  Selects the default image rendering method.
-                                [default: optimizeQuality]
-                                [possible values: optimizeQuality,
-                                optimizeSpeed]
-        --indent INDENT         Sets the XML nodes indent
-                                [values: none, 0, 1, 2, 3, 4, tabs] [default: 4]
-        --attrs-indent INDENT   Sets the XML attributes indent
-                                [values: none, 0, 1, 2, 3, 4, tabs] [default: none]
-
-ARGS:
-    <in-svg>                    Input file
-    <out-svg>                   Output file
-");
 }
 
 fn process(args: &Args) -> Result<(), String> {
