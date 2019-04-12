@@ -101,6 +101,7 @@ fn conv_defs(
                 defs.append(mask_elem.clone());
 
                 mask_elem.set_id(mask.id.clone());
+
                 conv_units(AId::MaskUnits, mask.units, Units::ObjectBoundingBox, &mut mask_elem);
                 conv_units(AId::MaskContentUnits, mask.content_units, Units::UserSpaceOnUse, &mut mask_elem);
                 conv_rect(mask.rect, &mut mask_elem);
@@ -275,10 +276,11 @@ fn conv_elements(
                 let mut path_elem = new_doc.create_element(EId::Path);
                 parent.append(path_elem.clone());
 
+                path_elem.set_id(p.id.clone());
+
                 conv_transform(AId::Transform, &p.transform, &mut path_elem);
                 path_elem.set_enum_attribute(AId::Visibility, p.visibility);
                 path_elem.set_enum_attribute(AId::ShapeRendering, p.rendering_mode);
-                path_elem.set_id(p.id.clone());
 
                 use svgdom::Path as SvgDomPath;
                 use svgdom::PathSegment as SvgDomPathSegment;
@@ -310,15 +312,14 @@ fn conv_elements(
                 let mut text_elem = new_doc.create_element(EId::Text);
                 parent.append(text_elem.clone());
 
+                text_elem.set_id(text.id.clone());
+
                 conv_transform(AId::Transform, &text.transform, &mut text_elem);
                 text_elem.set_enum_attribute(AId::TextRendering, text.rendering_mode);
-                text_elem.set_id(text.id.clone());
 
                 if let Some(ref rotate) = text.rotate {
                     text_elem.set_attribute((AId::Rotate, NumberList(rotate.clone())));
                 }
-
-                // conv_text_decoration(&text.decoration, &mut text_elem);
 
                 let mut is_preserve_required = false;
 
@@ -380,10 +381,11 @@ fn conv_elements(
                 let mut img_elem = new_doc.create_element(EId::Image);
                 parent.append(img_elem.clone());
 
+                img_elem.set_id(img.id.clone());
+
                 conv_transform(AId::Transform, &img.transform, &mut img_elem);
                 img_elem.set_enum_attribute(AId::Visibility, img.visibility);
                 img_elem.set_enum_attribute(AId::ImageRendering, img.rendering_mode);
-                img_elem.set_id(img.id.clone());
                 conv_rect(img.view_box.rect, &mut img_elem);
 
                 if !img.view_box.aspect.is_default() {
@@ -402,8 +404,9 @@ fn conv_elements(
                     g_elem
                 };
 
-                conv_transform(AId::Transform, &g.transform, &mut g_elem);
                 g_elem.set_id(g.id.clone());
+
+                conv_transform(AId::Transform, &g.transform, &mut g_elem);
 
                 conv_opt_link(tree, defs, AId::ClipPath, &g.clip_path, &mut g_elem);
                 conv_opt_link(tree, defs, AId::Mask, &g.mask, &mut g_elem);

@@ -625,6 +625,67 @@ pub enum FilterKind {
 }
 
 
+/// A blend filter primitive.
+///
+/// `feBlend` element in the SVG.
+#[derive(Clone, Debug)]
+pub struct FeBlend {
+    /// Identifies input for the given filter primitive.
+    ///
+    /// `in` in the SVG.
+    pub input1: FilterInput,
+
+    /// Identifies input for the given filter primitive.
+    ///
+    /// `in2` in the SVG.
+    pub input2: FilterInput,
+
+    /// A blending mode.
+    ///
+    /// `mode` in the SVG.
+    pub mode: FeBlendMode,
+}
+
+
+/// A composite filter primitive.
+///
+/// `feComposite` element in the SVG.
+#[derive(Clone, Debug)]
+pub struct FeComposite {
+    /// Identifies input for the given filter primitive.
+    ///
+    /// `in` in the SVG.
+    pub input1: FilterInput,
+
+    /// Identifies input for the given filter primitive.
+    ///
+    /// `in2` in the SVG.
+    pub input2: FilterInput,
+
+    /// A compositing operation.
+    ///
+    /// `operator` in the SVG.
+    pub operator: FeCompositeOperator,
+}
+
+
+/// A flood filter primitive.
+///
+/// `feFlood` element in the SVG.
+#[derive(Clone, Copy, Debug)]
+pub struct FeFlood {
+    /// A flood color.
+    ///
+    /// `flood-color` in the SVG.
+    pub color: Color,
+
+    /// A flood opacity.
+    ///
+    /// `flood-opacity` in the SVG.
+    pub opacity: Opacity,
+}
+
+
 /// A Gaussian blur filter primitive.
 ///
 /// `feGaussianBlur` element in the SVG.
@@ -647,97 +708,6 @@ pub struct FeGaussianBlur {
 }
 
 
-/// An offset filter primitive.
-///
-/// `feOffset` element in the SVG.
-#[derive(Clone, Debug)]
-pub struct FeOffset {
-    /// Identifies input for the given filter primitive.
-    ///
-    /// `in` in the SVG.
-    pub input: FilterInput,
-
-    /// The amount to offset the input graphic along the X-axis.
-    pub dx: f64,
-
-    /// The amount to offset the input graphic along the Y-axis.
-    pub dy: f64,
-}
-
-
-/// A blend filter primitive.
-///
-/// `feBlend` element in the SVG.
-#[derive(Clone, Debug)]
-pub struct FeBlend {
-    /// A blending mode.
-    ///
-    /// `mode` in the SVG.
-    pub mode: FeBlendMode,
-
-    /// Identifies input for the given filter primitive.
-    ///
-    /// `in` in the SVG.
-    pub input1: FilterInput,
-
-    /// Identifies input for the given filter primitive.
-    ///
-    /// `in2` in the SVG.
-    pub input2: FilterInput,
-}
-
-
-/// A flood filter primitive.
-///
-/// `feFlood` element in the SVG.
-#[derive(Clone, Copy, Debug)]
-pub struct FeFlood {
-    /// A flood color.
-    ///
-    /// `flood-color` in the SVG.
-    pub color: Color,
-
-    /// A flood opacity.
-    ///
-    /// `flood-opacity` in the SVG.
-    pub opacity: Opacity,
-}
-
-
-/// A composite filter primitive.
-///
-/// `feComposite` element in the SVG.
-#[derive(Clone, Debug)]
-pub struct FeComposite {
-    /// A compositing operation.
-    ///
-    /// `operator` in the SVG.
-    pub operator: FeCompositeOperator,
-
-    /// Identifies input for the given filter primitive.
-    ///
-    /// `in` in the SVG.
-    pub input1: FilterInput,
-
-    /// Identifies input for the given filter primitive.
-    ///
-    /// `in2` in the SVG.
-    pub input2: FilterInput,
-}
-
-
-/// A merge filter primitive.
-///
-/// `feMerge` element in the SVG.
-#[derive(Clone, Debug)]
-pub struct FeMerge {
-    /// List of input layers that should be merged.
-    ///
-    /// List of `feMergeNode`'s in the SVG.
-    pub inputs: Vec<FilterInput>,
-}
-
-
 /// An image filter primitive.
 ///
 /// `feImage` element in the SVG.
@@ -753,6 +723,36 @@ pub struct FeImage {
 
     /// Image data.
     pub data: FeImageKind,
+}
+
+
+/// A merge filter primitive.
+///
+/// `feMerge` element in the SVG.
+#[derive(Clone, Debug)]
+pub struct FeMerge {
+    /// List of input layers that should be merged.
+    ///
+    /// List of `feMergeNode`'s in the SVG.
+    pub inputs: Vec<FilterInput>,
+}
+
+
+/// An offset filter primitive.
+///
+/// `feOffset` element in the SVG.
+#[derive(Clone, Debug)]
+pub struct FeOffset {
+    /// Identifies input for the given filter primitive.
+    ///
+    /// `in` in the SVG.
+    pub input: FilterInput,
+
+    /// The amount to offset the input graphic along the X-axis.
+    pub dx: f64,
+
+    /// The amount to offset the input graphic along the Y-axis.
+    pub dy: f64,
 }
 
 
