@@ -9,6 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - `shape-rendering`, `text-rendering` and `image-rendering` support.
+- (usvg) `--quiet` argument.
 
 ### Changed
 - (qt-backend) Text will always be rendered as path now.

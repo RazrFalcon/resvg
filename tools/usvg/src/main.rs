@@ -63,6 +63,7 @@ OPTIONS:
                                 [values: none, 0, 1, 2, 3, 4, tabs] [default: 4]
         --attrs-indent INDENT   Sets the XML attributes indent
                                 [values: none, 0, 1, 2, 3, 4, tabs] [default: none]
+        --quiet                 Disables warnings
 
 ARGS:
     <in-svg>                    Input file
@@ -110,6 +111,9 @@ struct Args {
 
     #[options(no_short, meta = "INDENT", default = "none", parse(try_from_str = "parse_indent"))]
     attrs_indent: svgdom::Indent,
+
+    #[options(no_short)]
+    quiet: bool,
 
     #[options(free)]
     free: Vec<String>,
@@ -196,11 +200,13 @@ fn main() {
         process::exit(0);
     }
 
-    fern::Dispatch::new()
-        .format(log_format)
-        .level(log::LevelFilter::Warn)
-        .chain(std::io::stderr())
-        .apply().unwrap();
+    if !args.quiet {
+        fern::Dispatch::new()
+            .format(log_format)
+            .level(log::LevelFilter::Warn)
+            .chain(std::io::stderr())
+            .apply().unwrap();
+    }
 
     if let Err(e) = process(&args) {
         eprintln!("Error: {}.", e.to_string());
