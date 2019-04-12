@@ -243,9 +243,8 @@ fn conv_defs(
                     if let Some(n) = fe.width { fe_elem.set_attribute((AId::Width, n)); }
                     if let Some(n) = fe.height { fe_elem.set_attribute((AId::Height, n)); }
 
-                    fe_elem.set_attribute(
-                        (AId::ColorInterpolationFilters, fe.color_interpolation.to_string())
-                    );
+                    fe_elem.set_enum_attribute(AId::ColorInterpolationFilters,
+                                               fe.color_interpolation);
 
                     fe_elem.set_attribute((AId::Result, fe.result.as_str()));
                 }
