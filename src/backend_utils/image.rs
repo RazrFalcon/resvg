@@ -11,6 +11,7 @@ use {
     Options,
 };
 
+
 pub fn load_sub_svg(
     data: &usvg::ImageData,
     opt: &Options,
@@ -102,6 +103,19 @@ pub fn prepare_sub_svg_geom(
     let ts = usvg::Transform::new(sx, 0.0, 0.0, sy, tx, ty);
 
     (ts, clip)
+}
+
+pub fn image_rect(view_box: &usvg::ViewBox, img_size: ScreenSize) -> Rect {
+    let new_size = utils::apply_view_box(view_box, img_size);
+    let pos = utils::aligned_pos(
+        view_box.aspect.align,
+        view_box.rect.x(),
+        view_box.rect.y(),
+        view_box.rect.width() - new_size.width() as f64,
+        view_box.rect.height() - new_size.height() as f64,
+    );
+
+    new_size.to_size().to_rect(pos.x, pos.y)
 }
 
 pub fn get_abs_path(

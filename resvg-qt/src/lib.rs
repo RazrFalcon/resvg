@@ -313,6 +313,10 @@ impl Painter {
         unsafe { ffi::qtc_qpainter_draw_image(self.0, x, y, img.0) }
     }
 
+    pub fn draw_image_rect(&mut self, x: f64, y: f64, w: f64, h: f64, img: &Image) {
+        unsafe { ffi::qtc_qpainter_draw_image_rect(self.0, x, y, w, h, img.0) }
+    }
+
     pub fn draw_text(&mut self, x: f64, y: f64, text: &str) {
         let c_text = CString::new(text).unwrap();
         unsafe { ffi::qtc_qpainter_draw_text(self.0, x, y, c_text.as_ptr()) }

@@ -183,6 +183,7 @@ void qtc_qpainter_reset_brush(qtc_qpainter *c_p);
 void qtc_qpainter_set_opacity(qtc_qpainter *c_p, double opacity);
 void qtc_qpainter_draw_path(qtc_qpainter *c_p, qtc_qpainterpath *c_pp);
 void qtc_qpainter_draw_image(qtc_qpainter *c_p, double x, double y, qtc_qimage *c_img);
+void qtc_qpainter_draw_image_rect(qtc_qpainter *c_p, double x, double y, double w, double h, qtc_qimage *c_img);
 void qtc_qpainter_draw_text(qtc_qpainter *c_p, double x, double y, const char *c_text);
 void qtc_qpainter_draw_rect(qtc_qpainter *c_p, double x, double y, double w, double h);
 void qtc_qpainter_translate(qtc_qpainter *c_p, double tx, double ty);

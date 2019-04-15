@@ -39,10 +39,9 @@ pub const _STDC_PREDEF_H: u32 = 1;
 pub const __STDC_IEC_559__: u32 = 1;
 pub const __STDC_IEC_559_COMPLEX__: u32 = 1;
 pub const __STDC_ISO_10646__: u32 = 201706;
-pub const __STDC_NO_THREADS__: u32 = 1;
 pub const __GNU_LIBRARY__: u32 = 6;
 pub const __GLIBC__: u32 = 2;
-pub const __GLIBC_MINOR__: u32 = 27;
+pub const __GLIBC_MINOR__: u32 = 28;
 pub const _SYS_CDEFS_H: u32 = 1;
 pub const __glibc_c99_flexarr_available: u32 = 1;
 pub const __WORDSIZE: u32 = 64;
@@ -144,6 +143,14 @@ pub type __int32_t = ::std::os::raw::c_int;
 pub type __uint32_t = ::std::os::raw::c_uint;
 pub type __int64_t = ::std::os::raw::c_long;
 pub type __uint64_t = ::std::os::raw::c_ulong;
+pub type __int_least8_t = __int8_t;
+pub type __uint_least8_t = __uint8_t;
+pub type __int_least16_t = __int16_t;
+pub type __uint_least16_t = __uint16_t;
+pub type __int_least32_t = __int32_t;
+pub type __uint_least32_t = __uint32_t;
+pub type __int_least64_t = __int64_t;
+pub type __uint_least64_t = __uint64_t;
 pub type __quad_t = ::std::os::raw::c_long;
 pub type __u_quad_t = ::std::os::raw::c_ulong;
 pub type __intmax_t = ::std::os::raw::c_long;
@@ -213,14 +220,14 @@ pub type __caddr_t = *mut ::std::os::raw::c_char;
 pub type __intptr_t = ::std::os::raw::c_long;
 pub type __socklen_t = ::std::os::raw::c_uint;
 pub type __sig_atomic_t = ::std::os::raw::c_int;
-pub type int_least8_t = ::std::os::raw::c_schar;
-pub type int_least16_t = ::std::os::raw::c_short;
-pub type int_least32_t = ::std::os::raw::c_int;
-pub type int_least64_t = ::std::os::raw::c_long;
-pub type uint_least8_t = ::std::os::raw::c_uchar;
-pub type uint_least16_t = ::std::os::raw::c_ushort;
-pub type uint_least32_t = ::std::os::raw::c_uint;
-pub type uint_least64_t = ::std::os::raw::c_ulong;
+pub type int_least8_t = __int_least8_t;
+pub type int_least16_t = __int_least16_t;
+pub type int_least32_t = __int_least32_t;
+pub type int_least64_t = __int_least64_t;
+pub type uint_least8_t = __uint_least8_t;
+pub type uint_least16_t = __uint_least16_t;
+pub type uint_least32_t = __uint_least32_t;
+pub type uint_least64_t = __uint_least64_t;
 pub type int_fast8_t = ::std::os::raw::c_schar;
 pub type int_fast16_t = ::std::os::raw::c_long;
 pub type int_fast32_t = ::std::os::raw::c_long;
@@ -650,6 +657,16 @@ extern "C" {
 }
 extern "C" {
     pub fn qtc_qpainter_draw_image(c_p: *mut qtc_qpainter, x: f64, y: f64, c_img: *mut qtc_qimage);
+}
+extern "C" {
+    pub fn qtc_qpainter_draw_image_rect(
+        c_p: *mut qtc_qpainter,
+        x: f64,
+        y: f64,
+        w: f64,
+        h: f64,
+        c_img: *mut qtc_qimage,
+    );
 }
 extern "C" {
     pub fn qtc_qpainter_draw_text(

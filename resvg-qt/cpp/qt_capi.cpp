@@ -212,6 +212,11 @@ void qtc_qpainter_draw_image(qtc_qpainter *c_p, double x, double y, qtc_qimage *
     PAINTER_CAST->drawImage(QPointF(x, y), *IMAGE_CAST);
 }
 
+void qtc_qpainter_draw_image_rect(qtc_qpainter *c_p, double x, double y, double w, double h, qtc_qimage *c_img)
+{
+    PAINTER_CAST->drawImage(QRectF(x, y, w, h), *IMAGE_CAST);
+}
+
 void qtc_qpainter_draw_text(qtc_qpainter *c_p, double x, double y, const char *c_text)
 {
     auto p = PAINTER_CAST;

@@ -48,48 +48,22 @@ pub fn draw_raster(
     };
 
     let img_size = try_opt!(ScreenSize::new(img.width(), img.height()), ());
-    let r = view_box.rect;
-
-    let new_size = utils::apply_view_box(&view_box, img_size);
-
-    let smooth_scaling = rendering_mode == usvg::ImageRendering::OptimizeQuality;
 
     if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
-        p.set_smooth_pixmap_transform(smooth_scaling);
+        p.set_smooth_pixmap_transform(false);
     }
-
-    let img = try_opt_warn!(
-        img.resize(new_size.width(), new_size.height(), qt::AspectRatioMode::Ignore, smooth_scaling),
-        (), "Failed to scale an image.",
-    );
 
     if view_box.aspect.slice {
-        // Scaled image will be bigger than viewbox, so we have to
-        // cut only the part specified by align rule.
-
-        let pos = utils::aligned_pos(
-            view_box.aspect.align,
-            0.0, 0.0, new_size.width() as f64 - r.width(), new_size.height() as f64 - r.height(),
-        );
-
-        let img = try_opt_warn!(
-            img.copy(pos.x as u32, pos.y as u32, r.width() as u32, r.height() as u32), (),
-            "Failed to copy a part of an image."
-        );
-
-        p.draw_image(r.x(), r.y(), &img);
-    } else {
-        let pos = utils::aligned_pos(
-            view_box.aspect.align,
-            r.x(), r.y(), r.width() - new_size.width() as f64, r.height() - new_size.height() as f64,
-        );
-
-        p.draw_image(pos.x, pos.y, &img);
+        let r = view_box.rect;
+        p.set_clip_rect(r.x(), r.y(), r.width(), r.height());
     }
 
+    let r = image::image_rect(&view_box, img_size);
+    p.draw_image_rect(r.x(), r.y(), r.width(), r.height(), &img);
+
     // Revert.
-    p.set_antialiasing(true);
     p.set_smooth_pixmap_transform(true);
+    p.reset_clip_path();
 }
 
 pub fn draw_svg(

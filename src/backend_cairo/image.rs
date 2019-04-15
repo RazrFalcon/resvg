@@ -55,34 +55,51 @@ pub fn draw_raster(
     };
 
     let img_size = try_opt!(ScreenSize::new(img.get_width() as u32, img.get_height() as u32), ());
-    let r = view_box.rect;
 
-    let new_size = utils::apply_view_box(&view_box, img_size);
+    let surface = try_opt!(gdk_pixbuf_to_surface(img, img_size), ());
 
-    let scaling_mode = match rendering_mode {
-        usvg::ImageRendering::OptimizeQuality => gdk_pixbuf::InterpType::Bilinear,
-        usvg::ImageRendering::OptimizeSpeed   => gdk_pixbuf::InterpType::Nearest,
+    let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);
+
+    if let Some(clip) = clip {
+        cr.rectangle(clip.x(), clip.y(), clip.width(), clip.height());
+        cr.clip();
+    } else {
+        // We have to clip the image before rendering because we use `Extend::Pad`.
+        let r = image::image_rect(&view_box, img_size);
+        cr.rectangle(r.x(), r.y(), r.width(), r.height());
+        cr.clip();
+    }
+
+    cr.transform(ts.to_native());
+
+    let filter_mode = match rendering_mode {
+        usvg::ImageRendering::OptimizeQuality => cairo::Filter::Gaussian,
+        usvg::ImageRendering::OptimizeSpeed   => cairo::Filter::Nearest,
     };
 
-    let img = img.scale_simple(new_size.width() as i32, new_size.height() as i32, scaling_mode);
-    let img = try_opt_warn!(img, (), "Failed to scale an image.");
+    let patt = cairo::SurfacePattern::create(&surface);
+    // Do not use `Extend::None`, because it will introduce a "transparent border".
+    patt.set_extend(cairo::Extend::Pad);
+    patt.set_filter(filter_mode);
+    cr.set_source(&cairo::Pattern::SurfacePattern(patt));
+    cr.paint();
+    cr.reset_clip();
+}
 
-    let mut surface = try_create_surface!(new_size, ());
+fn load_raster_data(data: &[u8]) -> Option<gdk_pixbuf::Pixbuf> {
+    let loader = gdk_pixbuf::PixbufLoader::new();
+    loader.write(data).ok()?;
+    loader.close().ok()?;
+    loader.get_pixbuf()
+}
+
+fn gdk_pixbuf_to_surface(
+    img: gdk_pixbuf::Pixbuf,
+    img_size: ScreenSize,
+) -> Option<cairo::ImageSurface> {
+    let mut surface = try_create_surface!(img_size, None);
 
     {
-        // Scaled image will be bigger than viewbox, so we have to
-        // cut only the part specified by align rule.
-        let (start_x, start_y, end_x, end_y) = if view_box.aspect.slice {
-            let pos = utils::aligned_pos(
-                view_box.aspect.align,
-                0.0, 0.0, new_size.width() as f64 - r.width(), new_size.height() as f64 - r.height(),
-            );
-
-            (pos.x as u32, pos.y as u32, (pos.x + r.width()) as u32, (pos.y + r.height()) as u32)
-        } else {
-            (0, 0, img.get_width() as u32, img.get_height() as u32)
-        };
-
         // Unwrap is safe, because no one uses the surface.
         let mut surface_data = surface.get_data().unwrap();
 
@@ -95,30 +112,28 @@ pub fn draw_raster(
         let mut i = 0;
         for y in 0..h {
             for x in 0..w {
-                if x >= start_x && y >= start_y && x <= end_x && y <= end_y {
-                    let idx = (y * stride + x * channels) as usize;
+                let idx = (y * stride + x * channels) as usize;
 
-                    // NOTE: will not work on big endian.
-                    if channels == 4 {
-                        let r = img_pixels[idx + 0] as u32;
-                        let g = img_pixels[idx + 1] as u32;
-                        let b = img_pixels[idx + 2] as u32;
-                        let a = img_pixels[idx + 3] as u32;
+                // NOTE: will not work on big endian.
+                if channels == 4 {
+                    let r = img_pixels[idx + 0] as u32;
+                    let g = img_pixels[idx + 1] as u32;
+                    let b = img_pixels[idx + 2] as u32;
+                    let a = img_pixels[idx + 3] as u32;
 
-                        // https://www.cairographics.org/manual/cairo-Image-Surfaces.html#cairo-format-t
-                        let tr = a * r + 0x80;
-                        let tg = a * g + 0x80;
-                        let tb = a * b + 0x80;
-                        surface_data[i + 0] = (((tb >> 8) + tb) >> 8) as u8;
-                        surface_data[i + 1] = (((tg >> 8) + tg) >> 8) as u8;
-                        surface_data[i + 2] = (((tr >> 8) + tr) >> 8) as u8;
-                        surface_data[i + 3] = a as u8; // TODO: is needed?
-                    } else {
-                        surface_data[i + 0] = img_pixels[idx + 2];
-                        surface_data[i + 1] = img_pixels[idx + 1];
-                        surface_data[i + 2] = img_pixels[idx + 0];
-                        surface_data[i + 3] = 255;
-                    }
+                    // https://www.cairographics.org/manual/cairo-Image-Surfaces.html#cairo-format-t
+                    let tr = a * r + 0x80;
+                    let tg = a * g + 0x80;
+                    let tb = a * b + 0x80;
+                    surface_data[i + 0] = (((tb >> 8) + tb) >> 8) as u8;
+                    surface_data[i + 1] = (((tg >> 8) + tg) >> 8) as u8;
+                    surface_data[i + 2] = (((tr >> 8) + tr) >> 8) as u8;
+                    surface_data[i + 3] = a as u8; // TODO: is needed?
+                } else {
+                    surface_data[i + 0] = img_pixels[idx + 2];
+                    surface_data[i + 1] = img_pixels[idx + 1];
+                    surface_data[i + 2] = img_pixels[idx + 0];
+                    surface_data[i + 3] = 255;
                 }
 
                 // Surface is always ARGB.
@@ -127,42 +142,7 @@ pub fn draw_raster(
         }
     }
 
-    let pos = utils::aligned_pos(
-        view_box.aspect.align,
-        r.x(), r.y(), r.width() - img.get_width() as f64, r.height() - img.get_height() as f64,
-    );
-
-    // We have to clip the image before rendering otherwise it will be
-    // blurred outside the viewbox if `cr` has a transform.
-    cr.rectangle(r.x(), r.y(), r.width(), r.height());
-    cr.clip();
-
-    cr.translate(pos.x, pos.y);
-
-    let filter_mode = match rendering_mode {
-        usvg::ImageRendering::OptimizeQuality => cairo::Filter::Gaussian,
-        usvg::ImageRendering::OptimizeSpeed   => cairo::Filter::Nearest,
-    };
-
-    // Use `SurfacePattern` instead of `cairo::Context::set_source_surface`,
-    // so we can disable smooth scaling.
-    let patt = cairo::SurfacePattern::create(&surface);
-    patt.set_extend(cairo::Extend::None);
-    patt.set_filter(filter_mode);
-    cr.set_source(&cairo::Pattern::SurfacePattern(patt));
-
-    cr.translate(-pos.x, -pos.y);
-
-    cr.paint();
-
-    cr.reset_clip();
-}
-
-fn load_raster_data(data: &[u8]) -> Option<gdk_pixbuf::Pixbuf> {
-    let loader = gdk_pixbuf::PixbufLoader::new();
-    loader.write(data).ok()?;
-    loader.close().ok()?;
-    loader.get_pixbuf()
+    Some(surface)
 }
 
 pub fn draw_svg(

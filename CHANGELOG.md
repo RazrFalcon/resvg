@@ -12,9 +12,10 @@ This changelog also contains important changes in dependencies.
 - (usvg) `--quiet` argument.
 
 ### Changed
+- (resvg) Do not rescale images before rendering. This is faster and better.
 - (qt-backend) Text will always be rendered as path now.
   Previously, `QPainter::drawText` was used for simple text.
-- An `image` element with a zero or negative size will be skipped now.
+- (usvg) An `image` element with a zero or negative size will be skipped now.
   Previously, a linked image size was used, which is incorrect.
 - Geometry primitives (`Rect`, `Size`, etc) are immutable and always valid now.
 - (usvg) The default `color-interpolation-filters` attribute will not be exported now.
