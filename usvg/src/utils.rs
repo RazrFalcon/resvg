@@ -44,23 +44,23 @@ pub fn view_box_to_transform(
     let w = img_size.width() - vr.width() * sx;
     let h = img_size.height() - vr.height() * sy;
 
-    let pos = aligned_pos(aspect.align, x, y, w, h);
-    Transform::new(sx, 0.0, 0.0, sy, pos.x, pos.y)
+    let (tx, ty) = aligned_pos(aspect.align, x, y, w, h);
+    Transform::new(sx, 0.0, 0.0, sy, tx, ty)
 }
 
 /// Returns object aligned position.
-pub fn aligned_pos(align: Align, x: f64, y: f64, w: f64, h: f64) -> Point {
+pub fn aligned_pos(align: Align, x: f64, y: f64, w: f64, h: f64) -> (f64, f64) {
     match align {
-        Align::None     => Point::new(x,           y          ),
-        Align::XMinYMin => Point::new(x,           y          ),
-        Align::XMidYMin => Point::new(x + w / 2.0, y          ),
-        Align::XMaxYMin => Point::new(x + w,       y          ),
-        Align::XMinYMid => Point::new(x,           y + h / 2.0),
-        Align::XMidYMid => Point::new(x + w / 2.0, y + h / 2.0),
-        Align::XMaxYMid => Point::new(x + w,       y + h / 2.0),
-        Align::XMinYMax => Point::new(x,           y + h      ),
-        Align::XMidYMax => Point::new(x + w / 2.0, y + h      ),
-        Align::XMaxYMax => Point::new(x + w,       y + h      ),
+        Align::None     => (x,           y          ),
+        Align::XMinYMin => (x,           y          ),
+        Align::XMidYMin => (x + w / 2.0, y          ),
+        Align::XMaxYMin => (x + w,       y          ),
+        Align::XMinYMid => (x,           y + h / 2.0),
+        Align::XMidYMid => (x + w / 2.0, y + h / 2.0),
+        Align::XMaxYMid => (x + w,       y + h / 2.0),
+        Align::XMinYMax => (x,           y + h      ),
+        Align::XMidYMax => (x + w / 2.0, y + h      ),
+        Align::XMaxYMax => (x + w,       y + h      ),
     }
 }
 

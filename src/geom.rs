@@ -15,7 +15,6 @@ use usvg::{
 };
 pub use usvg::{
     Line,
-    Point,
     Rect,
     Size,
 };

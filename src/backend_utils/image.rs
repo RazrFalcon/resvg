@@ -83,19 +83,19 @@ pub fn prepare_sub_svg_geom(
     let new_size = utils::apply_view_box(&view_box, img_size);
 
     let (tx, ty, clip) = if view_box.aspect.slice {
-        let pos = utils::aligned_pos(
+        let (dx, dy) = utils::aligned_pos(
             view_box.aspect.align,
             0.0, 0.0, new_size.width() as f64 - r.width(), new_size.height() as f64 - r.height(),
         );
 
-        (r.x() - pos.x, r.y() - pos.y, Some(r))
+        (r.x() - dx, r.y() - dy, Some(r))
     } else {
-        let pos = utils::aligned_pos(
+        let (dx, dy) = utils::aligned_pos(
             view_box.aspect.align,
             r.x(), r.y(), r.width() - new_size.width() as f64, r.height() - new_size.height() as f64,
         );
 
-        (pos.x, pos.y, None)
+        (dx, dy, None)
     };
 
     let sx = new_size.width() as f64 / img_size.width() as f64;
@@ -107,7 +107,7 @@ pub fn prepare_sub_svg_geom(
 
 pub fn image_rect(view_box: &usvg::ViewBox, img_size: ScreenSize) -> Rect {
     let new_size = utils::apply_view_box(view_box, img_size);
-    let pos = utils::aligned_pos(
+    let (x, y) = utils::aligned_pos(
         view_box.aspect.align,
         view_box.rect.x(),
         view_box.rect.y(),
@@ -115,7 +115,7 @@ pub fn image_rect(view_box: &usvg::ViewBox, img_size: ScreenSize) -> Rect {
         view_box.rect.height() - new_size.height() as f64,
     );
 
-    new_size.to_size().to_rect(pos.x, pos.y)
+    new_size.to_size().to_rect(x, y)
 }
 
 pub fn get_abs_path(

@@ -66,47 +66,6 @@ impl Line {
 }
 
 
-/// A 2D point representation.
-#[allow(missing_docs)]
-#[derive(Clone, Copy)]
-pub struct Point {
-    pub x: f64,
-    pub y: f64,
-}
-
-impl Point {
-    /// Creates a new `Point` from values.
-    pub fn new(x: f64, y: f64) -> Self {
-        Point { x, y }
-    }
-}
-
-impl From<(f64, f64)> for Point {
-    fn from(v: (f64, f64)) -> Self {
-        Point::new(v.0, v.1)
-    }
-}
-
-impl fmt::Debug for Point {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Point({} {})", self.x, self.y)
-    }
-}
-
-impl fmt::Display for Point {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl FuzzyEq for Point {
-    fn fuzzy_eq(&self, other: &Self) -> bool {
-           self.x.fuzzy_eq(&other.x)
-        && self.y.fuzzy_eq(&other.y)
-    }
-}
-
-
 /// A 2D size representation.
 ///
 /// Width and height are guarantee to be > 0.
@@ -249,12 +208,12 @@ impl Rect {
     }
 
     /// Checks that the rect contains a point.
-    pub fn contains(&self, p: Point) -> bool {
-        if p.x < self.x || p.x > self.x + self.width - 1.0 {
+    pub fn contains(&self, x: f64, y: f64) -> bool {
+        if x < self.x || x > self.x + self.width - 1.0 {
             return false;
         }
 
-        if p.y < self.y || p.y > self.y + self.height - 1.0 {
+        if y < self.y || y > self.y + self.height - 1.0 {
             return false;
         }
 
