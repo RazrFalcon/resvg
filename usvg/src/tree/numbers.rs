@@ -46,6 +46,7 @@ impl Opacity {
     }
 
     /// Returns an underlying value.
+    #[inline]
     pub fn value(&self) -> f64 {
         self.0
     }
@@ -62,6 +63,9 @@ wrap!(Opacity);
 
 /// An alias to `Opacity`.
 pub type StopOffset = Opacity;
+
+/// An alias to `Opacity`.
+pub type CompositingCoefficient = Opacity;
 
 
 /// A `stroke-width` value.
@@ -83,6 +87,7 @@ impl StrokeWidth {
     }
 
     /// Returns an underlying value.
+    #[inline]
     pub fn value(&self) -> f64 {
         self.0
     }
@@ -115,6 +120,7 @@ impl StrokeMiterlimit {
     }
 
     /// Returns an underlying value.
+    #[inline]
     pub fn value(&self) -> f64 {
         self.0
     }
@@ -148,6 +154,7 @@ impl FontSize {
     }
 
     /// Returns an underlying value.
+    #[inline]
     pub fn value(&self) -> f64 {
         self.0
     }
@@ -175,6 +182,7 @@ impl PositiveNumber {
     }
 
     /// Returns an underlying value.
+    #[inline]
     pub fn value(&self) -> f64 {
         self.0
     }

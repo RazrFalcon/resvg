@@ -9,6 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - `shape-rendering`, `text-rendering` and `image-rendering` support.
+- The `arithmetic` operator for `feComposite`.
 - (usvg) `--quiet` argument.
 
 ### Changed

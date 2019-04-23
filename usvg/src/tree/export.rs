@@ -193,6 +193,16 @@ fn conv_defs(
 
                             fe_elem.set_attribute((AId::Operator, composite.operator.to_string()));
 
+                            match composite.operator {
+                                FeCompositeOperator::Arithmetic { k1, k2, k3, k4 } => {
+                                    fe_elem.set_attribute((AId::K1, k1.value()));
+                                    fe_elem.set_attribute((AId::K2, k2.value()));
+                                    fe_elem.set_attribute((AId::K3, k3.value()));
+                                    fe_elem.set_attribute((AId::K4, k4.value()));
+                                }
+                                _ => {}
+                            }
+
                             fe_elem.set_attribute((AId::In, composite.input1.to_string()));
                             fe_elem.set_attribute((AId::In2, composite.input2.to_string()));
 

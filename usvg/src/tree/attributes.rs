@@ -625,16 +625,21 @@ pub enum FeCompositeOperator {
     Out,
     Atop,
     Xor,
-    Arithmetic,
+    Arithmetic {
+        k1: CompositingCoefficient,
+        k2: CompositingCoefficient,
+        k3: CompositingCoefficient,
+        k4: CompositingCoefficient,
+    },
 }
 
 enum_to_string!(FeCompositeOperator,
-    FeCompositeOperator::Over       => "over",
-    FeCompositeOperator::In         => "in",
-    FeCompositeOperator::Out        => "out",
-    FeCompositeOperator::Atop       => "atop",
-    FeCompositeOperator::Xor        => "xor",
-    FeCompositeOperator::Arithmetic => "arithmetic"
+    FeCompositeOperator::Over               => "over",
+    FeCompositeOperator::In                 => "in",
+    FeCompositeOperator::Out                => "out",
+    FeCompositeOperator::Atop               => "atop",
+    FeCompositeOperator::Xor                => "xor",
+    FeCompositeOperator::Arithmetic { .. }  => "arithmetic"
 );
 
 

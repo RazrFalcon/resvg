@@ -492,8 +492,15 @@ Neither do others, because they are pretty poorly implemented.
 
 * `in` = <<filter-input-type,<filter-input> >>
 * `in2` = <<filter-input-type,<filter-input> >>
-* `operator` = `over | in | out | atop | xor` +
-  The `arithmetic` operator is not supported.
+* `operator` = `over | in | out | atop | xor | arithmetic`
+* `k1` = <<compositing-coefficient-type,<compositing-coefficient> >> +
+  Present only when `operator=arithmetic`.
+* `k2` = <<compositing-coefficient-type,<compositing-coefficient> >> +
+  Present only when `operator=arithmetic`.
+* `k3` = <<compositing-coefficient-type,<compositing-coefficient> >> +
+  Present only when `operator=arithmetic`.
+* `k4` = <<compositing-coefficient-type,<compositing-coefficient> >> +
+  Present only when `operator=arithmetic`.
 * <<Filter primitive attributes>>
 
 === Filter primitive `feFlood`
@@ -588,6 +595,12 @@ that this attribute is optional.
 
 *<offset>* - A real <<number-type,number>> in a 0..1 range. +
 `offset ::= positive-number`
+
+
+[[compositing-coefficient-type]]
+
+*<compositing-coefficient>* - A real <<number-type,number>> in a 0..1 range. +
+`compositing-coefficient ::= positive-number`
 
 
 [[color-type]]

@@ -286,15 +286,47 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         input1: Image,
         input2: Image,
     ) -> Result<Image, Error> {
-        let input1 = input1.into_color_space(cs)?;
-        let input2 = input2.into_color_space(cs)?;
+        use rgb::alt::BGRA8;
+
+        let mut input1 = input1.into_color_space(cs)?.take()?;
+        let mut input2 = input2.into_color_space(cs)?.take()?;
 
         let mut buffer = create_image(region.width(), region.height())?;
 
-        if fe.operator == Operator::Arithmetic {
-            warn!("feComposite with 'arithmetic' operator is not supported.");
+        if let Operator::Arithmetic { k1, k2, k3, k4 } = fe.operator {
+            let mut data1 = input1.get_data().unwrap();
+            let mut data2 = input2.get_data().unwrap();
+
+            let calc = |i1, i2, max| {
+                let i1 = i1 as f64 / 255.0;
+                let i2 = i2 as f64 / 255.0;
+                let result = k1.value() * i1 * i2 + k2.value() * i1 + k3.value() * i2 + k4.value();
+                f64_bound(0.0, result, max)
+            };
+
+            {
+                let mut i = 0;
+                let mut data3 = buffer.get_data().unwrap();
+                let mut data3 = data3.as_bgra_mut();
+                for (c1, c2) in data1.as_bgra().iter().zip(data2.as_bgra()) {
+                    let a = calc(c1.a, c2.a, 1.0);
+                    if a.is_fuzzy_zero() {
+                        continue;
+                    }
+
+                    let r = (calc(c1.r, c2.r, a) * 255.0) as u8;
+                    let g = (calc(c1.g, c2.g, a) * 255.0) as u8;
+                    let b = (calc(c1.b, c2.b, a) * 255.0) as u8;
+                    let a = (a * 255.0) as u8;
+
+                    data3[i] = BGRA8 { r, g, b, a };
+
+                    i += 1;
+                }
+            }
+
             return Ok(Image::from_image(buffer, cs));
-        };
+        }
 
         let cr = cairo::Context::new(&mut buffer);
 
@@ -308,7 +340,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
             Operator::Out => cairo::Operator::Out,
             Operator::Atop => cairo::Operator::Atop,
             Operator::Xor => cairo::Operator::Xor,
-            Operator::Arithmetic => cairo::Operator::Over,
+            Operator::Arithmetic { .. } => cairo::Operator::Over,
         };
 
         cr.set_operator(operator);

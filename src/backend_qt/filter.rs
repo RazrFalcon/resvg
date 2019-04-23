@@ -221,28 +221,79 @@ impl Filter<qt::Image> for QtFilter {
         input1: Image,
         input2: Image,
     ) -> Result<Image, Error> {
+        use rgb::RGBA8;
+        use usvg::FeCompositeOperator as Operator;
+
         let input1 = input1.into_color_space(cs)?;
         let input2 = input2.into_color_space(cs)?;
 
         let mut buffer = create_image(region.width(), region.height())?;
 
-        if fe.operator == Operator::Arithmetic {
-            warn!("feComposite with 'arithmetic' operator is not supported.");
+        if let Operator::Arithmetic { k1, k2, k3, k4 } = fe.operator {
+            fn premultiply_alpha(c: RGBA8) -> RGBA8 {
+                let a =  c.a as f64 / 255.0;
+                let b = (c.b as f64 * a + 0.5) as u8;
+                let g = (c.g as f64 * a + 0.5) as u8;
+                let r = (c.r as f64 * a + 0.5) as u8;
+
+                RGBA8 { r, g, b, a: c.a }
+            }
+
+            fn unmultiply_alpha(c: RGBA8) -> RGBA8 {
+                let a =  c.a as f64 / 255.0;
+                let b = (c.b as f64 / a + 0.5) as u8;
+                let g = (c.g as f64 / a + 0.5) as u8;
+                let r = (c.r as f64 / a + 0.5) as u8;
+
+                RGBA8 { r, g, b, a: c.a }
+            }
+
+            let data1 = input1.as_ref().data();
+            let data2 = input2.as_ref().data();
+
+            let calc = |i1, i2, max| {
+                let i1 = i1 as f64 / 255.0;
+                let i2 = i2 as f64 / 255.0;
+                let result = k1.value() * i1 * i2 + k2.value() * i1 + k3.value() * i2 + k4.value();
+                f64_bound(0.0, result, max)
+            };
+
+            {
+                let mut i = 0;
+                let mut data3 = buffer.data_mut();
+                let mut data3 = data3.as_rgba_mut();
+                for (c1, c2) in data1.as_rgba().iter().zip(data2.as_rgba()) {
+                    let c1 = premultiply_alpha(*c1);
+                    let c2 = premultiply_alpha(*c2);
+
+                    let a = calc(c1.a, c2.a, 1.0);
+                    if a.is_fuzzy_zero() {
+                        continue;
+                    }
+
+                    let r = (calc(c1.r, c2.r, a) * 255.0) as u8;
+                    let g = (calc(c1.g, c2.g, a) * 255.0) as u8;
+                    let b = (calc(c1.b, c2.b, a) * 255.0) as u8;
+                    let a = (a * 255.0) as u8;
+
+                    data3[i] = unmultiply_alpha(RGBA8 { r, g, b, a });
+
+                    i += 1;
+                }
+            }
+
             return Ok(Image::from_image(buffer, cs));
-        };
+        }
 
         let mut p = qt::Painter::new(&mut buffer);
-
         p.draw_image(0.0, 0.0, input2.as_ref());
-
-        use usvg::FeCompositeOperator as Operator;
         let qt_mode = match fe.operator {
             Operator::Over => qt::CompositionMode::SourceOver,
             Operator::In => qt::CompositionMode::SourceIn,
             Operator::Out => qt::CompositionMode::SourceOut,
             Operator::Atop => qt::CompositionMode::SourceAtop,
             Operator::Xor => qt::CompositionMode::Xor,
-            Operator::Arithmetic => qt::CompositionMode::SourceOver,
+            Operator::Arithmetic { .. } => qt::CompositionMode::SourceOver,
         };
         p.set_composition_mode(qt_mode);
         p.draw_image(0.0, 0.0, input1.as_ref());

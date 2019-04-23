@@ -228,19 +228,35 @@ fn convert_fe_flood(fe: &svgdom::Node) -> tree::FilterKind {
     })
 }
 
+fn get_coeff(attrs: &svgdom::Attributes, aid: AId) -> tree::CompositingCoefficient {
+    let k = match attrs.get_value(aid) {
+        Some(AValue::Number(n)) => *n,
+        _ => 0.0,
+    };
+
+    f64_bound(0.0, k, 1.0).into()
+}
+
 fn convert_fe_composite(
     fe: &svgdom::Node,
     primitives: &[tree::FilterPrimitive],
 ) -> tree::FilterKind {
-    let attrs = fe.attributes();
+    let ref attrs = fe.attributes();
 
     let operator = match attrs.get_str_or(AId::Operator, "over") {
         "in"            => tree::FeCompositeOperator::In,
         "out"           => tree::FeCompositeOperator::Out,
         "atop"          => tree::FeCompositeOperator::Atop,
         "xor"           => tree::FeCompositeOperator::Xor,
-        "arithmetic"    => tree::FeCompositeOperator::Arithmetic,
-        _               => tree::FeCompositeOperator::Over,
+        "arithmetic"    => {
+            tree::FeCompositeOperator::Arithmetic {
+                k1: get_coeff(attrs, AId::K1),
+                k2: get_coeff(attrs, AId::K2),
+                k3: get_coeff(attrs, AId::K3),
+                k4: get_coeff(attrs, AId::K4),
+            }
+        }
+        _ => tree::FeCompositeOperator::Over,
     };
 
     let input1 = resolve_input(fe, AId::In, primitives);
