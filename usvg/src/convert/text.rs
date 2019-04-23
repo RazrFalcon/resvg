@@ -8,8 +8,8 @@ use std::cmp;
 use svgdom;
 
 // self
-use tree;
-use tree::prelude::*;
+use crate::tree;
+use crate::tree::prelude::*;
 use super::prelude::*;
 use super::{
     style,
@@ -50,15 +50,10 @@ pub fn convert(
     }));
 }
 
-
-type PositionsList = Vec<CharacterPosition>;
-type RotateList = Vec<f64>;
-
-
 fn collect_text_chunks(
     text_elem: &svgdom::Node,
-    pos_list: &PositionsList,
-    rotate_list: &RotateList,
+    pos_list: &[CharacterPosition],
+    rotate_list: &[f64],
     state: &State,
     tree: &mut tree::Tree,
 ) -> Vec<tree::TextChunk> {
@@ -256,7 +251,7 @@ struct CharacterPosition {
 fn resolve_positions_list(
     text_elem: &svgdom::Node,
     state: &State,
-) -> PositionsList {
+) -> Vec<CharacterPosition> {
     // Allocate a list that has all characters positions set to `None`.
     let total_chars = count_chars(text_elem);
     let mut list = vec![CharacterPosition {
@@ -306,7 +301,7 @@ fn resolve_positions_list(
 /// Note: this algorithm differs from the position resolving one.
 fn resolve_rotate_list(
     text_elem: &svgdom::Node,
-) -> RotateList {
+) -> Vec<f64> {
     // Allocate a list that has all characters angles set to `0.0`.
     let mut list = vec![0.0; count_chars(text_elem)];
     let mut last = 0.0;

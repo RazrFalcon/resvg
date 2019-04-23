@@ -11,7 +11,7 @@ pub use usvg::utils::*;
 
 // self
 use super::prelude::*;
-use FitTo;
+use crate::FitTo;
 
 
 /// Returns `size` preprocessed according to `FitTo`.
@@ -80,7 +80,7 @@ pub fn path_bbox(
 ) -> Option<Rect> {
     debug_assert!(!segments.is_empty());
 
-    use lyon_geom;
+    use crate::lyon_geom;
 
     let mut prev_x = 0.0;
     let mut prev_y = 0.0;
@@ -165,7 +165,7 @@ pub fn path_bbox(
 pub fn path_length(segments: &[usvg::PathSegment]) -> f64 {
     debug_assert!(!segments.is_empty());
 
-    use lyon_geom;
+    use crate::lyon_geom;
 
     let (mut prev_x, mut prev_y) = {
         if let usvg::PathSegment::MoveTo { x, y } = segments[0] {

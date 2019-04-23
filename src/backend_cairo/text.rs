@@ -15,8 +15,8 @@ use pangocairo::functions as pc;
 
 // self
 use super::prelude::*;
-use backend_utils;
-use backend_utils::text::{
+use crate::backend_utils;
+use crate::backend_utils::text::{
     self,
     FontMetrics,
 };

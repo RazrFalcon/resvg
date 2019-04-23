@@ -6,12 +6,12 @@
 use usvg;
 
 // self
-use geom::*;
+use crate::geom::*;
 
 
 pub(crate) trait ConvTransform<T> {
     fn to_native(&self) -> T;
-    fn from_native(&T) -> Self;
+    fn from_native(_: &T) -> Self;
 }
 
 

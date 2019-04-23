@@ -5,7 +5,7 @@
 use std::ops::Deref;
 
 // self
-use geom::*;
+use crate::geom::*;
 use super::attributes::*;
 
 // TODO: implement Default for all

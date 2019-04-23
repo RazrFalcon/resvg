@@ -3,11 +3,11 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // external
-use qt;
+use crate::qt;
 
 // self
 use super::prelude::*;
-use backend_utils::image;
+use crate::backend_utils::image;
 
 
 pub fn draw(

@@ -12,8 +12,8 @@ use cairo::{
 use pangocairo::functions as pc;
 
 // self
-use prelude::*;
-use {
+use crate::prelude::*;
+use crate::{
     backend_utils,
     layers,
 };
@@ -130,7 +130,7 @@ impl OutputImage for cairo::ImageSurface {
         use std::fs;
 
         if let Ok(mut buffer) = fs::File::create(path) {
-            if let Ok(_) = self.write_to_png(&mut buffer) {
+            if self.write_to_png(&mut buffer).is_ok() {
                 return true;
             }
         }

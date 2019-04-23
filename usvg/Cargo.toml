@@ -5,6 +5,7 @@ version = "0.6.1"
 authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg"]
 license = "MPL-2.0"
+edition = "2018"
 description = "An SVG simplification library."
 categories = ["multimedia::images"]
 repository = "https://github.com/RazrFalcon/resvg"

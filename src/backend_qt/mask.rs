@@ -3,11 +3,11 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // external
-use qt;
+use crate::qt;
 
 // self
 use super::prelude::*;
-use backend_utils::mask;
+use crate::backend_utils::mask;
 
 
 pub fn apply(

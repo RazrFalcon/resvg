@@ -11,13 +11,13 @@ use svgdom::{
 
 // self
 use super::*;
-use geom::*;
-use short::{
+use crate::geom::*;
+use crate::short::{
     AId,
     AValue,
     EId,
 };
-use IsDefault;
+use crate::IsDefault;
 
 
 pub fn convert(tree: &Tree) -> svgdom::Document {
@@ -409,7 +409,7 @@ fn conv_elements(
                     conv_elements(tree, &n, defs, new_doc, parent);
                     parent.last_child().unwrap()
                 } else {
-                    let mut g_elem = new_doc.create_element(EId::G);
+                    let g_elem = new_doc.create_element(EId::G);
                     parent.append(g_elem.clone());
                     g_elem
                 };

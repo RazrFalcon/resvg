@@ -51,9 +51,9 @@ pub fn prepare_blocks<Font>(
     let mut last_y = 0.0;
     let mut char_idx = 0;
     for chunk in &text_kind.chunks {
-        let mut chunk_x = chunk.x.unwrap_or(last_x) + chunk.dx.unwrap_or(0.0);
+        let chunk_x = chunk.x.unwrap_or(last_x) + chunk.dx.unwrap_or(0.0);
         let mut x = chunk_x;
-        let mut y = chunk.y.unwrap_or(last_y) + chunk.dy.unwrap_or(0.0);
+        let y = chunk.y.unwrap_or(last_y) + chunk.dy.unwrap_or(0.0);
         let start_idx = blocks.len();
 
         for tspan in &chunk.spans {
@@ -86,8 +86,8 @@ pub fn prepare_blocks<Font>(
                     }
 
                     let mut new_width = chunk_x;
-                    for i in start_idx..blocks.len() {
-                        new_width += blocks[i].bbox.width();
+                    for block in blocks.iter().skip(start_idx) {
+                        new_width += block.bbox.width();
                     }
 
                     x = new_width;
@@ -138,13 +138,13 @@ pub fn prepare_blocks<Font>(
         }
 
         let mut chunk_w = 0.0;
-        for i in start_idx..blocks.len() {
-            chunk_w += blocks[i].bbox.width();
+        for block in blocks.iter().skip(start_idx) {
+            chunk_w += block.bbox.width();
         }
 
         let adx = process_text_anchor(chunk.anchor, chunk_w);
-        for i in start_idx..blocks.len() {
-            blocks[i].bbox = blocks[i].bbox.translate(-adx, 0.0);
+        for block in blocks.iter_mut().skip(start_idx) {
+            block.bbox = block.bbox.translate(-adx, 0.0);
         }
 
         last_x = chunk_x + chunk_w - adx;

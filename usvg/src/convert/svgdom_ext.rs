@@ -8,7 +8,7 @@ use std::str::FromStr;
 use svgdom;
 
 // self
-use tree;
+use crate::tree;
 use super::prelude::*;
 use super::units;
 
@@ -242,7 +242,7 @@ impl_from_value!(svgdom::AspectRatio, AspectRatio);
 impl FromValue for str {
     fn get(v: &AValue) -> Option<&Self> {
         match v {
-            &AValue::String(ref s) => Some(s.as_str()),
+            AValue::String(ref s) => Some(s.as_str()),
             _ => None,
         }
     }

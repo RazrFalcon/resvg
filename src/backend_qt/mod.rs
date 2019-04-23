@@ -5,11 +5,11 @@
 //! Qt backend implementation.
 
 // external
-use qt;
+use crate::qt;
 
 // self
-use prelude::*;
-use {
+use crate::prelude::*;
+use crate::{
     backend_utils,
     layers,
     OutputImage,

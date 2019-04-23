@@ -17,7 +17,7 @@ pub use svgdom::{
 };
 
 // self
-use geom::*;
+use crate::geom::*;
 pub use super::numbers::*;
 
 

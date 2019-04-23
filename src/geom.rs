@@ -24,7 +24,7 @@ pub(crate) use usvg::{
 };
 
 // self
-use utils;
+use crate::utils;
 
 
 /// A 2D screen size representation.

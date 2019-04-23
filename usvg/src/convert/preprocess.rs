@@ -15,8 +15,8 @@ use svgdom::{
 };
 
 // self
-use geom::*;
-use short::*;
+use crate::geom::*;
+use crate::short::*;
 use super::svgdom_ext::*;
 
 

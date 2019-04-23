@@ -16,7 +16,7 @@ use usvg::ColorInterpolation as ColorSpace;
 
 // self
 use super::prelude::*;
-use backend_utils::filter::{
+use crate::backend_utils::filter::{
     self,
     Error,
     Filter,
@@ -239,9 +239,9 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         let (dx, dy) = try_opt!(Self::resolve_offset(fe, units, bbox, ts), Ok(input));
 
         // TODO: do not use an additional buffer
-        let mut buffer = create_image(input.width(), input.height())?;
+        let buffer = create_image(input.width(), input.height())?;
 
-        let cr = cairo::Context::new(&mut buffer);
+        let cr = cairo::Context::new(&buffer);
         cr.set_source_surface(input.as_ref(), dx, dy);
         cr.paint();
 
@@ -258,8 +258,8 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         let input1 = input1.into_color_space(cs)?;
         let input2 = input2.into_color_space(cs)?;
 
-        let mut buffer = create_image(region.width(), region.height())?;
-        let cr = cairo::Context::new(&mut buffer);
+        let buffer = create_image(region.width(), region.height())?;
+        let cr = cairo::Context::new(&buffer);
 
         cr.set_source_surface(input2.as_ref(), 0.0, 0.0);
         cr.paint();
@@ -294,8 +294,8 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         let mut buffer = create_image(region.width(), region.height())?;
 
         if let Operator::Arithmetic { k1, k2, k3, k4 } = fe.operator {
-            let mut data1 = input1.get_data().unwrap();
-            let mut data2 = input2.get_data().unwrap();
+            let data1 = input1.get_data().unwrap();
+            let data2 = input2.get_data().unwrap();
 
             let calc = |i1, i2, max| {
                 let i1 = i1 as f64 / 255.0;
@@ -307,7 +307,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
             {
                 let mut i = 0;
                 let mut data3 = buffer.get_data().unwrap();
-                let mut data3 = data3.as_bgra_mut();
+                let data3 = data3.as_bgra_mut();
                 for (c1, c2) in data1.as_bgra().iter().zip(data2.as_bgra()) {
                     let a = calc(c1.a, c2.a, 1.0);
                     if a.is_fuzzy_zero() {
@@ -328,7 +328,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
             return Ok(Image::from_image(buffer, cs));
         }
 
-        let cr = cairo::Context::new(&mut buffer);
+        let cr = cairo::Context::new(&buffer);
 
         cr.set_source_surface(input2.as_ref(), 0.0, 0.0);
         cr.paint();
@@ -357,8 +357,8 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         results: &[FilterResult],
         canvas: &cairo::ImageSurface,
     ) -> Result<Image, Error> {
-        let mut buffer = create_image(region.width(), region.height())?;
-        let cr = cairo::Context::new(&mut buffer);
+        let buffer = create_image(region.width(), region.height())?;
+        let cr = cairo::Context::new(&buffer);
 
         for input in &fe.inputs {
             let input = Self::get_input(input, region, &results, canvas)?;

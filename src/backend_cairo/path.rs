@@ -11,7 +11,7 @@ use super::{
     fill,
     stroke,
 };
-use backend_utils;
+use crate::backend_utils;
 
 
 pub fn draw(
@@ -32,7 +32,7 @@ pub fn draw(
     // `usvg` guaranties that path without a bbox will not use
     // a paint server with ObjectBoundingBox,
     // so we can pass whatever rect we want, because it will not be used anyway.
-    let style_bbox = bbox.unwrap_or(Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
+    let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
 
     if path.visibility != usvg::Visibility::Visible {
         return bbox;
@@ -112,12 +112,7 @@ fn draw_subpath(
     // Buy the SVG spec, a zero length subpath with a square cap should be
     // rendered as a square/rect, but it's not (at least on 1.14.12/1.15.12).
     // And this is probably a bug, since round caps are rendered correctly.
-    let mut is_zero_path = false;
-    if is_square_cap {
-        if utils::path_length(segments).is_fuzzy_zero() {
-            is_zero_path = true;
-        }
-    }
+    let is_zero_path = is_square_cap && utils::path_length(segments).is_fuzzy_zero();
 
     if !is_zero_path {
         for seg in segments {

@@ -12,8 +12,8 @@ use svgdom::{
 };
 
 // self
-use geom::*;
-use tree;
+use crate::geom::*;
+use crate::tree;
 
 
 /// Converts `viewBox` to `Transform`.

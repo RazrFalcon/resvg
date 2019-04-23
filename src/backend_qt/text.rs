@@ -3,12 +3,12 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // external
-use qt;
+use crate::qt;
 
 // self
 use super::prelude::*;
-use backend_utils;
-use backend_utils::text::{
+use crate::backend_utils;
+use crate::backend_utils::text::{
     self,
     FontMetrics,
 };

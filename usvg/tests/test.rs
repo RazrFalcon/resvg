@@ -2,7 +2,7 @@ extern crate usvg;
 #[macro_use] extern crate pretty_assertions;
 
 use usvg::svgdom;
-use svgdom::WriteBuffer;
+use crate::svgdom::WriteBuffer;
 
 use std::fmt;
 

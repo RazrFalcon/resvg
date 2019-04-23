@@ -7,7 +7,7 @@ use std::fmt;
 
 use svgdom::FuzzyEq;
 
-use IsValidLength;
+use crate::IsValidLength;
 
 
 /// Bounds `f64` number.

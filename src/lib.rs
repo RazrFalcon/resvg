@@ -53,23 +53,23 @@ mod traits;
 pub mod prelude {
     pub use usvg;
     pub use usvg::prelude::*;
-    pub use geom::*;
-    pub(crate) use traits::*;
-    pub use utils;
-    pub use Options;
-    pub use Render;
-    pub use OutputImage;
+    pub use crate::geom::*;
+    pub(crate) use crate::traits::*;
+    pub use crate::utils;
+    pub use crate::Options;
+    pub use crate::Render;
+    pub use crate::OutputImage;
 }
 
 
 use std::path;
 
-pub use options::*;
-pub use geom::*;
+pub use crate::options::*;
+pub use crate::geom::*;
 
 /// Shorthand names for modules.
 mod short {
-    pub use svgdom::{
+    pub use crate::svgdom::{
         LengthUnit as Unit,
         ElementId as EId,
         AttributeId as AId,

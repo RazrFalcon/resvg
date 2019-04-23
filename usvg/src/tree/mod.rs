@@ -16,7 +16,7 @@ use libflate;
 // self
 pub use self::nodes::*;
 pub use self::attributes::*;
-use {
+use crate::{
     Error,
     Options,
 };
@@ -28,10 +28,10 @@ mod numbers;
 
 /// Basic traits for tree manipulations.
 pub mod prelude {
-    pub use IsDefault;
-    pub use IsValidLength;
-    pub use tree::FuzzyEq;
-    pub use tree::FuzzyZero;
+    pub use crate::IsDefault;
+    pub use crate::IsValidLength;
+    pub use crate::tree::FuzzyEq;
+    pub use crate::tree::FuzzyZero;
     pub use super::NodeExt;
 }
 
@@ -69,7 +69,7 @@ impl Tree {
         };
 
         let doc = svgdom::Document::from_str_with_opt(text, &dom_opt)
-            .map_err(|e| Error::ParsingFailed(e))?;
+            .map_err(Error::ParsingFailed)?;
 
         Self::from_dom(doc, &opt)
     }

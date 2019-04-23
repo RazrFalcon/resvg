@@ -5,10 +5,10 @@
 use std::f64;
 
 // self
-use utils;
-use tree;
-use tree::prelude::*;
-use tree::PathSegment as Segment;
+use crate::utils;
+use crate::tree;
+use crate::tree::prelude::*;
+use crate::tree::PathSegment as Segment;
 use super::prelude::*;
 use super::use_node;
 
@@ -435,7 +435,7 @@ fn get_subpath_start(segments: &[Segment], idx: usize) -> (f64, f64) {
         }
     }
 
-    return (0.0, 0.0)
+    (0.0, 0.0)
 }
 
 fn get_prev_vertex(segments: &[Segment], idx: usize) -> (f64, f64) {

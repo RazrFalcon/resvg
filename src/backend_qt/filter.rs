@@ -6,13 +6,13 @@ use std::cmp;
 use std::rc::Rc;
 
 // external
-use qt;
+use crate::qt;
 use rgb::FromSlice;
 use usvg::ColorInterpolation as ColorSpace;
 
 // self
 use super::prelude::*;
-use backend_utils::filter::{
+use crate::backend_utils::filter::{
     self,
     Error,
     Filter,
@@ -261,7 +261,7 @@ impl Filter<qt::Image> for QtFilter {
             {
                 let mut i = 0;
                 let mut data3 = buffer.data_mut();
-                let mut data3 = data3.as_rgba_mut();
+                let data3 = data3.as_rgba_mut();
                 for (c1, c2) in data1.as_rgba().iter().zip(data2.as_rgba()) {
                     let c1 = premultiply_alpha(*c1);
                     let c2 = premultiply_alpha(*c2);

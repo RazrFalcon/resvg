@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // self
-use geom::*;
+use crate::geom::*;
 
 
 /// Converts an image to an alpha mask.

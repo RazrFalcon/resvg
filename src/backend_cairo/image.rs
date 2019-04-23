@@ -14,7 +14,7 @@ use gdk_pixbuf::{
 
 // self
 use super::prelude::*;
-use backend_utils::image;
+use crate::backend_utils::image;
 
 
 pub fn draw(

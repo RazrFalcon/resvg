@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use svgdom;
 
 // self
-use tree;
+use crate::tree;
 use super::prelude::*;
 use super::paint_server::{
     resolve_number,
@@ -219,7 +219,7 @@ fn convert_fe_blend(
 fn convert_fe_flood(fe: &svgdom::Node) -> tree::FilterKind {
     let attrs = fe.attributes();
 
-    let color = attrs.get_color(AId::FloodColor).unwrap_or(tree::Color::black());
+    let color = attrs.get_color(AId::FloodColor).unwrap_or_else(tree::Color::black);
     let opacity = fe.convert_opacity(AId::FloodOpacity);
 
     tree::FilterKind::FeFlood(tree::FeFlood {
@@ -396,7 +396,7 @@ fn gen_result(node: &svgdom::Node, results: &mut FilterResults) -> String {
         None => {
             // Generate an unique name for `result`.
             loop {
-                let mut name = format!("result{}", results.idx);
+                let name = format!("result{}", results.idx);
                 results.idx += 1;
 
                 if !results.names.contains(&name) {

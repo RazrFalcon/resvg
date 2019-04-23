@@ -8,7 +8,7 @@ use std::f64;
 use svgdom;
 
 // self
-use tree;
+use crate::tree;
 use super::prelude::*;
 
 
@@ -290,7 +290,7 @@ fn convert_stops(grad: &svgdom::Node) -> Vec<tree::Stop> {
             prev_offset = Length::new_number(offset);
 
             let color = stop.attributes().get_color(AId::StopColor)
-                            .unwrap_or(svgdom::Color::black());
+                            .unwrap_or_else(svgdom::Color::black);
 
             stops.push(tree::Stop {
                 offset: offset.into(),

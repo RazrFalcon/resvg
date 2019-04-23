@@ -4,7 +4,7 @@
 
 use std::path::PathBuf;
 
-use {
+use crate::{
     ImageRendering,
     ShapeRendering,
     TextRendering,

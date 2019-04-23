@@ -60,13 +60,10 @@ Full spec can be found [here](https://github.com/RazrFalcon/usvg/blob/master/doc
 
 #![doc(html_root_url = "https://docs.rs/usvg/0.6.1")]
 
-#![cfg_attr(feature = "cargo-clippy", allow(collapsible_if))]
-
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_copy_implementations)]
-#![allow(dead_code)]
 
 
 pub extern crate svgdom;
@@ -141,11 +138,11 @@ mod short {
 }
 
 
-pub use error::*;
-pub use geom::*;
-pub use options::*;
-pub use tree::*;
-pub use convert::{
+pub use crate::error::*;
+pub use crate::geom::*;
+pub use crate::options::*;
+pub use crate::tree::*;
+pub use crate::convert::{
     IsDefault,
     IsValidLength,
 };

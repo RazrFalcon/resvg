@@ -11,7 +11,7 @@ use svgdom::{
 };
 
 // self
-use geom::f64_bound;
+use crate::geom::f64_bound;
 
 
 macro_rules! wrap {

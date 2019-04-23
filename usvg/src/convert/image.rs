@@ -9,8 +9,8 @@ use base64;
 use svgdom;
 
 // self
-use tree;
-use tree::prelude::*;
+use crate::tree;
+use crate::tree::prelude::*;
 use super::prelude::*;
 
 

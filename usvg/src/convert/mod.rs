@@ -11,11 +11,11 @@ use svgdom::{
 };
 
 // self
-use tree;
-use tree::prelude::*;
-use short::*;
-use geom::*;
-use {
+use crate::tree;
+use crate::tree::prelude::*;
+use crate::short::*;
+use crate::geom::*;
+use crate::{
     Error,
     Options,
 };
@@ -51,9 +51,9 @@ mod prelude {
         FuzzyZero,
         Length,
     };
-    pub use geom::*;
-    pub use short::*;
-    pub use Options;
+    pub use crate::geom::*;
+    pub use crate::short::*;
+    pub use crate::Options;
     pub use super::svgdom_ext::*;
     pub use super::State;
 }

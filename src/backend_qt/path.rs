@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // external
-use qt;
+use crate::qt;
 
 // self
 use super::prelude::*;
@@ -11,7 +11,7 @@ use super::{
     fill,
     stroke,
 };
-use backend_utils;
+use crate::backend_utils;
 
 
 pub fn draw(
@@ -35,7 +35,7 @@ pub fn draw(
     // `usvg` guaranties that path without a bbox will not use
     // a paint server with ObjectBoundingBox,
     // so we can pass whatever rect we want, because it will not be used anyway.
-    let style_bbox = bbox.unwrap_or(Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
+    let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
 
     if path.visibility != usvg::Visibility::Visible {
         return bbox;

@@ -6,7 +6,7 @@ use std::path;
 
 // self
 use super::prelude::*;
-use {
+use crate::{
     FitTo,
     Options,
 };

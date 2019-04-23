@@ -6,7 +6,7 @@
 use svgdom;
 
 // self
-use tree;
+use crate::tree;
 use super::prelude::*;
 use super::{
     paint_server,
@@ -39,16 +39,16 @@ pub fn resolve_fill(
 
     let fill_opacity = node.resolve_length(AId::FillOpacity, state, 1.0) * sub_opacity.value();
 
-    let mut fill_rule = node.find_enum(AId::FillRule);
-
     // The `fill-rule` should be ignored.
     // https://www.w3.org/TR/SVG2/text.html#TextRenderingOrder
     //
     // 'Since the fill-rule property does not apply to SVG text elements,
     // the specific order of the subpaths within the equivalent path does not matter.'
-    if state.current_root.is_tag_name(EId::Text) {
-        fill_rule = tree::FillRule::NonZero;
-    }
+    let fill_rule = if state.current_root.is_tag_name(EId::Text) {
+        tree::FillRule::NonZero
+    } else {
+        node.find_enum(AId::FillRule)
+    };
 
     Some(tree::Fill {
         paint,
