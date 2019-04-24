@@ -1,33 +1,35 @@
 ### Elements
 
 - Filter based
+  - `feColorMatrix`
+  - `feComponentTransfer`
   - `feConvolveMatrix`
   - `feDiffuseLighting`
   - `feDisplacementMap`
-  - `feMorphology`
-  - `feSpecularLighting`
   - `feDistantLight`
-  - `fePointLight`
-  - `feSpotLight`
   - `feImage` with a reference to an element
+  - `feMorphology`
+  - `fePointLight`
+  - `feSpecularLighting`
+  - `feSpotLight`
 - Font based
-  - `font`
-  - `glyph`
-  - `missing-glyph`
-  - `hkern`
-  - `vkern`
-  - `font-face`
-  - `font-face-src`
-  - `font-face-uri`
-  - `font-face-format`
-  - `font-face-name`
   - `altGlyph`
   - `altGlyphDef`
   - `altGlyphItem`
+  - `font-face-format`
+  - `font-face-name`
+  - `font-face-src`
+  - `font-face-uri`
+  - `font-face`
+  - `font`
+  - `glyph`
   - `glyphRef`
+  - `hkern`
+  - `missing-glyph`
+  - `vkern`
 - `color-profile`
 - `textPath`
-- `use` with a reference to an external SVG
+- `use` with a reference to an external SVG file
 
 ### Attributes
 
@@ -46,12 +48,9 @@
 - `glyph-orientation-vertical` (deprecated in the SVG 2)
 - [`in`](https://www.w3.org/TR/SVG11/filters.html#FilterPrimitiveInAttribute)
   with `BackgroundImage`, `BackgroundAlpha`, `FillPaint`, `StrokePaint`
-- `image-rendering`
 - `kerning` (removed in the SVG 2)
 - `lengthAdjust`
 - `line-height`
-- `shape-rendering`
-- `text-rendering`
 - `textLength`
 - `unicode-bidi`
 - `word-spacing` (unsupported only by cairo backend)
