@@ -1,3 +1,4 @@
+a-alignment-baseline-001,3060,unsupported
 a-baseline-shift-002,637
 a-baseline-shift-003,547
 a-baseline-shift-010,1254
@@ -9,6 +10,8 @@ a-baseline-shift-016,3794
 a-baseline-shift-019,1755
 a-baseline-shift-020,737
 a-baseline-shift-021,1105
+a-direction-001,906,unsupported
+a-direction-002,3257,unsupported
 a-display-002,25284,chrome bug
 a-display-003,25284,chrome bug
 a-display-004,31852,chrome bug
@@ -16,8 +19,10 @@ a-display-005,2018,bug
 a-display-006,1997,chrome bug
 a-display-007,27184,chrome bug
 a-display-008,335
+a-dominant-baseline-001,3060,unsupported
 a-fill-025,25604,chrome bug
 a-fill-034,25604,chrome bug
+a-font-001,191,unsupported
 a-font-size-005,824,chrome uses different coefficients
 a-font-size-007,1538,UA dependent
 a-font-size-008,656,UA dependent
@@ -27,12 +32,14 @@ a-font-size-017,1088,UA dependent
 a-font-size-019,649,bug
 a-font-weight-003,484,chrome bug
 a-font-weight-012,714,chrome bug
+a-glyph-orientation-vertical-001,1143,unsupported
 a-letter-spacing-005,2171,chrome bug
 a-word-spacing-005,730,chrome bug
 a-opacity-001,591
 a-opacity-002,137
 a-overflow-001,25
 a-overflow-003,25
+a-unicode-bidi-001,1144,unsupported
 a-shape-rendering-001,538
 a-shape-rendering-002,93
 a-shape-rendering-003,93
@@ -70,6 +77,12 @@ a-text-rendering-005,313,#95
 a-visibility-005,137
 a-visibility-006,137
 a-visibility-007,29
+a-writing-mode-005,2939,unsupported
+a-writing-mode-006,2939,unsupported
+a-writing-mode-008,2939,unsupported
+a-writing-mode-009,3626,unsupported
+a-writing-mode-010,3487,unsupported
+a-writing-mode-012,3530,unsupported
 e-circle-001,519
 e-circle-002,538
 e-circle-003,262
@@ -231,6 +244,7 @@ e-text-033,1312,unsupported #4
 e-text-034,471,unsupported #4
 e-text-036,1513,?
 e-text-038,1959,chrome bug
+e-textPath-001,1286,unsupported
 e-tref-001,2005,chrome bug
 e-tref-002,1180,chrome bug
 e-tref-005,2005,chrome bug
