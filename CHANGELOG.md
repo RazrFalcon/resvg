@@ -21,6 +21,9 @@ This changelog also contains important changes in dependencies.
 - Geometry primitives (`Rect`, `Size`, etc) are immutable and always valid now.
 - (usvg) The default `color-interpolation-filters` attribute will not be exported now.
 
+### Fixed
+- (rctree) Prevent stack overflow on a huge, deeply nested SVG.
+
 ## [0.6.1] - 2019-03-16
 ### Fixed
 - (usvg) `transform` multiplication.
