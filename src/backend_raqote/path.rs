@@ -7,11 +7,7 @@ use raqote;
 
 // self
 use super::prelude::*;
-use super::{
-    fill,
-    stroke,
-};
-//use crate::backend_utils;
+use super::style;
 
 
 pub fn draw(
@@ -61,8 +57,8 @@ pub fn draw(
         }
     }
 
-    fill::apply(tree, &segments, &path.fill, opt, style_bbox, dt);
-    stroke::apply(tree, &segments, &path.stroke, opt, style_bbox, dt);
+    style::fill(tree, &segments, &path.fill, opt, style_bbox, dt);
+    style::stroke(tree, &segments, &path.stroke, opt, style_bbox, dt);
 
 //    // Revert anti-aliasing.
 //    cr.set_antialias(cairo::Antialias::Default);

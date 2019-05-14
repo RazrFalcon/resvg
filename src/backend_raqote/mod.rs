@@ -12,10 +12,8 @@ use crate::prelude::*;
 use crate::layers;
 
 
-mod fill;
-mod gradient;
 mod path;
-mod stroke;
+mod style;
 
 mod prelude {
     pub use super::super::prelude::*;
