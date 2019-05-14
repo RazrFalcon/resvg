@@ -7,10 +7,7 @@ use cairo;
 
 // self
 use super::prelude::*;
-use super::{
-    fill,
-    stroke,
-};
+use super::style;
 use crate::backend_utils;
 
 
@@ -42,11 +39,11 @@ pub fn draw(
         cr.set_antialias(cairo::Antialias::None);
     }
 
-    fill::apply(tree, &path.fill, opt, style_bbox, cr);
+    style::fill(tree, &path.fill, opt, style_bbox, cr);
     if path.stroke.is_some() {
         cr.fill_preserve();
 
-        stroke::apply(tree, &path.stroke, opt, style_bbox, cr);
+        style::stroke(tree, &path.stroke, opt, style_bbox, cr);
         cr.stroke();
     } else {
         cr.fill();
