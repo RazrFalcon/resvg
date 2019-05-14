@@ -28,6 +28,8 @@ extern crate rgb;
 
 #[cfg(feature = "qt-backend")] pub extern crate resvg_qt as qt;
 
+#[cfg(feature = "raqote-backend")] pub extern crate raqote;
+
 
 pub use usvg::{
     svgdom,
@@ -39,6 +41,7 @@ use usvg::lyon_geom;
 
 #[cfg(feature = "cairo-backend")] pub mod backend_cairo;
 #[cfg(feature = "qt-backend")] pub mod backend_qt;
+#[cfg(feature = "raqote-backend")] pub mod backend_raqote;
 
 pub mod utils;
 mod backend_utils;
@@ -131,6 +134,11 @@ pub fn default_backend() -> Box<Render> {
     #[cfg(feature = "qt-backend")]
     {
         return Box::new(backend_qt::Backend);
+    }
+
+    #[cfg(feature = "raqote-backend")]
+    {
+        return Box::new(backend_raqote::Backend);
     }
 
     unreachable!("at least one backend must be enabled")

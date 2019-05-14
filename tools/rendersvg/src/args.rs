@@ -305,6 +305,9 @@ fn default_backend() -> &'static str {
     #[cfg(feature = "qt-backend")]
     { return "qt" }
 
+    #[cfg(feature = "raqote-backend")]
+    { return "raqote" }
+
     unreachable!();
 }
 
@@ -316,6 +319,9 @@ fn backends() -> Vec<&'static str> {
 
     #[cfg(feature = "qt-backend")]
     { list.push("qt"); }
+
+    #[cfg(feature = "raqote-backend")]
+    { list.push("raqote"); }
 
     list
 }
