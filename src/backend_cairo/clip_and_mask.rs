@@ -9,11 +9,12 @@ use cairo::{
 };
 
 // self
+use crate::backend_utils::mask;
 use super::prelude::*;
 use super::path;
 
 
-pub fn apply(
+pub fn clip(
     node: &usvg::Node,
     cp: &usvg::ClipPath,
     opt: &Options,
@@ -56,7 +57,7 @@ pub fn apply(
     if let Some(ref id) = cp.clip_path {
         if let Some(ref clip_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                apply(clip_node, cp, opt, bbox, layers, cr);
+                clip(clip_node, cp, opt, bbox, layers, cr);
             }
         }
     }
@@ -98,7 +99,7 @@ fn clip_group(
 
                 draw_group_child(&node, opt, &clip_cr);
 
-                apply(clip_node, cp, opt, bbox, layers, &clip_cr);
+                clip(clip_node, cp, opt, bbox, layers, &clip_cr);
 
                 cr.set_matrix(cairo::Matrix::identity());
                 cr.set_operator(cairo::Operator::Xor);
@@ -125,4 +126,61 @@ fn draw_group_child(
             _ => {}
         }
     }
+}
+
+pub fn mask(
+    node: &usvg::Node,
+    mask: &usvg::Mask,
+    opt: &Options,
+    bbox: Rect,
+    layers: &mut CairoLayers,
+    sub_cr: &cairo::Context,
+) {
+    let mask_surface = try_opt!(layers.get(), ());
+    let mut mask_surface = mask_surface.borrow_mut();
+
+    {
+        let mask_cr = cairo::Context::new(&*mask_surface);
+        mask_cr.set_matrix(sub_cr.get_matrix());
+
+        let r = if mask.units == usvg::Units::ObjectBoundingBox {
+            mask.rect.bbox_transform(bbox)
+        } else {
+            mask.rect
+        };
+
+        mask_cr.rectangle(r.x(), r.y(), r.width(), r.height());
+        mask_cr.clip();
+
+        if mask.content_units == usvg::Units::ObjectBoundingBox {
+            mask_cr.transform(cairo::Matrix::from_bbox(bbox));
+        }
+
+        super::render_group(node, opt, layers, &mask_cr);
+    }
+
+    {
+        let mut data = try_opt_warn!(mask_surface.get_data().ok(), (),
+                                     "Failed to borrow a surface for mask '{}'.", mask.id);
+        mask::image_to_mask(&mut data, layers.image_size());
+    }
+
+    if let Some(ref id) = mask.mask {
+        if let Some(ref mask_node) = node.tree().defs_by_id(id) {
+            if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
+                self::mask(mask_node, mask, opt, bbox, layers, sub_cr);
+            }
+        }
+    }
+
+    sub_cr.set_matrix(cairo::Matrix::identity());
+    sub_cr.set_source_surface(&*mask_surface, 0.0, 0.0);
+    sub_cr.set_operator(cairo::Operator::DestIn);
+    sub_cr.paint();
+
+    // Reset operator.
+    sub_cr.set_operator(cairo::Operator::Over);
+
+    // Reset source to unborrow the `mask_surface` from the `Context`.
+    sub_cr.reset_source_rgba();
 }
