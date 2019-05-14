@@ -20,10 +20,7 @@ use crate::backend_utils::text::{
     self,
     FontMetrics,
 };
-use super::{
-    fill,
-    stroke,
-};
+use super::style;
 
 
 trait FromPangoScale {
@@ -188,11 +185,11 @@ fn draw_block(
     // Draw text.
     cr.move_to(bbox.x(), bbox.y());
 
-    fill::apply(tree, &block.fill, opt, text_bbox, cr);
+    style::fill(tree, &block.fill, opt, text_bbox, cr);
     pc::update_layout(cr, &layout);
     pc::show_layout(cr, &layout);
 
-    stroke::apply(tree, &block.stroke, opt, text_bbox, cr);
+    style::stroke(tree, &block.stroke, opt, text_bbox, cr);
     pc::layout_path(cr, &layout);
     cr.stroke();
 
@@ -281,11 +278,11 @@ fn draw_line(
 ) {
     cr.rectangle(r.x(), r.y(), r.width(), r.height());
 
-    fill::apply(tree, fill, opt, text_bbox, cr);
+    style::fill(tree, fill, opt, text_bbox, cr);
     if stroke.is_some() {
         cr.fill_preserve();
 
-        stroke::apply(tree, &stroke, opt, text_bbox, cr);
+        style::stroke(tree, &stroke, opt, text_bbox, cr);
         cr.stroke();
     } else {
         cr.fill();

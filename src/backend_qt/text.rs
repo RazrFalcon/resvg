@@ -12,10 +12,7 @@ use crate::backend_utils::text::{
     self,
     FontMetrics,
 };
-use super::{
-    fill,
-    stroke,
-};
+use super::style;
 
 
 pub struct QtFontMetrics<'a> {
@@ -110,8 +107,8 @@ fn draw_block(
     }
 
     // Draw text.
-    fill::apply(tree, &block.fill, opt, text_bbox, p);
-    stroke::apply(tree, &block.stroke, opt, text_bbox, p);
+    style::fill(tree, &block.fill, opt, text_bbox, p);
+    style::stroke(tree, &block.stroke, opt, text_bbox, p);
 
     p.draw_text(bbox.x(), bbox.y(), &block.text);
 
@@ -192,7 +189,7 @@ fn draw_line(
     opt: &Options,
     p: &mut qt::Painter,
 ) {
-    fill::apply(tree, fill, opt, text_bbox, p);
-    stroke::apply(tree, stroke, opt, text_bbox, p);
+    style::fill(tree, fill, opt, text_bbox, p);
+    style::stroke(tree, stroke, opt, text_bbox, p);
     p.draw_rect(r.x(), r.y(), r.width() + 1.0, r.height());
 }

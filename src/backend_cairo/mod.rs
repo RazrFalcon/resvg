@@ -32,15 +32,11 @@ macro_rules! try_create_surface {
 }
 
 
-mod clippath;
-mod fill;
+mod clip_and_mask;
 mod filter;
-mod gradient;
 mod image;
-mod mask;
 mod path;
-mod pattern;
-mod stroke;
+mod style;
 mod text;
 
 mod prelude {
@@ -334,7 +330,7 @@ fn render_group_impl(
                 let sub_cr = cairo::Context::new(&*sub_surface);
                 sub_cr.set_matrix(curr_ts);
 
-                clippath::apply(&clip_node, cp, opt, bbox, layers, &sub_cr);
+                clip_and_mask::clip(&clip_node, cp, opt, bbox, layers, &sub_cr);
             }
         }
     }
@@ -345,7 +341,7 @@ fn render_group_impl(
                 let sub_cr = cairo::Context::new(&*sub_surface);
                 sub_cr.set_matrix(curr_ts);
 
-                mask::apply(&mask_node, mask, opt, bbox, layers, &sub_cr);
+                clip_and_mask::mask(&mask_node, mask, opt, bbox, layers, &sub_cr);
             }
         }
     }

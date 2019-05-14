@@ -6,6 +6,7 @@
 use crate::qt;
 
 // self
+use crate::backend_utils::mask;
 use super::prelude::*;
 use super::{
     path,
@@ -13,7 +14,7 @@ use super::{
 };
 
 
-pub fn apply(
+pub fn clip(
     node: &usvg::Node,
     cp: &usvg::ClipPath,
     opt: &Options,
@@ -60,7 +61,7 @@ pub fn apply(
     if let Some(ref id) = cp.clip_path {
         if let Some(ref clip_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                apply(clip_node, cp, opt, bbox, layers, p);
+                clip(clip_node, cp, opt, bbox, layers, p);
             }
         }
     }
@@ -92,7 +93,7 @@ fn clip_group(
                 clip_p.set_transform(&p.get_transform());
                 draw_group_child(&node, opt, &mut clip_p);
 
-                apply(clip_node, cp, opt, bbox, layers, &mut clip_p);
+                clip(clip_node, cp, opt, bbox, layers, &mut clip_p);
                 clip_p.end();
 
                 p.set_transform(&qt::Transform::default());
@@ -121,4 +122,49 @@ fn draw_group_child(
             _ => {}
         }
     }
+}
+
+pub fn mask(
+    node: &usvg::Node,
+    mask: &usvg::Mask,
+    opt: &Options,
+    bbox: Rect,
+    layers: &mut QtLayers,
+    sub_p: &mut qt::Painter,
+) {
+    let mask_img = try_opt!(layers.get(), ());
+    let mut mask_img = mask_img.borrow_mut();
+
+    {
+        let mut mask_p = qt::Painter::new(&mut mask_img);
+        mask_p.set_transform(&sub_p.get_transform());
+
+        let r = if mask.units == usvg::Units::ObjectBoundingBox {
+            mask.rect.bbox_transform(bbox)
+        } else {
+            mask.rect
+        };
+
+        mask_p.set_clip_rect(r.x(), r.y(), r.width(), r.height());
+
+        if mask.content_units == usvg::Units::ObjectBoundingBox {
+            mask_p.apply_transform(&qt::Transform::from_bbox(bbox));
+        }
+
+        super::render_group(node, opt, layers, &mut mask_p);
+    }
+
+    mask::image_to_mask(&mut mask_img.data_mut(), layers.image_size());
+
+    if let Some(ref id) = mask.mask {
+        if let Some(ref mask_node) = node.tree().defs_by_id(id) {
+            if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
+                self::mask(mask_node, mask, opt, bbox, layers, sub_p);
+            }
+        }
+    }
+
+    sub_p.set_transform(&qt::Transform::default());
+    sub_p.set_composition_mode(qt::CompositionMode::DestinationIn);
+    sub_p.draw_image(0.0, 0.0, &mask_img);
 }

@@ -7,10 +7,7 @@ use crate::qt;
 
 // self
 use super::prelude::*;
-use super::{
-    fill,
-    stroke,
-};
+use super::style;
 use crate::backend_utils;
 
 
@@ -41,8 +38,8 @@ pub fn draw(
         return bbox;
     }
 
-    fill::apply(tree, &path.fill, opt, style_bbox, p);
-    stroke::apply(tree, &path.stroke, opt, style_bbox, p);
+    style::fill(tree, &path.fill, opt, style_bbox, p);
+    style::stroke(tree, &path.stroke, opt, style_bbox, p);
     p.set_antialiasing(backend_utils::use_shape_antialiasing(path.rendering_mode));
 
     p.draw_path(&p_path);
