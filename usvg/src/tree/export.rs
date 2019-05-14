@@ -318,75 +318,6 @@ fn conv_elements(
                 conv_fill(tree, &p.fill, defs, parent, &mut path_elem);
                 conv_stroke(tree, &p.stroke, defs, &mut path_elem);
             }
-            NodeKind::Text(ref text) => {
-                let mut text_elem = new_doc.create_element(EId::Text);
-                parent.append(text_elem.clone());
-
-                text_elem.set_id(text.id.clone());
-
-                conv_transform(AId::Transform, &text.transform, &mut text_elem);
-                text_elem.set_enum_attribute(AId::TextRendering, text.rendering_mode);
-
-                if let Some(ref rotate) = text.rotate {
-                    text_elem.set_attribute((AId::Rotate, NumberList(rotate.clone())));
-                }
-
-                let mut is_preserve_required = false;
-
-                for chunk in &text.chunks {
-                    let mut chunk_tspan_elem = new_doc.create_element(EId::Tspan);
-                    text_elem.append(chunk_tspan_elem.clone());
-
-                    if let Some(x) = chunk.x {
-                        chunk_tspan_elem.set_attribute((AId::X, x));
-                    }
-
-                    if let Some(y) = chunk.y {
-                        chunk_tspan_elem.set_attribute((AId::Y, y));
-                    }
-
-                    if let Some(dx) = chunk.dx {
-                        chunk_tspan_elem.set_attribute((AId::Dx, dx));
-                    }
-
-                    if let Some(dy) = chunk.dy {
-                        chunk_tspan_elem.set_attribute((AId::Dy, dy));
-                    }
-
-                    chunk_tspan_elem.set_enum_attribute(AId::TextAnchor, chunk.anchor);
-
-                    for tspan in &chunk.spans {
-                        let mut tspan_elem = new_doc.create_element(EId::Tspan);
-                        chunk_tspan_elem.append(tspan_elem.clone());
-
-                        let text_node = new_doc.create_node(
-                            svgdom::NodeType::Text,
-                            tspan.text.clone(),
-                        );
-                        tspan_elem.append(text_node.clone());
-
-                        tspan_elem.set_enum_attribute(AId::Visibility, tspan.visibility);
-
-                        conv_fill(tree, &tspan.fill, defs, parent, &mut tspan_elem);
-                        conv_stroke(tree, &tspan.stroke, defs, &mut tspan_elem);
-                        conv_font(&tspan.font, &mut tspan_elem);
-
-                        if !tspan.baseline_shift.is_fuzzy_zero() {
-                            tspan_elem.set_attribute((AId::BaselineShift, tspan.baseline_shift));
-                        }
-
-                        if tspan.text.contains("  ") {
-                            is_preserve_required = true;
-                        }
-
-                        // TODO: text-decoration
-                    }
-                }
-
-                if is_preserve_required {
-                    text_elem.set_attribute((AId::Space, "preserve"));
-                }
-            }
             NodeKind::Image(ref img) => {
                 let mut img_elem = new_doc.create_element(EId::Image);
                 parent.append(img_elem.clone());
@@ -583,30 +514,6 @@ fn conv_transform(
 ) {
     if !ts.is_default() {
         node.set_attribute((aid, *ts));
-    }
-}
-
-fn conv_font(
-    font: &Font,
-    node: &mut svgdom::Node,
-) {
-    node.set_attribute((AId::FontFamily, font.family.clone()));
-    node.set_attribute((AId::FontSize, font.size.value()));
-    node.set_enum_attribute(AId::FontStyle, font.style);
-    node.set_enum_attribute(AId::FontVariant, font.variant);
-    node.set_enum_attribute(AId::FontWeight, font.weight);
-    node.set_enum_attribute(AId::FontStretch, font.stretch);
-    conv_text_spacing(font.letter_spacing, AId::LetterSpacing, node);
-    conv_text_spacing(font.word_spacing, AId::WordSpacing, node);
-}
-
-fn conv_text_spacing(
-    spacing: Option<f64>,
-    aid: AId,
-    node: &mut svgdom::Node,
-) {
-    if let Some(spacing) = spacing {
-        node.set_attribute((aid, spacing));
     }
 }
 

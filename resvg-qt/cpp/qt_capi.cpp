@@ -13,26 +13,8 @@
 #define BRUSH_CAST reinterpret_cast<QBrush*>(c_brush)
 #define LG_CAST reinterpret_cast<QLinearGradient*>(c_lg)
 #define RG_CAST reinterpret_cast<QRadialGradient*>(c_rg)
-#define FONT_CAST reinterpret_cast<QFont*>(c_f)
-#define FM_CAST reinterpret_cast<QFontMetricsF*>(c_fm)
 
 extern "C" {
-
-qtc_qguiapp* qtc_create_gui(char *app_name)
-{
-    if (!QGuiApplication::instance()) {
-        int argc = 1;
-        char *argv[] = {app_name};
-        new QGuiApplication(argc, argv);
-    }
-
-    return reinterpret_cast<qtc_qguiapp*>(qGuiApp);
-}
-
-void qtc_destroy_gui(qtc_qguiapp *c_app)
-{
-    delete reinterpret_cast<QGuiApplication*>(c_app);
-}
 
 // QImage
 
@@ -167,16 +149,6 @@ void qtc_qpainter_set_smooth_pixmap_transform(qtc_qpainter *c_p, bool flag)
     PAINTER_CAST->setRenderHint(QPainter::SmoothPixmapTransform, flag);
 }
 
-qtc_qfont* qtc_qpainter_get_font(qtc_qpainter *c_p)
-{
-    return reinterpret_cast<qtc_qfont*>(new QFont(PAINTER_CAST->font()));
-}
-
-void qtc_qpainter_set_font(qtc_qpainter *c_p, qtc_qfont *c_f)
-{
-    PAINTER_CAST->setFont(*FONT_CAST);
-}
-
 void qtc_qpainter_set_pen(qtc_qpainter *c_p, qtc_qpen *c_pen)
 {
     PAINTER_CAST->setPen(*PEN_CAST);
@@ -275,11 +247,6 @@ void qtc_qpainter_set_composition_mode(qtc_qpainter *c_p, CompositionMode mode)
     PAINTER_CAST->setCompositionMode(QPainter::CompositionMode(mode));
 }
 
-qtc_qfontmetricsf* qtc_qpainter_get_fontmetricsf(qtc_qpainter *c_p)
-{
-    return reinterpret_cast<qtc_qfontmetricsf*>(new QFontMetricsF(PAINTER_CAST->font()));
-}
-
 void qtc_qpainter_end(qtc_qpainter *c_p)
 {
     PAINTER_CAST->end();
@@ -316,12 +283,6 @@ void qtc_qpainterpath_curve_to(qtc_qpainterpath *c_pp, double x1, double y1, dou
 void qtc_qpainterpath_close_path(qtc_qpainterpath *c_pp)
 {
     PATH_CAST->closeSubpath();
-}
-
-void qtc_qpainterpath_add_text(qtc_qpainterpath *c_pp, double x, double y, qtc_qfont *c_f,
-                               const char *text)
-{
-    PATH_CAST->addText(x, y, *FONT_CAST, QString::fromUtf8(text));
 }
 
 void qtc_qpainterpath_set_fill_rule(qtc_qpainterpath *c_pp, FillRule rule)
@@ -562,121 +523,6 @@ void qtc_qradialgradient_set_spread(qtc_qradialgradient *c_rg, Spread s)
 void qtc_qradialgradient_destroy(qtc_qradialgradient *c_rg)
 {
     delete RG_CAST;
-}
-
-// QFont
-
-qtc_qfont *qtc_qfont_create()
-{
-    return reinterpret_cast<qtc_qfont*>(new QFont());
-}
-
-qtc_qfont* qtc_qfont_clone(qtc_qfont *c_f)
-{
-    return reinterpret_cast<qtc_qfont*>(new QFont(*FONT_CAST));
-}
-
-void qtc_qfont_set_family(qtc_qfont *c_f, const char *family)
-{
-    FONT_CAST->setFamily(QString::fromUtf8(family));
-}
-
-void qtc_qfont_set_style(qtc_qfont *c_f, FontStyle style)
-{
-    FONT_CAST->setStyle(QFont::Style(style));
-}
-
-void qtc_qfont_set_small_caps(qtc_qfont *c_f, bool flag)
-{
-    FONT_CAST->setCapitalization(flag ? QFont::SmallCaps : QFont::MixedCase);
-}
-
-void qtc_qfont_set_weight(qtc_qfont *c_f, FontWeight weight)
-{
-    FONT_CAST->setWeight(QFont::Weight(weight));
-}
-
-void qtc_qfont_set_stretch(qtc_qfont *c_f, FontStretch stretch)
-{
-    FONT_CAST->setStretch(QFont::Stretch(stretch));
-}
-
-void qtc_qfont_set_size(qtc_qfont *c_f, double size)
-{
-    FONT_CAST->setPixelSize(size);
-}
-
-void qtc_qfont_set_letter_spacing(qtc_qfont *c_f, double size)
-{
-    FONT_CAST->setLetterSpacing(QFont::AbsoluteSpacing, size);
-}
-
-void qtc_qfont_set_word_spacing(qtc_qfont *c_f, double size)
-{
-    FONT_CAST->setWordSpacing(size);
-}
-
-void qtc_qfont_print_debug(qtc_qfont *c_f)
-{
-    qDebug() << *FONT_CAST;
-}
-
-void qtc_qfont_destroy(qtc_qfont *c_f)
-{
-    delete FONT_CAST;
-}
-
-// QFontMetricsF
-
-double qtc_qfontmetricsf_height(qtc_qfontmetricsf *c_fm)
-{
-    return FM_CAST->height();
-}
-
-double qtc_qfontmetricsf_width(qtc_qfontmetricsf *c_fm, const char *text)
-{
-    return FM_CAST->width(QString::fromUtf8(text));
-}
-
-double qtc_qfontmetricsf_full_width(qtc_qfontmetricsf *c_fm, const char *text)
-{
-    return FM_CAST->boundingRect(QString::fromUtf8(text)).width();
-}
-
-qtc_rect_f qtc_qfontmetricsf_get_bbox(qtc_qfontmetricsf *c_fm, const char *text)
-{
-    const auto bbox = FM_CAST->boundingRect(QString::fromUtf8(text));
-    return qtc_rect_f { bbox.x(), bbox.y(), bbox.width(), bbox.height() };
-}
-
-double qtc_qfontmetricsf_get_ascent(qtc_qfontmetricsf *c_fm)
-{
-    return FM_CAST->ascent();
-}
-
-double qtc_qfontmetricsf_get_underline_pos(qtc_qfontmetricsf *c_fm)
-{
-    return FM_CAST->underlinePos();
-}
-
-double qtc_qfontmetricsf_get_overline_pos(qtc_qfontmetricsf *c_fm)
-{
-    return FM_CAST->overlinePos();
-}
-
-double qtc_qfontmetricsf_get_strikeout_pos(qtc_qfontmetricsf *c_fm)
-{
-    return FM_CAST->strikeOutPos();
-}
-
-double qtc_qfontmetricsf_get_line_width(qtc_qfontmetricsf *c_fm)
-{
-    return FM_CAST->lineWidth();
-}
-
-void qtc_qfontmetricsf_destroy(qtc_qfontmetricsf *c_fm)
-{
-    delete FM_CAST;
 }
 
 }

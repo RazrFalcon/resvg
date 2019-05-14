@@ -16,7 +16,6 @@ fn main() {
         return;
     }
 
-    let _resvg = resvg::init();
     let backend = resvg::default_backend();
 
     let zoom = if args.len() == 5 {

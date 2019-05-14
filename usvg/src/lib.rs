@@ -68,9 +68,8 @@ Full spec can be found [here](https://github.com/RazrFalcon/usvg/blob/master/doc
 
 pub extern crate svgdom;
 pub extern crate lyon_geom;
-extern crate base64;
-extern crate libflate;
 #[macro_use] extern crate log;
+extern crate harfbuzz_rs as harfbuzz;
 
 
 /// Task, return value.

@@ -8,9 +8,15 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
+- New text layout implementation.
+- [Text BIDI reordering](http://www.unicode.org/reports/tr9/).
+- Better text shaping.
+- Text will be converted into paths on the `usvg` side now.
+- [`harfbuzz`](https://github.com/harfbuzz/harfbuzz) dependency.
 - `shape-rendering`, `text-rendering` and `image-rendering` support.
 - The `arithmetic` operator for `feComposite`.
 - (usvg) `--quiet` argument.
+- `word-spacing` is supported for all backends now.
 
 ### Changed
 - (resvg) Do not rescale images before rendering. This is faster and better.
@@ -21,7 +27,14 @@ This changelog also contains important changes in dependencies.
 - Geometry primitives (`Rect`, `Size`, etc) are immutable and always valid now.
 - (usvg) The default `color-interpolation-filters` attribute will not be exported now.
 
+### Removed
+- (usvg) All text related structures and enums. Text will be converted into `Path` now.
+- `InitObject` and `init()` because they are no longer needed.
+- (c-api) `resvg_handle`, `resvg_init`, `resvg_destroy`.
+- (cairo-backend) `pango` dependency.
+
 ### Fixed
+- `letter-spacing` on cursive scripts (like Arabic).
 - (rctree) Prevent stack overflow on a huge, deeply nested SVG.
 
 ## [0.6.1] - 2019-03-16

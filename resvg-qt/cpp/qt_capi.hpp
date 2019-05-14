@@ -7,7 +7,6 @@
     struct x; \
     typedef struct x x;
 
-INIT_STRUCT(qtc_qguiapp)
 INIT_STRUCT(qtc_qimage)
 INIT_STRUCT(qtc_qpainter)
 INIT_STRUCT(qtc_qpainterpath)
@@ -16,8 +15,6 @@ INIT_STRUCT(qtc_qpen)
 INIT_STRUCT(qtc_qbrush)
 INIT_STRUCT(qtc_qlineargradient)
 INIT_STRUCT(qtc_qradialgradient)
-INIT_STRUCT(qtc_qfont)
-INIT_STRUCT(qtc_qfontmetricsf)
 
 #undef INIT_STRUCT
 
@@ -76,39 +73,6 @@ enum Spread {
     RepeatSpread,
 };
 
-// A direct copy from qfont.h.
-enum FontStyle {
-    StyleNormal,
-    StyleItalic,
-    StyleOblique,
-};
-
-// A direct copy from qfont.h.
-enum FontWeight {
-    Thin        = 0,  // 100
-    ExtraLight  = 12, // 200
-    Light       = 25, // 300
-    Normal      = 50, // 400
-    Medium      = 57, // 500
-    DemiBold    = 63, // 600
-    Bold        = 75, // 700
-    ExtraBold   = 81, // 800
-    Black       = 87, // 900
-};
-
-// A direct copy from qfont.h.
-enum FontStretch {
-    UltraCondensed =  50,
-    ExtraCondensed =  62,
-    Condensed      =  75,
-    SemiCondensed  =  87,
-    Unstretched    = 100,
-    SemiExpanded   = 112,
-    Expanded       = 125,
-    ExtraExpanded  = 150,
-    UltraExpanded  = 200,
-};
-
 // TODO: remove prefix somehow
 // A direct copy from qpainter.h.
 enum CompositionMode {
@@ -148,9 +112,6 @@ enum AspectRatioMode {
 
 extern "C" {
 
-qtc_qguiapp* qtc_create_gui(char *app_name);
-void qtc_destroy_gui(qtc_qguiapp *c_app);
-
 // QImage
 qtc_qimage* qtc_qimage_create_rgba_premultiplied(uint32_t width, uint32_t height);
 qtc_qimage* qtc_qimage_create_rgba(uint32_t width, uint32_t height);
@@ -174,8 +135,6 @@ void qtc_qimage_destroy(qtc_qimage *c_img);
 qtc_qpainter* qtc_qpainter_create(qtc_qimage *c_img);
 void qtc_qpainter_set_antialiasing(qtc_qpainter *c_p, bool flag);
 void qtc_qpainter_set_smooth_pixmap_transform(qtc_qpainter *c_p, bool flag);
-qtc_qfont* qtc_qpainter_get_font(qtc_qpainter *c_p);
-void qtc_qpainter_set_font(qtc_qpainter *c_p, qtc_qfont *c_f);
 void qtc_qpainter_set_pen(qtc_qpainter *c_p, qtc_qpen *c_pen);
 void qtc_qpainter_reset_pen(qtc_qpainter *c_p);
 void qtc_qpainter_set_brush(qtc_qpainter *c_p, qtc_qbrush *c_brush);
@@ -194,7 +153,6 @@ void qtc_qpainter_set_clip_rect(qtc_qpainter *c_p, double x, double y, double w,
 void qtc_qpainter_set_clip_path(qtc_qpainter *c_p, qtc_qpainterpath *c_pp);
 void qtc_qpainter_reset_clip_path(qtc_qpainter *c_p);
 void qtc_qpainter_set_composition_mode(qtc_qpainter *c_p, CompositionMode mode);
-qtc_qfontmetricsf* qtc_qpainter_get_fontmetricsf(qtc_qpainter *c_p);
 void qtc_qpainter_end(qtc_qpainter *c_p);
 void qtc_qpainter_destroy(qtc_qpainter *c_p);
 
@@ -206,8 +164,6 @@ void qtc_qpainterpath_line_to(qtc_qpainterpath *c_pp, double x, double y);
 void qtc_qpainterpath_curve_to(qtc_qpainterpath *c_pp, double x1, double y1, double x2, double y2,
                                double x, double y);
 void qtc_qpainterpath_close_path(qtc_qpainterpath *c_pp);
-void qtc_qpainterpath_add_text(qtc_qpainterpath *c_pp, double x, double y, qtc_qfont *c_f,
-                               const char *text);
 void qtc_qpainterpath_set_fill_rule(qtc_qpainterpath *c_pp, FillRule rule);
 int qtc_qpainterpath_element_count(qtc_qpainterpath *c_pp);
 PathSegment qtc_qpainterpath_element_at(qtc_qpainterpath *c_pp, int i);
@@ -260,32 +216,6 @@ void qtc_qradialgradient_set_color_at(qtc_qradialgradient *c_rg, double offset,
                                       uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 void qtc_qradialgradient_set_spread(qtc_qradialgradient *c_rg, Spread s);
 void qtc_qradialgradient_destroy(qtc_qradialgradient *c_rg);
-
-// QFont
-qtc_qfont* qtc_qfont_create();
-qtc_qfont* qtc_qfont_clone(qtc_qfont *c_f);
-void qtc_qfont_set_family(qtc_qfont *c_f, const char *family);
-void qtc_qfont_set_style(qtc_qfont *c_f, FontStyle style);
-void qtc_qfont_set_small_caps(qtc_qfont *c_f, bool flag);
-void qtc_qfont_set_weight(qtc_qfont *c_f, FontWeight weight);
-void qtc_qfont_set_stretch(qtc_qfont *c_f, FontStretch stretch);
-void qtc_qfont_set_size(qtc_qfont *c_f, double size);
-void qtc_qfont_set_letter_spacing(qtc_qfont *c_f, double size);
-void qtc_qfont_set_word_spacing(qtc_qfont *c_f, double size);
-void qtc_qfont_print_debug(qtc_qfont *c_f);
-void qtc_qfont_destroy(qtc_qfont *c_f);
-
-// QFontMetricsF
-double qtc_qfontmetricsf_height(qtc_qfontmetricsf *c_fm);
-double qtc_qfontmetricsf_width(qtc_qfontmetricsf *c_fm, const char *text);
-double qtc_qfontmetricsf_full_width(qtc_qfontmetricsf *c_fm, const char *text);
-qtc_rect_f qtc_qfontmetricsf_get_bbox(qtc_qfontmetricsf *c_fm, const char *text);
-double qtc_qfontmetricsf_get_ascent(qtc_qfontmetricsf *c_fm);
-double qtc_qfontmetricsf_get_underline_pos(qtc_qfontmetricsf *c_fm);
-double qtc_qfontmetricsf_get_overline_pos(qtc_qfontmetricsf *c_fm);
-double qtc_qfontmetricsf_get_strikeout_pos(qtc_qfontmetricsf *c_fm);
-double qtc_qfontmetricsf_get_line_width(qtc_qfontmetricsf *c_fm);
-void qtc_qfontmetricsf_destroy(qtc_qfontmetricsf *c_fm);
 }
 
 #endif // QT_CAPI_H

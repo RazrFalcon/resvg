@@ -9,14 +9,10 @@ use cairo::{
     self,
     MatrixTrait,
 };
-use pangocairo::functions as pc;
 
 // self
 use crate::prelude::*;
-use crate::{
-    backend_utils,
-    layers,
-};
+use crate::layers;
 
 
 macro_rules! try_create_surface {
@@ -41,7 +37,6 @@ mod mask;
 mod path;
 mod pattern;
 mod stroke;
-mod text;
 
 mod prelude {
     pub use super::super::prelude::*;
@@ -261,9 +256,6 @@ fn render_node(
         usvg::NodeKind::Path(ref path) => {
             path::draw(&node.tree(), path, opt, cr)
         }
-        usvg::NodeKind::Text(ref text) => {
-            Some(text::draw(&node.tree(), text, opt, cr))
-        }
         usvg::NodeKind::Image(ref img) => {
             Some(image::draw(img, opt, cr))
         }
@@ -406,36 +398,6 @@ fn _calc_node_bbox(
         usvg::NodeKind::Path(ref path) => {
             utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2)
         }
-        usvg::NodeKind::Text(ref text) => {
-            let mut bbox = Rect::new_bbox();
-            let mut fm = text::PangoFontMetrics::new(opt, cr);
-            let (blocks, _) = backend_utils::text::prepare_blocks(text, &mut fm);
-            backend_utils::text::draw_blocks(blocks, |block| {
-                cr.new_path();
-
-                let context = text::init_pango_context(opt, cr);
-                let layout = text::init_pango_layout(&block, &context);
-
-                pc::layout_path(cr, &layout);
-                let path = cr.copy_path();
-                let segments = from_cairo_path(&path);
-
-                let mut t = ts2;
-                if let Some(rotate) = block.rotate {
-                    t.rotate_at(rotate, block.bbox.x(), block.bbox.y() + block.font_ascent);
-                }
-                t.translate(block.bbox.x(), block.bbox.y());
-
-                if !segments.is_empty() {
-                    let c_bbox = utils::path_bbox(&segments, block.stroke.as_ref(), &t);
-                    if let Some(c_bbox) = c_bbox {
-                        bbox = bbox.expand(c_bbox);
-                    }
-                }
-            });
-
-            Some(bbox)
-        }
         usvg::NodeKind::Image(ref img) => {
             let segments = utils::rect_to_path(img.view_box.rect);
             utils::path_bbox(&segments, None, &ts2)
@@ -453,32 +415,6 @@ fn _calc_node_bbox(
         }
         _ => None
     }
-}
-
-fn from_cairo_path(path: &cairo::Path) -> Vec<usvg::PathSegment> {
-    let mut segments = Vec::new();
-    for seg in path.iter() {
-        match seg {
-            cairo::PathSegment::MoveTo((x, y)) => {
-                segments.push(usvg::PathSegment::MoveTo { x, y });
-            }
-            cairo::PathSegment::LineTo((x, y)) => {
-                segments.push(usvg::PathSegment::LineTo { x, y });
-            }
-            cairo::PathSegment::CurveTo((x1, y1), (x2, y2), (x, y)) => {
-                segments.push(usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
-            }
-            cairo::PathSegment::ClosePath => {
-                segments.push(usvg::PathSegment::ClosePath);
-            }
-        }
-    }
-
-    if segments.len() == 1 {
-        segments.clear();
-    }
-
-    segments
 }
 
 fn create_layers(img_size: ScreenSize, opt: &Options) -> CairoLayers {

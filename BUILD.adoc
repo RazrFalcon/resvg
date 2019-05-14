@@ -5,7 +5,8 @@
 
 == Into
 
-*resvg* doesn't include a 2D graphics library and uses external ones via https://en.wikipedia.org/wiki/Foreign_function_interface[FFI].
+*resvg* doesn't include a 2D graphics library and uses external ones via
+https://en.wikipedia.org/wiki/Foreign_function_interface[FFI].
 Their support is implemented separately, therefore we call them _backends_.
 You can build them separately or together. +
 At the moment, there are only two backends: *Qt* and *cairo*.
@@ -26,14 +27,16 @@ cargo build --release --features="qt-backend cairo-backend"
 
 == Dependencies
 
-- The library requires the latest stable
+* The library requires the latest stable
   https://www.rust-lang.org/tools/install[Rust].
-- _Qt backend_ requires only `QtCore` and `QtGui` libraries
+* [harfbuzz](https://github.com/harfbuzz/harfbuzz).
+* _Qt backend_ requires only `QtCore` and `QtGui` libraries
   and the JPEG image format plugin (aka `plugins/imageformats/qjpeg`). +
   Technically, any Qt 5 version should work, but we only support Qt >= 5.6.
-
-- _cairo backend_ requires https://www.cairographics.org/[cairo] itself and https://www.pango.org/[pango] for text rendering (with the `pangocairo` glue library, which is an optional part of the `pango`). +
-  There is no specific minimal supported version at the moment.
+* _cairo backend_ requires https://www.cairographics.org/[cairo] and `gdk-pixbuf` (part of GTK).
+** cairo >= 1.12
+** gdk-pixbuf >= 2.30
+*** gio, glib, gobject >= 2.42
 
 == Windows
 
@@ -83,11 +86,10 @@ Install `stable-x86_64-pc-windows-gnu` https://www.rust-lang.org/tools/install[R
 Install GTK+ dependencies using MSYS2 as explained
 http://gtk-rs.org/docs/requirements.html#windows[here].
 
-We do not need the whole GTK+, so we can install only `pango` (which will install
-`cairo` too) and `gdk-pixbuf2`:
+We do not need the whole GTK+, so we can install only `cargo` and `gdk-pixbuf2`:
 
 ```bash
-pacman -S mingw-w64-x86_64-pango mingw-w64-x86_64-gdk-pixbuf2
+pacman -S mingw-w64-x86_64-cairo mingw-w64-x86_64-gdk-pixbuf2
 
 cargo.exe build --release --features "cairo-backend"
 ```
@@ -112,9 +114,9 @@ PKG_CONFIG_PATH='/path_to_qt/lib/pkgconfig' cargo build --release --features "qt
 
 === cairo backend
 
-Install `cairo`, `pango` (with `pangocairo`) and `gdk-pixbuf` using your distributive package manager.
+Install `cairo` and `gdk-pixbuf` using your distributive package manager.
 
-For Ubuntu its `libpango1.0-dev` (will pull `cairo` too) and `libgdk-pixbuf2.0-dev`.
+For Ubuntu its `libcairo2-dev` and `libgdk-pixbuf2.0-dev`.
 
 ```bash
 cargo build --release --features "cairo-backend"
@@ -146,7 +148,7 @@ We are using Qt 5.12.0 just for example.
 Using https://brew.sh/[homebrew]:
 
 ```bash
-brew install cairo pango gdk-pixbuf
+brew install cairo gdk-pixbuf
 
 cargo build --release --features "cairo-backend"
 ```

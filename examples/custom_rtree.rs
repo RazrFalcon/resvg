@@ -7,7 +7,6 @@ use resvg::prelude::*;
 // TODO: write doc
 
 fn main() {
-    let _resvg = resvg::init();
     let backend = resvg::default_backend();
 
     let opt = Options::default();

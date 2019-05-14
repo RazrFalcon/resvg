@@ -453,9 +453,6 @@ fn ungroup_groups(tree: &mut tree::Tree, opt: &Options) {
                         tree::NodeKind::Path(ref mut path) => {
                             prepend_ts(&mut path.transform, ts);
                         }
-                        tree::NodeKind::Text(ref mut text) => {
-                            prepend_ts(&mut text.transform, ts);
-                        }
                         tree::NodeKind::Image(ref mut img) => {
                             prepend_ts(&mut img.transform, ts);
                         }
@@ -519,14 +516,6 @@ fn remove_unused_defs(tree: &mut tree::Tree) {
                 tree::NodeKind::Path(ref path) => {
                     check_paint_id!(path.fill, id);
                     check_paint_id!(path.stroke, id);
-                }
-                tree::NodeKind::Text(ref text) => {
-                    for chunk in &text.chunks {
-                        for span in &chunk.spans {
-                            check_paint_id!(span.fill, id);
-                            check_paint_id!(span.stroke, id);
-                        }
-                    }
                 }
                 tree::NodeKind::Group(ref g) => {
                     check_id!(g.clip_path, id);
