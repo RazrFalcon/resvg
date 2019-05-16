@@ -4,6 +4,7 @@
 
 use std::cmp;
 use std::mem;
+use std::path::PathBuf;
 use std::rc::Rc;
 
 // external
@@ -41,7 +42,7 @@ type Range = std::ops::Range<usize>;
 /// A glyph.
 ///
 /// Basically, a glyph ID and it's metrics.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct Glyph {
     /// The glyph ID in the font.
     id: u32,
@@ -59,6 +60,17 @@ struct Glyph {
 
     /// The glyph width / X-advance in font units.
     width: i32,
+
+    /// Reference to the source font.
+    ///
+    /// Each glyph can have it's own source font.
+    font: Font,
+}
+
+impl Glyph {
+    fn is_missing(&self) -> bool {
+        self.id == 0
+    }
 }
 
 
@@ -143,8 +155,8 @@ enum TextAnchor {
 type Font = Rc<FontData>;
 
 struct FontData {
-    font: fk::Font,
-    path: String,
+    handle: fk::Font,
+    path: PathBuf,
     index: u32,
     units_per_em: u32,
     ascent: f32,
@@ -154,7 +166,9 @@ struct FontData {
 
 impl FontData {
     fn scale(&self, font_size: f64) -> f64 {
-        font_size / self.units_per_em as f64
+        let s = font_size / self.units_per_em as f64;
+        debug_assert!(s.is_finite(), "units per em cannot be {}", self.units_per_em);
+        s
     }
 
     fn ascent(&self, font_size: f64) -> f64 {
@@ -167,6 +181,12 @@ impl FontData {
 
     fn underline_thickness(&self, font_size: f64) -> f64 {
         self.underline_thickness as f64 * self.scale(font_size)
+    }
+}
+
+impl std::fmt::Debug for FontData {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "FontData({}:{})", self.path.display(), self.index)
     }
 }
 
@@ -236,8 +256,7 @@ pub fn convert(
         x = chunk.x.unwrap_or(x);
         baseline = chunk.y.unwrap_or(baseline);
 
-        let mut clusters = render_chunk(&chunk);
-        scale_clusters(&chunk, &mut clusters);
+        let mut clusters = render_chunk(&chunk, state);
         apply_letter_spacing(&chunk, &mut clusters);
         apply_word_spacing(&chunk, &mut clusters);
         resolve_clusters_positions(&chunk.text, char_offset, &pos_list, &rotate_list, &mut clusters);
@@ -439,26 +458,34 @@ fn resolve_font(
         }
     };
 
+    load_font(&handle)
+}
+
+fn load_font(handle: &fk::Handle) -> Option<Font> {
     let (path, index) = match handle {
         fk::Handle::Path { ref path, font_index } => {
-            (path.to_str().unwrap().to_owned(), font_index)
+            (path.clone(), *font_index)
         }
         _ => return None,
     };
 
-    // TODO: font caching
     let font = match handle.load() {
         Ok(v) => v,
         Err(_) => {
-            warn!("Failed to load '{}'.", path);
+            warn!("Failed to load '{}'.", path.display());
             return None;
         }
     };
 
     let metrics = font.metrics();
 
+    // Some fonts can have `units_per_em` set to zero, which will break out calculations.
+    if metrics.units_per_em == 0 {
+        return None;
+    }
+
     Some(Rc::new(FontData {
-        font,
+        handle: font,
         path,
         index,
         units_per_em: metrics.units_per_em,
@@ -875,67 +902,50 @@ fn convert_span(
     Some(tree::NodeKind::Path(path))
 }
 
-fn font_eq(f1: &Font, f2: &Font) -> bool {
-       f1.path  == f2.path
-    && f1.index == f2.index
-}
-
 /// Converts a text chunk into a list of outlined clusters.
 ///
 /// This function will do the BIDI reordering, text shaping and glyphs outlining,
-/// but not the text layouting. So all glyphs are in 0x0 position.
+/// but not the text layouting. So all clusters are in the 0x0 position.
 fn render_chunk(
     chunk: &TextChunk,
+    state: &State,
 ) -> Vec<OutlinedCluster> {
-    // Shape the text using all fonts in the chunk.
-    //
-    // I'm not sure if this can be optimized, but it's probably pretty expensive.
-    let fonts = collect_unique_fonts(chunk);
-    if fonts.is_empty() {
-        return Vec::new();
-    }
+    let mut glyphs = Vec::new();
+    for span in &chunk.spans {
+        let tmp_glyphs = shape_text(&chunk.text, &span.font, state);
 
-    let mut lists_of_glyphs = Vec::new();
-    for font in &fonts {
-        let glyphs = shape_text(&chunk.text, font);
-        lists_of_glyphs.push(glyphs);
-    }
+        // Do nothing with the first run.
+        if glyphs.is_empty() {
+            glyphs = tmp_glyphs;
+            continue;
+        }
 
-    // Check that all glyphs lists have the same length.
-    if !lists_of_glyphs.iter().all(|v| v.len() == lists_of_glyphs[0].len()) {
-        warn!("Text layouting failed.");
-        return Vec::new();
-    }
+        // We assume, that shaping with an any font will produce the same amount of glyphs.
+        // Otherwise an error.
+        if glyphs.len() != tmp_glyphs.len() {
+            warn!("Text layouting failed.");
+            return Vec::new();
+        }
 
-    // Check that glyph clusters in all lists are the same.
-    //
-    // For example, if one font supports ligatures and the other don't.
-    // Not sure what to do in this case, so we should stop here for now.
-    for glyphs in lists_of_glyphs.iter().skip(1) {
-        let iter = GlyphClusters::new(glyphs)
-                       .zip(GlyphClusters::new(&lists_of_glyphs[0]));
-        for (g1, g2) in iter {
-            if g1 != g2 {
-                warn!("Text layouting failed.");
-                return Vec::new();
+        // Copy span's glyphs.
+        for (i, glyph) in tmp_glyphs.iter().enumerate() {
+            if span.contains(glyph.byte_idx) {
+                glyphs[i] = glyph.clone();
             }
         }
     }
 
+    // Convert glyphs to clusters.
     let mut clusters = Vec::new();
-    for (range, byte_idx) in GlyphClusters::new(&lists_of_glyphs[0]) {
+    for (range, byte_idx) in GlyphClusters::new(&glyphs) {
         if let Some(span) = chunk.span_at(byte_idx) {
-            for (font, glyphs) in fonts.iter().zip(&lists_of_glyphs) {
-                if font_eq(&span.font, font) {
-                    clusters.push(outline_cluster(font, &glyphs[range]));
-                    break;
-                }
-            }
+            clusters.push(outline_cluster(&glyphs[range], span.font_size));
         }
     }
 
     clusters
 }
+
 
 /// An iterator over glyph clusters.
 ///
@@ -975,37 +985,83 @@ impl<'a> Iterator for GlyphClusters<'a> {
 }
 
 
-/// Returns a list of unique fonts in the specified chunk.
-fn collect_unique_fonts(
-    chunk: &TextChunk,
-) -> Vec<Font> {
-    let mut list = Vec::new();
+/// Text shaping with font fallback.
+fn shape_text(
+    text: &str,
+    font: &Font,
+    state: &State,
+) -> Vec<Glyph> {
+    let mut glyphs = shape_text_with_font(text, font);
 
-    for span in &chunk.spans {
-        let mut exists = false;
-        for font in &list {
-            if font_eq(font, &span.font) {
-                exists = true;
+    // Remember all fonts used for shaping.
+    let mut used_fonts = vec![font.clone()];
+
+    let mut all_fonts = Vec::new();
+
+    // Loop until all glyphs become resolved or until no more fonts are left.
+    'outer: loop {
+        let mut missing = None;
+        for glyph in &glyphs {
+            if glyph.is_missing() {
+                missing = byte_to_char(text, glyph.byte_idx);
                 break;
             }
         }
 
-        if !exists {
-            list.push(span.font.clone());
+        if all_fonts.is_empty() {
+            all_fonts = match fk::SystemSource::new().all_fonts() {
+                Ok(v) => v,
+                Err(_) => break 'outer,
+            }
+        }
+
+        if let Some(c) = missing {
+            let fallback_font = match find_font_for_char(c, &used_fonts, state) {
+                Some(v) => v,
+                None => break 'outer,
+            };
+
+            // Shape again, using a new font.
+            let fallback_glyphs = shape_text_with_font(text, &fallback_font);
+
+            if glyphs.len() != fallback_glyphs.len() {
+                break 'outer;
+            }
+
+            // Copy new glyphs.
+            for i in 0..glyphs.len() {
+                if glyphs[i].is_missing() && !fallback_glyphs[i].is_missing() {
+                    glyphs[i] = fallback_glyphs[i].clone();
+                }
+            }
+
+            // Remember this font.
+            used_fonts.push(fallback_font);
+        } else {
+            break 'outer;
         }
     }
 
-    list
+    // Warn about missing glyphs.
+    for glyph in &glyphs {
+        if glyph.is_missing() {
+            if let Some(c) = byte_to_char(text, glyph.byte_idx) {
+                warn!("No fonts with a {}/U+{:X} character were found.", c, c as u32);
+            }
+        }
+    }
+
+    glyphs
 }
 
 /// Converts a text into a list of glyph IDs.
 ///
 /// This function will do the BIDI reordering and text shaping.
-fn shape_text(
+fn shape_text_with_font(
     text: &str,
     font: &Font,
 ) -> Vec<Glyph> {
-    let font_data = try_opt!(font.font.copy_font_data(), Vec::new());
+    let font_data = try_opt!(font.handle.copy_font_data(), Vec::new());
     let hb_face = harfbuzz::Face::from_bytes(&font_data, font.index);
     let hb_font = harfbuzz::Font::new(hb_face);
 
@@ -1035,9 +1091,6 @@ fn shape_text(
         // TODO: feature smcp / small caps
         //       simply setting the `smcp` doesn't work for some reasons
 
-        // TODO: if the output has missing glyphs, we should fetch them from other fonts
-        //       no idea how to implement this
-
         let output = harfbuzz::shape(&hb_font, buffer, &[]);
 
         let positions = output.get_glyph_positions();
@@ -1053,6 +1106,7 @@ fn shape_text(
                 dx: pos.x_offset,
                 dy: pos.y_offset,
                 width: pos.x_advance,
+                font: font.clone(),
             });
         }
     }
@@ -1064,32 +1118,38 @@ fn shape_text(
 ///
 /// Uses one or more `Glyph`s to construct an `OutlinedCluster`.
 fn outline_cluster(
-    font: &Font,
     glyphs: &[Glyph],
+    font_size: f64,
 ) -> OutlinedCluster {
     debug_assert!(!glyphs.is_empty());
 
     use lyon_path::builder::FlatPathBuilder;
 
     let mut path = Vec::new();
-    let mut width = 0;
+    let mut advance = 0.0;
     let mut x = 0.0;
 
     for glyph in glyphs {
         let mut builder = svgdom_path_builder::Builder::new();
-        let mut outline = match font.font.outline(glyph.id, fk::Hinting::None, &mut builder) {
+        let mut outline = match glyph.font.handle.outline(glyph.id, fk::Hinting::None, &mut builder) {
             Ok(_) => {
                 super::path::convert_path(builder.build())
             }
             Err(_) => {
+                // Technically unreachable.
                 warn!("Glyph {} not found in the font.", glyph.id);
                 Vec::new()
             }
         };
 
+        let sx = glyph.font.scale(font_size);
+
         if !outline.is_empty() {
             // By default, glyphs are upside-down, so we have to mirror them.
             let mut ts = svgdom::Transform::new_scale(1.0, -1.0);
+
+            // Scale to font-size.
+            ts.scale(sx, sx);
 
             // Apply offset.
             //
@@ -1106,14 +1166,18 @@ fn outline_cluster(
         }
 
         x += glyph.width as f64;
-        width = cmp::max(glyph.width, width);
+
+        let glyph_width = glyph.width as f64 * sx;
+        if glyph_width > advance {
+            advance = glyph_width;
+        }
     }
 
     OutlinedCluster {
         byte_idx: glyphs[0].byte_idx,
         x: 0.0,
         y: 0.0,
-        advance: width as f64,
+        advance,
         rotate: 0.0,
         has_relative_shift: false,
         path,
@@ -1167,20 +1231,6 @@ fn resolve_clusters_positions(
 
         x = cluster.x + cluster.advance;
         y = cluster.y;
-    }
-}
-
-/// Scales clusters to the specified `font-size`.
-fn scale_clusters(
-    chunk: &TextChunk,
-    clusters: &mut Vec<OutlinedCluster>,
-) {
-    for cluster in clusters {
-        if let Some(span) = chunk.span_at(cluster.byte_idx) {
-            let scale = span.font.scale(span.font_size);
-            cluster.advance *= scale;
-            transform_path(&mut cluster.path, &tree::Transform::new_scale(scale, scale));
-        }
     }
 }
 
@@ -1395,6 +1445,46 @@ fn add_rect_to_path(rect: Rect, path: &mut Vec<tree::PathSegment>) {
         tree::PathSegment::LineTo { x: rect.x(),     y: rect.bottom() },
         tree::PathSegment::ClosePath,
     ]);
+}
+
+/// Finds a font with a specified char.
+///
+/// This is a rudimentary font fallback algorithm.
+fn find_font_for_char(
+    c: char,
+    exclude_fonts: &[Font],
+    state: &State,
+) -> Option<Font> {
+    let mut cache = state.font_cache.borrow_mut();
+    cache.init();
+
+    // Iterate over fonts and check if any of the support the specified char.
+    for handle in cache.fonts() {
+        let (path, index) = match handle {
+            fk::Handle::Path { ref path, font_index } => {
+                (path, *font_index)
+            }
+            _ => continue,
+        };
+
+        // Ignore fonts, that were used for shaping already.
+        let exclude = exclude_fonts
+            .iter()
+            .find(|f| f.path == *path && f.index == index)
+            .is_some();
+
+        if exclude {
+            continue;
+        }
+
+        if let Some(font) = load_font(handle) {
+            if font.handle.glyph_for_char(c).is_some() {
+                return Some(font);
+            }
+        }
+    }
+
+    None
 }
 
 /// Implements an ability to outline a glyph directly into the `svgdom::Path`.

@@ -2,6 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 // external
 use svgdom::{
     self,
@@ -56,6 +59,7 @@ mod prelude {
     pub use crate::Options;
     pub use super::svgdom_ext::*;
     pub use super::State;
+    pub use super::FontCache;
 }
 
 use self::svgdom_ext::*;
@@ -66,12 +70,38 @@ pub struct State<'a> {
     current_root: svgdom::Node,
     size: Size,
     view_box: Rect,
+    font_cache: Rc<RefCell<FontCache>>,
     opt: &'a Options,
 }
 
 impl<'a> State<'a> {
     pub fn is_in_clip_path(&self) -> bool {
         self.current_root.is_tag_name(EId::ClipPath)
+    }
+}
+
+
+pub struct FontCache {
+    fonts: Vec<font_kit::handle::Handle>,
+}
+
+impl FontCache {
+    fn new() -> Self {
+        FontCache {
+            fonts: Vec::new(),
+        }
+    }
+
+    fn init(&mut self) {
+        if self.fonts.is_empty() {
+            if let Ok(v) = font_kit::source::SystemSource::new().all_fonts() {
+                self.fonts = v;
+            }
+        }
+    }
+
+    fn fonts(&self) -> &[font_kit::handle::Handle] {
+        &self.fonts
     }
 }
 
@@ -126,6 +156,7 @@ pub fn convert_doc(
         current_root: svg.clone(),
         size,
         view_box: view_box.rect,
+        font_cache: Rc::new(RefCell::new(FontCache::new())),
         opt: &opt,
     };
 
@@ -145,6 +176,7 @@ fn resolve_svg_size(svg: &svgdom::Node, opt: &Options) -> Result<Size, Error> {
         current_root: svg.clone(),
         size: Size::new(100.0, 100.0).unwrap(),
         view_box: Rect::new(0.0, 0.0, 100.0, 100.0).unwrap(),
+        font_cache: Rc::new(RefCell::new(FontCache::new())),
         opt,
     };
 
