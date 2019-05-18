@@ -34,7 +34,6 @@ use super::{
 
 // TODO: visibility on text and tspan
 // TODO: group when Options::keep_named_groups is set
-// TODO: `fill-rule` must be set to `nonzero` for text
 
 
 type Range = std::ops::Range<usize>;
@@ -408,9 +407,7 @@ fn resolve_font(
     state: &State,
 ) -> Option<Font> {
     let style = conv_font_style(node);
-
     let stretch = conv_font_stretch(node);
-
     let weight = resolve_font_weight(node);
 
     let font_family = if let Some(n) = node.find_node_with_attribute(AId::FontFamily) {
@@ -453,7 +450,7 @@ fn resolve_font(
                 });
             }
 
-            warn!("No match for {:?} font-family.", families.join(", "));
+            warn!("No match for '{}' font-family.", families.join(", "));
             return None;
         }
     };
@@ -889,11 +886,18 @@ fn convert_span(
     // TODO: fill and stroke with a gradient/pattern that has objectBoundingBox
     //       should use the text element bbox and not the tspan bbox.
 
+    let mut fill = span.fill.take();
+    if let Some(ref mut fill) = fill {
+        // fill-rule on text must always be `nonzero`,
+        // otherwise overlapped characters will be clipped.
+        fill.rule = tree::FillRule::NonZero;
+    }
+
     let path = tree::Path {
         id: String::new(),
         transform,
         visibility: span.visibility,
-        fill: span.fill.take(),
+        fill,
         stroke: span.stroke.take(),
         rendering_mode: tree::ShapeRendering::default(),
         segments,
