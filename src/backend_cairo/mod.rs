@@ -13,6 +13,7 @@ use cairo::{
 // self
 use crate::prelude::*;
 use crate::layers;
+use crate::backend_utils::ConvTransform;
 
 
 macro_rules! try_create_surface {
@@ -36,6 +37,8 @@ mod style;
 
 mod prelude {
     pub use super::super::prelude::*;
+    pub use crate::backend_utils::ConvTransform;
+
     pub type CairoLayers = super::layers::Layers<super::cairo::ImageSurface>;
 
     // It's actually used. Rust bug?
@@ -57,11 +60,6 @@ impl ConvTransform<cairo::Matrix> for usvg::Transform {
     }
 }
 
-impl TransformFromBBox for cairo::Matrix {
-    fn from_bbox(bbox: Rect) -> Self {
-        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
-    }
-}
 
 pub(crate) trait ReCairoContextExt {
     fn set_source_color(&self, color: usvg::Color, opacity: usvg::Opacity);

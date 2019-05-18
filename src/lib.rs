@@ -45,14 +45,12 @@ mod backend_utils;
 mod geom;
 mod layers;
 mod options;
-mod traits;
 
 /// Commonly used types and traits.
 pub mod prelude {
     pub use usvg;
     pub use usvg::prelude::*;
     pub use crate::geom::*;
-    pub(crate) use crate::traits::*;
     pub use crate::utils;
     pub use crate::Options;
     pub use crate::Render;

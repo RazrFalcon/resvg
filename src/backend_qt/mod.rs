@@ -9,6 +9,7 @@ use crate::qt;
 
 // self
 use crate::prelude::*;
+use crate::backend_utils::ConvTransform;
 use crate::{
     layers,
     OutputImage,
@@ -35,6 +36,8 @@ mod style;
 
 mod prelude {
     pub use super::super::prelude::*;
+    pub use crate::backend_utils::ConvTransform;
+
     pub type QtLayers = super::layers::Layers<super::qt::Image>;
 }
 
@@ -52,11 +55,6 @@ impl ConvTransform<qt::Transform> for usvg::Transform {
     }
 }
 
-impl TransformFromBBox for qt::Transform {
-    fn from_bbox(bbox: Rect) -> Self {
-        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
-    }
-}
 
 /// Cairo backend handle.
 #[derive(Clone, Copy)]

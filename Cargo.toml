@@ -36,6 +36,9 @@ gdk-pixbuf = { version = "0.6", optional = true }
 # qt backend
 resvg-qt = { path = "resvg-qt", version = "0.6", optional = true }
 
+[replace]
+"svgtypes:0.4.2" = { git = "https://github.com/RazrFalcon/svgtypes", rev = "a04e6ea" }
+
 [features]
 cairo-backend = ["cairo-rs", "gdk-pixbuf"]
 qt-backend = ["resvg-qt"]

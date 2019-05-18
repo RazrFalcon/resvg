@@ -144,4 +144,5 @@ pub use crate::tree::*;
 pub use crate::convert::{
     IsDefault,
     IsValidLength,
+    TransformFromBBox,
 };

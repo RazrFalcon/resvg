@@ -194,14 +194,14 @@ fn get_clip_rect(
 /// Creates a free id for `clipPath`.
 pub fn gen_clip_path_id(
     node: &svgdom::Node,
-    tree: &mut tree::Tree,
+    tree: &tree::Tree,
 ) -> String {
     // TODO: speed up
 
     let mut idx = 1;
     let mut id = format!("clipPath{}", idx);
     while    node.root().descendants().any(|n| *n.id() == id)
-          || tree.defs().descendants().any(|n| *n.id() == id)
+          || tree.defs().children().any(|n| *n.id() == id)
     {
         idx += 1;
         id = format!("clipPath{}", idx);

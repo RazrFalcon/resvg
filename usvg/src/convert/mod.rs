@@ -26,6 +26,7 @@ pub use self::preprocess::prepare_doc;
 pub use self::svgdom_ext::{
     IsDefault,
     IsValidLength,
+    TransformFromBBox,
 };
 
 mod clip_and_mask;
@@ -450,11 +451,6 @@ fn remove_empty_groups(tree: &mut tree::Tree) {
 }
 
 fn ungroup_groups(tree: &mut tree::Tree, opt: &Options) {
-    fn prepend_ts(ts1: &mut tree::Transform, mut ts2: tree::Transform) {
-        ts2.append(ts1);
-        *ts1 = ts2;
-    }
-
     fn ungroup(parent: tree::Node, opt: &Options) -> bool {
         let mut changed = false;
 
@@ -483,13 +479,13 @@ fn ungroup_groups(tree: &mut tree::Tree, opt: &Options) {
                     // Update transform.
                     match *child.borrow_mut() {
                         tree::NodeKind::Path(ref mut path) => {
-                            prepend_ts(&mut path.transform, ts);
+                            path.transform.prepend(&ts);
                         }
                         tree::NodeKind::Image(ref mut img) => {
-                            prepend_ts(&mut img.transform, ts);
+                            img.transform.prepend(&ts);
                         }
                         tree::NodeKind::Group(ref mut g) => {
-                            prepend_ts(&mut g.transform, ts);
+                            g.transform.prepend(&ts);
                         }
                         _ => {}
                     }

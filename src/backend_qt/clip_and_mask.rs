@@ -28,7 +28,7 @@ pub fn clip(
     clip_p.apply_transform(&cp.transform.to_native());
 
     if cp.units == usvg::Units::ObjectBoundingBox {
-        clip_p.apply_transform(&qt::Transform::from_bbox(bbox));
+        clip_p.apply_transform(&usvg::Transform::from_bbox(bbox).to_native());
     }
 
     clip_p.set_composition_mode(qt::CompositionMode::Clear);
@@ -139,7 +139,7 @@ pub fn mask(
         mask_p.set_clip_rect(r.x(), r.y(), r.width(), r.height());
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {
-            mask_p.apply_transform(&qt::Transform::from_bbox(bbox));
+            mask_p.apply_transform(&usvg::Transform::from_bbox(bbox).to_native());
         }
 
         super::render_group(node, opt, layers, &mut mask_p);

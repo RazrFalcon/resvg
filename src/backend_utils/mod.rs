@@ -29,3 +29,8 @@ pub fn use_shape_antialiasing(
 //        usvg::TextRendering::GeometricPrecision    => true,
 //    }
 //}
+
+pub trait ConvTransform<T> {
+    fn to_native(&self) -> T;
+    fn from_native(_: &T) -> Self;
+}

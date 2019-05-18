@@ -326,3 +326,16 @@ impl IsValidLength for f64 {
         *self > 0.0
     }
 }
+
+
+/// Converts `Rect` into bbox `Transform`.
+pub trait TransformFromBBox: Sized {
+    /// Converts `Rect` into bbox `Transform`.
+    fn from_bbox(bbox: Rect) -> Self;
+}
+
+impl TransformFromBBox for tree::Transform {
+    fn from_bbox(bbox: Rect) -> Self {
+        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
+    }
+}

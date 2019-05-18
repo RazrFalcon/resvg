@@ -32,7 +32,7 @@ pub fn clip(
     clip_cr.transform(cp.transform.to_native());
 
     if cp.units == usvg::Units::ObjectBoundingBox {
-        clip_cr.transform(cairo::Matrix::from_bbox(bbox));
+        clip_cr.transform(usvg::Transform::from_bbox(bbox).to_native());
     }
 
     clip_cr.set_operator(cairo::Operator::Clear);
@@ -153,7 +153,7 @@ pub fn mask(
         mask_cr.clip();
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {
-            mask_cr.transform(cairo::Matrix::from_bbox(bbox));
+            mask_cr.transform(usvg::Transform::from_bbox(bbox).to_native());
         }
 
         super::render_group(node, opt, layers, &mask_cr);
