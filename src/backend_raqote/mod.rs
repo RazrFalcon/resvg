@@ -329,13 +329,15 @@ fn render_group_impl(
 
     dt.set_transform(&raqote::Transform::default());
 
-    // TODO: opacity
     let sub_img = raqote::Image {
         width: layers.image_size().width() as i32,
         height: layers.image_size().height() as i32,
         data: sub_dt.get_data(),
     };
-    dt.draw_image_at(0.0, 0.0, &sub_img, &raqote::DrawOptions::default());
+    dt.draw_image_at(0.0, 0.0, &sub_img, &raqote::DrawOptions {
+        blend_mode: raqote::BlendMode::SrcOver,
+        alpha: g.opacity.value() as f32,
+    });
 
     dt.set_transform(&curr_ts);
 
