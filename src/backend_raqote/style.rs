@@ -18,6 +18,7 @@ pub fn fill(
     dt: &mut raqote::DrawTarget,
 ) {
     if let Some(ref fill) = fill {
+        let patt_dt;
         let source = match fill.paint {
             usvg::Paint::Color(c) => {
                 let alpha = (fill.opacity.value() * 255.0) as u8;
@@ -33,8 +34,26 @@ pub fn fill(
                             prepare_radial(rg, fill.opacity, bbox)
                         }
                         usvg::NodeKind::Pattern(ref pattern) => {
-//                            pattern::apply(&node, pattern, opt, fill.opacity, bbox, cr);
-                            return;
+                            let ts = *dt.get_transform();
+                            let (sub_dt, patt_ts) = try_opt!(
+                                prepare_pattern(&node, pattern, opt, ts, bbox, fill.opacity),
+                                (),
+                            );
+                            patt_dt = sub_dt;
+
+                            patt_dt.write_png("patt.png");
+
+                            let img = raqote::Image {
+                                width: patt_dt.width(),
+                                height: patt_dt.height(),
+                                data: patt_dt.get_data(),
+                            };
+
+                            raqote::Source::Image(
+                                img,
+                                raqote::ExtendMode::Repeat,
+                                patt_ts.to_native(),
+                            )
                         }
                         _ => {
                             return;
@@ -89,6 +108,7 @@ pub fn stroke(
             dash_offset: stroke.dashoffset,
         };
 
+        let patt_dt;
         let source = match stroke.paint {
             usvg::Paint::Color(c) => {
                 let alpha = (stroke.opacity.value() * 255.0) as u8;
@@ -104,8 +124,24 @@ pub fn stroke(
                             prepare_radial(rg, stroke.opacity, bbox)
                         }
                         usvg::NodeKind::Pattern(ref pattern) => {
-//                            pattern::apply(&node, pattern, opt, stroke.opacity, bbox, cr);
-                            return;
+                            let ts = *dt.get_transform();
+                            let (sub_dt, patt_ts) = try_opt!(
+                                prepare_pattern(&node, pattern, opt, ts, bbox, stroke.opacity),
+                                (),
+                            );
+                            patt_dt = sub_dt;
+
+                            let img = raqote::Image {
+                                width: patt_dt.width(),
+                                height: patt_dt.height(),
+                                data: patt_dt.get_data(),
+                            };
+
+                            raqote::Source::Image(
+                                img,
+                                raqote::ExtendMode::Repeat,
+                                patt_ts.to_native(),
+                            )
                         }
                         _ => {
                             return;
@@ -163,4 +199,65 @@ fn conv_stops(
     }
 
     stops
+}
+
+fn prepare_pattern<'a>(
+    pattern_node: &usvg::Node,
+    pattern: &usvg::Pattern,
+    opt: &Options,
+    global_ts: raqote::Transform,
+    bbox: Rect,
+    opacity: usvg::Opacity,
+) -> Option<(raqote::DrawTarget, usvg::Transform)> {
+    let r = if pattern.units == usvg::Units::ObjectBoundingBox {
+        pattern.rect.bbox_transform(bbox)
+    } else {
+        pattern.rect
+    };
+
+    let global_ts = usvg::Transform::from_native(&global_ts);
+    let (sx, sy) = global_ts.get_scale();
+
+    let img_size = Size::new(r.width() * sx, r.height() * sy)?.to_screen_size();
+    let mut dt = raqote::DrawTarget::new(img_size.width() as i32, img_size.height() as i32);
+
+    dt.transform(&raqote::Transform::create_scale(sx as f32, sy as f32));
+    if let Some(vbox) = pattern.view_box {
+        let ts = utils::view_box_to_transform(vbox.rect, vbox.aspect, r.size());
+        dt.transform(&ts.to_native());
+    } else if pattern.content_units == usvg::Units::ObjectBoundingBox {
+        // 'Note that this attribute has no effect if attribute `viewBox` is specified.'
+
+        // We don't use Transform::from_bbox(bbox) because `x` and `y` should be
+        // ignored for some reasons...
+        dt.transform(&raqote::Transform::create_scale(bbox.width() as f32, bbox.height() as f32));
+    }
+
+    let mut layers = super::create_layers(img_size, opt);
+    super::render_group(pattern_node, opt, &mut layers, &mut dt);
+
+//    let img = if !opacity.is_default() {
+//        // If `opacity` isn't `1` then we have to make image semitransparent.
+//        // The only way to do this is by making a new image and rendering
+//        // the pattern on it with transparency.
+//
+//        let mut img2 = try_create_image!(img_size, ());
+//        img2.fill(0, 0, 0, 0);
+//
+//        let mut p2 = qt::Painter::new(&mut img2);
+//        p2.set_opacity(opacity.value());
+//        p2.draw_image(0.0, 0.0, &img);
+//        p2.end();
+//
+//        img2
+//    } else {
+//        img
+//    };
+
+    let mut ts = usvg::Transform::default();
+    ts.append(&pattern.transform);
+    ts.translate(r.x(), r.y());
+    ts.scale(1.0 / sx, 1.0 / sy);
+
+    Some((dt, ts))
 }

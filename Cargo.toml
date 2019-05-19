@@ -37,7 +37,11 @@ gdk-pixbuf = { version = "0.6", optional = true }
 resvg-qt = { path = "resvg-qt", version = "0.6", optional = true }
 
 # raqote backend
-raqote = { git = "https://github.com/jrmuizel/raqote.git", rev = "5a2c4b2", optional = true }
+[dependencies.raqote]
+git = "https://github.com/jrmuizel/raqote.git"
+rev = "291b91b"
+default-features = false
+optional = true
 
 [features]
 cairo-backend = ["cairo-rs", "gdk-pixbuf"]
