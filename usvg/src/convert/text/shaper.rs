@@ -7,6 +7,7 @@ use svgdom;
 use harfbuzz;
 use unicode_bidi;
 use unicode_script;
+use unicode_vo::{self, Orientation as CharOrientation};
 
 mod fk {
     pub use font_kit::handle::Handle;
@@ -22,6 +23,7 @@ use super::convert::{
     CharacterPosition,
     Font,
     TextChunk,
+    WritingMode,
 };
 
 type Range = std::ops::Range<usize>;
@@ -84,6 +86,8 @@ pub struct OutlinedCluster {
     /// The cluster position in SVG coordinates.
     pub y: f64,
 
+    baseline_shift: f64,
+
     /// The rotation angle.
     pub rotate: f64,
 
@@ -91,6 +95,12 @@ pub struct OutlinedCluster {
     ///
     /// Can be negative.
     pub advance: f64,
+
+    pub ascent: f64,
+
+    descent: f64,
+
+    x_height: f64,
 
     /// Indicates that this cluster was affected by the relative shift (via dx/dy attributes)
     /// during the text layouting.
@@ -100,6 +110,12 @@ pub struct OutlinedCluster {
 
     /// The actual outline.
     pub path: Vec<tree::PathSegment>,
+}
+
+impl OutlinedCluster {
+    pub fn height(&self) -> f64 {
+        self.ascent - self.descent
+    }
 }
 
 
@@ -145,7 +161,7 @@ impl<'a> Iterator for GlyphClusters<'a> {
 ///
 /// This function will do the BIDI reordering, text shaping and glyphs outlining,
 /// but not the text layouting. So all clusters are in the 0x0 position.
-pub fn render_chunk(
+pub fn outline_chunk(
     chunk: &TextChunk,
     state: &State,
 ) -> Vec<OutlinedCluster> {
@@ -377,7 +393,11 @@ fn outline_cluster(
         byte_idx: glyphs[0].byte_idx,
         x: 0.0,
         y: 0.0,
+        baseline_shift: 0.0,
         advance,
+        ascent: glyphs[0].font.ascent(font_size),
+        descent: glyphs[0].font.descent(font_size),
+        x_height: glyphs[0].font.x_height(font_size),
         rotate: 0.0,
         has_relative_shift: false,
         path,
@@ -431,8 +451,9 @@ pub fn resolve_clusters_positions(
     offset: usize,
     pos_list: &[CharacterPosition],
     rotate_list: &[f64],
-    clusters: &mut Vec<OutlinedCluster>,
-) {
+    writing_mode: WritingMode,
+    clusters: &mut [OutlinedCluster],
+) -> f64 {
     let mut x = 0.0;
     let mut y = 0.0;
 
@@ -453,7 +474,13 @@ pub fn resolve_clusters_positions(
 
         x = cluster.x + cluster.advance;
         y = cluster.y;
+
+        if writing_mode == WritingMode::TopToBottom {
+            cluster.y += cluster.baseline_shift;
+        }
     }
+
+    x
 }
 
 /// Applies the `letter-spacing` property to a text chunk clusters.
@@ -461,7 +488,7 @@ pub fn resolve_clusters_positions(
 /// [In the CSS spec](https://www.w3.org/TR/css-text-3/#letter-spacing-property).
 pub fn apply_letter_spacing(
     chunk: &TextChunk,
-    clusters: &mut Vec<OutlinedCluster>,
+    clusters: &mut [OutlinedCluster],
 ) {
     // At least one span should have a non-zero spacing.
     if !chunk.spans.iter().any(|span| !span.letter_spacing.is_fuzzy_zero()) {
@@ -526,7 +553,7 @@ fn script_supports_letter_spacing(script: unicode_script::Script) -> bool {
 /// [In the CSS spec](https://www.w3.org/TR/css-text-3/#propdef-word-spacing).
 pub fn apply_word_spacing(
     chunk: &TextChunk,
-    clusters: &mut Vec<OutlinedCluster>,
+    clusters: &mut [OutlinedCluster],
 ) {
     // At least one span should have a non-zero spacing.
     if !chunk.spans.iter().any(|span| !span.word_spacing.is_fuzzy_zero()) {
@@ -556,6 +583,44 @@ fn is_word_separator_characters(c: char) -> bool {
     match c as u32 {
         0x0020 | 0x00A0 | 0x1361 | 0x010100 | 0x010101 | 0x01039F | 0x01091F => true,
         _ => false,
+    }
+}
+
+/// Rotates clusters according to
+/// [Unicode Vertical_Orientation Property](https://www.unicode.org/reports/tr50/tr50-19.html).
+pub fn apply_writing_mode(
+    chunk: &TextChunk,
+    writing_mode: WritingMode,
+    clusters: &mut [OutlinedCluster],
+) {
+    if writing_mode != WritingMode::TopToBottom {
+        return;
+    }
+
+    for cluster in clusters {
+        if let Some(c) = byte_to_char(&chunk.text, cluster.byte_idx) {
+            let orientation = unicode_vo::char_orientation(c);
+            if orientation == CharOrientation::Upright {
+                // Additional offset. Not sure why.
+                let dy = cluster.advance - cluster.height();
+
+                // Rotate a cluster 90deg counter clockwise from the center.
+                let mut ts = tree::Transform::default();
+                ts.translate(cluster.advance / 2.0, 0.0);
+                ts.rotate(-90.0);
+                ts.translate(-cluster.advance / 2.0, -dy);
+                super::transform_path(&mut cluster.path, &ts);
+
+                // Move "baseline" to the middle and make height equal to advance.
+                cluster.ascent = cluster.advance / 2.0;
+                cluster.descent = -cluster.advance / 2.0;
+            } else {
+                // Could not find a spec that explains this,
+                // but this is how other applications shift "rotated" characters
+                // in the top-to-bottom mode.
+                cluster.baseline_shift = cluster.x_height / 2.0;
+            }
+        }
     }
 }
 

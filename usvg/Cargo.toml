@@ -25,11 +25,12 @@ lyon_geom = "0.12"
 rctree = "0.3"
 svgdom = { git = "https://github.com/RazrFalcon/svgdom", rev = "e396335" }
 
-font-kit = { git = "https://github.com/pcwalton/font-kit", rev = "9e143d5" }
+font-kit = { git = "https://github.com/RazrFalcon/font-kit", branch = "latest" }
 harfbuzz_rs = "1.0"
 lyon_path = "0.12"
 unicode-bidi = "0.3"
 unicode-script = "0.3"
+unicode-vo = { git = "https://github.com/RazrFalcon/unicode-vo" }
 
 [dev-dependencies]
 pretty_assertions = "0.6"

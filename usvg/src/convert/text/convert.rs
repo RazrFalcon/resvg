@@ -58,6 +58,8 @@ pub struct FontData {
     pub index: u32,
     units_per_em: u32,
     ascent: f32,
+    descent: f32,
+    x_height: f32,
     underline_position: f32,
     underline_thickness: f32,
 }
@@ -71,6 +73,14 @@ impl FontData {
 
     pub fn ascent(&self, font_size: f64) -> f64 {
         self.ascent as f64 * self.scale(font_size)
+    }
+
+    pub fn descent(&self, font_size: f64) -> f64 {
+        self.descent as f64 * self.scale(font_size)
+    }
+
+    pub fn x_height(&self, font_size: f64) -> f64 {
+        self.x_height as f64 * self.scale(font_size)
     }
 
     pub fn underline_position(&self, font_size: f64) -> f64 {
@@ -133,6 +143,13 @@ impl TextSpan {
     pub fn contains(&self, byte_offset: ByteIndex) -> bool {
         byte_offset.value() >= self.start && byte_offset.value() < self.end
     }
+}
+
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum WritingMode {
+    LeftToRight,
+    TopToBottom,
 }
 
 
@@ -317,12 +334,20 @@ pub fn load_font(handle: &fk::Handle) -> Option<Font> {
         return None;
     }
 
+    let x_height = if metrics.x_height != 0.0 {
+        metrics.x_height
+    } else {
+        (metrics.ascent - metrics.descent) * 0.45
+    };
+
     Some(Rc::new(FontData {
         handle: font,
         path,
         index,
         units_per_em: metrics.units_per_em,
         ascent: metrics.ascent,
+        descent: metrics.descent,
+        x_height,
         underline_position: metrics.underline_position,
         underline_thickness: metrics.underline_thickness,
     }))
@@ -607,6 +632,7 @@ fn resolve_baseline_shift(
     for n in nodes.iter().rev() {
         match n.attributes().get_value(AId::BaselineShift) {
             Some(AValue::String(ref s)) => {
+                // TODO: sub/super from font
                 match s.as_str() {
                     "baseline" => {}
                     "sub" => shift += units::resolve_font_size(&n, state) * -0.2,
@@ -685,4 +711,34 @@ fn count_chars(node: &svgdom::Node) -> usize {
     }
 
     total
+}
+
+/// Converts the writing mode.
+///
+/// According to the [SVG 2.0] spec, there are only two writing modes:
+/// horizontal left-to-right and vertical right-to-left.
+/// E.g:
+///
+/// - `lr`, `lr-tb`, `rl`, `rl-tb` => `horizontal-tb`
+/// - `tb`, `tb-rl` => `vertical-rl`
+///
+/// Also, looks like no one really supports the `rl` and `rl-tb`, except `Batik`.
+/// And I'm not sure if it's behaviour is correct.
+///
+/// So we will ignore it as well, mainly because I have no idea how exactly
+/// it should affect the rendering.
+///
+/// [SVG 2.0]: https://www.w3.org/TR/SVG2/text.html#WritingModeProperty
+pub fn convert_writing_mode(node: &svgdom::Node) -> WritingMode {
+    // `writing-mode` can be set only on a `text` element.
+    debug_assert!(node.is_tag_name(EId::Text));
+
+    if let Some(n) = node.find_node_with_attribute(AId::WritingMode) {
+        match n.attributes().get_str_or(AId::WritingMode, "lr-tb") {
+            "tb" | "tb-rl" => WritingMode::TopToBottom,
+            _ => WritingMode::LeftToRight,
+        }
+    } else {
+        WritingMode::LeftToRight
+    }
 }

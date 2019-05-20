@@ -390,11 +390,11 @@ fn _calc_node_bbox(
 
     match *node.borrow() {
         usvg::NodeKind::Path(ref path) => {
-            utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2)
+            utils::path_bbox(&path.segments, path.stroke.as_ref(), Some(ts2))
         }
         usvg::NodeKind::Image(ref img) => {
             let segments = utils::rect_to_path(img.view_box.rect);
-            utils::path_bbox(&segments, None, &ts2)
+            utils::path_bbox(&segments, None, Some(ts2))
         }
         usvg::NodeKind::Group(_) => {
             let mut bbox = Rect::new_bbox();

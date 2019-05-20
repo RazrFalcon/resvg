@@ -50,10 +50,8 @@
   with `BackgroundImage`, `BackgroundAlpha`, `FillPaint`, `StrokePaint`
 - `kerning` (removed in the SVG 2)
 - `lengthAdjust`
-- `line-height`
 - `textLength`
 - `unicode-bidi`
-- `writing-mode`
 
 **Note:** this list does not include elements and attributes outside the
 [static SVG](http://www.w3.org/TR/SVG11/feature#SVG-static) subset.

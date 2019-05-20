@@ -23,7 +23,7 @@ mod convert;
 use self::convert::*;
 
 mod shaper;
-use shaper::OutlinedCluster;
+use self::shaper::OutlinedCluster;
 
 
 // TODO: visibility on text and tspan
@@ -51,33 +51,47 @@ pub fn convert(
 ) {
     let pos_list = resolve_positions_list(node, state);
     let rotate_list = resolve_rotate_list(node);
-    let text_ts = node.attributes().get_transform(AId::Transform);
+    let writing_mode = convert_writing_mode(node);
+    let mut text_ts = node.attributes().get_transform(AId::Transform);
 
     let mut chunks = collect_text_chunks(node, &pos_list, state, tree);
     let mut char_offset = 0;
     let mut x = 0.0;
-    let mut baseline = 0.0;
+    let mut y = 0.0;
     let mut new_paths = Vec::new();
     for chunk in &mut chunks {
         x = chunk.x.unwrap_or(x);
-        baseline = chunk.y.unwrap_or(baseline);
+        y = chunk.y.unwrap_or(y);
 
-        let mut clusters = shaper::render_chunk(&chunk, state);
+        let mut clusters = shaper::outline_chunk(&chunk, state);
+        if clusters.is_empty() {
+            continue;
+        }
+
+        shaper::apply_writing_mode(&chunk, writing_mode, &mut clusters);
         shaper::apply_letter_spacing(&chunk, &mut clusters);
         shaper::apply_word_spacing(&chunk, &mut clusters);
-        shaper::resolve_clusters_positions(&chunk.text, char_offset, &pos_list,
-                                           &rotate_list, &mut clusters);
+        let width = shaper::resolve_clusters_positions(
+            &chunk.text, char_offset, &pos_list, &rotate_list, writing_mode, &mut clusters
+        );
 
-        let width = clusters.iter().fold(0.0, |w, cluster| w + cluster.advance);
+        match writing_mode {
+            WritingMode::LeftToRight => {
+                x -= process_anchor(chunk.anchor, width);
+            }
+            WritingMode::TopToBottom => {
+                y -= process_anchor(chunk.anchor, width);
+                text_ts.rotate_at(90.0, x, y);
+            }
+        }
 
-        x -= process_anchor(chunk.anchor, width);
 
         for span in &mut chunk.spans {
             let decoration_spans = collect_decoration_spans(span, &clusters);
 
             if let Some(decoration) = span.decoration.underline.take() {
                 new_paths.push(convert_decoration(
-                    x, baseline - span.font.underline_position(span.font_size),
+                    x, y - span.font.underline_position(span.font_size),
                     &span, decoration, &decoration_spans, text_ts,
                 ));
             }
@@ -85,19 +99,21 @@ pub fn convert(
             if let Some(decoration) = span.decoration.overline.take() {
                 // TODO: overline pos from font
                 new_paths.push(convert_decoration(
-                    x, baseline - span.font.ascent(span.font_size),
+                    x, y - span.font.ascent(span.font_size),
                     &span, decoration, &decoration_spans, text_ts,
                 ));
             }
 
-            if let Some(path) = convert_span(x, baseline, span, &mut clusters, &text_ts) {
+            let mut span_ts = text_ts.clone();
+            span_ts.translate(x, y - span.baseline_shift);
+            if let Some(path) = convert_span(span, &mut clusters, &span_ts, parent, false) {
                 new_paths.push(path);
             }
 
             if let Some(decoration) = span.decoration.line_through.take() {
                 // TODO: line-through pos from font
                 new_paths.push(convert_decoration(
-                    x, baseline - span.font.ascent(span.font_size) / 3.0,
+                    x, y - span.font.ascent(span.font_size) / 3.0,
                     &span, decoration, &decoration_spans, text_ts,
                 ));
             }
@@ -109,7 +125,7 @@ pub fn convert(
 
     let mut bbox = Rect::new_bbox();
     for path in &new_paths {
-        if let Some(r) = utils::path_bbox(&path.segments, None, &tree::Transform::default()) {
+        if let Some(r) = utils::path_bbox(&path.segments, None, None) {
             bbox = bbox.expand(r);
         }
     }
@@ -121,36 +137,35 @@ pub fn convert(
 }
 
 fn convert_span(
-    x: f64,
-    baseline: f64,
     span: &mut TextSpan,
     clusters: &mut [OutlinedCluster],
     text_ts: &tree::Transform,
+    parent: &mut tree::Node,
+    dump_clusters: bool,
 ) -> Option<tree::Path> {
     let mut segments = Vec::new();
 
     for cluster in clusters {
         if span.contains(cluster.byte_idx) {
-            let mut path = mem::replace(&mut cluster.path, Vec::new());
+            if dump_clusters {
+                dump_cluster(cluster, *text_ts, parent);
+            }
+
             let mut transform = tree::Transform::new_translate(cluster.x, cluster.y);
             if !cluster.rotate.is_fuzzy_zero() {
                 transform.rotate(cluster.rotate);
             }
 
+            let mut path = mem::replace(&mut cluster.path, Vec::new());
             transform_path(&mut path, &transform);
 
-            if !path.is_empty() {
-                segments.extend_from_slice(&path);
-            }
+            segments.extend_from_slice(&path);
         }
     }
 
     if segments.is_empty() {
         return None;
     }
-
-    let mut transform = text_ts.clone();
-    transform.translate(x, baseline - span.baseline_shift);
 
     let mut fill = span.fill.take();
     if let Some(ref mut fill) = fill {
@@ -161,11 +176,11 @@ fn convert_span(
 
     let path = tree::Path {
         id: String::new(),
-        transform,
+        transform: *text_ts,
         visibility: span.visibility,
         fill,
         stroke: span.stroke.take(),
-        rendering_mode: tree::ShapeRendering::default(),
+        rendering_mode: tree::ShapeRendering::default(), // TODO: this
         segments,
     };
 
@@ -190,6 +205,42 @@ fn transform_path(segments: &mut [tree::PathSegment], ts: &tree::Transform) {
             tree::PathSegment::ClosePath => {}
         }
     }
+}
+
+// Only for debug purposes.
+fn dump_cluster(
+    cluster: &OutlinedCluster,
+    text_ts: tree::Transform,
+    parent: &mut tree::Node,
+) {
+    fn new_stroke(color: tree::Color) -> Option<tree::Stroke> {
+        Some(tree::Stroke {
+            paint: tree::Paint::Color(color),
+            width: tree::StrokeWidth::new(0.2),
+            .. tree::Stroke::default()
+        })
+    }
+
+    let mut base_path = tree::Path {
+        transform: text_ts,
+        rendering_mode: tree::ShapeRendering::CrispEdges,
+        .. tree::Path::default()
+    };
+
+    // Cluster bbox.
+    let r = Rect::new(cluster.x, cluster.y - cluster.ascent,
+                      cluster.advance, cluster.height()).unwrap();
+    base_path.stroke = new_stroke(tree::Color::blue());
+    base_path.segments = utils::rect_to_path(r);
+    parent.append_kind(tree::NodeKind::Path(base_path.clone()));
+
+    // Baseline.
+    base_path.stroke = new_stroke(tree::Color::red());
+    base_path.segments = vec![
+        tree::PathSegment::MoveTo { x: cluster.x,                   y: cluster.y },
+        tree::PathSegment::LineTo { x: cluster.x + cluster.advance, y: cluster.y },
+    ];
+    parent.append_kind(tree::NodeKind::Path(base_path));
 }
 
 fn process_anchor(a: TextAnchor, text_width: f64) -> f64 {
