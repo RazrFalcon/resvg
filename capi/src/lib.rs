@@ -4,12 +4,6 @@
 
 #![allow(non_camel_case_types)]
 
-extern crate resvg;
-extern crate fern;
-#[macro_use] extern crate log;
-
-#[cfg(feature = "cairo-backend")] extern crate cairo_sys;
-
 use std::fmt;
 use std::path;
 use std::ffi::CStr;

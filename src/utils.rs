@@ -76,9 +76,14 @@ pub fn abs_transform(
 pub fn path_bbox(
     segments: &[usvg::PathSegment],
     stroke: Option<&usvg::Stroke>,
-    ts: &usvg::Transform,
+    ts: Option<usvg::Transform>,
 ) -> Option<Rect> {
     debug_assert!(!segments.is_empty());
+
+    let ts = match ts {
+        Some(ts) => ts,
+        None => usvg::Transform::default(),
+    };
 
     use crate::lyon_geom;
 
@@ -89,7 +94,7 @@ pub fn path_bbox(
     let mut maxx = 0.0;
     let mut maxy = 0.0;
 
-    if let Some(usvg::PathSegment::MoveTo { x, y }) = TransformedPath::new(segments, *ts).next() {
+    if let Some(usvg::PathSegment::MoveTo { x, y }) = TransformedPath::new(segments, ts).next() {
         let x = x as f32;
         let y = y as f32;
 
@@ -101,7 +106,7 @@ pub fn path_bbox(
         maxy = y;
     }
 
-    for seg in TransformedPath::new(segments, *ts) {
+    for seg in TransformedPath::new(segments, ts) {
         match seg {
               usvg::PathSegment::MoveTo { x, y }
             | usvg::PathSegment::LineTo { x, y } => {

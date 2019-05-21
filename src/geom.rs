@@ -184,7 +184,7 @@ impl RectExt for Rect {
                 usvg::PathSegment::ClosePath,
             ];
 
-            utils::path_bbox(path, None, ts)
+            utils::path_bbox(path, None, Some(*ts))
         } else {
             Some(*self)
         }

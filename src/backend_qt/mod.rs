@@ -345,7 +345,7 @@ fn _calc_node_bbox(
 
     match *node.borrow() {
         usvg::NodeKind::Path(ref path) => {
-            utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2)
+            utils::path_bbox(&path.segments, path.stroke.as_ref(), Some(ts2))
         }
         usvg::NodeKind::Text(ref text) => {
             let mut bbox = Rect::new_bbox();
@@ -365,7 +365,7 @@ fn _calc_node_bbox(
 
                 let segments = from_qt_path(&p_path);
                 if !segments.is_empty() {
-                    if let Some(c_bbox) = utils::path_bbox(&segments, block.stroke.as_ref(), &t) {
+                    if let Some(c_bbox) = utils::path_bbox(&segments, block.stroke.as_ref(), Some(t)) {
                         bbox = bbox.expand(c_bbox);
                     }
                 }
@@ -375,7 +375,7 @@ fn _calc_node_bbox(
         }
         usvg::NodeKind::Image(ref img) => {
             let segments = utils::rect_to_path(img.view_box.rect);
-            utils::path_bbox(&segments, None, &ts2)
+            utils::path_bbox(&segments, None, Some(ts2))
         }
         usvg::NodeKind::Group(_) => {
             let mut bbox = Rect::new_bbox();

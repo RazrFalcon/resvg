@@ -1,9 +1,3 @@
-extern crate gio;
-extern crate gtk;
-extern crate resvg;
-extern crate log;
-extern crate fern;
-
 use std::fmt;
 use std::env::args;
 use std::path::Path;

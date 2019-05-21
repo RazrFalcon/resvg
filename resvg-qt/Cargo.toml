@@ -4,6 +4,7 @@ version = "0.6.1"
 authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
 keywords = ["qt", "ffi"]
 license = "MIT"
+edition = "2018"
 description = "A minimal bindings to Qt used by resvg."
 repository = "https://github.com/RazrFalcon/resvg"
 workspace = ".."

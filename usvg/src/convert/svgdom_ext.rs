@@ -300,29 +300,3 @@ impl GetValue for svgdom::Attributes {
         self.get_value(id).and_then(|av| FromValue::get(av))
     }
 }
-
-
-/// Checks that type has a default value.
-pub trait IsDefault: Default {
-    /// Checks that type has a default value.
-    fn is_default(&self) -> bool;
-}
-
-impl<T: Default + PartialEq + Copy> IsDefault for T {
-    fn is_default(&self) -> bool {
-        *self == Self::default()
-    }
-}
-
-
-/// Checks that the current number is > 0.
-pub trait IsValidLength {
-    /// Checks that the current number is > 0.
-    fn is_valid_length(&self) -> bool;
-}
-
-impl IsValidLength for f64 {
-    fn is_valid_length(&self) -> bool {
-        *self > 0.0
-    }
-}
