@@ -56,7 +56,11 @@ pub struct FontData {
     pub handle: fk::Font,
     pub path: PathBuf,
     pub index: u32,
+
+    /// Guarantee to be > 0.
     units_per_em: u32,
+
+    // All values below are in font units.
     ascent: f32,
     descent: f32,
     x_height: f32,
@@ -334,10 +338,12 @@ pub fn load_font(handle: &fk::Handle) -> Option<Font> {
         return None;
     }
 
-    let x_height = if metrics.x_height != 0.0 {
-        metrics.x_height
-    } else {
+    let x_height = if metrics.x_height.is_fuzzy_zero() {
+        // If not set - fallback to height * 45%.
+        // 45% is what Firefox uses.
         (metrics.ascent - metrics.descent) * 0.45
+    } else {
+        metrics.x_height
     };
 
     Some(Rc::new(FontData {

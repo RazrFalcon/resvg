@@ -944,7 +944,7 @@ dependencies = [
 [[package]]
 name = "svgtypes"
 version = "0.4.2"
-source = "git+https://github.com/RazrFalcon/svgtypes?rev=a04e6ea#a04e6ea86b4365edb42f3f4aea7b39b88c73a9cf"
+source = "git+https://github.com/RazrFalcon/svgtypes?rev=54eabc9#54eabc9cc66df6307a44c9f1c4d64ef38413428d"
 dependencies = [
  "float-cmp 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "phf 0.7.24 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -954,7 +954,7 @@ dependencies = [
 name = "svgtypes"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-replace = "svgtypes 0.4.2 (git+https://github.com/RazrFalcon/svgtypes?rev=a04e6ea)"
+replace = "svgtypes 0.4.2 (git+https://github.com/RazrFalcon/svgtypes?rev=54eabc9)"
 
 [[package]]
 name = "syn"
@@ -1192,7 +1192,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum siphasher 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "0b8de496cf83d4ed58b6be86c3a275b8602f6ffe98d3024a869e124147a9a3ac"
 "checksum slab 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 "checksum svgdom 0.16.1 (git+https://github.com/RazrFalcon/svgdom?rev=e396335)" = "<none>"
-"checksum svgtypes 0.4.2 (git+https://github.com/RazrFalcon/svgtypes?rev=a04e6ea)" = "<none>"
+"checksum svgtypes 0.4.2 (git+https://github.com/RazrFalcon/svgtypes?rev=54eabc9)" = "<none>"
 "checksum svgtypes 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "06280cc80ac6d6be32d497f068c40a25552cc837519265edab70d9040e64c52b"
 "checksum syn 0.14.9 (registry+https://github.com/rust-lang/crates.io-index)" = "261ae9ecaa397c42b960649561949d69311f08eeaea86a65696e6e46517cf741"
 "checksum syn 0.15.34 (registry+https://github.com/rust-lang/crates.io-index)" = "a1393e4a97a19c01e900df2aec855a29f71cf02c402e2f443b8d2747c25c5dbe"
