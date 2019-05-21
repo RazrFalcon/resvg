@@ -9,10 +9,7 @@ use std::f64;
 use std::fmt;
 
 // external
-use usvg::{
-    self,
-    FuzzyEq,
-};
+use usvg;
 pub use usvg::{
     Line,
     Rect,
@@ -116,14 +113,6 @@ fn size_scale(s1: ScreenSize, s2: ScreenSize, expand: bool) -> ScreenSize {
 
 /// Additional `Rect` methods.
 pub trait RectExt: Sized {
-    /// Creates a new `Rect` for bounding box calculation.
-    ///
-    /// Shorthand for `Rect::new(f64::MAX, f64::MAX, 1.0, 1.0)`.
-    fn new_bbox() -> Self;
-
-    /// Expands the `Rect` to the provided size.
-    fn expand(&self, r: Rect) -> Self;
-
     /// Transforms the `Rect` using the provided `bbox`.
     fn bbox_transform(&self, bbox: Rect) -> Self;
 
@@ -140,24 +129,6 @@ pub trait RectExt: Sized {
 }
 
 impl RectExt for Rect {
-    fn new_bbox() -> Self {
-        Rect::new(f64::MAX, f64::MAX, 1.0, 1.0).unwrap()
-    }
-
-    fn expand(&self, r: Rect) -> Self {
-        if self.fuzzy_eq(&Rect::new_bbox()) {
-            r
-        } else {
-            let x1 = f64_min(self.x(), r.x());
-            let y1 = f64_min(self.y(), r.y());
-
-            let x2 = f64_max(self.right(), r.right());
-            let y2 = f64_max(self.bottom(), r.bottom());
-
-            Rect::new(x1, y1, x2 - x1, y2 - y1).unwrap()
-        }
-    }
-
     fn bbox_transform(&self, bbox: Rect) -> Self {
         let x = self.x() * bbox.width() + bbox.x();
         let y = self.y() * bbox.height() + bbox.y();
@@ -184,7 +155,7 @@ impl RectExt for Rect {
                 usvg::PathSegment::ClosePath,
             ];
 
-            utils::path_bbox(path, None, ts)
+            utils::path_bbox(path, None, Some(*ts))
         } else {
             Some(*self)
         }
@@ -341,17 +312,6 @@ impl fmt::Display for ScreenRect {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
-}
-
-
-#[inline]
-fn f64_min(v1: f64, v2: f64) -> f64 {
-    if v1 < v2 { v1 } else { v2 }
-}
-
-#[inline]
-fn f64_max(v1: f64, v2: f64) -> f64 {
-    if v1 > v2 { v1 } else { v2 }
 }
 
 

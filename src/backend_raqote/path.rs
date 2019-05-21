@@ -35,7 +35,7 @@ pub fn draw(
     }
     let mut segments = pb.finish();
 
-    let bbox = utils::path_bbox(&path.segments, None, &usvg::Transform::default());
+    let bbox = utils::path_bbox(&path.segments, None, None);
 
     // `usvg` guaranties that path without a bbox will not use
     // a paint server with ObjectBoundingBox,

@@ -4,8 +4,6 @@
 
 //! Implementation of the nodes tree.
 
-extern crate rctree;
-
 use std::cell::Ref;
 use std::path;
 
@@ -30,6 +28,7 @@ mod numbers;
 pub mod prelude {
     pub use crate::IsDefault;
     pub use crate::IsValidLength;
+    pub use crate::TransformFromBBox;
     pub use crate::tree::FuzzyEq;
     pub use crate::tree::FuzzyZero;
     pub use super::NodeExt;

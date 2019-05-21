@@ -19,17 +19,16 @@ And as an embeddable library to paint SVG on an application native canvas.
 //#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
-#[macro_use] pub extern crate usvg;
-#[macro_use] extern crate log;
-extern crate rgb;
+pub use usvg;
 
-#[cfg(feature = "cairo-backend")] pub extern crate cairo;
-#[cfg(feature = "cairo-backend")] extern crate gdk_pixbuf;
+#[cfg(feature = "cairo-backend")]
+pub use cairo;
 
-#[cfg(feature = "qt-backend")] pub extern crate resvg_qt as qt;
+#[cfg(feature = "qt-backend")]
+pub use resvg_qt as qt;
 
-#[cfg(feature = "raqote-backend")] pub extern crate raqote;
-
+#[cfg(feature = "raqote-backend")]
+pub use raqote;
 
 pub use usvg::{
     svgdom,
@@ -48,14 +47,14 @@ mod backend_utils;
 mod geom;
 mod layers;
 mod options;
-mod traits;
 
 /// Commonly used types and traits.
 pub mod prelude {
+    pub use log::warn;
     pub use usvg;
     pub use usvg::prelude::*;
+    pub use usvg::{try_opt, try_opt_warn};
     pub use crate::geom::*;
-    pub(crate) use crate::traits::*;
     pub use crate::utils;
     pub use crate::Options;
     pub use crate::Render;

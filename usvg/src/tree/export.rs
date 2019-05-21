@@ -8,6 +8,7 @@ use svgdom::{
     self,
     NumberList,
 };
+use log::warn;
 
 // self
 use super::*;

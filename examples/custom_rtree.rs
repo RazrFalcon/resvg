@@ -1,5 +1,3 @@
-extern crate resvg;
-
 use std::path::Path;
 
 use resvg::prelude::*;

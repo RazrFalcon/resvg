@@ -10,6 +10,7 @@ use raqote;
 // self
 use crate::prelude::*;
 use crate::layers;
+use crate::backend_utils::ConvTransform;
 
 
 mod path;
@@ -17,6 +18,8 @@ mod style;
 
 mod prelude {
     pub use super::super::prelude::*;
+    pub use crate::backend_utils::ConvTransform;
+
     pub type RaqoteLayers = super::layers::Layers<super::raqote::DrawTarget>;
 
     // It's actually used. Rust bug?
@@ -42,12 +45,6 @@ impl ConvTransform<raqote::Transform> for usvg::Transform {
     }
 }
 
-impl TransformFromBBox for raqote::Transform {
-    fn from_bbox(bbox: Rect) -> Self {
-        Self::row_major(bbox.width() as f32, 0.0, 0.0, bbox.height() as f32,
-                        bbox.x() as f32, bbox.y() as f32)
-    }
-}
 
 pub(crate) trait RaqoteDrawTargetExt {
     fn transform(&mut self, ts: &raqote::Transform);
@@ -379,11 +376,11 @@ fn _calc_node_bbox(
 
     match *node.borrow() {
         usvg::NodeKind::Path(ref path) => {
-            utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2)
+            utils::path_bbox(&path.segments, path.stroke.as_ref(), Some(ts2))
         }
         usvg::NodeKind::Image(ref img) => {
             let segments = utils::rect_to_path(img.view_box.rect);
-            utils::path_bbox(&segments, None, &ts2)
+            utils::path_bbox(&segments, None, Some(ts2))
         }
         usvg::NodeKind::Group(_) => {
             let mut bbox = Rect::new_bbox();

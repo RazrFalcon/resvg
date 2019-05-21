@@ -2,6 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 // external
 use svgdom::{
     self,
@@ -9,6 +12,7 @@ use svgdom::{
     FilterSvg,
     Length,
 };
+use log::warn;
 
 // self
 use crate::tree;
@@ -20,10 +24,7 @@ use crate::{
     Options,
 };
 pub use self::preprocess::prepare_doc;
-pub use self::svgdom_ext::{
-    IsDefault,
-    IsValidLength,
-};
+
 
 mod clip_and_mask;
 mod filter;
@@ -41,6 +42,7 @@ mod units;
 mod use_node;
 
 mod prelude {
+    pub use log::warn;
     pub use svgdom::{
         AttributeType,
         ElementType,
@@ -56,6 +58,7 @@ mod prelude {
     pub use crate::Options;
     pub use super::svgdom_ext::*;
     pub use super::State;
+    pub use super::FontCache;
 }
 
 use self::svgdom_ext::*;
@@ -66,12 +69,38 @@ pub struct State<'a> {
     current_root: svgdom::Node,
     size: Size,
     view_box: Rect,
+    font_cache: Rc<RefCell<FontCache>>,
     opt: &'a Options,
 }
 
 impl<'a> State<'a> {
     pub fn is_in_clip_path(&self) -> bool {
         self.current_root.is_tag_name(EId::ClipPath)
+    }
+}
+
+
+pub struct FontCache {
+    fonts: Vec<font_kit::handle::Handle>,
+}
+
+impl FontCache {
+    fn new() -> Self {
+        FontCache {
+            fonts: Vec::new(),
+        }
+    }
+
+    fn init(&mut self) {
+        if self.fonts.is_empty() {
+            if let Ok(v) = font_kit::source::SystemSource::new().all_fonts() {
+                self.fonts = v;
+            }
+        }
+    }
+
+    fn fonts(&self) -> &[font_kit::handle::Handle] {
+        &self.fonts
     }
 }
 
@@ -126,6 +155,7 @@ pub fn convert_doc(
         current_root: svg.clone(),
         size,
         view_box: view_box.rect,
+        font_cache: Rc::new(RefCell::new(FontCache::new())),
         opt: &opt,
     };
 
@@ -145,6 +175,7 @@ fn resolve_svg_size(svg: &svgdom::Node, opt: &Options) -> Result<Size, Error> {
         current_root: svg.clone(),
         size: Size::new(100.0, 100.0).unwrap(),
         view_box: Rect::new(0.0, 0.0, 100.0, 100.0).unwrap(),
+        font_cache: Rc::new(RefCell::new(FontCache::new())),
         opt,
     };
 
@@ -418,11 +449,6 @@ fn remove_empty_groups(tree: &mut tree::Tree) {
 }
 
 fn ungroup_groups(tree: &mut tree::Tree, opt: &Options) {
-    fn prepend_ts(ts1: &mut tree::Transform, mut ts2: tree::Transform) {
-        ts2.append(ts1);
-        *ts1 = ts2;
-    }
-
     fn ungroup(parent: tree::Node, opt: &Options) -> bool {
         let mut changed = false;
 
@@ -451,13 +477,13 @@ fn ungroup_groups(tree: &mut tree::Tree, opt: &Options) {
                     // Update transform.
                     match *child.borrow_mut() {
                         tree::NodeKind::Path(ref mut path) => {
-                            prepend_ts(&mut path.transform, ts);
+                            path.transform.prepend(&ts);
                         }
                         tree::NodeKind::Image(ref mut img) => {
-                            prepend_ts(&mut img.transform, ts);
+                            img.transform.prepend(&ts);
                         }
                         tree::NodeKind::Group(ref mut g) => {
-                            prepend_ts(&mut g.transform, ts);
+                            g.transform.prepend(&ts);
                         }
                         _ => {}
                     }

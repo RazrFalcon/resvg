@@ -9,11 +9,8 @@ use crate::qt;
 
 // self
 use crate::prelude::*;
-use crate::{
-    layers,
-    OutputImage,
-    Render,
-};
+use crate::backend_utils::ConvTransform;
+use crate::layers;
 
 
 macro_rules! try_create_image {
@@ -35,6 +32,8 @@ mod style;
 
 mod prelude {
     pub use super::super::prelude::*;
+    pub use crate::backend_utils::ConvTransform;
+
     pub type QtLayers = super::layers::Layers<super::qt::Image>;
 }
 
@@ -52,11 +51,6 @@ impl ConvTransform<qt::Transform> for usvg::Transform {
     }
 }
 
-impl TransformFromBBox for qt::Transform {
-    fn from_bbox(bbox: Rect) -> Self {
-        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
-    }
-}
 
 /// Cairo backend handle.
 #[derive(Clone, Copy)]
@@ -340,11 +334,11 @@ fn _calc_node_bbox(
 
     match *node.borrow() {
         usvg::NodeKind::Path(ref path) => {
-            utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2)
+            utils::path_bbox(&path.segments, path.stroke.as_ref(), Some(ts2))
         }
         usvg::NodeKind::Image(ref img) => {
             let segments = utils::rect_to_path(img.view_box.rect);
-            utils::path_bbox(&segments, None, &ts2)
+            utils::path_bbox(&segments, None, Some(ts2))
         }
         usvg::NodeKind::Group(_) => {
             let mut bbox = Rect::new_bbox();

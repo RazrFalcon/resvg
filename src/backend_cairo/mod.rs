@@ -13,6 +13,7 @@ use cairo::{
 // self
 use crate::prelude::*;
 use crate::layers;
+use crate::backend_utils::ConvTransform;
 
 
 macro_rules! try_create_surface {
@@ -36,6 +37,8 @@ mod style;
 
 mod prelude {
     pub use super::super::prelude::*;
+    pub use crate::backend_utils::ConvTransform;
+
     pub type CairoLayers = super::layers::Layers<super::cairo::ImageSurface>;
 
     // It's actually used. Rust bug?
@@ -57,11 +60,6 @@ impl ConvTransform<cairo::Matrix> for usvg::Transform {
     }
 }
 
-impl TransformFromBBox for cairo::Matrix {
-    fn from_bbox(bbox: Rect) -> Self {
-        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
-    }
-}
 
 pub(crate) trait ReCairoContextExt {
     fn set_source_color(&self, color: usvg::Color, opacity: usvg::Opacity);
@@ -392,11 +390,11 @@ fn _calc_node_bbox(
 
     match *node.borrow() {
         usvg::NodeKind::Path(ref path) => {
-            utils::path_bbox(&path.segments, path.stroke.as_ref(), &ts2)
+            utils::path_bbox(&path.segments, path.stroke.as_ref(), Some(ts2))
         }
         usvg::NodeKind::Image(ref img) => {
             let segments = utils::rect_to_path(img.view_box.rect);
-            utils::path_bbox(&segments, None, &ts2)
+            utils::path_bbox(&segments, None, Some(ts2))
         }
         usvg::NodeKind::Group(_) => {
             let mut bbox = Rect::new_bbox();

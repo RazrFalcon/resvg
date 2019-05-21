@@ -17,6 +17,7 @@ This changelog also contains important changes in dependencies.
 - The `arithmetic` operator for `feComposite`.
 - (usvg) `--quiet` argument.
 - `word-spacing` is supported for all backends now.
+- `writing-mode` support.
 
 ### Changed
 - (resvg) Do not rescale images before rendering. This is faster and better.

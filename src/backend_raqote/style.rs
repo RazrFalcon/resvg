@@ -37,11 +37,9 @@ pub fn fill(
                             let ts = *dt.get_transform();
                             let (sub_dt, patt_ts) = try_opt!(
                                 prepare_pattern(&node, pattern, opt, ts, bbox, fill.opacity),
-                                (),
+                                ()
                             );
                             patt_dt = sub_dt;
-
-                            patt_dt.write_png("patt.png");
 
                             let img = raqote::Image {
                                 width: patt_dt.width(),
@@ -127,7 +125,7 @@ pub fn stroke(
                             let ts = *dt.get_transform();
                             let (sub_dt, patt_ts) = try_opt!(
                                 prepare_pattern(&node, pattern, opt, ts, bbox, stroke.opacity),
-                                (),
+                                ()
                             );
                             patt_dt = sub_dt;
 
