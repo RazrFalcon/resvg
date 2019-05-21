@@ -40,18 +40,7 @@ pub fn fill(
                                 ()
                             );
                             patt_dt = sub_dt;
-
-                            let img = raqote::Image {
-                                width: patt_dt.width(),
-                                height: patt_dt.height(),
-                                data: patt_dt.get_data(),
-                            };
-
-                            raqote::Source::Image(
-                                img,
-                                raqote::ExtendMode::Repeat,
-                                patt_ts.to_native(),
-                            )
+                            create_pattern_image(&patt_dt, patt_ts)
                         }
                         _ => {
                             return;
@@ -128,18 +117,7 @@ pub fn stroke(
                                 ()
                             );
                             patt_dt = sub_dt;
-
-                            let img = raqote::Image {
-                                width: patt_dt.width(),
-                                height: patt_dt.height(),
-                                data: patt_dt.get_data(),
-                            };
-
-                            raqote::Source::Image(
-                                img,
-                                raqote::ExtendMode::Repeat,
-                                patt_ts.to_native(),
-                            )
+                            create_pattern_image(&patt_dt, patt_ts)
                         }
                         _ => {
                             return;
@@ -165,10 +143,26 @@ fn prepare_linear<'a>(
     opacity: usvg::Opacity,
     bbox: Rect,
 ) -> raqote::Source<'a> {
-    raqote::Source::LinearGradient(
+    let mut ts = if g.units == usvg::Units::ObjectBoundingBox {
+        let mut ts = usvg::Transform::from_bbox(bbox);
+        ts.append(&g.transform);
+        ts
+    } else {
+        g.transform
+    };
+
+    let mut grad = raqote::Source::new_linear_gradient(
         raqote::Gradient { stops: conv_stops(g, opacity) },
-        g.base.transform.to_native(),
-    )
+        raqote::Point::new(g.x1 as f32, g.y1 as f32),
+        raqote::Point::new(g.x2 as f32, g.y2 as f32),
+        conv_spread(g.base.spread_method),
+    );
+
+    if let raqote::Source::LinearGradient(_, _, ref mut transform) = grad {
+        transform.post_mul(&ts.to_native());
+    }
+
+    grad
 }
 
 fn prepare_radial<'a>(
@@ -178,8 +172,17 @@ fn prepare_radial<'a>(
 ) -> raqote::Source<'a> {
     raqote::Source::RadialGradient(
         raqote::Gradient { stops: conv_stops(g, opacity) },
+        conv_spread(g.base.spread_method),
         g.base.transform.to_native(),
     )
+}
+
+fn conv_spread(v: usvg::SpreadMethod) -> raqote::Spread {
+    match v {
+        usvg::SpreadMethod::Pad => raqote::Spread::Pad,
+        usvg::SpreadMethod::Reflect => raqote::Spread::Reflect,
+        usvg::SpreadMethod::Repeat => raqote::Spread::Repeat,
+    }
 }
 
 fn conv_stops(
@@ -258,4 +261,21 @@ fn prepare_pattern<'a>(
     ts.scale(1.0 / sx, 1.0 / sy);
 
     Some((dt, ts))
+}
+
+fn create_pattern_image(
+    dt: &raqote::DrawTarget,
+    ts: usvg::Transform,
+) -> raqote::Source {
+    let img = raqote::Image {
+        width: dt.width(),
+        height: dt.height(),
+        data: dt.get_data(),
+    };
+
+    raqote::Source::Image(
+        img,
+        raqote::ExtendMode::Repeat,
+        ts.to_native(),
+    )
 }
