@@ -4,8 +4,6 @@
 
 //! Implementation of the nodes tree.
 
-extern crate rctree;
-
 use std::cell::Ref;
 use std::path;
 

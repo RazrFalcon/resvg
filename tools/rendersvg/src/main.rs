@@ -2,16 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#[allow(unused_imports)] // for Rust >= 1.30
-#[macro_use]
-extern crate gumdrop;
-
-extern crate fern;
-extern crate log;
-extern crate resvg;
-extern crate time;
-
-
 use std::fmt;
 use std::fs;
 use std::io::Write;

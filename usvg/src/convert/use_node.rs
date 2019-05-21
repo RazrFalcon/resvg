@@ -196,8 +196,6 @@ pub fn gen_clip_path_id(
     node: &svgdom::Node,
     tree: &tree::Tree,
 ) -> String {
-    // TODO: speed up
-
     let mut idx = 1;
     let mut id = format!("clipPath{}", idx);
     while    node.root().descendants().any(|n| *n.id() == id)

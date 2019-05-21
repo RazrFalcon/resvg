@@ -65,12 +65,8 @@ Full spec can be found [here](https://github.com/RazrFalcon/usvg/blob/master/doc
 #![warn(missing_debug_implementations)]
 #![warn(missing_copy_implementations)]
 
-
-pub extern crate svgdom;
-pub extern crate lyon_geom;
-#[macro_use] extern crate log;
-extern crate harfbuzz_rs as harfbuzz;
-
+pub use svgdom;
+pub use lyon_geom;
 
 /// Task, return value.
 #[macro_export]
@@ -90,7 +86,7 @@ macro_rules! try_opt_warn {
         match $task {
             Some(v) => v,
             None => {
-                warn!($msg);
+                log::warn!($msg);
                 return $ret;
             }
         }
@@ -99,7 +95,7 @@ macro_rules! try_opt_warn {
         match $task {
             Some(v) => v,
             None => {
-                warn!($fmt, $($arg)*);
+                log::warn!($fmt, $($arg)*);
                 return $ret;
             }
         }
@@ -114,7 +110,7 @@ macro_rules! debug_panic {
     };
     ($fmt:expr, $($arg:tt)*) => {
         debug_assert!(false, $fmt, $($arg)*);
-        warn!($fmt, $($arg)*);
+        log::warn!($fmt, $($arg)*);
     };
 }
 
@@ -141,8 +137,42 @@ pub use crate::error::*;
 pub use crate::geom::*;
 pub use crate::options::*;
 pub use crate::tree::*;
-pub use crate::convert::{
-    IsDefault,
-    IsValidLength,
-    TransformFromBBox,
-};
+
+
+/// Checks that type has a default value.
+pub trait IsDefault: Default {
+    /// Checks that type has a default value.
+    fn is_default(&self) -> bool;
+}
+
+impl<T: Default + PartialEq + Copy> IsDefault for T {
+    fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
+
+/// Checks that the current number is > 0.
+pub trait IsValidLength {
+    /// Checks that the current number is > 0.
+    fn is_valid_length(&self) -> bool;
+}
+
+impl IsValidLength for f64 {
+    fn is_valid_length(&self) -> bool {
+        *self > 0.0
+    }
+}
+
+
+/// Converts `Rect` into bbox `Transform`.
+pub trait TransformFromBBox: Sized {
+    /// Converts `Rect` into bbox `Transform`.
+    fn from_bbox(bbox: Rect) -> Self;
+}
+
+impl TransformFromBBox for tree::Transform {
+    fn from_bbox(bbox: Rect) -> Self {
+        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
+    }
+}

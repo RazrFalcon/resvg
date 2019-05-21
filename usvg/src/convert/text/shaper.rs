@@ -4,7 +4,7 @@
 
 // external
 use svgdom;
-use harfbuzz;
+use harfbuzz_rs as harfbuzz;
 use unicode_bidi;
 use unicode_script;
 use unicode_vo::{self, Orientation as CharOrientation};

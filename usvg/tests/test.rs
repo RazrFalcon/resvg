@@ -1,4 +1,3 @@
-extern crate usvg;
 #[macro_use] extern crate pretty_assertions;
 
 use usvg::svgdom;

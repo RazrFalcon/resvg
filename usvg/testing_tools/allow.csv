@@ -1,4 +1,4 @@
-a-alignment-baseline-001,3060,unsupported
+a-alignment-baseline-001,3064,unsupported
 a-baseline-shift-002,637
 a-baseline-shift-003,547
 a-baseline-shift-010,1254
@@ -83,6 +83,9 @@ a-writing-mode-008,2939,unsupported
 a-writing-mode-009,3626,unsupported
 a-writing-mode-010,3487,unsupported
 a-writing-mode-012,3530,unsupported
+a-writing-mode-013,1882,unsupported
+a-writing-mode-014,1363,unsupported
+a-writing-mode-015,1600,unsupported
 e-circle-001,519
 e-circle-002,538
 e-circle-003,262

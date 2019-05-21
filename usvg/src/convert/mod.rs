@@ -12,6 +12,7 @@ use svgdom::{
     FilterSvg,
     Length,
 };
+use log::warn;
 
 // self
 use crate::tree;
@@ -23,11 +24,7 @@ use crate::{
     Options,
 };
 pub use self::preprocess::prepare_doc;
-pub use self::svgdom_ext::{
-    IsDefault,
-    IsValidLength,
-    TransformFromBBox,
-};
+
 
 mod clip_and_mask;
 mod filter;
@@ -45,6 +42,7 @@ mod units;
 mod use_node;
 
 mod prelude {
+    pub use log::warn;
     pub use svgdom::{
         AttributeType,
         ElementType,

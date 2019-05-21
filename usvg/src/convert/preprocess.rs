@@ -3,21 +3,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // external
-use svgdom::{
-    self,
-    AttributeType,
-    Document,
-    ElementType,
-    FilterSvg,
-    FilterSvgAttrs,
-    FuzzyEq,
-    Node,
-};
+use svgdom;
 
 // self
-use crate::geom::*;
-use crate::short::*;
-use super::svgdom_ext::*;
+use super::prelude::*;
 
 
 /// Prepares an input `Document`.
@@ -55,14 +44,14 @@ pub fn prepare_doc(doc: &mut svgdom::Document) {
     prepare_text(doc);
 }
 
-fn fix_recursive_links(doc: &Document) {
+fn fix_recursive_links(doc: &svgdom::Document) {
     fix_patterns(doc);
     fix_func_iri(doc, EId::ClipPath, AId::ClipPath);
     fix_func_iri(doc, EId::Mask, AId::Mask);
     fix_func_iri(doc, EId::Filter, AId::Filter);
 }
 
-fn fix_patterns(doc: &Document) {
+fn fix_patterns(doc: &svgdom::Document) {
     for pattern_node in doc.root().descendants().filter(|n| n.is_tag_name(EId::Pattern)) {
         for mut node in pattern_node.descendants() {
             let mut check_attr = |aid: AId| {
@@ -93,7 +82,7 @@ fn fix_patterns(doc: &Document) {
     }
 }
 
-fn fix_func_iri(doc: &Document, eid: EId, aid: AId) {
+fn fix_func_iri(doc: &svgdom::Document, eid: EId, aid: AId) {
     for node in doc.root().descendants().filter(|n| n.is_tag_name(eid)) {
         for mut child in node.descendants() {
             let av = child.attributes().get_value(aid).cloned();
@@ -122,7 +111,7 @@ fn fix_func_iri(doc: &Document, eid: EId, aid: AId) {
 /// `clipPath` can have only shapes and `text` children and not groups.
 /// So instead of creating a separate svgdom::Node to usvg::Node converter
 /// just for `clipPath` we will remove invalid children beforehand.
-fn prepare_clip_path(doc: &mut Document) {
+fn prepare_clip_path(doc: &mut svgdom::Document) {
     // Remove invalid children.
     for node in doc.root().descendants().filter(|n| n.is_tag_name(EId::ClipPath)) {
         let mut curr = node.first_child();
@@ -159,9 +148,9 @@ fn prepare_clip_path(doc: &mut Document) {
     }
 }
 
-fn prepare_text(doc: &mut Document) {
+fn prepare_text(doc: &mut svgdom::Document) {
     // Removes `text` inside `text`, since it should be ignored.
-    fn sanitize_text(parent: Node, doc: &mut Document) {
+    fn sanitize_text(parent: svgdom::Node, doc: &mut svgdom::Document) {
         for node in parent.children() {
             if node.is_tag_name(EId::Text) {
                 doc.drain(node, |n| n.is_tag_name(EId::Text));
@@ -177,8 +166,8 @@ fn prepare_text(doc: &mut Document) {
     sanitize_text(doc.root(), doc);
 }
 
-fn regroup_elements(doc: &mut Document, parent: &Node) {
-    fn has_links(node: &Node) -> bool {
+fn regroup_elements(doc: &mut svgdom::Document, parent: &svgdom::Node) {
+    fn has_links(node: &svgdom::Node) -> bool {
            node.has_attribute(AId::ClipPath)
         || node.has_attribute(AId::Mask)
         || node.has_attribute(AId::Filter)
@@ -248,8 +237,8 @@ fn regroup_elements(doc: &mut Document, parent: &Node) {
 /// Resolves the `currentColor` attribute.
 ///
 /// The function will fallback to a default value when possible.
-fn resolve_current_color(doc: &Document) {
-    fn resolve_color(node: &Node, aid: AId) -> Option<svgdom::Color> {
+fn resolve_current_color(doc: &svgdom::Document) {
+    fn resolve_color(node: &svgdom::Node, aid: AId) -> Option<svgdom::Color> {
         if let Some(n) = node.ancestors().find(|n| n.has_attribute(AId::Color)) {
             n.attributes().get_color(AId::Color)
         } else {
@@ -312,7 +301,7 @@ fn resolve_current_color(doc: &Document) {
 /// Resolves the `inherit` attribute value.
 ///
 /// The function will fallback to a default value when possible.
-fn resolve_inherit(doc: &Document) {
+fn resolve_inherit(doc: &svgdom::Document) {
     let mut ids = Vec::new();
     for (_, mut node) in doc.root().descendants().svg() {
         ids.clear();
@@ -329,7 +318,7 @@ fn resolve_inherit(doc: &Document) {
     }
 }
 
-fn _resolve_inherit(node: &mut Node, aid: AId) {
+fn _resolve_inherit(node: &mut svgdom::Node, aid: AId) {
     if aid.is_inheritable() {
         if let Some(n) = node.ancestors().skip(1).find(|n| n.has_attribute(aid)) {
             let attrs = n.attributes();
@@ -362,7 +351,7 @@ fn _resolve_inherit(node: &mut Node, aid: AId) {
 ///
 /// In the `usvg`, the root `svg` element can't have any style attributes,
 /// so we have to create a new root group and move all non-inheritable attributes into it.
-fn resolve_root_style_attributes(doc: &mut Document, svg: &mut Node) {
+fn resolve_root_style_attributes(doc: &mut svgdom::Document, svg: &mut svgdom::Node) {
     // Create a new group only when needed.
     let has_any =
         svg.has_attribute(AId::ClipPath)
@@ -391,7 +380,7 @@ fn resolve_root_style_attributes(doc: &mut Document, svg: &mut Node) {
     svg.move_attribute_to(AId::Transform, &mut g);
 }
 
-fn resolve_tref(doc: &mut Document) {
+fn resolve_tref(doc: &mut svgdom::Document) {
     for mut tref in doc.root().descendants().filter(|n| n.is_tag_name(EId::Tref)) {
         let av = tref.attributes().get_value(AId::Href).cloned();
         let text_elem = if let Some(AValue::Link(ref link)) = av {
@@ -417,7 +406,7 @@ fn resolve_tref(doc: &mut Document) {
     }
 }
 
-fn resolve_use(doc: &mut Document) {
+fn resolve_use(doc: &mut svgdom::Document) {
     let mut rm_nodes = Vec::new();
 
     // 'use' elements can be linked in any order,
@@ -440,9 +429,9 @@ fn resolve_use(doc: &mut Document) {
 }
 
 fn _resolve_use(
-    doc: &mut Document,
-    parent: Node,
-    rm_nodes: &mut Vec<Node>,
+    doc: &mut svgdom::Document,
+    parent: svgdom::Node,
+    rm_nodes: &mut Vec<svgdom::Node>,
 ) -> bool {
     let mut is_any_resolved = false;
 
@@ -511,9 +500,9 @@ fn _resolve_use(
 }
 
 fn __resolve_use(
-    doc: &mut Document,
-    use_node: &mut Node,
-    linked_node: &mut Node,
+    doc: &mut svgdom::Document,
+    use_node: &mut svgdom::Node,
+    linked_node: &mut svgdom::Node,
 ) {
     use_node.set_tag_name(EId::G);
 
@@ -533,8 +522,8 @@ fn __resolve_use(
     }
 }
 
-fn remove_invalid_use(doc: &mut Document) {
-    fn _rm(doc: &mut Document) -> usize {
+fn remove_invalid_use(doc: &mut svgdom::Document) {
+    fn _rm(doc: &mut svgdom::Document) -> usize {
         let root = doc.root();
         doc.drain(root, |n| {
             if n.is_tag_name(EId::Use) {
@@ -568,7 +557,7 @@ fn remove_invalid_use(doc: &mut Document) {
 /// We don't care about `a` elements, but we can't just remove them.
 /// So, if an `a` element is inside a `text` - change the tag name to `tspan`.
 /// Otherwise, to `g`.
-fn ungroup_a(doc: &Document) {
+fn ungroup_a(doc: &svgdom::Document) {
     for (id, mut node) in doc.root().descendants().svg() {
         if id != EId::A {
             continue;

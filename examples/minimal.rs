@@ -1,5 +1,3 @@
-extern crate resvg;
-
 use std::env;
 use std::path::Path;
 
