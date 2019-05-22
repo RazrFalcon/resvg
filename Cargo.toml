@@ -38,9 +38,14 @@ pangocairo = { version = "0.7", optional = true }
 # qt backend
 resvg-qt = { path = "resvg-qt", version = "0.6", optional = true }
 
+# skia backend
+skia-bindings = { git = "https://github.com/rust-skia/rust-skia", optional = true }
+skia-safe = { git = "https://github.com/rust-skia/rust-skia", optional = true }
+
 [features]
 cairo-backend = ["cairo-rs", "gdk-pixbuf", "pango", "pangocairo"]
 qt-backend = ["resvg-qt"]
+skia-backend = ["skia-bindings", "skia-safe"]
 
 [package.metadata.docs.rs]
 all-features = true
