@@ -204,8 +204,6 @@ fn shape_text(
     // Remember all fonts used for shaping.
     let mut used_fonts = vec![font.clone()];
 
-    let mut all_fonts = Vec::new();
-
     // Loop until all glyphs become resolved or until no more fonts are left.
     'outer: loop {
         let mut missing = None;
@@ -213,13 +211,6 @@ fn shape_text(
             if glyph.is_missing() {
                 missing = glyph.byte_idx.char_from(text);
                 break;
-            }
-        }
-
-        if all_fonts.is_empty() {
-            all_fonts = match fk::SystemSource::new().all_fonts() {
-                Ok(v) => v,
-                Err(_) => break 'outer,
             }
         }
 
