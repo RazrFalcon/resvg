@@ -307,6 +307,9 @@ fn resolve_font(
         name_list.push(name);
     }
 
+    // Use the default font as fallback.
+    name_list.push(fk::FamilyName::Title(state.opt.font_family.to_owned()));
+
     let properties = fk::Properties { style, weight, stretch };
     let handle = match fk::SystemSource::new().select_best_match(&name_list, &properties) {
         Ok(v) => v,
