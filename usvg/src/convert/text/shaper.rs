@@ -8,7 +8,6 @@ use harfbuzz_rs as harfbuzz;
 use unicode_bidi;
 use unicode_script;
 use unicode_vo::{self, Orientation as CharOrientation};
-use log::info;
 
 mod fk {
     pub use font_kit::handle::Handle;
@@ -402,6 +401,8 @@ fn find_font_for_char(
     exclude_fonts: &[Font],
     state: &State,
 ) -> Option<Font> {
+    let base_font = exclude_fonts[0].clone();
+
     let mut cache = state.font_cache.borrow_mut();
     cache.init();
 
@@ -424,13 +425,17 @@ fn find_font_for_char(
             continue;
         }
 
-        // TODO: match font style too
-
         if let Some(font) = super::load_font(handle) {
-            if font.handle.glyph_for_char(c).is_some() {
-                info!("Fallback from {} to {}.", exclude_fonts[0].path.display(), path.display());
-                return Some(font);
+            if base_font.handle.properties() != font.handle.properties() {
+                continue;
             }
+
+            if font.handle.glyph_for_char(c).is_none() {
+                continue;
+            }
+
+            warn!("Fallback from {} to {}.", exclude_fonts[0].path.display(), path.display());
+            return Some(font);
         }
     }
 
