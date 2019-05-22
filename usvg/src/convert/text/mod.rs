@@ -46,6 +46,7 @@ pub fn convert(
     let pos_list = resolve_positions_list(node, state);
     let rotate_list = resolve_rotate_list(node);
     let writing_mode = convert_writing_mode(node);
+    let rendering_mode = resolve_rendering_mode(node, state);
     let mut text_ts = node.attributes().get_transform(AId::Transform);
 
     let mut chunks = collect_text_chunks(node, &pos_list, state, tree);
@@ -140,6 +141,7 @@ pub fn convert(
 
     for mut path in new_paths {
         fix_obj_bounding_box(&mut path, bbox, tree);
+        path.rendering_mode = rendering_mode;
         parent.append_kind(tree::NodeKind::Path(path));
     }
 }
@@ -185,7 +187,7 @@ fn convert_span(
         visibility: span.visibility,
         fill,
         stroke: span.stroke.take(),
-        rendering_mode: tree::ShapeRendering::default(), // TODO: this
+        rendering_mode: tree::ShapeRendering::default(),
         segments,
     };
 

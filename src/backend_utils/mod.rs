@@ -20,16 +20,6 @@ pub fn use_shape_antialiasing(
     }
 }
 
-//pub fn use_text_antialiasing(
-//    mode: usvg::TextRendering,
-//) -> bool {
-//    match mode {
-//        usvg::TextRendering::OptimizeSpeed         => false,
-//        usvg::TextRendering::OptimizeLegibility    => true,
-//        usvg::TextRendering::GeometricPrecision    => true,
-//    }
-//}
-
 pub trait ConvTransform<T> {
     fn to_native(&self) -> T;
     fn from_native(_: &T) -> Self;

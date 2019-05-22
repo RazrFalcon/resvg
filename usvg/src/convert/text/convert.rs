@@ -275,6 +275,23 @@ pub fn collect_text_chunks(
     chunks
 }
 
+pub fn resolve_rendering_mode(
+    node: &svgdom::Node,
+    state: &State,
+) -> tree::ShapeRendering {
+    // `text-rendering` can be set only on a `text` element.
+    debug_assert!(node.is_tag_name(EId::Text));
+
+    let mode: tree::TextRendering = node.try_find_enum(AId::TextRendering)
+                                        .unwrap_or(state.opt.text_rendering);
+
+    match mode {
+        tree::TextRendering::OptimizeSpeed => tree::ShapeRendering::CrispEdges,
+        tree::TextRendering::OptimizeLegibility => tree::ShapeRendering::GeometricPrecision,
+        tree::TextRendering::GeometricPrecision =>  tree::ShapeRendering::GeometricPrecision,
+    }
+}
+
 fn resolve_font(
     node: &svgdom::Node,
     state: &State,
