@@ -159,7 +159,7 @@ fn prepare_linear<'a>(
     );
 
     if let raqote::Source::LinearGradient(_, _, ref mut transform) = grad {
-        transform.post_mul(&ts.to_native());
+        *transform = transform.post_mul(&ts.to_native());
     }
 
     grad

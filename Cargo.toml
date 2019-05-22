@@ -39,7 +39,7 @@ resvg-qt = { path = "resvg-qt", version = "0.6", optional = true }
 # raqote backend
 [dependencies.raqote]
 git = "https://github.com/jrmuizel/raqote.git"
-rev = "eb508c9"
+rev = "2bc600a"
 default-features = false
 optional = true
 
