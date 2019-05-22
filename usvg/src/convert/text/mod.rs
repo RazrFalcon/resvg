@@ -26,7 +26,6 @@ mod shaper;
 use self::shaper::OutlinedCluster;
 
 
-// TODO: visibility on text and tspan
 // TODO: group when Options::keep_named_groups is set
 
 

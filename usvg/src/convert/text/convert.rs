@@ -178,6 +178,12 @@ pub fn collect_text_chunks(
     let mut chunk_bytes_count = 0;
     for child in text_elem.descendants().filter(|n| n.is_text()) {
         let ref parent = child.parent().unwrap();
+
+        if !style::is_visible_element(parent, state.opt) {
+            chars_count += child.text().chars().count();
+            continue;
+        }
+
         let anchor = conv_text_anchor(parent);
 
         // TODO: what to do when <= 0? UB?
