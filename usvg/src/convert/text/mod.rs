@@ -26,9 +26,6 @@ mod shaper;
 use self::shaper::OutlinedCluster;
 
 
-// TODO: group when Options::keep_named_groups is set
-
-
 /// A text decoration span.
 ///
 /// Basically a horizontal line, that will be used for underline, overline and line-through.
@@ -125,6 +122,21 @@ pub fn convert(
             bbox = bbox.expand(r);
         }
     }
+
+    if new_paths.len() == 1 {
+        // Copy `text` id to the first path.
+        new_paths[0].id = node.id().clone();
+    }
+
+    let mut parent = if state.opt.keep_named_groups && new_paths.len() > 1 {
+        // Create a group will all paths that was created during text-to-path conversion.
+        parent.append_kind(tree::NodeKind::Group(tree::Group {
+            id: node.id().clone(),
+            .. tree::Group::default()
+        }))
+    } else {
+        parent.clone()
+    };
 
     for mut path in new_paths {
         fix_obj_bounding_box(&mut path, bbox, tree);

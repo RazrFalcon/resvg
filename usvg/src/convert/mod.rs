@@ -464,7 +464,7 @@ fn ungroup_groups(tree: &mut tree::Tree, opt: &Options) {
                 && g.clip_path.is_none()
                 && g.mask.is_none()
                 && g.filter.is_none()
-                && !opt.keep_named_groups
+                && !(opt.keep_named_groups && !g.id.is_empty())
             } else {
                 false
             };
