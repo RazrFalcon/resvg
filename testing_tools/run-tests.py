@@ -62,6 +62,10 @@ if not local_test:
     run(['git', 'clone', TESTS_URL, '--depth', '1', './target/resvg-test-suite'], check=True)
 
 
+with cd('usvg'):
+    run(['cargo', 'test'], check=True)
+
+
 if 'RESVG_QT_BACKEND' in os.environ:
     # build qt backend
     with cd('tools/rendersvg'):
@@ -146,16 +150,3 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
     # build cairo-rs example
     with cd('examples/cairo-rs'):
         run(['cargo', 'build'], check=True)
-
-
-if 'USVG_TESTING' in os.environ:
-    with cd('usvg'):
-        run(['cargo', 'test'], check=True)
-
-    # usvg/testing_tools/regression.py uses tools/usvg
-    with cd('tools/usvg'):
-        run(['cargo', 'build'], check=True)
-
-    with cd('usvg/testing_tools'):
-        run(['./regression.py', '--ci-mode', '../../target/resvg-test-suite/svg',
-             '../../target/test-suite-temp'], check=True)
