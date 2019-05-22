@@ -40,6 +40,16 @@ impl ByteIndex {
     pub fn value(&self) -> usize {
         self.0
     }
+
+    /// Converts byte position into a code point position.
+    pub fn code_point_from(&self, text: &str) -> usize {
+        text.char_indices().take_while(|(i, _)| *i != self.0).count()
+    }
+
+    /// Converts byte position into a character.
+    pub fn char_from(&self, text: &str) -> Option<char> {
+        text[self.0..].chars().next()
+    }
 }
 
 
