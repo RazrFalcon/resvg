@@ -42,8 +42,9 @@
 - `dominant-baseline`
 - [`enable-background`](https://www.w3.org/TR/SVG11/filters.html#EnableBackgroundProperty) (deprecated in the SVG 2)
 - `font`
-- `font-variant`
 - `font-size-adjust`
+- `font-stretch`
+- `font-variant`
 - `glyph-orientation-horizontal` (removed in the SVG 2)
 - `glyph-orientation-vertical` (deprecated in the SVG 2)
 - [`in`](https://www.w3.org/TR/SVG11/filters.html#FilterPrimitiveInAttribute)

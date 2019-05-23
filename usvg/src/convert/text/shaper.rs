@@ -70,8 +70,7 @@ impl Glyph {
 /// It can be positioned, rotated, spaced, etc.
 ///
 /// Let's say we have `й` which is *CYRILLIC SMALL LETTER I* and *COMBINING BREVE*.
-///
-/// It consists of two code points, will be shaped (via harfbuzz) as two glyphs in one cluster,
+/// It consists of two code points, will be shaped (via harfbuzz) as two glyphs into one cluster,
 /// and then will be combined into the one `OutlinedCluster`.
 #[derive(Clone)]
 pub struct OutlinedCluster {
@@ -80,22 +79,12 @@ pub struct OutlinedCluster {
     /// We use it to match a cluster with a character in the text chunk and therefore with the style.
     pub byte_idx: ByteIndex,
 
-    /// The cluster position in SVG coordinates.
-    pub x: f64,
-
-    /// The cluster position in SVG coordinates.
-    pub y: f64,
-
-    baseline_shift: f64,
-
-    /// The rotation angle.
-    pub rotate: f64,
-
     /// An advance along the X axis.
     ///
     /// Can be negative.
     pub advance: f64,
 
+    /// An ascent in SVG coordinates.
     pub ascent: f64,
 
     descent: f64,
@@ -103,13 +92,16 @@ pub struct OutlinedCluster {
     x_height: f64,
 
     /// Indicates that this cluster was affected by the relative shift (via dx/dy attributes)
-    /// during the text layouting.
+    /// during the text layouting. Which breaks the `text-decoration` line.
     ///
     /// Used during the `text-decoration` processing.
     pub has_relative_shift: bool,
 
-    /// The actual outline.
+    /// An actual outline.
     pub path: Vec<tree::PathSegment>,
+
+    /// A cluster's transform that contains it's position, rotation, etc.
+    pub transform: tree::Transform,
 }
 
 impl OutlinedCluster {
@@ -212,22 +204,13 @@ fn shape_text(
     // Remember all fonts used for shaping.
     let mut used_fonts = vec![font.clone()];
 
-    let mut all_fonts = Vec::new();
-
     // Loop until all glyphs become resolved or until no more fonts are left.
     'outer: loop {
         let mut missing = None;
         for glyph in &glyphs {
             if glyph.is_missing() {
-                missing = byte_to_char(text, glyph.byte_idx);
+                missing = glyph.byte_idx.char_from(text);
                 break;
-            }
-        }
-
-        if all_fonts.is_empty() {
-            all_fonts = match fk::SystemSource::new().all_fonts() {
-                Ok(v) => v,
-                Err(_) => break 'outer,
             }
         }
 
@@ -261,7 +244,7 @@ fn shape_text(
     // Warn about missing glyphs.
     for glyph in &glyphs {
         if glyph.is_missing() {
-            if let Some(c) = byte_to_char(text, glyph.byte_idx) {
+            if let Some(c) = glyph.byte_idx.char_from(text) {
                 warn!("No fonts with a {}/U+{:X} character were found.", c, c as u32);
             }
         }
@@ -391,16 +374,13 @@ fn outline_cluster(
 
     OutlinedCluster {
         byte_idx: glyphs[0].byte_idx,
-        x: 0.0,
-        y: 0.0,
-        baseline_shift: 0.0,
         advance,
         ascent: glyphs[0].font.ascent(font_size),
         descent: glyphs[0].font.descent(font_size),
         x_height: glyphs[0].font.x_height(font_size),
-        rotate: 0.0,
         has_relative_shift: false,
         path,
+        transform: tree::Transform::default(),
     }
 }
 
@@ -412,10 +392,12 @@ fn find_font_for_char(
     exclude_fonts: &[Font],
     state: &State,
 ) -> Option<Font> {
+    let base_font = exclude_fonts[0].clone();
+
     let mut cache = state.font_cache.borrow_mut();
     cache.init();
 
-    // Iterate over fonts and check if any of the support the specified char.
+    // Iterate over fonts and check if any of them support the specified char.
     for handle in cache.fonts() {
         let (path, index) = match handle {
             fk::Handle::Path { ref path, font_index } => {
@@ -434,12 +416,17 @@ fn find_font_for_char(
             continue;
         }
 
-        // TODO: match font style too
-
         if let Some(font) = super::load_font(handle) {
-            if font.handle.glyph_for_char(c).is_some() {
-                return Some(font);
+            if base_font.handle.properties() != font.handle.properties() {
+                continue;
             }
+
+            if font.handle.glyph_for_char(c).is_none() {
+                continue;
+            }
+
+            warn!("Fallback from {} to {}.", exclude_fonts[0].path.display(), path.display());
+            return Some(font);
         }
     }
 
@@ -451,33 +438,29 @@ pub fn resolve_clusters_positions(
     offset: usize,
     pos_list: &[CharacterPosition],
     rotate_list: &[f64],
-    writing_mode: WritingMode,
     clusters: &mut [OutlinedCluster],
 ) -> f64 {
     let mut x = 0.0;
     let mut y = 0.0;
 
     for cluster in clusters {
-        cluster.x = x;
-        cluster.y = y;
-
-        let cp = offset + byte_to_code_point(text, cluster.byte_idx);
+        let cp = offset + cluster.byte_idx.code_point_from(text);
         if let Some(pos) = pos_list.get(cp) {
-            cluster.x += pos.dx.unwrap_or(0.0);
-            cluster.y += pos.dy.unwrap_or(0.0);
+            x += pos.dx.unwrap_or(0.0);
+            y += pos.dy.unwrap_or(0.0);
             cluster.has_relative_shift = pos.dx.is_some() || pos.dy.is_some();
         }
 
+        cluster.transform.translate(x, y);
+
         if let Some(angle) = rotate_list.get(cp).cloned() {
-            cluster.rotate = angle;
+            if !angle.is_fuzzy_zero() {
+                cluster.transform.rotate(angle);
+                cluster.has_relative_shift = true;
+            }
         }
 
-        x = cluster.x + cluster.advance;
-        y = cluster.y;
-
-        if writing_mode == WritingMode::TopToBottom {
-            cluster.y += cluster.baseline_shift;
-        }
+        x += cluster.advance;
     }
 
     x
@@ -496,7 +479,7 @@ pub fn apply_letter_spacing(
     }
 
     for cluster in clusters {
-        if let Some(c) = byte_to_char(&chunk.text, cluster.byte_idx) {
+        if let Some(c) = cluster.byte_idx.char_from(&chunk.text) {
             // Spacing must be applied only to characters that belongs to the script
             // that supports spacing.
             // We are checking only the first code point, since it should be enough.
@@ -561,7 +544,7 @@ pub fn apply_word_spacing(
     }
 
     for cluster in clusters {
-        if let Some(c) = byte_to_char(&chunk.text, cluster.byte_idx) {
+        if let Some(c) = cluster.byte_idx.char_from(&chunk.text) {
             if is_word_separator_characters(c) {
                 if let Some(span) = chunk.span_at(cluster.byte_idx) {
                     // Technically, word spacing 'should be applied half on each
@@ -598,7 +581,7 @@ pub fn apply_writing_mode(
     }
 
     for cluster in clusters {
-        if let Some(c) = byte_to_char(&chunk.text, cluster.byte_idx) {
+        if let Some(c) = cluster.byte_idx.char_from(&chunk.text) {
             let orientation = unicode_vo::char_orientation(c);
             if orientation == CharOrientation::Upright {
                 // Additional offset. Not sure why.
@@ -618,21 +601,12 @@ pub fn apply_writing_mode(
                 // Could not find a spec that explains this,
                 // but this is how other applications shift "rotated" characters
                 // in the top-to-bottom mode.
-                cluster.baseline_shift = cluster.x_height / 2.0;
+                cluster.transform.translate(0.0, cluster.x_height / 2.0);
             }
         }
     }
 }
 
-/// Converts byte position into a code point position.
-fn byte_to_code_point(text: &str, byte: ByteIndex) -> usize {
-    text.char_indices().take_while(|(i, _)| *i != byte.value()).count()
-}
-
-/// Converts byte position into a character.
-fn byte_to_char(text: &str, byte: ByteIndex) -> Option<char> {
-    text[byte.value()..].chars().next()
-}
 
 /// Implements an ability to outline a glyph directly into the `svgdom::Path`.
 mod svgdom_path_builder {

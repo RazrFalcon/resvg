@@ -26,20 +26,14 @@ mod shaper;
 use self::shaper::OutlinedCluster;
 
 
-// TODO: visibility on text and tspan
-// TODO: group when Options::keep_named_groups is set
-
-
 /// A text decoration span.
 ///
 /// Basically a horizontal line, that will be used for underline, overline and line-through.
 /// It doesn't have a height, since it depends on the font metrics.
 #[derive(Clone, Copy)]
 struct DecorationSpan {
-    x: f64,
-    baseline: f64,
     width: f64,
-    angle: f64,
+    transform: tree::Transform,
 }
 
 
@@ -52,6 +46,7 @@ pub fn convert(
     let pos_list = resolve_positions_list(node, state);
     let rotate_list = resolve_rotate_list(node);
     let writing_mode = convert_writing_mode(node);
+    let rendering_mode = resolve_rendering_mode(node, state);
     let mut text_ts = node.attributes().get_transform(AId::Transform);
 
     let mut chunks = collect_text_chunks(node, &pos_list, state, tree);
@@ -72,7 +67,7 @@ pub fn convert(
         shaper::apply_letter_spacing(&chunk, &mut clusters);
         shaper::apply_word_spacing(&chunk, &mut clusters);
         let width = shaper::resolve_clusters_positions(
-            &chunk.text, char_offset, &pos_list, &rotate_list, writing_mode, &mut clusters
+            &chunk.text, char_offset, &pos_list, &rotate_list, &mut clusters
         );
 
         match writing_mode {
@@ -89,32 +84,31 @@ pub fn convert(
         for span in &mut chunk.spans {
             let decoration_spans = collect_decoration_spans(span, &clusters);
 
+            let mut span_ts = text_ts.clone();
+            span_ts.translate(x, y - span.baseline_shift);
+
             if let Some(decoration) = span.decoration.underline.take() {
                 new_paths.push(convert_decoration(
-                    x, y - span.font.underline_position(span.font_size),
-                    &span, decoration, &decoration_spans, text_ts,
+                    -span.font.underline_position(span.font_size),
+                    &span, decoration, &decoration_spans, span_ts,
                 ));
             }
 
             if let Some(decoration) = span.decoration.overline.take() {
-                // TODO: overline pos from font
                 new_paths.push(convert_decoration(
-                    x, y - span.font.ascent(span.font_size),
-                    &span, decoration, &decoration_spans, text_ts,
+                    -span.font.ascent(span.font_size),
+                    &span, decoration, &decoration_spans, span_ts,
                 ));
             }
 
-            let mut span_ts = text_ts.clone();
-            span_ts.translate(x, y - span.baseline_shift);
             if let Some(path) = convert_span(span, &mut clusters, &span_ts, parent, false) {
                 new_paths.push(path);
             }
 
             if let Some(decoration) = span.decoration.line_through.take() {
-                // TODO: line-through pos from font
                 new_paths.push(convert_decoration(
-                    x, y - span.font.ascent(span.font_size) / 3.0,
-                    &span, decoration, &decoration_spans, text_ts,
+                    -span.font.x_height(span.font_size) / 2.0,
+                    &span, decoration, &decoration_spans, span_ts,
                 ));
             }
         }
@@ -130,8 +124,24 @@ pub fn convert(
         }
     }
 
+    if new_paths.len() == 1 {
+        // Copy `text` id to the first path.
+        new_paths[0].id = node.id().clone();
+    }
+
+    let mut parent = if state.opt.keep_named_groups && new_paths.len() > 1 {
+        // Create a group will all paths that was created during text-to-path conversion.
+        parent.append_kind(tree::NodeKind::Group(tree::Group {
+            id: node.id().clone(),
+            .. tree::Group::default()
+        }))
+    } else {
+        parent.clone()
+    };
+
     for mut path in new_paths {
         fix_obj_bounding_box(&mut path, bbox, tree);
+        path.rendering_mode = rendering_mode;
         parent.append_kind(tree::NodeKind::Path(path));
     }
 }
@@ -148,16 +158,13 @@ fn convert_span(
     for cluster in clusters {
         if span.contains(cluster.byte_idx) {
             if dump_clusters {
-                dump_cluster(cluster, *text_ts, parent);
-            }
-
-            let mut transform = tree::Transform::new_translate(cluster.x, cluster.y);
-            if !cluster.rotate.is_fuzzy_zero() {
-                transform.rotate(cluster.rotate);
+                let mut ts = *text_ts;
+                ts.append(&cluster.transform);
+                dump_cluster(cluster, ts, parent);
             }
 
             let mut path = mem::replace(&mut cluster.path, Vec::new());
-            transform_path(&mut path, &transform);
+            transform_path(&mut path, &cluster.transform);
 
             segments.extend_from_slice(&path);
         }
@@ -180,7 +187,7 @@ fn convert_span(
         visibility: span.visibility,
         fill,
         stroke: span.stroke.take(),
-        rendering_mode: tree::ShapeRendering::default(), // TODO: this
+        rendering_mode: tree::ShapeRendering::default(),
         segments,
     };
 
@@ -223,12 +230,11 @@ fn dump_cluster(
 
     let mut base_path = tree::Path {
         transform: text_ts,
-        rendering_mode: tree::ShapeRendering::CrispEdges,
         .. tree::Path::default()
     };
 
     // Cluster bbox.
-    let r = Rect::new(cluster.x, cluster.y - cluster.ascent,
+    let r = Rect::new(0.0, -cluster.ascent,
                       cluster.advance, cluster.height()).unwrap();
     base_path.stroke = new_stroke(tree::Color::blue());
     base_path.segments = utils::rect_to_path(r);
@@ -237,8 +243,8 @@ fn dump_cluster(
     // Baseline.
     base_path.stroke = new_stroke(tree::Color::red());
     base_path.segments = vec![
-        tree::PathSegment::MoveTo { x: cluster.x,                   y: cluster.y },
-        tree::PathSegment::LineTo { x: cluster.x + cluster.advance, y: cluster.y },
+        tree::PathSegment::MoveTo { x: 0.0,             y: 0.0 },
+        tree::PathSegment::LineTo { x: cluster.advance, y: 0.0 },
     ];
     parent.append_kind(tree::NodeKind::Path(base_path));
 }
@@ -258,42 +264,37 @@ fn collect_decoration_spans(
     let mut spans = Vec::new();
 
     let mut started = false;
-    let mut x = 0.0;
-    let mut y = 0.0;
     let mut width = 0.0;
-    let mut angle = 0.0;
+    let mut transform = tree::Transform::default();
     for cluster in clusters {
         if span.contains(cluster.byte_idx) {
-            if started && (cluster.has_relative_shift || !cluster.rotate.is_fuzzy_zero()) {
+            if started && cluster.has_relative_shift {
                 started = false;
-                spans.push(DecorationSpan { x, baseline: y, width, angle });
+                spans.push(DecorationSpan { width, transform });
             }
 
             if !started {
-                x = cluster.x;
-                y = cluster.y;
-                width = cluster.x + cluster.advance - x;
-                angle = cluster.rotate;
+                width = cluster.advance;
                 started = true;
+                transform = cluster.transform;
             } else {
-                width = cluster.x + cluster.advance - x;
+                width += cluster.advance;
             }
         } else if started {
-            spans.push(DecorationSpan { x, baseline: y, width, angle });
+            spans.push(DecorationSpan { width, transform });
             started = false;
         }
     }
 
     if started {
-        spans.push(DecorationSpan { x, baseline: y, width, angle });
+        spans.push(DecorationSpan { width, transform });
     }
 
     spans
 }
 
 fn convert_decoration(
-    x: f64,
-    baseline: f64,
+    dy: f64,
     span: &TextSpan,
     mut decoration: TextDecorationStyle,
     decoration_spans: &[DecorationSpan],
@@ -303,10 +304,6 @@ fn convert_decoration(
 
     let mut segments = Vec::new();
     for dec_span in decoration_spans {
-        let tx = x + dec_span.x;
-        let ty = baseline + dec_span.baseline - span.baseline_shift
-                 - span.font.underline_thickness(span.font_size) / 2.0;
-
         let rect = Rect::new(
             0.0,
             0.0,
@@ -317,8 +314,8 @@ fn convert_decoration(
         let start_idx = segments.len();
         add_rect_to_path(rect, &mut segments);
 
-        let mut ts = tree::Transform::new_translate(tx, ty);
-        ts.rotate(dec_span.angle);
+        let mut ts = dec_span.transform;
+        ts.translate(0.0, dy);
         transform_path(&mut segments[start_idx..], &ts);
     }
 

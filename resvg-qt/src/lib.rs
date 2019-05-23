@@ -68,13 +68,6 @@ pub enum AspectRatioMode {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum PathSegmentType {
-    MoveTo,
-    LineTo,
-    CurveTo,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Spread {
     Pad = ffi::Spread_PadSpread as isize,
     Reflect = ffi::Spread_ReflectSpread as isize,
@@ -332,29 +325,6 @@ impl PainterPath {
 
     pub fn close_path(&mut self) {
         unsafe { ffi::qtc_qpainterpath_close_path(self.0) }
-    }
-
-    pub fn len(&self) -> i32 {
-        unsafe { ffi::qtc_qpainterpath_element_count(self.0) }
-    }
-
-    pub fn get(&self, index: i32) -> (PathSegmentType, f64, f64) {
-        unsafe {
-            let seg = ffi::qtc_qpainterpath_element_at(self.0, index);
-            let kind = match seg.kind {
-                ffi::PathSegmentType_MoveToSegment => PathSegmentType::MoveTo,
-                ffi::PathSegmentType_LineToSegment => PathSegmentType::LineTo,
-                ffi::PathSegmentType_CurveToSegment => PathSegmentType::CurveTo,
-                _ => unreachable!(),
-            };
-            (kind, seg.x, seg.y)
-        }
-    }
-
-    pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
-        let rect = unsafe { ffi::qtc_qpainterpath_get_bbox(self.0) };
-
-        (rect.x, rect.y, rect.w, rect.h)
     }
 
     pub fn set_fill_rule(&mut self, rule: FillRule) {

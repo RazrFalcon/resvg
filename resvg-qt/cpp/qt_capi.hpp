@@ -18,13 +18,6 @@ INIT_STRUCT(qtc_qradialgradient)
 
 #undef INIT_STRUCT
 
-struct qtc_rect_f {
-    double x;
-    double y;
-    double w;
-    double h;
-};
-
 struct qtc_transform {
     double a;
     double b;
@@ -32,18 +25,6 @@ struct qtc_transform {
     double d;
     double e;
     double f;
-};
-
-enum PathSegmentType {
-    MoveToSegment,
-    LineToSegment,
-    CurveToSegment,
-};
-
-struct PathSegment {
-    PathSegmentType kind;
-    double x;
-    double y;
 };
 
 // A direct copy from qnamespace.h.
@@ -165,9 +146,6 @@ void qtc_qpainterpath_curve_to(qtc_qpainterpath *c_pp, double x1, double y1, dou
                                double x, double y);
 void qtc_qpainterpath_close_path(qtc_qpainterpath *c_pp);
 void qtc_qpainterpath_set_fill_rule(qtc_qpainterpath *c_pp, FillRule rule);
-int qtc_qpainterpath_element_count(qtc_qpainterpath *c_pp);
-PathSegment qtc_qpainterpath_element_at(qtc_qpainterpath *c_pp, int i);
-qtc_rect_f qtc_qpainterpath_get_bbox(qtc_qpainterpath *c_pp);
 void qtc_qpainterpath_destroy(qtc_qpainterpath *c_pp);
 
 

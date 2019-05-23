@@ -35,13 +35,14 @@ pub const __USE_ATFILE: u32 = 1;
 pub const __USE_GNU: u32 = 1;
 pub const __USE_FORTIFY_LEVEL: u32 = 0;
 pub const __GLIBC_USE_DEPRECATED_GETS: u32 = 0;
+pub const __GLIBC_USE_DEPRECATED_SCANF: u32 = 0;
 pub const _STDC_PREDEF_H: u32 = 1;
 pub const __STDC_IEC_559__: u32 = 1;
 pub const __STDC_IEC_559_COMPLEX__: u32 = 1;
 pub const __STDC_ISO_10646__: u32 = 201706;
 pub const __GNU_LIBRARY__: u32 = 6;
 pub const __GLIBC__: u32 = 2;
-pub const __GLIBC_MINOR__: u32 = 28;
+pub const __GLIBC_MINOR__: u32 = 29;
 pub const _SYS_CDEFS_H: u32 = 1;
 pub const __glibc_c99_flexarr_available: u32 = 1;
 pub const __WORDSIZE: u32 = 64;
@@ -53,11 +54,13 @@ pub const __GLIBC_USE_IEC_60559_BFP_EXT: u32 = 1;
 pub const __GLIBC_USE_IEC_60559_FUNCS_EXT: u32 = 1;
 pub const __GLIBC_USE_IEC_60559_TYPES_EXT: u32 = 1;
 pub const _BITS_TYPES_H: u32 = 1;
+pub const __TIMESIZE: u32 = 64;
 pub const _BITS_TYPESIZES_H: u32 = 1;
 pub const __OFF_T_MATCHES_OFF64_T: u32 = 1;
 pub const __INO_T_MATCHES_INO64_T: u32 = 1;
 pub const __RLIM_T_MATCHES_RLIM64_T: u32 = 1;
 pub const __FD_SETSIZE: u32 = 1024;
+pub const _BITS_TIME64_H: u32 = 1;
 pub const _BITS_WCHAR_H: u32 = 1;
 pub const _BITS_STDINT_INTN_H: u32 = 1;
 pub const _BITS_STDINT_UINTN_H: u32 = 1;
@@ -280,67 +283,6 @@ pub struct qtc_qradialgradient {
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct qtc_rect_f {
-    pub x: f64,
-    pub y: f64,
-    pub w: f64,
-    pub h: f64,
-}
-#[test]
-fn bindgen_test_layout_qtc_rect_f() {
-    assert_eq!(
-        ::std::mem::size_of::<qtc_rect_f>(),
-        32usize,
-        concat!("Size of: ", stringify!(qtc_rect_f))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<qtc_rect_f>(),
-        8usize,
-        concat!("Alignment of ", stringify!(qtc_rect_f))
-    );
-    assert_eq!(
-        unsafe { &(*(::std::ptr::null::<qtc_rect_f>())).x as *const _ as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(qtc_rect_f),
-            "::",
-            stringify!(x)
-        )
-    );
-    assert_eq!(
-        unsafe { &(*(::std::ptr::null::<qtc_rect_f>())).y as *const _ as usize },
-        8usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(qtc_rect_f),
-            "::",
-            stringify!(y)
-        )
-    );
-    assert_eq!(
-        unsafe { &(*(::std::ptr::null::<qtc_rect_f>())).w as *const _ as usize },
-        16usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(qtc_rect_f),
-            "::",
-            stringify!(w)
-        )
-    );
-    assert_eq!(
-        unsafe { &(*(::std::ptr::null::<qtc_rect_f>())).h as *const _ as usize },
-        24usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(qtc_rect_f),
-            "::",
-            stringify!(h)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct qtc_transform {
     pub a: f64,
     pub b: f64,
@@ -419,60 +361,6 @@ fn bindgen_test_layout_qtc_transform() {
             stringify!(qtc_transform),
             "::",
             stringify!(f)
-        )
-    );
-}
-pub const PathSegmentType_MoveToSegment: PathSegmentType = 0;
-pub const PathSegmentType_LineToSegment: PathSegmentType = 1;
-pub const PathSegmentType_CurveToSegment: PathSegmentType = 2;
-pub type PathSegmentType = u32;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct PathSegment {
-    pub kind: PathSegmentType,
-    pub x: f64,
-    pub y: f64,
-}
-#[test]
-fn bindgen_test_layout_PathSegment() {
-    assert_eq!(
-        ::std::mem::size_of::<PathSegment>(),
-        24usize,
-        concat!("Size of: ", stringify!(PathSegment))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<PathSegment>(),
-        8usize,
-        concat!("Alignment of ", stringify!(PathSegment))
-    );
-    assert_eq!(
-        unsafe { &(*(::std::ptr::null::<PathSegment>())).kind as *const _ as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(PathSegment),
-            "::",
-            stringify!(kind)
-        )
-    );
-    assert_eq!(
-        unsafe { &(*(::std::ptr::null::<PathSegment>())).x as *const _ as usize },
-        8usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(PathSegment),
-            "::",
-            stringify!(x)
-        )
-    );
-    assert_eq!(
-        unsafe { &(*(::std::ptr::null::<PathSegment>())).y as *const _ as usize },
-        16usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(PathSegment),
-            "::",
-            stringify!(y)
         )
     );
 }
@@ -687,18 +575,6 @@ extern "C" {
 }
 extern "C" {
     pub fn qtc_qpainterpath_set_fill_rule(c_pp: *mut qtc_qpainterpath, rule: FillRule);
-}
-extern "C" {
-    pub fn qtc_qpainterpath_element_count(c_pp: *mut qtc_qpainterpath) -> ::std::os::raw::c_int;
-}
-extern "C" {
-    pub fn qtc_qpainterpath_element_at(
-        c_pp: *mut qtc_qpainterpath,
-        i: ::std::os::raw::c_int,
-    ) -> PathSegment;
-}
-extern "C" {
-    pub fn qtc_qpainterpath_get_bbox(c_pp: *mut qtc_qpainterpath) -> qtc_rect_f;
 }
 extern "C" {
     pub fn qtc_qpainterpath_destroy(c_pp: *mut qtc_qpainterpath);

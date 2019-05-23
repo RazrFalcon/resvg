@@ -40,6 +40,16 @@ impl ByteIndex {
     pub fn value(&self) -> usize {
         self.0
     }
+
+    /// Converts byte position into a code point position.
+    pub fn code_point_from(&self, text: &str) -> usize {
+        text.char_indices().take_while(|(i, _)| *i != self.0).count()
+    }
+
+    /// Converts byte position into a character.
+    pub fn char_from(&self, text: &str) -> Option<char> {
+        text[self.0..].chars().next()
+    }
 }
 
 
@@ -168,6 +178,12 @@ pub fn collect_text_chunks(
     let mut chunk_bytes_count = 0;
     for child in text_elem.descendants().filter(|n| n.is_text()) {
         let ref parent = child.parent().unwrap();
+
+        if !style::is_visible_element(parent, state.opt) {
+            chars_count += child.text().chars().count();
+            continue;
+        }
+
         let anchor = conv_text_anchor(parent);
 
         // TODO: what to do when <= 0? UB?
@@ -259,6 +275,23 @@ pub fn collect_text_chunks(
     chunks
 }
 
+pub fn resolve_rendering_mode(
+    node: &svgdom::Node,
+    state: &State,
+) -> tree::ShapeRendering {
+    // `text-rendering` can be set only on a `text` element.
+    debug_assert!(node.is_tag_name(EId::Text));
+
+    let mode: tree::TextRendering = node.try_find_enum(AId::TextRendering)
+                                        .unwrap_or(state.opt.text_rendering);
+
+    match mode {
+        tree::TextRendering::OptimizeSpeed => tree::ShapeRendering::CrispEdges,
+        tree::TextRendering::OptimizeLegibility => tree::ShapeRendering::GeometricPrecision,
+        tree::TextRendering::GeometricPrecision =>  tree::ShapeRendering::GeometricPrecision,
+    }
+}
+
 fn resolve_font(
     node: &svgdom::Node,
     state: &State,
@@ -290,6 +323,9 @@ fn resolve_font(
 
         name_list.push(name);
     }
+
+    // Use the default font as fallback.
+    name_list.push(fk::FamilyName::Title(state.opt.font_family.to_owned()));
 
     let properties = fk::Properties { style, weight, stretch };
     let handle = match fk::SystemSource::new().select_best_match(&name_list, &properties) {

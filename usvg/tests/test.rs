@@ -215,7 +215,7 @@ test!(pattern_without_children, false,
 // All supported elements should be listed.
 // We keep id's even if `keep_named_groups` is disabled.
 // ID on `svg`, `defs`, `stop` and `tspan` is ignored because they can't be rendered
-test!(preserve_id, false,
+test!(preserve_id, true,
 "<svg id='svg1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 1 1'>
     <defs id='defs1'>
         <linearGradient id='lg1'>
@@ -236,6 +236,7 @@ test!(preserve_id, false,
     <rect id='rect1' fill='url(#lg1)' stroke='url(#rg1)' clip-path='url(#clip1)' width='10' height='10'/>
     <path id='path1' fill='url(#patt1)' d='M 10 20 30 40'/>
     <text id='text1'>_</text>
+    <text id='text2' text-decoration='underline'>_</text>
     <image id='image1' width='1' height='1' xlink:href='data:image/png;base64,
         iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAB3RJTUUH4gMLDwAjrsLbtwAAAAlw
         SFlzAAAuIwAALiMBeKU/dgAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAAG
@@ -306,8 +307,16 @@ test!(preserve_id, false,
         id='path1'
         fill='url(#patt1)'
         d='M 10 20 L 30 40'/>
-    <path id='text1'
+    <path
+        id='text1'
         d='M 6.10546875 2.58984375 L -0.099609375 2.58984375 L -0.099609375 2.09765625 L 6.10546875 2.09765625 Z'/>
+    <g
+        id='text2'>
+        <path
+            d='M 0 1.306640625 L 6 1.306640625 L 6 1.892578125 L 0 1.892578125 Z'/>
+        <path
+            d='M 6.10546875 2.58984375 L -0.099609375 2.58984375 L -0.099609375 2.09765625 L 6.10546875 2.09765625 Z'/>
+    </g>
     <image
         id='image1'
         x='0'

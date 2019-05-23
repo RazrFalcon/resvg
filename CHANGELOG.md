@@ -17,12 +17,10 @@ This changelog also contains important changes in dependencies.
 - The `arithmetic` operator for `feComposite`.
 - (usvg) `--quiet` argument.
 - `word-spacing` is supported for all backends now.
-- `writing-mode` support.
+- `writing-mode` support, aka vertical text.
 
 ### Changed
 - (resvg) Do not rescale images before rendering. This is faster and better.
-- (qt-backend) Text will always be rendered as path now.
-  Previously, `QPainter::drawText` was used for simple text.
 - (usvg) An `image` element with a zero or negative size will be skipped now.
   Previously, a linked image size was used, which is incorrect.
 - Geometry primitives (`Rect`, `Size`, etc) are immutable and always valid now.
