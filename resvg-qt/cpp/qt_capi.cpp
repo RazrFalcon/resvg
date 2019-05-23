@@ -290,49 +290,6 @@ void qtc_qpainterpath_set_fill_rule(qtc_qpainterpath *c_pp, FillRule rule)
     PATH_CAST->setFillRule(Qt::FillRule(rule));
 }
 
-int qtc_qpainterpath_element_count(qtc_qpainterpath *c_pp)
-{
-    return PATH_CAST->elementCount();
-}
-
-PathSegment qtc_qpainterpath_element_at(qtc_qpainterpath *c_pp, int i)
-{
-    if (i >= PATH_CAST->elementCount()) {
-        // TODO: qDebug produces a compilation error on Ubuntu 14.04...
-        fprintf(stderr, "%s", "resvg-qt: Trying to get a segment out of scope.\n");
-        abort();
-    }
-
-    const auto path_seg = PATH_CAST->elementAt(i);
-
-    PathSegment seg;
-    seg.x = path_seg.x;
-    seg.y = path_seg.y;
-
-    switch (path_seg.type) {
-        case QPainterPath::MoveToElement : {
-            seg.kind = PathSegmentType::MoveToSegment;
-        } break;
-
-        case QPainterPath::LineToElement : {
-            seg.kind = PathSegmentType::LineToSegment;
-        } break;
-
-        case QPainterPath::CurveToElement :
-        case QPainterPath::CurveToDataElement : {
-            seg.kind = PathSegmentType::CurveToSegment;
-        } break;
-    }
-
-    return seg;
-}
-
-qtc_rect_f qtc_qpainterpath_get_bbox(qtc_qpainterpath *c_pp)
-{
-    const auto bbox = PATH_CAST->boundingRect();
-    return qtc_rect_f { bbox.x(), bbox.y(), bbox.width(), bbox.height() };
-}
-
 void qtc_qpainterpath_destroy(qtc_qpainterpath *c_pp)
 {
     delete PATH_CAST;

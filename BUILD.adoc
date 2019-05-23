@@ -29,25 +29,23 @@ cargo build --release --features="qt-backend cairo-backend"
 
 * The library requires the latest stable
   https://www.rust-lang.org/tools/install[Rust].
-* [harfbuzz](https://github.com/harfbuzz/harfbuzz).
-* _Qt backend_ requires only `QtCore` and `QtGui` libraries
+* The _Qt backend_ requires only `QtCore` and `QtGui` libraries
   and the JPEG image format plugin (aka `plugins/imageformats/qjpeg`). +
   Technically, any Qt 5 version should work, but we only support Qt >= 5.6.
-* _cairo backend_ requires https://www.cairographics.org/[cairo] and `gdk-pixbuf` (part of GTK).
-** cairo >= 1.12
-** gdk-pixbuf >= 2.30
-*** gio, glib, gobject >= 2.42
+* The _cairo backend_ requires https://www.cairographics.org/[cairo] and `gdk-pixbuf` (part of GTK). +
+  cairo >= 1.12 and gdk-pixbuf >= 2.30
 
 == Windows
 
 === Qt backend via MSVC
 
-Install `stable-x86_64-pc-windows-msvc` https://www.rust-lang.org/tools/install[Rust] target.
+Install:
 
-Install Qt built with MSVC via an
-http://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe[official installer].
+* `stable-x86_64-pc-windows-msvc` https://www.rust-lang.org/tools/install[Rust] target.
+* https://cmake.org/download/[CMake] (required to build harfbuzz).
+* Qt built with MSVC via an http://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe[official installer].
 
-Build using `cmd.exe`:
+Build using MSVC `cmd.exe` shell:
 
 ```batch
 set PATH=%userprofile%\.cargo\bin;%PATH%
@@ -56,28 +54,28 @@ set QT_DIR=C:\Qt\5.12.0\msvc2015_64
 cargo.exe build --release --features "qt-backend"
 ```
 
-Instead of `msvc2015_64` you can use any other Qt MSVC build. Even 32-bit one. +
+Instead of `msvc2015_64` you can use any other Qt MSVC build. Even 32-bit one.
 We are using Qt 5.12.0 just for example.
 
 === Qt backend via MinGW
 
-Install `stable-i686-pc-windows-gnu` https://www.rust-lang.org/tools/install[Rust] target.
+Install:
 
-Install Qt built with MinGW 32-bit via an
-http://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe[official installer]. +
-64-bit version, available since Qt 5.12, will not work due to https://github.com/rust-lang/rust/issues/47048[#47048].
+* `stable-x86_64-pc-windows-gnu` https://www.rust-lang.org/tools/install[Rust] target.
+* https://cmake.org/download/[CMake] (required to build harfbuzz).
+* Qt built with MinGW 64-bit via an http://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe[official installer].
 
 Build using `cmd.exe`:
 
 ```batch
-set PATH=C:\Qt\5.11.3\mingw53_32\bin;C:\Qt\Tools\mingw530_32\bin;%userprofile%\.cargo\bin;%PATH%
-set QT_DIR=C:\Qt\5.11.3\mingw53_32
+set PATH=C:\Qt\5.12.0\mingw73_64\bin;C:\Qt\Tools\mingw730_64\bin;%userprofile%\.cargo\bin;%PATH%
+set QT_DIR=C:\Qt\5.12.0\mingw73_64
 
 cargo.exe build --release --features "qt-backend"
 ```
 
-Instead of `mingw53_32` you can use any other Qt mingw build. +
-We are using Qt 5.11.3 just for example.
+Instead of `mingw73_64` you can use any other Qt mingw build.
+We are using Qt 5.12.0 just for example.
 
 === cairo backend via MSYS2
 
