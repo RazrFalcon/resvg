@@ -823,7 +823,7 @@ dependencies = [
 [[package]]
 name = "raqote"
 version = "0.4.1-alpha.0"
-source = "git+https://github.com/jrmuizel/raqote.git?rev=2bc600a#2bc600a73f9d9c248aab4e8fa4d56e3455485040"
+source = "git+https://github.com/jrmuizel/raqote.git?rev=2f1a7d5#2f1a7d5ff2060cf894b9e02bf6ea3b0b51e7ac7b"
 dependencies = [
  "euclid 0.19.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lyon_geom 0.12.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -879,7 +879,7 @@ dependencies = [
  "cairo-rs 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gdk-pixbuf 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "raqote 0.4.1-alpha.0 (git+https://github.com/jrmuizel/raqote.git?rev=2bc600a)",
+ "raqote 0.4.1-alpha.0 (git+https://github.com/jrmuizel/raqote.git?rev=2f1a7d5)",
  "resvg-qt 0.6.1",
  "rgb 0.8.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "usvg 0.6.1",
@@ -1246,7 +1246,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum rand_core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7a6fdeb83b075e8266dcc8762c22776f6877a63111121f5f8c7411e5be7eed4b"
 "checksum rand_core 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d0e7a549d590831370895ab7ba4ea0c1b6b011d106b5ff2da6eee112615e6dc0"
 "checksum rand_os 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "7b75f676a1e053fc562eafbb47838d67c84801e38fc1ba459e8f180deabd5071"
-"checksum raqote 0.4.1-alpha.0 (git+https://github.com/jrmuizel/raqote.git?rev=2bc600a)" = "<none>"
+"checksum raqote 0.4.1-alpha.0 (git+https://github.com/jrmuizel/raqote.git?rev=2f1a7d5)" = "<none>"
 "checksum rctree 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7365791774a0568ef20c86f872222c022ffd8efb27a58be074649b5342a38a30"
 "checksum rdrand 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "678054eb77286b51581ba43620cc911abf02758c91f93f479767aed0f90458b2"
 "checksum redox_syscall 0.1.54 (registry+https://github.com/rust-lang/crates.io-index)" = "12229c14a0f65c4f1cb046a3b52047cdd9da1f4b30f8a39c5063c8bae515e252"

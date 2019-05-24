@@ -143,7 +143,7 @@ fn prepare_linear<'a>(
     opacity: usvg::Opacity,
     bbox: Rect,
 ) -> raqote::Source<'a> {
-    let mut ts = if g.units == usvg::Units::ObjectBoundingBox {
+    let ts = if g.units == usvg::Units::ObjectBoundingBox {
         let mut ts = usvg::Transform::from_bbox(bbox);
         ts.append(&g.transform);
         ts
@@ -159,7 +159,10 @@ fn prepare_linear<'a>(
     );
 
     if let raqote::Source::LinearGradient(_, _, ref mut transform) = grad {
-        *transform = transform.post_mul(&ts.to_native());
+        let ts: raqote::Transform = ts.to_native();
+        if let Some(ts) = ts.inverse() {
+            *transform = transform.pre_mul(&ts);
+        }
     }
 
     grad
@@ -170,11 +173,31 @@ fn prepare_radial<'a>(
     opacity: usvg::Opacity,
     bbox: Rect,
 ) -> raqote::Source<'a> {
-    raqote::Source::RadialGradient(
+    let ts = if g.units == usvg::Units::ObjectBoundingBox {
+        let mut ts = usvg::Transform::from_bbox(bbox);
+        ts.append(&g.transform);
+        ts
+    } else {
+        g.transform
+    };
+
+    let mut grad = raqote::Source::new_two_circle_radial_gradient(
         raqote::Gradient { stops: conv_stops(g, opacity) },
+        raqote::Point::new(g.fx as f32, g.fy as f32),
+        0.0,
+        raqote::Point::new(g.cx as f32, g.cy as f32),
+        g.r.value() as f32,
         conv_spread(g.base.spread_method),
-        g.base.transform.to_native(),
-    )
+    );
+
+    if let raqote::Source::TwoCircleRadialGradient(_, _, _, _, _, _, ref mut transform) = grad {
+        let ts: raqote::Transform = ts.to_native();
+        if let Some(ts) = ts.inverse() {
+            *transform = transform.pre_mul(&ts);
+        }
+    }
+
+    grad
 }
 
 fn conv_spread(v: usvg::SpreadMethod) -> raqote::Spread {
