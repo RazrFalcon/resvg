@@ -130,7 +130,7 @@ pub fn convert(
     }
 
     let mut parent = if state.opt.keep_named_groups && new_paths.len() > 1 {
-        // Create a group will all paths that was created during text-to-path conversion.
+        // Create a group with all paths that was created during text-to-path conversion.
         parent.append_kind(tree::NodeKind::Group(tree::Group {
             id: node.id().clone(),
             .. tree::Group::default()
