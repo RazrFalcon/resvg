@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // external
-use svgdom;
 use harfbuzz_rs as harfbuzz;
 use unicode_bidi;
 use unicode_script;
@@ -345,7 +344,7 @@ fn outline_cluster(
 
         if !outline.is_empty() {
             // By default, glyphs are upside-down, so we have to mirror them.
-            let mut ts = svgdom::Transform::new_scale(1.0, -1.0);
+            let mut ts = tree::Transform::new_scale(1.0, -1.0);
 
             // Scale to font-size.
             ts.scale(sx, sx);

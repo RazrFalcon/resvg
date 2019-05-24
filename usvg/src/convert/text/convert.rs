@@ -24,6 +24,7 @@ use crate::convert::{
     style,
     units,
 };
+use super::TextNode;
 
 
 /// A read-only text index in bytes.
@@ -168,7 +169,7 @@ pub enum WritingMode {
 
 
 pub fn collect_text_chunks(
-    text_elem: &svgdom::Node,
+    text_node: &TextNode,
     pos_list: &[CharacterPosition],
     state: &State,
     tree: &mut tree::Tree,
@@ -176,7 +177,7 @@ pub fn collect_text_chunks(
     let mut chunks = Vec::new();
     let mut chars_count = 0;
     let mut chunk_bytes_count = 0;
-    for child in text_elem.descendants().filter(|n| n.is_text()) {
+    for child in text_node.descendants().filter(|n| n.is_text()) {
         let ref parent = child.parent().unwrap();
 
         if !style::is_visible_element(parent, state.opt) {
@@ -213,7 +214,7 @@ pub fn collect_text_chunks(
             stroke: style::resolve_stroke(parent, true, state, tree),
             font,
             font_size,
-            decoration: resolve_decoration(text_elem, parent, state, tree),
+            decoration: resolve_decoration(text_node, parent, state, tree),
             visibility: parent.find_enum(AId::Visibility),
             baseline_shift: resolve_baseline_shift(parent, state),
             letter_spacing,
@@ -276,14 +277,11 @@ pub fn collect_text_chunks(
 }
 
 pub fn resolve_rendering_mode(
-    node: &svgdom::Node,
+    text_node: &TextNode,
     state: &State,
 ) -> tree::ShapeRendering {
-    // `text-rendering` can be set only on a `text` element.
-    debug_assert!(node.is_tag_name(EId::Text));
-
-    let mode: tree::TextRendering = node.try_find_enum(AId::TextRendering)
-                                        .unwrap_or(state.opt.text_rendering);
+    let mode: tree::TextRendering = text_node.try_find_enum(AId::TextRendering)
+                                             .unwrap_or(state.opt.text_rendering);
 
     match mode {
         tree::TextRendering::OptimizeSpeed => tree::ShapeRendering::CrispEdges,
@@ -505,11 +503,11 @@ pub struct CharacterPosition {
 ///
 /// The result should be: `[100, 50, 120, None]`
 pub fn resolve_positions_list(
-    text_elem: &svgdom::Node,
+    text_node: &TextNode,
     state: &State,
 ) -> Vec<CharacterPosition> {
     // Allocate a list that has all characters positions set to `None`.
-    let total_chars = count_chars(text_elem);
+    let total_chars = count_chars(text_node);
     let mut list = vec![CharacterPosition {
         x: None,
         y: None,
@@ -518,7 +516,7 @@ pub fn resolve_positions_list(
     }; total_chars];
 
     let mut offset = 0;
-    for child in text_elem.descendants() {
+    for child in text_node.descendants() {
         if child.is_element() {
             let child_chars = count_chars(&child);
             macro_rules! push_list {
@@ -556,13 +554,13 @@ pub fn resolve_positions_list(
 ///
 /// Note: this algorithm differs from the position resolving one.
 pub fn resolve_rotate_list(
-    text_elem: &svgdom::Node,
+    text_node: &TextNode,
 ) -> Vec<f64> {
     // Allocate a list that has all characters angles set to `0.0`.
-    let mut list = vec![0.0; count_chars(text_elem)];
+    let mut list = vec![0.0; count_chars(text_node)];
     let mut last = 0.0;
     let mut offset = 0;
-    for child in text_elem.descendants() {
+    for child in text_node.descendants() {
         if child.is_element() {
             if let Some(num_list) = child.attributes().get_number_list(AId::Rotate) {
                 for i in 0..count_chars(&child) {
@@ -602,21 +600,21 @@ pub struct TextDecoration {
 ///
 /// `text` and `tspan` can point to the same node.
 fn resolve_decoration(
-    text: &svgdom::Node,
+    text_node: &TextNode,
     tspan: &svgdom::Node,
     state: &State,
     tree: &mut tree::Tree,
 ) -> TextDecoration {
     // TODO: explain the algorithm
 
-    let text_dec = conv_text_decoration(text);
+    let text_dec = conv_text_decoration(text_node);
     let tspan_dec = conv_text_decoration2(tspan);
 
     let mut gen_style = |in_tspan: bool, in_text: bool| {
         let n = if in_tspan {
             tspan.clone()
         } else if in_text {
-            text.clone()
+            (*text_node).clone()
         } else {
             return None;
         };
@@ -641,17 +639,15 @@ struct TextDecorationTypes {
 }
 
 /// Resolves the `text` node's `text-decoration` property.
-fn conv_text_decoration(node: &svgdom::Node) -> TextDecorationTypes {
-    debug_assert!(node.is_tag_name(EId::Text));
-
+fn conv_text_decoration(text_node: &TextNode) -> TextDecorationTypes {
     fn find_decoration(node: &svgdom::Node, value: &str) -> bool {
         node.ancestors().any(|n| n.attributes().get_str(AId::TextDecoration) == Some(value))
     }
 
     TextDecorationTypes {
-        has_underline: find_decoration(node, "underline"),
-        has_overline: find_decoration(node, "overline"),
-        has_line_through: find_decoration(node, "line-through"),
+        has_underline: find_decoration(text_node, "underline"),
+        has_overline: find_decoration(text_node, "overline"),
+        has_line_through: find_decoration(text_node, "line-through"),
     }
 }
 
@@ -771,11 +767,8 @@ fn count_chars(node: &svgdom::Node) -> usize {
 /// it should affect the rendering.
 ///
 /// [SVG 2.0]: https://www.w3.org/TR/SVG2/text.html#WritingModeProperty
-pub fn convert_writing_mode(node: &svgdom::Node) -> WritingMode {
-    // `writing-mode` can be set only on a `text` element.
-    debug_assert!(node.is_tag_name(EId::Text));
-
-    if let Some(n) = node.find_node_with_attribute(AId::WritingMode) {
+pub fn convert_writing_mode(text_node: &TextNode) -> WritingMode {
+    if let Some(n) = text_node.find_node_with_attribute(AId::WritingMode) {
         match n.attributes().get_str_or(AId::WritingMode, "lr-tb") {
             "tb" | "tb-rl" => WritingMode::TopToBottom,
             _ => WritingMode::LeftToRight,

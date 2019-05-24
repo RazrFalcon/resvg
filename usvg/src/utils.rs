@@ -98,8 +98,6 @@ pub fn path_bbox(
         None => tree::Transform::default(),
     };
 
-    use crate::lyon_geom;
-
     let mut prev_x = 0.0;
     let mut prev_y = 0.0;
     let mut minx = 0.0;

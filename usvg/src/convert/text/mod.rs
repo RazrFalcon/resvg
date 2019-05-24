@@ -26,6 +26,32 @@ mod shaper;
 use self::shaper::OutlinedCluster;
 
 
+mod private {
+    use super::*;
+
+    /// A type-safe container for a `text` node.
+    ///
+    /// This way we can be sure that we are passing the `text` node and not just a random node.
+    pub struct TextNode(svgdom::Node);
+
+    impl TextNode {
+        pub fn new(node: svgdom::Node) -> Self {
+            debug_assert!(node.is_tag_name(EId::Text));
+            TextNode(node)
+        }
+    }
+
+    impl std::ops::Deref for TextNode {
+        type Target = svgdom::Node;
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+}
+use self::private::*;
+
+
 /// A text decoration span.
 ///
 /// Basically a horizontal line, that will be used for underline, overline and line-through.
@@ -43,13 +69,15 @@ pub fn convert(
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    let pos_list = resolve_positions_list(node, state);
-    let rotate_list = resolve_rotate_list(node);
-    let writing_mode = convert_writing_mode(node);
-    let rendering_mode = resolve_rendering_mode(node, state);
+    let text_node = &TextNode::new(node.clone());
+
+    let pos_list = resolve_positions_list(text_node, state);
+    let rotate_list = resolve_rotate_list(text_node);
+    let writing_mode = convert_writing_mode(text_node);
+    let rendering_mode = resolve_rendering_mode(text_node, state);
     let mut text_ts = node.attributes().get_transform(AId::Transform);
 
-    let mut chunks = collect_text_chunks(node, &pos_list, state, tree);
+    let mut chunks = collect_text_chunks(text_node, &pos_list, state, tree);
     let mut char_offset = 0;
     let mut x = 0.0;
     let mut y = 0.0;
