@@ -618,6 +618,19 @@ fn collect_normals(
         }
     }
 
+    fn create_curve_from_line(px: f64, py: f64, x: f64, y: f64)
+        -> lyon_geom::CubicBezierSegment<f64>
+    {
+        let line = lyon_geom::LineSegment {
+            from:  lyon_geom::math::F64Point::new(px, py),
+            to:    lyon_geom::math::F64Point::new(x, y),
+        };
+
+        let p1 = line.sample(0.33);
+        let p2 = line.sample(0.66);
+        create_curve(px, py, p1.x, p1.y, p2.x, p2.y, x, y)
+    }
+
     let mut length = 0.0;
     for seg in segments {
         let curve = match *seg {
@@ -629,29 +642,13 @@ fn collect_normals(
                 continue;
             }
             tree::PathSegment::LineTo { x, y } => {
-                let line = lyon_geom::LineSegment {
-                    from:  lyon_geom::math::F64Point::new(prev_x, prev_y),
-                    to:    lyon_geom::math::F64Point::new(x, y),
-                };
-
-                let p1 = line.sample(0.25);
-                let p2 = line.sample(0.75);
-
-                create_curve(prev_x, prev_y, p1.x, p1.y, p2.x, p2.y, x, y)
+                create_curve_from_line(prev_x, prev_y, x, y)
             }
             tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
                 create_curve(prev_x, prev_y, x1, y1, x2, y2, x, y)
             }
             tree::PathSegment::ClosePath => {
-                let line = lyon_geom::LineSegment {
-                    from:  lyon_geom::math::F64Point::new(prev_x, prev_y),
-                    to:    lyon_geom::math::F64Point::new(prev_mx, prev_my),
-                };
-
-                let p1 = line.sample(0.25);
-                let p2 = line.sample(0.75);
-
-                create_curve(prev_x, prev_y, p1.x, p1.y, p2.x, p2.y, prev_mx, prev_my)
+                create_curve_from_line(prev_x, prev_y, prev_mx, prev_my)
             }
         };
 

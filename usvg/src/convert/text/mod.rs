@@ -175,7 +175,7 @@ fn text_to_paths(
                 ));
             }
 
-            if let Some(path) = convert_span(span, &mut clusters, &span_ts, parent, true) {
+            if let Some(path) = convert_span(span, &mut clusters, &span_ts, parent, false) {
                 new_paths.push(path);
             }
 
