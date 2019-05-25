@@ -137,6 +137,13 @@ fn text_to_paths(
             chunk, char_offset, &pos_list, &rotate_list, &mut clusters
         );
 
+        if let TextFlow::Path(_) = chunk.text_flow {
+            // Since a path flow can point clusters in any direction,
+            // we can't simply shift a global transform by Y axis.
+            // We have to shift each cluster individually.
+            shaper::shift_clusters_baseline(&chunk, &mut clusters);
+        }
+
         if writing_mode == WritingMode::TopToBottom {
             if let TextFlow::Horizontal = chunk.text_flow {
                 text_ts.rotate_at(90.0, x, y);
@@ -147,7 +154,13 @@ fn text_to_paths(
             let decoration_spans = collect_decoration_spans(span, &clusters);
 
             let mut span_ts = text_ts.clone();
-            span_ts.translate(x, y - span.baseline_shift);
+            span_ts.translate(x, y);
+            if let TextFlow::Horizontal = chunk.text_flow {
+                // In case of a horizontal flow, shift transform and not clusters,
+                // because clusters can be rotated and an additional shift will lead
+                // to invalid results.
+                span_ts.translate(0.0, -span.baseline_shift);
+            }
 
             if let Some(decoration) = span.decoration.underline.take() {
                 // TODO: No idea what offset should be used for top-to-bottom layout.

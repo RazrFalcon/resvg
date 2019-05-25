@@ -784,6 +784,19 @@ pub fn apply_word_spacing(
     }
 }
 
+pub fn shift_clusters_baseline(
+    chunk: &TextChunk,
+    clusters: &mut [OutlinedCluster],
+) {
+    for span in &chunk.spans {
+        for cluster in clusters.iter_mut() {
+            if span.contains(cluster.byte_idx) {
+                cluster.transform.translate(0.0, -span.baseline_shift);
+            }
+        }
+    }
+}
+
 /// Checks that the selected character is a word separator.
 ///
 /// According to: https://www.w3.org/TR/css-text-3/#word-separator
