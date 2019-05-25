@@ -21,7 +21,10 @@ use super::convert::{
     ByteIndex,
     CharacterPosition,
     Font,
+    TextAnchor,
     TextChunk,
+    TextFlow,
+    TextPath,
     WritingMode,
 };
 
@@ -86,9 +89,11 @@ pub struct OutlinedCluster {
     /// An ascent in SVG coordinates.
     pub ascent: f64,
 
-    descent: f64,
+    /// A descent in SVG coordinates.
+    pub descent: f64,
 
-    x_height: f64,
+    /// A x-height in SVG coordinates.
+    pub x_height: f64,
 
     /// Indicates that this cluster was affected by the relative shift (via dx/dy attributes)
     /// during the text layouting. Which breaks the `text-decoration` line.
@@ -101,6 +106,11 @@ pub struct OutlinedCluster {
 
     /// A cluster's transform that contains it's position, rotation, etc.
     pub transform: tree::Transform,
+
+    /// Not all clusters should be rendered.
+    ///
+    /// For example, if a cluster is outside the text path than it should not be rendered.
+    pub visible: bool,
 }
 
 impl OutlinedCluster {
@@ -331,7 +341,7 @@ fn outline_cluster(
         let mut builder = svgdom_path_builder::Builder::new();
         let mut outline = match glyph.font.handle.outline(glyph.id, fk::Hinting::None, &mut builder) {
             Ok(_) => {
-                crate::convert::path::convert_path(builder.build())
+                crate::convert::path::convert(builder.build())
             }
             Err(_) => {
                 // Technically unreachable.
@@ -358,7 +368,7 @@ fn outline_cluster(
             // TODO: should be done only inside a single text span
             ts.translate(x + glyph.dx as f64, glyph.dy as f64);
 
-            super::transform_path(&mut outline, &ts);
+            crate::utils::transform_path(&mut outline, &ts);
 
             path.extend_from_slice(&outline);
         }
@@ -380,6 +390,7 @@ fn outline_cluster(
         has_relative_shift: false,
         path,
         transform: tree::Transform::default(),
+        visible: true,
     }
 }
 
@@ -432,18 +443,40 @@ fn find_font_for_char(
     None
 }
 
+/// Resolves clusters positions.
+///
+/// Mainly sets the `transform` property.
+///
+/// Returns the last text position. The next text chunk should start from that position.
 pub fn resolve_clusters_positions(
-    text: &str,
+    chunk: &TextChunk,
     offset: usize,
     pos_list: &[CharacterPosition],
     rotate_list: &[f64],
     clusters: &mut [OutlinedCluster],
-) -> f64 {
-    let mut x = 0.0;
+) -> (f64, f64) {
+    match chunk.text_flow {
+        TextFlow::Horizontal => {
+            resolve_clusters_positions_horizontal(chunk, offset, pos_list, rotate_list, clusters)
+        }
+        TextFlow::Path(ref path) => {
+            resolve_clusters_positions_path(chunk, offset, path, pos_list, rotate_list, clusters)
+        }
+    }
+}
+
+fn resolve_clusters_positions_horizontal(
+    chunk: &TextChunk,
+    offset: usize,
+    pos_list: &[CharacterPosition],
+    rotate_list: &[f64],
+    clusters: &mut [OutlinedCluster],
+) -> (f64, f64) {
+    let mut x = process_anchor(chunk.anchor, clusters_length(clusters));
     let mut y = 0.0;
 
     for cluster in clusters {
-        let cp = offset + cluster.byte_idx.code_point_from(text);
+        let cp = offset + cluster.byte_idx.code_point_from(&chunk.text);
         if let Some(pos) = pos_list.get(cp) {
             x += pos.dx.unwrap_or(0.0);
             y += pos.dy.unwrap_or(0.0);
@@ -462,7 +495,203 @@ pub fn resolve_clusters_positions(
         x += cluster.advance;
     }
 
-    x
+    (x, y)
+}
+
+fn resolve_clusters_positions_path(
+    chunk: &TextChunk,
+    offset: usize,
+    path: &TextPath,
+    pos_list: &[CharacterPosition],
+    rotate_list: &[f64],
+    clusters: &mut [OutlinedCluster],
+) -> (f64, f64) {
+    let mut last_x = 0.0;
+    let mut last_y = 0.0;
+    let mut last_dx = 0.0;
+    let mut last_dy = 0.0;
+
+    let start_offset = path.start_offset + process_anchor(chunk.anchor, clusters_length(clusters));
+    let normals = collect_normals(clusters, &path.segments, start_offset);
+    for (cluster, normal) in clusters.iter_mut().zip(normals) {
+        let (mut x, mut y, angle) = match normal {
+            Some(normal) => {
+                (normal.x, normal.y, normal.angle)
+            }
+            None => {
+                // Hide clusters that are outside the text path.
+                cluster.visible = false;
+                continue;
+            }
+        };
+
+        cluster.has_relative_shift = true;
+
+        let cp = offset + cluster.byte_idx.code_point_from(&chunk.text);
+        if let Some(pos) = pos_list.get(cp) {
+            x += pos.dx.unwrap_or(last_dx);
+            y += pos.dy.unwrap_or(last_dy);
+
+            last_dx = pos.dx.unwrap_or(last_dx);
+            last_dy = pos.dy.unwrap_or(last_dy);
+        }
+
+        // Characters should be rotated by the x-midpoint x baseline position.
+        let half_advance = cluster.advance / 2.0;
+        cluster.transform.translate(x - half_advance, y);
+        cluster.transform.rotate_at(angle, half_advance, 0.0);
+
+        if let Some(angle) = rotate_list.get(cp).cloned() {
+            if !angle.is_fuzzy_zero() {
+                cluster.transform.rotate(angle);
+            }
+        }
+
+        last_x = x + cluster.advance;
+        last_y = y;
+    }
+
+    (last_x, last_y)
+}
+
+fn clusters_length(clusters: &[OutlinedCluster]) -> f64 {
+    clusters.iter().fold(0.0, |w, cluster| w + cluster.advance)
+}
+
+fn process_anchor(a: TextAnchor, text_width: f64) -> f64 {
+    match a {
+        TextAnchor::Start   => 0.0, // Nothing.
+        TextAnchor::Middle  => -text_width / 2.0,
+        TextAnchor::End     => -text_width,
+    }
+}
+
+struct PathNormal {
+    x: f64,
+    y: f64,
+    angle: f64,
+}
+
+fn collect_normals(
+    clusters: &[OutlinedCluster],
+    segments: &[tree::PathSegment],
+    offset: f64,
+) -> Vec<Option<PathNormal>> {
+    debug_assert!(!segments.is_empty());
+
+    let mut offsets = Vec::with_capacity(clusters.len());
+    let mut normals = Vec::with_capacity(clusters.len());
+    {
+        let mut advance = offset;
+        for cluster in clusters {
+            // Characters should be rotated by the x-midpoint x baseline position.
+            let half_advance = cluster.advance / 2.0;
+
+            let offset = advance + half_advance;
+
+            // Clusters outside the path have no normals.
+            if offset < 0.0 {
+                normals.push(None);
+            }
+
+            offsets.push(offset);
+            advance += cluster.advance;
+        }
+    }
+
+    let (mut prev_mx, mut prev_my, mut prev_x, mut prev_y) = {
+        if let tree::PathSegment::MoveTo { x, y } = segments[0] {
+            (x, y, x, y)
+        } else {
+            unreachable!();
+        }
+    };
+
+    fn create_curve(px: f64, py: f64, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64)
+        -> lyon_geom::CubicBezierSegment<f64>
+    {
+        lyon_geom::CubicBezierSegment {
+            from:  lyon_geom::math::F64Point::new(px, py),
+            ctrl1: lyon_geom::math::F64Point::new(x1, y1),
+            ctrl2: lyon_geom::math::F64Point::new(x2, y2),
+            to:    lyon_geom::math::F64Point::new(x, y),
+        }
+    }
+
+    let mut length = 0.0;
+    for seg in segments {
+        let curve = match *seg {
+            tree::PathSegment::MoveTo { x, y } => {
+                prev_mx = x;
+                prev_my = y;
+                prev_x = x;
+                prev_y = y;
+                continue;
+            }
+            tree::PathSegment::LineTo { x, y } => {
+                let line = lyon_geom::LineSegment {
+                    from:  lyon_geom::math::F64Point::new(prev_x, prev_y),
+                    to:    lyon_geom::math::F64Point::new(x, y),
+                };
+
+                let p1 = line.sample(0.25);
+                let p2 = line.sample(0.75);
+
+                create_curve(prev_x, prev_y, p1.x, p1.y, p2.x, p2.y, x, y)
+            }
+            tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+                create_curve(prev_x, prev_y, x1, y1, x2, y2, x, y)
+            }
+            tree::PathSegment::ClosePath => {
+                let line = lyon_geom::LineSegment {
+                    from:  lyon_geom::math::F64Point::new(prev_x, prev_y),
+                    to:    lyon_geom::math::F64Point::new(prev_mx, prev_my),
+                };
+
+                let p1 = line.sample(0.25);
+                let p2 = line.sample(0.75);
+
+                create_curve(prev_x, prev_y, p1.x, p1.y, p2.x, p2.y, prev_mx, prev_my)
+            }
+        };
+
+        let curve_len = curve.approximate_length(1.0);
+
+        for offset in &offsets[normals.len()..] {
+            if *offset >= length && *offset <= length + curve_len {
+                let offset = (offset - length) / curve_len;
+                debug_assert!(offset >= 0.0 && offset <= 1.0);
+
+                let pos = curve.sample(offset);
+
+                let d = curve.derivative(offset);
+                let d = lyon_geom::utils::normalized_tangent(d);
+
+                let angle = d.angle_from_x_axis().to_degrees() - 90.0;
+
+                normals.push(Some(PathNormal {
+                    x: pos.x,
+                    y: pos.y,
+                    angle,
+                }));
+
+                if normals.len() == offsets.len() {
+                    break;
+                }
+            }
+        }
+
+        length += curve_len;
+        prev_x = curve.to.x;
+        prev_y = curve.to.y;
+    }
+
+    // If path ended and we still have unresolved normals - set them to `None`.
+    for _ in 0..(offsets.len() - normals.len()) {
+        normals.push(None);
+    }
+
+    normals
 }
 
 /// Applies the `letter-spacing` property to a text chunk clusters.
@@ -490,7 +719,7 @@ pub fn apply_letter_spacing(
                     cluster.advance += span.letter_spacing;
 
                     // If the cluster advance became negative - clear it.
-                    // This is an UB and we can do whatever we want, so we mimic the Chrome behavior.
+                    // This is an UB so we can do whatever we want, so we mimic the Chrome behavior.
                     if !(cluster.advance > 0.0) {
                         cluster.advance = 0.0;
                         cluster.path.clear();
@@ -591,7 +820,7 @@ pub fn apply_writing_mode(
                 ts.translate(cluster.advance / 2.0, 0.0);
                 ts.rotate(-90.0);
                 ts.translate(-cluster.advance / 2.0, -dy);
-                super::transform_path(&mut cluster.path, &ts);
+                crate::utils::transform_path(&mut cluster.path, &ts);
 
                 // Move "baseline" to the middle and make height equal to advance.
                 cluster.ascent = cluster.advance / 2.0;

@@ -114,6 +114,23 @@ impl std::fmt::Debug for FontData {
 }
 
 
+pub struct TextPath {
+    /// A text offset in SVG coordinates.
+    ///
+    /// Percentage values already resolved.
+    pub start_offset: f64,
+
+    pub segments: Vec<tree::PathSegment>,
+}
+
+
+#[derive(Clone)]
+pub enum TextFlow {
+    Horizontal,
+    Path(Rc<TextPath>),
+}
+
+
 /// A text chunk.
 ///
 /// Text alignment and BIDI reordering can be done only inside a text chunk.
@@ -122,6 +139,7 @@ pub struct TextChunk {
     pub y: Option<f64>,
     pub anchor: TextAnchor,
     pub spans: Vec<TextSpan>,
+    pub text_flow: TextFlow,
     pub text: String,
 }
 
@@ -168,20 +186,80 @@ pub enum WritingMode {
 }
 
 
+struct IterState {
+    chars_count: usize,
+    chunk_bytes_count: usize,
+    split_chunk: bool,
+    text_flow: TextFlow,
+    chunks: Vec<TextChunk>,
+}
+
 pub fn collect_text_chunks(
     text_node: &TextNode,
     pos_list: &[CharacterPosition],
     state: &State,
     tree: &mut tree::Tree,
 ) -> Vec<TextChunk> {
-    let mut chunks = Vec::new();
-    let mut chars_count = 0;
-    let mut chunk_bytes_count = 0;
-    for child in text_node.descendants().filter(|n| n.is_text()) {
-        let ref parent = child.parent().unwrap();
+    let mut iter_state = IterState {
+        chars_count: 0,
+        chunk_bytes_count: 0,
+        split_chunk: false,
+        text_flow: TextFlow::Horizontal,
+        chunks: Vec::new(),
+    };
+
+    collect_text_chunks_impl(text_node, text_node, pos_list, state, tree, &mut iter_state);
+
+    iter_state.chunks
+}
+
+fn collect_text_chunks_impl(
+    text_node: &TextNode,
+    parent: &svgdom::Node,
+    pos_list: &[CharacterPosition],
+    state: &State,
+    tree: &mut tree::Tree,
+    iter_state: &mut IterState,
+) {
+    for child in parent.children() {
+        if child.is_element() {
+            if child.is_tag_name(EId::TextPath) {
+                if !parent.is_tag_name(EId::Text) {
+                    // `textPath` can be set only as a direct `text` element child.
+                    iter_state.chars_count += count_chars(&child);
+                    continue;
+                }
+
+                match resolve_text_flow(child.clone(), state) {
+                    Some(v) => {
+                        iter_state.text_flow = v;
+                    }
+                    None => {
+                        // Skip an invalid text path and all it's children.
+                        // We have to update the chars count,
+                        // because `pos_list` was calculated including this text path.
+                        iter_state.chars_count += count_chars(&child);
+                        continue;
+                    }
+                }
+
+                iter_state.split_chunk = true;
+            }
+
+            collect_text_chunks_impl(text_node, &child, pos_list, state, tree, iter_state);
+
+            iter_state.text_flow = TextFlow::Horizontal;
+
+            // Next char after `textPath` should be split too.
+            if child.is_tag_name(EId::TextPath) {
+                iter_state.split_chunk = true;
+            }
+
+            continue;
+        }
 
         if !style::is_visible_element(parent, state.opt) {
-            chars_count += child.text().chars().count();
+            iter_state.chars_count += child.text().chars().count();
             continue;
         }
 
@@ -191,7 +269,7 @@ pub fn collect_text_chunks(
         let font_size = units::resolve_font_size(parent, state);
         if !(font_size > 0.0) {
             // Skip this span.
-            chars_count += child.text().chars().count();
+            iter_state.chars_count += child.text().chars().count();
             continue;
         }
 
@@ -199,7 +277,7 @@ pub fn collect_text_chunks(
             Some(v) => v,
             None => {
                 // Skip this span.
-                chars_count += child.text().chars().count();
+                iter_state.chars_count += child.text().chars().count();
                 continue;
             }
         };
@@ -228,37 +306,44 @@ pub fn collect_text_chunks(
             // Create a new chunk if:
             // - this is the first span (yes, position can be None)
             // - text character has an absolute coordinate assigned to it (via x/y attribute)
-            let is_new_chunk =    pos_list[chars_count].x.is_some()
-                || pos_list[chars_count].y.is_some()
-                || chunks.is_empty();
+            // - `c` is the first char of the `textPath`
+            // - `c` is the first char after `textPath`
+            let is_new_chunk =
+                   pos_list[iter_state.chars_count].x.is_some()
+                || pos_list[iter_state.chars_count].y.is_some()
+                || iter_state.split_chunk
+                || iter_state.chunks.is_empty();
+
+            iter_state.split_chunk = false;
 
             if is_new_chunk {
-                chunk_bytes_count = 0;
+                iter_state.chunk_bytes_count = 0;
 
                 let mut span2 = span.clone();
                 span2.start = 0;
                 span2.end = char_len;
 
-                chunks.push(TextChunk {
-                    x: pos_list[chars_count].x,
-                    y: pos_list[chars_count].y,
+                iter_state.chunks.push(TextChunk {
+                    x: pos_list[iter_state.chars_count].x,
+                    y: pos_list[iter_state.chars_count].y,
                     anchor,
                     spans: vec![span2],
+                    text_flow: iter_state.text_flow.clone(),
                     text: c.to_string(),
                 });
             } else if is_new_span {
                 // Add this span to the last text chunk.
                 let mut span2 = span.clone();
-                span2.start = chunk_bytes_count;
-                span2.end = chunk_bytes_count + char_len;
+                span2.start = iter_state.chunk_bytes_count;
+                span2.end = iter_state.chunk_bytes_count + char_len;
 
-                if let Some(chunk) = chunks.last_mut() {
+                if let Some(chunk) = iter_state.chunks.last_mut() {
                     chunk.text.push(c);
                     chunk.spans.push(span2);
                 }
             } else {
                 // Extend the last span.
-                if let Some(chunk) = chunks.last_mut() {
+                if let Some(chunk) = iter_state.chunks.last_mut() {
                     chunk.text.push(c);
                     if let Some(span) = chunk.spans.last_mut() {
                         debug_assert_ne!(span.end, 0);
@@ -268,12 +353,49 @@ pub fn collect_text_chunks(
             }
 
             is_new_span = false;
-            chars_count += 1;
-            chunk_bytes_count += char_len;
+            iter_state.chars_count += 1;
+            iter_state.chunk_bytes_count += char_len;
         }
     }
+}
 
-    chunks
+fn resolve_text_flow(
+    node: svgdom::Node,
+    state: &State,
+) -> Option<TextFlow> {
+    let av = node.attributes().get_value(AId::Href).cloned();
+    let path_node = match av {
+        Some(AValue::Link(n)) => n.clone(),
+        _ => return None,
+    };
+
+    if !path_node.is_tag_name(EId::Path) {
+        return None;
+    }
+
+    let segments = match path_node.attributes().get_value(AId::D).cloned() {
+        Some(AValue::Path(path)) => crate::convert::path::convert(path),
+        _ => return None,
+    };
+
+    if segments.len() < 2 {
+        return None;
+    }
+
+    let start_offset = node.attributes().get_length_or(AId::StartOffset, Length::zero());
+    let start_offset = if start_offset.unit == Unit::Percent {
+        // 'If a percentage is given, then the `startOffset` represents
+        // a percentage distance along the entire path.'
+        let path_len = crate::utils::path_length(&segments);
+        path_len * (start_offset.num / 100.0)
+    } else {
+        node.resolve_length(AId::StartOffset, state, 0.0)
+    };
+
+    Some(TextFlow::Path(Rc::new(TextPath {
+        start_offset,
+        segments,
+    })))
 }
 
 pub fn resolve_rendering_mode(
@@ -743,12 +865,9 @@ fn resolve_font_weight(
 }
 
 fn count_chars(node: &svgdom::Node) -> usize {
-    let mut total = 0;
-    for child in node.descendants().filter(|n| n.is_text()) {
-        total += child.text().chars().count();
-    }
-
-    total
+    node.descendants()
+        .filter(|n| n.is_text())
+        .fold(0, |w, n| w + n.text().chars().count())
 }
 
 /// Converts the writing mode.

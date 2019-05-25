@@ -32,8 +32,6 @@ pub use usvg::{
     Error,
 };
 
-use usvg::lyon_geom;
-
 
 #[cfg(feature = "cairo-backend")] pub mod backend_cairo;
 #[cfg(feature = "qt-backend")] pub mod backend_qt;
