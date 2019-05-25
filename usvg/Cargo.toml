@@ -19,7 +19,7 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
 base64 = "0.10"
-font-kit = { git = "https://github.com/RazrFalcon/font-kit", branch = "latest" }
+font-kit = { git = "https://github.com/pcwalton/font-kit", rev = "45de005" }
 harfbuzz_rs = "1.0"
 libflate = "0.1"
 log = "0.4"
