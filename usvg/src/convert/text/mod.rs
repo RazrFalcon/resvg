@@ -150,27 +150,43 @@ fn text_to_paths(
             span_ts.translate(x, y - span.baseline_shift);
 
             if let Some(decoration) = span.decoration.underline.take() {
+                // TODO: No idea what offset should be used for top-to-bottom layout.
+                // There is
+                // https://www.w3.org/TR/css-text-decor-3/#text-underline-position-property
+                // but it doesn't go into details.
+                let offset = match writing_mode {
+                    WritingMode::LeftToRight => -span.font.underline_position(span.font_size),
+                    WritingMode::TopToBottom => span.font.height(span.font_size) / 2.0,
+                };
+
                 new_paths.push(convert_decoration(
-                    -span.font.underline_position(span.font_size),
-                    &span, decoration, &decoration_spans, span_ts,
+                    offset, &span, decoration, &decoration_spans, span_ts,
                 ));
             }
 
             if let Some(decoration) = span.decoration.overline.take() {
+                let offset = match writing_mode {
+                    WritingMode::LeftToRight => -span.font.ascent(span.font_size),
+                    WritingMode::TopToBottom => -span.font.height(span.font_size) / 2.0,
+                };
+
                 new_paths.push(convert_decoration(
-                    -span.font.ascent(span.font_size),
-                    &span, decoration, &decoration_spans, span_ts,
+                    offset, &span, decoration, &decoration_spans, span_ts,
                 ));
             }
 
-            if let Some(path) = convert_span(span, &mut clusters, &span_ts, parent, false) {
+            if let Some(path) = convert_span(span, &mut clusters, &span_ts, parent, true) {
                 new_paths.push(path);
             }
 
             if let Some(decoration) = span.decoration.line_through.take() {
+                let offset = match writing_mode {
+                    WritingMode::LeftToRight => -span.font.x_height(span.font_size) / 2.0,
+                    WritingMode::TopToBottom => 0.0,
+                };
+
                 new_paths.push(convert_decoration(
-                    -span.font.x_height(span.font_size) / 2.0,
-                    &span, decoration, &decoration_spans, span_ts,
+                    offset, &span, decoration, &decoration_spans, span_ts,
                 ));
             }
         }
@@ -315,13 +331,15 @@ fn convert_decoration(
 ) -> tree::Path {
     debug_assert!(!decoration_spans.is_empty());
 
+    let thickness = span.font.underline_thickness(span.font_size);
+
     let mut segments = Vec::new();
     for dec_span in decoration_spans {
         let rect = Rect::new(
             0.0,
-            0.0,
+            -thickness / 2.0,
             dec_span.width,
-            span.font.underline_thickness(span.font_size),
+            thickness,
         ).unwrap();
 
         let start_idx = segments.len();

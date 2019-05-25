@@ -94,6 +94,10 @@ impl FontData {
         self.descent as f64 * self.scale(font_size)
     }
 
+    pub fn height(&self, font_size: f64) -> f64 {
+        self.ascent(font_size) - self.descent(font_size)
+    }
+
     pub fn x_height(&self, font_size: f64) -> f64 {
         self.x_height as f64 * self.scale(font_size)
     }
