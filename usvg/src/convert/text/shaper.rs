@@ -28,8 +28,6 @@ use super::convert::{
     WritingMode,
 };
 
-type Range = std::ops::Range<usize>;
-
 
 /// A glyph.
 ///
@@ -80,6 +78,12 @@ pub struct OutlinedCluster {
     ///
     /// We use it to match a cluster with a character in the text chunk and therefore with the style.
     pub byte_idx: ByteIndex,
+
+    /// Cluster's original codepoint.
+    ///
+    /// Technically, a cluster can contain multiple codepoints,
+    /// but we are storing only the first one.
+    pub codepoint: char,
 
     /// An advance along the X axis.
     ///
@@ -136,7 +140,7 @@ impl<'a> GlyphClusters<'a> {
 }
 
 impl<'a> Iterator for GlyphClusters<'a> {
-    type Item = (Range, ByteIndex);
+    type Item = (std::ops::Range<usize>, ByteIndex);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.idx == self.data.len() {
@@ -195,7 +199,7 @@ pub fn outline_chunk(
     let mut clusters = Vec::new();
     for (range, byte_idx) in GlyphClusters::new(&glyphs) {
         if let Some(span) = chunk.span_at(byte_idx) {
-            clusters.push(outline_cluster(&glyphs[range], span.font_size));
+            clusters.push(outline_cluster(&glyphs[range], &chunk.text, span.font_size));
         }
     }
 
@@ -218,7 +222,7 @@ fn shape_text(
         let mut missing = None;
         for glyph in &glyphs {
             if glyph.is_missing() {
-                missing = glyph.byte_idx.char_from(text);
+                missing = Some(glyph.byte_idx.char_from(text));
                 break;
             }
         }
@@ -232,6 +236,8 @@ fn shape_text(
             // Shape again, using a new font.
             let fallback_glyphs = shape_text_with_font(text, &fallback_font);
 
+            // We assume, that shaping with an any font will produce the same amount of glyphs.
+            // Otherwise an error.
             if glyphs.len() != fallback_glyphs.len() {
                 break 'outer;
             }
@@ -253,9 +259,8 @@ fn shape_text(
     // Warn about missing glyphs.
     for glyph in &glyphs {
         if glyph.is_missing() {
-            if let Some(c) = glyph.byte_idx.char_from(text) {
-                warn!("No fonts with a {}/U+{:X} character were found.", c, c as u32);
-            }
+            let c = glyph.byte_idx.char_from(text);
+            warn!("No fonts with a {}/U+{:X} character were found.", c, c as u32);
         }
     }
 
@@ -327,6 +332,7 @@ fn shape_text_with_font(
 /// Uses one or more `Glyph`s to construct an `OutlinedCluster`.
 fn outline_cluster(
     glyphs: &[Glyph],
+    text: &str,
     font_size: f64,
 ) -> OutlinedCluster {
     debug_assert!(!glyphs.is_empty());
@@ -364,7 +370,6 @@ fn outline_cluster(
             // The first glyph in the cluster will have an offset from 0x0,
             // but the later one will have an offset from the "current position".
             // So we have to keep an advance.
-            // TODO: vertical advance?
             // TODO: should be done only inside a single text span
             ts.translate(x + glyph.dx as f64, glyph.dy as f64);
 
@@ -383,6 +388,7 @@ fn outline_cluster(
 
     OutlinedCluster {
         byte_idx: glyphs[0].byte_idx,
+        codepoint: glyphs[0].byte_idx.char_from(text),
         advance,
         ascent: glyphs[0].font.ascent(font_size),
         descent: glyphs[0].font.descent(font_size),
@@ -476,7 +482,7 @@ fn resolve_clusters_positions_horizontal(
     let mut y = 0.0;
 
     for cluster in clusters {
-        let cp = offset + cluster.byte_idx.code_point_from(&chunk.text);
+        let cp = offset + cluster.byte_idx.code_point_at(&chunk.text);
         if let Some(pos) = pos_list.get(cp) {
             x += pos.dx.unwrap_or(0.0);
             y += pos.dy.unwrap_or(0.0);
@@ -525,9 +531,10 @@ fn resolve_clusters_positions_path(
             }
         };
 
+        // We have to break a decoration line for each cluster during text-on-path.
         cluster.has_relative_shift = true;
 
-        let cp = offset + cluster.byte_idx.code_point_from(&chunk.text);
+        let cp = offset + cluster.byte_idx.code_point_at(&chunk.text);
         if let Some(pos) = pos_list.get(cp) {
             x += pos.dx.unwrap_or(last_dx);
             y += pos.dy.unwrap_or(last_dy);
@@ -536,7 +543,7 @@ fn resolve_clusters_positions_path(
             last_dy = pos.dy.unwrap_or(last_dy);
         }
 
-        // Characters should be rotated by the x-midpoint x baseline position.
+        // Clusters should be rotated by the x-midpoint x baseline position.
         let half_advance = cluster.advance / 2.0;
         cluster.transform.translate(x - half_advance, y);
         cluster.transform.rotate_at(angle, half_advance, 0.0);
@@ -584,7 +591,7 @@ fn collect_normals(
     {
         let mut advance = offset;
         for cluster in clusters {
-            // Characters should be rotated by the x-midpoint x baseline position.
+            // Clusters should be rotated by the x-midpoint x baseline position.
             let half_advance = cluster.advance / 2.0;
 
             let offset = advance + half_advance;
@@ -704,23 +711,21 @@ pub fn apply_letter_spacing(
     }
 
     for cluster in clusters {
-        if let Some(c) = cluster.byte_idx.char_from(&chunk.text) {
-            // Spacing must be applied only to characters that belongs to the script
-            // that supports spacing.
-            // We are checking only the first code point, since it should be enough.
-            let script = unicode_script::get_script(c);
-            if script_supports_letter_spacing(script) {
-                if let Some(span) = chunk.span_at(cluster.byte_idx) {
-                    // Technically, we should ignore spacing on the last character,
-                    // but it doesn't affect us in any way, so we are ignoring this.
-                    cluster.advance += span.letter_spacing;
+        // Spacing must be applied only to characters that belongs to the script
+        // that supports spacing.
+        // We are checking only the first code point, since it should be enough.
+        let script = unicode_script::get_script(cluster.codepoint);
+        if script_supports_letter_spacing(script) {
+            if let Some(span) = chunk.span_at(cluster.byte_idx) {
+                // Technically, we should ignore spacing on the last character,
+                // but it doesn't affect us in any way, so we are ignoring this.
+                cluster.advance += span.letter_spacing;
 
-                    // If the cluster advance became negative - clear it.
-                    // This is an UB so we can do whatever we want, so we mimic the Chrome behavior.
-                    if !(cluster.advance > 0.0) {
-                        cluster.advance = 0.0;
-                        cluster.path.clear();
-                    }
+                // If the cluster advance became negative - clear it.
+                // This is an UB so we can do whatever we want, so we mimic the Chrome behavior.
+                if !(cluster.advance > 0.0) {
+                    cluster.advance = 0.0;
+                    cluster.path.clear();
                 }
             }
         }
@@ -769,16 +774,14 @@ pub fn apply_word_spacing(
     }
 
     for cluster in clusters {
-        if let Some(c) = cluster.byte_idx.char_from(&chunk.text) {
-            if is_word_separator_characters(c) {
-                if let Some(span) = chunk.span_at(cluster.byte_idx) {
-                    // Technically, word spacing 'should be applied half on each
-                    // side of the character', but it doesn't affect us in any way,
-                    // so we are ignoring this.
-                    cluster.advance += span.word_spacing;
+        if is_word_separator_characters(cluster.codepoint) {
+            if let Some(span) = chunk.span_at(cluster.byte_idx) {
+                // Technically, word spacing 'should be applied half on each
+                // side of the character', but it doesn't affect us in any way,
+                // so we are ignoring this.
+                cluster.advance += span.word_spacing;
 
-                    // After word spacing, `advance` can be negative.
-                }
+                // After word spacing, `advance` can be negative.
             }
         }
     }
@@ -810,7 +813,6 @@ fn is_word_separator_characters(c: char) -> bool {
 /// Rotates clusters according to
 /// [Unicode Vertical_Orientation Property](https://www.unicode.org/reports/tr50/tr50-19.html).
 pub fn apply_writing_mode(
-    chunk: &TextChunk,
     writing_mode: WritingMode,
     clusters: &mut [OutlinedCluster],
 ) {
@@ -819,28 +821,26 @@ pub fn apply_writing_mode(
     }
 
     for cluster in clusters {
-        if let Some(c) = cluster.byte_idx.char_from(&chunk.text) {
-            let orientation = unicode_vo::char_orientation(c);
-            if orientation == CharOrientation::Upright {
-                // Additional offset. Not sure why.
-                let dy = cluster.advance - cluster.height();
+        let orientation = unicode_vo::char_orientation(cluster.codepoint);
+        if orientation == CharOrientation::Upright {
+            // Additional offset. Not sure why.
+            let dy = cluster.advance - cluster.height();
 
-                // Rotate a cluster 90deg counter clockwise from the center.
-                let mut ts = tree::Transform::default();
-                ts.translate(cluster.advance / 2.0, 0.0);
-                ts.rotate(-90.0);
-                ts.translate(-cluster.advance / 2.0, -dy);
-                crate::utils::transform_path(&mut cluster.path, &ts);
+            // Rotate a cluster 90deg counter clockwise by the center.
+            let mut ts = tree::Transform::default();
+            ts.translate(cluster.advance / 2.0, 0.0);
+            ts.rotate(-90.0);
+            ts.translate(-cluster.advance / 2.0, -dy);
+            crate::utils::transform_path(&mut cluster.path, &ts);
 
-                // Move "baseline" to the middle and make height equal to advance.
-                cluster.ascent = cluster.advance / 2.0;
-                cluster.descent = -cluster.advance / 2.0;
-            } else {
-                // Could not find a spec that explains this,
-                // but this is how other applications shift "rotated" characters
-                // in the top-to-bottom mode.
-                cluster.transform.translate(0.0, cluster.x_height / 2.0);
-            }
+            // Move "baseline" to the middle and make height equal to advance.
+            cluster.ascent = cluster.advance / 2.0;
+            cluster.descent = -cluster.advance / 2.0;
+        } else {
+            // Could not find a spec that explains this,
+            // but this is how other applications are shifting the "rotated" characters
+            // in the top-to-bottom mode.
+            cluster.transform.translate(0.0, cluster.x_height / 2.0);
         }
     }
 }

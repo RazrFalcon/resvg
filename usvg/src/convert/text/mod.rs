@@ -130,7 +130,7 @@ fn text_to_paths(
             continue;
         }
 
-        shaper::apply_writing_mode(&chunk, writing_mode, &mut clusters);
+        shaper::apply_writing_mode(writing_mode, &mut clusters);
         shaper::apply_letter_spacing(&chunk, &mut clusters);
         shaper::apply_word_spacing(&chunk, &mut clusters);
         let curr_pos = shaper::resolve_clusters_positions(
