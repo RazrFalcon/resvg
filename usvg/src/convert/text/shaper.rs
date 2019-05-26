@@ -615,7 +615,7 @@ fn collect_normals(
     };
 
     fn create_curve(px: f64, py: f64, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64)
-                    -> lyon_geom::CubicBezierSegment<f64>
+        -> lyon_geom::CubicBezierSegment<f64>
     {
         lyon_geom::CubicBezierSegment {
             from:  lyon_geom::math::F64Point::new(px, py),
@@ -626,7 +626,7 @@ fn collect_normals(
     }
 
     fn create_curve_from_line(px: f64, py: f64, x: f64, y: f64)
-                              -> lyon_geom::CubicBezierSegment<f64>
+        -> lyon_geom::CubicBezierSegment<f64>
     {
         let line = lyon_geom::LineSegment {
             from:  lyon_geom::math::F64Point::new(px, py),
@@ -741,7 +741,7 @@ fn script_supports_letter_spacing(script: unicode_script::Script) -> bool {
     use unicode_script::Script;
 
     match script {
-        Script::Arabic
+          Script::Arabic
         | Script::Syriac
         | Script::Nko
         | Script::Manichaean

@@ -313,10 +313,10 @@ fn collect_text_chunks_impl(
             // - `c` is the first char of the `textPath`
             // - `c` is the first char after `textPath`
             let is_new_chunk =
-                pos_list[iter_state.chars_count].x.is_some()
-                    || pos_list[iter_state.chars_count].y.is_some()
-                    || iter_state.split_chunk
-                    || iter_state.chunks.is_empty();
+                   pos_list[iter_state.chars_count].x.is_some()
+                || pos_list[iter_state.chars_count].y.is_some()
+                || iter_state.split_chunk
+                || iter_state.chunks.is_empty();
 
             iter_state.split_chunk = false;
 
@@ -407,7 +407,7 @@ pub fn resolve_rendering_mode(
     state: &State,
 ) -> tree::ShapeRendering {
     let mode: tree::TextRendering = text_node.try_find_enum(AId::TextRendering)
-        .unwrap_or(state.opt.text_rendering);
+                                             .unwrap_or(state.opt.text_rendering);
 
     match mode {
         tree::TextRendering::OptimizeSpeed => tree::ShapeRendering::CrispEdges,

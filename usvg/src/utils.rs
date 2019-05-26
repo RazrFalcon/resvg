@@ -119,7 +119,7 @@ pub fn path_bbox(
 
     for seg in TransformedPath::new(segments, ts) {
         match seg {
-            tree::PathSegment::MoveTo { x, y }
+              tree::PathSegment::MoveTo { x, y }
             | tree::PathSegment::LineTo { x, y } => {
                 let x = x as f32;
                 let y = y as f32;
