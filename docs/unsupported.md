@@ -28,7 +28,6 @@
   - `missing-glyph`
   - `vkern`
 - `color-profile`
-- `textPath`
 - `use` with a reference to an external SVG file
 
 ### Attributes

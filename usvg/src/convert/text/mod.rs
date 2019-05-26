@@ -26,6 +26,32 @@ mod shaper;
 use self::shaper::OutlinedCluster;
 
 
+mod private {
+    use super::*;
+
+    /// A type-safe container for a `text` node.
+    ///
+    /// This way we can be sure that we are passing the `text` node and not just a random node.
+    pub struct TextNode(svgdom::Node);
+
+    impl TextNode {
+        pub fn new(node: svgdom::Node) -> Self {
+            debug_assert!(node.is_tag_name(EId::Text));
+            TextNode(node)
+        }
+    }
+
+    impl std::ops::Deref for TextNode {
+        type Target = svgdom::Node;
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+}
+use self::private::*;
+
+
 /// A text decoration span.
 ///
 /// Basically a horizontal line, that will be used for underline, overline and line-through.
@@ -43,79 +69,8 @@ pub fn convert(
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    let pos_list = resolve_positions_list(node, state);
-    let rotate_list = resolve_rotate_list(node);
-    let writing_mode = convert_writing_mode(node);
-    let rendering_mode = resolve_rendering_mode(node, state);
-    let mut text_ts = node.attributes().get_transform(AId::Transform);
-
-    let mut chunks = collect_text_chunks(node, &pos_list, state, tree);
-    let mut char_offset = 0;
-    let mut x = 0.0;
-    let mut y = 0.0;
-    let mut new_paths = Vec::new();
-    for chunk in &mut chunks {
-        x = chunk.x.unwrap_or(x);
-        y = chunk.y.unwrap_or(y);
-
-        let mut clusters = shaper::outline_chunk(&chunk, state);
-        if clusters.is_empty() {
-            continue;
-        }
-
-        shaper::apply_writing_mode(&chunk, writing_mode, &mut clusters);
-        shaper::apply_letter_spacing(&chunk, &mut clusters);
-        shaper::apply_word_spacing(&chunk, &mut clusters);
-        let width = shaper::resolve_clusters_positions(
-            &chunk.text, char_offset, &pos_list, &rotate_list, &mut clusters
-        );
-
-        match writing_mode {
-            WritingMode::LeftToRight => {
-                x -= process_anchor(chunk.anchor, width);
-            }
-            WritingMode::TopToBottom => {
-                y -= process_anchor(chunk.anchor, width);
-                text_ts.rotate_at(90.0, x, y);
-            }
-        }
-
-
-        for span in &mut chunk.spans {
-            let decoration_spans = collect_decoration_spans(span, &clusters);
-
-            let mut span_ts = text_ts.clone();
-            span_ts.translate(x, y - span.baseline_shift);
-
-            if let Some(decoration) = span.decoration.underline.take() {
-                new_paths.push(convert_decoration(
-                    -span.font.underline_position(span.font_size),
-                    &span, decoration, &decoration_spans, span_ts,
-                ));
-            }
-
-            if let Some(decoration) = span.decoration.overline.take() {
-                new_paths.push(convert_decoration(
-                    -span.font.ascent(span.font_size),
-                    &span, decoration, &decoration_spans, span_ts,
-                ));
-            }
-
-            if let Some(path) = convert_span(span, &mut clusters, &span_ts, parent, false) {
-                new_paths.push(path);
-            }
-
-            if let Some(decoration) = span.decoration.line_through.take() {
-                new_paths.push(convert_decoration(
-                    -span.font.x_height(span.font_size) / 2.0,
-                    &span, decoration, &decoration_spans, span_ts,
-                ));
-            }
-        }
-
-        char_offset += chunk.text.chars().count();
-        x += width;
-    }
+    let text_node = &TextNode::new(node.clone());
+    let mut new_paths = text_to_paths(text_node, state, parent, tree);
 
     let mut bbox = Rect::new_bbox();
     for path in &new_paths {
@@ -139,11 +94,122 @@ pub fn convert(
         parent.clone()
     };
 
+    let rendering_mode = resolve_rendering_mode(text_node, state);
     for mut path in new_paths {
         fix_obj_bounding_box(&mut path, bbox, tree);
         path.rendering_mode = rendering_mode;
         parent.append_kind(tree::NodeKind::Path(path));
     }
+}
+
+fn text_to_paths(
+    text_node: &TextNode,
+    state: &State,
+    parent: &mut tree::Node,
+    tree: &mut tree::Tree,
+) -> Vec<tree::Path> {
+    let pos_list = resolve_positions_list(text_node, state);
+    let rotate_list = resolve_rotate_list(text_node);
+    let writing_mode = convert_writing_mode(text_node);
+    let mut text_ts = text_node.attributes().get_transform(AId::Transform);
+
+    let mut chunks = collect_text_chunks(text_node, &pos_list, state, tree);
+    let mut char_offset = 0;
+    let mut last_x = 0.0;
+    let mut last_y = 0.0;
+    let mut new_paths = Vec::new();
+    for chunk in &mut chunks {
+        let (x, y) = match chunk.text_flow {
+            TextFlow::Horizontal => (chunk.x.unwrap_or(last_x), chunk.y.unwrap_or(last_y)),
+            TextFlow::Path(_) => (0.0, 0.0),
+        };
+
+        let mut clusters = shaper::outline_chunk(&chunk, state);
+        if clusters.is_empty() {
+            char_offset += chunk.text.chars().count();
+            continue;
+        }
+
+        shaper::apply_writing_mode(writing_mode, &mut clusters);
+        shaper::apply_letter_spacing(&chunk, &mut clusters);
+        shaper::apply_word_spacing(&chunk, &mut clusters);
+        let curr_pos = shaper::resolve_clusters_positions(
+            chunk, char_offset, &pos_list, &rotate_list, &mut clusters
+        );
+
+        if let TextFlow::Path(_) = chunk.text_flow {
+            // Since a path flow can point clusters in any direction,
+            // we can't simply shift a global transform by Y axis.
+            // We have to shift each cluster individually.
+            shaper::shift_clusters_baseline(&chunk, &mut clusters);
+        }
+
+        if writing_mode == WritingMode::TopToBottom {
+            if let TextFlow::Horizontal = chunk.text_flow {
+                text_ts.rotate_at(90.0, x, y);
+            }
+        }
+
+        for span in &mut chunk.spans {
+            let decoration_spans = collect_decoration_spans(span, &clusters);
+
+            let mut span_ts = text_ts.clone();
+            span_ts.translate(x, y);
+            if let TextFlow::Horizontal = chunk.text_flow {
+                // In case of a horizontal flow, shift transform and not clusters,
+                // because clusters can be rotated and an additional shift will lead
+                // to invalid results.
+                span_ts.translate(0.0, -span.baseline_shift);
+            }
+
+            if let Some(decoration) = span.decoration.underline.take() {
+                // TODO: No idea what offset should be used for top-to-bottom layout.
+                // There is
+                // https://www.w3.org/TR/css-text-decor-3/#text-underline-position-property
+                // but it doesn't go into details.
+                let offset = match writing_mode {
+                    WritingMode::LeftToRight => -span.font.underline_position(span.font_size),
+                    WritingMode::TopToBottom => span.font.height(span.font_size) / 2.0,
+                };
+
+                new_paths.push(convert_decoration(
+                    offset, &span, decoration, &decoration_spans, span_ts,
+                ));
+            }
+
+            if let Some(decoration) = span.decoration.overline.take() {
+                let offset = match writing_mode {
+                    WritingMode::LeftToRight => -span.font.ascent(span.font_size),
+                    WritingMode::TopToBottom => -span.font.height(span.font_size) / 2.0,
+                };
+
+                new_paths.push(convert_decoration(
+                    offset, &span, decoration, &decoration_spans, span_ts,
+                ));
+            }
+
+            if let Some(path) = convert_span(span, &mut clusters, &span_ts, parent, false) {
+                new_paths.push(path);
+            }
+
+            if let Some(decoration) = span.decoration.line_through.take() {
+                let offset = match writing_mode {
+                    WritingMode::LeftToRight => -span.font.x_height(span.font_size) / 2.0,
+                    WritingMode::TopToBottom => 0.0,
+                };
+
+                new_paths.push(convert_decoration(
+                    offset, &span, decoration, &decoration_spans, span_ts,
+                ));
+            }
+        }
+
+        char_offset += chunk.text.chars().count();
+        last_x = x + curr_pos.0;
+        last_y = y + curr_pos.1;
+    }
+
+    new_paths
 }
 
 fn convert_span(
@@ -156,6 +222,10 @@ fn convert_span(
     let mut segments = Vec::new();
 
     for cluster in clusters {
+        if !cluster.visible {
+            continue;
+        }
+
         if span.contains(cluster.byte_idx) {
             if dump_clusters {
                 let mut ts = *text_ts;
@@ -164,7 +234,7 @@ fn convert_span(
             }
 
             let mut path = mem::replace(&mut cluster.path, Vec::new());
-            transform_path(&mut path, &cluster.transform);
+            crate::utils::transform_path(&mut path, &cluster.transform);
 
             segments.extend_from_slice(&path);
         }
@@ -192,26 +262,6 @@ fn convert_span(
     };
 
     Some(path)
-}
-
-/// Applies the transform to the path segments.
-fn transform_path(segments: &mut [tree::PathSegment], ts: &tree::Transform) {
-    for seg in segments {
-        match seg {
-            tree::PathSegment::MoveTo { x, y } => {
-                ts.apply_to(x, y);
-            }
-            tree::PathSegment::LineTo { x, y } => {
-                ts.apply_to(x, y);
-            }
-            tree::PathSegment::CurveTo { x1, y1, x2, y2, x,  y } => {
-                ts.apply_to(x1, y1);
-                ts.apply_to(x2, y2);
-                ts.apply_to(x, y);
-            }
-            tree::PathSegment::ClosePath => {}
-        }
-    }
 }
 
 // Only for debug purposes.
@@ -247,14 +297,6 @@ fn dump_cluster(
         tree::PathSegment::LineTo { x: cluster.advance, y: 0.0 },
     ];
     parent.append_kind(tree::NodeKind::Path(base_path));
-}
-
-fn process_anchor(a: TextAnchor, text_width: f64) -> f64 {
-    match a {
-        TextAnchor::Start   => 0.0, // Nothing.
-        TextAnchor::Middle  => text_width / 2.0,
-        TextAnchor::End     => text_width,
-    }
 }
 
 fn collect_decoration_spans(
@@ -302,13 +344,15 @@ fn convert_decoration(
 ) -> tree::Path {
     debug_assert!(!decoration_spans.is_empty());
 
+    let thickness = span.font.underline_thickness(span.font_size);
+
     let mut segments = Vec::new();
     for dec_span in decoration_spans {
         let rect = Rect::new(
             0.0,
-            0.0,
+            -thickness / 2.0,
             dec_span.width,
-            span.font.underline_thickness(span.font_size),
+            thickness,
         ).unwrap();
 
         let start_idx = segments.len();
@@ -316,7 +360,7 @@ fn convert_decoration(
 
         let mut ts = dec_span.transform;
         ts.translate(0.0, dy);
-        transform_path(&mut segments[start_idx..], &ts);
+        crate::utils::transform_path(&mut segments[start_idx..], &ts);
     }
 
     tree::Path {

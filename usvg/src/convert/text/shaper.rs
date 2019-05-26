@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // external
-use svgdom;
 use harfbuzz_rs as harfbuzz;
 use unicode_bidi;
 use unicode_script;
@@ -22,11 +21,12 @@ use super::convert::{
     ByteIndex,
     CharacterPosition,
     Font,
+    TextAnchor,
     TextChunk,
+    TextFlow,
+    TextPath,
     WritingMode,
 };
-
-type Range = std::ops::Range<usize>;
 
 
 /// A glyph.
@@ -79,6 +79,12 @@ pub struct OutlinedCluster {
     /// We use it to match a cluster with a character in the text chunk and therefore with the style.
     pub byte_idx: ByteIndex,
 
+    /// Cluster's original codepoint.
+    ///
+    /// Technically, a cluster can contain multiple codepoints,
+    /// but we are storing only the first one.
+    pub codepoint: char,
+
     /// An advance along the X axis.
     ///
     /// Can be negative.
@@ -87,9 +93,11 @@ pub struct OutlinedCluster {
     /// An ascent in SVG coordinates.
     pub ascent: f64,
 
-    descent: f64,
+    /// A descent in SVG coordinates.
+    pub descent: f64,
 
-    x_height: f64,
+    /// A x-height in SVG coordinates.
+    pub x_height: f64,
 
     /// Indicates that this cluster was affected by the relative shift (via dx/dy attributes)
     /// during the text layouting. Which breaks the `text-decoration` line.
@@ -102,6 +110,11 @@ pub struct OutlinedCluster {
 
     /// A cluster's transform that contains it's position, rotation, etc.
     pub transform: tree::Transform,
+
+    /// Not all clusters should be rendered.
+    ///
+    /// For example, if a cluster is outside the text path than it should not be rendered.
+    pub visible: bool,
 }
 
 impl OutlinedCluster {
@@ -127,7 +140,7 @@ impl<'a> GlyphClusters<'a> {
 }
 
 impl<'a> Iterator for GlyphClusters<'a> {
-    type Item = (Range, ByteIndex);
+    type Item = (std::ops::Range<usize>, ByteIndex);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.idx == self.data.len() {
@@ -186,7 +199,7 @@ pub fn outline_chunk(
     let mut clusters = Vec::new();
     for (range, byte_idx) in GlyphClusters::new(&glyphs) {
         if let Some(span) = chunk.span_at(byte_idx) {
-            clusters.push(outline_cluster(&glyphs[range], span.font_size));
+            clusters.push(outline_cluster(&glyphs[range], &chunk.text, span.font_size));
         }
     }
 
@@ -209,7 +222,7 @@ fn shape_text(
         let mut missing = None;
         for glyph in &glyphs {
             if glyph.is_missing() {
-                missing = glyph.byte_idx.char_from(text);
+                missing = Some(glyph.byte_idx.char_from(text));
                 break;
             }
         }
@@ -223,6 +236,8 @@ fn shape_text(
             // Shape again, using a new font.
             let fallback_glyphs = shape_text_with_font(text, &fallback_font);
 
+            // We assume, that shaping with an any font will produce the same amount of glyphs.
+            // Otherwise an error.
             if glyphs.len() != fallback_glyphs.len() {
                 break 'outer;
             }
@@ -244,9 +259,8 @@ fn shape_text(
     // Warn about missing glyphs.
     for glyph in &glyphs {
         if glyph.is_missing() {
-            if let Some(c) = glyph.byte_idx.char_from(text) {
-                warn!("No fonts with a {}/U+{:X} character were found.", c, c as u32);
-            }
+            let c = glyph.byte_idx.char_from(text);
+            warn!("No fonts with a {}/U+{:X} character were found.", c, c as u32);
         }
     }
 
@@ -318,6 +332,7 @@ fn shape_text_with_font(
 /// Uses one or more `Glyph`s to construct an `OutlinedCluster`.
 fn outline_cluster(
     glyphs: &[Glyph],
+    text: &str,
     font_size: f64,
 ) -> OutlinedCluster {
     debug_assert!(!glyphs.is_empty());
@@ -332,7 +347,7 @@ fn outline_cluster(
         let mut builder = svgdom_path_builder::Builder::new();
         let mut outline = match glyph.font.handle.outline(glyph.id, fk::Hinting::None, &mut builder) {
             Ok(_) => {
-                crate::convert::path::convert_path(builder.build())
+                crate::convert::path::convert(builder.build())
             }
             Err(_) => {
                 // Technically unreachable.
@@ -345,7 +360,7 @@ fn outline_cluster(
 
         if !outline.is_empty() {
             // By default, glyphs are upside-down, so we have to mirror them.
-            let mut ts = svgdom::Transform::new_scale(1.0, -1.0);
+            let mut ts = tree::Transform::new_scale(1.0, -1.0);
 
             // Scale to font-size.
             ts.scale(sx, sx);
@@ -355,11 +370,10 @@ fn outline_cluster(
             // The first glyph in the cluster will have an offset from 0x0,
             // but the later one will have an offset from the "current position".
             // So we have to keep an advance.
-            // TODO: vertical advance?
             // TODO: should be done only inside a single text span
             ts.translate(x + glyph.dx as f64, glyph.dy as f64);
 
-            super::transform_path(&mut outline, &ts);
+            crate::utils::transform_path(&mut outline, &ts);
 
             path.extend_from_slice(&outline);
         }
@@ -374,6 +388,7 @@ fn outline_cluster(
 
     OutlinedCluster {
         byte_idx: glyphs[0].byte_idx,
+        codepoint: glyphs[0].byte_idx.char_from(text),
         advance,
         ascent: glyphs[0].font.ascent(font_size),
         descent: glyphs[0].font.descent(font_size),
@@ -381,6 +396,7 @@ fn outline_cluster(
         has_relative_shift: false,
         path,
         transform: tree::Transform::default(),
+        visible: true,
     }
 }
 
@@ -433,18 +449,40 @@ fn find_font_for_char(
     None
 }
 
+/// Resolves clusters positions.
+///
+/// Mainly sets the `transform` property.
+///
+/// Returns the last text position. The next text chunk should start from that position.
 pub fn resolve_clusters_positions(
-    text: &str,
+    chunk: &TextChunk,
     offset: usize,
     pos_list: &[CharacterPosition],
     rotate_list: &[f64],
     clusters: &mut [OutlinedCluster],
-) -> f64 {
-    let mut x = 0.0;
+) -> (f64, f64) {
+    match chunk.text_flow {
+        TextFlow::Horizontal => {
+            resolve_clusters_positions_horizontal(chunk, offset, pos_list, rotate_list, clusters)
+        }
+        TextFlow::Path(ref path) => {
+            resolve_clusters_positions_path(chunk, offset, path, pos_list, rotate_list, clusters)
+        }
+    }
+}
+
+fn resolve_clusters_positions_horizontal(
+    chunk: &TextChunk,
+    offset: usize,
+    pos_list: &[CharacterPosition],
+    rotate_list: &[f64],
+    clusters: &mut [OutlinedCluster],
+) -> (f64, f64) {
+    let mut x = process_anchor(chunk.anchor, clusters_length(clusters));
     let mut y = 0.0;
 
     for cluster in clusters {
-        let cp = offset + cluster.byte_idx.code_point_from(text);
+        let cp = offset + cluster.byte_idx.code_point_at(&chunk.text);
         if let Some(pos) = pos_list.get(cp) {
             x += pos.dx.unwrap_or(0.0);
             y += pos.dy.unwrap_or(0.0);
@@ -463,7 +501,201 @@ pub fn resolve_clusters_positions(
         x += cluster.advance;
     }
 
-    x
+    (x, y)
+}
+
+fn resolve_clusters_positions_path(
+    chunk: &TextChunk,
+    offset: usize,
+    path: &TextPath,
+    pos_list: &[CharacterPosition],
+    rotate_list: &[f64],
+    clusters: &mut [OutlinedCluster],
+) -> (f64, f64) {
+    let mut last_x = 0.0;
+    let mut last_y = 0.0;
+    let mut last_dx = 0.0;
+    let mut last_dy = 0.0;
+
+    let start_offset = path.start_offset + process_anchor(chunk.anchor, clusters_length(clusters));
+    let normals = collect_normals(clusters, &path.segments, start_offset);
+    for (cluster, normal) in clusters.iter_mut().zip(normals) {
+        let (mut x, mut y, angle) = match normal {
+            Some(normal) => {
+                (normal.x, normal.y, normal.angle)
+            }
+            None => {
+                // Hide clusters that are outside the text path.
+                cluster.visible = false;
+                continue;
+            }
+        };
+
+        // We have to break a decoration line for each cluster during text-on-path.
+        cluster.has_relative_shift = true;
+
+        let cp = offset + cluster.byte_idx.code_point_at(&chunk.text);
+        if let Some(pos) = pos_list.get(cp) {
+            x += pos.dx.unwrap_or(last_dx);
+            y += pos.dy.unwrap_or(last_dy);
+
+            last_dx = pos.dx.unwrap_or(last_dx);
+            last_dy = pos.dy.unwrap_or(last_dy);
+        }
+
+        // Clusters should be rotated by the x-midpoint x baseline position.
+        let half_advance = cluster.advance / 2.0;
+        cluster.transform.translate(x - half_advance, y);
+        cluster.transform.rotate_at(angle, half_advance, 0.0);
+
+        if let Some(angle) = rotate_list.get(cp).cloned() {
+            if !angle.is_fuzzy_zero() {
+                cluster.transform.rotate(angle);
+            }
+        }
+
+        last_x = x + cluster.advance;
+        last_y = y;
+    }
+
+    (last_x, last_y)
+}
+
+fn clusters_length(clusters: &[OutlinedCluster]) -> f64 {
+    clusters.iter().fold(0.0, |w, cluster| w + cluster.advance)
+}
+
+fn process_anchor(a: TextAnchor, text_width: f64) -> f64 {
+    match a {
+        TextAnchor::Start   => 0.0, // Nothing.
+        TextAnchor::Middle  => -text_width / 2.0,
+        TextAnchor::End     => -text_width,
+    }
+}
+
+struct PathNormal {
+    x: f64,
+    y: f64,
+    angle: f64,
+}
+
+fn collect_normals(
+    clusters: &[OutlinedCluster],
+    segments: &[tree::PathSegment],
+    offset: f64,
+) -> Vec<Option<PathNormal>> {
+    debug_assert!(!segments.is_empty());
+
+    let mut offsets = Vec::with_capacity(clusters.len());
+    let mut normals = Vec::with_capacity(clusters.len());
+    {
+        let mut advance = offset;
+        for cluster in clusters {
+            // Clusters should be rotated by the x-midpoint x baseline position.
+            let half_advance = cluster.advance / 2.0;
+
+            let offset = advance + half_advance;
+
+            // Clusters outside the path have no normals.
+            if offset < 0.0 {
+                normals.push(None);
+            }
+
+            offsets.push(offset);
+            advance += cluster.advance;
+        }
+    }
+
+    let (mut prev_mx, mut prev_my, mut prev_x, mut prev_y) = {
+        if let tree::PathSegment::MoveTo { x, y } = segments[0] {
+            (x, y, x, y)
+        } else {
+            unreachable!();
+        }
+    };
+
+    fn create_curve(px: f64, py: f64, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64)
+                    -> lyon_geom::CubicBezierSegment<f64>
+    {
+        lyon_geom::CubicBezierSegment {
+            from:  lyon_geom::math::F64Point::new(px, py),
+            ctrl1: lyon_geom::math::F64Point::new(x1, y1),
+            ctrl2: lyon_geom::math::F64Point::new(x2, y2),
+            to:    lyon_geom::math::F64Point::new(x, y),
+        }
+    }
+
+    fn create_curve_from_line(px: f64, py: f64, x: f64, y: f64)
+                              -> lyon_geom::CubicBezierSegment<f64>
+    {
+        let line = lyon_geom::LineSegment {
+            from:  lyon_geom::math::F64Point::new(px, py),
+            to:    lyon_geom::math::F64Point::new(x, y),
+        };
+
+        let p1 = line.sample(0.33);
+        let p2 = line.sample(0.66);
+        create_curve(px, py, p1.x, p1.y, p2.x, p2.y, x, y)
+    }
+
+    let mut length = 0.0;
+    for seg in segments {
+        let curve = match *seg {
+            tree::PathSegment::MoveTo { x, y } => {
+                prev_mx = x;
+                prev_my = y;
+                prev_x = x;
+                prev_y = y;
+                continue;
+            }
+            tree::PathSegment::LineTo { x, y } => {
+                create_curve_from_line(prev_x, prev_y, x, y)
+            }
+            tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+                create_curve(prev_x, prev_y, x1, y1, x2, y2, x, y)
+            }
+            tree::PathSegment::ClosePath => {
+                create_curve_from_line(prev_x, prev_y, prev_mx, prev_my)
+            }
+        };
+
+        let curve_len = curve.approximate_length(1.0);
+
+        for offset in &offsets[normals.len()..] {
+            if *offset >= length && *offset <= length + curve_len {
+                let offset = (offset - length) / curve_len;
+                debug_assert!(offset >= 0.0 && offset <= 1.0);
+
+                let pos = curve.sample(offset);
+
+                let d = curve.derivative(offset);
+                let d = lyon_geom::utils::normalized_tangent(d);
+
+                let angle = d.angle_from_x_axis().to_degrees() - 90.0;
+
+                normals.push(Some(PathNormal {
+                    x: pos.x,
+                    y: pos.y,
+                    angle,
+                }));
+
+                if normals.len() == offsets.len() {
+                    break;
+                }
+            }
+        }
+
+        length += curve_len;
+        prev_x = curve.to.x;
+        prev_y = curve.to.y;
+    }
+
+    // If path ended and we still have unresolved normals - set them to `None`.
+    for _ in 0..(offsets.len() - normals.len()) {
+        normals.push(None);
+    }
+
+    normals
 }
 
 /// Applies the `letter-spacing` property to a text chunk clusters.
@@ -479,23 +711,21 @@ pub fn apply_letter_spacing(
     }
 
     for cluster in clusters {
-        if let Some(c) = cluster.byte_idx.char_from(&chunk.text) {
-            // Spacing must be applied only to characters that belongs to the script
-            // that supports spacing.
-            // We are checking only the first code point, since it should be enough.
-            let script = unicode_script::get_script(c);
-            if script_supports_letter_spacing(script) {
-                if let Some(span) = chunk.span_at(cluster.byte_idx) {
-                    // Technically, we should ignore spacing on the last character,
-                    // but it doesn't affect us in any way, so we are ignoring this.
-                    cluster.advance += span.letter_spacing;
+        // Spacing must be applied only to characters that belongs to the script
+        // that supports spacing.
+        // We are checking only the first code point, since it should be enough.
+        let script = unicode_script::get_script(cluster.codepoint);
+        if script_supports_letter_spacing(script) {
+            if let Some(span) = chunk.span_at(cluster.byte_idx) {
+                // Technically, we should ignore spacing on the last character,
+                // but it doesn't affect us in any way, so we are ignoring this.
+                cluster.advance += span.letter_spacing;
 
-                    // If the cluster advance became negative - clear it.
-                    // This is an UB and we can do whatever we want, so we mimic the Chrome behavior.
-                    if !(cluster.advance > 0.0) {
-                        cluster.advance = 0.0;
-                        cluster.path.clear();
-                    }
+                // If the cluster advance became negative - clear it.
+                // This is an UB so we can do whatever we want, so we mimic the Chrome behavior.
+                if !(cluster.advance > 0.0) {
+                    cluster.advance = 0.0;
+                    cluster.path.clear();
                 }
             }
         }
@@ -511,7 +741,7 @@ fn script_supports_letter_spacing(script: unicode_script::Script) -> bool {
     use unicode_script::Script;
 
     match script {
-          Script::Arabic
+        Script::Arabic
         | Script::Syriac
         | Script::Nko
         | Script::Manichaean
@@ -544,16 +774,27 @@ pub fn apply_word_spacing(
     }
 
     for cluster in clusters {
-        if let Some(c) = cluster.byte_idx.char_from(&chunk.text) {
-            if is_word_separator_characters(c) {
-                if let Some(span) = chunk.span_at(cluster.byte_idx) {
-                    // Technically, word spacing 'should be applied half on each
-                    // side of the character', but it doesn't affect us in any way,
-                    // so we are ignoring this.
-                    cluster.advance += span.word_spacing;
+        if is_word_separator_characters(cluster.codepoint) {
+            if let Some(span) = chunk.span_at(cluster.byte_idx) {
+                // Technically, word spacing 'should be applied half on each
+                // side of the character', but it doesn't affect us in any way,
+                // so we are ignoring this.
+                cluster.advance += span.word_spacing;
 
-                    // After word spacing, `advance` can be negative.
-                }
+                // After word spacing, `advance` can be negative.
+            }
+        }
+    }
+}
+
+pub fn shift_clusters_baseline(
+    chunk: &TextChunk,
+    clusters: &mut [OutlinedCluster],
+) {
+    for span in &chunk.spans {
+        for cluster in clusters.iter_mut() {
+            if span.contains(cluster.byte_idx) {
+                cluster.transform.translate(0.0, -span.baseline_shift);
             }
         }
     }
@@ -572,7 +813,6 @@ fn is_word_separator_characters(c: char) -> bool {
 /// Rotates clusters according to
 /// [Unicode Vertical_Orientation Property](https://www.unicode.org/reports/tr50/tr50-19.html).
 pub fn apply_writing_mode(
-    chunk: &TextChunk,
     writing_mode: WritingMode,
     clusters: &mut [OutlinedCluster],
 ) {
@@ -581,28 +821,26 @@ pub fn apply_writing_mode(
     }
 
     for cluster in clusters {
-        if let Some(c) = cluster.byte_idx.char_from(&chunk.text) {
-            let orientation = unicode_vo::char_orientation(c);
-            if orientation == CharOrientation::Upright {
-                // Additional offset. Not sure why.
-                let dy = cluster.advance - cluster.height();
+        let orientation = unicode_vo::char_orientation(cluster.codepoint);
+        if orientation == CharOrientation::Upright {
+            // Additional offset. Not sure why.
+            let dy = cluster.advance - cluster.height();
 
-                // Rotate a cluster 90deg counter clockwise from the center.
-                let mut ts = tree::Transform::default();
-                ts.translate(cluster.advance / 2.0, 0.0);
-                ts.rotate(-90.0);
-                ts.translate(-cluster.advance / 2.0, -dy);
-                super::transform_path(&mut cluster.path, &ts);
+            // Rotate a cluster 90deg counter clockwise by the center.
+            let mut ts = tree::Transform::default();
+            ts.translate(cluster.advance / 2.0, 0.0);
+            ts.rotate(-90.0);
+            ts.translate(-cluster.advance / 2.0, -dy);
+            crate::utils::transform_path(&mut cluster.path, &ts);
 
-                // Move "baseline" to the middle and make height equal to advance.
-                cluster.ascent = cluster.advance / 2.0;
-                cluster.descent = -cluster.advance / 2.0;
-            } else {
-                // Could not find a spec that explains this,
-                // but this is how other applications shift "rotated" characters
-                // in the top-to-bottom mode.
-                cluster.transform.translate(0.0, cluster.x_height / 2.0);
-            }
+            // Move "baseline" to the middle and make height equal to advance.
+            cluster.ascent = cluster.advance / 2.0;
+            cluster.descent = -cluster.advance / 2.0;
+        } else {
+            // Could not find a spec that explains this,
+            // but this is how other applications are shifting the "rotated" characters
+            // in the top-to-bottom mode.
+            cluster.transform.translate(0.0, cluster.x_height / 2.0);
         }
     }
 }

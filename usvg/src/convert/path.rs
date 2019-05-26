@@ -13,7 +13,7 @@ use crate::tree;
 use super::prelude::*;
 
 
-pub fn convert_path(mut path: svgdom::Path) -> Vec<tree::PathSegment> {
+pub fn convert(mut path: svgdom::Path) -> Vec<tree::PathSegment> {
     let mut new_path = Vec::with_capacity(path.len());
 
     path.conv_to_absolute();

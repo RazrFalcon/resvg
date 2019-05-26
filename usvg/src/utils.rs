@@ -98,8 +98,6 @@ pub fn path_bbox(
         None => tree::Transform::default(),
     };
 
-    use crate::lyon_geom;
-
     let mut prev_x = 0.0;
     let mut prev_y = 0.0;
     let mut minx = 0.0;
@@ -121,7 +119,7 @@ pub fn path_bbox(
 
     for seg in TransformedPath::new(segments, ts) {
         match seg {
-              tree::PathSegment::MoveTo { x, y }
+            tree::PathSegment::MoveTo { x, y }
             | tree::PathSegment::LineTo { x, y } => {
                 let x = x as f32;
                 let y = y as f32;
@@ -226,5 +224,86 @@ impl<'a> Iterator for TransformedPath<'a> {
         self.idx += 1;
 
         Some(seg)
+    }
+}
+
+/// Calculates path's length.
+///
+/// Length from the first segment to the first MoveTo, ClosePath or slice end.
+pub fn path_length(segments: &[tree::PathSegment]) -> f64 {
+    debug_assert!(!segments.is_empty());
+
+    let (mut prev_x, mut prev_y) = {
+        if let tree::PathSegment::MoveTo { x, y } = segments[0] {
+            (x as f32, y as f32)
+        } else {
+            panic!("first segment must be MoveTo");
+        }
+    };
+
+    let start_x = prev_x;
+    let start_y = prev_y;
+
+    let mut is_first_seg = true;
+    let mut length = 0.0f64;
+    for seg in segments {
+        match *seg {
+            tree::PathSegment::MoveTo { .. } => {
+                if !is_first_seg {
+                    break;
+                }
+            }
+            tree::PathSegment::LineTo { x, y } => {
+                length += Line::new(prev_x as f64, prev_y as f64, x, y).length();
+
+                prev_x = x as f32;
+                prev_y = y as f32;
+            }
+            tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+                let x = x as f32;
+                let y = y as f32;
+
+                let curve = lyon_geom::CubicBezierSegment {
+                    from: lyon_geom::math::Point::new(prev_x, prev_y),
+                    ctrl1: lyon_geom::math::Point::new(x1 as f32, y1 as f32),
+                    ctrl2: lyon_geom::math::Point::new(x2 as f32, y2 as f32),
+                    to: lyon_geom::math::Point::new(x, y),
+                };
+
+                length += curve.approximate_length(1.0) as f64;
+
+                prev_x = x;
+                prev_y = y;
+            }
+            tree::PathSegment::ClosePath => {
+                length += Line::new(prev_x as f64, prev_y as f64,
+                                    start_x as f64, start_y as f64).length();
+                break;
+            }
+        }
+
+        is_first_seg = false;
+    }
+
+    length
+}
+
+/// Applies the transform to the path segments.
+pub fn transform_path(segments: &mut [tree::PathSegment], ts: &tree::Transform) {
+    for seg in segments {
+        match seg {
+            tree::PathSegment::MoveTo { x, y } => {
+                ts.apply_to(x, y);
+            }
+            tree::PathSegment::LineTo { x, y } => {
+                ts.apply_to(x, y);
+            }
+            tree::PathSegment::CurveTo { x1, y1, x2, y2, x,  y } => {
+                ts.apply_to(x1, y1);
+                ts.apply_to(x2, y2);
+                ts.apply_to(x, y);
+            }
+            tree::PathSegment::ClosePath => {}
+        }
     }
 }

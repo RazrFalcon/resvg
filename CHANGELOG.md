@@ -9,9 +9,18 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - New text layout implementation.
+<<<<<<< HEAD
 - [Text BIDI reordering](http://www.unicode.org/reports/tr9/).
 - Better text shaping.
 - Text will be converted into paths on the `usvg` side now.
+=======
+- `textPath` support.
+- `writing-mode` support, aka vertical text.
+- [Text BIDI reordering](http://www.unicode.org/reports/tr9/).
+- Better text shaping.
+- Text will be converted into paths on the `usvg` side now.
+- `word-spacing` is supported for all backends now.
+>>>>>>> master
 - [`harfbuzz`](https://github.com/harfbuzz/harfbuzz) dependency.
 - `shape-rendering`, `text-rendering` and `image-rendering` support.
 - The `arithmetic` operator for `feComposite`.
