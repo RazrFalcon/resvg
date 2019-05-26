@@ -5,7 +5,8 @@
 
 == Into
 
-*resvg* doesn't include a 2D graphics library and uses external ones via https://en.wikipedia.org/wiki/Foreign_function_interface[FFI].
+*resvg* doesn't include a 2D graphics library and uses external ones via
+https://en.wikipedia.org/wiki/Foreign_function_interface[FFI].
 Their support is implemented separately, therefore we call them _backends_.
 You can build them separately or together. +
 At the moment, there are only two backends: *Qt* and *cairo*.
@@ -26,25 +27,25 @@ cargo build --release --features="qt-backend cairo-backend"
 
 == Dependencies
 
-- The library requires the latest stable
+* The library requires the latest stable
   https://www.rust-lang.org/tools/install[Rust].
-- _Qt backend_ requires only `QtCore` and `QtGui` libraries
+* The _Qt backend_ requires only `QtCore` and `QtGui` libraries
   and the JPEG image format plugin (aka `plugins/imageformats/qjpeg`). +
   Technically, any Qt 5 version should work, but we only support Qt >= 5.6.
-
-- _cairo backend_ requires https://www.cairographics.org/[cairo] itself and https://www.pango.org/[pango] for text rendering (with the `pangocairo` glue library, which is an optional part of the `pango`). +
-  There is no specific minimal supported version at the moment.
+* The _cairo backend_ requires https://www.cairographics.org/[cairo] and `gdk-pixbuf` (part of GTK). +
+  cairo >= 1.12 and gdk-pixbuf >= 2.30
 
 == Windows
 
 === Qt backend via MSVC
 
-Install `stable-x86_64-pc-windows-msvc` https://www.rust-lang.org/tools/install[Rust] target.
+Install:
 
-Install Qt built with MSVC via an
-http://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe[official installer].
+* `stable-x86_64-pc-windows-msvc` https://www.rust-lang.org/tools/install[Rust] target.
+* https://cmake.org/download/[CMake] (required to build harfbuzz).
+* Qt built with MSVC via an http://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe[official installer].
 
-Build using `cmd.exe`:
+Build using MSVC `cmd.exe` shell:
 
 ```batch
 set PATH=%userprofile%\.cargo\bin;%PATH%
@@ -53,28 +54,28 @@ set QT_DIR=C:\Qt\5.12.0\msvc2015_64
 cargo.exe build --release --features "qt-backend"
 ```
 
-Instead of `msvc2015_64` you can use any other Qt MSVC build. Even 32-bit one. +
+Instead of `msvc2015_64` you can use any other Qt MSVC build. Even 32-bit one.
 We are using Qt 5.12.0 just for example.
 
 === Qt backend via MinGW
 
-Install `stable-i686-pc-windows-gnu` https://www.rust-lang.org/tools/install[Rust] target.
+Install:
 
-Install Qt built with MinGW 32-bit via an
-http://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe[official installer]. +
-64-bit version, available since Qt 5.12, will not work due to https://github.com/rust-lang/rust/issues/47048[#47048].
+* `stable-x86_64-pc-windows-gnu` https://www.rust-lang.org/tools/install[Rust] target.
+* https://cmake.org/download/[CMake] (required to build harfbuzz).
+* Qt built with MinGW 64-bit via an http://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe[official installer].
 
 Build using `cmd.exe`:
 
 ```batch
-set PATH=C:\Qt\5.11.3\mingw53_32\bin;C:\Qt\Tools\mingw530_32\bin;%userprofile%\.cargo\bin;%PATH%
-set QT_DIR=C:\Qt\5.11.3\mingw53_32
+set PATH=C:\Qt\5.12.0\mingw73_64\bin;C:\Qt\Tools\mingw730_64\bin;%userprofile%\.cargo\bin;%PATH%
+set QT_DIR=C:\Qt\5.12.0\mingw73_64
 
 cargo.exe build --release --features "qt-backend"
 ```
 
-Instead of `mingw53_32` you can use any other Qt mingw build. +
-We are using Qt 5.11.3 just for example.
+Instead of `mingw73_64` you can use any other Qt mingw build.
+We are using Qt 5.12.0 just for example.
 
 === cairo backend via MSYS2
 
@@ -83,11 +84,10 @@ Install `stable-x86_64-pc-windows-gnu` https://www.rust-lang.org/tools/install[R
 Install GTK+ dependencies using MSYS2 as explained
 http://gtk-rs.org/docs/requirements.html#windows[here].
 
-We do not need the whole GTK+, so we can install only `pango` (which will install
-`cairo` too) and `gdk-pixbuf2`:
+We do not need the whole GTK+, so we can install only `cargo` and `gdk-pixbuf2`:
 
 ```bash
-pacman -S mingw-w64-x86_64-pango mingw-w64-x86_64-gdk-pixbuf2
+pacman -S mingw-w64-x86_64-cairo mingw-w64-x86_64-gdk-pixbuf2
 
 cargo.exe build --release --features "cairo-backend"
 ```
@@ -112,9 +112,9 @@ PKG_CONFIG_PATH='/path_to_qt/lib/pkgconfig' cargo build --release --features "qt
 
 === cairo backend
 
-Install `cairo`, `pango` (with `pangocairo`) and `gdk-pixbuf` using your distributive package manager.
+Install `cairo` and `gdk-pixbuf` using your distributive package manager.
 
-For Ubuntu its `libpango1.0-dev` (will pull `cairo` too) and `libgdk-pixbuf2.0-dev`.
+For Ubuntu its `libcairo2-dev` and `libgdk-pixbuf2.0-dev`.
 
 ```bash
 cargo build --release --features "cairo-backend"
@@ -146,7 +146,7 @@ We are using Qt 5.12.0 just for example.
 Using https://brew.sh/[homebrew]:
 
 ```bash
-brew install cairo pango gdk-pixbuf
+brew install cairo gdk-pixbuf
 
 cargo build --release --features "cairo-backend"
 ```

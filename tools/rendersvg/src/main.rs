@@ -75,10 +75,6 @@ fn process() -> Result<(), String> {
         usvg::Tree::from_file(&args.in_svg, &opt.usvg).map_err(|e| e.to_string())
     })?;
 
-    // We have to init only Qt backend.
-    #[cfg(feature = "qt-backend")]
-    let _resvg = timed!("Backend init", init_qt_gui(&tree, &args));
-
     if args.query_all {
         return query_all(backend, &tree, &opt);
     }
@@ -111,31 +107,6 @@ fn process() -> Result<(), String> {
     };
 
     Ok(())
-}
-
-// Qt backend initialization is pretty slow
-// and needed only for files with text nodes.
-// So we skip it file doesn't have one.
-#[cfg(feature = "qt-backend")]
-fn init_qt_gui(
-    tree: &usvg::Tree,
-    args: &args::Args,
-) -> Option<resvg::InitObject> {
-    if args.backend_name != "qt" {
-        return None;
-    }
-
-    // Check that tree has any text nodes.
-    let has_text = tree.root().descendants().any(|n|
-        if let usvg::NodeKind::Text { .. } = *n.borrow() { true } else { false }
-    );
-
-    if has_text {
-        // Init Qt backend.
-        Some(resvg::init())
-    } else {
-        None
-    }
 }
 
 fn query_all(

@@ -11,10 +11,7 @@ use cairo::{
 // self
 use crate::backend_utils::mask;
 use super::prelude::*;
-use super::{
-    path,
-    text,
-};
+use super::path;
 
 
 pub fn clip(
@@ -35,7 +32,7 @@ pub fn clip(
     clip_cr.transform(cp.transform.to_native());
 
     if cp.units == usvg::Units::ObjectBoundingBox {
-        clip_cr.transform(cairo::Matrix::from_bbox(bbox));
+        clip_cr.transform(usvg::Transform::from_bbox(bbox).to_native());
     }
 
     clip_cr.set_operator(cairo::Operator::Clear);
@@ -47,9 +44,6 @@ pub fn clip(
         match *node.borrow() {
             usvg::NodeKind::Path(ref p) => {
                 path::draw(&node.tree(), p, opt, &clip_cr);
-            }
-            usvg::NodeKind::Text(ref text) => {
-                text::draw(&node.tree(), text, opt, &clip_cr);
             }
             usvg::NodeKind::Group(ref g) => {
                 clip_group(&node, g, opt, bbox, layers, &clip_cr);
@@ -129,9 +123,6 @@ fn draw_group_child(
             usvg::NodeKind::Path(ref path_node) => {
                 path::draw(&child.tree(), path_node, opt, cr);
             }
-            usvg::NodeKind::Text(ref text) => {
-                text::draw(&child.tree(), text, opt, cr);
-            }
             _ => {}
         }
     }
@@ -162,7 +153,7 @@ pub fn mask(
         mask_cr.clip();
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {
-            mask_cr.transform(cairo::Matrix::from_bbox(bbox));
+            mask_cr.transform(usvg::Transform::from_bbox(bbox).to_native());
         }
 
         super::render_group(node, opt, layers, &mask_cr);

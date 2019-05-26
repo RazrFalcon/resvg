@@ -12,8 +12,6 @@ fn main() {
         return;
     }
 
-    let _resvg = resvg::init();
-
     let mut opt = resvg::Options::default();
     opt.usvg.path = Some(args[1].clone().into());
 

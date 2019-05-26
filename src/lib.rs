@@ -32,8 +32,6 @@ pub use usvg::{
     Error,
 };
 
-use usvg::lyon_geom;
-
 
 #[cfg(feature = "cairo-backend")] pub mod backend_cairo;
 #[cfg(feature = "qt-backend")] pub mod backend_qt;
@@ -43,7 +41,6 @@ mod backend_utils;
 mod geom;
 mod layers;
 mod options;
-mod traits;
 
 /// Commonly used types and traits.
 pub mod prelude {
@@ -52,7 +49,6 @@ pub mod prelude {
     pub use usvg::prelude::*;
     pub use usvg::{try_opt, try_opt_warn};
     pub use crate::geom::*;
-    pub(crate) use crate::traits::*;
     pub use crate::utils;
     pub use crate::Options;
     pub use crate::Render;
@@ -115,43 +111,6 @@ pub trait OutputImage {
     fn save(&self, path: &path::Path) -> bool;
 }
 
-
-/// A global library handle.
-pub struct InitObject {
-    #[cfg(feature = "qt-backend")]
-    #[allow(dead_code)]
-    handle: qt::GuiApp,
-}
-
-/// Creates a global library handle.
-///
-/// Must be invoked before any other `resvg` code.
-///
-/// Currently, handles `QGuiApplication` object which must be created
-/// in order to draw text. If you don't plan to draw text - it's better to skip
-/// the initialization.
-///
-/// Does nothing when only the `cairo` backend is enabled.
-///
-/// Note: `QGuiApplication` initialization is pretty slow (up to 100ms).
-///
-/// # Example
-///
-/// ```
-/// let _resvg = resvg::init();
-///
-/// // other code
-/// ```
-///
-/// Also, take a look at `examples/minimal.rs`.
-///
-/// **Warning**: this method is not thread-safe.
-pub fn init() -> InitObject {
-    InitObject {
-        #[cfg(feature = "qt-backend")]
-        handle: qt::GuiApp::new("resvg"),
-    }
-}
 
 /// Returns default backend.
 ///

@@ -8,20 +8,33 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
+- New text layout implementation.
+- `textPath` support.
+- `writing-mode` support, aka vertical text.
+- [Text BIDI reordering](http://www.unicode.org/reports/tr9/).
+- Better text shaping.
+- Text will be converted into paths on the `usvg` side now.
+- `word-spacing` is supported for all backends now.
+- [`harfbuzz`](https://github.com/harfbuzz/harfbuzz) dependency.
 - `shape-rendering`, `text-rendering` and `image-rendering` support.
 - The `arithmetic` operator for `feComposite`.
 - (usvg) `--quiet` argument.
 
 ### Changed
 - (resvg) Do not rescale images before rendering. This is faster and better.
-- (qt-backend) Text will always be rendered as path now.
-  Previously, `QPainter::drawText` was used for simple text.
 - (usvg) An `image` element with a zero or negative size will be skipped now.
   Previously, a linked image size was used, which is incorrect.
 - Geometry primitives (`Rect`, `Size`, etc) are immutable and always valid now.
 - (usvg) The default `color-interpolation-filters` attribute will not be exported now.
 
+### Removed
+- (usvg) All text related structures and enums. Text will be converted into `Path` now.
+- `InitObject` and `init()` because they are no longer needed.
+- (c-api) `resvg_handle`, `resvg_init`, `resvg_destroy`.
+- (cairo-backend) `pango` dependency.
+
 ### Fixed
+- `letter-spacing` on cursive scripts (like Arabic).
 - (rctree) Prevent stack overflow on a huge, deeply nested SVG.
 
 ## [0.6.1] - 2019-03-16

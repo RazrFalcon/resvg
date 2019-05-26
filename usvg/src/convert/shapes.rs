@@ -35,7 +35,7 @@ pub fn convert_path(
     node: &svgdom::Node,
 ) -> Option<Vec<tree::PathSegment>> {
     if let Some(AValue::Path(path)) = node.attributes().get_value(AId::D).cloned() {
-        let new_path = super::path::convert_path(path);
+        let new_path = super::path::convert(path);
         if new_path.len() >= 2 {
             return Some(new_path);
         }
@@ -117,7 +117,7 @@ pub fn convert_rect(
             .arc_to(rx, ry, 0.0, false, true, x + rx, y)
             .finalize();
 
-        path::convert_path(p)
+        path::convert(p)
     };
 
     Some(path)
@@ -231,7 +231,7 @@ pub fn convert_ellipse(
 }
 
 fn ellipse_to_path(cx: f64, cy: f64, rx: f64, ry: f64) -> Vec<tree::PathSegment> {
-    path::convert_path(svgdom::PathBuilder::with_capacity(6)
+    path::convert(svgdom::PathBuilder::with_capacity(6)
         .move_to(cx + rx, cy)
         .arc_to(rx, ry, 0.0, false, true, cx,      cy + ry)
         .arc_to(rx, ry, 0.0, false, true, cx - rx, cy)

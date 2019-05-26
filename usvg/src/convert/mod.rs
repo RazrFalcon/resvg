@@ -2,6 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 // external
 use svgdom::{
     self,
@@ -22,6 +25,7 @@ use crate::{
 };
 pub use self::preprocess::prepare_doc;
 
+
 mod clip_and_mask;
 mod filter;
 mod image;
@@ -38,6 +42,7 @@ mod units;
 mod use_node;
 
 mod prelude {
+    pub use log::warn;
     pub use svgdom::{
         AttributeType,
         ElementType,
@@ -53,7 +58,7 @@ mod prelude {
     pub use crate::Options;
     pub use super::svgdom_ext::*;
     pub use super::State;
-    pub use log::warn;
+    pub use super::FontCache;
 }
 
 use self::svgdom_ext::*;
@@ -64,12 +69,38 @@ pub struct State<'a> {
     current_root: svgdom::Node,
     size: Size,
     view_box: Rect,
+    font_cache: Rc<RefCell<FontCache>>,
     opt: &'a Options,
 }
 
 impl<'a> State<'a> {
     pub fn is_in_clip_path(&self) -> bool {
         self.current_root.is_tag_name(EId::ClipPath)
+    }
+}
+
+
+pub struct FontCache {
+    fonts: Vec<font_kit::handle::Handle>,
+}
+
+impl FontCache {
+    fn new() -> Self {
+        FontCache {
+            fonts: Vec::new(),
+        }
+    }
+
+    fn init(&mut self) {
+        if self.fonts.is_empty() {
+            if let Ok(v) = font_kit::source::SystemSource::new().all_fonts() {
+                self.fonts = v;
+            }
+        }
+    }
+
+    fn fonts(&self) -> &[font_kit::handle::Handle] {
+        &self.fonts
     }
 }
 
@@ -124,6 +155,7 @@ pub fn convert_doc(
         current_root: svg.clone(),
         size,
         view_box: view_box.rect,
+        font_cache: Rc::new(RefCell::new(FontCache::new())),
         opt: &opt,
     };
 
@@ -143,6 +175,7 @@ fn resolve_svg_size(svg: &svgdom::Node, opt: &Options) -> Result<Size, Error> {
         current_root: svg.clone(),
         size: Size::new(100.0, 100.0).unwrap(),
         view_box: Rect::new(0.0, 0.0, 100.0, 100.0).unwrap(),
+        font_cache: Rc::new(RefCell::new(FontCache::new())),
         opt,
     };
 
@@ -431,7 +464,7 @@ fn ungroup_groups(tree: &mut tree::Tree, opt: &Options) {
                 && g.clip_path.is_none()
                 && g.mask.is_none()
                 && g.filter.is_none()
-                && !opt.keep_named_groups
+                && !(opt.keep_named_groups && !g.id.is_empty())
             } else {
                 false
             };
@@ -445,9 +478,6 @@ fn ungroup_groups(tree: &mut tree::Tree, opt: &Options) {
                     match *child.borrow_mut() {
                         tree::NodeKind::Path(ref mut path) => {
                             path.transform.prepend(&ts);
-                        }
-                        tree::NodeKind::Text(ref mut text) => {
-                            text.transform.prepend(&ts);
                         }
                         tree::NodeKind::Image(ref mut img) => {
                             img.transform.prepend(&ts);
@@ -512,14 +542,6 @@ fn remove_unused_defs(tree: &mut tree::Tree) {
                 tree::NodeKind::Path(ref path) => {
                     check_paint_id!(path.fill, id);
                     check_paint_id!(path.stroke, id);
-                }
-                tree::NodeKind::Text(ref text) => {
-                    for chunk in &text.chunks {
-                        for span in &chunk.spans {
-                            check_paint_id!(span.fill, id);
-                            check_paint_id!(span.stroke, id);
-                        }
-                    }
                 }
                 tree::NodeKind::Group(ref g) => {
                     check_id!(g.clip_path, id);

@@ -33,39 +33,6 @@ pub enum LineJoin {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum FontStyle {
-    Normal = ffi::FontStyle_StyleNormal as isize,
-    Italic = ffi::FontStyle_StyleItalic as isize,
-    Oblique = ffi::FontStyle_StyleOblique as isize,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum FontWeight {
-    Thin = ffi::FontWeight_Thin as isize,
-    ExtraLight = ffi::FontWeight_ExtraLight as isize,
-    Light = ffi::FontWeight_Light as isize,
-    Normal = ffi::FontWeight_Normal as isize,
-    Medium = ffi::FontWeight_Medium as isize,
-    DemiBold = ffi::FontWeight_DemiBold as isize,
-    Bold = ffi::FontWeight_Bold as isize,
-    ExtraBold = ffi::FontWeight_ExtraBold as isize,
-    Black = ffi::FontWeight_Black as isize,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum FontStretch {
-    UltraCondensed = ffi::FontStretch_UltraCondensed as isize,
-    ExtraCondensed = ffi::FontStretch_ExtraCondensed as isize,
-    Condensed = ffi::FontStretch_Condensed as isize,
-    SemiCondensed = ffi::FontStretch_SemiCondensed as isize,
-    Unstretched = ffi::FontStretch_Unstretched as isize,
-    SemiExpanded = ffi::FontStretch_SemiExpanded as isize,
-    Expanded = ffi::FontStretch_Expanded as isize,
-    ExtraExpanded = ffi::FontStretch_ExtraExpanded as isize,
-    UltraExpanded = ffi::FontStretch_UltraExpanded as isize,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum CompositionMode {
     SourceOver = ffi::CompositionMode_CompositionMode_SourceOver as isize,
     DestinationOver = ffi::CompositionMode_CompositionMode_DestinationOver as isize,
@@ -101,32 +68,10 @@ pub enum AspectRatioMode {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum PathSegmentType {
-    MoveTo,
-    LineTo,
-    CurveTo,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Spread {
     Pad = ffi::Spread_PadSpread as isize,
     Reflect = ffi::Spread_ReflectSpread as isize,
     Repeat = ffi::Spread_RepeatSpread as isize,
-}
-
-pub struct GuiApp(*mut ffi::qtc_qguiapp);
-
-impl GuiApp {
-    pub fn new(app_name: &str) -> GuiApp {
-        let c_app_name = CString::new(app_name).unwrap();
-        unsafe { GuiApp(ffi::qtc_create_gui(c_app_name.as_ptr() as *mut _)) }
-    }
-}
-
-impl Drop for GuiApp {
-    fn drop(&mut self) {
-        unsafe { ffi::qtc_destroy_gui(self.0) }
-    }
 }
 
 
@@ -273,18 +218,6 @@ impl Painter {
         unsafe { ffi::qtc_qpainter_set_smooth_pixmap_transform(self.0, flag); }
     }
 
-    pub fn font(&self) -> Font {
-        unsafe { Font(ffi::qtc_qpainter_get_font(self.0)) }
-    }
-
-    pub fn set_font(&mut self, font: &Font) {
-        unsafe { ffi::qtc_qpainter_set_font(self.0, font.0) }
-    }
-
-    pub fn font_metrics(&self) -> FontMetricsF {
-        unsafe { FontMetricsF(ffi::qtc_qpainter_get_fontmetricsf(self.0)) }
-    }
-
     pub fn set_pen(&mut self, pen: Pen) {
         unsafe { ffi::qtc_qpainter_set_pen(self.0, pen.0) }
     }
@@ -315,11 +248,6 @@ impl Painter {
 
     pub fn draw_image_rect(&mut self, x: f64, y: f64, w: f64, h: f64, img: &Image) {
         unsafe { ffi::qtc_qpainter_draw_image_rect(self.0, x, y, w, h, img.0) }
-    }
-
-    pub fn draw_text(&mut self, x: f64, y: f64, text: &str) {
-        let c_text = CString::new(text).unwrap();
-        unsafe { ffi::qtc_qpainter_draw_text(self.0, x, y, c_text.as_ptr()) }
     }
 
     pub fn draw_rect(&mut self, x: f64, y: f64, w: f64, h: f64) {
@@ -397,34 +325,6 @@ impl PainterPath {
 
     pub fn close_path(&mut self) {
         unsafe { ffi::qtc_qpainterpath_close_path(self.0) }
-    }
-
-    pub fn add_text(&mut self, x: f64, y: f64, font: &Font, text: &str) {
-        let c_text = CString::new(text).unwrap();
-        unsafe { ffi::qtc_qpainterpath_add_text(self.0, x, y, font.0, c_text.as_ptr()) }
-    }
-
-    pub fn len(&self) -> i32 {
-        unsafe { ffi::qtc_qpainterpath_element_count(self.0) }
-    }
-
-    pub fn get(&self, index: i32) -> (PathSegmentType, f64, f64) {
-        unsafe {
-            let seg = ffi::qtc_qpainterpath_element_at(self.0, index);
-            let kind = match seg.kind {
-                ffi::PathSegmentType_MoveToSegment => PathSegmentType::MoveTo,
-                ffi::PathSegmentType_LineToSegment => PathSegmentType::LineTo,
-                ffi::PathSegmentType_CurveToSegment => PathSegmentType::CurveTo,
-                _ => unreachable!(),
-            };
-            (kind, seg.x, seg.y)
-        }
-    }
-
-    pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
-        let rect = unsafe { ffi::qtc_qpainterpath_get_bbox(self.0) };
-
-        (rect.x, rect.y, rect.w, rect.h)
     }
 
     pub fn set_fill_rule(&mut self, rule: FillRule) {
@@ -600,115 +500,5 @@ impl Gradient for RadialGradient {
 impl Drop for RadialGradient {
     fn drop(&mut self) {
         unsafe { ffi::qtc_qradialgradient_destroy(self.0) }
-    }
-}
-
-
-pub struct Font(*mut ffi::qtc_qfont);
-
-impl Font {
-    pub fn new() -> Font {
-        unsafe { Font(ffi::qtc_qfont_create()) }
-    }
-
-    pub fn set_family(&mut self, family: &str) {
-        let c_family = CString::new(family).unwrap();
-        unsafe { ffi::qtc_qfont_set_family(self.0, c_family.as_ptr()); }
-    }
-
-    pub fn set_style(&mut self, style: FontStyle) {
-        unsafe { ffi::qtc_qfont_set_style(self.0, style as ffi::FontStyle); }
-    }
-
-    pub fn set_small_caps(&mut self, flag: bool) {
-        unsafe { ffi::qtc_qfont_set_small_caps(self.0, flag); }
-    }
-
-    pub fn set_weight(&mut self, weight: FontWeight) {
-        unsafe { ffi::qtc_qfont_set_weight(self.0, weight as ffi::FontWeight); }
-    }
-
-    pub fn set_stretch(&mut self, stretch: FontStretch) {
-        unsafe { ffi::qtc_qfont_set_stretch(self.0, stretch as ffi::FontStretch); }
-    }
-
-    pub fn set_size(&mut self, size: f64) {
-        unsafe { ffi::qtc_qfont_set_size(self.0, size); }
-    }
-
-    pub fn set_letter_spacing(&mut self, size: f64) {
-        unsafe { ffi::qtc_qfont_set_letter_spacing(self.0, size); }
-    }
-
-    pub fn set_word_spacing(&mut self, size: f64) {
-        unsafe { ffi::qtc_qfont_set_word_spacing(self.0, size); }
-    }
-
-    pub fn print_debug(&self) {
-        unsafe { ffi::qtc_qfont_print_debug(self.0); }
-    }
-}
-
-impl Clone for Font {
-    fn clone(&self) -> Self {
-        unsafe { Font(ffi::qtc_qfont_clone(self.0)) }
-    }
-}
-
-impl Drop for Font {
-    fn drop(&mut self) {
-        unsafe { ffi::qtc_qfont_destroy(self.0) }
-    }
-}
-
-
-pub struct FontMetricsF(*mut ffi::qtc_qfontmetricsf);
-
-impl FontMetricsF {
-    pub fn height(&self) -> f64 {
-        unsafe { ffi::qtc_qfontmetricsf_height(self.0) }
-    }
-
-    pub fn width(&self, text: &str) -> f64 {
-        let c_text = CString::new(text).unwrap();
-        unsafe { ffi::qtc_qfontmetricsf_width(self.0, c_text.as_ptr()) }
-    }
-
-    pub fn ascent(&self) -> f64 {
-        unsafe { ffi::qtc_qfontmetricsf_get_ascent(self.0) }
-    }
-
-    pub fn underline_pos(&self) -> f64 {
-        unsafe { ffi::qtc_qfontmetricsf_get_underline_pos(self.0) }
-    }
-
-    pub fn overline_pos(&self) -> f64 {
-        unsafe { ffi::qtc_qfontmetricsf_get_overline_pos(self.0) }
-    }
-
-    pub fn strikeout_pos(&self) -> f64 {
-        unsafe { ffi::qtc_qfontmetricsf_get_strikeout_pos(self.0) }
-    }
-
-    pub fn line_width(&self) -> f64 {
-        unsafe { ffi::qtc_qfontmetricsf_get_line_width(self.0) }
-    }
-
-    pub fn full_width(&self, text: &str) -> f64 {
-        let c_text = CString::new(text).unwrap();
-        unsafe { ffi::qtc_qfontmetricsf_full_width(self.0, c_text.as_ptr()) }
-    }
-
-    pub fn bounding_box(&self, text: &str) -> (f64, f64, f64, f64) {
-        let c_text = CString::new(text).unwrap();
-        let rect = unsafe { ffi::qtc_qfontmetricsf_get_bbox(self.0, c_text.as_ptr()) };
-
-        (rect.x, rect.y, rect.w, rect.h)
-    }
-}
-
-impl Drop for FontMetricsF {
-    fn drop(&mut self) {
-        unsafe { ffi::qtc_qfontmetricsf_destroy(self.0) }
     }
 }

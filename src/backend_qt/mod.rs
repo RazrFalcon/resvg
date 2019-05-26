@@ -9,8 +9,8 @@ use crate::qt;
 
 // self
 use crate::prelude::*;
+use crate::backend_utils::ConvTransform;
 use crate::{
-    backend_utils,
     layers,
     OutputImage,
     Render,
@@ -33,10 +33,11 @@ mod filter;
 mod image;
 mod path;
 mod style;
-mod text;
 
 mod prelude {
     pub use super::super::prelude::*;
+    pub use crate::backend_utils::ConvTransform;
+
     pub type QtLayers = super::layers::Layers<super::qt::Image>;
 }
 
@@ -54,11 +55,6 @@ impl ConvTransform<qt::Transform> for usvg::Transform {
     }
 }
 
-impl TransformFromBBox for qt::Transform {
-    fn from_bbox(bbox: Rect) -> Self {
-        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
-    }
-}
 
 /// Cairo backend handle.
 #[derive(Clone, Copy)]
@@ -213,9 +209,6 @@ fn render_node(
         usvg::NodeKind::Path(ref path) => {
             path::draw(&node.tree(), path, opt, p)
         }
-        usvg::NodeKind::Text(ref text) => {
-            Some(text::draw(&node.tree(), text, opt, p))
-        }
         usvg::NodeKind::Image(ref img) => {
             Some(image::draw(img, opt, p))
         }
@@ -347,32 +340,6 @@ fn _calc_node_bbox(
         usvg::NodeKind::Path(ref path) => {
             utils::path_bbox(&path.segments, path.stroke.as_ref(), Some(ts2))
         }
-        usvg::NodeKind::Text(ref text) => {
-            let mut bbox = Rect::new_bbox();
-            let mut fm = text::QtFontMetrics::new(p);
-            let (blocks, _) = backend_utils::text::prepare_blocks(text, &mut fm);
-            backend_utils::text::draw_blocks(blocks, |block| {
-                let mut p_path = qt::PainterPath::new();
-                p_path.add_text(0.0, 0.0, &block.font, &block.text);
-
-                let y = block.bbox.y() + block.font_ascent;
-
-                let mut t = ts2;
-                if let Some(rotate) = block.rotate {
-                    t.rotate_at(rotate, block.bbox.x(), y);
-                }
-                t.translate(block.bbox.x(), y);
-
-                let segments = from_qt_path(&p_path);
-                if !segments.is_empty() {
-                    if let Some(c_bbox) = utils::path_bbox(&segments, block.stroke.as_ref(), Some(t)) {
-                        bbox = bbox.expand(c_bbox);
-                    }
-                }
-            });
-
-            Some(bbox)
-        }
         usvg::NodeKind::Image(ref img) => {
             let segments = utils::rect_to_path(img.view_box.rect);
             utils::path_bbox(&segments, None, Some(ts2))
@@ -390,39 +357,6 @@ fn _calc_node_bbox(
         }
         _ => None
     }
-}
-
-fn from_qt_path(p_path: &qt::PainterPath) -> Vec<usvg::PathSegment> {
-    let mut segments = Vec::with_capacity(p_path.len() as usize);
-    let p_path_len = p_path.len();
-    let mut i = 0;
-    while i < p_path_len {
-        let (kind, x, y) = p_path.get(i);
-        match kind {
-            qt::PathSegmentType::MoveTo => {
-                segments.push(usvg::PathSegment::MoveTo { x, y });
-            }
-            qt::PathSegmentType::LineTo => {
-                segments.push(usvg::PathSegment::LineTo { x, y });
-            }
-            qt::PathSegmentType::CurveTo => {
-                let (_, x1, y1) = p_path.get(i + 1);
-                let (_, x2, y2) = p_path.get(i + 2);
-
-                segments.push(usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
-
-                i += 2;
-            }
-        }
-
-        i += 1;
-    }
-
-    if segments.len() == 1 {
-        segments.clear();
-    }
-
-    segments
 }
 
 fn create_layers(img_size: ScreenSize, opt: &Options) -> QtLayers {

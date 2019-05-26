@@ -215,7 +215,7 @@ test!(pattern_without_children, false,
 // All supported elements should be listed.
 // We keep id's even if `keep_named_groups` is disabled.
 // ID on `svg`, `defs`, `stop` and `tspan` is ignored because they can't be rendered
-test!(preserve_id, false,
+test!(preserve_id, true,
 "<svg id='svg1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 1 1'>
     <defs id='defs1'>
         <linearGradient id='lg1'>
@@ -235,8 +235,8 @@ test!(preserve_id, false,
     </defs>
     <rect id='rect1' fill='url(#lg1)' stroke='url(#rg1)' clip-path='url(#clip1)' width='10' height='10'/>
     <path id='path1' fill='url(#patt1)' d='M 10 20 30 40'/>
-    <text id='text1'>Some text</text>
-    <text id='text2'><tspan id='tspan2'>Some text</tspan></text>
+    <text id='text1'>_</text>
+    <text id='text2' text-decoration='underline'>_</text>
     <image id='image1' width='1' height='1' xlink:href='data:image/png;base64,
         iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAB3RJTUUH4gMLDwAjrsLbtwAAAAlw
         SFlzAAAuIwAALiMBeKU/dgAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAAG
@@ -307,14 +307,16 @@ test!(preserve_id, false,
         id='path1'
         fill='url(#patt1)'
         d='M 10 20 L 30 40'/>
-    <text
-        id='text1'><tspan><tspan
-        font-family='Times New Roman'
-        font-size='12'>Some text</tspan></tspan></text>
-    <text
-        id='text2'><tspan><tspan
-        font-family='Times New Roman'
-        font-size='12'>Some text</tspan></tspan></text>
+    <path
+        id='text1'
+        d='M 6.10546875 2.58984375 L -0.099609375 2.58984375 L -0.099609375 2.09765625 L 6.10546875 2.09765625 Z'/>
+    <g
+        id='text2'>
+        <path
+            d='M 0 1.013671875 L 6 1.013671875 L 6 1.599609375 L 0 1.599609375 Z'/>
+        <path
+            d='M 6.10546875 2.58984375 L -0.099609375 2.58984375 L -0.099609375 2.09765625 L 6.10546875 2.09765625 Z'/>
+    </g>
     <image
         id='image1'
         x='0'
@@ -496,7 +498,7 @@ test!(switch_with_opacity, false,
 // `fill-rule` cannot be set on `text`.
 test!(fill_rule_on_text, false,
 "<svg viewBox='0 0 1 1' xmlns='http://www.w3.org/2000/svg'>
-    <text fill-rule='evenodd'>Text</text>
+    <text fill-rule='evenodd'>_</text>
 </svg>",
 "<svg
     xmlns='http://www.w3.org/2000/svg'
@@ -506,9 +508,8 @@ test!(fill_rule_on_text, false,
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.6.1'>
     <defs/>
-    <text><tspan><tspan
-        font-family='Times New Roman'
-        font-size='12'>Text</tspan></tspan></text>
+    <path
+        d='M 6.10546875 2.58984375 L -0.099609375 2.58984375 L -0.099609375 2.09765625 L 6.10546875 2.09765625 Z'/>
 </svg>
 ");
 

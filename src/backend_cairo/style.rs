@@ -159,7 +159,7 @@ fn prepare_base_gradient<G: cairo::Gradient>(
     let mut matrix = g.transform.to_native();
 
     if g.units == usvg::Units::ObjectBoundingBox {
-        let m = cairo::Matrix::from_bbox(bbox);
+        let m = usvg::Transform::from_bbox(bbox).to_native();
         matrix = cairo::Matrix::multiply(&matrix, &m);
     }
 

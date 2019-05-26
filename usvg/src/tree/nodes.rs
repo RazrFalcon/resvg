@@ -24,7 +24,6 @@ pub enum NodeKind {
     Pattern(Pattern),
     Filter(Filter),
     Path(Path),
-    Text(Text),
     Image(Image),
     Group(Group),
 }
@@ -45,7 +44,6 @@ impl NodeKind {
             NodeKind::Pattern(ref e) => e.id.as_str(),
             NodeKind::Filter(ref e) => e.id.as_str(),
             NodeKind::Path(ref e) => e.id.as_str(),
-            NodeKind::Text(ref e) => e.id.as_str(),
             NodeKind::Image(ref e) => e.id.as_str(),
             NodeKind::Group(ref e) => e.id.as_str(),
         }
@@ -66,7 +64,6 @@ impl NodeKind {
             NodeKind::Pattern(ref e) => e.transform,
             NodeKind::Filter(_) => Transform::default(),
             NodeKind::Path(ref e) => e.transform,
-            NodeKind::Text(ref e) => e.transform,
             NodeKind::Image(ref e) => e.transform,
             NodeKind::Group(ref e) => e.transform,
         }
@@ -138,114 +135,6 @@ impl Default for Path {
             segments: Vec::new(),
         }
     }
-}
-
-
-/// A text element.
-///
-/// `text` element in SVG.
-#[derive(Clone, Debug)]
-pub struct Text {
-    /// Element's ID.
-    ///
-    /// Taken from the SVG itself.
-    /// Isn't automatically generated.
-    /// Can be empty.
-    pub id: String,
-
-    /// Element transform.
-    pub transform: Transform,
-
-    /// Rotate list.
-    ///
-    /// If set, contains a list of rotation angles for each *code point* in the `text`.
-    pub rotate: Option<Vec<f64>>,
-
-    /// Rendering mode.
-    ///
-    /// `text-rendering` in SVG.
-    pub rendering_mode: TextRendering,
-
-    /// A list of text chunks.
-    pub chunks: Vec<TextChunk>,
-}
-
-
-/// A text chunk.
-///
-/// Contains position and anchor of the next
-/// [text chunk](https://www.w3.org/TR/SVG11/text.html#TextChunk).
-///
-/// Doesn't represented in SVG directly. Usually, it's a first `tspan` or text node
-/// and any `tspan` that defines either `x` or `y` coordinates.
-///
-/// *Note:* `usvg` text chunk isn't strictly the same as an SVG one,
-/// because text chunk should be defined only by `x` or `y` coordinates.
-/// But since `resvg` backends doesn't have a direct access to glyphs/graphemes
-/// we have to create chunks on `dx`, `dy` and non-zero `rotate` to simulate this.
-/// This is incorrect, since it breaks text shaping
-/// and BIDI reordering (resvg doesn't support this one anyway).
-#[derive(Clone, Debug)]
-pub struct TextChunk {
-    /// An optional absolute positions along the X-axis.
-    pub x: Option<f64>,
-
-    /// An optional absolute positions along the Y-axis.
-    pub y: Option<f64>,
-
-    /// An optional relative positions along the X-axis.
-    pub dx: Option<f64>,
-
-    /// An optional relative positions along the Y-axis.
-    pub dy: Option<f64>,
-
-    /// A text anchor/align.
-    pub anchor: TextAnchor,
-
-    /// A list of text spans.
-    pub spans: Vec<TextSpan>,
-}
-
-
-/// A text span.
-///
-/// `tspan` element in SVG.
-#[derive(Clone, Debug)]
-pub struct TextSpan {
-    /// Element visibility.
-    pub visibility: Visibility,
-
-    /// Fill style.
-    pub fill: Option<Fill>,
-
-    /// Stroke style.
-    pub stroke: Option<Stroke>,
-
-    /// Font description.
-    pub font: Font,
-
-    /// Baseline shift.
-    pub baseline_shift: f64,
-
-    /// Text decoration.
-    ///
-    /// Unlike `text-decoration` attribute from the SVG, this one has all styles resolved.
-    /// Basically, by the SVG `text-decoration` attribute can be defined on `tspan` element
-    /// and on any parent element. And all definitions should be combined.
-    /// The one that was defined by `tspan` uses the `tspan` style itself.
-    /// The one that was defined by any parent node uses the `text` element style.
-    /// So it's pretty hard to resolve.
-    ///
-    /// This property has all this stuff resolved.
-    pub decoration: TextDecoration,
-
-    /// An actual text line.
-    ///
-    /// SVG doesn't support multiline text, so this property doesn't have a new line inside of it.
-    /// All the spaces are already trimmed or preserved, depending on the `xml:space` attribute.
-    /// All characters references are already resolved, so there is no `&gt;` or `&#x50;`.
-    /// So this text should be rendered as is, without any postprocessing.
-    pub text: String,
 }
 
 
