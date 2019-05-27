@@ -230,7 +230,12 @@ pub fn convert_ellipse(
     Some(ellipse_to_path(cx, cy, rx, ry))
 }
 
-fn ellipse_to_path(cx: f64, cy: f64, rx: f64, ry: f64) -> Vec<tree::PathSegment> {
+fn ellipse_to_path(
+    cx: f64,
+    cy: f64,
+    rx: f64,
+    ry: f64,
+) -> Vec<tree::PathSegment> {
     path::convert(svgdom::PathBuilder::with_capacity(6)
         .move_to(cx + rx, cy)
         .arc_to(rx, ry, 0.0, false, true, cx,      cy + ry)

@@ -4,15 +4,21 @@
 
 #![allow(non_camel_case_types)]
 
-use std::fmt;
-use std::path;
 use std::ffi::CStr;
+use std::fmt;
 use std::os::raw::c_char;
-use std::slice;
+use std::path;
 use std::ptr;
+use std::slice;
 
-#[cfg(feature = "qt-backend")] use resvg::qt;
-#[cfg(feature = "cairo-backend")] use resvg::cairo;
+use log::warn;
+
+#[cfg(feature = "cairo-backend")]
+use resvg::cairo;
+
+#[cfg(feature = "qt-backend")]
+use resvg::qt;
+
 use resvg::prelude::*;
 
 const DEFAULT_FONT_FAMILY: &str = "Times New Roman";
@@ -114,15 +120,20 @@ pub struct resvg_transform {
 pub struct resvg_render_tree(usvg::Tree);
 
 #[no_mangle]
-pub extern fn resvg_init_log() {
+pub extern "C" fn resvg_init_log() {
     fern::Dispatch::new()
         .format(log_format)
         .level(log::LevelFilter::Warn)
         .chain(std::io::stderr())
-        .apply().unwrap();
+        .apply()
+        .unwrap();
 }
 
-fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &log::Record) {
+fn log_format(
+    out: fern::FormatCallback,
+    message: &fmt::Arguments,
+    record: &log::Record,
+) {
     let lvl = match record.level() {
         log::Level::Error => "Error",
         log::Level::Warn => "Warning",
@@ -141,7 +152,9 @@ fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &log:
 }
 
 #[no_mangle]
-pub extern fn resvg_init_options(opt: *mut resvg_options) {
+pub extern "C" fn resvg_init_options(
+    opt: *mut resvg_options,
+) {
     unsafe {
         (*opt).path = ptr::null();
         (*opt).dpi = 96.0;
@@ -164,7 +177,7 @@ pub extern fn resvg_init_options(opt: *mut resvg_options) {
 }
 
 #[no_mangle]
-pub extern fn resvg_parse_tree_from_file(
+pub extern "C" fn resvg_parse_tree_from_file(
     file_path: *const c_char,
     opt: *const resvg_options,
     raw_tree: *mut *mut resvg_render_tree,
@@ -191,7 +204,7 @@ pub extern fn resvg_parse_tree_from_file(
 }
 
 #[no_mangle]
-pub extern fn resvg_parse_tree_from_data(
+pub extern "C" fn resvg_parse_tree_from_data(
     data: *const c_char,
     len: usize,
     opt: *const resvg_options,
@@ -216,7 +229,9 @@ pub extern fn resvg_parse_tree_from_data(
 }
 
 #[no_mangle]
-pub extern fn resvg_tree_destroy(tree: *mut resvg_render_tree) {
+pub extern "C" fn resvg_tree_destroy(
+    tree: *mut resvg_render_tree,
+) {
     unsafe {
         assert!(!tree.is_null());
         Box::from_raw(tree)
@@ -225,7 +240,7 @@ pub extern fn resvg_tree_destroy(tree: *mut resvg_render_tree) {
 
 #[cfg(feature = "qt-backend")]
 #[no_mangle]
-pub extern fn resvg_qt_render_to_image(
+pub extern "C" fn resvg_qt_render_to_image(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     file_path: *const c_char,
@@ -236,7 +251,7 @@ pub extern fn resvg_qt_render_to_image(
 
 #[cfg(feature = "cairo-backend")]
 #[no_mangle]
-pub extern fn resvg_cairo_render_to_image(
+pub extern "C" fn resvg_cairo_render_to_image(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     file_path: *const c_char,
@@ -282,7 +297,7 @@ fn render_to_image(
 
 #[cfg(feature = "qt-backend")]
 #[no_mangle]
-pub extern fn resvg_qt_render_to_canvas(
+pub extern "C" fn resvg_qt_render_to_canvas(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     size: resvg_size,
@@ -305,7 +320,7 @@ pub extern fn resvg_qt_render_to_canvas(
 
 #[cfg(feature = "cairo-backend")]
 #[no_mangle]
-pub extern fn resvg_cairo_render_to_canvas(
+pub extern "C" fn resvg_cairo_render_to_canvas(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     size: resvg_size,
@@ -329,7 +344,7 @@ pub extern fn resvg_cairo_render_to_canvas(
 
 #[cfg(feature = "qt-backend")]
 #[no_mangle]
-pub extern fn resvg_qt_render_to_canvas_by_id(
+pub extern "C" fn resvg_qt_render_to_canvas_by_id(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     size: resvg_size,
@@ -376,7 +391,7 @@ pub extern fn resvg_qt_render_to_canvas_by_id(
 
 #[cfg(feature = "cairo-backend")]
 #[no_mangle]
-pub extern fn resvg_cairo_render_to_canvas_by_id(
+pub extern "C" fn resvg_cairo_render_to_canvas_by_id(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     size: resvg_size,
@@ -423,7 +438,7 @@ pub extern fn resvg_cairo_render_to_canvas_by_id(
 }
 
 #[no_mangle]
-pub extern fn resvg_get_image_size(
+pub extern "C" fn resvg_get_image_size(
     tree: *const resvg_render_tree,
 ) -> resvg_size {
     let tree = unsafe {
@@ -440,7 +455,7 @@ pub extern fn resvg_get_image_size(
 }
 
 #[no_mangle]
-pub extern fn resvg_get_image_viewbox(
+pub extern "C" fn resvg_get_image_viewbox(
     tree: *const resvg_render_tree,
 ) -> resvg_rect {
     let tree = unsafe {
@@ -459,7 +474,7 @@ pub extern fn resvg_get_image_viewbox(
 }
 
 #[no_mangle]
-pub extern fn resvg_is_image_empty(
+pub extern "C" fn resvg_is_image_empty(
     tree: *const resvg_render_tree,
 ) -> bool {
     let tree = unsafe {
@@ -472,7 +487,7 @@ pub extern fn resvg_is_image_empty(
 
 #[cfg(feature = "qt-backend")]
 #[no_mangle]
-pub extern fn resvg_qt_get_node_bbox(
+pub extern "C" fn resvg_qt_get_node_bbox(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     id: *const c_char,
@@ -484,7 +499,7 @@ pub extern fn resvg_qt_get_node_bbox(
 
 #[cfg(feature = "cairo-backend")]
 #[no_mangle]
-pub extern fn resvg_cairo_get_node_bbox(
+pub extern "C" fn resvg_cairo_get_node_bbox(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     id: *const c_char,
@@ -548,7 +563,7 @@ fn get_node_bbox(
 }
 
 #[no_mangle]
-pub extern fn resvg_node_exists(
+pub extern "C" fn resvg_node_exists(
     tree: *const resvg_render_tree,
     id: *const c_char,
 ) -> bool {
@@ -569,7 +584,7 @@ pub extern fn resvg_node_exists(
 }
 
 #[no_mangle]
-pub extern fn resvg_get_node_transform(
+pub extern "C" fn resvg_get_node_transform(
     tree: *const resvg_render_tree,
     id: *const c_char,
     ts: *mut resvg_transform,
@@ -606,7 +621,9 @@ pub extern fn resvg_get_node_transform(
     false
 }
 
-fn cstr_to_str(text: *const c_char) -> Option<&'static str> {
+fn cstr_to_str(
+    text: *const c_char,
+) -> Option<&'static str> {
     let text = unsafe {
         assert!(!text.is_null());
         CStr::from_ptr(text)
@@ -615,7 +632,9 @@ fn cstr_to_str(text: *const c_char) -> Option<&'static str> {
     text.to_str().ok()
 }
 
-fn to_native_opt(opt: &resvg_options) -> resvg::Options {
+fn to_native_opt(
+    opt: &resvg_options,
+) -> resvg::Options {
     let mut path: Option<path::PathBuf> = None;
 
     if !opt.path.is_null() {
@@ -655,28 +674,36 @@ fn to_native_opt(opt: &resvg_options) -> resvg::Options {
     };
 
     let shape_rendering = match opt.shape_rendering {
-        resvg_shape_rendering::RESVG_SHAPE_RENDERING_OPTIMIZE_SPEED =>
-            usvg::ShapeRendering::OptimizeSpeed,
-        resvg_shape_rendering::RESVG_SHAPE_RENDERING_CRISP_EDGES =>
-            usvg::ShapeRendering::CrispEdges,
-        resvg_shape_rendering::RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION =>
-            usvg::ShapeRendering::GeometricPrecision,
+        resvg_shape_rendering::RESVG_SHAPE_RENDERING_OPTIMIZE_SPEED => {
+            usvg::ShapeRendering::OptimizeSpeed
+        }
+        resvg_shape_rendering::RESVG_SHAPE_RENDERING_CRISP_EDGES => {
+            usvg::ShapeRendering::CrispEdges
+        }
+        resvg_shape_rendering::RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION => {
+            usvg::ShapeRendering::GeometricPrecision
+        }
     };
 
     let text_rendering = match opt.text_rendering {
-        resvg_text_rendering::RESVG_TEXT_RENDERING_OPTIMIZE_SPEED =>
-            usvg::TextRendering::OptimizeSpeed,
-        resvg_text_rendering::RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY =>
-            usvg::TextRendering::OptimizeLegibility,
-        resvg_text_rendering::RESVG_TEXT_RENDERING_GEOMETRIC_PRECISION =>
-            usvg::TextRendering::GeometricPrecision,
+        resvg_text_rendering::RESVG_TEXT_RENDERING_OPTIMIZE_SPEED => {
+            usvg::TextRendering::OptimizeSpeed
+        }
+        resvg_text_rendering::RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY => {
+            usvg::TextRendering::OptimizeLegibility
+        }
+        resvg_text_rendering::RESVG_TEXT_RENDERING_GEOMETRIC_PRECISION => {
+            usvg::TextRendering::GeometricPrecision
+        }
     };
 
     let image_rendering = match opt.image_rendering {
-        resvg_image_rendering::RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY =>
-            usvg::ImageRendering::OptimizeQuality,
-        resvg_image_rendering::RESVG_IMAGE_RENDERING_OPTIMIZE_SPEED =>
-            usvg::ImageRendering::OptimizeSpeed,
+        resvg_image_rendering::RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY => {
+            usvg::ImageRendering::OptimizeQuality
+        }
+        resvg_image_rendering::RESVG_IMAGE_RENDERING_OPTIMIZE_SPEED => {
+            usvg::ImageRendering::OptimizeSpeed
+        }
     };
 
     let ff = DEFAULT_FONT_FAMILY;
@@ -732,7 +759,9 @@ fn to_native_opt(opt: &resvg_options) -> resvg::Options {
     }
 }
 
-fn convert_error(e: usvg::Error) -> ErrorId {
+fn convert_error(
+    e: usvg::Error,
+) -> ErrorId {
     match e {
         usvg::Error::InvalidFileSuffix => ErrorId::InvalidFileSuffix,
         usvg::Error::FileOpenFailed => ErrorId::FileOpenFailed,

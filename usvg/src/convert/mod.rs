@@ -170,7 +170,10 @@ pub fn convert_doc(
     Ok(tree)
 }
 
-fn resolve_svg_size(svg: &svgdom::Node, opt: &Options) -> Result<Size, Error> {
+fn resolve_svg_size(
+    svg: &svgdom::Node,
+    opt: &Options,
+) -> Result<Size, Error> {
     let mut state = State {
         current_root: svg.clone(),
         size: Size::new(100.0, 100.0).unwrap(),
@@ -221,7 +224,10 @@ fn resolve_svg_size(svg: &svgdom::Node, opt: &Options) -> Result<Size, Error> {
     }
 }
 
-fn get_view_box(svg: &svgdom::Node, size: Size) -> Rect {
+fn get_view_box(
+    svg: &svgdom::Node,
+    size: Size,
+) -> Rect {
     match svg.get_viewbox() {
         Some(vb) => vb,
         None => size.to_rect(0.0, 0.0),
@@ -257,7 +263,7 @@ fn convert_element(
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    let eid = try_opt!(node.tag_id(), ());
+    let eid = try_opt!(node.tag_id());
 
     let is_valid_child =    node.is_graphic()
                          || eid == EId::G
@@ -410,7 +416,9 @@ fn convert_group(
     }
 }
 
-fn remove_empty_groups(tree: &mut tree::Tree) {
+fn remove_empty_groups(
+    tree: &mut tree::Tree,
+) {
     fn rm(parent: tree::Node) -> bool {
         let mut changed = false;
 
@@ -448,7 +456,10 @@ fn remove_empty_groups(tree: &mut tree::Tree) {
     while rm(tree.root()) {}
 }
 
-fn ungroup_groups(tree: &mut tree::Tree, opt: &Options) {
+fn ungroup_groups(
+    tree: &mut tree::Tree,
+    opt: &Options,
+) {
     fn ungroup(parent: tree::Node, opt: &Options) -> bool {
         let mut changed = false;
 
@@ -507,7 +518,9 @@ fn ungroup_groups(tree: &mut tree::Tree, opt: &Options) {
     while ungroup(tree.root(), opt) {}
 }
 
-fn remove_unused_defs(tree: &mut tree::Tree) {
+fn remove_unused_defs(
+    tree: &mut tree::Tree,
+) {
     macro_rules! check_id {
         ($from:expr, $id:expr) => {
             if let Some(ref id) = $from {
@@ -589,8 +602,9 @@ fn convert_path(
     let stroke = style::resolve_stroke(node, has_bbox, state, tree);
     let transform = attrs.get_transform(AId::Transform);
     let mut visibility = node.find_enum(AId::Visibility);
-    let rendering_mode = node.try_find_enum(AId::ShapeRendering)
-                             .unwrap_or(state.opt.shape_rendering);
+    let rendering_mode = node
+        .try_find_enum(AId::ShapeRendering)
+        .unwrap_or(state.opt.shape_rendering);
 
     // If a path doesn't have a fill or a stroke than it's invisible.
     // By setting `visibility` to `hidden` we are disabling the rendering of this path.
@@ -613,7 +627,9 @@ fn convert_path(
     }
 }
 
-fn convert_aspect(attrs: &svgdom::Attributes) -> tree::AspectRatio {
+fn convert_aspect(
+    attrs: &svgdom::Attributes,
+) -> tree::AspectRatio {
     let ratio: Option<&tree::AspectRatio> = attrs.get_type(AId::PreserveAspectRatio);
     match ratio {
         Some(v) => *v,

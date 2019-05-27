@@ -1,7 +1,7 @@
 use std::ffi::CString;
 use std::i32;
-use std::path::PathBuf;
 use std::ops::{Deref, DerefMut};
+use std::path::PathBuf;
 use std::slice;
 
 #[allow(dead_code)]
@@ -129,8 +129,9 @@ impl Image {
         smooth: bool,
     ) -> Option<Image> {
         unsafe {
-            Self::from_ptr(ffi::qtc_qimage_resize(self.0, width, height,
-                                                  ratio as ffi::AspectRatioMode, smooth))
+            Self::from_ptr(ffi::qtc_qimage_resize(
+                self.0, width, height, ratio as ffi::AspectRatioMode, smooth
+            ))
         }
     }
 

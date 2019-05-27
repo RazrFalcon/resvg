@@ -49,7 +49,10 @@ pub fn view_box_to_transform(
 }
 
 /// Returns object aligned position.
-pub fn aligned_pos(align: Align, x: f64, y: f64, w: f64, h: f64) -> (f64, f64) {
+pub fn aligned_pos(
+    align: Align,
+    x: f64, y: f64, w: f64, h: f64,
+) -> (f64, f64) {
     match align {
         Align::None     => (x,           y          ),
         Align::XMinYMin => (x,           y          ),
@@ -65,7 +68,9 @@ pub fn aligned_pos(align: Align, x: f64, y: f64, w: f64, h: f64) -> (f64, f64) {
 }
 
 /// Converts `rect` to path segments.
-pub fn rect_to_path(rect: Rect) -> Vec<tree::PathSegment> {
+pub fn rect_to_path(
+    rect: Rect,
+) -> Vec<tree::PathSegment> {
     vec![
         tree::PathSegment::MoveTo {
             x: rect.x(), y: rect.y()
@@ -230,7 +235,9 @@ impl<'a> Iterator for TransformedPath<'a> {
 /// Calculates path's length.
 ///
 /// Length from the first segment to the first MoveTo, ClosePath or slice end.
-pub fn path_length(segments: &[tree::PathSegment]) -> f64 {
+pub fn path_length(
+    segments: &[tree::PathSegment],
+) -> f64 {
     debug_assert!(!segments.is_empty());
 
     let (mut prev_x, mut prev_y) = {
@@ -289,7 +296,10 @@ pub fn path_length(segments: &[tree::PathSegment]) -> f64 {
 }
 
 /// Applies the transform to the path segments.
-pub fn transform_path(segments: &mut [tree::PathSegment], ts: &tree::Transform) {
+pub fn transform_path(
+    segments: &mut [tree::PathSegment],
+    ts: &tree::Transform,
+) {
     for seg in segments {
         match seg {
             tree::PathSegment::MoveTo { x, y } => {

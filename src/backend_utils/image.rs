@@ -5,11 +5,7 @@
 use std::path;
 
 // self
-use super::prelude::*;
-use crate::{
-    FitTo,
-    Options,
-};
+use crate::prelude::*;
 
 
 pub fn load_sub_svg(
@@ -48,7 +44,9 @@ pub fn load_sub_svg(
     Some((tree, sub_opt))
 }
 
-fn sanitize_sub_svg(tree: &usvg::Tree) {
+fn sanitize_sub_svg(
+    tree: &usvg::Tree,
+) {
     // Remove all Image nodes.
     //
     // The referenced SVG image cannot have any 'image' elements by itself.
@@ -105,7 +103,10 @@ pub fn prepare_sub_svg_geom(
     (ts, clip)
 }
 
-pub fn image_rect(view_box: &usvg::ViewBox, img_size: ScreenSize) -> Rect {
+pub fn image_rect(
+    view_box: &usvg::ViewBox,
+    img_size: ScreenSize,
+) -> Rect {
     let new_size = utils::apply_view_box(view_box, img_size);
     let (x, y) = utils::aligned_pos(
         view_box.aspect.align,

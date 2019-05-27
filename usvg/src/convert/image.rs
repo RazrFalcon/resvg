@@ -23,11 +23,11 @@ pub fn convert(
 
     let transform = attrs.get_transform(AId::Transform);
     let visibility = node.find_enum(AId::Visibility);
-    let rendering_mode = node.try_find_enum(AId::ImageRendering)
-                             .unwrap_or(state.opt.image_rendering);
+    let rendering_mode = node
+        .try_find_enum(AId::ImageRendering)
+        .unwrap_or(state.opt.image_rendering);
 
-    let rect = try_opt_warn!(get_image_rect(node, state), (),
-        "Image has an invalid size. Skipped.");
+    let rect = try_opt_warn!(get_image_rect(node, state), "Image has an invalid size. Skipped.");
 
     let view_box = tree::ViewBox {
         rect,

@@ -4,8 +4,6 @@
 
 //! Some useful utilities.
 
-use std::f64;
-
 // external
 pub use usvg::utils::*;
 
@@ -15,7 +13,10 @@ use crate::FitTo;
 
 
 /// Returns `size` preprocessed according to `FitTo`.
-pub fn fit_to(size: ScreenSize, fit: FitTo) -> Option<ScreenSize> {
+pub(crate) fn fit_to(
+    size: ScreenSize,
+    fit: FitTo,
+) -> Option<ScreenSize> {
     let sizef = size.to_size();
 
     match fit {
@@ -37,7 +38,10 @@ pub fn fit_to(size: ScreenSize, fit: FitTo) -> Option<ScreenSize> {
     }
 }
 
-pub(crate) fn apply_view_box(vb: &usvg::ViewBox, img_size: ScreenSize) -> ScreenSize {
+pub(crate) fn apply_view_box(
+    vb: &usvg::ViewBox,
+    img_size: ScreenSize,
+) -> ScreenSize {
     let s = vb.rect.to_screen_size();
 
     if vb.aspect.align == usvg::Align::None {

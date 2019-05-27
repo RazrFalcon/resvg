@@ -11,10 +11,14 @@ use gdk_pixbuf::{
     self,
     PixbufLoaderExt,
 };
+use usvg::{
+    try_opt,
+    try_opt_warn,
+};
 
 // self
-use super::prelude::*;
-use crate::backend_utils::image;
+use crate::prelude::*;
+use crate::backend_utils::*;
 
 
 pub fn draw(
@@ -45,18 +49,23 @@ pub fn draw_raster(
     let img = match data {
         usvg::ImageData::Path(ref path) => {
             let path = image::get_abs_path(path, opt);
-            try_opt_warn!(gdk_pixbuf::Pixbuf::new_from_file(path.clone()).ok(), (),
-                          "Failed to load an external image: {:?}.", path)
+            try_opt_warn!(
+                gdk_pixbuf::Pixbuf::new_from_file(path.clone()).ok(),
+                "Failed to load an external image: {:?}.", path
+            )
         }
         usvg::ImageData::Raw(ref data) => {
-            try_opt_warn!(load_raster_data(data), (),
-                          "Failed to load an embedded image.")
+            try_opt_warn!(
+                load_raster_data(data),
+                "Failed to load an embedded image."
+            )
         }
     };
 
-    let img_size = try_opt!(ScreenSize::new(img.get_width() as u32, img.get_height() as u32), ());
+    let img_size = ScreenSize::new(img.get_width() as u32, img.get_height() as u32);
+    let img_size = try_opt!(img_size);
 
-    let surface = try_opt!(gdk_pixbuf_to_surface(img, img_size), ());
+    let surface = try_opt!(gdk_pixbuf_to_surface(img, img_size));
 
     let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);
 
@@ -151,7 +160,7 @@ pub fn draw_svg(
     opt: &Options,
     cr: &cairo::Context,
 ) {
-    let (tree, sub_opt) = try_opt!(image::load_sub_svg(data, opt), ());
+    let (tree, sub_opt) = try_opt!(image::load_sub_svg(data, opt));
 
     let img_size = tree.svg_node().size.to_screen_size();
     let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);

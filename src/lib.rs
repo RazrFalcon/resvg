@@ -19,8 +19,6 @@ And as an embeddable library to paint SVG on an application native canvas.
 //#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
-pub use usvg;
-
 #[cfg(feature = "cairo-backend")]
 pub use cairo;
 
@@ -28,13 +26,17 @@ pub use cairo;
 pub use resvg_qt as qt;
 
 pub use usvg::{
+    self,
     svgdom,
     Error,
 };
 
 
-#[cfg(feature = "cairo-backend")] pub mod backend_cairo;
-#[cfg(feature = "qt-backend")] pub mod backend_qt;
+#[cfg(feature = "cairo-backend")]
+pub mod backend_cairo;
+
+#[cfg(feature = "qt-backend")]
+pub mod backend_qt;
 
 pub mod utils;
 mod backend_utils;
@@ -44,32 +46,17 @@ mod options;
 
 /// Commonly used types and traits.
 pub mod prelude {
-    pub use log::warn;
     pub use usvg;
     pub use usvg::prelude::*;
-    pub use usvg::{try_opt, try_opt_warn};
     pub use crate::geom::*;
+    pub use crate::options::*;
     pub use crate::utils;
-    pub use crate::Options;
-    pub use crate::Render;
     pub use crate::OutputImage;
+    pub use crate::Render;
 }
 
-
-use std::path;
-
-pub use crate::options::*;
 pub use crate::geom::*;
-
-/// Shorthand names for modules.
-mod short {
-    pub use crate::svgdom::{
-        LengthUnit as Unit,
-        ElementId as EId,
-        AttributeId as AId,
-        AttributeValue as AValue,
-    };
-}
+pub use crate::options::*;
 
 
 /// A generic interface for image rendering.
@@ -108,7 +95,10 @@ pub trait Render {
 /// A generic interface for output image.
 pub trait OutputImage {
     /// Saves rendered image to the selected path.
-    fn save(&self, path: &path::Path) -> bool;
+    fn save(
+        &self,
+        path: &std::path::Path,
+    ) -> bool;
 }
 
 

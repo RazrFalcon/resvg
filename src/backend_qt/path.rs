@@ -6,9 +6,9 @@
 use crate::qt;
 
 // self
-use super::prelude::*;
+use crate::prelude::*;
+use crate::backend_utils::*;
 use super::style;
-use crate::backend_utils;
 
 
 pub fn draw(
@@ -40,7 +40,7 @@ pub fn draw(
 
     style::fill(tree, &path.fill, opt, style_bbox, p);
     style::stroke(tree, &path.stroke, opt, style_bbox, p);
-    p.set_antialiasing(backend_utils::use_shape_antialiasing(path.rendering_mode));
+    p.set_antialiasing(use_shape_antialiasing(path.rendering_mode));
 
     p.draw_path(&p_path);
 
@@ -77,7 +77,7 @@ fn convert_path(
             if i == len - 1 {
                 true
             } else {
-                if let usvg::PathSegment::MoveTo{ .. } = list[i + 1] {
+                if let usvg::PathSegment::MoveTo { .. } = list[i + 1] {
                     true
                 } else {
                     false

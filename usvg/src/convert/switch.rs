@@ -23,14 +23,14 @@ static FEATURES: &[&str] = &[
     "http://www.w3.org/TR/SVG11/feature#Style",
     // "http://www.w3.org/TR/SVG11/feature#ViewportAttribute", // `clip` and `overflow`, not yet
     "http://www.w3.org/TR/SVG11/feature#Shape",
-    "http://www.w3.org/TR/SVG11/feature#Text", // partial
+    "http://www.w3.org/TR/SVG11/feature#Text",
     "http://www.w3.org/TR/SVG11/feature#BasicText",
     "http://www.w3.org/TR/SVG11/feature#PaintAttribute", // no color-interpolation and color-rendering
     "http://www.w3.org/TR/SVG11/feature#BasicPaintAttribute", // no color-interpolation
     "http://www.w3.org/TR/SVG11/feature#OpacityAttribute",
     // "http://www.w3.org/TR/SVG11/feature#GraphicsAttribute",
     "http://www.w3.org/TR/SVG11/feature#BasicGraphicsAttribute",
-    // "http://www.w3.org/TR/SVG11/feature#Marker", // not yet
+    "http://www.w3.org/TR/SVG11/feature#Marker",
     // "http://www.w3.org/TR/SVG11/feature#ColorProfile", // not yet
     "http://www.w3.org/TR/SVG11/feature#Gradient",
     "http://www.w3.org/TR/SVG11/feature#Pattern",
@@ -51,7 +51,8 @@ pub fn convert(
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    let child = try_opt!(node.children().find(|n| is_condition_passed(&n, state.opt)), ());
+    let child = node.children().find(|n| is_condition_passed(&n, state.opt));
+    let child = try_opt!(child);
 
     match super::convert_group(&node, state, false, parent, tree) {
         super::GroupKind::Keep(mut g) => {
@@ -64,7 +65,10 @@ pub fn convert(
     }
 }
 
-pub fn is_condition_passed(node: &svgdom::Node, opt: &Options) -> bool {
+pub fn is_condition_passed(
+    node: &svgdom::Node,
+    opt: &Options,
+) -> bool {
     if !node.is_svg_element() {
         return false;
     }
@@ -96,7 +100,10 @@ pub fn is_condition_passed(node: &svgdom::Node, opt: &Options) -> bool {
 }
 
 /// SVG spec 5.8.5
-fn is_valid_sys_lang(attrs: &svgdom::Attributes, opt: &Options) -> bool {
+fn is_valid_sys_lang(
+    attrs: &svgdom::Attributes,
+    opt: &Options,
+) -> bool {
     // 'The attribute value is a comma-separated list of language names
     // as defined in BCP 47.'
     //

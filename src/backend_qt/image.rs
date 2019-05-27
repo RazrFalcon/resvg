@@ -4,10 +4,14 @@
 
 // external
 use crate::qt;
+use usvg::{
+    try_opt,
+    try_opt_warn,
+};
 
 // self
-use super::prelude::*;
-use crate::backend_utils::image;
+use crate::prelude::*;
+use crate::backend_utils::*;
 
 
 pub fn draw(
@@ -38,16 +42,20 @@ pub fn draw_raster(
     let img = match data {
         usvg::ImageData::Path(ref path) => {
             let path = image::get_abs_path(path, opt);
-            try_opt_warn!(qt::Image::from_file(&path), (),
-                          "Failed to load an external image: {:?}.", path)
+            try_opt_warn!(
+                qt::Image::from_file(&path),
+                "Failed to load an external image: {:?}.", path
+            )
         }
         usvg::ImageData::Raw(ref data) => {
-            try_opt_warn!(qt::Image::from_data(data), (),
-                          "Failed to load an embedded image.")
+            try_opt_warn!(
+                qt::Image::from_data(data),
+                "Failed to load an embedded image."
+            )
         }
     };
 
-    let img_size = try_opt!(ScreenSize::new(img.width(), img.height()), ());
+    let img_size = try_opt!(ScreenSize::new(img.width(), img.height()));
 
     if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
         p.set_smooth_pixmap_transform(false);
@@ -72,7 +80,7 @@ pub fn draw_svg(
     opt: &Options,
     p: &mut qt::Painter,
 ) {
-    let (tree, sub_opt) = try_opt!(image::load_sub_svg(data, opt), ());
+    let (tree, sub_opt) = try_opt!(image::load_sub_svg(data, opt));
 
     let img_size = tree.svg_node().size.to_screen_size();
     let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);

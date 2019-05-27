@@ -16,6 +16,7 @@ mod fk {
 
 // self
 use crate::tree;
+use crate::utils;
 use crate::convert::prelude::*;
 use super::convert::{
     ByteIndex,
@@ -274,7 +275,7 @@ fn shape_text_with_font(
     text: &str,
     font: &Font,
 ) -> Vec<Glyph> {
-    let font_data = try_opt!(font.handle.copy_font_data(), Vec::new());
+    let font_data = try_opt_or!(font.handle.copy_font_data(), Vec::new());
     let hb_face = harfbuzz::Face::from_bytes(&font_data, font.index);
     let hb_font = harfbuzz::Font::new(hb_face);
 
@@ -345,7 +346,8 @@ fn outline_cluster(
 
     for glyph in glyphs {
         let mut builder = svgdom_path_builder::Builder::new();
-        let mut outline = match glyph.font.handle.outline(glyph.id, fk::Hinting::None, &mut builder) {
+        let outline = glyph.font.handle.outline(glyph.id, fk::Hinting::None, &mut builder);
+        let mut outline = match outline {
             Ok(_) => {
                 crate::convert::path::convert(builder.build())
             }
@@ -373,7 +375,7 @@ fn outline_cluster(
             // TODO: should be done only inside a single text span
             ts.translate(x + glyph.dx as f64, glyph.dy as f64);
 
-            crate::utils::transform_path(&mut outline, &ts);
+            utils::transform_path(&mut outline, &ts);
 
             path.extend_from_slice(&outline);
         }
@@ -561,11 +563,16 @@ fn resolve_clusters_positions_path(
     (last_x, last_y)
 }
 
-fn clusters_length(clusters: &[OutlinedCluster]) -> f64 {
+fn clusters_length(
+    clusters: &[OutlinedCluster],
+) -> f64 {
     clusters.iter().fold(0.0, |w, cluster| w + cluster.advance)
 }
 
-fn process_anchor(a: TextAnchor, text_width: f64) -> f64 {
+fn process_anchor(
+    a: TextAnchor,
+    text_width: f64,
+) -> f64 {
     match a {
         TextAnchor::Start   => 0.0, // Nothing.
         TextAnchor::Middle  => -text_width / 2.0,
@@ -737,7 +744,9 @@ pub fn apply_letter_spacing(
 /// [In the CSS spec](https://www.w3.org/TR/css-text-3/#cursive-tracking).
 ///
 /// The list itself is from: https://github.com/harfbuzz/harfbuzz/issues/64
-fn script_supports_letter_spacing(script: unicode_script::Script) -> bool {
+fn script_supports_letter_spacing(
+    script: unicode_script::Script,
+) -> bool {
     use unicode_script::Script;
 
     match script {
@@ -803,7 +812,9 @@ pub fn shift_clusters_baseline(
 /// Checks that the selected character is a word separator.
 ///
 /// According to: https://www.w3.org/TR/css-text-3/#word-separator
-fn is_word_separator_characters(c: char) -> bool {
+fn is_word_separator_characters(
+    c: char,
+) -> bool {
     match c as u32 {
         0x0020 | 0x00A0 | 0x1361 | 0x010100 | 0x010101 | 0x01039F | 0x01091F => true,
         _ => false,
@@ -831,7 +842,7 @@ pub fn apply_writing_mode(
             ts.translate(cluster.advance / 2.0, 0.0);
             ts.rotate(-90.0);
             ts.translate(-cluster.advance / 2.0, -dy);
-            crate::utils::transform_path(&mut cluster.path, &ts);
+            utils::transform_path(&mut cluster.path, &ts);
 
             // Move "baseline" to the middle and make height equal to advance.
             cluster.ascent = cluster.advance / 2.0;

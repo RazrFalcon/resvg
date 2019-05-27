@@ -6,9 +6,9 @@
 use cairo;
 
 // self
-use super::prelude::*;
+use crate::prelude::*;
+use crate::backend_utils::*;
 use super::style;
-use crate::backend_utils;
 
 
 pub fn draw(
@@ -35,7 +35,7 @@ pub fn draw(
         return bbox;
     }
 
-    if !backend_utils::use_shape_antialiasing(path.rendering_mode) {
+    if !use_shape_antialiasing(path.rendering_mode) {
         cr.set_antialias(cairo::Antialias::None);
     }
 
@@ -75,7 +75,10 @@ fn draw_path(
     }
 }
 
-fn get_subpath(start: usize, segments: &[usvg::PathSegment]) -> &[usvg::PathSegment] {
+fn get_subpath(
+    start: usize,
+    segments: &[usvg::PathSegment],
+) -> &[usvg::PathSegment] {
     let mut i = start;
     while i < segments.len() {
         match segments[i] {

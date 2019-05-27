@@ -4,9 +4,11 @@
 
 // external
 use crate::qt;
+use usvg::try_opt;
 
 // self
-use super::prelude::*;
+use crate::prelude::*;
+use crate::backend_utils::*;
 
 
 pub fn fill(
@@ -208,7 +210,7 @@ fn prepare_pattern(
     let global_ts = usvg::Transform::from_native(&global_ts);
     let (sx, sy) = global_ts.get_scale();
 
-    let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy), ()).to_screen_size();
+    let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy)).to_screen_size();
     let mut img = try_create_image!(img_size, ());
 
     img.set_dpi(opt.usvg.dpi);

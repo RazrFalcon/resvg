@@ -9,18 +9,23 @@ use cairo::{
     self,
     MatrixTrait,
 };
+use log::warn;
 
 // self
 use crate::prelude::*;
 use crate::layers;
-use crate::backend_utils::ConvTransform;
+use crate::backend_utils::{
+    ConvTransform,
+};
 
 
 macro_rules! try_create_surface {
     ($size:expr, $ret:expr) => {
-        try_opt_warn!(
-            cairo::ImageSurface::create(cairo::Format::ARgb32,
-                $size.width() as i32, $size.height() as i32,
+        usvg::try_opt_warn_or!(
+            cairo::ImageSurface::create(
+                cairo::Format::ARgb32,
+                $size.width() as i32,
+                $size.height() as i32,
             ).ok(),
             $ret,
             "Failed to create a {}x{} surface.", $size.width(), $size.height()
@@ -34,17 +39,6 @@ mod filter;
 mod image;
 mod path;
 mod style;
-
-mod prelude {
-    pub use super::super::prelude::*;
-    pub use crate::backend_utils::ConvTransform;
-
-    pub type CairoLayers = super::layers::Layers<super::cairo::ImageSurface>;
-
-    // It's actually used. Rust bug?
-    #[allow(unused_imports)]
-    pub(super) use super::ReCairoContextExt;
-}
 
 
 type CairoLayers = layers::Layers<cairo::ImageSurface>;
@@ -115,7 +109,10 @@ impl Render for Backend {
 }
 
 impl OutputImage for cairo::ImageSurface {
-    fn save(&self, path: &::std::path::Path) -> bool {
+    fn save(
+        &self,
+        path: &std::path::Path,
+    ) -> bool {
         use std::fs;
 
         if let Ok(mut buffer) = fs::File::create(path) {
@@ -191,8 +188,7 @@ pub fn render_to_canvas(
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
-    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box,
-                          img_size, cr);
+    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, cr);
 }
 
 /// Renders SVG node to canvas.
@@ -411,7 +407,10 @@ fn _calc_node_bbox(
     }
 }
 
-fn create_layers(img_size: ScreenSize, opt: &Options) -> CairoLayers {
+fn create_layers(
+    img_size: ScreenSize,
+    opt: &Options,
+) -> CairoLayers {
     layers::Layers::new(img_size, opt.usvg.dpi, create_subsurface, clear_subsurface)
 }
 
@@ -422,7 +421,9 @@ fn create_subsurface(
     Some(try_create_surface!(size, None))
 }
 
-fn clear_subsurface(surface: &mut cairo::ImageSurface) {
+fn clear_subsurface(
+    surface: &mut cairo::ImageSurface,
+) {
     let cr = cairo::Context::new(&surface);
     cr.set_operator(cairo::Operator::Clear);
     cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);

@@ -8,9 +8,11 @@ use resvg::prelude::*;
 fn main() {
     let args: Vec<String> = env::args().collect();
     if !(args.len() == 3 || args.len() == 5) {
-        println!("Usage:\n\
-            \tdraw_bboxes <in-svg> <out-png>\n\
-            \tdraw_bboxes <in-svg> <out-png> -z ZOOM");
+        println!(
+            "Usage:\n\
+             \tdraw_bboxes <in-svg> <out-png>\n\
+             \tdraw_bboxes <in-svg> <out-png> -z ZOOM"
+        );
         return;
     }
 

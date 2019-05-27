@@ -8,9 +8,16 @@ use cairo::{
     MatrixTrait,
     PatternTrait,
 };
+use usvg::{
+    try_opt,
+};
 
 // self
-use super::prelude::*;
+use crate::prelude::*;
+use crate::backend_utils::*;
+use super::{
+    ReCairoContextExt
+};
 
 
 pub fn fill(
@@ -136,7 +143,7 @@ fn prepare_radial(
     g: &usvg::RadialGradient,
     opacity: usvg::Opacity,
     bbox: Rect,
-    cr: &cairo::Context
+    cr: &cairo::Context,
 ) {
     let grad = cairo::RadialGradient::new(g.fx, g.fy, 0.0, g.cx, g.cy, g.r.value());
     prepare_base_gradient(&g.base, &grad, opacity, bbox);
@@ -194,7 +201,7 @@ fn prepare_pattern(
     let global_ts = usvg::Transform::from_native(&cr.get_matrix());
     let (sx, sy) = global_ts.get_scale();
 
-    let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy), ()).to_screen_size();
+    let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy)).to_screen_size();
     let surface = try_create_surface!(img_size, ());
 
     let sub_cr = cairo::Context::new(&surface);

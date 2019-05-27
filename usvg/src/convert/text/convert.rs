@@ -19,6 +19,7 @@ mod fk {
 
 // self
 use crate::tree;
+use crate::utils;
 use crate::convert::prelude::*;
 use crate::convert::{
     style,
@@ -390,7 +391,7 @@ fn resolve_text_flow(
     let start_offset = if start_offset.unit == Unit::Percent {
         // 'If a percentage is given, then the `startOffset` represents
         // a percentage distance along the entire path.'
-        let path_len = crate::utils::path_length(&segments);
+        let path_len = utils::path_length(&segments);
         path_len * (start_offset.num / 100.0)
     } else {
         node.resolve_length(AId::StartOffset, state, 0.0)
@@ -406,8 +407,9 @@ pub fn resolve_rendering_mode(
     text_node: &TextNode,
     state: &State,
 ) -> tree::ShapeRendering {
-    let mode: tree::TextRendering = text_node.try_find_enum(AId::TextRendering)
-                                             .unwrap_or(state.opt.text_rendering);
+    let mode: tree::TextRendering = text_node
+        .try_find_enum(AId::TextRendering)
+        .unwrap_or(state.opt.text_rendering);
 
     match mode {
         tree::TextRendering::OptimizeSpeed => tree::ShapeRendering::CrispEdges,
@@ -475,7 +477,9 @@ fn resolve_font(
     load_font(&handle)
 }
 
-pub fn load_font(handle: &fk::Handle) -> Option<Font> {
+pub fn load_font(
+    handle: &fk::Handle,
+) -> Option<Font> {
     let (path, index) = match handle {
         fk::Handle::Path { ref path, font_index } => {
             (path.clone(), *font_index)
@@ -519,7 +523,9 @@ pub fn load_font(handle: &fk::Handle) -> Option<Font> {
     }))
 }
 
-fn conv_font_style(node: &svgdom::Node) -> fk::Style {
+fn conv_font_style(
+    node: &svgdom::Node,
+) -> fk::Style {
     if let Some(n) = node.find_node_with_attribute(AId::FontStyle) {
         match n.attributes().get_str_or(AId::FontStyle, "") {
             "italic"  => fk::Style::Italic,
@@ -531,7 +537,9 @@ fn conv_font_style(node: &svgdom::Node) -> fk::Style {
     }
 }
 
-fn conv_font_stretch(node: &svgdom::Node) -> fk::Stretch {
+fn conv_font_stretch(
+    node: &svgdom::Node,
+) -> fk::Stretch {
     if let Some(n) = node.find_node_with_attribute(AId::FontStretch) {
         match n.attributes().get_str_or(AId::FontStretch, "") {
             "narrower" | "condensed" => fk::Stretch::CONDENSED,
@@ -549,7 +557,9 @@ fn conv_font_stretch(node: &svgdom::Node) -> fk::Stretch {
     }
 }
 
-fn conv_text_anchor(node: &svgdom::Node) -> TextAnchor {
+fn conv_text_anchor(
+    node: &svgdom::Node,
+) -> TextAnchor {
     if let Some(n) = node.find_node_with_attribute(AId::TextAnchor) {
         match n.attributes().get_str_or(AId::TextAnchor, "") {
             "middle" => TextAnchor::Middle,
@@ -765,7 +775,9 @@ struct TextDecorationTypes {
 }
 
 /// Resolves the `text` node's `text-decoration` property.
-fn conv_text_decoration(text_node: &TextNode) -> TextDecorationTypes {
+fn conv_text_decoration(
+    text_node: &TextNode,
+) -> TextDecorationTypes {
     fn find_decoration(node: &svgdom::Node, value: &str) -> bool {
         node.ancestors().any(|n| n.attributes().get_str(AId::TextDecoration) == Some(value))
     }
@@ -778,7 +790,9 @@ fn conv_text_decoration(text_node: &TextNode) -> TextDecorationTypes {
 }
 
 /// Resolves the default `text-decoration` property.
-fn conv_text_decoration2(tspan: &svgdom::Node) -> TextDecorationTypes {
+fn conv_text_decoration2(
+    tspan: &svgdom::Node,
+) -> TextDecorationTypes {
     let attrs = tspan.attributes();
     TextDecorationTypes {
         has_underline:    attrs.get_str(AId::TextDecoration) == Some("underline"),
@@ -808,8 +822,9 @@ fn resolve_baseline_shift(
                 if len.unit == Unit::Percent {
                     shift += units::resolve_font_size(&n, state) * (len.num / 100.0);
                 } else {
-                    shift += units::convert_length(*len, &n, AId::BaselineShift,
-                                                   tree::Units::ObjectBoundingBox, state);
+                    shift += units::convert_length(
+                        *len, &n, AId::BaselineShift, tree::Units::ObjectBoundingBox, state,
+                    );
                 }
             }
             _ => {}
@@ -868,7 +883,9 @@ fn resolve_font_weight(
     fk::Weight(weight as f32)
 }
 
-fn count_chars(node: &svgdom::Node) -> usize {
+fn count_chars(
+    node: &svgdom::Node,
+) -> usize {
     node.descendants()
         .filter(|n| n.is_text())
         .fold(0, |w, n| w + n.text().chars().count())
@@ -890,7 +907,9 @@ fn count_chars(node: &svgdom::Node) -> usize {
 /// it should affect the rendering.
 ///
 /// [SVG 2.0]: https://www.w3.org/TR/SVG2/text.html#WritingModeProperty
-pub fn convert_writing_mode(text_node: &TextNode) -> WritingMode {
+pub fn convert_writing_mode(
+    text_node: &TextNode,
+) -> WritingMode {
     if let Some(n) = text_node.find_node_with_attribute(AId::WritingMode) {
         match n.attributes().get_str_or(AId::WritingMode, "lr-tb") {
             "tb" | "tb-rl" => WritingMode::TopToBottom,

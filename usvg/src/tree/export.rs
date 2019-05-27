@@ -539,13 +539,8 @@ fn conv_link(
 ) {
     if let Some(n) = tree.defs_by_id(id) {
         let defs_id = n.id();
-        let link = match defs.children().find(|n| *n.id() == *defs_id) {
-            Some(v) => v,
-            None => {
-                debug_panic!("unresolved FuncLink '{}'", defs_id);
-                return;
-            }
-        };
+        let link = defs.children().find(|n| *n.id() == *defs_id);
+        let link = try_opt_warn!(link, "Unresolved FuncLink '{}'.", defs_id);
         node.set_attribute((aid, link));
     }
 }
