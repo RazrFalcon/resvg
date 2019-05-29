@@ -49,12 +49,12 @@ Build using MSVC `cmd.exe` shell:
 
 ```batch
 set PATH=%userprofile%\.cargo\bin;%PATH%
-set QT_DIR=C:\Qt\5.12.0\msvc2015_64
+set QT_DIR=C:\Qt\5.12.0\msvc2017_64
 
 cargo.exe build --release --features "qt-backend"
 ```
 
-Instead of `msvc2015_64` you can use any other Qt MSVC build. Even 32-bit one.
+Instead of `msvc2017_64` you can use any other Qt MSVC build. Even 32-bit one.
 We are using Qt 5.12.0 just for example.
 
 === Qt backend via MinGW
@@ -80,14 +80,10 @@ We are using Qt 5.12.0 just for example.
 === cairo backend via MSYS2
 
 Install `stable-x86_64-pc-windows-gnu` https://www.rust-lang.org/tools/install[Rust] target.
-
-Install GTK+ dependencies using MSYS2 as explained
-http://gtk-rs.org/docs/requirements.html#windows[here].
-
-We do not need the whole GTK+, so we can install only `cargo` and `gdk-pixbuf2`:
+And then:
 
 ```bash
-pacman -S mingw-w64-x86_64-cairo mingw-w64-x86_64-gdk-pixbuf2
+pacman -S mingw-w64-x86_64-cmake mingw-w64-x86_64-cairo mingw-w64-x86_64-gdk-pixbuf2
 
 cargo.exe build --release --features "cairo-backend"
 ```
@@ -96,9 +92,17 @@ You can use x86/i686 target in the same way.
 
 == Linux
 
+For all backends we need `freetype` and `fontconfig` dev libraries.
+
+On Ubuntu you can install them via:
+
+```bash
+sudo apt install pkg-config libfreetype6-dev libfontconfig1-dev
+```
+
 === Qt backend
 
-Install Qt 5 using your distributive package manager and then build *resvg*:
+Install Qt 5 using your distributive's package manager and then build *resvg*:
 
 ```bash
 cargo build --release --features "qt-backend"
@@ -112,9 +116,15 @@ PKG_CONFIG_PATH='/path_to_qt/lib/pkgconfig' cargo build --release --features "qt
 
 === cairo backend
 
-Install `cairo` and `gdk-pixbuf` using your distributive package manager.
+Install `cairo` and `gdk-pixbuf` using your distributive's package manager.
 
-For Ubuntu its `libcairo2-dev` and `libgdk-pixbuf2.0-dev`.
+On Ubuntu you can install them via:
+
+```
+sudo apt install libcairo2-dev libgdk-pixbuf2.0-dev
+```
+
+Build `resvg`:
 
 ```bash
 cargo build --release --features "cairo-backend"
@@ -170,10 +180,10 @@ separately.
 So the final package can look like this:
 
 ```
-/bin/rendersvg (does not depend on *.so)
+/bin/rendersvg (does not depend on libresvg-*.so)
 /bin/usvg (completely optional)
 /include/resvg/resvg.h (from capi/include)
-/include/resvg/ResvgQt.h (from capi/include)
+/include/resvg/ResvgQt.h (from capi/include, only for Qt backend)
 /lib/libresvg-cairo.so
 /lib/libresvg-qt.so
 ```
