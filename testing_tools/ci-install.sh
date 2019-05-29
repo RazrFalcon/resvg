@@ -5,7 +5,11 @@ set -e
 # python 3.6 for travis script and regression.py
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt-get update -qq
-sudo apt-get install python3.6
+sudo apt-get install -y python3.6
+
+# MS fonts
+echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections
+sudo apt-get install -y ttf-mscorefonts-installer
 
 if [ "$RESVG_CAIRO_BACKEND" = true ]; then
     sudo apt-get install -y libcairo2-dev libgdk-pixbuf2.0-dev
