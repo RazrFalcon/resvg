@@ -5,15 +5,17 @@
 use std::f64;
 
 // external
-use svgdom;
 use lyon_geom;
+use svgdom;
 
 // self
 use crate::tree;
 use super::prelude::*;
 
 
-pub fn convert(mut path: svgdom::Path) -> Vec<tree::PathSegment> {
+pub fn convert(
+    mut path: svgdom::Path,
+) -> Vec<tree::PathSegment> {
     let mut new_path = Vec::with_capacity(path.len());
 
     path.conv_to_absolute();
@@ -180,7 +182,7 @@ fn quad_to_curve(
     x1: f64,
     y1: f64,
     x: f64,
-    y: f64
+    y: f64,
 ) -> tree::PathSegment {
     let quad = lyon_geom::QuadraticBezierSegment {
         from: [px as f32, py as f32].into(),

@@ -6,6 +6,7 @@
 
 // external
 use crate::qt;
+use log::warn;
 
 // self
 use crate::prelude::*;
@@ -15,7 +16,7 @@ use crate::layers;
 
 macro_rules! try_create_image {
     ($size:expr, $ret:expr) => {
-        try_opt_warn!(
+        usvg::try_opt_warn_or!(
             qt::Image::new_rgba_premultiplied($size.width(), $size.height()),
             $ret,
             "Failed to create a {}x{} image.", $size.width(), $size.height()
@@ -30,15 +31,9 @@ mod image;
 mod path;
 mod style;
 
-mod prelude {
-    pub use super::super::prelude::*;
-    pub use crate::backend_utils::ConvTransform;
-
-    pub type QtLayers = super::layers::Layers<super::qt::Image>;
-}
-
 
 type QtLayers = layers::Layers<qt::Image>;
+
 
 impl ConvTransform<qt::Transform> for usvg::Transform {
     fn to_native(&self) -> qt::Transform {
@@ -85,7 +80,10 @@ impl Render for Backend {
 }
 
 impl OutputImage for qt::Image {
-    fn save(&self, path: &::std::path::Path) -> bool {
+    fn save(
+        &self,
+        path: &std::path::Path,
+    ) -> bool {
         self.save(path.to_str().unwrap())
     }
 }
@@ -137,8 +135,7 @@ pub fn render_to_canvas(
     img_size: ScreenSize,
     painter: &mut qt::Painter,
 ) {
-    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box,
-                          img_size, painter);
+    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, painter);
 }
 
 /// Renders SVG node to canvas.
@@ -351,11 +348,14 @@ fn _calc_node_bbox(
 
             Some(bbox)
         }
-        _ => None
+        _ => None,
     }
 }
 
-fn create_layers(img_size: ScreenSize, opt: &Options) -> QtLayers {
+fn create_layers(
+    img_size: ScreenSize,
+    opt: &Options,
+) -> QtLayers {
     layers::Layers::new(img_size, opt.usvg.dpi, create_subimage, clear_image)
 }
 

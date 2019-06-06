@@ -4,7 +4,7 @@
 
 use std::fmt;
 use std::fs::File;
-use std::io::{ self, Read, Write };
+use std::io::{self, Read, Write};
 use std::path::Path;
 use std::process;
 
@@ -199,7 +199,8 @@ fn main() {
             .format(log_format)
             .level(log::LevelFilter::Warn)
             .chain(std::io::stderr())
-            .apply().unwrap();
+            .apply()
+            .unwrap();
     }
 
     if let Err(e) = process(&args) {
@@ -264,14 +265,13 @@ fn process(args: &Args) -> Result<(), String> {
         }
     }?;
 
-    let tree = usvg::Tree::from_str(&input_str, &re_opt)
-                    .map_err(|e| format!("{}", e))?;
+    let tree = usvg::Tree::from_str(&input_str, &re_opt).map_err(|e| format!("{}", e))?;
 
     let dom_opt = svgdom::WriteOptions {
         indent: args.indent,
         attributes_indent: args.attrs_indent,
         attributes_order: svgdom::AttributesOrder::Specification,
-        .. svgdom::WriteOptions::default()
+        ..svgdom::WriteOptions::default()
     };
 
     let doc = tree.to_svgdom();
@@ -281,7 +281,8 @@ fn process(args: &Args) -> Result<(), String> {
 
     match out_svg {
         OutputTo::Stdout => {
-            io::stdout().write_all(&output_data)
+            io::stdout()
+                .write_all(&output_data)
                 .map_err(|_| format!("failed to write to the stdout"))?;
         }
         OutputTo::File(path) => {
@@ -322,8 +323,9 @@ fn load_stdin() -> Result<String, String> {
     let stdin = io::stdin();
     let mut handle = stdin.lock();
 
-    handle.read_to_string(&mut s)
-          .map_err(|_| format!("provided data has not an UTF-8 encoding"))?;
+    handle
+        .read_to_string(&mut s)
+        .map_err(|_| format!("provided data has not an UTF-8 encoding"))?;
 
     Ok(s)
 }

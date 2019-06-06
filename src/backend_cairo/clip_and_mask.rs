@@ -7,11 +7,19 @@ use cairo::{
     self,
     MatrixTrait,
 };
+use usvg::{
+    try_opt,
+    try_opt_warn,
+};
 
 // self
-use crate::backend_utils::mask;
-use super::prelude::*;
-use super::path;
+use crate::prelude::*;
+use crate::backend_utils::*;
+use super::{
+    path,
+    CairoLayers,
+    ReCairoContextExt,
+};
 
 
 pub fn clip(
@@ -22,7 +30,7 @@ pub fn clip(
     layers: &mut CairoLayers,
     cr: &cairo::Context,
 ) {
-    let clip_surface = try_opt!(layers.get(), ());
+    let clip_surface = try_opt!(layers.get());
     let clip_surface = clip_surface.borrow_mut();
 
     let clip_cr = cairo::Context::new(&*clip_surface);
@@ -89,7 +97,7 @@ fn clip_group(
                 // then we should render this child on a new canvas,
                 // clip it, and only then draw it to the `clipPath`.
 
-                let clip_surface = try_opt!(layers.get(), ());
+                let clip_surface = try_opt!(layers.get());
                 let clip_surface = clip_surface.borrow_mut();
 
                 let clip_cr = cairo::Context::new(&*clip_surface);
@@ -136,7 +144,7 @@ pub fn mask(
     layers: &mut CairoLayers,
     sub_cr: &cairo::Context,
 ) {
-    let mask_surface = try_opt!(layers.get(), ());
+    let mask_surface = try_opt!(layers.get());
     let mut mask_surface = mask_surface.borrow_mut();
 
     {
@@ -160,9 +168,11 @@ pub fn mask(
     }
 
     {
-        let mut data = try_opt_warn!(mask_surface.get_data().ok(), (),
-                                     "Failed to borrow a surface for mask '{}'.", mask.id);
-        mask::image_to_mask(&mut data, layers.image_size());
+        let mut data = try_opt_warn!(
+            mask_surface.get_data().ok(),
+            "Failed to borrow a surface for mask '{}'.", mask.id
+        );
+        image_to_mask(&mut data, layers.image_size());
     }
 
     if let Some(ref id) = mask.mask {

@@ -83,9 +83,9 @@ fn resolve(
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    let stroke_scale = try_opt!(stroke_scale(shape_node, marker_node, state), ());
+    let stroke_scale = try_opt!(stroke_scale(shape_node, marker_node, state));
 
-    let r = try_opt!(convert_rect(marker_node, state), ());
+    let r = try_opt!(convert_rect(marker_node, state));
 
     let view_box = marker_node.get_viewbox().map(|vb|
         tree::ViewBox {
@@ -193,8 +193,13 @@ fn stroke_scale(
     }
 }
 
-fn draw_markers<P>(segments: &[tree::PathSegment], kind: MarkerKind, mut draw_marker: P)
-    where P: FnMut(f64, f64, usize)
+fn draw_markers<P>(
+    segments: &[tree::PathSegment],
+    kind: MarkerKind,
+    mut draw_marker: P,
+)
+where
+    P: FnMut(f64, f64, usize)
 {
     match kind {
         MarkerKind::Start => {
@@ -212,7 +217,7 @@ fn draw_markers<P>(segments: &[tree::PathSegment], kind: MarkerKind, mut draw_ma
                     tree::PathSegment::CurveTo { x, y, .. } => (x, y),
                     _ => {
                         i += 1;
-                        continue
+                        continue;
                     }
                 };
 
@@ -313,8 +318,10 @@ fn calc_vertex_angle(segments: &[Segment], idx: usize) -> f64 {
             }
             (Segment::LineTo { x: x1, y: y1 }, Segment::LineTo { x: x2, y: y2 }) => {
                 let (px, py) = get_prev_vertex(segments, idx);
-                calc_angle(px, py, x1, y1,
-                           x1, y1, x2, y2)
+                calc_angle(
+                    px, py, x1, y1,
+                    x1, y1, x2, y2,
+                )
             }
             (Segment::CurveTo { x2: c1_x2, y2: c1_y2, x, y, .. },
                 Segment::CurveTo { x1: c2_x1, y1: c2_y1, x: nx, y: ny, .. }) => {
@@ -358,8 +365,10 @@ fn calc_vertex_angle(segments: &[Segment], idx: usize) -> f64 {
             (Segment::LineTo { x, y }, Segment::ClosePath) => {
                 let (px, py) = get_prev_vertex(segments, idx);
                 let (nx, ny) = get_subpath_start(segments, idx);
-                calc_angle(px, py, x, y,
-                           x, y, nx, ny)
+                calc_angle(
+                    px, py, x, y,
+                    x, y, nx, ny,
+                )
             }
             (_, Segment::ClosePath) => {
                 let (px, py) = get_prev_vertex(segments, idx);
@@ -427,7 +436,10 @@ fn calc_angle(
     normalize(angle) * 180.0 / PI
 }
 
-fn get_subpath_start(segments: &[Segment], idx: usize) -> (f64, f64) {
+fn get_subpath_start(
+    segments: &[Segment],
+    idx: usize,
+) -> (f64, f64) {
     let offset = segments.len() - idx;
     for seg in segments.iter().rev().skip(offset) {
         if let Segment::MoveTo { x, y } = *seg {
@@ -438,7 +450,10 @@ fn get_subpath_start(segments: &[Segment], idx: usize) -> (f64, f64) {
     (0.0, 0.0)
 }
 
-fn get_prev_vertex(segments: &[Segment], idx: usize) -> (f64, f64) {
+fn get_prev_vertex(
+    segments: &[Segment],
+    idx: usize,
+) -> (f64, f64) {
     match segments[idx - 1] {
         Segment::MoveTo { x, y } => (x, y),
         Segment::LineTo { x, y } => (x, y),
@@ -447,7 +462,10 @@ fn get_prev_vertex(segments: &[Segment], idx: usize) -> (f64, f64) {
     }
 }
 
-fn convert_rect(node: &svgdom::Node, state: &State) -> Option<Rect> {
+fn convert_rect(
+    node: &svgdom::Node,
+    state: &State,
+) -> Option<Rect> {
     Rect::new(
         node.convert_user_length(AId::RefX, state, Length::zero()),
         node.convert_user_length(AId::RefY, state, Length::zero()),
@@ -456,7 +474,9 @@ fn convert_rect(node: &svgdom::Node, state: &State) -> Option<Rect> {
     )
 }
 
-fn convert_orientation(attrs: &svgdom::Attributes) -> MarkerOrientation {
+fn convert_orientation(
+    attrs: &svgdom::Attributes,
+) -> MarkerOrientation {
     match attrs.get_value(AId::Orient) {
         Some(AValue::Angle(angle)) => {
             let a = match angle.unit {

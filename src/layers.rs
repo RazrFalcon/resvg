@@ -2,8 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::ops::Deref;
 use std::cell::RefCell;
+use std::ops::Deref;
 use std::rc::Rc;
 
 use crate::ScreenSize;
@@ -33,8 +33,9 @@ impl<T> Layers<T> {
         new_img_fn: F1,
         clear_img_fn: F2,
     ) -> Self
-        where F1: Fn(ScreenSize, f64) -> Option<T> + 'static,
-              F2: Fn(&mut T) + 'static,
+    where
+        F1: Fn(ScreenSize, f64) -> Option<T> + 'static,
+        F2: Fn(&mut T) + 'static,
     {
         Layers {
             d: Vec::new(),

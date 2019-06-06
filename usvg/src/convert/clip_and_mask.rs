@@ -81,7 +81,7 @@ pub fn convert_mask(
         node.convert_user_length(AId::Width, state, Length::new(120.0, Unit::Percent)),
         node.convert_user_length(AId::Height, state, Length::new(120.0, Unit::Percent)),
     );
-    let rect = try_opt_warn!(rect, None, "Mask '{}' has an invalid size. Skipped.", node.id());
+    let rect = try_opt_warn_or!(rect, None, "Mask '{}' has an invalid size. Skipped.", node.id());
 
     let ref attrs = node.attributes();
 
@@ -95,10 +95,12 @@ pub fn convert_mask(
         }
     }
 
-    let units = convert_element_units(attrs, AId::MaskUnits,
-                                      tree::Units::ObjectBoundingBox);
-    let content_units = convert_element_units(attrs, AId::MaskContentUnits,
-                                              tree::Units::UserSpaceOnUse);
+    let units = convert_element_units(
+        attrs, AId::MaskUnits, tree::Units::ObjectBoundingBox,
+    );
+    let content_units = convert_element_units(
+        attrs, AId::MaskContentUnits, tree::Units::UserSpaceOnUse,
+    );
 
     let mut mask = tree.append_to_defs(tree::NodeKind::Mask(tree::Mask {
         id: node.id().clone(),
@@ -118,7 +120,11 @@ pub fn convert_mask(
     }
 }
 
-fn convert_element_units(attrs: &svgdom::Attributes, aid: AId, def: tree::Units) -> tree::Units {
+fn convert_element_units(
+    attrs: &svgdom::Attributes,
+    aid: AId,
+    def: tree::Units,
+) -> tree::Units {
     match attrs.get_str(aid) {
         Some("userSpaceOnUse") => tree::Units::UserSpaceOnUse,
         Some("objectBoundingBox") => tree::Units::ObjectBoundingBox,

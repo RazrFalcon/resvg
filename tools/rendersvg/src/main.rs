@@ -57,7 +57,8 @@ fn process() -> Result<(), String> {
             .format(log_format)
             .level(log::LevelFilter::Warn)
             .chain(std::io::stderr())
-            .apply().unwrap();
+            .apply()
+            .unwrap();
     }
 
     let backend: Box<Render> = match args.backend_name.as_str() {
@@ -135,9 +136,11 @@ fn query_all(
         }
 
         if let Some(bbox) = backend.calc_node_bbox(&node, &opt) {
-            println!("{},{},{},{},{}", node.id(),
-                     round_len(bbox.x()), round_len(bbox.y()),
-                     round_len(bbox.width()), round_len(bbox.height()));
+            println!(
+                "{},{},{},{},{}", node.id(),
+                round_len(bbox.x()), round_len(bbox.y()),
+                round_len(bbox.width()), round_len(bbox.height())
+            );
         }
     }
 
@@ -164,13 +167,13 @@ fn run_task<P, T>(perf: bool, title: &str, p: P) -> T
 
 fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), String> {
     let mut f = fs::File::create(path)
-                   .map_err(|_| format!("failed to create a file {:?}", path))?;
+        .map_err(|_| format!("failed to create a file {:?}", path))?;
 
     let opt = svgdom::WriteOptions {
         indent: svgdom::Indent::Spaces(2),
         attributes_indent: svgdom::Indent::Spaces(3),
         attributes_order: svgdom::AttributesOrder::Specification,
-        .. svgdom::WriteOptions::default()
+        ..svgdom::WriteOptions::default()
     };
 
     let svgdoc = tree.to_svgdom();

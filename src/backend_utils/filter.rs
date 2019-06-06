@@ -5,10 +5,11 @@
 use std::rc::Rc;
 
 // external
+use log::warn;
 use usvg::ColorInterpolation as ColorSpace;
 
 // self
-use super::prelude::*;
+use crate::prelude::*;
 
 
 pub enum Error {
@@ -18,7 +19,8 @@ pub enum Error {
 
 
 pub trait ImageExt
-    where Self: Sized
+where
+    Self: Sized
 {
     fn width(&self) -> u32;
     fn height(&self) -> u32;
@@ -137,10 +139,15 @@ pub trait Filter<T: ImageExt> {
 
         match res {
             Ok(_) => {}
-            Err(Error::AllocFailed) =>
-                warn!("Memory allocation failed while processing the '{}' filter. Skipped.", filter.id),
-            Err(Error::InvalidRegion) =>
-                warn!("Filter '{}' has an invalid region.", filter.id),
+            Err(Error::AllocFailed) => {
+                warn!(
+                    "Memory allocation failed while processing the '{}' filter. Skipped.",
+                    filter.id
+                );
+            }
+            Err(Error::InvalidRegion) => {
+                warn!("Filter '{}' has an invalid region.", filter.id);
+            }
         }
     }
 
@@ -315,9 +322,15 @@ pub trait Filter<T: ImageExt> {
         let (sx, sy) = ts.get_scale();
 
         let (std_dx, std_dy) = if units == usvg::Units::ObjectBoundingBox {
-            (fe.std_dev_x.value() * sx * bbox.width(), fe.std_dev_y.value() * sy * bbox.height())
+            (
+                fe.std_dev_x.value() * sx * bbox.width(),
+                fe.std_dev_y.value() * sy * bbox.height()
+            )
         } else {
-            (fe.std_dev_x.value() * sx, fe.std_dev_y.value() * sy)
+            (
+                fe.std_dev_x.value() * sx,
+                fe.std_dev_y.value() * sy
+            )
         };
 
         if std_dx.is_fuzzy_zero() && std_dy.is_fuzzy_zero() {
@@ -336,9 +349,15 @@ pub trait Filter<T: ImageExt> {
         let (sx, sy) = ts.get_scale();
 
         let (dx, dy) = if units == usvg::Units::ObjectBoundingBox {
-            (fe.dx * sx * bbox.width(), fe.dy * sy * bbox.height())
+            (
+                fe.dx * sx * bbox.width(),
+                fe.dy * sy * bbox.height()
+            )
         } else {
-            (fe.dx * sx, fe.dy * sy)
+            (
+                fe.dx * sx,
+                fe.dy * sy
+            )
         };
 
         if dx.is_fuzzy_zero() && dy.is_fuzzy_zero() {
@@ -552,8 +571,8 @@ pub mod blur {
             (1.0, 1.0)
         };
 
-        let post_scale = ((dnu_x * dnu_y).sqrt() / (lambda_x * lambda_y).sqrt())
-                            .powi(2 * d.steps as i32);
+        let post_scale =
+            ((dnu_x * dnu_y).sqrt() / (lambda_x * lambda_y).sqrt()).powi(2 * d.steps as i32);
 
         buf.iter_mut().for_each(|v| *v *= post_scale);
     }
@@ -586,9 +605,9 @@ fn calc_region(
     };
 
     let region = utils::path_bbox(&path, None, Some(region_ts))
-                       .ok_or_else(|| Error::InvalidRegion)?
-                       .to_screen_rect()
-                       .fit_to_rect(canvas_rect);
+        .ok_or_else(|| Error::InvalidRegion)?
+        .to_screen_rect()
+        .fit_to_rect(canvas_rect);
 
     Ok(region)
 }
@@ -632,9 +651,10 @@ fn calc_subregion<T: ImageExt>(
                     primitive.height.unwrap_or(1.0),
                 ).ok_or_else(|| Error::InvalidRegion)?;
 
-                let r = r.bbox_transform(bbox)
-                         .bbox_transform(ts_bbox)
-                         .to_screen_rect();
+                let r = r
+                    .bbox_transform(bbox)
+                    .bbox_transform(ts_bbox)
+                    .to_screen_rect();
 
                 return Ok(r);
             } else {

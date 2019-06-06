@@ -4,11 +4,15 @@
 
 // external
 use crate::qt;
+use usvg::try_opt;
 
 // self
-use crate::backend_utils::mask;
-use super::prelude::*;
-use super::path;
+use crate::prelude::*;
+use crate::backend_utils::*;
+use super::{
+    path,
+    QtLayers,
+};
 
 
 pub fn clip(
@@ -19,7 +23,7 @@ pub fn clip(
     layers: &mut QtLayers,
     p: &mut qt::Painter,
 ) {
-    let clip_img = try_opt!(layers.get(), ());
+    let clip_img = try_opt!(layers.get());
     let mut clip_img = clip_img.borrow_mut();
     clip_img.fill(0, 0, 0, 255);
 
@@ -80,7 +84,7 @@ fn clip_group(
                 // then we should render this child on a new canvas,
                 // clip it, and only then draw it to the `clipPath`.
 
-                let clip_img = try_opt!(layers.get(), ());
+                let clip_img = try_opt!(layers.get());
                 let mut clip_img = clip_img.borrow_mut();
 
                 let mut clip_p = qt::Painter::new(&mut clip_img);
@@ -123,7 +127,7 @@ pub fn mask(
     layers: &mut QtLayers,
     sub_p: &mut qt::Painter,
 ) {
-    let mask_img = try_opt!(layers.get(), ());
+    let mask_img = try_opt!(layers.get());
     let mut mask_img = mask_img.borrow_mut();
 
     {
@@ -145,7 +149,7 @@ pub fn mask(
         super::render_group(node, opt, layers, &mut mask_p);
     }
 
-    mask::image_to_mask(&mut mask_img.data_mut(), layers.image_size());
+    image_to_mask(&mut mask_img.data_mut(), layers.image_size());
 
     if let Some(ref id) = mask.mask {
         if let Some(ref mask_node) = node.tree().defs_by_id(id) {

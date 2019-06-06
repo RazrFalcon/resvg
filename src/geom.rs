@@ -99,7 +99,11 @@ impl SizeExt for Size {
     }
 }
 
-fn size_scale(s1: ScreenSize, s2: ScreenSize, expand: bool) -> ScreenSize {
+fn size_scale(
+    s1: ScreenSize,
+    s2: ScreenSize,
+    expand: bool,
+) -> ScreenSize {
     let rw = (s2.height as f64 * s1.width as f64 / s1.height as f64).ceil() as u32;
     let with_h = if expand { rw <= s2.width } else { rw >= s2.width };
     if !with_h {

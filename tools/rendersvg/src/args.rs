@@ -2,16 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::process;
 use std::path;
+use std::process;
 
 use gumdrop::Options;
 
-use resvg::{
-    self,
-    usvg,
-    FitTo,
-};
+use resvg::prelude::*;
 
 
 pub fn print_help() {

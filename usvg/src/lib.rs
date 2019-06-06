@@ -53,7 +53,6 @@ Full spec can be found [here](https://github.com/RazrFalcon/usvg/blob/master/doc
 - Unsupported elements:
   - some filter-based elements
   - font-based elements
-  - `marker`
 
 [SVG]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 */
@@ -66,11 +65,21 @@ Full spec can be found [here](https://github.com/RazrFalcon/usvg/blob/master/doc
 #![warn(missing_copy_implementations)]
 
 pub use svgdom;
-pub use lyon_geom;
 
-/// Task, return value.
+/// Unwraps `Option` and invokes `return` on `None`.
 #[macro_export]
 macro_rules! try_opt {
+    ($task:expr) => {
+        match $task {
+            Some(v) => v,
+            None => return,
+        }
+    };
+}
+
+/// Unwraps `Option` and invokes `return $ret` on `None`.
+#[macro_export]
+macro_rules! try_opt_or {
     ($task:expr, $ret:expr) => {
         match $task {
             Some(v) => v,
@@ -79,9 +88,32 @@ macro_rules! try_opt {
     };
 }
 
-/// Task, return value, warning message.
+/// Unwraps `Option` and invokes `return` on `None` with a warning.
 #[macro_export]
 macro_rules! try_opt_warn {
+    ($task:expr, $msg:expr) => {
+        match $task {
+            Some(v) => v,
+            None => {
+                log::warn!($msg);
+                return;
+            }
+        }
+    };
+    ($task:expr, $fmt:expr, $($arg:tt)*) => {
+        match $task {
+            Some(v) => v,
+            None => {
+                log::warn!($fmt, $($arg)*);
+                return;
+            }
+        }
+    };
+}
+
+/// Unwraps `Option` and invokes `return $ret` on `None` with a warning.
+#[macro_export]
+macro_rules! try_opt_warn_or {
     ($task:expr, $ret:expr, $msg:expr) => {
         match $task {
             Some(v) => v,
@@ -99,18 +131,6 @@ macro_rules! try_opt_warn {
                 return $ret;
             }
         }
-    };
-}
-
-/// Panics in debug, prints a warning in release.
-macro_rules! debug_panic {
-    ($msg:expr) => {
-        debug_assert!(false, $msg);
-        warn!($msg);
-    };
-    ($fmt:expr, $($arg:tt)*) => {
-        debug_assert!(false, $fmt, $($arg)*);
-        log::warn!($fmt, $($arg)*);
     };
 }
 

@@ -12,15 +12,22 @@ use cairo::{
     PatternTrait,
 };
 use rgb::FromSlice;
-use usvg::ColorInterpolation as ColorSpace;
+use log::warn;
+use usvg::{
+    try_opt_or,
+    ColorInterpolation as ColorSpace
+};
 
 // self
-use super::prelude::*;
+use crate::prelude::*;
+use crate::backend_utils::*;
 use crate::backend_utils::filter::{
-    self,
     Error,
     Filter,
     ImageExt,
+};
+use super::{
+    ReCairoContextExt,
 };
 
 type Image = filter::Image<cairo::ImageSurface>;
@@ -115,7 +122,10 @@ fn create_image(width: u32, height: u32) -> Result<cairo::ImageSurface, Error> {
         .map_err(|_| Error::AllocFailed)
 }
 
-fn copy_image(image: &cairo::ImageSurface, region: ScreenRect) -> Result<cairo::ImageSurface, Error> {
+fn copy_image(
+    image: &cairo::ImageSurface,
+    region: ScreenRect,
+) -> Result<cairo::ImageSurface, Error> {
     let x = cmp::max(0, region.x()) as f64;
     let y = cmp::max(0, region.y()) as f64;
 
@@ -213,7 +223,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (std_dx, std_dy) = try_opt!(Self::resolve_std_dev(fe, units, bbox, ts), Ok(input));
+        let (std_dx, std_dy) = try_opt_or!(Self::resolve_std_dev(fe, units, bbox, ts), Ok(input));
 
         let input = input.into_color_space(cs)?;
         let mut buffer = input.take()?;
@@ -236,7 +246,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (dx, dy) = try_opt!(Self::resolve_offset(fe, units, bbox, ts), Ok(input));
+        let (dx, dy) = try_opt_or!(Self::resolve_offset(fe, units, bbox, ts), Ok(input));
 
         // TODO: do not use an additional buffer
         let buffer = create_image(input.width(), input.height())?;

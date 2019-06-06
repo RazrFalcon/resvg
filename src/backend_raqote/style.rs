@@ -4,6 +4,7 @@
 
 // external
 use raqote;
+use usvg::try_opt;
 
 // self
 use super::prelude::*;
@@ -36,8 +37,7 @@ pub fn fill(
                         usvg::NodeKind::Pattern(ref pattern) => {
                             let ts = *dt.get_transform();
                             let (sub_dt, patt_ts) = try_opt!(
-                                prepare_pattern(&node, pattern, opt, ts, bbox, fill.opacity),
-                                ()
+                                prepare_pattern(&node, pattern, opt, ts, bbox, fill.opacity)
                             );
                             patt_dt = sub_dt;
                             create_pattern_image(&patt_dt, patt_ts)
@@ -113,8 +113,7 @@ pub fn stroke(
                         usvg::NodeKind::Pattern(ref pattern) => {
                             let ts = *dt.get_transform();
                             let (sub_dt, patt_ts) = try_opt!(
-                                prepare_pattern(&node, pattern, opt, ts, bbox, stroke.opacity),
-                                ()
+                                prepare_pattern(&node, pattern, opt, ts, bbox, stroke.opacity)
                             );
                             patt_dt = sub_dt;
                             create_pattern_image(&patt_dt, patt_ts)

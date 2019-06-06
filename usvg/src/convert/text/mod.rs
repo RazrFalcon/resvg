@@ -234,7 +234,7 @@ fn convert_span(
             }
 
             let mut path = mem::replace(&mut cluster.path, Vec::new());
-            crate::utils::transform_path(&mut path, &cluster.transform);
+            utils::transform_path(&mut path, &cluster.transform);
 
             segments.extend_from_slice(&path);
         }
@@ -284,8 +284,7 @@ fn dump_cluster(
     };
 
     // Cluster bbox.
-    let r = Rect::new(0.0, -cluster.ascent,
-                      cluster.advance, cluster.height()).unwrap();
+    let r = Rect::new(0.0, -cluster.ascent, cluster.advance, cluster.height()).unwrap();
     base_path.stroke = new_stroke(tree::Color::blue());
     base_path.segments = utils::rect_to_path(r);
     parent.append_kind(tree::NodeKind::Path(base_path.clone()));
@@ -360,7 +359,7 @@ fn convert_decoration(
 
         let mut ts = dec_span.transform;
         ts.translate(0.0, dy);
-        crate::utils::transform_path(&mut segments[start_idx..], &ts);
+        utils::transform_path(&mut segments[start_idx..], &ts);
     }
 
     tree::Path {
@@ -374,7 +373,10 @@ fn convert_decoration(
     }
 }
 
-fn add_rect_to_path(rect: Rect, path: &mut Vec<tree::PathSegment>) {
+fn add_rect_to_path(
+    rect: Rect,
+    path: &mut Vec<tree::PathSegment>,
+) {
     path.extend_from_slice(&[
         tree::PathSegment::MoveTo { x: rect.x(),     y: rect.y() },
         tree::PathSegment::LineTo { x: rect.right(), y: rect.y() },
