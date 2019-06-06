@@ -308,7 +308,7 @@ pub fn transform_path(
             tree::PathSegment::LineTo { x, y } => {
                 ts.apply_to(x, y);
             }
-            tree::PathSegment::CurveTo { x1, y1, x2, y2, x,  y } => {
+            tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
                 ts.apply_to(x1, y1);
                 ts.apply_to(x2, y2);
                 ts.apply_to(x, y);

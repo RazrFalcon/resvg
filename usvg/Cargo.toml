@@ -19,14 +19,14 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
 base64 = "0.10"
-font-kit = { git = "https://github.com/pcwalton/font-kit", rev = "3fd2ea4" }
 harfbuzz_rs = "1.0"
 libflate = "0.1"
 log = "0.4"
 lyon_geom = "0.12"
-lyon_path = "0.12" # the same version as used by font-kit
+memmap = "0.7"
 rctree = "0.3"
 svgdom = { git = "https://github.com/RazrFalcon/svgdom" }
+ttf-parser = { git = "https://github.com/RazrFalcon/ttf-parser", rev = "9466954" }
 unicode-bidi = "0.3"
 unicode-script = "0.3"
 unicode-vo = { git = "https://github.com/RazrFalcon/unicode-vo" }

@@ -3,21 +3,13 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::cmp;
-use std::path::PathBuf;
 use std::rc::Rc;
 
 // external
 use svgdom;
 
-mod fk {
-    pub use font_kit::family_name::FamilyName;
-    pub use font_kit::font::Font;
-    pub use font_kit::handle::Handle;
-    pub use font_kit::properties::*;
-    pub use font_kit::source::SystemSource;
-}
-
 // self
+use crate::fontdb;
 use crate::tree;
 use crate::utils;
 use crate::convert::prelude::*;
@@ -60,62 +52,6 @@ pub enum TextAnchor {
     Start,
     Middle,
     End,
-}
-
-pub type Font = Rc<FontData>;
-
-pub struct FontData {
-    pub handle: fk::Font,
-    pub path: PathBuf,
-    pub index: u32,
-
-    /// Guarantee to be > 0.
-    units_per_em: u32,
-
-    // All values below are in font units.
-    ascent: f32,
-    descent: f32,
-    x_height: f32,
-    underline_position: f32,
-    underline_thickness: f32,
-}
-
-impl FontData {
-    pub fn scale(&self, font_size: f64) -> f64 {
-        let s = font_size / self.units_per_em as f64;
-        debug_assert!(s.is_finite(), "units per em cannot be {}", self.units_per_em);
-        s
-    }
-
-    pub fn ascent(&self, font_size: f64) -> f64 {
-        self.ascent as f64 * self.scale(font_size)
-    }
-
-    pub fn descent(&self, font_size: f64) -> f64 {
-        self.descent as f64 * self.scale(font_size)
-    }
-
-    pub fn height(&self, font_size: f64) -> f64 {
-        self.ascent(font_size) - self.descent(font_size)
-    }
-
-    pub fn x_height(&self, font_size: f64) -> f64 {
-        self.x_height as f64 * self.scale(font_size)
-    }
-
-    pub fn underline_position(&self, font_size: f64) -> f64 {
-        self.underline_position as f64 * self.scale(font_size)
-    }
-
-    pub fn underline_thickness(&self, font_size: f64) -> f64 {
-        self.underline_thickness as f64 * self.scale(font_size)
-    }
-}
-
-impl std::fmt::Debug for FontData {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "FontData({}:{})", self.path.display(), self.index)
-    }
 }
 
 
@@ -168,7 +104,7 @@ pub struct TextSpan {
     pub end: usize,
     pub fill: Option<tree::Fill>,
     pub stroke: Option<tree::Stroke>,
-    pub font: Font,
+    pub font: fontdb::Font,
     pub font_size: f64,
     pub decoration: TextDecoration,
     pub baseline_shift: f64,
@@ -421,10 +357,11 @@ pub fn resolve_rendering_mode(
 fn resolve_font(
     node: &svgdom::Node,
     state: &State,
-) -> Option<Font> {
+) -> Option<fontdb::Font> {
     let style = conv_font_style(node);
     let stretch = conv_font_stretch(node);
     let weight = resolve_font_weight(node);
+    let properties = fontdb::Properties { style, weight, stretch };
 
     let font_family = if let Some(n) = node.find_node_with_attribute(AId::FontFamily) {
         n.attributes().get_str_or(AId::FontFamily, &state.opt.font_family).to_owned()
@@ -437,123 +374,57 @@ fn resolve_font(
         // TODO: to a proper parser
         let family = family.replace('\'', "");
         let family = family.trim();
-
-        let name = match family {
-            "serif"      => fk::FamilyName::Serif,
-            "sans-serif" => fk::FamilyName::SansSerif,
-            "monospace"  => fk::FamilyName::Monospace,
-            "cursive"    => fk::FamilyName::Cursive,
-            "fantasy"    => fk::FamilyName::Fantasy,
-            _            => fk::FamilyName::Title(family.to_string())
-        };
-
-        name_list.push(name);
+        name_list.push(family.to_string());
     }
 
     // Use the default font as fallback.
-    name_list.push(fk::FamilyName::Title(state.opt.font_family.to_owned()));
+    name_list.push(state.opt.font_family.clone());
 
-    let properties = fk::Properties { style, weight, stretch };
-    let handle = match fk::SystemSource::new().select_best_match(&name_list, &properties) {
-        Ok(v) => v,
-        Err(_) => {
-            let mut families = Vec::new();
-            for name in name_list {
-                families.push(match name {
-                    fk::FamilyName::Serif           => "serif".to_string(),
-                    fk::FamilyName::SansSerif       => "sans-serif".to_string(),
-                    fk::FamilyName::Monospace       => "monospace".to_string(),
-                    fk::FamilyName::Cursive         => "cursive".to_string(),
-                    fk::FamilyName::Fantasy         => "fantasy".to_string(),
-                    fk::FamilyName::Title(ref name) => name.clone(),
-                });
-            }
+    let name_list: Vec<_> = name_list.iter().map(|s| s.as_str()).collect();
 
-            warn!("No match for '{}' font-family.", families.join(", "));
+    let db = state.db.borrow();
+    let id = match db.select_best_match(&name_list, properties) {
+        Some(id) => id,
+        None => {
+            warn!("No match for '{}' font-family.", font_family);
             return None;
         }
     };
 
-    load_font(&handle)
-}
-
-pub fn load_font(
-    handle: &fk::Handle,
-) -> Option<Font> {
-    let (path, index) = match handle {
-        fk::Handle::Path { ref path, font_index } => {
-            (path.clone(), *font_index)
-        }
-        _ => return None,
-    };
-
-    let font = match handle.load() {
-        Ok(v) => v,
-        Err(_) => {
-            warn!("Failed to load '{}'.", path.display());
-            return None;
-        }
-    };
-
-    let metrics = font.metrics();
-
-    // Some fonts can have `units_per_em` set to zero, which will break out calculations.
-    if metrics.units_per_em == 0 {
-        return None;
-    }
-
-    let x_height = if metrics.x_height.is_fuzzy_zero() {
-        // If not set - fallback to height * 45%.
-        // 45% is what Firefox uses.
-        (metrics.ascent - metrics.descent) * 0.45
-    } else {
-        metrics.x_height
-    };
-
-    Some(Rc::new(FontData {
-        handle: font,
-        path,
-        index,
-        units_per_em: metrics.units_per_em,
-        ascent: metrics.ascent,
-        descent: metrics.descent,
-        x_height,
-        underline_position: metrics.underline_position,
-        underline_thickness: metrics.underline_thickness,
-    }))
+    db.load_font(id)
 }
 
 fn conv_font_style(
     node: &svgdom::Node,
-) -> fk::Style {
+) -> fontdb::Style {
     if let Some(n) = node.find_node_with_attribute(AId::FontStyle) {
         match n.attributes().get_str_or(AId::FontStyle, "") {
-            "italic"  => fk::Style::Italic,
-            "oblique" => fk::Style::Oblique,
-            _         => fk::Style::Normal,
+            "italic"  => fontdb::Style::Italic,
+            "oblique" => fontdb::Style::Oblique,
+            _         => fontdb::Style::Normal,
         }
     } else {
-        fk::Style::Normal
+        fontdb::Style::Normal
     }
 }
 
 fn conv_font_stretch(
     node: &svgdom::Node,
-) -> fk::Stretch {
+) -> fontdb::Stretch {
     if let Some(n) = node.find_node_with_attribute(AId::FontStretch) {
         match n.attributes().get_str_or(AId::FontStretch, "") {
-            "narrower" | "condensed" => fk::Stretch::CONDENSED,
-            "ultra-condensed"        => fk::Stretch::ULTRA_CONDENSED,
-            "extra-condensed"        => fk::Stretch::EXTRA_CONDENSED,
-            "semi-condensed"         => fk::Stretch::SEMI_CONDENSED,
-            "semi-expanded"          => fk::Stretch::SEMI_EXPANDED,
-            "wider" | "expanded"     => fk::Stretch::EXPANDED,
-            "extra-expanded"         => fk::Stretch::EXTRA_EXPANDED,
-            "ultra-expanded"         => fk::Stretch::ULTRA_EXPANDED,
-            _                        => fk::Stretch::NORMAL,
+            "narrower" | "condensed" => fontdb::Stretch::Condensed,
+            "ultra-condensed"        => fontdb::Stretch::UltraCondensed,
+            "extra-condensed"        => fontdb::Stretch::ExtraCondensed,
+            "semi-condensed"         => fontdb::Stretch::SemiCondensed,
+            "semi-expanded"          => fontdb::Stretch::SemiExpanded,
+            "wider" | "expanded"     => fontdb::Stretch::Expanded,
+            "extra-expanded"         => fontdb::Stretch::ExtraExpanded,
+            "ultra-expanded"         => fontdb::Stretch::UltraExpanded,
+            _                        => fontdb::Stretch::Normal,
         }
     } else {
-        fk::Stretch::NORMAL
+        fontdb::Stretch::Normal
     }
 }
 
@@ -836,7 +707,7 @@ fn resolve_baseline_shift(
 
 fn resolve_font_weight(
     node: &svgdom::Node,
-) -> fk::Weight {
+) -> fontdb::Weight {
     fn bound(min: usize, val: usize, max: usize) -> usize {
         cmp::max(min, cmp::min(max, val))
     }
@@ -880,7 +751,11 @@ fn resolve_font_weight(
         };
     }
 
-    fk::Weight(weight as f32)
+    let weight = fontdb::Weight::from(weight as u16);
+    match weight {
+        fontdb::Weight::Other(_) => fontdb::Weight::Normal,
+        _ => weight,
+    }
 }
 
 fn count_chars(

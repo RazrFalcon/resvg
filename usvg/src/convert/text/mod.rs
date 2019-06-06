@@ -7,12 +7,6 @@ use std::mem;
 // external
 use svgdom;
 
-mod fk {
-    pub use font_kit::handle::Handle;
-    pub use font_kit::hinting::HintingOptions as Hinting;
-    pub use font_kit::source::SystemSource;
-}
-
 // self
 use crate::tree;
 use crate::tree::prelude::*;
@@ -69,6 +63,11 @@ pub fn convert(
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
+    {
+        let mut db = state.db.borrow_mut();
+        db.populate();
+    }
+
     let text_node = &TextNode::new(node.clone());
     let mut new_paths = text_to_paths(text_node, state, parent, tree);
 

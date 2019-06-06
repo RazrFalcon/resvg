@@ -8,20 +8,14 @@ use unicode_bidi;
 use unicode_script;
 use unicode_vo::{self, Orientation as CharOrientation};
 
-mod fk {
-    pub use font_kit::handle::Handle;
-    pub use font_kit::hinting::HintingOptions as Hinting;
-    pub use font_kit::source::SystemSource;
-}
-
 // self
 use crate::tree;
 use crate::utils;
 use crate::convert::prelude::*;
+use crate::fontdb;
 use super::convert::{
     ByteIndex,
     CharacterPosition,
-    Font,
     TextAnchor,
     TextChunk,
     TextFlow,
@@ -36,7 +30,7 @@ use super::convert::{
 #[derive(Clone)]
 struct Glyph {
     /// The glyph ID in the font.
-    id: u32,
+    id: u16,
 
     /// Position in bytes in the original string.
     ///
@@ -55,7 +49,7 @@ struct Glyph {
     /// Reference to the source font.
     ///
     /// Each glyph can have it's own source font.
-    font: Font,
+    font: fontdb::Font,
 }
 
 impl Glyph {
@@ -173,7 +167,7 @@ pub fn outline_chunk(
 ) -> Vec<OutlinedCluster> {
     let mut glyphs = Vec::new();
     for span in &chunk.spans {
-        let tmp_glyphs = shape_text(&chunk.text, &span.font, state);
+        let tmp_glyphs = shape_text(&chunk.text, span.font, state);
 
         // Do nothing with the first run.
         if glyphs.is_empty() {
@@ -200,7 +194,8 @@ pub fn outline_chunk(
     let mut clusters = Vec::new();
     for (range, byte_idx) in GlyphClusters::new(&glyphs) {
         if let Some(span) = chunk.span_at(byte_idx) {
-            clusters.push(outline_cluster(&glyphs[range], &chunk.text, span.font_size));
+            let db = state.db.borrow();
+            clusters.push(outline_cluster(&glyphs[range], &chunk.text, span.font_size, &db));
         }
     }
 
@@ -210,13 +205,13 @@ pub fn outline_chunk(
 /// Text shaping with font fallback.
 fn shape_text(
     text: &str,
-    font: &Font,
+    font: fontdb::Font,
     state: &State,
 ) -> Vec<Glyph> {
-    let mut glyphs = shape_text_with_font(text, font);
+    let mut glyphs = shape_text_with_font(text, font, state).unwrap_or_default();
 
     // Remember all fonts used for shaping.
-    let mut used_fonts = vec![font.clone()];
+    let mut used_fonts = vec![font.id];
 
     // Loop until all glyphs become resolved or until no more fonts are left.
     'outer: loop {
@@ -235,7 +230,8 @@ fn shape_text(
             };
 
             // Shape again, using a new font.
-            let fallback_glyphs = shape_text_with_font(text, &fallback_font);
+            let fallback_glyphs = shape_text_with_font(text, fallback_font, state)
+                .unwrap_or_default();
 
             // We assume, that shaping with an any font will produce the same amount of glyphs.
             // Otherwise an error.
@@ -251,7 +247,7 @@ fn shape_text(
             }
 
             // Remember this font.
-            used_fonts.push(fallback_font);
+            used_fonts.push(fallback_font.id);
         } else {
             break 'outer;
         }
@@ -261,6 +257,7 @@ fn shape_text(
     for glyph in &glyphs {
         if glyph.is_missing() {
             let c = glyph.byte_idx.char_from(text);
+            // TODO: print a full grapheme
             warn!("No fonts with a {}/U+{:X} character were found.", c, c as u32);
         }
     }
@@ -273,10 +270,17 @@ fn shape_text(
 /// This function will do the BIDI reordering and text shaping.
 fn shape_text_with_font(
     text: &str,
-    font: &Font,
-) -> Vec<Glyph> {
-    let font_data = try_opt_or!(font.handle.copy_font_data(), Vec::new());
-    let hb_face = harfbuzz::Face::from_bytes(&font_data, font.index);
+    font: fontdb::Font,
+    state: &State,
+) -> Option<Vec<Glyph>> {
+    let db = state.db.borrow();
+
+    // We can't simplify this code because of lifetimes.
+    let item = db.font(font.id);
+    let file = std::fs::File::open(&item.path).ok()?;
+    let mmap = unsafe { memmap::MmapOptions::new().map(&file).ok()? };
+
+    let hb_face = harfbuzz::Face::from_bytes(&mmap, item.face_index);
     let hb_font = harfbuzz::Font::new(hb_face);
 
     let bidi_info = unicode_bidi::BidiInfo::new(text, Some(unicode_bidi::Level::ltr()));
@@ -316,16 +320,16 @@ fn shape_text_with_font(
 
             glyphs.push(Glyph {
                 byte_idx: ByteIndex::new(idx),
-                id: info.codepoint,
+                id: info.codepoint as u16,
                 dx: pos.x_offset,
                 dy: pos.y_offset,
                 width: pos.x_advance,
-                font: font.clone(),
+                font,
             });
         }
     }
 
-    glyphs
+    Some(glyphs)
 }
 
 /// Outlines a glyph cluster.
@@ -335,28 +339,17 @@ fn outline_cluster(
     glyphs: &[Glyph],
     text: &str,
     font_size: f64,
+    db: &fontdb::Database,
 ) -> OutlinedCluster {
     debug_assert!(!glyphs.is_empty());
-
-    use lyon_path::builder::FlatPathBuilder;
 
     let mut path = Vec::new();
     let mut advance = 0.0;
     let mut x = 0.0;
 
     for glyph in glyphs {
-        let mut builder = svgdom_path_builder::Builder::new();
-        let outline = glyph.font.handle.outline(glyph.id, fk::Hinting::None, &mut builder);
-        let mut outline = match outline {
-            Ok(_) => {
-                crate::convert::path::convert(builder.build())
-            }
-            Err(_) => {
-                // Technically unreachable.
-                warn!("Glyph {} not found in the font.", glyph.id);
-                Vec::new()
-            }
-        };
+        let outline = db.outline(glyph.font.id, glyph.id).unwrap_or(svgdom::Path::new());
+        let mut outline = crate::convert::path::convert(outline);
 
         let sx = glyph.font.scale(font_size);
 
@@ -407,45 +400,34 @@ fn outline_cluster(
 /// This is a rudimentary font fallback algorithm.
 fn find_font_for_char(
     c: char,
-    exclude_fonts: &[Font],
+    exclude_fonts: &[fontdb::ID],
     state: &State,
-) -> Option<Font> {
-    let base_font = exclude_fonts[0].clone();
+) -> Option<fontdb::Font> {
+    let base_font_id = exclude_fonts[0];
 
-    let mut cache = state.font_cache.borrow_mut();
-    cache.init();
+    let db = state.db.borrow();
 
     // Iterate over fonts and check if any of them support the specified char.
-    for handle in cache.fonts() {
-        let (path, index) = match handle {
-            fk::Handle::Path { ref path, font_index } => {
-                (path, *font_index)
-            }
-            _ => continue,
-        };
-
+    for item in db.fonts() {
         // Ignore fonts, that were used for shaping already.
-        let exclude = exclude_fonts
-            .iter()
-            .find(|f| f.path == *path && f.index == index)
-            .is_some();
-
-        if exclude {
+        if exclude_fonts.contains(&item.id) {
             continue;
         }
 
-        if let Some(font) = super::load_font(handle) {
-            if base_font.handle.properties() != font.handle.properties() {
-                continue;
-            }
-
-            if font.handle.glyph_for_char(c).is_none() {
-                continue;
-            }
-
-            warn!("Fallback from {} to {}.", exclude_fonts[0].path.display(), path.display());
-            return Some(font);
+        if db.font(base_font_id).properties != item.properties {
+            continue;
         }
+
+        if !db.has_char(item.id, c) {
+            continue;
+        }
+
+        warn!(
+            "Fallback from {} to {}.",
+            db.font(base_font_id).path.display(),
+            item.path.display(),
+        );
+        return db.load_font(item.id);
     }
 
     None
@@ -852,110 +834,6 @@ pub fn apply_writing_mode(
             // but this is how other applications are shifting the "rotated" characters
             // in the top-to-bottom mode.
             cluster.transform.translate(0.0, cluster.x_height / 2.0);
-        }
-    }
-}
-
-
-/// Implements an ability to outline a glyph directly into the `svgdom::Path`.
-mod svgdom_path_builder {
-    use lyon_geom::math::*;
-    use lyon_path::builder::{FlatPathBuilder, PathBuilder};
-
-    pub struct Builder {
-        path: svgdom::Path,
-        current_position: Point,
-        first_position: Point,
-    }
-
-    impl Builder {
-        pub fn new() -> Self {
-            Builder {
-                path: svgdom::Path::new(),
-                current_position: Point::new(0.0, 0.0),
-                first_position: Point::new(0.0, 0.0),
-            }
-        }
-    }
-
-    impl FlatPathBuilder for Builder {
-        type PathType = svgdom::Path;
-
-        fn move_to(&mut self, to: Point) {
-            self.first_position = to;
-            self.current_position = to;
-            self.path.push(svgdom::PathSegment::MoveTo { abs: true, x: to.x as f64, y: to.y as f64 });
-        }
-
-        fn line_to(&mut self, to: Point) {
-            self.current_position = to;
-            self.path.push(svgdom::PathSegment::LineTo { abs: true, x: to.x as f64, y: to.y as f64 });
-        }
-
-        fn close(&mut self) {
-            self.current_position = self.first_position;
-            self.path.push(svgdom::PathSegment::ClosePath { abs: true });
-        }
-
-        fn build(self) -> Self::PathType {
-            self.path
-        }
-
-        fn build_and_reset(&mut self) -> Self::PathType {
-            let p = self.path.clone();
-            self.path.clear();
-            self.current_position = Point::new(0.0, 0.0);
-            self.first_position = Point::new(0.0, 0.0);
-            p
-        }
-
-        fn current_position(&self) -> Point {
-            self.current_position
-        }
-    }
-
-    impl PathBuilder for Builder {
-        fn quadratic_bezier_to(&mut self, ctrl: Point, to: Point) {
-            self.current_position = to;
-            self.path.push(svgdom::PathSegment::Quadratic {
-                abs: true,
-                x1: ctrl.x as f64,
-                y1: ctrl.y as f64,
-                x: to.x as f64,
-                y: to.y as f64,
-            });
-        }
-
-        fn cubic_bezier_to(&mut self, ctrl1: Point, ctrl2: Point, to: Point) {
-            self.current_position = to;
-            self.path.push(svgdom::PathSegment::CurveTo {
-                abs: true,
-                x1: ctrl1.x as f64,
-                y1: ctrl1.y as f64,
-                x2: ctrl2.x as f64,
-                y2: ctrl2.y as f64,
-                x: to.x as f64,
-                y: to.y as f64,
-            });
-        }
-
-        fn arc(&mut self, center: Point, radii: Vector, sweep_angle: Angle, x_rotation: Angle) {
-            let arc = lyon_geom::arc::Arc {
-                start_angle: (self.current_position() - center).angle_from_x_axis() - x_rotation,
-                center, radii, sweep_angle, x_rotation,
-            };
-            let arc = arc.to_svg_arc();
-
-            self.path.push(svgdom::PathSegment::EllipticalArc {
-                abs: true,
-                rx: arc.radii.x as f64,
-                ry: arc.radii.y as f64,
-                x_axis_rotation: arc.x_rotation.to_degrees() as f64,
-                large_arc: arc.flags.large_arc,
-                sweep: arc.flags.sweep,
-                x: arc.to.x as f64,
-                y: arc.to.y as f64,
-            });
         }
     }
 }
