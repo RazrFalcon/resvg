@@ -4,11 +4,6 @@
 
 use std::f64;
 
-// external
-use lyon_geom;
-use svgdom;
-
-// self
 use crate::tree;
 use super::prelude::*;
 

@@ -2,23 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use cairo::{
-    self,
-    PatternTrait,
-};
-use gdk_pixbuf::{
-    self,
-    PixbufLoaderExt,
-};
-use usvg::{
-    try_opt,
-    try_opt_warn,
-};
+use cairo::PatternTrait;
+use gdk_pixbuf::PixbufLoaderExt;
+use usvg::{try_opt, try_opt_warn};
 
-// self
-use crate::prelude::*;
-use crate::backend_utils::*;
+use crate::{prelude::*, backend_utils::*};
 
 
 pub fn draw(

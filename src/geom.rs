@@ -4,23 +4,12 @@
 
 //! 2D geometric primitives.
 
-use std::cmp;
-use std::f64;
-use std::fmt;
+use std::{cmp, f64, fmt};
 
-// external
 use usvg;
-pub use usvg::{
-    Line,
-    Rect,
-    Size,
-};
+pub use usvg::{Line, Rect, Size};
+pub(crate) use usvg::f64_bound;
 
-pub(crate) use usvg::{
-    f64_bound,
-};
-
-// self
 use crate::utils;
 
 

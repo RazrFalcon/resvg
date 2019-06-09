@@ -6,7 +6,6 @@ use std::fmt;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-// external
 pub use svgdom::{
     Align,
     AspectRatio,
@@ -16,7 +15,6 @@ pub use svgdom::{
     Transform,
 };
 
-// self
 use crate::geom::*;
 pub use super::numbers::*;
 

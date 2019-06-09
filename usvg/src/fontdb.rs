@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 
-pub use ttf_parser::os2::Weight;
-pub use ttf_parser::os2::Width as Stretch;
+pub use ttf_parser::os2::{Weight, Width as Stretch};
 
 
 pub struct FontItem {

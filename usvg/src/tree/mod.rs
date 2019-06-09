@@ -7,17 +7,8 @@
 use std::cell::Ref;
 use std::path;
 
-// external
-use svgdom;
-use libflate;
-
-// self
-pub use self::nodes::*;
-pub use self::attributes::*;
-use crate::{
-    Error,
-    Options,
-};
+pub use self::{nodes::*, attributes::*};
+use crate::{Error, Options};
 
 mod attributes;
 mod export;

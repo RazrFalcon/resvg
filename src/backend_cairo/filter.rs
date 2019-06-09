@@ -5,30 +5,15 @@
 use std::cmp;
 use std::rc::Rc;
 
-// external
-use cairo::{
-    self,
-    MatrixTrait,
-    PatternTrait,
-};
+use cairo::{MatrixTrait, PatternTrait};
 use rgb::FromSlice;
 use log::warn;
-use usvg::{
-    try_opt_or,
-    ColorInterpolation as ColorSpace
-};
+use usvg::{try_opt_or, ColorInterpolation as ColorSpace};
 
-// self
 use crate::prelude::*;
-use crate::backend_utils::*;
-use crate::backend_utils::filter::{
-    Error,
-    Filter,
-    ImageExt,
-};
-use super::{
-    ReCairoContextExt,
-};
+use crate::backend_utils::ConvTransform;
+use crate::backend_utils::filter::{self, Filter, ImageExt, Error};
+use super::ReCairoContextExt;
 
 type Image = filter::Image<cairo::ImageSurface>;
 type FilterResult = filter::FilterResult<cairo::ImageSurface>;

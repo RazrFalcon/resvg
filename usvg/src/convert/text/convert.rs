@@ -5,18 +5,8 @@
 use std::cmp;
 use std::rc::Rc;
 
-// external
-use svgdom;
-
-// self
-use crate::fontdb;
-use crate::tree;
-use crate::utils;
-use crate::convert::prelude::*;
-use crate::convert::{
-    style,
-    units,
-};
+use crate::{fontdb, tree, utils};
+use crate::convert::{prelude::*, style, units};
 use super::TextNode;
 
 

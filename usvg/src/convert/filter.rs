@@ -4,10 +4,6 @@
 
 use std::collections::HashSet;
 
-// external
-use svgdom;
-
-// self
 use crate::tree;
 use super::prelude::*;
 use super::paint_server::{

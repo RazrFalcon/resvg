@@ -2,16 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use svgdom;
-
-// self
 use crate::tree;
-use super::prelude::*;
-use super::{
-    paint_server,
-    switch,
-};
+use super::{prelude::*, paint_server, switch};
 
 
 pub fn resolve_fill(

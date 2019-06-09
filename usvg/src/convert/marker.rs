@@ -4,13 +4,8 @@
 
 use std::f64;
 
-// self
-use crate::utils;
-use crate::tree;
-use crate::tree::prelude::*;
-use crate::tree::PathSegment as Segment;
-use super::prelude::*;
-use super::use_node;
+use crate::{utils, tree, tree::prelude::*, tree::PathSegment as Segment};
+use super::{prelude::*, use_node};
 
 
 pub fn convert(

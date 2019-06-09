@@ -2,22 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use cairo::{
-    self,
-    MatrixTrait,
-    PatternTrait,
-};
-use usvg::{
-    try_opt,
-};
+use cairo::{MatrixTrait, PatternTrait};
+use usvg::try_opt;
 
-// self
-use crate::prelude::*;
-use crate::backend_utils::*;
-use super::{
-    ReCairoContextExt
-};
+use crate::{prelude::*, backend_utils::ConvTransform};
+use super::ReCairoContextExt;
 
 
 pub fn fill(

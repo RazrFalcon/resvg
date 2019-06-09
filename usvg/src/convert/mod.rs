@@ -5,25 +5,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-// external
-use svgdom::{
-    self,
-    ElementType,
-    FilterSvg,
-    Length,
-};
+use svgdom::{ElementType, FilterSvg, Length};
 use log::warn;
 
-// self
-use crate::tree;
-use crate::tree::prelude::*;
-use crate::short::*;
-use crate::geom::*;
-use crate::fontdb;
-use crate::{
-    Error,
-    Options,
-};
+use crate::{tree, tree::prelude::*, fontdb, Error};
 pub use self::preprocess::prepare_doc;
 
 
@@ -54,14 +39,17 @@ mod prelude {
         FuzzyZero,
         Length,
     };
-    pub use crate::geom::*;
-    pub use crate::short::*;
-    pub use crate::Options;
-    pub use super::svgdom_ext::*;
-    pub use super::State;
+    pub use crate::{
+        geom::*,
+        short::*,
+        Options,
+    };
+    pub use super::{
+        svgdom_ext::*,
+        State,
+    };
 }
-
-use self::svgdom_ext::*;
+use self::prelude::*;
 
 
 #[derive(Clone)]

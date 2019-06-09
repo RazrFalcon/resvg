@@ -2,17 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use svgdom;
-
-// self
-use crate::tree;
-use crate::utils;
-use super::prelude::*;
-use super::{
-    path,
-    units,
-};
+use crate::{tree, utils};
+use super::{prelude::*, path, units};
 
 
 pub fn convert(

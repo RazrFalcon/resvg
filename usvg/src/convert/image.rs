@@ -4,12 +4,7 @@
 
 use std::path;
 
-// external
-use svgdom;
-
-// self
-use crate::tree;
-use crate::tree::prelude::*;
+use crate::{tree, tree::prelude::*};
 use super::prelude::*;
 
 

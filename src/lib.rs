@@ -25,11 +25,7 @@ pub use cairo;
 #[cfg(feature = "qt-backend")]
 pub use resvg_qt as qt;
 
-pub use usvg::{
-    self,
-    svgdom,
-    Error,
-};
+pub use usvg::{self, svgdom, Error};
 
 
 #[cfg(feature = "cairo-backend")]
@@ -46,13 +42,8 @@ mod options;
 
 /// Commonly used types and traits.
 pub mod prelude {
-    pub use usvg;
-    pub use usvg::prelude::*;
-    pub use crate::geom::*;
-    pub use crate::options::*;
-    pub use crate::utils;
-    pub use crate::OutputImage;
-    pub use crate::Render;
+    pub use usvg::{self, prelude::*};
+    pub use crate::{geom::*, options::*, utils, OutputImage, Render};
 }
 
 pub use crate::geom::*;

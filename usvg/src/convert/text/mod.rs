@@ -2,15 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::mem;
-
-// external
-use svgdom;
-
-// self
-use crate::tree;
-use crate::tree::prelude::*;
-use crate::utils;
+use crate::{tree, tree::prelude::*, utils};
 use super::prelude::*;
 
 mod convert;
@@ -232,7 +224,7 @@ fn convert_span(
                 dump_cluster(cluster, ts, parent);
             }
 
-            let mut path = mem::replace(&mut cluster.path, Vec::new());
+            let mut path = std::mem::replace(&mut cluster.path, Vec::new());
             utils::transform_path(&mut path, &cluster.transform);
 
             segments.extend_from_slice(&path);

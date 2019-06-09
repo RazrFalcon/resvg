@@ -2,23 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use base64;
-use svgdom::{
-    self,
-    NumberList,
-};
 use log::warn;
 
-// self
 use super::*;
-use crate::geom::*;
-use crate::short::{
-    AId,
-    AValue,
-    EId,
-};
-use crate::IsDefault;
+use crate::{geom::*, short::*, IsDefault};
 
 
 pub fn convert(tree: &Tree) -> svgdom::Document {
@@ -148,7 +135,7 @@ fn conv_defs(
                             let mut fe_elem = new_doc.create_element(EId::FeGaussianBlur);
                             filter_elem.append(fe_elem.clone());
 
-                            let std_dev = NumberList(vec![
+                            let std_dev = svgdom::NumberList(vec![
                                 blur.std_dev_x.value(),
                                 blur.std_dev_y.value()
                             ]);
@@ -477,7 +464,7 @@ fn conv_stroke(
         node.set_enum_attribute(AId::StrokeLinejoin, stroke.linejoin);
 
         if let Some(ref array) = stroke.dasharray {
-            node.set_attribute((AId::StrokeDasharray, NumberList(array.clone())));
+            node.set_attribute((AId::StrokeDasharray, svgdom::NumberList(array.clone())));
         }
     }
 }

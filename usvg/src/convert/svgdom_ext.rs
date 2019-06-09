@@ -4,13 +4,8 @@
 
 use std::str::FromStr;
 
-// external
-use svgdom;
-
-// self
 use crate::tree;
-use super::prelude::*;
-use super::units;
+use super::{prelude::*, units};
 
 
 pub trait SvgNodeExt {

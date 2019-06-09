@@ -4,10 +4,8 @@
 
 //! Some useful utilities.
 
-// external
 pub use usvg::utils::*;
 
-// self
 use super::prelude::*;
 use crate::FitTo;
 

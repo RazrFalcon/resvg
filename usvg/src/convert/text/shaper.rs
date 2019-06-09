@@ -2,17 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
 use harfbuzz_rs as harfbuzz;
-use unicode_bidi;
-use unicode_script;
-use unicode_vo::{self, Orientation as CharOrientation};
+use unicode_vo::Orientation as CharOrientation;
 
-// self
-use crate::tree;
-use crate::utils;
-use crate::convert::prelude::*;
-use crate::fontdb;
+use crate::{tree, utils, fontdb, convert::prelude::*};
 use super::convert::{
     ByteIndex,
     CharacterPosition,
