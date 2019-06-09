@@ -59,8 +59,4 @@ impl fmt::Display for Error {
     }
 }
 
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        "an SVG simplification error"
-    }
-}
+impl error::Error for Error {}
