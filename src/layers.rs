@@ -21,29 +21,25 @@ pub struct Layers<T> {
     counter: Rc<()>,
     img_size: ScreenSize,
     dpi: f64,
-    new_img_fn: Box<Fn(ScreenSize, f64) -> Option<T>>,
-    clear_img_fn: Box<Fn(&mut T)>,
+    new_img_fn: fn(ScreenSize, f64) -> Option<T>,
+    clear_img_fn: fn(&mut T),
 }
 
 impl<T> Layers<T> {
     /// Creates `Layers`.
-    pub fn new<F1, F2>(
+    pub fn new(
         img_size: ScreenSize,
         dpi: f64,
-        new_img_fn: F1,
-        clear_img_fn: F2,
-    ) -> Self
-    where
-        F1: Fn(ScreenSize, f64) -> Option<T> + 'static,
-        F2: Fn(&mut T) + 'static,
-    {
+        new_img_fn: fn(ScreenSize, f64) -> Option<T>,
+        clear_img_fn: fn(&mut T),
+    ) -> Self {
         Layers {
             d: Vec::new(),
             counter: Rc::new(()),
             img_size,
             dpi,
-            new_img_fn: Box::new(new_img_fn),
-            clear_img_fn: Box::new(clear_img_fn),
+            new_img_fn,
+            clear_img_fn,
         }
     }
 
