@@ -56,6 +56,7 @@ impl<T> Layers<T> {
     ///
     /// - If there are no free layers - will create a new one.
     /// - If there is a free layer - it will clear it before return.
+    /// - If a new layer allocation fail - will return `None`.
     pub fn get(&mut self) -> Option<Layer<T>> {
         let used_layers = Rc::strong_count(&self.counter) - 1;
         if used_layers == self.d.len() {

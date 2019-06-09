@@ -19,13 +19,14 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
 base64 = "0.10"
+data-url = "0.1"
 harfbuzz_rs = "1.0"
 libflate = "0.1"
 log = "0.4"
 lyon_geom = "0.12"
 memmap = "0.7"
 rctree = "0.3"
-svgdom = { git = "https://github.com/RazrFalcon/svgdom" }
+svgdom = { git = "https://github.com/RazrFalcon/svgdom", rev = "d7f3ea1" }
 ttf-parser = { git = "https://github.com/RazrFalcon/ttf-parser", rev = "9466954" }
 unicode-bidi = "0.3"
 unicode-script = "0.3"
