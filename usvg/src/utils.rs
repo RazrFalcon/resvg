@@ -308,3 +308,11 @@ pub fn transform_path(
         }
     }
 }
+
+pub(crate) fn file_extension(path: &std::path::Path) -> Option<&str> {
+    if let Some(ext) = path.extension() {
+        ext.to_str()
+    } else {
+        None
+    }
+}

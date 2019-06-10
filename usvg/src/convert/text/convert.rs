@@ -372,7 +372,7 @@ fn resolve_font(
 
     let name_list: Vec<_> = name_list.iter().map(|s| s.as_str()).collect();
 
-    let db = state.db.borrow();
+    let mut db = state.db.borrow_mut();
     let id = match db.select_best_match(&name_list, properties) {
         Some(id) => id,
         None => {

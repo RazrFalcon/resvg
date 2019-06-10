@@ -34,7 +34,7 @@ cargo build --release --features="qt-backend cairo-backend"
   Technically, any Qt 5 version should work, but we only support Qt >= 5.6.
 * The _cairo backend_ requires https://www.cairographics.org/[cairo] and `gdk-pixbuf` (part of GTK). +
   cairo >= 1.12 and gdk-pixbuf >= 2.30
-* (Linux, runtime) _fontconfig_. Specifically `fc-list` and `fc-match`.
+* (Linux, runtime) _fontconfig_. Specifically `fc-match`.
 
 == Windows
 

@@ -2,6 +2,12 @@ use std::path::{Path, PathBuf};
 
 pub use ttf_parser::os2::{Weight, Width as Stretch};
 
+use crate::utils;
+
+
+#[cfg(target_os = "linux")]
+const GENERIC_FAMILIES: &[&str] = &["serif", "sans-serif", "monospace", "cursive", "fantasy"];
+
 
 pub struct FontItem {
     pub id: ID,
@@ -17,12 +23,14 @@ pub struct ID(u16); // 65k fonts if more than enough!
 
 pub struct Database {
     fonts: Vec<FontItem>,
+    has_generic_fonts: bool,
 }
 
 impl Database {
     pub fn new() -> Self {
         Database {
             fonts: Vec::new(),
+            has_generic_fonts: false,
         }
     }
 
@@ -40,6 +48,41 @@ impl Database {
         }
     }
 
+    fn populate_generic_fonts(&mut self) {
+        fn match_font(name: &str) -> Option<FontPath> {
+            let output = std::process::Command::new("fc-match")
+                .arg(name)
+                .arg("--format=%{index} %{file}")
+                .output().ok();
+            let output = try_opt_warn_or!(output, None, "Failed to run 'fc-match'.");
+            let stdout = std::str::from_utf8(&output.stdout).ok()?;
+
+            let index: u32 = stdout[0..1].parse().ok()?;
+            let path = stdout[2..].into();
+            Some(FontPath {
+                path,
+                index,
+                family: Some(name.to_string()),
+            })
+        }
+
+        if self.fonts.is_empty() {
+            return;
+        }
+
+        let mut id = self.fonts.last().map(|item| item.id.0).unwrap() + 1;
+        for family in GENERIC_FAMILIES {
+            if let Some(font) = match_font(family) {
+                if let Some(item) = resolve_font(font, ID(id)) {
+                    self.fonts.push(item);
+                    id += 1;
+                }
+            }
+        }
+
+        self.has_generic_fonts = true;
+    }
+
     pub fn font(&self, id: ID) -> &FontItem {
         &self.fonts[id.0 as usize]
     }
@@ -48,8 +91,21 @@ impl Database {
         &self.fonts
     }
 
-    pub fn select_best_match(&self, family_names: &[&str], properties: Properties) -> Option<ID> {
+    pub fn select_best_match(
+        &mut self,
+        family_names: &[&str],
+        properties: Properties,
+    ) -> Option<ID> {
         for family_name in family_names {
+            // A generic font families querying is very slow on Linux (50-200ms),
+            // so do it only when necessary.
+            #[cfg(target_os = "linux")]
+            {
+                if !self.has_generic_fonts && GENERIC_FAMILIES.contains(family_name) {
+                    self.populate_generic_fonts();
+                }
+            }
+
             let mut ids = Vec::new();
             let mut candidates = Vec::new();
             for item in self.fonts.iter().filter(|font| &font.family == family_name) {
@@ -408,63 +464,16 @@ struct FontPath {
 
 #[cfg(target_os = "linux")]
 fn load_all_fonts() -> Vec<FontPath> {
-    fn load() -> Option<Vec<FontPath>> {
-        let output = std::process::Command::new("fc-list")
-            .arg("--format=%{index} %{file}\n")
-            .output().ok();
-        let output = try_opt_warn_or!(output, None, "Failed to run 'fc-list'.");
-        let stdout = std::str::from_utf8(&output.stdout).ok()?;
-        let mut paths = Vec::new();
+    let mut paths = Vec::new();
+    load_fonts_from("/usr/share/fonts/", &mut paths);
+    load_fonts_from("/usr/local/share/fonts/", &mut paths);
 
-        for line in stdout.split('\n') {
-            if line.is_empty() {
-                continue;
-            }
-
-            let index: u32 = match line[0..1].parse() {
-                Ok(v) => v,
-                Err(_) => continue,
-            };
-
-            let path = line[2..].into();
-            paths.push(FontPath {
-                path,
-                index,
-                family: None,
-            });
-        }
-
-        Some(paths)
+    if let Ok(ref home) = std::env::var("HOME") {
+        let path = Path::new(home).join("/.local/share/fonts");
+        load_fonts_from(path.to_str().unwrap(), &mut paths);
     }
 
-    fn match_font(name: &str) -> Option<FontPath> {
-        let output = std::process::Command::new("fc-match")
-            .arg(name)
-            .arg("--format=%{index} %{file}")
-            .output().ok();
-        let output = try_opt_warn_or!(output, None, "Failed to run 'fc-match'.");
-        let stdout = std::str::from_utf8(&output.stdout).ok()?;
-
-        let index: u32 = stdout[0..1].parse().ok()?;
-        let path = stdout[2..].into();
-        Some(FontPath {
-            path,
-            index,
-            family: Some(name.to_string()),
-        })
-    }
-
-    let mut fonts = load().unwrap_or_default();
-
-    // TODO: very slow
-    let generic_families = &["serif", "sans-serif", "monospace", "cursive", "fantasy"];
-    for family in generic_families {
-        if let Some(font) = match_font(family) {
-            fonts.push(font);
-        }
-    }
-
-    fonts
+    paths
 }
 
 #[cfg(target_os = "windows")]
@@ -496,20 +505,25 @@ fn load_all_fonts() -> Vec<FontPath> {
     paths
 }
 
-#[allow(dead_code)]
 fn load_fonts_from(dir: &str, paths: &mut Vec<FontPath>) {
     let fonts_dir = try_opt!(std::fs::read_dir(dir).ok());
     for entry in fonts_dir {
         if let Ok(entry) = entry {
             let path = entry.path();
             if path.is_file() {
-                let _ = load_font(&path, None, paths);
+                match utils::file_extension(&path) {
+                    Some("ttf") | Some("ttc") | Some("TTF") | Some("TTC") => {
+                        let _ = load_font(&path, None, paths);
+                    }
+                    _ => {}
+                }
+            } else if path.is_dir() {
+                load_fonts_from(path.to_str().unwrap(), paths);
             }
         }
     }
 }
 
-#[allow(dead_code)]
 fn load_font(
     path: &Path,
     family: Option<&str>,

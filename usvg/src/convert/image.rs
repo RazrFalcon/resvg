@@ -4,7 +4,7 @@
 
 use std::path;
 
-use crate::{tree, tree::prelude::*};
+use crate::{tree, tree::prelude::*, utils};
 use super::prelude::*;
 
 
@@ -97,21 +97,13 @@ pub fn get_href_data(
     None
 }
 
-fn file_extension(path: &path::Path) -> Option<&str> {
-    if let Some(ext) = path.extension() {
-        ext.to_str()
-    } else {
-        None
-    }
-}
-
 /// Checks that file has a PNG or a JPEG magic bytes.
 /// Or SVG(Z) extension.
 fn get_image_format(path: &path::Path) -> Option<tree::ImageFormat> {
     use std::fs;
     use std::io::Read;
 
-    let ext = file_extension(path)?.to_lowercase();
+    let ext = utils::file_extension(path)?.to_lowercase();
     if ext == "svg" || ext == "svgz" {
         return Some(tree::ImageFormat::SVG);
     }
