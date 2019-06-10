@@ -48,6 +48,7 @@ impl Database {
         }
     }
 
+    #[cfg(target_os = "linux")]
     fn populate_generic_fonts(&mut self) {
         fn match_font(name: &str) -> Option<FontPath> {
             let output = std::process::Command::new("fc-match")
