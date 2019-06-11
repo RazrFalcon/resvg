@@ -121,7 +121,7 @@ All other dependencies aren't written by me for this project.
 - `examples` – usage examples for *resvg* as a library
 - `resvg-qt` – minimal bindings to Qt used by *resvg*
 - `src` – source code
-- `testing_tools` – scripts used for testing
+- `testing-tools` – scripts used for testing
 - `tools` – useful tools
 - `usvg` – an SVG simplification library used by *resvg*
 
