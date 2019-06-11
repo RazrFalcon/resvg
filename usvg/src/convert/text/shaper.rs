@@ -436,6 +436,7 @@ pub fn resolve_clusters_positions(
     offset: usize,
     pos_list: &[CharacterPosition],
     rotate_list: &[f64],
+    writing_mode: WritingMode,
     clusters: &mut [OutlinedCluster],
 ) -> (f64, f64) {
     match chunk.text_flow {
@@ -443,7 +444,7 @@ pub fn resolve_clusters_positions(
             resolve_clusters_positions_horizontal(chunk, offset, pos_list, rotate_list, clusters)
         }
         TextFlow::Path(ref path) => {
-            resolve_clusters_positions_path(chunk, offset, path, rotate_list, clusters)
+            resolve_clusters_positions_path(chunk, offset, path, rotate_list, writing_mode, clusters)
         }
     }
 }
@@ -486,12 +487,22 @@ fn resolve_clusters_positions_path(
     offset: usize,
     path: &TextPath,
     rotate_list: &[f64],
+    writing_mode: WritingMode,
     clusters: &mut [OutlinedCluster],
 ) -> (f64, f64) {
     let mut last_x = 0.0;
     let mut last_y = 0.0;
 
-    let start_offset = path.start_offset + process_anchor(chunk.anchor, clusters_length(clusters));
+    // In the text path mode, chunk's x/y coordinates provide an additional offset along the path.
+    // The X coordinate is used in a horizontal mode, and Y in vertical.
+    let chunk_offset = match writing_mode {
+        WritingMode::LeftToRight => chunk.x.unwrap_or(0.0),
+        WritingMode::TopToBottom => chunk.y.unwrap_or(0.0),
+    };
+
+    let start_offset = chunk_offset + path.start_offset
+        + process_anchor(chunk.anchor, clusters_length(clusters));
+
     let normals = collect_normals(clusters, &path.segments, start_offset);
     for (cluster, normal) in clusters.iter_mut().zip(normals) {
         let (x, y, angle) = match normal {

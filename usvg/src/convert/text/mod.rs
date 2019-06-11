@@ -125,7 +125,7 @@ fn text_to_paths(
         shaper::apply_letter_spacing(&chunk, &mut clusters);
         shaper::apply_word_spacing(&chunk, &mut clusters);
         let curr_pos = shaper::resolve_clusters_positions(
-            chunk, char_offset, &pos_list, &rotate_list, &mut clusters
+            chunk, char_offset, &pos_list, &rotate_list, writing_mode, &mut clusters
         );
 
         if let TextFlow::Path(_) = chunk.text_flow {
