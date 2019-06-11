@@ -23,6 +23,7 @@ pub struct ID(u16); // 65k fonts if more than enough!
 
 pub struct Database {
     fonts: Vec<FontItem>,
+    #[allow(dead_code)]
     has_generic_fonts: bool,
 }
 
@@ -166,8 +167,8 @@ impl Database {
         let ascent = font.ascender();
         let descent = font.descender();
 
-        let x_height = match font.x_height() {
-            Some(h) => h,
+        let x_height = match font.os2_table().and_then(|table| table.x_height()) {
+            Some(height) => height,
             None => {
                 // If not set - fallback to height * 45%.
                 // 45% is what Firefox uses.
@@ -175,7 +176,12 @@ impl Database {
             }
         };
 
-        let underline = font.underline();
+        let underline = font.underline_metrics();
+
+        let line_through_position = match font.os2_table() {
+            Some(table) => table.strikeout_metrics().position,
+            None => x_height / 2,
+        };
 
         Some(Font {
             id,
@@ -185,6 +191,7 @@ impl Database {
             x_height,
             underline_position: underline.position,
             underline_thickness: underline.thickness,
+            line_through_position,
         })
     }
 }
@@ -196,18 +203,23 @@ fn resolve_font(path: FontPath, id: ID) -> Option<FontItem> {
 
     let family = match path.family {
         Some(f) => f,
-        None => font.family_name()?,
+        None => font.name_table().and_then(|table| table.family_name())?,
     };
 
     let mut style = Style::Normal;
-    if font.is_italic().unwrap_or(false) {
-        style = Style::Italic;
-    } else if font.is_oblique().unwrap_or(false) {
-        style = Style::Oblique;
+    let mut weight = Weight::Normal;
+    let mut stretch = Stretch::Normal;
+    if let Some(table) = font.os2_table() {
+        if table.is_italic() {
+            style = Style::Italic;
+        } else if table.is_oblique().unwrap_or(false) {
+            style = Style::Oblique;
+        }
+
+        weight = table.weight();
+        stretch = table.width().unwrap_or(Stretch::Normal);
     }
 
-    let weight = font.weight().unwrap_or(Weight::Normal);
-    let stretch = font.width().unwrap_or(Stretch::Normal);
     let properties = Properties { style, weight, stretch };
 
     Some(FontItem {
@@ -233,6 +245,11 @@ pub struct Font {
     x_height: i16,
     underline_position: i16,
     underline_thickness: i16,
+    line_through_position: i16,
+
+    // line-through thickness should be the the same as underline thickness
+    // according to the TrueType spec:
+    // https://docs.microsoft.com/en-us/typography/opentype/spec/os2#ystrikeoutsize
 }
 
 impl Font {
@@ -269,6 +286,11 @@ impl Font {
     #[inline]
     pub fn underline_thickness(&self, font_size: f64) -> f64 {
         self.underline_thickness as f64 * self.scale(font_size)
+    }
+
+    #[inline]
+    pub fn line_through_position(&self, font_size: f64) -> f64 {
+        self.line_through_position as f64 * self.scale(font_size)
     }
 }
 
@@ -533,8 +555,8 @@ fn load_font(
     let file = std::fs::File::open(path)?;
     let mmap = unsafe { memmap::MmapOptions::new().map(&file)? };
 
-    if ttf_parser::Font::is_collection(&mmap) {
-        for index in 0..ttf_parser::Font::fonts_number(&mmap).unwrap() {
+    if let Some(n) = ttf_parser::fonts_in_collection(&mmap) {
+        for index in 0..n {
             paths.push(FontPath {
                 path: path.to_owned(),
                 index,

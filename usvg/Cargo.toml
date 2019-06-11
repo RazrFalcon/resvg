@@ -26,8 +26,8 @@ log = "0.4"
 lyon_geom = "0.12"
 memmap = "0.7"
 rctree = "0.3"
-svgdom = { git = "https://github.com/RazrFalcon/svgdom", rev = "d7f3ea1" }
-ttf-parser = { git = "https://github.com/RazrFalcon/ttf-parser", rev = "9466954" }
+svgdom = { git = "https://github.com/RazrFalcon/svgdom", rev = "f858842" }
+ttf-parser = { git = "https://github.com/RazrFalcon/ttf-parser", rev = "9bbea56" }
 unicode-bidi = "0.3"
 unicode-script = "0.3"
 unicode-vo = { git = "https://github.com/RazrFalcon/unicode-vo" }

@@ -185,7 +185,7 @@ fn text_to_paths(
 
             if let Some(decoration) = span.decoration.line_through.take() {
                 let offset = match writing_mode {
-                    WritingMode::LeftToRight => -span.font.x_height(span.font_size) / 2.0,
+                    WritingMode::LeftToRight => -span.font.line_through_position(span.font_size),
                     WritingMode::TopToBottom => 0.0,
                 };
 
