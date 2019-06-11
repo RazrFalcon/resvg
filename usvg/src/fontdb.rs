@@ -183,6 +183,14 @@ impl Database {
             None => x_height / 2,
         };
 
+        // 0.2 and 0.4 are generic offsets used by some applications (Inkscape/librsvg).
+        let mut subscript_offset = (units_per_em as f32 / 0.2).round() as i16;
+        let mut superscript_offset = (units_per_em as f32 / 0.4).round() as i16;
+        if let Some(table) = font.os2_table() {
+            subscript_offset = table.subscript_metrics().y_offset;
+            superscript_offset = table.superscript_metrics().y_offset;
+        }
+
         Some(Font {
             id,
             units_per_em,
@@ -192,6 +200,8 @@ impl Database {
             underline_position: underline.position,
             underline_thickness: underline.thickness,
             line_through_position,
+            subscript_offset,
+            superscript_offset,
         })
     }
 }
@@ -243,13 +253,17 @@ pub struct Font {
     ascent: i16,
     descent: i16,
     x_height: i16,
+
     underline_position: i16,
     underline_thickness: i16,
-    line_through_position: i16,
 
     // line-through thickness should be the the same as underline thickness
     // according to the TrueType spec:
     // https://docs.microsoft.com/en-us/typography/opentype/spec/os2#ystrikeoutsize
+    line_through_position: i16,
+
+    subscript_offset: i16,
+    superscript_offset: i16,
 }
 
 impl Font {
@@ -291,6 +305,16 @@ impl Font {
     #[inline]
     pub fn line_through_position(&self, font_size: f64) -> f64 {
         self.line_through_position as f64 * self.scale(font_size)
+    }
+
+    #[inline]
+    pub fn subscript_offset(&self, font_size: f64) -> f64 {
+        self.subscript_offset as f64 * self.scale(font_size)
+    }
+
+    #[inline]
+    pub fn superscript_offset(&self, font_size: f64) -> f64 {
+        self.superscript_offset as f64 * self.scale(font_size)
     }
 }
 

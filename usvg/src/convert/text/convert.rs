@@ -671,11 +671,20 @@ fn resolve_baseline_shift(
     for n in nodes.iter().rev() {
         match n.attributes().get_value(AId::BaselineShift) {
             Some(AValue::String(ref s)) => {
-                // TODO: sub/super from font
                 match s.as_str() {
                     "baseline" => {}
-                    "sub" => shift += units::resolve_font_size(&n, state) * -0.2,
-                    "super" => shift += units::resolve_font_size(&n, state) * 0.4,
+                    "sub" => {
+                        let font_size = units::resolve_font_size(&n, state);
+                        if let Some(font) = resolve_font(n, state) {
+                            shift -= font.subscript_offset(font_size);
+                        }
+                    }
+                    "super" => {
+                        let font_size = units::resolve_font_size(&n, state);
+                        if let Some(font) = resolve_font(n, state) {
+                            shift += font.superscript_offset(font_size);
+                        }
+                    }
                     _ => {}
                 }
             }
