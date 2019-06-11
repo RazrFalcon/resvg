@@ -443,7 +443,7 @@ pub fn resolve_clusters_positions(
             resolve_clusters_positions_horizontal(chunk, offset, pos_list, rotate_list, clusters)
         }
         TextFlow::Path(ref path) => {
-            resolve_clusters_positions_path(chunk, offset, path, pos_list, rotate_list, clusters)
+            resolve_clusters_positions_path(chunk, offset, path, rotate_list, clusters)
         }
     }
 }
@@ -485,19 +485,16 @@ fn resolve_clusters_positions_path(
     chunk: &TextChunk,
     offset: usize,
     path: &TextPath,
-    pos_list: &[CharacterPosition],
     rotate_list: &[f64],
     clusters: &mut [OutlinedCluster],
 ) -> (f64, f64) {
     let mut last_x = 0.0;
     let mut last_y = 0.0;
-    let mut last_dx = 0.0;
-    let mut last_dy = 0.0;
 
     let start_offset = path.start_offset + process_anchor(chunk.anchor, clusters_length(clusters));
     let normals = collect_normals(clusters, &path.segments, start_offset);
     for (cluster, normal) in clusters.iter_mut().zip(normals) {
-        let (mut x, mut y, angle) = match normal {
+        let (x, y, angle) = match normal {
             Some(normal) => {
                 (normal.x, normal.y, normal.angle)
             }
@@ -511,20 +508,14 @@ fn resolve_clusters_positions_path(
         // We have to break a decoration line for each cluster during text-on-path.
         cluster.has_relative_shift = true;
 
-        let cp = offset + cluster.byte_idx.code_point_at(&chunk.text);
-        if let Some(pos) = pos_list.get(cp) {
-            x += pos.dx.unwrap_or(last_dx);
-            y += pos.dy.unwrap_or(last_dy);
-
-            last_dx = pos.dx.unwrap_or(last_dx);
-            last_dy = pos.dy.unwrap_or(last_dy);
-        }
-
         // Clusters should be rotated by the x-midpoint x baseline position.
         let half_advance = cluster.advance / 2.0;
         cluster.transform.translate(x - half_advance, y);
         cluster.transform.rotate_at(angle, half_advance, 0.0);
 
+        // TODO: Shift by dx/dy. We have to shift along the normal, which is troublesome.
+
+        let cp = offset + cluster.byte_idx.code_point_at(&chunk.text);
         if let Some(angle) = rotate_list.get(cp).cloned() {
             if !angle.is_fuzzy_zero() {
                 cluster.transform.rotate(angle);
