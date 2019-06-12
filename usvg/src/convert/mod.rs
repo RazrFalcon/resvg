@@ -5,24 +5,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-// external
-use svgdom::{
-    self,
-    ElementType,
-    FilterSvg,
-    Length,
-};
+use svgdom::{ElementType, FilterSvg, Length};
 use log::warn;
 
-// self
-use crate::tree;
-use crate::tree::prelude::*;
-use crate::short::*;
-use crate::geom::*;
-use crate::{
-    Error,
-    Options,
-};
+use crate::{tree, tree::prelude::*, fontdb, Error};
 pub use self::preprocess::prepare_doc;
 
 
@@ -53,15 +39,17 @@ mod prelude {
         FuzzyZero,
         Length,
     };
-    pub use crate::geom::*;
-    pub use crate::short::*;
-    pub use crate::Options;
-    pub use super::svgdom_ext::*;
-    pub use super::State;
-    pub use super::FontCache;
+    pub use crate::{
+        geom::*,
+        short::*,
+        Options,
+    };
+    pub use super::{
+        svgdom_ext::*,
+        State,
+    };
 }
-
-use self::svgdom_ext::*;
+use self::prelude::*;
 
 
 #[derive(Clone)]
@@ -69,38 +57,13 @@ pub struct State<'a> {
     current_root: svgdom::Node,
     size: Size,
     view_box: Rect,
-    font_cache: Rc<RefCell<FontCache>>,
+    db: Rc<RefCell<fontdb::Database>>,
     opt: &'a Options,
 }
 
 impl<'a> State<'a> {
     pub fn is_in_clip_path(&self) -> bool {
         self.current_root.is_tag_name(EId::ClipPath)
-    }
-}
-
-
-pub struct FontCache {
-    fonts: Vec<font_kit::handle::Handle>,
-}
-
-impl FontCache {
-    fn new() -> Self {
-        FontCache {
-            fonts: Vec::new(),
-        }
-    }
-
-    fn init(&mut self) {
-        if self.fonts.is_empty() {
-            if let Ok(v) = font_kit::source::SystemSource::new().all_fonts() {
-                self.fonts = v;
-            }
-        }
-    }
-
-    fn fonts(&self) -> &[font_kit::handle::Handle] {
-        &self.fonts
     }
 }
 
@@ -155,7 +118,7 @@ pub fn convert_doc(
         current_root: svg.clone(),
         size,
         view_box: view_box.rect,
-        font_cache: Rc::new(RefCell::new(FontCache::new())),
+        db: Rc::new(RefCell::new(fontdb::Database::new())),
         opt: &opt,
     };
 
@@ -178,7 +141,7 @@ fn resolve_svg_size(
         current_root: svg.clone(),
         size: Size::new(100.0, 100.0).unwrap(),
         view_box: Rect::new(0.0, 0.0, 100.0, 100.0).unwrap(),
-        font_cache: Rc::new(RefCell::new(FontCache::new())),
+        db: Rc::new(RefCell::new(fontdb::Database::new())),
         opt,
     };
 

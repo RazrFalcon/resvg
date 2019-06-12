@@ -4,7 +4,6 @@
 
 use std::ops::Deref;
 
-// self
 use crate::geom::*;
 use super::attributes::*;
 

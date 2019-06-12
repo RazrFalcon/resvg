@@ -1,12 +1,7 @@
-use std::env;
-use std::path::Path;
-
 use resvg::prelude::*;
 
-// TODO: write doc
-
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let args: Vec<String> = std::env::args().collect();
     if !(args.len() == 3 || args.len() == 5) {
         println!(
             "Usage:\n\
@@ -59,5 +54,5 @@ fn main() {
     }
 
     let img = backend.render_to_image(&rtree, &opt).unwrap();
-    img.save(Path::new(&args[2]));
+    img.save(std::path::Path::new(&args[2]));
 }

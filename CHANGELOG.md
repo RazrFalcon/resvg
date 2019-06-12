@@ -16,6 +16,7 @@ This changelog also contains important changes in dependencies.
 - Text will be converted into paths on the `usvg` side now.
 - `word-spacing` is supported for all backends now.
 - [`harfbuzz`](https://github.com/harfbuzz/harfbuzz) dependency.
+- Subscript, superscript offsets are extracted from font and not hardcoded now.
 - `shape-rendering`, `text-rendering` and `image-rendering` support.
 - The `arithmetic` operator for `feComposite`.
 - (usvg) `--quiet` argument.

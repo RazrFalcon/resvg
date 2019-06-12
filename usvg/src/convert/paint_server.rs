@@ -4,10 +4,6 @@
 
 use std::f64;
 
-// external
-use svgdom;
-
-// self
 use crate::tree;
 use super::prelude::*;
 

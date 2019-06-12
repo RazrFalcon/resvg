@@ -11,7 +11,7 @@ categories = ["multimedia::images"]
 repository = "https://github.com/RazrFalcon/resvg"
 documentation = "https://docs.rs/usvg/"
 readme = "README.md"
-exclude = ["testing_tools/**"]
+exclude = ["testing-tools/**"]
 workspace = ".."
 
 [badges]
@@ -19,17 +19,18 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
 base64 = "0.10"
-font-kit = { git = "https://github.com/pcwalton/font-kit", rev = "3fd2ea4" }
+data-url = "0.1"
 harfbuzz_rs = "1.0"
 libflate = "0.1"
 log = "0.4"
 lyon_geom = "0.12"
-lyon_path = "0.12" # the same version as used by font-kit
+memmap = "0.7"
 rctree = "0.3"
-svgdom = { git = "https://github.com/RazrFalcon/svgdom" }
+svgdom = "0.17"
+ttf-parser = { git = "https://github.com/RazrFalcon/ttf-parser", rev = "9bbea56" }
 unicode-bidi = "0.3"
 unicode-script = "0.3"
-unicode-vo = { git = "https://github.com/RazrFalcon/unicode-vo" }
+unicode-vo = "0.1"
 
 [dev-dependencies]
 pretty_assertions = "0.6"

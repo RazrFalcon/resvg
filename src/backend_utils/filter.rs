@@ -4,11 +4,9 @@
 
 use std::rc::Rc;
 
-// external
 use log::warn;
 use usvg::ColorInterpolation as ColorSpace;
 
-// self
 use crate::prelude::*;
 
 
@@ -370,12 +368,7 @@ pub trait Filter<T: ImageExt> {
 
 
 pub mod blur {
-    // external
-    use rgb::{
-        RGBA8,
-        FromSlice,
-        ComponentSlice,
-    };
+    use rgb::{RGBA8, FromSlice, ComponentSlice};
 
     struct BlurData {
         width: usize,

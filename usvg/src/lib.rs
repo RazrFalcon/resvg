@@ -59,7 +59,6 @@ Full spec can be found [here](https://github.com/RazrFalcon/usvg/blob/master/doc
 
 #![doc(html_root_url = "https://docs.rs/usvg/0.6.1")]
 
-#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_copy_implementations)]
@@ -138,6 +137,7 @@ macro_rules! try_opt_warn_or {
 pub mod utils;
 mod convert;
 mod error;
+mod fontdb;
 mod geom;
 mod options;
 mod tree;

@@ -121,7 +121,7 @@ All other dependencies aren't written by me for this project.
 - `examples` – usage examples for *resvg* as a library
 - `resvg-qt` – minimal bindings to Qt used by *resvg*
 - `src` – source code
-- `testing_tools` – scripts used for testing
+- `testing-tools` – scripts used for testing
 - `tools` – useful tools
 - `usvg` – an SVG simplification library used by *resvg*
 
@@ -131,6 +131,7 @@ All other dependencies aren't written by me for this project.
   There are only a few methods that can produce a panic.
 - The core library structure (see above) does not use any `unsafe`,
   but since all backends are implemented via FFI, we are stuck with `unsafe` anyway.
+  Also, `usvg` uses unsafe for fonts memory mapping.
 
 ## License
 

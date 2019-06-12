@@ -4,19 +4,11 @@
 
 //! Cairo backend implementation.
 
-// external
-use cairo::{
-    self,
-    MatrixTrait,
-};
+use cairo::MatrixTrait;
 use log::warn;
 
-// self
-use crate::prelude::*;
-use crate::layers;
-use crate::backend_utils::{
-    ConvTransform,
-};
+use crate::{prelude::*, layers};
+use crate::backend_utils::ConvTransform;
 
 
 macro_rules! try_create_surface {

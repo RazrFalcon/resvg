@@ -41,7 +41,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--no-regression', help='Do not run regression testing', action='store_true')
 args = parser.parse_args()
 
-if os.getcwd().endswith('testing_tools'):
+if os.getcwd().endswith('testing-tools'):
     os.chdir('..')
 
 if 'TRAVIS_BUILD_DIR' in os.environ:
@@ -73,7 +73,7 @@ if 'RESVG_QT_BACKEND' in os.environ:
 
     # regression testing of the qt backend
     if not args.no_regression:
-        with cd('testing_tools/regression'):
+        with cd('testing-tools/regression'):
             if not local_test:
                 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
                 run(['sudo', 'ln', '-s', '/usr/share/fonts', '/opt/qt56/lib/fonts'], check=True)
@@ -91,7 +91,7 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
 
     # regression testing of the cairo backend
     if not args.no_regression:
-        with cd('testing_tools/regression'):
+        with cd('testing-tools/regression'):
             try:
                 regression_testing('cairo')
             except subprocess.CalledProcessError:

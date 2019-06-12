@@ -2,21 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::mem;
-
-// external
-use svgdom;
-
-mod fk {
-    pub use font_kit::handle::Handle;
-    pub use font_kit::hinting::HintingOptions as Hinting;
-    pub use font_kit::source::SystemSource;
-}
-
-// self
-use crate::tree;
-use crate::tree::prelude::*;
-use crate::utils;
+use crate::{tree, tree::prelude::*, utils};
 use super::prelude::*;
 
 mod convert;
@@ -69,6 +55,11 @@ pub fn convert(
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
+    {
+        let mut db = state.db.borrow_mut();
+        db.populate();
+    }
+
     let text_node = &TextNode::new(node.clone());
     let mut new_paths = text_to_paths(text_node, state, parent, tree);
 
@@ -134,7 +125,7 @@ fn text_to_paths(
         shaper::apply_letter_spacing(&chunk, &mut clusters);
         shaper::apply_word_spacing(&chunk, &mut clusters);
         let curr_pos = shaper::resolve_clusters_positions(
-            chunk, char_offset, &pos_list, &rotate_list, &mut clusters
+            chunk, char_offset, &pos_list, &rotate_list, writing_mode, &mut clusters
         );
 
         if let TextFlow::Path(_) = chunk.text_flow {
@@ -194,7 +185,7 @@ fn text_to_paths(
 
             if let Some(decoration) = span.decoration.line_through.take() {
                 let offset = match writing_mode {
-                    WritingMode::LeftToRight => -span.font.x_height(span.font_size) / 2.0,
+                    WritingMode::LeftToRight => -span.font.line_through_position(span.font_size),
                     WritingMode::TopToBottom => 0.0,
                 };
 
@@ -233,7 +224,7 @@ fn convert_span(
                 dump_cluster(cluster, ts, parent);
             }
 
-            let mut path = mem::replace(&mut cluster.path, Vec::new());
+            let mut path = std::mem::replace(&mut cluster.path, Vec::new());
             utils::transform_path(&mut path, &cluster.transform);
 
             segments.extend_from_slice(&path);

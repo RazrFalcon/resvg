@@ -1,8 +1,4 @@
-use std::path::Path;
-
 use resvg::prelude::*;
-
-// TODO: write doc
 
 fn main() {
     let backend = resvg::default_backend();
@@ -61,5 +57,5 @@ fn main() {
     println!("{}", rtree.to_svgdom());
 
     let img = backend.render_to_image(&rtree, &opt).unwrap();
-    img.save(Path::new("out.png"));
+    img.save(std::path::Path::new("out.png"));
 }

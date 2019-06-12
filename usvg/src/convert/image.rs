@@ -4,13 +4,7 @@
 
 use std::path;
 
-// external
-use base64;
-use svgdom;
-
-// self
-use crate::tree;
-use crate::tree::prelude::*;
+use crate::{tree, tree::prelude::*, utils};
 use super::prelude::*;
 
 
@@ -61,16 +55,15 @@ pub fn get_href_data(
     path: Option<&path::PathBuf>,
 ) -> Option<(tree::ImageData, tree::ImageFormat)> {
     if href.starts_with("data:image/") {
-        if let Some(idx) = href.find(',') {
-            let start_idx = 11; // data:image/
-            let format = match &href[start_idx..idx] {
-                "jpg;base64" | "jpeg;base64" => {
+        if let Ok(url) = data_url::DataUrl::process(href) {
+            let format = match (url.mime_type().type_.as_str(), url.mime_type().subtype.as_str()) {
+                ("image", "jpg") | ("image", "jpeg") => {
                     tree::ImageFormat::JPEG
                 }
-                "png;base64" => {
+                ("image", "png") => {
                     tree::ImageFormat::PNG
                 }
-                "svg+xml;base64" => {
+                ("image", "svg+xml") => {
                     tree::ImageFormat::SVG
                 }
                 _ => {
@@ -78,11 +71,8 @@ pub fn get_href_data(
                 }
             };
 
-            let mut base_data = href[(idx + 1)..].to_string();
-            base_data.retain(|c| c != ' ');
-
-            if let Ok(data) = base64::decode(&base_data) {
-                return Some((tree::ImageData::Raw(data.to_owned()), format));
+            if let Ok((data, _)) = url.decode_to_vec() {
+                return Some((tree::ImageData::Raw(data), format));
             }
         }
 
@@ -107,21 +97,13 @@ pub fn get_href_data(
     None
 }
 
-fn file_extension(path: &path::Path) -> Option<&str> {
-    if let Some(ext) = path.extension() {
-        ext.to_str()
-    } else {
-        None
-    }
-}
-
 /// Checks that file has a PNG or a JPEG magic bytes.
 /// Or SVG(Z) extension.
 fn get_image_format(path: &path::Path) -> Option<tree::ImageFormat> {
     use std::fs;
     use std::io::Read;
 
-    let ext = file_extension(path)?.to_lowercase();
+    let ext = utils::file_extension(path)?.to_lowercase();
     if ext == "svg" || ext == "svgz" {
         return Some(tree::ImageFormat::SVG);
     }

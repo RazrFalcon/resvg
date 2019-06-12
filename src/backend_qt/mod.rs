@@ -4,14 +4,11 @@
 
 //! Qt backend implementation.
 
-// external
 use crate::qt;
 use log::warn;
 
-// self
-use crate::prelude::*;
+use crate::{prelude::*, layers};
 use crate::backend_utils::ConvTransform;
-use crate::layers;
 
 
 macro_rules! try_create_image {

@@ -3,12 +3,12 @@ language: rust
 rust:
   - stable
 install:
-  - ./testing_tools/ci-install.sh
+  - ./testing-tools/ci-install.sh
   # prepare custom Qt
   - if [ "$RESVG_QT_BACKEND" = true ]; then
         source /opt/qt56/bin/qt56-env.sh;
     fi
-script: ./testing_tools/run-tests.py
+script: ./testing-tools/run-tests.py
 env:
   matrix:
     - RESVG_QT_BACKEND=true

@@ -1,9 +1,5 @@
-fn main() {
-    compile();
-}
-
 #[cfg(target_os = "linux")]
-fn compile() {
+fn main() {
     let mut build = cc::Build::new();
     build.cpp(true);
     build.flag("-std=c++11");
@@ -18,12 +14,9 @@ fn compile() {
 }
 
 #[cfg(target_os = "windows")]
-fn compile() {
-    use std::env;
-    use std::path::Path;
-
-    let qt_dir = env::var("QT_DIR").expect("QT_DIR is not set");
-    let qt_path = Path::new(&qt_dir);
+fn main() {
+    let qt_dir = std::env::var("QT_DIR").expect("QT_DIR is not set");
+    let qt_path = std::path::Path::new(&qt_dir);
 
     let mut build = cc::Build::new();
     let tool = build.get_compiler();
@@ -50,12 +43,9 @@ fn compile() {
 }
 
 #[cfg(target_os = "macos")]
-fn compile() {
-    use std::env;
-    use std::path::Path;
-
-    let qt_dir = env::var("QT_DIR").expect("QT_DIR is not set");
-    let qt_path = Path::new(&qt_dir);
+fn main() {
+    let qt_dir = std::env::var("QT_DIR").expect("QT_DIR is not set");
+    let qt_path = std::path::Path::new(&qt_dir);
 
     let mut build = cc::Build::new();
     build.cpp(true);

@@ -5,23 +5,13 @@
 use std::cmp;
 use std::rc::Rc;
 
-// external
 use crate::qt;
 use rgb::FromSlice;
 use log::warn;
-use usvg::{
-    try_opt_or,
-    ColorInterpolation as ColorSpace,
-};
+use usvg::{try_opt_or, ColorInterpolation as ColorSpace};
 
-// self
-use crate::prelude::*;
-use crate::backend_utils::*;
-use crate::backend_utils::filter::{
-    Error,
-    Filter,
-    ImageExt,
-};
+use crate::{prelude::*, backend_utils::*};
+use crate::backend_utils::filter::{Error, Filter, ImageExt};
 
 type Image = filter::Image<qt::Image>;
 type FilterResult = filter::FilterResult<qt::Image>;

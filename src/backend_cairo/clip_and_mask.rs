@@ -2,24 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use cairo::{
-    self,
-    MatrixTrait,
-};
-use usvg::{
-    try_opt,
-    try_opt_warn,
-};
+use cairo::MatrixTrait;
+use usvg::{try_opt, try_opt_warn};
 
-// self
-use crate::prelude::*;
-use crate::backend_utils::*;
-use super::{
-    path,
-    CairoLayers,
-    ReCairoContextExt,
-};
+use crate::{prelude::*, backend_utils::*};
+use super::{path, CairoLayers, ReCairoContextExt};
 
 
 pub fn clip(

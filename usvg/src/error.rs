@@ -2,11 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::error;
-use std::fmt;
-
-use svgdom;
-
 /// List of all errors.
 #[derive(Debug)]
 pub enum Error {
@@ -34,8 +29,8 @@ pub enum Error {
     ParsingFailed(svgdom::ParserError),
 }
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
             Error::InvalidFileSuffix => {
                 write!(f, "invalid file suffix")
@@ -59,8 +54,4 @@ impl fmt::Display for Error {
     }
 }
 
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        "an SVG simplification error"
-    }
-}
+impl std::error::Error for Error {}
