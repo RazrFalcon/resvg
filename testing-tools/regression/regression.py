@@ -67,7 +67,7 @@ def rm_file(file_path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--backend', help='Sets resvg backend', choices=['qt', 'cairo'])
+    parser.add_argument('--backend', help='Sets resvg backend', choices=['qt', 'cairo', 'raqote'])
     parser.add_argument('--use-prev-commit', help='Use previous git commit as a reference',
                         action='store_true')
     parser.add_argument('in_dir', type=Path, help='Sets input directory')

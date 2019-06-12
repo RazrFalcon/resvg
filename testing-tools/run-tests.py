@@ -98,6 +98,20 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
                 exit(1)
 
 
+if 'RESVG_RAQOTE_BACKEND' in os.environ:
+    # build raqote backend
+    with cd('tools/rendersvg'):
+        run(['cargo', 'build', '--features', 'raqote-backend'], check=True)
+
+    # regression testing of the cairo backend
+    if not args.no_regression:
+        with cd('testing-tools/regression'):
+            try:
+                regression_testing('raqote')
+            except subprocess.CalledProcessError:
+                exit(1)
+
+
 # # try to build with all backends
 # with cd('tools/rendersvg'):
 #     run(['cargo', 'build', '--all-features'], check=True)
@@ -150,3 +164,12 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
     # build cairo-rs example
     with cd('examples/cairo-rs'):
         run(['cargo', 'build'], check=True)
+
+
+if 'RESVG_RAQOTE_BACKEND' in os.environ:
+    # build C-API
+    # with cd('capi'):
+    #     run(['cargo', 'build', '--features', 'raqote-backend'], check=True)
+
+    # run tests and build examples
+    run(['cargo', 'test', '--features', 'raqote-backend'], check=True)
