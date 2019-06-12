@@ -467,4 +467,39 @@ void resvg_qt_render_to_canvas_by_id(const resvg_render_tree *tree,
                                      void *painter);
 #endif /* RESVG_QT_BACKEND */
 
+#ifdef RESVG_RAQOTE_BACKEND
+/**
+ * @brief Returns node's bounding box by ID.
+ *
+ * @param tree Render tree.
+ * @param opt Rendering options.
+ * @param id Node's ID.
+ * @param bbox Node's bounding box.
+ * @return \b false if a node with such an ID does not exist,
+ *         ID is an empty string or ID isn't a UTF-8 string.
+ */
+bool resvg_raqote_get_node_bbox(const resvg_render_tree *tree,
+                                const resvg_options *opt,
+                                const char *id,
+                                resvg_rect *bbox);
+
+/**
+ * @brief Renders the #resvg_render_tree to file.
+ *
+ * @param tree Render tree.
+ * @param opt Rendering options.
+ * @param file_path File path.
+ * @return #resvg_error
+ */
+int resvg_raqote_render_to_image(const resvg_render_tree *tree,
+                                 const resvg_options *opt,
+                                 const char *file_path);
+
+/**
+ * Raqote backend doesn't have render_to_canvas and render_to_canvas_by_id
+ * methods since it's a Rust library.
+ */
+
+#endif /* RESVG_RAQOTE_BACKEND */
+
 #endif /* RESVG_H */
