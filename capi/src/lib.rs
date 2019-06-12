@@ -482,7 +482,9 @@ pub extern "C" fn resvg_is_image_empty(
         &*tree
     };
 
-    tree.0.root().has_children()
+    // The root/svg node should have at least two children.
+    // The first child is `defs` and it always present.
+    tree.0.root().children().count() > 1
 }
 
 #[cfg(feature = "qt-backend")]

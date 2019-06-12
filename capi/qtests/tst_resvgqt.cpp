@@ -11,6 +11,7 @@ class ResvgQtTests : public QObject
 private Q_SLOTS:
     void test_parseFile();
     void test_parseInvalidFile();
+    void test_emptyFile();
 
     void test_renderFile();
 
@@ -35,6 +36,13 @@ void ResvgQtTests::test_parseInvalidFile()
 {
     ResvgRenderer render(localPath("invalid.svg"));
     QVERIFY(!render.isValid());
+    QVERIFY(render.isEmpty());
+}
+
+void ResvgQtTests::test_emptyFile()
+{
+    ResvgRenderer render(localPath("empty.svg"));
+    QVERIFY(render.isValid());
     QVERIFY(render.isEmpty());
 }
 

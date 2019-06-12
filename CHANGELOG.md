@@ -37,6 +37,7 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `letter-spacing` on cursive scripts (like Arabic).
 - (rctree) Prevent stack overflow on a huge, deeply nested SVG.
+- (c-api) `resvg_is_image_empty` was always returning `false`.
 
 ## [0.6.1] - 2019-03-16
 ### Fixed
