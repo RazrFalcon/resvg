@@ -126,7 +126,7 @@ fn copy_image(
         height: image.height() as i32,
         data: image.get_data(),
     };
-    new_image.draw_image_at(x, y, &src_img, &raqote::DrawOptions {
+    new_image.draw_image_at(-x, -y, &src_img, &raqote::DrawOptions {
         blend_mode: raqote::BlendMode::Src,
         alpha: 1.,
     });
