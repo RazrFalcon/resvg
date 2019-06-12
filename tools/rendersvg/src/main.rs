@@ -77,7 +77,7 @@ fn process() -> Result<(), String> {
     })?;
 
     if args.query_all {
-        return query_all(backend, &tree, &opt);
+        return query_all(&tree);
     }
 
     // Dump before rendering in case of panic.
@@ -110,11 +110,7 @@ fn process() -> Result<(), String> {
     Ok(())
 }
 
-fn query_all(
-    backend: Box<Render>,
-    tree: &usvg::Tree,
-    opt: &Options,
-) -> Result<(), String> {
+fn query_all(tree: &usvg::Tree) -> Result<(), String> {
     let mut count = 0;
     for node in tree.root().descendants() {
         if tree.is_in_defs(&node) {
@@ -131,7 +127,7 @@ fn query_all(
             (v * 1000.0).round() / 1000.0
         }
 
-        if let Some(bbox) = backend.calc_node_bbox(&node, &opt) {
+        if let Some(bbox) = node.calculate_bbox() {
             println!(
                 "{},{},{},{},{}", node.id(),
                 round_len(bbox.x()), round_len(bbox.y()),

@@ -341,6 +341,20 @@ bool resvg_get_node_transform(const resvg_render_tree *tree,
                               resvg_transform *ts);
 
 /**
+ * @brief Returns node's bounding box by ID.
+ *
+ * @param tree Render tree.
+ * @param id Node's ID.
+ * @param bbox Node's bounding box.
+ * @return \b false if a node with such an ID does not exist
+ * @return \b false if ID isn't a UTF-8 string.
+ * @return \b false if ID is an empty string
+ */
+bool resvg_get_node_bbox(const resvg_render_tree *tree,
+                         const char *id,
+                         resvg_rect *bbox);
+
+/**
  * @brief Destroys the #resvg_render_tree.
  *
  * @param tree Render tree.
@@ -349,22 +363,6 @@ void resvg_tree_destroy(resvg_render_tree *tree);
 
 
 #ifdef RESVG_CAIRO_BACKEND
-/**
- * @brief Returns node's bounding box by ID.
- *
- * @param tree Render tree.
- * @param opt Rendering options.
- * @param id Node's ID.
- * @param bbox Node's bounding box.
- * @return \b false if a node with such an ID does not exist
- * @return \b false if ID isn't a UTF-8 string.
- * @return \b false if ID is an empty string
- */
-bool resvg_cairo_get_node_bbox(const resvg_render_tree *tree,
-                               const resvg_options *opt,
-                               const char *id,
-                               resvg_rect *bbox);
-
 /**
  * @brief Renders the #resvg_render_tree to file.
  *
@@ -409,21 +407,6 @@ void resvg_cairo_render_to_canvas_by_id(const resvg_render_tree *tree,
 #endif /* RESVG_CAIRO_BACKEND */
 
 #ifdef RESVG_QT_BACKEND
-/**
- * @brief Returns node's bounding box by ID.
- *
- * @param tree Render tree.
- * @param opt Rendering options.
- * @param id Node's ID.
- * @param bbox Node's bounding box.
- * @return \b false if a node with such an ID does not exist,
- *         ID is an empty string or ID isn't a UTF-8 string.
- */
-bool resvg_qt_get_node_bbox(const resvg_render_tree *tree,
-                            const resvg_options *opt,
-                            const char *id,
-                            resvg_rect *bbox);
-
 /**
  * @brief Renders the #resvg_render_tree to file.
  *

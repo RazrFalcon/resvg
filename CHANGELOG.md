@@ -32,7 +32,10 @@ This changelog also contains important changes in dependencies.
 - (usvg) All text related structures and enums. Text will be converted into `Path` now.
 - `InitObject` and `init()` because they are no longer needed.
 - (c-api) `resvg_handle`, `resvg_init`, `resvg_destroy`.
+- (c-api) `resvg_cairo_get_node_bbox` and `resvg_qt_get_node_bbox`.
+  Use backend-independent `resvg_get_node_bbox` instead.
 - (cairo-backend) `pango` dependency.
+- (resvg) `Backend::calc_node_bbox`. Use `Node::calculate_bbox()` instead.
 
 ### Fixed
 - `letter-spacing` on cursive scripts (like Arabic).

@@ -66,14 +66,6 @@ impl Render for Backend {
         let img = render_node_to_image(node, opt)?;
         Some(Box::new(img))
     }
-
-    fn calc_node_bbox(
-        &self,
-        node: &usvg::Node,
-        opt: &Options,
-    ) -> Option<Rect> {
-        calc_node_bbox(node, opt)
-    }
 }
 
 impl OutputImage for qt::Image {
@@ -104,7 +96,7 @@ pub fn render_node_to_image(
     node: &usvg::Node,
     opt: &Options,
 ) -> Option<qt::Image> {
-    let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
+    let node_bbox = if let Some(bbox) = node.calculate_bbox() {
         bbox
     } else {
         warn!("Node '{}' has zero size.", node.id());
@@ -149,7 +141,7 @@ pub fn render_node_to_canvas(
 
     let curr_ts = painter.get_transform();
 
-    let mut ts = utils::abs_transform(node);
+    let mut ts = node.abs_transform();
     ts.append(&node.transform());
 
     painter.apply_transform(&ts.to_native());
@@ -298,55 +290,6 @@ fn render_group_impl(
     p.set_transform(&curr_ts);
 
     Some(bbox)
-}
-
-/// Calculates node's absolute bounding box.
-///
-/// Note: this method can be pretty expensive.
-pub fn calc_node_bbox(
-    node: &usvg::Node,
-    opt: &Options,
-) -> Option<Rect> {
-    // Unwrap can't fail, because `None` will be returned only on OOM,
-    // and we cannot hit it with a such small image.
-    let mut img = qt::Image::new_rgba_premultiplied(1, 1).unwrap();
-    img.set_dpi(opt.usvg.dpi);
-    let mut p = qt::Painter::new(&mut img);
-
-    let abs_ts = utils::abs_transform(node);
-    _calc_node_bbox(node, opt, abs_ts, &mut p)
-}
-
-fn _calc_node_bbox(
-    node: &usvg::Node,
-    opt: &Options,
-    ts: usvg::Transform,
-    p: &mut qt::Painter,
-) -> Option<Rect> {
-    let mut ts2 = ts;
-    ts2.append(&node.transform());
-
-    match *node.borrow() {
-        usvg::NodeKind::Path(ref path) => {
-            utils::path_bbox(&path.segments, path.stroke.as_ref(), Some(ts2))
-        }
-        usvg::NodeKind::Image(ref img) => {
-            let segments = utils::rect_to_path(img.view_box.rect);
-            utils::path_bbox(&segments, None, Some(ts2))
-        }
-        usvg::NodeKind::Group(_) => {
-            let mut bbox = Rect::new_bbox();
-
-            for child in node.children() {
-                if let Some(c_bbox) = _calc_node_bbox(&child, opt, ts2, p) {
-                    bbox = bbox.expand(c_bbox);
-                }
-            }
-
-            Some(bbox)
-        }
-        _ => None,
-    }
 }
 
 fn create_layers(

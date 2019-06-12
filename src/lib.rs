@@ -72,15 +72,6 @@ pub trait Render {
         node: &usvg::Node,
         opt: &Options,
     ) -> Option<Box<OutputImage>>;
-
-    /// Calculates node's absolute bounding box.
-    ///
-    /// Note: this method can be pretty expensive.
-    fn calc_node_bbox(
-        &self,
-        node: &usvg::Node,
-        opt: &Options,
-    ) -> Option<Rect>;
 }
 
 /// A generic interface for output image.
