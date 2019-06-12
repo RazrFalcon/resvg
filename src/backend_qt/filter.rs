@@ -19,7 +19,7 @@ type FilterResult = filter::FilterResult<qt::Image>;
 
 pub fn apply(
     filter: &usvg::Filter,
-    bbox: Rect,
+    bbox: Option<Rect>,
     ts: &usvg::Transform,
     opt: &Options,
     canvas: &mut qt::Image,
@@ -146,7 +146,7 @@ impl Filter<qt::Image> for QtFilter {
         fe: &usvg::FeGaussianBlur,
         units: usvg::Units,
         cs: ColorSpace,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
@@ -164,7 +164,7 @@ impl Filter<qt::Image> for QtFilter {
     fn apply_offset(
         fe: &usvg::FeOffset,
         units: usvg::Units,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
