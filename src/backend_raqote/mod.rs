@@ -33,11 +33,20 @@ impl ConvTransform<raqote::Transform> for usvg::Transform {
 
 pub(crate) trait RaqoteDrawTargetExt {
     fn transform(&mut self, ts: &raqote::Transform);
+    fn as_image(&self) -> raqote::Image;
 }
 
 impl RaqoteDrawTargetExt for raqote::DrawTarget {
     fn transform(&mut self, ts: &raqote::Transform) {
         self.set_transform(&self.get_transform().pre_mul(ts));
+    }
+
+    fn as_image(&self) -> raqote::Image {
+        raqote::Image {
+            width: self.width() as i32,
+            height: self.height() as i32,
+            data: self.get_data(),
+        }
     }
 }
 
@@ -300,12 +309,7 @@ fn render_group_impl(
 
     dt.set_transform(&raqote::Transform::default());
 
-    let sub_img = raqote::Image {
-        width: layers.image_size().width() as i32,
-        height: layers.image_size().height() as i32,
-        data: sub_dt.get_data(),
-    };
-    dt.draw_image_at(0.0, 0.0, &sub_img, &raqote::DrawOptions {
+    dt.draw_image_at(0.0, 0.0, &sub_dt.as_image(), &raqote::DrawOptions {
         blend_mode: raqote::BlendMode::SrcOver,
         alpha: g.opacity.value() as f32,
     });

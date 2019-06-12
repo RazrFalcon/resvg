@@ -6,6 +6,7 @@ use image::GenericImageView;
 use usvg::{try_opt, try_opt_warn};
 
 use crate::{prelude::*, backend_utils, backend_utils::ConvTransform};
+use super::RaqoteDrawTargetExt;
 
 
 pub fn draw(
@@ -56,7 +57,7 @@ pub fn draw_raster(
     let img_size = ScreenSize::new(img_size.0, img_size.1);
     let img_size = try_opt!(img_size);
 
-    let surface = try_opt!(image_to_surface(img, img_size));
+    let sub_dt = try_opt!(image_to_surface(img, img_size));
 
     let (ts, clip) = backend_utils::image::prepare_sub_svg_geom(view_box, img_size);
 
@@ -69,16 +70,10 @@ pub fn draw_raster(
         pb.rect(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
     }
 
-    let img = raqote::Image {
-        width: surface.width() as i32,
-        height: surface.height() as i32,
-        data: surface.get_data(),
-    };
-
-
     let t: raqote::Transform = ts.to_native();
-    let patt = raqote::Source::Image(img, raqote::ExtendMode::Repeat, t.inverse().unwrap());
-
+    let patt = raqote::Source::Image(
+        sub_dt.as_image(), raqote::ExtendMode::Pad, t.inverse().unwrap(),
+    );
 
     dt.fill(&pb.finish(), &patt, &raqote::DrawOptions::default());
 }

@@ -57,14 +57,8 @@ pub fn clip(
         }
     }
 
-    let clip_img = raqote::Image {
-        width: clip_dt.width() as i32,
-        height: clip_dt.height() as i32,
-        data: clip_dt.get_data(),
-    };
-
     dt.set_transform(&raqote::Transform::identity());
-    dt.draw_image_at(0.0, 0.0, &clip_img, &raqote::DrawOptions {
+    dt.draw_image_at(0.0, 0.0, &clip_dt.as_image(), &raqote::DrawOptions {
         blend_mode: raqote::BlendMode::DstOut,
         alpha: 1.0,
     });
@@ -92,14 +86,8 @@ fn clip_group(
                 draw_group_child(&node, opt, &raqote::DrawOptions::default(), &mut clip_dt);
                 clip(clip_node, cp, opt, bbox, layers, &mut clip_dt);
 
-
-                let clip_img = raqote::Image {
-                    width: clip_dt.width() as i32,
-                    height: clip_dt.height() as i32,
-                    data: clip_dt.get_data(),
-                };
                 dt.set_transform(&raqote::Transform::identity());
-                dt.draw_image_at(0.0, 0.0, &clip_img, &raqote::DrawOptions {
+                dt.draw_image_at(0.0, 0.0, &clip_dt.as_image(), &raqote::DrawOptions {
                     blend_mode: raqote::BlendMode::Xor,
                     alpha: 1.0,
                 });
@@ -175,13 +163,7 @@ pub fn mask(
     }
 
     sub_dt.set_transform(&raqote::Transform::identity());
-
-    let mask_img = raqote::Image {
-        width: mask_dt.width() as i32,
-        height: mask_dt.height() as i32,
-        data: mask_dt.get_data(),
-    };
-    sub_dt.draw_image_at(0.0, 0.0, &mask_img, &raqote::DrawOptions {
+    sub_dt.draw_image_at(0.0, 0.0, &mask_dt.as_image(), &raqote::DrawOptions {
         blend_mode: raqote::BlendMode::DstIn,
         alpha: 1.0,
     });

@@ -280,13 +280,7 @@ fn prepare_pattern<'a>(
         // the pattern on it with transparency.
 
         let mut img2 = raqote::DrawTarget::new(img_size.width() as i32, img_size.height() as i32);
-
-        let src_img = raqote::Image {
-            width: dt.width() as i32,
-            height: dt.height() as i32,
-            data: dt.get_data(),
-        };
-        img2.draw_image_at(0.0, 0.0, &src_img, &raqote::DrawOptions {
+        img2.draw_image_at(0.0, 0.0, &dt.as_image(), &raqote::DrawOptions {
             blend_mode: raqote::BlendMode::Src,
             alpha: opacity.value() as f32,
         });
@@ -308,16 +302,9 @@ fn create_pattern_image(
     dt: &raqote::DrawTarget,
     ts: usvg::Transform,
 ) -> raqote::Source {
-    let img = raqote::Image {
-        width: dt.width(),
-        height: dt.height(),
-        data: dt.get_data(),
-    };
-
     let ts: raqote::Transform = ts.to_native();
-
     raqote::Source::Image(
-        img,
+        dt.as_image(),
         raqote::ExtendMode::Repeat,
         ts.inverse().unwrap(),
     )

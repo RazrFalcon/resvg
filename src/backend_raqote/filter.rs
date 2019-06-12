@@ -12,7 +12,7 @@ use usvg::{try_opt_or, ColorInterpolation as ColorSpace};
 
 use crate::{prelude::*, backend_utils::*};
 use crate::backend_utils::filter::{Error, Filter, ImageExt};
-use super::ColorExt;
+use super::{ColorExt, RaqoteDrawTargetExt};
 
 type Image = filter::Image<raqote::DrawTarget>;
 type FilterResult = filter::FilterResult<raqote::DrawTarget>;
@@ -40,13 +40,7 @@ impl ImageExt for raqote::DrawTarget {
 
     fn try_clone(&self) -> Result<Self, Error> {
         let mut dt = raqote::DrawTarget::new(self.width(), self.height());
-
-        let src_img = raqote::Image {
-            width: self.width() as i32,
-            height: self.height() as i32,
-            data: self.get_data(),
-        };
-        dt.draw_image_at(0.0, 0.0, &src_img, &raqote::DrawOptions {
+        dt.draw_image_at(0.0, 0.0, &self.as_image(), &raqote::DrawOptions {
             blend_mode: raqote::BlendMode::Src,
             alpha: 1.0,
         });
@@ -121,12 +115,7 @@ fn copy_image(
 
     let mut new_image = create_image(region.width(), region.height())?;
 
-    let src_img = raqote::Image {
-        width: image.width() as i32,
-        height: image.height() as i32,
-        data: image.get_data(),
-    };
-    new_image.draw_image_at(-x, -y, &src_img, &raqote::DrawOptions {
+    new_image.draw_image_at(-x, -y, &image.as_image(), &raqote::DrawOptions {
         blend_mode: raqote::BlendMode::Src,
         alpha: 1.0,
     });
@@ -242,13 +231,9 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
 
         // TODO: do not use an additional buffer
         let mut dt = create_image(input.width(), input.height())?;
-
-        let src_img = raqote::Image {
-            width: input.width() as i32,
-            height: input.height() as i32,
-            data: input.as_ref().get_data(),
-        };
-        dt.draw_image_at(dx as f32, dy as f32, &src_img, &raqote::DrawOptions::default());
+        dt.draw_image_at(
+            dx as f32, dy as f32, &input.as_ref().as_image(), &raqote::DrawOptions::default(),
+        );
 
         Ok(Image::from_image(dt, input.color_space))
     }
@@ -264,15 +249,11 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         let input2 = input2.into_color_space(cs)?;
 
         let mut dt = create_image(region.width(), region.height())?;
-        let src_img = raqote::Image {
-            width: input2.width() as i32,
-            height: input2.height() as i32,
-            data: input2.as_ref().get_data(),
-        };
-        dt.draw_image_at(0.0, 0.0, &src_img, &raqote::DrawOptions {
+        let draw_opt = raqote::DrawOptions {
             blend_mode: raqote::BlendMode::Src,
             alpha: 1.0,
-        });
+        };
+        dt.draw_image_at(0.0, 0.0, &input2.as_ref().as_image(), &draw_opt);
 
         let blend_mode = match fe.mode {
             usvg::FeBlendMode::Normal => raqote::BlendMode::SrcOver,
@@ -282,15 +263,8 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
             usvg::FeBlendMode::Lighten => raqote::BlendMode::Lighten,
         };
 
-        let src_img = raqote::Image {
-            width: input1.width() as i32,
-            height: input1.height() as i32,
-            data: input1.as_ref().get_data(),
-        };
-        dt.draw_image_at(0.0, 0.0, &src_img, &raqote::DrawOptions {
-            blend_mode,
-            alpha: 1.0,
-        });
+        let draw_opt = raqote::DrawOptions { blend_mode, alpha: 1.0 };
+        dt.draw_image_at(0.0, 0.0, &input1.as_ref().as_image(), &draw_opt);
 
         Ok(Image::from_image(dt, cs))
     }
@@ -344,15 +318,11 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
             return Ok(Image::from_image(dt, cs));
         }
 
-        let src_img = raqote::Image {
-            width: input2.width() as i32,
-            height: input2.height() as i32,
-            data: input2.get_data(),
-        };
-        dt.draw_image_at(0.0, 0.0, &src_img, &raqote::DrawOptions {
+        let draw_opt = raqote::DrawOptions {
             blend_mode: raqote::BlendMode::Src,
             alpha: 1.0,
-        });
+        };
+        dt.draw_image_at(0.0, 0.0, &input2.as_image(), &draw_opt);
 
         use usvg::FeCompositeOperator as Operator;
         let blend_mode = match fe.operator {
@@ -364,15 +334,8 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
             Operator::Arithmetic { .. } => raqote::BlendMode::SrcOver,
         };
 
-        let src_img = raqote::Image {
-            width: input1.width() as i32,
-            height: input1.height() as i32,
-            data: input1.get_data(),
-        };
-        dt.draw_image_at(0.0, 0.0, &src_img, &raqote::DrawOptions {
-            blend_mode,
-            alpha: 1.0,
-        });
+        let draw_opt = raqote::DrawOptions { blend_mode, alpha: 1.0 };
+        dt.draw_image_at(0.0, 0.0, &input1.as_image(), &draw_opt);
 
         Ok(Image::from_image(dt, cs))
     }
@@ -389,13 +352,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         for input in &fe.inputs {
             let input = Self::get_input(input, region, &results, canvas)?;
             let input = input.into_color_space(cs)?;
-
-            let src_img = raqote::Image {
-                width: input.width() as i32,
-                height: input.height() as i32,
-                data: input.as_ref().get_data(),
-            };
-            dt.draw_image_at(0.0, 0.0, &src_img, &raqote::DrawOptions::default());
+            dt.draw_image_at(0.0, 0.0, &input.as_ref().as_image(), &raqote::DrawOptions::default());
         }
 
         Ok(Image::from_image(dt, cs))
@@ -424,14 +381,9 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         let tile = copy_image(&input.image, subregion)?;
         let brush_ts = usvg::Transform::new_translate(subregion.x() as f64, subregion.y() as f64);
 
-        let img = raqote::Image {
-            width: tile.width() as i32,
-            height: tile.height() as i32,
-            data: tile.get_data(),
-        };
-        let t: raqote::Transform = brush_ts.to_native();
-        let t = t.inverse().unwrap();
-        let patt = raqote::Source::Image(img, raqote::ExtendMode::Repeat, t);
+        let ts: raqote::Transform = brush_ts.to_native();
+        let ts = ts.inverse().unwrap();
+        let patt = raqote::Source::Image(tile.as_image(), raqote::ExtendMode::Repeat, ts);
 
         let mut pb = raqote::PathBuilder::new();
         pb.rect(0.0, 0.0, region.width() as f32, region.height() as f32);
@@ -482,22 +434,15 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         let input = input.into_color_space(ColorSpace::SRGB)?;
 
         canvas.set_transform(&raqote::Transform::identity());
-        canvas.clear(raqote::SolidSource {
-            r: 0,
-            g: 0,
-            b: 0,
-            a: 0,
-        });
+        canvas.clear(raqote::SolidSource { r: 0, g: 0, b: 0, a: 0 });
 
-        let src_img = raqote::Image {
-            width: input.width() as i32,
-            height: input.height() as i32,
-            data: input.as_ref().get_data(),
-        };
-        canvas.draw_image_at(region.x() as f32, region.y() as f32, &src_img, &raqote::DrawOptions {
+        let draw_opt = raqote::DrawOptions {
             blend_mode: raqote::BlendMode::SrcOver,
             alpha: 1.0,
-        });
+        };
+        canvas.draw_image_at(
+            region.x() as f32, region.y() as f32, &input.as_ref().as_image(), &draw_opt,
+        );
 
         Ok(())
     }
