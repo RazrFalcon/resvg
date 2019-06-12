@@ -2,12 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use raqote;
 use usvg::try_opt;
 
-// self
-use super::prelude::*;
+use crate::{prelude::*, backend_utils::ConvTransform};
+use super::{ColorExt, RaqoteDrawTargetExt};
 
 
 pub fn fill(

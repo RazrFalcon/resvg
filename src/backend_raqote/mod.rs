@@ -4,31 +4,12 @@
 
 //! Raqote backend implementation.
 
-// external
-use raqote;
 use log::warn;
 
-// self
-use crate::prelude::*;
-use crate::layers;
-use crate::backend_utils::ConvTransform;
-
+use crate::{prelude::*, layers, backend_utils::ConvTransform};
 
 mod path;
 mod style;
-
-mod prelude {
-    pub use super::super::prelude::*;
-    pub use crate::backend_utils::ConvTransform;
-
-    pub type RaqoteLayers = super::layers::Layers<super::raqote::DrawTarget>;
-
-    // It's actually used. Rust bug?
-    #[allow(unused_imports)]
-    pub(super) use super::RaqoteDrawTargetExt;
-    #[allow(unused_imports)]
-    pub(super) use super::ColorExt;
-}
 
 
 type RaqoteLayers = layers::Layers<raqote::DrawTarget>;
