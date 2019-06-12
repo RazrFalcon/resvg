@@ -189,7 +189,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "euclid"
-version = "0.19.8"
+version = "0.19.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "euclid_macros 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -480,7 +480,7 @@ version = "0.12.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "arrayvec 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "euclid 0.19.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "euclid 0.19.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -682,8 +682,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "svgdom"
-version = "0.16.1"
-source = "git+https://github.com/RazrFalcon/svgdom?rev=f858842#f85884209918f6d1447d473a7f2032e5fcd53512"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "roxmltree 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -755,7 +755,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "unicode-vo"
 version = "0.1.0"
-source = "git+https://github.com/RazrFalcon/unicode-vo#f163f6cc40436cf793742607048273fbb8834fbd"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "unicode-xid"
@@ -775,11 +775,11 @@ dependencies = [
  "memmap 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pretty_assertions 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rctree 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "svgdom 0.16.1 (git+https://github.com/RazrFalcon/svgdom?rev=f858842)",
+ "svgdom 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ttf-parser 0.1.0 (git+https://github.com/RazrFalcon/ttf-parser?rev=9bbea56)",
  "unicode-bidi 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-script 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "unicode-vo 0.1.0 (git+https://github.com/RazrFalcon/unicode-vo)",
+ "unicode-vo 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -839,7 +839,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum ctor 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)" = "3b4c17619643c1252b5f690084b82639dd7fac141c57c8e77a00e0148132092c"
 "checksum data-url 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d33fe99ccedd6e84bc035f1931bb2e6be79739d6242bd895e7311c886c50dc9c"
 "checksum difference 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198"
-"checksum euclid 0.19.8 (registry+https://github.com/rust-lang/crates.io-index)" = "7a4719a544a67ed3fc33784c2bd2c6581663dfe83b719a6ae05c6dabc3b51c73"
+"checksum euclid 0.19.9 (registry+https://github.com/rust-lang/crates.io-index)" = "596b99621b9477e7a5f94d2d8dd13a9c5c302ac358b822c67a42b6f1054450e1"
 "checksum euclid_macros 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fdcb84c18ea5037a1c5a23039b4ff29403abce2e0d6b1daa11cf0bde2b30be15"
 "checksum fern 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)" = "29d26fa0f4d433d1956746e66ec10d6bf4d6c8b93cd39965cceea7f7cc78c7dd"
 "checksum float-cmp 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "17ae3a6394183450225f33d9419cbd627b3cfc831e14f3f1146d5bcaf984e00c"
@@ -888,7 +888,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum simplecss 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "135685097a85a64067df36e28a243e94a94f76d829087ce0be34eeb014260c0e"
 "checksum siphasher 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "0b8de496cf83d4ed58b6be86c3a275b8602f6ffe98d3024a869e124147a9a3ac"
 "checksum slab 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
-"checksum svgdom 0.16.1 (git+https://github.com/RazrFalcon/svgdom?rev=f858842)" = "<none>"
+"checksum svgdom 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9ddce601e49ed213b0126ff4172cd9f5f8dba5f1df2277ecbe0e298f9865baba"
 "checksum svgtypes 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "444c882c28925ae0585df228a90f9951569588646ceca4753560de93cdd02258"
 "checksum syn 0.14.9 (registry+https://github.com/rust-lang/crates.io-index)" = "261ae9ecaa397c42b960649561949d69311f08eeaea86a65696e6e46517cf741"
 "checksum syn 0.15.35 (registry+https://github.com/rust-lang/crates.io-index)" = "641e117d55514d6d918490e47102f7e08d096fdde360247e4a10f7a91a8478d3"
@@ -896,7 +896,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum ttf-parser 0.1.0 (git+https://github.com/RazrFalcon/ttf-parser?rev=9bbea56)" = "<none>"
 "checksum unicode-bidi 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "49f2bd0c6468a8230e1db229cff8029217cf623c767ea5d60bfbd42729ea54d5"
 "checksum unicode-script 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "09f03ad95feb4fde244d79985bfd79eb34ff2702fedb441d2ba3f4ff813efd19"
-"checksum unicode-vo 0.1.0 (git+https://github.com/RazrFalcon/unicode-vo)" = "<none>"
+"checksum unicode-vo 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b1d386ff53b415b7fe27b50bb44679e2cc4660272694b7b6f3326d8480823a94"
 "checksum unicode-xid 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fc72304796d0818e357ead4e000d19c9c174ab23dc11093ac919054d20a6a7fc"
 "checksum winapi 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)" = "f10e386af2b13e47c89e7236a7a14a086791a2b88ebad6df9bf42040195cf770"
 "checksum winapi-i686-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
