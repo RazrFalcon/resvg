@@ -48,7 +48,7 @@ impl ImageExt for raqote::DrawTarget {
         };
         dt.draw_image_at(0.0, 0.0, &src_img, &raqote::DrawOptions {
             blend_mode: raqote::BlendMode::Src,
-            alpha: 1.,
+            alpha: 1.0,
         });
 
         Ok(dt)
@@ -128,7 +128,7 @@ fn copy_image(
     };
     new_image.draw_image_at(-x, -y, &src_img, &raqote::DrawOptions {
         blend_mode: raqote::BlendMode::Src,
-        alpha: 1.,
+        alpha: 1.0,
     });
 
     Ok(new_image)
@@ -271,7 +271,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         };
         dt.draw_image_at(0.0, 0.0, &src_img, &raqote::DrawOptions {
             blend_mode: raqote::BlendMode::Src,
-            alpha: 1.,
+            alpha: 1.0,
         });
 
         let blend_mode = match fe.mode {
@@ -289,7 +289,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         };
         dt.draw_image_at(0.0, 0.0, &src_img, &raqote::DrawOptions {
             blend_mode,
-            alpha: 1.,
+            alpha: 1.0,
         });
 
         Ok(Image::from_image(dt, cs))
@@ -351,7 +351,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         };
         dt.draw_image_at(0.0, 0.0, &src_img, &raqote::DrawOptions {
             blend_mode: raqote::BlendMode::Src,
-            alpha: 1.,
+            alpha: 1.0,
         });
 
         use usvg::FeCompositeOperator as Operator;
@@ -371,7 +371,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         };
         dt.draw_image_at(0.0, 0.0, &src_img, &raqote::DrawOptions {
             blend_mode,
-            alpha: 1.,
+            alpha: 1.0,
         });
 
         Ok(Image::from_image(dt, cs))
@@ -496,7 +496,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         };
         canvas.draw_image_at(region.x() as f32, region.y() as f32, &src_img, &raqote::DrawOptions {
             blend_mode: raqote::BlendMode::SrcOver,
-            alpha: 1.,
+            alpha: 1.0,
         });
 
         Ok(())

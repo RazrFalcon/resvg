@@ -5,7 +5,7 @@
 use usvg::try_opt;
 
 use crate::{prelude::*, backend_utils::*};
-use super::{path, RaqoteLayers};
+use super::{path, RaqoteLayers, RaqoteDrawTargetExt};
 
 
 pub fn clip(
@@ -19,26 +19,17 @@ pub fn clip(
     let clip_dt = try_opt!(layers.get());
     let mut clip_dt = clip_dt.borrow_mut();
 
-    clip_dt.set_transform(&raqote::Transform::identity());
-    clip_dt.clear(raqote::SolidSource {
-        r: 0,
-        g: 0,
-        b: 0,
-        a: 0xff,
-    });
-
-
-    clip_dt.set_transform(&dt.get_transform().pre_mul(&cp.transform.to_native()));
+    clip_dt.clear(raqote::SolidSource { r: 0, g: 0, b: 0, a: 255 });
+    clip_dt.set_transform(dt.get_transform());
+    clip_dt.transform(&cp.transform.to_native());
 
     if cp.units == usvg::Units::ObjectBoundingBox {
-        let ctm = clip_dt.get_transform().pre_mul(&usvg::Transform::from_bbox(bbox).to_native());
-        clip_dt.set_transform(&ctm);
+        clip_dt.transform(&usvg::Transform::from_bbox(bbox).to_native());
     }
 
-    let matrix = *clip_dt.get_transform();
+    let ts = *clip_dt.get_transform();
     for node in node.children() {
-        let ctm = clip_dt.get_transform().pre_mul(&node.transform().to_native());
-        clip_dt.set_transform(&ctm);
+        clip_dt.transform(&node.transform().to_native());
 
         match *node.borrow() {
             usvg::NodeKind::Path(ref p) => {
@@ -55,7 +46,7 @@ pub fn clip(
             _ => {}
         }
 
-        clip_dt.set_transform(&matrix);
+        clip_dt.set_transform(&ts);
     }
 
     if let Some(ref id) = cp.clip_path {
@@ -66,16 +57,16 @@ pub fn clip(
         }
     }
 
-    dt.set_transform(&raqote::Transform::identity());
-
     let clip_img = raqote::Image {
         width: clip_dt.width() as i32,
         height: clip_dt.height() as i32,
         data: clip_dt.get_data(),
     };
+
+    dt.set_transform(&raqote::Transform::identity());
     dt.draw_image_at(0.0, 0.0, &clip_img, &raqote::DrawOptions {
         blend_mode: raqote::BlendMode::DstOut,
-        alpha: 1.,
+        alpha: 1.0,
     });
 }
 
@@ -96,30 +87,21 @@ fn clip_group(
 
                 let clip_dt = try_opt!(layers.get());
                 let mut clip_dt = clip_dt.borrow_mut();
-
-                clip_dt.set_transform(&raqote::Transform::identity());
-                clip_dt.clear(raqote::SolidSource {
-                    r: 0,
-                    g: 0,
-                    b: 0,
-                    a: 0,
-                });
                 clip_dt.set_transform(dt.get_transform());
 
-                draw_group_child(&node, opt, &mut clip_dt, &raqote::DrawOptions::default());
-
+                draw_group_child(&node, opt, &raqote::DrawOptions::default(), &mut clip_dt);
                 clip(clip_node, cp, opt, bbox, layers, &mut clip_dt);
 
-                clip_dt.set_transform(&raqote::Transform::identity());
 
                 let clip_img = raqote::Image {
                     width: clip_dt.width() as i32,
                     height: clip_dt.height() as i32,
                     data: clip_dt.get_data(),
                 };
+                dt.set_transform(&raqote::Transform::identity());
                 dt.draw_image_at(0.0, 0.0, &clip_img, &raqote::DrawOptions {
                     blend_mode: raqote::BlendMode::Xor,
-                    alpha: 1.,
+                    alpha: 1.0,
                 });
             }
         }
@@ -130,11 +112,11 @@ fn clip_group(
 fn draw_group_child(
     node: &usvg::Node,
     opt: &Options,
-    dt: &mut raqote::DrawTarget,
     draw_options: &raqote::DrawOptions,
+    dt: &mut raqote::DrawTarget,
 ) {
     if let Some(child) = node.first_child() {
-        dt.set_transform(&child.transform().to_native());
+        dt.transform(&child.transform().to_native());
 
         match *child.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
@@ -201,6 +183,6 @@ pub fn mask(
     };
     sub_dt.draw_image_at(0.0, 0.0, &mask_img, &raqote::DrawOptions {
         blend_mode: raqote::BlendMode::DstIn,
-        alpha: 1.,
+        alpha: 1.0,
     });
 }

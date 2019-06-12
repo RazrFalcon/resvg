@@ -88,37 +88,31 @@ fn image_to_surface(
     img_size: ScreenSize,
 ) -> Option<raqote::DrawTarget> {
     let mut surface = raqote::DrawTarget::new(img_size.width() as i32, img_size.height() as i32);
+    let surface_data = surface.get_data_u8_mut();
 
-    {
-        // Unwrap is safe, because no one uses the surface.
-        let surface_data = surface.get_data_u8_mut();
+    let w = img.dimensions().0 as u32;
+    let h = img.dimensions().1 as u32;
+    let pixels = img.to_rgba();
+    // We can't iterate over pixels directly, because width may not be equal to stride.
+    let mut i = 0;
+    for y in 0..h {
+        for x in 0..w {
+            let pixel = pixels[(x,y)];
+            let r = pixel[0] as u32;
+            let g = pixel[1] as u32;
+            let b = pixel[2] as u32;
+            let a = pixel[3] as u32;
 
-        let w = img.dimensions().0 as u32;
-        let h = img.dimensions().1 as u32;
-        let pixels = img.to_rgba();
-        // We can't iterate over pixels directly, because width may not be equal to stride.
-        let mut i = 0;
-        for y in 0..h {
-            for x in 0..w {
+            let tr = a * r + 0x80;
+            let tg = a * g + 0x80;
+            let tb = a * b + 0x80;
+            surface_data[i + 0] = (((tb >> 8) + tb) >> 8) as u8;
+            surface_data[i + 1] = (((tg >> 8) + tg) >> 8) as u8;
+            surface_data[i + 2] = (((tr >> 8) + tr) >> 8) as u8;
+            surface_data[i + 3] = a as u8; // TODO: is needed?
 
-                let pixel = pixels[(x,y)];
-                let r = pixel[0] as u32;
-                let g = pixel[1] as u32;
-                let b = pixel[2] as u32;
-                let a = pixel[3] as u32;
-
-                // https://www.cairographics.org/manual/cairo-Image-Surfaces.html#cairo-format-t
-                let tr = a * r + 0x80;
-                let tg = a * g + 0x80;
-                let tb = a * b + 0x80;
-                surface_data[i + 0] = (((tb >> 8) + tb) >> 8) as u8;
-                surface_data[i + 1] = (((tg >> 8) + tg) >> 8) as u8;
-                surface_data[i + 2] = (((tr >> 8) + tr) >> 8) as u8;
-                surface_data[i + 3] = a as u8; // TODO: is needed?
-
-                // Surface is always ARGB.
-                i += 4;
-            }
+            // Surface is always ARGB.
+            i += 4;
         }
     }
 

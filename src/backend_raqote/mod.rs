@@ -327,5 +327,6 @@ fn create_subsurface(
 }
 
 fn clear_subsurface(dt: &mut raqote::DrawTarget) {
+    dt.set_transform(&raqote::Transform::identity());
     dt.clear(raqote::SolidSource { r: 0, g: 0, b: 0, a: 0 });
 }
