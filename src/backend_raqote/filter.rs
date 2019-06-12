@@ -5,25 +5,14 @@
 use std::cmp;
 use std::rc::Rc;
 
-// external
-use raqote;
 use rgb::FromSlice;
 use log::warn;
+
+use usvg::{try_opt_or, ColorInterpolation as ColorSpace};
+
+use crate::{prelude::*, backend_utils::*};
+use crate::backend_utils::filter::{Error, Filter, ImageExt};
 use super::ColorExt;
-
-use usvg::{
-    try_opt_or,
-    ColorInterpolation as ColorSpace
-};
-
-// self
-use crate::prelude::*;
-use crate::backend_utils::*;
-use crate::backend_utils::filter::{
-    Error,
-    Filter,
-    ImageExt,
-};
 
 type Image = filter::Image<raqote::DrawTarget>;
 type FilterResult = filter::FilterResult<raqote::DrawTarget>;
@@ -66,7 +55,6 @@ impl ImageExt for raqote::DrawTarget {
     }
 
     fn clip(&mut self, region: ScreenRect) {
-
         let mut pb = raqote::PathBuilder::new();
         pb.rect(0.0, 0.0, self.width() as f32, region.y() as f32);
         pb.rect(0.0, 0.0, region.x() as f32, self.height() as f32);

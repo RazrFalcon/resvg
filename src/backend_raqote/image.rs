@@ -2,20 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use image;
 use image::GenericImageView;
+use usvg::{try_opt, try_opt_warn};
 
-
-use usvg::{
-    try_opt,
-    try_opt_warn,
-};
-
-// self
-use crate::prelude::*;
-use crate::backend_utils;
-use crate::backend_utils::ConvTransform;
+use crate::{prelude::*, backend_utils, backend_utils::ConvTransform};
 
 
 pub fn draw(

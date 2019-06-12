@@ -2,18 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use raqote;
 use usvg::try_opt;
 
-// self
-use crate::prelude::*;
-use crate::backend_utils::*;
-use super::{
-    path,
-    RaqoteLayers,
-};
-use raqote::BlendMode;
+use crate::{prelude::*, backend_utils::*};
+use super::{path, RaqoteLayers};
 
 
 pub fn clip(
@@ -51,7 +43,7 @@ pub fn clip(
         match *node.borrow() {
             usvg::NodeKind::Path(ref p) => {
                 let draw_opt = raqote::DrawOptions {
-                    blend_mode: BlendMode::Clear,
+                    blend_mode: raqote::BlendMode::Clear,
                     ..Default::default()
                 };
 
@@ -82,7 +74,7 @@ pub fn clip(
         data: clip_dt.get_data(),
     };
     dt.draw_image_at(0.0, 0.0, &clip_img, &raqote::DrawOptions {
-        blend_mode: BlendMode::DstOut,
+        blend_mode: raqote::BlendMode::DstOut,
         alpha: 1.,
     });
 }
@@ -126,7 +118,7 @@ fn clip_group(
                     data: clip_dt.get_data(),
                 };
                 dt.draw_image_at(0.0, 0.0, &clip_img, &raqote::DrawOptions {
-                    blend_mode: BlendMode::Xor,
+                    blend_mode: raqote::BlendMode::Xor,
                     alpha: 1.,
                 });
             }
@@ -208,7 +200,7 @@ pub fn mask(
         data: mask_dt.get_data(),
     };
     sub_dt.draw_image_at(0.0, 0.0, &mask_img, &raqote::DrawOptions {
-        blend_mode: BlendMode::DstIn,
+        blend_mode: raqote::BlendMode::DstIn,
         alpha: 1.,
     });
 }
