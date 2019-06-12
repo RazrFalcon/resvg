@@ -220,7 +220,7 @@ fn render_node(
 ) -> Option<Rect> {
     match *node.borrow() {
         usvg::NodeKind::Svg(_) => {
-            Some(render_group(node, opt, layers, dt))
+            render_group(node, opt, layers, dt)
         }
         usvg::NodeKind::Path(ref path) => {
             path::draw(&node.tree(), path, opt, &raqote::DrawOptions::default(), dt)
@@ -240,7 +240,7 @@ fn render_group(
     opt: &Options,
     layers: &mut RaqoteLayers,
     dt: &mut raqote::DrawTarget,
-) -> Rect {
+) -> Option<Rect> {
     let curr_ts = *dt.get_transform();
     let mut g_bbox = Rect::new_bbox();
 
@@ -258,7 +258,12 @@ fn render_group(
         dt.set_transform(&curr_ts);
     }
 
-    g_bbox
+    // Check that bbox was changed, otherwise we will have a rect with x/y set to f64::MAX.
+    if g_bbox.fuzzy_ne(&Rect::new_bbox()) {
+        Some(g_bbox)
+    } else {
+        None
+    }
 }
 
 fn render_group_impl(
@@ -278,6 +283,8 @@ fn render_group_impl(
         render_group(node, opt, layers, &mut sub_dt)
     };
 
+    // Filter can be rendered on an object without a bbox,
+    // as long as filter uses `userSpaceOnUse`.
     if let Some(ref id) = g.filter {
         if let Some(filter_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
@@ -287,22 +294,25 @@ fn render_group_impl(
         }
     }
 
-    if let Some(ref id) = g.clip_path {
-        if let Some(clip_node) = node.tree().defs_by_id(id) {
-            if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                sub_dt.set_transform(&curr_ts);
+    // Clipping and masking can be done only for objects with a valid bbox.
+    if let Some(bbox) = bbox {
+        if let Some(ref id) = g.clip_path {
+            if let Some(clip_node) = node.tree().defs_by_id(id) {
+                if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
+                    sub_dt.set_transform(&curr_ts);
 
-                clip_and_mask::clip(&clip_node, cp, opt, bbox, layers, &mut sub_dt);
+                    clip_and_mask::clip(&clip_node, cp, opt, bbox, layers, &mut sub_dt);
+                }
             }
         }
-    }
 
-    if let Some(ref id) = g.mask {
-        if let Some(mask_node) = node.tree().defs_by_id(id) {
-            if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                sub_dt.set_transform(&curr_ts);
+        if let Some(ref id) = g.mask {
+            if let Some(mask_node) = node.tree().defs_by_id(id) {
+                if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
+                    sub_dt.set_transform(&curr_ts);
 
-                clip_and_mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_dt);
+                    clip_and_mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_dt);
+                }
             }
         }
     }
@@ -316,7 +326,7 @@ fn render_group_impl(
 
     dt.set_transform(&curr_ts);
 
-    Some(bbox)
+    bbox
 }
 
 fn create_layers(img_size: ScreenSize, opt: &Options) -> RaqoteLayers {

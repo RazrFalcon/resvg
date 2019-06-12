@@ -20,7 +20,7 @@ type FilterResult = filter::FilterResult<raqote::DrawTarget>;
 
 pub fn apply(
     filter: &usvg::Filter,
-    bbox: Rect,
+    bbox: Option<Rect>,
     ts: &usvg::Transform,
     opt: &Options,
     canvas: &mut raqote::DrawTarget,
@@ -201,7 +201,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         fe: &usvg::FeGaussianBlur,
         units: usvg::Units,
         cs: ColorSpace,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
@@ -223,7 +223,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
     fn apply_offset(
         fe: &usvg::FeOffset,
         units: usvg::Units,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
