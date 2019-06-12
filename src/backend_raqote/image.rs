@@ -132,8 +132,7 @@ pub fn draw_svg(
         dt.push_clip(&pb.finish());
     }
 
-    let ctm = dt.get_transform().pre_mul(&ts.to_native());
-    dt.set_transform(&ctm);
+    dt.transform(&ts.to_native());
     super::render_to_canvas(&tree, &sub_opt, img_size, dt);
 
     if let Some(_) = clip {

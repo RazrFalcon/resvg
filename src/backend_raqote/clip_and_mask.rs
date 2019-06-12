@@ -138,21 +138,17 @@ pub fn mask(
 
         let mut pb = raqote::PathBuilder::new();
         pb.rect(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
-
         mask_dt.push_clip(&pb.finish());
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {
-            let ctm = *mask_dt.get_transform();
-            mask_dt.set_transform(&ctm.pre_mul(&usvg::Transform::from_bbox(bbox).to_native()));
+            mask_dt.transform(&usvg::Transform::from_bbox(bbox).to_native());
         }
 
         super::render_group(node, opt, layers, &mut mask_dt);
         mask_dt.pop_clip();
     }
 
-    {
-        image_to_mask(mask_dt.get_data_u8_mut(), layers.image_size());
-    }
+    image_to_mask(mask_dt.get_data_u8_mut(), layers.image_size());
 
     if let Some(ref id) = mask.mask {
         if let Some(ref mask_node) = node.tree().defs_by_id(id) {
