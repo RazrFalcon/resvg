@@ -123,7 +123,7 @@ pub struct FilterResult<T: ImageExt> {
 pub trait Filter<T: ImageExt> {
     fn apply(
         filter: &usvg::Filter,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         opt: &Options,
         canvas: &mut T,
@@ -151,7 +151,7 @@ pub trait Filter<T: ImageExt> {
 
     fn _apply(
         filter: &usvg::Filter,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         opt: &Options,
         canvas: &mut T,
@@ -245,7 +245,7 @@ pub trait Filter<T: ImageExt> {
         fe: &usvg::FeGaussianBlur,
         units: usvg::Units,
         cs: ColorSpace,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         input: Image<T>,
     ) -> Result<Image<T>, Error>;
@@ -253,7 +253,7 @@ pub trait Filter<T: ImageExt> {
     fn apply_offset(
         fe: &usvg::FeOffset,
         units: usvg::Units,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         input: Image<T>,
     ) -> Result<Image<T>, Error>;
@@ -308,7 +308,7 @@ pub trait Filter<T: ImageExt> {
     fn resolve_std_dev(
         fe: &usvg::FeGaussianBlur,
         units: usvg::Units,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
     ) -> Option<(f64, f64)> {
         // 'A negative value or a value of zero disables the effect of the given filter primitive
@@ -320,6 +320,8 @@ pub trait Filter<T: ImageExt> {
         let (sx, sy) = ts.get_scale();
 
         let (std_dx, std_dy) = if units == usvg::Units::ObjectBoundingBox {
+            let bbox = bbox?;
+
             (
                 fe.std_dev_x.value() * sx * bbox.width(),
                 fe.std_dev_y.value() * sy * bbox.height()
@@ -341,12 +343,14 @@ pub trait Filter<T: ImageExt> {
     fn resolve_offset(
         fe: &usvg::FeOffset,
         units: usvg::Units,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
     ) -> Option<(f64, f64)> {
         let (sx, sy) = ts.get_scale();
 
         let (dx, dy) = if units == usvg::Units::ObjectBoundingBox {
+            let bbox = bbox?;
+
             (
                 fe.dx * sx * bbox.width(),
                 fe.dy * sy * bbox.height()
@@ -582,13 +586,14 @@ pub mod blur {
 
 fn calc_region(
     filter: &usvg::Filter,
-    bbox: Rect,
+    bbox: Option<Rect>,
     ts: &usvg::Transform,
     canvas_rect: ScreenRect,
 ) -> Result<ScreenRect, Error> {
     let path = utils::rect_to_path(filter.rect);
 
     let region_ts = if filter.units == usvg::Units::ObjectBoundingBox {
+        let bbox = bbox.ok_or(Error::InvalidRegion)?;
         let bbox_ts = usvg::Transform::from_bbox(bbox);
         let mut ts2 = ts.clone();
         ts2.append(&bbox_ts);
@@ -609,7 +614,7 @@ fn calc_region(
 fn calc_subregion<T: ImageExt>(
     filter: &usvg::Filter,
     primitive: &usvg::FilterPrimitive,
-    bbox: Rect,
+    bbox: Option<Rect>,
     filter_region: ScreenRect,
     ts: &usvg::Transform,
     results: &[FilterResult<T>],
@@ -634,6 +639,8 @@ fn calc_subregion<T: ImageExt>(
         usvg::FilterKind::FeImage(..) => {
             // `feImage` uses the object bbox.
             if filter.primitive_units == usvg::Units::ObjectBoundingBox {
+                let bbox = bbox.ok_or(Error::InvalidRegion)?;
+
                 // TODO: wrong
                 let ts_bbox = Rect::new(ts.e, ts.f, ts.a, ts.d).unwrap();
 

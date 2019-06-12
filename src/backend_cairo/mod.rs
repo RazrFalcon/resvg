@@ -225,7 +225,7 @@ fn render_node(
 ) -> Option<Rect> {
     match *node.borrow() {
         usvg::NodeKind::Svg(_) => {
-            Some(render_group(node, opt, layers, cr))
+            render_group(node, opt, layers, cr)
         }
         usvg::NodeKind::Path(ref path) => {
             path::draw(&node.tree(), path, opt, cr)
@@ -245,7 +245,7 @@ fn render_group(
     opt: &Options,
     layers: &mut CairoLayers,
     cr: &cairo::Context,
-) -> Rect {
+) -> Option<Rect> {
     let curr_ts = cr.get_matrix();
     let mut g_bbox = Rect::new_bbox();
 
@@ -253,17 +253,22 @@ fn render_group(
         cr.transform(node.transform().to_native());
 
         let bbox = render_node(&node, opt, layers, cr);
-
         if let Some(bbox) = bbox {
-            let bbox = bbox.transform(&node.transform()).unwrap();
-            g_bbox = g_bbox.expand(bbox);
+            if let Some(bbox) = bbox.transform(&node.transform()) {
+                g_bbox = g_bbox.expand(bbox);
+            }
         }
 
         // Revert transform.
         cr.set_matrix(curr_ts);
     }
 
-    g_bbox
+    // Check that bbox was changed, otherwise we will have a rect with x/y set to f64::MAX.
+    if g_bbox.fuzzy_ne(&Rect::new_bbox()) {
+        Some(g_bbox)
+    } else {
+        None
+    }
 }
 
 fn render_group_impl(
@@ -285,6 +290,8 @@ fn render_group_impl(
         render_group(node, opt, layers, &sub_cr)
     };
 
+    // Filter can be rendered on an object without a bbox,
+    // as long as filter uses `userSpaceOnUse`.
     if let Some(ref id) = g.filter {
         if let Some(filter_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
@@ -294,24 +301,27 @@ fn render_group_impl(
         }
     }
 
-    if let Some(ref id) = g.clip_path {
-        if let Some(clip_node) = node.tree().defs_by_id(id) {
-            if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                let sub_cr = cairo::Context::new(&*sub_surface);
-                sub_cr.set_matrix(curr_ts);
+    // Clipping and masking can be done only for objects with a valid bbox.
+    if let Some(bbox) = bbox {
+        if let Some(ref id) = g.clip_path {
+            if let Some(clip_node) = node.tree().defs_by_id(id) {
+                if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
+                    let sub_cr = cairo::Context::new(&*sub_surface);
+                    sub_cr.set_matrix(curr_ts);
 
-                clip_and_mask::clip(&clip_node, cp, opt, bbox, layers, &sub_cr);
+                    clip_and_mask::clip(&clip_node, cp, opt, bbox, layers, &sub_cr);
+                }
             }
         }
-    }
 
-    if let Some(ref id) = g.mask {
-        if let Some(mask_node) = node.tree().defs_by_id(id) {
-            if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                let sub_cr = cairo::Context::new(&*sub_surface);
-                sub_cr.set_matrix(curr_ts);
+        if let Some(ref id) = g.mask {
+            if let Some(mask_node) = node.tree().defs_by_id(id) {
+                if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
+                    let sub_cr = cairo::Context::new(&*sub_surface);
+                    sub_cr.set_matrix(curr_ts);
 
-                clip_and_mask::mask(&mask_node, mask, opt, bbox, layers, &sub_cr);
+                    clip_and_mask::mask(&mask_node, mask, opt, bbox, layers, &sub_cr);
+                }
             }
         }
     }
@@ -331,7 +341,7 @@ fn render_group_impl(
     // TODO: find a way to automate this
     cr.reset_source_rgba();
 
-    Some(bbox)
+    bbox
 }
 
 fn create_layers(
