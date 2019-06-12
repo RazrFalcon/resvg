@@ -53,21 +53,3 @@ pub(crate) fn apply_view_box(
     }
 }
 
-/// Returns node's absolute transform.
-///
-/// Does not include the node's transform itself.
-pub fn abs_transform(
-    node: &usvg::Node,
-) -> usvg::Transform {
-    let mut ts_list = Vec::new();
-    for p in node.ancestors().skip(1) {
-        ts_list.push(p.transform());
-    }
-
-    let mut root_ts = usvg::Transform::default();
-    for ts in ts_list.iter().rev() {
-        root_ts.append(ts);
-    }
-
-    root_ts
-}

@@ -11,8 +11,6 @@ fn main() {
         return;
     }
 
-    let backend = resvg::default_backend();
-
     let zoom = if args.len() == 5 {
         args[4].parse::<f64>().expect("not a float")
     } else {
@@ -29,7 +27,7 @@ fn main() {
     let mut bboxes = Vec::new();
     for node in rtree.root().descendants() {
         if !rtree.is_in_defs(&node) {
-            if let Some(bbox) = backend.calc_node_bbox(&node, &opt) {
+            if let Some(bbox) = node.calculate_bbox() {
                 bboxes.push(bbox);
             }
         }
@@ -53,6 +51,6 @@ fn main() {
         }));
     }
 
-    let img = backend.render_to_image(&rtree, &opt).unwrap();
+    let img = resvg::default_backend().render_to_image(&rtree, &opt).unwrap();
     img.save(std::path::Path::new(&args[2]));
 }

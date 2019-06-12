@@ -93,14 +93,6 @@ impl Render for Backend {
         let img = render_node_to_image(node, opt)?;
         Some(Box::new(img))
     }
-
-    fn calc_node_bbox(
-        &self,
-        node: &usvg::Node,
-        opt: &Options,
-    ) -> Option<Rect> {
-        calc_node_bbox(node, opt)
-    }
 }
 
 impl OutputImage for raqote::DrawTarget {
@@ -135,7 +127,7 @@ pub fn render_node_to_image(
     node: &usvg::Node,
     opt: &Options,
 ) -> Option<raqote::DrawTarget> {
-    let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
+    let node_bbox = if let Some(bbox) = node.calculate_bbox() {
         bbox
     } else {
         warn!("Node '{}' has a zero size.", node.id());
@@ -182,7 +174,7 @@ pub fn render_node_to_canvas(
     apply_viewbox_transform(view_box, img_size, dt);
 
     let curr_ts = *dt.get_transform();
-    let mut ts = utils::abs_transform(node);
+    let mut ts = node.abs_transform();
     ts.append(&node.transform());
 
     dt.transform(&ts.to_native());
@@ -321,62 +313,6 @@ fn render_group_impl(
     dt.set_transform(&curr_ts);
 
     Some(bbox)
-}
-
-/// Calculates node's absolute bounding box.
-///
-/// Note: this method can be pretty expensive.
-pub fn calc_node_bbox(
-    node: &usvg::Node,
-    opt: &Options,
-) -> Option<Rect> {
-    let tree = node.tree();
-
-    // We can't use 1x1 image, like in Qt backend because otherwise
-    // text layouts will be truncated.
-    let (mut dt, img_view) = create_target(
-        ScreenSize::new(1, 1).unwrap(),
-        opt,
-    )?;
-
-    // We also have to apply the viewbox transform,
-    // otherwise text hinting will be different and bbox will be different too.
-    apply_viewbox_transform(tree.svg_node().view_box, img_view, &mut dt);
-
-    let abs_ts = utils::abs_transform(node);
-    _calc_node_bbox(node, opt, abs_ts, &mut dt)
-}
-
-fn _calc_node_bbox(
-    node: &usvg::Node,
-    opt: &Options,
-    ts: usvg::Transform,
-    dt: &mut raqote::DrawTarget,
-) -> Option<Rect> {
-    let mut ts2 = ts;
-    ts2.append(&node.transform());
-
-    match *node.borrow() {
-        usvg::NodeKind::Path(ref path) => {
-            utils::path_bbox(&path.segments, path.stroke.as_ref(), Some(ts2))
-        }
-        usvg::NodeKind::Image(ref img) => {
-            let segments = utils::rect_to_path(img.view_box.rect);
-            utils::path_bbox(&segments, None, Some(ts2))
-        }
-        usvg::NodeKind::Group(_) => {
-            let mut bbox = Rect::new_bbox();
-
-            for child in node.children() {
-                if let Some(c_bbox) = _calc_node_bbox(&child, opt, ts2, dt) {
-                    bbox = bbox.expand(c_bbox);
-                }
-            }
-
-            Some(bbox)
-        }
-        _ => None
-    }
 }
 
 fn create_layers(img_size: ScreenSize, opt: &Options) -> RaqoteLayers {

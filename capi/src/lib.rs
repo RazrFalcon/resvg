@@ -385,7 +385,7 @@ pub extern "C" fn resvg_qt_render_to_canvas_by_id(
     }
 
     if let Some(node) = tree.0.node_by_id(id) {
-        if let Some(bbox) = resvg::backend_qt::calc_node_bbox(&node, &opt) {
+        if let Some(bbox) = node.calculate_bbox() {
             let vbox = usvg::ViewBox {
                 rect: bbox,
                 aspect: usvg::AspectRatio::default(),
@@ -433,7 +433,7 @@ pub extern "C" fn resvg_cairo_render_to_canvas_by_id(
     });
 
     if let Some(node) = tree.0.node_by_id(id) {
-        if let Some(bbox) = resvg::backend_cairo::calc_node_bbox(&node, &opt) {
+        if let Some(bbox) = node.calculate_bbox() {
             let vbox = usvg::ViewBox {
                 rect: bbox,
                 aspect: usvg::AspectRatio::default(),
@@ -493,51 +493,16 @@ pub extern "C" fn resvg_is_image_empty(
         &*tree
     };
 
-    tree.0.root().has_children()
+    // The root/svg node should have at least two children.
+    // The first child is `defs` and it always present.
+    tree.0.root().children().count() > 1
 }
 
-#[cfg(feature = "qt-backend")]
 #[no_mangle]
-pub extern "C" fn resvg_qt_get_node_bbox(
+pub extern "C" fn resvg_get_node_bbox(
     tree: *const resvg_render_tree,
-    opt: *const resvg_options,
     id: *const c_char,
     bbox: *mut resvg_rect,
-) -> bool {
-    let backend = Box::new(resvg::backend_qt::Backend);
-    get_node_bbox(tree, opt, id, bbox, backend)
-}
-
-#[cfg(feature = "cairo-backend")]
-#[no_mangle]
-pub extern "C" fn resvg_cairo_get_node_bbox(
-    tree: *const resvg_render_tree,
-    opt: *const resvg_options,
-    id: *const c_char,
-    bbox: *mut resvg_rect,
-) -> bool {
-    let backend = Box::new(resvg::backend_cairo::Backend);
-    get_node_bbox(tree, opt, id, bbox, backend)
-}
-
-#[cfg(feature = "raqote-backend")]
-#[no_mangle]
-pub extern "C" fn resvg_cairo_get_node_bbox(
-    tree: *const resvg_render_tree,
-    opt: *const resvg_options,
-    id: *const c_char,
-    bbox: *mut resvg_rect,
-) -> bool {
-    let backend = Box::new(resvg::backend_raqote::Backend);
-    get_node_bbox(tree, opt, id, bbox, backend)
-}
-
-fn get_node_bbox(
-    tree: *const resvg_render_tree,
-    opt: *const resvg_options,
-    id: *const c_char,
-    bbox: *mut resvg_rect,
-    backend: Box<resvg::Render>,
 ) -> bool {
     let id = match cstr_to_str(id) {
         Some(v) => v,
@@ -557,15 +522,9 @@ fn get_node_bbox(
         &*tree
     };
 
-
-    let opt = to_native_opt(unsafe {
-        assert!(!opt.is_null());
-        &*opt
-    });
-
     match tree.0.node_by_id(id) {
         Some(node) => {
-            if let Some(r) = backend.calc_node_bbox(&node, &opt) {
+            if let Some(r) = node.calculate_bbox() {
                 unsafe {
                     (*bbox).x = r.x();
                     (*bbox).y = r.y();
@@ -626,7 +585,7 @@ pub extern "C" fn resvg_get_node_transform(
     };
 
     if let Some(node) = tree.0.node_by_id(id) {
-        let mut abs_ts = resvg::utils::abs_transform(&node);
+        let mut abs_ts = node.abs_transform();
         abs_ts.append(&node.transform());
 
         unsafe {

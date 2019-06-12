@@ -374,7 +374,7 @@ inline QRectF ResvgRenderer::boundsOnElement(const QString &id) const
     const auto utf8Str = id.toUtf8();
     const auto rawId = utf8Str.constData();
     resvg_rect bbox;
-    if (resvg_qt_get_node_bbox(d->tree, &d->opt, rawId, &bbox))
+    if (resvg_get_node_bbox(d->tree, rawId, &bbox))
         return QRectF(bbox.x, bbox.y, bbox.height, bbox.width);
 
     return QRectF();

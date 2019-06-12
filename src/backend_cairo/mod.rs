@@ -90,14 +90,6 @@ impl Render for Backend {
         let img = render_node_to_image(node, opt)?;
         Some(Box::new(img))
     }
-
-    fn calc_node_bbox(
-        &self,
-        node: &usvg::Node,
-        opt: &Options,
-    ) -> Option<Rect> {
-        calc_node_bbox(node, opt)
-    }
 }
 
 impl OutputImage for cairo::ImageSurface {
@@ -146,7 +138,7 @@ pub fn render_node_to_image(
     node: &usvg::Node,
     opt: &Options,
 ) -> Option<cairo::ImageSurface> {
-    let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
+    let node_bbox = if let Some(bbox) = node.calculate_bbox() {
         bbox
     } else {
         warn!("Node '{}' has a zero size.", node.id());
@@ -196,7 +188,7 @@ pub fn render_node_to_canvas(
     apply_viewbox_transform(view_box, img_size, &cr);
 
     let curr_ts = cr.get_matrix();
-    let mut ts = utils::abs_transform(node);
+    let mut ts = node.abs_transform();
     ts.append(&node.transform());
 
     cr.transform(ts.to_native());
@@ -340,63 +332,6 @@ fn render_group_impl(
     cr.reset_source_rgba();
 
     Some(bbox)
-}
-
-/// Calculates node's absolute bounding box.
-///
-/// Note: this method can be pretty expensive.
-pub fn calc_node_bbox(
-    node: &usvg::Node,
-    opt: &Options,
-) -> Option<Rect> {
-    let tree = node.tree();
-
-    // We can't use 1x1 image, like in Qt backend because otherwise
-    // text layouts will be truncated.
-    let (surface, img_view) = create_surface(
-        tree.svg_node().size.to_screen_size(),
-        opt,
-    )?;
-    let cr = cairo::Context::new(&surface);
-
-    // We also have to apply the viewbox transform,
-    // otherwise text hinting will be different and bbox will be different too.
-    apply_viewbox_transform(tree.svg_node().view_box, img_view, &cr);
-
-    let abs_ts = utils::abs_transform(node);
-    _calc_node_bbox(node, opt, abs_ts, &cr)
-}
-
-fn _calc_node_bbox(
-    node: &usvg::Node,
-    opt: &Options,
-    ts: usvg::Transform,
-    cr: &cairo::Context,
-) -> Option<Rect> {
-    let mut ts2 = ts;
-    ts2.append(&node.transform());
-
-    match *node.borrow() {
-        usvg::NodeKind::Path(ref path) => {
-            utils::path_bbox(&path.segments, path.stroke.as_ref(), Some(ts2))
-        }
-        usvg::NodeKind::Image(ref img) => {
-            let segments = utils::rect_to_path(img.view_box.rect);
-            utils::path_bbox(&segments, None, Some(ts2))
-        }
-        usvg::NodeKind::Group(_) => {
-            let mut bbox = Rect::new_bbox();
-
-            for child in node.children() {
-                if let Some(c_bbox) = _calc_node_bbox(&child, opt, ts2, cr) {
-                    bbox = bbox.expand(c_bbox);
-                }
-            }
-
-            Some(bbox)
-        }
-        _ => None
-    }
 }
 
 fn create_layers(
