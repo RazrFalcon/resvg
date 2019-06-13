@@ -91,13 +91,6 @@ void qtc_qimage_fill(qtc_qimage *c_img, uint8_t r, uint8_t g, uint8_t b, uint8_t
     IMAGE_CAST->fill(QColor(r, g, b, a));
 }
 
-void qtc_qimage_set_dpi(qtc_qimage *c_img, double dpi)
-{
-    static const int dpm = qRound(dpi / 0.0254);
-    IMAGE_CAST->setDotsPerMeterX(dpm);
-    IMAGE_CAST->setDotsPerMeterY(dpm);
-}
-
 qtc_qimage* qtc_qimage_to_rgba(qtc_qimage *c_img)
 {
     const QImage rImg = IMAGE_CAST->convertToFormat(QImage::Format_ARGB32);

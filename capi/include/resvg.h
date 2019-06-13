@@ -301,6 +301,8 @@ bool resvg_is_image_empty(const resvg_render_tree *tree);
 /**
  * @brief Returns an image size.
  *
+ * The size of a canvas that required to render this SVG.
+ *
  * @param tree Render tree.
  * @return Image size.
  */
@@ -313,6 +315,18 @@ resvg_size resvg_get_image_size(const resvg_render_tree *tree);
  * @return Image viewbox.
  */
 resvg_rect resvg_get_image_viewbox(const resvg_render_tree *tree);
+
+/**
+ * @brief Returns an image bounding box.
+ *
+ * Can be smaller or bigger than a \b viewbox.
+ *
+ * @param tree Render tree.
+ * @param bbox Image's bounding box.
+ * @return \b false if an image has no elements.
+ */
+bool resvg_get_image_bbox(const resvg_render_tree *tree,
+                          resvg_rect *bbox);
 
 /**
  * @brief Returns \b true if a renderable node with such an ID exists.

@@ -183,7 +183,7 @@ pub fn render_node_to_canvas(
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
-    let mut layers = create_layers(img_size, opt);
+    let mut layers = create_layers(img_size);
 
     apply_viewbox_transform(view_box, img_size, &cr);
 
@@ -346,14 +346,12 @@ fn render_group_impl(
 
 fn create_layers(
     img_size: ScreenSize,
-    opt: &Options,
 ) -> CairoLayers {
-    layers::Layers::new(img_size, opt.usvg.dpi, create_subsurface, clear_subsurface)
+    layers::Layers::new(img_size, create_subsurface, clear_subsurface)
 }
 
 fn create_subsurface(
     size: ScreenSize,
-    _: f64,
 ) -> Option<cairo::ImageSurface> {
     Some(try_create_surface!(size, None))
 }

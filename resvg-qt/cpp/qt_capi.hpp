@@ -104,7 +104,6 @@ qtc_qimage* qtc_qimage_resize(qtc_qimage *c_img, uint32_t width, uint32_t height
                               bool smoothTransformation);
 qtc_qimage* qtc_qimage_copy(qtc_qimage *c_img, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 void qtc_qimage_fill(qtc_qimage *c_img, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-void qtc_qimage_set_dpi(qtc_qimage *c_img, double dpi);
 qtc_qimage *qtc_qimage_to_rgba(qtc_qimage *c_img);
 uint32_t qtc_qimage_get_width(qtc_qimage *c_img);
 uint32_t qtc_qimage_get_height(qtc_qimage *c_img);

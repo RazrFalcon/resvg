@@ -294,7 +294,7 @@ fn calc_node_bbox(
             let segments = utils::rect_to_path(img.view_box.rect);
             utils::path_bbox(&segments, None, Some(ts2))
         }
-        NodeKind::Group(_) => {
+        NodeKind::Svg(_) | NodeKind::Group(_) => {
             let mut bbox = Rect::new_bbox();
 
             for child in node.children() {

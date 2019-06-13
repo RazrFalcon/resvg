@@ -22,6 +22,8 @@ This changelog also contains important changes in dependencies.
 - `shape-rendering`, `text-rendering` and `image-rendering` support.
 - The `arithmetic` operator for `feComposite`.
 - (usvg) `--quiet` argument.
+- (c-api) `resvg_get_image_bbox`.
+- (qt-api) `ResvgRenderer::boundingBox`.
 
 ### Changed
 - (resvg) Do not rescale images before rendering. This is faster and better.

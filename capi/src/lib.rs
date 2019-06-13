@@ -449,6 +449,20 @@ pub extern "C" fn resvg_cairo_render_to_canvas_by_id(
 }
 
 #[no_mangle]
+pub extern "C" fn resvg_is_image_empty(
+    tree: *const resvg_render_tree,
+) -> bool {
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
+    };
+
+    // The root/svg node should have at least two children.
+    // The first child is `defs` and it always present.
+    tree.0.root().children().count() > 1
+}
+
+#[no_mangle]
 pub extern "C" fn resvg_get_image_size(
     tree: *const resvg_render_tree,
 ) -> resvg_size {
@@ -484,18 +498,29 @@ pub extern "C" fn resvg_get_image_viewbox(
     }
 }
 
+
 #[no_mangle]
-pub extern "C" fn resvg_is_image_empty(
+pub extern "C" fn resvg_get_image_bbox(
     tree: *const resvg_render_tree,
+    bbox: *mut resvg_rect,
 ) -> bool {
     let tree = unsafe {
         assert!(!tree.is_null());
         &*tree
     };
 
-    // The root/svg node should have at least two children.
-    // The first child is `defs` and it always present.
-    tree.0.root().children().count() > 1
+    if let Some(r) = tree.0.root().calculate_bbox() {
+        unsafe {
+            (*bbox).x = r.x();
+            (*bbox).y = r.y();
+            (*bbox).width = r.width();
+            (*bbox).height = r.height();
+        }
+
+        true
+    } else {
+        false
+    }
 }
 
 #[no_mangle]

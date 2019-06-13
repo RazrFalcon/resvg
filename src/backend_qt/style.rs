@@ -209,8 +209,6 @@ fn prepare_pattern(
 
     let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy)).to_screen_size();
     let mut img = try_create_image!(img_size, ());
-
-    img.set_dpi(opt.usvg.dpi);
     img.fill(0, 0, 0, 0);
 
     let mut p = qt::Painter::new(&mut img);
@@ -227,7 +225,7 @@ fn prepare_pattern(
         p.scale(bbox.width(), bbox.height());
     }
 
-    let mut layers = super::create_layers(img_size, opt);
+    let mut layers = super::create_layers(img_size);
     super::render_group(pattern_node, opt, &mut layers, &mut p);
     p.end();
 
