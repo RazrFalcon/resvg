@@ -271,7 +271,7 @@ fn prepare_pattern<'a>(
         dt.transform(&raqote::Transform::create_scale(bbox.width() as f32, bbox.height() as f32));
     }
 
-    let mut layers = super::create_layers(img_size, opt);
+    let mut layers = super::create_layers(img_size);
     super::render_group(pattern_node, opt, &mut layers, &mut dt);
 
     let img = if !opacity.is_default() {

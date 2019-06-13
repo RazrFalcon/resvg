@@ -186,7 +186,7 @@ pub fn render_node_to_canvas(
     img_size: ScreenSize,
     dt: &mut raqote::DrawTarget,
 ) {
-    let mut layers = create_layers(img_size, opt);
+    let mut layers = create_layers(img_size);
 
     apply_viewbox_transform(view_box, img_size, dt);
 
@@ -337,13 +337,12 @@ fn render_group_impl(
     bbox
 }
 
-fn create_layers(img_size: ScreenSize, opt: &Options) -> RaqoteLayers {
-    layers::Layers::new(img_size, opt.usvg.dpi, create_subsurface, clear_subsurface)
+fn create_layers(img_size: ScreenSize) -> RaqoteLayers {
+    layers::Layers::new(img_size, create_subsurface, clear_subsurface)
 }
 
 fn create_subsurface(
     size: ScreenSize,
-    _: f64,
 ) -> Option<raqote::DrawTarget> {
     Some(raqote::DrawTarget::new(size.width() as i32, size.height() as i32))
 }
