@@ -135,7 +135,7 @@ pub fn render_node_to_canvas(
     img_size: ScreenSize,
     painter: &mut qt::Painter,
 ) {
-    let mut layers = create_layers(img_size, opt);
+    let mut layers = create_layers(img_size);
 
     apply_viewbox_transform(view_box, img_size, painter);
 
@@ -163,7 +163,6 @@ fn create_root_image(
     } else {
         img.fill(0, 0, 0, 0);
     }
-    img.set_dpi(opt.usvg.dpi);
 
     Some((img, img_size))
 }
@@ -304,19 +303,15 @@ fn render_group_impl(
 
 fn create_layers(
     img_size: ScreenSize,
-    opt: &Options,
 ) -> QtLayers {
-    layers::Layers::new(img_size, opt.usvg.dpi, create_subimage, clear_image)
+    layers::Layers::new(img_size, create_subimage, clear_image)
 }
 
 fn create_subimage(
     size: ScreenSize,
-    dpi: f64,
 ) -> Option<qt::Image> {
     let mut img = try_create_image!(size, None);
-
     img.fill(0, 0, 0, 0);
-    img.set_dpi(dpi);
 
     Some(img)
 }

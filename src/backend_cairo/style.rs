@@ -207,7 +207,7 @@ fn prepare_pattern(
         sub_cr.scale(bbox.width(), bbox.height());
     }
 
-    let mut layers = super::create_layers(img_size, opt);
+    let mut layers = super::create_layers(img_size);
     super::render_group(node, opt, &mut layers, &sub_cr);
 
     let mut ts = usvg::Transform::default();

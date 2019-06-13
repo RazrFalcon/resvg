@@ -448,9 +448,6 @@ extern "C" {
     pub fn qtc_qimage_fill(c_img: *mut qtc_qimage, r: u8, g: u8, b: u8, a: u8);
 }
 extern "C" {
-    pub fn qtc_qimage_set_dpi(c_img: *mut qtc_qimage, dpi: f64);
-}
-extern "C" {
     pub fn qtc_qimage_to_rgba(c_img: *mut qtc_qimage) -> *mut qtc_qimage;
 }
 extern "C" {

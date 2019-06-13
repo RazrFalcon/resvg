@@ -108,10 +108,6 @@ impl Image {
         unsafe { ffi::qtc_qimage_fill(self.0, r, g, b, a) }
     }
 
-    pub fn set_dpi(&mut self, dpi: f64) {
-        unsafe { ffi::qtc_qimage_set_dpi(self.0, dpi) }
-    }
-
     pub fn to_rgba(&self) -> Option<Image> {
         unsafe { Self::from_ptr(ffi::qtc_qimage_to_rgba(self.0)) }
     }

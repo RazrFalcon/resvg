@@ -20,8 +20,7 @@ pub struct Layers<T> {
     /// Use Rc as a shared counter.
     counter: Rc<()>,
     img_size: ScreenSize,
-    dpi: f64,
-    new_img_fn: fn(ScreenSize, f64) -> Option<T>,
+    new_img_fn: fn(ScreenSize) -> Option<T>,
     clear_img_fn: fn(&mut T),
 }
 
@@ -29,15 +28,13 @@ impl<T> Layers<T> {
     /// Creates `Layers`.
     pub fn new(
         img_size: ScreenSize,
-        dpi: f64,
-        new_img_fn: fn(ScreenSize, f64) -> Option<T>,
+        new_img_fn: fn(ScreenSize) -> Option<T>,
         clear_img_fn: fn(&mut T),
     ) -> Self {
         Layers {
             d: Vec::new(),
             counter: Rc::new(()),
             img_size,
-            dpi,
             new_img_fn,
             clear_img_fn,
         }
@@ -56,7 +53,7 @@ impl<T> Layers<T> {
     pub fn get(&mut self) -> Option<Layer<T>> {
         let used_layers = Rc::strong_count(&self.counter) - 1;
         if used_layers == self.d.len() {
-            match (self.new_img_fn)(self.img_size, self.dpi) {
+            match (self.new_img_fn)(self.img_size) {
                 Some(img) => {
                     self.d.push(Rc::new(RefCell::new(img)));
                     Some(Layer {
