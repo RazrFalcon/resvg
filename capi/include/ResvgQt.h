@@ -216,6 +216,11 @@ public:
     QRectF boundsOnElement(const QString &id) const;
 
     /**
+     * @brief Returns bounding rectangle of a whole image.
+     */
+    QRectF boundingBox() const;
+
+    /**
      * @brief Returns \b true if element with such an ID exists.
      */
     bool elementExists(const QString &id) const;
@@ -375,6 +380,18 @@ inline QRectF ResvgRenderer::boundsOnElement(const QString &id) const
     const auto rawId = utf8Str.constData();
     resvg_rect bbox;
     if (resvg_get_node_bbox(d->tree, rawId, &bbox))
+        return QRectF(bbox.x, bbox.y, bbox.height, bbox.width);
+
+    return QRectF();
+}
+
+inline QRectF ResvgRenderer::boundingBox() const
+{
+    if (!d->tree)
+        return QRectF();
+
+    resvg_rect bbox;
+    if (resvg_get_image_bbox(d->tree, &bbox))
         return QRectF(bbox.x, bbox.y, bbox.height, bbox.width);
 
     return QRectF();

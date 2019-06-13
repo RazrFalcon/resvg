@@ -15,6 +15,9 @@ private Q_SLOTS:
 
     void test_renderFile();
 
+    void test_imageSize();
+    void test_imageViewBox();
+    void test_imageBoundingBox();
     void test_elementExists();
     void test_transformForElement();
 };
@@ -64,6 +67,27 @@ void ResvgQtTests::test_renderFile()
 
     QCOMPARE(img, QImage(localPath("test_renderFile_result.png")));
 #endif
+}
+
+void ResvgQtTests::test_imageSize()
+{
+    ResvgRenderer render(localPath("vb.svg"));
+    QVERIFY(!render.isEmpty());
+    QCOMPARE(render.defaultSize(), QSize(200, 400));
+}
+
+void ResvgQtTests::test_imageViewBox()
+{
+    ResvgRenderer render(localPath("vb.svg"));
+    QVERIFY(!render.isEmpty());
+    QCOMPARE(render.viewBox(), QRect(50, 100, 200, 400));
+}
+
+void ResvgQtTests::test_imageBoundingBox()
+{
+    ResvgRenderer render(localPath("test.svg"));
+    QVERIFY(!render.isEmpty());
+    QCOMPARE(render.boundingBox(), QRect(20, 20, 160, 160));
 }
 
 void ResvgQtTests::test_elementExists()

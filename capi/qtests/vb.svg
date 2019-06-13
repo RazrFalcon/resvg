@@ -1,0 +1,3 @@
+<svg id="svg1" viewBox="50 100 200 400" xmlns="http://www.w3.org/2000/svg">
+    <circle id="circle1" cx="80" cy="100" r="40" fill="green" transform="scale(2)"/>
+</svg>
