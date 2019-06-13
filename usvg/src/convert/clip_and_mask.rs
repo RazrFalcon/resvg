@@ -71,15 +71,22 @@ pub fn convert_mask(
         return Some(node.id().clone());
     }
 
+    let ref attrs = node.attributes();
+
+    let units = convert_element_units(
+        attrs, AId::MaskUnits, tree::Units::ObjectBoundingBox,
+    );
+    let content_units = convert_element_units(
+        attrs, AId::MaskContentUnits, tree::Units::UserSpaceOnUse,
+    );
+
     let rect = Rect::new(
-        node.convert_user_length(AId::X, state, Length::new(-10.0, Unit::Percent)),
-        node.convert_user_length(AId::Y, state, Length::new(-10.0, Unit::Percent)),
-        node.convert_user_length(AId::Width, state, Length::new(120.0, Unit::Percent)),
-        node.convert_user_length(AId::Height, state, Length::new(120.0, Unit::Percent)),
+        node.convert_length(AId::X, units, state, Length::new(-10.0, Unit::Percent)),
+        node.convert_length(AId::Y, units, state, Length::new(-10.0, Unit::Percent)),
+        node.convert_length(AId::Width, units, state, Length::new(120.0, Unit::Percent)),
+        node.convert_length(AId::Height, units, state, Length::new(120.0, Unit::Percent)),
     );
     let rect = try_opt_warn_or!(rect, None, "Mask '{}' has an invalid size. Skipped.", node.id());
-
-    let ref attrs = node.attributes();
 
     let mut mask = None;
     if let Some(&AValue::FuncLink(ref link)) = attrs.get_value(AId::Mask) {
@@ -90,13 +97,6 @@ pub fn convert_mask(
             return None;
         }
     }
-
-    let units = convert_element_units(
-        attrs, AId::MaskUnits, tree::Units::ObjectBoundingBox,
-    );
-    let content_units = convert_element_units(
-        attrs, AId::MaskContentUnits, tree::Units::UserSpaceOnUse,
-    );
 
     let mut mask = tree.append_to_defs(tree::NodeKind::Mask(tree::Mask {
         id: node.id().clone(),
