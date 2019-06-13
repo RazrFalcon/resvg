@@ -679,12 +679,12 @@ dependencies = [
 [[package]]
 name = "raqote"
 version = "0.4.1-alpha.0"
-source = "git+https://github.com/jrmuizel/raqote.git?rev=7582f7f#7582f7ff0764df9b75feb67d28fc9dd77be5a78e"
+source = "git+https://github.com/jrmuizel/raqote.git?rev=95860cb#95860cb6697430ae191a4005d6fc2cdd1a150d53"
 dependencies = [
  "euclid 0.19.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "lyon_geom 0.12.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "png 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "sw-composite 0.5.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sw-composite 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "typed-arena 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -717,7 +717,7 @@ dependencies = [
  "gdk-pixbuf 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.21.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "raqote 0.4.1-alpha.0 (git+https://github.com/jrmuizel/raqote.git?rev=7582f7f)",
+ "raqote 0.4.1-alpha.0 (git+https://github.com/jrmuizel/raqote.git?rev=95860cb)",
  "resvg-qt 0.6.1",
  "rgb 0.8.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "usvg 0.6.1",
@@ -801,7 +801,7 @@ dependencies = [
 
 [[package]]
 name = "sw-composite"
-version = "0.5.7"
+version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -997,7 +997,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum pretty_assertions 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)" = "3f81e1644e1b54f5a68959a29aa86cde704219254669da328ecfdf6a1f09d427"
 "checksum proc-macro2 0.4.30 (registry+https://github.com/rust-lang/crates.io-index)" = "cf3d2011ab5c909338f7887f4fc896d35932e29146c12c8d01da6b22a80ba759"
 "checksum quote 0.6.12 (registry+https://github.com/rust-lang/crates.io-index)" = "faf4799c5d274f3868a4aae320a0a182cbd2baee377b378f080e16a23e9d80db"
-"checksum raqote 0.4.1-alpha.0 (git+https://github.com/jrmuizel/raqote.git?rev=7582f7f)" = "<none>"
+"checksum raqote 0.4.1-alpha.0 (git+https://github.com/jrmuizel/raqote.git?rev=95860cb)" = "<none>"
 "checksum rctree 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "193d11923532b462b7231e2d7fb785a9c0d580b03c0eccac460a1e9ee0e87fda"
 "checksum redox_syscall 0.1.54 (registry+https://github.com/rust-lang/crates.io-index)" = "12229c14a0f65c4f1cb046a3b52047cdd9da1f4b30f8a39c5063c8bae515e252"
 "checksum rgb 0.8.13 (registry+https://github.com/rust-lang/crates.io-index)" = "4f089652ca87f5a82a62935ec6172a534066c7b97be003cc8f702ee9a7a59c92"
@@ -1008,7 +1008,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum slab 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 "checksum svgdom 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9ddce601e49ed213b0126ff4172cd9f5f8dba5f1df2277ecbe0e298f9865baba"
 "checksum svgtypes 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "444c882c28925ae0585df228a90f9951569588646ceca4753560de93cdd02258"
-"checksum sw-composite 0.5.7 (registry+https://github.com/rust-lang/crates.io-index)" = "5039ed920adf08d263db65eb240dd61a8d751c49d83563f89729875452f052c7"
+"checksum sw-composite 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)" = "b67e427706839bf0708779b62bd37472531f387a1bbc5bcc47129133c518b3f1"
 "checksum syn 0.14.9 (registry+https://github.com/rust-lang/crates.io-index)" = "261ae9ecaa397c42b960649561949d69311f08eeaea86a65696e6e46517cf741"
 "checksum syn 0.15.35 (registry+https://github.com/rust-lang/crates.io-index)" = "641e117d55514d6d918490e47102f7e08d096fdde360247e4a10f7a91a8478d3"
 "checksum time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)" = "db8dcfca086c1143c9270ac42a2bbd8a7ee477b78ac8e45b19abfb0cbede4b6f"
