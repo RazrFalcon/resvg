@@ -67,12 +67,7 @@ impl ImageExt for raqote::DrawTarget {
     }
 
     fn clear(&mut self) {
-        self.clear(raqote::SolidSource {
-            r: 0,
-            g: 0,
-            b: 0,
-            a: 0,
-        });
+        self.make_transparent();
     }
 
     fn into_srgb(&mut self) {
@@ -434,7 +429,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         let input = input.into_color_space(ColorSpace::SRGB)?;
 
         canvas.set_transform(&raqote::Transform::identity());
-        canvas.clear(raqote::SolidSource { r: 0, g: 0, b: 0, a: 0 });
+        canvas.make_transparent();
 
         let draw_opt = raqote::DrawOptions {
             blend_mode: raqote::BlendMode::SrcOver,

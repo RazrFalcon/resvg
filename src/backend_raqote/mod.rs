@@ -34,6 +34,7 @@ impl ConvTransform<raqote::Transform> for usvg::Transform {
 pub(crate) trait RaqoteDrawTargetExt {
     fn transform(&mut self, ts: &raqote::Transform);
     fn as_image(&self) -> raqote::Image;
+    fn make_transparent(&mut self);
 }
 
 impl RaqoteDrawTargetExt for raqote::DrawTarget {
@@ -46,6 +47,13 @@ impl RaqoteDrawTargetExt for raqote::DrawTarget {
             width: self.width() as i32,
             height: self.height() as i32,
             data: self.get_data(),
+        }
+    }
+
+    fn make_transparent(&mut self) {
+        // This is faster than DrawTarget::clear.
+        for i in self.get_data_u8_mut() {
+            *i = 0;
         }
     }
 }
@@ -342,5 +350,5 @@ fn create_subsurface(
 
 fn clear_subsurface(dt: &mut raqote::DrawTarget) {
     dt.set_transform(&raqote::Transform::identity());
-    dt.clear(raqote::SolidSource { r: 0, g: 0, b: 0, a: 0 });
+    dt.make_transparent();
 }
