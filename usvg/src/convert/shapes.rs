@@ -106,6 +106,7 @@ pub fn convert_rect(
             .arc_to(rx, ry, 0.0, false, true, x, y + height - ry)
             .line_to(x, y + ry)
             .arc_to(rx, ry, 0.0, false, true, x + rx, y)
+            .close_path()
             .finalize();
 
         path::convert(p)
