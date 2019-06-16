@@ -46,7 +46,7 @@ This changelog also contains important changes in dependencies.
 - (rctree) Prevent stack overflow on a huge, deeply nested SVG.
 - (c-api) `resvg_is_image_empty` was always returning `false`.
 - (resvg) Panic when `filter` with `objectBoudningBox` was set on an empty group.
-- (usvg) `mask` with `objectBoudningBox` resolving.
+- (usvg) `mask` with `objectBoundingBox` resolving.
 
 ## [0.6.1] - 2019-03-16
 ### Fixed
