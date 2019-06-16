@@ -9,16 +9,13 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - New text layout implementation.
-  - `textPath` support.
-  - `writing-mode` support, aka vertical text.
-  - [Text BIDI reordering](http://www.unicode.org/reports/tr9/).
-  - Better text shaping.
-  - Text will be converted into paths on the `usvg` side now.
-  - `word-spacing` is supported for all backends now.
-  - [`harfbuzz`](https://github.com/harfbuzz/harfbuzz) dependency.
-  - Subscript, superscript offsets are extracted from font and not hardcoded now.
-- A [raqote](https://github.com/jrmuizel/raqote) rendering backend
-  thanks to [jrmuizel](https://github.com/jrmuizel).
+- `textPath` support.
+- `writing-mode` support, aka vertical text.
+- [Text BIDI reordering](http://www.unicode.org/reports/tr9/).
+- Better text shaping.
+- `word-spacing` is supported for all backends now.
+- [`harfbuzz`](https://github.com/harfbuzz/harfbuzz) dependency.
+- Subscript, superscript offsets are extracted from font and not hardcoded now.
 - `shape-rendering`, `text-rendering` and `image-rendering` support.
 - The `arithmetic` operator for `feComposite`.
 - (usvg) `--quiet` argument.
@@ -26,6 +23,7 @@ This changelog also contains important changes in dependencies.
 - (qt-api) `ResvgRenderer::boundingBox`.
 
 ### Changed
+- Text will be converted into paths on the `usvg` side now.
 - (resvg) Do not rescale images before rendering. This is faster and better.
 - (usvg) An `image` element with a zero or negative size will be skipped now.
   Previously, a linked image size was used, which is incorrect.

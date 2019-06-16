@@ -21,9 +21,9 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 base64 = "0.10"
 data-url = "0.1"
 harfbuzz_rs = "1.0"
+kurbo = { git = "https://github.com/linebender/kurbo", rev = "a006dd8" }
 libflate = "0.1"
 log = "0.4"
-lyon_geom = "0.12"
 memmap = "0.7"
 rctree = "0.3"
 svgdom = "0.17"

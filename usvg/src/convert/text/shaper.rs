@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use kurbo::{ParamCurveArclen, ParamCurve, ParamCurveDeriv};
 use harfbuzz_rs as harfbuzz;
 use unicode_vo::Orientation as CharOrientation;
 
@@ -599,26 +600,25 @@ fn collect_normals(
     };
 
     fn create_curve(px: f64, py: f64, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64)
-        -> lyon_geom::CubicBezierSegment<f64>
+        -> kurbo::CubicBez
     {
-        lyon_geom::CubicBezierSegment {
-            from:  lyon_geom::math::F64Point::new(px, py),
-            ctrl1: lyon_geom::math::F64Point::new(x1, y1),
-            ctrl2: lyon_geom::math::F64Point::new(x2, y2),
-            to:    lyon_geom::math::F64Point::new(x, y),
+        kurbo::CubicBez {
+            p0: kurbo::Vec2::new(px, py),
+            p1: kurbo::Vec2::new(x1, y1),
+            p2: kurbo::Vec2::new(x2, y2),
+            p3: kurbo::Vec2::new(x, y),
         }
     }
 
     fn create_curve_from_line(px: f64, py: f64, x: f64, y: f64)
-        -> lyon_geom::CubicBezierSegment<f64>
+        -> kurbo::CubicBez
     {
-        let line = lyon_geom::LineSegment {
-            from:  lyon_geom::math::F64Point::new(px, py),
-            to:    lyon_geom::math::F64Point::new(x, y),
+        let line = kurbo::Line {
+            p0: kurbo::Vec2::new(px, py),
+            p1: kurbo::Vec2::new(x, y),
         };
-
-        let p1 = line.sample(0.33);
-        let p2 = line.sample(0.66);
+        let p1 = line.eval(0.33);
+        let p2 = line.eval(0.66);
         create_curve(px, py, p1.x, p1.y, p2.x, p2.y, x, y)
     }
 
@@ -643,19 +643,17 @@ fn collect_normals(
             }
         };
 
-        let curve_len = curve.approximate_length(1.0);
+        let curve_len = curve.arclen(1.0);
 
         for offset in &offsets[normals.len()..] {
             if *offset >= length && *offset <= length + curve_len {
                 let offset = (offset - length) / curve_len;
                 debug_assert!(offset >= 0.0 && offset <= 1.0);
 
-                let pos = curve.sample(offset);
-
-                let d = curve.derivative(offset);
-                let d = lyon_geom::utils::normalized_tangent(d);
-
-                let angle = d.angle_from_x_axis().to_degrees() - 90.0;
+                let pos = curve.eval(offset);
+                let d = curve.deriv().eval(offset);
+                let d = kurbo::Vec2::new(-d.y, d.x); // tangent
+                let angle = d.atan2().to_degrees() - 90.0;
 
                 normals.push(Some(PathNormal {
                     x: pos.x,
@@ -670,8 +668,8 @@ fn collect_normals(
         }
 
         length += curve_len;
-        prev_x = curve.to.x;
-        prev_y = curve.to.y;
+        prev_x = curve.p3.x;
+        prev_y = curve.p3.y;
     }
 
     // If path ended and we still have unresolved normals - set them to `None`.

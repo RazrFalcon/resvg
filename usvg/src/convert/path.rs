@@ -2,10 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::f64;
-
 use crate::tree;
-use super::prelude::*;
 
 
 pub fn convert(
@@ -93,24 +90,29 @@ pub fn convert(
                 }
             }
             svgdom::PathSegment::EllipticalArc { rx, ry, x_axis_rotation, large_arc, sweep, x, y, .. } => {
-                let arc = lyon_geom::SvgArc {
-                    from: [px as f32, py as f32].into(),
-                    to: [x as f32, y as f32].into(),
-                    radii: [rx as f32, ry as f32].into(),
-                    x_rotation: lyon_geom::math::Angle::degrees(x_axis_rotation as f32),
-                    flags: lyon_geom::ArcFlags { large_arc, sweep },
+                let svg_arc = kurbo::SvgArc {
+                    from: kurbo::Vec2::new(px, py),
+                    to: kurbo::Vec2::new(x, y),
+                    radii: kurbo::Vec2::new(rx, ry),
+                    x_rotation: x_axis_rotation.to_radians(),
+                    large_arc,
+                    sweep,
                 };
 
-                arc.for_each_quadratic_bezier(&mut |quad| {
-                    let cubic = quad.to_cubic();
-                    let curve = tree::PathSegment::CurveTo {
-                        x1: cubic.ctrl1.x as f64, y1: cubic.ctrl1.y as f64,
-                        x2: cubic.ctrl2.x as f64, y2: cubic.ctrl2.y as f64,
-                        x:  cubic.to.x as f64,    y:  cubic.to.y as f64,
-                    };
-
-                    new_path.push(curve);
-                });
+                match kurbo::Arc::from_svg_arc(&svg_arc) {
+                    Some(arc) => {
+                        arc.to_cubic_beziers(0.1, |p1, p2, p| {
+                            new_path.push(tree::PathSegment::CurveTo {
+                                x1: p1.x, y1: p1.y,
+                                x2: p2.x, y2: p2.y,
+                                x: p.x, y: p.y,
+                            });
+                        });
+                    }
+                    None => {
+                        new_path.push(tree::PathSegment::LineTo { x, y });
+                    }
+                }
             }
             svgdom::PathSegment::ClosePath { .. } => {
                 if let Some(tree::PathSegment::ClosePath) = new_path.last() {
@@ -171,87 +173,15 @@ pub fn convert(
     new_path
 }
 
-fn quad_to_curve(
-    px: f64,
-    py: f64,
-    x1: f64,
-    y1: f64,
-    x: f64,
-    y: f64,
-) -> tree::PathSegment {
-    let quad = lyon_geom::QuadraticBezierSegment {
-        from: [px as f32, py as f32].into(),
-        ctrl: [x1 as f32, y1 as f32].into(),
-        to:   [x  as f32,  y as f32].into(),
-    };
-
-    let cubic = quad.to_cubic();
+fn quad_to_curve(px: f64, py: f64, x1: f64, y1: f64, x: f64, y: f64) -> tree::PathSegment {
+    #[inline]
+    fn calc(n1: f64, n2: f64) -> f64 {
+        (n1 + n2 * 2.0) / 3.0
+    }
 
     tree::PathSegment::CurveTo {
-        x1: cubic.ctrl1.x as f64, y1: cubic.ctrl1.y as f64,
-        x2: cubic.ctrl2.x as f64, y2: cubic.ctrl2.y as f64,
-        x:  cubic.to.x as f64,    y:  cubic.to.y as f64,
+        x1: calc(px, x1), y1: calc(py, y1),
+        x2:  calc(x, x1), y2:  calc(y, y1),
+        x, y,
     }
-}
-
-pub fn has_bbox(segments: &[tree::PathSegment]) -> bool {
-    debug_assert!(!segments.is_empty());
-
-    let (mut prev_x, mut prev_y, mut minx, mut miny, mut maxx, mut maxy) = {
-        if let tree::PathSegment::MoveTo { x, y } = segments[0] {
-            (x as f32, y as f32, x as f32, y as f32, x as f32, y as f32)
-        } else {
-            unreachable!();
-        }
-    };
-
-    for seg in segments {
-        match *seg {
-            tree::PathSegment::MoveTo { x, y }
-            | tree::PathSegment::LineTo { x, y } => {
-                let x = x as f32;
-                let y = y as f32;
-                prev_x = x;
-                prev_y = y;
-
-                if x > maxx { maxx = x; }
-                else if x < minx { minx = x; }
-
-                if y > maxy { maxy = y; }
-                else if y < miny { miny = y; }
-            }
-            tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                let x = x as f32;
-                let y = y as f32;
-
-                let curve = lyon_geom::CubicBezierSegment {
-                    from: lyon_geom::math::Point::new(prev_x, prev_y),
-                    ctrl1: lyon_geom::math::Point::new(x1 as f32, y1 as f32),
-                    ctrl2: lyon_geom::math::Point::new(x2 as f32, y2 as f32),
-                    to: lyon_geom::math::Point::new(x, y),
-                };
-
-                prev_x = x;
-                prev_y = y;
-
-                let r = curve.bounding_rect();
-
-                let right = r.max_x();
-                let bottom = r.max_y();
-                if r.min_x() < minx { minx = r.min_x(); }
-                if right > maxx { maxx = right; }
-                if r.min_y() < miny { miny = r.min_y(); }
-                if bottom > maxy { maxy = bottom; }
-            }
-            tree::PathSegment::ClosePath => {}
-        }
-
-        let width = (maxx - minx) as f64;
-        let height = (maxy - miny) as f64;
-        if !(width.is_fuzzy_zero() || height.is_fuzzy_zero()) {
-            return true;
-        }
-    }
-
-    false
 }

@@ -8,7 +8,7 @@ use std::rc::Rc;
 use svgdom::{ElementType, FilterSvg, Length};
 use log::warn;
 
-use crate::{tree, tree::prelude::*, fontdb, Error};
+use crate::{tree, tree::prelude::*, fontdb, utils, Error};
 pub use self::preprocess::prepare_doc;
 
 
@@ -559,7 +559,7 @@ fn convert_path(
         return;
     }
 
-    let has_bbox = path::has_bbox(&segments);
+    let has_bbox = utils::path_has_bbox(&segments);
     let attrs = node.attributes();
     let fill = style::resolve_fill(node, has_bbox, state, tree);
     let stroke = style::resolve_stroke(node, has_bbox, state, tree);

@@ -7,7 +7,7 @@
 use std::{cmp, f64, fmt};
 
 use usvg;
-pub use usvg::{Line, Rect, Size};
+pub use usvg::{Rect, Size};
 pub(crate) use usvg::f64_bound;
 
 use crate::utils;
