@@ -29,7 +29,7 @@ pub fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
 /// Line representation.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, Debug)]
-pub struct Line {
+pub(crate) struct Line {
     pub x1: f64,
     pub y1: f64,
     pub x2: f64,

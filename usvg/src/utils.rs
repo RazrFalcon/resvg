@@ -4,6 +4,9 @@
 
 //! Some useful utilities.
 
+use kurbo::{ParamCurveArclen, ParamCurveExtrema};
+use svgdom::FuzzyZero;
+
 use crate::{tree, geom::*};
 
 
@@ -80,8 +83,6 @@ pub fn rect_to_path(
 }
 
 /// Calculates path's bounding box.
-///
-/// Width and/or height can be zero.
 pub fn path_bbox(
     segments: &[tree::PathSegment],
     stroke: Option<&tree::Stroke>,
@@ -102,9 +103,6 @@ pub fn path_bbox(
     let mut maxy = 0.0;
 
     if let Some(tree::PathSegment::MoveTo { x, y }) = TransformedPath::new(segments, ts).next() {
-        let x = x as f32;
-        let y = y as f32;
-
         prev_x = x;
         prev_y = y;
         minx = x;
@@ -117,8 +115,6 @@ pub fn path_bbox(
         match seg {
               tree::PathSegment::MoveTo { x, y }
             | tree::PathSegment::LineTo { x, y } => {
-                let x = x as f32;
-                let y = y as f32;
                 prev_x = x;
                 prev_y = y;
 
@@ -129,27 +125,19 @@ pub fn path_bbox(
                 else if y < miny { miny = y; }
             }
             tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                let x = x as f32;
-                let y = y as f32;
-
-                let curve = lyon_geom::CubicBezierSegment {
-                    from: lyon_geom::math::Point::new(prev_x, prev_y),
-                    ctrl1: lyon_geom::math::Point::new(x1 as f32, y1 as f32),
-                    ctrl2: lyon_geom::math::Point::new(x2 as f32, y2 as f32),
-                    to: lyon_geom::math::Point::new(x, y),
+                let curve = kurbo::CubicBez {
+                    p0: kurbo::Vec2::new(prev_x, prev_y),
+                    p1: kurbo::Vec2::new(x1, y1),
+                    p2: kurbo::Vec2::new(x2, y2),
+                    p3: kurbo::Vec2::new(x, y),
                 };
 
-                prev_x = x;
-                prev_y = y;
+                let r = curve.bounding_box();
 
-                let r = curve.bounding_rect();
-
-                let right = r.max_x();
-                let bottom = r.max_y();
-                if r.min_x() < minx { minx = r.min_x(); }
-                if right > maxx { maxx = right; }
-                if r.min_y() < miny { miny = r.min_y(); }
-                if bottom > maxy { maxy = bottom; }
+                if r.x0 < minx { minx = r.x0; }
+                if r.x1 > maxx { maxx = r.x1; }
+                if r.x0 < miny { miny = r.y0; }
+                if r.y1 > maxy { maxy = r.y1; }
             }
             tree::PathSegment::ClosePath => {}
         }
@@ -158,7 +146,7 @@ pub fn path_bbox(
     // TODO: find a better way
     // It's an approximation, but it's better than nothing.
     if let Some(ref stroke) = stroke {
-        let w = (stroke.width.value() / 2.0) as f32;
+        let w = stroke.width.value() / 2.0;
         minx -= w;
         miny -= w;
         maxx += w;
@@ -168,8 +156,72 @@ pub fn path_bbox(
     let width = maxx - minx;
     let height = maxy - miny;
 
-    Rect::new(minx as f64, miny as f64, width as f64, height as f64)
+    Rect::new(minx, miny, width, height)
 }
+
+/// Checks that path has a bounding box.
+pub fn path_has_bbox(
+    segments: &[tree::PathSegment],
+) -> bool {
+    debug_assert!(!segments.is_empty());
+
+    let mut prev_x = 0.0;
+    let mut prev_y = 0.0;
+    let mut minx = 0.0;
+    let mut miny = 0.0;
+    let mut maxx = 0.0;
+    let mut maxy = 0.0;
+
+    if let tree::PathSegment::MoveTo { x, y } = segments[0] {
+        prev_x = x;
+        prev_y = y;
+        minx = x;
+        miny = y;
+        maxx = x;
+        maxy = y;
+    }
+
+    for seg in segments {
+        match *seg {
+              tree::PathSegment::MoveTo { x, y }
+            | tree::PathSegment::LineTo { x, y } => {
+                prev_x = x;
+                prev_y = y;
+
+                if x > maxx { maxx = x; }
+                else if x < minx { minx = x; }
+
+                if y > maxy { maxy = y; }
+                else if y < miny { miny = y; }
+            }
+            tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+                let curve = kurbo::CubicBez {
+                    p0: kurbo::Vec2::new(prev_x, prev_y),
+                    p1: kurbo::Vec2::new(x1, y1),
+                    p2: kurbo::Vec2::new(x2, y2),
+                    p3: kurbo::Vec2::new(x, y),
+                };
+
+                let r = curve.bounding_box();
+
+                if r.x0 < minx { minx = r.x0; }
+                if r.x1 > maxx { maxx = r.x1; }
+                if r.x0 < miny { miny = r.y0; }
+                if r.y1 > maxy { maxy = r.y1; }
+            }
+            tree::PathSegment::ClosePath => {}
+        }
+
+        let width = (maxx - minx) as f64;
+        let height = (maxy - miny) as f64;
+        if !(width.is_fuzzy_zero() || height.is_fuzzy_zero()) {
+            return true;
+        }
+    }
+
+    false
+}
+
 
 /// An iterator over transformed path segments.
 #[allow(missing_debug_implementations)]
@@ -233,7 +285,7 @@ pub fn path_length(
 
     let (mut prev_x, mut prev_y) = {
         if let tree::PathSegment::MoveTo { x, y } = segments[0] {
-            (x as f32, y as f32)
+            (x, y)
         } else {
             panic!("first segment must be MoveTo");
         }
@@ -252,30 +304,26 @@ pub fn path_length(
                 }
             }
             tree::PathSegment::LineTo { x, y } => {
-                length += Line::new(prev_x as f64, prev_y as f64, x, y).length();
+                length += Line::new(prev_x, prev_y, x, y).length();
 
-                prev_x = x as f32;
-                prev_y = y as f32;
+                prev_x = x;
+                prev_y = y;
             }
             tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                let x = x as f32;
-                let y = y as f32;
-
-                let curve = lyon_geom::CubicBezierSegment {
-                    from: lyon_geom::math::Point::new(prev_x, prev_y),
-                    ctrl1: lyon_geom::math::Point::new(x1 as f32, y1 as f32),
-                    ctrl2: lyon_geom::math::Point::new(x2 as f32, y2 as f32),
-                    to: lyon_geom::math::Point::new(x, y),
+                let curve = kurbo::CubicBez {
+                    p0: kurbo::Vec2::new(prev_x, prev_y),
+                    p1: kurbo::Vec2::new(x1, y1),
+                    p2: kurbo::Vec2::new(x2, y2),
+                    p3: kurbo::Vec2::new(x, y),
                 };
 
-                length += curve.approximate_length(1.0) as f64;
+                length += curve.arclen(1.0);
 
                 prev_x = x;
                 prev_y = y;
             }
             tree::PathSegment::ClosePath => {
-                length += Line::new(prev_x as f64, prev_y as f64,
-                                    start_x as f64, start_y as f64).length();
+                length += Line::new(prev_x, prev_y, start_x, start_y).length();
                 break;
             }
         }
