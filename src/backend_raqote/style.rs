@@ -182,7 +182,7 @@ fn prepare_radial<'a>(
 
     let mut grad;
 
-    if g.fx == g.cx && g.fy == g.fy {
+    if g.fx == g.cx && g.fy == g.cy {
         grad = raqote::Source::new_radial_gradient(
             raqote::Gradient { stops: conv_stops(g, opacity) },
             raqote::Point::new(g.cx as f32, g.cy as f32),
