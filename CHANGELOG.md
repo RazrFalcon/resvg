@@ -21,6 +21,8 @@ This changelog also contains important changes in dependencies.
 - (usvg) `--quiet` argument.
 - (c-api) `resvg_get_image_bbox`.
 - (qt-api) `ResvgRenderer::boundingBox`.
+- (resvg) A [raqote](https://github.com/jrmuizel/raqote) backend thanks to
+  [jrmuizel](https://github.com/jrmuizel). Still experimental.
 
 ### Changed
 - Text will be converted into paths on the `usvg` side now.

@@ -3,15 +3,14 @@
 
 = How to build *resvg*
 
-== Into
+== Intro
 
-*resvg* doesn't include a 2D graphics library and uses external ones via
-https://en.wikipedia.org/wiki/Foreign_function_interface[FFI].
+*resvg* doesn't include a 2D graphics library and uses external ones.
 Their support is implemented separately, therefore we call them _backends_.
 You can build them separately or together. +
-At the moment, there are only two backends: *Qt* and *cairo*.
-The first one uses the https://www.qt.io/[Qt framework] and the second one uses the
-https://www.cairographics.org/[cairo] library.
+At the moment, there are only three backends: https://www.qt.io/[Qt],
+https://www.cairographics.org/[cairo] and
+https://github.com/jrmuizel/raqote[raqote] (experimental).
 
 Since *resvg* is a https://www.rust-lang.org/[Rust] library, you should build it via `cargo`. +
 To enable a backend use the `--features` option:
@@ -21,19 +20,25 @@ To enable a backend use the `--features` option:
 cargo build --release --features="qt-backend"
 # or with a cairo backend
 cargo build --release --features="cairo-backend"
-# or with both
-cargo build --release --features="qt-backend cairo-backend"
+# or with a raqote backend
+cargo build --release --features="raqote-backend"
+# or with all
+cargo build --release --features="qt-backend cairo-backend raqote-backend"
 ```
 
 == Dependencies
 
 * The library requires the latest stable
   https://www.rust-lang.org/tools/install[Rust].
+* All backends depend on https://github.com/harfbuzz/harfbuzz[harfbuzz],
+  which will be built automatically by `cargo` and will be linked statically.
+  https://cmake.org/download/[CMake] is required as a build-time dependency.
 * The _Qt backend_ requires only `QtCore` and `QtGui` libraries
   and the JPEG image format plugin (aka `plugins/imageformats/qjpeg`). +
   Technically, any Qt 5 version should work, but we only support Qt >= 5.6.
 * The _cairo backend_ requires https://www.cairographics.org/[cairo] and `gdk-pixbuf` (part of GTK). +
   cairo >= 1.12 and gdk-pixbuf >= 2.30
+* The _raqote backend_ doesn't require any external dependencies.
 * (Linux, runtime) _fontconfig_. Specifically `fc-match`.
 
 == Windows
@@ -46,7 +51,7 @@ Install:
 * https://cmake.org/download/[CMake] (required to build harfbuzz).
 * Qt built with MSVC via an http://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe[official installer].
 
-Build using MSVC `cmd.exe` shell:
+Build using `x64 Native Tools Command Prompt for VS 2017` shell:
 
 ```batch
 set PATH=%userprofile%\.cargo\bin;%PATH%
@@ -89,21 +94,50 @@ pacman -S mingw-w64-x86_64-cmake mingw-w64-x86_64-cairo mingw-w64-x86_64-gdk-pix
 cargo.exe build --release --features "cairo-backend"
 ```
 
-You can use x86/i686 target in the same way.
+You can use i686 target in the same way.
+
+=== raqote backend via MSVC
+
+Install:
+
+* `stable-x86_64-pc-windows-msvc` https://www.rust-lang.org/tools/install[Rust] target.
+* https://cmake.org/download/[CMake] (required to build harfbuzz).
+
+Build using `x64 Native Tools Command Prompt for VS 2017` shell:
+
+```batch
+set PATH=%userprofile%\.cargo\bin;C:\Program Files\CMake\bin;%PATH%
+
+cargo.exe build --release --features "raqote-backend"
+```
+
+=== raqote backend via MSYS2
+
+Install `stable-x86_64-pc-windows-gnu` https://www.rust-lang.org/tools/install[Rust] target.
+And then:
+
+```bash
+# install harfbuzz dependencies:
+pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake
+
+cargo.exe build --release --features "raqote-backend"
+```
+
+You can use i686 target in the same way.
 
 == Linux
 
-For all backends we need `freetype` and `fontconfig` dev libraries.
+=== Qt backend
+
+Install Qt 5 and `harfbuzz` using your distributive's package manager.
 
 On Ubuntu you can install them via:
 
-```bash
-sudo apt install pkg-config libfreetype6-dev libfontconfig1-dev
+```
+sudo apt install qtbase5-dev libharfbuzz-dev
 ```
 
-=== Qt backend
-
-Install Qt 5 using your distributive's package manager and then build *resvg*:
+Build `resvg`:
 
 ```bash
 cargo build --release --features "qt-backend"
@@ -117,18 +151,34 @@ PKG_CONFIG_PATH='/path_to_qt/lib/pkgconfig' cargo build --release --features "qt
 
 === cairo backend
 
-Install `cairo` and `gdk-pixbuf` using your distributive's package manager.
+Install `cairo`, `gdk-pixbuf` and `harfbuzz` using your distributive's package manager.
 
 On Ubuntu you can install them via:
 
 ```
-sudo apt install libcairo2-dev libgdk-pixbuf2.0-dev
+sudo apt install libcairo2-dev libgdk-pixbuf2.0-dev libharfbuzz-dev
 ```
 
 Build `resvg`:
 
 ```bash
 cargo build --release --features "cairo-backend"
+```
+
+=== raqote backend
+
+Install `harfbuzz` using your distributive's package manager.
+
+On Ubuntu you can install it via:
+
+```
+sudo apt install libharfbuzz-dev
+```
+
+Build `resvg`:
+
+```bash
+cargo build --release --features "raqote-backend"
 ```
 
 == macOS
@@ -160,6 +210,16 @@ Using https://brew.sh/[homebrew]:
 brew install cairo gdk-pixbuf
 
 cargo build --release --features "cairo-backend"
+```
+
+=== raqote backend
+
+Using https://brew.sh/[homebrew]:
+
+```bash
+brew install cmake
+
+cargo build --release --features "raqote-backend"
 ```
 
 == For maintainers
