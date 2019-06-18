@@ -283,6 +283,7 @@ fn prepare_pattern<'a>(
         img2.draw_image_at(0.0, 0.0, &dt.as_image(), &raqote::DrawOptions {
             blend_mode: raqote::BlendMode::Src,
             alpha: opacity.value() as f32,
+            ..raqote::DrawOptions::default()
         });
 
         img2

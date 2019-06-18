@@ -75,7 +75,12 @@ pub fn draw_raster(
         sub_dt.as_image(), raqote::ExtendMode::Pad, t.inverse().unwrap(),
     );
 
-    dt.fill(&pb.finish(), &patt, &raqote::DrawOptions::default());
+    let mut draw_opt = raqote::DrawOptions::default();
+    if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
+        draw_opt.antialias = raqote::AntialiasMode::None;
+    }
+
+    dt.fill(&pb.finish(), &patt, &draw_opt);
 }
 
 fn image_to_surface(

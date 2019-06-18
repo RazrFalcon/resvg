@@ -42,7 +42,7 @@ impl ImageExt for raqote::DrawTarget {
         let mut dt = raqote::DrawTarget::new(self.width(), self.height());
         dt.draw_image_at(0.0, 0.0, &self.as_image(), &raqote::DrawOptions {
             blend_mode: raqote::BlendMode::Src,
-            alpha: 1.0,
+            ..raqote::DrawOptions::default()
         });
 
         Ok(dt)
@@ -112,7 +112,7 @@ fn copy_image(
 
     new_image.draw_image_at(-x, -y, &image.as_image(), &raqote::DrawOptions {
         blend_mode: raqote::BlendMode::Src,
-        alpha: 1.0,
+        ..raqote::DrawOptions::default()
     });
 
     Ok(new_image)
@@ -246,7 +246,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         let mut dt = create_image(region.width(), region.height())?;
         let draw_opt = raqote::DrawOptions {
             blend_mode: raqote::BlendMode::Src,
-            alpha: 1.0,
+            ..raqote::DrawOptions::default()
         };
         dt.draw_image_at(0.0, 0.0, &input2.as_ref().as_image(), &draw_opt);
 
@@ -258,7 +258,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
             usvg::FeBlendMode::Lighten => raqote::BlendMode::Lighten,
         };
 
-        let draw_opt = raqote::DrawOptions { blend_mode, alpha: 1.0 };
+        let draw_opt = raqote::DrawOptions { blend_mode, ..raqote::DrawOptions::default() };
         dt.draw_image_at(0.0, 0.0, &input1.as_ref().as_image(), &draw_opt);
 
         Ok(Image::from_image(dt, cs))
@@ -315,7 +315,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
 
         let draw_opt = raqote::DrawOptions {
             blend_mode: raqote::BlendMode::Src,
-            alpha: 1.0,
+            ..raqote::DrawOptions::default()
         };
         dt.draw_image_at(0.0, 0.0, &input2.as_image(), &draw_opt);
 
@@ -329,7 +329,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
             Operator::Arithmetic { .. } => raqote::BlendMode::SrcOver,
         };
 
-        let draw_opt = raqote::DrawOptions { blend_mode, alpha: 1.0 };
+        let draw_opt = raqote::DrawOptions { blend_mode, ..raqote::DrawOptions::default() };
         dt.draw_image_at(0.0, 0.0, &input1.as_image(), &draw_opt);
 
         Ok(Image::from_image(dt, cs))
@@ -433,7 +433,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
 
         let draw_opt = raqote::DrawOptions {
             blend_mode: raqote::BlendMode::SrcOver,
-            alpha: 1.0,
+            ..raqote::DrawOptions::default()
         };
         canvas.draw_image_at(
             region.x() as f32, region.y() as f32, &input.as_ref().as_image(), &draw_opt,

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::prelude::*;
+use crate::{prelude::*, backend_utils};
 use super::style;
 
 
@@ -10,7 +10,7 @@ pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
     opt: &Options,
-    draw_opt: &raqote::DrawOptions,
+    draw_opt: raqote::DrawOptions,
     dt: &mut raqote::DrawTarget,
 ) -> Option<Rect> {
     let mut is_butt_cap = true;
@@ -31,10 +31,6 @@ pub fn draw(
         return bbox;
     }
 
-//    if !backend_utils::use_shape_antialiasing(path.rendering_mode) {
-//        cr.set_antialias(cairo::Antialias::None);
-//    }
-
     if let Some(ref fill) = path.fill {
         match fill.rule {
             usvg::FillRule::NonZero => segments.winding = raqote::Winding::NonZero,
@@ -42,11 +38,13 @@ pub fn draw(
         }
     }
 
-    style::fill(tree, &segments, &path.fill, opt, style_bbox, draw_opt, dt);
-    style::stroke(tree, &segments, &path.stroke, opt, style_bbox, draw_opt, dt);
+    let mut draw_opt = draw_opt.clone();
+    if !backend_utils::use_shape_antialiasing(path.rendering_mode) {
+        draw_opt.antialias = raqote::AntialiasMode::None;
+    }
 
-//    // Revert anti-aliasing.
-//    cr.set_antialias(cairo::Antialias::Default);
+    style::fill(tree, &segments, &path.fill, opt, style_bbox, &draw_opt, dt);
+    style::stroke(tree, &segments, &path.stroke, opt, style_bbox, &draw_opt, dt);
 
     bbox
 }

@@ -38,7 +38,7 @@ pub fn clip(
                     ..Default::default()
                 };
 
-                path::draw(&node.tree(), p, opt, &draw_opt, &mut clip_dt);
+                path::draw(&node.tree(), p, opt, draw_opt, &mut clip_dt);
             }
             usvg::NodeKind::Group(ref g) => {
                 clip_group(&node, g, opt, bbox, layers, &mut clip_dt);
@@ -60,7 +60,7 @@ pub fn clip(
     dt.set_transform(&raqote::Transform::identity());
     dt.draw_image_at(0.0, 0.0, &clip_dt.as_image(), &raqote::DrawOptions {
         blend_mode: raqote::BlendMode::DstOut,
-        alpha: 1.0,
+        ..Default::default()
     });
 }
 
@@ -83,13 +83,13 @@ fn clip_group(
                 let mut clip_dt = clip_dt.borrow_mut();
                 clip_dt.set_transform(dt.get_transform());
 
-                draw_group_child(&node, opt, &raqote::DrawOptions::default(), &mut clip_dt);
+                draw_group_child(&node, opt, raqote::DrawOptions::default(), &mut clip_dt);
                 clip(clip_node, cp, opt, bbox, layers, &mut clip_dt);
 
                 dt.set_transform(&raqote::Transform::identity());
                 dt.draw_image_at(0.0, 0.0, &clip_dt.as_image(), &raqote::DrawOptions {
                     blend_mode: raqote::BlendMode::Xor,
-                    alpha: 1.0,
+                    ..Default::default()
                 });
             }
         }
@@ -100,7 +100,7 @@ fn clip_group(
 fn draw_group_child(
     node: &usvg::Node,
     opt: &Options,
-    draw_options: &raqote::DrawOptions,
+    draw_options: raqote::DrawOptions,
     dt: &mut raqote::DrawTarget,
 ) {
     if let Some(child) = node.first_child() {
@@ -161,6 +161,6 @@ pub fn mask(
     sub_dt.set_transform(&raqote::Transform::identity());
     sub_dt.draw_image_at(0.0, 0.0, &mask_dt.as_image(), &raqote::DrawOptions {
         blend_mode: raqote::BlendMode::DstIn,
-        alpha: 1.0,
+        ..Default::default()
     });
 }

@@ -231,7 +231,7 @@ fn render_node(
             render_group(node, opt, layers, dt)
         }
         usvg::NodeKind::Path(ref path) => {
-            path::draw(&node.tree(), path, opt, &raqote::DrawOptions::default(), dt)
+            path::draw(&node.tree(), path, opt, raqote::DrawOptions::default(), dt)
         }
         usvg::NodeKind::Image(ref img) => {
             Some(image::draw(img, opt, dt))
@@ -330,6 +330,7 @@ fn render_group_impl(
     dt.draw_image_at(0.0, 0.0, &sub_dt.as_image(), &raqote::DrawOptions {
         blend_mode: raqote::BlendMode::SrcOver,
         alpha: g.opacity.value() as f32,
+        antialias: raqote::AntialiasMode::Gray,
     });
 
     dt.set_transform(&curr_ts);
