@@ -214,11 +214,7 @@ cargo build --release --features "cairo-backend"
 
 === raqote backend
 
-Using https://brew.sh/[homebrew]:
-
 ```bash
-brew install cmake
-
 cargo build --release --features "raqote-backend"
 ```
 
