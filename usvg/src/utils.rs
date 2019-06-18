@@ -136,7 +136,7 @@ pub fn path_bbox(
 
                 if r.x0 < minx { minx = r.x0; }
                 if r.x1 > maxx { maxx = r.x1; }
-                if r.x0 < miny { miny = r.y0; }
+                if r.y0 < miny { miny = r.y0; }
                 if r.y1 > maxy { maxy = r.y1; }
             }
             tree::PathSegment::ClosePath => {}

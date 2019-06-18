@@ -159,14 +159,16 @@ fn convert_pattern(
 ) -> Option<ServerOrColor> {
     let node_with_children = find_pattern_with_children(node)?;
 
-    let ref attrs = node.attributes();
-
-    let view_box = node.get_viewbox().map(|vb|
-        tree::ViewBox {
-            rect: vb,
-            aspect: super::convert_aspect(attrs), // TODO: via href?
-        }
-    );
+    let view_box = {
+        let n1 = resolve_attr(node, AId::ViewBox);
+        let n2 = resolve_attr(node, AId::PreserveAspectRatio);
+        n1.get_viewbox().map(|vb|
+            tree::ViewBox {
+                rect: vb,
+                aspect: super::convert_aspect(&n2.attributes()),
+            }
+        )
+    };
 
     let units = convert_units(node, AId::PatternUnits, tree::Units::ObjectBoundingBox);
     let content_units = convert_units(node, AId::PatternContentUnits, tree::Units::UserSpaceOnUse);

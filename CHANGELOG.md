@@ -8,14 +8,14 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
-- New text layout implementation.
-- `textPath` support.
-- `writing-mode` support, aka vertical text.
-- [Text BIDI reordering](http://www.unicode.org/reports/tr9/).
-- Better text shaping.
-- `word-spacing` is supported for all backends now.
-- [`harfbuzz`](https://github.com/harfbuzz/harfbuzz) dependency.
-- Subscript, superscript offsets are extracted from font and not hardcoded now.
+- New text layout implementation:
+  - `textPath` support.
+  - `writing-mode` support, aka vertical text.
+  - [Text BIDI reordering](http://www.unicode.org/reports/tr9/).
+  - Better text shaping.
+  - `word-spacing` is supported for all backends now.
+  - [`harfbuzz`](https://github.com/harfbuzz/harfbuzz) dependency.
+  - Subscript, superscript offsets are extracted from font and not hardcoded now.
 - `shape-rendering`, `text-rendering` and `image-rendering` support.
 - The `arithmetic` operator for `feComposite`.
 - (usvg) `--quiet` argument.
@@ -47,6 +47,8 @@ This changelog also contains important changes in dependencies.
 - (c-api) `resvg_is_image_empty` was always returning `false`.
 - (resvg) Panic when `filter` with `objectBoudningBox` was set on an empty group.
 - (usvg) `mask` with `objectBoundingBox` resolving.
+- (usvg) `pattern`'s `viewBox` attribute resolving via `href`.
+- (roxmltree) Namespace resolving.
 
 ## [0.6.1] - 2019-03-16
 ### Fixed
