@@ -87,7 +87,7 @@ void ResvgQtTests::test_imageBoundingBox()
 {
     ResvgRenderer render(localPath("test.svg"));
     QVERIFY(!render.isEmpty());
-    QCOMPARE(render.boundingBox(), QRect(20, 20, 160, 160));
+    QCOMPARE(render.boundingBox().toRect(), QRect(20, 20, 160, 160));
 }
 
 void ResvgQtTests::test_elementExists()
