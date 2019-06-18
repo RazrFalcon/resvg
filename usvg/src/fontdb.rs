@@ -559,7 +559,8 @@ fn load_fonts_from(dir: &str, paths: &mut Vec<FontPath>) {
             let path = entry.path();
             if path.is_file() {
                 match utils::file_extension(&path) {
-                    Some("ttf") | Some("ttc") | Some("TTF") | Some("TTC") => {
+                    Some("ttf") | Some("ttc") | Some("TTF") | Some("TTC") |
+                    Some("otf") | Some("otc") | Some("OTF") | Some("OTC") => {
                         let _ = load_font(&path, None, paths);
                     }
                     _ => {}
