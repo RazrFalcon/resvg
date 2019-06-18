@@ -46,6 +46,7 @@ This changelog also contains important changes in dependencies.
 - (resvg) Panic when `filter` with `objectBoudningBox` was set on an empty group.
 - (usvg) `mask` with `objectBoundingBox` resolving.
 - (usvg) `pattern`'s `viewBox` attribute resolving via `href`.
+- (roxmltree) Namespace resolving.
 
 ## [0.6.1] - 2019-03-16
 ### Fixed
