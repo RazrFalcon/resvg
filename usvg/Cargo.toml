@@ -27,7 +27,7 @@ log = "0.4"
 memmap = "0.7"
 rctree = "0.3"
 svgdom = "0.17"
-ttf-parser = { git = "https://github.com/RazrFalcon/ttf-parser", rev = "9bbea56" }
+ttf-parser = "0.1"
 unicode-bidi = "0.3"
 unicode-script = "0.3"
 unicode-vo = "0.1"
