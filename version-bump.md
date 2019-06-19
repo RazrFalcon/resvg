@@ -1,0 +1,12 @@
+- .github/*
+- capi/Cargo.toml
+- capi/include/resvg.h
+- Cargo.toml
+- CHANGELOG.md
+- resvg-qt/Cargo.toml
+- src/lib.rs
+- tools/rendersvg/Cargo.toml
+- tools/usvg/Cargo.toml
+- usvg/Cargo.toml
+- usvg/src/lib.rs
+- usvg/tests/test.rs

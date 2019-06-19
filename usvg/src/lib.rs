@@ -57,7 +57,7 @@ Full spec can be found [here](https://github.com/RazrFalcon/usvg/blob/master/doc
 [SVG]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 */
 
-#![doc(html_root_url = "https://docs.rs/usvg/0.6.1")]
+#![doc(html_root_url = "https://docs.rs/usvg/0.7.0")]
 
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]

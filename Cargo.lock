@@ -571,42 +571,42 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "rendersvg"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "fern 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "gumdrop 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "resvg 0.6.1",
+ "resvg 0.7.0",
  "time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "resvg"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "cairo-rs 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gdk-pixbuf 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.21.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "raqote 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "resvg-qt 0.6.1",
+ "resvg-qt 0.7.0",
  "rgb 0.8.13 (registry+https://github.com/rust-lang/crates.io-index)",
- "usvg 0.6.1",
+ "usvg 0.7.0",
 ]
 
 [[package]]
 name = "resvg-capi"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "cairo-sys-rs 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "fern 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "resvg 0.6.1",
+ "resvg 0.7.0",
 ]
 
 [[package]]
 name = "resvg-qt"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "cc 1.0.37 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -740,7 +740,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "usvg"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "data-url 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -760,12 +760,12 @@ dependencies = [
 
 [[package]]
 name = "usvg-cli"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "fern 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "gumdrop 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "usvg 0.6.1",
+ "usvg 0.7.0",
 ]
 
 [[package]]

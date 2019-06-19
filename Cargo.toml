@@ -1,6 +1,6 @@
 [package]
 name = "resvg"
-version = "0.6.1"
+version = "0.7.0"
 authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster"]
 license = "MPL-2.0"
@@ -26,14 +26,14 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 [dependencies]
 log = "0.4"
 rgb = "0.8"
-usvg = { path = "usvg", version = "0.6" }
+usvg = { path = "usvg", version = "0.7" }
 
 # cairo backend
 cairo-rs = { version = "0.6", features = ["png"], optional = true }
 gdk-pixbuf = { version = "0.6", optional = true }
 
 # qt backend
-resvg-qt = { path = "resvg-qt", version = "0.6", optional = true }
+resvg-qt = { path = "resvg-qt", version = "0.7", optional = true }
 
 # raqote backend
 raqote = { version = "0.5.1", default-features = false, optional = true }
