@@ -21,3 +21,4 @@ cairo-sys-rs = { version = "0.8.0", optional = true }
 [features]
 cairo-backend = ["resvg/cairo-backend", "cairo-sys-rs"]
 qt-backend = ["resvg/qt-backend"]
+raqote-backend = ["resvg/raqote-backend"]

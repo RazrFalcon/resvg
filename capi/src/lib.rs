@@ -260,6 +260,17 @@ pub extern "C" fn resvg_cairo_render_to_image(
     render_to_image(tree, opt, file_path, backend)
 }
 
+#[cfg(feature = "raqote-backend")]
+#[no_mangle]
+pub extern "C" fn resvg_raqote_render_to_image(
+    tree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    file_path: *const c_char,
+) -> i32 {
+    let backend = Box::new(resvg::backend_raqote::Backend);
+    render_to_image(tree, opt, file_path, backend)
+}
+
 fn render_to_image(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
