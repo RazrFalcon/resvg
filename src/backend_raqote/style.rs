@@ -307,6 +307,7 @@ fn create_pattern_image(
     raqote::Source::Image(
         dt.as_image(),
         raqote::ExtendMode::Repeat,
+        raqote::FilterMode::Bilinear,
         ts.inverse().unwrap(),
     )
 }

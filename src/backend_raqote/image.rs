@@ -70,17 +70,21 @@ pub fn draw_raster(
         pb.rect(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
     }
 
+    let filter_mode = if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
+        raqote::FilterMode::Nearest
+    } else {
+        raqote::FilterMode::Bilinear
+    };
+
     let t: raqote::Transform = ts.to_native();
     let patt = raqote::Source::Image(
-        sub_dt.as_image(), raqote::ExtendMode::Pad, t.inverse().unwrap(),
+        sub_dt.as_image(),
+        raqote::ExtendMode::Pad,
+        filter_mode,
+        t.inverse().unwrap(),
     );
 
-    let mut draw_opt = raqote::DrawOptions::default();
-    if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
-        draw_opt.antialias = raqote::AntialiasMode::None;
-    }
-
-    dt.fill(&pb.finish(), &patt, &draw_opt);
+    dt.fill(&pb.finish(), &patt, &raqote::DrawOptions::default());
 }
 
 fn image_to_surface(

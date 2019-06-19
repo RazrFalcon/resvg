@@ -378,7 +378,12 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
 
         let ts: raqote::Transform = brush_ts.to_native();
         let ts = ts.inverse().unwrap();
-        let patt = raqote::Source::Image(tile.as_image(), raqote::ExtendMode::Repeat, ts);
+        let patt = raqote::Source::Image(
+            tile.as_image(),
+            raqote::ExtendMode::Repeat,
+            raqote::FilterMode::Bilinear,
+            ts,
+        );
 
         let mut pb = raqote::PathBuilder::new();
         pb.rect(0.0, 0.0, region.width() as f32, region.height() as f32);
@@ -398,7 +403,6 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         match fe.data {
             usvg::FeImageKind::None => {}
             usvg::FeImageKind::Image(ref data, format) => {
-
                 let dx = (subregion.x() - region.x()) as f64;
                 let dy = (subregion.y() - region.y()) as f64;
                 let ctm = dt.get_transform().pre_translate(raqote::Vector::new(dx as f32, dy as f32));
