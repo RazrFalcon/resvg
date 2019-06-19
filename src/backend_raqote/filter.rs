@@ -389,6 +389,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         pb.rect(0.0, 0.0, region.width() as f32, region.height() as f32);
         dt.fill(&pb.finish(), &patt, &raqote::DrawOptions::default());
 
+        dt.set_transform(&raqote::Transform::default());
         Ok(Image::from_image(dt, ColorSpace::SRGB))
     }
 
@@ -422,6 +423,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
             usvg::FeImageKind::Use(..) => {}
         }
 
+        dt.set_transform(&raqote::Transform::default());
         Ok(Image::from_image(dt, ColorSpace::SRGB))
     }
 
