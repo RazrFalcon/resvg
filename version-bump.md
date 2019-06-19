@@ -5,6 +5,7 @@
 - CHANGELOG.md
 - resvg-qt/Cargo.toml
 - src/lib.rs
+- tools/explorer-thumbnailer/install/installer.iss
 - tools/rendersvg/Cargo.toml
 - tools/usvg/Cargo.toml
 - usvg/Cargo.toml
