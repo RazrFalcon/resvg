@@ -16,7 +16,6 @@ members = [
     "capi",
     "tools/rendersvg",
     "tools/usvg",
-    "examples/cairo-rs",
     "usvg",
     "resvg-qt",
 ]
