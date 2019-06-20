@@ -437,13 +437,12 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         canvas.set_transform(&raqote::Transform::identity());
         canvas.make_transparent();
 
-        let draw_opt = raqote::DrawOptions {
-            blend_mode: raqote::BlendMode::SrcOver,
-            ..raqote::DrawOptions::default()
-        };
-        canvas.draw_image_at(
-            region.x() as f32, region.y() as f32, &input.as_ref().as_image(), &draw_opt,
-        );
+        let image = input.as_ref();
+
+        canvas.copy_surface(image,
+                            raqote::IntRect::new(raqote::IntPoint::new(0, 0),
+                                                 raqote::IntPoint::new(image.width(), image.height())),
+                            raqote::IntPoint::new(region.x(), region.y()));
 
         Ok(())
     }
