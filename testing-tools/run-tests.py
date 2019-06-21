@@ -27,7 +27,8 @@ def regression_testing(backend):
         os.mkdir(reg_work_dir)
 
     regression_args = ['./regression.py', tests_dir, reg_work_dir, '--backend', backend]
-    if not local_test:
+    # Use a master branch for pull requests.
+    if not local_test and os.environ['TRAVIS_PULL_REQUEST'] == 'false':
         regression_args.append('--use-prev-commit')
 
     run(regression_args, check=True)
