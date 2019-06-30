@@ -29,7 +29,7 @@ rgb = "0.8"
 usvg = { path = "usvg", version = "0.7" }
 
 # cairo backend
-cairo-rs = { version = "0.6", features = ["png"], optional = true }
+cairo-rs = { version = "0.6", default-features = false, features = ["png"], optional = true }
 gdk-pixbuf = { version = "0.6", optional = true }
 
 # qt backend

@@ -51,9 +51,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bitflags 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cairo-sys-rs 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "glib 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "glib-sys 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "gobject-sys 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -62,7 +59,6 @@ name = "cairo-sys-rs"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "glib-sys 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
