@@ -16,10 +16,7 @@ pub enum Error {
 }
 
 
-pub trait ImageExt
-where
-    Self: Sized
-{
+pub trait ImageExt: Sized {
     fn width(&self) -> u32;
     fn height(&self) -> u32;
 

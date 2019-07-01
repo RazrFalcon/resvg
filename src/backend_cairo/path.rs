@@ -10,8 +10,9 @@ pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
     opt: &Options,
+    bbox: Option<Rect>,
     cr: &cairo::Context,
-) -> Option<Rect> {
+) {
     let mut is_square_cap = false;
     if let Some(ref stroke) = path.stroke {
         is_square_cap = stroke.linecap == usvg::LineCap::Square;
@@ -19,16 +20,10 @@ pub fn draw(
 
     draw_path(&path.segments, is_square_cap, cr);
 
-    let bbox = utils::path_bbox(&path.segments, None, None);
-
     // `usvg` guaranties that path without a bbox will not use
     // a paint server with ObjectBoundingBox,
     // so we can pass whatever rect we want, because it will not be used anyway.
     let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
-
-    if path.visibility != usvg::Visibility::Visible {
-        return bbox;
-    }
 
     if !use_shape_antialiasing(path.rendering_mode) {
         cr.set_antialias(cairo::Antialias::None);
@@ -46,8 +41,6 @@ pub fn draw(
 
     // Revert anti-aliasing.
     cr.set_antialias(cairo::Antialias::Default);
-
-    bbox
 }
 
 fn draw_path(

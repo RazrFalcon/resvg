@@ -5,7 +5,7 @@
 use usvg::try_opt;
 
 use crate::{prelude::*, backend_utils::ConvTransform};
-use super::{ColorExt, RaqoteDrawTargetExt};
+use super::{ColorExt, RaqoteDrawTargetExt, RaqoteFlatRender, FlatRender};
 
 
 pub fn fill(
@@ -271,8 +271,9 @@ fn prepare_pattern<'a>(
         dt.transform(&raqote::Transform::create_scale(bbox.width() as f32, bbox.height() as f32));
     }
 
-    let mut layers = super::create_layers(img_size);
-    super::render_group(pattern_node, opt, &mut layers, &mut dt);
+    let ref tree = pattern_node.tree();
+    let mut render = RaqoteFlatRender::new(tree, opt, img_size, &mut dt);
+    render.render_group(pattern_node);
 
     let img = if !opacity.is_default() {
         // If `opacity` isn't `1` then we have to make image semitransparent.
