@@ -389,12 +389,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "libflate"
-version = "0.1.23"
+version = "0.1.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "adler32 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "crc32fast 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rle-decode-fast 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "take_mut 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -614,6 +616,11 @@ version = "0.8.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "rle-decode-fast"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "roxmltree"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -692,6 +699,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "take_mut"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "time"
 version = "0.1.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -742,7 +754,7 @@ dependencies = [
  "data-url 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "harfbuzz_rs 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "kurbo 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "libflate 0.1.23 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libflate 0.1.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "memmap 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pretty_assertions 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -835,7 +847,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum kurbo 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2e6076333105a72e8d2c227ba6a6da0dc3c8e5f53f02053f598a6087a1ea8991"
 "checksum lazy_static 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "bc5729f27f159ddd61f4df6228e827e86643d4d3e7c32183cb30a1c08f604a14"
 "checksum libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)" = "6281b86796ba5e4366000be6e9e18bf35580adf9e63fbe2294aadb587613a319"
-"checksum libflate 0.1.23 (registry+https://github.com/rust-lang/crates.io-index)" = "76912aa0196b6f0e06d9c43ee877be45369157c06172ade12fe20ac3ee5ffa15"
+"checksum libflate 0.1.25 (registry+https://github.com/rust-lang/crates.io-index)" = "90c6f86f4b0caa347206f916f8b687b51d77c6ef8ff18d52dd007491fd580529"
 "checksum log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)" = "c84ec4b527950aa83a329754b01dbe3f58361d1c5efacd1f6d68c494d08a17c6"
 "checksum lyon_geom 0.12.6 (registry+https://github.com/rust-lang/crates.io-index)" = "0638070e85f0e8b5da3909d8c5c0a66785b18da96a1e8dc30acb0aea9770529a"
 "checksum lzw 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7d947cbb889ed21c2a84be6ffbaebf5b4e0f4340638cba0444907e38b56be084"
@@ -858,6 +870,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum rctree 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "193d11923532b462b7231e2d7fb785a9c0d580b03c0eccac460a1e9ee0e87fda"
 "checksum redox_syscall 0.1.54 (registry+https://github.com/rust-lang/crates.io-index)" = "12229c14a0f65c4f1cb046a3b52047cdd9da1f4b30f8a39c5063c8bae515e252"
 "checksum rgb 0.8.13 (registry+https://github.com/rust-lang/crates.io-index)" = "4f089652ca87f5a82a62935ec6172a534066c7b97be003cc8f702ee9a7a59c92"
+"checksum rle-decode-fast 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "cabe4fa914dec5870285fa7f71f602645da47c486e68486d2b4ceb4a343e90ac"
 "checksum roxmltree 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)" = "330d8f80a274bc3cb608908ee345970e7e24b96907f1ad69615a498bec57871c"
 "checksum servo-freetype-sys 4.0.5 (registry+https://github.com/rust-lang/crates.io-index)" = "2c4ccb6d0d32d277d3ef7dea86203d8210945eb7a45fba89dd445b3595dd0dfc"
 "checksum simplecss 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "135685097a85a64067df36e28a243e94a94f76d829087ce0be34eeb014260c0e"
@@ -868,6 +881,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum sw-composite 0.5.10 (registry+https://github.com/rust-lang/crates.io-index)" = "5eba1755094da86216f071f7a28b0453345c3e6e558ea2fd7821c55eef8fb9b2"
 "checksum syn 0.14.9 (registry+https://github.com/rust-lang/crates.io-index)" = "261ae9ecaa397c42b960649561949d69311f08eeaea86a65696e6e46517cf741"
 "checksum syn 0.15.36 (registry+https://github.com/rust-lang/crates.io-index)" = "8b4f551a91e2e3848aeef8751d0d4eec9489b6474c720fd4c55958d8d31a430c"
+"checksum take_mut 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "f764005d11ee5f36500a149ace24e00e3da98b0158b3e2d53a7495660d3f4d60"
 "checksum time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)" = "db8dcfca086c1143c9270ac42a2bbd8a7ee477b78ac8e45b19abfb0cbede4b6f"
 "checksum ttf-parser 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "29637063e570f7e5260924119666113215386c1b94e1d1ceb4525e269dfbe2d0"
 "checksum typed-arena 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "c6c06a92aef38bb4dc5b0df00d68496fc31307c5344c867bb61678c6e1671ec5"
