@@ -415,12 +415,6 @@ extern "C" {
     pub fn qtc_qimage_create_rgba(width: u32, height: u32) -> *mut qtc_qimage;
 }
 extern "C" {
-    pub fn qtc_qimage_from_file(path: *const ::std::os::raw::c_char) -> *mut qtc_qimage;
-}
-extern "C" {
-    pub fn qtc_qimage_from_data(data: *const u8, size: ::std::os::raw::c_int) -> *mut qtc_qimage;
-}
-extern "C" {
     pub fn qtc_qimage_get_data(c_img: *mut qtc_qimage) -> *mut u8;
 }
 extern "C" {

@@ -335,3 +335,17 @@ pub trait ConvTransform<T> {
     fn to_native(&self) -> T;
     fn from_native(_: &T) -> Self;
 }
+
+
+pub trait ToScreenSize {
+    fn to_screen_size(&self) -> Option<ScreenSize>;
+}
+
+impl ToScreenSize for ::image::DynamicImage {
+    fn to_screen_size(&self) -> Option<ScreenSize> {
+        use ::image::GenericImageView;
+
+        let size = self.dimensions();
+        ScreenSize::new(size.0, size.1)
+    }
+}

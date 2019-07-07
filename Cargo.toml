@@ -30,7 +30,6 @@ usvg = { path = "usvg", version = "0.7" }
 
 # cairo backend
 cairo-rs = { version = "0.7.1", default-features = false, features = ["png"], optional = true }
-gdk-pixbuf = { version = "0.7", optional = true }
 
 # qt backend
 resvg-qt = { path = "resvg-qt", version = "0.7", optional = true }
@@ -42,13 +41,11 @@ raqote = { version = "0.5.5", default-features = false, optional = true }
 version = "0.21"
 default-features = false
 features = ["jpeg", "png_codec"]
-optional = true
-
 
 [features]
-cairo-backend = ["cairo-rs", "gdk-pixbuf"]
+cairo-backend = ["cairo-rs"]
 qt-backend = ["resvg-qt"]
-raqote-backend = ["raqote", "image"]
+raqote-backend = ["raqote"]
 
 [package.metadata.docs.rs]
 all-features = true

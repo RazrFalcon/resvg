@@ -4,8 +4,82 @@
 
 use std::path;
 
+use log::warn;
+
 use crate::prelude::*;
 
+
+pub fn load(
+    data: &usvg::ImageData,
+    opt: &Options,
+) -> Option<image::DynamicImage> {
+    match data {
+        usvg::ImageData::Path(ref path) => {
+            let path = get_abs_path(path, opt);
+            match image::open(&path) {
+                Ok(img) => Some(img),
+                Err(_) => {
+                    warn!("Failed to load an external image: {:?}.", path);
+                    None
+                }
+            }
+        }
+        usvg::ImageData::Raw(ref data) => {
+            match image::load_from_memory(data) {
+                Ok(img) => Some(img),
+                Err(_) => {
+                    warn!("Failed to load an embedded image.");
+                    None
+                }
+            }
+        }
+    }
+}
+
+pub fn image_to_surface(
+    img: &image::DynamicImage,
+    surface: &mut [u8],
+) {
+    // Surface is always ARGB.
+    const SURFACE_CHANNELS: usize = 4;
+
+    debug_assert!(surface.len() % SURFACE_CHANNELS == 0);
+
+    let mut i = 0;
+
+    let mut to_surface = |r, g, b, a| {
+        let tr = a * r + 0x80;
+        let tg = a * g + 0x80;
+        let tb = a * b + 0x80;
+        surface[i + 0] = (((tb >> 8) + tb) >> 8) as u8;
+        surface[i + 1] = (((tg >> 8) + tg) >> 8) as u8;
+        surface[i + 2] = (((tr >> 8) + tr) >> 8) as u8;
+        surface[i + 3] = a as u8;
+
+        i += SURFACE_CHANNELS;
+    };
+
+    match img {
+        image::DynamicImage::ImageRgb8(data) => {
+            for pixel in data.pixels() {
+                let r = pixel[0] as u32;
+                let g = pixel[1] as u32;
+                let b = pixel[2] as u32;
+                to_surface(r, g, b, 255);
+            }
+        }
+        image::DynamicImage::ImageRgba8(data) => {
+            for pixel in data.pixels() {
+                let r = pixel[0] as u32;
+                let g = pixel[1] as u32;
+                let b = pixel[2] as u32;
+                let a = pixel[3] as u32;
+                to_surface(r, g, b, a);
+            }
+        }
+        _ => {}
+    }
+}
 
 pub fn load_sub_svg(
     data: &usvg::ImageData,
@@ -118,7 +192,7 @@ pub fn image_rect(
     new_size.to_size().to_rect(x, y)
 }
 
-pub fn get_abs_path(
+fn get_abs_path(
     rel_path: &path::Path,
     opt: &Options,
 ) -> path::PathBuf {

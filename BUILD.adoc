@@ -33,11 +33,9 @@ cargo build --release --features="qt-backend cairo-backend raqote-backend"
 * All backends depend on https://github.com/harfbuzz/harfbuzz[harfbuzz],
   which will be built automatically by `cargo` and will be linked statically.
   https://cmake.org/download/[CMake] is required as a build-time dependency.
-* The _Qt backend_ requires only `QtCore` and `QtGui` libraries
-  and the JPEG image format plugin (aka `plugins/imageformats/qjpeg`). +
+* The _Qt backend_ requires only `QtCore` and `QtGui` libraries. +
   Technically, any Qt 5 version should work, but we only support Qt >= 5.6.
-* The _cairo backend_ requires https://www.cairographics.org/[cairo] and `gdk-pixbuf` (part of GTK). +
-  cairo >= 1.12 and gdk-pixbuf >= 2.30
+* The _cairo backend_ requires https://www.cairographics.org/[cairo] >= 1.12.
 * The _raqote backend_ doesn't require any external dependencies.
 * (Linux, runtime) _fontconfig_. Specifically `fc-match`.
 
@@ -89,7 +87,7 @@ Install `stable-x86_64-pc-windows-gnu` https://www.rust-lang.org/tools/install[R
 And then:
 
 ```bash
-pacman -S mingw-w64-x86_64-cmake mingw-w64-x86_64-cairo mingw-w64-x86_64-gdk-pixbuf2
+pacman -S mingw-w64-x86_64-cmake mingw-w64-x86_64-cairo
 
 cargo.exe build --release --features "cairo-backend"
 ```
@@ -151,12 +149,12 @@ PKG_CONFIG_PATH='/path_to_qt/lib/pkgconfig' cargo build --release --features "qt
 
 === cairo backend
 
-Install `cairo`, `gdk-pixbuf` and `harfbuzz` using your distributive's package manager.
+Install `cairo` and `harfbuzz` using your distributive's package manager.
 
 On Ubuntu you can install them via:
 
 ```
-sudo apt install libcairo2-dev libgdk-pixbuf2.0-dev libharfbuzz-dev
+sudo apt install libcairo2-dev libharfbuzz-dev
 ```
 
 Build `resvg`:
@@ -207,7 +205,7 @@ We are using Qt 5.12.0 just for example.
 Using https://brew.sh/[homebrew]:
 
 ```bash
-brew install cairo gdk-pixbuf
+brew install cairo
 
 cargo build --release --features "cairo-backend"
 ```
