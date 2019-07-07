@@ -430,7 +430,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
                 if format == usvg::ImageFormat::SVG {
                     super::image::draw_svg(data, view_box, opt, &cr);
                 } else {
-                    super::image::draw_raster(data, view_box, fe.rendering_mode, opt, &cr);
+                    super::image::draw_raster(format, data, view_box, fe.rendering_mode, opt, &cr);
                 }
             }
             usvg::FeImageKind::Use(..) => {}

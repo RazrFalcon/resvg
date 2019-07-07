@@ -5,35 +5,35 @@
 use usvg::try_opt;
 
 use crate::prelude::*;
-use crate::backend_utils::{self, ConvTransform, ToScreenSize};
+use crate::backend_utils::{self, ConvTransform};
 use super::RaqoteDrawTargetExt;
 
 
 pub fn draw_raster(
+    format: usvg::ImageFormat,
     data: &usvg::ImageData,
     view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
     opt: &Options,
     dt: &mut raqote::DrawTarget,
 ) {
-    let img = try_opt!(backend_utils::image::load(data, opt));
-    let img_size = try_opt!(img.to_screen_size());
+    let img = try_opt!(backend_utils::image::load_raster(format, data, opt));
 
     let sub_dt = {
-        let mut sub_dt = raqote::DrawTarget::new(img_size.width() as i32, img_size.height() as i32);
+        let mut sub_dt = raqote::DrawTarget::new(img.size.width() as i32, img.size.height() as i32);
         let surface_data = sub_dt.get_data_u8_mut();
         backend_utils::image::image_to_surface(&img, surface_data);
         sub_dt
     };
 
-    let (ts, clip) = backend_utils::image::prepare_sub_svg_geom(view_box, img_size);
+    let (ts, clip) = backend_utils::image::prepare_sub_svg_geom(view_box, img.size);
 
     let mut pb = raqote::PathBuilder::new();
     if let Some(clip) = clip {
         pb.rect(clip.x() as f32, clip.y() as f32, clip.width() as f32, clip.height() as f32);
     } else {
         // We have to clip the image before rendering because we use `Extend::Pad`.
-        let r = backend_utils::image::image_rect(&view_box, img_size);
+        let r = backend_utils::image::image_rect(&view_box, img.size);
         pb.rect(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
     }
 

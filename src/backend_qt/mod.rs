@@ -242,20 +242,17 @@ impl<'a> FlatRender for QtFlatRender<'a> {
         });
     }
 
-    fn draw_svg_image(&mut self, data: &usvg::ImageData, view_box: usvg::ViewBox) {
+    fn draw_svg_image(&mut self, image: &usvg::Image) {
         self.paint(|_, opt, p| {
-            image::draw_svg(data, view_box, opt, p);
+            image::draw_svg(&image.data, image.view_box, opt, p);
         });
     }
 
-    fn draw_raster_image(
-        &mut self,
-        data: &usvg::ImageData,
-        view_box: usvg::ViewBox,
-        rendering_mode: usvg::ImageRendering,
-    ) {
+    fn draw_raster_image(&mut self, image: &usvg::Image) {
         self.paint(|_, opt, p| {
-            image::draw_raster(data, view_box, rendering_mode, opt, p);
+            image::draw_raster(
+                image.format, &image.data, image.view_box, image.rendering_mode, opt, p,
+            );
         });
     }
 

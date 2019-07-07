@@ -374,7 +374,9 @@ impl Filter<qt::Image> for QtFilter {
                 if format == usvg::ImageFormat::SVG {
                     super::image::draw_svg(data, view_box, opt, &mut p);
                 } else {
-                    super::image::draw_raster(data, view_box, fe.rendering_mode, opt, &mut p);
+                    super::image::draw_raster(
+                        format, data, view_box, fe.rendering_mode, opt, &mut p
+                    );
                 }
             }
             usvg::FeImageKind::Use(..) => {}

@@ -140,9 +140,9 @@ pub trait FlatRender {
         let bbox = Some(image.view_box.rect);
         if image.visibility == usvg::Visibility::Visible {
             if image.format == usvg::ImageFormat::SVG {
-                self.draw_svg_image(&image.data, image.view_box);
+                self.draw_svg_image(image);
             } else {
-                self.draw_raster_image(&image.data, image.view_box, image.rendering_mode);
+                self.draw_raster_image(image);
             }
 
         }
@@ -274,9 +274,8 @@ pub trait FlatRender {
     }
 
     fn draw_path(&mut self, path: &usvg::Path, bbox: Option<Rect>);
-    fn draw_svg_image(&mut self, data: &usvg::ImageData, view_box: usvg::ViewBox);
-    fn draw_raster_image(&mut self, data: &usvg::ImageData, view_box: usvg::ViewBox,
-                         rendering_mode: usvg::ImageRendering);
+    fn draw_svg_image(&mut self, data: &usvg::Image);
+    fn draw_raster_image(&mut self, image: &usvg::Image);
     fn filter(&mut self, filter: &usvg::Filter, bbox: Option<Rect>, ts: usvg::Transform);
     fn fill_layer(&mut self, r: u8, g: u8, b: u8, a: u8);
     fn push_layer(&mut self) -> Option<()>;
@@ -334,18 +333,4 @@ pub fn image_to_mask(
 pub trait ConvTransform<T> {
     fn to_native(&self) -> T;
     fn from_native(_: &T) -> Self;
-}
-
-
-pub trait ToScreenSize {
-    fn to_screen_size(&self) -> Option<ScreenSize>;
-}
-
-impl ToScreenSize for ::image::DynamicImage {
-    fn to_screen_size(&self) -> Option<ScreenSize> {
-        use ::image::GenericImageView;
-
-        let size = self.dimensions();
-        ScreenSize::new(size.0, size.1)
-    }
 }

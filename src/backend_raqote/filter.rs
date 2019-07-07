@@ -417,7 +417,9 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
                 if format == usvg::ImageFormat::SVG {
                     super::image::draw_svg(data, view_box, opt, &mut dt);
                 } else {
-                    super::image::draw_raster(data, view_box, fe.rendering_mode, opt, &mut dt);
+                    super::image::draw_raster(
+                        format, data, view_box, fe.rendering_mode, opt, &mut dt
+                    );
                 }
             }
             usvg::FeImageKind::Use(..) => {}

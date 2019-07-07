@@ -2,42 +2,119 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::path;
+use std::{fs, path};
 
 use log::warn;
 
 use crate::prelude::*;
 
 
-pub fn load(
+pub struct Image {
+    pub data: ImageData,
+    pub size: ScreenSize,
+}
+
+pub enum ImageData {
+    RGB(Vec<u8>),
+    RGBA(Vec<u8>),
+}
+
+pub fn load_raster(
+    format: usvg::ImageFormat,
     data: &usvg::ImageData,
     opt: &Options,
-) -> Option<image::DynamicImage> {
+) -> Option<Image> {
+    let img = _load_raster(format, data, opt);
+
+    if img.is_none() {
+        match data {
+            usvg::ImageData::Path(ref path) => {
+                let path = get_abs_path(path, opt);
+                warn!("Failed to load an external image: {:?}.", path);
+            }
+            usvg::ImageData::Raw(_) => {
+                warn!("Failed to load an embedded image.");
+            }
+        }
+    }
+
+    img
+}
+
+fn _load_raster(
+    format: usvg::ImageFormat,
+    data: &usvg::ImageData,
+    opt: &Options,
+) -> Option<Image> {
+    debug_assert!(format != usvg::ImageFormat::SVG);
+
     match data {
         usvg::ImageData::Path(ref path) => {
             let path = get_abs_path(path, opt);
-            match image::open(&path) {
-                Ok(img) => Some(img),
-                Err(_) => {
-                    warn!("Failed to load an external image: {:?}.", path);
-                    None
-                }
+            let file = fs::File::open(path).ok()?;
+
+            if format == usvg::ImageFormat::JPEG {
+                read_jpeg(file)
+            } else {
+                read_png(file)
             }
         }
         usvg::ImageData::Raw(ref data) => {
-            match image::load_from_memory(data) {
-                Ok(img) => Some(img),
-                Err(_) => {
-                    warn!("Failed to load an embedded image.");
-                    None
-                }
+            if format == usvg::ImageFormat::JPEG {
+                read_jpeg(data.as_slice())
+            } else {
+                read_png(data.as_slice())
             }
         }
     }
 }
 
+fn read_png<R: std::io::Read>(r: R) -> Option<Image> {
+    let decoder = png::Decoder::new(r);
+    let (info, mut reader) = decoder.read_info().ok()?;
+
+    match info.color_type {
+        png::ColorType::RGB | png::ColorType::RGBA => {}
+        _ => return None,
+    }
+
+    let size = ScreenSize::new(info.width, info.height)?;
+
+    let mut img_data = vec![0; info.buffer_size()];
+    reader.next_frame(&mut img_data).ok()?;
+
+    let data = match info.color_type {
+        png::ColorType::RGB => ImageData::RGB(img_data),
+        png::ColorType::RGBA => ImageData::RGBA(img_data),
+        _ => return None,
+    };
+
+    Some(Image {
+        data,
+        size,
+    })
+}
+
+fn read_jpeg<R: std::io::Read>(r: R) -> Option<Image> {
+    let mut decoder = jpeg_decoder::Decoder::new(r);
+    let img_data = decoder.decode().ok()?;
+    let info = decoder.info()?;
+
+    let size = ScreenSize::new(info.width as u32, info.height as u32)?;
+
+    let data = match info.pixel_format {
+        jpeg_decoder::PixelFormat::RGB24 => ImageData::RGB(img_data),
+        _ => return None,
+    };
+
+    Some(Image {
+        data,
+        size,
+    })
+}
+
 pub fn image_to_surface(
-    img: &image::DynamicImage,
+    image: &Image,
     surface: &mut [u8],
 ) {
     // Surface is always ARGB.
@@ -46,7 +123,6 @@ pub fn image_to_surface(
     debug_assert!(surface.len() % SURFACE_CHANNELS == 0);
 
     let mut i = 0;
-
     let mut to_surface = |r, g, b, a| {
         let tr = a * r + 0x80;
         let tg = a * g + 0x80;
@@ -59,25 +135,28 @@ pub fn image_to_surface(
         i += SURFACE_CHANNELS;
     };
 
-    match img {
-        image::DynamicImage::ImageRgb8(data) => {
-            for pixel in data.pixels() {
-                let r = pixel[0] as u32;
-                let g = pixel[1] as u32;
-                let b = pixel[2] as u32;
+    match &image.data {
+        ImageData::RGB(data) => {
+            let mut j = 0;
+            while j < data.len() {
+                let r = data[j + 0] as u32;
+                let g = data[j + 1] as u32;
+                let b = data[j + 2] as u32;
                 to_surface(r, g, b, 255);
+                j += 3;
             }
         }
-        image::DynamicImage::ImageRgba8(data) => {
-            for pixel in data.pixels() {
-                let r = pixel[0] as u32;
-                let g = pixel[1] as u32;
-                let b = pixel[2] as u32;
-                let a = pixel[3] as u32;
+        ImageData::RGBA(data) => {
+            let mut j = 0;
+            while j < data.len() {
+                let r = data[j + 0] as u32;
+                let g = data[j + 1] as u32;
+                let b = data[j + 2] as u32;
+                let a = data[j + 3] as u32;
                 to_surface(r, g, b, a);
+                j += 4;
             }
         }
-        _ => {}
     }
 }
 

@@ -6,21 +6,21 @@ use crate::qt;
 use usvg::try_opt;
 
 use crate::prelude::*;
-use crate::backend_utils::{self, ConvTransform, ToScreenSize};
+use crate::backend_utils::{self, ConvTransform};
 
 
 pub fn draw_raster(
+    format: usvg::ImageFormat,
     data: &usvg::ImageData,
     view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
     opt: &Options,
     p: &mut qt::Painter,
 ) {
-    let img = try_opt!(backend_utils::image::load(data, opt));
-    let img_size = try_opt!(img.to_screen_size());
+    let img = try_opt!(backend_utils::image::load_raster(format, data, opt));
 
     let image = {
-        let mut image = try_create_image!(img_size, ());
+        let mut image = try_create_image!(img.size, ());
         backend_utils::image::image_to_surface(&img, &mut image.data_mut());
         image
     };
@@ -34,7 +34,7 @@ pub fn draw_raster(
         p.set_clip_rect(r.x(), r.y(), r.width(), r.height());
     }
 
-    let r = backend_utils::image::image_rect(&view_box, img_size);
+    let r = backend_utils::image::image_rect(&view_box, img.size);
     p.draw_image_rect(r.x(), r.y(), r.width(), r.height(), &image);
 
     // Revert.

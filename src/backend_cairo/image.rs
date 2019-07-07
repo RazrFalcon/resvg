@@ -5,21 +5,21 @@
 use usvg::try_opt;
 
 use crate::prelude::*;
-use crate::backend_utils::{self, ConvTransform, ToScreenSize};
+use crate::backend_utils::{self, ConvTransform};
 
 
 pub fn draw_raster(
+    format: usvg::ImageFormat,
     data: &usvg::ImageData,
     view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
     opt: &Options,
     cr: &cairo::Context,
 ) {
-    let img = try_opt!(backend_utils::image::load(data, opt));
-    let img_size = try_opt!(img.to_screen_size());
+    let img = try_opt!(backend_utils::image::load_raster(format, data, opt));
 
     let surface = {
-        let mut surface = try_create_surface!(img_size, ());
+        let mut surface = try_create_surface!(img.size, ());
 
         {
             // Unwrap is safe, because no one uses the surface.
@@ -30,14 +30,14 @@ pub fn draw_raster(
         surface
     };
 
-    let (ts, clip) = backend_utils::image::prepare_sub_svg_geom(view_box, img_size);
+    let (ts, clip) = backend_utils::image::prepare_sub_svg_geom(view_box, img.size);
 
     if let Some(clip) = clip {
         cr.rectangle(clip.x(), clip.y(), clip.width(), clip.height());
         cr.clip();
     } else {
         // We have to clip the image before rendering because we use `Extend::Pad`.
-        let r = backend_utils::image::image_rect(&view_box, img_size);
+        let r = backend_utils::image::image_rect(&view_box, img.size);
         cr.rectangle(r.x(), r.y(), r.width(), r.height());
         cr.clip();
     }
