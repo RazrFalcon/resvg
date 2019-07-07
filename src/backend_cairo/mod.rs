@@ -5,7 +5,6 @@
 //! Cairo backend implementation.
 
 use usvg::try_opt;
-use cairo::MatrixTrait;
 use log::warn;
 
 use crate::prelude::*;

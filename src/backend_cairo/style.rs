@@ -2,7 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use cairo::{MatrixTrait, PatternTrait};
 use usvg::try_opt;
 
 use crate::{prelude::*, backend_utils::ConvTransform};
@@ -125,7 +124,7 @@ fn prepare_linear(
 ) {
     let grad = cairo::LinearGradient::new(g.x1, g.y1, g.x2, g.y2);
     prepare_base_gradient(&g.base, &grad, opacity, bbox);
-    cr.set_source(&cairo::Pattern::LinearGradient(grad));
+    cr.set_source(&grad);
 }
 
 fn prepare_radial(
@@ -136,12 +135,12 @@ fn prepare_radial(
 ) {
     let grad = cairo::RadialGradient::new(g.fx, g.fy, 0.0, g.cx, g.cy, g.r.value());
     prepare_base_gradient(&g.base, &grad, opacity, bbox);
-    cr.set_source(&cairo::Pattern::RadialGradient(grad));
+    cr.set_source(&grad);
 }
 
-fn prepare_base_gradient<G: cairo::Gradient>(
+fn prepare_base_gradient(
     g: &usvg::BaseGradient,
-    grad: &G,
+    grad: &cairo::Gradient,
     opacity: usvg::Opacity,
     bbox: Rect,
 ) {
@@ -241,5 +240,5 @@ fn prepare_pattern(
     m.invert();
     patt.set_matrix(m);
 
-    cr.set_source(&cairo::Pattern::SurfacePattern(patt));
+    cr.set_source(&patt);
 }

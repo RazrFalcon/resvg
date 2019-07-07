@@ -42,6 +42,7 @@ impl<T: Image> Layers<T> {
         }
     }
 
+    #[cfg(feature = "qt-backend")]
     pub fn is_empty(&self) -> bool {
         self.used_layers == 0
     }

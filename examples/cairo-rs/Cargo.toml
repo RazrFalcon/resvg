@@ -8,8 +8,8 @@ edition = "2018"
 [workspace]
 
 [dependencies]
-gio = "0.6"
-gtk = "0.6"
+gio = "0.7"
+gtk = "0.7"
 log = "0.4"
 fern = "0.5"
 

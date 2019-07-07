@@ -2,7 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use cairo::PatternTrait;
 use gdk_pixbuf::PixbufLoaderExt;
 use usvg::{try_opt, try_opt_warn};
 
@@ -60,7 +59,7 @@ pub fn draw_raster(
     // Do not use `Extend::None`, because it will introduce a "transparent border".
     patt.set_extend(cairo::Extend::Pad);
     patt.set_filter(filter_mode);
-    cr.set_source(&cairo::Pattern::SurfacePattern(patt));
+    cr.set_source(&patt);
     cr.paint();
     cr.reset_clip();
 }

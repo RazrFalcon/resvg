@@ -11,6 +11,7 @@ use crate::prelude::*;
 
 
 pub enum Error {
+    #[allow(dead_code)] // Not used by raqote-backend.
     AllocFailed,
     InvalidRegion,
 }
