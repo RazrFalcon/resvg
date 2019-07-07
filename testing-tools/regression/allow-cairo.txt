@@ -1,4 +1,0 @@
-e-image-001.svg
-e-image-004.svg
-e-image-009.svg
-e-image-032.svg

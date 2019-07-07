@@ -21,7 +21,7 @@ def build_prev_version():
     prev_resvg_dir = args.work_dir / 'resvg'
     if prev_resvg_dir.exists():
         print('Warning: previous resvg version already exists')
-        return prev_resvg_dir / 'target/debug/rendersvg'
+        return prev_resvg_dir / 'target/release/rendersvg'
 
     run(['git', 'clone', '--depth', '5', RESVG_URL, prev_resvg_dir], check=True)
 
@@ -29,10 +29,10 @@ def build_prev_version():
         # TODO: maybe there is a better way
         run(['git', 'reset', '--hard', 'HEAD~1'], cwd=prev_resvg_dir, check=True)
 
-    run(['cargo', 'build', '--features', args.backend + '-backend'],
+    run(['cargo', 'build', '--release', '--features', args.backend + '-backend'],
         cwd=prev_resvg_dir / 'tools/rendersvg', check=True)
 
-    return prev_resvg_dir / 'target/debug/rendersvg'
+    return prev_resvg_dir / 'target/release/rendersvg'
 
 
 def change_ext(path, suffix, new_ext):
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     parser.add_argument('work_dir', type=Path, help='Sets working directory')
     args = parser.parse_args()
 
-    render_path = Path('../../target/debug/rendersvg').resolve()
+    render_path = Path('../../target/release/rendersvg').resolve()
     if not render_path.exists():
         raise RuntimeError('rendersvg executable not found')
 

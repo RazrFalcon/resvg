@@ -70,7 +70,7 @@ with cd('usvg'):
 if 'RESVG_QT_BACKEND' in os.environ:
     # build qt backend
     with cd('tools/rendersvg'):
-        run(['cargo', 'build', '--features', 'qt-backend'], check=True)
+        run(['cargo', 'build', '--release', '--features', 'qt-backend'], check=True)
 
     # regression testing of the qt backend
     if not args.no_regression:
@@ -88,7 +88,7 @@ if 'RESVG_QT_BACKEND' in os.environ:
 if 'RESVG_CAIRO_BACKEND' in os.environ:
     # build cairo backend
     with cd('tools/rendersvg'):
-        run(['cargo', 'build', '--features', 'cairo-backend'], check=True)
+        run(['cargo', 'build', '--release', '--features', 'cairo-backend'], check=True)
 
     # regression testing of the cairo backend
     if not args.no_regression:
@@ -102,7 +102,7 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
 if 'RESVG_RAQOTE_BACKEND' in os.environ:
     # build raqote backend
     with cd('tools/rendersvg'):
-        run(['cargo', 'build', '--features', 'raqote-backend'], check=True)
+        run(['cargo', 'build', '--release', '--features', 'raqote-backend'], check=True)
 
     # regression testing of the cairo backend
     if not args.no_regression:
@@ -168,9 +168,5 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
 
 
 if 'RESVG_RAQOTE_BACKEND' in os.environ:
-    # build C-API
-    # with cd('capi'):
-    #     run(['cargo', 'build', '--features', 'raqote-backend'], check=True)
-
     # run tests and build examples
     run(['cargo', 'test', '--features', 'raqote-backend'], check=True)
