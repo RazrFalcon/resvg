@@ -571,7 +571,7 @@ dependencies = [
 [[package]]
 name = "ttf-parser"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/RazrFalcon/ttf-parser?rev=af7dfab#af7dfabe6fd0acbe9945ed59d76415e33dc2e76f"
 
 [[package]]
 name = "typed-arena"
@@ -615,7 +615,7 @@ dependencies = [
  "pretty_assertions 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rctree 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "svgdom 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ttf-parser 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ttf-parser 0.1.0 (git+https://github.com/RazrFalcon/ttf-parser?rev=af7dfab)",
  "unicode-bidi 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-script 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-vo 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -724,7 +724,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum syn 0.15.36 (registry+https://github.com/rust-lang/crates.io-index)" = "8b4f551a91e2e3848aeef8751d0d4eec9489b6474c720fd4c55958d8d31a430c"
 "checksum take_mut 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "f764005d11ee5f36500a149ace24e00e3da98b0158b3e2d53a7495660d3f4d60"
 "checksum time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)" = "db8dcfca086c1143c9270ac42a2bbd8a7ee477b78ac8e45b19abfb0cbede4b6f"
-"checksum ttf-parser 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "29637063e570f7e5260924119666113215386c1b94e1d1ceb4525e269dfbe2d0"
+"checksum ttf-parser 0.1.0 (git+https://github.com/RazrFalcon/ttf-parser?rev=af7dfab)" = "<none>"
 "checksum typed-arena 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "c6c06a92aef38bb4dc5b0df00d68496fc31307c5344c867bb61678c6e1671ec5"
 "checksum unicode-bidi 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "49f2bd0c6468a8230e1db229cff8029217cf623c767ea5d60bfbd42729ea54d5"
 "checksum unicode-script 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "09f03ad95feb4fde244d79985bfd79eb34ff2702fedb441d2ba3f4ff813efd19"

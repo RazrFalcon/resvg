@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-pub use ttf_parser::os2::{Weight, Width as Stretch};
+pub use ttf_parser::{GlyphId, Weight, Width as Stretch};
 
 use crate::utils;
 
@@ -123,17 +123,15 @@ impl Database {
         None
     }
 
-    pub fn outline(&self, id: ID, glyph_id: u16) -> Option<svgdom::Path> {
+    pub fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<svgdom::Path> {
         // We can't simplify this code because of lifetimes.
         let item = self.font(id);
         let file = std::fs::File::open(&item.path).ok()?;
         let mmap = unsafe { memmap::MmapOptions::new().map(&file).ok()? };
         let font = ttf_parser::Font::from_data(&mmap, item.face_index).ok()?;
 
-        let font_glyph = font.glyph(glyph_id).ok()?;
-
         let mut builder = PathBuilder(svgdom::Path::new());
-        font_glyph.outline(&mut builder);
+        font.outline_glyph(glyph_id, &mut builder).ok()?;
         Some(builder.0)
     }
 
@@ -167,7 +165,7 @@ impl Database {
         let ascent = font.ascender();
         let descent = font.descender();
 
-        let x_height = match font.os2_table().and_then(|table| table.x_height()) {
+        let x_height = match font.x_height() {
             Some(height) => height,
             None => {
                 // If not set - fallback to height * 45%.
@@ -176,19 +174,30 @@ impl Database {
             }
         };
 
-        let underline = font.underline_metrics();
+        let underline = match font.underline_metrics() {
+            Ok(metrics) => metrics,
+            Err(_) => {
+                ttf_parser::LineMetrics {
+                    position: -(units_per_em as i16) / 9,
+                    thickness: units_per_em as i16 / 12,
+                }
+            }
+        };
 
-        let line_through_position = match font.os2_table() {
-            Some(table) => table.strikeout_metrics().position,
-            None => x_height / 2,
+        let line_through_position = match font.strikeout_metrics() {
+            Ok(metrics) => metrics.position,
+            Err(_) => x_height / 2,
         };
 
         // 0.2 and 0.4 are generic offsets used by some applications (Inkscape/librsvg).
         let mut subscript_offset = (units_per_em as f32 / 0.2).round() as i16;
         let mut superscript_offset = (units_per_em as f32 / 0.4).round() as i16;
-        if let Some(table) = font.os2_table() {
-            subscript_offset = table.subscript_metrics().y_offset;
-            superscript_offset = table.superscript_metrics().y_offset;
+        if let Ok(metrics) = font.subscript_metrics() {
+            subscript_offset = metrics.y_offset;
+        }
+
+        if let Ok(metrics) = font.superscript_metrics() {
+            superscript_offset = metrics.y_offset;
         }
 
         Some(Font {
@@ -213,22 +222,19 @@ fn resolve_font(path: FontPath, id: ID) -> Option<FontItem> {
 
     let family = match path.family {
         Some(f) => f,
-        None => font.name_table().and_then(|table| table.family_name())?,
+        None => font.family_name()?,
     };
 
-    let mut style = Style::Normal;
-    let mut weight = Weight::Normal;
-    let mut stretch = Stretch::Normal;
-    if let Some(table) = font.os2_table() {
-        if table.is_italic() {
-            style = Style::Italic;
-        } else if table.is_oblique().unwrap_or(false) {
-            style = Style::Oblique;
-        }
+    let style = if font.is_italic() {
+        Style::Italic
+    } else if font.is_oblique() {
+        Style::Oblique
+    } else {
+        Style::Normal
+    };
 
-        weight = table.weight();
-        stretch = table.width().unwrap_or(Stretch::Normal);
-    }
+    let weight = font.weight();
+    let stretch = font.width();
 
     let properties = Properties { style, weight, stretch };
 
@@ -482,7 +488,7 @@ fn find_best_match(
 
 struct PathBuilder(svgdom::Path);
 
-impl ttf_parser::glyf::OutlineBuilder for PathBuilder {
+impl ttf_parser::OutlineBuilder for PathBuilder {
     fn move_to(&mut self, x: f32, y: f32) {
         self.0.push(svgdom::PathSegment::MoveTo { abs: true, x: x as f64, y: y as f64 });
     }
@@ -494,6 +500,15 @@ impl ttf_parser::glyf::OutlineBuilder for PathBuilder {
     fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
         self.0.push(svgdom::PathSegment::Quadratic {
             abs: true, x1: x1 as f64, y1: y1 as f64, x: x as f64, y: y as f64
+        });
+    }
+
+    fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
+        self.0.push(svgdom::PathSegment::CurveTo {
+            abs: true,
+            x1: x1 as f64, y1: y1 as f64,
+            x2: x2 as f64, y2: y2 as f64,
+            x: x as f64, y: y as f64
         });
     }
 

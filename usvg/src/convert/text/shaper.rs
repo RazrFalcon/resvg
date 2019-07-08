@@ -5,6 +5,7 @@
 use kurbo::{ParamCurveArclen, ParamCurve, ParamCurveDeriv};
 use harfbuzz_rs as harfbuzz;
 use unicode_vo::Orientation as CharOrientation;
+use ttf_parser::GlyphId;
 
 use crate::{tree, utils, fontdb, convert::prelude::*};
 use super::convert::{
@@ -24,7 +25,7 @@ use super::convert::{
 #[derive(Clone)]
 struct Glyph {
     /// The glyph ID in the font.
-    id: u16,
+    id: GlyphId,
 
     /// Position in bytes in the original string.
     ///
@@ -48,7 +49,7 @@ struct Glyph {
 
 impl Glyph {
     fn is_missing(&self) -> bool {
-        self.id == 0
+        self.id.0 == 0
     }
 }
 
@@ -314,7 +315,7 @@ fn shape_text_with_font(
 
             glyphs.push(Glyph {
                 byte_idx: ByteIndex::new(idx),
-                id: info.codepoint as u16,
+                id: GlyphId(info.codepoint as u16),
                 dx: pos.x_offset,
                 dy: pos.y_offset,
                 width: pos.x_advance,
