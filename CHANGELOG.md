@@ -9,6 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Changed
 - All backend are using the `image` crate for raster images loading now.
+- Use `pico-args` instead of `gumdrop`.
 
 ### Removed
 - (cairo-backend) `gdk-pixbuf` dependency.
