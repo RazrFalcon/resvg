@@ -18,6 +18,7 @@ members = [
     "tools/usvg",
     "usvg",
     "resvg-qt",
+    "resvg-skia",
 ]
 
 [badges]
@@ -38,16 +39,20 @@ resvg-qt = { path = "resvg-qt", version = "0.7", optional = true }
 # raqote backend
 raqote = { version = "0.5.1", default-features = false, optional = true }
 
+# skia backend
+resvg-skia = { path = "resvg-skia", version = "0.1", optional = true }
+
+
 [dependencies.image]
 version = "0.21"
 default-features = false
 features = ["jpeg", "png_codec"]
 optional = true
 
-
 [features]
 cairo-backend = ["cairo-rs", "gdk-pixbuf"]
 qt-backend = ["resvg-qt"]
+skia-backend = ["resvg-skia"]
 raqote-backend = ["raqote", "image"]
 
 [package.metadata.docs.rs]

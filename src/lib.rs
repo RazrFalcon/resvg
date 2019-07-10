@@ -25,6 +25,9 @@ pub use cairo;
 #[cfg(feature = "qt-backend")]
 pub use resvg_qt as qt;
 
+#[cfg(feature = "skia-backend")]
+pub use resvg_skia as skia;
+
 #[cfg(feature = "raqote-backend")]
 pub use raqote;
 
@@ -36,6 +39,9 @@ pub mod backend_cairo;
 
 #[cfg(feature = "qt-backend")]
 pub mod backend_qt;
+
+#[cfg(feature = "skia-backend")]
+pub mod backend_skia;
 
 #[cfg(feature = "raqote-backend")]
 pub mod backend_raqote;
@@ -107,6 +113,11 @@ pub fn default_backend() -> Box<Render> {
         return Box::new(backend_qt::Backend);
     }
 
+    #[cfg(feature = "skia-backend")]
+    {
+        return Box::new(backend_skia::Backend);
+    }
+    
     #[cfg(feature = "raqote-backend")]
     {
         return Box::new(backend_raqote::Backend);
