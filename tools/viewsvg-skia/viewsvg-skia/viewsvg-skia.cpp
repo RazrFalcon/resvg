@@ -58,7 +58,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	svgView_.loadFile("..\\..\\..\\capi\\skiatests\\drawing-7.svg");
+	svgView_.loadFile("..\\..\\..\\capi\\skiatests\\drawing-7-viewbox.svg");
 	ResizeViewToClient(hWnd_);
 
 	fitToWindow_ = GetFitToWindow(hWnd_);

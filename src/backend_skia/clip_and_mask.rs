@@ -19,7 +19,7 @@ pub fn clip(
 ) {
     let clip_surface = try_opt!(layers.get());
     let mut clip_surface = clip_surface.borrow_mut();
-    clip_surface.get_canvas().clear_rgba(0, 0, 0, 255);
+    clip_surface.get_canvas().fill(0, 0, 0, 255);
 
     let mut clip_canvas = clip_surface.get_canvas();
     clip_canvas.set_matrix(&canvas.get_total_matrix());

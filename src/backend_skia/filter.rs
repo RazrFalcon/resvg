@@ -40,39 +40,35 @@ impl ImageExt for skia::Surface {
         self.try_clone().ok_or(Error::AllocFailed)
     }
 
-    fn clip(&mut self, region: ScreenRect) {
+    fn clip(&mut self, _region: ScreenRect) {
         // This is cropping by clearing the pixels outside the region.
         // TODO:  Implement 
     }
 
     fn clear(&mut self) {
-        self.get_canvas().clear(0);
+        self.get_canvas().clear();
     }
 
     fn into_srgb(&mut self) {
-        let mut data = self.data();        
-        for p in data.as_rgba_mut() {
+        for p in self.data_mut().as_rgba_mut() {
             p.r = filter::LINEAR_RGB_TO_SRGB_TABLE[p.r as usize];
             p.g = filter::LINEAR_RGB_TO_SRGB_TABLE[p.g as usize];
             p.b = filter::LINEAR_RGB_TO_SRGB_TABLE[p.b as usize];
         }
-        self.commit_data(data);
     }
 
     fn into_linear_rgb(&mut self) {
-        let mut data = self.data();        
-        for p in data.as_rgba_mut() {
+        for p in self.data_mut().as_rgba_mut() {
             p.r = filter::SRGB_TO_LINEAR_RGB_TABLE[p.r as usize];
             p.g = filter::SRGB_TO_LINEAR_RGB_TABLE[p.g as usize];
             p.b = filter::SRGB_TO_LINEAR_RGB_TABLE[p.b as usize];
         }
-        self.commit_data(data);
     }
 }
 
 fn create_surface(width: u32, height: u32) -> Result<skia::Surface, Error> {
     let mut surface = skia::Surface::new_rgba(width, height).ok_or(Error::AllocFailed)?;
-    surface.get_canvas().clear(0);
+    surface.get_canvas().clear();
     Ok(surface)
 }
 
@@ -106,13 +102,11 @@ impl Filter<skia::Surface> for SkiaFilter {
                 let image = copy_surface(surface, region)?;
 
                 // Set RGB to black. Keep alpha as is.
-                let mut data = image.data();
-                for p in data.chunks_mut(4) {
+                for p in image.data().chunks_mut(4) {
                      p[0] = 0;
                      p[1] = 0;
                      p[2] = 0;
                 }
-                image.commit_data(data);
 
                 Ok(Image {
                     image: Rc::new(image),
@@ -150,11 +144,7 @@ impl Filter<skia::Surface> for SkiaFilter {
         let mut buffer = input.take()?;
 
         let (w, h) = (buffer.width(), buffer.height());
-        {
-            let mut data = buffer.data();
-            filter::blur::apply(&mut data, w, h, std_dx, std_dy, 4);
-            buffer.commit_data(data);
-        }
+        filter::blur::apply(&mut buffer.data_mut(), w, h, std_dx, std_dy, 4);
 
         Ok(Image::from_image(buffer, cs))
     }
@@ -255,8 +245,8 @@ impl Filter<skia::Surface> for SkiaFilter {
 
             {
                 let mut i = 0;
-                let mut data3 = buffer.data();
-                let data3_rgba = data3.as_rgba_mut();
+                let mut data3 = buffer.data_mut();
+                let data3 = data3.as_rgba_mut();
                 for (c1, c2) in data1.as_rgba().iter().zip(data2.as_rgba()) {
                     let c1 = premultiply_alpha(*c1);
                     let c2 = premultiply_alpha(*c2);
@@ -271,12 +261,10 @@ impl Filter<skia::Surface> for SkiaFilter {
                     let b = (calc(c1.b, c2.b, a) * 255.0) as u8;
                     let a = (a * 255.0) as u8;
 
-                    data3_rgba[i] = unmultiply_alpha(RGBA8 { r, g, b, a });
+                    data3[i] = unmultiply_alpha(RGBA8 { r, g, b, a });
 
                     i += 1;
                 }
-
-                buffer.commit_data(data3);
             }
 
             return Ok(Image::from_image(buffer, cs));
@@ -327,7 +315,7 @@ impl Filter<skia::Surface> for SkiaFilter {
         let alpha = f64_bound(0.0, fe.opacity.value() * 255.0, 255.0) as u8;
 
         let mut buffer = create_surface(region.width(), region.height())?;
-        buffer.get_canvas().clear_rgba(c.red, c.green, c.blue, alpha);
+        buffer.get_canvas().fill(c.red, c.green, c.blue, alpha);
 
         Ok(Image::from_image(buffer, ColorSpace::SRGB))
     }
@@ -400,7 +388,7 @@ impl Filter<skia::Surface> for SkiaFilter {
 
         let mut canvas = surface.get_canvas();        
         canvas.reset_matrix();
-        canvas.clear(0);
+        canvas.clear();
         canvas.draw_surface(input.as_ref(), region.x() as f64, region.y() as f64, 255, skia::BlendMode::SourceOver);
 
         Ok(())

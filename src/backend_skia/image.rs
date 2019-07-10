@@ -29,7 +29,7 @@ pub fn draw(
 pub fn draw_raster(
     data: &usvg::ImageData,
     view_box: usvg::ViewBox,
-    rendering_mode: usvg::ImageRendering,
+    _rendering_mode: usvg::ImageRendering,
     opt: &Options,
     canvas: &mut skia::Canvas,
 ) {

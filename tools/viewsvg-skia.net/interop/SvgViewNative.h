@@ -20,7 +20,7 @@ public:
 	unsigned int GetHeight();
 	unsigned int GetStride();
 
-	void* LockBitmap();
+	const void* GetPixels();
 	void UnlockBitmap();
 
 	bool Export(const char* filePath, bool formatted);

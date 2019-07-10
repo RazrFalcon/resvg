@@ -395,7 +395,6 @@ pub extern "C" fn resvg_skia_render_to_canvas(
         &*opt
     });
     
-
     resvg::backend_skia::render_to_canvas(&tree.0, &opt, img_size, &mut canvas);
 }
 
@@ -425,14 +424,15 @@ pub extern "C" fn resvg_skia_render_rect_to_canvas(
     
     let src = {
         if src.is_null() {
-            None
+            let size = tree.0.svg_node().size;
+            usvg::Rect::new(0.0, 0.0, size.width(), size.height()).unwrap()
         }
         else {
-            unsafe { usvg::Rect::new((*src).x, (*src).y, (*src).width, (*src).height) }
+            unsafe { usvg::Rect::new((*src).x, (*src).y, (*src).width, (*src).height).unwrap() }
         }
     };
 
-    resvg::backend_skia::render_rect_to_canvas(&tree.0, &opt, img_size, src, &mut canvas);
+    resvg::backend_skia::render_rect_to_canvas(&tree.0, &opt, img_size, &src, &mut canvas);
 }
 
 #[cfg(feature = "qt-backend")]

@@ -54,22 +54,9 @@ pub enum BlendMode {
     Lighten = 12,
 }
 
-pub struct Context(*mut ffi::skiac_context);
-
-impl Context {
-
-    pub fn set_from_canvas(canvas: &Canvas) {
-        unsafe {
-            let context = ffi::skiac_canvas_get_context(canvas.0);
-            ffi::skiac_set_context(context);
-        }
-    }
-} 
-
 pub struct Surface(*mut ffi::skiac_surface);
      
 impl Surface {
-
 
     pub fn new_rgba(width: u32, height: u32) -> Option<Surface> {        
         unsafe {
@@ -136,7 +123,6 @@ impl Surface {
             ffi::skiac_surface_read_pixels(self.0, &mut data);
 
             SurfaceData {
-                data: data,
                 slice: slice::from_raw_parts_mut(data.ptr, data.size as usize),
             }
         }
@@ -149,15 +135,8 @@ impl Surface {
             ffi::skiac_surface_read_pixels(self.0, &mut data);
 
             SurfaceData {
-                data: data,
                 slice: slice::from_raw_parts_mut(data.ptr, data.size as usize),
             }
-        }
-    }
-
-    pub fn commit_data(&self, data: SurfaceData) {
-        unsafe {            
-            ffi::skiac_surface_write_pixels(self.0, &data.data);
         }
     }
 
@@ -172,9 +151,7 @@ impl Drop for Surface {
     }
 }
 
-
 pub struct SurfaceData<'a> {
-    data: ffi::skiac_surface_data,
     slice: &'a mut [u8],
 }
 
@@ -191,16 +168,6 @@ impl<'a> DerefMut for SurfaceData<'a> {
         self.slice
     }
 }
-
-impl<'a> Drop for SurfaceData <'a>{
-
-    fn drop(&mut self) {
-        unsafe { 
-            ffi::skiac_surface_data_delete(&mut self.data);
-        }
-    }
-}
-
 
 pub struct Color(u8, u8, u8, u8);
 
@@ -276,14 +243,11 @@ impl Canvas {
     pub unsafe fn from_raw(ptr: *mut ffi::skiac_canvas) -> Canvas {
         Canvas(ptr)
     }
-    pub fn get_context(&self) -> Context {
-         unsafe { Context(ffi::skiac_canvas_get_context(self.0)) }
+    pub fn clear(&self) {
+        unsafe { ffi::skiac_canvas_clear(self.0, 0); }
     }
-    pub fn clear(&self, color: u32) {
-         unsafe { ffi::skiac_canvas_clear(self.0, color); }
-    }
-    pub fn clear_rgba(&self, r: u8, g: u8, b: u8, a: u8) {        
-        self.clear((a as u32) << 24 | (r as u32) << 16 | (g as u32) << 8 | b as u32);
+    pub fn fill(&self, r: u8, g: u8, b: u8, a: u8) {        
+        unsafe { ffi::skiac_canvas_clear(self.0, (a as u32) << 24 | (r as u32) << 16 | (g as u32) << 8 | b as u32); }
     }
     pub fn flush(&self) {
          unsafe { ffi::skiac_canvas_flush(self.0); }
@@ -520,13 +484,5 @@ impl PathEffect {
 impl Drop for PathEffect {
     fn drop(&mut self) {
         unsafe { ffi::skiac_path_effect_destroy(self.0); }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
     }
 }

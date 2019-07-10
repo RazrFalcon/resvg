@@ -7,8 +7,6 @@
 #include <SkDashPathEffect.h>    
 #include <SkShader.h>
 #include <SkBlendMode.h>
-#include <GrContextOptions.h>
-#include <GrContext.h>
 #include <gl/GrGLAssembleInterface.h>
 
 #include "skia_capi.hpp"
@@ -52,21 +50,7 @@ static SkBlendMode blendModes_[static_cast<int>(BlendMode::__Size)] = {
     SkBlendMode::kLighten,
 };
 
-GrContext* grContext_ = nullptr;
-
 extern "C" {
-
-// Context
-
-skiac_context* skiac_get_context()
-{ 
-    return reinterpret_cast<skiac_context*>(grContext_);
-}
-
-void skiac_set_context(skiac_context* c_context)
-{
-    grContext_ = reinterpret_cast<GrContext*>(c_context); 
-}
 
 // Surface
 
@@ -75,20 +59,10 @@ static SkSurface* skiac_surface_create(int width, int height, SkAlphaType alphaT
     // Init() is indempotent, so can be called more than once with no adverse effect.
     SkGraphics::Init();
 
-    sk_sp<SkSurface> surface;
+    SkImageInfo info = SkImageInfo::Make(width, height, kN32_SkColorType, alphaType);
+    sk_sp<SkSurface> surface = SkSurface::MakeRaster(info);
 
-    // TODO:  Raster fails unless N32. Why has RGBA_8888 historically been used for GL instead of BGRA?
-    // if (grContext_) {	        
-    //     SkImageInfo info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, alphaType);
-	//     surface = SkSurface::MakeRenderTarget(grContext_, SkBudgeted::kYes, info);
-    // }
-    // else {
-        SkImageInfo info = SkImageInfo::Make(width, height, kN32_SkColorType, alphaType);
-        surface = SkSurface::MakeRaster(info);
-    //}
-
-    // Creating a surface increments context's ref count. The surface ref count will 
-    // therefore equal one after the pointer is returned.
+    // The surface ref count will equal one after the pointer is returned.
     return surface.release();
 }
 
@@ -117,7 +91,6 @@ SkSurface* skiac_surface_create_data(sk_sp<SkData> data)
 
     return surface;
 }
-
 
 skiac_surface* skiac_surface_create_from_image_data(const void* buffer, uint32_t size)
 {
@@ -205,55 +178,14 @@ bool skiac_surface_read_pixels(skiac_surface* c_surface, skiac_surface_data* dat
 	
     data->ptr = nullptr;
     data->size = 0;
-    data->allocated = false;
 	
     SkPixmap pixmap;
 	if (surface->getCanvas()->peekPixels(&pixmap)) {
         data->ptr = static_cast<char*>(pixmap.writable_addr());
         data->size = static_cast<uint32_t>(pixmap.getSafeSize());
 	}
-    else {
-		size_t rowBytes = info.minRowBytes();
-        size_t size = info.getSafeSize(rowBytes);
-		char* ptr = new char[size];
-		if (!canvas->readPixels(info, ptr, rowBytes, 0, 0)) {
-            delete [] ptr;
-            success = false;
-        }
-        else {
-            data->ptr = ptr;
-            data->size = static_cast<uint32_t>(size);
-            data->allocated = true;
-        }
-    }
-
+    
     return success;
-}
-
-bool skiac_surface_write_pixels(skiac_surface* c_surface, const skiac_surface_data* data)
-{
-	if (!data->allocated) {
-        return true;
-    }
-
-    SkSurface* surface = reinterpret_cast<SkSurface*>(c_surface);
-    SkCanvas* canvas = surface->getCanvas();
-    const SkImageInfo& info = canvas->imageInfo();		
-    return canvas->writePixels(info, data->ptr, info.minRowBytes(), 0, 0);    
-}
-
-
-// Surface Data
-
-void skiac_surface_data_delete(skiac_surface_data* data)
-{
-    if (data->allocated && data->ptr) {
-        delete [] data->ptr;
-    }
-
-    data->allocated = false;
-    data->ptr = nullptr;
-    data->size = 0;
 }
 
 // Bitmap
@@ -278,12 +210,6 @@ void skiac_surface_data_delete(skiac_surface_data* data)
 // }
 
 // Canvas
-
-skiac_context* skiac_canvas_get_context(skiac_canvas* c_canvas)
-{
-    SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);
-    return reinterpret_cast<skiac_context*>(canvas->getGrContext());
-}
 
 void skiac_canvas_clear(skiac_canvas* c_canvas, uint32_t color)
 {

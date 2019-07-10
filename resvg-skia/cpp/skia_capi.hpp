@@ -47,7 +47,6 @@ struct skia_rect {
 struct skiac_surface_data {
     char* ptr;
     uint32_t size;
-    bool allocated;
 };
 
 enum class PaintStyle {
@@ -87,7 +86,7 @@ enum class BlendMode {
     DestinationOut = 6,
     SourceAtop = 7,
     Xor = 8,
-    Multiply = 8,
+    Multiply = 9,
     Screen = 10,
     Darken = 11,
     Lighten = 12,
@@ -95,10 +94,6 @@ enum class BlendMode {
 };
 
 extern "C" {
-
-    // Context
-    skiac_context* skiac_get_context();
-    void skiac_set_context(skiac_context* c_context);
 
     // Surface
     skiac_surface* skiac_surface_create_rgba_premultiplied(int width, int height);
@@ -122,7 +117,6 @@ extern "C" {
     void skiac_bitmap_destroy(skiac_bitmap* c_bitmap);
 
     // Canvas
-    skiac_context* skiac_canvas_get_context(skiac_canvas* c_canvas);
     void skiac_canvas_clear(skiac_canvas* c_canvas, uint32_t color);
     void skiac_canvas_flush(skiac_canvas* c_canvas);
     void skiac_canvas_set_matrix(skiac_canvas* c_canvas, skiac_matrix *c_mat);

@@ -85,7 +85,6 @@ pub struct skiac_path_effect {
 pub struct skiac_surface_data {
     pub ptr: *mut u8,
     pub size: u32,
-    pub allocated: bool,
 }
 
 impl Default for skiac_surface_data {
@@ -93,18 +92,8 @@ impl Default for skiac_surface_data {
         skiac_surface_data { 
             ptr: std::ptr::null_mut(), 
             size: 0, 
-            allocated: false 
         }
     }
-}
-
-// Context
-
-extern "C" {
-    pub fn skiac_get_context() -> *mut skiac_context;
-}
-extern "C" {
-    pub fn skiac_set_context(c_context: *mut skiac_context);
 }
 
 // Surface
@@ -153,9 +142,6 @@ extern "C" {
 
 // Canvas
 
-extern "C" {
-    pub fn skiac_canvas_get_context(c_canvas: *mut skiac_canvas) -> *mut skiac_context;
-}
 extern "C" {
     pub fn skiac_canvas_clear(c_canvas: *mut skiac_canvas, color: u32);
 }

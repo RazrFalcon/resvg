@@ -6,7 +6,6 @@
 
 // external
 use crate::skia;
-use crate::svgdom;
 
 // self
 use crate::prelude::*;
@@ -85,35 +84,39 @@ pub fn render_to_image(
     opt: &Options,
 ) -> Option<skia::Surface> {
 
-    let view_box = tree.svg_node().view_box;
-    let size = tree.svg_node().size.to_screen_size();
-    let img_size = utils::fit_to(size, opt.fit_to)?; 
-    
-    let mut surface = skia::Surface::new_rgba_premultiplied(img_size.width(), img_size.height())?;       
-    let mut canvas = surface.get_canvas();
-    canvas.reset_matrix();
+    let (mut surface, img_size) = create_root_surface(tree.svg_node().size.to_screen_size(), opt)?;
+    render_to_canvas(tree, opt, img_size, &mut surface.get_canvas());
 
-    // This stores the GrContext so that layered surfaced are created using the same context.
-    skia::Context::set_from_canvas(&canvas);
-    canvas.clear(0xFFFFFFFF);
-
-	canvas.save();
-
-    apply_viewbox_transform(view_box, img_size.to_size(), &mut canvas);
-    render_node_to_canvas(&tree.root(), opt, img_size, &mut canvas);
-
-	canvas.restore();
-
-    Some(surface)
+	Some(surface)
 }
 
 /// Renders SVG node to image.
 pub fn render_node_to_image(
-    node: &usvg::Node,
-    opt: &Options,
+    _node: &usvg::Node,
+    _opt: &Options,
 ) -> Option<skia::Surface> {
     // TODO:  not implemented
     None
+}
+
+/// Renders rectangular region from source SVG to canvas.
+pub fn render_rect_to_canvas(
+    tree: &usvg::Tree,
+    opt: &Options,
+    img_size: ScreenSize,
+    src: &usvg::Rect,
+    canvas: &mut skia::Canvas,
+) {
+    // Translate and scale the source rectangle (after viewbox transformation) into the image size.
+	let dst_matrix = skia::Matrix::new();
+    dst_matrix.pre_scale(img_size.width() as f64 / src.width(), img_size.height() as f64 / src.height());
+    dst_matrix.pre_translate(-src.left(), -src.top());
+    canvas.concat(&dst_matrix);
+
+    // Apply the viewbox transform to the viewport (instead of the image size)
+    apply_viewbox_transform(tree.svg_node().view_box, tree.svg_node().size, canvas);
+	render_node_to_canvas(&tree.root(), opt, img_size, canvas);
+    canvas.flush();    
 }
 
 /// Renders SVG to canvas.
@@ -123,53 +126,10 @@ pub fn render_to_canvas(
     img_size: ScreenSize,
     canvas: &mut skia::Canvas,
 ) {
-
-    let view_box = tree.svg_node().view_box;
-
-    // This stores the GrContext so that layered surfaced are created using the same context.
-    // TODO:  This should only get called once!  Current image::draw_svg() is calling here which
-    // could change the context if a raster surface is used in a GL enviroment.
-    // NOTE:  At the moment only raster surfaces are being created.
-    skia::Context::set_from_canvas(canvas);
-    
-    // Save and restore to remove the view box transformation and clip region.
-    canvas.save();
-    
-	apply_viewbox_transform(view_box, img_size.to_size(), canvas);
+	apply_viewbox_transform(tree.svg_node().view_box, img_size.to_size(), canvas);
 	render_node_to_canvas(&tree.root(), opt, img_size, canvas);
-    
-	canvas.restore();
+    canvas.flush();
 }
-
-/// Renders rectangular region from source SVG to canvas.
-pub fn render_rect_to_canvas(
-    tree: &usvg::Tree,
-    opt: &Options,
-    img_size: ScreenSize,
-    src: Option<usvg::Rect>,
-    canvas: &mut skia::Canvas,
-) {
-
-    let svg_size = tree.svg_node().size;
-
-    // This stores the GrContext so that layered surfaced are created using the same context.
-    skia::Context::set_from_canvas(canvas);
-    
-    let src_rect = match src {
-		Some(rect) => { rect }
-        None => { Rect::new(0.0, 0.0, svg_size.width(), svg_size.height()).unwrap() }
-    };
-
-    // TODO:  What happened to applying the viewbox transform?
-
-	let dst_matrix = skia::Matrix::new();
-    dst_matrix.pre_scale(img_size.width() as f64 / src_rect.width(), img_size.height() as f64 / src_rect.height());
-    dst_matrix.pre_translate(-src_rect.left(), -src_rect.top());
-    canvas.concat(&dst_matrix);
-
-    render_node_to_canvas(&tree.root(), opt, img_size, canvas);    
-}
-
 
 /// Renders SVG node to canvas.
 fn render_node_to_canvas(
@@ -190,17 +150,33 @@ fn render_node_to_canvas(
     canvas.set_matrix(&curr_mat);
 }
 
+fn create_root_surface(
+    size: ScreenSize,
+    opt: &Options,
+) -> Option<(skia::Surface, ScreenSize)> {
+    let img_size = utils::fit_to(size, opt.fit_to)?;
+
+    let mut surface = try_create_surface!(img_size, None);
+    let canvas = surface.get_canvas();
+
+    // Fill background.
+    if let Some(c) = opt.background {
+        canvas.fill(c.red, c.green, c.blue, 255);
+    } else {
+        canvas.clear();
+    }
+
+    Some((surface, img_size))
+}
 
 // Applies viewbox transformation to the canvas.
 fn apply_viewbox_transform(
     view_box: usvg::ViewBox,
     img_size: Size,
     canvas: &mut skia::Canvas,
-) -> skia::Matrix  {
+) {    
     let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size);
-    let matrix = ts.to_native();
-    canvas.concat(&matrix);
-    matrix
+    canvas.concat(&ts.to_native());
 }
 
 fn render_node(
@@ -336,11 +312,11 @@ fn create_subsurface(
     let mut surface = try_create_surface!(size, None);
 
     let canvas = surface.get_canvas();
-    canvas.clear(0);
+    canvas.clear();
     
     Some(surface)
 }
 
 fn clear_surface(surface: &mut skia::Surface) {
-    surface.get_canvas().clear(0);
+    surface.get_canvas().clear();
 }

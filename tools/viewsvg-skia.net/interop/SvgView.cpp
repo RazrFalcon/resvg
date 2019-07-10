@@ -41,11 +41,12 @@ namespace Interop
 	{
 		if (native_->DrawImage(sx, sy, sw, sh, dw, dh)) {
 
-			void* pixels = native_->LockBitmap();
+			const void* pixels = native_->GetPixels();
 
-			IntPtr ptr(pixels);
+			IntPtr ptr(const_cast<void*>(pixels));
 			int len = native_->GetHeight() * native_->GetStride();
 
+			// TODO:  need to use DPI of caller or system.
 			return BitmapSource::Create(
 				native_->GetWidth(),
 				native_->GetHeight(),

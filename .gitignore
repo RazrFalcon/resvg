@@ -21,6 +21,7 @@ capi/skiatests/out.png
 capi/skiatests/out.svg
 tools/viewsvg-skia.net/viewsvg-skia.net/obj
 tools/viewsvg-skia.net/.vs
+tools/viewsvg-skia.net/interop/Debug
 *.csproj.user
 
 

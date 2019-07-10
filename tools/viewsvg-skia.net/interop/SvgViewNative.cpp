@@ -30,10 +30,6 @@ public:
 			resvg_tree_destroy(tree_);
 		}
 		imageSurface_.reset();
-		if (grContext_) 
-		{
-			grContext_->unref();
-		}
 	}
 	
 	static bool Initialize()
@@ -45,22 +41,12 @@ public:
 		resvg_init_options(&opt_);
 		opt_.font_family = "";
 		opt_.languages = "";
-
-		const GrGLInterface* grInterface = GrGLCreateNativeInterface();
-		if (grInterface) {
-			GrContextOptions grContextOptions;
-			grContext_ = GrContext::Create(kOpenGL_GrBackend, (GrBackendContext)grInterface, grContextOptions);
-		}
-
-		SkSafeUnref(grInterface);
-		grInterface = NULL;
-	
+		
 		return true;
 	}
 
 	static void Terminate()
 	{
-		SkSafeSetNull(grContext_);
 	}
 
 	bool LoadFile(const char* filePath)
@@ -95,54 +81,48 @@ public:
 
 	unsigned int GetWidth()
 	{
-		return (unsigned int)bitmap_.width();
+		return (unsigned int)imageSurface_->width();
 	}
 
 	unsigned int GetHeight()
 	{
-		return (unsigned int)bitmap_.height();
+		return (unsigned int)imageSurface_->height();
 	}
 
 	unsigned int GetStride()
+	{		
+		SkPixmap pixmap;
+		if (imageSurface_->peekPixels(&pixmap)) {
+			return (int)pixmap.rowBytes();
+		}
+		return 0;
+	}
+
+	const void* GetPixels()
 	{
-		return (unsigned int)bitmap_.rowBytes();
+		SkPixmap pixmap;
+		if (imageSurface_->peekPixels(&pixmap)) {
+			return pixmap.addr();
+		}
+		return nullptr;
 	}
 
 	bool DrawImage(double sx, double sy, double sw, double sh, uint32_t dw, uint32_t dh)
 	{
 		bool success = false;
-		resvg_rect srcRect{ sx, sy, sw, sh };
 		resvg_size imageSize = { dw, dh };
 
 		// Create a render surface.
-		if (createImageSurface(imageSize.width, imageSize.height)) {
-			
+		if (createImageSurface(imageSize.width, imageSize.height)) {			
+
+			resvg_rect srcRect{ sx, sy, sw, sh };
 			SkCanvas* imageCanvas = imageSurface_->getCanvas();
 			resvg_skia_render_rect_to_canvas(tree_, &opt_, imageSize, &srcRect, imageCanvas);
+
 			imageCanvas->flush();
-
-			if (!grContext_) {
-				success = true;
-			}
-			else {
-				sk_sp<SkImage> image = imageSurface_->makeImageSnapshot();
-				success = image->asLegacyBitmap(&bitmap_, SkImage::LegacyBitmapMode::kRO_LegacyBitmapMode);
-			}
-
+			success = true;			
 		}
 		return success;
-	}
-
-	void* LockBitmap()
-	{
-		SkASSERT(bitmap_.width() * bitmap_.bytesPerPixel() == bitmap_.rowBytes());
-		bitmap_.lockPixels();
-		return bitmap_.getPixels();
-	}
-
-	void UnlockBitmap()
-	{
-		bitmap_.unlockPixels();
 	}
 
 	bool Export(const char* filePath, bool formatted)
@@ -152,11 +132,9 @@ public:
 
 private:
 	static resvg_options opt_;
-	static GrContext* grContext_;	
 
 	resvg_render_tree *tree_ = nullptr;
 	resvg_size svgSize_;
-	SkBitmap bitmap_;
 	sk_sp<SkSurface> imageSurface_;
 	
 	bool createImageSurface(int width, int height)
@@ -165,37 +143,15 @@ private:
 			return false;
 		}
 
-		bool success = true;
-		imageSurface_.reset();
+		SkImageInfo info = SkImageInfo::Make(width, height, kN32_SkColorType, kPremul_SkAlphaType);
+		imageSurface_ = SkSurface::MakeRaster(info);
 
-		if (!grContext_) {
-			
-			// Bitmap for Raster device mode.
-			bitmap_.allocN32Pixels(0, 0);
-			
-			SkImageInfo info = bitmap_.info().makeWH(width, height);
-			bitmap_.allocPixels(info);
-			SkSurfaceProps surfaceProps(SkSurfaceProps::kLegacyFontHost_InitType);
-			imageSurface_ = SkSurface::MakeRasterDirect(bitmap_.info(), bitmap_.getPixels(), bitmap_.rowBytes(), &surfaceProps);
-		}
-		else {
-			
-			// Increment the grContext reference count
-			grContext_ = SkSafeRef(grContext_);
-
-			const int colorDepth = 32;
-			SkColorType colorType = colorDepth == 32 ? kRGBA_8888_SkColorType : kRGB_565_SkColorType;
-			SkImageInfo info = SkImageInfo::Make(width, height, colorType, kPremul_SkAlphaType);
-			imageSurface_ = SkSurface::MakeRenderTarget(grContext_, SkBudgeted::kNo, info);
-		}
-				
-		return success;
+		return imageSurface_ != nullptr;
 	}
 
 };
 
 resvg_options SvgViewNative::SvgViewNativeImpl::opt_;
-GrContext* SvgViewNative::SvgViewNativeImpl::grContext_ = nullptr;
 
 SvgViewNative::SvgViewNative() :
 	impl_(new SvgViewNativeImpl)
@@ -252,14 +208,9 @@ bool SvgViewNative::DrawImage(double sx, double sy, double sw, double sh, uint32
 	return impl_->DrawImage(sx, sy, sw, sh, dw, dh);
 }
 
-void* SvgViewNative::LockBitmap()
+const void* SvgViewNative::GetPixels()
 {
-	return impl_->LockBitmap();
-}
-
-void SvgViewNative::UnlockBitmap()
-{
-	impl_->UnlockBitmap();
+	return impl_->GetPixels();
 }
 
 bool SvgViewNative::Export(const char* filePath, bool formatted)

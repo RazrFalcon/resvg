@@ -3,6 +3,7 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -56,7 +57,7 @@ namespace viewsvg_skia.net
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             string filePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                @"..\..\..\..\..\..\capi\skiatests\spitfire.svg");
+                @"..\..\..\..\..\..\capi\skiatests\drawing-7.svg");
             LoadFile(filePath);
             RenderImage();
         }
@@ -73,11 +74,12 @@ namespace viewsvg_skia.net
                 if (bitmapSource != null)
                 {
                     Image image = new Image();
-                    image.Source = bitmapSource;
+                    image.Source = bitmapSource;                    
                     this.MainCanvas.Children.Clear();
                     this.MainCanvas.Children.Add(image);
-                }
 
+                    SaveBitmapSourceToFile(bitmapSource);
+                }           
             }
         }
 
@@ -113,5 +115,17 @@ namespace viewsvg_skia.net
             }
 
         }
+
+        private void SaveBitmapSourceToFile(BitmapSource source)
+        {
+            string exportPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "out.png");
+            using (var fileStream = new FileStream(exportPath, FileMode.Create))
+            {
+                BitmapEncoder encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(source));
+                encoder.Save(fileStream);
+            }
+        }
+
     }
 }

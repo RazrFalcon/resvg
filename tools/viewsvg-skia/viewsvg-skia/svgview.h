@@ -33,8 +33,9 @@ private:
 	sk_sp<SkSurface> imageSurface_;
 	bool imageChanged_;
 
+	resvg_size getImageFitSize();
 	void createImageSurface(int width, int height);
-	void drawImage();
+	void drawImageToFit();
 	void drawImageRect();
 	void saveImage(sk_sp<SkImage> image);
 

@@ -69,7 +69,6 @@ bool SvgView::resize(int width, int height)
 		return false;
 	}
 
-	// TODO:  Add support support non-GL (raster mode) surfaces.
 	assert(grContext_);
 	backendSurface_.reset();
 	imageSurface_.reset();
@@ -79,8 +78,7 @@ bool SvgView::resize(int width, int height)
 	desc.fHeight = height;
 
 	// Only supporting 32 color depth at the moment.
-	const int colorDepth = 32;
-	desc.fConfig = colorDepth == 32 ? kRGBA_8888_GrPixelConfig : kRGB_565_GrPixelConfig;
+	desc.fConfig = kRGBA_8888_GrPixelConfig;
 	desc.fOrigin = kBottomLeft_GrSurfaceOrigin;
 	desc.fSampleCnt = 0;
 	desc.fStencilBits = 8;
@@ -94,6 +92,7 @@ bool SvgView::resize(int width, int height)
 	return true;
 }
 
+// This is experimental.  Fiddle with matImageObject, srcRect, and dstRect as needed.
 void SvgView::drawImageRect()
 {
 	SkCanvas* backendCanvas = backendSurface_->getCanvas();
@@ -111,7 +110,8 @@ void SvgView::drawImageRect()
 
 	resvg_size svgSize = resvg_get_image_size(tree_);
 	resvg_rect srcRect{ 0.0, 0.0, (double)svgSize.width, (double)svgSize.height };
-	resvg_rect dstRect{ 0.0, 0.0, (double)svgSize.width, (double)svgSize.height };
+	//resvg_rect dstRect{ 0.0, 0.0, (double)svgSize.width, (double)svgSize.height };
+	resvg_rect dstRect{ 0.0, 0.0, (double)backendSurface_->width(), (double)backendSurface_->height() };
 
 	// Get only the scale factors from the back canvas.
 	SkSize scale;
@@ -142,9 +142,9 @@ void SvgView::drawImageRect()
 	}
 	
 	SkPaint paint;
-	paint.setColor(0xFFFF0000);
-	paint.setFilterQuality(SkFilterQuality::kLow_SkFilterQuality);
-	backendCanvas->drawRect(SkRect::MakeXYWH(0, 0, 1, 1), paint);
+	//paint.setColor(0xFFFF0000);
+	//paint.setFilterQuality(SkFilterQuality::kLow_SkFilterQuality);
+	//backendCanvas->drawRect(SkRect::MakeXYWH(0, 0, 1, 1), paint);
 
 	SkMatrix renderMatrix = currentMatrix;
 	renderMatrix.preScale(SkScalarInvert(scale.fWidth), SkScalarInvert(scale.fHeight));
@@ -159,9 +159,7 @@ void SvgView::drawImageRect()
 
 void SvgView::createImageSurface(int width, int height)
 {
-	const int colorDepth = 32;
-	SkColorType colorType = colorDepth == 32 ? kRGBA_8888_SkColorType : kRGB_565_SkColorType;
-	SkImageInfo info = SkImageInfo::Make(width, height, colorType, kPremul_SkAlphaType);
+	SkImageInfo info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, kPremul_SkAlphaType);
 	imageSurface_ = SkSurface::MakeRenderTarget(grContext_, SkBudgeted::kNo, info);
 }
 
@@ -179,16 +177,33 @@ void SvgView::saveImage(sk_sp<SkImage> image)
 	}
 }
 
-void SvgView::drawImage()
+resvg_size SvgView::getImageFitSize()
+{
+	resvg_size imageSize = resvg_get_image_size(tree_);
+
+	SkScalar newWidth, newHeight;
+	SkScalar viewAspectRatio = (SkScalar)imageSize.width / (SkScalar)imageSize.height;
+	SkScalar canvasAspectRatio = (SkScalar) backendSurface_->width() / (SkScalar) backendSurface_->height();
+
+	if (canvasAspectRatio > viewAspectRatio) {
+		newWidth = (SkScalar)backendSurface_->height() * viewAspectRatio;
+		newHeight = (SkScalar)backendSurface_->height();
+	}
+	else {
+		newWidth = (SkScalar)backendSurface_->width();
+		newHeight = (SkScalar)backendSurface_->width() / viewAspectRatio;
+	}
+
+	return { (uint32_t)newWidth, (uint32_t)newHeight };
+}
+
+
+void SvgView::drawImageToFit()
 {
 	if (imageChanged_) {
 
-		resvg_size imageSize{ 
-			(uint32_t)backendSurface_->width(), 
-			(uint32_t)backendSurface_->height() 
-		};
-
-		createImageSurface(backendSurface_->width(), backendSurface_->height());		
+		resvg_size imageSize = getImageFitSize();
+		createImageSurface(imageSize.width, imageSize.height);		
 		SkCanvas* imageCanvas = imageSurface_->getCanvas();
 
 		resvg_skia_render_to_canvas(tree_, &opt_, imageSize, imageCanvas);
@@ -202,7 +217,11 @@ void SvgView::drawImage()
 
 	SkCanvas* backendCanvas = backendSurface_->getCanvas();
 	backendCanvas->resetMatrix();
-	backendCanvas->drawImage(image, 0, 0);
+
+	// Center the image...
+	SkScalar x = ((SkScalar)backendSurface_->width() * 0.5f) - ((SkScalar)image->width() * 0.5f);
+	SkScalar y = ((SkScalar)backendSurface_->height() * 0.5f) - ((SkScalar)image->height() * 0.5f);	
+	backendCanvas->drawImage(image, x, y);
 	backendCanvas->flush();
 
 	imageChanged_ = false;
@@ -219,7 +238,7 @@ void SvgView::render(bool fitWindow)
 		if (tree_) {	
 
 			if (fitWindow) {
-				drawImage();
+				drawImageToFit();
 			}
 			else {
 				drawImageRect();

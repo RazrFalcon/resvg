@@ -23,7 +23,7 @@ pub fn draw(
     // and (maybe) performance.
 
     // TODO:  implement fill rule
-    let fill_rule = if let Some(ref fill) = path.fill {
+    let _fill_rule = if let Some(ref fill) = path.fill {
         fill.rule
     } else {
         usvg::FillRule::NonZero

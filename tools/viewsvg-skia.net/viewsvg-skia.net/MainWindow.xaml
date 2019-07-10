@@ -18,6 +18,6 @@
                 <MenuItem x:Name="AppExit" Header="E_xit" HorizontalAlignment="Left" Width="140" Click="AppExit_Click"/>
             </MenuItem>
         </Menu>
-        <Canvas Grid.Row="1"  Name="MainCanvas" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="20" />
+        <Canvas Grid.Row="1"  Name="MainCanvas" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
     </Grid>
 </Window>
