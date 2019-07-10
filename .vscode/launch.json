@@ -9,7 +9,7 @@
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/target/debug/rendersvg.exe",
-            "args": ["--dump-svg", "${workspaceFolder}\\capi\\skiatests\\out.svg", "${workspaceFolder}\\capi\\skiatests\\drawing-7-viewbox.svg", "${workspaceFolder}\\capi\\skiatests\\out.png"],
+            "args": ["--dump-svg", "${workspaceFolder}\\capi\\skiatests\\out.svg", "${workspaceFolder}\\capi\\skiatests\\spitfire.svg", "${workspaceFolder}\\capi\\skiatests\\out.png"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [

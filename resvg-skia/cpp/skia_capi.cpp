@@ -351,8 +351,8 @@ skia_matrix skiac_matrix_get_data(skiac_matrix *c_mat)
     const auto mat = reinterpret_cast<SkMatrix*>(c_mat);
     skia_matrix raw_mat;
     raw_mat.a = mat->getScaleX();
-    raw_mat.b = mat->getSkewX();
-    raw_mat.c = mat->getSkewY();
+    raw_mat.b = mat->getSkewY();
+    raw_mat.c = mat->getSkewX();
     raw_mat.d = mat->getScaleY();
     raw_mat.e = mat->getTranslateX();
     raw_mat.f = mat->getTranslateY();
