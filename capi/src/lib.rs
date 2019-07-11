@@ -5,11 +5,16 @@
 #![allow(non_camel_case_types)]
 
 use std::ffi::CStr;
+use std::fs;
+use std::io::Write;
 use std::fmt;
 use std::os::raw::c_char;
 use std::path;
 use std::ptr;
 use std::slice;
+
+use resvg::svgdom;
+use svgdom::WriteBuffer;
 
 use log::warn;
 
@@ -18,6 +23,9 @@ use resvg::cairo;
 
 #[cfg(feature = "qt-backend")]
 use resvg::qt;
+
+#[cfg(feature = "skia-backend")]
+use resvg::skia;
 
 use resvg::prelude::*;
 
@@ -267,7 +275,19 @@ pub extern "C" fn resvg_raqote_render_to_image(
     opt: *const resvg_options,
     file_path: *const c_char,
 ) -> i32 {
+    let backend = Box::new(resvg::backend_skia::Backend);
     let backend = Box::new(resvg::backend_raqote::Backend);
+    render_to_image(tree, opt, file_path, backend)
+}
+
+#[cfg(feature = "skia-backend")]
+#[no_mangle]
+pub extern "C" fn resvg_skia_render_to_image(
+    tree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    file_path: *const c_char,
+) -> i32 {
+    let backend = Box::new(resvg::backend_skia::Backend);
     render_to_image(tree, opt, file_path, backend)
 }
 
@@ -351,6 +371,68 @@ pub extern "C" fn resvg_cairo_render_to_canvas(
     });
 
     resvg::backend_cairo::render_to_canvas(&tree.0, &opt, size, &cr);
+}
+
+#[cfg(feature = "skia-backend")]
+#[no_mangle]
+pub extern "C" fn resvg_skia_render_to_canvas(
+    tree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    img_size: resvg_size,
+    canvas: *mut skia::skiac_canvas,
+) {
+  
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
+    };
+
+    let mut canvas = unsafe { skia::Canvas::from_raw(canvas) };
+    let img_size = resvg::ScreenSize::new(img_size.width, img_size.height).unwrap();
+
+    let opt = to_native_opt(unsafe {
+        assert!(!opt.is_null());
+        &*opt
+    });
+    
+    resvg::backend_skia::render_to_canvas(&tree.0, &opt, img_size, &mut canvas);
+}
+
+
+#[cfg(feature = "skia-backend")]
+#[no_mangle]
+pub extern "C" fn resvg_skia_render_rect_to_canvas(
+    tree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    img_size: resvg_size,
+    src: *const resvg_rect,
+    canvas: *mut skia::skiac_canvas,
+) {
+  
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
+    };
+
+    let mut canvas = unsafe { skia::Canvas::from_raw(canvas) };
+    let img_size = resvg::ScreenSize::new(img_size.width, img_size.height).unwrap();
+
+    let opt = to_native_opt(unsafe {
+        assert!(!opt.is_null());
+        &*opt
+    });
+    
+    let src = {
+        if src.is_null() {
+            let size = tree.0.svg_node().size;
+            usvg::Rect::new(0.0, 0.0, size.width(), size.height()).unwrap()
+        }
+        else {
+            unsafe { usvg::Rect::new((*src).x, (*src).y, (*src).width, (*src).height).unwrap() }
+        }
+    };
+
+    resvg::backend_skia::render_rect_to_canvas(&tree.0, &opt, img_size, &src, &mut canvas);
 }
 
 #[cfg(feature = "qt-backend")]
@@ -627,6 +709,59 @@ pub extern "C" fn resvg_get_node_transform(
 
     false
 }
+
+#[no_mangle]
+pub extern "C" fn resvg_export_usvg(tree: &usvg::Tree, file_path: *const c_char, formatted: bool) -> bool {
+
+    let file_path = match cstr_to_str(file_path) {
+        Some(v) => v,
+        None => {
+            warn!("invalid string parameter");
+            return false;
+        }
+    };
+
+    let mut f = match fs::File::create(file_path) {
+        Ok(f) => f,
+        Err(_) => {
+            warn!("failed to create a file {:?}", file_path);
+            return false;
+        }
+    };
+
+    let opt = {
+
+        if formatted {
+            svgdom::WriteOptions {
+                indent: svgdom::Indent::Spaces(2),
+                attributes_indent: svgdom::Indent::Spaces(3),
+                ..svgdom::WriteOptions::default()
+            }
+        }
+        else {
+            svgdom::WriteOptions {
+                indent: svgdom::Indent::None,
+                attributes_indent: svgdom::Indent::None,
+                ..svgdom::WriteOptions::default()
+            }
+        }        
+    };
+
+    let svgdoc = tree.to_svgdom();
+
+    let mut out = Vec::new();
+    svgdoc.write_buf_opt(&opt, &mut out);
+    match f.write_all(&out) {
+        Err(_) => {
+            warn!("failed to write a file {:?}", file_path);
+            return false;
+        }
+        Ok(()) => {}
+    }
+
+    return true;
+}
+
 
 fn cstr_to_str(
     text: *const c_char,
