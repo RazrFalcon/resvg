@@ -40,9 +40,17 @@ impl ImageExt for skia::Surface {
         self.try_clone().ok_or(Error::AllocFailed)
     }
 
-    fn clip(&mut self, _region: ScreenRect) {
+    fn clip(&mut self, region: ScreenRect) {
         // This is cropping by clearing the pixels outside the region.
-        // TODO:  Implement 
+        let mut paint = skia::Paint::new();
+        paint.set_color(0, 0, 0, 0);
+        paint.set_blend_mode(skia::BlendMode::Clear);
+
+        let mut canvas = self.get_canvas();
+        canvas.draw_rect(0.0, 0.0, self.width() as f64, region.y() as f64, &paint);
+        canvas.draw_rect(0.0, 0.0, region.x() as f64, self.height() as f64, &paint);
+        canvas.draw_rect(region.right() as f64, 0.0, self.width() as f64, self.height() as f64, &paint);
+        canvas.draw_rect(0.0, region.bottom() as f64, self.width() as f64, self.height() as f64, &paint);
     }
 
     fn clear(&mut self) {

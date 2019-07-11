@@ -58,7 +58,7 @@ impl Render for Backend {
         Some(Box::new(img))
     }
 
-    // TODO:  finish implementation
+    // TODO:  not implemented
     fn render_node_to_image(
         &self,
         node: &usvg::Node,
