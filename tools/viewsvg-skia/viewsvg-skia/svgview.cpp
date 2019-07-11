@@ -218,9 +218,9 @@ void SvgView::drawImageToFit()
 	SkCanvas* backendCanvas = backendSurface_->getCanvas();
 	backendCanvas->resetMatrix();
 
-	// Center the image...
-	SkScalar x = ((SkScalar)backendSurface_->width() * 0.5f) - ((SkScalar)image->width() * 0.5f);
-	SkScalar y = ((SkScalar)backendSurface_->height() * 0.5f) - ((SkScalar)image->height() * 0.5f);	
+	// Center the image on integer coordinates (or else aliasing occurs).
+	SkScalar x = floorf(((SkScalar)backendSurface_->width() * 0.5f) - ((SkScalar)image->width() * 0.5f));
+	SkScalar y = floorf(((SkScalar)backendSurface_->height() * 0.5f) - ((SkScalar)image->height() * 0.5f));	
 	backendCanvas->drawImage(image, x, y);
 	backendCanvas->flush();
 

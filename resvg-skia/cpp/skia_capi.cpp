@@ -399,7 +399,8 @@ void skiac_matrix_destroy(skiac_matrix *c_mat)
 
 skiac_paint* skiac_paint_create()
 {
-    return reinterpret_cast<skiac_paint*>(new SkPaint());
+    SkPaint* paint = new SkPaint();
+    return reinterpret_cast<skiac_paint*>(paint);
 }
 
 void skiac_paint_destroy(skiac_paint* c_paint)

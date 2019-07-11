@@ -109,9 +109,6 @@ extern "C" {
     bool skiac_surface_read_pixels(skiac_surface* c_surface, skiac_surface_data* data);
     bool skiac_surface_write_pixels(skiac_surface* c_surface, const skiac_surface_data* data);
 
-    // Surface Data
-    void skiac_surface_data_delete(skiac_surface_data* data);
-
     // Bitmap
     skiac_bitmap* skiac_bitmap_create_rgba(uint32_t width, uint32_t height);
     void skiac_bitmap_destroy(skiac_bitmap* c_bitmap);
