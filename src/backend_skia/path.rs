@@ -17,22 +17,17 @@ pub fn draw(
     surface: &mut skia::Surface,
     blend_mode: skia::BlendMode
 ) -> Option<Rect> {
-    // TODO:  need to consider having a stateful paint object for the canvas to hold blend mode
-    // and (maybe) performance.
-
-    // TODO: implement fill rule
-    let _fill_rule = if let Some(ref fill) = path.fill {
-        fill.rule
-    } else {
-        usvg::FillRule::NonZero
-    };
-
     // `usvg` guaranties that path without a bbox will not use
     // a paint server with ObjectBoundingBox,
     // so we can pass whatever rect we want, because it will not be used anyway.
     let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
 
-    let skia_path = convert_path(&path.segments);
+    let mut skia_path = convert_path(&path.segments);
+    if let Some(ref fill) = path.fill {
+        if fill.rule == usvg::FillRule::EvenOdd {
+            skia_path.set_fill_type(skia::FillType::EvenOdd);
+        }
+    };
 
     let anti_alias = use_shape_antialiasing(path.rendering_mode);
 

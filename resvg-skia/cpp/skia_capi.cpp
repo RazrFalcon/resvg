@@ -451,6 +451,12 @@ void skiac_path_destroy(skiac_path* c_path)
     delete reinterpret_cast<SkPath*>(c_path);
 }
 
+void skiac_path_set_fill_type(skiac_path* c_path, FillType type)
+{
+    SkPath* path = reinterpret_cast<SkPath*>(c_path);
+    path->setFillType((SkPath::FillType)type);
+}
+
 void skiac_path_move_to(skiac_path* c_path, double x, double y)
 {
     SkPath* path = reinterpret_cast<SkPath*>(c_path);
@@ -491,8 +497,8 @@ void skiac_path_effect_destroy(skiac_path_effect* c_path_effect)
     SkSafeUnref(effect);
 }
 
-
 // Shader
+
 skiac_shader* skiac_shader_make_linear_gradient(
     const skia_point* c_points, const SkColor* colors, const SkScalar* positions,
     int count, TileMode tile_mode,
@@ -531,7 +537,6 @@ skiac_shader* skiac_shader_make_two_point_conical_gradient(
 
     return reinterpret_cast<skiac_shader*>(shader);
 }
-
 
 skiac_shader* skiac_shader_make_from_surface_image(skiac_surface* c_surface, const skiac_matrix* c_matrix)
 {

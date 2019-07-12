@@ -55,6 +55,11 @@ enum class PaintStyle {
     __Size
 };
 
+enum class FillType {
+    Winding = 0,
+    EvenOdd = 1,
+};
+
 enum class StrokeCap {
     Butt = 0,
     Round = 1,

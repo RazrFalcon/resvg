@@ -17,6 +17,12 @@ pub enum PaintStyle {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum FillType {
+    Winding = 0,
+    EvenOdd = 1,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum StrokeCap {
     Butt = 0,
     Round = 1,
@@ -359,15 +365,23 @@ impl Path {
     pub fn new() -> Path {
         unsafe { Path(ffi::skiac_path_create()) }
     }
+
+    pub fn set_fill_type(&mut self, kind: FillType) {
+        unsafe { ffi::skiac_path_set_fill_type(self.0, kind as u32); }
+    }
+
     pub fn move_to(&mut self, x: f64, y: f64) {
         unsafe { ffi::skiac_path_move_to(self.0, x, y); }
     }
+
     pub fn line_to(&mut self, x: f64, y: f64) {
         unsafe { ffi::skiac_path_line_to(self.0, x, y); }
     }
+
     pub fn cubic_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64) {
         unsafe { ffi::skiac_path_cubic_to(self.0, x1, y1, x2, y2, x3, y3); }
     }
+
     pub fn close(&mut self) {
         unsafe { ffi::skiac_path_close(self.0); }
     }

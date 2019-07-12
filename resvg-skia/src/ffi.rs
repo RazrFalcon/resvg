@@ -260,6 +260,9 @@ extern "C" {
     pub fn skiac_path_destroy(c_paint: *mut skiac_path);
 }
 extern "C" {
+    pub fn skiac_path_set_fill_type(c_path: *mut skiac_path, kind: u32);
+}
+extern "C" {
     pub fn skiac_path_move_to(c_path: *mut skiac_path, x: f64, y: f64);
 }
 extern "C" {
