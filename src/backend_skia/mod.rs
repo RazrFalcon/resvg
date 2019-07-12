@@ -292,7 +292,7 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
             Some(prev) => {
                 let mut canvas = prev.img.canvas_mut();
                 canvas.draw_surface(&last.img, 0.0, 0.0, a, mode.into(),
-                                    skia::FilterQuality::High);
+                                    skia::FilterQuality::Low);
             }
             None => {
                 let mut canvas = self.surface.canvas_mut();
@@ -300,7 +300,7 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
                 let curr_ts = canvas.get_matrix();
                 canvas.reset_matrix();
                 canvas.draw_surface(&last.img, 0.0, 0.0, a, mode.into(),
-                                    skia::FilterQuality::High);
+                                    skia::FilterQuality::Low);
 
                 // Reset.
                 canvas.set_matrix(&curr_ts);
