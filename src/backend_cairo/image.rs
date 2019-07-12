@@ -5,7 +5,7 @@
 use usvg::try_opt;
 
 use crate::prelude::*;
-use crate::backend_utils::{self, ConvTransform};
+use crate::backend_utils::{self, AlphaMode, ConvTransform};
 
 
 pub fn draw_raster(
@@ -24,7 +24,7 @@ pub fn draw_raster(
         {
             // Unwrap is safe, because no one uses the surface.
             let mut surface_data = surface.get_data().unwrap();
-            backend_utils::image::image_to_surface(&img, &mut surface_data);
+            backend_utils::image::image_to_surface(&img, AlphaMode::Premultiplied, &mut surface_data);
         }
 
         surface

@@ -6,7 +6,7 @@ use crate::qt;
 use usvg::try_opt;
 
 use crate::prelude::*;
-use crate::backend_utils::{self, ConvTransform};
+use crate::backend_utils::{self, AlphaMode, ConvTransform};
 
 
 pub fn draw_raster(
@@ -20,8 +20,14 @@ pub fn draw_raster(
     let img = try_opt!(backend_utils::image::load_raster(format, data, opt));
 
     let image = {
-        let mut image = try_create_image!(img.size, ());
-        backend_utils::image::image_to_surface(&img, &mut image.data_mut());
+        let (w, h) = img.size.dimensions();
+        let mut image = usvg::try_opt_warn_or!(
+            qt::Image::new_rgba_premultiplied(w, h), (),
+            "Failed to create a {}x{} image.", w, h
+        );
+        backend_utils::image::image_to_surface(
+            &img, AlphaMode::Premultiplied, &mut image.data_mut(),
+        );
         image
     };
 

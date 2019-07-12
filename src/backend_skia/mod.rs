@@ -188,6 +188,7 @@ struct SkiaFlatRender<'a> {
     tree: &'a usvg::Tree,
     opt: &'a Options,
     blend_mode: BlendMode,
+    clip_rect: Option<Rect>,
     surface: &'a mut skia::Surface,
     layers: Layers<skia::Surface>,
 }
@@ -203,6 +204,7 @@ impl<'a> SkiaFlatRender<'a> {
             tree,
             opt,
             blend_mode: BlendMode::default(),
+            clip_rect: None,
             surface,
             layers: Layers::new(img_size),
         }
@@ -214,18 +216,28 @@ impl<'a> SkiaFlatRender<'a> {
         match self.layers.current_mut() {
             Some(layer) => {
                 let mut canvas = layer.img.canvas_mut();
+                canvas.save();
                 canvas.set_matrix(&layer.ts.to_native());
 
                 if let Some(r) = layer.clip_rect {
-                    canvas.clip_rect(r.x(), r.y(), r.width(), r.height());
+                    canvas.set_clip_rect(r.x(), r.y(), r.width(), r.height());
                 }
 
                 f(self.tree, self.opt, layer.blend_mode, &mut layer.img);
 
-                canvas.reset_matrix();
+                canvas.restore();
             }
             None => {
+                let mut canvas = self.surface.canvas_mut();
+                canvas.save();
+
+                if let Some(r) = self.clip_rect {
+                    canvas.set_clip_rect(r.x(), r.y(), r.width(), r.height());
+                }
+
                 f(self.tree, self.opt, self.blend_mode, self.surface);
+
+                canvas.restore();
             }
         }
     }
@@ -314,7 +326,7 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
     fn set_clip_rect(&mut self, rect: Rect) {
         match self.layers.current_mut() {
             Some(layer) => layer.clip_rect = Some(rect),
-            None => self.surface.canvas_mut().clip_rect(rect.x(), rect.y(), rect.width(), rect.height()),
+            None => self.surface.canvas_mut().set_clip_rect(rect.x(), rect.y(), rect.width(), rect.height()),
         }
     }
 

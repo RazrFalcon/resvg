@@ -337,11 +337,10 @@ impl Filter<skia::Surface> for SkiaFilter {
         let mut paint = skia::Paint::new();
         paint.set_shader(&shader);
 
-        // TODO:  Getting different results compared to the web browsers.  Chrome differs from FF and Edge
-        //  which look the same.
         let mut canvas = buffer.canvas_mut();
         canvas.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64, &paint);
 
+        buffer.canvas_mut().reset_matrix();
         Ok(Image::from_image(buffer, ColorSpace::SRGB))
     }
 
@@ -378,6 +377,7 @@ impl Filter<skia::Surface> for SkiaFilter {
             usvg::FeImageKind::Use(..) => {}
         }
 
+        buffer.canvas_mut().reset_matrix();
         Ok(Image::from_image(buffer, ColorSpace::SRGB))
     }
 

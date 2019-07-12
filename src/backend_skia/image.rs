@@ -6,7 +6,7 @@ use crate::skia;
 use usvg::try_opt;
 
 use crate::prelude::*;
-use crate::backend_utils::{self, ConvTransform};
+use crate::backend_utils::{self, AlphaMode, ConvTransform};
 
 
 pub fn draw_raster(
@@ -20,8 +20,13 @@ pub fn draw_raster(
     let img = try_opt!(backend_utils::image::load_raster(format, data, opt));
 
     let image = {
-        let mut image = try_create_surface!(img.size, ());
-        backend_utils::image::image_to_surface(&img, &mut image.data_mut());
+        let (w, h) = img.size.dimensions();
+        let mut image = usvg::try_opt_warn_or!(
+            skia::Surface::new_rgba(w, h), (),
+            "Failed to create a {}x{} surface.", w, h
+        );
+
+        backend_utils::image::image_to_surface(&img, AlphaMode::AsIs, &mut image.data_mut());
         image
     };
 
@@ -29,17 +34,20 @@ pub fn draw_raster(
 //        canvas.set_smooth_pixmap_transform(false);
 //    }
 
+    let mut canvas = surface.canvas_mut();
+    canvas.save();
+
     if view_box.aspect.slice {
         let r = view_box.rect;
-        surface.canvas_mut().clip_rect(r.x(), r.y(), r.width(), r.height());
+        canvas.set_clip_rect(r.x(), r.y(), r.width(), r.height());
     }
 
     let r = backend_utils::image::image_rect(&view_box, img.size);
-    surface.canvas_mut().draw_surface(&image, r.x(), r.y(), 255, skia::BlendMode::SourceOver);
+    canvas.draw_surface_rect(&image, r.x(), r.y(), r.width(), r.height());
 
     // Revert.
 //    p.set_smooth_pixmap_transform(true);
-//    p.reset_clip_path();
+    canvas.restore();
 }
 
 pub fn draw_svg(
@@ -54,7 +62,7 @@ pub fn draw_svg(
     let (ts, clip) = backend_utils::image::prepare_sub_svg_geom(view_box, img_size);
 
     if let Some(clip) = clip {
-        surface.canvas_mut().clip_rect(clip.x(), clip.y(), clip.width(), clip.height());
+        surface.canvas_mut().set_clip_rect(clip.x(), clip.y(), clip.width(), clip.height());
     }
 
     surface.canvas_mut().concat(&ts.to_native());

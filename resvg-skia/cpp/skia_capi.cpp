@@ -1,12 +1,8 @@
 #include <assert.h>
-#include <include/core/SkBlendMode.h>
 #include <include/core/SkCanvas.h>
 #include <include/core/SkGraphics.h>
 #include <include/core/SkPaint.h>
-#include <include/core/SkPath.h>
-#include <include/core/SkShader.h>
 #include <include/core/SkSurface.h>
-#include <include/core/SkTileMode.h>
 #include <include/effects/SkDashPathEffect.h>
 #include <include/effects/SkGradientShader.h>
 
@@ -262,6 +258,18 @@ void skiac_canvas_draw_surface(skiac_canvas* c_canvas, skiac_surface* c_surface,
     canvas->drawImage(image, (SkScalar)left, (SkScalar)top, &paint);
 }
 
+void skiac_canvas_draw_surface_rect(skiac_canvas* c_canvas, skiac_surface* c_surface, double x, double y, double w, double h)
+{
+    SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);
+    SkSurface* surface = reinterpret_cast<SkSurface*>(c_surface);
+    sk_sp<SkImage> image = surface->makeImageSnapshot();
+    SkPaint paint;
+    paint.setFilterQuality(SkFilterQuality::kLow_SkFilterQuality);
+    SkRect src = SkRect::MakeXYWH(0, 0, (SkScalar)image->width(), (SkScalar)image->height());
+    SkRect dst = SkRect::MakeXYWH((SkScalar)x, (SkScalar)y, (SkScalar)w, (SkScalar)h);
+    canvas->drawImageRect(image, src, dst, &paint);
+}
+
 void skiac_canvas_reset_matrix(skiac_canvas* c_canvas)
 {
     SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);
@@ -273,6 +281,18 @@ void skiac_canvas_clip_rect(skiac_canvas* c_canvas, const skia_rect* c_rect)
     SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);
     SkRect rect = SkRect::MakeLTRB(c_rect->left, c_rect->top, c_rect->right, c_rect->bottom);
     canvas->clipRect(rect, true);
+}
+
+void skiac_canvas_save(skiac_canvas* c_canvas)
+{
+    SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);
+    canvas->save();
+}
+
+void skiac_canvas_restore(skiac_canvas* c_canvas)
+{
+    SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);
+    canvas->restore();
 }
 
 // SkMatrix

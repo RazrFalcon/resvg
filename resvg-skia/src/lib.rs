@@ -294,20 +294,32 @@ impl Canvas {
         unsafe { ffi::skiac_canvas_draw_surface(self.0, surface.0, left, top, alpha, blend_mode as u32); }
     }
 
-    pub fn reset_matrix(&self) {
+    pub fn draw_surface_rect(&mut self, surface: &Surface, x: f64, y: f64, w: f64, h: f64) {
+        unsafe { ffi::skiac_canvas_draw_surface_rect(self.0, surface.0, x, y, w, h) }
+    }
+
+    pub fn reset_matrix(&mut self) {
         unsafe { ffi::skiac_canvas_reset_matrix(self.0); }
     }
 
-    pub fn clip_rect(&self, l: f64, t: f64, r: f64, b: f64) {
+    pub fn set_clip_rect(&mut self, x: f64, y: f64, w: f64, h: f64) {
         let rect = ffi::skia_rect {
-            left: l as f32,
-            top: t as f32,
-            right: r as f32,
-            bottom: b as f32
+            left: x as f32,
+            top: y as f32,
+            right: (x + w) as f32,
+            bottom: (y + h) as f32
         };
         unsafe {
             ffi::skiac_canvas_clip_rect(self.0, &rect)
         }
+    }
+
+    pub fn save(&mut self) {
+        unsafe { ffi::skiac_canvas_save(self.0); }
+    }
+
+    pub fn restore(&mut self) {
+        unsafe { ffi::skiac_canvas_restore(self.0); }
     }
 }
 

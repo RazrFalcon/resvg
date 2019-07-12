@@ -5,7 +5,7 @@
 use usvg::try_opt;
 
 use crate::prelude::*;
-use crate::backend_utils::{self, ConvTransform};
+use crate::backend_utils::{self, AlphaMode, ConvTransform};
 use super::RaqoteDrawTargetExt;
 
 
@@ -22,7 +22,7 @@ pub fn draw_raster(
     let sub_dt = {
         let mut sub_dt = raqote::DrawTarget::new(img.size.width() as i32, img.size.height() as i32);
         let surface_data = sub_dt.get_data_u8_mut();
-        backend_utils::image::image_to_surface(&img, surface_data);
+        backend_utils::image::image_to_surface(&img, AlphaMode::Premultiplied, surface_data);
         sub_dt
     };
 
