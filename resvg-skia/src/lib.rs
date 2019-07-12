@@ -95,7 +95,7 @@ impl Surface {
     }
 
     pub fn try_clone(&self) -> Option<Surface> {
-        unsafe { Self::from_ptr(ffi::skiac_surface_copy_rgba(self.0, 0, 0, self.get_width() as u32, self.get_height() as u32)) }
+        unsafe { Self::from_ptr(ffi::skiac_surface_copy_rgba(self.0, 0, 0, self.width(), self.height())) }
     }
 
     pub fn save(&self, path: &str) -> bool {
@@ -103,16 +103,20 @@ impl Surface {
         unsafe { ffi::skiac_surface_save(self.0, c_path.as_ptr()) }
     }
 
-    pub fn get_canvas(&mut self) -> Canvas {
+    pub fn canvas(&self) -> Canvas {
         unsafe { Canvas(ffi::skiac_surface_get_canvas(self.0)) }
     }
 
-    pub fn get_width(&self) -> i32 {
-        unsafe { ffi::skiac_surface_get_width(self.0) }
+    pub fn canvas_mut(&mut self) -> Canvas {
+        unsafe { Canvas(ffi::skiac_surface_get_canvas(self.0)) }
     }
 
-    pub fn get_height(&self) -> i32 {
-        unsafe { ffi::skiac_surface_get_height(self.0) }
+    pub fn width(&self) -> u32 {
+        unsafe { ffi::skiac_surface_get_width(self.0) as u32 }
+    }
+
+    pub fn height(&self) -> u32 {
+        unsafe { ffi::skiac_surface_get_height(self.0) as u32 }
     }
 
     pub fn data(&self) -> SurfaceData {
@@ -268,7 +272,7 @@ impl Canvas {
         unsafe { ffi::skiac_canvas_translate(self.0, dx, dy); }
     }
 
-    pub fn get_total_matrix(&self) -> Matrix {
+    pub fn get_matrix(&self) -> Matrix {
         unsafe { Matrix(ffi::skiac_canvas_get_total_matrix(self.0)) }
     }
 
@@ -460,15 +464,11 @@ impl Drop for Shader {
 pub struct PathEffect(*mut ffi::skiac_path_effect);
 
 impl PathEffect {
-    pub fn new_dash_path(intervals: &Vec<f64>, count: i32, phase: f32) -> PathEffect {
-        // Convert to 32-bit float
-        let mut intervals32: Vec<f32> = Vec::with_capacity(intervals.len());
-        for dash in intervals {
-            intervals32.push(*dash as f32);
-        }
-
+    pub fn new_dash_path(intervals: &[f32], phase: f32) -> PathEffect {
         unsafe {
-            PathEffect(ffi::skiac_path_effect_make_dash_path(intervals32.as_ptr(), count, phase))
+            PathEffect(ffi::skiac_path_effect_make_dash_path(
+                intervals.as_ptr(), intervals.len() as i32, phase
+            ))
         }
     }
 }

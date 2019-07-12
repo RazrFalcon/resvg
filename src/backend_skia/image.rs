@@ -15,7 +15,7 @@ pub fn draw_raster(
     view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
     opt: &Options,
-    canvas: &mut skia::Canvas,
+    surface: &mut skia::Surface,
 ) {
     let img = try_opt!(backend_utils::image::load_raster(format, data, opt));
 
@@ -31,11 +31,11 @@ pub fn draw_raster(
 
     if view_box.aspect.slice {
         let r = view_box.rect;
-        canvas.clip_rect(r.x(), r.y(), r.width(), r.height());
+        surface.canvas_mut().clip_rect(r.x(), r.y(), r.width(), r.height());
     }
 
     let r = backend_utils::image::image_rect(&view_box, img.size);
-    canvas.draw_surface(&image, r.x(), r.y(), 255, skia::BlendMode::SourceOver);
+    surface.canvas_mut().draw_surface(&image, r.x(), r.y(), 255, skia::BlendMode::SourceOver);
 
     // Revert.
 //    p.set_smooth_pixmap_transform(true);
@@ -46,7 +46,7 @@ pub fn draw_svg(
     data: &usvg::ImageData,
     view_box: usvg::ViewBox,
     opt: &Options,
-    canvas: &mut skia::Canvas,
+    surface: &mut skia::Surface,
 ) {
     let (tree, sub_opt) = try_opt!(backend_utils::image::load_sub_svg(data, opt));
 
@@ -54,9 +54,9 @@ pub fn draw_svg(
     let (ts, clip) = backend_utils::image::prepare_sub_svg_geom(view_box, img_size);
 
     if let Some(clip) = clip {
-        canvas.clip_rect(clip.x(), clip.y(), clip.width(), clip.height());
+        surface.canvas_mut().clip_rect(clip.x(), clip.y(), clip.width(), clip.height());
     }
 
-    canvas.concat(&ts.to_native());
-    super::render_to_canvas(&tree, &sub_opt, img_size, canvas);
+    surface.canvas_mut().concat(&ts.to_native());
+    super::render_to_canvas(&tree, &sub_opt, img_size, surface);
 }
