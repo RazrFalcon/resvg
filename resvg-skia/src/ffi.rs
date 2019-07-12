@@ -89,9 +89,9 @@ pub struct skiac_surface_data {
 
 impl Default for skiac_surface_data {
     fn default() -> skiac_surface_data {
-        skiac_surface_data { 
-            ptr: std::ptr::null_mut(), 
-            size: 0, 
+        skiac_surface_data {
+            ptr: std::ptr::null_mut(),
+            size: 0,
         }
     }
 }
@@ -280,7 +280,7 @@ extern "C" {
 extern "C" {
     pub fn skiac_path_close(c_path: *mut skiac_path);
 }
-    
+
 // PathEffect
 
 extern "C" {
@@ -294,8 +294,8 @@ extern "C" {
 
 extern "C" {
     pub fn skiac_shader_make_linear_gradient(
-        points: *const skia_point, 
-        colors: *const u32, 
+        points: *const skia_point,
+        colors: *const u32,
         positions: *const f32,
         size: i32,
         tile_mode: u32,
@@ -304,11 +304,11 @@ extern "C" {
 }
 extern "C" {
     pub fn skiac_shader_make_two_point_conical_gradient(
-        start_point: skia_point, 
+        start_point: skia_point,
         start_radius: f32,
-        end_point: skia_point, 
-        end_radius: f32, 
-        colors: *const u32, 
+        end_point: skia_point,
+        end_radius: f32,
+        colors: *const u32,
         positions: *const f32,
         size: i32,
         tile_mode: u32,

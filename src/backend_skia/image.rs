@@ -91,6 +91,6 @@ pub fn draw_svg(
 
     canvas.concat(&ts.to_native());
     super::render_to_canvas(&tree, &sub_opt, img_size, canvas);
-    
+
     canvas.restore();
 }

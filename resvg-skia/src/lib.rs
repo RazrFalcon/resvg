@@ -48,23 +48,23 @@ pub enum BlendMode {
     DestinationOut = 6,
     SourceAtop = 7,
     Xor = 8,
-    Multiply = 9,    
+    Multiply = 9,
     Screen = 10,
     Darken = 11,
     Lighten = 12,
 }
 
 pub struct Surface(*mut ffi::skiac_surface);
-     
+
 impl Surface {
 
-    pub fn new_rgba(width: u32, height: u32) -> Option<Surface> {        
+    pub fn new_rgba(width: u32, height: u32) -> Option<Surface> {
         unsafe {
             Self::from_ptr(ffi::skiac_surface_create_rgba(width, height))
         }
     }
 
-    pub fn new_rgba_premultiplied(width: u32, height: u32) -> Option<Surface> {        
+    pub fn new_rgba_premultiplied(width: u32, height: u32) -> Option<Surface> {
         unsafe {
             Self::from_ptr(ffi::skiac_surface_create_rgba_premultiplied(width, height))
         }
@@ -118,7 +118,7 @@ impl Surface {
 
     pub fn data(&self) -> SurfaceData {
         unsafe {
-            
+
             let mut data: ffi::skiac_surface_data = Default::default();
             ffi::skiac_surface_read_pixels(self.0, &mut data);
 
@@ -130,7 +130,7 @@ impl Surface {
 
     pub fn data_mut(&mut self) -> SurfaceData {
         unsafe {
-            
+
             let mut data: ffi::skiac_surface_data = Default::default();
             ffi::skiac_surface_read_pixels(self.0, &mut data);
 
@@ -145,7 +145,7 @@ impl Surface {
 impl Drop for Surface {
 
     fn drop(&mut self) {
-        unsafe { 
+        unsafe {
             ffi::skiac_surface_destroy(self.0);
         }
     }
@@ -196,7 +196,7 @@ impl Matrix {
         unsafe { Matrix(ffi::skiac_matrix_create_inverse(self.0)) }
     }
     pub fn map_rect(&self, l: f64, t: f64, r: f64, b: f64) -> (f32, f32, f32, f32) {
-        let src = ffi::skia_rect { 
+        let src = ffi::skia_rect {
             left: l as f32,
             top: t as f32,
             right: r as f32,
@@ -215,13 +215,13 @@ impl Matrix {
     }
     pub fn reset(&self) {
         unsafe { ffi::skiac_matrix_reset(self.0); }
-    }    
+    }
     pub fn pre_translate(&self, dx: f64, dy: f64) {
         unsafe { ffi::skiac_matrix_pre_translate(self.0, dx, dy); }
-    }    
+    }
     pub fn pre_scale(&self, sx: f64, sy: f64) {
         unsafe { ffi::skiac_matrix_pre_scale(self.0, sx, sy); }
-    }    
+    }
 }
 
 impl Default for Matrix {
@@ -246,7 +246,7 @@ impl Canvas {
     pub fn clear(&self) {
         unsafe { ffi::skiac_canvas_clear(self.0, 0); }
     }
-    pub fn fill(&self, r: u8, g: u8, b: u8, a: u8) {        
+    pub fn fill(&self, r: u8, g: u8, b: u8, a: u8) {
         unsafe { ffi::skiac_canvas_clear(self.0, (a as u32) << 24 | (r as u32) << 16 | (g as u32) << 8 | b as u32); }
     }
     pub fn flush(&self) {
@@ -283,16 +283,16 @@ impl Canvas {
         unsafe { ffi::skiac_canvas_reset_matrix(self.0); }
     }
     pub fn clip_rect(&self, l: f64, t: f64, r: f64, b: f64) {
-        let rect = ffi::skia_rect { 
+        let rect = ffi::skia_rect {
             left: l as f32,
             top: t as f32,
             right: r as f32,
             bottom: b as f32
         };
-        unsafe { 
+        unsafe {
             ffi::skiac_canvas_clip_rect(self.0, &rect)
         }
-    } 
+    }
     pub fn save(&self) {
         unsafe { ffi::skiac_canvas_save(self.0); }
     }
@@ -309,7 +309,7 @@ impl Paint {
     }
     pub fn set_style(&mut self, style: PaintStyle) {
         unsafe { ffi::skiac_paint_set_style(self.0, style as u32); }
-    }    
+    }
     pub fn set_color(&mut self, r: u8, g: u8, b: u8, a: u8) {
         unsafe { ffi::skiac_paint_set_color(self.0, r, g, b, a); }
     }
@@ -339,7 +339,7 @@ impl Paint {
     }
     pub fn set_path_effect(&mut self, path_effect: PathEffect) {
         unsafe { ffi::skiac_paint_set_path_effect(self.0, path_effect.0); }
-    }    
+    }
 }
 
 impl Drop for Paint {
@@ -375,7 +375,7 @@ impl Drop for Path {
     }
 }
 
-pub struct Gradient {    
+pub struct Gradient {
     pub colors: Vec<u32>,
     pub positions: Vec<f32>,
     pub tile_mode: TileMode,
@@ -401,15 +401,15 @@ impl Shader {
     pub fn new_linear_gradient(grad:  LinearGradient) -> Shader {
 
         let points = [
-            ffi::skia_point{x: grad.start_point.0 as f32, y: grad.start_point.1 as f32}, 
+            ffi::skia_point{x: grad.start_point.0 as f32, y: grad.start_point.1 as f32},
             ffi::skia_point{x: grad.end_point.0 as f32, y: grad.end_point.1 as f32}
         ];
 
-        unsafe { 
+        unsafe {
             Shader(ffi::skiac_shader_make_linear_gradient(
-                points.as_ptr(), 
-                grad.base.colors.as_ptr(), 
-                grad.base.positions.as_ptr(), 
+                points.as_ptr(),
+                grad.base.colors.as_ptr(),
+                grad.base.positions.as_ptr(),
                 grad.base.colors.len() as i32,
                 grad.base.tile_mode as u32,
                 0 as u32,
@@ -420,25 +420,25 @@ impl Shader {
 
     pub fn new_radial_gradient(grad: RadialGradient) -> Shader {
 
-        let start_point = ffi::skia_point{ 
-            x: grad.start_circle.0 as f32, 
+        let start_point = ffi::skia_point{
+            x: grad.start_circle.0 as f32,
             y: grad.start_circle.1 as f32
-        };    
-        
+        };
+
         let end_point = ffi::skia_point{
-            x: grad.end_circle.0 as f32, 
+            x: grad.end_circle.0 as f32,
             y: grad.end_circle.1 as f32
         };
-        
+
         let start_radius = grad.start_circle.2 as f32;
         let end_radius = grad.end_circle.2 as f32;
 
-        unsafe { 
+        unsafe {
             Shader(ffi::skiac_shader_make_two_point_conical_gradient(
                 start_point, start_radius,
                 end_point, end_radius,
-                grad.base.colors.as_ptr(), 
-                grad.base.positions.as_ptr(), 
+                grad.base.colors.as_ptr(),
+                grad.base.positions.as_ptr(),
                 grad.base.colors.len() as i32,
                 grad.base.tile_mode as u32,
                 0 as u32,
@@ -466,7 +466,7 @@ pub struct PathEffect(*mut ffi::skiac_path_effect);
 
 impl PathEffect {
 
-    pub fn new_dash_path(intervals: &Vec<f64>, count: i32, phase: f32) -> PathEffect {       
+    pub fn new_dash_path(intervals: &Vec<f64>, count: i32, phase: f32) -> PathEffect {
 
         // Convert to 32-bit float
         let mut intervals32: Vec<f32> = Vec::with_capacity(intervals.len());
@@ -474,7 +474,7 @@ impl PathEffect {
             intervals32.push(*dash as f32);
         }
 
-        unsafe { 
+        unsafe {
             PathEffect(ffi::skiac_path_effect_make_dash_path(intervals32.as_ptr(), count, phase))
         }
     }

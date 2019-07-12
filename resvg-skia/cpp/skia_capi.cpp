@@ -4,14 +4,14 @@
 #include <SkCanvas.h>
 #include <SkPath.h>
 #include <SkGradientShader.h>
-#include <SkDashPathEffect.h>    
+#include <SkDashPathEffect.h>
 #include <SkShader.h>
 #include <SkBlendMode.h>
 #include <gl/GrGLAssembleInterface.h>
 
 #include "skia_capi.hpp"
 
-static SkPaint::Style paintStyles_[static_cast<int>(PaintStyle::__Size)] = { 
+static SkPaint::Style paintStyles_[static_cast<int>(PaintStyle::__Size)] = {
     SkPaint::Style::kFill_Style,
     SkPaint::Style::kStroke_Style,
 };
@@ -55,7 +55,7 @@ extern "C" {
 // Surface
 
 static SkSurface* skiac_surface_create(int width, int height, SkAlphaType alphaType)
-{    
+{
     // Init() is indempotent, so can be called more than once with no adverse effect.
     SkGraphics::Init();
 
@@ -67,19 +67,19 @@ static SkSurface* skiac_surface_create(int width, int height, SkAlphaType alphaT
 }
 
 skiac_surface* skiac_surface_create_rgba_premultiplied(int width, int height)
-{        
+{
     return reinterpret_cast<skiac_surface*>(skiac_surface_create(width, height, kPremul_SkAlphaType));
 }
 
 skiac_surface* skiac_surface_create_rgba(int width, int height)
-{    
+{
     return reinterpret_cast<skiac_surface*>(skiac_surface_create(width, height, kUnpremul_SkAlphaType));
 }
 
 SkSurface* skiac_surface_create_data(sk_sp<SkData> data)
 {
     SkSurface* surface = nullptr;
-    
+
     sk_sp<SkImage> image = SkImage::MakeFromEncoded(data);
 	if (image) {
         surface = skiac_surface_create(image->width(), image->height(), kPremul_SkAlphaType);
@@ -110,11 +110,11 @@ skiac_surface* skiac_surface_create_from_file(const char *path)
 bool skiac_surface_save(skiac_surface* c_surface, const char *path)
 {
     bool success = false;
-    
+
     SkSurface* surface = reinterpret_cast<SkSurface*>(c_surface);
     sk_sp<SkImage> image = surface->makeImageSnapshot();
     SkData* data = image->encode(SkEncodedImageFormat::kPNG, 0);
-    if (data) {        
+    if (data) {
         SkFILEWStream stream(path);
         if (stream.write(data->data(), data->size())) {
             stream.flush();
@@ -126,7 +126,7 @@ bool skiac_surface_save(skiac_surface* c_surface, const char *path)
     return success;
 }
 
-void skiac_surface_destroy(skiac_surface* c_surface) 
+void skiac_surface_destroy(skiac_surface* c_surface)
 {
     // SkSurface is ref counted.
     SkSurface* surface = reinterpret_cast<SkSurface*>(c_surface);
@@ -134,7 +134,7 @@ void skiac_surface_destroy(skiac_surface* c_surface)
 }
 
 skiac_surface* skiac_surface_copy_rgba(skiac_surface *c_surface, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
-{        
+{
     SkSurface* surface = reinterpret_cast<SkSurface*>(c_surface);
 
     // x, y, width, height are source rectangle coordinates.
@@ -146,7 +146,7 @@ skiac_surface* skiac_surface_copy_rgba(skiac_surface *c_surface, uint32_t x, uin
 
     // The original surface draws itself to the copy's canvas.
     surface->draw(copy->getCanvas(), -(SkScalar)x, -(SkScalar)y, &paint);
-    
+
     return reinterpret_cast<skiac_surface*>(copy);
 }
 
@@ -174,17 +174,17 @@ bool skiac_surface_read_pixels(skiac_surface* c_surface, skiac_surface_data* dat
 
     SkSurface* surface = reinterpret_cast<SkSurface*>(c_surface);
     SkCanvas* canvas = surface->getCanvas();
-    const SkImageInfo& info = canvas->imageInfo();		
-	
+    const SkImageInfo& info = canvas->imageInfo();
+
     data->ptr = nullptr;
     data->size = 0;
-	
+
     SkPixmap pixmap;
 	if (surface->getCanvas()->peekPixels(&pixmap)) {
         data->ptr = static_cast<char*>(pixmap.writable_addr());
         data->size = static_cast<uint32_t>(pixmap.getSafeSize());
 	}
-    
+
     return success;
 }
 
@@ -200,7 +200,7 @@ bool skiac_surface_read_pixels(skiac_surface* c_surface, skiac_surface_data* dat
 //     return reinterpret_cast<skiac_bitmap*>(bitmap);
 // }
 
-// void skiac_bitmap_destroy(skiac_bitmap* c_bitmap) 
+// void skiac_bitmap_destroy(skiac_bitmap* c_bitmap)
 // {
 //     // SkBitmap is NOT ref counted.
 //     if (c_bitmap) {
@@ -239,13 +239,13 @@ void skiac_canvas_concat(skiac_canvas* c_canvas, skiac_matrix* c_mat)
 
 void skiac_canvas_scale(skiac_canvas* c_canvas, double sx, double sy)
 {
-    SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);    
+    SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);
     canvas->scale((SkScalar)sx, (SkScalar)sy);
 }
 
 void skiac_canvas_translate(skiac_canvas* c_canvas, double dx, double dy)
 {
-    SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);    
+    SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);
     canvas->translate((SkScalar)dx, (SkScalar)dy);
 }
 
@@ -281,7 +281,7 @@ void skiac_canvas_draw_surface(skiac_canvas* c_canvas, skiac_surface* c_surface,
     SkPaint paint;
     paint.setFilterQuality(SkFilterQuality::kLow_SkFilterQuality);
     paint.setAlpha(alpha);
-    paint.setBlendMode(blendModes_[static_cast<int>(blendMode)]);    
+    paint.setBlendMode(blendModes_[static_cast<int>(blendMode)]);
     canvas->drawImage(image, (SkScalar)left, (SkScalar)top, &paint);
 }
 
@@ -340,7 +340,7 @@ skiac_matrix *skiac_matrix_create_from(double a, double b, double c, double d, d
 skiac_matrix *skiac_matrix_create_inverse(skiac_matrix *c_mat)
 {
     const auto mat = reinterpret_cast<SkMatrix*>(c_mat);
-    SkMatrix* inverse = new SkMatrix();    
+    SkMatrix* inverse = new SkMatrix();
     // TODO: check for non-invertability.
     mat->invert(inverse);
     return reinterpret_cast<skiac_matrix*>(inverse);
@@ -404,13 +404,13 @@ skiac_paint* skiac_paint_create()
 }
 
 void skiac_paint_destroy(skiac_paint* c_paint)
-{    
-    SkPaint* paint = reinterpret_cast<SkPaint*>(c_paint);  
-    
+{
+    SkPaint* paint = reinterpret_cast<SkPaint*>(c_paint);
+
     // Setting these references to nullptr should decrement their ref count.
     paint->setShader(nullptr);
     paint->setPathEffect(nullptr);
-    
+
     // SkPaint is not ref counted, so explicitly delete.
     delete paint;
 }
@@ -436,7 +436,7 @@ void skiac_paint_set_anti_alias(skiac_paint* c_paint, bool aa)
 void skiac_paint_set_blend_mode(skiac_paint* c_paint, BlendMode blendMode)
 {
     SkPaint* paint = reinterpret_cast<SkPaint*>(c_paint);
-    paint->setBlendMode(blendModes_[static_cast<int>(blendMode)]);    
+    paint->setBlendMode(blendModes_[static_cast<int>(blendMode)]);
 }
 
 void skiac_paint_set_shader(skiac_paint* c_paint, skiac_shader* c_shader)
@@ -525,7 +525,7 @@ void skiac_path_close(skiac_path* c_path)
 skiac_path_effect* skiac_path_effect_make_dash_path(const SkScalar* intervals, int count, SkScalar phase)
 {
     SkPathEffect* effect = SkDashPathEffect::Make(intervals, count, phase).release();
-    effect->ref();    
+    effect->ref();
     return reinterpret_cast<skiac_path_effect*>(effect);
 }
 
@@ -539,13 +539,13 @@ void skiac_path_effect_destroy(skiac_path_effect* c_path_effect)
 
 // Shader
 skiac_shader* skiac_shader_make_linear_gradient(
-    const skia_point* c_points, const SkColor* colors, const SkScalar* positions, 
+    const skia_point* c_points, const SkColor* colors, const SkScalar* positions,
     int count, TileMode tile_mode,
     uint32_t flags, skiac_matrix *c_mat)
 {
     const SkPoint* points = reinterpret_cast<const SkPoint*>(c_points);
     const SkMatrix* matrix = reinterpret_cast<const SkMatrix*>(c_mat);
-    
+
     SkShader* shader = SkGradientShader::MakeLinear(
         points, colors, positions, count, tileModes_[static_cast<int>(tile_mode)],
         flags, matrix
@@ -558,17 +558,17 @@ skiac_shader* skiac_shader_make_linear_gradient(
 skiac_shader* skiac_shader_make_two_point_conical_gradient(
     const skia_point c_start_point, SkScalar start_radius,
     const skia_point c_end_point, SkScalar end_radius,
-    const SkColor* colors, const SkScalar* positions, 
+    const SkColor* colors, const SkScalar* positions,
     int count, TileMode tile_mode,
     uint32_t flags, skiac_matrix *c_mat)
 {
     const SkPoint startPoint = { c_start_point.x, c_start_point.y };
     const SkPoint endPoint = { c_end_point.x, c_end_point.y };
     const SkMatrix* matrix = reinterpret_cast<const SkMatrix*>(c_mat);
-    
+
     SkShader* shader = SkGradientShader::MakeTwoPointConical(
         startPoint, start_radius,
-        endPoint, end_radius, 
+        endPoint, end_radius,
         colors, positions, count, tileModes_[static_cast<int>(tile_mode)],
         flags, matrix
     ).release();
@@ -582,15 +582,15 @@ skiac_shader* skiac_shader_make_from_surface_image(skiac_surface* c_surface, con
 {
     SkSurface* surface = reinterpret_cast<SkSurface*>(c_surface);
     const SkMatrix* matrix = reinterpret_cast<const SkMatrix*>(c_matrix);
-    
+
     sk_sp<SkImage> image = surface->makeImageSnapshot();
     SkShader* shader = image->makeShader(
-        SkShader::TileMode::kRepeat_TileMode, 
-        SkShader::TileMode::kRepeat_TileMode, 
+        SkShader::TileMode::kRepeat_TileMode,
+        SkShader::TileMode::kRepeat_TileMode,
         matrix
     ).release();
     shader->ref();
-    
+
     return reinterpret_cast<skiac_shader*>(shader);
 }
 

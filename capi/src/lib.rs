@@ -275,7 +275,6 @@ pub extern "C" fn resvg_raqote_render_to_image(
     opt: *const resvg_options,
     file_path: *const c_char,
 ) -> i32 {
-    let backend = Box::new(resvg::backend_skia::Backend);
     let backend = Box::new(resvg::backend_raqote::Backend);
     render_to_image(tree, opt, file_path, backend)
 }
@@ -381,7 +380,7 @@ pub extern "C" fn resvg_skia_render_to_canvas(
     img_size: resvg_size,
     canvas: *mut skia::skiac_canvas,
 ) {
-  
+
     let tree = unsafe {
         assert!(!tree.is_null());
         &*tree
@@ -394,45 +393,8 @@ pub extern "C" fn resvg_skia_render_to_canvas(
         assert!(!opt.is_null());
         &*opt
     });
-    
+
     resvg::backend_skia::render_to_canvas(&tree.0, &opt, img_size, &mut canvas);
-}
-
-
-#[cfg(feature = "skia-backend")]
-#[no_mangle]
-pub extern "C" fn resvg_skia_render_rect_to_canvas(
-    tree: *const resvg_render_tree,
-    opt: *const resvg_options,
-    img_size: resvg_size,
-    src: *const resvg_rect,
-    canvas: *mut skia::skiac_canvas,
-) {
-  
-    let tree = unsafe {
-        assert!(!tree.is_null());
-        &*tree
-    };
-
-    let mut canvas = unsafe { skia::Canvas::from_raw(canvas) };
-    let img_size = resvg::ScreenSize::new(img_size.width, img_size.height).unwrap();
-
-    let opt = to_native_opt(unsafe {
-        assert!(!opt.is_null());
-        &*opt
-    });
-    
-    let src = {
-        if src.is_null() {
-            let size = tree.0.svg_node().size;
-            usvg::Rect::new(0.0, 0.0, size.width(), size.height()).unwrap()
-        }
-        else {
-            unsafe { usvg::Rect::new((*src).x, (*src).y, (*src).width, (*src).height).unwrap() }
-        }
-    };
-
-    resvg::backend_skia::render_rect_to_canvas(&tree.0, &opt, img_size, &src, &mut canvas);
 }
 
 #[cfg(feature = "qt-backend")]
@@ -522,6 +484,54 @@ pub extern "C" fn resvg_cairo_render_to_canvas_by_id(
             };
 
             resvg::backend_cairo::render_node_to_canvas(&node, &opt, vbox, size, &cr);
+        } else {
+            warn!("A node with '{}' ID doesn't have a valid bounding box.", id);
+        }
+    } else {
+        warn!("A node with '{}' ID wasn't found.", id);
+    }
+}
+
+#[cfg(feature = "skia-backend")]
+#[no_mangle]
+pub extern "C" fn resvg_skia_render_to_canvas_by_id(
+    tree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    size: resvg_size,
+    id: *const c_char,
+    cr: *mut cairo_sys::cairo_t,
+) {
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
+    };
+
+    let id = match cstr_to_str(id) {
+        Some(v) => v,
+        None => return,
+    };
+
+    if id.is_empty() {
+        warn!("Node with an empty ID cannot be painted.");
+        return;
+    }
+
+    let mut canvas = unsafe { skia::Canvas::from_raw(canvas) };
+    let size = resvg::ScreenSize::new(size.width, size.height).unwrap();
+
+    let opt = to_native_opt(unsafe {
+        assert!(!opt.is_null());
+        &*opt
+    });
+
+    if let Some(node) = tree.0.node_by_id(id) {
+        if let Some(bbox) = node.calculate_bbox() {
+            let vbox = usvg::ViewBox {
+                rect: bbox,
+                aspect: usvg::AspectRatio::default(),
+            };
+
+            resvg::backend_skia::render_node_to_canvas(&node, &opt, vbox, size, &canvas);
         } else {
             warn!("A node with '{}' ID doesn't have a valid bounding box.", id);
         }
@@ -744,7 +754,7 @@ pub extern "C" fn resvg_export_usvg(tree: &usvg::Tree, file_path: *const c_char,
                 attributes_indent: svgdom::Indent::None,
                 ..svgdom::WriteOptions::default()
             }
-        }        
+        }
     };
 
     let svgdoc = tree.to_svgdom();

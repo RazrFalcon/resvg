@@ -129,7 +129,7 @@ extern "C" {
     void skiac_canvas_clip_rect(skiac_canvas* c_canvas, const skia_rect* c_rect);
     void skiac_canvas_save(skiac_canvas* c_canvas);
     void skiac_canvas_restore(skiac_canvas* c_canvas);
-    
+
     // Matrix
     skiac_matrix *skiac_matrix_create();
     skiac_matrix *skiac_matrix_create_from(double a, double b, double c, double d, double e, double f);
@@ -154,7 +154,7 @@ extern "C" {
     void skiac_paint_set_stroke_join(skiac_paint* c_paint, StrokeJoin join);
     void skiac_paint_set_stroke_miter(skiac_paint* c_paint, SkScalar miter);
     void skiac_paint_set_path_effect(skiac_paint* c_paint, skiac_path_effect* c_path_effect);
-    
+
      // Path
     skiac_path* skiac_path_create();
     void skiac_path_destroy(skiac_path* c_path);
@@ -169,18 +169,18 @@ extern "C" {
 
     // Shader
     skiac_shader* skiac_shader_make_linear_gradient(
-        const skia_point* points, 
-        const SkColor* colors, const SkScalar* positions, 
+        const skia_point* points,
+        const SkColor* colors, const SkScalar* positions,
         int count, TileMode tile_mode,
         uint32_t flags, skiac_matrix *c_mat);
-    
+
     skiac_shader* skiac_shader_make_two_point_conical_gradient(
         const skia_point start_point, SkScalar start_radius,
         const skia_point end_point, SkScalar end_radius,
-        const SkColor* colors, const SkScalar* positions, 
+        const SkColor* colors, const SkScalar* positions,
         int count, TileMode tile_mode,
         uint32_t flags, skiac_matrix *c_mat);
-    
+
     skiac_shader* skiac_shader_make_from_surface_image(skiac_surface* c_surface, const skiac_matrix* c_matrix);
 
     void skiac_shader_destroy(skiac_shader* c_shader);

@@ -39,7 +39,7 @@ impl ConvTransform<skia::Matrix> for usvg::Transform {
 
     fn from_native(mat: &skia::Matrix) -> Self {
         let d = mat.data();
-        Self::new(d.0, d.1, d.2, d.3, d.4, d.5)        
+        Self::new(d.0, d.1, d.2, d.3, d.4, d.5)
     }
 }
 
@@ -87,7 +87,7 @@ pub fn render_to_image(
     let (mut surface, img_size) = create_root_surface(tree.svg_node().size.to_screen_size(), opt)?;
     render_to_canvas(tree, opt, img_size, &mut surface.get_canvas());
 
-	Some(surface)
+    Some(surface)
 }
 
 /// Renders SVG node to image.
@@ -108,15 +108,15 @@ pub fn render_rect_to_canvas(
     canvas: &mut skia::Canvas,
 ) {
     // Translate and scale the source rectangle (after viewbox transformation) into the image size.
-	let dst_matrix = skia::Matrix::new();
+    let dst_matrix = skia::Matrix::new();
     dst_matrix.pre_scale(img_size.width() as f64 / src.width(), img_size.height() as f64 / src.height());
     dst_matrix.pre_translate(-src.left(), -src.top());
     canvas.concat(&dst_matrix);
 
     // Apply the viewbox transform to the viewport (instead of the image size)
     apply_viewbox_transform(tree.svg_node().view_box, tree.svg_node().size, canvas);
-	render_node_to_canvas(&tree.root(), opt, img_size, canvas);
-    canvas.flush();    
+    render_node_to_canvas(&tree.root(), opt, img_size, canvas);
+    canvas.flush();
 }
 
 /// Renders SVG to canvas.
@@ -126,13 +126,13 @@ pub fn render_to_canvas(
     img_size: ScreenSize,
     canvas: &mut skia::Canvas,
 ) {
-	apply_viewbox_transform(tree.svg_node().view_box, img_size.to_size(), canvas);
-	render_node_to_canvas(&tree.root(), opt, img_size, canvas);
+    apply_viewbox_transform(tree.svg_node().view_box, img_size.to_size(), canvas);
+    render_node_to_canvas(&tree.root(), opt, img_size, canvas);
     canvas.flush();
 }
 
 /// Renders SVG node to canvas.
-fn render_node_to_canvas(
+pub fn render_node_to_canvas(
     node: &usvg::Node,
     opt: &Options,
     img_size: ScreenSize,
@@ -174,7 +174,7 @@ fn apply_viewbox_transform(
     view_box: usvg::ViewBox,
     img_size: Size,
     canvas: &mut skia::Canvas,
-) {    
+) {
     let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size);
     canvas.concat(&ts.to_native());
 }
@@ -301,19 +301,19 @@ fn render_group_impl(
 
 fn create_layers(
     img_size: ScreenSize
-) -> SkiaLayers {    
+) -> SkiaLayers {
     layers::Layers::new(img_size, create_subsurface, clear_surface)
 }
 
 fn create_subsurface(
     size: ScreenSize
 ) -> Option<skia::Surface> {
-    
+
     let mut surface = try_create_surface!(size, None);
 
     let canvas = surface.get_canvas();
     canvas.clear();
-    
+
     Some(surface)
 }
 
