@@ -83,7 +83,7 @@ fn create_surface(width: u32, height: u32) -> Result<skia::Surface, Error> {
 fn copy_surface(surface: &skia::Surface, region: ScreenRect) -> Result<skia::Surface, Error> {
     let x = cmp::max(0, region.x()) as u32;
     let y = cmp::max(0, region.y()) as u32;
-    surface.copy_rgba(x, y, region.width(), region.height()).ok_or(Error::AllocFailed)    
+    surface.copy_rgba(x, y, region.width(), region.height()).ok_or(Error::AllocFailed)
 }
 
 struct SkiaFilter;
@@ -95,7 +95,7 @@ impl Filter<skia::Surface> for SkiaFilter {
         results: &[FilterResult],
         surface: &skia::Surface,
     ) -> Result<Image, Error> {
-    
+
         match input {
             usvg::FilterInput::SourceGraphic => {
                 let image = copy_surface(surface, region)?;
@@ -164,12 +164,12 @@ impl Filter<skia::Surface> for SkiaFilter {
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        
+
         let (dx, dy) = try_opt_or!(Self::resolve_offset(fe, units, bbox, ts), Ok(input));
 
         let mut buffer = create_surface(input.width(), input.height())?;
         let mut canvas = buffer.get_canvas();
-        
+
         canvas.reset_matrix();
         canvas.draw_surface(input.as_ref(), dx, dy, 255, skia::BlendMode::SourceOver);
         canvas.flush();
@@ -184,7 +184,7 @@ impl Filter<skia::Surface> for SkiaFilter {
         input1: Image,
         input2: Image,
     ) -> Result<Image, Error> {
-      
+
         let input1 = input1.into_color_space(cs)?;
         let input2 = input2.into_color_space(cs)?;
 
@@ -304,7 +304,7 @@ impl Filter<skia::Surface> for SkiaFilter {
         let mut buffer = create_surface(region.width(), region.height())?;
         let mut canvas = buffer.get_canvas();
         canvas.reset_matrix();
-        
+
         for input in &fe.inputs {
             let input = Self::get_input(input, region, &results, surface)?;
             let input = input.into_color_space(cs)?;
@@ -331,14 +331,14 @@ impl Filter<skia::Surface> for SkiaFilter {
     fn apply_tile(
         input: Image,
         region: ScreenRect,
-    ) -> Result<Image, Error> {    
-        
+    ) -> Result<Image, Error> {
+
         let mut buffer = create_surface(region.width(), region.height())?;
 
         let subregion = input.region.translate(-region.x(), -region.y());
 
         let tile_surface = copy_surface(&input.image, subregion)?;
-        let brush_ts = usvg::Transform::new_translate(subregion.x() as f64, subregion.y() as f64);        
+        let brush_ts = usvg::Transform::new_translate(subregion.x() as f64, subregion.y() as f64);
         let shader = skia::Shader::new_from_surface_image(&tile_surface, brush_ts.to_native());
         let mut paint = skia::Paint::new();
         paint.set_shader(&shader);
@@ -357,7 +357,7 @@ impl Filter<skia::Surface> for SkiaFilter {
         subregion: ScreenRect,
         opt: &Options,
     ) -> Result<Image, Error> {
-    
+
         let mut buffer = create_surface(region.width(), region.height())?;
 
         match fe.data {
@@ -377,7 +377,9 @@ impl Filter<skia::Surface> for SkiaFilter {
                 if format == usvg::ImageFormat::SVG {
                     super::image::draw_svg(data, view_box, opt, &mut canvas);
                 } else {
-                    super::image::draw_raster(data, view_box, fe.rendering_mode, opt, &mut canvas);
+                    super::image::draw_raster(
+                        format, data, view_box, fe.rendering_mode, opt, &mut canvas,
+                    );
                 }
             }
             usvg::FeImageKind::Use(..) => {}
@@ -391,10 +393,9 @@ impl Filter<skia::Surface> for SkiaFilter {
         region: ScreenRect,
         surface: &mut skia::Surface,
     ) -> Result<(), Error> {
-
         let input = input.into_color_space(ColorSpace::SRGB)?;
 
-        let mut canvas = surface.get_canvas();        
+        let mut canvas = surface.get_canvas();
         canvas.reset_matrix();
         canvas.clear();
         canvas.draw_surface(input.as_ref(), region.x() as f64, region.y() as f64, 255, skia::BlendMode::SourceOver);

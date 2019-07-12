@@ -7,7 +7,6 @@
 #include <SkDashPathEffect.h>
 #include <SkShader.h>
 #include <SkBlendMode.h>
-#include <gl/GrGLAssembleInterface.h>
 
 #include "skia_capi.hpp"
 
@@ -307,18 +306,6 @@ void skiac_canvas_clip_rect(skiac_canvas* c_canvas, const skia_rect* c_rect)
     SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);
     SkRect rect = SkRect::MakeLTRB(c_rect->left, c_rect->top, c_rect->right, c_rect->bottom);
     canvas->clipRect(rect, true);
-}
-
-void skiac_canvas_save(skiac_canvas* c_canvas)
-{
-    SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);
-    canvas->save();
-}
-
-void skiac_canvas_restore(skiac_canvas* c_canvas)
-{
-    SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);
-    canvas->restore();
 }
 
 // SkMatrix

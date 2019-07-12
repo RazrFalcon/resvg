@@ -181,12 +181,6 @@ extern "C" {
 extern "C" {
     pub fn skiac_canvas_clip_rect(c_canvas: *mut skiac_canvas, c_rect: *const skia_rect);
 }
-extern "C" {
-    pub fn skiac_canvas_save(c_canvas: *mut skiac_canvas);
-}
-extern "C" {
-    pub fn skiac_canvas_restore(c_canvas: *mut skiac_canvas);
-}
 
 // Matrix
 

@@ -4,15 +4,12 @@
 
 //! Skia backend implementation.
 
-// external
 use crate::skia;
+use usvg::try_opt;
 
-// self
 use crate::prelude::*;
-use crate::layers;
-use crate::backend_utils::{
-    ConvTransform,
-};
+use crate::layers::{self, Layer, Layers};
+use crate::backend_utils::{self, FlatRender, ConvTransform, BlendMode};
 
 macro_rules! try_create_surface {
     ($size:expr, $ret:expr) => {
@@ -24,7 +21,6 @@ macro_rules! try_create_surface {
     };
 }
 
-mod clip_and_mask;
 mod filter;
 mod image;
 mod path;
@@ -99,26 +95,6 @@ pub fn render_node_to_image(
     None
 }
 
-/// Renders rectangular region from source SVG to canvas.
-pub fn render_rect_to_canvas(
-    tree: &usvg::Tree,
-    opt: &Options,
-    img_size: ScreenSize,
-    src: &usvg::Rect,
-    canvas: &mut skia::Canvas,
-) {
-    // Translate and scale the source rectangle (after viewbox transformation) into the image size.
-    let dst_matrix = skia::Matrix::new();
-    dst_matrix.pre_scale(img_size.width() as f64 / src.width(), img_size.height() as f64 / src.height());
-    dst_matrix.pre_translate(-src.left(), -src.top());
-    canvas.concat(&dst_matrix);
-
-    // Apply the viewbox transform to the viewport (instead of the image size)
-    apply_viewbox_transform(tree.svg_node().view_box, tree.svg_node().size, canvas);
-    render_node_to_canvas(&tree.root(), opt, img_size, canvas);
-    canvas.flush();
-}
-
 /// Renders SVG to canvas.
 pub fn render_to_canvas(
     tree: &usvg::Tree,
@@ -126,28 +102,26 @@ pub fn render_to_canvas(
     img_size: ScreenSize,
     canvas: &mut skia::Canvas,
 ) {
-    apply_viewbox_transform(tree.svg_node().view_box, img_size.to_size(), canvas);
-    render_node_to_canvas(&tree.root(), opt, img_size, canvas);
-    canvas.flush();
+    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, canvas);
 }
 
 /// Renders SVG node to canvas.
 pub fn render_node_to_canvas(
     node: &usvg::Node,
     opt: &Options,
+    view_box: usvg::ViewBox,
     img_size: ScreenSize,
     canvas: &mut skia::Canvas,
 ) {
-    let mut layers = create_layers(img_size);
-
-    let curr_mat = canvas.get_total_matrix();
+    let tree = node.tree();
+    let mut render = SkiaFlatRender::new(&tree, opt, img_size, canvas);
 
     let mut ts = node.abs_transform();
     ts.append(&node.transform());
 
-    canvas.concat(&ts.to_native());
-    render_node(node, opt, &mut layers, canvas);
-    canvas.set_matrix(&curr_mat);
+    render.apply_viewbox(view_box, img_size);
+    render.apply_transform(ts);
+    render.render_node(node);
 }
 
 fn create_root_surface(
@@ -169,154 +143,194 @@ fn create_root_surface(
     Some((surface, img_size))
 }
 
-// Applies viewbox transformation to the canvas.
-fn apply_viewbox_transform(
-    view_box: usvg::ViewBox,
-    img_size: Size,
-    canvas: &mut skia::Canvas,
-) {
-    let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size);
-    canvas.concat(&ts.to_native());
-}
-
-fn render_node(
-    node: &usvg::Node,
-    opt: &Options,
-    layers: &mut SkiaLayers,
-    canvas: &mut skia::Canvas,
-) -> Option<Rect> {
-    match *node.borrow() {
-        usvg::NodeKind::Svg(_) => {
-            Some(render_group(node, opt, layers, canvas))
+impl Into<skia::BlendMode> for BlendMode {
+    fn into(self) -> skia::BlendMode {
+        match self {
+            BlendMode::SourceOver => skia::BlendMode::SourceOver,
+            BlendMode::Clear => skia::BlendMode::Clear,
+            BlendMode::DestinationIn => skia::BlendMode::DestinationIn,
+            BlendMode::DestinationOut => skia::BlendMode::DestinationOut,
+            BlendMode::Xor => skia::BlendMode::Xor,
         }
-        usvg::NodeKind::Path(ref path) => {
-            path::draw(&node.tree(), path, opt, canvas, skia::BlendMode::SourceOver)
-        }
-        usvg::NodeKind::Image(ref img) => {
-            Some(image::draw(img, opt, canvas))
-        }
-        usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, layers, canvas)
-        }
-        _ => None,
     }
 }
 
-fn render_group(
-    parent: &usvg::Node,
-    opt: &Options,
-    layers: &mut SkiaLayers,
-    canvas: &mut skia::Canvas,
-) -> Rect {
+impl layers::Image for skia::Surface {
+    fn new(size: ScreenSize) -> Option<Self> {
+        let mut surface = try_create_surface!(size, None);
 
-    let curr_mat = canvas.get_total_matrix();
-    let mut g_bbox = Rect::new_bbox();
+        let canvas = surface.get_canvas();
+        canvas.clear();
 
-    for node in parent.children() {
-        canvas.concat(&node.transform().to_native());
+        Some(surface)
+    }
 
-        let bbox = render_node(&node, opt, layers, canvas);
-        if let Some(bbox) = bbox {
-            if let Some(bbox) = bbox.transform(&node.transform()) {
-                g_bbox = g_bbox.expand(bbox);
+    fn clear(&mut self) {
+        self.get_canvas().clear();
+    }
+}
+
+struct SkiaFlatRender<'a> {
+    tree: &'a usvg::Tree,
+    opt: &'a Options,
+    blend_mode: BlendMode,
+    canvas: &'a mut skia::Canvas,
+    layers: Layers<skia::Surface>,
+}
+
+impl<'a> SkiaFlatRender<'a> {
+    fn new(
+        tree: &'a usvg::Tree,
+        opt: &'a Options,
+        img_size: ScreenSize,
+        painter: &'a mut skia::Canvas,
+    ) -> Self {
+        SkiaFlatRender {
+            tree,
+            opt,
+            blend_mode: BlendMode::default(),
+            canvas: painter,
+            layers: Layers::new(img_size),
+        }
+    }
+
+    fn new_painter(layer: &mut Layer<skia::Surface>) -> skia::Canvas {
+        let mut p = layer.img.get_canvas();
+        p.set_matrix(&layer.ts.to_native());
+//        p.set_composition_mode(layer.blend_mode.into());
+
+        if let Some(rect) = layer.clip_rect {
+            p.clip_rect(rect.x(), rect.y(), rect.width(), rect.height());
+        }
+
+        p
+    }
+
+    fn paint<F>(&mut self, f: F)
+        where F: FnOnce(&usvg::Tree, &Options, &mut skia::Canvas)
+    {
+        match self.layers.current_mut() {
+            Some(layer) => {
+                let mut p = Self::new_painter(layer);
+                f(self.tree, self.opt, &mut p);
             }
-        }
-
-        // Revert transform.
-        canvas.set_matrix(&curr_mat);
-    }
-
-    canvas.flush();
-
-    return g_bbox;
-}
-
-fn render_group_impl(
-    node: &usvg::Node,
-    g: &usvg::Group,
-    opt: &Options,
-    layers: &mut SkiaLayers,
-    canvas: &mut skia::Canvas,
-) -> Option<Rect> {
-
-    let sub_surface = layers.get()?;
-    let mut sub_surface = sub_surface.borrow_mut();
-
-    let curr_mat = canvas.get_total_matrix();
-
-    let bbox = {
-        let mut sub_canvas = sub_surface.get_canvas();
-        sub_canvas.set_matrix(&curr_mat);
-
-        render_group(node, opt, layers, &mut sub_canvas)
-    };
-
-    if let Some(ref id) = g.filter {
-        if let Some(filter_node) = node.tree().defs_by_id(id) {
-            if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
-                let ts = usvg::Transform::from_native(&curr_mat);
-                filter::apply(filter, Some(bbox), &ts, opt, &mut sub_surface);
+            None => {
+                f(self.tree, self.opt, self.canvas);
             }
         }
     }
+}
 
-    if let Some(ref id) = g.clip_path {
-        if let Some(clip_node) = node.tree().defs_by_id(id) {
-            if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                let mut sub_canvas = sub_surface.get_canvas();
-                sub_canvas.set_matrix(&curr_mat);
-                clip_and_mask::clip(&clip_node, cp, opt, bbox, layers, &mut sub_canvas);
-            }
+impl<'a> FlatRender for SkiaFlatRender<'a> {
+    fn draw_path(&mut self, path: &usvg::Path, bbox: Option<Rect>) {
+        self.paint(|tree, opt, p| {
+            path::draw(tree, path, opt, bbox, p, skia::BlendMode::SourceOver);
+        });
+    }
+
+    fn draw_svg_image(&mut self, image: &usvg::Image) {
+        self.paint(|_, opt, p| {
+            image::draw_svg(&image.data, image.view_box, opt, p);
+        });
+    }
+
+    fn draw_raster_image(&mut self, image: &usvg::Image) {
+        self.paint(|_, opt, p| {
+            image::draw_raster(
+                image.format, &image.data, image.view_box, image.rendering_mode, opt, p,
+            );
+        });
+    }
+
+    fn filter(&mut self, filter: &usvg::Filter, bbox: Option<Rect>, ts: usvg::Transform) {
+        if let Some(layer) = self.layers.current_mut() {
+            filter::apply(filter, bbox, &ts, &self.opt, &mut layer.img);
         }
     }
 
-    if let Some(ref id) = g.mask {
-        if let Some(mask_node) = node.tree().defs_by_id(id) {
-            if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                let mut sub_canvas = sub_surface.get_canvas();
-                sub_canvas.set_matrix(&curr_mat);
-                clip_and_mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_canvas);
-            }
+    fn fill_layer(&mut self, r: u8, g: u8, b: u8, a: u8) {
+        if let Some(layer) = self.layers.current_mut() {
+            layer.img.get_canvas().fill(r, g, b, a);
         }
     }
 
-    let opacity = {
-        if !g.opacity.is_default() {
-            (g.opacity.value()* 255.0) as u8
+    fn push_layer(&mut self) -> Option<()> {
+        self.layers.push()
+    }
+
+    fn pop_layer(&mut self, opacity: usvg::Opacity, mode: BlendMode) {
+        let last = try_opt!(self.layers.pop());
+        match self.layers.current_mut() {
+            Some(prev) => {
+                let mut painter = prev.img.get_canvas();
+
+//                if !opacity.is_default() {
+//                    painter.set_opacity(opacity.value());
+//                }
+
+//                painter.set_composition_mode(mode.into());
+//                painter.draw_image(0.0, 0.0, &last.img);
+                painter.draw_surface(&last.img, 0.0, 0.0, 255, skia::BlendMode::DestinationOut);
+            }
+            None => {
+//                if !opacity.is_default() {
+//                    self.painter.set_opacity(opacity.value());
+//                }
+
+                let curr_ts = self.canvas.get_total_matrix();
+                self.reset_transform();
+//                self.painter.set_composition_mode(mode.into());
+//                self.painter.draw_image(0.0, 0.0, &last.img);
+                self.canvas.draw_surface(&last.img, 0.0, 0.0, 255, skia::BlendMode::DestinationOut);
+
+                // Reset.
+//                self.painter.set_opacity(1.0);
+//                self.painter.set_composition_mode(qt::CompositionMode::SourceOver);
+                self.canvas.set_matrix(&curr_ts);
+            }
         }
-        else {
-            255 as u8
+
+        self.layers.push_back(last);
+    }
+
+    fn apply_mask(&mut self) {
+        let img_size = self.layers.img_size();
+        if let Some(layer) = self.layers.current_mut() {
+            backend_utils::image_to_mask(&mut layer.img.data_mut(), img_size);
         }
-    };
+    }
 
-    let curr_mat = canvas.get_total_matrix();
+    fn set_composition_mode(&mut self, mode: BlendMode) {
+        match self.layers.current_mut() {
+            Some(layer) => layer.blend_mode = mode,
+            None => self.blend_mode = mode,
+        }
+    }
 
-    canvas.reset_matrix();
-    canvas.draw_surface(&sub_surface, 0.0, 0.0, opacity, skia::BlendMode::SourceOver);
+    fn set_clip_rect(&mut self, rect: Rect) {
+        match self.layers.current_mut() {
+            Some(layer) => layer.clip_rect = Some(rect),
+            None => self.canvas.clip_rect(rect.x(), rect.y(), rect.width(), rect.height()),
+        }
+    }
 
-    canvas.set_matrix(&curr_mat);
+    fn get_transform(&self) -> usvg::Transform {
+        match self.layers.current() {
+            Some(layer) => layer.ts,
+            None => usvg::Transform::from_native(&self.canvas.get_total_matrix()),
+        }
+    }
 
-    Some(bbox)
-}
+    fn set_transform(&mut self, ts: usvg::Transform) {
+        match self.layers.current_mut() {
+            Some(layer) => layer.ts = ts,
+            None => self.canvas.set_matrix(&ts.to_native()),
+        }
+    }
 
-fn create_layers(
-    img_size: ScreenSize
-) -> SkiaLayers {
-    layers::Layers::new(img_size, create_subsurface, clear_surface)
-}
-
-fn create_subsurface(
-    size: ScreenSize
-) -> Option<skia::Surface> {
-
-    let mut surface = try_create_surface!(size, None);
-
-    let canvas = surface.get_canvas();
-    canvas.clear();
-
-    Some(surface)
-}
-
-fn clear_surface(surface: &mut skia::Surface) {
-    surface.get_canvas().clear();
+    fn finish(&mut self) {
+        if self.layers.is_empty() {
+            self.canvas.flush();
+        }
+    }
 }

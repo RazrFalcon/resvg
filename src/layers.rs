@@ -42,7 +42,7 @@ impl<T: Image> Layers<T> {
         }
     }
 
-    #[cfg(feature = "qt-backend")]
+    #[cfg(any(feature = "qt-backend", feature = "skia-backend"))]
     pub fn is_empty(&self) -> bool {
         self.used_layers == 0
     }

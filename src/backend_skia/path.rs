@@ -2,10 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
 use crate::skia;
 
-// self
 use crate::prelude::*;
 use crate::backend_utils::*;
 use super::style;
@@ -15,30 +13,24 @@ pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
     opt: &Options,
+    bbox: Option<Rect>,
     canvas: &mut skia::Canvas,
     blend_mode: skia::BlendMode
 ) -> Option<Rect> {
-
     // TODO:  need to consider having a stateful paint object for the canvas to hold blend mode
     // and (maybe) performance.
 
-    // TODO:  implement fill rule
+    // TODO: implement fill rule
     let _fill_rule = if let Some(ref fill) = path.fill {
         fill.rule
     } else {
         usvg::FillRule::NonZero
     };
 
-    let bbox = utils::path_bbox(&path.segments, None, None);
-
     // `usvg` guaranties that path without a bbox will not use
     // a paint server with ObjectBoundingBox,
     // so we can pass whatever rect we want, because it will not be used anyway.
     let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
-
-    if path.visibility != usvg::Visibility::Visible {
-        return bbox;
-    }
 
     let anti_alias = use_shape_antialiasing(path.rendering_mode);
 
@@ -55,7 +47,7 @@ pub fn draw(
         stroke.set_blend_mode(blend_mode);
         draw_path(&path.segments, true, canvas, &stroke);
     }
-    
+
     bbox
 }
 
@@ -66,7 +58,7 @@ fn draw_path(
     canvas: &mut skia::Canvas,
     paint: &skia::Paint
 ) {
-   
+
     let mut s_path = skia::Path::new();
 
     let mut i = 0;
@@ -123,7 +115,7 @@ fn draw_subpath(
     if !is_zero_path {
         for seg in segments {
             match *seg {
-                usvg::PathSegment::MoveTo { x, y } => {                    
+                usvg::PathSegment::MoveTo { x, y } => {
                     s_path.move_to(x, y);
                 }
                 usvg::PathSegment::LineTo { x, y } => {

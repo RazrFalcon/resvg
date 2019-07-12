@@ -2,13 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
 use crate::skia;
 use usvg::try_opt;
 
-// self
 use crate::prelude::*;
 use crate::backend_utils::*;
+use super::SkiaFlatRender;
 
 pub fn fill(
     tree: &usvg::Tree,
@@ -48,7 +47,7 @@ pub fn fill(
                         }
                     }
                 }
-            }            
+            }
         }
         None => {
         }
@@ -114,7 +113,7 @@ pub fn stroke(
             paint.set_stroke_miter(stroke.miterlimit.value());
             paint.set_stroke_width(stroke.width.value());
 
-            if let Some(ref list) = stroke.dasharray {                
+            if let Some(ref list) = stroke.dasharray {
                 let path_effect = skia::PathEffect::new_dash_path(list, list.len() as i32, stroke.dashoffset);
                 paint.set_path_effect(path_effect);
             }
@@ -133,12 +132,12 @@ fn prepare_linear(
     bbox: Rect,
     paint: &mut skia::Paint,
 ) {
-    let gradient = skia::LinearGradient { 
-        start_point: (g.x1, g.y1), 
-        end_point: (g.x2, g.y2), 
+    let gradient = skia::LinearGradient {
+        start_point: (g.x1, g.y1),
+        end_point: (g.x2, g.y2),
         base: prepare_base_gradient(g, opacity, &bbox)
-    };    
-    
+    };
+
     let shader = skia::Shader::new_linear_gradient(gradient);
     paint.set_shader(&shader);
 }
@@ -150,12 +149,12 @@ fn prepare_radial(
     paint: &mut skia::Paint,
 ) {
 
-    let gradient = skia::RadialGradient { 
-        start_circle: (g.fx, g.fy, 0.0), 
-        end_circle: (g.cx, g.cy, g.r.value()), 
+    let gradient = skia::RadialGradient {
+        start_circle: (g.fx, g.fy, 0.0),
+        end_circle: (g.cx, g.cy, g.r.value()),
         base: prepare_base_gradient(g, opacity, &bbox)
-    };    
-        
+    };
+
     let shader = skia::Shader::new_radial_gradient(gradient);
     paint.set_shader(&shader);
 }
@@ -171,7 +170,7 @@ fn prepare_base_gradient(
         usvg::SpreadMethod::Reflect => skia::TileMode::Mirror,
         usvg::SpreadMethod::Repeat => skia::TileMode::Repeat,
     };
-    
+
     let matrix = {
         if g.units == usvg::Units::ObjectBoundingBox {
             let mut ts = usvg::Transform::from_bbox(*bbox);
@@ -181,7 +180,7 @@ fn prepare_base_gradient(
             g.transform.to_native()
         }
     };
-    
+
     let mut colors: Vec<u32> = Vec::new();
     let mut positions: Vec<f32> = Vec::new();
 
@@ -230,9 +229,10 @@ fn prepare_pattern(
         canvas.scale(bbox.width(), bbox.height());
     }
 
-    let mut layers = super::create_layers(img_size);
-    super::render_group(pattern_node, opt, &mut layers, &mut canvas);
-    canvas.flush();
+    let ref tree = pattern_node.tree();
+    let mut render = SkiaFlatRender::new(tree, opt, img_size, &mut canvas);
+    render.render_group(pattern_node);
+    render.finish();
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);
@@ -245,5 +245,5 @@ fn prepare_pattern(
         let a = f64_bound(0.0, opacity.value() * 255.0, 255.0) as u8;
         paint.set_alpha(a);
     };
-    
+
 }

@@ -57,7 +57,6 @@ pub enum BlendMode {
 pub struct Surface(*mut ffi::skiac_surface);
 
 impl Surface {
-
     pub fn new_rgba(width: u32, height: u32) -> Option<Surface> {
         unsafe {
             Self::from_ptr(ffi::skiac_surface_create_rgba(width, height))
@@ -118,7 +117,6 @@ impl Surface {
 
     pub fn data(&self) -> SurfaceData {
         unsafe {
-
             let mut data: ffi::skiac_surface_data = Default::default();
             ffi::skiac_surface_read_pixels(self.0, &mut data);
 
@@ -130,7 +128,6 @@ impl Surface {
 
     pub fn data_mut(&mut self) -> SurfaceData {
         unsafe {
-
             let mut data: ffi::skiac_surface_data = Default::default();
             ffi::skiac_surface_read_pixels(self.0, &mut data);
 
@@ -139,11 +136,9 @@ impl Surface {
             }
         }
     }
-
 }
 
 impl Drop for Surface {
-
     fn drop(&mut self) {
         unsafe {
             ffi::skiac_surface_destroy(self.0);
@@ -172,7 +167,6 @@ impl<'a> DerefMut for SurfaceData<'a> {
 pub struct Color(u8, u8, u8, u8);
 
 impl Color {
-
     pub fn new(a: u8, r: u8, g: u8, b: u8) -> Color {
         Color(a, r, g, b)
     }
@@ -189,12 +183,15 @@ impl Matrix {
     pub fn new() -> Matrix {
         unsafe { Matrix(ffi::skiac_matrix_create()) }
     }
+
     pub fn new_from(a: f64, b: f64, c: f64, d: f64, e: f64, f: f64) -> Matrix {
         unsafe { Matrix(ffi::skiac_matrix_create_from(a, b, c, d, e, f)) }
     }
+
     pub fn invert(&self) -> Matrix {
         unsafe { Matrix(ffi::skiac_matrix_create_inverse(self.0)) }
     }
+
     pub fn map_rect(&self, l: f64, t: f64, r: f64, b: f64) -> (f32, f32, f32, f32) {
         let src = ffi::skia_rect {
             left: l as f32,
@@ -239,49 +236,62 @@ impl Drop for Matrix {
 pub struct Canvas(*mut ffi::skiac_canvas);
 
 impl Canvas {
-
     pub unsafe fn from_raw(ptr: *mut ffi::skiac_canvas) -> Canvas {
         Canvas(ptr)
     }
+
     pub fn clear(&self) {
         unsafe { ffi::skiac_canvas_clear(self.0, 0); }
     }
+
     pub fn fill(&self, r: u8, g: u8, b: u8, a: u8) {
         unsafe { ffi::skiac_canvas_clear(self.0, (a as u32) << 24 | (r as u32) << 16 | (g as u32) << 8 | b as u32); }
     }
+
     pub fn flush(&self) {
          unsafe { ffi::skiac_canvas_flush(self.0); }
     }
+
     pub fn set_matrix(&mut self, matrix: &Matrix) {
         unsafe { ffi::skiac_canvas_set_matrix(self.0, matrix.0); }
     }
+
     pub fn concat(&mut self, matrix: &Matrix) {
         unsafe { ffi::skiac_canvas_concat(self.0, matrix.0); }
     }
+
     pub fn scale(&mut self, sx: f64, sy: f64) {
         unsafe { ffi::skiac_canvas_scale(self.0, sx, sy); }
     }
+
     pub fn translate(&mut self, dx: f64, dy: f64) {
         unsafe { ffi::skiac_canvas_translate(self.0, dx, dy); }
     }
-    pub fn get_total_matrix(&mut self) -> Matrix {
+
+    pub fn get_total_matrix(&self) -> Matrix {
         unsafe { Matrix(ffi::skiac_canvas_get_total_matrix(self.0)) }
     }
+
     pub fn draw_path(&mut self, path: &Path, paint: &Paint) {
         unsafe { ffi::skiac_canvas_draw_path(self.0, path.0, paint.0); }
     }
+
     pub fn draw_rect(&mut self, x: f64, y: f64, w: f64, h: f64, paint: &Paint) {
         unsafe { ffi::skiac_canvas_draw_rect(self.0, x, y, w, h, paint.0); }
     }
+
     pub fn draw_surface(&mut self, surface: &Surface, left: f64, top: f64, alpha: u8, blend_mode: BlendMode) {
         unsafe { ffi::skiac_canvas_draw_surface(self.0, surface.0, left, top, alpha, blend_mode as u32); }
     }
+
     pub fn draw_surface_rect(&mut self, surface: &Surface, x: f64, y: f64, w: f64, h: f64) {
         unsafe { ffi::skiac_canvas_draw_surface_rect(self.0, surface.0, x, y, w, h) }
     }
+
     pub fn reset_matrix(&self) {
         unsafe { ffi::skiac_canvas_reset_matrix(self.0); }
     }
+
     pub fn clip_rect(&self, l: f64, t: f64, r: f64, b: f64) {
         let rect = ffi::skia_rect {
             left: l as f32,
@@ -292,12 +302,6 @@ impl Canvas {
         unsafe {
             ffi::skiac_canvas_clip_rect(self.0, &rect)
         }
-    }
-    pub fn save(&self) {
-        unsafe { ffi::skiac_canvas_save(self.0); }
-    }
-    pub fn restore(&self) {
-        unsafe { ffi::skiac_canvas_restore(self.0); }
     }
 }
 
@@ -397,12 +401,10 @@ pub struct RadialGradient {
 pub struct Shader(*mut ffi::skiac_shader);
 
 impl Shader {
-
     pub fn new_linear_gradient(grad:  LinearGradient) -> Shader {
-
         let points = [
-            ffi::skia_point{x: grad.start_point.0 as f32, y: grad.start_point.1 as f32},
-            ffi::skia_point{x: grad.end_point.0 as f32, y: grad.end_point.1 as f32}
+            ffi::skia_point {x: grad.start_point.0 as f32, y: grad.start_point.1 as f32},
+            ffi::skia_point {x: grad.end_point.0 as f32, y: grad.end_point.1 as f32}
         ];
 
         unsafe {
@@ -419,13 +421,12 @@ impl Shader {
     }
 
     pub fn new_radial_gradient(grad: RadialGradient) -> Shader {
-
-        let start_point = ffi::skia_point{
+        let start_point = ffi::skia_point {
             x: grad.start_circle.0 as f32,
             y: grad.start_circle.1 as f32
         };
 
-        let end_point = ffi::skia_point{
+        let end_point = ffi::skia_point {
             x: grad.end_circle.0 as f32,
             y: grad.end_circle.1 as f32
         };
@@ -451,9 +452,7 @@ impl Shader {
         unsafe {
             Shader(ffi::skiac_shader_make_from_surface_image(surface.0, matrix.0))
         }
-    }
-
-}
+    }}
 
 impl Drop for Shader {
     fn drop(&mut self) {
@@ -465,9 +464,7 @@ impl Drop for Shader {
 pub struct PathEffect(*mut ffi::skiac_path_effect);
 
 impl PathEffect {
-
     pub fn new_dash_path(intervals: &Vec<f64>, count: i32, phase: f32) -> PathEffect {
-
         // Convert to 32-bit float
         let mut intervals32: Vec<f32> = Vec::with_capacity(intervals.len());
         for dash in intervals {
@@ -478,7 +475,6 @@ impl PathEffect {
             PathEffect(ffi::skiac_path_effect_make_dash_path(intervals32.as_ptr(), count, phase))
         }
     }
-
 }
 
 impl Drop for PathEffect {
