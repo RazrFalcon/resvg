@@ -20,7 +20,7 @@ fn main() {
         .unwrap();
 
     let application = gtk::Application::new(
-        "com.github.cairo-example",
+        Some("com.github.cairo-example"),
         gio::ApplicationFlags::from_bits_truncate(4)
     ).expect("Initialization failed...");
 

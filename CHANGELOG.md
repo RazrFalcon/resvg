@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- All backend are using the `image` crate for raster images loading now.
+- Use `pico-args` instead of `gumdrop`.
+
+### Removed
+- (cairo-backend) `gdk-pixbuf` dependency.
+- (qt-backend) JPEG image format plugin dependency.
 
 ## [0.7.0] - 2019-06-19
 ### Added

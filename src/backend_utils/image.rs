@@ -2,10 +2,163 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::path;
+use std::{fs, path};
+
+use log::warn;
 
 use crate::prelude::*;
 
+
+pub struct Image {
+    pub data: ImageData,
+    pub size: ScreenSize,
+}
+
+pub enum ImageData {
+    RGB(Vec<u8>),
+    RGBA(Vec<u8>),
+}
+
+pub fn load_raster(
+    format: usvg::ImageFormat,
+    data: &usvg::ImageData,
+    opt: &Options,
+) -> Option<Image> {
+    let img = _load_raster(format, data, opt);
+
+    if img.is_none() {
+        match data {
+            usvg::ImageData::Path(ref path) => {
+                let path = get_abs_path(path, opt);
+                warn!("Failed to load an external image: {:?}.", path);
+            }
+            usvg::ImageData::Raw(_) => {
+                warn!("Failed to load an embedded image.");
+            }
+        }
+    }
+
+    img
+}
+
+fn _load_raster(
+    format: usvg::ImageFormat,
+    data: &usvg::ImageData,
+    opt: &Options,
+) -> Option<Image> {
+    debug_assert!(format != usvg::ImageFormat::SVG);
+
+    match data {
+        usvg::ImageData::Path(ref path) => {
+            let path = get_abs_path(path, opt);
+            let file = fs::File::open(path).ok()?;
+
+            if format == usvg::ImageFormat::JPEG {
+                read_jpeg(file)
+            } else {
+                read_png(file)
+            }
+        }
+        usvg::ImageData::Raw(ref data) => {
+            if format == usvg::ImageFormat::JPEG {
+                read_jpeg(data.as_slice())
+            } else {
+                read_png(data.as_slice())
+            }
+        }
+    }
+}
+
+fn read_png<R: std::io::Read>(r: R) -> Option<Image> {
+    let decoder = png::Decoder::new(r);
+    let (info, mut reader) = decoder.read_info().ok()?;
+
+    match info.color_type {
+        png::ColorType::RGB | png::ColorType::RGBA => {}
+        _ => return None,
+    }
+
+    let size = ScreenSize::new(info.width, info.height)?;
+
+    let mut img_data = vec![0; info.buffer_size()];
+    reader.next_frame(&mut img_data).ok()?;
+
+    let data = match info.color_type {
+        png::ColorType::RGB => ImageData::RGB(img_data),
+        png::ColorType::RGBA => ImageData::RGBA(img_data),
+        _ => return None,
+    };
+
+    Some(Image {
+        data,
+        size,
+    })
+}
+
+fn read_jpeg<R: std::io::Read>(r: R) -> Option<Image> {
+    let mut decoder = jpeg_decoder::Decoder::new(r);
+    let img_data = decoder.decode().ok()?;
+    let info = decoder.info()?;
+
+    let size = ScreenSize::new(info.width as u32, info.height as u32)?;
+
+    let data = match info.pixel_format {
+        jpeg_decoder::PixelFormat::RGB24 => ImageData::RGB(img_data),
+        _ => return None,
+    };
+
+    Some(Image {
+        data,
+        size,
+    })
+}
+
+pub fn image_to_surface(
+    image: &Image,
+    surface: &mut [u8],
+) {
+    // Surface is always ARGB.
+    const SURFACE_CHANNELS: usize = 4;
+
+    debug_assert!(surface.len() % SURFACE_CHANNELS == 0);
+
+    let mut i = 0;
+    let mut to_surface = |r, g, b, a| {
+        let tr = a * r + 0x80;
+        let tg = a * g + 0x80;
+        let tb = a * b + 0x80;
+        surface[i + 0] = (((tb >> 8) + tb) >> 8) as u8;
+        surface[i + 1] = (((tg >> 8) + tg) >> 8) as u8;
+        surface[i + 2] = (((tr >> 8) + tr) >> 8) as u8;
+        surface[i + 3] = a as u8;
+
+        i += SURFACE_CHANNELS;
+    };
+
+    match &image.data {
+        ImageData::RGB(data) => {
+            let mut j = 0;
+            while j < data.len() {
+                let r = data[j + 0] as u32;
+                let g = data[j + 1] as u32;
+                let b = data[j + 2] as u32;
+                to_surface(r, g, b, 255);
+                j += 3;
+            }
+        }
+        ImageData::RGBA(data) => {
+            let mut j = 0;
+            while j < data.len() {
+                let r = data[j + 0] as u32;
+                let g = data[j + 1] as u32;
+                let b = data[j + 2] as u32;
+                let a = data[j + 3] as u32;
+                to_surface(r, g, b, a);
+                j += 4;
+            }
+        }
+    }
+}
 
 pub fn load_sub_svg(
     data: &usvg::ImageData,
@@ -118,7 +271,7 @@ pub fn image_rect(
     new_size.to_size().to_rect(x, y)
 }
 
-pub fn get_abs_path(
+fn get_abs_path(
     rel_path: &path::Path,
     opt: &Options,
 ) -> path::PathBuf {

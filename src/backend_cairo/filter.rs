@@ -5,7 +5,6 @@
 use std::cmp;
 use std::rc::Rc;
 
-use cairo::{MatrixTrait, PatternTrait};
 use rgb::FromSlice;
 use log::warn;
 use usvg::{try_opt_or, ColorInterpolation as ColorSpace};
@@ -43,7 +42,7 @@ impl ImageExt for cairo::ImageSurface {
         let new_image = create_image(self.width(), self.height())?;
 
         let cr = cairo::Context::new(&new_image);
-        cr.set_source_surface(self.as_ref(), 0.0, 0.0);
+        cr.set_source_surface(self, 0.0, 0.0);
         cr.paint();
 
         Ok(new_image)
@@ -325,7 +324,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
 
         let cr = cairo::Context::new(&buffer);
 
-        cr.set_source_surface(input2.as_ref(), 0.0, 0.0);
+        cr.set_source_surface(&input2, 0.0, 0.0);
         cr.paint();
 
         use usvg::FeCompositeOperator as Operator;
@@ -339,7 +338,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         };
 
         cr.set_operator(operator);
-        cr.set_source_surface(input1.as_ref(), 0.0, 0.0);
+        cr.set_source_surface(&input1, 0.0, 0.0);
         cr.paint();
 
         Ok(Image::from_image(buffer, cs))
@@ -399,7 +398,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         m.invert();
         patt.set_matrix(m);
 
-        cr.set_source(&cairo::Pattern::SurfacePattern(patt));
+        cr.set_source(&patt);
         cr.rectangle(0.0, 0.0, region.width() as f64, region.height() as f64);
         cr.fill();
 
@@ -431,7 +430,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
                 if format == usvg::ImageFormat::SVG {
                     super::image::draw_svg(data, view_box, opt, &cr);
                 } else {
-                    super::image::draw_raster(data, view_box, fe.rendering_mode, opt, &cr);
+                    super::image::draw_raster(format, data, view_box, fe.rendering_mode, opt, &cr);
                 }
             }
             usvg::FeImageKind::Use(..) => {}

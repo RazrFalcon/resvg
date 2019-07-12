@@ -40,9 +40,3 @@ List of features required from the 2D graphics library to implement a backend fo
     - LineTo
     - CurveTo (cubic)
     - ClosePath
-- Raster images:
-  - Formats:
-    - PNG
-    - JPEG
-  - Loading from file and memory
-  - Smooth scaling

@@ -12,8 +12,9 @@ pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
     opt: &Options,
+    bbox: Option<Rect>,
     p: &mut qt::Painter,
-) -> Option<Rect> {
+) {
     let mut p_path = qt::PainterPath::new();
 
     let fill_rule = if let Some(ref fill) = path.fill {
@@ -24,16 +25,10 @@ pub fn draw(
 
     convert_path(&path.segments, fill_rule, &mut p_path);
 
-    let bbox = utils::path_bbox(&path.segments, None, None);
-
     // `usvg` guaranties that path without a bbox will not use
     // a paint server with ObjectBoundingBox,
     // so we can pass whatever rect we want, because it will not be used anyway.
     let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
-
-    if path.visibility != usvg::Visibility::Visible {
-        return bbox;
-    }
 
     style::fill(tree, &path.fill, opt, style_bbox, p);
     style::stroke(tree, &path.stroke, opt, style_bbox, p);
@@ -43,8 +38,6 @@ pub fn draw(
 
     // Revert anti-aliasing.
     p.set_antialiasing(true);
-
-    bbox
 }
 
 fn convert_path(

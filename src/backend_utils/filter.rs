@@ -11,15 +11,13 @@ use crate::prelude::*;
 
 
 pub enum Error {
+    #[allow(dead_code)] // Not used by raqote-backend.
     AllocFailed,
     InvalidRegion,
 }
 
 
-pub trait ImageExt
-where
-    Self: Sized
-{
+pub trait ImageExt: Sized {
     fn width(&self) -> u32;
     fn height(&self) -> u32;
 

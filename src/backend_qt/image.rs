@@ -3,53 +3,27 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::qt;
-use usvg::{try_opt, try_opt_warn};
+use usvg::try_opt;
 
-use crate::{prelude::*, backend_utils::*};
+use crate::prelude::*;
+use crate::backend_utils::{self, ConvTransform};
 
-
-pub fn draw(
-    image: &usvg::Image,
-    opt: &Options,
-    p: &mut qt::Painter,
-) -> Rect {
-    if image.visibility != usvg::Visibility::Visible {
-        return image.view_box.rect;
-    }
-
-    if image.format == usvg::ImageFormat::SVG {
-        draw_svg(&image.data, image.view_box, opt, p);
-    } else {
-        draw_raster(&image.data, image.view_box, image.rendering_mode, opt, p);
-    }
-
-    image.view_box.rect
-}
 
 pub fn draw_raster(
+    format: usvg::ImageFormat,
     data: &usvg::ImageData,
     view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
     opt: &Options,
     p: &mut qt::Painter,
 ) {
-    let img = match data {
-        usvg::ImageData::Path(ref path) => {
-            let path = image::get_abs_path(path, opt);
-            try_opt_warn!(
-                qt::Image::from_file(&path),
-                "Failed to load an external image: {:?}.", path
-            )
-        }
-        usvg::ImageData::Raw(ref data) => {
-            try_opt_warn!(
-                qt::Image::from_data(data),
-                "Failed to load an embedded image."
-            )
-        }
-    };
+    let img = try_opt!(backend_utils::image::load_raster(format, data, opt));
 
-    let img_size = try_opt!(ScreenSize::new(img.width(), img.height()));
+    let image = {
+        let mut image = try_create_image!(img.size, ());
+        backend_utils::image::image_to_surface(&img, &mut image.data_mut());
+        image
+    };
 
     if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
         p.set_smooth_pixmap_transform(false);
@@ -60,8 +34,8 @@ pub fn draw_raster(
         p.set_clip_rect(r.x(), r.y(), r.width(), r.height());
     }
 
-    let r = image::image_rect(&view_box, img_size);
-    p.draw_image_rect(r.x(), r.y(), r.width(), r.height(), &img);
+    let r = backend_utils::image::image_rect(&view_box, img.size);
+    p.draw_image_rect(r.x(), r.y(), r.width(), r.height(), &image);
 
     // Revert.
     p.set_smooth_pixmap_transform(true);
@@ -74,10 +48,10 @@ pub fn draw_svg(
     opt: &Options,
     p: &mut qt::Painter,
 ) {
-    let (tree, sub_opt) = try_opt!(image::load_sub_svg(data, opt));
+    let (tree, sub_opt) = try_opt!(backend_utils::image::load_sub_svg(data, opt));
 
     let img_size = tree.svg_node().size.to_screen_size();
-    let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);
+    let (ts, clip) = backend_utils::image::prepare_sub_svg_geom(view_box, img_size);
 
     if let Some(clip) = clip {
         p.set_clip_rect(clip.x(), clip.y(), clip.width(), clip.height());

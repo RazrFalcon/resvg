@@ -11,8 +11,9 @@ pub fn draw(
     path: &usvg::Path,
     opt: &Options,
     draw_opt: raqote::DrawOptions,
+    bbox: Option<Rect>,
     dt: &mut raqote::DrawTarget,
-) -> Option<Rect> {
+) {
     let mut is_butt_cap = true;
     if let Some(ref stroke) = path.stroke {
         is_butt_cap = stroke.linecap == usvg::LineCap::Butt;
@@ -20,16 +21,10 @@ pub fn draw(
 
     let mut segments = conv_path(&path.segments, is_butt_cap);
 
-    let bbox = utils::path_bbox(&path.segments, None, None);
-
     // `usvg` guaranties that path without a bbox will not use
     // a paint server with ObjectBoundingBox,
     // so we can pass whatever rect we want, because it will not be used anyway.
     let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
-
-    if path.visibility != usvg::Visibility::Visible {
-        return bbox;
-    }
 
     if let Some(ref fill) = path.fill {
         match fill.rule {
@@ -45,8 +40,6 @@ pub fn draw(
 
     style::fill(tree, &segments, &path.fill, opt, style_bbox, &draw_opt, dt);
     style::stroke(tree, &segments, &path.stroke, opt, style_bbox, &draw_opt, dt);
-
-    bbox
 }
 
 fn conv_path(
