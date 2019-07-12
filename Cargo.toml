@@ -47,6 +47,7 @@ resvg-skia = { path = "resvg-skia", version = "0.1", optional = true }
 cairo-backend = ["cairo-rs"]
 qt-backend = ["resvg-qt"]
 raqote-backend = ["raqote"]
+skia-backend = ["resvg-skia"]
 
 [package.metadata.docs.rs]
 all-features = true
