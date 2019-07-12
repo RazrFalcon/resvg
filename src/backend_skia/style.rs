@@ -203,7 +203,7 @@ fn prepare_pattern(
     canvas.scale(sx, sy);
     if let Some(vbox) = pattern.view_box {
         let ts = utils::view_box_to_transform(vbox.rect, vbox.aspect, r.size());
-        canvas.set_matrix(&ts.to_native());
+        canvas.concat(&ts.to_native());
     } else if pattern.content_units == usvg::Units::ObjectBoundingBox {
         // 'Note that this attribute has no effect if attribute `viewBox` is specified.'
 
@@ -228,5 +228,4 @@ fn prepare_pattern(
         let a = f64_bound(0.0, opacity.value() * 255.0, 255.0) as u8;
         paint.set_alpha(a);
     };
-
 }
