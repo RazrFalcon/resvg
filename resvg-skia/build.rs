@@ -17,7 +17,7 @@ fn main() {
     if tool.is_like_msvc() {
         build.compile("libskiac.lib");
     } else {
-        build.flag("-std=c++11");
+        build.flag("-std=c++14");
         build.compile("libskiac.a");
     }
 
@@ -25,7 +25,6 @@ fn main() {
     let skia_lib_path = Path::new(&skia_lib_dir);
 
     println!("cargo:rustc-link-search={}", skia_lib_path.to_str().unwrap()); // for MSVC
-
     println!("cargo:rustc-link-lib=skia.dll");
 }
 
@@ -38,24 +37,15 @@ fn main() {
     let skia_path = Path::new(&skia_dir);
 
     let mut build = cc::Build::new();
-    let tool = build.get_compiler();
-
     build.cpp(true);
     build.file("cpp/skia_capi.cpp").include("cpp");
-
     build.include(skia_path);
-
-    if tool.is_like_msvc() {
-        build.compile("libskiac.lib");
-    } else {
-        build.flag("-std=c++11");
-        build.compile("libskiac.a");
-    }
+    build.flag("-std=c++14");
+    build.compile("libskiac.a");
 
     let skia_lib_dir = env::var("SKIA_LIB_DIR").expect("SKIA_LIB_DIR is not set");
     let skia_lib_path = Path::new(&skia_lib_dir);
 
     println!("cargo:rustc-link-search={}", skia_lib_path.to_str().unwrap());
-
     println!("cargo:rustc-link-lib=skia");
 }

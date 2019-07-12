@@ -35,7 +35,7 @@ pub fn draw_raster(
     }
 
     let r = backend_utils::image::image_rect(&view_box, img.size);
-    canvas.draw_surface(&last.img, r.x(), r.y(), 255, skia::BlendMode::SourceOver);
+    canvas.draw_surface(&image, r.x(), r.y(), 255, skia::BlendMode::SourceOver);
 
     // Revert.
 //    p.set_smooth_pixmap_transform(true);
