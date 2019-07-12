@@ -375,6 +375,19 @@ bool resvg_get_node_bbox(const resvg_render_tree *tree,
  */
 void resvg_tree_destroy(resvg_render_tree *tree);
 
+/**
+ * @brief Exports the usvg text for the Render tree.
+ *
+ * @param tree Render tree.
+ * @param file_path File path where usvg will be written to.
+ * @param formatted Uses indenting if true.
+ * @return \b false if invalid string parameter.
+ * @return \b false if ailed to create a file.
+ * @return \b false if failed to write a file.
+ */
+bool resvg_export_usvg(const resvg_render_tree *tree,
+                       const char * file_path, 
+                       bool formatted);
 
 #ifdef RESVG_CAIRO_BACKEND
 /**
@@ -463,6 +476,51 @@ void resvg_qt_render_to_canvas_by_id(const resvg_render_tree *tree,
                                      const char *id,
                                      void *painter);
 #endif /* RESVG_QT_BACKEND */
+
+#ifdef RESVG_SKIA_BACKEND
+/**
+ * @brief Renders the #resvg_render_tree to file.
+ *
+ * @param tree Render tree.
+ * @param opt Rendering options.
+ * @param file_path File path.
+ * @return #resvg_error
+ */
+int resvg_skia_render_to_image(const resvg_render_tree *tree,
+	                           const resvg_options *opt,
+	                           const char *file_path);
+
+/**
+ * @brief Renders the #resvg_render_tree to canvas.
+ *
+ * @param tree Render tree.
+ * @param opt Rendering options.
+ * @param size Canvas size.
+ * @param skia Canvas.
+ */
+void resvg_skia_render_to_canvas(const resvg_render_tree *tree,
+                                 const resvg_options *opt,
+                                 resvg_size img_size,
+                                 void *canvas);
+
+
+/**
+ * @brief Renders the #resvg_render_tree to canvas.
+ *
+ * @param tree Render tree.
+ * @param opt Rendering options.
+ * @param img_size Canvas size.
+ * @param src Source rectangle.
+ * @param skia Canvas.
+ */
+void resvg_skia_render_rect_to_canvas(const resvg_render_tree *tree,
+                                 const resvg_options *opt,
+                                 resvg_size img_size,
+                                 const resvg_rect *src,
+                                 void *canvas);
+
+#endif /* RESVG_SKIA_BACKEND */
+
 
 #ifdef RESVG_RAQOTE_BACKEND
 /**

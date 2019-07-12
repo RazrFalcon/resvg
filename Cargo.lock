@@ -453,6 +453,7 @@ dependencies = [
  "png 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "raqote 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "resvg-qt 0.7.0",
+ "resvg-skia 0.1.0",
  "rgb 0.8.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "usvg 0.7.0",
 ]
@@ -470,6 +471,14 @@ dependencies = [
 [[package]]
 name = "resvg-qt"
 version = "0.7.0"
+dependencies = [
+ "cc 1.0.37 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "resvg-skia"
+version = "0.1.0"
 dependencies = [
  "cc 1.0.37 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
