@@ -173,9 +173,6 @@ extern "C" {
     pub fn skiac_canvas_draw_surface(c_canvas: *mut skiac_canvas, c_surface: *mut skiac_surface, left: f64, top: f64, alpha: u8, blendMode: u32);
 }
 extern "C" {
-    pub fn skiac_canvas_draw_surface_rect(c_canvas: *mut skiac_canvas, c_surface: *mut skiac_surface, x: f64, y: f64, w: f64, h: f64);
-}
-extern "C" {
     pub fn skiac_canvas_reset_matrix(c_canvas: *mut skiac_canvas);
 }
 extern "C" {

@@ -26,8 +26,6 @@ mod image;
 mod path;
 mod style;
 
-type SkiaLayers = layers::Layers<skia::Surface>;
-
 impl ConvTransform<skia::Matrix> for usvg::Transform {
     fn to_native(&self) -> skia::Matrix {
         skia::Matrix::new_from(self.a, self.b, self.c, self.d, self.e, self.f)

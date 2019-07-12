@@ -12,12 +12,7 @@ fn main() {
     build.cpp(true);
     build.file("cpp/skia_capi.cpp").include("cpp");
 
-    build.include(skia_path.join("include").join("gpu"));
-    build.include(skia_path.join("include").join("core"));
-    build.include(skia_path.join("include").join("utils"));
-    build.include(skia_path.join("include").join("effects"));
-    build.include(skia_path.join("include").join("config"));
-    build.include(skia_path.join("include").join("ports"));
+    build.include(skia_path);
 
     if tool.is_like_msvc() {
         build.compile("libskiac.lib");
@@ -48,12 +43,7 @@ fn main() {
     build.cpp(true);
     build.file("cpp/skia_capi.cpp").include("cpp");
 
-    build.include(skia_path.join("include").join("gpu"));
-    build.include(skia_path.join("include").join("core"));
-    build.include(skia_path.join("include").join("utils"));
-    build.include(skia_path.join("include").join("effects"));
-    build.include(skia_path.join("include").join("config"));
-    build.include(skia_path.join("include").join("ports"));
+    build.include(skia_path);
 
     if tool.is_like_msvc() {
         build.compile("libskiac.lib");

@@ -284,10 +284,6 @@ impl Canvas {
         unsafe { ffi::skiac_canvas_draw_surface(self.0, surface.0, left, top, alpha, blend_mode as u32); }
     }
 
-    pub fn draw_surface_rect(&mut self, surface: &Surface, x: f64, y: f64, w: f64, h: f64) {
-        unsafe { ffi::skiac_canvas_draw_surface_rect(self.0, surface.0, x, y, w, h) }
-    }
-
     pub fn reset_matrix(&self) {
         unsafe { ffi::skiac_canvas_reset_matrix(self.0); }
     }
