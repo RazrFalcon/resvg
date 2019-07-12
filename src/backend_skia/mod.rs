@@ -209,7 +209,7 @@ impl<'a> SkiaFlatRender<'a> {
     }
 
     fn paint<F>(&mut self, f: F)
-        where F: FnOnce(&usvg::Tree, &Options, &mut skia::Surface)
+        where F: FnOnce(&usvg::Tree, &Options, BlendMode, &mut skia::Surface)
     {
         match self.layers.current_mut() {
             Some(layer) => {
@@ -220,12 +220,12 @@ impl<'a> SkiaFlatRender<'a> {
                     canvas.clip_rect(r.x(), r.y(), r.width(), r.height());
                 }
 
-                f(self.tree, self.opt, &mut layer.img);
+                f(self.tree, self.opt, layer.blend_mode, &mut layer.img);
 
                 canvas.reset_matrix();
             }
             None => {
-                f(self.tree, self.opt, self.surface);
+                f(self.tree, self.opt, self.blend_mode, self.surface);
             }
         }
     }
@@ -233,19 +233,19 @@ impl<'a> SkiaFlatRender<'a> {
 
 impl<'a> FlatRender for SkiaFlatRender<'a> {
     fn draw_path(&mut self, path: &usvg::Path, bbox: Option<Rect>) {
-        self.paint(|tree, opt, surface| {
-            path::draw(tree, path, opt, bbox, surface, skia::BlendMode::SourceOver);
+        self.paint(|tree, opt, blend_mode, surface| {
+            path::draw(tree, path, opt, bbox, surface, blend_mode.into());
         });
     }
 
     fn draw_svg_image(&mut self, image: &usvg::Image) {
-        self.paint(|_, opt, surface| {
+        self.paint(|_, opt, _, surface| {
             image::draw_svg(&image.data, image.view_box, opt, surface);
         });
     }
 
     fn draw_raster_image(&mut self, image: &usvg::Image) {
-        self.paint(|_, opt, surface| {
+        self.paint(|_, opt, _, surface| {
             image::draw_raster(
                 image.format, &image.data, image.view_box, image.rendering_mode, opt, surface,
             );
@@ -285,7 +285,7 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
                 let mut canvas = self.surface.canvas_mut();
 
                 let curr_ts = canvas.get_matrix();
-                self.reset_transform();
+                canvas.reset_matrix();
                 canvas.draw_surface(&last.img, 0.0, 0.0, a, mode.into());
 
                 // Reset.
