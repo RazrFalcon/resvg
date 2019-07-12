@@ -169,7 +169,8 @@ impl Filter<skia::Surface> for SkiaFilter {
         let mut canvas = buffer.canvas_mut();
 
         canvas.reset_matrix();
-        canvas.draw_surface(input.as_ref(), dx, dy, 255, skia::BlendMode::SourceOver);
+        canvas.draw_surface(input.as_ref(), dx, dy, 255, skia::BlendMode::SourceOver,
+                            skia::FilterQuality::High);
         canvas.flush();
 
         Ok(Image::from_image(buffer, input.color_space))
@@ -188,7 +189,8 @@ impl Filter<skia::Surface> for SkiaFilter {
         let mut buffer = create_surface(region.width(), region.height())?;
         let mut canvas = buffer.canvas_mut();
 
-        canvas.draw_surface(input2.as_ref(), 0.0, 0.0, 255, skia::BlendMode::SourceOver);
+        canvas.draw_surface(input2.as_ref(), 0.0, 0.0, 255, skia::BlendMode::SourceOver,
+                            skia::FilterQuality::High);
 
         let blend_mode = match fe.mode {
             usvg::FeBlendMode::Normal => skia::BlendMode::SourceOver,
@@ -198,7 +200,8 @@ impl Filter<skia::Surface> for SkiaFilter {
             usvg::FeBlendMode::Lighten => skia::BlendMode::Lighten,
         };
 
-        canvas.draw_surface(input1.as_ref(), 0.0, 0.0, 255, blend_mode);
+        canvas.draw_surface(input1.as_ref(), 0.0, 0.0, 255, blend_mode,
+                            skia::FilterQuality::High);
 
         Ok(Image::from_image(buffer, cs))
     }
@@ -275,7 +278,8 @@ impl Filter<skia::Surface> for SkiaFilter {
         }
 
         let mut canvas = buffer.canvas_mut();
-        canvas.draw_surface(input2.as_ref(), 0.0, 0.0, 255, skia::BlendMode::SourceOver);
+        canvas.draw_surface(input2.as_ref(), 0.0, 0.0, 255, skia::BlendMode::SourceOver,
+                            skia::FilterQuality::High);
         let blend_mode = match fe.operator {
             Operator::Over => skia::BlendMode::SourceOver,
             Operator::In => skia::BlendMode::SourceIn,
@@ -284,7 +288,8 @@ impl Filter<skia::Surface> for SkiaFilter {
             Operator::Xor => skia::BlendMode::Xor,
             Operator::Arithmetic { .. } => skia::BlendMode::SourceOver,
         };
-        canvas.draw_surface(input1.as_ref(), 0.0, 0.0, 255, blend_mode);
+        canvas.draw_surface(input1.as_ref(), 0.0, 0.0, 255, blend_mode,
+                            skia::FilterQuality::High);
 
         Ok(Image::from_image(buffer, cs))
     }
@@ -303,7 +308,8 @@ impl Filter<skia::Surface> for SkiaFilter {
         for input in &fe.inputs {
             let input = Self::get_input(input, region, &results, surface)?;
             let input = input.into_color_space(cs)?;
-            canvas.draw_surface(input.as_ref(), 0.0, 0.0, 255, skia::BlendMode::SourceOver);
+            canvas.draw_surface(input.as_ref(), 0.0, 0.0, 255, skia::BlendMode::SourceOver,
+                                skia::FilterQuality::High);
         }
         canvas.flush();
 
@@ -392,7 +398,7 @@ impl Filter<skia::Surface> for SkiaFilter {
         canvas.reset_matrix();
         canvas.clear();
         canvas.draw_surface(input.as_ref(), region.x() as f64, region.y() as f64, 255,
-                            skia::BlendMode::SourceOver);
+                            skia::BlendMode::SourceOver, skia::FilterQuality::High);
 
         Ok(())
     }

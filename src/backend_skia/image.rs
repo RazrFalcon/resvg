@@ -30,9 +30,11 @@ pub fn draw_raster(
         image
     };
 
-//    if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
-//        canvas.set_smooth_pixmap_transform(false);
-//    }
+
+    let mut filter = skia::FilterQuality::High;
+    if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
+        filter = skia::FilterQuality::None;
+    }
 
     let mut canvas = surface.canvas_mut();
     canvas.save();
@@ -43,10 +45,9 @@ pub fn draw_raster(
     }
 
     let r = backend_utils::image::image_rect(&view_box, img.size);
-    canvas.draw_surface_rect(&image, r.x(), r.y(), r.width(), r.height());
+    canvas.draw_surface_rect(&image, r.x(), r.y(), r.width(), r.height(), filter);
 
     // Revert.
-//    p.set_smooth_pixmap_transform(true);
     canvas.restore();
 }
 

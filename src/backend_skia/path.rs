@@ -29,21 +29,21 @@ pub fn draw(
         }
     };
 
-    let anti_alias = use_shape_antialiasing(path.rendering_mode);
+    let antialias = use_shape_antialiasing(path.rendering_mode);
 
     let mut canvas = surface.canvas_mut();
     let global_ts = usvg::Transform::from_native(&canvas.get_matrix());
 
     if path.fill.is_some() {
         let mut fill = style::fill(tree, &path.fill, opt, style_bbox, global_ts);
-        fill.set_anti_alias(anti_alias);
+        fill.set_anti_alias(antialias);
         fill.set_blend_mode(blend_mode);
         canvas.draw_path(&skia_path, &fill);
     }
 
     if path.stroke.is_some() {
         let mut stroke = style::stroke(tree, &path.stroke, opt, style_bbox, global_ts);
-        stroke.set_anti_alias(anti_alias);
+        stroke.set_anti_alias(antialias);
         stroke.set_blend_mode(blend_mode);
         canvas.draw_path(&skia_path, &stroke);
     }

@@ -291,14 +291,16 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
         match self.layers.current_mut() {
             Some(prev) => {
                 let mut canvas = prev.img.canvas_mut();
-                canvas.draw_surface(&last.img, 0.0, 0.0, a, mode.into());
+                canvas.draw_surface(&last.img, 0.0, 0.0, a, mode.into(),
+                                    skia::FilterQuality::High);
             }
             None => {
                 let mut canvas = self.surface.canvas_mut();
 
                 let curr_ts = canvas.get_matrix();
                 canvas.reset_matrix();
-                canvas.draw_surface(&last.img, 0.0, 0.0, a, mode.into());
+                canvas.draw_surface(&last.img, 0.0, 0.0, a, mode.into(),
+                                    skia::FilterQuality::High);
 
                 // Reset.
                 canvas.set_matrix(&curr_ts);
@@ -326,7 +328,11 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
     fn set_clip_rect(&mut self, rect: Rect) {
         match self.layers.current_mut() {
             Some(layer) => layer.clip_rect = Some(rect),
-            None => self.surface.canvas_mut().set_clip_rect(rect.x(), rect.y(), rect.width(), rect.height()),
+            None => {
+                self.surface.canvas_mut().set_clip_rect(
+                    rect.x(), rect.y(), rect.width(), rect.height(),
+                )
+            }
         }
     }
 

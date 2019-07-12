@@ -60,6 +60,14 @@ pub enum BlendMode {
     Lighten = 12,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum FilterQuality {
+    None = 0,
+    Low = 1,
+    Medium = 2,
+    High = 3,
+}
+
 pub struct Surface(*mut ffi::skiac_surface);
 
 impl Surface {
@@ -290,12 +298,22 @@ impl Canvas {
         unsafe { ffi::skiac_canvas_draw_rect(self.0, x, y, w, h, paint.0); }
     }
 
-    pub fn draw_surface(&mut self, surface: &Surface, left: f64, top: f64, alpha: u8, blend_mode: BlendMode) {
-        unsafe { ffi::skiac_canvas_draw_surface(self.0, surface.0, left, top, alpha, blend_mode as u32); }
+    pub fn draw_surface(&mut self, surface: &Surface, left: f64, top: f64, alpha: u8,
+                        blend_mode: BlendMode, filter_quality: FilterQuality) {
+        unsafe {
+            ffi::skiac_canvas_draw_surface(
+                self.0, surface.0, left, top, alpha, blend_mode as u32, filter_quality as u32,
+            );
+        }
     }
 
-    pub fn draw_surface_rect(&mut self, surface: &Surface, x: f64, y: f64, w: f64, h: f64) {
-        unsafe { ffi::skiac_canvas_draw_surface_rect(self.0, surface.0, x, y, w, h) }
+    pub fn draw_surface_rect(&mut self, surface: &Surface, x: f64, y: f64, w: f64, h: f64,
+                             filter_quality: FilterQuality) {
+        unsafe {
+            ffi::skiac_canvas_draw_surface_rect(
+                self.0, surface.0, x, y, w, h, filter_quality as u32,
+            );
+        }
     }
 
     pub fn reset_matrix(&mut self) {

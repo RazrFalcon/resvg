@@ -98,6 +98,13 @@ enum class BlendMode {
     __Size
 };
 
+enum class FilterQuality {
+    None,
+    Low,
+    Medium,
+    High,
+};
+
 extern "C" {
 
 // Surface
@@ -128,8 +135,11 @@ void skiac_canvas_translate(skiac_canvas* c_canvas, double dx, double dy);
 skiac_matrix* skiac_canvas_get_total_matrix(skiac_canvas* c_canvas);
 void skiac_canvas_draw_path(skiac_canvas* c_canvas, skiac_path* c_path, skiac_paint* c_paint);
 void skiac_canvas_draw_rect(skiac_canvas* c_canvas, double x, double y, double w, double h, skiac_paint* c_paint);
-void skiac_canvas_draw_surface(skiac_canvas* c_canvas, skiac_surface* c_surface, double left, double top, uint8_t alpha, BlendMode blendMode);
-void skiac_canvas_draw_surface_rect(skiac_canvas* c_canvas, skiac_surface* c_surface, double x, double y, double w, double h);
+void skiac_canvas_draw_surface(skiac_canvas* c_canvas, skiac_surface* c_surface, double left, double top,
+                               uint8_t alpha, BlendMode blendMode, FilterQuality filterQuality);
+void skiac_canvas_draw_surface_rect(skiac_canvas* c_canvas, skiac_surface* c_surface,
+                                    double x, double y, double w, double h,
+                                    FilterQuality filterQuality);
 void skiac_canvas_reset_matrix(skiac_canvas* c_canvas);
 void skiac_canvas_clip_rect(skiac_canvas* c_canvas, const skia_rect* c_rect);
 void skiac_canvas_save(skiac_canvas* c_canvas);

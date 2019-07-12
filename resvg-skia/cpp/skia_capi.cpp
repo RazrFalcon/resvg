@@ -241,30 +241,34 @@ void skiac_canvas_draw_path(skiac_canvas* c_canvas, skiac_path* c_path, skiac_pa
 void skiac_canvas_draw_rect(skiac_canvas* c_canvas, double x, double y, double w, double h, skiac_paint* c_paint)
 {
     SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);
-    SkRect rect = SkRect::MakeXYWH( (SkScalar)x, (SkScalar)y, (SkScalar)w, (SkScalar)h );
+    SkRect rect = SkRect::MakeXYWH((SkScalar)x, (SkScalar)y, (SkScalar)w, (SkScalar)h);
     const SkPaint* paint = reinterpret_cast<const SkPaint*>(c_paint);
     canvas->drawRect(rect, *paint);
 }
 
-void skiac_canvas_draw_surface(skiac_canvas* c_canvas, skiac_surface* c_surface, double left, double top, uint8_t alpha, BlendMode blendMode)
+void skiac_canvas_draw_surface(skiac_canvas* c_canvas, skiac_surface* c_surface, double left,
+                               double top, uint8_t alpha, BlendMode blendMode,
+                               FilterQuality filterQuality)
 {
     SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);
     SkSurface* surface = reinterpret_cast<SkSurface*>(c_surface);
     sk_sp<SkImage> image = surface->makeImageSnapshot();
     SkPaint paint;
-    paint.setFilterQuality(SkFilterQuality::kLow_SkFilterQuality);
+    paint.setFilterQuality((SkFilterQuality)filterQuality);
     paint.setAlpha(alpha);
     paint.setBlendMode(blendModes_[static_cast<int>(blendMode)]);
     canvas->drawImage(image, (SkScalar)left, (SkScalar)top, &paint);
 }
 
-void skiac_canvas_draw_surface_rect(skiac_canvas* c_canvas, skiac_surface* c_surface, double x, double y, double w, double h)
+void skiac_canvas_draw_surface_rect(skiac_canvas* c_canvas, skiac_surface* c_surface,
+                                    double x, double y, double w, double h,
+                                    FilterQuality filterQuality)
 {
     SkCanvas* canvas = reinterpret_cast<SkCanvas*>(c_canvas);
     SkSurface* surface = reinterpret_cast<SkSurface*>(c_surface);
     sk_sp<SkImage> image = surface->makeImageSnapshot();
     SkPaint paint;
-    paint.setFilterQuality(SkFilterQuality::kLow_SkFilterQuality);
+    paint.setFilterQuality((SkFilterQuality)filterQuality);
     SkRect src = SkRect::MakeXYWH(0, 0, (SkScalar)image->width(), (SkScalar)image->height());
     SkRect dst = SkRect::MakeXYWH((SkScalar)x, (SkScalar)y, (SkScalar)w, (SkScalar)h);
     canvas->drawImageRect(image, src, dst, &paint);
