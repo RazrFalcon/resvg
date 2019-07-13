@@ -51,7 +51,7 @@ static SkSurface* skiac_surface_create(int width, int height, SkAlphaType alphaT
     // Init() is indempotent, so can be called more than once with no adverse effect.
     SkGraphics::Init();
 
-    SkImageInfo info = SkImageInfo::Make(width, height, kN32_SkColorType, alphaType);
+    SkImageInfo info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, alphaType);
     sk_sp<SkSurface> surface = SkSurface::MakeRaster(info);
 
     // The surface ref count will equal one after the pointer is returned.
