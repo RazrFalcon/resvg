@@ -35,8 +35,8 @@ fn main() {
         build.compile("libqtc.a");
     }
 
-    println!("cargo:rustc-link-search={}", qt_path.join("bin").to_str().unwrap()); // for MinGW
-    println!("cargo:rustc-link-search={}", qt_path.join("lib").to_str().unwrap()); // for MSVC
+    println!("cargo:rustc-link-search={}", qt_path.join("bin").display()); // for MinGW
+    println!("cargo:rustc-link-search={}", qt_path.join("lib").display()); // for MSVC
 
     println!("cargo:rustc-link-lib=Qt5Core");
     println!("cargo:rustc-link-lib=Qt5Gui");
