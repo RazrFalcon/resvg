@@ -123,6 +123,27 @@ cargo.exe build --release --features "raqote-backend"
 
 You can use i686 target in the same way.
 
+=== Skia backend via MSVC
+
+Install:
+
+* `stable-x86_64-pc-windows-msvc` https://www.rust-lang.org/tools/install[Rust] target.
+* https://cmake.org/download/[CMake] (required to build harfbuzz).
+* Skia itself (we assume that you have already build one).
+
+`SKIA_DIR` should point to a Skia directory that contains the Skia `include` directory.
+`SKIA_LIB_DIR` should point to a Skia directory that contains `skia.dll`.
+
+Build using `x64 Native Tools Command Prompt for VS 2017` shell:
+
+```batch
+set PATH=%userprofile%\.cargo\bin;C:\Program Files\CMake\bin;%PATH%
+set SKIA_DIR=path
+set SKIA_LIB_DIR=path
+
+cargo.exe build --release --features "skia-backend"
+```
+
 == Linux
 
 === Qt backend
@@ -179,6 +200,25 @@ Build `resvg`:
 cargo build --release --features "raqote-backend"
 ```
 
+=== Skia backend
+
+We assume that you have already build Skia itself.
+
+Install `harfbuzz` using your distributive's package manager.
+
+On Ubuntu you can install it via:
+
+```
+sudo apt install libharfbuzz-dev
+```
+
+`SKIA_DIR` should point to a Skia directory that contains the Skia `include` directory.
+`SKIA_LIB_DIR` should point to a Skia directory that contains `libskia.so`.
+
+```sh
+SKIA_DIR=path SKIA_LIB_DIR=path cargo build --release --features "skia-backend"
+```
+
 == macOS
 
 === Qt backend
@@ -215,6 +255,10 @@ cargo build --release --features "cairo-backend"
 ```bash
 cargo build --release --features "raqote-backend"
 ```
+
+=== Skia backend
+
+Not supported.
 
 == For maintainers
 

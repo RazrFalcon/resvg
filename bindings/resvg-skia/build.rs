@@ -65,3 +65,8 @@ fn main() {
     println!("cargo:rustc-link-search={}", skia_lib_path.display());
     println!("cargo:rustc-link-lib=skia");
 }
+
+#[cfg(target_os = "macos")]
+fn main() {
+    panic!("unsupported");
+}
