@@ -1,10 +1,20 @@
 #include <assert.h>
+
+#ifdef SKIA_VER_M58
+#include <SkCanvas.h>
+#include <SkGraphics.h>
+#include <SkPaint.h>
+#include <SkSurface.h>
+#include <SkDashPathEffect.h>
+#include <SkGradientShader.h>
+#else
 #include <include/core/SkCanvas.h>
 #include <include/core/SkGraphics.h>
 #include <include/core/SkPaint.h>
 #include <include/core/SkSurface.h>
 #include <include/effects/SkDashPathEffect.h>
 #include <include/effects/SkGradientShader.h>
+#endif
 
 #include <math.h>
 
@@ -92,7 +102,11 @@ skiac_surface* skiac_surface_create_from_file(const char *path)
 bool skiac_surface_save(skiac_surface* c_surface, const char *path)
 {
     sk_sp<SkImage> image = SURFACE_CAST->makeImageSnapshot();
+#ifdef SKIA_VER_M58
+    SkData *data = image->encode(SkEncodedImageFormat::kPNG, 0);
+#else
     sk_sp<SkData> data = image->encodeToData(SkEncodedImageFormat::kPNG, 0);
+#endif
     if (data) {
         SkFILEWStream stream(path);
         if (stream.write(data->data(), data->size())) {
@@ -149,7 +163,11 @@ void skiac_surface_read_pixels(skiac_surface* c_surface, skiac_surface_data* dat
     SkPixmap pixmap;
     if (SURFACE_CAST->getCanvas()->peekPixels(&pixmap)) {
         data->ptr = static_cast<uint8_t*>(pixmap.writable_addr());
+#ifdef SKIA_VER_M58
+        data->size = static_cast<uint32_t>(pixmap.getSafeSize());
+#else
         data->size = static_cast<uint32_t>(pixmap.computeByteSize());
+#endif
     }
 }
 
@@ -434,8 +452,14 @@ skiac_shader* skiac_shader_make_linear_gradient(
 {
     const SkPoint* points = reinterpret_cast<const SkPoint*>(c_points);
 
+#ifdef SKIA_VER_M58
+    auto skia_tile_mode = (SkShader::TileMode)tile_mode;
+#else
+    auto skia_tile_mode = (SkTileMode)tile_mode;
+#endif
+
     SkShader* shader = SkGradientShader::MakeLinear(
-        points, colors, positions, count, (SkTileMode)tile_mode,
+        points, colors, positions, count, skia_tile_mode,
         flags, MATRIX_CAST
     ).release();
     shader->ref();
@@ -453,10 +477,16 @@ skiac_shader* skiac_shader_make_two_point_conical_gradient(
     const SkPoint startPoint = { c_start_point.x, c_start_point.y };
     const SkPoint endPoint = { c_end_point.x, c_end_point.y };
 
+#ifdef SKIA_VER_M58
+    auto skia_tile_mode = (SkShader::TileMode)tile_mode;
+#else
+    auto skia_tile_mode = (SkTileMode)tile_mode;
+#endif
+
     SkShader* shader = SkGradientShader::MakeTwoPointConical(
         startPoint, start_radius,
         endPoint, end_radius,
-        colors, positions, count, (SkTileMode)tile_mode,
+        colors, positions, count, skia_tile_mode,
         flags, MATRIX_CAST
     ).release();
     shader->ref();
@@ -466,12 +496,14 @@ skiac_shader* skiac_shader_make_two_point_conical_gradient(
 
 skiac_shader* skiac_shader_make_from_surface_image(skiac_surface* c_surface, skiac_matrix* c_matrix)
 {
+#ifdef SKIA_VER_M58
+    auto skia_tile_mode = SkShader::TileMode::kRepeat_TileMode;
+#else
+    auto skia_tile_mode = SkTileMode::kRepeat;
+#endif
+
     sk_sp<SkImage> image = SURFACE_CAST->makeImageSnapshot();
-    SkShader* shader = image->makeShader(
-        SkTileMode::kRepeat,
-        SkTileMode::kRepeat,
-        MATRIX_CAST
-    ).release();
+    SkShader* shader = image->makeShader(skia_tile_mode, skia_tile_mode, MATRIX_CAST).release();
     shader->ref();
 
     return reinterpret_cast<skiac_shader*>(shader);

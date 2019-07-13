@@ -12,7 +12,14 @@ fn main() {
     build.cpp(true);
     build.file("cpp/skia_capi.cpp").include("cpp");
 
-    build.include(skia_path);
+    if env::var("SKIA_VER_M58").is_ok() {
+        build.define("SKIA_VER_M58", None);
+        build.include(skia_path.join("include").join("core"));
+        build.include(skia_path.join("include").join("config"));
+        build.include(skia_path.join("include").join("effects"));
+    } else {
+        build.include(skia_path);
+    }
 
     if tool.is_like_msvc() {
         build.compile("libskiac.lib");
@@ -39,7 +46,16 @@ fn main() {
     let mut build = cc::Build::new();
     build.cpp(true);
     build.file("cpp/skia_capi.cpp").include("cpp");
-    build.include(skia_path);
+
+    if env::var("SKIA_VER_M58").is_ok() {
+        build.define("SKIA_VER_M58", None);
+        build.include(skia_path.join("include").join("core"));
+        build.include(skia_path.join("include").join("config"));
+        build.include(skia_path.join("include").join("effects"));
+    } else {
+        build.include(skia_path);
+    }
+
     build.flag("-std=c++14");
     build.compile("libskiac.a");
 

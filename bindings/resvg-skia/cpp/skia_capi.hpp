@@ -8,7 +8,6 @@
     typedef struct x x;
 
 INIT_STRUCT(skiac_context)
-INIT_STRUCT(skiac_bitmap)
 INIT_STRUCT(skiac_surface)
 INIT_STRUCT(skiac_canvas)
 INIT_STRUCT(skiac_matrix)
