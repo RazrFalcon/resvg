@@ -110,7 +110,8 @@ Also, we do not test against Chrome, Firefox, Inkscape and Batik because they ha
         - [`xmlparser`](https://github.com/RazrFalcon/xmlparser) – an XML parser
       - [`svgtypes`](https://github.com/RazrFalcon/svgtypes) – SVG types parser and writer
     - [`rctree`](https://github.com/RazrFalcon/rctree) – a DOM-like tree
-  - [`resvg-qt`](./resvg-qt) – minimal bindings to [Qt]
+  - [`resvg-qt`](./bindings/resvg-qt) – minimal bindings to [Qt]
+  - [`resvg-skia`](./bindings/resvg-skia) – minimal bindings to [Skia]
 
 All other dependencies aren't written by me for this project.
 
