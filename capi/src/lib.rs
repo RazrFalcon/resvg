@@ -378,15 +378,14 @@ pub extern "C" fn resvg_skia_render_to_canvas(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     img_size: resvg_size,
-    canvas: *mut skia::skiac_canvas,
+    surface: *mut skia::skiac_surface,
 ) {
-
     let tree = unsafe {
         assert!(!tree.is_null());
         &*tree
     };
 
-    let mut canvas = unsafe { skia::Canvas::from_raw(canvas) };
+    let mut surface = unsafe { skia::Surface::from_raw(surface) };
     let img_size = resvg::ScreenSize::new(img_size.width, img_size.height).unwrap();
 
     let opt = to_native_opt(unsafe {
@@ -394,7 +393,7 @@ pub extern "C" fn resvg_skia_render_to_canvas(
         &*opt
     });
 
-    resvg::backend_skia::render_to_canvas(&tree.0, &opt, img_size, &mut canvas);
+    resvg::backend_skia::render_to_canvas(&tree.0, &opt, img_size, &mut surface);
 }
 
 #[cfg(feature = "qt-backend")]
@@ -499,7 +498,7 @@ pub extern "C" fn resvg_skia_render_to_canvas_by_id(
     opt: *const resvg_options,
     size: resvg_size,
     id: *const c_char,
-    cr: *mut cairo_sys::cairo_t,
+    surface: *mut skia::skiac_surface,
 ) {
     let tree = unsafe {
         assert!(!tree.is_null());
@@ -516,7 +515,7 @@ pub extern "C" fn resvg_skia_render_to_canvas_by_id(
         return;
     }
 
-    let mut canvas = unsafe { skia::Canvas::from_raw(canvas) };
+    let mut surface = unsafe { skia::Surface::from_raw(surface) };
     let size = resvg::ScreenSize::new(size.width, size.height).unwrap();
 
     let opt = to_native_opt(unsafe {
@@ -531,7 +530,7 @@ pub extern "C" fn resvg_skia_render_to_canvas_by_id(
                 aspect: usvg::AspectRatio::default(),
             };
 
-            resvg::backend_skia::render_node_to_canvas(&node, &opt, vbox, size, &canvas);
+            resvg::backend_skia::render_node_to_canvas(&node, &opt, vbox, size, &mut surface);
         } else {
             warn!("A node with '{}' ID doesn't have a valid bounding box.", id);
         }
