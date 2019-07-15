@@ -6,7 +6,7 @@ use crate::skia;
 use usvg::try_opt;
 
 use crate::prelude::*;
-use crate::backend_utils::{self, AlphaMode, ConvTransform};
+use crate::backend_utils::{self, ConvTransform, Image};
 
 
 pub fn draw_raster(
@@ -26,7 +26,7 @@ pub fn draw_raster(
             "Failed to create a {}x{} surface.", w, h
         );
 
-        backend_utils::image::image_to_surface(&img, AlphaMode::AsIs, &mut image.data_mut());
+        image_to_surface(&img, &mut image.data_mut());
         image
     };
 
@@ -49,6 +49,63 @@ pub fn draw_raster(
 
     // Revert.
     canvas.restore();
+}
+
+fn image_to_surface(image: &Image, surface: &mut [u8]) {
+    // Surface is always ARGB.
+    const SURFACE_CHANNELS: usize = 4;
+
+    use backend_utils::image::ImageData;
+    use rgb::FromSlice;
+
+    let mut i = 0;
+    if skia::Surface::is_bgra() {
+        match &image.data {
+            ImageData::RGB(data) => {
+                for p in data.as_rgb() {
+                    surface[i + 0] = p.b;
+                    surface[i + 1] = p.g;
+                    surface[i + 2] = p.r;
+                    surface[i + 3] = 255;
+
+                    i += SURFACE_CHANNELS;
+                }
+            }
+            ImageData::RGBA(data) => {
+                for p in data.as_rgba() {
+                    surface[i + 0] = p.b;
+                    surface[i + 1] = p.g;
+                    surface[i + 2] = p.r;
+                    surface[i + 3] = p.a;
+
+                    i += SURFACE_CHANNELS;
+                }
+            }
+        }
+    } else {
+        match &image.data {
+            ImageData::RGB(data) => {
+                for p in data.as_rgb() {
+                    surface[i + 0] = p.r;
+                    surface[i + 1] = p.g;
+                    surface[i + 2] = p.b;
+                    surface[i + 3] = 255;
+
+                    i += SURFACE_CHANNELS;
+                }
+            }
+            ImageData::RGBA(data) => {
+                for p in data.as_rgba() {
+                    surface[i + 0] = p.r;
+                    surface[i + 1] = p.g;
+                    surface[i + 2] = p.b;
+                    surface[i + 3] = p.a;
+
+                    i += SURFACE_CHANNELS;
+                }
+            }
+        }
+    }
 }
 
 pub fn draw_svg(

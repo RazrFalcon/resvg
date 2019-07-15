@@ -10,7 +10,7 @@ use crate::utils;
 pub mod filter;
 pub mod image;
 
-pub use image::AlphaMode;
+pub use image::Image;
 
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]

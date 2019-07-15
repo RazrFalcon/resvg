@@ -100,8 +100,6 @@ extern "C" {
 // Surface
 skiac_surface* skiac_surface_create_rgba_premultiplied(int width, int height);
 skiac_surface* skiac_surface_create_rgba(int width, int height);
-skiac_surface* skiac_surface_create_from_image_data(const void* buffer, uint32_t size);
-skiac_surface* skiac_surface_create_from_file(const char *path);
 void skiac_surface_destroy(skiac_surface* c_surface);
 skiac_surface* skiac_surface_copy_rgba(skiac_surface *c_surface, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 bool skiac_surface_save(skiac_surface* c_surface, const char *path);
@@ -109,6 +107,7 @@ skiac_canvas* skiac_surface_get_canvas(skiac_surface* c_surface);
 int skiac_surface_get_width(skiac_surface *c_surface);
 int skiac_surface_get_height(skiac_surface *c_surface);
 void skiac_surface_read_pixels(skiac_surface* c_surface, skiac_surface_data* data);
+bool skiac_is_surface_bgra();
 
 // Canvas
 void skiac_canvas_clear(skiac_canvas* c_canvas, uint32_t color);

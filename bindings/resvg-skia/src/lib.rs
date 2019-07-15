@@ -1,6 +1,5 @@
 use std::ffi::CString;
 use std::ops::{Deref, DerefMut};
-use std::path::PathBuf;
 use std::slice;
 
 #[allow(dead_code)]
@@ -87,11 +86,6 @@ impl Surface {
         }
     }
 
-    pub fn from_file(path: &PathBuf) -> Option<Surface> {
-        let c_path = CString::new(path.to_str().unwrap()).unwrap();
-        unsafe { Self::from_ptr(ffi::skiac_surface_create_from_file(c_path.as_ptr())) }
-    }
-
     unsafe fn from_ptr(surface: *mut ffi::skiac_surface) -> Option<Surface> {
         if surface.is_null() {
             None
@@ -159,6 +153,10 @@ impl Surface {
                 slice: slice::from_raw_parts_mut(data.ptr, data.size as usize),
             }
         }
+    }
+
+    pub fn is_bgra() -> bool {
+        unsafe { ffi::skiac_is_surface_bgra() }
     }
 }
 

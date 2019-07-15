@@ -51,7 +51,7 @@ static SkSurface* skiac_surface_create(int width, int height, SkAlphaType alphaT
     // Init() is indempotent, so can be called more than once with no adverse effect.
     SkGraphics::Init();
 
-    SkImageInfo info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, alphaType);
+    SkImageInfo info = SkImageInfo::Make(width, height, kN32_SkColorType, alphaType);
     sk_sp<SkSurface> surface = SkSurface::MakeRaster(info);
 
     // The surface ref count will equal one after the pointer is returned.
@@ -82,21 +82,6 @@ SkSurface* skiac_surface_create_data(sk_sp<SkData> data)
     }
 
     return surface;
-}
-
-skiac_surface* skiac_surface_create_from_image_data(const void* buffer, uint32_t size)
-{
-    sk_sp<SkData> data(SkData::MakeWithCopy(buffer, size));
-    return reinterpret_cast<skiac_surface*>(skiac_surface_create_data(data));
-}
-
-skiac_surface* skiac_surface_create_from_file(const char *path)
-{
-    sk_sp<SkData> data = SkData::MakeFromFileName(path);
-    if (data) {
-        return reinterpret_cast<skiac_surface*>(skiac_surface_create_data(data));
-    }
-    return nullptr;
 }
 
 bool skiac_surface_save(skiac_surface* c_surface, const char *path)
@@ -169,6 +154,11 @@ void skiac_surface_read_pixels(skiac_surface* c_surface, skiac_surface_data* dat
         data->size = static_cast<uint32_t>(pixmap.computeByteSize());
 #endif
     }
+}
+
+bool skiac_is_surface_bgra()
+{
+    return kN32_SkColorType == kBGRA_8888_SkColorType;
 }
 
 // Canvas

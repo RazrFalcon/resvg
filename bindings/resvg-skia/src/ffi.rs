@@ -248,11 +248,6 @@ pub struct skiac_context {
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct skiac_bitmap {
-    _unused: [u8; 0],
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct skiac_surface {
     _unused: [u8; 0],
 }
@@ -498,17 +493,6 @@ extern "C" {
     ) -> *mut skiac_surface;
 }
 extern "C" {
-    pub fn skiac_surface_create_from_image_data(
-        buffer: *const ::std::os::raw::c_void,
-        size: u32,
-    ) -> *mut skiac_surface;
-}
-extern "C" {
-    pub fn skiac_surface_create_from_file(
-        path: *const ::std::os::raw::c_char,
-    ) -> *mut skiac_surface;
-}
-extern "C" {
     pub fn skiac_surface_destroy(c_surface: *mut skiac_surface);
 }
 extern "C" {
@@ -537,6 +521,9 @@ extern "C" {
 }
 extern "C" {
     pub fn skiac_surface_read_pixels(c_surface: *mut skiac_surface, data: *mut skiac_surface_data);
+}
+extern "C" {
+    pub fn skiac_is_surface_bgra() -> bool;
 }
 extern "C" {
     pub fn skiac_canvas_clear(c_canvas: *mut skiac_canvas, color: u32);
