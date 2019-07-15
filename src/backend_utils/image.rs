@@ -113,53 +113,6 @@ fn read_jpeg<R: std::io::Read>(r: R) -> Option<Image> {
     })
 }
 
-pub fn image_to_surface(
-    image: &Image,
-    surface: &mut [u8],
-) {
-    // Surface is always ARGB.
-    const SURFACE_CHANNELS: usize = 4;
-
-    debug_assert!(surface.len() % SURFACE_CHANNELS == 0);
-
-    let mut i = 0;
-    let mut to_surface = |r, g, b, a| {
-        let tr = a * r + 0x80;
-        let tg = a * g + 0x80;
-        let tb = a * b + 0x80;
-        surface[i + 0] = (((tb >> 8) + tb) >> 8) as u8;
-        surface[i + 1] = (((tg >> 8) + tg) >> 8) as u8;
-        surface[i + 2] = (((tr >> 8) + tr) >> 8) as u8;
-        surface[i + 3] = a as u8;
-
-        i += SURFACE_CHANNELS;
-    };
-
-    match &image.data {
-        ImageData::RGB(data) => {
-            let mut j = 0;
-            while j < data.len() {
-                let r = data[j + 0] as u32;
-                let g = data[j + 1] as u32;
-                let b = data[j + 2] as u32;
-                to_surface(r, g, b, 255);
-                j += 3;
-            }
-        }
-        ImageData::RGBA(data) => {
-            let mut j = 0;
-            while j < data.len() {
-                let r = data[j + 0] as u32;
-                let g = data[j + 1] as u32;
-                let b = data[j + 2] as u32;
-                let a = data[j + 3] as u32;
-                to_surface(r, g, b, a);
-                j += 4;
-            }
-        }
-    }
-}
-
 pub fn load_sub_svg(
     data: &usvg::ImageData,
     opt: &Options,

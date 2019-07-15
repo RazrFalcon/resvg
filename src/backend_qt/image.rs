@@ -6,7 +6,7 @@ use crate::qt;
 use usvg::try_opt;
 
 use crate::prelude::*;
-use crate::backend_utils::{self, ConvTransform};
+use crate::backend_utils::{self, ConvTransform, Image};
 
 
 pub fn draw_raster(
@@ -20,8 +20,12 @@ pub fn draw_raster(
     let img = try_opt!(backend_utils::image::load_raster(format, data, opt));
 
     let image = {
-        let mut image = try_create_image!(img.size, ());
-        backend_utils::image::image_to_surface(&img, &mut image.data_mut());
+        let (w, h) = img.size.dimensions();
+        let mut image = usvg::try_opt_warn_or!(
+            qt::Image::new_rgba(w, h), (),
+            "Failed to create a {}x{} image.", w, h
+        );
+        image_to_surface(&img, &mut image.data_mut());
         image
     };
 
@@ -40,6 +44,38 @@ pub fn draw_raster(
     // Revert.
     p.set_smooth_pixmap_transform(true);
     p.reset_clip_path();
+}
+
+fn image_to_surface(image: &Image, surface: &mut [u8]) {
+    // Surface is always ARGB.
+    const SURFACE_CHANNELS: usize = 4;
+
+    use backend_utils::image::ImageData;
+    use rgb::FromSlice;
+
+    let mut i = 0;
+
+    let mut to_surface = |r, g, b, a| {
+        surface[i + 0] = b;
+        surface[i + 1] = g;
+        surface[i + 2] = r;
+        surface[i + 3] = a;
+
+        i += SURFACE_CHANNELS;
+    };
+
+    match &image.data {
+        ImageData::RGB(data) => {
+            for p in data.as_rgb() {
+                to_surface(p.r, p.g, p.b, 255);
+            }
+        }
+        ImageData::RGBA(data) => {
+            for p in data.as_rgba() {
+                to_surface(p.r, p.g, p.b, p.a);
+            }
+        }
+    }
 }
 
 pub fn draw_svg(

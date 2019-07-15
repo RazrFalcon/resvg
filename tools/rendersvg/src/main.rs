@@ -35,6 +35,7 @@ fn main() {
 fn process() -> Result<(), String> {
     #[cfg(all(not(feature = "cairo-backend"),
               not(feature = "qt-backend"),
+              not(feature = "skia-backend"),
               not(feature = "raqote-backend")))]
     {
         bail!("rendersvg has been built without any backends")
@@ -66,6 +67,8 @@ fn process() -> Result<(), String> {
         "cairo" => Box::new(resvg::backend_cairo::Backend),
         #[cfg(feature = "qt-backend")]
         "qt" => Box::new(resvg::backend_qt::Backend),
+        #[cfg(feature = "skia-backend")]
+        "skia" => Box::new(resvg::backend_skia::Backend),
         #[cfg(feature = "raqote-backend")]
         "raqote" => Box::new(resvg::backend_raqote::Backend),
         _ => bail!("unknown backend"),

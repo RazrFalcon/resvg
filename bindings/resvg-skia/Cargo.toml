@@ -1,0 +1,14 @@
+[package]
+name = "resvg-skia"
+version = "0.7.0"
+authors = ["JaFenix <51161647+JaFenix@users.noreply.github.com>"]
+keywords = ["skia", "ffi"]
+license = "MIT"
+edition = "2018"
+description = "A minimal bindings to Skia used by resvg."
+repository = "https://github.com/RazrFalcon/resvg"
+workspace = "../.."
+
+[build-dependencies]
+cc = "1.0"
+pkg-config = "0.3"

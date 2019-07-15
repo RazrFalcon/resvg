@@ -375,7 +375,6 @@ bool resvg_get_node_bbox(const resvg_render_tree *tree,
  */
 void resvg_tree_destroy(resvg_render_tree *tree);
 
-
 #ifdef RESVG_CAIRO_BACKEND
 /**
  * @brief Renders the #resvg_render_tree to file.
@@ -483,5 +482,50 @@ int resvg_raqote_render_to_image(const resvg_render_tree *tree,
  */
 
 #endif /* RESVG_RAQOTE_BACKEND */
+
+#ifdef RESVG_SKIA_BACKEND
+
+/**
+ * @brief Renders the #resvg_render_tree to file.
+ *
+ * @param tree Render tree.
+ * @param opt Rendering options.
+ * @param file_path File path.
+ * @return #resvg_error
+ */
+int resvg_skia_render_to_image(const resvg_render_tree *tree,
+                               const resvg_options *opt,
+                               const char *file_path);
+
+/**
+ * @brief Renders the #resvg_render_tree to canvas.
+ *
+ * @param tree Render tree.
+ * @param opt Rendering options.
+ * @param size Canvas size.
+ * @param surface Skia Surface.
+ */
+void resvg_skia_render_to_canvas(const resvg_render_tree *tree,
+                                 const resvg_options *opt,
+                                 resvg_size size,
+                                 void *surface);
+
+/**
+ * @brief Renders a Node by ID to canvas.
+ *
+ * Does nothing on error.
+ *
+ * @param tree Render tree.
+ * @param opt Rendering options.
+ * @param size Canvas size.
+ * @param id Node's ID.
+ * @param surface Skia Surface.
+ */
+void resvg_skia_render_to_canvas_by_id(const resvg_render_tree *tree,
+                                       const resvg_options *opt,
+                                       resvg_size size,
+                                       const char *id,
+                                       void *surface);
+#endif /* RESVG_SKIA_BACKEND */
 
 #endif /* RESVG_H */

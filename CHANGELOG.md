@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- (resvg) A [Skia](https://skia.org/) backend thanks to
+  [JaFenix](https://github.com/JaFenix).
+
 ### Changed
 - All backend are using the `image` crate for raster images loading now.
 - Use `pico-args` instead of `gumdrop`.

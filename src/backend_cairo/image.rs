@@ -5,7 +5,7 @@
 use usvg::try_opt;
 
 use crate::prelude::*;
-use crate::backend_utils::{self, ConvTransform};
+use crate::backend_utils::{self, ConvTransform, Image};
 
 
 pub fn draw_raster(
@@ -24,7 +24,7 @@ pub fn draw_raster(
         {
             // Unwrap is safe, because no one uses the surface.
             let mut surface_data = surface.get_data().unwrap();
-            backend_utils::image::image_to_surface(&img, &mut surface_data);
+            image_to_surface(&img, &mut surface_data);
         }
 
         surface
@@ -56,6 +56,41 @@ pub fn draw_raster(
     cr.set_source(&patt);
     cr.paint();
     cr.reset_clip();
+}
+
+fn image_to_surface(image: &Image, surface: &mut [u8]) {
+    // Surface is always ARGB.
+    const SURFACE_CHANNELS: usize = 4;
+
+    use backend_utils::image::ImageData;
+    use rgb::FromSlice;
+
+    let mut i = 0;
+
+    let mut to_surface = |r, g, b, a| {
+        let tr = a * r + 0x80;
+        let tg = a * g + 0x80;
+        let tb = a * b + 0x80;
+        surface[i + 0] = (((tb >> 8) + tb) >> 8) as u8;
+        surface[i + 1] = (((tg >> 8) + tg) >> 8) as u8;
+        surface[i + 2] = (((tr >> 8) + tr) >> 8) as u8;
+        surface[i + 3] = a as u8;
+
+        i += SURFACE_CHANNELS;
+    };
+
+    match &image.data {
+        ImageData::RGB(data) => {
+            for p in data.as_rgb() {
+                to_surface(p.r as u32, p.g as u32, p.b as u32, 255);
+            }
+        }
+        ImageData::RGBA(data) => {
+            for p in data.as_rgba() {
+                to_surface(p.r as u32, p.g as u32, p.b as u32, p.a as u32);
+            }
+        }
+    }
 }
 
 pub fn draw_svg(

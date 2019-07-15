@@ -43,6 +43,11 @@ impl ScreenSize {
         self.height
     }
 
+    /// Returns width and height as a tuple.
+    pub fn dimensions(&self) -> (u32, u32) {
+        (self.width, self.height)
+    }
+
     /// Scales current size to specified size.
     pub fn scale_to(&self, to: Self) -> Self {
         size_scale(*self, to, false)

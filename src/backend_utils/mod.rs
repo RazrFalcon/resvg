@@ -10,6 +10,8 @@ use crate::utils;
 pub mod filter;
 pub mod image;
 
+pub use image::Image;
+
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum BlendMode {

@@ -18,3 +18,4 @@ time = "0.1"
 cairo-backend = ["resvg/cairo-backend"]
 qt-backend = ["resvg/qt-backend"]
 raqote-backend = ["resvg/raqote-backend"]
+skia-backend = ["resvg/skia-backend"]
