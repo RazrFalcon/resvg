@@ -14,3 +14,4 @@ env:
     - RESVG_QT_BACKEND=true
     - RESVG_CAIRO_BACKEND=true
     - RESVG_RAQOTE_BACKEND=true
+    - RESVG_SKIA_BACKEND=true

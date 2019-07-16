@@ -10,6 +10,7 @@ from pathlib import Path
 
 
 TESTS_URL = 'https://github.com/RazrFalcon/resvg-test-suite.git'
+SKIA_BUILD_URL = 'https://github.com/RazrFalcon/resvg-skia-ci-build.git'
 
 
 @contextmanager
@@ -28,7 +29,7 @@ def regression_testing(backend):
 
     regression_args = ['./regression.py', tests_dir, reg_work_dir, '--backend', backend]
     # Use a master branch for pull requests.
-    if not local_test and os.environ['TRAVIS_PULL_REQUEST'] == 'false':
+    if not local_test and os.environ['TRAVIS_BRANCH'] == 'master':
         regression_args.append('--use-prev-commit')
 
     run(regression_args, check=True)
@@ -62,6 +63,12 @@ print('tests_dir:', tests_dir)
 if not local_test:
     run(['git', 'clone', TESTS_URL, '--depth', '1', './target/resvg-test-suite'], check=True)
 
+# prepare skia on CI
+if not local_test and 'RESVG_SKIA_BACKEND' in os.environ:
+    run(['git', 'clone', SKIA_BUILD_URL, '--depth', '1'], check=True)
+    os.environ['SKIA_DIR'] = str(Path('./resvg-skia-ci-build').resolve())
+    os.environ['SKIA_LIB_DIR'] = str(Path('./resvg-skia-ci-build/bin').resolve())
+    os.environ['LD_LIBRARY_PATH'] = str(Path('./resvg-skia-ci-build/bin').resolve())
 
 with cd('usvg'):
     run(['cargo', 'test'], check=True)
@@ -109,6 +116,20 @@ if 'RESVG_RAQOTE_BACKEND' in os.environ:
         with cd('testing-tools/regression'):
             try:
                 regression_testing('raqote')
+            except subprocess.CalledProcessError:
+                exit(1)
+
+
+if 'RESVG_SKIA_BACKEND' in os.environ:
+    # build skia backend
+    with cd('tools/rendersvg'):
+        run(['cargo', 'build', '--release', '--features', 'skia-backend'], check=True)
+
+    # regression testing of the cairo backend
+    if not args.no_regression:
+        with cd('testing-tools/regression'):
+            try:
+                regression_testing('skia')
             except subprocess.CalledProcessError:
                 exit(1)
 
@@ -170,3 +191,8 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
 if 'RESVG_RAQOTE_BACKEND' in os.environ:
     # run tests and build examples
     run(['cargo', 'test', '--features', 'raqote-backend'], check=True)
+
+
+if 'RESVG_SKIA_BACKEND' in os.environ:
+    # run tests and build examples
+    run(['cargo', 'test', '--features', 'skia-backend'], check=True)
