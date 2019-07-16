@@ -1,7 +1,7 @@
 [package]
 name = "resvg-skia"
 version = "0.7.0"
-authors = ["JaFenix <51161647+JaFenix@users.noreply.github.com>"]
+authors = ["JaFenix <jspicer@phoenixcontact.com>", "Reizner Evgeniy <razrfalcon@gmail.com>"]
 keywords = ["skia", "ffi"]
 license = "MIT"
 edition = "2018"
