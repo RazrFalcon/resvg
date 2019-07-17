@@ -16,7 +16,7 @@ And as an embeddable library to paint SVG on an application native canvas.
 
 #![doc(html_root_url = "https://docs.rs/resvg/0.7.0")]
 
-//#![forbid(unsafe_code)]
+#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
 #[cfg(feature = "cairo-backend")]
@@ -117,7 +117,7 @@ pub fn default_backend() -> Box<Render> {
     {
         return Box::new(backend_skia::Backend);
     }
-    
+
     #[cfg(feature = "raqote-backend")]
     {
         return Box::new(backend_raqote::Backend);
