@@ -5,16 +5,11 @@
 #![allow(non_camel_case_types)]
 
 use std::ffi::CStr;
-use std::fs;
-use std::io::Write;
 use std::fmt;
 use std::os::raw::c_char;
 use std::path;
 use std::ptr;
 use std::slice;
-
-use resvg::svgdom;
-use svgdom::WriteBuffer;
 
 use log::warn;
 
@@ -718,59 +713,6 @@ pub extern "C" fn resvg_get_node_transform(
 
     false
 }
-
-#[no_mangle]
-pub extern "C" fn resvg_export_usvg(tree: &usvg::Tree, file_path: *const c_char, formatted: bool) -> bool {
-
-    let file_path = match cstr_to_str(file_path) {
-        Some(v) => v,
-        None => {
-            warn!("invalid string parameter");
-            return false;
-        }
-    };
-
-    let mut f = match fs::File::create(file_path) {
-        Ok(f) => f,
-        Err(_) => {
-            warn!("failed to create a file {:?}", file_path);
-            return false;
-        }
-    };
-
-    let opt = {
-
-        if formatted {
-            svgdom::WriteOptions {
-                indent: svgdom::Indent::Spaces(2),
-                attributes_indent: svgdom::Indent::Spaces(3),
-                ..svgdom::WriteOptions::default()
-            }
-        }
-        else {
-            svgdom::WriteOptions {
-                indent: svgdom::Indent::None,
-                attributes_indent: svgdom::Indent::None,
-                ..svgdom::WriteOptions::default()
-            }
-        }
-    };
-
-    let svgdoc = tree.to_svgdom();
-
-    let mut out = Vec::new();
-    svgdoc.write_buf_opt(&opt, &mut out);
-    match f.write_all(&out) {
-        Err(_) => {
-            warn!("failed to write a file {:?}", file_path);
-            return false;
-        }
-        Ok(()) => {}
-    }
-
-    return true;
-}
-
 
 fn cstr_to_str(
     text: *const c_char,

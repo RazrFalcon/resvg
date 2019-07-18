@@ -14,6 +14,9 @@ This changelog also contains important changes in dependencies.
 ### Changed
 - All backend are using the `image` crate for raster images loading now.
 - Use `pico-args` instead of `gumdrop`.
+- (usvg) The `xmlwriter` is used for SVG generation now.
+  Almost 2x faster than generating an `svgdom`.
+- `svgdom` is no longer reexported.
 
 ### Removed
 - (cairo-backend) `gdk-pixbuf` dependency.

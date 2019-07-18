@@ -31,7 +31,7 @@ pub use resvg_skia as skia;
 #[cfg(feature = "raqote-backend")]
 pub use raqote;
 
-pub use usvg::{self, svgdom, Error};
+pub use usvg::{self, Error};
 
 
 #[cfg(feature = "cairo-backend")]

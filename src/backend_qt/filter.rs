@@ -136,7 +136,7 @@ impl Filter<qt::Image> for QtFilter {
                 }
             }
             _ => {
-                warn!("Filter input '{}' is not supported.", input.to_string());
+                warn!("Filter input '{:?}' is not supported.", input);
                 Self::get_input(&usvg::FilterInput::SourceGraphic, region, results, canvas)
             }
         }

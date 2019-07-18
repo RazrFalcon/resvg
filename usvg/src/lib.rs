@@ -63,8 +63,6 @@ Full spec can be found [here](https://github.com/RazrFalcon/usvg/blob/master/doc
 #![warn(missing_debug_implementations)]
 #![warn(missing_copy_implementations)]
 
-pub use svgdom;
-
 /// Unwraps `Option` and invokes `return` on `None`.
 #[macro_export]
 macro_rules! try_opt {
@@ -152,6 +150,8 @@ mod short {
     };
 }
 
+pub use xmlwriter::Options as XmlOptions;
+pub use xmlwriter::Indent as XmlIndent;
 
 pub use crate::error::*;
 pub use crate::geom::*;

@@ -8,7 +8,7 @@ use std::cell::Ref;
 use std::path;
 
 pub use self::{nodes::*, attributes::*};
-use crate::{utils, Rect, Error, Options};
+use crate::{utils, Rect, Error, Options, XmlOptions};
 
 mod attributes;
 mod export;
@@ -67,7 +67,7 @@ impl Tree {
     /// Parses `Tree` from the `svgdom::Document`.
     ///
     /// An empty `Tree` will be returned on any error.
-    pub fn from_dom(mut doc: svgdom::Document, opt: &Options) -> Result<Self, Error> {
+    fn from_dom(mut doc: svgdom::Document, opt: &Options) -> Result<Self, Error> {
         super::convert::prepare_doc(&mut doc);
         super::convert::convert_doc(&doc, opt)
     }
@@ -159,11 +159,9 @@ impl Tree {
         None
     }
 
-    /// Converts the document to `svgdom::Document`.
-    ///
-    /// Used to save document to file for debug purposes.
-    pub fn to_svgdom(&self) -> svgdom::Document {
-        export::convert(self)
+    /// Converts an SVG.
+    pub fn to_string(&self, opt: XmlOptions) -> String {
+        export::convert(self, opt)
     }
 }
 

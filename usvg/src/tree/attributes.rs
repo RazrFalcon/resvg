@@ -44,18 +44,6 @@ macro_rules! enum_from_str {
     };
 }
 
-macro_rules! enum_to_string {
-    ($name:ident, $($value:pat => $string:expr),+) => {
-        impl ToString for $name {
-            fn to_string(&self) -> String {
-                match self {
-                    $($value => $string),+,
-                }.to_string()
-            }
-        }
-    };
-}
-
 
 /// A line cap.
 ///
@@ -74,12 +62,6 @@ enum_from_str!(LineCap,
     "butt"      => LineCap::Butt,
     "round"     => LineCap::Round,
     "square"    => LineCap::Square
-);
-
-enum_to_string!(LineCap,
-    LineCap::Butt   => "butt",
-    LineCap::Round  => "round",
-    LineCap::Square => "square"
 );
 
 
@@ -102,12 +84,6 @@ enum_from_str!(LineJoin,
     "bevel" => LineJoin::Bevel
 );
 
-enum_to_string!(LineJoin,
-    LineJoin::Miter => "miter",
-    LineJoin::Round => "round",
-    LineJoin::Bevel => "bevel"
-);
-
 
 /// A fill rule.
 ///
@@ -126,11 +102,6 @@ enum_from_str!(FillRule,
     "evenodd" => FillRule::EvenOdd
 );
 
-enum_to_string!(FillRule,
-    FillRule::NonZero => "nonzero",
-    FillRule::EvenOdd => "evenodd"
-);
-
 
 /// An element units.
 #[allow(missing_docs)]
@@ -139,11 +110,6 @@ pub enum Units {
     UserSpaceOnUse,
     ObjectBoundingBox,
 }
-
-enum_to_string!(Units,
-    Units::UserSpaceOnUse       => "userSpaceOnUse",
-    Units::ObjectBoundingBox    => "objectBoundingBox"
-);
 
 
 /// A spread method.
@@ -158,12 +124,6 @@ pub enum SpreadMethod {
 }
 
 enum_default!(SpreadMethod, Pad);
-
-enum_to_string!(SpreadMethod,
-    SpreadMethod::Pad       => "pad",
-    SpreadMethod::Reflect   => "reflect",
-    SpreadMethod::Repeat    => "repeat"
-);
 
 
 /// A visibility property.
@@ -183,12 +143,6 @@ enum_from_str!(Visibility,
     "visible"   => Visibility::Visible,
     "hidden"    => Visibility::Hidden,
     "collapse"  => Visibility::Collapse
-);
-
-enum_to_string!(Visibility,
-    Visibility::Visible     => "visible",
-    Visibility::Hidden      => "hidden",
-    Visibility::Collapse    => "collapse"
 );
 
 
@@ -318,16 +272,6 @@ pub enum FilterInput {
     Reference(String),
 }
 
-enum_to_string!(FilterInput,
-    FilterInput::SourceGraphic      => "SourceGraphic",
-    FilterInput::SourceAlpha        => "SourceAlpha",
-    FilterInput::BackgroundImage    => "BackgroundImage",
-    FilterInput::BackgroundAlpha    => "BackgroundAlpha",
-    FilterInput::FillPaint          => "FillPaint",
-    FilterInput::StrokePaint        => "StrokePaint",
-    FilterInput::Reference(ref s)   => s
-);
-
 
 /// A color interpolation mode.
 #[allow(missing_docs)]
@@ -342,11 +286,6 @@ enum_default!(ColorInterpolation, LinearRGB);
 enum_from_str!(ColorInterpolation,
     "sRGB"      => ColorInterpolation::SRGB,
     "linearRGB" => ColorInterpolation::LinearRGB
-);
-
-enum_to_string!(ColorInterpolation,
-    ColorInterpolation::SRGB        => "sRGB",
-    ColorInterpolation::LinearRGB   => "linearRGB"
 );
 
 
@@ -390,14 +329,6 @@ pub enum FeBlendMode {
     Lighten,
 }
 
-enum_to_string!(FeBlendMode,
-    FeBlendMode::Normal     => "normal",
-    FeBlendMode::Multiply   => "multiply",
-    FeBlendMode::Screen     => "screen",
-    FeBlendMode::Darken     => "darken",
-    FeBlendMode::Lighten    => "lighten"
-);
-
 
 /// An images compositing operation.
 #[allow(missing_docs)]
@@ -415,15 +346,6 @@ pub enum FeCompositeOperator {
         k4: CompositingCoefficient,
     },
 }
-
-enum_to_string!(FeCompositeOperator,
-    FeCompositeOperator::Over               => "over",
-    FeCompositeOperator::In                 => "in",
-    FeCompositeOperator::Out                => "out",
-    FeCompositeOperator::Atop               => "atop",
-    FeCompositeOperator::Xor                => "xor",
-    FeCompositeOperator::Arithmetic { .. }  => "arithmetic"
-);
 
 
 /// Kind of the `feImage` data.
@@ -468,12 +390,6 @@ enum_from_str!(ShapeRendering,
     "geometricPrecision"    => ShapeRendering::GeometricPrecision
 );
 
-enum_to_string!(ShapeRendering,
-    ShapeRendering::OptimizeSpeed       => "optimizeSpeed",
-    ShapeRendering::CrispEdges          => "crispEdges",
-    ShapeRendering::GeometricPrecision  => "geometricPrecision"
-);
-
 
 /// A text rendering method.
 ///
@@ -494,12 +410,6 @@ enum_from_str!(TextRendering,
     "geometricPrecision"    => TextRendering::GeometricPrecision
 );
 
-enum_to_string!(TextRendering,
-    TextRendering::OptimizeSpeed       => "optimizeSpeed",
-    TextRendering::OptimizeLegibility  => "optimizeLegibility",
-    TextRendering::GeometricPrecision  => "geometricPrecision"
-);
-
 
 /// An image rendering method.
 ///
@@ -516,9 +426,4 @@ enum_default!(ImageRendering, OptimizeQuality);
 enum_from_str!(ImageRendering,
     "optimizeQuality"   => ImageRendering::OptimizeQuality,
     "optimizeSpeed"     => ImageRendering::OptimizeSpeed
-);
-
-enum_to_string!(ImageRendering,
-    ImageRendering::OptimizeQuality => "optimizeQuality",
-    ImageRendering::OptimizeSpeed   => "optimizeSpeed"
 );

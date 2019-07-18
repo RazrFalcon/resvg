@@ -10,10 +10,6 @@ use std::process;
 
 use pico_args::Arguments;
 
-use usvg::svgdom;
-
-use svgdom::WriteBuffer;
-
 
 fn print_help() {
     print!("\
@@ -78,8 +74,8 @@ struct Args {
     shape_rendering: usvg::ShapeRendering,
     text_rendering: usvg::TextRendering,
     image_rendering: usvg::ImageRendering,
-    indent: svgdom::Indent,
-    attrs_indent: svgdom::Indent,
+    indent: usvg::XmlIndent,
+    attrs_indent: usvg::XmlIndent,
     quiet: bool,
     free: Vec<String>,
 }
@@ -101,9 +97,9 @@ fn collect_args() -> Result<Args, pico_args::Error> {
         text_rendering:     input.value_from_str("--text-rendering")?.unwrap_or_default(),
         image_rendering:    input.value_from_str("--image-rendering")?.unwrap_or_default(),
         indent:             input.value_from_fn("--indent", parse_indent)?
-                                 .unwrap_or(svgdom::Indent::Spaces(4)),
+                                 .unwrap_or(usvg::XmlIndent::Spaces(4)),
         attrs_indent:       input.value_from_fn("--attrs-indent", parse_indent)?
-                                 .unwrap_or(svgdom::Indent::None),
+                                 .unwrap_or(usvg::XmlIndent::None),
         quiet:              input.contains("--quiet"),
         free:               input.free()?,
     })
@@ -142,15 +138,15 @@ fn parse_languages(s: &str) -> Result<Vec<String>, String> {
     Ok(langs)
 }
 
-fn parse_indent(s: &str) -> Result<svgdom::Indent, String> {
+fn parse_indent(s: &str) -> Result<usvg::XmlIndent, String> {
     let indent = match s {
-        "none" => svgdom::Indent::None,
-        "0" => svgdom::Indent::Spaces(0),
-        "1" => svgdom::Indent::Spaces(1),
-        "2" => svgdom::Indent::Spaces(2),
-        "3" => svgdom::Indent::Spaces(3),
-        "4" => svgdom::Indent::Spaces(4),
-        "tabs" => svgdom::Indent::Tabs,
+        "none" => usvg::XmlIndent::None,
+        "0" => usvg::XmlIndent::Spaces(0),
+        "1" => usvg::XmlIndent::Spaces(1),
+        "2" => usvg::XmlIndent::Spaces(2),
+        "3" => usvg::XmlIndent::Spaces(3),
+        "4" => usvg::XmlIndent::Spaces(4),
+        "tabs" => usvg::XmlIndent::Tabs,
         _ => return Err("invalid INDENT value".to_string()),
     };
 
@@ -257,28 +253,23 @@ fn process(args: &Args) -> Result<(), String> {
 
     let tree = usvg::Tree::from_str(&input_str, &re_opt).map_err(|e| format!("{}", e))?;
 
-    let dom_opt = svgdom::WriteOptions {
+    let xml_opt = usvg::XmlOptions {
+        use_single_quote: false,
         indent: args.indent,
         attributes_indent: args.attrs_indent,
-        attributes_order: svgdom::AttributesOrder::Specification,
-        ..svgdom::WriteOptions::default()
     };
 
-    let doc = tree.to_svgdom();
-
-    let mut output_data = Vec::new();
-    doc.write_buf_opt(&dom_opt, &mut output_data);
-
+    let s = tree.to_string(xml_opt);
     match out_svg {
         OutputTo::Stdout => {
             io::stdout()
-                .write_all(&output_data)
+                .write_all(s.as_bytes())
                 .map_err(|_| format!("failed to write to the stdout"))?;
         }
         OutputTo::File(path) => {
             let mut f = File::create(path)
                 .map_err(|_| format!("failed to create the output file"))?;
-            f.write_all(&output_data)
+            f.write_all(s.as_bytes())
                 .map_err(|_| format!("failed to write to the output file"))?;
         }
     }

@@ -8,9 +8,6 @@ use std::io::Write;
 use std::path;
 
 use resvg::prelude::*;
-use resvg::svgdom;
-
-use svgdom::WriteBuffer;
 
 mod args;
 
@@ -168,18 +165,8 @@ fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), String> {
     let mut f = fs::File::create(path)
         .map_err(|_| format!("failed to create a file {:?}", path))?;
 
-    let opt = svgdom::WriteOptions {
-        indent: svgdom::Indent::Spaces(2),
-        attributes_indent: svgdom::Indent::Spaces(3),
-        attributes_order: svgdom::AttributesOrder::Specification,
-        ..svgdom::WriteOptions::default()
-    };
-
-    let svgdoc = tree.to_svgdom();
-
-    let mut out = Vec::new();
-    svgdoc.write_buf_opt(&opt, &mut out);
-    f.write_all(&out).map_err(|_| format!("failed to write a file {:?}", path))?;
+    f.write_all(tree.to_string(usvg::XmlOptions::default()).as_bytes())
+     .map_err(|_| format!("failed to write a file {:?}", path))?;
 
     Ok(())
 }

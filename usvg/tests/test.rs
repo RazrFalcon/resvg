@@ -1,8 +1,5 @@
 #[macro_use] extern crate pretty_assertions;
 
-use usvg::svgdom;
-use crate::svgdom::WriteBuffer;
-
 use std::fmt;
 
 
@@ -25,15 +22,13 @@ macro_rules! test {
             };
             let tree = usvg::Tree::from_str($input, &re_opt).unwrap();
 
-            let dom_opt = svgdom::WriteOptions {
+            let xml_opt = usvg::XmlOptions {
                 use_single_quote: true,
-                attributes_indent: svgdom::Indent::Spaces(4),
-                attributes_order: svgdom::AttributesOrder::Specification,
-                .. svgdom::WriteOptions::default()
+                indent: usvg::XmlIndent::Spaces(4),
+                attributes_indent: usvg::XmlIndent::Spaces(4),
             };
 
-            assert_eq!(MStr(&tree.to_svgdom().with_write_opt(&dom_opt).to_string()),
-                       MStr($output));
+            assert_eq!(MStr(&tree.to_string(xml_opt)), MStr($output));
         }
     };
 }
@@ -44,10 +39,10 @@ test!(minimal, false,
 </svg>
 ",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs/>
@@ -66,10 +61,10 @@ test!(groups, false,
 </svg>
 ",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs/>
@@ -86,10 +81,10 @@ test!(clippath_with_invalid_child, false,
     <rect clip-path='url(#clip1)' width='10' height='10'/>
 </svg>",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs/>
@@ -110,10 +105,10 @@ test!(clippath_with_invalid_children, false,
     <rect clip-path='url(#clip1)' width='10' height='10'/>
 </svg>",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs/>
@@ -128,10 +123,10 @@ test!(group_clippath, false,
     <rect clip-path='url(#clip1)' width='10' height='10'/>
 </svg>",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs>
@@ -157,10 +152,10 @@ test!(ignore_groups_with_id, false,
     </g>
 </svg>",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs/>
@@ -177,10 +172,10 @@ test!(pattern_with_invalid_child, false,
     <rect fill='url(#patt1)' width='10' height='10'/>
 </svg>",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs/>
@@ -197,10 +192,10 @@ test!(pattern_without_children, false,
     <rect fill='url(#patt1)' width='10' height='10'/>
 </svg>",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs/>
@@ -242,11 +237,11 @@ test!(preserve_id, true,
         N1Ib1gAAAABJRU5ErkJggg=='/>
 </svg>",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
-    xmlns:xlink='http://www.w3.org/1999/xlink'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
+    xmlns:xlink='http://www.w3.org/1999/xlink'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs>
@@ -263,11 +258,11 @@ test!(preserve_id, true,
             x2='1'
             y2='0'>
             <stop
-                stop-color='#ffffff'
-                offset='0'/>
+                offset='0'
+                stop-color='#ffffff'/>
             <stop
-                stop-color='#000000'
-                offset='1'/>
+                offset='1'
+                stop-color='#000000'/>
         </linearGradient>
         <radialGradient
             id='rg1'
@@ -277,11 +272,11 @@ test!(preserve_id, true,
             fx='0.5'
             fy='0.5'>
             <stop
-                stop-color='#ffffff'
-                offset='0'/>
+                offset='0'
+                stop-color='#ffffff'/>
             <stop
-                stop-color='#000000'
-                offset='1'/>
+                offset='1'
+                stop-color='#000000'/>
         </radialGradient>
         <pattern
             id='patt1'
@@ -325,10 +320,10 @@ test!(ignore_empty_groups_with_id, true,
     <g id='some_group'/>
 </svg>",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs/>
@@ -342,10 +337,10 @@ test!(keep_groups_with_id, true,
     </g>
 </svg>",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs/>
@@ -362,10 +357,10 @@ test!(simplify_paths_1, false,
     <path d='M 10 20 L 10 30 Z Z Z'/>
 </svg>",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs/>
@@ -382,10 +377,10 @@ test!(group_with_default_opacity, false,
     </g>
 </svg>",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs/>
@@ -403,10 +398,10 @@ test!(group_with_an_invalid_child, false,
     </g>
 </svg>",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs/>
@@ -422,10 +417,10 @@ test!(nested_group_with_an_invalid_child, false,
     </g>
 </svg>",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs/>
@@ -442,10 +437,10 @@ test!(simple_switch, false,
     </switch>
 </svg>",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs/>
@@ -466,10 +461,10 @@ test!(switch_with_opacity, false,
     </switch>
 </svg>",
 "<svg
-    xmlns='http://www.w3.org/2000/svg'
     width='1'
     height='1'
     viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
     xmlns:usvg='https://github.com/RazrFalcon/usvg'
     usvg:version='0.7.0'>
     <defs/>

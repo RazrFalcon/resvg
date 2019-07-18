@@ -214,7 +214,6 @@ fn regroup_elements(
         }
 
         let mut g_node = doc.create_element(EId::G);
-        g_node.set_attribute(("usvg-group", 1));
 
         {
             let attrs = node.attributes();
