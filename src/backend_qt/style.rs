@@ -2,11 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
 use crate::qt;
+use usvg::try_opt;
 
-// self
-use super::prelude::*;
+use crate::prelude::*;
+use crate::backend_utils::{ConvTransform, FlatRender};
+use super::QtFlatRender;
 
 
 pub fn fill(
@@ -208,10 +209,8 @@ fn prepare_pattern(
     let global_ts = usvg::Transform::from_native(&global_ts);
     let (sx, sy) = global_ts.get_scale();
 
-    let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy), ()).to_screen_size();
+    let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy)).to_screen_size();
     let mut img = try_create_image!(img_size, ());
-
-    img.set_dpi(opt.usvg.dpi);
     img.fill(0, 0, 0, 0);
 
     let mut p = qt::Painter::new(&mut img);
@@ -228,9 +227,10 @@ fn prepare_pattern(
         p.scale(bbox.width(), bbox.height());
     }
 
-    let mut layers = super::create_layers(img_size, opt);
-    super::render_group(pattern_node, opt, &mut layers, &mut p);
-    p.end();
+    let ref tree = pattern_node.tree();
+    let mut render = QtFlatRender::new(tree, opt, img_size, &mut p);
+    render.render_group(pattern_node);
+    render.finish();
 
     let img = if !opacity.is_default() {
         // If `opacity` isn't `1` then we have to make image semitransparent.

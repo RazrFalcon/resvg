@@ -4,22 +4,18 @@
 
 //! Qt backend implementation.
 
-// external
 use crate::qt;
+use log::warn;
+use usvg::try_opt;
 
-// self
 use crate::prelude::*;
-use crate::{
-    backend_utils,
-    layers,
-    OutputImage,
-    Render,
-};
+use crate::layers::{self, Layer, Layers};
+use crate::backend_utils::{self, FlatRender, ConvTransform, BlendMode};
 
 
 macro_rules! try_create_image {
     ($size:expr, $ret:expr) => {
-        try_opt_warn!(
+        usvg::try_opt_warn_or!(
             qt::Image::new_rgba_premultiplied($size.width(), $size.height()),
             $ret,
             "Failed to create a {}x{} image.", $size.width(), $size.height()
@@ -28,20 +24,11 @@ macro_rules! try_create_image {
 }
 
 
-mod clip_and_mask;
 mod filter;
 mod image;
 mod path;
 mod style;
-mod text;
 
-mod prelude {
-    pub use super::super::prelude::*;
-    pub type QtLayers = super::layers::Layers<super::qt::Image>;
-}
-
-
-type QtLayers = layers::Layers<qt::Image>;
 
 impl ConvTransform<qt::Transform> for usvg::Transform {
     fn to_native(&self) -> qt::Transform {
@@ -54,11 +41,6 @@ impl ConvTransform<qt::Transform> for usvg::Transform {
     }
 }
 
-impl TransformFromBBox for qt::Transform {
-    fn from_bbox(bbox: Rect) -> Self {
-        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
-    }
-}
 
 /// Cairo backend handle.
 #[derive(Clone, Copy)]
@@ -82,18 +64,13 @@ impl Render for Backend {
         let img = render_node_to_image(node, opt)?;
         Some(Box::new(img))
     }
-
-    fn calc_node_bbox(
-        &self,
-        node: &usvg::Node,
-        opt: &Options,
-    ) -> Option<Rect> {
-        calc_node_bbox(node, opt)
-    }
 }
 
 impl OutputImage for qt::Image {
-    fn save(&self, path: &::std::path::Path) -> bool {
+    fn save(
+        &self,
+        path: &std::path::Path,
+    ) -> bool {
         self.save(path.to_str().unwrap())
     }
 }
@@ -117,7 +94,7 @@ pub fn render_node_to_image(
     node: &usvg::Node,
     opt: &Options,
 ) -> Option<qt::Image> {
-    let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
+    let node_bbox = if let Some(bbox) = node.calculate_bbox() {
         bbox
     } else {
         warn!("Node '{}' has zero size.", node.id());
@@ -145,8 +122,7 @@ pub fn render_to_canvas(
     img_size: ScreenSize,
     painter: &mut qt::Painter,
 ) {
-    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box,
-                          img_size, painter);
+    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, painter);
 }
 
 /// Renders SVG node to canvas.
@@ -157,18 +133,15 @@ pub fn render_node_to_canvas(
     img_size: ScreenSize,
     painter: &mut qt::Painter,
 ) {
-    let mut layers = create_layers(img_size, opt);
+    let tree = node.tree();
+    let mut render = QtFlatRender::new(&tree, opt, img_size, painter);
 
-    apply_viewbox_transform(view_box, img_size, painter);
-
-    let curr_ts = painter.get_transform();
-
-    let mut ts = utils::abs_transform(node);
+    let mut ts = node.abs_transform();
     ts.append(&node.transform());
 
-    painter.apply_transform(&ts.to_native());
-    render_node(node, opt, &mut layers, painter);
-    painter.set_transform(&curr_ts);
+    render.apply_viewbox(view_box, img_size);
+    render.apply_transform(ts);
+    render.render_node(node);
 }
 
 fn create_root_image(
@@ -185,262 +158,191 @@ fn create_root_image(
     } else {
         img.fill(0, 0, 0, 0);
     }
-    img.set_dpi(opt.usvg.dpi);
 
     Some((img, img_size))
 }
 
-/// Applies viewbox transformation to the painter.
-fn apply_viewbox_transform(
-    view_box: usvg::ViewBox,
-    img_size: ScreenSize,
-    painter: &mut qt::Painter,
-) {
-    let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_size());
-    painter.apply_transform(&ts.to_native());
-}
-
-fn render_node(
-    node: &usvg::Node,
-    opt: &Options,
-    layers: &mut QtLayers,
-    p: &mut qt::Painter,
-) -> Option<Rect> {
-    match *node.borrow() {
-        usvg::NodeKind::Svg(_) => {
-            Some(render_group(node, opt, layers, p))
+impl Into<qt::CompositionMode> for BlendMode {
+    fn into(self) -> qt::CompositionMode {
+        match self {
+            BlendMode::SourceOver => qt::CompositionMode::SourceOver,
+            BlendMode::Clear => qt::CompositionMode::Clear,
+            BlendMode::DestinationIn => qt::CompositionMode::DestinationIn,
+            BlendMode::DestinationOut => qt::CompositionMode::DestinationOut,
+            BlendMode::Xor => qt::CompositionMode::Xor,
         }
-        usvg::NodeKind::Path(ref path) => {
-            path::draw(&node.tree(), path, opt, p)
-        }
-        usvg::NodeKind::Text(ref text) => {
-            Some(text::draw(&node.tree(), text, opt, p))
-        }
-        usvg::NodeKind::Image(ref img) => {
-            Some(image::draw(img, opt, p))
-        }
-        usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, layers, p)
-        }
-        _ => None,
     }
 }
 
-fn render_group(
-    parent: &usvg::Node,
-    opt: &Options,
-    layers: &mut QtLayers,
-    p: &mut qt::Painter,
-) -> Rect {
-    let curr_ts = p.get_transform();
-    let mut g_bbox = Rect::new_bbox();
+impl layers::Image for qt::Image {
+    fn new(size: ScreenSize) -> Option<Self> {
+        let mut img = try_create_image!(size, None);
+        img.fill(0, 0, 0, 0);
+        Some(img)
+    }
 
-    for node in parent.children() {
-        p.apply_transform(&node.transform().to_native());
+    fn clear(&mut self) {
+        self.fill(0, 0, 0, 0);
+    }
+}
 
-        let bbox = render_node(&node, opt, layers, p);
-        if let Some(bbox) = bbox {
-            if let Some(bbox) = bbox.transform(&node.transform()) {
-                g_bbox = g_bbox.expand(bbox);
+struct QtFlatRender<'a> {
+    tree: &'a usvg::Tree,
+    opt: &'a Options,
+    painter: &'a mut qt::Painter,
+    layers: Layers<qt::Image>,
+}
+
+impl<'a> QtFlatRender<'a> {
+    fn new(
+        tree: &'a usvg::Tree,
+        opt: &'a Options,
+        img_size: ScreenSize,
+        painter: &'a mut qt::Painter,
+    ) -> Self {
+        QtFlatRender {
+            tree,
+            opt,
+            painter,
+            layers: Layers::new(img_size),
+        }
+    }
+
+    fn new_painter(layer: &mut Layer<qt::Image>) -> qt::Painter {
+        let mut p = qt::Painter::new(&mut layer.img);
+        p.set_transform(&layer.ts.to_native());
+        p.set_composition_mode(layer.blend_mode.into());
+
+        if let Some(rect) = layer.clip_rect {
+            p.set_clip_rect(rect.x(), rect.y(), rect.width(), rect.height());
+        }
+
+        p
+    }
+
+    fn paint<F>(&mut self, f: F)
+        where F: FnOnce(&usvg::Tree, &Options, &mut qt::Painter)
+    {
+        match self.layers.current_mut() {
+            Some(layer) => {
+                let mut p = Self::new_painter(layer);
+                f(self.tree, self.opt, &mut p);
             }
-        }
-
-        // Revert transform.
-        p.set_transform(&curr_ts);
-    }
-
-    g_bbox
-}
-
-fn render_group_impl(
-    node: &usvg::Node,
-    g: &usvg::Group,
-    opt: &Options,
-    layers: &mut QtLayers,
-    p: &mut qt::Painter,
-) -> Option<Rect> {
-    let sub_img = layers.get()?;
-    let mut sub_img = sub_img.borrow_mut();
-
-    let curr_ts = p.get_transform();
-
-    let bbox = {
-        let mut sub_p = qt::Painter::new(&mut sub_img);
-        sub_p.set_transform(&curr_ts);
-
-        render_group(node, opt, layers, &mut sub_p)
-    };
-
-    if let Some(ref id) = g.filter {
-        if let Some(filter_node) = node.tree().defs_by_id(id) {
-            if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
-                let ts = usvg::Transform::from_native(&curr_ts);
-                filter::apply(filter, bbox, &ts, opt, &mut sub_img);
+            None => {
+                f(self.tree, self.opt, self.painter);
             }
         }
     }
-
-    if let Some(ref id) = g.clip_path {
-        if let Some(clip_node) = node.tree().defs_by_id(id) {
-            if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                let mut sub_p = qt::Painter::new(&mut sub_img);
-                sub_p.set_transform(&curr_ts);
-
-                clip_and_mask::clip(&clip_node, cp, opt, bbox, layers, &mut sub_p);
-            }
-        }
-    }
-
-    if let Some(ref id) = g.mask {
-        if let Some(mask_node) = node.tree().defs_by_id(id) {
-            if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                let mut sub_p = qt::Painter::new(&mut sub_img);
-                sub_p.set_transform(&curr_ts);
-
-                clip_and_mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_p);
-            }
-        }
-    }
-
-    if !g.opacity.is_default() {
-        p.set_opacity(g.opacity.value());
-    }
-
-    let curr_ts = p.get_transform();
-    p.set_transform(&qt::Transform::default());
-
-    p.draw_image(0.0, 0.0, &sub_img);
-
-    p.set_opacity(1.0);
-    p.set_transform(&curr_ts);
-
-    Some(bbox)
 }
 
-/// Calculates node's absolute bounding box.
-///
-/// Note: this method can be pretty expensive.
-pub fn calc_node_bbox(
-    node: &usvg::Node,
-    opt: &Options,
-) -> Option<Rect> {
-    // Unwrap can't fail, because `None` will be returned only on OOM,
-    // and we cannot hit it with a such small image.
-    let mut img = qt::Image::new_rgba_premultiplied(1, 1).unwrap();
-    img.set_dpi(opt.usvg.dpi);
-    let mut p = qt::Painter::new(&mut img);
+impl<'a> FlatRender for QtFlatRender<'a> {
+    fn draw_path(&mut self, path: &usvg::Path, bbox: Option<Rect>) {
+        self.paint(|tree, opt, p| {
+            path::draw(tree, path, opt, bbox, p);
+        });
+    }
 
-    let abs_ts = utils::abs_transform(node);
-    _calc_node_bbox(node, opt, abs_ts, &mut p)
-}
+    fn draw_svg_image(&mut self, image: &usvg::Image) {
+        self.paint(|_, opt, p| {
+            image::draw_svg(&image.data, image.view_box, opt, p);
+        });
+    }
 
-fn _calc_node_bbox(
-    node: &usvg::Node,
-    opt: &Options,
-    ts: usvg::Transform,
-    p: &mut qt::Painter,
-) -> Option<Rect> {
-    let mut ts2 = ts;
-    ts2.append(&node.transform());
+    fn draw_raster_image(&mut self, image: &usvg::Image) {
+        self.paint(|_, opt, p| {
+            image::draw_raster(
+                image.format, &image.data, image.view_box, image.rendering_mode, opt, p,
+            );
+        });
+    }
 
-    match *node.borrow() {
-        usvg::NodeKind::Path(ref path) => {
-            utils::path_bbox(&path.segments, path.stroke.as_ref(), Some(ts2))
+    fn filter(&mut self, filter: &usvg::Filter, bbox: Option<Rect>, ts: usvg::Transform) {
+        if let Some(layer) = self.layers.current_mut() {
+            filter::apply(filter, bbox, &ts, &self.opt, &mut layer.img);
         }
-        usvg::NodeKind::Text(ref text) => {
-            let mut bbox = Rect::new_bbox();
-            let mut fm = text::QtFontMetrics::new(p);
-            let (blocks, _) = backend_utils::text::prepare_blocks(text, &mut fm);
-            backend_utils::text::draw_blocks(blocks, |block| {
-                let mut p_path = qt::PainterPath::new();
-                p_path.add_text(0.0, 0.0, &block.font, &block.text);
+    }
 
-                let y = block.bbox.y() + block.font_ascent;
+    fn fill_layer(&mut self, r: u8, g: u8, b: u8, a: u8) {
+        if let Some(layer) = self.layers.current_mut() {
+            layer.img.fill(r, g, b, a);
+        }
+    }
 
-                let mut t = ts2;
-                if let Some(rotate) = block.rotate {
-                    t.rotate_at(rotate, block.bbox.x(), y);
+    fn push_layer(&mut self) -> Option<()> {
+        self.layers.push()
+    }
+
+    fn pop_layer(&mut self, opacity: usvg::Opacity, mode: BlendMode) {
+        let last = try_opt!(self.layers.pop());
+        match self.layers.current_mut() {
+            Some(prev) => {
+                let mut painter = qt::Painter::new(&mut prev.img);
+
+                if !opacity.is_default() {
+                    painter.set_opacity(opacity.value());
                 }
-                t.translate(block.bbox.x(), y);
 
-                let segments = from_qt_path(&p_path);
-                if !segments.is_empty() {
-                    if let Some(c_bbox) = utils::path_bbox(&segments, block.stroke.as_ref(), Some(t)) {
-                        bbox = bbox.expand(c_bbox);
-                    }
+                painter.set_composition_mode(mode.into());
+                painter.draw_image(0.0, 0.0, &last.img);
+            }
+            None => {
+                if !opacity.is_default() {
+                    self.painter.set_opacity(opacity.value());
                 }
-            });
 
-            Some(bbox)
-        }
-        usvg::NodeKind::Image(ref img) => {
-            let segments = utils::rect_to_path(img.view_box.rect);
-            utils::path_bbox(&segments, None, Some(ts2))
-        }
-        usvg::NodeKind::Group(_) => {
-            let mut bbox = Rect::new_bbox();
+                let curr_ts = self.painter.get_transform();
+                self.reset_transform();
+                self.painter.set_composition_mode(mode.into());
+                self.painter.draw_image(0.0, 0.0, &last.img);
 
-            for child in node.children() {
-                if let Some(c_bbox) = _calc_node_bbox(&child, opt, ts2, p) {
-                    bbox = bbox.expand(c_bbox);
-                }
-            }
-
-            Some(bbox)
-        }
-        _ => None
-    }
-}
-
-fn from_qt_path(p_path: &qt::PainterPath) -> Vec<usvg::PathSegment> {
-    let mut segments = Vec::with_capacity(p_path.len() as usize);
-    let p_path_len = p_path.len();
-    let mut i = 0;
-    while i < p_path_len {
-        let (kind, x, y) = p_path.get(i);
-        match kind {
-            qt::PathSegmentType::MoveTo => {
-                segments.push(usvg::PathSegment::MoveTo { x, y });
-            }
-            qt::PathSegmentType::LineTo => {
-                segments.push(usvg::PathSegment::LineTo { x, y });
-            }
-            qt::PathSegmentType::CurveTo => {
-                let (_, x1, y1) = p_path.get(i + 1);
-                let (_, x2, y2) = p_path.get(i + 2);
-
-                segments.push(usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
-
-                i += 2;
+                // Reset.
+                self.painter.set_opacity(1.0);
+                self.painter.set_composition_mode(qt::CompositionMode::SourceOver);
+                self.painter.set_transform(&curr_ts);
             }
         }
 
-        i += 1;
+        self.layers.push_back(last);
     }
 
-    if segments.len() == 1 {
-        segments.clear();
+    fn apply_mask(&mut self) {
+        let img_size = self.layers.img_size();
+        if let Some(layer) = self.layers.current_mut() {
+            backend_utils::image_to_mask(&mut layer.img.data_mut(), img_size);
+        }
     }
 
-    segments
-}
+    fn set_composition_mode(&mut self, mode: BlendMode) {
+        match self.layers.current_mut() {
+            Some(layer) => layer.blend_mode = mode,
+            None => self.painter.set_composition_mode(mode.into()),
+        }
+    }
 
-fn create_layers(img_size: ScreenSize, opt: &Options) -> QtLayers {
-    layers::Layers::new(img_size, opt.usvg.dpi, create_subimage, clear_image)
-}
+    fn set_clip_rect(&mut self, rect: Rect) {
+        match self.layers.current_mut() {
+            Some(layer) => layer.clip_rect = Some(rect),
+            None => self.painter.set_clip_rect(rect.x(), rect.y(), rect.width(), rect.height()),
+        }
+    }
 
-fn create_subimage(
-    size: ScreenSize,
-    dpi: f64,
-) -> Option<qt::Image> {
-    let mut img = try_create_image!(size, None);
+    fn get_transform(&self) -> usvg::Transform {
+        match self.layers.current() {
+            Some(layer) => layer.ts,
+            None => usvg::Transform::from_native(&self.painter.get_transform()),
+        }
+    }
 
-    img.fill(0, 0, 0, 0);
-    img.set_dpi(dpi);
+    fn set_transform(&mut self, ts: usvg::Transform) {
+        match self.layers.current_mut() {
+            Some(layer) => layer.ts = ts,
+            None => self.painter.set_transform(&ts.to_native()),
+        }
+    }
 
-    Some(img)
-}
-
-fn clear_image(img: &mut qt::Image) {
-    img.fill(0, 0, 0, 0);
+    fn finish(&mut self) {
+        if self.layers.is_empty() {
+            self.painter.end();
+        }
+    }
 }

@@ -2,682 +2,647 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use base64;
-use svgdom::{
-    self,
-    NumberList,
-};
-use log::warn;
+use std::io::Write;
+use std::ops::Deref;
 
-// self
+use svgdom::WriteBuffer;
+use xmlwriter::XmlWriter;
+
 use super::*;
-use crate::geom::*;
-use crate::short::{
-    AId,
-    AValue,
-    EId,
-};
-use crate::IsDefault;
+use crate::{geom::*, IsDefault};
 
 
-pub fn convert(tree: &Tree) -> svgdom::Document {
-    let mut new_doc = svgdom::Document::new();
-
-    let mut svg = new_doc.create_element(EId::Svg);
-    new_doc.root().append(svg.clone());
+pub fn convert(tree: &Tree, opt: XmlOptions) -> String {
+    let mut xml = XmlWriter::new(opt);
 
     let svg_node = tree.svg_node();
 
-    svg.set_attribute((AId::Width,  svg_node.size.width()));
-    svg.set_attribute((AId::Height, svg_node.size.height()));
-    conv_viewbox(&svg_node.view_box, &mut svg);
-    svg.set_attribute((("xmlns:usvg"), "https://github.com/RazrFalcon/usvg"));
-    svg.set_attribute((("usvg:version"), env!("CARGO_PKG_VERSION")));
+    xml.start_element("svg");
+    xml.write_attribute("width", &svg_node.size.width());
+    xml.write_attribute("height", &svg_node.size.height());
+    xml.write_viewbox(&svg_node.view_box);
+    xml.write_attribute("xmlns", "http://www.w3.org/2000/svg");
+    if has_xlink(tree) {
+        xml.write_attribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+    }
+    xml.write_attribute("xmlns:usvg", "https://github.com/RazrFalcon/usvg");
+    xml.write_attribute("usvg:version", env!("CARGO_PKG_VERSION"));
 
-    let mut defs = new_doc.create_element(EId::Defs);
-    svg.append(defs.clone());
+    xml.start_element("defs");
+    conv_defs(tree, &mut xml);
+    xml.end_element();
 
-    conv_defs(tree, &mut new_doc, &mut defs);
-    conv_elements(tree, &tree.root(), &defs, &mut new_doc, &mut svg);
+    conv_elements(&tree.root(), false, &mut xml);
 
-    new_doc
+    xml.end_document()
 }
 
 fn conv_defs(
     tree: &Tree,
-    new_doc: &mut svgdom::Document,
-    defs: &mut svgdom::Node,
+    xml: &mut XmlWriter,
 ) {
-    let mut later_nodes = Vec::new();
-    let mut link_later = Vec::new();
-
     for n in tree.defs().children() {
         match *n.borrow() {
             NodeKind::LinearGradient(ref lg) => {
-                let mut grad_elem = new_doc.create_element(EId::LinearGradient);
-                defs.append(grad_elem.clone());
-
-                grad_elem.set_id(lg.id.clone());
-
-                grad_elem.set_attribute((AId::X1, lg.x1));
-                grad_elem.set_attribute((AId::Y1, lg.y1));
-                grad_elem.set_attribute((AId::X2, lg.x2));
-                grad_elem.set_attribute((AId::Y2, lg.y2));
-
-                conv_base_grad(&lg.base, new_doc, &mut grad_elem);
+                xml.start_element("linearGradient");
+                xml.write_attribute("id", &lg.id);
+                xml.write_attribute("x1", &lg.x1);
+                xml.write_attribute("y1", &lg.y1);
+                xml.write_attribute("x2", &lg.x2);
+                xml.write_attribute("y2", &lg.y2);
+                write_base_grad(&lg.base, xml);
+                xml.end_element();
             }
             NodeKind::RadialGradient(ref rg) => {
-                let mut grad_elem = new_doc.create_element(EId::RadialGradient);
-                defs.append(grad_elem.clone());
-
-                grad_elem.set_id(rg.id.clone());
-
-                grad_elem.set_attribute((AId::Cx, rg.cx));
-                grad_elem.set_attribute((AId::Cy, rg.cy));
-                grad_elem.set_attribute((AId::R,  rg.r.value()));
-                grad_elem.set_attribute((AId::Fx, rg.fx));
-                grad_elem.set_attribute((AId::Fy, rg.fy));
-
-                conv_base_grad(&rg.base, new_doc, &mut grad_elem);
+                xml.start_element("radialGradient");
+                xml.write_attribute("id", &rg.id);
+                xml.write_attribute("cx", &rg.cx);
+                xml.write_attribute("cy", &rg.cy);
+                xml.write_attribute("r",  &rg.r.value());
+                xml.write_attribute("fx", &rg.fx);
+                xml.write_attribute("fy", &rg.fy);
+                write_base_grad(&rg.base, xml);
+                xml.end_element();
             }
             NodeKind::ClipPath(ref clip) => {
-                let mut clip_elem = new_doc.create_element(EId::ClipPath);
-                defs.append(clip_elem.clone());
-
-                clip_elem.set_id(clip.id.clone());
-
-                conv_units(AId::ClipPathUnits, clip.units, Units::UserSpaceOnUse, &mut clip_elem);
-
-                conv_transform(AId::Transform, &clip.transform, &mut clip_elem);
+                xml.start_element("clipPath");
+                xml.write_attribute("id", &clip.id);
+                xml.write_units("clipPathUnits", clip.units, Units::UserSpaceOnUse);
+                xml.write_transform("transform", clip.transform);
 
                 if let Some(ref id) = clip.clip_path {
-                    link_later.push((id.clone(), AId::ClipPath, clip_elem.clone()));
+                    xml.write_func_iri("clip-path", id);
                 }
 
-                later_nodes.push((n.clone(), clip_elem.clone()));
+                conv_elements(&n, true, xml);
+
+                xml.end_element();
             }
             NodeKind::Mask(ref mask) => {
-                let mut mask_elem = new_doc.create_element(EId::Mask);
-                defs.append(mask_elem.clone());
-
-                mask_elem.set_id(mask.id.clone());
-
-                conv_units(AId::MaskUnits, mask.units, Units::ObjectBoundingBox, &mut mask_elem);
-                conv_units(AId::MaskContentUnits, mask.content_units, Units::UserSpaceOnUse, &mut mask_elem);
-                conv_rect(mask.rect, &mut mask_elem);
+                xml.start_element("mask");
+                xml.write_attribute("id", &mask.id);
+                xml.write_units("maskUnits", mask.units, Units::ObjectBoundingBox);
+                xml.write_units("maskContentUnits", mask.content_units, Units::UserSpaceOnUse);
+                xml.write_rect_attrs(mask.rect);
 
                 if let Some(ref id) = mask.mask {
-                    link_later.push((id.clone(), AId::Mask, mask_elem.clone()));
+                    xml.write_func_iri("mask", id);
                 }
 
-                later_nodes.push((n.clone(), mask_elem.clone()));
+                conv_elements(&n, false, xml);
+
+                xml.end_element();
             }
             NodeKind::Pattern(ref pattern) => {
-                let mut pattern_elem = new_doc.create_element(EId::Pattern);
-                defs.append(pattern_elem.clone());
+                xml.start_element("pattern");
+                xml.write_attribute("id", &pattern.id);
+                xml.write_rect_attrs(pattern.rect);
+                xml.write_units("patternUnits", pattern.units, Units::ObjectBoundingBox);
+                xml.write_units("patternContentUnits", pattern.content_units, Units::UserSpaceOnUse);
+                xml.write_transform("patternTransform", pattern.transform);
 
-                pattern_elem.set_id(pattern.id.clone());
-
-                conv_rect(pattern.rect, &mut pattern_elem);
-
-                if let Some(vbox) = pattern.view_box {
-                    conv_viewbox(&vbox, &mut pattern_elem);
+                if let Some(ref vbox) = pattern.view_box {
+                    xml.write_viewbox(vbox);
                 }
 
-                conv_units(AId::PatternUnits, pattern.units, Units::ObjectBoundingBox, &mut pattern_elem);
-                conv_units(AId::PatternContentUnits, pattern.content_units, Units::UserSpaceOnUse, &mut pattern_elem);
+                conv_elements(&n, false, xml);
 
-                conv_transform(AId::PatternTransform, &pattern.transform, &mut pattern_elem);
-                later_nodes.push((n.clone(), pattern_elem.clone()));
+                xml.end_element();
             }
             NodeKind::Filter(ref filter) => {
-                let mut filter_elem = new_doc.create_element(EId::Filter);
-                defs.append(filter_elem.clone());
-
-                filter_elem.set_id(filter.id.clone());
-
-                conv_rect(filter.rect, &mut filter_elem);
-
-                conv_units(AId::FilterUnits, filter.units, Units::ObjectBoundingBox, &mut filter_elem);
-                conv_units(AId::PrimitiveUnits, filter.primitive_units, Units::UserSpaceOnUse, &mut filter_elem);
+                xml.start_element("filter");
+                xml.write_attribute("id", &filter.id);
+                xml.write_rect_attrs(filter.rect);
+                xml.write_units("filterUnits", filter.units, Units::ObjectBoundingBox);
+                xml.write_units("primitiveUnits", filter.primitive_units, Units::UserSpaceOnUse);
 
                 for fe in &filter.children {
-                    let mut fe_elem = match fe.kind {
+                    match fe.kind {
                         FilterKind::FeGaussianBlur(ref blur) => {
-                            let mut fe_elem = new_doc.create_element(EId::FeGaussianBlur);
-                            filter_elem.append(fe_elem.clone());
-
-                            let std_dev = NumberList(vec![
-                                blur.std_dev_x.value(),
-                                blur.std_dev_y.value()
-                            ]);
-                            fe_elem.set_attribute((AId::StdDeviation, std_dev));
-
-                            fe_elem.set_attribute((AId::In, blur.input.to_string()));
-
-                            fe_elem
+                            xml.start_element("feGaussianBlur");
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_filter_input("in", &blur.input);
+                            xml.write_attribute_fmt(
+                                "stdDeviation",
+                                format_args!("{} {}", blur.std_dev_x.value(), blur.std_dev_y.value()),
+                            );
+                            xml.write_attribute("result", &fe.result);
+                            xml.end_element();
                         }
                         FilterKind::FeOffset(ref offset) => {
-                            let mut fe_elem = new_doc.create_element(EId::FeOffset);
-                            filter_elem.append(fe_elem.clone());
-
-                            fe_elem.set_attribute((AId::Dx, offset.dx));
-                            fe_elem.set_attribute((AId::Dy, offset.dy));
-
-                            fe_elem.set_attribute((AId::In, offset.input.to_string()));
-
-                            fe_elem
+                            xml.start_element("feOffset");
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_filter_input("in", &offset.input);
+                            xml.write_attribute("dx", &offset.dx);
+                            xml.write_attribute("dy", &offset.dy);
+                            xml.write_attribute("result", &fe.result);
+                            xml.end_element();
                         }
                         FilterKind::FeBlend(ref blend) => {
-                            let mut fe_elem = new_doc.create_element(EId::FeBlend);
-                            filter_elem.append(fe_elem.clone());
-
-                            fe_elem.set_attribute((AId::Mode, blend.mode.to_string()));
-                            fe_elem.set_attribute((AId::In, blend.input1.to_string()));
-                            fe_elem.set_attribute((AId::In2, blend.input2.to_string()));
-
-                            fe_elem
+                            xml.start_element("feBlend");
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_filter_input("in", &blend.input1);
+                            xml.write_filter_input("in2", &blend.input2);
+                            xml.write_attribute("mode", match blend.mode {
+                                FeBlendMode::Normal     => "normal",
+                                FeBlendMode::Multiply   => "multiply",
+                                FeBlendMode::Screen     => "screen",
+                                FeBlendMode::Darken     => "darken",
+                                FeBlendMode::Lighten    => "lighten",
+                            });
+                            xml.write_attribute("result", &fe.result);
+                            xml.end_element();
                         }
                         FilterKind::FeFlood(ref flood) => {
-                            let mut fe_elem = new_doc.create_element(EId::FeFlood);
-                            filter_elem.append(fe_elem.clone());
-
-                            fe_elem.set_attribute((AId::FloodColor, flood.color));
-                            fe_elem.set_attribute((AId::FloodOpacity, flood.opacity.value()));
-
-                            fe_elem
+                            xml.start_element("feFlood");
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_attribute("flood-color", &flood.color);
+                            xml.write_attribute("flood-opacity", &flood.opacity.value());
+                            xml.write_attribute("result", &fe.result);
+                            xml.end_element();
                         }
                         FilterKind::FeComposite(ref composite) => {
-                            let mut fe_elem = new_doc.create_element(EId::FeComposite);
-                            filter_elem.append(fe_elem.clone());
-
-                            fe_elem.set_attribute((AId::Operator, composite.operator.to_string()));
+                            xml.start_element("feComposite");
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_filter_input("in", &composite.input1);
+                            xml.write_filter_input("in2", &composite.input2);
+                            xml.write_attribute("operator", match composite.operator {
+                                FeCompositeOperator::Over               => "over",
+                                FeCompositeOperator::In                 => "in",
+                                FeCompositeOperator::Out                => "out",
+                                FeCompositeOperator::Atop               => "atop",
+                                FeCompositeOperator::Xor                => "xor",
+                                FeCompositeOperator::Arithmetic { .. }  => "arithmetic",
+                            });
 
                             match composite.operator {
                                 FeCompositeOperator::Arithmetic { k1, k2, k3, k4 } => {
-                                    fe_elem.set_attribute((AId::K1, k1.value()));
-                                    fe_elem.set_attribute((AId::K2, k2.value()));
-                                    fe_elem.set_attribute((AId::K3, k3.value()));
-                                    fe_elem.set_attribute((AId::K4, k4.value()));
+                                    xml.write_attribute("k1", &k1.value());
+                                    xml.write_attribute("k2", &k2.value());
+                                    xml.write_attribute("k3", &k3.value());
+                                    xml.write_attribute("k4", &k4.value());
                                 }
                                 _ => {}
                             }
 
-                            fe_elem.set_attribute((AId::In, composite.input1.to_string()));
-                            fe_elem.set_attribute((AId::In2, composite.input2.to_string()));
-
-                            fe_elem
+                            xml.write_attribute("result", &fe.result);
+                            xml.end_element();
                         }
                         FilterKind::FeMerge(ref merge) => {
-                            let mut fe_elem = new_doc.create_element(EId::FeMerge);
-                            filter_elem.append(fe_elem.clone());
-
+                            xml.start_element("feMerge");
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_attribute("result", &fe.result);
                             for input in &merge.inputs {
-                                let mut child_elem = new_doc.create_element(EId::FeMergeNode);
-                                fe_elem.append(child_elem.clone());
-
-                                child_elem.set_attribute((AId::In, input.to_string()));
+                                xml.start_element("feMergeNode");
+                                xml.write_filter_input("in", &input);
+                                xml.end_element();
                             }
 
-                            fe_elem
+                            xml.end_element();
                         }
                         FilterKind::FeTile(ref tile) => {
-                            let mut fe_elem = new_doc.create_element(EId::FeTile);
-                            filter_elem.append(fe_elem.clone());
-
-                            fe_elem.set_attribute((AId::In, tile.input.to_string()));
-
-                            fe_elem
+                            xml.start_element("feTile");
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_filter_input("in", &tile.input);
+                            xml.write_attribute("result", &fe.result);
+                            xml.end_element();
                         }
                         FilterKind::FeImage(ref img) => {
-                            let mut fe_elem = new_doc.create_element(EId::FeImage);
-                            filter_elem.append(fe_elem.clone());
-
+                            xml.start_element("feImage");
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_aspect(img.aspect);
+                            xml.write_attribute("imageRendering", match img.rendering_mode {
+                                ImageRendering::OptimizeQuality => "optimizeQuality",
+                                ImageRendering::OptimizeSpeed   => "optimizeSpeed",
+                            });
                             match img.data {
                                 FeImageKind::None => {}
                                 FeImageKind::Image(ref data, format) => {
-                                    let href = conv_image_data(data, format);
-                                    fe_elem.set_attribute((AId::Href, href));
+                                    xml.write_image_data(data, format);
                                 }
                                 FeImageKind::Use(..) => {}
                             }
 
-                            fe_elem.set_attribute((AId::PreserveAspectRatio, img.aspect));
-                            fe_elem.set_enum_attribute(AId::ImageRendering, img.rendering_mode);
-
-                            fe_elem
+                            xml.write_attribute("result", &fe.result);
+                            xml.end_element();
                         }
                     };
-
-                    if let Some(n) = fe.x { fe_elem.set_attribute((AId::X, n)); }
-                    if let Some(n) = fe.y { fe_elem.set_attribute((AId::Y, n)); }
-                    if let Some(n) = fe.width { fe_elem.set_attribute((AId::Width, n)); }
-                    if let Some(n) = fe.height { fe_elem.set_attribute((AId::Height, n)); }
-
-                    fe_elem.set_enum_attribute(AId::ColorInterpolationFilters,
-                                               fe.color_interpolation);
-
-                    fe_elem.set_attribute((AId::Result, fe.result.as_str()));
                 }
+
+                xml.end_element();
             }
             _ => {}
         }
-    }
-
-    for (id, aid, mut elem) in link_later {
-        conv_link(tree, defs, aid, &id, &mut elem);
-    }
-
-    for (rnode, mut elem) in later_nodes {
-        conv_elements(tree, &rnode, defs, new_doc, &mut elem);
     }
 }
 
 fn conv_elements(
-    tree: &Tree,
-    root: &Node,
-    defs: &svgdom::Node,
-    new_doc: &mut svgdom::Document,
-    parent: &mut svgdom::Node,
+    parent: &Node,
+    is_clip_path: bool,
+    xml: &mut XmlWriter,
 ) {
-    for n in root.children() {
+    for n in parent.children() {
         match *n.borrow() {
             NodeKind::Path(ref p) => {
-                let mut path_elem = new_doc.create_element(EId::Path);
-                parent.append(path_elem.clone());
-
-                path_elem.set_id(p.id.clone());
-
-                conv_transform(AId::Transform, &p.transform, &mut path_elem);
-                path_elem.set_enum_attribute(AId::Visibility, p.visibility);
-                path_elem.set_enum_attribute(AId::ShapeRendering, p.rendering_mode);
-
-                use svgdom::Path as SvgDomPath;
-                use svgdom::PathSegment as SvgDomPathSegment;
-
-                let mut path = SvgDomPath::with_capacity(p.segments.len());
-                for seg in &p.segments {
-                    match *seg {
-                        PathSegment::MoveTo { x, y } => {
-                            path.push(SvgDomPathSegment::MoveTo { abs: true, x, y });
-                        }
-                        PathSegment::LineTo { x, y } => {
-                            path.push(SvgDomPathSegment::LineTo { abs: true, x, y });
-                        }
-                        PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                            path.push(SvgDomPathSegment::CurveTo { abs: true, x1, y1, x2, y2, x, y });
-                        }
-                        PathSegment::ClosePath => {
-                            path.push(SvgDomPathSegment::ClosePath { abs: true });
-                        }
-                    }
-                }
-
-                path_elem.set_attribute((AId::D, path));
-
-                conv_fill(tree, &p.fill, defs, parent, &mut path_elem);
-                conv_stroke(tree, &p.stroke, defs, &mut path_elem);
-            }
-            NodeKind::Text(ref text) => {
-                let mut text_elem = new_doc.create_element(EId::Text);
-                parent.append(text_elem.clone());
-
-                text_elem.set_id(text.id.clone());
-
-                conv_transform(AId::Transform, &text.transform, &mut text_elem);
-                text_elem.set_enum_attribute(AId::TextRendering, text.rendering_mode);
-
-                if let Some(ref rotate) = text.rotate {
-                    text_elem.set_attribute((AId::Rotate, NumberList(rotate.clone())));
-                }
-
-                let mut is_preserve_required = false;
-
-                for chunk in &text.chunks {
-                    let mut chunk_tspan_elem = new_doc.create_element(EId::Tspan);
-                    text_elem.append(chunk_tspan_elem.clone());
-
-                    if let Some(x) = chunk.x {
-                        chunk_tspan_elem.set_attribute((AId::X, x));
-                    }
-
-                    if let Some(y) = chunk.y {
-                        chunk_tspan_elem.set_attribute((AId::Y, y));
-                    }
-
-                    if let Some(dx) = chunk.dx {
-                        chunk_tspan_elem.set_attribute((AId::Dx, dx));
-                    }
-
-                    if let Some(dy) = chunk.dy {
-                        chunk_tspan_elem.set_attribute((AId::Dy, dy));
-                    }
-
-                    chunk_tspan_elem.set_enum_attribute(AId::TextAnchor, chunk.anchor);
-
-                    for tspan in &chunk.spans {
-                        let mut tspan_elem = new_doc.create_element(EId::Tspan);
-                        chunk_tspan_elem.append(tspan_elem.clone());
-
-                        let text_node = new_doc.create_node(
-                            svgdom::NodeType::Text,
-                            tspan.text.clone(),
-                        );
-                        tspan_elem.append(text_node.clone());
-
-                        tspan_elem.set_enum_attribute(AId::Visibility, tspan.visibility);
-
-                        conv_fill(tree, &tspan.fill, defs, parent, &mut tspan_elem);
-                        conv_stroke(tree, &tspan.stroke, defs, &mut tspan_elem);
-                        conv_font(&tspan.font, &mut tspan_elem);
-
-                        if !tspan.baseline_shift.is_fuzzy_zero() {
-                            tspan_elem.set_attribute((AId::BaselineShift, tspan.baseline_shift));
-                        }
-
-                        if tspan.text.contains("  ") {
-                            is_preserve_required = true;
-                        }
-
-                        // TODO: text-decoration
-                    }
-                }
-
-                if is_preserve_required {
-                    text_elem.set_attribute((AId::Space, "preserve"));
-                }
+                write_path(p, is_clip_path, None, xml);
             }
             NodeKind::Image(ref img) => {
-                let mut img_elem = new_doc.create_element(EId::Image);
-                parent.append(img_elem.clone());
-
-                img_elem.set_id(img.id.clone());
-
-                conv_transform(AId::Transform, &img.transform, &mut img_elem);
-                img_elem.set_enum_attribute(AId::Visibility, img.visibility);
-                img_elem.set_enum_attribute(AId::ImageRendering, img.rendering_mode);
-                conv_rect(img.view_box.rect, &mut img_elem);
-
-                if !img.view_box.aspect.is_default() {
-                    img_elem.set_attribute((AId::PreserveAspectRatio, img.view_box.aspect));
+                xml.start_element("image");
+                if !img.id.is_empty() {
+                    xml.write_attribute("id", &img.id);
                 }
 
-                img_elem.set_attribute((AId::Href, conv_image_data(&img.data, img.format)));
+                xml.write_rect_attrs(img.view_box.rect);
+                if !img.view_box.aspect.is_default() {
+                    xml.write_aspect(img.view_box.aspect);
+                }
+
+                xml.write_visibility(img.visibility);
+
+                match img.rendering_mode {
+                    ImageRendering::OptimizeQuality => {}
+                    ImageRendering::OptimizeSpeed => {
+                        xml.write_attribute("image-rendering", "optimizeSpeed");
+                    }
+                }
+
+                xml.write_transform("transform", img.transform);
+                xml.write_image_data(&img.data, img.format);
+
+                xml.end_element();
             }
             NodeKind::Group(ref g) => {
-                let mut g_elem = if parent.is_tag_name(EId::ClipPath) {
-                    conv_elements(tree, &n, defs, new_doc, parent);
-                    parent.last_child().unwrap()
-                } else {
-                    let g_elem = new_doc.create_element(EId::G);
-                    parent.append(g_elem.clone());
-                    g_elem
+                if is_clip_path {
+                    // ClipPath with a Group element is an `usvg` special case.
+                    // Group will contains a single Path element and we should set
+                    // `clip-path` on it.
+
+                    if let NodeKind::Path(ref path) = *n.first_child().unwrap().borrow() {
+                        let clip_id = g.clip_path.as_ref().map(String::deref);
+                        write_path(path, is_clip_path, clip_id, xml);
+                    }
+
+                    continue;
+                }
+
+                xml.start_element("g");
+                if !g.id.is_empty() {
+                    xml.write_attribute("id", &g.id);
                 };
 
-                g_elem.set_id(g.id.clone());
+                if let Some(ref id) = g.clip_path {
+                    xml.write_func_iri("clip-path", id);
+                }
 
-                conv_transform(AId::Transform, &g.transform, &mut g_elem);
+                if let Some(ref id) = g.mask {
+                    xml.write_func_iri("mask", id);
+                }
 
-                conv_opt_link(tree, defs, AId::ClipPath, &g.clip_path, &mut g_elem);
-                conv_opt_link(tree, defs, AId::Mask, &g.mask, &mut g_elem);
-                conv_opt_link(tree, defs, AId::Filter, &g.filter, &mut g_elem);
+                if let Some(ref id) = g.filter {
+                    xml.write_func_iri("filter", id);
+                }
 
                 if !g.opacity.is_default() {
-                    g_elem.set_attribute((AId::Opacity, g.opacity.value()));
+                    xml.write_attribute("opacity", &g.opacity.value());
                 }
 
-                if !g_elem.has_id() && g_elem.attributes().len() == 0 {
-                    warn!("Group must have at least one attribute otherwise it's pointless.");
-                }
+                xml.write_transform("transform", g.transform);
 
-                if !parent.is_tag_name(EId::ClipPath) {
-                    conv_elements(tree, &n, defs, new_doc, &mut g_elem);
-                }
+                conv_elements(&n, false, xml);
+
+                xml.end_element();
             }
             _ => {}
         }
     }
 }
 
-fn conv_viewbox(
-    view_box: &ViewBox,
-    node: &mut svgdom::Node,
-) {
-    let r = view_box.rect;
-    let vb = svgdom::ViewBox::new(r.x(), r.y(), r.width(), r.height());
-    node.set_attribute((AId::ViewBox, vb));
+trait XmlWriterExt {
+    fn write_viewbox(&mut self, view_box: &ViewBox);
+    fn write_aspect(&mut self, aspect: AspectRatio);
+    fn write_units(&mut self, name: &str, units: Units, def: Units);
+    fn write_transform(&mut self, name: &str, units: Transform);
+    fn write_visibility(&mut self, value: Visibility);
+    fn write_func_iri(&mut self, name: &str, id: &str);
+    fn write_rect_attrs(&mut self, r: Rect);
+    fn write_filter_input(&mut self, name: &str, input: &FilterInput);
+    fn write_filter_primitive_attrs(&mut self, fe: &FilterPrimitive);
+    fn write_image_data(&mut self, data: &ImageData, format: ImageFormat);
+}
 
-    if !view_box.aspect.is_default() {
-        node.set_attribute((AId::PreserveAspectRatio, view_box.aspect));
+impl XmlWriterExt for XmlWriter {
+    fn write_viewbox(&mut self, view_box: &ViewBox) {
+        let r = view_box.rect;
+        self.write_attribute_fmt(
+            "viewBox",
+            format_args!("{} {} {} {}", r.x(), r.y(), r.width(), r.height()),
+        );
+
+        if !view_box.aspect.is_default() {
+            self.write_aspect(view_box.aspect);
+        }
+    }
+
+    fn write_aspect(&mut self, aspect: AspectRatio) {
+        self.write_attribute_raw("preserveAspectRatio", |buf| aspect.write_buf(buf));
+    }
+
+    fn write_units(&mut self, name: &str, units: Units, def: Units) {
+        if units != def {
+            self.write_attribute(name, match units {
+                Units::UserSpaceOnUse => "userSpaceOnUse",
+                Units::ObjectBoundingBox => "objectBoundingBox",
+            });
+        }
+    }
+
+    fn write_transform(&mut self, name: &str, ts: Transform) {
+        if !ts.is_default() {
+            self.write_attribute_fmt(
+                name,
+                format_args!("matrix({} {} {} {} {} {})", ts.a, ts.b, ts.c, ts.d, ts.e, ts.f),
+            );
+        }
+    }
+
+    fn write_visibility(&mut self, value: Visibility) {
+        match value {
+            Visibility::Visible => {},
+            Visibility::Hidden => self.write_attribute("visibility", "hidden"),
+            Visibility::Collapse => self.write_attribute("visibility", "collapse"),
+        }
+    }
+
+    fn write_func_iri(&mut self, name: &str, id: &str) {
+        self.write_attribute_fmt(name, format_args!("url(#{})", id));
+    }
+
+    fn write_rect_attrs(&mut self, r: Rect) {
+        self.write_attribute("x", &r.x());
+        self.write_attribute("y", &r.y());
+        self.write_attribute("width", &r.width());
+        self.write_attribute("height", &r.height());
+    }
+
+    fn write_filter_input(&mut self, name: &str, input: &FilterInput) {
+        self.write_attribute(name, match input {
+            FilterInput::SourceGraphic      => "SourceGraphic",
+            FilterInput::SourceAlpha        => "SourceAlpha",
+            FilterInput::BackgroundImage    => "BackgroundImage",
+            FilterInput::BackgroundAlpha    => "BackgroundAlpha",
+            FilterInput::FillPaint          => "FillPaint",
+            FilterInput::StrokePaint        => "StrokePaint",
+            FilterInput::Reference(ref s)   => s,
+        });
+    }
+
+    fn write_filter_primitive_attrs(&mut self, fe: &FilterPrimitive) {
+        if let Some(n) = fe.x { self.write_attribute("x", &n); }
+        if let Some(n) = fe.y { self.write_attribute("y", &n); }
+        if let Some(n) = fe.width { self.write_attribute("width", &n); }
+        if let Some(n) = fe.height { self.write_attribute("height", &n); }
+
+        self.write_attribute("colorInterpolationFilters", match fe.color_interpolation {
+            ColorInterpolation::SRGB        => "sRGB",
+            ColorInterpolation::LinearRGB   => "linearRGB"
+        });
+    }
+
+    fn write_image_data(&mut self, data: &ImageData, format: ImageFormat) {
+        match data {
+            ImageData::Path(ref path) => {
+                self.write_attribute("xlink:href", &path.to_str().unwrap());
+            }
+            ImageData::Raw(ref data) => {
+                self.write_attribute_raw("xlink:href", |buf| {
+                    buf.extend_from_slice(b"data:image/");
+                    buf.extend_from_slice(match format {
+                        ImageFormat::PNG => b"png",
+                        ImageFormat::JPEG => b"jpg",
+                        ImageFormat::SVG => b"svg+xml",
+                    });
+                    buf.extend_from_slice(b";base64, ");
+
+                    let mut enc = base64::write::EncoderWriter::new(buf, base64::STANDARD);
+                    enc.write_all(data).unwrap();
+                    enc.finish().unwrap();
+                });
+            }
+        }
     }
 }
 
-fn conv_rect(
-    r: Rect,
-    node: &mut svgdom::Node,
-) {
-    node.set_attribute((AId::X, r.x()));
-    node.set_attribute((AId::Y, r.y()));
-    node.set_attribute((AId::Width, r.width()));
-    node.set_attribute((AId::Height, r.height()));
+fn has_xlink(tree: &Tree) -> bool {
+    for n in tree.root().descendants() {
+        match *n.borrow() {
+            NodeKind::Filter(ref filter) => {
+                for fe in &filter.children {
+                    if let FilterKind::FeImage(ref img) = fe.kind {
+                        if let FeImageKind::Image(..) = img.data {
+                            return true;
+                        }
+                    }
+                }
+            }
+            NodeKind::Image(_) => {
+                return true;
+            }
+            _ => {}
+        }
+    }
+
+    false
 }
 
-fn conv_units(
-    aid: AId,
-    units: Units,
-    def: Units,
-    node: &mut svgdom::Node,
+fn write_base_grad(
+    g: &BaseGradient,
+    xml: &mut XmlWriter,
 ) {
-    if units != def {
-        node.set_attribute((aid, units.to_string()));
+    xml.write_units("gradientUnits", g.units, Units::ObjectBoundingBox);
+    xml.write_transform("gradientTransform", g.transform);
+
+    match g.spread_method {
+        SpreadMethod::Pad => {},
+        SpreadMethod::Reflect => xml.write_attribute("spreadMethod", "reflect"),
+        SpreadMethod::Repeat => xml.write_attribute("spreadMethod", "repeat"),
+    }
+
+    for s in &g.stops {
+        xml.start_element("stop");
+        xml.write_attribute("offset", &s.offset.value());
+        xml.write_attribute("stop-color", &s.color);
+        if !s.opacity.is_default() {
+            xml.write_attribute("stop-opacity", &s.opacity.value());
+        }
+
+        xml.end_element();
     }
 }
 
-fn conv_fill(
-    tree: &Tree,
+fn write_path(
+    path: &Path,
+    is_clip_path: bool,
+    clip_path: Option<&str>,
+    xml: &mut XmlWriter,
+) {
+    xml.start_element("path");
+    if !path.id.is_empty() {
+        xml.write_attribute("id", &path.id);
+    }
+
+    write_fill(&path.fill, is_clip_path, xml);
+    write_stroke(&path.stroke, xml);
+
+    xml.write_visibility(path.visibility);
+
+    match path.rendering_mode {
+        ShapeRendering::OptimizeSpeed => {
+            xml.write_attribute("shape-rendering", "optimizeSpeed");
+        }
+        ShapeRendering::CrispEdges => {
+            xml.write_attribute("shape-rendering", "crispEdges")
+        }
+        ShapeRendering::GeometricPrecision  => {}
+    }
+
+    if let Some(ref id) = clip_path {
+        xml.write_func_iri("clip-path", id);
+    }
+
+    xml.write_transform("transform", path.transform);
+
+    xml.write_attribute_raw("d", |buf| {
+        for seg in &path.segments {
+            match *seg {
+                PathSegment::MoveTo { x, y } => {
+                    buf.extend_from_slice(b"M ");
+                    x.write_buf(buf);
+                    buf.push(b' ');
+                    y.write_buf(buf);
+                    buf.push(b' ');
+                }
+                PathSegment::LineTo { x, y } => {
+                    buf.extend_from_slice(b"L ");
+                    x.write_buf(buf);
+                    buf.push(b' ');
+                    y.write_buf(buf);
+                    buf.push(b' ');
+                }
+                PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+                    buf.extend_from_slice(b"C ");
+                    x1.write_buf(buf);
+                    buf.push(b' ');
+                    y1.write_buf(buf);
+                    buf.push(b' ');
+                    x2.write_buf(buf);
+                    buf.push(b' ');
+                    y2.write_buf(buf);
+                    buf.push(b' ');
+                    x.write_buf(buf);
+                    buf.push(b' ');
+                    y.write_buf(buf);
+                    buf.push(b' ');
+                }
+                PathSegment::ClosePath => {
+                    buf.extend_from_slice(b"Z ");
+                }
+            }
+        }
+
+        if !path.segments.is_empty() {
+            buf.pop();
+        }
+    });
+
+    xml.end_element();
+}
+
+fn write_fill(
     fill: &Option<Fill>,
-    defs: &svgdom::Node,
-    parent: &svgdom::Node,
-    node: &mut svgdom::Node,
+    is_clip_path: bool,
+    xml: &mut XmlWriter,
 ) {
-    match *fill {
+    match fill {
         Some(ref fill) => {
             match fill.paint {
                 Paint::Color(c) => {
                     if c != Color::black() {
-                        node.set_attribute((AId::Fill, c))
+                        xml.write_attribute("fill", &c);
                     }
                 }
                 Paint::Link(ref id) => {
-                    conv_link(tree, defs, AId::Fill, id, node)
+                    xml.write_func_iri("fill", id);
                 }
             }
 
             if !fill.opacity.is_default() {
-                node.set_attribute((AId::FillOpacity, fill.opacity.value()));
+                xml.write_attribute("fill-opacity", &fill.opacity.value());
             }
 
             if !fill.rule.is_default() {
-                let rule_aid = if parent.is_tag_name(EId::ClipPath) {
-                    AId::ClipRule
+                let name = if is_clip_path {
+                    "clip-rule"
                 } else {
-                    AId::FillRule
+                    "fill-rule"
                 };
 
-                node.set_attribute((rule_aid, fill.rule.to_string()));
+                xml.write_attribute(name, "evenodd");
             }
         }
         None => {
-            node.set_attribute((AId::Fill, AValue::None));
+            xml.write_attribute("fill", "none");
         }
     }
 }
 
-fn conv_stroke(
-    tree: &Tree,
+fn write_stroke(
     stroke: &Option<Stroke>,
-    defs: &svgdom::Node,
-    node: &mut svgdom::Node,
+    xml: &mut XmlWriter,
 ) {
     if let Some(ref stroke) = stroke {
         match stroke.paint {
-            Paint::Color(c) => node.set_attribute((AId::Stroke, c)),
-            Paint::Link(ref id) => conv_link(tree, defs, AId::Stroke, id, node),
+            Paint::Color(ref c) => xml.write_attribute("stroke", c),
+            Paint::Link(ref id) => xml.write_func_iri("stroke", id),
         }
 
         if !stroke.opacity.is_default() {
-            node.set_attribute((AId::StrokeOpacity, stroke.opacity.value()));
+            xml.write_attribute("stroke-opacity", &stroke.opacity.value());
         }
 
         if !(stroke.dashoffset as f64).is_fuzzy_zero() {
-            node.set_attribute((AId::StrokeDashoffset, stroke.dashoffset as f64));
+            xml.write_attribute("stroke-dashoffset", &stroke.dashoffset)
         }
 
         if !stroke.miterlimit.is_default() {
-            node.set_attribute((AId::StrokeMiterlimit, stroke.miterlimit.value()));
+            xml.write_attribute("stroke-miterlimit", &stroke.miterlimit.value());
         }
 
         if !stroke.width.is_default() {
-            node.set_attribute((AId::StrokeWidth, stroke.width.value()));
+            xml.write_attribute("stroke-width", &stroke.width.value());
         }
 
-        node.set_enum_attribute(AId::StrokeLinecap, stroke.linecap);
-        node.set_enum_attribute(AId::StrokeLinejoin, stroke.linejoin);
+        match stroke.linecap {
+            LineCap::Butt => {}
+            LineCap::Round => xml.write_attribute("stroke-linecap", "round"),
+            LineCap::Square => xml.write_attribute("stroke-linecap", "square"),
+        }
+
+        match stroke.linejoin {
+            LineJoin::Miter => {}
+            LineJoin::Round => xml.write_attribute("stroke-linejoin", "round"),
+            LineJoin::Bevel => xml.write_attribute("stroke-linejoin", "bevel"),
+        }
 
         if let Some(ref array) = stroke.dasharray {
-            node.set_attribute((AId::StrokeDasharray, NumberList(array.clone())));
-        }
-    }
-}
+            xml.write_attribute_raw("stroke-dasharray", |buf| {
+                for n in array {
+                    buf.write_fmt(format_args!("{} ", n)).unwrap();
+                }
 
-fn conv_base_grad(
-    g: &BaseGradient,
-    doc: &mut svgdom::Document,
-    node: &mut svgdom::Node,
-) {
-    if g.units != Units::ObjectBoundingBox {
-        node.set_attribute((AId::GradientUnits, g.units.to_string()));
-    }
-
-    node.set_enum_attribute(AId::SpreadMethod, g.spread_method);
-
-    conv_transform(AId::GradientTransform, &g.transform, node);
-
-    for s in &g.stops {
-        let mut stop = doc.create_element(EId::Stop);
-        node.append(stop.clone());
-
-        stop.set_attribute((AId::Offset, s.offset.value()));
-        stop.set_attribute((AId::StopColor, s.color));
-
-        if !s.opacity.is_default() {
-            stop.set_attribute((AId::StopOpacity, s.opacity.value()));
-        }
-    }
-}
-
-fn conv_transform(
-    aid: AId,
-    ts: &svgdom::Transform,
-    node: &mut svgdom::Node,
-) {
-    if !ts.is_default() {
-        node.set_attribute((aid, *ts));
-    }
-}
-
-fn conv_font(
-    font: &Font,
-    node: &mut svgdom::Node,
-) {
-    node.set_attribute((AId::FontFamily, font.family.clone()));
-    node.set_attribute((AId::FontSize, font.size.value()));
-    node.set_enum_attribute(AId::FontStyle, font.style);
-    node.set_enum_attribute(AId::FontVariant, font.variant);
-    node.set_enum_attribute(AId::FontWeight, font.weight);
-    node.set_enum_attribute(AId::FontStretch, font.stretch);
-    conv_text_spacing(font.letter_spacing, AId::LetterSpacing, node);
-    conv_text_spacing(font.word_spacing, AId::WordSpacing, node);
-}
-
-fn conv_text_spacing(
-    spacing: Option<f64>,
-    aid: AId,
-    node: &mut svgdom::Node,
-) {
-    if let Some(spacing) = spacing {
-        node.set_attribute((aid, spacing));
-    }
-}
-
-fn conv_opt_link(
-    tree: &Tree,
-    defs: &svgdom::Node,
-    aid: AId,
-    id: &Option<String>,
-    node: &mut svgdom::Node,
-) {
-    if let Some(id) = id {
-        conv_link(tree, defs, aid, id, node);
-    }
-}
-
-fn conv_link(
-    tree: &Tree,
-    defs: &svgdom::Node,
-    aid: AId,
-    id: &str,
-    node: &mut svgdom::Node,
-) {
-    if let Some(n) = tree.defs_by_id(id) {
-        let defs_id = n.id();
-        let link = match defs.children().find(|n| *n.id() == *defs_id) {
-            Some(v) => v,
-            None => {
-                debug_panic!("unresolved FuncLink '{}'", defs_id);
-                return;
-            }
-        };
-        node.set_attribute((aid, link));
-    }
-}
-
-fn conv_image_data(
-    data: &ImageData,
-    format: ImageFormat,
-) -> String {
-    match data {
-        ImageData::Path(ref path) => path.to_str().unwrap().to_owned(),
-        ImageData::Raw(ref data) => {
-            let mut d = String::with_capacity(data.len() + 20);
-
-            d.push_str("data:image/");
-            match format {
-                ImageFormat::PNG => d.push_str("png"),
-                ImageFormat::JPEG => d.push_str("jpg"),
-                ImageFormat::SVG => d.push_str("svg+xml"),
-            }
-            d.push_str(";base64, ");
-            d.push_str(&base64::encode(data));
-
-            d
-        }
-    }
-}
-
-
-// TODO: find a way to do this for numbers too
-trait SetEnumAttribute<T> {
-    fn set_enum_attribute(&mut self, aid: AId, value: T);
-}
-
-impl<T> SetEnumAttribute<T> for svgdom::Node
-    where T: IsDefault + ToString
-{
-    fn set_enum_attribute(&mut self, aid: AId, value: T) {
-        if !value.is_default() {
-            self.set_attribute((aid, value.to_string()));
+                if !array.is_empty() {
+                    buf.pop();
+                }
+            });
         }
     }
 }

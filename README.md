@@ -64,9 +64,7 @@ Also, it's [deprecated](https://wiki.qt.io/Qt_Modules_Maturity_Level).
 *resvg* is aiming to support only the [static](http://www.w3.org/TR/SVG11/feature#SVG-static)
 SVG subset; e.g. no `a`, `script`, `view` or `cursor` elements, no events and no animations.
 
-Also, `textPath` and
-[embedded fonts](https://www.w3.org/TR/SVG11/feature#Font) are not yet implemented.
-A full list can be found [here](docs/unsupported.md).
+A list of unsupported features can be found [here](docs/unsupported.md).
 
 [SVG Tiny 1.2](https://www.w3.org/TR/SVGTiny12/) and [SVG 2.0](https://www.w3.org/TR/SVG2/)
 are not supported and not planned.
@@ -112,7 +110,8 @@ Also, we do not test against Chrome, Firefox, Inkscape and Batik because they ha
         - [`xmlparser`](https://github.com/RazrFalcon/xmlparser) – an XML parser
       - [`svgtypes`](https://github.com/RazrFalcon/svgtypes) – SVG types parser and writer
     - [`rctree`](https://github.com/RazrFalcon/rctree) – a DOM-like tree
-  - [`resvg-qt`](./resvg-qt) – minimal bindings to [Qt]
+  - [`resvg-qt`](./bindings/resvg-qt) – minimal bindings to [Qt]
+  - [`resvg-skia`](./bindings/resvg-skia) – minimal bindings to [Skia]
 
 All other dependencies aren't written by me for this project.
 
@@ -123,7 +122,7 @@ All other dependencies aren't written by me for this project.
 - `examples` – usage examples for *resvg* as a library
 - `resvg-qt` – minimal bindings to Qt used by *resvg*
 - `src` – source code
-- `testing_tools` – scripts used for testing
+- `testing-tools` – scripts used for testing
 - `tools` – useful tools
 - `usvg` – an SVG simplification library used by *resvg*
 
@@ -133,6 +132,7 @@ All other dependencies aren't written by me for this project.
   There are only a few methods that can produce a panic.
 - The core library structure (see above) does not use any `unsafe`,
   but since all backends are implemented via FFI, we are stuck with `unsafe` anyway.
+  Also, `usvg` uses unsafe for fonts memory mapping.
 
 ## License
 

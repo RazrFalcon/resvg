@@ -5,23 +5,14 @@
 use std::cmp;
 use std::rc::Rc;
 
-// external
-use cairo::{
-    self,
-    MatrixTrait,
-    PatternTrait,
-};
 use rgb::FromSlice;
-use usvg::ColorInterpolation as ColorSpace;
+use log::warn;
+use usvg::{try_opt_or, ColorInterpolation as ColorSpace};
 
-// self
-use super::prelude::*;
-use crate::backend_utils::filter::{
-    self,
-    Error,
-    Filter,
-    ImageExt,
-};
+use crate::prelude::*;
+use crate::backend_utils::ConvTransform;
+use crate::backend_utils::filter::{self, Filter, ImageExt, Error};
+use super::ReCairoContextExt;
 
 type Image = filter::Image<cairo::ImageSurface>;
 type FilterResult = filter::FilterResult<cairo::ImageSurface>;
@@ -29,7 +20,7 @@ type FilterResult = filter::FilterResult<cairo::ImageSurface>;
 
 pub fn apply(
     filter: &usvg::Filter,
-    bbox: Rect,
+    bbox: Option<Rect>,
     ts: &usvg::Transform,
     opt: &Options,
     canvas: &mut cairo::ImageSurface,
@@ -51,7 +42,7 @@ impl ImageExt for cairo::ImageSurface {
         let new_image = create_image(self.width(), self.height())?;
 
         let cr = cairo::Context::new(&new_image);
-        cr.set_source_surface(self.as_ref(), 0.0, 0.0);
+        cr.set_source_surface(self, 0.0, 0.0);
         cr.paint();
 
         Ok(new_image)
@@ -115,7 +106,10 @@ fn create_image(width: u32, height: u32) -> Result<cairo::ImageSurface, Error> {
         .map_err(|_| Error::AllocFailed)
 }
 
-fn copy_image(image: &cairo::ImageSurface, region: ScreenRect) -> Result<cairo::ImageSurface, Error> {
+fn copy_image(
+    image: &cairo::ImageSurface,
+    region: ScreenRect,
+) -> Result<cairo::ImageSurface, Error> {
     let x = cmp::max(0, region.x()) as f64;
     let y = cmp::max(0, region.y()) as f64;
 
@@ -199,7 +193,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
                 }
             }
             _ => {
-                warn!("Filter input '{}' is not supported.", input.to_string());
+                warn!("Filter input '{:?}' is not supported.", input);
                 Self::get_input(&usvg::FilterInput::SourceGraphic, region, results, canvas)
             }
         }
@@ -209,11 +203,11 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         fe: &usvg::FeGaussianBlur,
         units: usvg::Units,
         cs: ColorSpace,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (std_dx, std_dy) = try_opt!(Self::resolve_std_dev(fe, units, bbox, ts), Ok(input));
+        let (std_dx, std_dy) = try_opt_or!(Self::resolve_std_dev(fe, units, bbox, ts), Ok(input));
 
         let input = input.into_color_space(cs)?;
         let mut buffer = input.take()?;
@@ -232,11 +226,11 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
     fn apply_offset(
         fe: &usvg::FeOffset,
         units: usvg::Units,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (dx, dy) = try_opt!(Self::resolve_offset(fe, units, bbox, ts), Ok(input));
+        let (dx, dy) = try_opt_or!(Self::resolve_offset(fe, units, bbox, ts), Ok(input));
 
         // TODO: do not use an additional buffer
         let buffer = create_image(input.width(), input.height())?;
@@ -330,7 +324,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
 
         let cr = cairo::Context::new(&buffer);
 
-        cr.set_source_surface(input2.as_ref(), 0.0, 0.0);
+        cr.set_source_surface(&input2, 0.0, 0.0);
         cr.paint();
 
         use usvg::FeCompositeOperator as Operator;
@@ -344,7 +338,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         };
 
         cr.set_operator(operator);
-        cr.set_source_surface(input1.as_ref(), 0.0, 0.0);
+        cr.set_source_surface(&input1, 0.0, 0.0);
         cr.paint();
 
         Ok(Image::from_image(buffer, cs))
@@ -404,7 +398,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         m.invert();
         patt.set_matrix(m);
 
-        cr.set_source(&cairo::Pattern::SurfacePattern(patt));
+        cr.set_source(&patt);
         cr.rectangle(0.0, 0.0, region.width() as f64, region.height() as f64);
         cr.fill();
 
@@ -436,7 +430,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
                 if format == usvg::ImageFormat::SVG {
                     super::image::draw_svg(data, view_box, opt, &cr);
                 } else {
-                    super::image::draw_raster(data, view_box, fe.rendering_mode, opt, &cr);
+                    super::image::draw_raster(format, data, view_box, fe.rendering_mode, opt, &cr);
                 }
             }
             usvg::FeImageKind::Use(..) => {}

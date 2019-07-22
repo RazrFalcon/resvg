@@ -1,6 +1,6 @@
 [package]
 name = "usvg-cli"
-version = "0.6.1"
+version = "0.7.0"
 authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
 keywords = ["svg"]
 license = "MPL-2.0"
@@ -14,9 +14,9 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
 fern = "0.5"
-gumdrop = "0.5"
 log = "0.4"
-usvg = { version = "0.6.0", path = "../../usvg" }
+pico-args = { git = "https://github.com/RazrFalcon/pico-args", rev = "f9e8b51" }
+usvg = { version = "0.7.0", path = "../../usvg" }
 
 [[bin]]
 name = "usvg"

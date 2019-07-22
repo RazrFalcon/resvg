@@ -1,8 +1,8 @@
 [Setup]
 AppName="reSVG Explorer Extension"
-AppVersion="0.6.0"
-VersionInfoVersion="0.0.6.0"
-AppVerName="reSVG Explorer Extension 0.6.0"
+AppVersion="0.7.0"
+VersionInfoVersion="0.0.7.0"
+AppVerName="reSVG Explorer Extension 0.7.0"
 AppPublisher="Evgeniy Reizner"
 AppPublisherURL=https://github.com/RazrFalcon/resvg
 DefaultDirName="{pf}\reSVG Explorer Extension"
@@ -20,7 +20,7 @@ OutputDir=.
 Name: "en"; MessagesFile: "compiler:Default.isl"; LicenseFile: "..\LICENSE.txt"
 
 [Files]
-Source: "..\release\vcredist_x64.exe"; DestDir: "{app}"; AfterInstall: InstallVcredist
+Source: "..\release\vc_redist.x64.exe"; DestDir: "{app}"; AfterInstall: InstallVcredist
 Source: "..\release\imageformats\qjpeg.dll"; DestDir: "{app}\imageformats";
 Source: "..\release\platforms\qwindows.dll"; DestDir: "{app}\platforms";
 Source: "..\release\Qt5Core.dll"; DestDir: "{app}";
@@ -35,5 +35,5 @@ procedure InstallVcredist;
 var
     ResultCode: Integer;
 begin
-    Exec(ExpandConstant('{app}\vcredist_x64.exe'), '/install /passive /norestart', '', SW_SHOWNORMAL, ewWaitUntilTerminated, ResultCode)
+    Exec(ExpandConstant('{app}\vc_redist.x64.exe'), '/install /passive /norestart', '', SW_SHOWNORMAL, ewWaitUntilTerminated, ResultCode)
 end;

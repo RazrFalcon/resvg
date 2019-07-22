@@ -23,27 +23,10 @@
 
 
 #define RESVG_MAJOR_VERSION 0
-#define RESVG_MINOR_VERSION 6
-#define RESVG_PATCH_VERSION 1
-#define RESVG_VERSION "0.6.1"
+#define RESVG_MINOR_VERSION 7
+#define RESVG_PATCH_VERSION 0
+#define RESVG_VERSION "0.7.0"
 
-
-/**
- * @brief An opaque pointer to the global library handle.
- *
- * Must be invoked before any other \b resvg code.
- *
- * Currently, handles \b QGuiApplication object which must be created
- * in order to draw text. If you don't plan to draw text - it's better to skip
- * the initialization.
- *
- * If you are using this library from an existing Qt application you can skip it.
- *
- * Does nothing when only \b cairo backend is enabled/used.
- *
- * \b Note: \b QGuiApplication initialization is pretty slow (up to 100ms).
- */
-typedef struct resvg_handle resvg_handle;
 
 /**
  * @brief An opaque pointer to the rendering tree.
@@ -260,22 +243,6 @@ typedef struct resvg_transform {
 } resvg_transform;
 
 /**
- * @brief Initializes the library.
- *
- * See #resvg_handle for details.
- *
- * @return Library handle.
- */
-resvg_handle* resvg_init();
-
-/**
- * @brief Destroys the #resvg_handle.
- *
- * @param handle Library handle.
- */
-void resvg_destroy(resvg_handle *handle);
-
-/**
  * @brief Initializes the library log.
  *
  * Use it if you want to see any warnings.
@@ -334,6 +301,8 @@ bool resvg_is_image_empty(const resvg_render_tree *tree);
 /**
  * @brief Returns an image size.
  *
+ * The size of a canvas that required to render this SVG.
+ *
  * @param tree Render tree.
  * @return Image size.
  */
@@ -346,6 +315,18 @@ resvg_size resvg_get_image_size(const resvg_render_tree *tree);
  * @return Image viewbox.
  */
 resvg_rect resvg_get_image_viewbox(const resvg_render_tree *tree);
+
+/**
+ * @brief Returns an image bounding box.
+ *
+ * Can be smaller or bigger than a \b viewbox.
+ *
+ * @param tree Render tree.
+ * @param bbox Image's bounding box.
+ * @return \b false if an image has no elements.
+ */
+bool resvg_get_image_bbox(const resvg_render_tree *tree,
+                          resvg_rect *bbox);
 
 /**
  * @brief Returns \b true if a renderable node with such an ID exists.
@@ -374,30 +355,27 @@ bool resvg_get_node_transform(const resvg_render_tree *tree,
                               resvg_transform *ts);
 
 /**
- * @brief Destroys the #resvg_render_tree.
- *
- * @param tree Render tree.
- */
-void resvg_tree_destroy(resvg_render_tree *tree);
-
-
-#ifdef RESVG_CAIRO_BACKEND
-/**
  * @brief Returns node's bounding box by ID.
  *
  * @param tree Render tree.
- * @param opt Rendering options.
  * @param id Node's ID.
  * @param bbox Node's bounding box.
  * @return \b false if a node with such an ID does not exist
  * @return \b false if ID isn't a UTF-8 string.
  * @return \b false if ID is an empty string
  */
-bool resvg_cairo_get_node_bbox(const resvg_render_tree *tree,
-                               const resvg_options *opt,
-                               const char *id,
-                               resvg_rect *bbox);
+bool resvg_get_node_bbox(const resvg_render_tree *tree,
+                         const char *id,
+                         resvg_rect *bbox);
 
+/**
+ * @brief Destroys the #resvg_render_tree.
+ *
+ * @param tree Render tree.
+ */
+void resvg_tree_destroy(resvg_render_tree *tree);
+
+#ifdef RESVG_CAIRO_BACKEND
 /**
  * @brief Renders the #resvg_render_tree to file.
  *
@@ -443,21 +421,6 @@ void resvg_cairo_render_to_canvas_by_id(const resvg_render_tree *tree,
 
 #ifdef RESVG_QT_BACKEND
 /**
- * @brief Returns node's bounding box by ID.
- *
- * @param tree Render tree.
- * @param opt Rendering options.
- * @param id Node's ID.
- * @param bbox Node's bounding box.
- * @return \b false if a node with such an ID does not exist,
- *         ID is an empty string or ID isn't a UTF-8 string.
- */
-bool resvg_qt_get_node_bbox(const resvg_render_tree *tree,
-                            const resvg_options *opt,
-                            const char *id,
-                            resvg_rect *bbox);
-
-/**
  * @brief Renders the #resvg_render_tree to file.
  *
  * @param tree Render tree.
@@ -499,5 +462,70 @@ void resvg_qt_render_to_canvas_by_id(const resvg_render_tree *tree,
                                      const char *id,
                                      void *painter);
 #endif /* RESVG_QT_BACKEND */
+
+#ifdef RESVG_RAQOTE_BACKEND
+/**
+ * @brief Renders the #resvg_render_tree to file.
+ *
+ * @param tree Render tree.
+ * @param opt Rendering options.
+ * @param file_path File path.
+ * @return #resvg_error
+ */
+int resvg_raqote_render_to_image(const resvg_render_tree *tree,
+                                 const resvg_options *opt,
+                                 const char *file_path);
+
+/**
+ * Raqote backend doesn't have render_to_canvas and render_to_canvas_by_id
+ * methods since it's a Rust library.
+ */
+
+#endif /* RESVG_RAQOTE_BACKEND */
+
+#ifdef RESVG_SKIA_BACKEND
+
+/**
+ * @brief Renders the #resvg_render_tree to file.
+ *
+ * @param tree Render tree.
+ * @param opt Rendering options.
+ * @param file_path File path.
+ * @return #resvg_error
+ */
+int resvg_skia_render_to_image(const resvg_render_tree *tree,
+                               const resvg_options *opt,
+                               const char *file_path);
+
+/**
+ * @brief Renders the #resvg_render_tree to canvas.
+ *
+ * @param tree Render tree.
+ * @param opt Rendering options.
+ * @param size Canvas size.
+ * @param surface Skia Surface.
+ */
+void resvg_skia_render_to_canvas(const resvg_render_tree *tree,
+                                 const resvg_options *opt,
+                                 resvg_size size,
+                                 void *surface);
+
+/**
+ * @brief Renders a Node by ID to canvas.
+ *
+ * Does nothing on error.
+ *
+ * @param tree Render tree.
+ * @param opt Rendering options.
+ * @param size Canvas size.
+ * @param id Node's ID.
+ * @param surface Skia Surface.
+ */
+void resvg_skia_render_to_canvas_by_id(const resvg_render_tree *tree,
+                                       const resvg_options *opt,
+                                       resvg_size size,
+                                       const char *id,
+                                       void *surface);
+#endif /* RESVG_SKIA_BACKEND */
 
 #endif /* RESVG_H */

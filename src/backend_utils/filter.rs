@@ -4,22 +4,20 @@
 
 use std::rc::Rc;
 
-// external
+use log::warn;
 use usvg::ColorInterpolation as ColorSpace;
 
-// self
-use super::prelude::*;
+use crate::prelude::*;
 
 
 pub enum Error {
+    #[allow(dead_code)] // Not used by raqote-backend.
     AllocFailed,
     InvalidRegion,
 }
 
 
-pub trait ImageExt
-    where Self: Sized
-{
+pub trait ImageExt: Sized {
     fn width(&self) -> u32;
     fn height(&self) -> u32;
 
@@ -123,7 +121,7 @@ pub struct FilterResult<T: ImageExt> {
 pub trait Filter<T: ImageExt> {
     fn apply(
         filter: &usvg::Filter,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         opt: &Options,
         canvas: &mut T,
@@ -137,16 +135,21 @@ pub trait Filter<T: ImageExt> {
 
         match res {
             Ok(_) => {}
-            Err(Error::AllocFailed) =>
-                warn!("Memory allocation failed while processing the '{}' filter. Skipped.", filter.id),
-            Err(Error::InvalidRegion) =>
-                warn!("Filter '{}' has an invalid region.", filter.id),
+            Err(Error::AllocFailed) => {
+                warn!(
+                    "Memory allocation failed while processing the '{}' filter. Skipped.",
+                    filter.id
+                );
+            }
+            Err(Error::InvalidRegion) => {
+                warn!("Filter '{}' has an invalid region.", filter.id);
+            }
         }
     }
 
     fn _apply(
         filter: &usvg::Filter,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         opt: &Options,
         canvas: &mut T,
@@ -240,7 +243,7 @@ pub trait Filter<T: ImageExt> {
         fe: &usvg::FeGaussianBlur,
         units: usvg::Units,
         cs: ColorSpace,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         input: Image<T>,
     ) -> Result<Image<T>, Error>;
@@ -248,7 +251,7 @@ pub trait Filter<T: ImageExt> {
     fn apply_offset(
         fe: &usvg::FeOffset,
         units: usvg::Units,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         input: Image<T>,
     ) -> Result<Image<T>, Error>;
@@ -303,7 +306,7 @@ pub trait Filter<T: ImageExt> {
     fn resolve_std_dev(
         fe: &usvg::FeGaussianBlur,
         units: usvg::Units,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
     ) -> Option<(f64, f64)> {
         // 'A negative value or a value of zero disables the effect of the given filter primitive
@@ -315,9 +318,17 @@ pub trait Filter<T: ImageExt> {
         let (sx, sy) = ts.get_scale();
 
         let (std_dx, std_dy) = if units == usvg::Units::ObjectBoundingBox {
-            (fe.std_dev_x.value() * sx * bbox.width(), fe.std_dev_y.value() * sy * bbox.height())
+            let bbox = bbox?;
+
+            (
+                fe.std_dev_x.value() * sx * bbox.width(),
+                fe.std_dev_y.value() * sy * bbox.height()
+            )
         } else {
-            (fe.std_dev_x.value() * sx, fe.std_dev_y.value() * sy)
+            (
+                fe.std_dev_x.value() * sx,
+                fe.std_dev_y.value() * sy
+            )
         };
 
         if std_dx.is_fuzzy_zero() && std_dy.is_fuzzy_zero() {
@@ -330,15 +341,23 @@ pub trait Filter<T: ImageExt> {
     fn resolve_offset(
         fe: &usvg::FeOffset,
         units: usvg::Units,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
     ) -> Option<(f64, f64)> {
         let (sx, sy) = ts.get_scale();
 
         let (dx, dy) = if units == usvg::Units::ObjectBoundingBox {
-            (fe.dx * sx * bbox.width(), fe.dy * sy * bbox.height())
+            let bbox = bbox?;
+
+            (
+                fe.dx * sx * bbox.width(),
+                fe.dy * sy * bbox.height()
+            )
         } else {
-            (fe.dx * sx, fe.dy * sy)
+            (
+                fe.dx * sx,
+                fe.dy * sy
+            )
         };
 
         if dx.is_fuzzy_zero() && dy.is_fuzzy_zero() {
@@ -351,12 +370,7 @@ pub trait Filter<T: ImageExt> {
 
 
 pub mod blur {
-    // external
-    use rgb::{
-        RGBA8,
-        FromSlice,
-        ComponentSlice,
-    };
+    use rgb::{RGBA8, FromSlice, ComponentSlice};
 
     struct BlurData {
         width: usize,
@@ -552,8 +566,8 @@ pub mod blur {
             (1.0, 1.0)
         };
 
-        let post_scale = ((dnu_x * dnu_y).sqrt() / (lambda_x * lambda_y).sqrt())
-                            .powi(2 * d.steps as i32);
+        let post_scale =
+            ((dnu_x * dnu_y).sqrt() / (lambda_x * lambda_y).sqrt()).powi(2 * d.steps as i32);
 
         buf.iter_mut().for_each(|v| *v *= post_scale);
     }
@@ -570,13 +584,14 @@ pub mod blur {
 
 fn calc_region(
     filter: &usvg::Filter,
-    bbox: Rect,
+    bbox: Option<Rect>,
     ts: &usvg::Transform,
     canvas_rect: ScreenRect,
 ) -> Result<ScreenRect, Error> {
     let path = utils::rect_to_path(filter.rect);
 
     let region_ts = if filter.units == usvg::Units::ObjectBoundingBox {
+        let bbox = bbox.ok_or(Error::InvalidRegion)?;
         let bbox_ts = usvg::Transform::from_bbox(bbox);
         let mut ts2 = ts.clone();
         ts2.append(&bbox_ts);
@@ -586,9 +601,9 @@ fn calc_region(
     };
 
     let region = utils::path_bbox(&path, None, Some(region_ts))
-                       .ok_or_else(|| Error::InvalidRegion)?
-                       .to_screen_rect()
-                       .fit_to_rect(canvas_rect);
+        .ok_or_else(|| Error::InvalidRegion)?
+        .to_screen_rect()
+        .fit_to_rect(canvas_rect);
 
     Ok(region)
 }
@@ -597,7 +612,7 @@ fn calc_region(
 fn calc_subregion<T: ImageExt>(
     filter: &usvg::Filter,
     primitive: &usvg::FilterPrimitive,
-    bbox: Rect,
+    bbox: Option<Rect>,
     filter_region: ScreenRect,
     ts: &usvg::Transform,
     results: &[FilterResult<T>],
@@ -622,6 +637,8 @@ fn calc_subregion<T: ImageExt>(
         usvg::FilterKind::FeImage(..) => {
             // `feImage` uses the object bbox.
             if filter.primitive_units == usvg::Units::ObjectBoundingBox {
+                let bbox = bbox.ok_or(Error::InvalidRegion)?;
+
                 // TODO: wrong
                 let ts_bbox = Rect::new(ts.e, ts.f, ts.a, ts.d).unwrap();
 
@@ -632,9 +649,10 @@ fn calc_subregion<T: ImageExt>(
                     primitive.height.unwrap_or(1.0),
                 ).ok_or_else(|| Error::InvalidRegion)?;
 
-                let r = r.bbox_transform(bbox)
-                         .bbox_transform(ts_bbox)
-                         .to_screen_rect();
+                let r = r
+                    .bbox_transform(bbox)
+                    .bbox_transform(ts_bbox)
+                    .to_screen_rect();
 
                 return Ok(r);
             } else {

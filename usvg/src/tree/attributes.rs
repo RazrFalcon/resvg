@@ -6,7 +6,6 @@ use std::fmt;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-// external
 pub use svgdom::{
     Align,
     AspectRatio,
@@ -16,7 +15,6 @@ pub use svgdom::{
     Transform,
 };
 
-// self
 use crate::geom::*;
 pub use super::numbers::*;
 
@@ -46,18 +44,6 @@ macro_rules! enum_from_str {
     };
 }
 
-macro_rules! enum_to_string {
-    ($name:ident, $($value:pat => $string:expr),+) => {
-        impl ToString for $name {
-            fn to_string(&self) -> String {
-                match self {
-                    $($value => $string),+,
-                }.to_string()
-            }
-        }
-    };
-}
-
 
 /// A line cap.
 ///
@@ -76,12 +62,6 @@ enum_from_str!(LineCap,
     "butt"      => LineCap::Butt,
     "round"     => LineCap::Round,
     "square"    => LineCap::Square
-);
-
-enum_to_string!(LineCap,
-    LineCap::Butt   => "butt",
-    LineCap::Round  => "round",
-    LineCap::Square => "square"
 );
 
 
@@ -104,12 +84,6 @@ enum_from_str!(LineJoin,
     "bevel" => LineJoin::Bevel
 );
 
-enum_to_string!(LineJoin,
-    LineJoin::Miter => "miter",
-    LineJoin::Round => "round",
-    LineJoin::Bevel => "bevel"
-);
-
 
 /// A fill rule.
 ///
@@ -128,11 +102,6 @@ enum_from_str!(FillRule,
     "evenodd" => FillRule::EvenOdd
 );
 
-enum_to_string!(FillRule,
-    FillRule::NonZero => "nonzero",
-    FillRule::EvenOdd => "evenodd"
-);
-
 
 /// An element units.
 #[allow(missing_docs)]
@@ -141,11 +110,6 @@ pub enum Units {
     UserSpaceOnUse,
     ObjectBoundingBox,
 }
-
-enum_to_string!(Units,
-    Units::UserSpaceOnUse       => "userSpaceOnUse",
-    Units::ObjectBoundingBox    => "objectBoundingBox"
-);
 
 
 /// A spread method.
@@ -160,12 +124,6 @@ pub enum SpreadMethod {
 }
 
 enum_default!(SpreadMethod, Pad);
-
-enum_to_string!(SpreadMethod,
-    SpreadMethod::Pad       => "pad",
-    SpreadMethod::Reflect   => "reflect",
-    SpreadMethod::Repeat    => "repeat"
-);
 
 
 /// A visibility property.
@@ -185,200 +143,6 @@ enum_from_str!(Visibility,
     "visible"   => Visibility::Visible,
     "hidden"    => Visibility::Hidden,
     "collapse"  => Visibility::Collapse
-);
-
-enum_to_string!(Visibility,
-    Visibility::Visible     => "visible",
-    Visibility::Hidden      => "hidden",
-    Visibility::Collapse    => "collapse"
-);
-
-
-/// A text decoration style.
-///
-/// Defines the style of the line that should be rendered.
-#[allow(missing_docs)]
-#[derive(Clone, Default, Debug)]
-pub struct TextDecorationStyle {
-    pub fill: Option<Fill>,
-    pub stroke: Option<Stroke>,
-}
-
-
-/// A text decoration.
-#[derive(Clone, Default, Debug)]
-pub struct TextDecoration {
-    /// Draw underline using specified style.
-    ///
-    /// Should be drawn before/under text.
-    pub underline: Option<TextDecorationStyle>,
-
-    /// Draw overline using specified style.
-    ///
-    /// Should be drawn before/under text.
-    pub overline: Option<TextDecorationStyle>,
-
-    /// Draw line-through using specified style.
-    ///
-    /// Should be drawn after/over text.
-    pub line_through: Option<TextDecorationStyle>,
-}
-
-
-/// A text anchor.
-///
-/// `text-anchor` attribute in the SVG.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum TextAnchor {
-    Start,
-    Middle,
-    End,
-}
-
-enum_default!(TextAnchor, Start);
-
-enum_from_str!(TextAnchor,
-    "start"     => TextAnchor::Start,
-    "middle"    => TextAnchor::Middle,
-    "end"       => TextAnchor::End
-);
-
-enum_to_string!(TextAnchor,
-    TextAnchor::Start   => "start",
-    TextAnchor::Middle  => "middle",
-    TextAnchor::End     => "end"
-);
-
-
-/// A font style.
-///
-/// `font-style` attribute in the SVG.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum FontStyle {
-    Normal,
-    Italic,
-    Oblique,
-}
-
-enum_default!(FontStyle, Normal);
-
-enum_from_str!(FontStyle,
-    "normal"    => FontStyle::Normal,
-    "italic"    => FontStyle::Italic,
-    "oblique"   => FontStyle::Oblique
-);
-
-enum_to_string!(FontStyle,
-    FontStyle::Normal   => "normal",
-    FontStyle::Italic   => "italic",
-    FontStyle::Oblique  => "oblique"
-);
-
-
-/// A font variant.
-///
-/// `font-variant` attribute in the SVG.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum FontVariant {
-    Normal,
-    SmallCaps,
-}
-
-enum_default!(FontVariant, Normal);
-
-enum_from_str!(FontVariant,
-    "normal"        => FontVariant::Normal,
-    "small-caps"    => FontVariant::SmallCaps
-);
-
-enum_to_string!(FontVariant,
-    FontVariant::Normal     => "normal",
-    FontVariant::SmallCaps  => "small-caps"
-);
-
-
-/// A font weight.
-///
-/// `font-weight` attribute in the SVG.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum FontWeight {
-    W100,
-    W200,
-    W300,
-    W400,
-    W500,
-    W600,
-    W700,
-    W800,
-    W900,
-}
-
-enum_default!(FontWeight, W400);
-
-enum_to_string!(FontWeight,
-    FontWeight::W100 => "100",
-    FontWeight::W200 => "200",
-    FontWeight::W300 => "300",
-    FontWeight::W400 => "400",
-    FontWeight::W500 => "500",
-    FontWeight::W600 => "600",
-    FontWeight::W700 => "700",
-    FontWeight::W800 => "800",
-    FontWeight::W900 => "900"
-);
-
-
-/// A font stretch.
-///
-/// `font-stretch` attribute in the SVG.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum FontStretch {
-    Normal,
-    Wider,
-    Narrower,
-    UltraCondensed,
-    ExtraCondensed,
-    Condensed,
-    SemiCondensed,
-    SemiExpanded,
-    Expanded,
-    ExtraExpanded,
-    UltraExpanded,
-}
-
-enum_default!(FontStretch, Normal);
-
-enum_from_str!(FontStretch,
-    "normal"            => FontStretch::Normal,
-    "wider"             => FontStretch::Wider,
-    "narrower"          => FontStretch::Narrower,
-    "ultra-condensed"   => FontStretch::UltraCondensed,
-    "extra-condensed"   => FontStretch::ExtraCondensed,
-    "condensed"         => FontStretch::Condensed,
-    "semi-condensed"    => FontStretch::SemiCondensed,
-    "semi-expanded"     => FontStretch::SemiExpanded,
-    "expanded"          => FontStretch::Expanded,
-    "extra-expanded"    => FontStretch::ExtraExpanded,
-    "ultra-expanded"    => FontStretch::UltraExpanded
-);
-
-enum_to_string!(FontStretch,
-    FontStretch::Normal         => "normal",
-    FontStretch::Wider          => "wider",
-    FontStretch::Narrower       => "narrower",
-    FontStretch::UltraCondensed => "ultra-condensed",
-    FontStretch::ExtraCondensed => "extra-condensed",
-    FontStretch::Condensed      => "condensed",
-    FontStretch::SemiCondensed  => "semi-condensed",
-    FontStretch::SemiExpanded   => "semi-expanded",
-    FontStretch::Expanded       => "expanded",
-    FontStretch::ExtraExpanded  => "extra-expanded",
-    FontStretch::UltraExpanded  => "ultra-expanded"
 );
 
 
@@ -457,33 +221,6 @@ impl Default for Stroke {
 }
 
 
-/// A font description.
-#[allow(missing_docs)]
-#[derive(Clone, Debug)]
-pub struct Font {
-    /// Font family.
-    ///
-    /// Currently, is exactly the same as in the `font-family` attribute.
-    /// So it can look like `Verdana, 'Times New Roman', sans-serif`.
-    pub family: String,
-    pub size: FontSize,
-    pub style: FontStyle,
-    pub variant: FontVariant,
-    pub weight: FontWeight,
-    pub stretch: FontStretch,
-
-    /// Letter spacing.
-    ///
-    /// None == `normal`
-    pub letter_spacing: Option<f64>,
-
-    /// Word spacing.
-    ///
-    /// None == `normal`
-    pub word_spacing: Option<f64>,
-}
-
-
 /// View box.
 #[derive(Clone, Copy, Debug)]
 pub struct ViewBox {
@@ -535,16 +272,6 @@ pub enum FilterInput {
     Reference(String),
 }
 
-enum_to_string!(FilterInput,
-    FilterInput::SourceGraphic      => "SourceGraphic",
-    FilterInput::SourceAlpha        => "SourceAlpha",
-    FilterInput::BackgroundImage    => "BackgroundImage",
-    FilterInput::BackgroundAlpha    => "BackgroundAlpha",
-    FilterInput::FillPaint          => "FillPaint",
-    FilterInput::StrokePaint        => "StrokePaint",
-    FilterInput::Reference(ref s)   => s
-);
-
 
 /// A color interpolation mode.
 #[allow(missing_docs)]
@@ -559,11 +286,6 @@ enum_default!(ColorInterpolation, LinearRGB);
 enum_from_str!(ColorInterpolation,
     "sRGB"      => ColorInterpolation::SRGB,
     "linearRGB" => ColorInterpolation::LinearRGB
-);
-
-enum_to_string!(ColorInterpolation,
-    ColorInterpolation::SRGB        => "sRGB",
-    ColorInterpolation::LinearRGB   => "linearRGB"
 );
 
 
@@ -607,14 +329,6 @@ pub enum FeBlendMode {
     Lighten,
 }
 
-enum_to_string!(FeBlendMode,
-    FeBlendMode::Normal     => "normal",
-    FeBlendMode::Multiply   => "multiply",
-    FeBlendMode::Screen     => "screen",
-    FeBlendMode::Darken     => "darken",
-    FeBlendMode::Lighten    => "lighten"
-);
-
 
 /// An images compositing operation.
 #[allow(missing_docs)]
@@ -632,15 +346,6 @@ pub enum FeCompositeOperator {
         k4: CompositingCoefficient,
     },
 }
-
-enum_to_string!(FeCompositeOperator,
-    FeCompositeOperator::Over               => "over",
-    FeCompositeOperator::In                 => "in",
-    FeCompositeOperator::Out                => "out",
-    FeCompositeOperator::Atop               => "atop",
-    FeCompositeOperator::Xor                => "xor",
-    FeCompositeOperator::Arithmetic { .. }  => "arithmetic"
-);
 
 
 /// Kind of the `feImage` data.
@@ -685,12 +390,6 @@ enum_from_str!(ShapeRendering,
     "geometricPrecision"    => ShapeRendering::GeometricPrecision
 );
 
-enum_to_string!(ShapeRendering,
-    ShapeRendering::OptimizeSpeed       => "optimizeSpeed",
-    ShapeRendering::CrispEdges          => "crispEdges",
-    ShapeRendering::GeometricPrecision  => "geometricPrecision"
-);
-
 
 /// A text rendering method.
 ///
@@ -711,12 +410,6 @@ enum_from_str!(TextRendering,
     "geometricPrecision"    => TextRendering::GeometricPrecision
 );
 
-enum_to_string!(TextRendering,
-    TextRendering::OptimizeSpeed       => "optimizeSpeed",
-    TextRendering::OptimizeLegibility  => "optimizeLegibility",
-    TextRendering::GeometricPrecision  => "geometricPrecision"
-);
-
 
 /// An image rendering method.
 ///
@@ -733,9 +426,4 @@ enum_default!(ImageRendering, OptimizeQuality);
 enum_from_str!(ImageRendering,
     "optimizeQuality"   => ImageRendering::OptimizeQuality,
     "optimizeSpeed"     => ImageRendering::OptimizeSpeed
-);
-
-enum_to_string!(ImageRendering,
-    ImageRendering::OptimizeQuality => "optimizeQuality",
-    ImageRendering::OptimizeSpeed   => "optimizeSpeed"
 );

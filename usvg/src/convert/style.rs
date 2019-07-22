@@ -2,16 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use svgdom;
-
-// self
 use crate::tree;
-use super::prelude::*;
-use super::{
-    paint_server,
-    switch,
-};
+use super::{prelude::*, paint_server, switch};
 
 
 pub fn resolve_fill(
@@ -159,7 +151,9 @@ fn convert_paint(
     }
 }
 
-fn from_fallback(fallback: Option<svgdom::PaintFallback>) -> Option<tree::Paint> {
+fn from_fallback(
+    fallback: Option<svgdom::PaintFallback>,
+) -> Option<tree::Paint> {
     match fallback? {
         svgdom::PaintFallback::None => {
             None
@@ -176,7 +170,10 @@ fn from_fallback(fallback: Option<svgdom::PaintFallback>) -> Option<tree::Paint>
 
 // Prepare the 'stroke-dasharray' according to:
 // https://www.w3.org/TR/SVG11/painting.html#StrokeDasharrayProperty
-fn conv_dasharray(node: &svgdom::Node, state: &State) -> Option<Vec<f64>> {
+fn conv_dasharray(
+    node: &svgdom::Node,
+    state: &State,
+) -> Option<Vec<f64>> {
     let node = node.find_node_with_attribute(AId::StrokeDasharray)?;
     let list = super::units::convert_list(&node, AId::StrokeDasharray, state)?;
 
@@ -211,7 +208,10 @@ fn conv_dasharray(node: &svgdom::Node, state: &State) -> Option<Vec<f64>> {
     Some(list)
 }
 
-pub fn is_visible_element(node: &svgdom::Node, opt: &Options) -> bool {
+pub fn is_visible_element(
+    node: &svgdom::Node,
+    opt: &Options,
+) -> bool {
     let display = node.attributes().get_value(AId::Display) != Some(&AValue::None);
 
        display

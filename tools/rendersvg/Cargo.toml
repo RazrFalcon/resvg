@@ -1,6 +1,6 @@
 [package]
 name = "rendersvg"
-version = "0.6.1"
+version = "0.7.0"
 authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster"]
 license = "MPL-2.0"
@@ -9,11 +9,13 @@ workspace = "../../"
 
 [dependencies]
 fern = "0.5"
-gumdrop = "0.5"
 log = "0.4"
+pico-args = { git = "https://github.com/RazrFalcon/pico-args", rev = "f9e8b51" }
 resvg = { path = "../../" }
 time = "0.1"
 
 [features]
 cairo-backend = ["resvg/cairo-backend"]
 qt-backend = ["resvg/qt-backend"]
+raqote-backend = ["resvg/raqote-backend"]
+skia-backend = ["resvg/skia-backend"]

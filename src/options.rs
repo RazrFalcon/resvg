@@ -2,12 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use usvg::{
-    self,
-    Color,
-};
-
 
 /// Image fit options.
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -37,7 +31,7 @@ pub struct Options {
     /// Sets an image background color. Does not affect rendering to canvas.
     ///
     /// `None` equals to transparent.
-    pub background: Option<Color>,
+    pub background: Option<usvg::Color>,
 }
 
 impl Default for Options {

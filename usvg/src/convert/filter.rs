@@ -4,10 +4,6 @@
 
 use std::collections::HashSet;
 
-// external
-use svgdom;
-
-// self
 use crate::tree;
 use super::prelude::*;
 use super::paint_server::{
@@ -34,7 +30,10 @@ pub fn convert(
         resolve_number(node, AId::Width, units, state, Length::new(120.0, Unit::Percent)),
         resolve_number(node, AId::Height, units, state, Length::new(120.0, Unit::Percent)),
     );
-    let rect = try_opt_warn!(rect, None, "Filter '{}' has an invalid region. Skipped.", node.id());
+    let rect = try_opt_warn_or!(
+        rect, None,
+        "Filter '{}' has an invalid region. Skipped.", node.id(),
+    );
 
     let node_with_children = find_filter_with_children(node)?;
     let children = collect_children(&node_with_children, primitive_units, state);
@@ -55,11 +54,15 @@ pub fn convert(
     Some(node.id().clone())
 }
 
-fn find_filter_with_children(node: &svgdom::Node) -> Option<svgdom::Node> {
+fn find_filter_with_children(
+    node: &svgdom::Node,
+) -> Option<svgdom::Node> {
     for link in node.href_iter() {
         if !link.is_tag_name(EId::Filter) {
-            warn!("Filter '{}' cannot reference '{}' via 'xlink:href'.",
-                  node.id(), link.tag_id().unwrap());
+            warn!(
+                "Filter '{}' cannot reference '{}' via 'xlink:href'.",
+                node.id(), link.tag_id().unwrap()
+            );
             return None;
         }
 
@@ -216,7 +219,9 @@ fn convert_fe_blend(
     })
 }
 
-fn convert_fe_flood(fe: &svgdom::Node) -> tree::FilterKind {
+fn convert_fe_flood(
+    fe: &svgdom::Node,
+) -> tree::FilterKind {
     let attrs = fe.attributes();
 
     let color = attrs.get_color(AId::FloodColor).unwrap_or_else(tree::Color::black);
@@ -228,7 +233,10 @@ fn convert_fe_flood(fe: &svgdom::Node) -> tree::FilterKind {
     })
 }
 
-fn get_coeff(attrs: &svgdom::Attributes, aid: AId) -> tree::CompositingCoefficient {
+fn get_coeff(
+    attrs: &svgdom::Attributes,
+    aid: AId,
+) -> tree::CompositingCoefficient {
     let k = match attrs.get_value(aid) {
         Some(AValue::Number(n)) => *n,
         _ => 0.0,
@@ -290,8 +298,9 @@ fn convert_fe_image(
     let ref attrs = fe.attributes();
 
     let aspect = super::convert_aspect(attrs);
-    let rendering_mode = fe.try_find_enum(AId::ImageRendering)
-                           .unwrap_or(state.opt.image_rendering);
+    let rendering_mode = fe
+        .try_find_enum(AId::ImageRendering)
+        .unwrap_or(state.opt.image_rendering);
 
     let href = match attrs.get_value(AId::Href) {
         Some(&AValue::String(ref s)) => s,
@@ -305,7 +314,8 @@ fn convert_fe_image(
         }
     };
 
-    let (img_data, format) = match super::image::get_href_data(&*fe.id(), href, state.opt.path.as_ref()) {
+    let href = super::image::get_href_data(&*fe.id(), href, state.opt.path.as_ref());
+    let (img_data, format) = match href {
         Some((data, format)) => (data, format),
         None => {
             return tree::FilterKind::FeImage(tree::FeImage {
@@ -372,7 +382,9 @@ fn resolve_input(
     }
 }
 
-fn parse_in(s: &str) -> tree::FilterInput {
+fn parse_in(
+    s: &str,
+) -> tree::FilterInput {
     match s {
         "SourceGraphic"     => tree::FilterInput::SourceGraphic,
         "SourceAlpha"       => tree::FilterInput::SourceAlpha,
@@ -384,7 +396,10 @@ fn parse_in(s: &str) -> tree::FilterInput {
     }
 }
 
-fn gen_result(node: &svgdom::Node, results: &mut FilterResults) -> String {
+fn gen_result(
+    node: &svgdom::Node,
+    results: &mut FilterResults,
+) -> String {
     match node.attributes().get_str(AId::Result) {
         Some(s) => {
             // Remember predefined result.

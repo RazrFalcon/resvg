@@ -4,10 +4,6 @@
 
 use std::f64;
 
-// external
-use svgdom;
-
-// self
 use crate::tree;
 use super::prelude::*;
 
@@ -163,14 +159,16 @@ fn convert_pattern(
 ) -> Option<ServerOrColor> {
     let node_with_children = find_pattern_with_children(node)?;
 
-    let ref attrs = node.attributes();
-
-    let view_box = node.get_viewbox().map(|vb|
-        tree::ViewBox {
-            rect: vb,
-            aspect: super::convert_aspect(attrs), // TODO: via href?
-        }
-    );
+    let view_box = {
+        let n1 = resolve_attr(node, AId::ViewBox);
+        let n2 = resolve_attr(node, AId::PreserveAspectRatio);
+        n1.get_viewbox().map(|vb|
+            tree::ViewBox {
+                rect: vb,
+                aspect: super::convert_aspect(&n2.attributes()),
+            }
+        )
+    };
 
     let units = convert_units(node, AId::PatternUnits, tree::Units::ObjectBoundingBox);
     let content_units = convert_units(node, AId::PatternContentUnits, tree::Units::UserSpaceOnUse);
@@ -187,7 +185,10 @@ fn convert_pattern(
         resolve_number(node, AId::Width, units, state, Length::zero()),
         resolve_number(node, AId::Height, units, state, Length::zero()),
     );
-    let rect = try_opt_warn!(rect, None, "Pattern '{}' has an invalid size. Skipped.", node.id());
+    let rect = try_opt_warn_or!(
+        rect, None,
+        "Pattern '{}' has an invalid size. Skipped.", node.id()
+    );
 
     let mut patt = tree.append_to_defs(tree::NodeKind::Pattern(tree::Pattern {
         id: node.id().clone(),
@@ -239,8 +240,10 @@ pub fn convert_units(
 fn find_gradient_with_stops(node: &svgdom::Node) -> Option<svgdom::Node> {
     for link in node.href_iter() {
         if !link.is_gradient() {
-            warn!("Gradient '{}' cannot reference '{}' via 'xlink:href'.",
-                  node.id(), link.tag_id().unwrap());
+            warn!(
+                "Gradient '{}' cannot reference '{}' via 'xlink:href'.",
+                node.id(), link.tag_id().unwrap()
+            );
             return None;
         }
 
@@ -255,8 +258,10 @@ fn find_gradient_with_stops(node: &svgdom::Node) -> Option<svgdom::Node> {
 fn find_pattern_with_children(node: &svgdom::Node) -> Option<svgdom::Node> {
     for link in node.href_iter() {
         if !link.is_tag_name(EId::Pattern) {
-            warn!("Pattern '{}' cannot reference '{}' via 'xlink:href'.",
-                  node.id(), link.tag_id().unwrap());
+            warn!(
+                "Pattern '{}' cannot reference '{}' via 'xlink:href'.",
+                node.id(), link.tag_id().unwrap()
+            );
             return None;
         }
 
@@ -280,7 +285,10 @@ fn convert_stops(grad: &svgdom::Node) -> Vec<tree::Stop> {
             }
 
             // `number` can be either a number or a percentage.
-            let offset = stop.attributes().get_length(AId::Offset).unwrap_or(prev_offset);
+            let offset = stop
+                .attributes()
+                .get_length(AId::Offset)
+                .unwrap_or(prev_offset);
             let offset = match offset.unit {
                 Unit::None => offset.num,
                 Unit::Percent => offset.num / 100.0,
@@ -289,8 +297,10 @@ fn convert_stops(grad: &svgdom::Node) -> Vec<tree::Stop> {
             let offset = f64_bound(0.0, offset, 1.0);
             prev_offset = Length::new_number(offset);
 
-            let color = stop.attributes().get_color(AId::StopColor)
-                            .unwrap_or_else(svgdom::Color::black);
+            let color = stop
+                .attributes()
+                .get_color(AId::StopColor)
+                .unwrap_or_else(svgdom::Color::black);
 
             stops.push(tree::Stop {
                 offset: offset.into(),
@@ -409,7 +419,7 @@ fn resolve_lg_attr(
     aid: AId,
 ) -> svgdom::Node {
     for link in node.href_iter() {
-        let eid = try_opt!(link.tag_id(), node.clone());
+        let eid = try_opt_or!(link.tag_id(), node.clone());
         match (aid, eid) {
             // Coordinates can be resolved only from
             // ref element with the same type.
@@ -441,7 +451,7 @@ fn resolve_rg_attr(
     aid: AId,
 ) -> svgdom::Node {
     for link in node.href_iter() {
-        let eid = try_opt!(link.tag_id(), node.clone());
+        let eid = try_opt_or!(link.tag_id(), node.clone());
         match (aid, eid) {
             // Coordinates can be resolved only from
             // ref element with the same type.
@@ -474,7 +484,7 @@ fn resolve_pattern_attr(
     aid: AId,
 ) -> svgdom::Node {
     for link in node.href_iter() {
-        let eid = try_opt!(link.tag_id(), node.clone());
+        let eid = try_opt_or!(link.tag_id(), node.clone());
 
         if eid != EId::Pattern {
             break;
@@ -493,7 +503,7 @@ fn resolve_filter_attr(
     aid: AId,
 ) -> svgdom::Node {
     for link in node.href_iter() {
-        let eid = try_opt!(link.tag_id(), node.clone());
+        let eid = try_opt_or!(link.tag_id(), node.clone());
 
         if eid != EId::Filter {
             break;

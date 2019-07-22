@@ -7,17 +7,8 @@
 use std::cell::Ref;
 use std::path;
 
-// external
-use svgdom;
-use libflate;
-
-// self
-pub use self::nodes::*;
-pub use self::attributes::*;
-use crate::{
-    Error,
-    Options,
-};
+pub use self::{nodes::*, attributes::*};
+use crate::{utils, Rect, Error, Options, XmlOptions};
 
 mod attributes;
 mod export;
@@ -28,6 +19,7 @@ mod numbers;
 pub mod prelude {
     pub use crate::IsDefault;
     pub use crate::IsValidLength;
+    pub use crate::TransformFromBBox;
     pub use crate::tree::FuzzyEq;
     pub use crate::tree::FuzzyZero;
     pub use super::NodeExt;
@@ -75,7 +67,7 @@ impl Tree {
     /// Parses `Tree` from the `svgdom::Document`.
     ///
     /// An empty `Tree` will be returned on any error.
-    pub fn from_dom(mut doc: svgdom::Document, opt: &Options) -> Result<Self, Error> {
+    fn from_dom(mut doc: svgdom::Document, opt: &Options) -> Result<Self, Error> {
         super::convert::prepare_doc(&mut doc);
         super::convert::convert_doc(&doc, opt)
     }
@@ -167,11 +159,9 @@ impl Tree {
         None
     }
 
-    /// Converts the document to `svgdom::Document`.
-    ///
-    /// Used to save document to file for debug purposes.
-    pub fn to_svgdom(&self) -> svgdom::Document {
-        export::convert(self)
+    /// Converts an SVG.
+    pub fn to_string(&self, opt: XmlOptions) -> String {
+        export::convert(self, opt)
     }
 }
 
@@ -189,6 +179,12 @@ pub trait NodeExt {
     /// transform will be returned.
     fn transform(&self) -> Transform;
 
+    /// Returns node's absolute transform.
+    ///
+    /// If a current node doesn't support transformation - a default
+    /// transform will be returned.
+    fn abs_transform(&self) -> Transform;
+
     /// Appends `kind` as a node child.
     ///
     /// Shorthand for `Node::append(Node::new(Box::new(kind)))`.
@@ -196,6 +192,11 @@ pub trait NodeExt {
 
     /// Returns a node's tree.
     fn tree(&self) -> Tree;
+
+    /// Calculates node's absolute bounding box.
+    ///
+    /// Can be expensive on large paths and groups.
+    fn calculate_bbox(&self) -> Option<Rect>;
 }
 
 impl NodeExt for Node {
@@ -207,6 +208,20 @@ impl NodeExt for Node {
         self.borrow().transform()
     }
 
+    fn abs_transform(&self) -> Transform {
+        let mut ts_list = Vec::new();
+        for p in self.ancestors().skip(1) {
+            ts_list.push(p.transform());
+        }
+
+        let mut abs_ts = Transform::default();
+        for ts in ts_list.iter().rev() {
+            abs_ts.append(ts);
+        }
+
+        abs_ts
+    }
+
     fn append_kind(&mut self, kind: NodeKind) -> Node {
         let new_node = Node::new(kind);
         self.append(new_node.clone());
@@ -215,6 +230,10 @@ impl NodeExt for Node {
 
     fn tree(&self) -> Tree {
         Tree { root: self.root() }
+    }
+
+    fn calculate_bbox(&self) -> Option<Rect> {
+        calc_node_bbox(self, self.abs_transform())
     }
 }
 
@@ -258,3 +277,32 @@ fn deflate<R: ::std::io::Read>(inner: R, len: usize) -> Result<String, Error> {
     Ok(decoded)
 }
 
+fn calc_node_bbox(
+    node: &Node,
+    ts: Transform,
+) -> Option<Rect> {
+    let mut ts2 = ts;
+    ts2.append(&node.transform());
+
+    match *node.borrow() {
+        NodeKind::Path(ref path) => {
+            utils::path_bbox(&path.segments, path.stroke.as_ref(), Some(ts2))
+        }
+        NodeKind::Image(ref img) => {
+            let segments = utils::rect_to_path(img.view_box.rect);
+            utils::path_bbox(&segments, None, Some(ts2))
+        }
+        NodeKind::Svg(_) | NodeKind::Group(_) => {
+            let mut bbox = Rect::new_bbox();
+
+            for child in node.children() {
+                if let Some(c_bbox) = calc_node_bbox(&child, ts2) {
+                    bbox = bbox.expand(c_bbox);
+                }
+            }
+
+            Some(bbox)
+        }
+        _ => None,
+    }
+}

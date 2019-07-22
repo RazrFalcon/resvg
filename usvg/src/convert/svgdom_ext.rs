@@ -4,13 +4,8 @@
 
 use std::str::FromStr;
 
-// external
-use svgdom;
-
-// self
 use crate::tree;
-use super::prelude::*;
-use super::units;
+use super::{prelude::*, units};
 
 
 pub trait SvgNodeExt {
@@ -46,7 +41,7 @@ impl SvgNodeExt for svgdom::Node {
     fn find_node_with_attribute(&self, aid: AId) -> Option<svgdom::Node> {
         for n in self.ancestors() {
             if n.has_attribute(aid) {
-                return Some(n.clone())
+                return Some(n.clone());
             }
         }
 
@@ -267,8 +262,7 @@ pub trait GetValue {
     }
 
     fn get_transform(&self, id: AId) -> svgdom::Transform {
-        let ts: svgdom::Transform = try_opt!(self.get_type(id).cloned(),
-                                             svgdom::Transform::default());
+        let ts: svgdom::Transform = self.get_type(id).cloned().unwrap_or_default();
 
         let (sx, sy) = ts.get_scale();
         if sx.fuzzy_eq(&0.0) || sy.fuzzy_eq(&0.0) {

@@ -53,24 +53,30 @@ Full spec can be found [here](https://github.com/RazrFalcon/usvg/blob/master/doc
 - Unsupported elements:
   - some filter-based elements
   - font-based elements
-  - `marker`
 
 [SVG]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 */
 
-#![doc(html_root_url = "https://docs.rs/usvg/0.6.1")]
+#![doc(html_root_url = "https://docs.rs/usvg/0.7.0")]
 
-#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_copy_implementations)]
 
-pub use svgdom;
-pub use lyon_geom;
-
-/// Task, return value.
+/// Unwraps `Option` and invokes `return` on `None`.
 #[macro_export]
 macro_rules! try_opt {
+    ($task:expr) => {
+        match $task {
+            Some(v) => v,
+            None => return,
+        }
+    };
+}
+
+/// Unwraps `Option` and invokes `return $ret` on `None`.
+#[macro_export]
+macro_rules! try_opt_or {
     ($task:expr, $ret:expr) => {
         match $task {
             Some(v) => v,
@@ -79,9 +85,32 @@ macro_rules! try_opt {
     };
 }
 
-/// Task, return value, warning message.
+/// Unwraps `Option` and invokes `return` on `None` with a warning.
 #[macro_export]
 macro_rules! try_opt_warn {
+    ($task:expr, $msg:expr) => {
+        match $task {
+            Some(v) => v,
+            None => {
+                log::warn!($msg);
+                return;
+            }
+        }
+    };
+    ($task:expr, $fmt:expr, $($arg:tt)*) => {
+        match $task {
+            Some(v) => v,
+            None => {
+                log::warn!($fmt, $($arg)*);
+                return;
+            }
+        }
+    };
+}
+
+/// Unwraps `Option` and invokes `return $ret` on `None` with a warning.
+#[macro_export]
+macro_rules! try_opt_warn_or {
     ($task:expr, $ret:expr, $msg:expr) => {
         match $task {
             Some(v) => v,
@@ -102,22 +131,11 @@ macro_rules! try_opt_warn {
     };
 }
 
-/// Panics in debug, prints a warning in release.
-macro_rules! debug_panic {
-    ($msg:expr) => {
-        debug_assert!(false, $msg);
-        warn!($msg);
-    };
-    ($fmt:expr, $($arg:tt)*) => {
-        debug_assert!(false, $fmt, $($arg)*);
-        log::warn!($fmt, $($arg)*);
-    };
-}
-
 
 pub mod utils;
 mod convert;
 mod error;
+mod fontdb;
 mod geom;
 mod options;
 mod tree;
@@ -132,6 +150,8 @@ mod short {
     };
 }
 
+pub use xmlwriter::Options as XmlOptions;
+pub use xmlwriter::Indent as XmlIndent;
 
 pub use crate::error::*;
 pub use crate::geom::*;
@@ -161,5 +181,18 @@ pub trait IsValidLength {
 impl IsValidLength for f64 {
     fn is_valid_length(&self) -> bool {
         *self > 0.0
+    }
+}
+
+
+/// Converts `Rect` into bbox `Transform`.
+pub trait TransformFromBBox: Sized {
+    /// Converts `Rect` into bbox `Transform`.
+    fn from_bbox(bbox: Rect) -> Self;
+}
+
+impl TransformFromBBox for tree::Transform {
+    fn from_bbox(bbox: Rect) -> Self {
+        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
     }
 }

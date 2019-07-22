@@ -1,0 +1,14 @@
+[package]
+name = "resvg-qt"
+version = "0.7.0"
+authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
+keywords = ["qt", "ffi"]
+license = "MIT"
+edition = "2018"
+description = "A minimal bindings to Qt used by resvg."
+repository = "https://github.com/RazrFalcon/resvg"
+workspace = "../.."
+
+[build-dependencies]
+cc = "1.0"
+pkg-config = "0.3"

@@ -1,21 +1,15 @@
-use std::env;
-use std::path::Path;
-
 use resvg::prelude::*;
 
-// TODO: write doc
-
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let args: Vec<String> = std::env::args().collect();
     if !(args.len() == 3 || args.len() == 5) {
-        println!("Usage:\n\
-            \tdraw_bboxes <in-svg> <out-png>\n\
-            \tdraw_bboxes <in-svg> <out-png> -z ZOOM");
+        println!(
+            "Usage:\n\
+             \tdraw_bboxes <in-svg> <out-png>\n\
+             \tdraw_bboxes <in-svg> <out-png> -z ZOOM"
+        );
         return;
     }
-
-    let _resvg = resvg::init();
-    let backend = resvg::default_backend();
 
     let zoom = if args.len() == 5 {
         args[4].parse::<f64>().expect("not a float")
@@ -33,7 +27,7 @@ fn main() {
     let mut bboxes = Vec::new();
     for node in rtree.root().descendants() {
         if !rtree.is_in_defs(&node) {
-            if let Some(bbox) = backend.calc_node_bbox(&node, &opt) {
+            if let Some(bbox) = node.calculate_bbox() {
                 bboxes.push(bbox);
             }
         }
@@ -57,6 +51,6 @@ fn main() {
         }));
     }
 
-    let img = backend.render_to_image(&rtree, &opt).unwrap();
-    img.save(Path::new(&args[2]));
+    let img = resvg::default_backend().render_to_image(&rtree, &opt).unwrap();
+    img.save(std::path::Path::new(&args[2]));
 }

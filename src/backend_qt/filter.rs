@@ -5,19 +5,13 @@
 use std::cmp;
 use std::rc::Rc;
 
-// external
 use crate::qt;
 use rgb::FromSlice;
-use usvg::ColorInterpolation as ColorSpace;
+use log::warn;
+use usvg::{try_opt_or, ColorInterpolation as ColorSpace};
 
-// self
-use super::prelude::*;
-use crate::backend_utils::filter::{
-    self,
-    Error,
-    Filter,
-    ImageExt,
-};
+use crate::{prelude::*, backend_utils::*};
+use crate::backend_utils::filter::{Error, Filter, ImageExt};
 
 type Image = filter::Image<qt::Image>;
 type FilterResult = filter::FilterResult<qt::Image>;
@@ -25,7 +19,7 @@ type FilterResult = filter::FilterResult<qt::Image>;
 
 pub fn apply(
     filter: &usvg::Filter,
-    bbox: Rect,
+    bbox: Option<Rect>,
     ts: &usvg::Transform,
     opt: &Options,
     canvas: &mut qt::Image,
@@ -142,7 +136,7 @@ impl Filter<qt::Image> for QtFilter {
                 }
             }
             _ => {
-                warn!("Filter input '{}' is not supported.", input.to_string());
+                warn!("Filter input '{:?}' is not supported.", input);
                 Self::get_input(&usvg::FilterInput::SourceGraphic, region, results, canvas)
             }
         }
@@ -152,11 +146,11 @@ impl Filter<qt::Image> for QtFilter {
         fe: &usvg::FeGaussianBlur,
         units: usvg::Units,
         cs: ColorSpace,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (std_dx, std_dy) = try_opt!(Self::resolve_std_dev(fe, units, bbox, ts), Ok(input));
+        let (std_dx, std_dy) = try_opt_or!(Self::resolve_std_dev(fe, units, bbox, ts), Ok(input));
 
         let input = input.into_color_space(cs)?;
         let mut buffer = input.take()?;
@@ -170,11 +164,11 @@ impl Filter<qt::Image> for QtFilter {
     fn apply_offset(
         fe: &usvg::FeOffset,
         units: usvg::Units,
-        bbox: Rect,
+        bbox: Option<Rect>,
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (dx, dy) = try_opt!(Self::resolve_offset(fe, units, bbox, ts), Ok(input));
+        let (dx, dy) = try_opt_or!(Self::resolve_offset(fe, units, bbox, ts), Ok(input));
 
         // TODO: do not use an additional buffer
         let mut buffer = create_image(input.width(), input.height())?;
@@ -380,7 +374,9 @@ impl Filter<qt::Image> for QtFilter {
                 if format == usvg::ImageFormat::SVG {
                     super::image::draw_svg(data, view_box, opt, &mut p);
                 } else {
-                    super::image::draw_raster(data, view_box, fe.rendering_mode, opt, &mut p);
+                    super::image::draw_raster(
+                        format, data, view_box, fe.rendering_mode, opt, &mut p
+                    );
                 }
             }
             usvg::FeImageKind::Use(..) => {}

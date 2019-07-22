@@ -8,21 +8,63 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
+- (resvg) A [Skia](https://skia.org/) backend thanks to
+  [JaFenix](https://github.com/JaFenix).
+
+### Changed
+- All backend are using the `image` crate for raster images loading now.
+- Use `pico-args` instead of `gumdrop`.
+- (usvg) The `xmlwriter` is used for SVG generation now.
+  Almost 2x faster than generating an `svgdom`.
+- `svgdom` is no longer reexported.
+
+### Removed
+- (cairo-backend) `gdk-pixbuf` dependency.
+- (qt-backend) JPEG image format plugin dependency.
+
+## [0.7.0] - 2019-06-19
+### Added
+- New text layout implementation:
+  - `textPath` support.
+  - `writing-mode` support, aka vertical text.
+  - [Text BIDI reordering](http://www.unicode.org/reports/tr9/).
+  - Better text shaping.
+  - `word-spacing` is supported for all backends now.
+  - [`harfbuzz`](https://github.com/harfbuzz/harfbuzz) dependency.
+  - Subscript, superscript offsets are extracted from font and not hardcoded now.
 - `shape-rendering`, `text-rendering` and `image-rendering` support.
 - The `arithmetic` operator for `feComposite`.
 - (usvg) `--quiet` argument.
+- (c-api) `resvg_get_image_bbox`.
+- (qt-api) `ResvgRenderer::boundingBox`.
+- (resvg) A [raqote](https://github.com/jrmuizel/raqote) backend thanks to
+  [jrmuizel](https://github.com/jrmuizel). Still experimental.
 
 ### Changed
+- Text will be converted into paths on the `usvg` side now.
 - (resvg) Do not rescale images before rendering. This is faster and better.
-- (qt-backend) Text will always be rendered as path now.
-  Previously, `QPainter::drawText` was used for simple text.
 - (usvg) An `image` element with a zero or negative size will be skipped now.
   Previously, a linked image size was used, which is incorrect.
 - Geometry primitives (`Rect`, `Size`, etc) are immutable and always valid now.
 - (usvg) The default `color-interpolation-filters` attribute will not be exported now.
 
+### Removed
+- (usvg) All text related structures and enums. Text will be converted into `Path` now.
+- `InitObject` and `init()` because they are no longer needed.
+- (c-api) `resvg_handle`, `resvg_init`, `resvg_destroy`.
+- (c-api) `resvg_cairo_get_node_bbox` and `resvg_qt_get_node_bbox`.
+  Use backend-independent `resvg_get_node_bbox` instead.
+- (cairo-backend) `pango` dependency.
+- (resvg) `Backend::calc_node_bbox`. Use `Node::calculate_bbox()` instead.
+
 ### Fixed
+- `letter-spacing` on cursive scripts (like Arabic).
 - (rctree) Prevent stack overflow on a huge, deeply nested SVG.
+- (c-api) `resvg_is_image_empty` was always returning `false`.
+- (resvg) Panic when `filter` with `objectBoudningBox` was set on an empty group.
+- (usvg) `mask` with `objectBoundingBox` resolving.
+- (usvg) `pattern`'s `viewBox` attribute resolving via `href`.
+- (roxmltree) Namespace resolving.
 
 ## [0.6.1] - 2019-03-16
 ### Fixed
@@ -199,7 +241,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/RazrFalcon/resvg/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/RazrFalcon/resvg/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/RazrFalcon/resvg/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/RazrFalcon/resvg/compare/v0.4.0...v0.5.0

@@ -2,25 +2,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use svgdom::{
-    self,
-    ElementType,
-    FilterSvg,
-    Length,
-};
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use svgdom::{ElementType, FilterSvg, Length};
 use log::warn;
 
-// self
-use crate::tree;
-use crate::tree::prelude::*;
-use crate::short::*;
-use crate::geom::*;
-use crate::{
-    Error,
-    Options,
-};
+use crate::{tree, tree::prelude::*, fontdb, utils, Error};
 pub use self::preprocess::prepare_doc;
+
 
 mod clip_and_mask;
 mod filter;
@@ -38,6 +28,7 @@ mod units;
 mod use_node;
 
 mod prelude {
+    pub use log::warn;
     pub use svgdom::{
         AttributeType,
         ElementType,
@@ -48,15 +39,17 @@ mod prelude {
         FuzzyZero,
         Length,
     };
-    pub use crate::geom::*;
-    pub use crate::short::*;
-    pub use crate::Options;
-    pub use super::svgdom_ext::*;
-    pub use super::State;
-    pub use log::warn;
+    pub use crate::{
+        geom::*,
+        short::*,
+        Options,
+    };
+    pub use super::{
+        svgdom_ext::*,
+        State,
+    };
 }
-
-use self::svgdom_ext::*;
+use self::prelude::*;
 
 
 #[derive(Clone)]
@@ -64,6 +57,7 @@ pub struct State<'a> {
     current_root: svgdom::Node,
     size: Size,
     view_box: Rect,
+    db: Rc<RefCell<fontdb::Database>>,
     opt: &'a Options,
 }
 
@@ -124,6 +118,7 @@ pub fn convert_doc(
         current_root: svg.clone(),
         size,
         view_box: view_box.rect,
+        db: Rc::new(RefCell::new(fontdb::Database::new())),
         opt: &opt,
     };
 
@@ -138,11 +133,15 @@ pub fn convert_doc(
     Ok(tree)
 }
 
-fn resolve_svg_size(svg: &svgdom::Node, opt: &Options) -> Result<Size, Error> {
+fn resolve_svg_size(
+    svg: &svgdom::Node,
+    opt: &Options,
+) -> Result<Size, Error> {
     let mut state = State {
         current_root: svg.clone(),
         size: Size::new(100.0, 100.0).unwrap(),
         view_box: Rect::new(0.0, 0.0, 100.0, 100.0).unwrap(),
+        db: Rc::new(RefCell::new(fontdb::Database::new())),
         opt,
     };
 
@@ -188,7 +187,10 @@ fn resolve_svg_size(svg: &svgdom::Node, opt: &Options) -> Result<Size, Error> {
     }
 }
 
-fn get_view_box(svg: &svgdom::Node, size: Size) -> Rect {
+fn get_view_box(
+    svg: &svgdom::Node,
+    size: Size,
+) -> Rect {
     match svg.get_viewbox() {
         Some(vb) => vb,
         None => size.to_rect(0.0, 0.0),
@@ -224,7 +226,7 @@ fn convert_element(
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    let eid = try_opt!(node.tag_id(), ());
+    let eid = try_opt!(node.tag_id());
 
     let is_valid_child =    node.is_graphic()
                          || eid == EId::G
@@ -377,7 +379,9 @@ fn convert_group(
     }
 }
 
-fn remove_empty_groups(tree: &mut tree::Tree) {
+fn remove_empty_groups(
+    tree: &mut tree::Tree,
+) {
     fn rm(parent: tree::Node) -> bool {
         let mut changed = false;
 
@@ -415,7 +419,10 @@ fn remove_empty_groups(tree: &mut tree::Tree) {
     while rm(tree.root()) {}
 }
 
-fn ungroup_groups(tree: &mut tree::Tree, opt: &Options) {
+fn ungroup_groups(
+    tree: &mut tree::Tree,
+    opt: &Options,
+) {
     fn ungroup(parent: tree::Node, opt: &Options) -> bool {
         let mut changed = false;
 
@@ -431,7 +438,7 @@ fn ungroup_groups(tree: &mut tree::Tree, opt: &Options) {
                 && g.clip_path.is_none()
                 && g.mask.is_none()
                 && g.filter.is_none()
-                && !opt.keep_named_groups
+                && !(opt.keep_named_groups && !g.id.is_empty())
             } else {
                 false
             };
@@ -445,9 +452,6 @@ fn ungroup_groups(tree: &mut tree::Tree, opt: &Options) {
                     match *child.borrow_mut() {
                         tree::NodeKind::Path(ref mut path) => {
                             path.transform.prepend(&ts);
-                        }
-                        tree::NodeKind::Text(ref mut text) => {
-                            text.transform.prepend(&ts);
                         }
                         tree::NodeKind::Image(ref mut img) => {
                             img.transform.prepend(&ts);
@@ -477,7 +481,9 @@ fn ungroup_groups(tree: &mut tree::Tree, opt: &Options) {
     while ungroup(tree.root(), opt) {}
 }
 
-fn remove_unused_defs(tree: &mut tree::Tree) {
+fn remove_unused_defs(
+    tree: &mut tree::Tree,
+) {
     macro_rules! check_id {
         ($from:expr, $id:expr) => {
             if let Some(ref id) = $from {
@@ -512,14 +518,6 @@ fn remove_unused_defs(tree: &mut tree::Tree) {
                 tree::NodeKind::Path(ref path) => {
                     check_paint_id!(path.fill, id);
                     check_paint_id!(path.stroke, id);
-                }
-                tree::NodeKind::Text(ref text) => {
-                    for chunk in &text.chunks {
-                        for span in &chunk.spans {
-                            check_paint_id!(span.fill, id);
-                            check_paint_id!(span.stroke, id);
-                        }
-                    }
                 }
                 tree::NodeKind::Group(ref g) => {
                     check_id!(g.clip_path, id);
@@ -561,14 +559,15 @@ fn convert_path(
         return;
     }
 
-    let has_bbox = path::has_bbox(&segments);
+    let has_bbox = utils::path_has_bbox(&segments);
     let attrs = node.attributes();
     let fill = style::resolve_fill(node, has_bbox, state, tree);
     let stroke = style::resolve_stroke(node, has_bbox, state, tree);
     let transform = attrs.get_transform(AId::Transform);
     let mut visibility = node.find_enum(AId::Visibility);
-    let rendering_mode = node.try_find_enum(AId::ShapeRendering)
-                             .unwrap_or(state.opt.shape_rendering);
+    let rendering_mode = node
+        .try_find_enum(AId::ShapeRendering)
+        .unwrap_or(state.opt.shape_rendering);
 
     // If a path doesn't have a fill or a stroke than it's invisible.
     // By setting `visibility` to `hidden` we are disabling the rendering of this path.
@@ -591,7 +590,9 @@ fn convert_path(
     }
 }
 
-fn convert_aspect(attrs: &svgdom::Attributes) -> tree::AspectRatio {
+fn convert_aspect(
+    attrs: &svgdom::Attributes,
+) -> tree::AspectRatio {
     let ratio: Option<&tree::AspectRatio> = attrs.get_type(AId::PreserveAspectRatio);
     match ratio {
         Some(v) => *v,

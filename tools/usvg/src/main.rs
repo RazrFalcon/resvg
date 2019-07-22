@@ -4,15 +4,11 @@
 
 use std::fmt;
 use std::fs::File;
-use std::io::{ self, Read, Write };
+use std::io::{self, Read, Write};
 use std::path::Path;
 use std::process;
 
-use gumdrop::Options;
-
-use usvg::svgdom;
-
-use svgdom::WriteBuffer;
+use pico_args::Arguments;
 
 
 fn print_help() {
@@ -65,97 +61,93 @@ ARGS:
 ");
 }
 
-#[derive(Debug, Options)]
+#[derive(Debug)]
 struct Args {
-    #[options()]
     help: bool,
-
-    #[options(short = "V")]
     version: bool,
-
-    #[options(short = "c", no_long)]
     stdout: bool,
-
-    #[options(no_short)]
     keep_named_groups: bool,
-
-    #[options(no_short, meta = "DPI", default = "96", parse(try_from_str = "parse_dpi"))]
     dpi: u32,
-
-    #[options(no_short, meta = "FAMILY", default = "Times New Roman")]
     font_family: String,
-
-    #[options(no_short, meta = "SIZE", default = "12", parse(try_from_str = "parse_font_size"))]
     font_size: u32,
-
-    #[options(no_short, meta = "LANG", parse(try_from_str = "parse_languages"))]
-    languages: Option<Vec<String>>,
-
-    #[options(no_short, meta = "HINT", default = "geometricPrecision", parse(try_from_str))]
+    languages: Vec<String>,
     shape_rendering: usvg::ShapeRendering,
-
-    #[options(no_short, meta = "HINT", default = "optimizeLegibility", parse(try_from_str))]
     text_rendering: usvg::TextRendering,
-
-    #[options(no_short, meta = "HINT", default = "optimizeQuality", parse(try_from_str))]
     image_rendering: usvg::ImageRendering,
-
-    #[options(no_short, meta = "INDENT", default = "4", parse(try_from_str = "parse_indent"))]
-    indent: svgdom::Indent,
-
-    #[options(no_short, meta = "INDENT", default = "none", parse(try_from_str = "parse_indent"))]
-    attrs_indent: svgdom::Indent,
-
-    #[options(no_short)]
+    indent: usvg::XmlIndent,
+    attrs_indent: usvg::XmlIndent,
     quiet: bool,
-
-    #[options(free)]
     free: Vec<String>,
 }
 
-fn parse_dpi(s: &str) -> Result<u32, &'static str> {
+fn collect_args() -> Result<Args, pico_args::Error> {
+    let mut input = Arguments::from_env();
+    Ok(Args {
+        help:               input.contains("--help"),
+        version:            input.contains(["-V", "--version"]),
+        stdout:             input.contains("-c"),
+        keep_named_groups:  input.contains("--keep-named-groups"),
+        dpi:                input.value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
+        font_family:        input.value_from_str("--font-family")?
+                                 .unwrap_or_else(|| "Times New Roman".to_string()),
+        font_size:          input.value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
+        languages:          input.value_from_fn("--languages", parse_languages)?
+                                 .unwrap_or(vec!["en".to_string()]), // TODO: use system language
+        shape_rendering:    input.value_from_str("--shape-rendering")?.unwrap_or_default(),
+        text_rendering:     input.value_from_str("--text-rendering")?.unwrap_or_default(),
+        image_rendering:    input.value_from_str("--image-rendering")?.unwrap_or_default(),
+        indent:             input.value_from_fn("--indent", parse_indent)?
+                                 .unwrap_or(usvg::XmlIndent::Spaces(4)),
+        attrs_indent:       input.value_from_fn("--attrs-indent", parse_indent)?
+                                 .unwrap_or(usvg::XmlIndent::None),
+        quiet:              input.contains("--quiet"),
+        free:               input.free()?,
+    })
+}
+
+fn parse_dpi(s: &str) -> Result<u32, String> {
     let n: u32 = s.parse().map_err(|_| "invalid number")?;
 
     if n >= 10 && n <= 4000 {
         Ok(n)
     } else {
-        Err("DPI out of bounds")
+        Err("DPI out of bounds".to_string())
     }
 }
 
-fn parse_font_size(s: &str) -> Result<u32, &'static str> {
+fn parse_font_size(s: &str) -> Result<u32, String> {
     let n: u32 = s.parse().map_err(|_| "invalid number")?;
 
     if n > 0 && n <= 192 {
         Ok(n)
     } else {
-        Err("font size out of bounds")
+        Err("font size out of bounds".to_string())
     }
 }
 
-fn parse_languages(s: &str) -> Result<Vec<String>, &'static str> {
+fn parse_languages(s: &str) -> Result<Vec<String>, String> {
     let mut langs = Vec::new();
     for lang in s.split(',') {
         langs.push(lang.trim().to_string());
     }
 
     if langs.is_empty() {
-        return Err("languages list cannot be empty");
+        return Err("languages list cannot be empty".to_string());
     }
 
     Ok(langs)
 }
 
-fn parse_indent(s: &str) -> Result<svgdom::Indent, &'static str> {
+fn parse_indent(s: &str) -> Result<usvg::XmlIndent, String> {
     let indent = match s {
-        "none" => svgdom::Indent::None,
-        "0" => svgdom::Indent::Spaces(0),
-        "1" => svgdom::Indent::Spaces(1),
-        "2" => svgdom::Indent::Spaces(2),
-        "3" => svgdom::Indent::Spaces(3),
-        "4" => svgdom::Indent::Spaces(4),
-        "tabs" => svgdom::Indent::Tabs,
-        _ => return Err("invalid INDENT value"),
+        "none" => usvg::XmlIndent::None,
+        "0" => usvg::XmlIndent::Spaces(0),
+        "1" => usvg::XmlIndent::Spaces(1),
+        "2" => usvg::XmlIndent::Spaces(2),
+        "3" => usvg::XmlIndent::Spaces(3),
+        "4" => usvg::XmlIndent::Spaces(4),
+        "tabs" => usvg::XmlIndent::Tabs,
+        _ => return Err("invalid INDENT value".to_string()),
     };
 
     Ok(indent)
@@ -175,8 +167,7 @@ enum OutputTo<'a> {
 
 
 fn main() {
-    let args: Vec<String> = ::std::env::args().collect();
-    let args = match Args::parse_args_default(&args[1..]) {
+    let args = match collect_args() {
         Ok(v) => v,
         Err(e) => {
             eprintln!("Error: {}.", e);
@@ -199,7 +190,8 @@ fn main() {
             .format(log_format)
             .level(log::LevelFilter::Warn)
             .chain(std::io::stderr())
-            .apply().unwrap();
+            .apply()
+            .unwrap();
     }
 
     if let Err(e) = process(&args) {
@@ -237,11 +229,6 @@ fn process(args: &Args) -> Result<(), String> {
         (svg_from, svg_to)
     };
 
-    let languages = match args.languages.as_ref() {
-        Some(v) => v.clone(),
-        None => vec!["en".to_string()], // TODO: use system language
-    };
-
     let re_opt = usvg::Options {
         path: match in_svg {
             InputFrom::Stdin => None,
@@ -250,7 +237,7 @@ fn process(args: &Args) -> Result<(), String> {
         dpi: args.dpi as f64,
         font_family: args.font_family.clone(),
         font_size: args.font_size as f64,
-        languages,
+        languages: args.languages.clone(),
         shape_rendering: args.shape_rendering,
         text_rendering: args.text_rendering,
         image_rendering: args.image_rendering,
@@ -264,30 +251,25 @@ fn process(args: &Args) -> Result<(), String> {
         }
     }?;
 
-    let tree = usvg::Tree::from_str(&input_str, &re_opt)
-                    .map_err(|e| format!("{}", e))?;
+    let tree = usvg::Tree::from_str(&input_str, &re_opt).map_err(|e| format!("{}", e))?;
 
-    let dom_opt = svgdom::WriteOptions {
+    let xml_opt = usvg::XmlOptions {
+        use_single_quote: false,
         indent: args.indent,
         attributes_indent: args.attrs_indent,
-        attributes_order: svgdom::AttributesOrder::Specification,
-        .. svgdom::WriteOptions::default()
     };
 
-    let doc = tree.to_svgdom();
-
-    let mut output_data = Vec::new();
-    doc.write_buf_opt(&dom_opt, &mut output_data);
-
+    let s = tree.to_string(xml_opt);
     match out_svg {
         OutputTo::Stdout => {
-            io::stdout().write_all(&output_data)
+            io::stdout()
+                .write_all(s.as_bytes())
                 .map_err(|_| format!("failed to write to the stdout"))?;
         }
         OutputTo::File(path) => {
             let mut f = File::create(path)
                 .map_err(|_| format!("failed to create the output file"))?;
-            f.write_all(&output_data)
+            f.write_all(s.as_bytes())
                 .map_err(|_| format!("failed to write to the output file"))?;
         }
     }
@@ -322,8 +304,9 @@ fn load_stdin() -> Result<String, String> {
     let stdin = io::stdin();
     let mut handle = stdin.lock();
 
-    handle.read_to_string(&mut s)
-          .map_err(|_| format!("provided data has not an UTF-8 encoding"))?;
+    handle
+        .read_to_string(&mut s)
+        .map_err(|_| format!("provided data has not an UTF-8 encoding"))?;
 
     Ok(s)
 }

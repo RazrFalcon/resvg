@@ -2,70 +2,42 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use cairo::{
-    self,
-    PatternTrait,
-};
-use gdk_pixbuf::{
-    self,
-    PixbufLoaderExt,
-};
+use usvg::try_opt;
 
-// self
-use super::prelude::*;
-use crate::backend_utils::image;
+use crate::prelude::*;
+use crate::backend_utils::{self, ConvTransform, Image};
 
-
-pub fn draw(
-    image: &usvg::Image,
-    opt: &Options,
-    cr: &cairo::Context,
-) -> Rect {
-    if image.visibility != usvg::Visibility::Visible {
-        return image.view_box.rect;
-    }
-
-    if image.format == usvg::ImageFormat::SVG {
-        draw_svg(&image.data, image.view_box, opt, cr);
-    } else {
-        draw_raster(&image.data, image.view_box, image.rendering_mode, opt, cr);
-    }
-
-    image.view_box.rect
-}
 
 pub fn draw_raster(
+    format: usvg::ImageFormat,
     data: &usvg::ImageData,
     view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
     opt: &Options,
     cr: &cairo::Context,
 ) {
-    let img = match data {
-        usvg::ImageData::Path(ref path) => {
-            let path = image::get_abs_path(path, opt);
-            try_opt_warn!(gdk_pixbuf::Pixbuf::new_from_file(path.clone()).ok(), (),
-                          "Failed to load an external image: {:?}.", path)
+    let img = try_opt!(backend_utils::image::load_raster(format, data, opt));
+
+    let surface = {
+        let mut surface = try_create_surface!(img.size, ());
+
+        {
+            // Unwrap is safe, because no one uses the surface.
+            let mut surface_data = surface.get_data().unwrap();
+            image_to_surface(&img, &mut surface_data);
         }
-        usvg::ImageData::Raw(ref data) => {
-            try_opt_warn!(load_raster_data(data), (),
-                          "Failed to load an embedded image.")
-        }
+
+        surface
     };
 
-    let img_size = try_opt!(ScreenSize::new(img.get_width() as u32, img.get_height() as u32), ());
-
-    let surface = try_opt!(gdk_pixbuf_to_surface(img, img_size), ());
-
-    let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);
+    let (ts, clip) = backend_utils::image::prepare_sub_svg_geom(view_box, img.size);
 
     if let Some(clip) = clip {
         cr.rectangle(clip.x(), clip.y(), clip.width(), clip.height());
         cr.clip();
     } else {
         // We have to clip the image before rendering because we use `Extend::Pad`.
-        let r = image::image_rect(&view_box, img_size);
+        let r = backend_utils::image::image_rect(&view_box, img.size);
         cr.rectangle(r.x(), r.y(), r.width(), r.height());
         cr.clip();
     }
@@ -81,68 +53,44 @@ pub fn draw_raster(
     // Do not use `Extend::None`, because it will introduce a "transparent border".
     patt.set_extend(cairo::Extend::Pad);
     patt.set_filter(filter_mode);
-    cr.set_source(&cairo::Pattern::SurfacePattern(patt));
+    cr.set_source(&patt);
     cr.paint();
     cr.reset_clip();
 }
 
-fn load_raster_data(data: &[u8]) -> Option<gdk_pixbuf::Pixbuf> {
-    let loader = gdk_pixbuf::PixbufLoader::new();
-    loader.write(data).ok()?;
-    loader.close().ok()?;
-    loader.get_pixbuf()
-}
+fn image_to_surface(image: &Image, surface: &mut [u8]) {
+    // Surface is always ARGB.
+    const SURFACE_CHANNELS: usize = 4;
 
-fn gdk_pixbuf_to_surface(
-    img: gdk_pixbuf::Pixbuf,
-    img_size: ScreenSize,
-) -> Option<cairo::ImageSurface> {
-    let mut surface = try_create_surface!(img_size, None);
+    use backend_utils::image::ImageData;
+    use rgb::FromSlice;
 
-    {
-        // Unwrap is safe, because no one uses the surface.
-        let mut surface_data = surface.get_data().unwrap();
+    let mut i = 0;
 
-        let channels = img.get_n_channels() as u32;
-        let w = img.get_width() as u32;
-        let h = img.get_height() as u32;
-        let stride = img.get_rowstride() as u32;
-        let img_pixels = unsafe { img.get_pixels() };
-        // We can't iterate over pixels directly, because width may not be equal to stride.
-        let mut i = 0;
-        for y in 0..h {
-            for x in 0..w {
-                let idx = (y * stride + x * channels) as usize;
+    let mut to_surface = |r, g, b, a| {
+        let tr = a * r + 0x80;
+        let tg = a * g + 0x80;
+        let tb = a * b + 0x80;
+        surface[i + 0] = (((tb >> 8) + tb) >> 8) as u8;
+        surface[i + 1] = (((tg >> 8) + tg) >> 8) as u8;
+        surface[i + 2] = (((tr >> 8) + tr) >> 8) as u8;
+        surface[i + 3] = a as u8;
 
-                // NOTE: will not work on big endian.
-                if channels == 4 {
-                    let r = img_pixels[idx + 0] as u32;
-                    let g = img_pixels[idx + 1] as u32;
-                    let b = img_pixels[idx + 2] as u32;
-                    let a = img_pixels[idx + 3] as u32;
+        i += SURFACE_CHANNELS;
+    };
 
-                    // https://www.cairographics.org/manual/cairo-Image-Surfaces.html#cairo-format-t
-                    let tr = a * r + 0x80;
-                    let tg = a * g + 0x80;
-                    let tb = a * b + 0x80;
-                    surface_data[i + 0] = (((tb >> 8) + tb) >> 8) as u8;
-                    surface_data[i + 1] = (((tg >> 8) + tg) >> 8) as u8;
-                    surface_data[i + 2] = (((tr >> 8) + tr) >> 8) as u8;
-                    surface_data[i + 3] = a as u8; // TODO: is needed?
-                } else {
-                    surface_data[i + 0] = img_pixels[idx + 2];
-                    surface_data[i + 1] = img_pixels[idx + 1];
-                    surface_data[i + 2] = img_pixels[idx + 0];
-                    surface_data[i + 3] = 255;
-                }
-
-                // Surface is always ARGB.
-                i += 4;
+    match &image.data {
+        ImageData::RGB(data) => {
+            for p in data.as_rgb() {
+                to_surface(p.r as u32, p.g as u32, p.b as u32, 255);
+            }
+        }
+        ImageData::RGBA(data) => {
+            for p in data.as_rgba() {
+                to_surface(p.r as u32, p.g as u32, p.b as u32, p.a as u32);
             }
         }
     }
-
-    Some(surface)
 }
 
 pub fn draw_svg(
@@ -151,10 +99,10 @@ pub fn draw_svg(
     opt: &Options,
     cr: &cairo::Context,
 ) {
-    let (tree, sub_opt) = try_opt!(image::load_sub_svg(data, opt), ());
+    let (tree, sub_opt) = try_opt!(backend_utils::image::load_sub_svg(data, opt));
 
     let img_size = tree.svg_node().size.to_screen_size();
-    let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);
+    let (ts, clip) = backend_utils::image::prepare_sub_svg_geom(view_box, img_size);
 
     if let Some(clip) = clip {
         cr.rectangle(clip.x(), clip.y(), clip.width(), clip.height());

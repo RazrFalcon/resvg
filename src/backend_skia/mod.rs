@@ -2,94 +2,44 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-//! Cairo backend implementation.
+//! Skia backend implementation.
 
-// external
-use cairo::{
-    self,
-    MatrixTrait,
-};
-use pangocairo::functions as pc;
+use crate::skia;
+use log::warn;
+use usvg::try_opt;
 
-// self
 use crate::prelude::*;
-use crate::{
-    backend_utils,
-    layers,
-};
-
+use crate::layers::{self, Layers};
+use crate::backend_utils::{self, FlatRender, ConvTransform, BlendMode};
 
 macro_rules! try_create_surface {
     ($size:expr, $ret:expr) => {
-        try_opt_warn!(
-            cairo::ImageSurface::create(cairo::Format::ARgb32,
-                $size.width() as i32, $size.height() as i32,
-            ).ok(),
+        usvg::try_opt_warn_or!(
+            skia::Surface::new_rgba_premultiplied($size.width(), $size.height()),
             $ret,
             "Failed to create a {}x{} surface.", $size.width(), $size.height()
         );
     };
 }
 
-
-mod clip_and_mask;
 mod filter;
 mod image;
 mod path;
 mod style;
-mod text;
 
-mod prelude {
-    pub use super::super::prelude::*;
-    pub type CairoLayers = super::layers::Layers<super::cairo::ImageSurface>;
-
-    // It's actually used. Rust bug?
-    #[allow(unused_imports)]
-    pub(super) use super::ReCairoContextExt;
-}
-
-
-type CairoLayers = layers::Layers<cairo::ImageSurface>;
-
-
-impl ConvTransform<cairo::Matrix> for usvg::Transform {
-    fn to_native(&self) -> cairo::Matrix {
-        cairo::Matrix::new(self.a, self.b, self.c, self.d, self.e, self.f)
+impl ConvTransform<skia::Matrix> for usvg::Transform {
+    fn to_native(&self) -> skia::Matrix {
+        skia::Matrix::new_from(self.a, self.b, self.c, self.d, self.e, self.f)
     }
 
-    fn from_native(ts: &cairo::Matrix) -> Self {
-        Self::new(ts.xx, ts.yx, ts.xy, ts.yy, ts.x0, ts.y0)
-    }
-}
-
-impl TransformFromBBox for cairo::Matrix {
-    fn from_bbox(bbox: Rect) -> Self {
-        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
-    }
-}
-
-pub(crate) trait ReCairoContextExt {
-    fn set_source_color(&self, color: usvg::Color, opacity: usvg::Opacity);
-    fn reset_source_rgba(&self);
-}
-
-impl ReCairoContextExt for cairo::Context {
-    fn set_source_color(&self, color: usvg::Color, opacity: usvg::Opacity) {
-        self.set_source_rgba(
-            color.red as f64 / 255.0,
-            color.green as f64 / 255.0,
-            color.blue as f64 / 255.0,
-            opacity.value(),
-        );
-    }
-
-    fn reset_source_rgba(&self) {
-        self.set_source_rgba(0.0, 0.0, 0.0, 0.0);
+    fn from_native(mat: &skia::Matrix) -> Self {
+        let d = mat.data();
+        Self::new(d.0, d.1, d.2, d.3, d.4, d.5)
     }
 }
 
 
-/// Cairo backend handle.
+/// Skia backend handle.
 #[derive(Clone, Copy)]
 pub struct Backend;
 
@@ -111,82 +61,50 @@ impl Render for Backend {
         let img = render_node_to_image(node, opt)?;
         Some(Box::new(img))
     }
+}
 
-    fn calc_node_bbox(
+impl OutputImage for skia::Surface {
+    fn save(
         &self,
-        node: &usvg::Node,
-        opt: &Options,
-    ) -> Option<Rect> {
-        calc_node_bbox(node, opt)
+        path: &std::path::Path,
+    ) -> bool {
+        self.save(path.to_str().unwrap())
     }
 }
-
-impl OutputImage for cairo::ImageSurface {
-    fn save(&self, path: &::std::path::Path) -> bool {
-        use std::fs;
-
-        if let Ok(mut buffer) = fs::File::create(path) {
-            if self.write_to_png(&mut buffer).is_ok() {
-                return true;
-            }
-        }
-
-        false
-    }
-}
-
 
 /// Renders SVG to image.
 pub fn render_to_image(
     tree: &usvg::Tree,
     opt: &Options,
-) -> Option<cairo::ImageSurface> {
-    let (surface, img_view) = create_surface(
-        tree.svg_node().size.to_screen_size(),
-        opt,
-    )?;
+) -> Option<skia::Surface> {
 
-    let cr = cairo::Context::new(&surface);
-
-    // Fill background.
-    if let Some(color) = opt.background {
-        cr.set_source_color(color, 1.0.into());
-        cr.paint();
-    }
-
-    render_to_canvas(tree, opt, img_view, &cr);
+    let (mut surface, img_size) = create_root_surface(tree.svg_node().size.to_screen_size(), opt)?;
+    render_to_canvas(tree, opt, img_size, &mut surface);
+    surface.canvas_mut().flush();
 
     Some(surface)
 }
 
-/// Renders SVG to image.
+/// Renders SVG node to image.
 pub fn render_node_to_image(
     node: &usvg::Node,
     opt: &Options,
-) -> Option<cairo::ImageSurface> {
-    let node_bbox = if let Some(bbox) = calc_node_bbox(node, opt) {
+) -> Option<skia::Surface> {
+    let node_bbox = if let Some(bbox) = node.calculate_bbox() {
         bbox
     } else {
-        warn!("Node '{}' has a zero size.", node.id());
+        warn!("Node '{}' has zero size.", node.id());
         return None;
     };
-
-    let (surface, img_size) = create_surface(node_bbox.to_screen_size(), opt)?;
 
     let vbox = usvg::ViewBox {
         rect: node_bbox,
         aspect: usvg::AspectRatio::default(),
     };
 
-    let cr = cairo::Context::new(&surface);
-
-    // Fill background.
-    if let Some(color) = opt.background {
-        cr.set_source_color(color, 1.0.into());
-        cr.paint();
-    }
-
-    render_node_to_canvas(node, opt, vbox, img_size, &cr);
+    let (mut surface, img_size) = create_root_surface(node_bbox.size().to_screen_size(), opt)?;
+    render_node_to_canvas(node, opt, vbox, img_size, &mut surface);
+    surface.canvas_mut().flush();
 
     Some(surface)
 }
@@ -196,10 +114,9 @@ pub fn render_to_canvas(
     tree: &usvg::Tree,
     opt: &Options,
     img_size: ScreenSize,
-    cr: &cairo::Context,
+    surface: &mut skia::Surface,
 ) {
-    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box,
-                          img_size, cr);
+    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, surface);
 }
 
 /// Renders SVG node to canvas.
@@ -208,289 +125,234 @@ pub fn render_node_to_canvas(
     opt: &Options,
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
-    cr: &cairo::Context,
+    surface: &mut skia::Surface,
 ) {
-    let mut layers = create_layers(img_size, opt);
+    let tree = node.tree();
+    let mut render = SkiaFlatRender::new(&tree, opt, img_size, surface);
 
-    apply_viewbox_transform(view_box, img_size, &cr);
-
-    let curr_ts = cr.get_matrix();
-    let mut ts = utils::abs_transform(node);
+    let mut ts = node.abs_transform();
     ts.append(&node.transform());
 
-    cr.transform(ts.to_native());
-    render_node(node, opt, &mut layers, cr);
-    cr.set_matrix(curr_ts);
+    render.apply_viewbox(view_box, img_size);
+    render.apply_transform(ts);
+    render.render_node(node);
 }
 
-fn create_surface(
+fn create_root_surface(
     size: ScreenSize,
     opt: &Options,
-) -> Option<(cairo::ImageSurface, ScreenSize)> {
+) -> Option<(skia::Surface, ScreenSize)> {
     let img_size = utils::fit_to(size, opt.fit_to)?;
 
-    let surface = try_create_surface!(img_size, None);
+    let mut surface = try_create_surface!(img_size, None);
+    let canvas = surface.canvas_mut();
+
+    // Fill background.
+    if let Some(c) = opt.background {
+        canvas.fill(c.red, c.green, c.blue, 255);
+    } else {
+        canvas.clear();
+    }
 
     Some((surface, img_size))
 }
 
-/// Applies viewbox transformation to the painter.
-fn apply_viewbox_transform(
-    view_box: usvg::ViewBox,
-    img_size: ScreenSize,
-    cr: &cairo::Context,
-) {
-    let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_size());
-    cr.transform(ts.to_native());
-}
-
-fn render_node(
-    node: &usvg::Node,
-    opt: &Options,
-    layers: &mut CairoLayers,
-    cr: &cairo::Context,
-) -> Option<Rect> {
-    match *node.borrow() {
-        usvg::NodeKind::Svg(_) => {
-            Some(render_group(node, opt, layers, cr))
+impl Into<skia::BlendMode> for BlendMode {
+    fn into(self) -> skia::BlendMode {
+        match self {
+            BlendMode::SourceOver => skia::BlendMode::SourceOver,
+            BlendMode::Clear => skia::BlendMode::Clear,
+            BlendMode::DestinationIn => skia::BlendMode::DestinationIn,
+            BlendMode::DestinationOut => skia::BlendMode::DestinationOut,
+            BlendMode::Xor => skia::BlendMode::Xor,
         }
-        usvg::NodeKind::Path(ref path) => {
-            path::draw(&node.tree(), path, opt, cr)
-        }
-        usvg::NodeKind::Text(ref text) => {
-            Some(text::draw(&node.tree(), text, opt, cr))
-        }
-        usvg::NodeKind::Image(ref img) => {
-            Some(image::draw(img, opt, cr))
-        }
-        usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, layers, cr)
-        }
-        _ => None,
     }
 }
 
-fn render_group(
-    parent: &usvg::Node,
-    opt: &Options,
-    layers: &mut CairoLayers,
-    cr: &cairo::Context,
-) -> Rect {
-    let curr_ts = cr.get_matrix();
-    let mut g_bbox = Rect::new_bbox();
+impl layers::Image for skia::Surface {
+    fn new(size: ScreenSize) -> Option<Self> {
+        let mut surface = try_create_surface!(size, None);
 
-    for node in parent.children() {
-        cr.transform(node.transform().to_native());
+        let canvas = surface.canvas_mut();
+        canvas.clear();
 
-        let bbox = render_node(&node, opt, layers, cr);
-
-        if let Some(bbox) = bbox {
-            let bbox = bbox.transform(&node.transform()).unwrap();
-            g_bbox = g_bbox.expand(bbox);
-        }
-
-        // Revert transform.
-        cr.set_matrix(curr_ts);
+        Some(surface)
     }
 
-    g_bbox
+    fn clear(&mut self) {
+        self.canvas_mut().clear();
+    }
 }
 
-fn render_group_impl(
-    node: &usvg::Node,
-    g: &usvg::Group,
-    opt: &Options,
-    layers: &mut CairoLayers,
-    cr: &cairo::Context,
-) -> Option<Rect> {
-    let sub_surface = layers.get()?;
-    let mut sub_surface = sub_surface.borrow_mut();
-
-    let curr_ts = cr.get_matrix();
-
-    let bbox = {
-        let sub_cr = cairo::Context::new(&*sub_surface);
-        sub_cr.set_matrix(curr_ts);
-
-        render_group(node, opt, layers, &sub_cr)
-    };
-
-    if let Some(ref id) = g.filter {
-        if let Some(filter_node) = node.tree().defs_by_id(id) {
-            if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
-                let ts = usvg::Transform::from_native(&curr_ts);
-                filter::apply(filter, bbox, &ts, opt, &mut *sub_surface);
-            }
-        }
-    }
-
-    if let Some(ref id) = g.clip_path {
-        if let Some(clip_node) = node.tree().defs_by_id(id) {
-            if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                let sub_cr = cairo::Context::new(&*sub_surface);
-                sub_cr.set_matrix(curr_ts);
-
-                clip_and_mask::clip(&clip_node, cp, opt, bbox, layers, &sub_cr);
-            }
-        }
-    }
-
-    if let Some(ref id) = g.mask {
-        if let Some(mask_node) = node.tree().defs_by_id(id) {
-            if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                let sub_cr = cairo::Context::new(&*sub_surface);
-                sub_cr.set_matrix(curr_ts);
-
-                clip_and_mask::mask(&mask_node, mask, opt, bbox, layers, &sub_cr);
-            }
-        }
-    }
-
-    let curr_matrix = cr.get_matrix();
-    cr.set_matrix(cairo::Matrix::identity());
-    cr.set_source_surface(&*sub_surface, 0.0, 0.0);
-    if !g.opacity.is_default() {
-        cr.paint_with_alpha(g.opacity.value());
-    } else {
-        cr.paint();
-    }
-
-    cr.set_matrix(curr_matrix);
-
-    // All layers must be unlinked from the main context/cr after used.
-    // TODO: find a way to automate this
-    cr.reset_source_rgba();
-
-    Some(bbox)
+struct SkiaFlatRender<'a> {
+    tree: &'a usvg::Tree,
+    opt: &'a Options,
+    blend_mode: BlendMode,
+    clip_rect: Option<Rect>,
+    surface: &'a mut skia::Surface,
+    layers: Layers<skia::Surface>,
 }
 
-/// Calculates node's absolute bounding box.
-///
-/// Note: this method can be pretty expensive.
-pub fn calc_node_bbox(
-    node: &usvg::Node,
-    opt: &Options,
-) -> Option<Rect> {
-    let tree = node.tree();
-
-    // We can't use 1x1 image, like in Qt backend because otherwise
-    // text layouts will be truncated.
-    let (surface, img_view) = create_surface(
-        tree.svg_node().size.to_screen_size(),
-        opt,
-    )?;
-    let cr = cairo::Context::new(&surface);
-
-    // We also have to apply the viewbox transform,
-    // otherwise text hinting will be different and bbox will be different too.
-    apply_viewbox_transform(tree.svg_node().view_box, img_view, &cr);
-
-    let abs_ts = utils::abs_transform(node);
-    _calc_node_bbox(node, opt, abs_ts, &cr)
-}
-
-fn _calc_node_bbox(
-    node: &usvg::Node,
-    opt: &Options,
-    ts: usvg::Transform,
-    cr: &cairo::Context,
-) -> Option<Rect> {
-    let mut ts2 = ts;
-    ts2.append(&node.transform());
-
-    match *node.borrow() {
-        usvg::NodeKind::Path(ref path) => {
-            utils::path_bbox(&path.segments, path.stroke.as_ref(), Some(ts2))
+impl<'a> SkiaFlatRender<'a> {
+    fn new(
+        tree: &'a usvg::Tree,
+        opt: &'a Options,
+        img_size: ScreenSize,
+        surface: &'a mut skia::Surface,
+    ) -> Self {
+        SkiaFlatRender {
+            tree,
+            opt,
+            blend_mode: BlendMode::default(),
+            clip_rect: None,
+            surface,
+            layers: Layers::new(img_size),
         }
-        usvg::NodeKind::Text(ref text) => {
-            let mut bbox = Rect::new_bbox();
-            let mut fm = text::PangoFontMetrics::new(opt, cr);
-            let (blocks, _) = backend_utils::text::prepare_blocks(text, &mut fm);
-            backend_utils::text::draw_blocks(blocks, |block| {
-                cr.new_path();
+    }
 
-                let context = text::init_pango_context(opt, cr);
-                let layout = text::init_pango_layout(&block, &context);
+    fn paint<F>(&mut self, f: F)
+        where F: FnOnce(&usvg::Tree, &Options, BlendMode, &mut skia::Surface)
+    {
+        match self.layers.current_mut() {
+            Some(layer) => {
+                let mut canvas = layer.img.canvas_mut();
+                canvas.save();
+                canvas.set_matrix(&layer.ts.to_native());
 
-                pc::layout_path(cr, &layout);
-                let path = cr.copy_path();
-                let segments = from_cairo_path(&path);
-
-                let mut t = ts2;
-                if let Some(rotate) = block.rotate {
-                    t.rotate_at(rotate, block.bbox.x(), block.bbox.y() + block.font_ascent);
+                if let Some(r) = layer.clip_rect {
+                    canvas.set_clip_rect(r.x(), r.y(), r.width(), r.height());
                 }
-                t.translate(block.bbox.x(), block.bbox.y());
 
-                if !segments.is_empty() {
-                    let c_bbox = utils::path_bbox(&segments, block.stroke.as_ref(), Some(t));
-                    if let Some(c_bbox) = c_bbox {
-                        bbox = bbox.expand(c_bbox);
-                    }
+                f(self.tree, self.opt, layer.blend_mode, &mut layer.img);
+
+                canvas.restore();
+            }
+            None => {
+                let mut canvas = self.surface.canvas_mut();
+                canvas.save();
+
+                if let Some(r) = self.clip_rect {
+                    canvas.set_clip_rect(r.x(), r.y(), r.width(), r.height());
                 }
-            });
 
-            Some(bbox)
-        }
-        usvg::NodeKind::Image(ref img) => {
-            let segments = utils::rect_to_path(img.view_box.rect);
-            utils::path_bbox(&segments, None, Some(ts2))
-        }
-        usvg::NodeKind::Group(_) => {
-            let mut bbox = Rect::new_bbox();
+                f(self.tree, self.opt, self.blend_mode, self.surface);
 
-            for child in node.children() {
-                if let Some(c_bbox) = _calc_node_bbox(&child, opt, ts2, cr) {
-                    bbox = bbox.expand(c_bbox);
-                }
-            }
-
-            Some(bbox)
-        }
-        _ => None
-    }
-}
-
-fn from_cairo_path(path: &cairo::Path) -> Vec<usvg::PathSegment> {
-    let mut segments = Vec::new();
-    for seg in path.iter() {
-        match seg {
-            cairo::PathSegment::MoveTo((x, y)) => {
-                segments.push(usvg::PathSegment::MoveTo { x, y });
-            }
-            cairo::PathSegment::LineTo((x, y)) => {
-                segments.push(usvg::PathSegment::LineTo { x, y });
-            }
-            cairo::PathSegment::CurveTo((x1, y1), (x2, y2), (x, y)) => {
-                segments.push(usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
-            }
-            cairo::PathSegment::ClosePath => {
-                segments.push(usvg::PathSegment::ClosePath);
+                canvas.restore();
             }
         }
     }
+}
 
-    if segments.len() == 1 {
-        segments.clear();
+impl<'a> FlatRender for SkiaFlatRender<'a> {
+    fn draw_path(&mut self, path: &usvg::Path, bbox: Option<Rect>) {
+        self.paint(|tree, opt, blend_mode, surface| {
+            path::draw(tree, path, opt, bbox, surface, blend_mode.into());
+        });
     }
 
-    segments
-}
+    fn draw_svg_image(&mut self, image: &usvg::Image) {
+        self.paint(|_, opt, _, surface| {
+            image::draw_svg(&image.data, image.view_box, opt, surface);
+        });
+    }
 
-fn create_layers(img_size: ScreenSize, opt: &Options) -> CairoLayers {
-    layers::Layers::new(img_size, opt.usvg.dpi, create_subsurface, clear_subsurface)
-}
+    fn draw_raster_image(&mut self, image: &usvg::Image) {
+        self.paint(|_, opt, _, surface| {
+            image::draw_raster(
+                image.format, &image.data, image.view_box, image.rendering_mode, opt, surface,
+            );
+        });
+    }
 
-fn create_subsurface(
-    size: ScreenSize,
-    _: f64,
-) -> Option<cairo::ImageSurface> {
-    Some(try_create_surface!(size, None))
-}
+    fn filter(&mut self, filter: &usvg::Filter, bbox: Option<Rect>, ts: usvg::Transform) {
+        if let Some(layer) = self.layers.current_mut() {
+            filter::apply(filter, bbox, &ts, &self.opt, &mut layer.img);
+        }
+    }
 
-fn clear_subsurface(surface: &mut cairo::ImageSurface) {
-    let cr = cairo::Context::new(&surface);
-    cr.set_operator(cairo::Operator::Clear);
-    cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
-    cr.paint();
+    fn fill_layer(&mut self, r: u8, g: u8, b: u8, a: u8) {
+        if let Some(layer) = self.layers.current_mut() {
+            layer.img.canvas_mut().fill(r, g, b, a);
+        }
+    }
+
+    fn push_layer(&mut self) -> Option<()> {
+        self.layers.push()
+    }
+
+    fn pop_layer(&mut self, opacity: usvg::Opacity, mode: BlendMode) {
+        let a = if !opacity.is_default() {
+            (opacity.value() * 255.0) as u8
+        } else {
+            255
+        };
+
+        let last = try_opt!(self.layers.pop());
+        match self.layers.current_mut() {
+            Some(prev) => {
+                let mut canvas = prev.img.canvas_mut();
+                canvas.draw_surface(&last.img, 0.0, 0.0, a, mode.into(),
+                                    skia::FilterQuality::Low);
+            }
+            None => {
+                let mut canvas = self.surface.canvas_mut();
+
+                let curr_ts = canvas.get_matrix();
+                canvas.reset_matrix();
+                canvas.draw_surface(&last.img, 0.0, 0.0, a, mode.into(),
+                                    skia::FilterQuality::Low);
+
+                // Reset.
+                canvas.set_matrix(&curr_ts);
+                self.blend_mode = BlendMode::default();
+            }
+        }
+
+        self.layers.push_back(last);
+    }
+
+    fn apply_mask(&mut self) {
+        let img_size = self.layers.img_size();
+        if let Some(layer) = self.layers.current_mut() {
+            backend_utils::image_to_mask(&mut layer.img.data_mut(), img_size);
+        }
+    }
+
+    fn set_composition_mode(&mut self, mode: BlendMode) {
+        match self.layers.current_mut() {
+            Some(layer) => layer.blend_mode = mode,
+            None => self.blend_mode = mode,
+        }
+    }
+
+    fn set_clip_rect(&mut self, rect: Rect) {
+        match self.layers.current_mut() {
+            Some(layer) => layer.clip_rect = Some(rect),
+            None => {
+                self.surface.canvas_mut().set_clip_rect(
+                    rect.x(), rect.y(), rect.width(), rect.height(),
+                )
+            }
+        }
+    }
+
+    fn get_transform(&self) -> usvg::Transform {
+        match self.layers.current() {
+            Some(layer) => layer.ts,
+            None => usvg::Transform::from_native(&self.surface.canvas().get_matrix()),
+        }
+    }
+
+    fn set_transform(&mut self, ts: usvg::Transform) {
+        match self.layers.current_mut() {
+            Some(layer) => layer.ts = ts,
+            None => self.surface.canvas_mut().set_matrix(&ts.to_native()),
+        }
+    }
+
+    fn finish(&mut self) {
+        if self.layers.is_empty() {
+            self.surface.canvas_mut().flush();
+        }
+    }
 }

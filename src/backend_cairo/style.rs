@@ -2,15 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use cairo::{
-    self,
-    MatrixTrait,
-    PatternTrait,
-};
+use usvg::try_opt;
 
-// self
-use super::prelude::*;
+use crate::{prelude::*, backend_utils::ConvTransform};
+use super::{ReCairoContextExt, FlatRender, CairoFlatRender};
 
 
 pub fn fill(
@@ -129,23 +124,23 @@ fn prepare_linear(
 ) {
     let grad = cairo::LinearGradient::new(g.x1, g.y1, g.x2, g.y2);
     prepare_base_gradient(&g.base, &grad, opacity, bbox);
-    cr.set_source(&cairo::Pattern::LinearGradient(grad));
+    cr.set_source(&grad);
 }
 
 fn prepare_radial(
     g: &usvg::RadialGradient,
     opacity: usvg::Opacity,
     bbox: Rect,
-    cr: &cairo::Context
+    cr: &cairo::Context,
 ) {
     let grad = cairo::RadialGradient::new(g.fx, g.fy, 0.0, g.cx, g.cy, g.r.value());
     prepare_base_gradient(&g.base, &grad, opacity, bbox);
-    cr.set_source(&cairo::Pattern::RadialGradient(grad));
+    cr.set_source(&grad);
 }
 
-fn prepare_base_gradient<G: cairo::Gradient>(
+fn prepare_base_gradient(
     g: &usvg::BaseGradient,
-    grad: &G,
+    grad: &cairo::Gradient,
     opacity: usvg::Opacity,
     bbox: Rect,
 ) {
@@ -159,7 +154,7 @@ fn prepare_base_gradient<G: cairo::Gradient>(
     let mut matrix = g.transform.to_native();
 
     if g.units == usvg::Units::ObjectBoundingBox {
-        let m = cairo::Matrix::from_bbox(bbox);
+        let m = usvg::Transform::from_bbox(bbox).to_native();
         matrix = cairo::Matrix::multiply(&matrix, &m);
     }
 
@@ -194,7 +189,7 @@ fn prepare_pattern(
     let global_ts = usvg::Transform::from_native(&cr.get_matrix());
     let (sx, sy) = global_ts.get_scale();
 
-    let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy), ()).to_screen_size();
+    let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy)).to_screen_size();
     let surface = try_create_surface!(img_size, ());
 
     let sub_cr = cairo::Context::new(&surface);
@@ -211,8 +206,9 @@ fn prepare_pattern(
         sub_cr.scale(bbox.width(), bbox.height());
     }
 
-    let mut layers = super::create_layers(img_size, opt);
-    super::render_group(node, opt, &mut layers, &sub_cr);
+    let ref tree = node.tree();
+    let mut render = CairoFlatRender::new(tree, opt, img_size, &sub_cr);
+    render.render_group(node);
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);
@@ -244,5 +240,5 @@ fn prepare_pattern(
     m.invert();
     patt.set_matrix(m);
 
-    cr.set_source(&cairo::Pattern::SurfacePattern(patt));
+    cr.set_source(&patt);
 }

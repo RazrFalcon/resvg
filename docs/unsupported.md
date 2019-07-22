@@ -28,7 +28,6 @@
   - `missing-glyph`
   - `vkern`
 - `color-profile`
-- `textPath`
 - `use` with a reference to an external SVG file
 
 ### Attributes
@@ -42,19 +41,17 @@
 - `dominant-baseline`
 - [`enable-background`](https://www.w3.org/TR/SVG11/filters.html#EnableBackgroundProperty) (deprecated in the SVG 2)
 - `font`
-- `font-variant` (unsupported only by cairo backend)
 - `font-size-adjust`
+- `font-stretch`
+- `font-variant`
 - `glyph-orientation-horizontal` (removed in the SVG 2)
 - `glyph-orientation-vertical` (deprecated in the SVG 2)
 - [`in`](https://www.w3.org/TR/SVG11/filters.html#FilterPrimitiveInAttribute)
   with `BackgroundImage`, `BackgroundAlpha`, `FillPaint`, `StrokePaint`
 - `kerning` (removed in the SVG 2)
 - `lengthAdjust`
-- `line-height`
 - `textLength`
 - `unicode-bidi`
-- `word-spacing` (unsupported only by cairo backend)
-- `writing-mode`
 
 **Note:** this list does not include elements and attributes outside the
 [static SVG](http://www.w3.org/TR/SVG11/feature#SVG-static) subset.

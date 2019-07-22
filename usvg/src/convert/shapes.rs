@@ -2,17 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// external
-use svgdom;
-
-// self
-use crate::tree;
-use crate::utils;
-use super::prelude::*;
-use super::{
-    path,
-    units,
-};
+use crate::{tree, utils};
+use super::{prelude::*, path, units};
 
 
 pub fn convert(
@@ -35,7 +26,7 @@ pub fn convert_path(
     node: &svgdom::Node,
 ) -> Option<Vec<tree::PathSegment>> {
     if let Some(AValue::Path(path)) = node.attributes().get_value(AId::D).cloned() {
-        let new_path = super::path::convert_path(path);
+        let new_path = super::path::convert(path);
         if new_path.len() >= 2 {
             return Some(new_path);
         }
@@ -115,9 +106,10 @@ pub fn convert_rect(
             .arc_to(rx, ry, 0.0, false, true, x, y + height - ry)
             .line_to(x, y + ry)
             .arc_to(rx, ry, 0.0, false, true, x + rx, y)
+            .close_path()
             .finalize();
 
-        path::convert_path(p)
+        path::convert(p)
     };
 
     Some(path)
@@ -230,8 +222,13 @@ pub fn convert_ellipse(
     Some(ellipse_to_path(cx, cy, rx, ry))
 }
 
-fn ellipse_to_path(cx: f64, cy: f64, rx: f64, ry: f64) -> Vec<tree::PathSegment> {
-    path::convert_path(svgdom::PathBuilder::with_capacity(6)
+fn ellipse_to_path(
+    cx: f64,
+    cy: f64,
+    rx: f64,
+    ry: f64,
+) -> Vec<tree::PathSegment> {
+    path::convert(svgdom::PathBuilder::with_capacity(6)
         .move_to(cx + rx, cy)
         .arc_to(rx, ry, 0.0, false, true, cx,      cy + ry)
         .arc_to(rx, ry, 0.0, false, true, cx - rx, cy)

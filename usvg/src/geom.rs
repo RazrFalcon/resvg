@@ -2,8 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::f64;
-use std::fmt;
+use std::{f64, fmt};
 
 use svgdom::FuzzyEq;
 
@@ -30,7 +29,7 @@ pub fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
 /// Line representation.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, Debug)]
-pub struct Line {
+pub(crate) struct Line {
     pub x1: f64,
     pub y1: f64,
     pub x2: f64,
@@ -142,6 +141,13 @@ impl Rect {
         }
     }
 
+    /// Creates a new `Rect` for bounding box calculation.
+    ///
+    /// Shorthand for `Rect::new(f64::MAX, f64::MAX, 1.0, 1.0)`.
+    pub fn new_bbox() -> Self {
+        Rect::new(f64::MAX, f64::MAX, 1.0, 1.0).unwrap()
+    }
+
     /// Returns rect's size.
     pub fn size(&self) -> Size {
         Size::new(self.width, self.height).unwrap()
@@ -218,6 +224,31 @@ impl Rect {
         }
 
         true
+    }
+
+    /// Expands the `Rect` to the provided size.
+    pub fn expand(&self, r: Rect) -> Self {
+        #[inline]
+        fn f64_min(v1: f64, v2: f64) -> f64 {
+            if v1 < v2 { v1 } else { v2 }
+        }
+
+        #[inline]
+        fn f64_max(v1: f64, v2: f64) -> f64 {
+            if v1 > v2 { v1 } else { v2 }
+        }
+
+        if self.fuzzy_eq(&Rect::new_bbox()) {
+            r
+        } else {
+            let x1 = f64_min(self.x(), r.x());
+            let y1 = f64_min(self.y(), r.y());
+
+            let x2 = f64_max(self.right(), r.right());
+            let y2 = f64_max(self.bottom(), r.bottom());
+
+            Rect::new(x1, y1, x2 - x1, y2 - y1).unwrap()
+        }
     }
 }
 

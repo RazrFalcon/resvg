@@ -3,11 +3,13 @@ name = "cairo-example"
 version = "0.1.0"
 authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
 edition = "2018"
-workspace = "../.."
+
+# exclude from the main workspace
+[workspace]
 
 [dependencies]
-gio = "0.6"
-gtk = "0.6"
+gio = "0.7"
+gtk = "0.7"
 log = "0.4"
 fern = "0.5"
 

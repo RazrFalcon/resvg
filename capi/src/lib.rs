@@ -4,15 +4,24 @@
 
 #![allow(non_camel_case_types)]
 
-use std::fmt;
-use std::path;
 use std::ffi::CStr;
+use std::fmt;
 use std::os::raw::c_char;
-use std::slice;
+use std::path;
 use std::ptr;
+use std::slice;
 
-#[cfg(feature = "qt-backend")] use resvg::qt;
-#[cfg(feature = "cairo-backend")] use resvg::cairo;
+use log::warn;
+
+#[cfg(feature = "cairo-backend")]
+use resvg::cairo;
+
+#[cfg(feature = "qt-backend")]
+use resvg::qt;
+
+#[cfg(feature = "skia-backend")]
+use resvg::skia;
+
 use resvg::prelude::*;
 
 const DEFAULT_FONT_FAMILY: &str = "Times New Roman";
@@ -113,34 +122,21 @@ pub struct resvg_transform {
 #[repr(C)]
 pub struct resvg_render_tree(usvg::Tree);
 
-#[repr(C)]
-pub struct resvg_handle(resvg::InitObject);
-
-
 #[no_mangle]
-pub extern fn resvg_init() -> *mut resvg_handle {
-    let handle = Box::new(resvg_handle(resvg::init()));
-    Box::into_raw(handle)
-}
-
-#[no_mangle]
-pub extern fn resvg_destroy(handle: *mut resvg_handle) {
-    unsafe {
-        assert!(!handle.is_null());
-        Box::from_raw(handle)
-    };
-}
-
-#[no_mangle]
-pub extern fn resvg_init_log() {
+pub extern "C" fn resvg_init_log() {
     fern::Dispatch::new()
         .format(log_format)
         .level(log::LevelFilter::Warn)
         .chain(std::io::stderr())
-        .apply().unwrap();
+        .apply()
+        .unwrap();
 }
 
-fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &log::Record) {
+fn log_format(
+    out: fern::FormatCallback,
+    message: &fmt::Arguments,
+    record: &log::Record,
+) {
     let lvl = match record.level() {
         log::Level::Error => "Error",
         log::Level::Warn => "Warning",
@@ -159,7 +155,9 @@ fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &log:
 }
 
 #[no_mangle]
-pub extern fn resvg_init_options(opt: *mut resvg_options) {
+pub extern "C" fn resvg_init_options(
+    opt: *mut resvg_options,
+) {
     unsafe {
         (*opt).path = ptr::null();
         (*opt).dpi = 96.0;
@@ -182,7 +180,7 @@ pub extern fn resvg_init_options(opt: *mut resvg_options) {
 }
 
 #[no_mangle]
-pub extern fn resvg_parse_tree_from_file(
+pub extern "C" fn resvg_parse_tree_from_file(
     file_path: *const c_char,
     opt: *const resvg_options,
     raw_tree: *mut *mut resvg_render_tree,
@@ -209,7 +207,7 @@ pub extern fn resvg_parse_tree_from_file(
 }
 
 #[no_mangle]
-pub extern fn resvg_parse_tree_from_data(
+pub extern "C" fn resvg_parse_tree_from_data(
     data: *const c_char,
     len: usize,
     opt: *const resvg_options,
@@ -234,7 +232,9 @@ pub extern fn resvg_parse_tree_from_data(
 }
 
 #[no_mangle]
-pub extern fn resvg_tree_destroy(tree: *mut resvg_render_tree) {
+pub extern "C" fn resvg_tree_destroy(
+    tree: *mut resvg_render_tree,
+) {
     unsafe {
         assert!(!tree.is_null());
         Box::from_raw(tree)
@@ -243,7 +243,7 @@ pub extern fn resvg_tree_destroy(tree: *mut resvg_render_tree) {
 
 #[cfg(feature = "qt-backend")]
 #[no_mangle]
-pub extern fn resvg_qt_render_to_image(
+pub extern "C" fn resvg_qt_render_to_image(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     file_path: *const c_char,
@@ -254,12 +254,34 @@ pub extern fn resvg_qt_render_to_image(
 
 #[cfg(feature = "cairo-backend")]
 #[no_mangle]
-pub extern fn resvg_cairo_render_to_image(
+pub extern "C" fn resvg_cairo_render_to_image(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     file_path: *const c_char,
 ) -> i32 {
     let backend = Box::new(resvg::backend_cairo::Backend);
+    render_to_image(tree, opt, file_path, backend)
+}
+
+#[cfg(feature = "raqote-backend")]
+#[no_mangle]
+pub extern "C" fn resvg_raqote_render_to_image(
+    tree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    file_path: *const c_char,
+) -> i32 {
+    let backend = Box::new(resvg::backend_raqote::Backend);
+    render_to_image(tree, opt, file_path, backend)
+}
+
+#[cfg(feature = "skia-backend")]
+#[no_mangle]
+pub extern "C" fn resvg_skia_render_to_image(
+    tree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    file_path: *const c_char,
+) -> i32 {
+    let backend = Box::new(resvg::backend_skia::Backend);
     render_to_image(tree, opt, file_path, backend)
 }
 
@@ -300,7 +322,7 @@ fn render_to_image(
 
 #[cfg(feature = "qt-backend")]
 #[no_mangle]
-pub extern fn resvg_qt_render_to_canvas(
+pub extern "C" fn resvg_qt_render_to_canvas(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     size: resvg_size,
@@ -323,7 +345,7 @@ pub extern fn resvg_qt_render_to_canvas(
 
 #[cfg(feature = "cairo-backend")]
 #[no_mangle]
-pub extern fn resvg_cairo_render_to_canvas(
+pub extern "C" fn resvg_cairo_render_to_canvas(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     size: resvg_size,
@@ -345,9 +367,33 @@ pub extern fn resvg_cairo_render_to_canvas(
     resvg::backend_cairo::render_to_canvas(&tree.0, &opt, size, &cr);
 }
 
+#[cfg(feature = "skia-backend")]
+#[no_mangle]
+pub extern "C" fn resvg_skia_render_to_canvas(
+    tree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    img_size: resvg_size,
+    surface: *mut skia::skiac_surface,
+) {
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
+    };
+
+    let mut surface = unsafe { skia::Surface::from_raw(surface) };
+    let img_size = resvg::ScreenSize::new(img_size.width, img_size.height).unwrap();
+
+    let opt = to_native_opt(unsafe {
+        assert!(!opt.is_null());
+        &*opt
+    });
+
+    resvg::backend_skia::render_to_canvas(&tree.0, &opt, img_size, &mut surface);
+}
+
 #[cfg(feature = "qt-backend")]
 #[no_mangle]
-pub extern fn resvg_qt_render_to_canvas_by_id(
+pub extern "C" fn resvg_qt_render_to_canvas_by_id(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     size: resvg_size,
@@ -377,7 +423,7 @@ pub extern fn resvg_qt_render_to_canvas_by_id(
     }
 
     if let Some(node) = tree.0.node_by_id(id) {
-        if let Some(bbox) = resvg::backend_qt::calc_node_bbox(&node, &opt) {
+        if let Some(bbox) = node.calculate_bbox() {
             let vbox = usvg::ViewBox {
                 rect: bbox,
                 aspect: usvg::AspectRatio::default(),
@@ -394,7 +440,7 @@ pub extern fn resvg_qt_render_to_canvas_by_id(
 
 #[cfg(feature = "cairo-backend")]
 #[no_mangle]
-pub extern fn resvg_cairo_render_to_canvas_by_id(
+pub extern "C" fn resvg_cairo_render_to_canvas_by_id(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     size: resvg_size,
@@ -425,7 +471,7 @@ pub extern fn resvg_cairo_render_to_canvas_by_id(
     });
 
     if let Some(node) = tree.0.node_by_id(id) {
-        if let Some(bbox) = resvg::backend_cairo::calc_node_bbox(&node, &opt) {
+        if let Some(bbox) = node.calculate_bbox() {
             let vbox = usvg::ViewBox {
                 rect: bbox,
                 aspect: usvg::AspectRatio::default(),
@@ -440,8 +486,70 @@ pub extern fn resvg_cairo_render_to_canvas_by_id(
     }
 }
 
+#[cfg(feature = "skia-backend")]
 #[no_mangle]
-pub extern fn resvg_get_image_size(
+pub extern "C" fn resvg_skia_render_to_canvas_by_id(
+    tree: *const resvg_render_tree,
+    opt: *const resvg_options,
+    size: resvg_size,
+    id: *const c_char,
+    surface: *mut skia::skiac_surface,
+) {
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
+    };
+
+    let id = match cstr_to_str(id) {
+        Some(v) => v,
+        None => return,
+    };
+
+    if id.is_empty() {
+        warn!("Node with an empty ID cannot be painted.");
+        return;
+    }
+
+    let mut surface = unsafe { skia::Surface::from_raw(surface) };
+    let size = resvg::ScreenSize::new(size.width, size.height).unwrap();
+
+    let opt = to_native_opt(unsafe {
+        assert!(!opt.is_null());
+        &*opt
+    });
+
+    if let Some(node) = tree.0.node_by_id(id) {
+        if let Some(bbox) = node.calculate_bbox() {
+            let vbox = usvg::ViewBox {
+                rect: bbox,
+                aspect: usvg::AspectRatio::default(),
+            };
+
+            resvg::backend_skia::render_node_to_canvas(&node, &opt, vbox, size, &mut surface);
+        } else {
+            warn!("A node with '{}' ID doesn't have a valid bounding box.", id);
+        }
+    } else {
+        warn!("A node with '{}' ID wasn't found.", id);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_is_image_empty(
+    tree: *const resvg_render_tree,
+) -> bool {
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
+    };
+
+    // The root/svg node should have at least two children.
+    // The first child is `defs` and it always present.
+    tree.0.root().children().count() > 1
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_get_image_size(
     tree: *const resvg_render_tree,
 ) -> resvg_size {
     let tree = unsafe {
@@ -458,7 +566,7 @@ pub extern fn resvg_get_image_size(
 }
 
 #[no_mangle]
-pub extern fn resvg_get_image_viewbox(
+pub extern "C" fn resvg_get_image_viewbox(
     tree: *const resvg_render_tree,
 ) -> resvg_rect {
     let tree = unsafe {
@@ -476,48 +584,36 @@ pub extern fn resvg_get_image_viewbox(
     }
 }
 
+
 #[no_mangle]
-pub extern fn resvg_is_image_empty(
+pub extern "C" fn resvg_get_image_bbox(
     tree: *const resvg_render_tree,
+    bbox: *mut resvg_rect,
 ) -> bool {
     let tree = unsafe {
         assert!(!tree.is_null());
         &*tree
     };
 
-    tree.0.root().has_children()
+    if let Some(r) = tree.0.root().calculate_bbox() {
+        unsafe {
+            (*bbox).x = r.x();
+            (*bbox).y = r.y();
+            (*bbox).width = r.width();
+            (*bbox).height = r.height();
+        }
+
+        true
+    } else {
+        false
+    }
 }
 
-#[cfg(feature = "qt-backend")]
 #[no_mangle]
-pub extern fn resvg_qt_get_node_bbox(
+pub extern "C" fn resvg_get_node_bbox(
     tree: *const resvg_render_tree,
-    opt: *const resvg_options,
     id: *const c_char,
     bbox: *mut resvg_rect,
-) -> bool {
-    let backend = Box::new(resvg::backend_qt::Backend);
-    get_node_bbox(tree, opt, id, bbox, backend)
-}
-
-#[cfg(feature = "cairo-backend")]
-#[no_mangle]
-pub extern fn resvg_cairo_get_node_bbox(
-    tree: *const resvg_render_tree,
-    opt: *const resvg_options,
-    id: *const c_char,
-    bbox: *mut resvg_rect,
-) -> bool {
-    let backend = Box::new(resvg::backend_cairo::Backend);
-    get_node_bbox(tree, opt, id, bbox, backend)
-}
-
-fn get_node_bbox(
-    tree: *const resvg_render_tree,
-    opt: *const resvg_options,
-    id: *const c_char,
-    bbox: *mut resvg_rect,
-    backend: Box<resvg::Render>,
 ) -> bool {
     let id = match cstr_to_str(id) {
         Some(v) => v,
@@ -537,15 +633,9 @@ fn get_node_bbox(
         &*tree
     };
 
-
-    let opt = to_native_opt(unsafe {
-        assert!(!opt.is_null());
-        &*opt
-    });
-
     match tree.0.node_by_id(id) {
         Some(node) => {
-            if let Some(r) = backend.calc_node_bbox(&node, &opt) {
+            if let Some(r) = node.calculate_bbox() {
                 unsafe {
                     (*bbox).x = r.x();
                     (*bbox).y = r.y();
@@ -566,7 +656,7 @@ fn get_node_bbox(
 }
 
 #[no_mangle]
-pub extern fn resvg_node_exists(
+pub extern "C" fn resvg_node_exists(
     tree: *const resvg_render_tree,
     id: *const c_char,
 ) -> bool {
@@ -587,7 +677,7 @@ pub extern fn resvg_node_exists(
 }
 
 #[no_mangle]
-pub extern fn resvg_get_node_transform(
+pub extern "C" fn resvg_get_node_transform(
     tree: *const resvg_render_tree,
     id: *const c_char,
     ts: *mut resvg_transform,
@@ -606,7 +696,7 @@ pub extern fn resvg_get_node_transform(
     };
 
     if let Some(node) = tree.0.node_by_id(id) {
-        let mut abs_ts = resvg::utils::abs_transform(&node);
+        let mut abs_ts = node.abs_transform();
         abs_ts.append(&node.transform());
 
         unsafe {
@@ -624,7 +714,9 @@ pub extern fn resvg_get_node_transform(
     false
 }
 
-fn cstr_to_str(text: *const c_char) -> Option<&'static str> {
+fn cstr_to_str(
+    text: *const c_char,
+) -> Option<&'static str> {
     let text = unsafe {
         assert!(!text.is_null());
         CStr::from_ptr(text)
@@ -633,7 +725,9 @@ fn cstr_to_str(text: *const c_char) -> Option<&'static str> {
     text.to_str().ok()
 }
 
-fn to_native_opt(opt: &resvg_options) -> resvg::Options {
+fn to_native_opt(
+    opt: &resvg_options,
+) -> resvg::Options {
     let mut path: Option<path::PathBuf> = None;
 
     if !opt.path.is_null() {
@@ -673,28 +767,36 @@ fn to_native_opt(opt: &resvg_options) -> resvg::Options {
     };
 
     let shape_rendering = match opt.shape_rendering {
-        resvg_shape_rendering::RESVG_SHAPE_RENDERING_OPTIMIZE_SPEED =>
-            usvg::ShapeRendering::OptimizeSpeed,
-        resvg_shape_rendering::RESVG_SHAPE_RENDERING_CRISP_EDGES =>
-            usvg::ShapeRendering::CrispEdges,
-        resvg_shape_rendering::RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION =>
-            usvg::ShapeRendering::GeometricPrecision,
+        resvg_shape_rendering::RESVG_SHAPE_RENDERING_OPTIMIZE_SPEED => {
+            usvg::ShapeRendering::OptimizeSpeed
+        }
+        resvg_shape_rendering::RESVG_SHAPE_RENDERING_CRISP_EDGES => {
+            usvg::ShapeRendering::CrispEdges
+        }
+        resvg_shape_rendering::RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION => {
+            usvg::ShapeRendering::GeometricPrecision
+        }
     };
 
     let text_rendering = match opt.text_rendering {
-        resvg_text_rendering::RESVG_TEXT_RENDERING_OPTIMIZE_SPEED =>
-            usvg::TextRendering::OptimizeSpeed,
-        resvg_text_rendering::RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY =>
-            usvg::TextRendering::OptimizeLegibility,
-        resvg_text_rendering::RESVG_TEXT_RENDERING_GEOMETRIC_PRECISION =>
-            usvg::TextRendering::GeometricPrecision,
+        resvg_text_rendering::RESVG_TEXT_RENDERING_OPTIMIZE_SPEED => {
+            usvg::TextRendering::OptimizeSpeed
+        }
+        resvg_text_rendering::RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY => {
+            usvg::TextRendering::OptimizeLegibility
+        }
+        resvg_text_rendering::RESVG_TEXT_RENDERING_GEOMETRIC_PRECISION => {
+            usvg::TextRendering::GeometricPrecision
+        }
     };
 
     let image_rendering = match opt.image_rendering {
-        resvg_image_rendering::RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY =>
-            usvg::ImageRendering::OptimizeQuality,
-        resvg_image_rendering::RESVG_IMAGE_RENDERING_OPTIMIZE_SPEED =>
-            usvg::ImageRendering::OptimizeSpeed,
+        resvg_image_rendering::RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY => {
+            usvg::ImageRendering::OptimizeQuality
+        }
+        resvg_image_rendering::RESVG_IMAGE_RENDERING_OPTIMIZE_SPEED => {
+            usvg::ImageRendering::OptimizeSpeed
+        }
     };
 
     let ff = DEFAULT_FONT_FAMILY;
@@ -750,7 +852,9 @@ fn to_native_opt(opt: &resvg_options) -> resvg::Options {
     }
 }
 
-fn convert_error(e: usvg::Error) -> ErrorId {
+fn convert_error(
+    e: usvg::Error,
+) -> ErrorId {
     match e {
         usvg::Error::InvalidFileSuffix => ErrorId::InvalidFileSuffix,
         usvg::Error::FileOpenFailed => ErrorId::FileOpenFailed,

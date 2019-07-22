@@ -14,12 +14,10 @@ It can be used as a simple SVG to PNG converted.
 And as an embeddable library to paint SVG on an application native canvas.
 */
 
-#![doc(html_root_url = "https://docs.rs/resvg/0.6.1")]
+#![doc(html_root_url = "https://docs.rs/resvg/0.7.0")]
 
-//#![forbid(unsafe_code)]
+#![forbid(unsafe_code)]
 #![warn(missing_docs)]
-
-pub use usvg;
 
 #[cfg(feature = "cairo-backend")]
 pub use cairo;
@@ -27,53 +25,41 @@ pub use cairo;
 #[cfg(feature = "qt-backend")]
 pub use resvg_qt as qt;
 
-pub use usvg::{
-    svgdom,
-    Error,
-};
+#[cfg(feature = "skia-backend")]
+pub use resvg_skia as skia;
 
-use usvg::lyon_geom;
+#[cfg(feature = "raqote-backend")]
+pub use raqote;
+
+pub use usvg::{self, Error};
 
 
-#[cfg(feature = "cairo-backend")] pub mod backend_cairo;
-#[cfg(feature = "qt-backend")] pub mod backend_qt;
+#[cfg(feature = "cairo-backend")]
+pub mod backend_cairo;
+
+#[cfg(feature = "qt-backend")]
+pub mod backend_qt;
+
+#[cfg(feature = "skia-backend")]
+pub mod backend_skia;
+
+#[cfg(feature = "raqote-backend")]
+pub mod backend_raqote;
 
 pub mod utils;
 mod backend_utils;
 mod geom;
 mod layers;
 mod options;
-mod traits;
 
 /// Commonly used types and traits.
 pub mod prelude {
-    pub use log::warn;
-    pub use usvg;
-    pub use usvg::prelude::*;
-    pub use usvg::{try_opt, try_opt_warn};
-    pub use crate::geom::*;
-    pub(crate) use crate::traits::*;
-    pub use crate::utils;
-    pub use crate::Options;
-    pub use crate::Render;
-    pub use crate::OutputImage;
+    pub use usvg::{self, prelude::*};
+    pub use crate::{geom::*, options::*, utils, OutputImage, Render};
 }
 
-
-use std::path;
-
-pub use crate::options::*;
 pub use crate::geom::*;
-
-/// Shorthand names for modules.
-mod short {
-    pub use crate::svgdom::{
-        LengthUnit as Unit,
-        ElementId as EId,
-        AttributeId as AId,
-        AttributeValue as AValue,
-    };
-}
+pub use crate::options::*;
 
 
 /// A generic interface for image rendering.
@@ -98,60 +84,17 @@ pub trait Render {
         node: &usvg::Node,
         opt: &Options,
     ) -> Option<Box<OutputImage>>;
-
-    /// Calculates node's absolute bounding box.
-    ///
-    /// Note: this method can be pretty expensive.
-    fn calc_node_bbox(
-        &self,
-        node: &usvg::Node,
-        opt: &Options,
-    ) -> Option<Rect>;
 }
 
 /// A generic interface for output image.
 pub trait OutputImage {
     /// Saves rendered image to the selected path.
-    fn save(&self, path: &path::Path) -> bool;
+    fn save(
+        &self,
+        path: &std::path::Path,
+    ) -> bool;
 }
 
-
-/// A global library handle.
-pub struct InitObject {
-    #[cfg(feature = "qt-backend")]
-    #[allow(dead_code)]
-    handle: qt::GuiApp,
-}
-
-/// Creates a global library handle.
-///
-/// Must be invoked before any other `resvg` code.
-///
-/// Currently, handles `QGuiApplication` object which must be created
-/// in order to draw text. If you don't plan to draw text - it's better to skip
-/// the initialization.
-///
-/// Does nothing when only the `cairo` backend is enabled.
-///
-/// Note: `QGuiApplication` initialization is pretty slow (up to 100ms).
-///
-/// # Example
-///
-/// ```
-/// let _resvg = resvg::init();
-///
-/// // other code
-/// ```
-///
-/// Also, take a look at `examples/minimal.rs`.
-///
-/// **Warning**: this method is not thread-safe.
-pub fn init() -> InitObject {
-    InitObject {
-        #[cfg(feature = "qt-backend")]
-        handle: qt::GuiApp::new("resvg"),
-    }
-}
 
 /// Returns default backend.
 ///
@@ -168,6 +111,16 @@ pub fn default_backend() -> Box<Render> {
     #[cfg(feature = "qt-backend")]
     {
         return Box::new(backend_qt::Backend);
+    }
+
+    #[cfg(feature = "skia-backend")]
+    {
+        return Box::new(backend_skia::Backend);
+    }
+
+    #[cfg(feature = "raqote-backend")]
+    {
+        return Box::new(backend_raqote::Backend);
     }
 
     unreachable!("at least one backend must be enabled")

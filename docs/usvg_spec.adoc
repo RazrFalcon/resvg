@@ -26,10 +26,6 @@ You can use
 https://github.com/RazrFalcon/resvg/tree/master/usvg[usvg]
 to convert a random SVG into a SVG Micro almost losslessly.
 
-Note: the current version supports the `text` element,
-but eventually text will be converted into paths.
-To make SVG Micro even simpler.
-
 == Elements
 
 [[svg-element]]
@@ -44,7 +40,6 @@ It's defined only once and can't be nested, unlike by the SVG spec.
 * <<defs-element,defs>>
 * <<g-element,g>>
 * <<path-element,path>>
-* <<text-element,text>>
 * <<image-element,image>>
 
 *Attributes:*
@@ -152,7 +147,6 @@ Doesn't have a `xlink:href` attribute because all attributes and children will b
 
 * `g`
 * `path`
-* `text`
 * `image`
 
 *Attributes:*
@@ -178,7 +172,6 @@ Doesn't have a `xlink:href` attribute because all attributes and children will b
 *Children:*
 
 * `path`
-* `text`
 
 *Attributes:*
 
@@ -199,7 +192,6 @@ Doesn't have a `xlink:href` attribute because all attributes and children will b
 
 * `g`
 * `path`
-* `text`
 * `image`
 
 *Attributes:*
@@ -261,7 +253,6 @@ A group will have at least one of the attributes present.
 
 * <<g-element,g>>
 * <<path-element,path>>
-* <<text-element,text>>
 * <<image-element,image>>
 
 *Attributes:*
@@ -324,111 +315,6 @@ A group will have at least one of the attributes present.
 * `visibility` = `hidden | collapse`? +
   Default: visible
 * `transform` = <<transform-type,<transform> >>?
-
-[[text-element]]
-
-=== The `text` element
-
-The text is one of the most complex parts of the SVG.
-_usvg_ will modify the `text` element and its children a lot.
-The simplest `text` element like `<text>Text</text>` will be converted into:
-
-```xml
-<text>
-  <tspan
-     x="0"
-     y="0">
-    <tspan
-       fill="#000000"
-       font-family="Times New Roman"
-       font-size="12"
-       stroke="none">
-      Text
-    </tspan>
-  </tspan>
-</text>
-```
-
-In _usvg_, the `text` element is just a container for
-https://www.w3.org/TR/SVG11/text.html#TextChunk[text chunks],
-represented via `tspan`.
-So all `text` elements will have a three-level structure:
-
-* `text` - container
-** `tspan` - text chunk
-*** `tspan` - text container
-
-*Container attributes:*
-
-* `id` = <<string-type,<string> >>? +
-  An optional, but never empty, element ID.
-* `rotate` = `<list-of-numbers>`?
-* `xml:space` = `preserve`? +
-  Default: default
-* `clip-rule` = `evenodd`? +
-  Will be set only inside the <<clipPath-element,clipPath>>, instead of `fill-rule`.
-* `clip-path` = <<func-iri-type,<FuncIRI> >>? +
-  Available only inside the <<clipPath-element,clipPath>>.
-* `text-rendering` = `optimizeSpeed | geometricPrecision` +
-  Default: optimizeLegibility
-* `transform` = <<transform-type,<transform> >>?
-
-*Text chunk attributes:*
-
-* `x` = <<number-type,<number> >>?
-* `y` = <<number-type,<number> >>?
-* `dx` = <<number-type,<number> >>?
-* `dy` = <<number-type,<number> >>?
-* `text-anchor` = `middle | end`? +
-  Default: start
-
-*Text container attributes:*
-
-* `fill` = `none` | <<color-type,<color> >> | <<func-iri-type,<FuncIRI> >>? +
-  If not set, than all fill-* attributes will not be set too. +
-  Default: black
-* `fill-opacity` = <<opacity-type,<opacity> >>? +
-  Default: 1
-* `fill-rule` = `evenodd`? +
-  Default: nonzero
-* `stroke` = <<color-type,<color> >> | <<func-iri-type,<FuncIRI> >>? +
-  If not set, than all stroke-* attributes will not be set too. +
-  Default: none
-* `stroke-width` = <<positive-number-type,<positive-number> >>? +
-  Default: 1
-* `stroke-linecap` = `round | square`? +
-  Default: butt
-* `stroke-linejoin` = `round | bevel`? +
-  Default: miter
-* `stroke-miterlimit` = <<positive-number-type,<positive-number> >>? +
-  Guarantee to be > 1. +
-  Default: 4
-* `stroke-dasharray` = `<list-of-numbers>`? +
-  Guarantee to have even amount of numbers. +
-  Default: none
-* `stroke-dashoffset` = <<number-type,<number> >>?
-* `stroke-opacity` = <<opacity-type,<opacity> >>? +
-  Default: 1
-* `font-family` = <<string-type,<string> >>
-* `font-size` = <<positive-number-type,<positive-number> >>
-* `font-style` = `italic | oblique`? +
-  Default: normal
-* `font-variant` = `small-caps`? +
-  Default: normal
-* `font-weight` = `100 | 200 | 300 | 500 | 600 | 700 | 800 | 900`? +
-  Default: 400
-* `font-stretch` = `wider | narrower | ultra-condensed | extra-condensed` +
-  `| condensed | semi-condensed | semi-expanded | expanded` +
-  `| extra-expanded | ultra-expanded` ? +
-  Default: normal
-* `baseline-shift` = <<number-type,<number> >>? +
-  Default: baseline
-* `letter-spacing` = <<number-type,<number> >>? +
-  Default: normal
-* `word-spacing` = <<number-type,<number> >>? +
-  Default: normal
-* `visibility` = `hidden | collapse`? +
-  Default: visible
 
 [[image-element]]
 

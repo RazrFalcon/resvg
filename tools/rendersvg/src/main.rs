@@ -8,9 +8,6 @@ use std::io::Write;
 use std::path;
 
 use resvg::prelude::*;
-use resvg::svgdom;
-
-use svgdom::WriteBuffer;
 
 mod args;
 
@@ -33,7 +30,10 @@ fn main() {
 }
 
 fn process() -> Result<(), String> {
-    #[cfg(all(not(feature = "cairo-backend"), not(feature = "qt-backend")))]
+    #[cfg(all(not(feature = "cairo-backend"),
+              not(feature = "qt-backend"),
+              not(feature = "skia-backend"),
+              not(feature = "raqote-backend")))]
     {
         bail!("rendersvg has been built without any backends")
     }
@@ -55,7 +55,8 @@ fn process() -> Result<(), String> {
             .format(log_format)
             .level(log::LevelFilter::Warn)
             .chain(std::io::stderr())
-            .apply().unwrap();
+            .apply()
+            .unwrap();
     }
 
     let backend: Box<Render> = match args.backend_name.as_str() {
@@ -63,6 +64,10 @@ fn process() -> Result<(), String> {
         "cairo" => Box::new(resvg::backend_cairo::Backend),
         #[cfg(feature = "qt-backend")]
         "qt" => Box::new(resvg::backend_qt::Backend),
+        #[cfg(feature = "skia-backend")]
+        "skia" => Box::new(resvg::backend_skia::Backend),
+        #[cfg(feature = "raqote-backend")]
+        "raqote" => Box::new(resvg::backend_raqote::Backend),
         _ => bail!("unknown backend"),
     };
 
@@ -75,12 +80,8 @@ fn process() -> Result<(), String> {
         usvg::Tree::from_file(&args.in_svg, &opt.usvg).map_err(|e| e.to_string())
     })?;
 
-    // We have to init only Qt backend.
-    #[cfg(feature = "qt-backend")]
-    let _resvg = timed!("Backend init", init_qt_gui(&tree, &args));
-
     if args.query_all {
-        return query_all(backend, &tree, &opt);
+        return query_all(&tree);
     }
 
     // Dump before rendering in case of panic.
@@ -113,36 +114,7 @@ fn process() -> Result<(), String> {
     Ok(())
 }
 
-// Qt backend initialization is pretty slow
-// and needed only for files with text nodes.
-// So we skip it file doesn't have one.
-#[cfg(feature = "qt-backend")]
-fn init_qt_gui(
-    tree: &usvg::Tree,
-    args: &args::Args,
-) -> Option<resvg::InitObject> {
-    if args.backend_name != "qt" {
-        return None;
-    }
-
-    // Check that tree has any text nodes.
-    let has_text = tree.root().descendants().any(|n|
-        if let usvg::NodeKind::Text { .. } = *n.borrow() { true } else { false }
-    );
-
-    if has_text {
-        // Init Qt backend.
-        Some(resvg::init())
-    } else {
-        None
-    }
-}
-
-fn query_all(
-    backend: Box<Render>,
-    tree: &usvg::Tree,
-    opt: &Options,
-) -> Result<(), String> {
+fn query_all(tree: &usvg::Tree) -> Result<(), String> {
     let mut count = 0;
     for node in tree.root().descendants() {
         if tree.is_in_defs(&node) {
@@ -159,10 +131,12 @@ fn query_all(
             (v * 1000.0).round() / 1000.0
         }
 
-        if let Some(bbox) = backend.calc_node_bbox(&node, &opt) {
-            println!("{},{},{},{},{}", node.id(),
-                     round_len(bbox.x()), round_len(bbox.y()),
-                     round_len(bbox.width()), round_len(bbox.height()));
+        if let Some(bbox) = node.calculate_bbox() {
+            println!(
+                "{},{},{},{},{}", node.id(),
+                round_len(bbox.x()), round_len(bbox.y()),
+                round_len(bbox.width()), round_len(bbox.height())
+            );
         }
     }
 
@@ -189,20 +163,10 @@ fn run_task<P, T>(perf: bool, title: &str, p: P) -> T
 
 fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), String> {
     let mut f = fs::File::create(path)
-                   .map_err(|_| format!("failed to create a file {:?}", path))?;
+        .map_err(|_| format!("failed to create a file {:?}", path))?;
 
-    let opt = svgdom::WriteOptions {
-        indent: svgdom::Indent::Spaces(2),
-        attributes_indent: svgdom::Indent::Spaces(3),
-        attributes_order: svgdom::AttributesOrder::Specification,
-        .. svgdom::WriteOptions::default()
-    };
-
-    let svgdoc = tree.to_svgdom();
-
-    let mut out = Vec::new();
-    svgdoc.write_buf_opt(&opt, &mut out);
-    f.write_all(&out).map_err(|_| format!("failed to write a file {:?}", path))?;
+    f.write_all(tree.to_string(usvg::XmlOptions::default()).as_bytes())
+     .map_err(|_| format!("failed to write a file {:?}", path))?;
 
     Ok(())
 }
