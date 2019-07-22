@@ -223,16 +223,14 @@ SKIA_DIR=path SKIA_LIB_DIR=path cargo build --release --features "skia-backend"
 
 We assume that you have already built Skia itself.
 
-Install `harfbuzz` using your distributive's package manager.
-
-Using BrewInstall you can install it via:
+Install `harfbuzz` using Homebrew via:
 
 ```
 brew install harfbuzz
 ```
 
 `SKIA_DIR` should point to a Skia directory that contains the Skia `include` directory.
-`SKIA_LIB_DIR` should point to a Skia directory that contains `libskia.so`.
+`SKIA_LIB_DIR` should point to a Skia directory that contains `libskia.a`.
 
 ```sh
 SKIA_DIR=path SKIA_LIB_DIR=path cargo build --release --features "skia-backend"
