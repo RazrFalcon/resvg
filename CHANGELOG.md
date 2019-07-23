@@ -18,6 +18,9 @@ This changelog also contains important changes in dependencies.
   Almost 2x faster than generating an `svgdom`.
 - `svgdom` is no longer reexported.
 
+### Fixed
+- (qt-api) A default font resolving.
+
 ### Removed
 - (cairo-backend) `gdk-pixbuf` dependency.
 - (qt-backend) JPEG image format plugin dependency.
