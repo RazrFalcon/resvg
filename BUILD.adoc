@@ -202,7 +202,7 @@ cargo build --release --features "raqote-backend"
 
 === Skia backend
 
-We assume that you have already build Skia itself.
+We assume that you have already built Skia itself.
 
 Install `harfbuzz` using your distributive's package manager.
 
@@ -220,6 +220,21 @@ SKIA_DIR=path SKIA_LIB_DIR=path cargo build --release --features "skia-backend"
 ```
 
 == macOS
+
+We assume that you have already built Skia itself.
+
+Install `harfbuzz` using Homebrew via:
+
+```
+brew install harfbuzz
+```
+
+`SKIA_DIR` should point to a Skia directory that contains the Skia `include` directory.
+`SKIA_LIB_DIR` should point to a Skia directory that contains `libskia.dylib`.
+
+```sh
+SKIA_DIR=path SKIA_LIB_DIR=path cargo build --release --features "skia-backend"
+```
 
 === Qt backend
 

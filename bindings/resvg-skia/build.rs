@@ -35,7 +35,7 @@ fn main() {
     println!("cargo:rustc-link-lib=skia.dll");
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn main() {
     use std::env;
     use std::path::Path;
@@ -64,9 +64,4 @@ fn main() {
 
     println!("cargo:rustc-link-search={}", skia_lib_path.display());
     println!("cargo:rustc-link-lib=skia");
-}
-
-#[cfg(target_os = "macos")]
-fn main() {
-    panic!("unsupported");
 }
