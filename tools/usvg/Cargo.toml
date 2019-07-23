@@ -15,7 +15,7 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 [dependencies]
 fern = "0.5"
 log = "0.4"
-pico-args = { git = "https://github.com/RazrFalcon/pico-args", rev = "f9e8b51" }
+pico-args = "0.1"
 usvg = { version = "0.7.0", path = "../../usvg" }
 
 [[bin]]
