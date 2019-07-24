@@ -38,7 +38,7 @@ pub(crate) trait RaqoteDrawTargetExt {
 
 impl RaqoteDrawTargetExt for raqote::DrawTarget {
     fn transform(&mut self, ts: &raqote::Transform) {
-        self.set_transform(&self.get_transform().pre_mul(ts));
+        self.set_transform(&self.get_transform().pre_transform(ts));
     }
 
     fn as_image(&self) -> raqote::Image {

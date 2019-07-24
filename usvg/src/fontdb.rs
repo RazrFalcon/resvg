@@ -175,8 +175,8 @@ impl Database {
         };
 
         let underline = match font.underline_metrics() {
-            Ok(metrics) => metrics,
-            Err(_) => {
+            Some(metrics) => metrics,
+            None => {
                 ttf_parser::LineMetrics {
                     position: -(units_per_em as i16) / 9,
                     thickness: units_per_em as i16 / 12,
@@ -185,18 +185,18 @@ impl Database {
         };
 
         let line_through_position = match font.strikeout_metrics() {
-            Ok(metrics) => metrics.position,
-            Err(_) => x_height / 2,
+            Some(metrics) => metrics.position,
+            None => x_height / 2,
         };
 
         // 0.2 and 0.4 are generic offsets used by some applications (Inkscape/librsvg).
         let mut subscript_offset = (units_per_em as f32 / 0.2).round() as i16;
         let mut superscript_offset = (units_per_em as f32 / 0.4).round() as i16;
-        if let Ok(metrics) = font.subscript_metrics() {
+        if let Some(metrics) = font.subscript_metrics() {
             subscript_offset = metrics.y_offset;
         }
 
-        if let Ok(metrics) = font.superscript_metrics() {
+        if let Some(metrics) = font.superscript_metrics() {
             superscript_offset = metrics.y_offset;
         }
 

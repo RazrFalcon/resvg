@@ -160,7 +160,7 @@ fn prepare_linear<'a>(
     if let raqote::Source::LinearGradient(_, _, ref mut transform) = grad {
         let ts: raqote::Transform = ts.to_native();
         if let Some(ts) = ts.inverse() {
-            *transform = transform.pre_mul(&ts);
+            *transform = transform.pre_transform(&ts);
         }
     }
 
@@ -205,7 +205,7 @@ fn prepare_radial<'a>(
         | raqote::Source::TwoCircleRadialGradient(_, _, _, _, _, _, ref mut transform) => {
             let ts: raqote::Transform = ts.to_native();
             if let Some(ts) = ts.inverse() {
-                *transform = transform.pre_mul(&ts);
+                *transform = transform.pre_transform(&ts);
             }
         }
         _ => {}

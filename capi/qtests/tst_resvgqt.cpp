@@ -9,11 +9,14 @@ class ResvgQtTests : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void initTestCase();
+
     void test_parseFile();
     void test_parseInvalidFile();
     void test_emptyFile();
 
     void test_renderFile();
+    void test_renderFileWithText();
 
     void test_imageSize();
     void test_imageViewBox();
@@ -25,6 +28,11 @@ private Q_SLOTS:
 static QString localPath(const QString &fileName)
 {
     return QString("%1/%2").arg(SRCDIR).arg(fileName);
+}
+
+void ResvgQtTests::initTestCase()
+{
+    ResvgRenderer::initLog();
 }
 
 void ResvgQtTests::test_parseFile()
@@ -66,6 +74,26 @@ void ResvgQtTests::test_renderFile()
     img.save("test_renderFile.png");
 
     QCOMPARE(img, QImage(localPath("test_renderFile_result.png")));
+#endif
+}
+
+void ResvgQtTests::test_renderFileWithText()
+{
+#ifdef LOCAL_BUILD
+    ResvgRenderer render(localPath("text.svg"));
+    QVERIFY(!render.isEmpty());
+    QCOMPARE(render.defaultSize(), QSize(200, 200));
+
+    QImage img(render.defaultSize(), QImage::Format_ARGB32);
+    img.fill(Qt::transparent);
+
+    QPainter p(&img);
+    render.render(&p);
+    p.end();
+
+    img.save("test_renderFileWithText.png");
+
+    QCOMPARE(img, QImage(localPath("test_renderFileWithText_result.png")));
 #endif
 }
 

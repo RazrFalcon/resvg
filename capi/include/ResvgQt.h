@@ -68,17 +68,19 @@ private:
     {
         resvg_init_options(&opt);
 
-        QFont font;
-        opt.font_family = toCStr(font.family());
-        opt.font_size = font.pointSize();
+        // Do not set the default font via QFont::family()
+        // because it will return a dummy one on Windows.
+        // See https://github.com/RazrFalcon/resvg/issues/159
 
+        opt.font_family = "Times New Roman";
         opt.languages = toCStr(QLocale().bcp47Name());
-
         opt.dpi = 96 * scaleFactor;
     }
 
     void clear()
     {
+        // No need to deallocate opt.font_family, because it is a constant.
+
         if (tree) {
             resvg_tree_destroy(tree);
             tree = nullptr;
@@ -87,11 +89,6 @@ private:
         if (opt.path) {
             delete[] opt.path; // do not use free() because was allocated via qstrdup()
             opt.path = NULL;
-        }
-
-        if (opt.font_family) {
-            delete[] opt.font_family; // do not use free() because was allocated via qstrdup()
-            opt.font_family = NULL;
         }
 
         if (opt.languages) {
@@ -108,23 +105,23 @@ static QString errorToString(const int err)
 {
     switch (err) {
         case RESVG_OK :
-            return QString(); break;
+            return QString();
         case RESVG_ERROR_NOT_AN_UTF8_STR :
-            return QLatin1Literal("The SVG content has not an UTF-8 encoding."); break;
+            return QLatin1Literal("The SVG content has not an UTF-8 encoding.");
         case RESVG_ERROR_FILE_OPEN_FAILED :
-            return QLatin1Literal("Failed to open the file."); break;
+            return QLatin1Literal("Failed to open the file.");
         case RESVG_ERROR_FILE_WRITE_FAILED :
-            return QLatin1Literal("Failed to write to the file."); break;
+            return QLatin1Literal("Failed to write to the file.");
         case RESVG_ERROR_INVALID_FILE_SUFFIX :
-            return QLatin1Literal("Invalid file suffix."); break;
+            return QLatin1Literal("Invalid file suffix.");
         case RESVG_ERROR_MALFORMED_GZIP :
-            return QLatin1Literal("Not a GZip compressed data."); break;
+            return QLatin1Literal("Not a GZip compressed data.");
         case RESVG_ERROR_INVALID_SIZE :
-            return QLatin1Literal("SVG doesn't have a valid size."); break;
+            return QLatin1Literal("SVG doesn't have a valid size.");
         case RESVG_ERROR_PARSING_FAILED :
-            return QLatin1Literal("Failed to parse an SVG data."); break;
+            return QLatin1Literal("Failed to parse an SVG data.");
         case RESVG_ERROR_NO_CANVAS :
-            return QLatin1Literal("Failed to allocate the canvas."); break;
+            return QLatin1Literal("Failed to allocate the canvas.");
     }
 
     Q_UNREACHABLE();
