@@ -10,10 +10,12 @@ This changelog also contains important changes in dependencies.
 ### Added
 - (resvg) A [Skia](https://skia.org/) backend thanks to
   [JaFenix](https://github.com/JaFenix).
+- An `*.otf` fonts support.
 
 ### Changed
-- All backend are using the `image` crate for raster images loading now.
-- Use `pico-args` instead of `gumdrop`.
+- All backends are using the `image` crate for raster images loading now.
+- Use `pico-args` instead of `gumdrop` to reduced the build time of `tools/rendersvg`
+  and `tools/usvg`.
 - (usvg) The `xmlwriter` is used for SVG generation now.
   Almost 2x faster than generating an `svgdom`.
 - `svgdom` is no longer reexported.

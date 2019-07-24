@@ -15,49 +15,17 @@
 
 to render SVG files based on a
 [static](http://www.w3.org/TR/SVG11/feature#SVG-static)
-[SVG Full 1.1](https://www.w3.org/TR/SVG/Overview.html) subset
-(see [SVG support](#svg-support) for details).
+[SVG Full 1.1](https://www.w3.org/TR/SVG/Overview.html) subset to raster images or
+to a backend's canvas (e.g. to a QWidget via QPainter).
 
 The core idea is to make a fast, small, portable, multiple-backend SVG library
 designed for edge-cases.
 
-SVG can be rendered to a raster image or to a backend's canvas (e.g. to a QWidget via QPainter).
-
-## Why a new library?
-
-*resvg* is competing with [librsvg], [QtSvg]
-and [Inkscape] (only as a CLI SVG-to-PNG converter).
-
-One of the major differences from other rendering libraries is that *resvg* does a lot
-of preprocessing before rendering. It converts shapes to paths, resolves attributes,
-removes groups and invisible elements, fixes a lot of issues in malformed SVG files.
-Then it creates a simple render tree with all elements and attributes resolved.
-And only then it begins rendering. So it's very easy to implement a new rendering backend.
-
-More details [here](https://github.com/RazrFalcon/resvg/blob/master/docs/usvg_spec.adoc).
-
-### resvg vs librsvg
-
-*librsvg* is the main competitor to *resvg*. And even though *librsvg* itself is being
-rewritten in Rust, as *resvg*, the architecture of the library is completely different:
-
-- *librsvg* is heavily tied to the [cairo] library
-- *librsvg* is heavily tied to [GNOME], which makes it painful to distribute outside the Linux ecosystem
-- *librsvg* doesn't produce an intermediate rendering tree
-- *librsvg* has minimal support for edge cases, which leads to rendering errors
-
-### resvg vs Inkscape
-
-Inkscape is often used to convert SVG to PNG, but it's not an actual competitor to *resvg*,
-since it's still a complete vector editor, not a tiny library.
-Also, it's very slow. But it has the best SVG support amongst others.
-
-### resvg vs QtSvg
-
-Without a doubt, [QtSvg] is heavily used in [Qt] applications.
-But [QtSvg] itself is very limited. It officially supports only a tiny portion
-of the SVG Tiny 1.2 subset. In simple terms – it correctly renders only primitive SVG images.
-Also, it's [deprecated](https://wiki.qt.io/Qt_Modules_Maturity_Level).
+Another major difference from other SVG rendering libraries is that *resvg* does a lot
+of preprocessing before rendering. It converts an input SVG into a simplified one
+called [Micro SVG](./docs/usvg_spec.adoc) and only then it begins rendering.
+So it's very easy to implement a new rendering backend.
+And you can also access *Micro SVG* as XML directly via [usvg](./tools/usvg) tool.
 
 ## SVG support
 
@@ -109,6 +77,8 @@ Also, we do not test against Chrome, Firefox, Inkscape and Batik because they ha
       - [`roxmltree`](https://github.com/RazrFalcon/roxmltree) – a DOM-like XML tree
         - [`xmlparser`](https://github.com/RazrFalcon/xmlparser) – an XML parser
       - [`svgtypes`](https://github.com/RazrFalcon/svgtypes) – SVG types parser and writer
+    - [`ttf-parser`](https://github.com/RazrFalcon/ttf-parser) – a TrueType parser
+    - [`xmlwriter`](https://github.com/RazrFalcon/xmlwriter) – a simple XML writer
     - [`rctree`](https://github.com/RazrFalcon/rctree) – a DOM-like tree
   - [`resvg-qt`](./bindings/resvg-qt) – minimal bindings to [Qt]
   - [`resvg-skia`](./bindings/resvg-skia) – minimal bindings to [Skia]
@@ -117,10 +87,10 @@ All other dependencies aren't written by me for this project.
 
 ## Directory structure
 
-- `capi` – C/FFI interface for *resvg*
+- `bindings` – minimal bindings to Qt and Skia used by *resvg*
+- `capi` – C interface for *resvg*
 - `docs` – basic documentation
 - `examples` – usage examples for *resvg* as a library
-- `resvg-qt` – minimal bindings to Qt used by *resvg*
 - `src` – source code
 - `testing-tools` – scripts used for testing
 - `tools` – useful tools
