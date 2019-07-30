@@ -16,7 +16,7 @@ And as an embeddable library to paint SVG on an application native canvas.
 
 #![doc(html_root_url = "https://docs.rs/resvg/0.7.0")]
 
-#![forbid(unsafe_code)]
+// #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
 #[cfg(feature = "cairo-backend")]

@@ -12,11 +12,12 @@ use std::io::Write;
 use crate::prelude::*;
 use crate::layers::{self, Layers};
 use crate::backend_utils::{self, FlatRender, ConvTransform, BlendMode};
+use self::skia_bindings::ToData;
 
 macro_rules! try_create_surface {
     ($size:expr, $ret:expr) => {
         usvg::try_opt_warn_or!(
-            skia::Surface::new_raster_n32_premul(($size.width() as i32, $size.height() as i32)),
+            skia::Surface::new_raster_n32_premul((500, 500)),
             $ret,
             "Failed to create a {}x{} surface.", $size.width(), $size.height()
         );
@@ -28,13 +29,31 @@ mod image;
 mod path;
 mod style;
 
+pub(crate) mod skia_bindings {
+    use std::slice;
+    use crate::skia;
+    
+    pub(crate) trait ToData {
+        fn data_mut(&mut self) -> Box<&mut [u8]>;
+    }
+
+    impl ToData for skia::Surface {
+        fn data_mut(&mut self) -> Box<&mut [u8]> {
+            let pixels = self.peek_pixels().unwrap();
+            unsafe {
+                let mut addr = pixels.writable_addr();
+                Box::new(slice::from_raw_parts_mut(addr as _, pixels.compute_byte_size()))
+            }
+        }
+    }
+}
+
 impl ConvTransform<skia::Matrix> for usvg::Transform {
     fn to_native(&self) -> skia::Matrix {
-        skia::Matrix::new_all(self.a as f32, self.b as f32, self.c as f32, self.d as f32, self.e as f32, self.f as f32, 0.0, 0.0, 0.0)
+        skia::Matrix::new_all(self.a as f32, self.b as f32, self.c as f32, self.d as f32, self.e as f32, self.f as f32, 0.0, 0.0, 1.0)
     }
 
     fn from_native(mat: &skia::Matrix) -> Self {
-        // let d = mat.data();
         Self::new(
             mat.scale_x().into(),
             mat.skew_x().into(),
@@ -75,10 +94,11 @@ impl OutputImage for skia::Surface {
         &self,
         path: &std::path::Path,
     ) -> bool {
-        let image = self.image_snapshot();
-        let d = image.encode_to_data(skia::EncodedImageFormat::PNG).unwrap();
+        let mut surf = self.clone();
+        let image = surf.image_snapshot();
+        let data = image.encode_to_data(skia::EncodedImageFormat::PNG).unwrap();
         let mut file = std::fs::File::create(path).unwrap();
-        let bytes = d.as_bytes();
+        let bytes = data.as_bytes();
         if let Ok(_) = file.write_all(bytes) {
             return true;
         }
@@ -159,14 +179,11 @@ fn create_root_surface(
     let img_size = utils::fit_to(size, opt.fit_to)?;
 
     let mut surface = try_create_surface!(img_size, None);
-    let canvas = surface.canvas();
 
     // Fill background.
     if let Some(c) = opt.background {
         let rgb = skia::RGB::from((c.red, c.green, c.blue));
-        canvas.clear(skia::Color::from(rgb));
-    } else {
-        canvas.clear(skia::Color::WHITE);
+        surface.canvas().clear(skia::Color::from(rgb));
     }
 
     Some((surface, img_size))
@@ -189,13 +206,13 @@ impl layers::Image for skia::Surface {
         let mut surface = try_create_surface!(size, None);
 
         let canvas = surface.canvas();
-        canvas.clear(skia::Color::WHITE);
+        canvas.clear(skia::Color::TRANSPARENT);
 
         Some(surface)
     }
 
     fn clear(&mut self) {
-        self.canvas().clear(skia::Color::WHITE);
+        self.canvas().clear(skia::Color::TRANSPARENT);
     }
 }
 
@@ -228,6 +245,10 @@ impl<'a> SkiaFlatRender<'a> {
     fn paint<F>(&mut self, f: F)
         where F: FnOnce(&usvg::Tree, &Options, BlendMode, &mut skia::Surface)
     {
+        let mut restore = |canvas: &mut skia::Canvas| {
+            canvas.restore();
+        };
+
         match self.layers.current_mut() {
             Some(layer) => {
                 let mut canvas = layer.img.canvas();
@@ -240,11 +261,11 @@ impl<'a> SkiaFlatRender<'a> {
                 }
 
                 f(self.tree, self.opt, layer.blend_mode, &mut layer.img);
-
-                canvas.restore();
+                restore(layer.img.canvas());
             }
             None => {
-                let mut canvas = self.surface.canvas();
+                let canvas = self.surface.canvas();
+
                 canvas.save();
 
                 if let Some(r) = self.clip_rect {
@@ -253,8 +274,7 @@ impl<'a> SkiaFlatRender<'a> {
                 }
 
                 f(self.tree, self.opt, self.blend_mode, self.surface);
-
-                canvas.restore();
+                restore(self.surface.canvas());
             }
         }
     }
@@ -305,24 +325,22 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
             255
         };
 
-        let last = try_opt!(self.layers.pop());
-        let image = &last.img.image_snapshot();
+        let mut last = try_opt!(self.layers.pop());
+        let image = last.img.image_snapshot();
 
         match self.layers.current_mut() {
             Some(prev) => {
-                let mut canvas = prev.img.canvas();
+                let canvas = prev.img.canvas();
                 canvas.draw_image(&image, skia::Point::new(0.0, 0.0), None);
-                // canvas.draw_surface(&last.img, 0.0, 0.0, a, mode.into(),
-                //                     skia::FilterQuality::Low);
             }
             None => {
-                let mut canvas = self.surface.canvas();
+                let canvas = self.surface.canvas();
 
-                let curr_ts = canvas.total_matrix();
                 canvas.reset_matrix();
                 canvas.draw_image(&image, skia::Point::new(0.0, 0.0), None);
 
                 // Reset.
+                let curr_ts = canvas.total_matrix().clone();
                 canvas.set_matrix(&curr_ts);
                 self.blend_mode = BlendMode::default();
             }
@@ -334,9 +352,7 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
     fn apply_mask(&mut self) {
         let img_size = self.layers.img_size();
         if let Some(layer) = self.layers.current_mut() {
-            let image = layer.img.image_snapshot();
-            let mut data = image.encoded_data().unwrap();
-            backend_utils::image_to_mask(&mut data, img_size);
+            backend_utils::image_to_mask(&mut layer.img.data_mut(), img_size);
         }
     }
 
@@ -364,14 +380,19 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
     fn get_transform(&self) -> usvg::Transform {
         match self.layers.current() {
             Some(layer) => layer.ts,
-            None => usvg::Transform::from_native(&self.surface.canvas().total_matrix()),
+            None => {
+                let mut surface = self.surface.clone();
+                usvg::Transform::from_native(surface.canvas().total_matrix()) 
+            },
         }
     }
 
     fn set_transform(&mut self, ts: usvg::Transform) {
         match self.layers.current_mut() {
             Some(layer) => layer.ts = ts,
-            None => { let _ = self.surface.canvas().set_matrix(&ts.to_native()); },
+            None => {
+                let _ = self.surface.canvas().set_matrix(&ts.to_native()); 
+            },
         }
     }
 

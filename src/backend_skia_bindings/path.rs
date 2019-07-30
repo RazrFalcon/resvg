@@ -23,27 +23,26 @@ pub fn draw(
     let mut skia_path = convert_path(&path.segments);
     if let Some(ref fill) = path.fill {
         if fill.rule == usvg::FillRule::EvenOdd {
-            skia_path.set_fill_type(skia::Path::PathFillType::EventOdd);
+            skia_path.set_fill_type(skia::path::FillType::EventOdd);
         }
     };
 
     let antialias = use_shape_antialiasing(path.rendering_mode);
 
-    let mut canvas = surface.canvas_mut();
-    let global_ts = usvg::Transform::from_native(&canvas.get_matrix());
+    let global_ts = usvg::Transform::from_native(&surface.canvas().total_matrix());
 
     if path.fill.is_some() {
         let mut fill = style::fill(tree, &path.fill, opt, style_bbox, global_ts);
         fill.set_anti_alias(antialias);
         fill.set_blend_mode(blend_mode);
-        canvas.draw_path(&skia_path, &fill);
+        surface.canvas().draw_path(&skia_path, &fill);
     }
 
     if path.stroke.is_some() {
         let mut stroke = style::stroke(tree, &path.stroke, opt, style_bbox, global_ts);
         stroke.set_anti_alias(antialias);
         stroke.set_blend_mode(blend_mode);
-        canvas.draw_path(&skia_path, &stroke);
+        surface.canvas().draw_path(&skia_path, &stroke);
     }
 
     bbox
@@ -56,13 +55,16 @@ fn convert_path(
     for seg in segments {
         match *seg {
             usvg::PathSegment::MoveTo { x, y } => {
-                s_path.move_to(x, y);
+                s_path.move_to(skia::Point::new(x as f32, y as f32));
             }
             usvg::PathSegment::LineTo { x, y } => {
-                s_path.line_to(x, y);
+                s_path.line_to(skia::Point::new(x as f32, y as f32));
             }
             usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                s_path.cubic_to(x1, y1, x2, y2, x, y);
+                let p1 = skia::Point::new(x1 as f32, y1 as f32);
+                let p2 = skia::Point::new(x2 as f32, y2 as f32);
+                let p3 = skia::Point::new(x as f32, y as f32);
+                s_path.cubic_to(p1, p2, p3);
             }
             usvg::PathSegment::ClosePath => {
                 s_path.close();

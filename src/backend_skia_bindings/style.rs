@@ -16,7 +16,7 @@ pub fn fill(
     bbox: Rect,
     global_ts: usvg::Transform,
 ) -> skia::Paint {
-    let mut paint = skia::Paint::new();
+    let mut paint = skia::Paint::default();
     paint.set_style(skia::PaintStyle::Fill);
 
     if let Some(ref fill) = fill {
@@ -24,8 +24,10 @@ pub fn fill(
         match fill.paint {
             usvg::Paint::Color(c) => {
                 let a = f64_bound(0.0, opacity.value() * 255.0, 255.0) as u8;
-                paint.set_color(c.red, c.green, c.blue, a);
-            }
+                let color = skia::Color::from_argb(a, c.red, c.green, c.blue);
+                paint.set_color(color);
+            },
+            _ => {}
             // usvg::Paint::Link(ref id) => {
             //     if let Some(node) = tree.defs_by_id(id) {
             //         match *node.borrow() {
@@ -55,7 +57,7 @@ pub fn stroke(
     bbox: Rect,
     global_ts: usvg::Transform,
 ) -> skia::Paint {
-    let mut paint = skia::Paint::new();
+    let mut paint = skia::Paint::default();
     paint.set_style(skia::PaintStyle::Stroke);
 
     if let Some(ref stroke) = stroke {
@@ -63,8 +65,10 @@ pub fn stroke(
         match stroke.paint {
             usvg::Paint::Color(c) => {
                 let a = f64_bound(0.0, opacity.value() * 255.0, 255.0) as u8;
-                paint.set_color(c.red, c.green, c.blue, a);
-            }
+                let color = skia::Color::from_argb(a, c.red, c.green, c.blue);
+                paint.set_color(color);
+            },
+            _ => {},
             // usvg::Paint::Link(ref id) => {
             //     if let Some(node) = tree.defs_by_id(id) {
             //         match *node.borrow() {
@@ -97,14 +101,14 @@ pub fn stroke(
         };
         paint.set_stroke_join(stroke_join);
 
-        paint.set_stroke_miter(stroke.miterlimit.value());
-        paint.set_stroke_width(stroke.width.value());
+        paint.set_stroke_miter(stroke.miterlimit.value() as f32);
+        paint.set_stroke_width(stroke.width.value() as f32);
 
-        if let Some(ref list) = stroke.dasharray {
-            let list: Vec<_> = list.iter().map(|n| *n as f32).collect();
-            let path_effect = skia::PathEffect::new_dash_path(&list, stroke.dashoffset);
-            paint.set_path_effect(path_effect);
-        }
+        // if let Some(ref list) = stroke.dasharray {
+        //     let list: Vec<_> = list.iter().map(|n| *n as f32).collect();
+        //     let path_effect = skia::PathEffect::new_dash_path(&list, stroke.dashoffset);
+        //     paint.set_path_effect(path_effect);
+        // }
     }
 
     paint

@@ -7,7 +7,7 @@ use usvg::try_opt;
 
 use crate::prelude::*;
 use crate::backend_utils::{self, ConvTransform, Image};
-
+use crate::backend_skia_bindings::skia_bindings::ToData;
 
 pub fn draw_raster(
     format: usvg::ImageFormat,
@@ -19,16 +19,15 @@ pub fn draw_raster(
 ) {
     let img = try_opt!(backend_utils::image::load_raster(format, data, opt));
 
-    let image = {
+    let mut image = {
         let (w, h) = img.size.dimensions();
-        let mut image = usvg::try_opt_warn_or!(
+        let mut surface = usvg::try_opt_warn_or!(
             skia::Surface::new_raster(&skia::ImageInfo::new_unknown(Some(skia::ISize::new(w as i32, h as i32))), None, None), (),
             "Failed to create a {}x{} surface.", w, h
         );
-        let surface_img = image.image_snapshot();
-        let mut data = surface_img.encoded_data().unwrap();
-        image_to_surface(&img, &mut data);
-        image
+
+        image_to_surface(&img, &mut surface.data_mut());
+        surface
     };
 
 
@@ -37,7 +36,7 @@ pub fn draw_raster(
         filter = skia::FilterQuality::None;
     }
 
-    let mut canvas = surface.canvas();
+    let canvas = surface.canvas();
     canvas.save();
 
     if view_box.aspect.slice {
@@ -62,7 +61,7 @@ fn image_to_surface(image: &Image, surface: &mut [u8]) {
     use rgb::FromSlice;
 
     let mut i = 0;
-    if skia::Surface::is_bgra() {
+    if skia::ColorType::n32() == skia::ColorType::RGBA8888 {
         match &image.data {
             ImageData::RGB(data) => {
                 for p in data.as_rgb() {
