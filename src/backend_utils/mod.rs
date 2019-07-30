@@ -38,22 +38,15 @@ pub trait FlatRender {
     fn render_node(&mut self, node: &usvg::Node) -> Option<Rect> {
         match *node.borrow() {
             usvg::NodeKind::Svg(_) => {
-                println!("node type SVG");
                 self.render_group(node)
             }
             usvg::NodeKind::Path(ref path) => {
-                println!("node type path");
-
                 self.draw_path_impl(path)
             }
             usvg::NodeKind::Image(ref img) => {
-                println!("node type image");
-
                 self.draw_image_impl(img)
             }
             usvg::NodeKind::Group(ref g) => {
-                println!("node type group");
-
                 self.render_group_impl(node, g)
             }
             _ => None,
