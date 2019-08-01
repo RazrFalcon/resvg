@@ -15,9 +15,7 @@
 
 #define RESVG_QT_BACKEND
 
-extern "C" {
 #include <resvg.h>
-}
 
 #include <QDebug>
 #include <QFile>
