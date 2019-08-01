@@ -27,6 +27,9 @@
 #define RESVG_PATCH_VERSION 0
 #define RESVG_VERSION "0.7.0"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @brief An opaque pointer to the rendering tree.
@@ -527,5 +530,9 @@ void resvg_skia_render_to_canvas_by_id(const resvg_render_tree *tree,
                                        const char *id,
                                        void *surface);
 #endif /* RESVG_SKIA_BACKEND */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* RESVG_H */
