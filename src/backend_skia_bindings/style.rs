@@ -125,8 +125,8 @@ pub fn stroke(
 //         end_point: (g.x2, g.y2),
 //         base: prepare_base_gradient(g, opacity, &bbox)
 //     };
-
-//     let shader = skia::Shader::new_linear_gradient(gradient);
+//     let shader = skia::LinearGradient
+//     // let shader = skia::Shader::new_linear_gradient(gradient);
 //     paint.set_shader(&shader);
 // }
 
