@@ -10,6 +10,7 @@ This changelog also contains important changes in dependencies.
 ### Added
 - (resvg) A [Skia](https://skia.org/) backend thanks to
   [JaFenix](https://github.com/JaFenix).
+- A better CSS support.
 - An `*.otf` fonts support.
 
 ### Changed

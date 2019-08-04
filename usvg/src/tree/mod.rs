@@ -52,15 +52,7 @@ impl Tree {
 
     /// Parses `Tree` from the SVG string.
     pub fn from_str(text: &str, opt: &Options) -> Result<Self, Error> {
-        let dom_opt = svgdom::ParseOptions {
-            skip_invalid_attributes: true,
-            skip_invalid_css: true,
-            skip_unresolved_classes: true,
-        };
-
-        let doc = svgdom::Document::from_str_with_opt(text, &dom_opt)
-            .map_err(Error::ParsingFailed)?;
-
+        let doc = svgdom::Document::from_str(text).map_err(Error::ParsingFailed)?;
         Self::from_dom(doc, &opt)
     }
 

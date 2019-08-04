@@ -25,7 +25,8 @@ libflate = "0.1.25"
 log = "0.4"
 memmap = "0.7"
 rctree = "0.3"
-svgdom = { git = "https://github.com/RazrFalcon/svgdom", rev = "f4f4dfe" }
+svgdom = { git = "https://github.com/RazrFalcon/svgdom", rev = "c8881f9" }
+#svgdom = { path = "../../svgdom" }
 ttf-parser = "0.2"
 unicode-bidi = "0.3"
 unicode-script = "0.3"
