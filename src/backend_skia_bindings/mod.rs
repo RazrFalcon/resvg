@@ -24,7 +24,7 @@ macro_rules! try_create_surface {
     };
 }
 
-// mod filter;
+mod filter;
 mod image;
 mod path;
 mod style;
@@ -41,7 +41,7 @@ pub(crate) mod skia_bindings {
         fn data_mut(&mut self) -> Box<&mut [u8]> {
             let pixels = self.peek_pixels().unwrap();
             unsafe {
-                let mut addr = pixels.writable_addr();
+                let addr = pixels.writable_addr();
                 Box::new(slice::from_raw_parts_mut(addr as _, pixels.compute_byte_size()))
             }
         }
@@ -50,17 +50,28 @@ pub(crate) mod skia_bindings {
 
 impl ConvTransform<skia::Matrix> for usvg::Transform {
     fn to_native(&self) -> skia::Matrix {
-        skia::Matrix::new_all(self.a as f32, self.b as f32, self.c as f32, self.d as f32, self.e as f32, self.f as f32, 0.0, 0.0, 1.0)
+        skia::Matrix::new_all(
+            self.a as f32,
+            self.b as f32,
+            0.0,
+            self.c as f32,
+            self.d as f32,
+            0.0,
+            self.e as f32,
+            self.f as f32,
+            1.0,
+        )
     }
 
     fn from_native(mat: &skia::Matrix) -> Self {
         Self::new(
-            mat.scale_x().into(),
-            mat.skew_x().into(),
-            mat.translate_x().into(),
-            mat.skew_y().into(),
-            mat.scale_y().into(),
-            mat.translate_y().into())
+            mat[0] as f64,
+            mat[1] as f64,
+            mat[3] as f64,
+            mat[4] as f64,
+            mat[6] as f64,
+            mat[7] as f64,
+        )
     }
 }
 
@@ -244,13 +255,13 @@ impl<'a> SkiaFlatRender<'a> {
     fn paint<F>(&mut self, f: F)
         where F: FnOnce(&usvg::Tree, &Options, BlendMode, &mut skia::Surface)
     {
-        let mut restore = |canvas: &mut skia::Canvas| {
+        let restore = |canvas: &mut skia::Canvas| {
             canvas.restore();
         };
 
         match self.layers.current_mut() {
             Some(layer) => {
-                let mut canvas = layer.img.canvas();
+                let canvas = layer.img.canvas();
                 canvas.save();
                 canvas.set_matrix(&layer.ts.to_native());
 
@@ -302,7 +313,7 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
 
     fn filter(&mut self, filter: &usvg::Filter, bbox: Option<Rect>, ts: usvg::Transform) {
         if let Some(layer) = self.layers.current_mut() {
-            // filter::apply(filter, bbox, &ts, &self.opt, &mut layer.img);
+            filter::apply(filter, bbox, &ts, &self.opt, &mut layer.img);
         }
     }
 
