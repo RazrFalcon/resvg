@@ -216,7 +216,7 @@ fn prepare_pattern(
 
     let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy)).to_screen_size();
     let mut surface =  try_create_surface!(img_size, ());
-    let mut canvas = surface.canvas();
+    let canvas = surface.canvas();
     canvas.clear(skia::Color::TRANSPARENT);
 
     canvas.scale((sx as f32, sy as f32));

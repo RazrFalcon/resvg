@@ -52,25 +52,25 @@ impl ConvTransform<skia::Matrix> for usvg::Transform {
     fn to_native(&self) -> skia::Matrix {
         skia::Matrix::new_all(
             self.a as f32,
-            self.b as f32,
-            0.0,
             self.c as f32,
-            self.d as f32,
-            0.0,
             self.e as f32,
+            self.b as f32,
+            self.d as f32,
             self.f as f32,
+            0.0,
+            0.0,
             1.0,
         )
     }
 
     fn from_native(mat: &skia::Matrix) -> Self {
         Self::new(
-            mat[0] as f64,
-            mat[1] as f64,
-            mat[3] as f64,
-            mat[4] as f64,
-            mat[6] as f64,
-            mat[7] as f64,
+            mat.get_scale_x() as f64,
+            mat.get_skew_y() as f64,
+            mat.get_skew_x() as f64,
+            mat.get_scale_y() as f64,
+            mat.get_translate_x() as f64,
+            mat.get_translate_y() as f64,
         )
     }
 }
