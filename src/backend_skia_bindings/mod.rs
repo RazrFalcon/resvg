@@ -182,8 +182,7 @@ fn create_root_surface(
 
     // Fill background.
     if let Some(c) = opt.background {
-        let rgb = skia::RGB::from((c.red, c.green, c.blue));
-        surface.canvas().clear(skia::Color::from(rgb));
+        surface.canvas().clear(skia::Color::from_rgb(c.red, c.green, c.blue));
     }
 
     Some((surface, img_size))
@@ -309,8 +308,7 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
 
     fn fill_layer(&mut self, r: u8, g: u8, b: u8, a: u8) {
         if let Some(layer) = self.layers.current_mut() {
-            let rgb = skia::RGB::from((r, g, b));
-            layer.img.canvas().clear(skia::Color::from(rgb));
+            layer.img.canvas().clear(skia::Color::from_argb(a, r, g, b));
         }
     }
 
