@@ -25,7 +25,7 @@ pub fn convert(
     }
 
     // `marker-*` attributes cannot be set on shapes inside the `clipPath`.
-    if node.ancestors().any(|n| n.is_tag_name(EId::ClipPath)) {
+    if node.ancestors().any(|n| n.has_tag_name(EId::ClipPath)) {
         return;
     }
 
@@ -40,7 +40,7 @@ pub fn convert(
         for n in node.ancestors() {
             let attrs = n.attributes();
             if let Some(&AValue::FuncLink(ref link)) = attrs.get_value(*aid) {
-                if link.is_tag_name(EId::Marker) {
+                if link.has_tag_name(EId::Marker) {
                     marker = Some(link.clone());
                 }
             }

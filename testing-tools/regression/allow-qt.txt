@@ -1,1 +1,2 @@
-a-stroke-020.svg
+a-style-003.svg
+e-style-012.svg

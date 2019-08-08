@@ -63,7 +63,7 @@ pub struct State<'a> {
 
 impl<'a> State<'a> {
     pub fn is_in_clip_path(&self) -> bool {
-        self.current_root.is_tag_name(EId::ClipPath)
+        self.current_root.has_tag_name(EId::ClipPath)
     }
 }
 

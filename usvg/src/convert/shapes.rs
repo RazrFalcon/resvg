@@ -96,18 +96,17 @@ pub fn convert_rect(
     let path = if rx.fuzzy_eq(&0.0) {
         utils::rect_to_path(Rect::new(x, y, width, height)?)
     } else {
-        let p = svgdom::PathBuilder::with_capacity(9)
-            .move_to(x + rx, y)
-            .line_to(x + width - rx, y)
-            .arc_to(rx, ry, 0.0, false, true, x + width, y + ry)
-            .line_to(x + width, y + height - ry)
-            .arc_to(rx, ry, 0.0, false, true, x + width - rx, y + height)
-            .line_to(x + rx, y + height)
-            .arc_to(rx, ry, 0.0, false, true, x, y + height - ry)
-            .line_to(x, y + ry)
-            .arc_to(rx, ry, 0.0, false, true, x + rx, y)
-            .close_path()
-            .finalize();
+        let mut p = svgdom::Path::with_capacity(9);
+        p.push_move_to(x + rx, y);
+        p.push_line_to(x + width - rx, y);
+        p.push_arc_to(rx, ry, 0.0, false, true, x + width, y + ry);
+        p.push_line_to(x + width, y + height - ry);
+        p.push_arc_to(rx, ry, 0.0, false, true, x + width - rx, y + height);
+        p.push_line_to(x + rx, y + height);
+        p.push_arc_to(rx, ry, 0.0, false, true, x, y + height - ry);
+        p.push_line_to(x, y + ry);
+        p.push_arc_to(rx, ry, 0.0, false, true, x + rx, y);
+        p.push_close_path();
 
         path::convert(p)
     };
@@ -228,12 +227,13 @@ fn ellipse_to_path(
     rx: f64,
     ry: f64,
 ) -> Vec<tree::PathSegment> {
-    path::convert(svgdom::PathBuilder::with_capacity(6)
-        .move_to(cx + rx, cy)
-        .arc_to(rx, ry, 0.0, false, true, cx,      cy + ry)
-        .arc_to(rx, ry, 0.0, false, true, cx - rx, cy)
-        .arc_to(rx, ry, 0.0, false, true, cx,      cy - ry)
-        .arc_to(rx, ry, 0.0, false, true, cx + rx, cy)
-        .close_path()
-        .finalize())
+    let mut p = svgdom::Path::with_capacity(6);
+    p.push_move_to(cx + rx, cy);
+    p.push_arc_to(rx, ry, 0.0, false, true, cx,      cy + ry);
+    p.push_arc_to(rx, ry, 0.0, false, true, cx - rx, cy);
+    p.push_arc_to(rx, ry, 0.0, false, true, cx,      cy - ry);
+    p.push_arc_to(rx, ry, 0.0, false, true, cx + rx, cy);
+    p.push_close_path();
+
+    path::convert(p)
 }

@@ -11,7 +11,7 @@ pub fn convert_clip(
     state: &State,
     tree: &mut tree::Tree,
 ) -> Option<String> {
-    if !node.is_tag_name(EId::ClipPath) {
+    if !node.has_tag_name(EId::ClipPath) {
         return None;
     }
 
@@ -63,7 +63,7 @@ pub fn convert_mask(
     state: &State,
     tree: &mut tree::Tree,
 ) -> Option<String> {
-    if !node.is_tag_name(EId::Mask) {
+    if !node.has_tag_name(EId::Mask) {
         return None;
     }
 

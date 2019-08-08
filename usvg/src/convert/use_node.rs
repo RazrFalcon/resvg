@@ -30,7 +30,7 @@ pub fn convert(
             _ => return,
         };
 
-        debug_assert!(symbol.is_tag_name(EId::Symbol));
+        debug_assert!(symbol.has_tag_name(EId::Symbol));
 
         node.copy_attribute_to(AId::Width, &mut symbol);
         node.copy_attribute_to(AId::Height, &mut symbol);

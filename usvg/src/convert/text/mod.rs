@@ -22,7 +22,7 @@ mod private {
 
     impl TextNode {
         pub fn new(node: svgdom::Node) -> Self {
-            debug_assert!(node.is_tag_name(EId::Text));
+            debug_assert!(node.has_tag_name(EId::Text));
             TextNode(node)
         }
     }

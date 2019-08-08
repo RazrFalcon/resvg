@@ -58,7 +58,7 @@ fn find_filter_with_children(
     node: &svgdom::Node,
 ) -> Option<svgdom::Node> {
     for link in node.href_iter() {
-        if !link.is_tag_name(EId::Filter) {
+        if !link.has_tag_name(EId::Filter) {
             warn!(
                 "Filter '{}' cannot reference '{}' via 'xlink:href'.",
                 node.id(), link.tag_id().unwrap()

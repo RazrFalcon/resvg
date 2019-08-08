@@ -154,8 +154,8 @@ fn collect_text_chunks_impl(
 ) {
     for child in parent.children() {
         if child.is_element() {
-            if child.is_tag_name(EId::TextPath) {
-                if !parent.is_tag_name(EId::Text) {
+            if child.has_tag_name(EId::TextPath) {
+                if !parent.has_tag_name(EId::Text) {
                     // `textPath` can be set only as a direct `text` element child.
                     iter_state.chars_count += count_chars(&child);
                     continue;
@@ -182,7 +182,7 @@ fn collect_text_chunks_impl(
             iter_state.text_flow = TextFlow::Horizontal;
 
             // Next char after `textPath` should be split too.
-            if child.is_tag_name(EId::TextPath) {
+            if child.has_tag_name(EId::TextPath) {
                 iter_state.split_chunk = true;
             }
 
@@ -300,7 +300,7 @@ fn resolve_text_flow(
         _ => return None,
     };
 
-    if !path_node.is_tag_name(EId::Path) {
+    if !path_node.has_tag_name(EId::Path) {
         return None;
     }
 
@@ -667,7 +667,7 @@ fn resolve_baseline_shift(
     state: &State,
 ) -> f64 {
     let mut shift = 0.0;
-    let nodes: Vec<_> = node.ancestors().take_while(|n| !n.is_tag_name(EId::Text)).collect();
+    let nodes: Vec<_> = node.ancestors().take_while(|n| !n.has_tag_name(EId::Text)).collect();
     for n in nodes.iter().rev() {
         match n.attributes().get_value(AId::BaselineShift) {
             Some(AValue::String(ref s)) => {

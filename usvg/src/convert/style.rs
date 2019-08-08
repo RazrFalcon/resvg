@@ -36,7 +36,7 @@ pub fn resolve_fill(
     //
     // 'Since the fill-rule property does not apply to SVG text elements,
     // the specific order of the subpaths within the equivalent path does not matter.'
-    let fill_rule = if state.current_root.is_tag_name(EId::Text) {
+    let fill_rule = if state.current_root.has_tag_name(EId::Text) {
         tree::FillRule::NonZero
     } else {
         node.find_enum(AId::FillRule)

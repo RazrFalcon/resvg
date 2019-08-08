@@ -27,6 +27,7 @@ This changelog also contains important changes in dependencies.
 - (usvg) Ignore invalid `clipPath` children that were referenced via `use`.
 - (usvg) `currentColor` will always fallback to black now.
   Previously, `stroke` was set to `none` which is incorrect.
+- (svgdom) Parse only presentation attributes from the `style` element and attribute.
 
 ### Removed
 - (cairo-backend) `gdk-pixbuf` dependency.

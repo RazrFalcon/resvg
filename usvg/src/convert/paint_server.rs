@@ -247,7 +247,7 @@ fn find_gradient_with_stops(node: &svgdom::Node) -> Option<svgdom::Node> {
             return None;
         }
 
-        if link.children().any(|n| n.is_tag_name(EId::Stop)) {
+        if link.children().any(|n| n.has_tag_name(EId::Stop)) {
             return Some(link.clone());
         }
     }
@@ -257,7 +257,7 @@ fn find_gradient_with_stops(node: &svgdom::Node) -> Option<svgdom::Node> {
 
 fn find_pattern_with_children(node: &svgdom::Node) -> Option<svgdom::Node> {
     for link in node.href_iter() {
-        if !link.is_tag_name(EId::Pattern) {
+        if !link.has_tag_name(EId::Pattern) {
             warn!(
                 "Pattern '{}' cannot reference '{}' via 'xlink:href'.",
                 node.id(), link.tag_id().unwrap()
@@ -279,7 +279,7 @@ fn convert_stops(grad: &svgdom::Node) -> Vec<tree::Stop> {
     {
         let mut prev_offset = Length::zero();
         for stop in grad.children() {
-            if !stop.is_tag_name(EId::Stop) {
+            if !stop.has_tag_name(EId::Stop) {
                 warn!("Invalid gradient child: '{:?}'.", stop.tag_id().unwrap());
                 continue;
             }

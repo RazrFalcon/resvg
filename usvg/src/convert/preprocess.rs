@@ -52,7 +52,7 @@ fn fix_recursive_links(
 fn fix_patterns(
     doc: &svgdom::Document,
 ) {
-    for pattern_node in doc.root().descendants().filter(|n| n.is_tag_name(EId::Pattern)) {
+    for pattern_node in doc.root().descendants().filter(|n| n.has_tag_name(EId::Pattern)) {
         for mut node in pattern_node.descendants() {
             let mut check_attr = |aid: AId| {
                 let av = node.attributes().get_value(aid).cloned();
@@ -87,7 +87,7 @@ fn fix_func_iri(
     eid: EId,
     aid: AId,
 ) {
-    for node in doc.root().descendants().filter(|n| n.is_tag_name(eid)) {
+    for node in doc.root().descendants().filter(|n| n.has_tag_name(eid)) {
         for mut child in node.descendants() {
             let av = child.attributes().get_value(aid).cloned();
             if let Some(AValue::FuncLink(link)) = av {
@@ -134,7 +134,7 @@ fn prepare_clip_path(
     }
 
     // Remove invalid children.
-    for node in doc.root().descendants().filter(|n| n.is_tag_name(EId::ClipPath)) {
+    for node in doc.root().descendants().filter(|n| n.has_tag_name(EId::ClipPath)) {
         let mut curr = node.first_child();
         while let Some(n) = curr {
             curr = n.next_sibling();
@@ -173,8 +173,8 @@ fn prepare_text(
     // Removes `text` inside `text`, since it should be ignored.
     fn sanitize_text(parent: svgdom::Node, doc: &mut svgdom::Document) {
         for node in parent.children() {
-            if node.is_tag_name(EId::Text) {
-                doc.drain(node, |n| n.is_tag_name(EId::Text));
+            if node.has_tag_name(EId::Text) {
+                doc.drain(node, |n| n.has_tag_name(EId::Text));
                 continue;
             }
 
@@ -417,7 +417,7 @@ fn resolve_root_style_attributes(
 fn resolve_tref(
     doc: &mut svgdom::Document,
 ) {
-    for mut tref in doc.root().descendants().filter(|n| n.is_tag_name(EId::Tref)) {
+    for mut tref in doc.root().descendants().filter(|n| n.has_tag_name(EId::Tref)) {
         let av = tref.attributes().get_value(AId::Href).cloned();
         let text_elem = if let Some(AValue::Link(ref link)) = av {
             link.clone()
@@ -477,17 +477,17 @@ fn _resolve_use(
     let mut is_any_resolved = false;
 
     for mut node in parent.children() {
-        if node.is_tag_name(EId::Use) {
+        if node.has_tag_name(EId::Use) {
             let av = node.attributes().get_value(AId::Href).cloned();
             if let Some(AValue::Link(mut link)) = av {
                 // Ignore 'use' elements linked to other 'use' elements.
-                if link.is_tag_name(EId::Use) {
+                if link.has_tag_name(EId::Use) {
                     continue;
                 }
 
                 // TODO: this
                 // We don't support 'use' elements linked to 'svg' element.
-                if link.is_tag_name(EId::Svg) {
+                if link.has_tag_name(EId::Svg) {
                     warn!("'use' element linked to an 'svg' element is not supported. Skipped.");
                     rm_nodes.push(node.clone());
                     continue;
@@ -511,7 +511,7 @@ fn _resolve_use(
                 //
                 // `use1` should be removed.
                 let mut is_recursive = false;
-                for link_child in link.descendants().skip(1).filter(|n| n.is_tag_name(EId::Use)) {
+                for link_child in link.descendants().skip(1).filter(|n| n.has_tag_name(EId::Use)) {
                     let av = link_child.attributes().get_value(AId::Href).cloned();
                     if let Some(AValue::Link(link2)) = av {
                         if link2 == node || link2 == link {
@@ -550,7 +550,7 @@ fn __resolve_use(
     // Remember that this group was 'use' before.
     use_node.set_attribute(("usvg-use", 1));
 
-    if linked_node.is_tag_name(EId::Symbol) {
+    if linked_node.has_tag_name(EId::Symbol) {
         use_node.set_attribute(("usvg-symbol", 1));
 
         let new_node = doc.copy_node_deep(linked_node.clone());
@@ -569,7 +569,7 @@ fn remove_invalid_use(
     fn _rm(doc: &mut svgdom::Document) -> usize {
         let root = doc.root();
         doc.drain(root, |n| {
-            if n.is_tag_name(EId::Use) {
+            if n.has_tag_name(EId::Use) {
                 if !n.has_attribute(AId::Href) {
                     // Remove 'use' elements without an 'xlink:href' attribute.
                     return true;
@@ -610,7 +610,7 @@ fn ungroup_a(
 
         node.remove_attribute(AId::Href);
 
-        if node.ancestors().skip(1).any(|n| n.is_tag_name(EId::Text)) {
+        if node.ancestors().skip(1).any(|n| n.has_tag_name(EId::Text)) {
             node.set_tag_name(EId::Tspan);
         } else {
             node.set_tag_name(EId::G);
