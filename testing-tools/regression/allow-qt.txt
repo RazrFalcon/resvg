@@ -1,2 +1,1 @@
-e-tref-009.svg
-e-tref-010.svg
+e-clipPath-045.svg

@@ -118,6 +118,21 @@ fn fix_func_iri(
 fn prepare_clip_path(
     doc: &mut svgdom::Document,
 ) {
+    fn is_valid_child(eid: EId) -> bool {
+        // `line` doesn't impact rendering because stroke is always disabled
+        // for `clipPath` children. So we should remove it too.
+        match eid {
+              EId::Rect
+            | EId::Circle
+            | EId::Ellipse
+            | EId::Polyline
+            | EId::Polygon
+            | EId::Path
+            | EId::Text => true,
+            _ => false,
+        }
+    }
+
     // Remove invalid children.
     for node in doc.root().descendants().filter(|n| n.is_tag_name(EId::ClipPath)) {
         let mut curr = node.first_child();
@@ -133,22 +148,20 @@ fn prepare_clip_path(
                 }
             };
 
-            // Keep manually generated groups.
+            // Keep groups generated during `use` resolving.
             if eid == EId::G && n.has_attribute("usvg-use") {
+                // Remove `use` elements that reference elements not supported by `clipPath`.
+                if let Some(child_eid) = n.first_child().and_then(|n| n.tag_id()) {
+                    if !is_valid_child(child_eid) {
+                        doc.remove_node(n);
+                    }
+                }
+
                 continue;
             }
 
-            // `line` doesn't impact rendering because stroke is always disabled
-            // for `clipPath` children. So we should remove it.
-            match eid {
-                  EId::Rect
-                | EId::Circle
-                | EId::Ellipse
-                | EId::Polyline
-                | EId::Polygon
-                | EId::Path
-                | EId::Text => {}
-                _ => doc.remove_node(n),
+            if !is_valid_child(eid) {
+                doc.remove_node(n);
             }
         }
     }
