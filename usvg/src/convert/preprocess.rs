@@ -420,6 +420,9 @@ fn resolve_tref(
             text.push_str(&node.text());
         }
 
+        // `tref` must not have any children, so we have to remove all of them.
+        doc.drain(tref.clone(), |_| true);
+
         let text_node = doc.create_node(svgdom::NodeType::Text, text);
         tref.append(text_node);
 

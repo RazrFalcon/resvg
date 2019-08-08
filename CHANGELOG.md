@@ -23,6 +23,7 @@ This changelog also contains important changes in dependencies.
 
 ### Fixed
 - (qt-api) A default font resolving.
+- (usvg) Remove all `tref` element children.
 
 ### Removed
 - (cairo-backend) `gdk-pixbuf` dependency.
