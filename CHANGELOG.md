@@ -25,6 +25,8 @@ This changelog also contains important changes in dependencies.
 - (qt-api) A default font resolving.
 - (usvg) Remove all `tref` element children.
 - (usvg) Ignore invalid `clipPath` children that were referenced via `use`.
+- (usvg) `currentColor` will always fallback to black now.
+  Previously, `stroke` was set to `none` which is incorrect.
 
 ### Removed
 - (cairo-backend) `gdk-pixbuf` dependency.

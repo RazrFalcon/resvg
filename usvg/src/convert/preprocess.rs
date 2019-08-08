@@ -269,9 +269,10 @@ fn resolve_current_color(
         } else {
             match aid {
                   AId::Fill
+                | AId::Stroke
                 | AId::FloodColor
-                | AId::StopColor => Some(svgdom::Color::black()),
-                AId::LightingColor => Some(svgdom::Color::white()),
+                | AId::StopColor
+                | AId::LightingColor => Some(svgdom::Color::black()),
                 _ => None,
             }
         }
