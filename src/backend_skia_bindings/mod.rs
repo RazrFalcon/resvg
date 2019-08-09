@@ -339,6 +339,7 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
 
         let mut paint = skia::Paint::default();
         paint.set_alpha(a);
+        paint.set_blend_mode(mode.into());
         match self.layers.current_mut() {
             Some(prev) => {
                 let canvas = prev.img.canvas();
