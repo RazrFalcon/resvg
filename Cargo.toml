@@ -13,12 +13,12 @@ categories = ["multimedia::images"]
 
 [workspace]
 members = [
+    "bindings/resvg-qt",
+    "bindings/resvg-skia",
     "capi",
     "tools/rendersvg",
     "tools/usvg",
     "usvg",
-    "bindings/resvg-qt",
-    "bindings/resvg-skia",
 ]
 
 [badges]

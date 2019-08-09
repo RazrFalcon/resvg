@@ -27,7 +27,8 @@ def regression_testing(backend):
     if not reg_work_dir.exists():
         os.mkdir(reg_work_dir)
 
-    regression_args = ['./regression.py', tests_dir, reg_work_dir, '--backend', backend]
+    regression_args = ['cargo', 'run', '--release', '--',
+                       '--backend', backend, tests_dir, reg_work_dir]
     # Use a master branch for pull requests.
     if not local_test and os.environ['TRAVIS_BRANCH'] == 'master':
         regression_args.append('--use-prev-commit')
@@ -69,9 +70,6 @@ if not local_test and 'RESVG_SKIA_BACKEND' in os.environ:
     os.environ['SKIA_DIR'] = str(Path('./resvg-skia-ci-build').resolve())
     os.environ['SKIA_LIB_DIR'] = str(Path('./resvg-skia-ci-build/bin').resolve())
     os.environ['LD_LIBRARY_PATH'] = str(Path('./resvg-skia-ci-build/bin').resolve())
-
-with cd('usvg'):
-    run(['cargo', 'test'], check=True)
 
 
 if 'RESVG_QT_BACKEND' in os.environ:
@@ -190,9 +188,13 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
 
 if 'RESVG_RAQOTE_BACKEND' in os.environ:
     # run tests and build examples
-    run(['cargo', 'test', '--features', 'raqote-backend'], check=True)
+    run(['cargo', 'test', '--release', '--features', 'raqote-backend'], check=True)
 
 
 if 'RESVG_SKIA_BACKEND' in os.environ:
     # run tests and build examples
-    run(['cargo', 'test', '--features', 'skia-backend'], check=True)
+    run(['cargo', 'test', '--release', '--features', 'skia-backend'], check=True)
+
+
+with cd('usvg'):
+    run(['cargo', 'test', '--release'], check=True)
