@@ -6,11 +6,11 @@ use std::fmt::Display;
 use std::io::Write;
 use std::ops::Deref;
 
-use svgdom::WriteBuffer;
+use svgtypes::WriteBuffer;
 use xmlwriter::XmlWriter;
 
 use super::*;
-use crate::{geom::*, short::*, IsDefault};
+use crate::{geom::*, svgtree::{EId, AId}, IsDefault};
 
 
 pub fn convert(tree: &Tree, opt: XmlOptions) -> String {
@@ -124,7 +124,7 @@ fn conv_defs(
                             xml.write_filter_primitive_attrs(fe);
                             xml.write_filter_input(AId::In, &blur.input);
                             xml.write_attribute_fmt(
-                                AId::StdDeviation.as_str(),
+                                AId::StdDeviation.to_str(),
                                 format_args!("{} {}", blur.std_dev_x.value(), blur.std_dev_y.value()),
                             );
                             xml.write_svg_attribute(AId::Result, &fe.result);
@@ -336,18 +336,18 @@ trait XmlWriterExt {
 impl XmlWriterExt for XmlWriter {
     #[inline]
     fn start_svg_element(&mut self, id: EId) {
-        self.start_element(id.as_str());
+        self.start_element(id.to_str());
     }
 
     #[inline]
     fn write_svg_attribute<V: Display + ?Sized>(&mut self, id: AId, value: &V) {
-        self.write_attribute(id.as_str(), value)
+        self.write_attribute(id.to_str(), value)
     }
 
     fn write_viewbox(&mut self, view_box: &ViewBox) {
         let r = view_box.rect;
         self.write_attribute_fmt(
-            AId::ViewBox.as_str(),
+            AId::ViewBox.to_str(),
             format_args!("{} {} {} {}", r.x(), r.y(), r.width(), r.height()),
         );
 
@@ -357,13 +357,13 @@ impl XmlWriterExt for XmlWriter {
     }
 
     fn write_aspect(&mut self, aspect: AspectRatio) {
-        self.write_attribute_raw(AId::PreserveAspectRatio.as_str(), |buf| aspect.write_buf(buf));
+        self.write_attribute_raw(AId::PreserveAspectRatio.to_str(), |buf| aspect.write_buf(buf));
     }
 
     #[inline]
     fn write_units(&mut self, id: AId, units: Units, def: Units) {
         if units != def {
-            self.write_attribute(id.as_str(), match units {
+            self.write_attribute(id.to_str(), match units {
                 Units::UserSpaceOnUse => "userSpaceOnUse",
                 Units::ObjectBoundingBox => "objectBoundingBox",
             });
@@ -373,7 +373,7 @@ impl XmlWriterExt for XmlWriter {
     fn write_transform(&mut self, id: AId, ts: Transform) {
         if !ts.is_default() {
             self.write_attribute_fmt(
-                id.as_str(),
+                id.to_str(),
                 format_args!("matrix({} {} {} {} {} {})", ts.a, ts.b, ts.c, ts.d, ts.e, ts.f),
             );
         }
@@ -382,13 +382,13 @@ impl XmlWriterExt for XmlWriter {
     fn write_visibility(&mut self, value: Visibility) {
         match value {
             Visibility::Visible => {},
-            Visibility::Hidden => self.write_attribute(AId::Visibility.as_str(), "hidden"),
-            Visibility::Collapse => self.write_attribute(AId::Visibility.as_str(), "collapse"),
+            Visibility::Hidden => self.write_attribute(AId::Visibility.to_str(), "hidden"),
+            Visibility::Collapse => self.write_attribute(AId::Visibility.to_str(), "collapse"),
         }
     }
 
     fn write_func_iri(&mut self, aid: AId, id: &str) {
-        self.write_attribute_fmt(aid.as_str(), format_args!("url(#{})", id));
+        self.write_attribute_fmt(aid.to_str(), format_args!("url(#{})", id));
     }
 
     fn write_rect_attrs(&mut self, r: Rect) {
@@ -399,7 +399,7 @@ impl XmlWriterExt for XmlWriter {
     }
 
     fn write_filter_input(&mut self, id: AId, input: &FilterInput) {
-        self.write_attribute(id.as_str(), match input {
+        self.write_attribute(id.to_str(), match input {
             FilterInput::SourceGraphic      => "SourceGraphic",
             FilterInput::SourceAlpha        => "SourceAlpha",
             FilterInput::BackgroundImage    => "BackgroundImage",
@@ -416,7 +416,7 @@ impl XmlWriterExt for XmlWriter {
         if let Some(n) = fe.width { self.write_svg_attribute(AId::Width, &n); }
         if let Some(n) = fe.height { self.write_svg_attribute(AId::Height, &n); }
 
-        self.write_attribute(AId::ColorInterpolationFilters.as_str(), match fe.color_interpolation {
+        self.write_attribute(AId::ColorInterpolationFilters.to_str(), match fe.color_interpolation {
             ColorInterpolation::SRGB        => "sRGB",
             ColorInterpolation::LinearRGB   => "linearRGB"
         });
@@ -648,7 +648,7 @@ fn write_stroke(
         }
 
         if let Some(ref array) = stroke.dasharray {
-            xml.write_attribute_raw(AId::StrokeDasharray.as_str(), |buf| {
+            xml.write_attribute_raw(AId::StrokeDasharray.to_str(), |buf| {
                 for n in array {
                     buf.write_fmt(format_args!("{} ", n)).unwrap();
                 }

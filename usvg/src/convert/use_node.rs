@@ -2,20 +2,20 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{tree, tree::prelude::*, utils};
+use crate::{svgtree, tree, tree::prelude::*, utils};
 use super::prelude::*;
 
 
 pub fn convert(
-    node: &svgdom::Node,
+    node: svgtree::Node,
     state: &State,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    debug_assert!(node.has_attribute("usvg-use"));
+    let child = try_opt!(node.first_child());
 
-    // We require original transformation to setup 'clipPath'.
-    let mut orig_ts = node.attributes().get_transform(AId::Transform);
+    // We require an original transformation to setup 'clipPath'.
+    let mut orig_ts: tree::Transform = node.attribute(AId::Transform).unwrap_or_default();
     let mut new_ts = tree::Transform::default();
 
     {
@@ -24,39 +24,37 @@ pub fn convert(
         new_ts.translate(x, y);
     }
 
-    if node.has_attribute("usvg-symbol") {
-        let mut symbol = match node.attributes().get_value(AId::Href) {
-            Some(&AValue::Link(ref link)) => link.clone(),
-            _ => return,
-        };
+    let linked_to_symbol = child.tag_name() == Some(EId::Symbol);
 
-        debug_assert!(symbol.has_tag_name(EId::Symbol));
-
-        node.copy_attribute_to(AId::Width, &mut symbol);
-        node.copy_attribute_to(AId::Height, &mut symbol);
-        if let Some(ts) = viewbox_transform(node, &symbol, state) {
+    if linked_to_symbol {
+        if let Some(ts) = viewbox_transform(node, child, state) {
             new_ts.append(&ts);
         }
 
-        if let Some(clip_rect) = get_clip_rect(node, &symbol, state) {
+        if let Some(clip_rect) = get_clip_rect(node, child, state) {
             let mut g = clip_element(node, clip_rect, orig_ts, parent, tree);
-            convert_children(node, new_ts, state, &mut g, tree);
+            convert_children(child, new_ts, state, &mut g, tree);
             return;
         }
     }
 
     orig_ts.append(&new_ts);
-    convert_children(node, orig_ts, state, parent, tree);
+
+    if linked_to_symbol {
+        convert_children(child, orig_ts, state, parent, tree);
+    } else {
+        convert_children(node, orig_ts, state, parent, tree);
+    }
 }
 
 pub fn convert_svg(
-    node: &svgdom::Node,
+    node: svgtree::Node,
     state: &State,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
     // We require original transformation to setup 'clipPath'.
-    let mut orig_ts = node.attributes().get_transform(AId::Transform);
+    let mut orig_ts: tree::Transform = node.attribute(AId::Transform).unwrap_or_default();
     let mut new_ts = tree::Transform::default();
 
     {
@@ -79,9 +77,9 @@ pub fn convert_svg(
 }
 
 fn clip_element(
-    node: &svgdom::Node,
+    node: svgtree::Node,
     clip_rect: Rect,
-    transform: svgdom::Transform,
+    transform: tree::Transform,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) -> tree::Node {
@@ -119,7 +117,7 @@ fn clip_element(
     }));
 
     parent.append_kind(tree::NodeKind::Group(tree::Group {
-        id: node.id().clone(),
+        id: node.element_id().to_string(),
         transform,
         clip_path: Some(id),
         ..tree::Group::default()
@@ -127,8 +125,8 @@ fn clip_element(
 }
 
 fn convert_children(
-    node: &svgdom::Node,
-    transform: svgdom::Transform,
+    node: svgtree::Node,
+    transform: tree::Transform,
     state: &State,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
@@ -136,7 +134,7 @@ fn convert_children(
     let required = !transform.is_default();
 
     match super::convert_group(node, state, required, parent, tree) {
-        super::GroupKind::Keep(mut g) => {
+        super::GroupKind::Create(mut g) => {
             if let tree::NodeKind::Group(ref mut g) = *g.borrow_mut() {
                 g.transform = transform;
             }
@@ -151,15 +149,14 @@ fn convert_children(
 }
 
 fn get_clip_rect(
-    use_node: &svgdom::Node,
-    symbol_node: &svgdom::Node,
+    use_node: svgtree::Node,
+    symbol_node: svgtree::Node,
     state: &State,
 ) -> Option<Rect> {
     // No need to clip elements with overflow:visible.
     {
-        let attrs = symbol_node.attributes();
-        let overflow = attrs.get_str_or(AId::Overflow, "hidden");
-        if overflow != "hidden" && overflow != "scroll" {
+        let overflow = symbol_node.attribute(AId::Overflow);
+        if overflow == Some("visible") || overflow == Some("auto") {
             return None;
         }
     }
@@ -187,12 +184,12 @@ fn get_clip_rect(
 
 /// Creates a free id for `clipPath`.
 pub fn gen_clip_path_id(
-    node: &svgdom::Node,
+    node: svgtree::Node,
     tree: &tree::Tree,
 ) -> String {
     let mut idx = 1;
     let mut id = format!("clipPath{}", idx);
-    while    node.root().descendants().any(|n| *n.id() == id)
+    while    node.document().descendants().any(|n| n.element_id() == id)
           || tree.defs().children().any(|n| *n.id() == id)
     {
         idx += 1;
@@ -203,10 +200,10 @@ pub fn gen_clip_path_id(
 }
 
 fn viewbox_transform(
-    node: &svgdom::Node,
-    linked: &svgdom::Node,
+    node: svgtree::Node,
+    linked: svgtree::Node,
     state: &State,
-) -> Option<svgdom::Transform> {
+) -> Option<tree::Transform> {
     let size = {
         let w = node.convert_user_length(AId::Width, state, Length::new(100.0, Unit::Percent));
         let h = node.convert_user_length(AId::Height, state, Length::new(100.0, Unit::Percent));
@@ -214,10 +211,7 @@ fn viewbox_transform(
     }?;
 
     let vb = linked.get_viewbox()?;
-    let aspect = match linked.attributes().get_value(AId::PreserveAspectRatio) {
-        Some(&AValue::AspectRatio(aspect)) => aspect,
-        _ => svgdom::AspectRatio::default(),
-    };
+    let aspect = linked.attribute(AId::PreserveAspectRatio).unwrap_or_default();
 
     Some(utils::view_box_to_transform(vb, aspect, size))
 }

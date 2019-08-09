@@ -76,7 +76,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "cmake"
-version = "0.1.40"
+version = "0.1.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cc 1.0.38 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -132,7 +132,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "quote 0.6.13 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 0.15.42 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 0.15.43 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -205,7 +205,7 @@ name = "harfbuzz-sys"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "cmake 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cmake 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)",
  "core-graphics 0.17.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "core-text 13.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "foreign-types 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -253,11 +253,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "libflate"
-version = "0.1.25"
+version = "0.1.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "adler32 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "crc32fast 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rle-decode-fast 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "take_mut 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -450,7 +449,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "roxmltree"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "xmlparser 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -461,7 +460,7 @@ name = "servo-freetype-sys"
 version = "4.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "cmake 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cmake 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -479,28 +478,9 @@ version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "slab"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "svgdom"
-version = "0.17.0"
-source = "git+https://github.com/RazrFalcon/svgdom?rev=f610e99#f610e99eab0c6b939b1c38ccc2a0808c4d25b5c3"
-dependencies = [
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "roxmltree 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "simplecss 0.2.0 (git+https://github.com/RazrFalcon/simplecss?rev=9b5be32)",
- "siphasher 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "slab 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "svgtypes 0.4.4 (git+https://github.com/RazrFalcon/svgtypes?rev=e2a2a54)",
- "xmlwriter 0.1.0 (git+https://github.com/RazrFalcon/xmlwriter?rev=dac292c)",
-]
-
-[[package]]
 name = "svgtypes"
 version = "0.4.4"
-source = "git+https://github.com/RazrFalcon/svgtypes?rev=e2a2a54#e2a2a5455e13f6621c793f9a2ecb2de1390b1d14"
+source = "git+https://github.com/RazrFalcon/svgtypes?rev=6489791#648979151e30d3f19f92600aa5e5cb5a0287457b"
 dependencies = [
  "float-cmp 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "siphasher 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -513,7 +493,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "syn"
-version = "0.15.42"
+version = "0.15.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "proc-macro2 0.4.30 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -577,12 +557,15 @@ dependencies = [
  "data-url 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "harfbuzz_rs 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "kurbo 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "libflate 0.1.25 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libflate 0.1.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "memmap 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pretty_assertions 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rctree 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "svgdom 0.17.0 (git+https://github.com/RazrFalcon/svgdom?rev=f610e99)",
+ "roxmltree 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "simplecss 0.2.0 (git+https://github.com/RazrFalcon/simplecss?rev=9b5be32)",
+ "siphasher 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "svgtypes 0.4.4 (git+https://github.com/RazrFalcon/svgtypes?rev=6489791)",
  "ttf-parser 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-bidi 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-script 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -641,7 +624,7 @@ source = "git+https://github.com/RazrFalcon/xmlwriter?rev=dac292c#dac292c3c27d6c
 "checksum cairo-sys-rs 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "90a1ec04603a78c111886a385edcec396dbfbc57ea26b9e74aeea6a1fe55dcca"
 "checksum cc 1.0.38 (registry+https://github.com/rust-lang/crates.io-index)" = "ce400c638d48ee0e9ab75aef7997609ec57367ccfe1463f21bf53c3eca67bf46"
 "checksum cfg-if 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)" = "b486ce3ccf7ffd79fdeb678eac06a9e6c09fc88d33836340becb8fffe87c5e33"
-"checksum cmake 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)" = "2ca4386c8954b76a8415b63959337d940d724b336cabd3afe189c2b51a7e1ff0"
+"checksum cmake 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)" = "3c84c596dcf125d6781f58e3f4254677ec2a6d8aa56e8501ac277100990b3229"
 "checksum core-foundation 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)" = "25b9e03f145fd4f2bf705e07b900cd41fc636598fe5dc452fd0db1441c3f496d"
 "checksum core-foundation-sys 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e7ca8a5221364ef15ce201e8ed2f609fc312682a8f4e0e3d4aa5879764e0fa3b"
 "checksum core-graphics 0.17.3 (registry+https://github.com/rust-lang/crates.io-index)" = "56790968ab1c8a1202a102e6de05fc6e1ec87da99e4e93e9a7d13efbfc1e95a9"
@@ -663,7 +646,7 @@ source = "git+https://github.com/RazrFalcon/xmlwriter?rev=dac292c#dac292c3c27d6c
 "checksum jpeg-decoder 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)" = "c8b7d43206b34b3f94ea9445174bda196e772049b9bddbc620c9d29b2d20110d"
 "checksum kurbo 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2e6076333105a72e8d2c227ba6a6da0dc3c8e5f53f02053f598a6087a1ea8991"
 "checksum libc 0.2.60 (registry+https://github.com/rust-lang/crates.io-index)" = "d44e80633f007889c7eff624b709ab43c92d708caad982295768a7b13ca3b5eb"
-"checksum libflate 0.1.25 (registry+https://github.com/rust-lang/crates.io-index)" = "90c6f86f4b0caa347206f916f8b687b51d77c6ef8ff18d52dd007491fd580529"
+"checksum libflate 0.1.26 (registry+https://github.com/rust-lang/crates.io-index)" = "45c97cf62125b79dcac52d506acdc4799f21a198597806947fd5f40dc7b93412"
 "checksum log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)" = "14b6052be84e6b71ab17edffc2eeabf5c2c3ae1fdb464aae35ac50c67a44e1f7"
 "checksum lyon_geom 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)" = "69589b8844c0b3745cc031a35b62bc33b0fb9e5ba7613756d802c52861dcdb4c"
 "checksum matches 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)" = "7ffc5c5338469d4d3ea17d269fa8ea3512ad247247c30bd2df69e68309ed0a08"
@@ -682,15 +665,13 @@ source = "git+https://github.com/RazrFalcon/xmlwriter?rev=dac292c#dac292c3c27d6c
 "checksum redox_syscall 0.1.56 (registry+https://github.com/rust-lang/crates.io-index)" = "2439c63f3f6139d1b57529d16bc3b8bb855230c8efcc5d3a896c8bea7c3b1e84"
 "checksum rgb 0.8.13 (registry+https://github.com/rust-lang/crates.io-index)" = "4f089652ca87f5a82a62935ec6172a534066c7b97be003cc8f702ee9a7a59c92"
 "checksum rle-decode-fast 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "cabe4fa914dec5870285fa7f71f602645da47c486e68486d2b4ceb4a343e90ac"
-"checksum roxmltree 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)" = "330d8f80a274bc3cb608908ee345970e7e24b96907f1ad69615a498bec57871c"
+"checksum roxmltree 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "153c367ce9fb8ef7afe637ef92bd083ba0f88b03ef3fcf0287d40be05ae0a61c"
 "checksum servo-freetype-sys 4.0.5 (registry+https://github.com/rust-lang/crates.io-index)" = "2c4ccb6d0d32d277d3ef7dea86203d8210945eb7a45fba89dd445b3595dd0dfc"
 "checksum simplecss 0.2.0 (git+https://github.com/RazrFalcon/simplecss?rev=9b5be32)" = "<none>"
 "checksum siphasher 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "0b8de496cf83d4ed58b6be86c3a275b8602f6ffe98d3024a869e124147a9a3ac"
-"checksum slab 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
-"checksum svgdom 0.17.0 (git+https://github.com/RazrFalcon/svgdom?rev=f610e99)" = "<none>"
-"checksum svgtypes 0.4.4 (git+https://github.com/RazrFalcon/svgtypes?rev=e2a2a54)" = "<none>"
+"checksum svgtypes 0.4.4 (git+https://github.com/RazrFalcon/svgtypes?rev=6489791)" = "<none>"
 "checksum sw-composite 0.5.10 (registry+https://github.com/rust-lang/crates.io-index)" = "5eba1755094da86216f071f7a28b0453345c3e6e558ea2fd7821c55eef8fb9b2"
-"checksum syn 0.15.42 (registry+https://github.com/rust-lang/crates.io-index)" = "eadc09306ca51a40555dd6fc2b415538e9e18bc9f870e47b1a524a79fe2dcf5e"
+"checksum syn 0.15.43 (registry+https://github.com/rust-lang/crates.io-index)" = "ee06ea4b620ab59a2267c6b48be16244a3389f8bfa0986bdd15c35b890b00af3"
 "checksum take_mut 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "f764005d11ee5f36500a149ace24e00e3da98b0158b3e2d53a7495660d3f4d60"
 "checksum time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)" = "db8dcfca086c1143c9270ac42a2bbd8a7ee477b78ac8e45b19abfb0cbede4b6f"
 "checksum ttf-parser 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e3621bf979169de7d6d35889eff52a15f798e2af7b815896cf062a73ea0f541e"

@@ -2,13 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::tree;
+use crate::{svgtree, tree};
 use super::prelude::*;
 
 
 pub fn convert_length(
     length: Length,
-    node: &svgdom::Node,
+    node: svgtree::Node,
     aid: AId,
     object_units: tree::Units,
     state: &State,
@@ -52,16 +52,16 @@ pub fn convert_length(
 }
 
 pub fn convert_list(
-    node: &svgdom::Node,
+    node: svgtree::Node,
     aid: AId,
     state: &State,
 ) -> Option<Vec<f64>> {
-    let attrs = node.attributes();
-    let av = attrs.get_value(aid)?;
-    if let AValue::LengthList(ref len_list) = av {
-        let mut num_list = Vec::with_capacity(len_list.len());
-        for length in len_list.iter() {
-            num_list.push(convert_length(*length, node, aid, tree::Units::UserSpaceOnUse, state));
+    if let Some(text) = node.attribute::<&str>(aid) {
+        let mut num_list = Vec::new();
+        for length in svgtypes::LengthListParser::from(text) {
+            if let Ok(length) = length {
+                num_list.push(convert_length(length, node, aid, tree::Units::UserSpaceOnUse, state));
+            }
         }
 
         Some(num_list)
@@ -74,34 +74,30 @@ fn convert_percent(length: Length, base: f64) -> f64 {
     base * length.num / 100.0
 }
 
-pub fn resolve_font_size(node: &svgdom::Node, state: &State) -> f64 {
+pub fn resolve_font_size(node: svgtree::Node, state: &State) -> f64 {
     let nodes: Vec<_> = node.ancestors().collect();
     let mut font_size = state.opt.font_size;
     for n in nodes.iter().rev().skip(1) { // skip Root
-        match n.attributes().get_value(AId::FontSize) {
-            Some(&AValue::Length(length)) => {
-                let dpi = state.opt.dpi;
-                let n = length.num;
-                font_size = match length.unit {
-                    Unit::None | Unit::Px => n,
-                    Unit::Em => n * font_size,
-                    Unit::Ex => n * font_size / 2.0,
-                    Unit::In => n * dpi,
-                    Unit::Cm => n * dpi / 2.54,
-                    Unit::Mm => n * dpi / 25.4,
-                    Unit::Pt => n * dpi / 72.0,
-                    Unit::Pc => n * dpi / 6.0,
-                    Unit::Percent => {
-                        // If `font-size` has percent units that it's value
-                        // is relative to the parent node `font-size`.
-                        length.num * font_size * 0.01
-                    }
+        if let Some(length) = n.attribute::<Length>(AId::FontSize) {
+            let dpi = state.opt.dpi;
+            let n = length.num;
+            font_size = match length.unit {
+                Unit::None | Unit::Px => n,
+                Unit::Em => n * font_size,
+                Unit::Ex => n * font_size / 2.0,
+                Unit::In => n * dpi,
+                Unit::Cm => n * dpi / 2.54,
+                Unit::Mm => n * dpi / 25.4,
+                Unit::Pt => n * dpi / 72.0,
+                Unit::Pc => n * dpi / 6.0,
+                Unit::Percent => {
+                    // If `font-size` has percent units that it's value
+                    // is relative to the parent node `font-size`.
+                    length.num * font_size * 0.01
                 }
             }
-            Some(&AValue::String(ref name)) => {
-                font_size = convert_named_font_size(name, font_size);
-            }
-            _ => {}
+        } else if let Some(name) = n.attribute(AId::FontSize) {
+            font_size = convert_named_font_size(name, font_size);
         }
     }
 

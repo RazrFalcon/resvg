@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 pub use ttf_parser::{GlyphId, Weight, Width as Stretch};
 
+use crate::tree;
 use crate::utils;
 
 
@@ -123,16 +124,20 @@ impl Database {
         None
     }
 
-    pub fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<svgdom::Path> {
+    pub fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<Vec<tree::PathSegment>> {
         // We can't simplify this code because of lifetimes.
         let item = self.font(id);
         let file = std::fs::File::open(&item.path).ok()?;
         let mmap = unsafe { memmap::MmapOptions::new().map(&file).ok()? };
         let font = ttf_parser::Font::from_data(&mmap, item.face_index).ok()?;
 
-        let mut builder = PathBuilder(svgdom::Path::new());
+        let mut builder = PathBuilder {
+            segments: Vec::new(),
+            px: 0.0,
+            py: 0.0,
+        };
         font.outline_glyph(glyph_id, &mut builder).ok()?;
-        Some(builder.0)
+        Some(builder.segments)
     }
 
     pub fn has_char(&self, id: ID, c: char) -> bool {
@@ -345,6 +350,12 @@ impl Default for Style {
     }
 }
 
+impl_enum_from_str!(Style,
+    "normal"    => Style::Normal,
+    "italic"    => Style::Italic,
+    "oblique"   => Style::Oblique
+);
+
 /// From https://github.com/pcwalton/font-kit
 fn find_best_match(
     candidates: &[Properties],
@@ -486,36 +497,60 @@ fn find_best_match(
     matching_set.into_iter().next()
 }
 
-struct PathBuilder(svgdom::Path);
+struct PathBuilder {
+    segments: Vec<tree::PathSegment>,
+    px: f32,
+    py: f32,
+}
 
 impl ttf_parser::OutlineBuilder for PathBuilder {
     fn move_to(&mut self, x: f32, y: f32) {
-        self.0.push(svgdom::PathSegment::MoveTo { abs: true, x: x as f64, y: y as f64 });
+        self.segments.push(tree::PathSegment::MoveTo { x: x as f64, y: y as f64 });
+        self.px = x;
+        self.py = y;
     }
 
     fn line_to(&mut self, x: f32, y: f32) {
-        self.0.push(svgdom::PathSegment::LineTo { abs: true, x: x as f64, y: y as f64 });
+        self.segments.push(tree::PathSegment::LineTo { x: x as f64, y: y as f64 });
+        self.px = x;
+        self.py = y;
     }
 
     fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
-        self.0.push(svgdom::PathSegment::Quadratic {
-            abs: true, x1: x1 as f64, y1: y1 as f64, x: x as f64, y: y as f64
-        });
+        self.segments.push(quad_to_curve(self.px as f64, self.py as f64, x1 as f64, y1 as f64, x as f64, y as f64));
+        self.px = x;
+        self.py = y;
     }
 
     fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
-        self.0.push(svgdom::PathSegment::CurveTo {
-            abs: true,
+        self.segments.push(tree::PathSegment::CurveTo {
             x1: x1 as f64, y1: y1 as f64,
             x2: x2 as f64, y2: y2 as f64,
             x: x as f64, y: y as f64
         });
+        self.px = x;
+        self.py = y;
     }
 
     fn close(&mut self) {
-        self.0.push(svgdom::PathSegment::ClosePath { abs: true });
+        self.segments.push(tree::PathSegment::ClosePath);
     }
 }
+
+fn quad_to_curve(px: f64, py: f64, x1: f64, y1: f64, x: f64, y: f64) -> tree::PathSegment {
+    #[inline]
+    fn calc(n1: f64, n2: f64) -> f64 {
+        (n1 + n2 * 2.0) / 3.0
+    }
+
+    tree::PathSegment::CurveTo {
+        x1: calc(px, x1), y1: calc(py, y1),
+        x2:  calc(x, x1), y2:  calc(y, y1),
+        x, y,
+    }
+}
+
+
 
 #[derive(Debug)]
 struct FontPath {

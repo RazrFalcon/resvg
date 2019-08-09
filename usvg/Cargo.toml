@@ -19,18 +19,25 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 [dependencies]
 base64 = "0.10"
 data-url = "0.1"
-harfbuzz_rs = "1.0"
 kurbo = "0.2.3"
 libflate = "0.1.25"
 log = "0.4"
-memmap = "0.7"
 rctree = "0.3"
-svgdom = { git = "https://github.com/RazrFalcon/svgdom", rev = "f610e99" }
+xmlwriter = { git = "https://github.com/RazrFalcon/xmlwriter", rev = "dac292c" }
+
+# for svgtree
+roxmltree = "0.7"
+simplecss = { git = "https://github.com/RazrFalcon/simplecss", rev = "9b5be32" }
+siphasher = "0.2.3"
+svgtypes = { git = "https://github.com/RazrFalcon/svgtypes", rev = "6489791" }
+
+# for text to path
+harfbuzz_rs = "1.0"
+memmap = "0.7"
 ttf-parser = "0.2"
 unicode-bidi = "0.3"
 unicode-script = "0.3"
 unicode-vo = "0.1"
-xmlwriter = { git = "https://github.com/RazrFalcon/xmlwriter", rev = "dac292c" }
 
 [dev-dependencies]
 pretty_assertions = "0.6"

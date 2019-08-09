@@ -41,7 +41,7 @@ impl fmt::Display for Error {
         let file_name = self.svg_file.file_name_str();
         match self.kind {
             ErrorKind::CurrRenderFailed(ref e) => {
-                write!(f, "failed to render {} cause {}", file_name, e)
+                write!(f, "{} rendering failed cause {}", file_name, e)
             }
             ErrorKind::DifferentImageSizes => {
                 write!(f, "{} was rendered with different sizes", file_name)
@@ -63,6 +63,12 @@ struct Args {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = parse_args()?;
 
+    // Build current version.
+    Command::new("cargo")
+        .args(&["build", "--release", "--features", &format!("{}-backend", args.backend)])
+        .current_dir("../../tools/rendersvg")
+        .run()?;
+
     let curr_rendersvg = fs::canonicalize("../../target/release/rendersvg")?;
     let prev_rendersvg = build_previous_version(&args)?;
 
@@ -76,7 +82,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if !errors.is_empty() {
         for e in errors {
-            println!("Error: {}.", e);
+            println!("Failed: {}.", e);
         }
 
         std::process::exit(1);
@@ -222,8 +228,6 @@ fn process_file(
     curr_png: &Path,
     prev_png: &Path,
 ) -> Result<(), Error> {
-    println!("Processing {}", in_svg.file_name_str());
-
     if render_svg(&args.work_dir, prev_rendersvg, &args.backend, in_svg, prev_png).is_err() {
         return Ok(());
     }

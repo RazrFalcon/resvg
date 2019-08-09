@@ -4,6 +4,7 @@
 
 use std::collections::HashSet;
 
+use crate::svgtree;
 use crate::tree;
 use super::prelude::*;
 use super::paint_server::{
@@ -13,12 +14,12 @@ use super::paint_server::{
 
 
 pub fn convert(
-    node: &svgdom::Node,
+    node: svgtree::Node,
     state: &State,
     tree: &mut tree::Tree,
 ) -> Option<String> {
-    if tree.defs_by_id(node.id().as_str()).is_some() {
-        return Some(node.id().clone());
+    if tree.defs_by_id(node.element_id()).is_some() {
+        return Some(node.element_id().to_string());
     }
 
     let units = convert_units(node, AId::FilterUnits, tree::Units::ObjectBoundingBox);
@@ -32,7 +33,7 @@ pub fn convert(
     );
     let rect = try_opt_warn_or!(
         rect, None,
-        "Filter '{}' has an invalid region. Skipped.", node.id(),
+        "Filter '{}' has an invalid region. Skipped.", node.element_id(),
     );
 
     let node_with_children = find_filter_with_children(node)?;
@@ -43,7 +44,7 @@ pub fn convert(
 
     tree.append_to_defs(
         tree::NodeKind::Filter(tree::Filter {
-            id: node.id().clone(),
+            id: node.element_id().to_string(),
             units,
             primitive_units,
             rect,
@@ -51,17 +52,18 @@ pub fn convert(
         })
     );
 
-    Some(node.id().clone())
+    Some(node.element_id().to_string())
 }
 
-fn find_filter_with_children(
-    node: &svgdom::Node,
-) -> Option<svgdom::Node> {
-    for link in node.href_iter() {
+fn find_filter_with_children<'a>(
+    node: svgtree::Node<'a>,
+) -> Option<svgtree::Node<'a>> {
+    for link_id in node.href_iter() {
+        let link = node.document().get(link_id);
         if !link.has_tag_name(EId::Filter) {
             warn!(
                 "Filter '{}' cannot reference '{}' via 'xlink:href'.",
-                node.id(), link.tag_id().unwrap()
+                node.element_id(), link.tag_name().unwrap()
             );
             return None;
         }
@@ -80,7 +82,7 @@ struct FilterResults {
 }
 
 fn collect_children(
-    filter: &svgdom::Node,
+    filter: &svgtree::Node,
     units: tree::Units,
     state: &State,
 ) -> Vec<tree::FilterPrimitive> {
@@ -92,39 +94,39 @@ fn collect_children(
     };
 
     for child in filter.children() {
-        let kind = match child.tag_id() {
+        let kind = match child.tag_name() {
             Some(EId::FeGaussianBlur) => {
-                convert_fe_gaussian_blur(&child, &primitives)
+                convert_fe_gaussian_blur(child, &primitives)
             }
             Some(EId::FeOffset) => {
-                convert_fe_offset(&child, &primitives, state)
+                convert_fe_offset(child, &primitives, state)
             }
             Some(EId::FeBlend) => {
-                convert_fe_blend(&child, &primitives)
+                convert_fe_blend(child, &primitives)
             }
             Some(EId::FeFlood) => {
-                convert_fe_flood(&child)
+                convert_fe_flood(child)
             }
             Some(EId::FeComposite) => {
-                convert_fe_composite(&child, &primitives)
+                convert_fe_composite(child, &primitives)
             }
             Some(EId::FeMerge) => {
-                convert_fe_merge(&child, &primitives)
+                convert_fe_merge(child, &primitives)
             }
             Some(EId::FeTile) => {
-                convert_fe_tile(&child, &primitives)
+                convert_fe_tile(child, &primitives)
             }
             Some(EId::FeImage) => {
-                convert_fe_image(&child, state)
+                convert_fe_image(child, state)
             }
-            Some(_) => {
-                warn!("Filter with '{}' child is not supported.", child.tag_name());
+            Some(name) => {
+                warn!("Filter with '{}' child is not supported.", name);
                 continue;
             }
             None => continue,
         };
 
-        let fe = convert_primitive(&child, kind, units, state, &mut results);
+        let fe = convert_primitive(child, kind, units, state, &mut results);
         primitives.push(fe);
     }
 
@@ -132,7 +134,7 @@ fn collect_children(
 }
 
 fn convert_primitive(
-    fe: &svgdom::Node,
+    fe: svgtree::Node,
     kind: tree::FilterKind,
     units: tree::Units,
     state: &State,
@@ -144,33 +146,29 @@ fn convert_primitive(
         // TODO: validate and test
         width: fe.try_convert_length(AId::Width, units, state),
         height: fe.try_convert_length(AId::Height, units, state),
-        color_interpolation: fe.find_enum(AId::ColorInterpolationFilters),
+        color_interpolation: fe.find_attribute(AId::ColorInterpolationFilters).unwrap_or_default(),
         result: gen_result(fe, results),
         kind,
     }
 }
 
 fn convert_fe_gaussian_blur(
-    fe: &svgdom::Node,
+    fe: svgtree::Node,
     primitives: &[tree::FilterPrimitive],
 ) -> tree::FilterKind {
-    let attrs = fe.attributes();
+    let text = fe.attribute::<&str>(AId::StdDeviation).unwrap_or("0 0");
+    let mut parser = svgtypes::NumberListParser::from(text);
 
-    let std_dev_list = attrs.get_number_list(AId::StdDeviation).cloned();
+    let n1 = parser.next().and_then(|n| n.ok());
+    let n2 = parser.next().and_then(|n| n.ok());
+    // `stdDeviation` must have no more than two values.
+    // Otherwise we should fallback to `0 0`.
+    let n3 = parser.next().and_then(|n| n.ok());
 
-    let (mut std_dev_x, mut std_dev_y) = match std_dev_list {
-        Some(list) => {
-            if list.len() == 1 {
-                (list[0], list[0])
-            } else if list.len() == 2 {
-                (list[0], list[1])
-            } else {
-                (0.0, 0.0)
-            }
-        }
-        None => {
-            (0.0, 0.0)
-        }
+    let (mut std_dev_x, mut std_dev_y) = match (n1, n2, n3) {
+        (Some(n1), Some(n2), None) => (n1, n2),
+        (Some(n1), None, None) => (n1, n1),
+        _ => (0.0, 0.0),
     };
 
     if std_dev_x.is_sign_negative() { std_dev_x = 0.0; }
@@ -184,7 +182,7 @@ fn convert_fe_gaussian_blur(
 }
 
 fn convert_fe_offset(
-    fe: &svgdom::Node,
+    fe: svgtree::Node,
     primitives: &[tree::FilterPrimitive],
     state: &State,
 ) -> tree::FilterKind {
@@ -196,12 +194,10 @@ fn convert_fe_offset(
 }
 
 fn convert_fe_blend(
-    fe: &svgdom::Node,
+    fe: svgtree::Node,
     primitives: &[tree::FilterPrimitive],
 ) -> tree::FilterKind {
-    let attrs = fe.attributes();
-
-    let mode = match attrs.get_str_or(AId::Mode, "normal") {
+    let mode = match fe.attribute(AId::Mode).unwrap_or("normal") {
         "multiply"  => tree::FeBlendMode::Multiply,
         "screen"    => tree::FeBlendMode::Screen,
         "darken"    => tree::FeBlendMode::Darken,
@@ -220,13 +216,10 @@ fn convert_fe_blend(
 }
 
 fn convert_fe_flood(
-    fe: &svgdom::Node,
+    fe: svgtree::Node,
 ) -> tree::FilterKind {
-    let attrs = fe.attributes();
-
-    let color = attrs.get_color(AId::FloodColor).unwrap_or_else(tree::Color::black);
-    let opacity = fe.convert_opacity(AId::FloodOpacity);
-
+    let color = fe.attribute(AId::FloodColor).unwrap_or_else(tree::Color::black);
+    let opacity = fe.attribute(AId::FloodOpacity).unwrap_or_default();
     tree::FilterKind::FeFlood(tree::FeFlood {
         color,
         opacity,
@@ -234,34 +227,28 @@ fn convert_fe_flood(
 }
 
 fn get_coeff(
-    attrs: &svgdom::Attributes,
+    node: svgtree::Node,
     aid: AId,
 ) -> tree::CompositingCoefficient {
-    let k = match attrs.get_value(aid) {
-        Some(AValue::Number(n)) => *n,
-        _ => 0.0,
-    };
-
+    let k: f64 = node.attribute(aid).unwrap_or(0.0);
     f64_bound(0.0, k, 1.0).into()
 }
 
 fn convert_fe_composite(
-    fe: &svgdom::Node,
+    fe: svgtree::Node,
     primitives: &[tree::FilterPrimitive],
 ) -> tree::FilterKind {
-    let ref attrs = fe.attributes();
-
-    let operator = match attrs.get_str_or(AId::Operator, "over") {
+    let operator = match fe.attribute(AId::Operator).unwrap_or("over") {
         "in"            => tree::FeCompositeOperator::In,
         "out"           => tree::FeCompositeOperator::Out,
         "atop"          => tree::FeCompositeOperator::Atop,
         "xor"           => tree::FeCompositeOperator::Xor,
         "arithmetic"    => {
             tree::FeCompositeOperator::Arithmetic {
-                k1: get_coeff(attrs, AId::K1),
-                k2: get_coeff(attrs, AId::K2),
-                k3: get_coeff(attrs, AId::K3),
-                k4: get_coeff(attrs, AId::K4),
+                k1: get_coeff(fe, AId::K1),
+                k2: get_coeff(fe, AId::K2),
+                k3: get_coeff(fe, AId::K3),
+                k4: get_coeff(fe, AId::K4),
             }
         }
         _ => tree::FeCompositeOperator::Over,
@@ -278,12 +265,12 @@ fn convert_fe_composite(
 }
 
 fn convert_fe_merge(
-    fe: &svgdom::Node,
+    fe: svgtree::Node,
     primitives: &[tree::FilterPrimitive],
 ) -> tree::FilterKind {
     let mut inputs = Vec::new();
     for child in fe.children() {
-        inputs.push(resolve_input(&child, AId::In, primitives));
+        inputs.push(resolve_input(child, AId::In, primitives));
     }
 
     tree::FilterKind::FeMerge(tree::FeMerge {
@@ -292,18 +279,16 @@ fn convert_fe_merge(
 }
 
 fn convert_fe_image(
-    fe: &svgdom::Node,
+    fe: svgtree::Node,
     state: &State,
 ) -> tree::FilterKind {
-    let ref attrs = fe.attributes();
-
-    let aspect = super::convert_aspect(attrs);
+    let aspect = fe.attribute(AId::PreserveAspectRatio).unwrap_or_default();
     let rendering_mode = fe
-        .try_find_enum(AId::ImageRendering)
+        .find_attribute(AId::ImageRendering)
         .unwrap_or(state.opt.image_rendering);
 
-    let href = match attrs.get_value(AId::Href) {
-        Some(&AValue::String(ref s)) => s,
+    let href = match fe.attribute(AId::Href) {
+        Some(s) => s,
         _ => {
             warn!("The 'feImage' element lacks the 'xlink:href' attribute. Skipped.");
             return tree::FilterKind::FeImage(tree::FeImage {
@@ -314,7 +299,7 @@ fn convert_fe_image(
         }
     };
 
-    let href = super::image::get_href_data(&*fe.id(), href, state.opt.path.as_ref());
+    let href = super::image::get_href_data(fe.element_id(), href, state.opt.path.as_ref());
     let (img_data, format) = match href {
         Some((data, format)) => (data, format),
         None => {
@@ -335,7 +320,7 @@ fn convert_fe_image(
 }
 
 fn convert_fe_tile(
-    fe: &svgdom::Node,
+    fe: svgtree::Node,
     primitives: &[tree::FilterPrimitive],
 ) -> tree::FilterKind {
     tree::FilterKind::FeTile(tree::FeTile {
@@ -344,13 +329,11 @@ fn convert_fe_tile(
 }
 
 fn resolve_input(
-    node: &svgdom::Node,
+    node: svgtree::Node,
     aid: AId,
     primitives: &[tree::FilterPrimitive],
 ) -> tree::FilterInput {
-    let attrs = node.attributes();
-
-    match attrs.get_str(aid) {
+    match node.attribute(aid) {
         Some(s) => {
             let input = parse_in(s);
 
@@ -397,10 +380,10 @@ fn parse_in(
 }
 
 fn gen_result(
-    node: &svgdom::Node,
+    node: svgtree::Node,
     results: &mut FilterResults,
 ) -> String {
-    match node.attributes().get_str(AId::Result) {
+    match node.attribute::<&str>(AId::Result) {
         Some(s) => {
             // Remember predefined result.
             results.names.insert(s.to_string());

@@ -6,7 +6,7 @@ use crate::tree;
 
 
 pub fn convert(
-    mut path: svgdom::Path,
+    mut path: svgtypes::Path,
 ) -> Vec<tree::PathSegment> {
     let mut new_path = Vec::with_capacity(path.len());
 
@@ -26,22 +26,22 @@ pub fn convert(
 
     for (idx, seg) in path.iter().enumerate() {
         match *seg {
-            svgdom::PathSegment::MoveTo { x, y, .. } => {
+            svgtypes::PathSegment::MoveTo { x, y, .. } => {
                 new_path.push(tree::PathSegment::MoveTo { x, y });
             }
-            svgdom::PathSegment::LineTo { x, y, .. } => {
+            svgtypes::PathSegment::LineTo { x, y, .. } => {
                 new_path.push(tree::PathSegment::LineTo { x, y });
             }
-            svgdom::PathSegment::HorizontalLineTo { x, .. } => {
+            svgtypes::PathSegment::HorizontalLineTo { x, .. } => {
                 new_path.push(tree::PathSegment::LineTo { x, y: py });
             }
-            svgdom::PathSegment::VerticalLineTo { y, .. } => {
+            svgtypes::PathSegment::VerticalLineTo { y, .. } => {
                 new_path.push(tree::PathSegment::LineTo { x: px, y });
             }
-            svgdom::PathSegment::CurveTo { x1, y1, x2, y2, x, y, .. } => {
+            svgtypes::PathSegment::CurveTo { x1, y1, x2, y2, x, y, .. } => {
                 new_path.push(tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
             }
-            svgdom::PathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
+            svgtypes::PathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
                 // 'The first control point is assumed to be the reflection of the second control
                 // point on the previous command relative to the current point.
                 // (If there is no previous command or if the previous command
@@ -49,8 +49,8 @@ pub fn convert(
                 // coincident with the current point.)'
                 if let Some(prev_seg) = path.get(idx - 1).cloned() {
                     let (x1, y1) = match prev_seg {
-                        svgdom::PathSegment::CurveTo { x2, y2, x, y, .. } |
-                        svgdom::PathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
+                        svgtypes::PathSegment::CurveTo { x2, y2, x, y, .. } |
+                        svgtypes::PathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
                             (x * 2.0 - x2, y * 2.0 - y2)
                         }
                         _ => {
@@ -61,10 +61,10 @@ pub fn convert(
                     new_path.push(tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y });
                 }
             }
-            svgdom::PathSegment::Quadratic { x1, y1, x, y, .. } => {
+            svgtypes::PathSegment::Quadratic { x1, y1, x, y, .. } => {
                 new_path.push(quad_to_curve(px, py, x1, y1, x, y));
             }
-            svgdom::PathSegment::SmoothQuadratic { x, y, .. } => {
+            svgtypes::PathSegment::SmoothQuadratic { x, y, .. } => {
                 // 'The control point is assumed to be the reflection of
                 // the control point on the previous command relative to
                 // the current point. (If there is no previous command or
@@ -72,10 +72,10 @@ pub fn convert(
                 // the control point is coincident with the current point.)'
                 if let Some(prev_seg) = path.get(idx - 1).cloned() {
                     let (x1, y1) = match prev_seg {
-                        svgdom::PathSegment::Quadratic { x1, y1, x, y, .. } => {
+                        svgtypes::PathSegment::Quadratic { x1, y1, x, y, .. } => {
                             (x * 2.0 - x1, y * 2.0 - y1)
                         }
-                        svgdom::PathSegment::SmoothQuadratic { x, y, .. } => {
+                        svgtypes::PathSegment::SmoothQuadratic { x, y, .. } => {
                             (x * 2.0 - ptx, y * 2.0 - pty)
                         }
                         _ => {
@@ -89,7 +89,7 @@ pub fn convert(
                     new_path.push(quad_to_curve(px, py, x1, y1, x, y));
                 }
             }
-            svgdom::PathSegment::EllipticalArc { rx, ry, x_axis_rotation, large_arc, sweep, x, y, .. } => {
+            svgtypes::PathSegment::EllipticalArc { rx, ry, x_axis_rotation, large_arc, sweep, x, y, .. } => {
                 let svg_arc = kurbo::SvgArc {
                     from: kurbo::Vec2::new(px, py),
                     to: kurbo::Vec2::new(x, y),
@@ -114,7 +114,7 @@ pub fn convert(
                     }
                 }
             }
-            svgdom::PathSegment::ClosePath { .. } => {
+            svgtypes::PathSegment::ClosePath { .. } => {
                 if let Some(tree::PathSegment::ClosePath) = new_path.last() {
                     // Do not add sequential ClosePath segments.
                 } else {

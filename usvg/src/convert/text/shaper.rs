@@ -343,8 +343,7 @@ fn outline_cluster(
     let mut x = 0.0;
 
     for glyph in glyphs {
-        let outline = db.outline(glyph.font.id, glyph.id).unwrap_or(svgdom::Path::new());
-        let mut outline = crate::convert::path::convert(outline);
+        let mut outline = db.outline(glyph.font.id, glyph.id).unwrap_or(Vec::new());
 
         let sx = glyph.font.scale(font_size);
 

@@ -4,9 +4,8 @@
 
 use std::fmt;
 use std::path::PathBuf;
-use std::str::FromStr;
 
-pub use svgdom::{
+pub use svgtypes::{
     Align,
     AspectRatio,
     Color,
@@ -19,26 +18,13 @@ use crate::geom::*;
 pub use super::numbers::*;
 
 
-macro_rules! enum_default {
-    ($name:ident, $def_value:ident) => {
-        impl Default for $name {
-            fn default() -> Self {
-                $name::$def_value
-            }
-        }
-    };
-}
-
-macro_rules! enum_from_str {
-    ($name:ident, $($string:pat => $result:expr),+) => {
-        impl FromStr for $name {
+macro_rules! impl_from_str {
+    ($name:ident) => {
+        impl std::str::FromStr for $name {
             type Err = &'static str;
 
             fn from_str(s: &str) -> Result<Self, Self::Err> {
-                match s {
-                    $($string => Ok($result)),+,
-                    _ => Err("invalid value"),
-                }
+                crate::svgtree::EnumFromStr::enum_from_str(s).ok_or("invalid value")
             }
         }
     };
@@ -56,9 +42,9 @@ pub enum LineCap {
     Square,
 }
 
-enum_default!(LineCap, Butt);
+impl_enum_default!(LineCap, Butt);
 
-enum_from_str!(LineCap,
+impl_enum_from_str!(LineCap,
     "butt"      => LineCap::Butt,
     "round"     => LineCap::Round,
     "square"    => LineCap::Square
@@ -76,9 +62,9 @@ pub enum LineJoin {
     Bevel,
 }
 
-enum_default!(LineJoin, Miter);
+impl_enum_default!(LineJoin, Miter);
 
-enum_from_str!(LineJoin,
+impl_enum_from_str!(LineJoin,
     "miter" => LineJoin::Miter,
     "round" => LineJoin::Round,
     "bevel" => LineJoin::Bevel
@@ -95,9 +81,9 @@ pub enum FillRule {
     EvenOdd,
 }
 
-enum_default!(FillRule, NonZero);
+impl_enum_default!(FillRule, NonZero);
 
-enum_from_str!(FillRule,
+impl_enum_from_str!(FillRule,
     "nonzero" => FillRule::NonZero,
     "evenodd" => FillRule::EvenOdd
 );
@@ -111,6 +97,12 @@ pub enum Units {
     ObjectBoundingBox,
 }
 
+// `Units` cannot have a default value, because it changes depending on an element.
+
+impl_enum_from_str!(Units,
+    "userSpaceOnUse"    => Units::UserSpaceOnUse,
+    "objectBoundingBox" => Units::ObjectBoundingBox
+);
 
 /// A spread method.
 ///
@@ -123,7 +115,13 @@ pub enum SpreadMethod {
     Repeat,
 }
 
-enum_default!(SpreadMethod, Pad);
+impl_enum_default!(SpreadMethod, Pad);
+
+impl_enum_from_str!(SpreadMethod,
+    "pad"       => SpreadMethod::Pad,
+    "reflect"   => SpreadMethod::Reflect,
+    "repeat"    => SpreadMethod::Repeat
+);
 
 
 /// A visibility property.
@@ -137,9 +135,9 @@ pub enum Visibility {
     Collapse,
 }
 
-enum_default!(Visibility, Visible);
+impl_enum_default!(Visibility, Visible);
 
-enum_from_str!(Visibility,
+impl_enum_from_str!(Visibility,
     "visible"   => Visibility::Visible,
     "hidden"    => Visibility::Hidden,
     "collapse"  => Visibility::Collapse
@@ -281,9 +279,9 @@ pub enum ColorInterpolation {
     LinearRGB,
 }
 
-enum_default!(ColorInterpolation, LinearRGB);
+impl_enum_default!(ColorInterpolation, LinearRGB);
 
-enum_from_str!(ColorInterpolation,
+impl_enum_from_str!(ColorInterpolation,
     "sRGB"      => ColorInterpolation::SRGB,
     "linearRGB" => ColorInterpolation::LinearRGB
 );
@@ -382,13 +380,15 @@ pub enum ShapeRendering {
     GeometricPrecision,
 }
 
-enum_default!(ShapeRendering, GeometricPrecision);
+impl_enum_default!(ShapeRendering, GeometricPrecision);
 
-enum_from_str!(ShapeRendering,
+impl_enum_from_str!(ShapeRendering,
     "optimizeSpeed"         => ShapeRendering::OptimizeSpeed,
     "crispEdges"            => ShapeRendering::CrispEdges,
     "geometricPrecision"    => ShapeRendering::GeometricPrecision
 );
+
+impl_from_str!(ShapeRendering);
 
 
 /// A text rendering method.
@@ -402,13 +402,15 @@ pub enum TextRendering {
     GeometricPrecision,
 }
 
-enum_default!(TextRendering, OptimizeLegibility);
+impl_enum_default!(TextRendering, OptimizeLegibility);
 
-enum_from_str!(TextRendering,
+impl_enum_from_str!(TextRendering,
     "optimizeSpeed"         => TextRendering::OptimizeSpeed,
     "optimizeLegibility"    => TextRendering::OptimizeLegibility,
     "geometricPrecision"    => TextRendering::GeometricPrecision
 );
+
+impl_from_str!(TextRendering);
 
 
 /// An image rendering method.
@@ -421,9 +423,11 @@ pub enum ImageRendering {
     OptimizeSpeed,
 }
 
-enum_default!(ImageRendering, OptimizeQuality);
+impl_enum_default!(ImageRendering, OptimizeQuality);
 
-enum_from_str!(ImageRendering,
+impl_enum_from_str!(ImageRendering,
     "optimizeQuality"   => ImageRendering::OptimizeQuality,
     "optimizeSpeed"     => ImageRendering::OptimizeSpeed
 );
+
+impl_from_str!(ImageRendering);

@@ -2,7 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use svgdom::{FuzzyEq, FuzzyZero};
+
+use svgtypes::{FuzzyEq, FuzzyZero};
 
 use crate::geom::f64_bound;
 
@@ -42,6 +43,14 @@ impl Opacity {
     #[inline]
     pub fn value(&self) -> f64 {
         self.0
+    }
+}
+
+impl std::ops::Mul<Opacity> for Opacity {
+    type Output = Self;
+
+    fn mul(self, rhs: Opacity) -> Self::Output {
+        Opacity::new(self.0 * rhs.0)
     }
 }
 

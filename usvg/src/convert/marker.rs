@@ -4,19 +4,19 @@
 
 use std::f64;
 
-use crate::{utils, tree, tree::prelude::*, tree::PathSegment as Segment};
+use crate::{utils, svgtree, tree, tree::prelude::*, tree::PathSegment as Segment};
 use super::{prelude::*, use_node};
 
 
 pub fn convert(
-    node: &svgdom::Node,
+    node: svgtree::Node,
     segments: &[tree::PathSegment],
     state: &State,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
     // `marker-*` attributes can only be set on `path`, `line`, `polyline` and `polygon`.
-    match node.tag_id() {
+    match node.tag_name() {
           Some(EId::Path)
         | Some(EId::Line)
         | Some(EId::Polyline)
@@ -38,10 +38,9 @@ pub fn convert(
     for (aid, kind) in &list {
         let mut marker = None;
         for n in node.ancestors() {
-            let attrs = n.attributes();
-            if let Some(&AValue::FuncLink(ref link)) = attrs.get_value(*aid) {
+            if let Some(link) = n.attribute::<svgtree::Node>(*aid) {
                 if link.has_tag_name(EId::Marker) {
-                    marker = Some(link.clone());
+                    marker = Some(link);
                 }
             }
         }
@@ -52,7 +51,7 @@ pub fn convert(
                 continue;
             }
 
-            resolve(node, segments, &marker, *kind, state, parent, tree);
+            resolve(node, segments, marker, *kind, state, parent, tree);
         }
     }
 }
@@ -70,9 +69,9 @@ enum MarkerOrientation {
 }
 
 fn resolve(
-    shape_node: &svgdom::Node,
+    shape_node: svgtree::Node,
     segments: &[tree::PathSegment],
-    marker_node: &svgdom::Node,
+    marker_node: svgtree::Node,
     marker_kind: MarkerKind,
     state: &State,
     parent: &mut tree::Node,
@@ -85,14 +84,14 @@ fn resolve(
     let view_box = marker_node.get_viewbox().map(|vb|
         tree::ViewBox {
             rect: vb,
-            aspect: super::convert_aspect(&*marker_node.attributes()),
+            aspect: marker_node.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
         }
     );
 
     let has_overflow = {
-        let attrs = marker_node.attributes();
-        let overflow = attrs.get_str_or(AId::Overflow, "hidden");
-        overflow == "hidden" || overflow == "scroll"
+        let overflow = marker_node.attribute(AId::Overflow);
+        // `overflow` is `hidden` by default.
+        overflow == None || overflow == Some("hidden") || overflow == Some("scroll")
     };
 
     let clip_path = if has_overflow {
@@ -127,7 +126,7 @@ fn resolve(
     let draw_marker = |x: f64, y: f64, idx: usize| {
         let mut ts = tree::Transform::new_translate(x, y);
 
-        let angle = match convert_orientation(&*marker_node.attributes()) {
+        let angle = match convert_orientation(marker_node) {
             MarkerOrientation::Auto => calc_vertex_angle(&segments, idx),
             MarkerOrientation::Angle(angle) => angle,
         };
@@ -171,12 +170,12 @@ fn resolve(
 }
 
 fn stroke_scale(
-    path_node: &svgdom::Node,
-    marker_node: &svgdom::Node,
+    path_node: svgtree::Node,
+    marker_node: svgtree::Node,
     state: &State,
 ) -> Option<f64> {
-    match marker_node.attributes().get_str_or(AId::MarkerUnits, "strokeWidth") {
-        "userSpaceOnUse" => Some(1.0),
+    match marker_node.attribute(AId::MarkerUnits) {
+        Some("userSpaceOnUse") => Some(1.0),
         _ => {
             let sw = path_node.resolve_length(AId::StrokeWidth, state, 1.0);
             if !(sw > 0.0) {
@@ -458,7 +457,7 @@ fn get_prev_vertex(
 }
 
 fn convert_rect(
-    node: &svgdom::Node,
+    node: svgtree::Node,
     state: &State,
 ) -> Option<Rect> {
     Rect::new(
@@ -470,23 +469,26 @@ fn convert_rect(
 }
 
 fn convert_orientation(
-    attrs: &svgdom::Attributes,
+    node: svgtree::Node,
 ) -> MarkerOrientation {
-    match attrs.get_value(AId::Orient) {
-        Some(AValue::Angle(angle)) => {
-            let a = match angle.unit {
-                svgdom::AngleUnit::Degrees  => angle.num,
-                svgdom::AngleUnit::Gradians => angle.num * 180.0 / 200.0,
-                svgdom::AngleUnit::Radians  => angle.num * 180.0 / f64::consts::PI,
-            };
+    use svgtypes::{Angle, AngleUnit};
 
-            MarkerOrientation::Angle(a)
-        }
-        Some(AValue::String(s)) if s == "auto" => {
-            MarkerOrientation::Auto
-        }
-        _ => {
-            MarkerOrientation::Angle(0.0)
+    if node.attribute(AId::Orient) == Some("auto") {
+        MarkerOrientation::Auto
+    } else {
+        match node.attribute::<Angle>(AId::Orient) {
+            Some(angle) => {
+                let a = match angle.unit {
+                    AngleUnit::Degrees  => angle.num,
+                    AngleUnit::Gradians => angle.num * 180.0 / 200.0,
+                    AngleUnit::Radians  => angle.num * 180.0 / f64::consts::PI,
+                };
+
+                MarkerOrientation::Angle(a)
+            }
+            None => {
+                MarkerOrientation::Angle(0.0)
+            }
         }
     }
 }

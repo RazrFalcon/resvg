@@ -5,7 +5,7 @@
 //! Some useful utilities.
 
 use kurbo::{ParamCurveArclen, ParamCurveExtrema};
-use svgdom::FuzzyZero;
+use svgtypes::FuzzyZero;
 
 use crate::{tree, geom::*};
 

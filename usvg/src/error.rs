@@ -26,7 +26,7 @@ pub enum Error {
     InvalidSize,
 
     /// Failed to parse an SVG data.
-    ParsingFailed(svgdom::ParserError),
+    ParsingFailed(roxmltree::Error),
 }
 
 impl std::fmt::Display for Error {

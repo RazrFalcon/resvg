@@ -2,7 +2,6 @@ dist: xenial
 language: rust
 rust:
   - stable
-cache: cargo
 install:
   - ./testing-tools/ci-install.sh
   # prepare custom Qt

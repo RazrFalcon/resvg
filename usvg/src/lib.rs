@@ -131,6 +131,28 @@ macro_rules! try_opt_warn_or {
     };
 }
 
+macro_rules! impl_enum_default {
+    ($name:ident, $def_value:ident) => {
+        impl Default for $name {
+            fn default() -> Self {
+                $name::$def_value
+            }
+        }
+    };
+}
+
+macro_rules! impl_enum_from_str {
+    ($name:ident, $($string:pat => $result:expr),+) => {
+        impl crate::svgtree::EnumFromStr for $name {
+            fn enum_from_str(s: &str) -> Option<Self> {
+                match s {
+                    $($string => Some($result)),+,
+                    _ => None,
+                }
+            }
+        }
+    };
+}
 
 pub mod utils;
 mod convert;
@@ -138,16 +160,12 @@ mod error;
 mod fontdb;
 mod geom;
 mod options;
+mod svgtree;
 mod tree;
 
 /// Shorthand names for modules.
 mod short {
-    pub use svgdom::{
-        LengthUnit as Unit,
-        ElementId as EId,
-        AttributeId as AId,
-        AttributeValue as AValue,
-    };
+    pub use svgtypes::LengthUnit as Unit;
 }
 
 pub use xmlwriter::Options as XmlOptions;

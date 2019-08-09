@@ -24,9 +24,12 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - (qt-api) A default font resolving.
 - (usvg) Remove all `tref` element children.
+- (usvg) `tref` with `xml:space` resolving.
+- (usvg) Ignore nested `tref`.
 - (usvg) Ignore invalid `clipPath` children that were referenced via `use`.
 - (usvg) `currentColor` will always fallback to black now.
   Previously, `stroke` was set to `none` which is incorrect.
+- (usvg) `use` can reference an element inside a non-SVG element now.
 - (svgdom) Parse only presentation attributes from the `style` element and attribute.
 
 ### Removed

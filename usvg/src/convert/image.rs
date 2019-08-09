@@ -4,42 +4,39 @@
 
 use std::path;
 
-use crate::{tree, tree::prelude::*, utils};
+use crate::{svgtree, tree, tree::prelude::*, utils};
 use super::prelude::*;
 
 
 pub fn convert(
-    node: &svgdom::Node,
+    node: svgtree::Node,
     state: &State,
     parent: &mut tree::Node,
 ) {
-    let ref attrs = node.attributes();
-
-    let transform = attrs.get_transform(AId::Transform);
-    let visibility = node.find_enum(AId::Visibility);
+    let visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
     let rendering_mode = node
-        .try_find_enum(AId::ImageRendering)
+        .find_attribute(AId::ImageRendering)
         .unwrap_or(state.opt.image_rendering);
 
     let rect = try_opt_warn!(get_image_rect(node, state), "Image has an invalid size. Skipped.");
 
     let view_box = tree::ViewBox {
         rect,
-        aspect: super::convert_aspect(attrs),
+        aspect: node.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
 
-    let href = match attrs.get_value(AId::Href) {
-        Some(&AValue::String(ref s)) => s,
+    let href = match node.attribute(AId::Href) {
+        Some(s) => s,
         _ => {
             warn!("The 'image' element lacks the 'xlink:href' attribute. Skipped.");
             return;
         }
     };
 
-    if let Some((data, format)) = get_href_data(&*node.id(), href, state.opt.path.as_ref()) {
+    if let Some((data, format)) = get_href_data(node.element_id(), href, state.opt.path.as_ref()) {
         parent.append_kind(tree::NodeKind::Image(tree::Image {
-            id: node.id().clone(),
-            transform,
+            id: node.element_id().to_string(),
+            transform: Default::default(),
             visibility,
             view_box,
             rendering_mode,
@@ -124,7 +121,7 @@ fn get_image_format(path: &path::Path) -> Option<tree::ImageFormat> {
 }
 
 fn get_image_rect(
-    node: &svgdom::Node,
+    node: svgtree::Node,
     state: &State,
 ) -> Option<Rect> {
     Rect::new(

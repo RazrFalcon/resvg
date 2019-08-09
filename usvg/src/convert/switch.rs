@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::tree;
+use crate::{svgtree, tree};
 use super::prelude::*;
 
 
@@ -42,36 +42,34 @@ static FEATURES: &[&str] = &[
 
 
 pub fn convert(
-    node: &svgdom::Node,
+    node: svgtree::Node,
     state: &State,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    let child = node.children().find(|n| is_condition_passed(&n, state.opt));
+    let child = node.children().find(|n| is_condition_passed(*n, state.opt));
     let child = try_opt!(child);
 
-    match super::convert_group(&node, state, false, parent, tree) {
-        super::GroupKind::Keep(mut g) => {
-            super::convert_element(&child, state, &mut g, tree);
+    match super::convert_group(node, state, false, parent, tree) {
+        super::GroupKind::Create(ref mut g) => {
+            super::convert_element(child, state, g, tree);
         }
         super::GroupKind::Skip => {
-            super::convert_element(&child, state, parent, tree);
+            super::convert_element(child, state, parent, tree);
         }
         super::GroupKind::Ignore => {}
     }
 }
 
 pub fn is_condition_passed(
-    node: &svgdom::Node,
+    node: svgtree::Node,
     opt: &Options,
 ) -> bool {
-    if !node.is_svg_element() {
+    if !node.is_element() {
         return false;
     }
 
-    let ref attrs = node.attributes();
-
-    if attrs.contains(AId::RequiredExtensions) {
+    if node.has_attribute(AId::RequiredExtensions) {
         return false;
     }
 
@@ -80,7 +78,7 @@ pub fn is_condition_passed(
     // Only feature strings defined in the Feature String appendix are allowed.
     // If all of the given features are supported, then the attribute evaluates to true;
     // otherwise, the current element and its children are skipped and thus will not be rendered.'
-    if let Some(features) = attrs.get_str(AId::RequiredFeatures) {
+    if let Some(features) = node.attribute::<&str>(AId::RequiredFeatures) {
         for feature in features.split(' ') {
             if !FEATURES.contains(&feature) {
                 return false;
@@ -88,7 +86,7 @@ pub fn is_condition_passed(
         }
     }
 
-    if !is_valid_sys_lang(attrs, opt) {
+    if !is_valid_sys_lang(node, opt) {
         return false;
     }
 
@@ -97,7 +95,7 @@ pub fn is_condition_passed(
 
 /// SVG spec 5.8.5
 fn is_valid_sys_lang(
-    attrs: &svgdom::Attributes,
+    node: svgtree::Node,
     opt: &Options,
 ) -> bool {
     // 'The attribute value is a comma-separated list of language names
@@ -105,7 +103,7 @@ fn is_valid_sys_lang(
     //
     // But we support only simple cases like `en` or `en-US`.
     // No one really uses this, especially with complex BCP 47 values.
-    if let Some(langs) = attrs.get_str(AId::SystemLanguage) {
+    if let Some(langs) = node.attribute::<&str>(AId::SystemLanguage) {
         let mut has_match = false;
         for lang in langs.split(',') {
             let lang = lang.trim();

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{tree, tree::prelude::*, utils};
+use crate::{svgtree, tree, tree::prelude::*, utils};
 use super::prelude::*;
 
 mod convert;
@@ -18,17 +18,18 @@ mod private {
     /// A type-safe container for a `text` node.
     ///
     /// This way we can be sure that we are passing the `text` node and not just a random node.
-    pub struct TextNode(svgdom::Node);
+    #[derive(Clone, Copy)]
+    pub struct TextNode<'a>(svgtree::Node<'a>);
 
-    impl TextNode {
-        pub fn new(node: svgdom::Node) -> Self {
+    impl<'a> TextNode<'a> {
+        pub fn new(node: svgtree::Node<'a>) -> Self {
             debug_assert!(node.has_tag_name(EId::Text));
             TextNode(node)
         }
     }
 
-    impl std::ops::Deref for TextNode {
-        type Target = svgdom::Node;
+    impl<'a> std::ops::Deref for TextNode<'a> {
+        type Target = svgtree::Node<'a>;
 
         fn deref(&self) -> &Self::Target {
             &self.0
@@ -50,17 +51,14 @@ struct DecorationSpan {
 
 
 pub fn convert(
-    node: &svgdom::Node,
+    node: svgtree::Node,
     state: &State,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    {
-        let mut db = state.db.borrow_mut();
-        db.populate();
-    }
+    state.db.borrow_mut().populate();
 
-    let text_node = &TextNode::new(node.clone());
+    let text_node = TextNode::new(node.clone());
     let mut new_paths = text_to_paths(text_node, state, parent, tree);
 
     let mut bbox = Rect::new_bbox();
@@ -72,13 +70,13 @@ pub fn convert(
 
     if new_paths.len() == 1 {
         // Copy `text` id to the first path.
-        new_paths[0].id = node.id().clone();
+        new_paths[0].id = node.element_id().to_string();
     }
 
     let mut parent = if state.opt.keep_named_groups && new_paths.len() > 1 {
         // Create a group will all paths that was created during text-to-path conversion.
         parent.append_kind(tree::NodeKind::Group(tree::Group {
-            id: node.id().clone(),
+            id: node.element_id().to_string(),
             .. tree::Group::default()
         }))
     } else {
@@ -94,7 +92,7 @@ pub fn convert(
 }
 
 fn text_to_paths(
-    text_node: &TextNode,
+    text_node: TextNode,
     state: &State,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
@@ -102,7 +100,7 @@ fn text_to_paths(
     let pos_list = resolve_positions_list(text_node, state);
     let rotate_list = resolve_rotate_list(text_node);
     let writing_mode = convert_writing_mode(text_node);
-    let mut text_ts = text_node.attributes().get_transform(AId::Transform);
+    let mut text_ts = tree::Transform::default();
 
     let mut chunks = collect_text_chunks(text_node, &pos_list, state, tree);
     let mut char_offset = 0;

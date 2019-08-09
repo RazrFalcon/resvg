@@ -4,7 +4,7 @@
 
 use std::{f64, fmt};
 
-use svgdom::FuzzyEq;
+use svgtypes::FuzzyEq;
 
 use crate::IsValidLength;
 

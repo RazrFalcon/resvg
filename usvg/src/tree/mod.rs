@@ -8,7 +8,7 @@ use std::cell::Ref;
 use std::path;
 
 pub use self::{nodes::*, attributes::*};
-use crate::{utils, Rect, Error, Options, XmlOptions};
+use crate::{svgtree, utils, Rect, Error, Options, XmlOptions};
 
 mod attributes;
 mod export;
@@ -52,15 +52,14 @@ impl Tree {
 
     /// Parses `Tree` from the SVG string.
     pub fn from_str(text: &str, opt: &Options) -> Result<Self, Error> {
-        let doc = svgdom::Document::from_str(text).map_err(Error::ParsingFailed)?;
+        let doc = svgtree::Document::parse(text).map_err(Error::ParsingFailed)?;
         Self::from_dom(doc, &opt)
     }
 
     /// Parses `Tree` from the `svgdom::Document`.
     ///
     /// An empty `Tree` will be returned on any error.
-    fn from_dom(mut doc: svgdom::Document, opt: &Options) -> Result<Self, Error> {
-        super::convert::prepare_doc(&mut doc);
+    fn from_dom(doc: svgtree::Document, opt: &Options) -> Result<Self, Error> {
         super::convert::convert_doc(&doc, opt)
     }
 
