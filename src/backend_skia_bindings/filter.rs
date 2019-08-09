@@ -13,7 +13,7 @@ use usvg::{try_opt_or, ColorInterpolation as ColorSpace};
 use crate::{prelude::*, backend_utils::*};
 use crate::backend_utils::filter::{Error, Filter, ImageExt};
 use super::ToData;
-use skia::{AlphaType, ColorType, TileMode, BlendMode, FilterQuality, ImageInfo, IRect, ISize, Paint, Point, Surface};
+use skia::{TileMode, BlendMode, FilterQuality, IRect, ISize, Paint, Point, Surface};
 use crate::backend_utils::ConvTransform;
 
 type Image = filter::Image<Surface>;
@@ -93,19 +93,7 @@ impl ImageExt for Surface {
     }
 
     fn try_clone(&self) -> Result<Self, Error> {
-        let image_info = ImageInfo::new(
-            (self.width(), self.height()),
-            ColorType::RGBA8888,
-            AlphaType::Unpremul,
-            None,
-        );
-        let mut copy = Surface::new_raster(&image_info, None, None).ok_or(Error::AllocFailed)?;
-        let mut paint = Paint::default();
-        paint.set_filter_quality(FilterQuality::Low);
-        paint.set_alpha(0xFF);
-        let mut mut_self = self.clone();
-        mut_self.draw(copy.canvas(), (self.width(), self.height()), Some(&paint));
-        Ok(copy)
+        Ok(self.clone())
     }
 
     fn clip(&mut self, region: ScreenRect) {
