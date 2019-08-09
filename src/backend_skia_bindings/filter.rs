@@ -58,7 +58,7 @@ impl CanvasExt for skia::Canvas {
     }
 
     fn just_clear(&mut self) {
-        self.clear(skia_safe::Color::default());
+        self.clear(skia_safe::Color::from(0));
     }
 
     fn draw_surface(
