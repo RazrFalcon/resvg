@@ -17,7 +17,7 @@ use self::skia_bindings::ToData;
 macro_rules! try_create_surface {
     ($size:expr, $ret:expr) => {
         usvg::try_opt_warn_or!(
-            skia::Surface::new_raster_n32_premul((500, 500)),
+            skia::Surface::new_raster_n32_premul(($size.width()as i32, $size.height() as i32)),
             $ret,
             "Failed to create a {}x{} surface.", $size.width(), $size.height()
         );
@@ -65,12 +65,12 @@ impl ConvTransform<skia::Matrix> for usvg::Transform {
 
     fn from_native(mat: &skia::Matrix) -> Self {
         Self::new(
-            mat.get_scale_x() as f64,
-            mat.get_skew_y() as f64,
-            mat.get_skew_x() as f64,
-            mat.get_scale_y() as f64,
-            mat.get_translate_x() as f64,
-            mat.get_translate_y() as f64,
+            mat.scale_x() as f64,
+            mat.skew_y() as f64,
+            mat.skew_x() as f64,
+            mat.scale_y() as f64,
+            mat.translate_x() as f64,
+            mat.translate_y() as f64,
         )
     }
 }
@@ -337,16 +337,18 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
         let mut last = try_opt!(self.layers.pop());
         let image = last.img.image_snapshot();
 
+        let mut paint = skia::Paint::default();
+        paint.set_alpha(a);
         match self.layers.current_mut() {
             Some(prev) => {
                 let canvas = prev.img.canvas();
-                canvas.draw_image(&image, skia::Point::new(0.0, 0.0), None);
+                canvas.draw_image(&image, skia::Point::new(0.0, 0.0), Some(&paint));
             }
             None => {
                 let canvas = self.surface.canvas();
 
                 canvas.reset_matrix();
-                canvas.draw_image(&image, skia::Point::new(0.0, 0.0), None);
+                canvas.draw_image(&image, skia::Point::new(0.0, 0.0), Some(&paint));
 
                 // Reset.
                 let curr_ts = canvas.total_matrix().clone();
