@@ -216,13 +216,13 @@ impl layers::Image for skia::Surface {
         let mut surface = try_create_surface!(size, None);
 
         let canvas = surface.canvas();
-        canvas.clear(skia::Color::from(0));
+        canvas.clear(skia::Color::TRANSPARENT);
 
         Some(surface)
     }
 
     fn clear(&mut self) {
-        self.canvas().clear(skia::Color::from(0));
+        self.canvas().clear(skia::Color::TRANSPARENT);
     }
 }
 
