@@ -38,6 +38,3 @@ ttf-parser = "0.2"
 unicode-bidi = "0.3"
 unicode-script = "0.3"
 unicode-vo = "0.1"
-
-[dev-dependencies]
-pretty_assertions = "0.6"
