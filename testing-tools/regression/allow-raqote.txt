@@ -1,7 +1,0 @@
-e-clipPath-044.svg
-e-tref-005.svg
-e-tref-008.svg
-e-tref-009.svg
-e-tref-010.svg
-e-use-032.svg
-a-stroke-016.svg

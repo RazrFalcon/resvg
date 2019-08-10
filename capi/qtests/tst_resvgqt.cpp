@@ -37,7 +37,7 @@ void ResvgQtTests::initTestCase()
 
 void ResvgQtTests::test_parseFile()
 {
-    ResvgRenderer render(localPath("test.svg"));
+    ResvgRenderer render(localPath("images/test.svg"));
     QVERIFY(render.isValid());
     QVERIFY(!render.isEmpty());
     QCOMPARE(render.defaultSize(), QSize(200, 200));
@@ -45,14 +45,14 @@ void ResvgQtTests::test_parseFile()
 
 void ResvgQtTests::test_parseInvalidFile()
 {
-    ResvgRenderer render(localPath("invalid.svg"));
+    ResvgRenderer render(localPath("images/invalid.svg"));
     QVERIFY(!render.isValid());
     QVERIFY(render.isEmpty());
 }
 
 void ResvgQtTests::test_emptyFile()
 {
-    ResvgRenderer render(localPath("empty.svg"));
+    ResvgRenderer render(localPath("images/empty.svg"));
     QVERIFY(render.isValid());
     QVERIFY(render.isEmpty());
 }
@@ -60,7 +60,7 @@ void ResvgQtTests::test_emptyFile()
 void ResvgQtTests::test_renderFile()
 {
 #ifdef LOCAL_BUILD
-    ResvgRenderer render(localPath("test.svg"));
+    ResvgRenderer render(localPath("images/test.svg"));
     QVERIFY(!render.isEmpty());
     QCOMPARE(render.defaultSize(), QSize(200, 200));
 
@@ -71,16 +71,16 @@ void ResvgQtTests::test_renderFile()
     render.render(&p);
     p.end();
 
-    img.save("test_renderFile.png");
+    img.save("test.png");
 
-    QCOMPARE(img, QImage(localPath("test_renderFile_result.png")));
+    QCOMPARE(img, QImage(localPath("results/test_renderFile.png")));
 #endif
 }
 
 void ResvgQtTests::test_renderFileWithText()
 {
 #ifdef LOCAL_BUILD
-    ResvgRenderer render(localPath("text.svg"));
+    ResvgRenderer render(localPath("images/text.svg"));
     QVERIFY(!render.isEmpty());
     QCOMPARE(render.defaultSize(), QSize(200, 200));
 
@@ -91,36 +91,34 @@ void ResvgQtTests::test_renderFileWithText()
     render.render(&p);
     p.end();
 
-    img.save("test_renderFileWithText.png");
-
-    QCOMPARE(img, QImage(localPath("test_renderFileWithText_result.png")));
+    QCOMPARE(img, QImage(localPath("results/test_renderFileWithText.png")));
 #endif
 }
 
 void ResvgQtTests::test_imageSize()
 {
-    ResvgRenderer render(localPath("vb.svg"));
+    ResvgRenderer render(localPath("images/vb.svg"));
     QVERIFY(!render.isEmpty());
     QCOMPARE(render.defaultSize(), QSize(200, 400));
 }
 
 void ResvgQtTests::test_imageViewBox()
 {
-    ResvgRenderer render(localPath("vb.svg"));
+    ResvgRenderer render(localPath("images/vb.svg"));
     QVERIFY(!render.isEmpty());
     QCOMPARE(render.viewBox(), QRect(50, 100, 200, 400));
 }
 
 void ResvgQtTests::test_imageBoundingBox()
 {
-    ResvgRenderer render(localPath("test.svg"));
+    ResvgRenderer render(localPath("images/test.svg"));
     QVERIFY(!render.isEmpty());
     QCOMPARE(render.boundingBox().toRect(), QRect(20, 20, 160, 160));
 }
 
 void ResvgQtTests::test_elementExists()
 {
-    ResvgRenderer render(localPath("test.svg"));
+    ResvgRenderer render(localPath("images/test.svg"));
     QVERIFY(!render.isEmpty());
 
     // Existing element.
@@ -137,7 +135,7 @@ void ResvgQtTests::test_elementExists()
 
 void ResvgQtTests::test_transformForElement()
 {
-    ResvgRenderer render(localPath("test.svg"));
+    ResvgRenderer render(localPath("images/test.svg"));
     QVERIFY(!render.isEmpty());
     QCOMPARE(render.transformForElement("circle1"), QTransform(2, 0, 0, 2, 0, 0));
     QCOMPARE(render.transformForElement("invalid"), QTransform());
