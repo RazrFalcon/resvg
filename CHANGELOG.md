@@ -19,7 +19,6 @@ This changelog also contains important changes in dependencies.
   and `tools/usvg`.
 - (usvg) The `xmlwriter` is used for SVG generation now.
   Almost 2x faster than generating an `svgdom`.
-- `svgdom` is no longer reexported.
 
 ### Fixed
 - (qt-api) A default font resolving.
@@ -35,6 +34,7 @@ This changelog also contains important changes in dependencies.
 ### Removed
 - (cairo-backend) `gdk-pixbuf` dependency.
 - (qt-backend) JPEG image format plugin dependency.
+- `svgdom` dependency.
 
 ## [0.7.0] - 2019-06-19
 ### Added
