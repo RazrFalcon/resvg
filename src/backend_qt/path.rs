@@ -4,7 +4,7 @@
 
 use crate::qt;
 
-use crate::{prelude::*, backend_utils::*};
+use crate::prelude::*;
 use super::style;
 
 
@@ -32,7 +32,7 @@ pub fn draw(
 
     style::fill(tree, &path.fill, opt, style_bbox, p);
     style::stroke(tree, &path.stroke, opt, style_bbox, p);
-    p.set_antialiasing(use_shape_antialiasing(path.rendering_mode));
+    p.set_antialiasing(crate::use_shape_antialiasing(path.rendering_mode));
 
     p.draw_path(&p_path);
 

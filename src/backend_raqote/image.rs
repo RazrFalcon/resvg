@@ -5,7 +5,8 @@
 use usvg::try_opt;
 
 use crate::prelude::*;
-use crate::backend_utils::{self, ConvTransform, Image};
+use crate::image;
+use crate::ConvTransform;
 use super::RaqoteDrawTargetExt;
 
 
@@ -17,7 +18,7 @@ pub fn draw_raster(
     opt: &Options,
     dt: &mut raqote::DrawTarget,
 ) {
-    let img = try_opt!(backend_utils::image::load_raster(format, data, opt));
+    let img = try_opt!(image::load_raster(format, data, opt));
 
     let sub_dt = {
         let mut sub_dt = raqote::DrawTarget::new(img.size.width() as i32, img.size.height() as i32);
@@ -26,14 +27,14 @@ pub fn draw_raster(
         sub_dt
     };
 
-    let (ts, clip) = backend_utils::image::prepare_sub_svg_geom(view_box, img.size);
+    let (ts, clip) = image::prepare_sub_svg_geom(view_box, img.size);
 
     let mut pb = raqote::PathBuilder::new();
     if let Some(clip) = clip {
         pb.rect(clip.x() as f32, clip.y() as f32, clip.width() as f32, clip.height() as f32);
     } else {
         // We have to clip the image before rendering because we use `Extend::Pad`.
-        let r = backend_utils::image::image_rect(&view_box, img.size);
+        let r = image::image_rect(&view_box, img.size);
         pb.rect(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
     }
 
@@ -54,11 +55,11 @@ pub fn draw_raster(
     dt.fill(&pb.finish(), &patt, &raqote::DrawOptions::default());
 }
 
-fn image_to_surface(image: &Image, surface: &mut [u8]) {
+fn image_to_surface(image: &image::Image, surface: &mut [u8]) {
     // Surface is always ARGB.
     const SURFACE_CHANNELS: usize = 4;
 
-    use backend_utils::image::ImageData;
+    use crate::image::ImageData;
     use rgb::FromSlice;
 
     let mut i = 0;
@@ -95,10 +96,10 @@ pub fn draw_svg(
     opt: &Options,
     dt: &mut raqote::DrawTarget,
 ) {
-    let (tree, sub_opt) = try_opt!(backend_utils::image::load_sub_svg(data, opt));
+    let (tree, sub_opt) = try_opt!(image::load_sub_svg(data, opt));
 
     let img_size = tree.svg_node().size.to_screen_size();
-    let (ts, clip) = backend_utils::image::prepare_sub_svg_geom(view_box, img_size);
+    let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);
 
     if let Some(clip) = clip {
         let mut pb = raqote::PathBuilder::new();

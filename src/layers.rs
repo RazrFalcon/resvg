@@ -2,16 +2,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{Rect, ScreenSize};
-use crate::backend_utils::BlendMode;
+use crate::{Rect, ScreenSize, BlendMode};
 
 
-pub trait Image: Sized {
+pub(crate) trait Image: Sized {
     fn new(size: ScreenSize) -> Option<Self>;
     fn clear(&mut self);
 }
 
-pub struct Layer<T> {
+pub(crate) struct Layer<T> {
     pub ts: usvg::Transform,
     pub blend_mode: BlendMode,
     pub clip_rect: Option<Rect>,
@@ -22,7 +21,7 @@ pub struct Layer<T> {
 ///
 /// A layer allocation is very expensive, so instead of deallocating
 /// a layer on a `pop()` call, we simply decrementing the internal stack length value.
-pub struct Layers<T> {
+pub(crate) struct Layers<T> {
     img_size: ScreenSize,
     layers: Vec<Option<Layer<T>>>,
 

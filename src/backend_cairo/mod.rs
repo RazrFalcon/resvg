@@ -9,7 +9,7 @@ use log::warn;
 
 use crate::prelude::*;
 use crate::layers::{self, Layer, Layers};
-use crate::backend_utils::{self, FlatRender, ConvTransform, BlendMode};
+use crate::{FlatRender, ConvTransform, BlendMode};
 
 
 macro_rules! try_create_surface {
@@ -74,7 +74,7 @@ impl Render for Backend {
         &self,
         tree: &usvg::Tree,
         opt: &Options,
-    ) -> Option<Box<OutputImage>> {
+    ) -> Option<Box<dyn OutputImage>> {
         let img = render_to_image(tree, opt)?;
         Some(Box::new(img))
     }
@@ -83,7 +83,7 @@ impl Render for Backend {
         &self,
         node: &usvg::Node,
         opt: &Options,
-    ) -> Option<Box<OutputImage>> {
+    ) -> Option<Box<dyn OutputImage>> {
         let img = render_node_to_image(node, opt)?;
         Some(Box::new(img))
     }
@@ -360,7 +360,7 @@ impl<'a> FlatRender for CairoFlatRender<'a> {
         let img_size = self.layers.img_size();
         if let Some(layer) = self.layers.current_mut() {
             let mut data = try_opt!(layer.img.get_data().ok());
-            backend_utils::image_to_mask(&mut data, img_size);
+            crate::image_to_mask(&mut data, img_size);
         }
     }
 

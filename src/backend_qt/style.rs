@@ -6,7 +6,7 @@ use crate::qt;
 use usvg::try_opt;
 
 use crate::prelude::*;
-use crate::backend_utils::{ConvTransform, FlatRender};
+use crate::{ConvTransform, FlatRender};
 use super::QtFlatRender;
 
 

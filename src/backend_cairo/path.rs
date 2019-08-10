@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{prelude::*, backend_utils::*};
+use crate::prelude::*;
 use super::style;
 
 
@@ -25,7 +25,7 @@ pub fn draw(
     // so we can pass whatever rect we want, because it will not be used anyway.
     let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
 
-    if !use_shape_antialiasing(path.rendering_mode) {
+    if !crate::use_shape_antialiasing(path.rendering_mode) {
         cr.set_antialias(cairo::Antialias::None);
     }
 

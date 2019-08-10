@@ -10,8 +10,9 @@ use rgb::FromSlice;
 use log::warn;
 use usvg::{try_opt_or, ColorInterpolation as ColorSpace};
 
-use crate::{prelude::*, backend_utils::*};
-use crate::backend_utils::filter::{Error, Filter, ImageExt};
+use crate::prelude::*;
+use crate::filter::{self, Error, Filter, ImageExt};
+use crate::ConvTransform;
 
 type Image = filter::Image<skia::Surface>;
 type FilterResult = filter::FilterResult<skia::Surface>;

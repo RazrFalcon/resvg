@@ -59,7 +59,7 @@ fn process() -> Result<(), String> {
             .unwrap();
     }
 
-    let backend: Box<Render> = match args.backend_name.as_str() {
+    let backend: Box<dyn Render> = match args.backend_name.as_str() {
         #[cfg(feature = "cairo-backend")]
         "cairo" => Box::new(resvg::backend_cairo::Backend),
         #[cfg(feature = "qt-backend")]

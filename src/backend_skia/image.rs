@@ -6,7 +6,8 @@ use crate::skia;
 use usvg::try_opt;
 
 use crate::prelude::*;
-use crate::backend_utils::{self, ConvTransform, Image};
+use crate::image;
+use crate::ConvTransform;
 
 
 pub fn draw_raster(
@@ -17,7 +18,7 @@ pub fn draw_raster(
     opt: &Options,
     surface: &mut skia::Surface,
 ) {
-    let img = try_opt!(backend_utils::image::load_raster(format, data, opt));
+    let img = try_opt!(image::load_raster(format, data, opt));
 
     let image = {
         let (w, h) = img.size.dimensions();
@@ -44,18 +45,18 @@ pub fn draw_raster(
         canvas.set_clip_rect(r.x(), r.y(), r.width(), r.height());
     }
 
-    let r = backend_utils::image::image_rect(&view_box, img.size);
+    let r = image::image_rect(&view_box, img.size);
     canvas.draw_surface_rect(&image, r.x(), r.y(), r.width(), r.height(), filter);
 
     // Revert.
     canvas.restore();
 }
 
-fn image_to_surface(image: &Image, surface: &mut [u8]) {
+fn image_to_surface(image: &image::Image, surface: &mut [u8]) {
     // Surface is always ARGB.
     const SURFACE_CHANNELS: usize = 4;
 
-    use backend_utils::image::ImageData;
+    use crate::image::ImageData;
     use rgb::FromSlice;
 
     let mut i = 0;
@@ -114,10 +115,10 @@ pub fn draw_svg(
     opt: &Options,
     surface: &mut skia::Surface,
 ) {
-    let (tree, sub_opt) = try_opt!(backend_utils::image::load_sub_svg(data, opt));
+    let (tree, sub_opt) = try_opt!(image::load_sub_svg(data, opt));
 
     let img_size = tree.svg_node().size.to_screen_size();
-    let (ts, clip) = backend_utils::image::prepare_sub_svg_geom(view_box, img_size);
+    let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);
 
     if let Some(clip) = clip {
         surface.canvas_mut().set_clip_rect(clip.x(), clip.y(), clip.width(), clip.height());

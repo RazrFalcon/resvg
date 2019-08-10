@@ -6,7 +6,7 @@ use crate::skia;
 use usvg::try_opt;
 
 use crate::prelude::*;
-use crate::backend_utils::*;
+use crate::{ConvTransform, FlatRender};
 use super::SkiaFlatRender;
 
 pub fn fill(

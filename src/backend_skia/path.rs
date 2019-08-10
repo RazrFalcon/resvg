@@ -5,7 +5,7 @@
 use crate::skia;
 
 use crate::prelude::*;
-use crate::backend_utils::*;
+use crate::ConvTransform;
 use super::style;
 
 
@@ -29,7 +29,7 @@ pub fn draw(
         }
     };
 
-    let antialias = use_shape_antialiasing(path.rendering_mode);
+    let antialias = crate::use_shape_antialiasing(path.rendering_mode);
 
     let mut canvas = surface.canvas_mut();
     let global_ts = usvg::Transform::from_native(&canvas.get_matrix());

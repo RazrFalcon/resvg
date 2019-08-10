@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{prelude::*, backend_utils};
+use crate::prelude::*;
 use super::style;
 
 
@@ -34,7 +34,7 @@ pub fn draw(
     }
 
     let mut draw_opt = draw_opt.clone();
-    if !backend_utils::use_shape_antialiasing(path.rendering_mode) {
+    if !crate::use_shape_antialiasing(path.rendering_mode) {
         draw_opt.antialias = raqote::AntialiasMode::None;
     }
 

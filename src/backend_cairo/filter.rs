@@ -10,8 +10,8 @@ use log::warn;
 use usvg::{try_opt_or, ColorInterpolation as ColorSpace};
 
 use crate::prelude::*;
-use crate::backend_utils::ConvTransform;
-use crate::backend_utils::filter::{self, Filter, ImageExt, Error};
+use crate::filter::{self, Filter, ImageExt, Error};
+use crate::ConvTransform;
 use super::ReCairoContextExt;
 
 type Image = filter::Image<cairo::ImageSurface>;

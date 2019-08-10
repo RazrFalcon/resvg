@@ -5,7 +5,8 @@
 use usvg::try_opt;
 
 use crate::prelude::*;
-use crate::backend_utils::{self, ConvTransform, Image};
+use crate::image;
+use crate::ConvTransform;
 
 
 pub fn draw_raster(
@@ -16,7 +17,7 @@ pub fn draw_raster(
     opt: &Options,
     cr: &cairo::Context,
 ) {
-    let img = try_opt!(backend_utils::image::load_raster(format, data, opt));
+    let img = try_opt!(image::load_raster(format, data, opt));
 
     let surface = {
         let mut surface = try_create_surface!(img.size, ());
@@ -30,14 +31,14 @@ pub fn draw_raster(
         surface
     };
 
-    let (ts, clip) = backend_utils::image::prepare_sub_svg_geom(view_box, img.size);
+    let (ts, clip) = image::prepare_sub_svg_geom(view_box, img.size);
 
     if let Some(clip) = clip {
         cr.rectangle(clip.x(), clip.y(), clip.width(), clip.height());
         cr.clip();
     } else {
         // We have to clip the image before rendering because we use `Extend::Pad`.
-        let r = backend_utils::image::image_rect(&view_box, img.size);
+        let r = image::image_rect(&view_box, img.size);
         cr.rectangle(r.x(), r.y(), r.width(), r.height());
         cr.clip();
     }
@@ -58,11 +59,10 @@ pub fn draw_raster(
     cr.reset_clip();
 }
 
-fn image_to_surface(image: &Image, surface: &mut [u8]) {
+fn image_to_surface(image: &image::Image, surface: &mut [u8]) {
     // Surface is always ARGB.
     const SURFACE_CHANNELS: usize = 4;
 
-    use backend_utils::image::ImageData;
     use rgb::FromSlice;
 
     let mut i = 0;
@@ -80,12 +80,12 @@ fn image_to_surface(image: &Image, surface: &mut [u8]) {
     };
 
     match &image.data {
-        ImageData::RGB(data) => {
+        image::ImageData::RGB(data) => {
             for p in data.as_rgb() {
                 to_surface(p.r as u32, p.g as u32, p.b as u32, 255);
             }
         }
-        ImageData::RGBA(data) => {
+        image::ImageData::RGBA(data) => {
             for p in data.as_rgba() {
                 to_surface(p.r as u32, p.g as u32, p.b as u32, p.a as u32);
             }
@@ -99,10 +99,10 @@ pub fn draw_svg(
     opt: &Options,
     cr: &cairo::Context,
 ) {
-    let (tree, sub_opt) = try_opt!(backend_utils::image::load_sub_svg(data, opt));
+    let (tree, sub_opt) = try_opt!(image::load_sub_svg(data, opt));
 
     let img_size = tree.svg_node().size.to_screen_size();
-    let (ts, clip) = backend_utils::image::prepare_sub_svg_geom(view_box, img_size);
+    let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);
 
     if let Some(clip) = clip {
         cr.rectangle(clip.x(), clip.y(), clip.width(), clip.height());
