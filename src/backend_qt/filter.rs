@@ -386,6 +386,24 @@ impl Filter<qt::Image> for QtFilter {
         Ok(Image::from_image(buffer, ColorSpace::SRGB))
     }
 
+    fn apply_component_transfer(
+        fe: &usvg::FeComponentTransfer,
+        cs: ColorSpace,
+        input: Image,
+    ) -> Result<Image, Error> {
+        let input = input.into_color_space(cs)?;
+        let mut buffer = input.take()?;
+
+        for pixel in buffer.data_mut().as_bgra_mut() {
+            pixel.r = fe.func_r.apply(pixel.r);
+            pixel.g = fe.func_g.apply(pixel.g);
+            pixel.b = fe.func_b.apply(pixel.b);
+            pixel.a = fe.func_a.apply(pixel.a);
+        }
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,

@@ -343,8 +343,6 @@ A group will have at least one of the attributes present.
 
 == Filter primitives
 
-[[feGaussianBlur-element]]
-
 === Filter primitive attributes
 
 The attributes below are the same for all filter primitives.
@@ -372,6 +370,38 @@ Neither do others, because they are pretty poorly implemented.
 * `mode` = `normal | multiply | screen | darken | lighten`
 * <<Filter primitive attributes>>
 
+=== Filter primitive `feComponentTransfer`
+
+*Children:*
+
+* `feFuncR`
+* `feFuncG`
+* `feFuncB`
+* `feFuncA`
+
+The all four will always be present.
+
+*Attributes:*
+
+* `in` = <<filter-input-type,<filter-input> >>
+* <<Filter primitive attributes>>
+
+*`feFunc(R|G|B|A)` attributes:*
+
+* `type` = `identity | table | discrete | linear | gamma`
+* `tableValues` = `<list-of-numbers>`? +
+  Present only when `type=table | discrete`. Can be empty.
+* `slope` = <<number-type,<number> >>? +
+  Present only when `type=linear`.
+* `intercept` = <<number-type,<number> >>? +
+  Present only when `type=linear`.
+* `amplitude` = <<number-type,<number> >>? +
+  Present only when `type=gamma`.
+* `exponent` = <<number-type,<number> >>? +
+  Present only when `type=gamma`.
+* `offset` = <<number-type,<number> >>? +
+  Present only when `type=gamma`.
+
 === Filter primitive `feComposite`
 
 *Attributes:*
@@ -379,13 +409,13 @@ Neither do others, because they are pretty poorly implemented.
 * `in` = <<filter-input-type,<filter-input> >>
 * `in2` = <<filter-input-type,<filter-input> >>
 * `operator` = `over | in | out | atop | xor | arithmetic`
-* `k1` = <<compositing-coefficient-type,<compositing-coefficient> >> +
+* `k1` = <<compositing-coefficient-type,<compositing-coefficient> >>? +
   Present only when `operator=arithmetic`.
-* `k2` = <<compositing-coefficient-type,<compositing-coefficient> >> +
+* `k2` = <<compositing-coefficient-type,<compositing-coefficient> >>? +
   Present only when `operator=arithmetic`.
-* `k3` = <<compositing-coefficient-type,<compositing-coefficient> >> +
+* `k3` = <<compositing-coefficient-type,<compositing-coefficient> >>? +
   Present only when `operator=arithmetic`.
-* `k4` = <<compositing-coefficient-type,<compositing-coefficient> >> +
+* `k4` = <<compositing-coefficient-type,<compositing-coefficient> >>? +
   Present only when `operator=arithmetic`.
 * <<Filter primitive attributes>>
 

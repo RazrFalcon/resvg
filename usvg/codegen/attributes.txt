@@ -1,3 +1,4 @@
+amplitude
 baseline-shift
 class
 clip-path
@@ -12,6 +13,7 @@ direction
 display
 dx
 dy
+exponent
 fill
 fill-opacity
 fill-rule
@@ -35,6 +37,7 @@ id
 image-rendering
 in
 in2
+intercept
 k1
 k2
 k3
@@ -71,6 +74,7 @@ rotate
 rx
 ry
 shape-rendering
+slope
 space
 spreadMethod
 startOffset
@@ -87,10 +91,12 @@ stroke-opacity
 stroke-width
 style
 systemLanguage
+tableValues
 text-anchor
 text-decoration
 text-rendering
 transform
+type
 viewBox
 visibility
 width

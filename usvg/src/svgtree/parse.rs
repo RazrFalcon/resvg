@@ -57,6 +57,7 @@ impl Document {
                 value,
             });
         } else {
+            // TODO: store as AttributeValue::Invalid?
             warn!("Failed to parse {} value: '{}'.", aid, value);
             self.attrs.push(Attribute {
                 name: aid,
@@ -339,12 +340,16 @@ fn parse_svg_attribute(
         }
 
         AId::Offset => {
-            // offset = <number> | <percentage>
-            let l = svgtypes::Length::from_str(value)?;
-            if l.unit == svgtypes::LengthUnit::None || l.unit == svgtypes::LengthUnit::Percent {
-                AttributeValue::Length(l)
+            if let EId::FeFuncR | EId::FeFuncG | EId::FeFuncB | EId::FeFuncA = tag_name {
+                AttributeValue::Number(parse_number(value)?)
             } else {
-                return Err(svgtypes::Error::InvalidValue);
+                // offset = <number> | <percentage>
+                let l = svgtypes::Length::from_str(value)?;
+                if l.unit == svgtypes::LengthUnit::None || l.unit == svgtypes::LengthUnit::Percent {
+                    AttributeValue::Length(l)
+                } else {
+                    return Err(svgtypes::Error::InvalidValue);
+                }
             }
         }
 
@@ -374,6 +379,13 @@ fn parse_svg_attribute(
             let n = parse_number(value)?;
             let n = crate::f64_bound(0.0, n, 1.0);
             AttributeValue::Number(n)
+        }
+
+          AId::Amplitude
+        | AId::Exponent
+        | AId::Intercept
+        | AId::Slope => {
+            AttributeValue::Number(parse_number(value)?)
         }
 
         AId::StrokeDasharray => {
@@ -505,7 +517,8 @@ fn parse_svg_attribute(
             AttributeValue::AspectRatio(svgtypes::AspectRatio::from_str(value)?)
         }
 
-        AId::Rotate => {
+          AId::Rotate
+        | AId::TableValues => {
             AttributeValue::NumberList(svgtypes::NumberList::from_str(value)?)
         }
 

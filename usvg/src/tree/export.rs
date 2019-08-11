@@ -227,6 +227,19 @@ fn conv_defs(
                             xml.write_svg_attribute(AId::Result, &fe.result);
                             xml.end_element();
                         }
+                        FilterKind::FeComponentTransfer(ref transfer) => {
+                            xml.start_svg_element(EId::FeComponentTransfer);
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_filter_input(AId::In, &transfer.input);
+                            xml.write_svg_attribute(AId::Result, &fe.result);
+
+                            xml.write_filter_transfer_function(EId::FeFuncR, &transfer.func_r);
+                            xml.write_filter_transfer_function(EId::FeFuncG, &transfer.func_g);
+                            xml.write_filter_transfer_function(EId::FeFuncB, &transfer.func_b);
+                            xml.write_filter_transfer_function(EId::FeFuncA, &transfer.func_a);
+
+                            xml.end_element();
+                        }
                     };
                 }
 
@@ -330,6 +343,7 @@ trait XmlWriterExt {
     fn write_rect_attrs(&mut self, r: Rect);
     fn write_filter_input(&mut self, id: AId, input: &FilterInput);
     fn write_filter_primitive_attrs(&mut self, fe: &FilterPrimitive);
+    fn write_filter_transfer_function(&mut self, eid: EId, fe: &TransferFunction);
     fn write_image_data(&mut self, data: &ImageData, format: ImageFormat);
 }
 
@@ -420,6 +434,53 @@ impl XmlWriterExt for XmlWriter {
             ColorInterpolation::SRGB        => "sRGB",
             ColorInterpolation::LinearRGB   => "linearRGB"
         });
+    }
+
+    fn write_filter_transfer_function(&mut self, eid: EId, fe: &TransferFunction) {
+        self.start_svg_element(eid);
+
+        match fe {
+            TransferFunction::Identity => {
+                self.write_svg_attribute(AId::Type, "identity");
+            }
+            TransferFunction::Table(ref values) => {
+                self.write_svg_attribute(AId::Type, "table");
+                self.write_attribute_raw(AId::TableValues.to_str(), |buf| {
+                    for n in values {
+                        buf.write_fmt(format_args!("{} ", n)).unwrap();
+                    }
+
+                    if !values.is_empty() {
+                        buf.pop();
+                    }
+                });
+            }
+            TransferFunction::Discrete(ref values) => {
+                self.write_svg_attribute(AId::Type, "discrete");
+                self.write_attribute_raw(AId::TableValues.to_str(), |buf| {
+                    for n in values {
+                        buf.write_fmt(format_args!("{} ", n)).unwrap();
+                    }
+
+                    if !values.is_empty() {
+                        buf.pop();
+                    }
+                });
+            }
+            TransferFunction::Linear { slope, intercept } => {
+                self.write_svg_attribute(AId::Type, "linear");
+                self.write_svg_attribute(AId::Slope, &slope);
+                self.write_svg_attribute(AId::Intercept, &intercept);
+            }
+            TransferFunction::Gamma { amplitude, exponent, offset } => {
+                self.write_svg_attribute(AId::Type, "gamma");
+                self.write_svg_attribute(AId::Amplitude, &amplitude);
+                self.write_svg_attribute(AId::Exponent, &exponent);
+                self.write_svg_attribute(AId::Offset, &offset);
+            }
+        }
+
+        self.end_element();
     }
 
     fn write_image_data(&mut self, data: &ImageData, format: ImageFormat) {

@@ -55,9 +55,9 @@ pub fn convert(
     Some(node.element_id().to_string())
 }
 
-fn find_filter_with_children<'a>(
-    node: svgtree::Node<'a>,
-) -> Option<svgtree::Node<'a>> {
+fn find_filter_with_children(
+    node: svgtree::Node,
+) -> Option<svgtree::Node> {
     for link_id in node.href_iter() {
         let link = node.document().get(link_id);
         if !link.has_tag_name(EId::Filter) {
@@ -118,6 +118,9 @@ fn collect_children(
             }
             Some(EId::FeImage) => {
                 convert_fe_image(child, state)
+            }
+            Some(EId::FeComponentTransfer) => {
+                convert_fe_component_transfer(child, &primitives)
             }
             Some(name) => {
                 warn!("Filter with '{}' child is not supported.", name);
@@ -326,6 +329,69 @@ fn convert_fe_tile(
     tree::FilterKind::FeTile(tree::FeTile {
         input: resolve_input(fe, AId::In, primitives),
     })
+}
+
+fn convert_fe_component_transfer(
+    fe: svgtree::Node,
+    primitives: &[tree::FilterPrimitive],
+) -> tree::FilterKind {
+    let mut kind = tree::FeComponentTransfer {
+        input: resolve_input(fe, AId::In, primitives),
+        func_r: tree::TransferFunction::Identity,
+        func_g: tree::TransferFunction::Identity,
+        func_b: tree::TransferFunction::Identity,
+        func_a: tree::TransferFunction::Identity,
+    };
+
+    for child in fe.children().filter(|n| n.is_element()) {
+        if let Some(func) = convert_transfer_function(child) {
+            match child.tag_name().unwrap() {
+                EId::FeFuncR => kind.func_r = func,
+                EId::FeFuncG => kind.func_g = func,
+                EId::FeFuncB => kind.func_b = func,
+                EId::FeFuncA => kind.func_a = func,
+                _ => {}
+            }
+        }
+    }
+
+    tree::FilterKind::FeComponentTransfer(kind)
+}
+
+fn convert_transfer_function(
+    node: svgtree::Node,
+) -> Option<tree::TransferFunction> {
+    match node.attribute(AId::Type)? {
+        "identity" => {
+            Some(tree::TransferFunction::Identity)
+        }
+        "table" => {
+            match node.attribute::<&svgtypes::NumberList>(AId::TableValues) {
+                Some(values) => Some(tree::TransferFunction::Table(values.0.clone())),
+                None => Some(tree::TransferFunction::Table(Vec::new())),
+            }
+        }
+        "discrete" => {
+            match node.attribute::<&svgtypes::NumberList>(AId::TableValues) {
+                Some(values) => Some(tree::TransferFunction::Discrete(values.0.clone())),
+                None => Some(tree::TransferFunction::Discrete(Vec::new())),
+            }
+        }
+        "linear" => {
+            Some(tree::TransferFunction::Linear {
+                slope: node.attribute(AId::Slope).unwrap_or(1.0),
+                intercept: node.attribute(AId::Intercept).unwrap_or(0.0),
+            })
+        }
+        "gamma" => {
+            Some(tree::TransferFunction::Gamma {
+                amplitude: node.attribute(AId::Amplitude).unwrap_or(1.0),
+                exponent: node.attribute(AId::Exponent).unwrap_or(1.0),
+                offset: node.attribute(AId::Offset).unwrap_or(0.0),
+            })
+        }
+        _ => None,
+    }
 }
 
 fn resolve_input(

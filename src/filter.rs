@@ -195,6 +195,10 @@ pub trait Filter<T: ImageExt> {
                 usvg::FilterKind::FeImage(ref fe) => {
                     Self::apply_image(fe, region, subregion, opt)
                 }
+                usvg::FilterKind::FeComponentTransfer(ref fe) => {
+                    let input = Self::get_input(&fe.input, region, &results, canvas)?;
+                    Self::apply_component_transfer(fe, cs, input)
+                }
             }?;
 
             if region != subregion {
@@ -295,6 +299,12 @@ pub trait Filter<T: ImageExt> {
         region: ScreenRect,
         subregion: ScreenRect,
         opt: &Options,
+    ) -> Result<Image<T>, Error>;
+
+    fn apply_component_transfer(
+        fe: &usvg::FeComponentTransfer,
+        cs: ColorSpace,
+        input: Image<T>,
     ) -> Result<Image<T>, Error>;
 
     fn apply_to_canvas(

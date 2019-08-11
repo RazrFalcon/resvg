@@ -439,6 +439,30 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         Ok(Image::from_image(buffer, ColorSpace::SRGB))
     }
 
+    fn apply_component_transfer(
+        fe: &usvg::FeComponentTransfer,
+        cs: ColorSpace,
+        input: Image,
+    ) -> Result<Image, Error> {
+        let input = input.into_color_space(cs)?;
+        let mut buffer = input.take()?;
+
+        if let Ok(ref mut data) = buffer.get_data() {
+            from_premultiplied(data);
+
+            for pixel in data.as_bgra_mut() {
+                pixel.r = fe.func_r.apply(pixel.r);
+                pixel.g = fe.func_g.apply(pixel.g);
+                pixel.b = fe.func_b.apply(pixel.b);
+                pixel.a = fe.func_a.apply(pixel.a);
+            }
+
+            into_premultiplied(data);
+        }
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,
