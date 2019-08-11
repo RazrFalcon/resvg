@@ -126,13 +126,6 @@ fn text_to_paths(
             chunk, char_offset, &pos_list, &rotate_list, writing_mode, &mut clusters
         );
 
-        if let TextFlow::Path(_) = chunk.text_flow {
-            // Since a path flow can point clusters in any direction,
-            // we can't simply shift a global transform by Y axis.
-            // We have to shift each cluster individually.
-            shaper::shift_clusters_baseline(&chunk, &mut clusters);
-        }
-
         if writing_mode == WritingMode::TopToBottom {
             if let TextFlow::Horizontal = chunk.text_flow {
                 text_ts.rotate_at(90.0, x, y);
@@ -269,7 +262,7 @@ fn dump_cluster(
 
     let mut base_path = tree::Path {
         transform: text_ts,
-        .. tree::Path::default()
+        ..tree::Path::default()
     };
 
     // Cluster bbox.

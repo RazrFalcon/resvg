@@ -154,6 +154,15 @@ macro_rules! impl_enum_from_str {
     };
 }
 
+macro_rules! matches {
+    ($expression:expr, $($pattern:tt)+) => {
+        match $expression {
+            $($pattern)+ => true,
+            _ => false
+        }
+    }
+}
+
 pub mod utils;
 mod convert;
 mod error;

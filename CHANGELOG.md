@@ -12,6 +12,7 @@ This changelog also contains important changes in dependencies.
   [JaFenix](https://github.com/JaFenix).
 - A better CSS support.
 - An `*.otf` fonts support.
+- (usvg) `dx`, `dy` are supported inside `textPath` now.
 
 ### Changed
 - All backends are using the `image` crate for raster images loading now.
@@ -22,6 +23,7 @@ This changelog also contains important changes in dependencies.
 
 ### Fixed
 - (qt-api) A default font resolving.
+- (usvg) `baseline-shift` processing inside `textPath`.
 - (usvg) Remove all `tref` element children.
 - (usvg) `tref` with `xml:space` resolving.
 - (usvg) Ignore nested `tref`.

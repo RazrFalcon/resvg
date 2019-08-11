@@ -11,15 +11,6 @@ use svgtypes::FuzzyEq;
 
 use crate::geom::Rect;
 
-macro_rules! matches {
-    ($expression:expr, $($pattern:tt)+) => {
-        match $expression {
-            $($pattern)+ => true,
-            _ => false
-        }
-    }
-}
-
 mod parse;
 pub use parse::*;
 
