@@ -57,12 +57,7 @@ impl Document {
                 value,
             });
         } else {
-            // TODO: store as AttributeValue::Invalid?
             warn!("Failed to parse {} value: '{}'.", aid, value);
-            self.attrs.push(Attribute {
-                name: aid,
-                value: AttributeValue::String(value.to_string()),
-            });
         }
     }
 }
