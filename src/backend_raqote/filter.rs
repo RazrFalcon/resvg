@@ -453,6 +453,22 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
+    fn apply_color_matrix(
+        fe: &usvg::FeColorMatrix,
+        cs: ColorSpace,
+        input: Image,
+    ) -> Result<Image, Error> {
+        let input = input.into_color_space(cs)?;
+        let mut buffer = input.take()?;
+
+        let data = buffer.get_data_u8_mut();
+        from_premultiplied(data);
+        filter::color_matrix::apply(&fe.kind, data.as_bgra_mut());
+        into_premultiplied(data);
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,

@@ -503,6 +503,7 @@ pub struct FilterPrimitive {
 #[derive(Clone, Debug)]
 pub enum FilterKind {
     FeBlend(FeBlend),
+    FeColorMatrix(FeColorMatrix),
     FeComponentTransfer(FeComponentTransfer),
     FeComposite(FeComposite),
     FeFlood(FeFlood),
@@ -533,6 +534,44 @@ pub struct FeBlend {
     ///
     /// `mode` in the SVG.
     pub mode: FeBlendMode,
+}
+
+
+/// A color matrix filter primitive.
+///
+/// `feColorMatrix` element in the SVG.
+#[derive(Clone, Debug)]
+pub struct FeColorMatrix {
+    /// Identifies input for the given filter primitive.
+    ///
+    /// `in` in the SVG.
+    pub input: FilterInput,
+
+    /// A matrix kind.
+    ///
+    /// `type` in the SVG.
+    pub kind: FeColorMatrixKind,
+}
+
+/// A color matrix filter primitive kind.
+#[derive(Clone, Debug)]
+#[allow(missing_docs)]
+pub enum FeColorMatrixKind {
+    Matrix(Vec<f64>), // Guarantee to have 20 numbers.
+    Saturate(NormalizedValue),
+    HueRotate(f64),
+    LuminanceToAlpha,
+}
+
+impl Default for FeColorMatrixKind {
+    fn default() -> Self {
+        FeColorMatrixKind::Matrix(vec![
+            1.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 1.0, 0.0,
+        ])
+    }
 }
 
 

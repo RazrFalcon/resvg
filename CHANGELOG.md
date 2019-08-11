@@ -11,6 +11,7 @@ This changelog also contains important changes in dependencies.
 - (resvg) A [Skia](https://skia.org/) backend thanks to
   [JaFenix](https://github.com/JaFenix).
 - `feComponentTransfer` support.
+- `feColorMatrix` support.
 - A better CSS support.
 - An `*.otf` fonts support.
 - (usvg) `dx`, `dy` are supported inside `textPath` now.

@@ -1,8 +1,6 @@
 ### Elements
 
 - Filter based
-  - `feColorMatrix`
-  - `feComponentTransfer`
   - `feConvolveMatrix`
   - `feDiffuseLighting`
   - `feDisplacementMap`

@@ -122,6 +122,9 @@ fn collect_children(
             Some(EId::FeComponentTransfer) => {
                 convert_fe_component_transfer(child, &primitives)
             }
+            Some(EId::FeColorMatrix) => {
+                convert_fe_color_matrix(child, &primitives)
+            }
             Some(name) => {
                 warn!("Filter with '{}' child is not supported.", name);
                 continue;
@@ -392,6 +395,56 @@ fn convert_transfer_function(
         }
         _ => None,
     }
+}
+
+fn convert_fe_color_matrix(
+    fe: svgtree::Node,
+    primitives: &[tree::FilterPrimitive],
+) -> tree::FilterKind {
+    let kind = convert_color_matrix_kind(fe).unwrap_or_default();
+    tree::FilterKind::FeColorMatrix(tree::FeColorMatrix {
+        input: resolve_input(fe, AId::In, primitives),
+        kind,
+    })
+}
+
+fn convert_color_matrix_kind(
+    fe: svgtree::Node
+) -> Option<tree::FeColorMatrixKind> {
+    match fe.attribute(AId::Type) {
+        Some("matrix") => {
+            if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::Values) {
+                if list.len() == 20 {
+                    return Some(tree::FeColorMatrixKind::Matrix(list.0.clone()));
+                }
+            }
+        }
+        Some("saturate") => {
+            if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::Values) {
+                if !list.is_empty() {
+                    let n = f64_bound(0.0, list[0], 1.0);
+                    return Some(tree::FeColorMatrixKind::Saturate(n.into()));
+                } else {
+                    return Some(tree::FeColorMatrixKind::Saturate(1.0.into()));
+                }
+            }
+        }
+        Some("hueRotate") => {
+            if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::Values) {
+                if !list.is_empty() {
+                    return Some(tree::FeColorMatrixKind::HueRotate(list[0]));
+                } else {
+                    return Some(tree::FeColorMatrixKind::HueRotate(0.0));
+                }
+            }
+        }
+        Some("luminanceToAlpha") => {
+            return Some(tree::FeColorMatrixKind::LuminanceToAlpha);
+        }
+        _ => {}
+    }
+
+    None
 }
 
 fn resolve_input(

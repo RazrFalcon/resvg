@@ -97,6 +97,7 @@ text-decoration
 text-rendering
 transform
 type
+values
 viewBox
 visibility
 width

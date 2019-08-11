@@ -404,6 +404,19 @@ impl Filter<qt::Image> for QtFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
+    fn apply_color_matrix(
+        fe: &usvg::FeColorMatrix,
+        cs: ColorSpace,
+        input: Image,
+    ) -> Result<Image, Error> {
+        let input = input.into_color_space(cs)?;
+        let mut buffer = input.take()?;
+
+        filter::color_matrix::apply(&fe.kind, buffer.data_mut().as_bgra_mut());
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,

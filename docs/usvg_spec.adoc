@@ -370,6 +370,19 @@ Neither do others, because they are pretty poorly implemented.
 * `mode` = `normal | multiply | screen | darken | lighten`
 * <<Filter primitive attributes>>
 
+=== Filter primitive `feColorMatrix`
+
+*Attributes:*
+
+* `in` = <<filter-input-type,<filter-input> >>
+* `type` = `matrix | saturate | hueRotate | luminanceToAlpha`
+* `values` = `<list-of-numbers>`? +
+** For `type=matrix`, contains 20 numbers.
+** For `type=saturate`, contains a single number in a 0..1 range.
+** For `type=hueRotate`, contains a single number.
+** Not present for `type=luminanceToAlpha`.
+* <<Filter primitive attributes>>
+
 === Filter primitive `feComponentTransfer`
 
 *Children:*

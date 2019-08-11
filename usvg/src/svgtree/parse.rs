@@ -513,7 +513,8 @@ fn parse_svg_attribute(
         }
 
           AId::Rotate
-        | AId::TableValues => {
+        | AId::TableValues
+        | AId::Values => {
             AttributeValue::NumberList(svgtypes::NumberList::from_str(value)?)
         }
 

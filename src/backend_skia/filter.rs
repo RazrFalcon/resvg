@@ -406,6 +406,28 @@ impl Filter<skia::Surface> for SkiaFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
+    fn apply_color_matrix(
+        fe: &usvg::FeColorMatrix,
+        cs: ColorSpace,
+        input: Image,
+    ) -> Result<Image, Error> {
+        use std::mem::swap;
+
+        let input = input.into_color_space(cs)?;
+        let mut buffer = input.take()?;
+        let mut data = buffer.data_mut();
+
+        // RGBA -> BGRA.
+        data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+
+        filter::color_matrix::apply(&fe.kind, data.as_bgra_mut());
+
+        // BGRA -> RGBA.
+        data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,

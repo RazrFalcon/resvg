@@ -25,18 +25,18 @@ macro_rules! wrap {
 }
 
 
-/// An opacity value.
+/// A normalized value.
 ///
-/// Just like `f64` but immutable and guarantee to be in the 0..1 range.
+/// Just like `f64` but immutable and guarantee to be in a 0..1 range.
 #[derive(Clone, Copy, Debug)]
-pub struct Opacity(f64);
+pub struct NormalizedValue(f64);
 
-impl Opacity {
-    /// Creates a new `Opacity` value.
+impl NormalizedValue {
+    /// Creates a new `NormalizedValue` value.
     pub fn new(n: f64) -> Self {
         debug_assert!(n.is_finite());
         debug_assert!(n >= 0.0 && n <= 1.0);
-        Opacity(f64_bound(0.0, n, 1.0))
+        NormalizedValue(f64_bound(0.0, n, 1.0))
     }
 
     /// Returns an underlying value.
@@ -46,28 +46,30 @@ impl Opacity {
     }
 }
 
-impl std::ops::Mul<Opacity> for Opacity {
+impl std::ops::Mul<NormalizedValue> for NormalizedValue {
     type Output = Self;
 
-    fn mul(self, rhs: Opacity) -> Self::Output {
-        Opacity::new(self.0 * rhs.0)
+    fn mul(self, rhs: NormalizedValue) -> Self::Output {
+        NormalizedValue::new(self.0 * rhs.0)
     }
 }
 
-impl Default for Opacity {
+impl Default for NormalizedValue {
     fn default() -> Self {
-        Opacity::new(1.0)
+        NormalizedValue::new(1.0)
     }
 }
 
-wrap!(Opacity);
+wrap!(NormalizedValue);
 
+/// An alias to `NormalizedValue`.
+pub type Opacity = NormalizedValue;
 
-/// An alias to `Opacity`.
-pub type StopOffset = Opacity;
+/// An alias to `NormalizedValue`.
+pub type StopOffset = NormalizedValue;
 
-/// An alias to `Opacity`.
-pub type CompositingCoefficient = Opacity;
+/// An alias to `NormalizedValue`.
+pub type CompositingCoefficient = NormalizedValue;
 
 
 /// A `stroke-width` value.

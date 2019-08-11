@@ -240,6 +240,32 @@ fn conv_defs(
 
                             xml.end_element();
                         }
+                        FilterKind::FeColorMatrix(ref matrix) => {
+                            xml.start_svg_element(EId::FeColorMatrix);
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_filter_input(AId::In, &matrix.input);
+                            xml.write_svg_attribute(AId::Result, &fe.result);
+
+                            match matrix.kind {
+                                FeColorMatrixKind::Matrix(ref values) => {
+                                    xml.write_svg_attribute(AId::Type, "matrix");
+                                    xml.write_numbers(AId::Values, values);
+                                }
+                                FeColorMatrixKind::Saturate(value) => {
+                                    xml.write_svg_attribute(AId::Type, "saturate");
+                                    xml.write_svg_attribute(AId::Values, &value.value());
+                                }
+                                FeColorMatrixKind::HueRotate(angle) => {
+                                    xml.write_svg_attribute(AId::Type, "hueRotate");
+                                    xml.write_svg_attribute(AId::Values, &angle);
+                                }
+                                FeColorMatrixKind::LuminanceToAlpha => {
+                                    xml.write_svg_attribute(AId::Type, "luminanceToAlpha");
+                                }
+                            }
+
+                            xml.end_element();
+                        }
                     };
                 }
 
@@ -341,6 +367,7 @@ trait XmlWriterExt {
     fn write_visibility(&mut self, value: Visibility);
     fn write_func_iri(&mut self, aid: AId, id: &str);
     fn write_rect_attrs(&mut self, r: Rect);
+    fn write_numbers(&mut self, aid: AId, list: &[f64]);
     fn write_filter_input(&mut self, id: AId, input: &FilterInput);
     fn write_filter_primitive_attrs(&mut self, fe: &FilterPrimitive);
     fn write_filter_transfer_function(&mut self, eid: EId, fe: &TransferFunction);
@@ -412,6 +439,18 @@ impl XmlWriterExt for XmlWriter {
         self.write_svg_attribute(AId::Height, &r.height());
     }
 
+    fn write_numbers(&mut self, aid: AId, list: &[f64]) {
+        self.write_attribute_raw(aid.to_str(), |buf| {
+            for n in list {
+                buf.write_fmt(format_args!("{} ", n)).unwrap();
+            }
+
+            if !list.is_empty() {
+                buf.pop();
+            }
+        });
+    }
+
     fn write_filter_input(&mut self, id: AId, input: &FilterInput) {
         self.write_attribute(id.to_str(), match input {
             FilterInput::SourceGraphic      => "SourceGraphic",
@@ -445,27 +484,11 @@ impl XmlWriterExt for XmlWriter {
             }
             TransferFunction::Table(ref values) => {
                 self.write_svg_attribute(AId::Type, "table");
-                self.write_attribute_raw(AId::TableValues.to_str(), |buf| {
-                    for n in values {
-                        buf.write_fmt(format_args!("{} ", n)).unwrap();
-                    }
-
-                    if !values.is_empty() {
-                        buf.pop();
-                    }
-                });
+                self.write_numbers(AId::TableValues, values);
             }
             TransferFunction::Discrete(ref values) => {
                 self.write_svg_attribute(AId::Type, "discrete");
-                self.write_attribute_raw(AId::TableValues.to_str(), |buf| {
-                    for n in values {
-                        buf.write_fmt(format_args!("{} ", n)).unwrap();
-                    }
-
-                    if !values.is_empty() {
-                        buf.pop();
-                    }
-                });
+                self.write_numbers(AId::TableValues, values);
             }
             TransferFunction::Linear { slope, intercept } => {
                 self.write_svg_attribute(AId::Type, "linear");
@@ -709,15 +732,7 @@ fn write_stroke(
         }
 
         if let Some(ref array) = stroke.dasharray {
-            xml.write_attribute_raw(AId::StrokeDasharray.to_str(), |buf| {
-                for n in array {
-                    buf.write_fmt(format_args!("{} ", n)).unwrap();
-                }
-
-                if !array.is_empty() {
-                    buf.pop();
-                }
-            });
+            xml.write_numbers(AId::StrokeDasharray, array);
         }
     }
 }
