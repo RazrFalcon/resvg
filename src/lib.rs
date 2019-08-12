@@ -247,7 +247,7 @@ pub(crate) trait FlatRender {
     }
 
     fn draw_path_impl(&mut self, path: &usvg::Path) -> Option<Rect> {
-        let bbox = utils::path_bbox(&path.segments, None, None);
+        let bbox = utils::path_bbox(&path.segments);
         if path.visibility == usvg::Visibility::Visible {
             self.draw_path(path, bbox);
         }

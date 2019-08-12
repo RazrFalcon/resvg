@@ -277,11 +277,11 @@ fn calc_node_bbox(
 
     match *node.borrow() {
         NodeKind::Path(ref path) => {
-            utils::path_bbox(&path.segments, path.stroke.as_ref(), Some(ts2))
+            utils::path_bbox_with_transform(&path.segments, path.stroke.as_ref(), ts2)
         }
         NodeKind::Image(ref img) => {
             let segments = utils::rect_to_path(img.view_box.rect);
-            utils::path_bbox(&segments, None, Some(ts2))
+            utils::path_bbox_with_transform(&segments, None, ts2)
         }
         NodeKind::Svg(_) | NodeKind::Group(_) => {
             let mut bbox = Rect::new_bbox();

@@ -63,7 +63,7 @@ pub fn convert(
 
     let mut bbox = Rect::new_bbox();
     for path in &new_paths {
-        if let Some(r) = utils::path_bbox(&path.segments, None, None) {
+        if let Some(r) = utils::path_bbox(&path.segments) {
             bbox = bbox.expand(r);
         }
     }

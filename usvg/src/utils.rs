@@ -85,15 +85,70 @@ pub fn rect_to_path(
 /// Calculates path's bounding box.
 pub fn path_bbox(
     segments: &[tree::PathSegment],
-    stroke: Option<&tree::Stroke>,
-    ts: Option<tree::Transform>,
 ) -> Option<Rect> {
     debug_assert!(!segments.is_empty());
 
-    let ts = match ts {
-        Some(ts) => ts,
-        None => tree::Transform::default(),
-    };
+    let mut prev_x = 0.0;
+    let mut prev_y = 0.0;
+    let mut minx = 0.0;
+    let mut miny = 0.0;
+    let mut maxx = 0.0;
+    let mut maxy = 0.0;
+
+    if let tree::PathSegment::MoveTo { x, y } = segments[0].clone() {
+        prev_x = x;
+        prev_y = y;
+        minx = x;
+        miny = y;
+        maxx = x;
+        maxy = y;
+    }
+
+    for seg in segments.iter().cloned() {
+        match seg {
+              tree::PathSegment::MoveTo { x, y }
+            | tree::PathSegment::LineTo { x, y } => {
+                prev_x = x;
+                prev_y = y;
+
+                if x > maxx { maxx = x; }
+                else if x < minx { minx = x; }
+
+                if y > maxy { maxy = y; }
+                else if y < miny { miny = y; }
+            }
+            tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+                let curve = kurbo::CubicBez {
+                    p0: kurbo::Vec2::new(prev_x, prev_y),
+                    p1: kurbo::Vec2::new(x1, y1),
+                    p2: kurbo::Vec2::new(x2, y2),
+                    p3: kurbo::Vec2::new(x, y),
+                };
+
+                let r = curve.bounding_box();
+
+                if r.x0 < minx { minx = r.x0; }
+                if r.x1 > maxx { maxx = r.x1; }
+                if r.y0 < miny { miny = r.y0; }
+                if r.y1 > maxy { maxy = r.y1; }
+            }
+            tree::PathSegment::ClosePath => {}
+        }
+    }
+
+    let width = maxx - minx;
+    let height = maxy - miny;
+
+    Rect::new(minx, miny, width, height)
+}
+
+/// Calculates path's bounding box with a specified transform.
+pub fn path_bbox_with_transform(
+    segments: &[tree::PathSegment],
+    stroke: Option<&tree::Stroke>,
+    ts: tree::Transform,
+) -> Option<Rect> {
+    debug_assert!(!segments.is_empty());
 
     let mut prev_x = 0.0;
     let mut prev_y = 0.0;
@@ -244,11 +299,6 @@ impl<'a> Iterator for TransformedPath<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         if self.idx == self.segments.len() {
             return None;
-        }
-
-        if self.ts.is_default() {
-            self.idx += 1;
-            return self.segments.get(self.idx - 1).cloned();
         }
 
         let seg = match self.segments[self.idx] {
