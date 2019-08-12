@@ -134,6 +134,7 @@ macro_rules! try_opt_warn_or {
 macro_rules! impl_enum_default {
     ($name:ident, $def_value:ident) => {
         impl Default for $name {
+            #[inline]
             fn default() -> Self {
                 $name::$def_value
             }
@@ -193,6 +194,7 @@ pub trait IsDefault: Default {
 }
 
 impl<T: Default + PartialEq + Copy> IsDefault for T {
+    #[inline]
     fn is_default(&self) -> bool {
         *self == Self::default()
     }
@@ -206,6 +208,7 @@ pub trait IsValidLength {
 }
 
 impl IsValidLength for f64 {
+    #[inline]
     fn is_valid_length(&self) -> bool {
         *self > 0.0
     }
@@ -219,6 +222,7 @@ pub trait TransformFromBBox: Sized {
 }
 
 impl TransformFromBBox for tree::Transform {
+    #[inline]
     fn from_bbox(bbox: Rect) -> Self {
         Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
     }

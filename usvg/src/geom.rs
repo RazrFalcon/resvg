@@ -38,11 +38,13 @@ pub(crate) struct Line {
 
 impl Line {
     /// Creates a new line.
+    #[inline]
     pub fn new(x1: f64, y1: f64, x2: f64, y2: f64) -> Line {
         Line { x1, y1, x2, y2 }
     }
 
     /// Calculates the line length.
+    #[inline]
     pub fn length(&self) -> f64 {
         let x = self.x2 - self.x1;
         let y = self.y2 - self.y1;
@@ -76,6 +78,7 @@ pub struct Size {
 
 impl Size {
     /// Creates a new `Size` from values.
+    #[inline]
     pub fn new(width: f64, height: f64) -> Option<Self> {
         if width.is_valid_length() && height.is_valid_length() {
             Some(Size { width, height })
@@ -85,16 +88,19 @@ impl Size {
     }
 
     /// Returns width.
+    #[inline]
     pub fn width(&self) -> f64 {
         self.width
     }
 
     /// Returns height.
+    #[inline]
     pub fn height(&self) -> f64 {
         self.height
     }
 
     /// Converts the current size to `Rect` at provided position.
+    #[inline]
     pub fn to_rect(&self, x: f64, y: f64) -> Rect {
         Rect::new(x, y, self.width, self.height).unwrap()
     }
@@ -113,6 +119,7 @@ impl fmt::Display for Size {
 }
 
 impl FuzzyEq for Size {
+    #[inline]
     fn fuzzy_eq(&self, other: &Self) -> bool {
            self.width.fuzzy_eq(&other.width)
         && self.height.fuzzy_eq(&other.height)
@@ -133,6 +140,7 @@ pub struct Rect {
 
 impl Rect {
     /// Creates a new `Rect` from values.
+    #[inline]
     pub fn new(x: f64, y: f64, width: f64, height: f64) -> Option<Self> {
         if width.is_valid_length() && height.is_valid_length() {
             Some(Rect { x, y, width, height })
@@ -144,56 +152,67 @@ impl Rect {
     /// Creates a new `Rect` for bounding box calculation.
     ///
     /// Shorthand for `Rect::new(f64::MAX, f64::MAX, 1.0, 1.0)`.
+    #[inline]
     pub fn new_bbox() -> Self {
         Rect::new(f64::MAX, f64::MAX, 1.0, 1.0).unwrap()
     }
 
     /// Returns rect's size.
+    #[inline]
     pub fn size(&self) -> Size {
         Size::new(self.width, self.height).unwrap()
     }
 
     /// Returns rect's X position.
+    #[inline]
     pub fn x(&self) -> f64 {
         self.x
     }
 
     /// Returns rect's Y position.
+    #[inline]
     pub fn y(&self) -> f64 {
         self.y
     }
 
     /// Returns rect's width.
+    #[inline]
     pub fn width(&self) -> f64 {
         self.width
     }
 
     /// Returns rect's height.
+    #[inline]
     pub fn height(&self) -> f64 {
         self.height
     }
 
     /// Returns rect's left edge position.
+    #[inline]
     pub fn left(&self) -> f64 {
         self.x
     }
 
     /// Returns rect's right edge position.
+    #[inline]
     pub fn right(&self) -> f64 {
         self.x + self.width
     }
 
     /// Returns rect's top edge position.
+    #[inline]
     pub fn top(&self) -> f64 {
         self.y
     }
 
     /// Returns rect's bottom edge position.
+    #[inline]
     pub fn bottom(&self) -> f64 {
         self.y + self.height
     }
 
     /// Translates the rect by the specified offset.
+    #[inline]
     pub fn translate(&self, tx: f64, ty: f64) -> Self {
         Rect {
             x: self.x + tx,
@@ -204,6 +223,7 @@ impl Rect {
     }
 
     /// Translates the rect to the specified position.
+    #[inline]
     pub fn translate_to(&self, x: f64, y: f64) -> Self {
         Rect {
             x,
@@ -214,6 +234,7 @@ impl Rect {
     }
 
     /// Checks that the rect contains a point.
+    #[inline]
     pub fn contains(&self, x: f64, y: f64) -> bool {
         if x < self.x || x > self.x + self.width - 1.0 {
             return false;
@@ -227,6 +248,7 @@ impl Rect {
     }
 
     /// Expands the `Rect` to the provided size.
+    #[inline]
     pub fn expand(&self, r: Rect) -> Self {
         #[inline]
         fn f64_min(v1: f64, v2: f64) -> f64 {
@@ -253,6 +275,7 @@ impl Rect {
 }
 
 impl FuzzyEq for Rect {
+    #[inline]
     fn fuzzy_eq(&self, other: &Self) -> bool {
            self.x.fuzzy_eq(&other.x)
         && self.y.fuzzy_eq(&other.y)

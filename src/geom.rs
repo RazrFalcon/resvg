@@ -25,6 +25,7 @@ pub struct ScreenSize {
 
 impl ScreenSize {
     /// Creates a new `ScreenSize` from values.
+    #[inline]
     pub fn new(width: u32, height: u32) -> Option<Self> {
         if width > 0 && height > 0 {
             Some(ScreenSize { width, height })
@@ -34,31 +35,37 @@ impl ScreenSize {
     }
 
     /// Returns width.
+    #[inline]
     pub fn width(&self) -> u32 {
         self.width
     }
 
     /// Returns height.
+    #[inline]
     pub fn height(&self) -> u32 {
         self.height
     }
 
     /// Returns width and height as a tuple.
+    #[inline]
     pub fn dimensions(&self) -> (u32, u32) {
         (self.width, self.height)
     }
 
     /// Scales current size to specified size.
+    #[inline]
     pub fn scale_to(&self, to: Self) -> Self {
         size_scale(*self, to, false)
     }
 
     /// Expands current size to specified size.
+    #[inline]
     pub fn expand_to(&self, to: Self) -> Self {
         size_scale(*self, to, true)
     }
 
     /// Converts the current `ScreenSize` to `Size`.
+    #[inline]
     pub fn to_size(&self) -> Size {
         // Can't fail, because `ScreenSize` is always valid.
         Size::new(self.width as f64, self.height as f64).unwrap()
@@ -85,6 +92,7 @@ pub trait SizeExt {
 }
 
 impl SizeExt for Size {
+    #[inline]
     fn to_screen_size(&self) -> ScreenSize {
         ScreenSize::new(
             cmp::max(1, self.width().round() as u32),
@@ -159,10 +167,12 @@ impl RectExt for Rect {
         }
     }
 
+    #[inline]
     fn to_screen_size(&self) -> ScreenSize {
         self.size().to_screen_size()
     }
 
+    #[inline]
     fn to_screen_rect(&self) -> ScreenRect {
         ScreenRect::new(
             self.x() as i32,
@@ -188,6 +198,7 @@ pub struct ScreenRect {
 
 impl ScreenRect {
     /// Creates a new `Rect` from values.
+    #[inline]
     pub fn new(x: i32, y: i32, width: u32, height: u32) -> Option<Self> {
         if width > 0 && height > 0 {
             Some(ScreenRect { x, y, width, height })
@@ -197,52 +208,62 @@ impl ScreenRect {
     }
 
     /// Returns rect's size.
+    #[inline]
     pub fn size(&self) -> ScreenSize {
         // Can't fail, because `ScreenSize` is always valid.
         ScreenSize::new(self.width, self.height).unwrap()
     }
 
     /// Returns rect's X position.
+    #[inline]
     pub fn x(&self) -> i32 {
         self.x
     }
 
     /// Returns rect's Y position.
+    #[inline]
     pub fn y(&self) -> i32 {
         self.y
     }
 
     /// Returns rect's width.
+    #[inline]
     pub fn width(&self) -> u32 {
         self.width
     }
 
     /// Returns rect's height.
+    #[inline]
     pub fn height(&self) -> u32 {
         self.height
     }
 
     /// Returns rect's left edge position.
+    #[inline]
     pub fn left(&self) -> i32 {
         self.x
     }
 
     /// Returns rect's right edge position.
+    #[inline]
     pub fn right(&self) -> i32 {
         self.x + self.width as i32
     }
 
     /// Returns rect's top edge position.
+    #[inline]
     pub fn top(&self) -> i32 {
         self.y
     }
 
     /// Returns rect's bottom edge position.
+    #[inline]
     pub fn bottom(&self) -> i32 {
         self.y + self.height as i32
     }
 
     /// Translates the rect by the specified offset.
+    #[inline]
     pub fn translate(&self, tx: i32, ty: i32) -> Self {
         ScreenRect {
             x: self.x + tx,
@@ -253,6 +274,7 @@ impl ScreenRect {
     }
 
     /// Translates the rect to the specified position.
+    #[inline]
     pub fn translate_to(&self, x: i32, y: i32) -> Self {
         ScreenRect {
             x,
@@ -263,6 +285,7 @@ impl ScreenRect {
     }
 
     /// Checks that rect contains a point.
+    #[inline]
     pub fn contains(&self, x: i32, y: i32) -> bool {
         if x < self.x || x > self.x + self.width as i32 - 1 {
             return false;
@@ -276,6 +299,7 @@ impl ScreenRect {
     }
 
     /// Fits the current rect into the specified bounds.
+    #[inline]
     pub fn fit_to_rect(&self, bounds: ScreenRect) -> Self {
         let mut r = *self;
 
@@ -294,6 +318,7 @@ impl ScreenRect {
     }
 
     /// Converts into `Rect`.
+    #[inline]
     pub fn to_rect(&self) -> Rect {
         // Can't fail, because `ScreenRect` is always valid.
         Rect::new(self.x as f64, self.y as f64, self.width as f64, self.height as f64).unwrap()

@@ -84,11 +84,13 @@ impl Tree {
     }
 
     /// Returns the `Svg` node.
+    #[inline]
     pub fn root(&self) -> Node {
         self.root.clone()
     }
 
     /// Returns the `Svg` node value.
+    #[inline]
     pub fn svg_node(&self) -> Ref<Svg> {
         Ref::map(self.root.borrow(), |v| {
             match *v {
@@ -99,6 +101,7 @@ impl Tree {
     }
 
     /// Returns the `Defs` node.
+    #[inline]
     pub fn defs(&self) -> Node {
         self.root.first_child().unwrap()
     }
@@ -151,6 +154,7 @@ impl Tree {
     }
 
     /// Converts an SVG.
+    #[inline]
     pub fn to_string(&self, opt: XmlOptions) -> String {
         export::convert(self, opt)
     }
@@ -191,10 +195,12 @@ pub trait NodeExt {
 }
 
 impl NodeExt for Node {
+    #[inline]
     fn id(&self) -> Ref<str> {
         Ref::map(self.borrow(), |v| v.id())
     }
 
+    #[inline]
     fn transform(&self) -> Transform {
         self.borrow().transform()
     }
@@ -213,16 +219,19 @@ impl NodeExt for Node {
         abs_ts
     }
 
+    #[inline]
     fn append_kind(&mut self, kind: NodeKind) -> Node {
         let new_node = Node::new(kind);
         self.append(new_node.clone());
         new_node
     }
 
+    #[inline]
     fn tree(&self) -> Tree {
         Tree { root: self.root() }
     }
 
+    #[inline]
     fn calculate_bbox(&self) -> Option<Rect> {
         calc_node_bbox(self, self.abs_transform())
     }

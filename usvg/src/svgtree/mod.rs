@@ -712,6 +712,7 @@ pub trait EnumFromStr: Sized {
 }
 
 impl<'a, T: EnumFromStr> FromValue<'a> for T {
+    #[inline]
     fn get(node: Node, aid: AId) -> Option<Self> {
         EnumFromStr::enum_from_str(node.attribute(aid)?)
     }
@@ -754,6 +755,7 @@ impl EId {
 }
 
 impl AId {
+    #[inline]
     pub fn is_presentation(&self) -> bool {
         matches!(self,
               AId::BaselineShift
@@ -811,6 +813,7 @@ impl AId {
         }
     }
 
+    #[inline]
     pub fn allows_inherit_value(&self) -> bool {
         matches!(self,
               AId::BaselineShift

@@ -11,12 +11,14 @@ use crate::geom::f64_bound;
 macro_rules! wrap {
     ($name:ident) => {
         impl From<f64> for $name {
+            #[inline]
             fn from(n: f64) -> Self {
                 $name::new(n)
             }
         }
 
         impl PartialEq for $name {
+            #[inline]
             fn eq(&self, other: &Self) -> bool {
                 self.0.fuzzy_eq(&other.0)
             }
@@ -33,6 +35,7 @@ pub struct NormalizedValue(f64);
 
 impl NormalizedValue {
     /// Creates a new `NormalizedValue` value.
+    #[inline]
     pub fn new(n: f64) -> Self {
         debug_assert!(n.is_finite());
         debug_assert!(n >= 0.0 && n <= 1.0);
@@ -49,12 +52,14 @@ impl NormalizedValue {
 impl std::ops::Mul<NormalizedValue> for NormalizedValue {
     type Output = Self;
 
+    #[inline]
     fn mul(self, rhs: NormalizedValue) -> Self::Output {
         NormalizedValue::new(self.0 * rhs.0)
     }
 }
 
 impl Default for NormalizedValue {
+    #[inline]
     fn default() -> Self {
         NormalizedValue::new(1.0)
     }
@@ -80,6 +85,7 @@ pub struct StrokeWidth(f64);
 
 impl StrokeWidth {
     /// Creates a new `StrokeWidth` value.
+    #[inline]
     pub fn new(n: f64) -> Self {
         debug_assert!(n.is_finite());
         debug_assert!(n > 0.0);
@@ -98,6 +104,7 @@ impl StrokeWidth {
 }
 
 impl Default for StrokeWidth {
+    #[inline]
     fn default() -> Self {
         StrokeWidth::new(1.0)
     }
@@ -114,6 +121,7 @@ pub struct StrokeMiterlimit(f64);
 
 impl StrokeMiterlimit {
     /// Creates a new `StrokeMiterlimit` value.
+    #[inline]
     pub fn new(n: f64) -> Self {
         debug_assert!(n.is_finite());
         debug_assert!(n >= 1.0);
@@ -131,6 +139,7 @@ impl StrokeMiterlimit {
 }
 
 impl Default for StrokeMiterlimit {
+    #[inline]
     fn default() -> Self {
         StrokeMiterlimit::new(4.0)
     }
@@ -147,6 +156,7 @@ pub struct FontSize(f64);
 
 impl FontSize {
     /// Creates a new `FontSize` value.
+    #[inline]
     pub fn new(n: f64) -> Self {
         debug_assert!(n.is_finite());
         debug_assert!(n > 0.0);
@@ -175,6 +185,7 @@ pub struct PositiveNumber(f64);
 
 impl PositiveNumber {
     /// Creates a new `PositiveNumber` value.
+    #[inline]
     pub fn new(n: f64) -> Self {
         debug_assert!(n.is_finite());
         debug_assert!(!n.is_sign_negative());
@@ -192,6 +203,7 @@ impl PositiveNumber {
     }
 
     /// Checks that the current number is zero.
+    #[inline]
     pub fn is_zero(&self) -> bool {
         self.0.is_fuzzy_zero()
     }
