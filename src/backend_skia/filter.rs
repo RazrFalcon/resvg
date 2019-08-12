@@ -396,11 +396,20 @@ impl Filter<skia::Surface> for SkiaFilter {
         let input = input.into_color_space(cs)?;
         let mut buffer = input.take()?;
 
-        for pixel in buffer.data_mut().as_rgba_mut() {
-            pixel.r = fe.func_r.apply(pixel.r);
-            pixel.g = fe.func_g.apply(pixel.g);
-            pixel.b = fe.func_b.apply(pixel.b);
-            pixel.a = fe.func_a.apply(pixel.a);
+        if skia::Surface::is_bgra() {
+            for pixel in buffer.data_mut().as_bgra_mut() {
+                pixel.r = fe.func_r.apply(pixel.r);
+                pixel.g = fe.func_g.apply(pixel.g);
+                pixel.b = fe.func_b.apply(pixel.b);
+                pixel.a = fe.func_a.apply(pixel.a);
+            }
+        } else {
+            for pixel in buffer.data_mut().as_rgba_mut() {
+                pixel.r = fe.func_r.apply(pixel.r);
+                pixel.g = fe.func_g.apply(pixel.g);
+                pixel.b = fe.func_b.apply(pixel.b);
+                pixel.a = fe.func_a.apply(pixel.a);
+            }
         }
 
         Ok(Image::from_image(buffer, cs))
@@ -418,12 +427,16 @@ impl Filter<skia::Surface> for SkiaFilter {
         let mut data = buffer.data_mut();
 
         // RGBA -> BGRA.
-        data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+        if !skia::Surface::is_bgra() {
+            data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+        }
 
         filter::color_matrix::apply(&fe.kind, data.as_bgra_mut());
 
         // BGRA -> RGBA.
-        data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+        if !skia::Surface::is_bgra() {
+            data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+        }
 
         Ok(Image::from_image(buffer, cs))
     }
