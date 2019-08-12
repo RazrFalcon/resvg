@@ -10,7 +10,7 @@ workspace = "../../"
 [dependencies]
 fern = "0.5"
 log = "0.4"
-pico-args = "0.1"
+pico-args = "0.2"
 resvg = { path = "../../" }
 time = "0.1"
 

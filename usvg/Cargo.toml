@@ -34,7 +34,7 @@ svgtypes = "0.5"
 # for text to path
 harfbuzz_rs = "1.0"
 memmap = "0.7"
-ttf-parser = "=0.2.0"
+ttf-parser = "0.2.2"
 unicode-bidi = "0.3"
 unicode-script = "0.3"
 unicode-vo = "0.1"
