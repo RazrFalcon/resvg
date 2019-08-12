@@ -106,7 +106,7 @@ fn process() -> Result<(), String> {
         };
 
         match img {
-            Some(img) => { timed!("Saving", img.save(out_png)); }
+            Some(mut img) => { timed!("Saving", img.save_png(out_png)); }
             None => { bail!("failed to allocate an image") }
         }
     };

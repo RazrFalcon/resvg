@@ -1,6 +1,7 @@
 #include <QGuiApplication>
 #include <QImage>
 #include <QPainter>
+#include <QImageWriter>
 #include <QDebug>
 
 #include "qt_capi.hpp"
@@ -87,7 +88,9 @@ uint32_t qtc_qimage_get_height(qtc_qimage *c_img)
 
 bool qtc_qimage_save(qtc_qimage *c_img, const char *path)
 {
-    return IMAGE_CAST->save(QString::fromUtf8(path));
+    QImageWriter writer(QString::fromUtf8(path));
+    writer.setCompression(20); // Use a lower ratio to speed up compression.
+    return writer.write(*IMAGE_CAST);
 }
 
 void qtc_qimage_destroy(qtc_qimage *c_img)

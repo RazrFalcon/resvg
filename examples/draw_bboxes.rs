@@ -51,6 +51,6 @@ fn main() {
         }));
     }
 
-    let img = resvg::default_backend().render_to_image(&rtree, &opt).unwrap();
-    img.save(std::path::Path::new(&args[2]));
+    let mut img = resvg::default_backend().render_to_image(&rtree, &opt).unwrap();
+    img.save_png(std::path::Path::new(&args[2]));
 }

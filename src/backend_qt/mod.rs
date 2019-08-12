@@ -67,8 +67,8 @@ impl Render for Backend {
 }
 
 impl OutputImage for qt::Image {
-    fn save(
-        &self,
+    fn save_png(
+        &mut self,
         path: &std::path::Path,
     ) -> bool {
         self.save(path.to_str().unwrap())

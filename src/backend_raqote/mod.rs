@@ -112,7 +112,7 @@ impl Render for Backend {
 }
 
 impl OutputImage for raqote::DrawTarget {
-    fn save(&self, path: &::std::path::Path) -> bool {
+    fn save_png(&mut self, path: &::std::path::Path) -> bool {
         self.write_png(path).is_ok()
     }
 }

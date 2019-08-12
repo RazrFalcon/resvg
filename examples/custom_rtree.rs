@@ -56,6 +56,6 @@ fn main() {
 
     println!("{}", rtree.to_string(usvg::XmlOptions::default()));
 
-    let img = backend.render_to_image(&rtree, &opt).unwrap();
-    img.save(std::path::Path::new("out.png"));
+    let mut img = backend.render_to_image(&rtree, &opt).unwrap();
+    img.save_png(std::path::Path::new("out.png"));
 }

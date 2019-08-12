@@ -14,6 +14,7 @@
 #include <include/core/SkSurface.h>
 #include <include/effects/SkDashPathEffect.h>
 #include <include/effects/SkGradientShader.h>
+#include <include/encode/SkPngEncoder.h>
 #endif
 
 #include <math.h>
@@ -89,9 +90,6 @@ bool skiac_surface_save(skiac_surface* c_surface, const char *path)
     sk_sp<SkImage> image = SURFACE_CAST->makeImageSnapshot();
 #ifdef SKIA_VER_M58
     SkData *data = image->encode(SkEncodedImageFormat::kPNG, 0);
-#else
-    sk_sp<SkData> data = image->encodeToData(SkEncodedImageFormat::kPNG, 0);
-#endif
     if (data) {
         SkFILEWStream stream(path);
         if (stream.write(data->data(), data->size())) {
@@ -99,6 +97,17 @@ bool skiac_surface_save(skiac_surface* c_surface, const char *path)
             return true;
         }
     }
+#else
+    SkPngEncoder::Options opt;
+    opt.fZLibLevel = 2; // Use a lower ratio to speed up compression.
+
+    SkPixmap pixmap;
+    if (SURFACE_CAST->getCanvas()->peekPixels(&pixmap)) {
+        SkFILEWStream stream(path);
+        SkPngEncoder::Encode(&stream, pixmap, opt);
+        return true;
+    }
+#endif
 
     return false;
 }

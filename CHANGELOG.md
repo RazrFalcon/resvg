@@ -8,7 +8,7 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
-- (resvg) A [Skia](https://skia.org/) backend thanks to
+- A [Skia](https://skia.org/) backend thanks to
   [JaFenix](https://github.com/JaFenix).
 - `feComponentTransfer` support.
 - `feColorMatrix` support.
@@ -23,6 +23,9 @@ This changelog also contains important changes in dependencies.
 - (usvg) The `xmlwriter` is used for SVG generation now.
   Almost 2x faster than generating an `svgdom`.
 - (usvg) Optimize font database initialization. Almost 50% faster.
+- Use a lower PNG compression ratio to speed up PNG generation.
+  Depending on a backend and image can be 2-4x faster.
+- `OutputImage::save` -> `OutputImage::save_png`.
 
 ### Fixed
 - (qt-api) A default font resolving.

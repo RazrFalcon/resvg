@@ -93,8 +93,8 @@ pub trait Render {
 /// A generic interface for output image.
 pub trait OutputImage {
     /// Saves rendered image to the selected path.
-    fn save(
-        &self,
+    fn save_png(
+        &mut self,
         path: &std::path::Path,
     ) -> bool;
 }

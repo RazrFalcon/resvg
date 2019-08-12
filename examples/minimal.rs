@@ -12,6 +12,6 @@ fn main() {
 
     let rtree = usvg::Tree::from_file(&args[1], &opt.usvg).unwrap();
     let backend = resvg::default_backend();
-    let img = backend.render_to_image(&rtree, &opt).unwrap();
-    img.save(std::path::Path::new(&args[2]));
+    let mut img = backend.render_to_image(&rtree, &opt).unwrap();
+    img.save_png(std::path::Path::new(&args[2]));
 }

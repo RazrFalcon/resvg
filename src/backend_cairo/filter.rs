@@ -122,7 +122,7 @@ fn copy_image(
     Ok(new_image)
 }
 
-fn from_premultiplied(data: &mut [u8]) {
+pub(crate) fn from_premultiplied(data: &mut [u8]) {
     // https://www.cairographics.org/manual/cairo-Image-Surfaces.html#cairo-format-t
 
     for p in data.as_bgra_mut() {

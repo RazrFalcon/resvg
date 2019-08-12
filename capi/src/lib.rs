@@ -307,14 +307,14 @@ fn render_to_image(
     });
 
     let img = backend.render_to_image(&tree.0, &opt);
-    let img = match img {
+    let mut img = match img {
         Some(img) => img,
         None => {
             return ErrorId::NoCanvas as i32;
         }
     };
 
-    match img.save(path::Path::new(file_path)) {
+    match img.save_png(path::Path::new(file_path)) {
         true => ErrorId::Ok as i32,
         false => ErrorId::FileWriteFailed as i32,
     }

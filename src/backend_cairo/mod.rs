@@ -90,19 +90,34 @@ impl Render for Backend {
 }
 
 impl OutputImage for cairo::ImageSurface {
-    fn save(
-        &self,
+    fn save_png(
+        &mut self,
         path: &std::path::Path,
     ) -> bool {
-        use std::fs;
+        // Cairo doesn't support custom compression levels,
+        // so we are using the `png` crate to save a surface manually.
 
-        if let Ok(mut buffer) = fs::File::create(path) {
-            if self.write_to_png(&mut buffer).is_ok() {
-                return true;
-            }
-        }
+        use usvg::try_opt_or;
+        use rgb::FromSlice;
+        use std::mem::swap;
 
-        false
+        let file = try_opt_or!(std::fs::File::create(path).ok(), false);
+        let ref mut w = std::io::BufWriter::new(file);
+
+        let mut encoder = png::Encoder::new(w, self.get_width() as u32, self.get_height() as u32);
+        encoder.set_color(png::ColorType::RGBA);
+        encoder.set_depth(png::BitDepth::Eight);
+        let mut writer = try_opt_or!(encoder.write_header().ok(), false);
+
+        let mut img = try_opt_or!(self.get_data().ok(), false).to_vec();
+
+        // BGRA_Premultiplied -> BGRA
+        filter::from_premultiplied(&mut img);
+        // BGRA -> RGBA.
+        img.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+
+        try_opt_or!(writer.write_image_data(&img).ok(), false);
+        true
     }
 }
 
