@@ -23,18 +23,18 @@ kurbo = "0.2.3"
 libflate = "0.1.25"
 log = "0.4"
 rctree = "0.3"
-xmlwriter = { git = "https://github.com/RazrFalcon/xmlwriter", rev = "dac292c" }
+xmlwriter = "0.1"
 
 # for svgtree
 roxmltree = "0.7"
 simplecss = { git = "https://github.com/RazrFalcon/simplecss", rev = "9b5be32" }
 siphasher = "0.2.3"
-svgtypes = { git = "https://github.com/RazrFalcon/svgtypes", rev = "6489791" }
+svgtypes = "0.5"
 
 # for text to path
 harfbuzz_rs = "1.0"
 memmap = "0.7"
-ttf-parser = "0.2"
+ttf-parser = "=0.2.0"
 unicode-bidi = "0.3"
 unicode-script = "0.3"
 unicode-vo = "0.1"

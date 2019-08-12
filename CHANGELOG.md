@@ -22,6 +22,7 @@ This changelog also contains important changes in dependencies.
   and `tools/usvg`.
 - (usvg) The `xmlwriter` is used for SVG generation now.
   Almost 2x faster than generating an `svgdom`.
+- (usvg) Optimize font database initialization. Almost 50% faster.
 
 ### Fixed
 - (qt-api) A default font resolving.
