@@ -564,6 +564,13 @@ fn convert_path(
         visibility = tree::Visibility::Hidden
     }
 
+    let mut markers_group = None;
+    if visibility == tree::Visibility::Visible {
+        let mut g = parent.append_kind(tree::NodeKind::Group(tree::Group::default()));
+        marker::convert(node, &path, state, &mut g, tree);
+        markers_group = Some(g);
+    }
+
     parent.append_kind(tree::NodeKind::Path(tree::Path {
         id: node.element_id().to_string(),
         transform: Default::default(),
@@ -571,11 +578,13 @@ fn convert_path(
         fill,
         stroke,
         rendering_mode,
-        data: path.clone(), // TODO: remove
+        data: path,
     }));
 
-    if visibility == tree::Visibility::Visible {
-        marker::convert(node, &path, state, parent, tree);
+    // Insert markers group after `path`.
+    if let Some(mut g) = markers_group {
+        g.detach();
+        parent.append(g);
     }
 }
 
