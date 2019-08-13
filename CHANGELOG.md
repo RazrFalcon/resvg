@@ -26,6 +26,7 @@ This changelog also contains important changes in dependencies.
 - Use a lower PNG compression ratio to speed up PNG generation.
   Depending on a backend and image can be 2-4x faster.
 - `OutputImage::save` -> `OutputImage::save_png`.
+- (usvg) `Path::segments` -> `Path::data`.
 
 ### Fixed
 - (qt-api) A default font resolving.

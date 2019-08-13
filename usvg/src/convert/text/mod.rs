@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{svgtree, tree, tree::prelude::*, utils};
+use crate::{svgtree, tree, tree::prelude::*};
 use super::prelude::*;
 
 mod convert;
@@ -63,7 +63,7 @@ pub fn convert(
 
     let mut bbox = Rect::new_bbox();
     for path in &new_paths {
-        if let Some(r) = utils::path_bbox(&path.segments) {
+        if let Some(r) = path.data.bbox() {
             bbox = bbox.expand(r);
         }
     }
@@ -201,7 +201,7 @@ fn convert_span(
     parent: &mut tree::Node,
     dump_clusters: bool,
 ) -> Option<tree::Path> {
-    let mut segments = Vec::new();
+    let mut data = tree::PathData::new();
 
     for cluster in clusters {
         if !cluster.visible {
@@ -215,14 +215,14 @@ fn convert_span(
                 dump_cluster(cluster, ts, parent);
             }
 
-            let mut path = std::mem::replace(&mut cluster.path, Vec::new());
-            utils::transform_path(&mut path, &cluster.transform);
+            let mut path = std::mem::replace(&mut cluster.path, tree::PathData::new());
+            path.transform(cluster.transform);
 
-            segments.extend_from_slice(&path);
+            data.extend_from_slice(&path);
         }
     }
 
-    if segments.is_empty() {
+    if data.is_empty() {
         return None;
     }
 
@@ -240,7 +240,7 @@ fn convert_span(
         fill,
         stroke: span.stroke.take(),
         rendering_mode: tree::ShapeRendering::default(),
-        segments,
+        data,
     };
 
     Some(path)
@@ -268,15 +268,15 @@ fn dump_cluster(
     // Cluster bbox.
     let r = Rect::new(0.0, -cluster.ascent, cluster.advance, cluster.height()).unwrap();
     base_path.stroke = new_stroke(tree::Color::blue());
-    base_path.segments = utils::rect_to_path(r);
+    base_path.data = tree::PathData::from_rect(r);
     parent.append_kind(tree::NodeKind::Path(base_path.clone()));
 
     // Baseline.
     base_path.stroke = new_stroke(tree::Color::red());
-    base_path.segments = vec![
+    base_path.data = tree::PathData(vec![
         tree::PathSegment::MoveTo { x: 0.0,             y: 0.0 },
         tree::PathSegment::LineTo { x: cluster.advance, y: 0.0 },
-    ];
+    ]);
     parent.append_kind(tree::NodeKind::Path(base_path));
 }
 
@@ -327,7 +327,7 @@ fn convert_decoration(
 
     let thickness = span.font.underline_thickness(span.font_size);
 
-    let mut segments = Vec::new();
+    let mut path = tree::PathData::new();
     for dec_span in decoration_spans {
         let rect = Rect::new(
             0.0,
@@ -336,12 +336,12 @@ fn convert_decoration(
             thickness,
         ).unwrap();
 
-        let start_idx = segments.len();
-        add_rect_to_path(rect, &mut segments);
+        let start_idx = path.len();
+        add_rect_to_path(rect, &mut path);
 
         let mut ts = dec_span.transform;
         ts.translate(0.0, dy);
-        utils::transform_path(&mut segments[start_idx..], &ts);
+        path.transform_from(start_idx, ts);
     }
 
     tree::Path {
@@ -351,7 +351,7 @@ fn convert_decoration(
         fill: decoration.fill.take(),
         stroke: decoration.stroke.take(),
         rendering_mode: tree::ShapeRendering::default(),
-        segments,
+        data: path,
     }
 }
 

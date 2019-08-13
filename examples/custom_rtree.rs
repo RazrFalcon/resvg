@@ -51,7 +51,7 @@ fn main() {
         fill,
         stroke: None,
         rendering_mode: usvg::ShapeRendering::default(),
-        segments: utils::rect_to_path(Rect::new(20.0, 20.0, 160.0, 160.0).unwrap()),
+        data: usvg::PathData::from_rect(Rect::new(20.0, 20.0, 160.0, 160.0).unwrap()),
     }));
 
     println!("{}", rtree.to_string(usvg::XmlOptions::default()));

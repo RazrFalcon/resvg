@@ -610,7 +610,7 @@ fn write_path(
     xml.write_transform(AId::Transform, path.transform);
 
     xml.write_attribute_raw("d", |buf| {
-        for seg in &path.segments {
+        for seg in path.data.iter() {
             match *seg {
                 PathSegment::MoveTo { x, y } => {
                     buf.extend_from_slice(b"M ");
@@ -647,7 +647,7 @@ fn write_path(
             }
         }
 
-        if !path.segments.is_empty() {
+        if !path.data.is_empty() {
             buf.pop();
         }
     });

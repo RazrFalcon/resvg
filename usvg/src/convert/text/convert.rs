@@ -5,7 +5,7 @@
 use std::cmp;
 use std::rc::Rc;
 
-use crate::{fontdb, svgtree, tree, utils};
+use crate::{fontdb, svgtree, tree};
 use crate::convert::{prelude::*, style, units};
 use super::TextNode;
 
@@ -59,7 +59,7 @@ pub struct TextPath {
     /// Percentage values already resolved.
     pub start_offset: f64,
 
-    pub segments: Vec<tree::PathSegment>,
+    pub path: tree::PathData,
 }
 
 
@@ -309,9 +309,9 @@ fn resolve_text_flow(
     }
 
     let path = path_node.attribute::<svgtypes::Path>(AId::D)?;
-    let segments = crate::convert::path::convert(path);
+    let path = crate::convert::path::convert(path);
 
-    if segments.len() < 2 {
+    if path.len() < 2 {
         return None;
     }
 
@@ -319,7 +319,7 @@ fn resolve_text_flow(
     let start_offset = if start_offset.unit == Unit::Percent {
         // 'If a percentage is given, then the `startOffset` represents
         // a percentage distance along the entire path.'
-        let path_len = utils::path_length(&segments);
+        let path_len = path.length();
         path_len * (start_offset.num / 100.0)
     } else {
         node.resolve_length(AId::StartOffset, state, 0.0)
@@ -327,7 +327,7 @@ fn resolve_text_flow(
 
     Some(TextFlow::Path(Rc::new(TextPath {
         start_offset,
-        segments,
+        path,
     })))
 }
 

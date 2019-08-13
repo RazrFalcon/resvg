@@ -19,7 +19,7 @@ pub fn draw(
         is_butt_cap = stroke.linecap == usvg::LineCap::Butt;
     }
 
-    let mut segments = conv_path(&path.segments, is_butt_cap);
+    let mut new_path = conv_path(&path.data, is_butt_cap);
 
     // `usvg` guaranties that path without a bbox will not use
     // a paint server with ObjectBoundingBox,
@@ -28,8 +28,8 @@ pub fn draw(
 
     if let Some(ref fill) = path.fill {
         match fill.rule {
-            usvg::FillRule::NonZero => segments.winding = raqote::Winding::NonZero,
-            usvg::FillRule::EvenOdd => segments.winding = raqote::Winding::EvenOdd,
+            usvg::FillRule::NonZero => new_path.winding = raqote::Winding::NonZero,
+            usvg::FillRule::EvenOdd => new_path.winding = raqote::Winding::EvenOdd,
         }
     }
 
@@ -38,68 +38,36 @@ pub fn draw(
         draw_opt.antialias = raqote::AntialiasMode::None;
     }
 
-    style::fill(tree, &segments, &path.fill, opt, style_bbox, &draw_opt, dt);
-    style::stroke(tree, &segments, &path.stroke, opt, style_bbox, &draw_opt, dt);
+    style::fill(tree, &new_path, &path.fill, opt, style_bbox, &draw_opt, dt);
+    style::stroke(tree, &new_path, &path.stroke, opt, style_bbox, &draw_opt, dt);
 }
 
 fn conv_path(
-    segments: &[usvg::PathSegment],
+    path: &usvg::PathData,
     is_butt_cap: bool,
 ) -> raqote::Path {
     let mut pb = raqote::PathBuilder::new();
 
-    let mut i = 0;
-    loop {
-        let subpath = get_subpath(i, segments);
-        if subpath.is_empty() {
-            break;
-        }
-
+    for subpath in path.subpaths() {
         conv_subpath(subpath, is_butt_cap, &mut pb);
-        i += subpath.len();
     }
 
     pb.finish()
 }
 
-fn get_subpath(
-    start: usize,
-    segments: &[usvg::PathSegment],
-) -> &[usvg::PathSegment] {
-    let mut i = start;
-    while i < segments.len() {
-        match segments[i] {
-            usvg::PathSegment::MoveTo { .. } => {
-                if i != start {
-                    break;
-                }
-            }
-            usvg::PathSegment::ClosePath => {
-                i += 1;
-                break;
-            }
-            _ => {}
-        }
-
-        i += 1;
-    }
-
-    &segments[start..i]
-}
-
 fn conv_subpath(
-    segments: &[usvg::PathSegment],
+    path: usvg::SubPathData,
     is_butt_cap: bool,
     pb: &mut raqote::PathBuilder,
 ) {
-    assert_ne!(segments.len(), 0);
+    assert_ne!(path.len(), 0);
 
     // Raqote doesn't support line caps on zero-length subpaths,
     // so we have to implement them manually.
-    let is_zero_path = !is_butt_cap && utils::path_length(segments).is_fuzzy_zero();
+    let is_zero_path = !is_butt_cap && path.length().is_fuzzy_zero();
 
     if !is_zero_path {
-        for seg in segments {
+        for seg in path.iter() {
             match *seg {
                 usvg::PathSegment::MoveTo { x, y } => {
                     pb.move_to(x as f32, y as f32);
@@ -116,7 +84,7 @@ fn conv_subpath(
             }
         }
     } else {
-        if let usvg::PathSegment::MoveTo { x, y } = segments[0] {
+        if let usvg::PathSegment::MoveTo { x, y } = path[0] {
             // Draw zero length path.
             let shift = 0.002; // Purely empirical.
             pb.move_to(x as f32, y as f32);

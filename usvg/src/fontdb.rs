@@ -120,7 +120,7 @@ impl Database {
         None
     }
 
-    pub fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<Vec<tree::PathSegment>> {
+    pub fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tree::PathData> {
         // We can't simplify this code because of lifetimes.
         let item = self.font(id);
         let file = fs::File::open(&item.path).ok()?;
@@ -128,12 +128,12 @@ impl Database {
         let font = ttf_parser::Font::from_data(&mmap, item.face_index).ok()?;
 
         let mut builder = PathBuilder {
-            segments: Vec::new(),
+            path: tree::PathData::new(),
             px: 0.0,
             py: 0.0,
         };
         font.outline_glyph(glyph_id, &mut builder).ok()?;
-        Some(builder.segments)
+        Some(builder.path)
     }
 
     pub fn has_char(&self, id: ID, c: char) -> bool {
@@ -462,42 +462,46 @@ fn find_best_match(
 }
 
 struct PathBuilder {
-    segments: Vec<tree::PathSegment>,
+    path: tree::PathData,
     px: f32,
     py: f32,
 }
 
 impl ttf_parser::OutlineBuilder for PathBuilder {
     fn move_to(&mut self, x: f32, y: f32) {
-        self.segments.push(tree::PathSegment::MoveTo { x: x as f64, y: y as f64 });
+        self.path.push_move_to(x as f64, y as f64);
         self.px = x;
         self.py = y;
     }
 
     fn line_to(&mut self, x: f32, y: f32) {
-        self.segments.push(tree::PathSegment::LineTo { x: x as f64, y: y as f64 });
+        self.path.push_line_to(x as f64, y as f64);
         self.px = x;
         self.py = y;
     }
 
     fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
-        self.segments.push(quad_to_curve(self.px as f64, self.py as f64, x1 as f64, y1 as f64, x as f64, y as f64));
+        self.path.push(quad_to_curve(
+            self.px as f64, self.py as f64,
+            x1 as f64, y1 as f64,
+            x as f64, y as f64,
+        ));
         self.px = x;
         self.py = y;
     }
 
     fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
-        self.segments.push(tree::PathSegment::CurveTo {
-            x1: x1 as f64, y1: y1 as f64,
-            x2: x2 as f64, y2: y2 as f64,
-            x: x as f64, y: y as f64
-        });
+        self.path.push_curve_to(
+            x1 as f64, y1 as f64,
+            x2 as f64, y2 as f64,
+            x as f64, y as f64
+        );
         self.px = x;
         self.py = y;
     }
 
     fn close(&mut self) {
-        self.segments.push(tree::PathSegment::ClosePath);
+        self.path.push_close_path();
     }
 }
 

@@ -22,7 +22,7 @@ pub fn draw(
     // so we can pass whatever rect we want, because it will not be used anyway.
     let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
 
-    let mut skia_path = convert_path(&path.segments);
+    let mut skia_path = convert_path(&path.data);
     if let Some(ref fill) = path.fill {
         if fill.rule == usvg::FillRule::EvenOdd {
             skia_path.set_fill_type(skia::FillType::EvenOdd);
@@ -52,10 +52,10 @@ pub fn draw(
 }
 
 fn convert_path(
-    segments: &[usvg::PathSegment],
+    path: &usvg::PathData,
 ) -> skia::Path {
     let mut s_path = skia::Path::new();
-    for seg in segments {
+    for seg in path.iter() {
         match *seg {
             usvg::PathSegment::MoveTo { x, y } => {
                 s_path.move_to(x, y);

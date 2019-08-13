@@ -6,6 +6,7 @@ use std::ops::Deref;
 
 use crate::geom::*;
 use super::attributes::*;
+use super::pathdata::PathData;
 
 // TODO: implement Default for all
 
@@ -119,7 +120,7 @@ pub struct Path {
     /// Segments list.
     ///
     /// All segments are in absolute coordinates.
-    pub segments: Vec<PathSegment>,
+    pub data: PathData,
 }
 
 impl Default for Path {
@@ -131,7 +132,7 @@ impl Default for Path {
             fill: None,
             stroke: None,
             rendering_mode: ShapeRendering::default(),
-            segments: Vec::new(),
+            data: PathData::default(),
         }
     }
 }

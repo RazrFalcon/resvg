@@ -47,7 +47,7 @@ fn main() {
             fill: None,
             stroke: stroke.clone(),
             rendering_mode: usvg::ShapeRendering::default(),
-            segments: utils::rect_to_path(bbox),
+            data: usvg::PathData::from_rect(bbox),
         }));
     }
 

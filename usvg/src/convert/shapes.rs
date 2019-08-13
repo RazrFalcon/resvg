@@ -2,14 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{svgtree, tree, utils};
+use crate::{svgtree, tree};
 use super::{prelude::*, units};
 
 
 pub fn convert(
     node: svgtree::Node,
     state: &State,
-) -> Option<Vec<tree::PathSegment>> {
+) -> Option<tree::PathData> {
     match node.tag_name()? {
         EId::Rect => convert_rect(node, state),
         EId::Circle => convert_circle(node, state),
@@ -24,7 +24,7 @@ pub fn convert(
 
 pub fn convert_path(
     node: svgtree::Node,
-) -> Option<Vec<tree::PathSegment>> {
+) -> Option<tree::PathData> {
     if let Some(path) = node.attribute::<svgtypes::Path>(AId::D) {
         let new_path = super::path::convert(path);
         if new_path.len() >= 2 {
@@ -38,7 +38,7 @@ pub fn convert_path(
 pub fn convert_rect(
     node: svgtree::Node,
     state: &State,
-) -> Option<Vec<tree::PathSegment>> {
+) -> Option<tree::PathData> {
     // 'width' and 'height' attributes must be positive and non-zero.
     let width  = node.convert_user_length(AId::Width, state, Length::zero());
     let height = node.convert_user_length(AId::Height, state, Length::zero());
@@ -92,7 +92,7 @@ pub fn convert_rect(
 
     // Conversion according to https://www.w3.org/TR/SVG11/shapes.html#RectElement
     let path = if rx.fuzzy_eq(&0.0) {
-        utils::rect_to_path(Rect::new(x, y, width, height)?)
+        tree::PathData::from_rect(Rect::new(x, y, width, height)?)
     } else {
         let mut p = svgtypes::Path::with_capacity(9);
         p.push_move_to(x + rx, y);
@@ -114,29 +114,27 @@ pub fn convert_rect(
 pub fn convert_line(
     node: svgtree::Node,
     state: &State,
-) -> Option<Vec<tree::PathSegment>> {
+) -> Option<tree::PathData> {
     let x1 = node.convert_user_length(AId::X1, state, Length::zero());
     let y1 = node.convert_user_length(AId::Y1, state, Length::zero());
     let x2 = node.convert_user_length(AId::X2, state, Length::zero());
     let y2 = node.convert_user_length(AId::Y2, state, Length::zero());
 
-    let path = vec![
-        tree::PathSegment::MoveTo { x: x1, y: y1 },
-        tree::PathSegment::LineTo { x: x2, y: y2 },
-    ];
-
+    let mut path = tree::PathData::new();
+    path.push_move_to(x1, y1);
+    path.push_line_to(x2, y2);
     Some(path)
 }
 
 pub fn convert_polyline(
     node: svgtree::Node,
-) -> Option<Vec<tree::PathSegment>> {
+) -> Option<tree::PathData> {
     points_to_path(node, "Polyline")
 }
 
 pub fn convert_polygon(
     node: svgtree::Node,
-) -> Option<Vec<tree::PathSegment>> {
+) -> Option<tree::PathData> {
     if let Some(mut path) = points_to_path(node, "Polygon") {
         path.push(tree::PathSegment::ClosePath);
         Some(path)
@@ -148,19 +146,18 @@ pub fn convert_polygon(
 fn points_to_path(
     node: svgtree::Node,
     eid: &str,
-) -> Option<Vec<tree::PathSegment>> {
+) -> Option<tree::PathData> {
     use svgtypes::PointsParser;
 
-    let mut path = Vec::new();
+    let mut path = tree::PathData::new();
     match node.attribute::<&str>(AId::Points) {
         Some(text) => {
             for (x, y) in PointsParser::from(text) {
-                let seg = if path.is_empty() {
-                    tree::PathSegment::MoveTo { x, y }
+                if path.is_empty() {
+                    path.push_move_to(x, y);
                 } else {
-                    tree::PathSegment::LineTo { x, y }
-                };
-                path.push(seg);
+                    path.push_line_to(x, y);
+                }
             }
         }
         _ => {
@@ -181,7 +178,7 @@ fn points_to_path(
 pub fn convert_circle(
     node: svgtree::Node,
     state: &State,
-) -> Option<Vec<tree::PathSegment>> {
+) -> Option<tree::PathData> {
     let cx = node.convert_user_length(AId::Cx, state, Length::zero());
     let cy = node.convert_user_length(AId::Cy, state, Length::zero());
     let r  = node.convert_user_length(AId::R,  state, Length::zero());
@@ -197,7 +194,7 @@ pub fn convert_circle(
 pub fn convert_ellipse(
     node: svgtree::Node,
     state: &State,
-) -> Option<Vec<tree::PathSegment>> {
+) -> Option<tree::PathData> {
     let cx = node.convert_user_length(AId::Cx, state, Length::zero());
     let cy = node.convert_user_length(AId::Cy, state, Length::zero());
     let rx = node.convert_user_length(AId::Rx, state, Length::zero());
@@ -221,7 +218,7 @@ fn ellipse_to_path(
     cy: f64,
     rx: f64,
     ry: f64,
-) -> Vec<tree::PathSegment> {
+) -> tree::PathData {
     let mut p = svgtypes::Path::with_capacity(6);
     p.push_move_to(cx + rx, cy);
     p.push_arc_to(rx, ry, 0.0, false, true, cx,      cy + ry);

@@ -10,8 +10,6 @@ use usvg;
 pub use usvg::{Rect, Size};
 pub(crate) use usvg::f64_bound;
 
-use crate::utils;
-
 
 /// A 2D screen size representation.
 ///
@@ -161,7 +159,7 @@ impl RectExt for Rect {
                 usvg::PathSegment::ClosePath,
             ];
 
-            utils::path_bbox_with_transform(path, None, *ts)
+            usvg::SubPathData(path).bbox_with_transform(*ts, None)
         } else {
             Some(*self)
         }

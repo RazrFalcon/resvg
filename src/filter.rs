@@ -708,7 +708,7 @@ fn calc_region(
     ts: &usvg::Transform,
     canvas_rect: ScreenRect,
 ) -> Result<ScreenRect, Error> {
-    let path = utils::rect_to_path(filter.rect);
+    let path = usvg::PathData::from_rect(filter.rect);
 
     let region_ts = if filter.units == usvg::Units::ObjectBoundingBox {
         let bbox = bbox.ok_or(Error::InvalidRegion)?;
@@ -720,7 +720,7 @@ fn calc_region(
         *ts
     };
 
-    let region = utils::path_bbox_with_transform(&path, None, region_ts)
+    let region = path.bbox_with_transform(region_ts, None)
         .ok_or_else(|| Error::InvalidRegion)?
         .to_screen_rect()
         .fit_to_rect(canvas_rect);

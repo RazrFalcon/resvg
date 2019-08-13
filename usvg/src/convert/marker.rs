@@ -10,7 +10,7 @@ use super::{prelude::*, use_node};
 
 pub fn convert(
     node: svgtree::Node,
-    segments: &[tree::PathSegment],
+    path: &tree::PathData,
     state: &State,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
@@ -51,7 +51,7 @@ pub fn convert(
                 continue;
             }
 
-            resolve(node, segments, marker, *kind, state, parent, tree);
+            resolve(node, path, marker, *kind, state, parent, tree);
         }
     }
 }
@@ -70,7 +70,7 @@ enum MarkerOrientation {
 
 fn resolve(
     shape_node: svgtree::Node,
-    segments: &[tree::PathSegment],
+    path: &tree::PathData,
     marker_node: svgtree::Node,
     marker_kind: MarkerKind,
     state: &State,
@@ -114,7 +114,7 @@ fn resolve(
 
         clip_path.append_kind(tree::NodeKind::Path(tree::Path {
             fill: Some(tree::Fill::default()),
-            segments: utils::rect_to_path(clip_rect),
+            data: tree::PathData::from_rect(clip_rect),
             ..tree::Path::default()
         }));
 
@@ -127,7 +127,7 @@ fn resolve(
         let mut ts = tree::Transform::new_translate(x, y);
 
         let angle = match convert_orientation(marker_node) {
-            MarkerOrientation::Auto => calc_vertex_angle(&segments, idx),
+            MarkerOrientation::Auto => calc_vertex_angle(path, idx),
             MarkerOrientation::Angle(angle) => angle,
         };
 
@@ -166,7 +166,7 @@ fn resolve(
         }
     };
 
-    draw_markers(&segments, marker_kind, draw_marker);
+    draw_markers(path, marker_kind, draw_marker);
 }
 
 fn stroke_scale(
@@ -188,7 +188,7 @@ fn stroke_scale(
 }
 
 fn draw_markers<P>(
-    segments: &[tree::PathSegment],
+    path: &tree::PathData,
     kind: MarkerKind,
     mut draw_marker: P,
 )
@@ -197,15 +197,15 @@ where
 {
     match kind {
         MarkerKind::Start => {
-            if let Some(tree::PathSegment::MoveTo { x, y }) = segments.first() {
+            if let Some(tree::PathSegment::MoveTo { x, y }) = path.first() {
                 draw_marker(*x, *y, 0);
             }
         }
         MarkerKind::Middle => {
-            let total = segments.len() - 1;
+            let total = path.len() - 1;
             let mut i = 1;
             while i < total {
-                let (x, y) = match segments[i] {
+                let (x, y) = match path[i] {
                     tree::PathSegment::MoveTo { x, y } => (x, y),
                     tree::PathSegment::LineTo { x, y } => (x, y),
                     tree::PathSegment::CurveTo { x, y, .. } => (x, y),
@@ -221,8 +221,8 @@ where
             }
         }
         MarkerKind::End => {
-            let idx = segments.len() - 1;
-            match segments.last() {
+            let idx = path.len() - 1;
+            match path.last() {
                 Some(Segment::LineTo { x, y }) => {
                     draw_marker(*x, *y, idx);
                 }
@@ -230,7 +230,7 @@ where
                     draw_marker(*x, *y, idx);
                 }
                 Some(Segment::ClosePath) => {
-                    let (x, y) = get_subpath_start(segments, idx);
+                    let (x, y) = get_subpath_start(path, idx);
                     draw_marker(x, y, idx);
                 }
                 _ => {}
@@ -239,14 +239,14 @@ where
     }
 }
 
-fn calc_vertex_angle(segments: &[Segment], idx: usize) -> f64 {
+fn calc_vertex_angle(path: &tree::PathData, idx: usize) -> f64 {
     if idx == 0 {
         // First segment.
 
-        debug_assert!(segments.len() > 1);
+        debug_assert!(path.len() > 1);
 
-        let seg1 = segments[0];
-        let seg2 = segments[1];
+        let seg1 = path[0];
+        let seg2 = path[1];
 
         match (seg1, seg2) {
             (Segment::MoveTo { x: mx, y: my }, Segment::LineTo { x, y }) => {
@@ -261,33 +261,33 @@ fn calc_vertex_angle(segments: &[Segment], idx: usize) -> f64 {
             }
             _ => 0.0,
         }
-    } else if idx == segments.len() - 1 {
+    } else if idx == path.len() - 1 {
         // Last segment.
 
-        let seg1 = segments[idx - 1];
-        let seg2 = segments[idx];
+        let seg1 = path[idx - 1];
+        let seg2 = path[idx];
 
         match (seg1, seg2) {
             (_, Segment::MoveTo { .. }) => 0.0, // unreachable
             (_, Segment::LineTo { x, y }) => {
-                let (px, py) = get_prev_vertex(segments, idx);
+                let (px, py) = get_prev_vertex(path, idx);
                 calc_line_angle(px, py, x, y)
             }
             (_, Segment::CurveTo { x2, y2, x, y, .. }) => {
                 if x2.fuzzy_eq(&x) && y2.fuzzy_eq(&y) {
-                    let (px, py) = get_prev_vertex(segments, idx);
+                    let (px, py) = get_prev_vertex(path, idx);
                     calc_line_angle(px, py, x, y)
                 } else {
                     calc_line_angle(x2, y2, x, y)
                 }
             }
             (Segment::LineTo { x, y }, Segment::ClosePath) => {
-                let (nx, ny) = get_subpath_start(segments, idx);
+                let (nx, ny) = get_subpath_start(path, idx);
                 calc_line_angle(x, y, nx, ny)
             }
             (Segment::CurveTo { x2, y2, x, y, .. }, Segment::ClosePath) => {
-                let (px, py) = get_prev_vertex(segments, idx);
-                let (nx, ny) = get_subpath_start(segments, idx);
+                let (px, py) = get_prev_vertex(path, idx);
+                let (nx, ny) = get_subpath_start(path, idx);
                 calc_curves_angle(
                     px, py, x2, y2,
                     x, y,
@@ -299,8 +299,8 @@ fn calc_vertex_angle(segments: &[Segment], idx: usize) -> f64 {
     } else {
         // Middle segments.
 
-        let seg1 = segments[idx];
-        let seg2 = segments[idx + 1];
+        let seg1 = path[idx];
+        let seg2 = path[idx + 1];
 
         // Not sure if there is a better way.
         match (seg1, seg2) {
@@ -311,7 +311,7 @@ fn calc_vertex_angle(segments: &[Segment], idx: usize) -> f64 {
                 calc_line_angle(mx, my, x1, y1)
             }
             (Segment::LineTo { x: x1, y: y1 }, Segment::LineTo { x: x2, y: y2 }) => {
-                let (px, py) = get_prev_vertex(segments, idx);
+                let (px, py) = get_prev_vertex(path, idx);
                 calc_angle(
                     px, py, x1, y1,
                     x1, y1, x2, y2,
@@ -319,7 +319,7 @@ fn calc_vertex_angle(segments: &[Segment], idx: usize) -> f64 {
             }
             (Segment::CurveTo { x2: c1_x2, y2: c1_y2, x, y, .. },
                 Segment::CurveTo { x1: c2_x1, y1: c2_y1, x: nx, y: ny, .. }) => {
-                let (px, py) = get_prev_vertex(segments, idx);
+                let (px, py) = get_prev_vertex(path, idx);
                 calc_curves_angle(
                     px, py, c1_x2, c1_y2,
                     x, y,
@@ -328,7 +328,7 @@ fn calc_vertex_angle(segments: &[Segment], idx: usize) -> f64 {
             }
             (Segment::LineTo { x, y },
                 Segment::CurveTo { x1, y1, x: nx, y: ny, .. }) => {
-                let (px, py) = get_prev_vertex(segments, idx);
+                let (px, py) = get_prev_vertex(path, idx);
                 calc_curves_angle(
                     px, py, px, py,
                     x, y,
@@ -337,7 +337,7 @@ fn calc_vertex_angle(segments: &[Segment], idx: usize) -> f64 {
             }
             (Segment::CurveTo { x2, y2, x, y, .. },
                 Segment::LineTo { x: nx, y: ny }) => {
-                let (px, py) = get_prev_vertex(segments, idx);
+                let (px, py) = get_prev_vertex(path, idx);
                 calc_curves_angle(
                     px, py, x2, y2,
                     x, y,
@@ -345,28 +345,28 @@ fn calc_vertex_angle(segments: &[Segment], idx: usize) -> f64 {
                 )
             }
             (Segment::LineTo { x, y }, Segment::MoveTo { .. }) => {
-                let (px, py) = get_prev_vertex(segments, idx);
+                let (px, py) = get_prev_vertex(path, idx);
                 calc_line_angle(px, py, x, y)
             }
             (Segment::CurveTo { x2, y2, x, y, .. }, Segment::MoveTo { .. }) => {
                 if x.fuzzy_eq(&x2) && y.fuzzy_eq(&y2) {
-                    let (px, py) = get_prev_vertex(segments, idx);
+                    let (px, py) = get_prev_vertex(path, idx);
                     calc_line_angle(px, py, x, y)
                 } else {
                     calc_line_angle(x2, y2, x, y)
                 }
             }
             (Segment::LineTo { x, y }, Segment::ClosePath) => {
-                let (px, py) = get_prev_vertex(segments, idx);
-                let (nx, ny) = get_subpath_start(segments, idx);
+                let (px, py) = get_prev_vertex(path, idx);
+                let (nx, ny) = get_subpath_start(path, idx);
                 calc_angle(
                     px, py, x, y,
                     x, y, nx, ny,
                 )
             }
             (_, Segment::ClosePath) => {
-                let (px, py) = get_prev_vertex(segments, idx);
-                let (nx, ny) = get_subpath_start(segments, idx);
+                let (px, py) = get_prev_vertex(path, idx);
+                let (nx, ny) = get_subpath_start(path, idx);
                 calc_line_angle(px, py, nx, ny)
             }
             (_, Segment::MoveTo { .. }) |
@@ -427,7 +427,7 @@ fn calc_angle(
         angle -= PI;
     }
 
-    normalize(angle) * 180.0 / PI
+    normalize(angle).to_degrees()
 }
 
 fn get_subpath_start(
@@ -481,7 +481,7 @@ fn convert_orientation(
                 let a = match angle.unit {
                     AngleUnit::Degrees  => angle.num,
                     AngleUnit::Gradians => angle.num * 180.0 / 200.0,
-                    AngleUnit::Radians  => angle.num * 180.0 / f64::consts::PI,
+                    AngleUnit::Radians  => angle.num.to_degrees(),
                 };
 
                 MarkerOrientation::Angle(a)

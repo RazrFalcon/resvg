@@ -7,13 +7,14 @@
 use std::cell::Ref;
 use std::path;
 
-pub use self::{nodes::*, attributes::*};
-use crate::{svgtree, utils, Rect, Error, Options, XmlOptions};
+pub use self::{nodes::*, attributes::*, pathdata::*};
+use crate::{svgtree, Rect, Error, Options, XmlOptions};
 
 mod attributes;
 mod export;
 mod nodes;
 mod numbers;
+mod pathdata;
 
 /// Basic traits for tree manipulations.
 pub mod prelude {
@@ -286,11 +287,11 @@ fn calc_node_bbox(
 
     match *node.borrow() {
         NodeKind::Path(ref path) => {
-            utils::path_bbox_with_transform(&path.segments, path.stroke.as_ref(), ts2)
+            path.data.bbox_with_transform(ts2, path.stroke.as_ref())
         }
         NodeKind::Image(ref img) => {
-            let segments = utils::rect_to_path(img.view_box.rect);
-            utils::path_bbox_with_transform(&segments, None, ts2)
+            let path = PathData::from_rect(img.view_box.rect);
+            path.bbox_with_transform(ts2, None)
         }
         NodeKind::Svg(_) | NodeKind::Group(_) => {
             let mut bbox = Rect::new_bbox();

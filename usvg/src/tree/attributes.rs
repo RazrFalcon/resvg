@@ -230,33 +230,6 @@ pub struct ViewBox {
 }
 
 
-/// A path's absolute segment.
-///
-/// Unlike the SVG spec, can contain only `M`, `L`, `C` and `Z` segments.
-/// All other segments will be converted into this one.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, Debug)]
-pub enum PathSegment {
-    MoveTo {
-        x: f64,
-        y: f64,
-    },
-    LineTo {
-        x: f64,
-        y: f64,
-    },
-    CurveTo {
-        x1: f64,
-        y1: f64,
-        x2: f64,
-        y2: f64,
-        x: f64,
-        y: f64,
-    },
-    ClosePath,
-}
-
-
 /// Identifies input for a filter primitive.
 #[allow(missing_docs)]
 #[derive(Clone, PartialEq, Debug)]

@@ -23,7 +23,7 @@ pub fn draw(
         usvg::FillRule::NonZero
     };
 
-    convert_path(&path.segments, fill_rule, &mut p_path);
+    convert_path(&path.data, fill_rule, &mut p_path);
 
     // `usvg` guaranties that path without a bbox will not use
     // a paint server with ObjectBoundingBox,

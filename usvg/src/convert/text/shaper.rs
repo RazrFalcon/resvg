@@ -8,7 +8,7 @@ use unicode_vo::Orientation as CharOrientation;
 use ttf_parser::GlyphId;
 use kurbo::Vec2;
 
-use crate::{tree, utils, fontdb, convert::prelude::*};
+use crate::{tree, fontdb, convert::prelude::*};
 use super::convert::{
     ByteIndex,
     CharacterPosition,
@@ -97,7 +97,7 @@ pub struct OutlinedCluster {
     pub has_relative_shift: bool,
 
     /// An actual outline.
-    pub path: Vec<tree::PathSegment>,
+    pub path: tree::PathData,
 
     /// A cluster's transform that contains it's position, rotation, etc.
     pub transform: tree::Transform,
@@ -339,12 +339,12 @@ fn outline_cluster(
 ) -> OutlinedCluster {
     debug_assert!(!glyphs.is_empty());
 
-    let mut path = Vec::new();
+    let mut path = tree::PathData::new();
     let mut advance = 0.0;
     let mut x = 0.0;
 
     for glyph in glyphs {
-        let mut outline = db.outline(glyph.font.id, glyph.id).unwrap_or(Vec::new());
+        let mut outline = db.outline(glyph.font.id, glyph.id).unwrap_or_default();
 
         let sx = glyph.font.scale(font_size);
 
@@ -363,7 +363,7 @@ fn outline_cluster(
             // TODO: should be done only inside a single text span
             ts.translate(x + glyph.dx as f64, glyph.dy as f64);
 
-            utils::transform_path(&mut outline, &ts);
+            outline.transform(ts);
 
             path.extend_from_slice(&outline);
         }
@@ -513,7 +513,7 @@ fn resolve_clusters_positions_path(
         + process_anchor(chunk.anchor, clusters_length(clusters));
 
     let normals = collect_normals(
-        chunk, clusters, &path.segments, pos_list, char_offset, start_offset,
+        chunk, clusters, &path.path, pos_list, char_offset, start_offset,
     );
     for (cluster, normal) in clusters.iter_mut().zip(normals) {
         let (x, y, angle) = match normal {
@@ -590,12 +590,12 @@ struct PathNormal {
 fn collect_normals(
     chunk: &TextChunk,
     clusters: &[OutlinedCluster],
-    segments: &[tree::PathSegment],
+    path: &tree::PathData,
     pos_list: &[CharacterPosition],
     char_offset: usize,
     offset: f64,
 ) -> Vec<Option<PathNormal>> {
-    debug_assert!(!segments.is_empty());
+    debug_assert!(!path.is_empty());
 
     let mut offsets = Vec::with_capacity(clusters.len());
     let mut normals = Vec::with_capacity(clusters.len());
@@ -624,7 +624,7 @@ fn collect_normals(
     }
 
     let (mut prev_mx, mut prev_my, mut prev_x, mut prev_y) = {
-        if let tree::PathSegment::MoveTo { x, y } = segments[0] {
+        if let tree::PathSegment::MoveTo { x, y } = path[0] {
             (x, y, x, y)
         } else {
             unreachable!();
@@ -655,7 +655,7 @@ fn collect_normals(
     }
 
     let mut length = 0.0;
-    for seg in segments {
+    for seg in path.iter() {
         let curve = match *seg {
             tree::PathSegment::MoveTo { x, y } => {
                 prev_mx = x;
@@ -831,7 +831,7 @@ pub fn apply_writing_mode(
             ts.translate(cluster.advance / 2.0, 0.0);
             ts.rotate(-90.0);
             ts.translate(-cluster.advance / 2.0, -dy);
-            utils::transform_path(&mut cluster.path, &ts);
+            cluster.path.transform(ts);
 
             // Move "baseline" to the middle and make height equal to advance.
             cluster.ascent = cluster.advance / 2.0;

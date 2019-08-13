@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use svgtypes::Length;
 
-use crate::{svgtree, tree, tree::prelude::*, fontdb, utils, Error};
+use crate::{svgtree, tree, tree::prelude::*, fontdb, Error};
 
 mod clip_and_mask;
 mod filter;
@@ -540,17 +540,17 @@ fn remove_unused_defs(
 
 fn convert_path(
     node: svgtree::Node,
-    segments: Vec<tree::PathSegment>,
+    path: tree::PathData,
     state: &State,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    debug_assert!(segments.len() >= 2);
-    if segments.len() < 2 {
+    debug_assert!(path.len() >= 2);
+    if path.len() < 2 {
         return;
     }
 
-    let has_bbox = utils::path_has_bbox(&segments);
+    let has_bbox = path.has_bbox();
     let fill = style::resolve_fill(node, has_bbox, state, tree);
     let stroke = style::resolve_stroke(node, has_bbox, state, tree);
     let mut visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
@@ -571,11 +571,11 @@ fn convert_path(
         fill,
         stroke,
         rendering_mode,
-        segments: segments.clone(), // TODO: remove
+        data: path.clone(), // TODO: remove
     }));
 
     if visibility == tree::Visibility::Visible {
-        marker::convert(node, &segments, state, parent, tree);
+        marker::convert(node, &path, state, parent, tree);
     }
 }
 
