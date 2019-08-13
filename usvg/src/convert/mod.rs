@@ -14,7 +14,6 @@ mod filter;
 mod image;
 mod marker;
 mod paint_server;
-mod path;
 mod shapes;
 mod style;
 mod switch;

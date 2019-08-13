@@ -127,11 +127,7 @@ impl Database {
         let mmap = unsafe { memmap::MmapOptions::new().map(&file).ok()? };
         let font = ttf_parser::Font::from_data(&mmap, item.face_index).ok()?;
 
-        let mut builder = PathBuilder {
-            path: tree::PathData::new(),
-            px: 0.0,
-            py: 0.0,
-        };
+        let mut builder = PathBuilder { path: tree::PathData::with_capacity(16) };
         font.outline_glyph(glyph_id, &mut builder).ok()?;
         Some(builder.path)
     }
@@ -463,31 +459,22 @@ fn find_best_match(
 
 struct PathBuilder {
     path: tree::PathData,
-    px: f32,
-    py: f32,
 }
 
 impl ttf_parser::OutlineBuilder for PathBuilder {
     fn move_to(&mut self, x: f32, y: f32) {
         self.path.push_move_to(x as f64, y as f64);
-        self.px = x;
-        self.py = y;
     }
 
     fn line_to(&mut self, x: f32, y: f32) {
         self.path.push_line_to(x as f64, y as f64);
-        self.px = x;
-        self.py = y;
     }
 
     fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
-        self.path.push(quad_to_curve(
-            self.px as f64, self.py as f64,
+        self.path.push_quad_to(
             x1 as f64, y1 as f64,
             x as f64, y as f64,
-        ));
-        self.px = x;
-        self.py = y;
+        );
     }
 
     fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
@@ -496,25 +483,10 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
             x2 as f64, y2 as f64,
             x as f64, y as f64
         );
-        self.px = x;
-        self.py = y;
     }
 
     fn close(&mut self) {
         self.path.push_close_path();
-    }
-}
-
-fn quad_to_curve(px: f64, py: f64, x1: f64, y1: f64, x: f64, y: f64) -> tree::PathSegment {
-    #[inline]
-    fn calc(n1: f64, n2: f64) -> f64 {
-        (n1 + n2 * 2.0) / 3.0
-    }
-
-    tree::PathSegment::CurveTo {
-        x1: calc(px, x1), y1: calc(py, y1),
-        x2:  calc(x, x1), y2:  calc(y, y1),
-        x, y,
     }
 }
 

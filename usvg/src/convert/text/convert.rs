@@ -308,12 +308,7 @@ fn resolve_text_flow(
         return None;
     }
 
-    let path = path_node.attribute::<svgtypes::Path>(AId::D)?;
-    let path = crate::convert::path::convert(path);
-
-    if path.len() < 2 {
-        return None;
-    }
+    let path = path_node.attribute::<tree::PathData>(AId::D)?;
 
     let start_offset: Length = node.attribute(AId::StartOffset).unwrap_or_default();
     let start_offset = if start_offset.unit == Unit::Percent {

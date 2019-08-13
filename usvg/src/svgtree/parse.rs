@@ -9,6 +9,8 @@ use log::warn;
 
 pub use roxmltree::Error;
 
+use crate::tree;
+
 use super::{Document, Attribute, AId, EId, Node, NodeId, NodeKind, NodeData, AttributeValue};
 
 const SVG_NS: &str = "http://www.w3.org/2000/svg";
@@ -447,19 +449,12 @@ fn parse_svg_attribute(
         }
 
         AId::D => {
-            let mut data = Vec::new();
-            for token in svgtypes::PathParser::from(value) {
-                match token {
-                    Ok(token) => data.push(token),
-                    Err(_) => {
-                        // By the SVG spec, any invalid data inside the path data
-                        // should stop parsing of this path, but not the whole document.
-                        break;
-                    }
-                }
+            let segments = parse_path(value);
+            if segments.len() >= 2 {
+                AttributeValue::Path(segments)
+            } else {
+                return Err(svgtypes::Error::InvalidValue);
             }
-
-            AttributeValue::Path(svgtypes::Path(data))
         }
 
           AId::Transform
@@ -533,6 +528,212 @@ fn parse_number(value: &str) -> Result<f64, svgtypes::Error> {
     }
 
     Ok(n)
+}
+
+fn parse_path(text: &str) -> tree::PathData {
+    // Previous MoveTo coordinates.
+    let mut prev_mx = 0.0;
+    let mut prev_my = 0.0;
+
+    // Previous SmoothQuadratic coordinates.
+    let mut prev_tx = 0.0;
+    let mut prev_ty = 0.0;
+
+    // Previous coordinates.
+    let mut prev_x = 0.0;
+    let mut prev_y = 0.0;
+
+    let mut prev_seg = svgtypes::PathSegment::MoveTo { abs: true, x: 0.0, y: 0.0 };
+
+    let mut path = tree::PathData::with_capacity(32);
+
+    for segment in svgtypes::PathParser::from(text) {
+        let segment = match segment {
+            Ok(v) => v,
+            Err(_) => break,
+        };
+
+        match segment {
+            svgtypes::PathSegment::MoveTo { abs, mut x, mut y } => {
+                if !abs {
+                    // When we get 'm'(relative) segment, which is not first segment - then it's
+                    // relative to a previous 'M'(absolute) segment, not to the first segment.
+                    if let Some(tree::PathSegment::ClosePath) = path.last() {
+                        x += prev_mx;
+                        y += prev_my;
+                    } else {
+                        x += prev_x;
+                        y += prev_y;
+                    }
+                }
+
+                path.push_move_to(x, y);
+                prev_seg = segment;
+            }
+            svgtypes::PathSegment::LineTo { abs, mut x, mut y } => {
+                if !abs {
+                    x += prev_x;
+                    y += prev_y;
+                }
+
+                path.push_line_to(x, y);
+                prev_seg = segment;
+            }
+            svgtypes::PathSegment::HorizontalLineTo { abs, mut x } => {
+                if !abs {
+                    x += prev_x;
+                }
+
+                path.push_line_to(x, prev_y);
+                prev_seg = segment;
+            }
+            svgtypes::PathSegment::VerticalLineTo { abs, mut y } => {
+                if !abs {
+                    y += prev_y;
+                }
+
+                path.push_line_to(prev_x, y);
+                prev_seg = segment;
+            }
+            svgtypes::PathSegment::CurveTo { abs, mut x1, mut y1, mut x2, mut y2, mut x, mut y } => {
+                if !abs {
+                    x1 += prev_x;
+                    y1 += prev_y;
+                    x2 += prev_x;
+                    y2 += prev_y;
+                    x += prev_x;
+                    y += prev_y;
+                }
+
+                path.push_curve_to(x1, y1, x2, y2, x, y);
+
+                // Remember as absolute.
+                prev_seg = svgtypes::PathSegment::CurveTo { abs: true, x1, y1, x2, y2, x, y };
+            }
+            svgtypes::PathSegment::SmoothCurveTo { abs, mut x2, mut y2, mut x, mut y } => {
+                // 'The first control point is assumed to be the reflection of the second control
+                // point on the previous command relative to the current point.
+                // (If there is no previous command or if the previous command
+                // was not an C, c, S or s, assume the first control point is
+                // coincident with the current point.)'
+                let (x1, y1) = match prev_seg {
+                    svgtypes::PathSegment::CurveTo { x2, y2, x, y, .. } |
+                    svgtypes::PathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
+                        (x * 2.0 - x2, y * 2.0 - y2)
+                    }
+                    _ => {
+                        (prev_x, prev_y)
+                    }
+                };
+
+                if !abs {
+                    x2 += prev_x;
+                    y2 += prev_y;
+                    x += prev_x;
+                    y += prev_y;
+                }
+
+                path.push_curve_to(x1, y1, x2, y2, x, y);
+
+                // Remember as absolute.
+                prev_seg = svgtypes::PathSegment::SmoothCurveTo { abs: true, x2, y2, x, y };
+            }
+            svgtypes::PathSegment::Quadratic { abs, mut x1, mut y1, mut x, mut y } => {
+                if !abs {
+                    x1 += prev_x;
+                    y1 += prev_y;
+                    x += prev_x;
+                    y += prev_y;
+                }
+
+                path.push_quad_to(x1, y1, x, y);
+
+                // Remember as absolute.
+                prev_seg = svgtypes::PathSegment::Quadratic { abs: true, x1, y1, x, y };
+            }
+            svgtypes::PathSegment::SmoothQuadratic { abs, mut x, mut y } => {
+                // 'The control point is assumed to be the reflection of
+                // the control point on the previous command relative to
+                // the current point. (If there is no previous command or
+                // if the previous command was not a Q, q, T or t, assume
+                // the control point is coincident with the current point.)'
+                let (x1, y1) = match prev_seg {
+                    svgtypes::PathSegment::Quadratic { x1, y1, x, y, .. } => {
+                        (x * 2.0 - x1, y * 2.0 - y1)
+                    }
+                    svgtypes::PathSegment::SmoothQuadratic { x, y, .. } => {
+                        (x * 2.0 - prev_tx, y * 2.0 - prev_ty)
+                    }
+                    _ => {
+                        (prev_x, prev_y)
+                    }
+                };
+
+                prev_tx = x1;
+                prev_ty = y1;
+
+                if !abs {
+                    x += prev_x;
+                    y += prev_y;
+                }
+
+                path.push_quad_to(x1, y1, x, y);
+
+                // Remember as absolute.
+                prev_seg = svgtypes::PathSegment::SmoothQuadratic { abs: true, x, y };
+            }
+            svgtypes::PathSegment::EllipticalArc {
+                abs, rx, ry, x_axis_rotation, large_arc, sweep, mut x, mut y
+            } => {
+                if !abs {
+                    x += prev_x;
+                    y += prev_y;
+                }
+
+                path.push_arc_to(rx, ry, x_axis_rotation, large_arc, sweep, x, y);
+                prev_seg = segment;
+            }
+            svgtypes::PathSegment::ClosePath { .. } => {
+                if let Some(tree::PathSegment::ClosePath) = path.last() {
+                    // Do not add sequential ClosePath segments.
+                    // Otherwise it will break marker rendering.
+                } else {
+                    path.push_close_path();
+                }
+
+                prev_seg = segment;
+            }
+        }
+
+        // Remember last position.
+        if let Some(seg) = path.last() {
+            match *seg {
+                tree::PathSegment::MoveTo { x, y } => {
+                    prev_x = x;
+                    prev_y = y;
+                    prev_mx = x;
+                    prev_my = y;
+                }
+                tree::PathSegment::LineTo { x, y } => {
+                    prev_x = x;
+                    prev_y = y;
+                }
+                tree::PathSegment::CurveTo { x, y, .. } => {
+                    prev_x = x;
+                    prev_y = y;
+                }
+                tree::PathSegment::ClosePath => {
+                    // ClosePath moves us to the last MoveTo coordinate,
+                    // not previous.
+                    prev_x = prev_mx;
+                    prev_y = prev_my;
+                }
+            }
+        }
+    }
+
+    path.shrink_to_fit();
+    path
 }
 
 fn resolve_inherit(

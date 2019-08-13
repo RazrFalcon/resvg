@@ -25,14 +25,7 @@ pub fn convert(
 pub fn convert_path(
     node: svgtree::Node,
 ) -> Option<tree::PathData> {
-    if let Some(path) = node.attribute::<svgtypes::Path>(AId::D) {
-        let new_path = super::path::convert(path);
-        if new_path.len() >= 2 {
-            return Some(new_path);
-        }
-    }
-
-    None
+    node.attribute::<tree::PathData>(AId::D)
 }
 
 pub fn convert_rect(
@@ -94,18 +87,24 @@ pub fn convert_rect(
     let path = if rx.fuzzy_eq(&0.0) {
         tree::PathData::from_rect(Rect::new(x, y, width, height)?)
     } else {
-        let mut p = svgtypes::Path::with_capacity(9);
+        let mut p = tree::PathData::with_capacity(16);
         p.push_move_to(x + rx, y);
+
         p.push_line_to(x + width - rx, y);
         p.push_arc_to(rx, ry, 0.0, false, true, x + width, y + ry);
+
         p.push_line_to(x + width, y + height - ry);
         p.push_arc_to(rx, ry, 0.0, false, true, x + width - rx, y + height);
+
         p.push_line_to(x + rx, y + height);
         p.push_arc_to(rx, ry, 0.0, false, true, x, y + height - ry);
+
         p.push_line_to(x, y + ry);
         p.push_arc_to(rx, ry, 0.0, false, true, x + rx, y);
+
         p.push_close_path();
-        super::path::convert(p)
+
+        p
     };
 
     Some(path)
@@ -219,13 +218,12 @@ fn ellipse_to_path(
     rx: f64,
     ry: f64,
 ) -> tree::PathData {
-    let mut p = svgtypes::Path::with_capacity(6);
+    let mut p = tree::PathData::with_capacity(6);
     p.push_move_to(cx + rx, cy);
     p.push_arc_to(rx, ry, 0.0, false, true, cx,      cy + ry);
     p.push_arc_to(rx, ry, 0.0, false, true, cx - rx, cy);
     p.push_arc_to(rx, ry, 0.0, false, true, cx,      cy - ry);
     p.push_arc_to(rx, ry, 0.0, false, true, cx + rx, cy);
     p.push_close_path();
-
-    super::path::convert(p)
+    p
 }

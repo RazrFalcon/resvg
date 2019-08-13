@@ -44,16 +44,19 @@ pub struct PathData(pub Vec<PathSegment>);
 
 impl PathData {
     /// Creates a new path.
+    #[inline]
     pub fn new() -> Self {
         PathData(Vec::new())
     }
 
     /// Creates a new path with a specified capacity.
+    #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         PathData(Vec::with_capacity(capacity))
     }
 
     /// Creates a path from a rect.
+    #[inline]
     pub fn from_rect(rect: Rect) -> Self {
         PathData(vec![
             PathSegment::MoveTo {
@@ -73,28 +76,91 @@ impl PathData {
     }
 
     /// Pushes a MoveTo segment to the path.
+    #[inline]
     pub fn push_move_to(&mut self, x: f64, y: f64) {
         self.push(PathSegment::MoveTo { x, y });
     }
 
     /// Pushes a LineTo segment to the path.
+    #[inline]
     pub fn push_line_to(&mut self, x: f64, y: f64) {
         self.push(PathSegment::LineTo { x, y });
     }
 
     /// Pushes a CurveTo segment to the path.
+    #[inline]
     pub fn push_curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64) {
         self.push(PathSegment::CurveTo { x1, y1, x2, y2, x, y });
     }
 
+    /// Pushes a QuadTo segment to the path.
+    ///
+    /// Will be converted into cubic curve.
+    #[inline]
+    pub fn push_quad_to(&mut self, x1: f64, y1: f64, x: f64, y: f64) {
+        let (prev_x, prev_y) = self.last_pos();
+        self.push(quad_to_curve(prev_x, prev_y, x1, y1, x, y));
+    }
+
+    /// Pushes an ArcTo segment to the path.
+    ///
+    /// Arc will be converted into cubic curves.
+    pub fn push_arc_to(
+        &mut self,
+        rx: f64, ry: f64,
+        x_axis_rotation: f64,
+        large_arc: bool,
+        sweep: bool,
+        x: f64, y: f64,
+    ) {
+        let (prev_x, prev_y) = self.last_pos();
+
+        let svg_arc = kurbo::SvgArc {
+            from: kurbo::Vec2::new(prev_x, prev_y),
+            to: kurbo::Vec2::new(x, y),
+            radii: kurbo::Vec2::new(rx, ry),
+            x_rotation: x_axis_rotation.to_radians(),
+            large_arc,
+            sweep,
+        };
+
+        match kurbo::Arc::from_svg_arc(&svg_arc) {
+            Some(arc) => {
+                arc.to_cubic_beziers(0.1, |p1, p2, p| {
+                    self.push_curve_to(p1.x, p1.y, p2.x, p2.y, p.x, p.y);
+                });
+            }
+            None => {
+                self.push_line_to(x, y);
+            }
+        }
+    }
+
     /// Pushes a ClosePath segment to the path.
+    #[inline]
     pub fn push_close_path(&mut self) {
         self.push(PathSegment::ClosePath);
+    }
+
+    #[inline]
+    fn last_pos(&self) -> (f64, f64) {
+        let seg = self.last().expect("path must not be empty").clone();
+        match seg {
+              PathSegment::MoveTo { x, y }
+            | PathSegment::LineTo { x, y }
+            | PathSegment::CurveTo { x, y, .. } => {
+               (x, y)
+            }
+            PathSegment::ClosePath => {
+                panic!("the previous segment must be M/L/C")
+            }
+        }
     }
 
     /// Calculates path's bounding box.
     ///
     /// This operation is expensive.
+    #[inline]
     pub fn bbox(&self) -> Option<Rect> {
         calc_bbox(self)
     }
@@ -102,6 +168,7 @@ impl PathData {
     /// Calculates path's bounding box with a specified transform.
     ///
     /// This operation is expensive.
+    #[inline]
     pub fn bbox_with_transform(
         &self,
         ts: Transform,
@@ -113,6 +180,7 @@ impl PathData {
     /// Checks that path has a bounding box.
     ///
     /// This operation is expensive.
+    #[inline]
     pub fn has_bbox(&self) -> bool {
         has_bbox(self)
     }
@@ -122,21 +190,25 @@ impl PathData {
     /// Length from the first segment to the first MoveTo, ClosePath or slice end.
     ///
     /// This operation is expensive.
+    #[inline]
     pub fn length(&self) -> f64 {
         calc_length(self)
     }
 
     /// Applies the transform to the path.
+    #[inline]
     pub fn transform(&mut self, ts: Transform) {
         transform_path(self, ts);
     }
 
     /// Applies the transform to the path from the specified offset.
+    #[inline]
     pub fn transform_from(&mut self, offset: usize, ts: Transform) {
         transform_path(&mut self[offset..], ts);
     }
 
     /// Returns an iterator over path subpaths.
+    #[inline]
     pub fn subpaths(&self) -> SubPathIter {
         SubPathIter {
             path: self,
@@ -148,12 +220,14 @@ impl PathData {
 impl std::ops::Deref for PathData {
     type Target = Vec<PathSegment>;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl std::ops::DerefMut for PathData {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -209,6 +283,7 @@ impl<'a> SubPathData<'a> {
     /// Calculates path's bounding box.
     ///
     /// This operation is expensive.
+    #[inline]
     pub fn bbox(&self) -> Option<Rect> {
         calc_bbox(self)
     }
@@ -216,6 +291,7 @@ impl<'a> SubPathData<'a> {
     /// Calculates path's bounding box with a specified transform.
     ///
     /// This operation is expensive.
+    #[inline]
     pub fn bbox_with_transform(
         &self,
         ts: Transform,
@@ -227,6 +303,7 @@ impl<'a> SubPathData<'a> {
     /// Checks that path has a bounding box.
     ///
     /// This operation is expensive.
+    #[inline]
     pub fn has_bbox(&self) -> bool {
         has_bbox(self)
     }
@@ -234,6 +311,7 @@ impl<'a> SubPathData<'a> {
     /// Calculates path's length.
     ///
     /// This operation is expensive.
+    #[inline]
     pub fn length(&self) -> f64 {
         calc_length(self)
     }
@@ -242,6 +320,7 @@ impl<'a> SubPathData<'a> {
 impl std::ops::Deref for SubPathData<'_> {
     type Target = [PathSegment];
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         self.0
     }
@@ -520,6 +599,7 @@ pub struct TransformedPath<'a> {
 
 impl<'a> TransformedPath<'a> {
     /// Creates a new `TransformedPath` iterator.
+    #[inline]
     pub fn new(segments: &'a [PathSegment], ts: Transform) -> Self {
         TransformedPath { segments, ts, idx: 0 }
     }
@@ -554,5 +634,20 @@ impl<'a> Iterator for TransformedPath<'a> {
         self.idx += 1;
 
         Some(seg)
+    }
+}
+
+
+#[inline]
+fn quad_to_curve(px: f64, py: f64, x1: f64, y1: f64, x: f64, y: f64) -> PathSegment {
+    #[inline]
+    fn calc(n1: f64, n2: f64) -> f64 {
+        (n1 + n2 * 2.0) / 3.0
+    }
+
+    PathSegment::CurveTo {
+        x1: calc(px, x1), y1: calc(py, y1),
+        x2:  calc(x, x1), y2:  calc(y, y1),
+        x, y,
     }
 }

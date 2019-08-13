@@ -10,6 +10,7 @@ use log::warn;
 use svgtypes::FuzzyEq;
 
 use crate::geom::Rect;
+use crate::tree;
 
 mod parse;
 pub use parse::*;
@@ -143,7 +144,7 @@ struct NodeData {
     kind: NodeKind,
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, Debug)]
 pub enum AttributeValue {
     None,
     CurrentColor,
@@ -154,9 +155,9 @@ pub enum AttributeValue {
     Link(String),
     Number(f64),
     NumberList(svgtypes::NumberList),
-    Opacity(crate::tree::Opacity),
+    Opacity(tree::Opacity),
     Paint(String, Option<svgtypes::PaintFallback>),
-    Path(svgtypes::Path),
+    Path(tree::PathData),
     String(String),
     Transform(svgtypes::Transform),
     ViewBox(svgtypes::ViewBox),
@@ -166,13 +167,6 @@ pub enum AttributeValue {
 pub struct Attribute {
     pub name: AId,
     pub value: AttributeValue,
-}
-
-impl PartialEq for Attribute {
-    #[inline]
-    fn eq(&self, other: &Attribute) -> bool {
-        self.name == other.name && self.value == other.value
-    }
 }
 
 impl fmt::Debug for Attribute {
@@ -658,7 +652,7 @@ impl<'a> FromValue<'a> for svgtypes::Transform {
     }
 }
 
-impl FromValue<'_> for svgtypes::Path {
+impl FromValue<'_> for tree::PathData {
     fn get(node: Node, aid: AId) -> Option<Self> {
         let a = node.attributes().iter().find(|a| a.name == aid)?;
         if let AttributeValue::Path(ref v) = a.value { Some(v.clone()) } else { None }
