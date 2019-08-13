@@ -1,4 +1,6 @@
-#!/usr/bin/env python3.6
+#!/usr/bin/env python3
+
+# Should work on Python >= 3.5
 
 import argparse
 import os
@@ -6,7 +8,6 @@ import platform
 import subprocess
 from subprocess import run
 from contextlib import contextmanager
-from pathlib import Path
 
 
 TESTS_URL = 'https://github.com/RazrFalcon/resvg-test-suite.git'
@@ -22,9 +23,9 @@ def cd(path):
 
 
 def regression_testing(backend):
-    reg_work_dir = Path(work_dir) / ('workdir-' + backend)
+    reg_work_dir = work_dir + '/' + ('workdir-' + backend)
 
-    if not reg_work_dir.exists():
+    if not os.path.exists(reg_work_dir):
         os.mkdir(reg_work_dir)
 
     regression_args = ['cargo', 'run', '--release', '--',
@@ -47,29 +48,33 @@ args = parser.parse_args()
 if os.getcwd().endswith('testing-tools'):
     os.chdir('..')
 
-if 'TRAVIS_BUILD_DIR' in os.environ:
-    local_test = False
-    work_dir = Path('.').resolve()
-    tests_dir = Path('./target/resvg-test-suite/svg').resolve()
-else:
-    local_test = True
-    work_dir = '/tmp'
-    tests_dir = Path('../resvg-test-suite/svg').resolve()
+if not os.path.exists('./target'):
+    os.mkdir('./target')
 
-print('local_test:', local_test)
-print('work_dir:', work_dir)
-print('tests_dir:', tests_dir)
+local_test = 'TRAVIS_BUILD_DIR' not in os.environ
 
 # clone tests on CI
 if not local_test:
     run(['git', 'clone', TESTS_URL, '--depth', '1', './target/resvg-test-suite'], check=True)
 
+if 'TRAVIS_BUILD_DIR' in os.environ:
+    work_dir =  os.path.abspath('.')
+    tests_dir = os.path.abspath('./target/resvg-test-suite/svg')
+else:
+    work_dir = '/tmp'
+    tests_dir = os.path.abspath('../resvg-test-suite/svg')
+
+print('local_test:', local_test)
+print('work_dir:', work_dir)
+print('tests_dir:', tests_dir)
+
+
 # prepare skia on CI
 if not local_test and 'RESVG_SKIA_BACKEND' in os.environ:
     run(['git', 'clone', SKIA_BUILD_URL, '--depth', '1'], check=True)
-    os.environ['SKIA_DIR'] = str(Path('./resvg-skia-ci-build').resolve())
-    os.environ['SKIA_LIB_DIR'] = str(Path('./resvg-skia-ci-build/bin').resolve())
-    os.environ['LD_LIBRARY_PATH'] = str(Path('./resvg-skia-ci-build/bin').resolve())
+    os.environ['SKIA_DIR'] = os.path.abspath('./resvg-skia-ci-build')
+    os.environ['SKIA_LIB_DIR'] = os.path.abspath('./resvg-skia-ci-build/bin')
+    os.environ['LD_LIBRARY_PATH'] = os.path.abspath('./resvg-skia-ci-build/bin')
 
 
 if 'RESVG_QT_BACKEND' in os.environ:
@@ -84,10 +89,7 @@ if 'RESVG_QT_BACKEND' in os.environ:
                 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
                 run(['sudo', 'ln', '-s', '/usr/share/fonts', '/opt/qt56/lib/fonts'], check=True)
 
-            try:
-                regression_testing('qt')
-            except subprocess.CalledProcessError:
-                exit(1)
+            regression_testing('qt')
 
 
 if 'RESVG_CAIRO_BACKEND' in os.environ:
@@ -98,10 +100,7 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
     # regression testing of the cairo backend
     if not args.no_regression:
         with cd('testing-tools/regression'):
-            try:
-                regression_testing('cairo')
-            except subprocess.CalledProcessError:
-                exit(1)
+            regression_testing('cairo')
 
 
 if 'RESVG_RAQOTE_BACKEND' in os.environ:
@@ -112,10 +111,7 @@ if 'RESVG_RAQOTE_BACKEND' in os.environ:
     # regression testing of the cairo backend
     if not args.no_regression:
         with cd('testing-tools/regression'):
-            try:
-                regression_testing('raqote')
-            except subprocess.CalledProcessError:
-                exit(1)
+            regression_testing('raqote')
 
 
 if 'RESVG_SKIA_BACKEND' in os.environ:
@@ -126,19 +122,7 @@ if 'RESVG_SKIA_BACKEND' in os.environ:
     # regression testing of the cairo backend
     if not args.no_regression:
         with cd('testing-tools/regression'):
-            try:
-                regression_testing('skia')
-            except subprocess.CalledProcessError:
-                exit(1)
-
-
-# # try to build with all backends
-# with cd('tools/rendersvg'):
-#     run(['cargo', 'build', '--all-features'], check=True)
-#
-#
-# # run tests and build examples
-# run(['cargo', 'test', '--all-features'], check=True)
+            regression_testing('skia')
 
 
 if 'RESVG_QT_BACKEND' in os.environ:
