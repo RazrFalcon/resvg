@@ -14,8 +14,10 @@ pub fn convert(
 ) {
     let child = try_opt!(node.first_child());
 
-    if state.is_in_clip_path() && child.tag_name() == Some(EId::G) {
-        // Ignore groups referenced by `use` inside a `clipPath`.
+    if state.is_in_clip_path() && child.tag_name() == Some(EId::Symbol) {
+        // Ignore `symbol` referenced by `use` inside a `clipPath`.
+        // It will be ignored later anyway, but this will prevent
+        // a redundant `clipPath` creation (which is required for `symbol`).
         return;
     }
 
@@ -144,10 +146,18 @@ fn convert_children(
                 g.transform = transform;
             }
 
-            super::convert_children(node, state, &mut g, tree);
+            if state.is_in_clip_path() {
+                super::convert_clip_path_elements(node, state, &mut g, tree);
+            } else {
+                super::convert_children(node, state, &mut g, tree);
+            }
         }
         super::GroupKind::Skip => {
-            super::convert_children(node, state, parent, tree);
+            if state.is_in_clip_path() {
+                super::convert_clip_path_elements(node, state,parent, tree);
+            } else {
+                super::convert_children(node, state, parent, tree);
+            }
         }
         super::GroupKind::Ignore => {}
     }
