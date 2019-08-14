@@ -14,6 +14,11 @@ pub fn convert(
 ) {
     let child = try_opt!(node.first_child());
 
+    if state.is_in_clip_path() && child.tag_name() == Some(EId::G) {
+        // Ignore groups referenced by `use` inside a `clipPath`.
+        return;
+    }
+
     // We require an original transformation to setup 'clipPath'.
     let mut orig_ts: tree::Transform = node.attribute(AId::Transform).unwrap_or_default();
     let mut new_ts = tree::Transform::default();

@@ -194,24 +194,6 @@ fn convert_element(
         return;
     }
 
-    // Clip path cannot have a `g` child.
-    if state.current_root.tag_name() == Some(EId::ClipPath) {
-        // `clipPath` can have only shape and `text` children.
-        //
-        // `line` doesn't impact rendering because stroke is always disabled
-        // for `clipPath` children.
-        match tag_name {
-              EId::Rect
-            | EId::Circle
-            | EId::Ellipse
-            | EId::Polyline
-            | EId::Polygon
-            | EId::Path
-            | EId::Text => {}
-            _ => return,
-        }
-    }
-
     if tag_name == EId::Use {
         use_node::convert(node, state, parent, tree);
         return;
@@ -223,15 +205,9 @@ fn convert_element(
     }
 
     let parent = &mut match convert_group(node, state, false, parent, tree) {
-        GroupKind::Create(g) => {
-            g
-        }
-        GroupKind::Skip => {
-            parent.clone()
-        }
-        GroupKind::Ignore => {
-            return;
-        }
+        GroupKind::Create(g) => g,
+        GroupKind::Skip => parent.clone(),
+        GroupKind::Ignore => return,
     };
 
     match tag_name {
@@ -263,7 +239,60 @@ fn convert_element(
         EId::G => {
             convert_children(node, state, parent, tree);
         }
-        _ => {},
+        _ => {}
+    }
+}
+
+// `clipPath` can have only shape and `text` children.
+//
+// `line` doesn't impact rendering because stroke is always disabled
+// for `clipPath` children.
+fn convert_clip_path_elements(
+    clip_node: svgtree::Node,
+    state: &State,
+    parent: &mut tree::Node,
+    tree: &mut tree::Tree,
+) {
+    for node in clip_node.children() {
+        let tag_name = try_opt!(node.tag_name());
+
+        if !tag_name.is_graphic() {
+            continue;
+        }
+
+        if !style::is_visible_element(node, state.opt) {
+            continue;
+        }
+
+        if tag_name == EId::Use {
+            use_node::convert(node, state, parent, tree);
+            continue;
+        }
+
+        let parent = &mut match convert_group(node, state, false, parent, tree) {
+            GroupKind::Create(g) => g,
+            GroupKind::Skip => parent.clone(),
+            GroupKind::Ignore => continue,
+        };
+
+        match tag_name {
+              EId::Rect
+            | EId::Circle
+            | EId::Ellipse
+            | EId::Polyline
+            | EId::Polygon
+            | EId::Path => {
+                if let Some(path) = shapes::convert(node, state) {
+                    convert_path(node, path, state, parent, tree);
+                }
+            }
+            EId::Text => {
+                text::convert(node, state, parent, tree);
+            }
+            _ => {
+                warn!("'{}' is no a valid 'clip-path' child.", tag_name);
+            }
+        }
     }
 }
 
