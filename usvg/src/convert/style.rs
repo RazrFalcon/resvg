@@ -69,7 +69,7 @@ pub fn resolve_stroke(
     };
 
     let dashoffset  = node.resolve_length(AId::StrokeDashoffset, state, 0.0) as f32;
-    let miterlimit  = node.attribute(AId::StrokeMiterlimit).unwrap_or(4.0);
+    let miterlimit  = node.find_attribute(AId::StrokeMiterlimit).unwrap_or(4.0);
     let width       = node.resolve_length(AId::StrokeWidth, state, 1.0);
     let opacity     = sub_opacity * node.find_attribute(AId::StrokeOpacity).unwrap_or_default();
 
@@ -83,8 +83,8 @@ pub fn resolve_stroke(
     let miterlimit = if miterlimit < 1.0 { 1.0 } else { miterlimit };
     let miterlimit = tree::StrokeMiterlimit::new(miterlimit);
 
-    let linecap = node.attribute(AId::StrokeLinecap).unwrap_or_default();
-    let linejoin = node.attribute(AId::StrokeLinejoin).unwrap_or_default();
+    let linecap = node.find_attribute(AId::StrokeLinecap).unwrap_or_default();
+    let linejoin = node.find_attribute(AId::StrokeLinejoin).unwrap_or_default();
     let dasharray = conv_dasharray(node, state);
 
     let stroke = tree::Stroke {
