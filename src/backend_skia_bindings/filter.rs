@@ -450,7 +450,7 @@ impl Filter<Surface> for SkiaFilter {
         match fe.data {
             usvg::FeImageKind::None => {}
             usvg::FeImageKind::Image(ref data, format) => {
-                let canvas = buffer.canvas();
+                let mut canvas = buffer.canvas();
 
                 let dx = (subregion.x() - region.x()) as f32;
                 let dy = (subregion.y() - region.y()) as f32;
@@ -462,7 +462,7 @@ impl Filter<Surface> for SkiaFilter {
                 };
 
                 if format == usvg::ImageFormat::SVG {
-                    super::image::draw_svg(data, view_box, opt, &mut buffer);
+                    super::image::draw_svg(data, view_box, opt, &mut canvas);
                 } else {
                     super::image::draw_raster(
                         format, data, view_box, fe.rendering_mode, opt, &mut buffer,

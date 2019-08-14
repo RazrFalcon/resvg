@@ -216,7 +216,7 @@ fn prepare_pattern(
 
     let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy)).to_screen_size();
     let mut surface =  try_create_surface!(img_size, ());
-    let canvas = surface.canvas();
+    let mut canvas = surface.canvas();
     canvas.clear(skia::Color::TRANSPARENT);
 
     canvas.scale((sx as f32, sy as f32));
@@ -232,7 +232,7 @@ fn prepare_pattern(
     }
 
     let ref tree = pattern_node.tree();
-    let mut render = SkiaFlatRender::new(tree, opt, img_size, &mut surface);
+    let mut render = SkiaFlatRender::new(tree, opt, img_size, &mut canvas);
     render.render_group(pattern_node);
     render.finish();
 

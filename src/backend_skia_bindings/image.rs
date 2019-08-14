@@ -114,7 +114,7 @@ pub fn draw_svg(
     data: &usvg::ImageData,
     view_box: usvg::ViewBox,
     opt: &Options,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) {
     let (tree, sub_opt) = try_opt!(backend_utils::image::load_sub_svg(data, opt));
 
@@ -123,9 +123,9 @@ pub fn draw_svg(
 
     if let Some(clip) = clip {
         let rect = skia::Rect::new(clip.x() as f32, clip.y() as f32, clip.width() as f32, clip.height() as f32);
-        surface.canvas().clip_rect(&rect, None, true);
+        canvas.clip_rect(&rect, None, true);
     }
 
-    surface.canvas().concat(&ts.to_native());
-    super::render_to_canvas(&tree, &sub_opt, img_size, surface);
+    canvas.concat(&ts.to_native());
+    super::render_to_canvas(&tree, &sub_opt, img_size, canvas);
 }

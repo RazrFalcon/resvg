@@ -124,7 +124,7 @@ pub fn render_to_image(
 ) -> Option<skia::Surface> {
 
     let (mut surface, img_size) = create_root_surface(tree.svg_node().size.to_screen_size(), opt)?;
-    render_to_canvas(tree, opt, img_size, &mut surface);
+    render_to_canvas(tree, opt, img_size, &mut surface.canvas());
     surface.flush();
 
     Some(surface)
@@ -148,7 +148,7 @@ pub fn render_node_to_image(
     };
 
     let (mut surface, img_size) = create_root_surface(node_bbox.size().to_screen_size(), opt)?;
-    render_node_to_canvas(node, opt, vbox, img_size, &mut surface);
+    render_node_to_canvas(node, opt, vbox, img_size, &mut surface.canvas());
     surface.flush();
 
     Some(surface)
@@ -159,9 +159,9 @@ pub fn render_to_canvas(
     tree: &usvg::Tree,
     opt: &Options,
     img_size: ScreenSize,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) {
-    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, surface);
+    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, canvas);
 }
 
 /// Renders SVG node to canvas.
@@ -170,10 +170,10 @@ pub fn render_node_to_canvas(
     opt: &Options,
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) {
     let tree = node.tree();
-    let mut render = SkiaFlatRender::new(&tree, opt, img_size, surface);
+    let mut render = SkiaFlatRender::new(&tree, opt, img_size, canvas);
 
     let mut ts = node.abs_transform();
     ts.append(&node.transform());
@@ -231,7 +231,7 @@ struct SkiaFlatRender<'a> {
     opt: &'a Options,
     blend_mode: BlendMode,
     clip_rect: Option<Rect>,
-    surface: &'a mut skia::Surface,
+    canvas: &'a mut skia::Canvas,
     layers: Layers<skia::Surface>,
 }
 
@@ -240,20 +240,20 @@ impl<'a> SkiaFlatRender<'a> {
         tree: &'a usvg::Tree,
         opt: &'a Options,
         img_size: ScreenSize,
-        surface: &'a mut skia::Surface,
+        canvas: &'a mut skia::Canvas,
     ) -> Self {
         SkiaFlatRender {
             tree,
             opt,
             blend_mode: BlendMode::default(),
             clip_rect: None,
-            surface,
+            canvas,
             layers: Layers::new(img_size),
         }
     }
 
     fn paint<F>(&mut self, f: F)
-        where F: FnOnce(&usvg::Tree, &Options, BlendMode, &mut skia::Surface)
+        where F: FnOnce(&usvg::Tree, &Options, BlendMode, &mut skia::Canvas)
     {
         let restore = |canvas: &mut skia::Canvas| {
             canvas.restore();
@@ -270,21 +270,19 @@ impl<'a> SkiaFlatRender<'a> {
                     canvas.clip_rect(&rect, None, true);
                 }
 
-                f(self.tree, self.opt, layer.blend_mode, &mut layer.img);
+                f(self.tree, self.opt, layer.blend_mode, &mut layer.img.canvas());
                 restore(layer.img.canvas());
             }
             None => {
-                let canvas = self.surface.canvas();
-
-                canvas.save();
+                self.canvas.save();
 
                 if let Some(r) = self.clip_rect {
                     let rect = skia::Rect::new(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
-                    canvas.clip_rect(&rect, None, true);
+                    self.canvas.clip_rect(&rect, None, true);
                 }
 
-                f(self.tree, self.opt, self.blend_mode, self.surface);
-                restore(self.surface.canvas());
+                f(self.tree, self.opt, self.blend_mode, self.canvas);
+                restore(self.canvas);
             }
         }
     }
@@ -292,22 +290,22 @@ impl<'a> SkiaFlatRender<'a> {
 
 impl<'a> FlatRender for SkiaFlatRender<'a> {
     fn draw_path(&mut self, path: &usvg::Path, bbox: Option<Rect>) {
-        self.paint(|tree, opt, blend_mode, surface| {
-            path::draw(tree, path, opt, bbox, surface, blend_mode.into());
+        self.paint(|tree, opt, blend_mode, canvas| {
+            path::draw(tree, path, opt, bbox, canvas, blend_mode.into());
         });
     }
 
     fn draw_svg_image(&mut self, image: &usvg::Image) {
-        self.paint(|_, opt, _, surface| {
-            image::draw_svg(&image.data, image.view_box, opt, surface);
+        self.paint(|_, opt, _, canvas| {
+            image::draw_svg(&image.data, image.view_box, opt, canvas);
         });
     }
 
     fn draw_raster_image(&mut self, image: &usvg::Image) {
-        self.paint(|_, opt, _, surface| {
-            image::draw_raster(
-                image.format, &image.data, image.view_box, image.rendering_mode, opt, surface,
-            );
+        self.paint(|_, opt, _, canvas| {
+            // image::draw_raster(
+            //     image.format, &image.data, image.view_box, image.rendering_mode, opt, surface,
+            // );
         });
     }
 
@@ -346,14 +344,12 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
                 canvas.draw_image(&image, skia::Point::new(0.0, 0.0), Some(&paint));
             }
             None => {
-                let canvas = self.surface.canvas();
-
-                canvas.reset_matrix();
-                canvas.draw_image(&image, skia::Point::new(0.0, 0.0), Some(&paint));
+                self.canvas.reset_matrix();
+                self.canvas.draw_image(&image, skia::Point::new(0.0, 0.0), Some(&paint));
 
                 // Reset.
-                let curr_ts = canvas.total_matrix().clone();
-                canvas.set_matrix(&curr_ts);
+                let curr_ts = self.canvas.total_matrix().clone();
+                self.canvas.set_matrix(&curr_ts);
                 self.blend_mode = BlendMode::default();
             }
         }
@@ -380,7 +376,7 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
             Some(layer) => layer.clip_rect = Some(rect),
             None => {
                 let rect = skia::Rect::new(rect.x() as f32, rect.y() as f32, rect.width() as f32, rect.height() as f32);
-                self.surface.canvas().clip_rect(
+                self.canvas.clip_rect(
                     rect,
                     None,
                     true,
@@ -393,8 +389,8 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
         match self.layers.current() {
             Some(layer) => layer.ts,
             None => {
-                let mut surface = self.surface.clone();
-                usvg::Transform::from_native(surface.canvas().total_matrix()) 
+                let clone = self.clone();
+                usvg::Transform::from_native(clone.canvas.total_matrix()) 
             },
         }
     }
@@ -403,14 +399,15 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
         match self.layers.current_mut() {
             Some(layer) => layer.ts = ts,
             None => {
-                let _ = self.surface.canvas().set_matrix(&ts.to_native()); 
+                let _ = self.canvas.set_matrix(&ts.to_native()); 
             },
         }
     }
 
     fn finish(&mut self) {
         if self.layers.is_empty() {
-            self.surface.canvas().flush();
+            self.canvas.flush();
         }
     }
 }
+
