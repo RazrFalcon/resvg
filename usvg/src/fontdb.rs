@@ -11,6 +11,7 @@ use crate::utils;
 const GENERIC_FAMILIES: &[&str] = &["serif", "sans-serif", "monospace", "cursive", "fantasy"];
 
 
+#[derive(Clone, Debug)]
 pub struct FontItem {
     pub id: ID,
     pub path: PathBuf,
@@ -44,42 +45,30 @@ impl Database {
     }
 
     #[cfg(target_os = "linux")]
-    fn populate_generic_fonts(&mut self) {
-        fn match_font(name: &str) -> Option<(PathBuf, u32)> {
-            let output = std::process::Command::new("fc-match")
-                .arg(name)
-                .arg("--format=%{index} %{file}")
-                .output().ok();
-            let output = try_opt_warn_or!(output, None, "Failed to run 'fc-match'.");
-            let stdout = std::str::from_utf8(&output.stdout).ok()?;
-
-            let index: u32 = stdout[0..1].parse().ok()?;
-            let path = stdout[2..].into();
-            Some((path, index))
-        }
-
+    fn collect_generic_fonts(&mut self) {
         if self.fonts.is_empty() {
             return;
         }
 
-        macro_rules! try_or_continue {
-            ($task:expr) => {
-                match $task {
-                    Some(v) => v,
-                    None => continue,
-                }
-            };
-        }
-
         for family in GENERIC_FAMILIES {
-            let (path, index) = try_or_continue!(match_font(family));
-            let file = try_or_continue!(fs::File::open(&path).ok());
-            let mmap = try_or_continue!(unsafe { memmap::MmapOptions::new().map(&file).ok() });
-            let item = try_or_continue!(resolve_font(&mmap, &path, index, Some(family), self.fonts.len()));
-            self.fonts.push(item);
+            self.collect_generic_font(family);
         }
 
         self.has_generic_fonts = true;
+    }
+
+    #[cfg(target_os = "linux")]
+    fn collect_generic_font(&mut self, generic_family: &str) -> Option<()> {
+        let output = std::process::Command::new("fc-match")
+            .arg(generic_family)
+            .arg("--format=%{family}")
+            .output().ok();
+        let output = try_opt_warn_or!(output, None, "Failed to run 'fc-match'.");
+        let family = std::str::from_utf8(&output.stdout).ok()?.trim();
+
+        duplicate_family(family, generic_family, &mut self.fonts);
+
+        Some(())
     }
 
     pub fn font(&self, id: ID) -> &FontItem {
@@ -101,7 +90,7 @@ impl Database {
             #[cfg(target_os = "linux")]
             {
                 if !self.has_generic_fonts && GENERIC_FAMILIES.contains(family_name) {
-                    self.populate_generic_fonts();
+                    self.collect_generic_fonts();
                 }
             }
 
@@ -506,11 +495,11 @@ fn load_all_fonts(fonts: &mut Vec<FontItem>) {
 fn load_all_fonts(fonts: &mut Vec<FontItem>) {
     load_fonts_from("C:\\Windows\\Fonts\\", fonts);
 
-    let _ = load_font(Path::new("C:\\Windows\\Fonts\\times.ttf"), Some("serif"), fonts);
-    let _ = load_font(Path::new("C:\\Windows\\Fonts\\arial.ttf"), Some("sans-serif"), fonts);
-    let _ = load_font(Path::new("C:\\Windows\\Fonts\\cour.ttf"), Some("monospace"), fonts);
-    let _ = load_font(Path::new("C:\\Windows\\Fonts\\comic.ttf"), Some("cursive"), fonts);
-    let _ = load_font(Path::new("C:\\Windows\\Fonts\\impact.ttf"), Some("fantasy"), fonts);
+    duplicate_family("Times New Roman", "serif", fonts);
+    duplicate_family("Arial", "sans-serif", fonts);
+    duplicate_family("Courier New", "monospace", fonts);
+    duplicate_family("Comic Sans MS", "cursive", fonts);
+    duplicate_family("Impact", "fantasy", fonts);
 }
 
 #[cfg(target_os = "macos")]
@@ -518,11 +507,11 @@ fn load_all_fonts(fonts: &mut Vec<FontItem>) {
     load_fonts_from("/Library/Fonts", fonts);
     load_fonts_from("/System/Library/Fonts", fonts);
 
-    let _ = load_font(Path::new("/Library/Fonts/Times New Roman.ttf"), Some("serif"), fonts);
-    let _ = load_font(Path::new("/Library/Fonts/Arial.ttf"), Some("sans-serif"), fonts);
-    let _ = load_font(Path::new("/Library/Fonts/Courier New.ttf"), Some("monospace"), fonts);
-    let _ = load_font(Path::new("/Library/Fonts/Comic Sans MS.ttf"), Some("cursive"), fonts);
-    let _ = load_font(Path::new("/Library/Fonts/Papyrus.ttc"), Some("fantasy"), fonts);
+    duplicate_family("Times New Roman", "serif", fonts);
+    duplicate_family("Arial", "sans-serif", fonts);
+    duplicate_family("Courier New", "monospace", fonts);
+    duplicate_family("Comic Sans MS", "cursive", fonts);
+    duplicate_family("Papyrus", "fantasy", fonts);
 }
 
 fn load_fonts_from(dir: &str, fonts: &mut Vec<FontItem>) {
@@ -534,7 +523,7 @@ fn load_fonts_from(dir: &str, fonts: &mut Vec<FontItem>) {
                 match utils::file_extension(&path) {
                     Some("ttf") | Some("ttc") | Some("TTF") | Some("TTC") |
                     Some("otf") | Some("otc") | Some("OTF") | Some("OTC") => {
-                        let _ = load_font(&path, None, fonts);
+                        let _ = load_font(&path, fonts);
                     }
                     _ => {}
                 }
@@ -547,7 +536,6 @@ fn load_fonts_from(dir: &str, fonts: &mut Vec<FontItem>) {
 
 fn load_font(
     path: &Path,
-    family: Option<&str>,
     fonts: &mut Vec<FontItem>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let file = fs::File::open(path)?;
@@ -555,7 +543,7 @@ fn load_font(
 
     let n = ttf_parser::fonts_in_collection(&mmap).unwrap_or(1);
     for index in 0..n {
-        if let Some(item) = resolve_font(&mmap, path, index, family, fonts.len()) {
+        if let Some(item) = resolve_font(&mmap, path, index, fonts.len()) {
             fonts.push(item);
         }
     }
@@ -567,15 +555,11 @@ fn resolve_font(
     data: &[u8],
     path: &Path,
     index: u32,
-    family: Option<&str>,
     id: usize,
 ) -> Option<FontItem> {
     let font = ttf_parser::Font::from_data(data, index).ok()?;
 
-    let family = match family {
-        Some(f) => f.to_string(),
-        None => font.family_name()?,
-    };
+    let family = font.family_name()?;
 
     let style = if font.is_italic() {
         Style::Italic
@@ -597,4 +581,21 @@ fn resolve_font(
         family,
         properties,
     })
+}
+
+fn duplicate_family(
+    old_family: &str,
+    new_family: &str,
+    fonts: &mut Vec<FontItem>,
+) {
+    let mut i = 0;
+    while i < fonts.len() {
+        if fonts[i].family == old_family {
+            let mut new_font = fonts[i].clone();
+            new_font.family = new_family.to_string();
+            fonts.push(new_font);
+        }
+
+        i += 1;
+    }
 }

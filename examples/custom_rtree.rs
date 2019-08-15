@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use resvg::prelude::*;
 
 fn main() {
@@ -51,7 +53,7 @@ fn main() {
         fill,
         stroke: None,
         rendering_mode: usvg::ShapeRendering::default(),
-        data: usvg::PathData::from_rect(Rect::new(20.0, 20.0, 160.0, 160.0).unwrap()),
+        data: Rc::new(usvg::PathData::from_rect(Rect::new(20.0, 20.0, 160.0, 160.0).unwrap())),
     }));
 
     println!("{}", rtree.to_string(usvg::XmlOptions::default()));

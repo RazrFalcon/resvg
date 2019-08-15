@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use resvg::prelude::*;
 
 fn main() {
@@ -47,7 +49,7 @@ fn main() {
             fill: None,
             stroke: stroke.clone(),
             rendering_mode: usvg::ShapeRendering::default(),
-            data: usvg::PathData::from_rect(bbox),
+            data: Rc::new(usvg::PathData::from_rect(bbox)),
         }));
     }
 
