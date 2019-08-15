@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::rc::Rc;
+
 use crate::{svgtree, tree};
 use super::{prelude::*, units};
 
@@ -9,7 +11,7 @@ use super::{prelude::*, units};
 pub fn convert(
     node: svgtree::Node,
     state: &State,
-) -> Option<tree::PathData> {
+) -> Option<tree::SharedPathData> {
     match node.tag_name()? {
         EId::Rect => convert_rect(node, state),
         EId::Circle => convert_circle(node, state),
@@ -24,14 +26,14 @@ pub fn convert(
 
 pub fn convert_path(
     node: svgtree::Node,
-) -> Option<tree::PathData> {
-    node.attribute::<tree::PathData>(AId::D)
+) -> Option<tree::SharedPathData> {
+    node.attribute::<tree::SharedPathData>(AId::D)
 }
 
 pub fn convert_rect(
     node: svgtree::Node,
     state: &State,
-) -> Option<tree::PathData> {
+) -> Option<tree::SharedPathData> {
     // 'width' and 'height' attributes must be positive and non-zero.
     let width  = node.convert_user_length(AId::Width, state, Length::zero());
     let height = node.convert_user_length(AId::Height, state, Length::zero());
@@ -107,13 +109,13 @@ pub fn convert_rect(
         p
     };
 
-    Some(path)
+    Some(Rc::new(path))
 }
 
 pub fn convert_line(
     node: svgtree::Node,
     state: &State,
-) -> Option<tree::PathData> {
+) -> Option<tree::SharedPathData> {
     let x1 = node.convert_user_length(AId::X1, state, Length::zero());
     let y1 = node.convert_user_length(AId::Y1, state, Length::zero());
     let x2 = node.convert_user_length(AId::X2, state, Length::zero());
@@ -122,21 +124,21 @@ pub fn convert_line(
     let mut path = tree::PathData::new();
     path.push_move_to(x1, y1);
     path.push_line_to(x2, y2);
-    Some(path)
+    Some(Rc::new(path))
 }
 
 pub fn convert_polyline(
     node: svgtree::Node,
-) -> Option<tree::PathData> {
-    points_to_path(node, "Polyline")
+) -> Option<tree::SharedPathData> {
+    points_to_path(node, "Polyline").map(Rc::new)
 }
 
 pub fn convert_polygon(
     node: svgtree::Node,
-) -> Option<tree::PathData> {
+) -> Option<tree::SharedPathData> {
     if let Some(mut path) = points_to_path(node, "Polygon") {
         path.push(tree::PathSegment::ClosePath);
-        Some(path)
+        Some(Rc::new(path))
     } else {
         None
     }
@@ -177,7 +179,7 @@ fn points_to_path(
 pub fn convert_circle(
     node: svgtree::Node,
     state: &State,
-) -> Option<tree::PathData> {
+) -> Option<tree::SharedPathData> {
     let cx = node.convert_user_length(AId::Cx, state, Length::zero());
     let cy = node.convert_user_length(AId::Cy, state, Length::zero());
     let r  = node.convert_user_length(AId::R,  state, Length::zero());
@@ -187,13 +189,13 @@ pub fn convert_circle(
         return None;
     }
 
-    Some(ellipse_to_path(cx, cy, r, r))
+    Some(Rc::new(ellipse_to_path(cx, cy, r, r)))
 }
 
 pub fn convert_ellipse(
     node: svgtree::Node,
     state: &State,
-) -> Option<tree::PathData> {
+) -> Option<tree::SharedPathData> {
     let cx = node.convert_user_length(AId::Cx, state, Length::zero());
     let cy = node.convert_user_length(AId::Cy, state, Length::zero());
     let rx = node.convert_user_length(AId::Rx, state, Length::zero());
@@ -209,7 +211,7 @@ pub fn convert_ellipse(
         return None;
     }
 
-    Some(ellipse_to_path(cx, cy, rx, ry))
+    Some(Rc::new(ellipse_to_path(cx, cy, rx, ry)))
 }
 
 fn ellipse_to_path(

@@ -565,7 +565,7 @@ fn remove_unused_defs(
 
 fn convert_path(
     node: svgtree::Node,
-    path: tree::PathData,
+    path: tree::SharedPathData,
     state: &State,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,

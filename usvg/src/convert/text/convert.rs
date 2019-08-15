@@ -59,7 +59,7 @@ pub struct TextPath {
     /// Percentage values already resolved.
     pub start_offset: f64,
 
-    pub path: tree::PathData,
+    pub path: tree::SharedPathData,
 }
 
 
@@ -308,7 +308,7 @@ fn resolve_text_flow(
         return None;
     }
 
-    let path = path_node.attribute::<tree::PathData>(AId::D)?;
+    let path = path_node.attribute::<tree::SharedPathData>(AId::D)?;
 
     let start_offset: Length = node.attribute(AId::StartOffset).unwrap_or_default();
     let start_offset = if start_offset.unit == Unit::Percent {

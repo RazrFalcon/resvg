@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::rc::Rc;
+
 use crate::{svgtree, tree, tree::prelude::*};
 use super::prelude::*;
 
@@ -201,7 +203,7 @@ fn convert_span(
     parent: &mut tree::Node,
     dump_clusters: bool,
 ) -> Option<tree::Path> {
-    let mut data = tree::PathData::new();
+    let mut path_data = tree::PathData::new();
 
     for cluster in clusters {
         if !cluster.visible {
@@ -218,11 +220,11 @@ fn convert_span(
             let mut path = std::mem::replace(&mut cluster.path, tree::PathData::new());
             path.transform(cluster.transform);
 
-            data.extend_from_slice(&path);
+            path_data.extend_from_slice(&path);
         }
     }
 
-    if data.is_empty() {
+    if path_data.is_empty() {
         return None;
     }
 
@@ -243,7 +245,7 @@ fn convert_span(
         fill,
         stroke: span.stroke.take(),
         rendering_mode: tree::ShapeRendering::default(),
-        data,
+        data: Rc::new(path_data),
     };
 
     Some(path)
@@ -271,15 +273,15 @@ fn dump_cluster(
     // Cluster bbox.
     let r = Rect::new(0.0, -cluster.ascent, cluster.advance, cluster.height()).unwrap();
     base_path.stroke = new_stroke(tree::Color::blue());
-    base_path.data = tree::PathData::from_rect(r);
+    base_path.data = Rc::new(tree::PathData::from_rect(r));
     parent.append_kind(tree::NodeKind::Path(base_path.clone()));
 
     // Baseline.
     base_path.stroke = new_stroke(tree::Color::red());
-    base_path.data = tree::PathData(vec![
+    base_path.data = Rc::new(tree::PathData(vec![
         tree::PathSegment::MoveTo { x: 0.0,             y: 0.0 },
         tree::PathSegment::LineTo { x: cluster.advance, y: 0.0 },
-    ]);
+    ]));
     parent.append_kind(tree::NodeKind::Path(base_path));
 }
 
@@ -354,7 +356,7 @@ fn convert_decoration(
         fill: decoration.fill.take(),
         stroke: decoration.stroke.take(),
         rendering_mode: tree::ShapeRendering::default(),
-        data: path,
+        data: Rc::new(path),
     }
 }
 

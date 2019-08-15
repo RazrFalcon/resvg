@@ -157,7 +157,7 @@ pub enum AttributeValue {
     NumberList(svgtypes::NumberList),
     Opacity(tree::Opacity),
     Paint(String, Option<svgtypes::PaintFallback>),
-    Path(tree::PathData),
+    Path(tree::SharedPathData),
     String(String),
     Transform(svgtypes::Transform),
     ViewBox(svgtypes::ViewBox),
@@ -652,9 +652,10 @@ impl<'a> FromValue<'a> for svgtypes::Transform {
     }
 }
 
-impl FromValue<'_> for tree::PathData {
+impl FromValue<'_> for tree::SharedPathData {
     fn get(node: Node, aid: AId) -> Option<Self> {
         let a = node.attributes().iter().find(|a| a.name == aid)?;
+        // Cloning is cheap, since it's a Rc.
         if let AttributeValue::Path(ref v) = a.value { Some(v.clone()) } else { None }
     }
 }

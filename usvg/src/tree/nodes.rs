@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::ops::Deref;
+use std::rc::Rc;
 
 use crate::geom::*;
 use super::attributes::*;
@@ -120,7 +121,7 @@ pub struct Path {
     /// Segments list.
     ///
     /// All segments are in absolute coordinates.
-    pub data: PathData,
+    pub data: Rc<PathData>,
 }
 
 impl Default for Path {
@@ -132,7 +133,7 @@ impl Default for Path {
             fill: None,
             stroke: None,
             rendering_mode: ShapeRendering::default(),
-            data: PathData::default(),
+            data: Rc::new(PathData::default()),
         }
     }
 }

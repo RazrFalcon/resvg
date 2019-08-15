@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::rc::Rc;
 use std::str::FromStr;
 use std::collections::HashMap;
 
@@ -451,7 +452,7 @@ fn parse_svg_attribute(
         AId::D => {
             let segments = parse_path(value);
             if segments.len() >= 2 {
-                AttributeValue::Path(segments)
+                AttributeValue::Path(Rc::new(segments))
             } else {
                 return Err(svgtypes::Error::InvalidValue);
             }

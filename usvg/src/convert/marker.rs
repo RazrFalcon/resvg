@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::f64;
+use std::rc::Rc;
 
 use crate::{utils, svgtree, tree, tree::prelude::*, tree::PathSegment as Segment};
 use super::{prelude::*, use_node};
@@ -114,7 +115,7 @@ fn resolve(
 
         clip_path.append_kind(tree::NodeKind::Path(tree::Path {
             fill: Some(tree::Fill::default()),
-            data: tree::PathData::from_rect(clip_rect),
+            data: Rc::new(tree::PathData::from_rect(clip_rect)),
             ..tree::Path::default()
         }));
 
