@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::qt;
-use usvg::try_opt;
 
 use crate::{prelude::*, ConvTransform};
 
@@ -151,7 +150,7 @@ fn prepare_radial(
 fn prepare_base_gradient(
     g: &usvg::BaseGradient,
     opacity: usvg::Opacity,
-    grad: &mut qt::Gradient,
+    grad: &mut dyn qt::Gradient,
 ) {
     let spread_method = match g.spread_method {
         usvg::SpreadMethod::Pad => qt::Spread::Pad,

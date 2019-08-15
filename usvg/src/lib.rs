@@ -64,7 +64,6 @@ Full spec can be found [here](https://github.com/RazrFalcon/usvg/blob/master/doc
 #![warn(missing_copy_implementations)]
 
 /// Unwraps `Option` and invokes `return` on `None`.
-#[macro_export]
 macro_rules! try_opt {
     ($task:expr) => {
         match $task {
@@ -75,7 +74,6 @@ macro_rules! try_opt {
 }
 
 /// Unwraps `Option` and invokes `return $ret` on `None`.
-#[macro_export]
 macro_rules! try_opt_or {
     ($task:expr, $ret:expr) => {
         match $task {
@@ -86,7 +84,6 @@ macro_rules! try_opt_or {
 }
 
 /// Unwraps `Option` and invokes `return` on `None` with a warning.
-#[macro_export]
 macro_rules! try_opt_warn {
     ($task:expr, $msg:expr) => {
         match $task {
@@ -109,7 +106,6 @@ macro_rules! try_opt_warn {
 }
 
 /// Unwraps `Option` and invokes `return $ret` on `None` with a warning.
-#[macro_export]
 macro_rules! try_opt_warn_or {
     ($task:expr, $ret:expr, $msg:expr) => {
         match $task {

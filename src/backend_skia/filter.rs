@@ -8,7 +8,7 @@ use std::rc::Rc;
 use crate::skia;
 use rgb::FromSlice;
 use log::warn;
-use usvg::{try_opt_or, ColorInterpolation as ColorSpace};
+use usvg::ColorInterpolation as ColorSpace;
 
 use crate::prelude::*;
 use crate::filter::{self, Error, Filter, ImageExt};

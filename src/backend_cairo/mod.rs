@@ -11,7 +11,7 @@ use crate::{prelude::*, layers, ConvTransform};
 
 macro_rules! try_create_surface {
     ($size:expr, $ret:expr) => {
-        usvg::try_opt_warn_or!(
+        try_opt_warn_or!(
             cairo::ImageSurface::create(
                 cairo::Format::ARgb32,
                 $size.width() as i32,
@@ -98,7 +98,6 @@ impl OutputImage for cairo::ImageSurface {
         // Cairo doesn't support custom compression levels,
         // so we are using the `png` crate to save a surface manually.
 
-        use usvg::try_opt_or;
         use rgb::FromSlice;
         use std::mem::swap;
 

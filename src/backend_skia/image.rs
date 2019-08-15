@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::skia;
-use usvg::try_opt;
 
 use crate::prelude::*;
 use crate::image;
@@ -40,7 +39,7 @@ pub fn draw_raster(
 
     let image = {
         let (w, h) = img.size.dimensions();
-        let mut image = usvg::try_opt_warn_or!(
+        let mut image = try_opt_warn_or!(
             skia::Surface::new_rgba(w, h), (),
             "Failed to create a {}x{} surface.", w, h
         );

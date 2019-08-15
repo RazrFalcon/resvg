@@ -8,7 +8,23 @@ use std::{cmp, f64, fmt};
 
 use usvg;
 pub use usvg::{Rect, Size};
-pub(crate) use usvg::f64_bound;
+
+
+/// Bounds `f64` number.
+#[inline]
+pub(crate) fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
+    debug_assert!(min.is_finite());
+    debug_assert!(val.is_finite());
+    debug_assert!(max.is_finite());
+
+    if val > max {
+        return max;
+    } else if val < min {
+        return min;
+    }
+
+    val
+}
 
 
 /// A 2D screen size representation.

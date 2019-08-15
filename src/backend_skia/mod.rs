@@ -11,7 +11,7 @@ use crate::{prelude::*, layers, ConvTransform};
 
 macro_rules! try_create_surface {
     ($size:expr, $ret:expr) => {
-        usvg::try_opt_warn_or!(
+        try_opt_warn_or!(
             skia::Surface::new_rgba_premultiplied($size.width(), $size.height()),
             $ret,
             "Failed to create a {}x{} surface.", $size.width(), $size.height()

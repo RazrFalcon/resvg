@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::skia;
-use usvg::try_opt;
 
 use crate::{prelude::*, ConvTransform};
 use super::{path, SkiaLayers};
