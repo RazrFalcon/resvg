@@ -32,17 +32,12 @@ use self::prelude::*;
 
 #[derive(Clone)]
 pub struct State<'a> {
-    current_root: svgtree::Node<'a>,
+    parent_clip_path: Option<svgtree::Node<'a>>,
+    parent_marker: Option<svgtree::Node<'a>>,
     size: Size,
     view_box: Rect,
     db: Rc<RefCell<fontdb::Database>>,
     opt: &'a Options,
-}
-
-impl<'a> State<'a> {
-    pub fn is_in_clip_path(&self) -> bool {
-        self.current_root.has_tag_name(EId::ClipPath)
-    }
 }
 
 
@@ -81,7 +76,8 @@ pub fn convert_doc(
     };
 
     let state = State {
-        current_root: svg,
+        parent_clip_path: None,
+        parent_marker: None,
         size,
         view_box: view_box.rect,
         db: Rc::new(RefCell::new(fontdb::Database::new())),
@@ -104,7 +100,8 @@ fn resolve_svg_size(
     opt: &Options,
 ) -> Result<Size, Error> {
     let mut state = State {
-        current_root: svg.clone(),
+        parent_clip_path: None,
+        parent_marker: None,
         size: Size::new(100.0, 100.0).unwrap(),
         view_box: Rect::new(0.0, 0.0, 100.0, 100.0).unwrap(),
         db: Rc::new(RefCell::new(fontdb::Database::new())),
@@ -313,7 +310,7 @@ fn convert_group(
     tree: &mut tree::Tree,
 ) -> GroupKind {
     // A `clipPath` child cannot have an opacity.
-    let opacity = if !state.is_in_clip_path() {
+    let opacity = if state.parent_clip_path.is_none() {
         node.attribute(AId::Opacity).unwrap_or_default()
     } else {
         tree::Opacity::default()
@@ -341,7 +338,7 @@ fn convert_group(
 
     let clip_path = resolve_link!(AId::ClipPath, clip_and_mask::convert_clip);
 
-    let mask = if !state.is_in_clip_path() {
+    let mask = if state.parent_clip_path.is_none() {
         resolve_link!(AId::Mask, clip_and_mask::convert_mask)
     } else {
         None
@@ -349,7 +346,7 @@ fn convert_group(
 
 
     let mut filter = None;
-    if !state.is_in_clip_path() {
+    if state.parent_clip_path.is_none() {
         if let Some(link) = node.attribute::<svgtree::Node>(AId::Filter) {
             filter = filter::convert(link, state, tree);
 

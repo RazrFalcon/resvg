@@ -47,7 +47,7 @@ pub fn convert(
 
         if let Some(marker) = marker {
             // Check for recursive marker.
-            if state.current_root == marker {
+            if state.parent_marker == Some(marker) {
                 continue;
             }
 
@@ -158,7 +158,7 @@ fn resolve(
         }));
 
         let mut marker_state = state.clone();
-        marker_state.current_root = marker_node.clone();
+        marker_state.parent_marker = Some(marker_node);
         super::convert_children(marker_node, &marker_state, &mut g_node, tree);
 
         if !g_node.has_children() {

@@ -6,6 +6,8 @@ CONFIG   -= app_bundle
 
 TEMPLATE = app
 
+CONFIG += c++11
+
 QMAKE_CXXFLAGS += -Wextra -Wpedantic
 
 QMAKE_CXXFLAGS += -fsanitize=address

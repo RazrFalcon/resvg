@@ -1,5 +1,0 @@
-e-mask-028.svg
-e-clipPath-020.svg
-e-clipPath-036.svg
-e-clipPath-037.svg
-e-filter-058.svg

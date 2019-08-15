@@ -12,7 +12,7 @@ pub fn resolve_fill(
     state: &State,
     tree: &mut tree::Tree,
 ) -> Option<tree::Fill> {
-    if state.is_in_clip_path() {
+    if state.parent_clip_path.is_some() {
         // A `clipPath` child can be filled only with a black color.
         return Some(tree::Fill {
             paint: tree::Paint::Color(tree::Color::black()),
@@ -30,22 +30,12 @@ pub fn resolve_fill(
     };
 
     let opacity = sub_opacity * node.find_attribute(AId::FillOpacity).unwrap_or_default();
-
-    // The `fill-rule` should be ignored.
-    // https://www.w3.org/TR/SVG2/text.html#TextRenderingOrder
-    //
-    // 'Since the fill-rule property does not apply to SVG text elements,
-    // the specific order of the subpaths within the equivalent path does not matter.'
-    let fill_rule = if state.current_root.has_tag_name(EId::Text) {
-        tree::FillRule::NonZero
-    } else {
-        node.find_attribute(AId::FillRule).unwrap_or_default()
-    };
+    let rule = node.find_attribute(AId::FillRule).unwrap_or_default();
 
     Some(tree::Fill {
         paint,
         opacity,
-        rule: fill_rule,
+        rule,
     })
 }
 
@@ -55,7 +45,7 @@ pub fn resolve_stroke(
     state: &State,
     tree: &mut tree::Tree,
 ) -> Option<tree::Stroke> {
-    if state.is_in_clip_path() {
+    if state.parent_clip_path.is_some() {
         // A `clipPath` child cannot be stroked.
         return None;
     }

@@ -228,8 +228,11 @@ fn convert_span(
 
     let mut fill = span.fill.take();
     if let Some(ref mut fill) = fill {
-        // fill-rule on text must always be `nonzero`,
-        // otherwise overlapped characters will be clipped.
+        // The `fill-rule` should be ignored.
+        // https://www.w3.org/TR/SVG2/text.html#TextRenderingOrder
+        //
+        // 'Since the fill-rule property does not apply to SVG text elements,
+        // the specific order of the subpaths within the equivalent path does not matter.'
         fill.rule = tree::FillRule::NonZero;
     }
 

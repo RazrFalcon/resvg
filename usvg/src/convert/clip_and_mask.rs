@@ -50,7 +50,7 @@ pub fn convert_clip(
     );
 
     let mut clip_state = state.clone();
-    clip_state.current_root = node;
+    clip_state.parent_clip_path = Some(node);
     super::convert_clip_path_elements(node, &clip_state, &mut clip, tree);
 
     if clip.has_children() {
