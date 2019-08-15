@@ -10,9 +10,13 @@ pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
     opt: &Options,
-    bbox: Option<Rect>,
     cr: &cairo::Context,
-) {
+) -> Option<Rect> {
+    let bbox = path.data.bbox();
+    if path.visibility != usvg::Visibility::Visible {
+        return bbox;
+    }
+
     let mut is_square_cap = false;
     if let Some(ref stroke) = path.stroke {
         is_square_cap = stroke.linecap == usvg::LineCap::Square;
@@ -41,6 +45,8 @@ pub fn draw(
 
     // Revert anti-aliasing.
     cr.set_antialias(cairo::Antialias::Default);
+
+    bbox
 }
 
 fn draw_path(

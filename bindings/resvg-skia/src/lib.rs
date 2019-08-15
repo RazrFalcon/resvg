@@ -67,13 +67,12 @@ pub enum FilterQuality {
     High = 3,
 }
 
-pub struct Surface(*mut ffi::skiac_surface);
+pub struct Surface {
+    ptr: *mut ffi::skiac_surface,
+    canvas: Canvas,
+}
 
 impl Surface {
-    pub unsafe fn from_raw(ptr: *mut ffi::skiac_surface) -> Surface {
-        Surface(ptr)
-    }
-
     pub fn new_rgba(width: u32, height: u32) -> Option<Surface> {
         unsafe {
             Self::from_ptr(ffi::skiac_surface_create_rgba(width as i32, height as i32))
@@ -86,45 +85,40 @@ impl Surface {
         }
     }
 
-    unsafe fn from_ptr(surface: *mut ffi::skiac_surface) -> Option<Surface> {
-        if surface.is_null() {
+    pub unsafe fn from_ptr(ptr: *mut ffi::skiac_surface) -> Option<Surface> {
+        if ptr.is_null() {
             None
         } else {
-            Some(Surface(surface))
+            Some(Surface {
+                ptr,
+                canvas: Canvas(ffi::skiac_surface_get_canvas(ptr))
+            })
         }
     }
 
     pub fn destroy(&mut self) {
-        unsafe { ffi::skiac_surface_destroy(self.0); }
+        unsafe { ffi::skiac_surface_destroy(self.ptr); }
     }
 
     pub fn copy_rgba(&self, x: u32, y: u32, width: u32, height: u32) -> Option<Surface> {
-        unsafe { Self::from_ptr(ffi::skiac_surface_copy_rgba(self.0, x, y, width, height)) }
+        unsafe { Self::from_ptr(ffi::skiac_surface_copy_rgba(self.ptr, x, y, width, height)) }
     }
 
     pub fn try_clone(&self) -> Option<Surface> {
-        unsafe { Self::from_ptr(ffi::skiac_surface_copy_rgba(self.0, 0, 0, self.width(), self.height())) }
+        unsafe { Self::from_ptr(ffi::skiac_surface_copy_rgba(self.ptr, 0, 0, self.width(), self.height())) }
     }
 
-    pub fn save(&self, path: &str) -> bool {
+    pub fn save_png(&self, path: &str) -> bool {
         let c_path = CString::new(path).unwrap();
-        unsafe { ffi::skiac_surface_save(self.0, c_path.as_ptr()) }
-    }
-
-    pub fn canvas(&self) -> Canvas {
-        unsafe { Canvas(ffi::skiac_surface_get_canvas(self.0)) }
-    }
-
-    pub fn canvas_mut(&mut self) -> Canvas {
-        unsafe { Canvas(ffi::skiac_surface_get_canvas(self.0)) }
+        unsafe { ffi::skiac_surface_save(self.ptr, c_path.as_ptr()) }
     }
 
     pub fn width(&self) -> u32 {
-        unsafe { ffi::skiac_surface_get_width(self.0) as u32 }
+        unsafe { ffi::skiac_surface_get_width(self.ptr) as u32 }
     }
 
     pub fn height(&self) -> u32 {
-        unsafe { ffi::skiac_surface_get_height(self.0) as u32 }
+        unsafe { ffi::skiac_surface_get_height(self.ptr) as u32 }
     }
 
     pub fn data(&self) -> SurfaceData {
@@ -133,7 +127,7 @@ impl Surface {
                 ptr: std::ptr::null_mut(),
                 size: 0,
             };
-            ffi::skiac_surface_read_pixels(self.0, &mut data);
+            ffi::skiac_surface_read_pixels(self.ptr, &mut data);
 
             SurfaceData {
                 slice: slice::from_raw_parts_mut(data.ptr, data.size as usize),
@@ -147,7 +141,7 @@ impl Surface {
                 ptr: std::ptr::null_mut(),
                 size: 0,
             };
-            ffi::skiac_surface_read_pixels(self.0, &mut data);
+            ffi::skiac_surface_read_pixels(self.ptr, &mut data);
 
             SurfaceData {
                 slice: slice::from_raw_parts_mut(data.ptr, data.size as usize),
@@ -160,10 +154,24 @@ impl Surface {
     }
 }
 
+impl std::ops::Deref for Surface {
+    type Target = Canvas;
+
+    fn deref(&self) -> &Self::Target {
+        &self.canvas
+    }
+}
+
+impl std::ops::DerefMut for Surface {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.canvas
+    }
+}
+
 impl Drop for Surface {
     fn drop(&mut self) {
         unsafe {
-            ffi::skiac_surface_destroy(self.0);
+            ffi::skiac_surface_destroy(self.ptr);
         }
     }
 }
@@ -242,15 +250,15 @@ impl Drop for Matrix {
 pub struct Canvas(*mut ffi::skiac_canvas);
 
 impl Canvas {
-    pub fn clear(&self) {
+    pub fn clear(&mut self) {
         unsafe { ffi::skiac_canvas_clear(self.0, 0); }
     }
 
-    pub fn fill(&self, r: u8, g: u8, b: u8, a: u8) {
+    pub fn fill(&mut self, r: u8, g: u8, b: u8, a: u8) {
         unsafe { ffi::skiac_canvas_clear(self.0, (a as u32) << 24 | (r as u32) << 16 | (g as u32) << 8 | b as u32); }
     }
 
-    pub fn flush(&self) {
+    pub fn flush(&mut self) {
          unsafe { ffi::skiac_canvas_flush(self.0); }
     }
 
@@ -286,7 +294,7 @@ impl Canvas {
                         blend_mode: BlendMode, filter_quality: FilterQuality) {
         unsafe {
             ffi::skiac_canvas_draw_surface(
-                self.0, surface.0, left, top, alpha, blend_mode as i32, filter_quality as i32,
+                self.0, surface.ptr, left, top, alpha, blend_mode as i32, filter_quality as i32,
             );
         }
     }
@@ -295,7 +303,7 @@ impl Canvas {
                              filter_quality: FilterQuality) {
         unsafe {
             ffi::skiac_canvas_draw_surface_rect(
-                self.0, surface.0, x, y, w, h, filter_quality as i32,
+                self.0, surface.ptr, x, y, w, h, filter_quality as i32,
             );
         }
     }
@@ -470,7 +478,7 @@ impl Shader {
 
     pub fn new_from_surface_image(surface: &Surface, matrix: Matrix) -> Shader {
         unsafe {
-            Shader(ffi::skiac_shader_make_from_surface_image(surface.0, matrix.0))
+            Shader(ffi::skiac_shader_make_from_surface_image(surface.ptr, matrix.0))
         }
     }
 }

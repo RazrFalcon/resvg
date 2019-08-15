@@ -13,10 +13,14 @@ pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
     opt: &Options,
-    bbox: Option<Rect>,
+    blend_mode: skia::BlendMode,
     surface: &mut skia::Surface,
-    blend_mode: skia::BlendMode
 ) -> Option<Rect> {
+    let bbox = path.data.bbox();
+    if path.visibility != usvg::Visibility::Visible {
+        return bbox;
+    }
+
     // `usvg` guaranties that path without a bbox will not use
     // a paint server with ObjectBoundingBox,
     // so we can pass whatever rect we want, because it will not be used anyway.
@@ -31,21 +35,20 @@ pub fn draw(
 
     let antialias = crate::use_shape_antialiasing(path.rendering_mode);
 
-    let mut canvas = surface.canvas_mut();
-    let global_ts = usvg::Transform::from_native(&canvas.get_matrix());
+    let global_ts = usvg::Transform::from_native(&surface.get_matrix());
 
     if path.fill.is_some() {
         let mut fill = style::fill(tree, &path.fill, opt, style_bbox, global_ts);
         fill.set_anti_alias(antialias);
         fill.set_blend_mode(blend_mode);
-        canvas.draw_path(&skia_path, &fill);
+        surface.draw_path(&skia_path, &fill);
     }
 
     if path.stroke.is_some() {
         let mut stroke = style::stroke(tree, &path.stroke, opt, style_bbox, global_ts);
         stroke.set_anti_alias(antialias);
         stroke.set_blend_mode(blend_mode);
-        canvas.draw_path(&skia_path, &stroke);
+        surface.draw_path(&skia_path, &stroke);
     }
 
     bbox

@@ -10,6 +10,24 @@ use crate::ConvTransform;
 use super::RaqoteDrawTargetExt;
 
 
+pub fn draw(
+    image: &usvg::Image,
+    opt: &Options,
+    dt: &mut raqote::DrawTarget,
+) -> Rect {
+    if image.visibility != usvg::Visibility::Visible {
+        return image.view_box.rect;
+    }
+
+    if image.format == usvg::ImageFormat::SVG {
+        draw_svg(&image.data, image.view_box, opt, dt);
+    } else {
+        draw_raster(image.format, &image.data, image.view_box, image.rendering_mode, opt, dt);
+    }
+
+    image.view_box.rect
+}
+
 pub fn draw_raster(
     format: usvg::ImageFormat,
     data: &usvg::ImageData,

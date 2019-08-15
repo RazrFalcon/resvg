@@ -5,9 +5,7 @@
 use crate::skia;
 use usvg::try_opt;
 
-use crate::prelude::*;
-use crate::{ConvTransform, FlatRender};
-use super::SkiaFlatRender;
+use crate::{prelude::*, ConvTransform};
 
 pub fn fill(
     tree: &usvg::Tree,
@@ -197,25 +195,22 @@ fn prepare_pattern(
 
     let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy)).to_screen_size();
     let mut surface =  try_create_surface!(img_size, ());
-    let mut canvas = surface.canvas_mut();
-    canvas.clear();
+    surface.clear();
 
-    canvas.scale(sx, sy);
+    surface.scale(sx, sy);
     if let Some(vbox) = pattern.view_box {
         let ts = utils::view_box_to_transform(vbox.rect, vbox.aspect, r.size());
-        canvas.concat(&ts.to_native());
+        surface.concat(&ts.to_native());
     } else if pattern.content_units == usvg::Units::ObjectBoundingBox {
         // 'Note that this attribute has no effect if attribute `viewBox` is specified.'
 
         // We don't use Transform::from_bbox(bbox) because `x` and `y` should be
         // ignored for some reasons...
-        canvas.scale(bbox.width(), bbox.height());
+        surface.scale(bbox.width(), bbox.height());
     }
 
-    let ref tree = pattern_node.tree();
-    let mut render = SkiaFlatRender::new(tree, opt, img_size, &mut surface);
-    render.render_group(pattern_node);
-    render.finish();
+    let mut layers = super::create_layers(img_size);
+    super::render_group(pattern_node, opt, &mut layers, &mut surface);
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);

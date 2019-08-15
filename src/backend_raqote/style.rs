@@ -4,9 +4,8 @@
 
 use usvg::try_opt;
 
-use crate::prelude::*;
-use crate::{ConvTransform, FlatRender};
-use super::{ColorExt, RaqoteDrawTargetExt, RaqoteFlatRender};
+use crate::{prelude::*, ConvTransform};
+use super::{ColorExt, RaqoteDrawTargetExt};
 
 
 pub fn fill(
@@ -202,7 +201,7 @@ fn prepare_radial<'a>(
     }
 
     match grad {
-        raqote::Source::RadialGradient(_, _, ref mut transform)
+          raqote::Source::RadialGradient(_, _, ref mut transform)
         | raqote::Source::TwoCircleRadialGradient(_, _, _, _, _, _, ref mut transform) => {
             let ts: raqote::Transform = ts.to_native();
             if let Some(ts) = ts.inverse() {
@@ -272,9 +271,8 @@ fn prepare_pattern<'a>(
         dt.transform(&raqote::Transform::create_scale(bbox.width() as f32, bbox.height() as f32));
     }
 
-    let ref tree = pattern_node.tree();
-    let mut render = RaqoteFlatRender::new(tree, opt, img_size, &mut dt);
-    render.render_group(pattern_node);
+    let mut layers = super::create_layers(img_size);
+    super::render_group(pattern_node, opt, &mut layers, &mut dt);
 
     let img = if !opacity.is_default() {
         // If `opacity` isn't `1` then we have to make image semitransparent.

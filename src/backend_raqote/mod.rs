@@ -4,17 +4,18 @@
 
 //! Raqote backend implementation.
 
-use usvg::try_opt;
 use log::warn;
 
-use crate::prelude::*;
-use crate::layers::{self, Layers};
-use crate::{FlatRender, ConvTransform, BlendMode};
+use crate::{prelude::*, layers, ConvTransform};
 
+mod clip_and_mask;
 mod filter;
 mod image;
 mod path;
 mod style;
+
+
+type RaqoteLayers = layers::Layers<raqote::DrawTarget>;
 
 
 impl ConvTransform<raqote::Transform> for usvg::Transform {
@@ -185,15 +186,17 @@ pub fn render_node_to_canvas(
     img_size: ScreenSize,
     dt: &mut raqote::DrawTarget,
 ) {
-    let tree = node.tree();
-    let mut render = RaqoteFlatRender::new(&tree, opt, img_size, dt);
+    let mut layers = create_layers(img_size);
 
+    apply_viewbox_transform(view_box, img_size, dt);
+
+    let curr_ts = *dt.get_transform();
     let mut ts = node.abs_transform();
     ts.append(&node.transform());
 
-    render.apply_viewbox(view_box, img_size);
-    render.apply_transform(ts);
-    render.render_node(node);
+    dt.transform(&ts.to_native());
+    render_node(node, opt, &mut layers, dt);
+    dt.set_transform(&curr_ts);
 }
 
 fn create_target(
@@ -207,197 +210,145 @@ fn create_target(
     Some((dt, img_size))
 }
 
-impl Into<raqote::BlendMode> for BlendMode {
-    fn into(self) -> raqote::BlendMode {
-        match self {
-            BlendMode::SourceOver => raqote::BlendMode::SrcOver,
-            BlendMode::Clear => raqote::BlendMode::Clear,
-            BlendMode::DestinationIn => raqote::BlendMode::DstIn,
-            BlendMode::DestinationOut => raqote::BlendMode::DstOut,
-            BlendMode::Xor => raqote::BlendMode::Xor,
+/// Applies viewbox transformation to the painter.
+fn apply_viewbox_transform(
+    view_box: usvg::ViewBox,
+    img_size: ScreenSize,
+    dt: &mut raqote::DrawTarget,
+) {
+    let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_size());
+    dt.transform(&ts.to_native());
+}
+
+fn render_node(
+    node: &usvg::Node,
+    opt: &Options,
+    layers: &mut RaqoteLayers,
+    dt: &mut raqote::DrawTarget,
+) -> Option<Rect> {
+    match *node.borrow() {
+        usvg::NodeKind::Svg(_) => {
+            render_group(node, opt, layers, dt)
         }
+        usvg::NodeKind::Path(ref path) => {
+            path::draw(&node.tree(), path, opt, raqote::DrawOptions::default(), dt)
+        }
+        usvg::NodeKind::Image(ref img) => {
+            Some(image::draw(img, opt, dt))
+        }
+        usvg::NodeKind::Group(ref g) => {
+            render_group_impl(node, g, opt, layers, dt)
+        }
+        _ => None,
     }
 }
 
-impl layers::Image for raqote::DrawTarget {
-    fn new(size: ScreenSize) -> Option<Self> {
-        Some(raqote::DrawTarget::new(size.width() as i32, size.height() as i32))
+fn render_group(
+    parent: &usvg::Node,
+    opt: &Options,
+    layers: &mut RaqoteLayers,
+    dt: &mut raqote::DrawTarget,
+) -> Option<Rect> {
+    let curr_ts = *dt.get_transform();
+    let mut g_bbox = Rect::new_bbox();
+
+    for node in parent.children() {
+        dt.transform(&node.transform().to_native());
+
+        let bbox = render_node(&node, opt, layers, dt);
+
+        if let Some(bbox) = bbox {
+            let bbox = bbox.transform(&node.transform()).unwrap();
+            g_bbox = g_bbox.expand(bbox);
+        }
+
+        // Revert transform.
+        dt.set_transform(&curr_ts);
     }
 
-    fn clear(&mut self) {
-        self.make_transparent();
+    // Check that bbox was changed, otherwise we will have a rect with x/y set to f64::MAX.
+    if g_bbox.fuzzy_ne(&Rect::new_bbox()) {
+        Some(g_bbox)
+    } else {
+        None
     }
 }
 
-struct RaqoteFlatRender<'a> {
-    tree: &'a usvg::Tree,
-    opt: &'a Options,
-    dt: &'a mut raqote::DrawTarget,
-    blend_mode: BlendMode,
-    clip_rect: Option<Rect>,
-    layers: Layers<raqote::DrawTarget>,
+fn render_group_impl(
+    node: &usvg::Node,
+    g: &usvg::Group,
+    opt: &Options,
+    layers: &mut RaqoteLayers,
+    dt: &mut raqote::DrawTarget,
+) -> Option<Rect> {
+    let sub_dt = layers.get()?;
+    let mut sub_dt = sub_dt.borrow_mut();
+
+    let curr_ts = *dt.get_transform();
+
+    let bbox = {
+        sub_dt.set_transform(&curr_ts);
+        render_group(node, opt, layers, &mut sub_dt)
+    };
+
+    // Filter can be rendered on an object without a bbox,
+    // as long as filter uses `userSpaceOnUse`.
+    if let Some(ref id) = g.filter {
+        if let Some(filter_node) = node.tree().defs_by_id(id) {
+            if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
+                let ts = usvg::Transform::from_native(&curr_ts);
+                filter::apply(filter, bbox, &ts, opt, &mut sub_dt);
+            }
+        }
+    }
+
+    // Clipping and masking can be done only for objects with a valid bbox.
+    if let Some(bbox) = bbox {
+        if let Some(ref id) = g.clip_path {
+            if let Some(clip_node) = node.tree().defs_by_id(id) {
+                if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
+                    sub_dt.set_transform(&curr_ts);
+
+                    clip_and_mask::clip(&clip_node, cp, opt, bbox, layers, &mut sub_dt);
+                }
+            }
+        }
+
+        if let Some(ref id) = g.mask {
+            if let Some(mask_node) = node.tree().defs_by_id(id) {
+                if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
+                    sub_dt.set_transform(&curr_ts);
+
+                    clip_and_mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_dt);
+                }
+            }
+        }
+    }
+
+    dt.set_transform(&raqote::Transform::default());
+
+    dt.draw_image_at(0.0, 0.0, &sub_dt.as_image(), &raqote::DrawOptions {
+        blend_mode: raqote::BlendMode::SrcOver,
+        alpha: g.opacity.value() as f32,
+        antialias: raqote::AntialiasMode::Gray,
+    });
+
+    dt.set_transform(&curr_ts);
+
+    bbox
 }
 
-impl<'a> RaqoteFlatRender<'a> {
-    fn new(
-        tree: &'a usvg::Tree,
-        opt: &'a Options,
-        img_size: ScreenSize,
-        dt: &'a mut raqote::DrawTarget,
-    ) -> Self {
-        RaqoteFlatRender {
-            tree,
-            opt,
-            dt,
-            blend_mode: BlendMode::default(),
-            clip_rect: None,
-            layers: Layers::new(img_size),
-        }
-    }
-
-    fn paint<F>(&mut self, f: F)
-        where F: FnOnce(&usvg::Tree, &Options, raqote::DrawOptions, &mut raqote::DrawTarget)
-    {
-        match self.layers.current_mut() {
-            Some(layer) => {
-                let dt = &mut layer.img;
-                dt.set_transform(&layer.ts.to_native());
-
-                if let Some(r) = layer.clip_rect {
-                    let mut pb = raqote::PathBuilder::new();
-                    pb.rect(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
-                    dt.push_clip(&pb.finish());
-                }
-
-                let mut draw_opt = raqote::DrawOptions::default();
-                draw_opt.blend_mode = layer.blend_mode.into();
-
-                f(self.tree, self.opt, draw_opt, dt);
-
-                dt.set_transform(&raqote::Transform::default());
-
-                if layer.clip_rect.is_some() {
-                    dt.pop_clip();
-                }
-            }
-            None => {
-                if let Some(r) = self.clip_rect {
-                    let mut pb = raqote::PathBuilder::new();
-                    pb.rect(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
-                    self.dt.push_clip(&pb.finish());
-                }
-
-                let mut draw_opt = raqote::DrawOptions::default();
-                draw_opt.blend_mode = self.blend_mode.into();
-
-                f(self.tree, self.opt, draw_opt, self.dt);
-
-                if self.clip_rect.is_some() {
-                    self.dt.pop_clip();
-                }
-            }
-        }
-    }
+fn create_layers(img_size: ScreenSize) -> RaqoteLayers {
+    layers::Layers::new(img_size, create_subsurface, clear_subsurface)
 }
 
-impl<'a> FlatRender for RaqoteFlatRender<'a> {
-    fn draw_path(&mut self, path: &usvg::Path, bbox: Option<Rect>) {
-        self.paint(|tree, opt, draw_opt, dt| {
-            path::draw(tree, path, opt, draw_opt, bbox, dt);
-        });
-    }
+fn create_subsurface(
+    size: ScreenSize,
+) -> Option<raqote::DrawTarget> {
+    Some(raqote::DrawTarget::new(size.width() as i32, size.height() as i32))
+}
 
-    fn draw_svg_image(&mut self, image: &usvg::Image) {
-        self.paint(|_, opt, _, dt| {
-            image::draw_svg(&image.data, image.view_box, opt, dt);
-        });
-    }
-
-    fn draw_raster_image(&mut self, image: &usvg::Image) {
-        self.paint(|_, opt, _, dt| {
-            image::draw_raster(
-                image.format, &image.data, image.view_box, image.rendering_mode, opt, dt,
-            );
-        });
-    }
-
-    fn filter(&mut self, filter: &usvg::Filter, bbox: Option<Rect>, ts: usvg::Transform) {
-        if let Some(layer) = self.layers.current_mut() {
-            filter::apply(filter, bbox, &ts, &self.opt, &mut layer.img);
-        }
-    }
-
-    fn fill_layer(&mut self, r: u8, g: u8, b: u8, a: u8) {
-        if let Some(layer) = self.layers.current_mut() {
-            layer.img.clear(raqote::SolidSource { r, g, b, a });
-        }
-    }
-
-    fn push_layer(&mut self) -> Option<()> {
-        self.layers.push()
-    }
-
-    fn pop_layer(&mut self, opacity: usvg::Opacity, mode: BlendMode) {
-        let last = try_opt!(self.layers.pop());
-        match self.layers.current_mut() {
-            Some(prev) => {
-                prev.img.draw_image_at(0.0, 0.0, &last.img.as_image(), &raqote::DrawOptions {
-                    blend_mode: mode.into(),
-                    alpha: opacity.value() as f32,
-                    antialias: raqote::AntialiasMode::Gray,
-                });
-            }
-            None => {
-                let curr_ts = *self.dt.get_transform();
-                self.reset_transform();
-
-                self.dt.draw_image_at(0.0, 0.0, &last.img.as_image(), &raqote::DrawOptions {
-                    blend_mode: mode.into(),
-                    alpha: opacity.value() as f32,
-                    antialias: raqote::AntialiasMode::Gray,
-                });
-
-                self.dt.set_transform(&curr_ts);
-                self.blend_mode = BlendMode::default();
-                self.clip_rect = None;
-            }
-        }
-
-        self.layers.push_back(last);
-    }
-
-    fn apply_mask(&mut self) {
-        let img_size = self.layers.img_size();
-        if let Some(layer) = self.layers.current_mut() {
-            crate::image_to_mask(layer.img.get_data_u8_mut(), img_size);
-        }
-    }
-
-    fn set_composition_mode(&mut self, mode: BlendMode) {
-        match self.layers.current_mut() {
-            Some(layer) => layer.blend_mode = mode,
-            None => self.blend_mode = mode.into(),
-        }
-    }
-
-    fn set_clip_rect(&mut self, rect: Rect) {
-        match self.layers.current_mut() {
-            Some(layer) => layer.clip_rect = Some(rect),
-            None => self.clip_rect = Some(rect),
-        }
-    }
-
-    fn get_transform(&self) -> usvg::Transform {
-        match self.layers.current() {
-            Some(layer) => layer.ts,
-            None => usvg::Transform::from_native(self.dt.get_transform()),
-        }
-    }
-
-    fn set_transform(&mut self, ts: usvg::Transform) {
-        match self.layers.current_mut() {
-            Some(layer) => layer.ts = ts,
-            None => self.dt.set_transform(&ts.to_native()),
-        }
-    }
+fn clear_subsurface(dt: &mut raqote::DrawTarget) {
+    dt.set_transform(&raqote::Transform::identity());
+    dt.make_transparent();
 }

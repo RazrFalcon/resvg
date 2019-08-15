@@ -11,9 +11,13 @@ pub fn draw(
     path: &usvg::Path,
     opt: &Options,
     draw_opt: raqote::DrawOptions,
-    bbox: Option<Rect>,
     dt: &mut raqote::DrawTarget,
-) {
+) -> Option<Rect> {
+    let bbox = path.data.bbox();
+    if path.visibility != usvg::Visibility::Visible {
+        return bbox;
+    }
+
     let mut is_butt_cap = true;
     if let Some(ref stroke) = path.stroke {
         is_butt_cap = stroke.linecap == usvg::LineCap::Butt;
@@ -40,6 +44,8 @@ pub fn draw(
 
     style::fill(tree, &new_path, &path.fill, opt, style_bbox, &draw_opt, dt);
     style::stroke(tree, &new_path, &path.stroke, opt, style_bbox, &draw_opt, dt);
+
+    bbox
 }
 
 fn conv_path(

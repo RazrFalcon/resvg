@@ -9,6 +9,24 @@ use crate::image;
 use crate::ConvTransform;
 
 
+pub fn draw(
+    image: &usvg::Image,
+    opt: &Options,
+    cr: &cairo::Context,
+) -> Rect {
+    if image.visibility != usvg::Visibility::Visible {
+        return image.view_box.rect;
+    }
+
+    if image.format == usvg::ImageFormat::SVG {
+        draw_svg(&image.data, image.view_box, opt, cr);
+    } else {
+        draw_raster(image.format, &image.data, image.view_box, image.rendering_mode, opt, cr);
+    }
+
+    image.view_box.rect
+}
+
 pub fn draw_raster(
     format: usvg::ImageFormat,
     data: &usvg::ImageData,

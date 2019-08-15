@@ -4,9 +4,8 @@
 
 use usvg::try_opt;
 
-use crate::prelude::*;
-use crate::{ConvTransform, FlatRender};
-use super::{ReCairoContextExt, CairoFlatRender};
+use crate::{prelude::*, ConvTransform};
+use super::ReCairoContextExt;
 
 
 pub fn fill(
@@ -207,9 +206,8 @@ fn prepare_pattern(
         sub_cr.scale(bbox.width(), bbox.height());
     }
 
-    let ref tree = node.tree();
-    let mut render = CairoFlatRender::new(tree, opt, img_size, &sub_cr);
-    render.render_group(node);
+    let mut layers = super::create_layers(img_size);
+    super::render_group(node, opt, &mut layers, &sub_cr);
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);

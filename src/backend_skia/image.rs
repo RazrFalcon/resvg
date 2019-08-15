@@ -10,6 +10,24 @@ use crate::image;
 use crate::ConvTransform;
 
 
+pub fn draw(
+    image: &usvg::Image,
+    opt: &Options,
+    surface: &mut skia::Surface,
+) -> Rect {
+    if image.visibility != usvg::Visibility::Visible {
+        return image.view_box.rect;
+    }
+
+    if image.format == usvg::ImageFormat::SVG {
+        draw_svg(&image.data, image.view_box, opt, surface);
+    } else {
+        draw_raster(image.format, &image.data, image.view_box, image.rendering_mode, opt, surface);
+    }
+
+    image.view_box.rect
+}
+
 pub fn draw_raster(
     format: usvg::ImageFormat,
     data: &usvg::ImageData,
@@ -37,19 +55,18 @@ pub fn draw_raster(
         filter = skia::FilterQuality::None;
     }
 
-    let mut canvas = surface.canvas_mut();
-    canvas.save();
+    surface.save();
 
     if view_box.aspect.slice {
         let r = view_box.rect;
-        canvas.set_clip_rect(r.x(), r.y(), r.width(), r.height());
+        surface.set_clip_rect(r.x(), r.y(), r.width(), r.height());
     }
 
     let r = image::image_rect(&view_box, img.size);
-    canvas.draw_surface_rect(&image, r.x(), r.y(), r.width(), r.height(), filter);
+    surface.draw_surface_rect(&image, r.x(), r.y(), r.width(), r.height(), filter);
 
     // Revert.
-    canvas.restore();
+    surface.restore();
 }
 
 fn image_to_surface(image: &image::Image, surface: &mut [u8]) {
@@ -120,10 +137,14 @@ pub fn draw_svg(
     let img_size = tree.svg_node().size.to_screen_size();
     let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);
 
+    surface.save();
+
     if let Some(clip) = clip {
-        surface.canvas_mut().set_clip_rect(clip.x(), clip.y(), clip.width(), clip.height());
+        surface.set_clip_rect(clip.x(), clip.y(), clip.width(), clip.height());
     }
 
-    surface.canvas_mut().concat(&ts.to_native());
+    surface.concat(&ts.to_native());
     super::render_to_canvas(&tree, &sub_opt, img_size, surface);
+
+    surface.restore();
 }

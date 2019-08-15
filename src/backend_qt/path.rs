@@ -12,10 +12,12 @@ pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
     opt: &Options,
-    bbox: Option<Rect>,
     p: &mut qt::Painter,
-) {
-    let mut p_path = qt::PainterPath::new();
+) -> Option<Rect> {
+    let bbox = path.data.bbox();
+    if path.visibility != usvg::Visibility::Visible {
+        return bbox;
+    }
 
     let fill_rule = if let Some(ref fill) = path.fill {
         fill.rule
@@ -23,7 +25,7 @@ pub fn draw(
         usvg::FillRule::NonZero
     };
 
-    convert_path(&path.data, fill_rule, &mut p_path);
+    let new_path = convert_path(&path.data, fill_rule);
 
     // `usvg` guaranties that path without a bbox will not use
     // a paint server with ObjectBoundingBox,
@@ -34,17 +36,18 @@ pub fn draw(
     style::stroke(tree, &path.stroke, opt, style_bbox, p);
     p.set_antialiasing(crate::use_shape_antialiasing(path.rendering_mode));
 
-    p.draw_path(&p_path);
+    p.draw_path(&new_path);
 
     // Revert anti-aliasing.
     p.set_antialiasing(true);
+
+    bbox
 }
 
 fn convert_path(
-    list: &[usvg::PathSegment],
+    segments: &[usvg::PathSegment],
     rule: usvg::FillRule,
-    p_path: &mut qt::PainterPath,
-) {
+) -> qt::PainterPath {
     // Qt's QPainterPath automatically closes open subpaths if start and end positions are equal.
     // This is an incorrect behaviour according to the SVG.
     // So we have to shift the last segment a bit, to prevent such behaviour.
@@ -52,22 +55,24 @@ fn convert_path(
     // 'A closed path has coinciding start and end points.'
     // https://doc.qt.io/qt-5/qpainterpath.html#details
 
+    let mut new_path = qt::PainterPath::new();
+
     let mut prev_mx = 0.0;
     let mut prev_my = 0.0;
     let mut prev_x = 0.0;
     let mut prev_y = 0.0;
 
-    let len = list.len();
+    let len = segments.len();
     let mut i = 0;
     while i < len {
-        let ref seg1 = list[i];
+        let ref seg1 = segments[i];
 
         // Check that current segment is the last segment of the subpath.
         let is_last_subpath_seg = {
             if i == len - 1 {
                 true
             } else {
-                if let usvg::PathSegment::MoveTo { .. } = list[i + 1] {
+                if let usvg::PathSegment::MoveTo { .. } = segments[i + 1] {
                     true
                 } else {
                     false
@@ -77,7 +82,7 @@ fn convert_path(
 
         match *seg1 {
             usvg::PathSegment::MoveTo { x, y } => {
-                p_path.move_to(x, y);
+                new_path.move_to(x, y);
 
                 // Remember subpath start position.
                 prev_mx = x;
@@ -94,7 +99,7 @@ fn convert_path(
                     }
                 }
 
-                p_path.line_to(x, y);
+                new_path.line_to(x, y);
 
                 prev_x = x;
                 prev_y = y;
@@ -107,16 +112,16 @@ fn convert_path(
                 }
 
                 if is_line(prev_x, prev_y, x1, y1, x2, y2, x, y) {
-                    p_path.line_to(x, y);
+                    new_path.line_to(x, y);
                 } else {
-                    p_path.curve_to(x1, y1, x2, y2, x, y);
+                    new_path.curve_to(x1, y1, x2, y2, x, y);
                 }
 
                 prev_x = x;
                 prev_y = y;
             }
             usvg::PathSegment::ClosePath => {
-                p_path.close_path();
+                new_path.close_path();
             }
         }
 
@@ -124,9 +129,11 @@ fn convert_path(
     }
 
     match rule {
-        usvg::FillRule::NonZero => p_path.set_fill_rule(qt::FillRule::Winding),
-        usvg::FillRule::EvenOdd => p_path.set_fill_rule(qt::FillRule::OddEven),
+        usvg::FillRule::NonZero => new_path.set_fill_rule(qt::FillRule::Winding),
+        usvg::FillRule::EvenOdd => new_path.set_fill_rule(qt::FillRule::OddEven),
     }
+
+    new_path
 }
 
 // If a CurveTo is approximately a LineTo than we should draw it as a LineTo,

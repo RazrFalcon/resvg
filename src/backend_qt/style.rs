@@ -5,9 +5,7 @@
 use crate::qt;
 use usvg::try_opt;
 
-use crate::prelude::*;
-use crate::{ConvTransform, FlatRender};
-use super::QtFlatRender;
+use crate::{prelude::*, ConvTransform};
 
 
 pub fn fill(
@@ -227,10 +225,9 @@ fn prepare_pattern(
         p.scale(bbox.width(), bbox.height());
     }
 
-    let ref tree = pattern_node.tree();
-    let mut render = QtFlatRender::new(tree, opt, img_size, &mut p);
-    render.render_group(pattern_node);
-    render.finish();
+    let mut layers = super::create_layers(img_size);
+    super::render_group(pattern_node, opt, &mut layers, &mut p);
+    p.end();
 
     let img = if !opacity.is_default() {
         // If `opacity` isn't `1` then we have to make image semitransparent.

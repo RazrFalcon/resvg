@@ -1,1 +1,2 @@
-e-clipPath-047.svg
+e-clipPath-037.svg
+e-mask-028.svg
