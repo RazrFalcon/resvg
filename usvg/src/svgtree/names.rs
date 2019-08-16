@@ -135,6 +135,7 @@ impl EId {
         ELEMENTS.get(text).cloned()
     }
 
+    #[inline(never)]
     pub fn to_str(&self) -> &'static str {
         ELEMENTS.key(self)
     }
@@ -148,7 +149,7 @@ impl fmt::Debug for EId {
 
 impl fmt::Display for EId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_str())
+        write!(f, "{:?}", self)
     }
 }
 
@@ -414,6 +415,7 @@ impl AId {
         ATTRIBUTES.get(text).cloned()
     }
 
+    #[inline(never)]
     pub fn to_str(&self) -> &'static str {
         ATTRIBUTES.key(self)
     }
@@ -427,7 +429,7 @@ impl fmt::Debug for AId {
 
 impl fmt::Display for AId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_str())
+        write!(f, "{:?}", self)
     }
 }
 

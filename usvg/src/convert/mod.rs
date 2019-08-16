@@ -160,6 +160,7 @@ fn get_view_box(
     }
 }
 
+#[inline(never)]
 fn convert_children(
     parent_node: svgtree::Node,
     state: &State,
@@ -171,6 +172,7 @@ fn convert_children(
     }
 }
 
+#[inline(never)]
 fn convert_element(
     node: svgtree::Node,
     state: &State,
@@ -244,6 +246,7 @@ fn convert_element(
 //
 // `line` doesn't impact rendering because stroke is always disabled
 // for `clipPath` children.
+#[inline(never)]
 fn convert_clip_path_elements(
     clip_node: svgtree::Node,
     state: &State,

@@ -51,26 +51,26 @@ fn _load_raster(
     match data {
         usvg::ImageData::Path(ref path) => {
             let path = get_abs_path(path, opt);
-            let file = fs::File::open(path).ok()?;
+            let data = fs::read(path).ok()?;
 
             if format == usvg::ImageFormat::JPEG {
-                read_jpeg(file)
+                read_jpeg(&data)
             } else {
-                read_png(file)
+                read_png(&data)
             }
         }
         usvg::ImageData::Raw(ref data) => {
             if format == usvg::ImageFormat::JPEG {
-                read_jpeg(data.as_slice())
+                read_jpeg(data)
             } else {
-                read_png(data.as_slice())
+                read_png(data)
             }
         }
     }
 }
 
-fn read_png<R: std::io::Read>(r: R) -> Option<Image> {
-    let decoder = png::Decoder::new(r);
+fn read_png(data: &[u8]) -> Option<Image> {
+    let decoder = png::Decoder::new(data);
     let (info, mut reader) = decoder.read_info().ok()?;
 
     match info.color_type {
@@ -95,8 +95,8 @@ fn read_png<R: std::io::Read>(r: R) -> Option<Image> {
     })
 }
 
-fn read_jpeg<R: std::io::Read>(r: R) -> Option<Image> {
-    let mut decoder = jpeg_decoder::Decoder::new(r);
+fn read_jpeg(data: &[u8]) -> Option<Image> {
+    let mut decoder = jpeg_decoder::Decoder::new(data);
     let img_data = decoder.decode().ok()?;
     let info = decoder.info()?;
 

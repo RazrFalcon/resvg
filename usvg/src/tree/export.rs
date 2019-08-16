@@ -375,12 +375,12 @@ trait XmlWriterExt {
 }
 
 impl XmlWriterExt for XmlWriter {
-    #[inline]
+    #[inline(never)]
     fn start_svg_element(&mut self, id: EId) {
         self.start_element(id.to_str());
     }
 
-    #[inline]
+    #[inline(never)]
     fn write_svg_attribute<V: Display + ?Sized>(&mut self, id: AId, value: &V) {
         self.write_attribute(id.to_str(), value)
     }
@@ -401,7 +401,6 @@ impl XmlWriterExt for XmlWriter {
         self.write_attribute_raw(AId::PreserveAspectRatio.to_str(), |buf| aspect.write_buf(buf));
     }
 
-    #[inline]
     fn write_units(&mut self, id: AId, units: Units, def: Units) {
         if units != def {
             self.write_attribute(id.to_str(), match units {

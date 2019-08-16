@@ -138,6 +138,7 @@ fn gen_map(
     writeln!(f, "        {}.get(text).cloned()", map_name)?;
     writeln!(f, "    }}")?;
     writeln!(f, "")?;
+    writeln!(f, "    #[inline(never)]")?;
     writeln!(f, "    pub fn to_str(&self) -> &'static str {{")?;
     writeln!(f, "        {}.key(self)", map_name)?;
     writeln!(f, "    }}")?;
@@ -151,7 +152,7 @@ fn gen_map(
 
     writeln!(f, "impl fmt::Display for {} {{", enum_name)?;
     writeln!(f, "    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {{")?;
-    writeln!(f, "        write!(f, \"{{}}\", self.to_str())")?;
+    writeln!(f, "        write!(f, \"{{:?}}\", self)")?;
     writeln!(f, "    }}")?;
     writeln!(f, "}}")?;
     writeln!(f, "")?;

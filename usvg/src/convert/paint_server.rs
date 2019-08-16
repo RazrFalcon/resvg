@@ -48,6 +48,7 @@ pub fn convert(
     }
 }
 
+#[inline(never)]
 fn convert_linear(
     node: svgtree::Node,
     state: &State,
@@ -91,6 +92,7 @@ fn convert_linear(
     })
 }
 
+#[inline(never)]
 fn convert_radial(
     node: svgtree::Node,
     state: &State,
@@ -150,6 +152,7 @@ fn convert_radial(
     })
 }
 
+#[inline(never)]
 fn convert_pattern(
     node: svgtree::Node,
     state: &State,
@@ -382,6 +385,7 @@ fn convert_stops(grad: svgtree::Node) -> Vec<tree::Stop> {
     stops
 }
 
+#[inline(never)]
 pub fn resolve_number(
     node: svgtree::Node, name: AId, units: tree::Units, state: &State, def: Length
 ) -> f64 {

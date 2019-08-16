@@ -44,6 +44,7 @@ impl Database {
         }
     }
 
+    #[inline(never)]
     #[cfg(target_os = "linux")]
     fn collect_generic_fonts(&mut self) {
         if self.fonts.is_empty() {
@@ -79,6 +80,7 @@ impl Database {
         &self.fonts
     }
 
+    #[inline(never)]
     pub fn select_best_match(
         &mut self,
         family_names: &[&str],
@@ -109,6 +111,7 @@ impl Database {
         None
     }
 
+    #[inline(never)]
     pub fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tree::PathData> {
         // We can't simplify this code because of lifetimes.
         let item = self.font(id);
@@ -121,6 +124,7 @@ impl Database {
         Some(builder.path)
     }
 
+    #[inline(never)]
     pub fn has_char(&self, id: ID, c: char) -> bool {
         self._has_char(id, c).unwrap_or(false)
     }
@@ -137,6 +141,7 @@ impl Database {
         Some(true)
     }
 
+    #[inline(never)]
     pub fn load_font(&self, id: ID) -> Option<Font> {
         // We can't simplify this code because of lifetimes.
         let item = self.font(id);
@@ -306,6 +311,7 @@ impl_enum_from_str!(Style,
 );
 
 /// From https://github.com/pcwalton/font-kit
+#[inline(never)]
 fn find_best_match(
     candidates: &[Properties],
     query: Properties,

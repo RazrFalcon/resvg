@@ -112,14 +112,6 @@ impl fmt::Debug for Document {
 
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub enum NodeType {
-    Root,
-    Element,
-    Text,
-}
-
-
-#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct NodeId(usize);
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -200,29 +192,29 @@ impl<'a> Node<'a> {
         self.id
     }
 
-    #[inline]
-    pub fn node_type(&self) -> NodeType {
-        match self.d.kind {
-            NodeKind::Root => NodeType::Root,
-            NodeKind::Element { .. } => NodeType::Element,
-            NodeKind::Text(_) => NodeType::Text,
-        }
-    }
-
     #[allow(dead_code)]
     #[inline]
     pub fn is_root(&self) -> bool {
-        self.node_type() == NodeType::Root
+        match self.d.kind {
+            NodeKind::Root => true,
+            _ => false,
+        }
     }
 
     #[inline]
     pub fn is_element(&self) -> bool {
-        self.node_type() == NodeType::Element
+        match self.d.kind {
+            NodeKind::Element { .. } => true,
+            _ => false,
+        }
     }
 
     #[inline]
     pub fn is_text(&self) -> bool {
-        self.node_type() == NodeType::Text
+        match self.d.kind {
+            NodeKind::Text(_) => true,
+            _ => false,
+        }
     }
 
     #[inline]
@@ -246,22 +238,19 @@ impl<'a> Node<'a> {
         }
     }
 
-    #[inline]
     pub fn element_id(&self) -> &str {
         self.attribute(AId::Id).unwrap_or("")
     }
 
-    #[inline]
+    #[inline(never)]
     pub fn attribute<V: FromValue<'a>>(&self, aid: AId) -> Option<V> {
         FromValue::get(*self, aid)
     }
 
-    #[inline]
     pub fn has_attribute(&self, aid: AId) -> bool {
         self.attributes().iter().any(|a| a.name == aid)
     }
 
-    #[inline]
     pub fn attributes(&self) -> &'a [Attribute] {
         match self.d.kind {
             NodeKind::Element { ref attributes, .. } => &self.doc.attrs[attributes.clone()],
@@ -269,7 +258,6 @@ impl<'a> Node<'a> {
         }
     }
 
-    #[inline]
     fn attribute_id(&self, aid: AId) -> Option<AttributeId> {
         match self.d.kind {
             NodeKind::Element { ref attributes, .. } => {
@@ -281,20 +269,30 @@ impl<'a> Node<'a> {
     }
 
     pub fn find_attribute<V: FromValue<'a>>(&self, aid: AId) -> Option<V> {
+        self.find_attribute_impl(aid).and_then(|n| n.attribute(aid))
+    }
+
+    fn find_attribute_impl(&self, aid: AId) -> Option<Node<'a>> {
         if aid.is_inheritable() {
             for n in self.ancestors() {
                 if n.has_attribute(aid) {
-                    return n.attribute(aid);
+                    return Some(n);
                 }
             }
-        } else {
-            return match self.attribute(aid) {
-                Some(v) => Some(v),
-                None => self.parent_element()?.attribute(aid),
-            };
-        }
 
-        None
+            None
+        } else {
+            if self.has_attribute(aid) {
+                Some(*self)
+            } else {
+                let n = self.parent_element()?;
+                if n.has_attribute(aid) {
+                    Some(n)
+                } else {
+                    None
+                }
+            }
+        }
     }
 
     pub fn find_node_with_attribute(&self, aid: AId) -> Option<Node> {
@@ -354,7 +352,6 @@ impl<'a> Node<'a> {
         Node { id, d: &self.doc.nodes[id.0], doc: self.doc }
     }
 
-    #[inline]
     pub fn parent(&self) -> Option<Self> {
         self.d.parent.map(|id| self.gen_node(id))
     }
@@ -363,17 +360,14 @@ impl<'a> Node<'a> {
         self.ancestors().skip(1).filter(|n| n.is_element()).nth(0)
     }
 
-    #[inline]
     pub fn prev_sibling(&self) -> Option<Self> {
         self.d.prev_sibling.map(|id| self.gen_node(id))
     }
 
-    #[inline]
     pub fn next_sibling(&self) -> Option<Self> {
         self.d.next_sibling.map(|id| self.gen_node(id))
     }
 
-    #[inline]
     pub fn first_child(&self) -> Option<Self> {
         self.d.children.map(|(id, _)| self.gen_node(id))
     }
@@ -382,36 +376,30 @@ impl<'a> Node<'a> {
         self.children().filter(|n| n.is_element()).nth(0)
     }
 
-    #[inline]
     pub fn last_child(&self) -> Option<Self> {
         self.d.children.map(|(_, id)| self.gen_node(id))
     }
 
-    #[inline]
     pub fn has_children(&self) -> bool {
         self.d.children.is_some()
     }
 
     /// Returns an iterator over ancestor nodes starting at this node.
-    #[inline]
     pub fn ancestors(&self) -> Ancestors<'a> {
         Ancestors(Some(*self))
     }
 
     /// Returns an iterator over children nodes.
-    #[inline]
     pub fn children(&self) -> Children<'a> {
         Children { front: self.first_child(), back: self.last_child() }
     }
 
     /// Returns an iterator which traverses the subtree starting at this node.
-    #[inline]
     pub fn traverse(&self) -> Traverse<'a> {
         Traverse { root: *self, edge: None }
     }
 
     /// Returns an iterator over this node and its descendants.
-    #[inline]
     pub fn descendants(&self) -> Descendants<'a> {
         Descendants(self.traverse())
     }
@@ -627,7 +615,7 @@ impl_from_value!(svgtypes::ViewBox, ViewBox);
 impl_from_value!(svgtypes::AspectRatio, AspectRatio);
 impl_from_value!(svgtypes::Angle, Angle);
 impl_from_value!(f64, Number);
-impl_from_value!(crate::tree::Opacity, Opacity);
+impl_from_value!(tree::Opacity, Opacity);
 
 impl<'a> FromValue<'a> for &'a AttributeValue {
     fn get(node: Node<'a>, aid: AId) -> Option<Self> {
@@ -715,7 +703,6 @@ impl<'a, T: EnumFromStr> FromValue<'a> for T {
 
 
 impl EId {
-    #[inline]
     pub fn is_graphic(&self) -> bool {
         matches!(self,
               EId::Circle
@@ -731,7 +718,6 @@ impl EId {
         )
     }
 
-    #[inline]
     pub fn is_gradient(&self) -> bool {
         matches!(self,
               EId::LinearGradient
@@ -739,7 +725,6 @@ impl EId {
         )
     }
 
-    #[inline]
     pub fn is_paint_server(&self) -> bool {
         matches!(self,
               EId::LinearGradient
@@ -750,7 +735,6 @@ impl EId {
 }
 
 impl AId {
-    #[inline]
     pub fn is_presentation(&self) -> bool {
         matches!(self,
               AId::BaselineShift
@@ -799,7 +783,6 @@ impl AId {
             | AId::WritingMode)
     }
 
-    #[inline]
     pub fn is_inheritable(&self) -> bool {
         if self.is_presentation() {
             !is_non_inheritable(*self)
@@ -808,7 +791,6 @@ impl AId {
         }
     }
 
-    #[inline]
     pub fn allows_inherit_value(&self) -> bool {
         matches!(self,
               AId::BaselineShift
@@ -858,7 +840,6 @@ impl AId {
     }
 }
 
-#[inline]
 fn is_non_inheritable(id: AId) -> bool {
     matches!(id,
           AId::BaselineShift

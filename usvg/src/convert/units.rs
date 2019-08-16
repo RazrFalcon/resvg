@@ -6,6 +6,7 @@ use crate::{svgtree, tree};
 use super::prelude::*;
 
 
+#[inline(never)]
 pub fn convert_length(
     length: Length,
     node: svgtree::Node,
@@ -51,6 +52,7 @@ pub fn convert_length(
     }
 }
 
+#[inline(never)]
 pub fn convert_list(
     node: svgtree::Node,
     aid: AId,
@@ -74,6 +76,7 @@ fn convert_percent(length: Length, base: f64) -> f64 {
     base * length.num / 100.0
 }
 
+#[inline(never)]
 pub fn resolve_font_size(node: svgtree::Node, state: &State) -> f64 {
     let nodes: Vec<_> = node.ancestors().collect();
     let mut font_size = state.opt.font_size;

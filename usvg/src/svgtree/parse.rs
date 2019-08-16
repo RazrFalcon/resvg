@@ -520,6 +520,7 @@ fn parse_svg_attribute(
     })
 }
 
+#[inline(never)]
 fn parse_number(value: &str) -> Result<f64, svgtypes::Error> {
     let mut s = svgtypes::Stream::from(value);
     let n = s.parse_number()?;
@@ -531,6 +532,7 @@ fn parse_number(value: &str) -> Result<f64, svgtypes::Error> {
     Ok(n)
 }
 
+#[inline(never)]
 fn parse_path(text: &str) -> tree::PathData {
     // Previous MoveTo coordinates.
     let mut prev_mx = 0.0;

@@ -40,6 +40,7 @@ macro_rules! try_opt_or {
 }
 
 /// Unwraps `Option` and invokes `return` on `None` with a warning.
+#[allow(unused_macros)]
 macro_rules! try_opt_warn {
     ($task:expr, $msg:expr) => {
         match $task {

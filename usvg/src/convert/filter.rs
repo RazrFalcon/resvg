@@ -94,42 +94,46 @@ fn collect_children(
     };
 
     for child in filter.children() {
-        let kind = match child.tag_name() {
-            Some(EId::FeGaussianBlur) => {
+        let tag_name = match child.tag_name() {
+            Some(n) => n,
+            None => continue,
+        };
+
+        let kind = match tag_name {
+            EId::FeGaussianBlur => {
                 convert_fe_gaussian_blur(child, &primitives)
             }
-            Some(EId::FeOffset) => {
+            EId::FeOffset => {
                 convert_fe_offset(child, &primitives, state)
             }
-            Some(EId::FeBlend) => {
+            EId::FeBlend => {
                 convert_fe_blend(child, &primitives)
             }
-            Some(EId::FeFlood) => {
+            EId::FeFlood => {
                 convert_fe_flood(child)
             }
-            Some(EId::FeComposite) => {
+            EId::FeComposite => {
                 convert_fe_composite(child, &primitives)
             }
-            Some(EId::FeMerge) => {
+            EId::FeMerge => {
                 convert_fe_merge(child, &primitives)
             }
-            Some(EId::FeTile) => {
+            EId::FeTile => {
                 convert_fe_tile(child, &primitives)
             }
-            Some(EId::FeImage) => {
+            EId::FeImage => {
                 convert_fe_image(child, state)
             }
-            Some(EId::FeComponentTransfer) => {
+            EId::FeComponentTransfer => {
                 convert_fe_component_transfer(child, &primitives)
             }
-            Some(EId::FeColorMatrix) => {
+            EId::FeColorMatrix => {
                 convert_fe_color_matrix(child, &primitives)
             }
-            Some(name) => {
-                warn!("Filter with '{}' child is not supported.", name);
+            _ => {
+                warn!("Filter with '{}' child is not supported.", tag_name);
                 continue;
             }
-            None => continue,
         };
 
         let fe = convert_primitive(child, kind, units, state, &mut results);
@@ -447,6 +451,7 @@ fn convert_color_matrix_kind(
     None
 }
 
+#[inline(never)]
 fn resolve_input(
     node: svgtree::Node,
     aid: AId,
