@@ -593,7 +593,7 @@ fn convert_path(
     }
 
     let mut markers_group = None;
-    if visibility == tree::Visibility::Visible {
+    if marker::is_valid(node) && visibility == tree::Visibility::Visible {
         let mut g = parent.append_kind(tree::NodeKind::Group(tree::Group::default()));
         marker::convert(node, &path, state, &mut g, tree);
         markers_group = Some(g);

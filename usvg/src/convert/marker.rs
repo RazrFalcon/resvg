@@ -9,6 +9,28 @@ use crate::{utils, svgtree, tree, tree::prelude::*, tree::PathSegment as Segment
 use super::{prelude::*, use_node};
 
 
+pub fn is_valid(
+    node: svgtree::Node,
+) -> bool {
+    // `marker-*` attributes can only be set on `path`, `line`, `polyline` and `polygon`.
+    match node.tag_name() {
+          Some(EId::Path)
+        | Some(EId::Line)
+        | Some(EId::Polyline)
+        | Some(EId::Polygon) => {}
+        _ => return false,
+    }
+
+    // `marker-*` attributes cannot be set on shapes inside the `clipPath`.
+    if node.ancestors().any(|n| n.has_tag_name(EId::ClipPath)) {
+        return false;
+    }
+
+       node.find_attribute::<svgtree::Node>(AId::MarkerStart).is_some()
+    || node.find_attribute::<svgtree::Node>(AId::MarkerMid).is_some()
+    || node.find_attribute::<svgtree::Node>(AId::MarkerEnd).is_some()
+}
+
 pub fn convert(
     node: svgtree::Node,
     path: &tree::PathData,
@@ -16,20 +38,6 @@ pub fn convert(
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    // `marker-*` attributes can only be set on `path`, `line`, `polyline` and `polygon`.
-    match node.tag_name() {
-          Some(EId::Path)
-        | Some(EId::Line)
-        | Some(EId::Polyline)
-        | Some(EId::Polygon) => {}
-        _ => return,
-    }
-
-    // `marker-*` attributes cannot be set on shapes inside the `clipPath`.
-    if node.ancestors().any(|n| n.has_tag_name(EId::ClipPath)) {
-        return;
-    }
-
     let list = [
         (AId::MarkerStart, MarkerKind::Start),
         (AId::MarkerMid, MarkerKind::Middle),
@@ -38,11 +46,9 @@ pub fn convert(
 
     for (aid, kind) in &list {
         let mut marker = None;
-        for n in node.ancestors() {
-            if let Some(link) = n.attribute::<svgtree::Node>(*aid) {
-                if link.has_tag_name(EId::Marker) {
-                    marker = Some(link);
-                }
+        if let Some(link) = node.find_attribute::<svgtree::Node>(*aid) {
+            if link.has_tag_name(EId::Marker) {
+                marker = Some(link);
             }
         }
 
