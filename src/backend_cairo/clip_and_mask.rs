@@ -156,7 +156,9 @@ pub fn mask(
             mask_surface.get_data().ok(),
             "Failed to borrow a surface for mask '{}'.", mask.id
         );
-        crate::image_to_mask(&mut data, layers.image_size());
+
+        use rgb::FromSlice;
+        crate::image_to_mask(data.as_bgra_mut(), layers.image_size());
     }
 
     if let Some(ref id) = mask.mask {

@@ -146,7 +146,8 @@ pub fn mask(
         mask_dt.pop_clip();
     }
 
-    crate::image_to_mask(mask_dt.get_data_u8_mut(), layers.image_size());
+    use rgb::FromSlice;
+    crate::image_to_mask(mask_dt.get_data_u8_mut().as_bgra_mut(), layers.image_size());
 
     if let Some(ref id) = mask.mask {
         if let Some(ref mask_node) = node.tree().defs_by_id(id) {

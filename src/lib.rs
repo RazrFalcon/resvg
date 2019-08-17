@@ -204,12 +204,11 @@ pub(crate) fn use_shape_antialiasing(
 
 /// Converts an image to an alpha mask.
 pub(crate) fn image_to_mask(
-    data: &mut [u8],
+    data: &mut [rgb::alt::BGRA8],
     img_size: ScreenSize,
 ) {
     let width = img_size.width();
     let height = img_size.height();
-    let stride = width * 4;
 
     let coeff_r = 0.2125 / 255.0;
     let coeff_g = 0.7154 / 255.0;
@@ -217,18 +216,19 @@ pub(crate) fn image_to_mask(
 
     for y in 0..height {
         for x in 0..width {
-            let idx = (y * stride + x * 4) as usize;
+            let idx = (y * width + x) as usize;
+            let ref mut pixel = data[idx];
 
-            let r = data[idx + 2] as f64;
-            let g = data[idx + 1] as f64;
-            let b = data[idx + 0] as f64;
+            let r = pixel.r as f64;
+            let g = pixel.g as f64;
+            let b = pixel.b as f64;
 
             let luma = r * coeff_r + g * coeff_g + b * coeff_b;
 
-            data[idx + 0] = 0;
-            data[idx + 1] = 0;
-            data[idx + 2] = 0;
-            data[idx + 3] = f64_bound(0.0, luma * 255.0, 255.0) as u8;
+            pixel.r = 0;
+            pixel.g = 0;
+            pixel.b = 0;
+            pixel.a = f64_bound(0.0, luma * 255.0, 255.0) as u8;
         }
     }
 }

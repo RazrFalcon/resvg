@@ -30,6 +30,7 @@ This changelog also contains important changes in dependencies.
   Depending on a backend and image can be 2-4x faster.
 - `OutputImage::save` -> `OutputImage::save_png`.
 - (usvg) `Path::segments` -> `Path::data`.
+- Cairo backend compilation is 2x faster now due to overall changes.
 
 ### Fixed
 - (qt-api) A default font resolving.

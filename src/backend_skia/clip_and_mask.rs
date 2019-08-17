@@ -138,7 +138,24 @@ pub fn mask(
         mask_surface.restore();
     }
 
-    crate::image_to_mask(&mut mask_surface.data_mut(), layers.image_size());
+    {
+        use rgb::FromSlice;
+        use std::mem::swap;
+
+        let mut data = mask_surface.data_mut();
+
+        // RGBA -> BGRA.
+        if !skia::Surface::is_bgra() {
+            data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+        }
+
+        crate::image_to_mask(data.as_bgra_mut(), layers.image_size());
+
+        // BGRA -> RGBA.
+        if !skia::Surface::is_bgra() {
+            data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+        }
+    }
 
     if let Some(ref id) = mask.mask {
         if let Some(ref mask_node) = node.tree().defs_by_id(id) {

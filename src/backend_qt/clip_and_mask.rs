@@ -143,7 +143,8 @@ pub fn mask(
         super::render_group(node, opt, layers, &mut mask_p);
     }
 
-    crate::image_to_mask(&mut mask_img.data_mut(), layers.image_size());
+    use rgb::FromSlice;
+    crate::image_to_mask(mask_img.data_mut().as_bgra_mut(), layers.image_size());
 
     if let Some(ref id) = mask.mask {
         if let Some(ref mask_node) = node.tree().defs_by_id(id) {
