@@ -27,7 +27,7 @@ xmlwriter = "0.1"
 
 # for svgtree
 roxmltree = "0.7"
-simplecss = { git = "https://github.com/RazrFalcon/simplecss", rev = "9b5be32" }
+simplecss = "0.2"
 siphasher = "0.2.3"
 svgtypes = "0.5"
 
