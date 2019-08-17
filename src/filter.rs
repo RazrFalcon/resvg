@@ -328,7 +328,7 @@ pub trait Filter<T: ImageExt> {
         units: usvg::Units,
         bbox: Option<Rect>,
         ts: &usvg::Transform,
-    ) -> Option<(f64, f64)> {
+    ) -> Option<(f64, f64, bool)> {
         // 'A negative value or a value of zero disables the effect of the given filter primitive
         // (i.e., the result is the filter input image).'
         if fe.std_dev_x.is_zero() && fe.std_dev_y.is_zero() {
@@ -354,7 +354,12 @@ pub trait Filter<T: ImageExt> {
         if std_dx.is_fuzzy_zero() && std_dy.is_fuzzy_zero() {
             None
         } else {
-            Some((std_dx, std_dy))
+            const BLUR_SIGMA_THRESHOLD: f64 = 2.0;
+            // Check that the current feGaussianBlur filter can be applied using a box blur.
+            let box_blur =    std_dx >= BLUR_SIGMA_THRESHOLD
+                           && std_dy >= BLUR_SIGMA_THRESHOLD;
+
+            Some((std_dx, std_dy, box_blur))
         }
     }
 
@@ -388,10 +393,28 @@ pub trait Filter<T: ImageExt> {
     }
 }
 
-
-pub mod blur {
-    use rgb::{RGBA8, FromSlice, ComponentSlice};
-
+/// An IIR blur.
+///
+/// Based on http://www.getreuer.info/home/gaussianiir
+///
+/// Licensed under 'Simplified BSD License'.
+///
+///
+/// Implements the fast Gaussian convolution algorithm of Alvarez and Mazorra,
+/// where the Gaussian is approximated by a cascade of first-order infinite
+/// impulsive response (IIR) filters.  Boundaries are handled with half-sample
+/// symmetric extension.
+///
+/// Gaussian convolution is approached as approximating the heat equation and
+/// each timestep is performed with an efficient recursive computation.  Using
+/// more steps yields a more accurate approximation of the Gaussian.  A
+/// reasonable default value for `numsteps` is 4.
+///
+/// Reference:
+/// Alvarez, Mazorra, "Signal and Image Restoration using Shock Filters and
+/// Anisotropic Diffusion," SIAM J. on Numerical Analysis, vol. 31, no. 2,
+/// pp. 590-605, 1994.
+pub mod iir_blur {
     struct BlurData {
         width: usize,
         height: usize,
@@ -407,10 +430,7 @@ pub mod blur {
         height: u32,
         sigma_x: f64,
         sigma_y: f64,
-        steps: u8,
     ) {
-        assert_ne!(steps, 0);
-
         let buf_size = (width * height) as usize;
         let mut buf = vec![0.0; buf_size];
         let buf = &mut buf;
@@ -421,102 +441,32 @@ pub mod blur {
             height: height as usize,
             sigma_x,
             sigma_y,
-            steps: steps as usize,
+            steps: 4,
         };
 
-        let alpha_channel = &gaussian_alpha(data, &d, buf);
-        gaussian_channel(data, &d, 0, alpha_channel, buf);
-        gaussian_channel(data, &d, 1, alpha_channel, buf);
-        gaussian_channel(data, &d, 2, alpha_channel, buf);
-        set_alpha(alpha_channel, data);
-    }
-
-    fn gaussian_alpha(
-        data: &[u8],
-        d: &BlurData,
-        buf: &mut Vec<f64>,
-    ) -> Vec<f64> {
-        for (i, p) in data.as_rgba().iter().enumerate() {
-            buf[i] = p.a as f64;
-        }
-
-        gaussianiir2d(d, buf);
-
-        buf.to_owned()
+        gaussian_channel(data, &d, 0, buf);
+        gaussian_channel(data, &d, 1, buf);
+        gaussian_channel(data, &d, 2, buf);
+        gaussian_channel(data, &d, 3, buf);
     }
 
     fn gaussian_channel(
         data: &mut [u8],
         d: &BlurData,
         channel: usize,
-        alpha_channel: &[f64],
         buf: &mut Vec<f64>,
     ) {
-        let mut i = 0;
-        for p in data.as_rgba() {
-            let c = p.as_slice()[channel] as f64;
-            let a = p.a as f64;
-
-            buf[i] = c * a;
-
-            i += 1;
+        for i in 0..data.len() / 4 {
+            buf[i] = data[i * 4 + channel] as f64 / 255.0;
         }
 
         gaussianiir2d(d, buf);
 
-        // Normalization of the selected channel according to the alpha channel.
-        i = 0;
-        for p in data.as_rgba_mut() {
-            if alpha_channel[i] > 0.0 {
-                let c = buf[i];
-                let a = alpha_channel[i];
-                p.as_mut_slice()[channel] = (c / a) as u8;
-            } else {
-                p.a = 0;
-            }
-
-            i += 1;
+        for i in 0..data.len() / 4 {
+            data[i * 4 + channel] = (buf[i] * 255.0) as u8;
         }
     }
 
-    fn set_alpha(
-        alpha_channel: &[f64],
-        data: &mut [u8],
-    ) {
-        let mut i = 0;
-        for p in data.as_rgba_mut() {
-            let a = alpha_channel[i];
-            if a > 0.0 {
-                p.a = a as u8;
-            } else {
-                *p = RGBA8::new(0, 0, 0, 0);
-            }
-
-            i += 1;
-        }
-    }
-
-    /// IIR blur.
-    ///
-    /// Based on http://www.getreuer.info/home/gaussianiir
-    ///
-    /// Licensed under 'Simplified BSD License'.
-    ///
-    ///
-    /// Implements the fast Gaussian convolution algorithm of Alvarez and Mazorra,
-    /// where the Gaussian is approximated by a cascade of first-order infinite
-    /// impulsive response (IIR) filters.  Boundaries are handled with half-sample
-    /// symmetric extension.
-    ///
-    /// Gaussian convolution is approached as approximating the heat equation and
-    /// each timestep is performed with an efficient recursive computation.  Using
-    /// more steps yields a more accurate approximation of the Gaussian.  A
-    /// reasonable default value for `numsteps` is 4.
-    ///
-    /// Reference:
-    /// Alvarez, Mazorra, "Signal and Image Restoration using Shock Filters and
-    /// Anisotropic Diffusion," SIAM J. on Numerical Analysis, vol. 31, no. 2,
-    /// pp. 590-605, 1994.
     fn gaussianiir2d(
         d: &BlurData,
         buf: &mut Vec<f64>,
@@ -599,6 +549,371 @@ pub mod blur {
 
         // (lambda, dnu, boundary_scale)
         (lambda, dnu)
+    }
+}
+
+/// A box blur.
+///
+/// Based on https://github.com/fschutt/fastblur
+pub mod box_blur {
+    use std::cmp;
+    use rgb::{RGBA8, FromSlice};
+
+    pub fn apply(
+        data: &mut [u8],
+        width: u32,
+        height: u32,
+        sigma_x: f64,
+        sigma_y: f64,
+    ) {
+        let boxes_horz = create_box_gauss(sigma_x as f32, 5);
+        let boxes_vert = create_box_gauss(sigma_y as f32, 5);
+        let mut backbuf = data.to_vec();
+
+        for (box_size_horz, box_size_vert) in boxes_horz.iter().zip(boxes_vert.iter()) {
+            let radius_horz = ((box_size_horz - 1) / 2) as usize;
+            let radius_vert = ((box_size_vert - 1) / 2) as usize;
+            // We don't care if an input image is RGBA or BGRA
+            // since all channels will be processed the same.
+            box_blur(
+                backbuf.as_rgba_mut(), data.as_rgba_mut(),
+                width as usize, height as usize,
+                radius_horz, radius_vert,
+            );
+        }
+    }
+
+    /// If there is no valid size (e.g. radius is negative), returns `vec![1; len]`
+    /// which would translate to blur radius of 0
+    #[inline]
+    fn create_box_gauss(
+        sigma: f32,
+        n: usize,
+    ) -> Vec<i32> {
+        if sigma > 0.0 {
+            let n_float = n as f32;
+
+            // Ideal averaging filter width
+            let w_ideal = (12.0 * sigma * sigma / n_float).sqrt() + 1.0;
+            let mut wl = w_ideal.floor() as i32;
+            if wl % 2 == 0 {
+                wl -= 1;
+            }
+
+            let wu = wl + 2;
+
+            let wl_float = wl as f32;
+            let m_ideal =
+                (  12.0 * sigma * sigma
+                 - n_float * wl_float * wl_float
+                 - 4.0 * n_float * wl_float
+                 - 3.0 * n_float)
+                / (-4.0 * wl_float - 4.0);
+            let m = m_ideal.round() as usize;
+
+            let mut sizes = Vec::new();
+            for i in 0..n {
+                if i < m {
+                    sizes.push(wl);
+                } else {
+                    sizes.push(wu);
+                }
+            }
+
+            sizes
+        } else {
+            vec![1; n]
+        }
+    }
+
+    /// Needs 2x the same image
+    #[inline]
+    fn box_blur(
+        backbuf: &mut [RGBA8],
+        frontbuf: &mut [RGBA8],
+        width: usize,
+        height: usize,
+        blur_radius_horz: usize,
+        blur_radius_vert: usize,
+    ) {
+        box_blur_vert(frontbuf, backbuf, width, height, blur_radius_vert);
+        box_blur_horz(backbuf, frontbuf, width, height, blur_radius_horz);
+    }
+
+    #[inline]
+    fn box_blur_vert(
+        backbuf: &[RGBA8],
+        frontbuf: &mut [RGBA8],
+        width: usize,
+        height: usize,
+        blur_radius: usize,
+    ) {
+        if blur_radius == 0 {
+            frontbuf.copy_from_slice(backbuf);
+            return;
+        }
+
+        let iarr = 1.0 / (blur_radius + blur_radius + 1) as f32;
+        let blur_radius_prev = blur_radius as isize - height as isize;
+        let blur_radius_next = blur_radius as isize + 1;
+
+        for i in 0..width {
+            let col_start = i; //inclusive
+            let col_end = i + width * (height - 1); //inclusive
+            let mut ti = i;
+            let mut li = ti;
+            let mut ri = ti + blur_radius * width;
+
+            let fv: RGBA8 = [0,0,0,0].into();
+            let lv: RGBA8 = [0,0,0,0].into();
+
+            let mut val_r = blur_radius_next * (fv.r as isize);
+            let mut val_g = blur_radius_next * (fv.g as isize);
+            let mut val_b = blur_radius_next * (fv.b as isize);
+            let mut val_a = blur_radius_next * (fv.a as isize);
+
+            // Get the pixel at the specified index, or the first pixel of the column
+            // if the index is beyond the top edge of the image
+            let get_top = |i| {
+                if i < col_start {
+                    fv
+                } else {
+                    backbuf[i]
+                }
+            };
+
+            // Get the pixel at the specified index, or the last pixel of the column
+            // if the index is beyond the bottom edge of the image
+            let get_bottom = |i| {
+                if i > col_end {
+                    lv
+                } else {
+                    backbuf[i]
+                }
+            };
+
+            for j in 0..cmp::min(blur_radius, height) {
+                let bb = backbuf[ti + j * width];
+                val_r += bb.r as isize;
+                val_g += bb.g as isize;
+                val_b += bb.b as isize;
+                val_a += bb.a as isize;
+            }
+            if blur_radius > height {
+                val_r += blur_radius_prev * (lv.r as isize);
+                val_g += blur_radius_prev * (lv.g as isize);
+                val_b += blur_radius_prev * (lv.b as isize);
+                val_a += blur_radius_prev * (lv.a as isize);
+            }
+
+            for _ in 0..cmp::min(height, blur_radius + 1) {
+                let bb = get_bottom(ri);
+                ri += width;
+                val_r += sub(bb.r, fv.r);
+                val_g += sub(bb.g, fv.g);
+                val_b += sub(bb.b, fv.b);
+                val_a += sub(bb.a, fv.a);
+
+                frontbuf[ti] = [
+                    round(val_r as f32 * iarr) as u8,
+                    round(val_g as f32 * iarr) as u8,
+                    round(val_b as f32 * iarr) as u8,
+                    round(val_a as f32 * iarr) as u8,
+                ].into();
+                ti += width;
+            }
+
+            if height <= blur_radius {
+                // otherwise `(height - blur_radius)` will underflow
+                continue;
+            }
+
+            for _ in (blur_radius + 1)..(height - blur_radius) {
+                let bb1 = backbuf[ri];
+                ri += width;
+                let bb2 = backbuf[li];
+                li += width;
+
+                val_r += sub(bb1.r, bb2.r);
+                val_g += sub(bb1.g, bb2.g);
+                val_b += sub(bb1.b, bb2.b);
+                val_a += sub(bb1.a, bb2.a);
+
+                frontbuf[ti] = [
+                    round(val_r as f32 * iarr) as u8,
+                    round(val_g as f32 * iarr) as u8,
+                    round(val_b as f32 * iarr) as u8,
+                    round(val_a as f32 * iarr) as u8,
+                ].into();
+                ti += width;
+            }
+
+            for _ in 0..cmp::min(height - blur_radius - 1, blur_radius) {
+                let bb = get_top(li);
+                li += width;
+
+                val_r += sub(lv.r, bb.r);
+                val_g += sub(lv.g, bb.g);
+                val_b += sub(lv.b, bb.b);
+                val_a += sub(lv.a, bb.a);
+
+                frontbuf[ti] = [
+                    round(val_r as f32 * iarr) as u8,
+                    round(val_g as f32 * iarr) as u8,
+                    round(val_b as f32 * iarr) as u8,
+                    round(val_a as f32 * iarr) as u8,
+                ].into();
+                ti += width;
+            }
+        }
+    }
+
+    #[inline]
+    fn box_blur_horz(
+        backbuf: &[RGBA8],
+        frontbuf: &mut [RGBA8],
+        width: usize,
+        height: usize,
+        blur_radius: usize,
+    ) {
+        if blur_radius == 0 {
+            frontbuf.copy_from_slice(backbuf);
+            return;
+        }
+
+        let iarr = 1.0 / (blur_radius + blur_radius + 1) as f32;
+        let blur_radius_prev = blur_radius as isize - width as isize;
+        let blur_radius_next = blur_radius as isize + 1;
+
+        for i in 0..height {
+            let row_start = i * width; // inclusive
+            let row_end = (i + 1) * width - 1; // inclusive
+            let mut ti = i * width; // VERTICAL: $i;
+            let mut li = ti;
+            let mut ri = ti + blur_radius;
+
+            let fv: RGBA8 = [0,0,0,0].into();
+            let lv: RGBA8 = [0,0,0,0].into();
+
+            let mut val_r = blur_radius_next * (fv.r as isize);
+            let mut val_g = blur_radius_next * (fv.g as isize);
+            let mut val_b = blur_radius_next * (fv.b as isize);
+            let mut val_a = blur_radius_next * (fv.a as isize);
+
+            // Get the pixel at the specified index, or the first pixel of the row
+            // if the index is beyond the left edge of the image
+            let get_left = |i| {
+                if i < row_start {
+                    fv
+                } else {
+                    backbuf[i]
+                }
+            };
+
+            // Get the pixel at the specified index, or the last pixel of the row
+            // if the index is beyond the right edge of the image
+            let get_right = |i| {
+                if i > row_end {
+                    lv
+                } else {
+                    backbuf[i]
+                }
+            };
+
+            for j in 0..cmp::min(blur_radius, width) {
+                let bb = backbuf[ti + j]; // VERTICAL: ti + j * width
+                val_r += bb.r as isize;
+                val_g += bb.g as isize;
+                val_b += bb.b as isize;
+                val_a += bb.a as isize;
+            }
+            if blur_radius > width {
+                val_r += blur_radius_prev * (lv.r as isize);
+                val_g += blur_radius_prev * (lv.g as isize);
+                val_b += blur_radius_prev * (lv.b as isize);
+                val_a += blur_radius_prev * (lv.a as isize);
+            }
+
+            // Process the left side where we need pixels from beyond the left edge
+            for _ in 0..cmp::min(width, blur_radius + 1) {
+                let bb = get_right(ri);
+                ri += 1;
+                val_r += sub(bb.r, fv.r);
+                val_g += sub(bb.g, fv.g);
+                val_b += sub(bb.b, fv.b);
+                val_a += sub(bb.a, fv.a);
+
+                frontbuf[ti] = [
+                    round(val_r as f32 * iarr) as u8,
+                    round(val_g as f32 * iarr) as u8,
+                    round(val_b as f32 * iarr) as u8,
+                    round(val_a as f32 * iarr) as u8,
+                ].into();
+                ti += 1; // VERTICAL : ti += width, same with the other areas
+            }
+
+            if width <= blur_radius {
+                // otherwise `(width - blur_radius)` will underflow
+                continue;
+            }
+
+            // Process the middle where we know we won't bump into borders
+            // without the extra indirection of get_left/get_right. This is faster.
+            for _ in (blur_radius + 1)..(width - blur_radius) {
+                let bb1 = backbuf[ri];
+                ri += 1;
+                let bb2 = backbuf[li];
+                li += 1;
+
+                val_r += sub(bb1.r, bb2.r);
+                val_g += sub(bb1.g, bb2.g);
+                val_b += sub(bb1.b, bb2.b);
+                val_a += sub(bb1.a, bb2.a);
+
+                frontbuf[ti] = [
+                    round(val_r as f32 * iarr) as u8,
+                    round(val_g as f32 * iarr) as u8,
+                    round(val_b as f32 * iarr) as u8,
+                    round(val_a as f32 * iarr) as u8,
+                ].into();
+                ti += 1;
+            }
+
+            // Process the right side where we need pixels from beyond the right edge
+            for _ in 0..cmp::min(width - blur_radius - 1, blur_radius) {
+                let bb = get_left(li);
+                li += 1;
+
+                val_r += sub(lv.r, bb.r);
+                val_g += sub(lv.g, bb.g);
+                val_b += sub(lv.b, bb.b);
+                val_a += sub(lv.a, bb.a);
+
+                frontbuf[ti] = [
+                    round(val_r as f32 * iarr) as u8,
+                    round(val_g as f32 * iarr) as u8,
+                    round(val_b as f32 * iarr) as u8,
+                    round(val_a as f32 * iarr) as u8,
+                ].into();
+                ti += 1;
+            }
+        }
+    }
+
+    /// Fast rounding for x <= 2^23.
+    /// This is orders of magnitude faster than built-in rounding intrinsic.
+    ///
+    /// Source: https://stackoverflow.com/a/42386149/585725
+    #[inline]
+    fn round(mut x: f32) -> f32 {
+        x += 12582912.0;
+        x -= 12582912.0;
+        x
+    }
+
+    #[inline]
+    fn sub(c1: u8, c2: u8) -> isize {
+        c1 as isize - c2 as isize
     }
 }
 
@@ -869,3 +1184,22 @@ pub const LINEAR_RGB_TO_SRGB_TABLE: &[u8; 256] = &[
     241, 241, 242, 242, 243, 243, 244, 244, 245, 245, 246, 246, 246, 247, 247, 248,
     248, 249, 249, 250, 250, 251, 251, 251, 252, 252, 253, 253, 254, 254, 255, 255,
 ];
+
+
+pub fn from_premultiplied(data: &mut [rgb::alt::BGRA8]) {
+    for p in data {
+        let a = p.a as f64 / 255.0;
+        p.b = (p.b as f64 / a + 0.5) as u8;
+        p.g = (p.g as f64 / a + 0.5) as u8;
+        p.r = (p.r as f64 / a + 0.5) as u8;
+    }
+}
+
+pub fn into_premultiplied(data: &mut [rgb::alt::BGRA8]) {
+    for p in data {
+        let a = p.a as f64 / 255.0;
+        p.b = (p.b as f64 * a + 0.5) as u8;
+        p.g = (p.g as f64 * a + 0.5) as u8;
+        p.r = (p.r as f64 * a + 0.5) as u8;
+    }
+}

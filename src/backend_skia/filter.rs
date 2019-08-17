@@ -148,13 +148,23 @@ impl Filter<skia::Surface> for SkiaFilter {
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (std_dx, std_dy) = try_opt_or!(Self::resolve_std_dev(fe, units, bbox, ts), Ok(input));
+        let (std_dx, std_dy, box_blur)
+            = try_opt_or!(Self::resolve_std_dev(fe, units, bbox, ts), Ok(input));
 
         let input = input.into_color_space(cs)?;
         let mut buffer = input.take()?;
 
         let (w, h) = (buffer.width(), buffer.height());
-        filter::blur::apply(&mut buffer.data_mut(), w, h, std_dx, std_dy, 4);
+        // Skia surface can be RGBA, but it will not affect the blur algorithm.
+        filter::into_premultiplied(buffer.data_mut().as_bgra_mut());
+
+        if box_blur {
+            filter::box_blur::apply(&mut buffer.data_mut(), w, h, std_dx, std_dy);
+        } else {
+            filter::iir_blur::apply(&mut buffer.data_mut(), w, h, std_dx, std_dy);
+        }
+
+        filter::from_premultiplied(buffer.data_mut().as_bgra_mut());
 
         Ok(Image::from_image(buffer, cs))
     }

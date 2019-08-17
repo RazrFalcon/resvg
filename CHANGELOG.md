@@ -15,6 +15,9 @@ This changelog also contains important changes in dependencies.
 - A better CSS support.
 - An `*.otf` fonts support.
 - (usvg) `dx`, `dy` are supported inside `textPath` now.
+- Use a box blur for `feGaussianBlur` with `stdDeviation`>=2.
+  This is 4-8 times faster than IIR blur.
+  Thanks to [Shnatsel](https://github.com/Shnatsel).
 
 ### Changed
 - All backends are using the `image` crate for raster images loading now.
