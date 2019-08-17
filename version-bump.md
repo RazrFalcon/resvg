@@ -3,7 +3,8 @@
 - capi/include/resvg.h
 - Cargo.toml
 - CHANGELOG.md
-- resvg-qt/Cargo.toml
+- bindings/resvg-qt/Cargo.toml
+- bindings/resvg-skia/Cargo.toml
 - src/lib.rs
 - tools/explorer-thumbnailer/install/installer.iss
 - tools/rendersvg/Cargo.toml

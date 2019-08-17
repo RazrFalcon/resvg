@@ -289,7 +289,7 @@ fn render_to_image(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     file_path: *const c_char,
-    backend: Box<resvg::Render>,
+    backend: Box<dyn resvg::Render>,
 ) -> i32 {
     let tree = unsafe {
         assert!(!tree.is_null());

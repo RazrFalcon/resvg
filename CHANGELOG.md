@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.8.0] - 2019-08-17
 ### Added
 - A [Skia](https://skia.org/) backend thanks to
   [JaFenix](https://github.com/JaFenix).
@@ -31,6 +33,10 @@ This changelog also contains important changes in dependencies.
 - `OutputImage::save` -> `OutputImage::save_png`.
 - (usvg) `Path::segments` -> `Path::data`.
 - Cairo backend compilation is 2x faster now due to overall changes.
+- Performance improvements (Oxygen Icon theme SVG-to-PNG):
+  - cairo-backend: 22% faster
+  - qt-backend: 20% faster
+  - raqote-backend: 34% faster
 
 ### Fixed
 - (qt-api) A default font resolving.
@@ -269,7 +275,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/RazrFalcon/resvg/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/RazrFalcon/resvg/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/RazrFalcon/resvg/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/RazrFalcon/resvg/compare/v0.5.0...v0.6.0
