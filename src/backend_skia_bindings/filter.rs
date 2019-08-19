@@ -135,9 +135,11 @@ impl ImageExt for Surface {
 }
 
 fn create_surface(width: u32, height: u32) -> Result<Surface, Error> {
-    let mut surface = Surface::new_raster_n32_premul(ISize::new(width as i32, height as i32))
-        .ok_or(Error::AllocFailed)?;
-    surface.canvas().just_clear();
+    let size = ISize::new(width as i32, height as i32);
+    let color_space = skia::ColorSpace::new_srgb();
+    let image_info = skia::ImageInfo::new_n32(size, skia::AlphaType::Unpremul, Some(&color_space));
+    let min_row_bytes = image_info.min_row_bytes();
+    let surface = skia::Surface::new_raster(&image_info, min_row_bytes, None).ok_or(Error::AllocFailed)?;
     Ok(surface)
 }
 
@@ -145,11 +147,7 @@ fn copy_surface(surface: &Surface, region: ScreenRect) -> Result<Surface, Error>
     let x = cmp::max(0, region.x()) as i32;
     let y = cmp::max(0, region.y()) as i32;
     let mut mut_surf = surface.clone();
-    let size = ISize::new(region.width() as i32, region.height() as i32);
-    let color_space = skia::ColorSpace::new_srgb();
-    let image_info = skia::ImageInfo::new_n32(size, skia::AlphaType::Unpremul, Some(&color_space));
-    let min_row_bytes = image_info.min_row_bytes();
-    let mut new_surface = skia::Surface::new_raster(&image_info, min_row_bytes, Some(surface.props())).ok_or(Error::AllocFailed)?;
+    let mut new_surface = create_surface(region.width(), region.height())?;
     let mut paint = skia::Paint::default();
     paint.set_filter_quality(skia::FilterQuality::Low);
     paint.set_alpha(255);
