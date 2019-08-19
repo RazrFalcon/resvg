@@ -42,8 +42,8 @@ raqote = { version = "0.6.1", default-features = false, optional = true }
 
 # skia backend
 resvg-skia = { path = "bindings/resvg-skia", version = "0.7", optional = true }
-"skia-bindings" = { git = "https://github.com/rust-skia/rust-skia", optional = true }
-"skia-safe" = { git = "https://github.com/rust-skia/rust-skia", optional = true }
+skia-safe = { version = "0.15.0", optional = true }
+skia-bindings = { version = "0.15.0", optional = true }
 
 [features]
 cairo-backend = ["cairo-rs"]

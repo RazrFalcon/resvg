@@ -731,8 +731,8 @@ dependencies = [
  "resvg-qt 0.7.0",
  "resvg-skia 0.7.0",
  "rgb 0.8.13 (registry+https://github.com/rust-lang/crates.io-index)",
- "skia-bindings 0.14.1 (git+https://github.com/rust-skia/rust-skia)",
- "skia-safe 0.14.1 (git+https://github.com/rust-skia/rust-skia)",
+ "skia-bindings 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "skia-safe 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "usvg 0.7.0",
 ]
 
@@ -840,8 +840,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "skia-bindings"
-version = "0.14.1"
-source = "git+https://github.com/rust-skia/rust-skia#26357eab0cb598933c3170493ccbd062eae70a67"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bindgen 0.51.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cc 1.0.38 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -849,17 +849,17 @@ dependencies = [
  "flate2 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "tar 0.4.26 (registry+https://github.com/rust-lang/crates.io-index)",
- "which 2.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "toml 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "skia-safe"
-version = "0.14.1"
-source = "git+https://github.com/rust-skia/rust-skia#26357eab0cb598933c3170493ccbd062eae70a67"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bitflags 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "skia-bindings 0.14.1 (git+https://github.com/rust-skia/rust-skia)",
+ "skia-bindings 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -968,6 +968,14 @@ dependencies = [
  "libc 0.2.60 (registry+https://github.com/rust-lang/crates.io-index)",
  "redox_syscall 0.1.56 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "toml"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "serde 1.0.98 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1225,8 +1233,8 @@ source = "git+https://github.com/RazrFalcon/xmlwriter?rev=dac292c#dac292c3c27d6c
 "checksum shlex 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7fdf1b9db47230893d76faad238fd6097fd6d6a9245cd7a4d90dbd639536bbd2"
 "checksum simplecss 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "135685097a85a64067df36e28a243e94a94f76d829087ce0be34eeb014260c0e"
 "checksum siphasher 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "0b8de496cf83d4ed58b6be86c3a275b8602f6ffe98d3024a869e124147a9a3ac"
-"checksum skia-bindings 0.14.1 (git+https://github.com/rust-skia/rust-skia)" = "<none>"
-"checksum skia-safe 0.14.1 (git+https://github.com/rust-skia/rust-skia)" = "<none>"
+"checksum skia-bindings 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)" = "82ebd15d61e6c95d2b31c61b154c404bc020269c0d2cf88c19963119c0e3adf2"
+"checksum skia-safe 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8c928bf59f45f05cf0fd0992037b207a63ab90286fcc1c0e8ba1df9e6dd00d6c"
 "checksum slab 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 "checksum socket2 0.3.11 (registry+https://github.com/rust-lang/crates.io-index)" = "e8b74de517221a2cb01a53349cf54182acdc31a074727d3079068448c0676d85"
 "checksum strsim 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
@@ -1240,6 +1248,7 @@ source = "git+https://github.com/RazrFalcon/xmlwriter?rev=dac292c#dac292c3c27d6c
 "checksum textwrap 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d326610f408c7a4eb6f51c37c330e496b08506c9457c9d34287ecc38809fb060"
 "checksum thread_local 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)" = "c6b53e329000edc2b34dbe8545fd20e55a333362d0a321909685a19bd28c3f1b"
 "checksum time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)" = "db8dcfca086c1143c9270ac42a2bbd8a7ee477b78ac8e45b19abfb0cbede4b6f"
+"checksum toml 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "c7aabe75941d914b72bf3e5d3932ed92ce0664d49d8432305a8b547c37227724"
 "checksum ttf-parser 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e3621bf979169de7d6d35889eff52a15f798e2af7b815896cf062a73ea0f541e"
 "checksum typed-arena 1.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7f70f5c346cc11bc044ae427ab2feae213350dca9e2d637047797d5ff316a646"
 "checksum unicode-bidi 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "49f2bd0c6468a8230e1db229cff8029217cf623c767ea5d60bfbd42729ea54d5"
