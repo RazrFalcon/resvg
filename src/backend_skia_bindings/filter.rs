@@ -142,23 +142,34 @@ fn create_surface(width: u32, height: u32) -> Result<Surface, Error> {
 }
 
 fn copy_surface(surface: &Surface, region: ScreenRect) -> Result<Surface, Error> {
-    let x = cmp::max(0, region.x()) as u32;
-    let y = cmp::max(0, region.y()) as u32;
+    let x = cmp::max(0, region.x()) as i32;
+    let y = cmp::max(0, region.y()) as i32;
     let mut mut_surf = surface.clone();
-    mut_surf.image_snapshot_with_bounds(IRect {
-        left: x as i32,
-        top: y as i32,
-        right: (x + region.width()) as i32,
-        bottom: (y + region.height()) as i32,
-    }).and_then(|image| {
-        let image_info = image.image_info();
-        mut_surf.new_surface(image_info).map(|surface| {
-            let mut mut_surf = surface.clone();
-            mut_surf.canvas().draw_image(&image, (0.0, 0.0), None);
-            mut_surf
-        })
+    let size = ISize::new(region.width() as i32, region.height() as i32);
+    let color_space = skia::ColorSpace::new_srgb();
+    let image_info = skia::ImageInfo::new_n32(size, skia::AlphaType::Unpremul, Some(&color_space));
+    let min_row_bytes = image_info.min_row_bytes();
+    let mut new_surface = skia::Surface::new_raster(&image_info, min_row_bytes, Some(surface.props())).ok_or(Error::AllocFailed)?;
+    let mut paint = skia::Paint::default();
+    paint.set_filter_quality(skia::FilterQuality::Low);
+    paint.set_alpha(255);
+    mut_surf.draw(new_surface.canvas(), (-x, -y), Some(&paint));
+    Ok(new_surface)
 
-    }).ok_or(Error::AllocFailed)
+    // mut_surf.image_snapshot_with_bounds(IRect {
+    //     left: x as i32,
+    //     top: y as i32,
+    //     right: (x + region.width()) as i32,
+    //     bottom: (y + region.height()) as i32,
+    // }).and_then(|image| {
+    //     let image_info = image.image_info();
+    //     mut_surf.new_surface(image_info).map(|surface| {
+    //         let mut mut_surf = surface.clone();
+    //         mut_surf.canvas().draw_image(&image, (0.0, 0.0), Some(&paint));
+    //         mut_surf
+    //     })
+
+    // }).ok_or(Error::AllocFailed)
 }
 
 struct SkiaFilter;
