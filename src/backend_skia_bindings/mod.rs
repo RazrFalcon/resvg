@@ -37,7 +37,7 @@ pub(crate) mod skia_bindings {
         fn data_mut(&mut self) -> Box<&mut [u8]>;
     }
 
-    impl ToData for skia::Surface {
+    impl ToData for skia::Canvas {
         fn data_mut(&mut self) -> Box<&mut [u8]> {
             let pixels = self.peek_pixels().unwrap();
             unsafe {
@@ -303,9 +303,9 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
 
     fn draw_raster_image(&mut self, image: &usvg::Image) {
         self.paint(|_, opt, _, canvas| {
-            // image::draw_raster(
-            //     image.format, &image.data, image.view_box, image.rendering_mode, opt, surface,
-            // );
+            image::draw_raster(
+                image.format, &image.data, image.view_box, image.rendering_mode, opt, canvas,
+            );
         });
     }
 
@@ -360,7 +360,7 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
     fn apply_mask(&mut self) {
         let img_size = self.layers.img_size();
         if let Some(layer) = self.layers.current_mut() {
-            backend_utils::image_to_mask(&mut layer.img.data_mut(), img_size);
+            backend_utils::image_to_mask(&mut layer.img.canvas().data_mut(), img_size);
         }
     }
 

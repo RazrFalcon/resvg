@@ -13,7 +13,7 @@ use usvg::{try_opt_or, ColorInterpolation as ColorSpace};
 use crate::{prelude::*, backend_utils::*};
 use crate::backend_utils::filter::{Error, Filter, ImageExt};
 use super::ToData;
-use skia::{TileMode, BlendMode, FilterQuality, IRect, ISize, Paint, Point, Surface};
+use skia::{TileMode, BlendMode, FilterQuality, ISize, Paint, Point, Surface};
 use crate::backend_utils::ConvTransform;
 
 type Image = filter::Image<Surface>;
@@ -118,7 +118,7 @@ impl ImageExt for Surface {
     }
 
     fn into_srgb(&mut self) {
-        for p in self.data_mut().as_rgba_mut() {
+        for p in self.canvas().data_mut().as_rgba_mut() {
             p.r = filter::LINEAR_RGB_TO_SRGB_TABLE[p.r as usize];
             p.g = filter::LINEAR_RGB_TO_SRGB_TABLE[p.g as usize];
             p.b = filter::LINEAR_RGB_TO_SRGB_TABLE[p.b as usize];
@@ -126,7 +126,7 @@ impl ImageExt for Surface {
     }
 
     fn into_linear_rgb(&mut self) {
-        for p in self.data_mut().as_rgba_mut() {
+        for p in self.canvas().data_mut().as_rgba_mut() {
             p.r = filter::SRGB_TO_LINEAR_RGB_TABLE[p.r as usize];
             p.g = filter::SRGB_TO_LINEAR_RGB_TABLE[p.g as usize];
             p.b = filter::SRGB_TO_LINEAR_RGB_TABLE[p.b as usize];
@@ -178,7 +178,7 @@ impl Filter<Surface> for SkiaFilter {
                 let mut image = copy_surface(surface, region)?;
 
                 // Set RGB to black. Keep alpha as is.
-                for p in image.data_mut().chunks_mut(4) {
+                for p in image.canvas().data_mut().chunks_mut(4) {
                      p[0] = 0;
                      p[1] = 0;
                      p[2] = 0;
@@ -220,7 +220,7 @@ impl Filter<Surface> for SkiaFilter {
         let mut buffer = input.take()?;
 
         let (w, h) = (buffer.width(), buffer.height());
-        filter::blur::apply(&mut buffer.data_mut(), w as u32, h as u32, std_dx, std_dy, 4);
+        filter::blur::apply(&mut buffer.canvas().data_mut(), w as u32, h as u32, std_dx, std_dy, 4);
 
         Ok(Image::from_image(buffer, cs))
     }
@@ -317,8 +317,8 @@ impl Filter<Surface> for SkiaFilter {
                 RGBA8 { r, g, b, a: c.a }
             }
 
-            let data1 = mut_input1.data_mut();
-            let data2 = mut_input2.data_mut();
+            let data1 = mut_input1.canvas().data_mut();
+            let data2 = mut_input2.canvas().data_mut();
 
             let calc = |i1, i2, max| {
                 let i1 = i1 as f64 / 255.0;
@@ -329,7 +329,7 @@ impl Filter<Surface> for SkiaFilter {
 
             {
                 let mut i = 0;
-                let data3 = buffer.data_mut();
+                let data3 = buffer.canvas().data_mut();
                 let data3 = data3.as_rgba_mut();
                 for (c1, c2) in data1.as_rgba().iter().zip(data2.as_rgba()) {
                     let c1 = premultiply_alpha(*c1);
@@ -459,7 +459,7 @@ impl Filter<Surface> for SkiaFilter {
                     super::image::draw_svg(data, view_box, opt, &mut canvas);
                 } else {
                     super::image::draw_raster(
-                        format, data, view_box, fe.rendering_mode, opt, &mut buffer,
+                        format, data, view_box, fe.rendering_mode, opt, &mut buffer.canvas(),
                     );
                 }
             }
