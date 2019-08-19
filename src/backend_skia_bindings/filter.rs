@@ -13,7 +13,7 @@ use usvg::{try_opt_or, ColorInterpolation as ColorSpace};
 use crate::{prelude::*, backend_utils::*};
 use crate::backend_utils::filter::{Error, Filter, ImageExt};
 use super::ToData;
-use skia::{TileMode, BlendMode, FilterQuality, IRect, ISize, Paint, Point, Surface};
+use skia::{TileMode, BlendMode, FilterQuality, ISize, Paint, Point, Surface};
 use crate::backend_utils::ConvTransform;
 
 type Image = filter::Image<Surface>;
