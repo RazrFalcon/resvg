@@ -15,18 +15,18 @@ pub fn draw_raster(
     view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
     opt: &Options,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) {
     let img = try_opt!(backend_utils::image::load_raster(format, data, opt));
 
     let mut image = {
         let (w, h) = img.size.dimensions();
-        let mut surface = usvg::try_opt_warn_or!(
+        let surface = usvg::try_opt_warn_or!(
             skia::Surface::new_raster(&skia::ImageInfo::new_unknown(Some(skia::ISize::new(w as i32, h as i32))), None, None), (),
             "Failed to create a {}x{} surface.", w, h
         );
 
-        image_to_surface(&img, &mut surface.data_mut());
+        image_to_surface(&img, &mut canvas.data_mut());
         surface
     };
 
@@ -36,7 +36,6 @@ pub fn draw_raster(
         filter = skia::FilterQuality::None;
     }
 
-    let canvas = surface.canvas();
     canvas.save();
 
     if view_box.aspect.slice {
