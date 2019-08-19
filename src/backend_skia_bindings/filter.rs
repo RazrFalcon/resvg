@@ -58,7 +58,7 @@ impl CanvasExt for skia::Canvas {
     }
 
     fn just_clear(&mut self) {
-        self.clear(skia_safe::Color::default());
+        self.clear(skia::Color::TRANSPARENT);
     }
 
     fn draw_surface(
@@ -155,21 +155,6 @@ fn copy_surface(surface: &Surface, region: ScreenRect) -> Result<Surface, Error>
     paint.set_alpha(255);
     mut_surf.draw(new_surface.canvas(), (-x, -y), Some(&paint));
     Ok(new_surface)
-
-    // mut_surf.image_snapshot_with_bounds(IRect {
-    //     left: x as i32,
-    //     top: y as i32,
-    //     right: (x + region.width()) as i32,
-    //     bottom: (y + region.height()) as i32,
-    // }).and_then(|image| {
-    //     let image_info = image.image_info();
-    //     mut_surf.new_surface(image_info).map(|surface| {
-    //         let mut mut_surf = surface.clone();
-    //         mut_surf.canvas().draw_image(&image, (0.0, 0.0), Some(&paint));
-    //         mut_surf
-    //     })
-
-    // }).ok_or(Error::AllocFailed)
 }
 
 struct SkiaFilter;
