@@ -22,7 +22,7 @@ This changelog also contains important changes in dependencies.
   Thanks to [Shnatsel](https://github.com/Shnatsel).
 
 ### Changed
-- All backends are using the `image` crate for raster images loading now.
+- All backends are using Rust crates for raster images loading now.
 - Use `pico-args` instead of `gumdrop` to reduced the build time of `tools/rendersvg`
   and `tools/usvg`.
 - (usvg) The `xmlwriter` is used for SVG generation now.

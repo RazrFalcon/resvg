@@ -57,6 +57,7 @@ Build using `x64 Native Tools Command Prompt for VS 2017` shell:
 ```batch
 set PATH=%userprofile%\.cargo\bin;%PATH%
 set QT_DIR=C:\Qt\5.12.0\msvc2017_64
+rustup.exe default stable-x86_64-pc-windows-msvc
 
 cargo.exe build --release --features "qt-backend"
 ```
@@ -77,6 +78,7 @@ Build using `cmd.exe`:
 ```batch
 set PATH=C:\Qt\5.12.0\mingw73_64\bin;C:\Qt\Tools\mingw730_64\bin;%userprofile%\.cargo\bin;%PATH%
 set QT_DIR=C:\Qt\5.12.0\mingw73_64
+rustup.exe default stable-x86_64-pc-windows-gnu
 
 cargo.exe build --release --features "qt-backend"
 ```
@@ -91,8 +93,9 @@ And then:
 
 ```bash
 pacman -S mingw-w64-x86_64-cmake mingw-w64-x86_64-cairo
+rustup default stable-x86_64-pc-windows-gnu
 
-cargo.exe build --release --features "cairo-backend"
+cargo build --release --features "cairo-backend"
 ```
 
 You can use i686 target in the same way.
@@ -108,6 +111,7 @@ Build using `x64 Native Tools Command Prompt for VS 2017` shell:
 
 ```batch
 set PATH=%userprofile%\.cargo\bin;C:\Program Files\CMake\bin;%PATH%
+rustup.exe default stable-x86_64-pc-windows-msvc
 
 cargo.exe build --release --features "raqote-backend"
 ```
@@ -120,8 +124,9 @@ And then:
 ```bash
 # install harfbuzz dependencies:
 pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake
+rustup default stable-x86_64-pc-windows-gnu
 
-cargo.exe build --release --features "raqote-backend"
+cargo build --release --features "raqote-backend"
 ```
 
 You can use i686 target in the same way.
@@ -143,6 +148,7 @@ Build using `x64 Native Tools Command Prompt for VS 2017` shell:
 set PATH=%userprofile%\.cargo\bin;C:\Program Files\CMake\bin;%PATH%
 set SKIA_DIR=path
 set SKIA_LIB_DIR=path
+rustup.exe default stable-x86_64-pc-windows-msvc
 
 cargo.exe build --release --features "skia-backend"
 ```
