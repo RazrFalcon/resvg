@@ -50,7 +50,8 @@ raqote-backend = ["raqote"]
 skia-backend = ["resvg-skia"]
 
 [package.metadata.docs.rs]
-all-features = true
+# Ignore skia-backend since it cannot be built on docs.rs instance.
+features = ["cairo-backend", "qt-backend", "raqote-backend"]
 
 [lib]
 doctest = false
