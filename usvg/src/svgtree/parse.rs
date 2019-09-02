@@ -374,9 +374,7 @@ fn parse_svg_attribute(
         | AId::K2
         | AId::K3
         | AId::K4 => {
-            let n = parse_number(value)?;
-            let n = crate::f64_bound(0.0, n, 1.0);
-            AttributeValue::Number(n)
+            AttributeValue::Number(parse_number(value)?)
         }
 
           AId::Amplitude

@@ -239,9 +239,9 @@ fn convert_fe_flood(
 fn get_coeff(
     node: svgtree::Node,
     aid: AId,
-) -> tree::CompositingCoefficient {
+) -> tree::PositiveNumber {
     let k: f64 = node.attribute(aid).unwrap_or(0.0);
-    f64_bound(0.0, k, 1.0).into()
+    if k.is_sign_negative() { 0.0 } else { k }.into()
 }
 
 fn convert_fe_composite(

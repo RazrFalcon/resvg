@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- Allow `feComposite` k1-4 coefficients to be larger than 1.0
+  This matches browsers behaviour.
+
 ### Fixed
 - `feComposite` with fully transparent regions was producing invalid results.
 

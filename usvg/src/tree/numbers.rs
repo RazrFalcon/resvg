@@ -73,9 +73,6 @@ pub type Opacity = NormalizedValue;
 /// An alias to `NormalizedValue`.
 pub type StopOffset = NormalizedValue;
 
-/// An alias to `NormalizedValue`.
-pub type CompositingCoefficient = NormalizedValue;
-
 
 /// A `stroke-width` value.
 ///

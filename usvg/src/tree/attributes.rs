@@ -311,10 +311,10 @@ pub enum FeCompositeOperator {
     Atop,
     Xor,
     Arithmetic {
-        k1: CompositingCoefficient,
-        k2: CompositingCoefficient,
-        k3: CompositingCoefficient,
-        k4: CompositingCoefficient,
+        k1: PositiveNumber,
+        k2: PositiveNumber,
+        k3: PositiveNumber,
+        k4: PositiveNumber,
     },
 }
 
