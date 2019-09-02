@@ -271,6 +271,7 @@ impl Filter<skia::Surface> for SkiaFilter {
 
                     let a = calc(c1.a, c2.a, 1.0);
                     if a.is_fuzzy_zero() {
+                        i += 1;
                         continue;
                     }
 

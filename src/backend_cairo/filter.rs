@@ -286,6 +286,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
                 for (c1, c2) in data1.as_bgra().iter().zip(data2.as_bgra()) {
                     let a = calc(c1.a, c2.a, 1.0);
                     if a.is_fuzzy_zero() {
+                        i += 1;
                         continue;
                     }
 

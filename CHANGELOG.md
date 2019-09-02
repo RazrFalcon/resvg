@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- `feComposite` with fully transparent regions was producing invalid results.
 
 ## [0.8.0] - 2019-08-17
 ### Added
