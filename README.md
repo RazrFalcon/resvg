@@ -70,6 +70,10 @@ Also, we do not test against Chrome, Firefox, Inkscape and Batik because they ha
 - QtSvg doesn't support `filter`, `clipPath`, `mask` and `pattern` that are heavily used in the Oxygen icon theme.
   So it's actually very slow.
 
+## Building *resvg*
+
+See the [BUILD](BUILD.adoc) document.
+
 ## Project structure
 
 - `resvg` – rendering backends implementation
