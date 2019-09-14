@@ -19,8 +19,8 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 [dependencies]
 base64 = "0.10"
 data-url = "0.1"
+flate2 = { version = "1.0.11", default-features = false, features = ["rust_backend"]}
 kurbo = "0.2.3"
-libflate = "0.1.25"
 log = "0.4"
 rctree = "0.3"
 xmlwriter = "0.1"

@@ -13,6 +13,7 @@ This changelog also contains important changes in dependencies.
 ### Changed
 - Allow `feComposite` k1-4 coefficients to be larger than 1.0
   This matches browsers behaviour.
+- Use `flate2` instead of `libflate` for GZip decoding.
 
 ### Fixed
 - `feComposite` with fully transparent regions was producing invalid results.
