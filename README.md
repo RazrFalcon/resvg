@@ -90,6 +90,7 @@ All other dependencies aren't written by me for this project.
 
 ## Directory structure
 
+- `benches` - basic benchmarks for rendering operations
 - `bindings` – minimal bindings to Qt and Skia used by *resvg*
 - `capi` – C interface for *resvg*
 - `docs` – basic documentation

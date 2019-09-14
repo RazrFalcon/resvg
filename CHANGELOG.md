@@ -13,6 +13,7 @@ This changelog also contains important changes in dependencies.
 
 ### Fixed
 - `feComposite` with fully transparent regions was producing invalid results.
+- Fallback to `matrix` in `feColorMatrix` when `type` is not set or invalid.
 
 ## [0.8.0] - 2019-08-17
 ### Added

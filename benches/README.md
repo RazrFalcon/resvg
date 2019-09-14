@@ -101,15 +101,15 @@ test groups_with_opacity_qt      ... bench:     173,847 ns/iter (+/- 652)
 test groups_with_opacity_raqote  ... bench:     884,742 ns/iter (+/- 1,058)
 test groups_with_opacity_skia    ... bench:     233,153 ns/iter (+/- 247)
 
-test nested_clip_path_cairo      ... bench:     240,114 ns/iter (+/- 594)
-test nested_clip_path_qt         ... bench:     471,939 ns/iter (+/- 2,506)
-test nested_clip_path_raqote     ... bench:   2,042,673 ns/iter (+/- 8,539)
-test nested_clip_path_skia       ... bench:     412,809 ns/iter (+/- 1,265)
-
 test clip_path_cairo             ... bench:     162,257 ns/iter (+/- 236)
 test clip_path_qt                ... bench:     265,143 ns/iter (+/- 16,374)
 test clip_path_raqote            ... bench:   1,309,212 ns/iter (+/- 2,860)
 test clip_path_skia              ... bench:     231,024 ns/iter (+/- 383)
+
+test nested_clip_path_cairo      ... bench:     240,114 ns/iter (+/- 594)
+test nested_clip_path_qt         ... bench:     471,939 ns/iter (+/- 2,506)
+test nested_clip_path_raqote     ... bench:   2,042,673 ns/iter (+/- 8,539)
+test nested_clip_path_skia       ... bench:     412,809 ns/iter (+/- 1,265)
 
 test mask_cairo                  ... bench:     174,916 ns/iter (+/- 203)
 test mask_qt                     ... bench:     336,101 ns/iter (+/- 2,356)

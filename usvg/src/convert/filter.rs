@@ -416,13 +416,6 @@ fn convert_color_matrix_kind(
     fe: svgtree::Node
 ) -> Option<tree::FeColorMatrixKind> {
     match fe.attribute(AId::Type) {
-        Some("matrix") => {
-            if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::Values) {
-                if list.len() == 20 {
-                    return Some(tree::FeColorMatrixKind::Matrix(list.0.clone()));
-                }
-            }
-        }
         Some("saturate") => {
             if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::Values) {
                 if !list.is_empty() {
@@ -445,7 +438,14 @@ fn convert_color_matrix_kind(
         Some("luminanceToAlpha") => {
             return Some(tree::FeColorMatrixKind::LuminanceToAlpha);
         }
-        _ => {}
+        _ => {
+            // Fallback to `matrix`.
+            if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::Values) {
+                if list.len() == 20 {
+                    return Some(tree::FeColorMatrixKind::Matrix(list.0.clone()));
+                }
+            }
+        }
     }
 
     None
