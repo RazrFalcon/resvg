@@ -6,7 +6,7 @@
 
 use log::warn;
 
-use crate::{prelude::*, layers, ConvTransform};
+use crate::{prelude::*, layers, ConvTransform, RenderState};
 
 mod clip_and_mask;
 mod filter;
@@ -186,6 +186,17 @@ pub fn render_node_to_canvas(
     img_size: ScreenSize,
     dt: &mut raqote::DrawTarget,
 ) {
+    render_node_to_canvas_impl(node, opt, view_box, img_size, &mut RenderState::Ok, dt)
+}
+
+fn render_node_to_canvas_impl(
+    node: &usvg::Node,
+    opt: &Options,
+    view_box: usvg::ViewBox,
+    img_size: ScreenSize,
+    state: &mut RenderState,
+    dt: &mut raqote::DrawTarget,
+) {
     let mut layers = create_layers(img_size);
 
     apply_viewbox_transform(view_box, img_size, dt);
@@ -195,7 +206,7 @@ pub fn render_node_to_canvas(
     ts.append(&node.transform());
 
     dt.transform(&ts.to_native());
-    render_node(node, opt, &mut layers, dt);
+    render_node(node, opt, state, &mut layers, dt);
     dt.set_transform(&curr_ts);
 }
 
@@ -223,12 +234,13 @@ fn apply_viewbox_transform(
 fn render_node(
     node: &usvg::Node,
     opt: &Options,
+    state: &mut RenderState,
     layers: &mut RaqoteLayers,
     dt: &mut raqote::DrawTarget,
 ) -> Option<Rect> {
     match *node.borrow() {
         usvg::NodeKind::Svg(_) => {
-            render_group(node, opt, layers, dt)
+            render_group(node, opt, state, layers, dt)
         }
         usvg::NodeKind::Path(ref path) => {
             path::draw(&node.tree(), path, opt, raqote::DrawOptions::default(), dt)
@@ -237,7 +249,7 @@ fn render_node(
             Some(image::draw(img, opt, dt))
         }
         usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, layers, dt)
+            render_group_impl(node, g, opt, state, layers, dt)
         }
         _ => None,
     }
@@ -246,6 +258,7 @@ fn render_node(
 fn render_group(
     parent: &usvg::Node,
     opt: &Options,
+    state: &mut RenderState,
     layers: &mut RaqoteLayers,
     dt: &mut raqote::DrawTarget,
 ) -> Option<Rect> {
@@ -253,9 +266,21 @@ fn render_group(
     let mut g_bbox = Rect::new_bbox();
 
     for node in parent.children() {
+        match state {
+            RenderState::Ok => {}
+            RenderState::RenderUntil(ref last) => {
+                if node == *last {
+                    // Stop rendering.
+                    *state = RenderState::BackgroundFinished;
+                    break;
+                }
+            }
+            RenderState::BackgroundFinished => break,
+        }
+
         dt.transform(&node.transform().to_native());
 
-        let bbox = render_node(&node, opt, layers, dt);
+        let bbox = render_node(&node, opt, state, layers, dt);
 
         if let Some(bbox) = bbox {
             let bbox = bbox.transform(&node.transform()).unwrap();
@@ -278,6 +303,7 @@ fn render_group_impl(
     node: &usvg::Node,
     g: &usvg::Group,
     opt: &Options,
+    state: &mut RenderState,
     layers: &mut RaqoteLayers,
     dt: &mut raqote::DrawTarget,
 ) -> Option<Rect> {
@@ -288,8 +314,22 @@ fn render_group_impl(
 
     let bbox = {
         sub_dt.set_transform(&curr_ts);
-        render_group(node, opt, layers, &mut sub_dt)
+        render_group(node, opt, state, layers, &mut sub_dt)
     };
+
+    // During the background rendering for filters,
+    // an opacity, a filter, a clip and a mask should be ignored for the inner group.
+    // So we are simply rendering the `sub_img` without any postprocessing.
+    //
+    // SVG spec, 15.6 Accessing the background image
+    // 'Any filter effects, masking and group opacity that might be set on A[i] do not apply
+    // when rendering the children of A[i] into BUF[i].'
+    if *state == RenderState::BackgroundFinished {
+        dt.set_transform(&raqote::Transform::default());
+        dt.draw_image_at(0.0, 0.0, &sub_dt.as_image(), &raqote::DrawOptions::default());
+        dt.set_transform(&curr_ts);
+        return bbox;
+    }
 
     // Filter can be rendered on an object without a bbox,
     // as long as filter uses `userSpaceOnUse`.
@@ -297,7 +337,8 @@ fn render_group_impl(
         if let Some(filter_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(&curr_ts);
-                filter::apply(filter, bbox, &ts, opt, &mut sub_dt);
+                let background = prepare_filter_background(node, filter, opt);
+                filter::apply(filter, bbox, &ts, opt, background.as_ref(), &mut sub_dt);
             }
         }
     }
@@ -336,6 +377,25 @@ fn render_group_impl(
     dt.set_transform(&curr_ts);
 
     bbox
+}
+
+/// Renders an image used by `BackgroundImage` or `BackgroundAlpha` filter inputs.
+fn prepare_filter_background(
+    parent: &usvg::Node,
+    filter: &usvg::Filter,
+    opt: &Options,
+) -> Option<raqote::DrawTarget> {
+    let start_node = crate::filter_background_start_node(parent, filter)?;
+
+    let tree = parent.tree();
+    let (mut dt, img_size) = create_target(tree.svg_node().size.to_screen_size(), opt)?;
+    let view_box = tree.svg_node().view_box;
+
+    // Render from the `start_node` until the `parent`. The `parent` itself is excluded.
+    let mut state = RenderState::RenderUntil(parent.clone());
+    render_node_to_canvas_impl(&start_node, opt, view_box, img_size, &mut state, &mut dt);
+
+    Some(dt)
 }
 
 fn create_layers(img_size: ScreenSize) -> RaqoteLayers {

@@ -368,12 +368,15 @@ fn convert_group(
 
     let transform: tree::Transform = node.attribute(AId::Transform).unwrap_or_default();
 
+    let enable_background = node.attribute(AId::EnableBackground);
+
     let required =    opacity.value().fuzzy_ne(&1.0)
                    || clip_path.is_some()
                    || mask.is_some()
                    || filter.is_some()
                    || !transform.is_default()
                    || (node.has_tag_name(EId::G) && state.opt.keep_named_groups)
+                   || enable_background.is_some()
                    || force;
 
     if required {
@@ -390,6 +393,7 @@ fn convert_group(
             clip_path,
             mask,
             filter,
+            enable_background,
         }));
 
         GroupKind::Create(g)
@@ -457,6 +461,7 @@ fn ungroup_groups(
                 && g.clip_path.is_none()
                 && g.mask.is_none()
                 && g.filter.is_none()
+                && g.enable_background.is_none()
                 && !(opt.keep_named_groups && !g.id.is_empty())
             } else {
                 false

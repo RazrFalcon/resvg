@@ -23,9 +23,10 @@ pub fn apply(
     bbox: Option<Rect>,
     ts: &usvg::Transform,
     opt: &Options,
+    background: Option<&qt::Image>,
     canvas: &mut qt::Image,
 ) {
-    QtFilter::apply(filter, bbox, ts, opt, canvas);
+    QtFilter::apply(filter, bbox, ts, opt, background, canvas);
 }
 
 
@@ -97,6 +98,7 @@ impl Filter<qt::Image> for QtFilter {
         input: &usvg::FilterInput,
         region: ScreenRect,
         results: &[FilterResult],
+        background: Option<&qt::Image>,
         canvas: &qt::Image,
     ) -> Result<Image, Error> {
         match input {
@@ -127,18 +129,55 @@ impl Filter<qt::Image> for QtFilter {
                     color_space: ColorSpace::SRGB,
                 })
             }
+            usvg::FilterInput::BackgroundImage => {
+                let image = if let Some(image) = background {
+                    let image = copy_image(image, region)?;
+                    image.to_rgba().ok_or(Error::AllocFailed)?
+                } else {
+                    create_image(canvas.width(), canvas.height())?
+                };
+
+                Ok(Image {
+                    image: Rc::new(image),
+                    region: region.translate_to(0, 0),
+                    color_space: ColorSpace::SRGB,
+                })
+            }
+            usvg::FilterInput::BackgroundAlpha => {
+                let image = Self::get_input(
+                    &usvg::FilterInput::BackgroundImage, region, results, background, canvas,
+                )?;
+                let mut image = image.take()?;
+
+                // Set RGB to black. Keep alpha as is.
+                for p in image.data_mut().chunks_mut(4) {
+                    p[0] = 0;
+                    p[1] = 0;
+                    p[2] = 0;
+                }
+
+                Ok(Image {
+                    image: Rc::new(image),
+                    region: region.translate_to(0, 0),
+                    color_space: ColorSpace::SRGB,
+                })
+            }
             usvg::FilterInput::Reference(ref name) => {
                 if let Some(ref v) = results.iter().rev().find(|v| v.name == *name) {
                     Ok(v.image.clone())
                 } else {
                     // Technically unreachable.
                     warn!("Unknown filter primitive reference '{}'.", name);
-                    Self::get_input(&usvg::FilterInput::SourceGraphic, region, results, canvas)
+                    Self::get_input(
+                        &usvg::FilterInput::SourceGraphic, region, results, background, canvas,
+                    )
                 }
             }
             _ => {
                 warn!("Filter input '{:?}' is not supported.", input);
-                Self::get_input(&usvg::FilterInput::SourceGraphic, region, results, canvas)
+                Self::get_input(
+                    &usvg::FilterInput::SourceGraphic, region, results, background, canvas,
+                )
             }
         }
     }
@@ -311,13 +350,14 @@ impl Filter<qt::Image> for QtFilter {
         cs: ColorSpace,
         region: ScreenRect,
         results: &[FilterResult],
+        background: Option<&qt::Image>,
         canvas: &qt::Image,
     ) -> Result<Image, Error> {
         let mut buffer = create_image(region.width(), region.height())?;
         let mut p = qt::Painter::new(&mut buffer);
 
         for input in &fe.inputs {
-            let input = Self::get_input(input, region, &results, canvas)?;
+            let input = Self::get_input(input, region, &results, background, canvas)?;
             let input = input.into_color_space(cs)?;
 
             p.draw_image(0.0, 0.0, input.as_ref());

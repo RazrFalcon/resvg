@@ -267,6 +267,7 @@ A group will have at least one of the attributes present.
 * `filter` = <<func-iri-type,<FuncIRI> >>? +
   Cannot be set to `none`.
 * `transform` = <<transform-type,<transform> >>?
+* `enable-background` = `new | new <number> <number> <positive-number> <positive-number>`?
 
 [[path-element]]
 

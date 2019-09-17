@@ -6,7 +6,7 @@
 
 use log::warn;
 
-use crate::{prelude::*, layers, ConvTransform};
+use crate::{prelude::*, layers, ConvTransform, RenderState};
 
 
 macro_rules! try_create_surface {
@@ -195,6 +195,17 @@ pub fn render_node_to_canvas(
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
+    render_node_to_canvas_impl(node, opt, view_box, img_size, &mut RenderState::Ok, cr)
+}
+
+fn render_node_to_canvas_impl(
+    node: &usvg::Node,
+    opt: &Options,
+    view_box: usvg::ViewBox,
+    img_size: ScreenSize,
+    state: &mut RenderState,
+    cr: &cairo::Context,
+) {
     let mut layers = create_layers(img_size);
 
     apply_viewbox_transform(view_box, img_size, &cr);
@@ -204,7 +215,7 @@ pub fn render_node_to_canvas(
     ts.append(&node.transform());
 
     cr.transform(ts.to_native());
-    render_node(node, opt, &mut layers, cr);
+    render_node(node, opt, state, &mut layers, cr);
     cr.set_matrix(curr_ts);
 }
 
@@ -232,12 +243,13 @@ fn apply_viewbox_transform(
 fn render_node(
     node: &usvg::Node,
     opt: &Options,
+    state: &mut RenderState,
     layers: &mut CairoLayers,
     cr: &cairo::Context,
 ) -> Option<Rect> {
     match *node.borrow() {
         usvg::NodeKind::Svg(_) => {
-            render_group(node, opt, layers, cr)
+            render_group(node, opt, state, layers, cr)
         }
         usvg::NodeKind::Path(ref path) => {
             path::draw(&node.tree(), path, opt, cr)
@@ -246,7 +258,7 @@ fn render_node(
             Some(image::draw(img, opt, cr))
         }
         usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, layers, cr)
+            render_group_impl(node, g, opt, state, layers, cr)
         }
         _ => None,
     }
@@ -255,6 +267,7 @@ fn render_node(
 fn render_group(
     parent: &usvg::Node,
     opt: &Options,
+    state: &mut RenderState,
     layers: &mut CairoLayers,
     cr: &cairo::Context,
 ) -> Option<Rect> {
@@ -262,9 +275,21 @@ fn render_group(
     let mut g_bbox = Rect::new_bbox();
 
     for node in parent.children() {
+        match state {
+            RenderState::Ok => {}
+            RenderState::RenderUntil(ref last) => {
+                if node == *last {
+                    // Stop rendering.
+                    *state = RenderState::BackgroundFinished;
+                    break;
+                }
+            }
+            RenderState::BackgroundFinished => break,
+        }
+
         cr.transform(node.transform().to_native());
 
-        let bbox = render_node(&node, opt, layers, cr);
+        let bbox = render_node(&node, opt, state, layers, cr);
         if let Some(bbox) = bbox {
             if let Some(bbox) = bbox.transform(&node.transform()) {
                 g_bbox = g_bbox.expand(bbox);
@@ -287,6 +312,7 @@ fn render_group_impl(
     node: &usvg::Node,
     g: &usvg::Group,
     opt: &Options,
+    state: &mut RenderState,
     layers: &mut CairoLayers,
     cr: &cairo::Context,
 ) -> Option<Rect> {
@@ -299,16 +325,34 @@ fn render_group_impl(
         let sub_cr = cairo::Context::new(&*sub_surface);
         sub_cr.set_matrix(curr_ts);
 
-        render_group(node, opt, layers, &sub_cr)
+        render_group(node, opt, state, layers, &sub_cr)
     };
+
+    // During the background rendering for filters,
+    // an opacity, a filter, a clip and a mask should be ignored for the inner group.
+    // So we are simply rendering the `sub_img` without any postprocessing.
+    //
+    // SVG spec, 15.6 Accessing the background image
+    // 'Any filter effects, masking and group opacity that might be set on A[i] do not apply
+    // when rendering the children of A[i] into BUF[i].'
+    if *state == RenderState::BackgroundFinished {
+        let curr_matrix = cr.get_matrix();
+        cr.set_matrix(cairo::Matrix::identity());
+        cr.set_source_surface(&*sub_surface, 0.0, 0.0);
+        cr.paint();
+        cr.set_matrix(curr_matrix);
+        cr.reset_source_rgba();
+        return bbox;
+    }
 
     // Filter can be rendered on an object without a bbox,
     // as long as filter uses `userSpaceOnUse`.
     if let Some(ref id) = g.filter {
         if let Some(filter_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
+                let background = prepare_filter_background(node, filter, opt);
                 let ts = usvg::Transform::from_native(&curr_ts);
-                filter::apply(filter, bbox, &ts, opt, &mut *sub_surface);
+                filter::apply(filter, bbox, &ts, opt, background.as_ref(), &mut *sub_surface);
             }
         }
     }
@@ -354,6 +398,26 @@ fn render_group_impl(
     cr.reset_source_rgba();
 
     bbox
+}
+
+/// Renders an image used by `BackgroundImage` or `BackgroundAlpha` filter inputs.
+fn prepare_filter_background(
+    parent: &usvg::Node,
+    filter: &usvg::Filter,
+    opt: &Options,
+) -> Option<cairo::ImageSurface> {
+    let start_node = crate::filter_background_start_node(parent, filter)?;
+
+    let tree = parent.tree();
+    let (surface, img_size) = create_surface(tree.svg_node().size.to_screen_size(), opt)?;
+    let view_box = tree.svg_node().view_box;
+
+    let cr = cairo::Context::new(&surface);
+    // Render from the `start_node` until the `parent`. The `parent` itself is excluded.
+    let mut state = RenderState::RenderUntil(parent.clone());
+    render_node_to_canvas_impl(&start_node, opt, view_box, img_size, &mut state, &cr);
+
+    Some(surface)
 }
 
 fn create_layers(

@@ -404,3 +404,11 @@ impl_enum_from_str!(ImageRendering,
 );
 
 impl_from_str!(ImageRendering);
+
+
+/// An `enable-background`.
+///
+/// Contains only the `new [ <x> <y> <width> <height> ]` value.
+#[derive(Clone, Copy, Debug)]
+#[allow(missing_docs)]
+pub struct EnableBackground(pub Option<Rect>);

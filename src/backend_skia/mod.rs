@@ -7,7 +7,7 @@
 use crate::skia;
 use log::warn;
 
-use crate::{prelude::*, layers, ConvTransform};
+use crate::{prelude::*, layers, ConvTransform, RenderState};
 
 macro_rules! try_create_surface {
     ($size:expr, $ret:expr) => {
@@ -123,6 +123,17 @@ pub fn render_node_to_canvas(
     img_size: ScreenSize,
     surface: &mut skia::Surface,
 ) {
+    render_node_to_canvas_impl(node, opt, view_box, img_size, &mut RenderState::Ok, surface)
+}
+
+fn render_node_to_canvas_impl(
+    node: &usvg::Node,
+    opt: &Options,
+    view_box: usvg::ViewBox,
+    img_size: ScreenSize,
+    state: &mut RenderState,
+    surface: &mut skia::Surface,
+) {
     let mut layers = create_layers(img_size);
 
     apply_viewbox_transform(view_box, img_size, surface);
@@ -133,7 +144,7 @@ pub fn render_node_to_canvas(
     ts.append(&node.transform());
 
     surface.concat(&ts.to_native());
-    render_node(node, opt, &mut layers, surface);
+    render_node(node, opt, state, &mut layers, surface);
     surface.set_matrix(&curr_ts);
 }
 
@@ -168,12 +179,13 @@ fn apply_viewbox_transform(
 fn render_node(
     node: &usvg::Node,
     opt: &Options,
+    state: &mut RenderState,
     layers: &mut SkiaLayers,
     surface: &mut skia::Surface,
 ) -> Option<Rect> {
     match *node.borrow() {
         usvg::NodeKind::Svg(_) => {
-            render_group(node, opt, layers, surface)
+            render_group(node, opt, state, layers, surface)
         }
         usvg::NodeKind::Path(ref path) => {
             path::draw(&node.tree(), path, opt, skia::BlendMode::SourceOver, surface)
@@ -182,7 +194,7 @@ fn render_node(
             Some(image::draw(img, opt, surface))
         }
         usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, layers, surface)
+            render_group_impl(node, g, opt, state, layers, surface)
         }
         _ => None,
     }
@@ -191,6 +203,7 @@ fn render_node(
 fn render_group(
     parent: &usvg::Node,
     opt: &Options,
+    state: &mut RenderState,
     layers: &mut SkiaLayers,
     surface: &mut skia::Surface,
 ) -> Option<Rect> {
@@ -198,9 +211,21 @@ fn render_group(
     let mut g_bbox = Rect::new_bbox();
 
     for node in parent.children() {
+        match state {
+            RenderState::Ok => {}
+            RenderState::RenderUntil(ref last) => {
+                if node == *last {
+                    // Stop rendering.
+                    *state = RenderState::BackgroundFinished;
+                    break;
+                }
+            }
+            RenderState::BackgroundFinished => break,
+        }
+
         surface.concat(&node.transform().to_native());
 
-        let bbox = render_node(&node, opt, layers, surface);
+        let bbox = render_node(&node, opt, state, layers, surface);
         if let Some(bbox) = bbox {
             if let Some(bbox) = bbox.transform(&node.transform()) {
                 g_bbox = g_bbox.expand(bbox);
@@ -223,6 +248,7 @@ fn render_group_impl(
     node: &usvg::Node,
     g: &usvg::Group,
     opt: &Options,
+    state: &mut RenderState,
     layers: &mut SkiaLayers,
     surface: &mut skia::Surface,
 ) -> Option<Rect> {
@@ -233,8 +259,25 @@ fn render_group_impl(
 
     let bbox = {
         sub_surface.set_matrix(&curr_ts);
-        render_group(node, opt, layers, &mut sub_surface)
+        render_group(node, opt, state, layers, &mut sub_surface)
     };
+
+    // During the background rendering for filters,
+    // an opacity, a filter, a clip and a mask should be ignored for the inner group.
+    // So we are simply rendering the `sub_img` without any postprocessing.
+    //
+    // SVG spec, 15.6 Accessing the background image
+    // 'Any filter effects, masking and group opacity that might be set on A[i] do not apply
+    // when rendering the children of A[i] into BUF[i].'
+    if *state == RenderState::BackgroundFinished {
+        let curr_ts = surface.get_matrix();
+        surface.reset_matrix();
+        surface.draw_surface(
+            &sub_surface, 0.0, 0.0, 255, skia::BlendMode::SourceOver, skia::FilterQuality::Low,
+        );
+        surface.set_matrix(&curr_ts);
+        return bbox;
+    }
 
     // Filter can be rendered on an object without a bbox,
     // as long as filter uses `userSpaceOnUse`.
@@ -242,7 +285,8 @@ fn render_group_impl(
         if let Some(filter_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(&curr_ts);
-                filter::apply(filter, bbox, &ts, opt, &mut sub_surface);
+                let background = prepare_filter_background(node, filter, opt);
+                filter::apply(filter, bbox, &ts, opt, background.as_ref(), &mut sub_surface);
             }
         }
     }
@@ -282,6 +326,25 @@ fn render_group_impl(
     surface.set_matrix(&curr_ts);
 
     bbox
+}
+
+/// Renders an image used by `BackgroundImage` or `BackgroundAlpha` filter inputs.
+fn prepare_filter_background(
+    parent: &usvg::Node,
+    filter: &usvg::Filter,
+    opt: &Options,
+) -> Option<skia::Surface> {
+    let start_node = crate::filter_background_start_node(parent, filter)?;
+
+    let tree = parent.tree();
+    let (mut img, img_size) = create_root_image(tree.svg_node().size.to_screen_size(), opt)?;
+    let view_box = tree.svg_node().view_box;
+
+    // Render from the `start_node` until the `parent`. The `parent` itself is excluded.
+    let mut state = RenderState::RenderUntil(parent.clone());
+    render_node_to_canvas_impl(&start_node, opt, view_box, img_size, &mut state, &mut img);
+
+    Some(img)
 }
 
 fn create_layers(

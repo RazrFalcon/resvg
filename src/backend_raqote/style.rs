@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{prelude::*, ConvTransform};
+use crate::{prelude::*, ConvTransform, RenderState};
 use super::{ColorExt, RaqoteDrawTargetExt};
 
 
@@ -270,7 +270,7 @@ fn prepare_pattern<'a>(
     }
 
     let mut layers = super::create_layers(img_size);
-    super::render_group(pattern_node, opt, &mut layers, &mut dt);
+    super::render_group(pattern_node, opt, &mut RenderState::Ok, &mut layers, &mut dt);
 
     let img = if !opacity.is_default() {
         // If `opacity` isn't `1` then we have to make image semitransparent.

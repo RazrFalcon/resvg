@@ -143,6 +143,7 @@ pub enum AttributeValue {
     Angle(svgtypes::Angle),
     AspectRatio(svgtypes::AspectRatio),
     Color(svgtypes::Color),
+    EnableBackground(tree::EnableBackground),
     Length(svgtypes::Length),
     Link(String),
     Number(f64),
@@ -616,6 +617,7 @@ impl_from_value!(svgtypes::AspectRatio, AspectRatio);
 impl_from_value!(svgtypes::Angle, Angle);
 impl_from_value!(f64, Number);
 impl_from_value!(tree::Opacity, Opacity);
+impl_from_value!(tree::EnableBackground, EnableBackground);
 
 impl<'a> FromValue<'a> for &'a AttributeValue {
     fn get(node: Node<'a>, aid: AId) -> Option<Self> {

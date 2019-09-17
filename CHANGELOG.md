@@ -9,6 +9,8 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - Load grayscale raster images.
+- `enable-background` support.
+- `BackgroundImage` and `BackgroundAlpha` support as a filter input.
 
 ### Changed
 - Allow `feComposite` k1-4 coefficients to be larger than 1.0

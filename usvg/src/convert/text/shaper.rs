@@ -302,9 +302,6 @@ fn shape_text_with_font(
             .add_str(sub_text)
             .set_direction(hb_direction);
 
-        // TODO: feature smcp / small caps
-        //       simply setting the `smcp` doesn't work for some reasons
-
         let output = harfbuzz::shape(&hb_font, buffer, &[]);
 
         let positions = output.get_glyph_positions();

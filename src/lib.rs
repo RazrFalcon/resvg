@@ -84,6 +84,15 @@ macro_rules! try_opt_warn_or {
     };
 }
 
+macro_rules! matches {
+    ($expression:expr, $($pattern:tt)+) => {
+        match $expression {
+            $($pattern)+ => true,
+            _ => false
+        }
+    }
+}
+
 #[cfg(feature = "cairo-backend")]
 pub use cairo;
 
@@ -236,4 +245,63 @@ pub(crate) fn image_to_mask(
 pub(crate) trait ConvTransform<T> {
     fn to_native(&self) -> T;
     fn from_native(_: &T) -> Self;
+}
+
+
+#[derive(PartialEq)]
+pub(crate) enum RenderState {
+    /// A default value. Doesn't indicate anything.
+    Ok,
+    /// Indicates that the current rendering task should stop after reaching the specified node.
+    RenderUntil(usvg::Node),
+    /// Indicates that `usvg::FilterInput::BackgroundImage` rendering task was finished.
+    BackgroundFinished,
+}
+
+
+/// Returns the node starting from which the filter background should be rendered.
+pub(crate) fn filter_background_start_node(
+    parent: &usvg::Node,
+    filter: &usvg::Filter,
+) -> Option<usvg::Node> {
+    fn has_enable_background(node: &usvg::Node) -> bool {
+        if let usvg::NodeKind::Group(ref g) = *node.borrow() {
+            g.enable_background.is_some()
+        } else {
+            false
+        }
+    }
+
+    fn is_background(input: &usvg::FilterInput) -> bool {
+        matches!(input, usvg::FilterInput::BackgroundImage | usvg::FilterInput::BackgroundAlpha)
+    }
+
+    let mut ok = false;
+    for child in &filter.children {
+        ok = match child.kind {
+            usvg::FilterKind::FeBlend(ref fe)               => is_background(&fe.input1),
+            usvg::FilterKind::FeColorMatrix(ref fe)         => is_background(&fe.input),
+            usvg::FilterKind::FeComponentTransfer(ref fe)   => is_background(&fe.input),
+            usvg::FilterKind::FeComposite(ref fe)           => is_background(&fe.input1),
+            usvg::FilterKind::FeFlood(_)                    => false,
+            usvg::FilterKind::FeGaussianBlur(ref fe)        => is_background(&fe.input),
+            usvg::FilterKind::FeImage(_)                    => false,
+            usvg::FilterKind::FeOffset(ref fe)              => is_background(&fe.input),
+            usvg::FilterKind::FeTile(ref fe)                => is_background(&fe.input),
+            usvg::FilterKind::FeMerge(ref fe)               => {
+                fe.inputs.iter().any(|input| is_background(input))
+            }
+        };
+
+        if ok {
+            break;
+        }
+    }
+
+    if !ok {
+        return None;
+    }
+
+    // We should have an ancestor with `enable-background=new`.
+    parent.ancestors().find(|node| has_enable_background(node))
 }

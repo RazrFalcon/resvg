@@ -17,7 +17,7 @@ cmake .. -DCMAKE_INSTALL_PREFIX=`kf5-config --prefix` -DQT_PLUGIN_INSTALL_DIR=`k
 make
 
 # install
-sudo make intall
+sudo make install
 ```
 
 ## Enable

@@ -11,7 +11,7 @@ use log::warn;
 pub use roxmltree::Error;
 
 use crate::tree;
-
+use crate::Rect;
 use super::{Document, Attribute, AId, EId, Node, NodeId, NodeKind, NodeData, AttributeValue};
 
 const SVG_NS: &str = "http://www.w3.org/2000/svg";
@@ -60,7 +60,11 @@ impl Document {
                 value,
             });
         } else {
-            warn!("Failed to parse {} value: '{}'.", aid, value);
+            // Invalid `enable-background` is not an error
+            // since we are ignoring the `accumulate` value.
+            if aid != AId::EnableBackground {
+                warn!("Failed to parse {} value: '{}'.", aid, value);
+            }
         }
     }
 }
@@ -512,6 +516,10 @@ fn parse_svg_attribute(
             AttributeValue::NumberList(svgtypes::NumberList::from_str(value)?)
         }
 
+        AId::EnableBackground => {
+            AttributeValue::EnableBackground(parse_enable_background(value)?)
+        }
+
         _ => {
             AttributeValue::String(value.to_string())
         }
@@ -735,6 +743,33 @@ fn parse_path(text: &str) -> tree::PathData {
 
     path.shrink_to_fit();
     path
+}
+
+fn parse_enable_background(value: &str) -> Result<tree::EnableBackground, svgtypes::Error> {
+    let mut s = svgtypes::Stream::from(value);
+    s.skip_spaces();
+    if s.starts_with(b"new") {
+        s.advance(3);
+        s.skip_spaces();
+        if s.at_end() {
+            return Ok(tree::EnableBackground(None));
+        }
+
+        let x = s.parse_list_number()?;
+        let y = s.parse_list_number()?;
+        let w = s.parse_list_number()?;
+        let h = s.parse_list_number()?;
+
+        s.skip_spaces();
+        if !s.at_end() {
+            return Err(svgtypes::Error::InvalidValue);
+        }
+
+        let r = Rect::new(x, y, w, h).ok_or(svgtypes::Error::InvalidValue)?;
+        Ok(tree::EnableBackground(Some(r)))
+    } else {
+        Err(svgtypes::Error::InvalidValue)
+    }
 }
 
 fn resolve_inherit(

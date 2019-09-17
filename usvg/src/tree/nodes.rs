@@ -208,6 +208,11 @@ pub struct Group {
 
     /// Element filter.
     pub filter: Option<String>,
+
+    /// Indicates that this node can be accessed via `filter`.
+    ///
+    /// `None` indicates an `accumulate` value.
+    pub enable_background: Option<EnableBackground>,
 }
 
 impl Default for Group {
@@ -219,6 +224,7 @@ impl Default for Group {
             clip_path: None,
             mask: None,
             filter: None,
+            enable_background: None,
         }
     }
 }
