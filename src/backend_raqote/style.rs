@@ -230,7 +230,7 @@ fn conv_stops(
         let alpha = stop.opacity.value() * opacity.value();
         stops.push(raqote::GradientStop {
             position: stop.offset.value() as f32,
-            color: stop.color.to_u32((alpha * 255.0) as u8),
+            color: stop.color.to_color((alpha * 255.0) as u8),
         });
     }
 

@@ -38,7 +38,7 @@ cairo-rs = { version = "0.7.1", default-features = false, features = ["png"], op
 resvg-qt = { path = "bindings/resvg-qt", version = "0.8", optional = true }
 
 # raqote backend
-raqote = { version = "0.6.1", default-features = false, optional = true }
+raqote = { version = "0.7.3", default-features = false, optional = true }
 
 # skia backend
 resvg-skia = { path = "bindings/resvg-skia", version = "0.8", optional = true }
