@@ -186,7 +186,7 @@ fn render_svg(
             in_svg.to_str().unwrap(), out_png.to_str().unwrap(),
         ])
         .current_dir(word_dir)
-        .stderr(Stdio::null())
+        .stderr(Stdio::piped())
         .run_with_timeout(15)
 }
 
@@ -307,8 +307,13 @@ impl CommandExt for Command {
         if status_code == Some(0) {
             Ok(())
         } else {
-            // The actual error doesn't matter.
-            Err(io::ErrorKind::Other.into())
+            let mut s = String::new();
+            if let Some(mut stderr) = child.stderr {
+                use std::io::Read;
+                stderr.read_to_string(&mut s).unwrap();
+            }
+
+            Err(io::Error::new(io::ErrorKind::Other, s))
         }
     }
 }
