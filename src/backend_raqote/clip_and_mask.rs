@@ -54,12 +54,11 @@ pub fn clip(
             }
         }
     }
-
-    dt.set_transform(&raqote::Transform::identity());
-    dt.draw_image_at(0.0, 0.0, &clip_dt.as_image(), &raqote::DrawOptions {
-        blend_mode: raqote::BlendMode::DstOut,
-        ..Default::default()
-    });
+    dt.blend_surface(&clip_dt,
+        raqote::IntRect::new(raqote::IntPoint::new(0, 0),
+                             raqote::IntPoint::new(clip_dt.width(), clip_dt.height())),
+        raqote::IntPoint::new(0, 0),
+        raqote::BlendMode::DstOut);
 }
 
 fn clip_group(
@@ -157,9 +156,9 @@ pub fn mask(
         }
     }
 
-    dt.set_transform(&raqote::Transform::identity());
-    dt.draw_image_at(0.0, 0.0, &mask_dt.as_image(), &raqote::DrawOptions {
-        blend_mode: raqote::BlendMode::DstIn,
-        ..Default::default()
-    });
+    dt.blend_surface(&mask_dt,
+        raqote::IntRect::new(raqote::IntPoint::new(0, 0),
+                             raqote::IntPoint::new(mask_dt.width(), mask_dt.height())),
+        raqote::IntPoint::new(0, 0),
+        raqote::BlendMode::DstIn);
 }
