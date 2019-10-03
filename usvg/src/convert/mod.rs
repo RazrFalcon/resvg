@@ -2,12 +2,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#[cfg(feature = "text")]
 use std::cell::RefCell;
+#[cfg(feature = "text")]
 use std::rc::Rc;
 
 use svgtypes::Length;
 
-use crate::{svgtree, tree, tree::prelude::*, fontdb, Error};
+use crate::{svgtree, tree, tree::prelude::*, Error};
+#[cfg(feature = "text")]
+use crate::fontdb;
 
 mod clip_and_mask;
 mod filter;
@@ -17,9 +21,9 @@ mod paint_server;
 mod shapes;
 mod style;
 mod switch;
-mod text;
 mod units;
 mod use_node;
+#[cfg(feature = "text")] mod text;
 
 mod prelude {
     pub use log::warn;
@@ -36,6 +40,7 @@ pub struct State<'a> {
     parent_marker: Option<svgtree::Node<'a>>,
     size: Size,
     view_box: Rect,
+    #[cfg(feature = "text")]
     db: Rc<RefCell<fontdb::Database>>,
     opt: &'a Options,
 }
@@ -80,6 +85,7 @@ pub fn convert_doc(
         parent_marker: None,
         size,
         view_box: view_box.rect,
+        #[cfg(feature = "text")]
         db: Rc::new(RefCell::new(fontdb::Database::new())),
         opt: &opt,
     };
@@ -104,6 +110,7 @@ fn resolve_svg_size(
         parent_marker: None,
         size: Size::new(100.0, 100.0).unwrap(),
         view_box: Rect::new(0.0, 0.0, 100.0, 100.0).unwrap(),
+        #[cfg(feature = "text")]
         db: Rc::new(RefCell::new(fontdb::Database::new())),
         opt,
     };
@@ -225,6 +232,7 @@ fn convert_element(
             image::convert(node, state, parent);
         }
         EId::Text => {
+            #[cfg(feature = "text")]
             text::convert(node, state, parent, tree);
         }
         EId::Svg => {
@@ -287,6 +295,7 @@ fn convert_clip_path_elements(
                 }
             }
             EId::Text => {
+                #[cfg(feature = "text")]
                 text::convert(node, state, parent, tree);
             }
             _ => {

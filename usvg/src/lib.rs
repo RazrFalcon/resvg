@@ -163,11 +163,11 @@ macro_rules! matches {
 pub mod utils;
 mod convert;
 mod error;
-mod fontdb;
 mod geom;
 mod options;
 mod svgtree;
 mod tree;
+#[cfg(feature = "text")] mod fontdb;
 
 /// Shorthand names for modules.
 mod short {

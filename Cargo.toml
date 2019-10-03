@@ -27,7 +27,7 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 [dependencies]
 log = "0.4"
 rgb = "0.8"
-usvg = { path = "usvg", version = "0.8" }
+usvg = { path = "usvg", version = "0.8", default-features = false }
 png = { version = "0.15", default-features = false }
 jpeg-decoder = { version = "0.1.15", default-features = false }
 
@@ -44,10 +44,12 @@ raqote = { version = "0.7.3", default-features = false, optional = true }
 resvg-skia = { path = "bindings/resvg-skia", version = "0.8", optional = true }
 
 [features]
+default = ["text"]
 cairo-backend = ["cairo-rs", "png/png-encoding"]
 qt-backend = ["resvg-qt"]
 raqote-backend = ["raqote"]
 skia-backend = ["resvg-skia"]
+text = ["usvg/text"]
 
 [package.metadata.docs.rs]
 # Ignore skia-backend since it cannot be built on docs.rs instance.
