@@ -1199,7 +1199,8 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
                 if let NodeKind::Text(ref mut text) = doc.nodes[node1_id.0].kind {
                     text.remove_first();
                 }
-            } else if    is_last
+            } else if
+                   is_last
                 && c4 == Some(b' ')
                 && !doc.get(node2_id).text().is_empty()
                 && xmlspace2 == XmlSpace::Default

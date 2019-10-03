@@ -24,9 +24,7 @@ pub fn convert(
     }
 }
 
-fn convert_path(
-    node: svgtree::Node,
-) -> Option<tree::SharedPathData> {
+fn convert_path(node: svgtree::Node) -> Option<tree::SharedPathData> {
     node.attribute::<tree::SharedPathData>(AId::D)
 }
 
@@ -124,15 +122,11 @@ fn convert_line(
     Some(Rc::new(path))
 }
 
-fn convert_polyline(
-    node: svgtree::Node,
-) -> Option<tree::SharedPathData> {
+fn convert_polyline(node: svgtree::Node) -> Option<tree::SharedPathData> {
     points_to_path(node, "Polyline").map(Rc::new)
 }
 
-fn convert_polygon(
-    node: svgtree::Node,
-) -> Option<tree::SharedPathData> {
+fn convert_polygon(node: svgtree::Node) -> Option<tree::SharedPathData> {
     if let Some(mut path) = points_to_path(node, "Polygon") {
         path.push(tree::PathSegment::ClosePath);
         Some(Rc::new(path))

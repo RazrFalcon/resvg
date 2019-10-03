@@ -181,6 +181,11 @@ pub trait NodeExt {
     /// transform will be returned.
     fn abs_transform(&self) -> Transform;
 
+    /// Returns node's paint server units.
+    ///
+    /// Returns `None` when node is not a `LinearGradient`, `RadialGradient` or `Pattern`.
+    fn units(&self) -> Option<Units>;
+
     /// Appends `kind` as a node child.
     ///
     /// Shorthand for `Node::append(Node::new(Box::new(kind)))`.
@@ -218,6 +223,16 @@ impl NodeExt for Node {
         }
 
         abs_ts
+    }
+
+    #[inline]
+    fn units(&self) -> Option<Units> {
+        match *self.borrow() {
+            NodeKind::LinearGradient(ref lg) => Some(lg.units),
+            NodeKind::RadialGradient(ref rg) => Some(rg.units),
+            NodeKind::Pattern(ref patt) => Some(patt.units),
+            _ => None,
+        }
     }
 
     #[inline]

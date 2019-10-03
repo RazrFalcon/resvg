@@ -28,13 +28,10 @@ pub fn resolve_fill(
         tree::Paint::Color(tree::Color::black())
     };
 
-    let opacity = sub_opacity * node.find_attribute(AId::FillOpacity).unwrap_or_default();
-    let rule = node.find_attribute(AId::FillRule).unwrap_or_default();
-
     Some(tree::Fill {
         paint,
-        opacity,
-        rule,
+        opacity: sub_opacity * node.find_attribute(AId::FillOpacity).unwrap_or_default(),
+        rule: node.find_attribute(AId::FillRule).unwrap_or_default(),
     })
 }
 
@@ -56,34 +53,22 @@ pub fn resolve_stroke(
         return None;
     };
 
-    let dashoffset  = node.resolve_length(AId::StrokeDashoffset, state, 0.0) as f32;
-    let miterlimit  = node.find_attribute(AId::StrokeMiterlimit).unwrap_or(4.0);
-    let width       = node.resolve_length(AId::StrokeWidth, state, 1.0);
-    let opacity     = sub_opacity * node.find_attribute(AId::StrokeOpacity).unwrap_or_default();
-
-    if !width.is_valid_length() {
-        return None;
-    }
-
-    let width = tree::StrokeWidth::new(width);
+    let width = node.resolve_valid_length(AId::StrokeWidth, state, 1.0)?;
 
     // Must be bigger than 1.
+    let miterlimit = node.find_attribute(AId::StrokeMiterlimit).unwrap_or(4.0);
     let miterlimit = if miterlimit < 1.0 { 1.0 } else { miterlimit };
     let miterlimit = tree::StrokeMiterlimit::new(miterlimit);
 
-    let linecap = node.find_attribute(AId::StrokeLinecap).unwrap_or_default();
-    let linejoin = node.find_attribute(AId::StrokeLinejoin).unwrap_or_default();
-    let dasharray = conv_dasharray(node, state);
-
     let stroke = tree::Stroke {
         paint,
-        dasharray,
-        dashoffset,
+        dasharray: conv_dasharray(node, state),
+        dashoffset: node.resolve_length(AId::StrokeDashoffset, state, 0.0) as f32,
         miterlimit,
-        opacity,
-        width,
-        linecap,
-        linejoin,
+        opacity: sub_opacity * node.find_attribute(AId::StrokeOpacity).unwrap_or_default(),
+        width: tree::StrokeWidth::new(width),
+        linecap: node.find_attribute(AId::StrokeLinecap).unwrap_or_default(),
+        linejoin: node.find_attribute(AId::StrokeLinejoin).unwrap_or_default(),
     };
 
     Some(stroke)

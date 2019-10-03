@@ -624,6 +624,7 @@ fn convert_path(
 
 pub trait SvgNodeExt {
     fn resolve_length(&self, aid: AId, state: &State, def: f64) -> f64;
+    fn resolve_valid_length(&self, aid: AId, state: &State, def: f64) -> Option<f64>;
     fn convert_length(&self, aid: AId, object_units: tree::Units, state: &State, def: Length) -> f64;
     fn try_convert_length(&self, aid: AId, object_units: tree::Units, state: &State) -> Option<f64>;
     fn convert_user_length(&self, aid: AId, state: &State, def: Length) -> f64;
@@ -648,6 +649,11 @@ impl<'a> SvgNodeExt for svgtree::Node<'a> {
         }
 
         def
+    }
+
+    fn resolve_valid_length(&self, aid: AId, state: &State, def: f64) -> Option<f64> {
+        let n = self.resolve_length(aid, state, def);
+        if n.is_valid_length() { Some(n) } else { None }
     }
 
     fn convert_length(&self, aid: AId, object_units: tree::Units, state: &State, def: Length) -> f64 {

@@ -4,7 +4,7 @@
 
 use std::f64;
 
-use crate::{svgtree, tree};
+use crate::{svgtree, tree, tree::prelude::*};
 use super::prelude::*;
 
 
@@ -26,16 +26,9 @@ pub fn convert(
 ) -> Option<ServerOrColor> {
     // Check for existing.
     if let Some(exist_node) = tree.defs_by_id(node.element_id()) {
-        let units = match *exist_node.borrow() {
-            tree::NodeKind::LinearGradient(ref lg) => lg.units,
-            tree::NodeKind::RadialGradient(ref rg) => rg.units,
-            tree::NodeKind::Pattern(ref patt) => patt.units,
-            _ => return None, // Unreachable.
-        };
-
         return Some(ServerOrColor::Server {
             id: node.element_id().to_string(),
-            units,
+            units: exist_node.units()?,
         });
     }
 

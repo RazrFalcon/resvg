@@ -141,27 +141,24 @@ fn convert_children(
     tree: &mut tree::Tree,
 ) {
     let required = !transform.is_default();
-
-    match super::convert_group(node, state, required, parent, tree) {
+    let mut parent = match super::convert_group(node, state, required, parent, tree) {
         super::GroupKind::Create(mut g) => {
             if let tree::NodeKind::Group(ref mut g) = *g.borrow_mut() {
                 g.transform = transform;
             }
 
-            if state.parent_clip_path.is_some() {
-                super::convert_clip_path_elements(node, state, &mut g, tree);
-            } else {
-                super::convert_children(node, state, &mut g, tree);
-            }
+            g.clone()
         }
         super::GroupKind::Skip => {
-            if state.parent_clip_path.is_some() {
-                super::convert_clip_path_elements(node, state,parent, tree);
-            } else {
-                super::convert_children(node, state, parent, tree);
-            }
+            parent.clone()
         }
-        super::GroupKind::Ignore => {}
+        super::GroupKind::Ignore => return,
+    };
+
+    if state.parent_clip_path.is_some() {
+        super::convert_clip_path_elements(node, state, &mut parent, tree);
+    } else {
+        super::convert_children(node, state, &mut parent, tree);
     }
 }
 
@@ -171,11 +168,8 @@ fn get_clip_rect(
     state: &State,
 ) -> Option<Rect> {
     // No need to clip elements with overflow:visible.
-    {
-        let overflow = symbol_node.attribute(AId::Overflow);
-        if overflow == Some("visible") || overflow == Some("auto") {
-            return None;
-        }
+    if matches!(symbol_node.attribute(AId::Overflow), Some("visible") | Some("auto")) {
+        return None;
     }
 
     let (x, y, w, h) = {
@@ -186,7 +180,7 @@ fn get_clip_rect(
         (x, y, w, h)
     };
 
-    if w.is_fuzzy_zero() || h.is_fuzzy_zero() {
+    if !w.is_valid_length() || !h.is_valid_length() {
         return None;
     }
 

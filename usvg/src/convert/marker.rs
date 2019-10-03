@@ -180,14 +180,7 @@ fn stroke_scale(
 ) -> Option<f64> {
     match marker_node.attribute(AId::MarkerUnits) {
         Some("userSpaceOnUse") => Some(1.0),
-        _ => {
-            let sw = path_node.resolve_length(AId::StrokeWidth, state, 1.0);
-            if sw.is_valid_length() {
-                Some(sw)
-            } else {
-                None
-            }
-        }
+        _ => path_node.resolve_valid_length(AId::StrokeWidth, state, 1.0),
     }
 }
 

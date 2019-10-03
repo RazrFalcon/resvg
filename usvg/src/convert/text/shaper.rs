@@ -9,6 +9,7 @@ use ttf_parser::GlyphId;
 use kurbo::Vec2;
 
 use crate::{tree, fontdb, convert::prelude::*};
+use crate::tree::CubicBezExt;
 use super::convert::{
     ByteIndex,
     CharacterPosition,
@@ -628,27 +629,11 @@ fn collect_normals(
         }
     };
 
-    fn create_curve(px: f64, py: f64, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64)
-        -> kurbo::CubicBez
-    {
-        kurbo::CubicBez {
-            p0: Vec2::new(px, py),
-            p1: Vec2::new(x1, y1),
-            p2: Vec2::new(x2, y2),
-            p3: Vec2::new(x, y),
-        }
-    }
-
-    fn create_curve_from_line(px: f64, py: f64, x: f64, y: f64)
-        -> kurbo::CubicBez
-    {
-        let line = kurbo::Line {
-            p0: Vec2::new(px, py),
-            p1: Vec2::new(x, y),
-        };
+    fn create_curve_from_line(px: f64, py: f64, x: f64, y: f64) -> kurbo::CubicBez {
+        let line = kurbo::Line::new(Vec2::new(px, py), Vec2::new(x, y));
         let p1 = line.eval(0.33);
         let p2 = line.eval(0.66);
-        create_curve(px, py, p1.x, p1.y, p2.x, p2.y, x, y)
+        kurbo::CubicBez::from_points(px, py, p1.x, p1.y, p2.x, p2.y, x, y)
     }
 
     let mut length = 0.0;
@@ -665,7 +650,7 @@ fn collect_normals(
                 create_curve_from_line(prev_x, prev_y, x, y)
             }
             tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                create_curve(prev_x, prev_y, x1, y1, x2, y2, x, y)
+                kurbo::CubicBez::from_points(prev_x, prev_y, x1, y1, x2, y2, x, y)
             }
             tree::PathSegment::ClosePath => {
                 create_curve_from_line(prev_x, prev_y, prev_mx, prev_my)
