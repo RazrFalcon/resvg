@@ -373,13 +373,15 @@ fn outline_cluster(
         }
     }
 
+    let byte_idx = glyphs[0].byte_idx;
+    let font = glyphs[0].font;
     OutlinedCluster {
-        byte_idx: glyphs[0].byte_idx,
-        codepoint: glyphs[0].byte_idx.char_from(text),
+        byte_idx,
+        codepoint: byte_idx.char_from(text),
         advance,
-        ascent: glyphs[0].font.ascent(font_size),
-        descent: glyphs[0].font.descent(font_size),
-        x_height: glyphs[0].font.x_height(font_size),
+        ascent: font.ascent(font_size),
+        descent: font.descent(font_size),
+        x_height: font.x_height(font_size),
         has_relative_shift: false,
         path,
         transform: tree::Transform::default(),
@@ -561,9 +563,7 @@ fn resolve_clusters_positions_path(
     (last_x, last_y)
 }
 
-fn clusters_length(
-    clusters: &[OutlinedCluster],
-) -> f64 {
+fn clusters_length(clusters: &[OutlinedCluster]) -> f64 {
     clusters.iter().fold(0.0, |w, cluster| w + cluster.advance)
 }
 
@@ -734,7 +734,7 @@ pub fn apply_letter_spacing(
 
                 // If the cluster advance became negative - clear it.
                 // This is an UB so we can do whatever we want, so we mimic the Chrome behavior.
-                if !(cluster.advance > 0.0) {
+                if !cluster.advance.is_valid_length() {
                     cluster.advance = 0.0;
                     cluster.path.clear();
                 }
@@ -748,9 +748,7 @@ pub fn apply_letter_spacing(
 /// [In the CSS spec](https://www.w3.org/TR/css-text-3/#cursive-tracking).
 ///
 /// The list itself is from: https://github.com/harfbuzz/harfbuzz/issues/64
-fn script_supports_letter_spacing(
-    script: unicode_script::Script,
-) -> bool {
+fn script_supports_letter_spacing(script: unicode_script::Script) -> bool {
     use unicode_script::Script;
 
     !matches!(script,
@@ -801,9 +799,7 @@ pub fn apply_word_spacing(
 /// Checks that the selected character is a word separator.
 ///
 /// According to: https://www.w3.org/TR/css-text-3/#word-separator
-fn is_word_separator_characters(
-    c: char,
-) -> bool {
+fn is_word_separator_characters(c: char) -> bool {
     matches!(c as u32, 0x0020 | 0x00A0 | 0x1361 | 0x010100 | 0x010101 | 0x01039F | 0x01091F)
 }
 

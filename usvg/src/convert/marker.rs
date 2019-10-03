@@ -13,15 +13,15 @@ pub fn is_valid(
     node: svgtree::Node,
 ) -> bool {
     // `marker-*` attributes can only be set on `path`, `line`, `polyline` and `polygon`.
-    match node.tag_name() {
-          Some(EId::Path)
-        | Some(EId::Line)
-        | Some(EId::Polyline)
-        | Some(EId::Polygon) => {}
+    match try_opt_or!(node.tag_name(), false) {
+          EId::Path
+        | EId::Line
+        | EId::Polyline
+        | EId::Polygon => {}
         _ => return false,
     }
 
-    // `marker-*` attributes cannot be set on shapes inside the `clipPath`.
+    // `marker-*` attributes cannot be set on shapes inside a `clipPath`.
     if node.ancestors().any(|n| n.has_tag_name(EId::ClipPath)) {
         return false;
     }
@@ -182,10 +182,10 @@ fn stroke_scale(
         Some("userSpaceOnUse") => Some(1.0),
         _ => {
             let sw = path_node.resolve_length(AId::StrokeWidth, state, 1.0);
-            if !(sw > 0.0) {
-                None
-            } else {
+            if sw.is_valid_length() {
                 Some(sw)
+            } else {
+                None
             }
         }
     }

@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::{svgtree, tree};
-use super::{prelude::*, paint_server, switch};
+use super::{prelude::*, paint_server};
 
 
 pub fn resolve_fill(
@@ -20,7 +20,6 @@ pub fn resolve_fill(
             rule: node.find_attribute(AId::ClipRule).unwrap_or_default(),
         });
     }
-
 
     let mut sub_opacity = tree::Opacity::default();
     let paint = if let Some(n) = node.find_node_with_attribute(AId::Fill) {
@@ -50,7 +49,6 @@ pub fn resolve_stroke(
         return None;
     }
 
-
     let mut sub_opacity = tree::Opacity::default();
     let paint = if let Some(n) = node.find_node_with_attribute(AId::Stroke) {
         convert_paint(n, AId::Stroke, has_bbox, state, &mut sub_opacity, tree)?
@@ -63,7 +61,7 @@ pub fn resolve_stroke(
     let width       = node.resolve_length(AId::StrokeWidth, state, 1.0);
     let opacity     = sub_opacity * node.find_attribute(AId::StrokeOpacity).unwrap_or_default();
 
-    if !(width > 0.0) {
+    if !width.is_valid_length() {
         return None;
     }
 
@@ -201,15 +199,4 @@ fn conv_dasharray(
     }
 
     Some(list)
-}
-
-pub fn is_visible_element(
-    node: svgtree::Node,
-    opt: &Options,
-) -> bool {
-    let display = node.attribute(AId::Display) != Some("none");
-
-       display
-    && node.has_valid_transform(AId::Transform)
-    && switch::is_condition_passed(node, opt)
 }

@@ -197,7 +197,7 @@ fn collect_text_chunks_impl(
             continue;
         }
 
-        if !style::is_visible_element(parent, state.opt) {
+        if !parent.is_visible_element(state.opt) {
             iter_state.chars_count += child.text().chars().count();
             continue;
         }
@@ -206,7 +206,7 @@ fn collect_text_chunks_impl(
 
         // TODO: what to do when <= 0? UB?
         let font_size = units::resolve_font_size(parent, state);
-        if !(font_size > 0.0) {
+        if !font_size.is_valid_length() {
             // Skip this span.
             iter_state.chars_count += child.text().chars().count();
             continue;
@@ -221,9 +221,6 @@ fn collect_text_chunks_impl(
             }
         };
 
-        let letter_spacing = parent.resolve_length(AId::LetterSpacing, state, 0.0);
-        let word_spacing = parent.resolve_length(AId::WordSpacing, state, 0.0);
-
         let span = TextSpan {
             start: 0,
             end: 0,
@@ -234,8 +231,8 @@ fn collect_text_chunks_impl(
             decoration: resolve_decoration(text_node, parent, state, tree),
             visibility: parent.find_attribute(AId::Visibility).unwrap_or_default(),
             baseline_shift: resolve_baseline_shift(parent, state),
-            letter_spacing,
-            word_spacing,
+            letter_spacing: parent.resolve_length(AId::LetterSpacing, state, 0.0),
+            word_spacing: parent.resolve_length(AId::WordSpacing, state, 0.0),
         };
 
         let mut is_new_span = true;

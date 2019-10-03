@@ -13,7 +13,7 @@ static FEATURES: &[&str] = &[
     "http://www.w3.org/TR/SVG11/feature#CoreAttribute", // no xml:base and xml:lang
     "http://www.w3.org/TR/SVG11/feature#Structure",
     "http://www.w3.org/TR/SVG11/feature#BasicStructure",
-    // "http://www.w3.org/TR/SVG11/feature#ContainerAttribute", // `enable-background`, not yet
+    "http://www.w3.org/TR/SVG11/feature#ContainerAttribute", // `enable-background`
     "http://www.w3.org/TR/SVG11/feature#ConditionalProcessing",
     "http://www.w3.org/TR/SVG11/feature#Image",
     "http://www.w3.org/TR/SVG11/feature#Style",

@@ -60,27 +60,20 @@ fn convert_linear(
     }
 
     let units = convert_units(node, AId::GradientUnits, tree::Units::ObjectBoundingBox);
-    let spread_method = convert_spread_method(node);
-    let x1 = resolve_number(node, AId::X1, units, state, Length::zero());
-    let y1 = resolve_number(node, AId::Y1, units, state, Length::zero());
-    let x2 = resolve_number(node, AId::X2, units, state, Length::new(100.0, Unit::Percent));
-    let y2 = resolve_number(node, AId::Y2, units, state, Length::zero());
-    let transform = {
-        let n = resolve_attr(node, AId::GradientTransform);
-        n.attribute(AId::GradientTransform).unwrap_or_default()
-    };
+    let transform = resolve_attr(node, AId::GradientTransform)
+        .attribute(AId::GradientTransform).unwrap_or_default();
 
     tree.append_to_defs(
         tree::NodeKind::LinearGradient(tree::LinearGradient {
             id: node.element_id().to_string(),
-            x1,
-            y1,
-            x2,
-            y2,
+            x1: resolve_number(node, AId::X1, units, state, Length::zero()),
+            y1: resolve_number(node, AId::Y1, units, state, Length::zero()),
+            x2: resolve_number(node, AId::X2, units, state, Length::new(100.0, Unit::Percent)),
+            y2: resolve_number(node, AId::Y2, units, state, Length::zero()),
             base: tree::BaseGradient {
                 units,
                 transform,
-                spread_method,
+                spread_method: convert_spread_method(node),
                 stops,
             }
         })
@@ -110,7 +103,7 @@ fn convert_radial(
     // using the color and opacity of the last gradient stop.'
     //
     // https://www.w3.org/TR/SVG11/pservers.html#RadialGradientElementRAttribute
-    if !(r > 0.0) {
+    if !r.is_valid_length() {
         let stop = stops.last().unwrap();
         return Some(ServerOrColor::Color {
             color: stop.color,
@@ -124,10 +117,8 @@ fn convert_radial(
     let fx = resolve_number(node, AId::Fx, units, state, Length::new_number(cx));
     let fy = resolve_number(node, AId::Fy, units, state, Length::new_number(cy));
     let (fx, fy) = prepare_focal(cx, cy, r, fx, fy);
-    let transform = {
-        let n = resolve_attr(node, AId::GradientTransform);
-        n.attribute(AId::GradientTransform).unwrap_or_default()
-    };
+    let transform = resolve_attr(node, AId::GradientTransform)
+        .attribute(AId::GradientTransform).unwrap_or_default();
 
     tree.append_to_defs(
         tree::NodeKind::RadialGradient(tree::RadialGradient {
@@ -174,10 +165,8 @@ fn convert_pattern(
     let units = convert_units(node, AId::PatternUnits, tree::Units::ObjectBoundingBox);
     let content_units = convert_units(node, AId::PatternContentUnits, tree::Units::UserSpaceOnUse);
 
-    let transform = {
-        let n = resolve_attr(node, AId::PatternTransform);
-        n.attribute(AId::PatternTransform).unwrap_or_default()
-    };
+    let transform = resolve_attr(node, AId::PatternTransform)
+        .attribute(AId::PatternTransform).unwrap_or_default();
 
     let rect = Rect::new(
         resolve_number(node, AId::X, units, state, Length::zero()),

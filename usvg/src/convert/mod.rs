@@ -24,7 +24,7 @@ mod use_node;
 mod prelude {
     pub use log::warn;
     pub use svgtypes::{FuzzyEq, FuzzyZero, Length};
-    pub use crate::{geom::*, short::*, svgtree::{AId, EId}, Options};
+    pub use crate::{geom::*, short::*, svgtree::{AId, EId}, Options, IsValidLength};
     pub use super::{SvgNodeExt, State};
 }
 use self::prelude::*;
@@ -61,7 +61,7 @@ pub fn convert_doc(
         }
     };
 
-    if !style::is_visible_element(svg, opt) {
+    if !svg.is_visible_element(opt) {
         let svg_kind = tree::Svg {
             size,
             view_box,
@@ -189,7 +189,7 @@ fn convert_element(
         return;
     }
 
-    if !style::is_visible_element(node, state.opt) {
+    if !node.is_visible_element(state.opt) {
         return;
     }
 
@@ -260,7 +260,7 @@ fn convert_clip_path_elements(
             continue;
         }
 
-        if !style::is_visible_element(node, state.opt) {
+        if !node.is_visible_element(state.opt) {
             continue;
         }
 
@@ -628,6 +628,7 @@ pub trait SvgNodeExt {
     fn try_convert_length(&self, aid: AId, object_units: tree::Units, state: &State) -> Option<f64>;
     fn convert_user_length(&self, aid: AId, state: &State, def: Length) -> f64;
     fn try_convert_user_length(&self, aid: AId, state: &State) -> Option<f64>;
+    fn is_visible_element(&self, opt: &Options) -> bool;
 }
 
 impl<'a> SvgNodeExt for svgtree::Node<'a> {
@@ -665,5 +666,11 @@ impl<'a> SvgNodeExt for svgtree::Node<'a> {
 
     fn try_convert_user_length(&self, aid: AId, state: &State) -> Option<f64> {
         self.try_convert_length(aid, tree::Units::UserSpaceOnUse, state)
+    }
+
+    fn is_visible_element(&self, opt: &Options) -> bool {
+           self.attribute(AId::Display) != Some("none")
+        && self.has_valid_transform(AId::Transform)
+        && switch::is_condition_passed(*self, opt)
     }
 }

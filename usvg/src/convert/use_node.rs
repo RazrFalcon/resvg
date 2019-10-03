@@ -222,8 +222,9 @@ fn viewbox_transform(
     state: &State,
 ) -> Option<tree::Transform> {
     let size = {
-        let w = node.convert_user_length(AId::Width, state, Length::new(100.0, Unit::Percent));
-        let h = node.convert_user_length(AId::Height, state, Length::new(100.0, Unit::Percent));
+        let def = Length::new(100.0, Unit::Percent);
+        let w = node.convert_user_length(AId::Width, state, def);
+        let h = node.convert_user_length(AId::Height, state, def);
         Size::new(w, h)
     }?;
 
