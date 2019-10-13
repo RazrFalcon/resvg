@@ -411,7 +411,7 @@ fn calc_bbox_with_transform(
 
     for seg in TransformedPath::new(segments, ts) {
         match seg {
-            PathSegment::MoveTo { x, y }
+              PathSegment::MoveTo { x, y }
             | PathSegment::LineTo { x, y } => {
                 prev_x = x;
                 prev_y = y;

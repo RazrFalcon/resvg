@@ -18,32 +18,34 @@ pub fn convert(
         .find_attribute(AId::ImageRendering)
         .unwrap_or(state.opt.image_rendering);
 
-    let rect = try_opt_warn!(get_image_rect(node, state), "Image has an invalid size. Skipped.");
+    let rect = Rect::new(
+        node.convert_user_length(AId::X, state, Length::zero()),
+        node.convert_user_length(AId::Y, state, Length::zero()),
+        node.convert_user_length(AId::Width, state, Length::zero()),
+        node.convert_user_length(AId::Height, state, Length::zero()),
+    );
+    let rect = try_opt_warn!(rect, "Image has an invalid size. Skipped.");
 
     let view_box = tree::ViewBox {
         rect,
         aspect: node.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
 
-    let href = match node.attribute(AId::Href) {
-        Some(s) => s,
-        _ => {
-            warn!("The 'image' element lacks the 'xlink:href' attribute. Skipped.");
-            return;
-        }
-    };
+    let href = try_opt_warn!(
+        node.attribute(AId::Href),
+        "The 'image' element lacks the 'xlink:href' attribute. Skipped."
+    );
 
-    if let Some((data, format)) = get_href_data(node.element_id(), href, state.opt.path.as_ref()) {
-        parent.append_kind(tree::NodeKind::Image(tree::Image {
-            id: node.element_id().to_string(),
-            transform: Default::default(),
-            visibility,
-            view_box,
-            rendering_mode,
-            data,
-            format,
-        }));
-    }
+    let (data, format) = try_opt!(get_href_data(node.element_id(), href, state.opt.path.as_ref()));
+    parent.append_kind(tree::NodeKind::Image(tree::Image {
+        id: node.element_id().to_string(),
+        transform: Default::default(),
+        visibility,
+        view_box,
+        rendering_mode,
+        data,
+        format,
+    }));
 }
 
 pub fn get_href_data(
@@ -54,18 +56,10 @@ pub fn get_href_data(
     if href.starts_with("data:image/") {
         if let Ok(url) = data_url::DataUrl::process(href) {
             let format = match (url.mime_type().type_.as_str(), url.mime_type().subtype.as_str()) {
-                ("image", "jpg") | ("image", "jpeg") => {
-                    tree::ImageFormat::JPEG
-                }
-                ("image", "png") => {
-                    tree::ImageFormat::PNG
-                }
-                ("image", "svg+xml") => {
-                    tree::ImageFormat::SVG
-                }
-                _ => {
-                    return None;
-                }
+                ("image", "jpg") | ("image", "jpeg") => tree::ImageFormat::JPEG,
+                ("image", "png") => tree::ImageFormat::PNG,
+                ("image", "svg+xml") => tree::ImageFormat::SVG,
+                _ => return None,
             };
 
             if let Ok((data, _)) = url.decode_to_vec() {
@@ -95,9 +89,8 @@ pub fn get_href_data(
 }
 
 /// Checks that file has a PNG or a JPEG magic bytes.
-/// Or SVG(Z) extension.
+/// Or an SVG(Z) extension.
 fn get_image_format(path: &path::Path) -> Option<tree::ImageFormat> {
-    use std::fs;
     use std::io::Read;
 
     let ext = utils::file_extension(path)?.to_lowercase();
@@ -105,7 +98,7 @@ fn get_image_format(path: &path::Path) -> Option<tree::ImageFormat> {
         return Some(tree::ImageFormat::SVG);
     }
 
-    let mut file = fs::File::open(path).ok()?;
+    let mut file = std::fs::File::open(path).ok()?;
 
     let mut d = Vec::new();
     d.resize(8, 0);
@@ -118,16 +111,4 @@ fn get_image_format(path: &path::Path) -> Option<tree::ImageFormat> {
     } else {
         None
     }
-}
-
-fn get_image_rect(
-    node: svgtree::Node,
-    state: &State,
-) -> Option<Rect> {
-    Rect::new(
-        node.convert_user_length(AId::X, state, Length::zero()),
-        node.convert_user_length(AId::Y, state, Length::zero()),
-        node.convert_user_length(AId::Width, state, Length::zero()),
-        node.convert_user_length(AId::Height, state, Length::zero()),
-    )
 }

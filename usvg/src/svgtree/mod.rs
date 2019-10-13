@@ -297,13 +297,7 @@ impl<'a> Node<'a> {
     }
 
     pub fn find_node_with_attribute(&self, aid: AId) -> Option<Node> {
-        for n in self.ancestors() {
-            if n.has_attribute(aid) {
-                return Some(n);
-            }
-        }
-
-        None
+        self.ancestors().find(|n| n.has_attribute(aid))
     }
 
     pub fn has_valid_transform(&self, aid: AId) -> bool {

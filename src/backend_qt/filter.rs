@@ -11,7 +11,7 @@ use log::warn;
 use usvg::ColorInterpolation as ColorSpace;
 
 use crate::prelude::*;
-use crate::filter::{self, Error, Filter, ImageExt};
+use crate::filter::{self, Error, Filter, ImageExt, TransferFunctionExt};
 use crate::ConvTransform;
 
 type Image = filter::Image<qt::Image>;

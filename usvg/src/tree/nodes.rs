@@ -640,60 +640,6 @@ pub enum TransferFunction {
     },
 }
 
-impl TransferFunction {
-    /// Applies a transfer function to a provided color component.
-    ///
-    /// Requires a non-premultiplied color component.
-    pub fn apply(&self, c: u8) -> u8 {
-        (f64_bound(0.0, self.apply_impl(c as f64 / 255.0), 1.0) * 255.0) as u8
-    }
-
-    fn apply_impl(&self, c: f64) -> f64 {
-        use std::cmp;
-
-        match self {
-            TransferFunction::Identity => {
-                c
-            }
-            TransferFunction::Table(ref values) => {
-                if values.is_empty() {
-                    return c;
-                }
-
-                let n = values.len() - 1;
-                let k = (c * (n as f64)).floor() as usize;
-                let k = cmp::min(k, n);
-                if k == n {
-                    return values[k];
-                }
-
-                let vk = values[k];
-                let vk1 = values[k + 1];
-                let k = k as f64;
-                let n = n as f64;
-
-                vk + (c - k / n) * n * (vk1 - vk)
-            }
-            TransferFunction::Discrete(ref values) => {
-                if values.is_empty() {
-                    return c;
-                }
-
-                let n = values.len();
-                let k = (c * (n as f64)).floor() as usize;
-
-                values[cmp::min(k, n - 1)]
-            }
-            TransferFunction::Linear { slope, intercept } => {
-                slope * c + intercept
-            }
-            TransferFunction::Gamma { amplitude, exponent, offset } => {
-                amplitude * c.powf(*exponent) + offset
-            }
-        }
-    }
-}
-
 
 /// A composite filter primitive.
 ///

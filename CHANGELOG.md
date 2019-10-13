@@ -63,7 +63,7 @@ This changelog also contains important changes in dependencies.
   Previously, `stroke` was set to `none` which is incorrect.
 - (usvg) `use` can reference an element inside a non-SVG element now.
 - (usvg) Collect all styles for generic fonts and not only *Regular*.
-- (svgdom) Parse only presentation attributes from the `style` element and attribute.
+- (usvg) Parse only presentation attributes from the `style` element and attribute.
 
 ### Removed
 - (cairo-backend) `gdk-pixbuf` dependency.

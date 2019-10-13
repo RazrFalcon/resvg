@@ -58,27 +58,17 @@ pub fn convert_doc(
 ) -> Result<tree::Tree, Error> {
     let svg = svg_doc.root_element();
     let size = resolve_svg_size(&svg, opt)?;
-
-    let view_box = {
-        tree::ViewBox {
-            rect: get_view_box(&svg, size),
-            aspect: svg.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
-        }
+    let view_box = tree::ViewBox {
+        rect: svg.get_viewbox().unwrap_or(size.to_rect(0.0, 0.0)),
+        aspect: svg.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
+
+    let svg_kind = tree::Svg { size, view_box };
+    let mut tree = tree::Tree::create(svg_kind);
 
     if !svg.is_visible_element(opt) {
-        let svg_kind = tree::Svg {
-            size,
-            view_box,
-        };
-
-        return Ok(tree::Tree::create(svg_kind));
+        return Ok(tree);
     }
-
-    let svg_kind = tree::Svg {
-        size,
-        view_box,
-    };
 
     let state = State {
         parent_clip_path: None,
@@ -89,8 +79,6 @@ pub fn convert_doc(
         db: Rc::new(RefCell::new(fontdb::Database::new())),
         opt: &opt,
     };
-
-    let mut tree = tree::Tree::create(svg_kind);
 
     convert_children(svg_doc.root(), &state, &mut tree.root(), &mut tree);
 
@@ -150,21 +138,7 @@ fn resolve_svg_size(
         )
     };
 
-    if let Some(size) = size {
-        Ok(size)
-    } else {
-        Err(Error::InvalidSize)
-    }
-}
-
-fn get_view_box(
-    svg: &svgtree::Node,
-    size: Size,
-) -> Rect {
-    match svg.get_viewbox() {
-        Some(vb) => vb,
-        None => size.to_rect(0.0, 0.0),
-    }
+    size.ok_or_else(|| Error::InvalidSize)
 }
 
 #[inline(never)]
@@ -188,11 +162,7 @@ fn convert_element(
 ) {
     let tag_name = try_opt!(node.tag_name());
 
-    let is_valid_child =    tag_name.is_graphic()
-                         || tag_name == EId::G
-                         || tag_name == EId::Switch
-                         || tag_name == EId::Svg;
-    if !is_valid_child {
+    if !tag_name.is_graphic() && !matches!(tag_name, EId::G | EId::Switch | EId::Svg) {
         return;
     }
 
@@ -379,14 +349,15 @@ fn convert_group(
 
     let enable_background = node.attribute(AId::EnableBackground);
 
-    let required =    opacity.value().fuzzy_ne(&1.0)
-                   || clip_path.is_some()
-                   || mask.is_some()
-                   || filter.is_some()
-                   || !transform.is_default()
-                   || (node.has_tag_name(EId::G) && state.opt.keep_named_groups)
-                   || enable_background.is_some()
-                   || force;
+    let required =
+           opacity.value().fuzzy_ne(&1.0)
+        || clip_path.is_some()
+        || mask.is_some()
+        || filter.is_some()
+        || !transform.is_default()
+        || (node.has_tag_name(EId::G) && state.opt.keep_named_groups)
+        || enable_background.is_some()
+        || force;
 
     if required {
         let id = if node.has_tag_name(EId::G) {
@@ -411,9 +382,7 @@ fn convert_group(
     }
 }
 
-fn remove_empty_groups(
-    tree: &mut tree::Tree,
-) {
+fn remove_empty_groups(tree: &mut tree::Tree) {
     fn rm(parent: tree::Node) -> bool {
         let mut changed = false;
 
@@ -603,7 +572,7 @@ fn convert_path(
     // If a path doesn't have a fill or a stroke than it's invisible.
     // By setting `visibility` to `hidden` we are disabling the rendering of this path.
     if fill.is_none() && stroke.is_none() {
-        visibility = tree::Visibility::Hidden
+        visibility = tree::Visibility::Hidden;
     }
 
     let mut markers_group = None;
@@ -643,15 +612,10 @@ pub trait SvgNodeExt {
 
 impl<'a> SvgNodeExt for svgtree::Node<'a> {
     fn resolve_length(&self, aid: AId, state: &State, def: f64) -> f64 {
-        let is_inheritable = match aid {
-              AId::BaselineShift
-            | AId::FontSize => false,
-            _ => true,
-        };
+        debug_assert!(!matches!(aid, AId::BaselineShift | AId::FontSize),
+                      "{} cannot be resolved via this function", aid);
 
-        debug_assert!(is_inheritable);
-
-        if let Some(n) = self.ancestors().find(|n| n.has_attribute(aid)) {
+        if let Some(n) = self.find_node_with_attribute(aid) {
             if let Some(length) = n.attribute(aid) {
                 return units::convert_length(length, n, aid, tree::Units::UserSpaceOnUse, state);
             }
@@ -666,13 +630,11 @@ impl<'a> SvgNodeExt for svgtree::Node<'a> {
     }
 
     fn convert_length(&self, aid: AId, object_units: tree::Units, state: &State, def: Length) -> f64 {
-        let length = self.attribute(aid).unwrap_or(def);
-        units::convert_length(length, *self, aid, object_units, state)
+        units::convert_length(self.attribute(aid).unwrap_or(def), *self, aid, object_units, state)
     }
 
     fn try_convert_length(&self, aid: AId, object_units: tree::Units, state: &State) -> Option<f64> {
-        let length = self.attribute(aid)?;
-        Some(units::convert_length(length, *self, aid, object_units, state))
+        Some(units::convert_length(self.attribute(aid)?, *self, aid, object_units, state))
     }
 
     fn convert_user_length(&self, aid: AId, state: &State, def: Length) -> f64 {

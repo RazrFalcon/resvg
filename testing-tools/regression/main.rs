@@ -175,8 +175,6 @@ fn render_svg(
     in_svg: &Path,
     out_png: &Path,
 ) -> io::Result<()> {
-    use std::process::Stdio;
-
     // Render with zoom by default to test scaling.
     // Images may render differently depending on scale.
     Command::new(render)
@@ -186,7 +184,7 @@ fn render_svg(
             in_svg.to_str().unwrap(), out_png.to_str().unwrap(),
         ])
         .current_dir(word_dir)
-        .stderr(Stdio::piped())
+        .stderr(std::process::Stdio::piped())
         .run_with_timeout(15)
 }
 

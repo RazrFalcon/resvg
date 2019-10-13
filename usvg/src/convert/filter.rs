@@ -7,10 +7,7 @@ use std::collections::HashSet;
 use crate::svgtree;
 use crate::tree;
 use super::prelude::*;
-use super::paint_server::{
-    resolve_number,
-    convert_units,
-};
+use super::paint_server::{resolve_number, convert_units};
 
 
 pub fn convert(
@@ -94,43 +91,18 @@ fn collect_children(
     };
 
     for child in filter.children() {
-        let tag_name = match child.tag_name() {
-            Some(n) => n,
-            None => continue,
-        };
-
-        let kind = match tag_name {
-            EId::FeGaussianBlur => {
-                convert_fe_gaussian_blur(child, &primitives)
-            }
-            EId::FeOffset => {
-                convert_fe_offset(child, &primitives, state)
-            }
-            EId::FeBlend => {
-                convert_fe_blend(child, &primitives)
-            }
-            EId::FeFlood => {
-                convert_fe_flood(child)
-            }
-            EId::FeComposite => {
-                convert_fe_composite(child, &primitives)
-            }
-            EId::FeMerge => {
-                convert_fe_merge(child, &primitives)
-            }
-            EId::FeTile => {
-                convert_fe_tile(child, &primitives)
-            }
-            EId::FeImage => {
-                convert_fe_image(child, state)
-            }
-            EId::FeComponentTransfer => {
-                convert_fe_component_transfer(child, &primitives)
-            }
-            EId::FeColorMatrix => {
-                convert_fe_color_matrix(child, &primitives)
-            }
-            _ => {
+        let kind = match try_opt_continue!(child.tag_name()) {
+            EId::FeGaussianBlur => convert_fe_gaussian_blur(child, &primitives),
+            EId::FeOffset => convert_fe_offset(child, &primitives, state),
+            EId::FeBlend => convert_fe_blend(child, &primitives),
+            EId::FeFlood => convert_fe_flood(child),
+            EId::FeComposite => convert_fe_composite(child, &primitives),
+            EId::FeMerge => convert_fe_merge(child, &primitives),
+            EId::FeTile => convert_fe_tile(child, &primitives),
+            EId::FeImage => convert_fe_image(child, state),
+            EId::FeComponentTransfer => convert_fe_component_transfer(child, &primitives),
+            EId::FeColorMatrix => convert_fe_color_matrix(child, &primitives),
+            tag_name => {
                 warn!("Filter with '{}' child is not supported.", tag_name);
                 continue;
             }

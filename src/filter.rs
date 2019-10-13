@@ -1021,6 +1021,69 @@ pub mod color_matrix {
     }
 }
 
+
+pub trait TransferFunctionExt {
+    /// Applies a transfer function to a provided color component.
+    ///
+    /// Requires a non-premultiplied color component.
+    fn apply(&self, c: u8) -> u8;
+}
+
+impl TransferFunctionExt for usvg::TransferFunction {
+    /// Applies a transfer function to a provided color component.
+    ///
+    /// Requires a non-premultiplied color component.
+    fn apply(&self, c: u8) -> u8 {
+        fn apply_impl(kind: &usvg::TransferFunction, c: f64) -> f64 {
+            use std::cmp;
+
+            match kind {
+                usvg::TransferFunction::Identity => {
+                    c
+                }
+                usvg::TransferFunction::Table(ref values) => {
+                    if values.is_empty() {
+                        return c;
+                    }
+
+                    let n = values.len() - 1;
+                    let k = (c * (n as f64)).floor() as usize;
+                    let k = cmp::min(k, n);
+                    if k == n {
+                        return values[k];
+                    }
+
+                    let vk = values[k];
+                    let vk1 = values[k + 1];
+                    let k = k as f64;
+                    let n = n as f64;
+
+                    vk + (c - k / n) * n * (vk1 - vk)
+                }
+                usvg::TransferFunction::Discrete(ref values) => {
+                    if values.is_empty() {
+                        return c;
+                    }
+
+                    let n = values.len();
+                    let k = (c * (n as f64)).floor() as usize;
+
+                    values[cmp::min(k, n - 1)]
+                }
+                usvg::TransferFunction::Linear { slope, intercept } => {
+                    slope * c + intercept
+                }
+                usvg::TransferFunction::Gamma { amplitude, exponent, offset } => {
+                    amplitude * c.powf(*exponent) + offset
+                }
+            }
+        }
+
+        (f64_bound(0.0, apply_impl(self, c as f64 / 255.0), 1.0) * 255.0) as u8
+    }
+}
+
+
 fn calc_region(
     filter: &usvg::Filter,
     bbox: Option<Rect>,

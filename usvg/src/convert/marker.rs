@@ -194,8 +194,8 @@ where
 {
     match kind {
         MarkerKind::Start => {
-            if let Some(tree::PathSegment::MoveTo { x, y }) = path.first() {
-                draw_marker(*x, *y, 0);
+            if let Some(tree::PathSegment::MoveTo { x, y }) = path.first().cloned() {
+                draw_marker(x, y, 0);
             }
         }
         MarkerKind::Middle => {
@@ -219,12 +219,12 @@ where
         }
         MarkerKind::End => {
             let idx = path.len() - 1;
-            match path.last() {
+            match path.last().cloned() {
                 Some(Segment::LineTo { x, y }) => {
-                    draw_marker(*x, *y, idx);
+                    draw_marker(x, y, idx);
                 }
                 Some(Segment::CurveTo { x, y, .. }) => {
-                    draw_marker(*x, *y, idx);
+                    draw_marker(x, y, idx);
                 }
                 Some(Segment::ClosePath) => {
                     let (x, y) = get_subpath_start(path, idx);
@@ -299,7 +299,7 @@ fn calc_vertex_angle(path: &tree::PathData, idx: usize) -> f64 {
         let seg1 = path[idx];
         let seg2 = path[idx + 1];
 
-        // Not sure if there is a better way.
+        // TODO: Not sure if there is a better way.
         match (seg1, seg2) {
             (Segment::MoveTo { x: mx, y: my }, Segment::LineTo { x, y }) => {
                 calc_line_angle(mx, my, x, y)

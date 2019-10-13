@@ -10,7 +10,7 @@ use log::warn;
 use usvg::ColorInterpolation as ColorSpace;
 
 use crate::prelude::*;
-use crate::filter::{self, Filter, ImageExt, Error};
+use crate::filter::{self, Filter, ImageExt, Error, TransferFunctionExt};
 use crate::ConvTransform;
 use super::ReCairoContextExt;
 
