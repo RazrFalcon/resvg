@@ -849,6 +849,5 @@ fn is_non_inheritable(id: AId) -> bool {
         | AId::Overflow
         | AId::StopColor
         | AId::StopOpacity
-        | AId::TextDecoration
-        | AId::Visibility)
+        | AId::TextDecoration)
 }
