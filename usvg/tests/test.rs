@@ -228,6 +228,7 @@ test!(preserve_id, true,
     </defs>
     <rect id='rect1' fill='url(#lg1)' stroke='url(#rg1)' clip-path='url(#clip1)' width='10' height='10'/>
     <path id='path1' fill='url(#patt1)' d='M 10 20 30 40'/>
+    <use id='use1' xlink:href='#path1'/>
     <image id='image1' width='1' height='1' xlink:href='data:image/png;base64,
         iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAB3RJTUUH4gMLDwAjrsLbtwAAAAlw
         SFlzAAAuIwAALiMBeKU/dgAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAAG
@@ -298,6 +299,12 @@ test!(preserve_id, true,
         id='path1'
         fill='url(#patt1)'
         d='M 10 20 L 30 40'/>
+    <g
+        id='use1'>
+        <path
+            fill='url(#patt1)'
+            d='M 10 20 L 30 40'/>
+    </g>
     <image
         id='image1'
         x='0'

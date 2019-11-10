@@ -356,11 +356,12 @@ fn convert_group(
         || filter.is_some()
         || !transform.is_default()
         || (node.has_tag_name(EId::G) && state.opt.keep_named_groups)
+        || (node.has_tag_name(EId::Use) && state.opt.keep_named_groups)
         || enable_background.is_some()
         || force;
 
     if required {
-        let id = if node.has_tag_name(EId::G) {
+        let id = if node.has_tag_name(EId::G) || node.has_tag_name(EId::Use) {
             node.element_id().to_string()
         } else {
             String::new()
