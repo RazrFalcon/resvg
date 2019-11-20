@@ -110,9 +110,9 @@ pub fn render_to_canvas(
     tree: &usvg::Tree,
     opt: &Options,
     img_size: ScreenSize,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) {
-    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, surface);
+    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, canvas);
 }
 
 /// Renders SVG node to canvas.
@@ -121,20 +121,20 @@ pub fn render_node_to_canvas(
     opt: &Options,
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) {
     let mut layers = create_layers(img_size);
 
-    apply_viewbox_transform(view_box, img_size, surface);
+    apply_viewbox_transform(view_box, img_size, canvas);
 
-    let curr_ts = surface.get_matrix();
+    let curr_ts = canvas.get_matrix();
 
     let mut ts = node.abs_transform();
     ts.append(&node.transform());
 
-    surface.concat(&ts.to_native());
-    render_node(node, opt, &mut layers, surface);
-    surface.set_matrix(&curr_ts);
+    canvas.concat(&ts.to_native());
+    render_node(node, opt, &mut layers, canvas);
+    canvas.set_matrix(&curr_ts);
 }
 
 fn create_root_image(
@@ -159,30 +159,30 @@ fn create_root_image(
 fn apply_viewbox_transform(
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) {
     let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_size());
-    surface.concat(&ts.to_native());
+    canvas.concat(&ts.to_native());
 }
 
 fn render_node(
     node: &usvg::Node,
     opt: &Options,
     layers: &mut SkiaLayers,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) -> Option<Rect> {
     match *node.borrow() {
         usvg::NodeKind::Svg(_) => {
-            render_group(node, opt, layers, surface)
+            render_group(node, opt, layers, canvas)
         }
         usvg::NodeKind::Path(ref path) => {
-            path::draw(&node.tree(), path, opt, skia::BlendMode::SourceOver, surface)
+            path::draw(&node.tree(), path, opt, skia::BlendMode::SourceOver, canvas)
         }
         usvg::NodeKind::Image(ref img) => {
-            Some(image::draw(img, opt, surface))
+            Some(image::draw(img, opt, canvas))
         }
         usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, layers, surface)
+            render_group_impl(node, g, opt, layers, canvas)
         }
         _ => None,
     }
@@ -192,15 +192,15 @@ fn render_group(
     parent: &usvg::Node,
     opt: &Options,
     layers: &mut SkiaLayers,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) -> Option<Rect> {
-    let curr_ts = surface.get_matrix();
+    let curr_ts = canvas.get_matrix();
     let mut g_bbox = Rect::new_bbox();
 
     for node in parent.children() {
-        surface.concat(&node.transform().to_native());
+        canvas.concat(&node.transform().to_native());
 
-        let bbox = render_node(&node, opt, layers, surface);
+        let bbox = render_node(&node, opt, layers, canvas);
         if let Some(bbox) = bbox {
             if let Some(bbox) = bbox.transform(&node.transform()) {
                 g_bbox = g_bbox.expand(bbox);
@@ -208,7 +208,7 @@ fn render_group(
         }
 
         // Revert transform.
-        surface.set_matrix(&curr_ts);
+        canvas.set_matrix(&curr_ts);
     }
 
     // Check that bbox was changed, otherwise we will have a rect with x/y set to f64::MAX.
@@ -224,12 +224,12 @@ fn render_group_impl(
     g: &usvg::Group,
     opt: &Options,
     layers: &mut SkiaLayers,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) -> Option<Rect> {
     let sub_surface = layers.get()?;
     let mut sub_surface = sub_surface.borrow_mut();
 
-    let curr_ts = surface.get_matrix();
+    let curr_ts = canvas.get_matrix();
 
     let bbox = {
         sub_surface.set_matrix(&curr_ts);
@@ -274,12 +274,12 @@ fn render_group_impl(
         255
     };
 
-    let curr_ts = surface.get_matrix();
-    surface.reset_matrix();
-    surface.draw_surface(
+    let curr_ts = canvas.get_matrix();
+    canvas.reset_matrix();
+    canvas.draw_surface(
         &sub_surface, 0.0, 0.0, a, skia::BlendMode::SourceOver, skia::FilterQuality::Low,
     );
-    surface.set_matrix(&curr_ts);
+    canvas.set_matrix(&curr_ts);
 
     bbox
 }

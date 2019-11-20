@@ -14,13 +14,14 @@ pub fn clip(
     opt: &Options,
     bbox: Rect,
     layers: &mut SkiaLayers,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) {
     let clip_surface = try_opt!(layers.get());
     let mut clip_surface = clip_surface.borrow_mut();
+
     clip_surface.fill(0, 0, 0, 255);
 
-    clip_surface.set_matrix(&surface.get_matrix());
+    clip_surface.set_matrix(&canvas.get_matrix());
     clip_surface.concat(&cp.transform.to_native());
 
     if cp.units == usvg::Units::ObjectBoundingBox {
@@ -47,13 +48,13 @@ pub fn clip(
     if let Some(ref id) = cp.clip_path {
         if let Some(ref clip_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                clip(clip_node, cp, opt, bbox, layers, surface);
+                clip(clip_node, cp, opt, bbox, layers, canvas);
             }
         }
     }
 
-    surface.reset_matrix();
-    surface.draw_surface(
+    canvas.reset_matrix();
+    canvas.draw_surface(
         &clip_surface, 0.0, 0.0, 255, skia::BlendMode::DestinationOut, skia::FilterQuality::Low,
     );
 }
@@ -64,7 +65,7 @@ fn clip_group(
     opt: &Options,
     bbox: Rect,
     layers: &mut SkiaLayers,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) {
     if let Some(ref id) = g.clip_path {
         if let Some(ref clip_node) = node.tree().defs_by_id(id) {
@@ -75,13 +76,14 @@ fn clip_group(
 
                 let clip_surface = try_opt!(layers.get());
                 let mut clip_surface = clip_surface.borrow_mut();
-                clip_surface.set_matrix(&surface.get_matrix());
+
+                clip_surface.set_matrix(&canvas.get_matrix());
 
                 draw_group_child(&node, opt, &mut clip_surface);
                 clip(clip_node, cp, opt, bbox, layers, &mut clip_surface);
 
-                surface.reset_matrix();
-                surface.draw_surface(
+                canvas.reset_matrix();
+                canvas.draw_surface(
                     &clip_surface, 0.0, 0.0, 255, skia::BlendMode::Xor, skia::FilterQuality::Low,
                 );
             }
@@ -92,14 +94,14 @@ fn clip_group(
 fn draw_group_child(
     node: &usvg::Node,
     opt: &Options,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) {
     if let Some(child) = node.first_child() {
-        surface.concat(&child.transform().to_native());
+        canvas.concat(&child.transform().to_native());
 
         match *child.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                path::draw(&child.tree(), path_node, opt, skia::BlendMode::SourceOver, surface);
+                path::draw(&child.tree(), path_node, opt, skia::BlendMode::SourceOver, canvas);
             }
             _ => {}
         }
@@ -112,13 +114,13 @@ pub fn mask(
     opt: &Options,
     bbox: Rect,
     layers: &mut SkiaLayers,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) {
     let mask_surface = try_opt!(layers.get());
     let mut mask_surface = mask_surface.borrow_mut();
 
     {
-        mask_surface.set_matrix(&surface.get_matrix());
+        mask_surface.set_matrix(&canvas.get_matrix());
 
         let r = if mask.units == usvg::Units::ObjectBoundingBox {
             mask.rect.bbox_transform(bbox)
@@ -160,13 +162,13 @@ pub fn mask(
     if let Some(ref id) = mask.mask {
         if let Some(ref mask_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                self::mask(mask_node, mask, opt, bbox, layers, surface);
+                self::mask(mask_node, mask, opt, bbox, layers, canvas);
             }
         }
     }
 
-    surface.reset_matrix();
-    surface.draw_surface(
+    canvas.reset_matrix();
+    canvas.draw_surface(
         &mask_surface, 0.0, 0.0, 255, skia::BlendMode::DestinationIn, skia::FilterQuality::Low,
     );
 }

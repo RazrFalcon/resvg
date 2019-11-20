@@ -14,7 +14,7 @@ pub fn draw(
     path: &usvg::Path,
     opt: &Options,
     blend_mode: skia::BlendMode,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) -> Option<Rect> {
     let bbox = path.data.bbox();
     if path.visibility != usvg::Visibility::Visible {
@@ -35,20 +35,20 @@ pub fn draw(
 
     let antialias = crate::use_shape_antialiasing(path.rendering_mode);
 
-    let global_ts = usvg::Transform::from_native(&surface.get_matrix());
+    let global_ts = usvg::Transform::from_native(&canvas.get_matrix());
 
     if path.fill.is_some() {
         let mut fill = style::fill(tree, &path.fill, opt, style_bbox, global_ts);
         fill.set_anti_alias(antialias);
         fill.set_blend_mode(blend_mode);
-        surface.draw_path(&skia_path, &fill);
+        canvas.draw_path(&skia_path, &fill);
     }
 
     if path.stroke.is_some() {
         let mut stroke = style::stroke(tree, &path.stroke, opt, style_bbox, global_ts);
         stroke.set_anti_alias(antialias);
         stroke.set_blend_mode(blend_mode);
-        surface.draw_path(&skia_path, &stroke);
+        canvas.draw_path(&skia_path, &stroke);
     }
 
     bbox
