@@ -13,6 +13,7 @@ direction
 display
 dx
 dy
+enable-background
 exponent
 fill
 fill-opacity

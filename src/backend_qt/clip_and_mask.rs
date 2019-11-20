@@ -5,7 +5,7 @@
 use crate::qt;
 
 use crate::prelude::*;
-use crate::ConvTransform;
+use crate::{ConvTransform, RenderState};
 use super::{path, QtLayers};
 
 
@@ -140,7 +140,7 @@ pub fn mask(
             mask_p.apply_transform(&usvg::Transform::from_bbox(bbox).to_native());
         }
 
-        super::render_group(node, opt, layers, &mut mask_p);
+        super::render_group(node, opt, &mut RenderState::Ok, layers, &mut mask_p);
     }
 
     use rgb::FromSlice;

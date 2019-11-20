@@ -21,7 +21,6 @@ Name: "en"; MessagesFile: "compiler:Default.isl"; LicenseFile: "..\LICENSE.txt"
 
 [Files]
 Source: "..\release\vc_redist.x64.exe"; DestDir: "{app}"; AfterInstall: InstallVcredist
-Source: "..\release\imageformats\qjpeg.dll"; DestDir: "{app}\imageformats";
 Source: "..\release\platforms\qwindows.dll"; DestDir: "{app}\platforms";
 Source: "..\release\Qt5Core.dll"; DestDir: "{app}";
 Source: "..\release\Qt5Gui.dll"; DestDir: "{app}";

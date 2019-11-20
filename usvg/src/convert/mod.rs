@@ -2,12 +2,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#[cfg(feature = "text")]
 use std::cell::RefCell;
+#[cfg(feature = "text")]
 use std::rc::Rc;
 
 use svgtypes::Length;
 
-use crate::{svgtree, tree, tree::prelude::*, fontdb, Error};
+use crate::{svgtree, tree, tree::prelude::*, Error};
+#[cfg(feature = "text")]
+use crate::fontdb;
 
 mod clip_and_mask;
 mod filter;
@@ -17,14 +21,14 @@ mod paint_server;
 mod shapes;
 mod style;
 mod switch;
-mod text;
 mod units;
 mod use_node;
+#[cfg(feature = "text")] mod text;
 
 mod prelude {
     pub use log::warn;
     pub use svgtypes::{FuzzyEq, FuzzyZero, Length};
-    pub use crate::{geom::*, short::*, svgtree::{AId, EId}, Options};
+    pub use crate::{geom::*, short::*, svgtree::{AId, EId}, Options, IsValidLength};
     pub use super::{SvgNodeExt, State};
 }
 use self::prelude::*;
@@ -36,6 +40,7 @@ pub struct State<'a> {
     parent_marker: Option<svgtree::Node<'a>>,
     size: Size,
     view_box: Rect,
+    #[cfg(feature = "text")]
     db: Rc<RefCell<fontdb::Database>>,
     opt: &'a Options,
 }
@@ -53,38 +58,27 @@ pub fn convert_doc(
 ) -> Result<tree::Tree, Error> {
     let svg = svg_doc.root_element();
     let size = resolve_svg_size(&svg, opt)?;
-
-    let view_box = {
-        tree::ViewBox {
-            rect: get_view_box(&svg, size),
-            aspect: svg.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
-        }
+    let view_box = tree::ViewBox {
+        rect: svg.get_viewbox().unwrap_or(size.to_rect(0.0, 0.0)),
+        aspect: svg.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
 
-    if !style::is_visible_element(svg, opt) {
-        let svg_kind = tree::Svg {
-            size,
-            view_box,
-        };
+    let svg_kind = tree::Svg { size, view_box };
+    let mut tree = tree::Tree::create(svg_kind);
 
-        return Ok(tree::Tree::create(svg_kind));
+    if !svg.is_visible_element(opt) {
+        return Ok(tree);
     }
-
-    let svg_kind = tree::Svg {
-        size,
-        view_box,
-    };
 
     let state = State {
         parent_clip_path: None,
         parent_marker: None,
         size,
         view_box: view_box.rect,
+        #[cfg(feature = "text")]
         db: Rc::new(RefCell::new(fontdb::Database::new())),
         opt: &opt,
     };
-
-    let mut tree = tree::Tree::create(svg_kind);
 
     convert_children(svg_doc.root(), &state, &mut tree.root(), &mut tree);
 
@@ -104,6 +98,7 @@ fn resolve_svg_size(
         parent_marker: None,
         size: Size::new(100.0, 100.0).unwrap(),
         view_box: Rect::new(0.0, 0.0, 100.0, 100.0).unwrap(),
+        #[cfg(feature = "text")]
         db: Rc::new(RefCell::new(fontdb::Database::new())),
         opt,
     };
@@ -143,21 +138,7 @@ fn resolve_svg_size(
         )
     };
 
-    if let Some(size) = size {
-        Ok(size)
-    } else {
-        Err(Error::InvalidSize)
-    }
-}
-
-fn get_view_box(
-    svg: &svgtree::Node,
-    size: Size,
-) -> Rect {
-    match svg.get_viewbox() {
-        Some(vb) => vb,
-        None => size.to_rect(0.0, 0.0),
-    }
+    size.ok_or_else(|| Error::InvalidSize)
 }
 
 #[inline(never)]
@@ -181,15 +162,11 @@ fn convert_element(
 ) {
     let tag_name = try_opt!(node.tag_name());
 
-    let is_valid_child =    tag_name.is_graphic()
-                         || tag_name == EId::G
-                         || tag_name == EId::Switch
-                         || tag_name == EId::Svg;
-    if !is_valid_child {
+    if !tag_name.is_graphic() && !matches!(tag_name, EId::G | EId::Switch | EId::Svg) {
         return;
     }
 
-    if !style::is_visible_element(node, state.opt) {
+    if !node.is_visible_element(state.opt) {
         return;
     }
 
@@ -225,6 +202,7 @@ fn convert_element(
             image::convert(node, state, parent);
         }
         EId::Text => {
+            #[cfg(feature = "text")]
             text::convert(node, state, parent, tree);
         }
         EId::Svg => {
@@ -260,7 +238,7 @@ fn convert_clip_path_elements(
             continue;
         }
 
-        if !style::is_visible_element(node, state.opt) {
+        if !node.is_visible_element(state.opt) {
             continue;
         }
 
@@ -287,6 +265,7 @@ fn convert_clip_path_elements(
                 }
             }
             EId::Text => {
+                #[cfg(feature = "text")]
                 text::convert(node, state, parent, tree);
             }
             _ => {
@@ -368,16 +347,21 @@ fn convert_group(
 
     let transform: tree::Transform = node.attribute(AId::Transform).unwrap_or_default();
 
-    let required =    opacity.value().fuzzy_ne(&1.0)
-                   || clip_path.is_some()
-                   || mask.is_some()
-                   || filter.is_some()
-                   || !transform.is_default()
-                   || (node.has_tag_name(EId::G) && state.opt.keep_named_groups)
-                   || force;
+    let enable_background = node.attribute(AId::EnableBackground);
+
+    let required =
+           opacity.value().fuzzy_ne(&1.0)
+        || clip_path.is_some()
+        || mask.is_some()
+        || filter.is_some()
+        || !transform.is_default()
+        || (node.has_tag_name(EId::G) && state.opt.keep_named_groups)
+        || (node.has_tag_name(EId::Use) && state.opt.keep_named_groups)
+        || enable_background.is_some()
+        || force;
 
     if required {
-        let id = if node.has_tag_name(EId::G) {
+        let id = if node.has_tag_name(EId::G) || node.has_tag_name(EId::Use) {
             node.element_id().to_string()
         } else {
             String::new()
@@ -390,6 +374,7 @@ fn convert_group(
             clip_path,
             mask,
             filter,
+            enable_background,
         }));
 
         GroupKind::Create(g)
@@ -398,9 +383,7 @@ fn convert_group(
     }
 }
 
-fn remove_empty_groups(
-    tree: &mut tree::Tree,
-) {
+fn remove_empty_groups(tree: &mut tree::Tree) {
     fn rm(parent: tree::Node) -> bool {
         let mut changed = false;
 
@@ -457,6 +440,7 @@ fn ungroup_groups(
                 && g.clip_path.is_none()
                 && g.mask.is_none()
                 && g.filter.is_none()
+                && g.enable_background.is_none()
                 && !(opt.keep_named_groups && !g.id.is_empty())
             } else {
                 false
@@ -589,7 +573,7 @@ fn convert_path(
     // If a path doesn't have a fill or a stroke than it's invisible.
     // By setting `visibility` to `hidden` we are disabling the rendering of this path.
     if fill.is_none() && stroke.is_none() {
-        visibility = tree::Visibility::Hidden
+        visibility = tree::Visibility::Hidden;
     }
 
     let mut markers_group = None;
@@ -619,23 +603,20 @@ fn convert_path(
 
 pub trait SvgNodeExt {
     fn resolve_length(&self, aid: AId, state: &State, def: f64) -> f64;
+    fn resolve_valid_length(&self, aid: AId, state: &State, def: f64) -> Option<f64>;
     fn convert_length(&self, aid: AId, object_units: tree::Units, state: &State, def: Length) -> f64;
     fn try_convert_length(&self, aid: AId, object_units: tree::Units, state: &State) -> Option<f64>;
     fn convert_user_length(&self, aid: AId, state: &State, def: Length) -> f64;
     fn try_convert_user_length(&self, aid: AId, state: &State) -> Option<f64>;
+    fn is_visible_element(&self, opt: &Options) -> bool;
 }
 
 impl<'a> SvgNodeExt for svgtree::Node<'a> {
     fn resolve_length(&self, aid: AId, state: &State, def: f64) -> f64 {
-        let is_inheritable = match aid {
-              AId::BaselineShift
-            | AId::FontSize => false,
-            _ => true,
-        };
+        debug_assert!(!matches!(aid, AId::BaselineShift | AId::FontSize),
+                      "{} cannot be resolved via this function", aid);
 
-        debug_assert!(is_inheritable);
-
-        if let Some(n) = self.ancestors().find(|n| n.has_attribute(aid)) {
+        if let Some(n) = self.find_node_with_attribute(aid) {
             if let Some(length) = n.attribute(aid) {
                 return units::convert_length(length, n, aid, tree::Units::UserSpaceOnUse, state);
             }
@@ -644,14 +625,17 @@ impl<'a> SvgNodeExt for svgtree::Node<'a> {
         def
     }
 
+    fn resolve_valid_length(&self, aid: AId, state: &State, def: f64) -> Option<f64> {
+        let n = self.resolve_length(aid, state, def);
+        if n.is_valid_length() { Some(n) } else { None }
+    }
+
     fn convert_length(&self, aid: AId, object_units: tree::Units, state: &State, def: Length) -> f64 {
-        let length = self.attribute(aid).unwrap_or(def);
-        units::convert_length(length, *self, aid, object_units, state)
+        units::convert_length(self.attribute(aid).unwrap_or(def), *self, aid, object_units, state)
     }
 
     fn try_convert_length(&self, aid: AId, object_units: tree::Units, state: &State) -> Option<f64> {
-        let length = self.attribute(aid)?;
-        Some(units::convert_length(length, *self, aid, object_units, state))
+        Some(units::convert_length(self.attribute(aid)?, *self, aid, object_units, state))
     }
 
     fn convert_user_length(&self, aid: AId, state: &State, def: Length) -> f64 {
@@ -660,5 +644,11 @@ impl<'a> SvgNodeExt for svgtree::Node<'a> {
 
     fn try_convert_user_length(&self, aid: AId, state: &State) -> Option<f64> {
         self.try_convert_length(aid, tree::Units::UserSpaceOnUse, state)
+    }
+
+    fn is_visible_element(&self, opt: &Options) -> bool {
+           self.attribute(AId::Display) != Some("none")
+        && self.has_valid_transform(AId::Transform)
+        && switch::is_condition_passed(*self, opt)
     }
 }

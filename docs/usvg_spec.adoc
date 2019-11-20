@@ -267,6 +267,7 @@ A group will have at least one of the attributes present.
 * `filter` = <<func-iri-type,<FuncIRI> >>? +
   Cannot be set to `none`.
 * `transform` = <<transform-type,<transform> >>?
+* `enable-background` = `new | new <number> <number> <positive-number> <positive-number>`?
 
 [[path-element]]
 
@@ -422,13 +423,13 @@ The all four will always be present.
 * `in` = <<filter-input-type,<filter-input> >>
 * `in2` = <<filter-input-type,<filter-input> >>
 * `operator` = `over | in | out | atop | xor | arithmetic`
-* `k1` = <<compositing-coefficient-type,<compositing-coefficient> >>? +
+* `k1` = <<positive-number-type,<positive-number> >>? +
   Present only when `operator=arithmetic`.
-* `k2` = <<compositing-coefficient-type,<compositing-coefficient> >>? +
+* `k2` = <<positive-number-type,<positive-number> >>? +
   Present only when `operator=arithmetic`.
-* `k3` = <<compositing-coefficient-type,<compositing-coefficient> >>? +
+* `k3` = <<positive-number-type,<positive-number> >>? +
   Present only when `operator=arithmetic`.
-* `k4` = <<compositing-coefficient-type,<compositing-coefficient> >>? +
+* `k4` = <<positive-number-type,<positive-number> >>? +
   Present only when `operator=arithmetic`.
 * <<Filter primitive attributes>>
 
@@ -499,19 +500,19 @@ that this attribute is optional.
 
 [[string-type]]
 
-*<string>* - A Unicode string.
+*<string>* - A Unicode (UTF-8) string.
 
 
 [[number-type]]
 
 *<number>* - A real number. +
-`number ::= [-]? [0-9]* "." [0-9]+`
+`number ::= [-]? [0-9]+ "." [0-9]+`
 
 
 [[positive-number-type]]
 
 *<positive-number>* - A positive, non-zero real <<number-type,number>>. +
-`positive-number ::= [0-9]* "." [0-9]+`
+`positive-number ::= [0-9]+ "." [0-9]+`
 
 
 [[opacity-type]]
@@ -524,12 +525,6 @@ that this attribute is optional.
 
 *<offset>* - A real <<number-type,number>> in a 0..1 range. +
 `offset ::= positive-number`
-
-
-[[compositing-coefficient-type]]
-
-*<compositing-coefficient>* - A real <<number-type,number>> in a 0..1 range. +
-`compositing-coefficient ::= positive-number`
 
 
 [[color-type]]
@@ -635,3 +630,8 @@ digit-sequence:
 digit:
     "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
 ```
+
+Basically, a path looks like this: `M 10.5 20 L 30 40`.
+Commands and numbers are separated by a space.
+Numbers with an exponent are not allowed.
+Trimmed numbers like `-.5` are not allowed.

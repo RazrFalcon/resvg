@@ -267,7 +267,7 @@ fn dump_cluster(
 
     let mut base_path = tree::Path {
         transform: text_ts,
-        ..tree::Path::default()
+        .. tree::Path::default()
     };
 
     // Cluster bbox.
@@ -342,7 +342,7 @@ fn convert_decoration(
         ).unwrap();
 
         let start_idx = path.len();
-        add_rect_to_path(rect, &mut path);
+        path.push_rect(rect);
 
         let mut ts = dec_span.transform;
         ts.translate(0.0, dy);
@@ -350,27 +350,13 @@ fn convert_decoration(
     }
 
     tree::Path {
-        id: String::new(),
         transform,
         visibility: span.visibility,
         fill: decoration.fill.take(),
         stroke: decoration.stroke.take(),
-        rendering_mode: tree::ShapeRendering::default(),
         data: Rc::new(path),
+        .. tree::Path::default()
     }
-}
-
-fn add_rect_to_path(
-    rect: Rect,
-    path: &mut Vec<tree::PathSegment>,
-) {
-    path.extend_from_slice(&[
-        tree::PathSegment::MoveTo { x: rect.x(),     y: rect.y() },
-        tree::PathSegment::LineTo { x: rect.right(), y: rect.y() },
-        tree::PathSegment::LineTo { x: rect.right(), y: rect.bottom() },
-        tree::PathSegment::LineTo { x: rect.x(),     y: rect.bottom() },
-        tree::PathSegment::ClosePath,
-    ]);
 }
 
 /// By the SVG spec, `tspan` doesn't have a bbox and uses the parent `text` bbox.
@@ -409,24 +395,9 @@ fn paint_server_to_user_space_on_use(
     tree: &mut tree::Tree,
 ) -> Option<String> {
     if let Some(ps) = tree.defs_by_id(id) {
-        let is_obj_bbox = match *ps.borrow() {
-            tree::NodeKind::LinearGradient(ref lg) => {
-                lg.units == tree::Units::ObjectBoundingBox
-            }
-            tree::NodeKind::RadialGradient(ref rg) => {
-                rg.units == tree::Units::ObjectBoundingBox
-            }
-            tree::NodeKind::Pattern(ref patt) => {
-                patt.units == tree::Units::ObjectBoundingBox
-            }
-            _ => false,
-        };
-
-        // Do nothing.
-        if !is_obj_bbox {
+        if ps.units() != Some(tree::Units::ObjectBoundingBox) {
             return None;
         }
-
 
         // TODO: is `pattern` copying safe? Maybe we should reset id's on all `pattern` children.
         // We have to clone a paint server, in case some other element is already using it.
@@ -437,29 +408,24 @@ fn paint_server_to_user_space_on_use(
         let new_id = gen_paint_server_id(tree);
 
         // Update id, transform and units.
+        let ts = tree::Transform::from_bbox(bbox);
         match *new_ps.borrow_mut() {
             tree::NodeKind::LinearGradient(ref mut lg) => {
-                if lg.units == tree::Units::ObjectBoundingBox {
-                    lg.id = new_id.clone();
-                    lg.base.transform.prepend(&tree::Transform::from_bbox(bbox));
-                    lg.base.units = tree::Units::UserSpaceOnUse;
-                }
+                lg.id = new_id.clone();
+                lg.base.transform.prepend(&ts);
+                lg.base.units = tree::Units::UserSpaceOnUse;
             }
             tree::NodeKind::RadialGradient(ref mut rg) => {
-                if rg.units == tree::Units::ObjectBoundingBox {
-                    rg.id = new_id.clone();
-                    rg.base.transform.prepend(&tree::Transform::from_bbox(bbox));
-                    rg.base.units = tree::Units::UserSpaceOnUse;
-                }
+                rg.id = new_id.clone();
+                rg.base.transform.prepend(&ts);
+                rg.base.units = tree::Units::UserSpaceOnUse;
             }
             tree::NodeKind::Pattern(ref mut patt) => {
-                if patt.units == tree::Units::ObjectBoundingBox {
-                    patt.id = new_id.clone();
-                    patt.transform.prepend(&tree::Transform::from_bbox(bbox));
-                    patt.units = tree::Units::UserSpaceOnUse;
-                }
+                patt.id = new_id.clone();
+                patt.transform.prepend(&ts);
+                patt.units = tree::Units::UserSpaceOnUse;
             }
-            _ => return None,
+            _ => {}
         }
 
         Some(new_id)

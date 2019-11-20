@@ -11,7 +11,7 @@ use log::warn;
 use usvg::ColorInterpolation as ColorSpace;
 
 use crate::prelude::*;
-use crate::filter::{self, Error, Filter, ImageExt};
+use crate::filter::{self, Error, Filter, ImageExt, TransferFunctionExt};
 use crate::ConvTransform;
 
 type Image = filter::Image<skia::Surface>;
@@ -23,9 +23,10 @@ pub fn apply(
     bbox: Option<Rect>,
     ts: &usvg::Transform,
     opt: &Options,
-    surface: &mut skia::Surface,
+    background: Option<&skia::Surface>,
+    canvas: &mut skia::Surface,
 ) {
-    SkiaFilter::apply(filter, bbox, ts, opt, surface);
+    SkiaFilter::apply(filter, bbox, ts, opt, background, canvas);
 }
 
 impl ImageExt for skia::Surface {
@@ -96,11 +97,12 @@ impl Filter<skia::Surface> for SkiaFilter {
         input: &usvg::FilterInput,
         region: ScreenRect,
         results: &[FilterResult],
-        surface: &skia::Surface,
+        background: Option<&skia::Surface>,
+        canvas: &skia::Surface,
     ) -> Result<Image, Error> {
         match input {
             usvg::FilterInput::SourceGraphic => {
-                let image = copy_surface(surface, region)?;
+                let image = copy_surface(canvas, region)?;
 
                 Ok(Image {
                     image: Rc::new(image),
@@ -109,7 +111,7 @@ impl Filter<skia::Surface> for SkiaFilter {
                 })
             }
             usvg::FilterInput::SourceAlpha => {
-                let image = copy_surface(surface, region)?;
+                let image = copy_surface(canvas, region)?;
 
                 // Set RGB to black. Keep alpha as is.
                 for p in image.data().chunks_mut(4) {
@@ -124,18 +126,54 @@ impl Filter<skia::Surface> for SkiaFilter {
                     color_space: ColorSpace::SRGB,
                 })
             }
+            usvg::FilterInput::BackgroundImage => {
+                let image = if let Some(image) = background {
+                    copy_surface(image, region)?
+                } else {
+                    create_surface(canvas.width(), canvas.height())?
+                };
+
+                Ok(Image {
+                    image: Rc::new(image),
+                    region: region.translate_to(0, 0),
+                    color_space: ColorSpace::SRGB,
+                })
+            }
+            usvg::FilterInput::BackgroundAlpha => {
+                let image = Self::get_input(
+                    &usvg::FilterInput::BackgroundImage, region, results, background, canvas,
+                )?;
+                let image = image.take()?;
+
+                // Set RGB to black. Keep alpha as is.
+                for p in image.data().chunks_mut(4) {
+                    p[0] = 0;
+                    p[1] = 0;
+                    p[2] = 0;
+                }
+
+                Ok(Image {
+                    image: Rc::new(image),
+                    region: region.translate_to(0, 0),
+                    color_space: ColorSpace::SRGB,
+                })
+            }
             usvg::FilterInput::Reference(ref name) => {
                 if let Some(ref v) = results.iter().rev().find(|v| v.name == *name) {
                     Ok(v.image.clone())
                 } else {
                     // Technically unreachable.
                     warn!("Unknown filter primitive reference '{}'.", name);
-                    Self::get_input(&usvg::FilterInput::SourceGraphic, region, results, surface)
+                    Self::get_input(
+                        &usvg::FilterInput::SourceGraphic, region, results, background, canvas,
+                    )
                 }
             }
             _ => {
                 warn!("Filter input '{:?}' is not supported.", input);
-                Self::get_input(&usvg::FilterInput::SourceGraphic, region, results, surface)
+                Self::get_input(
+                    &usvg::FilterInput::SourceGraphic, region, results, background, canvas,
+                )
             }
         }
     }
@@ -271,6 +309,7 @@ impl Filter<skia::Surface> for SkiaFilter {
 
                     let a = calc(c1.a, c2.a, 1.0);
                     if a.is_fuzzy_zero() {
+                        i += 1;
                         continue;
                     }
 
@@ -309,13 +348,14 @@ impl Filter<skia::Surface> for SkiaFilter {
         cs: ColorSpace,
         region: ScreenRect,
         results: &[FilterResult],
-        surface: &skia::Surface,
+        background: Option<&skia::Surface>,
+        canvas: &skia::Surface,
     ) -> Result<Image, Error> {
         let mut buffer = create_surface(region.width(), region.height())?;
         buffer.reset_matrix();
 
         for input in &fe.inputs {
-            let input = Self::get_input(input, region, &results, surface)?;
+            let input = Self::get_input(input, region, &results, background, canvas)?;
             let input = input.into_color_space(cs)?;
             buffer.draw_surface(input.as_ref(), 0.0, 0.0, 255, skia::BlendMode::SourceOver,
                                 skia::FilterQuality::Low);
@@ -449,13 +489,13 @@ impl Filter<skia::Surface> for SkiaFilter {
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,
-        surface: &mut skia::Surface,
+        canvas: &mut skia::Surface,
     ) -> Result<(), Error> {
         let input = input.into_color_space(ColorSpace::SRGB)?;
 
-        surface.reset_matrix();
-        surface.clear();
-        surface.draw_surface(input.as_ref(), region.x() as f64, region.y() as f64, 255,
+        canvas.reset_matrix();
+        canvas.clear();
+        canvas.draw_surface(input.as_ref(), region.x() as f64, region.y() as f64, 255,
                              skia::BlendMode::SourceOver, skia::FilterQuality::Low);
 
         Ok(())

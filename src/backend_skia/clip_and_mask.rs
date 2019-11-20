@@ -4,7 +4,7 @@
 
 use crate::skia;
 
-use crate::{prelude::*, ConvTransform};
+use crate::{prelude::*, ConvTransform, RenderState};
 use super::{path, SkiaLayers};
 
 
@@ -135,7 +135,7 @@ pub fn mask(
             mask_surface.concat(&usvg::Transform::from_bbox(bbox).to_native());
         }
 
-        super::render_group(node, opt, layers, &mut mask_surface);
+        super::render_group(node, opt, &mut RenderState::Ok, layers, &mut mask_surface);
 
         mask_surface.restore();
     }

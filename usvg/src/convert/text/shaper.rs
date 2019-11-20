@@ -9,6 +9,7 @@ use ttf_parser::GlyphId;
 use kurbo::Vec2;
 
 use crate::{tree, fontdb, convert::prelude::*};
+use crate::tree::CubicBezExt;
 use super::convert::{
     ByteIndex,
     CharacterPosition,
@@ -302,9 +303,6 @@ fn shape_text_with_font(
             .add_str(sub_text)
             .set_direction(hb_direction);
 
-        // TODO: feature smcp / small caps
-        //       simply setting the `smcp` doesn't work for some reasons
-
         let output = harfbuzz::shape(&hb_font, buffer, &[]);
 
         let positions = output.get_glyph_positions();
@@ -376,13 +374,15 @@ fn outline_cluster(
         }
     }
 
+    let byte_idx = glyphs[0].byte_idx;
+    let font = glyphs[0].font;
     OutlinedCluster {
-        byte_idx: glyphs[0].byte_idx,
-        codepoint: glyphs[0].byte_idx.char_from(text),
+        byte_idx,
+        codepoint: byte_idx.char_from(text),
         advance,
-        ascent: glyphs[0].font.ascent(font_size),
-        descent: glyphs[0].font.descent(font_size),
-        x_height: glyphs[0].font.x_height(font_size),
+        ascent: font.ascent(font_size),
+        descent: font.descent(font_size),
+        x_height: font.x_height(font_size),
         has_relative_shift: false,
         path,
         transform: tree::Transform::default(),
@@ -564,9 +564,7 @@ fn resolve_clusters_positions_path(
     (last_x, last_y)
 }
 
-fn clusters_length(
-    clusters: &[OutlinedCluster],
-) -> f64 {
+fn clusters_length(clusters: &[OutlinedCluster]) -> f64 {
     clusters.iter().fold(0.0, |w, cluster| w + cluster.advance)
 }
 
@@ -631,27 +629,11 @@ fn collect_normals(
         }
     };
 
-    fn create_curve(px: f64, py: f64, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64)
-        -> kurbo::CubicBez
-    {
-        kurbo::CubicBez {
-            p0: Vec2::new(px, py),
-            p1: Vec2::new(x1, y1),
-            p2: Vec2::new(x2, y2),
-            p3: Vec2::new(x, y),
-        }
-    }
-
-    fn create_curve_from_line(px: f64, py: f64, x: f64, y: f64)
-        -> kurbo::CubicBez
-    {
-        let line = kurbo::Line {
-            p0: Vec2::new(px, py),
-            p1: Vec2::new(x, y),
-        };
+    fn create_curve_from_line(px: f64, py: f64, x: f64, y: f64) -> kurbo::CubicBez {
+        let line = kurbo::Line::new(Vec2::new(px, py), Vec2::new(x, y));
         let p1 = line.eval(0.33);
         let p2 = line.eval(0.66);
-        create_curve(px, py, p1.x, p1.y, p2.x, p2.y, x, y)
+        kurbo::CubicBez::from_points(px, py, p1.x, p1.y, p2.x, p2.y, x, y)
     }
 
     let mut length = 0.0;
@@ -668,7 +650,7 @@ fn collect_normals(
                 create_curve_from_line(prev_x, prev_y, x, y)
             }
             tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                create_curve(prev_x, prev_y, x1, y1, x2, y2, x, y)
+                kurbo::CubicBez::from_points(prev_x, prev_y, x1, y1, x2, y2, x, y)
             }
             tree::PathSegment::ClosePath => {
                 create_curve_from_line(prev_x, prev_y, prev_mx, prev_my)
@@ -737,7 +719,7 @@ pub fn apply_letter_spacing(
 
                 // If the cluster advance became negative - clear it.
                 // This is an UB so we can do whatever we want, so we mimic the Chrome behavior.
-                if !(cluster.advance > 0.0) {
+                if !cluster.advance.is_valid_length() {
                     cluster.advance = 0.0;
                     cluster.path.clear();
                 }
@@ -751,9 +733,7 @@ pub fn apply_letter_spacing(
 /// [In the CSS spec](https://www.w3.org/TR/css-text-3/#cursive-tracking).
 ///
 /// The list itself is from: https://github.com/harfbuzz/harfbuzz/issues/64
-fn script_supports_letter_spacing(
-    script: unicode_script::Script,
-) -> bool {
+fn script_supports_letter_spacing(script: unicode_script::Script) -> bool {
     use unicode_script::Script;
 
     !matches!(script,
@@ -804,9 +784,7 @@ pub fn apply_word_spacing(
 /// Checks that the selected character is a word separator.
 ///
 /// According to: https://www.w3.org/TR/css-text-3/#word-separator
-fn is_word_separator_characters(
-    c: char,
-) -> bool {
+fn is_word_separator_characters(c: char) -> bool {
     matches!(c as u32, 0x0020 | 0x00A0 | 0x1361 | 0x010100 | 0x010101 | 0x01039F | 0x01091F)
 }
 

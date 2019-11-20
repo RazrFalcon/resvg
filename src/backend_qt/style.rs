@@ -225,7 +225,7 @@ fn prepare_pattern(
     }
 
     let mut layers = super::create_layers(img_size);
-    super::render_group(pattern_node, opt, &mut layers, &mut p);
+    super::render_group(pattern_node, opt, &mut crate::RenderState::Ok, &mut layers, &mut p);
     p.end();
 
     let img = if !opacity.is_default() {

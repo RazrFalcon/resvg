@@ -11,7 +11,7 @@ use log::warn;
 pub use roxmltree::Error;
 
 use crate::tree;
-
+use crate::Rect;
 use super::{Document, Attribute, AId, EId, Node, NodeId, NodeKind, NodeData, AttributeValue};
 
 const SVG_NS: &str = "http://www.w3.org/2000/svg";
@@ -60,7 +60,11 @@ impl Document {
                 value,
             });
         } else {
-            warn!("Failed to parse {} value: '{}'.", aid, value);
+            // Invalid `enable-background` is not an error
+            // since we are ignoring the `accumulate` value.
+            if aid != AId::EnableBackground {
+                warn!("Failed to parse {} value: '{}'.", aid, value);
+            }
         }
     }
 }
@@ -191,10 +195,7 @@ fn parse_svg_element(
             _ => continue,
         }
 
-        let aid = match AId::from_str(attr.name()) {
-            Some(id) => id,
-            None => continue,
-        };
+        let aid = try_opt_continue!(AId::from_str(attr.name()));
 
         // During a `use` resolving, all `id` attributes must be ignored.
         // Otherwise we will get elements with duplicated id's.
@@ -374,9 +375,7 @@ fn parse_svg_attribute(
         | AId::K2
         | AId::K3
         | AId::K4 => {
-            let n = parse_number(value)?;
-            let n = crate::f64_bound(0.0, n, 1.0);
-            AttributeValue::Number(n)
+            AttributeValue::Number(parse_number(value)?)
         }
 
           AId::Amplitude
@@ -512,6 +511,10 @@ fn parse_svg_attribute(
         | AId::TableValues
         | AId::Values => {
             AttributeValue::NumberList(svgtypes::NumberList::from_str(value)?)
+        }
+
+        AId::EnableBackground => {
+            AttributeValue::EnableBackground(parse_enable_background(value)?)
         }
 
         _ => {
@@ -739,6 +742,33 @@ fn parse_path(text: &str) -> tree::PathData {
     path
 }
 
+fn parse_enable_background(value: &str) -> Result<tree::EnableBackground, svgtypes::Error> {
+    let mut s = svgtypes::Stream::from(value);
+    s.skip_spaces();
+    if s.starts_with(b"new") {
+        s.advance(3);
+        s.skip_spaces();
+        if s.at_end() {
+            return Ok(tree::EnableBackground(None));
+        }
+
+        let x = s.parse_list_number()?;
+        let y = s.parse_list_number()?;
+        let w = s.parse_list_number()?;
+        let h = s.parse_list_number()?;
+
+        s.skip_spaces();
+        if !s.at_end() {
+            return Err(svgtypes::Error::InvalidValue);
+        }
+
+        let r = Rect::new(x, y, w, h).ok_or(svgtypes::Error::InvalidValue)?;
+        Ok(tree::EnableBackground(Some(r)))
+    } else {
+        Err(svgtypes::Error::InvalidValue)
+    }
+}
+
 fn resolve_inherit(
     parent_id: NodeId,
     tag_name: EId,
@@ -932,21 +962,15 @@ fn parse_svg_text_element_impl(
             continue;
         }
 
-        let mut tag_name = match parse_tag_name(node) {
-            Some(id) => id,
-            None => continue,
-        };
+        let mut tag_name = try_opt_continue!(parse_tag_name(node));
 
         if tag_name == EId::A {
             // Treat links as a simple text.
             tag_name = EId::Tspan;
         }
 
-        match tag_name {
-            EId::Tspan |
-            EId::Tref |
-            EId::TextPath => {}
-            _ => continue,
+        if !matches!(tag_name, EId::Tspan | EId::Tref | EId::TextPath) {
+            continue;
         }
 
         // `textPath` must be a direct `text` child.
@@ -993,16 +1017,11 @@ fn resolve_tref_text(
     // within additional markup, will be rendered.'
     //
     // So we don't care about attributes and everything. Just collecting text nodes data.
-    let mut text = String::new();
-    for child in node.descendants().filter(|n| n.is_text()) {
-        text.push_str(child.text().unwrap_or(""));
-    }
-
-    if text.is_empty() {
-        return None;
-    }
-
-    Some(text)
+    //
+    // Note: we have to filter nodes by `is_text()` first since `text()` will look up
+    // for text nodes in element children therefore we will get duplicates.
+    let text: String = node.descendants().filter(|n| n.is_text()).filter_map(|n| n.text()).collect();
+    if text.is_empty() { None } else { Some(text) }
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -1020,16 +1039,18 @@ fn get_xmlspace(doc: &Document, node_id: NodeId, default: XmlSpace) -> XmlSpace 
 }
 
 trait StrTrim {
-    fn remove_first(&mut self);
-    fn remove_last(&mut self);
+    fn remove_first_space(&mut self);
+    fn remove_last_space(&mut self);
 }
 
 impl StrTrim for String {
-    fn remove_first(&mut self) {
+    fn remove_first_space(&mut self) {
+        debug_assert_eq!(self.chars().next().unwrap(), ' ');
         self.drain(0..1);
     }
 
-    fn remove_last(&mut self) {
+    fn remove_last_space(&mut self) {
+        debug_assert_eq!(self.chars().rev().next().unwrap(), ' ');
         self.pop();
     }
 }
@@ -1068,11 +1089,11 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
                         let c2 = text.as_bytes()[text.len() - 1];
 
                         if c1 == b' ' {
-                            text.remove_first();
+                            text.remove_first_space();
                         }
 
                         if c2 == b' ' {
-                            text.remove_last();
+                            text.remove_last_space();
                         }
                     }
                 }
@@ -1138,17 +1159,17 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
                 if depth1 < depth2 {
                     if xmlspace2 == XmlSpace::Default {
                         if let NodeKind::Text(ref mut text) = doc.nodes[node2_id.0].kind {
-                            text.remove_first();
+                            text.remove_first_space();
                         }
                     }
                 } else {
                     if xmlspace1 == XmlSpace::Default && xmlspace2 == XmlSpace::Default {
                         if let NodeKind::Text(ref mut text) = doc.nodes[node1_id.0].kind {
-                            text.remove_last();
+                            text.remove_last_space();
                         }
                     } else if xmlspace1 == XmlSpace::Preserve && xmlspace2 == XmlSpace::Default {
                         if let NodeKind::Text(ref mut text) = doc.nodes[node2_id.0].kind {
-                            text.remove_first();
+                            text.remove_first_space();
                         }
                     }
                 }
@@ -1164,9 +1185,10 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
             {
                 // Remove a leading space from a first text node.
                 if let NodeKind::Text(ref mut text) = doc.nodes[node1_id.0].kind {
-                    text.remove_first();
+                    text.remove_first_space();
                 }
-            } else if    is_last
+            } else if
+                   is_last
                 && c4 == Some(b' ')
                 && !doc.get(node2_id).text().is_empty()
                 && xmlspace2 == XmlSpace::Default
@@ -1174,7 +1196,7 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
                 // Remove a trailing space from a last text node.
                 // Also check that 'text2' is not empty already.
                 if let NodeKind::Text(ref mut text) = doc.nodes[node2_id.0].kind {
-                    text.remove_last();
+                    text.remove_last_space();
                 }
             }
 
@@ -1185,7 +1207,7 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
                 && doc.get(node1_id).text().ends_with(' ')
             {
                 if let NodeKind::Text(ref mut text) = doc.nodes[node1_id.0].kind {
-                    text.remove_last();
+                    text.remove_last_space();
                 }
             }
 
@@ -1234,9 +1256,7 @@ fn trim_text(text: &str, space: XmlSpace) -> String {
     s
 }
 
-fn resolve_css<'a>(
-    xml: &'a roxmltree::Document<'a>,
-) -> simplecss::StyleSheet<'a> {
+fn resolve_css<'a>(xml: &'a roxmltree::Document<'a>) -> simplecss::StyleSheet<'a> {
     let mut sheet = simplecss::StyleSheet::new();
 
     for node in xml.descendants().filter(|n| n.has_tag_name("style")) {
@@ -1246,12 +1266,7 @@ fn resolve_css<'a>(
             None => {}
         }
 
-        let style = match node.text() {
-            Some(s) => s,
-            None => continue,
-        };
-
-        sheet.parse_more(style);
+        sheet.parse_more(try_opt_continue!(node.text()));
     }
 
     sheet

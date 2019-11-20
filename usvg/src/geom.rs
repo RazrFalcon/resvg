@@ -9,6 +9,7 @@ use svgtypes::FuzzyEq;
 use crate::IsValidLength;
 
 
+// TODO: https://github.com/rust-lang/rust/issues/44095
 /// Bounds `f64` number.
 #[inline]
 pub(crate) fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
@@ -17,12 +18,12 @@ pub(crate) fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
     debug_assert!(max.is_finite());
 
     if val > max {
-        return max;
+        max
     } else if val < min {
-        return min;
+        min
+    } else {
+        val
     }
-
-    val
 }
 
 

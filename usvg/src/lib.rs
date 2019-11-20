@@ -73,6 +73,16 @@ macro_rules! try_opt {
     };
 }
 
+/// Unwraps `Option` and invokes `continue` on `None`.
+macro_rules! try_opt_continue {
+    ($task:expr) => {
+        match $task {
+            Some(v) => v,
+            None => continue,
+        }
+    };
+}
+
 /// Unwraps `Option` and invokes `return $ret` on `None`.
 macro_rules! try_opt_or {
     ($task:expr, $ret:expr) => {
@@ -163,11 +173,11 @@ macro_rules! matches {
 pub mod utils;
 mod convert;
 mod error;
-mod fontdb;
 mod geom;
 mod options;
 mod svgtree;
 mod tree;
+#[cfg(feature = "text")] mod fontdb;
 
 /// Shorthand names for modules.
 mod short {

@@ -11,11 +11,13 @@ workspace = "../../"
 fern = "0.5"
 log = "0.4"
 pico-args = "0.2"
-resvg = { path = "../../" }
+resvg = { path = "../../", default-features = false }
 time = "0.1"
 
 [features]
+default = ["text"]
 cairo-backend = ["resvg/cairo-backend"]
 qt-backend = ["resvg/qt-backend"]
 raqote-backend = ["resvg/raqote-backend"]
 skia-backend = ["resvg/skia-backend"]
+text = ["resvg/text"]

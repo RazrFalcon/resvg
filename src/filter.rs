@@ -124,9 +124,10 @@ pub trait Filter<T: ImageExt> {
         bbox: Option<Rect>,
         ts: &usvg::Transform,
         opt: &Options,
+        background: Option<&T>,
         canvas: &mut T,
     ) {
-        let res = Self::_apply(filter, bbox, ts, opt, canvas);
+        let res = Self::_apply(filter, bbox, ts, opt, background, canvas);
 
         // Clear on error.
         if res.is_err() {
@@ -152,6 +153,7 @@ pub trait Filter<T: ImageExt> {
         bbox: Option<Rect>,
         ts: &usvg::Transform,
         opt: &Options,
+        background: Option<&T>,
         canvas: &mut T,
     ) -> Result<(), Error> {
         let mut results = Vec::new();
@@ -165,42 +167,42 @@ pub trait Filter<T: ImageExt> {
 
             let mut result = match primitive.kind {
                 usvg::FilterKind::FeBlend(ref fe) => {
-                    let input1 = Self::get_input(&fe.input1, region, &results, canvas)?;
-                    let input2 = Self::get_input(&fe.input2, region, &results, canvas)?;
+                    let input1 = Self::get_input(&fe.input1, region, &results, background, canvas)?;
+                    let input2 = Self::get_input(&fe.input2, region, &results, background, canvas)?;
                     Self::apply_blend(fe, cs, region, input1, input2)
                 }
                 usvg::FilterKind::FeFlood(ref fe) => {
                     Self::apply_flood(fe, region)
                 }
                 usvg::FilterKind::FeGaussianBlur(ref fe) => {
-                    let input = Self::get_input(&fe.input, region, &results, canvas)?;
+                    let input = Self::get_input(&fe.input, region, &results, background, canvas)?;
                     Self::apply_blur(fe, filter.primitive_units, cs, bbox, ts, input)
                 }
                 usvg::FilterKind::FeOffset(ref fe) => {
-                    let input = Self::get_input(&fe.input, region, &results, canvas)?;
+                    let input = Self::get_input(&fe.input, region, &results, background, canvas)?;
                     Self::apply_offset(fe, filter.primitive_units, bbox, ts, input)
                 }
                 usvg::FilterKind::FeComposite(ref fe) => {
-                    let input1 = Self::get_input(&fe.input1, region, &results, canvas)?;
-                    let input2 = Self::get_input(&fe.input2, region, &results, canvas)?;
+                    let input1 = Self::get_input(&fe.input1, region, &results, background, canvas)?;
+                    let input2 = Self::get_input(&fe.input2, region, &results, background, canvas)?;
                     Self::apply_composite(fe, cs, region, input1, input2)
                 }
                 usvg::FilterKind::FeMerge(ref fe) => {
-                    Self::apply_merge(fe, cs, region, &results, canvas)
+                    Self::apply_merge(fe, cs, region, &results, background, canvas)
                 }
                 usvg::FilterKind::FeTile(ref fe) => {
-                    let input = Self::get_input(&fe.input, region, &results, canvas)?;
+                    let input = Self::get_input(&fe.input, region, &results, background, canvas)?;
                     Self::apply_tile(input, region)
                 }
                 usvg::FilterKind::FeImage(ref fe) => {
                     Self::apply_image(fe, region, subregion, opt)
                 }
                 usvg::FilterKind::FeComponentTransfer(ref fe) => {
-                    let input = Self::get_input(&fe.input, region, &results, canvas)?;
+                    let input = Self::get_input(&fe.input, region, &results, background, canvas)?;
                     Self::apply_component_transfer(fe, cs, input)
                 }
                 usvg::FilterKind::FeColorMatrix(ref fe) => {
-                    let input = Self::get_input(&fe.input, region, &results, canvas)?;
+                    let input = Self::get_input(&fe.input, region, &results, background, canvas)?;
                     Self::apply_color_matrix(fe, cs, input)
                 }
             }?;
@@ -244,6 +246,7 @@ pub trait Filter<T: ImageExt> {
         input: &usvg::FilterInput,
         region: ScreenRect,
         results: &[FilterResult<T>],
+        background: Option<&T>,
         canvas: &T,
     ) -> Result<Image<T>, Error>;
 
@@ -285,6 +288,7 @@ pub trait Filter<T: ImageExt> {
         cs: ColorSpace,
         region: ScreenRect,
         results: &[FilterResult<T>],
+        background: Option<&T>,
         canvas: &T,
     ) -> Result<Image<T>, Error>;
 
@@ -1016,6 +1020,69 @@ pub mod color_matrix {
         }
     }
 }
+
+
+pub trait TransferFunctionExt {
+    /// Applies a transfer function to a provided color component.
+    ///
+    /// Requires a non-premultiplied color component.
+    fn apply(&self, c: u8) -> u8;
+}
+
+impl TransferFunctionExt for usvg::TransferFunction {
+    /// Applies a transfer function to a provided color component.
+    ///
+    /// Requires a non-premultiplied color component.
+    fn apply(&self, c: u8) -> u8 {
+        fn apply_impl(kind: &usvg::TransferFunction, c: f64) -> f64 {
+            use std::cmp;
+
+            match kind {
+                usvg::TransferFunction::Identity => {
+                    c
+                }
+                usvg::TransferFunction::Table(ref values) => {
+                    if values.is_empty() {
+                        return c;
+                    }
+
+                    let n = values.len() - 1;
+                    let k = (c * (n as f64)).floor() as usize;
+                    let k = cmp::min(k, n);
+                    if k == n {
+                        return values[k];
+                    }
+
+                    let vk = values[k];
+                    let vk1 = values[k + 1];
+                    let k = k as f64;
+                    let n = n as f64;
+
+                    vk + (c - k / n) * n * (vk1 - vk)
+                }
+                usvg::TransferFunction::Discrete(ref values) => {
+                    if values.is_empty() {
+                        return c;
+                    }
+
+                    let n = values.len();
+                    let k = (c * (n as f64)).floor() as usize;
+
+                    values[cmp::min(k, n - 1)]
+                }
+                usvg::TransferFunction::Linear { slope, intercept } => {
+                    slope * c + intercept
+                }
+                usvg::TransferFunction::Gamma { amplitude, exponent, offset } => {
+                    amplitude * c.powf(*exponent) + offset
+                }
+            }
+        }
+
+        (f64_bound(0.0, apply_impl(self, c as f64 / 255.0), 1.0) * 255.0) as u8
+    }
+}
+
 
 fn calc_region(
     filter: &usvg::Filter,

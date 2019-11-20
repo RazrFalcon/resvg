@@ -7,10 +7,7 @@ use std::collections::HashSet;
 use crate::svgtree;
 use crate::tree;
 use super::prelude::*;
-use super::paint_server::{
-    resolve_number,
-    convert_units,
-};
+use super::paint_server::{resolve_number, convert_units};
 
 
 pub fn convert(
@@ -94,43 +91,18 @@ fn collect_children(
     };
 
     for child in filter.children() {
-        let tag_name = match child.tag_name() {
-            Some(n) => n,
-            None => continue,
-        };
-
-        let kind = match tag_name {
-            EId::FeGaussianBlur => {
-                convert_fe_gaussian_blur(child, &primitives)
-            }
-            EId::FeOffset => {
-                convert_fe_offset(child, &primitives, state)
-            }
-            EId::FeBlend => {
-                convert_fe_blend(child, &primitives)
-            }
-            EId::FeFlood => {
-                convert_fe_flood(child)
-            }
-            EId::FeComposite => {
-                convert_fe_composite(child, &primitives)
-            }
-            EId::FeMerge => {
-                convert_fe_merge(child, &primitives)
-            }
-            EId::FeTile => {
-                convert_fe_tile(child, &primitives)
-            }
-            EId::FeImage => {
-                convert_fe_image(child, state)
-            }
-            EId::FeComponentTransfer => {
-                convert_fe_component_transfer(child, &primitives)
-            }
-            EId::FeColorMatrix => {
-                convert_fe_color_matrix(child, &primitives)
-            }
-            _ => {
+        let kind = match try_opt_continue!(child.tag_name()) {
+            EId::FeGaussianBlur => convert_fe_gaussian_blur(child, &primitives),
+            EId::FeOffset => convert_fe_offset(child, &primitives, state),
+            EId::FeBlend => convert_fe_blend(child, &primitives),
+            EId::FeFlood => convert_fe_flood(child),
+            EId::FeComposite => convert_fe_composite(child, &primitives),
+            EId::FeMerge => convert_fe_merge(child, &primitives),
+            EId::FeTile => convert_fe_tile(child, &primitives),
+            EId::FeImage => convert_fe_image(child, state),
+            EId::FeComponentTransfer => convert_fe_component_transfer(child, &primitives),
+            EId::FeColorMatrix => convert_fe_color_matrix(child, &primitives),
+            tag_name => {
                 warn!("Filter with '{}' child is not supported.", tag_name);
                 continue;
             }
@@ -239,9 +211,9 @@ fn convert_fe_flood(
 fn get_coeff(
     node: svgtree::Node,
     aid: AId,
-) -> tree::CompositingCoefficient {
+) -> tree::PositiveNumber {
     let k: f64 = node.attribute(aid).unwrap_or(0.0);
-    f64_bound(0.0, k, 1.0).into()
+    if k.is_sign_negative() { 0.0 } else { k }.into()
 }
 
 fn convert_fe_composite(
@@ -416,13 +388,6 @@ fn convert_color_matrix_kind(
     fe: svgtree::Node
 ) -> Option<tree::FeColorMatrixKind> {
     match fe.attribute(AId::Type) {
-        Some("matrix") => {
-            if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::Values) {
-                if list.len() == 20 {
-                    return Some(tree::FeColorMatrixKind::Matrix(list.0.clone()));
-                }
-            }
-        }
         Some("saturate") => {
             if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::Values) {
                 if !list.is_empty() {
@@ -445,7 +410,14 @@ fn convert_color_matrix_kind(
         Some("luminanceToAlpha") => {
             return Some(tree::FeColorMatrixKind::LuminanceToAlpha);
         }
-        _ => {}
+        _ => {
+            // Fallback to `matrix`.
+            if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::Values) {
+                if list.len() == 20 {
+                    return Some(tree::FeColorMatrixKind::Matrix(list.0.clone()));
+                }
+            }
+        }
     }
 
     None

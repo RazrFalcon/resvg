@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{prelude::*, ConvTransform};
+use crate::{prelude::*, ConvTransform, RenderState};
 use super::{path, CairoLayers, ReCairoContextExt};
 
 
@@ -148,7 +148,7 @@ pub fn mask(
             mask_cr.transform(usvg::Transform::from_bbox(bbox).to_native());
         }
 
-        super::render_group(node, opt, layers, &mask_cr);
+        super::render_group(node, opt, &mut RenderState::Ok, layers, &mask_cr);
     }
 
     {

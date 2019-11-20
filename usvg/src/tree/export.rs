@@ -348,6 +348,10 @@ fn conv_elements(
 
                 xml.write_transform(AId::Transform, g.transform);
 
+                if let Some(eb) = g.enable_background {
+                    xml.write_enable_background(eb);
+                }
+
                 conv_elements(&n, false, xml);
 
                 xml.end_element();
@@ -364,6 +368,7 @@ trait XmlWriterExt {
     fn write_aspect(&mut self, aspect: AspectRatio);
     fn write_units(&mut self, id: AId, units: Units, def: Units);
     fn write_transform(&mut self, id: AId, units: Transform);
+    fn write_enable_background(&mut self, eb: EnableBackground);
     fn write_visibility(&mut self, value: Visibility);
     fn write_func_iri(&mut self, aid: AId, id: &str);
     fn write_rect_attrs(&mut self, r: Rect);
@@ -416,6 +421,21 @@ impl XmlWriterExt for XmlWriter {
                 id.to_str(),
                 format_args!("matrix({} {} {} {} {} {})", ts.a, ts.b, ts.c, ts.d, ts.e, ts.f),
             );
+        }
+    }
+
+    fn write_enable_background(&mut self, eb: EnableBackground) {
+        let id = AId::EnableBackground.to_str();
+        match eb {
+            EnableBackground(None) => {
+                self.write_attribute(id, "new");
+            }
+            EnableBackground(Some(r)) => {
+                self.write_attribute_fmt(
+                    id,
+                    format_args!("new {} {} {} {}", r.x(), r.y(), r.width(), r.height()),
+                );
+            }
         }
     }
 
@@ -599,7 +619,7 @@ fn write_path(
         ShapeRendering::CrispEdges => {
             xml.write_svg_attribute(AId::ShapeRendering, "crispEdges")
         }
-        ShapeRendering::GeometricPrecision  => {}
+        ShapeRendering::GeometricPrecision => {}
     }
 
     if let Some(ref id) = clip_path {

@@ -197,7 +197,7 @@ fn collect_text_chunks_impl(
             continue;
         }
 
-        if !style::is_visible_element(parent, state.opt) {
+        if !parent.is_visible_element(state.opt) {
             iter_state.chars_count += child.text().chars().count();
             continue;
         }
@@ -206,7 +206,7 @@ fn collect_text_chunks_impl(
 
         // TODO: what to do when <= 0? UB?
         let font_size = units::resolve_font_size(parent, state);
-        if !(font_size > 0.0) {
+        if !font_size.is_valid_length() {
             // Skip this span.
             iter_state.chars_count += child.text().chars().count();
             continue;
@@ -221,9 +221,6 @@ fn collect_text_chunks_impl(
             }
         };
 
-        let letter_spacing = parent.resolve_length(AId::LetterSpacing, state, 0.0);
-        let word_spacing = parent.resolve_length(AId::WordSpacing, state, 0.0);
-
         let span = TextSpan {
             start: 0,
             end: 0,
@@ -234,8 +231,8 @@ fn collect_text_chunks_impl(
             decoration: resolve_decoration(text_node, parent, state, tree),
             visibility: parent.find_attribute(AId::Visibility).unwrap_or_default(),
             baseline_shift: resolve_baseline_shift(parent, state),
-            letter_spacing,
-            word_spacing,
+            letter_spacing: parent.resolve_length(AId::LetterSpacing, state, 0.0),
+            word_spacing: parent.resolve_length(AId::WordSpacing, state, 0.0),
         };
 
         let mut is_new_span = true;
@@ -335,9 +332,9 @@ pub fn resolve_rendering_mode(
         .unwrap_or(state.opt.text_rendering);
 
     match mode {
-        tree::TextRendering::OptimizeSpeed => tree::ShapeRendering::CrispEdges,
+        tree::TextRendering::OptimizeSpeed      => tree::ShapeRendering::CrispEdges,
         tree::TextRendering::OptimizeLegibility => tree::ShapeRendering::GeometricPrecision,
-        tree::TextRendering::GeometricPrecision =>  tree::ShapeRendering::GeometricPrecision,
+        tree::TextRendering::GeometricPrecision => tree::ShapeRendering::GeometricPrecision,
     }
 }
 
@@ -370,20 +367,15 @@ fn resolve_font(
     let name_list: Vec<_> = name_list.iter().map(|s| s.as_str()).collect();
 
     let mut db = state.db.borrow_mut();
-    let id = match db.select_best_match(&name_list, properties) {
-        Some(id) => id,
-        None => {
-            warn!("No match for '{}' font-family.", font_family);
-            return None;
-        }
-    };
+    let id = try_opt_warn_or!(
+        db.select_best_match(&name_list, properties), None,
+        "No match for '{}' font-family.", font_family
+    );
 
     db.load_font(id)
 }
 
-fn conv_font_stretch(
-    node: svgtree::Node,
-) -> fontdb::Stretch {
+fn conv_font_stretch(node: svgtree::Node) -> fontdb::Stretch {
     if let Some(n) = node.find_node_with_attribute(AId::FontStretch) {
         match n.attribute(AId::FontStretch).unwrap_or("") {
             "narrower" | "condensed" => fontdb::Stretch::Condensed,
@@ -519,9 +511,7 @@ pub fn resolve_positions_list(
 /// ![](https://www.w3.org/TR/SVG11/images/text/tspan05-diagram.png)
 ///
 /// Note: this algorithm differs from the position resolving one.
-pub fn resolve_rotate_list(
-    text_node: TextNode,
-) -> Vec<f64> {
+pub fn resolve_rotate_list(text_node: TextNode) -> Vec<f64> {
     // Allocate a list that has all characters angles set to `0.0`.
     let mut list = vec![0.0; count_chars(*text_node)];
     let mut last = 0.0;
@@ -605,9 +595,7 @@ struct TextDecorationTypes {
 }
 
 /// Resolves the `text` node's `text-decoration` property.
-fn conv_text_decoration(
-    text_node: TextNode,
-) -> TextDecorationTypes {
+fn conv_text_decoration(text_node: TextNode) -> TextDecorationTypes {
     fn find_decoration(node: svgtree::Node, value: &str) -> bool {
         node.ancestors().any(|n| n.attribute(AId::TextDecoration) == Some(value))
     }
@@ -620,9 +608,7 @@ fn conv_text_decoration(
 }
 
 /// Resolves the default `text-decoration` property.
-fn conv_text_decoration2(
-    tspan: svgtree::Node,
-) -> TextDecorationTypes {
+fn conv_text_decoration2(tspan: svgtree::Node) -> TextDecorationTypes {
     let s = tspan.attribute(AId::TextDecoration);
     TextDecorationTypes {
         has_underline:    s == Some("underline"),
@@ -669,9 +655,7 @@ fn resolve_baseline_shift(
     shift
 }
 
-fn resolve_font_weight(
-    node: svgtree::Node,
-) -> fontdb::Weight {
+fn resolve_font_weight(node: svgtree::Node) -> fontdb::Weight {
     fn bound(min: usize, val: usize, max: usize) -> usize {
         cmp::max(min, cmp::min(max, val))
     }
@@ -722,9 +706,7 @@ fn resolve_font_weight(
     }
 }
 
-fn count_chars(
-    node: svgtree::Node,
-) -> usize {
+fn count_chars(node: svgtree::Node) -> usize {
     node.descendants()
         .filter(|n| n.is_text())
         .fold(0, |w, n| w + n.text().chars().count())
@@ -746,9 +728,7 @@ fn count_chars(
 /// it should affect the rendering.
 ///
 /// [SVG 2.0]: https://www.w3.org/TR/SVG2/text.html#WritingModeProperty
-pub fn convert_writing_mode(
-    text_node: TextNode,
-) -> WritingMode {
+pub fn convert_writing_mode(text_node: TextNode) -> WritingMode {
     if let Some(n) = text_node.find_node_with_attribute(AId::WritingMode) {
         match n.attribute(AId::WritingMode).unwrap_or("lr-tb") {
             "tb" | "tb-rl" => WritingMode::TopToBottom,

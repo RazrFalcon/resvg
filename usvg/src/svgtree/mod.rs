@@ -143,6 +143,7 @@ pub enum AttributeValue {
     Angle(svgtypes::Angle),
     AspectRatio(svgtypes::AspectRatio),
     Color(svgtypes::Color),
+    EnableBackground(tree::EnableBackground),
     Length(svgtypes::Length),
     Link(String),
     Number(f64),
@@ -296,13 +297,7 @@ impl<'a> Node<'a> {
     }
 
     pub fn find_node_with_attribute(&self, aid: AId) -> Option<Node> {
-        for n in self.ancestors() {
-            if n.has_attribute(aid) {
-                return Some(n);
-            }
-        }
-
-        None
+        self.ancestors().find(|n| n.has_attribute(aid))
     }
 
     pub fn has_valid_transform(&self, aid: AId) -> bool {
@@ -616,6 +611,7 @@ impl_from_value!(svgtypes::AspectRatio, AspectRatio);
 impl_from_value!(svgtypes::Angle, Angle);
 impl_from_value!(f64, Number);
 impl_from_value!(tree::Opacity, Opacity);
+impl_from_value!(tree::EnableBackground, EnableBackground);
 
 impl<'a> FromValue<'a> for &'a AttributeValue {
     fn get(node: Node<'a>, aid: AId) -> Option<Self> {
@@ -853,6 +849,5 @@ fn is_non_inheritable(id: AId) -> bool {
         | AId::Overflow
         | AId::StopColor
         | AId::StopOpacity
-        | AId::TextDecoration
-        | AId::Visibility)
+        | AId::TextDecoration)
 }

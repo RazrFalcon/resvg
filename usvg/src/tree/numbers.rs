@@ -5,6 +5,7 @@
 
 use svgtypes::{FuzzyEq, FuzzyZero};
 
+use crate::IsValidLength;
 use crate::geom::f64_bound;
 
 
@@ -73,9 +74,6 @@ pub type Opacity = NormalizedValue;
 /// An alias to `NormalizedValue`.
 pub type StopOffset = NormalizedValue;
 
-/// An alias to `NormalizedValue`.
-pub type CompositingCoefficient = NormalizedValue;
-
 
 /// A `stroke-width` value.
 ///
@@ -88,10 +86,10 @@ impl StrokeWidth {
     #[inline]
     pub fn new(n: f64) -> Self {
         debug_assert!(n.is_finite());
-        debug_assert!(n > 0.0);
+        debug_assert!(n.is_valid_length());
 
         // Fallback to `1.0` when value is invalid.
-        let n = if !(n > 0.0) { 1.0 } else { n };
+        let n = if !n.is_valid_length() { 1.0 } else { n };
 
         StrokeWidth(n)
     }
@@ -162,7 +160,7 @@ impl FontSize {
         debug_assert!(n > 0.0);
 
         // Fallback to `12.0` when value is invalid.
-        let n = if !(n > 0.0) { 12.0 } else { n };
+        let n = if !n.is_valid_length() { 12.0 } else { n };
 
         FontSize(n)
     }

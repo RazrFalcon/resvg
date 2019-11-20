@@ -180,5 +180,9 @@ if 'RESVG_SKIA_BACKEND' in os.environ:
     run(['cargo', 'test', '--release', '--features', 'skia-backend'], check=True)
 
 
-with cd('usvg'):
-    run(['cargo', 'test', '--release'], check=True)
+if 'USVG_TESTING' in os.environ:
+    with cd('usvg'):
+        # build without the `text` feature first
+        run(['cargo', 'build', '--no-default-features'], check=True)
+        # test with the `text` feature
+        run(['cargo', 'test'], check=True)

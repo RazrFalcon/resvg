@@ -43,7 +43,7 @@ impl Tree {
     /// Can contain an SVG string or a gzip compressed data.
     pub fn from_data(data: &[u8], opt: &Options) -> Result<Self, Error> {
         if data.starts_with(&[0x1f, 0x8b]) {
-            let text = deflate(data, data.len())?;
+            let text = deflate(data)?;
             Self::from_str(&text, opt)
         } else {
             let text = ::std::str::from_utf8(data).map_err(|_| Error::NotAnUtf8Str)?;
@@ -181,6 +181,11 @@ pub trait NodeExt {
     /// transform will be returned.
     fn abs_transform(&self) -> Transform;
 
+    /// Returns node's paint server units.
+    ///
+    /// Returns `None` when node is not a `LinearGradient`, `RadialGradient` or `Pattern`.
+    fn units(&self) -> Option<Units>;
+
     /// Appends `kind` as a node child.
     ///
     /// Shorthand for `Node::append(Node::new(Box::new(kind)))`.
@@ -221,6 +226,16 @@ impl NodeExt for Node {
     }
 
     #[inline]
+    fn units(&self) -> Option<Units> {
+        match *self.borrow() {
+            NodeKind::LinearGradient(ref lg) => Some(lg.units),
+            NodeKind::RadialGradient(ref rg) => Some(rg.units),
+            NodeKind::Pattern(ref patt) => Some(patt.units),
+            _ => None,
+        }
+    }
+
+    #[inline]
     fn append_kind(&mut self, kind: NodeKind) -> Node {
         let new_node = Node::new(kind);
         self.append(new_node.clone());
@@ -256,7 +271,9 @@ pub fn load_svg_file(path: &path::Path) -> Result<String, Error> {
 
     match ext.as_str() {
         "svgz" => {
-            deflate(&file, length)
+            let mut data = Vec::with_capacity(length);
+            file.read_to_end(&mut data).map_err(|_| Error::FileOpenFailed)?;
+            deflate(&data)
         }
         "svg" => {
             let mut s = String::with_capacity(length);
@@ -269,12 +286,13 @@ pub fn load_svg_file(path: &path::Path) -> Result<String, Error> {
     }
 }
 
-fn deflate<R: ::std::io::Read>(inner: R, len: usize) -> Result<String, Error> {
+fn deflate(data: &[u8]) -> Result<String, Error> {
     use std::io::Read;
 
-    let mut decoder = libflate::gzip::Decoder::new(inner).map_err(|_| Error::MalformedGZip)?;
-    let mut decoded = String::with_capacity(len * 2);
-    decoder.read_to_string(&mut decoded).map_err(|_| Error::NotAnUtf8Str)?;
+    let mut decoder = flate2::read::GzDecoder::new(data);
+    let mut decoded = Vec::with_capacity(data.len() * 2);
+    decoder.read_to_end(&mut decoded).map_err(|_| Error::MalformedGZip)?;
+    let decoded = String::from_utf8(decoded).map_err(|_| Error::NotAnUtf8Str)?;
     Ok(decoded)
 }
 

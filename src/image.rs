@@ -86,6 +86,29 @@ fn read_png(data: &[u8]) -> Option<Image> {
     let data = match info.color_type {
         png::ColorType::RGB => ImageData::RGB(img_data),
         png::ColorType::RGBA => ImageData::RGBA(img_data),
+        png::ColorType::Grayscale => {
+            let mut rgb_data = Vec::with_capacity(img_data.len() * 3);
+            for gray in img_data {
+                rgb_data.push(gray);
+                rgb_data.push(gray);
+                rgb_data.push(gray);
+            }
+
+            ImageData::RGB(rgb_data)
+        }
+        png::ColorType::GrayscaleAlpha => {
+            let mut rgba_data = Vec::with_capacity(img_data.len() * 2);
+            for slice in img_data.chunks(2) {
+                let gray = slice[0];
+                let alpha = slice[1];
+                rgba_data.push(gray);
+                rgba_data.push(gray);
+                rgba_data.push(gray);
+                rgba_data.push(alpha);
+            }
+
+            ImageData::RGBA(rgba_data)
+        }
         _ => return None,
     };
 
@@ -104,6 +127,16 @@ fn read_jpeg(data: &[u8]) -> Option<Image> {
 
     let data = match info.pixel_format {
         jpeg_decoder::PixelFormat::RGB24 => ImageData::RGB(img_data),
+        jpeg_decoder::PixelFormat::L8 => {
+            let mut rgb_data = Vec::with_capacity(img_data.len() * 3);
+            for gray in img_data {
+                rgb_data.push(gray);
+                rgb_data.push(gray);
+                rgb_data.push(gray);
+            }
+
+            ImageData::RGB(rgb_data)
+        }
         _ => return None,
     };
 

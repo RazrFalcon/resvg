@@ -11,7 +11,7 @@ use log::warn;
 use usvg::ColorInterpolation as ColorSpace;
 
 use crate::prelude::*;
-use crate::filter::{self, Error, Filter, ImageExt};
+use crate::filter::{self, Error, Filter, ImageExt, TransferFunctionExt};
 use crate::ConvTransform;
 use super::{ColorExt, RaqoteDrawTargetExt};
 
@@ -24,9 +24,10 @@ pub fn apply(
     bbox: Option<Rect>,
     ts: &usvg::Transform,
     opt: &Options,
+    background: Option<&raqote::DrawTarget>,
     canvas: &mut raqote::DrawTarget,
 ) {
-    RaqoteFilter::apply(filter, bbox, ts, opt, canvas);
+    RaqoteFilter::apply(filter, bbox, ts, opt, background, canvas);
 }
 
 
@@ -126,6 +127,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         input: &usvg::FilterInput,
         region: ScreenRect,
         results: &[FilterResult],
+        background: Option<&raqote::DrawTarget>,
         canvas: &raqote::DrawTarget,
     ) -> Result<Image, Error> {
         match input {
@@ -155,18 +157,55 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
                     color_space: ColorSpace::SRGB,
                 })
             }
+            usvg::FilterInput::BackgroundImage => {
+                let image = if let Some(image) = background {
+                    copy_image(image, region)?
+                } else {
+                    create_image(canvas.width() as u32, canvas.height() as u32)?
+                };
+
+                Ok(Image {
+                    image: Rc::new(image),
+                    region: region.translate_to(0, 0),
+                    color_space: ColorSpace::SRGB,
+                })
+            }
+            usvg::FilterInput::BackgroundAlpha => {
+                let image = Self::get_input(
+                    &usvg::FilterInput::BackgroundImage, region, results, background, canvas,
+                )?;
+                let mut image = image.take()?;
+
+                // Set RGB to black. Keep alpha as is.
+                let data = image.get_data_u8_mut();
+                for p in data.chunks_mut(4) {
+                    p[0] = 0;
+                    p[1] = 0;
+                    p[2] = 0;
+                }
+
+                Ok(Image {
+                    image: Rc::new(image),
+                    region: region.translate_to(0, 0),
+                    color_space: ColorSpace::SRGB,
+                })
+            }
             usvg::FilterInput::Reference(ref name) => {
                 if let Some(ref v) = results.iter().rev().find(|v| v.name == *name) {
                     Ok(v.image.clone())
                 } else {
                     // Technically unreachable.
                     warn!("Unknown filter primitive reference '{}'.", name);
-                    Self::get_input(&usvg::FilterInput::SourceGraphic, region, results, canvas)
+                    Self::get_input(
+                        &usvg::FilterInput::SourceGraphic, region, results, background, canvas,
+                    )
                 }
             }
             _ => {
                 warn!("Filter input '{:?}' is not supported.", input);
-                Self::get_input(&usvg::FilterInput::SourceGraphic, region, results, canvas)
+                Self::get_input(
+                    &usvg::FilterInput::SourceGraphic, region, results, background, canvas,
+                )
             }
         }
     }
@@ -278,6 +317,7 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
                 for (c1, c2) in data1.as_bgra().iter().zip(data2.as_bgra()) {
                     let a = calc(c1.a, c2.a, 1.0);
                     if a.is_fuzzy_zero() {
+                        i += 1;
                         continue;
                     }
 
@@ -322,12 +362,13 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         cs: ColorSpace,
         region: ScreenRect,
         results: &[FilterResult],
+        background: Option<&raqote::DrawTarget>,
         canvas: &raqote::DrawTarget,
     ) -> Result<Image, Error> {
         let mut dt = create_image(region.width(), region.height())?;
 
         for input in &fe.inputs {
-            let input = Self::get_input(input, region, &results, canvas)?;
+            let input = Self::get_input(input, region, &results, background, canvas)?;
             let input = input.into_color_space(cs)?;
             dt.draw_image_at(0.0, 0.0, &input.as_ref().as_image(), &raqote::DrawOptions::default());
         }

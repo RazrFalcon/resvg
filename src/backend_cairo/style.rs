@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{prelude::*, ConvTransform};
+use crate::{prelude::*, ConvTransform, RenderState};
 use super::ReCairoContextExt;
 
 
@@ -205,7 +205,7 @@ fn prepare_pattern(
     }
 
     let mut layers = super::create_layers(img_size);
-    super::render_group(node, opt, &mut layers, &sub_cr);
+    super::render_group(node, opt, &mut RenderState::Ok, &mut layers, &sub_cr);
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);

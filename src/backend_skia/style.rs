@@ -4,7 +4,7 @@
 
 use crate::skia;
 
-use crate::{prelude::*, ConvTransform};
+use crate::{prelude::*, ConvTransform, RenderState};
 
 pub fn fill(
     tree: &usvg::Tree,
@@ -209,7 +209,7 @@ fn prepare_pattern(
     }
 
     let mut layers = super::create_layers(img_size);
-    super::render_group(pattern_node, opt, &mut layers, &mut surface);
+    super::render_group(pattern_node, opt, &mut RenderState::Ok, &mut layers, &mut surface);
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);

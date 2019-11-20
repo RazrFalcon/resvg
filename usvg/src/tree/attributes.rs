@@ -311,10 +311,10 @@ pub enum FeCompositeOperator {
     Atop,
     Xor,
     Arithmetic {
-        k1: CompositingCoefficient,
-        k2: CompositingCoefficient,
-        k3: CompositingCoefficient,
-        k4: CompositingCoefficient,
+        k1: PositiveNumber,
+        k2: PositiveNumber,
+        k3: PositiveNumber,
+        k4: PositiveNumber,
     },
 }
 
@@ -404,3 +404,11 @@ impl_enum_from_str!(ImageRendering,
 );
 
 impl_from_str!(ImageRendering);
+
+
+/// An `enable-background`.
+///
+/// Contains only the `new [ <x> <y> <width> <height> ]` value.
+#[derive(Clone, Copy, Debug)]
+#[allow(missing_docs)]
+pub struct EnableBackground(pub Option<Rect>);

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- Load grayscale raster images.
+- `enable-background` support.
+- `BackgroundImage` and `BackgroundAlpha` support as a filter input.
+- resvg/usvg can be built without text rendering support now.
+
+### Changed
+- Allow `feComposite` k1-4 coefficients to be larger than 1.0
+  This matches browsers behaviour.
+- Use `flate2` instead of `libflate` for GZip decoding.
+
+### Fixed
+- `feComposite` with fully transparent regions was producing invalid results.
+- Fallback to `matrix` in `feColorMatrix` when `type` is not set or invalid.
+- ID preserving for `use` elements.
 
 ## [0.8.0] - 2019-08-17
 ### Added
@@ -22,7 +37,7 @@ This changelog also contains important changes in dependencies.
   Thanks to [Shnatsel](https://github.com/Shnatsel).
 
 ### Changed
-- All backends are using the `image` crate for raster images loading now.
+- All backends are using Rust crates for raster images loading now.
 - Use `pico-args` instead of `gumdrop` to reduced the build time of `tools/rendersvg`
   and `tools/usvg`.
 - (usvg) The `xmlwriter` is used for SVG generation now.
@@ -49,7 +64,7 @@ This changelog also contains important changes in dependencies.
   Previously, `stroke` was set to `none` which is incorrect.
 - (usvg) `use` can reference an element inside a non-SVG element now.
 - (usvg) Collect all styles for generic fonts and not only *Regular*.
-- (svgdom) Parse only presentation attributes from the `style` element and attribute.
+- (usvg) Parse only presentation attributes from the `style` element and attribute.
 
 ### Removed
 - (cairo-backend) `gdk-pixbuf` dependency.

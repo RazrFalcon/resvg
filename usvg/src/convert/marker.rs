@@ -13,15 +13,15 @@ pub fn is_valid(
     node: svgtree::Node,
 ) -> bool {
     // `marker-*` attributes can only be set on `path`, `line`, `polyline` and `polygon`.
-    match node.tag_name() {
-          Some(EId::Path)
-        | Some(EId::Line)
-        | Some(EId::Polyline)
-        | Some(EId::Polygon) => {}
+    match try_opt_or!(node.tag_name(), false) {
+          EId::Path
+        | EId::Line
+        | EId::Polyline
+        | EId::Polygon => {}
         _ => return false,
     }
 
-    // `marker-*` attributes cannot be set on shapes inside the `clipPath`.
+    // `marker-*` attributes cannot be set on shapes inside a `clipPath`.
     if node.ancestors().any(|n| n.has_tag_name(EId::ClipPath)) {
         return false;
     }
@@ -156,12 +156,9 @@ fn resolve(
 
         // TODO: do not create a group when no clipPath
         let mut g_node = parent.append_kind(tree::NodeKind::Group(tree::Group {
-            id: String::new(),
             transform: ts,
-            opacity: tree::Opacity::default(),
             clip_path: clip_path.clone(),
-            mask: None,
-            filter: None,
+            .. tree::Group::default()
         }));
 
         let mut marker_state = state.clone();
@@ -183,14 +180,7 @@ fn stroke_scale(
 ) -> Option<f64> {
     match marker_node.attribute(AId::MarkerUnits) {
         Some("userSpaceOnUse") => Some(1.0),
-        _ => {
-            let sw = path_node.resolve_length(AId::StrokeWidth, state, 1.0);
-            if !(sw > 0.0) {
-                None
-            } else {
-                Some(sw)
-            }
-        }
+        _ => path_node.resolve_valid_length(AId::StrokeWidth, state, 1.0),
     }
 }
 
@@ -204,8 +194,8 @@ where
 {
     match kind {
         MarkerKind::Start => {
-            if let Some(tree::PathSegment::MoveTo { x, y }) = path.first() {
-                draw_marker(*x, *y, 0);
+            if let Some(tree::PathSegment::MoveTo { x, y }) = path.first().cloned() {
+                draw_marker(x, y, 0);
             }
         }
         MarkerKind::Middle => {
@@ -229,12 +219,12 @@ where
         }
         MarkerKind::End => {
             let idx = path.len() - 1;
-            match path.last() {
+            match path.last().cloned() {
                 Some(Segment::LineTo { x, y }) => {
-                    draw_marker(*x, *y, idx);
+                    draw_marker(x, y, idx);
                 }
                 Some(Segment::CurveTo { x, y, .. }) => {
-                    draw_marker(*x, *y, idx);
+                    draw_marker(x, y, idx);
                 }
                 Some(Segment::ClosePath) => {
                     let (x, y) = get_subpath_start(path, idx);
@@ -309,7 +299,7 @@ fn calc_vertex_angle(path: &tree::PathData, idx: usize) -> f64 {
         let seg1 = path[idx];
         let seg2 = path[idx + 1];
 
-        // Not sure if there is a better way.
+        // TODO: Not sure if there is a better way.
         match (seg1, seg2) {
             (Segment::MoveTo { x: mx, y: my }, Segment::LineTo { x, y }) => {
                 calc_line_angle(mx, my, x, y)

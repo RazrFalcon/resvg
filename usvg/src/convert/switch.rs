@@ -4,6 +4,7 @@
 
 use crate::{svgtree, tree};
 use super::prelude::*;
+use super::{GroupKind, convert_group, convert_element};
 
 
 // Full list can be found here: https://www.w3.org/TR/SVG11/feature.html
@@ -13,7 +14,7 @@ static FEATURES: &[&str] = &[
     "http://www.w3.org/TR/SVG11/feature#CoreAttribute", // no xml:base and xml:lang
     "http://www.w3.org/TR/SVG11/feature#Structure",
     "http://www.w3.org/TR/SVG11/feature#BasicStructure",
-    // "http://www.w3.org/TR/SVG11/feature#ContainerAttribute", // `enable-background`, not yet
+    "http://www.w3.org/TR/SVG11/feature#ContainerAttribute", // `enable-background`
     "http://www.w3.org/TR/SVG11/feature#ConditionalProcessing",
     "http://www.w3.org/TR/SVG11/feature#Image",
     "http://www.w3.org/TR/SVG11/feature#Style",
@@ -47,17 +48,15 @@ pub fn convert(
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    let child = node.children().find(|n| is_condition_passed(*n, state.opt));
-    let child = try_opt!(child);
-
-    match super::convert_group(node, state, false, parent, tree) {
-        super::GroupKind::Create(ref mut g) => {
-            super::convert_element(child, state, g, tree);
+    let child = try_opt!(node.children().find(|n| is_condition_passed(*n, state.opt)));
+    match convert_group(node, state, false, parent, tree) {
+        GroupKind::Create(ref mut g) => {
+            convert_element(child, state, g, tree);
         }
-        super::GroupKind::Skip => {
-            super::convert_element(child, state, parent, tree);
+        GroupKind::Skip => {
+            convert_element(child, state, parent, tree);
         }
-        super::GroupKind::Ignore => {}
+        GroupKind::Ignore => {}
     }
 }
 
@@ -127,8 +126,8 @@ fn is_valid_sys_lang(
             }
         }
 
-        return has_match;
+        has_match
+    } else {
+        true
     }
-
-    true
 }
