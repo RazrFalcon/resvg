@@ -176,6 +176,10 @@ if 'RESVG_RAQOTE_BACKEND' in os.environ:
 
 
 if 'RESVG_SKIA_BACKEND' in os.environ:
+    # check C-API
+    with cd('capi'):
+        run(['cargo', 'build', '--features', 'skia-backend'], check=True)
+
     # run tests and build examples
     run(['cargo', 'test', '--release', '--features', 'skia-backend'], check=True)
 
