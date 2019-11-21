@@ -8,6 +8,7 @@ use std::slice;
 mod ffi;
 
 pub use ffi::skiac_surface;
+pub use ffi::skiac_canvas;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum PaintStyle {
@@ -250,6 +251,14 @@ impl Drop for Matrix {
 pub struct Canvas(*mut ffi::skiac_canvas);
 
 impl Canvas {
+    pub unsafe fn from_ptr(ptr: *mut ffi::skiac_canvas) -> Option<Canvas> {
+        if ptr.is_null() {
+            None
+        } else {
+            Some(Canvas(ptr))
+        }
+    }
+
     pub fn clear(&mut self) {
         unsafe { ffi::skiac_canvas_clear(self.0, 0); }
     }

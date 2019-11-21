@@ -12,16 +12,16 @@ use crate::ConvTransform;
 pub fn draw(
     image: &usvg::Image,
     opt: &Options,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) -> Rect {
     if image.visibility != usvg::Visibility::Visible {
         return image.view_box.rect;
     }
 
     if image.format == usvg::ImageFormat::SVG {
-        draw_svg(&image.data, image.view_box, opt, surface);
+        draw_svg(&image.data, image.view_box, opt, canvas);
     } else {
-        draw_raster(image.format, &image.data, image.view_box, image.rendering_mode, opt, surface);
+        draw_raster(image.format, &image.data, image.view_box, image.rendering_mode, opt, canvas);
     }
 
     image.view_box.rect
@@ -33,7 +33,7 @@ pub fn draw_raster(
     view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
     opt: &Options,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) {
     let img = try_opt!(image::load_raster(format, data, opt));
 
@@ -54,18 +54,18 @@ pub fn draw_raster(
         filter = skia::FilterQuality::None;
     }
 
-    surface.save();
+    canvas.save();
 
     if view_box.aspect.slice {
         let r = view_box.rect;
-        surface.set_clip_rect(r.x(), r.y(), r.width(), r.height());
+        canvas.set_clip_rect(r.x(), r.y(), r.width(), r.height());
     }
 
     let r = image::image_rect(&view_box, img.size);
-    surface.draw_surface_rect(&image, r.x(), r.y(), r.width(), r.height(), filter);
+    canvas.draw_surface_rect(&image, r.x(), r.y(), r.width(), r.height(), filter);
 
     // Revert.
-    surface.restore();
+    canvas.restore();
 }
 
 fn image_to_surface(image: &image::Image, surface: &mut [u8]) {
@@ -129,21 +129,21 @@ pub fn draw_svg(
     data: &usvg::ImageData,
     view_box: usvg::ViewBox,
     opt: &Options,
-    surface: &mut skia::Surface,
+    canvas: &mut skia::Canvas,
 ) {
     let (tree, sub_opt) = try_opt!(image::load_sub_svg(data, opt));
 
     let img_size = tree.svg_node().size.to_screen_size();
     let (ts, clip) = image::prepare_sub_svg_geom(view_box, img_size);
 
-    surface.save();
+    canvas.save();
 
     if let Some(clip) = clip {
-        surface.set_clip_rect(clip.x(), clip.y(), clip.width(), clip.height());
+        canvas.set_clip_rect(clip.x(), clip.y(), clip.width(), clip.height());
     }
 
-    surface.concat(&ts.to_native());
-    super::render_to_canvas(&tree, &sub_opt, img_size, surface);
+    canvas.concat(&ts.to_native());
+    super::render_to_canvas(&tree, &sub_opt, img_size, canvas);
 
-    surface.restore();
+    canvas.restore();
 }
