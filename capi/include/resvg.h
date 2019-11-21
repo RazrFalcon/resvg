@@ -506,7 +506,7 @@ int resvg_skia_render_to_image(const resvg_render_tree *tree,
  * @param tree Render tree.
  * @param opt Rendering options.
  * @param size Canvas size.
- * @param surface Skia Surface.
+ * @param canvas Skia Canvas.
  */
 void resvg_skia_render_to_canvas(const resvg_render_tree *tree,
                                  const resvg_options *opt,
@@ -522,7 +522,7 @@ void resvg_skia_render_to_canvas(const resvg_render_tree *tree,
  * @param opt Rendering options.
  * @param size Canvas size.
  * @param id Node's ID.
- * @param surface Skia Surface.
+ * @param canvas Skia Canvas.
  */
 void resvg_skia_render_to_canvas_by_id(const resvg_render_tree *tree,
                                        const resvg_options *opt,
