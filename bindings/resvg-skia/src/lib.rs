@@ -8,6 +8,7 @@ use std::slice;
 mod ffi;
 
 pub use ffi::skiac_surface;
+pub use ffi::skiac_canvas;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum PaintStyle {
