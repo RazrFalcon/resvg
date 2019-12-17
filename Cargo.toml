@@ -32,7 +32,7 @@ png = { version = "0.15", default-features = false }
 jpeg-decoder = { version = "0.1.15", default-features = false }
 
 # cairo backend
-cairo-rs = { version = "0.7.1", default-features = false, features = ["png"], optional = true }
+cairo-rs = { version = "0.8", default-features = false, features = ["png"], optional = true }
 
 # qt backend
 resvg-qt = { path = "bindings/resvg-qt", version = "0.8", optional = true }
