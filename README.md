@@ -51,26 +51,35 @@ It also includes alternative libraries.
 
 ## Performance
 
-Note that all tested applications have a different SVG support, which impacts the performance.
+Comparing performance between different SVG rendering libraries is like comparing
+apples and oranges. Everyone has a very different set of supported features,
+implementation languages, build flags, etc. You should do the benchmarks by yourself,
+on your images.
 
-Also, we do not test against Chrome, Firefox, Inkscape and Batik because they have a huge startup time.
+Because of that, we are only comparing the relative performance between `resvg` backends,
+so you can choose the one by yourself. Also, it helps with regression testing.
+But you should note, that results still may vary depending on OS, hardware,
+and backend's underlying library version.
 
 ![Chart3](./.github/perf-elementary.svg)
 
-- Elementary Icon Theme contains 3417 files.
-- Qt backend is slow because `QRasterPaintEngine` is slow.
+- *elementary* icons are very simple, and we are basically testing primitives rendering.
+- All icons were rendered with **4x** zoom.
+- Qt has a slow path stroking/filling algorithm, but a fast layer compositing.
+  So on complex files it's pretty fast, as you can see below.
 
 ![Chart4](./.github/perf-oxygen.svg)
 
-- The Oxygen icon theme contains 4947 files.
+- *Oxygen* icons are absurdly complex. Many files are more than 200KiB and total size is 1.2GiB!
+  Most of the files include complex features like clipping, masking, patterns, blur and multiple layers.
 - All images were converted from `.svgz` to `.svg` beforehand.
-- `resvg` is slower than `librsvg` because the Oxygen icon theme uses Gaussian blur heavily,
-  and `librsvg` has a faster blur implementation.
-  Also, `librsvg` uses native `cairo` clipping, [which is incorrect](https://razrfalcon.github.io/resvg-test-suite/svg-support-table.html#e-clipPath) but faster.
-- QtSvg doesn't support `filter`, `clipPath`, `mask` and `pattern` that are heavily used in the Oxygen icon theme.
-  So it's actually very slow.
 
-For more details checkout [benches/README.md](./benches/README.md)
+The tests above we run on a single thread on Gentoo Linux with AMD 3700X and inside `tmpfs`.
+You can find the script [here](https://github.com/RazrFalcon/resvg-test-suite/tree/master/tools/perf).
+
+Used libraries: cairo 1.16.0, Qt 5.13.2, raqote 0.6.1, Skia m76
+
+For more specific details checkout [benches/README.md](./benches/README.md)
 
 ## Project structure
 
