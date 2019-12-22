@@ -48,7 +48,11 @@ uint8_t* qtc_qimage_get_data(qtc_qimage *c_img)
 
 uint32_t qtc_qimage_get_size_in_bytes(qtc_qimage *c_img)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
     return IMAGE_CAST->sizeInBytes();
+#else
+    return IMAGE_CAST->byteCount();
+#endif
 }
 
 qtc_qimage* qtc_qimage_resize(qtc_qimage *c_img, uint32_t width, uint32_t height, AspectRatioMode ratio,
