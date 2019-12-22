@@ -418,7 +418,7 @@ extern "C" {
     pub fn qtc_qimage_get_data(c_img: *mut qtc_qimage) -> *mut u8;
 }
 extern "C" {
-    pub fn qtc_qimage_get_byte_count(c_img: *mut qtc_qimage) -> u32;
+    pub fn qtc_qimage_get_size_in_bytes(c_img: *mut qtc_qimage) -> u32;
 }
 extern "C" {
     pub fn qtc_qimage_resize(

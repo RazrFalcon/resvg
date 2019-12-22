@@ -131,7 +131,7 @@ impl Image {
     pub fn data(&self) -> ImageData {
         unsafe {
             let ptr = ffi::qtc_qimage_get_data(self.0);
-            let len = ffi::qtc_qimage_get_byte_count(self.0) as usize;
+            let len = ffi::qtc_qimage_get_size_in_bytes(self.0) as usize;
 
             ImageData {
                 slice: slice::from_raw_parts_mut(ptr, len),
@@ -142,7 +142,7 @@ impl Image {
     pub fn data_mut(&mut self) -> ImageData {
         unsafe {
             let ptr = ffi::qtc_qimage_get_data(self.0);
-            let len = ffi::qtc_qimage_get_byte_count(self.0) as usize;
+            let len = ffi::qtc_qimage_get_size_in_bytes(self.0) as usize;
 
             ImageData {
                 slice: slice::from_raw_parts_mut(ptr, len),

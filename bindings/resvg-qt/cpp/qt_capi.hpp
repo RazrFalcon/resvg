@@ -97,7 +97,7 @@ extern "C" {
 qtc_qimage* qtc_qimage_create_rgba_premultiplied(uint32_t width, uint32_t height);
 qtc_qimage* qtc_qimage_create_rgba(uint32_t width, uint32_t height);
 uint8_t* qtc_qimage_get_data(qtc_qimage *c_img);
-uint32_t qtc_qimage_get_byte_count(qtc_qimage *c_img);
+uint32_t qtc_qimage_get_size_in_bytes(qtc_qimage *c_img);
 qtc_qimage* qtc_qimage_resize(qtc_qimage *c_img, uint32_t width, uint32_t height, AspectRatioMode ratio,
                               bool smoothTransformation);
 qtc_qimage* qtc_qimage_copy(qtc_qimage *c_img, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
