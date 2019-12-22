@@ -8,10 +8,10 @@ edition = "2018"
 [workspace]
 
 [dependencies]
-gio = "0.7"
-gtk = "0.7"
+gio = "0.8"
+gtk = "0.8"
 log = "0.4"
-fern = "0.5"
+fern = "=0.5.8" # fixed version without chrono
 
 [dependencies.resvg]
 path = "../.."

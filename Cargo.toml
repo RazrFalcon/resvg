@@ -32,13 +32,13 @@ png = { version = "0.15", default-features = false }
 jpeg-decoder = { version = "0.1.15", default-features = false }
 
 # cairo backend
-cairo-rs = { version = "0.7.1", default-features = false, features = ["png"], optional = true }
+cairo-rs = { version = "0.8.0", default-features = false, features = ["png"], optional = true }
 
 # qt backend
 resvg-qt = { path = "bindings/resvg-qt", version = "0.8", optional = true }
 
 # raqote backend
-raqote = { version = "0.7.3", default-features = false, optional = true }
+raqote = { version = "0.7.7", default-features = false, optional = true }
 
 # skia backend
 resvg-skia = { path = "bindings/resvg-skia", version = "0.8", optional = true }

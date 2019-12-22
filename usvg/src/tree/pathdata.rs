@@ -112,8 +112,8 @@ impl PathData {
         let (prev_x, prev_y) = self.last_pos();
 
         let svg_arc = kurbo::SvgArc {
-            from: kurbo::Vec2::new(prev_x, prev_y),
-            to: kurbo::Vec2::new(x, y),
+            from: kurbo::Point::new(prev_x, prev_y),
+            to: kurbo::Point::new(x, y),
             radii: kurbo::Vec2::new(rx, ry),
             x_rotation: x_axis_rotation.to_radians(),
             large_arc,
@@ -644,10 +644,10 @@ pub(crate) trait CubicBezExt {
 impl CubicBezExt for kurbo::CubicBez {
     fn from_points(px: f64, py: f64, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64) -> Self {
         kurbo::CubicBez {
-            p0: kurbo::Vec2::new(px, py),
-            p1: kurbo::Vec2::new(x1, y1),
-            p2: kurbo::Vec2::new(x2, y2),
-            p3: kurbo::Vec2::new(x, y),
+            p0: kurbo::Point::new(px, py),
+            p1: kurbo::Point::new(x1, y1),
+            p2: kurbo::Point::new(x2, y2),
+            p3: kurbo::Point::new(x, y),
         }
     }
 }

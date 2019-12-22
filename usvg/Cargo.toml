@@ -17,16 +17,16 @@ workspace = ".."
 travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
-base64 = "0.10"
+base64 = "0.11"
 data-url = "0.1"
 flate2 = { version = "1.0.11", default-features = false, features = ["rust_backend"]}
-kurbo = "0.2.3"
+kurbo = "0.5.6"
 log = "0.4"
 rctree = "0.3"
 xmlwriter = "0.1"
 
 # for svgtree
-roxmltree = "0.7"
+roxmltree = "0.8"
 simplecss = "0.2"
 siphasher = "0.2.3"
 svgtypes = "0.5"
@@ -34,7 +34,7 @@ svgtypes = "0.5"
 # for text to path
 harfbuzz_rs = { version = "1.0", optional = true }
 memmap = { version = "0.7", optional = true }
-ttf-parser = { version = "0.2.2", optional = true }
+ttf-parser = { version = "0.3.0", optional = true }
 unicode-bidi = { version = "0.3", optional = true }
 unicode-script = { version = "0.3", optional = true }
 unicode-vo = { version = "0.1", optional = true }

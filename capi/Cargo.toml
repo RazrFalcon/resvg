@@ -12,7 +12,7 @@ name = "resvg"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-fern = "0.5"
+fern = "=0.5.8" # fixed version without chrono
 log = "0.4"
 resvg = { path = "../" }
 # cairo backend

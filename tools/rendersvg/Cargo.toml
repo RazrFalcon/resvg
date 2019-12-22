@@ -8,7 +8,7 @@ edition = "2018"
 workspace = "../../"
 
 [dependencies]
-fern = "0.5"
+fern = "=0.5.8" # fixed version without chrono
 log = "0.4"
 pico-args = "0.2"
 resvg = { path = "../../", default-features = false }

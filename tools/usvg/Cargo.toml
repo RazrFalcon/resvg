@@ -13,7 +13,7 @@ workspace = "../../"
 travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
-fern = "0.5"
+fern = "=0.5.8" # fixed version without chrono
 log = "0.4"
 pico-args = "0.2"
 usvg = { version = "0.8", path = "../../usvg", default-features = false }

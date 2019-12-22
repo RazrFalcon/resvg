@@ -6,7 +6,6 @@ use kurbo::{ParamCurveArclen, ParamCurve, ParamCurveDeriv};
 use harfbuzz_rs as harfbuzz;
 use unicode_vo::Orientation as CharOrientation;
 use ttf_parser::GlyphId;
-use kurbo::Vec2;
 
 use crate::{tree, fontdb, convert::prelude::*};
 use crate::tree::CubicBezExt;
@@ -547,7 +546,7 @@ fn resolve_clusters_positions_path(
         // Shift only by `dy` since we already applied `dx`
         // during offset along the path calculation.
         if !dy.is_fuzzy_zero() || !baseline_shift.is_fuzzy_zero() {
-            let shift = Vec2::from_angle(angle) + Vec2::new(0.0, dy - baseline_shift);
+            let shift = kurbo::Vec2::from_angle(angle) + kurbo::Vec2::new(0.0, dy - baseline_shift);
             cluster.transform.translate(shift.x, shift.y);
         }
 
@@ -630,7 +629,7 @@ fn collect_normals(
     };
 
     fn create_curve_from_line(px: f64, py: f64, x: f64, y: f64) -> kurbo::CubicBez {
-        let line = kurbo::Line::new(Vec2::new(px, py), Vec2::new(x, y));
+        let line = kurbo::Line::new(kurbo::Point::new(px, py), kurbo::Point::new(x, y));
         let p1 = line.eval(0.33);
         let p2 = line.eval(0.66);
         kurbo::CubicBez::from_points(px, py, p1.x, p1.y, p2.x, p2.y, x, y)
@@ -666,7 +665,7 @@ fn collect_normals(
 
                 let pos = curve.eval(offset);
                 let d = curve.deriv().eval(offset);
-                let d = Vec2::new(-d.y, d.x); // tangent
+                let d = kurbo::Vec2::new(-d.y, d.x); // tangent
                 let angle = d.atan2().to_degrees() - 90.0;
 
                 normals.push(Some(PathNormal {
