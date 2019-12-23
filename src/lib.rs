@@ -160,6 +160,9 @@ pub trait OutputImage {
         &mut self,
         path: &std::path::Path,
     ) -> bool;
+
+    /// Converts an image's internal data into a `Vec<u8>`.
+    fn make_vec(&mut self) -> Vec<u8>;
 }
 
 

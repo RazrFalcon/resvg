@@ -70,6 +70,10 @@ impl OutputImage for skia::Surface {
     ) -> bool {
         skia::Surface::save_png(self, path.to_str().unwrap())
     }
+
+    fn make_vec(&mut self) -> Vec<u8> {
+        self.data().to_vec()
+    }
 }
 
 /// Renders SVG to image.

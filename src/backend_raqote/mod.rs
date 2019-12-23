@@ -112,6 +112,10 @@ impl OutputImage for raqote::DrawTarget {
     fn save_png(&mut self, path: &::std::path::Path) -> bool {
         self.write_png(path).is_ok()
     }
+
+    fn make_vec(&mut self) -> Vec<u8> {
+        self.get_data_u8_mut().to_vec()
+    }
 }
 
 

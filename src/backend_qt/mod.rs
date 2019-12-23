@@ -74,6 +74,10 @@ impl OutputImage for qt::Image {
     ) -> bool {
         self.save(path.to_str().unwrap())
     }
+
+    fn make_vec(&mut self) -> Vec<u8> {
+        self.data().to_vec()
+    }
 }
 
 /// Renders SVG to image.

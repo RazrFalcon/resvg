@@ -12,6 +12,7 @@ This changelog also contains important changes in dependencies.
 - `enable-background` support.
 - `BackgroundImage`, `BackgroundAlpha`, `FillPaint` and `StrokePaint` support as a filter input.
 - resvg/usvg can be built without text rendering support now.
+- `OutputImage::make_vec`.
 
 ### Changed
 - Allow `feComposite` k1-4 coefficients to be larger than 1.0

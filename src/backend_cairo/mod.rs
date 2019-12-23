@@ -119,6 +119,10 @@ impl OutputImage for cairo::ImageSurface {
         try_opt_or!(writer.write_image_data(&img).ok(), false);
         true
     }
+
+    fn make_vec(&mut self) -> Vec<u8> {
+        self.get_data().unwrap().to_vec()
+    }
 }
 
 
