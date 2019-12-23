@@ -45,6 +45,8 @@ test!(minimal, false,
     usvg:version='0.8.0'>
     <defs/>
     <path
+        fill='#000000'
+        stroke='none'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
 ");
@@ -67,6 +69,8 @@ test!(groups, false,
     usvg:version='0.8.0'>
     <defs/>
     <path
+        fill='#000000'
+        stroke='none'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
 ");
@@ -131,12 +135,16 @@ test!(group_clippath, false,
         <clipPath
             id='clip1'>
             <path
+                fill='#000000'
+                stroke='none'
                 d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
         </clipPath>
     </defs>
     <g
         clip-path='url(#clip1)'>
         <path
+            fill='#000000'
+            stroke='none'
             d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
     </g>
 </svg>
@@ -158,6 +166,8 @@ test!(ignore_groups_with_id, false,
     usvg:version='0.8.0'>
     <defs/>
     <path
+        fill='#000000'
+        stroke='none'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
 ");
@@ -179,6 +189,7 @@ test!(pattern_with_invalid_child, false,
     <defs/>
     <path
         fill='none'
+        stroke='none'
         visibility='hidden'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
@@ -199,6 +210,7 @@ test!(pattern_without_children, false,
     <defs/>
     <path
         fill='none'
+        stroke='none'
         visibility='hidden'
         d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
 </svg>
@@ -248,6 +260,8 @@ test!(preserve_id, true,
             id='clip1'>
             <path
                 id='rect2'
+                fill='#000000'
+                stroke='none'
                 d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
         </clipPath>
         <linearGradient
@@ -284,6 +298,8 @@ test!(preserve_id, true,
             width='1'
             height='1'>
             <path
+                fill='#000000'
+                stroke='none'
                 d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
         </pattern>
     </defs>
@@ -298,11 +314,13 @@ test!(preserve_id, true,
     <path
         id='path1'
         fill='url(#patt1)'
+        stroke='none'
         d='M 10 20 L 30 40'/>
     <g
         id='use1'>
         <path
             fill='url(#patt1)'
+            stroke='none'
             d='M 10 20 L 30 40'/>
     </g>
     <image
@@ -352,6 +370,8 @@ test!(keep_groups_with_id, true,
     <g
         id='some_group'>
         <path
+            fill='#000000'
+            stroke='none'
             d='M 0 0 L 10 0 L 10 10 L 0 10 Z'/>
     </g>
 </svg>
@@ -370,6 +390,8 @@ test!(simplify_paths_1, false,
     usvg:version='0.8.0'>
     <defs/>
     <path
+        fill='#000000'
+        stroke='none'
         d='M 10 20 L 10 30 Z'/>
 </svg>
 ");
@@ -390,8 +412,12 @@ test!(group_with_default_opacity, false,
     usvg:version='0.8.0'>
     <defs/>
     <path
+        fill='#000000'
+        stroke='none'
         d='M 10 20 L 10 30'/>
     <path
+        fill='#000000'
+        stroke='none'
         d='M 10 20 L 10 30'/>
 </svg>
 ");
@@ -452,6 +478,7 @@ test!(simple_switch, false,
     <path
         id='rect2'
         fill='#008000'
+        stroke='none'
         d='M 20 20 L 180 20 L 180 180 L 20 180 Z'/>
 </svg>
 ");
@@ -478,6 +505,7 @@ test!(switch_with_opacity, false,
         <path
             id='rect2'
             fill='#008000'
+            stroke='none'
             d='M 20 20 L 180 20 L 180 180 L 20 180 Z'/>
     </g>
 </svg>

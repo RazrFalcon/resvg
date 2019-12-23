@@ -790,14 +790,3 @@ pub struct FeTile {
     /// `in` in the SVG.
     pub input: FilterInput,
 }
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn node_kind_size() {
-        assert!(std::mem::size_of::<NodeKind>() <= 256);
-    }
-}
