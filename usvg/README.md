@@ -1,5 +1,4 @@
 # usvg
-[![Build Status](https://travis-ci.org/RazrFalcon/resvg.svg?branch=master)](https://travis-ci.org/RazrFalcon/usvg)
 [![Crates.io](https://img.shields.io/crates/v/usvg.svg)](https://crates.io/crates/usvg)
 [![Documentation](https://docs.rs/usvg/badge.svg)](https://docs.rs/usvg)
 

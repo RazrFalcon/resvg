@@ -26,7 +26,7 @@ pub fn convert(tree: &Tree, opt: XmlOptions) -> String {
     if has_xlink(tree) {
         xml.write_attribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
     }
-    xml.write_attribute("xmlns:usvg", "https://github.com/RazrFalcon/usvg");
+    xml.write_attribute("xmlns:usvg", "https://github.com/RazrFalcon/resvg");
     xml.write_attribute("usvg:version", env!("CARGO_PKG_VERSION"));
 
     xml.start_svg_element(EId::Defs);

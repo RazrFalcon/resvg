@@ -41,7 +41,7 @@ test!(minimal, false,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs/>
     <path
@@ -65,7 +65,7 @@ test!(groups, false,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs/>
     <path
@@ -87,7 +87,7 @@ test!(clippath_with_invalid_child, false,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs/>
 </svg>
@@ -111,7 +111,7 @@ test!(clippath_with_invalid_children, false,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs/>
 </svg>
@@ -129,7 +129,7 @@ test!(group_clippath, false,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs>
         <clipPath
@@ -162,7 +162,7 @@ test!(ignore_groups_with_id, false,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs/>
     <path
@@ -184,7 +184,7 @@ test!(pattern_with_invalid_child, false,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs/>
     <path
@@ -205,7 +205,7 @@ test!(pattern_without_children, false,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs/>
     <path
@@ -253,7 +253,7 @@ test!(preserve_id, true,
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
     xmlns:xlink='http://www.w3.org/1999/xlink'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs>
         <clipPath
@@ -347,7 +347,7 @@ test!(ignore_empty_groups_with_id, true,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs/>
 </svg>
@@ -364,7 +364,7 @@ test!(keep_groups_with_id, true,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs/>
     <g
@@ -386,7 +386,7 @@ test!(simplify_paths_1, false,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs/>
     <path
@@ -408,7 +408,7 @@ test!(group_with_default_opacity, false,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs/>
     <path
@@ -433,7 +433,7 @@ test!(group_with_an_invalid_child, false,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs/>
 </svg>
@@ -452,7 +452,7 @@ test!(nested_group_with_an_invalid_child, false,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs/>
 </svg>
@@ -472,7 +472,7 @@ test!(simple_switch, false,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs/>
     <path
@@ -497,7 +497,7 @@ test!(switch_with_opacity, false,
     height='1'
     viewBox='0 0 1 1'
     xmlns='http://www.w3.org/2000/svg'
-    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
     usvg:version='0.8.0'>
     <defs/>
     <g
@@ -521,7 +521,7 @@ test!(switch_with_opacity, false,
 //    width='1'
 //    height='1'
 //    viewBox='0 0 1 1'
-//    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+//    xmlns:usvg='https://github.com/RazrFalcon/resvg'
 //    usvg:version='0.8.0'>
 //    <defs/>
 //    <path
@@ -583,7 +583,7 @@ test_size_err!(size_detection_err_2,
 //    width='1'
 //    height='1'
 //    viewBox='0 0 1 1'
-//    xmlns:usvg='https://github.com/RazrFalcon/usvg'
+//    xmlns:usvg='https://github.com/RazrFalcon/resvg'
 //    usvg:version='0.8.0'>
 //    <defs/>
 //    <path

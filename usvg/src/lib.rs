@@ -42,7 +42,7 @@ and an XML library with some small amount of code.
 - No CSS (partial support)
 - No `script` (simply ignoring it)
 
-Full spec can be found [here](https://github.com/RazrFalcon/usvg/blob/master/docs/usvg_spec.adoc).
+Full spec can be found [here](https://github.com/RazrFalcon/resvg/blob/master/docs/usvg_spec.adoc).
 
 ## Limitations
 
