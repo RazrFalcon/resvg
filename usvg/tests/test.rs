@@ -529,6 +529,62 @@ test!(switch_with_opacity, false,
 //</svg>
 //");
 
+test!(fe_image_duplicates, false,
+"<svg viewBox='0 0 1 1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>
+    <defs>
+        <filter id='filter1'>
+            <feImage xlink:href='#rect1'/>
+            <feImage xlink:href='#rect1'/>
+        </filter>
+        <rect id='rect1' width='120' height='120'/>
+    </defs>
+    <rect filter='url(#filter1)' width='120' height='120'/>
+</svg>",
+"<svg
+    width='1'
+    height='1'
+    viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
+    xmlns:xlink='http://www.w3.org/1999/xlink'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
+    usvg:version='0.8.0'>
+    <defs>
+        <filter
+            id='filter1'
+            x='-0.1'
+            y='-0.1'
+            width='1.2'
+            height='1.2'>
+            <feImage
+                color-interpolation-filters='linearRGB'
+                preserveAspectRatio='xMidYMid'
+                image-rendering='optimizeQuality'
+                xlink:href='#rect1'
+                result='result1'/>
+            <feImage
+                color-interpolation-filters='linearRGB'
+                preserveAspectRatio='xMidYMid'
+                image-rendering='optimizeQuality'
+                xlink:href='#rect1'
+                result='result2'/>
+        </filter>
+        <path
+            id='rect1'
+            fill='#000000'
+            stroke='none'
+            d='M 0 0 L 120 0 L 120 120 L 0 120 Z'/>
+    </defs>
+    <g
+        filter='url(#filter1)'>
+        <path
+            fill='#000000'
+            stroke='none'
+            d='M 0 0 L 120 0 L 120 120 L 0 120 Z'/>
+    </g>
+</svg>
+");
+
+
 macro_rules! test_size {
     ($name:ident, $input:expr, $expected:expr) => {
         #[test]

@@ -25,12 +25,13 @@ pub fn apply(
     bbox: Option<Rect>,
     ts: &usvg::Transform,
     opt: &Options,
+    tree: &usvg::Tree,
     background: Option<&raqote::DrawTarget>,
     fill_paint: Option<&raqote::DrawTarget>,
     stroke_paint: Option<&raqote::DrawTarget>,
     canvas: &mut raqote::DrawTarget,
 ) {
-    RaqoteFilter::apply(filter, bbox, ts, opt, background, fill_paint, stroke_paint, canvas);
+    RaqoteFilter::apply(filter, bbox, ts, opt, tree, background, fill_paint, stroke_paint, canvas);
 }
 
 
@@ -415,6 +416,8 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         region: ScreenRect,
         subregion: ScreenRect,
         opt: &Options,
+        tree: &usvg::Tree,
+        ts: &usvg::Transform,
     ) -> Result<Image, Error> {
         let mut dt = create_image(region.width(), region.height())?;
 
@@ -439,7 +442,14 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
                     );
                 }
             }
-            usvg::FeImageKind::Use(..) => {}
+            usvg::FeImageKind::Use(ref id) => {
+                if let Some(ref node) = tree.defs_by_id(id).or(tree.node_by_id(id)) {
+                    let mut layers = super::create_layers(region.size());
+                    dt.transform(&ts.to_native());
+                    dt.transform(&node.transform().to_native());
+                    super::render_node(node, opt, &mut crate::RenderState::Ok, &mut layers, &mut dt);
+                }
+            }
         }
 
         dt.set_transform(&raqote::Transform::default());

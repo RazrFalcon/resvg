@@ -24,12 +24,13 @@ pub fn apply(
     bbox: Option<Rect>,
     ts: &usvg::Transform,
     opt: &Options,
+    tree: &usvg::Tree,
     background: Option<&skia::Surface>,
     fill_paint: Option<&skia::Surface>,
     stroke_paint: Option<&skia::Surface>,
     canvas: &mut skia::Surface,
 ) {
-    SkiaFilter::apply(filter, bbox, ts, opt, background, fill_paint, stroke_paint, canvas);
+    SkiaFilter::apply(filter, bbox, ts, opt, tree, background, fill_paint, stroke_paint, canvas);
 }
 
 impl ImageExt for skia::Surface {
@@ -398,6 +399,8 @@ impl Filter<skia::Surface> for SkiaFilter {
         region: ScreenRect,
         subregion: ScreenRect,
         opt: &Options,
+        tree: &usvg::Tree,
+        ts: &usvg::Transform,
     ) -> Result<Image, Error> {
         let mut buffer = create_surface(region.width(), region.height())?;
 
@@ -421,7 +424,14 @@ impl Filter<skia::Surface> for SkiaFilter {
                     );
                 }
             }
-            usvg::FeImageKind::Use(..) => {}
+            usvg::FeImageKind::Use(ref id) => {
+                if let Some(ref node) = tree.defs_by_id(id).or(tree.node_by_id(id)) {
+                    let mut layers = super::create_layers(region.size());
+                    buffer.concat(&ts.to_native());
+                    buffer.concat(&node.transform().to_native());
+                    super::render_node(node, opt, &mut crate::RenderState::Ok, &mut layers, &mut buffer);
+                }
+            }
         }
 
         buffer.reset_matrix();

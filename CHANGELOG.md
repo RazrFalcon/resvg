@@ -13,12 +13,14 @@ This changelog also contains important changes in dependencies.
 - `BackgroundImage`, `BackgroundAlpha`, `FillPaint` and `StrokePaint` support as a filter input.
 - resvg/usvg can be built without text rendering support now.
 - `OutputImage::make_vec`.
+- `feImage` with a reference to an internal element.
 
 ### Changed
 - Allow `feComposite` k1-4 coefficients to be larger than 1.0
   This matches browsers behaviour.
 - Use `flate2` instead of `libflate` for GZip decoding.
 - (usvg) `fill` and `stroke` attributes will always be set for `path` now.
+- (usvg) `g`, `path` and `image` can now be set inside `defs`. Required by `feImage`.
 
 ### Fixed
 - `feComposite` with fully transparent regions was producing invalid results.

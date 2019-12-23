@@ -303,7 +303,7 @@ fn render_group_impl(
                 let background = prepare_filter_background(node, filter, opt);
                 let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, opt, &sub_img);
                 let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_img);
-                filter::apply(filter, bbox, &ts, opt,
+                filter::apply(filter, bbox, &ts, opt, &node.tree(),
                               background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
                               &mut sub_img);
             }

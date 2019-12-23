@@ -269,30 +269,41 @@ fn convert_fe_image(
         .find_attribute(AId::ImageRendering)
         .unwrap_or(state.opt.image_rendering);
 
+    let failed = || {
+        return tree::FilterKind::FeImage(tree::FeImage {
+            aspect,
+            rendering_mode,
+            data: tree::FeImageKind::None,
+        });
+    };
+
+    if let Some(node) = fe.attribute::<svgtree::Node>(AId::Href) {
+        // If `feImage` references an existing SVG element,
+        // simply store its ID and do not attempt to convert the element itself.
+        // The problem is that `feImage` can reference an element outside `defs`,
+        // and we should not create it manually.
+        // Instead, after document conversion is finished, we should search for this ID
+        // and if it does not exist - create it inside `defs`.
+        return tree::FilterKind::FeImage(tree::FeImage {
+            aspect,
+            rendering_mode,
+            data: tree::FeImageKind::Use(node.element_id().to_string()),
+        });
+    }
+
     let href = match fe.attribute(AId::Href) {
         Some(s) => s,
         _ => {
             warn!("The 'feImage' element lacks the 'xlink:href' attribute. Skipped.");
-            return tree::FilterKind::FeImage(tree::FeImage {
-                aspect,
-                rendering_mode,
-                data: tree::FeImageKind::None,
-            });
+            return failed();
         }
     };
 
     let href = super::image::get_href_data(fe.element_id(), href, state.opt.path.as_ref());
     let (img_data, format) = match href {
         Some((data, format)) => (data, format),
-        None => {
-            return tree::FilterKind::FeImage(tree::FeImage {
-                aspect,
-                rendering_mode,
-                data: tree::FeImageKind::None,
-            });
-        }
+        None => return failed(),
     };
-
 
     tree::FilterKind::FeImage(tree::FeImage {
         aspect,

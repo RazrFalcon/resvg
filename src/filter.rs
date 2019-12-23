@@ -133,6 +133,7 @@ pub trait Filter<T: ImageExt> {
         bbox: Option<Rect>,
         ts: &usvg::Transform,
         opt: &Options,
+        tree: &usvg::Tree,
         background: Option<&T>,
         fill_paint: Option<&T>,
         stroke_paint: Option<&T>,
@@ -146,7 +147,7 @@ pub trait Filter<T: ImageExt> {
                 stroke_paint,
             };
 
-            Self::_apply(filter, &inputs, bbox, ts, opt)
+            Self::_apply(filter, &inputs, bbox, ts, opt, tree)
         };
 
         let res = res.and_then(|(image, region)| Self::apply_to_canvas(image, region, canvas));
@@ -177,6 +178,7 @@ pub trait Filter<T: ImageExt> {
         bbox: Option<Rect>,
         ts: &usvg::Transform,
         opt: &Options,
+        tree: &usvg::Tree,
     ) -> Result<(Image<T>, ScreenRect), Error> {
         let mut results = Vec::new();
         let region = calc_region(filter, bbox, ts, inputs.source)?;
@@ -215,7 +217,7 @@ pub trait Filter<T: ImageExt> {
                     Self::apply_tile(input, region)
                 }
                 usvg::FilterKind::FeImage(ref fe) => {
-                    Self::apply_image(fe, region, subregion, opt)
+                    Self::apply_image(fe, region, subregion, opt, tree, ts)
                 }
                 usvg::FilterKind::FeComponentTransfer(ref fe) => {
                     let input = Self::get_input(&fe.input, region, inputs, &results)?;
@@ -325,6 +327,8 @@ pub trait Filter<T: ImageExt> {
         region: ScreenRect,
         subregion: ScreenRect,
         opt: &Options,
+        tree: &usvg::Tree,
+        ts: &usvg::Transform,
     ) -> Result<Image<T>, Error>;
 
     fn apply_component_transfer(

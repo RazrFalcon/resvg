@@ -5,7 +5,6 @@
   - `feDiffuseLighting`
   - `feDisplacementMap`
   - `feDistantLight`
-  - `feImage` with a reference to an element
   - `feMorphology`
   - `fePointLight`
   - `feSpecularLighting`

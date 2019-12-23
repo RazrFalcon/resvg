@@ -24,12 +24,13 @@ pub fn apply(
     bbox: Option<Rect>,
     ts: &usvg::Transform,
     opt: &Options,
+    tree: &usvg::Tree,
     background: Option<&qt::Image>,
     fill_paint: Option<&qt::Image>,
     stroke_paint: Option<&qt::Image>,
     canvas: &mut qt::Image,
 ) {
-    QtFilter::apply(filter, bbox, ts, opt, background, fill_paint, stroke_paint, canvas);
+    QtFilter::apply(filter, bbox, ts, opt, tree, background, fill_paint, stroke_paint, canvas);
 }
 
 
@@ -398,6 +399,8 @@ impl Filter<qt::Image> for QtFilter {
         region: ScreenRect,
         subregion: ScreenRect,
         opt: &Options,
+        tree: &usvg::Tree,
+        ts: &usvg::Transform,
     ) -> Result<Image, Error> {
         let mut buffer = create_image(region.width(), region.height())?;
 
@@ -423,7 +426,15 @@ impl Filter<qt::Image> for QtFilter {
                     );
                 }
             }
-            usvg::FeImageKind::Use(..) => {}
+            usvg::FeImageKind::Use(ref id) => {
+                if let Some(ref node) = tree.defs_by_id(id).or(tree.node_by_id(id)) {
+                    let mut layers = super::create_layers(region.size());
+                    let mut p = qt::Painter::new(&mut buffer);
+                    p.apply_transform(&ts.to_native());
+                    p.apply_transform(&node.transform().to_native());
+                    super::render_node(node, opt, &mut crate::RenderState::Ok, &mut layers, &mut p);
+                }
+            }
         }
 
         Ok(Image::from_image(buffer, ColorSpace::SRGB))

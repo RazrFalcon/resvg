@@ -221,7 +221,9 @@ fn conv_defs(
                                 FeImageKind::Image(ref data, format) => {
                                     xml.write_image_data(data, format);
                                 }
-                                FeImageKind::Use(..) => {}
+                                FeImageKind::Use(ref id) => {
+                                    xml.write_attribute_fmt("xlink:href", format_args!("#{}", id));
+                                }
                             }
 
                             xml.write_svg_attribute(AId::Result, &fe.result);
@@ -271,6 +273,11 @@ fn conv_defs(
 
                 xml.end_element();
             }
+            NodeKind::Group(_) |
+            NodeKind::Image(_) |
+            NodeKind::Path(_) => {
+                conv_element(&n, false, xml);
+            }
             _ => {}
         }
     }
@@ -282,90 +289,98 @@ fn conv_elements(
     xml: &mut XmlWriter,
 ) {
     for n in parent.children() {
-        match *n.borrow() {
-            NodeKind::Path(ref p) => {
-                write_path(p, is_clip_path, None, xml);
-            }
-            NodeKind::Image(ref img) => {
-                xml.start_svg_element(EId::Image);
-                if !img.id.is_empty() {
-                    xml.write_svg_attribute(AId::Id, &img.id);
-                }
+        conv_element(&n, is_clip_path, xml);
+    }
+}
 
-                xml.write_rect_attrs(img.view_box.rect);
-                if !img.view_box.aspect.is_default() {
-                    xml.write_aspect(img.view_box.aspect);
-                }
-
-                xml.write_visibility(img.visibility);
-
-                match img.rendering_mode {
-                    ImageRendering::OptimizeQuality => {}
-                    ImageRendering::OptimizeSpeed => {
-                        xml.write_svg_attribute(AId::ImageRendering, "optimizeSpeed");
-                    }
-                }
-
-                xml.write_transform(AId::Transform, img.transform);
-                xml.write_image_data(&img.data, img.format);
-
-                xml.end_element();
-            }
-            NodeKind::Group(ref g) => {
-                if is_clip_path {
-                    // ClipPath with a Group element is an `usvg` special case.
-                    // Group will contains a single Path element and we should set
-                    // `clip-path` on it.
-
-                    if let NodeKind::Path(ref path) = *n.first_child().unwrap().borrow() {
-                        let clip_id = g.clip_path.as_ref().map(String::deref);
-                        write_path(path, is_clip_path, clip_id, xml);
-                    }
-
-                    continue;
-                }
-
-                xml.start_svg_element(EId::G);
-                if !g.id.is_empty() {
-                    xml.write_svg_attribute(AId::Id, &g.id);
-                };
-
-                if let Some(ref id) = g.clip_path {
-                    xml.write_func_iri(AId::ClipPath, id);
-                }
-
-                if let Some(ref id) = g.mask {
-                    xml.write_func_iri(AId::Mask, id);
-                }
-
-                if let Some(ref id) = g.filter {
-                    xml.write_func_iri(AId::Filter, id);
-
-                    if let Some(ref fill) = g.filter_fill {
-                        write_paint(AId::Fill, fill, xml);
-                    }
-
-                    if let Some(ref stroke) = g.filter_stroke {
-                        write_paint(AId::Stroke, stroke, xml);
-                    }
-                }
-
-                if !g.opacity.is_default() {
-                    xml.write_svg_attribute(AId::Opacity, &g.opacity.value());
-                }
-
-                xml.write_transform(AId::Transform, g.transform);
-
-                if let Some(eb) = g.enable_background {
-                    xml.write_enable_background(eb);
-                }
-
-                conv_elements(&n, false, xml);
-
-                xml.end_element();
-            }
-            _ => {}
+fn conv_element(
+    node: &Node,
+    is_clip_path: bool,
+    xml: &mut XmlWriter,
+) {
+    match *node.borrow() {
+        NodeKind::Path(ref p) => {
+            write_path(p, is_clip_path, None, xml);
         }
+        NodeKind::Image(ref img) => {
+            xml.start_svg_element(EId::Image);
+            if !img.id.is_empty() {
+                xml.write_svg_attribute(AId::Id, &img.id);
+            }
+
+            xml.write_rect_attrs(img.view_box.rect);
+            if !img.view_box.aspect.is_default() {
+                xml.write_aspect(img.view_box.aspect);
+            }
+
+            xml.write_visibility(img.visibility);
+
+            match img.rendering_mode {
+                ImageRendering::OptimizeQuality => {}
+                ImageRendering::OptimizeSpeed => {
+                    xml.write_svg_attribute(AId::ImageRendering, "optimizeSpeed");
+                }
+            }
+
+            xml.write_transform(AId::Transform, img.transform);
+            xml.write_image_data(&img.data, img.format);
+
+            xml.end_element();
+        }
+        NodeKind::Group(ref g) => {
+            if is_clip_path {
+                // ClipPath with a Group element is an `usvg` special case.
+                // Group will contains a single Path element and we should set
+                // `clip-path` on it.
+
+                if let NodeKind::Path(ref path) = *node.first_child().unwrap().borrow() {
+                    let clip_id = g.clip_path.as_ref().map(String::deref);
+                    write_path(path, is_clip_path, clip_id, xml);
+                }
+
+                return;
+            }
+
+            xml.start_svg_element(EId::G);
+            if !g.id.is_empty() {
+                xml.write_svg_attribute(AId::Id, &g.id);
+            };
+
+            if let Some(ref id) = g.clip_path {
+                xml.write_func_iri(AId::ClipPath, id);
+            }
+
+            if let Some(ref id) = g.mask {
+                xml.write_func_iri(AId::Mask, id);
+            }
+
+            if let Some(ref id) = g.filter {
+                xml.write_func_iri(AId::Filter, id);
+
+                if let Some(ref fill) = g.filter_fill {
+                    write_paint(AId::Fill, fill, xml);
+                }
+
+                if let Some(ref stroke) = g.filter_stroke {
+                    write_paint(AId::Stroke, stroke, xml);
+                }
+            }
+
+            if !g.opacity.is_default() {
+                xml.write_svg_attribute(AId::Opacity, &g.opacity.value());
+            }
+
+            xml.write_transform(AId::Transform, g.transform);
+
+            if let Some(eb) = g.enable_background {
+                xml.write_enable_background(eb);
+            }
+
+            conv_elements(&node, false, xml);
+
+            xml.end_element();
+        }
+        _ => {}
     }
 }
 
@@ -563,7 +578,7 @@ fn has_xlink(tree: &Tree) -> bool {
             NodeKind::Filter(ref filter) => {
                 for fe in &filter.children {
                     if let FilterKind::FeImage(ref img) = fe.kind {
-                        if let FeImageKind::Image(..) = img.data {
+                        if let FeImageKind::Image(..) | FeImageKind::Use(..) = img.data {
                             return true;
                         }
                     }

@@ -24,12 +24,13 @@ pub fn apply(
     bbox: Option<Rect>,
     ts: &usvg::Transform,
     opt: &Options,
+    tree: &usvg::Tree,
     background: Option<&cairo::ImageSurface>,
     fill_paint: Option<&cairo::ImageSurface>,
     stroke_paint: Option<&cairo::ImageSurface>,
     canvas: &mut cairo::ImageSurface,
 ) {
-    CairoFilter::apply(filter, bbox, ts, opt, background, fill_paint, stroke_paint, canvas);
+    CairoFilter::apply(filter, bbox, ts, opt, tree, background, fill_paint, stroke_paint, canvas);
 }
 
 
@@ -425,6 +426,8 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         region: ScreenRect,
         subregion: ScreenRect,
         opt: &Options,
+        tree: &usvg::Tree,
+        ts: &usvg::Transform,
     ) -> Result<Image, Error> {
         let buffer = create_image(region.width(), region.height())?;
 
@@ -448,7 +451,15 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
                     super::image::draw_raster(format, data, view_box, fe.rendering_mode, opt, &cr);
                 }
             }
-            usvg::FeImageKind::Use(..) => {}
+            usvg::FeImageKind::Use(ref id) => {
+                if let Some(ref node) = tree.defs_by_id(id).or(tree.node_by_id(id)) {
+                    let mut layers = super::create_layers(region.size());
+                    let cr = cairo::Context::new(&buffer);
+                    cr.transform(ts.to_native());
+                    cr.transform(node.transform().to_native());
+                    super::render_node(node, opt, &mut crate::RenderState::Ok, &mut layers, &cr);
+                }
+            }
         }
 
         Ok(Image::from_image(buffer, ColorSpace::SRGB))

@@ -65,6 +65,9 @@ Always present. Always the first `svg` child. Can be empty.
 * <<mask-element,mask>>
 * <<pattern-element,pattern>>
 * <<filter-element,filter>>
+* <<g-element,g>>
+* <<path-element,path>>
+* <<image-element,image>>
 
 *Attributes:*
 

@@ -243,6 +243,10 @@ impl<'a> Node<'a> {
         self.attribute(AId::Id).unwrap_or("")
     }
 
+    pub fn has_element_id(&self) -> bool {
+        !self.element_id().is_empty()
+    }
+
     #[inline(never)]
     pub fn attribute<V: FromValue<'a>>(&self, aid: AId) -> Option<V> {
         FromValue::get(*self, aid)
