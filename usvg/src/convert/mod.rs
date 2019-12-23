@@ -345,6 +345,9 @@ fn convert_group(
         }
     }
 
+    let filter_fill = resolve_filter_fill(node, state, filter.as_deref(), tree);
+    let filter_stroke = resolve_filter_stroke(node, state, filter.as_deref(), tree);
+
     let transform: tree::Transform = node.attribute(AId::Transform).unwrap_or_default();
 
     let enable_background = node.attribute(AId::EnableBackground);
@@ -374,6 +377,8 @@ fn convert_group(
             clip_path,
             mask,
             filter,
+            filter_fill,
+            filter_stroke,
             enable_background,
         }));
 
@@ -381,6 +386,40 @@ fn convert_group(
     } else {
         GroupKind::Skip
     }
+}
+
+fn resolve_filter_fill(
+    node: svgtree::Node,
+    state: &State,
+    filter_id: Option<&str>,
+    tree: &mut tree::Tree,
+) -> Option<tree::Paint> {
+    let filter_node = tree.defs_by_id(filter_id?)?;
+    if let tree::NodeKind::Filter(ref filter) = *filter_node.borrow() {
+        if !filter.children.iter().any(|c| c.kind.has_input(&tree::FilterInput::FillPaint)) {
+            return None;
+        }
+    }
+
+    let stroke = style::resolve_fill(node, true, state, tree)?;
+    Some(stroke.paint)
+}
+
+fn resolve_filter_stroke(
+    node: svgtree::Node,
+    state: &State,
+    filter_id: Option<&str>,
+    tree: &mut tree::Tree,
+) -> Option<tree::Paint> {
+    let filter_node = tree.defs_by_id(filter_id?)?;
+    if let tree::NodeKind::Filter(ref filter) = *filter_node.borrow() {
+        if !filter.children.iter().any(|c| c.kind.has_input(&tree::FilterInput::StrokePaint)) {
+            return None;
+        }
+    }
+
+    let stroke = style::resolve_stroke(node, true, state, tree)?;
+    Some(stroke.paint)
 }
 
 fn remove_empty_groups(tree: &mut tree::Tree) {
@@ -509,6 +548,18 @@ fn remove_unused_defs(
         };
     }
 
+    macro_rules! check_paint_id2 {
+        ($from:expr, $id:expr) => {
+            if let Some(ref v) = $from {
+                if let tree::Paint::Link(ref paint_id) = v {
+                    if $id == paint_id {
+                        return true;
+                    }
+                }
+            }
+        };
+    }
+
     fn is_used(tree: &tree::Tree, id: &str) -> bool {
         for node in tree.root().descendants() {
             match *node.borrow() {
@@ -526,6 +577,8 @@ fn remove_unused_defs(
                     check_id!(g.clip_path, id);
                     check_id!(g.mask, id);
                     check_id!(g.filter, id);
+                    check_paint_id2!(g.filter_fill, id);
+                    check_paint_id2!(g.filter_stroke, id);
                 }
                 _ => {}
             }

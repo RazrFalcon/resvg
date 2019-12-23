@@ -266,6 +266,10 @@ A group will have at least one of the attributes present.
   Cannot be set to `none`.
 * `filter` = <<func-iri-type,<FuncIRI> >>? +
   Cannot be set to `none`.
+* `fill` = `none` | <<color-type,<color> >> | <<func-iri-type,<FuncIRI> >> +
+  Will be set only when any of the `filter` primitives has a `FillPaint` input.
+* `stroke` = `none` | <<color-type,<color> >> | <<func-iri-type,<FuncIRI> >> +
+  Will be set only when any of the `filter` primitives has a `StrokePaint` input.
 * `transform` = <<transform-type,<transform> >>?
 * `enable-background` = `new | new <number> <number> <positive-number> <positive-number>`?
 
@@ -282,15 +286,15 @@ A group will have at least one of the attributes present.
 * `id` = <<string-type,<string> >>? +
   An optional, but never empty, element ID.
 * `d` = <<path-data-type,<path-data> >> +
-* `fill` = `none` | <<color-type,<color> >> | <<func-iri-type,<FuncIRI> >>? +
-  If not set, than all fill-* attributes will not be set too. +
+* `fill` = `none` | <<color-type,<color> >> | <<func-iri-type,<FuncIRI> >> +
+  If set to `none` than all fill-* attributes will not be set too. +
   Default: black
 * `fill-opacity` = <<opacity-type,<opacity> >>? +
   Default: 1
 * `fill-rule` = `evenodd`? +
   Default: nonzero
-* `stroke` = <<color-type,<color> >> | <<func-iri-type,<FuncIRI> >>? +
-  If not set, than all stroke-* attributes will not be set too. +
+* `stroke` = `none` | <<color-type,<color> >> | <<func-iri-type,<FuncIRI> >> +
+  If set to `none` than all stroke-* attributes will not be set too. +
   Default: none
 * `stroke-width` = <<positive-number-type,<positive-number> >>? +
   Default: 1

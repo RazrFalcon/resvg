@@ -63,6 +63,7 @@ macro_rules! try_opt_warn {
 }
 
 /// Unwraps `Option` and invokes `return $ret` on `None` with a warning.
+#[allow(unused_macros)]
 macro_rules! try_opt_warn_or {
     ($task:expr, $ret:expr, $msg:expr) => {
         match $task {
@@ -82,15 +83,6 @@ macro_rules! try_opt_warn_or {
             }
         }
     };
-}
-
-macro_rules! matches {
-    ($expression:expr, $($pattern:tt)+) => {
-        match $expression {
-            $($pattern)+ => true,
-            _ => false
-        }
-    }
 }
 
 #[cfg(feature = "cairo-backend")]
@@ -272,33 +264,8 @@ pub(crate) fn filter_background_start_node(
         }
     }
 
-    fn is_background(input: &usvg::FilterInput) -> bool {
-        matches!(input, usvg::FilterInput::BackgroundImage | usvg::FilterInput::BackgroundAlpha)
-    }
-
-    let mut ok = false;
-    for child in &filter.children {
-        ok = match child.kind {
-            usvg::FilterKind::FeBlend(ref fe)               => is_background(&fe.input1),
-            usvg::FilterKind::FeColorMatrix(ref fe)         => is_background(&fe.input),
-            usvg::FilterKind::FeComponentTransfer(ref fe)   => is_background(&fe.input),
-            usvg::FilterKind::FeComposite(ref fe)           => is_background(&fe.input1),
-            usvg::FilterKind::FeFlood(_)                    => false,
-            usvg::FilterKind::FeGaussianBlur(ref fe)        => is_background(&fe.input),
-            usvg::FilterKind::FeImage(_)                    => false,
-            usvg::FilterKind::FeOffset(ref fe)              => is_background(&fe.input),
-            usvg::FilterKind::FeTile(ref fe)                => is_background(&fe.input),
-            usvg::FilterKind::FeMerge(ref fe)               => {
-                fe.inputs.iter().any(|input| is_background(input))
-            }
-        };
-
-        if ok {
-            break;
-        }
-    }
-
-    if !ok {
+    if !filter.children.iter().any(|c| c.kind.has_input(&usvg::FilterInput::BackgroundImage)) &&
+       !filter.children.iter().any(|c| c.kind.has_input(&usvg::FilterInput::BackgroundAlpha)) {
         return None;
     }
 

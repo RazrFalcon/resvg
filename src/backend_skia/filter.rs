@@ -15,6 +15,7 @@ use crate::filter::{self, Error, Filter, ImageExt, TransferFunctionExt};
 use crate::ConvTransform;
 
 type Image = filter::Image<skia::Surface>;
+type FilterInputs<'a> = filter::FilterInputs<'a, skia::Surface>;
 type FilterResult = filter::FilterResult<skia::Surface>;
 
 
@@ -24,9 +25,11 @@ pub fn apply(
     ts: &usvg::Transform,
     opt: &Options,
     background: Option<&skia::Surface>,
+    fill_paint: Option<&skia::Surface>,
+    stroke_paint: Option<&skia::Surface>,
     canvas: &mut skia::Surface,
 ) {
-    SkiaFilter::apply(filter, bbox, ts, opt, background, canvas);
+    SkiaFilter::apply(filter, bbox, ts, opt, background, fill_paint, stroke_paint, canvas);
 }
 
 impl ImageExt for skia::Surface {
@@ -96,13 +99,41 @@ impl Filter<skia::Surface> for SkiaFilter {
     fn get_input(
         input: &usvg::FilterInput,
         region: ScreenRect,
+        inputs: &FilterInputs,
         results: &[FilterResult],
-        background: Option<&skia::Surface>,
-        canvas: &skia::Surface,
     ) -> Result<Image, Error> {
+        let convert = |in_image, region| {
+            let image = if let Some(image) = in_image {
+                copy_surface(image, region)?
+            } else {
+                create_surface(region.width(), region.height())?
+            };
+
+            Ok(Image {
+                image: Rc::new(image),
+                region: region.translate_to(0, 0),
+                color_space: ColorSpace::SRGB,
+            })
+        };
+
+        let convert_alpha = |image: skia::Surface| {
+            // Set RGB to black. Keep alpha as is.
+            for p in image.data().chunks_mut(4) {
+                p[0] = 0;
+                p[1] = 0;
+                p[2] = 0;
+            }
+
+            Ok(Image {
+                image: Rc::new(image),
+                region: region.translate_to(0, 0),
+                color_space: ColorSpace::SRGB,
+            })
+        };
+
         match input {
             usvg::FilterInput::SourceGraphic => {
-                let image = copy_surface(canvas, region)?;
+                let image = copy_surface(inputs.source, region)?;
 
                 Ok(Image {
                     image: Rc::new(image),
@@ -111,52 +142,23 @@ impl Filter<skia::Surface> for SkiaFilter {
                 })
             }
             usvg::FilterInput::SourceAlpha => {
-                let image = copy_surface(canvas, region)?;
-
-                // Set RGB to black. Keep alpha as is.
-                for p in image.data().chunks_mut(4) {
-                     p[0] = 0;
-                     p[1] = 0;
-                     p[2] = 0;
-                }
-
-                Ok(Image {
-                    image: Rc::new(image),
-                    region: region.translate_to(0, 0),
-                    color_space: ColorSpace::SRGB,
-                })
+                let image = copy_surface(inputs.source, region)?;
+                convert_alpha(image)
             }
             usvg::FilterInput::BackgroundImage => {
-                let image = if let Some(image) = background {
-                    copy_surface(image, region)?
-                } else {
-                    create_surface(canvas.width(), canvas.height())?
-                };
-
-                Ok(Image {
-                    image: Rc::new(image),
-                    region: region.translate_to(0, 0),
-                    color_space: ColorSpace::SRGB,
-                })
+                convert(inputs.background, region)
             }
             usvg::FilterInput::BackgroundAlpha => {
                 let image = Self::get_input(
-                    &usvg::FilterInput::BackgroundImage, region, results, background, canvas,
+                    &usvg::FilterInput::BackgroundImage, region, inputs, results,
                 )?;
-                let image = image.take()?;
-
-                // Set RGB to black. Keep alpha as is.
-                for p in image.data().chunks_mut(4) {
-                    p[0] = 0;
-                    p[1] = 0;
-                    p[2] = 0;
-                }
-
-                Ok(Image {
-                    image: Rc::new(image),
-                    region: region.translate_to(0, 0),
-                    color_space: ColorSpace::SRGB,
-                })
+                convert_alpha(image.take()?)
+            }
+            usvg::FilterInput::FillPaint => {
+                convert(inputs.fill_paint, region.translate_to(0, 0))
+            }
+            usvg::FilterInput::StrokePaint => {
+                convert(inputs.stroke_paint, region.translate_to(0, 0))
             }
             usvg::FilterInput::Reference(ref name) => {
                 if let Some(ref v) = results.iter().rev().find(|v| v.name == *name) {
@@ -165,15 +167,9 @@ impl Filter<skia::Surface> for SkiaFilter {
                     // Technically unreachable.
                     warn!("Unknown filter primitive reference '{}'.", name);
                     Self::get_input(
-                        &usvg::FilterInput::SourceGraphic, region, results, background, canvas,
+                        &usvg::FilterInput::SourceGraphic, region, inputs, results,
                     )
                 }
-            }
-            _ => {
-                warn!("Filter input '{:?}' is not supported.", input);
-                Self::get_input(
-                    &usvg::FilterInput::SourceGraphic, region, results, background, canvas,
-                )
             }
         }
     }
@@ -347,15 +343,14 @@ impl Filter<skia::Surface> for SkiaFilter {
         fe: &usvg::FeMerge,
         cs: ColorSpace,
         region: ScreenRect,
+        inputs: &FilterInputs,
         results: &[FilterResult],
-        background: Option<&skia::Surface>,
-        canvas: &skia::Surface,
     ) -> Result<Image, Error> {
         let mut buffer = create_surface(region.width(), region.height())?;
         buffer.reset_matrix();
 
         for input in &fe.inputs {
-            let input = Self::get_input(input, region, &results, background, canvas)?;
+            let input = Self::get_input(input, region, inputs, results)?;
             let input = input.into_color_space(cs)?;
             buffer.draw_surface(input.as_ref(), 0.0, 0.0, 255, skia::BlendMode::SourceOver,
                                 skia::FilterQuality::Low);

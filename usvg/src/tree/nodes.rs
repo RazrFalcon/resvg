@@ -209,6 +209,16 @@ pub struct Group {
     /// Element filter.
     pub filter: Option<String>,
 
+    /// Contains a fill color or paint server used by `FilterInput::FillPaint`.
+    ///
+    /// Will be set only when filter actually has a `FilterInput::FillPaint`.
+    pub filter_fill: Option<Paint>,
+
+    /// Contains a fill color or paint server used by `FilterInput::StrokePaint`.
+    ///
+    /// Will be set only when filter actually has a `FilterInput::StrokePaint`.
+    pub filter_stroke: Option<Paint>,
+
     /// Indicates that this node can be accessed via `filter`.
     ///
     /// `None` indicates an `accumulate` value.
@@ -224,6 +234,8 @@ impl Default for Group {
             clip_path: None,
             mask: None,
             filter: None,
+            filter_fill: None,
+            filter_stroke: None,
             enable_background: None,
         }
     }
@@ -520,6 +532,24 @@ pub enum FilterKind {
     FeMerge(FeMerge),
     FeOffset(FeOffset),
     FeTile(FeTile),
+}
+
+impl FilterKind {
+    /// Checks that `FilterKind` has a specific input.
+    pub fn has_input(&self, input: &FilterInput) -> bool {
+        match self {
+            FilterKind::FeBlend(ref fe) => fe.input1 == *input || fe.input2 == *input,
+            FilterKind::FeColorMatrix(ref fe) => fe.input == *input,
+            FilterKind::FeComponentTransfer(ref fe) => fe.input == *input,
+            FilterKind::FeComposite(ref fe) => fe.input1 == *input || fe.input2 == *input,
+            FilterKind::FeFlood(_) => false,
+            FilterKind::FeGaussianBlur(ref fe) => fe.input == *input,
+            FilterKind::FeImage(_) => false,
+            FilterKind::FeOffset(ref fe) => fe.input == *input,
+            FilterKind::FeTile(ref fe) => fe.input == *input,
+            FilterKind::FeMerge(ref fe) => fe.inputs.iter().any(|i| i == input),
+        }
+    }
 }
 
 

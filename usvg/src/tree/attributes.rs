@@ -153,7 +153,7 @@ pub enum Paint {
     /// Paint with a color.
     Color(Color),
 
-    /// Paint using a referenced element.
+    /// Paint using a paint server.
     Link(String),
 }
 
@@ -161,7 +161,7 @@ impl fmt::Debug for Paint {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Paint::Color(c) => write!(f, "Color({})", c),
-            Paint::Link(_)  => write!(f, "Link"),
+            Paint::Link(ref id)  => write!(f, "Link({})", id),
         }
     }
 }
@@ -174,6 +174,18 @@ pub struct Fill {
     pub paint: Paint,
     pub opacity: Opacity,
     pub rule: FillRule,
+}
+
+impl Fill {
+    /// Creates a `Fill` from `Paint`.
+    ///
+    /// `opacity` and `rule` will be set to default values.
+    pub fn from_paint(paint: Paint) -> Self {
+        Fill {
+            paint,
+            ..Fill::default()
+        }
+    }
 }
 
 impl Default for Fill {

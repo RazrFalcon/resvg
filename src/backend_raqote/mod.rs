@@ -334,7 +334,11 @@ fn render_group_impl(
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(&curr_ts);
                 let background = prepare_filter_background(node, filter, opt);
-                filter::apply(filter, bbox, &ts, opt, background.as_ref(), &mut sub_dt);
+                let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, opt, &sub_dt);
+                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_dt);
+                filter::apply(filter, bbox, &ts, opt,
+                              background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
+                              &mut sub_dt);
             }
         }
     }
@@ -386,6 +390,62 @@ fn prepare_filter_background(
     // Render from the `start_node` until the `parent`. The `parent` itself is excluded.
     let mut state = RenderState::RenderUntil(parent.clone());
     render_node_to_canvas_impl(&start_node, opt, view_box, img_size, &mut state, &mut dt);
+
+    Some(dt)
+}
+
+/// Renders an image used by `FillPaint`/`StrokePaint` filter input.
+///
+/// FillPaint/StrokePaint is mostly an undefined behavior and will produce different results
+/// in every application.
+/// And since there are no expected behaviour, we will simply fill the filter region.
+///
+/// https://github.com/w3c/fxtf-drafts/issues/323
+fn prepare_filter_fill_paint(
+    parent: &usvg::Node,
+    filter: &usvg::Filter,
+    bbox: Option<Rect>,
+    ts: usvg::Transform,
+    opt: &Options,
+    canvas: &raqote::DrawTarget,
+) -> Option<raqote::DrawTarget> {
+    let region = crate::filter::calc_region(filter, bbox, &ts, canvas).ok()?;
+    let mut dt = create_subsurface(region.size())?;
+    if let usvg::NodeKind::Group(ref g) = *parent.borrow() {
+        if let Some(paint) = g.filter_fill.clone() {
+            let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
+            let fill = Some(usvg::Fill::from_paint(paint));
+            let draw_opt = raqote::DrawOptions::default();
+            let mut pb = raqote::PathBuilder::new();
+            pb.rect(0.0, 0.0, region.width() as f32, region.height() as f32);
+            style::fill(&parent.tree(), &pb.finish(), &fill, opt, style_bbox, &draw_opt, &mut dt);
+        }
+    }
+
+    Some(dt)
+}
+
+/// The same as `prepare_filter_fill_paint`, but for `StrokePaint`.
+fn prepare_filter_stroke_paint(
+    parent: &usvg::Node,
+    filter: &usvg::Filter,
+    bbox: Option<Rect>,
+    ts: usvg::Transform,
+    opt: &Options,
+    canvas: &raqote::DrawTarget,
+) -> Option<raqote::DrawTarget> {
+    let region = crate::filter::calc_region(filter, bbox, &ts, canvas).ok()?;
+    let mut dt = create_subsurface(region.size())?;
+    if let usvg::NodeKind::Group(ref g) = *parent.borrow() {
+        if let Some(paint) = g.filter_stroke.clone() {
+            let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
+            let fill = Some(usvg::Fill::from_paint(paint));
+            let draw_opt = raqote::DrawOptions::default();
+            let mut pb = raqote::PathBuilder::new();
+            pb.rect(0.0, 0.0, region.width() as f32, region.height() as f32);
+            style::fill(&parent.tree(), &pb.finish(), &fill, opt, style_bbox, &draw_opt, &mut dt);
+        }
+    }
 
     Some(dt)
 }

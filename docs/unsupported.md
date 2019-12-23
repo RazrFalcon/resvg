@@ -43,8 +43,6 @@
 - `font-variant`
 - `glyph-orientation-horizontal` (removed in the SVG 2)
 - `glyph-orientation-vertical` (deprecated in the SVG 2)
-- [`in`](https://www.w3.org/TR/SVG11/filters.html#FilterPrimitiveInAttribute)
-  with `FillPaint`, `StrokePaint`
 - `kerning` (removed in the SVG 2)
 - `lengthAdjust`
 - `textLength`

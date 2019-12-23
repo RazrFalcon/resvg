@@ -15,6 +15,7 @@ use crate::filter::{self, Error, Filter, ImageExt, TransferFunctionExt};
 use crate::ConvTransform;
 
 type Image = filter::Image<qt::Image>;
+type FilterInputs<'a> = filter::FilterInputs<'a, qt::Image>;
 type FilterResult = filter::FilterResult<qt::Image>;
 
 
@@ -24,9 +25,11 @@ pub fn apply(
     ts: &usvg::Transform,
     opt: &Options,
     background: Option<&qt::Image>,
+    fill_paint: Option<&qt::Image>,
+    stroke_paint: Option<&qt::Image>,
     canvas: &mut qt::Image,
 ) {
-    QtFilter::apply(filter, bbox, ts, opt, background, canvas);
+    QtFilter::apply(filter, bbox, ts, opt, background, fill_paint, stroke_paint, canvas);
 }
 
 
@@ -97,13 +100,42 @@ impl Filter<qt::Image> for QtFilter {
     fn get_input(
         input: &usvg::FilterInput,
         region: ScreenRect,
+        inputs: &FilterInputs,
         results: &[FilterResult],
-        background: Option<&qt::Image>,
-        canvas: &qt::Image,
     ) -> Result<Image, Error> {
+        let convert = |in_image, region| {
+            let image = if let Some(image) = in_image {
+                let image = copy_image(image, region)?;
+                image.to_rgba().ok_or(Error::AllocFailed)?
+            } else {
+                create_image(region.width(), region.height())?
+            };
+
+            Ok(Image {
+                image: Rc::new(image),
+                region: region.translate_to(0, 0),
+                color_space: ColorSpace::SRGB,
+            })
+        };
+
+        let convert_alpha = |mut image: qt::Image| {
+            // Set RGB to black. Keep alpha as is.
+            for p in image.data_mut().chunks_mut(4) {
+                p[0] = 0;
+                p[1] = 0;
+                p[2] = 0;
+            }
+
+            Ok(Image {
+                image: Rc::new(image),
+                region: region.translate_to(0, 0),
+                color_space: ColorSpace::SRGB,
+            })
+        };
+
         match input {
             usvg::FilterInput::SourceGraphic => {
-                let image = copy_image(canvas, region)?;
+                let image = copy_image(inputs.source, region)?;
                 let image = image.to_rgba().ok_or(Error::AllocFailed)?; // TODO: optional
 
                 Ok(Image {
@@ -113,54 +145,24 @@ impl Filter<qt::Image> for QtFilter {
                 })
             }
             usvg::FilterInput::SourceAlpha => {
-                let image = copy_image(canvas, region)?;
-                let mut image = image.to_rgba().ok_or(Error::AllocFailed)?;
-
-                // Set RGB to black. Keep alpha as is.
-                for p in image.data_mut().chunks_mut(4) {
-                    p[0] = 0;
-                    p[1] = 0;
-                    p[2] = 0;
-                }
-
-                Ok(Image {
-                    image: Rc::new(image),
-                    region: region.translate_to(0, 0),
-                    color_space: ColorSpace::SRGB,
-                })
+                let image = copy_image(inputs.source, region)?;
+                let image = image.to_rgba().ok_or(Error::AllocFailed)?;
+                convert_alpha(image)
             }
             usvg::FilterInput::BackgroundImage => {
-                let image = if let Some(image) = background {
-                    let image = copy_image(image, region)?;
-                    image.to_rgba().ok_or(Error::AllocFailed)?
-                } else {
-                    create_image(canvas.width(), canvas.height())?
-                };
-
-                Ok(Image {
-                    image: Rc::new(image),
-                    region: region.translate_to(0, 0),
-                    color_space: ColorSpace::SRGB,
-                })
+                convert(inputs.background, region)
             }
             usvg::FilterInput::BackgroundAlpha => {
                 let image = Self::get_input(
-                    &usvg::FilterInput::BackgroundImage, region, results, background, canvas,
+                    &usvg::FilterInput::BackgroundImage, region, inputs, results,
                 )?;
-                let mut image = image.take()?;
-
-                // Set RGB to black. Keep alpha as is.
-                for p in image.data_mut().chunks_mut(4) {
-                    p[0] = 0;
-                    p[1] = 0;
-                    p[2] = 0;
-                }
-
-                Ok(Image {
-                    image: Rc::new(image),
-                    region: region.translate_to(0, 0),
-                    color_space: ColorSpace::SRGB,
-                })
+                convert_alpha(image.take()?)
+            }
+            usvg::FilterInput::FillPaint => {
+                convert(inputs.fill_paint, region.translate_to(0, 0))
+            }
+            usvg::FilterInput::StrokePaint => {
+                convert(inputs.stroke_paint, region.translate_to(0, 0))
             }
             usvg::FilterInput::Reference(ref name) => {
                 if let Some(ref v) = results.iter().rev().find(|v| v.name == *name) {
@@ -168,16 +170,8 @@ impl Filter<qt::Image> for QtFilter {
                 } else {
                     // Technically unreachable.
                     warn!("Unknown filter primitive reference '{}'.", name);
-                    Self::get_input(
-                        &usvg::FilterInput::SourceGraphic, region, results, background, canvas,
-                    )
+                    Self::get_input(&usvg::FilterInput::SourceGraphic, region, inputs, results)
                 }
-            }
-            _ => {
-                warn!("Filter input '{:?}' is not supported.", input);
-                Self::get_input(
-                    &usvg::FilterInput::SourceGraphic, region, results, background, canvas,
-                )
             }
         }
     }
@@ -349,15 +343,14 @@ impl Filter<qt::Image> for QtFilter {
         fe: &usvg::FeMerge,
         cs: ColorSpace,
         region: ScreenRect,
+        inputs: &FilterInputs,
         results: &[FilterResult],
-        background: Option<&qt::Image>,
-        canvas: &qt::Image,
     ) -> Result<Image, Error> {
         let mut buffer = create_image(region.width(), region.height())?;
         let mut p = qt::Painter::new(&mut buffer);
 
         for input in &fe.inputs {
-            let input = Self::get_input(input, region, &results, background, canvas)?;
+            let input = Self::get_input(input, region, inputs, &results)?;
             let input = input.into_color_space(cs)?;
 
             p.draw_image(0.0, 0.0, input.as_ref());

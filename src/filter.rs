@@ -14,6 +14,7 @@ pub enum Error {
     #[allow(dead_code)] // Not used by raqote-backend.
     AllocFailed,
     InvalidRegion,
+    NoResults,
 }
 
 
@@ -112,6 +113,14 @@ impl<T: ImageExt> Clone for Image<T> {
 }
 
 
+pub struct FilterInputs<'a, T: ImageExt> {
+    pub source: &'a T,
+    pub background: Option<&'a T>,
+    pub fill_paint: Option<&'a T>,
+    pub stroke_paint: Option<&'a T>,
+}
+
+
 pub struct FilterResult<T: ImageExt> {
     pub name: String,
     pub image: Image<T>,
@@ -125,9 +134,22 @@ pub trait Filter<T: ImageExt> {
         ts: &usvg::Transform,
         opt: &Options,
         background: Option<&T>,
+        fill_paint: Option<&T>,
+        stroke_paint: Option<&T>,
         canvas: &mut T,
     ) {
-        let res = Self::_apply(filter, bbox, ts, opt, background, canvas);
+        let res = {
+            let inputs = FilterInputs {
+                source: canvas,
+                background,
+                fill_paint,
+                stroke_paint,
+            };
+
+            Self::_apply(filter, &inputs, bbox, ts, opt)
+        };
+
+        let res = res.and_then(|(image, region)| Self::apply_to_canvas(image, region, canvas));
 
         // Clear on error.
         if res.is_err() {
@@ -145,21 +167,19 @@ pub trait Filter<T: ImageExt> {
             Err(Error::InvalidRegion) => {
                 warn!("Filter '{}' has an invalid region.", filter.id);
             }
+            Err(Error::NoResults) => {}
         }
     }
 
     fn _apply(
         filter: &usvg::Filter,
+        inputs: &FilterInputs<T>,
         bbox: Option<Rect>,
         ts: &usvg::Transform,
         opt: &Options,
-        background: Option<&T>,
-        canvas: &mut T,
-    ) -> Result<(), Error> {
+    ) -> Result<(Image<T>, ScreenRect), Error> {
         let mut results = Vec::new();
-
-        let canvas_rect = ScreenRect::new(0, 0, canvas.width(), canvas.height()).unwrap();
-        let region = calc_region(filter, bbox, ts, canvas_rect)?;
+        let region = calc_region(filter, bbox, ts, inputs.source)?;
 
         for primitive in &filter.children {
             let cs = primitive.color_interpolation;
@@ -167,42 +187,42 @@ pub trait Filter<T: ImageExt> {
 
             let mut result = match primitive.kind {
                 usvg::FilterKind::FeBlend(ref fe) => {
-                    let input1 = Self::get_input(&fe.input1, region, &results, background, canvas)?;
-                    let input2 = Self::get_input(&fe.input2, region, &results, background, canvas)?;
+                    let input1 = Self::get_input(&fe.input1, region, inputs, &results)?;
+                    let input2 = Self::get_input(&fe.input2, region, inputs, &results)?;
                     Self::apply_blend(fe, cs, region, input1, input2)
                 }
                 usvg::FilterKind::FeFlood(ref fe) => {
                     Self::apply_flood(fe, region)
                 }
                 usvg::FilterKind::FeGaussianBlur(ref fe) => {
-                    let input = Self::get_input(&fe.input, region, &results, background, canvas)?;
+                    let input = Self::get_input(&fe.input, region, inputs, &results)?;
                     Self::apply_blur(fe, filter.primitive_units, cs, bbox, ts, input)
                 }
                 usvg::FilterKind::FeOffset(ref fe) => {
-                    let input = Self::get_input(&fe.input, region, &results, background, canvas)?;
+                    let input = Self::get_input(&fe.input, region, inputs, &results)?;
                     Self::apply_offset(fe, filter.primitive_units, bbox, ts, input)
                 }
                 usvg::FilterKind::FeComposite(ref fe) => {
-                    let input1 = Self::get_input(&fe.input1, region, &results, background, canvas)?;
-                    let input2 = Self::get_input(&fe.input2, region, &results, background, canvas)?;
+                    let input1 = Self::get_input(&fe.input1, region, inputs, &results)?;
+                    let input2 = Self::get_input(&fe.input2, region, inputs, &results)?;
                     Self::apply_composite(fe, cs, region, input1, input2)
                 }
                 usvg::FilterKind::FeMerge(ref fe) => {
-                    Self::apply_merge(fe, cs, region, &results, background, canvas)
+                    Self::apply_merge(fe, cs, region, inputs, &results)
                 }
                 usvg::FilterKind::FeTile(ref fe) => {
-                    let input = Self::get_input(&fe.input, region, &results, background, canvas)?;
+                    let input = Self::get_input(&fe.input, region, inputs, &results)?;
                     Self::apply_tile(input, region)
                 }
                 usvg::FilterKind::FeImage(ref fe) => {
                     Self::apply_image(fe, region, subregion, opt)
                 }
                 usvg::FilterKind::FeComponentTransfer(ref fe) => {
-                    let input = Self::get_input(&fe.input, region, &results, background, canvas)?;
+                    let input = Self::get_input(&fe.input, region, inputs, &results)?;
                     Self::apply_component_transfer(fe, cs, input)
                 }
                 usvg::FilterKind::FeColorMatrix(ref fe) => {
-                    let input = Self::get_input(&fe.input, region, &results, background, canvas)?;
+                    let input = Self::get_input(&fe.input, region, inputs, &results)?;
                     Self::apply_color_matrix(fe, cs, input)
                 }
             }?;
@@ -236,18 +256,17 @@ pub trait Filter<T: ImageExt> {
         }
 
         if let Some(res) = results.pop() {
-            Self::apply_to_canvas(res.image, region, canvas)?;
+            Ok((res.image, region))
+        } else {
+            Err(Error::NoResults)
         }
-
-        Ok(())
     }
 
     fn get_input(
-        input: &usvg::FilterInput,
+        kind: &usvg::FilterInput,
         region: ScreenRect,
+        inputs: &FilterInputs<T>,
         results: &[FilterResult<T>],
-        background: Option<&T>,
-        canvas: &T,
     ) -> Result<Image<T>, Error>;
 
     fn apply_blur(
@@ -287,9 +306,8 @@ pub trait Filter<T: ImageExt> {
         fe: &usvg::FeMerge,
         cs: ColorSpace,
         region: ScreenRect,
+        inputs: &FilterInputs<T>,
         results: &[FilterResult<T>],
-        background: Option<&T>,
-        canvas: &T,
     ) -> Result<Image<T>, Error>;
 
     fn apply_flood(
@@ -1084,12 +1102,13 @@ impl TransferFunctionExt for usvg::TransferFunction {
 }
 
 
-fn calc_region(
+pub fn calc_region<T: ImageExt>(
     filter: &usvg::Filter,
     bbox: Option<Rect>,
     ts: &usvg::Transform,
-    canvas_rect: ScreenRect,
+    canvas: &T,
 ) -> Result<ScreenRect, Error> {
+
     let path = usvg::PathData::from_rect(filter.rect);
 
     let region_ts = if filter.units == usvg::Units::ObjectBoundingBox {
@@ -1102,6 +1121,7 @@ fn calc_region(
         *ts
     };
 
+    let canvas_rect = ScreenRect::new(0, 0, canvas.width(), canvas.height()).unwrap();
     let region = path.bbox_with_transform(region_ts, None)
         .ok_or_else(|| Error::InvalidRegion)?
         .to_screen_rect()

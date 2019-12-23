@@ -15,6 +15,7 @@ use crate::ConvTransform;
 use super::ReCairoContextExt;
 
 type Image = filter::Image<cairo::ImageSurface>;
+type FilterInputs<'a> = filter::FilterInputs<'a, cairo::ImageSurface>;
 type FilterResult = filter::FilterResult<cairo::ImageSurface>;
 
 
@@ -24,9 +25,11 @@ pub fn apply(
     ts: &usvg::Transform,
     opt: &Options,
     background: Option<&cairo::ImageSurface>,
+    fill_paint: Option<&cairo::ImageSurface>,
+    stroke_paint: Option<&cairo::ImageSurface>,
     canvas: &mut cairo::ImageSurface,
 ) {
-    CairoFilter::apply(filter, bbox, ts, opt, background, canvas);
+    CairoFilter::apply(filter, bbox, ts, opt, background, fill_paint, stroke_paint, canvas);
 }
 
 
@@ -129,13 +132,45 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
     fn get_input(
         input: &usvg::FilterInput,
         region: ScreenRect,
+        inputs: &FilterInputs,
         results: &[FilterResult],
-        background: Option<&cairo::ImageSurface>,
-        canvas: &cairo::ImageSurface,
     ) -> Result<Image, Error> {
+        let convert = |in_image, region| {
+            let image = if let Some(image) = in_image {
+                copy_image(image, region)?
+            } else {
+                create_image(region.width(), region.height())?
+            };
+
+            Ok(Image {
+                image: Rc::new(image),
+                region: region.translate_to(0, 0),
+                color_space: ColorSpace::SRGB,
+            })
+        };
+
+        let convert_alpha = |mut image: cairo::ImageSurface| {
+            // Set RGB to black. Keep alpha as is.
+            if let Ok(ref mut data) = image.get_data() {
+                for p in data.chunks_mut(4) {
+                    p[0] = 0;
+                    p[1] = 0;
+                    p[2] = 0;
+                }
+            } else {
+                warn!("Cairo surface is already borrowed.");
+            }
+
+            Ok(Image {
+                image: Rc::new(image),
+                region: region.translate_to(0, 0),
+                color_space: ColorSpace::SRGB,
+            })
+        };
+
         match input {
             usvg::FilterInput::SourceGraphic => {
-                let image = copy_image(canvas, region)?;
+                let image = copy_image(inputs.source, region)?;
 
                 Ok(Image {
                     image: Rc::new(image),
@@ -144,60 +179,24 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
                 })
             }
             usvg::FilterInput::SourceAlpha => {
-                let mut image = copy_image(canvas, region)?;
-
-                // Set RGB to black. Keep alpha as is.
-                if let Ok(ref mut data) = image.get_data() {
-                    for p in data.chunks_mut(4) {
-                        p[0] = 0;
-                        p[1] = 0;
-                        p[2] = 0;
-                    }
-                } else {
-                    warn!("Cairo surface is already borrowed.");
-                }
-
-                Ok(Image {
-                    image: Rc::new(image),
-                    region: region.translate_to(0, 0),
-                    color_space: ColorSpace::SRGB,
-                })
+                let image = copy_image(inputs.source, region)?;
+                convert_alpha(image)
             }
             usvg::FilterInput::BackgroundImage => {
-                let image = if let Some(image) = background {
-                    copy_image(image, region)?
-                } else {
-                    create_image(canvas.width(), canvas.height())?
-                };
-
-                Ok(Image {
-                    image: Rc::new(image),
-                    region: region.translate_to(0, 0),
-                    color_space: ColorSpace::SRGB,
-                })
+                convert(inputs.background, region)
             }
             usvg::FilterInput::BackgroundAlpha => {
                 let image = Self::get_input(
-                    &usvg::FilterInput::BackgroundImage, region, results, background, canvas,
+                    &usvg::FilterInput::BackgroundImage, region, inputs, results,
                 )?;
-                let mut image = image.take()?;
-
-                // Set RGB to black. Keep alpha as is.
-                if let Ok(ref mut data) = image.get_data() {
-                    for p in data.chunks_mut(4) {
-                        p[0] = 0;
-                        p[1] = 0;
-                        p[2] = 0;
-                    }
-                } else {
-                    warn!("Cairo surface is already borrowed.");
-                }
-
-                Ok(Image {
-                    image: Rc::new(image),
-                    region: region.translate_to(0, 0),
-                    color_space: ColorSpace::SRGB,
-                })
+                let image = image.take()?;
+                convert_alpha(image)
+            }
+            usvg::FilterInput::FillPaint => {
+                convert(inputs.fill_paint, region.translate_to(0, 0))
+            }
+            usvg::FilterInput::StrokePaint => {
+                convert(inputs.stroke_paint, region.translate_to(0, 0))
             }
             usvg::FilterInput::Reference(ref name) => {
                 if let Some(ref v) = results.iter().rev().find(|v| v.name == *name) {
@@ -205,16 +204,8 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
                 } else {
                     // Technically unreachable.
                     warn!("Unknown filter primitive reference '{}'.", name);
-                    Self::get_input(
-                        &usvg::FilterInput::SourceGraphic, region, results, background, canvas,
-                    )
+                    Self::get_input(&usvg::FilterInput::SourceGraphic, region, inputs, results)
                 }
-            }
-            _ => {
-                warn!("Filter input '{:?}' is not supported.", input);
-                Self::get_input(
-                    &usvg::FilterInput::SourceGraphic, region, results, background, canvas,
-                )
             }
         }
     }
@@ -372,15 +363,14 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         fe: &usvg::FeMerge,
         cs: ColorSpace,
         region: ScreenRect,
+        inputs: &FilterInputs,
         results: &[FilterResult],
-        background: Option<&cairo::ImageSurface>,
-        canvas: &cairo::ImageSurface,
     ) -> Result<Image, Error> {
         let buffer = create_image(region.width(), region.height())?;
         let cr = cairo::Context::new(&buffer);
 
         for input in &fe.inputs {
-            let input = Self::get_input(input, region, &results, background, canvas)?;
+            let input = Self::get_input(input, region, inputs, results)?;
             let input = input.into_color_space(cs)?;
 
             cr.set_source_surface(input.as_ref(), 0.0, 0.0);

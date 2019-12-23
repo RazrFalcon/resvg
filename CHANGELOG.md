@@ -10,7 +10,7 @@ This changelog also contains important changes in dependencies.
 ### Added
 - Load grayscale raster images.
 - `enable-background` support.
-- `BackgroundImage` and `BackgroundAlpha` support as a filter input.
+- `BackgroundImage`, `BackgroundAlpha`, `FillPaint` and `StrokePaint` support as a filter input.
 - resvg/usvg can be built without text rendering support now.
 
 ### Changed

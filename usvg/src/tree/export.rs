@@ -340,6 +340,14 @@ fn conv_elements(
 
                 if let Some(ref id) = g.filter {
                     xml.write_func_iri(AId::Filter, id);
+
+                    if let Some(ref fill) = g.filter_fill {
+                        write_paint(AId::Fill, fill, xml);
+                    }
+
+                    if let Some(ref stroke) = g.filter_stroke {
+                        write_paint(AId::Stroke, stroke, xml);
+                    }
                 }
 
                 if !g.opacity.is_default() {
@@ -679,36 +687,24 @@ fn write_fill(
     is_clip_path: bool,
     xml: &mut XmlWriter,
 ) {
-    match fill {
-        Some(ref fill) => {
-            match fill.paint {
-                Paint::Color(c) => {
-                    if c != Color::black() {
-                        xml.write_svg_attribute(AId::Fill, &c);
-                    }
-                }
-                Paint::Link(ref id) => {
-                    xml.write_func_iri(AId::Fill, id);
-                }
-            }
+    if let Some(ref fill) = fill {
+        write_paint(AId::Fill, &fill.paint, xml);
 
-            if !fill.opacity.is_default() {
-                xml.write_svg_attribute(AId::FillOpacity, &fill.opacity.value());
-            }
-
-            if !fill.rule.is_default() {
-                let name = if is_clip_path {
-                    AId::ClipRule
-                } else {
-                    AId::FillRule
-                };
-
-                xml.write_svg_attribute(name, "evenodd");
-            }
+        if !fill.opacity.is_default() {
+            xml.write_svg_attribute(AId::FillOpacity, &fill.opacity.value());
         }
-        None => {
-            xml.write_svg_attribute(AId::Fill, "none");
+
+        if !fill.rule.is_default() {
+            let name = if is_clip_path {
+                AId::ClipRule
+            } else {
+                AId::FillRule
+            };
+
+            xml.write_svg_attribute(name, "evenodd");
         }
+    } else {
+        xml.write_svg_attribute(AId::Fill, "none");
     }
 }
 
@@ -717,10 +713,7 @@ fn write_stroke(
     xml: &mut XmlWriter,
 ) {
     if let Some(ref stroke) = stroke {
-        match stroke.paint {
-            Paint::Color(ref c) => xml.write_svg_attribute(AId::Stroke, c),
-            Paint::Link(ref id) => xml.write_func_iri(AId::Stroke, id),
-        }
+        write_paint(AId::Stroke, &stroke.paint, xml);
 
         if !stroke.opacity.is_default() {
             xml.write_svg_attribute(AId::StrokeOpacity, &stroke.opacity.value());
@@ -753,5 +746,21 @@ fn write_stroke(
         if let Some(ref array) = stroke.dasharray {
             xml.write_numbers(AId::StrokeDasharray, array);
         }
+    } else {
+        // Always set `stroke` to `none` to override the parent value.
+        // In 99.9% of the cases it's redundant, but a group with `filter` with `StrokePaint`
+        // will set `stroke`, which will interfere with children nodes.
+        xml.write_svg_attribute(AId::Stroke, "none");
+    }
+}
+
+fn write_paint(
+    aid: AId,
+    paint: &Paint,
+    xml: &mut XmlWriter,
+) {
+    match paint {
+        Paint::Color(ref c) => xml.write_svg_attribute(aid, c),
+        Paint::Link(ref id) => xml.write_func_iri(aid, id),
     }
 }
