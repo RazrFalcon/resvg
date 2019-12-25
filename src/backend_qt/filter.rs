@@ -471,6 +471,28 @@ impl Filter<qt::Image> for QtFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
+    fn apply_convolve_matrix(
+        fe: &usvg::FeConvolveMatrix,
+        cs: ColorSpace,
+        input: Image,
+    ) -> Result<Image, Error> {
+        let input = input.into_color_space(cs)?;
+        let mut buffer = input.take()?;
+
+        if !fe.preserve_alpha {
+            filter::into_premultiplied(buffer.data_mut().as_bgra_mut());
+        }
+
+        filter::convolve_matrix::apply(fe, buffer.width(), buffer.height(),
+                                       buffer.data_mut().as_bgra_mut());
+
+        // `convolve_matrix` filter will premultiply channels,
+        // so we have to undo it.
+        filter::from_premultiplied(buffer.data_mut().as_bgra_mut());
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,

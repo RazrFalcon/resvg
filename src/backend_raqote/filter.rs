@@ -495,6 +495,26 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
+    fn apply_convolve_matrix(
+        fe: &usvg::FeConvolveMatrix,
+        cs: ColorSpace,
+        input: Image,
+    ) -> Result<Image, Error> {
+        let input = input.into_color_space(cs)?;
+        let mut buffer = input.take()?;
+        let w = buffer.width() as u32;
+        let h = buffer.height() as u32;
+
+        let data = buffer.get_data_u8_mut();
+        if fe.preserve_alpha {
+            filter::from_premultiplied(data.as_bgra_mut());
+        }
+
+        filter::convolve_matrix::apply(fe, w, h, data.as_bgra_mut());
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,

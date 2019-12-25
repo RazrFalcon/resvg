@@ -354,6 +354,126 @@ pub enum FeImageKind {
 }
 
 
+/// An edges processing mode.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum FeEdgeMode {
+    None,
+    Duplicate,
+    Wrap,
+}
+
+
+/// A convolve matrix representation.
+///
+/// Used primarily by `FeConvolveMatrix`.
+#[derive(Clone, Debug)]
+pub struct ConvolveMatrix {
+    x: u32,
+    y: u32,
+    columns: u32,
+    rows: u32,
+    data: Vec<f64>,
+}
+
+impl Default for ConvolveMatrix {
+    fn default() -> Self {
+        ConvolveMatrix {
+            x: 1,
+            y: 1,
+            columns: 3,
+            rows: 3,
+            data: vec![1.0; 9],
+        }
+    }
+}
+
+impl crate::IsDefault for ConvolveMatrix {
+    #[inline]
+    fn is_default(&self) -> bool {
+           self.x == 1
+        && self.y == 1
+        && self.columns == 3
+        && self.rows == 3
+        && self.data == [1.0; 9]
+    }
+}
+
+impl ConvolveMatrix {
+    /// Creates a new `ConvolveMatrix`.
+    ///
+    /// Returns `None` when:
+    ///
+    /// - `columns` * `rows` != `data.len()`
+    /// - `target_x` >= `columns`
+    /// - `target_y` >= `rows`
+    pub fn new(target_x: u32, target_y: u32, columns: u32, rows: u32, data: Vec<f64>) -> Option<Self> {
+        if (columns * rows) as usize != data.len()
+           || target_x >= columns
+           || target_y >= rows
+        {
+            return None;
+        }
+
+        Some(ConvolveMatrix {
+            x: target_x,
+            y: target_y,
+            columns,
+            rows,
+            data,
+        })
+    }
+
+    /// Returns a matrix's X target.
+    ///
+    /// `targetX` in the SVG.
+    #[inline]
+    pub fn target_x(&self) -> u32 {
+        self.x
+    }
+
+    /// Returns a matrix's Y target.
+    ///
+    /// `targetY` in the SVG.
+    #[inline]
+    pub fn target_y(&self) -> u32 {
+        self.y
+    }
+
+    /// Returns a number of columns in the matrix.
+    ///
+    /// Part of the `order` attribute in the SVG.
+    #[inline]
+    pub fn columns(&self) -> u32 {
+        self.columns
+    }
+
+    /// Returns a number of rows in the matrix.
+    ///
+    /// Part of the `order` attribute in the SVG.
+    #[inline]
+    pub fn rows(&self) -> u32 {
+        self.rows
+    }
+
+    /// Returns a matrix value at the specified position.
+    ///
+    /// # Panics
+    ///
+    /// - When position is out of bounds.
+    #[inline]
+    pub fn get(&self, x: u32, y: u32) -> f64 {
+        self.data[(y * self.columns + x) as usize]
+    }
+
+    /// Returns a reference to an internal data.
+    #[inline]
+    pub fn data(&self) -> &[f64] {
+        &self.data
+    }
+}
+
+
 /// A shape rendering method.
 ///
 /// `shape-rendering` attribute in the SVG.

@@ -357,10 +357,6 @@ fn parse_svg_attribute(
             AttributeValue::Length(svgtypes::Length::from_str(value)?)
         }
 
-        AId::StrokeMiterlimit => {
-            AttributeValue::Number(parse_number(value)?)
-        }
-
           AId::Opacity
         | AId::FillOpacity
         | AId::FloodOpacity
@@ -371,17 +367,19 @@ fn parse_svg_attribute(
             AttributeValue::Opacity(n.into())
         }
 
-          AId::K1
-        | AId::K2
-        | AId::K3
-        | AId::K4 => {
-            AttributeValue::Number(parse_number(value)?)
-        }
-
           AId::Amplitude
+        | AId::Bias
+        | AId::Divisor
         | AId::Exponent
         | AId::Intercept
-        | AId::Slope => {
+        | AId::K1
+        | AId::K2
+        | AId::K3
+        | AId::K4
+        | AId::Slope
+        | AId::StrokeMiterlimit
+        | AId::TargetX
+        | AId::TargetY => {
             AttributeValue::Number(parse_number(value)?)
         }
 
@@ -509,7 +507,8 @@ fn parse_svg_attribute(
 
           AId::Rotate
         | AId::TableValues
-        | AId::Values => {
+        | AId::Values
+        | AId::KernelMatrix => {
             AttributeValue::NumberList(svgtypes::NumberList::from_str(value)?)
         }
 

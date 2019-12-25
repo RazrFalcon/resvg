@@ -526,6 +526,7 @@ pub enum FilterKind {
     FeColorMatrix(FeColorMatrix),
     FeComponentTransfer(FeComponentTransfer),
     FeComposite(FeComposite),
+    FeConvolveMatrix(FeConvolveMatrix),
     FeFlood(FeFlood),
     FeGaussianBlur(FeGaussianBlur),
     FeImage(FeImage),
@@ -542,6 +543,7 @@ impl FilterKind {
             FilterKind::FeColorMatrix(ref fe) => fe.input == *input,
             FilterKind::FeComponentTransfer(ref fe) => fe.input == *input,
             FilterKind::FeComposite(ref fe) => fe.input1 == *input || fe.input2 == *input,
+            FilterKind::FeConvolveMatrix(ref fe) => fe.input == *input,
             FilterKind::FeFlood(_) => false,
             FilterKind::FeGaussianBlur(ref fe) => fe.input == *input,
             FilterKind::FeImage(_) => false,
@@ -690,6 +692,41 @@ pub struct FeComposite {
     ///
     /// `operator` in the SVG.
     pub operator: FeCompositeOperator,
+}
+
+
+/// A matrix convolution filter primitive.
+///
+/// `feConvolveMatrix` element in the SVG.
+#[derive(Clone, Debug)]
+pub struct FeConvolveMatrix {
+    /// Identifies input for the given filter primitive.
+    ///
+    /// `in` in the SVG.
+    pub input: FilterInput,
+
+    /// A convolve matrix.
+    pub matrix: ConvolveMatrix,
+
+    /// A matrix divisor.
+    ///
+    /// `divisor` in the SVG.
+    pub divisor: NonZeroF64,
+
+    /// A kernel matrix bias.
+    ///
+    /// `bias` in the SVG.
+    pub bias: f64,
+
+    /// An edges processing mode.
+    ///
+    /// `edgeMode` in the SVG.
+    pub edge_mode: FeEdgeMode,
+
+    /// An alpha preserving flag.
+    ///
+    /// `preserveAlpha` in the SVG.
+    pub preserve_alpha: bool,
 }
 
 

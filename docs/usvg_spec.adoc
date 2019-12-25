@@ -440,6 +440,26 @@ The all four will always be present.
   Present only when `operator=arithmetic`.
 * <<Filter primitive attributes>>
 
+=== Filter primitive `feConvolveMatrix`
+
+*Attributes:*
+
+* `in` = <<filter-input-type,<filter-input> >>
+* `order` = <<positive-integer-type,<positive-integer> >> " " <<positive-integer-type,<positive-integer> >> +
+  Both numbers are never 0.
+* `kernelMatrix` = `<list-of-numbers>`
+* `divisor` = <<number-type,<number> >>? +
+  Never 0.
+* `bias` = <<number-type,<number> >>?
+* `targetX` = <<positive-integer-type,<positive-integer> >> +
+  Always smaller than the number of columns in the matrix.
+* `targetY` = <<positive-integer-type,<positive-integer> >> +
+  Always smaller than the number of rows in the matrix.
+* `edgeMode` = `none | duplicate | wrap`
+* `preserveAlpha` = `true | false`
+
+* <<Filter primitive attributes>>
+
 === Filter primitive `feFlood`
 
 *Attributes:*
@@ -518,8 +538,14 @@ that this attribute is optional.
 
 [[positive-number-type]]
 
-*<positive-number>* - A positive, non-zero real <<number-type,number>>. +
+*<positive-number>* - A positive real <<number-type,number>>. +
 `positive-number ::= [0-9]+ "." [0-9]+`
+
+
+[[positive-integer-type]]
+
+*<positive-integer>* - A positive integer. +
+`positive-integer ::= [0-9]+`
 
 
 [[opacity-type]]

@@ -102,6 +102,7 @@ fn collect_children(
             EId::FeImage => convert_fe_image(child, state),
             EId::FeComponentTransfer => convert_fe_component_transfer(child, &primitives),
             EId::FeColorMatrix => convert_fe_color_matrix(child, &primitives),
+            EId::FeConvolveMatrix => convert_fe_convolve_matrix(child, &primitives),
             tag_name => {
                 warn!("Filter with '{}' child is not supported.", tag_name);
                 continue;
@@ -432,6 +433,86 @@ fn convert_color_matrix_kind(
     }
 
     None
+}
+
+fn convert_fe_convolve_matrix(
+    fe: svgtree::Node,
+    primitives: &[tree::FilterPrimitive],
+) -> tree::FilterKind {
+    fn parse_target(target: Option<f64>, order: u32) -> Option<u32> {
+        let default_target = (order as f32 / 2.0).floor() as u32;
+        let target = target.unwrap_or(default_target as f64) as i32;
+        if target < 0 || target >= order as i32 {
+            None
+        } else {
+            Some(target as u32)
+        }
+    }
+
+    let mut order_x = 3;
+    let mut order_y = 3;
+    if let Some(value) = fe.attribute::<&str>(AId::Order) {
+        let mut s = svgtypes::Stream::from(value);
+        let x = s.parse_list_integer().unwrap_or(3);
+        let y = s.parse_list_integer().unwrap_or(x);
+        if x > 0 && y > 0 {
+            order_x = x as u32;
+            order_y = y as u32;
+        }
+    }
+
+    let mut matrix = Vec::new();
+    if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::KernelMatrix) {
+        if list.len() == (order_x * order_y) as usize {
+            matrix = list.0.clone();
+        }
+    }
+
+    let mut kernel_sum: f64 = matrix.iter().sum();
+    // Round up to prevent float precision issues.
+    kernel_sum = (kernel_sum * 1_000_000.0).round() / 1_000_000.0;
+    if kernel_sum.is_fuzzy_zero() {
+        kernel_sum = 1.0;
+    }
+
+    let mut divisor = fe.attribute::<f64>(AId::Divisor).unwrap_or(kernel_sum);
+
+    let bias = fe.attribute(AId::Bias).unwrap_or(0.0);
+
+    let target_x = parse_target(fe.attribute(AId::TargetX), order_x);
+    let target_y = parse_target(fe.attribute(AId::TargetY), order_y);
+
+    let mut kernel_matrix = tree::ConvolveMatrix::default();
+
+    if !divisor.is_fuzzy_zero() {
+        if let (Some(target_x), Some(target_y)) = (target_x, target_y) {
+            kernel_matrix = tree::ConvolveMatrix::new(
+                target_x, target_y, order_x, order_y, matrix,
+            ).unwrap_or_default();
+        }
+    } else {
+        divisor = 1.0;
+    }
+
+    let edge_mode = match fe.attribute(AId::EdgeMode).unwrap_or("duplicate") {
+        "none" => tree::FeEdgeMode::None,
+        "wrap" => tree::FeEdgeMode::Wrap,
+        _      => tree::FeEdgeMode::Duplicate,
+    };
+
+    let preserve_alpha = match fe.attribute(AId::PreserveAlpha).unwrap_or("false") {
+        "true" => true,
+        _      => false,
+    };
+
+    tree::FilterKind::FeConvolveMatrix(tree::FeConvolveMatrix {
+        input: resolve_input(fe, AId::In, primitives),
+        matrix: kernel_matrix,
+        divisor: tree::NonZeroF64::new(divisor).unwrap(),
+        bias,
+        edge_mode,
+        preserve_alpha,
+    })
 }
 
 #[inline(never)]

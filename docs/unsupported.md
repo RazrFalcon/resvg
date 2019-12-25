@@ -1,7 +1,6 @@
 ### Elements
 
 - Filter based
-  - `feConvolveMatrix`
   - `feDiffuseLighting`
   - `feDisplacementMap`
   - `feDistantLight`

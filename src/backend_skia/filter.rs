@@ -491,6 +491,42 @@ impl Filter<skia::Surface> for SkiaFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
+    fn apply_convolve_matrix(
+        fe: &usvg::FeConvolveMatrix,
+        cs: ColorSpace,
+        input: Image,
+    ) -> Result<Image, Error> {
+        use std::mem::swap;
+
+        let input = input.into_color_space(cs)?;
+        let mut buffer = input.take()?;
+        let w = buffer.width();
+        let h = buffer.height();
+        let mut data = buffer.data_mut();
+
+        // RGBA -> BGRA.
+        if !skia::Surface::is_bgra() {
+            data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+        }
+
+        if !fe.preserve_alpha {
+            filter::into_premultiplied(data.as_bgra_mut());
+        }
+
+        filter::convolve_matrix::apply(fe, w, h, data.as_bgra_mut());
+
+        // `convolve_matrix` filter will premultiply channels,
+        // so we have to undo it.
+        filter::from_premultiplied(data.as_bgra_mut());
+
+        // BGRA -> RGBA.
+        if !skia::Surface::is_bgra() {
+            data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+        }
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,

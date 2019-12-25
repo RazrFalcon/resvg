@@ -227,6 +227,10 @@ pub trait Filter<T: ImageExt> {
                     let input = Self::get_input(&fe.input, region, inputs, &results)?;
                     Self::apply_color_matrix(fe, cs, input)
                 }
+                usvg::FilterKind::FeConvolveMatrix(ref fe) => {
+                    let input = Self::get_input(&fe.input, region, inputs, &results)?;
+                    Self::apply_convolve_matrix(fe, cs, input)
+                }
             }?;
 
             if region != subregion {
@@ -339,6 +343,12 @@ pub trait Filter<T: ImageExt> {
 
     fn apply_color_matrix(
         fe: &usvg::FeColorMatrix,
+        cs: ColorSpace,
+        input: Image<T>,
+    ) -> Result<Image<T>, Error>;
+
+    fn apply_convolve_matrix(
+        fe: &usvg::FeConvolveMatrix,
         cs: ColorSpace,
         input: Image<T>,
     ) -> Result<Image<T>, Error>;
@@ -1043,6 +1053,122 @@ pub mod color_matrix {
     }
 }
 
+pub mod convolve_matrix {
+    use super::*;
+
+    pub fn apply(
+        fe: &usvg::FeConvolveMatrix,
+        width: u32,
+        height: u32,
+        data: &mut [rgb::alt::BGRA8],
+    ) {
+        fn bound(min: i32, val: i32, max: i32) -> i32 {
+            std::cmp::max(min, std::cmp::min(max, val))
+        }
+
+        if fe.matrix.is_default() {
+            // Reset to transparent black.
+            for i in 0..data.len() {
+                data[i] = rgb::alt::BGRA8::default();
+            }
+
+            return;
+        }
+
+        let width_max = width as i32 - 1;
+        let height_max = height as i32 - 1;
+        let index_from_pos = |x: u32, y: u32| (y * width + x) as usize;
+
+        let mut buf = vec![rgb::alt::BGRA8::default(); data.len()];
+        let mut x = 0;
+        let mut y = 0;
+        for in_p in data.iter() {
+            let mut new_r = 0.0;
+            let mut new_g = 0.0;
+            let mut new_b = 0.0;
+            let mut new_a = 0.0;
+            for oy in 0..fe.matrix.rows() {
+                for ox in 0..fe.matrix.columns() {
+                    let mut tx = x as i32 - fe.matrix.target_x() as i32 + ox as i32;
+                    let mut ty = y as i32 - fe.matrix.target_y() as i32 + oy as i32;
+
+                    match fe.edge_mode {
+                        usvg::FeEdgeMode::None => {
+                            if tx < 0 || tx > width_max || ty < 0 || ty > height_max {
+                                continue;
+                            }
+                        }
+                        usvg::FeEdgeMode::Duplicate => {
+                            tx = bound(0, tx, width_max);
+                            ty = bound(0, ty, height_max);
+                        }
+                        usvg::FeEdgeMode::Wrap => {
+                            while tx < 0 {
+                                tx += width as i32;
+                            }
+                            tx %= width as i32;
+
+                            while ty < 0 {
+                                ty += height as i32;
+                            }
+                            ty %= height as i32;
+                        }
+                    }
+
+                    let k = fe.matrix.get(fe.matrix.columns() - ox - 1,
+                                          fe.matrix.rows() - oy - 1);
+
+                    let p = data[index_from_pos(tx as u32, ty as u32)];
+                    new_r += (p.r as f64) / 255.0 * k;
+                    new_g += (p.g as f64) / 255.0 * k;
+                    new_b += (p.b as f64) / 255.0 * k;
+
+                    if !fe.preserve_alpha {
+                        new_a += (p.a as f64) / 255.0 * k;
+                    }
+                }
+            }
+
+            if fe.preserve_alpha {
+                new_a = in_p.a as f64 / 255.0;
+            } else {
+                new_a = new_a / fe.divisor.value() + fe.bias;
+            }
+
+            let bounded_new_a = f64_bound(0.0, new_a, 1.0);
+
+            let calc = |x| {
+                let x = x / fe.divisor.value() + fe.bias * new_a;
+
+                let x = if fe.preserve_alpha {
+                    f64_bound(0.0, x, 1.0) * bounded_new_a
+                } else {
+                    f64_bound(0.0, x, bounded_new_a)
+                };
+
+                (x * 255.0 + 0.5) as u8
+            };
+
+            let out_p = &mut buf[index_from_pos(x, y)];
+            out_p.r = calc(new_r);
+            out_p.g = calc(new_g);
+            out_p.b = calc(new_b);
+            out_p.a = (bounded_new_a * 255.0 + 0.5) as u8;
+
+            x += 1;
+            if x == width {
+                x = 0;
+                y += 1;
+            }
+        }
+
+        // Do not use `mem::swap` because `data` referenced via FFI.
+        for i in 0..data.len() {
+            data[i] = buf[i];
+        }
+    }
+}
+
 
 pub trait TransferFunctionExt {
     /// Applies a transfer function to a provided color component.
@@ -1112,7 +1238,6 @@ pub fn calc_region<T: ImageExt>(
     ts: &usvg::Transform,
     canvas: &T,
 ) -> Result<ScreenRect, Error> {
-
     let path = usvg::PathData::from_rect(filter.rect);
 
     let region_ts = if filter.units == usvg::Units::ObjectBoundingBox {

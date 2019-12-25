@@ -268,6 +268,31 @@ fn conv_defs(
 
                             xml.end_element();
                         }
+                        FilterKind::FeConvolveMatrix(ref matrix) => {
+                            xml.start_svg_element(EId::FeConvolveMatrix);
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_filter_input(AId::In, &matrix.input);
+                            xml.write_svg_attribute(AId::Result, &fe.result);
+
+                            xml.write_attribute_fmt(
+                                AId::Order.to_str(),
+                                format_args!("{} {}", matrix.matrix.columns(), matrix.matrix.rows()),
+                            );
+                            xml.write_numbers(AId::KernelMatrix, matrix.matrix.data());
+                            xml.write_svg_attribute(AId::Divisor, &matrix.divisor.value());
+                            xml.write_svg_attribute(AId::Bias, &matrix.bias);
+                            xml.write_svg_attribute(AId::TargetX, &matrix.matrix.target_x());
+                            xml.write_svg_attribute(AId::TargetY, &matrix.matrix.target_y());
+                            xml.write_svg_attribute(AId::EdgeMode, match matrix.edge_mode {
+                                FeEdgeMode::None => "none",
+                                FeEdgeMode::Duplicate => "duplicate",
+                                FeEdgeMode::Wrap => "wrap",
+                            });
+                            xml.write_svg_attribute(AId::PreserveAlpha,
+                                if matrix.preserve_alpha { "true" } else { "false" });
+
+                            xml.end_element();
+                        }
                     };
                 }
 

@@ -208,3 +208,28 @@ impl PositiveNumber {
 }
 
 wrap!(PositiveNumber);
+
+
+/// A non-zero `f64`.
+///
+/// Just like `f64` but immutable and guarantee to never be zero.
+#[derive(Clone, Copy, Debug)]
+pub struct NonZeroF64(f64);
+
+impl NonZeroF64 {
+    /// Creates a new `NonZeroF64` value.
+    #[inline]
+    pub fn new(n: f64) -> Option<Self> {
+        if n.is_fuzzy_zero() {
+            None
+        } else {
+            Some(NonZeroF64(n))
+        }
+    }
+
+    /// Returns an underlying value.
+    #[inline]
+    pub fn value(&self) -> f64 {
+        self.0
+    }
+}

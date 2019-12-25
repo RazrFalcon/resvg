@@ -506,6 +506,29 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
+    fn apply_convolve_matrix(
+        fe: &usvg::FeConvolveMatrix,
+        cs: ColorSpace,
+        input: Image,
+    ) -> Result<Image, Error> {
+        let input = input.into_color_space(cs)?;
+        let mut buffer = input.take()?;
+
+        if fe.preserve_alpha {
+            if let Ok(ref mut data) = buffer.get_data() {
+                filter::from_premultiplied(data.as_bgra_mut());
+            }
+        }
+
+        let w = buffer.width();
+        let h = buffer.height();
+        if let Ok(ref mut data) = buffer.get_data() {
+            filter::convolve_matrix::apply(fe, w, h, data.as_bgra_mut());
+        }
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,
