@@ -14,6 +14,7 @@ const RESVG_URL: &str = "https://github.com/RazrFalcon/resvg";
 const CRASH_ALLOWED: &[&str] = &[
     "e-svg-007.svg",
     "e-svg-036.svg",
+    "e-feMorphology-012.svg", // will timeout on CI
 ];
 
 
