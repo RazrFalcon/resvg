@@ -103,7 +103,9 @@ fn collect_children(
             EId::FeComponentTransfer => convert_fe_component_transfer(child, &primitives),
             EId::FeColorMatrix => convert_fe_color_matrix(child, &primitives),
             EId::FeConvolveMatrix => convert_fe_convolve_matrix(child, &primitives),
+            EId::FeMorphology => convert_fe_morphology(child, &primitives),
             tag_name => {
+                // TODO: rename to invalid, when all filters are implemented
                 warn!("Filter with '{}' child is not supported.", tag_name);
                 continue;
             }
@@ -512,6 +514,53 @@ fn convert_fe_convolve_matrix(
         bias,
         edge_mode,
         preserve_alpha,
+    })
+}
+
+fn convert_fe_morphology(
+    fe: svgtree::Node,
+    primitives: &[tree::FilterPrimitive],
+) -> tree::FilterKind {
+    let operator = match fe.attribute(AId::Operator).unwrap_or("erode") {
+        "dilate" => tree::FeMorphologyOperator::Dilate,
+        _        => tree::FeMorphologyOperator::Erode,
+    };
+
+    // Both radius are zero by default.
+    let mut radius_x = tree::PositiveNumber::new(0.0);
+    let mut radius_y = tree::PositiveNumber::new(0.0);
+    if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::Radius) {
+        let mut rx = 0.0;
+        let mut ry = 0.0;
+        if list.len() == 2 {
+            rx = list[0];
+            ry = list[1];
+        } else if list.len() == 1 {
+            rx = list[0];
+            ry = list[0]; // The same as `rx`.
+        }
+
+        // If only one of the values is zero, reset it to 1.0
+        // This is not specified in the spec, but this is how Chrome and Firefox works.
+        if rx.is_fuzzy_zero() && !ry.is_fuzzy_zero() {
+            rx = 1.0;
+        }
+        if !rx.is_fuzzy_zero() && ry.is_fuzzy_zero() {
+            ry = 1.0;
+        }
+
+        // Both values must be positive.
+        if rx.is_sign_positive() && ry.is_sign_positive() {
+            radius_x = tree::PositiveNumber::new(rx);
+            radius_y = tree::PositiveNumber::new(ry);
+        }
+    }
+
+    tree::FilterKind::FeMorphology(tree::FeMorphology {
+        input: resolve_input(fe, AId::In, primitives),
+        operator,
+        radius_x,
+        radius_y,
     })
 }
 

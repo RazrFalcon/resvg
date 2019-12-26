@@ -493,6 +493,29 @@ impl Filter<qt::Image> for QtFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
+    fn apply_morphology(
+        fe: &usvg::FeMorphology,
+        units: usvg::Units,
+        cs: ColorSpace,
+        bbox: Option<Rect>,
+        ts: &usvg::Transform,
+        input: Image,
+    ) -> Result<Image, Error> {
+        let input = input.into_color_space(cs)?;
+        let (rx, ry) = try_opt_or!(Self::resolve_radius(fe, units, bbox, ts), Ok(input));
+
+        let mut buffer = input.take()?;
+
+        filter::into_premultiplied(buffer.data_mut().as_bgra_mut());
+
+        filter::morphology::apply(fe.operator, rx, ry, buffer.width(), buffer.height(),
+                                  buffer.data_mut().as_bgra_mut());
+
+        filter::from_premultiplied(buffer.data_mut().as_bgra_mut());
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,

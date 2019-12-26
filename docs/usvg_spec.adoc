@@ -504,6 +504,15 @@ The all four will always be present.
 
 * `in` = <<filter-input-type,<filter-input> >>
 
+=== Filter primitive `feMorphology`
+
+*Attributes:*
+
+* `in` = <<filter-input-type,<filter-input> >>
+* `operator` = `erode | dilate`
+* `radius` = <<positive-number-type,<positive-number> >> " " <<positive-number-type,<positive-number> >>
+* <<Filter primitive attributes>>
+
 === Filter primitive `feOffset`
 
 *Attributes:*

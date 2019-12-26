@@ -529,6 +529,27 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
+    fn apply_morphology(
+        fe: &usvg::FeMorphology,
+        units: usvg::Units,
+        cs: ColorSpace,
+        bbox: Option<Rect>,
+        ts: &usvg::Transform,
+        input: Image,
+    ) -> Result<Image, Error> {
+        let input = input.into_color_space(cs)?;
+        let (rx, ry) = try_opt_or!(Self::resolve_radius(fe, units, bbox, ts), Ok(input));
+
+        let mut buffer = input.take()?;
+        let w = buffer.width();
+        let h = buffer.height();
+        if let Ok(ref mut data) = buffer.get_data() {
+            filter::morphology::apply(fe.operator, rx, ry, w, h, data.as_bgra_mut());
+        }
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,

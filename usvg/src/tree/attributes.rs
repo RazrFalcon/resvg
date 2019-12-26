@@ -331,6 +331,15 @@ pub enum FeCompositeOperator {
 }
 
 
+/// A morphology operation.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum FeMorphologyOperator {
+    Erode,
+    Dilate,
+}
+
+
 /// Kind of the `feImage` data.
 #[derive(Clone, Debug)]
 pub enum FeImageKind {

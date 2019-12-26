@@ -231,6 +231,10 @@ pub trait Filter<T: ImageExt> {
                     let input = Self::get_input(&fe.input, region, inputs, &results)?;
                     Self::apply_convolve_matrix(fe, cs, input)
                 }
+                usvg::FilterKind::FeMorphology(ref fe) => {
+                    let input = Self::get_input(&fe.input, region, inputs, &results)?;
+                    Self::apply_morphology(fe, filter.primitive_units, cs, bbox, ts, input)
+                }
             }?;
 
             if region != subregion {
@@ -353,6 +357,15 @@ pub trait Filter<T: ImageExt> {
         input: Image<T>,
     ) -> Result<Image<T>, Error>;
 
+    fn apply_morphology(
+        fe: &usvg::FeMorphology,
+        units: usvg::Units,
+        cs: ColorSpace,
+        bbox: Option<Rect>,
+        ts: &usvg::Transform,
+        input: Image<T>,
+    ) -> Result<Image<T>, Error>;
+
     fn apply_to_canvas(
         input: Image<T>,
         region: ScreenRect,
@@ -425,6 +438,28 @@ pub trait Filter<T: ImageExt> {
             None
         } else {
             Some((dx, dy))
+        }
+    }
+
+    fn resolve_radius(
+        fe: &usvg::FeMorphology,
+        units: usvg::Units,
+        bbox: Option<Rect>,
+        ts: &usvg::Transform,
+    ) -> Option<(f64, f64)> {
+        let (sx, sy) = ts.get_scale();
+
+        if units == usvg::Units::ObjectBoundingBox {
+            let bbox = bbox?;
+            Some((
+                fe.radius_x.value() * sx * bbox.width(),
+                fe.radius_y.value() * sy * bbox.height()
+            ))
+        } else {
+            Some((
+                fe.radius_x.value() * sx,
+                fe.radius_y.value() * sy
+            ))
         }
     }
 }
@@ -1154,6 +1189,88 @@ pub mod convolve_matrix {
             out_p.g = calc(new_g);
             out_p.b = calc(new_b);
             out_p.a = (bounded_new_a * 255.0 + 0.5) as u8;
+
+            x += 1;
+            if x == width {
+                x = 0;
+                y += 1;
+            }
+        }
+
+        // Do not use `mem::swap` because `data` referenced via FFI.
+        for i in 0..data.len() {
+            data[i] = buf[i];
+        }
+    }
+}
+
+pub mod morphology {
+    use super::*;
+
+    pub fn apply(
+        operator: usvg::FeMorphologyOperator,
+        rx: f64,
+        ry: f64,
+        width: u32,
+        height: u32,
+        data: &mut [rgb::alt::BGRA8],
+    ) {
+        if !(rx > 0.0 && ry > 0.0) {
+            // Reset to transparent black.
+            for i in 0..data.len() {
+                data[i] = rgb::alt::BGRA8::default();
+            }
+
+            return;
+        }
+
+        // No point in making matrix larger than image.
+        let columns = std::cmp::min(rx as u32 * 2, width);
+        let rows    = std::cmp::min(ry as u32 * 2, height);
+        let target_x = (columns as f32 / 2.0).floor() as u32;
+        let target_y = (rows as f32 / 2.0).floor() as u32;
+
+        let width_max = width as i32 - 1;
+        let height_max = height as i32 - 1;
+        let index_from_pos = |x: u32, y: u32| (y * width + x) as usize;
+
+        let mut buf = vec![rgb::alt::BGRA8::default(); data.len()];
+        let mut x = 0;
+        let mut y = 0;
+        for _ in data.iter() {
+            let mut new_p = rgb::alt::BGRA8::default();
+            if operator == usvg::FeMorphologyOperator::Erode {
+                new_p.r = 255;
+                new_p.g = 255;
+                new_p.b = 255;
+                new_p.a = 255;
+            }
+
+            for oy in 0..rows {
+                for ox in 0..columns {
+                    let tx = x as i32 - target_x as i32 + ox as i32;
+                    let ty = y as i32 - target_y as i32 + oy as i32;
+
+                    if tx < 0 || tx > width_max || ty < 0 || ty > height_max {
+                        continue;
+                    }
+
+                    let p = data[index_from_pos(tx as u32, ty as u32)];
+                    if operator == usvg::FeMorphologyOperator::Erode {
+                        new_p.r = std::cmp::min(p.r, new_p.r);
+                        new_p.g = std::cmp::min(p.g, new_p.g);
+                        new_p.b = std::cmp::min(p.b, new_p.b);
+                        new_p.a = std::cmp::min(p.a, new_p.a);
+                    } else {
+                        new_p.r = std::cmp::max(p.r, new_p.r);
+                        new_p.g = std::cmp::max(p.g, new_p.g);
+                        new_p.b = std::cmp::max(p.b, new_p.b);
+                        new_p.a = std::cmp::max(p.a, new_p.a);
+                    }
+                }
+            }
+
+            buf[index_from_pos(x, y)] = new_p;
 
             x += 1;
             if x == width {

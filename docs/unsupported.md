@@ -4,7 +4,6 @@
   - `feDiffuseLighting`
   - `feDisplacementMap`
   - `feDistantLight`
-  - `feMorphology`
   - `fePointLight`
   - `feSpecularLighting`
   - `feSpotLight`

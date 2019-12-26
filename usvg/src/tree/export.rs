@@ -293,6 +293,24 @@ fn conv_defs(
 
                             xml.end_element();
                         }
+                        FilterKind::FeMorphology(ref morphology) => {
+                            xml.start_svg_element(EId::FeMorphology);
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_filter_input(AId::In, &morphology.input);
+                            xml.write_svg_attribute(AId::Result, &fe.result);
+
+                            xml.write_svg_attribute(AId::Operator, match morphology.operator {
+                                FeMorphologyOperator::Erode => "erode",
+                                FeMorphologyOperator::Dilate => "dilate",
+                            });
+                            xml.write_attribute_fmt(
+                                AId::Radius.to_str(),
+                                format_args!("{} {}", morphology.radius_x.value(),
+                                                      morphology.radius_y.value()),
+                            );
+
+                            xml.end_element();
+                        }
                     };
                 }
 

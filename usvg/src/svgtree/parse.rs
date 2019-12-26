@@ -505,10 +505,11 @@ fn parse_svg_attribute(
             AttributeValue::AspectRatio(svgtypes::AspectRatio::from_str(value)?)
         }
 
-          AId::Rotate
+          AId::KernelMatrix
+        | AId::Radius
+        | AId::Rotate
         | AId::TableValues
-        | AId::Values
-        | AId::KernelMatrix => {
+        | AId::Values => {
             AttributeValue::NumberList(svgtypes::NumberList::from_str(value)?)
         }
 

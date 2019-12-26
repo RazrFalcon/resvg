@@ -531,6 +531,7 @@ pub enum FilterKind {
     FeGaussianBlur(FeGaussianBlur),
     FeImage(FeImage),
     FeMerge(FeMerge),
+    FeMorphology(FeMorphology),
     FeOffset(FeOffset),
     FeTile(FeTile),
 }
@@ -547,9 +548,10 @@ impl FilterKind {
             FilterKind::FeFlood(_) => false,
             FilterKind::FeGaussianBlur(ref fe) => fe.input == *input,
             FilterKind::FeImage(_) => false,
+            FilterKind::FeMerge(ref fe) => fe.inputs.iter().any(|i| i == input),
+            FilterKind::FeMorphology(ref fe) => fe.input == *input,
             FilterKind::FeOffset(ref fe) => fe.input == *input,
             FilterKind::FeTile(ref fe) => fe.input == *input,
-            FilterKind::FeMerge(ref fe) => fe.inputs.iter().any(|i| i == input),
         }
     }
 }
@@ -796,6 +798,37 @@ pub struct FeMerge {
     ///
     /// List of `feMergeNode`'s in the SVG.
     pub inputs: Vec<FilterInput>,
+}
+
+
+/// A morphology filter primitive.
+///
+/// `feMorphology` element in the SVG.
+#[derive(Clone, Debug)]
+pub struct FeMorphology {
+    /// Identifies input for the given filter primitive.
+    ///
+    /// `in` in the SVG.
+    pub input: FilterInput,
+
+    /// A filter operator.
+    ///
+    /// `operator` in the SVG.
+    pub operator: FeMorphologyOperator,
+
+    /// A filter radius along the X-axis.
+    ///
+    /// A value of zero disables the effect of the given filter primitive.
+    ///
+    /// `radius` in the SVG.
+    pub radius_x: PositiveNumber,
+
+    /// A filter radius along the Y-axis.
+    ///
+    /// A value of zero disables the effect of the given filter primitive.
+    ///
+    /// `radius` in the SVG.
+    pub radius_y: PositiveNumber,
 }
 
 
