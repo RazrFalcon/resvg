@@ -104,6 +104,7 @@ fn collect_children(
             EId::FeColorMatrix => convert_fe_color_matrix(child, &primitives),
             EId::FeConvolveMatrix => convert_fe_convolve_matrix(child, &primitives),
             EId::FeMorphology => convert_fe_morphology(child, &primitives),
+            EId::FeDisplacementMap => convert_fe_displacement_map(child, &primitives),
             tag_name => {
                 // TODO: rename to invalid, when all filters are implemented
                 warn!("Filter with '{}' child is not supported.", tag_name);
@@ -561,6 +562,28 @@ fn convert_fe_morphology(
         operator,
         radius_x,
         radius_y,
+    })
+}
+
+fn convert_fe_displacement_map(
+    fe: svgtree::Node,
+    primitives: &[tree::FilterPrimitive],
+) -> tree::FilterKind {
+    let parse_channel = |aid| {
+        match fe.attribute(aid).unwrap_or("A") {
+            "R" => tree::ColorChannel::R,
+            "G" => tree::ColorChannel::G,
+            "B" => tree::ColorChannel::B,
+            _   => tree::ColorChannel::A,
+        }
+    };
+
+    tree::FilterKind::FeDisplacementMap(tree::FeDisplacementMap {
+        input1: resolve_input(fe, AId::In, primitives),
+        input2: resolve_input(fe, AId::In2, primitives),
+        scale: fe.attribute(AId::Scale).unwrap_or(0.0),
+        x_channel_selector: parse_channel(AId::XChannelSelector),
+        y_channel_selector: parse_channel(AId::YChannelSelector),
     })
 }
 

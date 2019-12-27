@@ -2,7 +2,6 @@
 
 - Filter based
   - `feDiffuseLighting`
-  - `feDisplacementMap`
   - `feDistantLight`
   - `fePointLight`
   - `feSpecularLighting`

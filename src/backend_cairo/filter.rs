@@ -245,7 +245,10 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (dx, dy) = try_opt_or!(Self::resolve_offset(fe, units, bbox, ts), Ok(input));
+        let (dx, dy) = try_opt_or!(Self::scale_coordinates(fe.dx, fe.dy, units, bbox, ts), Ok(input));
+        if dx.is_fuzzy_zero() && dy.is_fuzzy_zero() {
+            return Ok(input);
+        }
 
         // TODO: do not use an additional buffer
         let buffer = create_image(input.width(), input.height())?;
@@ -538,13 +541,53 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         input: Image,
     ) -> Result<Image, Error> {
         let input = input.into_color_space(cs)?;
-        let (rx, ry) = try_opt_or!(Self::resolve_radius(fe, units, bbox, ts), Ok(input));
+        let (rx, ry) = try_opt_or!(
+            Self::scale_coordinates(fe.radius_x.value(), fe.radius_y.value(), units, bbox, ts),
+            Ok(input)
+        );
 
         let mut buffer = input.take()?;
         let w = buffer.width();
         let h = buffer.height();
         if let Ok(ref mut data) = buffer.get_data() {
             filter::morphology::apply(fe.operator, rx, ry, w, h, data.as_bgra_mut());
+        }
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
+    fn apply_displacement_map(
+        fe: &usvg::FeDisplacementMap,
+        region: ScreenRect,
+        units: usvg::Units,
+        cs: ColorSpace,
+        bbox: Option<Rect>,
+        ts: &usvg::Transform,
+        input1: Image,
+        input2: Image,
+    ) -> Result<Image, Error> {
+        let input1 = input1.into_color_space(cs)?;
+        let input2 = input2.into_color_space(cs)?;
+        let (sx, sy) = try_opt_or!(
+            Self::scale_coordinates(fe.scale, fe.scale, units, bbox, ts),
+            Ok(input1)
+        );
+
+        let mut buffer1 = input1.take()?;
+        let mut buffer2 = input2.take()?;
+        let mut buffer = create_image(region.width(), region.height())?;
+
+        if let (Ok(buffer1), Ok(buffer2), Ok(mut buffer))
+            = (buffer1.get_data(), buffer2.get_data(), buffer.get_data())
+        {
+            filter::displacement_map::apply(
+                fe.x_channel_selector, fe.y_channel_selector,
+                region.width(), region.height(),
+                sx, sy,
+                buffer1.as_bgra(),
+                buffer2.as_bgra(),
+                buffer.as_bgra_mut(),
+            );
         }
 
         Ok(Image::from_image(buffer, cs))

@@ -272,6 +272,17 @@ impl_enum_from_str!(ColorInterpolation,
 );
 
 
+/// A color channel.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum ColorChannel {
+    R,
+    G,
+    B,
+    A,
+}
+
+
 /// A raster image container.
 #[derive(Clone, Debug)]
 pub enum ImageData {

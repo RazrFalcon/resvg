@@ -527,6 +527,7 @@ pub enum FilterKind {
     FeComponentTransfer(FeComponentTransfer),
     FeComposite(FeComposite),
     FeConvolveMatrix(FeConvolveMatrix),
+    FeDisplacementMap(FeDisplacementMap),
     FeFlood(FeFlood),
     FeGaussianBlur(FeGaussianBlur),
     FeImage(FeImage),
@@ -545,6 +546,7 @@ impl FilterKind {
             FilterKind::FeComponentTransfer(ref fe) => fe.input == *input,
             FilterKind::FeComposite(ref fe) => fe.input1 == *input || fe.input2 == *input,
             FilterKind::FeConvolveMatrix(ref fe) => fe.input == *input,
+            FilterKind::FeDisplacementMap(ref fe) => fe.input1 == *input || fe.input2 == *input,
             FilterKind::FeFlood(_) => false,
             FilterKind::FeGaussianBlur(ref fe) => fe.input == *input,
             FilterKind::FeImage(_) => false,
@@ -729,6 +731,38 @@ pub struct FeConvolveMatrix {
     ///
     /// `preserveAlpha` in the SVG.
     pub preserve_alpha: bool,
+}
+
+
+/// A displacement map filter primitive.
+///
+/// `feDisplacementMap` element in the SVG.
+#[derive(Clone, Debug)]
+pub struct FeDisplacementMap {
+    /// Identifies input for the given filter primitive.
+    ///
+    /// `in` in the SVG.
+    pub input1: FilterInput,
+
+    /// Identifies input for the given filter primitive.
+    ///
+    /// `in2` in the SVG.
+    pub input2: FilterInput,
+
+    /// Scale factor.
+    ///
+    /// `scale` in the SVG.
+    pub scale: f64,
+
+    /// Indicates a source color channel along the X-axis.
+    ///
+    /// `xChannelSelector` in the SVG.
+    pub x_channel_selector: ColorChannel,
+
+    /// Indicates a source color channel along the Y-axis.
+    ///
+    /// `yChannelSelector` in the SVG.
+    pub y_channel_selector: ColorChannel,
 }
 
 

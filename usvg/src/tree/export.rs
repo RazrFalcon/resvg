@@ -311,6 +311,28 @@ fn conv_defs(
 
                             xml.end_element();
                         }
+                        FilterKind::FeDisplacementMap(ref map) => {
+                            xml.start_svg_element(EId::FeDisplacementMap);
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_filter_input(AId::In, &map.input1);
+                            xml.write_filter_input(AId::In2, &map.input2);
+                            xml.write_svg_attribute(AId::Result, &fe.result);
+
+                            xml.write_svg_attribute(AId::Scale, &map.scale);
+
+                            let mut write_channel = |c, aid| {
+                                xml.write_svg_attribute(aid, match c {
+                                    ColorChannel::R => "R",
+                                    ColorChannel::G => "G",
+                                    ColorChannel::B => "B",
+                                    ColorChannel::A => "A",
+                                });
+                            };
+                            write_channel(map.x_channel_selector, AId::XChannelSelector);
+                            write_channel(map.y_channel_selector, AId::YChannelSelector);
+
+                            xml.end_element();
+                        }
                     };
                 }
 

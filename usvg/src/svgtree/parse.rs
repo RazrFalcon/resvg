@@ -376,6 +376,7 @@ fn parse_svg_attribute(
         | AId::K2
         | AId::K3
         | AId::K4
+        | AId::Scale
         | AId::Slope
         | AId::StrokeMiterlimit
         | AId::TargetX

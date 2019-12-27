@@ -448,16 +448,26 @@ The all four will always be present.
 * `order` = <<positive-integer-type,<positive-integer> >> " " <<positive-integer-type,<positive-integer> >> +
   Both numbers are never 0.
 * `kernelMatrix` = `<list-of-numbers>`
-* `divisor` = <<number-type,<number> >>? +
+* `divisor` = <<number-type,<number> >> +
   Never 0.
-* `bias` = <<number-type,<number> >>?
+* `bias` = <<number-type,<number> >>
 * `targetX` = <<positive-integer-type,<positive-integer> >> +
   Always smaller than the number of columns in the matrix.
 * `targetY` = <<positive-integer-type,<positive-integer> >> +
   Always smaller than the number of rows in the matrix.
 * `edgeMode` = `none | duplicate | wrap`
 * `preserveAlpha` = `true | false`
+* <<Filter primitive attributes>>
 
+=== Filter primitive `feDisplacementMap`
+
+*Attributes:*
+
+* `in` = <<filter-input-type,<filter-input> >>
+* `in2` = <<filter-input-type,<filter-input> >>
+* `scale` = <<number-type,<number> >>
+* `xChannelSelector` = `R | G | B | A`
+* `yChannelSelector` = `R | G | B | A`
 * <<Filter primitive attributes>>
 
 === Filter primitive `feFlood`

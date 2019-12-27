@@ -239,7 +239,10 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (dx, dy) = try_opt_or!(Self::resolve_offset(fe, units, bbox, ts), Ok(input));
+        let (dx, dy) = try_opt_or!(Self::scale_coordinates(fe.dx, fe.dy, units, bbox, ts), Ok(input));
+        if dx.is_fuzzy_zero() && dy.is_fuzzy_zero() {
+            return Ok(input);
+        }
 
         // TODO: do not use an additional buffer
         let mut dt = create_image(input.width(), input.height())?;
@@ -524,13 +527,49 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         input: Image,
     ) -> Result<Image, Error> {
         let input = input.into_color_space(cs)?;
-        let (rx, ry) = try_opt_or!(Self::resolve_radius(fe, units, bbox, ts), Ok(input));
+        let (rx, ry) = try_opt_or!(
+            Self::scale_coordinates(fe.radius_x.value(), fe.radius_y.value(), units, bbox, ts),
+            Ok(input)
+        );
 
         let mut buffer = input.take()?;
         let w = buffer.width() as u32;
         let h = buffer.height() as u32;
         let data = buffer.get_data_u8_mut();
         filter::morphology::apply(fe.operator, rx, ry, w, h, data.as_bgra_mut());
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
+    fn apply_displacement_map(
+        fe: &usvg::FeDisplacementMap,
+        region: ScreenRect,
+        units: usvg::Units,
+        cs: ColorSpace,
+        bbox: Option<Rect>,
+        ts: &usvg::Transform,
+        input1: Image,
+        input2: Image,
+    ) -> Result<Image, Error> {
+        let input1 = input1.into_color_space(cs)?;
+        let input2 = input2.into_color_space(cs)?;
+        let (sx, sy) = try_opt_or!(
+            Self::scale_coordinates(fe.scale, fe.scale, units, bbox, ts),
+            Ok(input1)
+        );
+
+        let mut buffer1 = input1.take()?;
+        let mut buffer2 = input2.take()?;
+        let mut buffer = create_image(region.width(), region.height())?;
+
+        filter::displacement_map::apply(
+            fe.x_channel_selector, fe.y_channel_selector,
+            region.width(), region.height(),
+            sx, sy,
+            buffer1.get_data_u8_mut().as_bgra(),
+            buffer2.get_data_u8_mut().as_bgra(),
+            buffer.get_data_u8_mut().as_bgra_mut(),
+        );
 
         Ok(Image::from_image(buffer, cs))
     }

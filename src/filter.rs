@@ -235,6 +235,11 @@ pub trait Filter<T: ImageExt> {
                     let input = Self::get_input(&fe.input, region, inputs, &results)?;
                     Self::apply_morphology(fe, filter.primitive_units, cs, bbox, ts, input)
                 }
+                usvg::FilterKind::FeDisplacementMap(ref fe) => {
+                    let input1 = Self::get_input(&fe.input1, region, inputs, &results)?;
+                    let input2 = Self::get_input(&fe.input2, region, inputs, &results)?;
+                    Self::apply_displacement_map(fe, region, filter.primitive_units, cs, bbox, ts, input1, input2)
+                }
             }?;
 
             if region != subregion {
@@ -366,6 +371,17 @@ pub trait Filter<T: ImageExt> {
         input: Image<T>,
     ) -> Result<Image<T>, Error>;
 
+    fn apply_displacement_map(
+        fe: &usvg::FeDisplacementMap,
+        region: ScreenRect,
+        units: usvg::Units,
+        cs: ColorSpace,
+        bbox: Option<Rect>,
+        ts: &usvg::Transform,
+        input1: Image<T>,
+        input2: Image<T>,
+    ) -> Result<Image<T>, Error>;
+
     fn apply_to_canvas(
         input: Image<T>,
         region: ScreenRect,
@@ -384,22 +400,9 @@ pub trait Filter<T: ImageExt> {
             return None;
         }
 
-        let (sx, sy) = ts.get_scale();
-
-        let (std_dx, std_dy) = if units == usvg::Units::ObjectBoundingBox {
-            let bbox = bbox?;
-
-            (
-                fe.std_dev_x.value() * sx * bbox.width(),
-                fe.std_dev_y.value() * sy * bbox.height()
-            )
-        } else {
-            (
-                fe.std_dev_x.value() * sx,
-                fe.std_dev_y.value() * sy
-            )
-        };
-
+        let (std_dx, std_dy) = Self::scale_coordinates(
+            fe.std_dev_x.value(), fe.std_dev_y.value(), units, bbox, ts,
+        )?;
         if std_dx.is_fuzzy_zero() && std_dy.is_fuzzy_zero() {
             None
         } else {
@@ -412,54 +415,19 @@ pub trait Filter<T: ImageExt> {
         }
     }
 
-    fn resolve_offset(
-        fe: &usvg::FeOffset,
+    fn scale_coordinates(
+        x: f64,
+        y: f64,
         units: usvg::Units,
         bbox: Option<Rect>,
         ts: &usvg::Transform,
     ) -> Option<(f64, f64)> {
         let (sx, sy) = ts.get_scale();
-
-        let (dx, dy) = if units == usvg::Units::ObjectBoundingBox {
-            let bbox = bbox?;
-
-            (
-                fe.dx * sx * bbox.width(),
-                fe.dy * sy * bbox.height()
-            )
-        } else {
-            (
-                fe.dx * sx,
-                fe.dy * sy
-            )
-        };
-
-        if dx.is_fuzzy_zero() && dy.is_fuzzy_zero() {
-            None
-        } else {
-            Some((dx, dy))
-        }
-    }
-
-    fn resolve_radius(
-        fe: &usvg::FeMorphology,
-        units: usvg::Units,
-        bbox: Option<Rect>,
-        ts: &usvg::Transform,
-    ) -> Option<(f64, f64)> {
-        let (sx, sy) = ts.get_scale();
-
         if units == usvg::Units::ObjectBoundingBox {
             let bbox = bbox?;
-            Some((
-                fe.radius_x.value() * sx * bbox.width(),
-                fe.radius_y.value() * sy * bbox.height()
-            ))
+            Some((x * sx * bbox.width(), y * sy * bbox.height()))
         } else {
-            Some((
-                fe.radius_x.value() * sx,
-                fe.radius_y.value() * sy
-            ))
+            Some((x * sx, y * sy))
         }
     }
 }
@@ -1282,6 +1250,58 @@ pub mod morphology {
         // Do not use `mem::swap` because `data` referenced via FFI.
         for i in 0..data.len() {
             data[i] = buf[i];
+        }
+    }
+}
+
+pub mod displacement_map {
+    use super::*;
+
+    pub fn apply(
+        x_channel_selector: usvg::ColorChannel,
+        y_channel_selector: usvg::ColorChannel,
+        width: u32,
+        height: u32,
+        sx: f64,
+        sy: f64,
+        src: &[rgb::alt::BGRA8],
+        displace: &[rgb::alt::BGRA8],
+        dest: &mut [rgb::alt::BGRA8],
+    ) {
+        let rect = ScreenRect::new(0, 0, width, height).unwrap();
+
+        let mut x = 0;
+        let mut y = 0;
+        for pixel in displace {
+            let calc_offset = |channel| {
+                let c = match channel {
+                    usvg::ColorChannel::R => pixel.r,
+                    usvg::ColorChannel::G => pixel.g,
+                    usvg::ColorChannel::B => pixel.b,
+                    usvg::ColorChannel::A => pixel.a,
+                };
+
+                c as f64 / 255.0 - 0.5
+            };
+
+            let dx = calc_offset(x_channel_selector);
+            let dy = calc_offset(y_channel_selector);
+            let ox = (x as f64 + dx * sx).round() as i32;
+            let oy = (y as f64 + dy * sy).round() as i32;
+
+            // TODO: we should use some kind of anti-aliasing when offset is on a pixel border
+
+            if rect.contains(ox, oy) && rect.contains(ox, oy) {
+                let idx = (oy * width as i32 + ox) as usize;
+                let idx1 = (y * width + x) as usize;
+                dest[idx1] = src[idx];
+            }
+
+            x += 1;
+            if x == width {
+                x = 0;
+                y += 1;
+            }
         }
     }
 }
