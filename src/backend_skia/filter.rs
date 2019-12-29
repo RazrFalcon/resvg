@@ -610,6 +610,25 @@ impl Filter<skia::Surface> for SkiaFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
+    fn apply_turbulence(
+        fe: &usvg::FeTurbulence,
+        region: ScreenRect,
+        cs: ColorSpace,
+        ts: &usvg::Transform,
+    ) -> Result<Image, Error> {
+        use std::mem::swap;
+
+        let mut buffer = create_surface(region.width(), region.height())?;
+        filter::turbulence::apply(fe, region, ts, buffer.data_mut().as_bgra_mut());
+
+        // RGBA -> BGRA.
+        if !skia::Surface::is_bgra() {
+            buffer.data_mut().as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+        }
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,

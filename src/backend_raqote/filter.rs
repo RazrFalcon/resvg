@@ -574,6 +574,19 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
+    fn apply_turbulence(
+        fe: &usvg::FeTurbulence,
+        region: ScreenRect,
+        cs: ColorSpace,
+        ts: &usvg::Transform,
+    ) -> Result<Image, Error> {
+        let mut buffer = create_image(region.width(), region.height())?;
+        let data = buffer.get_data_u8_mut();
+        filter::turbulence::apply(fe, region, ts, data.as_bgra_mut());
+        filter::into_premultiplied(data.as_bgra_mut());
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,

@@ -3,6 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
+use std::fmt;
+
 use svgtypes::{FuzzyEq, FuzzyZero};
 
 use crate::IsValidLength;
@@ -208,6 +210,12 @@ impl PositiveNumber {
 }
 
 wrap!(PositiveNumber);
+
+impl fmt::Display for PositiveNumber {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 
 /// A non-zero `f64`.

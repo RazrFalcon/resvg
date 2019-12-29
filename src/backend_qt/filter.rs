@@ -555,6 +555,17 @@ impl Filter<qt::Image> for QtFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
+    fn apply_turbulence(
+        fe: &usvg::FeTurbulence,
+        region: ScreenRect,
+        cs: ColorSpace,
+        ts: &usvg::Transform,
+    ) -> Result<Image, Error> {
+        let mut buffer = create_image(region.width(), region.height())?;
+        filter::turbulence::apply(fe, region, ts, buffer.data_mut().as_bgra_mut());
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,

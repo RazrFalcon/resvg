@@ -539,6 +539,17 @@ The all four will always be present.
 * `in` = <<filter-input-type,<filter-input> >>
 * <<Filter primitive attributes>>
 
+=== Filter primitive `feTurbulence`
+
+*Attributes:*
+
+* `baseFrequency` = <<positive-number-type,<positive-number> >> " " <<positive-number-type,<positive-number> >>
+* `numOctaves` = <<positive-integer-type,<positive-integer> >>
+* `seed` = <<integer-type,<integer> >>
+* `stitchTiles` = `stitch | noStitch`
+* `type` = `fractalNoise | turbulence`
+* <<Filter primitive attributes>>
+
 == Data types
 
 If an attribute has the `?` symbol after the type that's mean that
@@ -559,6 +570,12 @@ that this attribute is optional.
 
 *<positive-number>* - A positive real <<number-type,number>>. +
 `positive-number ::= [0-9]+ "." [0-9]+`
+
+
+[[integer-type]]
+
+*<integer>* - An integer. +
+`integer ::= [-]? [0-9]+`
 
 
 [[positive-integer-type]]

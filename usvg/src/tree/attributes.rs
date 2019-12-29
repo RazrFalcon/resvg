@@ -384,6 +384,15 @@ pub enum FeEdgeMode {
 }
 
 
+/// A turbulence kind for the `feTurbulence` filter.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum FeTurbulenceKind {
+    FractalNoise,
+    Turbulence,
+}
+
+
 /// A convolve matrix representation.
 ///
 /// Used primarily by `FeConvolveMatrix`.

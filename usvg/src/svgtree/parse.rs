@@ -376,7 +376,9 @@ fn parse_svg_attribute(
         | AId::K2
         | AId::K3
         | AId::K4
+        | AId::NumOctaves
         | AId::Scale
+        | AId::Seed
         | AId::Slope
         | AId::StrokeMiterlimit
         | AId::TargetX
@@ -506,7 +508,8 @@ fn parse_svg_attribute(
             AttributeValue::AspectRatio(svgtypes::AspectRatio::from_str(value)?)
         }
 
-          AId::KernelMatrix
+          AId::BaseFrequency
+        | AId::KernelMatrix
         | AId::Radius
         | AId::Rotate
         | AId::TableValues

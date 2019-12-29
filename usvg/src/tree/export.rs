@@ -333,6 +333,25 @@ fn conv_defs(
 
                             xml.end_element();
                         }
+                        FilterKind::FeTurbulence(ref turbulence) => {
+                            xml.start_svg_element(EId::FeTurbulence);
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_svg_attribute(AId::Result, &fe.result);
+
+                            xml.write_point(AId::BaseFrequency, turbulence.base_frequency);
+                            xml.write_svg_attribute(AId::NumOctaves, &turbulence.num_octaves);
+                            xml.write_svg_attribute(AId::Seed, &turbulence.seed);
+                            xml.write_svg_attribute(AId::StitchTiles, match turbulence.stitch_tiles {
+                                true => "stitch",
+                                false => "noStitch",
+                            });
+                            xml.write_svg_attribute(AId::Type, match turbulence.kind {
+                                FeTurbulenceKind::FractalNoise => "fractalNoise",
+                                FeTurbulenceKind::Turbulence => "turbulence",
+                            });
+
+                            xml.end_element();
+                        }
                     };
                 }
 
@@ -461,6 +480,7 @@ trait XmlWriterExt {
     fn write_func_iri(&mut self, aid: AId, id: &str);
     fn write_rect_attrs(&mut self, r: Rect);
     fn write_numbers(&mut self, aid: AId, list: &[f64]);
+    fn write_point<T: Display>(&mut self, id: AId, p: Point<T>);
     fn write_filter_input(&mut self, id: AId, input: &FilterInput);
     fn write_filter_primitive_attrs(&mut self, fe: &FilterPrimitive);
     fn write_filter_transfer_function(&mut self, eid: EId, fe: &TransferFunction);
@@ -556,6 +576,10 @@ impl XmlWriterExt for XmlWriter {
                 buf.pop();
             }
         });
+    }
+
+    fn write_point<T: Display>(&mut self, id: AId, p: Point<T>) {
+        self.write_attribute_fmt(id.to_str(), format_args!("{} {}", p.x, p.y));
     }
 
     fn write_filter_input(&mut self, id: AId, input: &FilterInput) {

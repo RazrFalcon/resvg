@@ -105,6 +105,7 @@ fn collect_children(
             EId::FeConvolveMatrix => convert_fe_convolve_matrix(child, &primitives),
             EId::FeMorphology => convert_fe_morphology(child, &primitives),
             EId::FeDisplacementMap => convert_fe_displacement_map(child, &primitives),
+            EId::FeTurbulence => convert_fe_turbulence(child),
             tag_name => {
                 // TODO: rename to invalid, when all filters are implemented
                 warn!("Filter with '{}' child is not supported.", tag_name);
@@ -584,6 +585,45 @@ fn convert_fe_displacement_map(
         scale: fe.attribute(AId::Scale).unwrap_or(0.0),
         x_channel_selector: parse_channel(AId::XChannelSelector),
         y_channel_selector: parse_channel(AId::YChannelSelector),
+    })
+}
+
+fn convert_fe_turbulence(
+    fe: svgtree::Node,
+) -> tree::FilterKind {
+    let mut base_frequency = Point::new(0.0.into(), 0.0.into());
+    if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::BaseFrequency) {
+        let mut x = 0.0;
+        let mut y = 0.0;
+        if list.len() == 2 {
+            x = list[0];
+            y = list[1];
+        } else if list.len() == 1 {
+            x = list[0];
+            y = list[0]; // The same as `x`.
+        }
+
+        if x.is_sign_positive() && y.is_sign_positive() {
+            base_frequency = Point::new(x.into(), y.into());
+        }
+    }
+
+    let mut num_octaves = fe.attribute(AId::NumOctaves).unwrap_or(1.0);
+    if num_octaves.is_sign_negative() {
+        num_octaves = 0.0;
+    }
+
+    let kind = match fe.attribute(AId::Type).unwrap_or("turbulence") {
+        "fractalNoise" => tree::FeTurbulenceKind::FractalNoise,
+        _              => tree::FeTurbulenceKind::Turbulence,
+    };
+
+    tree::FilterKind::FeTurbulence(tree::FeTurbulence {
+        base_frequency,
+        num_octaves: num_octaves.round() as u32,
+        seed: fe.attribute(AId::Seed).unwrap_or(0.0).trunc() as i32,
+        stitch_tiles: fe.attribute(AId::StitchTiles) == Some("stitch"),
+        kind,
     })
 }
 

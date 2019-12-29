@@ -535,6 +535,7 @@ pub enum FilterKind {
     FeMorphology(FeMorphology),
     FeOffset(FeOffset),
     FeTile(FeTile),
+    FeTurbulence(FeTurbulence),
 }
 
 impl FilterKind {
@@ -554,6 +555,7 @@ impl FilterKind {
             FilterKind::FeMorphology(ref fe) => fe.input == *input,
             FilterKind::FeOffset(ref fe) => fe.input == *input,
             FilterKind::FeTile(ref fe) => fe.input == *input,
+            FilterKind::FeTurbulence(_) => false,
         }
     }
 }
@@ -893,4 +895,36 @@ pub struct FeTile {
     ///
     /// `in` in the SVG.
     pub input: FilterInput,
+}
+
+
+/// A turbulence generation filter primitive.
+///
+/// `feTurbulence` element in the SVG.
+#[derive(Clone, Copy, Debug)]
+pub struct FeTurbulence {
+    /// Identifies the base frequency for the noise function.
+    ///
+    /// `baseFrequency` in the SVG.
+    pub base_frequency: Point<PositiveNumber>,
+
+    /// Identifies the number of octaves for the noise function.
+    ///
+    /// `numOctaves` in the SVG.
+    pub num_octaves: u32,
+
+    /// The starting number for the pseudo random number generator.
+    ///
+    /// `seed` in the SVG.
+    pub seed: i32,
+
+    /// Smooth transitions at the border of tiles.
+    ///
+    /// `stitchTiles` in the SVG.
+    pub stitch_tiles: bool,
+
+    /// Indicates whether the filter primitive should perform a noise or turbulence function.
+    ///
+    /// `type` in the SVG.
+    pub kind: FeTurbulenceKind,
 }

@@ -593,6 +593,21 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
+    fn apply_turbulence(
+        fe: &usvg::FeTurbulence,
+        region: ScreenRect,
+        cs: ColorSpace,
+        ts: &usvg::Transform,
+    ) -> Result<Image, Error> {
+        let mut buffer = create_image(region.width(), region.height())?;
+        if let Ok(ref mut data) = buffer.get_data() {
+            filter::turbulence::apply(fe, region, ts, data.as_bgra_mut());
+            filter::into_premultiplied(data.as_bgra_mut());
+        }
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,

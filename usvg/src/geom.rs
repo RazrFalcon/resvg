@@ -68,6 +68,36 @@ impl Line {
 }
 
 
+/// A 2D point representation.
+#[derive(Clone, Copy)]
+pub struct Point<T> {
+    /// Position along the X-axis.
+    pub x: T,
+
+    /// Position along the Y-axis.
+    pub y: T,
+}
+
+impl<T> Point<T> {
+    /// Create a new point.
+    pub fn new(x: T, y: T) -> Self {
+        Point { x, y }
+    }
+}
+
+impl<T: fmt::Display> fmt::Debug for Point<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Point({} {})", self.x, self.y)
+    }
+}
+
+impl<T: fmt::Display> fmt::Display for Point<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+
 /// A 2D size representation.
 ///
 /// Width and height are guarantee to be > 0.
