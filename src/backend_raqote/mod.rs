@@ -283,8 +283,9 @@ fn render_group(
         let bbox = render_node(&node, opt, state, layers, dt);
 
         if let Some(bbox) = bbox {
-            let bbox = bbox.transform(&node.transform()).unwrap();
-            g_bbox = g_bbox.expand(bbox);
+            if let Some(bbox) = bbox.transform(&node.transform()) {
+                g_bbox = g_bbox.expand(bbox);
+            }
         }
 
         // Revert transform.
