@@ -319,6 +319,10 @@ fn parse_svg_attribute(
                 | EId::Tspan => {
                     AttributeValue::String(value.to_string())
                 }
+                  EId::FePointLight
+                | EId::FeSpotLight => {
+                    AttributeValue::Number(parse_number(value)?)
+                }
                 _ => {
                     AttributeValue::Length(svgtypes::Length::from_str(value)?)
                 }
@@ -368,21 +372,32 @@ fn parse_svg_attribute(
         }
 
           AId::Amplitude
+        | AId::Azimuth
         | AId::Bias
+        | AId::DiffuseConstant
         | AId::Divisor
+        | AId::Elevation
         | AId::Exponent
         | AId::Intercept
         | AId::K1
         | AId::K2
         | AId::K3
         | AId::K4
+        | AId::LimitingConeAngle
         | AId::NumOctaves
+        | AId::PointsAtX
+        | AId::PointsAtY
+        | AId::PointsAtZ
         | AId::Scale
         | AId::Seed
         | AId::Slope
+        | AId::SpecularConstant
+        | AId::SpecularExponent
         | AId::StrokeMiterlimit
+        | AId::SurfaceScale
         | AId::TargetX
-        | AId::TargetY => {
+        | AId::TargetY
+        | AId::Z => {
             AttributeValue::Number(parse_number(value)?)
         }
 
@@ -442,6 +457,7 @@ fn parse_svg_attribute(
         }
 
           AId::FloodColor
+        | AId::LightingColor
         | AId::StopColor => {
             match value {
                 "currentColor" => AttributeValue::CurrentColor,

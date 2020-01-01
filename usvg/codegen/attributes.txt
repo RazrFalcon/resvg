@@ -53,6 +53,7 @@ k4
 kernelMatrix
 kernelUnitLength
 letter-spacing
+lighting-color
 limitingConeAngle
 marker-end
 marker-mid

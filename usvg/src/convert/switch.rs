@@ -25,7 +25,7 @@ static FEATURES: &[&str] = &[
     "http://www.w3.org/TR/SVG11/feature#PaintAttribute", // no color-interpolation and color-rendering
     "http://www.w3.org/TR/SVG11/feature#BasicPaintAttribute", // no color-interpolation
     "http://www.w3.org/TR/SVG11/feature#OpacityAttribute",
-    // "http://www.w3.org/TR/SVG11/feature#GraphicsAttribute",
+    "http://www.w3.org/TR/SVG11/feature#GraphicsAttribute",
     "http://www.w3.org/TR/SVG11/feature#BasicGraphicsAttribute",
     "http://www.w3.org/TR/SVG11/feature#Marker",
     // "http://www.w3.org/TR/SVG11/feature#ColorProfile", // not yet
@@ -34,7 +34,7 @@ static FEATURES: &[&str] = &[
     "http://www.w3.org/TR/SVG11/feature#Clip",
     "http://www.w3.org/TR/SVG11/feature#BasicClip",
     "http://www.w3.org/TR/SVG11/feature#Mask",
-    // "http://www.w3.org/TR/SVG11/feature#Filter", // not yet
+    "http://www.w3.org/TR/SVG11/feature#Filter",
     "http://www.w3.org/TR/SVG11/feature#BasicFilter",
     "http://www.w3.org/TR/SVG11/feature#XlinkAttribute", // only xlink:href
     // "http://www.w3.org/TR/SVG11/feature#Font",

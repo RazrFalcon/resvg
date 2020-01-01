@@ -317,8 +317,8 @@ dependencies = [
 
 [[package]]
 name = "raqote"
-version = "0.7.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+version = "0.7.8-alpha.0"
+source = "git+https://github.com/jrmuizel/raqote?rev=146bd17#146bd172e1d1e2e4024cbf25beb0e5a01d84a982"
 dependencies = [
  "euclid 0.20.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "lyon_geom 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -356,7 +356,7 @@ dependencies = [
  "jpeg-decoder 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "png 0.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "raqote 0.7.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "raqote 0.7.8-alpha.0 (git+https://github.com/jrmuizel/raqote?rev=146bd17)",
  "resvg-qt 0.8.0",
  "resvg-skia 0.8.0",
  "rgb 0.8.14 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -581,7 +581,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum pico-args 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2fce25154205cf4360b456fd7d48994afe20663b77e3bd3d0a353a2fccf7f22c"
 "checksum pkg-config 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)" = "05da548ad6865900e60eaba7f589cc0783590a92e940c26953ff81ddbab2d677"
 "checksum png 0.15.2 (registry+https://github.com/rust-lang/crates.io-index)" = "247cb804bd7fc86d0c2b153d1374265e67945875720136ca8fe451f11c6aed52"
-"checksum raqote 0.7.7 (registry+https://github.com/rust-lang/crates.io-index)" = "20ee88a59b053c9134d1dd4be94bc8b7744840d86b38dea000e3a94c11093667"
+"checksum raqote 0.7.8-alpha.0 (git+https://github.com/jrmuizel/raqote?rev=146bd17)" = "<none>"
 "checksum rctree 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "be9e29cb19c8fe84169fcb07f8f11e66bc9e6e0280efd4715c54818296f8a4a8"
 "checksum redox_syscall 0.1.56 (registry+https://github.com/rust-lang/crates.io-index)" = "2439c63f3f6139d1b57529d16bc3b8bb855230c8efcc5d3a896c8bea7c3b1e84"
 "checksum rgb 0.8.14 (registry+https://github.com/rust-lang/crates.io-index)" = "2089e4031214d129e201f8c3c8c2fe97cd7322478a0d1cdf78e7029b0042efdb"

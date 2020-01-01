@@ -608,6 +608,40 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
+    fn apply_diffuse_lighting(
+        fe: &usvg::FeDiffuseLighting,
+        region: ScreenRect,
+        cs: ColorSpace,
+        ts: &usvg::Transform,
+        input: Image,
+    ) -> Result<Image, Error> {
+        let mut input = input.take()?;
+        let mut buffer = create_image(region.width(), region.height())?;
+
+        if let (Ok(ref buf_in), Ok(ref mut buf_out)) = (input.get_data(), buffer.get_data()) {
+            filter::lighting::apply_diffuse(fe, region, ts, buf_in.as_bgra(), buf_out.as_bgra_mut());
+        }
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
+    fn apply_specular_lighting(
+        fe: &usvg::FeSpecularLighting,
+        region: ScreenRect,
+        cs: ColorSpace,
+        ts: &usvg::Transform,
+        input: Image,
+    ) -> Result<Image, Error> {
+        let mut input = input.take()?;
+        let mut buffer = create_image(region.width(), region.height())?;
+
+        if let (Ok(ref buf_in), Ok(ref mut buf_out)) = (input.get_data(), buffer.get_data()) {
+            filter::lighting::apply_specular(fe, region, ts, buf_in.as_bgra(), buf_out.as_bgra_mut());
+        }
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,

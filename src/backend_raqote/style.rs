@@ -178,25 +178,23 @@ fn prepare_radial<'a>(
         g.transform
     };
 
-    let mut grad;
-
-    if g.fx == g.cx && g.fy == g.cy {
-        grad = raqote::Source::new_radial_gradient(
+    let mut grad = if g.fx == g.cx && g.fy == g.cy {
+        raqote::Source::new_radial_gradient(
             raqote::Gradient { stops: conv_stops(g, opacity) },
             raqote::Point::new(g.cx as f32, g.cy as f32),
             g.r.value() as f32,
             conv_spread(g.base.spread_method),
-        );
+        )
     } else {
-        grad = raqote::Source::new_two_circle_radial_gradient(
+        raqote::Source::new_two_circle_radial_gradient(
             raqote::Gradient { stops: conv_stops(g, opacity) },
             raqote::Point::new(g.fx as f32, g.fy as f32),
             0.0,
             raqote::Point::new(g.cx as f32, g.cy as f32),
             g.r.value() as f32,
             conv_spread(g.base.spread_method),
-        );
-    }
+        )
+    };
 
     match grad {
           raqote::Source::RadialGradient(_, _, ref mut transform)

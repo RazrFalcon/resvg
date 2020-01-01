@@ -459,6 +459,46 @@ The all four will always be present.
 * `preserveAlpha` = `true | false`
 * <<Filter primitive attributes>>
 
+=== Filter primitive `feDiffuseLighting`
+
+*Children:*
+
+Only one of:
+
+* `feDistantLight`
+* `fePointLight`
+* `feSpotLight`
+
+*Attributes:*
+
+* `in` = <<filter-input-type,<filter-input> >>
+* `surfaceScale` = <<number-type,<number> >>
+* `diffuseConstant` = <<number-type,<number> >>
+* `lighting-color` = <<color-type,<color> >>
+* <<Filter primitive attributes>>
+
+`feDistantLight` *attributes:*
+
+* `azimuth` = <<number-type,<number> >>
+* `elevation` = <<number-type,<number> >>
+
+`fePointLight` *attributes:*
+
+* `x` = <<number-type,<number> >>
+* `y` = <<number-type,<number> >>
+* `z` = <<number-type,<number> >>
+
+`feSpotLight` *attributes:*
+
+* `x` = <<number-type,<number> >>
+* `y` = <<number-type,<number> >>
+* `z` = <<number-type,<number> >>
+* `pointsAtX` = <<number-type,<number> >>
+* `pointsAtY` = <<number-type,<number> >>
+* `pointsAtZ` = <<number-type,<number> >>
+* `specularExponent` = <<positive-number-type,<positive-number> >>
+* `limitingConeAngle` = <<number-type,<number> >>?
+
 === Filter primitive `feDisplacementMap`
 
 *Attributes:*
@@ -531,6 +571,48 @@ The all four will always be present.
 * `dx` = <<number-type,<number> >>
 * `dy` = <<number-type,<number> >>
 * <<Filter primitive attributes>>
+
+=== Filter primitive `feSpecularLighting`
+
+*Children:*
+
+Only one of:
+
+* `feDistantLight`
+* `fePointLight`
+* `feSpotLight`
+
+*Attributes:*
+
+* `in` = <<filter-input-type,<filter-input> >>
+* `surfaceScale` = <<number-type,<number> >>
+* `specularConstant` = <<number-type,<number> >>
+* `specularExponent` = <<number-type,<number> >> +
+  Number in a 1..128 range.
+* `lighting-color` = <<color-type,<color> >>
+* <<Filter primitive attributes>>
+
+`feDistantLight` *attributes:*
+
+* `azimuth` = <<number-type,<number> >>
+* `elevation` = <<number-type,<number> >>
+
+`fePointLight` *attributes:*
+
+* `x` = <<number-type,<number> >>
+* `y` = <<number-type,<number> >>
+* `z` = <<number-type,<number> >>
+
+`feSpotLight` *attributes:*
+
+* `x` = <<number-type,<number> >>
+* `y` = <<number-type,<number> >>
+* `z` = <<number-type,<number> >>
+* `pointsAtX` = <<number-type,<number> >>
+* `pointsAtY` = <<number-type,<number> >>
+* `pointsAtZ` = <<number-type,<number> >>
+* `specularExponent` = <<positive-number-type,<positive-number> >>
+* `limitingConeAngle` = <<number-type,<number> >>?
 
 === Filter primitive `feTile`
 

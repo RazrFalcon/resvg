@@ -352,6 +352,31 @@ fn conv_defs(
 
                             xml.end_element();
                         }
+                        FilterKind::FeDiffuseLighting(ref light) => {
+                            xml.start_svg_element(EId::FeDiffuseLighting);
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_svg_attribute(AId::Result, &fe.result);
+
+                            xml.write_svg_attribute(AId::SurfaceScale, &light.surface_scale);
+                            xml.write_svg_attribute(AId::DiffuseConstant, &light.diffuse_constant);
+                            xml.write_svg_attribute(AId::LightingColor, &light.lighting_color);
+                            write_light_source(&light.light_source, xml);
+
+                            xml.end_element();
+                        }
+                        FilterKind::FeSpecularLighting(ref light) => {
+                            xml.start_svg_element(EId::FeSpecularLighting);
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_svg_attribute(AId::Result, &fe.result);
+
+                            xml.write_svg_attribute(AId::SurfaceScale, &light.surface_scale);
+                            xml.write_svg_attribute(AId::SpecularConstant, &light.specular_constant);
+                            xml.write_svg_attribute(AId::SpecularExponent, &light.specular_exponent);
+                            xml.write_svg_attribute(AId::LightingColor, &light.lighting_color);
+                            write_light_source(&light.light_source, xml);
+
+                            xml.end_element();
+                        }
                     };
                 }
 
@@ -867,4 +892,38 @@ fn write_paint(
         Paint::Color(ref c) => xml.write_svg_attribute(aid, c),
         Paint::Link(ref id) => xml.write_func_iri(aid, id),
     }
+}
+
+fn write_light_source(
+    light: &FeLightSource,
+    xml: &mut XmlWriter,
+) {
+    match light {
+        FeLightSource::FeDistantLight(ref light) => {
+            xml.start_svg_element(EId::FeDistantLight);
+            xml.write_svg_attribute(AId::Azimuth, &light.azimuth);
+            xml.write_svg_attribute(AId::Elevation, &light.elevation);
+        }
+        FeLightSource::FePointLight(ref light) => {
+            xml.start_svg_element(EId::FePointLight);
+            xml.write_svg_attribute(AId::X, &light.x);
+            xml.write_svg_attribute(AId::Y, &light.y);
+            xml.write_svg_attribute(AId::Z, &light.z);
+        }
+        FeLightSource::FeSpotLight(ref light) => {
+            xml.start_svg_element(EId::FeSpotLight);
+            xml.write_svg_attribute(AId::X, &light.x);
+            xml.write_svg_attribute(AId::Y, &light.y);
+            xml.write_svg_attribute(AId::Z, &light.z);
+            xml.write_svg_attribute(AId::PointsAtX, &light.points_at_x);
+            xml.write_svg_attribute(AId::PointsAtY, &light.points_at_y);
+            xml.write_svg_attribute(AId::PointsAtZ, &light.points_at_z);
+            xml.write_svg_attribute(AId::SpecularExponent, &light.specular_exponent);
+            if let Some(ref n) = light.limiting_cone_angle {
+                xml.write_svg_attribute(AId::LimitingConeAngle, n);
+            }
+        }
+    }
+
+    xml.end_element();
 }

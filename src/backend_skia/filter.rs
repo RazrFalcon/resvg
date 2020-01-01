@@ -629,6 +629,57 @@ impl Filter<skia::Surface> for SkiaFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
+    fn apply_diffuse_lighting(
+        fe: &usvg::FeDiffuseLighting,
+        region: ScreenRect,
+        cs: ColorSpace,
+        ts: &usvg::Transform,
+        input: Image,
+    ) -> Result<Image, Error> {
+        use std::mem::swap;
+
+        let mut buffer = create_surface(region.width(), region.height())?;
+        filter::lighting::apply_diffuse(
+            fe, region, ts,
+            input.image.data().as_bgra(),
+            buffer.data_mut().as_bgra_mut(),
+        );
+
+        // RGBA -> BGRA.
+        if !skia::Surface::is_bgra() {
+            buffer.data_mut().as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+        }
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
+    fn apply_specular_lighting(
+        fe: &usvg::FeSpecularLighting,
+        region: ScreenRect,
+        cs: ColorSpace,
+        ts: &usvg::Transform,
+        input: Image,
+    ) -> Result<Image, Error> {
+        use std::mem::swap;
+
+        let mut buffer = create_surface(region.width(), region.height())?;
+
+        filter::lighting::apply_specular(
+            fe, region, ts,
+            input.image.data().as_bgra(),
+            buffer.data_mut().as_bgra_mut(),
+        );
+
+        filter::from_premultiplied(buffer.data_mut().as_bgra_mut());
+
+        // RGBA -> BGRA.
+        if !skia::Surface::is_bgra() {
+            buffer.data_mut().as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+        }
+
+        Ok(Image::from_image(buffer, cs))
+    }
+
     fn apply_to_canvas(
         input: Image,
         region: ScreenRect,

@@ -1,11 +1,5 @@
 ### Elements
 
-- Filter based
-  - `feDiffuseLighting`
-  - `feDistantLight`
-  - `fePointLight`
-  - `feSpecularLighting`
-  - `feSpotLight`
 - Font based
   - `altGlyph`
   - `altGlyphDef`

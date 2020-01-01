@@ -106,9 +106,10 @@ fn collect_children(
             EId::FeMorphology => convert_fe_morphology(child, &primitives),
             EId::FeDisplacementMap => convert_fe_displacement_map(child, &primitives),
             EId::FeTurbulence => convert_fe_turbulence(child),
+            EId::FeDiffuseLighting => convert_fe_diffuse_lighting(child, &primitives),
+            EId::FeSpecularLighting => convert_fe_specular_lighting(child, &primitives),
             tag_name => {
-                // TODO: rename to invalid, when all filters are implemented
-                warn!("Filter with '{}' child is not supported.", tag_name);
+                warn!("'{}' is not a valid filter primitive. Skipped.", tag_name);
                 continue;
             }
         };
@@ -116,6 +117,8 @@ fn collect_children(
         let fe = convert_primitive(child, kind, units, state, &mut results);
         primitives.push(fe);
     }
+
+    // TODO: remove primitives which results are not used
 
     primitives
 }
@@ -624,6 +627,111 @@ fn convert_fe_turbulence(
         seed: fe.attribute(AId::Seed).unwrap_or(0.0).trunc() as i32,
         stitch_tiles: fe.attribute(AId::StitchTiles) == Some("stitch"),
         kind,
+    })
+}
+
+fn convert_fe_diffuse_lighting(
+    fe: svgtree::Node,
+    primitives: &[tree::FilterPrimitive],
+) -> tree::FilterKind {
+    let light_source = try_opt_or!(convert_light_source(fe), create_dummy_primitive());
+    tree::FilterKind::FeDiffuseLighting(tree::FeDiffuseLighting {
+        input: resolve_input(fe, AId::In, primitives),
+        surface_scale: fe.attribute(AId::SurfaceScale).unwrap_or(1.0),
+        diffuse_constant: fe.attribute(AId::DiffuseConstant).unwrap_or(1.0),
+        lighting_color: convert_lighting_color(fe),
+        light_source,
+    })
+}
+
+fn convert_fe_specular_lighting(
+    fe: svgtree::Node,
+    primitives: &[tree::FilterPrimitive],
+) -> tree::FilterKind {
+    let light_source = try_opt_or!(convert_light_source(fe), create_dummy_primitive());
+
+    let specular_exponent = fe.attribute(AId::SpecularExponent).unwrap_or(1.0);
+    if specular_exponent < 1.0 || specular_exponent > 128.0 {
+        // When exponent is out of range, the whole filter primitive should be ignored.
+        return create_dummy_primitive();
+    }
+
+    let specular_exponent = f64_bound(1.0, specular_exponent, 128.0);
+
+    tree::FilterKind::FeSpecularLighting(tree::FeSpecularLighting {
+        input: resolve_input(fe, AId::In, primitives),
+        surface_scale: fe.attribute(AId::SurfaceScale).unwrap_or(1.0),
+        specular_constant: fe.attribute(AId::SpecularConstant).unwrap_or(1.0),
+        specular_exponent,
+        lighting_color: convert_lighting_color(fe),
+        light_source,
+    })
+}
+
+#[inline(never)]
+fn convert_lighting_color(
+    node: svgtree::Node,
+) -> tree::Color {
+    match node.attribute::<&svgtree::AttributeValue>(AId::LightingColor) {
+        Some(svgtree::AttributeValue::CurrentColor) => {
+            node.find_attribute(AId::Color).unwrap_or_else(tree::Color::black)
+        }
+        Some(svgtree::AttributeValue::Color(c)) => *c,
+        _ => tree::Color::white(),
+    }
+}
+
+#[inline(never)]
+fn convert_light_source(
+    parent: svgtree::Node,
+) -> Option<tree::FeLightSource> {
+    let child = parent.children().find(|n|
+        matches!(n.tag_name(), Some(EId::FeDistantLight) | Some(EId::FePointLight) | Some(EId::FeSpotLight))
+    )?;
+
+    match child.tag_name() {
+        Some(EId::FeDistantLight) => {
+            Some(tree::FeLightSource::FeDistantLight(tree::FeDistantLight {
+                azimuth: child.attribute(AId::Azimuth).unwrap_or(0.0),
+                elevation: child.attribute(AId::Elevation).unwrap_or(0.0),
+            }))
+        }
+        Some(EId::FePointLight) => {
+            Some(tree::FeLightSource::FePointLight(tree::FePointLight {
+                x: child.attribute(AId::X).unwrap_or(0.0),
+                y: child.attribute(AId::Y).unwrap_or(0.0),
+                z: child.attribute(AId::Z).unwrap_or(0.0),
+            }))
+        }
+        Some(EId::FeSpotLight) => {
+            let mut specular_exponent = child.attribute(AId::SpecularExponent).unwrap_or(1.0);
+            if specular_exponent.is_sign_negative() {
+                specular_exponent = 1.0;
+            }
+
+            Some(tree::FeLightSource::FeSpotLight(tree::FeSpotLight {
+                x: child.attribute(AId::X).unwrap_or(0.0),
+                y: child.attribute(AId::Y).unwrap_or(0.0),
+                z: child.attribute(AId::Z).unwrap_or(0.0),
+                points_at_x: child.attribute(AId::PointsAtX).unwrap_or(0.0),
+                points_at_y: child.attribute(AId::PointsAtY).unwrap_or(0.0),
+                points_at_z: child.attribute(AId::PointsAtZ).unwrap_or(0.0),
+                specular_exponent: tree::PositiveNumber::new(specular_exponent),
+                limiting_cone_angle: child.attribute(AId::LimitingConeAngle),
+            }))
+        }
+        _ => None,
+    }
+}
+
+// A malformed filter primitive usually should produce a transparent image.
+// But since `FilterKind` structs are designed to always be valid,
+// we are using `FeFlood` as fallback.
+#[inline(never)]
+fn create_dummy_primitive() -> tree::FilterKind {
+    tree::FilterKind::FeFlood(tree::FeFlood {
+        color: tree::Color::black(),
+        opacity: tree::Opacity::new(0.0),
     })
 }
 

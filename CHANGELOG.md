@@ -8,7 +8,8 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
-- `feConvolveMatrix`, `feMorphology`, `feDisplacementMap`, `feTurbulence` support.
+- `feConvolveMatrix`, `feMorphology`, `feDisplacementMap`, `feTurbulence`,
+  `feDiffuseLighting` and `feSpecularLighting` support.
 - Load grayscale raster images.
 - `enable-background` support.
 - `BackgroundImage`, `BackgroundAlpha`, `FillPaint` and `StrokePaint` support as a filter input.
