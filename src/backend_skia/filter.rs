@@ -430,8 +430,11 @@ impl Filter<skia::Surface> for SkiaFilter {
             usvg::FeImageKind::Use(ref id) => {
                 if let Some(ref node) = tree.defs_by_id(id).or(tree.node_by_id(id)) {
                     let mut layers = super::create_layers(region.size());
-                    buffer.concat(&ts.to_native());
+
+                    let (sx, sy) = ts.get_scale();
+                    buffer.scale(sx, sy);
                     buffer.concat(&node.transform().to_native());
+
                     super::render_node(node, opt, &mut crate::RenderState::Ok, &mut layers, &mut buffer);
                 }
             }

@@ -10,9 +10,9 @@ This changelog also contains important changes in dependencies.
 ### Added
 - `feConvolveMatrix`, `feMorphology`, `feDisplacementMap`, `feTurbulence`,
   `feDiffuseLighting` and `feSpecularLighting` support.
+- `BackgroundImage`, `BackgroundAlpha`, `FillPaint` and `StrokePaint` support as a filter input.
 - Load grayscale raster images.
 - `enable-background` support.
-- `BackgroundImage`, `BackgroundAlpha`, `FillPaint` and `StrokePaint` support as a filter input.
 - resvg/usvg can be built without text rendering support now.
 - `OutputImage::make_vec`.
 - `feImage` with a reference to an internal element.
@@ -25,7 +25,7 @@ This changelog also contains important changes in dependencies.
 - (usvg) `g`, `path` and `image` can now be set inside `defs`. Required by `feImage`.
 
 ### Fixed
-- `feComposite` with fully transparent regions was producing invalid results.
+- `feComposite` with fully transparent region was producing an invalid result.
 - Fallback to `matrix` in `feColorMatrix` when `type` is not set or invalid.
 - ID preserving for `use` elements.
 

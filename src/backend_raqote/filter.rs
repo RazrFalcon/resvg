@@ -448,8 +448,11 @@ impl Filter<raqote::DrawTarget> for RaqoteFilter {
             usvg::FeImageKind::Use(ref id) => {
                 if let Some(ref node) = tree.defs_by_id(id).or(tree.node_by_id(id)) {
                     let mut layers = super::create_layers(region.size());
-                    dt.transform(&ts.to_native());
+
+                    let (sx, sy) = ts.get_scale();
+                    dt.transform(&usvg::Transform::new_scale(sx, sy).to_native());
                     dt.transform(&node.transform().to_native());
+
                     super::render_node(node, opt, &mut crate::RenderState::Ok, &mut layers, &mut dt);
                 }
             }

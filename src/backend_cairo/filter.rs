@@ -458,8 +458,11 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
                 if let Some(ref node) = tree.defs_by_id(id).or(tree.node_by_id(id)) {
                     let mut layers = super::create_layers(region.size());
                     let cr = cairo::Context::new(&buffer);
-                    cr.transform(ts.to_native());
+
+                    let (sx, sy) = ts.get_scale();
+                    cr.scale(sx, sy);
                     cr.transform(node.transform().to_native());
+
                     super::render_node(node, opt, &mut crate::RenderState::Ok, &mut layers, &cr);
                 }
             }

@@ -359,7 +359,7 @@ pub enum FeImageKind {
     /// Unlike the `image` element, `feImage` can be without the `href` attribute.
     /// In this case the filter primitive is an empty canvas.
     /// And we can't remove it, because its `result` can be used.
-    None,
+    None, // TODO: remove
 
     /// An image data.
     Image(ImageData, ImageFormat),

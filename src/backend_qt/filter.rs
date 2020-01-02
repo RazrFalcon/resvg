@@ -433,8 +433,11 @@ impl Filter<qt::Image> for QtFilter {
                 if let Some(ref node) = tree.defs_by_id(id).or(tree.node_by_id(id)) {
                     let mut layers = super::create_layers(region.size());
                     let mut p = qt::Painter::new(&mut buffer);
-                    p.apply_transform(&ts.to_native());
+
+                    let (sx, sy) = ts.get_scale();
+                    p.scale(sx, sy);
                     p.apply_transform(&node.transform().to_native());
+
                     super::render_node(node, opt, &mut crate::RenderState::Ok, &mut layers, &mut p);
                 }
             }
