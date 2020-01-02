@@ -216,14 +216,6 @@ fn convert_fe_flood(
     })
 }
 
-fn get_coeff(
-    node: svgtree::Node,
-    aid: AId,
-) -> tree::PositiveNumber {
-    let k: f64 = node.attribute(aid).unwrap_or(0.0);
-    if k.is_sign_negative() { 0.0 } else { k }.into()
-}
-
 fn convert_fe_composite(
     fe: svgtree::Node,
     primitives: &[tree::FilterPrimitive],
@@ -235,10 +227,10 @@ fn convert_fe_composite(
         "xor"           => tree::FeCompositeOperator::Xor,
         "arithmetic"    => {
             tree::FeCompositeOperator::Arithmetic {
-                k1: get_coeff(fe, AId::K1),
-                k2: get_coeff(fe, AId::K2),
-                k3: get_coeff(fe, AId::K3),
-                k4: get_coeff(fe, AId::K4),
+                k1: fe.attribute(AId::K1).unwrap_or(0.0),
+                k2: fe.attribute(AId::K2).unwrap_or(0.0),
+                k3: fe.attribute(AId::K3).unwrap_or(0.0),
+                k4: fe.attribute(AId::K4).unwrap_or(0.0),
             }
         }
         _ => tree::FeCompositeOperator::Over,

@@ -312,7 +312,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
             let calc = |i1, i2, max| {
                 let i1 = i1 as f64 / 255.0;
                 let i2 = i2 as f64 / 255.0;
-                let result = k1.value() * i1 * i2 + k2.value() * i1 + k3.value() * i2 + k4.value();
+                let result = k1 * i1 * i2 + k2 * i1 + k3 * i2 + k4;
                 f64_bound(0.0, result, max)
             };
 

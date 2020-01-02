@@ -178,10 +178,10 @@ fn conv_defs(
 
                             match composite.operator {
                                 FeCompositeOperator::Arithmetic { k1, k2, k3, k4 } => {
-                                    xml.write_svg_attribute(AId::K1, &k1.value());
-                                    xml.write_svg_attribute(AId::K2, &k2.value());
-                                    xml.write_svg_attribute(AId::K3, &k3.value());
-                                    xml.write_svg_attribute(AId::K4, &k4.value());
+                                    xml.write_svg_attribute(AId::K1, &k1);
+                                    xml.write_svg_attribute(AId::K2, &k2);
+                                    xml.write_svg_attribute(AId::K3, &k3);
+                                    xml.write_svg_attribute(AId::K4, &k4);
                                 }
                                 _ => {}
                             }

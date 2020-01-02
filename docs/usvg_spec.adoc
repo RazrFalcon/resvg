@@ -430,13 +430,13 @@ The all four will always be present.
 * `in` = <<filter-input-type,<filter-input> >>
 * `in2` = <<filter-input-type,<filter-input> >>
 * `operator` = `over | in | out | atop | xor | arithmetic`
-* `k1` = <<positive-number-type,<positive-number> >>? +
+* `k1` = <<number-type,<number> >>? +
   Present only when `operator=arithmetic`.
-* `k2` = <<positive-number-type,<positive-number> >>? +
+* `k2` = <<number-type,<number> >>? +
   Present only when `operator=arithmetic`.
-* `k3` = <<positive-number-type,<positive-number> >>? +
+* `k3` = <<number-type,<number> >>? +
   Present only when `operator=arithmetic`.
-* `k4` = <<positive-number-type,<positive-number> >>? +
+* `k4` = <<number-type,<number> >>? +
   Present only when `operator=arithmetic`.
 * <<Filter primitive attributes>>
 

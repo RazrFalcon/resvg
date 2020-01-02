@@ -334,10 +334,10 @@ pub enum FeCompositeOperator {
     Atop,
     Xor,
     Arithmetic {
-        k1: PositiveNumber,
-        k2: PositiveNumber,
-        k3: PositiveNumber,
-        k4: PositiveNumber,
+        k1: f64,
+        k2: f64,
+        k3: f64,
+        k4: f64,
     },
 }
 

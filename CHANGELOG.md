@@ -18,7 +18,7 @@ This changelog also contains important changes in dependencies.
 - `feImage` with a reference to an internal element.
 
 ### Changed
-- Allow `feComposite` k1-4 coefficients to be larger than 1.0
+- `feComposite` k1-4 coefficients can have any number now
   This matches browsers behaviour.
 - Use `flate2` instead of `libflate` for GZip decoding.
 - (usvg) `fill` and `stroke` attributes will always be set for `path` now.
