@@ -1,0 +1,13 @@
+<svg
+    width="1"
+    height="1"
+    viewBox="0 0 1 1"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:usvg="https://github.com/RazrFalcon/resvg"
+    usvg:version="0.8.0">
+    <defs/>
+    <path
+        fill="#000000"
+        stroke="none"
+        d="M 10 20 L 10 30 Z"/>
+</svg>

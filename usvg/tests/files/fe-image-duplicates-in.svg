@@ -1,0 +1,10 @@
+<svg viewBox="0 0 1 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+        <filter id="filter1">
+            <feImage xlink:href="#rect1"/>
+            <feImage xlink:href="#rect1"/>
+        </filter>
+        <rect id="rect1" width="120" height="120"/>
+    </defs>
+    <rect filter="url(#filter1)" width="120" height="120"/>
+</svg>

@@ -1,0 +1,6 @@
+<svg viewBox="0 0 1 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <filter id="filter1">
+        <feSpecularLighting/>
+    </filter>
+    <rect filter="url(#filter1)" width="120" height="120"/>
+</svg>

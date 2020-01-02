@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1">
+    <marker id="marker1" overflow="visible">
+        <rect width="10" height="10"/>
+    </marker>
+    <path d="M 10 10 L 20 20" marker-start="url(#marker1)"/>
+</svg>

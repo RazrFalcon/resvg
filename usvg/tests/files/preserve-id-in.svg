@@ -1,0 +1,26 @@
+<svg id="svg1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1 1">
+    <defs id="defs1">
+        <linearGradient id="lg1">
+            <stop id="stop1" offset="0" stop-color="white"/>
+            <stop offset="1" stop-color="black"/>
+        </linearGradient>
+        <radialGradient id="rg1">
+            <stop offset="0" stop-color="white"/>
+            <stop offset="1" stop-color="black"/>
+        </radialGradient>
+        <clipPath id="clip1">
+            <rect id="rect2" width="10" height="10"/>
+        </clipPath>
+        <pattern id="patt1" width="1" height="1">
+            <rect width="10" height="10"/>
+        </pattern>
+    </defs>
+    <rect id="rect1" fill="url(#lg1)" stroke="url(#rg1)" clip-path="url(#clip1)" width="10" height="10"/>
+    <path id="path1" fill="url(#patt1)" d="M 10 20 30 40"/>
+    <use id="use1" xlink:href="#path1"/>
+    <image id="image1" width="1" height="1" xlink:href="data:image/png;base64,
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAB3RJTUUH4gMLDwAjrsLbtwAAAAlw
+        SFlzAAAuIwAALiMBeKU/dgAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAAG
+        UExURQAA/xjQP14JpdQAAAABYktHRACIBR1IAAAAFklEQVR42mMAgvp/IJTAhgdB1ADVAgDvdAnx
+        N1Ib1gAAAABJRU5ErkJggg=="/>
+</svg>
