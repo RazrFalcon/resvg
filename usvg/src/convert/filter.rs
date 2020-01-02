@@ -474,24 +474,23 @@ fn convert_fe_convolve_matrix(
         kernel_sum = 1.0;
     }
 
-    let mut divisor = fe.attribute::<f64>(AId::Divisor).unwrap_or(kernel_sum);
+    let divisor = fe.attribute::<f64>(AId::Divisor).unwrap_or(kernel_sum);
+    if divisor.is_fuzzy_zero() {
+        return create_dummy_primitive();
+    }
 
     let bias = fe.attribute(AId::Bias).unwrap_or(0.0);
 
     let target_x = parse_target(fe.attribute(AId::TargetX), order_x);
     let target_y = parse_target(fe.attribute(AId::TargetY), order_y);
 
-    let mut kernel_matrix = tree::ConvolveMatrix::default();
+    let target_x = try_opt_or!(target_x, create_dummy_primitive());
+    let target_y = try_opt_or!(target_y, create_dummy_primitive());
 
-    if !divisor.is_fuzzy_zero() {
-        if let (Some(target_x), Some(target_y)) = (target_x, target_y) {
-            kernel_matrix = tree::ConvolveMatrix::new(
-                target_x, target_y, order_x, order_y, matrix,
-            ).unwrap_or_default();
-        }
-    } else {
-        divisor = 1.0;
-    }
+    let kernel_matrix = tree::ConvolveMatrix::new(
+        target_x, target_y, order_x, order_y, matrix,
+    );
+    let kernel_matrix = try_opt_or!(kernel_matrix, create_dummy_primitive());
 
     let edge_mode = match fe.attribute(AId::EdgeMode).unwrap_or("duplicate") {
         "none" => tree::FeEdgeMode::None,

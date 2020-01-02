@@ -395,29 +395,6 @@ pub struct ConvolveMatrix {
     data: Vec<f64>,
 }
 
-impl Default for ConvolveMatrix {
-    fn default() -> Self {
-        ConvolveMatrix {
-            x: 1,
-            y: 1,
-            columns: 3,
-            rows: 3,
-            data: vec![1.0; 9],
-        }
-    }
-}
-
-impl crate::IsDefault for ConvolveMatrix {
-    #[inline]
-    fn is_default(&self) -> bool {
-           self.x == 1
-        && self.y == 1
-        && self.columns == 3
-        && self.rows == 3
-        && self.data == [1.0; 9]
-    }
-}
-
 impl ConvolveMatrix {
     /// Creates a new `ConvolveMatrix`.
     ///

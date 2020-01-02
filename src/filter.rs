@@ -1103,15 +1103,6 @@ pub mod convolve_matrix {
             std::cmp::max(min, std::cmp::min(max, val))
         }
 
-        if fe.matrix.is_default() {
-            // Reset to transparent black.
-            for i in 0..data.len() {
-                data[i] = rgb::alt::BGRA8::default();
-            }
-
-            return;
-        }
-
         let width_max = width as i32 - 1;
         let height_max = height as i32 - 1;
         let index_from_pos = |x: u32, y: u32| (y * width + x) as usize;
