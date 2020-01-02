@@ -2262,6 +2262,7 @@ fn calc_subregion<T: ImageExt>(
                 }
             }
         }
+        usvg::FilterKind::FeFlood(..) |
         usvg::FilterKind::FeImage(..) => {
             // `feImage` uses the object bbox.
             if filter.primitive_units == usvg::Units::ObjectBoundingBox {

@@ -369,7 +369,7 @@ impl Filter<skia::Surface> for SkiaFilter {
         region: ScreenRect,
     ) -> Result<Image, Error> {
         let c = fe.color;
-        let alpha = f64_bound(0.0, fe.opacity.value() * 255.0, 255.0) as u8;
+        let alpha = (fe.opacity.value() * 255.0) as u8;
 
         let mut buffer = create_surface(region.width(), region.height())?;
         buffer.fill(c.red, c.green, c.blue, alpha);
