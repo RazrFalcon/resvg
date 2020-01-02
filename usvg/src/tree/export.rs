@@ -217,7 +217,6 @@ fn conv_defs(
                                 ImageRendering::OptimizeSpeed   => "optimizeSpeed",
                             });
                             match img.data {
-                                FeImageKind::None => {}
                                 FeImageKind::Image(ref data, format) => {
                                     xml.write_image_data(data, format);
                                 }
@@ -691,10 +690,8 @@ fn has_xlink(tree: &Tree) -> bool {
         match *n.borrow() {
             NodeKind::Filter(ref filter) => {
                 for fe in &filter.children {
-                    if let FilterKind::FeImage(ref img) = fe.kind {
-                        if let FeImageKind::Image(..) | FeImageKind::Use(..) = img.data {
-                            return true;
-                        }
+                    if let FilterKind::FeImage(..) = fe.kind {
+                        return true;
                     }
                 }
             }

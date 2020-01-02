@@ -585,14 +585,12 @@ fn link_fe_image(
             convert_element(node, &state, &mut tree.defs(), tree);
 
             // Check that node was actually created.
-            // If not, reset the `feImage` link.
+            // If not, reset to a dummy primitive.
             if !tree.defs().descendants().any(|n| *n.id() == id) {
                 for mut filter_node in tree.defs().children() {
                     if let tree::NodeKind::Filter(ref mut filter) = *filter_node.borrow_mut() {
                         for fe in &mut filter.children {
-                            if let tree::FilterKind::FeImage(ref mut fe_img) = fe.kind {
-                                fe_img.data = tree::FeImageKind::None;
-                            }
+                            fe.kind = filter::create_dummy_primitive();
                         }
                     }
                 }

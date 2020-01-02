@@ -533,11 +533,8 @@ Only one of:
 * `preserveAspectRatio` = <<preserveAspectRatio-type,<preserveAspectRatio> >>
 * `image-rendering` = `optimizeSpeed`? +
   Default: optimizeQuality
-* `xlink:href` = <<iri-type,<IRI> >>? +
-  The IRI contains a file path or base64 encoded image.
-  Link to an element (like in `use`) is not supported. +
-  Unlike the `image` element, `feImage` can be without the `href` attribute.
-  In this case the filter primitive is an empty canvas.
+* `xlink:href` = <<iri-type,<IRI> >> +
+  The IRI contains a file path, base64 encoded image or a link to an element (like `use`).
 * <<Filter primitive attributes>>
 
 === Filter primitive `feMerge`

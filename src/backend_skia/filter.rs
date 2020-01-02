@@ -408,7 +408,6 @@ impl Filter<skia::Surface> for SkiaFilter {
         let mut buffer = create_surface(region.width(), region.height())?;
 
         match fe.data {
-            usvg::FeImageKind::None => {}
             usvg::FeImageKind::Image(ref data, format) => {
                 let dx = (subregion.x() - region.x()) as f64;
                 let dy = (subregion.y() - region.y()) as f64;

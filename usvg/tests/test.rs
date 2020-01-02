@@ -584,6 +584,46 @@ test!(fe_image_duplicates, false,
 </svg>
 ");
 
+test!(fe_image_with_invalid_link, false,
+"<svg viewBox='0 0 1 1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>
+    <defs>
+        <filter id='filter1'>
+            <feImage xlink:href='#rect1'/>
+        </filter>
+    </defs>
+    <rect filter='url(#filter1)' width='120' height='120'/>
+</svg>",
+"<svg
+    width='1'
+    height='1'
+    viewBox='0 0 1 1'
+    xmlns='http://www.w3.org/2000/svg'
+    xmlns:usvg='https://github.com/RazrFalcon/resvg'
+    usvg:version='0.8.0'>
+    <defs>
+        <filter
+            id='filter1'
+            x='-0.1'
+            y='-0.1'
+            width='1.2'
+            height='1.2'>
+            <feFlood
+                color-interpolation-filters='linearRGB'
+                flood-color='#000000'
+                flood-opacity='0'
+                result='result1'/>
+        </filter>
+    </defs>
+    <g
+        filter='url(#filter1)'>
+        <path
+            fill='#000000'
+            stroke='none'
+            d='M 0 0 L 120 0 L 120 120 L 0 120 Z'/>
+    </g>
+</svg>
+");
+
 test!(fe_diffuse_lighting_without_light_source, false,
 "<svg viewBox='0 0 1 1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>
     <filter id='filter1'>

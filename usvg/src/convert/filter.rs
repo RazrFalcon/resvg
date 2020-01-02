@@ -277,14 +277,6 @@ fn convert_fe_image(
         .find_attribute(AId::ImageRendering)
         .unwrap_or(state.opt.image_rendering);
 
-    let failed = || {
-        return tree::FilterKind::FeImage(tree::FeImage {
-            aspect,
-            rendering_mode,
-            data: tree::FeImageKind::None,
-        });
-    };
-
     if let Some(node) = fe.attribute::<svgtree::Node>(AId::Href) {
         // If `feImage` references an existing SVG element,
         // simply store its ID and do not attempt to convert the element itself.
@@ -303,14 +295,14 @@ fn convert_fe_image(
         Some(s) => s,
         _ => {
             warn!("The 'feImage' element lacks the 'xlink:href' attribute. Skipped.");
-            return failed();
+            return create_dummy_primitive();
         }
     };
 
     let href = super::image::get_href_data(fe.element_id(), href, state.opt.path.as_ref());
     let (img_data, format) = match href {
         Some((data, format)) => (data, format),
-        None => return failed(),
+        None => return create_dummy_primitive(),
     };
 
     tree::FilterKind::FeImage(tree::FeImage {
@@ -728,7 +720,7 @@ fn convert_light_source(
 // But since `FilterKind` structs are designed to always be valid,
 // we are using `FeFlood` as fallback.
 #[inline(never)]
-fn create_dummy_primitive() -> tree::FilterKind {
+pub fn create_dummy_primitive() -> tree::FilterKind {
     tree::FilterKind::FeFlood(tree::FeFlood {
         color: tree::Color::black(),
         opacity: tree::Opacity::new(0.0),

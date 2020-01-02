@@ -354,22 +354,12 @@ pub enum FeMorphologyOperator {
 /// Kind of the `feImage` data.
 #[derive(Clone, Debug)]
 pub enum FeImageKind {
-    /// Empty image.
-    ///
-    /// Unlike the `image` element, `feImage` can be without the `href` attribute.
-    /// In this case the filter primitive is an empty canvas.
-    /// And we can't remove it, because its `result` can be used.
-    None, // TODO: remove
-
     /// An image data.
     Image(ImageData, ImageFormat),
 
     /// A reference to an SVG object.
     ///
     /// `feImage` can reference any SVG object, just like `use` element.
-    /// But we can't resolve `use` in this case.
-    ///
-    /// Not supported yet.
     Use(String),
 }
 

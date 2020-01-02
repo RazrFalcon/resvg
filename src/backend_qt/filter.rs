@@ -408,7 +408,6 @@ impl Filter<qt::Image> for QtFilter {
         let mut buffer = create_image(region.width(), region.height())?;
 
         match fe.data {
-            usvg::FeImageKind::None => {}
             usvg::FeImageKind::Image(ref data, format) => {
                 let mut p = qt::Painter::new(&mut buffer);
 

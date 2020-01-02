@@ -435,7 +435,6 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         let buffer = create_image(region.width(), region.height())?;
 
         match fe.data {
-            usvg::FeImageKind::None => {}
             usvg::FeImageKind::Image(ref data, format) => {
                 let cr = cairo::Context::new(&buffer);
 
