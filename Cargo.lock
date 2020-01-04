@@ -360,6 +360,7 @@ dependencies = [
  "resvg-qt 0.8.0",
  "resvg-skia 0.8.0",
  "rgb 0.8.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "svgfilters 0.1.0",
  "usvg 0.8.0",
 ]
 
@@ -423,6 +424,14 @@ dependencies = [
 name = "siphasher"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "svgfilters"
+version = "0.1.0"
+dependencies = [
+ "float-cmp 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rgb 0.8.14 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "svgtypes"

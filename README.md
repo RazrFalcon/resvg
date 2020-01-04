@@ -105,6 +105,7 @@ All other dependencies aren't written by me for this project.
 - `docs` – basic documentation
 - `examples` – usage examples for *resvg* as a library
 - `src` – source code
+- `svgfilters` - SVG filters implementation
 - `testing-tools` – scripts used for testing
 - `tools` – useful tools
 - `usvg` – an SVG simplification library used by *resvg*

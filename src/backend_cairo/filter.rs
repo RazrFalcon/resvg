@@ -10,7 +10,7 @@ use log::warn;
 use usvg::ColorInterpolation as ColorSpace;
 
 use crate::prelude::*;
-use crate::filter::{self, Filter, ImageExt, Error, TransferFunctionExt};
+use crate::filter::{self, Filter, ImageExt, IntoSvgFilters, Error};
 use crate::ConvTransform;
 use super::ReCairoContextExt;
 
@@ -75,15 +75,9 @@ impl ImageExt for cairo::ImageSurface {
 
     fn into_srgb(&mut self) {
         if let Ok(ref mut data) = self.get_data() {
-            filter::from_premultiplied(data.as_bgra_mut());
-
-            for p in data.as_bgra_mut() {
-                p.r = filter::LINEAR_RGB_TO_SRGB_TABLE[p.r as usize];
-                p.g = filter::LINEAR_RGB_TO_SRGB_TABLE[p.g as usize];
-                p.b = filter::LINEAR_RGB_TO_SRGB_TABLE[p.b as usize];
-            }
-
-            filter::into_premultiplied(data.as_bgra_mut());
+            svgfilters::demultiply_alpha(data.as_bgra_mut());
+            svgfilters::from_linear_rgb(data.as_bgra_mut());
+            svgfilters::multiply_alpha(data.as_bgra_mut());
         } else {
             warn!("Cairo surface is already borrowed.");
         }
@@ -91,15 +85,9 @@ impl ImageExt for cairo::ImageSurface {
 
     fn into_linear_rgb(&mut self) {
         if let Ok(ref mut data) = self.get_data() {
-            filter::from_premultiplied(data.as_bgra_mut());
-
-            for p in data.as_bgra_mut() {
-                p.r = filter::SRGB_TO_LINEAR_RGB_TABLE[p.r as usize];
-                p.g = filter::SRGB_TO_LINEAR_RGB_TABLE[p.g as usize];
-                p.b = filter::SRGB_TO_LINEAR_RGB_TABLE[p.b as usize];
-            }
-
-            filter::into_premultiplied(data.as_bgra_mut());
+            svgfilters::demultiply_alpha(data.as_bgra_mut());
+            svgfilters::into_linear_rgb(data.as_bgra_mut());
+            svgfilters::multiply_alpha(data.as_bgra_mut());
         } else {
             warn!("Cairo surface is already borrowed.");
         }
@@ -222,16 +210,14 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         let (std_dx, std_dy, box_blur)
             = try_opt_or!(Self::resolve_std_dev(fe, units, bbox, ts), Ok(input));
 
-        let input = input.into_color_space(cs)?;
-        let mut buffer = input.take()?;
-
+        let mut buffer = input.into_color_space(cs)?.take()?;
         let (w, h) = (buffer.width(), buffer.height());
-
         if let Ok(ref mut data) = buffer.get_data() {
+            let img = svgfilters::ImageRefMut::new(data.as_bgra_mut(), w, h);
             if box_blur {
-                filter::box_blur::apply(data, w, h, std_dx, std_dy);
+                svgfilters::box_blur(std_dx, std_dy, img);
             } else {
-                filter::iir_blur::apply(data, w, h, std_dx, std_dy);
+                svgfilters::iir_blur(std_dx, std_dy, img);
             }
         }
 
@@ -298,52 +284,26 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         input1: Image,
         input2: Image,
     ) -> Result<Image, Error> {
-        use rgb::alt::BGRA8;
-
-        let mut input1 = input1.into_color_space(cs)?.take()?;
-        let mut input2 = input2.into_color_space(cs)?.take()?;
+        let mut buffer1 = input1.into_color_space(cs)?.take()?;
+        let mut buffer2 = input2.into_color_space(cs)?.take()?;
 
         let mut buffer = create_image(region.width(), region.height())?;
 
         if let Operator::Arithmetic { k1, k2, k3, k4 } = fe.operator {
-            let data1 = input1.get_data().unwrap();
-            let data2 = input2.get_data().unwrap();
-
-            let calc = |i1, i2, max| {
-                let i1 = i1 as f64 / 255.0;
-                let i2 = i2 as f64 / 255.0;
-                let result = k1 * i1 * i2 + k2 * i1 + k3 * i2 + k4;
-                f64_bound(0.0, result, max)
-            };
-
-            {
-                let mut i = 0;
-                let mut data3 = buffer.get_data().unwrap();
-                let data3 = data3.as_bgra_mut();
-                for (c1, c2) in data1.as_bgra().iter().zip(data2.as_bgra()) {
-                    let a = calc(c1.a, c2.a, 1.0);
-                    if a.is_fuzzy_zero() {
-                        i += 1;
-                        continue;
-                    }
-
-                    let r = (calc(c1.r, c2.r, a) * 255.0) as u8;
-                    let g = (calc(c1.g, c2.g, a) * 255.0) as u8;
-                    let b = (calc(c1.b, c2.b, a) * 255.0) as u8;
-                    let a = (a * 255.0) as u8;
-
-                    data3[i] = BGRA8 { r, g, b, a };
-
-                    i += 1;
-                }
-            }
+            let (w, h) = (region.width(), region.height());
+            svgfilters::arithmetic_composite(
+                k1, k2, k3, k4,
+                svgfilters::ImageRef::new(buffer1.get_data().unwrap().as_bgra(), w, h),
+                svgfilters::ImageRef::new(buffer2.get_data().unwrap().as_bgra(), w, h),
+                svgfilters::ImageRefMut::new(buffer.get_data().unwrap().as_bgra_mut(), w, h),
+            );
 
             return Ok(Image::from_image(buffer, cs));
         }
 
         let cr = cairo::Context::new(&buffer);
 
-        cr.set_source_surface(&input2, 0.0, 0.0);
+        cr.set_source_surface(&buffer2, 0.0, 0.0);
         cr.paint();
 
         use usvg::FeCompositeOperator as Operator;
@@ -357,7 +317,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         };
 
         cr.set_operator(operator);
-        cr.set_source_surface(&input1, 0.0, 0.0);
+        cr.set_source_surface(&buffer1, 0.0, 0.0);
         cr.paint();
 
         Ok(Image::from_image(buffer, cs))
@@ -475,20 +435,20 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         cs: ColorSpace,
         input: Image,
     ) -> Result<Image, Error> {
-        let input = input.into_color_space(cs)?;
-        let mut buffer = input.take()?;
-
+        let mut buffer = input.into_color_space(cs)?.take()?;
+        let (w, h) = (buffer.width(), buffer.height());
         if let Ok(ref mut data) = buffer.get_data() {
-            filter::from_premultiplied(data.as_bgra_mut());
+            svgfilters::demultiply_alpha(data.as_bgra_mut());
 
-            for pixel in data.as_bgra_mut() {
-                pixel.r = fe.func_r.apply(pixel.r);
-                pixel.g = fe.func_g.apply(pixel.g);
-                pixel.b = fe.func_b.apply(pixel.b);
-                pixel.a = fe.func_a.apply(pixel.a);
-            }
+            svgfilters::component_transfer(
+                fe.func_b.into_svgf(),
+                fe.func_g.into_svgf(),
+                fe.func_r.into_svgf(),
+                fe.func_a.into_svgf(),
+                svgfilters::ImageRefMut::new(data.as_bgra_mut(), w, h),
+            );
 
-            filter::into_premultiplied(data.as_bgra_mut());
+            svgfilters::multiply_alpha(data.as_bgra_mut());
         }
 
         Ok(Image::from_image(buffer, cs))
@@ -499,13 +459,14 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         cs: ColorSpace,
         input: Image,
     ) -> Result<Image, Error> {
-        let input = input.into_color_space(cs)?;
-        let mut buffer = input.take()?;
-
+        let mut buffer = input.into_color_space(cs)?.take()?;
+        let (w, h) = (buffer.width(), buffer.height());
         if let Ok(ref mut data) = buffer.get_data() {
-            filter::from_premultiplied(data.as_bgra_mut());
-            filter::color_matrix::apply(&fe.kind, data.as_bgra_mut());
-            filter::into_premultiplied(data.as_bgra_mut());
+            svgfilters::demultiply_alpha(data.as_bgra_mut());
+            svgfilters::color_matrix(
+                fe.kind.into_svgf(), svgfilters::ImageRefMut::new(data.as_bgra_mut(), w, h),
+            );
+            svgfilters::multiply_alpha(data.as_bgra_mut());
         }
 
         Ok(Image::from_image(buffer, cs))
@@ -516,19 +477,21 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         cs: ColorSpace,
         input: Image,
     ) -> Result<Image, Error> {
-        let input = input.into_color_space(cs)?;
-        let mut buffer = input.take()?;
+        let mut buffer = input.into_color_space(cs)?.take()?;
 
         if fe.preserve_alpha {
             if let Ok(ref mut data) = buffer.get_data() {
-                filter::from_premultiplied(data.as_bgra_mut());
+                svgfilters::demultiply_alpha(data.as_bgra_mut());
             }
         }
 
-        let w = buffer.width();
-        let h = buffer.height();
+        let (w, h) = (buffer.width(), buffer.height());
         if let Ok(ref mut data) = buffer.get_data() {
-            filter::convolve_matrix::apply(fe, w, h, data.as_bgra_mut());
+            svgfilters::convolve_matrix(
+                fe.matrix.into_svgf(), fe.divisor.value(), fe.bias,
+                fe.edge_mode.into_svgf(), fe.preserve_alpha,
+                svgfilters::ImageRefMut::new(data.as_bgra_mut(), w, h),
+            );
         }
 
         Ok(Image::from_image(buffer, cs))
@@ -542,17 +505,23 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let input = input.into_color_space(cs)?;
+        let mut buffer = input.into_color_space(cs)?.take()?;
         let (rx, ry) = try_opt_or!(
             Self::scale_coordinates(fe.radius_x.value(), fe.radius_y.value(), units, bbox, ts),
-            Ok(input)
+            Ok(Image::from_image(buffer, cs))
         );
 
-        let mut buffer = input.take()?;
-        let w = buffer.width();
-        let h = buffer.height();
+        if !(rx > 0.0 && ry > 0.0) {
+            buffer.clear();
+            return Ok(Image::from_image(buffer, cs));
+        }
+
+        let (w, h) = (buffer.width(), buffer.height());
         if let Ok(ref mut data) = buffer.get_data() {
-            filter::morphology::apply(fe.operator, rx, ry, w, h, data.as_bgra_mut());
+            svgfilters::morphology(
+                fe.operator.into_svgf(), rx, ry,
+                svgfilters::ImageRefMut::new(data.as_bgra_mut(), w, h),
+            );
         }
 
         Ok(Image::from_image(buffer, cs))
@@ -568,27 +537,26 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         input1: Image,
         input2: Image,
     ) -> Result<Image, Error> {
-        let input1 = input1.into_color_space(cs)?;
-        let input2 = input2.into_color_space(cs)?;
+        let mut buffer1 = input1.into_color_space(cs)?.take()?;
+        let mut buffer2 = input2.into_color_space(cs)?.take()?;
         let (sx, sy) = try_opt_or!(
             Self::scale_coordinates(fe.scale, fe.scale, units, bbox, ts),
-            Ok(input1)
+            Ok(Image::from_image(buffer1, cs))
         );
 
-        let mut buffer1 = input1.take()?;
-        let mut buffer2 = input2.take()?;
         let mut buffer = create_image(region.width(), region.height())?;
 
+        let (w, h) = (buffer.width(), buffer.height());
         if let (Ok(buffer1), Ok(buffer2), Ok(mut buffer))
             = (buffer1.get_data(), buffer2.get_data(), buffer.get_data())
         {
-            filter::displacement_map::apply(
-                fe.x_channel_selector, fe.y_channel_selector,
-                region.width(), region.height(),
+            svgfilters::displacement_map(
+                fe.x_channel_selector.into_svgf(),
+                fe.y_channel_selector.into_svgf(),
                 sx, sy,
-                buffer1.as_bgra(),
-                buffer2.as_bgra(),
-                buffer.as_bgra_mut(),
+                svgfilters::ImageRef::new(buffer1.as_bgra(), w, h),
+                svgfilters::ImageRef::new(buffer2.as_bgra(), w, h),
+                svgfilters::ImageRefMut::new(buffer.as_bgra_mut(), w, h),
             );
         }
 
@@ -602,9 +570,25 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         ts: &usvg::Transform,
     ) -> Result<Image, Error> {
         let mut buffer = create_image(region.width(), region.height())?;
+        let (sx, sy) = ts.get_scale();
+        if sx.is_fuzzy_zero() || sy.is_fuzzy_zero() {
+            return Ok(Image::from_image(buffer, cs));
+        }
+
+        let (w, h) = (buffer.width(), buffer.height());
         if let Ok(ref mut data) = buffer.get_data() {
-            filter::turbulence::apply(fe, region, ts, data.as_bgra_mut());
-            filter::into_premultiplied(data.as_bgra_mut());
+            svgfilters::turbulence(
+                region.x() as f64, region.y() as f64,
+                sx, sy,
+                fe.base_frequency.x.value().into(), fe.base_frequency.y.value().into(),
+                fe.num_octaves,
+                fe.seed,
+                fe.stitch_tiles,
+                fe.kind == usvg::FeTurbulenceKind::FractalNoise,
+                svgfilters::ImageRefMut::new(data.as_bgra_mut(), w, h),
+            );
+
+            svgfilters::multiply_alpha(data.as_bgra_mut());
         }
 
         Ok(Image::from_image(buffer, cs))
@@ -620,8 +604,18 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         let mut input = input.take()?;
         let mut buffer = create_image(region.width(), region.height())?;
 
+        let light_source = crate::filter::transform_light_source(region, ts, fe.light_source);
+
+        let (w, h) = (buffer.width(), buffer.height());
         if let (Ok(ref buf_in), Ok(ref mut buf_out)) = (input.get_data(), buffer.get_data()) {
-            filter::lighting::apply_diffuse(fe, region, ts, buf_in.as_bgra(), buf_out.as_bgra_mut());
+            svgfilters::diffuse_lighting(
+                fe.surface_scale,
+                fe.diffuse_constant,
+                fe.lighting_color.into_svgf(),
+                light_source.into_svgf(),
+                svgfilters::ImageRef::new(buf_in.as_bgra(), w, h),
+                svgfilters::ImageRefMut::new(buf_out.as_bgra_mut(), w, h),
+            );
         }
 
         Ok(Image::from_image(buffer, cs))
@@ -637,8 +631,19 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         let mut input = input.take()?;
         let mut buffer = create_image(region.width(), region.height())?;
 
+        let light_source = crate::filter::transform_light_source(region, ts, fe.light_source);
+
+        let (w, h) = (buffer.width(), buffer.height());
         if let (Ok(ref buf_in), Ok(ref mut buf_out)) = (input.get_data(), buffer.get_data()) {
-            filter::lighting::apply_specular(fe, region, ts, buf_in.as_bgra(), buf_out.as_bgra_mut());
+            svgfilters::specular_lighting(
+                fe.surface_scale,
+                fe.specular_constant,
+                fe.specular_exponent,
+                fe.lighting_color.into_svgf(),
+                light_source.into_svgf(),
+                svgfilters::ImageRef::new(buf_in.as_bgra(), w, h),
+                svgfilters::ImageRefMut::new(buf_out.as_bgra_mut(), w, h),
+            );
         }
 
         Ok(Image::from_image(buffer, cs))

@@ -112,7 +112,7 @@ impl OutputImage for cairo::ImageSurface {
         let mut img = try_opt_or!(self.get_data().ok(), false).to_vec();
 
         // BGRA_Premultiplied -> BGRA
-        crate::filter::from_premultiplied(img.as_bgra_mut());
+        svgfilters::demultiply_alpha(img.as_bgra_mut());
         // BGRA -> RGBA.
         img.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
 

@@ -1,0 +1,17 @@
+[package]
+name = "svgfilters"
+version = "0.1.0"
+authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
+keywords = ["svg", "filter"]
+license = "MPL-2.0"
+edition = "2018"
+description = "Implementation of various SVG filters."
+categories = ["multimedia::images"]
+repository = "https://github.com/RazrFalcon/resvg/svgfilters"
+documentation = "https://docs.rs/svgfilters/"
+readme = "README.md"
+workspace = ".."
+
+[dependencies]
+rgb = "0.8"
+float-cmp = { version = "0.5", default-features = false }

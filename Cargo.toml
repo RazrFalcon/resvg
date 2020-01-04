@@ -16,6 +16,7 @@ members = [
     "bindings/resvg-qt",
     "bindings/resvg-skia",
     "capi",
+    "svgfilters",
     "tools/rendersvg",
     "tools/usvg",
     "usvg",
@@ -30,6 +31,7 @@ rgb = "0.8"
 usvg = { path = "usvg", version = "0.8", default-features = false }
 png = { version = "0.15", default-features = false }
 jpeg-decoder = { version = "0.1.15", default-features = false }
+svgfilters = { path = "svgfilters", version = "0.1" }
 
 # cairo backend
 cairo-rs = { version = "0.8.0", default-features = false, features = ["png"], optional = true }
