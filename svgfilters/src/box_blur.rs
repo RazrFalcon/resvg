@@ -8,6 +8,8 @@ use std::cmp;
 
 use crate::{ImageRefMut, BGRA8};
 
+const STEPS: usize = 5;
+
 /// Applies a box blur.
 ///
 /// Input image pixels should have a **premultiplied alpha**.
@@ -22,27 +24,22 @@ pub fn box_blur(
     sigma_y: f64,
     mut src: ImageRefMut,
 ) {
-    let boxes_horz = create_box_gauss(sigma_x as f32, 5);
-    let boxes_vert = create_box_gauss(sigma_y as f32, 5);
+    let boxes_horz = create_box_gauss(sigma_x as f32);
+    let boxes_vert = create_box_gauss(sigma_y as f32);
     let mut backbuf = src.data.to_vec();
     let mut backbuf = ImageRefMut::new(&mut backbuf, src.width, src.height);
 
     for (box_size_horz, box_size_vert) in boxes_horz.iter().zip(boxes_vert.iter()) {
         let radius_horz = ((box_size_horz - 1) / 2) as usize;
         let radius_vert = ((box_size_vert - 1) / 2) as usize;
-        // We don't care if an input image is RGBA or BGRA
-        // since all channels will be processed the same.
         box_blur_impl(radius_horz, radius_vert, &mut backbuf, &mut src);
     }
 }
 
 #[inline(never)]
-fn create_box_gauss(
-    sigma: f32,
-    n: usize,
-) -> Vec<i32> {
+fn create_box_gauss(sigma: f32) -> [i32; STEPS] {
     if sigma > 0.0 {
-        let n_float = n as f32;
+        let n_float = STEPS as f32;
 
         // Ideal averaging filter width
         let w_ideal = (12.0 * sigma * sigma / n_float).sqrt() + 1.0;
@@ -62,18 +59,18 @@ fn create_box_gauss(
              / (-4.0 * wl_float - 4.0);
         let m = m_ideal.round() as usize;
 
-        let mut sizes = Vec::new();
-        for i in 0..n {
+        let mut sizes = [0; STEPS];
+        for i in 0..STEPS {
             if i < m {
-                sizes.push(wl);
+                sizes[i] = wl;
             } else {
-                sizes.push(wu);
+                sizes[i] = wu;
             }
         }
 
         sizes
     } else {
-        vec![1; n]
+        [1; STEPS]
     }
 }
 
@@ -113,12 +110,12 @@ fn box_blur_vert(
         let mut li = ti;
         let mut ri = ti + blur_radius * width;
 
-        let fv: BGRA8 = [0,0,0,0].into();
-        let lv: BGRA8 = [0,0,0,0].into();
+        let fv = BGRA8::default();
+        let lv = BGRA8::default();
 
-        let mut val_r = blur_radius_next * (fv.r as isize);
-        let mut val_g = blur_radius_next * (fv.g as isize);
         let mut val_b = blur_radius_next * (fv.b as isize);
+        let mut val_g = blur_radius_next * (fv.g as isize);
+        let mut val_r = blur_radius_next * (fv.r as isize);
         let mut val_a = blur_radius_next * (fv.a as isize);
 
         // Get the pixel at the specified index, or the first pixel of the column
@@ -143,32 +140,32 @@ fn box_blur_vert(
 
         for j in 0..cmp::min(blur_radius, height) {
             let bb = backbuf.data[ti + j * width];
-            val_r += bb.r as isize;
-            val_g += bb.g as isize;
             val_b += bb.b as isize;
+            val_g += bb.g as isize;
+            val_r += bb.r as isize;
             val_a += bb.a as isize;
         }
         if blur_radius > height {
-            val_r += blur_radius_prev * (lv.r as isize);
-            val_g += blur_radius_prev * (lv.g as isize);
             val_b += blur_radius_prev * (lv.b as isize);
+            val_g += blur_radius_prev * (lv.g as isize);
+            val_r += blur_radius_prev * (lv.r as isize);
             val_a += blur_radius_prev * (lv.a as isize);
         }
 
         for _ in 0..cmp::min(height, blur_radius + 1) {
             let bb = get_bottom(ri);
             ri += width;
-            val_r += sub(bb.r, fv.r);
-            val_g += sub(bb.g, fv.g);
             val_b += sub(bb.b, fv.b);
+            val_g += sub(bb.g, fv.g);
+            val_r += sub(bb.r, fv.r);
             val_a += sub(bb.a, fv.a);
 
-            frontbuf.data[ti] = [
-                round(val_r as f32 * iarr) as u8,
-                round(val_g as f32 * iarr) as u8,
-                round(val_b as f32 * iarr) as u8,
-                round(val_a as f32 * iarr) as u8,
-            ].into();
+            frontbuf.data[ti] = BGRA8 {
+                b: round(val_b as f32 * iarr) as u8,
+                g: round(val_g as f32 * iarr) as u8,
+                r: round(val_r as f32 * iarr) as u8,
+                a: round(val_a as f32 * iarr) as u8,
+            };
             ti += width;
         }
 
@@ -183,17 +180,17 @@ fn box_blur_vert(
             let bb2 = backbuf.data[li];
             li += width;
 
-            val_r += sub(bb1.r, bb2.r);
-            val_g += sub(bb1.g, bb2.g);
             val_b += sub(bb1.b, bb2.b);
+            val_g += sub(bb1.g, bb2.g);
+            val_r += sub(bb1.r, bb2.r);
             val_a += sub(bb1.a, bb2.a);
 
-            frontbuf.data[ti] = [
-                round(val_r as f32 * iarr) as u8,
-                round(val_g as f32 * iarr) as u8,
-                round(val_b as f32 * iarr) as u8,
-                round(val_a as f32 * iarr) as u8,
-            ].into();
+            frontbuf.data[ti] = BGRA8 {
+                b: round(val_b as f32 * iarr) as u8,
+                g: round(val_g as f32 * iarr) as u8,
+                r: round(val_r as f32 * iarr) as u8,
+                a: round(val_a as f32 * iarr) as u8,
+            };
             ti += width;
         }
 
@@ -201,17 +198,17 @@ fn box_blur_vert(
             let bb = get_top(li);
             li += width;
 
-            val_r += sub(lv.r, bb.r);
-            val_g += sub(lv.g, bb.g);
             val_b += sub(lv.b, bb.b);
+            val_g += sub(lv.g, bb.g);
+            val_r += sub(lv.r, bb.r);
             val_a += sub(lv.a, bb.a);
 
-            frontbuf.data[ti] = [
-                round(val_r as f32 * iarr) as u8,
-                round(val_g as f32 * iarr) as u8,
-                round(val_b as f32 * iarr) as u8,
-                round(val_a as f32 * iarr) as u8,
-            ].into();
+            frontbuf.data[ti] = BGRA8 {
+                b: round(val_b as f32 * iarr) as u8,
+                g: round(val_g as f32 * iarr) as u8,
+                r: round(val_r as f32 * iarr) as u8,
+                a: round(val_a as f32 * iarr) as u8,
+            };
             ti += width;
         }
     }
@@ -242,12 +239,12 @@ fn box_blur_horz(
         let mut li = ti;
         let mut ri = ti + blur_radius;
 
-        let fv: BGRA8 = [0,0,0,0].into();
-        let lv: BGRA8 = [0,0,0,0].into();
+        let fv = BGRA8::default();
+        let lv = BGRA8::default();
 
-        let mut val_r = blur_radius_next * (fv.r as isize);
-        let mut val_g = blur_radius_next * (fv.g as isize);
         let mut val_b = blur_radius_next * (fv.b as isize);
+        let mut val_g = blur_radius_next * (fv.g as isize);
+        let mut val_r = blur_radius_next * (fv.r as isize);
         let mut val_a = blur_radius_next * (fv.a as isize);
 
         // Get the pixel at the specified index, or the first pixel of the row
@@ -272,15 +269,15 @@ fn box_blur_horz(
 
         for j in 0..cmp::min(blur_radius, width) {
             let bb = backbuf.data[ti + j]; // VERTICAL: ti + j * width
-            val_r += bb.r as isize;
-            val_g += bb.g as isize;
             val_b += bb.b as isize;
+            val_g += bb.g as isize;
+            val_r += bb.r as isize;
             val_a += bb.a as isize;
         }
         if blur_radius > width {
-            val_r += blur_radius_prev * (lv.r as isize);
-            val_g += blur_radius_prev * (lv.g as isize);
             val_b += blur_radius_prev * (lv.b as isize);
+            val_g += blur_radius_prev * (lv.g as isize);
+            val_r += blur_radius_prev * (lv.r as isize);
             val_a += blur_radius_prev * (lv.a as isize);
         }
 
@@ -288,17 +285,17 @@ fn box_blur_horz(
         for _ in 0..cmp::min(width, blur_radius + 1) {
             let bb = get_right(ri);
             ri += 1;
-            val_r += sub(bb.r, fv.r);
-            val_g += sub(bb.g, fv.g);
             val_b += sub(bb.b, fv.b);
+            val_g += sub(bb.g, fv.g);
+            val_r += sub(bb.r, fv.r);
             val_a += sub(bb.a, fv.a);
 
-            frontbuf.data[ti] = [
-                round(val_r as f32 * iarr) as u8,
-                round(val_g as f32 * iarr) as u8,
-                round(val_b as f32 * iarr) as u8,
-                round(val_a as f32 * iarr) as u8,
-            ].into();
+            frontbuf.data[ti] = BGRA8 {
+                b: round(val_b as f32 * iarr) as u8,
+                g: round(val_g as f32 * iarr) as u8,
+                r: round(val_r as f32 * iarr) as u8,
+                a: round(val_a as f32 * iarr) as u8,
+            };
             ti += 1; // VERTICAL : ti += width, same with the other areas
         }
 
@@ -315,17 +312,17 @@ fn box_blur_horz(
             let bb2 = backbuf.data[li];
             li += 1;
 
-            val_r += sub(bb1.r, bb2.r);
-            val_g += sub(bb1.g, bb2.g);
             val_b += sub(bb1.b, bb2.b);
+            val_g += sub(bb1.g, bb2.g);
+            val_r += sub(bb1.r, bb2.r);
             val_a += sub(bb1.a, bb2.a);
 
-            frontbuf.data[ti] = [
-                round(val_r as f32 * iarr) as u8,
-                round(val_g as f32 * iarr) as u8,
-                round(val_b as f32 * iarr) as u8,
-                round(val_a as f32 * iarr) as u8,
-            ].into();
+            frontbuf.data[ti] = BGRA8 {
+                b: round(val_b as f32 * iarr) as u8,
+                g: round(val_g as f32 * iarr) as u8,
+                r: round(val_r as f32 * iarr) as u8,
+                a: round(val_a as f32 * iarr) as u8,
+            };
             ti += 1;
         }
 
@@ -334,17 +331,17 @@ fn box_blur_horz(
             let bb = get_left(li);
             li += 1;
 
-            val_r += sub(lv.r, bb.r);
-            val_g += sub(lv.g, bb.g);
             val_b += sub(lv.b, bb.b);
+            val_g += sub(lv.g, bb.g);
+            val_r += sub(lv.r, bb.r);
             val_a += sub(lv.a, bb.a);
 
-            frontbuf.data[ti] = [
-                round(val_r as f32 * iarr) as u8,
-                round(val_g as f32 * iarr) as u8,
-                round(val_b as f32 * iarr) as u8,
-                round(val_a as f32 * iarr) as u8,
-            ].into();
+            frontbuf.data[ti] = BGRA8 {
+                b: round(val_b as f32 * iarr) as u8,
+                g: round(val_g as f32 * iarr) as u8,
+                r: round(val_r as f32 * iarr) as u8,
+                a: round(val_a as f32 * iarr) as u8,
+            };
             ti += 1;
         }
     }
