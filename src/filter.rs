@@ -578,7 +578,7 @@ pub trait IntoSvgFilters<T>: Sized {
 
 impl IntoSvgFilters<svgfilters::BGR8> for usvg::Color {
     fn into_svgf(self) -> svgfilters::BGR8 {
-        svgfilters::BGR8::new(self.red, self.green, self.blue)
+        svgfilters::BGR8 { b: self.blue, g: self.green, r: self.red }
     }
 }
 

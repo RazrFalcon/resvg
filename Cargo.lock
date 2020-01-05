@@ -359,7 +359,7 @@ dependencies = [
  "raqote 0.7.8-alpha.0 (git+https://github.com/jrmuizel/raqote?rev=146bd17)",
  "resvg-qt 0.8.0",
  "resvg-skia 0.8.0",
- "rgb 0.8.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rgb 0.8.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "svgfilters 0.1.0",
  "usvg 0.8.0",
 ]
@@ -392,7 +392,7 @@ dependencies = [
 
 [[package]]
 name = "rgb"
-version = "0.8.14"
+version = "0.8.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -430,7 +430,7 @@ name = "svgfilters"
 version = "0.1.0"
 dependencies = [
  "float-cmp 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "rgb 0.8.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rgb 0.8.16 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -593,7 +593,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum raqote 0.7.8-alpha.0 (git+https://github.com/jrmuizel/raqote?rev=146bd17)" = "<none>"
 "checksum rctree 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "be9e29cb19c8fe84169fcb07f8f11e66bc9e6e0280efd4715c54818296f8a4a8"
 "checksum redox_syscall 0.1.56 (registry+https://github.com/rust-lang/crates.io-index)" = "2439c63f3f6139d1b57529d16bc3b8bb855230c8efcc5d3a896c8bea7c3b1e84"
-"checksum rgb 0.8.14 (registry+https://github.com/rust-lang/crates.io-index)" = "2089e4031214d129e201f8c3c8c2fe97cd7322478a0d1cdf78e7029b0042efdb"
+"checksum rgb 0.8.16 (registry+https://github.com/rust-lang/crates.io-index)" = "5ec4ab2cf0b27e111e266e161cf7f9efd20125a161190da1c0945c4a4408fef3"
 "checksum roxmltree 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "27824cdacc2666f494734bd7bd0d05124f3dea3199893fd67e37277220702643"
 "checksum servo-freetype-sys 4.0.5 (registry+https://github.com/rust-lang/crates.io-index)" = "2c4ccb6d0d32d277d3ef7dea86203d8210945eb7a45fba89dd445b3595dd0dfc"
 "checksum simplecss 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "596554e63596d556a0dbd681416342ca61c75f1a45203201e7e77d3fa2fa9014"

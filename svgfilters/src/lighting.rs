@@ -352,12 +352,12 @@ fn light_color(
             let direction = direction.normalized().unwrap_or(direction);
             let minus_l_dot_s = -light_vector.dot(&direction);
             if minus_l_dot_s <= 0.0 {
-                return BGR8::new(0, 0, 0);
+                return BGR8::default();
             }
 
             if let Some(limiting_cone_angle) = limiting_cone_angle {
                 if minus_l_dot_s < limiting_cone_angle.to_radians().cos() {
-                    return BGR8::new(0, 0, 0);
+                    return BGR8::default();
                 }
             }
 
