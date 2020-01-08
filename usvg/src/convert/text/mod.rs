@@ -228,6 +228,8 @@ fn convert_span(
         return None;
     }
 
+    path_data.transform(*text_ts);
+
     let mut fill = span.fill.take();
     if let Some(ref mut fill) = fill {
         // The `fill-rule` should be ignored.
@@ -240,7 +242,7 @@ fn convert_span(
 
     let path = tree::Path {
         id: String::new(),
-        transform: *text_ts,
+        transform: tree::Transform::default(),
         visibility: span.visibility,
         fill,
         stroke: span.stroke.take(),
@@ -349,8 +351,9 @@ fn convert_decoration(
         path.transform_from(start_idx, ts);
     }
 
+    path.transform(transform);
+
     tree::Path {
-        transform,
         visibility: span.visibility,
         fill: decoration.fill.take(),
         stroke: decoration.stroke.take(),

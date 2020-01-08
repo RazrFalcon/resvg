@@ -25,6 +25,7 @@ This changelog also contains important changes in dependencies.
 - (usvg) `g`, `path` and `image` can now be set inside `defs`. Required by `feImage`.
 
 ### Fixed
+- (usvg) Transform processing during text-to-path conversion.
 - `feComposite` with fully transparent region was producing an invalid result.
 - Fallback to `matrix` in `feColorMatrix` when `type` is not set or invalid.
 - ID preserving for `use` elements.
