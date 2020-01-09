@@ -349,8 +349,9 @@ fn convert_group(
         }
     }
 
-    let filter_fill = resolve_filter_fill(node, state, filter.as_deref(), tree);
-    let filter_stroke = resolve_filter_stroke(node, state, filter.as_deref(), tree);
+    // TODO: move to `::deref` later.
+    let filter_fill = resolve_filter_fill(node, state, filter.as_ref().map(|t| t.as_str()), tree);
+    let filter_stroke = resolve_filter_stroke(node, state, filter.as_ref().map(|t| t.as_str()), tree);
 
     let transform: tree::Transform = node.attribute(AId::Transform).unwrap_or_default();
 
