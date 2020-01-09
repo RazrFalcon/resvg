@@ -19,7 +19,9 @@ resvg = { path = "../" }
 cairo-sys-rs = { version = "0.9.0", optional = true }
 
 [features]
+default = ["text"]
 cairo-backend = ["resvg/cairo-backend", "cairo-sys-rs"]
 qt-backend = ["resvg/qt-backend"]
 skia-backend = ["resvg/skia-backend"]
 raqote-backend = ["resvg/raqote-backend"]
+text = ["resvg/text"]
