@@ -243,49 +243,49 @@ pub extern "C" fn resvg_tree_destroy(
 
 #[cfg(feature = "qt-backend")]
 #[no_mangle]
-pub extern "C" fn resvg_qt_render_to_image(
+pub extern "C" fn resvg_qt_render_to_file(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     file_path: *const c_char,
 ) -> i32 {
     let backend = Box::new(resvg::backend_qt::Backend);
-    render_to_image(tree, opt, file_path, backend)
+    render_to_file(tree, opt, file_path, backend)
 }
 
 #[cfg(feature = "cairo-backend")]
 #[no_mangle]
-pub extern "C" fn resvg_cairo_render_to_image(
+pub extern "C" fn resvg_cairo_render_to_file(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     file_path: *const c_char,
 ) -> i32 {
     let backend = Box::new(resvg::backend_cairo::Backend);
-    render_to_image(tree, opt, file_path, backend)
+    render_to_file(tree, opt, file_path, backend)
 }
 
 #[cfg(feature = "raqote-backend")]
 #[no_mangle]
-pub extern "C" fn resvg_raqote_render_to_image(
+pub extern "C" fn resvg_raqote_render_to_file(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     file_path: *const c_char,
 ) -> i32 {
     let backend = Box::new(resvg::backend_raqote::Backend);
-    render_to_image(tree, opt, file_path, backend)
+    render_to_file(tree, opt, file_path, backend)
 }
 
 #[cfg(feature = "skia-backend")]
 #[no_mangle]
-pub extern "C" fn resvg_skia_render_to_image(
+pub extern "C" fn resvg_skia_render_to_file(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     file_path: *const c_char,
 ) -> i32 {
     let backend = Box::new(resvg::backend_skia::Backend);
-    render_to_image(tree, opt, file_path, backend)
+    render_to_file(tree, opt, file_path, backend)
 }
 
-fn render_to_image(
+fn render_to_file(
     tree: *const resvg_render_tree,
     opt: *const resvg_options,
     file_path: *const c_char,

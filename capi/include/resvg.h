@@ -380,16 +380,16 @@ void resvg_tree_destroy(resvg_render_tree *tree);
 
 #ifdef RESVG_CAIRO_BACKEND
 /**
- * @brief Renders the #resvg_render_tree to file.
+ * @brief Renders the #resvg_render_tree into a PNG file.
  *
  * @param tree Render tree.
  * @param opt Rendering options.
  * @param file_path File path.
  * @return #resvg_error
  */
-int resvg_cairo_render_to_image(const resvg_render_tree *tree,
-                                const resvg_options *opt,
-                                const char *file_path);
+int resvg_cairo_render_to_file(const resvg_render_tree *tree,
+                               const resvg_options *opt,
+                               const char *file_path);
 
 /**
  * @brief Renders the #resvg_render_tree to canvas.
@@ -424,16 +424,16 @@ void resvg_cairo_render_to_canvas_by_id(const resvg_render_tree *tree,
 
 #ifdef RESVG_QT_BACKEND
 /**
- * @brief Renders the #resvg_render_tree to file.
+ * @brief Renders the #resvg_render_tree into a PNG file.
  *
  * @param tree Render tree.
  * @param opt Rendering options.
  * @param file_path File path.
  * @return #resvg_error
  */
-int resvg_qt_render_to_image(const resvg_render_tree *tree,
-                             const resvg_options *opt,
-                             const char *file_path);
+int resvg_qt_render_to_file(const resvg_render_tree *tree,
+                            const resvg_options *opt,
+                            const char *file_path);
 
 /**
  * @brief Renders the #resvg_render_tree to canvas.
@@ -468,16 +468,16 @@ void resvg_qt_render_to_canvas_by_id(const resvg_render_tree *tree,
 
 #ifdef RESVG_RAQOTE_BACKEND
 /**
- * @brief Renders the #resvg_render_tree to file.
+ * @brief Renders the #resvg_render_tree into a PNG file.
  *
  * @param tree Render tree.
  * @param opt Rendering options.
  * @param file_path File path.
  * @return #resvg_error
  */
-int resvg_raqote_render_to_image(const resvg_render_tree *tree,
-                                 const resvg_options *opt,
-                                 const char *file_path);
+int resvg_raqote_render_to_file(const resvg_render_tree *tree,
+                                const resvg_options *opt,
+                                const char *file_path);
 
 /**
  * Raqote backend doesn't have render_to_canvas and render_to_canvas_by_id
@@ -489,16 +489,16 @@ int resvg_raqote_render_to_image(const resvg_render_tree *tree,
 #ifdef RESVG_SKIA_BACKEND
 
 /**
- * @brief Renders the #resvg_render_tree to file.
+ * @brief Renders the #resvg_render_tree into a PNG file.
  *
  * @param tree Render tree.
  * @param opt Rendering options.
  * @param file_path File path.
  * @return #resvg_error
  */
-int resvg_skia_render_to_image(const resvg_render_tree *tree,
-                               const resvg_options *opt,
-                               const char *file_path);
+int resvg_skia_render_to_file(const resvg_render_tree *tree,
+                              const resvg_options *opt,
+                              const char *file_path);
 
 /**
  * @brief Renders the #resvg_render_tree to canvas.

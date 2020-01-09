@@ -23,6 +23,7 @@ This changelog also contains important changes in dependencies.
 - Use `flate2` instead of `libflate` for GZip decoding.
 - (usvg) `fill` and `stroke` attributes will always be set for `path` now.
 - (usvg) `g`, `path` and `image` can now be set inside `defs`. Required by `feImage`.
+- (c-api) Rename `resvg_*_render_to_image` into `resvg_*_render_to_file`.
 
 ### Fixed
 - (usvg) Transform processing during text-to-path conversion.
