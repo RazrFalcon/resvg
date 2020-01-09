@@ -162,7 +162,14 @@ pub trait OutputImage {
     ) -> bool;
 
     /// Converts an image's internal data into a `Vec<u8>`.
+    ///
+    /// Channels order and alpha multiplication will be different for each backend.
     fn make_vec(&mut self) -> Vec<u8>;
+
+    /// Converts an image's internal data into a `Vec<u8>`.
+    ///
+    /// Image will be converted into an unmultiplied RGBA array.
+    fn make_rgba_vec(&mut self) -> Vec<u8>;
 }
 
 

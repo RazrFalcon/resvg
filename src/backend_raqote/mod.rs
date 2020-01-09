@@ -116,6 +116,20 @@ impl OutputImage for raqote::DrawTarget {
     fn make_vec(&mut self) -> Vec<u8> {
         self.get_data_u8_mut().to_vec()
     }
+
+    fn make_rgba_vec(&mut self) -> Vec<u8> {
+        use rgb::FromSlice;
+        use std::mem::swap;
+
+        let mut data = self.make_vec();
+
+        // BGRA_Premultiplied -> BGRA
+        svgfilters::demultiply_alpha(data.as_bgra_mut());
+        // BGRA -> RGBA.
+        data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+
+        data
+    }
 }
 
 

@@ -98,9 +98,6 @@ impl OutputImage for cairo::ImageSurface {
         // Cairo doesn't support custom compression levels,
         // so we are using the `png` crate to save a surface manually.
 
-        use rgb::FromSlice;
-        use std::mem::swap;
-
         let file = try_opt_or!(std::fs::File::create(path).ok(), false);
         let ref mut w = std::io::BufWriter::new(file);
 
@@ -109,19 +106,27 @@ impl OutputImage for cairo::ImageSurface {
         encoder.set_depth(png::BitDepth::Eight);
         let mut writer = try_opt_or!(encoder.write_header().ok(), false);
 
-        let mut img = try_opt_or!(self.get_data().ok(), false).to_vec();
-
-        // BGRA_Premultiplied -> BGRA
-        svgfilters::demultiply_alpha(img.as_bgra_mut());
-        // BGRA -> RGBA.
-        img.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
-
-        try_opt_or!(writer.write_image_data(&img).ok(), false);
+        let data = self.make_rgba_vec();
+        try_opt_or!(writer.write_image_data(&data).ok(), false);
         true
     }
 
     fn make_vec(&mut self) -> Vec<u8> {
         self.get_data().unwrap().to_vec()
+    }
+
+    fn make_rgba_vec(&mut self) -> Vec<u8> {
+        use rgb::FromSlice;
+        use std::mem::swap;
+
+        let mut data = self.make_vec();
+
+        // BGRA_Premultiplied -> BGRA
+        svgfilters::demultiply_alpha(data.as_bgra_mut());
+        // BGRA -> RGBA.
+        data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+
+        data
     }
 }
 

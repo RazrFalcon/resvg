@@ -14,7 +14,7 @@ This changelog also contains important changes in dependencies.
 - Load grayscale raster images.
 - `enable-background` support.
 - resvg/usvg can be built without text rendering support now.
-- `OutputImage::make_vec`.
+- `OutputImage::make_vec` and `OutputImage::make_rgba_vec`.
 - `feImage` with a reference to an internal element.
 
 ### Changed
