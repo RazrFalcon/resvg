@@ -12,7 +12,6 @@ fern = "=0.5.8" # fixed version without chrono
 log = "0.4"
 pico-args = "0.2"
 resvg = { path = "../../", default-features = false }
-time = "0.1"
 
 [features]
 default = ["text"]

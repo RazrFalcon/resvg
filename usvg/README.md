@@ -52,9 +52,7 @@ Full spec can be found [here](../docs/usvg_spec.adoc).
 - CSS support is minimal.
 - Only [static](http://www.w3.org/TR/SVG11/feature#SVG-static) SVG features,
   e.g. no: `a`, `view`, `cursor`, `script` and [animations](https://www.w3.org/TR/SVG/animate.html).
-- Unsupported elements:
-  - some filter-based elements
-  - font-based elements
+- Font-based elements are not supported.
 
 ## Dependency
 

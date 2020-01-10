@@ -151,10 +151,9 @@ fn run_task<P, T>(perf: bool, title: &str, p: P) -> T
     where P: FnOnce() -> T
 {
     if perf {
-        let start = time::precise_time_ns();
+        let now = std::time::Instant::now();
         let res = p();
-        let end = time::precise_time_ns();
-        println!("{}: {:.2}ms", title, (end - start) as f64 / 1_000_000.0);
+        println!("{}: {:.2}ms", title, now.elapsed().as_micros() as f64 / 1000.0);
         res
     } else {
         p()
