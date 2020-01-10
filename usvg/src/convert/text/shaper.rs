@@ -274,7 +274,7 @@ fn shape_text_with_font(
     // We can't simplify this code because of lifetimes.
     let item = db.font(font.id);
     let file = std::fs::File::open(&item.path).ok()?;
-    let mmap = unsafe { memmap::MmapOptions::new().map(&file).ok()? };
+    let mmap = unsafe { memmap2::MmapOptions::new().map(&file).ok()? };
 
     let hb_face = harfbuzz::Face::from_bytes(&mmap, item.face_index);
     let hb_font = harfbuzz::Font::new(hb_face);

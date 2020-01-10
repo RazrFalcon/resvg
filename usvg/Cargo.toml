@@ -33,7 +33,7 @@ svgtypes = "0.5"
 
 # for text to path
 harfbuzz_rs = { version = "1.0", optional = true }
-memmap = { version = "0.7", optional = true }
+memmap2 = { git = "https://github.com/RazrFalcon/memmap2-rs", rev = "49e8c1d", optional = true }
 ttf-parser = { version = "0.3.0", optional = true }
 unicode-bidi = { version = "0.3", optional = true }
 unicode-script = { version = "0.3", optional = true }
@@ -41,4 +41,4 @@ unicode-vo = { version = "0.1", optional = true }
 
 [features]
 default = ["text"]
-text = ["harfbuzz_rs", "memmap", "ttf-parser", "unicode-bidi", "unicode-script", "unicode-vo"]
+text = ["harfbuzz_rs", "memmap2", "ttf-parser", "unicode-bidi", "unicode-script", "unicode-vo"]

@@ -116,7 +116,7 @@ impl Database {
         // We can't simplify this code because of lifetimes.
         let item = self.font(id);
         let file = fs::File::open(&item.path).ok()?;
-        let mmap = unsafe { memmap::MmapOptions::new().map(&file).ok()? };
+        let mmap = unsafe { memmap2::MmapOptions::new().map(&file).ok()? };
         let font = ttf_parser::Font::from_data(&mmap, item.face_index).ok()?;
 
         let mut builder = PathBuilder { path: tree::PathData::with_capacity(16) };
@@ -133,7 +133,7 @@ impl Database {
         // We can't simplify this code because of lifetimes.
         let item = self.font(id);
         let file = fs::File::open(&item.path).ok()?;
-        let mmap = unsafe { memmap::MmapOptions::new().map(&file).ok()? };
+        let mmap = unsafe { memmap2::MmapOptions::new().map(&file).ok()? };
         let font = ttf_parser::Font::from_data(&mmap, item.face_index).ok()?;
 
         font.glyph_index(c).ok()?;
@@ -146,7 +146,7 @@ impl Database {
         // We can't simplify this code because of lifetimes.
         let item = self.font(id);
         let file = fs::File::open(&item.path).ok()?;
-        let mmap = unsafe { memmap::MmapOptions::new().map(&file).ok()? };
+        let mmap = unsafe { memmap2::MmapOptions::new().map(&file).ok()? };
         let font = ttf_parser::Font::from_data(&mmap, item.face_index).ok()?;
 
         // Some fonts can have `units_per_em` set to zero, which will break out calculations.
@@ -545,7 +545,7 @@ fn load_font(
     fonts: &mut Vec<FontItem>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let file = fs::File::open(path)?;
-    let mmap = unsafe { memmap::MmapOptions::new().map(&file)? };
+    let mmap = unsafe { memmap2::MmapOptions::new().map(&file)? };
 
     let n = ttf_parser::fonts_in_collection(&mmap).unwrap_or(1);
     for index in 0..n {
