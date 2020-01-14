@@ -137,7 +137,7 @@ impl ImageExt for Surface {
 fn create_surface(width: u32, height: u32) -> Result<Surface, Error> {
     let size = ISize::new(width as i32, height as i32);
     let color_space = skia::ColorSpace::new_srgb();
-    let image_info = skia::ImageInfo::new_n32(size, skia::AlphaType::Unpremul, Some(&color_space));
+    let image_info = skia::ImageInfo::new_n32(size, skia::AlphaType::Unpremul, Some(color_space));
     let min_row_bytes = image_info.min_row_bytes();
     let surface = skia::Surface::new_raster(&image_info, min_row_bytes, None).ok_or(Error::AllocFailed)?;
     Ok(surface)
@@ -424,7 +424,7 @@ impl Filter<Surface> for SkiaFilter {
         let shader = image.to_shader(Some((TileMode::Repeat, TileMode::Repeat)), Some(&brush_ts.to_native()));
 
         let mut paint = skia::Paint::default();
-        paint.set_shader(&shader);
+        paint.set_shader(shader);
 
         let canvas = buffer.canvas();
         canvas.draw_rect_from_top_left(0.0, 0.0, region.width() as f32, region.height() as f32, &paint);

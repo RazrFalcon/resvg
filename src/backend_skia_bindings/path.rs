@@ -23,7 +23,7 @@ pub fn draw(
     let mut skia_path = convert_path(&path.segments);
     if let Some(ref fill) = path.fill {
         if fill.rule == usvg::FillRule::EvenOdd {
-            skia_path.set_fill_type(skia::path::FillType::EvenOdd);
+            skia_path.set_fill_type(skia::PathFillType::EvenOdd);
         }
     };
 
