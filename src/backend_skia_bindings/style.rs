@@ -106,7 +106,7 @@ pub fn stroke(
             let list: Vec<_> = list.iter().map(|n| *n as f32).collect();
 
             let path_effect = skia::dash_path_effect::new(&list, stroke.dashoffset);
-            paint.set_path_effect(&path_effect);
+            paint.set_path_effect(path_effect);
         }
     }
 
@@ -131,7 +131,7 @@ fn prepare_linear(
         None,
         Some(&base_gradient.matrix),
     );
-    paint.set_shader(&shader);
+    paint.set_shader(shader);
 }
 
 fn prepare_radial(
@@ -156,7 +156,7 @@ fn prepare_radial(
         Some(&base_gradient.matrix),
     );
 
-    paint.set_shader(&shader);
+    paint.set_shader(shader);
 }
 
 fn prepare_base_gradient(
@@ -246,7 +246,7 @@ fn prepare_pattern(
         Some(&ts.to_native()),
     );
 
-    paint.set_shader(&shader);
+    paint.set_shader(shader);
 
     if !opacity.is_default() {
         let a = f64_bound(0.0, opacity.value() * 255.0, 255.0) as u8;
