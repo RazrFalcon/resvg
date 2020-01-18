@@ -205,7 +205,7 @@ dependencies = [
 
 [[package]]
 name = "harfbuzz_rs"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bitflags 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -475,7 +475,7 @@ dependencies = [
  "base64 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "data-url 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "flate2 1.0.13 (registry+https://github.com/rust-lang/crates.io-index)",
- "harfbuzz_rs 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "harfbuzz_rs 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "kurbo 0.5.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "memmap2 0.1.0 (git+https://github.com/RazrFalcon/memmap2-rs?rev=49e8c1d)",
@@ -539,7 +539,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum foreign-types-shared 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 "checksum freetype 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "11926b2b410b469d0e9399eca4cbbe237a9ef02176c485803b29216307e8e028"
 "checksum harfbuzz-sys 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "cf14b85a0c906ef4ef3ff87d0fba25ee45b724404a1a3100dc25eeb4f37ff43b"
-"checksum harfbuzz_rs 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "534c8e9b15d8db6e69654b07dad955f4132757194e7d2bba620d38cf08996088"
+"checksum harfbuzz_rs 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "cab35982090055087fad29795c465b33e8cf201bda50bfa008311ffe88630f16"
 "checksum inflate 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)" = "1cdb29978cc5797bd8dcc8e5bf7de604891df2a8dc576973d71a281e916db2ff"
 "checksum jpeg-decoder 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)" = "0256f0aec7352539102a9efbcb75543227b7ab1117e0f95450023af730128451"
 "checksum kurbo 0.5.6 (registry+https://github.com/rust-lang/crates.io-index)" = "c1f081c28eed05ad28554187729dabe9723f82e482ebf78a2fdd4666d5d99951"

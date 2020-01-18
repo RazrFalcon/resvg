@@ -31,6 +31,7 @@ This changelog also contains important changes in dependencies.
 - Fallback to `matrix` in `feColorMatrix` when `type` is not set or invalid.
 - ID preserving for `use` elements.
 - `feFlood` with subregion and `primitiveUnits=objectBoundingBox`.
+- (harfbuzz_rs) Memory leak.
 
 ## [0.8.0] - 2019-08-17
 ### Added
