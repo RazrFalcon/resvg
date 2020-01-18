@@ -1,6 +1,6 @@
 [package]
 name = "rendersvg"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster"]
 license = "MPL-2.0"

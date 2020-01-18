@@ -94,6 +94,7 @@ For more specific details checkout [benches/README.md](./benches/README.md)
     - [`rctree`](https://github.com/RazrFalcon/rctree) – a DOM-like tree
   - [`resvg-qt`](./bindings/resvg-qt) – minimal bindings to [Qt]
   - [`resvg-skia`](./bindings/resvg-skia) – minimal bindings to [Skia]
+  - [`svgfilters`](./svgfilters) – a collection of SVG filters
 
 All other dependencies aren't written by me for this project.
 

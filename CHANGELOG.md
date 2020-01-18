@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.9.0] - 2020-01-18
 ### Added
 - `feConvolveMatrix`, `feMorphology`, `feDisplacementMap`, `feTurbulence`,
   `feDiffuseLighting` and `feSpecularLighting` support.
@@ -300,7 +302,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/RazrFalcon/resvg/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/RazrFalcon/resvg/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/RazrFalcon/resvg/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/RazrFalcon/resvg/compare/v0.6.0...v0.6.1

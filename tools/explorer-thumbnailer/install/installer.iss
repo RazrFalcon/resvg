@@ -1,8 +1,8 @@
 [Setup]
 AppName="reSVG Explorer Extension"
-AppVersion="0.8.0"
-VersionInfoVersion="0.0.8.0"
-AppVerName="reSVG Explorer Extension 0.8.0"
+AppVersion="0.9.0"
+VersionInfoVersion="0.0.9.0"
+AppVerName="reSVG Explorer Extension 0.9.0"
 AppPublisher="Evgeniy Reizner"
 AppPublisherURL=https://github.com/RazrFalcon/resvg
 DefaultDirName="{pf}\reSVG Explorer Extension"
