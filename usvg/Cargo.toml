@@ -26,17 +26,17 @@ rctree = "0.3"
 xmlwriter = "0.1"
 
 # for svgtree
-roxmltree = "0.8"
+roxmltree = "0.9"
 simplecss = "0.2"
 siphasher = "0.2.3"
 svgtypes = "0.5"
 
 # for text to path
 harfbuzz_rs = { version = "1.0.1", optional = true }
-memmap2 = { git = "https://github.com/RazrFalcon/memmap2-rs", rev = "49e8c1d", optional = true }
+memmap2 = { version = "0.1", optional = true }
 ttf-parser = { version = "0.3.0", optional = true }
 unicode-bidi = { version = "0.3", optional = true }
-unicode-script = { version = "0.3", optional = true }
+unicode-script = { version = "0.5", optional = true }
 unicode-vo = { version = "0.1", optional = true }
 
 [features]

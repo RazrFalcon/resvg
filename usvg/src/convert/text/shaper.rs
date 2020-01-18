@@ -5,6 +5,7 @@
 use kurbo::{ParamCurveArclen, ParamCurve, ParamCurveDeriv};
 use harfbuzz_rs as harfbuzz;
 use unicode_vo::Orientation as CharOrientation;
+use unicode_script::UnicodeScript;
 use ttf_parser::GlyphId;
 
 use crate::{tree, fontdb, convert::prelude::*};
@@ -709,7 +710,7 @@ pub fn apply_letter_spacing(
         // Spacing must be applied only to characters that belongs to the script
         // that supports spacing.
         // We are checking only the first code point, since it should be enough.
-        let script = unicode_script::get_script(cluster.codepoint);
+        let script = cluster.codepoint.script();
         if script_supports_letter_spacing(script) {
             if let Some(span) = chunk.span_at(cluster.byte_idx) {
                 // Technically, we should ignore spacing on the last character,
