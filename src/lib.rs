@@ -10,8 +10,8 @@
 [SVG Full 1.1](https://www.w3.org/TR/SVG/Overview.html) subset.
 In simple terms: no animations and scripting.
 
-It can be used as a simple SVG to PNG converted.
-And as an embeddable library to paint SVG on an application native canvas.
+It can be used as a simple SVG to PNG converter or as an embeddable library to paint SVG on an
+application native canvas.
 */
 
 #![doc(html_root_url = "https://docs.rs/resvg/0.9.0")]
