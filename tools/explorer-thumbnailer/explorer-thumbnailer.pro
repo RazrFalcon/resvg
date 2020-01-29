@@ -25,4 +25,6 @@ DEPENDPATH += $$PWD/../../capi/include
 LIBS += \
     shlwapi.lib \
     advapi32.lib \
-    gdiplus.lib
+    gdiplus.lib \
+    Userenv.lib \
+    Ws2_32.lib

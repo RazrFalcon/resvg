@@ -15,7 +15,7 @@
 
 to render SVG files based on a
 [static](http://www.w3.org/TR/SVG11/feature#SVG-static)
-[SVG Full 1.1](https://www.w3.org/TR/SVG/Overview.html) subset to raster images or
+[SVG Full 1.1](https://www.w3.org/TR/SVG11/) subset to raster images or
 to a backend's canvas (e.g. to a QWidget via QPainter).
 
 The core idea is to make a fast, small, portable, multiple-backend SVG library
