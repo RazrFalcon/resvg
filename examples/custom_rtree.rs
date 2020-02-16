@@ -47,13 +47,9 @@ fn main() {
     });
 
     rtree.root().append_kind(usvg::NodeKind::Path(usvg::Path {
-        id: String::new(),
-        transform: usvg::Transform::default(),
-        visibility: usvg::Visibility::Visible,
         fill,
-        stroke: None,
-        rendering_mode: usvg::ShapeRendering::default(),
         data: Rc::new(usvg::PathData::from_rect(Rect::new(20.0, 20.0, 160.0, 160.0).unwrap())),
+        .. usvg::Path::default()
     }));
 
     println!("{}", rtree.to_string(usvg::XmlOptions::default()));

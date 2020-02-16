@@ -43,13 +43,9 @@ fn main() {
 
     for bbox in bboxes {
         rtree.root().append_kind(usvg::NodeKind::Path(usvg::Path {
-            id: String::new(),
-            transform: usvg::Transform::default(),
-            visibility: usvg::Visibility::Visible,
-            fill: None,
             stroke: stroke.clone(),
-            rendering_mode: usvg::ShapeRendering::default(),
             data: Rc::new(usvg::PathData::from_rect(bbox)),
+            .. usvg::Path::default()
         }));
     }
 
