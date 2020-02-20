@@ -230,11 +230,20 @@ fn shape_text(
             let fallback_glyphs = shape_text_with_font(text, fallback_font, state)
                 .unwrap_or_default();
 
+            let all_matched = fallback_glyphs.iter().all(|g| !g.is_missing());
+            if all_matched {
+                // Replace all glyphs when all of them were matched.
+                glyphs = fallback_glyphs;
+                break 'outer;
+            }
+
             // We assume, that shaping with an any font will produce the same amount of glyphs.
-            // Otherwise an error.
+            // This is incorrect, but good enough for now.
             if glyphs.len() != fallback_glyphs.len() {
                 break 'outer;
             }
+
+            // TODO: Replace clusters and not glyphs. This should be more accurate.
 
             // Copy new glyphs.
             for i in 0..glyphs.len() {

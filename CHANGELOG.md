@@ -9,6 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Fixed
 - Grayscale PNG loading.
+- Font fallback when shaping produces a different amount of glyphs.
 
 ## [0.9.0] - 2020-01-18
 ### Added
