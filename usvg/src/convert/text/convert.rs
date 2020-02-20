@@ -722,7 +722,7 @@ fn count_chars(node: svgtree::Node) -> usize {
 /// - `tb`, `tb-rl` => `vertical-rl`
 ///
 /// Also, looks like no one really supports the `rl` and `rl-tb`, except `Batik`.
-/// And I'm not sure if it's behaviour is correct.
+/// And I'm not sure if its behaviour is correct.
 ///
 /// So we will ignore it as well, mainly because I have no idea how exactly
 /// it should affect the rendering.

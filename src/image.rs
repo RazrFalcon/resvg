@@ -73,11 +73,6 @@ fn read_png(data: &[u8]) -> Option<Image> {
     let decoder = png::Decoder::new(data);
     let (info, mut reader) = decoder.read_info().ok()?;
 
-    match info.color_type {
-        png::ColorType::RGB | png::ColorType::RGBA => {}
-        _ => return None,
-    }
-
     let size = ScreenSize::new(info.width, info.height)?;
 
     let mut img_data = vec![0; info.buffer_size()];
@@ -109,7 +104,10 @@ fn read_png(data: &[u8]) -> Option<Image> {
 
             ImageData::RGBA(rgba_data)
         }
-        _ => return None,
+        png::ColorType::Indexed => {
+            warn!("Indexed PNG is not supported.");
+            return None
+        }
     };
 
     Some(Image {

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- Grayscale PNG loading.
 
 ## [0.9.0] - 2020-01-18
 ### Added
