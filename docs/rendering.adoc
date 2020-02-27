@@ -51,6 +51,8 @@ in the Rust ecosystem.
 
 Technically, an XML library should also support a non-Unicode input, but hey, it's 2020 already.
 
+// TODO: Add an example of a very complex XML
+
 == SVG parsing
 
 Now we have an XML tree and it's time to convert it into an SVG tree (do not confuse with render tree).

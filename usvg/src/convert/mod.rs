@@ -279,6 +279,7 @@ fn convert_clip_path_elements(
     }
 }
 
+#[derive(Debug)]
 enum GroupKind {
     /// Creates a new group.
     Create(tree::Node),
@@ -343,8 +344,18 @@ fn convert_group(
         } else if node.attribute(AId::Filter) == Some("none") {
             // Do nothing.
         } else if node.has_attribute(AId::Filter) {
-            // Unlike `clip-path` and `mask`, when `filter` is invalid
-            // than the whole element should be removed.
+            // A filter that not a link or a filter with a link to a non existing element.
+            //
+            // Unlike `clip-path` and `mask`, when a `filter` link is invalid
+            // then the whole element should be ignored.
+            //
+            // This is kinda an undefined behaviour.
+            // In most cases, Chrome, Firefox and rsvg will ignore such elements,
+            // but in some cases Chrome allows it. Not sure why.
+            // Inkscape (0.92) simply ignores such attributes, rendering element as is.
+            // Batik (1.12) crashes.
+            //
+            // Test file: e-filter-051.svg
             return GroupKind::Ignore;
         }
     }
