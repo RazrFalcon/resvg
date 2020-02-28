@@ -81,6 +81,13 @@ Used libraries: cairo 1.16.0, Qt 5.13.2, raqote 0.6.1, Skia m76
 
 For more specific details checkout [benches/README.md](./benches/README.md)
 
+## Usage
+```bash
+cd tools/rendersvg
+cargo run --release --features="qt-backend" -- in.svg out.png
+# the binary could be found at resvg/target/release/rendersvg
+```
+
 ## Project structure
 
 - `resvg` – rendering backends implementation
