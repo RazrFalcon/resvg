@@ -280,5 +280,6 @@ pub(crate) fn filter_background_start_node(
     }
 
     // We should have an ancestor with `enable-background=new`.
-    parent.ancestors().find(|node| has_enable_background(node))
+    // Skip the current element.
+    parent.ancestors().skip(1).find(|node| has_enable_background(node))
 }

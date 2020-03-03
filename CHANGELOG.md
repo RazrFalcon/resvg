@@ -8,6 +8,7 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Fixed
+- Stack overflow when `enable-background` and `filter` are set on the same element.
 - Grayscale PNG loading.
 - Font fallback when shaping produces a different amount of glyphs.
 
