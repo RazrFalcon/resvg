@@ -18,12 +18,12 @@ env XZ_OPT="-9e" tar \
     --exclude=".github" \
     --exclude=".gitignore" \
     --exclude=".travis.yml" \
-    --exclude="./resvg-$VERSION/version-bump.md" \
-    --exclude="./resvg-$VERSION/docs" \
-    --exclude="./resvg-$VERSION/benches" \
-    --exclude="./resvg-$VERSION/examples" \
-    --exclude="./resvg-$VERSION/testing-tools" \
-    --exclude="./resvg-$VERSION/capi/qtests" \
+    --exclude="version-bump.md" \
+    --exclude="docs" \
+    --exclude="benches" \
+    --exclude="examples" \
+    --exclude="testing-tools" \
+    --exclude="capi/qtests" \
     -cJf resvg-"$VERSION".tar.xz resvg-"$VERSION"
 
 # Clean up.
