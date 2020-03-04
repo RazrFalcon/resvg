@@ -24,7 +24,7 @@ env XZ_OPT="-9e" tar \
     --exclude="./resvg-$VERSION/examples" \
     --exclude="./resvg-$VERSION/testing-tools" \
     --exclude="./resvg-$VERSION/capi/qtests" \
-    -cJf resvg-"$VERSION".tar.xz ./resvg-"$VERSION"
+    -cJf resvg-"$VERSION".tar.xz resvg-"$VERSION"
 
 # Clean up.
 rm -rf resvg-"$VERSION"
