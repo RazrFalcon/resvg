@@ -2,9 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{svgtree, tree};
 use super::prelude::*;
-
+use crate::{svgtree, tree};
 
 #[inline(never)]
 pub fn convert_length(
@@ -32,17 +31,13 @@ pub fn convert_length(
                 let view_box = state.view_box;
 
                 match aid {
-                    AId::X | AId::Cx | AId::Width  => {
-                        convert_percent(length, view_box.width())
-                    }
-                    AId::Y | AId::Cy | AId::Height => {
-                        convert_percent(length, view_box.height())
-                    }
+                    AId::X | AId::Cx | AId::Width => convert_percent(length, view_box.width()),
+                    AId::Y | AId::Cy | AId::Height => convert_percent(length, view_box.height()),
                     _ => {
-                        let vb_len = (
-                              view_box.width() * view_box.width()
-                            + view_box.height() * view_box.height()
-                        ).sqrt() / 2.0_f64.sqrt();
+                        let vb_len = (view_box.width() * view_box.width()
+                            + view_box.height() * view_box.height())
+                        .sqrt()
+                            / 2.0_f64.sqrt();
 
                         convert_percent(length, vb_len)
                     }
@@ -53,16 +48,18 @@ pub fn convert_length(
 }
 
 #[inline(never)]
-pub fn convert_list(
-    node: svgtree::Node,
-    aid: AId,
-    state: &State,
-) -> Option<Vec<f64>> {
+pub fn convert_list(node: svgtree::Node, aid: AId, state: &State) -> Option<Vec<f64>> {
     if let Some(text) = node.attribute::<&str>(aid) {
         let mut num_list = Vec::new();
         for length in svgtypes::LengthListParser::from(text) {
             if let Ok(length) = length {
-                num_list.push(convert_length(length, node, aid, tree::Units::UserSpaceOnUse, state));
+                num_list.push(convert_length(
+                    length,
+                    node,
+                    aid,
+                    tree::Units::UserSpaceOnUse,
+                    state,
+                ));
             }
         }
 
@@ -80,7 +77,8 @@ fn convert_percent(length: Length, base: f64) -> f64 {
 pub fn resolve_font_size(node: svgtree::Node, state: &State) -> f64 {
     let nodes: Vec<_> = node.ancestors().collect();
     let mut font_size = state.opt.font_size;
-    for n in nodes.iter().rev().skip(1) { // skip Root
+    for n in nodes.iter().rev().skip(1) {
+        // skip Root
         if let Some(length) = n.attribute::<Length>(AId::FontSize) {
             let dpi = state.opt.dpi;
             let n = length.num;
@@ -107,20 +105,17 @@ pub fn resolve_font_size(node: svgtree::Node, state: &State) -> f64 {
     font_size
 }
 
-fn convert_named_font_size(
-    name: &str,
-    parent_font_size: f64,
-) -> f64 {
+fn convert_named_font_size(name: &str, parent_font_size: f64) -> f64 {
     let factor = match name {
-        "xx-small"  => -3,
-        "x-small"   => -2,
-        "small"     => -1,
-        "medium"    => 0,
-        "large"     => 1,
-        "x-large"   => 2,
-        "xx-large"  => 3,
-        "smaller"   => -1,
-        "larger"    => 1,
+        "xx-small" => -3,
+        "x-small" => -2,
+        "small" => -1,
+        "medium" => 0,
+        "large" => 1,
+        "x-large" => 2,
+        "xx-large" => 3,
+        "smaller" => -1,
+        "larger" => 1,
         _ => {
             warn!("Invalid 'font-size' value: '{}'.", name);
             0

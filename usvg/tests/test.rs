@@ -1,6 +1,5 @@
 use std::fmt;
 
-
 #[derive(Clone, Copy, PartialEq)]
 struct MStr<'a>(&'a str);
 
@@ -41,7 +40,7 @@ macro_rules! test_preserve {
 
             let re_opt = usvg::Options {
                 keep_named_groups: true,
-                .. usvg::Options::default()
+                ..usvg::Options::default()
             };
             let tree = usvg::Tree::from_str(&in_str, &re_opt).unwrap();
 
@@ -89,7 +88,6 @@ test_preserve!(ignore_empty_groups_with_id);
 
 test_preserve!(keep_groups_with_id);
 
-
 macro_rules! test_size {
     ($name:ident, $input:expr, $expected:expr) => {
         #[test]
@@ -101,17 +99,20 @@ macro_rules! test_size {
     };
 }
 
-test_size!(size_detection_1,
+test_size!(
+    size_detection_1,
     "<svg viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>",
     usvg::Size::new(10.0, 20.0).unwrap()
 );
 
-test_size!(size_detection_2,
+test_size!(
+    size_detection_2,
     "<svg width='30' height='40' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>",
     usvg::Size::new(30.0, 40.0).unwrap()
 );
 
-test_size!(size_detection_3,
+test_size!(
+    size_detection_3,
     "<svg width='50%' height='100%' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>",
     usvg::Size::new(5.0, 20.0).unwrap()
 );
@@ -125,8 +126,12 @@ macro_rules! test_size_err {
     };
 }
 
-test_size_err!(size_detection_err_1,
-    "<svg width='50%' height='100%' xmlns='http://www.w3.org/2000/svg'>");
+test_size_err!(
+    size_detection_err_1,
+    "<svg width='50%' height='100%' xmlns='http://www.w3.org/2000/svg'>"
+);
 
-test_size_err!(size_detection_err_2,
-    "<svg width='0' height='0' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>");
+test_size_err!(
+    size_detection_err_2,
+    "<svg width='0' height='0' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>"
+);

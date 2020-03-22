@@ -4,16 +4,10 @@
 
 use std::rc::Rc;
 
-use crate::{svgtree, tree, tree::prelude::*, utils};
 use super::prelude::*;
+use crate::{svgtree, tree, tree::prelude::*, utils};
 
-
-pub fn convert(
-    node: svgtree::Node,
-    state: &State,
-    parent: &mut tree::Node,
-    tree: &mut tree::Tree,
-) {
+pub fn convert(node: svgtree::Node, state: &State, parent: &mut tree::Node, tree: &mut tree::Tree) {
     let child = try_opt!(node.first_child());
 
     if state.parent_clip_path.is_some() && child.tag_name() == Some(EId::Symbol) {
@@ -149,9 +143,7 @@ fn convert_children(
 
             g.clone()
         }
-        super::GroupKind::Skip => {
-            parent.clone()
-        }
+        super::GroupKind::Skip => parent.clone(),
         super::GroupKind::Ignore => return,
     };
 
@@ -168,7 +160,10 @@ fn get_clip_rect(
     state: &State,
 ) -> Option<Rect> {
     // No need to clip elements with overflow:visible.
-    if matches!(symbol_node.attribute(AId::Overflow), Some("visible") | Some("auto")) {
+    if matches!(
+        symbol_node.attribute(AId::Overflow),
+        Some("visible") | Some("auto")
+    ) {
         return None;
     }
 
@@ -194,14 +189,11 @@ fn get_clip_rect(
 }
 
 /// Creates a free id for `clipPath`.
-pub fn gen_clip_path_id(
-    node: svgtree::Node,
-    tree: &tree::Tree,
-) -> String {
+pub fn gen_clip_path_id(node: svgtree::Node, tree: &tree::Tree) -> String {
     let mut idx = 1;
     let mut id = format!("clipPath{}", idx);
-    while    node.document().descendants().any(|n| n.element_id() == id)
-          || tree.defs().children().any(|n| *n.id() == id)
+    while node.document().descendants().any(|n| n.element_id() == id)
+        || tree.defs().children().any(|n| *n.id() == id)
     {
         idx += 1;
         id = format!("clipPath{}", idx);
@@ -223,7 +215,9 @@ fn viewbox_transform(
     }?;
 
     let vb = linked.get_viewbox()?;
-    let aspect = linked.attribute(AId::PreserveAspectRatio).unwrap_or_default();
+    let aspect = linked
+        .attribute(AId::PreserveAspectRatio)
+        .unwrap_or_default();
 
     Some(utils::view_box_to_transform(vb, aspect, size))
 }

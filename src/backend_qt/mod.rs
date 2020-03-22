@@ -7,19 +7,19 @@
 use crate::qt;
 use log::warn;
 
-use crate::{prelude::*, layers, ConvTransform, RenderState};
-
+use crate::{layers, prelude::*, ConvTransform, RenderState};
 
 macro_rules! try_create_image {
     ($size:expr, $ret:expr) => {
         try_opt_warn_or!(
             qt::Image::new_rgba_premultiplied($size.width(), $size.height()),
             $ret,
-            "Failed to create a {}x{} image.", $size.width(), $size.height()
+            "Failed to create a {}x{} image.",
+            $size.width(),
+            $size.height()
         );
     };
 }
-
 
 mod clip_and_mask;
 mod filter;
@@ -27,9 +27,7 @@ mod image;
 mod path;
 mod style;
 
-
 type QtLayers = layers::Layers<qt::Image>;
-
 
 impl ConvTransform<qt::Transform> for usvg::Transform {
     fn to_native(&self) -> qt::Transform {
@@ -42,17 +40,12 @@ impl ConvTransform<qt::Transform> for usvg::Transform {
     }
 }
 
-
 /// Cairo backend handle.
 #[derive(Clone, Copy)]
 pub struct Backend;
 
 impl Render for Backend {
-    fn render_to_image(
-        &self,
-        tree: &usvg::Tree,
-        opt: &Options,
-    ) -> Option<Box<dyn OutputImage>> {
+    fn render_to_image(&self, tree: &usvg::Tree, opt: &Options) -> Option<Box<dyn OutputImage>> {
         let img = render_to_image(tree, opt)?;
         Some(Box::new(img))
     }
@@ -68,10 +61,7 @@ impl Render for Backend {
 }
 
 impl OutputImage for qt::Image {
-    fn save_png(
-        &mut self,
-        path: &std::path::Path,
-    ) -> bool {
+    fn save_png(&mut self, path: &std::path::Path) -> bool {
         self.save(path.to_str().unwrap())
     }
 
@@ -88,17 +78,16 @@ impl OutputImage for qt::Image {
         // BGRA_Premultiplied -> BGRA
         svgfilters::demultiply_alpha(data.as_bgra_mut());
         // BGRA -> RGBA.
-        data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+        data.as_bgra_mut()
+            .iter_mut()
+            .for_each(|p| swap(&mut p.r, &mut p.b));
 
         data
     }
 }
 
 /// Renders SVG to image.
-pub fn render_to_image(
-    tree: &usvg::Tree,
-    opt: &Options,
-) -> Option<qt::Image> {
+pub fn render_to_image(tree: &usvg::Tree, opt: &Options) -> Option<qt::Image> {
     let (mut img, img_size) = create_root_image(tree.svg_node().size.to_screen_size(), opt)?;
 
     let mut painter = qt::Painter::new(&mut img);
@@ -109,10 +98,7 @@ pub fn render_to_image(
 }
 
 /// Renders SVG node to image.
-pub fn render_node_to_image(
-    node: &usvg::Node,
-    opt: &Options,
-) -> Option<qt::Image> {
+pub fn render_node_to_image(node: &usvg::Node, opt: &Options) -> Option<qt::Image> {
     let node_bbox = if let Some(bbox) = node.calculate_bbox() {
         bbox
     } else {
@@ -141,7 +127,13 @@ pub fn render_to_canvas(
     img_size: ScreenSize,
     painter: &mut qt::Painter,
 ) {
-    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, painter);
+    render_node_to_canvas(
+        &tree.root(),
+        opt,
+        tree.svg_node().view_box,
+        img_size,
+        painter,
+    );
 }
 
 /// Renders SVG node to canvas.
@@ -177,10 +169,7 @@ fn render_node_to_canvas_impl(
     painter.set_transform(&curr_ts);
 }
 
-fn create_root_image(
-    size: ScreenSize,
-    opt: &Options,
-) -> Option<(qt::Image, ScreenSize)> {
+fn create_root_image(size: ScreenSize, opt: &Options) -> Option<(qt::Image, ScreenSize)> {
     let img_size = utils::fit_to(size, opt.fit_to)?;
 
     let mut img = try_create_image!(img_size, None);
@@ -213,18 +202,10 @@ fn render_node(
     p: &mut qt::Painter,
 ) -> Option<Rect> {
     match *node.borrow() {
-        usvg::NodeKind::Svg(_) => {
-            render_group(node, opt, state, layers, p)
-        }
-        usvg::NodeKind::Path(ref path) => {
-            path::draw(&node.tree(), path, opt, p)
-        }
-        usvg::NodeKind::Image(ref img) => {
-            Some(image::draw(img, opt, p))
-        }
-        usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, state, layers, p)
-        }
+        usvg::NodeKind::Svg(_) => render_group(node, opt, state, layers, p),
+        usvg::NodeKind::Path(ref path) => path::draw(&node.tree(), path, opt, p),
+        usvg::NodeKind::Image(ref img) => Some(image::draw(img, opt, p)),
+        usvg::NodeKind::Group(ref g) => render_group_impl(node, g, opt, state, layers, p),
         _ => None,
     }
 }
@@ -316,10 +297,19 @@ fn render_group_impl(
                 let ts = usvg::Transform::from_native(&curr_ts);
                 let background = prepare_filter_background(node, filter, opt);
                 let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, opt, &sub_img);
-                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_img);
-                filter::apply(filter, bbox, &ts, opt, &node.tree(),
-                              background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
-                              &mut sub_img);
+                let stroke_paint =
+                    prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_img);
+                filter::apply(
+                    filter,
+                    bbox,
+                    &ts,
+                    opt,
+                    &node.tree(),
+                    background.as_ref(),
+                    fill_paint.as_ref(),
+                    stroke_paint.as_ref(),
+                    &mut sub_img,
+                );
             }
         }
     }
@@ -379,7 +369,14 @@ fn prepare_filter_background(
     let mut painter = qt::Painter::new(&mut img);
     // Render from the `start_node` until the `parent`. The `parent` itself is excluded.
     let mut state = RenderState::RenderUntil(parent.clone());
-    render_node_to_canvas_impl(&start_node, opt, view_box, img_size, &mut state, &mut painter);
+    render_node_to_canvas_impl(
+        &start_node,
+        opt,
+        view_box,
+        img_size,
+        &mut state,
+        &mut painter,
+    );
     painter.end();
 
     Some(img)
@@ -439,15 +436,11 @@ fn prepare_filter_stroke_paint(
     Some(img)
 }
 
-fn create_layers(
-    img_size: ScreenSize,
-) -> QtLayers {
+fn create_layers(img_size: ScreenSize) -> QtLayers {
     layers::Layers::new(img_size, create_subimage, clear_image)
 }
 
-fn create_subimage(
-    size: ScreenSize,
-) -> Option<qt::Image> {
+fn create_subimage(size: ScreenSize) -> Option<qt::Image> {
     let mut img = try_create_image!(size, None);
     img.fill(0, 0, 0, 0);
 

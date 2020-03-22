@@ -2,9 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::prelude::*;
 use super::style;
-
+use crate::prelude::*;
 
 pub fn draw(
     tree: &usvg::Tree,
@@ -43,15 +42,20 @@ pub fn draw(
     }
 
     style::fill(tree, &new_path, &path.fill, opt, style_bbox, &draw_opt, dt);
-    style::stroke(tree, &new_path, &path.stroke, opt, style_bbox, &draw_opt, dt);
+    style::stroke(
+        tree,
+        &new_path,
+        &path.stroke,
+        opt,
+        style_bbox,
+        &draw_opt,
+        dt,
+    );
 
     bbox
 }
 
-fn conv_path(
-    path: &usvg::PathData,
-    is_butt_cap: bool,
-) -> raqote::Path {
+fn conv_path(path: &usvg::PathData, is_butt_cap: bool) -> raqote::Path {
     let mut pb = raqote::PathBuilder::new();
 
     for subpath in path.subpaths() {
@@ -61,11 +65,7 @@ fn conv_path(
     pb.finish()
 }
 
-fn conv_subpath(
-    path: usvg::SubPathData,
-    is_butt_cap: bool,
-    pb: &mut raqote::PathBuilder,
-) {
+fn conv_subpath(path: usvg::SubPathData, is_butt_cap: bool, pb: &mut raqote::PathBuilder) {
     assert_ne!(path.len(), 0);
 
     // Raqote doesn't support line caps on zero-length subpaths,
@@ -81,8 +81,17 @@ fn conv_subpath(
                 usvg::PathSegment::LineTo { x, y } => {
                     pb.line_to(x as f32, y as f32);
                 }
-                usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                    pb.cubic_to(x1 as f32, y1 as f32, x2 as f32, y2 as f32, x as f32, y as f32);
+                usvg::PathSegment::CurveTo {
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    x,
+                    y,
+                } => {
+                    pb.cubic_to(
+                        x1 as f32, y1 as f32, x2 as f32, y2 as f32, x as f32, y as f32,
+                    );
                 }
                 usvg::PathSegment::ClosePath => {
                     pb.close();

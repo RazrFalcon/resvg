@@ -4,12 +4,7 @@
 
 use std::path::PathBuf;
 
-use crate::{
-    ImageRendering,
-    ShapeRendering,
-    TextRendering,
-};
-
+use crate::{ImageRendering, ShapeRendering, TextRendering};
 
 /// Processing options.
 #[derive(Clone, Debug)]

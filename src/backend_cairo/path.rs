@@ -2,9 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::prelude::*;
 use super::style;
-
+use crate::prelude::*;
 
 pub fn draw(
     tree: &usvg::Tree,
@@ -49,11 +48,7 @@ pub fn draw(
     bbox
 }
 
-fn draw_path(
-    path: &usvg::PathData,
-    is_square_cap: bool,
-    cr: &cairo::Context,
-) {
+fn draw_path(path: &usvg::PathData, is_square_cap: bool, cr: &cairo::Context) {
     // Reset path, in case something was left from the previous paint pass.
     cr.new_path();
 
@@ -62,11 +57,7 @@ fn draw_path(
     }
 }
 
-fn draw_subpath(
-    path: usvg::SubPathData,
-    is_square_cap: bool,
-    cr: &cairo::Context,
-) {
+fn draw_subpath(path: usvg::SubPathData, is_square_cap: bool, cr: &cairo::Context) {
     assert_ne!(path.len(), 0);
 
     // This is a workaround for a cairo bug(?).
@@ -86,7 +77,14 @@ fn draw_subpath(
                 usvg::PathSegment::LineTo { x, y } => {
                     cr.line_to(x, y);
                 }
-                usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+                usvg::PathSegment::CurveTo {
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    x,
+                    y,
+                } => {
                     cr.curve_to(x1, y1, x2, y2, x, y);
                 }
                 usvg::PathSegment::ClosePath => {

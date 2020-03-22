@@ -15,7 +15,6 @@ And as an embeddable library to paint SVG on an application native canvas.
 */
 
 #![doc(html_root_url = "https://docs.rs/resvg/0.9.0")]
-
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
@@ -99,7 +98,6 @@ pub use raqote;
 
 pub use usvg::{self, Error};
 
-
 #[cfg(feature = "cairo-backend")]
 pub mod backend_cairo;
 
@@ -112,22 +110,21 @@ pub mod backend_skia;
 #[cfg(feature = "raqote-backend")]
 pub mod backend_raqote;
 
-pub mod utils;
 mod filter;
 mod geom;
 mod image;
 mod layers;
 mod options;
+pub mod utils;
 
 /// Commonly used types and traits.
 pub mod prelude {
-    pub use usvg::{self, prelude::*};
     pub use crate::{geom::*, options::*, utils, OutputImage, Render};
+    pub use usvg::{self, prelude::*};
 }
 
 pub use crate::geom::*;
 pub use crate::options::*;
-
 
 /// A generic interface for image rendering.
 ///
@@ -137,11 +134,7 @@ pub trait Render {
     /// Renders SVG to image.
     ///
     /// Returns `None` if an image allocation failed.
-    fn render_to_image(
-        &self,
-        tree: &usvg::Tree,
-        opt: &Options,
-    ) -> Option<Box<dyn OutputImage>>;
+    fn render_to_image(&self, tree: &usvg::Tree, opt: &Options) -> Option<Box<dyn OutputImage>>;
 
     /// Renders SVG node to image.
     ///
@@ -156,10 +149,7 @@ pub trait Render {
 /// A generic interface for output image.
 pub trait OutputImage {
     /// Saves rendered image to the selected path.
-    fn save_png(
-        &mut self,
-        path: &std::path::Path,
-    ) -> bool;
+    fn save_png(&mut self, path: &std::path::Path) -> bool;
 
     /// Converts an image's internal data into a `Vec<u8>`.
     ///
@@ -171,7 +161,6 @@ pub trait OutputImage {
     /// Image will be converted into an unmultiplied RGBA array.
     fn make_rgba_vec(&mut self) -> Vec<u8>;
 }
-
 
 /// Returns a default backend.
 ///
@@ -203,21 +192,16 @@ pub fn default_backend() -> Box<dyn Render> {
     unreachable!("at least one backend must be enabled")
 }
 
-pub(crate) fn use_shape_antialiasing(
-    mode: usvg::ShapeRendering,
-) -> bool {
+pub(crate) fn use_shape_antialiasing(mode: usvg::ShapeRendering) -> bool {
     match mode {
-        usvg::ShapeRendering::OptimizeSpeed         => false,
-        usvg::ShapeRendering::CrispEdges            => false,
-        usvg::ShapeRendering::GeometricPrecision    => true,
+        usvg::ShapeRendering::OptimizeSpeed => false,
+        usvg::ShapeRendering::CrispEdges => false,
+        usvg::ShapeRendering::GeometricPrecision => true,
     }
 }
 
 /// Converts an image to an alpha mask.
-pub(crate) fn image_to_mask(
-    data: &mut [rgb::alt::BGRA8],
-    img_size: ScreenSize,
-) {
+pub(crate) fn image_to_mask(data: &mut [rgb::alt::BGRA8], img_size: ScreenSize) {
     let width = img_size.width();
     let height = img_size.height();
 
@@ -249,7 +233,6 @@ pub(crate) trait ConvTransform<T> {
     fn from_native(_: &T) -> Self;
 }
 
-
 #[derive(PartialEq)]
 pub(crate) enum RenderState {
     /// A default value. Doesn't indicate anything.
@@ -259,7 +242,6 @@ pub(crate) enum RenderState {
     /// Indicates that `usvg::FilterInput::BackgroundImage` rendering task was finished.
     BackgroundFinished,
 }
-
 
 /// Returns the node starting from which the filter background should be rendered.
 pub(crate) fn filter_background_start_node(
@@ -274,12 +256,22 @@ pub(crate) fn filter_background_start_node(
         }
     }
 
-    if !filter.children.iter().any(|c| c.kind.has_input(&usvg::FilterInput::BackgroundImage)) &&
-       !filter.children.iter().any(|c| c.kind.has_input(&usvg::FilterInput::BackgroundAlpha)) {
+    if !filter
+        .children
+        .iter()
+        .any(|c| c.kind.has_input(&usvg::FilterInput::BackgroundImage))
+        && !filter
+            .children
+            .iter()
+            .any(|c| c.kind.has_input(&usvg::FilterInput::BackgroundAlpha))
+    {
         return None;
     }
 
     // We should have an ancestor with `enable-background=new`.
     // Skip the current element.
-    parent.ancestors().skip(1).find(|node| has_enable_background(node))
+    parent
+        .ancestors()
+        .skip(1)
+        .find(|node| has_enable_background(node))
 }

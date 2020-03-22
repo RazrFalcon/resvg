@@ -8,8 +8,8 @@ use svgtypes::FuzzyZero;
 
 use kurbo::{ParamCurveArclen, ParamCurveExtrema};
 
-use crate::{Rect, Line};
 use super::Transform;
+use crate::{Line, Rect};
 
 /// A path's absolute segment.
 ///
@@ -36,7 +36,6 @@ pub enum PathSegment {
     },
     ClosePath,
 }
-
 
 /// An SVG path data container.
 ///
@@ -86,7 +85,14 @@ impl PathData {
     /// Pushes a CurveTo segment to the path.
     #[inline]
     pub fn push_curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64) {
-        self.push(PathSegment::CurveTo { x1, y1, x2, y2, x, y });
+        self.push(PathSegment::CurveTo {
+            x1,
+            y1,
+            x2,
+            y2,
+            x,
+            y,
+        });
     }
 
     /// Pushes a QuadTo segment to the path.
@@ -103,11 +109,13 @@ impl PathData {
     /// Arc will be converted into cubic curves.
     pub fn push_arc_to(
         &mut self,
-        rx: f64, ry: f64,
+        rx: f64,
+        ry: f64,
         x_axis_rotation: f64,
         large_arc: bool,
         sweep: bool,
-        x: f64, y: f64,
+        x: f64,
+        y: f64,
     ) {
         let (prev_x, prev_y) = self.last_pos();
 
@@ -142,10 +150,22 @@ impl PathData {
     #[inline]
     pub fn push_rect(&mut self, rect: Rect) {
         self.extend_from_slice(&[
-            PathSegment::MoveTo { x: rect.x(),     y: rect.y() },
-            PathSegment::LineTo { x: rect.right(), y: rect.y() },
-            PathSegment::LineTo { x: rect.right(), y: rect.bottom() },
-            PathSegment::LineTo { x: rect.x(),     y: rect.bottom() },
+            PathSegment::MoveTo {
+                x: rect.x(),
+                y: rect.y(),
+            },
+            PathSegment::LineTo {
+                x: rect.right(),
+                y: rect.y(),
+            },
+            PathSegment::LineTo {
+                x: rect.right(),
+                y: rect.bottom(),
+            },
+            PathSegment::LineTo {
+                x: rect.x(),
+                y: rect.bottom(),
+            },
             PathSegment::ClosePath,
         ]);
     }
@@ -154,14 +174,10 @@ impl PathData {
     fn last_pos(&self) -> (f64, f64) {
         let seg = self.last().expect("path must not be empty").clone();
         match seg {
-              PathSegment::MoveTo { x, y }
+            PathSegment::MoveTo { x, y }
             | PathSegment::LineTo { x, y }
-            | PathSegment::CurveTo { x, y, .. } => {
-               (x, y)
-            }
-            PathSegment::ClosePath => {
-                panic!("the previous segment must be M/L/C")
-            }
+            | PathSegment::CurveTo { x, y, .. } => (x, y),
+            PathSegment::ClosePath => panic!("the previous segment must be M/L/C"),
         }
     }
 
@@ -241,7 +257,6 @@ impl std::ops::DerefMut for PathData {
     }
 }
 
-
 /// An iterator over `PathData` subpaths.
 #[allow(missing_debug_implementations)]
 pub struct SubPathIter<'a> {
@@ -281,7 +296,6 @@ impl<'a> Iterator for SubPathIter<'a> {
         Some(SubPathData(&self.path[start..i]))
     }
 }
-
 
 /// A reference to a `PathData` subpath.
 #[derive(Clone, Copy, Debug)]
@@ -334,7 +348,6 @@ impl std::ops::Deref for SubPathData<'_> {
     }
 }
 
-
 fn calc_bbox(segments: &[PathSegment]) -> Option<Rect> {
     debug_assert!(!segments.is_empty());
 
@@ -356,25 +369,45 @@ fn calc_bbox(segments: &[PathSegment]) -> Option<Rect> {
 
     for seg in segments.iter().cloned() {
         match seg {
-              PathSegment::MoveTo { x, y }
-            | PathSegment::LineTo { x, y } => {
+            PathSegment::MoveTo { x, y } | PathSegment::LineTo { x, y } => {
                 prev_x = x;
                 prev_y = y;
 
-                if x > maxx { maxx = x; }
-                else if x < minx { minx = x; }
+                if x > maxx {
+                    maxx = x;
+                } else if x < minx {
+                    minx = x;
+                }
 
-                if y > maxy { maxy = y; }
-                else if y < miny { miny = y; }
+                if y > maxy {
+                    maxy = y;
+                } else if y < miny {
+                    miny = y;
+                }
             }
-            PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+            PathSegment::CurveTo {
+                x1,
+                y1,
+                x2,
+                y2,
+                x,
+                y,
+            } => {
                 let curve = kurbo::CubicBez::from_points(prev_x, prev_y, x1, y1, x2, y2, x, y);
                 let r = curve.bounding_box();
 
-                if r.x0 < minx { minx = r.x0; }
-                if r.x1 > maxx { maxx = r.x1; }
-                if r.y0 < miny { miny = r.y0; }
-                if r.y1 > maxy { maxy = r.y1; }
+                if r.x0 < minx {
+                    minx = r.x0;
+                }
+                if r.x1 > maxx {
+                    maxx = r.x1;
+                }
+                if r.y0 < miny {
+                    miny = r.y0;
+                }
+                if r.y1 > maxy {
+                    maxy = r.y1;
+                }
             }
             PathSegment::ClosePath => {}
         }
@@ -411,25 +444,45 @@ fn calc_bbox_with_transform(
 
     for seg in TransformedPath::new(segments, ts) {
         match seg {
-              PathSegment::MoveTo { x, y }
-            | PathSegment::LineTo { x, y } => {
+            PathSegment::MoveTo { x, y } | PathSegment::LineTo { x, y } => {
                 prev_x = x;
                 prev_y = y;
 
-                if x > maxx { maxx = x; }
-                else if x < minx { minx = x; }
+                if x > maxx {
+                    maxx = x;
+                } else if x < minx {
+                    minx = x;
+                }
 
-                if y > maxy { maxy = y; }
-                else if y < miny { miny = y; }
+                if y > maxy {
+                    maxy = y;
+                } else if y < miny {
+                    miny = y;
+                }
             }
-            PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+            PathSegment::CurveTo {
+                x1,
+                y1,
+                x2,
+                y2,
+                x,
+                y,
+            } => {
                 let curve = kurbo::CubicBez::from_points(prev_x, prev_y, x1, y1, x2, y2, x, y);
                 let r = curve.bounding_box();
 
-                if r.x0 < minx { minx = r.x0; }
-                if r.x1 > maxx { maxx = r.x1; }
-                if r.y0 < miny { miny = r.y0; }
-                if r.y1 > maxy { maxy = r.y1; }
+                if r.x0 < minx {
+                    minx = r.x0;
+                }
+                if r.x1 > maxx {
+                    maxx = r.x1;
+                }
+                if r.y0 < miny {
+                    miny = r.y0;
+                }
+                if r.y1 > maxy {
+                    maxy = r.y1;
+                }
             }
             PathSegment::ClosePath => {}
         }
@@ -472,25 +525,45 @@ fn has_bbox(segments: &[PathSegment]) -> bool {
 
     for seg in segments {
         match *seg {
-              PathSegment::MoveTo { x, y }
-            | PathSegment::LineTo { x, y } => {
+            PathSegment::MoveTo { x, y } | PathSegment::LineTo { x, y } => {
                 prev_x = x;
                 prev_y = y;
 
-                if x > maxx { maxx = x; }
-                else if x < minx { minx = x; }
+                if x > maxx {
+                    maxx = x;
+                } else if x < minx {
+                    minx = x;
+                }
 
-                if y > maxy { maxy = y; }
-                else if y < miny { miny = y; }
+                if y > maxy {
+                    maxy = y;
+                } else if y < miny {
+                    miny = y;
+                }
             }
-            PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+            PathSegment::CurveTo {
+                x1,
+                y1,
+                x2,
+                y2,
+                x,
+                y,
+            } => {
                 let curve = kurbo::CubicBez::from_points(prev_x, prev_y, x1, y1, x2, y2, x, y);
                 let r = curve.bounding_box();
 
-                if r.x0 < minx { minx = r.x0; }
-                if r.x1 > maxx { maxx = r.x1; }
-                if r.x0 < miny { miny = r.y0; }
-                if r.y1 > maxy { maxy = r.y1; }
+                if r.x0 < minx {
+                    minx = r.x0;
+                }
+                if r.x1 > maxx {
+                    maxx = r.x1;
+                }
+                if r.x0 < miny {
+                    miny = r.y0;
+                }
+                if r.y1 > maxy {
+                    maxy = r.y1;
+                }
             }
             PathSegment::ClosePath => {}
         }
@@ -534,7 +607,14 @@ fn calc_length(segments: &[PathSegment]) -> f64 {
                 prev_x = x;
                 prev_y = y;
             }
-            PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+            PathSegment::CurveTo {
+                x1,
+                y1,
+                x2,
+                y2,
+                x,
+                y,
+            } => {
                 let curve = kurbo::CubicBez::from_points(prev_x, prev_y, x1, y1, x2, y2, x, y);
                 length += curve.arclen(1.0);
 
@@ -562,7 +642,14 @@ fn transform_path(segments: &mut [PathSegment], ts: Transform) {
             PathSegment::LineTo { x, y } => {
                 ts.apply_to(x, y);
             }
-            PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+            PathSegment::CurveTo {
+                x1,
+                y1,
+                x2,
+                y2,
+                x,
+                y,
+            } => {
                 ts.apply_to(x1, y1);
                 ts.apply_to(x2, y2);
                 ts.apply_to(x, y);
@@ -571,7 +658,6 @@ fn transform_path(segments: &mut [PathSegment], ts: Transform) {
         }
     }
 }
-
 
 /// An iterator over transformed path segments.
 #[allow(missing_debug_implementations)]
@@ -585,7 +671,11 @@ impl<'a> TransformedPath<'a> {
     /// Creates a new `TransformedPath` iterator.
     #[inline]
     pub fn new(segments: &'a [PathSegment], ts: Transform) -> Self {
-        TransformedPath { segments, ts, idx: 0 }
+        TransformedPath {
+            segments,
+            ts,
+            idx: 0,
+        }
     }
 }
 
@@ -606,11 +696,25 @@ impl<'a> Iterator for TransformedPath<'a> {
                 let (x, y) = self.ts.apply(x, y);
                 PathSegment::LineTo { x, y }
             }
-            PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+            PathSegment::CurveTo {
+                x1,
+                y1,
+                x2,
+                y2,
+                x,
+                y,
+            } => {
                 let (x1, y1) = self.ts.apply(x1, y1);
                 let (x2, y2) = self.ts.apply(x2, y2);
-                let (x,  y)  = self.ts.apply(x, y);
-                PathSegment::CurveTo { x1, y1, x2, y2, x, y }
+                let (x, y) = self.ts.apply(x, y);
+                PathSegment::CurveTo {
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    x,
+                    y,
+                }
             }
             PathSegment::ClosePath => PathSegment::ClosePath,
         };
@@ -621,7 +725,6 @@ impl<'a> Iterator for TransformedPath<'a> {
     }
 }
 
-
 #[inline]
 fn quad_to_curve(px: f64, py: f64, x1: f64, y1: f64, x: f64, y: f64) -> PathSegment {
     #[inline]
@@ -630,12 +733,14 @@ fn quad_to_curve(px: f64, py: f64, x1: f64, y1: f64, x: f64, y: f64) -> PathSegm
     }
 
     PathSegment::CurveTo {
-        x1: calc(px, x1), y1: calc(py, y1),
-        x2:  calc(x, x1), y2:  calc(y, y1),
-        x, y,
+        x1: calc(px, x1),
+        y1: calc(py, y1),
+        x2: calc(x, x1),
+        y2: calc(y, y1),
+        x,
+        y,
     }
 }
-
 
 pub(crate) trait CubicBezExt {
     fn from_points(px: f64, py: f64, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64) -> Self;

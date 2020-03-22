@@ -9,14 +9,12 @@ use usvg::ColorInterpolation as ColorSpace;
 
 use crate::prelude::*;
 
-
 pub enum Error {
     #[allow(dead_code)] // Not used by raqote-backend.
     AllocFailed,
     InvalidRegion,
     NoResults,
 }
-
 
 pub trait ImageExt: Sized {
     fn width(&self) -> u32;
@@ -29,7 +27,6 @@ pub trait ImageExt: Sized {
     fn into_srgb(&mut self);
     fn into_linear_rgb(&mut self);
 }
-
 
 pub struct Image<T: ImageExt> {
     /// Filter primitive result.
@@ -112,7 +109,6 @@ impl<T: ImageExt> Clone for Image<T> {
     }
 }
 
-
 pub struct FilterInputs<'a, T: ImageExt> {
     pub source: &'a T,
     pub background: Option<&'a T>,
@@ -120,12 +116,10 @@ pub struct FilterInputs<'a, T: ImageExt> {
     pub stroke_paint: Option<&'a T>,
 }
 
-
 pub struct FilterResult<T: ImageExt> {
     pub name: String,
     pub image: Image<T>,
 }
-
 
 pub trait Filter<T: ImageExt> {
     fn apply(
@@ -193,9 +187,7 @@ pub trait Filter<T: ImageExt> {
                     let input2 = Self::get_input(&fe.input2, region, inputs, &results)?;
                     Self::apply_blend(fe, cs, region, input1, input2)
                 }
-                usvg::FilterKind::FeFlood(ref fe) => {
-                    Self::apply_flood(fe, region)
-                }
+                usvg::FilterKind::FeFlood(ref fe) => Self::apply_flood(fe, region),
                 usvg::FilterKind::FeGaussianBlur(ref fe) => {
                     let input = Self::get_input(&fe.input, region, inputs, &results)?;
                     Self::apply_blur(fe, filter.primitive_units, cs, bbox, ts, input)
@@ -238,7 +230,16 @@ pub trait Filter<T: ImageExt> {
                 usvg::FilterKind::FeDisplacementMap(ref fe) => {
                     let input1 = Self::get_input(&fe.input1, region, inputs, &results)?;
                     let input2 = Self::get_input(&fe.input2, region, inputs, &results)?;
-                    Self::apply_displacement_map(fe, region, filter.primitive_units, cs, bbox, ts, input1, input2)
+                    Self::apply_displacement_map(
+                        fe,
+                        region,
+                        filter.primitive_units,
+                        cs,
+                        bbox,
+                        ts,
+                        input1,
+                        input2,
+                    )
                 }
                 usvg::FilterKind::FeTurbulence(ref fe) => {
                     Self::apply_turbulence(fe, region, cs, ts)
@@ -336,15 +337,9 @@ pub trait Filter<T: ImageExt> {
         results: &[FilterResult<T>],
     ) -> Result<Image<T>, Error>;
 
-    fn apply_flood(
-        fe: &usvg::FeFlood,
-        region: ScreenRect,
-    ) -> Result<Image<T>, Error>;
+    fn apply_flood(fe: &usvg::FeFlood, region: ScreenRect) -> Result<Image<T>, Error>;
 
-    fn apply_tile(
-        input: Image<T>,
-        region: ScreenRect,
-    ) -> Result<Image<T>, Error>;
+    fn apply_tile(input: Image<T>, region: ScreenRect) -> Result<Image<T>, Error>;
 
     fn apply_image(
         fe: &usvg::FeImage,
@@ -416,11 +411,7 @@ pub trait Filter<T: ImageExt> {
         input: Image<T>,
     ) -> Result<Image<T>, Error>;
 
-    fn apply_to_canvas(
-        input: Image<T>,
-        region: ScreenRect,
-        canvas: &mut T,
-    ) -> Result<(), Error>;
+    fn apply_to_canvas(input: Image<T>, region: ScreenRect, canvas: &mut T) -> Result<(), Error>;
 
     fn resolve_std_dev(
         fe: &usvg::FeGaussianBlur,
@@ -434,16 +425,14 @@ pub trait Filter<T: ImageExt> {
             return None;
         }
 
-        let (std_dx, std_dy) = Self::scale_coordinates(
-            fe.std_dev_x.value(), fe.std_dev_y.value(), units, bbox, ts,
-        )?;
+        let (std_dx, std_dy) =
+            Self::scale_coordinates(fe.std_dev_x.value(), fe.std_dev_y.value(), units, bbox, ts)?;
         if std_dx.is_fuzzy_zero() && std_dy.is_fuzzy_zero() {
             None
         } else {
             const BLUR_SIGMA_THRESHOLD: f64 = 2.0;
             // Check that the current feGaussianBlur filter can be applied using a box blur.
-            let box_blur =    std_dx >= BLUR_SIGMA_THRESHOLD
-                           || std_dy >= BLUR_SIGMA_THRESHOLD;
+            let box_blur = std_dx >= BLUR_SIGMA_THRESHOLD || std_dy >= BLUR_SIGMA_THRESHOLD;
 
             Some((std_dx, std_dy, box_blur))
         }
@@ -485,7 +474,8 @@ pub fn calc_region<T: ImageExt>(
     };
 
     let canvas_rect = ScreenRect::new(0, 0, canvas.width(), canvas.height()).unwrap();
-    let region = path.bbox_with_transform(region_ts, None)
+    let region = path
+        .bbox_with_transform(region_ts, None)
         .ok_or_else(|| Error::InvalidRegion)?
         .to_screen_rect()
         .fit_to_rect(canvas_rect);
@@ -514,13 +504,10 @@ fn calc_subregion<T: ImageExt>(
                         None => filter_region,
                     }
                 }
-                _ => {
-                    filter_region
-                }
+                _ => filter_region,
             }
         }
-        usvg::FilterKind::FeFlood(..) |
-        usvg::FilterKind::FeImage(..) => {
+        usvg::FilterKind::FeFlood(..) | usvg::FilterKind::FeImage(..) => {
             // `feImage` uses the object bbox.
             if filter.primitive_units == usvg::Units::ObjectBoundingBox {
                 let bbox = bbox.ok_or(Error::InvalidRegion)?;
@@ -533,7 +520,8 @@ fn calc_subregion<T: ImageExt>(
                     primitive.y.unwrap_or(0.0),
                     primitive.width.unwrap_or(1.0),
                     primitive.height.unwrap_or(1.0),
-                ).ok_or_else(|| Error::InvalidRegion)?;
+                )
+                .ok_or_else(|| Error::InvalidRegion)?;
 
                 let r = r
                     .bbox_transform(bbox)
@@ -555,18 +543,32 @@ fn calc_subregion<T: ImageExt>(
             primitive.y.unwrap_or(0.0),
             primitive.width.unwrap_or(1.0),
             primitive.height.unwrap_or(1.0),
-        ).ok_or_else(|| Error::InvalidRegion)?;
+        )
+        .ok_or_else(|| Error::InvalidRegion)?;
 
         region.to_rect().bbox_transform(subregion_bbox)
     } else {
         let (dx, dy) = ts.get_translate();
         let (sx, sy) = ts.get_scale();
         Rect::new(
-            primitive.x.map(|n| n * sx + dx).unwrap_or(region.x() as f64),
-            primitive.y.map(|n| n * sy + dy).unwrap_or(region.y() as f64),
-            primitive.width.map(|n| n * sx).unwrap_or(region.width() as f64),
-            primitive.height.map(|n| n * sy).unwrap_or(region.height() as f64),
-        ).ok_or_else(|| Error::InvalidRegion)?
+            primitive
+                .x
+                .map(|n| n * sx + dx)
+                .unwrap_or(region.x() as f64),
+            primitive
+                .y
+                .map(|n| n * sy + dy)
+                .unwrap_or(region.y() as f64),
+            primitive
+                .width
+                .map(|n| n * sx)
+                .unwrap_or(region.width() as f64),
+            primitive
+                .height
+                .map(|n| n * sy)
+                .unwrap_or(region.height() as f64),
+        )
+        .ok_or_else(|| Error::InvalidRegion)?
     };
 
     Ok(subregion.to_screen_rect())
@@ -578,7 +580,11 @@ pub trait IntoSvgFilters<T>: Sized {
 
 impl IntoSvgFilters<svgfilters::BGR8> for usvg::Color {
     fn into_svgf(self) -> svgfilters::BGR8 {
-        svgfilters::BGR8 { b: self.blue, g: self.green, r: self.red }
+        svgfilters::BGR8 {
+            b: self.blue,
+            g: self.green,
+            r: self.red,
+        }
     }
 }
 
@@ -591,25 +597,21 @@ impl IntoSvgFilters<svgfilters::LightSource> for usvg::FeLightSource {
                     elevation: light.elevation,
                 }
             }
-            usvg::FeLightSource::FePointLight(ref light) => {
-                svgfilters::LightSource::PointLight {
-                    x: light.x,
-                    y: light.y,
-                    z: light.z,
-                }
-            }
-            usvg::FeLightSource::FeSpotLight(ref light) => {
-                svgfilters::LightSource::SpotLight {
-                    x: light.x,
-                    y: light.y,
-                    z: light.z,
-                    points_at_x: light.points_at_x,
-                    points_at_y: light.points_at_y,
-                    points_at_z: light.points_at_z,
-                    specular_exponent: light.specular_exponent.value().into(),
-                    limiting_cone_angle: light.limiting_cone_angle,
-                }
-            }
+            usvg::FeLightSource::FePointLight(ref light) => svgfilters::LightSource::PointLight {
+                x: light.x,
+                y: light.y,
+                z: light.z,
+            },
+            usvg::FeLightSource::FeSpotLight(ref light) => svgfilters::LightSource::SpotLight {
+                x: light.x,
+                y: light.y,
+                z: light.z,
+                points_at_x: light.points_at_x,
+                points_at_y: light.points_at_y,
+                points_at_z: light.points_at_z,
+                specular_exponent: light.specular_exponent.value().into(),
+                limiting_cone_angle: light.limiting_cone_angle,
+            },
         }
     }
 }
@@ -617,16 +619,23 @@ impl IntoSvgFilters<svgfilters::LightSource> for usvg::FeLightSource {
 impl<'a> IntoSvgFilters<svgfilters::TransferFunction<'a>> for &'a usvg::TransferFunction {
     fn into_svgf(self) -> svgfilters::TransferFunction<'a> {
         match *self {
-            usvg::TransferFunction::Identity =>
-                svgfilters::TransferFunction::Identity,
-            usvg::TransferFunction::Table(ref data) =>
-                svgfilters::TransferFunction::Table(data),
-            usvg::TransferFunction::Discrete(ref data) =>
-                svgfilters::TransferFunction::Discrete(data),
-            usvg::TransferFunction::Linear { slope, intercept } =>
-                svgfilters::TransferFunction::Linear { slope, intercept },
-            usvg::TransferFunction::Gamma { amplitude, exponent, offset } =>
-                svgfilters::TransferFunction::Gamma { amplitude, exponent, offset },
+            usvg::TransferFunction::Identity => svgfilters::TransferFunction::Identity,
+            usvg::TransferFunction::Table(ref data) => svgfilters::TransferFunction::Table(data),
+            usvg::TransferFunction::Discrete(ref data) => {
+                svgfilters::TransferFunction::Discrete(data)
+            }
+            usvg::TransferFunction::Linear { slope, intercept } => {
+                svgfilters::TransferFunction::Linear { slope, intercept }
+            }
+            usvg::TransferFunction::Gamma {
+                amplitude,
+                exponent,
+                offset,
+            } => svgfilters::TransferFunction::Gamma {
+                amplitude,
+                exponent,
+                offset,
+            },
         }
     }
 }
@@ -636,14 +645,14 @@ impl<'a> IntoSvgFilters<svgfilters::ColorMatrix<'a>> for &'a usvg::FeColorMatrix
         use std::convert::TryInto;
 
         match *self {
-            usvg::FeColorMatrixKind::Matrix(ref data) =>
-                svgfilters::ColorMatrix::Matrix(data.as_slice().try_into().unwrap()),
-            usvg::FeColorMatrixKind::Saturate(n) =>
-                svgfilters::ColorMatrix::Saturate(svgfilters::NormalizedValue::new(n.value())),
-            usvg::FeColorMatrixKind::HueRotate(n) =>
-                svgfilters::ColorMatrix::HueRotate(n),
-            usvg::FeColorMatrixKind::LuminanceToAlpha =>
-                svgfilters::ColorMatrix::LuminanceToAlpha,
+            usvg::FeColorMatrixKind::Matrix(ref data) => {
+                svgfilters::ColorMatrix::Matrix(data.as_slice().try_into().unwrap())
+            }
+            usvg::FeColorMatrixKind::Saturate(n) => {
+                svgfilters::ColorMatrix::Saturate(svgfilters::NormalizedValue::new(n.value()))
+            }
+            usvg::FeColorMatrixKind::HueRotate(n) => svgfilters::ColorMatrix::HueRotate(n),
+            usvg::FeColorMatrixKind::LuminanceToAlpha => svgfilters::ColorMatrix::LuminanceToAlpha,
         }
     }
 }
@@ -681,10 +690,13 @@ impl IntoSvgFilters<svgfilters::EdgeMode> for usvg::FeEdgeMode {
 impl<'a> IntoSvgFilters<svgfilters::ConvolveMatrix<'a>> for &'a usvg::ConvolveMatrix {
     fn into_svgf(self) -> svgfilters::ConvolveMatrix<'a> {
         svgfilters::ConvolveMatrix::new(
-            self.target_x(), self.target_y(),
-            self.columns(), self.rows(),
+            self.target_x(),
+            self.target_y(),
+            self.columns(),
+            self.rows(),
             self.data(),
-        ).unwrap()
+        )
+        .unwrap()
     }
 }
 
@@ -701,10 +713,10 @@ pub fn transform_light_source(
             let (x, y) = ts.apply(light.x, light.y);
             light.x = x - region.x() as f64;
             light.y = y - region.y() as f64;
-            light.z = light.z * (ts.a*ts.a + ts.d*ts.d).sqrt() / SQRT_2;
+            light.z = light.z * (ts.a * ts.a + ts.d * ts.d).sqrt() / SQRT_2;
         }
         usvg::FeLightSource::FeSpotLight(ref mut light) => {
-            let sz = (ts.a*ts.a + ts.d*ts.d).sqrt() / SQRT_2;
+            let sz = (ts.a * ts.a + ts.d * ts.d).sqrt() / SQRT_2;
 
             let (x, y) = ts.apply(light.x, light.y);
             light.x = x - region.x() as f64;

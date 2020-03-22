@@ -2,16 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::prelude::*;
 use crate::image;
+use crate::prelude::*;
 use crate::ConvTransform;
 
-
-pub fn draw(
-    image: &usvg::Image,
-    opt: &Options,
-    cr: &cairo::Context,
-) -> Rect {
+pub fn draw(image: &usvg::Image, opt: &Options, cr: &cairo::Context) -> Rect {
     if image.visibility != usvg::Visibility::Visible {
         return image.view_box.rect;
     }
@@ -19,7 +14,14 @@ pub fn draw(
     if image.format == usvg::ImageFormat::SVG {
         draw_svg(&image.data, image.view_box, opt, cr);
     } else {
-        draw_raster(image.format, &image.data, image.view_box, image.rendering_mode, opt, cr);
+        draw_raster(
+            image.format,
+            &image.data,
+            image.view_box,
+            image.rendering_mode,
+            opt,
+            cr,
+        );
     }
 
     image.view_box.rect
@@ -63,7 +65,7 @@ pub fn draw_raster(
 
     let filter_mode = match rendering_mode {
         usvg::ImageRendering::OptimizeQuality => cairo::Filter::Gaussian,
-        usvg::ImageRendering::OptimizeSpeed   => cairo::Filter::Nearest,
+        usvg::ImageRendering::OptimizeSpeed => cairo::Filter::Nearest,
     };
 
     let patt = cairo::SurfacePattern::create(&surface);

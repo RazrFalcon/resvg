@@ -2,10 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{svgtree, tree};
 use super::prelude::*;
-use super::{GroupKind, convert_group, convert_element};
-
+use super::{convert_element, convert_group, GroupKind};
+use crate::{svgtree, tree};
 
 // Full list can be found here: https://www.w3.org/TR/SVG11/feature.html
 static FEATURES: &[&str] = &[
@@ -37,17 +36,11 @@ static FEATURES: &[&str] = &[
     "http://www.w3.org/TR/SVG11/feature#Filter",
     "http://www.w3.org/TR/SVG11/feature#BasicFilter",
     "http://www.w3.org/TR/SVG11/feature#XlinkAttribute", // only xlink:href
-    // "http://www.w3.org/TR/SVG11/feature#Font",
-    // "http://www.w3.org/TR/SVG11/feature#BasicFont",
+                                                         // "http://www.w3.org/TR/SVG11/feature#Font",
+                                                         // "http://www.w3.org/TR/SVG11/feature#BasicFont",
 ];
 
-
-pub fn convert(
-    node: svgtree::Node,
-    state: &State,
-    parent: &mut tree::Node,
-    tree: &mut tree::Tree,
-) {
+pub fn convert(node: svgtree::Node, state: &State, parent: &mut tree::Node, tree: &mut tree::Tree) {
     let child = try_opt!(node.children().find(|n| is_condition_passed(*n, state.opt)));
     match convert_group(node, state, false, parent, tree) {
         GroupKind::Create(ref mut g) => {
@@ -60,10 +53,7 @@ pub fn convert(
     }
 }
 
-pub fn is_condition_passed(
-    node: svgtree::Node,
-    opt: &Options,
-) -> bool {
+pub fn is_condition_passed(node: svgtree::Node, opt: &Options) -> bool {
     if !node.is_element() {
         return false;
     }
@@ -93,10 +83,7 @@ pub fn is_condition_passed(
 }
 
 /// SVG spec 5.8.5
-fn is_valid_sys_lang(
-    node: svgtree::Node,
-    opt: &Options,
-) -> bool {
+fn is_valid_sys_lang(node: svgtree::Node, opt: &Options) -> bool {
     // 'The attribute value is a comma-separated list of language names
     // as defined in BCP 47.'
     //

@@ -7,14 +7,16 @@
 use crate::skia;
 use log::warn;
 
-use crate::{prelude::*, layers, ConvTransform, RenderState};
+use crate::{layers, prelude::*, ConvTransform, RenderState};
 
 macro_rules! try_create_surface {
     ($size:expr, $ret:expr) => {
         try_opt_warn_or!(
             skia::Surface::new_rgba_premultiplied($size.width(), $size.height()),
             $ret,
-            "Failed to create a {}x{} surface.", $size.width(), $size.height()
+            "Failed to create a {}x{} surface.",
+            $size.width(),
+            $size.height()
         );
     };
 }
@@ -38,17 +40,12 @@ impl ConvTransform<skia::Matrix> for usvg::Transform {
     }
 }
 
-
 /// Skia backend handle.
 #[derive(Clone, Copy)]
 pub struct Backend;
 
 impl Render for Backend {
-    fn render_to_image(
-        &self,
-        tree: &usvg::Tree,
-        opt: &Options,
-    ) -> Option<Box<dyn OutputImage>> {
+    fn render_to_image(&self, tree: &usvg::Tree, opt: &Options) -> Option<Box<dyn OutputImage>> {
         let img = render_to_image(tree, opt)?;
         Some(Box::new(img))
     }
@@ -64,10 +61,7 @@ impl Render for Backend {
 }
 
 impl OutputImage for skia::Surface {
-    fn save_png(
-        &mut self,
-        path: &std::path::Path,
-    ) -> bool {
+    fn save_png(&mut self, path: &std::path::Path) -> bool {
         skia::Surface::save_png(self, path.to_str().unwrap())
     }
 
@@ -85,7 +79,9 @@ impl OutputImage for skia::Surface {
         svgfilters::demultiply_alpha(data.as_bgra_mut());
         // BGRA -> RGBA.
         if skia::Surface::is_bgra() {
-            data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+            data.as_bgra_mut()
+                .iter_mut()
+                .for_each(|p| swap(&mut p.r, &mut p.b));
         }
 
         data
@@ -93,20 +89,14 @@ impl OutputImage for skia::Surface {
 }
 
 /// Renders SVG to image.
-pub fn render_to_image(
-    tree: &usvg::Tree,
-    opt: &Options,
-) -> Option<skia::Surface> {
+pub fn render_to_image(tree: &usvg::Tree, opt: &Options) -> Option<skia::Surface> {
     let (mut img, img_size) = create_root_image(tree.svg_node().size.to_screen_size(), opt)?;
     render_to_canvas(tree, opt, img_size, &mut img);
     Some(img)
 }
 
 /// Renders SVG node to image.
-pub fn render_node_to_image(
-    node: &usvg::Node,
-    opt: &Options,
-) -> Option<skia::Surface> {
+pub fn render_node_to_image(node: &usvg::Node, opt: &Options) -> Option<skia::Surface> {
     let node_bbox = if let Some(bbox) = node.calculate_bbox() {
         bbox
     } else {
@@ -132,7 +122,13 @@ pub fn render_to_canvas(
     img_size: ScreenSize,
     canvas: &mut skia::Canvas,
 ) {
-    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, canvas);
+    render_node_to_canvas(
+        &tree.root(),
+        opt,
+        tree.svg_node().view_box,
+        img_size,
+        canvas,
+    );
 }
 
 /// Renders SVG node to canvas.
@@ -168,10 +164,7 @@ fn render_node_to_canvas_impl(
     canvas.set_matrix(&curr_ts);
 }
 
-fn create_root_image(
-    size: ScreenSize,
-    opt: &Options,
-) -> Option<(skia::Surface, ScreenSize)> {
+fn create_root_image(size: ScreenSize, opt: &Options) -> Option<(skia::Surface, ScreenSize)> {
     let img_size = utils::fit_to(size, opt.fit_to)?;
 
     let mut img = try_create_surface!(img_size, None);
@@ -204,18 +197,12 @@ fn render_node(
     canvas: &mut skia::Canvas,
 ) -> Option<Rect> {
     match *node.borrow() {
-        usvg::NodeKind::Svg(_) => {
-            render_group(node, opt, state, layers, canvas)
-        }
+        usvg::NodeKind::Svg(_) => render_group(node, opt, state, layers, canvas),
         usvg::NodeKind::Path(ref path) => {
             path::draw(&node.tree(), path, opt, skia::BlendMode::SourceOver, canvas)
         }
-        usvg::NodeKind::Image(ref img) => {
-            Some(image::draw(img, opt, canvas))
-        }
-        usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, state, layers, canvas)
-        }
+        usvg::NodeKind::Image(ref img) => Some(image::draw(img, opt, canvas)),
+        usvg::NodeKind::Group(ref g) => render_group_impl(node, g, opt, state, layers, canvas),
         _ => None,
     }
 }
@@ -293,7 +280,12 @@ fn render_group_impl(
         let curr_ts = canvas.get_matrix();
         canvas.reset_matrix();
         canvas.draw_surface(
-            &sub_surface, 0.0, 0.0, 255, skia::BlendMode::SourceOver, skia::FilterQuality::Low,
+            &sub_surface,
+            0.0,
+            0.0,
+            255,
+            skia::BlendMode::SourceOver,
+            skia::FilterQuality::Low,
         );
         canvas.set_matrix(&curr_ts);
         return bbox;
@@ -306,11 +298,21 @@ fn render_group_impl(
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(&curr_ts);
                 let background = prepare_filter_background(node, filter, opt);
-                let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, opt, &sub_surface);
-                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_surface);
-                filter::apply(filter, bbox, &ts, opt, &node.tree(),
-                              background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
-                              &mut sub_surface);
+                let fill_paint =
+                    prepare_filter_fill_paint(node, filter, bbox, ts, opt, &sub_surface);
+                let stroke_paint =
+                    prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_surface);
+                filter::apply(
+                    filter,
+                    bbox,
+                    &ts,
+                    opt,
+                    &node.tree(),
+                    background.as_ref(),
+                    fill_paint.as_ref(),
+                    stroke_paint.as_ref(),
+                    &mut sub_surface,
+                );
             }
         }
     }
@@ -345,7 +347,12 @@ fn render_group_impl(
     let curr_ts = canvas.get_matrix();
     canvas.reset_matrix();
     canvas.draw_surface(
-        &sub_surface, 0.0, 0.0, a, skia::BlendMode::SourceOver, skia::FilterQuality::Low,
+        &sub_surface,
+        0.0,
+        0.0,
+        a,
+        skia::BlendMode::SourceOver,
+        skia::FilterQuality::Low,
     );
     canvas.set_matrix(&curr_ts);
 
@@ -393,7 +400,13 @@ fn prepare_filter_fill_paint(
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
             let fill = style::fill(&parent.tree(), &fill, opt, style_bbox, ts);
-            surface.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64, &fill);
+            surface.draw_rect(
+                0.0,
+                0.0,
+                region.width() as f64,
+                region.height() as f64,
+                &fill,
+            );
         }
     }
 
@@ -416,22 +429,24 @@ fn prepare_filter_stroke_paint(
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
             let fill = style::fill(&parent.tree(), &fill, opt, style_bbox, ts);
-            surface.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64, &fill);
+            surface.draw_rect(
+                0.0,
+                0.0,
+                region.width() as f64,
+                region.height() as f64,
+                &fill,
+            );
         }
     }
 
     Some(surface)
 }
 
-fn create_layers(
-    img_size: ScreenSize,
-) -> SkiaLayers {
+fn create_layers(img_size: ScreenSize) -> SkiaLayers {
     layers::Layers::new(img_size, create_subimage, clear_image)
 }
 
-fn create_subimage(
-    size: ScreenSize,
-) -> Option<skia::Surface> {
+fn create_subimage(size: ScreenSize) -> Option<skia::Surface> {
     let mut img = try_create_surface!(size, None);
     img.fill(0, 0, 0, 0);
 

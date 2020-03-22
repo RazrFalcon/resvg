@@ -33,7 +33,9 @@ pub fn fill(
                             prepare_radial(rg, opacity, bbox, &mut paint);
                         }
                         usvg::NodeKind::Pattern(ref pattern) => {
-                            prepare_pattern(&node, pattern, opt, global_ts, bbox, opacity, &mut paint);
+                            prepare_pattern(
+                                &node, pattern, opt, global_ts, bbox, opacity, &mut paint,
+                            );
                         }
                         _ => {}
                     }
@@ -72,7 +74,9 @@ pub fn stroke(
                             prepare_radial(rg, opacity, bbox, &mut paint);
                         }
                         usvg::NodeKind::Pattern(ref pattern) => {
-                            prepare_pattern(&node, pattern, opt, global_ts, bbox, opacity, &mut paint);
+                            prepare_pattern(
+                                &node, pattern, opt, global_ts, bbox, opacity, &mut paint,
+                            );
                         }
                         _ => {}
                     }
@@ -116,7 +120,7 @@ fn prepare_linear(
     let gradient = skia::LinearGradient {
         start_point: (g.x1, g.y1),
         end_point: (g.x2, g.y2),
-        base: prepare_base_gradient(g, opacity, &bbox)
+        base: prepare_base_gradient(g, opacity, &bbox),
     };
 
     let shader = skia::Shader::new_linear_gradient(gradient);
@@ -129,11 +133,10 @@ fn prepare_radial(
     bbox: Rect,
     paint: &mut skia::Paint,
 ) {
-
     let gradient = skia::RadialGradient {
         start_circle: (g.fx, g.fy, 0.0),
         end_circle: (g.cx, g.cy, g.r.value()),
-        base: prepare_base_gradient(g, opacity, &bbox)
+        base: prepare_base_gradient(g, opacity, &bbox),
     };
 
     let shader = skia::Shader::new_radial_gradient(gradient);
@@ -143,9 +146,8 @@ fn prepare_radial(
 fn prepare_base_gradient(
     g: &usvg::BaseGradient,
     opacity: usvg::Opacity,
-    bbox: &Rect
+    bbox: &Rect,
 ) -> skia::Gradient {
-
     let tile_mode = match g.spread_method {
         usvg::SpreadMethod::Pad => skia::TileMode::Clamp,
         usvg::SpreadMethod::Reflect => skia::TileMode::Mirror,
@@ -172,7 +174,12 @@ fn prepare_base_gradient(
         positions.push(stop.offset.value() as f32);
     }
 
-    skia::Gradient { colors, positions, tile_mode, matrix }
+    skia::Gradient {
+        colors,
+        positions,
+        tile_mode,
+        matrix,
+    }
 }
 
 fn prepare_pattern(
@@ -193,7 +200,7 @@ fn prepare_pattern(
     let (sx, sy) = global_ts.get_scale();
 
     let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy)).to_screen_size();
-    let mut surface =  try_create_surface!(img_size, ());
+    let mut surface = try_create_surface!(img_size, ());
     surface.clear();
 
     surface.scale(sx, sy);
@@ -209,7 +216,13 @@ fn prepare_pattern(
     }
 
     let mut layers = super::create_layers(img_size);
-    super::render_group(pattern_node, opt, &mut RenderState::Ok, &mut layers, &mut surface);
+    super::render_group(
+        pattern_node,
+        opt,
+        &mut RenderState::Ok,
+        &mut layers,
+        &mut surface,
+    );
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);

@@ -38,17 +38,19 @@ fn main() {
     let stroke = Some(usvg::Stroke {
         paint: usvg::Paint::Color(usvg::Color::new(255, 0, 0)),
         opacity: 0.5.into(),
-        .. usvg::Stroke::default()
+        ..usvg::Stroke::default()
     });
 
     for bbox in bboxes {
         rtree.root().append_kind(usvg::NodeKind::Path(usvg::Path {
             stroke: stroke.clone(),
             data: Rc::new(usvg::PathData::from_rect(bbox)),
-            .. usvg::Path::default()
+            ..usvg::Path::default()
         }));
     }
 
-    let mut img = resvg::default_backend().render_to_image(&rtree, &opt).unwrap();
+    let mut img = resvg::default_backend()
+        .render_to_image(&rtree, &opt)
+        .unwrap();
     img.save_png(std::path::Path::new(&args[2]));
 }

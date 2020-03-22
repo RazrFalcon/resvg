@@ -2,9 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{prelude::*, ConvTransform, RenderState};
 use super::{ColorExt, RaqoteDrawTargetExt};
-
+use crate::{prelude::*, ConvTransform, RenderState};
 
 pub fn fill(
     tree: &usvg::Tree,
@@ -33,9 +32,14 @@ pub fn fill(
                         }
                         usvg::NodeKind::Pattern(ref pattern) => {
                             let ts = *dt.get_transform();
-                            let (sub_dt, patt_ts) = try_opt!(
-                                prepare_pattern(&node, pattern, opt, ts, bbox, fill.opacity)
-                            );
+                            let (sub_dt, patt_ts) = try_opt!(prepare_pattern(
+                                &node,
+                                pattern,
+                                opt,
+                                ts,
+                                bbox,
+                                fill.opacity
+                            ));
                             patt_dt = sub_dt;
                             create_pattern_image(&patt_dt, patt_ts)
                         }
@@ -49,11 +53,7 @@ pub fn fill(
             }
         };
 
-        dt.fill(
-            path,
-            &source,
-            draw_opt,
-        );
+        dt.fill(path, &source, draw_opt);
     }
 }
 
@@ -110,9 +110,14 @@ pub fn stroke(
                         }
                         usvg::NodeKind::Pattern(ref pattern) => {
                             let ts = *dt.get_transform();
-                            let (sub_dt, patt_ts) = try_opt!(
-                                prepare_pattern(&node, pattern, opt, ts, bbox, stroke.opacity)
-                            );
+                            let (sub_dt, patt_ts) = try_opt!(prepare_pattern(
+                                &node,
+                                pattern,
+                                opt,
+                                ts,
+                                bbox,
+                                stroke.opacity
+                            ));
                             patt_dt = sub_dt;
                             create_pattern_image(&patt_dt, patt_ts)
                         }
@@ -126,12 +131,7 @@ pub fn stroke(
             }
         };
 
-        dt.stroke(
-            &path,
-            &source,
-            &style,
-            draw_opt,
-        );
+        dt.stroke(&path, &source, &style, draw_opt);
     }
 }
 
@@ -149,7 +149,9 @@ fn prepare_linear<'a>(
     };
 
     let mut grad = raqote::Source::new_linear_gradient(
-        raqote::Gradient { stops: conv_stops(g, opacity) },
+        raqote::Gradient {
+            stops: conv_stops(g, opacity),
+        },
         raqote::Point::new(g.x1 as f32, g.y1 as f32),
         raqote::Point::new(g.x2 as f32, g.y2 as f32),
         conv_spread(g.base.spread_method),
@@ -180,14 +182,18 @@ fn prepare_radial<'a>(
 
     let mut grad = if g.fx == g.cx && g.fy == g.cy {
         raqote::Source::new_radial_gradient(
-            raqote::Gradient { stops: conv_stops(g, opacity) },
+            raqote::Gradient {
+                stops: conv_stops(g, opacity),
+            },
             raqote::Point::new(g.cx as f32, g.cy as f32),
             g.r.value() as f32,
             conv_spread(g.base.spread_method),
         )
     } else {
         raqote::Source::new_two_circle_radial_gradient(
-            raqote::Gradient { stops: conv_stops(g, opacity) },
+            raqote::Gradient {
+                stops: conv_stops(g, opacity),
+            },
             raqote::Point::new(g.fx as f32, g.fy as f32),
             0.0,
             raqote::Point::new(g.cx as f32, g.cy as f32),
@@ -197,7 +203,7 @@ fn prepare_radial<'a>(
     };
 
     match grad {
-          raqote::Source::RadialGradient(_, _, ref mut transform)
+        raqote::Source::RadialGradient(_, _, ref mut transform)
         | raqote::Source::TwoCircleRadialGradient(_, _, _, _, _, _, ref mut transform) => {
             let ts: raqote::Transform = ts.to_native();
             if let Some(ts) = ts.inverse() {
@@ -218,10 +224,7 @@ fn conv_spread(v: usvg::SpreadMethod) -> raqote::Spread {
     }
 }
 
-fn conv_stops(
-    g: &usvg::BaseGradient,
-    opacity: usvg::Opacity,
-) -> Vec<raqote::GradientStop> {
+fn conv_stops(g: &usvg::BaseGradient, opacity: usvg::Opacity) -> Vec<raqote::GradientStop> {
     let mut stops = Vec::new();
 
     for stop in &g.stops {
@@ -264,11 +267,20 @@ fn prepare_pattern<'a>(
 
         // We don't use Transform::from_bbox(bbox) because `x` and `y` should be
         // ignored for some reasons...
-        dt.transform(&raqote::Transform::create_scale(bbox.width() as f32, bbox.height() as f32));
+        dt.transform(&raqote::Transform::create_scale(
+            bbox.width() as f32,
+            bbox.height() as f32,
+        ));
     }
 
     let mut layers = super::create_layers(img_size);
-    super::render_group(pattern_node, opt, &mut RenderState::Ok, &mut layers, &mut dt);
+    super::render_group(
+        pattern_node,
+        opt,
+        &mut RenderState::Ok,
+        &mut layers,
+        &mut dt,
+    );
 
     let img = if !opacity.is_default() {
         // If `opacity` isn't `1` then we have to make image semitransparent.
@@ -276,11 +288,16 @@ fn prepare_pattern<'a>(
         // the pattern on it with transparency.
 
         let mut img2 = raqote::DrawTarget::new(img_size.width() as i32, img_size.height() as i32);
-        img2.draw_image_at(0.0, 0.0, &dt.as_image(), &raqote::DrawOptions {
-            blend_mode: raqote::BlendMode::Src,
-            alpha: opacity.value() as f32,
-            ..raqote::DrawOptions::default()
-        });
+        img2.draw_image_at(
+            0.0,
+            0.0,
+            &dt.as_image(),
+            &raqote::DrawOptions {
+                blend_mode: raqote::BlendMode::Src,
+                alpha: opacity.value() as f32,
+                ..raqote::DrawOptions::default()
+            },
+        );
 
         img2
     } else {
@@ -295,10 +312,7 @@ fn prepare_pattern<'a>(
     Some((img, ts))
 }
 
-fn create_pattern_image(
-    dt: &raqote::DrawTarget,
-    ts: usvg::Transform,
-) -> raqote::Source {
+fn create_pattern_image(dt: &raqote::DrawTarget, ts: usvg::Transform) -> raqote::Source {
     let ts: raqote::Transform = ts.to_native();
     raqote::Source::Image(
         dt.as_image(),

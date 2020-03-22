@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ImageRefMut, FuzzyZero, f64_bound};
+use crate::{f64_bound, FuzzyZero, ImageRefMut};
 
 const RAND_M: i32 = 2147483647; // 2**31 - 1
 const RAND_A: i32 = 16807; // 7**5; primitive root of m
@@ -61,10 +61,14 @@ pub fn turbulence(
             let (tx, ty) = ((x as f64 + offset_x) / sx, (y as f64 + offset_y) / sy);
             let n = turbulence_impl(
                 channel,
-                tx, ty,
-                x as f64, y as f64,
-                width as f64, height as f64,
-                base_frequency_x, base_frequency_y,
+                tx,
+                ty,
+                x as f64,
+                y as f64,
+                width as f64,
+                height as f64,
+                base_frequency_x,
+                base_frequency_y,
                 num_octaves,
                 fractal_noise,
                 stitch_tiles,
@@ -115,8 +119,8 @@ fn init(mut seed: i32) -> (Vec<usize>, Vec<Vec<Vec<f64>>>) {
                     ((seed % (B_SIZE_32 + B_SIZE_32)) - B_SIZE_32) as f64 / B_SIZE_32 as f64;
             }
 
-            let s = (  gradient[k][i][0] * gradient[k][i][0]
-                + gradient[k][i][1] * gradient[k][i][1]).sqrt();
+            let s = (gradient[k][i][0] * gradient[k][i][0] + gradient[k][i][1] * gradient[k][i][1])
+                .sqrt();
 
             gradient[k][i][0] /= s;
             gradient[k][i][1] /= s;

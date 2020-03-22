@@ -2,9 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{prelude::*, ConvTransform, RenderState};
 use super::ReCairoContextExt;
-
+use crate::{prelude::*, ConvTransform, RenderState};
 
 pub fn fill(
     tree: &usvg::Tree,
@@ -212,7 +211,6 @@ fn prepare_pattern(
     ts.translate(r.x(), r.y());
     ts.scale(1.0 / sx, 1.0 / sy);
 
-
     let surface = if !opacity.is_default() {
         // If `opacity` isn't `1` then we have to make image semitransparent.
         // The only way to do this is by making a new image and rendering
@@ -227,7 +225,6 @@ fn prepare_pattern(
     } else {
         surface
     };
-
 
     let patt = cairo::SurfacePattern::create(&surface);
     patt.set_extend(cairo::Extend::Repeat);

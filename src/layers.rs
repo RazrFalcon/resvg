@@ -8,7 +8,6 @@ use std::rc::Rc;
 
 use crate::ScreenSize;
 
-
 type LayerData<T> = Rc<RefCell<T>>;
 
 /// Stack of image layers.
@@ -61,9 +60,7 @@ impl<T> Layers<T> {
                         _counter_holder: self.counter.clone(),
                     })
                 }
-                None => {
-                    None
-                }
+                None => None,
             }
         } else {
             {

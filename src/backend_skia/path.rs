@@ -4,10 +4,9 @@
 
 use crate::skia;
 
+use super::style;
 use crate::prelude::*;
 use crate::ConvTransform;
-use super::style;
-
 
 pub fn draw(
     tree: &usvg::Tree,
@@ -54,9 +53,7 @@ pub fn draw(
     bbox
 }
 
-fn convert_path(
-    path: &usvg::PathData,
-) -> skia::Path {
+fn convert_path(path: &usvg::PathData) -> skia::Path {
     let mut s_path = skia::Path::new();
     for seg in path.iter() {
         match *seg {
@@ -66,7 +63,14 @@ fn convert_path(
             usvg::PathSegment::LineTo { x, y } => {
                 s_path.line_to(x, y);
             }
-            usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+            usvg::PathSegment::CurveTo {
+                x1,
+                y1,
+                x2,
+                y2,
+                x,
+                y,
+            } => {
                 s_path.cubic_to(x1, y1, x2, y2, x, y);
             }
             usvg::PathSegment::ClosePath => {

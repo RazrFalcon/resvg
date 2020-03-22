@@ -1,15 +1,13 @@
-use std::path::{Path, PathBuf};
 use std::fs;
+use std::path::{Path, PathBuf};
 
 pub use ttf_parser::{GlyphId, Weight, Width as Stretch};
 
 use crate::tree;
 use crate::utils;
 
-
 #[cfg(target_os = "linux")]
 const GENERIC_FAMILIES: &[&str] = &["serif", "sans-serif", "monospace", "cursive", "fantasy"];
-
 
 #[derive(Clone, Debug)]
 pub struct FontItem {
@@ -19,7 +17,6 @@ pub struct FontItem {
     pub family: String,
     pub properties: Properties,
 }
-
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct ID(u16); // 65k fonts if more than enough!
@@ -63,7 +60,8 @@ impl Database {
         let output = std::process::Command::new("fc-match")
             .arg(generic_family)
             .arg("--format=%{family}")
-            .output().ok();
+            .output()
+            .ok();
         let output = try_opt_warn_or!(output, None, "Failed to run 'fc-match'.");
         let family = std::str::from_utf8(&output.stdout).ok()?.trim();
 
@@ -119,7 +117,9 @@ impl Database {
         let mmap = unsafe { memmap2::MmapOptions::new().map(&file).ok()? };
         let font = ttf_parser::Font::from_data(&mmap, item.face_index).ok()?;
 
-        let mut builder = PathBuilder { path: tree::PathData::with_capacity(16) };
+        let mut builder = PathBuilder {
+            path: tree::PathData::with_capacity(16),
+        };
         font.outline_glyph(glyph_id, &mut builder).ok()?;
         Some(builder.path)
     }
@@ -167,12 +167,10 @@ impl Database {
 
         let underline = match font.underline_metrics() {
             Some(metrics) => metrics,
-            None => {
-                ttf_parser::LineMetrics {
-                    position: -(units_per_em as i16) / 9,
-                    thickness: units_per_em as i16 / 12,
-                }
-            }
+            None => ttf_parser::LineMetrics {
+                position: -(units_per_em as i16) / 9,
+                thickness: units_per_em as i16 / 12,
+            },
         };
 
         let line_through_position = match font.strikeout_metrics() {
@@ -205,7 +203,6 @@ impl Database {
         })
     }
 }
-
 
 #[derive(Clone, Copy)]
 pub struct Font {
@@ -283,7 +280,6 @@ impl Font {
     }
 }
 
-
 #[derive(Clone, Copy, PartialEq, Default, Debug)]
 pub struct Properties {
     pub style: Style,
@@ -312,10 +308,7 @@ impl_enum_from_str!(Style,
 
 /// From https://github.com/pcwalton/font-kit
 #[inline(never)]
-fn find_best_match(
-    candidates: &[Properties],
-    query: Properties,
-) -> Option<usize> {
+fn find_best_match(candidates: &[Properties], query: Properties) -> Option<usize> {
     let weight = query.weight.to_number();
 
     // Step 4.
@@ -336,9 +329,8 @@ fn find_best_match(
         match matching_set
             .iter()
             .filter(|&&index| candidates[index].stretch < query.stretch)
-            .min_by_key(|&&index| {
-                query.stretch.to_number() - candidates[index].stretch.to_number()
-            }) {
+            .min_by_key(|&&index| query.stretch.to_number() - candidates[index].stretch.to_number())
+        {
             Some(&matching_index) => candidates[matching_index].stretch,
             None => {
                 let matching_index = *matching_set
@@ -355,9 +347,8 @@ fn find_best_match(
         match matching_set
             .iter()
             .filter(|&&index| candidates[index].stretch > query.stretch)
-            .min_by_key(|&&index| {
-                candidates[index].stretch.to_number() - query.stretch.to_number()
-            }) {
+            .min_by_key(|&&index| candidates[index].stretch.to_number() - query.stretch.to_number())
+        {
             Some(&matching_index) => candidates[matching_index].stretch,
             None => {
                 let matching_index = *matching_set
@@ -396,14 +387,16 @@ fn find_best_match(
     let matching_weight = if weight >= 400
         && weight < 450
         && matching_set
-        .iter()
-        .any(|&index| candidates[index].weight.to_number() == 500)
+            .iter()
+            .any(|&index| candidates[index].weight.to_number() == 500)
     {
         // Check 500 first.
         Weight::Medium
-    } else if weight >= 450 && weight <= 500 && matching_set
-        .iter()
-        .any(|&index| candidates[index].weight.to_number() == 400)
+    } else if weight >= 450
+        && weight <= 500
+        && matching_set
+            .iter()
+            .any(|&index| candidates[index].weight.to_number() == 400)
     {
         // Check 400 first.
         Weight::Normal
@@ -413,36 +406,32 @@ fn find_best_match(
             .iter()
             .filter(|&&index| candidates[index].weight.to_number() <= weight)
             .min_by_key(|&&index| weight - candidates[index].weight.to_number())
-            {
-                Some(&matching_index) => candidates[matching_index].weight,
-                None => {
-                    let matching_index = *matching_set
-                        .iter()
-                        .min_by_key(|&&index| {
-                            candidates[index].weight.to_number() - weight
-                        })
-                        .unwrap();
-                    candidates[matching_index].weight
-                }
+        {
+            Some(&matching_index) => candidates[matching_index].weight,
+            None => {
+                let matching_index = *matching_set
+                    .iter()
+                    .min_by_key(|&&index| candidates[index].weight.to_number() - weight)
+                    .unwrap();
+                candidates[matching_index].weight
             }
+        }
     } else {
         // Closest weight, first checking fatter values and then thinner ones.
         match matching_set
             .iter()
             .filter(|&&index| candidates[index].weight.to_number() >= weight)
             .min_by_key(|&&index| candidates[index].weight.to_number() - weight)
-            {
-                Some(&matching_index) => candidates[matching_index].weight,
-                None => {
-                    let matching_index = *matching_set
-                        .iter()
-                        .min_by_key(|&&index| {
-                            weight - candidates[index].weight.to_number()
-                        })
-                        .unwrap();
-                    candidates[matching_index].weight
-                }
+        {
+            Some(&matching_index) => candidates[matching_index].weight,
+            None => {
+                let matching_index = *matching_set
+                    .iter()
+                    .min_by_key(|&&index| weight - candidates[index].weight.to_number())
+                    .unwrap();
+                candidates[matching_index].weight
             }
+        }
     };
     matching_set.retain(|&index| candidates[index].weight == matching_weight);
 
@@ -466,17 +455,13 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
     }
 
     fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
-        self.path.push_quad_to(
-            x1 as f64, y1 as f64,
-            x as f64, y as f64,
-        );
+        self.path
+            .push_quad_to(x1 as f64, y1 as f64, x as f64, y as f64);
     }
 
     fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
         self.path.push_curve_to(
-            x1 as f64, y1 as f64,
-            x2 as f64, y2 as f64,
-            x as f64, y as f64
+            x1 as f64, y1 as f64, x2 as f64, y2 as f64, x as f64, y as f64,
         );
     }
 
@@ -484,7 +469,6 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
         self.path.push_close_path();
     }
 }
-
 
 #[cfg(target_os = "linux")]
 fn load_all_fonts(fonts: &mut Vec<FontItem>) {
@@ -527,8 +511,8 @@ fn load_fonts_from(dir: &str, fonts: &mut Vec<FontItem>) {
             let path = entry.path();
             if path.is_file() {
                 match utils::file_extension(&path) {
-                    Some("ttf") | Some("ttc") | Some("TTF") | Some("TTC") |
-                    Some("otf") | Some("otc") | Some("OTF") | Some("OTC") => {
+                    Some("ttf") | Some("ttc") | Some("TTF") | Some("TTC") | Some("otf")
+                    | Some("otc") | Some("OTF") | Some("OTC") => {
                         let _ = load_font(&path, fonts);
                     }
                     _ => {}
@@ -540,10 +524,7 @@ fn load_fonts_from(dir: &str, fonts: &mut Vec<FontItem>) {
     }
 }
 
-fn load_font(
-    path: &Path,
-    fonts: &mut Vec<FontItem>,
-) -> Result<(), Box<dyn std::error::Error>> {
+fn load_font(path: &Path, fonts: &mut Vec<FontItem>) -> Result<(), Box<dyn std::error::Error>> {
     let file = fs::File::open(path)?;
     let mmap = unsafe { memmap2::MmapOptions::new().map(&file)? };
 
@@ -557,12 +538,7 @@ fn load_font(
     Ok(())
 }
 
-fn resolve_font(
-    data: &[u8],
-    path: &Path,
-    index: u32,
-    id: usize,
-) -> Option<FontItem> {
+fn resolve_font(data: &[u8], path: &Path, index: u32, id: usize) -> Option<FontItem> {
     let font = ttf_parser::Font::from_data(data, index).ok()?;
 
     let family = font.family_name()?;
@@ -578,7 +554,11 @@ fn resolve_font(
     let weight = font.weight();
     let stretch = font.width();
 
-    let properties = Properties { style, weight, stretch };
+    let properties = Properties {
+        style,
+        weight,
+        stretch,
+    };
 
     Some(FontItem {
         id: ID(id as u16),
@@ -589,11 +569,7 @@ fn resolve_font(
     })
 }
 
-fn duplicate_family(
-    old_family: &str,
-    new_family: &str,
-    fonts: &mut Vec<FontItem>,
-) {
+fn duplicate_family(old_family: &str, new_family: &str, fonts: &mut Vec<FontItem>) {
     let mut i = 0;
     while i < fonts.len() {
         if fonts[i].family == old_family {

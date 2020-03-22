@@ -6,12 +6,12 @@ use std::cmp;
 use std::rc::Rc;
 
 use crate::qt;
-use rgb::FromSlice;
 use log::warn;
+use rgb::FromSlice;
 use usvg::ColorInterpolation as ColorSpace;
 
-use crate::prelude::*;
 use crate::filter::{self, Error, Filter, ImageExt, IntoSvgFilters};
+use crate::prelude::*;
 use crate::ConvTransform;
 
 type Image = filter::Image<qt::Image>;
@@ -19,20 +19,25 @@ type FilterInputs<'a> = filter::FilterInputs<'a, qt::Image>;
 type FilterResult = filter::FilterResult<qt::Image>;
 
 macro_rules! into_svgfilters_image {
-    ($img:expr) => { svgfilters::ImageRef::new($img.data().as_bgra(), $img.width(), $img.height()) };
+    ($img:expr) => {
+        svgfilters::ImageRef::new($img.data().as_bgra(), $img.width(), $img.height())
+    };
 }
 
 macro_rules! into_svgfilters_image_mut {
-    ($img:expr) => { into_svgfilters_image_mut($img.width(), $img.height(), &mut $img.data_mut()) };
+    ($img:expr) => {
+        into_svgfilters_image_mut($img.width(), $img.height(), &mut $img.data_mut())
+    };
 }
 
 // We need a macro and a function to resolve lifetimes.
-fn into_svgfilters_image_mut<'a>(width: u32, height: u32, data: &'a mut qt::ImageData)
-    -> svgfilters::ImageRefMut<'a>
-{
+fn into_svgfilters_image_mut<'a>(
+    width: u32,
+    height: u32,
+    data: &'a mut qt::ImageData,
+) -> svgfilters::ImageRefMut<'a> {
     svgfilters::ImageRefMut::new(data.as_bgra_mut(), width, height)
 }
-
 
 pub fn apply(
     filter: &usvg::Filter,
@@ -45,9 +50,18 @@ pub fn apply(
     stroke_paint: Option<&qt::Image>,
     canvas: &mut qt::Image,
 ) {
-    QtFilter::apply(filter, bbox, ts, opt, tree, background, fill_paint, stroke_paint, canvas);
+    QtFilter::apply(
+        filter,
+        bbox,
+        ts,
+        opt,
+        tree,
+        background,
+        fill_paint,
+        stroke_paint,
+        canvas,
+    );
 }
-
 
 impl ImageExt for qt::Image {
     fn width(&self) -> u32 {
@@ -72,8 +86,18 @@ impl ImageExt for qt::Image {
         p.set_brush(brush);
         p.draw_rect(0.0, 0.0, self.width() as f64, region.y() as f64);
         p.draw_rect(0.0, 0.0, region.x() as f64, self.height() as f64);
-        p.draw_rect(region.right() as f64, 0.0, self.width() as f64, self.height() as f64);
-        p.draw_rect(0.0, region.bottom() as f64, self.width() as f64, self.height() as f64);
+        p.draw_rect(
+            region.right() as f64,
+            0.0,
+            self.width() as f64,
+            self.height() as f64,
+        );
+        p.draw_rect(
+            0.0,
+            region.bottom() as f64,
+            self.width() as f64,
+            self.height() as f64,
+        );
     }
 
     fn clear(&mut self) {
@@ -99,7 +123,9 @@ fn copy_image(image: &qt::Image, region: ScreenRect) -> Result<qt::Image, Error>
     let x = cmp::max(0, region.x()) as u32;
     let y = cmp::max(0, region.y()) as u32;
 
-    image.copy(x, y, region.width(), region.height()).ok_or(Error::AllocFailed)
+    image
+        .copy(x, y, region.width(), region.height())
+        .ok_or(Error::AllocFailed)
 }
 
 struct QtFilter;
@@ -157,18 +183,13 @@ impl Filter<qt::Image> for QtFilter {
                 let image = image.to_rgba().ok_or(Error::AllocFailed)?;
                 convert_alpha(image)
             }
-            usvg::FilterInput::BackgroundImage => {
-                convert(inputs.background, region)
-            }
+            usvg::FilterInput::BackgroundImage => convert(inputs.background, region),
             usvg::FilterInput::BackgroundAlpha => {
-                let image = Self::get_input(
-                    &usvg::FilterInput::BackgroundImage, region, inputs, results,
-                )?;
+                let image =
+                    Self::get_input(&usvg::FilterInput::BackgroundImage, region, inputs, results)?;
                 convert_alpha(image.take()?)
             }
-            usvg::FilterInput::FillPaint => {
-                convert(inputs.fill_paint, region.translate_to(0, 0))
-            }
+            usvg::FilterInput::FillPaint => convert(inputs.fill_paint, region.translate_to(0, 0)),
             usvg::FilterInput::StrokePaint => {
                 convert(inputs.stroke_paint, region.translate_to(0, 0))
             }
@@ -192,8 +213,8 @@ impl Filter<qt::Image> for QtFilter {
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (std_dx, std_dy, box_blur)
-            = try_opt_or!(Self::resolve_std_dev(fe, units, bbox, ts), Ok(input));
+        let (std_dx, std_dy, box_blur) =
+            try_opt_or!(Self::resolve_std_dev(fe, units, bbox, ts), Ok(input));
 
         let mut buffer = input.into_color_space(cs)?.take()?;
 
@@ -217,7 +238,10 @@ impl Filter<qt::Image> for QtFilter {
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (dx, dy) = try_opt_or!(Self::scale_coordinates(fe.dx, fe.dy, units, bbox, ts), Ok(input));
+        let (dx, dy) = try_opt_or!(
+            Self::scale_coordinates(fe.dx, fe.dy, units, bbox, ts),
+            Ok(input)
+        );
         if dx.is_fuzzy_zero() && dy.is_fuzzy_zero() {
             return Ok(input);
         }
@@ -281,7 +305,10 @@ impl Filter<qt::Image> for QtFilter {
             svgfilters::multiply_alpha(buffer2.data_mut().as_bgra_mut());
 
             svgfilters::arithmetic_composite(
-                k1, k2, k3, k4,
+                k1,
+                k2,
+                k3,
+                k4,
                 into_svgfilters_image!(buffer1),
                 into_svgfilters_image!(buffer2),
                 into_svgfilters_image_mut!(buffer),
@@ -328,10 +355,7 @@ impl Filter<qt::Image> for QtFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
-    fn apply_flood(
-        fe: &usvg::FeFlood,
-        region: ScreenRect,
-    ) -> Result<Image, Error> {
+    fn apply_flood(fe: &usvg::FeFlood, region: ScreenRect) -> Result<Image, Error> {
         let c = fe.color;
         let alpha = (fe.opacity.value() * 255.0) as u8;
 
@@ -341,10 +365,7 @@ impl Filter<qt::Image> for QtFilter {
         Ok(Image::from_image(buffer, ColorSpace::SRGB))
     }
 
-    fn apply_tile(
-        input: Image,
-        region: ScreenRect,
-    ) -> Result<Image, Error> {
+    fn apply_tile(input: Image, region: ScreenRect) -> Result<Image, Error> {
         let mut buffer = create_image(region.width(), region.height())?;
 
         let subregion = input.region.translate(-region.x(), -region.y());
@@ -389,7 +410,12 @@ impl Filter<qt::Image> for QtFilter {
                     super::image::draw_svg(data, view_box, opt, &mut p);
                 } else {
                     super::image::draw_raster(
-                        format, data, view_box, fe.rendering_mode, opt, &mut p
+                        format,
+                        data,
+                        view_box,
+                        fe.rendering_mode,
+                        opt,
+                        &mut p,
                     );
                 }
             }
@@ -452,8 +478,11 @@ impl Filter<qt::Image> for QtFilter {
         }
 
         svgfilters::convolve_matrix(
-            fe.matrix.into_svgf(), fe.divisor.value(), fe.bias,
-            fe.edge_mode.into_svgf(), fe.preserve_alpha,
+            fe.matrix.into_svgf(),
+            fe.divisor.value(),
+            fe.bias,
+            fe.edge_mode.into_svgf(),
+            fe.preserve_alpha,
             into_svgfilters_image_mut!(buffer),
         );
 
@@ -485,7 +514,12 @@ impl Filter<qt::Image> for QtFilter {
 
         svgfilters::multiply_alpha(buffer.data_mut().as_bgra_mut());
 
-        svgfilters::morphology(fe.operator.into_svgf(), rx, ry, into_svgfilters_image_mut!(buffer));
+        svgfilters::morphology(
+            fe.operator.into_svgf(),
+            rx,
+            ry,
+            into_svgfilters_image_mut!(buffer),
+        );
 
         svgfilters::demultiply_alpha(buffer.data_mut().as_bgra_mut());
 
@@ -514,7 +548,8 @@ impl Filter<qt::Image> for QtFilter {
         svgfilters::displacement_map(
             fe.x_channel_selector.into_svgf(),
             fe.y_channel_selector.into_svgf(),
-            sx, sy,
+            sx,
+            sy,
             into_svgfilters_image!(&buffer1),
             into_svgfilters_image!(&buffer2),
             into_svgfilters_image_mut!(buffer),
@@ -542,9 +577,12 @@ impl Filter<qt::Image> for QtFilter {
         }
 
         svgfilters::turbulence(
-            region.x() as f64, region.y() as f64,
-            sx, sy,
-            fe.base_frequency.x.value().into(), fe.base_frequency.y.value().into(),
+            region.x() as f64,
+            region.y() as f64,
+            sx,
+            sy,
+            fe.base_frequency.x.value().into(),
+            fe.base_frequency.y.value().into(),
             fe.num_octaves,
             fe.seed,
             fe.stitch_tiles,

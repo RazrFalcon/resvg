@@ -10,7 +10,6 @@ mod ffi;
 
 pub use ffi::qtc_qpainter;
 
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum FillRule {
     OddEven = ffi::FillRule_OddEvenFill as isize,
@@ -73,7 +72,6 @@ pub enum Spread {
     Repeat = ffi::Spread_RepeatSpread as isize,
 }
 
-
 pub struct Image(*mut ffi::qtc_qimage);
 
 impl Image {
@@ -115,7 +113,11 @@ impl Image {
     ) -> Option<Image> {
         unsafe {
             Self::from_ptr(ffi::qtc_qimage_resize(
-                self.0, width, height, ratio as ffi::AspectRatioMode, smooth
+                self.0,
+                width,
+                height,
+                ratio as ffi::AspectRatioMode,
+                smooth,
             ))
         }
     }
@@ -125,7 +127,15 @@ impl Image {
     }
 
     pub fn try_clone(&self) -> Option<Image> {
-        unsafe { Self::from_ptr(ffi::qtc_qimage_copy(self.0, 0, 0, self.width(), self.height())) }
+        unsafe {
+            Self::from_ptr(ffi::qtc_qimage_copy(
+                self.0,
+                0,
+                0,
+                self.width(),
+                self.height(),
+            ))
+        }
     }
 
     pub fn data(&self) -> ImageData {
@@ -165,7 +175,6 @@ impl Drop for Image {
     }
 }
 
-
 pub struct ImageData<'a> {
     slice: &'a mut [u8],
 }
@@ -184,7 +193,6 @@ impl<'a> DerefMut for ImageData<'a> {
     }
 }
 
-
 pub struct Painter(*mut ffi::qtc_qpainter, bool);
 
 impl Painter {
@@ -197,11 +205,15 @@ impl Painter {
     }
 
     pub fn set_antialiasing(&self, flag: bool) {
-        unsafe { ffi::qtc_qpainter_set_antialiasing(self.0, flag); }
+        unsafe {
+            ffi::qtc_qpainter_set_antialiasing(self.0, flag);
+        }
     }
 
     pub fn set_smooth_pixmap_transform(&self, flag: bool) {
-        unsafe { ffi::qtc_qpainter_set_smooth_pixmap_transform(self.0, flag); }
+        unsafe {
+            ffi::qtc_qpainter_set_smooth_pixmap_transform(self.0, flag);
+        }
     }
 
     pub fn set_pen(&mut self, pen: Pen) {
@@ -289,7 +301,6 @@ impl Drop for Painter {
     }
 }
 
-
 pub struct PainterPath(*mut ffi::qtc_qpainterpath);
 
 impl PainterPath {
@@ -324,7 +335,6 @@ impl Drop for PainterPath {
     }
 }
 
-
 pub struct Transform(*mut ffi::qtc_qtransform);
 
 impl Transform {
@@ -349,7 +359,6 @@ impl Drop for Transform {
         unsafe { ffi::qtc_qtransform_destroy(self.0) }
     }
 }
-
 
 pub struct Pen(*mut ffi::qtc_qpen);
 
@@ -398,7 +407,6 @@ impl Drop for Pen {
     }
 }
 
-
 pub struct Brush(*mut ffi::qtc_qbrush);
 
 impl Brush {
@@ -433,12 +441,10 @@ impl Drop for Brush {
     }
 }
 
-
 pub trait Gradient {
     fn set_color_at(&mut self, offset: f64, r: u8, g: u8, b: u8, a: u8);
     fn set_spread(&mut self, spread: Spread);
 }
-
 
 pub struct LinearGradient(*mut ffi::qtc_qlineargradient);
 
@@ -463,7 +469,6 @@ impl Drop for LinearGradient {
         unsafe { ffi::qtc_qlineargradient_destroy(self.0) }
     }
 }
-
 
 pub struct RadialGradient(*mut ffi::qtc_qradialgradient);
 

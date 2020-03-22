@@ -11,7 +11,6 @@ use resvg::prelude::*;
 
 mod args;
 
-
 macro_rules! bail {
     ($msg:expr) => {
         return Err(format!("{}", $msg));
@@ -21,7 +20,6 @@ macro_rules! bail {
     };
 }
 
-
 fn main() {
     if let Err(e) = process() {
         eprintln!("Error: {}.", e);
@@ -30,10 +28,12 @@ fn main() {
 }
 
 fn process() -> Result<(), String> {
-    #[cfg(all(not(feature = "cairo-backend"),
-              not(feature = "qt-backend"),
-              not(feature = "skia-backend"),
-              not(feature = "raqote-backend")))]
+    #[cfg(all(
+        not(feature = "cairo-backend"),
+        not(feature = "qt-backend"),
+        not(feature = "skia-backend"),
+        not(feature = "raqote-backend")
+    ))]
     {
         bail!("rendersvg has been built without any backends")
     }
@@ -72,7 +72,9 @@ fn process() -> Result<(), String> {
     };
 
     macro_rules! timed {
-        ($name:expr, $task:expr) => { run_task(args.perf, $name, || $task) };
+        ($name:expr, $task:expr) => {
+            run_task(args.perf, $name, || $task)
+        };
     }
 
     // Load file.
@@ -106,8 +108,10 @@ fn process() -> Result<(), String> {
         };
 
         match img {
-            Some(mut img) => { timed!("Saving", img.save_png(out_png)); }
-            None => { bail!("failed to allocate an image") }
+            Some(mut img) => {
+                timed!("Saving", img.save_png(out_png));
+            }
+            None => bail!("failed to allocate an image"),
         }
     };
 
@@ -133,9 +137,12 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
 
         if let Some(bbox) = node.calculate_bbox() {
             println!(
-                "{},{},{},{},{}", node.id(),
-                round_len(bbox.x()), round_len(bbox.y()),
-                round_len(bbox.width()), round_len(bbox.height())
+                "{},{},{},{},{}",
+                node.id(),
+                round_len(bbox.x()),
+                round_len(bbox.y()),
+                round_len(bbox.width()),
+                round_len(bbox.height())
             );
         }
     }
@@ -148,12 +155,17 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
 }
 
 fn run_task<P, T>(perf: bool, title: &str, p: P) -> T
-    where P: FnOnce() -> T
+where
+    P: FnOnce() -> T,
 {
     if perf {
         let now = std::time::Instant::now();
         let res = p();
-        println!("{}: {:.2}ms", title, now.elapsed().as_micros() as f64 / 1000.0);
+        println!(
+            "{}: {:.2}ms",
+            title,
+            now.elapsed().as_micros() as f64 / 1000.0
+        );
         res
     } else {
         p()
@@ -161,24 +173,20 @@ fn run_task<P, T>(perf: bool, title: &str, p: P) -> T
 }
 
 fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), String> {
-    let mut f = fs::File::create(path)
-        .map_err(|_| format!("failed to create a file {:?}", path))?;
+    let mut f =
+        fs::File::create(path).map_err(|_| format!("failed to create a file {:?}", path))?;
 
     f.write_all(tree.to_string(usvg::XmlOptions::default()).as_bytes())
-     .map_err(|_| format!("failed to write a file {:?}", path))?;
+        .map_err(|_| format!("failed to write a file {:?}", path))?;
 
     Ok(())
 }
 
-fn log_format(
-    out: fern::FormatCallback,
-    message: &fmt::Arguments,
-    record: &log::Record,
-) {
+fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &log::Record) {
     let lvl = match record.level() {
         log::Level::Error => "Error",
-        log::Level::Warn  => "Warning",
-        log::Level::Info  => "Info",
+        log::Level::Warn => "Warning",
+        log::Level::Info => "Info",
         log::Level::Debug => "Debug",
         log::Level::Trace => "Trace",
     };

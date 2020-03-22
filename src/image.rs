@@ -8,7 +8,6 @@ use log::warn;
 
 use crate::prelude::*;
 
-
 pub struct Image {
     pub data: ImageData,
     pub size: ScreenSize,
@@ -41,11 +40,7 @@ pub fn load_raster(
     img
 }
 
-fn _load_raster(
-    format: usvg::ImageFormat,
-    data: &usvg::ImageData,
-    opt: &Options,
-) -> Option<Image> {
+fn _load_raster(format: usvg::ImageFormat, data: &usvg::ImageData, opt: &Options) -> Option<Image> {
     debug_assert!(format != usvg::ImageFormat::SVG);
 
     match data {
@@ -106,14 +101,11 @@ fn read_png(data: &[u8]) -> Option<Image> {
         }
         png::ColorType::Indexed => {
             warn!("Indexed PNG is not supported.");
-            return None
+            return None;
         }
     };
 
-    Some(Image {
-        data,
-        size,
-    })
+    Some(Image { data, size })
 }
 
 fn read_jpeg(data: &[u8]) -> Option<Image> {
@@ -138,16 +130,10 @@ fn read_jpeg(data: &[u8]) -> Option<Image> {
         _ => return None,
     };
 
-    Some(Image {
-        data,
-        size,
-    })
+    Some(Image { data, size })
 }
 
-pub fn load_sub_svg(
-    data: &usvg::ImageData,
-    opt: &Options,
-) -> Option<(usvg::Tree, Options)> {
+pub fn load_sub_svg(data: &usvg::ImageData, opt: &Options) -> Option<(usvg::Tree, Options)> {
     let mut sub_opt = Options {
         usvg: usvg::Options {
             path: None,
@@ -170,9 +156,7 @@ pub fn load_sub_svg(
             sub_opt.usvg.path = Some(path.clone());
             usvg::Tree::from_file(path, &sub_opt.usvg).ok()?
         }
-        usvg::ImageData::Raw(ref data) => {
-            usvg::Tree::from_data(data, &sub_opt.usvg).ok()?
-        }
+        usvg::ImageData::Raw(ref data) => usvg::Tree::from_data(data, &sub_opt.usvg).ok()?,
     };
 
     sanitize_sub_svg(&tree);
@@ -180,9 +164,7 @@ pub fn load_sub_svg(
     Some((tree, sub_opt))
 }
 
-fn sanitize_sub_svg(
-    tree: &usvg::Tree,
-) {
+fn sanitize_sub_svg(tree: &usvg::Tree) {
     // Remove all Image nodes.
     //
     // The referenced SVG image cannot have any 'image' elements by itself.
@@ -219,14 +201,20 @@ pub fn prepare_sub_svg_geom(
     let (tx, ty, clip) = if view_box.aspect.slice {
         let (dx, dy) = utils::aligned_pos(
             view_box.aspect.align,
-            0.0, 0.0, new_size.width() as f64 - r.width(), new_size.height() as f64 - r.height(),
+            0.0,
+            0.0,
+            new_size.width() as f64 - r.width(),
+            new_size.height() as f64 - r.height(),
         );
 
         (r.x() - dx, r.y() - dy, Some(r))
     } else {
         let (dx, dy) = utils::aligned_pos(
             view_box.aspect.align,
-            r.x(), r.y(), r.width() - new_size.width() as f64, r.height() - new_size.height() as f64,
+            r.x(),
+            r.y(),
+            r.width() - new_size.width() as f64,
+            r.height() - new_size.height() as f64,
         );
 
         (dx, dy, None)
@@ -239,10 +227,7 @@ pub fn prepare_sub_svg_geom(
     (ts, clip)
 }
 
-pub fn image_rect(
-    view_box: &usvg::ViewBox,
-    img_size: ScreenSize,
-) -> Rect {
+pub fn image_rect(view_box: &usvg::ViewBox, img_size: ScreenSize) -> Rect {
     let new_size = utils::apply_view_box(view_box, img_size);
     let (x, y) = utils::aligned_pos(
         view_box.aspect.align,
@@ -255,10 +240,7 @@ pub fn image_rect(
     new_size.to_size().to_rect(x, y)
 }
 
-fn get_abs_path(
-    rel_path: &path::Path,
-    opt: &Options,
-) -> path::PathBuf {
+fn get_abs_path(rel_path: &path::Path, opt: &Options) -> path::PathBuf {
     match opt.usvg.path {
         Some(ref path) => path.parent().unwrap().join(rel_path),
         None => rel_path.into(),

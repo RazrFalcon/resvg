@@ -19,11 +19,7 @@ const STEPS: usize = 5;
 /// # Allocations
 ///
 /// This method will allocate a copy of the `src` image as a back buffer.
-pub fn box_blur(
-    sigma_x: f64,
-    sigma_y: f64,
-    mut src: ImageRefMut,
-) {
+pub fn box_blur(sigma_x: f64, sigma_y: f64, mut src: ImageRefMut) {
     let boxes_horz = create_box_gauss(sigma_x as f32);
     let boxes_vert = create_box_gauss(sigma_y as f32);
     let mut backbuf = src.data.to_vec();
@@ -51,12 +47,11 @@ fn create_box_gauss(sigma: f32) -> [i32; STEPS] {
         let wu = wl + 2;
 
         let wl_float = wl as f32;
-        let m_ideal =
-            (  12.0 * sigma * sigma
-             - n_float * wl_float * wl_float
-             - 4.0 * n_float * wl_float
-             - 3.0 * n_float)
-             / (-4.0 * wl_float - 4.0);
+        let m_ideal = (12.0 * sigma * sigma
+            - n_float * wl_float * wl_float
+            - 4.0 * n_float * wl_float
+            - 3.0 * n_float)
+            / (-4.0 * wl_float - 4.0);
         let m = m_ideal.round() as usize;
 
         let mut sizes = [0; STEPS];
@@ -86,11 +81,7 @@ fn box_blur_impl(
 }
 
 #[inline]
-fn box_blur_vert(
-    blur_radius: usize,
-    backbuf: &ImageRefMut,
-    frontbuf: &mut ImageRefMut,
-) {
+fn box_blur_vert(blur_radius: usize, backbuf: &ImageRefMut, frontbuf: &mut ImageRefMut) {
     if blur_radius == 0 {
         frontbuf.data.copy_from_slice(backbuf.data);
         return;
@@ -215,11 +206,7 @@ fn box_blur_vert(
 }
 
 #[inline]
-fn box_blur_horz(
-    blur_radius: usize,
-    backbuf: &ImageRefMut,
-    frontbuf: &mut ImageRefMut,
-) {
+fn box_blur_horz(blur_radius: usize, backbuf: &ImageRefMut, frontbuf: &mut ImageRefMut) {
     if blur_radius == 0 {
         frontbuf.data.copy_from_slice(backbuf.data);
         return;

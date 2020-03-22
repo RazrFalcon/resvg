@@ -9,7 +9,6 @@ use std::{cmp, f64, fmt};
 use usvg;
 pub use usvg::{Rect, Size};
 
-
 /// Bounds `f64` number.
 #[inline]
 pub(crate) fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
@@ -25,7 +24,6 @@ pub(crate) fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
 
     val
 }
-
 
 /// A 2D screen size representation.
 ///
@@ -98,7 +96,6 @@ impl fmt::Display for ScreenSize {
     }
 }
 
-
 /// Additional `Size` methods.
 pub trait SizeExt {
     /// Converts `Size` to `ScreenSize`.
@@ -111,17 +108,18 @@ impl SizeExt for Size {
         ScreenSize::new(
             cmp::max(1, self.width().round() as u32),
             cmp::max(1, self.height().round() as u32),
-        ).unwrap()
+        )
+        .unwrap()
     }
 }
 
-fn size_scale(
-    s1: ScreenSize,
-    s2: ScreenSize,
-    expand: bool,
-) -> ScreenSize {
+fn size_scale(s1: ScreenSize, s2: ScreenSize, expand: bool) -> ScreenSize {
     let rw = (s2.height as f64 * s1.width as f64 / s1.height as f64).ceil() as u32;
-    let with_h = if expand { rw <= s2.width } else { rw >= s2.width };
+    let with_h = if expand {
+        rw <= s2.width
+    } else {
+        rw >= s2.width
+    };
     if !with_h {
         ScreenSize::new(rw, s2.height).unwrap()
     } else {
@@ -129,7 +127,6 @@ fn size_scale(
         ScreenSize::new(s2.width, h).unwrap()
     }
 }
-
 
 /// Additional `Rect` methods.
 pub trait RectExt: Sized {
@@ -161,16 +158,20 @@ impl RectExt for Rect {
         if !ts.is_default() {
             let path = &[
                 usvg::PathSegment::MoveTo {
-                    x: self.x(), y: self.y()
+                    x: self.x(),
+                    y: self.y(),
                 },
                 usvg::PathSegment::LineTo {
-                    x: self.right(), y: self.y()
+                    x: self.right(),
+                    y: self.y(),
                 },
                 usvg::PathSegment::LineTo {
-                    x: self.right(), y: self.bottom()
+                    x: self.right(),
+                    y: self.bottom(),
                 },
                 usvg::PathSegment::LineTo {
-                    x: self.x(), y: self.bottom()
+                    x: self.x(),
+                    y: self.bottom(),
                 },
                 usvg::PathSegment::ClosePath,
             ];
@@ -193,10 +194,10 @@ impl RectExt for Rect {
             self.y() as i32,
             cmp::max(1, self.width().round() as u32),
             cmp::max(1, self.height().round() as u32),
-        ).unwrap()
+        )
+        .unwrap()
     }
 }
-
 
 /// A 2D screen rect representation.
 ///
@@ -215,7 +216,12 @@ impl ScreenRect {
     #[inline]
     pub fn new(x: i32, y: i32, width: u32, height: u32) -> Option<Self> {
         if width > 0 && height > 0 {
-            Some(ScreenRect { x, y, width, height })
+            Some(ScreenRect {
+                x,
+                y,
+                width,
+                height,
+            })
         } else {
             None
         }
@@ -317,8 +323,12 @@ impl ScreenRect {
     pub fn fit_to_rect(&self, bounds: ScreenRect) -> Self {
         let mut r = *self;
 
-        if r.x < 0 { r.x = 0; }
-        if r.y < 0 { r.y = 0; }
+        if r.x < 0 {
+            r.x = 0;
+        }
+        if r.y < 0 {
+            r.y = 0;
+        }
 
         if r.right() > bounds.width as i32 {
             r.width = cmp::max(1, bounds.width as i32 - r.x) as u32;
@@ -335,13 +345,23 @@ impl ScreenRect {
     #[inline]
     pub fn to_rect(&self) -> Rect {
         // Can't fail, because `ScreenRect` is always valid.
-        Rect::new(self.x as f64, self.y as f64, self.width as f64, self.height as f64).unwrap()
+        Rect::new(
+            self.x as f64,
+            self.y as f64,
+            self.width as f64,
+            self.height as f64,
+        )
+        .unwrap()
     }
 }
 
 impl fmt::Debug for ScreenRect {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "ScreenRect({} {} {} {})", self.x, self.y, self.width, self.height)
+        write!(
+            f,
+            "ScreenRect({} {} {} {})",
+            self.x, self.y, self.width, self.height
+        )
     }
 }
 
@@ -351,7 +371,6 @@ impl fmt::Display for ScreenRect {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -360,7 +379,8 @@ mod tests {
     #[test]
     fn bbox_transform_1() {
         let r = Rect::new(10.0, 20.0, 30.0, 40.0).unwrap();
-        assert!(r.bbox_transform(Rect::new(0.2, 0.3, 0.4, 0.5).unwrap())
-                 .fuzzy_eq(&Rect::new(4.2, 10.3, 12.0, 20.0).unwrap()));
+        assert!(r
+            .bbox_transform(Rect::new(0.2, 0.3, 0.4, 0.5).unwrap())
+            .fuzzy_eq(&Rect::new(4.2, 10.3, 12.0, 20.0).unwrap()));
     }
 }

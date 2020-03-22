@@ -8,7 +8,6 @@ use svgtypes::FuzzyEq;
 
 use crate::IsValidLength;
 
-
 // TODO: https://github.com/rust-lang/rust/issues/44095
 /// Bounds `f64` number.
 #[inline]
@@ -25,7 +24,6 @@ pub(crate) fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
         val
     }
 }
-
 
 /// Line representation.
 #[allow(missing_docs)]
@@ -49,24 +47,25 @@ impl Line {
     pub fn length(&self) -> f64 {
         let x = self.x2 - self.x1;
         let y = self.y2 - self.y1;
-        (x*x + y*y).sqrt()
+        (x * x + y * y).sqrt()
     }
 
     /// Sets the line length.
     pub fn set_length(&mut self, len: f64) {
         let x = self.x2 - self.x1;
         let y = self.y2 - self.y1;
-        let len2 = (x*x + y*y).sqrt();
+        let len2 = (x * x + y * y).sqrt();
         let line = Line {
-            x1: self.x1, y1: self.y1,
-            x2: self.x1 + x/len2, y2: self.y1 + y/len2
+            x1: self.x1,
+            y1: self.y1,
+            x2: self.x1 + x / len2,
+            y2: self.y1 + y / len2,
         };
 
         self.x2 = self.x1 + (line.x2 - line.x1) * len;
         self.y2 = self.y1 + (line.y2 - line.y1) * len;
     }
 }
-
 
 /// A 2D point representation.
 #[derive(Clone, Copy)]
@@ -96,7 +95,6 @@ impl<T: fmt::Display> fmt::Display for Point<T> {
         write!(f, "{:?}", self)
     }
 }
-
 
 /// A 2D size representation.
 ///
@@ -152,11 +150,9 @@ impl fmt::Display for Size {
 impl FuzzyEq for Size {
     #[inline]
     fn fuzzy_eq(&self, other: &Self) -> bool {
-           self.width.fuzzy_eq(&other.width)
-        && self.height.fuzzy_eq(&other.height)
+        self.width.fuzzy_eq(&other.width) && self.height.fuzzy_eq(&other.height)
     }
 }
-
 
 /// A rect representation.
 ///
@@ -174,7 +170,12 @@ impl Rect {
     #[inline]
     pub fn new(x: f64, y: f64, width: f64, height: f64) -> Option<Self> {
         if width.is_valid_length() && height.is_valid_length() {
-            Some(Rect { x, y, width, height })
+            Some(Rect {
+                x,
+                y,
+                width,
+                height,
+            })
         } else {
             None
         }
@@ -283,12 +284,20 @@ impl Rect {
     pub fn expand(&self, r: Rect) -> Self {
         #[inline]
         fn f64_min(v1: f64, v2: f64) -> f64 {
-            if v1 < v2 { v1 } else { v2 }
+            if v1 < v2 {
+                v1
+            } else {
+                v2
+            }
         }
 
         #[inline]
         fn f64_max(v1: f64, v2: f64) -> f64 {
-            if v1 > v2 { v1 } else { v2 }
+            if v1 > v2 {
+                v1
+            } else {
+                v2
+            }
         }
 
         if self.fuzzy_eq(&Rect::new_bbox()) {
@@ -308,16 +317,20 @@ impl Rect {
 impl FuzzyEq for Rect {
     #[inline]
     fn fuzzy_eq(&self, other: &Self) -> bool {
-           self.x.fuzzy_eq(&other.x)
-        && self.y.fuzzy_eq(&other.y)
-        && self.width.fuzzy_eq(&other.width)
-        && self.height.fuzzy_eq(&other.height)
+        self.x.fuzzy_eq(&other.x)
+            && self.y.fuzzy_eq(&other.y)
+            && self.width.fuzzy_eq(&other.width)
+            && self.height.fuzzy_eq(&other.height)
     }
 }
 
 impl fmt::Debug for Rect {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Rect({} {} {} {})", self.x, self.y, self.width, self.height)
+        write!(
+            f,
+            "Rect({} {} {} {})",
+            self.x, self.y, self.width, self.height
+        )
     }
 }
 

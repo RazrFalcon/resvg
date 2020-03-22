@@ -7,8 +7,8 @@
 use std::cell::Ref;
 use std::path;
 
-pub use self::{nodes::*, attributes::*, pathdata::*};
-use crate::{svgtree, Rect, Error, Options, XmlOptions};
+pub use self::{attributes::*, nodes::*, pathdata::*};
+use crate::{svgtree, Error, Options, Rect, XmlOptions};
 
 mod attributes;
 mod export;
@@ -18,12 +18,12 @@ mod pathdata;
 
 /// Basic traits for tree manipulations.
 pub mod prelude {
+    pub use super::NodeExt;
+    pub use crate::tree::FuzzyEq;
+    pub use crate::tree::FuzzyZero;
     pub use crate::IsDefault;
     pub use crate::IsValidLength;
     pub use crate::TransformFromBBox;
-    pub use crate::tree::FuzzyEq;
-    pub use crate::tree::FuzzyZero;
-    pub use super::NodeExt;
 }
 
 /// Alias for `rctree::Node<NodeKind>`.
@@ -65,10 +65,7 @@ impl Tree {
     }
 
     /// Parses `Tree` from the file.
-    pub fn from_file<P: AsRef<path::Path>>(
-        path: P,
-        opt: &Options,
-    ) -> Result<Self, Error> {
+    pub fn from_file<P: AsRef<path::Path>>(path: P, opt: &Options) -> Result<Self, Error> {
         let text = load_svg_file(path.as_ref())?;
         Self::from_str(&text, opt)
     }
@@ -79,9 +76,7 @@ impl Tree {
         let defs_node = Node::new(NodeKind::Defs);
         root_node.append(defs_node);
 
-        Tree {
-            root: root_node,
-        }
+        Tree { root: root_node }
     }
 
     /// Returns the `Svg` node.
@@ -93,11 +88,9 @@ impl Tree {
     /// Returns the `Svg` node value.
     #[inline]
     pub fn svg_node(&self) -> Ref<Svg> {
-        Ref::map(self.root.borrow(), |v| {
-            match *v {
-                NodeKind::Svg(ref svg) => svg,
-                _ => unreachable!(),
-            }
+        Ref::map(self.root.borrow(), |v| match *v {
+            NodeKind::Svg(ref svg) => svg,
+            _ => unreachable!(),
         })
     }
 
@@ -115,8 +108,11 @@ impl Tree {
 
     /// Appends `NodeKind` to the `Defs` node.
     pub fn append_to_defs(&mut self, kind: NodeKind) -> Node {
-        debug_assert!(self.defs_by_id(kind.id()).is_none(),
-                      "Element #{} already exists in 'defs'.", kind.id());
+        debug_assert!(
+            self.defs_by_id(kind.id()).is_none(),
+            "Element #{} already exists in 'defs'.",
+            kind.id()
+        );
 
         let new_node = Node::new(kind);
         self.defs().append(new_node.clone());
@@ -253,7 +249,6 @@ impl NodeExt for Node {
     }
 }
 
-
 /// Loads SVG, SVGZ file content.
 pub fn load_svg_file(path: &path::Path) -> Result<String, Error> {
     use std::fs;
@@ -272,17 +267,17 @@ pub fn load_svg_file(path: &path::Path) -> Result<String, Error> {
     match ext.as_str() {
         "svgz" => {
             let mut data = Vec::with_capacity(length);
-            file.read_to_end(&mut data).map_err(|_| Error::FileOpenFailed)?;
+            file.read_to_end(&mut data)
+                .map_err(|_| Error::FileOpenFailed)?;
             deflate(&data)
         }
         "svg" => {
             let mut s = String::with_capacity(length);
-            file.read_to_string(&mut s).map_err(|_| Error::NotAnUtf8Str)?;
+            file.read_to_string(&mut s)
+                .map_err(|_| Error::NotAnUtf8Str)?;
             Ok(s)
         }
-        _ => {
-            Err(Error::InvalidFileSuffix)
-        }
+        _ => Err(Error::InvalidFileSuffix),
     }
 }
 
@@ -291,22 +286,19 @@ fn deflate(data: &[u8]) -> Result<String, Error> {
 
     let mut decoder = flate2::read::GzDecoder::new(data);
     let mut decoded = Vec::with_capacity(data.len() * 2);
-    decoder.read_to_end(&mut decoded).map_err(|_| Error::MalformedGZip)?;
+    decoder
+        .read_to_end(&mut decoded)
+        .map_err(|_| Error::MalformedGZip)?;
     let decoded = String::from_utf8(decoded).map_err(|_| Error::NotAnUtf8Str)?;
     Ok(decoded)
 }
 
-fn calc_node_bbox(
-    node: &Node,
-    ts: Transform,
-) -> Option<Rect> {
+fn calc_node_bbox(node: &Node, ts: Transform) -> Option<Rect> {
     let mut ts2 = ts;
     ts2.append(&node.transform());
 
     match *node.borrow() {
-        NodeKind::Path(ref path) => {
-            path.data.bbox_with_transform(ts2, path.stroke.as_ref())
-        }
+        NodeKind::Path(ref path) => path.data.bbox_with_transform(ts2, path.stroke.as_ref()),
         NodeKind::Image(ref img) => {
             let path = PathData::from_rect(img.view_box.rect);
             path.bbox_with_transform(ts2, None)

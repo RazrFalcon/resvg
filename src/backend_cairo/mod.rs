@@ -6,8 +6,7 @@
 
 use log::warn;
 
-use crate::{prelude::*, layers, ConvTransform, RenderState};
-
+use crate::{layers, prelude::*, ConvTransform, RenderState};
 
 macro_rules! try_create_surface {
     ($size:expr, $ret:expr) => {
@@ -16,13 +15,15 @@ macro_rules! try_create_surface {
                 cairo::Format::ARgb32,
                 $size.width() as i32,
                 $size.height() as i32,
-            ).ok(),
+            )
+            .ok(),
             $ret,
-            "Failed to create a {}x{} surface.", $size.width(), $size.height()
+            "Failed to create a {}x{} surface.",
+            $size.width(),
+            $size.height()
         );
     };
 }
-
 
 mod clip_and_mask;
 mod filter;
@@ -30,9 +31,7 @@ mod image;
 mod path;
 mod style;
 
-
 type CairoLayers = layers::Layers<cairo::ImageSurface>;
-
 
 impl ConvTransform<cairo::Matrix> for usvg::Transform {
     fn to_native(&self) -> cairo::Matrix {
@@ -43,7 +42,6 @@ impl ConvTransform<cairo::Matrix> for usvg::Transform {
         Self::new(ts.xx, ts.yx, ts.xy, ts.yy, ts.x0, ts.y0)
     }
 }
-
 
 pub(crate) trait ReCairoContextExt {
     fn set_source_color(&self, color: usvg::Color, opacity: usvg::Opacity);
@@ -65,17 +63,12 @@ impl ReCairoContextExt for cairo::Context {
     }
 }
 
-
 /// Cairo backend handle.
 #[derive(Clone, Copy)]
 pub struct Backend;
 
 impl Render for Backend {
-    fn render_to_image(
-        &self,
-        tree: &usvg::Tree,
-        opt: &Options,
-    ) -> Option<Box<dyn OutputImage>> {
+    fn render_to_image(&self, tree: &usvg::Tree, opt: &Options) -> Option<Box<dyn OutputImage>> {
         let img = render_to_image(tree, opt)?;
         Some(Box::new(img))
     }
@@ -91,10 +84,7 @@ impl Render for Backend {
 }
 
 impl OutputImage for cairo::ImageSurface {
-    fn save_png(
-        &mut self,
-        path: &std::path::Path,
-    ) -> bool {
+    fn save_png(&mut self, path: &std::path::Path) -> bool {
         // Cairo doesn't support custom compression levels,
         // so we are using the `png` crate to save a surface manually.
 
@@ -124,22 +114,17 @@ impl OutputImage for cairo::ImageSurface {
         // BGRA_Premultiplied -> BGRA
         svgfilters::demultiply_alpha(data.as_bgra_mut());
         // BGRA -> RGBA.
-        data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+        data.as_bgra_mut()
+            .iter_mut()
+            .for_each(|p| swap(&mut p.r, &mut p.b));
 
         data
     }
 }
 
-
 /// Renders SVG to image.
-pub fn render_to_image(
-    tree: &usvg::Tree,
-    opt: &Options,
-) -> Option<cairo::ImageSurface> {
-    let (surface, img_view) = create_surface(
-        tree.svg_node().size.to_screen_size(),
-        opt,
-    )?;
+pub fn render_to_image(tree: &usvg::Tree, opt: &Options) -> Option<cairo::ImageSurface> {
+    let (surface, img_view) = create_surface(tree.svg_node().size.to_screen_size(), opt)?;
 
     let cr = cairo::Context::new(&surface);
 
@@ -155,10 +140,7 @@ pub fn render_to_image(
 }
 
 /// Renders SVG to image.
-pub fn render_node_to_image(
-    node: &usvg::Node,
-    opt: &Options,
-) -> Option<cairo::ImageSurface> {
+pub fn render_node_to_image(node: &usvg::Node, opt: &Options) -> Option<cairo::ImageSurface> {
     let node_bbox = if let Some(bbox) = node.calculate_bbox() {
         bbox
     } else {
@@ -228,10 +210,7 @@ fn render_node_to_canvas_impl(
     cr.set_matrix(curr_ts);
 }
 
-fn create_surface(
-    size: ScreenSize,
-    opt: &Options,
-) -> Option<(cairo::ImageSurface, ScreenSize)> {
+fn create_surface(size: ScreenSize, opt: &Options) -> Option<(cairo::ImageSurface, ScreenSize)> {
     let img_size = utils::fit_to(size, opt.fit_to)?;
 
     let surface = try_create_surface!(img_size, None);
@@ -240,11 +219,7 @@ fn create_surface(
 }
 
 /// Applies viewbox transformation to the painter.
-fn apply_viewbox_transform(
-    view_box: usvg::ViewBox,
-    img_size: ScreenSize,
-    cr: &cairo::Context,
-) {
+fn apply_viewbox_transform(view_box: usvg::ViewBox, img_size: ScreenSize, cr: &cairo::Context) {
     let ts = utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_size());
     cr.transform(ts.to_native());
 }
@@ -257,18 +232,10 @@ fn render_node(
     cr: &cairo::Context,
 ) -> Option<Rect> {
     match *node.borrow() {
-        usvg::NodeKind::Svg(_) => {
-            render_group(node, opt, state, layers, cr)
-        }
-        usvg::NodeKind::Path(ref path) => {
-            path::draw(&node.tree(), path, opt, cr)
-        }
-        usvg::NodeKind::Image(ref img) => {
-            Some(image::draw(img, opt, cr))
-        }
-        usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, state, layers, cr)
-        }
+        usvg::NodeKind::Svg(_) => render_group(node, opt, state, layers, cr),
+        usvg::NodeKind::Path(ref path) => path::draw(&node.tree(), path, opt, cr),
+        usvg::NodeKind::Image(ref img) => Some(image::draw(img, opt, cr)),
+        usvg::NodeKind::Group(ref g) => render_group_impl(node, g, opt, state, layers, cr),
         _ => None,
     }
 }
@@ -361,11 +328,21 @@ fn render_group_impl(
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(&curr_ts);
                 let background = prepare_filter_background(node, filter, opt);
-                let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, opt, &sub_surface);
-                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_surface);
-                filter::apply(filter, bbox, &ts, opt, &node.tree(),
-                              background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
-                              &mut *sub_surface);
+                let fill_paint =
+                    prepare_filter_fill_paint(node, filter, bbox, ts, opt, &sub_surface);
+                let stroke_paint =
+                    prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_surface);
+                filter::apply(
+                    filter,
+                    bbox,
+                    &ts,
+                    opt,
+                    &node.tree(),
+                    background.as_ref(),
+                    fill_paint.as_ref(),
+                    stroke_paint.as_ref(),
+                    &mut *sub_surface,
+                );
             }
         }
     }
@@ -489,21 +466,15 @@ fn prepare_filter_stroke_paint(
     Some(surface)
 }
 
-fn create_layers(
-    img_size: ScreenSize,
-) -> CairoLayers {
+fn create_layers(img_size: ScreenSize) -> CairoLayers {
     layers::Layers::new(img_size, create_subsurface, clear_subsurface)
 }
 
-fn create_subsurface(
-    size: ScreenSize,
-) -> Option<cairo::ImageSurface> {
+fn create_subsurface(size: ScreenSize) -> Option<cairo::ImageSurface> {
     Some(try_create_surface!(size, None))
 }
 
-fn clear_subsurface(
-    surface: &mut cairo::ImageSurface,
-) {
+fn clear_subsurface(surface: &mut cairo::ImageSurface) {
     let cr = cairo::Context::new(&surface);
     cr.set_operator(cairo::Operator::Clear);
     cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);

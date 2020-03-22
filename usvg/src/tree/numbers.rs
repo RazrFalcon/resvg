@@ -2,14 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-
 use std::fmt;
 
 use svgtypes::{FuzzyEq, FuzzyZero};
 
-use crate::IsValidLength;
 use crate::geom::f64_bound;
-
+use crate::IsValidLength;
 
 macro_rules! wrap {
     ($name:ident) => {
@@ -28,7 +26,6 @@ macro_rules! wrap {
         }
     };
 }
-
 
 /// A normalized value.
 ///
@@ -76,7 +73,6 @@ pub type Opacity = NormalizedValue;
 /// An alias to `NormalizedValue`.
 pub type StopOffset = NormalizedValue;
 
-
 /// A `stroke-width` value.
 ///
 /// Just like `f64` but immutable and guarantee to be >0.0.
@@ -112,7 +108,6 @@ impl Default for StrokeWidth {
 
 wrap!(StrokeWidth);
 
-
 /// A `stroke-miterlimit` value.
 ///
 /// Just like `f64` but immutable and guarantee to be >=1.0.
@@ -147,7 +142,6 @@ impl Default for StrokeMiterlimit {
 
 wrap!(StrokeMiterlimit);
 
-
 /// A `font-size` value.
 ///
 /// Just like `f64` but immutable and guarantee to be >0.0.
@@ -175,7 +169,6 @@ impl FontSize {
 }
 
 wrap!(FontSize);
-
 
 /// A positive number.
 ///
@@ -216,7 +209,6 @@ impl fmt::Display for PositiveNumber {
         write!(f, "{}", self.0)
     }
 }
-
 
 /// A non-zero `f64`.
 ///

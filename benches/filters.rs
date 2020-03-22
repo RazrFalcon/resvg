@@ -6,7 +6,10 @@ macro_rules! bench_backend {
         fn $name(bencher: &mut Bencher) {
             let tree = usvg::Tree::from_str($input, &usvg::Options::default()).unwrap();
             bencher.iter(|| {
-                let _ = bencher::black_box(resvg::$backend::render_to_image(&tree, &resvg::Options::default()));
+                let _ = bencher::black_box(resvg::$backend::render_to_image(
+                    &tree,
+                    &resvg::Options::default(),
+                ));
             })
         }
     };
@@ -27,58 +30,82 @@ bench_backend!(blend_multiply_raqote, backend_raqote, BLEND_MULTIPLY_SVG);
 bench_backend!(blend_multiply_skia, backend_skia, BLEND_MULTIPLY_SVG);
 
 fn box_blur_100px(bencher: &mut Bencher) {
-    let tree = usvg::Tree::from_str("
+    let tree = usvg::Tree::from_str(
+        "
         <svg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'>
             <filter id='filter1'>
                 <feGaussianBlur stdDeviation='4'/>
             </filter>
             <circle cx='50' cy='50' r='40' fill='green' stroke='red' filter='url(#filter1)'/>
-        </svg>", &usvg::Options::default()).unwrap();
+        </svg>",
+        &usvg::Options::default(),
+    )
+    .unwrap();
 
     bencher.iter(|| {
-        let _ = bencher::black_box(resvg::default_backend().render_to_image(&tree, &resvg::Options::default()));
+        let _ = bencher::black_box(
+            resvg::default_backend().render_to_image(&tree, &resvg::Options::default()),
+        );
     })
 }
 
 fn iir_blur_100px(bencher: &mut Bencher) {
-    let tree = usvg::Tree::from_str("
+    let tree = usvg::Tree::from_str(
+        "
         <svg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'>
             <filter id='filter1'>
                 <feGaussianBlur stdDeviation='1'/>
             </filter>
             <circle cx='50' cy='50' r='40' fill='green' stroke='red' filter='url(#filter1)'/>
-        </svg>", &usvg::Options::default()).unwrap();
+        </svg>",
+        &usvg::Options::default(),
+    )
+    .unwrap();
 
     bencher.iter(|| {
-        let _ = bencher::black_box(resvg::default_backend().render_to_image(&tree, &resvg::Options::default()));
+        let _ = bencher::black_box(
+            resvg::default_backend().render_to_image(&tree, &resvg::Options::default()),
+        );
     })
 }
 
 fn box_blur_500px(bencher: &mut Bencher) {
-    let tree = usvg::Tree::from_str("
+    let tree = usvg::Tree::from_str(
+        "
         <svg viewBox='0 0 500 500' xmlns='http://www.w3.org/2000/svg'>
             <filter id='filter1'>
                 <feGaussianBlur stdDeviation='4'/>
             </filter>
             <circle cx='250' cy='250' r='200' fill='green' stroke='red' filter='url(#filter1)'/>
-        </svg>", &usvg::Options::default()).unwrap();
+        </svg>",
+        &usvg::Options::default(),
+    )
+    .unwrap();
 
     bencher.iter(|| {
-        let _ = bencher::black_box(resvg::default_backend().render_to_image(&tree, &resvg::Options::default()));
+        let _ = bencher::black_box(
+            resvg::default_backend().render_to_image(&tree, &resvg::Options::default()),
+        );
     })
 }
 
 fn iir_blur_500px(bencher: &mut Bencher) {
-    let tree = usvg::Tree::from_str("
+    let tree = usvg::Tree::from_str(
+        "
         <svg viewBox='0 0 500 500' xmlns='http://www.w3.org/2000/svg'>
             <filter id='filter1'>
                 <feGaussianBlur stdDeviation='1'/>
             </filter>
             <circle cx='250' cy='250' r='200' fill='green' stroke='red' filter='url(#filter1)'/>
-        </svg>", &usvg::Options::default()).unwrap();
+        </svg>",
+        &usvg::Options::default(),
+    )
+    .unwrap();
 
     bencher.iter(|| {
-        let _ = bencher::black_box(resvg::default_backend().render_to_image(&tree, &resvg::Options::default()));
+        let _ = bencher::black_box(
+            resvg::default_backend().render_to_image(&tree, &resvg::Options::default()),
+        );
     })
 }
 
@@ -105,10 +132,26 @@ const COMPOSITE_ARITHMETIC_SVG: &str = "\
     <rect x='20' y='20' width='160' height='160' fill='green' filter='url(#filter1)'/>
 </svg>";
 
-bench_backend!(composite_arithmetic_cairo, backend_cairo, COMPOSITE_ARITHMETIC_SVG);
-bench_backend!(composite_arithmetic_qt, backend_qt, COMPOSITE_ARITHMETIC_SVG);
-bench_backend!(composite_arithmetic_raqote, backend_raqote, COMPOSITE_ARITHMETIC_SVG);
-bench_backend!(composite_arithmetic_skia, backend_skia, COMPOSITE_ARITHMETIC_SVG);
+bench_backend!(
+    composite_arithmetic_cairo,
+    backend_cairo,
+    COMPOSITE_ARITHMETIC_SVG
+);
+bench_backend!(
+    composite_arithmetic_qt,
+    backend_qt,
+    COMPOSITE_ARITHMETIC_SVG
+);
+bench_backend!(
+    composite_arithmetic_raqote,
+    backend_raqote,
+    COMPOSITE_ARITHMETIC_SVG
+);
+bench_backend!(
+    composite_arithmetic_skia,
+    backend_skia,
+    COMPOSITE_ARITHMETIC_SVG
+);
 
 const COLOR_MATRIX_SVG: &str = "\
 <svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'>

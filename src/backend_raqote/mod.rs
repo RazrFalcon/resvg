@@ -6,7 +6,7 @@
 
 use log::warn;
 
-use crate::{prelude::*, layers, ConvTransform, RenderState};
+use crate::{layers, prelude::*, ConvTransform, RenderState};
 
 mod clip_and_mask;
 mod filter;
@@ -14,22 +14,31 @@ mod image;
 mod path;
 mod style;
 
-
 type RaqoteLayers = layers::Layers<raqote::DrawTarget>;
-
 
 impl ConvTransform<raqote::Transform> for usvg::Transform {
     fn to_native(&self) -> raqote::Transform {
-        raqote::Transform::row_major(self.a as f32, self.b as f32, self.c as f32,
-                                     self.d as f32, self.e as f32, self.f as f32)
+        raqote::Transform::row_major(
+            self.a as f32,
+            self.b as f32,
+            self.c as f32,
+            self.d as f32,
+            self.e as f32,
+            self.f as f32,
+        )
     }
 
     fn from_native(ts: &raqote::Transform) -> Self {
-        Self::new(ts.m11 as f64, ts.m12 as f64, ts.m21 as f64,
-                  ts.m22 as f64, ts.m31 as f64, ts.m32 as f64)
+        Self::new(
+            ts.m11 as f64,
+            ts.m12 as f64,
+            ts.m21 as f64,
+            ts.m22 as f64,
+            ts.m31 as f64,
+            ts.m32 as f64,
+        )
     }
 }
-
 
 pub(crate) trait RaqoteDrawTargetExt {
     fn transform(&mut self, ts: &raqote::Transform);
@@ -83,17 +92,12 @@ fn premultiply(c: u8, a: u8) -> u8 {
     (((c >> 8) + c) >> 8) as u8
 }
 
-
 /// Raqote backend handle.
 #[derive(Clone, Copy)]
 pub struct Backend;
 
 impl Render for Backend {
-    fn render_to_image(
-        &self,
-        tree: &usvg::Tree,
-        opt: &Options,
-    ) -> Option<Box<dyn OutputImage>> {
+    fn render_to_image(&self, tree: &usvg::Tree, opt: &Options) -> Option<Box<dyn OutputImage>> {
         let img = render_to_image(tree, opt)?;
         Some(Box::new(img))
     }
@@ -126,26 +130,26 @@ impl OutputImage for raqote::DrawTarget {
         // BGRA_Premultiplied -> BGRA
         svgfilters::demultiply_alpha(data.as_bgra_mut());
         // BGRA -> RGBA.
-        data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+        data.as_bgra_mut()
+            .iter_mut()
+            .for_each(|p| swap(&mut p.r, &mut p.b));
 
         data
     }
 }
 
-
 /// Renders SVG to image.
-pub fn render_to_image(
-    tree: &usvg::Tree,
-    opt: &Options,
-) -> Option<raqote::DrawTarget> {
-    let (mut dt, img_view) = create_target(
-        tree.svg_node().size.to_screen_size(),
-        opt,
-    )?;
+pub fn render_to_image(tree: &usvg::Tree, opt: &Options) -> Option<raqote::DrawTarget> {
+    let (mut dt, img_view) = create_target(tree.svg_node().size.to_screen_size(), opt)?;
 
     // Fill background.
     if let Some(c) = opt.background {
-        dt.clear(raqote::SolidSource { r: c.red, g: c.green, b: c.blue, a: 255 });
+        dt.clear(raqote::SolidSource {
+            r: c.red,
+            g: c.green,
+            b: c.blue,
+            a: 255,
+        });
     }
 
     render_to_canvas(tree, opt, img_view, &mut dt);
@@ -154,10 +158,7 @@ pub fn render_to_image(
 }
 
 /// Renders SVG to image.
-pub fn render_node_to_image(
-    node: &usvg::Node,
-    opt: &Options,
-) -> Option<raqote::DrawTarget> {
+pub fn render_node_to_image(node: &usvg::Node, opt: &Options) -> Option<raqote::DrawTarget> {
     let node_bbox = if let Some(bbox) = node.calculate_bbox() {
         bbox
     } else {
@@ -174,7 +175,12 @@ pub fn render_node_to_image(
 
     // Fill background.
     if let Some(c) = opt.background {
-        dt.clear(raqote::SolidSource { r: c.red, g: c.green, b: c.blue, a: 255 });
+        dt.clear(raqote::SolidSource {
+            r: c.red,
+            g: c.green,
+            b: c.blue,
+            a: 255,
+        });
     }
 
     render_node_to_canvas(node, opt, vbox, img_size, &mut dt);
@@ -224,10 +230,7 @@ fn render_node_to_canvas_impl(
     dt.set_transform(&curr_ts);
 }
 
-fn create_target(
-    size: ScreenSize,
-    opt: &Options,
-) -> Option<(raqote::DrawTarget, ScreenSize)> {
+fn create_target(size: ScreenSize, opt: &Options) -> Option<(raqote::DrawTarget, ScreenSize)> {
     let img_size = utils::fit_to(size, opt.fit_to)?;
 
     let dt = raqote::DrawTarget::new(img_size.width() as i32, img_size.height() as i32);
@@ -253,18 +256,12 @@ fn render_node(
     dt: &mut raqote::DrawTarget,
 ) -> Option<Rect> {
     match *node.borrow() {
-        usvg::NodeKind::Svg(_) => {
-            render_group(node, opt, state, layers, dt)
-        }
+        usvg::NodeKind::Svg(_) => render_group(node, opt, state, layers, dt),
         usvg::NodeKind::Path(ref path) => {
             path::draw(&node.tree(), path, opt, raqote::DrawOptions::default(), dt)
         }
-        usvg::NodeKind::Image(ref img) => {
-            Some(image::draw(img, opt, dt))
-        }
-        usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, state, layers, dt)
-        }
+        usvg::NodeKind::Image(ref img) => Some(image::draw(img, opt, dt)),
+        usvg::NodeKind::Group(ref g) => render_group_impl(node, g, opt, state, layers, dt),
         _ => None,
     }
 }
@@ -341,7 +338,12 @@ fn render_group_impl(
     // when rendering the children of A[i] into BUF[i].'
     if *state == RenderState::BackgroundFinished {
         dt.set_transform(&raqote::Transform::default());
-        dt.draw_image_at(0.0, 0.0, &sub_dt.as_image(), &raqote::DrawOptions::default());
+        dt.draw_image_at(
+            0.0,
+            0.0,
+            &sub_dt.as_image(),
+            &raqote::DrawOptions::default(),
+        );
         dt.set_transform(&curr_ts);
         return bbox;
     }
@@ -354,10 +356,19 @@ fn render_group_impl(
                 let ts = usvg::Transform::from_native(&curr_ts);
                 let background = prepare_filter_background(node, filter, opt);
                 let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, opt, &sub_dt);
-                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_dt);
-                filter::apply(filter, bbox, &ts, opt, &node.tree(),
-                              background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
-                              &mut sub_dt);
+                let stroke_paint =
+                    prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_dt);
+                filter::apply(
+                    filter,
+                    bbox,
+                    &ts,
+                    opt,
+                    &node.tree(),
+                    background.as_ref(),
+                    fill_paint.as_ref(),
+                    stroke_paint.as_ref(),
+                    &mut sub_dt,
+                );
             }
         }
     }
@@ -385,11 +396,15 @@ fn render_group_impl(
         }
     }
 
-    dt.blend_surface_with_alpha(&sub_dt,
-        raqote::IntRect::new(raqote::IntPoint::new(0, 0),
-                             raqote::IntPoint::new(sub_dt.width(), sub_dt.height())),
+    dt.blend_surface_with_alpha(
+        &sub_dt,
+        raqote::IntRect::new(
+            raqote::IntPoint::new(0, 0),
+            raqote::IntPoint::new(sub_dt.width(), sub_dt.height()),
+        ),
         raqote::IntPoint::new(0, 0),
-        g.opacity.value() as f32);
+        g.opacity.value() as f32,
+    );
 
     bbox
 }
@@ -437,7 +452,15 @@ fn prepare_filter_fill_paint(
             let draw_opt = raqote::DrawOptions::default();
             let mut pb = raqote::PathBuilder::new();
             pb.rect(0.0, 0.0, region.width() as f32, region.height() as f32);
-            style::fill(&parent.tree(), &pb.finish(), &fill, opt, style_bbox, &draw_opt, &mut dt);
+            style::fill(
+                &parent.tree(),
+                &pb.finish(),
+                &fill,
+                opt,
+                style_bbox,
+                &draw_opt,
+                &mut dt,
+            );
         }
     }
 
@@ -462,7 +485,15 @@ fn prepare_filter_stroke_paint(
             let draw_opt = raqote::DrawOptions::default();
             let mut pb = raqote::PathBuilder::new();
             pb.rect(0.0, 0.0, region.width() as f32, region.height() as f32);
-            style::fill(&parent.tree(), &pb.finish(), &fill, opt, style_bbox, &draw_opt, &mut dt);
+            style::fill(
+                &parent.tree(),
+                &pb.finish(),
+                &fill,
+                opt,
+                style_bbox,
+                &draw_opt,
+                &mut dt,
+            );
         }
     }
 
@@ -473,10 +504,11 @@ fn create_layers(img_size: ScreenSize) -> RaqoteLayers {
     layers::Layers::new(img_size, create_subsurface, clear_subsurface)
 }
 
-fn create_subsurface(
-    size: ScreenSize,
-) -> Option<raqote::DrawTarget> {
-    Some(raqote::DrawTarget::new(size.width() as i32, size.height() as i32))
+fn create_subsurface(size: ScreenSize) -> Option<raqote::DrawTarget> {
+    Some(raqote::DrawTarget::new(
+        size.width() as i32,
+        size.height() as i32,
+    ))
 }
 
 fn clear_subsurface(dt: &mut raqote::DrawTarget) {

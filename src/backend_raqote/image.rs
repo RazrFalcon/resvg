@@ -2,17 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::prelude::*;
-use crate::image;
-use crate::ConvTransform;
 use super::RaqoteDrawTargetExt;
+use crate::image;
+use crate::prelude::*;
+use crate::ConvTransform;
 
-
-pub fn draw(
-    image: &usvg::Image,
-    opt: &Options,
-    dt: &mut raqote::DrawTarget,
-) -> Rect {
+pub fn draw(image: &usvg::Image, opt: &Options, dt: &mut raqote::DrawTarget) -> Rect {
     if image.visibility != usvg::Visibility::Visible {
         return image.view_box.rect;
     }
@@ -20,7 +15,14 @@ pub fn draw(
     if image.format == usvg::ImageFormat::SVG {
         draw_svg(&image.data, image.view_box, opt, dt);
     } else {
-        draw_raster(image.format, &image.data, image.view_box, image.rendering_mode, opt, dt);
+        draw_raster(
+            image.format,
+            &image.data,
+            image.view_box,
+            image.rendering_mode,
+            opt,
+            dt,
+        );
     }
 
     image.view_box.rect
@@ -47,11 +49,21 @@ pub fn draw_raster(
 
     let mut pb = raqote::PathBuilder::new();
     if let Some(clip) = clip {
-        pb.rect(clip.x() as f32, clip.y() as f32, clip.width() as f32, clip.height() as f32);
+        pb.rect(
+            clip.x() as f32,
+            clip.y() as f32,
+            clip.width() as f32,
+            clip.height() as f32,
+        );
     } else {
         // We have to clip the image before rendering because we use `Extend::Pad`.
         let r = image::image_rect(&view_box, img.size);
-        pb.rect(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
+        pb.rect(
+            r.x() as f32,
+            r.y() as f32,
+            r.width() as f32,
+            r.height() as f32,
+        );
     }
 
     let filter_mode = if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
@@ -120,7 +132,12 @@ pub fn draw_svg(
     if let Some(clip) = clip {
         let mut pb = raqote::PathBuilder::new();
 
-        pb.rect(clip.x() as f32, clip.y() as f32, clip.width() as f32, clip.height() as f32);
+        pb.rect(
+            clip.x() as f32,
+            clip.y() as f32,
+            clip.width() as f32,
+            clip.height() as f32,
+        );
         dt.push_clip(&pb.finish());
     }
 

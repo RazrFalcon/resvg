@@ -48,8 +48,10 @@ fn main() {
 
     rtree.root().append_kind(usvg::NodeKind::Path(usvg::Path {
         fill,
-        data: Rc::new(usvg::PathData::from_rect(Rect::new(20.0, 20.0, 160.0, 160.0).unwrap())),
-        .. usvg::Path::default()
+        data: Rc::new(usvg::PathData::from_rect(
+            Rect::new(20.0, 20.0, 160.0, 160.0).unwrap(),
+        )),
+        ..usvg::Path::default()
     }));
 
     println!("{}", rtree.to_string(usvg::XmlOptions::default()));

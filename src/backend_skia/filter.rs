@@ -6,12 +6,12 @@ use std::cmp;
 use std::rc::Rc;
 
 use crate::skia;
-use rgb::FromSlice;
 use log::warn;
+use rgb::FromSlice;
 use usvg::ColorInterpolation as ColorSpace;
 
-use crate::prelude::*;
 use crate::filter::{self, Error, Filter, ImageExt, IntoSvgFilters};
+use crate::prelude::*;
 use crate::ConvTransform;
 
 type Image = filter::Image<skia::Surface>;
@@ -19,17 +19,23 @@ type FilterInputs<'a> = filter::FilterInputs<'a, skia::Surface>;
 type FilterResult = filter::FilterResult<skia::Surface>;
 
 macro_rules! into_svgfilters_image {
-    ($img:expr) => { svgfilters::ImageRef::new($img.data().as_bgra(), $img.width(), $img.height()) };
+    ($img:expr) => {
+        svgfilters::ImageRef::new($img.data().as_bgra(), $img.width(), $img.height())
+    };
 }
 
 macro_rules! into_svgfilters_image_mut {
-    ($img:expr) => { into_svgfilters_image_mut($img.width(), $img.height(), &mut $img.data_mut()) };
+    ($img:expr) => {
+        into_svgfilters_image_mut($img.width(), $img.height(), &mut $img.data_mut())
+    };
 }
 
 // We need a macro and a function to resolve lifetimes.
-fn into_svgfilters_image_mut<'a>(width: u32, height: u32, data: &'a mut skia::SurfaceData)
-    -> svgfilters::ImageRefMut<'a>
-{
+fn into_svgfilters_image_mut<'a>(
+    width: u32,
+    height: u32,
+    data: &'a mut skia::SurfaceData,
+) -> svgfilters::ImageRefMut<'a> {
     svgfilters::ImageRefMut::new(data.as_bgra_mut(), width, height)
 }
 
@@ -44,7 +50,17 @@ pub fn apply(
     stroke_paint: Option<&skia::Surface>,
     canvas: &mut skia::Surface,
 ) {
-    SkiaFilter::apply(filter, bbox, ts, opt, tree, background, fill_paint, stroke_paint, canvas);
+    SkiaFilter::apply(
+        filter,
+        bbox,
+        ts,
+        opt,
+        tree,
+        background,
+        fill_paint,
+        stroke_paint,
+        canvas,
+    );
 }
 
 impl ImageExt for skia::Surface {
@@ -97,7 +113,9 @@ fn create_surface(width: u32, height: u32) -> Result<skia::Surface, Error> {
 fn copy_surface(surface: &skia::Surface, region: ScreenRect) -> Result<skia::Surface, Error> {
     let x = cmp::max(0, region.x()) as u32;
     let y = cmp::max(0, region.y()) as u32;
-    surface.copy_rgba(x, y, region.width(), region.height()).ok_or(Error::AllocFailed)
+    surface
+        .copy_rgba(x, y, region.width(), region.height())
+        .ok_or(Error::AllocFailed)
 }
 
 struct SkiaFilter;
@@ -152,18 +170,13 @@ impl Filter<skia::Surface> for SkiaFilter {
                 let image = copy_surface(inputs.source, region)?;
                 convert_alpha(image)
             }
-            usvg::FilterInput::BackgroundImage => {
-                convert(inputs.background, region)
-            }
+            usvg::FilterInput::BackgroundImage => convert(inputs.background, region),
             usvg::FilterInput::BackgroundAlpha => {
-                let image = Self::get_input(
-                    &usvg::FilterInput::BackgroundImage, region, inputs, results,
-                )?;
+                let image =
+                    Self::get_input(&usvg::FilterInput::BackgroundImage, region, inputs, results)?;
                 convert_alpha(image.take()?)
             }
-            usvg::FilterInput::FillPaint => {
-                convert(inputs.fill_paint, region.translate_to(0, 0))
-            }
+            usvg::FilterInput::FillPaint => convert(inputs.fill_paint, region.translate_to(0, 0)),
             usvg::FilterInput::StrokePaint => {
                 convert(inputs.stroke_paint, region.translate_to(0, 0))
             }
@@ -173,9 +186,7 @@ impl Filter<skia::Surface> for SkiaFilter {
                 } else {
                     // Technically unreachable.
                     warn!("Unknown filter primitive reference '{}'.", name);
-                    Self::get_input(
-                        &usvg::FilterInput::SourceGraphic, region, inputs, results,
-                    )
+                    Self::get_input(&usvg::FilterInput::SourceGraphic, region, inputs, results)
                 }
             }
         }
@@ -189,8 +200,8 @@ impl Filter<skia::Surface> for SkiaFilter {
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (std_dx, std_dy, box_blur)
-            = try_opt_or!(Self::resolve_std_dev(fe, units, bbox, ts), Ok(input));
+        let (std_dx, std_dy, box_blur) =
+            try_opt_or!(Self::resolve_std_dev(fe, units, bbox, ts), Ok(input));
 
         let mut buffer = input.into_color_space(cs)?.take()?;
 
@@ -215,7 +226,10 @@ impl Filter<skia::Surface> for SkiaFilter {
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (dx, dy) = try_opt_or!(Self::scale_coordinates(fe.dx, fe.dy, units, bbox, ts), Ok(input));
+        let (dx, dy) = try_opt_or!(
+            Self::scale_coordinates(fe.dx, fe.dy, units, bbox, ts),
+            Ok(input)
+        );
         if dx.is_fuzzy_zero() && dy.is_fuzzy_zero() {
             return Ok(input);
         }
@@ -223,8 +237,14 @@ impl Filter<skia::Surface> for SkiaFilter {
         let mut buffer = create_surface(input.width(), input.height())?;
 
         buffer.reset_matrix();
-        buffer.draw_surface(input.as_ref(), dx, dy, 255, skia::BlendMode::SourceOver,
-                            skia::FilterQuality::Low);
+        buffer.draw_surface(
+            input.as_ref(),
+            dx,
+            dy,
+            255,
+            skia::BlendMode::SourceOver,
+            skia::FilterQuality::Low,
+        );
         buffer.flush();
 
         Ok(Image::from_image(buffer, input.color_space))
@@ -242,8 +262,14 @@ impl Filter<skia::Surface> for SkiaFilter {
 
         let mut buffer = create_surface(region.width(), region.height())?;
 
-        buffer.draw_surface(input2.as_ref(), 0.0, 0.0, 255, skia::BlendMode::SourceOver,
-                            skia::FilterQuality::Low);
+        buffer.draw_surface(
+            input2.as_ref(),
+            0.0,
+            0.0,
+            255,
+            skia::BlendMode::SourceOver,
+            skia::FilterQuality::Low,
+        );
 
         let blend_mode = match fe.mode {
             usvg::FeBlendMode::Normal => skia::BlendMode::SourceOver,
@@ -253,8 +279,14 @@ impl Filter<skia::Surface> for SkiaFilter {
             usvg::FeBlendMode::Lighten => skia::BlendMode::Lighten,
         };
 
-        buffer.draw_surface(input1.as_ref(), 0.0, 0.0, 255, blend_mode,
-                            skia::FilterQuality::Low);
+        buffer.draw_surface(
+            input1.as_ref(),
+            0.0,
+            0.0,
+            255,
+            blend_mode,
+            skia::FilterQuality::Low,
+        );
 
         Ok(Image::from_image(buffer, cs))
     }
@@ -280,7 +312,10 @@ impl Filter<skia::Surface> for SkiaFilter {
             svgfilters::multiply_alpha(buffer2.data_mut().as_bgra_mut());
 
             svgfilters::arithmetic_composite(
-                k1, k2, k3, k4,
+                k1,
+                k2,
+                k3,
+                k4,
                 into_svgfilters_image!(buffer1),
                 into_svgfilters_image!(buffer2),
                 into_svgfilters_image_mut!(buffer),
@@ -291,8 +326,14 @@ impl Filter<skia::Surface> for SkiaFilter {
             return Ok(Image::from_image(buffer, cs));
         }
 
-        buffer.draw_surface(input2.as_ref(), 0.0, 0.0, 255, skia::BlendMode::SourceOver,
-                            skia::FilterQuality::Low);
+        buffer.draw_surface(
+            input2.as_ref(),
+            0.0,
+            0.0,
+            255,
+            skia::BlendMode::SourceOver,
+            skia::FilterQuality::Low,
+        );
         let blend_mode = match fe.operator {
             Operator::Over => skia::BlendMode::SourceOver,
             Operator::In => skia::BlendMode::SourceIn,
@@ -301,8 +342,14 @@ impl Filter<skia::Surface> for SkiaFilter {
             Operator::Xor => skia::BlendMode::Xor,
             Operator::Arithmetic { .. } => skia::BlendMode::SourceOver,
         };
-        buffer.draw_surface(input1.as_ref(), 0.0, 0.0, 255, blend_mode,
-                            skia::FilterQuality::Low);
+        buffer.draw_surface(
+            input1.as_ref(),
+            0.0,
+            0.0,
+            255,
+            blend_mode,
+            skia::FilterQuality::Low,
+        );
 
         Ok(Image::from_image(buffer, cs))
     }
@@ -320,18 +367,21 @@ impl Filter<skia::Surface> for SkiaFilter {
         for input in &fe.inputs {
             let input = Self::get_input(input, region, inputs, results)?;
             let input = input.into_color_space(cs)?;
-            buffer.draw_surface(input.as_ref(), 0.0, 0.0, 255, skia::BlendMode::SourceOver,
-                                skia::FilterQuality::Low);
+            buffer.draw_surface(
+                input.as_ref(),
+                0.0,
+                0.0,
+                255,
+                skia::BlendMode::SourceOver,
+                skia::FilterQuality::Low,
+            );
         }
         buffer.flush();
 
         Ok(Image::from_image(buffer, cs))
     }
 
-    fn apply_flood(
-        fe: &usvg::FeFlood,
-        region: ScreenRect,
-    ) -> Result<Image, Error> {
+    fn apply_flood(fe: &usvg::FeFlood, region: ScreenRect) -> Result<Image, Error> {
         let c = fe.color;
         let alpha = (fe.opacity.value() * 255.0) as u8;
 
@@ -341,10 +391,7 @@ impl Filter<skia::Surface> for SkiaFilter {
         Ok(Image::from_image(buffer, ColorSpace::SRGB))
     }
 
-    fn apply_tile(
-        input: Image,
-        region: ScreenRect,
-    ) -> Result<Image, Error> {
+    fn apply_tile(input: Image, region: ScreenRect) -> Result<Image, Error> {
         let mut buffer = create_surface(region.width(), region.height())?;
 
         let subregion = input.region.translate(-region.x(), -region.y());
@@ -355,7 +402,13 @@ impl Filter<skia::Surface> for SkiaFilter {
         let mut paint = skia::Paint::new();
         paint.set_shader(&shader);
 
-        buffer.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64, &paint);
+        buffer.draw_rect(
+            0.0,
+            0.0,
+            region.width() as f64,
+            region.height() as f64,
+            &paint,
+        );
 
         buffer.reset_matrix();
         Ok(Image::from_image(buffer, ColorSpace::SRGB))
@@ -386,7 +439,12 @@ impl Filter<skia::Surface> for SkiaFilter {
                     super::image::draw_svg(data, view_box, opt, &mut buffer);
                 } else {
                     super::image::draw_raster(
-                        format, data, view_box, fe.rendering_mode, opt, &mut buffer,
+                        format,
+                        data,
+                        view_box,
+                        fe.rendering_mode,
+                        opt,
+                        &mut buffer,
                     );
                 }
             }
@@ -398,7 +456,13 @@ impl Filter<skia::Surface> for SkiaFilter {
                     buffer.scale(sx, sy);
                     buffer.concat(&node.transform().to_native());
 
-                    super::render_node(node, opt, &mut crate::RenderState::Ok, &mut layers, &mut buffer);
+                    super::render_node(
+                        node,
+                        opt,
+                        &mut crate::RenderState::Ok,
+                        &mut layers,
+                        &mut buffer,
+                    );
                 }
             }
         }
@@ -455,8 +519,11 @@ impl Filter<skia::Surface> for SkiaFilter {
         }
 
         svgfilters::convolve_matrix(
-            fe.matrix.into_svgf(), fe.divisor.value(), fe.bias,
-            fe.edge_mode.into_svgf(), fe.preserve_alpha,
+            fe.matrix.into_svgf(),
+            fe.divisor.value(),
+            fe.bias,
+            fe.edge_mode.into_svgf(),
+            fe.preserve_alpha,
             into_svgfilters_image_mut!(buffer),
         );
 
@@ -490,7 +557,12 @@ impl Filter<skia::Surface> for SkiaFilter {
 
         reverse_rgb(&mut buffer);
         svgfilters::multiply_alpha(buffer.data_mut().as_bgra_mut());
-        svgfilters::morphology(fe.operator.into_svgf(), rx, ry, into_svgfilters_image_mut!(buffer));
+        svgfilters::morphology(
+            fe.operator.into_svgf(),
+            rx,
+            ry,
+            into_svgfilters_image_mut!(buffer),
+        );
         svgfilters::demultiply_alpha(buffer.data_mut().as_bgra_mut());
         reverse_rgb(&mut buffer);
 
@@ -521,7 +593,8 @@ impl Filter<skia::Surface> for SkiaFilter {
         svgfilters::displacement_map(
             fe.x_channel_selector.into_svgf(),
             fe.y_channel_selector.into_svgf(),
-            sx, sy,
+            sx,
+            sy,
             into_svgfilters_image!(&buffer1),
             into_svgfilters_image!(&buffer2),
             into_svgfilters_image_mut!(buffer),
@@ -544,9 +617,12 @@ impl Filter<skia::Surface> for SkiaFilter {
         }
 
         svgfilters::turbulence(
-            region.x() as f64, region.y() as f64,
-            sx, sy,
-            fe.base_frequency.x.value().into(), fe.base_frequency.y.value().into(),
+            region.x() as f64,
+            region.y() as f64,
+            sx,
+            sy,
+            fe.base_frequency.x.value().into(),
+            fe.base_frequency.y.value().into(),
             fe.num_octaves,
             fe.seed,
             fe.stitch_tiles,
@@ -620,8 +696,14 @@ impl Filter<skia::Surface> for SkiaFilter {
 
         canvas.reset_matrix();
         canvas.clear();
-        canvas.draw_surface(input.as_ref(), region.x() as f64, region.y() as f64, 255,
-                            skia::BlendMode::SourceOver, skia::FilterQuality::Low);
+        canvas.draw_surface(
+            input.as_ref(),
+            region.x() as f64,
+            region.y() as f64,
+            255,
+            skia::BlendMode::SourceOver,
+            skia::FilterQuality::Low,
+        );
 
         Ok(())
     }
@@ -631,6 +713,10 @@ fn reverse_rgb(buffer: &mut skia::Surface) {
     use std::mem::swap;
 
     if !skia::Surface::is_bgra() {
-        buffer.data_mut().as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+        buffer
+            .data_mut()
+            .as_bgra_mut()
+            .iter_mut()
+            .for_each(|p| swap(&mut p.r, &mut p.b));
     }
 }

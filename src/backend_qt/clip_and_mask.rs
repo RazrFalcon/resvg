@@ -4,10 +4,9 @@
 
 use crate::qt;
 
+use super::{path, QtLayers};
 use crate::prelude::*;
 use crate::{ConvTransform, RenderState};
-use super::{path, QtLayers};
-
 
 pub fn clip(
     node: &usvg::Node,
@@ -96,11 +95,7 @@ fn clip_group(
     }
 }
 
-fn draw_group_child(
-    node: &usvg::Node,
-    opt: &Options,
-    p: &mut qt::Painter,
-) {
+fn draw_group_child(node: &usvg::Node, opt: &Options, p: &mut qt::Painter) {
     if let Some(child) = node.first_child() {
         p.apply_transform(&child.transform().to_native());
 

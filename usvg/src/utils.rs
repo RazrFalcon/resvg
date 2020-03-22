@@ -4,8 +4,7 @@
 
 //! Some useful utilities.
 
-use crate::{tree, geom::*};
-
+use crate::{geom::*, tree};
 
 /// Converts `viewBox` to `Transform`.
 pub fn view_box_to_transform(
@@ -22,9 +21,17 @@ pub fn view_box_to_transform(
         (sx, sy)
     } else {
         let s = if aspect.slice {
-            if sx < sy { sy } else { sx }
+            if sx < sy {
+                sy
+            } else {
+                sx
+            }
         } else {
-            if sx > sy { sy } else { sx }
+            if sx > sy {
+                sy
+            } else {
+                sx
+            }
         };
 
         (s, s)
@@ -40,21 +47,18 @@ pub fn view_box_to_transform(
 }
 
 /// Returns object aligned position.
-pub fn aligned_pos(
-    align: tree::Align,
-    x: f64, y: f64, w: f64, h: f64,
-) -> (f64, f64) {
+pub fn aligned_pos(align: tree::Align, x: f64, y: f64, w: f64, h: f64) -> (f64, f64) {
     match align {
-        tree::Align::None     => (x,           y          ),
-        tree::Align::XMinYMin => (x,           y          ),
-        tree::Align::XMidYMin => (x + w / 2.0, y          ),
-        tree::Align::XMaxYMin => (x + w,       y          ),
-        tree::Align::XMinYMid => (x,           y + h / 2.0),
+        tree::Align::None => (x, y),
+        tree::Align::XMinYMin => (x, y),
+        tree::Align::XMidYMin => (x + w / 2.0, y),
+        tree::Align::XMaxYMin => (x + w, y),
+        tree::Align::XMinYMid => (x, y + h / 2.0),
         tree::Align::XMidYMid => (x + w / 2.0, y + h / 2.0),
-        tree::Align::XMaxYMid => (x + w,       y + h / 2.0),
-        tree::Align::XMinYMax => (x,           y + h      ),
-        tree::Align::XMidYMax => (x + w / 2.0, y + h      ),
-        tree::Align::XMaxYMax => (x + w,       y + h      ),
+        tree::Align::XMaxYMid => (x + w, y + h / 2.0),
+        tree::Align::XMinYMax => (x, y + h),
+        tree::Align::XMidYMax => (x + w / 2.0, y + h),
+        tree::Align::XMaxYMax => (x + w, y + h),
     }
 }
 

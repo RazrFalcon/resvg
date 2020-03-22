@@ -2,9 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use super::{paint_server, prelude::*};
 use crate::{svgtree, tree};
-use super::{prelude::*, paint_server};
-
 
 pub fn resolve_fill(
     node: svgtree::Node,
@@ -84,12 +83,12 @@ fn convert_paint(
 ) -> Option<tree::Paint> {
     match node.attribute::<&svgtree::AttributeValue>(aid)? {
         svgtree::AttributeValue::CurrentColor => {
-            let c = node.find_attribute(AId::Color).unwrap_or_else(tree::Color::black);
+            let c = node
+                .find_attribute(AId::Color)
+                .unwrap_or_else(tree::Color::black);
             Some(tree::Paint::Color(c))
         }
-        svgtree::AttributeValue::Color(c) => {
-            Some(tree::Paint::Color(*c))
-        }
+        svgtree::AttributeValue::Color(c) => Some(tree::Paint::Color(*c)),
         svgtree::AttributeValue::Paint(func_iri, fallback) => {
             if let Some(link) = node.document().element_by_id(func_iri) {
                 let tag_name = link.tag_name().unwrap();
@@ -110,9 +109,7 @@ fn convert_paint(
                             *opacity = so;
                             Some(tree::Paint::Color(color))
                         }
-                        None => {
-                            from_fallback(node, *fallback)
-                        }
+                        None => from_fallback(node, *fallback),
                     }
                 } else {
                     warn!("'{}' cannot be used to {} a shape.", tag_name, aid);
@@ -122,9 +119,7 @@ fn convert_paint(
                 from_fallback(node, *fallback)
             }
         }
-        _ => {
-            None
-        }
+        _ => None,
     }
 }
 
@@ -133,25 +128,20 @@ fn from_fallback(
     fallback: Option<svgtypes::PaintFallback>,
 ) -> Option<tree::Paint> {
     match fallback? {
-        svgtypes::PaintFallback::None => {
-            None
-        }
+        svgtypes::PaintFallback::None => None,
         svgtypes::PaintFallback::CurrentColor => {
-            let c = node.find_attribute(AId::Color).unwrap_or_else(tree::Color::black);
+            let c = node
+                .find_attribute(AId::Color)
+                .unwrap_or_else(tree::Color::black);
             Some(tree::Paint::Color(c))
         }
-        svgtypes::PaintFallback::Color(c) => {
-            Some(tree::Paint::Color(c))
-        }
+        svgtypes::PaintFallback::Color(c) => Some(tree::Paint::Color(c)),
     }
 }
 
 // Prepare the 'stroke-dasharray' according to:
 // https://www.w3.org/TR/SVG11/painting.html#StrokeDasharrayProperty
-fn conv_dasharray(
-    node: svgtree::Node,
-    state: &State,
-) -> Option<Vec<f64>> {
+fn conv_dasharray(node: svgtree::Node, state: &State) -> Option<Vec<f64>> {
     let node = node.find_node_with_attribute(AId::StrokeDasharray)?;
     let list = super::units::convert_list(node, AId::StrokeDasharray, state)?;
 

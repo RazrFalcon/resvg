@@ -2,9 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{prelude::*, ConvTransform, RenderState};
 use super::{path, CairoLayers, ReCairoContextExt};
-
+use crate::{prelude::*, ConvTransform, RenderState};
 
 pub fn clip(
     node: &usvg::Node,
@@ -103,11 +102,7 @@ fn clip_group(
     }
 }
 
-fn draw_group_child(
-    node: &usvg::Node,
-    opt: &Options,
-    cr: &cairo::Context,
-) {
+fn draw_group_child(node: &usvg::Node, opt: &Options, cr: &cairo::Context) {
     if let Some(child) = node.first_child() {
         cr.transform(child.transform().to_native());
 
@@ -154,7 +149,8 @@ pub fn mask(
     {
         let mut data = try_opt_warn!(
             mask_surface.get_data().ok(),
-            "Failed to borrow a surface for mask '{}'.", mask.id
+            "Failed to borrow a surface for mask '{}'.",
+            mask.id
         );
 
         use rgb::FromSlice;

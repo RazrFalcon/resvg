@@ -6,7 +6,10 @@ macro_rules! bench_backend {
         fn $name(bencher: &mut Bencher) {
             let tree = usvg::Tree::from_str($input, &usvg::Options::default()).unwrap();
             bencher.iter(|| {
-                let _ = bencher::black_box(resvg::$backend::render_to_image(&tree, &resvg::Options::default()));
+                let _ = bencher::black_box(resvg::$backend::render_to_image(
+                    &tree,
+                    &resvg::Options::default(),
+                ));
             })
         }
     };
@@ -17,10 +20,26 @@ const ELEMENT_WITH_OPACITY_SVG: &str = "\
     <rect x='40' y='40' width='160' height='160' fill='blue' opacity='0.5'/>
 </svg>";
 
-bench_backend!(element_with_opacity_cairo, backend_cairo, ELEMENT_WITH_OPACITY_SVG);
-bench_backend!(element_with_opacity_qt, backend_qt, ELEMENT_WITH_OPACITY_SVG);
-bench_backend!(element_with_opacity_raqote, backend_raqote, ELEMENT_WITH_OPACITY_SVG);
-bench_backend!(element_with_opacity_skia, backend_skia, ELEMENT_WITH_OPACITY_SVG);
+bench_backend!(
+    element_with_opacity_cairo,
+    backend_cairo,
+    ELEMENT_WITH_OPACITY_SVG
+);
+bench_backend!(
+    element_with_opacity_qt,
+    backend_qt,
+    ELEMENT_WITH_OPACITY_SVG
+);
+bench_backend!(
+    element_with_opacity_raqote,
+    backend_raqote,
+    ELEMENT_WITH_OPACITY_SVG
+);
+bench_backend!(
+    element_with_opacity_skia,
+    backend_skia,
+    ELEMENT_WITH_OPACITY_SVG
+);
 
 const GROUPS_WITH_OPACITY_SVG: &str = "\
 <svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'>
@@ -32,10 +51,22 @@ const GROUPS_WITH_OPACITY_SVG: &str = "\
     </g>
 </svg>";
 
-bench_backend!(groups_with_opacity_cairo, backend_cairo, GROUPS_WITH_OPACITY_SVG);
+bench_backend!(
+    groups_with_opacity_cairo,
+    backend_cairo,
+    GROUPS_WITH_OPACITY_SVG
+);
 bench_backend!(groups_with_opacity_qt, backend_qt, GROUPS_WITH_OPACITY_SVG);
-bench_backend!(groups_with_opacity_raqote, backend_raqote, GROUPS_WITH_OPACITY_SVG);
-bench_backend!(groups_with_opacity_skia, backend_skia, GROUPS_WITH_OPACITY_SVG);
+bench_backend!(
+    groups_with_opacity_raqote,
+    backend_raqote,
+    GROUPS_WITH_OPACITY_SVG
+);
+bench_backend!(
+    groups_with_opacity_skia,
+    backend_skia,
+    GROUPS_WITH_OPACITY_SVG
+);
 
 const CLIP_PATH_SVG: &str = "\
 <svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'>
@@ -63,7 +94,11 @@ const NESTED_CLIP_PATH_SVG: &str = "\
 
 bench_backend!(nested_clip_path_cairo, backend_cairo, NESTED_CLIP_PATH_SVG);
 bench_backend!(nested_clip_path_qt, backend_qt, NESTED_CLIP_PATH_SVG);
-bench_backend!(nested_clip_path_raqote, backend_raqote, NESTED_CLIP_PATH_SVG);
+bench_backend!(
+    nested_clip_path_raqote,
+    backend_raqote,
+    NESTED_CLIP_PATH_SVG
+);
 bench_backend!(nested_clip_path_skia, backend_skia, NESTED_CLIP_PATH_SVG);
 
 const MASK_SVG: &str = "\

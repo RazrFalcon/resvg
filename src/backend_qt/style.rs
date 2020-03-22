@@ -6,7 +6,6 @@ use crate::qt;
 
 use crate::{prelude::*, ConvTransform};
 
-
 pub fn fill(
     tree: &usvg::Tree,
     fill: &Option<usvg::Fill>,
@@ -170,11 +169,7 @@ fn prepare_base_gradient(
     }
 }
 
-fn transform_gradient(
-    g: &usvg::BaseGradient,
-    bbox: Rect,
-    brush: &mut qt::Brush,
-) {
+fn transform_gradient(g: &usvg::BaseGradient, bbox: Rect, brush: &mut qt::Brush) {
     // We don't use `QGradient::setCoordinateMode` because it works incorrectly.
     //
     // See QTBUG-67995
@@ -225,7 +220,13 @@ fn prepare_pattern(
     }
 
     let mut layers = super::create_layers(img_size);
-    super::render_group(pattern_node, opt, &mut crate::RenderState::Ok, &mut layers, &mut p);
+    super::render_group(
+        pattern_node,
+        opt,
+        &mut crate::RenderState::Ok,
+        &mut layers,
+        &mut p,
+    );
     p.end();
 
     let img = if !opacity.is_default() {

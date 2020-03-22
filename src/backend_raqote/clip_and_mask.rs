@@ -2,9 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use super::{path, RaqoteDrawTargetExt, RaqoteLayers};
 use crate::{prelude::*, ConvTransform, RenderState};
-use super::{path, RaqoteLayers, RaqoteDrawTargetExt};
-
 
 pub fn clip(
     node: &usvg::Node,
@@ -17,7 +16,12 @@ pub fn clip(
     let clip_dt = try_opt!(layers.get());
     let mut clip_dt = clip_dt.borrow_mut();
 
-    clip_dt.clear(raqote::SolidSource { r: 0, g: 0, b: 0, a: 255 });
+    clip_dt.clear(raqote::SolidSource {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 255,
+    });
     clip_dt.set_transform(dt.get_transform());
     clip_dt.transform(&cp.transform.to_native());
 
@@ -54,11 +58,15 @@ pub fn clip(
             }
         }
     }
-    dt.blend_surface(&clip_dt,
-        raqote::IntRect::new(raqote::IntPoint::new(0, 0),
-                             raqote::IntPoint::new(clip_dt.width(), clip_dt.height())),
+    dt.blend_surface(
+        &clip_dt,
+        raqote::IntRect::new(
+            raqote::IntPoint::new(0, 0),
+            raqote::IntPoint::new(clip_dt.width(), clip_dt.height()),
+        ),
         raqote::IntPoint::new(0, 0),
-        raqote::BlendMode::DstOut);
+        raqote::BlendMode::DstOut,
+    );
 }
 
 fn clip_group(
@@ -84,15 +92,19 @@ fn clip_group(
                 clip(clip_node, cp, opt, bbox, layers, &mut clip_dt);
 
                 dt.set_transform(&raqote::Transform::identity());
-                dt.draw_image_at(0.0, 0.0, &clip_dt.as_image(), &raqote::DrawOptions {
-                    blend_mode: raqote::BlendMode::Xor,
-                    ..Default::default()
-                });
+                dt.draw_image_at(
+                    0.0,
+                    0.0,
+                    &clip_dt.as_image(),
+                    &raqote::DrawOptions {
+                        blend_mode: raqote::BlendMode::Xor,
+                        ..Default::default()
+                    },
+                );
             }
         }
     }
 }
-
 
 fn draw_group_child(
     node: &usvg::Node,
@@ -111,7 +123,6 @@ fn draw_group_child(
         }
     }
 }
-
 
 pub fn mask(
     node: &usvg::Node,
@@ -134,7 +145,12 @@ pub fn mask(
         };
 
         let mut pb = raqote::PathBuilder::new();
-        pb.rect(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
+        pb.rect(
+            r.x() as f32,
+            r.y() as f32,
+            r.width() as f32,
+            r.height() as f32,
+        );
         mask_dt.push_clip(&pb.finish());
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {
@@ -156,9 +172,13 @@ pub fn mask(
         }
     }
 
-    dt.blend_surface(&mask_dt,
-        raqote::IntRect::new(raqote::IntPoint::new(0, 0),
-                             raqote::IntPoint::new(mask_dt.width(), mask_dt.height())),
+    dt.blend_surface(
+        &mask_dt,
+        raqote::IntRect::new(
+            raqote::IntPoint::new(0, 0),
+            raqote::IntPoint::new(mask_dt.width(), mask_dt.height()),
+        ),
         raqote::IntPoint::new(0, 0),
-        raqote::BlendMode::DstIn);
+        raqote::BlendMode::DstIn,
+    );
 }

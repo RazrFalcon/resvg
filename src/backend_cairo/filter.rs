@@ -5,19 +5,18 @@
 use std::cmp;
 use std::rc::Rc;
 
-use rgb::FromSlice;
 use log::warn;
+use rgb::FromSlice;
 use usvg::ColorInterpolation as ColorSpace;
 
-use crate::prelude::*;
-use crate::filter::{self, Filter, ImageExt, IntoSvgFilters, Error};
-use crate::ConvTransform;
 use super::ReCairoContextExt;
+use crate::filter::{self, Error, Filter, ImageExt, IntoSvgFilters};
+use crate::prelude::*;
+use crate::ConvTransform;
 
 type Image = filter::Image<cairo::ImageSurface>;
 type FilterInputs<'a> = filter::FilterInputs<'a, cairo::ImageSurface>;
 type FilterResult = filter::FilterResult<cairo::ImageSurface>;
-
 
 pub fn apply(
     filter: &usvg::Filter,
@@ -30,9 +29,18 @@ pub fn apply(
     stroke_paint: Option<&cairo::ImageSurface>,
     canvas: &mut cairo::ImageSurface,
 ) {
-    CairoFilter::apply(filter, bbox, ts, opt, tree, background, fill_paint, stroke_paint, canvas);
+    CairoFilter::apply(
+        filter,
+        bbox,
+        ts,
+        opt,
+        tree,
+        background,
+        fill_paint,
+        stroke_paint,
+        canvas,
+    );
 }
-
 
 impl ImageExt for cairo::ImageSurface {
     fn width(&self) -> u32 {
@@ -60,8 +68,18 @@ impl ImageExt for cairo::ImageSurface {
 
         cr.rectangle(0.0, 0.0, self.width() as f64, region.y() as f64);
         cr.rectangle(0.0, 0.0, region.x() as f64, self.height() as f64);
-        cr.rectangle(region.right() as f64, 0.0, self.width() as f64, self.height() as f64);
-        cr.rectangle(0.0, region.bottom() as f64, self.width() as f64, self.height() as f64);
+        cr.rectangle(
+            region.right() as f64,
+            0.0,
+            self.width() as f64,
+            self.height() as f64,
+        );
+        cr.rectangle(
+            0.0,
+            region.bottom() as f64,
+            self.width() as f64,
+            self.height() as f64,
+        );
 
         cr.fill();
     }
@@ -171,19 +189,14 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
                 let image = copy_image(inputs.source, region)?;
                 convert_alpha(image)
             }
-            usvg::FilterInput::BackgroundImage => {
-                convert(inputs.background, region)
-            }
+            usvg::FilterInput::BackgroundImage => convert(inputs.background, region),
             usvg::FilterInput::BackgroundAlpha => {
-                let image = Self::get_input(
-                    &usvg::FilterInput::BackgroundImage, region, inputs, results,
-                )?;
+                let image =
+                    Self::get_input(&usvg::FilterInput::BackgroundImage, region, inputs, results)?;
                 let image = image.take()?;
                 convert_alpha(image)
             }
-            usvg::FilterInput::FillPaint => {
-                convert(inputs.fill_paint, region.translate_to(0, 0))
-            }
+            usvg::FilterInput::FillPaint => convert(inputs.fill_paint, region.translate_to(0, 0)),
             usvg::FilterInput::StrokePaint => {
                 convert(inputs.stroke_paint, region.translate_to(0, 0))
             }
@@ -207,8 +220,8 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (std_dx, std_dy, box_blur)
-            = try_opt_or!(Self::resolve_std_dev(fe, units, bbox, ts), Ok(input));
+        let (std_dx, std_dy, box_blur) =
+            try_opt_or!(Self::resolve_std_dev(fe, units, bbox, ts), Ok(input));
 
         let mut buffer = input.into_color_space(cs)?.take()?;
         let (w, h) = (buffer.width(), buffer.height());
@@ -231,7 +244,10 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         ts: &usvg::Transform,
         input: Image,
     ) -> Result<Image, Error> {
-        let (dx, dy) = try_opt_or!(Self::scale_coordinates(fe.dx, fe.dy, units, bbox, ts), Ok(input));
+        let (dx, dy) = try_opt_or!(
+            Self::scale_coordinates(fe.dx, fe.dy, units, bbox, ts),
+            Ok(input)
+        );
         if dx.is_fuzzy_zero() && dy.is_fuzzy_zero() {
             return Ok(input);
         }
@@ -292,7 +308,10 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         if let Operator::Arithmetic { k1, k2, k3, k4 } = fe.operator {
             let (w, h) = (region.width(), region.height());
             svgfilters::arithmetic_composite(
-                k1, k2, k3, k4,
+                k1,
+                k2,
+                k3,
+                k4,
                 svgfilters::ImageRef::new(buffer1.get_data().unwrap().as_bgra(), w, h),
                 svgfilters::ImageRef::new(buffer2.get_data().unwrap().as_bgra(), w, h),
                 svgfilters::ImageRefMut::new(buffer.get_data().unwrap().as_bgra_mut(), w, h),
@@ -344,10 +363,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         Ok(Image::from_image(buffer, cs))
     }
 
-    fn apply_flood(
-        fe: &usvg::FeFlood,
-        region: ScreenRect,
-    ) -> Result<Image, Error> {
+    fn apply_flood(fe: &usvg::FeFlood, region: ScreenRect) -> Result<Image, Error> {
         let buffer = create_image(region.width(), region.height())?;
 
         let cr = cairo::Context::new(&buffer);
@@ -357,10 +373,7 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         Ok(Image::from_image(buffer, ColorSpace::SRGB))
     }
 
-    fn apply_tile(
-        input: Image,
-        region: ScreenRect,
-    ) -> Result<Image, Error> {
+    fn apply_tile(input: Image, region: ScreenRect) -> Result<Image, Error> {
         let buffer = create_image(region.width(), region.height())?;
 
         let subregion = input.region.translate(-region.x(), -region.y());
@@ -464,7 +477,8 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         if let Ok(ref mut data) = buffer.get_data() {
             svgfilters::demultiply_alpha(data.as_bgra_mut());
             svgfilters::color_matrix(
-                fe.kind.into_svgf(), svgfilters::ImageRefMut::new(data.as_bgra_mut(), w, h),
+                fe.kind.into_svgf(),
+                svgfilters::ImageRefMut::new(data.as_bgra_mut(), w, h),
             );
             svgfilters::multiply_alpha(data.as_bgra_mut());
         }
@@ -488,8 +502,11 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         let (w, h) = (buffer.width(), buffer.height());
         if let Ok(ref mut data) = buffer.get_data() {
             svgfilters::convolve_matrix(
-                fe.matrix.into_svgf(), fe.divisor.value(), fe.bias,
-                fe.edge_mode.into_svgf(), fe.preserve_alpha,
+                fe.matrix.into_svgf(),
+                fe.divisor.value(),
+                fe.bias,
+                fe.edge_mode.into_svgf(),
+                fe.preserve_alpha,
                 svgfilters::ImageRefMut::new(data.as_bgra_mut(), w, h),
             );
         }
@@ -519,7 +536,9 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         let (w, h) = (buffer.width(), buffer.height());
         if let Ok(ref mut data) = buffer.get_data() {
             svgfilters::morphology(
-                fe.operator.into_svgf(), rx, ry,
+                fe.operator.into_svgf(),
+                rx,
+                ry,
                 svgfilters::ImageRefMut::new(data.as_bgra_mut(), w, h),
             );
         }
@@ -547,13 +566,14 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         let mut buffer = create_image(region.width(), region.height())?;
 
         let (w, h) = (buffer.width(), buffer.height());
-        if let (Ok(buffer1), Ok(buffer2), Ok(mut buffer))
-            = (buffer1.get_data(), buffer2.get_data(), buffer.get_data())
+        if let (Ok(buffer1), Ok(buffer2), Ok(mut buffer)) =
+            (buffer1.get_data(), buffer2.get_data(), buffer.get_data())
         {
             svgfilters::displacement_map(
                 fe.x_channel_selector.into_svgf(),
                 fe.y_channel_selector.into_svgf(),
-                sx, sy,
+                sx,
+                sy,
                 svgfilters::ImageRef::new(buffer1.as_bgra(), w, h),
                 svgfilters::ImageRef::new(buffer2.as_bgra(), w, h),
                 svgfilters::ImageRefMut::new(buffer.as_bgra_mut(), w, h),
@@ -578,9 +598,12 @@ impl Filter<cairo::ImageSurface> for CairoFilter {
         let (w, h) = (buffer.width(), buffer.height());
         if let Ok(ref mut data) = buffer.get_data() {
             svgfilters::turbulence(
-                region.x() as f64, region.y() as f64,
-                sx, sy,
-                fe.base_frequency.x.value().into(), fe.base_frequency.y.value().into(),
+                region.x() as f64,
+                region.y() as f64,
+                sx,
+                sy,
+                fe.base_frequency.x.value().into(),
+                fe.base_frequency.y.value().into(),
                 fe.num_octaves,
                 fe.seed,
                 fe.stitch_tiles,

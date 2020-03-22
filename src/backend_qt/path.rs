@@ -4,9 +4,8 @@
 
 use crate::qt;
 
-use crate::prelude::*;
 use super::style;
-
+use crate::prelude::*;
 
 pub fn draw(
     tree: &usvg::Tree,
@@ -44,10 +43,7 @@ pub fn draw(
     bbox
 }
 
-fn convert_path(
-    segments: &[usvg::PathSegment],
-    rule: usvg::FillRule,
-) -> qt::PainterPath {
+fn convert_path(segments: &[usvg::PathSegment], rule: usvg::FillRule) -> qt::PainterPath {
     // Qt's QPainterPath automatically closes open subpaths if start and end positions are equal.
     // This is an incorrect behaviour according to the SVG.
     // So we have to shift the last segment a bit, to prevent such behaviour.
@@ -104,7 +100,14 @@ fn convert_path(
                 prev_x = x;
                 prev_y = y;
             }
-            usvg::PathSegment::CurveTo { x1, y1, x2, y2, mut x, y } => {
+            usvg::PathSegment::CurveTo {
+                x1,
+                y1,
+                x2,
+                y2,
+                mut x,
+                y,
+            } => {
                 if is_last_subpath_seg {
                     if x == prev_mx && y == prev_my {
                         x -= 0.000001;
@@ -141,8 +144,8 @@ fn convert_path(
 //
 // See QTBUG-72796
 fn is_line(px: f64, py: f64, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64) -> bool {
-       (px - x1).abs() < 0.001
-    && (py - y1).abs() < 0.001
-    && (x2 -  x).abs() < 0.001
-    && (y2 -  y).abs() < 0.001
+    (px - x1).abs() < 0.001
+        && (py - y1).abs() < 0.001
+        && (x2 - x).abs() < 0.001
+        && (y2 - y).abs() < 0.001
 }

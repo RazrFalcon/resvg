@@ -7,7 +7,12 @@ use crate::{ImageRef, ImageRefMut};
 /// A color channel.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub enum ColorChannel { R, G, B, A }
+pub enum ColorChannel {
+    R,
+    G,
+    B,
+    A,
+}
 
 /// Applies a displacement map.
 ///
@@ -55,9 +60,7 @@ pub fn displacement_map(
 
         // TODO: we should use some kind of anti-aliasing when offset is on a pixel border
 
-        if    x < w as u32 && y < h as u32
-           && ox >= 0 && ox < w && oy >= 0 && oy < h
-        {
+        if x < w as u32 && y < h as u32 && ox >= 0 && ox < w && oy >= 0 && oy < h {
             let idx = (oy * w + ox) as usize;
             let idx1 = (y * w as u32 + x) as usize;
             dest.data[idx1] = src.data[idx];

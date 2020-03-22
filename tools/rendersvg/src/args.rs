@@ -9,9 +9,9 @@ use pico_args::Arguments;
 
 use resvg::prelude::*;
 
-
 pub fn print_help() {
-    print!("\
+    print!(
+        "\
 rendersvg is an SVG rendering application.
 
 USAGE:
@@ -70,8 +70,10 @@ OPTIONS:
 ARGS:
     <in-svg>                    Input file
     <out-png>                   Output file
-", default_backend(),
-   backends().join(", "));
+",
+        default_backend(),
+        backends().join(", ")
+    );
 }
 
 #[derive(Debug)]
@@ -102,29 +104,41 @@ struct CliArgs {
 fn collect_args() -> Result<CliArgs, pico_args::Error> {
     let mut input = Arguments::from_env();
     Ok(CliArgs {
-        help:               input.contains("--help"),
-        version:            input.contains(["-V", "--version"]),
-        backend:            input.value_from_str("--backend")?.unwrap_or(default_backend()),
-        width:              input.value_from_fn(["-w", "--width"], parse_length)?,
-        height:             input.value_from_fn(["-h", "--height"], parse_length)?,
-        zoom:               input.value_from_fn(["-z", "--zoom"], parse_zoom)?,
-        dpi:                input.value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
-        background:         input.value_from_str("--background")?,
-        font_family:        input.value_from_str("--font-family")?
-                                 .unwrap_or_else(|| "Times New Roman".to_string()),
-        font_size:          input.value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
-        languages:          input.value_from_fn("--languages", parse_languages)?
-                                 .unwrap_or(vec!["en".to_string()]), // TODO: use system language
-        shape_rendering:    input.value_from_str("--shape-rendering")?.unwrap_or_default(),
-        text_rendering:     input.value_from_str("--text-rendering")?.unwrap_or_default(),
-        image_rendering:    input.value_from_str("--image-rendering")?.unwrap_or_default(),
-        query_all:          input.contains("--query-all"),
-        export_id:          input.value_from_str("--export-id")?,
-        perf:               input.contains("--perf"),
-        pretend:            input.contains("--pretend"),
-        quiet:              input.contains("--quiet"),
-        dump_svg:           input.value_from_str("--dump-svg")?,
-        free:               input.free()?,
+        help: input.contains("--help"),
+        version: input.contains(["-V", "--version"]),
+        backend: input
+            .value_from_str("--backend")?
+            .unwrap_or(default_backend()),
+        width: input.value_from_fn(["-w", "--width"], parse_length)?,
+        height: input.value_from_fn(["-h", "--height"], parse_length)?,
+        zoom: input.value_from_fn(["-z", "--zoom"], parse_zoom)?,
+        dpi: input.value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
+        background: input.value_from_str("--background")?,
+        font_family: input
+            .value_from_str("--font-family")?
+            .unwrap_or_else(|| "Times New Roman".to_string()),
+        font_size: input
+            .value_from_fn("--font-size", parse_font_size)?
+            .unwrap_or(12),
+        languages: input
+            .value_from_fn("--languages", parse_languages)?
+            .unwrap_or(vec!["en".to_string()]), // TODO: use system language
+        shape_rendering: input
+            .value_from_str("--shape-rendering")?
+            .unwrap_or_default(),
+        text_rendering: input
+            .value_from_str("--text-rendering")?
+            .unwrap_or_default(),
+        image_rendering: input
+            .value_from_str("--image-rendering")?
+            .unwrap_or_default(),
+        query_all: input.contains("--query-all"),
+        export_id: input.value_from_str("--export-id")?,
+        perf: input.contains("--perf"),
+        pretend: input.contains("--pretend"),
+        quiet: input.contains("--quiet"),
+        dump_svg: input.value_from_str("--dump-svg")?,
+        free: input.free()?,
     })
 }
 
@@ -270,16 +284,24 @@ pub fn parse() -> Result<(Args, resvg::Options), String> {
 #[allow(unreachable_code)]
 fn default_backend() -> String {
     #[cfg(feature = "cairo-backend")]
-    { return "cairo".to_string() }
+    {
+        return "cairo".to_string();
+    }
 
     #[cfg(feature = "qt-backend")]
-    { return "qt".to_string() }
+    {
+        return "qt".to_string();
+    }
 
     #[cfg(feature = "skia-backend")]
-    { return "skia".to_string() }
+    {
+        return "skia".to_string();
+    }
 
     #[cfg(feature = "raqote-backend")]
-    { return "raqote".to_string() }
+    {
+        return "raqote".to_string();
+    }
 
     unreachable!();
 }
@@ -288,16 +310,24 @@ fn backends() -> Vec<&'static str> {
     let mut list = Vec::new();
 
     #[cfg(feature = "cairo-backend")]
-    { list.push("cairo"); }
+    {
+        list.push("cairo");
+    }
 
     #[cfg(feature = "qt-backend")]
-    { list.push("qt"); }
+    {
+        list.push("qt");
+    }
 
     #[cfg(feature = "skia-backend")]
-    { list.push("skia"); }
+    {
+        list.push("skia");
+    }
 
     #[cfg(feature = "raqote-backend")]
-    { list.push("raqote"); }
+    {
+        list.push("raqote");
+    }
 
     list
 }

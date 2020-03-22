@@ -4,16 +4,11 @@
 
 use crate::skia;
 
-use crate::prelude::*;
 use crate::image;
+use crate::prelude::*;
 use crate::ConvTransform;
 
-
-pub fn draw(
-    image: &usvg::Image,
-    opt: &Options,
-    canvas: &mut skia::Canvas,
-) -> Rect {
+pub fn draw(image: &usvg::Image, opt: &Options, canvas: &mut skia::Canvas) -> Rect {
     if image.visibility != usvg::Visibility::Visible {
         return image.view_box.rect;
     }
@@ -21,7 +16,14 @@ pub fn draw(
     if image.format == usvg::ImageFormat::SVG {
         draw_svg(&image.data, image.view_box, opt, canvas);
     } else {
-        draw_raster(image.format, &image.data, image.view_box, image.rendering_mode, opt, canvas);
+        draw_raster(
+            image.format,
+            &image.data,
+            image.view_box,
+            image.rendering_mode,
+            opt,
+            canvas,
+        );
     }
 
     image.view_box.rect
@@ -40,14 +42,16 @@ pub fn draw_raster(
     let image = {
         let (w, h) = img.size.dimensions();
         let mut image = try_opt_warn_or!(
-            skia::Surface::new_rgba(w, h), (),
-            "Failed to create a {}x{} surface.", w, h
+            skia::Surface::new_rgba(w, h),
+            (),
+            "Failed to create a {}x{} surface.",
+            w,
+            h
         );
 
         image_to_surface(&img, &mut image.data_mut());
         image
     };
-
 
     let mut filter = skia::FilterQuality::Low;
     if rendering_mode == usvg::ImageRendering::OptimizeSpeed {

@@ -56,7 +56,7 @@ pub enum EId {
     TextPath,
     Tref,
     Tspan,
-    Use
+    Use,
 }
 
 static ELEMENTS: Map<EId> = Map {
@@ -295,7 +295,7 @@ pub enum AId {
     Y1,
     Y2,
     YChannelSelector,
-    Z
+    Z,
 }
 
 static ATTRIBUTES: Map<AId> = Map {
@@ -461,7 +461,10 @@ static ATTRIBUTES: Map<AId> = Map {
         ("surfaceScale", AId::SurfaceScale),
         ("tableValues", AId::TableValues),
         ("orient", AId::Orient),
-        ("color-interpolation-filters", AId::ColorInterpolationFilters),
+        (
+            "color-interpolation-filters",
+            AId::ColorInterpolationFilters,
+        ),
         ("points", AId::Points),
         ("baseline-shift", AId::BaselineShift),
         ("elevation", AId::Elevation),
@@ -506,7 +509,7 @@ impl fmt::Display for AId {
 struct Map<V: 'static> {
     pub key: u64,
     pub disps: &'static [(u32, u32)],
-    pub entries: &'static[(&'static str, V)],
+    pub entries: &'static [(&'static str, V)],
 }
 
 impl<V: PartialEq> Map<V> {
@@ -550,9 +553,11 @@ fn split(hash: u64) -> (u32, u32, u32) {
     const BITS: u32 = 21;
     const MASK: u64 = (1 << BITS) - 1;
 
-    ((hash & MASK) as u32,
-     ((hash >> BITS) & MASK) as u32,
-     ((hash >> (2 * BITS)) & MASK) as u32)
+    (
+        (hash & MASK) as u32,
+        ((hash >> BITS) & MASK) as u32,
+        ((hash >> (2 * BITS)) & MASK) as u32,
+    )
 }
 
 #[inline]

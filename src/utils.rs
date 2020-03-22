@@ -9,18 +9,12 @@ pub use usvg::utils::*;
 use super::prelude::*;
 use crate::FitTo;
 
-
 /// Returns `size` preprocessed according to `FitTo`.
-pub(crate) fn fit_to(
-    size: ScreenSize,
-    fit: FitTo,
-) -> Option<ScreenSize> {
+pub(crate) fn fit_to(size: ScreenSize, fit: FitTo) -> Option<ScreenSize> {
     let sizef = size.to_size();
 
     match fit {
-        FitTo::Original => {
-            Some(size)
-        }
+        FitTo::Original => Some(size),
         FitTo::Width(w) => {
             let h = (w as f64 * sizef.height() / sizef.width()).ceil();
             ScreenSize::new(w, h as u32)
@@ -29,17 +23,12 @@ pub(crate) fn fit_to(
             let w = (h as f64 * sizef.width() / sizef.height()).ceil();
             ScreenSize::new(w as u32, h)
         }
-        FitTo::Zoom(z) => {
-            Size::new(sizef.width() * z as f64, sizef.height() * z as f64)
-                 .map(|s| s.to_screen_size())
-        }
+        FitTo::Zoom(z) => Size::new(sizef.width() * z as f64, sizef.height() * z as f64)
+            .map(|s| s.to_screen_size()),
     }
 }
 
-pub(crate) fn apply_view_box(
-    vb: &usvg::ViewBox,
-    img_size: ScreenSize,
-) -> ScreenSize {
+pub(crate) fn apply_view_box(vb: &usvg::ViewBox, img_size: ScreenSize) -> ScreenSize {
     let s = vb.rect.to_screen_size();
 
     if vb.aspect.align == usvg::Align::None {
@@ -52,4 +41,3 @@ pub(crate) fn apply_view_box(
         }
     }
 }
-

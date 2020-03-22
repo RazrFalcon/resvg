@@ -7,7 +7,10 @@ fn main() {
 
     let lib = pkg_config::find_library("Qt5Gui").expect("Unable to find Qt5Gui");
     for path in lib.include_paths {
-        build.include(path.to_str().expect("Failed to convert include path to str"));
+        build.include(
+            path.to_str()
+                .expect("Failed to convert include path to str"),
+        );
     }
 
     build.compile("libqtc.a");

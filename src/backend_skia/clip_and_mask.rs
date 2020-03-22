@@ -4,9 +4,8 @@
 
 use crate::skia;
 
-use crate::{prelude::*, ConvTransform, RenderState};
 use super::{path, SkiaLayers};
-
+use crate::{prelude::*, ConvTransform, RenderState};
 
 pub fn clip(
     node: &usvg::Node,
@@ -34,7 +33,13 @@ pub fn clip(
 
         match *node.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                path::draw(&node.tree(), path_node, opt, skia::BlendMode::Clear, &mut clip_surface);
+                path::draw(
+                    &node.tree(),
+                    path_node,
+                    opt,
+                    skia::BlendMode::Clear,
+                    &mut clip_surface,
+                );
             }
             usvg::NodeKind::Group(ref g) => {
                 clip_group(&node, g, opt, bbox, layers, &mut clip_surface);
@@ -55,7 +60,12 @@ pub fn clip(
 
     canvas.reset_matrix();
     canvas.draw_surface(
-        &clip_surface, 0.0, 0.0, 255, skia::BlendMode::DestinationOut, skia::FilterQuality::Low,
+        &clip_surface,
+        0.0,
+        0.0,
+        255,
+        skia::BlendMode::DestinationOut,
+        skia::FilterQuality::Low,
     );
 }
 
@@ -84,24 +94,31 @@ fn clip_group(
 
                 canvas.reset_matrix();
                 canvas.draw_surface(
-                    &clip_surface, 0.0, 0.0, 255, skia::BlendMode::Xor, skia::FilterQuality::Low,
+                    &clip_surface,
+                    0.0,
+                    0.0,
+                    255,
+                    skia::BlendMode::Xor,
+                    skia::FilterQuality::Low,
                 );
             }
         }
     }
 }
 
-fn draw_group_child(
-    node: &usvg::Node,
-    opt: &Options,
-    canvas: &mut skia::Canvas,
-) {
+fn draw_group_child(node: &usvg::Node, opt: &Options, canvas: &mut skia::Canvas) {
     if let Some(child) = node.first_child() {
         canvas.concat(&child.transform().to_native());
 
         match *child.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                path::draw(&child.tree(), path_node, opt, skia::BlendMode::SourceOver, canvas);
+                path::draw(
+                    &child.tree(),
+                    path_node,
+                    opt,
+                    skia::BlendMode::SourceOver,
+                    canvas,
+                );
             }
             _ => {}
         }
@@ -148,14 +165,18 @@ pub fn mask(
 
         // RGBA -> BGRA.
         if !skia::Surface::is_bgra() {
-            data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+            data.as_bgra_mut()
+                .iter_mut()
+                .for_each(|p| swap(&mut p.r, &mut p.b));
         }
 
         crate::image_to_mask(data.as_bgra_mut(), layers.image_size());
 
         // BGRA -> RGBA.
         if !skia::Surface::is_bgra() {
-            data.as_bgra_mut().iter_mut().for_each(|p| swap(&mut p.r, &mut p.b));
+            data.as_bgra_mut()
+                .iter_mut()
+                .for_each(|p| swap(&mut p.r, &mut p.b));
         }
     }
 
@@ -169,6 +190,11 @@ pub fn mask(
 
     canvas.reset_matrix();
     canvas.draw_surface(
-        &mask_surface, 0.0, 0.0, 255, skia::BlendMode::DestinationIn, skia::FilterQuality::Low,
+        &mask_surface,
+        0.0,
+        0.0,
+        255,
+        skia::BlendMode::DestinationIn,
+        skia::FilterQuality::Low,
     );
 }

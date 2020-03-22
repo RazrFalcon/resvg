@@ -4,15 +4,10 @@
 
 use std::path;
 
-use crate::{svgtree, tree, tree::prelude::*, utils};
 use super::prelude::*;
+use crate::{svgtree, tree, tree::prelude::*, utils};
 
-
-pub fn convert(
-    node: svgtree::Node,
-    state: &State,
-    parent: &mut tree::Node,
-) {
+pub fn convert(node: svgtree::Node, state: &State, parent: &mut tree::Node) {
     let visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
     let rendering_mode = node
         .find_attribute(AId::ImageRendering)
@@ -36,7 +31,11 @@ pub fn convert(
         "The 'image' element lacks the 'xlink:href' attribute. Skipped."
     );
 
-    let (data, format) = try_opt!(get_href_data(node.element_id(), href, state.opt.path.as_ref()));
+    let (data, format) = try_opt!(get_href_data(
+        node.element_id(),
+        href,
+        state.opt.path.as_ref()
+    ));
     parent.append_kind(tree::NodeKind::Image(tree::Image {
         id: node.element_id().to_string(),
         transform: Default::default(),
@@ -55,7 +54,10 @@ pub fn get_href_data(
 ) -> Option<(tree::ImageData, tree::ImageFormat)> {
     if href.starts_with("data:image/") {
         if let Ok(url) = data_url::DataUrl::process(href) {
-            let format = match (url.mime_type().type_.as_str(), url.mime_type().subtype.as_str()) {
+            let format = match (
+                url.mime_type().type_.as_str(),
+                url.mime_type().subtype.as_str(),
+            ) {
                 ("image", "jpg") | ("image", "jpeg") => tree::ImageFormat::JPEG,
                 ("image", "png") => tree::ImageFormat::PNG,
                 ("image", "svg+xml") => tree::ImageFormat::SVG,
@@ -67,7 +69,10 @@ pub fn get_href_data(
             }
         }
 
-        warn!("Image '{}' has an invalid 'xlink:href' content.", element_id);
+        warn!(
+            "Image '{}' has an invalid 'xlink:href' content.",
+            element_id
+        );
     } else {
         let path = match path {
             Some(path) => path.parent().unwrap().join(href),

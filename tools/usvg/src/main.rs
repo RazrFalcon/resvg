@@ -10,9 +10,9 @@ use std::process;
 
 use pico_args::Arguments;
 
-
 fn print_help() {
-    print!("\
+    print!(
+        "\
 usvg (micro SVG) is an SVG simplification tool.
 
 USAGE:
@@ -58,7 +58,8 @@ OPTIONS:
 ARGS:
     <in-svg>                    Input file
     <out-svg>                   Output file
-");
+"
+    );
 }
 
 #[derive(Debug)]
@@ -83,25 +84,37 @@ struct Args {
 fn collect_args() -> Result<Args, pico_args::Error> {
     let mut input = Arguments::from_env();
     Ok(Args {
-        help:               input.contains("--help"),
-        version:            input.contains(["-V", "--version"]),
-        stdout:             input.contains("-c"),
-        keep_named_groups:  input.contains("--keep-named-groups"),
-        dpi:                input.value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
-        font_family:        input.value_from_str("--font-family")?
-                                 .unwrap_or_else(|| "Times New Roman".to_string()),
-        font_size:          input.value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
-        languages:          input.value_from_fn("--languages", parse_languages)?
-                                 .unwrap_or(vec!["en".to_string()]), // TODO: use system language
-        shape_rendering:    input.value_from_str("--shape-rendering")?.unwrap_or_default(),
-        text_rendering:     input.value_from_str("--text-rendering")?.unwrap_or_default(),
-        image_rendering:    input.value_from_str("--image-rendering")?.unwrap_or_default(),
-        indent:             input.value_from_fn("--indent", parse_indent)?
-                                 .unwrap_or(usvg::XmlIndent::Spaces(4)),
-        attrs_indent:       input.value_from_fn("--attrs-indent", parse_indent)?
-                                 .unwrap_or(usvg::XmlIndent::None),
-        quiet:              input.contains("--quiet"),
-        free:               input.free()?,
+        help: input.contains("--help"),
+        version: input.contains(["-V", "--version"]),
+        stdout: input.contains("-c"),
+        keep_named_groups: input.contains("--keep-named-groups"),
+        dpi: input.value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
+        font_family: input
+            .value_from_str("--font-family")?
+            .unwrap_or_else(|| "Times New Roman".to_string()),
+        font_size: input
+            .value_from_fn("--font-size", parse_font_size)?
+            .unwrap_or(12),
+        languages: input
+            .value_from_fn("--languages", parse_languages)?
+            .unwrap_or(vec!["en".to_string()]), // TODO: use system language
+        shape_rendering: input
+            .value_from_str("--shape-rendering")?
+            .unwrap_or_default(),
+        text_rendering: input
+            .value_from_str("--text-rendering")?
+            .unwrap_or_default(),
+        image_rendering: input
+            .value_from_str("--image-rendering")?
+            .unwrap_or_default(),
+        indent: input
+            .value_from_fn("--indent", parse_indent)?
+            .unwrap_or(usvg::XmlIndent::Spaces(4)),
+        attrs_indent: input
+            .value_from_fn("--attrs-indent", parse_indent)?
+            .unwrap_or(usvg::XmlIndent::None),
+        quiet: input.contains("--quiet"),
+        free: input.free()?,
     })
 }
 
@@ -164,7 +177,6 @@ enum OutputTo<'a> {
     Stdout,
     File(&'a str),
 }
-
 
 fn main() {
     let args = match collect_args() {
@@ -267,8 +279,8 @@ fn process(args: &Args) -> Result<(), String> {
                 .map_err(|_| format!("failed to write to the stdout"))?;
         }
         OutputTo::File(path) => {
-            let mut f = File::create(path)
-                .map_err(|_| format!("failed to create the output file"))?;
+            let mut f =
+                File::create(path).map_err(|_| format!("failed to create the output file"))?;
             f.write_all(s.as_bytes())
                 .map_err(|_| format!("failed to write to the output file"))?;
         }
@@ -277,15 +289,11 @@ fn process(args: &Args) -> Result<(), String> {
     Ok(())
 }
 
-fn log_format(
-    out: fern::FormatCallback,
-    message: &fmt::Arguments,
-    record: &log::Record,
-) {
+fn log_format(out: fern::FormatCallback, message: &fmt::Arguments, record: &log::Record) {
     let lvl = match record.level() {
         log::Level::Error => "Error",
-        log::Level::Warn  => "Warning",
-        log::Level::Info  => "Info",
+        log::Level::Warn => "Warning",
+        log::Level::Info => "Info",
         log::Level::Debug => "Debug",
         log::Level::Trace => "Trace",
     };
