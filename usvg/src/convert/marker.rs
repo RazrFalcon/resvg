@@ -270,10 +270,9 @@ fn calc_vertex_angle(path: &tree::PathData, idx: usize) -> f64 {
                 let (px, py) = get_prev_vertex(path, idx);
                 calc_line_angle(px, py, x, y)
             }
-            (_, Segment::CurveTo { x2, y2, x, y, .. }) => {
+            (_, Segment::CurveTo { x1, y1, x2, y2, x, y, .. }) => {
                 if x2.fuzzy_eq(&x) && y2.fuzzy_eq(&y) {
-                    let (px, py) = get_prev_vertex(path, idx);
-                    calc_line_angle(px, py, x, y)
+                    calc_line_angle(x1, y1, x, y)
                 } else {
                     calc_line_angle(x2, y2, x, y)
                 }

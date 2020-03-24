@@ -12,6 +12,8 @@ This changelog also contains important changes in dependencies.
 - Grayscale PNG loading.
 - Font fallback when shaping produces a different amount of glyphs.
 - Ignore a space after the last character during `letter-spacing` processing.
+- `marker-end` rendering when the last segment is a curve with the second control point
+  that coincides with end point.
 
 ## [0.9.0] - 2020-01-18
 ### Added
