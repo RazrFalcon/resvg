@@ -53,44 +53,43 @@ pub fn get_href_data(
     href: &str,
     path: Option<&path::PathBuf>,
 ) -> Option<(tree::ImageData, tree::ImageFormat)> {
-    if href.starts_with("data:image/") {
-        if let Ok(url) = data_url::DataUrl::process(href) {
-            let format = match (url.mime_type().type_.as_str(), url.mime_type().subtype.as_str()) {
-                ("image", "jpg") | ("image", "jpeg") => tree::ImageFormat::JPEG,
-                ("image", "png") => tree::ImageFormat::PNG,
-                ("image", "svg+xml") => tree::ImageFormat::SVG,
-                _ => return None,
-            };
-
-            if let Ok((data, _)) = url.decode_to_vec() {
-                return Some((tree::ImageData::Raw(data), format));
+    if let Ok(url) = data_url::DataUrl::process(href) {
+        let (data, _) = url.decode_to_vec().ok()?;
+        let format = match (url.mime_type().type_.as_str(), url.mime_type().subtype.as_str()) {
+            ("image", "jpg") | ("image", "jpeg") => tree::ImageFormat::JPEG,
+            ("image", "png") => tree::ImageFormat::PNG,
+            ("image", "svg+xml") => tree::ImageFormat::SVG,
+            ("text", "plain") => {
+                // Try to guess from raw data.
+                get_image_data_format(&data).unwrap_or(tree::ImageFormat::SVG)
             }
-        }
+            _ => return None,
+        };
 
-        warn!("Image '{}' has an invalid 'xlink:href' content.", element_id);
+        Some((tree::ImageData::Raw(data), format))
     } else {
         let path = match path {
-            Some(path) => path.parent().unwrap().join(href),
+            Some(path) => path.parent()?.join(href),
             None => path::PathBuf::from(href),
         };
 
         if path.exists() {
-            if let Some(format) = get_image_format(&path) {
+            if let Some(format) = get_image_file_format(&path) {
                 return Some((tree::ImageData::Path(path::PathBuf::from(href)), format));
             } else {
                 warn!("'{}' is not a PNG, JPEG or SVG(Z) image.", href);
             }
         } else {
-            warn!("Linked file does not exist: '{}'.", href);
+            warn!("Image '{}' has an invalid 'xlink:href' content.", element_id);
         }
-    }
 
-    None
+        None
+    }
 }
 
 /// Checks that file has a PNG or a JPEG magic bytes.
 /// Or an SVG(Z) extension.
-fn get_image_format(path: &path::Path) -> Option<tree::ImageFormat> {
+fn get_image_file_format(path: &path::Path) -> Option<tree::ImageFormat> {
     use std::io::Read;
 
     let ext = utils::file_extension(path)?.to_lowercase();
@@ -100,13 +99,17 @@ fn get_image_format(path: &path::Path) -> Option<tree::ImageFormat> {
 
     let mut file = std::fs::File::open(path).ok()?;
 
-    let mut d = Vec::new();
-    d.resize(8, 0);
+    let mut d = [0; 8];
     file.read_exact(&mut d).ok()?;
 
-    if d.starts_with(b"\x89PNG\r\n\x1a\n") {
+    get_image_data_format(&d)
+}
+
+/// Checks that file has a PNG or a JPEG magic bytes.
+fn get_image_data_format(data: &[u8]) -> Option<tree::ImageFormat> {
+    if data.starts_with(b"\x89PNG\r\n\x1a\n") {
         Some(tree::ImageFormat::PNG)
-    } else if d.starts_with(&[0xff, 0xd8, 0xff]) {
+    } else if data.starts_with(&[0xff, 0xd8, 0xff]) {
         Some(tree::ImageFormat::JPEG)
     } else {
         None
