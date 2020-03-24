@@ -7,7 +7,7 @@
 /**
  * @file resvg.h
  *
- * resvg C-API
+ * resvg C API
  */
 
 #ifndef RESVG_H

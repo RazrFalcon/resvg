@@ -11,6 +11,7 @@ This changelog also contains important changes in dependencies.
 - Stack overflow when `enable-background` and `filter` are set on the same element.
 - Grayscale PNG loading.
 - Font fallback when shaping produces a different amount of glyphs.
+- Ignore a space after the last character during `letter-spacing` processing.
 
 ## [0.9.0] - 2020-01-18
 ### Added

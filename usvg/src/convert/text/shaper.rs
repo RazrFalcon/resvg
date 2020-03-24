@@ -715,6 +715,10 @@ pub fn apply_letter_spacing(
         return;
     }
 
+    // Find the last byte index of the chunk.
+    let last_idx = chunk.spans.last().and_then(|span| span.end.checked_sub(1)).unwrap_or(0);
+    let last_idx = ByteIndex::new(last_idx);
+
     for cluster in clusters {
         // Spacing must be applied only to characters that belongs to the script
         // that supports spacing.
@@ -722,12 +726,14 @@ pub fn apply_letter_spacing(
         let script = cluster.codepoint.script();
         if script_supports_letter_spacing(script) {
             if let Some(span) = chunk.span_at(cluster.byte_idx) {
-                // Technically, we should ignore spacing on the last character,
-                // but it doesn't affect us in any way, so we are ignoring this.
-                cluster.advance += span.letter_spacing;
+                // A space after the last cluster should be ignored,
+                // since it affects the bbox and text alignment.
+                if cluster.byte_idx != last_idx {
+                    cluster.advance += span.letter_spacing;
+                }
 
                 // If the cluster advance became negative - clear it.
-                // This is an UB so we can do whatever we want, so we mimic the Chrome behavior.
+                // This is an UB so we can do whatever we want, and we mimic Chrome's behavior.
                 if !cluster.advance.is_valid_length() {
                     cluster.advance = 0.0;
                     cluster.path.clear();

@@ -1,0 +1,3 @@
+a-letter-spacing-009.svg
+a-letter-spacing-010.svg
+a-text-anchor-013.svg
