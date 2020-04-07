@@ -492,7 +492,7 @@ fn load_all_fonts(fonts: &mut Vec<FontItem>) {
     load_fonts_from("/usr/local/share/fonts/", fonts);
 
     if let Ok(ref home) = std::env::var("HOME") {
-        let path = Path::new(home).join("/.local/share/fonts");
+        let path = Path::new(home).join(".local/share/fonts");
         load_fonts_from(path.to_str().unwrap(), fonts);
     }
 }

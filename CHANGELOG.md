@@ -15,6 +15,7 @@ This changelog also contains important changes in dependencies.
 - `marker-end` rendering when the last segment is a curve with the second control point
   that coincides with end point.
 - Accept embedded `image` data without mime.
+- Fonts search in a home directory on Linux.
 - (xmlparser) Parsing comment before DTD.
 
 ## [0.9.0] - 2020-01-18
