@@ -1,0 +1,1 @@
+option('backends', type : 'combo', choices : ['both', 'qt', 'cairo'], value : 'both')
