@@ -83,7 +83,7 @@ struct Args {
 fn collect_args() -> Result<Args, pico_args::Error> {
     let mut input = Arguments::from_env();
     Ok(Args {
-        help:               input.contains("--help"),
+        help:               input.contains(["-h", "--help"]),
         version:            input.contains(["-V", "--version"]),
         stdout:             input.contains("-c"),
         keep_named_groups:  input.contains("--keep-named-groups"),
