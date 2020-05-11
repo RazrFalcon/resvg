@@ -390,7 +390,7 @@ impl<'a> FlatRender for SkiaFlatRender<'a> {
             Some(layer) => layer.ts,
             None => {
                 let clone = self.clone();
-                usvg::Transform::from_native(clone.canvas.total_matrix()) 
+                usvg::Transform::from_native(&clone.canvas.total_matrix())
             },
         }
     }
