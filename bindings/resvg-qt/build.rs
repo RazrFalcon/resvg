@@ -1,4 +1,4 @@
-#[cfg(target_os = "linux")]
+#[cfg(all(unix, not(target_os = "macos")))]
 fn main() {
     let mut build = cc::Build::new();
     build.cpp(true);

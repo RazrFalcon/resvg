@@ -7,7 +7,7 @@ use crate::tree;
 use crate::utils;
 
 
-#[cfg(target_os = "linux")]
+#[cfg(all(unix, not(target_os = "macos")))]
 const GENERIC_FAMILIES: &[&str] = &["serif", "sans-serif", "monospace", "cursive", "fantasy"];
 
 
@@ -45,7 +45,7 @@ impl Database {
     }
 
     #[inline(never)]
-    #[cfg(target_os = "linux")]
+    #[cfg(all(unix, not(target_os = "macos")))]
     fn collect_generic_fonts(&mut self) {
         if self.fonts.is_empty() {
             return;
@@ -58,7 +58,7 @@ impl Database {
         self.has_generic_fonts = true;
     }
 
-    #[cfg(target_os = "linux")]
+    #[cfg(all(unix, not(target_os = "macos")))]
     fn collect_generic_font(&mut self, generic_family: &str) -> Option<()> {
         let output = std::process::Command::new("fc-match")
             .arg(generic_family)
@@ -89,7 +89,7 @@ impl Database {
         for family_name in family_names {
             // A generic font families querying is very slow on Linux (50-200ms),
             // so do it only when necessary.
-            #[cfg(target_os = "linux")]
+            #[cfg(all(unix, not(target_os = "macos")))]
             {
                 if !self.has_generic_fonts && GENERIC_FAMILIES.contains(family_name) {
                     self.collect_generic_fonts();
@@ -486,7 +486,7 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
 }
 
 
-#[cfg(target_os = "linux")]
+#[cfg(all(unix, not(target_os = "macos")))]
 fn load_all_fonts(fonts: &mut Vec<FontItem>) {
     load_fonts_from("/usr/share/fonts/", fonts);
     load_fonts_from("/usr/local/share/fonts/", fonts);
