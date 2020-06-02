@@ -1,2 +1,1 @@
-e-image-038.svg
-e-image-039.svg
+e-textPath-035.svg
