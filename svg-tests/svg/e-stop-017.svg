@@ -1,0 +1,16 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Stops with equal `offset` (6)</title>
+
+    <linearGradient id="lg1" x1="0.2" x2="0.8">
+        <stop offset="0" stop-color="black"/>
+        <stop offset="0" stop-color="red"/>
+        <stop offset="0" stop-color="gray"/>
+        <stop offset="0.9" stop-color="lightgray"/>
+        <stop offset="1" stop-color="white"/>
+    </linearGradient>
+
+    <rect id="rect1" x="20" y="20" width="160" height="160" fill="url(#lg1)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

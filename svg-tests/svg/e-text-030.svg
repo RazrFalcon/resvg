@@ -1,0 +1,13 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     font-family="Arial" font-size="48">
+    <title>`x` and `y` with multiple values and arabic text</title>
+
+    <path id="crosshair" d="M 20 60 L 180 60 M 20 140 L 180 140 M 100 20 L 100 180"
+          stroke="gray" stroke-width="0.5"/>
+
+    <text id="text1" x="50" y="60">الويب</text>
+    <text id="text2" x="50" y="140 150 160 170">الويب</text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

@@ -1,0 +1,15 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Control points clamping (1)</title>
+
+    <g id="g1" fill="none" stroke="green" stroke-linejoin="bevel">
+        <path id="path1" d="M 175 15 C 175 30 175.1 175 175 175 H 15" stroke-width="20"/>
+        <path id="path2" d="M 140 15 C 140 30 140.1 140 140 140 H 15" stroke-width="10"/>
+        <path id="path3" d="M 120 15 C 120 30 120.1 115 120 115 H 15" stroke-width="5"/>
+        <path id="path4" d="M 100 15 C 100 30 100.1  95 100  95 H 15" stroke-width="2.5"/>
+        <path id="path5" d="M 85 15  C  85 30  85.1  80  85  80 H 15" stroke-width="1"/>
+        <path id="path6" d="M 70 15  C  70 30  70.1  65  70  65 H 15" stroke-width=".5"/>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

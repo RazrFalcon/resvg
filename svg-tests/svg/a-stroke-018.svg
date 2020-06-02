@@ -1,0 +1,9 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Line as curve (1)</title>
+
+    <path id="path1" fill="none" stroke="green" stroke-width="20"
+          d="M 20 160 C 20.0001 160 160 20 160.0001 20"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

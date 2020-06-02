@@ -1,0 +1,29 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Gradient with `objectBoundingBox` on path without a bbox (2)</title>
+
+    <linearGradient id="lg1" gradientUnits="objectBoundingBox">
+        <stop id="stop1" offset="0" stop-color="#f00"/>
+        <stop id="stop2" offset="1" stop-color="#f10"/>
+    </linearGradient>
+
+    <radialGradient id="rg1" gradientUnits="objectBoundingBox">
+        <stop id="stop1" offset="0" stop-color="#f00"/>
+        <stop id="stop2" offset="1" stop-color="#f10"/>
+    </radialGradient>
+
+    <!-- vertical line -->
+    <!-- should not be covered -->
+    <line id="line1" x1="100" y1="20" x2="100" y2="180" stroke="green" stroke-width="3"/>
+    <!-- should be removed -->
+    <path id="path1" d="M 100 20 C 100 40 100 160 100 180" stroke="url(#lg1)" stroke-width="3"/>
+
+    <!-- horizontal line -->
+    <!-- should not be covered -->
+    <line id="line2" x1="20" y1="100" x2="180" y2="100" stroke="green" stroke-width="3"/>
+    <!-- should be removed -->
+    <path id="path2" d="M 20 100 C 40 100 160 100 180 100" stroke="url(#rg1)" stroke-width="3"/>
+
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

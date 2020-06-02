@@ -1,0 +1,13 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>baseFrequency=0.01</title>
+
+    <filter id="filter1">
+        <feTurbulence baseFrequency="0.01"/>
+    </filter>
+    <!-- Use a smaller rect to make the resulting image smaller. -->
+    <!-- Because noise is mainly uncompressable and we can easily hit 500KiB. -->
+    <rect id="rect1" x="50" y="50" width="100" height="100" filter="url(#filter1)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

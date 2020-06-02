@@ -1,0 +1,14 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" version="1.1">
+    <title>`transform`</title>
+    <desc>
+        https://github.com/w3c/svgwg/issues/721
+    </desc>
+
+    <style id="style1">
+        #rect1 { transform:scale(2) }
+    </style>
+    <rect id="rect1" x="10" y="10" width="80" height="80" fill="green"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

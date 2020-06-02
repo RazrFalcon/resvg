@@ -57,7 +57,6 @@ impl fmt::Display for Error {
 struct Args {
     backend: String,
     use_prev_commit: bool,
-    in_dir: PathBuf,
     work_dir: PathBuf,
 }
 
@@ -97,7 +96,6 @@ fn parse_args() -> Result<Args, Box<dyn std::error::Error>> {
     Ok(Args {
         backend: args.value_from_str("--backend")?.ok_or("backend is not set")?,
         use_prev_commit: args.contains("--use-prev-commit"),
-        in_dir: args.free_from_str()?.ok_or("input dir is not set")?,
         work_dir: args.free_from_str()?.ok_or("work dir is not set")?,
     })
 }
@@ -141,13 +139,11 @@ fn parse_allowed(backend: &str) -> io::Result<Vec<String>> {
 }
 
 fn collect_files(args: &Args) -> io::Result<Vec<PathBuf>> {
-    assert!(args.in_dir.is_dir());
-
     let allowed_files = parse_allowed(&args.backend)?;
 
     let mut files = Vec::new();
 
-    for entry in fs::read_dir(&args.in_dir)? {
+    for entry in fs::read_dir("../../svg-tests")? {
         let path = entry?.path();
         if path.is_file() {
             if allowed_files.iter().any(|s| s == path.as_path().file_name_str()) {

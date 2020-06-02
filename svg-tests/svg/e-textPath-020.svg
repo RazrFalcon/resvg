@@ -1,0 +1,17 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Closed path</title>
+
+    <path id="pathForText1" fill="none" stroke="gray"
+        d="M 160 100 A 60 60 0 0 1 100 160 60 60 0 0 1 40 100 60 60 0 0 1 100 40
+           60 60 0 0 1 160 100 Z"/>
+
+    <text id="text1" font-family="Arial" font-size="24">
+        <textPath id="textPath1" xlink:href="#pathForText1">
+            Some very very very very very long text
+        </textPath>
+    </text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

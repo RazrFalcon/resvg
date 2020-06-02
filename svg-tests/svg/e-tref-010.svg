@@ -1,0 +1,22 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink" font-family="Arial" font-size="22">
+    <title>With a `title` child</title>
+
+    <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
+          stroke="gray" stroke-width="0.5"/>
+
+    <defs id="defs1">
+        <text id="text1">good</text>
+    </defs>
+
+    <text id="text2" x="100" y="100" fill="black" text-anchor="middle">
+        Some
+        <tref id="tref1" xlink:href="#text1">
+            <title>bad</title>
+        </tref>
+        text
+    </text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

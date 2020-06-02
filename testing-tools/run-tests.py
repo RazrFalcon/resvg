@@ -10,7 +10,6 @@ from subprocess import run
 from contextlib import contextmanager
 
 
-TESTS_URL = 'https://github.com/RazrFalcon/resvg-test-suite.git'
 SKIA_BUILD_URL = 'https://github.com/RazrFalcon/resvg-skia-ci-build.git'
 
 
@@ -30,6 +29,7 @@ def regression_testing(backend):
 
     regression_args = ['cargo', 'run', '--release', '--',
                        '--backend', backend, tests_dir, reg_work_dir]
+
     # Use a master branch for pull requests.
     if not local_test and os.environ['TRAVIS_BRANCH'] == 'master':
         regression_args.append('--use-prev-commit')
@@ -52,17 +52,8 @@ if not os.path.exists('./target'):
     os.mkdir('./target')
 
 local_test = 'TRAVIS_BUILD_DIR' not in os.environ
-
-# clone tests on CI
-if not local_test:
-    run(['git', 'clone', TESTS_URL, '--depth', '1', './target/resvg-test-suite'], check=True)
-
-if 'TRAVIS_BUILD_DIR' in os.environ:
-    work_dir =  os.path.abspath('.')
-    tests_dir = os.path.abspath('./target/resvg-test-suite/svg')
-else:
-    work_dir = '/tmp'
-    tests_dir = os.path.abspath('../resvg-test-suite/svg')
+work_dir = os.path.abspath('.')
+tests_dir = os.path.abspath('./svg-tests/svg')
 
 print('local_test:', local_test)
 print('work_dir:', work_dir)

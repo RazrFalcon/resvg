@@ -1,0 +1,13 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Missing coordinate in L</title>
+
+    <!-- should be covered -->
+    <path id="path1" d="M 30 40 L 110 160"
+          fill="none" stroke="red" stroke-width="5"/>
+
+    <path id="path2" d="M 30 40 L 110 160 L 150"
+          fill="none" stroke="green" stroke-width="5"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

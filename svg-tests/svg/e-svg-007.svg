@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="Windows-1251"?>
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Not UTF-8 encoding</title>
+
+    <text id="text1" x="40" y="100" font-family="Arial" font-size="24">Привет мир</text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

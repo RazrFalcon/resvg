@@ -1,0 +1,24 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>color-interpolation-filters=sRGB</title>
+
+    <filter id="filter1" filterUnits="userSpaceOnUse" width="200" height="200">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="1"
+                        color-interpolation-filters="sRGB" result="blur1"/>
+
+        <feGaussianBlur in="SourceGraphic" stdDeviation="1"
+                        color-interpolation-filters="linearRGB"/>
+        <feOffset dx="40" dy="40" result="blur2"/>
+
+        <feMerge color-interpolation-filters="sRGB">
+            <feMergeNode in="blur1"/>
+            <feMergeNode in="blur2"/>
+        </feMerge>
+    </filter>
+    <g id="g1" filter="url(#filter1)">
+        <rect id="rect1" x="40" y="40" width="40" height="40" fill="yellow"/>
+        <rect id="rect2" x="60" y="60" width="40" height="40" fill="blue"/>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

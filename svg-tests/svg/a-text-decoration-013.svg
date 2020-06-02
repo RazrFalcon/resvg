@@ -1,0 +1,20 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     font-family="Arial" font-size="48">
+    <title>`underline` with `rotate` list (4)</title>
+
+    <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
+          stroke="gray" stroke-width="0.5"/>
+
+    <linearGradient id="lg1">
+        <stop offset="0" stop-color="white"/>
+        <stop offset="1" stop-color="green"/>
+    </linearGradient>
+
+    <text id="text1" x="49" y="100" rotate="15" fill="url(#lg1)" stroke="gray"
+          text-decoration="underline">
+        Text
+    </text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

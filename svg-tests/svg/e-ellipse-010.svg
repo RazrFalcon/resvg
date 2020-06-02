@@ -1,0 +1,9 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Negative `rx` and `ry` attributes</title>
+    <desc>Nothing should be rendered</desc>
+
+    <ellipse id="ellipse1" cx="90" cy="100" rx="-80" ry="-60" fill="red"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

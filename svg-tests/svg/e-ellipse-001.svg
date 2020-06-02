@@ -1,0 +1,13 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Simple case</title>
+
+    <!-- should be covered -->
+    <path id="path1" fill="red"
+          d="M170 100 C 170 66.86 134.18 40 90 40 C 45.82 40 10 66.86 10 100
+             C 10 133.14 45.82 160 90 160 C 134.18 160 170 133.14 170 100 Z"/>
+
+    <ellipse id="ellipse1" cx="90" cy="100" rx="80" ry="60" fill="green"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

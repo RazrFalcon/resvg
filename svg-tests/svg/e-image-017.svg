@@ -1,0 +1,14 @@
+<svg id="svg1" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>External SVG with transform</title>
+
+    <g id="g1" transform="scale(1.5) translate(-5 10) skewX(45)">
+        <image id="image1" x="4" y="4" width="24" height="24" xlink:href="data:image/svg+xml;base64,
+PHN2ZyB2aWV3Qm94PSIwIDAgMjAgMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2
+ZyI+PHJlY3QgZmlsbD0iIzAwZiIgaGVpZ2h0PSIyMCIgcng9IjUiIHdpZHRoPSIyMCIvPjxyZWN0
+IGZpbGw9Im5vbmUiIGhlaWdodD0iMTYiIHJ4PSI0IiBzdHJva2U9IiMwZjAiIHdpZHRoPSIxNiIg
+eD0iMiIgeT0iMiIvPjwvc3ZnPgo="/>
+    </g>
+
+    <rect id="frame" x="1" y="1" width="78" height="78" fill="none" stroke="black"/>
+</svg>

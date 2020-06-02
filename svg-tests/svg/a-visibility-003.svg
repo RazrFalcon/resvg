@@ -1,0 +1,19 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>`hidden` on `tspan`</title>
+    <desc>
+        If the 'visibility' property set to 'hidden' on a 'tspan'
+        then the text is invisible but still takes up space in text layout calculations.
+    </desc>
+
+    <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
+          stroke="gray" stroke-width="0.5"/>
+
+    <text id="text1" x="20" y="100" font-family="Arial" font-size="20">
+        <tspan id="tspan1">Text1</tspan>
+        <tspan id="tspan2" visibility="hidden">Text2</tspan>
+        <tspan id="tspan3">Text3</tspan>
+    </text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

@@ -1,0 +1,12 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Ignore odd points</title>
+    <desc>Last point should be ignored</desc>
+
+    <!-- should be covered -->
+    <path id="path1" d="M 20 40 L 160 180 L 30 150" fill="none" stroke="red"/>
+
+    <polyline id="polyline1" points="20 40 160 180 30 150 300" fill="none" stroke="green"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

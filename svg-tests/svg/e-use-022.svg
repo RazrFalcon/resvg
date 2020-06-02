@@ -1,0 +1,16 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Complex style resolving order</title>
+
+    <defs id="defs1">
+        <linearGradient id="lg1">
+            <stop offset="0" stop-color="green" stop-opacity="0.7"/>
+        </linearGradient>
+
+        <rect id="rect1" width="160" height="160" fill-opacity="1"/>
+    </defs>
+
+    <use id="use1" x="20" y="20" xlink:href="#rect1" fill="url(#lg1)" fill-opacity="0"/>
+
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

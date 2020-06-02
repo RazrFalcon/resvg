@@ -1,0 +1,19 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Simple case</title>
+
+    <filter id="filter1">
+        <feFlood flood-color="seagreen" x="28" y="28" width="10" height="10"/>
+        <feOffset dx="5" dy="5"/>
+        <feTile/>
+    </filter>
+    <rect id="rect1" x="40" y="40" width="120" height="120" filter="url(#filter1)"/>
+
+    <rect id="rect2" x="28" y="28" width="144" height="144" fill="none" stroke="black"/>
+    <rect id="rect3" x="28" y="28" width="10" height="10" fill="none" stroke="black"/>
+
+    <rect id="rect4" x="40" y="40" width="120" height="120" fill="none" stroke="black"/>
+    <rect id="rect5" x="40" y="40" width="10" height="10" fill="none" stroke="black"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

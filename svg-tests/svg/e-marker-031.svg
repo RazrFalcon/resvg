@@ -1,0 +1,19 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Target with subpaths (1)</title>
+
+    <marker id="marker1" refX="10" refY="10" markerWidth="20" markerHeight="20">
+        <path id="path-marker1" d="M 10 0 16 20 H 4 Z" fill="blue" opacity="0.75"/>
+    </marker>
+    <marker id="marker2" refX="10" refY="10" markerWidth="20" markerHeight="20">
+        <path id="path-marker2" d="M 10 0 16 20 H 4 Z" fill="lightskyblue" opacity="0.75"/>
+    </marker>
+    <marker id="marker3" refX="10" refY="10" markerWidth="20" markerHeight="20">
+        <path id="path-marker3" d="M 10 0 16 20 H 4 Z" fill="coral" opacity="0.75"/>
+    </marker>
+    <path id="path1" fill="green"
+          d="M 140 55 165 135 100 85 H 180 L 115 135 M 60 55 85 135 20 85 H 100 L 35 135"
+          marker-start="url(#marker1)" marker-mid="url(#marker2)" marker-end="url(#marker3)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

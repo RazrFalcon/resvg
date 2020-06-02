@@ -41,7 +41,7 @@ Results of the static subset of the [SVG test suite](https://www.w3.org/Graphics
 
 ![Chart1](./.github/official_chart.svg)
 
-Results of the [resvg test suite](https://github.com/RazrFalcon/resvg-test-suite):
+Results of the [resvg test suite](./svg-tests/README.md):
 
 ![Chart2](./.github/chart.svg)
 
@@ -106,6 +106,7 @@ All other dependencies aren't written by me for this project.
 - `docs` – basic documentation
 - `examples` – usage examples for *resvg* as a library
 - `src` – source code
+- `svg-tests` - a collection of SVG files for testing
 - `svgfilters` - SVG filters implementation
 - `testing-tools` – scripts used for testing
 - `tools` – useful tools
@@ -118,6 +119,28 @@ All other dependencies aren't written by me for this project.
 - The core library structure (see above) does not use any `unsafe`,
   but since all backends are implemented via FFI, we are stuck with `unsafe` anyway.
   Also, `usvg` uses unsafe for fonts memory mapping.
+
+## Testing
+
+We are using regression testing to test *resvg*. 
+
+Basically, we will download a previous
+*resvg* version and check that the new one produces the same results
+(excluding the expected changes).
+
+The downside of this method is that you need a network connection.
+On the other hand, we have 4 backends and each of them will produce slightly different results
+since there is no single correct 2D rendering technique. Bézier curves flattening,
+gradients rendering, bitmaps scaling, anti-aliasing - they are all backend-specific.<br/>
+Not to mention the text rendering. We don't use the system fonts rendering, but a list of available,
+default fonts will still affect the results.
+
+So a regression testing looks like the best choice between manual testing
+and overcomplicated automatic one. And before each release I'm testing all files manually anyway.
+
+See [testing-tools/regression/README.md](./testing-tools/regression/README.md) for more details.
+
+Also, the test files itself are located at the `svg-tests` directory.
 
 ## License
 

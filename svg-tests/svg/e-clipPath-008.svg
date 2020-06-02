@@ -1,0 +1,12 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>`transform` on `clipPath`</title>
+
+    <clipPath id="clip1" clipPathUnits="objectBoundingBox"
+              transform="translate(100 -40) rotate(45)">
+        <rect id="rect1" x="0.2" y="0.2" width="0.6" height="0.6" rx="0.1" ry="0.1"/>
+    </clipPath>
+    <rect id="rect2" x="0" y="0" width="200" height="200" fill="green" clip-path="url(#clip1)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

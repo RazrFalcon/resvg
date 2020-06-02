@@ -1,0 +1,11 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>On an empty group (2)</title>
+
+    <filter id="filter1">
+        <feFlood flood-color="red"/>
+    </filter>
+    <g id="g1" filter="url(#filter1)" transform="scale(2)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

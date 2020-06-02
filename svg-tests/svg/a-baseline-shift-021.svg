@@ -1,0 +1,29 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     font-family="Arial" font-size="26">
+    <title>Nested with `baseline` (2)</title>
+
+    <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
+          stroke="gray" stroke-width="0.5"/>
+
+    <!-- should be hovered -->
+    <text id="text1" x="66" y="100" fill="red">
+        <tspan id="tspan1" baseline-shift="50%">
+            <tspan id="tspan2" baseline-shift="50%">
+                Text
+            </tspan>
+        </tspan>
+    </text>
+
+    <text id="text2" x="66" y="100">
+        <tspan id="tspan3" baseline-shift="50%">
+            <tspan id="tspan4" baseline-shift="50%">
+                <tspan id="tspan5" baseline-shift="baseline">
+                    Text
+                </tspan>
+            </tspan>
+        </tspan>
+    </text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Fallback (1)</title>
+
+    <text id="text1" x="70" y="100" font-family="Invalid" font-size="40">Text</text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

@@ -1,0 +1,16 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>M L Z path</title>
+
+    <path id="pathForText1" d="M 40 100 L 160 100 Z"
+          fill="none" stroke="gray"/>
+
+    <text id="text1" font-family="Arial" font-size="24">
+        <textPath id="textPath1" xlink:href="#pathForText1" baseline-shift="5">
+            abcdefghijklmnopqrstuvwxyz
+        </textPath>
+    </text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg id="svg1" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>No `width` and `height` on SVG (UB)</title>
+
+    <image id="image1" x="8" y="8" xlink:href="../images/image.svg"/>
+
+    <rect id="frame" x="1" y="1" width="78" height="78" fill="none" stroke="black"/>
+</svg>

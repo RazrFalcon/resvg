@@ -1,0 +1,13 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Zero length path with `round`</title>
+
+    <path id="path1" d="M 100 70 L 100 70" fill="red" stroke="green"
+          stroke-width="20" stroke-linecap="round"/>
+    <path id="path2" d="M 70 100 L 70 100 M 130 100 L 130 100" fill="red" stroke="green"
+          stroke-width="20" stroke-linecap="round"/>
+    <path id="path3" d="M 100 130 L 100 130" fill="red" stroke="green"
+          stroke-width="20" stroke-linecap="round"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

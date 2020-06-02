@@ -1,0 +1,27 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Gradient with `objectBoundingBox` and fallback on lines</title>
+    <desc>
+        Horizontal and vertical lines cannot be linked to the painting server
+        with `objectBoundingBox` units.
+    </desc>
+
+    <linearGradient id="lg1" gradientUnits="objectBoundingBox">
+        <stop id="stop1" offset="0" stop-color="#f00"/>
+        <stop id="stop2" offset="1" stop-color="#f10"/>
+    </linearGradient>
+
+    <radialGradient id="rg1" gradientUnits="objectBoundingBox">
+        <stop id="stop1" offset="0" stop-color="#f00"/>
+        <stop id="stop2" offset="1" stop-color="#f10"/>
+    </radialGradient>
+
+    <!-- vertical line -->
+    <line id="line2" x1="100" y1="20" x2="100" y2="180" stroke="url(#lg1) green" stroke-width="3"/>
+
+    <!-- horizontal line -->
+    <line id="line4" x1="20" y1="100" x2="180" y2="100" stroke="url(#rg1) green" stroke-width="3"/>
+
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

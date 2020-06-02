@@ -1,0 +1,11 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Control points clamping (2)</title>
+
+    <path id="path1" fill="none" stroke="green" stroke-linecap="round" stroke-linejoin="round"
+          stroke-width="30"
+          d="M 170 30 L 30.553378 99.048418
+             C 30.563658 99.066835 30.546308 99.280724 30.557592 99.305282 L 170 170"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

@@ -1,0 +1,15 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>M A trimmed</title>
+
+    <g id="g1" transform="translate(10 40)">
+        <!-- should be covered -->
+        <path id="path1" d="M 10 -20 A 5.5 0.3 -4 0 1 0 -0.1"
+            fill="none" stroke="red" stroke-width="5"/>
+
+        <path id="path2" d="M10-20A5.5.3-4 010-.1"
+            fill="none" stroke="green" stroke-width="5"/>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

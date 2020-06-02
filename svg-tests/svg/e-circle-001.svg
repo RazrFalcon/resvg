@@ -1,0 +1,13 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Simple case</title>
+
+    <!-- should be covered -->
+    <path id="path1" fill="red"
+          d="M180 100C180 55.82 144.18 20 100 20 55.82 20 20 55.82 20 100
+             20 144.18 55.82 180 100 180 144.18 180 180 144.18 180 100Z"/>
+
+    <circle id="circle1" cx="100" cy="100" r="80" fill="green"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

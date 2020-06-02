@@ -1,0 +1,10 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Numeric character references</title>
+
+    <path id="path1" d="M 10 10 L 190 190" fill="none" stroke="red" stroke-width="5"/>
+    <path id="path2" d="M&#x20;10&#x20;10&#x20;L&#x20;190&#x20;190"
+          fill="none" stroke="green" stroke-width="5"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

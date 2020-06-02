@@ -1,0 +1,36 @@
+<!-- based on the tspan05.svg example from the SVG spec, paragraph 10.5 -->
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     font-family="Arial" font-size="14">
+    <title>Nested `rotate`</title>
+
+    <text id="text1" fill="red" x="10" y="80" rotate="5,15,25,35,45,55">
+        Not
+
+        <tspan id="child1" rotate="-10,-20,-30,-40" fill="orange">
+            all characters
+
+            <tspan id="child2" rotate="70,60,50,40,30,20,10" fill="yellow">
+                in
+
+                <tspan id="child3">
+                    the
+                </tspan>
+            </tspan>
+
+            <tspan id="child4" fill="orange" x="10" y="110">
+                text
+            </tspan>
+
+            have a
+        </tspan>
+
+        <tspan id="child5" rotate="-10" fill="blue">
+            specified
+        </tspan>
+
+        rotation
+    </text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

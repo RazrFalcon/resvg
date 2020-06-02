@@ -1,0 +1,20 @@
+<!-- based on struct-frag-05-t.svg -->
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Mixed namespaces</title>
+
+    <g id="g1" font-family="Arial" font-size="40" text-anchor="middle">
+        <text id="text1" x="100" y="100" fill="green">
+            <a id="a1" xmlns:toto="http://www.w3.org/2000/svg"
+               xmlns:dahut="http://www.w3.org/1999/xlink"
+               dahut:href="https://www.w3.org/TR/SVG11/">Valid</a>
+        </text>
+        <text id="text2" x="100" y="100" fill="red">
+            <a id="a2" xmlns="http://example.org/notsvg"
+               xmlns:xlink="http://example.org/notxlink"
+               xlink:href="https://www.w3.org/TR/SVG11/">Invalid</a>
+        </text>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

@@ -1,0 +1,13 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>`rotate(angle)`</title>
+
+    <!-- should be covered -->
+    <path id="path1" d="M 99,14.14 L 183.8,99 L 99,183.85 L 14.14,99 Z" fill="red"/>
+
+    <g id="g1" transform="rotate(45)">
+        <rect id="rect1" x="80" y="-60" width="120" height="120" fill="green"/>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

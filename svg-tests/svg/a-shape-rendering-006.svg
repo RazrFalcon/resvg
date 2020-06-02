@@ -1,0 +1,15 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>On horizontal line</title>
+
+    <line id="line1" x1="20.2" y1="92.5" x2="180.5" y2="92.5" stroke="green"
+          shape-rendering="auto"/>
+    <line id="line2" x1="20.2" y1="96.5" x2="180.5" y2="96.5" stroke="green"
+          shape-rendering="optimizeSpeed"/>
+    <line id="line3" x1="20.2" y1="100.5" x2="180.5" y2="100.5" stroke="green"
+          shape-rendering="crispEdges"/>
+    <line id="line4" x1="20.2" y1="104.5" x2="180.5" y2="104.5" stroke="green"
+          shape-rendering="geometricPrecision"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

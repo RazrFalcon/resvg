@@ -1,0 +1,9 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>M q t</title>
+
+    <path id="path1" d="M 30 40 q 171 45 50 40 t 60 80"
+          fill="none" stroke="green" stroke-width="5"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

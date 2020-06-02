@@ -1,0 +1,14 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Complex transform</title>
+
+    <filter id="filter1">
+        <feTurbulence baseFrequency="0.03"/>
+    </filter>
+    <!-- Use a smaller rect to make the resulting image smaller. -->
+    <!-- Because noise is mainly uncompressable and we can easily hit 500KiB. -->
+    <rect id="rect1" x="0" y="50" width="90" height="90" filter="url(#filter1)"
+          transform="skewX(30)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

@@ -1,0 +1,11 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Group opacity</title>
+
+    <g id="g1" opacity=".5">
+        <circle id="circle1" cx="100" cy="60" fill="#f00" r="40"/>
+        <circle id="circle2" cx="70" cy="100" fill="#0f0" r="40"/>
+        <circle id="circle3" cx="130" cy="100" fill="#00f" r="40"/>
+    </g>
+
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

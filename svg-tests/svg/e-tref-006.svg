@@ -1,0 +1,19 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink" font-family="Arial" font-size="64">
+    <title>Position attributes</title>
+
+    <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
+          stroke="gray" stroke-width="0.5"/>
+
+    <defs id="defs1">
+        <text id="text1">Text</text>
+    </defs>
+
+    <!-- should be covered -->
+    <text id="text2" x="33" y="100" fill="red">Text</text>
+
+    <text id="text3" y="100"><tref id="tref1" x="33" xlink:href="#text1"/></text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

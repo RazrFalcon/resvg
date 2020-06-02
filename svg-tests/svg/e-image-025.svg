@@ -1,0 +1,10 @@
+<svg id="svg1" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Raster image and size with odd numbers</title>
+    <desc>May cause a crash if an image stride handled incorrectly.</desc>
+
+    <image id="image1" x="8" y="8" width="63" height="61"
+           xlink:href="../images/image-63x61.png"/>
+
+    <rect id="frame" x="1" y="1" width="78" height="78" fill="none" stroke="black"/>
+</svg>

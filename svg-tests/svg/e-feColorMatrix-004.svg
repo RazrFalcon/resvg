@@ -1,0 +1,21 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>type=matrix with not enough values</title>
+
+    <linearGradient id="lg1">
+        <stop offset="0" stop-color="#cc00cc"/>
+        <stop offset=".33" stop-color="#228822"/>
+        <stop offset=".67" stop-color="#400000"/>
+        <stop offset="1" stop-color="#a0a0ff"/>
+    </linearGradient>
+    <filter id="filter1">
+        <feColorMatrix type="matrix" values="
+            0.3 0.3 0.3 0 0
+            0.3 0.3 0.3 0 0
+            0.3 0.3 0.3 0 0"/>
+    </filter>
+    <rect id="rect1" x="20" y="20" width="160" height="160"
+          fill="url(#lg1)" filter="url(#filter1)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

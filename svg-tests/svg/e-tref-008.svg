@@ -1,0 +1,21 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink" font-family="Arial" font-size="22">
+    <title>`xml:space`</title>
+
+    <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
+          stroke="gray" stroke-width="0.5"/>
+
+    <defs id="defs1">
+        <text id="text1">Some   text</text>
+    </defs>
+
+    <!-- should be covered -->
+    <text id="text2" x="40" y="100" fill="red" xml:space="preserve">Some   text</text>
+
+    <text id="text3" x="40" y="100" fill="red">
+        <tref id="tref1" fill="black" xlink:href="#text1" xml:space="preserve"/>
+    </text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

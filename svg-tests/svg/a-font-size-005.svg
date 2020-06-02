@@ -1,0 +1,67 @@
+<svg id="svg1" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" font-family="Arial">
+    <title>Named value</title>
+
+    <g id="g1" font-size="12" transform="translate(10)">
+        <g id="g2" transform="translate(0 20)">
+            <text id="text1" transform="translate(0 -2)">12</text>
+            <rect id="rect1" width="10em" height="10"/>
+        </g>
+
+        <g id="g3" transform="translate(0 50)">
+            <text id="text2" transform="translate(0 -2)">xx-small</text>
+            <rect id="rect2" font-size="xx-small" width="10em" height="10"/>
+        </g>
+
+        <g id="g4" transform="translate(0 80)">
+            <text id="text3" transform="translate(0 -2)">x-small</text>
+            <rect id="rect3" font-size="x-small" width="10em" height="10"/>
+        </g>
+
+        <g id="g5" transform="translate(0 110)">
+            <text id="text4" transform="translate(0 -2)">small</text>
+            <rect id="rect4" font-size="small" width="10em" height="10"/>
+        </g>
+
+        <g id="g6" transform="translate(0 140)">
+            <text id="text5" transform="translate(0 -2)">medium</text>
+            <rect id="rect5" font-size="medium" width="10em" height="10"/>
+        </g>
+
+        <g id="g7" transform="translate(0 170)">
+            <text id="text6" transform="translate(0 -2)">large</text>
+            <rect id="rect6" font-size="large" width="10em" height="10"/>
+        </g>
+
+        <g id="g8" transform="translate(0 200)">
+            <text id="text7" transform="translate(0 -2)">x-large</text>
+            <rect id="rect7" font-size="x-large" width="10em" height="10"/>
+        </g>
+
+        <g id="g9" transform="translate(0 230)">
+            <text id="text8" transform="translate(0 -2)">xx-large</text>
+            <rect id="rect8" font-size="xx-large" width="10em" height="10"/>
+        </g>
+
+        <g id="g10" transform="translate(0 260)">
+            <text id="text9" transform="translate(0 -2)">larger</text>
+            <rect id="rect9" font-size="larger" width="10em" height="10"/>
+        </g>
+
+        <g id="g11" transform="translate(0 290)">
+            <text id="text10" transform="translate(0 -2)">smaller</text>
+            <rect id="rect10" font-size="smaller" width="10em" height="10"/>
+        </g>
+
+        <g id="g12" transform="translate(0 320)">
+            <text id="text11" transform="translate(0 -2)">percent</text>
+            <!-- both rects should have equal width -->
+            <rect id="rect11" font-size="50%" width="10em" height="5"/>
+            <rect id="rect12" y="5" width="5em" height="5"/>
+        </g>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="398" height="398" fill="none" stroke="black"/>
+</svg>
+
+

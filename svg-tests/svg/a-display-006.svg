@@ -1,0 +1,16 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>`none` on `tref`</title>
+
+    <defs id="defs1">
+        <text id="text1">Text</text>
+    </defs>
+
+    <text id="text2" y="100" font-family="Arial" font-size="64">
+        <tref x="33" id="tref2" xlink:href="#text1" fill="green"/>
+        <tref x="33" id="tref1" xlink:href="#text1" display="none" fill="red"/>
+    </text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

@@ -1,0 +1,20 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Complex</title>
+
+    <path id="pathForText1" fill="none" stroke="gray"
+          d="M 40 100 A 60 60 0 0 1 100 40 60 60 0 0 1 160 100 60 60 0 0 1 100 160
+             60 60 0 0 1 40 100 Z"/>
+
+    <g id="g1" text-decoration="overline" fill="red" letter-spacing="5">
+        <text id="text1" font-family="Arial" font-size="22" writing-mode="tb" fill="black">
+            <textPath id="textPath1" xlink:href="#pathForText1" startOffset="-10">
+                非常に長いテキ
+            </textPath>
+            スト。
+        </text>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

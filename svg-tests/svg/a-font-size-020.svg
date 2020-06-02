@@ -1,0 +1,20 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" font-family="Arial">
+    <title>Nested percent values (2)</title>
+
+    <!-- should be covered -->
+    <text id="text1" x="100" y="100" fill="red" text-anchor="middle" font-size="40">Text</text>
+
+    <g id="g1" font-size="40">
+        <g id="g2">
+            <g id="g3" font-size="200%">
+                <g id="g4">
+                    <text id="text2" x="100" y="100" text-anchor="middle"
+                          font-size="50%">Text</text>
+                </g>
+            </g>
+        </g>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

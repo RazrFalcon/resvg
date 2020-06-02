@@ -1,0 +1,13 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Nested transforms (2)</title>
+
+    <g id="g1" transform="translate(40 30)">
+        <g id="g2" transform="scale(0.5, 0.5)">
+            <rect id="rect1" x="60" y="-80" width="160" height="160" fill="green"
+                  transform="skewY(45)"/>
+        </g>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

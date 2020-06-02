@@ -1,0 +1,12 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Inheritance</title>
+
+    <g id="g1" shape-rendering="optimizeSpeed">
+        <line id="line1" x1="20.2" y1="100.5" x2="160.5" y2="100.5" stroke="green"/>
+        <line id="line2" x1="20.2" y1="105.5" x2="160.5" y2="105.5" stroke="green"
+              shape-rendering="geometricPrecision"/>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

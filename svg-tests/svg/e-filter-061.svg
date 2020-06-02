@@ -1,0 +1,15 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>On a vertical line</title>
+    <desc>
+        Filter with `objectBoundingBox` on a zero-sized object should be ignored.
+    </desc>
+
+    <filter id="filter1">
+        <feGaussianBlur stdDeviation="1"/>
+    </filter>
+    <line id="line1" x1="100" y1="20" x2="100" y2="180" stroke="seagreen" stroke-width="20"
+          filter="url(#filter1)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

@@ -1,0 +1,11 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Nested recursive (1)</title>
+
+    <use id="use1" xlink:href="#use2">
+        <use id="use2" xlink:href="#use1"/>
+    </use>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

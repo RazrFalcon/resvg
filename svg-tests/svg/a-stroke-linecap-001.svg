@@ -1,0 +1,9 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>`butt`</title>
+
+    <line id="line1" x1="40" y1="40" x2="160" y2="160"
+          stroke="green" stroke-width="10" stroke-linecap="butt"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

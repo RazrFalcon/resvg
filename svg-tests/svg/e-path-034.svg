@@ -1,0 +1,12 @@
+<!-- based on paths-data-20-f.svg from the SVG test suite -->
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Out of range large-arc-flag value</title>
+
+    <path id="path1" d="M 100 100 h 25 a 25 25 0 1 0 -25 25 z" fill="green"/>
+
+    <!-- should not be rendered-->
+    <path id="path2" d="M 100 100 h 25 a25 25 0 6 0 -25 25 z" fill="red"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

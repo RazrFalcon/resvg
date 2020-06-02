@@ -1,0 +1,19 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Pattern with `objectBoundingBox` and fallback on null shape</title>
+
+    <pattern id="patt1" gradientUnits="objectBoundingBox">
+        <rect id="rect1" width="50" height="50" fill="red"/>
+    </pattern>
+
+    <!-- vertical line -->
+    <line id="line2" x1="100" y1="20" x2="100" y2="180"
+          stroke="url(#patt1) green" stroke-width="3"/>
+
+    <!-- horizontal line -->
+    <line id="line4" x1="20" y1="100" x2="180" y2="100"
+          stroke="url(#patt1) green" stroke-width="3"/>
+
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

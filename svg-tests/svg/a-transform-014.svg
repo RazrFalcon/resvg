@@ -1,0 +1,14 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Extra spaces</title>
+
+    <!-- should be covered -->
+    <path id="path1" fill="red"
+          d="M 87.756 40.104 L 178.584 65.268 L 108.024 152.136 L 17.196 126.972 Z"/>
+
+    <g id="g1" transform="  matrix  (  0.7569  0.2097 -0.588  0.7239 81 2.76  )   ">
+        <rect id="rect1" x="40" y="40" width="120" height="120" fill="green"/>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

@@ -1,0 +1,17 @@
+<!-- based on linking-a-09-b.svg -->
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>On `tspan`</title>
+
+    <text id="text1" x="100" y="100" text-anchor="middle" font-family="Arial" font-size="12">
+        A <a id="a1" xlink:href="https://www.w3.org/TR/SVG/">
+            <tspan id="tspan1" fill="blue">
+                link
+                around tspan
+            </tspan>
+        </a> for testing
+    </text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

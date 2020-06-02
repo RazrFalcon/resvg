@@ -1,0 +1,13 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Simple case</title>
+    <desc>
+        The `feDisplacementMap` support across all tested applications is so bad,
+        that it's basically non-existent.
+        I can't even create a test to show it. This is how bad it is.
+        Every application produces such different results that I can't
+        figure out how it actually should work.
+    </desc>
+
+    <!-- image  frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

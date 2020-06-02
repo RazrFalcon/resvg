@@ -1,0 +1,15 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Numeric character references</title>
+
+    <!-- should be covered -->
+    <path id="path1" d="M 40,40 H 160 V 160 H 40 Z" fill="red"/>
+
+    <g id="g1" transform="&#x0020;matrix&#x0020;(&#x0009;1&#x000D;0&#x000A;0
+       &#x000D;1&#x000D;0&#x000D;0&#x000D;&#x000D;)&#x000D;
+       &#x000D;">
+        <rect id="rect1" x="40" y="40" width="120" height="120" fill="green"/>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

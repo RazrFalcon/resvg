@@ -1,0 +1,19 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     font-family="Arial" font-size="64">
+    <title>fill-rule=evenodd</title>
+    <desc>
+        The `fill-rule` should be ignored.
+        https://www.w3.org/TR/SVG2/text.html#TextRenderingOrder
+
+        Since the fill-rule property does not apply to SVG text elements,
+        the specific order of the subpaths within the equivalent path does not matter.
+    </desc>
+
+    <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
+          stroke="gray" stroke-width="0.5"/>
+
+    <text id="text1" x="40" y="100" fill-rule="evenodd">مرحبا</text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>
