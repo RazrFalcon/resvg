@@ -556,7 +556,7 @@ fn resolve_clusters_positions_path(
         // Shift only by `dy` since we already applied `dx`
         // during offset along the path calculation.
         if !dy.is_fuzzy_zero() || !baseline_shift.is_fuzzy_zero() {
-            let shift = kurbo::Vec2::from_angle(angle) + kurbo::Vec2::new(0.0, dy - baseline_shift);
+            let shift = kurbo::Vec2::new(0.0, dy - baseline_shift);
             cluster.transform.translate(shift.x, shift.y);
         }
 
