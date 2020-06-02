@@ -5,7 +5,7 @@
 use std::cmp;
 use std::rc::Rc;
 
-use crate::{fontdb, svgtree, tree};
+use crate::{fontdb, svgtree, tree, Transform};
 use crate::convert::{prelude::*, style, units};
 use super::TextNode;
 
@@ -306,7 +306,16 @@ fn resolve_text_flow(
     }
 
     let path = path_node.attribute::<tree::SharedPathData>(AId::D)?;
-
+    
+    // The reference path's transform needs to be applied
+    let path = if let Some(node_transform) = path_node.attribute::<Transform>(AId::Transform) {
+        let mut path_copy = path.as_ref().clone();
+        path_copy.transform(node_transform);
+        Rc::new(path_copy)
+    } else {
+        path.clone()
+    };
+    
     let start_offset: Length = node.attribute(AId::StartOffset).unwrap_or_default();
     let start_offset = if start_offset.unit == Unit::Percent {
         // 'If a percentage is given, then the `startOffset` represents
@@ -316,6 +325,7 @@ fn resolve_text_flow(
     } else {
         node.resolve_length(AId::StartOffset, state, 0.0)
     };
+
 
     Some(TextFlow::Path(Rc::new(TextPath {
         start_offset,
