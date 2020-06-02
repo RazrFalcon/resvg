@@ -6,7 +6,7 @@ use std::cmp;
 use std::rc::Rc;
 
 use crate::{fontdb, svgtree, tree};
-use crate::convert::{prelude::*, style, units};
+use crate::{Transform, convert::{prelude::*, style, units}};
 use super::TextNode;
 
 
@@ -60,6 +60,7 @@ pub struct TextPath {
     pub start_offset: f64,
 
     pub path: tree::SharedPathData,
+    pub transform: Transform,
 }
 
 
@@ -317,9 +318,30 @@ fn resolve_text_flow(
         node.resolve_length(AId::StartOffset, state, 0.0)
     };
 
+    let node_transform = path_node.attribute::<Transform>(AId::Transform).unwrap_or_default();
+
+    // Get the absolute transform by looking at all parent elements
+    // Unfortunately, we can't use NodeExt::abs_transform since we're still 
+    // only dealing with svgtree::node
+    let mut transform_stack = vec![node_transform];
+
+    let mut current_node = path_node;
+    while let Some(parent) = current_node.parent_element() {
+        if let Some(parent_transform) = parent.attribute::<Transform>(AId::Transform) {
+            transform_stack.push(parent_transform);
+        }
+        current_node = parent;
+    }
+
+    let mut absolute_transform = Transform::default();
+    for ts in transform_stack.iter().rev() {
+        absolute_transform.append(ts);
+    }
+    
     Some(TextFlow::Path(Rc::new(TextPath {
         start_offset,
         path,
+        transform: absolute_transform,
     })))
 }
 

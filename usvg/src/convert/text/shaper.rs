@@ -521,8 +521,12 @@ fn resolve_clusters_positions_path(
     let start_offset = chunk_offset + path.start_offset
         + process_anchor(chunk.anchor, clusters_length(clusters));
 
+
+    let mut transformed_path = path.path.as_ref().clone();
+    transformed_path.transform(path.transform);
+
     let normals = collect_normals(
-        chunk, clusters, &path.path, pos_list, char_offset, start_offset,
+        chunk, clusters, &transformed_path, pos_list, char_offset, start_offset,
     );
     for (cluster, normal) in clusters.iter_mut().zip(normals) {
         let (x, y, angle) = match normal {
