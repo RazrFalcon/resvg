@@ -16,6 +16,10 @@ This changelog also contains important changes in dependencies.
   that coincides with end point.
 - Accept embedded `image` data without mime.
 - Fonts search in a home directory on Linux.
+- Allow building on BSD.
+- `dy` calculation for `textPath` thanks to [Stoeoef](https://github.com/Stoeoef)
+- `textPath` resolving when a referenced path has a transform.<br/>
+  Thanks to [Stoeoef](https://github.com/Stoeoef).
 - (xmlparser) Parsing comment before DTD.
 
 ## [0.9.0] - 2020-01-18
