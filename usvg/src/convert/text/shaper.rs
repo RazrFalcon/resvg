@@ -666,7 +666,7 @@ fn collect_normals(
             }
         };
 
-        let curve_len = curve.arclen(1.0);
+        let curve_len = curve.arclen(0.5);
 
         for offset in &offsets[normals.len()..] {
             if *offset >= length && *offset <= length + curve_len {

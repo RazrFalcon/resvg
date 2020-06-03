@@ -20,7 +20,7 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 base64 = "0.12"
 data-url = "0.1"
 flate2 = { version = "1.0.11", default-features = false, features = ["rust_backend"]}
-kurbo = "0.5.6"
+kurbo = "0.6"
 log = "0.4"
 rctree = "0.3"
 xmlwriter = "0.1"
