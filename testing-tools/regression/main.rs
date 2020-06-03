@@ -143,14 +143,14 @@ fn collect_files(args: &Args) -> io::Result<Vec<PathBuf>> {
 
     let mut files = Vec::new();
 
-    for entry in fs::read_dir("../../svg-tests")? {
+    for entry in fs::read_dir("../../svg-tests/svg")? {
         let path = entry?.path();
         if path.is_file() {
             if allowed_files.iter().any(|s| s == path.as_path().file_name_str()) {
                 continue;
             }
 
-            files.push(path);
+            files.push(fs::canonicalize(path).unwrap());
         }
     }
 
