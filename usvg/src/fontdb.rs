@@ -513,6 +513,11 @@ fn load_all_fonts(fonts: &mut Vec<FontItem>) {
     load_fonts_from("/Library/Fonts", fonts);
     load_fonts_from("/System/Library/Fonts", fonts);
 
+    if let Ok(ref home) = std::env::var("HOME") {
+        let path = Path::new(home).join("Library/Fonts");
+        load_fonts_from(path.to_str().unwrap(), fonts);
+    }
+
     duplicate_family("Times New Roman", "serif", fonts);
     duplicate_family("Arial", "sans-serif", fonts);
     duplicate_family("Courier New", "monospace", fonts);

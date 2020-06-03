@@ -10,16 +10,17 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - Stack overflow when `enable-background` and `filter` are set on the same element.
 - Grayscale PNG loading.
-- Font fallback when shaping produces a different amount of glyphs.
-- Ignore a space after the last character during `letter-spacing` processing.
-- `marker-end` rendering when the last segment is a curve with the second control point
-  that coincides with end point.
-- Accept embedded `image` data without mime.
-- Fonts search in a home directory on Linux.
 - Allow building on BSD.
-- `dy` calculation for `textPath` thanks to [Stoeoef](https://github.com/Stoeoef)
-- `textPath` resolving when a referenced path has a transform.<br/>
+- (usvg) Font fallback when shaping produces a different amount of glyphs.
+- (usvg) Ignore a space after the last character during `letter-spacing` processing.
+- (usvg) `marker-end` rendering when the last segment is a curve with the second control point
+  that coincides with end point.
+- (usvg) Accept embedded `image` data without mime.
+- (usvg) Fonts search in a home directory on Linux.
+- (usvg) `dy` calculation for `textPath` thanks to [Stoeoef](https://github.com/Stoeoef)
+- (usvg) `textPath` resolving when a referenced path has a transform.<br/>
   Thanks to [Stoeoef](https://github.com/Stoeoef).
+- (usvg) Load user fonts on macOS too.
 - (xmlparser) Parsing comment before DTD.
 
 ## [0.9.0] - 2020-01-18
