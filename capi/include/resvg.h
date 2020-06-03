@@ -24,8 +24,8 @@
 
 #define RESVG_MAJOR_VERSION 0
 #define RESVG_MINOR_VERSION 9
-#define RESVG_PATCH_VERSION 0
-#define RESVG_VERSION "0.9.0"
+#define RESVG_PATCH_VERSION 1
+#define RESVG_VERSION "0.9.1"
 
 #ifdef __cplusplus
 extern "C" {

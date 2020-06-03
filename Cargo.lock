@@ -330,43 +330,43 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "rendersvg"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "fern 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "pico-args 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "resvg 0.9.0",
+ "resvg 0.9.1",
 ]
 
 [[package]]
 name = "resvg"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "cairo-rs 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "jpeg-decoder 0.1.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "png 0.15.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "raqote 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "resvg-qt 0.9.0",
- "resvg-skia 0.9.0",
+ "resvg-qt 0.9.1",
+ "resvg-skia 0.9.1",
  "rgb 0.8.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "svgfilters 0.1.0",
- "usvg 0.9.0",
+ "usvg 0.9.1",
 ]
 
 [[package]]
 name = "resvg-capi"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "cairo-sys-rs 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "fern 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "resvg 0.9.0",
+ "resvg 0.9.1",
 ]
 
 [[package]]
 name = "resvg-qt"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "cc 1.0.54 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -374,7 +374,7 @@ dependencies = [
 
 [[package]]
 name = "resvg-skia"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "cc 1.0.54 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -458,7 +458,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "usvg"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "base64 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "data-url 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -481,12 +481,12 @@ dependencies = [
 
 [[package]]
 name = "usvg-cli"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "fern 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "pico-args 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "usvg 0.9.0",
+ "usvg 0.9.1",
 ]
 
 [[package]]

@@ -11,4 +11,5 @@
 - tools/usvg/Cargo.toml
 - usvg/Cargo.toml
 - usvg/src/lib.rs
-- usvg/tests/test.rs
+- usvg/tests/files/*
+- make-vendored.sh

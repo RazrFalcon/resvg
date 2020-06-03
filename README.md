@@ -37,10 +37,6 @@ A list of unsupported features can be found [here](docs/unsupported.md).
 [SVG Tiny 1.2](https://www.w3.org/TR/SVGTiny12/) and [SVG 2.0](https://www.w3.org/TR/SVG2/)
 are not supported and not planned.
 
-Results of the static subset of the [SVG test suite](https://www.w3.org/Graphics/SVG/Test/20110816/):
-
-![Chart1](./.github/official_chart.svg)
-
 Results of the [resvg test suite](./svg-tests/README.md):
 
 ![Chart2](./.github/chart.svg)
@@ -48,6 +44,10 @@ Results of the [resvg test suite](./svg-tests/README.md):
 You can find a complete table of supported features
 [here](https://razrfalcon.github.io/resvg-test-suite/svg-support-table.html).
 It also includes alternative libraries.
+
+Results of the static subset of the [SVG test suite](https://www.w3.org/Graphics/SVG/Test/20110816/):
+
+![Chart1](./.github/official_chart.svg)
 
 ## Performance
 
@@ -122,7 +122,7 @@ All other dependencies aren't written by me for this project.
 
 ## Testing
 
-We are using regression testing to test *resvg*. 
+We are using regression testing to test *resvg*.
 
 Basically, we will download a previous
 *resvg* version and check that the new one produces the same results

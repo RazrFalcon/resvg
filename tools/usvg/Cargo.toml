@@ -1,6 +1,6 @@
 [package]
 name = "usvg-cli"
-version = "0.9.0"
+version = "0.9.1"
 authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
 keywords = ["svg"]
 license = "MPL-2.0"

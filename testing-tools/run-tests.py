@@ -27,8 +27,7 @@ def regression_testing(backend):
     if not os.path.exists(reg_work_dir):
         os.mkdir(reg_work_dir)
 
-    regression_args = ['cargo', 'run', '--release', '--',
-                       '--backend', backend, tests_dir, reg_work_dir]
+    regression_args = ['cargo', 'run', '--release', '--', '--backend', backend, reg_work_dir]
 
     # Use a master branch for pull requests.
     if not local_test and os.environ['TRAVIS_BRANCH'] == 'master':
