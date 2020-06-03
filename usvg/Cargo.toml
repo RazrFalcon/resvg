@@ -17,7 +17,7 @@ workspace = ".."
 travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
-base64 = "0.11"
+base64 = "0.12"
 data-url = "0.1"
 flate2 = { version = "1.0.11", default-features = false, features = ["rust_backend"]}
 kurbo = "0.5.6"
@@ -26,7 +26,7 @@ rctree = "0.3"
 xmlwriter = "0.1"
 
 # for svgtree
-roxmltree = "0.9"
+roxmltree = "0.11"
 simplecss = "0.2"
 siphasher = "0.2.3"
 svgtypes = "0.5"
