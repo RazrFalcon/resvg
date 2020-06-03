@@ -117,10 +117,10 @@ impl Database {
         let item = self.font(id);
         let file = fs::File::open(&item.path).ok()?;
         let mmap = unsafe { memmap2::MmapOptions::new().map(&file).ok()? };
-        let font = ttf_parser::Font::from_data(&mmap, item.face_index).ok()?;
+        let font = ttf_parser::Font::from_data(&mmap, item.face_index)?;
 
         let mut builder = PathBuilder { path: tree::PathData::with_capacity(16) };
-        font.outline_glyph(glyph_id, &mut builder).ok()?;
+        font.outline_glyph(glyph_id, &mut builder)?;
         Some(builder.path)
     }
 
@@ -134,9 +134,9 @@ impl Database {
         let item = self.font(id);
         let file = fs::File::open(&item.path).ok()?;
         let mmap = unsafe { memmap2::MmapOptions::new().map(&file).ok()? };
-        let font = ttf_parser::Font::from_data(&mmap, item.face_index).ok()?;
+        let font = ttf_parser::Font::from_data(&mmap, item.face_index)?;
 
-        font.glyph_index(c).ok()?;
+        font.glyph_index(c)?;
 
         Some(true)
     }
@@ -147,7 +147,7 @@ impl Database {
         let item = self.font(id);
         let file = fs::File::open(&item.path).ok()?;
         let mmap = unsafe { memmap2::MmapOptions::new().map(&file).ok()? };
-        let font = ttf_parser::Font::from_data(&mmap, item.face_index).ok()?;
+        let font = ttf_parser::Font::from_data(&mmap, item.face_index)?;
 
         // Some fonts can have `units_per_em` set to zero, which will break out calculations.
         // `ttf_parser` will check this for us.
@@ -568,7 +568,7 @@ fn resolve_font(
     index: u32,
     id: usize,
 ) -> Option<FontItem> {
-    let font = ttf_parser::Font::from_data(data, index).ok()?;
+    let font = ttf_parser::Font::from_data(data, index)?;
 
     let family = font.family_name()?;
 
