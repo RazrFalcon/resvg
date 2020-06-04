@@ -1,6 +1,7 @@
 #include <QGuiApplication>
 #include <QImage>
 #include <QPainter>
+#include <QPainterPath>
 #include <QImageWriter>
 #include <QDebug>
 
