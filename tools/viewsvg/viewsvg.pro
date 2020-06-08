@@ -2,7 +2,7 @@ QT += core gui widgets
 
 TARGET = viewsvg
 TEMPLATE = app
-CONFIG += C++11
+CONFIG += C++11 debug_and_release
 
 SOURCES += \
     main.cpp \
