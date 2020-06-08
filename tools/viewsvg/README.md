@@ -8,6 +8,7 @@ A simple SVG viewer using Qt and *resvg* C-API.
 
 ## Build
 
+To build a release version:
 ```bash
 # build C-API first
 cargo build --release --features "qt-backend" --manifest-path ../../capi/Cargo.toml
@@ -15,7 +16,15 @@ cargo build --release --features "qt-backend" --manifest-path ../../capi/Cargo.t
 qmake
 make
 # run
-LD_LIBRARY_PATH=../../target/release ./viewsvg
+./viewsvg
+```
+
+Or, to build in debug mode:
+```bash
+cargo build --debug --features "qt-backend" --manifest-path ../../capi/Cargo.toml
+qmake
+make debug
+./viewsvg
 ```
 
 See [BUILD.adoc](../../BUILD.adoc) for details.
