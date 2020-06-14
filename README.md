@@ -32,22 +32,32 @@ And you can also access *Micro SVG* as XML directly via [usvg](./tools/usvg) too
 *resvg* is aiming to support only the [static](http://www.w3.org/TR/SVG11/feature#SVG-static)
 SVG subset; e.g. no `a`, `script`, `view` or `cursor` elements, no events and no animations.
 
-A list of unsupported features can be found [here](docs/unsupported.md).
-
 [SVG Tiny 1.2](https://www.w3.org/TR/SVGTiny12/) and [SVG 2.0](https://www.w3.org/TR/SVG2/)
 are not supported and not planned.
 
 Results of the [resvg test suite](./svg-tests/README.md):
 
-![Chart2](./.github/chart.svg)
+![](./.github/chart.svg)
 
 You can find a complete table of supported features
 [here](https://razrfalcon.github.io/resvg-test-suite/svg-support-table.html).
 It also includes alternative libraries.
 
-Results of the static subset of the [SVG test suite](https://www.w3.org/Graphics/SVG/Test/20110816/):
+## Rendering backends
 
-![Chart1](./.github/official_chart.svg)
+At the moment, there are no production-ready 2D rendering libraries for Rust,
+therefore we have to delegate the rendering itself to external libraries.
+
+Right now, resvg supports four backends: [cairo], [Qt], [Skia] and [raqote].
+
+All of them support exactly the same set of features and should produce roughly the same images
+(see the [Testing](#testing) section for details).
+While raqote is the most experimental and unstable of them, but the only one written in Rust.
+
+From the performance perspective, Skia is the fastest one.
+cairo and Qt performance heavily depends on SVG content, but roughly the same
+(cairo has a faster shapes rendering, while Qt has a faster layers compositing).
+And raqote is the slowest one.
 
 ## Performance
 
@@ -129,5 +139,6 @@ Also, the test files itself are located at the `svg-tests` directory.
 [cairo]: https://www.cairographics.org/
 [Qt]: https://www.qt.io/
 [Skia]: https://skia.org/
+[raqote]: https://github.com/jrmuizel/raqote
 
 [GNOME]: https://www.gnome.org/
