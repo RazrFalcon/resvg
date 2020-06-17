@@ -1,5 +1,4 @@
 use bencher::Bencher;
-use resvg::usvg;
 
 // We are using `text` instead of a `path` since it's easier to create a lot of curves this way.
 // From the text below, usvg will create ~400KiB SVG file.
@@ -9,7 +8,7 @@ macro_rules! bench_backend {
         fn $name(bencher: &mut Bencher) {
             let tree = usvg::Tree::from_str(&$input, &usvg::Options::default()).unwrap();
             bencher.iter(|| {
-                let _ = bencher::black_box(resvg::$backend::render_to_image(&tree, &resvg::Options::default()));
+                let _ = bencher::black_box($backend::render_to_image(&tree, &$backend::Options::default()));
             })
         }
     };
@@ -30,25 +29,25 @@ const BASE_SVG: &str = "\
     </text>
 </svg>";
 
-bench_backend!(stroke_cairo, backend_cairo,    BASE_SVG.replace("#style#", "fill='none' stroke='black'"));
-bench_backend!(stroke_qt, backend_qt,          BASE_SVG.replace("#style#", "fill='none' stroke='black'"));
-bench_backend!(stroke_raqote, backend_raqote,  BASE_SVG.replace("#style#", "fill='none' stroke='black'"));
-bench_backend!(stroke_skia, backend_skia,      BASE_SVG.replace("#style#", "fill='none' stroke='black'"));
+bench_backend!(stroke_cairo, resvg_cairo,    BASE_SVG.replace("#style#", "fill='none' stroke='black'"));
+bench_backend!(stroke_qt, resvg_qt,          BASE_SVG.replace("#style#", "fill='none' stroke='black'"));
+bench_backend!(stroke_raqote, resvg_raqote,  BASE_SVG.replace("#style#", "fill='none' stroke='black'"));
+bench_backend!(stroke_skia, resvg_skia,      BASE_SVG.replace("#style#", "fill='none' stroke='black'"));
 
-bench_backend!(fill_cairo, backend_cairo,    BASE_SVG.replace("#style#", "fill='black'"));
-bench_backend!(fill_qt, backend_qt,          BASE_SVG.replace("#style#", "fill='black'"));
-bench_backend!(fill_raqote, backend_raqote,  BASE_SVG.replace("#style#", "fill='black'"));
-bench_backend!(fill_skia, backend_skia,      BASE_SVG.replace("#style#", "fill='black'"));
+bench_backend!(fill_cairo, resvg_cairo,    BASE_SVG.replace("#style#", "fill='black'"));
+bench_backend!(fill_qt, resvg_qt,          BASE_SVG.replace("#style#", "fill='black'"));
+bench_backend!(fill_raqote, resvg_raqote,  BASE_SVG.replace("#style#", "fill='black'"));
+bench_backend!(fill_skia, resvg_skia,      BASE_SVG.replace("#style#", "fill='black'"));
 
-bench_backend!(fill_and_stroke_cairo, backend_cairo,    BASE_SVG.replace("#style#", "fill='green' stroke='black'"));
-bench_backend!(fill_and_stroke_qt, backend_qt,          BASE_SVG.replace("#style#", "fill='green' stroke='black'"));
-bench_backend!(fill_and_stroke_raqote, backend_raqote,  BASE_SVG.replace("#style#", "fill='green' stroke='black'"));
-bench_backend!(fill_and_stroke_skia, backend_skia,      BASE_SVG.replace("#style#", "fill='green' stroke='black'"));
+bench_backend!(fill_and_stroke_cairo, resvg_cairo,    BASE_SVG.replace("#style#", "fill='green' stroke='black'"));
+bench_backend!(fill_and_stroke_qt, resvg_qt,          BASE_SVG.replace("#style#", "fill='green' stroke='black'"));
+bench_backend!(fill_and_stroke_raqote, resvg_raqote,  BASE_SVG.replace("#style#", "fill='green' stroke='black'"));
+bench_backend!(fill_and_stroke_skia, resvg_skia,      BASE_SVG.replace("#style#", "fill='green' stroke='black'"));
 
-bench_backend!(dashed_stroke_cairo, backend_cairo,    BASE_SVG.replace("#style#", "fill='none' stroke='black' stroke-dasharray='2 4 6'"));
-bench_backend!(dashed_stroke_qt, backend_qt,          BASE_SVG.replace("#style#", "fill='none' stroke='black' stroke-dasharray='2 4 6'"));
-bench_backend!(dashed_stroke_raqote, backend_raqote,  BASE_SVG.replace("#style#", "fill='none' stroke='black' stroke-dasharray='2 4 6'"));
-bench_backend!(dashed_stroke_skia, backend_skia,      BASE_SVG.replace("#style#", "fill='none' stroke='black' stroke-dasharray='2 4 6'"));
+bench_backend!(dashed_stroke_cairo, resvg_cairo,    BASE_SVG.replace("#style#", "fill='none' stroke='black' stroke-dasharray='2 4 6'"));
+bench_backend!(dashed_stroke_qt, resvg_qt,          BASE_SVG.replace("#style#", "fill='none' stroke='black' stroke-dasharray='2 4 6'"));
+bench_backend!(dashed_stroke_raqote, resvg_raqote,  BASE_SVG.replace("#style#", "fill='none' stroke='black' stroke-dasharray='2 4 6'"));
+bench_backend!(dashed_stroke_skia, resvg_skia,      BASE_SVG.replace("#style#", "fill='none' stroke='black' stroke-dasharray='2 4 6'"));
 
 const GRADIENTS_SVG: &str = "\
 <svg viewBox='0 0 1000 300' xmlns='http://www.w3.org/2000/svg' font-size='32'>
@@ -75,10 +74,10 @@ const GRADIENTS_SVG: &str = "\
     </g>
 </svg>";
 
-bench_backend!(fill_and_stroke_with_gradient_cairo, backend_cairo,    GRADIENTS_SVG);
-bench_backend!(fill_and_stroke_with_gradient_qt, backend_qt,          GRADIENTS_SVG);
-bench_backend!(fill_and_stroke_with_gradient_raqote, backend_raqote,  GRADIENTS_SVG);
-bench_backend!(fill_and_stroke_with_gradient_skia, backend_skia,      GRADIENTS_SVG);
+bench_backend!(fill_and_stroke_with_gradient_cairo, resvg_cairo,    GRADIENTS_SVG);
+bench_backend!(fill_and_stroke_with_gradient_qt, resvg_qt,          GRADIENTS_SVG);
+bench_backend!(fill_and_stroke_with_gradient_raqote, resvg_raqote,  GRADIENTS_SVG);
+bench_backend!(fill_and_stroke_with_gradient_skia, resvg_skia,      GRADIENTS_SVG);
 
 const PATTERN_SVG: &str = "\
 <svg viewBox='0 0 1000 300' xmlns='http://www.w3.org/2000/svg' font-size='32'>
@@ -101,30 +100,30 @@ const PATTERN_SVG: &str = "\
     </g>
 </svg>";
 
-bench_backend!(fill_and_stroke_with_pattern_cairo, backend_cairo,    PATTERN_SVG);
-bench_backend!(fill_and_stroke_with_pattern_qt, backend_qt,          PATTERN_SVG);
-bench_backend!(fill_and_stroke_with_pattern_raqote, backend_raqote,  PATTERN_SVG);
-bench_backend!(fill_and_stroke_with_pattern_skia, backend_skia,      PATTERN_SVG);
+bench_backend!(fill_and_stroke_with_pattern_cairo, resvg_cairo,    PATTERN_SVG);
+bench_backend!(fill_and_stroke_with_pattern_qt, resvg_qt,          PATTERN_SVG);
+bench_backend!(fill_and_stroke_with_pattern_raqote, resvg_raqote,  PATTERN_SVG);
+bench_backend!(fill_and_stroke_with_pattern_skia, resvg_skia,      PATTERN_SVG);
 
 const FILL_CIRCLE_SVG: &str = "\
 <svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'>
     <circle cx='100' cy='100' r='80' fill='green'/>
 </svg>";
 
-bench_backend!(fill_circle_cairo, backend_cairo,    FILL_CIRCLE_SVG);
-bench_backend!(fill_circle_qt, backend_qt,          FILL_CIRCLE_SVG);
-bench_backend!(fill_circle_raqote, backend_raqote,  FILL_CIRCLE_SVG);
-bench_backend!(fill_circle_skia, backend_skia,      FILL_CIRCLE_SVG);
+bench_backend!(fill_circle_cairo, resvg_cairo,    FILL_CIRCLE_SVG);
+bench_backend!(fill_circle_qt, resvg_qt,          FILL_CIRCLE_SVG);
+bench_backend!(fill_circle_raqote, resvg_raqote,  FILL_CIRCLE_SVG);
+bench_backend!(fill_circle_skia, resvg_skia,      FILL_CIRCLE_SVG);
 
 const STROKE_CIRCLE_SVG: &str = "\
 <svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'>
     <circle cx='100' cy='100' r='80' fill='none' stroke='green'/>
 </svg>";
 
-bench_backend!(stroke_circle_cairo, backend_cairo,    STROKE_CIRCLE_SVG);
-bench_backend!(stroke_circle_qt, backend_qt,          STROKE_CIRCLE_SVG);
-bench_backend!(stroke_circle_raqote, backend_raqote,  STROKE_CIRCLE_SVG);
-bench_backend!(stroke_circle_skia, backend_skia,      STROKE_CIRCLE_SVG);
+bench_backend!(stroke_circle_cairo, resvg_cairo,    STROKE_CIRCLE_SVG);
+bench_backend!(stroke_circle_qt, resvg_qt,          STROKE_CIRCLE_SVG);
+bench_backend!(stroke_circle_raqote, resvg_raqote,  STROKE_CIRCLE_SVG);
+bench_backend!(stroke_circle_skia, resvg_skia,      STROKE_CIRCLE_SVG);
 
 const GRADIENT_CIRCLE_SVG: &str = "\
 <svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'>
@@ -139,10 +138,10 @@ const GRADIENT_CIRCLE_SVG: &str = "\
     <circle cx='100' cy='100' r='80' fill='url(#lg1)' stroke='url(#lg2)'/>
 </svg>";
 
-bench_backend!(fill_and_stroke_circle_with_gradient_cairo, backend_cairo,    GRADIENT_CIRCLE_SVG);
-bench_backend!(fill_and_stroke_circle_with_gradient_qt, backend_qt,          GRADIENT_CIRCLE_SVG);
-bench_backend!(fill_and_stroke_circle_with_gradient_raqote, backend_raqote,  GRADIENT_CIRCLE_SVG);
-bench_backend!(fill_and_stroke_circle_with_gradient_skia, backend_skia,      GRADIENT_CIRCLE_SVG);
+bench_backend!(fill_and_stroke_circle_with_gradient_cairo, resvg_cairo,    GRADIENT_CIRCLE_SVG);
+bench_backend!(fill_and_stroke_circle_with_gradient_qt, resvg_qt,          GRADIENT_CIRCLE_SVG);
+bench_backend!(fill_and_stroke_circle_with_gradient_raqote, resvg_raqote,  GRADIENT_CIRCLE_SVG);
+bench_backend!(fill_and_stroke_circle_with_gradient_skia, resvg_skia,      GRADIENT_CIRCLE_SVG);
 
 const PATTERN_CIRCLE_SVG: &str = "\
 <svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'>
@@ -153,10 +152,10 @@ const PATTERN_CIRCLE_SVG: &str = "\
     <circle cx='100' cy='100' r='80' fill='url(#patt1)' stroke='url(#patt1)'/>
 </svg>";
 
-bench_backend!(fill_and_stroke_circle_with_pattern_cairo, backend_cairo,    PATTERN_CIRCLE_SVG);
-bench_backend!(fill_and_stroke_circle_with_pattern_qt, backend_qt,          PATTERN_CIRCLE_SVG);
-bench_backend!(fill_and_stroke_circle_with_pattern_raqote, backend_raqote,  PATTERN_CIRCLE_SVG);
-bench_backend!(fill_and_stroke_circle_with_pattern_skia, backend_skia,      PATTERN_CIRCLE_SVG);
+bench_backend!(fill_and_stroke_circle_with_pattern_cairo, resvg_cairo,    PATTERN_CIRCLE_SVG);
+bench_backend!(fill_and_stroke_circle_with_pattern_qt, resvg_qt,          PATTERN_CIRCLE_SVG);
+bench_backend!(fill_and_stroke_circle_with_pattern_raqote, resvg_raqote,  PATTERN_CIRCLE_SVG);
+bench_backend!(fill_and_stroke_circle_with_pattern_skia, resvg_skia,      PATTERN_CIRCLE_SVG);
 
 bencher::benchmark_group!(
     benches,

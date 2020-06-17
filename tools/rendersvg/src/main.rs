@@ -7,10 +7,14 @@ use std::fs;
 use std::io::Write;
 use std::path;
 
-use resvg::prelude::*;
+use usvg::NodeExt;
 
 mod args;
 
+
+macro_rules! timed {
+    ($args:expr, $name:expr, $task:expr) => { run_task($args.perf, $name, || $task) };
+}
 
 macro_rules! bail {
     ($msg:expr) => {
@@ -59,24 +63,8 @@ fn process() -> Result<(), String> {
             .unwrap();
     }
 
-    let backend: Box<dyn Render> = match args.backend_name.as_str() {
-        #[cfg(feature = "cairo-backend")]
-        "cairo" => Box::new(resvg::backend_cairo::Backend),
-        #[cfg(feature = "qt-backend")]
-        "qt" => Box::new(resvg::backend_qt::Backend),
-        #[cfg(feature = "skia-backend")]
-        "skia" => Box::new(resvg::backend_skia::Backend),
-        #[cfg(feature = "raqote-backend")]
-        "raqote" => Box::new(resvg::backend_raqote::Backend),
-        _ => bail!("unknown backend"),
-    };
-
-    macro_rules! timed {
-        ($name:expr, $task:expr) => { run_task(args.perf, $name, || $task) };
-    }
-
     // Load file.
-    let tree = timed!("Preprocessing", {
+    let tree = timed!(args, "Preprocessing", {
         usvg::Tree::from_file(&args.in_svg, &opt.usvg).map_err(|e| e.to_string())
     })?;
 
@@ -93,23 +81,23 @@ fn process() -> Result<(), String> {
         return Ok(());
     }
 
-    // Render.
-    if let Some(ref out_png) = args.out_png {
-        let img = if let Some(ref id) = args.export_id {
-            if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
-                timed!("Rendering", backend.render_node_to_image(&node, &opt))
-            } else {
-                bail!("SVG doesn't have '{}' ID", id)
-            }
-        } else {
-            timed!("Rendering", backend.render_to_image(&tree, &opt))
-        };
-
-        match img {
-            Some(mut img) => { timed!("Saving", img.save_png(out_png)); }
-            None => { bail!("failed to allocate an image") }
-        }
+    let out_png = match args.out_png {
+        Some(ref path) => path,
+        None => return Ok(()),
     };
+
+    // Render.
+    match args.backend_name.as_str() {
+        #[cfg(feature = "cairo-backend")]
+        "cairo" => render_svg_cairo(&args, &tree, opt, out_png)?,
+        #[cfg(feature = "qt-backend")]
+        "qt" => render_svg_qt(&args, &tree, opt, out_png)?,
+        #[cfg(feature = "skia-backend")]
+        "skia" => render_svg_skia(&args, &tree, opt, out_png)?,
+        #[cfg(feature = "raqote-backend")]
+        "raqote" => render_svg_raqote(&args, &tree, opt, out_png)?,
+        _ => bail!("unknown backend"),
+    }
 
     Ok(())
 }
@@ -145,6 +133,132 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[cfg(feature = "cairo-backend")]
+fn render_svg_cairo(args: &args::Args, tree: &usvg::Tree, opt: args::Options, out_png: &path::Path) -> Result<(), String> {
+    let opt = resvg_cairo::Options {
+        usvg: opt.usvg,
+        fit_to: opt.fit_to,
+        background: opt.background,
+    };
+
+    let img = if let Some(ref id) = args.export_id {
+        if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
+            timed!(args, "Rendering", resvg_cairo::render_node_to_image(&node, &opt))
+        } else {
+            bail!("SVG doesn't have '{}' ID", id)
+        }
+    } else {
+        timed!(args, "Rendering", resvg_cairo::render_to_image(&tree, &opt))
+    };
+
+    match img {
+        Some(img) => {
+            run_task(args.perf, "Saving", || {
+                let mut file = std::fs::File::create(out_png).map_err(|e| e.to_string())?;
+                img.write_to_png(&mut file).map_err(|e| e.to_string())
+            })?;
+
+            Ok(())
+        }
+        None => {
+            bail!("failed to allocate an image")
+        }
+    }
+}
+
+#[cfg(feature = "qt-backend")]
+fn render_svg_qt(args: &args::Args, tree: &usvg::Tree, opt: args::Options, out_png: &path::Path) -> Result<(), String> {
+    let opt = resvg_qt::Options {
+        usvg: opt.usvg,
+        fit_to: opt.fit_to,
+        background: opt.background,
+    };
+
+    let img = if let Some(ref id) = args.export_id {
+        if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
+            timed!(args, "Rendering", resvg_qt::render_node_to_image(&node, &opt))
+        } else {
+            bail!("SVG doesn't have '{}' ID", id)
+        }
+    } else {
+        timed!(args, "Rendering", resvg_qt::render_to_image(&tree, &opt))
+    };
+
+    match img {
+        Some(img) => {
+            run_task(args.perf, "Saving", || {
+                img.save(out_png.to_str().unwrap());
+            });
+
+            Ok(())
+        }
+        None => {
+            bail!("failed to allocate an image")
+        }
+    }
+}
+
+#[cfg(feature = "skia-backend")]
+fn render_svg_skia(args: &args::Args, tree: &usvg::Tree, opt: args::Options, out_png: &path::Path) -> Result<(), String> {
+    let opt = resvg_skia::Options {
+        usvg: opt.usvg,
+        fit_to: opt.fit_to,
+        background: opt.background,
+    };
+
+    let img = if let Some(ref id) = args.export_id {
+        if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
+            timed!(args, "Rendering", resvg_skia::render_node_to_image(&node, &opt))
+        } else {
+            bail!("SVG doesn't have '{}' ID", id)
+        }
+    } else {
+        timed!(args, "Rendering", resvg_skia::render_to_image(&tree, &opt))
+    };
+
+    match img {
+        Some(img) => {
+            timed!(args, "Saving", img.save_png(out_png.to_str().unwrap()));
+            Ok(())
+        }
+        None => {
+            bail!("failed to allocate an image")
+        }
+    }
+}
+
+#[cfg(feature = "raqote-backend")]
+fn render_svg_raqote(args: &args::Args, tree: &usvg::Tree, opt: args::Options, out_png: &path::Path) -> Result<(), String> {
+    let opt = resvg_raqote::Options {
+        usvg: opt.usvg,
+        fit_to: opt.fit_to,
+        background: opt.background,
+    };
+
+    let img = if let Some(ref id) = args.export_id {
+        if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
+            timed!(args, "Rendering", resvg_raqote::render_node_to_image(&node, &opt))
+        } else {
+            bail!("SVG doesn't have '{}' ID", id)
+        }
+    } else {
+        timed!(args, "Rendering", resvg_raqote::render_to_image(&tree, &opt))
+    };
+
+    match img {
+        Some(img) => {
+            run_task(args.perf, "Saving", || {
+                img.write_png(out_png).map_err(|e| e.to_string())
+            })?;
+
+            Ok(())
+        }
+        None => {
+            bail!("failed to allocate an image")
+        }
+    }
 }
 
 fn run_task<P, T>(perf: bool, title: &str, p: P) -> T

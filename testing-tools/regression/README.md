@@ -31,5 +31,4 @@ The `--backend` option specifies which backend to test. It can be cairo, qt, ski
 Since this tool will create/delete a lot of files, you should also specify a custom working directory.
 On Linux, a `tmpfs` can be used to reduce HDD/SSD usage.
 
-Depending on the backend, you might need to set additional environment variables
-as specified in the [BUILD.adoc](../../BUILD.adoc).
+Depending on the backend, you might need to set additional environment variables.

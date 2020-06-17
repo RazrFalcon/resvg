@@ -1,12 +1,11 @@
 use bencher::Bencher;
-use resvg::usvg;
 
 macro_rules! bench_backend {
     ($name:ident, $backend:ident, $input:expr) => {
         fn $name(bencher: &mut Bencher) {
             let tree = usvg::Tree::from_str($input, &usvg::Options::default()).unwrap();
             bencher.iter(|| {
-                let _ = bencher::black_box(resvg::$backend::render_to_image(&tree, &resvg::Options::default()));
+                let _ = bencher::black_box($backend::render_to_image(&tree, &$backend::Options::default()));
             })
         }
     };
@@ -17,10 +16,10 @@ const ELEMENT_WITH_OPACITY_SVG: &str = "\
     <rect x='40' y='40' width='160' height='160' fill='blue' opacity='0.5'/>
 </svg>";
 
-bench_backend!(element_with_opacity_cairo, backend_cairo, ELEMENT_WITH_OPACITY_SVG);
-bench_backend!(element_with_opacity_qt, backend_qt, ELEMENT_WITH_OPACITY_SVG);
-bench_backend!(element_with_opacity_raqote, backend_raqote, ELEMENT_WITH_OPACITY_SVG);
-bench_backend!(element_with_opacity_skia, backend_skia, ELEMENT_WITH_OPACITY_SVG);
+bench_backend!(element_with_opacity_cairo, resvg_cairo, ELEMENT_WITH_OPACITY_SVG);
+bench_backend!(element_with_opacity_qt, resvg_qt, ELEMENT_WITH_OPACITY_SVG);
+bench_backend!(element_with_opacity_raqote, resvg_raqote, ELEMENT_WITH_OPACITY_SVG);
+bench_backend!(element_with_opacity_skia, resvg_skia, ELEMENT_WITH_OPACITY_SVG);
 
 const GROUPS_WITH_OPACITY_SVG: &str = "\
 <svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'>
@@ -32,10 +31,10 @@ const GROUPS_WITH_OPACITY_SVG: &str = "\
     </g>
 </svg>";
 
-bench_backend!(groups_with_opacity_cairo, backend_cairo, GROUPS_WITH_OPACITY_SVG);
-bench_backend!(groups_with_opacity_qt, backend_qt, GROUPS_WITH_OPACITY_SVG);
-bench_backend!(groups_with_opacity_raqote, backend_raqote, GROUPS_WITH_OPACITY_SVG);
-bench_backend!(groups_with_opacity_skia, backend_skia, GROUPS_WITH_OPACITY_SVG);
+bench_backend!(groups_with_opacity_cairo, resvg_cairo, GROUPS_WITH_OPACITY_SVG);
+bench_backend!(groups_with_opacity_qt, resvg_qt, GROUPS_WITH_OPACITY_SVG);
+bench_backend!(groups_with_opacity_raqote, resvg_raqote, GROUPS_WITH_OPACITY_SVG);
+bench_backend!(groups_with_opacity_skia, resvg_skia, GROUPS_WITH_OPACITY_SVG);
 
 const CLIP_PATH_SVG: &str = "\
 <svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'>
@@ -45,10 +44,10 @@ const CLIP_PATH_SVG: &str = "\
     <rect x='0' y='0' width='200' height='200' fill='green' clip-path='url(#clip1)'/>
 </svg>";
 
-bench_backend!(clip_path_cairo, backend_cairo, CLIP_PATH_SVG);
-bench_backend!(clip_path_qt, backend_qt, CLIP_PATH_SVG);
-bench_backend!(clip_path_raqote, backend_raqote, CLIP_PATH_SVG);
-bench_backend!(clip_path_skia, backend_skia, CLIP_PATH_SVG);
+bench_backend!(clip_path_cairo, resvg_cairo, CLIP_PATH_SVG);
+bench_backend!(clip_path_qt, resvg_qt, CLIP_PATH_SVG);
+bench_backend!(clip_path_raqote, resvg_raqote, CLIP_PATH_SVG);
+bench_backend!(clip_path_skia, resvg_skia, CLIP_PATH_SVG);
 
 const NESTED_CLIP_PATH_SVG: &str = "\
 <svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'>
@@ -61,10 +60,10 @@ const NESTED_CLIP_PATH_SVG: &str = "\
     <rect x='0' y='0' width='200' height='200' fill='green' clip-path='url(#clip1)'/>
 </svg>";
 
-bench_backend!(nested_clip_path_cairo, backend_cairo, NESTED_CLIP_PATH_SVG);
-bench_backend!(nested_clip_path_qt, backend_qt, NESTED_CLIP_PATH_SVG);
-bench_backend!(nested_clip_path_raqote, backend_raqote, NESTED_CLIP_PATH_SVG);
-bench_backend!(nested_clip_path_skia, backend_skia, NESTED_CLIP_PATH_SVG);
+bench_backend!(nested_clip_path_cairo, resvg_cairo, NESTED_CLIP_PATH_SVG);
+bench_backend!(nested_clip_path_qt, resvg_qt, NESTED_CLIP_PATH_SVG);
+bench_backend!(nested_clip_path_raqote, resvg_raqote, NESTED_CLIP_PATH_SVG);
+bench_backend!(nested_clip_path_skia, resvg_skia, NESTED_CLIP_PATH_SVG);
 
 const MASK_SVG: &str = "\
 <svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'>
@@ -78,10 +77,10 @@ const MASK_SVG: &str = "\
     <rect x='0' y='0' width='200' height='200' fill='green' mask='url(#mask1)'/>
 </svg>";
 
-bench_backend!(mask_cairo, backend_cairo, MASK_SVG);
-bench_backend!(mask_qt, backend_qt, MASK_SVG);
-bench_backend!(mask_raqote, backend_raqote, MASK_SVG);
-bench_backend!(mask_skia, backend_skia, MASK_SVG);
+bench_backend!(mask_cairo, resvg_cairo, MASK_SVG);
+bench_backend!(mask_qt, resvg_qt, MASK_SVG);
+bench_backend!(mask_raqote, resvg_raqote, MASK_SVG);
+bench_backend!(mask_skia, resvg_skia, MASK_SVG);
 
 bencher::benchmark_group!(
     benches,

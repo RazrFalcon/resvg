@@ -198,6 +198,9 @@ pub trait NodeExt {
     ///
     /// Can be expensive on large paths and groups.
     fn calculate_bbox(&self) -> Option<Rect>;
+
+    /// Returns the node starting from which the filter background should be rendered.
+    fn filter_background_start_node(&self, filter: &Filter) -> Option<Node>;
 }
 
 impl NodeExt for Node {
@@ -250,6 +253,26 @@ impl NodeExt for Node {
     #[inline]
     fn calculate_bbox(&self) -> Option<Rect> {
         calc_node_bbox(self, self.abs_transform())
+    }
+
+    fn filter_background_start_node(&self, filter: &Filter) -> Option<Node> {
+        fn has_enable_background(node: &Node) -> bool {
+            if let NodeKind::Group(ref g) = *node.borrow() {
+                g.enable_background.is_some()
+            } else {
+                false
+            }
+        }
+
+        if !filter.children.iter().any(|c| c.kind.has_input(&FilterInput::BackgroundImage)) &&
+           !filter.children.iter().any(|c| c.kind.has_input(&FilterInput::BackgroundAlpha))
+        {
+            return None;
+        }
+
+        // We should have an ancestor with `enable-background=new`.
+        // Skip the current element.
+        self.ancestors().skip(1).find(|node| has_enable_background(node))
     }
 }
 

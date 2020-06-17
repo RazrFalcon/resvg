@@ -5,9 +5,8 @@
 use std::path;
 use std::process;
 
+use usvg;
 use pico_args::Arguments;
-
-use resvg::prelude::*;
 
 
 pub fn print_help() {
@@ -193,7 +192,13 @@ pub struct Args {
     pub quiet: bool,
 }
 
-pub fn parse() -> Result<(Args, resvg::Options), String> {
+pub struct Options {
+    pub usvg: usvg::Options,
+    pub fit_to: usvg::FitTo,
+    pub background: Option<usvg::Color>,
+}
+
+pub fn parse() -> Result<(Args, Options), String> {
     let args = collect_args().map_err(|e| e.to_string())?;
 
     if args.help {
@@ -239,16 +244,16 @@ pub fn parse() -> Result<(Args, resvg::Options), String> {
     // because it will slow down rendering.
     let keep_named_groups = app_args.query_all || app_args.export_id.is_some();
 
-    let mut fit_to = FitTo::Original;
+    let mut fit_to = usvg::FitTo::Original;
     if let Some(w) = args.width {
-        fit_to = FitTo::Width(w);
+        fit_to = usvg::FitTo::Width(w);
     } else if let Some(h) = args.height {
-        fit_to = FitTo::Height(h);
+        fit_to = usvg::FitTo::Height(h);
     } else if let Some(z) = args.zoom {
-        fit_to = FitTo::Zoom(z);
+        fit_to = usvg::FitTo::Zoom(z);
     }
 
-    let opt = resvg::Options {
+    let opt = Options {
         usvg: usvg::Options {
             path: Some(in_svg.into()),
             dpi: args.dpi as f64,

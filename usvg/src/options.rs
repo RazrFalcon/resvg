@@ -4,11 +4,46 @@
 
 use std::path::PathBuf;
 
-use crate::{
-    ImageRendering,
-    ShapeRendering,
-    TextRendering,
-};
+use crate::{ImageRendering, ShapeRendering, TextRendering, Size, ScreenSize};
+
+
+/// Image fit options.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum FitTo {
+    /// Keep original size.
+    Original,
+    /// Scale to width.
+    Width(u32),
+    /// Scale to height.
+    Height(u32),
+    /// Zoom by factor.
+    Zoom(f32),
+}
+
+impl FitTo {
+    /// Returns `size` preprocessed according to `FitTo`.
+    pub fn fit_to(&self, size: ScreenSize) -> Option<ScreenSize> {
+        let sizef = size.to_size();
+
+        match *self {
+            FitTo::Original => {
+                Some(size)
+            }
+            FitTo::Width(w) => {
+                let h = (w as f64 * sizef.height() / sizef.width()).ceil();
+                ScreenSize::new(w, h as u32)
+            }
+            FitTo::Height(h) => {
+                let w = (h as f64 * sizef.width() / sizef.height()).ceil();
+                ScreenSize::new(w as u32, h)
+            }
+            FitTo::Zoom(z) => {
+                Size::new(sizef.width() * z as f64, sizef.height() * z as f64)
+                    .map(|s| s.to_screen_size())
+            }
+        }
+    }
+}
 
 
 /// Processing options.
@@ -56,6 +91,18 @@ pub struct Options {
     /// If set to `true`, all non-empty groups with `id` attribute will not
     /// be removed.
     pub keep_named_groups: bool,
+}
+
+impl Options {
+    /// Converts a relative path into absolute relative to the SVG file itself.
+    ///
+    /// If `Options::path` is not set, returns itself.
+    pub fn get_abs_path(&self, rel_path: &std::path::Path) -> std::path::PathBuf {
+        match self.path {
+            Some(ref path) => path.parent().unwrap().join(rel_path),
+            None => rel_path.into(),
+        }
+    }
 }
 
 impl Default for Options {

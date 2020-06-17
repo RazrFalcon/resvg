@@ -7,7 +7,7 @@ An SVG thumbnails generator for the KDE's
 
 ```bash
 # build and install C-API first in case you don't have resvg intalled already
-cargo build --release --features "qt-backend" --manifest-path ../../capi/Cargo.toml
+cargo build --release --manifest-path ../../capi/Cargo.toml
 sudo cp ../../target/release/libresvg.so /usr/lib/
 
 # build

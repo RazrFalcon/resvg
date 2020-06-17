@@ -4,10 +4,12 @@ version = "0.1.0"
 edition = "2018"
 license = "MIT"
 
-[workspace]
-
 [dependencies]
-resvg = { path = "../", features = ["cairo-backend", "qt-backend", "raqote-backend", "skia-backend"] }
+usvg = { path = "../usvg" }
+resvg-cairo = { path = "../resvg-cairo" }
+resvg-qt = { path = "../resvg-qt" }
+resvg-skia = { path = "../resvg-skia" }
+resvg-raqote = { path = "../resvg-raqote" }
 bencher = "0.1"
 
 [[bench]]

@@ -8,7 +8,7 @@ use std::fmt;
 use svgtypes::{FuzzyEq, FuzzyZero};
 
 use crate::IsValidLength;
-use crate::geom::f64_bound;
+use crate::utils::f64_bound;
 
 
 macro_rules! wrap {

@@ -301,6 +301,68 @@ pub enum ImageData {
     Raw(Vec<u8>),
 }
 
+impl ImageData {
+    /// Tries to load the `ImageData` content as an SVG image.
+    ///
+    /// Unlike `Tree::from_*` methods, this one will also remove all `image` elements
+    /// from the loaded SVG, as required by the spec.
+    pub fn load_svg(&self, opt: &crate::Options) -> Option<(crate::Tree, crate::Options)> {
+        let mut sub_opt = crate::Options {
+            path: None,
+            dpi: opt.dpi,
+            font_family: opt.font_family.clone(),
+            font_size: opt.font_size,
+            languages: opt.languages.clone(),
+            shape_rendering: opt.shape_rendering,
+            text_rendering: opt.text_rendering,
+            image_rendering: opt.image_rendering,
+            keep_named_groups: false,
+        };
+
+        let tree = match self {
+            ImageData::Path(ref path) => {
+                let path = opt.get_abs_path(path);
+                sub_opt.path = Some(path.clone());
+                crate::Tree::from_file(path, &sub_opt).ok()?
+            }
+            ImageData::Raw(ref data) => {
+                crate::Tree::from_data(data, &sub_opt).ok()?
+            }
+        };
+
+        sanitize_sub_svg(&tree);
+
+        Some((tree, sub_opt))
+    }
+}
+
+fn sanitize_sub_svg(tree: &crate::Tree) {
+    // Remove all Image nodes.
+    //
+    // The referenced SVG image cannot have any 'image' elements by itself.
+    // Not only recursive. Any. Don't know why.
+
+    // TODO: implement drain or something to the rctree.
+    let mut changed = true;
+    while changed {
+        changed = false;
+
+        for mut node in tree.root().descendants() {
+            let mut rm = false;
+            // TODO: feImage?
+            if let super::NodeKind::Image(_) = *node.borrow() {
+                rm = true;
+            };
+
+            if rm {
+                node.detach();
+                changed = true;
+                break;
+            }
+        }
+    }
+}
+
 
 /// An image codec.
 #[allow(missing_docs)]
@@ -479,6 +541,17 @@ pub enum ShapeRendering {
     OptimizeSpeed,
     CrispEdges,
     GeometricPrecision,
+}
+
+impl ShapeRendering {
+    /// Checks if anti-aliasing should be enabled.
+    pub fn use_shape_antialiasing(self) -> bool {
+        match self {
+            ShapeRendering::OptimizeSpeed         => false,
+            ShapeRendering::CrispEdges            => false,
+            ShapeRendering::GeometricPrecision    => true,
+        }
+    }
 }
 
 impl_enum_default!(ShapeRendering, GeometricPrecision);

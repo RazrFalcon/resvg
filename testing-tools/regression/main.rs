@@ -69,7 +69,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .current_dir("../../tools/rendersvg")
         .run()?;
 
-    let curr_rendersvg = fs::canonicalize("../../target/release/rendersvg")?;
+    let curr_rendersvg = fs::canonicalize("../../tools/rendersvg/target/release/rendersvg")?;
     let prev_rendersvg = build_previous_version(&args)?;
 
     let files = collect_files(&args)?;

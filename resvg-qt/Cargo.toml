@@ -1,0 +1,31 @@
+[package]
+name = "resvg-qt"
+version = "0.9.1"
+authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
+keywords = ["svg", "render", "raster"]
+license = "MPL-2.0"
+edition = "2018"
+description = "Qt backend for resvg."
+repository = "https://github.com/RazrFalcon/resvg"
+
+[workspace]
+members = ["c-api"]
+
+[badges]
+travis-ci = { repository = "RazrFalcon/resvg" }
+
+[dependencies]
+jpeg-decoder = { version = "0.1.15", default-features = false }
+log = "0.4"
+png = { version = "0.15", default-features = false }
+rgb = "0.8"
+svgfilters = { path = "../svgfilters" }
+usvg = { path = "../usvg", default-features = false }
+
+[build-dependencies]
+cc = "1.0"
+pkg-config = "0.3"
+
+[features]
+default = ["text"]
+text = ["usvg/text"] # enables SVG Text support

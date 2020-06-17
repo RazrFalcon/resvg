@@ -1010,6 +1010,38 @@ pub enum FeLightSource {
     FeSpotLight(FeSpotLight),
 }
 
+impl FeLightSource {
+    /// Applies a transform to the light source.
+    pub fn transform(mut self, region: ScreenRect, ts: &Transform) -> Self {
+        use std::f64::consts::SQRT_2;
+
+        match self {
+            FeLightSource::FeDistantLight(..) => {}
+            FeLightSource::FePointLight(ref mut light) => {
+                let (x, y) = ts.apply(light.x, light.y);
+                light.x = x - region.x() as f64;
+                light.y = y - region.y() as f64;
+                light.z = light.z * (ts.a*ts.a + ts.d*ts.d).sqrt() / SQRT_2;
+            }
+            FeLightSource::FeSpotLight(ref mut light) => {
+                let sz = (ts.a*ts.a + ts.d*ts.d).sqrt() / SQRT_2;
+
+                let (x, y) = ts.apply(light.x, light.y);
+                light.x = x - region.x() as f64;
+                light.y = y - region.x() as f64;
+                light.z = light.z * sz;
+
+                let (x, y) = ts.apply(light.points_at_x, light.points_at_y);
+                light.points_at_x = x - region.x() as f64;
+                light.points_at_y = y - region.x() as f64;
+                light.points_at_z = light.points_at_z * sz;
+            }
+        }
+
+        self
+    }
+}
+
 
 /// A distant light source.
 ///

@@ -367,7 +367,7 @@ fn parse_svg_attribute(
         | AId::StrokeOpacity
         | AId::StopOpacity => {
             let n = parse_number(value)?;
-            let n = crate::f64_bound(0.0, n, 1.0);
+            let n = crate::utils::f64_bound(0.0, n, 1.0);
             AttributeValue::Opacity(n.into())
         }
 

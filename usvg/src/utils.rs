@@ -6,6 +6,22 @@
 
 use crate::{tree, geom::*};
 
+// TODO: https://github.com/rust-lang/rust/issues/44095
+/// Bounds `f64` number.
+#[inline]
+pub fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
+    debug_assert!(min.is_finite());
+    debug_assert!(val.is_finite());
+    debug_assert!(max.is_finite());
+
+    if val > max {
+        max
+    } else if val < min {
+        min
+    } else {
+        val
+    }
+}
 
 /// Converts `viewBox` to `Transform`.
 pub fn view_box_to_transform(

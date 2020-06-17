@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- The `resvg` crate has been split into four: resvg-cairo, resvg-qt, resvg-skia and resvg-raqote.<br/>
+  So from now, instead of enabling a required backend via cargo features,
+  you should select a required backend-specific crate.<br/>
+  This allows us to have a better integration with a selected 2D library.<br/>
+  And we also have separated C API implementations now.<br/>
+  And each backend has its own vendored archive too.
+
+### Removed
+- The `resvg` crate. Use backend-specific crates.
+- (c-api) `resvg_*_render_to_file` methods.
 
 ## [0.9.1] - 2020-06-03
 ### Fixed

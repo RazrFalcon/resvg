@@ -21,10 +21,8 @@ env XZ_OPT="-9e" tar \
     --exclude="resvg-$VERSION/version-bump.md" \
     --exclude="resvg-$VERSION/docs" \
     --exclude="resvg-$VERSION/benches" \
-    --exclude="resvg-$VERSION/examples" \
     --exclude="resvg-$VERSION/svg-tests" \
     --exclude="resvg-$VERSION/testing-tools" \
-    --exclude="resvg-$VERSION/capi/qtests" \
     -cJf resvg-"$VERSION".tar.xz resvg-"$VERSION"
 
 # Clean up.

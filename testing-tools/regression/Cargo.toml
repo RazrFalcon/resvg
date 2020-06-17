@@ -5,8 +5,6 @@ authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
 license = "MIT"
 edition = "2018"
 
-[workspace]
-
 [[bin]]
 name = "regression"
 path = "main.rs"

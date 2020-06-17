@@ -1,13 +1,5 @@
 .directory
 target
 .idea
-*.pro.user
-*.pro.user.*
-.qmake.stash
-Makefile
-*.o
-moc_*.cpp
-moc_*.h
-qrc_*.cpp
-ui_*.h
 build-*
+workdir-*

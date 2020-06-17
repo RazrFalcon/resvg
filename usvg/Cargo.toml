@@ -11,7 +11,6 @@ repository = "https://github.com/RazrFalcon/resvg"
 documentation = "https://docs.rs/usvg/"
 readme = "README.md"
 exclude = ["testing-tools/**"]
-workspace = ".."
 
 [badges]
 travis-ci = { repository = "RazrFalcon/resvg" }

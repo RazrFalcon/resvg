@@ -263,7 +263,7 @@ fn convert_stops(grad: svgtree::Node) -> Vec<tree::Stop> {
                 Unit::Percent => offset.num / 100.0,
                 _ => prev_offset.num,
             };
-            let offset = f64_bound(0.0, offset, 1.0);
+            let offset = crate::utils::f64_bound(0.0, offset, 1.0);
             prev_offset = Length::new_number(offset);
 
             let color = match stop.attribute(AId::StopColor) {
@@ -356,7 +356,7 @@ fn convert_stops(grad: svgtree::Node) -> Vec<tree::Stop> {
             if offset1 > offset2 || offset1.fuzzy_eq(&offset2) {
                 // Make previous offset a bit smaller.
                 let new_offset = offset1 - f64::EPSILON;
-                stops[i - 1].offset = f64_bound(0.0, new_offset, 1.0).into();
+                stops[i - 1].offset = crate::utils::f64_bound(0.0, new_offset, 1.0).into();
                 stops[i - 0].offset = offset1.into();
             }
 

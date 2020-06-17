@@ -1,8 +1,0 @@
-<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <pattern id="patt1" patternUnits="userSpaceOnUse" width="20" height="20">
-        <rect id="rect1" x="0" y="0" width="10" height="10" fill="grey"/>
-        <rect id="rect2" x="10" y="10" width="10" height="10" fill="green"/>
-    </pattern>
-    <circle id="circle1" cx="50" cy="50" r="40" fill="url(#patt1)"
-            transform="scale(2)"/>
-</svg>

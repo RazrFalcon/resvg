@@ -10,7 +10,7 @@
 *resvg* can be used as:
 
 - a Rust library
-- a C library (see [capi](./capi))
+- a C library
 - a CLI application (see [tools/rendersvg](./tools/rendersvg))
 
 to render SVG files based on a
@@ -66,36 +66,23 @@ apples and oranges. Everyone has a very different set of supported features,
 implementation languages, build flags, etc. You should do the benchmarks by yourself,
 on your images.
 
-## Project structure
-
-- `resvg` – rendering backends implementation
-  - [`usvg`](./usvg) – an SVG simplification tool
-    - [`roxmltree`](https://github.com/RazrFalcon/roxmltree) – a DOM-like XML tree
-      - [`xmlparser`](https://github.com/RazrFalcon/xmlparser) – an XML parser
-    - [`svgtypes`](https://github.com/RazrFalcon/svgtypes) – SVG types parser and writer
-    - [`simplecss`](https://github.com/RazrFalcon/simplecss) – a simple CSS2 parser
-    - [`ttf-parser`](https://github.com/RazrFalcon/ttf-parser) – a TrueType/OpenType parser
-    - [`xmlwriter`](https://github.com/RazrFalcon/xmlwriter) – a simple XML writer
-    - [`rctree`](https://github.com/RazrFalcon/rctree) – a DOM-like tree
-  - [`resvg-qt`](./bindings/resvg-qt) – minimal bindings to [Qt]
-  - [`resvg-skia`](./bindings/resvg-skia) – minimal bindings to [Skia]
-  - [`svgfilters`](./svgfilters) – a collection of SVG filters
-
-All other dependencies aren't written by me for this project.
-
 ## Directory structure
 
+This a monorepo, therefore there are no root project.
+You are probably looking for `resvg-*` subprojects.
+
 - `benches` - basic benchmarks for rendering operations
-- `bindings` – minimal bindings to Qt and Skia used by *resvg*
-- `capi` – C interface for *resvg*
 - `docs` – basic documentation
-- `examples` – usage examples for *resvg* as a library
-- `src` – source code
+- `resvg` – foundation crate for all backends
+- `resvg-cairo` – cairo backend implementation
+- `resvg-qt` – qt backend implementation
+- `resvg-skia` – skia backend implementation
+- `resvg-raqote` – raqote backend implementation
 - `svg-tests` - a collection of SVG files for testing
 - `svgfilters` - SVG filters implementation
 - `testing-tools` – scripts used for testing
 - `tools` – useful tools
-- `usvg` – an SVG simplification library used by *resvg*
+- `usvg` – an SVG simplification library
 
 ## Safety
 
@@ -129,16 +116,10 @@ Also, the test files itself are located at the `svg-tests` directory.
 
 ## License
 
-*resvg* is licensed under the [MPLv2.0](https://www.mozilla.org/en-US/MPL/).
+*resvg* project is licensed under the [MPLv2.0](https://www.mozilla.org/en-US/MPL/).
 
-
-[Inkscape]: https://www.inkscape.org
-[librsvg]: https://wiki.gnome.org/action/show/Projects/LibRsvg
-[QtSvg]: https://doc.qt.io/qt-5/qtsvg-index.html
 
 [cairo]: https://www.cairographics.org/
 [Qt]: https://www.qt.io/
 [Skia]: https://skia.org/
 [raqote]: https://github.com/jrmuizel/raqote
-
-[GNOME]: https://www.gnome.org/

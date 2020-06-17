@@ -394,7 +394,7 @@ fn convert_color_matrix_kind(
         Some("saturate") => {
             if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::Values) {
                 if !list.is_empty() {
-                    let n = f64_bound(0.0, list[0], 1.0);
+                    let n = crate::utils::f64_bound(0.0, list[0], 1.0);
                     return Some(tree::FeColorMatrixKind::Saturate(n.into()));
                 } else {
                     return Some(tree::FeColorMatrixKind::Saturate(1.0.into()));
@@ -639,7 +639,7 @@ fn convert_fe_specular_lighting(
         return create_dummy_primitive();
     }
 
-    let specular_exponent = f64_bound(1.0, specular_exponent, 128.0);
+    let specular_exponent = crate::utils::f64_bound(1.0, specular_exponent, 128.0);
 
     tree::FilterKind::FeSpecularLighting(tree::FeSpecularLighting {
         input: resolve_input(fe, AId::In, primitives),

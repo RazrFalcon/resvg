@@ -81,6 +81,31 @@ if 'RESVG_QT_BACKEND' in os.environ:
 
             regression_testing('qt')
 
+    # build examples
+    with cd('resvg-qt'):
+        run(['cargo', 'test'], check=True)
+
+    # test Qt C-API
+    #
+    # build C-API for demo
+    with cd('resvg-qt/c-api'):
+        run(['cargo', 'build'], check=True)
+
+    # test Qt C-API wrapper
+    qmake_env = os.environ if local_test else dict(os.environ, QT_SELECT="5")
+
+    # with cd('capi/qtests'):
+    #     defines = 'DEFINES+=LOCAL_BUILD' if local_test else ''
+    #     run(['make', 'distclean'])
+    #     run(['qmake', 'CONFIG+=debug', defines], env=qmake_env, check=True)
+    #     run(['make'], check=True)
+    #     run(['./tst_resvgqt'], env=dict(os.environ, LD_LIBRARY_PATH="../../target/debug"), check=True)
+
+    with cd('resvg-qt/examples/viewsvg'):
+        run(['make', 'distclean'])
+        run(['qmake', 'CONFIG+=debug'], env=qmake_env, check=True)
+        run(['make'], check=True)
+
 
 if 'RESVG_CAIRO_BACKEND' in os.environ:
     # build cairo backend
@@ -92,16 +117,20 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
         with cd('testing-tools/regression'):
             regression_testing('cairo')
 
+    # build examples
+    with cd('resvg-cairo'):
+        run(['cargo', 'test'], check=True)
 
-if 'RESVG_RAQOTE_BACKEND' in os.environ:
-    # build raqote backend
-    with cd('tools/rendersvg'):
-        run(['cargo', 'build', '--release', '--features', 'raqote-backend'], check=True)
+    with cd('resvg-cairo/examples/gtk-ui-rs'):
+        run(['cargo', 'build'], check=True)
 
-    # regression testing of the cairo backend
-    if not args.no_regression:
-        with cd('testing-tools/regression'):
-            regression_testing('raqote')
+    # build C-API for gtk-ui-c
+    with cd('resvg-cairo/c-api'):
+        run(['cargo', 'build'], check=True)
+
+    with cd('resvg-cairo/examples/gtk-ui-c'):
+        run(['make', 'clean'], check=True)
+        run(['make'], check=True)
 
 
 if 'RESVG_SKIA_BACKEND' in os.environ:
@@ -114,64 +143,28 @@ if 'RESVG_SKIA_BACKEND' in os.environ:
         with cd('testing-tools/regression'):
             regression_testing('skia')
 
-
-if 'RESVG_QT_BACKEND' in os.environ:
-    # test Qt C-API
-    #
-    # build C-API for demo
-    with cd('capi'):
-        run(['cargo', 'build', '--features', 'qt-backend'], check=True)
-
-    # run tests and build examples
-    run(['cargo', 'test', '--features', 'qt-backend'], check=True)
-
-    # test Qt C-API wrapper
-    qmake_env = os.environ if local_test else dict(os.environ, QT_SELECT="5")
-
-    with cd('capi/qtests'):
-        defines = 'DEFINES+=LOCAL_BUILD' if local_test else ''
-        run(['make', 'distclean'])
-        run(['qmake', 'CONFIG+=debug', defines], env=qmake_env, check=True)
-        run(['make'], check=True)
-        run(['./tst_resvgqt'], env=dict(os.environ, LD_LIBRARY_PATH="../../target/debug"), check=True)
-
-    with cd('tools/viewsvg'):
-        run(['make', 'distclean'])
-        run(['qmake', 'CONFIG+=debug'], env=qmake_env, check=True)
-        run(['make'], check=True)
-
-
-if 'RESVG_CAIRO_BACKEND' in os.environ:
-    # build cairo C example
-    #
-    # build C-API for cairo-capi
-    with cd('capi'):
-        run(['cargo', 'build', '--features', 'cairo-backend'], check=True)
-
-    # run tests and build examples
-    run(['cargo', 'test', '--features', 'cairo-backend'], check=True)
-
-    with cd('examples/cairo-capi'):
-        run(['make', 'clean'], check=True)
-        run(['make'], check=True)
-
-    # build cairo-rs example
-    with cd('examples/cairo-rs'):
+    # check C-API
+    with cd('resvg-skia/c-api'):
         run(['cargo', 'build'], check=True)
+
+    # build examples
+    with cd('resvg-skia'):
+        run(['cargo', 'test'], check=True)
 
 
 if 'RESVG_RAQOTE_BACKEND' in os.environ:
-    # run tests and build examples
-    run(['cargo', 'test', '--release', '--features', 'raqote-backend'], check=True)
+    # build raqote backend
+    with cd('tools/rendersvg'):
+        run(['cargo', 'build', '--release', '--features', 'raqote-backend'], check=True)
 
+    # regression testing of the cairo backend
+    if not args.no_regression:
+        with cd('testing-tools/regression'):
+            regression_testing('raqote')
 
-if 'RESVG_SKIA_BACKEND' in os.environ:
-    # check C-API
-    with cd('capi'):
-        run(['cargo', 'build', '--features', 'skia-backend'], check=True)
-
-    # run tests and build examples
-    run(['cargo', 'test', '--release', '--features', 'skia-backend'], check=True)
+    # build examples
+    with cd('resvg-raqote'):
+        run(['cargo', 'test'], check=True)
 
 
 if 'USVG_TESTING' in os.environ:
