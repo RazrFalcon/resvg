@@ -107,6 +107,8 @@ mod ffi {
     extern "C" {
         pub fn qtc_qimage_create_rgba_premultiplied(width: u32, height: u32) -> *mut qtc_qimage;
         pub fn qtc_qimage_create_rgba(width: u32, height: u32) -> *mut qtc_qimage;
+        pub fn qtc_qimage_from_file(path: *const ::std::os::raw::c_char) -> *mut qtc_qimage;
+        pub fn qtc_qimage_from_data(data: *const u8, size: ::std::os::raw::c_int) -> *mut qtc_qimage;
         pub fn qtc_qimage_get_data(c_img: *mut qtc_qimage) -> *mut u8;
         pub fn qtc_qimage_get_size_in_bytes(c_img: *mut qtc_qimage) -> u32;
         pub fn qtc_qimage_resize(
@@ -318,6 +320,16 @@ impl Image {
 
     pub fn new_rgba_premultiplied(width: u32, height: u32) -> Option<Image> {
         unsafe { Self::from_ptr(ffi::qtc_qimage_create_rgba_premultiplied(width, height)) }
+    }
+
+    pub fn from_file(path: &std::path::Path) -> Option<Image> {
+        let c_path = CString::new(path.to_str().unwrap()).unwrap();
+
+        unsafe { Self::from_ptr(ffi::qtc_qimage_from_file(c_path.as_ptr())) }
+    }
+
+    pub fn from_data(data: &[u8]) -> Option<Image> {
+        unsafe { Self::from_ptr(ffi::qtc_qimage_from_data(data.as_ptr(), data.len() as i32)) }
     }
 
     unsafe fn from_ptr(img: *mut ffi::qtc_qimage) -> Option<Image> {

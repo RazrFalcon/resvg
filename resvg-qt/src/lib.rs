@@ -31,23 +31,23 @@ macro_rules! try_opt_or {
     };
 }
 
-/// Unwraps `Option` and invokes `return $ret` on `None` with a warning.
-macro_rules! try_opt_warn_or {
-    ($task:expr, $ret:expr, $msg:expr) => {
+/// Unwraps `Option` and invokes `return` on `None` with a warning.
+macro_rules! try_opt_warn {
+    ($task:expr, $msg:expr) => {
         match $task {
             Some(v) => v,
             None => {
                 log::warn!($msg);
-                return $ret;
+                return;
             }
         }
     };
-    ($task:expr, $ret:expr, $fmt:expr, $($arg:tt)*) => {
+    ($task:expr, $fmt:expr, $($arg:tt)*) => {
         match $task {
             Some(v) => v,
             None => {
                 log::warn!($fmt, $($arg)*);
-                return $ret;
+                return;
             }
         }
     };

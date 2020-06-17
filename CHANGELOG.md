@@ -14,10 +14,12 @@ This changelog also contains important changes in dependencies.
   This allows us to have a better integration with a selected 2D library.<br/>
   And we also have separated C API implementations now.<br/>
   And each backend has its own vendored archive too.
+- (qt-backend) Use `QImage` instead of Rust libraries for raster images loading.
 
 ### Removed
 - The `resvg` crate. Use backend-specific crates.
 - (c-api) `resvg_*_render_to_file` methods.
+- (qt-backend) `jpeg-decoder` and `png` dependencies.
 
 ## [0.9.1] - 2020-06-03
 ### Fixed

@@ -94,7 +94,7 @@ We are using Qt 5.12.0 just for example.
 
 ## Runtime dependencies
 
-`resvg-qt` depends only on QtCore and QtGui libraries.
+`resvg-qt` depends only on QtCore and QtGui libraries and imageformats/qjpeg plugin.
 
 Technically, any Qt 5 version should work, but we only support Qt >= 5.6.
 

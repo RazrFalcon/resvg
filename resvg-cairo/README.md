@@ -10,6 +10,8 @@ This backend uses the [gtk-rs](https://gtk-rs.org/) project.
 
 Building on Linux should work out of the box, but others OS'es are more complex.
 
+Note: we are not using the `gdk-pixbuf` crate for raster images, because it's way too heavy.
+
 ### on Windows using MSYS2
 
 Install `stable-x86_64-pc-windows-gnu` [Rust] target.

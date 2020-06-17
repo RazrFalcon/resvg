@@ -15,9 +15,7 @@ members = ["c-api"]
 travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
-jpeg-decoder = { version = "0.1.15", default-features = false }
 log = "0.4"
-png = { version = "0.15", default-features = false }
 rgb = "0.8"
 svgfilters = { path = "../svgfilters" }
 usvg = { path = "../usvg", default-features = false }
