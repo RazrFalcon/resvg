@@ -2,10 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use usvg::{NodeExt, TransformFromBBox, Rect, ScreenSize};
-
-use crate::{skia, Layers, ConvTransform, RenderState, Options};
-
+use crate::render::prelude::*;
 
 pub fn mask(
     node: &usvg::Node,
@@ -34,7 +31,7 @@ pub fn mask(
             mask_surface.concat(&usvg::Transform::from_bbox(bbox).to_native());
         }
 
-        super::render_group(node, opt, &mut RenderState::Ok, layers, &mut mask_surface);
+        crate::render::render_group(node, opt, &mut RenderState::Ok, layers, &mut mask_surface);
 
         mask_surface.restore();
     }

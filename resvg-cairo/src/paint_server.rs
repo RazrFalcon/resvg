@@ -2,9 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use usvg::{Size, Rect, TransformFromBBox, IsDefault};
-use crate::{ConvTransform, ReCairoContextExt, Options, RenderState, Layers};
-
+use crate::render::prelude::*;
 
 pub fn fill(
     tree: &usvg::Tree,
@@ -188,7 +186,7 @@ fn prepare_pattern(
     let (sx, sy) = global_ts.get_scale();
 
     let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy)).to_screen_size();
-    let surface = try_opt!(super::create_subsurface(img_size));
+    let surface = try_opt!(crate::render::create_subsurface(img_size));
 
     let sub_cr = cairo::Context::new(&surface);
     sub_cr.transform(cairo::Matrix::new(sx, 0.0, 0.0, sy, 0.0, 0.0));
@@ -205,7 +203,7 @@ fn prepare_pattern(
     }
 
     let mut layers = Layers::new(img_size);
-    super::render_group(node, opt, &mut RenderState::Ok, &mut layers, &sub_cr);
+    crate::render::render_group(node, opt, &mut RenderState::Ok, &mut layers, &sub_cr);
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);
@@ -218,7 +216,7 @@ fn prepare_pattern(
         // The only way to do this is by making a new image and rendering
         // the pattern on it with transparency.
 
-        let surface2 = try_opt!(super::create_subsurface(img_size));
+        let surface2 = try_opt!(crate::render::create_subsurface(img_size));
         let sub_cr2 = cairo::Context::new(&surface2);
         sub_cr2.set_source_surface(&surface, 0.0, 0.0);
         sub_cr2.paint_with_alpha(opacity.value());

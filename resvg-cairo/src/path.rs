@@ -2,9 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use usvg::{FuzzyZero, Rect};
-use crate::{paint_server, Options};
-
+use crate::render::prelude::*;
 
 pub fn draw(
     tree: &usvg::Tree,
@@ -33,11 +31,11 @@ pub fn draw(
         cr.set_antialias(cairo::Antialias::None);
     }
 
-    paint_server::fill(tree, &path.fill, opt, style_bbox, cr);
+    crate::paint_server::fill(tree, &path.fill, opt, style_bbox, cr);
     if path.stroke.is_some() {
         cr.fill_preserve();
 
-        paint_server::stroke(tree, &path.stroke, opt, style_bbox, cr);
+        crate::paint_server::stroke(tree, &path.stroke, opt, style_bbox, cr);
         cr.stroke();
     } else {
         cr.fill();

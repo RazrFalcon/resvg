@@ -3,9 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use log::warn;
-use usvg::{Rect, FitTo, ScreenSize};
-use crate::{skia, ConvTransform, Options};
-
+use crate::render::prelude::*;
 
 pub fn draw(
     image: &usvg::Image,

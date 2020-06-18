@@ -2,9 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use usvg::{Rect, FitTo, ScreenSize};
-use crate::{qt, ConvTransform, Options};
-
+use crate::render::prelude::*;
 
 pub fn draw(
     image: &usvg::Image,

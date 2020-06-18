@@ -5,12 +5,11 @@
 use std::cmp;
 use std::rc::Rc;
 
-use crate::skia;
 use rgb::FromSlice;
 use log::warn;
 use usvg::ColorInterpolation as ColorSpace;
-use usvg::{TransformFromBBox, FuzzyZero, NodeExt, Rect, ScreenRect};
-use crate::{ConvTransform, RenderState, Options, Layers};
+
+use crate::render::prelude::*;
 
 macro_rules! into_svgfilters_image {
     ($img:expr) => { svgfilters::ImageRef::new($img.data().as_bgra(), $img.width(), $img.height()) };
@@ -107,6 +106,58 @@ pub(crate) enum Error {
     NoResults,
 }
 
+
+trait SurfaceExt: Sized {
+    fn try_create(width: u32, height: u32) -> Result<skia::Surface, Error>;
+    fn copy_region(&self, region: ScreenRect) -> Result<skia::Surface, Error>;
+    fn clip_region(&mut self, region: ScreenRect);
+    fn clear(&mut self);
+    fn into_srgb(&mut self);
+    fn into_linear_rgb(&mut self);
+}
+
+impl SurfaceExt for skia::Surface {
+    fn try_create(width: u32, height: u32) -> Result<skia::Surface, Error> {
+        let mut surface = skia::Surface::new_rgba(width, height).ok_or(Error::AllocFailed)?;
+        surface.clear();
+        Ok(surface)
+    }
+
+    fn copy_region(&self, region: ScreenRect) -> Result<skia::Surface, Error> {
+        let x = cmp::max(0, region.x()) as u32;
+        let y = cmp::max(0, region.y()) as u32;
+        self.copy_rgba(x, y, region.width(), region.height()).ok_or(Error::AllocFailed)
+    }
+
+    fn clip_region(&mut self, region: ScreenRect) {
+        // This is cropping by clearing the pixels outside the region.
+        let mut paint = skia::Paint::new();
+        paint.set_color(0, 0, 0, 0);
+        paint.set_blend_mode(skia::BlendMode::Clear);
+
+        let w = self.width() as f64;
+        let h = self.height() as f64;
+
+        self.draw_rect(0.0, 0.0, w, region.y() as f64, &paint);
+        self.draw_rect(0.0, 0.0, region.x() as f64, h, &paint);
+        self.draw_rect(region.right() as f64, 0.0, w, h, &paint);
+        self.draw_rect(0.0, region.bottom() as f64, w, h, &paint);
+    }
+
+    fn clear(&mut self) {
+        skia::Canvas::clear(self);
+    }
+
+    fn into_srgb(&mut self) {
+        svgfilters::from_linear_rgb(self.data_mut().as_bgra_mut());
+    }
+
+    fn into_linear_rgb(&mut self) {
+        svgfilters::into_linear_rgb(self.data_mut().as_bgra_mut());
+    }
+}
+
+
 #[derive(Clone)]
 struct Image {
     /// Filter primitive result.
@@ -161,7 +212,7 @@ impl Image {
     fn take(self) -> Result<skia::Surface, Error> {
         match Rc::try_unwrap(self.image) {
             Ok(v) => Ok(v),
-            Err(v) => v.try_clone2(),
+            Err(v) => v.try_clone().ok_or(Error::AllocFailed),
         }
     }
 
@@ -331,7 +382,7 @@ fn _apply(
 
             let color_space = result.color_space;
             let mut buffer = result.take()?;
-            buffer.clip(subregion2);
+            buffer.clip_region(subregion2);
 
             result = Image {
                 image: Rc::new(buffer),
@@ -459,82 +510,17 @@ fn calc_subregion(
     Ok(subregion.to_screen_rect())
 }
 
-trait ImageExt: Sized {
-    fn width(&self) -> u32;
-    fn height(&self) -> u32;
-
-    fn try_clone2(&self) -> Result<Self, Error>;
-    fn clip(&mut self, region: ScreenRect);
-    fn clear(&mut self);
-
-    fn into_srgb(&mut self);
-    fn into_linear_rgb(&mut self);
-}
-
-impl ImageExt for skia::Surface {
-    fn width(&self) -> u32 {
-        self.width() as u32
-    }
-
-    fn height(&self) -> u32 {
-        self.height() as u32
-    }
-
-    fn try_clone2(&self) -> Result<Self, Error> {
-        self.try_clone().ok_or(Error::AllocFailed)
-    }
-
-    fn clip(&mut self, region: ScreenRect) {
-        // This is cropping by clearing the pixels outside the region.
-        let mut paint = skia::Paint::new();
-        paint.set_color(0, 0, 0, 0);
-        paint.set_blend_mode(skia::BlendMode::Clear);
-
-        let w = self.width() as f64;
-        let h = self.height() as f64;
-
-        self.draw_rect(0.0, 0.0, w, region.y() as f64, &paint);
-        self.draw_rect(0.0, 0.0, region.x() as f64, h, &paint);
-        self.draw_rect(region.right() as f64, 0.0, w, h, &paint);
-        self.draw_rect(0.0, region.bottom() as f64, w, h, &paint);
-    }
-
-    fn clear(&mut self) {
-        skia::Canvas::clear(self);
-    }
-
-    fn into_srgb(&mut self) {
-        svgfilters::from_linear_rgb(self.data_mut().as_bgra_mut());
-    }
-
-    fn into_linear_rgb(&mut self) {
-        svgfilters::into_linear_rgb(self.data_mut().as_bgra_mut());
-    }
-}
-
-fn create_surface(width: u32, height: u32) -> Result<skia::Surface, Error> {
-    let mut surface = skia::Surface::new_rgba(width, height).ok_or(Error::AllocFailed)?;
-    surface.clear();
-    Ok(surface)
-}
-
-fn copy_surface(surface: &skia::Surface, region: ScreenRect) -> Result<skia::Surface, Error> {
-    let x = cmp::max(0, region.x()) as u32;
-    let y = cmp::max(0, region.y()) as u32;
-    surface.copy_rgba(x, y, region.width(), region.height()).ok_or(Error::AllocFailed)
-}
-
 fn get_input(
     input: &usvg::FilterInput,
     region: ScreenRect,
     inputs: &FilterInputs,
     results: &[FilterResult],
 ) -> Result<Image, Error> {
-    let convert = |in_image, region| {
+    let convert = |in_image: Option<&skia::Surface>, region| {
         let image = if let Some(image) = in_image {
-            copy_surface(image, region)?
+            image.copy_region(region)?
         } else {
-            create_surface(region.width(), region.height())?
+            skia::Surface::try_create(region.width(), region.height())?
         };
 
         Ok(Image {
@@ -561,7 +547,7 @@ fn get_input(
 
     match input {
         usvg::FilterInput::SourceGraphic => {
-            let image = copy_surface(inputs.source, region)?;
+            let image = inputs.source.copy_region(region)?;
 
             Ok(Image {
                 image: Rc::new(image),
@@ -570,7 +556,7 @@ fn get_input(
             })
         }
         usvg::FilterInput::SourceAlpha => {
-            let image = copy_surface(inputs.source, region)?;
+            let image = inputs.source.copy_region(region)?;
             convert_alpha(image)
         }
         usvg::FilterInput::BackgroundImage => {
@@ -641,7 +627,7 @@ fn apply_offset(
         return Ok(input);
     }
 
-    let mut buffer = create_surface(input.width(), input.height())?;
+    let mut buffer = skia::Surface::try_create(input.width(), input.height())?;
 
     buffer.reset_matrix();
     buffer.draw_surface(input.as_ref(), dx, dy, 255, skia::BlendMode::SourceOver,
@@ -661,7 +647,7 @@ fn apply_blend(
     let input1 = input1.into_color_space(cs)?;
     let input2 = input2.into_color_space(cs)?;
 
-    let mut buffer = create_surface(region.width(), region.height())?;
+    let mut buffer = skia::Surface::try_create(region.width(), region.height())?;
 
     buffer.draw_surface(input2.as_ref(), 0.0, 0.0, 255, skia::BlendMode::SourceOver,
                         skia::FilterQuality::Low);
@@ -692,7 +678,7 @@ fn apply_composite(
     let input1 = input1.into_color_space(cs)?;
     let input2 = input2.into_color_space(cs)?;
 
-    let mut buffer = create_surface(region.width(), region.height())?;
+    let mut buffer = skia::Surface::try_create(region.width(), region.height())?;
 
     if let Operator::Arithmetic { k1, k2, k3, k4 } = fe.operator {
         let mut buffer1 = input1.take()?;
@@ -735,7 +721,7 @@ fn apply_merge(
     inputs: &FilterInputs,
     results: &[FilterResult],
 ) -> Result<Image, Error> {
-    let mut buffer = create_surface(region.width(), region.height())?;
+    let mut buffer = skia::Surface::try_create(region.width(), region.height())?;
     buffer.reset_matrix();
 
     for input in &fe.inputs {
@@ -756,7 +742,7 @@ fn apply_flood(
     let c = fe.color;
     let alpha = (fe.opacity.value() * 255.0) as u8;
 
-    let mut buffer = create_surface(region.width(), region.height())?;
+    let mut buffer = skia::Surface::try_create(region.width(), region.height())?;
     buffer.fill(c.red, c.green, c.blue, alpha);
 
     Ok(Image::from_image(buffer, ColorSpace::SRGB))
@@ -766,11 +752,11 @@ fn apply_tile(
     input: Image,
     region: ScreenRect,
 ) -> Result<Image, Error> {
-    let mut buffer = create_surface(region.width(), region.height())?;
+    let mut buffer = skia::Surface::try_create(region.width(), region.height())?;
 
     let subregion = input.region.translate(-region.x(), -region.y());
 
-    let tile_surface = copy_surface(&input.image, subregion)?;
+    let tile_surface = input.image.copy_region(subregion)?;
     let brush_ts = usvg::Transform::new_translate(subregion.x() as f64, subregion.y() as f64);
     let shader = skia::Shader::new_from_surface_image(&tile_surface, brush_ts.to_native());
     let mut paint = skia::Paint::new();
@@ -790,7 +776,7 @@ fn apply_image(
     tree: &usvg::Tree,
     ts: &usvg::Transform,
 ) -> Result<Image, Error> {
-    let mut buffer = create_surface(region.width(), region.height())?;
+    let mut buffer = skia::Surface::try_create(region.width(), region.height())?;
 
     match fe.data {
         usvg::FeImageKind::Image(ref data, format) => {
@@ -819,7 +805,7 @@ fn apply_image(
                 buffer.scale(sx, sy);
                 buffer.concat(&node.transform().to_native());
 
-                super::render_node(node, opt, &mut RenderState::Ok, &mut layers, &mut buffer);
+                crate::render::render_node(node, opt, &mut RenderState::Ok, &mut layers, &mut buffer);
             }
         }
     }
@@ -964,7 +950,7 @@ fn apply_displacement_map(
         Ok(Image::from_image(buffer1, cs))
     );
 
-    let mut buffer = create_surface(region.width(), region.height())?;
+    let mut buffer = skia::Surface::try_create(region.width(), region.height())?;
 
     reverse_rgb(&mut buffer);
 
@@ -986,7 +972,7 @@ fn apply_turbulence(
     cs: ColorSpace,
     ts: &usvg::Transform,
 ) -> Result<Image, Error> {
-    let mut buffer = create_surface(region.width(), region.height())?;
+    let mut buffer = skia::Surface::try_create(region.width(), region.height())?;
 
     let (sx, sy) = ts.get_scale();
     if sx.is_fuzzy_zero() || sy.is_fuzzy_zero() {
@@ -1016,7 +1002,7 @@ fn apply_diffuse_lighting(
     ts: &usvg::Transform,
     input: Image,
 ) -> Result<Image, Error> {
-    let mut buffer = create_surface(region.width(), region.height())?;
+    let mut buffer = skia::Surface::try_create(region.width(), region.height())?;
 
     let light_source = fe.light_source.transform(region, ts);
 
@@ -1041,7 +1027,7 @@ fn apply_specular_lighting(
     ts: &usvg::Transform,
     input: Image,
 ) -> Result<Image, Error> {
-    let mut buffer = create_surface(region.width(), region.height())?;
+    let mut buffer = skia::Surface::try_create(region.width(), region.height())?;
 
     let light_source = fe.light_source.transform(region, ts);
 
@@ -1108,7 +1094,7 @@ fn resolve_std_dev(
         const BLUR_SIGMA_THRESHOLD: f64 = 2.0;
         // Check that the current feGaussianBlur filter can be applied using a box blur.
         let box_blur =    std_dx >= BLUR_SIGMA_THRESHOLD
-            || std_dy >= BLUR_SIGMA_THRESHOLD;
+                       || std_dy >= BLUR_SIGMA_THRESHOLD;
 
         Some((std_dx, std_dy, box_blur))
     }

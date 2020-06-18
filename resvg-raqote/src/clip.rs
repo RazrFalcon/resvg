@@ -4,7 +4,6 @@
 
 use crate::render::prelude::*;
 
-
 pub fn clip(
     node: &usvg::Node,
     cp: &usvg::ClipPath,
@@ -35,7 +34,7 @@ pub fn clip(
                     ..Default::default()
                 };
 
-                path::draw(&node.tree(), p, opt, draw_opt, &mut clip_dt);
+                crate::path::draw(&node.tree(), p, opt, draw_opt, &mut clip_dt);
             }
             usvg::NodeKind::Group(ref g) => {
                 clip_group(&node, g, opt, bbox, layers, &mut clip_dt);
@@ -104,7 +103,7 @@ fn draw_group_child(
 
         match *child.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                path::draw(&child.tree(), path_node, opt, draw_options, dt);
+                crate::path::draw(&child.tree(), path_node, opt, draw_options, dt);
             }
             _ => {}
         }

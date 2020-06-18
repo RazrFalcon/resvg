@@ -5,12 +5,11 @@
 use std::cmp;
 use std::rc::Rc;
 
-use usvg::{TransformFromBBox, FuzzyZero, NodeExt, Rect, ScreenRect};
 use usvg::ColorInterpolation as ColorSpace;
 use rgb::FromSlice;
 use log::warn;
 
-use crate::{ConvTransform, ReCairoContextExt, Layers, Options};
+use crate::render::prelude::*;
 
 
 /// A helper trait to convert `usvg` types into `svgfilters` one.
@@ -91,6 +90,77 @@ pub(crate) enum Error {
     InvalidRegion,
     NoResults,
 }
+
+
+trait ImageSurfaceExt: Sized {
+    fn try_create(width: u32, height: u32) -> Result<cairo::ImageSurface, Error>;
+    fn copy_region(&self, region: ScreenRect) -> Result<cairo::ImageSurface, Error>;
+    fn clip_region(&mut self, region: ScreenRect);
+    fn clear(&mut self);
+    fn into_srgb(&mut self);
+    fn into_linear_rgb(&mut self);
+}
+
+impl ImageSurfaceExt for cairo::ImageSurface {
+    fn try_create(width: u32, height: u32) -> Result<cairo::ImageSurface, Error> {
+        cairo::ImageSurface::create(cairo::Format::ARgb32, width as i32, height as i32)
+            .map_err(|_| Error::AllocFailed)
+    }
+
+    fn copy_region(&self, region: ScreenRect) -> Result<cairo::ImageSurface, Error> {
+        let x = cmp::max(0, region.x()) as f64;
+        let y = cmp::max(0, region.y()) as f64;
+
+        let new_image = cairo::ImageSurface::try_create(region.width(), region.height())?;
+
+        let cr = cairo::Context::new(&new_image);
+        cr.set_source_surface(&*self, -x, -y);
+        cr.paint();
+
+        Ok(new_image)
+    }
+
+    fn clip_region(&mut self, region: ScreenRect) {
+        let cr = cairo::Context::new(self);
+        cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
+        cr.set_operator(cairo::Operator::Clear);
+
+        cr.rectangle(0.0, 0.0, self.get_width() as f64, region.y() as f64);
+        cr.rectangle(0.0, 0.0, region.x() as f64, self.get_height() as f64);
+        cr.rectangle(region.right() as f64, 0.0, self.get_width() as f64, self.get_height() as f64);
+        cr.rectangle(0.0, region.bottom() as f64, self.get_width() as f64, self.get_height() as f64);
+
+        cr.fill();
+    }
+
+    fn clear(&mut self) {
+        let cr = cairo::Context::new(self);
+        cr.set_operator(cairo::Operator::Clear);
+        cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
+        cr.paint();
+    }
+
+    fn into_srgb(&mut self) {
+        if let Ok(ref mut data) = self.get_data() {
+            svgfilters::demultiply_alpha(data.as_bgra_mut());
+            svgfilters::from_linear_rgb(data.as_bgra_mut());
+            svgfilters::multiply_alpha(data.as_bgra_mut());
+        } else {
+            warn!("Cairo surface is already borrowed.");
+        }
+    }
+
+    fn into_linear_rgb(&mut self) {
+        if let Ok(ref mut data) = self.get_data() {
+            svgfilters::demultiply_alpha(data.as_bgra_mut());
+            svgfilters::into_linear_rgb(data.as_bgra_mut());
+            svgfilters::multiply_alpha(data.as_bgra_mut());
+        } else {
+            warn!("Cairo surface is already borrowed.");
+        }
+    }
+}
+
 
 #[derive(Clone)]
 struct Image {
@@ -231,77 +301,6 @@ pub fn apply(
     }
 }
 
-
-trait ImageExt: Sized {
-    fn clip(&mut self, region: ScreenRect);
-    fn clear(&mut self);
-    fn into_srgb(&mut self);
-    fn into_linear_rgb(&mut self);
-}
-
-impl ImageExt for cairo::ImageSurface {
-    fn clip(&mut self, region: ScreenRect) {
-        let cr = cairo::Context::new(self);
-        cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
-        cr.set_operator(cairo::Operator::Clear);
-
-        cr.rectangle(0.0, 0.0, self.get_width() as f64, region.y() as f64);
-        cr.rectangle(0.0, 0.0, region.x() as f64, self.get_height() as f64);
-        cr.rectangle(region.right() as f64, 0.0, self.get_width() as f64, self.get_height() as f64);
-        cr.rectangle(0.0, region.bottom() as f64, self.get_width() as f64, self.get_height() as f64);
-
-        cr.fill();
-    }
-
-    fn clear(&mut self) {
-        let cr = cairo::Context::new(self);
-        cr.set_operator(cairo::Operator::Clear);
-        cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
-        cr.paint();
-    }
-
-    fn into_srgb(&mut self) {
-        if let Ok(ref mut data) = self.get_data() {
-            svgfilters::demultiply_alpha(data.as_bgra_mut());
-            svgfilters::from_linear_rgb(data.as_bgra_mut());
-            svgfilters::multiply_alpha(data.as_bgra_mut());
-        } else {
-            warn!("Cairo surface is already borrowed.");
-        }
-    }
-
-    fn into_linear_rgb(&mut self) {
-        if let Ok(ref mut data) = self.get_data() {
-            svgfilters::demultiply_alpha(data.as_bgra_mut());
-            svgfilters::into_linear_rgb(data.as_bgra_mut());
-            svgfilters::multiply_alpha(data.as_bgra_mut());
-        } else {
-            warn!("Cairo surface is already borrowed.");
-        }
-    }
-}
-
-fn create_image(width: u32, height: u32) -> Result<cairo::ImageSurface, Error> {
-    cairo::ImageSurface::create(cairo::Format::ARgb32, width as i32, height as i32)
-        .map_err(|_| Error::AllocFailed)
-}
-
-fn copy_image(
-    image: &cairo::ImageSurface,
-    region: ScreenRect,
-) -> Result<cairo::ImageSurface, Error> {
-    let x = cmp::max(0, region.x()) as f64;
-    let y = cmp::max(0, region.y()) as f64;
-
-    let new_image = create_image(region.width(), region.height())?;
-
-    let cr = cairo::Context::new(&new_image);
-    cr.set_source_surface(&*image, -x, -y);
-    cr.paint();
-
-    Ok(new_image)
-}
-
 fn _apply(
     filter: &usvg::Filter,
     inputs: &FilterInputs,
@@ -396,7 +395,7 @@ fn _apply(
 
             let color_space = result.color_space;
             let mut buffer = result.take()?;
-            buffer.clip(subregion2);
+            buffer.clip_region(subregion2);
 
             result = Image {
                 image: Rc::new(buffer),
@@ -530,11 +529,11 @@ fn get_input(
     inputs: &FilterInputs,
     results: &[FilterResult],
 ) -> Result<Image, Error> {
-    let convert = |in_image, region| {
+    let convert = |in_image: Option<&cairo::ImageSurface>, region| {
         let image = if let Some(image) = in_image {
-            copy_image(image, region)?
+            image.copy_region(region)?
         } else {
-            create_image(region.width(), region.height())?
+            cairo::ImageSurface::try_create(region.width(), region.height())?
         };
 
         Ok(Image {
@@ -565,7 +564,7 @@ fn get_input(
 
     match input {
         usvg::FilterInput::SourceGraphic => {
-            let image = copy_image(inputs.source, region)?;
+            let image = inputs.source.copy_region(region)?;
 
             Ok(Image {
                 image: Rc::new(image),
@@ -574,7 +573,7 @@ fn get_input(
             })
         }
         usvg::FilterInput::SourceAlpha => {
-            let image = copy_image(inputs.source, region)?;
+            let image = inputs.source.copy_region(region)?;
             convert_alpha(image)
         }
         usvg::FilterInput::BackgroundImage => {
@@ -683,7 +682,7 @@ fn apply_blend(
     let input1 = input1.into_color_space(cs)?;
     let input2 = input2.into_color_space(cs)?;
 
-    let buffer = create_image(region.width(), region.height())?;
+    let buffer = cairo::ImageSurface::try_create(region.width(), region.height())?;
     let cr = cairo::Context::new(&buffer);
 
     cr.set_source_surface(&input2, 0.0, 0.0);
@@ -714,7 +713,7 @@ fn apply_composite(
     let mut buffer1 = input1.into_color_space(cs)?.take()?;
     let mut buffer2 = input2.into_color_space(cs)?.take()?;
 
-    let mut buffer = create_image(region.width(), region.height())?;
+    let mut buffer = cairo::ImageSurface::try_create(region.width(), region.height())?;
 
     if let Operator::Arithmetic { k1, k2, k3, k4 } = fe.operator {
         let (w, h) = (region.width(), region.height());
@@ -757,7 +756,7 @@ fn apply_merge(
     inputs: &FilterInputs,
     results: &[FilterResult],
 ) -> Result<Image, Error> {
-    let buffer = create_image(region.width(), region.height())?;
+    let buffer = cairo::ImageSurface::try_create(region.width(), region.height())?;
     let cr = cairo::Context::new(&buffer);
 
     for input in &fe.inputs {
@@ -775,7 +774,7 @@ fn apply_flood(
     fe: &usvg::FeFlood,
     region: ScreenRect,
 ) -> Result<Image, Error> {
-    let buffer = create_image(region.width(), region.height())?;
+    let buffer = cairo::ImageSurface::try_create(region.width(), region.height())?;
 
     let cr = cairo::Context::new(&buffer);
     cr.set_source_color(fe.color, fe.opacity);
@@ -788,11 +787,11 @@ fn apply_tile(
     input: Image,
     region: ScreenRect,
 ) -> Result<Image, Error> {
-    let buffer = create_image(region.width(), region.height())?;
+    let buffer = cairo::ImageSurface::try_create(region.width(), region.height())?;
 
     let subregion = input.region.translate(-region.x(), -region.y());
 
-    let tile = copy_image(&input.image, subregion)?;
+    let tile = input.image.copy_region(subregion)?;
     let brush_ts = usvg::Transform::new_translate(subregion.x() as f64, subregion.y() as f64);
 
     let patt = cairo::SurfacePattern::create(&tile);
@@ -819,7 +818,7 @@ fn apply_image(
     tree: &usvg::Tree,
     ts: &usvg::Transform,
 ) -> Result<Image, Error> {
-    let buffer = create_image(region.width(), region.height())?;
+    let buffer = cairo::ImageSurface::try_create(region.width(), region.height())?;
 
     match fe.data {
         usvg::FeImageKind::Image(ref data, format) => {
@@ -849,7 +848,7 @@ fn apply_image(
                 cr.scale(sx, sy);
                 cr.transform(node.transform().to_native());
 
-                super::render_node(node, opt, &mut crate::RenderState::Ok, &mut layers, &cr);
+                crate::render::render_node(node, opt, &mut RenderState::Ok, &mut layers, &cr);
             }
         }
     }
@@ -1001,7 +1000,7 @@ fn apply_displacement_map(
         Ok(Image::from_image(buffer1, cs))
     );
 
-    let mut buffer = create_image(region.width(), region.height())?;
+    let mut buffer = cairo::ImageSurface::try_create(region.width(), region.height())?;
 
     let (w, h) = (buffer.get_width() as u32, buffer.get_height() as u32);
     if let (Ok(buffer1), Ok(buffer2), Ok(mut buffer))
@@ -1026,7 +1025,7 @@ fn apply_turbulence(
     cs: ColorSpace,
     ts: &usvg::Transform,
 ) -> Result<Image, Error> {
-    let mut buffer = create_image(region.width(), region.height())?;
+    let mut buffer = cairo::ImageSurface::try_create(region.width(), region.height())?;
     let (sx, sy) = ts.get_scale();
     if sx.is_fuzzy_zero() || sy.is_fuzzy_zero() {
         return Ok(Image::from_image(buffer, cs));
@@ -1059,7 +1058,7 @@ fn apply_diffuse_lighting(
     input: Image,
 ) -> Result<Image, Error> {
     let mut input = input.take()?;
-    let mut buffer = create_image(region.width(), region.height())?;
+    let mut buffer = cairo::ImageSurface::try_create(region.width(), region.height())?;
 
     let light_source = fe.light_source.transform(region, ts);
 
@@ -1086,7 +1085,7 @@ fn apply_specular_lighting(
     input: Image,
 ) -> Result<Image, Error> {
     let mut input = input.take()?;
-    let mut buffer = create_image(region.width(), region.height())?;
+    let mut buffer = cairo::ImageSurface::try_create(region.width(), region.height())?;
 
     let light_source = fe.light_source.transform(region, ts);
 

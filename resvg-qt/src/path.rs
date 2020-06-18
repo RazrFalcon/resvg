@@ -2,9 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use usvg::Rect;
-use crate::{qt, paint_server, Options};
-
+use crate::render::prelude::*;
 
 pub fn draw(
     tree: &usvg::Tree,
@@ -30,8 +28,8 @@ pub fn draw(
     // so we can pass whatever rect we want, because it will not be used anyway.
     let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
 
-    paint_server::fill(tree, &path.fill, opt, style_bbox, p);
-    paint_server::stroke(tree, &path.stroke, opt, style_bbox, p);
+    crate::paint_server::fill(tree, &path.fill, opt, style_bbox, p);
+    crate::paint_server::stroke(tree, &path.stroke, opt, style_bbox, p);
     p.set_antialiasing(path.rendering_mode.use_shape_antialiasing());
 
     p.draw_path(&new_path);

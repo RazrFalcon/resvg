@@ -45,7 +45,7 @@ impl Layers {
     pub fn get(&mut self) -> Option<Layer> {
         let used_layers = Rc::strong_count(&self.counter) - 1;
         if used_layers == self.d.len() {
-            match super::create_subsurface(self.img_size) {
+            match crate::render::create_subsurface(self.img_size) {
                 Some(img) => {
                     self.d.push(Rc::new(RefCell::new(img)));
                     Some(Layer {

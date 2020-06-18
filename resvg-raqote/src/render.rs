@@ -7,9 +7,9 @@ use rgb::FromSlice;
 pub(crate) mod prelude {
     pub(crate) use usvg::{TransformFromBBox, FuzzyEq, FuzzyZero, NodeExt, IsDefault, FitTo};
     pub(crate) use usvg::{Size, ScreenSize, Rect, ScreenRect};
-    pub(crate) use crate::render::*;
-    pub(crate) use crate::*;
     pub(crate) use crate::layers::Layers;
+    pub(crate) use crate::Options;
+    pub(crate) use super::*;
 }
 
 use prelude::*;
@@ -293,9 +293,9 @@ fn render_group_impl(
                 let background = prepare_filter_background(node, filter, opt);
                 let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, opt, &sub_dt);
                 let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_dt);
-                filter::apply(filter, bbox, &ts, opt, &node.tree(),
-                              background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
-                              &mut sub_dt);
+                crate::filter::apply(filter, bbox, &ts, opt, &node.tree(),
+                                     background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
+                                     &mut sub_dt);
             }
         }
     }
@@ -307,7 +307,7 @@ fn render_group_impl(
                 if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
                     sub_dt.set_transform(&curr_ts);
 
-                    clip::clip(&clip_node, cp, opt, bbox, layers, &mut sub_dt);
+                    crate::clip::clip(&clip_node, cp, opt, bbox, layers, &mut sub_dt);
                 }
             }
         }
@@ -317,17 +317,21 @@ fn render_group_impl(
                 if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
                     sub_dt.set_transform(&curr_ts);
 
-                    mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_dt);
+                    crate::mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_dt);
                 }
             }
         }
     }
 
-    dt.blend_surface_with_alpha(&sub_dt,
-                                raqote::IntRect::new(raqote::IntPoint::new(0, 0),
-                                                     raqote::IntPoint::new(sub_dt.width(), sub_dt.height())),
-                                raqote::IntPoint::new(0, 0),
-                                g.opacity.value() as f32);
+    dt.blend_surface_with_alpha(
+        &sub_dt,
+        raqote::IntRect::new(
+            raqote::IntPoint::new(0, 0),
+            raqote::IntPoint::new(sub_dt.width(), sub_dt.height())
+        ),
+        raqote::IntPoint::new(0, 0),
+        g.opacity.value() as f32
+    );
 
     bbox
 }
@@ -366,7 +370,7 @@ fn prepare_filter_fill_paint(
     opt: &Options,
     canvas: &raqote::DrawTarget,
 ) -> Option<raqote::DrawTarget> {
-    let region = filter::calc_region(filter, bbox, &ts, canvas).ok()?;
+    let region = crate::filter::calc_region(filter, bbox, &ts, canvas).ok()?;
     let mut dt = raqote::DrawTarget::new(region.size().width() as i32, region.size().height() as i32);
     if let usvg::NodeKind::Group(ref g) = *parent.borrow() {
         if let Some(paint) = g.filter_fill.clone() {
@@ -375,7 +379,7 @@ fn prepare_filter_fill_paint(
             let draw_opt = raqote::DrawOptions::default();
             let mut pb = raqote::PathBuilder::new();
             pb.rect(0.0, 0.0, region.width() as f32, region.height() as f32);
-            paint_server::fill(&parent.tree(), &pb.finish(), &fill, opt, style_bbox, &draw_opt, &mut dt);
+            crate::paint_server::fill(&parent.tree(), &pb.finish(), &fill, opt, style_bbox, &draw_opt, &mut dt);
         }
     }
 
@@ -400,7 +404,7 @@ fn prepare_filter_stroke_paint(
             let draw_opt = raqote::DrawOptions::default();
             let mut pb = raqote::PathBuilder::new();
             pb.rect(0.0, 0.0, region.width() as f32, region.height() as f32);
-            paint_server::fill(&parent.tree(), &pb.finish(), &fill, opt, style_bbox, &draw_opt, &mut dt);
+            crate::paint_server::fill(&parent.tree(), &pb.finish(), &fill, opt, style_bbox, &draw_opt, &mut dt);
         }
     }
 

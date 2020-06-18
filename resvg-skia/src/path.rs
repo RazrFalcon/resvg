@@ -2,9 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use usvg::Rect;
-use crate::{skia, paint_server, ConvTransform, Options};
-
+use crate::render::prelude::*;
 
 pub fn draw(
     tree: &usvg::Tree,
@@ -35,14 +33,14 @@ pub fn draw(
     let global_ts = usvg::Transform::from_native(&canvas.get_matrix());
 
     if path.fill.is_some() {
-        let mut fill = paint_server::fill(tree, &path.fill, opt, style_bbox, global_ts);
+        let mut fill = crate::paint_server::fill(tree, &path.fill, opt, style_bbox, global_ts);
         fill.set_anti_alias(antialias);
         fill.set_blend_mode(blend_mode);
         canvas.draw_path(&skia_path, &fill);
     }
 
     if path.stroke.is_some() {
-        let mut stroke = paint_server::stroke(tree, &path.stroke, opt, style_bbox, global_ts);
+        let mut stroke = crate::paint_server::stroke(tree, &path.stroke, opt, style_bbox, global_ts);
         stroke.set_anti_alias(antialias);
         stroke.set_blend_mode(blend_mode);
         canvas.draw_path(&skia_path, &stroke);

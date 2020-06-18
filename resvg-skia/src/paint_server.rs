@@ -2,9 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use usvg::{Size, Rect, TransformFromBBox, IsDefault};
-use crate::{skia, ConvTransform, Options, RenderState, Layers};
-
+use crate::render::prelude::*;
 
 pub fn fill(
     tree: &usvg::Tree,
@@ -193,7 +191,7 @@ fn prepare_pattern(
     let (sx, sy) = global_ts.get_scale();
 
     let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy)).to_screen_size();
-    let mut surface = try_opt!(super::create_subsurface(img_size));
+    let mut surface = try_opt!(crate::render::create_subsurface(img_size));
     surface.clear();
 
     surface.scale(sx, sy);
@@ -209,7 +207,7 @@ fn prepare_pattern(
     }
 
     let mut layers = Layers::new(img_size);
-    super::render_group(pattern_node, opt, &mut RenderState::Ok, &mut layers, &mut surface);
+    crate::render::render_group(pattern_node, opt, &mut RenderState::Ok, &mut layers, &mut surface);
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);

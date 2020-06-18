@@ -8,9 +8,8 @@ use std::rc::Rc;
 use rgb::FromSlice;
 use log::warn;
 use usvg::ColorInterpolation as ColorSpace;
-use usvg::{NodeExt, TransformFromBBox, FuzzyZero, Rect, ScreenRect};
 
-use crate::{qt, ConvTransform, Options, Layers};
+use crate::render::prelude::*;
 
 macro_rules! into_svgfilters_image {
     ($img:expr) => { svgfilters::ImageRef::new($img.data().as_bgra(), $img.width(), $img.height()) };
@@ -107,6 +106,59 @@ pub(crate) enum Error {
     NoResults,
 }
 
+
+trait QtImageExt: Sized {
+    fn try_create(width: u32, height: u32) -> Result<qt::Image, Error>;
+    fn copy_region(&self, region: ScreenRect) -> Result<qt::Image, Error>;
+    fn clip_region(&mut self, region: ScreenRect);
+    fn clear(&mut self);
+    fn into_srgb(&mut self);
+    fn into_linear_rgb(&mut self);
+}
+
+impl QtImageExt for qt::Image {
+    fn try_create(width: u32, height: u32) -> Result<qt::Image, Error> {
+        // Unlike crate::create_subimage, this one is RGBA and not RGBA-premultiplied.
+        let mut image = qt::Image::new_rgba(width, height).ok_or(Error::AllocFailed)?;
+        image.clear();
+        Ok(image)
+    }
+
+    fn copy_region(&self, region: ScreenRect) -> Result<qt::Image, Error> {
+        let x = cmp::max(0, region.x()) as u32;
+        let y = cmp::max(0, region.y()) as u32;
+
+        self.copy(x, y, region.width(), region.height()).ok_or(Error::AllocFailed)
+    }
+
+    fn clip_region(&mut self, region: ScreenRect) {
+        let mut brush = qt::Brush::new();
+        brush.set_color(0, 0, 0, 0);
+
+        let mut p = qt::Painter::new(self);
+        p.set_composition_mode(qt::CompositionMode::Clear);
+        p.reset_pen();
+        p.set_brush(brush);
+        p.draw_rect(0.0, 0.0, self.width() as f64, region.y() as f64);
+        p.draw_rect(0.0, 0.0, region.x() as f64, self.height() as f64);
+        p.draw_rect(region.right() as f64, 0.0, self.width() as f64, self.height() as f64);
+        p.draw_rect(0.0, region.bottom() as f64, self.width() as f64, self.height() as f64);
+    }
+
+    fn clear(&mut self) {
+        self.fill(0, 0, 0, 0);
+    }
+
+    fn into_srgb(&mut self) {
+        svgfilters::from_linear_rgb(self.data_mut().as_bgra_mut());
+    }
+
+    fn into_linear_rgb(&mut self) {
+        svgfilters::into_linear_rgb(self.data_mut().as_bgra_mut());
+    }
+}
+
+
 #[derive(Clone)]
 struct Image {
     /// Filter primitive result.
@@ -161,7 +213,7 @@ impl Image {
     fn take(self) -> Result<qt::Image, Error> {
         match Rc::try_unwrap(self.image) {
             Ok(v) => Ok(v),
-            Err(v) => v.try_clone2(),
+            Err(v) => v.try_clone().ok_or(Error::AllocFailed),
         }
     }
 
@@ -234,72 +286,6 @@ pub fn apply(
         }
         Err(Error::NoResults) => {}
     }
-}
-
-
-trait ImageExt: Sized {
-    fn width(&self) -> u32;
-    fn height(&self) -> u32;
-
-    fn try_clone2(&self) -> Result<Self, Error>;
-    fn clip(&mut self, region: ScreenRect);
-    fn clear(&mut self);
-
-    fn into_srgb(&mut self);
-    fn into_linear_rgb(&mut self);
-}
-
-impl ImageExt for qt::Image {
-    fn width(&self) -> u32 {
-        self.width()
-    }
-
-    fn height(&self) -> u32 {
-        self.height()
-    }
-
-    fn try_clone2(&self) -> Result<Self, Error> {
-        self.try_clone().ok_or(Error::AllocFailed)
-    }
-
-    fn clip(&mut self, region: ScreenRect) {
-        let mut brush = qt::Brush::new();
-        brush.set_color(0, 0, 0, 0);
-
-        let mut p = qt::Painter::new(self);
-        p.set_composition_mode(qt::CompositionMode::Clear);
-        p.reset_pen();
-        p.set_brush(brush);
-        p.draw_rect(0.0, 0.0, self.width() as f64, region.y() as f64);
-        p.draw_rect(0.0, 0.0, region.x() as f64, self.height() as f64);
-        p.draw_rect(region.right() as f64, 0.0, self.width() as f64, self.height() as f64);
-        p.draw_rect(0.0, region.bottom() as f64, self.width() as f64, self.height() as f64);
-    }
-
-    fn clear(&mut self) {
-        self.fill(0, 0, 0, 0);
-    }
-
-    fn into_srgb(&mut self) {
-        svgfilters::from_linear_rgb(self.data_mut().as_bgra_mut());
-    }
-
-    fn into_linear_rgb(&mut self) {
-        svgfilters::into_linear_rgb(self.data_mut().as_bgra_mut());
-    }
-}
-
-fn create_image(width: u32, height: u32) -> Result<qt::Image, Error> {
-    let mut image = qt::Image::new_rgba(width, height).ok_or(Error::AllocFailed)?;
-    image.fill(0, 0, 0, 0);
-    Ok(image)
-}
-
-fn copy_image(image: &qt::Image, region: ScreenRect) -> Result<qt::Image, Error> {
-    let x = cmp::max(0, region.x()) as u32;
-    let y = cmp::max(0, region.y()) as u32;
-
-    image.copy(x, y, region.width(), region.height()).ok_or(Error::AllocFailed)
 }
 
 fn _apply(
@@ -396,7 +382,7 @@ fn _apply(
 
             let color_space = result.color_space;
             let mut buffer = result.take()?;
-            buffer.clip(subregion2);
+            buffer.clip_region(subregion2);
 
             result = Image {
                 image: Rc::new(buffer),
@@ -530,12 +516,12 @@ fn get_input(
     inputs: &FilterInputs,
     results: &[FilterResult],
 ) -> Result<Image, Error> {
-    let convert = |in_image, region| {
+    let convert = |in_image: Option<&qt::Image>, region| {
         let image = if let Some(image) = in_image {
-            let image = copy_image(image, region)?;
+            let image = image.copy_region(region)?;
             image.to_rgba().ok_or(Error::AllocFailed)?
         } else {
-            create_image(region.width(), region.height())?
+            qt::Image::try_create(region.width(), region.height())?
         };
 
         Ok(Image {
@@ -562,7 +548,7 @@ fn get_input(
 
     match input {
         usvg::FilterInput::SourceGraphic => {
-            let image = copy_image(inputs.source, region)?;
+            let image = inputs.source.copy_region(region)?;
             let image = image.to_rgba().ok_or(Error::AllocFailed)?; // TODO: optional
 
             Ok(Image {
@@ -572,7 +558,7 @@ fn get_input(
             })
         }
         usvg::FilterInput::SourceAlpha => {
-            let image = copy_image(inputs.source, region)?;
+            let image = inputs.source.copy_region(region)?;
             let image = image.to_rgba().ok_or(Error::AllocFailed)?;
             convert_alpha(image)
         }
@@ -642,7 +628,7 @@ fn apply_offset(
     }
 
     // TODO: do not use an additional buffer
-    let mut buffer = create_image(input.width(), input.height())?;
+    let mut buffer = qt::Image::try_create(input.width(), input.height())?;
 
     let mut p = qt::Painter::new(&mut buffer);
     // TODO: fractional doesn't work
@@ -661,7 +647,7 @@ fn apply_blend(
     let input1 = input1.into_color_space(cs)?;
     let input2 = input2.into_color_space(cs)?;
 
-    let mut buffer = create_image(region.width(), region.height())?;
+    let mut buffer = qt::Image::try_create(region.width(), region.height())?;
     let mut p = qt::Painter::new(&mut buffer);
 
     p.draw_image(0.0, 0.0, input2.as_ref());
@@ -691,7 +677,7 @@ fn apply_composite(
     let input1 = input1.into_color_space(cs)?;
     let input2 = input2.into_color_space(cs)?;
 
-    let mut buffer = create_image(region.width(), region.height())?;
+    let mut buffer = qt::Image::try_create(region.width(), region.height())?;
 
     if let Operator::Arithmetic { k1, k2, k3, k4 } = fe.operator {
         let mut buffer1 = input1.take()?;
@@ -734,7 +720,7 @@ fn apply_merge(
     inputs: &FilterInputs,
     results: &[FilterResult],
 ) -> Result<Image, Error> {
-    let mut buffer = create_image(region.width(), region.height())?;
+    let mut buffer = qt::Image::try_create(region.width(), region.height())?;
     let mut p = qt::Painter::new(&mut buffer);
 
     for input in &fe.inputs {
@@ -754,7 +740,7 @@ fn apply_flood(
     let c = fe.color;
     let alpha = (fe.opacity.value() * 255.0) as u8;
 
-    let mut buffer = create_image(region.width(), region.height())?;
+    let mut buffer = qt::Image::try_create(region.width(), region.height())?;
     buffer.fill(c.red, c.green, c.blue, alpha);
 
     Ok(Image::from_image(buffer, ColorSpace::SRGB))
@@ -764,12 +750,12 @@ fn apply_tile(
     input: Image,
     region: ScreenRect,
 ) -> Result<Image, Error> {
-    let mut buffer = create_image(region.width(), region.height())?;
+    let mut buffer = qt::Image::try_create(region.width(), region.height())?;
 
     let subregion = input.region.translate(-region.x(), -region.y());
 
     let mut brush = qt::Brush::new();
-    brush.set_pattern(copy_image(&input.image, subregion)?);
+    brush.set_pattern(input.image.copy_region(subregion)?);
     let brush_ts = usvg::Transform::new_translate(subregion.x() as f64, subregion.y() as f64);
     brush.set_transform(brush_ts.to_native());
 
@@ -789,7 +775,7 @@ fn apply_image(
     tree: &usvg::Tree,
     ts: &usvg::Transform,
 ) -> Result<Image, Error> {
-    let mut buffer = create_image(region.width(), region.height())?;
+    let mut buffer = qt::Image::try_create(region.width(), region.height())?;
 
     match fe.data {
         usvg::FeImageKind::Image(ref data, format) => {
@@ -819,7 +805,7 @@ fn apply_image(
                 p.scale(sx, sy);
                 p.apply_transform(&node.transform().to_native());
 
-                super::render_node(node, opt, &mut crate::RenderState::Ok, &mut layers, &mut p);
+                crate::render::render_node(node, opt, &mut RenderState::Ok, &mut layers, &mut p);
             }
         }
     }
@@ -955,7 +941,7 @@ fn apply_displacement_map(
         Ok(Image::from_image(buffer1, cs))
     );
 
-    let mut buffer = create_image(region.width(), region.height())?;
+    let mut buffer = qt::Image::try_create(region.width(), region.height())?;
 
     svgfilters::displacement_map(
         fe.x_channel_selector.into_svgf(),
@@ -980,7 +966,7 @@ fn apply_turbulence(
         warn!("'feTurbulence' with complex transform is not supported.");
     }
 
-    let mut buffer = create_image(region.width(), region.height())?;
+    let mut buffer = qt::Image::try_create(region.width(), region.height())?;
 
     let (sx, sy) = ts.get_scale();
     if sx.is_fuzzy_zero() || sy.is_fuzzy_zero() {
@@ -1008,7 +994,7 @@ fn apply_diffuse_lighting(
     ts: &usvg::Transform,
     input: Image,
 ) -> Result<Image, Error> {
-    let mut buffer = create_image(region.width(), region.height())?;
+    let mut buffer = qt::Image::try_create(region.width(), region.height())?;
 
     let light_source = fe.light_source.transform(region, ts);
 
@@ -1031,7 +1017,7 @@ fn apply_specular_lighting(
     ts: &usvg::Transform,
     input: Image,
 ) -> Result<Image, Error> {
-    let mut buffer = create_image(region.width(), region.height())?;
+    let mut buffer = qt::Image::try_create(region.width(), region.height())?;
 
     let light_source = fe.light_source.transform(region, ts);
 
@@ -1090,7 +1076,7 @@ fn resolve_std_dev(
         const BLUR_SIGMA_THRESHOLD: f64 = 2.0;
         // Check that the current feGaussianBlur filter can be applied using a box blur.
         let box_blur =    std_dx >= BLUR_SIGMA_THRESHOLD
-            || std_dy >= BLUR_SIGMA_THRESHOLD;
+                       || std_dy >= BLUR_SIGMA_THRESHOLD;
 
         Some((std_dx, std_dy, box_blur))
     }

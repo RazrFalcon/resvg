@@ -2,7 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+/*!
+[resvg](https://github.com/RazrFalcon/resvg) backend implementation
+using the [raqote](https://github.com/jrmuizel/raqote) library.
+*/
+
 #![doc(html_root_url = "https://docs.rs/resvg-raqote/0.9.1")]
+
+#![warn(missing_docs)]
 
 /// Unwraps `Option` and invokes `return` on `None`.
 macro_rules! try_opt {

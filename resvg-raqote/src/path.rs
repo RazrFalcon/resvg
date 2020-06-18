@@ -4,7 +4,6 @@
 
 use crate::render::prelude::*;
 
-
 pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
@@ -41,8 +40,8 @@ pub fn draw(
         draw_opt.antialias = raqote::AntialiasMode::None;
     }
 
-    paint_server::fill(tree, &new_path, &path.fill, opt, style_bbox, &draw_opt, dt);
-    paint_server::stroke(tree, &new_path, &path.stroke, opt, style_bbox, &draw_opt, dt);
+    crate::paint_server::fill(tree, &new_path, &path.fill, opt, style_bbox, &draw_opt, dt);
+    crate::paint_server::stroke(tree, &new_path, &path.stroke, opt, style_bbox, &draw_opt, dt);
 
     bbox
 }

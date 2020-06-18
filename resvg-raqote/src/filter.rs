@@ -236,27 +236,6 @@ pub fn apply(
     }
 }
 
-fn create_image(width: u32, height: u32) -> Result<raqote::DrawTarget, Error> {
-    Ok(raqote::DrawTarget::new(width as i32, height as i32))
-}
-
-fn copy_image(
-    image: &raqote::DrawTarget,
-    region: ScreenRect,
-) -> Result<raqote::DrawTarget, Error> {
-    let x = cmp::max(0, region.x()) as f32;
-    let y = cmp::max(0, region.y()) as f32;
-
-    let mut new_image = create_image(region.width(), region.height())?;
-
-    new_image.draw_image_at(-x, -y, &image.as_image(), &raqote::DrawOptions {
-        blend_mode: raqote::BlendMode::Src,
-        ..raqote::DrawOptions::default()
-    });
-
-    Ok(new_image)
-}
-
 fn _apply(
     filter: &usvg::Filter,
     inputs: &FilterInputs,
@@ -602,6 +581,27 @@ fn apply2(
             Ok(Image::from_image(buffer, cs))
         }
     }
+}
+
+fn create_image(width: u32, height: u32) -> Result<raqote::DrawTarget, Error> {
+    Ok(raqote::DrawTarget::new(width as i32, height as i32))
+}
+
+fn copy_image(
+    image: &raqote::DrawTarget,
+    region: ScreenRect,
+) -> Result<raqote::DrawTarget, Error> {
+    let x = cmp::max(0, region.x()) as f32;
+    let y = cmp::max(0, region.y()) as f32;
+
+    let mut new_image = create_image(region.width(), region.height())?;
+
+    new_image.draw_image_at(-x, -y, &image.as_image(), &raqote::DrawOptions {
+        blend_mode: raqote::BlendMode::Src,
+        ..raqote::DrawOptions::default()
+    });
+
+    Ok(new_image)
 }
 
 pub(crate) fn calc_region(

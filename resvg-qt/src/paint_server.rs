@@ -2,9 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use usvg::{TransformFromBBox, IsDefault, Size, Rect};
-use crate::{qt, ConvTransform, Options, Layers};
-
+use crate::render::prelude::*;
 
 pub fn fill(
     tree: &usvg::Tree,
@@ -206,7 +204,7 @@ fn prepare_pattern(
     let (sx, sy) = global_ts.get_scale();
 
     let img_size = try_opt!(Size::new(r.width() * sx, r.height() * sy)).to_screen_size();
-    let mut img = try_opt!(super::create_subimage(img_size));
+    let mut img = try_opt!(crate::render::create_subimage(img_size));
     img.fill(0, 0, 0, 0);
 
     let mut p = qt::Painter::new(&mut img);
@@ -224,7 +222,7 @@ fn prepare_pattern(
     }
 
     let mut layers = Layers::new(img_size);
-    super::render_group(pattern_node, opt, &mut crate::RenderState::Ok, &mut layers, &mut p);
+    crate::render::render_group(pattern_node, opt, &mut RenderState::Ok, &mut layers, &mut p);
     p.end();
 
     let img = if !opacity.is_default() {
@@ -232,7 +230,7 @@ fn prepare_pattern(
         // The only way to do this is by making a new image and rendering
         // the pattern on it with transparency.
 
-        let mut img2 = try_opt!(super::create_subimage(img_size));
+        let mut img2 = try_opt!(crate::render::create_subimage(img_size));
         img2.fill(0, 0, 0, 0);
 
         let mut p2 = qt::Painter::new(&mut img2);

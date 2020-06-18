@@ -3,9 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use log::warn;
-use usvg::{Rect, FitTo, ScreenSize};
-use crate::{ConvTransform, Options};
-
+use crate::render::prelude::*;
 
 pub fn draw(
     image: &usvg::Image,
@@ -36,7 +34,7 @@ pub fn draw_raster(
     let img = try_opt!(load_raster(format, data, opt));
 
     let surface = {
-        let mut surface = try_opt!(super::create_subsurface(img.size));
+        let mut surface = try_opt!(crate::render::create_subsurface(img.size));
 
         {
             // Unwrap is safe, because no one uses the surface.

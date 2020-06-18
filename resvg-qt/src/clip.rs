@@ -2,9 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use usvg::{NodeExt, TransformFromBBox, Rect};
-use crate::{qt, path, ConvTransform, Layers, Options};
-
+use crate::render::prelude::*;
 
 pub fn clip(
     node: &usvg::Node,
@@ -34,7 +32,7 @@ pub fn clip(
 
         match *node.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                path::draw(&node.tree(), path_node, opt, &mut clip_p);
+                crate::path::draw(&node.tree(), path_node, opt, &mut clip_p);
             }
             usvg::NodeKind::Group(ref g) => {
                 clip_group(&node, g, opt, bbox, layers, &mut clip_p);
@@ -103,7 +101,7 @@ fn draw_group_child(
 
         match *child.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                path::draw(&child.tree(), path_node, opt, p);
+                crate::path::draw(&child.tree(), path_node, opt, p);
             }
             _ => {}
         }

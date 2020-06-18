@@ -4,7 +4,6 @@
 
 use crate::render::prelude::*;
 
-
 pub fn mask(
     node: &usvg::Node,
     mask: &usvg::Mask,

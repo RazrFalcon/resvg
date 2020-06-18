@@ -4,7 +4,6 @@
 
 use crate::render::prelude::*;
 
-
 pub fn fill(
     tree: &usvg::Tree,
     path: &raqote::Path,

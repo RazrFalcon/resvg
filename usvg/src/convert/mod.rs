@@ -13,10 +13,11 @@ use crate::{svgtree, tree, tree::prelude::*, Error};
 #[cfg(feature = "text")]
 use crate::fontdb;
 
-mod clip_and_mask;
+mod clip;
 mod filter;
 mod image;
 mod marker;
+mod mask;
 mod paint_server;
 mod shapes;
 mod style;
@@ -323,10 +324,10 @@ fn convert_group(
     // `mask` and `filter` cannot be set on `clipPath` children.
     // But `clip-path` can.
 
-    let clip_path = resolve_link!(AId::ClipPath, clip_and_mask::convert_clip);
+    let clip_path = resolve_link!(AId::ClipPath, clip::convert);
 
     let mask = if state.parent_clip_path.is_none() {
-        resolve_link!(AId::Mask, clip_and_mask::convert_mask)
+        resolve_link!(AId::Mask, mask::convert)
     } else {
         None
     };
