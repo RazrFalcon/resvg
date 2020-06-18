@@ -104,7 +104,7 @@ fn build_previous_version(args: &Args) -> io::Result<PathBuf> {
     let prev_resvg_dir = args.work_dir.join("resvg");
 
     if prev_resvg_dir.exists() {
-        return Ok(prev_resvg_dir.join("target/release/rendersvg"));
+        return Ok(prev_resvg_dir.join("tools/rendersvg/target/release/rendersvg"));
     }
 
     Command::new("git")
@@ -124,7 +124,7 @@ fn build_previous_version(args: &Args) -> io::Result<PathBuf> {
         .current_dir(prev_resvg_dir.join("tools/rendersvg"))
         .run()?;
 
-    Ok(prev_resvg_dir.join("target/release/rendersvg"))
+    Ok(prev_resvg_dir.join("tools/rendersvg/target/release/rendersvg"))
 }
 
 fn parse_allowed(backend: &str) -> io::Result<Vec<String>> {

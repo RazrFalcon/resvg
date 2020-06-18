@@ -286,7 +286,6 @@ fn render_group_impl(
             if let Some(clip_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
                     sub_dt.set_transform(&curr_ts);
-
                     crate::clip::clip(&clip_node, cp, opt, bbox, layers, &mut sub_dt);
                 }
             }
@@ -296,7 +295,6 @@ fn render_group_impl(
             if let Some(mask_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
                     sub_dt.set_transform(&curr_ts);
-
                     crate::mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_dt);
                 }
             }
