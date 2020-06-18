@@ -371,7 +371,9 @@ bool resvg_get_node_bbox(const resvg_render_tree *tree,
 void resvg_tree_destroy(resvg_render_tree *tree);
 
 /**
- * @brief Renders the #resvg_render_tree to canvas.
+ * @brief Renders the #resvg_render_tree onto the canvas.
+ *
+ * \b Warning: the canvas must not have a transform.
  *
  * @param tree Render tree.
  * @param opt Rendering options.
@@ -384,7 +386,9 @@ void resvg_skia_render_to_canvas(const resvg_render_tree *tree,
                                  void *canvas);
 
 /**
- * @brief Renders a Node by ID to canvas.
+ * @brief Renders a Node by ID onto the canvas.
+ *
+ * \b Warning: the canvas must not have a transform.
  *
  * Does nothing on error.
  *

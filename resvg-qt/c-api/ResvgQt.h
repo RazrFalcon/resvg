@@ -346,7 +346,9 @@ public:
     void setDevicePixelRatio(qreal scaleFactor);
 
     /**
-     * @brief Renders the SVG data to canvas.
+     * @brief Renders the SVG data onto the canvas.
+     *
+     * \b Warning: the canvas must not have a transform.
      */
     void render(QPainter *p) const;
 

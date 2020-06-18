@@ -153,9 +153,11 @@ pub fn render_node_to_image(
     Some(surface)
 }
 
-/// Renders SVG to canvas.
+/// Renders `tree` onto the canvas.
 ///
 /// The caller must guarantee that `img_size` is large enough.
+///
+/// Canvas must not have a transform.
 pub fn render_to_canvas(
     tree: &usvg::Tree,
     opt: &Options,
@@ -165,9 +167,11 @@ pub fn render_to_canvas(
     render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, cr);
 }
 
-/// Renders SVG note to canvas.
+/// Renders `node` onto the canvas.
 ///
 /// The caller must guarantee that `img_size` is large enough.
+///
+/// Canvas must not have a transform.
 pub fn render_node_to_canvas(
     node: &usvg::Node,
     opt: &Options,
