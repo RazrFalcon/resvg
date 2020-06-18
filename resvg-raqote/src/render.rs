@@ -307,7 +307,7 @@ fn render_group_impl(
                 if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
                     sub_dt.set_transform(&curr_ts);
 
-                    clip_and_mask::clip(&clip_node, cp, opt, bbox, layers, &mut sub_dt);
+                    clip::clip(&clip_node, cp, opt, bbox, layers, &mut sub_dt);
                 }
             }
         }
@@ -317,7 +317,7 @@ fn render_group_impl(
                 if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
                     sub_dt.set_transform(&curr_ts);
 
-                    clip_and_mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_dt);
+                    mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_dt);
                 }
             }
         }
@@ -375,7 +375,7 @@ fn prepare_filter_fill_paint(
             let draw_opt = raqote::DrawOptions::default();
             let mut pb = raqote::PathBuilder::new();
             pb.rect(0.0, 0.0, region.width() as f32, region.height() as f32);
-            style::fill(&parent.tree(), &pb.finish(), &fill, opt, style_bbox, &draw_opt, &mut dt);
+            paint_server::fill(&parent.tree(), &pb.finish(), &fill, opt, style_bbox, &draw_opt, &mut dt);
         }
     }
 
@@ -400,7 +400,7 @@ fn prepare_filter_stroke_paint(
             let draw_opt = raqote::DrawOptions::default();
             let mut pb = raqote::PathBuilder::new();
             pb.rect(0.0, 0.0, region.width() as f32, region.height() as f32);
-            style::fill(&parent.tree(), &pb.finish(), &fill, opt, style_bbox, &draw_opt, &mut dt);
+            paint_server::fill(&parent.tree(), &pb.finish(), &fill, opt, style_bbox, &draw_opt, &mut dt);
         }
     }
 

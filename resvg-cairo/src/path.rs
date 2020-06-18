@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use usvg::{FuzzyZero, Rect};
-use crate::{style, Options};
+use crate::{paint_server, Options};
 
 
 pub fn draw(
@@ -33,11 +33,11 @@ pub fn draw(
         cr.set_antialias(cairo::Antialias::None);
     }
 
-    style::fill(tree, &path.fill, opt, style_bbox, cr);
+    paint_server::fill(tree, &path.fill, opt, style_bbox, cr);
     if path.stroke.is_some() {
         cr.fill_preserve();
 
-        style::stroke(tree, &path.stroke, opt, style_bbox, cr);
+        paint_server::stroke(tree, &path.stroke, opt, style_bbox, cr);
         cr.stroke();
     } else {
         cr.fill();

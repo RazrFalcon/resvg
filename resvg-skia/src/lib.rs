@@ -66,13 +66,14 @@ pub use usvg::ScreenSize;
 use usvg::{FuzzyEq, NodeExt, IsDefault, Rect};
 use log::warn;
 
-mod clip_and_mask;
+mod clip;
 mod filter;
 mod image;
 mod layers;
+mod mask;
+mod paint_server;
 mod path;
 mod skia;
-mod style;
 
 use layers::Layers;
 
@@ -370,7 +371,7 @@ fn render_group_impl(
             if let Some(clip_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
                     sub_surface.set_matrix(&curr_ts);
-                    clip_and_mask::clip(&clip_node, cp, opt, bbox, layers, &mut sub_surface);
+                    clip::clip(&clip_node, cp, opt, bbox, layers, &mut sub_surface);
                 }
             }
         }
@@ -379,7 +380,7 @@ fn render_group_impl(
             if let Some(mask_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
                     sub_surface.set_matrix(&curr_ts);
-                    clip_and_mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_surface);
+                    mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_surface);
                 }
             }
         }
@@ -441,7 +442,7 @@ fn prepare_filter_fill_paint(
         if let Some(paint) = g.filter_fill.clone() {
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
-            let fill = style::fill(&parent.tree(), &fill, opt, style_bbox, ts);
+            let fill = paint_server::fill(&parent.tree(), &fill, opt, style_bbox, ts);
             surface.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64, &fill);
         }
     }
@@ -464,7 +465,7 @@ fn prepare_filter_stroke_paint(
         if let Some(paint) = g.filter_stroke.clone() {
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
-            let fill = style::fill(&parent.tree(), &fill, opt, style_bbox, ts);
+            let fill = paint_server::fill(&parent.tree(), &fill, opt, style_bbox, ts);
             surface.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64, &fill);
         }
     }

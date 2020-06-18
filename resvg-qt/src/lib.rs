@@ -57,13 +57,14 @@ macro_rules! try_opt_warn {
 use usvg::{FuzzyEq, NodeExt, IsDefault, Rect, ScreenSize};
 use log::warn;
 
-mod clip_and_mask;
+mod clip;
 mod filter;
 mod image;
 mod layers;
+mod mask;
+mod paint_server;
 mod path;
 mod qt;
-mod style;
 
 use layers::Layers;
 
@@ -375,7 +376,7 @@ fn render_group_impl(
                     let mut sub_p = qt::Painter::new(&mut sub_img);
                     sub_p.set_transform(&curr_ts);
 
-                    clip_and_mask::clip(&clip_node, cp, opt, bbox, layers, &mut sub_p);
+                    clip::clip(&clip_node, cp, opt, bbox, layers, &mut sub_p);
                 }
             }
         }
@@ -386,7 +387,7 @@ fn render_group_impl(
                     let mut sub_p = qt::Painter::new(&mut sub_img);
                     sub_p.set_transform(&curr_ts);
 
-                    clip_and_mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_p);
+                    mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_p);
                 }
             }
         }
@@ -450,7 +451,7 @@ fn prepare_filter_fill_paint(
             let mut painter = qt::Painter::new(&mut img);
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
-            style::fill(&parent.tree(), &fill, opt, style_bbox, &mut painter);
+            paint_server::fill(&parent.tree(), &fill, opt, style_bbox, &mut painter);
             painter.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64);
         }
     }
@@ -474,7 +475,7 @@ fn prepare_filter_stroke_paint(
             let mut painter = qt::Painter::new(&mut img);
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
-            style::fill(&parent.tree(), &fill, opt, style_bbox, &mut painter);
+            paint_server::fill(&parent.tree(), &fill, opt, style_bbox, &mut painter);
             painter.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64);
         }
     }

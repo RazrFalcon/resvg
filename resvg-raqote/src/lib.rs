@@ -28,13 +28,14 @@ macro_rules! try_opt_or {
 use usvg::NodeExt;
 use log::warn;
 
-mod clip_and_mask;
+mod clip;
 mod filter;
 mod image;
 mod layers;
+mod mask;
+mod paint_server;
 mod path;
 mod render;
-mod style;
 
 
 /// Rendering options.

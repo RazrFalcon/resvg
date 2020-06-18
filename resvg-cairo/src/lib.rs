@@ -57,12 +57,13 @@ macro_rules! try_opt_warn {
 use usvg::{FuzzyEq, NodeExt, IsDefault, Rect, ScreenSize};
 use log::warn;
 
-mod clip_and_mask;
+mod clip;
 mod filter;
 mod image;
 mod layers;
+mod mask;
+mod paint_server;
 mod path;
-mod style;
 
 use layers::Layers;
 
@@ -410,7 +411,7 @@ fn render_group_impl(
                     let sub_cr = cairo::Context::new(&*sub_surface);
                     sub_cr.set_matrix(curr_ts);
 
-                    clip_and_mask::clip(&clip_node, cp, opt, bbox, layers, &sub_cr);
+                    clip::clip(&clip_node, cp, opt, bbox, layers, &sub_cr);
                 }
             }
         }
@@ -421,7 +422,7 @@ fn render_group_impl(
                     let sub_cr = cairo::Context::new(&*sub_surface);
                     sub_cr.set_matrix(curr_ts);
 
-                    clip_and_mask::mask(&mask_node, mask, opt, bbox, layers, &sub_cr);
+                    mask::mask(&mask_node, mask, opt, bbox, layers, &sub_cr);
                 }
             }
         }
@@ -487,7 +488,7 @@ fn prepare_filter_fill_paint(
             let cr = cairo::Context::new(&*surface);
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
-            style::fill(&parent.tree(), &fill, opt, style_bbox, &cr);
+            paint_server::fill(&parent.tree(), &fill, opt, style_bbox, &cr);
             cr.rectangle(0.0, 0.0, region.width() as f64, region.height() as f64);
             cr.paint();
         }
@@ -512,7 +513,7 @@ fn prepare_filter_stroke_paint(
             let cr = cairo::Context::new(&*surface);
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
-            style::fill(&parent.tree(), &fill, opt, style_bbox, &cr);
+            paint_server::fill(&parent.tree(), &fill, opt, style_bbox, &cr);
             cr.rectangle(0.0, 0.0, region.width() as f64, region.height() as f64);
             cr.paint();
         }
