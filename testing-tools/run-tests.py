@@ -58,15 +58,6 @@ print('local_test:', local_test)
 print('work_dir:', work_dir)
 print('tests_dir:', tests_dir)
 
-
-# prepare skia on CI
-if not local_test and 'RESVG_SKIA_BACKEND' in os.environ:
-    run(['git', 'clone', SKIA_BUILD_URL, '--depth', '1'], check=True)
-    os.environ['SKIA_DIR'] = os.path.abspath('./resvg-skia-ci-build')
-    os.environ['SKIA_LIB_DIR'] = os.path.abspath('./resvg-skia-ci-build/bin')
-    os.environ['LD_LIBRARY_PATH'] = os.path.abspath('./resvg-skia-ci-build/bin')
-
-
 if 'RESVG_QT_BACKEND' in os.environ:
     # build qt backend
     with cd('tools/rendersvg'):
@@ -126,7 +117,7 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
 
     # build C-API for gtk-ui-c
     with cd('resvg-cairo/c-api'):
-        run(['cargo', 'build'], check=True)
+        run(['cargo', 'build', '--release'], check=True)
 
     with cd('resvg-cairo/examples/gtk-ui-c'):
         run(['make', 'clean'], check=True)
@@ -134,6 +125,13 @@ if 'RESVG_CAIRO_BACKEND' in os.environ:
 
 
 if 'RESVG_SKIA_BACKEND' in os.environ:
+    # prepare skia on CI
+    if not local_test:
+        run(['git', 'clone', SKIA_BUILD_URL, '--depth', '1'], check=True)
+        os.environ['SKIA_DIR'] = os.path.abspath('./resvg-skia-ci-build')
+        os.environ['SKIA_LIB_DIR'] = os.path.abspath('./resvg-skia-ci-build/bin')
+        os.environ['LD_LIBRARY_PATH'] = os.path.abspath('./resvg-skia-ci-build/bin')
+
     # build skia backend
     with cd('tools/rendersvg'):
         run(['cargo', 'build', '--release', '--features', 'skia-backend'], check=True)

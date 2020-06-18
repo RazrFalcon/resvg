@@ -81,7 +81,7 @@ pub fn draw_svg(
     };
 
     let img_size = tree.svg_node().size.to_screen_size();
-    let (ts, clip) = prepare_sub_svg_geom(view_box, img_size);
+    let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&view_box, img_size);
 
     if let Some(clip) = clip {
         p.set_clip_rect(clip.x(), clip.y(), clip.width(), clip.height());
@@ -90,38 +90,6 @@ pub fn draw_svg(
     p.apply_transform(&ts.to_native());
     super::render_to_canvas(&tree, &sub_opt, img_size, p);
     p.reset_clip_path();
-}
-
-/// Calculates the required SVG transform and size.
-fn prepare_sub_svg_geom(
-    view_box: usvg::ViewBox,
-    img_size: ScreenSize,
-) -> (usvg::Transform, Option<Rect>) {
-    let r = view_box.rect;
-
-    let new_size = img_size.fit_view_box(&view_box);
-
-    let (tx, ty, clip) = if view_box.aspect.slice {
-        let (dx, dy) = usvg::utils::aligned_pos(
-            view_box.aspect.align,
-            0.0, 0.0, new_size.width() as f64 - r.width(), new_size.height() as f64 - r.height(),
-        );
-
-        (r.x() - dx, r.y() - dy, Some(r))
-    } else {
-        let (dx, dy) = usvg::utils::aligned_pos(
-            view_box.aspect.align,
-            r.x(), r.y(), r.width() - new_size.width() as f64, r.height() - new_size.height() as f64,
-        );
-
-        (dx, dy, None)
-    };
-
-    let sx = new_size.width() as f64 / img_size.width() as f64;
-    let sy = new_size.height() as f64 / img_size.height() as f64;
-    let ts = usvg::Transform::new(sx, 0.0, 0.0, sy, tx, ty);
-
-    (ts, clip)
 }
 
 /// Calculates an image rect depending on the provided view box.
