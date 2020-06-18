@@ -121,27 +121,7 @@ fn premultiply(c: u8, a: u8) -> u8 {
     (((c >> 8) + c) >> 8) as u8
 }
 
-
-pub(crate) fn render_to_canvas(
-    tree: &usvg::Tree,
-    opt: &Options,
-    img_size: ScreenSize,
-    dt: &mut raqote::DrawTarget,
-) {
-    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, dt);
-}
-
 pub(crate) fn render_node_to_canvas(
-    node: &usvg::Node,
-    opt: &Options,
-    view_box: usvg::ViewBox,
-    img_size: ScreenSize,
-    dt: &mut raqote::DrawTarget,
-) {
-    render_node_to_canvas_impl(node, opt, view_box, img_size, &mut RenderState::Ok, dt)
-}
-
-fn render_node_to_canvas_impl(
     node: &usvg::Node,
     opt: &Options,
     view_box: usvg::ViewBox,
@@ -350,7 +330,7 @@ fn prepare_filter_background(
 
     // Render from the `start_node` until the `parent`. The `parent` itself is excluded.
     let mut state = RenderState::RenderUntil(parent.clone());
-    render_node_to_canvas_impl(&start_node, opt, view_box, img_size, &mut state, &mut dt);
+    render_node_to_canvas(&start_node, opt, view_box, img_size, &mut state, &mut dt);
 
     Some(dt)
 }

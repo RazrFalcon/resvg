@@ -127,7 +127,7 @@ pub fn draw_svg(
     }
 
     dt.transform(&ts.to_native());
-    render_to_canvas(&tree, &sub_opt, img_size, dt);
+    crate::render_to_canvas(&tree, &sub_opt, img_size, dt);
 
     if let Some(_) = clip {
         dt.pop_clip();

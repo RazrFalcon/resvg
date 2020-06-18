@@ -32,7 +32,7 @@ macro_rules! try_opt_or {
 }
 
 
-use usvg::NodeExt;
+use usvg::{NodeExt, ScreenSize};
 use log::warn;
 
 mod clip;
@@ -89,7 +89,7 @@ pub fn render_to_image(
         dt.clear(raqote::SolidSource { r: c.red, g: c.green, b: c.blue, a: 255 });
     }
 
-    render::render_to_canvas(tree, opt, img_view, &mut dt);
+    render_to_canvas(tree, opt, img_view, &mut dt);
 
     Some(dt)
 }
@@ -118,7 +118,28 @@ pub fn render_node_to_image(
         dt.clear(raqote::SolidSource { r: c.red, g: c.green, b: c.blue, a: 255 });
     }
 
-    render::render_node_to_canvas(node, opt, vbox, img_size, &mut dt);
+    render_node_to_canvas(node, opt, vbox, img_size, &mut dt);
 
     Some(dt)
+}
+
+/// Renders SVG to canvas.
+pub fn render_to_canvas(
+    tree: &usvg::Tree,
+    opt: &Options,
+    img_size: ScreenSize,
+    dt: &mut raqote::DrawTarget,
+) {
+    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, dt);
+}
+
+/// Renders SVG node to canvas.
+pub fn render_node_to_canvas(
+    node: &usvg::Node,
+    opt: &Options,
+    view_box: usvg::ViewBox,
+    img_size: ScreenSize,
+    dt: &mut raqote::DrawTarget,
+) {
+    render::render_node_to_canvas(node, opt, view_box, img_size, &mut render::RenderState::Ok, dt)
 }
