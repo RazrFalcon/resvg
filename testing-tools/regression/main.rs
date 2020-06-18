@@ -65,11 +65,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Build current version.
     Command::new("cargo")
-        .args(&["build", "--release", "--features", &format!("{}-backend", args.backend)])
-        .current_dir("../../tools/rendersvg")
+        .args(&["build", "--release"])
+        .current_dir(&format!("../../resvg-{}", args.backend))
         .run()?;
 
-    let curr_rendersvg = fs::canonicalize("../../tools/rendersvg/target/release/rendersvg")?;
+    let curr_rendersvg = fs::canonicalize(
+        format!("../../resvg-{}/target/release/resvg-{}", args.backend, args.backend)
+    )?;
     let prev_rendersvg = build_previous_version(&args)?;
 
     let files = collect_files(&args)?;
@@ -103,8 +105,11 @@ fn parse_args() -> Result<Args, Box<dyn std::error::Error>> {
 fn build_previous_version(args: &Args) -> io::Result<PathBuf> {
     let prev_resvg_dir = args.work_dir.join("resvg");
 
+    let prev_resvg_bin = prev_resvg_dir
+        .join(format!("resvg-{}/target/release/resvg-{}", args.backend, args.backend));
+
     if prev_resvg_dir.exists() {
-        return Ok(prev_resvg_dir.join("tools/rendersvg/target/release/rendersvg"));
+        return Ok(prev_resvg_bin);
     }
 
     Command::new("git")
@@ -120,11 +125,11 @@ fn build_previous_version(args: &Args) -> io::Result<PathBuf> {
     }
 
     Command::new("cargo")
-        .args(&["build", "--release", "--features", &format!("{}-backend", args.backend)])
-        .current_dir(prev_resvg_dir.join("tools/rendersvg"))
+        .args(&["build", "--release"])
+        .current_dir(prev_resvg_dir.join(&format!("resvg-{}", args.backend)))
         .run()?;
 
-    Ok(prev_resvg_dir.join("tools/rendersvg/target/release/rendersvg"))
+    Ok(prev_resvg_bin)
 }
 
 fn parse_allowed(backend: &str) -> io::Result<Vec<String>> {
@@ -168,7 +173,6 @@ fn change_ext(mut path: PathBuf, suffix: &str, ext: &str) -> PathBuf {
 fn render_svg(
     word_dir: &Path,
     render: &Path,
-    backend: &str,
     in_svg: &Path,
     out_png: &Path,
 ) -> io::Result<()> {
@@ -176,7 +180,6 @@ fn render_svg(
     // Images may render differently depending on scale.
     Command::new(render)
         .args(&[
-            "--backend", backend,
             "--zoom", "2",
             in_svg.to_str().unwrap(), out_png.to_str().unwrap(),
         ])
@@ -223,11 +226,11 @@ fn process_file(
     curr_png: &Path,
     prev_png: &Path,
 ) -> Result<(), Error> {
-    if render_svg(&args.work_dir, prev_rendersvg, &args.backend, in_svg, prev_png).is_err() {
+    if render_svg(&args.work_dir, prev_rendersvg, in_svg, prev_png).is_err() {
         return Ok(());
     }
 
-    if let Err(e) = render_svg(&args.work_dir, curr_rendersvg, &args.backend, in_svg, curr_png) {
+    if let Err(e) = render_svg(&args.work_dir, curr_rendersvg, in_svg, curr_png) {
         return Err(Error {
             kind: ErrorKind::CurrRenderFailed(e),
             svg_file: in_svg.to_path_buf(),

@@ -9,8 +9,6 @@ This backend intentionally doesn't provide a C API.
 
 ## Build
 
-*resvg* is a [Rust] library, therefore you should install it first.
-
 Right now, this is the only backend that uses Rust-based 2D library,
 therefore building process is fairly straightforward.
 
@@ -68,6 +66,14 @@ cargo build --release
 ## Runtime dependencies
 
 `harfbuzz` on Linux. On other OS'es it will be built statically.
+
+## Running resvg CLI
+
+```sh
+cargo run --release -- in.svg out.png
+```
+
+The resulting binary can be found at: `target/release/resvg-raqote`
 
 ## Running examples
 

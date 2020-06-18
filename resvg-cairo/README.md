@@ -4,8 +4,6 @@
 
 ## Build
 
-*resvg* is a [Rust] library, therefore you should install it first.
-
 This backend uses the [gtk-rs](https://gtk-rs.org/) project.
 
 Building on Linux should work out of the box, but others OS'es are more complex.
@@ -58,6 +56,14 @@ cargo build --release
 `resvg-cairo` depends only on cairo. `pango` is not required.
 
 On Linux, `harfbuzz` is also required.
+
+## Running resvg CLI
+
+```sh
+cargo run --release -- in.svg out.png
+```
+
+The resulting binary can be found at: `target/release/resvg-cairo`
 
 ## Running examples
 

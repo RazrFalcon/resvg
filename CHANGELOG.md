@@ -18,6 +18,7 @@ This changelog also contains important changes in dependencies.
 
 ### Removed
 - The `resvg` crate. Use backend-specific crates.
+- `tools/rendersvg`. Each backend has its own CLI tool now.
 - (c-api) `resvg_*_render_to_file` methods.
 - (qt-backend) `jpeg-decoder` and `png` dependencies.
 

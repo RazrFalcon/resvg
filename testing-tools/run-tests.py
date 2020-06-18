@@ -60,8 +60,8 @@ print('tests_dir:', tests_dir)
 
 if 'RESVG_QT_BACKEND' in os.environ:
     # build qt backend
-    with cd('tools/rendersvg'):
-        run(['cargo', 'build', '--release', '--features', 'qt-backend'], check=True)
+    with cd('resvg-qt'):
+        run(['cargo', 'build', '--release'], check=True)
 
     # regression testing of the qt backend
     if not args.no_regression:
@@ -100,8 +100,8 @@ if 'RESVG_QT_BACKEND' in os.environ:
 
 if 'RESVG_CAIRO_BACKEND' in os.environ:
     # build cairo backend
-    with cd('tools/rendersvg'):
-        run(['cargo', 'build', '--release', '--features', 'cairo-backend'], check=True)
+    with cd('resvg-cairo'):
+        run(['cargo', 'build', '--release'], check=True)
 
     # regression testing of the cairo backend
     if not args.no_regression:
@@ -133,8 +133,8 @@ if 'RESVG_SKIA_BACKEND' in os.environ:
         os.environ['LD_LIBRARY_PATH'] = os.path.abspath('./resvg-skia-ci-build/bin')
 
     # build skia backend
-    with cd('tools/rendersvg'):
-        run(['cargo', 'build', '--release', '--features', 'skia-backend'], check=True)
+    with cd('resvg-skia'):
+        run(['cargo', 'build', '--release'], check=True)
 
     # regression testing of the cairo backend
     if not args.no_regression:
@@ -152,8 +152,8 @@ if 'RESVG_SKIA_BACKEND' in os.environ:
 
 if 'RESVG_RAQOTE_BACKEND' in os.environ:
     # build raqote backend
-    with cd('tools/rendersvg'):
-        run(['cargo', 'build', '--release', '--features', 'raqote-backend'], check=True)
+    with cd('resvg-raqote'):
+        run(['cargo', 'build', '--release'], check=True)
 
     # regression testing of the cairo backend
     if not args.no_regression:

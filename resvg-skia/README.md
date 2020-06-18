@@ -4,8 +4,6 @@
 
 ## Build
 
-*resvg* is a [Rust] library, therefore you should install it first.
-
 The Skia build process is not trivial, therefore we are not building it automatically.
 A caller should built it manually and set corespondent environment variables:
 
@@ -67,6 +65,14 @@ SKIA_DIR=path SKIA_LIB_DIR=path cargo build --release
 `resvg-skia` depends only on Skia itself.
 
 On Linux, `harfbuzz` is also required.
+
+## Running resvg CLI
+
+```sh
+cargo run --release -- in.svg out.png
+```
+
+The resulting binary can be found at: `target/release/resvg-skia`
 
 ## Running examples
 

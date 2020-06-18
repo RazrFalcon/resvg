@@ -2,31 +2,157 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::io::Write;
 use std::path;
-use std::process;
 
-use usvg;
-use pico_args::Arguments;
+use usvg::NodeExt;
+
+macro_rules! timed {
+    ($args:expr, $name:expr, $task:expr) => {
+        if $args.perf {
+            let now = std::time::Instant::now();
+            let res = $task;
+            println!("{}: {:.2}ms", $name, now.elapsed().as_micros() as f64 / 1000.0);
+            res
+        } else {
+            $task
+        }
+    };
+}
+
+fn main() {
+    if let Err(e) = process() {
+        eprintln!("Error: {}.", e);
+        std::process::exit(1);
+    }
+}
+
+fn process() -> Result<(), String> {
+    let args = match parse_args() {
+        Ok(args) => args,
+        Err(e) => {
+            println!("{}", HELP);
+            return Err(format!("{}", e));
+        }
+    };
+
+    // Do not print warning during the ID querying.
+    //
+    // Some crates still can print to stdout/stderr, but we can't do anything about it.
+    if !(args.query_all || args.quiet) {
+        if let Ok(()) = log::set_logger(&LOGGER) {
+            log::set_max_level(log::LevelFilter::Warn);
+        }
+    }
+
+    // Load file.
+    let tree = timed!(args, "Preprocessing",
+        usvg::Tree::from_file(&args.in_svg, &args.usvg).map_err(|e| e.to_string())
+    )?;
+
+    if args.query_all {
+        return query_all(&tree);
+    }
+
+    // Dump before rendering in case of panic.
+    if let Some(ref dump_path) = args.dump {
+        dump_svg(&tree, dump_path)?;
+    }
+
+    let out_png = match args.out_png {
+        Some(ref path) => path.clone(),
+        None => return Ok(()),
+    };
+
+    // Render.
+    render_svg(args, &tree, &out_png)
+}
+
+fn query_all(tree: &usvg::Tree) -> Result<(), String> {
+    let mut count = 0;
+    for node in tree.root().descendants() {
+        if tree.is_in_defs(&node) {
+            continue;
+        }
+
+        if node.id().is_empty() {
+            continue;
+        }
+
+        count += 1;
+
+        fn round_len(v: f64) -> f64 {
+            (v * 1000.0).round() / 1000.0
+        }
+
+        if let Some(bbox) = node.calculate_bbox() {
+            println!(
+                "{},{},{},{},{}", node.id(),
+                round_len(bbox.x()), round_len(bbox.y()),
+                round_len(bbox.width()), round_len(bbox.height())
+            );
+        }
+    }
+
+    if count == 0 {
+        return Err("the file has no valid ID's".to_string());
+    }
+
+    Ok(())
+}
+
+fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(), String> {
+    let opt = resvg_raqote::Options {
+        usvg: args.usvg,
+        fit_to: args.fit_to,
+        background: args.background,
+    };
+
+    let img = if let Some(ref id) = args.export_id {
+        if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
+            timed!(args, "Rendering", resvg_raqote::render_node_to_image(&node, &opt))
+        } else {
+            return Err(format!("SVG doesn't have '{}' ID", id));
+        }
+    } else {
+        timed!(args, "Rendering", resvg_raqote::render_to_image(&tree, &opt))
+    };
+
+    match img {
+        Some(img) => {
+            timed!(args, "Saving", img.write_png(out_png).map_err(|e| e.to_string())?);
+            Ok(())
+        }
+        None => {
+            Err("failed to allocate an image".to_string())
+        }
+    }
+}
+
+fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), String> {
+    let mut f = std::fs::File::create(path)
+        .map_err(|_| format!("failed to create a file {:?}", path))?;
+
+    f.write_all(tree.to_string(usvg::XmlOptions::default()).as_bytes())
+        .map_err(|_| format!("failed to write a file {:?}", path))?;
+
+    Ok(())
+}
 
 
-pub fn print_help() {
-    print!("\
-rendersvg is an SVG rendering application.
+const HELP: &str = "\
+resvg-cairo is an SVG rendering application.
 
 USAGE:
-    rendersvg [OPTIONS] <in-svg> <out-png>
+    resvg-cairo [OPTIONS] <in-svg> <out-png>
 
-    rendersvg in.svg out.png
-    rendersvg -z 4 in.svg out.png
-    rendersvg --query-all in.svg
+    resvg-cairo in.svg out.png
+    resvg-cairo -z 4 in.svg out.png
+    resvg-cairo --query-all in.svg
 
 OPTIONS:
-        --help                  Prints help information
-    -V, --version               Prints version information
-
-        --backend BACKEND       Sets the rendering backend.
-                                Has no effect if built with only one backend
-                                [default: {}] [possible values: {}]
+        --help                  Prints this help
+    -V, --version               Prints version
 
     -w, --width LENGTH          Sets the width in pixels
     -h, --height LENGTH         Sets the height in pixels
@@ -62,22 +188,18 @@ OPTIONS:
         --export-id ID          Renders an object only with a specified ID
 
         --perf                  Prints performance stats
-        --pretend               Does all the steps except rendering
         --quiet                 Disables warnings
-        --dump-svg PATH         Saves the preprocessed SVG to the selected file
+        --dump-svg PATH         Saves the preprocessed SVG into the selected file
 
 ARGS:
     <in-svg>                    Input file
     <out-png>                   Output file
-", default_backend(),
-   backends().join(", "));
-}
+";
 
 #[derive(Debug)]
 struct CliArgs {
     help: bool,
     version: bool,
-    backend: String,
     width: Option<u32>,
     height: Option<u32>,
     zoom: Option<f32>,
@@ -92,35 +214,32 @@ struct CliArgs {
     query_all: bool,
     export_id: Option<String>,
     perf: bool,
-    pretend: bool,
     quiet: bool,
     dump_svg: Option<String>,
     free: Vec<String>,
 }
 
 fn collect_args() -> Result<CliArgs, pico_args::Error> {
-    let mut input = Arguments::from_env();
+    let mut input = pico_args::Arguments::from_env();
     Ok(CliArgs {
         help:               input.contains("--help"),
         version:            input.contains(["-V", "--version"]),
-        backend:            input.value_from_str("--backend")?.unwrap_or(default_backend()),
         width:              input.value_from_fn(["-w", "--width"], parse_length)?,
         height:             input.value_from_fn(["-h", "--height"], parse_length)?,
         zoom:               input.value_from_fn(["-z", "--zoom"], parse_zoom)?,
         dpi:                input.value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
         background:         input.value_from_str("--background")?,
         font_family:        input.value_from_str("--font-family")?
-                                 .unwrap_or_else(|| "Times New Roman".to_string()),
+            .unwrap_or_else(|| "Times New Roman".to_string()),
         font_size:          input.value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
         languages:          input.value_from_fn("--languages", parse_languages)?
-                                 .unwrap_or(vec!["en".to_string()]), // TODO: use system language
+            .unwrap_or(vec!["en".to_string()]), // TODO: use system language
         shape_rendering:    input.value_from_str("--shape-rendering")?.unwrap_or_default(),
         text_rendering:     input.value_from_str("--text-rendering")?.unwrap_or_default(),
         image_rendering:    input.value_from_str("--image-rendering")?.unwrap_or_default(),
         query_all:          input.contains("--query-all"),
         export_id:          input.value_from_str("--export-id")?,
         perf:               input.contains("--perf"),
-        pretend:            input.contains("--pretend"),
         quiet:              input.contains("--quiet"),
         dump_svg:           input.value_from_str("--dump-svg")?,
         free:               input.free()?,
@@ -180,41 +299,36 @@ fn parse_languages(s: &str) -> Result<Vec<String>, String> {
     Ok(langs)
 }
 
-pub struct Args {
-    pub in_svg: path::PathBuf,
-    pub out_png: Option<path::PathBuf>,
-    pub backend_name: String,
-    pub query_all: bool,
-    pub export_id: Option<String>,
-    pub dump: Option<path::PathBuf>,
-    pub pretend: bool,
-    pub perf: bool,
-    pub quiet: bool,
+struct Args {
+    in_svg: path::PathBuf,
+    out_png: Option<path::PathBuf>,
+    query_all: bool,
+    export_id: Option<String>,
+    dump: Option<path::PathBuf>,
+    perf: bool,
+    quiet: bool,
+    usvg: usvg::Options,
+    fit_to: usvg::FitTo,
+    background: Option<usvg::Color>,
 }
 
-pub struct Options {
-    pub usvg: usvg::Options,
-    pub fit_to: usvg::FitTo,
-    pub background: Option<usvg::Color>,
-}
-
-pub fn parse() -> Result<(Args, Options), String> {
+fn parse_args() -> Result<Args, String> {
     let args = collect_args().map_err(|e| e.to_string())?;
 
     if args.help {
-        print_help();
-        process::exit(0);
+        print!("{}", HELP);
+        std::process::exit(0);
     }
 
     if args.version {
         println!("{}", env!("CARGO_PKG_VERSION"));
-        process::exit(0);
+        std::process::exit(0);
     }
 
     let positional_count = if args.query_all { 1 } else { 2 };
 
     if args.free.len() != positional_count {
-        return Err(format!("<in-svg> and <out-png> must be set"));
+        return Err("<in-svg> and <out-png> must be set".to_string());
     }
 
     let in_svg: path::PathBuf = args.free[0].to_string().into();
@@ -228,21 +342,9 @@ pub fn parse() -> Result<(Args, Options), String> {
     let dump = args.dump_svg.map(|v| v.into());
     let export_id = args.export_id.map(|v| v.to_string());
 
-    let app_args = Args {
-        in_svg: in_svg.clone(),
-        out_png,
-        backend_name: args.backend,
-        query_all: args.query_all,
-        export_id,
-        dump,
-        pretend: args.pretend,
-        perf: args.perf,
-        quiet: args.quiet,
-    };
-
     // We don't have to keep named groups when we don't need them
     // because it will slow down rendering.
-    let keep_named_groups = app_args.query_all || app_args.export_id.is_some();
+    let keep_named_groups = args.query_all || export_id.is_some();
 
     let mut fit_to = usvg::FitTo::Original;
     if let Some(w) = args.width {
@@ -253,56 +355,60 @@ pub fn parse() -> Result<(Args, Options), String> {
         fit_to = usvg::FitTo::Zoom(z);
     }
 
-    let opt = Options {
-        usvg: usvg::Options {
-            path: Some(in_svg.into()),
-            dpi: args.dpi as f64,
-            font_family: args.font_family.clone(),
-            font_size: args.font_size as f64,
-            languages: args.languages,
-            shape_rendering: args.shape_rendering,
-            text_rendering: args.text_rendering,
-            image_rendering: args.image_rendering,
-            keep_named_groups,
-        },
-        fit_to,
-        background: args.background,
+    let usvg = usvg::Options {
+        path: Some(in_svg.clone()),
+        dpi: args.dpi as f64,
+        font_family: args.font_family.clone(),
+        font_size: args.font_size as f64,
+        languages: args.languages,
+        shape_rendering: args.shape_rendering,
+        text_rendering: args.text_rendering,
+        image_rendering: args.image_rendering,
+        keep_named_groups,
     };
 
-    Ok((app_args, opt))
+    Ok(Args {
+        in_svg: in_svg.clone(),
+        out_png,
+        query_all: args.query_all,
+        export_id,
+        dump,
+        perf: args.perf,
+        quiet: args.quiet,
+        usvg,
+        fit_to,
+        background: args.background,
+    })
 }
 
-#[allow(unreachable_code)]
-fn default_backend() -> String {
-    #[cfg(feature = "cairo-backend")]
-    { return "cairo".to_string() }
 
-    #[cfg(feature = "qt-backend")]
-    { return "qt".to_string() }
+/// A simple stderr logger.
+static LOGGER: SimpleLogger = SimpleLogger;
+struct SimpleLogger;
+impl log::Log for SimpleLogger {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        metadata.level() <= log::LevelFilter::Warn
+    }
 
-    #[cfg(feature = "skia-backend")]
-    { return "skia".to_string() }
+    fn log(&self, record: &log::Record) {
+        if self.enabled(record.metadata()) {
+            let target = if record.target().len() > 0 {
+                record.target()
+            } else {
+                record.module_path().unwrap_or_default()
+            };
 
-    #[cfg(feature = "raqote-backend")]
-    { return "raqote".to_string() }
+            let line = record.line().unwrap_or(0);
 
-    unreachable!();
-}
+            match record.level() {
+                log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, record.args()),
+                log::Level::Warn  => eprintln!("Warning (in {}:{}): {}", target, line, record.args()),
+                log::Level::Info  => eprintln!("Info (in {}:{}): {}", target, line, record.args()),
+                log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, record.args()),
+                log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, record.args()),
+            }
+        }
+    }
 
-fn backends() -> Vec<&'static str> {
-    let mut list = Vec::new();
-
-    #[cfg(feature = "cairo-backend")]
-    { list.push("cairo"); }
-
-    #[cfg(feature = "qt-backend")]
-    { list.push("qt"); }
-
-    #[cfg(feature = "skia-backend")]
-    { list.push("skia"); }
-
-    #[cfg(feature = "raqote-backend")]
-    { list.push("raqote"); }
-
-    list
+    fn flush(&self) {}
 }

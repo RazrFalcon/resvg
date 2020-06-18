@@ -4,8 +4,6 @@
 
 ## Build
 
-*resvg* is a [Rust] library, therefore you should install it first.
-
 Since there are no Qt binding for Rust yet, we are using our own.
 This complicates the build process a bit.
 
@@ -97,6 +95,14 @@ We are using Qt 5.12.0 just for example.
 `resvg-qt` depends only on QtCore and QtGui libraries and imageformats/qjpeg plugin.
 
 Technically, any Qt 5 version should work, but we only support Qt >= 5.6.
+
+## Running resvg CLI
+
+```sh
+cargo run --release -- in.svg out.png
+```
+
+The resulting binary can be found at: `target/release/resvg-qt`
 
 ## Running examples
 

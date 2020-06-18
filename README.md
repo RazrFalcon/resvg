@@ -11,7 +11,7 @@
 
 - a Rust library
 - a C library
-- a CLI application (see [tools/rendersvg](./tools/rendersvg))
+- a CLI application
 
 to render SVG files based on a
 [static](http://www.w3.org/TR/SVG11/feature#SVG-static)
@@ -26,22 +26,6 @@ of preprocessing before rendering. It converts an input SVG into a simplified on
 called [Micro SVG](./docs/usvg_spec.adoc) and only then it begins rendering.
 So it's very easy to implement a new rendering backend.
 And you can also access *Micro SVG* as XML directly via [usvg](./tools/usvg) tool.
-
-## SVG support
-
-*resvg* is aiming to support only the [static](http://www.w3.org/TR/SVG11/feature#SVG-static)
-SVG subset; e.g. no `a`, `script`, `view` or `cursor` elements, no events and no animations.
-
-[SVG Tiny 1.2](https://www.w3.org/TR/SVGTiny12/) and [SVG 2.0](https://www.w3.org/TR/SVG2/)
-are not supported and not planned.
-
-Results of the [resvg test suite](./svg-tests/README.md):
-
-![](./.github/chart.svg)
-
-You can find a complete table of supported features
-[here](https://razrfalcon.github.io/resvg-test-suite/svg-support-table.html).
-It also includes alternative libraries.
 
 ## Rendering backends
 
@@ -58,6 +42,22 @@ From the performance perspective, Skia is the fastest one.
 cairo and Qt performance heavily depends on SVG content, but roughly the same
 (cairo has a faster shapes rendering, while Qt has a faster layers compositing).
 And raqote is the slowest one.
+
+## SVG support
+
+*resvg* is aiming to support only the [static](http://www.w3.org/TR/SVG11/feature#SVG-static)
+SVG subset; e.g. no `a`, `script`, `view` or `cursor` elements, no events and no animations.
+
+[SVG Tiny 1.2](https://www.w3.org/TR/SVGTiny12/) and [SVG 2.0](https://www.w3.org/TR/SVG2/)
+are not supported and not planned.
+
+Results of the [resvg test suite](./svg-tests/README.md):
+
+![](./.github/chart.svg)
+
+You can find a complete table of supported features
+[here](https://razrfalcon.github.io/resvg-test-suite/svg-support-table.html).
+It also includes alternative libraries.
 
 ## Performance
 

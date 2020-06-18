@@ -18,6 +18,7 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 cairo-rs = { version = "0.8.0", default-features = false, features = ["png"] }
 jpeg-decoder = { version = "0.1.15", default-features = false }
 log = "0.4"
+pico-args = "0.2"
 png = { version = "0.15", default-features = false }
 rgb = "0.8"
 svgfilters = { path = "../svgfilters" }
