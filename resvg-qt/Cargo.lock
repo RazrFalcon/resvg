@@ -104,15 +104,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fern"
-version = "0.5.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29d26fa0f4d433d1956746e66ec10d6bf4d6c8b93cd39965cceea7f7cc78c7dd"
-dependencies = [
- "log",
-]
-
-[[package]]
 name = "flate2"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -273,7 +264,6 @@ dependencies = [
 name = "resvg-qt-capi"
 version = "0.9.1"
 dependencies = [
- "fern",
  "log",
  "resvg-qt",
  "usvg",

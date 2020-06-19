@@ -5,7 +5,6 @@
 #![allow(non_camel_case_types)]
 
 use std::ffi::CStr;
-use std::fmt;
 use std::os::raw::c_char;
 use std::path;
 use std::ptr;
@@ -112,34 +111,9 @@ pub struct resvg_render_tree(usvg::Tree);
 
 #[no_mangle]
 pub extern "C" fn resvg_init_log() {
-    fern::Dispatch::new()
-        .format(log_format)
-        .level(log::LevelFilter::Warn)
-        .chain(std::io::stderr())
-        .apply()
-        .unwrap();
-}
-
-fn log_format(
-    out: fern::FormatCallback,
-    message: &fmt::Arguments,
-    record: &log::Record,
-) {
-    let lvl = match record.level() {
-        log::Level::Error => "Error",
-        log::Level::Warn => "Warning",
-        log::Level::Info => "Info",
-        log::Level::Debug => "Debug",
-        log::Level::Trace => "Trace",
-    };
-
-    out.finish(format_args!(
-        "{} (in {}:{}): {}",
-        lvl,
-        record.target(),
-        record.line().unwrap_or(0),
-        message
-    ))
+    if let Ok(()) = log::set_logger(&LOGGER) {
+        log::set_max_level(log::LevelFilter::Warn);
+    }
 }
 
 #[no_mangle]
@@ -612,4 +586,36 @@ fn convert_error(e: usvg::Error) -> ErrorId {
         usvg::Error::InvalidSize => ErrorId::InvalidSize,
         usvg::Error::ParsingFailed(_) => ErrorId::ParsingFailed,
     }
+}
+
+
+/// A simple stderr logger.
+static LOGGER: SimpleLogger = SimpleLogger;
+struct SimpleLogger;
+impl log::Log for SimpleLogger {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        metadata.level() <= log::LevelFilter::Warn
+    }
+
+    fn log(&self, record: &log::Record) {
+        if self.enabled(record.metadata()) {
+            let target = if record.target().len() > 0 {
+                record.target()
+            } else {
+                record.module_path().unwrap_or_default()
+            };
+
+            let line = record.line().unwrap_or(0);
+
+            match record.level() {
+                log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, record.args()),
+                log::Level::Warn  => eprintln!("Warning (in {}:{}): {}", target, line, record.args()),
+                log::Level::Info  => eprintln!("Info (in {}:{}): {}", target, line, record.args()),
+                log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, record.args()),
+                log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, record.args()),
+            }
+        }
+    }
+
+    fn flush(&self) {}
 }

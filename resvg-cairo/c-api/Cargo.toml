@@ -13,9 +13,8 @@ path = "lib.rs"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-cairo-rs = { version = "0.8.0", default-features = false, features = ["png"] }
+cairo-rs = { version = "0.8.0", default-features = false }
 cairo-sys-rs = "0.9"
-fern = "=0.5.8" # fixed version without chrono
 log = "0.4"
 resvg-cairo = { path = "../" }
 usvg = { path = "../../usvg" }

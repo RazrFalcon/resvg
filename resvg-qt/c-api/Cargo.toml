@@ -13,10 +13,9 @@ path = "lib.rs"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-fern = "=0.5.8" # fixed version without chrono
 log = "0.4"
-usvg = { path = "../../usvg" }
 resvg-qt = { path = "../" }
+usvg = { path = "../../usvg" }
 
 [features]
 default = ["text"]
