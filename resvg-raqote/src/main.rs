@@ -141,14 +141,14 @@ fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), String> {
 
 
 const HELP: &str = "\
-resvg-cairo is an SVG rendering application.
+resvg-raqote is an SVG rendering application.
 
 USAGE:
-    resvg-cairo [OPTIONS] <in-svg> <out-png>
+    resvg-raqote [OPTIONS] <in-svg> <out-png>
 
-    resvg-cairo in.svg out.png
-    resvg-cairo -z 4 in.svg out.png
-    resvg-cairo --query-all in.svg
+    resvg-raqote in.svg out.png
+    resvg-raqote -z 4 in.svg out.png
+    resvg-raqote --query-all in.svg
 
 OPTIONS:
         --help                  Prints this help
