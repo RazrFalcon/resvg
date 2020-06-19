@@ -5,8 +5,8 @@ An SVG thumbnails generator for the Windows Explorer.
 ## Dependencies
 
 - Windows 64bit >= Vista
-- MSVC => 2015
-- Qt => 5.6 built with MSVC
+- MSVC >= 2015
+- Qt >= 5.6 built with MSVC
 
 ## Build
 
