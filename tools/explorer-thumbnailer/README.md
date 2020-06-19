@@ -15,7 +15,7 @@ An SVG thumbnails generator for the Windows Explorer.
 set PATH=%userprofile%\.cargo\bin;C:\Qt\5.12.0\msvc2015_64\bin;%PATH%
 rem build C-API first
 set QT_DIR=C:\Qt\5.12.0\msvc2015_64
-cargo build --release --manifest-path ../../capi/Cargo.toml
+cargo build --release --manifest-path ../../resvg-qt/c-api/Cargo.toml
 rem build thumbnailer
 qmake
 nmake

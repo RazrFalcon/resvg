@@ -16,11 +16,11 @@ HEADERS +=\
 DEF_FILE += \
     src/thumbnailprovider.def
 
-CONFIG(release, debug|release): LIBS += -L$$PWD/../../target/release/ -lresvg
-else:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../target/debug/ -lresvg
+CONFIG(release, debug|release): LIBS += -L$$PWD/../../resvg-qt/target/release/ -lresvg_qt
+else:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../resvg-qt/target/debug/ -lresvg_qt
 
-INCLUDEPATH += $$PWD/../../capi/include
-DEPENDPATH += $$PWD/../../capi/include
+INCLUDEPATH += $$PWD/../../resvg-qt/c-api
+DEPENDPATH += $$PWD/../../resvg-qt/c-api
 
 LIBS += \
     shlwapi.lib \
