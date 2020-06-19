@@ -453,6 +453,7 @@ dependencies = [
  "kurbo",
  "log",
  "memmap2",
+ "pico-args",
  "rctree",
  "roxmltree",
  "simplecss",

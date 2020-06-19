@@ -230,10 +230,10 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
         dpi:                input.opt_value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
         background:         input.opt_value_from_str("--background")?,
         font_family:        input.opt_value_from_str("--font-family")?
-            .unwrap_or_else(|| "Times New Roman".to_string()),
+                                 .unwrap_or_else(|| "Times New Roman".to_string()),
         font_size:          input.opt_value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
         languages:          input.opt_value_from_fn("--languages", parse_languages)?
-            .unwrap_or(vec!["en".to_string()]), // TODO: use system language
+                                 .unwrap_or(vec!["en".to_string()]), // TODO: use system language
         shape_rendering:    input.opt_value_from_str("--shape-rendering")?.unwrap_or_default(),
         text_rendering:     input.opt_value_from_str("--text-rendering")?.unwrap_or_default(),
         image_rendering:    input.opt_value_from_str("--image-rendering")?.unwrap_or_default(),

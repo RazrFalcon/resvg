@@ -169,5 +169,7 @@ if 'USVG_TESTING' in os.environ:
     with cd('usvg'):
         # build without the `text` feature first
         run(['cargo', 'build', '--no-default-features'], check=True)
-        # test with the `text` feature
+        # build with default features
+        run(['cargo', 'build'], check=True)
+        # test with default features
         run(['cargo', 'test'], check=True)

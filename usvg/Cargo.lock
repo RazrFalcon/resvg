@@ -230,6 +230,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "pico-args"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a71836ceac43f0349e3bd964f5bb902f7b003916f32a4ad00354dafc447fa8f"
+
+[[package]]
 name = "pkg-config"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -313,6 +319,7 @@ dependencies = [
  "kurbo",
  "log",
  "memmap2",
+ "pico-args",
  "rctree",
  "roxmltree",
  "simplecss",

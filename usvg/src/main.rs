@@ -2,7 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::fmt;
 use std::fs::File;
 use std::io::{self, Read, Write};
 use std::path::Path;
@@ -87,18 +86,18 @@ fn collect_args() -> Result<Args, pico_args::Error> {
         version:            input.contains(["-V", "--version"]),
         stdout:             input.contains("-c"),
         keep_named_groups:  input.contains("--keep-named-groups"),
-        dpi:                input.value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
-        font_family:        input.value_from_str("--font-family")?
+        dpi:                input.opt_value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
+        font_family:        input.opt_value_from_str("--font-family")?
                                  .unwrap_or_else(|| "Times New Roman".to_string()),
-        font_size:          input.value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
-        languages:          input.value_from_fn("--languages", parse_languages)?
+        font_size:          input.opt_value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
+        languages:          input.opt_value_from_fn("--languages", parse_languages)?
                                  .unwrap_or(vec!["en".to_string()]), // TODO: use system language
-        shape_rendering:    input.value_from_str("--shape-rendering")?.unwrap_or_default(),
-        text_rendering:     input.value_from_str("--text-rendering")?.unwrap_or_default(),
-        image_rendering:    input.value_from_str("--image-rendering")?.unwrap_or_default(),
-        indent:             input.value_from_fn("--indent", parse_indent)?
+        shape_rendering:    input.opt_value_from_str("--shape-rendering")?.unwrap_or_default(),
+        text_rendering:     input.opt_value_from_str("--text-rendering")?.unwrap_or_default(),
+        image_rendering:    input.opt_value_from_str("--image-rendering")?.unwrap_or_default(),
+        indent:             input.opt_value_from_fn("--indent", parse_indent)?
                                  .unwrap_or(usvg::XmlIndent::Spaces(4)),
-        attrs_indent:       input.value_from_fn("--attrs-indent", parse_indent)?
+        attrs_indent:       input.opt_value_from_fn("--attrs-indent", parse_indent)?
                                  .unwrap_or(usvg::XmlIndent::None),
         quiet:              input.contains("--quiet"),
         free:               input.free()?,
@@ -186,12 +185,9 @@ fn main() {
     }
 
     if !args.quiet {
-        fern::Dispatch::new()
-            .format(log_format)
-            .level(log::LevelFilter::Warn)
-            .chain(std::io::stderr())
-            .apply()
-            .unwrap();
+        if let Ok(()) = log::set_logger(&LOGGER) {
+            log::set_max_level(log::LevelFilter::Warn);
+        }
     }
 
     if let Err(e) = process(&args) {
@@ -277,28 +273,6 @@ fn process(args: &Args) -> Result<(), String> {
     Ok(())
 }
 
-fn log_format(
-    out: fern::FormatCallback,
-    message: &fmt::Arguments,
-    record: &log::Record,
-) {
-    let lvl = match record.level() {
-        log::Level::Error => "Error",
-        log::Level::Warn  => "Warning",
-        log::Level::Info  => "Info",
-        log::Level::Debug => "Debug",
-        log::Level::Trace => "Trace",
-    };
-
-    out.finish(format_args!(
-        "{} (in {}:{}): {}",
-        lvl,
-        record.target(),
-        record.line().unwrap_or(0),
-        message
-    ))
-}
-
 fn load_stdin() -> Result<String, String> {
     let mut s = String::new();
     let stdin = io::stdin();
@@ -309,4 +283,36 @@ fn load_stdin() -> Result<String, String> {
         .map_err(|_| format!("provided data has not an UTF-8 encoding"))?;
 
     Ok(s)
+}
+
+
+/// A simple stderr logger.
+static LOGGER: SimpleLogger = SimpleLogger;
+struct SimpleLogger;
+impl log::Log for SimpleLogger {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        metadata.level() <= log::LevelFilter::Warn
+    }
+
+    fn log(&self, record: &log::Record) {
+        if self.enabled(record.metadata()) {
+            let target = if record.target().len() > 0 {
+                record.target()
+            } else {
+                record.module_path().unwrap_or_default()
+            };
+
+            let line = record.line().unwrap_or(0);
+
+            match record.level() {
+                log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, record.args()),
+                log::Level::Warn  => eprintln!("Warning (in {}:{}): {}", target, line, record.args()),
+                log::Level::Info  => eprintln!("Info (in {}:{}): {}", target, line, record.args()),
+                log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, record.args()),
+                log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, record.args()),
+            }
+        }
+    }
+
+    fn flush(&self) {}
 }
