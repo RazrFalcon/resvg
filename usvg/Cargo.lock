@@ -310,7 +310,7 @@ checksum = "b1d386ff53b415b7fe27b50bb44679e2cc4660272694b7b6f3326d8480823a94"
 
 [[package]]
 name = "usvg"
-version = "0.9.1"
+version = "0.10.0"
 dependencies = [
  "base64",
  "data-url",

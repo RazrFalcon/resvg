@@ -1,5 +1,4 @@
 - .github/*
-- Cargo.toml
 - CHANGELOG.md
 - resvg-cairo/Cargo.toml
 - resvg-cairo/src/lib.rs
