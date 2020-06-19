@@ -1,39 +1,35 @@
 #!/usr/bin/env bash
 
+# WARNING: run only in a freshly cloned repo
+
 set -e
 
-VERSION="0.9.1"
+VERSION="0.10.0"
 
-git clone https://github.com/RazrFalcon/resvg resvg-$VERSION
-cd resvg-"$VERSION"
-git checkout tags/v"$VERSION" -b temp-branch
+if [ "$1" = "" ]; then
+    echo "Usage: $0 backend"
+    exit
+fi
 
+BACKEND="$1"
+VERSIONED_DIR="resvg-$BACKEND-$VERSION"
+
+# Temporary rename the backend dir.
+mv "resvg-$BACKEND" "$VERSIONED_DIR"
+
+cd "$VERSIONED_DIR"
 mkdir -p .cargo
-cargo-vendor vendor --relative-path > .cargo/config
-
+cargo vendor > .cargo/config
 cd ..
 
-env XZ_OPT="-9e" tar \
-    --exclude=".git" \
-    --exclude=".gitignore" \
-    --exclude=".travis.yml" \
-    --exclude="resvg-$VERSION/.github" \
-    --exclude="resvg-$VERSION/version-bump.md" \
-    --exclude="resvg-$VERSION/docs" \
-    --exclude="resvg-$VERSION/benches" \
-    --exclude="resvg-$VERSION/svg-tests" \
-    --exclude="resvg-$VERSION/testing-tools" \
-    -cJf resvg-"$VERSION".tar.xz resvg-"$VERSION"
+env XZ_OPT="-9e" tar -cJvf "$VERSIONED_DIR".tar.xz "$VERSIONED_DIR"
 
-# Clean up.
-rm -rf resvg-"$VERSION"
+# Rename back.
+mv "$VERSIONED_DIR" "resvg-$BACKEND"
 
 # Test our archive.
-tar -xJf resvg-"$VERSION".tar.xz
-cd resvg-"$VERSION"
-cargo build --verbose --release --frozen \
-    --manifest-path tools/rendersvg/Cargo.toml --features "raqote-backend"
-
-# Clean up again.
+tar -xJf "$VERSIONED_DIR".tar.xz
+cd "$VERSIONED_DIR"
+cargo build --release --frozen --offline
 cd ..
-rm -r resvg-"$VERSION"
+rm -r "$VERSIONED_DIR"
