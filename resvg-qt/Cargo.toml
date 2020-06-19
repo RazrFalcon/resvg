@@ -16,7 +16,7 @@ travis-ci = { repository = "RazrFalcon/resvg" }
 
 [dependencies]
 log = "0.4"
-pico-args = "0.2"
+pico-args = "0.3"
 rgb = "0.8"
 svgfilters = { path = "../svgfilters" }
 usvg = { path = "../usvg", default-features = false }

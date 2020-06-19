@@ -224,24 +224,24 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
     Ok(CliArgs {
         help:               input.contains("--help"),
         version:            input.contains(["-V", "--version"]),
-        width:              input.value_from_fn(["-w", "--width"], parse_length)?,
-        height:             input.value_from_fn(["-h", "--height"], parse_length)?,
-        zoom:               input.value_from_fn(["-z", "--zoom"], parse_zoom)?,
-        dpi:                input.value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
-        background:         input.value_from_str("--background")?,
-        font_family:        input.value_from_str("--font-family")?
+        width:              input.opt_value_from_fn(["-w", "--width"], parse_length)?,
+        height:             input.opt_value_from_fn(["-h", "--height"], parse_length)?,
+        zoom:               input.opt_value_from_fn(["-z", "--zoom"], parse_zoom)?,
+        dpi:                input.opt_value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
+        background:         input.opt_value_from_str("--background")?,
+        font_family:        input.opt_value_from_str("--font-family")?
             .unwrap_or_else(|| "Times New Roman".to_string()),
-        font_size:          input.value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
-        languages:          input.value_from_fn("--languages", parse_languages)?
+        font_size:          input.opt_value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
+        languages:          input.opt_value_from_fn("--languages", parse_languages)?
             .unwrap_or(vec!["en".to_string()]), // TODO: use system language
-        shape_rendering:    input.value_from_str("--shape-rendering")?.unwrap_or_default(),
-        text_rendering:     input.value_from_str("--text-rendering")?.unwrap_or_default(),
-        image_rendering:    input.value_from_str("--image-rendering")?.unwrap_or_default(),
+        shape_rendering:    input.opt_value_from_str("--shape-rendering")?.unwrap_or_default(),
+        text_rendering:     input.opt_value_from_str("--text-rendering")?.unwrap_or_default(),
+        image_rendering:    input.opt_value_from_str("--image-rendering")?.unwrap_or_default(),
         query_all:          input.contains("--query-all"),
-        export_id:          input.value_from_str("--export-id")?,
+        export_id:          input.opt_value_from_str("--export-id")?,
         perf:               input.contains("--perf"),
         quiet:              input.contains("--quiet"),
-        dump_svg:           input.value_from_str("--dump-svg")?,
+        dump_svg:           input.opt_value_from_str("--dump-svg")?,
         free:               input.free()?,
     })
 }
