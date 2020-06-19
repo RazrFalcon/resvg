@@ -1,7 +1,7 @@
 ## resvg
 [![Build Status](https://travis-ci.org/RazrFalcon/resvg.svg?branch=master)](https://travis-ci.org/RazrFalcon/resvg)
-[![Crates.io](https://img.shields.io/crates/v/resvg.svg)](https://crates.io/crates/resvg)
-[![Documentation](https://docs.rs/resvg/badge.svg)](https://docs.rs/resvg)
+[![Crates.io](https://img.shields.io/crates/v/usvg.svg)](https://crates.io/crates/usvg)
+[![Documentation](https://docs.rs/usvg/badge.svg)](https://docs.rs/usvg)
 
 *resvg* is an [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) rendering library.
 
@@ -73,7 +73,6 @@ You are probably looking for `resvg-*` subprojects.
 
 - `benches` - basic benchmarks for rendering operations
 - `docs` – basic documentation
-- `resvg` – foundation crate for all backends
 - `resvg-cairo` – cairo backend implementation
 - `resvg-qt` – qt backend implementation
 - `resvg-skia` – skia backend implementation
