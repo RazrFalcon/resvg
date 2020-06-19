@@ -7,7 +7,7 @@
 using the [cairo](https://www.cairographics.org/) library.
 */
 
-#![doc(html_root_url = "https://docs.rs/resvg-cairo/0.9.1")]
+#![doc(html_root_url = "https://docs.rs/resvg-cairo/0.10.0")]
 
 #![warn(missing_docs)]
 

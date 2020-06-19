@@ -249,7 +249,7 @@ checksum = "be9e29cb19c8fe84169fcb07f8f11e66bc9e6e0280efd4715c54818296f8a4a8"
 
 [[package]]
 name = "resvg-qt"
-version = "0.9.1"
+version = "0.10.0"
 dependencies = [
  "cc",
  "log",
@@ -257,16 +257,16 @@ dependencies = [
  "pkg-config",
  "rgb",
  "svgfilters",
- "usvg",
+ "usvg 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "resvg-qt-capi"
-version = "0.9.1"
+version = "0.10.0"
 dependencies = [
  "log",
  "resvg-qt",
- "usvg",
+ "usvg 0.10.0",
 ]
 
 [[package]]
@@ -302,6 +302,8 @@ checksum = "0b8de496cf83d4ed58b6be86c3a275b8602f6ffe98d3024a869e124147a9a3ac"
 [[package]]
 name = "svgfilters"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08035a14ca51cbc8dde5470f9109615e6acf181020dc9f1cfba9c12efd31ad84"
 dependencies = [
  "float-cmp",
  "rgb",
@@ -347,6 +349,32 @@ checksum = "b1d386ff53b415b7fe27b50bb44679e2cc4660272694b7b6f3326d8480823a94"
 [[package]]
 name = "usvg"
 version = "0.10.0"
+dependencies = [
+ "base64",
+ "data-url",
+ "flate2",
+ "harfbuzz_rs",
+ "kurbo",
+ "log",
+ "memmap2",
+ "pico-args",
+ "rctree",
+ "roxmltree",
+ "simplecss",
+ "siphasher",
+ "svgtypes",
+ "ttf-parser",
+ "unicode-bidi",
+ "unicode-script",
+ "unicode-vo",
+ "xmlwriter",
+]
+
+[[package]]
+name = "usvg"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d681fd78e7926787a4e23c67beb18472525a10cb161d98e12f8a0a751f699ef8"
 dependencies = [
  "base64",
  "data-url",

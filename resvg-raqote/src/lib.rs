@@ -7,7 +7,7 @@
 using the [raqote](https://github.com/jrmuizel/raqote) library.
 */
 
-#![doc(html_root_url = "https://docs.rs/resvg-raqote/0.9.1")]
+#![doc(html_root_url = "https://docs.rs/resvg-raqote/0.10.0")]
 
 #![warn(missing_docs)]
 

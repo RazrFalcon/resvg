@@ -1,6 +1,6 @@
 [package]
 name = "resvg-skia"
-version = "0.9.1"
+version = "0.10.0"
 authors = ["Reizner Evgeniy <razrfalcon@gmail.com>", "JaFenix <jspicer@phoenixcontact.com>"]
 keywords = ["svg", "render", "raster", "skia"]
 license = "MPL-2.0"
@@ -20,8 +20,8 @@ log = "0.4"
 pico-args = "0.3"
 png = { version = "0.16", default-features = false }
 rgb = "0.8"
-svgfilters = { path = "../svgfilters" }
-usvg = { path = "../usvg", default-features = false }
+svgfilters = "0.1"
+usvg = { version = "0.10", default-features = false }
 
 [build-dependencies]
 cc = "1.0"

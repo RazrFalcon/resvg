@@ -7,7 +7,7 @@
 using the [Skia](https://skia.org/) library.
 */
 
-#![doc(html_root_url = "https://docs.rs/resvg-skia/0.9.1")]
+#![doc(html_root_url = "https://docs.rs/resvg-skia/0.10.0")]
 
 #![warn(missing_docs)]
 

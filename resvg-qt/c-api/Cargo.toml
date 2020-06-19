@@ -1,6 +1,6 @@
 [package]
 name = "resvg-qt-capi"
-version = "0.9.1"
+version = "0.10.0"
 authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster", "c-api"]
 license = "MPL-2.0"

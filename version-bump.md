@@ -10,14 +10,11 @@
 - resvg-qt/c-api/ResvgQt.h
 - resvg-skia/Cargo.toml
 - resvg-skia/src/lib.rs
-- resvg-cairo/c-api/Cargo.toml
-- resvg-cairo/c-api/resvg-skia.h
+- resvg-skia/c-api/Cargo.toml
+- resvg-skia/c-api/resvg-skia.h
 - resvg-raqote/Cargo.toml
 - resvg-raqote/src/lib.rs
-- src/lib.rs
 - tools/explorer-thumbnailer/install/installer.iss
-- tools/rendersvg/Cargo.toml
-- tools/usvg/Cargo.toml
 - usvg/Cargo.toml
 - usvg/src/lib.rs
 - usvg/tests/files/*

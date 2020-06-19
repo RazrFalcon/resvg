@@ -7,7 +7,7 @@
 using the [Qt](https://www.qt.io/) library.
 */
 
-#![doc(html_root_url = "https://docs.rs/resvg-qt/0.9.1")]
+#![doc(html_root_url = "https://docs.rs/resvg-qt/0.10.0")]
 
 #![warn(missing_docs)]
 

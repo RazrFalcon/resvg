@@ -10,13 +10,13 @@
  * Qt API for resvg-qt
  */
 
-#ifndef RESVGQT_H
-#define RESVGQT_H
+#ifndef RESVG_QT_H
+#define RESVG_QT_H
 
-#define RESVGQT_MAJOR_VERSION 0
-#define RESVGQT_MINOR_VERSION 9
-#define RESVGQT_PATCH_VERSION 1
-#define RESVGQT_VERSION "0.9.1"
+#define RESVG_QT_MAJOR_VERSION 0
+#define RESVG_QT_MINOR_VERSION 10
+#define RESVG_QT_PATCH_VERSION 0
+#define RESVG_QT_VERSION "0.10.0"
 
 #include <QDebug>
 #include <QFile>
@@ -573,4 +573,4 @@ inline void ResvgRenderer::initLog()
     ResvgPrivate::resvg_init_log();
 }
 
-#endif // RESVGQT_H
+#endif // RESVG_QT_H
