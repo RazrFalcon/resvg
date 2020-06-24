@@ -28,115 +28,11 @@
 #include <QString>
 #include <QTransform>
 
+#include <resvg.h>
+
 namespace ResvgPrivate {
 
 extern "C" {
-    typedef struct resvg_render_tree resvg_render_tree;
-
-    typedef enum resvg_error {
-        RESVG_OK = 0,
-        RESVG_ERROR_NOT_AN_UTF8_STR,
-        RESVG_ERROR_FILE_WRITE_FAILED,
-        RESVG_ERROR_INVALID_FILE_SUFFIX,
-        RESVG_ERROR_MALFORMED_GZIP,
-        RESVG_ERROR_INVALID_SIZE,
-        RESVG_ERROR_PARSING_FAILED,
-    } resvg_error;
-
-    typedef struct resvg_color {
-        uint8_t r;
-        uint8_t g;
-        uint8_t b;
-    } resvg_color;
-
-    typedef enum resvg_fit_to_type {
-        RESVG_FIT_TO_ORIGINAL,
-        RESVG_FIT_TO_WIDTH,
-        RESVG_FIT_TO_HEIGHT,
-        RESVG_FIT_TO_ZOOM,
-    } resvg_fit_to_type;
-
-    typedef struct resvg_fit_to {
-        resvg_fit_to_type type;
-        float value;
-    } resvg_fit_to;
-
-    typedef enum resvg_shape_rendering {
-        RESVG_SHAPE_RENDERING_OPTIMIZE_SPEED,
-        RESVG_SHAPE_RENDERING_CRISP_EDGES,
-        RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION,
-    } resvg_shape_rendering;
-
-    typedef enum resvg_text_rendering {
-        RESVG_TEXT_RENDERING_OPTIMIZE_SPEED,
-        RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY,
-        RESVG_TEXT_RENDERING_GEOMETRIC_PRECISION,
-    } resvg_text_rendering;
-
-    typedef enum resvg_image_rendering {
-        RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY,
-        RESVG_IMAGE_RENDERING_OPTIMIZE_SPEED,
-    } resvg_image_rendering;
-
-    typedef struct resvg_options {
-        const char *path;
-        double dpi;
-        const char *font_family;
-        double font_size;
-        const char *languages;
-        resvg_shape_rendering shape_rendering;
-        resvg_text_rendering text_rendering;
-        resvg_image_rendering image_rendering;
-        resvg_fit_to fit_to;
-        bool draw_background;
-        resvg_color background;
-        bool keep_named_groups;
-    } resvg_options;
-
-    typedef struct resvg_rect {
-        double x;
-        double y;
-        double width;
-        double height;
-    } resvg_rect;
-
-    typedef struct resvg_size {
-        uint32_t width;
-        uint32_t height;
-    } resvg_size;
-
-    typedef struct resvg_transform {
-        double a;
-        double b;
-        double c;
-        double d;
-        double e;
-        double f;
-    } resvg_transform;
-
-    void resvg_init_log();
-    void resvg_init_options(resvg_options *opt);
-    int resvg_parse_tree_from_file(const char *file_path,
-                                   const resvg_options *opt,
-                                   resvg_render_tree **tree);
-    int resvg_parse_tree_from_data(const char *data,
-                                   const size_t len,
-                                   const resvg_options *opt,
-                                   resvg_render_tree **tree);
-    bool resvg_is_image_empty(const resvg_render_tree *tree);
-    resvg_size resvg_get_image_size(const resvg_render_tree *tree);
-    resvg_rect resvg_get_image_viewbox(const resvg_render_tree *tree);
-    bool resvg_get_image_bbox(const resvg_render_tree *tree,
-                              resvg_rect *bbox);
-    bool resvg_node_exists(const resvg_render_tree *tree,
-                           const char *id);
-    bool resvg_get_node_transform(const resvg_render_tree *tree,
-                                  const char *id,
-                                  resvg_transform *ts);
-    bool resvg_get_node_bbox(const resvg_render_tree *tree,
-                             const char *id,
-                             resvg_rect *bbox);
-    void resvg_tree_destroy(resvg_render_tree *tree);
     void resvg_qt_render_to_canvas(const resvg_render_tree *tree,
                                    const resvg_options *opt,
                                    resvg_size size,
@@ -225,8 +121,8 @@ static QString errorToString(const int err)
             return QString();
         case RESVG_ERROR_NOT_AN_UTF8_STR :
             return QLatin1String("The SVG content has not an UTF-8 encoding.");
-        case RESVG_ERROR_FILE_WRITE_FAILED :
-            return QLatin1String("Failed to write to the file.");
+        case RESVG_ERROR_FILE_OPEN_FAILED :
+            return QLatin1String("Failed to read the file.");
         case RESVG_ERROR_INVALID_FILE_SUFFIX :
             return QLatin1String("Invalid file suffix.");
         case RESVG_ERROR_MALFORMED_GZIP :
@@ -412,7 +308,7 @@ inline bool ResvgRenderer::load(const QString &filePath)
     d->opt.path = ResvgPrivate::toCStr(filePath);
 
     const auto err = resvg_parse_tree_from_file(d->opt.path, &d->opt, &d->tree);
-    if (err != ResvgPrivate::RESVG_OK) {
+    if (err != RESVG_OK) {
         d->errMsg = ResvgPrivate::errorToString(err);
         return false;
     }
@@ -428,7 +324,7 @@ inline bool ResvgRenderer::load(const QByteArray &data)
     d->reset();
 
     const auto err = resvg_parse_tree_from_data(data.constData(), data.size(), &d->opt, &d->tree);
-    if (err != ResvgPrivate::RESVG_OK) {
+    if (err != RESVG_OK) {
         d->errMsg = ResvgPrivate::errorToString(err);
         return false;
     }
@@ -490,7 +386,7 @@ inline QRectF ResvgRenderer::boundsOnElement(const QString &id) const
 
     const auto utf8Str = id.toUtf8();
     const auto rawId = utf8Str.constData();
-    ResvgPrivate::resvg_rect bbox;
+    resvg_rect bbox;
     if (resvg_get_node_bbox(d->tree, rawId, &bbox))
         return QRectF(bbox.x, bbox.y, bbox.height, bbox.width);
 
@@ -502,7 +398,7 @@ inline QRectF ResvgRenderer::boundingBox() const
     if (!d->tree)
         return QRectF();
 
-    ResvgPrivate::resvg_rect bbox;
+    resvg_rect bbox;
     if (resvg_get_image_bbox(d->tree, &bbox))
         return QRectF(bbox.x, bbox.y, bbox.height, bbox.width);
 
@@ -526,7 +422,7 @@ inline QTransform ResvgRenderer::transformForElement(const QString &id) const
 
     const auto utf8Str = id.toUtf8();
     const auto rawId = utf8Str.constData();
-    ResvgPrivate::resvg_transform ts;
+    resvg_transform ts;
     if (resvg_get_node_transform(d->tree, rawId, &ts))
         return QTransform(ts.a, ts.b, ts.c, ts.d, ts.e, ts.f);
 
@@ -549,8 +445,8 @@ inline void ResvgRenderer::render(QPainter *p) const
     p->setRenderHint(QPainter::Antialiasing);
 
     const auto r = p->viewport();
-    ResvgPrivate::resvg_size imgSize { (uint)r.width(), (uint)r.height() };
-    resvg_qt_render_to_canvas(d->tree, &d->opt, imgSize, p);
+    resvg_size imgSize { (uint)r.width(), (uint)r.height() };
+    ResvgPrivate::resvg_qt_render_to_canvas(d->tree, &d->opt, imgSize, p);
 
     p->restore();
 }
@@ -570,7 +466,7 @@ inline QImage ResvgRenderer::renderToImage(const QSize &size) const
 
 inline void ResvgRenderer::initLog()
 {
-    ResvgPrivate::resvg_init_log();
+    resvg_init_log();
 }
 
 #endif // RESVG_QT_H

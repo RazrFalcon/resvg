@@ -17,5 +17,6 @@
 - tools/explorer-thumbnailer/install/installer.iss
 - usvg/Cargo.toml
 - usvg/src/lib.rs
+- usvg/c-api/resvg.h
 - usvg/tests/files/*
 - make-vendored.sh

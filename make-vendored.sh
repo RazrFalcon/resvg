@@ -22,7 +22,7 @@ mkdir -p .cargo
 cargo vendor > .cargo/config
 cd ..
 
-env XZ_OPT="-9e" tar -cJvf "$VERSIONED_DIR".tar.xz "$VERSIONED_DIR"
+env XZ_OPT="-9e" tar -hcJvf "$VERSIONED_DIR".tar.xz "$VERSIONED_DIR"
 
 # Rename back.
 mv "$VERSIONED_DIR" "resvg-$BACKEND"

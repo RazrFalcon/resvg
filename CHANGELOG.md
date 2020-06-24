@@ -12,6 +12,9 @@ This changelog also contains important changes in dependencies.
 - (usvg) `fontconfig` is no longer used for matching
   [generic fonts](https://www.w3.org/TR/2018/REC-css-fonts-3-20180920/#generic-family-value)
   on Linux. Mainly because it's very slow.
+- (c-api) `resvg-*.h` in all backends has been split into `resvg.h` + `resvg-*.h`.
+  Where `resvg.h` contains backend-independent functions
+  and `resvg-*.h` contains backend-specific functions.
 
 ## [0.10.0] - 2020-06-19
 ### Changed
