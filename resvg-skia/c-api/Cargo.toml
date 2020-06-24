@@ -15,7 +15,7 @@ crate-type = ["cdylib", "staticlib"]
 [dependencies]
 log = "0.4"
 resvg-skia = { path = "../" }
-usvg = { version = "0.10", default-features = false }
+usvg = { path = "../../usvg", default-features = false }
 
 [features]
 default = ["text"] # enables SVG Text support

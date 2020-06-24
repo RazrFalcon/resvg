@@ -8,8 +8,9 @@ use unicode_vo::Orientation as CharOrientation;
 use unicode_script::UnicodeScript;
 use ttf_parser::GlyphId;
 
-use crate::{tree, fontdb, convert::prelude::*};
+use crate::{tree, fontdb_ext, convert::prelude::*};
 use crate::tree::CubicBezExt;
+use crate::fontdb_ext::DatabaseExt;
 use super::convert::{
     ByteIndex,
     CharacterPosition,
@@ -46,7 +47,7 @@ struct Glyph {
     /// Reference to the source font.
     ///
     /// Each glyph can have it's own source font.
-    font: fontdb::Font,
+    font: fontdb_ext::Font,
 }
 
 impl Glyph {
@@ -202,7 +203,7 @@ pub fn outline_chunk(
 /// Text shaping with font fallback.
 fn shape_text(
     text: &str,
-    font: fontdb::Font,
+    font: fontdb_ext::Font,
     state: &State,
 ) -> Vec<Glyph> {
     let mut glyphs = shape_text_with_font(text, font, state).unwrap_or_default();
@@ -276,63 +277,60 @@ fn shape_text(
 /// This function will do the BIDI reordering and text shaping.
 fn shape_text_with_font(
     text: &str,
-    font: fontdb::Font,
+    font: fontdb_ext::Font,
     state: &State,
 ) -> Option<Vec<Glyph>> {
     let db = state.db.borrow();
 
-    // We can't simplify this code because of lifetimes.
-    let item = db.font(font.id);
-    let file = std::fs::File::open(&item.path).ok()?;
-    let mmap = unsafe { memmap2::MmapOptions::new().map(&file).ok()? };
+    db.with_face_data(font.id, |font_data, face_index| -> Option<Vec<Glyph>> {
+        let hb_face = harfbuzz::Face::from_bytes(font_data, face_index);
+        let hb_font = harfbuzz::Font::new(hb_face);
 
-    let hb_face = harfbuzz::Face::from_bytes(&mmap, item.face_index);
-    let hb_font = harfbuzz::Font::new(hb_face);
+        let bidi_info = unicode_bidi::BidiInfo::new(text, Some(unicode_bidi::Level::ltr()));
+        let paragraph = &bidi_info.paragraphs[0];
+        let line = paragraph.range.clone();
 
-    let bidi_info = unicode_bidi::BidiInfo::new(text, Some(unicode_bidi::Level::ltr()));
-    let paragraph = &bidi_info.paragraphs[0];
-    let line = paragraph.range.clone();
+        let mut glyphs = Vec::new();
 
-    let mut glyphs = Vec::new();
+        let (levels, runs) = bidi_info.visual_runs(&paragraph, line);
+        for run in runs.iter() {
+            let sub_text = &text[run.clone()];
+            if sub_text.is_empty() {
+                continue;
+            }
 
-    let (levels, runs) = bidi_info.visual_runs(&paragraph, line);
-    for run in runs.iter() {
-        let sub_text = &text[run.clone()];
-        if sub_text.is_empty() {
-            continue;
+            let hb_direction = if levels[run.start].is_rtl() {
+                harfbuzz::Direction::Rtl
+            } else {
+                harfbuzz::Direction::Ltr
+            };
+
+            let buffer = harfbuzz::UnicodeBuffer::new()
+                .add_str(sub_text)
+                .set_direction(hb_direction);
+
+            let output = harfbuzz::shape(&hb_font, buffer, &[]);
+
+            let positions = output.get_glyph_positions();
+            let infos = output.get_glyph_infos();
+
+            for (pos, info) in positions.iter().zip(infos) {
+                let idx = run.start + info.cluster as usize;
+                debug_assert!(text.get(idx..).is_some());
+
+                glyphs.push(Glyph {
+                    byte_idx: ByteIndex::new(idx),
+                    id: GlyphId(info.codepoint as u16),
+                    dx: pos.x_offset,
+                    dy: pos.y_offset,
+                    width: pos.x_advance,
+                    font,
+                });
+            }
         }
 
-        let hb_direction = if levels[run.start].is_rtl() {
-            harfbuzz::Direction::Rtl
-        } else {
-            harfbuzz::Direction::Ltr
-        };
-
-        let buffer = harfbuzz::UnicodeBuffer::new()
-            .add_str(sub_text)
-            .set_direction(hb_direction);
-
-        let output = harfbuzz::shape(&hb_font, buffer, &[]);
-
-        let positions = output.get_glyph_positions();
-        let infos = output.get_glyph_infos();
-
-        for (pos, info) in positions.iter().zip(infos) {
-            let idx = run.start + info.cluster as usize;
-            debug_assert!(text.get(idx..).is_some());
-
-            glyphs.push(Glyph {
-                byte_idx: ByteIndex::new(idx),
-                id: GlyphId(info.codepoint as u16),
-                dx: pos.x_offset,
-                dy: pos.y_offset,
-                width: pos.x_advance,
-                font,
-            });
-        }
-    }
-
-    Some(glyphs)
+        Some(glyphs)
+    })?
 }
 
 /// Outlines a glyph cluster.
@@ -406,32 +404,33 @@ fn find_font_for_char(
     c: char,
     exclude_fonts: &[fontdb::ID],
     state: &State,
-) -> Option<fontdb::Font> {
+) -> Option<fontdb_ext::Font> {
     let base_font_id = exclude_fonts[0];
 
     let db = state.db.borrow();
 
     // Iterate over fonts and check if any of them support the specified char.
-    for item in db.fonts() {
+    for face in db.faces() {
         // Ignore fonts, that were used for shaping already.
-        if exclude_fonts.contains(&item.id) {
+        if exclude_fonts.contains(&face.id) {
             continue;
         }
 
-        if db.font(base_font_id).properties != item.properties {
+        // Check that the new face has the same style.
+        let base_face = db.face(base_font_id)?;
+        if  base_face.style != face.style &&
+            base_face.weight != face.weight &&
+            base_face.stretch != face.stretch
+        {
             continue;
         }
 
-        if !db.has_char(item.id, c) {
+        if !db.has_char(face.id, c) {
             continue;
         }
 
-        warn!(
-            "Fallback from {} to {}.",
-            db.font(base_font_id).path.display(),
-            item.path.display(),
-        );
-        return db.load_font(item.id);
+        warn!("Fallback from {} to {}.", base_face.family, face.family);
+        return db.load_font(face.id);
     }
 
     None

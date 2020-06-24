@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- (usvg) The `fontdb` module moved to its own crate.
+- (usvg) `fontconfig` is no longer used for matching
+  [generic fonts](https://www.w3.org/TR/2018/REC-css-fonts-3-20180920/#generic-family-value)
+  on Linux. Mainly because it's very slow.
 
 ## [0.10.0] - 2020-06-19
 ### Changed

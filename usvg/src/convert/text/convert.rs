@@ -5,8 +5,9 @@
 use std::cmp;
 use std::rc::Rc;
 
-use crate::{fontdb, svgtree, tree, Transform};
+use crate::{fontdb_ext, svgtree, tree, Transform};
 use crate::convert::{prelude::*, style, units};
+use crate::fontdb_ext::DatabaseExt;
 use super::TextNode;
 
 
@@ -51,6 +52,18 @@ impl_enum_from_str!(TextAnchor,
     "middle"    => TextAnchor::Middle,
     "end"       => TextAnchor::End
 );
+
+
+impl crate::svgtree::EnumFromStr for fontdb::Style {
+    fn enum_from_str(s: &str) -> Option<Self> {
+        match s {
+            "normal"    => Some(fontdb::Style::Normal),
+            "italic"    => Some(fontdb::Style::Italic),
+            "oblique"   => Some(fontdb::Style::Oblique),
+            _ => None,
+        }
+    }
+}
 
 
 pub struct TextPath {
@@ -102,7 +115,7 @@ pub struct TextSpan {
     pub end: usize,
     pub fill: Option<tree::Fill>,
     pub stroke: Option<tree::Stroke>,
-    pub font: fontdb::Font,
+    pub font: fontdb_ext::Font,
     pub font_size: f64,
     pub decoration: TextDecoration,
     pub baseline_shift: f64,
@@ -306,7 +319,7 @@ fn resolve_text_flow(
     }
 
     let path = path_node.attribute::<tree::SharedPathData>(AId::D)?;
-    
+
     // The reference path's transform needs to be applied
     let path = if let Some(node_transform) = path_node.attribute::<Transform>(AId::Transform) {
         let mut path_copy = path.as_ref().clone();
@@ -315,7 +328,7 @@ fn resolve_text_flow(
     } else {
         path.clone()
     };
-    
+
     let start_offset: Length = node.attribute(AId::StartOffset).unwrap_or_default();
     let start_offset = if start_offset.unit == Unit::Percent {
         // 'If a percentage is given, then the `startOffset` represents
@@ -351,11 +364,10 @@ pub fn resolve_rendering_mode(
 fn resolve_font(
     node: svgtree::Node,
     state: &State,
-) -> Option<fontdb::Font> {
+) -> Option<fontdb_ext::Font> {
     let style = node.find_attribute(AId::FontStyle).unwrap_or_default();
     let stretch = conv_font_stretch(node);
     let weight = resolve_font_weight(node);
-    let properties = fontdb::Properties { style, weight, stretch };
 
     let font_family = if let Some(n) = node.find_node_with_attribute(AId::FontFamily) {
         n.attribute::<&str>(AId::FontFamily).unwrap_or(&state.opt.font_family).to_owned()
@@ -364,21 +376,42 @@ fn resolve_font(
     };
 
     let mut name_list = Vec::new();
-    for family in font_family.split(',') {
+    for mut family in font_family.split(',') {
         // TODO: to a proper parser
-        let family = family.replace('\'', "");
-        let family = family.trim();
-        name_list.push(family.to_string());
+
+        if family.starts_with('\'') {
+            family = &family[1..];
+        }
+
+        if family.ends_with('\'') {
+            family = &family[..family.len()-1];
+        }
+
+        family = family.trim();
+
+        name_list.push(match family {
+            "serif" => fontdb::Family::Serif,
+            "sans-serif" => fontdb::Family::SansSerif,
+            "cursive" => fontdb::Family::Cursive,
+            "fantasy" => fontdb::Family::Fantasy,
+            "monospace" => fontdb::Family::Monospace,
+            _ => fontdb::Family::Name(family),
+        });
     }
 
     // Use the default font as fallback.
-    name_list.push(state.opt.font_family.clone());
+    name_list.push(fontdb::Family::Name(&state.opt.font_family));
 
-    let name_list: Vec<_> = name_list.iter().map(|s| s.as_str()).collect();
+    let query = fontdb::Query {
+        families: &name_list,
+        weight,
+        stretch,
+        style,
+    };
 
-    let mut db = state.db.borrow_mut();
+    let db = state.db.borrow();
     let id = try_opt_warn_or!(
-        db.select_best_match(&name_list, properties), None,
+        db.query(&query), None,
         "No match for '{}' font-family.", font_family
     );
 
@@ -709,11 +742,7 @@ fn resolve_font_weight(node: svgtree::Node) -> fontdb::Weight {
         };
     }
 
-    let weight = fontdb::Weight::from(weight as u16);
-    match weight {
-        fontdb::Weight::Other(_) => fontdb::Weight::Normal,
-        _ => weight,
-    }
+    fontdb::Weight(weight as u16)
 }
 
 fn count_chars(node: svgtree::Node) -> usize {

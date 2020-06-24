@@ -10,8 +10,6 @@ use std::rc::Rc;
 use svgtypes::Length;
 
 use crate::{svgtree, tree, tree::prelude::*, Error};
-#[cfg(feature = "text")]
-use crate::fontdb;
 
 mod clip;
 mod filter;

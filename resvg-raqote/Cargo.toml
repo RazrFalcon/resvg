@@ -19,7 +19,7 @@ png = { version = "0.15", default-features = false } # the same version as used 
 raqote = { version = "0.8", default-features = false }
 rgb = "0.8"
 svgfilters = "0.1"
-usvg = { version = "0.10", default-features = false }
+usvg = { path = "../usvg", default-features = false }
 
 [features]
 default = ["text"]

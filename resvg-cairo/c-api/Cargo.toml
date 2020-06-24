@@ -17,7 +17,7 @@ cairo-rs = { version = "0.8", default-features = false }
 cairo-sys-rs = "0.9"
 log = "0.4"
 resvg-cairo = { path = "../" }
-usvg = { version = "0.10", default-features = false }
+usvg = { path = "../../usvg", default-features = false }
 
 [features]
 default = ["text"] # enables SVG Text support

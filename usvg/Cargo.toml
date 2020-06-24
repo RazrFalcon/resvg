@@ -32,6 +32,7 @@ siphasher = "0.2"
 svgtypes = "0.5"
 
 # for text to path
+fontdb = { git = "https://github.com/RazrFalcon/fontdb", rev = "ec9dbbb", optional = true }
 harfbuzz_rs = { version = "1.0.1", optional = true }
 memmap2 = { version = "0.1", optional = true }
 ttf-parser = { version = "0.6", optional = true }
@@ -41,4 +42,12 @@ unicode-vo = { version = "0.1", optional = true }
 
 [features]
 default = ["text"]
-text = ["harfbuzz_rs", "memmap2", "ttf-parser", "unicode-bidi", "unicode-script", "unicode-vo"]
+text = [
+    "fontdb",
+    "harfbuzz_rs",
+    "memmap2",
+    "ttf-parser",
+    "unicode-bidi",
+    "unicode-script",
+    "unicode-vo",
+]

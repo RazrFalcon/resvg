@@ -177,7 +177,7 @@ mod geom;
 mod options;
 mod svgtree;
 mod tree;
-#[cfg(feature = "text")] mod fontdb;
+#[cfg(feature = "text")] mod fontdb_ext;
 
 /// Shorthand names for modules.
 mod short {

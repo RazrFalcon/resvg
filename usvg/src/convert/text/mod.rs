@@ -5,6 +5,7 @@
 use std::rc::Rc;
 
 use crate::{svgtree, tree, tree::prelude::*};
+use crate::fontdb_ext::DatabaseExt;
 use super::prelude::*;
 
 mod convert;

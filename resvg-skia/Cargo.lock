@@ -128,6 +128,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "75224bec9bfe1a65e2d34132933f2de7fe79900c96a0174307554244ece8150e"
 
 [[package]]
+name = "fontdb"
+version = "0.1.0"
+source = "git+https://github.com/RazrFalcon/fontdb?rev=ec9dbbb#ec9dbbb2b320263cf26a75214ef648f4b05fb040"
+dependencies = [
+ "log",
+ "memmap2",
+ "ttf-parser 0.6.1 (git+https://github.com/RazrFalcon/ttf-parser?rev=df046dd)",
+ "uuid",
+]
+
+[[package]]
 name = "foreign-types"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -161,6 +172,17 @@ dependencies = [
  "cmake",
  "libc",
  "pkg-config",
+]
+
+[[package]]
+name = "getrandom"
+version = "0.1.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7abc8dd8451921606d809ba32e95b6111925cd2906060d2dcc29c070220503eb"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "wasi",
 ]
 
 [[package]]
@@ -349,6 +371,11 @@ dependencies = [
 [[package]]
 name = "ttf-parser"
 version = "0.6.1"
+source = "git+https://github.com/RazrFalcon/ttf-parser?rev=df046dd#df046ddb6ed20da7e1b0d9673651fe9112dff958"
+
+[[package]]
+name = "ttf-parser"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52fbe7769f5af5d7d25aea74b9443b64e544a5ffb4d2b2968295ddea934f1a06"
 
@@ -376,12 +403,11 @@ checksum = "b1d386ff53b415b7fe27b50bb44679e2cc4660272694b7b6f3326d8480823a94"
 [[package]]
 name = "usvg"
 version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d681fd78e7926787a4e23c67beb18472525a10cb161d98e12f8a0a751f699ef8"
 dependencies = [
  "base64",
  "data-url",
  "flate2",
+ "fontdb",
  "harfbuzz_rs",
  "kurbo",
  "log",
@@ -392,12 +418,26 @@ dependencies = [
  "simplecss",
  "siphasher",
  "svgtypes",
- "ttf-parser",
+ "ttf-parser 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-bidi",
  "unicode-script",
  "unicode-vo",
  "xmlwriter",
 ]
+
+[[package]]
+name = "uuid"
+version = "0.8.1"
+source = "git+https://github.com/uuid-rs/uuid?rev=9bb93b6#9bb93b63c983a5df05df06eaef007d55fb3728bd"
+dependencies = [
+ "getrandom",
+]
+
+[[package]]
+name = "wasi"
+version = "0.9.0+wasi-snapshot-preview1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
 
 [[package]]
 name = "xmlparser"
