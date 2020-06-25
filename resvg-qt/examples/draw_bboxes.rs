@@ -49,6 +49,6 @@ fn main() {
         }));
     }
 
-    let img = resvg_qt::render_to_image(&rtree, &opt, fit_to, None).unwrap();
+    let img = resvg_qt::render_to_image(&rtree, fit_to, None).unwrap();
     img.save(&args[2]);
 }

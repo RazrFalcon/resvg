@@ -70,7 +70,6 @@ mod render;
 /// Renders SVG to image.
 pub fn render_to_image(
     tree: &usvg::Tree,
-    opt: &usvg::Options,
     fit_to: usvg::FitTo,
     background: Option<usvg::Color>,
 ) -> Option<cairo::ImageSurface> {
@@ -78,14 +77,13 @@ pub fn render_to_image(
         render::create_root_surface(tree.svg_node().size.to_screen_size(), fit_to, background)?;
 
     let cr = cairo::Context::new(&surface);
-    render_to_canvas(tree, opt, img_size, &cr);
+    render_to_canvas(tree, img_size, &cr);
     Some(surface)
 }
 
 /// Renders SVG node to image.
 pub fn render_node_to_image(
     node: &usvg::Node,
-    opt: &usvg::Options,
     fit_to: usvg::FitTo,
     background: Option<usvg::Color>,
 ) -> Option<cairo::ImageSurface> {
@@ -105,7 +103,7 @@ pub fn render_node_to_image(
         = render::create_root_surface(node_bbox.to_screen_size(), fit_to, background)?;
 
     let cr = cairo::Context::new(&surface);
-    render_node_to_canvas(node, opt, vbox, img_size, &cr);
+    render_node_to_canvas(node, vbox, img_size, &cr);
 
     Some(surface)
 }
@@ -117,11 +115,10 @@ pub fn render_node_to_image(
 /// Canvas must not have a transform.
 pub fn render_to_canvas(
     tree: &usvg::Tree,
-    opt: &usvg::Options,
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
-    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, cr);
+    render_node_to_canvas(&tree.root(), tree.svg_node().view_box, img_size, cr);
 }
 
 /// Renders `node` onto the canvas.
@@ -131,10 +128,9 @@ pub fn render_to_canvas(
 /// Canvas must not have a transform.
 pub fn render_node_to_canvas(
     node: &usvg::Node,
-    opt: &usvg::Options,
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
-    render::render_node_to_canvas(node, opt, view_box, img_size, &mut render::RenderState::Ok, cr)
+    render::render_node_to_canvas(node, view_box, img_size, &mut render::RenderState::Ok, cr)
 }

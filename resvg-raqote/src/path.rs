@@ -7,7 +7,6 @@ use crate::render::prelude::*;
 pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
-    opt: &Options,
     draw_opt: raqote::DrawOptions,
     dt: &mut raqote::DrawTarget,
 ) -> Option<Rect> {
@@ -40,8 +39,8 @@ pub fn draw(
         draw_opt.antialias = raqote::AntialiasMode::None;
     }
 
-    crate::paint_server::fill(tree, &new_path, &path.fill, opt, style_bbox, &draw_opt, dt);
-    crate::paint_server::stroke(tree, &new_path, &path.stroke, opt, style_bbox, &draw_opt, dt);
+    crate::paint_server::fill(tree, &new_path, &path.fill, style_bbox, &draw_opt, dt);
+    crate::paint_server::stroke(tree, &new_path, &path.stroke, style_bbox, &draw_opt, dt);
 
     bbox
 }

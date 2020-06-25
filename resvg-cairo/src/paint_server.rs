@@ -7,7 +7,6 @@ use crate::render::prelude::*;
 pub fn fill(
     tree: &usvg::Tree,
     fill: &Option<usvg::Fill>,
-    opt: &Options,
     bbox: Rect,
     cr: &cairo::Context,
 ) {
@@ -27,7 +26,7 @@ pub fn fill(
                                 prepare_radial(rg, fill.opacity, bbox, cr);
                             }
                             usvg::NodeKind::Pattern(ref pattern) => {
-                                prepare_pattern(&node, pattern, opt, fill.opacity, bbox, cr);
+                                prepare_pattern(&node, pattern, fill.opacity, bbox, cr);
                             }
                             _ => {}
                         }
@@ -50,7 +49,6 @@ pub fn fill(
 pub fn stroke(
     tree: &usvg::Tree,
     stroke: &Option<usvg::Stroke>,
-    opt: &Options,
     bbox: Rect,
     cr: &cairo::Context,
 ) {
@@ -70,7 +68,7 @@ pub fn stroke(
                                 prepare_radial(rg, stroke.opacity, bbox, cr);
                             }
                             usvg::NodeKind::Pattern(ref pattern) => {
-                                prepare_pattern(&node, pattern, opt, stroke.opacity, bbox, cr);
+                                prepare_pattern(&node, pattern, stroke.opacity, bbox, cr);
                             }
                             _ => {}
                         }
@@ -171,7 +169,6 @@ fn prepare_base_gradient(
 fn prepare_pattern(
     node: &usvg::Node,
     pattern: &usvg::Pattern,
-    opt: &Options,
     opacity: usvg::Opacity,
     bbox: Rect,
     cr: &cairo::Context,
@@ -203,7 +200,7 @@ fn prepare_pattern(
     }
 
     let mut layers = Layers::new(img_size);
-    crate::render::render_group(node, opt, &mut RenderState::Ok, &mut layers, &sub_cr);
+    crate::render::render_group(node, &mut RenderState::Ok, &mut layers, &sub_cr);
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);

@@ -50,7 +50,6 @@ fn main() {
 
     println!("{}", rtree.to_string(usvg::XmlOptions::default()));
 
-    let opt = usvg::Options::default();
-    let img = resvg_qt::render_to_image(&rtree, &opt, usvg::FitTo::Original, None).unwrap();
+    let img = resvg_qt::render_to_image(&rtree, usvg::FitTo::Original, None).unwrap();
     img.save("out.png");
 }

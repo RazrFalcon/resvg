@@ -7,7 +7,6 @@ use crate::render::prelude::*;
 pub fn mask(
     node: &usvg::Node,
     mask: &usvg::Mask,
-    opt: &Options,
     bbox: Rect,
     layers: &mut Layers,
     cr: &cairo::Context,
@@ -32,7 +31,7 @@ pub fn mask(
             mask_cr.transform(usvg::Transform::from_bbox(bbox).to_native());
         }
 
-        crate::render::render_group(node, opt, &mut RenderState::Ok, layers, &mask_cr);
+        crate::render::render_group(node, &mut RenderState::Ok, layers, &mask_cr);
     }
 
     {
@@ -48,7 +47,7 @@ pub fn mask(
     if let Some(ref id) = mask.mask {
         if let Some(ref mask_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                self::mask(mask_node, mask, opt, bbox, layers, cr);
+                self::mask(mask_node, mask, bbox, layers, cr);
             }
         }
     }

@@ -169,10 +169,7 @@ pub struct Image {
     pub rendering_mode: ImageRendering,
 
     /// Image data.
-    pub data: ImageData,
-
-    /// Image data kind.
-    pub format: ImageFormat,
+    pub kind: ImageKind,
 }
 
 

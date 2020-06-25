@@ -45,7 +45,6 @@ impl ConvTransform<skia::Matrix> for usvg::Transform {
 
 pub(crate) fn render_node_to_canvas(
     node: &usvg::Node,
-    opt: &Options,
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
     state: &mut RenderState,
@@ -61,7 +60,7 @@ pub(crate) fn render_node_to_canvas(
     ts.append(&node.transform());
 
     canvas.concat(&ts.to_native());
-    render_node(node, opt, state, &mut layers, canvas);
+    render_node(node, state, &mut layers, canvas);
     canvas.set_matrix(&curr_ts);
 }
 
@@ -93,23 +92,22 @@ fn apply_viewbox_transform(
 
 pub(crate) fn render_node(
     node: &usvg::Node,
-    opt: &Options,
     state: &mut RenderState,
     layers: &mut Layers,
     canvas: &mut skia::Canvas,
 ) -> Option<Rect> {
     match *node.borrow() {
         usvg::NodeKind::Svg(_) => {
-            render_group(node, opt, state, layers, canvas)
+            render_group(node, state, layers, canvas)
         }
         usvg::NodeKind::Path(ref path) => {
-            crate::path::draw(&node.tree(), path, opt, skia::BlendMode::SourceOver, canvas)
+            crate::path::draw(&node.tree(), path, skia::BlendMode::SourceOver, canvas)
         }
         usvg::NodeKind::Image(ref img) => {
-            Some(crate::image::draw(img, opt, canvas))
+            Some(crate::image::draw(img, canvas))
         }
         usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, state, layers, canvas)
+            render_group_impl(node, g, state, layers, canvas)
         }
         _ => None,
     }
@@ -117,7 +115,6 @@ pub(crate) fn render_node(
 
 pub(crate) fn render_group(
     parent: &usvg::Node,
-    opt: &Options,
     state: &mut RenderState,
     layers: &mut Layers,
     canvas: &mut skia::Canvas,
@@ -140,7 +137,7 @@ pub(crate) fn render_group(
 
         canvas.concat(&node.transform().to_native());
 
-        let bbox = render_node(&node, opt, state, layers, canvas);
+        let bbox = render_node(&node, state, layers, canvas);
         if let Some(bbox) = bbox {
             if let Some(bbox) = bbox.transform(&node.transform()) {
                 g_bbox = g_bbox.expand(bbox);
@@ -162,7 +159,6 @@ pub(crate) fn render_group(
 fn render_group_impl(
     node: &usvg::Node,
     g: &usvg::Group,
-    opt: &Options,
     state: &mut RenderState,
     layers: &mut Layers,
     canvas: &mut skia::Canvas,
@@ -174,7 +170,7 @@ fn render_group_impl(
 
     let bbox = {
         sub_surface.set_matrix(&curr_ts);
-        render_group(node, opt, state, layers, &mut sub_surface)
+        render_group(node, state, layers, &mut sub_surface)
     };
 
     // During the background rendering for filters,
@@ -200,10 +196,10 @@ fn render_group_impl(
         if let Some(filter_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(&curr_ts);
-                let background = prepare_filter_background(node, filter, opt, layers.image_size());
-                let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, opt, &sub_surface);
-                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_surface);
-                crate::filter::apply(filter, bbox, &ts, opt, &node.tree(),
+                let background = prepare_filter_background(node, filter, layers.image_size());
+                let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, &sub_surface);
+                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, &sub_surface);
+                crate::filter::apply(filter, bbox, &ts, &node.tree(),
                                      background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
                                      &mut sub_surface);
             }
@@ -216,7 +212,7 @@ fn render_group_impl(
             if let Some(clip_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
                     sub_surface.set_matrix(&curr_ts);
-                    crate::clip::clip(&clip_node, cp, opt, bbox, layers, &mut sub_surface);
+                    crate::clip::clip(&clip_node, cp, bbox, layers, &mut sub_surface);
                 }
             }
         }
@@ -225,7 +221,7 @@ fn render_group_impl(
             if let Some(mask_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
                     sub_surface.set_matrix(&curr_ts);
-                    crate::mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_surface);
+                    crate::mask::mask(&mask_node, mask, bbox, layers, &mut sub_surface);
                 }
             }
         }
@@ -251,7 +247,6 @@ fn render_group_impl(
 fn prepare_filter_background(
     parent: &usvg::Node,
     filter: &usvg::Filter,
-    opt: &Options,
     img_size: ScreenSize,
 ) -> Option<skia::Surface> {
     let start_node = parent.filter_background_start_node(filter)?;
@@ -262,7 +257,7 @@ fn prepare_filter_background(
 
     // Render from the `start_node` until the `parent`. The `parent` itself is excluded.
     let mut state = RenderState::RenderUntil(parent.clone());
-    crate::render::render_node_to_canvas(&start_node, opt, view_box, img_size, &mut state, &mut img);
+    crate::render::render_node_to_canvas(&start_node, view_box, img_size, &mut state, &mut img);
 
     Some(img)
 }
@@ -279,7 +274,6 @@ fn prepare_filter_fill_paint(
     filter: &usvg::Filter,
     bbox: Option<Rect>,
     ts: usvg::Transform,
-    opt: &Options,
     canvas: &skia::Surface,
 ) -> Option<skia::Surface> {
     let region = crate::filter::calc_region(filter, bbox, &ts, canvas).ok()?;
@@ -288,7 +282,7 @@ fn prepare_filter_fill_paint(
         if let Some(paint) = g.filter_fill.clone() {
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
-            let fill = crate::paint_server::fill(&parent.tree(), &fill, opt, style_bbox, ts);
+            let fill = crate::paint_server::fill(&parent.tree(), &fill, style_bbox, ts);
             surface.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64, &fill);
         }
     }
@@ -302,7 +296,6 @@ fn prepare_filter_stroke_paint(
     filter: &usvg::Filter,
     bbox: Option<Rect>,
     ts: usvg::Transform,
-    opt: &Options,
     canvas: &skia::Surface,
 ) -> Option<skia::Surface> {
     let region = crate::filter::calc_region(filter, bbox, &ts, canvas).ok()?;
@@ -311,7 +304,7 @@ fn prepare_filter_stroke_paint(
         if let Some(paint) = g.filter_stroke.clone() {
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
-            let fill = crate::paint_server::fill(&parent.tree(), &fill, opt, style_bbox, ts);
+            let fill = crate::paint_server::fill(&parent.tree(), &fill, style_bbox, ts);
             surface.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64, &fill);
         }
     }

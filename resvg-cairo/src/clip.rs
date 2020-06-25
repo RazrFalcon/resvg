@@ -7,7 +7,6 @@ use crate::render::prelude::*;
 pub fn clip(
     node: &usvg::Node,
     cp: &usvg::ClipPath,
-    opt: &Options,
     bbox: Rect,
     layers: &mut Layers,
     cr: &cairo::Context,
@@ -33,10 +32,10 @@ pub fn clip(
 
         match *node.borrow() {
             usvg::NodeKind::Path(ref p) => {
-                crate::path::draw(&node.tree(), p, opt, &clip_cr);
+                crate::path::draw(&node.tree(), p, &clip_cr);
             }
             usvg::NodeKind::Group(ref g) => {
-                clip_group(&node, g, opt, bbox, layers, &clip_cr);
+                clip_group(&node, g, bbox, layers, &clip_cr);
             }
             _ => {}
         }
@@ -47,7 +46,7 @@ pub fn clip(
     if let Some(ref id) = cp.clip_path {
         if let Some(ref clip_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                clip(clip_node, cp, opt, bbox, layers, cr);
+                clip(clip_node, cp, bbox, layers, cr);
             }
         }
     }
@@ -67,7 +66,6 @@ pub fn clip(
 fn clip_group(
     node: &usvg::Node,
     g: &usvg::Group,
-    opt: &Options,
     bbox: Rect,
     layers: &mut Layers,
     cr: &cairo::Context,
@@ -87,9 +85,9 @@ fn clip_group(
                 clip_cr.paint();
                 clip_cr.set_matrix(cr.get_matrix());
 
-                draw_group_child(&node, opt, &clip_cr);
+                draw_group_child(&node, &clip_cr);
 
-                clip(clip_node, cp, opt, bbox, layers, &clip_cr);
+                clip(clip_node, cp, bbox, layers, &clip_cr);
 
                 cr.set_matrix(cairo::Matrix::identity());
                 cr.set_operator(cairo::Operator::Xor);
@@ -101,17 +99,13 @@ fn clip_group(
     }
 }
 
-fn draw_group_child(
-    node: &usvg::Node,
-    opt: &Options,
-    cr: &cairo::Context,
-) {
+fn draw_group_child(node: &usvg::Node, cr: &cairo::Context) {
     if let Some(child) = node.first_child() {
         cr.transform(child.transform().to_native());
 
         match *child.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                crate::path::draw(&child.tree(), path_node, opt, cr);
+                crate::path::draw(&child.tree(), path_node, cr);
             }
             _ => {}
         }

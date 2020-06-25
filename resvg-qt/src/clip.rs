@@ -7,7 +7,6 @@ use crate::render::prelude::*;
 pub fn clip(
     node: &usvg::Node,
     cp: &usvg::ClipPath,
-    opt: &Options,
     bbox: Rect,
     layers: &mut Layers,
     p: &mut qt::Painter,
@@ -32,10 +31,10 @@ pub fn clip(
 
         match *node.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                crate::path::draw(&node.tree(), path_node, opt, &mut clip_p);
+                crate::path::draw(&node.tree(), path_node, &mut clip_p);
             }
             usvg::NodeKind::Group(ref g) => {
-                clip_group(&node, g, opt, bbox, layers, &mut clip_p);
+                clip_group(&node, g, bbox, layers, &mut clip_p);
             }
             _ => {}
         }
@@ -48,7 +47,7 @@ pub fn clip(
     if let Some(ref id) = cp.clip_path {
         if let Some(ref clip_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                clip(clip_node, cp, opt, bbox, layers, p);
+                clip(clip_node, cp, bbox, layers, p);
             }
         }
     }
@@ -61,7 +60,6 @@ pub fn clip(
 fn clip_group(
     node: &usvg::Node,
     g: &usvg::Group,
-    opt: &Options,
     bbox: Rect,
     layers: &mut Layers,
     p: &mut qt::Painter,
@@ -78,9 +76,9 @@ fn clip_group(
 
                 let mut clip_p = qt::Painter::new(&mut clip_img);
                 clip_p.set_transform(&p.get_transform());
-                draw_group_child(&node, opt, &mut clip_p);
+                draw_group_child(&node, &mut clip_p);
 
-                clip(clip_node, cp, opt, bbox, layers, &mut clip_p);
+                clip(clip_node, cp, bbox, layers, &mut clip_p);
                 clip_p.end();
 
                 p.set_transform(&qt::Transform::default());
@@ -91,17 +89,13 @@ fn clip_group(
     }
 }
 
-fn draw_group_child(
-    node: &usvg::Node,
-    opt: &Options,
-    p: &mut qt::Painter,
-) {
+fn draw_group_child(node: &usvg::Node, p: &mut qt::Painter) {
     if let Some(child) = node.first_child() {
         p.apply_transform(&child.transform().to_native());
 
         match *child.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                crate::path::draw(&child.tree(), path_node, opt, p);
+                crate::path::draw(&child.tree(), path_node, p);
             }
             _ => {}
         }

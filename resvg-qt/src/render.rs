@@ -45,7 +45,6 @@ impl ConvTransform<qt::Transform> for usvg::Transform {
 
 pub(crate) fn render_node_to_canvas(
     node: &usvg::Node,
-    opt: &Options,
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
     state: &mut RenderState,
@@ -61,7 +60,7 @@ pub(crate) fn render_node_to_canvas(
     ts.append(&node.transform());
 
     painter.apply_transform(&ts.to_native());
-    render_node(node, opt, state, &mut layers, painter);
+    render_node(node, state, &mut layers, painter);
     painter.set_transform(&curr_ts);
 }
 
@@ -94,23 +93,22 @@ fn apply_viewbox_transform(
 
 pub(crate) fn render_node(
     node: &usvg::Node,
-    opt: &Options,
     state: &mut RenderState,
     layers: &mut Layers,
     p: &mut qt::Painter,
 ) -> Option<Rect> {
     match *node.borrow() {
         usvg::NodeKind::Svg(_) => {
-            render_group(node, opt, state, layers, p)
+            render_group(node, state, layers, p)
         }
         usvg::NodeKind::Path(ref path) => {
-            crate::path::draw(&node.tree(), path, opt, p)
+            crate::path::draw(&node.tree(), path, p)
         }
         usvg::NodeKind::Image(ref img) => {
-            Some(crate::image::draw(img, opt, p))
+            Some(crate::image::draw(img, p))
         }
         usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, state, layers, p)
+            render_group_impl(node, g, state, layers, p)
         }
         _ => None,
     }
@@ -118,7 +116,6 @@ pub(crate) fn render_node(
 
 pub(crate) fn render_group(
     parent: &usvg::Node,
-    opt: &Options,
     state: &mut RenderState,
     layers: &mut Layers,
     p: &mut qt::Painter,
@@ -141,7 +138,7 @@ pub(crate) fn render_group(
 
         p.apply_transform(&node.transform().to_native());
 
-        let bbox = render_node(&node, opt, state, layers, p);
+        let bbox = render_node(&node, state, layers, p);
         if let Some(bbox) = bbox {
             if let Some(bbox) = bbox.transform(&node.transform()) {
                 g_bbox = g_bbox.expand(bbox);
@@ -163,7 +160,6 @@ pub(crate) fn render_group(
 fn render_group_impl(
     node: &usvg::Node,
     g: &usvg::Group,
-    opt: &Options,
     state: &mut RenderState,
     layers: &mut Layers,
     p: &mut qt::Painter,
@@ -177,7 +173,7 @@ fn render_group_impl(
         let mut sub_p = qt::Painter::new(&mut sub_img);
         sub_p.set_transform(&curr_ts);
 
-        render_group(node, opt, state, layers, &mut sub_p)
+        render_group(node, state, layers, &mut sub_p)
     };
 
     // During the background rendering for filters,
@@ -201,10 +197,10 @@ fn render_group_impl(
         if let Some(filter_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(&curr_ts);
-                let background = prepare_filter_background(node, filter, opt, layers.image_size());
-                let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, opt, &sub_img);
-                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_img);
-                crate::filter::apply(filter, bbox, &ts, opt, &node.tree(),
+                let background = prepare_filter_background(node, filter, layers.image_size());
+                let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, &sub_img);
+                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, &sub_img);
+                crate::filter::apply(filter, bbox, &ts, &node.tree(),
                                      background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
                                      &mut sub_img);
             }
@@ -219,7 +215,7 @@ fn render_group_impl(
                     let mut sub_p = qt::Painter::new(&mut sub_img);
                     sub_p.set_transform(&curr_ts);
 
-                    crate::clip::clip(&clip_node, cp, opt, bbox, layers, &mut sub_p);
+                    crate::clip::clip(&clip_node, cp, bbox, layers, &mut sub_p);
                 }
             }
         }
@@ -230,7 +226,7 @@ fn render_group_impl(
                     let mut sub_p = qt::Painter::new(&mut sub_img);
                     sub_p.set_transform(&curr_ts);
 
-                    crate::mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_p);
+                    crate::mask::mask(&mask_node, mask, bbox, layers, &mut sub_p);
                 }
             }
         }
@@ -255,7 +251,6 @@ fn render_group_impl(
 fn prepare_filter_background(
     parent: &usvg::Node,
     filter: &usvg::Filter,
-    opt: &Options,
     img_size: ScreenSize,
 ) -> Option<qt::Image> {
     let start_node = parent.filter_background_start_node(filter)?;
@@ -267,7 +262,7 @@ fn prepare_filter_background(
     let mut painter = qt::Painter::new(&mut img);
     // Render from the `start_node` until the `parent`. The `parent` itself is excluded.
     let mut state = RenderState::RenderUntil(parent.clone());
-    render_node_to_canvas(&start_node, opt, view_box, img_size, &mut state, &mut painter);
+    render_node_to_canvas(&start_node, view_box, img_size, &mut state, &mut painter);
     painter.end();
 
     Some(img)
@@ -285,7 +280,6 @@ fn prepare_filter_fill_paint(
     filter: &usvg::Filter,
     bbox: Option<Rect>,
     ts: usvg::Transform,
-    opt: &Options,
     canvas: &qt::Image,
 ) -> Option<qt::Image> {
     let region = crate::filter::calc_region(filter, bbox, &ts, canvas).ok()?;
@@ -295,7 +289,7 @@ fn prepare_filter_fill_paint(
             let mut painter = qt::Painter::new(&mut img);
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
-            crate::paint_server::fill(&parent.tree(), &fill, opt, style_bbox, &mut painter);
+            crate::paint_server::fill(&parent.tree(), &fill, style_bbox, &mut painter);
             painter.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64);
         }
     }
@@ -309,7 +303,6 @@ fn prepare_filter_stroke_paint(
     filter: &usvg::Filter,
     bbox: Option<Rect>,
     ts: usvg::Transform,
-    opt: &Options,
     canvas: &qt::Image,
 ) -> Option<qt::Image> {
     let region = crate::filter::calc_region(filter, bbox, &ts, canvas).ok()?;
@@ -319,7 +312,7 @@ fn prepare_filter_stroke_paint(
             let mut painter = qt::Painter::new(&mut img);
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
-            crate::paint_server::fill(&parent.tree(), &fill, opt, style_bbox, &mut painter);
+            crate::paint_server::fill(&parent.tree(), &fill, style_bbox, &mut painter);
             painter.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64);
         }
     }

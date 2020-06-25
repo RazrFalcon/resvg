@@ -9,7 +9,7 @@ fn main() {
     opt.path = Some(args[1].clone().into());
 
     let rtree = usvg::Tree::from_file(&args[1], &opt).unwrap();
-    let img = resvg_cairo::render_to_image(&rtree, &opt, usvg::FitTo::Original, None).unwrap();
+    let img = resvg_cairo::render_to_image(&rtree, usvg::FitTo::Original, None).unwrap();
     let mut file = std::fs::File::create(&args[2]).unwrap();
     img.write_to_png(&mut file).unwrap();
 }

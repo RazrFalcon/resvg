@@ -7,7 +7,6 @@ use crate::render::prelude::*;
 pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
-    opt: &Options,
     cr: &cairo::Context,
 ) -> Option<Rect> {
     let bbox = path.data.bbox();
@@ -31,11 +30,11 @@ pub fn draw(
         cr.set_antialias(cairo::Antialias::None);
     }
 
-    crate::paint_server::fill(tree, &path.fill, opt, style_bbox, cr);
+    crate::paint_server::fill(tree, &path.fill, style_bbox, cr);
     if path.stroke.is_some() {
         cr.fill_preserve();
 
-        crate::paint_server::stroke(tree, &path.stroke, opt, style_bbox, cr);
+        crate::paint_server::stroke(tree, &path.stroke, style_bbox, cr);
         cr.stroke();
     } else {
         cr.fill();

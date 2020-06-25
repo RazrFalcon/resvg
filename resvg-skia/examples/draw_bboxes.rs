@@ -49,6 +49,6 @@ fn main() {
         }));
     }
 
-    let img = resvg_skia::render_to_image(&rtree, &opt, fit_to, None).unwrap();
+    let img = resvg_skia::render_to_image(&rtree, fit_to, None).unwrap();
     img.save_png(&args[2]);
 }

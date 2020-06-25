@@ -5,7 +5,6 @@
 #include <resvg-cairo.h>
 
 static resvg_render_tree *tree = NULL;
-static resvg_options opt;
 
 static gboolean
 draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data)
@@ -15,7 +14,7 @@ draw_cb(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     if (tree) {
         resvg_size s = { alloc.width, alloc.height };
-        resvg_cairo_render_to_canvas(tree, &opt, s, cr);
+        resvg_cairo_render_to_canvas(tree, s, cr);
     }
 
     return FALSE;
@@ -32,6 +31,7 @@ close_window(void)
 static void
 parse_doc(const char *path)
 {
+    resvg_options opt;
     resvg_init_options(&opt);
     opt.path = path;
     opt.font_family = "Times New Roman";

@@ -217,8 +217,8 @@ fn conv_defs(
                                 ImageRendering::OptimizeSpeed   => "optimizeSpeed",
                             });
                             match img.data {
-                                FeImageKind::Image(ref data, format) => {
-                                    xml.write_image_data(data, format);
+                                FeImageKind::Image(ref kind) => {
+                                    xml.write_image_data(kind);
                                 }
                                 FeImageKind::Use(ref id) => {
                                     xml.write_attribute_fmt("xlink:href", format_args!("#{}", id));
@@ -431,7 +431,7 @@ fn conv_element(
             }
 
             xml.write_transform(AId::Transform, img.transform);
-            xml.write_image_data(&img.data, img.format);
+            xml.write_image_data(&img.kind);
 
             xml.end_element();
         }
@@ -508,7 +508,7 @@ trait XmlWriterExt {
     fn write_filter_input(&mut self, id: AId, input: &FilterInput);
     fn write_filter_primitive_attrs(&mut self, fe: &FilterPrimitive);
     fn write_filter_transfer_function(&mut self, eid: EId, fe: &TransferFunction);
-    fn write_image_data(&mut self, data: &ImageData, format: ImageFormat);
+    fn write_image_data(&mut self, kind: &ImageKind);
 }
 
 impl XmlWriterExt for XmlWriter {
@@ -661,27 +661,30 @@ impl XmlWriterExt for XmlWriter {
         self.end_element();
     }
 
-    fn write_image_data(&mut self, data: &ImageData, format: ImageFormat) {
-        match data {
-            ImageData::Path(ref path) => {
-                self.write_attribute("xlink:href", &path.to_str().unwrap());
+    fn write_image_data(&mut self, kind: &ImageKind) {
+        let svg_string;
+        let (mime, data) = match kind {
+            ImageKind::JPEG(ref data) => {
+                ("jpg", data.as_slice())
             }
-            ImageData::Raw(ref data) => {
-                self.write_attribute_raw("xlink:href", |buf| {
-                    buf.extend_from_slice(b"data:image/");
-                    buf.extend_from_slice(match format {
-                        ImageFormat::PNG => b"png",
-                        ImageFormat::JPEG => b"jpg",
-                        ImageFormat::SVG => b"svg+xml",
-                    });
-                    buf.extend_from_slice(b";base64, ");
+            ImageKind::PNG(ref data) => {
+                ("png", data.as_slice())
+            }
+            ImageKind::SVG(ref tree) => {
+                svg_string = tree.to_string(XmlOptions::default());
+                ("svg+xml", svg_string.as_bytes())
+            }
+        };
 
-                    let mut enc = base64::write::EncoderWriter::new(buf, base64::STANDARD);
-                    enc.write_all(data).unwrap();
-                    enc.finish().unwrap();
-                });
-            }
-        }
+        self.write_attribute_raw("xlink:href", |buf| {
+            buf.extend_from_slice(b"data:image/");
+            buf.extend_from_slice(mime.as_bytes());
+            buf.extend_from_slice(b";base64, ");
+
+            let mut enc = base64::write::EncoderWriter::new(buf, base64::STANDARD);
+            enc.write_all(data).unwrap();
+            enc.finish().unwrap();
+        });
     }
 }
 

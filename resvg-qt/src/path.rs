@@ -7,7 +7,6 @@ use crate::render::prelude::*;
 pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
-    opt: &Options,
     p: &mut qt::Painter,
 ) -> Option<Rect> {
     let bbox = path.data.bbox();
@@ -28,8 +27,8 @@ pub fn draw(
     // so we can pass whatever rect we want, because it will not be used anyway.
     let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
 
-    crate::paint_server::fill(tree, &path.fill, opt, style_bbox, p);
-    crate::paint_server::stroke(tree, &path.stroke, opt, style_bbox, p);
+    crate::paint_server::fill(tree, &path.fill, style_bbox, p);
+    crate::paint_server::stroke(tree, &path.stroke, style_bbox, p);
     p.set_antialiasing(path.rendering_mode.use_shape_antialiasing());
 
     p.draw_path(&new_path);

@@ -7,7 +7,6 @@ use crate::render::prelude::*;
 pub fn clip(
     node: &usvg::Node,
     cp: &usvg::ClipPath,
-    opt: &Options,
     bbox: Rect,
     layers: &mut Layers,
     dt: &mut raqote::DrawTarget,
@@ -34,10 +33,10 @@ pub fn clip(
                     ..Default::default()
                 };
 
-                crate::path::draw(&node.tree(), p, opt, draw_opt, &mut clip_dt);
+                crate::path::draw(&node.tree(), p, draw_opt, &mut clip_dt);
             }
             usvg::NodeKind::Group(ref g) => {
-                clip_group(&node, g, opt, bbox, layers, &mut clip_dt);
+                clip_group(&node, g,  bbox, layers, &mut clip_dt);
             }
             _ => {}
         }
@@ -48,21 +47,24 @@ pub fn clip(
     if let Some(ref id) = cp.clip_path {
         if let Some(ref clip_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                clip(clip_node, cp, opt, bbox, layers, dt);
+                clip(clip_node, cp, bbox, layers, dt);
             }
         }
     }
-    dt.blend_surface(&clip_dt,
-        raqote::IntRect::new(raqote::IntPoint::new(0, 0),
-                             raqote::IntPoint::new(clip_dt.width(), clip_dt.height())),
+    dt.blend_surface(
+        &clip_dt,
+        raqote::IntRect::new(
+            raqote::IntPoint::new(0, 0),
+            raqote::IntPoint::new(clip_dt.width(), clip_dt.height())
+        ),
         raqote::IntPoint::new(0, 0),
-        raqote::BlendMode::DstOut);
+        raqote::BlendMode::DstOut,
+    );
 }
 
 fn clip_group(
     node: &usvg::Node,
     g: &usvg::Group,
-    opt: &Options,
     bbox: Rect,
     layers: &mut Layers,
     dt: &mut raqote::DrawTarget,
@@ -78,8 +80,8 @@ fn clip_group(
                 let mut clip_dt = clip_dt.borrow_mut();
                 clip_dt.set_transform(dt.get_transform());
 
-                draw_group_child(&node, opt, raqote::DrawOptions::default(), &mut clip_dt);
-                clip(clip_node, cp, opt, bbox, layers, &mut clip_dt);
+                draw_group_child(&node, raqote::DrawOptions::default(), &mut clip_dt);
+                clip(clip_node, cp, bbox, layers, &mut clip_dt);
 
                 dt.set_transform(&raqote::Transform::identity());
                 dt.draw_image_at(0.0, 0.0, &clip_dt.as_image(), &raqote::DrawOptions {
@@ -94,7 +96,6 @@ fn clip_group(
 
 fn draw_group_child(
     node: &usvg::Node,
-    opt: &Options,
     draw_options: raqote::DrawOptions,
     dt: &mut raqote::DrawTarget,
 ) {
@@ -103,7 +104,7 @@ fn draw_group_child(
 
         match *child.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                crate::path::draw(&child.tree(), path_node, opt, draw_options, dt);
+                crate::path::draw(&child.tree(), path_node, draw_options, dt);
             }
             _ => {}
         }

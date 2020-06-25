@@ -49,6 +49,6 @@ fn main() {
         }));
     }
 
-    let img = resvg_raqote::render_to_image(&rtree, &opt, fit_to, None).unwrap();
+    let img = resvg_raqote::render_to_image(&rtree, fit_to, None).unwrap();
     img.write_png(&args[2]).unwrap();
 }

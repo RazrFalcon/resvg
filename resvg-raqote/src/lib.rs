@@ -48,14 +48,13 @@ mod render;
 /// Renders SVG to image.
 pub fn render_to_image(
     tree: &usvg::Tree,
-    opt: &usvg::Options,
     fit_to: usvg::FitTo,
     background: Option<usvg::Color>,
 ) -> Option<raqote::DrawTarget> {
     let (mut dt, img_view)
         = render::create_root_target(tree.svg_node().size.to_screen_size(), fit_to, background)?;
 
-    render_to_canvas(tree, opt, img_view, &mut dt);
+    render_to_canvas(tree, img_view, &mut dt);
 
     Some(dt)
 }
@@ -63,7 +62,6 @@ pub fn render_to_image(
 /// Renders SVG node to image.
 pub fn render_node_to_image(
     node: &usvg::Node,
-    opt: &usvg::Options,
     fit_to: usvg::FitTo,
     background: Option<usvg::Color>,
 ) -> Option<raqote::DrawTarget> {
@@ -82,7 +80,7 @@ pub fn render_node_to_image(
         aspect: usvg::AspectRatio::default(),
     };
 
-    render_node_to_canvas(node, opt, vbox, img_size, &mut dt);
+    render_node_to_canvas(node, vbox, img_size, &mut dt);
 
     Some(dt)
 }
@@ -94,11 +92,10 @@ pub fn render_node_to_image(
 /// Canvas must not have a transform.
 pub fn render_to_canvas(
     tree: &usvg::Tree,
-    opt: &usvg::Options,
     img_size: ScreenSize,
     dt: &mut raqote::DrawTarget,
 ) {
-    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, dt);
+    render_node_to_canvas(&tree.root(), tree.svg_node().view_box, img_size, dt);
 }
 
 /// Renders `node` onto the canvas.
@@ -108,10 +105,9 @@ pub fn render_to_canvas(
 /// Canvas must not have a transform.
 pub fn render_node_to_canvas(
     node: &usvg::Node,
-    opt: &usvg::Options,
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
     dt: &mut raqote::DrawTarget,
 ) {
-    render::render_node_to_canvas(node, opt, view_box, img_size, &mut render::RenderState::Ok, dt)
+    render::render_node_to_canvas(node, view_box, img_size, &mut render::RenderState::Ok, dt)
 }

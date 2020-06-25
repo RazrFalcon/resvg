@@ -49,7 +49,7 @@ fn main() {
         }));
     }
 
-    let img = resvg_cairo::render_to_image(&rtree, &opt, fit_to, None).unwrap();
+    let img = resvg_cairo::render_to_image(&rtree, fit_to, None).unwrap();
     let mut file = std::fs::File::create(&args[2]).unwrap();
     img.write_to_png(&mut file).unwrap();
 }

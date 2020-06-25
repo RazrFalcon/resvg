@@ -8,7 +8,6 @@ pub fn fill(
     tree: &usvg::Tree,
     path: &raqote::Path,
     fill: &Option<usvg::Fill>,
-    opt: &Options,
     bbox: Rect,
     draw_opt: &raqote::DrawOptions,
     dt: &mut raqote::DrawTarget,
@@ -32,7 +31,7 @@ pub fn fill(
                         usvg::NodeKind::Pattern(ref pattern) => {
                             let ts = *dt.get_transform();
                             let (sub_dt, patt_ts) = try_opt!(
-                                prepare_pattern(&node, pattern, opt, ts, bbox, fill.opacity)
+                                prepare_pattern(&node, pattern, ts, bbox, fill.opacity)
                             );
                             patt_dt = sub_dt;
                             create_pattern_image(&patt_dt, patt_ts)
@@ -59,7 +58,6 @@ pub fn stroke(
     tree: &usvg::Tree,
     path: &raqote::Path,
     stroke: &Option<usvg::Stroke>,
-    opt: &Options,
     bbox: Rect,
     draw_opt: &raqote::DrawOptions,
     dt: &mut raqote::DrawTarget,
@@ -109,7 +107,7 @@ pub fn stroke(
                         usvg::NodeKind::Pattern(ref pattern) => {
                             let ts = *dt.get_transform();
                             let (sub_dt, patt_ts) = try_opt!(
-                                prepare_pattern(&node, pattern, opt, ts, bbox, stroke.opacity)
+                                prepare_pattern(&node, pattern, ts, bbox, stroke.opacity)
                             );
                             patt_dt = sub_dt;
                             create_pattern_image(&patt_dt, patt_ts)
@@ -236,7 +234,6 @@ fn conv_stops(
 fn prepare_pattern<'a>(
     pattern_node: &usvg::Node,
     pattern: &usvg::Pattern,
-    opt: &Options,
     global_ts: raqote::Transform,
     bbox: Rect,
     opacity: usvg::Opacity,
@@ -266,7 +263,7 @@ fn prepare_pattern<'a>(
     }
 
     let mut layers = Layers::new(img_size);
-    render_group(pattern_node, opt, &mut RenderState::Ok, &mut layers, &mut dt);
+    render_group(pattern_node, &mut RenderState::Ok, &mut layers, &mut dt);
 
     let img = if !opacity.is_default() {
         // If `opacity` isn't `1` then we have to make image semitransparent.

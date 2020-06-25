@@ -248,7 +248,6 @@ pub fn apply(
     filter: &usvg::Filter,
     bbox: Option<Rect>,
     ts: &usvg::Transform,
-    opt: &Options,
     tree: &usvg::Tree,
     background: Option<&qt::Image>,
     fill_paint: Option<&qt::Image>,
@@ -263,7 +262,7 @@ pub fn apply(
             stroke_paint,
         };
 
-        _apply(filter, &inputs, bbox, ts, opt, tree)
+        _apply(filter, &inputs, bbox, ts, tree)
     };
 
     let res = res.and_then(|(image, region)| apply_to_canvas(image, region, canvas));
@@ -293,7 +292,6 @@ fn _apply(
     inputs: &FilterInputs,
     bbox: Option<Rect>,
     ts: &usvg::Transform,
-    opt: &Options,
     tree: &usvg::Tree,
 ) -> Result<(Image, ScreenRect), Error> {
     let mut results = Vec::new();
@@ -333,7 +331,7 @@ fn _apply(
                 apply_tile(input, region)
             }
             usvg::FilterKind::FeImage(ref fe) => {
-                apply_image(fe, region, subregion, opt, tree, ts)
+                apply_image(fe, region, subregion, tree, ts)
             }
             usvg::FilterKind::FeComponentTransfer(ref fe) => {
                 let input = get_input(&fe.input, region, inputs, &results)?;
@@ -771,14 +769,13 @@ fn apply_image(
     fe: &usvg::FeImage,
     region: ScreenRect,
     subregion: ScreenRect,
-    opt: &Options,
     tree: &usvg::Tree,
     ts: &usvg::Transform,
 ) -> Result<Image, Error> {
     let mut buffer = qt::Image::try_create(region.width(), region.height())?;
 
     match fe.data {
-        usvg::FeImageKind::Image(ref data, format) => {
+        usvg::FeImageKind::Image(ref kind) => {
             let mut p = qt::Painter::new(&mut buffer);
 
             let dx = (subregion.x() - region.x()) as f64;
@@ -790,10 +787,13 @@ fn apply_image(
                 aspect: fe.aspect,
             };
 
-            if format == usvg::ImageFormat::SVG {
-                super::image::draw_svg(data, view_box, opt, &mut p);
-            } else {
-                super::image::draw_raster(data, view_box, fe.rendering_mode, opt, &mut p);
+            match kind {
+                usvg::ImageKind::PNG(ref data) | usvg::ImageKind::JPEG(ref data) => {
+                    super::image::draw_raster(data, view_box, fe.rendering_mode, &mut p);
+                }
+                usvg::ImageKind::SVG(ref subtree) => {
+                    super::image::draw_svg(subtree, view_box, &mut p);
+                }
             }
         }
         usvg::FeImageKind::Use(ref id) => {
@@ -805,7 +805,7 @@ fn apply_image(
                 p.scale(sx, sy);
                 p.apply_transform(&node.transform().to_native());
 
-                crate::render::render_node(node, opt, &mut RenderState::Ok, &mut layers, &mut p);
+                crate::render::render_node(node, &mut RenderState::Ok, &mut layers, &mut p);
             }
         }
     }

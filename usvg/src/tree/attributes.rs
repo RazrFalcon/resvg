@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::fmt;
-use std::path::PathBuf;
 
 pub use svgtypes::{
     Align,
@@ -283,94 +282,25 @@ pub enum ColorChannel {
 }
 
 
-/// A raster image container.
-#[derive(Clone, Debug)]
-pub enum ImageData {
-    /// Path to a PNG, JPEG or SVG(Z) image.
-    ///
-    /// Preprocessor will check that the file exist, but because it can be removed later,
-    /// so there is no guarantee that this path is valid.
-    ///
-    /// The path may be relative.
-    Path(PathBuf),
-
-    /// Image raw data.
-    ///
-    /// It's not a decoded image data, but the data that was decoded from base64.
-    /// So you still need a PNG, JPEG and SVG(Z) decoding libraries.
-    Raw(Vec<u8>),
+/// An embedded image kind.
+#[derive(Clone)]
+pub enum ImageKind {
+    /// A raw JPEG data. Should be decoded by the caller.
+    JPEG(Vec<u8>),
+    /// A raw PNG data. Should be decoded by the caller.
+    PNG(Vec<u8>),
+    /// A preprocessed SVG tree. Can be rendered as is.
+    SVG(crate::Tree),
 }
 
-impl ImageData {
-    /// Tries to load the `ImageData` content as an SVG image.
-    ///
-    /// Unlike `Tree::from_*` methods, this one will also remove all `image` elements
-    /// from the loaded SVG, as required by the spec.
-    pub fn load_svg(&self, opt: &crate::Options) -> Option<(crate::Tree, crate::Options)> {
-        let mut sub_opt = crate::Options {
-            path: None,
-            dpi: opt.dpi,
-            font_family: opt.font_family.clone(),
-            font_size: opt.font_size,
-            languages: opt.languages.clone(),
-            shape_rendering: opt.shape_rendering,
-            text_rendering: opt.text_rendering,
-            image_rendering: opt.image_rendering,
-            keep_named_groups: false,
-        };
-
-        let tree = match self {
-            ImageData::Path(ref path) => {
-                let path = opt.get_abs_path(path);
-                sub_opt.path = Some(path.clone());
-                crate::Tree::from_file(path, &sub_opt).ok()?
-            }
-            ImageData::Raw(ref data) => {
-                crate::Tree::from_data(data, &sub_opt).ok()?
-            }
-        };
-
-        sanitize_sub_svg(&tree);
-
-        Some((tree, sub_opt))
-    }
-}
-
-fn sanitize_sub_svg(tree: &crate::Tree) {
-    // Remove all Image nodes.
-    //
-    // The referenced SVG image cannot have any 'image' elements by itself.
-    // Not only recursive. Any. Don't know why.
-
-    // TODO: implement drain or something to the rctree.
-    let mut changed = true;
-    while changed {
-        changed = false;
-
-        for mut node in tree.root().descendants() {
-            let mut rm = false;
-            // TODO: feImage?
-            if let super::NodeKind::Image(_) = *node.borrow() {
-                rm = true;
-            };
-
-            if rm {
-                node.detach();
-                changed = true;
-                break;
-            }
+impl fmt::Debug for ImageKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ImageKind::JPEG(_) => f.write_str("ImageKind::JPEG(..)"),
+            ImageKind::PNG(_) => f.write_str("ImageKind::PNG(..)"),
+            ImageKind::SVG(_) => f.write_str("ImageKind::SVG(..)"),
         }
     }
-}
-
-
-/// An image codec.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum ImageFormat {
-    PNG,
-    JPEG,
-    SVG,
 }
 
 
@@ -417,7 +347,7 @@ pub enum FeMorphologyOperator {
 #[derive(Clone, Debug)]
 pub enum FeImageKind {
     /// An image data.
-    Image(ImageData, ImageFormat),
+    Image(ImageKind),
 
     /// A reference to an SVG object.
     ///

@@ -13,7 +13,6 @@ use usvg_capi::*;
 #[no_mangle]
 pub extern "C" fn resvg_qt_render_to_canvas(
     tree: *const resvg_render_tree,
-    opt: *const resvg_options,
     size: resvg_size,
     painter: *mut std::ffi::c_void,
 ) {
@@ -25,18 +24,12 @@ pub extern "C" fn resvg_qt_render_to_canvas(
     let mut painter = unsafe { resvg_qt::painter_from_ptr(painter) };
     let size = usvg::ScreenSize::new(size.width, size.height).unwrap();
 
-    let opt = unsafe {
-        assert!(!opt.is_null());
-        &*opt
-    };
-
-    resvg_qt::render_to_canvas(&tree.0, &opt.to_usvg(), size, &mut painter);
+    resvg_qt::render_to_canvas(&tree.0, size, &mut painter);
 }
 
 #[no_mangle]
 pub extern "C" fn resvg_qt_render_to_canvas_by_id(
     tree: *const resvg_render_tree,
-    opt: *const resvg_options,
     size: resvg_size,
     id: *const c_char,
     painter: *mut std::ffi::c_void,
@@ -48,11 +41,6 @@ pub extern "C" fn resvg_qt_render_to_canvas_by_id(
 
     let mut painter = unsafe { resvg_qt::painter_from_ptr(painter) };
     let size = usvg::ScreenSize::new(size.width, size.height).unwrap();
-
-    let opt = unsafe {
-        assert!(!opt.is_null());
-        &*opt
-    };
 
     let id = match cstr_to_str(id) {
         Some(v) => v,
@@ -71,7 +59,7 @@ pub extern "C" fn resvg_qt_render_to_canvas_by_id(
                 aspect: usvg::AspectRatio::default(),
             };
 
-            resvg_qt::render_node_to_canvas(&node, &opt.to_usvg(), vbox, size, &mut painter);
+            resvg_qt::render_node_to_canvas(&node, vbox, size, &mut painter);
         } else {
             warn!("A node with '{}' ID doesn't have a valid bounding box.", id);
         }

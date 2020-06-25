@@ -291,16 +291,16 @@ fn convert_fe_image(
         }
     };
 
-    let href = super::image::get_href_data(fe.element_id(), href, state.opt.path.as_ref());
-    let (img_data, format) = match href {
-        Some((data, format)) => (data, format),
+    let href = super::image::get_href_data(fe.element_id(), href, state.opt);
+    let img_data = match href {
+        Some(data) => data,
         None => return create_dummy_primitive(),
     };
 
     tree::FilterKind::FeImage(tree::FeImage {
         aspect,
         rendering_mode,
-        data: tree::FeImageKind::Image(img_data, format),
+        data: tree::FeImageKind::Image(img_data),
     })
 }
 

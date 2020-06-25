@@ -9,6 +9,6 @@ fn main() {
     opt.path = Some(args[1].clone().into());
 
     let rtree = usvg::Tree::from_file(&args[1], &opt).unwrap();
-    let img = resvg_qt::render_to_image(&rtree, &opt, usvg::FitTo::Original, None).unwrap();
+    let img = resvg_qt::render_to_image(&rtree, usvg::FitTo::Original, None).unwrap();
     img.save(&args[2]);
 }

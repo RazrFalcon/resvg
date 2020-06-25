@@ -6,42 +6,35 @@ use crate::render::prelude::*;
 
 pub fn draw(
     image: &usvg::Image,
-    opt: &Options,
     p: &mut qt::Painter,
 ) -> Rect {
     if image.visibility != usvg::Visibility::Visible {
         return image.view_box.rect;
     }
 
-    if image.format == usvg::ImageFormat::SVG {
-        draw_svg(&image.data, image.view_box, opt, p);
-    } else {
-        draw_raster(&image.data, image.view_box, image.rendering_mode, opt, p);
+    match image.kind {
+        usvg::ImageKind::PNG(ref data) | usvg::ImageKind::JPEG(ref data) => {
+            draw_raster(data, image.view_box, image.rendering_mode, p);
+        }
+        usvg::ImageKind::SVG(ref subtree) => {
+            draw_svg(subtree, image.view_box, p);
+        }
     }
 
     image.view_box.rect
 }
 
 pub fn draw_raster(
-    data: &usvg::ImageData,
+    data: &[u8],
     view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
-    opt: &Options,
     p: &mut qt::Painter,
 ) {
-    let img = match data {
-        usvg::ImageData::Path(ref path) => {
-            let path = opt.get_abs_path(path);
-            try_opt_warn!(
-                qt::Image::from_file(&path),
-                "Failed to load an external image: {:?}.", path
-            )
-        }
-        usvg::ImageData::Raw(ref data) => {
-            try_opt_warn!(
-                qt::Image::from_data(data),
-                "Failed to load an embedded image."
-            )
+    let img = match qt::Image::from_data(data) {
+        Some(img) => img,
+        None => {
+            log::warn!("Failed to load an embedded image.");
+            return;
         }
     };
 
@@ -65,13 +58,10 @@ pub fn draw_raster(
 }
 
 pub fn draw_svg(
-    data: &usvg::ImageData,
+    tree: &usvg::Tree,
     view_box: usvg::ViewBox,
-    opt: &Options,
     p: &mut qt::Painter,
 ) {
-    let (tree, sub_opt) = try_opt!(data.load_svg(opt));
-
     let img_size = tree.svg_node().size.to_screen_size();
     let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&view_box, img_size);
 
@@ -80,7 +70,7 @@ pub fn draw_svg(
     }
 
     p.apply_transform(&ts.to_native());
-    super::render_to_canvas(&tree, &sub_opt, img_size, p);
+    super::render_to_canvas(&tree, img_size, p);
     p.reset_clip_path();
 }
 

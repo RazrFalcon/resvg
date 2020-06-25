@@ -13,7 +13,6 @@ use usvg_capi::*;
 #[no_mangle]
 pub extern "C" fn resvg_cairo_render_to_canvas(
     tree: *const resvg_render_tree,
-    opt: *const resvg_options,
     size: resvg_size,
     cr: *mut cairo_sys::cairo_t,
 ) {
@@ -25,18 +24,12 @@ pub extern "C" fn resvg_cairo_render_to_canvas(
     let cr = unsafe { cairo::Context::from_raw_none(cr) };
     let size = usvg::ScreenSize::new(size.width, size.height).unwrap();
 
-    let opt = unsafe {
-        assert!(!opt.is_null());
-        &*opt
-    };
-
-    resvg_cairo::render_to_canvas(&tree.0, &opt.to_usvg(), size, &cr);
+    resvg_cairo::render_to_canvas(&tree.0, size, &cr);
 }
 
 #[no_mangle]
 pub extern "C" fn resvg_cairo_render_to_canvas_by_id(
     tree: *const resvg_render_tree,
-    opt: *const resvg_options,
     size: resvg_size,
     id: *const c_char,
     cr: *mut cairo_sys::cairo_t,
@@ -48,11 +41,6 @@ pub extern "C" fn resvg_cairo_render_to_canvas_by_id(
 
     let cr = unsafe { cairo::Context::from_raw_none(cr) };
     let size = usvg::ScreenSize::new(size.width, size.height).unwrap();
-
-    let opt = unsafe {
-        assert!(!opt.is_null());
-        &*opt
-    };
 
     let id = match cstr_to_str(id) {
         Some(v) => v,
@@ -71,7 +59,7 @@ pub extern "C" fn resvg_cairo_render_to_canvas_by_id(
                 aspect: usvg::AspectRatio::default(),
             };
 
-            resvg_cairo::render_node_to_canvas(&node, &opt.to_usvg(), vbox, size, &cr);
+            resvg_cairo::render_node_to_canvas(&node, vbox, size, &cr);
         } else {
             warn!("A node with '{}' ID doesn't have a valid bounding box.", id);
         }

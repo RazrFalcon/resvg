@@ -50,8 +50,7 @@ fn main() {
 
     println!("{}", rtree.to_string(usvg::XmlOptions::default()));
 
-    let opt = usvg::Options::default();
-    let img = resvg_cairo::render_to_image(&rtree, &opt, usvg::FitTo::Original, None).unwrap();
+    let img = resvg_cairo::render_to_image(&rtree, usvg::FitTo::Original, None).unwrap();
     let mut file = std::fs::File::create("out.png").unwrap();
     img.write_to_png(&mut file).unwrap();
 }

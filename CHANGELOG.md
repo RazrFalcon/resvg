@@ -11,19 +11,25 @@ This changelog also contains important changes in dependencies.
 **Contains a lot of breaking changes**
 
 ### Changed
+- Rendering doesn't require `usvg::Options` now. This change affected all rendering methods.
 - (usvg) The `fontdb` module moved to its own crate.
 - (usvg) `fontconfig` is no longer used for matching
   [generic fonts](https://www.w3.org/TR/2018/REC-css-fonts-3-20180920/#generic-family-value)
   on Linux. Mainly because it's very slow.
+- (usvg) When an `image` element contains a file path, the file will be loaded into memory now,
+  instead of simply storing a file path. And will be dumped as base64 on SVG save.
+  In case of an SVG image, it will be loaded as a `Tree` and saved as base64 encoded XML on save.
 - (c-api) `resvg-*.h` in all backends has been split into `resvg.h` + `resvg-*.h`.
   Where `resvg.h` contains backend-independent functions
   and `resvg-*.h` contains backend-specific functions.
+- (usvg) `ImageData` replaced with `ImageKind`.
 
 ### Removed
-- `Options` from all backends. `usvg::Options` is used instead now.
+- `Options` from all backends. We don't use it anymore.
 - (c-api) `resvg_options::fit_to`, `resvg_options::draw_background` and `resvg_options::background`
   since unused.
 - (c-api) `resvg_color`, `resvg_fit_to_type` and `resvg_fit_to` since unused.
+- (usvg) `ImageFormat`.
 
 ## [0.10.0] - 2020-06-19
 

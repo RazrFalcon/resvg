@@ -5,34 +5,46 @@
 use log::warn;
 use crate::render::prelude::*;
 
-pub fn draw(
-    image: &usvg::Image,
-    opt: &Options,
-    dt: &mut raqote::DrawTarget,
-) -> Rect {
+pub fn draw(image: &usvg::Image, dt: &mut raqote::DrawTarget) -> Rect {
     if image.visibility != usvg::Visibility::Visible {
         return image.view_box.rect;
     }
 
-    if image.format == usvg::ImageFormat::SVG {
-        draw_svg(&image.data, image.view_box, opt, dt);
-    } else {
-        draw_raster(image.format, &image.data, image.view_box, image.rendering_mode, opt, dt);
-    }
-
+    draw_kind(&image.kind, image.view_box, image.rendering_mode, dt);
     image.view_box.rect
 }
 
-pub fn draw_raster(
-    format: usvg::ImageFormat,
-    data: &usvg::ImageData,
+pub fn draw_kind(
+    kind: &usvg::ImageKind,
     view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
-    opt: &Options,
+    dt: &mut raqote::DrawTarget
+) {
+    match kind {
+        usvg::ImageKind::JPEG(ref data) => {
+            match read_jpeg(data) {
+                Some(image) => draw_raster(&image, view_box, rendering_mode, dt),
+                None => warn!("Failed to load an embedded image."),
+            }
+        }
+        usvg::ImageKind::PNG(ref data) => {
+            match read_png(data) {
+                Some(image) => draw_raster(&image, view_box, rendering_mode, dt),
+                None => warn!("Failed to load an embedded image."),
+            }
+        }
+        usvg::ImageKind::SVG(ref subtree) => {
+            draw_svg(subtree, view_box, dt);
+        }
+    }
+}
+
+fn draw_raster(
+    img: &Image,
+    view_box: usvg::ViewBox,
+    rendering_mode: usvg::ImageRendering,
     dt: &mut raqote::DrawTarget,
 ) {
-    let img = try_opt!(load_raster(format, data, opt));
-
     let sub_dt = {
         let mut sub_dt = raqote::DrawTarget::new(img.size.width() as i32, img.size.height() as i32);
         let surface_data = sub_dt.get_data_u8_mut();
@@ -102,14 +114,11 @@ fn image_to_surface(image: &Image, surface: &mut [u8]) {
     }
 }
 
-pub fn draw_svg(
-    data: &usvg::ImageData,
+fn draw_svg(
+    tree: &usvg::Tree,
     view_box: usvg::ViewBox,
-    opt: &Options,
     dt: &mut raqote::DrawTarget,
 ) {
-    let (tree, sub_opt) = try_opt!(data.load_svg(opt));
-
     let img_size = tree.svg_node().size.to_screen_size();
     let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&view_box, img_size);
 
@@ -121,7 +130,7 @@ pub fn draw_svg(
     }
 
     dt.transform(&ts.to_native());
-    crate::render_to_canvas(&tree, &sub_opt, img_size, dt);
+    crate::render_to_canvas(&tree, img_size, dt);
 
     if let Some(_) = clip {
         dt.pop_clip();
@@ -130,68 +139,17 @@ pub fn draw_svg(
 
 /// A raster image data.
 #[allow(missing_docs)]
-pub struct Image {
-    pub data: ImageData,
-    pub size: ScreenSize,
+struct Image {
+    data: ImageData,
+    size: ScreenSize,
 }
 
 
 /// A raster image data kind.
 #[allow(missing_docs)]
-pub enum ImageData {
+enum ImageData {
     RGB(Vec<u8>),
     RGBA(Vec<u8>),
-}
-
-/// Loads a raster image.
-pub fn load_raster(
-    format: usvg::ImageFormat,
-    data: &usvg::ImageData,
-    opt: &Options,
-) -> Option<Image> {
-    let img = _load_raster(format, data, opt);
-
-    if img.is_none() {
-        match data {
-            usvg::ImageData::Path(ref path) => {
-                let path = opt.get_abs_path(path);
-                warn!("Failed to load an external image: {:?}.", path);
-            }
-            usvg::ImageData::Raw(_) => {
-                warn!("Failed to load an embedded image.");
-            }
-        }
-    }
-
-    img
-}
-
-fn _load_raster(
-    format: usvg::ImageFormat,
-    data: &usvg::ImageData,
-    opt: &Options,
-) -> Option<Image> {
-    debug_assert!(format != usvg::ImageFormat::SVG);
-
-    match data {
-        usvg::ImageData::Path(ref path) => {
-            let path = opt.get_abs_path(path);
-            let data = std::fs::read(path).ok()?;
-
-            if format == usvg::ImageFormat::JPEG {
-                read_jpeg(&data)
-            } else {
-                read_png(&data)
-            }
-        }
-        usvg::ImageData::Raw(ref data) => {
-            if format == usvg::ImageFormat::JPEG {
-                read_jpeg(data)
-            } else {
-                read_png(data)
-            }
-        }
-    }
 }
 
 fn read_png(data: &[u8]) -> Option<Image> {
@@ -270,7 +228,7 @@ fn read_jpeg(data: &[u8]) -> Option<Image> {
 }
 
 /// Calculates an image rect depending on the provided view box.
-pub fn image_rect(
+fn image_rect(
     view_box: &usvg::ViewBox,
     img_size: ScreenSize,
 ) -> Rect {

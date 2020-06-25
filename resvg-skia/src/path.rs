@@ -7,7 +7,6 @@ use crate::render::prelude::*;
 pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
-    opt: &Options,
     blend_mode: skia::BlendMode,
     canvas: &mut skia::Canvas,
 ) -> Option<Rect> {
@@ -33,14 +32,14 @@ pub fn draw(
     let global_ts = usvg::Transform::from_native(&canvas.get_matrix());
 
     if path.fill.is_some() {
-        let mut fill = crate::paint_server::fill(tree, &path.fill, opt, style_bbox, global_ts);
+        let mut fill = crate::paint_server::fill(tree, &path.fill, style_bbox, global_ts);
         fill.set_anti_alias(antialias);
         fill.set_blend_mode(blend_mode);
         canvas.draw_path(&skia_path, &fill);
     }
 
     if path.stroke.is_some() {
-        let mut stroke = crate::paint_server::stroke(tree, &path.stroke, opt, style_bbox, global_ts);
+        let mut stroke = crate::paint_server::stroke(tree, &path.stroke, style_bbox, global_ts);
         stroke.set_anti_alias(antialias);
         stroke.set_blend_mode(blend_mode);
         canvas.draw_path(&skia_path, &stroke);

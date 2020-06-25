@@ -64,7 +64,6 @@ impl ReCairoContextExt for cairo::Context {
 
 pub(crate) fn render_node_to_canvas(
     node: &usvg::Node,
-    opt: &Options,
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
     state: &mut RenderState,
@@ -79,7 +78,7 @@ pub(crate) fn render_node_to_canvas(
     ts.append(&node.transform());
 
     cr.transform(ts.to_native());
-    render_node(node, opt, state, &mut layers, cr);
+    render_node(node, state, &mut layers, cr);
     cr.set_matrix(curr_ts);
 }
 
@@ -130,23 +129,22 @@ fn apply_viewbox_transform(
 
 pub(crate) fn render_node(
     node: &usvg::Node,
-    opt: &Options,
     state: &mut RenderState,
     layers: &mut Layers,
     cr: &cairo::Context,
 ) -> Option<Rect> {
     match *node.borrow() {
         usvg::NodeKind::Svg(_) => {
-            render_group(node, opt, state, layers, cr)
+            render_group(node, state, layers, cr)
         }
         usvg::NodeKind::Path(ref path) => {
-            crate::path::draw(&node.tree(), path, opt, cr)
+            crate::path::draw(&node.tree(), path, cr)
         }
         usvg::NodeKind::Image(ref img) => {
-            Some(crate::image::draw(img, opt, cr))
+            Some(crate::image::draw(img, cr))
         }
         usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, state, layers, cr)
+            render_group_impl(node, g, state, layers, cr)
         }
         _ => None,
     }
@@ -154,7 +152,6 @@ pub(crate) fn render_node(
 
 pub(crate) fn render_group(
     parent: &usvg::Node,
-    opt: &Options,
     state: &mut RenderState,
     layers: &mut Layers,
     cr: &cairo::Context,
@@ -177,7 +174,7 @@ pub(crate) fn render_group(
 
         cr.transform(node.transform().to_native());
 
-        let bbox = render_node(&node, opt, state, layers, cr);
+        let bbox = render_node(&node, state, layers, cr);
         if let Some(bbox) = bbox {
             if let Some(bbox) = bbox.transform(&node.transform()) {
                 g_bbox = g_bbox.expand(bbox);
@@ -199,7 +196,6 @@ pub(crate) fn render_group(
 fn render_group_impl(
     node: &usvg::Node,
     g: &usvg::Group,
-    opt: &Options,
     state: &mut RenderState,
     layers: &mut Layers,
     cr: &cairo::Context,
@@ -213,7 +209,7 @@ fn render_group_impl(
         let sub_cr = cairo::Context::new(&*sub_surface);
         sub_cr.set_matrix(curr_ts);
 
-        render_group(node, opt, state, layers, &sub_cr)
+        render_group(node, state, layers, &sub_cr)
     };
 
     // During the background rendering for filters,
@@ -239,10 +235,10 @@ fn render_group_impl(
         if let Some(filter_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(&curr_ts);
-                let background = prepare_filter_background(node, filter, opt, layers.image_size());
-                let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, opt, &sub_surface);
-                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_surface);
-                crate::filter::apply(filter, bbox, &ts, opt, &node.tree(),
+                let background = prepare_filter_background(node, filter, layers.image_size());
+                let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, &sub_surface);
+                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, &sub_surface);
+                crate::filter::apply(filter, bbox, &ts, &node.tree(),
                                      background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
                                      &mut *sub_surface);
             }
@@ -257,7 +253,7 @@ fn render_group_impl(
                     let sub_cr = cairo::Context::new(&*sub_surface);
                     sub_cr.set_matrix(curr_ts);
 
-                    crate::clip::clip(&clip_node, cp, opt, bbox, layers, &sub_cr);
+                    crate::clip::clip(&clip_node, cp, bbox, layers, &sub_cr);
                 }
             }
         }
@@ -268,7 +264,7 @@ fn render_group_impl(
                     let sub_cr = cairo::Context::new(&*sub_surface);
                     sub_cr.set_matrix(curr_ts);
 
-                    crate::mask::mask(&mask_node, mask, opt, bbox, layers, &sub_cr);
+                    crate::mask::mask(&mask_node, mask, bbox, layers, &sub_cr);
                 }
             }
         }
@@ -296,7 +292,6 @@ fn render_group_impl(
 fn prepare_filter_background(
     parent: &usvg::Node,
     filter: &usvg::Filter,
-    opt: &Options,
     img_size: ScreenSize,
 ) -> Option<cairo::ImageSurface> {
     let start_node = parent.filter_background_start_node(filter)?;
@@ -308,7 +303,7 @@ fn prepare_filter_background(
     let cr = cairo::Context::new(&surface);
     // Render from the `start_node` until the `parent`. The `parent` itself is excluded.
     let mut state = RenderState::RenderUntil(parent.clone());
-    render_node_to_canvas(&start_node, opt, view_box, img_size, &mut state, &cr);
+    render_node_to_canvas(&start_node, view_box, img_size, &mut state, &cr);
 
     Some(surface)
 }
@@ -325,7 +320,6 @@ fn prepare_filter_fill_paint(
     filter: &usvg::Filter,
     bbox: Option<Rect>,
     ts: usvg::Transform,
-    opt: &Options,
     canvas: &cairo::ImageSurface,
 ) -> Option<cairo::ImageSurface> {
     let region = crate::filter::calc_region(filter, bbox, &ts, canvas).ok()?;
@@ -335,7 +329,7 @@ fn prepare_filter_fill_paint(
             let cr = cairo::Context::new(&*surface);
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
-            crate::paint_server::fill(&parent.tree(), &fill, opt, style_bbox, &cr);
+            crate::paint_server::fill(&parent.tree(), &fill, style_bbox, &cr);
             cr.rectangle(0.0, 0.0, region.width() as f64, region.height() as f64);
             cr.paint();
         }
@@ -350,7 +344,6 @@ fn prepare_filter_stroke_paint(
     filter: &usvg::Filter,
     bbox: Option<Rect>,
     ts: usvg::Transform,
-    opt: &Options,
     canvas: &cairo::ImageSurface,
 ) -> Option<cairo::ImageSurface> {
     let region = crate::filter::calc_region(filter, bbox, &ts, canvas).ok()?;
@@ -360,7 +353,7 @@ fn prepare_filter_stroke_paint(
             let cr = cairo::Context::new(&*surface);
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
-            crate::paint_server::fill(&parent.tree(), &fill, opt, style_bbox, &cr);
+            crate::paint_server::fill(&parent.tree(), &fill, style_bbox, &cr);
             cr.rectangle(0.0, 0.0, region.width() as f64, region.height() as f64);
             cr.paint();
         }

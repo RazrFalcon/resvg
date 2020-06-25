@@ -261,7 +261,6 @@ pub fn apply(
     filter: &usvg::Filter,
     bbox: Option<Rect>,
     ts: &usvg::Transform,
-    opt: &Options,
     tree: &usvg::Tree,
     background: Option<&cairo::ImageSurface>,
     fill_paint: Option<&cairo::ImageSurface>,
@@ -276,7 +275,7 @@ pub fn apply(
             stroke_paint,
         };
 
-        _apply(filter, &inputs, bbox, ts, opt, tree)
+        _apply(filter, &inputs, bbox, ts, tree)
     };
 
     let res = res.and_then(|(image, region)| apply_to_canvas(image, region, canvas));
@@ -306,7 +305,6 @@ fn _apply(
     inputs: &FilterInputs,
     bbox: Option<Rect>,
     ts: &usvg::Transform,
-    opt: &Options,
     tree: &usvg::Tree,
 ) -> Result<(Image, ScreenRect), Error> {
     let mut results = Vec::new();
@@ -346,7 +344,7 @@ fn _apply(
                 apply_tile(input, region)
             }
             usvg::FilterKind::FeImage(ref fe) => {
-                apply_image(fe, region, subregion, opt, tree, ts)
+                apply_image(fe, region, subregion, tree, ts)
             }
             usvg::FilterKind::FeComponentTransfer(ref fe) => {
                 let input = get_input(&fe.input, region, inputs, &results)?;
@@ -814,14 +812,13 @@ fn apply_image(
     fe: &usvg::FeImage,
     region: ScreenRect,
     subregion: ScreenRect,
-    opt: &Options,
     tree: &usvg::Tree,
     ts: &usvg::Transform,
 ) -> Result<Image, Error> {
     let buffer = cairo::ImageSurface::try_create(region.width(), region.height())?;
 
     match fe.data {
-        usvg::FeImageKind::Image(ref data, format) => {
+        usvg::FeImageKind::Image(ref kind) => {
             let cr = cairo::Context::new(&buffer);
 
             let dx = (subregion.x() - region.x()) as f64;
@@ -833,11 +830,7 @@ fn apply_image(
                 aspect: fe.aspect,
             };
 
-            if format == usvg::ImageFormat::SVG {
-                super::image::draw_svg(data, view_box, opt, &cr);
-            } else {
-                super::image::draw_raster(format, data, view_box, fe.rendering_mode, opt, &cr);
-            }
+            crate::image::draw_kind(kind, view_box, fe.rendering_mode, &cr);
         }
         usvg::FeImageKind::Use(ref id) => {
             if let Some(ref node) = tree.defs_by_id(id).or(tree.node_by_id(id)) {
@@ -848,7 +841,7 @@ fn apply_image(
                 cr.scale(sx, sy);
                 cr.transform(node.transform().to_native());
 
-                crate::render::render_node(node, opt, &mut RenderState::Ok, &mut layers, &cr);
+                crate::render::render_node(node, &mut RenderState::Ok, &mut layers, &cr);
             }
         }
     }

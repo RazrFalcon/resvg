@@ -131,6 +131,7 @@ enum ErrorId {
 }
 
 #[repr(C)]
+#[allow(dead_code)]
 pub enum resvg_shape_rendering {
     RESVG_SHAPE_RENDERING_OPTIMIZE_SPEED,
     RESVG_SHAPE_RENDERING_CRISP_EDGES,
@@ -138,6 +139,7 @@ pub enum resvg_shape_rendering {
 }
 
 #[repr(C)]
+#[allow(dead_code)]
 pub enum resvg_text_rendering {
     RESVG_TEXT_RENDERING_OPTIMIZE_SPEED,
     RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY,
@@ -145,6 +147,7 @@ pub enum resvg_text_rendering {
 }
 
 #[repr(C)]
+#[allow(dead_code)]
 pub enum resvg_image_rendering {
     RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY,
     RESVG_IMAGE_RENDERING_OPTIMIZE_SPEED,

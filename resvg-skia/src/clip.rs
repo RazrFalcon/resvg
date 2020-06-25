@@ -7,7 +7,6 @@ use crate::render::prelude::*;
 pub fn clip(
     node: &usvg::Node,
     cp: &usvg::ClipPath,
-    opt: &Options,
     bbox: Rect,
     layers: &mut Layers,
     canvas: &mut skia::Canvas,
@@ -30,10 +29,10 @@ pub fn clip(
 
         match *node.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                crate::path::draw(&node.tree(), path_node, opt, skia::BlendMode::Clear, &mut clip_surface);
+                crate::path::draw(&node.tree(), path_node, skia::BlendMode::Clear, &mut clip_surface);
             }
             usvg::NodeKind::Group(ref g) => {
-                clip_group(&node, g, opt, bbox, layers, &mut clip_surface);
+                clip_group(&node, g, bbox, layers, &mut clip_surface);
             }
             _ => {}
         }
@@ -44,7 +43,7 @@ pub fn clip(
     if let Some(ref id) = cp.clip_path {
         if let Some(ref clip_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                clip(clip_node, cp, opt, bbox, layers, canvas);
+                clip(clip_node, cp, bbox, layers, canvas);
             }
         }
     }
@@ -58,7 +57,6 @@ pub fn clip(
 fn clip_group(
     node: &usvg::Node,
     g: &usvg::Group,
-    opt: &Options,
     bbox: Rect,
     layers: &mut Layers,
     canvas: &mut skia::Canvas,
@@ -75,8 +73,8 @@ fn clip_group(
 
                 clip_surface.set_matrix(&canvas.get_matrix());
 
-                draw_group_child(&node, opt, &mut clip_surface);
-                clip(clip_node, cp, opt, bbox, layers, &mut clip_surface);
+                draw_group_child(&node, &mut clip_surface);
+                clip(clip_node, cp, bbox, layers, &mut clip_surface);
 
                 canvas.reset_matrix();
                 canvas.draw_surface(
@@ -87,17 +85,13 @@ fn clip_group(
     }
 }
 
-fn draw_group_child(
-    node: &usvg::Node,
-    opt: &Options,
-    canvas: &mut skia::Canvas,
-) {
+fn draw_group_child(node: &usvg::Node, canvas: &mut skia::Canvas) {
     if let Some(child) = node.first_child() {
         canvas.concat(&child.transform().to_native());
 
         match *child.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                crate::path::draw(&child.tree(), path_node, opt, skia::BlendMode::SourceOver, canvas);
+                crate::path::draw(&child.tree(), path_node, skia::BlendMode::SourceOver, canvas);
             }
             _ => {}
         }

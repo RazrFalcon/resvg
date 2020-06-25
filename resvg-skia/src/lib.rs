@@ -71,20 +71,18 @@ mod skia;
 /// Renders SVG to image.
 pub fn render_to_image(
     tree: &usvg::Tree,
-    opt: &usvg::Options,
     fit_to: usvg::FitTo,
     background: Option<usvg::Color>,
 ) -> Option<skia::Surface> {
     let (mut img, img_size)
         = render::create_root_image(tree.svg_node().size.to_screen_size(), fit_to, background)?;
-    render_to_canvas(tree, opt, img_size, &mut img);
+    render_to_canvas(tree, img_size, &mut img);
     Some(img)
 }
 
 /// Renders SVG node to image.
 pub fn render_node_to_image(
     node: &usvg::Node,
-    opt: &usvg::Options,
     fit_to: usvg::FitTo,
     background: Option<usvg::Color>,
 ) -> Option<skia::Surface> {
@@ -103,7 +101,7 @@ pub fn render_node_to_image(
     let (mut img, img_size)
         = render::create_root_image(node_bbox.size().to_screen_size(), fit_to, background)?;
 
-    render_node_to_canvas(node, opt, vbox, img_size, &mut img);
+    render_node_to_canvas(node, vbox, img_size, &mut img);
     Some(img)
 }
 
@@ -114,11 +112,10 @@ pub fn render_node_to_image(
 /// Canvas must not have a transform.
 pub fn render_to_canvas(
     tree: &usvg::Tree,
-    opt: &usvg::Options,
     img_size: ScreenSize,
     canvas: &mut skia::Canvas,
 ) {
-    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, canvas);
+    render_node_to_canvas(&tree.root(), tree.svg_node().view_box, img_size, canvas);
 }
 
 /// Renders `node` onto the canvas.
@@ -128,12 +125,11 @@ pub fn render_to_canvas(
 /// Canvas must not have a transform.
 pub fn render_node_to_canvas(
     node: &usvg::Node,
-    opt: &usvg::Options,
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
     canvas: &mut skia::Canvas,
 ) {
-    render::render_node_to_canvas(node, opt, view_box, img_size, &mut render::RenderState::Ok, canvas)
+    render::render_node_to_canvas(node, view_box, img_size, &mut render::RenderState::Ok, canvas)
 }
 
 /// Converts a raw pointer into a Skia Canvas object.

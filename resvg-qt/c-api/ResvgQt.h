@@ -34,11 +34,9 @@ namespace ResvgPrivate {
 
 extern "C" {
     void resvg_qt_render_to_canvas(const resvg_render_tree *tree,
-                                   const resvg_options *opt,
                                    resvg_size size,
                                    void *painter);
     void resvg_qt_render_to_canvas_by_id(const resvg_render_tree *tree,
-                                         const resvg_options *opt,
                                          resvg_size size,
                                          const char *id,
                                          void *painter);
@@ -446,7 +444,7 @@ inline void ResvgRenderer::render(QPainter *p) const
 
     const auto r = p->viewport();
     resvg_size imgSize { (uint)r.width(), (uint)r.height() };
-    ResvgPrivate::resvg_qt_render_to_canvas(d->tree, &d->opt, imgSize, p);
+    ResvgPrivate::resvg_qt_render_to_canvas(d->tree, imgSize, p);
 
     p->restore();
 }

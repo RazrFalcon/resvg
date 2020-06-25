@@ -105,13 +105,13 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
     let img = if let Some(ref id) = args.export_id {
         if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
             timed!(args, "Rendering",
-                resvg_qt::render_node_to_image(&node, &args.usvg, args.fit_to, args.background))
+                resvg_qt::render_node_to_image(&node, args.fit_to, args.background))
         } else {
             return Err(format!("SVG doesn't have '{}' ID", id));
         }
     } else {
         timed!(args, "Rendering",
-            resvg_qt::render_to_image(&tree, &args.usvg, args.fit_to, args.background))
+            resvg_qt::render_to_image(&tree, args.fit_to, args.background))
     };
 
     match img {

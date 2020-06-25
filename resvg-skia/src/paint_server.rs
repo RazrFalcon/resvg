@@ -7,7 +7,6 @@ use crate::render::prelude::*;
 pub fn fill(
     tree: &usvg::Tree,
     fill: &Option<usvg::Fill>,
-    opt: &Options,
     bbox: Rect,
     global_ts: usvg::Transform,
 ) -> skia::Paint {
@@ -31,7 +30,7 @@ pub fn fill(
                             prepare_radial(rg, opacity, bbox, &mut paint);
                         }
                         usvg::NodeKind::Pattern(ref pattern) => {
-                            prepare_pattern(&node, pattern, opt, global_ts, bbox, opacity, &mut paint);
+                            prepare_pattern(&node, pattern, global_ts, bbox, opacity, &mut paint);
                         }
                         _ => {}
                     }
@@ -46,7 +45,6 @@ pub fn fill(
 pub fn stroke(
     tree: &usvg::Tree,
     stroke: &Option<usvg::Stroke>,
-    opt: &Options,
     bbox: Rect,
     global_ts: usvg::Transform,
 ) -> skia::Paint {
@@ -70,7 +68,7 @@ pub fn stroke(
                             prepare_radial(rg, opacity, bbox, &mut paint);
                         }
                         usvg::NodeKind::Pattern(ref pattern) => {
-                            prepare_pattern(&node, pattern, opt, global_ts, bbox, opacity, &mut paint);
+                            prepare_pattern(&node, pattern, global_ts, bbox, opacity, &mut paint);
                         }
                         _ => {}
                     }
@@ -176,7 +174,6 @@ fn prepare_base_gradient(
 fn prepare_pattern(
     pattern_node: &usvg::Node,
     pattern: &usvg::Pattern,
-    opt: &Options,
     global_ts: usvg::Transform,
     bbox: Rect,
     opacity: usvg::Opacity,
@@ -207,7 +204,7 @@ fn prepare_pattern(
     }
 
     let mut layers = Layers::new(img_size);
-    crate::render::render_group(pattern_node, opt, &mut RenderState::Ok, &mut layers, &mut surface);
+    crate::render::render_group(pattern_node, &mut RenderState::Ok, &mut layers, &mut surface);
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);

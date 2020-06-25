@@ -337,7 +337,7 @@ A group will have at least one of the attributes present.
 * `id` = <<string-type,<string> >>? +
   An optional, but never empty, element ID.
 * `xlink:href` = <<iri-type,<IRI> >> +
-  The IRI contains a file path or base64 encoded image.
+  The IRI contains a base64 encoded image.
 * `x` = <<number-type,<number> >>
 * `y` = <<number-type,<number> >>
 * `width` = <<positive-number-type,<positive-number> >>
@@ -534,7 +534,7 @@ Only one of:
 * `image-rendering` = `optimizeSpeed`? +
   Default: optimizeQuality
 * `xlink:href` = <<iri-type,<IRI> >> +
-  The IRI contains a file path, base64 encoded image or a link to an element (like `use`).
+  The IRI contains a base64 encoded image or a link to an element (like `use`).
 * <<Filter primitive attributes>>
 
 === Filter primitive `feMerge`

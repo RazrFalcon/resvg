@@ -31,28 +31,6 @@ macro_rules! try_opt_or {
     };
 }
 
-/// Unwraps `Option` and invokes `return` on `None` with a warning.
-macro_rules! try_opt_warn {
-    ($task:expr, $msg:expr) => {
-        match $task {
-            Some(v) => v,
-            None => {
-                log::warn!($msg);
-                return;
-            }
-        }
-    };
-    ($task:expr, $fmt:expr, $($arg:tt)*) => {
-        match $task {
-            Some(v) => v,
-            None => {
-                log::warn!($fmt, $($arg)*);
-                return;
-            }
-        }
-    };
-}
-
 
 use usvg::{NodeExt, ScreenSize};
 use log::warn;
@@ -71,7 +49,6 @@ mod render;
 /// Renders SVG to image.
 pub fn render_to_image(
     tree: &usvg::Tree,
-    opt: &usvg::Options,
     fit_to: usvg::FitTo,
     background: Option<usvg::Color>,
 ) -> Option<qt::Image> {
@@ -79,7 +56,7 @@ pub fn render_to_image(
         render::create_root_image(tree.svg_node().size.to_screen_size(), fit_to, background)?;
 
     let mut painter = qt::Painter::new(&mut img);
-    render_to_canvas(tree, opt, img_size, &mut painter);
+    render_to_canvas(tree, img_size, &mut painter);
     painter.end();
 
     Some(img)
@@ -88,7 +65,6 @@ pub fn render_to_image(
 /// Renders SVG node to image.
 pub fn render_node_to_image(
     node: &usvg::Node,
-    opt: &usvg::Options,
     fit_to: usvg::FitTo,
     background: Option<usvg::Color>,
 ) -> Option<qt::Image> {
@@ -108,7 +84,7 @@ pub fn render_node_to_image(
         = render::create_root_image(node_bbox.size().to_screen_size(), fit_to, background)?;
 
     let mut painter = qt::Painter::new(&mut img);
-    render_node_to_canvas(node, opt, vbox, img_size, &mut painter);
+    render_node_to_canvas(node, vbox, img_size, &mut painter);
     painter.end();
 
     Some(img)
@@ -121,11 +97,10 @@ pub fn render_node_to_image(
 /// Canvas must not have a transform.
 pub fn render_to_canvas(
     tree: &usvg::Tree,
-    opt: &usvg::Options,
     img_size: ScreenSize,
     painter: &mut qt::Painter,
 ) {
-    render_node_to_canvas(&tree.root(), opt, tree.svg_node().view_box, img_size, painter);
+    render_node_to_canvas(&tree.root(), tree.svg_node().view_box, img_size, painter);
 }
 
 /// Renders `node` onto the canvas.
@@ -135,12 +110,11 @@ pub fn render_to_canvas(
 /// Canvas must not have a transform.
 pub fn render_node_to_canvas(
     node: &usvg::Node,
-    opt: &usvg::Options,
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
     painter: &mut qt::Painter,
 ) {
-    render::render_node_to_canvas(node, opt, view_box, img_size, &mut render::RenderState::Ok, painter)
+    render::render_node_to_canvas(node, view_box, img_size, &mut render::RenderState::Ok, painter)
 }
 
 /// Converts a raw pointer into a QPainter object.

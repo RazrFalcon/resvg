@@ -30,7 +30,7 @@ fn build_ui(application: &gtk::Application, file_path: &std::path::Path) {
             w.get_allocated_width() as u32,
             w.get_allocated_height() as u32,
         ).unwrap();
-        resvg_cairo::render_to_canvas(&tree, &opt, s, cr);
+        resvg_cairo::render_to_canvas(&tree, s, cr);
 
         Inhibit(false)
     });

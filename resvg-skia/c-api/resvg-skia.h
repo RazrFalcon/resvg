@@ -33,12 +33,10 @@ extern "C" {
  * \b Warning: the canvas must not have a transform.
  *
  * @param tree Render tree.
- * @param opt Rendering options.
  * @param size Canvas size.
  * @param canvas Skia Canvas.
  */
 void resvg_skia_render_to_canvas(const resvg_render_tree *tree,
-                                 const resvg_options *opt,
                                  resvg_size size,
                                  void *canvas);
 
@@ -50,13 +48,11 @@ void resvg_skia_render_to_canvas(const resvg_render_tree *tree,
  * Does nothing on error.
  *
  * @param tree Render tree.
- * @param opt Rendering options.
  * @param size Canvas size.
  * @param id Node's ID.
  * @param canvas Skia Canvas.
  */
 void resvg_skia_render_to_canvas_by_id(const resvg_render_tree *tree,
-                                       const resvg_options *opt,
                                        resvg_size size,
                                        const char *id,
                                        void *canvas);

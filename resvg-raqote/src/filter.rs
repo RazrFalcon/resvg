@@ -202,7 +202,6 @@ pub fn apply(
     filter: &usvg::Filter,
     bbox: Option<Rect>,
     ts: &usvg::Transform,
-    opt: &Options,
     tree: &usvg::Tree,
     background: Option<&raqote::DrawTarget>,
     fill_paint: Option<&raqote::DrawTarget>,
@@ -217,7 +216,7 @@ pub fn apply(
             stroke_paint,
         };
 
-        _apply(filter, &inputs, bbox, ts, opt, tree)
+        _apply(filter, &inputs, bbox, ts, tree)
     };
 
     let res = res.and_then(|(image, region)| apply_to_canvas(image, region, canvas));
@@ -241,7 +240,6 @@ fn _apply(
     inputs: &FilterInputs,
     bbox: Option<Rect>,
     ts: &usvg::Transform,
-    opt: &Options,
     tree: &usvg::Tree,
 ) -> Result<(Image, ScreenRect), Error> {
     let mut results = Vec::new();
@@ -250,7 +248,7 @@ fn _apply(
     for primitive in &filter.children {
         // let cs = primitive.color_interpolation;
         let subregion = calc_subregion(filter, primitive, bbox, region, ts, &results)?;
-        let mut result = apply2(filter, primitive, inputs, &results, bbox, region, subregion, ts, opt, tree)?;
+        let mut result = apply2(filter, primitive, inputs, &results, bbox, region, subregion, ts, tree)?;
 
         if region != subregion {
             // Clip result.
@@ -296,7 +294,6 @@ fn apply2(
     region: ScreenRect,
     subregion: ScreenRect,
     ts: &usvg::Transform,
-    opt: &Options,
     tree: &usvg::Tree,
 ) -> Result<Image, Error> {
     let cs = primitive.color_interpolation;
@@ -407,7 +404,7 @@ fn apply2(
             Ok(Image::from_image(dt, ColorSpace::SRGB))
         }
         usvg::FilterKind::FeImage(ref fe) => {
-            apply_image(fe, region, subregion, opt, tree, ts)
+            apply_image(fe, region, subregion, tree, ts)
         }
         usvg::FilterKind::FeComponentTransfer(ref fe) => {
             let input = get_input(&fe.input, region, inputs, &results)?;
@@ -839,14 +836,13 @@ fn apply_image(
     fe: &usvg::FeImage,
     region: ScreenRect,
     subregion: ScreenRect,
-    opt: &Options,
     tree: &usvg::Tree,
     ts: &usvg::Transform,
 ) -> Result<Image, Error> {
     let mut dt = create_image(region.width(), region.height())?;
 
     match fe.data {
-        usvg::FeImageKind::Image(ref data, format) => {
+        usvg::FeImageKind::Image(ref kind) => {
             let dx = (subregion.x() - region.x()) as f64;
             let dy = (subregion.y() - region.y()) as f64;
             let ctm = dt.get_transform().pre_translate(raqote::Vector::new(dx as f32, dy as f32));
@@ -857,13 +853,7 @@ fn apply_image(
                 aspect: fe.aspect,
             };
 
-            if format == usvg::ImageFormat::SVG {
-                super::image::draw_svg(data, view_box, opt, &mut dt);
-            } else {
-                super::image::draw_raster(
-                    format, data, view_box, fe.rendering_mode, opt, &mut dt
-                );
-            }
+            crate::image::draw_kind(kind, view_box, fe.rendering_mode, &mut dt);
         }
         usvg::FeImageKind::Use(ref id) => {
             if let Some(ref node) = tree.defs_by_id(id).or(tree.node_by_id(id)) {
@@ -873,7 +863,7 @@ fn apply_image(
                 dt.transform(&usvg::Transform::new_scale(sx, sy).to_native());
                 dt.transform(&node.transform().to_native());
 
-                render_node(node, opt, &mut RenderState::Ok, &mut layers, &mut dt);
+                render_node(node, &mut RenderState::Ok, &mut layers, &mut dt);
             }
         }
     }

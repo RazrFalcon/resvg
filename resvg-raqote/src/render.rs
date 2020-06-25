@@ -121,7 +121,6 @@ fn premultiply(c: u8, a: u8) -> u8 {
 
 pub(crate) fn render_node_to_canvas(
     node: &usvg::Node,
-    opt: &Options,
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
     state: &mut RenderState,
@@ -136,7 +135,7 @@ pub(crate) fn render_node_to_canvas(
     ts.append(&node.transform());
 
     dt.transform(&ts.to_native());
-    render_node(node, opt, state, &mut layers, dt);
+    render_node(node, state, &mut layers, dt);
     dt.set_transform(&curr_ts);
 }
 
@@ -168,23 +167,22 @@ fn apply_viewbox_transform(
 
 pub(crate) fn render_node(
     node: &usvg::Node,
-    opt: &Options,
     state: &mut RenderState,
     layers: &mut Layers,
     dt: &mut raqote::DrawTarget,
 ) -> Option<Rect> {
     match *node.borrow() {
         usvg::NodeKind::Svg(_) => {
-            render_group(node, opt, state, layers, dt)
+            render_group(node, state, layers, dt)
         }
         usvg::NodeKind::Path(ref path) => {
-            crate::path::draw(&node.tree(), path, opt, raqote::DrawOptions::default(), dt)
+            crate::path::draw(&node.tree(), path, raqote::DrawOptions::default(), dt)
         }
         usvg::NodeKind::Image(ref img) => {
-            Some(crate::image::draw(img, opt, dt))
+            Some(crate::image::draw(img, dt))
         }
         usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, opt, state, layers, dt)
+            render_group_impl(node, g, state, layers, dt)
         }
         _ => None,
     }
@@ -192,7 +190,6 @@ pub(crate) fn render_node(
 
 pub(crate) fn render_group(
     parent: &usvg::Node,
-    opt: &Options,
     state: &mut RenderState,
     layers: &mut Layers,
     dt: &mut raqote::DrawTarget,
@@ -215,7 +212,7 @@ pub(crate) fn render_group(
 
         dt.transform(&node.transform().to_native());
 
-        let bbox = render_node(&node, opt, state, layers, dt);
+        let bbox = render_node(&node, state, layers, dt);
 
         if let Some(bbox) = bbox {
             if let Some(bbox) = bbox.transform(&node.transform()) {
@@ -238,7 +235,6 @@ pub(crate) fn render_group(
 fn render_group_impl(
     node: &usvg::Node,
     g: &usvg::Group,
-    opt: &Options,
     state: &mut RenderState,
     layers: &mut Layers,
     dt: &mut raqote::DrawTarget,
@@ -250,7 +246,7 @@ fn render_group_impl(
 
     let bbox = {
         sub_dt.set_transform(&curr_ts);
-        render_group(node, opt, state, layers, &mut sub_dt)
+        render_group(node, state, layers, &mut sub_dt)
     };
 
     // During the background rendering for filters,
@@ -273,10 +269,10 @@ fn render_group_impl(
         if let Some(filter_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(&curr_ts);
-                let background = prepare_filter_background(node, filter, opt, layers.image_size());
-                let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, opt, &sub_dt);
-                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_dt);
-                crate::filter::apply(filter, bbox, &ts, opt, &node.tree(),
+                let background = prepare_filter_background(node, filter, layers.image_size());
+                let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, &sub_dt);
+                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, &sub_dt);
+                crate::filter::apply(filter, bbox, &ts, &node.tree(),
                                      background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
                                      &mut sub_dt);
             }
@@ -289,7 +285,7 @@ fn render_group_impl(
             if let Some(clip_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
                     sub_dt.set_transform(&curr_ts);
-                    crate::clip::clip(&clip_node, cp, opt, bbox, layers, &mut sub_dt);
+                    crate::clip::clip(&clip_node, cp, bbox, layers, &mut sub_dt);
                 }
             }
         }
@@ -298,7 +294,7 @@ fn render_group_impl(
             if let Some(mask_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
                     sub_dt.set_transform(&curr_ts);
-                    crate::mask::mask(&mask_node, mask, opt, bbox, layers, &mut sub_dt);
+                    crate::mask::mask(&mask_node, mask, bbox, layers, &mut sub_dt);
                 }
             }
         }
@@ -321,7 +317,6 @@ fn render_group_impl(
 fn prepare_filter_background(
     parent: &usvg::Node,
     filter: &usvg::Filter,
-    opt: &Options,
     img_size: ScreenSize,
 ) -> Option<raqote::DrawTarget> {
     let start_node = parent.filter_background_start_node(filter)?;
@@ -332,7 +327,7 @@ fn prepare_filter_background(
 
     // Render from the `start_node` until the `parent`. The `parent` itself is excluded.
     let mut state = RenderState::RenderUntil(parent.clone());
-    render_node_to_canvas(&start_node, opt, view_box, img_size, &mut state, &mut dt);
+    render_node_to_canvas(&start_node, view_box, img_size, &mut state, &mut dt);
 
     Some(dt)
 }
@@ -349,7 +344,6 @@ fn prepare_filter_fill_paint(
     filter: &usvg::Filter,
     bbox: Option<Rect>,
     ts: usvg::Transform,
-    opt: &Options,
     canvas: &raqote::DrawTarget,
 ) -> Option<raqote::DrawTarget> {
     let region = crate::filter::calc_region(filter, bbox, &ts, canvas).ok()?;
@@ -361,7 +355,7 @@ fn prepare_filter_fill_paint(
             let draw_opt = raqote::DrawOptions::default();
             let mut pb = raqote::PathBuilder::new();
             pb.rect(0.0, 0.0, region.width() as f32, region.height() as f32);
-            crate::paint_server::fill(&parent.tree(), &pb.finish(), &fill, opt, style_bbox, &draw_opt, &mut dt);
+            crate::paint_server::fill(&parent.tree(), &pb.finish(), &fill, style_bbox, &draw_opt, &mut dt);
         }
     }
 
@@ -374,7 +368,6 @@ fn prepare_filter_stroke_paint(
     filter: &usvg::Filter,
     bbox: Option<Rect>,
     ts: usvg::Transform,
-    opt: &Options,
     canvas: &raqote::DrawTarget,
 ) -> Option<raqote::DrawTarget> {
     let region = crate::filter::calc_region(filter, bbox, &ts, canvas).ok()?;
@@ -386,7 +379,7 @@ fn prepare_filter_stroke_paint(
             let draw_opt = raqote::DrawOptions::default();
             let mut pb = raqote::PathBuilder::new();
             pb.rect(0.0, 0.0, region.width() as f32, region.height() as f32);
-            crate::paint_server::fill(&parent.tree(), &pb.finish(), &fill, opt, style_bbox, &draw_opt, &mut dt);
+            crate::paint_server::fill(&parent.tree(), &pb.finish(), &fill, style_bbox, &draw_opt, &mut dt);
         }
     }
 

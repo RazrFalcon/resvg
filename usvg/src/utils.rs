@@ -110,9 +110,5 @@ pub fn aligned_pos(
 }
 
 pub(crate) fn file_extension(path: &std::path::Path) -> Option<&str> {
-    if let Some(ext) = path.extension() {
-        ext.to_str()
-    } else {
-        None
-    }
+    path.extension().and_then(|e| e.to_str())
 }
