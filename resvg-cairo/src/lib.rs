@@ -66,65 +66,28 @@ mod paint_server;
 mod path;
 mod render;
 
-use render::ReCairoContextExt;
-
-
-/// Rendering options.
-pub struct Options {
-    /// `usvg` preprocessor options.
-    pub usvg: usvg::Options,
-
-    /// Fits the image using specified options.
-    ///
-    /// Does not affect rendering to canvas.
-    pub fit_to: usvg::FitTo,
-
-    /// An image background color.
-    ///
-    /// Sets an image background color. Does not affect rendering to canvas.
-    ///
-    /// `None` equals to transparent.
-    pub background: Option<usvg::Color>,
-}
-
-impl Default for Options {
-    fn default() -> Options {
-        Options {
-            usvg: usvg::Options::default(),
-            fit_to: usvg::FitTo::Original,
-            background: None,
-        }
-    }
-}
-
 
 /// Renders SVG to image.
 pub fn render_to_image(
     tree: &usvg::Tree,
-    opt: &Options,
+    opt: &usvg::Options,
+    fit_to: usvg::FitTo,
+    background: Option<usvg::Color>,
 ) -> Option<cairo::ImageSurface> {
-    let (surface, img_view) = render::create_surface(
-        tree.svg_node().size.to_screen_size(),
-        opt,
-    )?;
+    let (surface, img_size) =
+        render::create_root_surface(tree.svg_node().size.to_screen_size(), fit_to, background)?;
 
     let cr = cairo::Context::new(&surface);
-
-    // Fill background.
-    if let Some(color) = opt.background {
-        cr.set_source_color(color, 1.0.into());
-        cr.paint();
-    }
-
-    render_to_canvas(tree, opt, img_view, &cr);
-
+    render_to_canvas(tree, opt, img_size, &cr);
     Some(surface)
 }
 
 /// Renders SVG node to image.
 pub fn render_node_to_image(
     node: &usvg::Node,
-    opt: &Options,
+    opt: &usvg::Options,
+    fit_to: usvg::FitTo,
+    background: Option<usvg::Color>,
 ) -> Option<cairo::ImageSurface> {
     let node_bbox = if let Some(bbox) = node.calculate_bbox() {
         bbox
@@ -133,21 +96,15 @@ pub fn render_node_to_image(
         return None;
     };
 
-    let (surface, img_size) = render::create_surface(node_bbox.to_screen_size(), opt)?;
-
     let vbox = usvg::ViewBox {
         rect: node_bbox,
         aspect: usvg::AspectRatio::default(),
     };
 
+    let (surface, img_size)
+        = render::create_root_surface(node_bbox.to_screen_size(), fit_to, background)?;
+
     let cr = cairo::Context::new(&surface);
-
-    // Fill background.
-    if let Some(color) = opt.background {
-        cr.set_source_color(color, 1.0.into());
-        cr.paint();
-    }
-
     render_node_to_canvas(node, opt, vbox, img_size, &cr);
 
     Some(surface)
@@ -160,7 +117,7 @@ pub fn render_node_to_image(
 /// Canvas must not have a transform.
 pub fn render_to_canvas(
     tree: &usvg::Tree,
-    opt: &Options,
+    opt: &usvg::Options,
     img_size: ScreenSize,
     cr: &cairo::Context,
 ) {
@@ -174,7 +131,7 @@ pub fn render_to_canvas(
 /// Canvas must not have a transform.
 pub fn render_node_to_canvas(
     node: &usvg::Node,
-    opt: &Options,
+    opt: &usvg::Options,
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
     cr: &cairo::Context,

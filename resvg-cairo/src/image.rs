@@ -113,13 +113,7 @@ pub fn draw_svg(
     opt: &Options,
     cr: &cairo::Context,
 ) {
-    let (tree, sub_opt) = try_opt!(data.load_svg(&opt.usvg));
-
-    let sub_opt = Options {
-        usvg: sub_opt,
-        fit_to: FitTo::Original,
-        background: None,
-    };
+    let (tree, sub_opt) = try_opt!(data.load_svg(opt));
 
     let img_size = tree.svg_node().size.to_screen_size();
     let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&view_box, img_size);
@@ -160,7 +154,7 @@ fn load_raster(
     if img.is_none() {
         match data {
             usvg::ImageData::Path(ref path) => {
-                let path = opt.usvg.get_abs_path(path);
+                let path = opt.get_abs_path(path);
                 warn!("Failed to load an external image: {:?}.", path);
             }
             usvg::ImageData::Raw(_) => {
@@ -181,7 +175,7 @@ fn _load_raster(
 
     match data {
         usvg::ImageData::Path(ref path) => {
-            let path = opt.usvg.get_abs_path(path);
+            let path = opt.get_abs_path(path);
             let data = std::fs::read(path).ok()?;
 
             if format == usvg::ImageFormat::JPEG {

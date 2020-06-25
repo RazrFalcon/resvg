@@ -45,49 +45,15 @@ mod path;
 mod render;
 
 
-/// Rendering options.
-pub struct Options {
-    /// `usvg` preprocessor options.
-    pub usvg: usvg::Options,
-
-    /// Fits the image using specified options.
-    ///
-    /// Does not affect rendering to canvas.
-    pub fit_to: usvg::FitTo,
-
-    /// An image background color.
-    ///
-    /// Sets an image background color. Does not affect rendering to canvas.
-    ///
-    /// `None` equals to transparent.
-    pub background: Option<usvg::Color>,
-}
-
-impl Default for Options {
-    fn default() -> Options {
-        Options {
-            usvg: usvg::Options::default(),
-            fit_to: usvg::FitTo::Original,
-            background: None,
-        }
-    }
-}
-
-
 /// Renders SVG to image.
 pub fn render_to_image(
     tree: &usvg::Tree,
-    opt: &Options,
+    opt: &usvg::Options,
+    fit_to: usvg::FitTo,
+    background: Option<usvg::Color>,
 ) -> Option<raqote::DrawTarget> {
-    let (mut dt, img_view) = render::create_target(
-        tree.svg_node().size.to_screen_size(),
-        opt,
-    )?;
-
-    // Fill background.
-    if let Some(c) = opt.background {
-        dt.clear(raqote::SolidSource { r: c.red, g: c.green, b: c.blue, a: 255 });
-    }
+    let (mut dt, img_view)
+        = render::create_root_target(tree.svg_node().size.to_screen_size(), fit_to, background)?;
 
     render_to_canvas(tree, opt, img_view, &mut dt);
 
@@ -97,7 +63,9 @@ pub fn render_to_image(
 /// Renders SVG node to image.
 pub fn render_node_to_image(
     node: &usvg::Node,
-    opt: &Options,
+    opt: &usvg::Options,
+    fit_to: usvg::FitTo,
+    background: Option<usvg::Color>,
 ) -> Option<raqote::DrawTarget> {
     let node_bbox = if let Some(bbox) = node.calculate_bbox() {
         bbox
@@ -106,17 +74,13 @@ pub fn render_node_to_image(
         return None;
     };
 
-    let (mut dt, img_size) = render::create_target(node_bbox.to_screen_size(), opt)?;
+    let (mut dt, img_size)
+        = render::create_root_target(node_bbox.to_screen_size(), fit_to, background)?;
 
     let vbox = usvg::ViewBox {
         rect: node_bbox,
         aspect: usvg::AspectRatio::default(),
     };
-
-    // Fill background.
-    if let Some(c) = opt.background {
-        dt.clear(raqote::SolidSource { r: c.red, g: c.green, b: c.blue, a: 255 });
-    }
 
     render_node_to_canvas(node, opt, vbox, img_size, &mut dt);
 
@@ -130,7 +94,7 @@ pub fn render_node_to_image(
 /// Canvas must not have a transform.
 pub fn render_to_canvas(
     tree: &usvg::Tree,
-    opt: &Options,
+    opt: &usvg::Options,
     img_size: ScreenSize,
     dt: &mut raqote::DrawTarget,
 ) {
@@ -144,7 +108,7 @@ pub fn render_to_canvas(
 /// Canvas must not have a transform.
 pub fn render_node_to_canvas(
     node: &usvg::Node,
-    opt: &Options,
+    opt: &usvg::Options,
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
     dt: &mut raqote::DrawTarget,

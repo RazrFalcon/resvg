@@ -102,20 +102,16 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
 }
 
 fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(), String> {
-    let opt = resvg_raqote::Options {
-        usvg: args.usvg,
-        fit_to: args.fit_to,
-        background: args.background,
-    };
-
     let img = if let Some(ref id) = args.export_id {
         if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
-            timed!(args, "Rendering", resvg_raqote::render_node_to_image(&node, &opt))
+            timed!(args, "Rendering",
+                resvg_raqote::render_node_to_image(&node, &args.usvg, args.fit_to, args.background))
         } else {
             return Err(format!("SVG doesn't have '{}' ID", id));
         }
     } else {
-        timed!(args, "Rendering", resvg_raqote::render_to_image(&tree, &opt))
+        timed!(args, "Rendering",
+            resvg_raqote::render_to_image(&tree, &args.usvg, args.fit_to, args.background))
     };
 
     match img {

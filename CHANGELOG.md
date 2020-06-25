@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+**Contains a lot of breaking changes**
+
 ### Changed
 - (usvg) The `fontdb` module moved to its own crate.
 - (usvg) `fontconfig` is no longer used for matching
@@ -16,7 +19,16 @@ This changelog also contains important changes in dependencies.
   Where `resvg.h` contains backend-independent functions
   and `resvg-*.h` contains backend-specific functions.
 
+### Removed
+- `Options` from all backends. `usvg::Options` is used instead now.
+- (c-api) `resvg_options::fit_to`, `resvg_options::draw_background` and `resvg_options::background`
+  since unused.
+- (c-api) `resvg_color`, `resvg_fit_to_type` and `resvg_fit_to` since unused.
+
 ## [0.10.0] - 2020-06-19
+
+**Contains a lot of breaking changes**
+
 ### Changed
 - The `resvg` crate has been split into four: resvg-cairo, resvg-qt, resvg-skia and resvg-raqote.<br/>
   So from now, instead of enabling a required backend via cargo features,

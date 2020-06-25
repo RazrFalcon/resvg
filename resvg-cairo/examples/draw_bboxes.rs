@@ -19,12 +19,12 @@ fn main() {
         1.0
     };
 
-    let mut opt = resvg_cairo::Options::default();
-    opt.usvg.path = Some(args[1].clone().into());
-    opt.usvg.keep_named_groups = true;
-    opt.fit_to = usvg::FitTo::Zoom(zoom);
+    let mut opt = usvg::Options::default();
+    opt.path = Some(args[1].clone().into());
+    opt.keep_named_groups = true;
+    let fit_to = usvg::FitTo::Zoom(zoom);
 
-    let rtree = usvg::Tree::from_file(&args[1], &opt.usvg).unwrap();
+    let rtree = usvg::Tree::from_file(&args[1], &opt).unwrap();
 
     let mut bboxes = Vec::new();
     for node in rtree.root().descendants() {
@@ -49,7 +49,7 @@ fn main() {
         }));
     }
 
-    let img = resvg_cairo::render_to_image(&rtree, &opt).unwrap();
+    let img = resvg_cairo::render_to_image(&rtree, &opt, fit_to, None).unwrap();
     let mut file = std::fs::File::create(&args[2]).unwrap();
     img.write_to_png(&mut file).unwrap();
 }

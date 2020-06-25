@@ -20,10 +20,10 @@ fn build_ui(application: &gtk::Application, file_path: &std::path::Path) {
     let window = gtk::ApplicationWindow::new(application);
     let drawing_area = Box::new(gtk::DrawingArea::new)();
 
-    let mut opt = resvg_cairo::Options::default();
-    opt.usvg.path = Some(file_path.into());
+    let mut opt = usvg::Options::default();
+    opt.path = Some(file_path.into());
 
-    let tree = usvg::Tree::from_file(file_path, &opt.usvg).unwrap();
+    let tree = usvg::Tree::from_file(file_path, &opt).unwrap();
 
     drawing_area.connect_draw(move |w, cr| {
         let s = usvg::ScreenSize::new(

@@ -3,8 +3,6 @@ use std::rc::Rc;
 use usvg::NodeExt;
 
 fn main() {
-    let opt = resvg_raqote::Options::default();
-
     let size = usvg::Size::new(200.0, 200.0).unwrap();
     let mut rtree = usvg::Tree::create(usvg::Svg {
         size,
@@ -52,6 +50,7 @@ fn main() {
 
     println!("{}", rtree.to_string(usvg::XmlOptions::default()));
 
-    let img = resvg_raqote::render_to_image(&rtree, &opt).unwrap();
+    let opt = usvg::Options::default();
+    let img = resvg_raqote::render_to_image(&rtree, &opt, usvg::FitTo::Original, None).unwrap();
     img.write_png("out.png").unwrap();
 }

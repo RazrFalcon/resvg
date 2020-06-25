@@ -5,12 +5,8 @@
 use log::warn;
 
 pub(crate) mod prelude {
-    pub(crate) use usvg::{
-        TransformFromBBox, FuzzyEq, FuzzyZero, NodeExt, IsDefault, FitTo,
-        Size, ScreenSize, Rect, ScreenRect,
-    };
+    pub(crate) use usvg::*;
     pub(crate) use crate::layers::Layers;
-    pub(crate) use crate::Options;
     pub(crate) use super::*;
 }
 
@@ -87,12 +83,22 @@ pub(crate) fn render_node_to_canvas(
     cr.set_matrix(curr_ts);
 }
 
-pub fn create_surface(
+pub(crate) fn create_root_surface(
     size: ScreenSize,
-    opt: &Options,
+    fit_to: usvg::FitTo,
+    background: Option<usvg::Color>,
 ) -> Option<(cairo::ImageSurface, ScreenSize)> {
-    let img_size = opt.fit_to.fit_to(size)?;
+    let img_size = fit_to.fit_to(size)?;
+
     let surface = create_subsurface(img_size)?;
+
+    // Fill background.
+    if let Some(c) = background {
+        let cr = cairo::Context::new(&surface);
+        cr.set_source_color(c, 1.0.into());
+        cr.paint();
+    }
+
     Some((surface, img_size))
 }
 
@@ -233,7 +239,7 @@ fn render_group_impl(
         if let Some(filter_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(&curr_ts);
-                let background = prepare_filter_background(node, filter, opt);
+                let background = prepare_filter_background(node, filter, opt, layers.image_size());
                 let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, opt, &sub_surface);
                 let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_surface);
                 crate::filter::apply(filter, bbox, &ts, opt, &node.tree(),
@@ -291,11 +297,12 @@ fn prepare_filter_background(
     parent: &usvg::Node,
     filter: &usvg::Filter,
     opt: &Options,
+    img_size: ScreenSize,
 ) -> Option<cairo::ImageSurface> {
     let start_node = parent.filter_background_start_node(filter)?;
 
     let tree = parent.tree();
-    let (surface, img_size) = create_surface(tree.svg_node().size.to_screen_size(), opt)?;
+    let surface = create_subsurface(img_size)?;
     let view_box = tree.svg_node().view_box;
 
     let cr = cairo::Context::new(&surface);

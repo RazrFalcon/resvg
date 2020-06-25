@@ -3,8 +3,6 @@ use std::rc::Rc;
 use usvg::NodeExt;
 
 fn main() {
-    let opt = resvg_cairo::Options::default();
-
     let size = usvg::Size::new(200.0, 200.0).unwrap();
     let mut rtree = usvg::Tree::create(usvg::Svg {
         size,
@@ -52,7 +50,8 @@ fn main() {
 
     println!("{}", rtree.to_string(usvg::XmlOptions::default()));
 
-    let img = resvg_cairo::render_to_image(&rtree, &opt).unwrap();
+    let opt = usvg::Options::default();
+    let img = resvg_cairo::render_to_image(&rtree, &opt, usvg::FitTo::Original, None).unwrap();
     let mut file = std::fs::File::create("out.png").unwrap();
     img.write_to_png(&mut file).unwrap();
 }

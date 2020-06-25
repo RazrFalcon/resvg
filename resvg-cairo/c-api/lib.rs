@@ -25,18 +25,12 @@ pub extern "C" fn resvg_cairo_render_to_canvas(
     let cr = unsafe { cairo::Context::from_raw_none(cr) };
     let size = usvg::ScreenSize::new(size.width, size.height).unwrap();
 
-    let raw_opt = unsafe {
+    let opt = unsafe {
         assert!(!opt.is_null());
         &*opt
     };
 
-    let opt = resvg_cairo::Options {
-        usvg: raw_opt.to_usvg(),
-        fit_to: raw_opt.convert_fit_to(),
-        background: raw_opt.convert_background(),
-    };
-
-    resvg_cairo::render_to_canvas(&tree.0, &opt, size, &cr);
+    resvg_cairo::render_to_canvas(&tree.0, &opt.to_usvg(), size, &cr);
 }
 
 #[no_mangle]
@@ -55,15 +49,9 @@ pub extern "C" fn resvg_cairo_render_to_canvas_by_id(
     let cr = unsafe { cairo::Context::from_raw_none(cr) };
     let size = usvg::ScreenSize::new(size.width, size.height).unwrap();
 
-    let raw_opt = unsafe {
+    let opt = unsafe {
         assert!(!opt.is_null());
         &*opt
-    };
-
-    let opt = resvg_cairo::Options {
-        usvg: raw_opt.to_usvg(),
-        fit_to: raw_opt.convert_fit_to(),
-        background: raw_opt.convert_background(),
     };
 
     let id = match cstr_to_str(id) {
@@ -83,7 +71,7 @@ pub extern "C" fn resvg_cairo_render_to_canvas_by_id(
                 aspect: usvg::AspectRatio::default(),
             };
 
-            resvg_cairo::render_node_to_canvas(&node, &opt, vbox, size, &cr);
+            resvg_cairo::render_node_to_canvas(&node, &opt.to_usvg(), vbox, size, &cr);
         } else {
             warn!("A node with '{}' ID doesn't have a valid bounding box.", id);
         }

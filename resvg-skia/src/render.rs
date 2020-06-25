@@ -5,13 +5,9 @@
 use log::warn;
 
 pub(crate) mod prelude {
-    pub(crate) use usvg::{
-        TransformFromBBox, FuzzyEq, FuzzyZero, NodeExt, IsDefault, FitTo,
-        Size, ScreenSize, Rect, ScreenRect,
-    };
+    pub(crate) use usvg::*;
     pub(crate) use crate::layers::Layers;
     pub(crate) use crate::skia;
-    pub(crate) use crate::Options;
     pub(crate) use super::*;
 }
 
@@ -71,17 +67,15 @@ pub(crate) fn render_node_to_canvas(
 
 pub(crate) fn create_root_image(
     size: ScreenSize,
-    opt: &Options,
+    fit_to: usvg::FitTo,
+    background: Option<usvg::Color>,
 ) -> Option<(skia::Surface, ScreenSize)> {
-    let img_size = opt.fit_to.fit_to(size)?;
+    let img_size = fit_to.fit_to(size)?;
 
     let mut img = create_subsurface(img_size)?;
 
-    // Fill background.
-    if let Some(c) = opt.background {
+    if let Some(c) = background {
         img.fill(c.red, c.green, c.blue, 255);
-    } else {
-        img.fill(0, 0, 0, 0);
     }
 
     Some((img, img_size))
@@ -206,7 +200,7 @@ fn render_group_impl(
         if let Some(filter_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(&curr_ts);
-                let background = prepare_filter_background(node, filter, opt);
+                let background = prepare_filter_background(node, filter, opt, layers.image_size());
                 let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, opt, &sub_surface);
                 let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, opt, &sub_surface);
                 crate::filter::apply(filter, bbox, &ts, opt, &node.tree(),
@@ -258,11 +252,12 @@ fn prepare_filter_background(
     parent: &usvg::Node,
     filter: &usvg::Filter,
     opt: &Options,
+    img_size: ScreenSize,
 ) -> Option<skia::Surface> {
     let start_node = parent.filter_background_start_node(filter)?;
 
     let tree = parent.tree();
-    let (mut img, img_size) = create_root_image(tree.svg_node().size.to_screen_size(), opt)?;
+    let mut img = create_subsurface(img_size)?;
     let view_box = tree.svg_node().view_box;
 
     // Render from the `start_node` until the `parent`. The `parent` itself is excluded.

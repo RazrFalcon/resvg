@@ -25,9 +25,6 @@ pub struct resvg_options {
     pub shape_rendering: resvg_shape_rendering,
     pub text_rendering: resvg_text_rendering,
     pub image_rendering: resvg_image_rendering,
-    pub fit_to: resvg_fit_to,
-    pub draw_background: bool,
-    pub background: resvg_color,
     pub keep_named_groups: bool,
 }
 
@@ -121,38 +118,6 @@ impl resvg_options {
             keep_named_groups: self.keep_named_groups,
         }
     }
-
-    pub fn convert_fit_to(&self) -> usvg::FitTo {
-        match self.fit_to.kind {
-            resvg_fit_to_type::RESVG_FIT_TO_ORIGINAL => {
-                usvg::FitTo::Original
-            }
-            resvg_fit_to_type::RESVG_FIT_TO_WIDTH => {
-                assert!(self.fit_to.value > 0.0);
-                usvg::FitTo::Width(self.fit_to.value as u32)
-            }
-            resvg_fit_to_type::RESVG_FIT_TO_HEIGHT => {
-                assert!(self.fit_to.value > 0.0);
-                usvg::FitTo::Height(self.fit_to.value as u32)
-            }
-            resvg_fit_to_type::RESVG_FIT_TO_ZOOM => {
-                assert!(self.fit_to.value > 0.0);
-                usvg::FitTo::Zoom(self.fit_to.value)
-            }
-        }
-    }
-
-    pub fn convert_background(&self) -> Option<usvg::Color> {
-        if self.draw_background {
-            Some(usvg::Color::new(
-                self.background.r,
-                self.background.g,
-                self.background.b,
-            ))
-        } else {
-            None
-        }
-    }
 }
 
 enum ErrorId {
@@ -163,13 +128,6 @@ enum ErrorId {
     MalformedGZip,
     InvalidSize,
     ParsingFailed,
-}
-
-#[repr(C)]
-pub struct resvg_color {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
 }
 
 #[repr(C)]
@@ -190,21 +148,6 @@ pub enum resvg_text_rendering {
 pub enum resvg_image_rendering {
     RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY,
     RESVG_IMAGE_RENDERING_OPTIMIZE_SPEED,
-}
-
-#[repr(C)]
-#[allow(dead_code)]
-pub enum resvg_fit_to_type {
-    RESVG_FIT_TO_ORIGINAL,
-    RESVG_FIT_TO_WIDTH,
-    RESVG_FIT_TO_HEIGHT,
-    RESVG_FIT_TO_ZOOM,
-}
-
-#[repr(C)]
-pub struct resvg_fit_to {
-    kind: resvg_fit_to_type,
-    value: f32,
 }
 
 #[repr(C)]
@@ -252,14 +195,6 @@ pub extern "C" fn resvg_init_options(opt: *mut resvg_options) {
         (*opt).shape_rendering = resvg_shape_rendering::RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION;
         (*opt).text_rendering = resvg_text_rendering::RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY;
         (*opt).image_rendering = resvg_image_rendering::RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY;
-        (*opt).fit_to = resvg_fit_to {
-            kind: resvg_fit_to_type::RESVG_FIT_TO_ORIGINAL,
-            value: 0.0,
-        };
-        (*opt).draw_background = false;
-        (*opt).background.r = 0;
-        (*opt).background.g = 0;
-        (*opt).background.b = 0;
         (*opt).keep_named_groups = false;
     }
 }

@@ -68,41 +68,15 @@ mod render;
 mod skia;
 
 
-/// Rendering options.
-pub struct Options {
-    /// `usvg` preprocessor options.
-    pub usvg: usvg::Options,
-
-    /// Fits the image using specified options.
-    ///
-    /// Does not affect rendering to canvas.
-    pub fit_to: usvg::FitTo,
-
-    /// An image background color.
-    ///
-    /// Sets an image background color. Does not affect rendering to canvas.
-    ///
-    /// `None` equals to transparent.
-    pub background: Option<usvg::Color>,
-}
-
-impl Default for Options {
-    fn default() -> Options {
-        Options {
-            usvg: usvg::Options::default(),
-            fit_to: usvg::FitTo::Original,
-            background: None,
-        }
-    }
-}
-
-
 /// Renders SVG to image.
 pub fn render_to_image(
     tree: &usvg::Tree,
-    opt: &Options,
+    opt: &usvg::Options,
+    fit_to: usvg::FitTo,
+    background: Option<usvg::Color>,
 ) -> Option<skia::Surface> {
-    let (mut img, img_size) = render::create_root_image(tree.svg_node().size.to_screen_size(), opt)?;
+    let (mut img, img_size)
+        = render::create_root_image(tree.svg_node().size.to_screen_size(), fit_to, background)?;
     render_to_canvas(tree, opt, img_size, &mut img);
     Some(img)
 }
@@ -110,7 +84,9 @@ pub fn render_to_image(
 /// Renders SVG node to image.
 pub fn render_node_to_image(
     node: &usvg::Node,
-    opt: &Options,
+    opt: &usvg::Options,
+    fit_to: usvg::FitTo,
+    background: Option<usvg::Color>,
 ) -> Option<skia::Surface> {
     let node_bbox = if let Some(bbox) = node.calculate_bbox() {
         bbox
@@ -124,7 +100,8 @@ pub fn render_node_to_image(
         aspect: usvg::AspectRatio::default(),
     };
 
-    let (mut img, img_size) = render::create_root_image(node_bbox.size().to_screen_size(), opt)?;
+    let (mut img, img_size)
+        = render::create_root_image(node_bbox.size().to_screen_size(), fit_to, background)?;
 
     render_node_to_canvas(node, opt, vbox, img_size, &mut img);
     Some(img)
@@ -137,7 +114,7 @@ pub fn render_node_to_image(
 /// Canvas must not have a transform.
 pub fn render_to_canvas(
     tree: &usvg::Tree,
-    opt: &Options,
+    opt: &usvg::Options,
     img_size: ScreenSize,
     canvas: &mut skia::Canvas,
 ) {
@@ -151,7 +128,7 @@ pub fn render_to_canvas(
 /// Canvas must not have a transform.
 pub fn render_node_to_canvas(
     node: &usvg::Node,
-    opt: &Options,
+    opt: &usvg::Options,
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
     canvas: &mut skia::Canvas,

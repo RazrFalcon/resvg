@@ -5,10 +5,10 @@ fn main() {
         return;
     }
 
-    let mut opt = resvg_raqote::Options::default();
-    opt.usvg.path = Some(args[1].clone().into());
+    let mut opt = usvg::Options::default();
+    opt.path = Some(args[1].clone().into());
 
-    let rtree = usvg::Tree::from_file(&args[1], &opt.usvg).unwrap();
-    let img = resvg_raqote::render_to_image(&rtree, &opt).unwrap();
+    let rtree = usvg::Tree::from_file(&args[1], &opt).unwrap();
+    let img = resvg_raqote::render_to_image(&rtree, &opt, usvg::FitTo::Original, None).unwrap();
     img.write_png(&args[2]).unwrap();
 }

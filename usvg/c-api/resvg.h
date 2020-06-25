@@ -59,35 +59,6 @@ typedef enum resvg_error {
 } resvg_error;
 
 /**
- * @brief An RGB color representation.
- */
-typedef struct resvg_color {
-    uint8_t r; /**< Red component. */
-    uint8_t g; /**< Green component. */
-    uint8_t b; /**< Blue component. */
-} resvg_color;
-
-/**
- * @brief A "fit to" type.
- *
- * All types produce proportional scaling.
- */
-typedef enum resvg_fit_to_type {
-    RESVG_FIT_TO_ORIGINAL, /**< Use an original image size. */
-    RESVG_FIT_TO_WIDTH, /**< Fit an image to a specified width. */
-    RESVG_FIT_TO_HEIGHT, /**< Fit an image to a specified height. */
-    RESVG_FIT_TO_ZOOM, /**< Zoom an image using scaling factor */
-} resvg_fit_to_type;
-
-/**
- * @brief A "fit to" property.
- */
-typedef struct resvg_fit_to {
-    resvg_fit_to_type type; /**< Fit type. */
-    float value; /**< Fit to value. Must be > 0. */
-} resvg_fit_to;
-
-/**
  * @brief A shape rendering method.
  */
 typedef enum resvg_shape_rendering {
@@ -180,22 +151,6 @@ typedef struct resvg_options {
      * Default: \b RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY.
      */
     resvg_image_rendering image_rendering;
-
-    /**
-     * Fits the image using specified options.
-     *
-     * Default: \b RESVG_FIT_TO_ORIGINAL.
-     */
-    resvg_fit_to fit_to;
-
-    /** Draw background.
-     *
-     * Default: false.
-     */
-    bool draw_background;
-
-    /** Background color. */
-    resvg_color background;
 
     /**
      * Keep named groups. If set to \b true, all non-empty

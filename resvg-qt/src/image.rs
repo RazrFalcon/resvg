@@ -31,7 +31,7 @@ pub fn draw_raster(
 ) {
     let img = match data {
         usvg::ImageData::Path(ref path) => {
-            let path = opt.usvg.get_abs_path(path);
+            let path = opt.get_abs_path(path);
             try_opt_warn!(
                 qt::Image::from_file(&path),
                 "Failed to load an external image: {:?}.", path
@@ -70,13 +70,7 @@ pub fn draw_svg(
     opt: &Options,
     p: &mut qt::Painter,
 ) {
-    let (tree, sub_opt) = try_opt!(data.load_svg(&opt.usvg));
-
-    let sub_opt = Options {
-        usvg: sub_opt,
-        fit_to: FitTo::Original,
-        background: None,
-    };
+    let (tree, sub_opt) = try_opt!(data.load_svg(opt));
 
     let img_size = tree.svg_node().size.to_screen_size();
     let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&view_box, img_size);

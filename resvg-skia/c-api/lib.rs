@@ -25,18 +25,12 @@ pub extern "C" fn resvg_skia_render_to_canvas(
     let mut canvas = unsafe { resvg_skia::canvas_from_ptr(canvas) };
     let img_size = usvg::ScreenSize::new(img_size.width, img_size.height).unwrap();
 
-    let raw_opt = unsafe {
+    let opt = unsafe {
         assert!(!opt.is_null());
         &*opt
     };
 
-    let opt = resvg_skia::Options {
-        usvg: raw_opt.to_usvg(),
-        fit_to: raw_opt.convert_fit_to(),
-        background: raw_opt.convert_background(),
-    };
-
-    resvg_skia::render_to_canvas(&tree.0, &opt, img_size, &mut canvas);
+    resvg_skia::render_to_canvas(&tree.0, &opt.to_usvg(), img_size, &mut canvas);
 }
 
 #[no_mangle]
@@ -65,15 +59,9 @@ pub extern "C" fn resvg_skia_render_to_canvas_by_id(
     let mut canvas = unsafe { resvg_skia::canvas_from_ptr(canvas) };
     let size = usvg::ScreenSize::new(size.width, size.height).unwrap();
 
-    let raw_opt = unsafe {
+    let opt = unsafe {
         assert!(!opt.is_null());
         &*opt
-    };
-
-    let opt = resvg_skia::Options {
-        usvg: raw_opt.to_usvg(),
-        fit_to: raw_opt.convert_fit_to(),
-        background: raw_opt.convert_background(),
     };
 
     if let Some(node) = tree.0.node_by_id(id) {
@@ -83,7 +71,7 @@ pub extern "C" fn resvg_skia_render_to_canvas_by_id(
                 aspect: usvg::AspectRatio::default(),
             };
 
-            resvg_skia::render_node_to_canvas(&node, &opt, vbox, size, &mut canvas);
+            resvg_skia::render_node_to_canvas(&node, &opt.to_usvg(), vbox, size, &mut canvas);
         } else {
             warn!("A node with '{}' ID doesn't have a valid bounding box.", id);
         }
