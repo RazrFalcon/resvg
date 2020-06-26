@@ -26,6 +26,7 @@ signals:
 private:
     const float m_dpiRatio;
     mutable QMutex m_mutex;
+    ResvgOptions m_opt;
     ResvgRenderer m_renderer;
 };
 

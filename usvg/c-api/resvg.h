@@ -262,7 +262,7 @@ void resvg_options_load_system_fonts(resvg_options *opt);
 /**
  * @brief Destroys the #resvg_options.
  */
-void resvg_options_destroy(resvg_options *db);
+void resvg_options_destroy(resvg_options *opt);
 
 /**
  * @brief Creates #resvg_render_tree from file.

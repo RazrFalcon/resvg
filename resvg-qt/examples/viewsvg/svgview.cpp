@@ -12,6 +12,7 @@ SvgViewWorker::SvgViewWorker(QObject *parent)
     : QObject(parent)
     , m_dpiRatio(qApp->screens().first()->devicePixelRatio())
 {
+    m_opt.loadSystemFonts();
 }
 
 QRect SvgViewWorker::viewBox() const
@@ -24,7 +25,7 @@ QString SvgViewWorker::loadData(const QByteArray &data)
 {
     QMutexLocker lock(&m_mutex);
 
-    m_renderer.load(data);
+    m_renderer.load(data, m_opt);
     if (!m_renderer.isValid()) {
         return m_renderer.errorString();
     }
@@ -36,7 +37,7 @@ QString SvgViewWorker::loadFile(const QString &path)
 {
     QMutexLocker lock(&m_mutex);
 
-    m_renderer.load(path);
+    m_renderer.load(path, m_opt);
     if (!m_renderer.isValid()) {
         return m_renderer.errorString();
     }
