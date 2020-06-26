@@ -113,11 +113,7 @@ public:
         // because it will return a dummy one on Windows.
         // See https://github.com/RazrFalcon/resvg/issues/159
 
-        auto languages = QLocale().bcp47Name().toUtf8();
-        languages.append('\0');
-        resvg_options_set_languages(d, languages.constData());
-
-//        resvg_options_set_dpi(d, 96 * scaleFactor);
+        setLanguages({ QLocale().bcp47Name() });
     }
 
     /**
