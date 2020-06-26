@@ -31,17 +31,17 @@ close_window(void)
 static void
 parse_doc(const char *path)
 {
-    resvg_options opt;
-    resvg_init_options(&opt);
-    opt.path = path;
-    opt.font_family = "Times New Roman";
-    opt.languages = "en";
+    resvg_options *opt = resvg_options_create();
+    resvg_options_set_file_path(opt, path);
+    resvg_options_load_system_fonts(opt);
 
-    int err = resvg_parse_tree_from_file(path, &opt, &tree);
+    int err = resvg_parse_tree_from_file(path, opt, &tree);
     if (err != RESVG_OK) {
         printf("Error id: %i\n", err);
         abort();
     }
+
+    resvg_options_destroy(opt);
 }
 
 static void

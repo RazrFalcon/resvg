@@ -14,6 +14,10 @@ members = ["c-api"]
 [badges]
 travis-ci = { repository = "RazrFalcon/resvg" }
 
+[[bin]]
+name = "resvg-qt"
+required-features = ["text"]
+
 [dependencies]
 log = "0.4"
 pico-args = "0.3"

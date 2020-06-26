@@ -409,13 +409,12 @@ fn resolve_font(
         style,
     };
 
-    let db = state.db.borrow();
     let id = try_opt_warn_or!(
-        db.query(&query), None,
+        state.opt.fontdb.query(&query), None,
         "No match for '{}' font-family.", font_family
     );
 
-    db.load_font(id)
+    state.opt.fontdb.load_font(id)
 }
 
 fn conv_font_stretch(node: svgtree::Node) -> fontdb::Stretch {

@@ -6,119 +6,11 @@
 
 use std::ffi::CStr;
 use std::os::raw::c_char;
-use std::path;
-use std::ptr;
 use std::slice;
 
 use log::warn;
-use usvg::NodeExt;
+use usvg::{NodeExt, SystemFontDB};
 
-const DEFAULT_FONT_FAMILY: &str = "Times New Roman";
-
-#[repr(C)]
-pub struct resvg_options {
-    pub path: *const c_char,
-    pub dpi: f64,
-    pub font_family: *const c_char,
-    pub font_size: f64,
-    pub languages: *const c_char,
-    pub shape_rendering: resvg_shape_rendering,
-    pub text_rendering: resvg_text_rendering,
-    pub image_rendering: resvg_image_rendering,
-    pub keep_named_groups: bool,
-}
-
-impl resvg_options {
-    pub fn to_usvg(&self) -> usvg::Options {
-        let mut path: Option<path::PathBuf> = None;
-        if !self.path.is_null() {
-            if let Some(p) = cstr_to_str(self.path) {
-                if !p.is_empty() {
-                    path = Some(p.into());
-                }
-            }
-        };
-
-        let shape_rendering = match self.shape_rendering {
-            resvg_shape_rendering::RESVG_SHAPE_RENDERING_OPTIMIZE_SPEED => {
-                usvg::ShapeRendering::OptimizeSpeed
-            }
-            resvg_shape_rendering::RESVG_SHAPE_RENDERING_CRISP_EDGES => {
-                usvg::ShapeRendering::CrispEdges
-            }
-            resvg_shape_rendering::RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION => {
-                usvg::ShapeRendering::GeometricPrecision
-            }
-        };
-
-        let text_rendering = match self.text_rendering {
-            resvg_text_rendering::RESVG_TEXT_RENDERING_OPTIMIZE_SPEED => {
-                usvg::TextRendering::OptimizeSpeed
-            }
-            resvg_text_rendering::RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY => {
-                usvg::TextRendering::OptimizeLegibility
-            }
-            resvg_text_rendering::RESVG_TEXT_RENDERING_GEOMETRIC_PRECISION => {
-                usvg::TextRendering::GeometricPrecision
-            }
-        };
-
-        let image_rendering = match self.image_rendering {
-            resvg_image_rendering::RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY => {
-                usvg::ImageRendering::OptimizeQuality
-            }
-            resvg_image_rendering::RESVG_IMAGE_RENDERING_OPTIMIZE_SPEED => {
-                usvg::ImageRendering::OptimizeSpeed
-            }
-        };
-
-        let ff = DEFAULT_FONT_FAMILY;
-        let font_family = match cstr_to_str(self.font_family) {
-            Some(v) => {
-                if v.is_empty() {
-                    warn!("Provided 'font_family' option is empty. Fallback to '{}'.", ff);
-                    ff
-                } else {
-                    v
-                }
-            }
-            None => {
-                warn!("Provided 'font_family' option is no an UTF-8 string. Fallback to '{}'.", ff);
-                ff
-            }
-        };
-
-        let languages_str = match cstr_to_str(self.languages) {
-            Some(v) => v,
-            None => {
-                warn!("Provided 'languages' option is no an UTF-8 string. Fallback to 'en'.");
-                "en"
-            }
-        };
-
-        let mut languages = Vec::new();
-        for lang in languages_str.split(',') {
-            languages.push(lang.trim().to_string());
-        }
-
-        if languages.is_empty() {
-            warn!("Provided 'languages' option is empty. Fallback to 'en'.");
-            languages = vec!["en".to_string()]
-        }
-
-        usvg::Options {
-            path,
-            dpi: self.dpi,
-            font_family: font_family.to_string(),
-            font_size: self.font_size,
-            languages,
-            shape_rendering,
-            text_rendering,
-            image_rendering,
-            keep_named_groups: self.keep_named_groups,
-        }
-    }
-}
 
 enum ErrorId {
     Ok = 0,
@@ -128,29 +20,6 @@ enum ErrorId {
     MalformedGZip,
     InvalidSize,
     ParsingFailed,
-}
-
-#[repr(C)]
-#[allow(dead_code)]
-pub enum resvg_shape_rendering {
-    RESVG_SHAPE_RENDERING_OPTIMIZE_SPEED,
-    RESVG_SHAPE_RENDERING_CRISP_EDGES,
-    RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION,
-}
-
-#[repr(C)]
-#[allow(dead_code)]
-pub enum resvg_text_rendering {
-    RESVG_TEXT_RENDERING_OPTIMIZE_SPEED,
-    RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY,
-    RESVG_TEXT_RENDERING_GEOMETRIC_PRECISION,
-}
-
-#[repr(C)]
-#[allow(dead_code)]
-pub enum resvg_image_rendering {
-    RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY,
-    RESVG_IMAGE_RENDERING_OPTIMIZE_SPEED,
 }
 
 #[repr(C)]
@@ -178,6 +47,9 @@ pub struct resvg_transform {
 }
 
 #[repr(C)]
+pub struct resvg_options(usvg::Options);
+
+#[repr(C)]
 pub struct resvg_render_tree(pub usvg::Tree);
 
 #[no_mangle]
@@ -188,18 +60,160 @@ pub extern "C" fn resvg_init_log() {
 }
 
 #[no_mangle]
-pub extern "C" fn resvg_init_options(opt: *mut resvg_options) {
+pub extern "C" fn resvg_options_create() -> *mut resvg_options {
+    Box::into_raw(Box::new(resvg_options(usvg::Options::default())))
+}
+
+#[inline]
+fn cast_opt(opt: *mut resvg_options) -> &'static mut usvg::Options {
     unsafe {
-        (*opt).path = ptr::null();
-        (*opt).dpi = 96.0;
-        (*opt).font_family = ptr::null();
-        (*opt).font_size = 12.0;
-        (*opt).languages = ptr::null();
-        (*opt).shape_rendering = resvg_shape_rendering::RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION;
-        (*opt).text_rendering = resvg_text_rendering::RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY;
-        (*opt).image_rendering = resvg_image_rendering::RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY;
-        (*opt).keep_named_groups = false;
+        assert!(!opt.is_null());
+        &mut (*opt).0
     }
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_set_file_path(opt: *mut resvg_options, path: *const c_char) {
+    if path.is_null() {
+        cast_opt(opt).path = None;
+    } else {
+        let file_path = match cstr_to_str(path) {
+            Some(v) => v,
+            None => return,
+        };
+
+        cast_opt(opt).path = Some(file_path.into());
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_set_dpi(opt: *mut resvg_options, dpi: f64) {
+    cast_opt(opt).dpi = dpi;
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_set_font_family(opt: *mut resvg_options, family: *const c_char) {
+    let family = match cstr_to_str(family) {
+        Some(v) => v,
+        None => return,
+    };
+
+    cast_opt(opt).font_family = family.to_string();
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_set_font_size(opt: *mut resvg_options, font_size: f64) {
+    cast_opt(opt).font_size = font_size;
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_set_languages(opt: *mut resvg_options, languages: *const c_char) {
+    if languages.is_null() {
+        cast_opt(opt).languages = Vec::new();
+        return;
+    }
+
+    let languages_str = match cstr_to_str(languages) {
+        Some(v) => v,
+        None => return,
+    };
+
+    let mut languages = Vec::new();
+    for lang in languages_str.split(',') {
+        languages.push(lang.trim().to_string());
+    }
+
+    cast_opt(opt).languages = languages;
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_set_shape_rendering_mode(opt: *mut resvg_options, mode: i32) {
+    cast_opt(opt).shape_rendering = match mode {
+        0 => usvg::ShapeRendering::OptimizeSpeed,
+        1 => usvg::ShapeRendering::CrispEdges,
+        2 => usvg::ShapeRendering::GeometricPrecision,
+        _ => return,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_set_text_rendering_mode(opt: *mut resvg_options, mode: i32) {
+    cast_opt(opt).text_rendering = match mode {
+        0 => usvg::TextRendering::OptimizeSpeed,
+        1 => usvg::TextRendering::OptimizeLegibility,
+        2 => usvg::TextRendering::GeometricPrecision,
+        _ => return,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_set_image_rendering_mode(opt: *mut resvg_options, mode: i32) {
+    cast_opt(opt).image_rendering = match mode {
+        0 => usvg::ImageRendering::OptimizeQuality,
+        1 => usvg::ImageRendering::OptimizeSpeed,
+        _ => return,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_set_keep_named_groups(opt: *mut resvg_options, keep: bool) {
+    cast_opt(opt).keep_named_groups = keep;
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_load_system_fonts(opt: *mut resvg_options) {
+    let opt = unsafe {
+        assert!(!opt.is_null());
+        &mut *opt
+    };
+
+    opt.0.fontdb.load_system_fonts();
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_load_font_file(
+    opt: *mut resvg_options,
+    file_path: *const c_char,
+) -> i32 {
+    let file_path = match cstr_to_str(file_path) {
+        Some(v) => v,
+        None => return ErrorId::NotAnUtf8Str as i32,
+    };
+
+    let opt = unsafe {
+        assert!(!opt.is_null());
+        &mut *opt
+    };
+
+    if opt.0.fontdb.load_font_file(file_path).is_ok() {
+        ErrorId::Ok as i32
+    } else {
+        ErrorId::FileOpenFailed as i32
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_load_font_data(
+    opt: *mut resvg_options,
+    data: *const c_char,
+    len: usize,
+) {
+    let data = unsafe { slice::from_raw_parts(data as *const u8, len) };
+
+    let opt = unsafe {
+        assert!(!opt.is_null());
+        &mut *opt
+    };
+
+    opt.0.fontdb.load_font_data(data.to_vec())
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_destroy(db: *mut resvg_options) {
+    unsafe {
+        assert!(!db.is_null());
+        Box::from_raw(db)
+    };
 }
 
 #[no_mangle]
@@ -218,7 +232,7 @@ pub extern "C" fn resvg_parse_tree_from_file(
         &*opt
     };
 
-    let tree = match usvg::Tree::from_file(file_path, &raw_opt.to_usvg()) {
+    let tree = match usvg::Tree::from_file(file_path, &raw_opt.0) {
         Ok(tree) => tree,
         Err(e) => return convert_error(e) as i32,
     };
@@ -243,7 +257,7 @@ pub extern "C" fn resvg_parse_tree_from_data(
         &*opt
     };
 
-    let tree = match usvg::Tree::from_data(data, &raw_opt.to_usvg()) {
+    let tree = match usvg::Tree::from_data(data, &raw_opt.0) {
         Ok(tree) => tree,
         Err(e) => return convert_error(e) as i32,
     };
@@ -319,10 +333,12 @@ pub extern "C" fn resvg_get_image_bbox(
 
     if let Some(r) = tree.0.root().calculate_bbox() {
         unsafe {
-            (*bbox).x = r.x();
-            (*bbox).y = r.y();
-            (*bbox).width = r.width();
-            (*bbox).height = r.height();
+            *bbox = resvg_rect {
+                x: r.x(),
+                y: r.y(),
+                width: r.width(),
+                height: r.height(),
+            }
         }
 
         true
@@ -359,10 +375,12 @@ pub extern "C" fn resvg_get_node_bbox(
         Some(node) => {
             if let Some(r) = node.calculate_bbox() {
                 unsafe {
-                    (*bbox).x = r.x();
-                    (*bbox).y = r.y();
-                    (*bbox).width = r.width();
-                    (*bbox).height = r.height();
+                    *bbox = resvg_rect {
+                        x: r.x(),
+                        y: r.y(),
+                        width: r.width(),
+                        height: r.height(),
+                    }
                 }
 
                 true
@@ -422,12 +440,14 @@ pub extern "C" fn resvg_get_node_transform(
         abs_ts.append(&node.transform());
 
         unsafe {
-            (*ts).a = abs_ts.a;
-            (*ts).b = abs_ts.b;
-            (*ts).c = abs_ts.c;
-            (*ts).d = abs_ts.d;
-            (*ts).e = abs_ts.e;
-            (*ts).f = abs_ts.f;
+            *ts = resvg_transform {
+                a: abs_ts.a,
+                b: abs_ts.b,
+                c: abs_ts.c,
+                d: abs_ts.d,
+                e: abs_ts.e,
+                f: abs_ts.f,
+            }
         }
 
         return true;

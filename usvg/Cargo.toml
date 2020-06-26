@@ -15,6 +15,10 @@ exclude = ["testing-tools/**"]
 [badges]
 travis-ci = { repository = "RazrFalcon/resvg" }
 
+[[bin]]
+name = "usvg"
+required-features = ["text"]
+
 [dependencies]
 base64 = "0.12"
 data-url = "0.1"
@@ -32,7 +36,7 @@ siphasher = "0.2"
 svgtypes = "0.5"
 
 # for text to path
-fontdb = { git = "https://github.com/RazrFalcon/fontdb", rev = "ec9dbbb", optional = true }
+fontdb = { git = "https://github.com/RazrFalcon/fontdb", rev = "818bfe3", optional = true }
 harfbuzz_rs = { version = "1.0.1", optional = true }
 memmap2 = { version = "0.1", optional = true }
 ttf-parser = { version = "0.6", optional = true }

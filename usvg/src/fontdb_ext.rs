@@ -5,19 +5,12 @@ use crate::tree;
 
 
 pub trait DatabaseExt {
-    fn populate(&mut self);
     fn load_font(&self, id: ID) -> Option<Font>;
     fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tree::PathData>;
     fn has_char(&self, id: ID, c: char) -> bool;
 }
 
 impl DatabaseExt for Database {
-    fn populate(&mut self) {
-        if self.is_empty() {
-            load_system_fonts(self);
-        }
-    }
-
     #[inline(never)]
     fn load_font(&self, id: ID) -> Option<Font> {
         self.with_face_data(id, |data, face_index| -> Option<Font> {
@@ -219,7 +212,7 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
 
 
 #[cfg(all(unix, not(target_os = "macos")))]
-fn load_system_fonts(db: &mut Database) {
+pub fn load_system_fonts(db: &mut Database) {
     db.load_fonts_dir("/usr/share/fonts/");
     db.load_fonts_dir("/usr/local/share/fonts/");
 
@@ -236,7 +229,7 @@ fn load_system_fonts(db: &mut Database) {
 }
 
 #[cfg(target_os = "windows")]
-fn load_system_fonts(db: &mut Database) {
+pub fn load_system_fonts(db: &mut Database) {
     db.load_fonts_dir("C:\\Windows\\Fonts\\");
 
     db.set_serif_family("Times New Roman");
@@ -247,7 +240,7 @@ fn load_system_fonts(db: &mut Database) {
 }
 
 #[cfg(target_os = "macos")]
-fn load_system_fonts(db: &mut Database) {
+pub fn load_system_fonts(db: &mut Database) {
     db.load_fonts_dir("/Library/Fonts");
     db.load_fonts_dir("/System/Library/Fonts");
 

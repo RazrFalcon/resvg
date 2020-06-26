@@ -5,7 +5,7 @@
 use std::io::Write;
 use std::path;
 
-use usvg::NodeExt;
+use usvg::{NodeExt, SystemFontDB};
 
 macro_rules! timed {
     ($args:expr, $name:expr, $task:expr) => {
@@ -166,6 +166,19 @@ OPTIONS:
                                 [default: 'Times New Roman']
         --font-size SIZE        Sets the default font size
                                 [default: 12] [possible values: 1..192]
+        --use-font-file PATH    Load a specified font file into the fonts database.
+                                Will be used during text to path conversion.
+                                This option can be set multiple times.
+        --use-fonts-dir PATH    Loads all fonts from the specified directory
+                                into the fonts database.
+                                Will be used during text to path conversion.
+                                This option can be set multiple times.
+        --skip-system-fonts     Disables system fonts loading.
+                                You should add some fonts manually using
+                                --use-font and/or --use-fonts-dir.
+                                Otherwise, text elements will not be processes.
+        --list-fonts            Lists successfully loaded font faces.
+                                Useful for debugging.
         --languages LANG        Sets a comma-separated list of languages that
                                 will be used during the 'systemLanguage'
                                 attribute resolving.
@@ -207,6 +220,10 @@ struct CliArgs {
     background: Option<usvg::Color>,
     font_family: String,
     font_size: u32,
+    font_files: Vec<path::PathBuf>,
+    font_dirs: Vec<path::PathBuf>,
+    skip_system_fonts: bool,
+    list_fonts: bool,
     languages: Vec<String>,
     shape_rendering: usvg::ShapeRendering,
     text_rendering: usvg::TextRendering,
@@ -232,6 +249,10 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
         font_family:        input.opt_value_from_str("--font-family")?
                                  .unwrap_or_else(|| "Times New Roman".to_string()),
         font_size:          input.opt_value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
+        font_files:         input.values_from_str("--use-font-file")?,
+        font_dirs:          input.values_from_str("--use-fonts-dir")?,
+        skip_system_fonts:  input.contains("--skip-system-fonts"),
+        list_fonts:         input.contains("--list-fonts"),
         languages:          input.opt_value_from_fn("--languages", parse_languages)?
                                  .unwrap_or(vec!["en".to_string()]), // TODO: use system language
         shape_rendering:    input.opt_value_from_str("--shape-rendering")?.unwrap_or_default(),
@@ -339,8 +360,8 @@ fn parse_args() -> Result<Args, String> {
         None
     };
 
-    let dump = args.dump_svg.map(|v| v.into());
-    let export_id = args.export_id.map(|v| v.to_string());
+    let dump = args.dump_svg.as_ref().map(|v| v.into());
+    let export_id = args.export_id.as_ref().map(|v| v.to_string());
 
     // We don't have to keep named groups when we don't need them
     // because it will slow down rendering.
@@ -355,7 +376,9 @@ fn parse_args() -> Result<Args, String> {
         fit_to = usvg::FitTo::Zoom(z);
     }
 
-   let usvg = usvg::Options {
+    let fontdb = timed!(args, "FontDB init", load_fonts(&args));
+
+    let usvg = usvg::Options {
         path: Some(in_svg.clone()),
         dpi: args.dpi as f64,
         font_family: args.font_family.clone(),
@@ -365,6 +388,7 @@ fn parse_args() -> Result<Args, String> {
         text_rendering: args.text_rendering,
         image_rendering: args.image_rendering,
         keep_named_groups,
+        fontdb,
     };
 
     Ok(Args {
@@ -379,6 +403,37 @@ fn parse_args() -> Result<Args, String> {
         fit_to,
         background: args.background,
     })
+}
+
+fn load_fonts(args: &CliArgs) -> usvg::fontdb::Database {
+    let mut fontdb = usvg::fontdb::Database::new();
+    if !args.skip_system_fonts {
+        fontdb.load_system_fonts();
+    }
+
+    for path in &args.font_files {
+        if let Err(e) = fontdb.load_font_file(path) {
+            log::warn!("Failed to load '{}' cause {}.", path.display(), e);
+        }
+    }
+
+    for path in &args.font_dirs {
+        fontdb.load_fonts_dir(path);
+    }
+
+    if args.list_fonts {
+        for face in fontdb.faces() {
+            if let usvg::fontdb::Source::File(ref path) = &*face.source {
+                println!(
+                    "{}: '{}', {}, {:?}, {:?}, {:?}",
+                    path.display(), face.family, face.index,
+                    face.style, face.weight.0, face.stretch
+                );
+            }
+        }
+    }
+
+    fontdb
 }
 
 

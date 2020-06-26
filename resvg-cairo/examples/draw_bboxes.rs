@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use usvg::NodeExt;
+use usvg::{NodeExt, SystemFontDB};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -22,6 +22,7 @@ fn main() {
     let mut opt = usvg::Options::default();
     opt.path = Some(args[1].clone().into());
     opt.keep_named_groups = true;
+    opt.fontdb.load_system_fonts();
     let fit_to = usvg::FitTo::Zoom(zoom);
 
     let rtree = usvg::Tree::from_file(&args[1], &opt).unwrap();

@@ -14,6 +14,10 @@ members = ["c-api"]
 [badges]
 travis-ci = { repository = "RazrFalcon/resvg" }
 
+[[bin]]
+name = "resvg-cairo"
+required-features = ["text"]
+
 [dependencies]
 cairo-rs = { version = "0.8", default-features = false, features = ["png"] }
 jpeg-decoder = { version = "0.1", default-features = false }

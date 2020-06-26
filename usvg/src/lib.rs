@@ -184,6 +184,8 @@ mod short {
     pub use svgtypes::LengthUnit as Unit;
 }
 
+#[cfg(feature = "text")] pub use fontdb;
+
 pub use xmlwriter::Options as XmlOptions;
 pub use xmlwriter::Indent as XmlIndent;
 
@@ -231,5 +233,21 @@ impl TransformFromBBox for tree::Transform {
     #[inline]
     fn from_bbox(bbox: Rect) -> Self {
         Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
+    }
+}
+
+
+/// An extension trait for `fontdb::Database`.
+#[cfg(feature = "text")]
+pub trait SystemFontDB {
+    /// Loads system fonts into the fonts database.
+    fn load_system_fonts(&mut self);
+}
+
+#[cfg(feature = "text")]
+impl SystemFontDB for fontdb::Database {
+    #[inline]
+    fn load_system_fonts(&mut self) {
+        fontdb_ext::load_system_fonts(self);
     }
 }

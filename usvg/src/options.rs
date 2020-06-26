@@ -52,45 +52,74 @@ pub struct Options {
     /// SVG image path.
     ///
     /// Used to resolve relative image paths.
+    ///
+    /// Default: `None`
     pub path: Option<PathBuf>,
 
     /// Target DPI.
     ///
     /// Impact units conversion.
+    ///
+    /// Default: 96.0
     pub dpi: f64,
 
     /// A default font family.
+    ///
+    /// Will be used when no `font-family` attribute is set in the SVG.
+    ///
+    /// Default: Times New Roman
     pub font_family: String,
 
     /// A default font size.
+    ///
+    /// Will be used when no `font-size` attribute is set in the SVG.
+    ///
+    /// Default: 12
     pub font_size: f64,
 
-    /// A list of languages that will be used to resolve the `systemLanguage`
-    /// conditional attribute.
+    /// A list of languages.
+    ///
+    /// Will be used to resolve a `systemLanguage` conditional attribute.
     ///
     /// Format: en, en-US.
+    ///
+    /// Default: [en]
     pub languages: Vec<String>,
 
     /// Specifies the default shape rendering method.
     ///
     /// Will be used when an SVG element's `shape-rendering` property is set to `auto`.
+    ///
+    /// Default: GeometricPrecision
     pub shape_rendering: ShapeRendering,
 
     /// Specifies the default text rendering method.
     ///
     /// Will be used when an SVG element's `text-rendering` property is set to `auto`.
+    ///
+    /// Default: OptimizeLegibility
     pub text_rendering: TextRendering,
 
     /// Specifies the default image rendering method.
     ///
     /// Will be used when an SVG element's `image-rendering` property is set to `auto`.
+    ///
+    /// Default: OptimizeQuality
     pub image_rendering: ImageRendering,
 
     /// Keep named groups.
     ///
     /// If set to `true`, all non-empty groups with `id` attribute will not
     /// be removed.
+    ///
+    /// Default: false
     pub keep_named_groups: bool,
+
+    /// When empty, `text` elements will be skipped.
+    ///
+    /// Default: empty
+    #[cfg(feature = "text")]
+    pub fontdb: fontdb::Database,
 }
 
 impl Options {
@@ -110,7 +139,7 @@ impl Default for Options {
         Options {
             path: None,
             dpi: 96.0,
-            // Default font is user-agent dependent so we can use whatever we like.
+            // Default font is user-agent dependent so we can use whichever we like.
             font_family: "Times New Roman".to_owned(),
             font_size: 12.0,
             languages: vec!["en".to_string()],
@@ -118,6 +147,8 @@ impl Default for Options {
             text_rendering: TextRendering::default(),
             image_rendering: ImageRendering::default(),
             keep_named_groups: false,
+            #[cfg(feature = "text")]
+            fontdb: fontdb::Database::new(),
         }
     }
 }

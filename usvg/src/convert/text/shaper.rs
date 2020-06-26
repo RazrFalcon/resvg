@@ -192,8 +192,8 @@ pub fn outline_chunk(
     let mut clusters = Vec::new();
     for (range, byte_idx) in GlyphClusters::new(&glyphs) {
         if let Some(span) = chunk.span_at(byte_idx) {
-            let db = state.db.borrow();
-            clusters.push(outline_cluster(&glyphs[range], &chunk.text, span.font_size, &db));
+            let db = &state.opt.fontdb;
+            clusters.push(outline_cluster(&glyphs[range], &chunk.text, span.font_size, db));
         }
     }
 
@@ -280,9 +280,7 @@ fn shape_text_with_font(
     font: fontdb_ext::Font,
     state: &State,
 ) -> Option<Vec<Glyph>> {
-    let db = state.db.borrow();
-
-    db.with_face_data(font.id, |font_data, face_index| -> Option<Vec<Glyph>> {
+    state.opt.fontdb.with_face_data(font.id, |font_data, face_index| -> Option<Vec<Glyph>> {
         let hb_face = harfbuzz::Face::from_bytes(font_data, face_index);
         let hb_font = harfbuzz::Font::new(hb_face);
 
@@ -407,17 +405,15 @@ fn find_font_for_char(
 ) -> Option<fontdb_ext::Font> {
     let base_font_id = exclude_fonts[0];
 
-    let db = state.db.borrow();
-
     // Iterate over fonts and check if any of them support the specified char.
-    for face in db.faces() {
+    for face in state.opt.fontdb.faces() {
         // Ignore fonts, that were used for shaping already.
         if exclude_fonts.contains(&face.id) {
             continue;
         }
 
         // Check that the new face has the same style.
-        let base_face = db.face(base_font_id)?;
+        let base_face = state.opt.fontdb.face(base_font_id)?;
         if  base_face.style != face.style &&
             base_face.weight != face.weight &&
             base_face.stretch != face.stretch
@@ -425,12 +421,12 @@ fn find_font_for_char(
             continue;
         }
 
-        if !db.has_char(face.id, c) {
+        if !state.opt.fontdb.has_char(face.id, c) {
             continue;
         }
 
         warn!("Fallback from {} to {}.", base_face.family, face.family);
-        return db.load_font(face.id);
+        return state.opt.fontdb.load_font(face.id);
     }
 
     None

@@ -2,11 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#[cfg(feature = "text")]
-use std::cell::RefCell;
-#[cfg(feature = "text")]
-use std::rc::Rc;
-
 use svgtypes::Length;
 
 use crate::{svgtree, tree, tree::prelude::*, Error};
@@ -40,8 +35,6 @@ pub struct State<'a> {
     fe_image_link: bool,
     size: Size,
     view_box: Rect,
-    #[cfg(feature = "text")]
-    db: Rc<RefCell<fontdb::Database>>,
     opt: &'a Options,
 }
 
@@ -76,8 +69,6 @@ pub fn convert_doc(
         fe_image_link: false,
         size,
         view_box: view_box.rect,
-        #[cfg(feature = "text")]
-        db: Rc::new(RefCell::new(fontdb::Database::new())),
         opt: &opt,
     };
 
@@ -101,8 +92,6 @@ fn resolve_svg_size(
         fe_image_link: false,
         size: Size::new(100.0, 100.0).unwrap(),
         view_box: Rect::new(0.0, 0.0, 100.0, 100.0).unwrap(),
-        #[cfg(feature = "text")]
-        db: Rc::new(RefCell::new(fontdb::Database::new())),
         opt,
     };
 
@@ -269,7 +258,11 @@ fn convert_clip_path_elements(
             }
             EId::Text => {
                 #[cfg(feature = "text")]
-                text::convert(node, state, parent, tree);
+                {
+                    if !state.opt.fontdb.is_empty() {
+                        text::convert(node, state, parent, tree);
+                    }
+                }
             }
             _ => {
                 warn!("'{}' is no a valid 'clip-path' child.", tag_name);

@@ -156,6 +156,8 @@ pub fn load_sub_svg(data: &[u8], opt: &Options) -> Option<tree::ImageKind> {
         text_rendering: opt.text_rendering,
         image_rendering: opt.image_rendering,
         keep_named_groups: false,
+        #[cfg(feature = "text")]
+        fontdb: opt.fontdb.clone(),
     };
 
     let tree = match tree::Tree::from_data(data, &sub_opt) {

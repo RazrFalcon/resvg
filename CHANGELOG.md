@@ -10,6 +10,10 @@ This changelog also contains important changes in dependencies.
 
 **Contains a lot of breaking changes**
 
+### Added
+- Support for user-defined fonts in usvg, resvg and C API.
+- (c-api) `resvg_options_*` methods.
+
 ### Changed
 - Rendering doesn't require `usvg::Options` now. This change affected all rendering methods.
 - (usvg) The `fontdb` module moved to its own crate.
@@ -23,6 +27,8 @@ This changelog also contains important changes in dependencies.
   Where `resvg.h` contains backend-independent functions
   and `resvg-*.h` contains backend-specific functions.
 - (usvg) `ImageData` replaced with `ImageKind`.
+- (usvg) Fonts database is empty by default now and should be filled manually.
+- (c-api) `resvg_options` is an opaque struct now.
 
 ### Removed
 - `Options` from all backends. We don't use it anymore.

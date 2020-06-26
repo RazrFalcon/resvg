@@ -42,13 +42,6 @@ extern "C" {
                                          void *painter);
 }
 
-static const char* toCStr(const QString &text)
-{
-    const auto utf8 = text.toUtf8();
-    const auto data = utf8.constData();
-    return qstrdup(data);
-}
-
 class Data
 {
 public:
@@ -69,7 +62,7 @@ public:
     }
 
     resvg_render_tree *tree = nullptr;
-    resvg_options opt;
+    resvg_options *opt = nullptr;
     qreal scaleFactor = 1.0;
     QRectF viewBox;
     QString errMsg;
@@ -77,15 +70,19 @@ public:
 private:
     void init()
     {
-        resvg_init_options(&opt);
-
         // Do not set the default font via QFont::family()
         // because it will return a dummy one on Windows.
         // See https://github.com/RazrFalcon/resvg/issues/159
 
-        opt.font_family = "Times New Roman";
-        opt.languages = toCStr(QLocale().bcp47Name());
-        opt.dpi = 96 * scaleFactor;
+        opt = resvg_options_create();
+
+        auto languages = QLocale().bcp47Name().toUtf8();
+        languages.append('\0');
+        resvg_options_set_languages(opt, languages.constData());
+
+        resvg_options_set_dpi(opt, 96 * scaleFactor);
+
+        resvg_options_load_system_fonts(opt);
     }
 
     void clear()
@@ -97,14 +94,9 @@ private:
             tree = nullptr;
         }
 
-        if (opt.path) {
-            delete[] opt.path; // do not use free() because was allocated via qstrdup()
-            opt.path = NULL;
-        }
-
-        if (opt.languages) {
-            delete[] opt.languages; // do not use free() because was allocated via qstrdup()
-            opt.languages = NULL;
+        if (opt) {
+            resvg_options_destroy(opt);
+            tree = nullptr;
         }
 
         viewBox = QRectF();
@@ -303,9 +295,11 @@ inline bool ResvgRenderer::load(const QString &filePath)
 
     d->reset();
 
-    d->opt.path = ResvgPrivate::toCStr(filePath);
+    auto filePathC = filePath.toUtf8();
+    filePathC.append('\0');
+    resvg_options_set_file_path(d->opt, filePathC.constData());
 
-    const auto err = resvg_parse_tree_from_file(d->opt.path, &d->opt, &d->tree);
+    const auto err = resvg_parse_tree_from_file(filePathC.constData(), d->opt, &d->tree);
     if (err != RESVG_OK) {
         d->errMsg = ResvgPrivate::errorToString(err);
         return false;
@@ -321,7 +315,7 @@ inline bool ResvgRenderer::load(const QByteArray &data)
 {
     d->reset();
 
-    const auto err = resvg_parse_tree_from_data(data.constData(), data.size(), &d->opt, &d->tree);
+    const auto err = resvg_parse_tree_from_data(data.constData(), data.size(), d->opt, &d->tree);
     if (err != RESVG_OK) {
         d->errMsg = ResvgPrivate::errorToString(err);
         return false;

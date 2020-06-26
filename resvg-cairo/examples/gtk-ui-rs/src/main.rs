@@ -1,5 +1,6 @@
 use gio::prelude::*;
 use gtk::prelude::*;
+use usvg::SystemFontDB;
 
 fn main() {
     let application = gtk::Application::new(
@@ -22,6 +23,7 @@ fn build_ui(application: &gtk::Application, file_path: &std::path::Path) {
 
     let mut opt = usvg::Options::default();
     opt.path = Some(file_path.into());
+    opt.fontdb.load_system_fonts();
 
     let tree = usvg::Tree::from_file(file_path, &opt).unwrap();
 

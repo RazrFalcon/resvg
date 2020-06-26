@@ -4,14 +4,14 @@
 
 use std::fs::File;
 use std::io::{self, Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process;
 
 use pico_args::Arguments;
+use usvg::SystemFontDB;
 
 
-fn print_help() {
-    print!("\
+const HELP: &str = "\
 usvg (micro SVG) is an SVG simplification tool.
 
 USAGE:
@@ -31,6 +31,19 @@ OPTIONS:
                                 [default: 'Times New Roman']
         --font-size SIZE        Sets the default font size
                                 [default: 12] [possible values: 1..192]
+        --use-font-file PATH    Load a specified font file into the fonts database.
+                                Will be used during text to path conversion.
+                                This option can be set multiple times.
+        --use-fonts-dir PATH    Loads all fonts from the specified directory
+                                into the fonts database.
+                                Will be used during text to path conversion.
+                                This option can be set multiple times.
+        --skip-system-fonts     Disables system fonts loading.
+                                You should add some fonts manually using
+                                --use-font and/or --use-fonts-dir.
+                                Otherwise, text elements will not be processes.
+        --list-fonts            Lists successfully loaded font faces.
+                                Useful for debugging.
         --languages LANG        Sets a comma-separated list of languages that
                                 will be used during the 'systemLanguage'
                                 attribute resolving.
@@ -57,8 +70,7 @@ OPTIONS:
 ARGS:
     <in-svg>                    Input file
     <out-svg>                   Output file
-");
-}
+";
 
 #[derive(Debug)]
 struct Args {
@@ -69,6 +81,10 @@ struct Args {
     dpi: u32,
     font_family: String,
     font_size: u32,
+    font_files: Vec<PathBuf>,
+    font_dirs: Vec<PathBuf>,
+    skip_system_fonts: bool,
+    list_fonts: bool,
     languages: Vec<String>,
     shape_rendering: usvg::ShapeRendering,
     text_rendering: usvg::TextRendering,
@@ -90,6 +106,10 @@ fn collect_args() -> Result<Args, pico_args::Error> {
         font_family:        input.opt_value_from_str("--font-family")?
                                  .unwrap_or_else(|| "Times New Roman".to_string()),
         font_size:          input.opt_value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
+        font_files:         input.values_from_str("--use-font-file")?,
+        font_dirs:          input.values_from_str("--use-fonts-dir")?,
+        skip_system_fonts:  input.contains("--skip-system-fonts"),
+        list_fonts:         input.contains("--list-fonts"),
         languages:          input.opt_value_from_fn("--languages", parse_languages)?
                                  .unwrap_or(vec!["en".to_string()]), // TODO: use system language
         shape_rendering:    input.opt_value_from_str("--shape-rendering")?.unwrap_or_default(),
@@ -175,7 +195,7 @@ fn main() {
     };
 
     if args.help {
-        print_help();
+        print!("{}", HELP);
         process::exit(0);
     }
 
@@ -225,6 +245,33 @@ fn process(args: &Args) -> Result<(), String> {
         (svg_from, svg_to)
     };
 
+    let mut fontdb = usvg::fontdb::Database::new();
+    if !args.skip_system_fonts {
+        fontdb.load_system_fonts();
+    }
+
+    for path in &args.font_files {
+        if let Err(e) = fontdb.load_font_file(path) {
+            log::warn!("Failed to load '{}' cause {}.", path.display(), e);
+        }
+    }
+
+    for path in &args.font_dirs {
+        fontdb.load_fonts_dir(path);
+    }
+
+    if args.list_fonts {
+        for face in fontdb.faces() {
+            if let usvg::fontdb::Source::File(ref path) = &*face.source {
+                println!(
+                    "{}: '{}', {}, {:?}, {:?}, {:?}",
+                    path.display(), face.family, face.index,
+                    face.style, face.weight.0, face.stretch
+                );
+            }
+        }
+    }
+
     let re_opt = usvg::Options {
         path: match in_svg {
             InputFrom::Stdin => None,
@@ -238,6 +285,7 @@ fn process(args: &Args) -> Result<(), String> {
         text_rendering: args.text_rendering,
         image_rendering: args.image_rendering,
         keep_named_groups: args.keep_named_groups,
+        fontdb,
     };
 
     let input_str = match in_svg {

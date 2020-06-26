@@ -5,7 +5,6 @@
 use std::rc::Rc;
 
 use crate::{svgtree, tree, tree::prelude::*};
-use crate::fontdb_ext::DatabaseExt;
 use super::prelude::*;
 
 mod convert;
@@ -59,8 +58,6 @@ pub fn convert(
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    state.db.borrow_mut().populate();
-
     let text_node = TextNode::new(node.clone());
     let mut new_paths = text_to_paths(text_node, state, parent, tree);
 

@@ -11,6 +11,10 @@ repository = "https://github.com/RazrFalcon/resvg"
 [badges]
 travis-ci = { repository = "RazrFalcon/resvg" }
 
+[[bin]]
+name = "resvg-raqote"
+required-features = ["text"]
+
 [dependencies]
 jpeg-decoder = { version = "0.1", default-features = false }
 log = "0.4"
