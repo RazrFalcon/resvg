@@ -15,61 +15,76 @@ const HELP: &str = "\
 usvg (micro SVG) is an SVG simplification tool.
 
 USAGE:
-    usvg [OPTIONS] <in-svg> <out-svg> # from file to file
-    usvg [OPTIONS] -c <in-svg>        # from file to stdout
-    usvg [OPTIONS] <out-svg> -        # from stdin to file
-    usvg [OPTIONS] -c -               # from stdin to stdout
+  usvg [OPTIONS] <in-svg> <out-svg>  # from file to file
+  usvg [OPTIONS] -c <in-svg>         # from file to stdout
+  usvg [OPTIONS] <out-svg> -         # from stdin to file
+  usvg [OPTIONS] -c -                # from stdin to stdout
 
 OPTIONS:
-    -h, --help                  Prints help information
-    -V, --version               Prints version information
-    -c                          Prints the output SVG to the stdout
-        --keep-named-groups     Disables removing of groups with non-empty ID
-        --dpi DPI               Sets the resolution
+  -h, --help                    Prints help information
+  -V, --version                 Prints version information
+  -c                            Prints the output SVG to the stdout
+
+  --dpi DPI                     Sets the resolution
                                 [default: 96] [possible values: 10..4000]
-        --font-family FAMILY    Sets the default font family
-                                [default: 'Times New Roman']
-        --font-size SIZE        Sets the default font size
-                                [default: 12] [possible values: 1..192]
-        --use-font-file PATH    Load a specified font file into the fonts database.
-                                Will be used during text to path conversion.
-                                This option can be set multiple times.
-        --use-fonts-dir PATH    Loads all fonts from the specified directory
-                                into the fonts database.
-                                Will be used during text to path conversion.
-                                This option can be set multiple times.
-        --skip-system-fonts     Disables system fonts loading.
-                                You should add some fonts manually using
-                                --use-font and/or --use-fonts-dir.
-                                Otherwise, text elements will not be processes.
-        --list-fonts            Lists successfully loaded font faces.
-                                Useful for debugging.
-        --languages LANG        Sets a comma-separated list of languages that
+  --languages LANG              Sets a comma-separated list of languages that
                                 will be used during the 'systemLanguage'
-                                attribute resolving.
+                                attribute resolving
                                 Examples: 'en-US', 'en-US, ru-RU', 'en, ru'
-                                [default: 'en']
-        --shape-rendering HINT  Selects the default shape rendering method.
+                                [default: en]
+  --shape-rendering HINT        Selects the default shape rendering method
                                 [default: geometricPrecision]
                                 [possible values: optimizeSpeed, crispEdges,
                                 geometricPrecision]
-        --text-rendering HINT   Selects the default text rendering method.
+  --text-rendering HINT         Selects the default text rendering method
                                 [default: optimizeLegibility]
-                                [possible values: optimizeSpeed,
-                                optimizeLegibility, geometricPrecision]
-        --image-rendering HINT  Selects the default image rendering method.
+                                [possible values: optimizeSpeed, optimizeLegibility,
+                                geometricPrecision]
+  --image-rendering HINT        Selects the default image rendering method
                                 [default: optimizeQuality]
-                                [possible values: optimizeQuality,
-                                optimizeSpeed]
-        --indent INDENT         Sets the XML nodes indent
+                                [possible values: optimizeQuality, optimizeSpeed]
+
+  --font-family FAMILY          Sets the default font family that will be
+                                used when no 'font-family' is present
+                                [default: Times New Roman]
+  --font-size SIZE              Sets the default font size that will be
+                                used when no 'font-size' is present
+                                [default: 12] [possible values: 1..192]
+  --serif-family FAMILY         Sets the 'serif' font family
+                                [default: Times New Roman]
+  --sans-serif-family FAMILY    Sets the 'sans-serif' font family
+                                [default: Arial]
+  --cursive-family FAMILY       Sets the 'cursive' font family
+                                [default: Comic Sans MS]
+  --fantasy-family FAMILY       Sets the 'fantasy' font family
+                                [default: Impact]
+  --monospace-family FAMILY     Sets the 'monospace' font family
+                                [default: Courier New]
+  --use-font-file PATH          Load a specified font file into the fonts database.
+                                Will be used during text to path conversion.
+                                This option can be set multiple times
+  --use-fonts-dir PATH          Loads all fonts from the specified directory
+                                into the fonts database.
+                                Will be used during text to path conversion.
+                                This option can be set multiple times
+  --skip-system-fonts           Disables system fonts loading.
+                                You should add some fonts manually using
+                                --use-font-file and/or --use-fonts-dir
+                                Otherwise, text elements will not be processes
+  --list-fonts                  Lists successfully loaded font faces.
+                                Useful for debugging
+
+  --keep-named-groups           Disables removing of groups with non-empty ID
+  --indent INDENT               Sets the XML nodes indent
                                 [values: none, 0, 1, 2, 3, 4, tabs] [default: 4]
-        --attrs-indent INDENT   Sets the XML attributes indent
+  --attrs-indent INDENT         Sets the XML attributes indent
                                 [values: none, 0, 1, 2, 3, 4, tabs] [default: none]
-        --quiet                 Disables warnings
+
+  --quiet                       Disables warnings
 
 ARGS:
-    <in-svg>                    Input file
-    <out-svg>                   Output file
+  <in-svg>                      Input file
+  <out-svg>                     Output file
 ";
 
 #[derive(Debug)]
@@ -77,21 +92,31 @@ struct Args {
     help: bool,
     version: bool,
     stdout: bool,
-    keep_named_groups: bool,
+
     dpi: u32,
-    font_family: String,
-    font_size: u32,
-    font_files: Vec<PathBuf>,
-    font_dirs: Vec<PathBuf>,
-    skip_system_fonts: bool,
-    list_fonts: bool,
     languages: Vec<String>,
     shape_rendering: usvg::ShapeRendering,
     text_rendering: usvg::TextRendering,
     image_rendering: usvg::ImageRendering,
+
+    font_family: Option<String>,
+    font_size: u32,
+    serif_family: Option<String>,
+    sans_serif_family: Option<String>,
+    cursive_family: Option<String>,
+    fantasy_family: Option<String>,
+    monospace_family: Option<String>,
+    font_files: Vec<PathBuf>,
+    font_dirs: Vec<PathBuf>,
+    skip_system_fonts: bool,
+    list_fonts: bool,
+
+    keep_named_groups: bool,
     indent: usvg::XmlIndent,
     attrs_indent: usvg::XmlIndent,
+
     quiet: bool,
+
     free: Vec<String>,
 }
 
@@ -101,25 +126,34 @@ fn collect_args() -> Result<Args, pico_args::Error> {
         help:               input.contains(["-h", "--help"]),
         version:            input.contains(["-V", "--version"]),
         stdout:             input.contains("-c"),
-        keep_named_groups:  input.contains("--keep-named-groups"),
+
         dpi:                input.opt_value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
-        font_family:        input.opt_value_from_str("--font-family")?
-                                 .unwrap_or_else(|| "Times New Roman".to_string()),
-        font_size:          input.opt_value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
-        font_files:         input.values_from_str("--use-font-file")?,
-        font_dirs:          input.values_from_str("--use-fonts-dir")?,
-        skip_system_fonts:  input.contains("--skip-system-fonts"),
-        list_fonts:         input.contains("--list-fonts"),
         languages:          input.opt_value_from_fn("--languages", parse_languages)?
                                  .unwrap_or(vec!["en".to_string()]), // TODO: use system language
         shape_rendering:    input.opt_value_from_str("--shape-rendering")?.unwrap_or_default(),
         text_rendering:     input.opt_value_from_str("--text-rendering")?.unwrap_or_default(),
         image_rendering:    input.opt_value_from_str("--image-rendering")?.unwrap_or_default(),
+
+        font_family:        input.opt_value_from_str("--font-family")?,
+        font_size:          input.opt_value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
+        serif_family:       input.opt_value_from_str("--serif-family")?,
+        sans_serif_family:  input.opt_value_from_str("--sans-serif-family")?,
+        cursive_family:     input.opt_value_from_str("--cursive-family")?,
+        fantasy_family:     input.opt_value_from_str("--fantasy-family")?,
+        monospace_family:   input.opt_value_from_str("--monospace-family")?,
+        font_files:         input.values_from_str("--use-font-file")?,
+        font_dirs:          input.values_from_str("--use-fonts-dir")?,
+        skip_system_fonts:  input.contains("--skip-system-fonts"),
+        list_fonts:         input.contains("--list-fonts"),
+
+        keep_named_groups:  input.contains("--keep-named-groups"),
         indent:             input.opt_value_from_fn("--indent", parse_indent)?
                                  .unwrap_or(usvg::XmlIndent::Spaces(4)),
         attrs_indent:       input.opt_value_from_fn("--attrs-indent", parse_indent)?
                                  .unwrap_or(usvg::XmlIndent::None),
+
         quiet:              input.contains("--quiet"),
+
         free:               input.free()?,
     })
 }
@@ -210,13 +244,13 @@ fn main() {
         }
     }
 
-    if let Err(e) = process(&args) {
+    if let Err(e) = process(args) {
         eprintln!("Error: {}.", e.to_string());
         std::process::exit(1);
     }
 }
 
-fn process(args: &Args) -> Result<(), String> {
+fn process(args: Args) -> Result<(), String> {
     if args.free.is_empty() {
         return Err(format!("no positional arguments are provided"));
     }
@@ -260,6 +294,15 @@ fn process(args: &Args) -> Result<(), String> {
         fontdb.load_fonts_dir(path);
     }
 
+    let take_or = |mut family: Option<String>, fallback: &str|
+        family.take().unwrap_or_else(|| fallback.to_string());
+
+    fontdb.set_serif_family(take_or(args.serif_family, "Times New Roman"));
+    fontdb.set_sans_serif_family(take_or(args.sans_serif_family, "Arial"));
+    fontdb.set_cursive_family(take_or(args.cursive_family, "Comic Sans MS"));
+    fontdb.set_fantasy_family(take_or(args.fantasy_family, "Impact"));
+    fontdb.set_monospace_family(take_or(args.monospace_family, "Courier New"));
+
     if args.list_fonts {
         for face in fontdb.faces() {
             if let usvg::fontdb::Source::File(ref path) = &*face.source {
@@ -278,9 +321,9 @@ fn process(args: &Args) -> Result<(), String> {
             InputFrom::File(ref f) => Some(f.into()),
         },
         dpi: args.dpi as f64,
-        font_family: args.font_family.clone(),
+        font_family: take_or(args.font_family, "Times New Roman"),
         font_size: args.font_size as f64,
-        languages: args.languages.clone(),
+        languages: args.languages,
         shape_rendering: args.shape_rendering,
         text_rendering: args.text_rendering,
         image_rendering: args.image_rendering,

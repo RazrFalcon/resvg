@@ -140,95 +140,119 @@ const HELP: &str = "\
 resvg-skia is an SVG rendering application.
 
 USAGE:
-    resvg-skia [OPTIONS] <in-svg> <out-png>
+  resvg-skia [OPTIONS] <in-svg> <out-png>
 
-    resvg-skia in.svg out.png
-    resvg-skia -z 4 in.svg out.png
-    resvg-skia --query-all in.svg
+  resvg-skia in.svg out.png
+  resvg-skia -z 4 in.svg out.png
+  resvg-skia --query-all in.svg
 
 OPTIONS:
-        --help                  Prints this help
-    -V, --version               Prints version
+  --help                        Prints this help
+  -V, --version                 Prints version
 
-    -w, --width LENGTH          Sets the width in pixels
-    -h, --height LENGTH         Sets the height in pixels
-    -z, --zoom FACTOR           Zooms the image by a factor
-        --dpi DPI               Sets the resolution
+  -w, --width LENGTH            Sets the width in pixels
+  -h, --height LENGTH           Sets the height in pixels
+  -z, --zoom FACTOR             Zooms the image by a factor
+      --dpi DPI                 Sets the resolution
                                 [default: 96] [possible values: 10..4000]
-
-        --background COLOR      Sets the background color.
+  --background COLOR            Sets the background color
                                 Examples: red, #fff, #fff000
-        --font-family FAMILY    Sets the default font family
-                                [default: 'Times New Roman']
-        --font-size SIZE        Sets the default font size
-                                [default: 12] [possible values: 1..192]
-        --use-font-file PATH    Load a specified font file into the fonts database.
-                                Will be used during text to path conversion.
-                                This option can be set multiple times.
-        --use-fonts-dir PATH    Loads all fonts from the specified directory
-                                into the fonts database.
-                                Will be used during text to path conversion.
-                                This option can be set multiple times.
-        --skip-system-fonts     Disables system fonts loading.
-                                You should add some fonts manually using
-                                --use-font and/or --use-fonts-dir.
-                                Otherwise, text elements will not be processes.
-        --list-fonts            Lists successfully loaded font faces.
-                                Useful for debugging.
-        --languages LANG        Sets a comma-separated list of languages that
+
+  --languages LANG              Sets a comma-separated list of languages that
                                 will be used during the 'systemLanguage'
-                                attribute resolving.
+                                attribute resolving
                                 Examples: 'en-US', 'en-US, ru-RU', 'en, ru'
-                                [default: 'en']
-        --shape-rendering HINT  Selects the default shape rendering method.
+                                [default: en]
+  --shape-rendering HINT        Selects the default shape rendering method
                                 [default: geometricPrecision]
                                 [possible values: optimizeSpeed, crispEdges,
                                 geometricPrecision]
-        --text-rendering HINT   Selects the default text rendering method.
+  --text-rendering HINT         Selects the default text rendering method
                                 [default: optimizeLegibility]
-                                [possible values: optimizeSpeed,
-                                optimizeLegibility, geometricPrecision]
-        --image-rendering HINT  Selects the default image rendering method.
+                                [possible values: optimizeSpeed, optimizeLegibility,
+                                geometricPrecision]
+  --image-rendering HINT        Selects the default image rendering method
                                 [default: optimizeQuality]
-                                [possible values: optimizeQuality,
-                                optimizeSpeed]
+                                [possible values: optimizeQuality, optimizeSpeed]
 
-        --query-all             Queries all valid SVG ids with bounding boxes
-        --export-id ID          Renders an object only with a specified ID
+  --font-family FAMILY          Sets the default font family that will be
+                                used when no 'font-family' is present
+                                [default: Times New Roman]
+  --font-size SIZE              Sets the default font size that will be
+                                used when no 'font-size' is present
+                                [default: 12] [possible values: 1..192]
+  --serif-family FAMILY         Sets the 'serif' font family
+                                [default: Times New Roman]
+  --sans-serif-family FAMILY    Sets the 'sans-serif' font family
+                                [default: Arial]
+  --cursive-family FAMILY       Sets the 'cursive' font family
+                                [default: Comic Sans MS]
+  --fantasy-family FAMILY       Sets the 'fantasy' font family
+                                [default: Impact]
+  --monospace-family FAMILY     Sets the 'monospace' font family
+                                [default: Courier New]
+  --use-font-file PATH          Load a specified font file into the fonts database.
+                                Will be used during text to path conversion.
+                                This option can be set multiple times
+  --use-fonts-dir PATH          Loads all fonts from the specified directory
+                                into the fonts database.
+                                Will be used during text to path conversion.
+                                This option can be set multiple times
+  --skip-system-fonts           Disables system fonts loading.
+                                You should add some fonts manually using
+                                --use-font-file and/or --use-fonts-dir
+                                Otherwise, text elements will not be processes
+  --list-fonts                  Lists successfully loaded font faces.
+                                Useful for debugging
 
-        --perf                  Prints performance stats
-        --quiet                 Disables warnings
-        --dump-svg PATH         Saves the preprocessed SVG into the selected file
+
+  --query-all                   Queries all valid SVG ids with bounding boxes
+  --export-id ID                Renders an object only with a specified ID
+
+  --perf                        Prints performance stats
+  --quiet                       Disables warnings
+  --dump-svg PATH               Saves the preprocessed SVG into the selected file
 
 ARGS:
-    <in-svg>                    Input file
-    <out-png>                   Output file
+  <in-svg>                      Input file
+  <out-png>                     Output file
 ";
 
 #[derive(Debug)]
 struct CliArgs {
     help: bool,
     version: bool,
+
     width: Option<u32>,
     height: Option<u32>,
     zoom: Option<f32>,
     dpi: u32,
     background: Option<usvg::Color>,
-    font_family: String,
-    font_size: u32,
-    font_files: Vec<path::PathBuf>,
-    font_dirs: Vec<path::PathBuf>,
-    skip_system_fonts: bool,
-    list_fonts: bool,
+
     languages: Vec<String>,
     shape_rendering: usvg::ShapeRendering,
     text_rendering: usvg::TextRendering,
     image_rendering: usvg::ImageRendering,
+
+    font_family: Option<String>,
+    font_size: u32,
+    serif_family: Option<String>,
+    sans_serif_family: Option<String>,
+    cursive_family: Option<String>,
+    fantasy_family: Option<String>,
+    monospace_family: Option<String>,
+    font_files: Vec<path::PathBuf>,
+    font_dirs: Vec<path::PathBuf>,
+    skip_system_fonts: bool,
+    list_fonts: bool,
+
     query_all: bool,
     export_id: Option<String>,
+
     perf: bool,
     quiet: bool,
     dump_svg: Option<String>,
+
     free: Vec<String>,
 }
 
@@ -237,28 +261,38 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
     Ok(CliArgs {
         help:               input.contains("--help"),
         version:            input.contains(["-V", "--version"]),
+
         width:              input.opt_value_from_fn(["-w", "--width"], parse_length)?,
         height:             input.opt_value_from_fn(["-h", "--height"], parse_length)?,
         zoom:               input.opt_value_from_fn(["-z", "--zoom"], parse_zoom)?,
         dpi:                input.opt_value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
         background:         input.opt_value_from_str("--background")?,
-        font_family:        input.opt_value_from_str("--font-family")?
-                                 .unwrap_or_else(|| "Times New Roman".to_string()),
+
+        languages:          input.opt_value_from_fn("--languages", parse_languages)?
+            .unwrap_or(vec!["en".to_string()]), // TODO: use system language
+        shape_rendering:    input.opt_value_from_str("--shape-rendering")?.unwrap_or_default(),
+        text_rendering:     input.opt_value_from_str("--text-rendering")?.unwrap_or_default(),
+        image_rendering:    input.opt_value_from_str("--image-rendering")?.unwrap_or_default(),
+
+        font_family:        input.opt_value_from_str("--font-family")?,
         font_size:          input.opt_value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
+        serif_family:       input.opt_value_from_str("--serif-family")?,
+        sans_serif_family:  input.opt_value_from_str("--sans-serif-family")?,
+        cursive_family:     input.opt_value_from_str("--cursive-family")?,
+        fantasy_family:     input.opt_value_from_str("--fantasy-family")?,
+        monospace_family:   input.opt_value_from_str("--monospace-family")?,
         font_files:         input.values_from_str("--use-font-file")?,
         font_dirs:          input.values_from_str("--use-fonts-dir")?,
         skip_system_fonts:  input.contains("--skip-system-fonts"),
         list_fonts:         input.contains("--list-fonts"),
-        languages:          input.opt_value_from_fn("--languages", parse_languages)?
-                                 .unwrap_or(vec!["en".to_string()]), // TODO: use system language
-        shape_rendering:    input.opt_value_from_str("--shape-rendering")?.unwrap_or_default(),
-        text_rendering:     input.opt_value_from_str("--text-rendering")?.unwrap_or_default(),
-        image_rendering:    input.opt_value_from_str("--image-rendering")?.unwrap_or_default(),
+
         query_all:          input.contains("--query-all"),
         export_id:          input.opt_value_from_str("--export-id")?,
+
         perf:               input.contains("--perf"),
         quiet:              input.contains("--quiet"),
         dump_svg:           input.opt_value_from_str("--dump-svg")?,
+
         free:               input.free()?,
     })
 }
@@ -330,7 +364,7 @@ struct Args {
 }
 
 fn parse_args() -> Result<Args, String> {
-    let args = collect_args().map_err(|e| e.to_string())?;
+    let mut args = collect_args().map_err(|e| e.to_string())?;
 
     if args.help {
         print!("{}", HELP);
@@ -372,12 +406,12 @@ fn parse_args() -> Result<Args, String> {
         fit_to = usvg::FitTo::Zoom(z);
     }
 
-    let fontdb = timed!(args, "FontDB init", load_fonts(&args));
+    let fontdb = timed!(args, "FontDB init", load_fonts(&mut args));
 
     let usvg = usvg::Options {
         path: Some(in_svg.clone()),
         dpi: args.dpi as f64,
-        font_family: args.font_family.clone(),
+        font_family: args.font_family.take().unwrap_or_else(|| "Times New Roman".to_string()),
         font_size: args.font_size as f64,
         languages: args.languages,
         shape_rendering: args.shape_rendering,
@@ -401,7 +435,7 @@ fn parse_args() -> Result<Args, String> {
     })
 }
 
-fn load_fonts(args: &CliArgs) -> usvg::fontdb::Database {
+fn load_fonts(args: &mut CliArgs) -> usvg::fontdb::Database {
     let mut fontdb = usvg::fontdb::Database::new();
     if !args.skip_system_fonts {
         fontdb.load_system_fonts();
@@ -416,6 +450,15 @@ fn load_fonts(args: &CliArgs) -> usvg::fontdb::Database {
     for path in &args.font_dirs {
         fontdb.load_fonts_dir(path);
     }
+
+    let take_or = |family: Option<String>, fallback: &str|
+        family.unwrap_or_else(|| fallback.to_string());
+
+    fontdb.set_serif_family(take_or(args.serif_family.take(), "Times New Roman"));
+    fontdb.set_sans_serif_family(take_or(args.sans_serif_family.take(), "Arial"));
+    fontdb.set_cursive_family(take_or(args.cursive_family.take(), "Comic Sans MS"));
+    fontdb.set_fantasy_family(take_or(args.fantasy_family.take(), "Impact"));
+    fontdb.set_monospace_family(take_or(args.monospace_family.take(), "Courier New"));
 
     if args.list_fonts {
         for face in fontdb.faces() {

@@ -124,7 +124,7 @@ checksum = "75224bec9bfe1a65e2d34132933f2de7fe79900c96a0174307554244ece8150e"
 [[package]]
 name = "fontdb"
 version = "0.1.0"
-source = "git+https://github.com/RazrFalcon/fontdb?rev=0f412ed#0f412edd99f0b6b75381c3928988f59fd4e6e3ca"
+source = "git+https://github.com/RazrFalcon/fontdb?rev=2299573#2299573ebbe359fcd3daaed317ce774ee7debcaa"
 dependencies = [
  "log",
  "memmap2",

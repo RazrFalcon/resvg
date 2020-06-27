@@ -13,6 +13,9 @@ This changelog also contains important changes in dependencies.
 ### Added
 - Support for user-defined fonts in usvg, resvg and C API.
 - (c-api) `resvg_options_*` methods.
+- `--serif-family`, `--sans-serif-family`, `--cursive-family`, `--fantasy-family`
+  `--monospace-family`, `--use-font-file`, `--use-fonts-dir`, `--skip-system-fonts` and `--list-fonts`
+  options to all CLI tools.
 
 ### Changed
 - Rendering doesn't require `usvg::Options` now. This change affected all rendering methods.

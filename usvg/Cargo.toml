@@ -36,7 +36,7 @@ siphasher = "0.2"
 svgtypes = "0.5"
 
 # for text to path
-fontdb = { git = "https://github.com/RazrFalcon/fontdb", rev = "0f412ed", optional = true }
+fontdb = { git = "https://github.com/RazrFalcon/fontdb", rev = "2299573", optional = true }
 harfbuzz_rs = { version = "1.0.1", optional = true }
 memmap2 = { version = "0.1", optional = true }
 ttf-parser = { version = "0.6", optional = true }
