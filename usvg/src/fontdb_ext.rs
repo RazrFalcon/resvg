@@ -220,23 +220,11 @@ pub fn load_system_fonts(db: &mut Database) {
         let path = std::path::Path::new(home).join(".local/share/fonts");
         db.load_fonts_dir(path);
     }
-
-    db.set_serif_family("Times New Roman");
-    db.set_sans_serif_family("Arial");
-    db.set_cursive_family("Comic Sans MS");
-    db.set_fantasy_family("Impact");
-    db.set_monospace_family("Courier New");
 }
 
 #[cfg(target_os = "windows")]
 pub fn load_system_fonts(db: &mut Database) {
     db.load_fonts_dir("C:\\Windows\\Fonts\\");
-
-    db.set_serif_family("Times New Roman");
-    db.set_sans_serif_family("Arial");
-    db.set_cursive_family("Comic Sans MS");
-    db.set_fantasy_family("Impact");
-    db.set_monospace_family("Courier New");
 }
 
 #[cfg(target_os = "macos")]
@@ -248,10 +236,4 @@ pub fn load_system_fonts(db: &mut Database) {
         let path = Path::new(home).join("Library/Fonts");
         db.load_fonts_dir(path);
     }
-
-    db.set_serif_family("Times New Roman");
-    db.set_sans_serif_family("Arial");
-    db.set_cursive_family("Comic Sans MS");
-    db.set_fantasy_family("Papyrus");
-    db.set_monospace_family("Courier New");
 }

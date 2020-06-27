@@ -77,12 +77,7 @@ pub extern "C" fn resvg_options_set_file_path(opt: *mut resvg_options, path: *co
     if path.is_null() {
         cast_opt(opt).path = None;
     } else {
-        let file_path = match cstr_to_str(path) {
-            Some(v) => v,
-            None => return,
-        };
-
-        cast_opt(opt).path = Some(file_path.into());
+        cast_opt(opt).path = Some(cstr_to_str(path).unwrap().into());
     }
 }
 
@@ -93,17 +88,37 @@ pub extern "C" fn resvg_options_set_dpi(opt: *mut resvg_options, dpi: f64) {
 
 #[no_mangle]
 pub extern "C" fn resvg_options_set_font_family(opt: *mut resvg_options, family: *const c_char) {
-    let family = match cstr_to_str(family) {
-        Some(v) => v,
-        None => return,
-    };
-
-    cast_opt(opt).font_family = family.to_string();
+    cast_opt(opt).font_family = cstr_to_str(family).unwrap().to_string();
 }
 
 #[no_mangle]
 pub extern "C" fn resvg_options_set_font_size(opt: *mut resvg_options, font_size: f64) {
     cast_opt(opt).font_size = font_size;
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_set_serif_family(opt: *mut resvg_options, family: *const c_char) {
+    cast_opt(opt).fontdb.set_serif_family(cstr_to_str(family).unwrap().to_string());
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_set_sans_serif_family(opt: *mut resvg_options, family: *const c_char) {
+    cast_opt(opt).fontdb.set_sans_serif_family(cstr_to_str(family).unwrap().to_string());
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_set_cursive_family(opt: *mut resvg_options, family: *const c_char) {
+    cast_opt(opt).fontdb.set_cursive_family(cstr_to_str(family).unwrap().to_string());
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_set_fantasy_family(opt: *mut resvg_options, family: *const c_char) {
+    cast_opt(opt).fontdb.set_fantasy_family(cstr_to_str(family).unwrap().to_string());
+}
+
+#[no_mangle]
+pub extern "C" fn resvg_options_set_monospace_family(opt: *mut resvg_options, family: *const c_char) {
+    cast_opt(opt).fontdb.set_monospace_family(cstr_to_str(family).unwrap().to_string());
 }
 
 #[no_mangle]

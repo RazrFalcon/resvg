@@ -169,7 +169,7 @@ void resvg_options_set_dpi(resvg_options *opt, double dpi);
  *
  * Default: Times New Roman
  */
-void resvg_options_set_font_family(resvg_options *opt, const char *path);
+void resvg_options_set_font_family(resvg_options *opt, const char *family);
 
 /**
  * @brief Sets the default font size.
@@ -179,6 +179,51 @@ void resvg_options_set_font_family(resvg_options *opt, const char *path);
  * Default: 12
  */
 void resvg_options_set_font_size(resvg_options *opt, double size);
+
+/**
+ * @brief Sets the `serif` font family.
+ *
+ * Must be UTF-8. NULL is not allowed.
+ *
+ * Default: Times New Roman
+ */
+void resvg_options_set_serif_family(resvg_options *opt, const char *family);
+
+/**
+ * @brief Sets the `sans-serif` font family.
+ *
+ * Must be UTF-8. NULL is not allowed.
+ *
+ * Default: Arial
+ */
+void resvg_options_set_sans_serif_family(resvg_options *opt, const char *family);
+
+/**
+ * @brief Sets the `cursive` font family.
+ *
+ * Must be UTF-8. NULL is not allowed.
+ *
+ * Default: Comic Sans MS
+ */
+void resvg_options_set_cursive_family(resvg_options *opt, const char *family);
+
+/**
+ * @brief Sets the `fantasy` font family.
+ *
+ * Must be UTF-8. NULL is not allowed.
+ *
+ * Default: Papyrus on macOS, Impact on other OS'es
+ */
+void resvg_options_set_fantasy_family(resvg_options *opt, const char *family);
+
+/**
+ * @brief Sets the `monospace` font family.
+ *
+ * Must be UTF-8. NULL is not allowed.
+ *
+ * Default: Courier New
+ */
+void resvg_options_set_monospace_family(resvg_options *opt, const char *family);
 
 /**
  * @brief Sets a comma-separated list of languages.

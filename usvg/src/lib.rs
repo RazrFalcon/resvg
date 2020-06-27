@@ -249,5 +249,20 @@ impl SystemFontDB for fontdb::Database {
     #[inline]
     fn load_system_fonts(&mut self) {
         fontdb_ext::load_system_fonts(self);
+
+        self.set_serif_family("Times New Roman");
+        self.set_sans_serif_family("Arial");
+        self.set_cursive_family("Comic Sans MS");
+        self.set_monospace_family("Courier New");
+
+        #[cfg(not(target_os = "macos"))]
+        {
+            self.set_fantasy_family("Impact");
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            db.set_fantasy_family("Papyrus");
+        }
     }
 }
