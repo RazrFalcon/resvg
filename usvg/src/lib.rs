@@ -262,7 +262,7 @@ impl SystemFontDB for fontdb::Database {
 
         #[cfg(target_os = "macos")]
         {
-            db.set_fantasy_family("Papyrus");
+            self.set_fantasy_family("Papyrus");
         }
     }
 }
