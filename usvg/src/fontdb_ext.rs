@@ -233,7 +233,7 @@ pub fn load_system_fonts(db: &mut Database) {
     db.load_fonts_dir("/System/Library/Fonts");
 
     if let Ok(ref home) = std::env::var("HOME") {
-        let path = Path::new(home).join("Library/Fonts");
+        let path = std::path::Path::new(home).join("Library/Fonts");
         db.load_fonts_dir(path);
     }
 }
