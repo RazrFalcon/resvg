@@ -21,12 +21,13 @@ pub fn draw_raster(
 
     let mut image = {
         let (w, h) = img.size.dimensions();
-        let surface = usvg::try_opt_warn_or!(
-            skia::Surface::new_raster(&skia::ImageInfo::new_unknown(Some(skia::ISize::new(w as i32, h as i32))), None, None), (),
+        let image_info = skia::ImageInfo::new(skia::ISize::new(w as i32, h as i32),skia::ColorType::n32(), skia::AlphaType::Unpremul, None);
+        let mut surface = usvg::try_opt_warn_or!(
+            skia::Surface::new_raster(&image_info, None, None), (),
             "Failed to create a {}x{} surface.", w, h
         );
 
-        image_to_surface(&img, &mut canvas.data_mut());
+        image_to_surface(&img, &mut surface.canvas().data_mut());
         surface
     };
 
@@ -47,8 +48,9 @@ pub fn draw_raster(
     let mut paint = skia::Paint::default();
     paint.set_filter_quality(filter);
     let r = backend_utils::image::image_rect(&view_box, img.size);
-    let rect = skia::Rect::new(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
-    canvas.draw_image_rect(&image.image_snapshot(), None, rect, &paint);
+
+    let left_top = skia::Point::new(r.x() as f32, r.y() as f32);
+    canvas.draw_image(&image.image_snapshot(), left_top, Some(&paint));
 
     // Revert.
     canvas.restore();
@@ -62,7 +64,7 @@ fn image_to_surface(image: &Image, surface: &mut [u8]) {
     use rgb::FromSlice;
 
     let mut i = 0;
-    if skia::ColorType::n32() == skia::ColorType::RGBA8888 {
+    if skia::ColorType::n32() == skia::ColorType::BGRA8888 {
         match &image.data {
             ImageData::RGB(data) => {
                 for p in data.as_rgb() {
