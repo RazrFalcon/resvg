@@ -88,8 +88,8 @@ pub fn stroke(
         };
         paint.set_stroke_join(stroke_join);
 
-        paint.set_stroke_miter(stroke.miterlimit.value());
-        paint.set_stroke_width(stroke.width.value());
+        paint.set_stroke_miter(stroke.miterlimit.value() as f32);
+        paint.set_stroke_width(stroke.width.value() as f32);
 
         if let Some(ref list) = stroke.dasharray {
             let list: Vec<_> = list.iter().map(|n| *n as f32).collect();
@@ -113,7 +113,7 @@ fn prepare_linear(
         base: prepare_base_gradient(g, opacity, &bbox)
     };
 
-    let shader = skia::Shader::new_linear_gradient(gradient).unwrap();
+    let shader = skia::Shader::new_linear_gradient(&gradient).unwrap();
     paint.set_shader(&shader);
 }
 
@@ -124,13 +124,15 @@ fn prepare_radial(
     paint: &mut skia::Paint,
 ) {
 
-    let gradient = skia::RadialGradient {
-        start_circle: (g.fx as f32, g.fy as f32, 0.0),
-        end_circle: (g.cx as f32, g.cy as f32, g.r.value() as f32),
+    let gradient = skia::TwoPointConicalGradient {
+        start: (g.fx as f32, g.fy as f32),
+        start_radius: 0.0,
+        end: (g.cx as f32, g.cy as f32),
+        end_radius: g.r.value() as f32,
         base: prepare_base_gradient(g, opacity, &bbox)
     };
 
-    let shader = skia::Shader::new_radial_gradient(gradient).unwrap();
+    let shader = skia::Shader::new_two_point_conical_gradient(&gradient).unwrap();
     paint.set_shader(&shader);
 }
 
@@ -156,13 +158,13 @@ fn prepare_base_gradient(
         }
     };
 
-    let mut colors: Vec<u32> = Vec::new();
-    let mut positions: Vec<f32> = Vec::new();
+    let mut colors = Vec::new();
+    let mut positions = Vec::new();
 
     for stop in &g.stops {
         let a = stop.opacity * opacity;
         let color = skia::Color::new(a.to_u8(), stop.color.red, stop.color.green, stop.color.blue);
-        colors.push(color.to_u32());
+        colors.push(color);
         positions.push(stop.offset.value() as f32);
     }
 
@@ -189,7 +191,7 @@ fn prepare_pattern(
     let mut surface = try_opt!(crate::render::create_subsurface(img_size));
     surface.clear();
 
-    surface.scale(sx, sy);
+    surface.scale(sx as f32, sy as f32);
     if let Some(vbox) = pattern.view_box {
         let ts = usvg::utils::view_box_to_transform(vbox.rect, vbox.aspect, r.size());
         surface.concat(ts.to_native());
@@ -198,7 +200,7 @@ fn prepare_pattern(
 
         // We don't use Transform::from_bbox(bbox) because `x` and `y` should be
         // ignored for some reasons...
-        surface.scale(bbox.width(), bbox.height());
+        surface.scale(bbox.width() as f32, bbox.height() as f32);
     }
 
     let mut layers = Layers::new(img_size);

@@ -69,11 +69,15 @@ fn draw_raster(
 
     if view_box.aspect.slice {
         let r = view_box.rect;
-        canvas.set_clip_rect(r.x(), r.y(), r.width(), r.height());
+        canvas.set_clip_rect(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
     }
 
     let r = image_rect(&view_box, img.size);
-    canvas.draw_surface_rect(&image, r.x(), r.y(), r.width(), r.height(), filter);
+    canvas.draw_surface_rect(
+        &image,
+        r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32,
+        filter,
+    );
 
     // Revert.
     canvas.restore();
@@ -121,7 +125,9 @@ fn draw_svg(
     canvas.save();
 
     if let Some(clip) = clip {
-        canvas.set_clip_rect(clip.x(), clip.y(), clip.width(), clip.height());
+        canvas.set_clip_rect(
+            clip.x() as f32, clip.y() as f32, clip.width() as f32, clip.height() as f32,
+        );
     }
 
     canvas.concat(ts.to_native());

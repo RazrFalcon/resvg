@@ -24,7 +24,7 @@ pub fn mask(
         };
 
         mask_surface.save();
-        mask_surface.set_clip_rect(r.x(), r.y(), r.width(), r.height());
+        mask_surface.set_clip_rect(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {
             mask_surface.concat(usvg::Transform::from_bbox(bbox).to_native());

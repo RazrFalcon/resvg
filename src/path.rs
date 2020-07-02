@@ -55,13 +55,13 @@ fn convert_path(
     for seg in path.iter() {
         match *seg {
             usvg::PathSegment::MoveTo { x, y } => {
-                s_path.move_to(x, y);
+                s_path.move_to(x as f32, y as f32);
             }
             usvg::PathSegment::LineTo { x, y } => {
-                s_path.line_to(x, y);
+                s_path.line_to(x as f32, y as f32);
             }
             usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                s_path.cubic_to(x1, y1, x2, y2, x, y);
+                s_path.cubic_to(x1 as f32, y1 as f32, x2 as f32, y2 as f32, x as f32, y as f32);
             }
             usvg::PathSegment::ClosePath => {
                 s_path.close();

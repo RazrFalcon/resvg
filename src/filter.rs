@@ -135,13 +135,13 @@ impl SurfaceExt for skia::Surface {
         paint.set_color(0, 0, 0, 0);
         paint.set_blend_mode(skia::BlendMode::Clear);
 
-        let w = self.width() as f64;
-        let h = self.height() as f64;
+        let w = self.width() as f32;
+        let h = self.height() as f32;
 
-        self.draw_rect(0.0, 0.0, w, region.y() as f64, &paint);
-        self.draw_rect(0.0, 0.0, region.x() as f64, h, &paint);
-        self.draw_rect(region.right() as f64, 0.0, w, h, &paint);
-        self.draw_rect(0.0, region.bottom() as f64, w, h, &paint);
+        self.draw_rect(0.0, 0.0, w, region.y() as f32, &paint);
+        self.draw_rect(0.0, 0.0, region.x() as f32, h, &paint);
+        self.draw_rect(region.right() as f32, 0.0, w, h, &paint);
+        self.draw_rect(0.0, region.bottom() as f32, w, h, &paint);
     }
 
     fn clear(&mut self) {
@@ -628,8 +628,13 @@ fn apply_offset(
     let mut buffer = skia::Surface::try_create(input.width(), input.height())?;
 
     buffer.reset_transform();
-    buffer.draw_surface(input.as_ref(), dx, dy, 255, skia::BlendMode::SourceOver,
-                        skia::FilterQuality::Low);
+    buffer.draw_surface(
+        input.as_ref(),
+        dx as f32, dy as f32,
+        255,
+        skia::BlendMode::SourceOver,
+        skia::FilterQuality::Low,
+    );
     buffer.flush();
 
     Ok(Image::from_image(buffer, input.color_space))
@@ -647,8 +652,13 @@ fn apply_blend(
 
     let mut buffer = skia::Surface::try_create(region.width(), region.height())?;
 
-    buffer.draw_surface(input2.as_ref(), 0.0, 0.0, 255, skia::BlendMode::SourceOver,
-                        skia::FilterQuality::Low);
+    buffer.draw_surface(
+        input2.as_ref(),
+        0.0, 0.0,
+        255,
+        skia::BlendMode::SourceOver,
+        skia::FilterQuality::Low,
+    );
 
     let blend_mode = match fe.mode {
         usvg::FeBlendMode::Normal => skia::BlendMode::SourceOver,
@@ -658,8 +668,13 @@ fn apply_blend(
         usvg::FeBlendMode::Lighten => skia::BlendMode::Lighten,
     };
 
-    buffer.draw_surface(input1.as_ref(), 0.0, 0.0, 255, blend_mode,
-                        skia::FilterQuality::Low);
+    buffer.draw_surface(
+        input1.as_ref(),
+        0.0, 0.0,
+        255,
+        blend_mode,
+        skia::FilterQuality::Low,
+    );
 
     Ok(Image::from_image(buffer, cs))
 }
@@ -696,8 +711,14 @@ fn apply_composite(
         return Ok(Image::from_image(buffer, cs));
     }
 
-    buffer.draw_surface(input2.as_ref(), 0.0, 0.0, 255, skia::BlendMode::SourceOver,
-                        skia::FilterQuality::Low);
+    buffer.draw_surface(
+        input2.as_ref(),
+        0.0, 0.0,
+        255,
+        skia::BlendMode::SourceOver,
+        skia::FilterQuality::Low,
+    );
+
     let blend_mode = match fe.operator {
         Operator::Over => skia::BlendMode::SourceOver,
         Operator::In => skia::BlendMode::SourceIn,
@@ -706,8 +727,14 @@ fn apply_composite(
         Operator::Xor => skia::BlendMode::Xor,
         Operator::Arithmetic { .. } => skia::BlendMode::SourceOver,
     };
-    buffer.draw_surface(input1.as_ref(), 0.0, 0.0, 255, blend_mode,
-                        skia::FilterQuality::Low);
+
+    buffer.draw_surface(
+        input1.as_ref(),
+        0.0, 0.0,
+        255,
+        blend_mode,
+        skia::FilterQuality::Low,
+    );
 
     Ok(Image::from_image(buffer, cs))
 }
@@ -725,8 +752,13 @@ fn apply_merge(
     for input in &fe.inputs {
         let input = get_input(input, region, inputs, results)?;
         let input = input.into_color_space(cs)?;
-        buffer.draw_surface(input.as_ref(), 0.0, 0.0, 255, skia::BlendMode::SourceOver,
-                            skia::FilterQuality::Low);
+        buffer.draw_surface(
+            input.as_ref(),
+            0.0, 0.0,
+            255,
+            skia::BlendMode::SourceOver,
+            skia::FilterQuality::Low,
+        );
     }
     buffer.flush();
 
@@ -759,7 +791,7 @@ fn apply_tile(
     let mut paint = skia::Paint::new();
     paint.set_shader(&shader);
 
-    buffer.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64, &paint);
+    buffer.draw_rect(0.0, 0.0, region.width() as f32, region.height() as f32, &paint);
 
     buffer.reset_transform();
     Ok(Image::from_image(buffer, ColorSpace::SRGB))
@@ -776,8 +808,8 @@ fn apply_image(
 
     match fe.data {
         usvg::FeImageKind::Image(ref kind) => {
-            let dx = (subregion.x() - region.x()) as f64;
-            let dy = (subregion.y() - region.y()) as f64;
+            let dx = (subregion.x() - region.x()) as f32;
+            let dy = (subregion.y() - region.y()) as f32;
             buffer.translate(dx, dy);
 
             let view_box = usvg::ViewBox {
@@ -792,7 +824,7 @@ fn apply_image(
                 let mut layers = Layers::new(region.size());
 
                 let (sx, sy) = ts.get_scale();
-                buffer.scale(sx, sy);
+                buffer.scale(sx as f32, sy as f32);
                 buffer.concat(node.transform().to_native());
 
                 crate::render::render_node(node, &mut RenderState::Ok, &mut layers, &mut buffer);
@@ -1029,8 +1061,13 @@ fn apply_to_canvas(
 
     canvas.reset_transform();
     canvas.clear();
-    canvas.draw_surface(input.as_ref(), region.x() as f64, region.y() as f64, 255,
-                        skia::BlendMode::SourceOver, skia::FilterQuality::Low);
+    canvas.draw_surface(
+        input.as_ref(),
+        region.x() as f32, region.y() as f32,
+        255,
+        skia::BlendMode::SourceOver,
+        skia::FilterQuality::Low,
+    );
 
     Ok(())
 }

@@ -539,7 +539,7 @@ dependencies = [
 [[package]]
 name = "tiny-skia"
 version = "0.1.0"
-source = "git+https://github.com/RazrFalcon/tiny-skia?rev=53920ae#53920aeb3cc3b627804544f1715fc1b4bb826e24"
+source = "git+https://github.com/RazrFalcon/tiny-skia?rev=b8adab9#b8adab99d82c2976a4924fc7de485813a94c9eb9"
 dependencies = [
  "cc",
  "png",

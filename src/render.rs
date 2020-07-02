@@ -296,7 +296,7 @@ fn prepare_filter_fill_paint(
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
             let fill = crate::paint_server::fill(&parent.tree(), &fill, style_bbox, ts);
-            surface.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64, &fill);
+            surface.draw_rect(0.0, 0.0, region.width() as f32, region.height() as f32, &fill);
         }
     }
 
@@ -318,7 +318,7 @@ fn prepare_filter_stroke_paint(
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
             let fill = crate::paint_server::fill(&parent.tree(), &fill, style_bbox, ts);
-            surface.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64, &fill);
+            surface.draw_rect(0.0, 0.0, region.width() as f32, region.height() as f32, &fill);
         }
     }
 
