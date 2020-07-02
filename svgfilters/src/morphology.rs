@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ImageRefMut, BGRA8};
+use crate::{ImageRefMut, RGBA8};
 
 /// A morphology operation.
 #[allow(missing_docs)]
@@ -41,12 +41,12 @@ pub fn morphology(
     let width_max = src.width as i32 - 1;
     let height_max = src.height as i32 - 1;
 
-    let mut buf = vec![BGRA8::default(); src.data.len()];
+    let mut buf = vec![RGBA8::default(); src.data.len()];
     let mut buf = ImageRefMut::new(&mut buf, src.width, src.height);
     let mut x = 0;
     let mut y = 0;
     for _ in src.data.iter() {
-        let mut new_p = BGRA8::default();
+        let mut new_p = RGBA8::default();
         if operator == MorphologyOperator::Erode {
             new_p.r = 255;
             new_p.g = 255;

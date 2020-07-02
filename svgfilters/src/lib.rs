@@ -52,7 +52,7 @@ But majority of methods will work on provided buffers.
 #![warn(missing_docs)]
 
 use float_cmp::ApproxEqUlps;
-pub use rgb::alt::{BGR8, BGRA8};
+pub use rgb::{RGB8, RGBA8};
 
 mod box_blur;
 mod color_matrix;
@@ -108,13 +108,13 @@ impl From<f64> for NormalizedValue {
 
 /// An image reference.
 ///
-/// Image pixels should be stored in BGRA order.
+/// Image pixels should be stored in RGBA order.
 ///
 /// Some filters will require premultipled channels, some not.
 /// See specific filter documentation for details.
 #[derive(Clone, Copy)]
 pub struct ImageRef<'a> {
-    data: &'a [BGRA8],
+    data: &'a [RGBA8],
     width: u32,
     height: u32,
 }
@@ -124,7 +124,7 @@ impl<'a> ImageRef<'a> {
     ///
     /// Doesn't clone the provided data.
     #[inline]
-    pub fn new(data: &'a [BGRA8], width: u32, height: u32) -> Self {
+    pub fn new(data: &'a [RGBA8], width: u32, height: u32) -> Self {
         ImageRef { data, width, height }
     }
 
@@ -137,7 +137,7 @@ impl<'a> ImageRef<'a> {
 
 /// A mutable `ImageRef` variant.
 pub struct ImageRefMut<'a> {
-    data: &'a mut [BGRA8],
+    data: &'a mut [RGBA8],
     width: u32,
     height: u32,
 }
@@ -147,24 +147,24 @@ impl<'a> ImageRefMut<'a> {
     ///
     /// Doesn't clone the provided data.
     #[inline]
-    pub fn new(data: &'a mut [BGRA8], width: u32, height: u32) -> Self {
+    pub fn new(data: &'a mut [RGBA8], width: u32, height: u32) -> Self {
         ImageRefMut { data, width, height }
     }
 
     #[inline]
-    fn pixel_at(&self, x: u32, y: u32) -> BGRA8 {
+    fn pixel_at(&self, x: u32, y: u32) -> RGBA8 {
         self.data[(self.width * y + x) as usize]
     }
 
     #[inline]
-    fn pixel_at_mut(&mut self, x: u32, y: u32) -> &mut BGRA8 {
+    fn pixel_at_mut(&mut self, x: u32, y: u32) -> &mut RGBA8 {
         &mut self.data[(self.width * y + x) as usize]
     }
 }
 
 
 /// Multiplies provided pixels alpha.
-pub fn multiply_alpha(data: &mut [BGRA8]) {
+pub fn multiply_alpha(data: &mut [RGBA8]) {
     for p in data {
         let a = p.a as f64 / 255.0;
         p.b = (p.b as f64 * a + 0.5) as u8;
@@ -174,7 +174,7 @@ pub fn multiply_alpha(data: &mut [BGRA8]) {
 }
 
 /// Demultiplies provided pixels alpha.
-pub fn demultiply_alpha(data: &mut [BGRA8]) {
+pub fn demultiply_alpha(data: &mut [RGBA8]) {
     for p in data {
         let a = p.a as f64 / 255.0;
         p.b = (p.b as f64 / a + 0.5) as u8;
@@ -253,11 +253,11 @@ const LINEAR_RGB_TO_SRGB_TABLE: &[u8; 256] = &[
 /// Provided pixels should have an **unpremultiplied alpha**.
 ///
 /// RGB channels order of the input image doesn't matter, but alpha channel must be the last one.
-pub fn into_linear_rgb(data: &mut [BGRA8]) {
+pub fn into_linear_rgb(data: &mut [RGBA8]) {
     for p in data {
-        p.b = SRGB_TO_LINEAR_RGB_TABLE[p.b as usize];
-        p.g = SRGB_TO_LINEAR_RGB_TABLE[p.g as usize];
         p.r = SRGB_TO_LINEAR_RGB_TABLE[p.r as usize];
+        p.g = SRGB_TO_LINEAR_RGB_TABLE[p.g as usize];
+        p.b = SRGB_TO_LINEAR_RGB_TABLE[p.b as usize];
     }
 }
 
@@ -266,11 +266,11 @@ pub fn into_linear_rgb(data: &mut [BGRA8]) {
 /// Provided pixels should have an **unpremultiplied alpha**.
 ///
 /// RGB channels order of the input image doesn't matter, but alpha channel must be the last one.
-pub fn from_linear_rgb(data: &mut [BGRA8]) {
+pub fn from_linear_rgb(data: &mut [RGBA8]) {
     for p in data {
-        p.b = LINEAR_RGB_TO_SRGB_TABLE[p.b as usize];
-        p.g = LINEAR_RGB_TO_SRGB_TABLE[p.g as usize];
         p.r = LINEAR_RGB_TO_SRGB_TABLE[p.r as usize];
+        p.g = LINEAR_RGB_TO_SRGB_TABLE[p.g as usize];
+        p.b = LINEAR_RGB_TO_SRGB_TABLE[p.b as usize];
     }
 }
 

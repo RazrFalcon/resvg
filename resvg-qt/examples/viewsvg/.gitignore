@@ -1,6 +1,0 @@
-debug
-release
-viewsvg
-*.pro.user
-Makefile*
-ui_*.h

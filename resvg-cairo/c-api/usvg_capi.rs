@@ -1,1 +1,0 @@
-../../usvg/c-api/usvg_capi.rs

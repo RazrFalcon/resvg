@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ImageRef, ImageRefMut, FuzzyEq, FuzzyZero, BGR8, BGRA8, f64_bound};
+use crate::{ImageRef, ImageRefMut, FuzzyEq, FuzzyZero, RGB8, RGBA8, f64_bound};
 
 const FACTOR_1_2: f64 = 1.0 / 2.0;
 const FACTOR_1_3: f64 = 1.0 / 3.0;
@@ -164,7 +164,7 @@ impl Normal {
 pub fn diffuse_lighting(
     surface_scale: f64,
     diffuse_constant: f64,
-    lighting_color: BGR8,
+    lighting_color: RGB8,
     light_source: LightSource,
     src: ImageRef,
     dest: ImageRefMut,
@@ -210,7 +210,7 @@ pub fn specular_lighting(
     surface_scale: f64,
     specular_constant: f64,
     specular_exponent: f64,
-    lighting_color: BGR8,
+    lighting_color: RGB8,
     light_source: LightSource,
     src: ImageRef,
     dest: ImageRefMut,
@@ -261,7 +261,7 @@ pub fn specular_lighting(
 fn apply(
     light_source: LightSource,
     surface_scale: f64,
-    lighting_color: BGR8,
+    lighting_color: RGB8,
     light_factor: &dyn Fn(Normal, Vector3) -> f64,
     calc_alpha: fn(u8, u8, u8) -> u8,
     src: ImageRef,
@@ -309,7 +309,7 @@ fn apply(
         let b = compute(light_color.b);
         let a = calc_alpha(r, g, b);
 
-        *dest.pixel_at_mut(nx, ny) = BGRA8 { b, g, r, a };
+        *dest.pixel_at_mut(nx, ny) = RGBA8 { b, g, r, a };
     };
 
     calc(0,         0,          top_left_normal(src));
@@ -336,9 +336,9 @@ fn apply(
 
 fn light_color(
     light: &LightSource,
-    lighting_color: BGR8,
+    lighting_color: RGB8,
     light_vector: Vector3,
-) -> BGR8 {
+) -> RGB8 {
     match *light {
         LightSource::DistantLight { .. } | LightSource::PointLight { .. } => {
             lighting_color
@@ -352,22 +352,22 @@ fn light_color(
             let direction = direction.normalized().unwrap_or(direction);
             let minus_l_dot_s = -light_vector.dot(&direction);
             if minus_l_dot_s <= 0.0 {
-                return BGR8::default();
+                return RGB8::default();
             }
 
             if let Some(limiting_cone_angle) = limiting_cone_angle {
                 if minus_l_dot_s < limiting_cone_angle.to_radians().cos() {
-                    return BGR8::default();
+                    return RGB8::default();
                 }
             }
 
             let factor = minus_l_dot_s.powf(specular_exponent);
             let compute = |x| (f64_bound(0.0, x as f64 * factor, 255.0) + 0.5) as u8;
 
-            BGR8 {
-                b: compute(lighting_color.b),
-                g: compute(lighting_color.g),
+            RGB8 {
                 r: compute(lighting_color.r),
+                g: compute(lighting_color.g),
+                b: compute(lighting_color.b),
             }
         }
     }

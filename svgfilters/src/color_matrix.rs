@@ -2,10 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ImageRefMut, NormalizedValue, BGRA8, f64_bound};
+use crate::{ImageRefMut, NormalizedValue, RGBA8, f64_bound};
 
 #[inline]
-fn to_normalized_components(pixel: BGRA8) -> (f64, f64, f64, f64) {
+fn to_normalized_components(pixel: RGBA8) -> (f64, f64, f64, f64) {
     (pixel.r as f64 / 255.0,
      pixel.g as f64 / 255.0,
      pixel.b as f64 / 255.0,

@@ -57,7 +57,7 @@ impl Tree {
         Self::from_dom(doc, &opt)
     }
 
-    /// Parses `Tree` from the `svgdom::Document`.
+    /// Parses `Tree` from the `svgtree::Document`.
     ///
     /// An empty `Tree` will be returned on any error.
     fn from_dom(doc: svgtree::Document, opt: &Options) -> Result<Self, Error> {

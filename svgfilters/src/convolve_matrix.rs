@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ImageRefMut, FuzzyZero, BGRA8, f64_bound};
+use crate::{ImageRefMut, FuzzyZero, RGBA8, f64_bound};
 
 /// An edges processing mode used by `convolve_matrix`.
 #[allow(missing_docs)]
@@ -125,7 +125,7 @@ pub fn convolve_matrix(
     let width_max = src.width as i32 - 1;
     let height_max = src.height as i32 - 1;
 
-    let mut buf = vec![BGRA8::default(); src.data.len()];
+    let mut buf = vec![RGBA8::default(); src.data.len()];
     let mut buf = ImageRefMut::new(&mut buf, src.width, src.height);
     let mut x = 0;
     let mut y = 0;

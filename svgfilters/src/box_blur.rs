@@ -6,7 +6,7 @@
 
 use std::cmp;
 
-use crate::{ImageRefMut, BGRA8};
+use crate::{ImageRefMut, RGBA8};
 
 const STEPS: usize = 5;
 
@@ -110,12 +110,12 @@ fn box_blur_vert(
         let mut li = ti;
         let mut ri = ti + blur_radius * width;
 
-        let fv = BGRA8::default();
-        let lv = BGRA8::default();
+        let fv = RGBA8::default();
+        let lv = RGBA8::default();
 
-        let mut val_b = blur_radius_next * (fv.b as isize);
-        let mut val_g = blur_radius_next * (fv.g as isize);
         let mut val_r = blur_radius_next * (fv.r as isize);
+        let mut val_g = blur_radius_next * (fv.g as isize);
+        let mut val_b = blur_radius_next * (fv.b as isize);
         let mut val_a = blur_radius_next * (fv.a as isize);
 
         // Get the pixel at the specified index, or the first pixel of the column
@@ -140,30 +140,30 @@ fn box_blur_vert(
 
         for j in 0..cmp::min(blur_radius, height) {
             let bb = backbuf.data[ti + j * width];
-            val_b += bb.b as isize;
-            val_g += bb.g as isize;
             val_r += bb.r as isize;
+            val_g += bb.g as isize;
+            val_b += bb.b as isize;
             val_a += bb.a as isize;
         }
         if blur_radius > height {
-            val_b += blur_radius_prev * (lv.b as isize);
-            val_g += blur_radius_prev * (lv.g as isize);
             val_r += blur_radius_prev * (lv.r as isize);
+            val_g += blur_radius_prev * (lv.g as isize);
+            val_b += blur_radius_prev * (lv.b as isize);
             val_a += blur_radius_prev * (lv.a as isize);
         }
 
         for _ in 0..cmp::min(height, blur_radius + 1) {
             let bb = get_bottom(ri);
             ri += width;
-            val_b += sub(bb.b, fv.b);
-            val_g += sub(bb.g, fv.g);
             val_r += sub(bb.r, fv.r);
+            val_g += sub(bb.g, fv.g);
+            val_b += sub(bb.b, fv.b);
             val_a += sub(bb.a, fv.a);
 
-            frontbuf.data[ti] = BGRA8 {
-                b: round(val_b as f32 * iarr) as u8,
-                g: round(val_g as f32 * iarr) as u8,
+            frontbuf.data[ti] = RGBA8 {
                 r: round(val_r as f32 * iarr) as u8,
+                g: round(val_g as f32 * iarr) as u8,
+                b: round(val_b as f32 * iarr) as u8,
                 a: round(val_a as f32 * iarr) as u8,
             };
             ti += width;
@@ -180,15 +180,15 @@ fn box_blur_vert(
             let bb2 = backbuf.data[li];
             li += width;
 
-            val_b += sub(bb1.b, bb2.b);
-            val_g += sub(bb1.g, bb2.g);
             val_r += sub(bb1.r, bb2.r);
+            val_g += sub(bb1.g, bb2.g);
+            val_b += sub(bb1.b, bb2.b);
             val_a += sub(bb1.a, bb2.a);
 
-            frontbuf.data[ti] = BGRA8 {
-                b: round(val_b as f32 * iarr) as u8,
-                g: round(val_g as f32 * iarr) as u8,
+            frontbuf.data[ti] = RGBA8 {
                 r: round(val_r as f32 * iarr) as u8,
+                g: round(val_g as f32 * iarr) as u8,
+                b: round(val_b as f32 * iarr) as u8,
                 a: round(val_a as f32 * iarr) as u8,
             };
             ti += width;
@@ -198,15 +198,15 @@ fn box_blur_vert(
             let bb = get_top(li);
             li += width;
 
-            val_b += sub(lv.b, bb.b);
-            val_g += sub(lv.g, bb.g);
             val_r += sub(lv.r, bb.r);
+            val_g += sub(lv.g, bb.g);
+            val_b += sub(lv.b, bb.b);
             val_a += sub(lv.a, bb.a);
 
-            frontbuf.data[ti] = BGRA8 {
-                b: round(val_b as f32 * iarr) as u8,
-                g: round(val_g as f32 * iarr) as u8,
+            frontbuf.data[ti] = RGBA8 {
                 r: round(val_r as f32 * iarr) as u8,
+                g: round(val_g as f32 * iarr) as u8,
+                b: round(val_b as f32 * iarr) as u8,
                 a: round(val_a as f32 * iarr) as u8,
             };
             ti += width;
@@ -239,12 +239,12 @@ fn box_blur_horz(
         let mut li = ti;
         let mut ri = ti + blur_radius;
 
-        let fv = BGRA8::default();
-        let lv = BGRA8::default();
+        let fv = RGBA8::default();
+        let lv = RGBA8::default();
 
-        let mut val_b = blur_radius_next * (fv.b as isize);
-        let mut val_g = blur_radius_next * (fv.g as isize);
         let mut val_r = blur_radius_next * (fv.r as isize);
+        let mut val_g = blur_radius_next * (fv.g as isize);
+        let mut val_b = blur_radius_next * (fv.b as isize);
         let mut val_a = blur_radius_next * (fv.a as isize);
 
         // Get the pixel at the specified index, or the first pixel of the row
@@ -269,15 +269,15 @@ fn box_blur_horz(
 
         for j in 0..cmp::min(blur_radius, width) {
             let bb = backbuf.data[ti + j]; // VERTICAL: ti + j * width
-            val_b += bb.b as isize;
-            val_g += bb.g as isize;
             val_r += bb.r as isize;
+            val_g += bb.g as isize;
+            val_b += bb.b as isize;
             val_a += bb.a as isize;
         }
         if blur_radius > width {
-            val_b += blur_radius_prev * (lv.b as isize);
-            val_g += blur_radius_prev * (lv.g as isize);
             val_r += blur_radius_prev * (lv.r as isize);
+            val_g += blur_radius_prev * (lv.g as isize);
+            val_b += blur_radius_prev * (lv.b as isize);
             val_a += blur_radius_prev * (lv.a as isize);
         }
 
@@ -285,15 +285,15 @@ fn box_blur_horz(
         for _ in 0..cmp::min(width, blur_radius + 1) {
             let bb = get_right(ri);
             ri += 1;
-            val_b += sub(bb.b, fv.b);
-            val_g += sub(bb.g, fv.g);
             val_r += sub(bb.r, fv.r);
+            val_g += sub(bb.g, fv.g);
+            val_b += sub(bb.b, fv.b);
             val_a += sub(bb.a, fv.a);
 
-            frontbuf.data[ti] = BGRA8 {
-                b: round(val_b as f32 * iarr) as u8,
-                g: round(val_g as f32 * iarr) as u8,
+            frontbuf.data[ti] = RGBA8 {
                 r: round(val_r as f32 * iarr) as u8,
+                g: round(val_g as f32 * iarr) as u8,
+                b: round(val_b as f32 * iarr) as u8,
                 a: round(val_a as f32 * iarr) as u8,
             };
             ti += 1; // VERTICAL : ti += width, same with the other areas
@@ -312,15 +312,15 @@ fn box_blur_horz(
             let bb2 = backbuf.data[li];
             li += 1;
 
-            val_b += sub(bb1.b, bb2.b);
-            val_g += sub(bb1.g, bb2.g);
             val_r += sub(bb1.r, bb2.r);
+            val_g += sub(bb1.g, bb2.g);
+            val_b += sub(bb1.b, bb2.b);
             val_a += sub(bb1.a, bb2.a);
 
-            frontbuf.data[ti] = BGRA8 {
-                b: round(val_b as f32 * iarr) as u8,
-                g: round(val_g as f32 * iarr) as u8,
+            frontbuf.data[ti] = RGBA8 {
                 r: round(val_r as f32 * iarr) as u8,
+                g: round(val_g as f32 * iarr) as u8,
+                b: round(val_b as f32 * iarr) as u8,
                 a: round(val_a as f32 * iarr) as u8,
             };
             ti += 1;
@@ -331,15 +331,15 @@ fn box_blur_horz(
             let bb = get_left(li);
             li += 1;
 
-            val_b += sub(lv.b, bb.b);
-            val_g += sub(lv.g, bb.g);
             val_r += sub(lv.r, bb.r);
+            val_g += sub(lv.g, bb.g);
+            val_b += sub(lv.b, bb.b);
             val_a += sub(lv.a, bb.a);
 
-            frontbuf.data[ti] = BGRA8 {
-                b: round(val_b as f32 * iarr) as u8,
-                g: round(val_g as f32 * iarr) as u8,
+            frontbuf.data[ti] = RGBA8 {
                 r: round(val_r as f32 * iarr) as u8,
+                g: round(val_g as f32 * iarr) as u8,
+                b: round(val_b as f32 * iarr) as u8,
                 a: round(val_a as f32 * iarr) as u8,
             };
             ti += 1;

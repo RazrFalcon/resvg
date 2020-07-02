@@ -236,7 +236,6 @@ The trick is that font units should be resolved from top to bottom, so:
 // feDisplacementMap UB
 // enable-background
 // sRgb - LinearRGB
-// RGBA - BGRA
 // FillPaint/StrokePaint UB
 // filter on zero sized object/empty group
 

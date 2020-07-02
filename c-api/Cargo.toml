@@ -1,0 +1,22 @@
+[package]
+name = "resvg-capi"
+version = "0.10.0"
+authors = ["Evgeniy Reizner <razrfalcon@gmail.com>"]
+keywords = ["svg", "render", "raster", "c-api"]
+license = "MPL-2.0"
+edition = "2018"
+workspace = ".."
+
+[lib]
+name = "resvg"
+path = "lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+log = "0.4"
+resvg = { path = "../" }
+usvg = { path = "../usvg", default-features = false }
+
+[features]
+default = ["text"] # enables SVG Text support
+text = ["usvg/text", "resvg/text"]

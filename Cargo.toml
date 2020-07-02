@@ -1,0 +1,36 @@
+[package]
+name = "resvg"
+version = "0.10.0"
+authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
+keywords = ["svg", "render", "raster", "skia"]
+license = "MPL-2.0"
+edition = "2018"
+description = "An SVG rendering library."
+repository = "https://github.com/RazrFalcon/resvg"
+
+[workspace]
+members = ["c-api", "svgfilters", "usvg"]
+
+[badges]
+travis-ci = { repository = "RazrFalcon/resvg" }
+
+[[bin]]
+name = "resvg"
+required-features = ["text"]
+
+[dependencies]
+jpeg-decoder = { version = "0.1", default-features = false }
+log = "0.4"
+pico-args = "0.3"
+png = "0.16"
+rgb = "0.8"
+svgfilters = { path = "svgfilters", version = "0.1" }
+tiny-skia = { git = "https://github.com/RazrFalcon/tiny-skia", rev = "1c6e024" }
+usvg = { path = "usvg", version = "0.10", default-features = false }
+
+[dev-dependencies]
+rayon = "1.3"
+
+[features]
+default = ["text"]
+text = ["usvg/text"] # enables SVG Text support

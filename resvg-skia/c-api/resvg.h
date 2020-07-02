@@ -1,1 +1,0 @@
-../../usvg/c-api/resvg.h

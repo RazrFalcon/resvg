@@ -50,6 +50,12 @@ impl NormalizedValue {
     pub fn value(&self) -> f64 {
         self.0
     }
+
+    /// Converts an underlying value into a 0..255 range.
+    #[inline]
+    pub fn to_u8(&self) -> u8 {
+        (self.0 * 255.0).ceil() as u8
+    }
 }
 
 impl std::ops::Mul<NormalizedValue> for NormalizedValue {

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ImageRef, ImageRefMut, FuzzyZero, BGRA8, f64_bound};
+use crate::{ImageRef, ImageRefMut, FuzzyZero, RGBA8, f64_bound};
 
 /// Performs an arithmetic composition.
 ///
@@ -44,7 +44,7 @@ pub fn arithmetic_composite(
         let b = (calc(c1.b, c2.b, a) * 255.0) as u8;
         let a = (a * 255.0) as u8;
 
-        dest.data[i] = BGRA8 { r, g, b, a };
+        dest.data[i] = RGBA8 { r, g, b, a };
 
         i += 1;
     }
