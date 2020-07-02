@@ -1,5 +1,7 @@
 # explorer-thumbnailer
 
+**Warning:** doesn't work since resvg v0.11. Will be fixed soon.
+
 An SVG thumbnails generator for the Windows Explorer.
 
 ## Dependencies

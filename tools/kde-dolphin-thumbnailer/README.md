@@ -7,13 +7,14 @@ An SVG thumbnails generator for the KDE's
 
 ```bash
 # build and install C-API first in case you don't have resvg intalled already
-cargo build --release --manifest-path ../../resvg-qt/c-api/Cargo.toml
-sudo cp ../../resvg-qt/target/release/libresvg_qt.so /usr/lib/
+cargo build --release --manifest-path ../../c-api/Cargo.toml
+strip -s ../../target/release/libresvg.so # optional, but recommended
+sudo cp ../../target/release/libresvg.so /usr/lib64/
 
 # build
 mkdir build
 cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=`kf5-config --prefix` -DQT_PLUGIN_INSTALL_DIR=`kf5-config --qt-plugins` -DCMAKE_BUILD_TYPE=Release
+env CC=clang cmake .. -DCMAKE_INSTALL_PREFIX=`kf5-config --prefix` -DKDE_INSTALL_QTPLUGINDIR=`kf5-config --qt-plugins` -DCMAKE_BUILD_TYPE=Release
 make
 
 # install
