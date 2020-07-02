@@ -108,8 +108,8 @@ fn prepare_linear(
     paint: &mut skia::Paint,
 ) {
     let gradient = skia::LinearGradient {
-        start_point: (g.x1, g.y1),
-        end_point: (g.x2, g.y2),
+        start_point: (g.x1 as f32, g.y1 as f32),
+        end_point: (g.x2 as f32, g.y2 as f32),
         base: prepare_base_gradient(g, opacity, &bbox)
     };
 
@@ -125,8 +125,8 @@ fn prepare_radial(
 ) {
 
     let gradient = skia::RadialGradient {
-        start_circle: (g.fx, g.fy, 0.0),
-        end_circle: (g.cx, g.cy, g.r.value()),
+        start_circle: (g.fx as f32, g.fy as f32, 0.0),
+        end_circle: (g.cx as f32, g.cy as f32, g.r.value() as f32),
         base: prepare_base_gradient(g, opacity, &bbox)
     };
 
@@ -146,7 +146,7 @@ fn prepare_base_gradient(
         usvg::SpreadMethod::Repeat => skia::TileMode::Repeat,
     };
 
-    let matrix = {
+    let transform = {
         if g.units == usvg::Units::ObjectBoundingBox {
             let mut ts = usvg::Transform::from_bbox(*bbox);
             ts.append(&g.transform);
@@ -166,7 +166,7 @@ fn prepare_base_gradient(
         positions.push(stop.offset.value() as f32);
     }
 
-    skia::Gradient { colors, positions, tile_mode, matrix }
+    skia::Gradient { colors, positions, tile_mode, transform }
 }
 
 fn prepare_pattern(
@@ -192,7 +192,7 @@ fn prepare_pattern(
     surface.scale(sx, sy);
     if let Some(vbox) = pattern.view_box {
         let ts = usvg::utils::view_box_to_transform(vbox.rect, vbox.aspect, r.size());
-        surface.concat(&ts.to_native());
+        surface.concat(ts.to_native());
     } else if pattern.content_units == usvg::Units::ObjectBoundingBox {
         // 'Note that this attribute has no effect if attribute `viewBox` is specified.'
 

@@ -15,7 +15,7 @@ pub fn mask(
     let mut mask_surface = mask_surface.borrow_mut();
 
     {
-        mask_surface.set_matrix(&canvas.get_matrix());
+        mask_surface.set_transform(canvas.get_transform());
 
         let r = if mask.units == usvg::Units::ObjectBoundingBox {
             mask.rect.bbox_transform(bbox)
@@ -27,7 +27,7 @@ pub fn mask(
         mask_surface.set_clip_rect(r.x(), r.y(), r.width(), r.height());
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {
-            mask_surface.concat(&usvg::Transform::from_bbox(bbox).to_native());
+            mask_surface.concat(usvg::Transform::from_bbox(bbox).to_native());
         }
 
         crate::render::render_group(node, &mut RenderState::Ok, layers, &mut mask_surface);
@@ -50,7 +50,7 @@ pub fn mask(
         }
     }
 
-    canvas.reset_matrix();
+    canvas.reset_transform();
     canvas.draw_surface(
         &mask_surface, 0.0, 0.0, 255, skia::BlendMode::DestinationIn, skia::FilterQuality::Low,
     );

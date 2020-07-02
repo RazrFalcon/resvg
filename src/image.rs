@@ -124,7 +124,7 @@ fn draw_svg(
         canvas.set_clip_rect(clip.x(), clip.y(), clip.width(), clip.height());
     }
 
-    canvas.concat(&ts.to_native());
+    canvas.concat(ts.to_native());
     render_to_canvas(&tree, img_size, canvas);
 
     canvas.restore();

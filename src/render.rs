@@ -27,19 +27,24 @@ pub(crate) enum RenderState {
 }
 
 
-pub(crate) trait ConvTransform<T> {
-    fn to_native(&self) -> T;
-    fn from_native(_: &T) -> Self;
+pub(crate) trait ConvTransform {
+    fn to_native(&self) -> skia::Transform;
+    fn from_native(_: skia::Transform) -> Self;
 }
 
-impl ConvTransform<skia::Matrix> for usvg::Transform {
-    fn to_native(&self) -> skia::Matrix {
-        skia::Matrix::new_from(self.a, self.b, self.c, self.d, self.e, self.f)
+impl ConvTransform for usvg::Transform {
+    fn to_native(&self) -> skia::Transform {
+        skia::Transform::new(
+            self.a as f32, self.b as f32, self.c as f32,
+            self.d as f32, self.e as f32, self.f as f32,
+        )
     }
 
-    fn from_native(mat: &skia::Matrix) -> Self {
-        let d = mat.data();
-        Self::new(d.0, d.1, d.2, d.3, d.4, d.5)
+    fn from_native(ts: skia::Transform) -> Self {
+        Self::new(
+            ts.a as f64, ts.b as f64, ts.c as f64,
+            ts.d as f64, ts.e as f64, ts.f as f64,
+        )
     }
 }
 
@@ -62,14 +67,14 @@ pub(crate) fn render_node_to_canvas(
 
     apply_viewbox_transform(view_box, img_size, canvas);
 
-    let curr_ts = canvas.get_matrix();
+    let curr_ts = canvas.get_transform();
 
     let mut ts = node.abs_transform();
     ts.append(&node.transform());
 
-    canvas.concat(&ts.to_native());
+    canvas.concat(ts.to_native());
     render_node(node, state, &mut layers, canvas);
-    canvas.set_matrix(&curr_ts);
+    canvas.set_transform(curr_ts);
 }
 
 pub(crate) fn create_root_image(
@@ -95,7 +100,7 @@ fn apply_viewbox_transform(
     canvas: &mut skia::Canvas,
 ) {
     let ts = usvg::utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_size());
-    canvas.concat(&ts.to_native());
+    canvas.concat(ts.to_native());
 }
 
 pub(crate) fn render_node(
@@ -127,7 +132,7 @@ pub(crate) fn render_group(
     layers: &mut Layers,
     canvas: &mut skia::Canvas,
 ) -> Option<Rect> {
-    let curr_ts = canvas.get_matrix();
+    let curr_ts = canvas.get_transform();
     let mut g_bbox = Rect::new_bbox();
 
     for node in parent.children() {
@@ -143,7 +148,7 @@ pub(crate) fn render_group(
             RenderState::BackgroundFinished => break,
         }
 
-        canvas.concat(&node.transform().to_native());
+        canvas.concat(node.transform().to_native());
 
         let bbox = render_node(&node, state, layers, canvas);
         if let Some(bbox) = bbox {
@@ -153,7 +158,7 @@ pub(crate) fn render_group(
         }
 
         // Revert transform.
-        canvas.set_matrix(&curr_ts);
+        canvas.set_transform(curr_ts);
     }
 
     // Check that bbox was changed, otherwise we will have a rect with x/y set to f64::MAX.
@@ -174,10 +179,10 @@ fn render_group_impl(
     let sub_surface = layers.get()?;
     let mut sub_surface = sub_surface.borrow_mut();
 
-    let curr_ts = canvas.get_matrix();
+    let curr_ts = canvas.get_transform();
 
     let bbox = {
-        sub_surface.set_matrix(&curr_ts);
+        sub_surface.set_transform(curr_ts);
         render_group(node, state, layers, &mut sub_surface)
     };
 
@@ -189,12 +194,12 @@ fn render_group_impl(
     // 'Any filter effects, masking and group opacity that might be set on A[i] do not apply
     // when rendering the children of A[i] into BUF[i].'
     if *state == RenderState::BackgroundFinished {
-        let curr_ts = canvas.get_matrix();
-        canvas.reset_matrix();
+        let curr_ts = canvas.get_transform();
+        canvas.reset_transform();
         canvas.draw_surface(
             &sub_surface, 0.0, 0.0, 255, skia::BlendMode::SourceOver, skia::FilterQuality::Low,
         );
-        canvas.set_matrix(&curr_ts);
+        canvas.set_transform(curr_ts);
         return bbox;
     }
 
@@ -203,7 +208,7 @@ fn render_group_impl(
     if let Some(ref id) = g.filter {
         if let Some(filter_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
-                let ts = usvg::Transform::from_native(&curr_ts);
+                let ts = usvg::Transform::from_native(curr_ts);
                 let background = prepare_filter_background(node, filter, layers.image_size());
                 let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, &sub_surface);
                 let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, &sub_surface);
@@ -219,7 +224,7 @@ fn render_group_impl(
         if let Some(ref id) = g.clip_path {
             if let Some(clip_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                    sub_surface.set_matrix(&curr_ts);
+                    sub_surface.set_transform(curr_ts);
                     crate::clip::clip(&clip_node, cp, bbox, layers, &mut sub_surface);
                 }
             }
@@ -228,7 +233,7 @@ fn render_group_impl(
         if let Some(ref id) = g.mask {
             if let Some(mask_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                    sub_surface.set_matrix(&curr_ts);
+                    sub_surface.set_transform(curr_ts);
                     crate::mask::mask(&mask_node, mask, bbox, layers, &mut sub_surface);
                 }
             }
@@ -241,12 +246,12 @@ fn render_group_impl(
         255
     };
 
-    let curr_ts = canvas.get_matrix();
-    canvas.reset_matrix();
+    let curr_ts = canvas.get_transform();
+    canvas.reset_transform();
     canvas.draw_surface(
         &sub_surface, 0.0, 0.0, a, skia::BlendMode::SourceOver, skia::FilterQuality::Low,
     );
-    canvas.set_matrix(&curr_ts);
+    canvas.set_transform(curr_ts);
 
     bbox
 }

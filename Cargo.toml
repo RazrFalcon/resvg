@@ -25,7 +25,7 @@ pico-args = "0.3"
 png = "0.16"
 rgb = "0.8"
 svgfilters = { path = "svgfilters", version = "0.1" }
-tiny-skia = { git = "https://github.com/RazrFalcon/tiny-skia", rev = "1c6e024" }
+tiny-skia = { git = "https://github.com/RazrFalcon/tiny-skia", rev = "53920ae" }
 usvg = { path = "usvg", version = "0.10", default-features = false }
 
 [dev-dependencies]

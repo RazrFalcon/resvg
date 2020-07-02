@@ -627,7 +627,7 @@ fn apply_offset(
 
     let mut buffer = skia::Surface::try_create(input.width(), input.height())?;
 
-    buffer.reset_matrix();
+    buffer.reset_transform();
     buffer.draw_surface(input.as_ref(), dx, dy, 255, skia::BlendMode::SourceOver,
                         skia::FilterQuality::Low);
     buffer.flush();
@@ -720,7 +720,7 @@ fn apply_merge(
     results: &[FilterResult],
 ) -> Result<Image, Error> {
     let mut buffer = skia::Surface::try_create(region.width(), region.height())?;
-    buffer.reset_matrix();
+    buffer.reset_transform();
 
     for input in &fe.inputs {
         let input = get_input(input, region, inputs, results)?;
@@ -761,7 +761,7 @@ fn apply_tile(
 
     buffer.draw_rect(0.0, 0.0, region.width() as f64, region.height() as f64, &paint);
 
-    buffer.reset_matrix();
+    buffer.reset_transform();
     Ok(Image::from_image(buffer, ColorSpace::SRGB))
 }
 
@@ -793,14 +793,14 @@ fn apply_image(
 
                 let (sx, sy) = ts.get_scale();
                 buffer.scale(sx, sy);
-                buffer.concat(&node.transform().to_native());
+                buffer.concat(node.transform().to_native());
 
                 crate::render::render_node(node, &mut RenderState::Ok, &mut layers, &mut buffer);
             }
         }
     }
 
-    buffer.reset_matrix();
+    buffer.reset_transform();
     Ok(Image::from_image(buffer, ColorSpace::SRGB))
 }
 
@@ -1027,7 +1027,7 @@ fn apply_to_canvas(
 ) -> Result<(), Error> {
     let input = input.into_color_space(ColorSpace::SRGB)?;
 
-    canvas.reset_matrix();
+    canvas.reset_transform();
     canvas.clear();
     canvas.draw_surface(input.as_ref(), region.x() as f64, region.y() as f64, 255,
                         skia::BlendMode::SourceOver, skia::FilterQuality::Low);

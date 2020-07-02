@@ -29,7 +29,7 @@ pub fn draw(
 
     let antialias = path.rendering_mode.use_shape_antialiasing();
 
-    let global_ts = usvg::Transform::from_native(&canvas.get_matrix());
+    let global_ts = usvg::Transform::from_native(canvas.get_transform());
 
     if path.fill.is_some() {
         let mut fill = crate::paint_server::fill(tree, &path.fill, style_bbox, global_ts);

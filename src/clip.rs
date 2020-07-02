@@ -16,16 +16,16 @@ pub fn clip(
 
     clip_surface.fill(0, 0, 0, 255);
 
-    clip_surface.set_matrix(&canvas.get_matrix());
-    clip_surface.concat(&cp.transform.to_native());
+    clip_surface.set_transform(canvas.get_transform());
+    clip_surface.concat(cp.transform.to_native());
 
     if cp.units == usvg::Units::ObjectBoundingBox {
-        clip_surface.concat(&usvg::Transform::from_bbox(bbox).to_native());
+        clip_surface.concat(usvg::Transform::from_bbox(bbox).to_native());
     }
 
-    let ts = clip_surface.get_matrix();
+    let ts = clip_surface.get_transform();
     for node in node.children() {
-        clip_surface.concat(&node.transform().to_native());
+        clip_surface.concat(node.transform().to_native());
 
         match *node.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
@@ -37,7 +37,7 @@ pub fn clip(
             _ => {}
         }
 
-        clip_surface.set_matrix(&ts);
+        clip_surface.set_transform(ts);
     }
 
     if let Some(ref id) = cp.clip_path {
@@ -48,7 +48,7 @@ pub fn clip(
         }
     }
 
-    canvas.reset_matrix();
+    canvas.reset_transform();
     canvas.draw_surface(
         &clip_surface, 0.0, 0.0, 255, skia::BlendMode::DestinationOut, skia::FilterQuality::Low,
     );
@@ -71,12 +71,12 @@ fn clip_group(
                 let clip_surface = try_opt!(layers.get());
                 let mut clip_surface = clip_surface.borrow_mut();
 
-                clip_surface.set_matrix(&canvas.get_matrix());
+                clip_surface.set_transform(canvas.get_transform());
 
                 draw_group_child(&node, &mut clip_surface);
                 clip(clip_node, cp, bbox, layers, &mut clip_surface);
 
-                canvas.reset_matrix();
+                canvas.reset_transform();
                 canvas.draw_surface(
                     &clip_surface, 0.0, 0.0, 255, skia::BlendMode::Xor, skia::FilterQuality::Low,
                 );
@@ -87,7 +87,7 @@ fn clip_group(
 
 fn draw_group_child(node: &usvg::Node, canvas: &mut skia::Canvas) {
     if let Some(child) = node.first_child() {
-        canvas.concat(&child.transform().to_native());
+        canvas.concat(child.transform().to_native());
 
         match *child.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
