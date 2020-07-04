@@ -9,7 +9,7 @@ cd resvg-"$VERSION"
 git checkout tags/v"$VERSION" -b temp-branch
 
 mkdir -p .cargo
-cargo-vendor vendor --relative-path > .cargo/config
+cargo vendor > .cargo/config
 
 cd ..
 
@@ -28,7 +28,7 @@ rm -rf resvg-"$VERSION"
 # Test our archive.
 tar -xJf resvg-"$VERSION".tar.xz
 cd resvg-"$VERSION"
-cargo build --verbose --release --frozen
+cargo build --release --frozen
 
 # Clean up again.
 cd ..
