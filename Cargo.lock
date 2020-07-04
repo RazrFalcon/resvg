@@ -393,7 +393,7 @@ checksum = "be9e29cb19c8fe84169fcb07f8f11e66bc9e6e0280efd4715c54818296f8a4a8"
 
 [[package]]
 name = "resvg"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "jpeg-decoder",
  "log",
@@ -408,7 +408,7 @@ dependencies = [
 
 [[package]]
 name = "resvg-capi"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "log",
  "resvg",
@@ -463,7 +463,7 @@ checksum = "0b8de496cf83d4ed58b6be86c3a275b8602f6ffe98d3024a869e124147a9a3ac"
 
 [[package]]
 name = "svgfilters"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "float-cmp",
  "rgb",
@@ -518,7 +518,7 @@ checksum = "b1d386ff53b415b7fe27b50bb44679e2cc4660272694b7b6f3326d8480823a94"
 
 [[package]]
 name = "usvg"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "base64",
  "data-url",

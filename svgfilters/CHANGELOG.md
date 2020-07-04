@@ -8,5 +8,6 @@ This changelog also contains important changes in dependencies.
 
 ## Unreleased
 
+## 0.2.0 - 2020-07-04
 ### Changed
 - BGRA -> RGBA

@@ -8,6 +8,7 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 
+## [0.11.0] - 2020-07-04
 ### Highlights
 - All backends except Skia were removed. Skia is the only official one from now.
 - New C API implementation.
@@ -372,7 +373,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/RazrFalcon/resvg/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/RazrFalcon/resvg/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/RazrFalcon/resvg/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/RazrFalcon/resvg/compare/v0.8.0...v0.9.0

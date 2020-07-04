@@ -46,7 +46,7 @@ Some methods will allocate necessary, temporary buffers which will be reflected 
 But majority of methods will work on provided buffers.
 */
 
-#![doc(html_root_url = "https://docs.rs/svgfilters/0.1.0")]
+#![doc(html_root_url = "https://docs.rs/svgfilters/0.2.0")]
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
