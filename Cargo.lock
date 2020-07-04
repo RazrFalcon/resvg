@@ -432,9 +432,9 @@ dependencies = [
 
 [[package]]
 name = "rustybuzz"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65224f1b020aed60b72d9a198b8c56e1b963f8af73c8008bbe978834c8b44ed5"
+checksum = "587e0c54f676a15df40c5fe5ea98da021000fe73762ace644d0ce4c5e3e80812"
 dependencies = [
  "bitflags",
  "cc",
