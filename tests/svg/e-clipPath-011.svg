@@ -2,7 +2,7 @@
     <title>Clipping with complex text (2)</title>
 
     <clipPath id="clip1">
-        <text id="text1" x="30" y="110" font-family="Arial" font-size="30"
+        <text id="text1" x="30" y="110" font-family="Noto Sans" font-size="30"
               stroke="black" stroke-width="20">
             <tspan id="tspan1">Some Text</tspan>
         </text>

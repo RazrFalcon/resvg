@@ -1,6 +1,6 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink"
-     font-family="Arial" font-size="22">
+     font-family="Noto Sans" font-size="22">
     <title>Link to a complex `text`</title>
     <desc>Only text data should be referenced</desc>
 

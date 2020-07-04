@@ -9,7 +9,7 @@
     <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
           stroke="gray" stroke-width="0.5"/>
 
-    <g id="g1" font-family="Arial" font-size="40" clip-path="url(#clip1)">
+    <g id="g1" font-family="Noto Sans" font-size="40" clip-path="url(#clip1)">
         <text id="text1" x="50" y="105" font-size="50" visibility="hidden">Text</text>
         <text id="text2" x="60" y="100">Text</text>
     </g>

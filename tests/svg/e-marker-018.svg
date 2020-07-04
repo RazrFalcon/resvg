@@ -2,7 +2,7 @@
     <title>With a text child</title>
 
     <marker id="marker1" refX="7" refY="10" markerWidth="30" markerHeight="30">
-        <text id="text1" font-family="Arial" font-size="8" y="12">Text</text>
+        <text id="text1" font-family="Noto Sans" font-size="8" y="12">Text</text>
     </marker>
     <path id="path1" fill="green" d="M 100 15 l 50 160 l -130 -100 l 160 0 l -130 100"
           marker-start="url(#marker1)" marker-mid="url(#marker1)" marker-end="url(#marker1)"/>

@@ -8,7 +8,7 @@
     <path id="pathForText2" d="M 120 100 C 115 65 165 65 180 100"
           fill="none" stroke="gray"/>
 
-    <text id="text1" font-family="Arial" font-size="24" x="20" y="60">
+    <text id="text1" font-family="Noto Sans" font-size="24" x="20" y="60">
         Some
         <textPath id="textPath1" xlink:href="#pathForText1">
             very

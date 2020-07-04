@@ -3,7 +3,7 @@
     <title>On text</title>
 
     <a id="a1" xlink:href="https://www.w3.org/TR/SVG/">
-        <text id="text1" x="40" y="120" font-family="Arial" font-size="64">Text</text>
+        <text id="text1" x="40" y="120" font-family="Noto Sans" font-size="64">Text</text>
     </a>
 
     <!-- image frame -->

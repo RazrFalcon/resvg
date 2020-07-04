@@ -6,7 +6,7 @@
         <text id="text1">Text</text>
     </defs>
 
-    <text id="text2" y="100" font-family="Arial" font-size="64">
+    <text id="text2" y="100" font-family="Noto Sans" font-size="64">
         <tref x="33" id="tref2" xlink:href="#text1" fill="green"/>
         <tref x="33" id="tref1" xlink:href="#text1" display="none" fill="red"/>
     </text>

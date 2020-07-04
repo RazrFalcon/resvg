@@ -5,7 +5,7 @@
     <path id="pathForText1" d="M 30 100 A 40 30 20 1 1 160 100"
           fill="none" stroke="gray"/>
 
-    <text id="text1" font-family="Arial" font-size="24">
+    <text id="text1" font-family="Noto Sans" font-size="24">
         <textPath id="textPath1" xlink:href="#pathForText1">
             abcdefghijklmnopqrstuvwxyz
         </textPath>

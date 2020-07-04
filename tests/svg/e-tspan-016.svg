@@ -1,6 +1,6 @@
 <!-- based on the tspan05.svg example from the SVG spec, paragraph 10.5 -->
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
-     font-family="Arial" font-size="14">
+     font-family="Noto Sans" font-size="14">
     <title>Nested `rotate`</title>
 
     <text id="text1" fill="red" x="10" y="80" rotate="5,15,25,35,45,55">

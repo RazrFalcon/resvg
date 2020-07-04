@@ -1,7 +1,7 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
     <title>Invalid `textPath` in the middle</title>
 
-    <text id="text1" font-family="Arial" font-size="24" text-anchor="middle" x="100" y="100">
+    <text id="text1" font-family="Noto Sans" font-size="24" text-anchor="middle" x="100" y="100">
         Some
         <textPath id="textPath1">
             long

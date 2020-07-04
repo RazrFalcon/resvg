@@ -1,7 +1,7 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
     <title>`none` on `tspan` (1)</title>
 
-    <text id="text1" y="100" font-family="Arial" font-size="64">
+    <text id="text1" y="100" font-family="Noto Sans" font-size="64">
         <tspan id="tspan1" x="32" fill="green">Text</tspan>
         <tspan id="tspan2" x="32" fill="red" display="none">Text</tspan>
     </text>

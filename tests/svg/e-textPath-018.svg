@@ -2,7 +2,7 @@
      xmlns:xlink="http://www.w3.org/1999/xlink">
     <title>Invalid link</title>
 
-    <text id="text1" font-family="Arial" font-size="24" y="100">
+    <text id="text1" font-family="Noto Sans" font-size="24" y="100">
         <textPath id="textPath1" xlink:href="#text1">
             Some long text
         </textPath>

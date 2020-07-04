@@ -4,7 +4,7 @@
     <rect id="rect1" x="40" y="93" width="120" height="20" fill="green"/>
 
     <text id="text1" x="100" y="120" text-anchor="middle"
-          font-family="Arial" font-size="64"
+          font-family="Noto Sans" font-size="64"
           fill="black" fill-opacity="0.5" stroke="green">Text</text>
 
     <!-- image frame -->

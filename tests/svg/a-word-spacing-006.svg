@@ -1,5 +1,5 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
-     font-family="Arial" font-size="18">
+     font-family="Noto Sans" font-size="18">
     <title>`2mm`</title>
 
     <path id="crosshair" d="M 20 100 L 180 100 M 41 20 L 41 180 M 160 20 L 160 180"

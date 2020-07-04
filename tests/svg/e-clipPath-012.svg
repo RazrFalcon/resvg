@@ -2,7 +2,7 @@
     <title>Clipping with complex text and `clip-rule`</title>
 
     <clipPath id="clip1" clip-rule="evenodd">
-        <text id="text1" x="20" y="110" font-family="Arial" font-size="40">
+        <text id="text1" x="20" y="110" font-family="Noto Sans" font-size="40">
             <tspan id="tspan1">Text</tspan>
             <tspan id="tspan2" x="30">Text</tspan>
         </text>

@@ -7,7 +7,7 @@
               fill="none" stroke="gray"/>
     </g>
 
-    <text id="text1" font-family="Arial" font-size="24">
+    <text id="text1" font-family="Noto Sans" font-size="24">
         <textPath id="textPath1" xlink:href="#pathForText1">Some long text</textPath>
     </text>
 

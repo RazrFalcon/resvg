@@ -1,7 +1,7 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
     <title>`ex`</title>
 
-    <g id="g1" font-family="Arial" font-size="12">
+    <g id="g1" font-family="Noto Sans" font-size="12">
         <text id="text1" x="60" y="100" font-size="5ex">Text</text>
     </g>
 

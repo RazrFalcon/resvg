@@ -5,7 +5,7 @@
     <path id="pathForText1" d="M 20 100 C 35 135 85 135 100 100 C 115 65 165 65 180 100"
           fill="none" stroke="gray"/>
 
-    <text id="text1" font-family="Arial" font-size="24">
+    <text id="text1" font-family="Noto Sans" font-size="24">
         <textPath id="textPath1" xlink:href="#pathForText1" startOffset="5mm">
             Some long text
         </textPath>

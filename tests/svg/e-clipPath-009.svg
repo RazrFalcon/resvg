@@ -2,7 +2,7 @@
     <title>Clipping with text</title>
 
     <clipPath id="clip1">
-        <text id="text1" x="40" y="120" font-family="Arial" font-size="64">Text</text>
+        <text id="text1" x="40" y="120" font-family="Noto Sans" font-size="64">Text</text>
     </clipPath>
     <rect id="rect1" x="0" y="0" width="200" height="200" fill="green" clip-path="url(#clip1)"/>
 

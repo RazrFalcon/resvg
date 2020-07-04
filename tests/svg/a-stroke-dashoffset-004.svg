@@ -2,7 +2,7 @@
     <title>`em` value</title>
 
     <rect id="rect1" x="40" y="40" width="120" height="120" fill="none" stroke="green"
-          font-family="Arial" font-size="20"
+          font-family="Noto Sans" font-size="20"
           stroke-dasharray="10,6,4,10,6,4" stroke-dashoffset="1.5em"/>
 
     <!-- image frame -->

@@ -6,7 +6,7 @@
         d="M 160 100 A 60 60 0 0 1 100 160 60 60 0 0 1 40 100 60 60 0 0 1 100 40
            60 60 0 0 1 160 100 Z"/>
 
-    <text id="text1" font-family="Arial" font-size="24">
+    <text id="text1" font-family="Noto Sans" font-size="24">
         <textPath id="textPath1" xlink:href="#pathForText1">
             Some very very very very very long text
         </textPath>

@@ -1,5 +1,5 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
-     font-family="Arial" font-size="5ex">
+     font-family="Noto Sans" font-size="5ex">
     <title>`ex` on the root element</title>
 
     <text id="text1" x="60" y="100">Text</text>

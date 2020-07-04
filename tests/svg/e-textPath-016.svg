@@ -5,7 +5,7 @@
 
     <rect id="rectForText1" x="40" y="40" width="120" height="120" fill="none" stroke="gray"/>
 
-    <text id="text1" font-family="Arial" font-size="24" y="100">
+    <text id="text1" font-family="Noto Sans" font-size="24" y="100">
         <textPath id="textPath1" xlink:href="#rectForText1">
             Some long text
         </textPath>

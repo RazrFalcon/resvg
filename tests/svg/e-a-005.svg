@@ -3,7 +3,7 @@
      xmlns:xlink="http://www.w3.org/1999/xlink">
     <title>On `tspan`</title>
 
-    <text id="text1" x="100" y="100" text-anchor="middle" font-family="Arial" font-size="12">
+    <text id="text1" x="100" y="100" text-anchor="middle" font-family="Noto Sans" font-size="12">
         A <a id="a1" xlink:href="https://www.w3.org/TR/SVG/">
             <tspan id="tspan1" fill="blue">
                 link

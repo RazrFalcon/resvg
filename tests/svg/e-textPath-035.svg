@@ -14,7 +14,7 @@
               d="M 0.20 1.27 C 0.35 1.62 0.85 1.62 1.00 1.27 C 1.15 0.92 1.65 0.92 1.80 1.27"
               fill="none" stroke="gray" stroke-width="0.01"/>
 
-        <text id="text1" font-family="Arial" font-size="0.24" dy="0.15">
+        <text id="text1" font-family="Noto Sans" font-size="0.24" dy="0.15">
             <textPath id="textPath1" xlink:href="#pathForText1">
                 Some long text
             </textPath>

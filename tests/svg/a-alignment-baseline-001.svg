@@ -4,7 +4,7 @@
     <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
           stroke="gray" stroke-width="0.5"/>
 
-    <text id="text1" x="100" y="100" text-anchor="middle" font-family="Arial" font-size="36"
+    <text id="text1" x="100" y="100" text-anchor="middle" font-family="Noto Sans" font-size="36"
           alignment-baseline="hanging">Hanging</text>
 
       <!-- image frame -->

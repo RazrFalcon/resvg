@@ -2,7 +2,7 @@
     <title>Font list</title>
 
     <text id="text1" x="100" y="100" text-anchor="middle"
-          font-family="'Times New Roman', Arial, serif" font-size="40">Text</text>
+          font-family="'Source Sans Pro', Noto Sans, serif" font-size="40">Text</text>
 
     <!-- image frame -->
     <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>

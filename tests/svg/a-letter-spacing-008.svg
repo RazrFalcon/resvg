@@ -1,5 +1,5 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
-     font-family="Arial" font-size="12">
+     font-family="Noto Sans" font-size="12">
     <title>Mixed spacing</title>
 
     <path id="crosshair" d="M 20 100 L 180 100 M 25 20 L 25 180 M 173 20 L 173 180"

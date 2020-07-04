@@ -2,7 +2,7 @@
     <title>On text</title>
 
     <text id="text1" x="100" y="120" text-anchor="middle"
-          font-family="Arial" font-size="64"
+          font-family="Noto Sans" font-size="64"
           fill="none" stroke="green" stroke-opacity="0.5" stroke-width="3">Text</text>
 
     <!-- image frame -->

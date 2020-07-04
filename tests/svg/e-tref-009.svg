@@ -1,5 +1,5 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
-     xmlns:xlink="http://www.w3.org/1999/xlink" font-family="Arial" font-size="22">
+     xmlns:xlink="http://www.w3.org/1999/xlink" font-family="Noto Sans" font-size="22">
     <title>With text</title>
 
     <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
