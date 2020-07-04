@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use kurbo::{ParamCurveArclen, ParamCurve, ParamCurveDeriv};
-use harfbuzz_rs as harfbuzz;
 use unicode_vo::Orientation as CharOrientation;
 use unicode_script::UnicodeScript;
 use ttf_parser::GlyphId;
@@ -281,8 +280,7 @@ fn shape_text_with_font(
     state: &State,
 ) -> Option<Vec<Glyph>> {
     state.opt.fontdb.with_face_data(font.id, |font_data, face_index| -> Option<Vec<Glyph>> {
-        let hb_face = harfbuzz::Face::from_bytes(font_data, face_index);
-        let hb_font = harfbuzz::Font::new(hb_face);
+        let rb_font = rustybuzz::Font::from_data(font_data, face_index).unwrap();
 
         let bidi_info = unicode_bidi::BidiInfo::new(text, Some(unicode_bidi::Level::ltr()));
         let paragraph = &bidi_info.paragraphs[0];
@@ -298,19 +296,19 @@ fn shape_text_with_font(
             }
 
             let hb_direction = if levels[run.start].is_rtl() {
-                harfbuzz::Direction::Rtl
+                rustybuzz::Direction::RightToLeft
             } else {
-                harfbuzz::Direction::Ltr
+                rustybuzz::Direction::LeftToRight
             };
 
-            let buffer = harfbuzz::UnicodeBuffer::new()
-                .add_str(sub_text)
-                .set_direction(hb_direction);
+            let mut buffer = rustybuzz::UnicodeBuffer::new();
+            buffer.push_str(sub_text);
+            buffer.set_direction(hb_direction);
 
-            let output = harfbuzz::shape(&hb_font, buffer, &[]);
+            let output = rustybuzz::shape(&rb_font, &[], buffer);
 
-            let positions = output.get_glyph_positions();
-            let infos = output.get_glyph_infos();
+            let positions = output.glyph_positions();
+            let infos = output.glyph_infos();
 
             for (pos, info) in positions.iter().zip(infos) {
                 let idx = run.start + info.cluster as usize;
@@ -318,7 +316,7 @@ fn shape_text_with_font(
 
                 glyphs.push(Glyph {
                     byte_idx: ByteIndex::new(idx),
-                    id: GlyphId(info.codepoint as u16),
+                    id: GlyphId(info.glyph as u16),
                     dx: pos.x_offset,
                     dy: pos.y_offset,
                     width: pos.x_advance,

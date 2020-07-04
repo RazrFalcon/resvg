@@ -24,6 +24,7 @@ This changelog also contains important changes in dependencies.
 
 ### Changed
 - Library uses an embedded Skia by default now.
+- Switch `harfbuzz_rs` with `rustybuzz`.
 - Rendering doesn't require `usvg::Options` now.
 - (usvg) The `fontdb` module moved into its own crate.
 - (usvg) `fontconfig` is no longer used for matching

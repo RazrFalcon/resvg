@@ -72,11 +72,6 @@ section for details. And yes, you can use your own Skia build too.
 
 Also, we do not support 32-bit builds and MINGW target.
 
-### Linux specific
-
-By default, the system `harfbuzz` library will be linked on Linux and BSD.
-To force static linking, set the `HARFBUZZ_SYS_NO_PKG_CONFIG=1` environment variable.
-
 ## Safety
 
 Since `resvg` depends on C++ libraries, it's inherently unsafe in Rust terms.
