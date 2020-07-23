@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- (usvg) Do not panic when a font has a zero-sized underline thickness.
 
 ## [0.11.0] - 2020-07-04
 ### Highlights

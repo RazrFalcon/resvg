@@ -1,3 +1,6 @@
+use std::convert::TryFrom;
+use std::num::NonZeroU16;
+
 use fontdb::{ID, Database};
 use ttf_parser::GlyphId;
 
@@ -16,40 +19,48 @@ impl DatabaseExt for Database {
         self.with_face_data(id, |data, face_index| -> Option<Font> {
             let font = ttf_parser::Font::from_data(data, face_index)?;
 
-            // Some fonts can have `units_per_em` set to zero, which will break out calculations.
-            // `ttf_parser` will check this for us.
-            let units_per_em = font.units_per_em()?;
+            let units_per_em = NonZeroU16::new(font.units_per_em()?)?;
 
             let ascent = font.ascender();
             let descent = font.descender();
 
-            let x_height = match font.x_height() {
+            let x_height = font.x_height().and_then(|x| u16::try_from(x).ok()).and_then(NonZeroU16::new);
+            let x_height = match x_height {
                 Some(height) => height,
                 None => {
                     // If not set - fallback to height * 45%.
                     // 45% is what Firefox uses.
-                    (f32::from(ascent - descent) * 0.45) as i16
+                    u16::try_from((f32::from(ascent - descent) * 0.45) as i32).ok()
+                        .and_then(NonZeroU16::new)?
                 }
             };
 
-            let underline = match font.underline_metrics() {
-                Some(metrics) => metrics,
-                None => {
-                    ttf_parser::LineMetrics {
-                        position: -(units_per_em as i16) / 9,
-                        thickness: units_per_em as i16 / 12,
-                    }
-                }
-            };
-
-            let line_through_position = match font.strikeout_metrics() {
+            let line_through = font.strikeout_metrics();
+            let line_through_position = match line_through {
                 Some(metrics) => metrics.position,
-                None => x_height / 2,
+                None => x_height.get() as i16 / 2,
+            };
+
+            let (underline_position, underline_thickness) = match font.underline_metrics() {
+                Some(metrics) => {
+                    let thickness = u16::try_from(metrics.thickness).ok()
+                        .and_then(NonZeroU16::new)
+                        // `ttf_parser` guarantees that units_per_em is >= 16
+                        .unwrap_or(NonZeroU16::new(units_per_em.get() / 12).unwrap());
+
+                    (metrics.position, thickness)
+                }
+                None => {
+                    (
+                        -(units_per_em.get() as i16) / 9,
+                        NonZeroU16::new(units_per_em.get() / 12).unwrap(),
+                    )
+                }
             };
 
             // 0.2 and 0.4 are generic offsets used by some applications (Inkscape/librsvg).
-            let mut subscript_offset = (units_per_em as f32 / 0.2).round() as i16;
-            let mut superscript_offset = (units_per_em as f32 / 0.4).round() as i16;
+            let mut subscript_offset = (units_per_em.get() as f32 / 0.2).round() as i16;
+            let mut superscript_offset = (units_per_em.get() as f32 / 0.4).round() as i16;
             if let Some(metrics) = font.subscript_metrics() {
                 subscript_offset = metrics.y_offset;
             }
@@ -64,8 +75,8 @@ impl DatabaseExt for Database {
                 ascent,
                 descent,
                 x_height,
-                underline_position: underline.position,
-                underline_thickness: underline.thickness,
+                underline_position,
+                underline_thickness,
                 line_through_position,
                 subscript_offset,
                 superscript_offset,
@@ -104,16 +115,15 @@ impl DatabaseExt for Database {
 pub struct Font {
     pub id: ID,
 
-    /// Guarantee to be > 0.
-    units_per_em: u16,
+    units_per_em: NonZeroU16,
 
     // All values below are in font units.
     ascent: i16,
     descent: i16,
-    x_height: i16,
+    x_height: NonZeroU16,
 
     underline_position: i16,
-    underline_thickness: i16,
+    underline_thickness: NonZeroU16,
 
     // line-through thickness should be the the same as underline thickness
     // according to the TrueType spec:
@@ -127,7 +137,7 @@ pub struct Font {
 impl Font {
     #[inline]
     pub fn scale(&self, font_size: f64) -> f64 {
-        font_size / self.units_per_em as f64
+        font_size / self.units_per_em.get() as f64
     }
 
     #[inline]
@@ -147,7 +157,7 @@ impl Font {
 
     #[inline]
     pub fn x_height(&self, font_size: f64) -> f64 {
-        self.x_height as f64 * self.scale(font_size)
+        self.x_height.get() as f64 * self.scale(font_size)
     }
 
     #[inline]
@@ -157,7 +167,7 @@ impl Font {
 
     #[inline]
     pub fn underline_thickness(&self, font_size: f64) -> f64 {
-        self.underline_thickness as f64 * self.scale(font_size)
+        self.underline_thickness.get() as f64 * self.scale(font_size)
     }
 
     #[inline]
