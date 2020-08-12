@@ -1,13 +1,12 @@
 use std::cell::RefCell;
-use winapi::ctypes::c_void;
-use winapi::shared::minwindef::{DWORD, UINT, ULONG};
+use winapi::shared::minwindef::{DWORD, UINT};
 use winapi::shared::windef::HBITMAP;
-use winapi::um::objidlbase::{LPSTREAM, STATSTG};
-use com::sys::{HRESULT, IID, NOERROR, S_OK, S_FALSE};
+use winapi::um::objidlbase::LPSTREAM;
+use com::sys::{HRESULT, IID, S_OK};
 use com::co_class;
-use log::{error};
-use usvg::{FitTo, SystemFontDB};
+use log::error;
 use crate::interfaces::{IThumbnailProvider, IInitializeWithStream};
+use crate::utils::{img_to_hbitmap, render_thumbnail, tree_from_istream};
 
 // {4432C229-DFD0-4B18-8C4D-F58932AF6105}
 pub const CLSID_THUMBNAIL_PROVIDER_CLASS: IID = IID {
@@ -24,55 +23,34 @@ pub struct ThumbnailProvider {
 
 impl IInitializeWithStream for ThumbnailProvider {
     unsafe fn read(&self, pstream: LPSTREAM, _grf_mode: DWORD) -> HRESULT {
-        let mut stat: STATSTG = Default::default();
-        let stat_res = (*pstream).Stat(&mut stat, 0);
-        if stat_res != S_OK {
-            error!("IStream::stat error");
-            return S_FALSE;
-        }
-        let size = *stat.cbSize.QuadPart();
-        let mut svg_data = Vec::with_capacity(size as usize);
-        let mut len: ULONG = 0;
-        let read_res = (*pstream).Read(svg_data.as_mut_ptr() as *mut c_void, size as u32, &mut len);
-        if read_res != S_OK {
-            error!("IStream::read error");
-            return S_FALSE;
-        }
-        svg_data.set_len(len as usize);
-
-        let mut opt = usvg::Options::default();
-        opt.fontdb.load_system_fonts();
-
-        let tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
-        self.tree.replace(Some(tree));
-
-        NOERROR
+        tree_from_istream(pstream).map_or_else(
+            |err| {
+                error!("{}", err);
+                err.into()
+            },
+            |tree| {
+                self.tree.replace(Some(tree));
+                S_OK
+            },
+        )
     }
 }
 
 impl IThumbnailProvider for ThumbnailProvider {
     unsafe fn get_thumbnail(&self, cx: UINT, phbmp: *mut HBITMAP, pdw_alpha: *mut UINT) -> HRESULT {
-        if let Some(tree) = &*self.tree.borrow() {
-            let size = tree.svg_node().size;
-            let fit_to = if size.width() > size.height() {
-                FitTo::Width(cx)
-            } else {
-                FitTo::Height(cx)
-            };
-
-            if let Some(img) = resvg::render(&tree, fit_to, None) {
-                // img.save_png("C:\\the_thumbnail.png");
-                *phbmp = crate::utils::to_hbitmap(img);
-                *pdw_alpha = 2;
-            } else {
-                error!("resvg::render error");
-                return S_FALSE;
-            }
-        } else {
-            error!("SVG tree was not initialized");
-            return S_FALSE;
-        }
-        NOERROR
+        render_thumbnail(&*self.tree.borrow(), cx)
+            .and_then(|img| img_to_hbitmap(img))
+            .map_or_else(
+                |err| {
+                    error!("{}", err);
+                    err.into()
+                },
+                |hbmp| {
+                    *phbmp = hbmp;
+                    *pdw_alpha = 2;
+                    S_OK
+                },
+            )
     }
 }
 

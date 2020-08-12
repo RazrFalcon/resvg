@@ -1,6 +1,7 @@
 use com::registration::{RegistryKeyInfo, dll_register_server, dll_unregister_server};
 use thumbnail_provider::{CLSID_THUMBNAIL_PROVIDER_CLASS, ThumbnailProvider};
 
+mod error;
 mod utils;
 mod interfaces;
 mod thumbnail_provider;
