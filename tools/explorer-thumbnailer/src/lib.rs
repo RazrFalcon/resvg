@@ -5,7 +5,6 @@ mod error;
 mod utils;
 mod interfaces;
 mod thumbnail_provider;
-mod logging;
 
 // we replace the com::registration::inproc_dll_module macro in order to be able
 // to modify DllRegisterServer and DllUnregisterServer functions
@@ -58,6 +57,8 @@ macro_rules! inproc_dll_module {
     };
 }
 
+static WINLOG_SOURCE: &'static str = "reSVG Thumbnailer";
+
 inproc_dll_module![(CLSID_THUMBNAIL_PROVIDER_CLASS, ThumbnailProvider),];
 
 fn get_all_relevant_registry_keys() -> Vec<RegistryKeyInfo> {
@@ -72,12 +73,16 @@ fn get_all_relevant_registry_keys() -> Vec<RegistryKeyInfo> {
 
 #[no_mangle]
 extern "stdcall" fn DllRegisterServer() -> com::sys::HRESULT {
-    logging::reg().unwrap();
+    if winlog::try_register(WINLOG_SOURCE).is_err() {
+        return com::sys::SELFREG_E_CLASS;
+    }
     dll_register_server(&mut get_all_relevant_registry_keys())
 }
 
 #[no_mangle]
 extern "stdcall" fn DllUnregisterServer() -> com::sys::HRESULT {
-    logging::unreg().unwrap();
+    if winlog::try_deregister(WINLOG_SOURCE).is_err() {
+        return com::sys::SELFREG_E_CLASS;
+    }
     dll_unregister_server(&mut get_all_relevant_registry_keys())
 }

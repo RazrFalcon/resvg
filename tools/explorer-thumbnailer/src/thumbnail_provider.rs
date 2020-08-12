@@ -5,6 +5,7 @@ use winapi::um::objidlbase::LPSTREAM;
 use com::sys::{HRESULT, IID, S_OK};
 use com::co_class;
 use log::error;
+use crate::WINLOG_SOURCE;
 use crate::interfaces::{IThumbnailProvider, IInitializeWithStream};
 use crate::utils::{img_to_hbitmap, render_thumbnail, tree_from_istream};
 
@@ -56,7 +57,10 @@ impl IThumbnailProvider for ThumbnailProvider {
 
 impl ThumbnailProvider {
     pub(crate) fn new() -> Box<ThumbnailProvider> {
-        crate::logging::init();
+        // winlog::init fails sometimes but logging still works
+        #[allow(unused_must_use)] {
+            winlog::init(WINLOG_SOURCE);
+        }
         ThumbnailProvider::allocate(RefCell::new(None))
     }
 }
