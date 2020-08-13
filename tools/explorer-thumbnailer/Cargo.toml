@@ -2,7 +2,7 @@
 name = "explorer-thumbnailer"
 version = "0.11.0"
 authors = ["gentoo90 <gentoo90@gmail.com>"]
-license = "GPL-3.0"
+license = "MPL-2.0"
 edition = "2018"
 publish = false
 
