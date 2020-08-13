@@ -9,7 +9,7 @@ description = "An SVG rendering library."
 repository = "https://github.com/RazrFalcon/resvg"
 
 [workspace]
-members = ["c-api", "svgfilters", "usvg", "tools/explorer-thumbnailer"]
+members = ["c-api", "svgfilters", "usvg"]
 
 [badges]
 travis-ci = { repository = "RazrFalcon/resvg" }

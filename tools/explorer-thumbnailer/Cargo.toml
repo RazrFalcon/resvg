@@ -6,6 +6,8 @@ license = "GPL-3.0"
 edition = "2018"
 publish = false
 
+[workspace]
+
 [dependencies]
 com = "0.2"
 winapi = { version = "0.3.9", features = ["impl-default", "objidlbase", "windef", "wingdi"] }
