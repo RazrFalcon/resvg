@@ -1,8 +1,8 @@
 [Setup]
 AppName="reSVG Explorer Extension"
-AppVersion="0.10.0"
-VersionInfoVersion="0.0.10.0"
-AppVerName="reSVG Explorer Extension 0.10.0"
+AppVersion="0.11.0"
+VersionInfoVersion="0.0.11.0"
+AppVerName="reSVG Explorer Extension 0.11.0"
 AppPublisher="Evgeniy Reizner"
 AppPublisherURL=https://github.com/RazrFalcon/resvg
 DefaultDirName="{pf}\reSVG Explorer Extension"
@@ -21,14 +21,18 @@ Name: "en"; MessagesFile: "compiler:Default.isl"; LicenseFile: "..\LICENSE.txt"
 
 [Files]
 Source: "..\release\vc_redist.x64.exe"; DestDir: "{app}"; AfterInstall: InstallVcredist
-Source: "..\release\platforms\qwindows.dll"; DestDir: "{app}\platforms";
-Source: "..\release\imageformats\qjpeg.dll"; DestDir: "{app}\imageformats";
-Source: "..\release\Qt5Core.dll"; DestDir: "{app}";
-Source: "..\release\Qt5Gui.dll"; DestDir: "{app}";
-Source: "..\release\Qt5WinExtras.dll"; DestDir: "{app}"
-Source: "..\release\SVGThumbnailExtension.dll"; DestDir: "{app}"; Flags: regserver
+Source: "..\target\release\server.dll"; DestDir: "{app}"
 Source: "..\LICENSE.txt"; DestDir: "{app}";
-Source: "LICENSE.LGPLv3-Qt.txt"; DestDir: "{app}";
+
+[Registry]
+Root: HKCR; Subkey: "CLSID\{{4432C229-DFD0-4B18-8C4D-F58932AF6105}"; Flags: uninsdeletekey
+Root: HKCR; Subkey: "CLSID\{{4432C229-DFD0-4B18-8C4D-F58932AF6105}"; ValueType: string; ValueData: "ThumbnailProvider"
+Root: HKCR; Subkey: "CLSID\{{4432C229-DFD0-4B18-8C4D-F58932AF6105}\InprocServer32"; ValueType: string; ValueData: "{app}\server.dll"
+Root: HKCR; Subkey: ".svg\shellex"; Flags: uninsdeletekeyifempty
+Root: HKCR; Subkey: ".svg\shellex\{{E357FCCD-A995-4576-B01F-234630154E96}"; Flags: uninsdeletekey
+Root: HKCR; Subkey: ".svg\shellex\{{E357FCCD-A995-4576-B01F-234630154E96}"; ValueType: string; ValueData: "{{4432C229-DFD0-4B18-8C4D-F58932AF6105}"
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Services\EventLog\Application\reSVG Thumbnailer"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Services\EventLog\Application\reSVG Thumbnailer"; ValueType: string; ValueName: "EventMessageFile"; ValueData: "{app}\server.dll"
 
 [Code]
 procedure InstallVcredist;

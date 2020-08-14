@@ -1,0 +1,22 @@
+[package]
+name = "explorer-thumbnailer"
+version = "0.11.0"
+authors = ["gentoo90 <gentoo90@gmail.com>"]
+license = "MPL-2.0"
+edition = "2018"
+publish = false
+
+[workspace]
+
+[dependencies]
+com = "0.2"
+winapi = { version = "0.3.9", features = ["impl-default", "objidlbase", "windef", "wingdi"] }
+log = "0.4"
+winlog = "0.2"
+resvg = { path = "../..", version = "0.11"}
+usvg = { path = "../../usvg", version = "0.11"}
+
+[lib]
+# name can only be "server.dll", see https://github.com/microsoft/com-rs/issues/157
+name = "server"
+crate-type = ["rlib", "cdylib"]
