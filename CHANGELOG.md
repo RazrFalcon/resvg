@@ -9,6 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Fixed
 - (usvg) Do not panic when a font has a zero-sized underline thickness.
+- (qt-api) `boundsOnElement` and `boundingBox` were returning transposed bounds.
 
 ## [0.11.0] - 2020-07-04
 ### Highlights

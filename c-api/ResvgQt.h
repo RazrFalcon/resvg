@@ -455,7 +455,7 @@ public:
         const auto rawId = utf8Str.constData();
         resvg_rect bbox;
         if (resvg_get_node_bbox(d->tree, rawId, &bbox))
-            return QRectF(bbox.x, bbox.y, bbox.height, bbox.width);
+            return QRectF(bbox.x, bbox.y, bbox.width, bbox.height);
 
         return QRectF();
     }
@@ -470,7 +470,7 @@ public:
 
         resvg_rect bbox;
         if (resvg_get_image_bbox(d->tree, &bbox))
-            return QRectF(bbox.x, bbox.y, bbox.height, bbox.width);
+            return QRectF(bbox.x, bbox.y, bbox.width, bbox.height);
 
         return QRectF();
     }
