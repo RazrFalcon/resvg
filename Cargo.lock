@@ -59,7 +59,7 @@ dependencies = [
 
 [[package]]
 name = "bindgen"
-version = "0.55.0"
+version = "0.55.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bitflags 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -717,8 +717,8 @@ dependencies = [
  "resvg-qt 0.7.0",
  "resvg-skia 0.7.0",
  "rgb 0.8.20 (registry+https://github.com/rust-lang/crates.io-index)",
- "skia-bindings 0.30.1 (git+https://github.com/romanzes/rust-skia?rev=4e8d3424f82c2df6cced57e3edaad306bf9cc260)",
- "skia-safe 0.30.1 (git+https://github.com/romanzes/rust-skia?rev=4e8d3424f82c2df6cced57e3edaad306bf9cc260)",
+ "skia-bindings 0.34.2 (git+https://github.com/StewartCanva/rust-skia?rev=bef2150f05352a32bf072c52b1718d68974e19fc)",
+ "skia-safe 0.34.2 (git+https://github.com/StewartCanva/rust-skia?rev=bef2150f05352a32bf072c52b1718d68974e19fc)",
  "usvg 0.7.0",
 ]
 
@@ -829,10 +829,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "skia-bindings"
-version = "0.30.1"
-source = "git+https://github.com/romanzes/rust-skia?rev=4e8d3424f82c2df6cced57e3edaad306bf9cc260#4e8d3424f82c2df6cced57e3edaad306bf9cc260"
+version = "0.34.2"
+source = "git+https://github.com/StewartCanva/rust-skia?rev=bef2150f05352a32bf072c52b1718d68974e19fc#bef2150f05352a32bf072c52b1718d68974e19fc"
 dependencies = [
- "bindgen 0.55.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bindgen 0.55.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "cc 1.0.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "curl 0.4.31 (registry+https://github.com/rust-lang/crates.io-index)",
  "flate2 1.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -845,12 +845,12 @@ dependencies = [
 
 [[package]]
 name = "skia-safe"
-version = "0.30.1"
-source = "git+https://github.com/romanzes/rust-skia?rev=4e8d3424f82c2df6cced57e3edaad306bf9cc260#4e8d3424f82c2df6cced57e3edaad306bf9cc260"
+version = "0.34.2"
+source = "git+https://github.com/StewartCanva/rust-skia?rev=bef2150f05352a32bf072c52b1718d68974e19fc#bef2150f05352a32bf072c52b1718d68974e19fc"
 dependencies = [
  "bitflags 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "skia-bindings 0.30.1 (git+https://github.com/romanzes/rust-skia?rev=4e8d3424f82c2df6cced57e3edaad306bf9cc260)",
+ "skia-bindings 0.34.2 (git+https://github.com/StewartCanva/rust-skia?rev=bef2150f05352a32bf072c52b1718d68974e19fc)",
 ]
 
 [[package]]
@@ -1119,7 +1119,7 @@ source = "git+https://github.com/RazrFalcon/xmlwriter?rev=dac292c#dac292c3c27d6c
 "checksum atty 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)" = "d9b39be18770d11421cdb1b9947a45dd3f37e93092cbf377614828a319d5fee8"
 "checksum autocfg 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f8aac770f1885fd7e387acedd76065302551364496e46b3dd00860b2f8359b9d"
 "checksum base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)" = "0b25d992356d2eb0ed82172f5248873db5560c4721f564b13cb5193bda5e668e"
-"checksum bindgen 0.55.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e0dff7ab2f98ebea816728fd18a529812a122ecb41175454a8d99d268c00dcde"
+"checksum bindgen 0.55.1 (registry+https://github.com/rust-lang/crates.io-index)" = "75b13ce559e6433d360c26305643803cb52cfbabbc2b9c47ce04a58493dfb443"
 "checksum bitflags 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
 "checksum bytemuck 1.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "db7a1029718df60331e557c9e83a55523c955e5dd2a7bfeffad6bbd50b538ae9"
 "checksum byteorder 1.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "08c48aae112d48ed9f069b33538ea9e3e90aa263cfa3d1c24309612b1f7472de"
@@ -1208,8 +1208,8 @@ source = "git+https://github.com/RazrFalcon/xmlwriter?rev=dac292c#dac292c3c27d6c
 "checksum shlex 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7fdf1b9db47230893d76faad238fd6097fd6d6a9245cd7a4d90dbd639536bbd2"
 "checksum simplecss 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "135685097a85a64067df36e28a243e94a94f76d829087ce0be34eeb014260c0e"
 "checksum siphasher 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "0b8de496cf83d4ed58b6be86c3a275b8602f6ffe98d3024a869e124147a9a3ac"
-"checksum skia-bindings 0.30.1 (git+https://github.com/romanzes/rust-skia?rev=4e8d3424f82c2df6cced57e3edaad306bf9cc260)" = "<none>"
-"checksum skia-safe 0.30.1 (git+https://github.com/romanzes/rust-skia?rev=4e8d3424f82c2df6cced57e3edaad306bf9cc260)" = "<none>"
+"checksum skia-bindings 0.34.2 (git+https://github.com/StewartCanva/rust-skia?rev=bef2150f05352a32bf072c52b1718d68974e19fc)" = "<none>"
+"checksum skia-safe 0.34.2 (git+https://github.com/StewartCanva/rust-skia?rev=bef2150f05352a32bf072c52b1718d68974e19fc)" = "<none>"
 "checksum slab 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 "checksum socket2 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)" = "03088793f677dce356f3ccc2edb1b314ad191ab702a5de3faf49304f7e104918"
 "checksum strsim 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
