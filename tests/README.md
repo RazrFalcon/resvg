@@ -43,6 +43,35 @@ General requirements:
 
 You could use the `check.py` script to automatically check those requirements.
 
+### Render PNG
+
+After the SVG test is finished, you should render it using resvg:
+
+```sh
+cargo run --release -- \
+    --width 300 \
+    --skip-system-fonts \
+    --use-fonts-dir 'tests/fonts' \
+    --font-family 'Noto Sans' \
+    --serif-family 'Noto Serif' \
+    --sans-serif-family 'Noto Sans' \
+    --cursive-family 'Yellowtail' \
+    --fantasy-family 'Sedgwick Ave Display' \
+    --monospace-family 'Noto Mono' \
+    in.svg out.png
+```
+
+(we are using 300px width to test scaling)
+
+After that, you should optimize the resulting PNG using oxipng:
+
+```sh
+cargo install oxipng
+oxipng -o 6 -Z out.png
+```
+
+And then place it into the `png` dir.
+
 ## License
 
 MIT
