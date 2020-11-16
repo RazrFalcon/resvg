@@ -9,35 +9,40 @@ pub fn clip(
     cp: &usvg::ClipPath,
     bbox: Rect,
     layers: &mut Layers,
-    canvas: &mut skia::Canvas,
+    canvas: &mut tiny_skia::Canvas,
 ) {
-    let clip_surface = try_opt!(layers.get());
-    let mut clip_surface = clip_surface.borrow_mut();
+    let clip_canvas = try_opt!(layers.get());
+    let mut clip_canvas = clip_canvas.borrow_mut();
 
-    clip_surface.fill(0, 0, 0, 255);
+    clip_canvas.pixmap.fill(tiny_skia::Color::BLACK);
 
-    clip_surface.set_transform(canvas.get_transform());
-    clip_surface.concat(cp.transform.to_native());
+    clip_canvas.set_transform(canvas.get_transform());
+    clip_canvas.apply_transform(&cp.transform.to_native());
 
     if cp.units == usvg::Units::ObjectBoundingBox {
-        clip_surface.concat(usvg::Transform::from_bbox(bbox).to_native());
+        clip_canvas.apply_transform(&usvg::Transform::from_bbox(bbox).to_native());
     }
 
-    let ts = clip_surface.get_transform();
+    let ts = clip_canvas.get_transform();
     for node in node.children() {
-        clip_surface.concat(node.transform().to_native());
+        clip_canvas.apply_transform(&node.transform().to_native());
 
         match *node.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                crate::path::draw(&node.tree(), path_node, skia::BlendMode::Clear, &mut clip_surface);
+                crate::path::draw(
+                    &node.tree(),
+                    path_node,
+                    tiny_skia::BlendMode::Clear,
+                    &mut clip_canvas,
+                );
             }
             usvg::NodeKind::Group(ref g) => {
-                clip_group(&node, g, bbox, layers, &mut clip_surface);
+                clip_group(&node, g, bbox, layers, &mut clip_canvas);
             }
             _ => {}
         }
 
-        clip_surface.set_transform(ts);
+        clip_canvas.set_transform(ts);
     }
 
     if let Some(ref id) = cp.clip_path {
@@ -48,10 +53,10 @@ pub fn clip(
         }
     }
 
+    let mut paint = tiny_skia::PixmapPaint::default();
+    paint.blend_mode = tiny_skia::BlendMode::DestinationOut;
     canvas.reset_transform();
-    canvas.draw_surface(
-        &clip_surface, 0.0, 0.0, 255, skia::BlendMode::DestinationOut, skia::FilterQuality::Low,
-    );
+    canvas.draw_pixmap(0, 0, &clip_canvas.pixmap, &paint);
 }
 
 fn clip_group(
@@ -59,7 +64,7 @@ fn clip_group(
     g: &usvg::Group,
     bbox: Rect,
     layers: &mut Layers,
-    canvas: &mut skia::Canvas,
+    canvas: &mut tiny_skia::Canvas,
 ) {
     if let Some(ref id) = g.clip_path {
         if let Some(ref clip_node) = node.tree().defs_by_id(id) {
@@ -68,30 +73,30 @@ fn clip_group(
                 // then we should render this child on a new canvas,
                 // clip it, and only then draw it to the `clipPath`.
 
-                let clip_surface = try_opt!(layers.get());
-                let mut clip_surface = clip_surface.borrow_mut();
+                let clip_canvas = try_opt!(layers.get());
+                let mut clip_canvas = clip_canvas.borrow_mut();
 
-                clip_surface.set_transform(canvas.get_transform());
+                clip_canvas.set_transform(canvas.get_transform());
 
-                draw_group_child(&node, &mut clip_surface);
-                clip(clip_node, cp, bbox, layers, &mut clip_surface);
+                draw_group_child(&node, &mut clip_canvas);
+                clip(clip_node, cp, bbox, layers, &mut clip_canvas);
 
+                let mut paint = tiny_skia::PixmapPaint::default();
+                paint.blend_mode = tiny_skia::BlendMode::Xor;
                 canvas.reset_transform();
-                canvas.draw_surface(
-                    &clip_surface, 0.0, 0.0, 255, skia::BlendMode::Xor, skia::FilterQuality::Low,
-                );
+                canvas.draw_pixmap(0, 0, &clip_canvas.pixmap, &paint);
             }
         }
     }
 }
 
-fn draw_group_child(node: &usvg::Node, canvas: &mut skia::Canvas) {
+fn draw_group_child(node: &usvg::Node, canvas: &mut tiny_skia::Canvas) {
     if let Some(child) = node.first_child() {
-        canvas.concat(child.transform().to_native());
+        canvas.apply_transform(&child.transform().to_native());
 
         match *child.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                crate::path::draw(&child.tree(), path_node, skia::BlendMode::SourceOver, canvas);
+                crate::path::draw(&child.tree(), path_node, tiny_skia::BlendMode::SourceOver, canvas);
             }
             _ => {}
         }

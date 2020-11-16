@@ -7,7 +7,7 @@ use crate::render::prelude::*;
 
 pub fn draw(
     image: &usvg::Image,
-    canvas: &mut skia::Canvas,
+    canvas: &mut tiny_skia::Canvas,
 ) -> Rect {
     if image.visibility != usvg::Visibility::Visible {
         return image.view_box.rect;
@@ -21,18 +21,18 @@ pub fn draw_kind(
     kind: &usvg::ImageKind,
     view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
-    canvas: &mut skia::Canvas,
+    canvas: &mut tiny_skia::Canvas,
 ) {
     match kind {
         usvg::ImageKind::JPEG(ref data) => {
             match read_jpeg(data) {
-                Some(image) => draw_raster(&image, view_box, rendering_mode, canvas),
+                Some(image) => { draw_raster(&image, view_box, rendering_mode, canvas); }
                 None => warn!("Failed to load an embedded image."),
             }
         }
         usvg::ImageKind::PNG(ref data) => {
             match read_png(data) {
-                Some(image) => draw_raster(&image, view_box, rendering_mode, canvas),
+                Some(image) => { draw_raster(&image, view_box, rendering_mode, canvas); }
                 None => warn!("Failed to load an embedded image."),
             }
         }
@@ -46,70 +46,84 @@ fn draw_raster(
     img: &Image,
     view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
-    canvas: &mut skia::Canvas,
-) {
-    let image = {
-        let (w, h) = img.size.dimensions();
-        let mut image = try_opt_warn_or!(
-            skia::Surface::new_rgba(w, h), (),
-            "Failed to create a {}x{} surface.", w, h
-        );
+    canvas: &mut tiny_skia::Canvas,
+) -> Option<()> {
+    let (w, h) = img.size.dimensions();
+    let mut pixmap = tiny_skia::Pixmap::new(w, h)?;
+    image_to_pixmap(&img, pixmap.data_mut());
 
-        image_to_surface(&img, &mut image.data_mut());
-        image
-    };
-
-
-    let mut filter = skia::FilterQuality::Low;
+    let mut filter = tiny_skia::FilterQuality::Bicubic;
     if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
-        filter = skia::FilterQuality::None;
+        filter = tiny_skia::FilterQuality::Nearest;
     }
-
-    canvas.save();
 
     if view_box.aspect.slice {
         let r = view_box.rect;
-        canvas.set_clip_rect(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
+        let rect = tiny_skia::Rect::from_xywh(
+            r.x() as f32, r.y() as f32,
+            r.width() as f32, r.height() as f32,
+        )?;
+        canvas.set_clip_rect(rect, true);
     }
 
     let r = image_rect(&view_box, img.size);
-    canvas.draw_surface_rect(
-        &image,
-        r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32,
-        filter,
-    );
+    let rect = tiny_skia::Rect::from_xywh(
+        r.x() as f32, r.y() as f32,
+        r.width() as f32, r.height() as f32,
+    )?;
 
-    // Revert.
-    canvas.restore();
+    let ts = tiny_skia::Transform::from_row(
+        rect.width() as f32 / pixmap.width() as f32,
+        0.0,
+        0.0,
+        rect.height() as f32 / pixmap.height() as f32,
+        r.x() as f32,
+        r.y() as f32,
+    )?;
+
+    let pattern = tiny_skia::Pattern::new(
+        &pixmap,
+        tiny_skia::SpreadMode::Pad,
+        filter,
+        1.0,
+        ts,
+    );
+    let mut paint = tiny_skia::Paint::default();
+    paint.shader = pattern;
+
+    canvas.fill_rect(rect, &paint);
+
+    canvas.reset_clip();
+
+    Some(())
 }
 
-fn image_to_surface(image: &Image, surface: &mut [u8]) {
-    // Surface is always ARGB.
-    const SURFACE_CHANNELS: usize = 4;
-
+fn image_to_pixmap(image: &Image, pixmap: &mut [u8]) {
     use rgb::FromSlice;
 
     let mut i = 0;
     match &image.data {
         ImageData::RGB(data) => {
             for p in data.as_rgb() {
-                surface[i + 0] = p.r;
-                surface[i + 1] = p.g;
-                surface[i + 2] = p.b;
-                surface[i + 3] = 255;
+                pixmap[i + 0] = p.r;
+                pixmap[i + 1] = p.g;
+                pixmap[i + 2] = p.b;
+                pixmap[i + 3] = 255;
 
-                i += SURFACE_CHANNELS;
+                i += tiny_skia::BYTES_PER_PIXEL;
             }
         }
         ImageData::RGBA(data) => {
             for p in data.as_rgba() {
-                surface[i + 0] = p.r;
-                surface[i + 1] = p.g;
-                surface[i + 2] = p.b;
-                surface[i + 3] = p.a;
+                pixmap[i + 0] = p.r;
+                pixmap[i + 1] = p.g;
+                pixmap[i + 2] = p.b;
+                pixmap[i + 3] = p.a;
 
-                i += SURFACE_CHANNELS;
+                i += tiny_skia::BYTES_PER_PIXEL;
             }
+
+            svgfilters::multiply_alpha(pixmap.as_rgba_mut());
         }
     }
 }
@@ -117,33 +131,40 @@ fn image_to_surface(image: &Image, surface: &mut [u8]) {
 fn draw_svg(
     tree: &usvg::Tree,
     view_box: usvg::ViewBox,
-    canvas: &mut skia::Canvas,
-) {
+    canvas: &mut tiny_skia::Canvas,
+) -> Option<()> {
     let img_size = tree.svg_node().size.to_screen_size();
     let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&view_box, img_size);
 
-    canvas.save();
+    let mut sub_canvas = canvas.clone();
+    sub_canvas.apply_transform(&ts.to_native());
+    sub_canvas.pixmap.fill(tiny_skia::Color::TRANSPARENT);
+    render_to_canvas(&tree, img_size, &mut sub_canvas);
 
     if let Some(clip) = clip {
-        canvas.set_clip_rect(
-            clip.x() as f32, clip.y() as f32, clip.width() as f32, clip.height() as f32,
-        );
+        let rr = tiny_skia::Rect::from_xywh(
+            clip.x() as f32,
+            clip.y() as f32,
+            clip.width() as f32,
+            clip.height() as f32,
+        )?;
+        canvas.set_clip_rect(rr, false);
     }
 
-    canvas.concat(ts.to_native());
-    render_to_canvas(&tree, img_size, canvas);
+    let ts = canvas.get_transform();
+    canvas.reset_transform();
+    canvas.draw_pixmap(0, 0, &sub_canvas.pixmap, &tiny_skia::PixmapPaint::default());
+    canvas.reset_clip();
+    canvas.set_transform(ts);
 
-    canvas.restore();
+    Some(())
 }
 
-/// A raster image data.
 struct Image {
-    pub data: ImageData,
-    pub size: ScreenSize,
+    data: ImageData,
+    size: ScreenSize,
 }
 
-
-/// A raster image data kind.
 enum ImageData {
     RGB(Vec<u8>),
     RGBA(Vec<u8>),

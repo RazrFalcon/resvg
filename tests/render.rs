@@ -65,7 +65,7 @@ fn render() {
 
 #[derive(Debug)]
 enum ErrorKind {
-    ParsingPanicked(String),
+    Panicked,
     ParsingFailed(usvg::Error),
     RenderingFailed,
     DifferentImageSizes,
@@ -101,8 +101,8 @@ impl Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.kind {
-            ErrorKind::ParsingPanicked(ref e) => {
-                write!(f, "{} parsing failed cause {}", self.file_name, e)
+            ErrorKind::Panicked => {
+                write!(f, "{} panicked", self.file_name)
             }
             ErrorKind::ParsingFailed(ref e) => {
                 write!(f, "{} parsing failed cause {}", self.file_name, e)
@@ -129,11 +129,10 @@ fn process(
     png_path: &Path,
     opt: &usvg::Options,
 ) -> Result<(), ErrorKind> {
-    let rtree = std::panic::catch_unwind(|| usvg::Tree::from_file(&svg_path, &opt))
-        .map_err(|e| ErrorKind::ParsingPanicked(format!("{:?}", e)))??;
-
-    let img = resvg::render(&rtree, usvg::FitTo::Width(IMAGE_SIZE), None)
-        .ok_or_else(|| ErrorKind::RenderingFailed)?;
+    let img = std::panic::catch_unwind(move || {
+        let tree = usvg::Tree::from_file(&svg_path, &opt).map_err(|e| ErrorKind::ParsingFailed(e))?;
+        resvg::render(&tree, usvg::FitTo::Width(IMAGE_SIZE), None).ok_or_else(|| ErrorKind::RenderingFailed)
+    }).map_err(|_| ErrorKind::Panicked)??;
 
     let expected_data = load_png(png_path);
     if expected_data.len() != img.data().len() {

@@ -7,8 +7,8 @@ use crate::render::prelude::*;
 pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
-    blend_mode: skia::BlendMode,
-    canvas: &mut skia::Canvas,
+    blend_mode: tiny_skia::BlendMode,
+    canvas: &mut tiny_skia::Canvas,
 ) -> Option<Rect> {
     let bbox = path.data.bbox();
     if path.visibility != usvg::Visibility::Visible {
@@ -20,29 +20,16 @@ pub fn draw(
     // so we can pass whatever rect we want, because it will not be used anyway.
     let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
 
-    let mut skia_path = convert_path(&path.data);
-    if let Some(ref fill) = path.fill {
-        if fill.rule == usvg::FillRule::EvenOdd {
-            skia_path.set_fill_type(skia::FillType::EvenOdd);
-        }
-    };
+    let skia_path = convert_path(&path.data)?;
 
     let antialias = path.rendering_mode.use_shape_antialiasing();
 
-    let global_ts = usvg::Transform::from_native(canvas.get_transform());
-
-    if path.fill.is_some() {
-        let mut fill = crate::paint_server::fill(tree, &path.fill, style_bbox, global_ts);
-        fill.set_anti_alias(antialias);
-        fill.set_blend_mode(blend_mode);
-        canvas.draw_path(&skia_path, &fill);
+    if let Some(ref fill) = path.fill {
+        crate::paint_server::fill(tree, fill, style_bbox, &skia_path, antialias, blend_mode, canvas);
     }
 
     if path.stroke.is_some() {
-        let mut stroke = crate::paint_server::stroke(tree, &path.stroke, style_bbox, global_ts);
-        stroke.set_anti_alias(antialias);
-        stroke.set_blend_mode(blend_mode);
-        canvas.draw_path(&skia_path, &stroke);
+        crate::paint_server::stroke(tree, &path.stroke, style_bbox, &skia_path, antialias, blend_mode, canvas);
     }
 
     bbox
@@ -50,24 +37,24 @@ pub fn draw(
 
 fn convert_path(
     path: &usvg::PathData,
-) -> skia::Path {
-    let mut s_path = skia::Path::new();
+) -> Option<tiny_skia::Path> {
+    let mut pb = tiny_skia::PathBuilder::new();
     for seg in path.iter() {
         match *seg {
             usvg::PathSegment::MoveTo { x, y } => {
-                s_path.move_to(x as f32, y as f32);
+                pb.move_to(x as f32, y as f32);
             }
             usvg::PathSegment::LineTo { x, y } => {
-                s_path.line_to(x as f32, y as f32);
+                pb.line_to(x as f32, y as f32);
             }
             usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                s_path.cubic_to(x1 as f32, y1 as f32, x2 as f32, y2 as f32, x as f32, y as f32);
+                pb.cubic_to(x1 as f32, y1 as f32, x2 as f32, y2 as f32, x as f32, y as f32);
             }
             usvg::PathSegment::ClosePath => {
-                s_path.close();
+                pb.close();
             }
         }
     }
 
-    s_path
+    pb.finish()
 }

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- `tiny-skia` was updated to a pure Rust version, which means that `resvg` no longer
+  depends on `clang` and should work on 32bit tagets.
+
 ### Fixed
 - (usvg) Do not panic when a font has a zero-sized underline thickness.
 - (qt-api) `boundsOnElement` and `boundingBox` were returning transposed bounds.

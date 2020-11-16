@@ -9,13 +9,13 @@ pub fn mask(
     mask: &usvg::Mask,
     bbox: Rect,
     layers: &mut Layers,
-    canvas: &mut skia::Canvas,
+    canvas: &mut tiny_skia::Canvas,
 ) {
-    let mask_surface = try_opt!(layers.get());
-    let mut mask_surface = mask_surface.borrow_mut();
+    let mask_canvas = try_opt!(layers.get());
+    let mut mask_canvas = mask_canvas.borrow_mut();
 
     {
-        mask_surface.set_transform(canvas.get_transform());
+        mask_canvas.set_transform(canvas.get_transform());
 
         let r = if mask.units == usvg::Units::ObjectBoundingBox {
             mask.rect.bbox_transform(bbox)
@@ -23,22 +23,29 @@ pub fn mask(
             mask.rect
         };
 
-        mask_surface.save();
-        mask_surface.set_clip_rect(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
-
-        if mask.content_units == usvg::Units::ObjectBoundingBox {
-            mask_surface.concat(usvg::Transform::from_bbox(bbox).to_native());
+        let rr = tiny_skia::Rect::from_xywh(
+            r.x() as f32,
+            r.y() as f32,
+            r.width() as f32,
+            r.height() as f32,
+        );
+        if let Some(rr) = rr {
+            mask_canvas.set_clip_rect(rr, true);
         }
 
-        crate::render::render_group(node, &mut RenderState::Ok, layers, &mut mask_surface);
+        if mask.content_units == usvg::Units::ObjectBoundingBox {
+            mask_canvas.apply_transform(&usvg::Transform::from_bbox(bbox).to_native());
+        }
 
-        mask_surface.restore();
+        crate::render::render_group(node, &mut RenderState::Ok, layers, &mut mask_canvas);
+
+        mask_canvas.reset_clip();
     }
 
     {
         use rgb::FromSlice;
 
-        let mut data = mask_surface.data_mut();
+        let data = mask_canvas.pixmap.data_mut();
         image_to_mask(data.as_rgba_mut(), layers.image_size());
     }
 
@@ -50,10 +57,11 @@ pub fn mask(
         }
     }
 
+    let mut paint = tiny_skia::PixmapPaint::default();
+    paint.blend_mode = tiny_skia::BlendMode::DestinationIn;
+
     canvas.reset_transform();
-    canvas.draw_surface(
-        &mask_surface, 0.0, 0.0, 255, skia::BlendMode::DestinationIn, skia::FilterQuality::Low,
-    );
+    canvas.draw_pixmap(0, 0, &mask_canvas.pixmap, &paint);
 }
 
 /// Converts an image into an alpha mask.

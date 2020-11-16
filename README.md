@@ -13,16 +13,13 @@ to render SVG files based on a
 [SVG Full 1.1](https://www.w3.org/TR/SVG11/) subset.
 
 The core idea is to make a fast, small, portable SVG library designed for edge-cases.
-Right now, a `resvg` CLI application is less than 4MiB and doesn't require any external dependencies.
-
-At the moment, there are no production-ready 2D rendering libraries for Rust.
-Because of that, `resvg` relies on [Skia].
+Right now, a `resvg` CLI application is less than 3MiB and doesn't require any external dependencies.
 
 Another major difference from other SVG rendering libraries is that `resvg` does a lot
 of preprocessing before rendering. It converts an input SVG into a simplified one
 called [Micro SVG](./docs/usvg_spec.adoc) and only then it begins rendering.
 So it's very easy to implement a new rendering backend.
-But we officially support only the Skia one.
+But we officially support only one.
 And you can also access *Micro SVG* as XML directly via the [usvg](./usvg) tool.
 
 ## SVG support
@@ -46,12 +43,12 @@ It also includes alternative libraries.
 Comparing performance between different SVG rendering libraries is like comparing
 apples and oranges. Everyone has a very different set of supported features,
 implementation languages, build flags, etc.
-But since `resvg` is written in Rust and uses [Skia] for rendering - it's pretty fast.
+But since `resvg` is written in Rust and uses [tiny-skia] for rendering - it's pretty fast.
 
 ## Building
 
-Despite being a Rust library, `resvg` depends on [Skia] and [harfbuzz],
-therefore you will need a modern C++ compiler. But in most cases the compilation
+Despite being a Rust library, `resvg` still depends on some C++ code,
+therefore you will need a C++ compiler to build it. But in most cases the compilation
 process should be as easy as:
 
 ```
@@ -60,28 +57,16 @@ cargo build --release
 
 which will produce binaries that doesn't require any external dependencies.
 
-And while we can leave `harfbuzz` compilation to Cargo, Skia is more troublesome.
-Mainly because it
-[requires](https://skia.org/user/build#compilers)
-`clang` and no other compilers.
-
-By default, `resvg` uses it's own Skia bindings called
-[tiny-skia](https://github.com/RazrFalcon/tiny-skia). Which supports only `clang` too.
-See the [Build with embedded Skia](https://github.com/RazrFalcon/tiny-skia#build-with-embedded-skia)
-section for details. And yes, you can use your own Skia build too.
-
-Also, we do not support 32-bit builds and MINGW target.
-
 ## Safety
 
 Since `resvg` depends on C++ libraries, it's inherently unsafe in Rust terms.
 Despite of that, most of the dependencies are actually fully safe.
-The main exceptions are [Skia] and [harfbuzz] bindings, and files memory mapping.
+The main exceptions are [tiny-skia] and [rustybuzz] bindings, and files memory mapping.
 
 ## License
 
 `resvg` project is licensed under the [MPLv2.0](https://www.mozilla.org/en-US/MPL/).
 
-
-[Skia]: https://skia.org/
 [harfbuzz]: https://github.com/harfbuzz/harfbuzz
+[rustybuzz]: https://github.com/RazrFalcon/rustybuzz
+[tiny-skia]: https://github.com/RazrFalcon/tiny-skia

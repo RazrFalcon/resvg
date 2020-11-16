@@ -9,7 +9,7 @@ use std::rc::Rc;
 use usvg::ScreenSize;
 
 
-type LayerData = Rc<RefCell<tiny_skia::Surface>>;
+type LayerData = Rc<RefCell<tiny_skia::Canvas>>; // TODO: store Pixmap
 
 /// Stack of image layers.
 ///
@@ -32,6 +32,7 @@ impl Layers {
         }
     }
 
+    // TODO: remove
     /// Returns a layer size.
     pub fn image_size(&self) -> ScreenSize {
         self.img_size
@@ -45,9 +46,11 @@ impl Layers {
     pub fn get(&mut self) -> Option<Layer> {
         let used_layers = Rc::strong_count(&self.counter) - 1;
         if used_layers == self.d.len() {
-            match crate::render::create_subsurface(self.img_size) {
-                Some(img) => {
-                    self.d.push(Rc::new(RefCell::new(img)));
+            match tiny_skia::Pixmap::new(self.img_size.width(), self.img_size.height()) {
+                Some(pixmap) => {
+                    let canvas = tiny_skia::Canvas::from(pixmap);
+
+                    self.d.push(Rc::new(RefCell::new(canvas)));
                     Some(Layer {
                         d: self.d[self.d.len() - 1].clone(),
                         _counter_holder: self.counter.clone(),
@@ -60,7 +63,9 @@ impl Layers {
         } else {
             {
                 let img = self.d[used_layers].clone();
-                img.borrow_mut().fill(0, 0, 0, 0);
+                img.borrow_mut().reset_transform();
+                img.borrow_mut().reset_clip();
+                img.borrow_mut().pixmap.fill(tiny_skia::Color::TRANSPARENT);
             }
 
             Some(Layer {
