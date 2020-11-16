@@ -659,12 +659,15 @@ fn collect_normals(
             }
         };
 
-        let curve_len = curve.arclen(0.5);
+        let arclen_accuracy = 0.5;
+        let curve_len = curve.arclen(arclen_accuracy);
 
         for offset in &offsets[normals.len()..] {
             if *offset >= length && *offset <= length + curve_len {
-                let offset = (offset - length) / curve_len;
-                debug_assert!(offset >= 0.0 && offset <= 1.0);
+                let mut offset = curve.inv_arclen(offset - length, arclen_accuracy);
+                // some rounding error may occur, so we give offset a little tolerance
+                debug_assert!(offset >= -1.0e-3 && offset <= 1.0 + 1.0e-3);
+                offset = offset.min(1.0).max(0.0);
 
                 let pos = curve.eval(offset);
                 let d = curve.deriv().eval(offset);

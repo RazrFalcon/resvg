@@ -24,7 +24,7 @@ required-features = ["text"]
 base64 = "0.12"
 data-url = "0.1"
 flate2 = { version = "1.0", default-features = false, features = ["rust_backend"]}
-kurbo = "0.6"
+kurbo = "0.7"
 log = "0.4"
 pico-args = "0.3"
 rctree = "0.3"
