@@ -711,11 +711,8 @@ pub fn apply_letter_spacing(
         return;
     }
 
-    // Find the last byte index of the chunk.
-    let last_idx = chunk.spans.last().and_then(|span| span.end.checked_sub(1)).unwrap_or(0);
-    let last_idx = ByteIndex::new(last_idx);
-
-    for cluster in clusters {
+    let num_clusters = clusters.len();
+    for (i, cluster) in clusters.iter_mut().enumerate() {
         // Spacing must be applied only to characters that belongs to the script
         // that supports spacing.
         // We are checking only the first code point, since it should be enough.
@@ -724,7 +721,7 @@ pub fn apply_letter_spacing(
             if let Some(span) = chunk.span_at(cluster.byte_idx) {
                 // A space after the last cluster should be ignored,
                 // since it affects the bbox and text alignment.
-                if cluster.byte_idx != last_idx {
+                if i != num_clusters - 1 {
                     cluster.advance += span.letter_spacing;
                 }
 
