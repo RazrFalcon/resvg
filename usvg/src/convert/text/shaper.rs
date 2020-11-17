@@ -77,6 +77,11 @@ pub struct OutlinedCluster {
     /// but we are storing only the first one.
     pub codepoint: char,
 
+    /// Cluster's width.
+    ///
+    /// It's different from advance in that it's not affected by letter spacing and word spacing.
+    pub width: f64,
+
     /// An advance along the X axis.
     ///
     /// Can be negative.
@@ -341,7 +346,7 @@ fn outline_cluster(
     debug_assert!(!glyphs.is_empty());
 
     let mut path = tree::PathData::new();
-    let mut advance = 0.0;
+    let mut width = 0.0;
     let mut x = 0.0;
 
     for glyph in glyphs {
@@ -372,8 +377,8 @@ fn outline_cluster(
         x += glyph.width as f64;
 
         let glyph_width = glyph.width as f64 * sx;
-        if glyph_width > advance {
-            advance = glyph_width;
+        if glyph_width > width {
+            width = glyph_width;
         }
     }
 
@@ -382,7 +387,8 @@ fn outline_cluster(
     OutlinedCluster {
         byte_idx,
         codepoint: byte_idx.char_from(text),
-        advance,
+        width,
+        advance: width,
         ascent: font.ascent(font_size),
         descent: font.descent(font_size),
         x_height: font.x_height(font_size),
@@ -533,9 +539,9 @@ fn resolve_clusters_positions_path(
         cluster.has_relative_shift = true;
 
         // Clusters should be rotated by the x-midpoint x baseline position.
-        let half_advance = cluster.advance / 2.0;
-        cluster.transform.translate(x - half_advance, y);
-        cluster.transform.rotate_at(angle, half_advance, 0.0);
+        let half_width = cluster.width / 2.0;
+        cluster.transform.translate(x - half_width, y);
+        cluster.transform.rotate_at(angle, half_width, 0.0);
 
         let cp = char_offset + cluster.byte_idx.code_point_at(&chunk.text);
         if let Some(pos) = pos_list.get(cp) {
@@ -603,7 +609,7 @@ fn collect_normals(
         let mut advance = offset;
         for cluster in clusters {
             // Clusters should be rotated by the x-midpoint x baseline position.
-            let half_advance = cluster.advance / 2.0;
+            let half_width = cluster.width / 2.0;
 
             // Include relative position.
             let cp = char_offset + cluster.byte_idx.code_point_at(&chunk.text);
@@ -611,7 +617,7 @@ fn collect_normals(
                 advance += pos.dx.unwrap_or(0.0);
             }
 
-            let offset = advance + half_advance;
+            let offset = advance + half_width;
 
             // Clusters outside the path have no normals.
             if offset < 0.0 {
@@ -728,6 +734,7 @@ pub fn apply_letter_spacing(
                 // If the cluster advance became negative - clear it.
                 // This is an UB so we can do whatever we want, and we mimic Chrome's behavior.
                 if !cluster.advance.is_valid_length() {
+                    cluster.width = 0.0;
                     cluster.advance = 0.0;
                     cluster.path.clear();
                 }
@@ -810,18 +817,18 @@ pub fn apply_writing_mode(
         let orientation = unicode_vo::char_orientation(cluster.codepoint);
         if orientation == CharOrientation::Upright {
             // Additional offset. Not sure why.
-            let dy = cluster.advance - cluster.height();
+            let dy = cluster.width - cluster.height();
 
             // Rotate a cluster 90deg counter clockwise by the center.
             let mut ts = tree::Transform::default();
-            ts.translate(cluster.advance / 2.0, 0.0);
+            ts.translate(cluster.width / 2.0, 0.0);
             ts.rotate(-90.0);
-            ts.translate(-cluster.advance / 2.0, -dy);
+            ts.translate(-cluster.width / 2.0, -dy);
             cluster.path.transform(ts);
 
-            // Move "baseline" to the middle and make height equal to advance.
-            cluster.ascent = cluster.advance / 2.0;
-            cluster.descent = -cluster.advance / 2.0;
+            // Move "baseline" to the middle and make height equal to width.
+            cluster.ascent = cluster.width / 2.0;
+            cluster.descent = -cluster.width / 2.0;
         } else {
             // Could not find a spec that explains this,
             // but this is how other applications are shifting the "rotated" characters
