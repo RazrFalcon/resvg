@@ -1,0 +1,14 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>With big `letter-spacing`</title>
+
+    <path id="pathForText1" fill="none" stroke="gray"
+          d="M 40 100 A 60 60 0 0 1 100 40 60 60 0 0 1 160 100"/>
+
+    <text id="text1" font-family="Noto Sans" font-size="24" letter-spacing="40">
+        <textPath id="textPath1" xlink:href="#pathForText1">Text</textPath>
+    </text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>
