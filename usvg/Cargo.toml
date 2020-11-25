@@ -21,7 +21,7 @@ name = "usvg"
 required-features = ["text"]
 
 [dependencies]
-base64 = "0.12"
+base64 = "0.13"
 data-url = "0.1"
 flate2 = { version = "1.0", default-features = false, features = ["rust_backend"]}
 kurbo = "0.7"
