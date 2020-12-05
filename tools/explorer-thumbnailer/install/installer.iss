@@ -20,7 +20,7 @@ OutputDir=.
 Name: "en"; MessagesFile: "compiler:Default.isl"; LicenseFile: "..\LICENSE.txt"
 
 [Files]
-Source: "..\release\vc_redist.x64.exe"; DestDir: "{app}"; AfterInstall: InstallVcredist
+Source: "..\vc_redist.x64.exe"; DestDir: "{app}"; AfterInstall: InstallVcredist
 Source: "..\target\release\server.dll"; DestDir: "{app}"
 Source: "..\LICENSE.txt"; DestDir: "{app}";
 

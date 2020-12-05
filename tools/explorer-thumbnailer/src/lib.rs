@@ -12,16 +12,15 @@ macro_rules! inproc_dll_module {
     (($class_id_one:ident, $class_type_one:ty), $(($class_id:ident, $class_type:ty)),*) => {
         #[no_mangle]
         extern "stdcall" fn DllGetClassObject(class_id: *const com::sys::CLSID, iid: *const com::sys::IID, result: *mut *mut std::ffi::c_void) -> com::sys::HRESULT {
-            use com::interfaces::IUnknown;
             use com::registration::initialize_class_object;
             assert!(!class_id.is_null(), "class id passed to DllGetClassObject should never be null");
 
             let class_id = unsafe { &*class_id };
             if class_id == &$class_id_one {
-                let mut instance = <$class_type_one>::get_class_object();
+                let instance = <$class_type_one>::get_class_object();
                 initialize_class_object(instance, iid, result)
             } $(else if class_id == &$class_id {
-                let mut instance = <$class_type>::get_class_object();
+                let instance = <$class_type>::get_class_object();
                 initialize_class_object(instance, iid, result)
             })* else {
                 com::sys::CLASS_E_CLASSNOTAVAILABLE
