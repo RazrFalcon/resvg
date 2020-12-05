@@ -1,0 +1,39 @@
+name: Rust
+
+on: [push, pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        rust:
+          - stable
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Install toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        override: true
+
+    # We have to use the Release mode, otherwise it would take forever.
+    - name: Test
+      run: cargo test --release
+
+    - name: Build C API
+      working-directory: c-api
+      run: cargo build
+
+    - name: Test usvg
+      working-directory: usvg
+      run: cargo test
+
+    - name: Build usvg without text support
+      working-directory: usvg
+      run: cargo build --no-default-features

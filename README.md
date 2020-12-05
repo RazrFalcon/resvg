@@ -47,13 +47,12 @@ But since `resvg` is written in Rust and uses [tiny-skia] for rendering - it's p
 
 ## Safety
 
-resvg and most of its dependencies are mostly safe.
+resvg and most of its dependencies are pretty safe.
 The main exceptions are [tiny-skia] and files memory mapping.
 
 ## License
 
 `resvg` project is licensed under the [MPLv2.0](https://www.mozilla.org/en-US/MPL/).
 
-[harfbuzz]: https://github.com/harfbuzz/harfbuzz
 [rustybuzz]: https://github.com/RazrFalcon/rustybuzz
 [tiny-skia]: https://github.com/RazrFalcon/tiny-skia

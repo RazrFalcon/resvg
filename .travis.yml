@@ -1,4 +1,0 @@
-dist: bionic
-language: rust
-rust: stable
-script: ./run-tests.py
