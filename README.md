@@ -1,5 +1,5 @@
 ## resvg
-[![Build Status](https://travis-ci.org/RazrFalcon/resvg.svg?branch=master)](https://travis-ci.org/RazrFalcon/resvg)
+![Build Status](https://github.com/RazrFalcon/resvg/workflows/Rust/badge.svg)
 [![Crates.io](https://img.shields.io/crates/v/resvg.svg)](https://crates.io/crates/resvg)
 [![Documentation](https://docs.rs/resvg/badge.svg)](https://docs.rs/resvg)
 

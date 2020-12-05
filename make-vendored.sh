@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION="0.11.0"
+VERSION="0.12.0"
 
 git clone https://github.com/RazrFalcon/resvg resvg-$VERSION
 cd resvg-"$VERSION"

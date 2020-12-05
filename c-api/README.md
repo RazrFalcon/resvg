@@ -2,8 +2,6 @@
 
 ## Build
 
-See the parent readme for details.
-
 ```sh
 cargo build --release
 ```

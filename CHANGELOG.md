@@ -7,14 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.12.0] - 2020-12-05
 ### Changed
 - resvg no longer requires a C++ compiler!
 - `tiny-skia` was updated to a pure Rust version, which means that `resvg` no longer
-  depends on `clang` and should work on 32bit tagets.
+  depends on `clang` and should work on 32bit targets.
 - `rustybuzz` was updated to a pure Rust version.
+- `tools/explorer-thumbnailer` is back and written in Rust now.
+  Thanks to [gentoo90](https://github.com/gentoo90).
 
 ### Fixed
 - (usvg) Do not panic when a font has a zero-sized underline thickness.
+- (usvg) Multiple `textPath` processing fixed by [chubei-oppen](https://github.com/chubei-oppen).
 - (qt-api) `boundsOnElement` and `boundingBox` were returning transposed bounds.
 
 ## [0.11.0] - 2020-07-04
@@ -382,7 +387,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/RazrFalcon/resvg/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/RazrFalcon/resvg/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/RazrFalcon/resvg/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/RazrFalcon/resvg/compare/v0.9.0...v0.9.1

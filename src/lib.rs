@@ -6,7 +6,7 @@
 [resvg](https://github.com/RazrFalcon/resvg) is an SVG rendering library.
 */
 
-#![doc(html_root_url = "https://docs.rs/resvg/0.11.0")]
+#![doc(html_root_url = "https://docs.rs/resvg/0.12.0")]
 
 #![warn(missing_docs)]
 
