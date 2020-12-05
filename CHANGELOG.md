@@ -8,8 +8,10 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Changed
+- resvg no longer requires a C++ compiler!
 - `tiny-skia` was updated to a pure Rust version, which means that `resvg` no longer
   depends on `clang` and should work on 32bit tagets.
+- `rustybuzz` was updated to a pure Rust version.
 
 ### Fixed
 - (usvg) Do not panic when a font has a zero-sized underline thickness.
