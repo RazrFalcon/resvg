@@ -244,7 +244,7 @@ pub trait SystemFontDB {
     fn load_system_fonts(&mut self);
 }
 
-#[cfg(feature = "text")]
+#[cfg(feature = "system-fonts")]
 impl SystemFontDB for fontdb::Database {
     #[inline]
     fn load_system_fonts(&mut self) {

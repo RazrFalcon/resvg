@@ -33,4 +33,4 @@ rayon = "1.3"
 
 [features]
 default = ["text"]
-text = ["usvg/text"] # enables SVG Text support
+text = ["usvg/system-fonts", "usvg/text"] # enables SVG Text support
