@@ -150,6 +150,17 @@ fn conv_defs(
                                 FeBlendMode::Screen     => "screen",
                                 FeBlendMode::Darken     => "darken",
                                 FeBlendMode::Lighten    => "lighten",
+                                FeBlendMode::Overlay    => "overlay",
+                                FeBlendMode::ColorDodge => "color-dodge",
+                                FeBlendMode::ColorBurn  => "color-burn",
+                                FeBlendMode::HardLight  => "hard-light",
+                                FeBlendMode::SoftLight  => "soft-light",
+                                FeBlendMode::Difference => "difference",
+                                FeBlendMode::Exclusion  => "exclusion",
+                                FeBlendMode::Hue        => "hue",
+                                FeBlendMode::Saturation => "saturation",
+                                FeBlendMode::Color      => "color",
+                                FeBlendMode::Luminosity => "luminosity"
                             });
                             xml.write_svg_attribute(AId::Result, &fe.result);
                             xml.end_element();
