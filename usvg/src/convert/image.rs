@@ -45,8 +45,13 @@ pub fn convert(
     );
 
     let kind = try_opt!(get_href_data(node.element_id(), href, state.opt));
+    let id = if parent.id().to_string() == node.element_id().to_string() {
+        String::new()
+    } else {
+        node.element_id().to_string()
+    };
     parent.append_kind(tree::NodeKind::Image(tree::Image {
-        id: node.element_id().to_string(),
+        id,
         transform: Default::default(),
         visibility,
         view_box,

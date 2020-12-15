@@ -70,7 +70,11 @@ pub fn convert(
 
     if new_paths.len() == 1 {
         // Copy `text` id to the first path.
-        new_paths[0].id = node.element_id().to_string();
+        new_paths[0].id = if parent.id().to_string() == node.element_id().to_string() {
+            String::new()
+        } else {
+            node.element_id().to_string()
+        };
     }
 
     let mut parent = if state.opt.keep_named_groups && new_paths.len() > 1 {

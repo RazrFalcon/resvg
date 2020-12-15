@@ -374,7 +374,7 @@ fn convert_group(
         || force;
 
     if required {
-        let id = if is_g_or_use {
+        let id = if node.has_element_id() {
             node.element_id().to_string()
         } else {
             String::new()
@@ -708,8 +708,13 @@ fn convert_path(
         markers_group = Some(g);
     }
 
+    let id = if parent.id().to_string() == node.element_id().to_string() {
+        String::new()
+    } else {
+        node.element_id().to_string()
+    };
     parent.append_kind(tree::NodeKind::Path(tree::Path {
-        id: node.element_id().to_string(),
+        id,
         transform: Default::default(),
         visibility,
         fill,
