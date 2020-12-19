@@ -11,8 +11,9 @@ pub fn mask(
     layers: &mut Layers,
     canvas: &mut tiny_skia::Canvas,
 ) {
-    let mask_canvas = try_opt!(layers.get());
-    let mut mask_canvas = mask_canvas.borrow_mut();
+    let mask_pixmap = try_opt!(layers.get());
+    let mut mask_pixmap = mask_pixmap.borrow_mut();
+    let mut mask_canvas = tiny_skia::Canvas::from(mask_pixmap.as_mut());
 
     {
         mask_canvas.set_transform(canvas.get_transform());
@@ -45,7 +46,7 @@ pub fn mask(
     {
         use rgb::FromSlice;
 
-        let data = mask_canvas.pixmap.data_mut();
+        let data = mask_canvas.pixmap().data_mut();
         image_to_mask(data.as_rgba_mut(), layers.image_size());
     }
 
@@ -61,7 +62,7 @@ pub fn mask(
     paint.blend_mode = tiny_skia::BlendMode::DestinationIn;
 
     canvas.reset_transform();
-    canvas.draw_pixmap(0, 0, &mask_canvas.pixmap, &paint);
+    canvas.draw_pixmap(0, 0, mask_pixmap.as_ref(), &paint);
 }
 
 /// Converts an image into an alpha mask.

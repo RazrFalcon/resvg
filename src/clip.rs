@@ -11,11 +11,11 @@ pub fn clip(
     layers: &mut Layers,
     canvas: &mut tiny_skia::Canvas,
 ) {
-    let clip_canvas = try_opt!(layers.get());
-    let mut clip_canvas = clip_canvas.borrow_mut();
+    let clip_pixmap = try_opt!(layers.get());
+    let mut clip_pixmap = clip_pixmap.borrow_mut();
+    clip_pixmap.fill(tiny_skia::Color::BLACK);
 
-    clip_canvas.pixmap.fill(tiny_skia::Color::BLACK);
-
+    let mut clip_canvas = tiny_skia::Canvas::from(clip_pixmap.as_mut());
     clip_canvas.set_transform(canvas.get_transform());
     clip_canvas.apply_transform(&cp.transform.to_native());
 
@@ -56,7 +56,7 @@ pub fn clip(
     let mut paint = tiny_skia::PixmapPaint::default();
     paint.blend_mode = tiny_skia::BlendMode::DestinationOut;
     canvas.reset_transform();
-    canvas.draw_pixmap(0, 0, &clip_canvas.pixmap, &paint);
+    canvas.draw_pixmap(0, 0, clip_pixmap.as_ref(), &paint);
 }
 
 fn clip_group(
@@ -73,9 +73,10 @@ fn clip_group(
                 // then we should render this child on a new canvas,
                 // clip it, and only then draw it to the `clipPath`.
 
-                let clip_canvas = try_opt!(layers.get());
-                let mut clip_canvas = clip_canvas.borrow_mut();
+                let clip_pixmap = try_opt!(layers.get());
+                let mut clip_pixmap = clip_pixmap.borrow_mut();
 
+                let mut clip_canvas = tiny_skia::Canvas::from(clip_pixmap.as_mut());
                 clip_canvas.set_transform(canvas.get_transform());
 
                 draw_group_child(&node, &mut clip_canvas);
@@ -84,7 +85,7 @@ fn clip_group(
                 let mut paint = tiny_skia::PixmapPaint::default();
                 paint.blend_mode = tiny_skia::BlendMode::Xor;
                 canvas.reset_transform();
-                canvas.draw_pixmap(0, 0, &clip_canvas.pixmap, &paint);
+                canvas.draw_pixmap(0, 0, clip_pixmap.as_ref(), &paint);
             }
         }
     }

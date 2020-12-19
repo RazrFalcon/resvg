@@ -82,7 +82,7 @@ fn draw_raster(
     )?;
 
     let pattern = tiny_skia::Pattern::new(
-        &pixmap,
+        pixmap.as_ref(),
         tiny_skia::SpreadMode::Pad,
         filter,
         1.0,
@@ -136,9 +136,11 @@ fn draw_svg(
     let img_size = tree.svg_node().size.to_screen_size();
     let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&view_box, img_size);
 
-    let mut sub_canvas = canvas.clone();
+    let mut sub_pixmap = canvas.pixmap().to_owned();
+    sub_pixmap.fill(tiny_skia::Color::TRANSPARENT);
+    let mut sub_canvas = tiny_skia::Canvas::from(sub_pixmap.as_mut());
+    sub_canvas.set_transform(canvas.get_transform());
     sub_canvas.apply_transform(&ts.to_native());
-    sub_canvas.pixmap.fill(tiny_skia::Color::TRANSPARENT);
     render_to_canvas(&tree, img_size, &mut sub_canvas);
 
     if let Some(clip) = clip {
@@ -153,7 +155,7 @@ fn draw_svg(
 
     let ts = canvas.get_transform();
     canvas.reset_transform();
-    canvas.draw_pixmap(0, 0, &sub_canvas.pixmap, &tiny_skia::PixmapPaint::default());
+    canvas.draw_pixmap(0, 0, sub_pixmap.as_ref(), &tiny_skia::PixmapPaint::default());
     canvas.reset_clip();
     canvas.set_transform(ts);
 

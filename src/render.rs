@@ -77,16 +77,16 @@ pub(crate) fn create_root_image(
     size: ScreenSize,
     fit_to: usvg::FitTo,
     background: Option<usvg::Color>,
-) -> Option<(tiny_skia::Canvas, ScreenSize)> {
+) -> Option<(tiny_skia::Pixmap, ScreenSize)> {
     let img_size = fit_to.fit_to(size)?;
 
-    let mut canvas = tiny_skia::Canvas::new(img_size.width(), img_size.height())?;
+    let mut pixmap = tiny_skia::Pixmap::new(img_size.width(), img_size.height())?;
 
     if let Some(c) = background {
-        canvas.pixmap.fill(tiny_skia::Color::from_rgba8(c.red, c.green, c.blue, 255));
+        pixmap.fill(tiny_skia::Color::from_rgba8(c.red, c.green, c.blue, 255));
     }
 
-    Some((canvas, img_size))
+    Some((pixmap, img_size))
 }
 
 /// Applies viewbox transformation to the painter.
@@ -172,12 +172,13 @@ fn render_group_impl(
     layers: &mut Layers,
     canvas: &mut tiny_skia::Canvas,
 ) -> Option<Rect> {
-    let sub_canvas = layers.get()?;
-    let mut sub_canvas = sub_canvas.borrow_mut();
+    let sub_pixmap = layers.get()?;
+    let mut sub_pixmap = sub_pixmap.borrow_mut();
 
     let curr_ts = canvas.get_transform();
 
     let bbox = {
+        let mut sub_canvas = tiny_skia::Canvas::from(sub_pixmap.as_mut());
         sub_canvas.set_transform(curr_ts);
         render_group(node, state, layers, &mut sub_canvas)
     };
@@ -193,7 +194,7 @@ fn render_group_impl(
         let paint = tiny_skia::PixmapPaint::default();
         let curr_ts = canvas.get_transform();
         canvas.reset_transform();
-        canvas.draw_pixmap(0, 0, &sub_canvas.pixmap, &paint);
+        canvas.draw_pixmap(0, 0, sub_pixmap.as_ref(), &paint);
         canvas.set_transform(curr_ts);
         return bbox;
     }
@@ -205,11 +206,11 @@ fn render_group_impl(
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(curr_ts);
                 let background = prepare_filter_background(node, filter, layers.image_size());
-                let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, &sub_canvas.pixmap);
-                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, &sub_canvas.pixmap);
+                let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, &sub_pixmap);
+                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, &sub_pixmap);
                 crate::filter::apply(filter, bbox, &ts, &node.tree(),
                                      background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
-                                     &mut sub_canvas);
+                                     &mut sub_pixmap);
             }
         }
     }
@@ -219,6 +220,7 @@ fn render_group_impl(
         if let Some(ref id) = g.clip_path {
             if let Some(clip_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
+                    let mut sub_canvas = tiny_skia::Canvas::from(sub_pixmap.as_mut());
                     sub_canvas.set_transform(curr_ts);
                     crate::clip::clip(&clip_node, cp, bbox, layers, &mut sub_canvas);
                 }
@@ -228,6 +230,7 @@ fn render_group_impl(
         if let Some(ref id) = g.mask {
             if let Some(mask_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
+                    let mut sub_canvas = tiny_skia::Canvas::from(sub_pixmap.as_mut());
                     sub_canvas.set_transform(curr_ts);
                     crate::mask::mask(&mask_node, mask, bbox, layers, &mut sub_canvas);
                 }
@@ -243,7 +246,7 @@ fn render_group_impl(
 
     let curr_ts = canvas.get_transform();
     canvas.reset_transform();
-    canvas.draw_pixmap(0, 0, &sub_canvas.pixmap, &paint);
+    canvas.draw_pixmap(0, 0, sub_pixmap.as_ref(), &paint);
     canvas.set_transform(curr_ts);
 
     bbox
@@ -258,14 +261,15 @@ fn prepare_filter_background(
     let start_node = parent.filter_background_start_node(filter)?;
 
     let tree = parent.tree();
-    let mut canvas = tiny_skia::Canvas::new(img_size.width(), img_size.height())?;
+    let mut pixmap = tiny_skia::Pixmap::new(img_size.width(), img_size.height()).unwrap();
+    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
     let view_box = tree.svg_node().view_box;
 
     // Render from the `start_node` until the `parent`. The `parent` itself is excluded.
     let mut state = RenderState::RenderUntil(parent.clone());
     crate::render::render_node_to_canvas(&start_node, view_box, img_size, &mut state, &mut canvas);
 
-    Some(canvas.pixmap)
+    Some(pixmap)
 }
 
 /// Renders an image used by `FillPaint`/`StrokePaint` filter input.
@@ -283,7 +287,8 @@ fn prepare_filter_fill_paint(
     pixmap: &tiny_skia::Pixmap,
 ) -> Option<tiny_skia::Pixmap> {
     let region = crate::filter::calc_region(filter, bbox, &ts, pixmap).ok()?;
-    let mut sub_canvas = tiny_skia::Canvas::new(region.width(), region.height())?;
+    let mut sub_pixmap = tiny_skia::Pixmap::new(region.width(), region.height()).unwrap();
+    let mut sub_canvas = tiny_skia::Canvas::from(sub_pixmap.as_mut());
     if let usvg::NodeKind::Group(ref g) = *parent.borrow() {
         if let Some(paint) = g.filter_fill.clone() {
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
@@ -297,7 +302,7 @@ fn prepare_filter_fill_paint(
         }
     }
 
-    Some(sub_canvas.pixmap)
+    Some(sub_pixmap)
 }
 
 /// The same as `prepare_filter_fill_paint`, but for `StrokePaint`.
@@ -309,7 +314,8 @@ fn prepare_filter_stroke_paint(
     pixmap: &tiny_skia::Pixmap,
 ) -> Option<tiny_skia::Pixmap> {
     let region = crate::filter::calc_region(filter, bbox, &ts, pixmap).ok()?;
-    let mut sub_canvas = tiny_skia::Canvas::new(region.width(), region.height())?;
+    let mut sub_pixmap = tiny_skia::Pixmap::new(region.width(), region.height()).unwrap();
+    let mut sub_canvas = tiny_skia::Canvas::from(sub_pixmap.as_mut());
     if let usvg::NodeKind::Group(ref g) = *parent.borrow() {
         if let Some(paint) = g.filter_stroke.clone() {
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
@@ -322,5 +328,5 @@ fn prepare_filter_stroke_paint(
         }
     }
 
-    Some(sub_canvas.pixmap)
+    Some(sub_pixmap)
 }

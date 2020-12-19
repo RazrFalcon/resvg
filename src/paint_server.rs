@@ -229,7 +229,8 @@ fn prepare_pattern_pixmap(
     let (sx, sy) = global_ts.get_scale();
 
     let img_size = Size::new(r.width() * sx as f64, r.height() * sy as f64)?.to_screen_size();
-    let mut canvas = tiny_skia::Canvas::new(img_size.width(), img_size.height())?;
+    let mut pixmap = tiny_skia::Pixmap::new(img_size.width(), img_size.height())?;
+    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
 
     canvas.scale(sx as f32, sy as f32);
     if let Some(vbox) = pattern.view_box {
@@ -251,7 +252,7 @@ fn prepare_pattern_pixmap(
     ts.translate(r.x(), r.y());
     ts.scale(1.0 / sx as f64, 1.0 / sy as f64);
 
-    Some((canvas.pixmap, ts))
+    Some((pixmap, ts))
 }
 
 fn prepare_pattern(
@@ -260,7 +261,7 @@ fn prepare_pattern(
     opacity: usvg::Opacity,
 ) -> tiny_skia::Shader {
     tiny_skia::Pattern::new(
-        pixmap,
+        pixmap.as_ref(),
         tiny_skia::SpreadMode::Repeat,
         tiny_skia::FilterQuality::Bicubic,
         opacity.value() as f32,

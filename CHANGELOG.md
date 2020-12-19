@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- Update `fontdb`.
+- Update `tiny-skia`.
 
 ## [0.12.0] - 2020-12-05
 ### Changed
@@ -19,7 +22,7 @@ This changelog also contains important changes in dependencies.
 
 ### Fixed
 - (usvg) Do not panic when a font has a zero-sized underline thickness.
-- (usvg) Multiple `textPath` processing fixed by [chubei-oppen](https://github.com/chubei-oppen).
+- (usvg) Multiple `textPath` processing fixes by [chubei-oppen](https://github.com/chubei-oppen).
 - (qt-api) `boundsOnElement` and `boundingBox` were returning transposed bounds.
 
 ## [0.11.0] - 2020-07-04

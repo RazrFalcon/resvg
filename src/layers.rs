@@ -9,7 +9,7 @@ use std::rc::Rc;
 use usvg::ScreenSize;
 
 
-type LayerData = Rc<RefCell<tiny_skia::Canvas>>; // TODO: store Pixmap
+type LayerData = Rc<RefCell<tiny_skia::Pixmap>>;
 
 /// Stack of image layers.
 ///
@@ -48,9 +48,7 @@ impl Layers {
         if used_layers == self.d.len() {
             match tiny_skia::Pixmap::new(self.img_size.width(), self.img_size.height()) {
                 Some(pixmap) => {
-                    let canvas = tiny_skia::Canvas::from(pixmap);
-
-                    self.d.push(Rc::new(RefCell::new(canvas)));
+                    self.d.push(Rc::new(RefCell::new(pixmap)));
                     Some(Layer {
                         d: self.d[self.d.len() - 1].clone(),
                         _counter_holder: self.counter.clone(),
@@ -63,9 +61,7 @@ impl Layers {
         } else {
             {
                 let img = self.d[used_layers].clone();
-                img.borrow_mut().reset_transform();
-                img.borrow_mut().reset_clip();
-                img.borrow_mut().pixmap.fill(tiny_skia::Color::TRANSPARENT);
+                img.borrow_mut().fill(tiny_skia::Color::TRANSPARENT);
             }
 
             Some(Layer {

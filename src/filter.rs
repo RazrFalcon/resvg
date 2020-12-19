@@ -217,7 +217,7 @@ impl Image {
 
 
 struct FilterInputs<'a> {
-    source: &'a mut tiny_skia::Canvas,
+    source: &'a mut tiny_skia::Pixmap,
     background: Option<&'a tiny_skia::Pixmap>,
     fill_paint: Option<&'a tiny_skia::Pixmap>,
     stroke_paint: Option<&'a tiny_skia::Pixmap>,
@@ -238,11 +238,11 @@ pub fn apply(
     background: Option<&tiny_skia::Pixmap>,
     fill_paint: Option<&tiny_skia::Pixmap>,
     stroke_paint: Option<&tiny_skia::Pixmap>,
-    canvas: &mut tiny_skia::Canvas,
+    source: &mut tiny_skia::Pixmap,
 ) {
     let res = {
         let inputs = FilterInputs {
-            source: canvas,
+            source,
             background,
             fill_paint,
             stroke_paint,
@@ -251,11 +251,11 @@ pub fn apply(
         _apply(filter, &inputs, bbox, ts, tree)
     };
 
-    let res = res.and_then(|(image, region)| apply_to_canvas(image, region, canvas));
+    let res = res.and_then(|(image, region)| apply_to_canvas(image, region, source));
 
     // Clear on error.
     if res.is_err() {
-        canvas.pixmap.fill(tiny_skia::Color::TRANSPARENT);
+        source.fill(tiny_skia::Color::TRANSPARENT);
     }
 
     match res {
@@ -281,7 +281,7 @@ fn _apply(
     tree: &usvg::Tree,
 ) -> Result<(Image, ScreenRect), Error> {
     let mut results = Vec::new();
-    let region = calc_region(filter, bbox, ts, &inputs.source.pixmap)?;
+    let region = calc_region(filter, bbox, ts, &inputs.source)?;
 
     for primitive in &filter.children {
         let cs = primitive.color_interpolation;
@@ -372,9 +372,10 @@ fn _apply(
                 paint.set_color(tiny_skia::Color::BLACK);
                 paint.blend_mode = tiny_skia::BlendMode::Clear;
 
-                let mut canvas = tiny_skia::Canvas::from(result.take()?);
-                let w = canvas.pixmap.width() as f32;
-                let h = canvas.pixmap.height() as f32;
+                let mut pixmap = result.take()?;
+                let w = pixmap.width() as f32;
+                let h = pixmap.height() as f32;
+                let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
 
                 if let Some(rect) = tiny_skia::Rect::from_xywh(0.0, 0.0, w, subregion2.y() as f32) {
                     canvas.fill_rect(rect, &paint);
@@ -392,7 +393,7 @@ fn _apply(
                     canvas.fill_rect(rect, &paint);
                 }
 
-                canvas.pixmap
+                pixmap
             };
 
             result = Image {
@@ -558,7 +559,7 @@ fn get_input(
 
     match input {
         usvg::FilterInput::SourceGraphic => {
-            let image = inputs.source.pixmap.copy_region(region)?;
+            let image = inputs.source.copy_region(region)?;
 
             Ok(Image {
                 image: Rc::new(image),
@@ -567,7 +568,7 @@ fn get_input(
             })
         }
         usvg::FilterInput::SourceAlpha => {
-            let image = inputs.source.pixmap.copy_region(region)?;
+            let image = inputs.source.copy_region(region)?;
             convert_alpha(image)
         }
         usvg::FilterInput::BackgroundImage => {
@@ -633,17 +634,16 @@ fn apply_offset(
         return Ok(input);
     }
 
-    let pixmap = tiny_skia::Pixmap::try_create(input.width(), input.height())?;
-
-    let mut canvas = tiny_skia::Canvas::from(pixmap);
+    let mut pixmap = tiny_skia::Pixmap::try_create(input.width(), input.height())?;
+    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
     canvas.draw_pixmap(
         dx as i32,
         dy as i32,
-        input.as_ref(),
+        input.as_ref().as_ref(),
         &tiny_skia::PixmapPaint::default(),
     );
 
-    Ok(Image::from_image(canvas.pixmap, input.color_space))
+    Ok(Image::from_image(pixmap, input.color_space))
 }
 
 fn apply_blend(
@@ -656,13 +656,13 @@ fn apply_blend(
     let input1 = input1.into_color_space(cs)?;
     let input2 = input2.into_color_space(cs)?;
 
-    let pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
-    let mut canvas = tiny_skia::Canvas::from(pixmap);
+    let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
+    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
 
     canvas.draw_pixmap(
         0,
         0,
-        input2.as_ref(),
+        input2.as_ref().as_ref(),
         &tiny_skia::PixmapPaint::default(),
     );
 
@@ -677,14 +677,14 @@ fn apply_blend(
     canvas.draw_pixmap(
         0,
         0,
-        input1.as_ref(),
+        input1.as_ref().as_ref(),
         &tiny_skia::PixmapPaint {
             blend_mode,
             ..tiny_skia::PixmapPaint::default()
         },
     );
 
-    Ok(Image::from_image(canvas.pixmap, cs))
+    Ok(Image::from_image(pixmap, cs))
 }
 
 fn apply_composite(
@@ -715,11 +715,11 @@ fn apply_composite(
         return Ok(Image::from_image(pixmap, cs));
     }
 
-    let mut canvas = tiny_skia::Canvas::from(pixmap);
+    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
     canvas.draw_pixmap(
         0,
         0,
-        input2.as_ref(),
+        input2.as_ref().as_ref(),
         &tiny_skia::PixmapPaint::default(),
     );
 
@@ -735,14 +735,14 @@ fn apply_composite(
     canvas.draw_pixmap(
         0,
         0,
-        input1.as_ref(),
+        input1.as_ref().as_ref(),
         &tiny_skia::PixmapPaint {
             blend_mode,
             ..tiny_skia::PixmapPaint::default()
         },
     );
 
-    Ok(Image::from_image(canvas.pixmap, cs))
+    Ok(Image::from_image(pixmap, cs))
 }
 
 fn apply_merge(
@@ -752,8 +752,8 @@ fn apply_merge(
     inputs: &FilterInputs,
     results: &[FilterResult],
 ) -> Result<Image, Error> {
-    let pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
-    let mut canvas = tiny_skia::Canvas::from(pixmap);
+    let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
+    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
 
     for input in &fe.inputs {
         let input = get_input(input, region, inputs, results)?;
@@ -761,12 +761,12 @@ fn apply_merge(
         canvas.draw_pixmap(
             0,
             0,
-            input.as_ref(),
+            input.as_ref().as_ref(),
             &tiny_skia::PixmapPaint::default(),
         );
     }
 
-    Ok(Image::from_image(canvas.pixmap, cs))
+    Ok(Image::from_image(pixmap, cs))
 }
 
 fn apply_flood(
@@ -790,19 +790,19 @@ fn apply_tile(
     let tile_pixmap = input.image.copy_region(subregion)?;
     let mut paint = tiny_skia::Paint::default();
     paint.shader = tiny_skia::Pattern::new(
-        &tile_pixmap,
+        tile_pixmap.as_ref(),
         tiny_skia::SpreadMode::Repeat,
         tiny_skia::FilterQuality::Bicubic,
         1.0,
         tiny_skia::Transform::from_translate(subregion.x() as f32, subregion.y() as f32).unwrap(),
     );
 
-    let pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
-    let mut canvas = tiny_skia::Canvas::from(pixmap);
+    let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
+    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
     let rect = tiny_skia::Rect::from_xywh(0.0, 0.0, region.width() as f32, region.height() as f32).unwrap();
     canvas.fill_rect(rect, &paint);
 
-    Ok(Image::from_image(canvas.pixmap, ColorSpace::SRGB))
+    Ok(Image::from_image(pixmap, ColorSpace::SRGB))
 }
 
 fn apply_image(
@@ -812,8 +812,8 @@ fn apply_image(
     tree: &usvg::Tree,
     ts: &usvg::Transform,
 ) -> Result<Image, Error> {
-    let pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
-    let mut canvas = tiny_skia::Canvas::from(pixmap);
+    let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
+    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
 
     match fe.data {
         usvg::FeImageKind::Image(ref kind) => {
@@ -841,7 +841,7 @@ fn apply_image(
         }
     }
 
-    Ok(Image::from_image(canvas.pixmap, ColorSpace::SRGB))
+    Ok(Image::from_image(pixmap, ColorSpace::SRGB))
 }
 
 fn apply_component_transfer(
@@ -1065,16 +1065,18 @@ fn apply_specular_lighting(
 fn apply_to_canvas(
     input: Image,
     region: ScreenRect,
-    canvas: &mut tiny_skia::Canvas,
+    pixmap: &mut tiny_skia::Pixmap,
 ) -> Result<(), Error> {
     let input = input.into_color_space(ColorSpace::SRGB)?;
 
+    pixmap.fill(tiny_skia::Color::TRANSPARENT);
+
+    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
     canvas.reset_transform();
-    canvas.pixmap.fill(tiny_skia::Color::TRANSPARENT);
     canvas.draw_pixmap(
         region.x() as i32,
         region.y() as i32,
-        input.as_ref(),
+        input.as_ref().as_ref(),
         &tiny_skia::PixmapPaint::default(),
     );
 

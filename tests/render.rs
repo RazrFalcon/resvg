@@ -141,8 +141,6 @@ fn process(
 
     let mut pixels_d = 0;
     for (a, b) in expected_data.as_slice().as_rgba().iter().zip(img.data().as_rgba()) {
-        // Sadly, Skia can produce slightly different results on different OS'es/hardware.
-        // Not sure why. Because of that, we have to use approximate comparison.
         if is_pix_diff(*a, *b) {
             pixels_d += 1;
         }
@@ -231,7 +229,7 @@ fn gen_diff(name: &str, img1: &[u8], img2: &[u8]) -> Result<(), png::EncodingErr
     writer.write_image_data(&img3)
 }
 
-// A pixel can have a slightly different channel color due to rounding, I guess.
+// TODO: remove
 fn is_pix_diff(c1: rgb::RGBA8, c2: rgb::RGBA8) -> bool {
     (c1.r as i32 - c2.r as i32).abs() > 1 ||
     (c1.g as i32 - c2.g as i32).abs() > 1 ||

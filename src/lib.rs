@@ -38,13 +38,13 @@ pub struct Image {
 }
 
 impl Image {
-    fn from_canvas(canvas: tiny_skia::Canvas) -> Self {
+    fn from_pixmap(pixmap: tiny_skia::Pixmap) -> Self {
         use rgb::FromSlice;
 
-        let width = canvas.pixmap.width();
-        let height = canvas.pixmap.height();
+        let width = pixmap.width();
+        let height = pixmap.height();
 
-        let mut data = canvas.pixmap.take();
+        let mut data = pixmap.take();
         svgfilters::demultiply_alpha(data.as_rgba_mut());
 
         Image {
@@ -104,10 +104,11 @@ pub fn render(
     fit_to: usvg::FitTo,
     background: Option<usvg::Color>,
 ) -> Option<Image> {
-    let (mut canvas, size)
+    let (mut pixmap, size)
         = render::create_root_image(tree.svg_node().size.to_screen_size(), fit_to, background)?;
+    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
     render::render_to_canvas(tree, size, &mut canvas);
-    Some(Image::from_canvas(canvas))
+    Some(Image::from_pixmap(pixmap))
 }
 
 /// Renders an SVG node to image.
@@ -128,9 +129,10 @@ pub fn render_node(
         aspect: usvg::AspectRatio::default(),
     };
 
-    let (mut img, img_size)
+    let (mut pixmap, img_size)
         = render::create_root_image(node_bbox.size().to_screen_size(), fit_to, background)?;
 
-    render::render_node_to_canvas(node, vbox, img_size, &mut render::RenderState::Ok, &mut img);
-    Some(Image::from_canvas(img))
+    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
+    render::render_node_to_canvas(node, vbox, img_size, &mut render::RenderState::Ok, &mut canvas);
+    Some(Image::from_pixmap(pixmap))
 }
