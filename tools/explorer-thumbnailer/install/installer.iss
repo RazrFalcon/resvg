@@ -1,11 +1,11 @@
 [Setup]
-AppName="reSVG Explorer Extension"
+AppName="resvg Explorer Extension"
 AppVersion="0.12.0"
 VersionInfoVersion="0.0.12.0"
-AppVerName="reSVG Explorer Extension 0.12.0"
+AppVerName="resvg Explorer Extension 0.12.0"
 AppPublisher="Evgeniy Reizner"
 AppPublisherURL=https://github.com/RazrFalcon/resvg
-DefaultDirName="{pf}\reSVG Explorer Extension"
+DefaultDirName="{pf}\resvg Explorer Extension"
 Compression=lzma
 SolidCompression=yes
 ChangesAssociations=yes
@@ -20,7 +20,6 @@ OutputDir=.
 Name: "en"; MessagesFile: "compiler:Default.isl"; LicenseFile: "..\LICENSE.txt"
 
 [Files]
-Source: "..\vc_redist.x64.exe"; DestDir: "{app}"; AfterInstall: InstallVcredist
 Source: "..\target\release\server.dll"; DestDir: "{app}"
 Source: "..\LICENSE.txt"; DestDir: "{app}";
 
@@ -31,13 +30,5 @@ Root: HKCR; Subkey: "CLSID\{{4432C229-DFD0-4B18-8C4D-F58932AF6105}\InprocServer3
 Root: HKCR; Subkey: ".svg\shellex"; Flags: uninsdeletekeyifempty
 Root: HKCR; Subkey: ".svg\shellex\{{E357FCCD-A995-4576-B01F-234630154E96}"; Flags: uninsdeletekey
 Root: HKCR; Subkey: ".svg\shellex\{{E357FCCD-A995-4576-B01F-234630154E96}"; ValueType: string; ValueData: "{{4432C229-DFD0-4B18-8C4D-F58932AF6105}"
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Services\EventLog\Application\reSVG Thumbnailer"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Services\EventLog\Application\reSVG Thumbnailer"; ValueType: string; ValueName: "EventMessageFile"; ValueData: "{app}\server.dll"
-
-[Code]
-procedure InstallVcredist;
-var
-    ResultCode: Integer;
-begin
-    Exec(ExpandConstant('{app}\vc_redist.x64.exe'), '/install /passive /norestart', '', SW_SHOWNORMAL, ewWaitUntilTerminated, ResultCode)
-end;
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Services\EventLog\Application\resvg Thumbnailer"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Services\EventLog\Application\resvg Thumbnailer"; ValueType: string; ValueName: "EventMessageFile"; ValueData: "{app}\server.dll"
