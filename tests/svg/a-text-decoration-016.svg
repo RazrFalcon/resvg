@@ -1,16 +1,13 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
      font-family="Noto Sans" font-size="48">
-    <title>All types nested</title>
+    <title>All types inline, comma-separated</title>
+    <desc>The list can only be is space separated.</desc>
 
     <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
           stroke="gray" stroke-width="0.5"/>
 
-    <g id="g1" text-decoration="underline">
-        <g id="g2" text-decoration="overline">
-            <text id="text1" x="50" y="100" stroke="green"
-                  text-decoration="line-through">Text</text>
-        </g>
-    </g>
+    <text id="text1" x="50" y="100" stroke="green"
+          text-decoration="underline,overline,line-through">Text</text>
 
     <!-- image frame -->
     <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>

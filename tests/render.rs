@@ -40,8 +40,8 @@ pub fn render(name: &str) -> usize {
 
     if pixels_d != 0 {
         // Save diff if needed.
-        // img.save_png(&format!("tests/{}.png", file_name))?;
-        // gen_diff(&file_name, &expected_data, img.data())?;
+        // img.save_png(&format!("tests/{}.png", name)).unwrap();
+        // gen_diff(&name, &expected_data, img.data()).unwrap();
     }
 
     pixels_d

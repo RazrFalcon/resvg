@@ -11,6 +11,9 @@ This changelog also contains important changes in dependencies.
 - Update `fontdb`.
 - Update `tiny-skia`.
 
+### Fixed
+- Support multiple values inside a `text-decoration` attribute.
+
 ## [0.12.0] - 2020-12-05
 ### Changed
 - resvg no longer requires a C++ compiler!

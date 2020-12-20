@@ -327,6 +327,9 @@ use render::render;
 #[test] fn a_text_decoration_012() { assert_eq!(render("a-text-decoration-012"), 0); }
 #[test] fn a_text_decoration_013() { assert_eq!(render("a-text-decoration-013"), 0); }
 #[test] fn a_text_decoration_014() { assert_eq!(render("a-text-decoration-014"), 0); }
+#[test] fn a_text_decoration_015() { assert_eq!(render("a-text-decoration-015"), 0); }
+#[test] fn a_text_decoration_016() { assert_eq!(render("a-text-decoration-016"), 0); }
+#[test] fn a_text_decoration_017() { assert_eq!(render("a-text-decoration-017"), 0); }
 #[test] fn a_text_rendering_001() { assert_eq!(render("a-text-rendering-001"), 0); }
 #[test] fn a_text_rendering_002() { assert_eq!(render("a-text-rendering-002"), 0); }
 #[test] fn a_text_rendering_003() { assert_eq!(render("a-text-rendering-003"), 0); }

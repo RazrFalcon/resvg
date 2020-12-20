@@ -639,7 +639,13 @@ struct TextDecorationTypes {
 /// Resolves the `text` node's `text-decoration` property.
 fn conv_text_decoration(text_node: TextNode) -> TextDecorationTypes {
     fn find_decoration(node: svgtree::Node, value: &str) -> bool {
-        node.ancestors().any(|n| n.attribute(AId::TextDecoration) == Some(value))
+        node.ancestors().any(|n| {
+            if let Some(str_value) = n.attribute::<&str>(AId::TextDecoration) {
+                str_value.split(' ').any(|v| v == value)
+            } else {
+                false
+            }
+        })
     }
 
     TextDecorationTypes {
