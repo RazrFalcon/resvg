@@ -114,9 +114,9 @@ checksum = "75224bec9bfe1a65e2d34132933f2de7fe79900c96a0174307554244ece8150e"
 
 [[package]]
 name = "fontdb"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "108e06133e6288f4baf14ab57c8aa9d414bdeeb43a60f2fb211a6d1e803116a9"
+checksum = "428948a0f39fb83fe55991d4423e35a793cdbb0322ebe23853f6024124a330d7"
 dependencies = [
  "log",
  "memmap2",
@@ -241,6 +241,7 @@ version = "0.12.0"
 dependencies = [
  "log",
  "resvg",
+ "tiny-skia",
  "usvg",
 ]
 

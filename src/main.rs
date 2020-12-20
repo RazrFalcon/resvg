@@ -102,27 +102,50 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
 }
 
 fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(), String> {
+    let now = std::time::Instant::now();
+
     let img = if let Some(ref id) = args.export_id {
         if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
-            timed!(args, "Rendering",
-                resvg::render_node(&node, args.fit_to, args.background))
+            let bbox = node.calculate_bbox()
+                .ok_or_else(|| "node has zero size".to_string())?;
+
+            let size = args.fit_to.fit_to(bbox.to_screen_size())
+                .ok_or_else(|| "target size is zero".to_string())?;
+
+            // Unwrap is safe, because `size` is already valid.
+            let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
+
+            if let Some(background) = args.background {
+                pixmap.fill(tiny_skia::Color::from_rgba8(
+                    background.red, background.green, background.blue, 255));
+            }
+
+            resvg::render_node(&node, args.fit_to, pixmap.as_mut());
+            pixmap
         } else {
             return Err(format!("SVG doesn't have '{}' ID", id));
         }
     } else {
-        timed!(args, "Rendering",
-            resvg::render(&tree, args.fit_to, args.background))
+        let size = args.fit_to.fit_to(tree.svg_node().size.to_screen_size())
+            .ok_or_else(|| "target size is zero".to_string())?;
+
+        // Unwrap is safe, because `size` is already valid.
+        let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
+
+        if let Some(background) = args.background {
+            pixmap.fill(tiny_skia::Color::from_rgba8(
+                background.red, background.green, background.blue, 255));
+        }
+
+        resvg::render(tree, args.fit_to, pixmap.as_mut());
+        pixmap
     };
 
-    match img {
-        Some(img) => {
-            timed!(args, "Saving",
-                img.save_png(out_png).map_err(|e| e.to_string()))
-        }
-        None => {
-            Err("failed to allocate an image".to_string())
-        }
+    if args.perf {
+        println!("Rendering: {:.2}ms", now.elapsed().as_micros() as f64 / 1000.0);
     }
+
+    timed!(args, "Saving", img.save_png(out_png).map_err(|e| e.to_string()))
 }
 
 fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), String> {

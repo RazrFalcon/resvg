@@ -73,22 +73,6 @@ pub(crate) fn render_node_to_canvas(
     canvas.set_transform(curr_ts);
 }
 
-pub(crate) fn create_root_image(
-    size: ScreenSize,
-    fit_to: usvg::FitTo,
-    background: Option<usvg::Color>,
-) -> Option<(tiny_skia::Pixmap, ScreenSize)> {
-    let img_size = fit_to.fit_to(size)?;
-
-    let mut pixmap = tiny_skia::Pixmap::new(img_size.width(), img_size.height())?;
-
-    if let Some(c) = background {
-        pixmap.fill(tiny_skia::Color::from_rgba8(c.red, c.green, c.blue, 255));
-    }
-
-    Some((pixmap, img_size))
-}
-
 /// Applies viewbox transformation to the painter.
 fn apply_viewbox_transform(
     view_box: usvg::ViewBox,

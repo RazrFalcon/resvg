@@ -46,6 +46,7 @@ public:
     }
 
     resvg_render_tree *tree = nullptr;
+    QSizeF size;
     QRectF viewBox;
     QString errMsg;
 
@@ -59,6 +60,7 @@ private:
             tree = nullptr;
         }
 
+        size = QSizeF();
         viewBox = QRectF();
         errMsg = QString();
     }
@@ -348,6 +350,9 @@ public:
         const auto r = resvg_get_image_viewbox(d->tree);
         d->viewBox = QRectF(r.x, r.y, r.width, r.height);
 
+        const auto s = resvg_get_image_size(d->tree);
+        d->size = QSizeF(s.width, s.height);
+
         return true;
     }
 
@@ -405,6 +410,8 @@ public:
 
     /**
      * @brief Returns an SVG size.
+     *
+     * The `width` and `height` attributes in SVG.
      */
     QSize defaultSize() const
     {
@@ -413,17 +420,21 @@ public:
 
     /**
      * @brief Returns an SVG size.
+     *
+     * The `width` and `height` attributes in SVG.
      */
     QSizeF defaultSizeF() const
     {
         if (d->tree)
-            return d->viewBox.size();
+            return d->size.toSize();
         else
             return QSizeF();
     }
 
     /**
      * @brief Returns an SVG viewbox.
+     *
+     * The `viewBox` attribute in SVG.
      */
     QRect viewBox() const
     {
@@ -432,6 +443,8 @@ public:
 
     /**
      * @brief Returns an SVG viewbox.
+     *
+     * The `viewBox` attribute in SVG.
      */
     QRectF viewBoxF() const
     {
@@ -521,21 +534,16 @@ public:
             fit_to.value = size.width();
         }
 
-        const auto resvg_img = resvg_render(d->tree, fit_to, nullptr);
-        if (!resvg_img) {
-            return QImage();
+        auto svgSize = size;
+        if (svgSize.isEmpty()) {
+            svgSize = defaultSize();
         }
 
-        QImage qImg(resvg_image_get_width(resvg_img),
-                    resvg_image_get_height(resvg_img),
-                    QImage::Format_ARGB32);
+        QImage qImg(svgSize.width(), svgSize.height(), QImage::Format_ARGB32_Premultiplied);
+        qImg.fill(Qt::transparent);
+        resvg_render(d->tree, fit_to, qImg.width(), qImg.height(), (char*)qImg.bits());
 
-        size_t len;
-        auto img_data = resvg_image_get_data(resvg_img, &len);
-        memcpy(qImg.bits(), img_data, len);
-
-        resvg_image_destroy(resvg_img);
-
+        // resvg renders onto the RGBA canvas, while QImage is ARGB.
         // std::move is required to call inplace version of rgbSwapped().
         return std::move(qImg).rgbSwapped();
     }

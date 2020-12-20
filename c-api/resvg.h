@@ -40,11 +40,6 @@ typedef struct resvg_options resvg_options;
 typedef struct resvg_render_tree resvg_render_tree;
 
 /**
- * @brief A raster image that contains rendering results.
- */
-typedef struct resvg_image resvg_image;
-
-/**
  * @brief List of possible errors.
  */
 typedef enum resvg_error {
@@ -70,15 +65,6 @@ typedef enum resvg_error {
     /** Failed to parse an SVG data. */
     RESVG_ERROR_PARSING_FAILED,
 } resvg_error;
-
-/**
- * @brief An RGB color representation.
- */
-typedef struct resvg_color {
-    uint8_t r; /**< Red component. */
-    uint8_t g; /**< Green component. */
-    uint8_t b; /**< Blue component. */
-} resvg_color;
 
 /**
  * @brief A "fit to" type.
@@ -148,8 +134,8 @@ typedef struct resvg_rect {
  * @brief A size representation.
  */
 typedef struct resvg_size {
-    uint32_t width;
-    uint32_t height;
+    double width;
+    double height;
 } resvg_size;
 
 /**
@@ -396,6 +382,8 @@ bool resvg_is_image_empty(const resvg_render_tree *tree);
  *
  * The size of a canvas that required to render this SVG.
  *
+ * The `width` and `height` attributes in SVG.
+ *
  * @param tree Render tree.
  * @return Image size.
  */
@@ -403,6 +391,8 @@ resvg_size resvg_get_image_size(const resvg_render_tree *tree);
 
 /**
  * @brief Returns an image viewbox.
+ *
+ * The `viewBox` attribute in SVG.
  *
  * @param tree Render tree.
  * @return Image viewbox.
@@ -462,45 +452,25 @@ bool resvg_get_node_bbox(const resvg_render_tree *tree,
                          resvg_rect *bbox);
 
 /**
- * @brief Returns image's unpremultiplied RGBA data.
- *
- * Must not be modified.
- */
-const char* resvg_image_get_data(resvg_image *image, size_t *len);
-
-/**
- * @brief Returns image's width.
- */
-uint32_t resvg_image_get_width(resvg_image *image);
-
-/**
- * @brief Returns image's height.
- */
-uint32_t resvg_image_get_height(resvg_image *image);
-
-/**
- * @brief Destroys the #resvg_image.
- */
-void resvg_image_destroy(resvg_image *image);
-
-/**
  * @brief Destroys the #resvg_render_tree.
  */
 void resvg_tree_destroy(resvg_render_tree *tree);
 
 /**
- * @brief Renders the #resvg_render_tree onto the image.
+ * @brief Renders the #resvg_render_tree onto the pixmap.
  *
  * @param tree A render tree.
- * @param fit_to Specifies into which region the image should be fit.
- * @param background An optional background color.
- * @return A pointer to image on success.
- *         The pointer must be deallocated via #resvg_image_destroy
- * @return `NULL` when image allocation fails.
+ * @param fit_to Specifies into which region SVG should be fit.
+ * @param width Pixmap width.
+ * @param height Pixmap height.
+ * @param pixmap Pixmap data. Should have width*height*4 size and contain
+ *               premultiplied RGBA8888 pixels.
  */
-resvg_image* resvg_render(const resvg_render_tree *tree,
-                          resvg_fit_to fit_to,
-                          resvg_color *background);
+void resvg_render(const resvg_render_tree *tree,
+                  resvg_fit_to fit_to,
+                  uint32_t width,
+                  uint32_t height,
+                  char* pixmap);
 
 /**
  * @brief Renders a Node by ID onto the image.
@@ -508,18 +478,20 @@ resvg_image* resvg_render(const resvg_render_tree *tree,
  * @param tree A render tree.
  * @param id Node's ID.
  * @param fit_to Specifies into which region the image should be fit.
- * @param background An optional background color.
- * @return A pointer to image on success.
- *         The pointer must be deallocated via #resvg_image_destroy
- * @return `NULL` when image allocation fails.
- * @return `NULL` when `id` is not a non-empty UTF-8 string.
- * @return `NULL` when the selected `id` is not present.
- * @return `NULL` when an element has a zero bbox.
+ * @param width Pixmap width.
+ * @param height Pixmap height.
+ * @param pixmap Pixmap data. Should have width*height*4 size and contain
+ *               premultiplied RGBA8888 pixels.
+ * @return `false` when `id` is not a non-empty UTF-8 string.
+ * @return `false` when the selected `id` is not present.
+ * @return `false` when an element has a zero bbox.
  */
-resvg_image* resvg_render_node(const resvg_render_tree *tree,
-                               const char *id,
-                               resvg_fit_to fit_to,
-                               resvg_color *background);
+bool resvg_render_node(const resvg_render_tree *tree,
+                       const char *id,
+                       resvg_fit_to fit_to,
+                       uint32_t width,
+                       uint32_t height,
+                       char* pixmap);
 
 #ifdef __cplusplus
 }

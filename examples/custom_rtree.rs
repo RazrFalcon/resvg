@@ -50,6 +50,8 @@ fn main() {
 
     println!("{}", rtree.to_string(usvg::XmlOptions::default()));
 
-    let img = resvg::render(&rtree, usvg::FitTo::Original, None).unwrap();
-    img.save_png("out.png").unwrap();
+    let pixmap_size = rtree.svg_node().size.to_screen_size();
+    let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
+    resvg::render(&rtree, usvg::FitTo::Original, pixmap.as_mut()).unwrap();
+    pixmap.save_png("out.png").unwrap();
 }

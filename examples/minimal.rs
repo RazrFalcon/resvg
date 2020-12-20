@@ -13,6 +13,9 @@ fn main() {
     opt.fontdb.set_generic_families();
 
     let rtree = usvg::Tree::from_file(&args[1], &opt).unwrap();
-    let img = resvg::render(&rtree, usvg::FitTo::Original, None).unwrap();
-    img.save_png(&args[2]).unwrap();
+
+    let pixmap_size = rtree.svg_node().size.to_screen_size();
+    let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
+    resvg::render(&rtree, usvg::FitTo::Original, pixmap.as_mut()).unwrap();
+    pixmap.save_png(&args[2]).unwrap();
 }

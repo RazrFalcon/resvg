@@ -8,7 +8,7 @@ pub enum Error {
     TreeError(usvg::Error),
     TreeEmpty,
     CreateDIBSectionError,
-    RenderError
+    RenderError,
 }
 
 impl std::fmt::Display for Error {

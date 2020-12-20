@@ -34,8 +34,8 @@ pub struct resvg_rect {
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct resvg_size {
-    pub width: u32,
-    pub height: u32,
+    pub width: f64,
+    pub height: f64,
 }
 
 #[repr(C)]
@@ -85,15 +85,6 @@ impl resvg_fit_to {
             }
         }
     }
-}
-
-
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct resvg_color {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
 }
 
 
@@ -367,8 +358,8 @@ pub extern "C" fn resvg_get_image_size(tree: *const resvg_render_tree) -> resvg_
     let size = tree.0.svg_node().size;
 
     resvg_size {
-        width: size.width() as u32,
-        height: size.height() as u32,
+        width: size.width(),
+        height: size.height(),
     }
 }
 
@@ -546,51 +537,24 @@ fn convert_error(e: usvg::Error) -> ErrorId {
 }
 
 
-#[repr(C)]
-pub struct resvg_image(resvg::Image);
-
-#[no_mangle]
-pub extern "C" fn resvg_image_get_data(image: *mut resvg_image, len: *mut usize) -> *const c_char {
-    unsafe {
-        *len = (*image).0.data().len();
-        (*image).0.data().as_ptr() as _
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn resvg_image_get_width(image: *mut resvg_image) -> u32 {
-    unsafe { (*image).0.width() }
-}
-
-#[no_mangle]
-pub extern "C" fn resvg_image_get_height(image: *mut resvg_image) -> u32 {
-    unsafe { (*image).0.height() }
-}
-
-#[no_mangle]
-pub extern "C" fn resvg_image_destroy(image: *mut resvg_image) {
-    unsafe {
-        assert!(!image.is_null());
-        Box::from_raw(image)
-    };
-}
-
-
 #[no_mangle]
 pub extern "C" fn resvg_render(
     tree: *const resvg_render_tree,
     fit_to: resvg_fit_to,
-    background: *const resvg_color,
-) -> *mut resvg_image {
+    width: u32,
+    height: u32,
+    pixmap: *const c_char,
+) {
     let tree = unsafe {
         assert!(!tree.is_null());
         &*tree
     };
 
-    match resvg::render(&tree.0, fit_to.to_usvg(), conv_opt_color(background)) {
-        Some(img) => Box::into_raw(Box::new(resvg_image(img))),
-        None => std::ptr::null_mut(),
-    }
+    let pixmap_len = width as usize * height as usize * tiny_skia::BYTES_PER_PIXEL;
+    let pixmap: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
+    let pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
+
+    resvg::render(&tree.0, fit_to.to_usvg(), pixmap).unwrap()
 }
 
 #[no_mangle]
@@ -598,8 +562,10 @@ pub extern "C" fn resvg_render_node(
     tree: *const resvg_render_tree,
     id: *const c_char,
     fit_to: resvg_fit_to,
-    background: *const resvg_color,
-) -> *mut resvg_image {
+    width: u32,
+    height: u32,
+    pixmap: *const c_char,
+) -> bool {
     let tree = unsafe {
         assert!(!tree.is_null());
         &*tree
@@ -607,31 +573,23 @@ pub extern "C" fn resvg_render_node(
 
     let id = match cstr_to_str(id) {
         Some(v) => v,
-        None => return std::ptr::null_mut(),
+        None => return false,
     };
 
     if id.is_empty() {
         warn!("Node with an empty ID cannot be rendered.");
-        return std::ptr::null_mut();
+        return false;
     }
 
     if let Some(node) = tree.0.node_by_id(id) {
-        match resvg::render_node(&node, fit_to.to_usvg(), conv_opt_color(background)) {
-            Some(img) => Box::into_raw(Box::new(resvg_image(img))),
-            None => std::ptr::null_mut(),
-        }
+        let pixmap_len = width as usize * height as usize * tiny_skia::BYTES_PER_PIXEL;
+        let pixmap: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
+        let pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
+
+        resvg::render_node(&node, fit_to.to_usvg(), pixmap).is_some()
     } else {
         warn!("A node with '{}' ID wasn't found.", id);
-        std::ptr::null_mut()
-    }
-}
-
-fn conv_opt_color(background: *const resvg_color) -> Option<usvg::Color> {
-    if background.is_null() {
-        None
-    } else {
-        let c = unsafe { *background };
-        Some(usvg::Color::new(c.r, c.g, c.b))
+        false
     }
 }
 

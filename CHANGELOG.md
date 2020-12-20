@@ -11,11 +11,21 @@ This changelog also contains important changes in dependencies.
 - (usvg) `Tree::from_xmltree`
 
 ### Changed
+- Remove the `Image` struct. `render()` and `render_node()` methods now accept `tiny_skia::PixmapMut`.
 - Update `fontdb`.
 - Update `tiny-skia`.
+- (c-api) `resvg_size` uses `double` instead of `uint32_t` now.
+- (qt-api) `defaultSize()` and `defaultSizeF()` methods now return SVG size
+  and not SVG viewbox size.
 
 ### Fixed
 - Support multiple values inside a `text-decoration` attribute.
+
+### Removed
+- `Image`. Use `tiny_skia::PixmapMut` instead.
+- (c-api) `resvg_image` struct and `resvg_image_*` methods. `resvg` renders onto
+  the provided buffer now.
+- (c-api) `resvg_color`, because unused.
 
 ## [0.12.0] - 2020-12-05
 ### Changed

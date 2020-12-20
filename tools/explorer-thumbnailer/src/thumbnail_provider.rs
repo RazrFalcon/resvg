@@ -40,7 +40,7 @@ impl IInitializeWithStream for ThumbnailProvider {
 impl IThumbnailProvider for ThumbnailProvider {
     unsafe fn get_thumbnail(&self, cx: UINT, phbmp: *mut HBITMAP, pdw_alpha: *mut UINT) -> HRESULT {
         render_thumbnail(&*self.tree.borrow(), cx)
-            .and_then(|img| img_to_hbitmap(img))
+            .and_then(|img| img_to_hbitmap(&img))
             .map_or_else(
                 |err| {
                     error!("{}", err);

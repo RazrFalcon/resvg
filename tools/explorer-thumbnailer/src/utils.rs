@@ -32,7 +32,7 @@ pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvg::Tree, Error> 
         usvg::Tree::from_data(&svg_data, &opt).map_err(|e| Error::TreeError(e))
 }
 
-pub fn render_thumbnail(tree: &Option<usvg::Tree>, cx: u32) -> Result<resvg::Image, Error> {
+pub fn render_thumbnail(tree: &Option<usvg::Tree>, cx: u32) -> Result<tiny_skia::Pixmap, Error> {
     let tree = tree.as_ref().ok_or(Error::TreeEmpty)?;
     let size = tree.svg_node().size;
     let fit_to = if size.width() > size.height() {
@@ -41,10 +41,13 @@ pub fn render_thumbnail(tree: &Option<usvg::Tree>, cx: u32) -> Result<resvg::Ima
         FitTo::Height(cx)
     };
 
-    resvg::render(&tree, fit_to, None).ok_or(Error::RenderError)
+    let size = fit_to.fit_to(tree.svg_node().size.to_screen_size()).ok_or(Error::RenderError)?;
+    let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
+    resvg::render(&tree, fit_to, pixmap.as_mut()).ok_or(Error::RenderError)?;
+    Ok(pixmap)
 }
 
-pub unsafe fn img_to_hbitmap(img: resvg::Image) -> Result<HBITMAP, Error> {
+pub unsafe fn img_to_hbitmap(img: &tiny_skia::Pixmap) -> Result<HBITMAP, Error> {
     let hdc: HDC = ptr::null_mut();
     let mut bmi: BITMAPINFO = Default::default();
     bmi.bmiHeader.biSize = mem::size_of::<BITMAPINFOHEADER>() as u32;
@@ -59,18 +62,16 @@ pub unsafe fn img_to_hbitmap(img: resvg::Image) -> Result<HBITMAP, Error> {
     if hbitmap as *const c_void == ptr::null() {
         return Err(Error::CreateDIBSectionError)
     }
-    let data = img.data();
+
+    let mut i = 0;
     let ppv_bits = ppv_bits as *mut u8;
-    for (i, px) in data.chunks_exact(4).enumerate() {
-        let i = i as isize;
-        let r = px[0];
-        let g = px[1];
-        let b = px[2];
-        let a = px[3];
-        ptr::write(ppv_bits.offset(i*4), b);
-        ptr::write(ppv_bits.offset(i*4+1), g);
-        ptr::write(ppv_bits.offset(i*4+2), r);
-        ptr::write(ppv_bits.offset(i*4+3), a);
+    for px in img.pixels() {
+        let px = px.demultiply();
+        ptr::write(ppv_bits.offset(i+0), px.blue());
+        ptr::write(ppv_bits.offset(i+1), px.green());
+        ptr::write(ppv_bits.offset(i+2), px.red());
+        ptr::write(ppv_bits.offset(i+3), px.alpha());
+        i += 4;
     }
     Ok(hbitmap)
 }

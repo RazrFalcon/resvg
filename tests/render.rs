@@ -26,23 +26,30 @@ pub fn render(name: &str) -> usize {
         tree.unwrap()
     };
 
-    let img = resvg::render(&tree, usvg::FitTo::Width(IMAGE_SIZE), None).unwrap();
+    let fit_to = usvg::FitTo::Width(IMAGE_SIZE);
+    let size = fit_to.fit_to(tree.svg_node().size.to_screen_size()).unwrap();
+    let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
+    resvg::render(&tree, fit_to, pixmap.as_mut()).unwrap();
+
+    // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
+
+    let mut rgba = pixmap.take();
+    svgfilters::demultiply_alpha(rgba.as_mut_slice().as_rgba_mut());
 
     let expected_data = load_png(&png_path);
-    assert_eq!(expected_data.len(), img.data().len());
+    assert_eq!(expected_data.len(), rgba.len());
 
     let mut pixels_d = 0;
-    for (a, b) in expected_data.as_slice().as_rgba().iter().zip(img.data().as_rgba()) {
+    for (a, b) in expected_data.as_slice().as_rgba().iter().zip(rgba.as_rgba()) {
         if is_pix_diff(*a, *b) {
             pixels_d += 1;
         }
     }
 
-    if pixels_d != 0 {
-        // Save diff if needed.
-        // img.save_png(&format!("tests/{}.png", name)).unwrap();
-        // gen_diff(&name, &expected_data, img.data()).unwrap();
-    }
+    // Save diff if needed.
+    // if pixels_d != 0 {
+    //     gen_diff(&name, &expected_data, rgba.as_slice()).unwrap();
+    // }
 
     pixels_d
 }
