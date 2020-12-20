@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- (usvg) `Tree::from_xmltree`
+
 ### Changed
 - Update `fontdb`.
 - Update `tiny-skia`.

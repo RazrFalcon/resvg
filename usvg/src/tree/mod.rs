@@ -46,21 +46,27 @@ impl Tree {
             let text = deflate(data)?;
             Self::from_str(&text, opt)
         } else {
-            let text = ::std::str::from_utf8(data).map_err(|_| Error::NotAnUtf8Str)?;
+            let text = std::str::from_utf8(data).map_err(|_| Error::NotAnUtf8Str)?;
             Self::from_str(text, opt)
         }
     }
 
     /// Parses `Tree` from the SVG string.
     pub fn from_str(text: &str, opt: &Options) -> Result<Self, Error> {
-        let doc = svgtree::Document::parse(text).map_err(Error::ParsingFailed)?;
-        Self::from_dom(doc, &opt)
+        let doc = roxmltree::Document::parse(text).map_err(Error::ParsingFailed)?;
+        Self::from_xmltree(&doc, &opt)
+    }
+
+    /// Parses `Tree` from `roxmltree::Document`.
+    pub fn from_xmltree(doc: &roxmltree::Document, opt: &Options) -> Result<Self, Error> {
+        let doc = svgtree::Document::parse(doc).map_err(Error::ParsingFailed)?;
+        Self::from_svgtree(doc, &opt)
     }
 
     /// Parses `Tree` from the `svgtree::Document`.
     ///
     /// An empty `Tree` will be returned on any error.
-    fn from_dom(doc: svgtree::Document, opt: &Options) -> Result<Self, Error> {
+    fn from_svgtree(doc: svgtree::Document, opt: &Options) -> Result<Self, Error> {
         super::convert::convert_doc(&doc, opt)
     }
 

@@ -20,8 +20,8 @@ const XML_NAMESPACE_NS: &str = "http://www.w3.org/XML/1998/namespace";
 
 
 impl Document {
-    pub fn parse(text: &str) -> Result<Document, Error> {
-        parse(text)
+    pub fn parse(xml: &roxmltree::Document) -> Result<Document, Error> {
+        parse(xml)
     }
 
     fn append(&mut self, parent_id: NodeId, kind: NodeKind) -> NodeId {
@@ -69,9 +69,7 @@ impl Document {
     }
 }
 
-fn parse(text: &str) -> Result<Document, Error> {
-    let xml = roxmltree::Document::parse(text)?;
-
+fn parse(xml: &roxmltree::Document) -> Result<Document, Error> {
     let mut doc = Document {
         nodes: Vec::new(),
         attrs: Vec::new(),
