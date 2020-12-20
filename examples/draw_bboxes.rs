@@ -23,6 +23,7 @@ fn main() {
     opt.path = Some(args[1].clone().into());
     opt.keep_named_groups = true;
     opt.fontdb.load_system_fonts();
+    opt.fontdb.set_generic_families();
     let fit_to = usvg::FitTo::Zoom(zoom);
 
     let rtree = usvg::Tree::from_file(&args[1], &opt).unwrap();

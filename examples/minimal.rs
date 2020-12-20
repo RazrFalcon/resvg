@@ -10,6 +10,7 @@ fn main() {
     let mut opt = usvg::Options::default();
     opt.path = Some(args[1].clone().into());
     opt.fontdb.load_system_fonts();
+    opt.fontdb.set_generic_families();
 
     let rtree = usvg::Tree::from_file(&args[1], &opt).unwrap();
     let img = resvg::render(&rtree, usvg::FitTo::Original, None).unwrap();

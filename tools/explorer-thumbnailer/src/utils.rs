@@ -27,6 +27,7 @@ pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvg::Tree, Error> 
 
         let mut opt = usvg::Options::default();
         opt.fontdb.load_system_fonts();
+        opt.fontdb.set_generic_families();
 
         usvg::Tree::from_data(&svg_data, &opt).map_err(|e| Error::TreeError(e))
 }

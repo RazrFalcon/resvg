@@ -240,16 +240,15 @@ impl TransformFromBBox for tree::Transform {
 /// An extension trait for `fontdb::Database`.
 #[cfg(feature = "text")]
 pub trait SystemFontDB {
-    /// Loads system fonts into the fonts database.
-    fn load_system_fonts(&mut self);
+    /// Sets generic font families.
+    ///
+    /// Sans, serif, cursive, monospace and fantasy.
+    fn set_generic_families(&mut self);
 }
 
 #[cfg(feature = "system-fonts")]
 impl SystemFontDB for fontdb::Database {
-    #[inline]
-    fn load_system_fonts(&mut self) {
-        fontdb_ext::load_system_fonts(self);
-
+    fn set_generic_families(&mut self) {
         self.set_serif_family("Times New Roman");
         self.set_sans_serif_family("Arial");
         self.set_cursive_family("Comic Sans MS");

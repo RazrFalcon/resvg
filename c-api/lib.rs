@@ -232,6 +232,7 @@ pub extern "C" fn resvg_options_load_system_fonts(opt: *mut resvg_options) {
     };
 
     opt.0.fontdb.load_system_fonts();
+    opt.0.fontdb.set_generic_families();
 }
 
 #[no_mangle]

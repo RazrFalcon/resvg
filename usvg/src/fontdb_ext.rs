@@ -219,31 +219,3 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
         self.path.push_close_path();
     }
 }
-
-
-#[cfg(all(unix, not(target_os = "macos")))]
-pub fn load_system_fonts(db: &mut Database) {
-    db.load_fonts_dir("/usr/share/fonts/");
-    db.load_fonts_dir("/usr/local/share/fonts/");
-
-    if let Ok(ref home) = std::env::var("HOME") {
-        let path = std::path::Path::new(home).join(".local/share/fonts");
-        db.load_fonts_dir(path);
-    }
-}
-
-#[cfg(target_os = "windows")]
-pub fn load_system_fonts(db: &mut Database) {
-    db.load_fonts_dir("C:\\Windows\\Fonts\\");
-}
-
-#[cfg(target_os = "macos")]
-pub fn load_system_fonts(db: &mut Database) {
-    db.load_fonts_dir("/Library/Fonts");
-    db.load_fonts_dir("/System/Library/Fonts");
-
-    if let Ok(ref home) = std::env::var("HOME") {
-        let path = std::path::Path::new(home).join("Library/Fonts");
-        db.load_fonts_dir(path);
-    }
-}
