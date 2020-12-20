@@ -29,7 +29,7 @@ tiny-skia = "0.3"
 usvg = { path = "usvg", version = "0.12", default-features = false }
 
 [dev-dependencies]
-rayon = "1.3"
+once_cell = "1.5"
 
 [features]
 default = ["text"]

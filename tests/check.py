@@ -3,7 +3,6 @@
 import re
 import os
 import subprocess
-import csv
 from lxml import etree
 
 
