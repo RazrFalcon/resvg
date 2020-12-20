@@ -18,9 +18,9 @@
 #include <stddef.h>
 
 #define RESVG_MAJOR_VERSION 0
-#define RESVG_MINOR_VERSION 12
+#define RESVG_MINOR_VERSION 13
 #define RESVG_PATCH_VERSION 0
-#define RESVG_VERSION "0.12.0"
+#define RESVG_VERSION "0.13.0"
 
 #ifdef __cplusplus
 extern "C" {
