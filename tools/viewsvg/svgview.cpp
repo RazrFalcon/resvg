@@ -38,6 +38,7 @@ QString SvgViewWorker::loadFile(const QString &path)
 {
     QMutexLocker lock(&m_mutex);
 
+    m_opt.setResourcesDir(QFileInfo(path).absolutePath());
     m_renderer.load(path, m_opt);
     if (!m_renderer.isValid()) {
         return m_renderer.errorString();

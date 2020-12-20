@@ -197,6 +197,11 @@ OPTIONS:
   --image-rendering HINT        Selects the default image rendering method
                                 [default: optimizeQuality]
                                 [possible values: optimizeQuality, optimizeSpeed]
+  --resources-dir DIR           Sets a directory that will be used during
+                                relative paths resolving.
+                                Expected to be the same as the directory that
+                                contains the SVG file, but can be set to any.
+                                [default: input file directory]
 
   --font-family FAMILY          Sets the default font family that will be
                                 used when no 'font-family' is present
@@ -256,6 +261,7 @@ struct CliArgs {
     shape_rendering: usvg::ShapeRendering,
     text_rendering: usvg::TextRendering,
     image_rendering: usvg::ImageRendering,
+    resources_dir: Option<path::PathBuf>,
 
     font_family: Option<String>,
     font_size: u32,
@@ -296,6 +302,7 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
         shape_rendering:    input.opt_value_from_str("--shape-rendering")?.unwrap_or_default(),
         text_rendering:     input.opt_value_from_str("--text-rendering")?.unwrap_or_default(),
         image_rendering:    input.opt_value_from_str("--image-rendering")?.unwrap_or_default(),
+        resources_dir:      input.opt_value_from_str("--resources-dir").unwrap_or_default(),
 
         font_family:        input.opt_value_from_str("--font-family")?,
         font_size:          input.opt_value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
@@ -431,8 +438,16 @@ fn parse_args() -> Result<Args, String> {
 
     let fontdb = timed!(args, "FontDB init", load_fonts(&mut args));
 
+    let resources_dir = match args.resources_dir {
+        Some(v) => Some(v),
+        None => {
+            // Get input file absolute directory.
+            std::fs::canonicalize(&in_svg).ok().and_then(|p| p.parent().map(|p| p.to_path_buf()))
+        }
+    };
+
     let usvg = usvg::Options {
-        path: Some(in_svg.clone()),
+        resources_dir,
         dpi: args.dpi as f64,
         font_family: args.font_family.take().unwrap_or_else(|| "Times New Roman".to_string()),
         font_size: args.font_size as f64,

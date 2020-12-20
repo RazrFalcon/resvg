@@ -8,6 +8,7 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
+- `--resources-dir` option to CLI tools.
 - (usvg) `Tree::from_xmltree`
 
 ### Changed
@@ -17,6 +18,11 @@ This changelog also contains important changes in dependencies.
 - (c-api) `resvg_size` uses `double` instead of `uint32_t` now.
 - (qt-api) `defaultSize()` and `defaultSizeF()` methods now return SVG size
   and not SVG viewbox size.
+- (usvg) `Options::path` changed to `Options::resources_dir` and requires a directory now.
+- (c-api) `resvg_options_set_file_path` changed to `resvg_options_set_resources_dir`
+  and requires a directory now.
+- (qt-api) `ResvgOptions::setFilePath` changed to `ResvgOptions::setResourcesDir`
+  and requires a directory now.
 
 ### Fixed
 - Support multiple values inside a `text-decoration` attribute.

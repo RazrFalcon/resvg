@@ -12,7 +12,7 @@ static GLOBAL_OPT: Lazy<std::sync::Mutex<usvg::Options>> = Lazy::new(|| {
     opt.fontdb.set_cursive_family("Yellowtail");
     opt.fontdb.set_fantasy_family("Sedgwick Ave Display");
     opt.fontdb.set_monospace_family("Noto Mono");
-    opt.path = Some(std::path::PathBuf::from("tests/svg/a-alignment-baseline-001.svg"));
+    opt.resources_dir = Some(std::path::PathBuf::from("tests/svg"));
     std::sync::Mutex::new(opt)
 });
 

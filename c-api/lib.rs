@@ -113,11 +113,11 @@ fn cast_opt(opt: *mut resvg_options) -> &'static mut usvg::Options {
 }
 
 #[no_mangle]
-pub extern "C" fn resvg_options_set_file_path(opt: *mut resvg_options, path: *const c_char) {
+pub extern "C" fn resvg_options_set_resources_dir(opt: *mut resvg_options, path: *const c_char) {
     if path.is_null() {
-        cast_opt(opt).path = None;
+        cast_opt(opt).resources_dir = None;
     } else {
-        cast_opt(opt).path = Some(cstr_to_str(path).unwrap().into());
+        cast_opt(opt).resources_dir = Some(cstr_to_str(path).unwrap().into());
     }
 }
 

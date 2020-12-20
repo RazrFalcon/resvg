@@ -15,7 +15,6 @@ int main(int argc, char **argv)
     resvg_init_log();
 
     resvg_options *opt = resvg_options_create();
-    resvg_options_set_file_path(opt, argv[1]);
     resvg_options_load_system_fonts(opt);
 
     resvg_render_tree *tree;

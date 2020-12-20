@@ -20,6 +20,7 @@
 
 #include <QDebug>
 #include <QFile>
+#include <QFileInfo>
 #include <QGuiApplication>
 #include <QImage>
 #include <QRectF>
@@ -109,20 +110,22 @@ public:
     }
 
     /**
-     * @brief Sets an SVG image path.
+     * @brief Sets a directory that will be used during relative paths resolving.
      *
-     * Used to resolve relative image paths.
+     * Expected to be the same as the directory that contains the SVG file,
+     * but can be set to any.
      *
      * Default: not set
      */
-    void setFilePath(const QString &path)
+    void setResourcesDir(const QString &path)
     {
+        Q_ASSERT(QFileInfo(path).isDir());
         if (path.isEmpty()) {
-            resvg_options_set_file_path(d, nullptr);
+            resvg_options_set_resources_dir(d, nullptr);
         } else {
             auto pathC = path.toUtf8();
             pathC.append('\0');
-            resvg_options_set_file_path(d, pathC.constData());
+            resvg_options_set_resources_dir(d, pathC.constData());
         }
     }
 

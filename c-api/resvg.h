@@ -169,15 +169,16 @@ void resvg_init_log();
 resvg_options* resvg_options_create();
 
 /**
- * @brief Sets an SVG image path.
+ * @brief Sets a directory that will be used during relative paths resolving.
  *
- * Used to resolve relative image paths.
+ * Expected to be the same as the directory that contains the SVG file,
+ * but can be set to any.
  *
  * Must be UTF-8. Can be set to NULL.
  *
  * Default: NULL
  */
-void resvg_options_set_file_path(resvg_options *opt, const char *path);
+void resvg_options_set_resources_dir(resvg_options *opt, const char *path);
 
 /**
  * @brief Sets the target DPI.

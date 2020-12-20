@@ -43,6 +43,12 @@ OPTIONS:
   --image-rendering HINT        Selects the default image rendering method
                                 [default: optimizeQuality]
                                 [possible values: optimizeQuality, optimizeSpeed]
+  --resources-dir DIR           Sets a directory that will be used during
+                                relative paths resolving.
+                                Expected to be the same as the directory that
+                                contains the SVG file, but can be set to any.
+                                [default: input file directory
+                                or none when reading from stdin]
 
   --font-family FAMILY          Sets the default font family that will be
                                 used when no 'font-family' is present
@@ -98,6 +104,7 @@ struct Args {
     shape_rendering: usvg::ShapeRendering,
     text_rendering: usvg::TextRendering,
     image_rendering: usvg::ImageRendering,
+    resources_dir: Option<PathBuf>,
 
     font_family: Option<String>,
     font_size: u32,
@@ -133,6 +140,7 @@ fn collect_args() -> Result<Args, pico_args::Error> {
         shape_rendering:    input.opt_value_from_str("--shape-rendering")?.unwrap_or_default(),
         text_rendering:     input.opt_value_from_str("--text-rendering")?.unwrap_or_default(),
         image_rendering:    input.opt_value_from_str("--image-rendering")?.unwrap_or_default(),
+        resources_dir:      input.opt_value_from_str("--resources-dir").unwrap_or_default(),
 
         font_family:        input.opt_value_from_str("--font-family")?,
         font_size:          input.opt_value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
@@ -316,11 +324,21 @@ fn process(args: Args) -> Result<(), String> {
         }
     }
 
+    let resources_dir = match args.resources_dir {
+        Some(v) => Some(v),
+        None => {
+            match in_svg {
+                InputFrom::Stdin => None,
+                InputFrom::File(ref f) => {
+                    // Get input file absolute directory.
+                    std::fs::canonicalize(f).ok().and_then(|p| p.parent().map(|p| p.to_path_buf()))
+                }
+            }
+        }
+    };
+
     let re_opt = usvg::Options {
-        path: match in_svg {
-            InputFrom::Stdin => None,
-            InputFrom::File(ref f) => Some(f.into()),
-        },
+        resources_dir,
         dpi: args.dpi as f64,
         font_family: take_or(args.font_family, "Times New Roman"),
         font_size: args.font_size as f64,

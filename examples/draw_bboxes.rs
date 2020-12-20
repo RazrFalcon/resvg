@@ -20,7 +20,8 @@ fn main() {
     };
 
     let mut opt = usvg::Options::default();
-    opt.path = Some(args[1].clone().into());
+    // Get file's absolute directory.
+    opt.resources_dir = std::fs::canonicalize(&args[1]).ok().and_then(|p| p.parent().map(|p| p.to_path_buf()));
     opt.keep_named_groups = true;
     opt.fontdb.load_system_fonts();
     opt.fontdb.set_generic_families();

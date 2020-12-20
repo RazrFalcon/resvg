@@ -49,16 +49,17 @@ impl FitTo {
 /// Processing options.
 #[derive(Clone, Debug)]
 pub struct Options {
-    /// SVG image path.
+    /// Directory that will be used during relative paths resolving.
     ///
-    /// Used to resolve relative image paths.
+    /// Expected to be the same as the directory that contains the SVG file,
+    /// but can be set to any.
     ///
     /// Default: `None`
-    pub path: Option<PathBuf>,
+    pub resources_dir: Option<PathBuf>,
 
     /// Target DPI.
     ///
-    /// Impact units conversion.
+    /// Impacts units conversion.
     ///
     /// Default: 96.0
     pub dpi: f64,
@@ -125,10 +126,10 @@ pub struct Options {
 impl Options {
     /// Converts a relative path into absolute relative to the SVG file itself.
     ///
-    /// If `Options::path` is not set, returns itself.
+    /// If `Options::resources_dir` is not set, returns itself.
     pub fn get_abs_path(&self, rel_path: &std::path::Path) -> std::path::PathBuf {
-        match self.path {
-            Some(ref path) => path.parent().unwrap().join(rel_path),
+        match self.resources_dir {
+            Some(ref dir) => dir.join(rel_path),
             None => rel_path.into(),
         }
     }
@@ -137,7 +138,7 @@ impl Options {
 impl Default for Options {
     fn default() -> Options {
         Options {
-            path: None,
+            resources_dir: None,
             dpi: 96.0,
             // Default font is user-agent dependent so we can use whichever we like.
             font_family: "Times New Roman".to_owned(),

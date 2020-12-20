@@ -82,11 +82,7 @@ pub fn get_href_data(
             _ => None,
         }
     } else {
-        let path = match opt.path {
-            Some(ref path) => path.parent()?.join(href),
-            None => path::PathBuf::from(href),
-        };
-
+        let path = opt.get_abs_path(&path::Path::new(href));
         if path.exists() {
             let data = match std::fs::read(&path) {
                 Ok(data) => data,
@@ -147,7 +143,7 @@ fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
 /// from the loaded SVG, as required by the spec.
 pub fn load_sub_svg(data: &[u8], opt: &Options) -> Option<tree::ImageKind> {
     let sub_opt = Options {
-        path: None,
+        resources_dir: None,
         dpi: opt.dpi,
         font_family: opt.font_family.clone(),
         font_size: opt.font_size,
