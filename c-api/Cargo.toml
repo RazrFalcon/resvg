@@ -10,7 +10,7 @@ workspace = ".."
 [lib]
 name = "resvg"
 path = "lib.rs"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 log = "0.4"
