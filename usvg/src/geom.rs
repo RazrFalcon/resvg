@@ -112,6 +112,33 @@ impl Size {
         self.height
     }
 
+    /// Scales current size to specified size.
+    #[inline]
+    pub fn scale_to(&self, to: Self) -> Self {
+        size_scale_f64(*self, to, false)
+    }
+
+    /// Expands current size to specified size.
+    #[inline]
+    pub fn expand_to(&self, to: Self) -> Self {
+        size_scale_f64(*self, to, true)
+    }
+
+    /// Fits size into a viewbox.
+    pub fn fit_view_box(&self, vb: &tree::ViewBox) -> Self {
+        let s = vb.rect.size();
+
+        if vb.aspect.align == tree::Align::None {
+            s
+        } else {
+            if vb.aspect.slice {
+                self.expand_to(s)
+            } else {
+                self.scale_to(s)
+            }
+        }
+    }
+
     /// Converts `Size` to `ScreenSize`.
     #[inline]
     pub fn to_screen_size(&self) -> ScreenSize {
@@ -247,6 +274,21 @@ fn size_scale(
     } else {
         let h = (s2.width as f64 * s1.height as f64 / s1.width as f64).ceil() as u32;
         ScreenSize::new(s2.width, h).unwrap()
+    }
+}
+
+fn size_scale_f64(
+    s1: Size,
+    s2: Size,
+    expand: bool,
+) -> Size {
+    let rw = s2.height * s1.width / s1.height;
+    let with_h = if expand { rw <= s2.width } else { rw >= s2.width };
+    if !with_h {
+        Size::new(rw, s2.height).unwrap()
+    } else {
+        let h = s2.width * s1.height / s1.width;
+        Size::new(s2.width, h).unwrap()
     }
 }
 

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- `image` with float size scaling.
 
 ## [0.13.0] - 2020-12-21
 ### Added
