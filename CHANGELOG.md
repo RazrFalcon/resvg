@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.13.1] - 2021-01-20
 ### Fixed
 - `image` with float size scaling.
+- Critical bug in `tiny-skia`.
 
 ## [0.13.0] - 2020-12-21
 ### Added
@@ -416,7 +419,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/RazrFalcon/resvg/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/RazrFalcon/resvg/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/RazrFalcon/resvg/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/RazrFalcon/resvg/compare/v0.10.0...v0.11.0
