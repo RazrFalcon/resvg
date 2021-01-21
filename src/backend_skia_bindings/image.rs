@@ -8,7 +8,7 @@ use usvg::try_opt;
 use crate::prelude::*;
 use crate::backend_utils::{self, ConvTransform, Image};
 use crate::backend_skia_bindings::skia_bindings::ToData;
-use skia_bindings::SkCanvas_SrcRectConstraint;
+use skia_safe::canvas::SrcRectConstraint;
 
 pub fn draw_raster(
     format: usvg::ImageFormat,
@@ -59,7 +59,7 @@ pub fn draw_raster(
     );
     canvas.draw_image_rect(
         &image.image_snapshot(),
-        Some((&src_rect, SkCanvas_SrcRectConstraint::Fast)),
+        Some((&src_rect, SrcRectConstraint::Fast)),
         &dest_rect,
         &paint,
     );
