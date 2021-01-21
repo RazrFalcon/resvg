@@ -59,7 +59,7 @@ pub fn draw_raster(
     );
     canvas.draw_image_rect(
         &image.image_snapshot(),
-        Some((&new_rect, SkCanvas_SrcRectConstraint::Strict)),
+        Some((&src_rect, SkCanvas_SrcRectConstraint::Strict)),
         &dest_rect,
         &paint,
     );
