@@ -8,6 +8,7 @@ use usvg::try_opt;
 use crate::prelude::*;
 use crate::backend_utils::{self, ConvTransform, Image};
 use crate::backend_skia_bindings::skia_bindings::ToData;
+use skia_safe::canvas::SrcRectConstraint;
 
 pub fn draw_raster(
     format: usvg::ImageFormat,
@@ -49,8 +50,19 @@ pub fn draw_raster(
     paint.set_filter_quality(filter);
     let r = backend_utils::image::image_rect(&view_box, img.size);
 
-    let left_top = skia::Point::new(r.x() as f32, r.y() as f32);
-    canvas.draw_image(&image.image_snapshot(), left_top, Some(&paint));
+    let src_rect = skia::Rect::new(0.0, 0.0, image.width() as f32, image.height() as f32);
+    let dest_rect = skia::Rect::new(
+        r.left() as f32,
+        r.top() as f32,
+        r.right() as f32,
+        r.bottom() as f32,
+    );
+    canvas.draw_image_rect(
+        &image.image_snapshot(),
+        Some((&src_rect, SrcRectConstraint::Fast)),
+        &dest_rect,
+        &paint,
+    );
 
     // Revert.
     canvas.restore();
