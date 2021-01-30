@@ -26,6 +26,8 @@
 
 // TODO: Blurs right and bottom sides twice for some reason.
 
+use alloc::vec;
+use alloc::vec::Vec;
 use rgb::ComponentSlice;
 
 use crate::ImageRefMut;

@@ -55,7 +55,7 @@ impl Vector2 {
     }
 }
 
-impl std::ops::Mul<f64> for Vector2 {
+impl core::ops::Mul<f64> for Vector2 {
     type Output = Self;
 
     #[inline]
@@ -106,7 +106,7 @@ impl Vector3 {
     }
 }
 
-impl std::ops::Add<Vector3> for Vector3 {
+impl core::ops::Add<Vector3> for Vector3 {
     type Output = Self;
 
     #[inline]
@@ -119,7 +119,7 @@ impl std::ops::Add<Vector3> for Vector3 {
     }
 }
 
-impl std::ops::Sub<Vector3> for Vector3 {
+impl core::ops::Sub<Vector3> for Vector3 {
     type Output = Self;
 
     #[inline]
@@ -516,6 +516,6 @@ fn calc_diffuse_alpha(_: u8, _: u8, _: u8) -> u8 {
 }
 
 fn calc_specular_alpha(r: u8, g: u8, b: u8) -> u8 {
-    use std::cmp::max;
+    use core::cmp::max;
     max(max(r, g), b)
 }

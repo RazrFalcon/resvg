@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use alloc::vec;
+
 use crate::{ImageRefMut, RGBA8};
 
 /// A morphology operation.
@@ -33,8 +35,8 @@ pub fn morphology(
     assert!(!ry.is_sign_negative());
 
     // No point in making matrix larger than image.
-    let columns = std::cmp::min(rx.ceil() as u32 * 2, src.width);
-    let rows    = std::cmp::min(ry.ceil() as u32 * 2, src.height);
+    let columns = core::cmp::min(rx.ceil() as u32 * 2, src.width);
+    let rows    = core::cmp::min(ry.ceil() as u32 * 2, src.height);
     let target_x = (columns as f32 / 2.0).floor() as u32;
     let target_y = (rows as f32 / 2.0).floor() as u32;
 
@@ -65,15 +67,15 @@ pub fn morphology(
 
                 let p = src.pixel_at(tx as u32, ty as u32);
                 if operator == MorphologyOperator::Erode {
-                    new_p.r = std::cmp::min(p.r, new_p.r);
-                    new_p.g = std::cmp::min(p.g, new_p.g);
-                    new_p.b = std::cmp::min(p.b, new_p.b);
-                    new_p.a = std::cmp::min(p.a, new_p.a);
+                    new_p.r = core::cmp::min(p.r, new_p.r);
+                    new_p.g = core::cmp::min(p.g, new_p.g);
+                    new_p.b = core::cmp::min(p.b, new_p.b);
+                    new_p.a = core::cmp::min(p.a, new_p.a);
                 } else {
-                    new_p.r = std::cmp::max(p.r, new_p.r);
-                    new_p.g = std::cmp::max(p.g, new_p.g);
-                    new_p.b = std::cmp::max(p.b, new_p.b);
-                    new_p.a = std::cmp::max(p.a, new_p.a);
+                    new_p.r = core::cmp::max(p.r, new_p.r);
+                    new_p.g = core::cmp::max(p.g, new_p.g);
+                    new_p.b = core::cmp::max(p.b, new_p.b);
+                    new_p.a = core::cmp::max(p.a, new_p.a);
                 }
             }
         }

@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use alloc::vec;
+
 use crate::{ImageRefMut, FuzzyZero, RGBA8, f64_bound};
 
 /// An edges processing mode used by `convolve_matrix`.
@@ -119,7 +121,7 @@ pub fn convolve_matrix(
     assert!(!divisor.is_fuzzy_zero());
 
     fn bound(min: i32, val: i32, max: i32) -> i32 {
-        std::cmp::max(min, std::cmp::min(max, val))
+        core::cmp::max(min, core::cmp::min(max, val))
     }
 
     let width_max = src.width as i32 - 1;
