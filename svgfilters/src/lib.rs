@@ -48,8 +48,12 @@ But majority of methods will work on provided buffers.
 
 #![doc(html_root_url = "https://docs.rs/svgfilters/0.2.0")]
 
+#![no_std]
+
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
+
+extern crate alloc;
 
 use float_cmp::ApproxEqUlps;
 pub use rgb::{RGB8, RGBA8};

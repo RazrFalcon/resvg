@@ -4,7 +4,7 @@
 
 // Based on https://github.com/fschutt/fastblur
 
-use std::cmp;
+use core::cmp;
 
 use crate::{ImageRefMut, RGBA8};
 
