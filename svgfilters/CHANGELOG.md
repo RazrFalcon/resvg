@@ -8,6 +8,10 @@ This changelog also contains important changes in dependencies.
 
 ## Unreleased
 
+## 0.3.0 - 2021-03-06
+### Added
+- no_std support
+
 ## 0.2.0 - 2020-07-04
 ### Changed
 - BGRA -> RGBA

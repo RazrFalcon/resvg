@@ -24,7 +24,7 @@ log = "0.4"
 pico-args = "0.3"
 png = "0.16"
 rgb = "0.8"
-svgfilters = { path = "svgfilters", version = "0.2" }
+svgfilters = { path = "svgfilters", version = "0.3" }
 tiny-skia = "0.5.0"
 usvg = { path = "usvg", version = "0.13.1", default-features = false }
 
