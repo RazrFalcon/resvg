@@ -24,14 +24,14 @@ required-features = ["system-fonts", "text"]
 base64 = "0.13"
 data-url = "0.1"
 flate2 = { version = "1.0", default-features = false, features = ["rust_backend"]}
-kurbo = "0.7"
+kurbo = "0.8"
 log = "0.4"
 pico-args = "0.3"
 rctree = "0.3"
 xmlwriter = "0.1"
 
 # for svgtree
-roxmltree = "0.13"
+roxmltree = "0.14"
 simplecss = "0.2"
 siphasher = "0.2"
 svgtypes = "0.5"
@@ -39,8 +39,8 @@ svgtypes = "0.5"
 # for text to path
 fontdb = { version = "0.5.1", optional = true, default-features = false }
 rustybuzz = { version = "0.3", optional = true }
-memmap2 = { version = "0.1", optional = true }
-ttf-parser = { version = "0.9", optional = true }
+memmap2 = { version = "0.2", optional = true }
+ttf-parser = { version = "0.12", optional = true }
 unicode-bidi = { version = "0.3", optional = true }
 unicode-script = { version = "0.5", optional = true }
 unicode-vo = { version = "0.1", optional = true }

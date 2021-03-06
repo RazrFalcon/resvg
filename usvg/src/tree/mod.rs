@@ -53,7 +53,12 @@ impl Tree {
 
     /// Parses `Tree` from the SVG string.
     pub fn from_str(text: &str, opt: &Options) -> Result<Self, Error> {
-        let doc = roxmltree::Document::parse(text).map_err(Error::ParsingFailed)?;
+        let mut xml_opt = roxmltree::ParsingOptions::default();
+        xml_opt.allow_dtd = true;
+
+        let doc = roxmltree::Document::parse_with_options(text, xml_opt)
+            .map_err(Error::ParsingFailed)?;
+
         Self::from_xmltree(&doc, &opt)
     }
 
