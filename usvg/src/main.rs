@@ -17,8 +17,8 @@ usvg (micro SVG) is an SVG simplification tool.
 USAGE:
   usvg [OPTIONS] <in-svg> <out-svg>  # from file to file
   usvg [OPTIONS] -c <in-svg>         # from file to stdout
-  usvg [OPTIONS] <out-svg> -         # from stdin to file
-  usvg [OPTIONS] -c -                # from stdin to stdout
+  usvg [OPTIONS] - <out-svg>         # from stdin to file
+  usvg [OPTIONS] - -c                # from stdin to stdout
 
 OPTIONS:
   -h, --help                    Prints help information
@@ -97,7 +97,6 @@ ARGS:
 struct Args {
     help: bool,
     version: bool,
-    stdout: bool,
 
     dpi: u32,
     languages: Vec<String>,
@@ -124,7 +123,8 @@ struct Args {
 
     quiet: bool,
 
-    free: Vec<String>,
+    input: String,
+    output: String,
 }
 
 fn collect_args() -> Result<Args, pico_args::Error> {
@@ -132,7 +132,6 @@ fn collect_args() -> Result<Args, pico_args::Error> {
     Ok(Args {
         help:               input.contains(["-h", "--help"]),
         version:            input.contains(["-V", "--version"]),
-        stdout:             input.contains("-c"),
 
         dpi:                input.opt_value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
         languages:          input.opt_value_from_fn("--languages", parse_languages)?
@@ -162,7 +161,8 @@ fn collect_args() -> Result<Args, pico_args::Error> {
 
         quiet:              input.contains("--quiet"),
 
-        free:               input.free()?,
+        input:              input.free_from_str()?,
+        output:             input.free_from_str()?,
     })
 }
 
@@ -259,29 +259,22 @@ fn main() {
 }
 
 fn process(args: Args) -> Result<(), String> {
-    if args.free.is_empty() {
-        return Err(format!("no positional arguments are provided"));
-    }
-
     let (in_svg, out_svg) = {
-        let in_svg = &args.free[0];
-        let out_svg = args.free.get(1);
-        let out_svg = out_svg.map(String::as_ref);
+        let in_svg = args.input.as_str();
+        let out_svg = args.output.as_str();
 
-        let svg_from = if in_svg == "-" && args.stdout {
+        let svg_from = if in_svg == "-" {
             InputFrom::Stdin
-        } else if let Some("-") = out_svg {
-            InputFrom::Stdin
+        } else if in_svg == "-c" {
+            return Err(format!("-c should be set after input"));
         } else {
             InputFrom::File(in_svg)
         };
 
-        let svg_to = if args.stdout {
+        let svg_to = if out_svg == "-c" {
             OutputTo::Stdout
-        } else if let Some("-") = out_svg {
-            OutputTo::File(in_svg)
         } else {
-            OutputTo::File(out_svg.unwrap())
+            OutputTo::File(out_svg)
         };
 
         (svg_from, svg_to)

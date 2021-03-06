@@ -26,7 +26,7 @@ data-url = "0.1"
 flate2 = { version = "1.0", default-features = false, features = ["rust_backend"]}
 kurbo = "0.8"
 log = "0.4"
-pico-args = "0.3"
+pico-args = "0.4"
 rctree = "0.3"
 xmlwriter = "0.1"
 

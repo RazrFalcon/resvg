@@ -170,7 +170,7 @@ USAGE:
   resvg --query-all in.svg
 
 OPTIONS:
-  --help                        Prints this help
+      --help                    Prints this help
   -V, --version                 Prints version
 
   -w, --width LENGTH            Sets the width in pixels
@@ -282,7 +282,8 @@ struct CliArgs {
     quiet: bool,
     dump_svg: Option<String>,
 
-    free: Vec<String>,
+    input: path::PathBuf,
+    output: Option<path::PathBuf>,
 }
 
 fn collect_args() -> Result<CliArgs, pico_args::Error> {
@@ -323,7 +324,8 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
         quiet:              input.contains("--quiet"),
         dump_svg:           input.opt_value_from_str("--dump-svg")?,
 
-        free:               input.free()?,
+        input:              input.free_from_str()?,
+        output:             input.opt_free_from_str()?,
     })
 }
 
@@ -406,19 +408,12 @@ fn parse_args() -> Result<Args, String> {
         std::process::exit(0);
     }
 
-    let positional_count = if args.query_all { 1 } else { 2 };
-
-    if args.free.len() != positional_count {
-        return Err("<in-svg> and <out-png> must be set".to_string());
+    if !args.query_all && args.output.is_none() {
+        return Err("<out-png> must be set".to_string());
     }
 
-    let in_svg: path::PathBuf = args.free[0].to_string().into();
-
-    let out_png = if !args.query_all {
-        Some(args.free[1].to_string().into())
-    } else {
-        None
-    };
+    let in_svg = args.input.clone();
+    let out_png = args.output.clone();
 
     let dump = args.dump_svg.as_ref().map(|v| v.into());
     let export_id = args.export_id.as_ref().map(|v| v.to_string());
