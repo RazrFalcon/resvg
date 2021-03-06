@@ -7,7 +7,7 @@ use crate::render::prelude::*;
 
 pub fn draw(
     image: &usvg::Image,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) -> Rect {
     if image.visibility != usvg::Visibility::Visible {
         return image.view_box.rect;
@@ -21,7 +21,7 @@ pub fn draw_kind(
     kind: &usvg::ImageKind,
     view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) {
     match kind {
         usvg::ImageKind::JPEG(ref data) => {
@@ -46,7 +46,7 @@ fn draw_raster(
     img: &Image,
     view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) -> Option<()> {
     let (w, h) = img.size.dimensions();
     let mut pixmap = tiny_skia::Pixmap::new(w, h)?;
@@ -55,15 +55,6 @@ fn draw_raster(
     let mut filter = tiny_skia::FilterQuality::Bicubic;
     if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
         filter = tiny_skia::FilterQuality::Nearest;
-    }
-
-    if view_box.aspect.slice {
-        let r = view_box.rect;
-        let rect = tiny_skia::Rect::from_xywh(
-            r.x() as f32, r.y() as f32,
-            r.width() as f32, r.height() as f32,
-        )?;
-        canvas.set_clip_rect(rect, true);
     }
 
     let r = image_rect(&view_box, img.size);
@@ -79,7 +70,7 @@ fn draw_raster(
         rect.height() as f32 / pixmap.height() as f32,
         r.x() as f32,
         r.y() as f32,
-    )?;
+    );
 
     let pattern = tiny_skia::Pattern::new(
         pixmap.as_ref(),
@@ -91,9 +82,18 @@ fn draw_raster(
     let mut paint = tiny_skia::Paint::default();
     paint.shader = pattern;
 
-    canvas.fill_rect(rect, &paint);
+    if view_box.aspect.slice {
+        let r = view_box.rect;
+        let rect = tiny_skia::Rect::from_xywh(
+            r.x() as f32, r.y() as f32,
+            r.width() as f32, r.height() as f32,
+        )?;
 
-    canvas.reset_clip();
+        canvas.set_clip_rect(rect);
+    }
+
+    canvas.pixmap.fill_rect(rect, &paint, canvas.transform, canvas.clip.as_ref());
+    canvas.clip = None;
 
     Some(())
 }
@@ -131,16 +131,16 @@ fn image_to_pixmap(image: &Image, pixmap: &mut [u8]) {
 fn draw_svg(
     tree: &usvg::Tree,
     view_box: usvg::ViewBox,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) -> Option<()> {
     let img_size = tree.svg_node().size.to_screen_size();
     let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&view_box, img_size);
 
-    let mut sub_pixmap = canvas.pixmap().to_owned();
+    let mut sub_pixmap = canvas.pixmap.to_owned();
     sub_pixmap.fill(tiny_skia::Color::TRANSPARENT);
-    let mut sub_canvas = tiny_skia::Canvas::from(sub_pixmap.as_mut());
-    sub_canvas.set_transform(canvas.get_transform());
-    sub_canvas.apply_transform(&ts.to_native());
+    let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
+    sub_canvas.transform = canvas.transform;
+    sub_canvas.apply_transform(ts.to_native());
     render_to_canvas(&tree, img_size, &mut sub_canvas);
 
     if let Some(clip) = clip {
@@ -150,14 +150,17 @@ fn draw_svg(
             clip.width() as f32,
             clip.height() as f32,
         )?;
-        canvas.set_clip_rect(rr, false);
+        canvas.set_clip_rect(rr);
     }
 
-    let ts = canvas.get_transform();
-    canvas.reset_transform();
-    canvas.draw_pixmap(0, 0, sub_pixmap.as_ref(), &tiny_skia::PixmapPaint::default());
-    canvas.reset_clip();
-    canvas.set_transform(ts);
+    canvas.pixmap.draw_pixmap(
+        0, 0,
+        sub_pixmap.as_ref(),
+        &tiny_skia::PixmapPaint::default(),
+        tiny_skia::Transform::identity(),
+        canvas.clip.as_ref(),
+    );
+    canvas.clip = None;
 
     Some(())
 }

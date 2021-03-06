@@ -11,6 +11,47 @@ pub(crate) mod prelude {
 use prelude::*;
 
 
+pub struct Canvas<'a> {
+    pub pixmap: tiny_skia::PixmapMut<'a>,
+    pub transform: tiny_skia::Transform,
+    pub clip: Option<tiny_skia::ClipMask>,
+}
+
+impl<'a> From<tiny_skia::PixmapMut<'a>> for Canvas<'a> {
+    fn from(pixmap: tiny_skia::PixmapMut<'a>) -> Self {
+        Canvas {
+            pixmap,
+            transform: tiny_skia::Transform::identity(),
+            clip: None,
+        }
+    }
+}
+
+impl Canvas<'_> {
+    pub fn translate(&mut self, tx: f32, ty: f32) {
+        self.transform = self.transform.pre_translate(tx, ty);
+    }
+
+    pub fn scale(&mut self, sx: f32, sy: f32) {
+        self.transform = self.transform.pre_scale(sx, sy);
+    }
+
+    pub fn apply_transform(&mut self, ts: tiny_skia::Transform) {
+        self.transform = self.transform.pre_concat(ts);
+    }
+
+    pub fn set_clip_rect(&mut self, rect: tiny_skia::Rect) {
+        let path = tiny_skia::PathBuilder::from_rect(rect);
+        if let Some(path) = path.transform(self.transform) {
+            let mut clip = tiny_skia::ClipMask::new();
+            clip.set_path(self.pixmap.width(), self.pixmap.height(), &path,
+                          tiny_skia::FillRule::Winding, true);
+            self.clip = Some(clip);
+        }
+    }
+}
+
+
 /// Indicates the current rendering state.
 #[derive(Clone, PartialEq, Debug)]
 pub(crate) enum RenderState {
@@ -34,12 +75,15 @@ impl ConvTransform for usvg::Transform {
             self.a as f32, self.b as f32,
             self.c as f32, self.d as f32,
             self.e as f32, self.f as f32,
-        ).unwrap()
+        )
     }
 
     fn from_native(ts: tiny_skia::Transform) -> Self {
-        let (sx, ky, kx, sy, tx, ty) = ts.get_row();
-        Self::new(sx as f64, ky as f64, kx as f64, sy as f64, tx as f64, ty as f64)
+        Self::new(
+            ts.sx as f64, ts.ky as f64,
+            ts.kx as f64, ts.sy as f64,
+            ts.tx as f64, ts.ty as f64,
+        )
     }
 }
 
@@ -47,7 +91,7 @@ impl ConvTransform for usvg::Transform {
 pub(crate) fn render_to_canvas(
     tree: &usvg::Tree,
     img_size: ScreenSize,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) {
     render_node_to_canvas(&tree.root(), tree.svg_node().view_box, img_size, &mut RenderState::Ok, canvas);
 }
@@ -57,37 +101,37 @@ pub(crate) fn render_node_to_canvas(
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
     state: &mut RenderState,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) {
     let mut layers = Layers::new(img_size);
 
     apply_viewbox_transform(view_box, img_size, canvas);
 
-    let curr_ts = canvas.get_transform().clone();
+    let curr_ts = canvas.transform.clone();
 
     let mut ts = node.abs_transform();
     ts.append(&node.transform());
 
-    canvas.apply_transform(&ts.to_native());
+    canvas.apply_transform(ts.to_native());
     render_node(node, state, &mut layers, canvas);
-    canvas.set_transform(curr_ts);
+    canvas.transform = curr_ts;
 }
 
 /// Applies viewbox transformation to the painter.
 fn apply_viewbox_transform(
     view_box: usvg::ViewBox,
     img_size: ScreenSize,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) {
     let ts = usvg::utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_size());
-    canvas.apply_transform(&ts.to_native());
+    canvas.apply_transform(ts.to_native());
 }
 
 pub(crate) fn render_node(
     node: &usvg::Node,
     state: &mut RenderState,
     layers: &mut Layers,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) -> Option<Rect> {
     match *node.borrow() {
         usvg::NodeKind::Svg(_) => {
@@ -110,9 +154,9 @@ pub(crate) fn render_group(
     parent: &usvg::Node,
     state: &mut RenderState,
     layers: &mut Layers,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) -> Option<Rect> {
-    let curr_ts = canvas.get_transform();
+    let curr_ts = canvas.transform;
     let mut g_bbox = Rect::new_bbox();
 
     for node in parent.children() {
@@ -128,7 +172,7 @@ pub(crate) fn render_group(
             RenderState::BackgroundFinished => break,
         }
 
-        canvas.apply_transform(&node.transform().to_native());
+        canvas.apply_transform(node.transform().to_native());
 
         let bbox = render_node(&node, state, layers, canvas);
         if let Some(bbox) = bbox {
@@ -138,7 +182,7 @@ pub(crate) fn render_group(
         }
 
         // Revert transform.
-        canvas.set_transform(curr_ts);
+        canvas.transform = curr_ts;
     }
 
     // Check that bbox was changed, otherwise we will have a rect with x/y set to f64::MAX.
@@ -154,16 +198,16 @@ fn render_group_impl(
     g: &usvg::Group,
     state: &mut RenderState,
     layers: &mut Layers,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) -> Option<Rect> {
     let sub_pixmap = layers.get()?;
     let mut sub_pixmap = sub_pixmap.borrow_mut();
 
-    let curr_ts = canvas.get_transform();
+    let curr_ts = canvas.transform;
 
     let bbox = {
-        let mut sub_canvas = tiny_skia::Canvas::from(sub_pixmap.as_mut());
-        sub_canvas.set_transform(curr_ts);
+        let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
+        sub_canvas.transform = curr_ts;
         render_group(node, state, layers, &mut sub_canvas)
     };
 
@@ -176,10 +220,8 @@ fn render_group_impl(
     // when rendering the children of A[i] into BUF[i].'
     if *state == RenderState::BackgroundFinished {
         let paint = tiny_skia::PixmapPaint::default();
-        let curr_ts = canvas.get_transform();
-        canvas.reset_transform();
-        canvas.draw_pixmap(0, 0, sub_pixmap.as_ref(), &paint);
-        canvas.set_transform(curr_ts);
+        canvas.pixmap.draw_pixmap(0, 0, sub_pixmap.as_ref(), &paint,
+                                  tiny_skia::Transform::identity(), None);
         return bbox;
     }
 
@@ -204,8 +246,8 @@ fn render_group_impl(
         if let Some(ref id) = g.clip_path {
             if let Some(clip_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                    let mut sub_canvas = tiny_skia::Canvas::from(sub_pixmap.as_mut());
-                    sub_canvas.set_transform(curr_ts);
+                    let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
+                    sub_canvas.transform = curr_ts;
                     crate::clip::clip(&clip_node, cp, bbox, layers, &mut sub_canvas);
                 }
             }
@@ -214,8 +256,8 @@ fn render_group_impl(
         if let Some(ref id) = g.mask {
             if let Some(mask_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                    let mut sub_canvas = tiny_skia::Canvas::from(sub_pixmap.as_mut());
-                    sub_canvas.set_transform(curr_ts);
+                    let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
+                    sub_canvas.transform = curr_ts;
                     crate::mask::mask(&mask_node, mask, bbox, layers, &mut sub_canvas);
                 }
             }
@@ -228,10 +270,8 @@ fn render_group_impl(
         paint.opacity = g.opacity.value() as f32;
     }
 
-    let curr_ts = canvas.get_transform();
-    canvas.reset_transform();
-    canvas.draw_pixmap(0, 0, sub_pixmap.as_ref(), &paint);
-    canvas.set_transform(curr_ts);
+    canvas.pixmap.draw_pixmap(0, 0, sub_pixmap.as_ref(), &paint,
+                              tiny_skia::Transform::identity(), None);
 
     bbox
 }
@@ -246,7 +286,7 @@ fn prepare_filter_background(
 
     let tree = parent.tree();
     let mut pixmap = tiny_skia::Pixmap::new(img_size.width(), img_size.height()).unwrap();
-    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
+    let mut canvas = Canvas::from(pixmap.as_mut());
     let view_box = tree.svg_node().view_box;
 
     // Render from the `start_node` until the `parent`. The `parent` itself is excluded.
@@ -272,7 +312,7 @@ fn prepare_filter_fill_paint(
 ) -> Option<tiny_skia::Pixmap> {
     let region = crate::filter::calc_region(filter, bbox, &ts, pixmap).ok()?;
     let mut sub_pixmap = tiny_skia::Pixmap::new(region.width(), region.height()).unwrap();
-    let mut sub_canvas = tiny_skia::Canvas::from(sub_pixmap.as_mut());
+    let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
     if let usvg::NodeKind::Group(ref g) = *parent.borrow() {
         if let Some(paint) = g.filter_fill.clone() {
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
@@ -299,7 +339,7 @@ fn prepare_filter_stroke_paint(
 ) -> Option<tiny_skia::Pixmap> {
     let region = crate::filter::calc_region(filter, bbox, &ts, pixmap).ok()?;
     let mut sub_pixmap = tiny_skia::Pixmap::new(region.width(), region.height()).unwrap();
-    let mut sub_canvas = tiny_skia::Canvas::from(sub_pixmap.as_mut());
+    let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
     if let usvg::NodeKind::Group(ref g) = *parent.borrow() {
         if let Some(paint) = g.filter_stroke.clone() {
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());

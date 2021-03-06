@@ -9,14 +9,13 @@ pub fn mask(
     mask: &usvg::Mask,
     bbox: Rect,
     layers: &mut Layers,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) {
     let mask_pixmap = try_opt!(layers.get());
     let mut mask_pixmap = mask_pixmap.borrow_mut();
-    let mut mask_canvas = tiny_skia::Canvas::from(mask_pixmap.as_mut());
-
     {
-        mask_canvas.set_transform(canvas.get_transform());
+        let mut mask_canvas = Canvas::from(mask_pixmap.as_mut());
+        mask_canvas.transform = canvas.transform;
 
         let r = if mask.units == usvg::Units::ObjectBoundingBox {
             mask.rect.bbox_transform(bbox)
@@ -31,23 +30,19 @@ pub fn mask(
             r.height() as f32,
         );
         if let Some(rr) = rr {
-            mask_canvas.set_clip_rect(rr, true);
+            mask_canvas.set_clip_rect(rr);
         }
 
         if mask.content_units == usvg::Units::ObjectBoundingBox {
-            mask_canvas.apply_transform(&usvg::Transform::from_bbox(bbox).to_native());
+            mask_canvas.apply_transform(usvg::Transform::from_bbox(bbox).to_native());
         }
 
         crate::render::render_group(node, &mut RenderState::Ok, layers, &mut mask_canvas);
-
-        mask_canvas.reset_clip();
     }
 
     {
         use rgb::FromSlice;
-
-        let data = mask_canvas.pixmap().data_mut();
-        image_to_mask(data.as_rgba_mut(), layers.image_size());
+        image_to_mask(mask_pixmap.data_mut().as_rgba_mut(), layers.image_size());
     }
 
     if let Some(ref id) = mask.mask {
@@ -61,8 +56,13 @@ pub fn mask(
     let mut paint = tiny_skia::PixmapPaint::default();
     paint.blend_mode = tiny_skia::BlendMode::DestinationIn;
 
-    canvas.reset_transform();
-    canvas.draw_pixmap(0, 0, mask_pixmap.as_ref(), &paint);
+    canvas.pixmap.draw_pixmap(
+        0, 0,
+        mask_pixmap.as_ref(),
+        &paint,
+        tiny_skia::Transform::identity(),
+        None,
+    );
 }
 
 /// Converts an image into an alpha mask.

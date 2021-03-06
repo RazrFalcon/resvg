@@ -11,7 +11,7 @@ pub fn fill(
     path: &tiny_skia::Path,
     anti_alias: bool,
     blend_mode: tiny_skia::BlendMode,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) {
     let pattern_pixmap;
 
@@ -32,7 +32,7 @@ pub fn fill(
                         prepare_radial(rg, opacity, bbox, &mut paint);
                     }
                     usvg::NodeKind::Pattern(ref pattern) => {
-                        let global_ts = usvg::Transform::from_native(canvas.get_transform());
+                        let global_ts = usvg::Transform::from_native(canvas.transform);
                         let (patt_pix, patt_ts)
                             = try_opt!(prepare_pattern_pixmap(&node, pattern, &global_ts, bbox));
 
@@ -54,7 +54,7 @@ pub fn fill(
         tiny_skia::FillRule::EvenOdd
     };
 
-    canvas.fill_path(path, &paint, rule);
+    canvas.pixmap.fill_path(path, &paint, rule, canvas.transform, canvas.clip.as_ref());
 }
 
 pub fn stroke(
@@ -64,7 +64,7 @@ pub fn stroke(
     path: &tiny_skia::Path,
     anti_alias: bool,
     blend_mode: tiny_skia::BlendMode,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) {
     let pattern_pixmap;
 
@@ -87,7 +87,7 @@ pub fn stroke(
                             prepare_radial(rg, opacity, bbox, &mut paint);
                         }
                         usvg::NodeKind::Pattern(ref pattern) => {
-                            let global_ts = usvg::Transform::from_native(canvas.get_transform());
+                            let global_ts = usvg::Transform::from_native(canvas.transform);
                             let (patt_pix, patt_ts)
                                 = try_opt!(prepare_pattern_pixmap(&node, pattern, &global_ts, bbox));
 
@@ -126,7 +126,7 @@ pub fn stroke(
     paint.anti_alias = anti_alias;
     paint.blend_mode = blend_mode;
 
-    canvas.stroke_path(&path, &paint, &props);
+    canvas.pixmap.stroke_path(&path, &paint, &props, canvas.transform, canvas.clip.as_ref());
 }
 
 fn prepare_linear(
@@ -230,12 +230,12 @@ fn prepare_pattern_pixmap(
 
     let img_size = Size::new(r.width() * sx as f64, r.height() * sy as f64)?.to_screen_size();
     let mut pixmap = tiny_skia::Pixmap::new(img_size.width(), img_size.height())?;
-    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
+    let mut canvas = Canvas::from(pixmap.as_mut());
 
     canvas.scale(sx as f32, sy as f32);
     if let Some(vbox) = pattern.view_box {
         let ts = usvg::utils::view_box_to_transform(vbox.rect, vbox.aspect, r.size());
-        canvas.apply_transform(&ts.to_native());
+        canvas.apply_transform(ts.to_native());
     } else if pattern.content_units == usvg::Units::ObjectBoundingBox {
         // 'Note that this attribute has no effect if attribute `viewBox` is specified.'
 

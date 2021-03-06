@@ -375,22 +375,21 @@ fn _apply(
                 let mut pixmap = result.take()?;
                 let w = pixmap.width() as f32;
                 let h = pixmap.height() as f32;
-                let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
 
                 if let Some(rect) = tiny_skia::Rect::from_xywh(0.0, 0.0, w, subregion2.y() as f32) {
-                    canvas.fill_rect(rect, &paint);
+                    pixmap.fill_rect(rect, &paint, tiny_skia::Transform::identity(), None);
                 }
 
                 if let Some(rect) = tiny_skia::Rect::from_xywh(0.0, 0.0, subregion2.x() as f32, h) {
-                    canvas.fill_rect(rect, &paint);
+                    pixmap.fill_rect(rect, &paint, tiny_skia::Transform::identity(), None);
                 }
 
                 if let Some(rect) = tiny_skia::Rect::from_xywh(subregion2.right() as f32, 0.0, w, h) {
-                    canvas.fill_rect(rect, &paint);
+                    pixmap.fill_rect(rect, &paint, tiny_skia::Transform::identity(), None);
                 }
 
                 if let Some(rect) = tiny_skia::Rect::from_xywh(0.0, subregion2.bottom() as f32, w, h) {
-                    canvas.fill_rect(rect, &paint);
+                    pixmap.fill_rect(rect, &paint, tiny_skia::Transform::identity(), None);
                 }
 
                 pixmap
@@ -635,12 +634,13 @@ fn apply_offset(
     }
 
     let mut pixmap = tiny_skia::Pixmap::try_create(input.width(), input.height())?;
-    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
-    canvas.draw_pixmap(
+    pixmap.draw_pixmap(
         dx as i32,
         dy as i32,
         input.as_ref().as_ref(),
         &tiny_skia::PixmapPaint::default(),
+        tiny_skia::Transform::identity(),
+        None,
     );
 
     Ok(Image::from_image(pixmap, input.color_space))
@@ -657,13 +657,14 @@ fn apply_blend(
     let input2 = input2.into_color_space(cs)?;
 
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
-    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
 
-    canvas.draw_pixmap(
+    pixmap.draw_pixmap(
         0,
         0,
         input2.as_ref().as_ref(),
         &tiny_skia::PixmapPaint::default(),
+        tiny_skia::Transform::identity(),
+        None,
     );
 
     let blend_mode = match fe.mode {
@@ -674,7 +675,7 @@ fn apply_blend(
         usvg::FeBlendMode::Lighten => tiny_skia::BlendMode::Lighten,
     };
 
-    canvas.draw_pixmap(
+    pixmap.draw_pixmap(
         0,
         0,
         input1.as_ref().as_ref(),
@@ -682,6 +683,8 @@ fn apply_blend(
             blend_mode,
             ..tiny_skia::PixmapPaint::default()
         },
+        tiny_skia::Transform::identity(),
+        None,
     );
 
     Ok(Image::from_image(pixmap, cs))
@@ -715,12 +718,13 @@ fn apply_composite(
         return Ok(Image::from_image(pixmap, cs));
     }
 
-    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
-    canvas.draw_pixmap(
+    pixmap.draw_pixmap(
         0,
         0,
         input2.as_ref().as_ref(),
         &tiny_skia::PixmapPaint::default(),
+        tiny_skia::Transform::identity(),
+        None,
     );
 
     let blend_mode = match fe.operator {
@@ -732,7 +736,7 @@ fn apply_composite(
         Operator::Arithmetic { .. } => tiny_skia::BlendMode::SourceOver,
     };
 
-    canvas.draw_pixmap(
+    pixmap.draw_pixmap(
         0,
         0,
         input1.as_ref().as_ref(),
@@ -740,6 +744,8 @@ fn apply_composite(
             blend_mode,
             ..tiny_skia::PixmapPaint::default()
         },
+        tiny_skia::Transform::identity(),
+        None,
     );
 
     Ok(Image::from_image(pixmap, cs))
@@ -753,16 +759,17 @@ fn apply_merge(
     results: &[FilterResult],
 ) -> Result<Image, Error> {
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
-    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
 
     for input in &fe.inputs {
         let input = get_input(input, region, inputs, results)?;
         let input = input.into_color_space(cs)?;
-        canvas.draw_pixmap(
+        pixmap.draw_pixmap(
             0,
             0,
             input.as_ref().as_ref(),
             &tiny_skia::PixmapPaint::default(),
+            tiny_skia::Transform::identity(),
+            None,
         );
     }
 
@@ -794,13 +801,12 @@ fn apply_tile(
         tiny_skia::SpreadMode::Repeat,
         tiny_skia::FilterQuality::Bicubic,
         1.0,
-        tiny_skia::Transform::from_translate(subregion.x() as f32, subregion.y() as f32).unwrap(),
+        tiny_skia::Transform::from_translate(subregion.x() as f32, subregion.y() as f32),
     );
 
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
-    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
     let rect = tiny_skia::Rect::from_xywh(0.0, 0.0, region.width() as f32, region.height() as f32).unwrap();
-    canvas.fill_rect(rect, &paint);
+    pixmap.fill_rect(rect, &paint, tiny_skia::Transform::identity(), None);
 
     Ok(Image::from_image(pixmap, ColorSpace::SRGB))
 }
@@ -813,7 +819,7 @@ fn apply_image(
     ts: &usvg::Transform,
 ) -> Result<Image, Error> {
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
-    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
+    let mut canvas = Canvas::from(pixmap.as_mut());
 
     match fe.data {
         usvg::FeImageKind::Image(ref kind) => {
@@ -834,7 +840,7 @@ fn apply_image(
 
                 let (sx, sy) = ts.get_scale();
                 canvas.scale(sx as f32, sy as f32);
-                canvas.apply_transform(&node.transform().to_native());
+                canvas.apply_transform(node.transform().to_native());
 
                 crate::render::render_node(node, &mut RenderState::Ok, &mut layers, &mut canvas);
             }
@@ -1070,14 +1076,13 @@ fn apply_to_canvas(
     let input = input.into_color_space(ColorSpace::SRGB)?;
 
     pixmap.fill(tiny_skia::Color::TRANSPARENT);
-
-    let mut canvas = tiny_skia::Canvas::from(pixmap.as_mut());
-    canvas.reset_transform();
-    canvas.draw_pixmap(
+    pixmap.draw_pixmap(
         region.x() as i32,
         region.y() as i32,
         input.as_ref().as_ref(),
         &tiny_skia::PixmapPaint::default(),
+        tiny_skia::Transform::identity(),
+        None,
     );
 
     Ok(())

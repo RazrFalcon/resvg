@@ -9,23 +9,23 @@ pub fn clip(
     cp: &usvg::ClipPath,
     bbox: Rect,
     layers: &mut Layers,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) {
     let clip_pixmap = try_opt!(layers.get());
     let mut clip_pixmap = clip_pixmap.borrow_mut();
     clip_pixmap.fill(tiny_skia::Color::BLACK);
 
-    let mut clip_canvas = tiny_skia::Canvas::from(clip_pixmap.as_mut());
-    clip_canvas.set_transform(canvas.get_transform());
-    clip_canvas.apply_transform(&cp.transform.to_native());
+    let mut clip_canvas = Canvas::from(clip_pixmap.as_mut());
+    clip_canvas.transform = canvas.transform;
+    clip_canvas.apply_transform(cp.transform.to_native());
 
     if cp.units == usvg::Units::ObjectBoundingBox {
-        clip_canvas.apply_transform(&usvg::Transform::from_bbox(bbox).to_native());
+        clip_canvas.apply_transform(usvg::Transform::from_bbox(bbox).to_native());
     }
 
-    let ts = clip_canvas.get_transform();
+    let ts = clip_canvas.transform;
     for node in node.children() {
-        clip_canvas.apply_transform(&node.transform().to_native());
+        clip_canvas.apply_transform(node.transform().to_native());
 
         match *node.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
@@ -42,7 +42,7 @@ pub fn clip(
             _ => {}
         }
 
-        clip_canvas.set_transform(ts);
+        clip_canvas.transform = ts;
     }
 
     if let Some(ref id) = cp.clip_path {
@@ -55,8 +55,8 @@ pub fn clip(
 
     let mut paint = tiny_skia::PixmapPaint::default();
     paint.blend_mode = tiny_skia::BlendMode::DestinationOut;
-    canvas.reset_transform();
-    canvas.draw_pixmap(0, 0, clip_pixmap.as_ref(), &paint);
+    canvas.pixmap.draw_pixmap(0, 0, clip_pixmap.as_ref(), &paint,
+                              tiny_skia::Transform::identity(), None);
 }
 
 fn clip_group(
@@ -64,7 +64,7 @@ fn clip_group(
     g: &usvg::Group,
     bbox: Rect,
     layers: &mut Layers,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) {
     if let Some(ref id) = g.clip_path {
         if let Some(ref clip_node) = node.tree().defs_by_id(id) {
@@ -76,24 +76,24 @@ fn clip_group(
                 let clip_pixmap = try_opt!(layers.get());
                 let mut clip_pixmap = clip_pixmap.borrow_mut();
 
-                let mut clip_canvas = tiny_skia::Canvas::from(clip_pixmap.as_mut());
-                clip_canvas.set_transform(canvas.get_transform());
+                let mut clip_canvas = Canvas::from(clip_pixmap.as_mut());
+                clip_canvas.transform = canvas.transform;
 
                 draw_group_child(&node, &mut clip_canvas);
                 clip(clip_node, cp, bbox, layers, &mut clip_canvas);
 
                 let mut paint = tiny_skia::PixmapPaint::default();
                 paint.blend_mode = tiny_skia::BlendMode::Xor;
-                canvas.reset_transform();
-                canvas.draw_pixmap(0, 0, clip_pixmap.as_ref(), &paint);
+                canvas.pixmap.draw_pixmap(0, 0, clip_pixmap.as_ref(), &paint,
+                                          tiny_skia::Transform::identity(), None);
             }
         }
     }
 }
 
-fn draw_group_child(node: &usvg::Node, canvas: &mut tiny_skia::Canvas) {
+fn draw_group_child(node: &usvg::Node, canvas: &mut Canvas) {
     if let Some(child) = node.first_child() {
-        canvas.apply_transform(&child.transform().to_native());
+        canvas.apply_transform(child.transform().to_native());
 
         match *child.borrow() {
             usvg::NodeKind::Path(ref path_node) => {

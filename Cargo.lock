@@ -231,7 +231,7 @@ dependencies = [
  "png",
  "rgb",
  "svgfilters",
- "tiny-skia",
+ "tiny-skia 0.5.0",
  "usvg",
 ]
 
@@ -241,7 +241,7 @@ version = "0.13.1"
 dependencies = [
  "log",
  "resvg",
- "tiny-skia",
+ "tiny-skia 0.4.2",
  "usvg",
 ]
 
@@ -338,6 +338,20 @@ dependencies = [
  "bytemuck",
  "png",
  "wide",
+]
+
+[[package]]
+name = "tiny-skia"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6822aec518569696c04782c2b0e7500e25b4fc1b0dc055e15a8dff1795d1ff4"
+dependencies = [
+ "arrayref",
+ "arrayvec",
+ "bytemuck",
+ "cfg-if 1.0.0",
+ "png",
+ "safe_arch",
 ]
 
 [[package]]

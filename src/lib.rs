@@ -36,7 +36,7 @@ pub fn render(
     pixmap: tiny_skia::PixmapMut,
 ) -> Option<()> {
     let size = fit_to.fit_to(tree.svg_node().size.to_screen_size())?;
-    let mut canvas = tiny_skia::Canvas::from(pixmap);
+    let mut canvas = render::Canvas::from(pixmap);
     render::render_to_canvas(tree, size, &mut canvas);
     Some(())
 }
@@ -63,7 +63,7 @@ pub fn render_node(
     };
 
     let size = fit_to.fit_to(node_bbox.size().to_screen_size())?;
-    let mut canvas = tiny_skia::Canvas::from(pixmap);
+    let mut canvas = render::Canvas::from(pixmap);
     render::render_node_to_canvas(node, vbox, size, &mut render::RenderState::Ok, &mut canvas);
     Some(())
 }

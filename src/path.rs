@@ -8,7 +8,7 @@ pub fn draw(
     tree: &usvg::Tree,
     path: &usvg::Path,
     blend_mode: tiny_skia::BlendMode,
-    canvas: &mut tiny_skia::Canvas,
+    canvas: &mut Canvas,
 ) -> Option<Rect> {
     let bbox = path.data.bbox();
     if path.visibility != usvg::Visibility::Visible {
