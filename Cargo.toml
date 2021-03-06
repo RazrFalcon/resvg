@@ -1,6 +1,6 @@
 [package]
 name = "resvg"
-version = "0.13.1"
+version = "0.14.0"
 authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster", "skia"]
 license = "MPL-2.0"
@@ -26,7 +26,7 @@ png = "0.16"
 rgb = "0.8"
 svgfilters = { path = "svgfilters", version = "0.3" }
 tiny-skia = "0.5.0"
-usvg = { path = "usvg", version = "0.13.1", default-features = false }
+usvg = { path = "usvg", version = "0.14.0", default-features = false }
 
 [dev-dependencies]
 once_cell = "1.5"

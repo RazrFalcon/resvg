@@ -48,7 +48,7 @@ But since `resvg` is written in Rust and uses [tiny-skia] for rendering - it's p
 ## Safety
 
 resvg and most of its dependencies are pretty safe.
-The main exceptions are [tiny-skia] and files memory mapping.
+The main exception is fonts memory mapping.
 
 ## License
 
