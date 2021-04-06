@@ -859,6 +859,7 @@ fn resolve_inherit(
         AId::Direction =>                   "ltr",
         AId::Display =>                     "inline",
         AId::FontSize =>                    "medium",
+        AId::Overflow =>                    "visible",
         AId::StrokeDashoffset =>            "0",
         AId::StrokeLinecap =>               "butt",
         AId::StrokeLinejoin =>              "miter",

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- (usvg) `overflow='inherit'` resolving.
+
 ## [0.14.0] - 2021-03-06
 ### Fixed
 - Multiple critical bugs in `tiny-skia`.

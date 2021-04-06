@@ -209,6 +209,8 @@ use render::render;
 #[test] fn a_overflow_001() { assert_eq!(render("a-overflow-001"), 0); }
 #[test] fn a_overflow_002() { assert_eq!(render("a-overflow-002"), 0); }
 #[test] fn a_overflow_003() { assert_eq!(render("a-overflow-003"), 0); }
+#[test] fn a_overflow_004() { assert_eq!(render("a-overflow-004"), 0); }
+#[test] fn a_overflow_005() { assert_eq!(render("a-overflow-005"), 0); }
 #[test] fn a_shape_rendering_001() { assert_eq!(render("a-shape-rendering-001"), 0); }
 #[test] fn a_shape_rendering_002() { assert_eq!(render("a-shape-rendering-002"), 0); }
 #[test] fn a_shape_rendering_003() { assert_eq!(render("a-shape-rendering-003"), 0); }
