@@ -1,14 +1,16 @@
 [package]
 name = "resvg-skia"
 version = "0.9.1"
-authors = ["JaFenix <jspicer@phoenixcontact.com>", "Reizner Evgeniy <razrfalcon@gmail.com>"]
-keywords = ["skia", "ffi"]
-license = "MIT"
 edition = "2018"
-description = "A minimal bindings to Skia used by resvg."
-repository = "https://github.com/RazrFalcon/resvg"
+description = "A wrapper for skia-safe crate used by resvg."
+repository = "https://github.com/velyan/resvg"
 workspace = "../.."
 
 [build-dependencies]
 cc = "1.0"
 pkg-config = "0.3"
+
+[dependencies]
+skia-safe = "0.34.2"
+skia-bindings = "0.34.2"
+png = "0.16.8"

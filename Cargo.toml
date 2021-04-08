@@ -54,8 +54,11 @@ skia-backend = ["resvg-skia"]
 text = ["usvg/text"]
 
 [package.metadata.docs.rs]
-# Ignore skia-backend since it cannot be built on docs.rs instance.
-features = ["cairo-backend", "qt-backend", "raqote-backend"]
+features = ["cairo-backend", "qt-backend", "raqote-backend", "skia-backend"]
 
 [lib]
 doctest = false
+
+[patch.crates-io]
+skia-bindings = { git = "https://github.com/StewartCanva/rust-skia", rev = "bef2150f05352a32bf072c52b1718d68974e19fc" }
+skia-safe = { git = "https://github.com/StewartCanva/rust-skia", rev = "bef2150f05352a32bf072c52b1718d68974e19fc" }

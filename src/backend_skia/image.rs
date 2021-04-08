@@ -49,7 +49,7 @@ pub fn draw_raster(
     };
 
 
-    let mut filter = skia::FilterQuality::Low;
+    let mut filter = skia::FilterQuality::Medium;
     if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
         filter = skia::FilterQuality::None;
     }
