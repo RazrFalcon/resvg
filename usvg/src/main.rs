@@ -95,9 +95,6 @@ ARGS:
 
 #[derive(Debug)]
 struct Args {
-    help: bool,
-    version: bool,
-
     dpi: u32,
     languages: Vec<String>,
     shape_rendering: usvg::ShapeRendering,
@@ -129,10 +126,18 @@ struct Args {
 
 fn collect_args() -> Result<Args, pico_args::Error> {
     let mut input = Arguments::from_env();
-    Ok(Args {
-        help:               input.contains(["-h", "--help"]),
-        version:            input.contains(["-V", "--version"]),
 
+    if input.contains(["-h", "--help"]) {
+        print!("{}", HELP);
+        std::process::exit(0);
+    }
+
+    if input.contains(["-V", "--version"]) {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        std::process::exit(0);
+    }
+
+    Ok(Args {
         dpi:                input.opt_value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
         languages:          input.opt_value_from_fn("--languages", parse_languages)?
                                  .unwrap_or(vec!["en".to_string()]), // TODO: use system language
@@ -235,16 +240,6 @@ fn main() {
             process::exit(1);
         }
     };
-
-    if args.help {
-        print!("{}", HELP);
-        process::exit(0);
-    }
-
-    if args.version {
-        println!("{}", env!("CARGO_PKG_VERSION"));
-        process::exit(0);
-    }
 
     if !args.quiet {
         if let Ok(()) = log::set_logger(&LOGGER) {

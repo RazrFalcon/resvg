@@ -248,9 +248,6 @@ ARGS:
 
 #[derive(Debug)]
 struct CliArgs {
-    help: bool,
-    version: bool,
-
     width: Option<u32>,
     height: Option<u32>,
     zoom: Option<f32>,
@@ -288,10 +285,18 @@ struct CliArgs {
 
 fn collect_args() -> Result<CliArgs, pico_args::Error> {
     let mut input = pico_args::Arguments::from_env();
-    Ok(CliArgs {
-        help:               input.contains("--help"),
-        version:            input.contains(["-V", "--version"]),
 
+    if input.contains("--help") {
+        print!("{}", HELP);
+        std::process::exit(0);
+    }
+
+    if input.contains(["-V", "--version"]) {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        std::process::exit(0);
+    }
+
+    Ok(CliArgs {
         width:              input.opt_value_from_fn(["-w", "--width"], parse_length)?,
         height:             input.opt_value_from_fn(["-h", "--height"], parse_length)?,
         zoom:               input.opt_value_from_fn(["-z", "--zoom"], parse_zoom)?,
@@ -398,14 +403,17 @@ struct Args {
 fn parse_args() -> Result<Args, String> {
     let mut args = collect_args().map_err(|e| e.to_string())?;
 
-    if args.help {
-        print!("{}", HELP);
-        std::process::exit(0);
-    }
-
-    if args.version {
-        println!("{}", env!("CARGO_PKG_VERSION"));
-        std::process::exit(0);
+    let fontdb = timed!(args, "FontDB init", load_fonts(&mut args));
+    if args.list_fonts {
+        for face in fontdb.faces() {
+            if let usvg::fontdb::Source::File(ref path) = &*face.source {
+                println!(
+                    "{}: '{}', {}, {:?}, {:?}, {:?}",
+                    path.display(), face.family, face.index,
+                    face.style, face.weight.0, face.stretch
+                );
+            }
+        }
     }
 
     if !args.query_all && args.output.is_none() {
@@ -431,8 +439,6 @@ fn parse_args() -> Result<Args, String> {
         fit_to = usvg::FitTo::Zoom(z);
     }
 
-    let fontdb = timed!(args, "FontDB init", load_fonts(&mut args));
-
     let resources_dir = match args.resources_dir {
         Some(v) => Some(v),
         None => {
@@ -455,7 +461,7 @@ fn parse_args() -> Result<Args, String> {
     };
 
     Ok(Args {
-        in_svg: in_svg.clone(),
+        in_svg,
         out_png,
         query_all: args.query_all,
         export_id,
@@ -493,18 +499,6 @@ fn load_fonts(args: &mut CliArgs) -> usvg::fontdb::Database {
     fontdb.set_cursive_family(take_or(args.cursive_family.take(), "Comic Sans MS"));
     fontdb.set_fantasy_family(take_or(args.fantasy_family.take(), "Impact"));
     fontdb.set_monospace_family(take_or(args.monospace_family.take(), "Courier New"));
-
-    if args.list_fonts {
-        for face in fontdb.faces() {
-            if let usvg::fontdb::Source::File(ref path) = &*face.source {
-                println!(
-                    "{}: '{}', {}, {:?}, {:?}, {:?}",
-                    path.display(), face.family, face.index,
-                    face.style, face.weight.0, face.stretch
-                );
-            }
-        }
-    }
 
     fontdb
 }

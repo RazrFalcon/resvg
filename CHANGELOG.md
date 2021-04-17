@@ -9,6 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Fixed
 - (usvg) `overflow='inherit'` resolving.
+- CLI arguments processing.
 
 ## [0.14.0] - 2021-03-06
 ### Fixed
