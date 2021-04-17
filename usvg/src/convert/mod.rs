@@ -74,7 +74,22 @@ pub fn convert_doc(
 
     convert_children(svg_doc.root(), &state, &mut tree.root(), &mut tree);
 
-    link_fe_image(svg_doc, &state, &mut tree);
+    // The `convert_children` method doesn't convert elements inside `defs`
+    // and non-graphic elements (like gradients, patters, filters, etc.).
+    // Those elements are only converted when referenced.
+    // For example, a gradient can be referenced by a rect's fill property.
+    // This way we're automatically ignoring unused elements.
+    //
+    // But since `convert_children` processes elements in a linear order,
+    // `feImage` can reference an element that was not converted yet.
+    // In which case we have to process this `feImage` afterwards.
+    //
+    // And since `link_fe_image` processes only direct `feImage` links,
+    // we have to run it until there are no more links left.
+    // For example, when `feImage` references an element that also uses `feImage`,
+    // we have to run this methods twice. And so on.
+    while link_fe_image(svg_doc, &state, &mut tree) {}
+
     remove_empty_groups(&mut tree);
     ungroup_groups(opt, &mut tree);
     remove_unused_defs(&mut tree);
@@ -559,7 +574,7 @@ fn link_fe_image(
     svg_doc: &svgtree::Document,
     state: &State,
     tree: &mut tree::Tree,
-) {
+) -> bool {
     let mut ids = Vec::new();
     // TODO: simplify
     for filter_node in tree.defs().children() {
@@ -583,6 +598,7 @@ fn link_fe_image(
     ids.dedup_by(|a, b| a.1 == b.1);
 
     // TODO: simplify
+    let mut has_resolved = false;
     for (filter_id, id) in ids {
         if let Some(node) = svg_doc.element_by_id(&id) {
             let mut state = state.clone();
@@ -632,8 +648,12 @@ fn link_fe_image(
                     }
                 }
             }
+
+            has_resolved = true;
         }
     }
+
+    has_resolved
 }
 
 fn is_id_used(tree: &tree::Tree, id: &str) -> bool {
