@@ -222,7 +222,7 @@ checksum = "be9e29cb19c8fe84169fcb07f8f11e66bc9e6e0280efd4715c54818296f8a4a8"
 
 [[package]]
 name = "resvg"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "jpeg-decoder",
  "log",
@@ -237,7 +237,7 @@ dependencies = [
 
 [[package]]
 name = "resvg-capi"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "log",
  "resvg",
@@ -394,7 +394,7 @@ checksum = "b1d386ff53b415b7fe27b50bb44679e2cc4660272694b7b6f3326d8480823a94"
 
 [[package]]
 name = "usvg"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "base64",
  "data-url",

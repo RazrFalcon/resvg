@@ -1,4 +1,4 @@
-- .github/*
+- .github/chart.svg
 - CHANGELOG.md
 - Cargo.toml
 - src/lib.rs

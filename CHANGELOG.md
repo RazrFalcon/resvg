@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.14.1] - 2021-04-18
 ### Added
 - Allow `href` without the `xlink` namespace.
   This feature is part of SVG 2 (which we do not support),
@@ -438,7 +440,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.14.1...HEAD
+[0.14.1]: https://github.com/RazrFalcon/resvg/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/RazrFalcon/resvg/compare/v0.13.1...v0.14.0
 [0.13.1]: https://github.com/RazrFalcon/resvg/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/RazrFalcon/resvg/compare/v0.12.0...v0.13.0
