@@ -878,7 +878,9 @@ fn resolve_inherit(
 fn resolve_href<'a>(
     node: roxmltree::Node<'a, 'a>,
 ) -> Option<roxmltree::Node<'a, 'a>> {
-    let link_value = node.attribute((XLINK_NS, "href"))?;
+    let link_value = node.attribute((XLINK_NS, "href"))
+        .or_else(|| node.attribute("href"))?;
+
     let link_id = svgtypes::Stream::from(link_value).parse_iri().ok()?;
     node.document().descendants().find(|n| n.attribute("id") == Some(link_id))
 }
@@ -1008,7 +1010,10 @@ fn parse_svg_text_element_impl(
         let space = get_xmlspace(doc, node_id, space);
 
         if is_tref {
-            if let Some(href) = node.attribute((XLINK_NS, "href")) {
+            let link_value = node.attribute((XLINK_NS, "href"))
+                .or_else(|| node.attribute("href"));
+
+            if let Some(href) = link_value {
                 if let Some(text) = resolve_tref_text(node.document(), href) {
                     let text = trim_text(&text, space);
                     doc.append(node_id, NodeKind::Text(text));

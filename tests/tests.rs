@@ -1334,3 +1334,4 @@ use render::render;
 #[test] fn e_use_030() { assert_eq!(render("e-use-030"), 0); }
 #[test] fn e_use_031() { assert_eq!(render("e-use-031"), 0); }
 #[test] fn e_use_032() { assert_eq!(render("e-use-032"), 0); }
+#[test] fn e_use_033() { assert_eq!(render("e-use-033"), 0); }

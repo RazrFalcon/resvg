@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- Allow `href` without the `xlink` namespace.
+  This feature is part of SVG 2 (which we do not support),
+  but there are more and more files like this in the wild.
+
 ### Fixed
 - (usvg) `overflow='inherit'` resolving.
 - CLI arguments processing.
