@@ -6,10 +6,9 @@ use std::rc::Rc;
 
 use svgtypes::FuzzyZero;
 
-use kurbo::{ParamCurveArclen, ParamCurveExtrema};
+use kurbo::{ParamCurveArclen, ParamCurveExtrema, ParamCurve};
 
-use crate::{Rect, Line};
-use super::Transform;
+use crate::{Rect, Transform};
 
 /// A path's absolute segment.
 ///
@@ -508,46 +507,45 @@ fn has_bbox(segments: &[PathSegment]) -> bool {
 fn calc_length(segments: &[PathSegment]) -> f64 {
     debug_assert!(!segments.is_empty());
 
-    let (mut prev_x, mut prev_y) = {
+    let (mut prev_mx, mut prev_my, mut prev_x, mut prev_y) = {
         if let PathSegment::MoveTo { x, y } = segments[0] {
-            (x, y)
+            (x, y, x, y)
         } else {
-            panic!("first segment must be MoveTo");
+            unreachable!();
         }
     };
 
-    let start_x = prev_x;
-    let start_y = prev_y;
+    fn create_curve_from_line(px: f64, py: f64, x: f64, y: f64) -> kurbo::CubicBez {
+        let line = kurbo::Line::new(kurbo::Point::new(px, py), kurbo::Point::new(x, y));
+        let p1 = line.eval(0.33);
+        let p2 = line.eval(0.66);
+        kurbo::CubicBez::from_points(px, py, p1.x, p1.y, p2.x, p2.y, x, y)
+    }
 
-    let mut is_first_seg = true;
-    let mut length = 0.0f64;
+    let mut length = 0.0;
     for seg in segments {
-        match *seg {
-            PathSegment::MoveTo { .. } => {
-                if !is_first_seg {
-                    break;
-                }
+        let curve = match *seg {
+            PathSegment::MoveTo { x, y } => {
+                prev_mx = x;
+                prev_my = y;
+                prev_x = x;
+                prev_y = y;
+                continue;
             }
             PathSegment::LineTo { x, y } => {
-                length += Line::new(prev_x, prev_y, x, y).length();
-
-                prev_x = x;
-                prev_y = y;
+                create_curve_from_line(prev_x, prev_y, x, y)
             }
             PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                let curve = kurbo::CubicBez::from_points(prev_x, prev_y, x1, y1, x2, y2, x, y);
-                length += curve.arclen(1.0);
-
-                prev_x = x;
-                prev_y = y;
+                kurbo::CubicBez::from_points(prev_x, prev_y, x1, y1, x2, y2, x, y)
             }
             PathSegment::ClosePath => {
-                length += Line::new(prev_x, prev_y, start_x, start_y).length();
-                break;
+                create_curve_from_line(prev_x, prev_y, prev_mx, prev_my)
             }
-        }
+        };
 
-        is_first_seg = false;
+        length += curve.arclen(0.5);
+        prev_x = curve.p3.x;
+        prev_y = curve.p3.y;
     }
 
     length

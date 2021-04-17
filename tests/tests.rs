@@ -1262,6 +1262,7 @@ use render::render;
 #[test] fn e_textPath_036() { assert_eq!(render("e-textPath-036"), 0); }
 #[test] fn e_textPath_037() { assert_eq!(render("e-textPath-037"), 0); }
 #[test] fn e_textPath_038() { assert_eq!(render("e-textPath-038"), 0); }
+#[test] fn e_textPath_039() { assert_eq!(render("e-textPath-039"), 0); }
 #[test] fn e_tref_001() { assert_eq!(render("e-tref-001"), 0); }
 #[test] fn e_tref_002() { assert_eq!(render("e-tref-002"), 0); }
 #[test] fn e_tref_003() { assert_eq!(render("e-tref-003"), 0); }

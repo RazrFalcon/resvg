@@ -14,6 +14,7 @@ This changelog also contains important changes in dependencies.
 
 ### Fixed
 - (usvg) `overflow='inherit'` resolving.
+- (usvg) SVG Path length calculation that affects `startOffset` property in `textPath`.
 - CLI arguments processing.
 
 ## [0.14.0] - 2021-03-06
