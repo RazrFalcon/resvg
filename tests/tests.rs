@@ -620,6 +620,8 @@ use render::render;
 #[test] fn e_feImage_019() { assert_eq!(render("e-feImage-019"), 0); }
 #[test] fn e_feImage_020() { assert_eq!(render("e-feImage-020"), 0); }
 #[test] fn e_feImage_021() { assert_eq!(render("e-feImage-021"), 0); }
+#[test] fn e_feImage_022() { assert_eq!(render("e-feImage-022"), 0); }
+#[test] fn e_feImage_023() { assert_eq!(render("e-feImage-023"), 0); }
 #[test] fn e_feMerge_001() { assert_eq!(render("e-feMerge-001"), 0); }
 #[test] fn e_feMerge_002() { assert_eq!(render("e-feMerge-002"), 0); }
 #[test] fn e_feMerge_003() { assert_eq!(render("e-feMerge-003"), 0); }

@@ -15,6 +15,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - (usvg) `overflow='inherit'` resolving.
 - (usvg) SVG Path length calculation that affects `startOffset` property in `textPath`.
+- (usvg) Fix `feImage` resolving when the linked element has
+  `opacity`, `clip-path`, `mask` and/or `filter` attributes.
 - CLI arguments processing.
 
 ## [0.14.0] - 2021-03-06

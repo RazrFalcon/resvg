@@ -151,31 +151,31 @@ fn convert_element(
     state: &State,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
-) {
-    let tag_name = try_opt!(node.tag_name());
+) -> Option<tree::Node> {
+    let tag_name = node.tag_name()?;
 
     if !tag_name.is_graphic() && !matches!(tag_name, EId::G | EId::Switch | EId::Svg) {
-        return;
+        return None;
     }
 
     if !node.is_visible_element(state.opt) {
-        return;
+        return None;
     }
 
     if tag_name == EId::Use {
         use_node::convert(node, state, parent, tree);
-        return;
+        return None;
     }
 
     if tag_name == EId::Switch {
         switch::convert(node, state, parent, tree);
-        return;
+        return None;
     }
 
     let parent = &mut match convert_group(node, state, false, parent, tree) {
         GroupKind::Create(g) => g,
         GroupKind::Skip => parent.clone(),
-        GroupKind::Ignore => return,
+        GroupKind::Ignore => return None,
     };
 
     match tag_name {
@@ -210,6 +210,8 @@ fn convert_element(
         }
         _ => {}
     }
+
+    Some(parent.clone())
 }
 
 // `clipPath` can have only shape and `text` children.
@@ -569,7 +571,7 @@ fn link_fe_image(
                             // If `feImage` references a non-existing element,
                             // create it in `defs`.
                             if svg_doc.element_by_id(id).is_some() {
-                                ids.push(id.to_string());
+                                ids.push((filter_node.id().to_string(), id.to_string()));
                             }
                         }
                     }
@@ -578,19 +580,50 @@ fn link_fe_image(
         }
     }
 
-    ids.sort();
-    ids.dedup();
+    ids.dedup_by(|a, b| a.1 == b.1);
 
     // TODO: simplify
-    for id in ids {
+    for (filter_id, id) in ids {
         if let Some(node) = svg_doc.element_by_id(&id) {
             let mut state = state.clone();
             state.fe_image_link = true;
-            convert_element(node, &state, &mut tree.defs(), tree);
+            let mut new_node = match convert_element(node, &state, &mut tree.defs(), tree) {
+                Some(n) => n,
+                None => continue,
+            };
+
+            // `convert_element` can create a subgroup in some cases, which is not what we need.
+            // In this case we should move child element's id to the group,
+            // so `feImage` would reference the whole group and not just a child.
+            if new_node != tree.defs() {
+                if let tree::NodeKind::Group(ref mut g) = *new_node.borrow_mut() {
+                    g.id = id.clone();
+                }
+
+                // Remove ids from children.
+                for mut n in new_node.children() {
+                    match *n.borrow_mut() {
+                        tree::NodeKind::Path(ref mut p) => p.id.clear(),
+                        tree::NodeKind::Image(ref mut p) => p.id.clear(),
+                        _ => {}
+                    }
+                }
+            }
+
+            // Make sure the new element doesn't reference the current filter.
+            if let tree::NodeKind::Group(ref mut g) = *new_node.borrow_mut() {
+                if g.filter.as_deref() == Some(&filter_id) {
+                    warn!("Recursive 'feImage' detected. \
+                          The 'filter' attribute will be removed from '{}'.",
+                          id);
+
+                    g.filter = None;
+                }
+            }
 
             // Check that node was actually created.
             // If not, reset to a dummy primitive.
-            if !tree.defs().descendants().any(|n| *n.id() == id) {
+            if !tree.defs().children().any(|n| *n.id() == id) {
                 for mut filter_node in tree.defs().children() {
                     if let tree::NodeKind::Filter(ref mut filter) = *filter_node.borrow_mut() {
                         for fe in &mut filter.children {
