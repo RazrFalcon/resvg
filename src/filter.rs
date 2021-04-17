@@ -100,7 +100,6 @@ impl IntoSvgFilters<svgfilters::ColorChannel> for usvg::ColorChannel {
 
 
 pub(crate) enum Error {
-    AllocFailed, // TODO: rename
     InvalidRegion,
     NoResults,
 }
@@ -116,14 +115,14 @@ trait PixmapExt: Sized {
 
 impl PixmapExt for tiny_skia::Pixmap {
     fn try_create(width: u32, height: u32) -> Result<tiny_skia::Pixmap, Error> {
-        tiny_skia::Pixmap::new(width, height).ok_or(Error::AllocFailed)
+        tiny_skia::Pixmap::new(width, height).ok_or(Error::InvalidRegion)
     }
 
     fn copy_region(&self, region: ScreenRect) -> Result<tiny_skia::Pixmap, Error> {
         let rect = tiny_skia::IntRect::from_xywh(
             region.x(), region.y(), region.width(), region.height()
-        ).ok_or(Error::AllocFailed)?;
-        self.clone_rect(rect).ok_or(Error::AllocFailed)
+        ).ok_or(Error::InvalidRegion)?;
+        self.clone_rect(rect).ok_or(Error::InvalidRegion)
     }
 
     fn clear(&mut self) {
@@ -260,12 +259,6 @@ pub fn apply(
 
     match res {
         Ok(_) => {}
-        Err(Error::AllocFailed) => {
-            warn!(
-                "Memory allocation failed while processing the '{}' filter. Skipped.",
-                filter.id
-            );
-        }
         Err(Error::InvalidRegion) => {
             warn!("Filter '{}' has an invalid region.", filter.id);
         }
