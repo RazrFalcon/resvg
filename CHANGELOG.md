@@ -12,6 +12,9 @@ This changelog also contains important changes in dependencies.
   This feature is part of SVG 2 (which we do not support),
   but there are more and more files like this in the wild.
 
+### Changed
+- (usvg) Do not write `usvg:version` to the output SVG.
+
 ### Fixed
 - (usvg) `overflow='inherit'` resolving.
 - (usvg) SVG Path length calculation that affects `startOffset` property in `textPath`.
