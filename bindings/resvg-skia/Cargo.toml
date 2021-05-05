@@ -11,6 +11,6 @@ cc = "1.0"
 pkg-config = "0.3"
 
 [dependencies]
-skia-safe = "0.34.2"
-skia-bindings = "0.34.2"
+skia-safe = "0.37.0"
+skia-bindings = "0.37.0"
 png = "0.16.8"
