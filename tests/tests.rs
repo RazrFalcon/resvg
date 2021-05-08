@@ -599,6 +599,7 @@ use render::render;
 #[test] fn e_feGaussianBlur_010() { assert_eq!(render("e-feGaussianBlur-010"), 0); }
 #[test] fn e_feGaussianBlur_011() { assert_eq!(render("e-feGaussianBlur-011"), 0); }
 #[test] fn e_feGaussianBlur_012() { assert_eq!(render("e-feGaussianBlur-012"), 0); }
+#[test] fn e_feGaussianBlur_013() { assert_eq!(render("e-feGaussianBlur-013"), 0); }
 #[test] fn e_feImage_001() { assert_eq!(render("e-feImage-001"), 0); }
 #[test] fn e_feImage_002() { assert_eq!(render("e-feImage-002"), 0); }
 #[test] fn e_feImage_003() { assert_eq!(render("e-feImage-003"), 0); }

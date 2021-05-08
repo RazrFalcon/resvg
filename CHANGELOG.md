@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- Ignore tiny blur values. It could lead to a transparent image.
 
 ## [0.14.1] - 2021-04-18
 ### Added

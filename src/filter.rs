@@ -1096,12 +1096,21 @@ fn resolve_std_dev(
         return None;
     }
 
-    let (std_dx, std_dy) = scale_coordinates(
+    let (mut std_dx, mut std_dy) = scale_coordinates(
         fe.std_dev_x.value(), fe.std_dev_y.value(), units, bbox, ts,
     )?;
     if std_dx.is_fuzzy_zero() && std_dy.is_fuzzy_zero() {
         None
     } else {
+        // Ignore tiny sigmas. In case of IIR blur it can lead to a transparent image.
+        if std_dx < 0.05 {
+            std_dx = 0.0;
+        }
+
+        if std_dy < 0.05 {
+            std_dy = 0.0;
+        }
+
         const BLUR_SIGMA_THRESHOLD: f64 = 2.0;
         // Check that the current feGaussianBlur filter can be applied using a box blur.
         let box_blur =    std_dx >= BLUR_SIGMA_THRESHOLD
