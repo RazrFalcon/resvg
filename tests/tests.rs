@@ -1189,6 +1189,9 @@ use render::render;
 #[test] fn e_symbol_008() { assert_eq!(render("e-symbol-008"), 0); }
 #[test] fn e_symbol_009() { assert_eq!(render("e-symbol-009"), 0); }
 #[test] fn e_symbol_010() { assert_eq!(render("e-symbol-010"), 0); }
+#[test] fn e_symbol_011() { assert_eq!(render("e-symbol-011"), 0); }
+#[test] fn e_symbol_012() { assert_eq!(render("e-symbol-012"), 0); }
+#[test] fn e_symbol_013() { assert_eq!(render("e-symbol-013"), 0); }
 #[test] fn e_text_001() { assert_eq!(render("e-text-001"), 0); }
 #[test] fn e_text_002() { assert_eq!(render("e-text-002"), 0); }
 #[test] fn e_text_003() { assert_eq!(render("e-text-003"), 0); }

@@ -9,6 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Fixed
 - Ignore tiny blur values. It could lead to a transparent image.
+- `use` style propagation when used with `symbol`.
 
 ## [0.14.1] - 2021-04-18
 ### Added

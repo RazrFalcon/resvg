@@ -50,7 +50,14 @@ pub fn convert(
     orig_ts.append(&new_ts);
 
     if linked_to_symbol {
-        convert_children(child, orig_ts, state, parent, tree);
+        // Make group for `use`.
+        let mut parent = match super::convert_group(node, state, false, parent, tree) {
+            super::GroupKind::Create(g) => g.clone(),
+            super::GroupKind::Skip => parent.clone(),
+            super::GroupKind::Ignore => return,
+        };
+
+        convert_children(child, orig_ts, state, &mut parent, tree);
     } else {
         convert_children(node, orig_ts, state, parent, tree);
     }
