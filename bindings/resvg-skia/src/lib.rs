@@ -85,9 +85,8 @@ impl Surface {
 
     pub fn copy_rgba(&self, x: u32, y: u32, width: u32, height: u32) -> Option<Surface> {
         let mut copy = Surface::new_rgba(width, height)?;
-        let mut paint = skia_safe::Paint::default();
-        paint.set_filter_quality(skia_safe::FilterQuality::Low);
-        self.surface.clone().draw(copy.surface.canvas(), (-(x as f32), -(y as f32)), Some(&paint));
+        let sampling = skia_safe::SamplingOptions::from(skia_safe::FilterQuality::Low);
+        self.surface.clone().draw(copy.surface.canvas(), (-(x as f32), -(y as f32)), sampling, None);
         Some(copy)
     }
 
@@ -247,11 +246,11 @@ impl Canvas {
     }
 
     pub fn flush(&mut self) {
-        self.0.canvas().flush();
+        self.0.flush_and_submit();
     }
 
     pub fn set_matrix(&mut self, matrix: &Matrix) {
-        self.0.canvas().set_matrix(&matrix.0);
+        self.0.canvas().set_matrix(&matrix.0.into());
     }
 
     pub fn concat(&mut self, matrix: &Matrix) {
@@ -268,7 +267,7 @@ impl Canvas {
 
     pub fn get_matrix(&self) -> Matrix {
         let mut surface = self.0.clone();
-        Matrix(surface.canvas().total_matrix())
+        Matrix(surface.canvas().local_to_device_as_3x3())
     }
 
     pub fn draw_path(&mut self, path: &Path, paint: &Paint) {
@@ -282,18 +281,26 @@ impl Canvas {
     pub fn draw_surface(&mut self, surface: &Surface, left: f64, top: f64, alpha: u8,
                         blend_mode: BlendMode, filter_quality: FilterQuality) {
         let mut paint = skia_safe::Paint::default();
-        paint.set_filter_quality(filter_quality.to_skia());
         paint.set_alpha(alpha);
         paint.set_blend_mode(blend_mode.to_skia());
-        self.0.canvas().draw_image(&surface.image_snapshot(), (left as f32, top as f32), Some(&paint));
+        self.0.canvas().draw_image_with_sampling_options(
+            &surface.image_snapshot(),
+            (left as f32, top as f32),
+            skia_safe::SamplingOptions::from(filter_quality.to_skia()),
+            Some(&paint)
+        );
     }
 
     pub fn draw_surface_rect(&mut self, surface: &Surface, x: f64, y: f64, w: f64, h: f64,
                              filter_quality: FilterQuality) {
-        let mut paint = skia_safe::Paint::default();
-        paint.set_filter_quality(filter_quality.to_skia());
         let dst = skia_safe::Rect::from_xywh(x as f32, y as f32, w as f32, h as f32);
-        self.0.canvas().draw_image_rect(&surface.image_snapshot(), None, dst, &paint);
+        self.0.canvas().draw_image_rect_with_sampling_options(
+            &surface.image_snapshot(),
+            None,
+            dst,
+            filter_quality.to_skia(),
+            &skia_safe::Paint::default()
+        );
     }
 
     pub fn reset_matrix(&mut self) {
@@ -455,8 +462,9 @@ impl Shader {
     pub fn new_from_surface_image(surface: &Surface, matrix: Matrix) -> Shader {
         Shader(surface.image_snapshot().to_shader(
             (skia_safe::TileMode::Repeat, skia_safe::TileMode::Repeat),
+            skia_safe::SamplingOptions::default(),
             Some(&matrix.0),
-        ))
+        ).unwrap())
     }
 }
 
