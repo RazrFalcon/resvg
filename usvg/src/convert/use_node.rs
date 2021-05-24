@@ -42,7 +42,23 @@ pub fn convert(
 
         if let Some(clip_rect) = get_clip_rect(node, child, state) {
             let mut g = clip_element(node, clip_rect, orig_ts, parent, tree);
-            convert_children(child, new_ts, state, &mut g, tree);
+
+            // Make group for `use`.
+            let mut parent = match super::convert_group(node, state, true, &mut g, tree) {
+                super::GroupKind::Create(mut g) => {
+                    // We must reset transform, because it was already set
+                    // to the group with clip-path.
+                    if let tree::NodeKind::Group(ref mut g) = *g.borrow_mut() {
+                        g.transform = tree::Transform::default();
+                    }
+
+                    g.clone()
+                }
+                super::GroupKind::Skip => g.clone(),
+                super::GroupKind::Ignore => return,
+            };
+
+            convert_children(child, new_ts, state, &mut parent, tree);
             return;
         }
     }
@@ -50,7 +66,14 @@ pub fn convert(
     orig_ts.append(&new_ts);
 
     if linked_to_symbol {
-        convert_children(child, orig_ts, state, parent, tree);
+        // Make group for `use`.
+        let mut parent = match super::convert_group(node, state, false, parent, tree) {
+            super::GroupKind::Create(g) => g.clone(),
+            super::GroupKind::Skip => parent.clone(),
+            super::GroupKind::Ignore => return,
+        };
+
+        convert_children(child, orig_ts, state, &mut parent, tree);
     } else {
         convert_children(node, orig_ts, state, parent, tree);
     }
