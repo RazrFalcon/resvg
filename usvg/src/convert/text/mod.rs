@@ -100,7 +100,6 @@ fn text_to_paths(
     let pos_list = resolve_positions_list(text_node, state);
     let rotate_list = resolve_rotate_list(text_node);
     let writing_mode = convert_writing_mode(text_node);
-    let mut text_ts = tree::Transform::default();
 
     let mut chunks = collect_text_chunks(text_node, &pos_list, state, tree);
     let mut char_offset = 0;
@@ -122,10 +121,11 @@ fn text_to_paths(
         shaper::apply_writing_mode(writing_mode, &mut clusters);
         shaper::apply_letter_spacing(&chunk, &mut clusters);
         shaper::apply_word_spacing(&chunk, &mut clusters);
-        let curr_pos = shaper::resolve_clusters_positions(
+        let mut curr_pos = shaper::resolve_clusters_positions(
             chunk, char_offset, &pos_list, &rotate_list, writing_mode, &mut clusters
         );
 
+        let mut text_ts = tree::Transform::default();
         if writing_mode == WritingMode::TopToBottom {
             if let TextFlow::Horizontal = chunk.text_flow {
                 text_ts.rotate_at(90.0, x, y);
@@ -187,6 +187,13 @@ fn text_to_paths(
         }
 
         char_offset += chunk.text.chars().count();
+
+        if writing_mode == WritingMode::TopToBottom {
+            if let TextFlow::Horizontal = chunk.text_flow {
+                std::mem::swap(&mut curr_pos.0, &mut curr_pos.1);
+            }
+        }
+
         last_x = x + curr_pos.0;
         last_y = y + curr_pos.1;
     }

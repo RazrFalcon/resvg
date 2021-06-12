@@ -452,7 +452,7 @@ pub fn resolve_clusters_positions(
     match chunk.text_flow {
         TextFlow::Horizontal => {
             resolve_clusters_positions_horizontal(
-                chunk, char_offset, pos_list, rotate_list, clusters,
+                chunk, char_offset, pos_list, rotate_list, writing_mode, clusters,
             )
         }
         TextFlow::Path(ref path) => {
@@ -468,6 +468,7 @@ fn resolve_clusters_positions_horizontal(
     offset: usize,
     pos_list: &[CharacterPosition],
     rotate_list: &[f64],
+    writing_mode: WritingMode,
     clusters: &mut [OutlinedCluster],
 ) -> (f64, f64) {
     let mut x = process_anchor(chunk.anchor, clusters_length(clusters));
@@ -476,8 +477,13 @@ fn resolve_clusters_positions_horizontal(
     for cluster in clusters {
         let cp = offset + cluster.byte_idx.code_point_at(&chunk.text);
         if let Some(pos) = pos_list.get(cp) {
-            x += pos.dx.unwrap_or(0.0);
-            y += pos.dy.unwrap_or(0.0);
+            if writing_mode == WritingMode::LeftToRight {
+                x += pos.dx.unwrap_or(0.0);
+                y += pos.dy.unwrap_or(0.0);
+            } else {
+                y -= pos.dx.unwrap_or(0.0);
+                x += pos.dy.unwrap_or(0.0);
+            }
             cluster.has_relative_shift = pos.dx.is_some() || pos.dy.is_some();
         }
 

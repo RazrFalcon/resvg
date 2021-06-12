@@ -388,6 +388,9 @@ use render::render;
 #[test] fn a_writing_mode_015() { assert_eq!(render("a-writing-mode-015"), 0); }
 #[test] fn a_writing_mode_016() { assert_eq!(render("a-writing-mode-016"), 0); }
 #[test] fn a_writing_mode_017() { assert_eq!(render("a-writing-mode-017"), 0); }
+#[test] fn a_writing_mode_018() { assert_eq!(render("a-writing-mode-018"), 0); }
+#[test] fn a_writing_mode_019() { assert_eq!(render("a-writing-mode-019"), 0); }
+#[test] fn a_writing_mode_020() { assert_eq!(render("a-writing-mode-020"), 0); }
 #[test] fn e_a_001() { assert_eq!(render("e-a-001"), 0); }
 #[test] fn e_a_002() { assert_eq!(render("e-a-002"), 0); }
 #[test] fn e_a_003() { assert_eq!(render("e-a-003"), 0); }
