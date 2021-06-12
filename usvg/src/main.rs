@@ -4,7 +4,7 @@
 
 use std::fs::File;
 use std::io::{self, Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process;
 
 use pico_args::Arguments;
@@ -338,14 +338,12 @@ fn process(args: Args) -> Result<(), String> {
         fontdb,
     };
 
-    let input_str = match in_svg {
+    let input_svg = match in_svg {
         InputFrom::Stdin => load_stdin(),
-        InputFrom::File(ref path) => {
-            usvg::load_svg_file(Path::new(path)).map_err(|e| e.to_string())
-        }
+        InputFrom::File(ref path) => std::fs::read(path).map_err(|e| e.to_string()),
     }?;
 
-    let tree = usvg::Tree::from_str(&input_str, &re_opt).map_err(|e| format!("{}", e))?;
+    let tree = usvg::Tree::from_data(&input_svg, &re_opt).map_err(|e| format!("{}", e))?;
 
     let xml_opt = usvg::XmlOptions {
         use_single_quote: false,
@@ -371,16 +369,16 @@ fn process(args: Args) -> Result<(), String> {
     Ok(())
 }
 
-fn load_stdin() -> Result<String, String> {
-    let mut s = String::new();
+fn load_stdin() -> Result<Vec<u8>, String> {
+    let mut buf = Vec::new();
     let stdin = io::stdin();
     let mut handle = stdin.lock();
 
     handle
-        .read_to_string(&mut s)
-        .map_err(|_| format!("provided data has not an UTF-8 encoding"))?;
+        .read_to_end(&mut buf)
+        .map_err(|_| format!("failed to read from stdin"))?;
 
-    Ok(s)
+    Ok(buf)
 }
 
 
