@@ -8,11 +8,9 @@ pub fn clip(
     node: &usvg::Node,
     cp: &usvg::ClipPath,
     bbox: Rect,
-    layers: &mut Layers,
     canvas: &mut Canvas,
 ) {
-    let clip_pixmap = try_opt!(layers.get());
-    let mut clip_pixmap = clip_pixmap.borrow_mut();
+    let mut clip_pixmap = try_opt!(tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height()));
     clip_pixmap.fill(tiny_skia::Color::BLACK);
 
     let mut clip_canvas = Canvas::from(clip_pixmap.as_mut());
@@ -37,7 +35,7 @@ pub fn clip(
                 );
             }
             usvg::NodeKind::Group(ref g) => {
-                clip_group(&node, g, bbox, layers, &mut clip_canvas);
+                clip_group(&node, g, bbox, &mut clip_canvas);
             }
             _ => {}
         }
@@ -48,7 +46,7 @@ pub fn clip(
     if let Some(ref id) = cp.clip_path {
         if let Some(ref clip_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                clip(clip_node, cp, bbox, layers, canvas);
+                clip(clip_node, cp, bbox, canvas);
             }
         }
     }
@@ -63,7 +61,6 @@ fn clip_group(
     node: &usvg::Node,
     g: &usvg::Group,
     bbox: Rect,
-    layers: &mut Layers,
     canvas: &mut Canvas,
 ) {
     if let Some(ref id) = g.clip_path {
@@ -73,14 +70,12 @@ fn clip_group(
                 // then we should render this child on a new canvas,
                 // clip it, and only then draw it to the `clipPath`.
 
-                let clip_pixmap = try_opt!(layers.get());
-                let mut clip_pixmap = clip_pixmap.borrow_mut();
-
+                let mut clip_pixmap = try_opt!(tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height()));
                 let mut clip_canvas = Canvas::from(clip_pixmap.as_mut());
                 clip_canvas.transform = canvas.transform;
 
                 draw_group_child(&node, &mut clip_canvas);
-                clip(clip_node, cp, bbox, layers, &mut clip_canvas);
+                clip(clip_node, cp, bbox, &mut clip_canvas);
 
                 let mut paint = tiny_skia::PixmapPaint::default();
                 paint.blend_mode = tiny_skia::BlendMode::Xor;

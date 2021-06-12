@@ -8,11 +8,9 @@ pub fn mask(
     node: &usvg::Node,
     mask: &usvg::Mask,
     bbox: Rect,
-    layers: &mut Layers,
     canvas: &mut Canvas,
 ) {
-    let mask_pixmap = try_opt!(layers.get());
-    let mut mask_pixmap = mask_pixmap.borrow_mut();
+    let mut mask_pixmap = try_opt!(tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height()));
     {
         let mut mask_canvas = Canvas::from(mask_pixmap.as_mut());
         mask_canvas.transform = canvas.transform;
@@ -37,18 +35,18 @@ pub fn mask(
             mask_canvas.apply_transform(usvg::Transform::from_bbox(bbox).to_native());
         }
 
-        crate::render::render_group(node, &mut RenderState::Ok, layers, &mut mask_canvas);
+        crate::render::render_group(node, &mut RenderState::Ok, &mut mask_canvas);
     }
 
     {
         use rgb::FromSlice;
-        image_to_mask(mask_pixmap.data_mut().as_rgba_mut(), layers.image_size());
+        image_to_mask(mask_pixmap.width(), mask_pixmap.height(), mask_pixmap.data_mut().as_rgba_mut());
     }
 
     if let Some(ref id) = mask.mask {
         if let Some(ref mask_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                self::mask(mask_node, mask, bbox, layers, canvas);
+                self::mask(mask_node, mask, bbox, canvas);
             }
         }
     }
@@ -66,10 +64,7 @@ pub fn mask(
 }
 
 /// Converts an image into an alpha mask.
-fn image_to_mask(data: &mut [rgb::RGBA8], img_size: ScreenSize) {
-    let width = img_size.width();
-    let height = img_size.height();
-
+fn image_to_mask(width: u32, height: u32, data: &mut [rgb::RGBA8]) {
     let coeff_r = 0.2125 / 255.0;
     let coeff_g = 0.7154 / 255.0;
     let coeff_b = 0.0721 / 255.0;

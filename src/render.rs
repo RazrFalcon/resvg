@@ -4,7 +4,6 @@
 
 pub(crate) mod prelude {
     pub(crate) use usvg::*;
-    pub(crate) use crate::layers::Layers;
     pub(crate) use super::*;
 }
 
@@ -103,8 +102,6 @@ pub(crate) fn render_node_to_canvas(
     state: &mut RenderState,
     canvas: &mut Canvas,
 ) {
-    let mut layers = Layers::new(img_size);
-
     apply_viewbox_transform(view_box, img_size, canvas);
 
     let curr_ts = canvas.transform.clone();
@@ -113,7 +110,7 @@ pub(crate) fn render_node_to_canvas(
     ts.append(&node.transform());
 
     canvas.apply_transform(ts.to_native());
-    render_node(node, state, &mut layers, canvas);
+    render_node(node, state, canvas);
     canvas.transform = curr_ts;
 }
 
@@ -130,12 +127,11 @@ fn apply_viewbox_transform(
 pub(crate) fn render_node(
     node: &usvg::Node,
     state: &mut RenderState,
-    layers: &mut Layers,
     canvas: &mut Canvas,
 ) -> Option<Rect> {
     match *node.borrow() {
         usvg::NodeKind::Svg(_) => {
-            render_group(node, state, layers, canvas)
+            render_group(node, state, canvas)
         }
         usvg::NodeKind::Path(ref path) => {
             crate::path::draw(&node.tree(), path, tiny_skia::BlendMode::SourceOver, canvas)
@@ -144,7 +140,7 @@ pub(crate) fn render_node(
             Some(crate::image::draw(img, canvas))
         }
         usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, state, layers, canvas)
+            render_group_impl(node, g, state, canvas)
         }
         _ => None,
     }
@@ -153,7 +149,6 @@ pub(crate) fn render_node(
 pub(crate) fn render_group(
     parent: &usvg::Node,
     state: &mut RenderState,
-    layers: &mut Layers,
     canvas: &mut Canvas,
 ) -> Option<Rect> {
     let curr_ts = canvas.transform;
@@ -174,7 +169,7 @@ pub(crate) fn render_group(
 
         canvas.apply_transform(node.transform().to_native());
 
-        let bbox = render_node(&node, state, layers, canvas);
+        let bbox = render_node(&node, state, canvas);
         if let Some(bbox) = bbox {
             if let Some(bbox) = bbox.transform(&node.transform()) {
                 g_bbox = g_bbox.expand(bbox);
@@ -197,18 +192,15 @@ fn render_group_impl(
     node: &usvg::Node,
     g: &usvg::Group,
     state: &mut RenderState,
-    layers: &mut Layers,
     canvas: &mut Canvas,
 ) -> Option<Rect> {
-    let sub_pixmap = layers.get()?;
-    let mut sub_pixmap = sub_pixmap.borrow_mut();
-
+    let mut sub_pixmap = tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height())?;
     let curr_ts = canvas.transform;
 
     let bbox = {
         let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
         sub_canvas.transform = curr_ts;
-        render_group(node, state, layers, &mut sub_canvas)
+        render_group(node, state, &mut sub_canvas)
     };
 
     // During the background rendering for filters,
@@ -231,7 +223,7 @@ fn render_group_impl(
         if let Some(filter_node) = node.tree().defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(curr_ts);
-                let background = prepare_filter_background(node, filter, layers.image_size());
+                let background = prepare_filter_background(node, filter, &sub_pixmap);
                 let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, &sub_pixmap);
                 let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, &sub_pixmap);
                 crate::filter::apply(filter, bbox, &ts, &node.tree(),
@@ -248,7 +240,7 @@ fn render_group_impl(
                 if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
                     let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
                     sub_canvas.transform = curr_ts;
-                    crate::clip::clip(&clip_node, cp, bbox, layers, &mut sub_canvas);
+                    crate::clip::clip(&clip_node, cp, bbox, &mut sub_canvas);
                 }
             }
         }
@@ -258,7 +250,7 @@ fn render_group_impl(
                 if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
                     let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
                     sub_canvas.transform = curr_ts;
-                    crate::mask::mask(&mask_node, mask, bbox, layers, &mut sub_canvas);
+                    crate::mask::mask(&mask_node, mask, bbox, &mut sub_canvas);
                 }
             }
         }
@@ -280,12 +272,14 @@ fn render_group_impl(
 fn prepare_filter_background(
     parent: &usvg::Node,
     filter: &usvg::Filter,
-    img_size: ScreenSize,
+    pixmap: &tiny_skia::Pixmap,
 ) -> Option<tiny_skia::Pixmap> {
     let start_node = parent.filter_background_start_node(filter)?;
 
+    let img_size = ScreenSize::new(pixmap.width(), pixmap.height()).unwrap();
+
     let tree = parent.tree();
-    let mut pixmap = tiny_skia::Pixmap::new(img_size.width(), img_size.height()).unwrap();
+    let mut pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
     let mut canvas = Canvas::from(pixmap.as_mut());
     let view_box = tree.svg_node().view_box;
 

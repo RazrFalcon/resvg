@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- Remove layers caching. This was a pointless optimization.
+
 ### Fixed
 - Ignore tiny blur values. It could lead to a transparent image.
 - `use` style propagation when used with `symbol`.

@@ -19,7 +19,6 @@ use log::warn;
 mod clip;
 mod filter;
 mod image;
-mod layers;
 mod mask;
 mod paint_server;
 mod path;

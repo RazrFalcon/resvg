@@ -829,13 +829,11 @@ fn apply_image(
         }
         usvg::FeImageKind::Use(ref id) => {
             if let Some(ref node) = tree.defs_by_id(id).or(tree.node_by_id(id)) {
-                let mut layers = Layers::new(region.size());
-
                 let (sx, sy) = ts.get_scale();
                 canvas.scale(sx as f32, sy as f32);
                 canvas.apply_transform(node.transform().to_native());
 
-                crate::render::render_node(node, &mut RenderState::Ok, &mut layers, &mut canvas);
+                crate::render::render_node(node, &mut RenderState::Ok, &mut canvas);
             }
         }
     }
