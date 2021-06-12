@@ -10,6 +10,9 @@ This changelog also contains important changes in dependencies.
 ### Added
 - Allow reading SVG from stdin in `resvg` binary.
 - `--id-prefix` to `usvg`.
+- `FitTo::Size`
+- `resvg` binary accepts `--width` and `--height` args together now.
+  Previously, only `--width` or `--height` were allowed.
 
 ### Changed
 - Improve clipping and masking performance on large images.

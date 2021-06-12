@@ -448,7 +448,9 @@ fn parse_args() -> Result<Args, String> {
     let keep_named_groups = args.query_all || export_id.is_some();
 
     let mut fit_to = usvg::FitTo::Original;
-    if let Some(w) = args.width {
+    if let (Some(w), Some(h)) = (args.width, args.height) {
+        fit_to = usvg::FitTo::Size(w, h);
+    } else if let Some(w) = args.width {
         fit_to = usvg::FitTo::Width(w);
     } else if let Some(h) = args.height {
         fit_to = usvg::FitTo::Height(h);
