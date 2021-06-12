@@ -8,6 +8,7 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Changed
+- Improve clipping and masking performance on large images.
 - Remove layers caching. This was a pointless optimization.
 
 ### Fixed

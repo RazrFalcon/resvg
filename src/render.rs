@@ -203,6 +203,22 @@ fn render_group_impl(
         render_group(node, state, &mut sub_canvas)
     };
 
+    // At this point, `sub_pixmap` has probably the same size as the viewbox.
+    // So instead of clipping, masking and blending the whole viewbox, which can be very expensive,
+    // we're trying to reduce `sub_pixmap` to it's actual content trimming
+    // all transparent borders.
+    //
+    // Basically, if viewbox is 2000x2000 and the current group is 20x20, there is no point
+    // in blending the whole viewbox, we can blend just the current group region.
+    //
+    // Transparency trimming is not yet allowed on groups with filter,
+    // because filter expands the pixmap and it should be handled separately.
+    let (tx, ty, mut sub_pixmap) = if g.filter.is_none() {
+        trim_transparency(sub_pixmap)?
+    } else {
+        (0, 0, sub_pixmap)
+    };
+
     // During the background rendering for filters,
     // an opacity, a filter, a clip and a mask should be ignored for the inner group.
     // So we are simply rendering the `sub_img` without any postprocessing.
@@ -212,7 +228,7 @@ fn render_group_impl(
     // when rendering the children of A[i] into BUF[i].'
     if *state == RenderState::BackgroundFinished {
         let paint = tiny_skia::PixmapPaint::default();
-        canvas.pixmap.draw_pixmap(0, 0, sub_pixmap.as_ref(), &paint,
+        canvas.pixmap.draw_pixmap(tx, ty, sub_pixmap.as_ref(), &paint,
                                   tiny_skia::Transform::identity(), None);
         return bbox;
     }
@@ -239,7 +255,8 @@ fn render_group_impl(
             if let Some(clip_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
                     let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
-                    sub_canvas.transform = curr_ts;
+                    sub_canvas.translate(-tx as f32, -ty as f32);
+                    sub_canvas.apply_transform(curr_ts);
                     crate::clip::clip(&clip_node, cp, bbox, &mut sub_canvas);
                 }
             }
@@ -249,7 +266,8 @@ fn render_group_impl(
             if let Some(mask_node) = node.tree().defs_by_id(id) {
                 if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
                     let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
-                    sub_canvas.transform = curr_ts;
+                    sub_canvas.translate(-tx as f32, -ty as f32);
+                    sub_canvas.apply_transform(curr_ts);
                     crate::mask::mask(&mask_node, mask, bbox, &mut sub_canvas);
                 }
             }
@@ -262,10 +280,57 @@ fn render_group_impl(
         paint.opacity = g.opacity.value() as f32;
     }
 
-    canvas.pixmap.draw_pixmap(0, 0, sub_pixmap.as_ref(), &paint,
+    canvas.pixmap.draw_pixmap(tx, ty, sub_pixmap.as_ref(), &paint,
                               tiny_skia::Transform::identity(), None);
 
     bbox
+}
+
+/// Removes transparent borders from the image leaving only a tight bbox content.
+///
+/// Detects graphics element bbox on the raster images in absolute coordinates.
+///
+/// The current implementation is extremely simple and fairly slow.
+/// Ideally, we should calculate the absolute bbox based on the current transform and bbox.
+/// But because of anti-aliasing, float precision and especially stroking,
+/// this can be fairly complicated and error-prone.
+/// So for now we're using this method.
+fn trim_transparency(pixmap: tiny_skia::Pixmap) -> Option<(i32, i32, tiny_skia::Pixmap)> {
+    let mut x = 0;
+    let mut y = 0;
+    let width = pixmap.width() as i32;
+    let mut min_x = pixmap.width() as i32;
+    let mut min_y = pixmap.height() as i32;
+    let mut max_x = 0;
+    let mut max_y = 0;
+    for pixel in pixmap.pixels() {
+        if pixel.alpha() != 0 {
+            if x < min_x { min_x = x; }
+            if y < min_y { min_y = y; }
+            if x > max_x { max_x = x; }
+            if y > max_y { max_y = y; }
+        }
+
+        x += 1;
+        if x == width {
+            x = 0;
+            y += 1;
+        }
+    }
+
+    // Expand in all directions by 1px.
+    min_x = (min_x - 1).max(0);
+    min_y = (min_y - 1).max(0);
+    max_x = (max_x + 2).min(pixmap.width() as i32);
+    max_y = (max_y + 2).min(pixmap.height() as i32);
+
+    if min_x < max_x && min_y < max_y {
+        let rect = tiny_skia::IntRect::from_ltrb(min_x, min_y, max_x, max_y)?;
+        let pixmap = pixmap.clone_rect(rect)?;
+        Some((min_x, min_y, pixmap))
+    } else {
+        Some((0, 0, pixmap))
+    }
 }
 
 /// Renders an image used by `BackgroundImage` or `BackgroundAlpha` filter inputs.
