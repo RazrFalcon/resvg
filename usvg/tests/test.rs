@@ -21,12 +21,15 @@ macro_rules! test {
             let tree = usvg::Tree::from_str(&in_str, &usvg::Options::default()).unwrap();
 
             let xml_opt = usvg::XmlOptions {
-                use_single_quote: false,
-                indent: usvg::XmlIndent::Spaces(4),
-                attributes_indent: usvg::XmlIndent::Spaces(4),
+                id_prefix: None,
+                writer_opts: xmlwriter::Options {
+                    use_single_quote: false,
+                    indent: xmlwriter::Indent::Spaces(4),
+                    attributes_indent: xmlwriter::Indent::Spaces(4),
+                }
             };
 
-            assert_eq!(MStr(&tree.to_string(xml_opt)), MStr(&out_str));
+            assert_eq!(MStr(&tree.to_string(&xml_opt)), MStr(&out_str));
         }
     };
 }
@@ -46,12 +49,15 @@ macro_rules! test_preserve {
             let tree = usvg::Tree::from_str(&in_str, &re_opt).unwrap();
 
             let xml_opt = usvg::XmlOptions {
-                use_single_quote: false,
-                indent: usvg::XmlIndent::Spaces(4),
-                attributes_indent: usvg::XmlIndent::Spaces(4),
+                id_prefix: None,
+                writer_opts: xmlwriter::Options {
+                    use_single_quote: false,
+                    indent: xmlwriter::Indent::Spaces(4),
+                    attributes_indent: xmlwriter::Indent::Spaces(4),
+                }
             };
 
-            assert_eq!(MStr(&tree.to_string(xml_opt)), MStr(&out_str));
+            assert_eq!(MStr(&tree.to_string(&xml_opt)), MStr(&out_str));
         }
     };
 }

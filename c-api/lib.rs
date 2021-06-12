@@ -16,7 +16,6 @@ enum ErrorId {
     Ok = 0,
     NotAnUtf8Str,
     FileOpenFailed,
-    InvalidFileSuffix,
     MalformedGZip,
     InvalidSize,
     ParsingFailed,
@@ -292,7 +291,12 @@ pub extern "C" fn resvg_parse_tree_from_file(
         &*opt
     };
 
-    let tree = match usvg::Tree::from_file(file_path, &raw_opt.0) {
+    let file_data = match std::fs::read(file_path) {
+        Ok(tree) => tree,
+        Err(_) => return ErrorId::FileOpenFailed as i32,
+    };
+
+    let tree = match usvg::Tree::from_data(&file_data, &raw_opt.0) {
         Ok(tree) => tree,
         Err(e) => return convert_error(e) as i32,
     };
@@ -527,8 +531,6 @@ pub fn cstr_to_str(text: *const c_char) -> Option<&'static str> {
 
 fn convert_error(e: usvg::Error) -> ErrorId {
     match e {
-        usvg::Error::InvalidFileSuffix => ErrorId::InvalidFileSuffix,
-        usvg::Error::FileOpenFailed => ErrorId::FileOpenFailed,
         usvg::Error::NotAnUtf8Str => ErrorId::NotAnUtf8Str,
         usvg::Error::MalformedGZip => ErrorId::MalformedGZip,
         usvg::Error::InvalidSize => ErrorId::InvalidSize,

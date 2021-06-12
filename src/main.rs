@@ -164,7 +164,7 @@ fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), String> {
     let mut f = std::fs::File::create(path)
         .map_err(|_| format!("failed to create a file {:?}", path))?;
 
-    f.write_all(tree.to_string(usvg::XmlOptions::default()).as_bytes())
+    f.write_all(tree.to_string(&usvg::XmlOptions::default()).as_bytes())
         .map_err(|_| format!("failed to write a file {:?}", path))?;
 
     Ok(())

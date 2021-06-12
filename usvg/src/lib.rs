@@ -186,13 +186,21 @@ mod short {
 
 #[cfg(feature = "text")] pub use fontdb;
 
-pub use xmlwriter::Options as XmlOptions;
-pub use xmlwriter::Indent as XmlIndent;
-
 pub use crate::error::*;
 pub use crate::geom::*;
 pub use crate::options::*;
 pub use crate::tree::*;
+
+
+/// XML writing options.
+#[derive(Clone, Default, Debug)]
+pub struct XmlOptions {
+    /// Used to add a custom prefix to each element ID during writing.
+    pub id_prefix: Option<String>,
+
+    /// `xmlwriter` options.
+    pub writer_opts: xmlwriter::Options,
+}
 
 
 /// Checks that type has a default value.

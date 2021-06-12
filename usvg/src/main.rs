@@ -81,6 +81,7 @@ OPTIONS:
                                 Useful for debugging
 
   --keep-named-groups           Disables removing of groups with non-empty ID
+  --id-prefix                   Adds a prefix to each ID attribute
   --indent INDENT               Sets the XML nodes indent
                                 [values: none, 0, 1, 2, 3, 4, tabs] [default: 4]
   --attrs-indent INDENT         Sets the XML attributes indent
@@ -115,8 +116,9 @@ struct Args {
     list_fonts: bool,
 
     keep_named_groups: bool,
-    indent: usvg::XmlIndent,
-    attrs_indent: usvg::XmlIndent,
+    id_prefix: Option<String>,
+    indent: xmlwriter::Indent,
+    attrs_indent: xmlwriter::Indent,
 
     quiet: bool,
 
@@ -159,10 +161,11 @@ fn collect_args() -> Result<Args, pico_args::Error> {
         list_fonts:         input.contains("--list-fonts"),
 
         keep_named_groups:  input.contains("--keep-named-groups"),
+        id_prefix:          input.opt_value_from_str("--id-prefix")?,
         indent:             input.opt_value_from_fn("--indent", parse_indent)?
-                                 .unwrap_or(usvg::XmlIndent::Spaces(4)),
+                                 .unwrap_or(xmlwriter::Indent::Spaces(4)),
         attrs_indent:       input.opt_value_from_fn("--attrs-indent", parse_indent)?
-                                 .unwrap_or(usvg::XmlIndent::None),
+                                 .unwrap_or(xmlwriter::Indent::None),
 
         quiet:              input.contains("--quiet"),
 
@@ -204,15 +207,15 @@ fn parse_languages(s: &str) -> Result<Vec<String>, String> {
     Ok(langs)
 }
 
-fn parse_indent(s: &str) -> Result<usvg::XmlIndent, String> {
+fn parse_indent(s: &str) -> Result<xmlwriter::Indent, String> {
     let indent = match s {
-        "none" => usvg::XmlIndent::None,
-        "0" => usvg::XmlIndent::Spaces(0),
-        "1" => usvg::XmlIndent::Spaces(1),
-        "2" => usvg::XmlIndent::Spaces(2),
-        "3" => usvg::XmlIndent::Spaces(3),
-        "4" => usvg::XmlIndent::Spaces(4),
-        "tabs" => usvg::XmlIndent::Tabs,
+        "none" => xmlwriter::Indent::None,
+        "0" => xmlwriter::Indent::Spaces(0),
+        "1" => xmlwriter::Indent::Spaces(1),
+        "2" => xmlwriter::Indent::Spaces(2),
+        "3" => xmlwriter::Indent::Spaces(3),
+        "4" => xmlwriter::Indent::Spaces(4),
+        "tabs" => xmlwriter::Indent::Tabs,
         _ => return Err("invalid INDENT value".to_string()),
     };
 
@@ -346,12 +349,15 @@ fn process(args: Args) -> Result<(), String> {
     let tree = usvg::Tree::from_data(&input_svg, &re_opt).map_err(|e| format!("{}", e))?;
 
     let xml_opt = usvg::XmlOptions {
-        use_single_quote: false,
-        indent: args.indent,
-        attributes_indent: args.attrs_indent,
+        id_prefix: args.id_prefix,
+        writer_opts: xmlwriter::Options {
+            use_single_quote: false,
+            indent: args.indent,
+            attributes_indent: args.attrs_indent,
+        }
     };
 
-    let s = tree.to_string(xml_opt);
+    let s = tree.to_string(&xml_opt);
     match out_svg {
         OutputTo::Stdout => {
             io::stdout()

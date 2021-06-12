@@ -76,8 +76,6 @@ static QString errorToString(const int err)
             return QLatin1String("The SVG content has not an UTF-8 encoding.");
         case RESVG_ERROR_FILE_OPEN_FAILED :
             return QLatin1String("Failed to read the file.");
-        case RESVG_ERROR_INVALID_FILE_SUFFIX :
-            return QLatin1String("Invalid file suffix.");
         case RESVG_ERROR_MALFORMED_GZIP :
             return QLatin1String("Not a GZip compressed data.");
         case RESVG_ERROR_INVALID_SIZE :

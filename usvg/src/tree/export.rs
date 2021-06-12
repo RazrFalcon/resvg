@@ -13,8 +13,8 @@ use super::*;
 use crate::{geom::*, svgtree::{EId, AId}, IsDefault};
 
 
-pub fn convert(tree: &Tree, opt: XmlOptions) -> String {
-    let mut xml = XmlWriter::new(opt);
+pub fn convert(tree: &Tree, opt: &XmlOptions) -> String {
+    let mut xml = XmlWriter::new(opt.writer_opts);
 
     let svg_node = tree.svg_node();
 
@@ -28,23 +28,20 @@ pub fn convert(tree: &Tree, opt: XmlOptions) -> String {
     }
 
     xml.start_svg_element(EId::Defs);
-    conv_defs(tree, &mut xml);
+    conv_defs(tree, opt, &mut xml);
     xml.end_element();
 
-    conv_elements(&tree.root(), false, &mut xml);
+    conv_elements(&tree.root(), false, opt, &mut xml);
 
     xml.end_document()
 }
 
-fn conv_defs(
-    tree: &Tree,
-    xml: &mut XmlWriter,
-) {
+fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
     for n in tree.defs().children() {
         match *n.borrow() {
             NodeKind::LinearGradient(ref lg) => {
                 xml.start_svg_element(EId::LinearGradient);
-                xml.write_svg_attribute(AId::Id, &lg.id);
+                xml.write_id_attribute(&lg.id, opt);
                 xml.write_svg_attribute(AId::X1, &lg.x1);
                 xml.write_svg_attribute(AId::Y1, &lg.y1);
                 xml.write_svg_attribute(AId::X2, &lg.x2);
@@ -54,7 +51,7 @@ fn conv_defs(
             }
             NodeKind::RadialGradient(ref rg) => {
                 xml.start_svg_element(EId::RadialGradient);
-                xml.write_svg_attribute(AId::Id, &rg.id);
+                xml.write_id_attribute(&rg.id, opt);
                 xml.write_svg_attribute(AId::Cx, &rg.cx);
                 xml.write_svg_attribute(AId::Cy, &rg.cy);
                 xml.write_svg_attribute(AId::R,  &rg.r.value());
@@ -65,36 +62,36 @@ fn conv_defs(
             }
             NodeKind::ClipPath(ref clip) => {
                 xml.start_svg_element(EId::ClipPath);
-                xml.write_svg_attribute(AId::Id, &clip.id);
+                xml.write_id_attribute(&clip.id, opt);
                 xml.write_units(AId::ClipPathUnits, clip.units, Units::UserSpaceOnUse);
                 xml.write_transform(AId::Transform, clip.transform);
 
                 if let Some(ref id) = clip.clip_path {
-                    xml.write_func_iri(AId::ClipPath, id);
+                    xml.write_func_iri(AId::ClipPath, id, opt);
                 }
 
-                conv_elements(&n, true, xml);
+                conv_elements(&n, true, opt, xml);
 
                 xml.end_element();
             }
             NodeKind::Mask(ref mask) => {
                 xml.start_svg_element(EId::Mask);
-                xml.write_svg_attribute(AId::Id, &mask.id);
+                xml.write_id_attribute(&mask.id, opt);
                 xml.write_units(AId::MaskUnits, mask.units, Units::ObjectBoundingBox);
                 xml.write_units(AId::MaskContentUnits, mask.content_units, Units::UserSpaceOnUse);
                 xml.write_rect_attrs(mask.rect);
 
                 if let Some(ref id) = mask.mask {
-                    xml.write_func_iri(AId::Mask, id);
+                    xml.write_func_iri(AId::Mask, id, opt);
                 }
 
-                conv_elements(&n, false, xml);
+                conv_elements(&n, false, opt, xml);
 
                 xml.end_element();
             }
             NodeKind::Pattern(ref pattern) => {
                 xml.start_svg_element(EId::Pattern);
-                xml.write_svg_attribute(AId::Id, &pattern.id);
+                xml.write_id_attribute(&pattern.id, opt);
                 xml.write_rect_attrs(pattern.rect);
                 xml.write_units(AId::PatternUnits, pattern.units, Units::ObjectBoundingBox);
                 xml.write_units(AId::PatternContentUnits, pattern.content_units, Units::UserSpaceOnUse);
@@ -104,13 +101,13 @@ fn conv_defs(
                     xml.write_viewbox(vbox);
                 }
 
-                conv_elements(&n, false, xml);
+                conv_elements(&n, false, opt, xml);
 
                 xml.end_element();
             }
             NodeKind::Filter(ref filter) => {
                 xml.start_svg_element(EId::Filter);
-                xml.write_svg_attribute(AId::Id, &filter.id);
+                xml.write_id_attribute(&filter.id, opt);
                 xml.write_rect_attrs(filter.rect);
                 xml.write_units(AId::FilterUnits, filter.units, Units::ObjectBoundingBox);
                 xml.write_units(AId::PrimitiveUnits, filter.primitive_units, Units::UserSpaceOnUse);
@@ -219,7 +216,11 @@ fn conv_defs(
                                     xml.write_image_data(kind);
                                 }
                                 FeImageKind::Use(ref id) => {
-                                    xml.write_attribute_fmt("xlink:href", format_args!("#{}", id));
+                                    let prefix = opt.id_prefix.as_deref().unwrap_or_default();
+                                    xml.write_attribute_fmt(
+                                        "xlink:href",
+                                        format_args!("#{}{}", prefix, id),
+                                    );
                                 }
                             }
 
@@ -382,7 +383,7 @@ fn conv_defs(
             NodeKind::Group(_) |
             NodeKind::Image(_) |
             NodeKind::Path(_) => {
-                conv_element(&n, false, xml);
+                conv_element(&n, false, opt, xml);
             }
             _ => {}
         }
@@ -392,26 +393,28 @@ fn conv_defs(
 fn conv_elements(
     parent: &Node,
     is_clip_path: bool,
+    opt: &XmlOptions,
     xml: &mut XmlWriter,
 ) {
     for n in parent.children() {
-        conv_element(&n, is_clip_path, xml);
+        conv_element(&n, is_clip_path, opt, xml);
     }
 }
 
 fn conv_element(
     node: &Node,
     is_clip_path: bool,
+    opt: &XmlOptions,
     xml: &mut XmlWriter,
 ) {
     match *node.borrow() {
         NodeKind::Path(ref p) => {
-            write_path(p, is_clip_path, None, xml);
+            write_path(p, is_clip_path, None, opt, xml);
         }
         NodeKind::Image(ref img) => {
             xml.start_svg_element(EId::Image);
             if !img.id.is_empty() {
-                xml.write_svg_attribute(AId::Id, &img.id);
+                xml.write_id_attribute(&img.id, opt);
             }
 
             xml.write_rect_attrs(img.view_box.rect);
@@ -441,7 +444,7 @@ fn conv_element(
 
                 if let NodeKind::Path(ref path) = *node.first_child().unwrap().borrow() {
                     let clip_id = g.clip_path.as_ref().map(String::deref);
-                    write_path(path, is_clip_path, clip_id, xml);
+                    write_path(path, is_clip_path, clip_id, opt, xml);
                 }
 
                 return;
@@ -449,26 +452,26 @@ fn conv_element(
 
             xml.start_svg_element(EId::G);
             if !g.id.is_empty() {
-                xml.write_svg_attribute(AId::Id, &g.id);
+                xml.write_id_attribute(&g.id, opt);
             };
 
             if let Some(ref id) = g.clip_path {
-                xml.write_func_iri(AId::ClipPath, id);
+                xml.write_func_iri(AId::ClipPath, id, opt);
             }
 
             if let Some(ref id) = g.mask {
-                xml.write_func_iri(AId::Mask, id);
+                xml.write_func_iri(AId::Mask, id, opt);
             }
 
             if let Some(ref id) = g.filter {
-                xml.write_func_iri(AId::Filter, id);
+                xml.write_func_iri(AId::Filter, id, opt);
 
                 if let Some(ref fill) = g.filter_fill {
-                    write_paint(AId::Fill, fill, xml);
+                    write_paint(AId::Fill, fill, opt, xml);
                 }
 
                 if let Some(ref stroke) = g.filter_stroke {
-                    write_paint(AId::Stroke, stroke, xml);
+                    write_paint(AId::Stroke, stroke, opt, xml);
                 }
             }
 
@@ -482,7 +485,7 @@ fn conv_element(
                 xml.write_enable_background(eb);
             }
 
-            conv_elements(&node, false, xml);
+            conv_elements(&node, false, opt, xml);
 
             xml.end_element();
         }
@@ -493,13 +496,14 @@ fn conv_element(
 trait XmlWriterExt {
     fn start_svg_element(&mut self, id: EId);
     fn write_svg_attribute<V: Display + ?Sized>(&mut self, id: AId, value: &V);
+    fn write_id_attribute(&mut self, value: &str, opt: &XmlOptions);
     fn write_viewbox(&mut self, view_box: &ViewBox);
     fn write_aspect(&mut self, aspect: AspectRatio);
     fn write_units(&mut self, id: AId, units: Units, def: Units);
     fn write_transform(&mut self, id: AId, units: Transform);
     fn write_enable_background(&mut self, eb: EnableBackground);
     fn write_visibility(&mut self, value: Visibility);
-    fn write_func_iri(&mut self, aid: AId, id: &str);
+    fn write_func_iri(&mut self, aid: AId, id: &str, opt: &XmlOptions);
     fn write_rect_attrs(&mut self, r: Rect);
     fn write_numbers(&mut self, aid: AId, list: &[f64]);
     fn write_point<T: Display>(&mut self, id: AId, p: Point<T>);
@@ -518,6 +522,15 @@ impl XmlWriterExt for XmlWriter {
     #[inline(never)]
     fn write_svg_attribute<V: Display + ?Sized>(&mut self, id: AId, value: &V) {
         self.write_attribute(id.to_str(), value)
+    }
+
+    #[inline(never)]
+    fn write_id_attribute(&mut self, value: &str, opt: &XmlOptions) {
+        if let Some(ref prefix) = opt.id_prefix {
+            self.write_attribute_fmt("id", format_args!("{}{}", prefix, value));
+        } else {
+            self.write_attribute("id", value);
+        }
     }
 
     fn write_viewbox(&mut self, view_box: &ViewBox) {
@@ -577,8 +590,9 @@ impl XmlWriterExt for XmlWriter {
         }
     }
 
-    fn write_func_iri(&mut self, aid: AId, id: &str) {
-        self.write_attribute_fmt(aid.to_str(), format_args!("url(#{})", id));
+    fn write_func_iri(&mut self, aid: AId, id: &str, opt: &XmlOptions) {
+        let prefix = opt.id_prefix.as_deref().unwrap_or_default();
+        self.write_attribute_fmt(aid.to_str(), format_args!("url(#{}{})", prefix, id));
     }
 
     fn write_rect_attrs(&mut self, r: Rect) {
@@ -669,7 +683,7 @@ impl XmlWriterExt for XmlWriter {
                 ("png", data.as_slice())
             }
             ImageKind::SVG(ref tree) => {
-                svg_string = tree.to_string(XmlOptions::default());
+                svg_string = tree.to_string(&XmlOptions::default());
                 ("svg+xml", svg_string.as_bytes())
             }
         };
@@ -735,15 +749,16 @@ fn write_path(
     path: &Path,
     is_clip_path: bool,
     clip_path: Option<&str>,
+    opt: &XmlOptions,
     xml: &mut XmlWriter,
 ) {
     xml.start_svg_element(EId::Path);
     if !path.id.is_empty() {
-        xml.write_svg_attribute(AId::Id, &path.id);
+        xml.write_id_attribute(&path.id, opt);
     }
 
-    write_fill(&path.fill, is_clip_path, xml);
-    write_stroke(&path.stroke, xml);
+    write_fill(&path.fill, is_clip_path, opt, xml);
+    write_stroke(&path.stroke, opt, xml);
 
     xml.write_visibility(path.visibility);
 
@@ -758,7 +773,7 @@ fn write_path(
     }
 
     if let Some(ref id) = clip_path {
-        xml.write_func_iri(AId::ClipPath, id);
+        xml.write_func_iri(AId::ClipPath, id, opt);
     }
 
     xml.write_transform(AId::Transform, path.transform);
@@ -812,10 +827,11 @@ fn write_path(
 fn write_fill(
     fill: &Option<Fill>,
     is_clip_path: bool,
+    opt: &XmlOptions,
     xml: &mut XmlWriter,
 ) {
     if let Some(ref fill) = fill {
-        write_paint(AId::Fill, &fill.paint, xml);
+        write_paint(AId::Fill, &fill.paint, opt, xml);
 
         if !fill.opacity.is_default() {
             xml.write_svg_attribute(AId::FillOpacity, &fill.opacity.value());
@@ -837,10 +853,11 @@ fn write_fill(
 
 fn write_stroke(
     stroke: &Option<Stroke>,
+    opt: &XmlOptions,
     xml: &mut XmlWriter,
 ) {
     if let Some(ref stroke) = stroke {
-        write_paint(AId::Stroke, &stroke.paint, xml);
+        write_paint(AId::Stroke, &stroke.paint, opt, xml);
 
         if !stroke.opacity.is_default() {
             xml.write_svg_attribute(AId::StrokeOpacity, &stroke.opacity.value());
@@ -884,11 +901,12 @@ fn write_stroke(
 fn write_paint(
     aid: AId,
     paint: &Paint,
+    opt: &XmlOptions,
     xml: &mut XmlWriter,
 ) {
     match paint {
         Paint::Color(ref c) => xml.write_svg_attribute(aid, c),
-        Paint::Link(ref id) => xml.write_func_iri(aid, id),
+        Paint::Link(ref id) => xml.write_func_iri(aid, id, opt),
     }
 }
 

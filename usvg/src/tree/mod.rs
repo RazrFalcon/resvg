@@ -157,7 +157,7 @@ impl Tree {
 
     /// Converts an SVG.
     #[inline]
-    pub fn to_string(&self, opt: XmlOptions) -> String {
+    pub fn to_string(&self, opt: &XmlOptions) -> String {
         export::convert(self, opt)
     }
 }

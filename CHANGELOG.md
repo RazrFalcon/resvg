@@ -9,14 +9,20 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - Allow reading SVG from stdin in `resvg` binary.
+- `--id-prefix` to `usvg`.
 
 ### Changed
 - Improve clipping and masking performance on large images.
 - Remove layers caching. This was a pointless optimization.
 - Split _Preprocessing_ into _Reading_ and _Parsing_ in `resvg --perf`.
+- `usvg::XmlOptions` rewritten.
+- `usvg::Tree::to_string` requires a reference to `XmlOptions` now.
 
 ### Removed
 - `usvg::Tree::from_file`. Use `from_data` or `from_str` instead.
+- `usvg::Error::InvalidFileSuffix`
+- `usvg::Error::FileOpenFailed`
+- (c-api) `RESVG_ERROR_INVALID_FILE_SUFFIX`
 
 ### Fixed
 - Ignore tiny blur values. It could lead to a transparent image.

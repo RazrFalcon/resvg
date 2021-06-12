@@ -49,8 +49,6 @@ typedef enum resvg_error {
     RESVG_ERROR_NOT_AN_UTF8_STR,
     /** Failed to open the provided file. */
     RESVG_ERROR_FILE_OPEN_FAILED,
-    /** Only `svg` and `svgz` suffixes are supported. */
-    RESVG_ERROR_INVALID_FILE_SUFFIX,
     /** Compressed SVG must use the GZip algorithm. */
     RESVG_ERROR_MALFORMED_GZIP,
     /**
