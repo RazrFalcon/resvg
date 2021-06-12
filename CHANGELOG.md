@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- Allow reading SVG from stdin in `resvg` binary.
+
 ### Changed
 - Improve clipping and masking performance on large images.
 - Remove layers caching. This was a pointless optimization.
+- Split _Preprocessing_ into _Reading_ and _Parsing_ in `resvg --perf`.
 
 ### Fixed
 - Ignore tiny blur values. It could lead to a transparent image.

@@ -45,9 +45,21 @@ fn process() -> Result<(), String> {
         }
     }
 
-    // Load file.
-    let tree = timed!(args, "Preprocessing",
-        usvg::Tree::from_file(&args.in_svg, &args.usvg).map_err(|e| e.to_string())
+    let svg_data = timed!(args, "Reading", {
+        if args.in_svg == "-" {
+            use std::io::Read;
+            let mut buf = Vec::new();
+            let stdin = std::io::stdin();
+            let mut handle = stdin.lock();
+            handle.read_to_end(&mut buf).map_err(|_| "failed to read stdin")?;
+            buf
+        } else {
+            std::fs::read(&args.in_svg).map_err(|_| "failed to open the provided file")?
+        }
+    });
+
+    let tree = timed!(args, "Parsing",
+        usvg::Tree::from_data(&svg_data, &args.usvg).map_err(|e| e.to_string())
     )?;
 
     if args.query_all {
@@ -163,7 +175,8 @@ const HELP: &str = "\
 resvg is an SVG rendering application.
 
 USAGE:
-  resvg [OPTIONS] <in-svg> <out-png>
+  resvg [OPTIONS] <in-svg> <out-png>  # from file to file
+  resvg [OPTIONS] - <out-png>         # from stdin to file
 
   resvg in.svg out.png
   resvg -z 4 in.svg out.png
@@ -279,7 +292,7 @@ struct CliArgs {
     quiet: bool,
     dump_svg: Option<String>,
 
-    input: path::PathBuf,
+    input: String,
     output: Option<path::PathBuf>,
 }
 
@@ -388,7 +401,7 @@ fn parse_languages(s: &str) -> Result<Vec<String>, String> {
 }
 
 struct Args {
-    in_svg: path::PathBuf,
+    in_svg: String,
     out_png: Option<path::PathBuf>,
     query_all: bool,
     export_id: Option<String>,
@@ -418,6 +431,10 @@ fn parse_args() -> Result<Args, String> {
 
     if !args.query_all && args.output.is_none() {
         return Err("<out-png> must be set".to_string());
+    }
+
+    if args.input == "-" && args.resources_dir.is_none() {
+        println!("Warning: Make sure to set --resources-dir when reading SVG from stdin.");
     }
 
     let in_svg = args.input.clone();
