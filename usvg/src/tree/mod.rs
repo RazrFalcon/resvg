@@ -5,7 +5,6 @@
 //! Implementation of the nodes tree.
 
 use std::cell::Ref;
-use std::path;
 
 pub use self::{nodes::*, attributes::*, pathdata::*};
 use crate::{svgtree, Rect, Error, Options, XmlOptions};
@@ -73,15 +72,6 @@ impl Tree {
     /// An empty `Tree` will be returned on any error.
     fn from_svgtree(doc: svgtree::Document, opt: &Options) -> Result<Self, Error> {
         super::convert::convert_doc(&doc, opt)
-    }
-
-    /// Parses `Tree` from the file.
-    pub fn from_file<P: AsRef<path::Path>>(
-        path: P,
-        opt: &Options,
-    ) -> Result<Self, Error> {
-        let text = load_svg_file(path.as_ref())?;
-        Self::from_str(&text, opt)
     }
 
     /// Creates a new `Tree`.
@@ -284,39 +274,6 @@ impl NodeExt for Node {
         // We should have an ancestor with `enable-background=new`.
         // Skip the current element.
         self.ancestors().skip(1).find(|node| has_enable_background(node))
-    }
-}
-
-
-/// Loads SVG, SVGZ file content.
-pub fn load_svg_file(path: &path::Path) -> Result<String, Error> {
-    use std::fs;
-    use std::io::Read;
-    use std::path::Path;
-
-    let mut file = fs::File::open(path).map_err(|_| Error::FileOpenFailed)?;
-    let length = file.metadata().map_err(|_| Error::FileOpenFailed)?.len() as usize + 1;
-
-    let ext = if let Some(ext) = Path::new(path).extension() {
-        ext.to_str().map(|s| s.to_lowercase()).unwrap_or_default()
-    } else {
-        String::new()
-    };
-
-    match ext.as_str() {
-        "svgz" => {
-            let mut data = Vec::with_capacity(length);
-            file.read_to_end(&mut data).map_err(|_| Error::FileOpenFailed)?;
-            deflate(&data)
-        }
-        "svg" => {
-            let mut s = String::with_capacity(length);
-            file.read_to_string(&mut s).map_err(|_| Error::NotAnUtf8Str)?;
-            Ok(s)
-        }
-        _ => {
-            Err(Error::InvalidFileSuffix)
-        }
     }
 }
 

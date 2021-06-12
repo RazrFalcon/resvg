@@ -20,9 +20,10 @@ pub fn render(name: &str) -> usize {
     let svg_path = format!("tests/svg/{}.svg", name);
     let png_path = format!("tests/png/{}.png", name);
 
-    // Do not unwrap on the from_file line, because panic will poison GLOBAL_OPT.
+    // Do not unwrap on the from_data line, because panic will poison GLOBAL_OPT.
     let tree = {
-        let tree = usvg::Tree::from_file(&svg_path, &GLOBAL_OPT.lock().unwrap());
+        let svg_data = std::fs::read(&svg_path).unwrap();
+        let tree = usvg::Tree::from_data(&svg_data, &GLOBAL_OPT.lock().unwrap());
         tree.unwrap()
     };
 

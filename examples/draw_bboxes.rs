@@ -27,7 +27,8 @@ fn main() {
     opt.fontdb.set_generic_families();
     let fit_to = usvg::FitTo::Zoom(zoom);
 
-    let rtree = usvg::Tree::from_file(&args[1], &opt).unwrap();
+    let svg_data = std::fs::read(&args[1]).unwrap();
+    let rtree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
 
     let mut bboxes = Vec::new();
     for node in rtree.root().descendants() {

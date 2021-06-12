@@ -15,6 +15,9 @@ This changelog also contains important changes in dependencies.
 - Remove layers caching. This was a pointless optimization.
 - Split _Preprocessing_ into _Reading_ and _Parsing_ in `resvg --perf`.
 
+### Removed
+- `usvg::Tree::from_file`. Use `from_data` or `from_str` instead.
+
 ### Fixed
 - Ignore tiny blur values. It could lead to a transparent image.
 - `use` style propagation when used with `symbol`.

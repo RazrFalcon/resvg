@@ -5,12 +5,6 @@
 /// List of all errors.
 #[derive(Debug)]
 pub enum Error {
-    /// Only `svg` and `svgz` suffixes are supported.
-    InvalidFileSuffix,
-
-    /// Failed to open the provided file.
-    FileOpenFailed,
-
     /// Only UTF-8 content are supported.
     NotAnUtf8Str,
 
@@ -32,12 +26,6 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
-            Error::InvalidFileSuffix => {
-                write!(f, "invalid file suffix")
-            }
-            Error::FileOpenFailed => {
-                write!(f, "failed to open the provided file")
-            }
             Error::NotAnUtf8Str => {
                 write!(f, "provided data has not an UTF-8 encoding")
             }
