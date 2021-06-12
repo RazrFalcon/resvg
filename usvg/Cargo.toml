@@ -24,7 +24,7 @@ required-features = ["system-fonts", "text"]
 base64 = "0.13"
 data-url = "0.1"
 flate2 = { version = "1.0", default-features = false, features = ["rust_backend"]}
-kurbo = "0.8"
+kurbo = "=0.8.0" # https://github.com/linebender/kurbo/issues/176
 log = "0.4"
 pico-args = "0.4"
 rctree = "0.3"
