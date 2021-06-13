@@ -31,10 +31,18 @@ fn main() {
     let rtree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
 
     let mut bboxes = Vec::new();
+    let mut text_bboxes = Vec::new();
     for node in rtree.root().descendants() {
         if !rtree.is_in_defs(&node) {
             if let Some(bbox) = node.calculate_bbox() {
                 bboxes.push(bbox);
+            }
+
+            // Text bboxes are different from path bboxes.
+            if let usvg::NodeKind::Path(ref path) = *node.borrow() {
+                if let Some(ref bbox) = path.text_bbox {
+                    text_bboxes.push(*bbox);
+                }
             }
         }
     }
@@ -45,9 +53,23 @@ fn main() {
         .. usvg::Stroke::default()
     });
 
+    let stroke2 = Some(usvg::Stroke {
+        paint: usvg::Paint::Color(usvg::Color::new(0, 0, 200)),
+        opacity: 0.5.into(),
+        .. usvg::Stroke::default()
+    });
+
     for bbox in bboxes {
         rtree.root().append_kind(usvg::NodeKind::Path(usvg::Path {
             stroke: stroke.clone(),
+            data: Rc::new(usvg::PathData::from_rect(bbox)),
+            .. usvg::Path::default()
+        }));
+    }
+
+    for bbox in text_bboxes {
+        rtree.root().append_kind(usvg::NodeKind::Path(usvg::Path {
+            stroke: stroke2.clone(),
             data: Rc::new(usvg::PathData::from_rect(bbox)),
             .. usvg::Path::default()
         }));

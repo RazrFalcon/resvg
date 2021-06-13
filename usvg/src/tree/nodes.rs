@@ -118,6 +118,18 @@ pub struct Path {
     /// `shape-rendering` in SVG.
     pub rendering_mode: ShapeRendering,
 
+    /// Contains a text bbox.
+    ///
+    /// Text bbox is different from path bbox. The later one contains a tight path bbox,
+    /// while the text bbox is based on the actual font metrics and usually larger than tight bbox.
+    ///
+    /// Also, path bbox doesn't include leading and trailing whitespaces,
+    /// because there is nothing to include. But text bbox does.
+    ///
+    /// As the name suggests, this property will be set only for paths
+    /// that were converted from text.
+    pub text_bbox: Option<Rect>,
+
     /// Segments list.
     ///
     /// All segments are in absolute coordinates.
@@ -133,6 +145,7 @@ impl Default for Path {
             fill: None,
             stroke: None,
             rendering_mode: ShapeRendering::default(),
+            text_bbox: None,
             data: Rc::new(PathData::default()),
         }
     }

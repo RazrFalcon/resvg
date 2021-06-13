@@ -1,0 +1,26 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     font-family="Noto Sans" font-size="24">
+    <title>`tspan` bbox (2)</title>
+    <desc>`tspan` doesn't have a bbox and `text` bbox should be used.</desc>
+
+    <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
+          stroke="gray" stroke-width="0.5"/>
+
+    <linearGradient id="lg1">
+        <stop offset="0" stop-color="red"/>
+        <stop offset="0.6" stop-color="green"/>
+    </linearGradient>
+
+    <text id="text1" x="20" y="95">
+        <tspan id="tspan1" fill="url(#lg1)" xml:space="preserve">         Text</tspan>
+    </text>
+
+    <!-- reference result -->
+    <!-- we're highlighting the bbox using underline -->
+    <text id="text2" x="20" y="120" text-decoration="underline">
+        <tspan id="tspan2" fill="url(#lg1)" xml:space="preserve">         Text</tspan>
+    </text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

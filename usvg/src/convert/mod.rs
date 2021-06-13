@@ -768,6 +768,7 @@ fn convert_path(
         fill,
         stroke,
         rendering_mode,
+        text_bbox: None,
         data: path,
     }));
 

@@ -59,14 +59,7 @@ pub fn convert(
     tree: &mut tree::Tree,
 ) {
     let text_node = TextNode::new(node.clone());
-    let mut new_paths = text_to_paths(text_node, state, parent, tree);
-
-    let mut bbox = Rect::new_bbox();
-    for path in &new_paths {
-        if let Some(r) = path.data.bbox() {
-            bbox = bbox.expand(r);
-        }
-    }
+    let (mut new_paths, bbox) = text_to_paths(text_node, state, parent, tree);
 
     if new_paths.len() == 1 {
         // Copy `text` id to the first path.
@@ -96,11 +89,12 @@ fn text_to_paths(
     state: &State,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
-) -> Vec<tree::Path> {
+) -> (Vec<tree::Path>, Rect) {
     let pos_list = resolve_positions_list(text_node, state);
     let rotate_list = resolve_rotate_list(text_node);
     let writing_mode = convert_writing_mode(text_node);
 
+    let mut bbox = Rect::new_bbox();
     let mut chunks = collect_text_chunks(text_node, &pos_list, state, tree);
     let mut char_offset = 0;
     let mut last_x = 0.0;
@@ -154,9 +148,15 @@ fn text_to_paths(
                     WritingMode::TopToBottom => span.font.height(span.font_size) / 2.0,
                 };
 
-                new_paths.push(convert_decoration(
+                let path = convert_decoration(
                     offset, &span, decoration, &decoration_spans, span_ts,
-                ));
+                );
+
+                if let Some(r) = path.data.bbox() {
+                    bbox = bbox.expand(r);
+                }
+
+                new_paths.push(path);
             }
 
             if let Some(decoration) = span.decoration.overline.take() {
@@ -165,12 +165,23 @@ fn text_to_paths(
                     WritingMode::TopToBottom => -span.font.height(span.font_size) / 2.0,
                 };
 
-                new_paths.push(convert_decoration(
+                let path = convert_decoration(
                     offset, &span, decoration, &decoration_spans, span_ts,
-                ));
+                );
+
+                if let Some(r) = path.data.bbox() {
+                    bbox = bbox.expand(r);
+                }
+
+                new_paths.push(path);
             }
 
             if let Some(path) = convert_span(span, &mut clusters, &span_ts, parent, false) {
+                // Use `text_bbox` here and not `path.data.bbox()`.
+                if let Some(r) = path.text_bbox {
+                    bbox = bbox.expand(r);
+                }
+
                 new_paths.push(path);
             }
 
@@ -180,9 +191,15 @@ fn text_to_paths(
                     WritingMode::TopToBottom => 0.0,
                 };
 
-                new_paths.push(convert_decoration(
+                let path = convert_decoration(
                     offset, &span, decoration, &decoration_spans, span_ts,
-                ));
+                );
+
+                if let Some(r) = path.data.bbox() {
+                    bbox = bbox.expand(r);
+                }
+
+                new_paths.push(path);
             }
         }
 
@@ -198,7 +215,7 @@ fn text_to_paths(
         last_y = y + curr_pos.1;
     }
 
-    new_paths
+    (new_paths, bbox)
 }
 
 fn convert_span(
@@ -209,6 +226,7 @@ fn convert_span(
     dump_clusters: bool,
 ) -> Option<tree::Path> {
     let mut path_data = tree::PathData::new();
+    let mut bboxes_data = tree::PathData::new();
 
     for cluster in clusters {
         if !cluster.visible {
@@ -226,6 +244,13 @@ fn convert_span(
             path.transform(cluster.transform);
 
             path_data.extend_from_slice(&path);
+
+            // We have to calculate text bbox using font metrics and not glyph shape.
+            if let Some(r) = Rect::new(0.0, -cluster.ascent, cluster.advance, cluster.height()) {
+                if let Some(r) = r.transform(&cluster.transform) {
+                    bboxes_data.push_rect(r);
+                }
+            }
         }
     }
 
@@ -234,6 +259,7 @@ fn convert_span(
     }
 
     path_data.transform(*text_ts);
+    bboxes_data.transform(*text_ts);
 
     let mut fill = span.fill.take();
     if let Some(ref mut fill) = fill {
@@ -252,6 +278,7 @@ fn convert_span(
         fill,
         stroke: span.stroke.take(),
         rendering_mode: tree::ShapeRendering::default(),
+        text_bbox: bboxes_data.bbox(),
         data: Rc::new(path_data),
     };
 

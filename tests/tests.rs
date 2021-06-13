@@ -1235,6 +1235,7 @@ use render::render;
 #[test] fn e_text_038() { assert_eq!(render("e-text-038"), 0); }
 #[test] fn e_text_039() { assert_eq!(render("e-text-039"), 0); }
 #[test] fn e_text_040() { assert_eq!(render("e-text-040"), 0); }
+#[test] fn e_text_041() { assert_eq!(render("e-text-041"), 0); }
 #[test] fn e_textPath_001() { assert_eq!(render("e-textPath-001"), 0); }
 #[test] fn e_textPath_002() { assert_eq!(render("e-textPath-002"), 0); }
 #[test] fn e_textPath_003() { assert_eq!(render("e-textPath-003"), 0); }
@@ -1314,6 +1315,7 @@ use render::render;
 #[test] fn e_tspan_027() { assert_eq!(render("e-tspan-027"), 0); }
 #[test] fn e_tspan_028() { assert_eq!(render("e-tspan-028"), 0); }
 #[test] fn e_tspan_029() { assert_eq!(render("e-tspan-029"), 0); }
+#[test] fn e_tspan_030() { assert_eq!(render("e-tspan-030"), 0); }
 #[test] fn e_use_001() { assert_eq!(render("e-use-001"), 0); }
 #[test] fn e_use_002() { assert_eq!(render("e-use-002"), 0); }
 #[test] fn e_use_003() { assert_eq!(render("e-use-003"), 0); }

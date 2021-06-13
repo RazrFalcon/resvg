@@ -335,7 +335,9 @@ impl std::ops::Deref for SubPathData<'_> {
 
 
 fn calc_bbox(segments: &[PathSegment]) -> Option<Rect> {
-    debug_assert!(!segments.is_empty());
+    if segments.is_empty() {
+        return None;
+    }
 
     let mut prev_x = 0.0;
     let mut prev_y = 0.0;
@@ -390,7 +392,9 @@ fn calc_bbox_with_transform(
     ts: Transform,
     stroke: Option<&super::Stroke>,
 ) -> Option<Rect> {
-    debug_assert!(!segments.is_empty());
+    if segments.is_empty() {
+        return None;
+    }
 
     let mut prev_x = 0.0;
     let mut prev_y = 0.0;
@@ -451,7 +455,9 @@ fn calc_bbox_with_transform(
 }
 
 fn has_bbox(segments: &[PathSegment]) -> bool {
-    debug_assert!(!segments.is_empty());
+    if segments.is_empty() {
+        return false;
+    }
 
     let mut prev_x = 0.0;
     let mut prev_y = 0.0;
@@ -505,7 +511,9 @@ fn has_bbox(segments: &[PathSegment]) -> bool {
 }
 
 fn calc_length(segments: &[PathSegment]) -> f64 {
-    debug_assert!(!segments.is_empty());
+    if segments.is_empty() {
+        return 0.0;
+    }
 
     let (mut prev_mx, mut prev_my, mut prev_x, mut prev_y) = {
         if let PathSegment::MoveTo { x, y } = segments[0] {

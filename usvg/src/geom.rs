@@ -416,24 +416,14 @@ impl Rect {
     /// Expands the `Rect` to the provided size.
     #[inline]
     pub fn expand(&self, r: Rect) -> Self {
-        #[inline]
-        fn f64_min(v1: f64, v2: f64) -> f64 {
-            if v1 < v2 { v1 } else { v2 }
-        }
-
-        #[inline]
-        fn f64_max(v1: f64, v2: f64) -> f64 {
-            if v1 > v2 { v1 } else { v2 }
-        }
-
         if self.fuzzy_eq(&Rect::new_bbox()) {
             r
         } else {
-            let x1 = f64_min(self.x(), r.x());
-            let y1 = f64_min(self.y(), r.y());
+            let x1 = self.x().min(r.x());
+            let y1 = self.y().min(r.y());
 
-            let x2 = f64_max(self.right(), r.right());
-            let y2 = f64_max(self.bottom(), r.bottom());
+            let x2 = self.right().max(r.right());
+            let y2 = self.bottom().max(r.bottom());
 
             Rect::new(x1, y1, x2 - x1, y2 - y1).unwrap()
         }

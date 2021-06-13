@@ -13,6 +13,7 @@ This changelog also contains important changes in dependencies.
 - `FitTo::Size`
 - `resvg` binary accepts `--width` and `--height` args together now.
   Previously, only `--width` or `--height` were allowed.
+- `usvg::Path::text_bbox`
 
 ### Changed
 - Improve clipping and masking performance on large images.
@@ -31,6 +32,7 @@ This changelog also contains important changes in dependencies.
 - Ignore tiny blur values. It could lead to a transparent image.
 - `use` style propagation when used with `symbol`.
 - Vertical text layout with relative offsets.
+- Text bbox calculation. `usvg` uses font metrics instead of path bbox now.
 
 ## [0.14.1] - 2021-04-18
 ### Added
