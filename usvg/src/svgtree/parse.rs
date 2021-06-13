@@ -85,7 +85,7 @@ fn parse(xml: &roxmltree::Document) -> Result<Document, Error> {
 
     let style_sheet = resolve_css(&xml);
 
-    parse_xml_node_children(xml.root(), xml.root(), doc.root().id, &style_sheet, false, &mut doc)?;
+    parse_xml_node_children(xml.root(), xml.root(), doc.root().id, &style_sheet, false, 0, &mut doc)?;
 
     // Check that the root element is `svg`.
     match doc.root().first_element_child() {
@@ -132,10 +132,11 @@ fn parse_xml_node_children(
     parent_id: NodeId,
     style_sheet: &simplecss::StyleSheet,
     ignore_ids: bool,
+    depth: u32,
     doc: &mut Document,
 ) -> Result<(), Error> {
     for node in parent.children() {
-        parse_xml_node(node, origin, parent_id, style_sheet, ignore_ids, doc)?;
+        parse_xml_node(node, origin, parent_id, style_sheet, ignore_ids, depth, doc)?;
     }
 
     Ok(())
@@ -147,8 +148,13 @@ fn parse_xml_node(
     parent_id: NodeId,
     style_sheet: &simplecss::StyleSheet,
     ignore_ids: bool,
+    depth: u32,
     doc: &mut Document,
 ) -> Result<(), Error> {
+    if depth > 1024 {
+        return Err(Error::ElementsLimitReached);
+    }
+
     let mut tag_name = match parse_tag_name(node) {
         Some(id) => id,
         None => return Ok(()),
@@ -167,9 +173,9 @@ fn parse_xml_node(
     if tag_name == EId::Text {
         parse_svg_text_element(node, node_id, style_sheet, doc)?;
     } else if tag_name == EId::Use {
-        parse_svg_use_element(node, origin, node_id, style_sheet, doc)?;
+        parse_svg_use_element(node, origin, node_id, style_sheet, depth + 1, doc)?;
     } else {
-        parse_xml_node_children(node, origin, node_id, style_sheet, ignore_ids, doc)?;
+        parse_xml_node_children(node, origin, node_id, style_sheet, ignore_ids, depth + 1, doc)?;
     }
 
     Ok(())
@@ -888,6 +894,14 @@ fn resolve_href<'a>(
         .or_else(|| node.attribute("href"))?;
 
     let link_id = svgtypes::Stream::from(link_value).parse_iri().ok()?;
+
+    // We're using `descendants` each time instead of HashTable because
+    // we have to preserve the original elements order.
+    // See tests/svg/e-use-024.svg
+    //
+    // Technically we can use https://crates.io/crates/hashlink,
+    // but this is an additional dependency.
+    // And performance even on huge files is still good enough.
     node.document().descendants().find(|n| n.attribute("id") == Some(link_id))
 }
 
@@ -896,6 +910,7 @@ fn parse_svg_use_element(
     origin: roxmltree::Node,
     parent_id: NodeId,
     style_sheet: &simplecss::StyleSheet,
+    depth: u32,
     doc: &mut Document,
 ) -> Result<(), Error> {
     let link = match resolve_href(node) {
@@ -954,7 +969,7 @@ fn parse_svg_use_element(
         return Ok(());
     }
 
-    parse_xml_node(link, node, parent_id, style_sheet, true, doc)
+    parse_xml_node(link, node, parent_id, style_sheet, true, depth + 1, doc)
 }
 
 fn parse_svg_text_element(
