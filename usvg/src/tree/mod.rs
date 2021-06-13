@@ -63,7 +63,7 @@ impl Tree {
 
     /// Parses `Tree` from `roxmltree::Document`.
     pub fn from_xmltree(doc: &roxmltree::Document, opt: &Options) -> Result<Self, Error> {
-        let doc = svgtree::Document::parse(doc).map_err(Error::ParsingFailed)?;
+        let doc = svgtree::Document::parse(doc)?;
         Self::from_svgtree(doc, &opt)
     }
 

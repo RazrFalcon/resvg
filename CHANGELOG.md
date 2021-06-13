@@ -14,6 +14,8 @@ This changelog also contains important changes in dependencies.
 - `resvg` binary accepts `--width` and `--height` args together now.
   Previously, only `--width` or `--height` were allowed.
 - `usvg::Path::text_bbox`
+- The maximum number of SVG elements is limited by 1_000_000 now.
+  Mainly to prevent a billion laugh style attacks.
 
 ### Changed
 - Improve clipping and masking performance on large images.

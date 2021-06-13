@@ -17,6 +17,7 @@ enum ErrorId {
     NotAnUtf8Str,
     FileOpenFailed,
     MalformedGZip,
+    ElementsLimitReached,
     InvalidSize,
     ParsingFailed,
 }
@@ -533,6 +534,7 @@ fn convert_error(e: usvg::Error) -> ErrorId {
     match e {
         usvg::Error::NotAnUtf8Str => ErrorId::NotAnUtf8Str,
         usvg::Error::MalformedGZip => ErrorId::MalformedGZip,
+        usvg::Error::ElementsLimitReached => ErrorId::ElementsLimitReached,
         usvg::Error::InvalidSize => ErrorId::InvalidSize,
         usvg::Error::ParsingFailed(_) => ErrorId::ParsingFailed,
     }

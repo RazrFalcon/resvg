@@ -8,10 +8,8 @@ use std::collections::HashMap;
 
 use log::warn;
 
-pub use roxmltree::Error;
-
 use crate::tree;
-use crate::Rect;
+use crate::{Rect, Error};
 use super::{Document, Attribute, AId, EId, Node, NodeId, NodeKind, NodeData, AttributeValue};
 
 const SVG_NS: &str = "http://www.w3.org/2000/svg";
@@ -87,16 +85,16 @@ fn parse(xml: &roxmltree::Document) -> Result<Document, Error> {
 
     let style_sheet = resolve_css(&xml);
 
-    parse_xml_node_children(xml.root(), xml.root(), doc.root().id, &style_sheet, false, &mut doc);
+    parse_xml_node_children(xml.root(), xml.root(), doc.root().id, &style_sheet, false, &mut doc)?;
 
     // Check that the root element is `svg`.
     match doc.root().first_element_child() {
         Some(child) => {
             if child.tag_name() != Some(EId::Svg) {
-                return Err(Error::NoRootNode)
+                return Err(roxmltree::Error::NoRootNode.into())
             }
         }
-        None => return Err(Error::NoRootNode),
+        None => return Err(roxmltree::Error::NoRootNode.into()),
     }
 
     // Collect all elements with `id` attribute.
@@ -135,10 +133,12 @@ fn parse_xml_node_children(
     style_sheet: &simplecss::StyleSheet,
     ignore_ids: bool,
     doc: &mut Document,
-) {
+) -> Result<(), Error> {
     for node in parent.children() {
-        parse_xml_node(node, origin, parent_id, style_sheet, ignore_ids, doc);
+        parse_xml_node(node, origin, parent_id, style_sheet, ignore_ids, doc)?;
     }
+
+    Ok(())
 }
 
 fn parse_xml_node(
@@ -148,14 +148,14 @@ fn parse_xml_node(
     style_sheet: &simplecss::StyleSheet,
     ignore_ids: bool,
     doc: &mut Document,
-) {
+) -> Result<(), Error> {
     let mut tag_name = match parse_tag_name(node) {
         Some(id) => id,
-        None => return,
+        None => return Ok(()),
     };
 
     if tag_name == EId::Style {
-        return;
+        return Ok(());
     }
 
     // Treat links as groups.
@@ -163,14 +163,16 @@ fn parse_xml_node(
         tag_name = EId::G;
     }
 
-    let node_id = parse_svg_element(node, parent_id, tag_name, style_sheet, ignore_ids, doc);
+    let node_id = parse_svg_element(node, parent_id, tag_name, style_sheet, ignore_ids, doc)?;
     if tag_name == EId::Text {
-        parse_svg_text_element(node, node_id, style_sheet, doc);
+        parse_svg_text_element(node, node_id, style_sheet, doc)?;
     } else if tag_name == EId::Use {
-        parse_svg_use_element(node, origin, node_id, style_sheet, doc);
+        parse_svg_use_element(node, origin, node_id, style_sheet, doc)?;
     } else {
-        parse_xml_node_children(node, origin, node_id, style_sheet, ignore_ids, doc);
+        parse_xml_node_children(node, origin, node_id, style_sheet, ignore_ids, doc)?;
     }
+
+    Ok(())
 }
 
 fn parse_svg_element(
@@ -180,7 +182,7 @@ fn parse_svg_element(
     style_sheet: &simplecss::StyleSheet,
     ignore_ids: bool,
     doc: &mut Document,
-) -> NodeId {
+) -> Result<NodeId, Error> {
     let attrs_start_idx = doc.attrs.len();
 
     // Copy presentational attributes first.
@@ -257,12 +259,16 @@ fn parse_svg_element(
         }
     }
 
+    if doc.nodes.len() > 1_000_000 {
+        return Err(Error::ElementsLimitReached);
+    }
+
     let node_id = doc.append(parent_id, NodeKind::Element {
         tag_name,
         attributes: attrs_start_idx..doc.attrs.len(),
     });
 
-    node_id
+    Ok(node_id)
 }
 
 fn append_attribute(
@@ -891,22 +897,28 @@ fn parse_svg_use_element(
     parent_id: NodeId,
     style_sheet: &simplecss::StyleSheet,
     doc: &mut Document,
-) -> Option<()> {
-    let link = resolve_href(node)?;
+) -> Result<(), Error> {
+    let link = match resolve_href(node) {
+        Some(v) => v,
+        None => return Ok(()),
+    };
 
     if link == node || link == origin {
         warn!("Recursive 'use' detected. '{}' will be skipped.",
               node.attribute((SVG_NS, "id")).unwrap_or_default());
-        return None;
+        return Ok(());
     }
 
-    let tag_name = parse_tag_name(link)?;
+    let tag_name = match parse_tag_name(link) {
+        Some(v) => v,
+        None => return Ok(()),
+    };
 
     // TODO: this
     // We don't support 'use' elements linked to 'svg' element.
     if tag_name == EId::Svg {
         warn!("'use' elements linked to an 'svg' element are not supported. Skipped.");
-        return None;
+        return Ok(());
     }
 
     // Check that none of the linked node's children reference current `use` node
@@ -939,11 +951,10 @@ fn parse_svg_use_element(
     if is_recursive {
         warn!("Recursive 'use' detected. '{}' will be skipped.",
               node.attribute((SVG_NS, "id")).unwrap_or_default());
-        return None;
+        return Ok(());
     }
 
-    parse_xml_node(link, node, parent_id, style_sheet, true, doc);
-    Some(())
+    parse_xml_node(link, node, parent_id, style_sheet, true, doc)
 }
 
 fn parse_svg_text_element(
@@ -951,7 +962,7 @@ fn parse_svg_text_element(
     parent_id: NodeId,
     style_sheet: &simplecss::StyleSheet,
     doc: &mut Document,
-) {
+) -> Result<(), Error> {
     debug_assert_eq!(parent.tag_name().name(), "text");
 
     let space = if doc.get(parent_id).has_attribute(AId::Space) {
@@ -964,9 +975,10 @@ fn parse_svg_text_element(
         }
     };
 
-    parse_svg_text_element_impl(parent, parent_id, style_sheet, space, doc);
+    parse_svg_text_element_impl(parent, parent_id, style_sheet, space, doc)?;
 
     trim_text_nodes(parent_id, space, doc);
+    Ok(())
 }
 
 fn parse_svg_text_element_impl(
@@ -975,7 +987,7 @@ fn parse_svg_text_element_impl(
     style_sheet: &simplecss::StyleSheet,
     space: XmlSpace,
     doc: &mut Document,
-) {
+) -> Result<(), Error> {
     for node in parent.children() {
         if node.is_text() {
             let text = trim_text(node.text().unwrap(), space);
@@ -1006,7 +1018,7 @@ fn parse_svg_text_element_impl(
             is_tref = true;
         }
 
-        let node_id = parse_svg_element(node, parent_id, tag_name, style_sheet, false, doc);
+        let node_id = parse_svg_element(node, parent_id, tag_name, style_sheet, false, doc)?;
         let space = get_xmlspace(doc, node_id, space);
 
         if is_tref {
@@ -1020,9 +1032,11 @@ fn parse_svg_text_element_impl(
                 }
             }
         } else {
-            parse_svg_text_element_impl(node, node_id, style_sheet, space, doc);
+            parse_svg_text_element_impl(node, node_id, style_sheet, space, doc)?;
         }
     }
+
+    Ok(())
 }
 
 fn resolve_tref_text(

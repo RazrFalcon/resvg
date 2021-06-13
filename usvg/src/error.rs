@@ -11,6 +11,9 @@ pub enum Error {
     /// Compressed SVG must use the GZip algorithm.
     MalformedGZip,
 
+    /// We do not allow SVG with more than 1_000_000 elements for security reasons.
+    ElementsLimitReached,
+
     /// SVG doesn't have a valid size.
     ///
     /// Occurs when width and/or height are <= 0.
@@ -23,6 +26,12 @@ pub enum Error {
     ParsingFailed(roxmltree::Error),
 }
 
+impl From<roxmltree::Error> for Error {
+    fn from(e: roxmltree::Error) -> Self {
+        Error::ParsingFailed(e)
+    }
+}
+
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
@@ -31,6 +40,9 @@ impl std::fmt::Display for Error {
             }
             Error::MalformedGZip => {
                 write!(f, "provided data has a malformed GZip content")
+            }
+            Error::ElementsLimitReached => {
+                write!(f, "the maximum number of SVG elements has been reached")
             }
             Error::InvalidSize => {
                 write!(f, "SVG has an invalid size")

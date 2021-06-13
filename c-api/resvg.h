@@ -51,6 +51,8 @@ typedef enum resvg_error {
     RESVG_ERROR_FILE_OPEN_FAILED,
     /** Compressed SVG must use the GZip algorithm. */
     RESVG_ERROR_MALFORMED_GZIP,
+    /** We do not allow SVG with more than 1_000_000 elements for security reasons. */
+    RESVG_ERROR_ELEMENTS_LIMIT_REACHED,
     /**
      * SVG doesn't have a valid size.
      *

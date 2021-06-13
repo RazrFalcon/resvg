@@ -78,6 +78,8 @@ static QString errorToString(const int err)
             return QLatin1String("Failed to read the file.");
         case RESVG_ERROR_MALFORMED_GZIP :
             return QLatin1String("Not a GZip compressed data.");
+        case RESVG_ERROR_ELEMENTS_LIMIT_REACHED :
+            return QLatin1String("Too many elements.");
         case RESVG_ERROR_INVALID_SIZE :
             return QLatin1String("SVG doesn't have a valid size.");
         case RESVG_ERROR_PARSING_FAILED :
