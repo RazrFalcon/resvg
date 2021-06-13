@@ -7,7 +7,6 @@
 - c-api/ResvgQt.h
 - usvg/Cargo.toml
 - usvg/src/lib.rs
-- usvg/tests/files/*
 - tools/explorer-thumbnailer/install/installer.iss
 - tools/explorer-thumbnailer/Cargo.toml
 - make-vendored.sh
