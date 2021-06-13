@@ -27,8 +27,10 @@ And you can also access *Micro SVG* as XML directly via the [usvg](./usvg) tool.
 `resvg` is aiming to support only the [static](http://www.w3.org/TR/SVG11/feature#SVG-static)
 SVG subset; e.g. no `a`, `script`, `view` or `cursor` elements, no events and no animations.
 
-[SVG Tiny 1.2](https://www.w3.org/TR/SVGTiny12/) and [SVG 2.0](https://www.w3.org/TR/SVG2/)
-are not supported and not planned.
+[SVG 2.0](https://www.w3.org/TR/SVG2/) support is in progress.
+See [#393](https://github.com/RazrFalcon/resvg/issues/393)
+
+[SVG Tiny 1.2](https://www.w3.org/TR/SVGTiny12/) is not supported and not planned.
 
 Results of the [resvg test suite](./tests/README.md):
 

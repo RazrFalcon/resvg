@@ -17,6 +17,7 @@ This changelog also contains important changes in dependencies.
 - The maximum number of SVG elements is limited by 1_000_000 now.
   Mainly to prevent a billion laugh style attacks.
 - The maximum SVG elements nesting is limited by 1024 now.
+- `usvg::Error::ElementsLimitReached`
 
 ### Changed
 - Improve clipping and masking performance on large images.
