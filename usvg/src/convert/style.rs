@@ -4,12 +4,14 @@
 
 use crate::{svgtree, tree};
 use super::{prelude::*, paint_server};
+use crate::convert::NodeIdGenerator;
 
 
 pub fn resolve_fill(
     node: svgtree::Node,
     has_bbox: bool,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
 ) -> Option<tree::Fill> {
     if state.parent_clip_path.is_some() {
@@ -23,7 +25,7 @@ pub fn resolve_fill(
 
     let mut sub_opacity = tree::Opacity::default();
     let paint = if let Some(n) = node.find_node_with_attribute(AId::Fill) {
-        convert_paint(n, AId::Fill, has_bbox, state, &mut sub_opacity, tree)?
+        convert_paint(n, AId::Fill, has_bbox, state, &mut sub_opacity, id_generator, tree)?
     } else {
         tree::Paint::Color(tree::Color::black())
     };
@@ -39,6 +41,7 @@ pub fn resolve_stroke(
     node: svgtree::Node,
     has_bbox: bool,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
 ) -> Option<tree::Stroke> {
     if state.parent_clip_path.is_some() {
@@ -48,7 +51,7 @@ pub fn resolve_stroke(
 
     let mut sub_opacity = tree::Opacity::default();
     let paint = if let Some(n) = node.find_node_with_attribute(AId::Stroke) {
-        convert_paint(n, AId::Stroke, has_bbox, state, &mut sub_opacity, tree)?
+        convert_paint(n, AId::Stroke, has_bbox, state, &mut sub_opacity, id_generator, tree)?
     } else {
         return None;
     };
@@ -80,6 +83,7 @@ fn convert_paint(
     has_bbox: bool,
     state: &State,
     opacity: &mut tree::Opacity,
+    id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
 ) -> Option<tree::Paint> {
     match node.attribute::<&svgtree::AttributeValue>(aid)? {
@@ -94,7 +98,7 @@ fn convert_paint(
             if let Some(link) = node.document().element_by_id(func_iri) {
                 let tag_name = link.tag_name().unwrap();
                 if tag_name.is_paint_server() {
-                    match paint_server::convert(link, state, tree) {
+                    match paint_server::convert(link, state, id_generator, tree) {
                         Some(paint_server::ServerOrColor::Server { id, units }) => {
                             // We can use a paint server node with ObjectBoundingBox units
                             // for painting only when the shape itself has a bbox.

@@ -5,11 +5,13 @@
 use crate::tree;
 use crate::svgtree;
 use super::prelude::*;
+use crate::convert::NodeIdGenerator;
 
 
 pub fn convert(
     node: svgtree::Node,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
 ) -> Option<String> {
     // A `clip-path` attribute must reference a `clipPath` element.
@@ -31,7 +33,7 @@ pub fn convert(
     // Resolve linked clip path.
     let mut clip_path = None;
     if let Some(link) = node.attribute::<svgtree::Node>(AId::ClipPath) {
-        clip_path = convert(link, state, tree);
+        clip_path = convert(link, state, id_generator, tree);
 
         // Linked `clipPath` must be valid.
         if clip_path.is_none() {
@@ -51,7 +53,7 @@ pub fn convert(
 
     let mut clip_state = state.clone();
     clip_state.parent_clip_path = Some(node);
-    super::convert_clip_path_elements(node, &clip_state, &mut clip, tree);
+    super::convert_clip_path_elements(node, &clip_state, id_generator, &mut clip, tree);
 
     if clip.has_children() {
         Some(node.element_id().to_string())

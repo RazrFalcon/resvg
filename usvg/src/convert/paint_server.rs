@@ -6,6 +6,7 @@ use std::f64;
 
 use crate::{svgtree, tree, tree::prelude::*};
 use super::prelude::*;
+use crate::convert::NodeIdGenerator;
 
 
 pub enum ServerOrColor {
@@ -22,6 +23,7 @@ pub enum ServerOrColor {
 pub fn convert(
     node: svgtree::Node,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
 ) -> Option<ServerOrColor> {
     // Check for existing.
@@ -36,7 +38,7 @@ pub fn convert(
     match node.tag_name().unwrap() {
         EId::LinearGradient => convert_linear(node, state, tree),
         EId::RadialGradient => convert_radial(node, state, tree),
-        EId::Pattern => convert_pattern(node, state, tree),
+        EId::Pattern => convert_pattern(node, state, id_generator, tree),
         _ => unreachable!(),
     }
 }
@@ -140,6 +142,7 @@ fn convert_radial(
 fn convert_pattern(
     node: svgtree::Node,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
 ) -> Option<ServerOrColor> {
     let node_with_children = find_pattern_with_children(node)?;
@@ -181,7 +184,7 @@ fn convert_pattern(
         view_box,
     }));
 
-    super::convert_children(node_with_children, state, &mut patt, tree);
+    super::convert_children(node_with_children, state, id_generator, &mut patt, tree);
 
     if !patt.has_children() {
         return None;

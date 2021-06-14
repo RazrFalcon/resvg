@@ -39,6 +39,7 @@ mod private {
     }
 }
 use self::private::*;
+use crate::convert::NodeIdGenerator;
 
 
 /// A text decoration span.
@@ -55,11 +56,12 @@ struct DecorationSpan {
 pub fn convert(
     node: svgtree::Node,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
     let text_node = TextNode::new(node.clone());
-    let (mut new_paths, bbox) = text_to_paths(text_node, state, parent, tree);
+    let (mut new_paths, bbox) = text_to_paths(text_node, state, id_generator, parent, tree);
 
     if new_paths.len() == 1 {
         // Copy `text` id to the first path.
@@ -87,6 +89,7 @@ pub fn convert(
 fn text_to_paths(
     text_node: TextNode,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) -> (Vec<tree::Path>, Rect) {
@@ -95,7 +98,7 @@ fn text_to_paths(
     let writing_mode = convert_writing_mode(text_node);
 
     let mut bbox = Rect::new_bbox();
-    let mut chunks = collect_text_chunks(text_node, &pos_list, state, tree);
+    let mut chunks = collect_text_chunks(text_node, &pos_list, state, id_generator, tree);
     let mut char_offset = 0;
     let mut last_x = 0.0;
     let mut last_y = 0.0;

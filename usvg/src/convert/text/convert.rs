@@ -6,7 +6,7 @@ use std::cmp;
 use std::rc::Rc;
 
 use crate::{fontdb_ext, svgtree, tree, Transform};
-use crate::convert::{prelude::*, style, units};
+use crate::convert::{prelude::*, style, units, NodeIdGenerator};
 use crate::fontdb_ext::DatabaseExt;
 use super::TextNode;
 
@@ -150,6 +150,7 @@ pub fn collect_text_chunks(
     text_node: TextNode,
     pos_list: &[CharacterPosition],
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
 ) -> Vec<TextChunk> {
     let mut iter_state = IterState {
@@ -160,7 +161,7 @@ pub fn collect_text_chunks(
         chunks: Vec::new(),
     };
 
-    collect_text_chunks_impl(text_node, *text_node, pos_list, state, tree, &mut iter_state);
+    collect_text_chunks_impl(text_node, *text_node, pos_list, state, id_generator, tree, &mut iter_state);
 
     iter_state.chunks
 }
@@ -170,6 +171,7 @@ fn collect_text_chunks_impl(
     parent: svgtree::Node,
     pos_list: &[CharacterPosition],
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
     iter_state: &mut IterState,
 ) {
@@ -198,7 +200,7 @@ fn collect_text_chunks_impl(
                 iter_state.split_chunk = true;
             }
 
-            collect_text_chunks_impl(text_node, child, pos_list, state, tree, iter_state);
+            collect_text_chunks_impl(text_node, child, pos_list, state, id_generator, tree, iter_state);
 
             iter_state.text_flow = TextFlow::Horizontal;
 
@@ -237,11 +239,11 @@ fn collect_text_chunks_impl(
         let span = TextSpan {
             start: 0,
             end: 0,
-            fill: style::resolve_fill(parent, true, state, tree),
-            stroke: style::resolve_stroke(parent, true, state, tree),
+            fill: style::resolve_fill(parent, true, state, id_generator, tree),
+            stroke: style::resolve_stroke(parent, true, state, id_generator, tree),
             font,
             font_size,
-            decoration: resolve_decoration(text_node, parent, state, tree),
+            decoration: resolve_decoration(text_node, parent, state, id_generator, tree),
             visibility: parent.find_attribute(AId::Visibility).unwrap_or_default(),
             baseline_shift: resolve_baseline_shift(parent, state),
             letter_spacing: parent.resolve_length(AId::LetterSpacing, state, 0.0),
@@ -601,6 +603,7 @@ fn resolve_decoration(
     text_node: TextNode,
     tspan: svgtree::Node,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
 ) -> TextDecoration {
     // TODO: explain the algorithm
@@ -618,8 +621,8 @@ fn resolve_decoration(
         };
 
         Some(TextDecorationStyle {
-            fill: style::resolve_fill(n, true, state, tree),
-            stroke: style::resolve_stroke(n, true, state, tree),
+            fill: style::resolve_fill(n, true, state, id_generator, tree),
+            stroke: style::resolve_stroke(n, true, state, id_generator, tree),
         })
     };
 

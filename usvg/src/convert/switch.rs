@@ -5,6 +5,7 @@
 use crate::{svgtree, tree};
 use super::prelude::*;
 use super::{GroupKind, convert_group, convert_element};
+use crate::convert::NodeIdGenerator;
 
 
 // Full list can be found here: https://www.w3.org/TR/SVG11/feature.html
@@ -45,16 +46,17 @@ static FEATURES: &[&str] = &[
 pub fn convert(
     node: svgtree::Node,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
     let child = try_opt!(node.children().find(|n| is_condition_passed(*n, state.opt)));
-    match convert_group(node, state, false, parent, tree) {
+    match convert_group(node, state, false, id_generator, parent, tree) {
         GroupKind::Create(ref mut g) => {
-            convert_element(child, state, g, tree);
+            convert_element(child, state, id_generator, g, tree);
         }
         GroupKind::Skip => {
-            convert_element(child, state, parent, tree);
+            convert_element(child, state, id_generator, parent, tree);
         }
         GroupKind::Ignore => {}
     }

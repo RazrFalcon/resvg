@@ -5,11 +5,13 @@
 use crate::tree;
 use crate::svgtree;
 use super::prelude::*;
+use crate::convert::NodeIdGenerator;
 
 
 pub fn convert(
     node: svgtree::Node,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
 ) -> Option<String> {
     // A `mask` attribute must reference a `mask` element.
@@ -41,7 +43,7 @@ pub fn convert(
     // Resolve linked mask.
     let mut mask = None;
     if let Some(link) = node.attribute::<svgtree::Node>(AId::Mask) {
-        mask = convert(link, state, tree);
+        mask = convert(link, state, id_generator, tree);
 
         // Linked `mask` must be valid.
         if mask.is_none() {
@@ -57,7 +59,7 @@ pub fn convert(
         mask,
     }));
 
-    super::convert_children(node, state, &mut mask, tree);
+    super::convert_children(node, state, id_generator, &mut mask, tree);
 
     if mask.has_children() {
         Some(node.element_id().to_string())

@@ -6,7 +6,8 @@ use std::f64;
 use std::rc::Rc;
 
 use crate::{utils, svgtree, tree, tree::prelude::*, tree::PathSegment as Segment};
-use super::{prelude::*, use_node};
+use super::prelude::*;
+use crate::convert::NodeIdGenerator;
 
 
 pub fn is_valid(
@@ -35,6 +36,7 @@ pub fn convert(
     node: svgtree::Node,
     path: &tree::PathData,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
@@ -58,7 +60,7 @@ pub fn convert(
                 continue;
             }
 
-            resolve(node, path, marker, *kind, state, parent, tree);
+            resolve(node, path, marker, *kind, state, id_generator, parent, tree);
         }
     }
 }
@@ -81,6 +83,7 @@ fn resolve(
     marker_node: svgtree::Node,
     marker_kind: MarkerKind,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
@@ -108,7 +111,7 @@ fn resolve(
             r.size().to_rect(0.0, 0.0)
         };
 
-        let id = use_node::gen_clip_path_id(shape_node, tree);
+        let id = id_generator.gen_clip_path_id();
 
         let mut clip_path = tree.append_to_defs(
             tree::NodeKind::ClipPath(tree::ClipPath {
@@ -163,7 +166,7 @@ fn resolve(
 
         let mut marker_state = state.clone();
         marker_state.parent_marker = Some(marker_node);
-        super::convert_children(marker_node, &marker_state, &mut g_node, tree);
+        super::convert_children(marker_node, &marker_state, id_generator, &mut g_node, tree);
 
         if !g_node.has_children() {
             g_node.detach();

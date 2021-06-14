@@ -2,6 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
+
 use svgtypes::Length;
 
 use crate::{svgtree, tree, tree::prelude::*, Error};
@@ -38,6 +41,46 @@ pub struct State<'a> {
     opt: &'a Options,
 }
 
+pub struct NodeIdGenerator {
+    all_ids: HashSet<u64>,
+    clip_path_index: usize,
+}
+
+impl NodeIdGenerator {
+    fn new(doc: &svgtree::Document) -> Self {
+        let mut all_ids = HashSet::new();
+        for node in doc.descendants() {
+            if node.has_element_id() {
+                all_ids.insert(string_hash(node.element_id()));
+            }
+        }
+
+        NodeIdGenerator {
+            all_ids,
+            clip_path_index: 0,
+        }
+    }
+
+    pub fn gen_clip_path_id(&mut self) -> String {
+        loop {
+            self.clip_path_index += 1;
+            let new_id = format!("clipPath{}", self.clip_path_index);
+            let new_hash = string_hash(&new_id);
+            if !self.all_ids.contains(&new_hash) {
+                return new_id;
+            }
+        }
+    }
+}
+
+// TODO: is there a simpler way?
+fn string_hash(s: &str) -> u64 {
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    s.hash(&mut h);
+    h.finish()
+}
+
+
 
 /// Converts an input `Document` into a `Tree`.
 ///
@@ -72,7 +115,9 @@ pub fn convert_doc(
         opt: &opt,
     };
 
-    convert_children(svg_doc.root(), &state, &mut tree.root(), &mut tree);
+    let mut id_generator = NodeIdGenerator::new(svg_doc);
+
+    convert_children(svg_doc.root(), &state, &mut id_generator, &mut tree.root(), &mut tree);
 
     // The `convert_children` method doesn't convert elements inside `defs`
     // and non-graphic elements (like gradients, patters, filters, etc.).
@@ -88,7 +133,7 @@ pub fn convert_doc(
     // we have to run it until there are no more links left.
     // For example, when `feImage` references an element that also uses `feImage`,
     // we have to run this methods twice. And so on.
-    while link_fe_image(svg_doc, &state, &mut tree) {}
+    while link_fe_image(svg_doc, &state, &mut id_generator, &mut tree) {}
 
     remove_empty_groups(&mut tree);
     ungroup_groups(opt, &mut tree);
@@ -152,11 +197,12 @@ fn resolve_svg_size(
 fn convert_children(
     parent_node: svgtree::Node,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
     for node in parent_node.children() {
-        convert_element(node, state, parent, tree);
+        convert_element(node, state, id_generator, parent, tree);
     }
 }
 
@@ -164,6 +210,7 @@ fn convert_children(
 fn convert_element(
     node: svgtree::Node,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) -> Option<tree::Node> {
@@ -178,16 +225,16 @@ fn convert_element(
     }
 
     if tag_name == EId::Use {
-        use_node::convert(node, state, parent, tree);
+        use_node::convert(node, state, id_generator, parent, tree);
         return None;
     }
 
     if tag_name == EId::Switch {
-        switch::convert(node, state, parent, tree);
+        switch::convert(node, state, id_generator, parent, tree);
         return None;
     }
 
-    let parent = &mut match convert_group(node, state, false, parent, tree) {
+    let parent = &mut match convert_group(node, state, false, id_generator, parent, tree) {
         GroupKind::Create(g) => g,
         GroupKind::Skip => parent.clone(),
         GroupKind::Ignore => return None,
@@ -202,7 +249,7 @@ fn convert_element(
         | EId::Polygon
         | EId::Path => {
             if let Some(path) = shapes::convert(node, state) {
-                convert_path(node, path, state, parent, tree);
+                convert_path(node, path, state, id_generator, parent, tree);
             }
         }
         EId::Image => {
@@ -210,18 +257,18 @@ fn convert_element(
         }
         EId::Text => {
             #[cfg(feature = "text")]
-            text::convert(node, state, parent, tree);
+            text::convert(node, state, id_generator, parent, tree);
         }
         EId::Svg => {
             if node.parent_element().is_some() {
-                use_node::convert_svg(node, state, parent, tree);
+                use_node::convert_svg(node, state, id_generator, parent, tree);
             } else {
                 // Skip root `svg`.
-                convert_children(node, state, parent, tree);
+                convert_children(node, state, id_generator, parent, tree);
             }
         }
         EId::G => {
-            convert_children(node, state, parent, tree);
+            convert_children(node, state, id_generator, parent, tree);
         }
         _ => {}
     }
@@ -237,6 +284,7 @@ fn convert_element(
 fn convert_clip_path_elements(
     clip_node: svgtree::Node,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
@@ -252,11 +300,11 @@ fn convert_clip_path_elements(
         }
 
         if tag_name == EId::Use {
-            use_node::convert(node, state, parent, tree);
+            use_node::convert(node, state, id_generator, parent, tree);
             continue;
         }
 
-        let parent = &mut match convert_group(node, state, false, parent, tree) {
+        let parent = &mut match convert_group(node, state, false, id_generator, parent, tree) {
             GroupKind::Create(g) => g,
             GroupKind::Skip => parent.clone(),
             GroupKind::Ignore => continue,
@@ -270,14 +318,14 @@ fn convert_clip_path_elements(
             | EId::Polygon
             | EId::Path => {
                 if let Some(path) = shapes::convert(node, state) {
-                    convert_path(node, path, state, parent, tree);
+                    convert_path(node, path, state, id_generator, parent, tree);
                 }
             }
             EId::Text => {
                 #[cfg(feature = "text")]
                 {
                     if !state.opt.fontdb.is_empty() {
-                        text::convert(node, state, parent, tree);
+                        text::convert(node, state, id_generator, parent, tree);
                     }
                 }
             }
@@ -302,6 +350,7 @@ fn convert_group(
     node: svgtree::Node,
     state: &State,
     force: bool,
+    id_generator: &mut NodeIdGenerator,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) -> GroupKind {
@@ -317,7 +366,7 @@ fn convert_group(
             let mut v = None;
 
             if let Some(link) = node.attribute::<svgtree::Node>($aid) {
-                v = $f(link, state, tree);
+                v = $f(link, state, id_generator, tree);
 
                 // If `$aid` is linked to an invalid element - skip this group completely.
                 if v.is_none() {
@@ -370,8 +419,8 @@ fn convert_group(
     }
 
     // TODO: move to `::deref` later.
-    let filter_fill = resolve_filter_fill(node, state, filter.as_ref().map(|t| t.as_str()), tree);
-    let filter_stroke = resolve_filter_stroke(node, state, filter.as_ref().map(|t| t.as_str()), tree);
+    let filter_fill = resolve_filter_fill(node, state, filter.as_ref().map(|t| t.as_str()), id_generator, tree);
+    let filter_stroke = resolve_filter_stroke(node, state, filter.as_ref().map(|t| t.as_str()), id_generator, tree);
 
     let transform: tree::Transform = node.attribute(AId::Transform).unwrap_or_default();
 
@@ -419,6 +468,7 @@ fn resolve_filter_fill(
     node: svgtree::Node,
     state: &State,
     filter_id: Option<&str>,
+    id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
 ) -> Option<tree::Paint> {
     let filter_node = tree.defs_by_id(filter_id?)?;
@@ -428,7 +478,7 @@ fn resolve_filter_fill(
         }
     }
 
-    let stroke = style::resolve_fill(node, true, state, tree)?;
+    let stroke = style::resolve_fill(node, true, state, id_generator, tree)?;
     Some(stroke.paint)
 }
 
@@ -436,6 +486,7 @@ fn resolve_filter_stroke(
     node: svgtree::Node,
     state: &State,
     filter_id: Option<&str>,
+    id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
 ) -> Option<tree::Paint> {
     let filter_node = tree.defs_by_id(filter_id?)?;
@@ -445,7 +496,7 @@ fn resolve_filter_stroke(
         }
     }
 
-    let stroke = style::resolve_stroke(node, true, state, tree)?;
+    let stroke = style::resolve_stroke(node, true, state, id_generator, tree)?;
     Some(stroke.paint)
 }
 
@@ -573,6 +624,7 @@ fn remove_unused_defs(
 fn link_fe_image(
     svg_doc: &svgtree::Document,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
 ) -> bool {
     let mut ids = Vec::new();
@@ -603,7 +655,7 @@ fn link_fe_image(
         if let Some(node) = svg_doc.element_by_id(&id) {
             let mut state = state.clone();
             state.fe_image_link = true;
-            let mut new_node = match convert_element(node, &state, &mut tree.defs(), tree) {
+            let mut new_node = match convert_element(node, &state, id_generator, &mut tree.defs(), tree) {
                 Some(n) => n,
                 None => continue,
             };
@@ -732,6 +784,7 @@ fn convert_path(
     node: svgtree::Node,
     path: tree::SharedPathData,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
@@ -741,8 +794,8 @@ fn convert_path(
     }
 
     let has_bbox = path.has_bbox();
-    let fill = style::resolve_fill(node, has_bbox, state, tree);
-    let stroke = style::resolve_stroke(node, has_bbox, state, tree);
+    let fill = style::resolve_fill(node, has_bbox, state, id_generator, tree);
+    let stroke = style::resolve_stroke(node, has_bbox, state, id_generator, tree);
     let mut visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
     let rendering_mode = node
         .find_attribute(AId::ShapeRendering)
@@ -757,7 +810,7 @@ fn convert_path(
     let mut markers_group = None;
     if marker::is_valid(node) && visibility == tree::Visibility::Visible {
         let mut g = parent.append_kind(tree::NodeKind::Group(tree::Group::default()));
-        marker::convert(node, &path, state, &mut g, tree);
+        marker::convert(node, &path, state, id_generator, &mut g, tree);
         markers_group = Some(g);
     }
 
