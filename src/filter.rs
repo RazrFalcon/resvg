@@ -190,7 +190,7 @@ impl Image {
                 color_space,
             })
         } else {
-            Ok(self.clone())
+            Ok(self)
         }
     }
 
@@ -274,7 +274,7 @@ fn _apply(
     tree: &usvg::Tree,
 ) -> Result<(Image, ScreenRect), Error> {
     let mut results = Vec::new();
-    let region = calc_region(filter, bbox, ts, &inputs.source)?;
+    let region = calc_region(filter, bbox, ts, inputs.source)?;
 
     for primitive in &filter.children {
         let cs = primitive.color_interpolation;
@@ -452,7 +452,7 @@ fn calc_subregion(
             match fe.input {
                 usvg::FilterInput::Reference(ref name) => {
                     match results.iter().rev().find(|v| v.name == *name) {
-                        Some(ref res) => res.image.region,
+                        Some(res) => res.image.region,
                         None => filter_region,
                     }
                 }
@@ -579,7 +579,7 @@ fn get_input(
             convert(inputs.stroke_paint, region.translate_to(0, 0))
         }
         usvg::FilterInput::Reference(ref name) => {
-            if let Some(ref v) = results.iter().rev().find(|v| v.name == *name) {
+            if let Some(v) = results.iter().rev().find(|v| v.name == *name) {
                 Ok(v.image.clone())
             } else {
                 // Technically unreachable.

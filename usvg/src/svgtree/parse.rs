@@ -83,7 +83,7 @@ fn parse(xml: &roxmltree::Document) -> Result<Document, Error> {
         kind: NodeKind::Root,
     });
 
-    let style_sheet = resolve_css(&xml);
+    let style_sheet = resolve_css(xml);
 
     parse_xml_node_children(xml.root(), xml.root(), doc.root().id, &style_sheet, false, 0, &mut doc)?;
 

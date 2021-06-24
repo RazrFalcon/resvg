@@ -54,7 +54,7 @@ pub fn convert(
                         g.transform = tree::Transform::default();
                     }
 
-                    g.clone()
+                    g
                 }
                 super::GroupKind::Skip => g.clone(),
                 super::GroupKind::Ignore => return,
@@ -70,7 +70,7 @@ pub fn convert(
     if linked_to_symbol {
         // Make group for `use`.
         let mut parent = match super::convert_group(node, state, false, id_generator, parent, tree) {
-            super::GroupKind::Create(g) => g.clone(),
+            super::GroupKind::Create(g) => g,
             super::GroupKind::Skip => parent.clone(),
             super::GroupKind::Ignore => return,
         };
@@ -175,7 +175,7 @@ fn convert_children(
                 g.transform = transform;
             }
 
-            g.clone()
+            g
         }
         super::GroupKind::Skip => {
             parent.clone()

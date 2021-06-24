@@ -109,15 +109,15 @@ fn text_to_paths(
             TextFlow::Path(_) => (0.0, 0.0),
         };
 
-        let mut clusters = shaper::outline_chunk(&chunk, state);
+        let mut clusters = shaper::outline_chunk(chunk, state);
         if clusters.is_empty() {
             char_offset += chunk.text.chars().count();
             continue;
         }
 
         shaper::apply_writing_mode(writing_mode, &mut clusters);
-        shaper::apply_letter_spacing(&chunk, &mut clusters);
-        shaper::apply_word_spacing(&chunk, &mut clusters);
+        shaper::apply_letter_spacing(chunk, &mut clusters);
+        shaper::apply_word_spacing(chunk, &mut clusters);
         let mut curr_pos = shaper::resolve_clusters_positions(
             chunk, char_offset, &pos_list, &rotate_list, writing_mode, &mut clusters
         );
@@ -152,7 +152,7 @@ fn text_to_paths(
                 };
 
                 let path = convert_decoration(
-                    offset, &span, decoration, &decoration_spans, span_ts,
+                    offset, span, decoration, &decoration_spans, span_ts,
                 );
 
                 if let Some(r) = path.data.bbox() {
@@ -169,7 +169,7 @@ fn text_to_paths(
                 };
 
                 let path = convert_decoration(
-                    offset, &span, decoration, &decoration_spans, span_ts,
+                    offset, span, decoration, &decoration_spans, span_ts,
                 );
 
                 if let Some(r) = path.data.bbox() {
@@ -195,7 +195,7 @@ fn text_to_paths(
                 };
 
                 let path = convert_decoration(
-                    offset, &span, decoration, &decoration_spans, span_ts,
+                    offset, span, decoration, &decoration_spans, span_ts,
                 );
 
                 if let Some(r) = path.data.bbox() {

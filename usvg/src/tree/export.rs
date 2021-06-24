@@ -190,7 +190,7 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
                             xml.write_svg_attribute(AId::Result, &fe.result);
                             for input in &merge.inputs {
                                 xml.start_svg_element(EId::FeMergeNode);
-                                xml.write_filter_input(AId::In, &input);
+                                xml.write_filter_input(AId::In, input);
                                 xml.end_element();
                             }
 
@@ -485,7 +485,7 @@ fn conv_element(
                 xml.write_enable_background(eb);
             }
 
-            conv_elements(&node, false, opt, xml);
+            conv_elements(node, false, opt, xml);
 
             xml.end_element();
         }
@@ -772,7 +772,7 @@ fn write_path(
         ShapeRendering::GeometricPrecision => {}
     }
 
-    if let Some(ref id) = clip_path {
+    if let Some(id) = clip_path {
         xml.write_func_iri(AId::ClipPath, id, opt);
     }
 

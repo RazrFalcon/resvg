@@ -82,7 +82,7 @@ pub fn get_href_data(
             _ => None,
         }
     } else {
-        let path = opt.get_abs_path(&path::Path::new(href));
+        let path = opt.get_abs_path(path::Path::new(href));
         if path.exists() {
             let data = match std::fs::read(&path) {
                 Ok(data) => data,

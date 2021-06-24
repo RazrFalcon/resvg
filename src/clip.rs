@@ -74,7 +74,7 @@ fn clip_group(
                 let mut clip_canvas = Canvas::from(clip_pixmap.as_mut());
                 clip_canvas.transform = canvas.transform;
 
-                draw_group_child(&node, &mut clip_canvas);
+                draw_group_child(node, &mut clip_canvas);
                 clip(clip_node, cp, bbox, &mut clip_canvas);
 
                 let mut paint = tiny_skia::PixmapPaint::default();

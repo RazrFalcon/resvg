@@ -65,7 +65,7 @@ pub fn view_box_to_transform_with_clip(
 ) -> (tree::Transform, Option<Rect>) {
     let r = view_box.rect;
 
-    let new_size = img_size.fit_view_box(&view_box);
+    let new_size = img_size.fit_view_box(view_box);
 
     let (tx, ty, clip) = if view_box.aspect.slice {
         let (dx, dy) = aligned_pos(

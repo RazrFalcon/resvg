@@ -35,7 +35,7 @@ pub fn color_matrix(
     src: ImageRefMut,
 ) {
     match matrix {
-        ColorMatrix::Matrix(ref m) => {
+        ColorMatrix::Matrix(m) => {
             for pixel in src.data {
                 let (r, g, b, a) = to_normalized_components(*pixel);
 

@@ -686,7 +686,7 @@ impl<'a> FromValue<'a> for Node<'a> {
             _ => return None,
         };
 
-        node.document().element_by_id(&id)
+        node.document().element_by_id(id)
     }
 }
 

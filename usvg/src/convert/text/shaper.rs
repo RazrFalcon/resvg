@@ -293,7 +293,7 @@ fn shape_text_with_font(
 
         let mut glyphs = Vec::new();
 
-        let (levels, runs) = bidi_info.visual_runs(&paragraph, line);
+        let (levels, runs) = bidi_info.visual_runs(paragraph, line);
         for run in runs.iter() {
             let sub_text = &text[run.clone()];
             if sub_text.is_empty() {
@@ -678,7 +678,7 @@ fn collect_normals(
             if *offset >= length && *offset <= length + curve_len {
                 let mut offset = curve.inv_arclen(offset - length, arclen_accuracy);
                 // some rounding error may occur, so we give offset a little tolerance
-                debug_assert!(offset >= -1.0e-3 && offset <= 1.0 + 1.0e-3);
+                debug_assert!((-1.0e-3..=1.0 + 1.0e-3).contains(&offset));
                 offset = offset.min(1.0).max(0.0);
 
                 let pos = curve.eval(offset);

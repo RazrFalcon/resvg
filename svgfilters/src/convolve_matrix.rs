@@ -95,7 +95,7 @@ impl<'a> ConvolveMatrix<'a> {
     /// Returns a reference to an internal data.
     #[inline]
     pub fn data(&self) -> &[f64] {
-        &self.data
+        self.data
     }
 }
 
