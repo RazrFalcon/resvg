@@ -182,8 +182,8 @@ impl PartialEq for Node<'_> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
            self.id == other.id
-        && self.doc as *const _ == other.doc as *const _
-        && self.d as *const _ == other.d as *const _
+        && std::ptr::eq(self.doc, other.doc)
+        && std::ptr::eq(self.d, other.d)
     }
 }
 
@@ -196,26 +196,17 @@ impl<'a> Node<'a> {
     #[allow(dead_code)]
     #[inline]
     pub fn is_root(&self) -> bool {
-        match self.d.kind {
-            NodeKind::Root => true,
-            _ => false,
-        }
+        matches!(self.d.kind, NodeKind::Root)
     }
 
     #[inline]
     pub fn is_element(&self) -> bool {
-        match self.d.kind {
-            NodeKind::Element { .. } => true,
-            _ => false,
-        }
+        matches!(self.d.kind, NodeKind::Element { .. })
     }
 
     #[inline]
     pub fn is_text(&self) -> bool {
-        match self.d.kind {
-            NodeKind::Text(_) => true,
-            _ => false,
-        }
+       matches!(self.d.kind, NodeKind::Text(_))
     }
 
     #[inline]
@@ -356,7 +347,7 @@ impl<'a> Node<'a> {
     }
 
     pub fn parent_element(&self) -> Option<Self> {
-        self.ancestors().skip(1).filter(|n| n.is_element()).nth(0)
+        self.ancestors().skip(1).filter(|n| n.is_element()).next()
     }
 
     pub fn prev_sibling(&self) -> Option<Self> {
@@ -372,7 +363,7 @@ impl<'a> Node<'a> {
     }
 
     pub fn first_element_child(&self) -> Option<Self> {
-        self.children().filter(|n| n.is_element()).nth(0)
+        self.children().filter(|n| n.is_element()).next()
     }
 
     pub fn last_child(&self) -> Option<Self> {
@@ -464,12 +455,11 @@ impl<'a> Iterator for Children<'a> {
     type Item = Node<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        let node = self.front.take();
         if self.front == self.back {
-            let node = self.front.take();
             self.back = None;
             node
         } else {
-            let node = self.front.take();
             self.front = node.as_ref().and_then(Node::next_sibling);
             node
         }
@@ -478,12 +468,11 @@ impl<'a> Iterator for Children<'a> {
 
 impl<'a> DoubleEndedIterator for Children<'a> {
     fn next_back(&mut self) -> Option<Self::Item> {
+        let node = self.back.take();
         if self.back == self.front {
-            let node = self.back.take();
             self.front = None;
             node
         } else {
-            let node = self.back.take();
             self.back = node.as_ref().and_then(Node::prev_sibling);
             node
         }

@@ -62,7 +62,7 @@ impl IntoSvgFilters<svgfilters::LightSource> for usvg::FeLightSource {
                     points_at_x: light.points_at_x,
                     points_at_y: light.points_at_y,
                     points_at_z: light.points_at_z,
-                    specular_exponent: light.specular_exponent.value().into(),
+                    specular_exponent: light.specular_exponent.value(),
                     limiting_cone_angle: light.limiting_cone_angle,
                 }
             }
@@ -419,7 +419,7 @@ pub(crate) fn calc_region(
     let region_ts = if filter.units == usvg::Units::ObjectBoundingBox {
         let bbox = bbox.ok_or(Error::InvalidRegion)?;
         let bbox_ts = usvg::Transform::from_bbox(bbox);
-        let mut ts2 = ts.clone();
+        let mut ts2 = *ts;
         ts2.append(&bbox_ts);
         ts2
     } else {
@@ -428,7 +428,7 @@ pub(crate) fn calc_region(
 
     let canvas_rect = ScreenRect::new(0, 0, pixmap.width(), pixmap.height()).unwrap();
     let region = path.bbox_with_transform(region_ts, None)
-        .ok_or_else(|| Error::InvalidRegion)?
+        .ok_or(Error::InvalidRegion)?
         .to_screen_rect()
         .fit_to_rect(canvas_rect);
 
@@ -475,7 +475,7 @@ fn calc_subregion(
                     primitive.y.unwrap_or(0.0),
                     primitive.width.unwrap_or(1.0),
                     primitive.height.unwrap_or(1.0),
-                ).ok_or_else(|| Error::InvalidRegion)?;
+                ).ok_or(Error::InvalidRegion)?;
 
                 let r = r
                     .bbox_transform(bbox)
@@ -497,7 +497,7 @@ fn calc_subregion(
             primitive.y.unwrap_or(0.0),
             primitive.width.unwrap_or(1.0),
             primitive.height.unwrap_or(1.0),
-        ).ok_or_else(|| Error::InvalidRegion)?;
+        ).ok_or(Error::InvalidRegion)?;
 
         region.to_rect().bbox_transform(subregion_bbox)
     } else {
@@ -508,7 +508,7 @@ fn calc_subregion(
             primitive.y.map(|n| n * sy + dy).unwrap_or(region.y() as f64),
             primitive.width.map(|n| n * sx).unwrap_or(region.width() as f64),
             primitive.height.map(|n| n * sy).unwrap_or(region.height() as f64),
-        ).ok_or_else(|| Error::InvalidRegion)?
+        ).ok_or(Error::InvalidRegion)?
     };
 
     Ok(subregion.to_screen_rect())
@@ -828,7 +828,7 @@ fn apply_image(
             crate::image::draw_kind(kind, view_box, fe.rendering_mode, &mut canvas);
         }
         usvg::FeImageKind::Use(ref id) => {
-            if let Some(ref node) = tree.defs_by_id(id).or(tree.node_by_id(id)) {
+            if let Some(ref node) = tree.defs_by_id(id).or_else(|| tree.node_by_id(id)) {
                 let (sx, sy) = ts.get_scale();
                 canvas.scale(sx as f32, sy as f32);
                 canvas.apply_transform(node.transform().to_native());
@@ -999,7 +999,7 @@ fn apply_turbulence(
     svgfilters::turbulence(
         region.x() as f64, region.y() as f64,
         sx, sy,
-        fe.base_frequency.x.value().into(), fe.base_frequency.y.value().into(),
+        fe.base_frequency.x.value(), fe.base_frequency.y.value(),
         fe.num_octaves,
         fe.seed,
         fe.stitch_tiles,

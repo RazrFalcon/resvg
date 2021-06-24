@@ -145,11 +145,9 @@ impl Tree {
         }
 
         for node in self.root().descendants() {
-            if !self.is_in_defs(&node) {
-                if &*node.id() == id {
+            if !self.is_in_defs(&node) && &*node.id() == id {
                     return Some(node);
                 }
-            }
         }
 
         None

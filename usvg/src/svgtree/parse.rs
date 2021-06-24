@@ -1124,7 +1124,7 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
     if nodes.len() == 1 {
         // Process element with a single text node child.
 
-        let node_id = nodes[0].0.clone();
+        let node_id = nodes[0].0;
 
         if xmlspace == XmlSpace::Default {
             if let NodeKind::Text(ref mut text) = doc.nodes[node_id.0].kind {
@@ -1168,8 +1168,8 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
         let mut last_non_empty: Option<NodeId> = None;
         while i < len {
             // Process pairs.
-            let (mut node1_id, depth1) = nodes[i].clone();
-            let (node2_id, depth2) = nodes[i + 1].clone();
+            let (mut node1_id, depth1) = nodes[i];
+            let (node2_id, depth2) = nodes[i + 1];
 
             if doc.get(node1_id).text().is_empty() {
                 if let Some(n) = last_non_empty {
@@ -1220,9 +1220,11 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
                         if let NodeKind::Text(ref mut text) = doc.nodes[node1_id.0].kind {
                             text.remove_last_space();
                         }
-                    } else if xmlspace1 == XmlSpace::Preserve && xmlspace2 == XmlSpace::Default {
-                        if let NodeKind::Text(ref mut text) = doc.nodes[node2_id.0].kind {
-                            text.remove_first_space();
+                    } else {
+                        if xmlspace1 == XmlSpace::Preserve && xmlspace2 == XmlSpace::Default {
+                            if let NodeKind::Text(ref mut text) = doc.nodes[node2_id.0].kind {
+                                text.remove_first_space();
+                            }
                         }
                     }
                 }

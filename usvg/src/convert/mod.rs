@@ -95,7 +95,7 @@ pub fn convert_doc(
     let svg = svg_doc.root_element();
     let size = resolve_svg_size(&svg, opt)?;
     let view_box = tree::ViewBox {
-        rect: svg.get_viewbox().unwrap_or(size.to_rect(0.0, 0.0)),
+        rect: svg.get_viewbox().unwrap_or_else(|| size.to_rect(0.0, 0.0)),
         aspect: svg.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
 
@@ -190,7 +190,7 @@ fn resolve_svg_size(
         )
     };
 
-    size.ok_or_else(|| Error::InvalidSize)
+    size.ok_or(Error::InvalidSize)
 }
 
 #[inline(never)]
@@ -417,10 +417,9 @@ fn convert_group(
             return GroupKind::Ignore;
         }
     }
-
-    // TODO: move to `::deref` later.
-    let filter_fill = resolve_filter_fill(node, state, filter.as_ref().map(|t| t.as_str()), id_generator, tree);
-    let filter_stroke = resolve_filter_stroke(node, state, filter.as_ref().map(|t| t.as_str()), id_generator, tree);
+    
+    let filter_fill = resolve_filter_fill(node, state, filter.as_deref(), id_generator, tree);
+    let filter_stroke = resolve_filter_stroke(node, state, filter.as_deref(), id_generator, tree);
 
     let transform: tree::Transform = node.attribute(AId::Transform).unwrap_or_default();
 
@@ -634,7 +633,7 @@ fn link_fe_image(
             for fe in &filter.children {
                 if let tree::FilterKind::FeImage(ref fe_img) = fe.kind {
                     if let tree::FeImageKind::Use(ref id) = fe_img.data {
-                        if tree.defs_by_id(id).or(tree.node_by_id(id)).is_none() {
+                        if tree.defs_by_id(id).or_else(|| tree.node_by_id(id)).is_none() {
                             // If `feImage` references a non-existing element,
                             // create it in `defs`.
                             if svg_doc.element_by_id(id).is_some() {

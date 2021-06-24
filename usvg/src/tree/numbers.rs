@@ -41,7 +41,7 @@ impl NormalizedValue {
     #[inline]
     pub fn new(n: f64) -> Self {
         debug_assert!(n.is_finite());
-        debug_assert!(n >= 0.0 && n <= 1.0);
+        debug_assert!((0.0..=1.0).contains(&n));
         NormalizedValue(f64_bound(0.0, n, 1.0))
     }
 

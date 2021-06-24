@@ -90,11 +90,8 @@ fn draw_group_child(node: &usvg::Node, canvas: &mut Canvas) {
     if let Some(child) = node.first_child() {
         canvas.apply_transform(child.transform().to_native());
 
-        match *child.borrow() {
-            usvg::NodeKind::Path(ref path_node) => {
+         if let usvg::NodeKind::Path(ref path_node) = *child.borrow() {
                 crate::path::draw(&child.tree(), path_node, tiny_skia::BlendMode::SourceOver, canvas);
-            }
-            _ => {}
         }
     }
 }

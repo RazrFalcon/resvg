@@ -104,7 +104,7 @@ pub(crate) fn render_node_to_canvas(
 ) {
     apply_viewbox_transform(view_box, img_size, canvas);
 
-    let curr_ts = canvas.transform.clone();
+    let curr_ts = canvas.transform;
 
     let mut ts = node.abs_transform();
     ts.append(&node.transform());

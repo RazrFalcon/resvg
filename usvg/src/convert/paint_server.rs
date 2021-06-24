@@ -222,7 +222,7 @@ fn find_gradient_with_stops(node: svgtree::Node) -> Option<svgtree::Node> {
         }
 
         if link.children().any(|n| n.has_tag_name(EId::Stop)) {
-            return Some(link.clone());
+            return Some(link);
         }
     }
 
@@ -241,7 +241,7 @@ fn find_pattern_with_children(node: svgtree::Node) -> Option<svgtree::Node> {
         }
 
         if link.has_children() {
-            return Some(link.clone());
+            return Some(link);
         }
     }
 

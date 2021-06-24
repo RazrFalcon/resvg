@@ -151,12 +151,12 @@ impl PathData {
 
     #[inline]
     fn last_pos(&self) -> (f64, f64) {
-        let seg = self.last().expect("path must not be empty").clone();
+        let seg = self.last().expect("path must not be empty");
         match seg {
               PathSegment::MoveTo { x, y }
             | PathSegment::LineTo { x, y }
             | PathSegment::CurveTo { x, y, .. } => {
-               (x, y)
+               (*x, *y)
             }
             PathSegment::ClosePath => {
                 panic!("the previous segment must be M/L/C")
@@ -346,7 +346,7 @@ fn calc_bbox(segments: &[PathSegment]) -> Option<Rect> {
     let mut maxx = 0.0;
     let mut maxy = 0.0;
 
-    if let PathSegment::MoveTo { x, y } = segments[0].clone() {
+    if let PathSegment::MoveTo { x, y } = segments[0] {
         prev_x = x;
         prev_y = y;
         minx = x;
