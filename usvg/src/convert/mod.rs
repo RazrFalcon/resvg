@@ -112,7 +112,7 @@ pub fn convert_doc(
         fe_image_link: false,
         size,
         view_box: view_box.rect,
-        opt: &opt,
+        opt,
     };
 
     let mut id_generator = NodeIdGenerator::new(svg_doc);

@@ -50,7 +50,7 @@ fn draw_raster(
 ) -> Option<()> {
     let (w, h) = img.size.dimensions();
     let mut pixmap = tiny_skia::Pixmap::new(w, h)?;
-    image_to_pixmap(&img, pixmap.data_mut());
+    image_to_pixmap(img, pixmap.data_mut());
 
     let mut filter = tiny_skia::FilterQuality::Bicubic;
     if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
@@ -141,7 +141,7 @@ fn draw_svg(
     let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
     sub_canvas.transform = canvas.transform;
     sub_canvas.apply_transform(ts.to_native());
-    render_to_canvas(&tree, img_size, &mut sub_canvas);
+    render_to_canvas(tree, img_size, &mut sub_canvas);
 
     if let Some(clip) = clip {
         let rr = tiny_skia::Rect::from_xywh(

@@ -634,7 +634,7 @@ fn convert_fe_specular_lighting(
     let light_source = try_opt_or!(convert_light_source(fe), create_dummy_primitive());
 
     let specular_exponent = fe.attribute(AId::SpecularExponent).unwrap_or(1.0);
-    if specular_exponent < 1.0 || specular_exponent > 128.0 {
+    if !(1.0..=128.0).contains(&specular_exponent) {
         // When exponent is out of range, the whole filter primitive should be ignored.
         return create_dummy_primitive();
     }
@@ -732,7 +732,7 @@ fn resolve_input(
             // to previous result or `SourceGraphic`.
             if let tree::FilterInput::Reference(ref name) = input {
                 if !primitives.iter().any(|p| p.result == *name) {
-                    return if let Some(ref prev) = primitives.last() {
+                    return if let Some(prev) = primitives.last() {
                         tree::FilterInput::Reference(prev.result.clone())
                     } else {
                         tree::FilterInput::SourceGraphic
@@ -743,7 +743,7 @@ fn resolve_input(
             input
         }
         None => {
-            if let Some(ref prev) = primitives.last() {
+            if let Some(prev) = primitives.last() {
                 // If `in` is not set and this is not the first primitive
                 // than the input is a result of the previous primitive.
                 tree::FilterInput::Reference(prev.result.clone())

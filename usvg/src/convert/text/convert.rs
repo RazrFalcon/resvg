@@ -328,7 +328,7 @@ fn resolve_text_flow(
         path_copy.transform(node_transform);
         Rc::new(path_copy)
     } else {
-        path.clone()
+        path
     };
 
     let start_offset: Length = node.attribute(AId::StartOffset).unwrap_or_default();

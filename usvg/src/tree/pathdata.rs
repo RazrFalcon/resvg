@@ -440,7 +440,7 @@ fn calc_bbox_with_transform(
 
     // TODO: find a better way
     // It's an approximation, but it's better than nothing.
-    if let Some(ref stroke) = stroke {
+    if let Some(stroke) = stroke {
         let w = stroke.width.value() / 2.0;
         minx -= w;
         miny -= w;

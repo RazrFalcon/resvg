@@ -126,7 +126,7 @@ pub fn stroke(
     paint.anti_alias = anti_alias;
     paint.blend_mode = blend_mode;
 
-    canvas.pixmap.stroke_path(&path, &paint, &props, canvas.transform, canvas.clip.as_ref());
+    canvas.pixmap.stroke_path(path, &paint, &props, canvas.transform, canvas.clip.as_ref());
 }
 
 fn prepare_linear(

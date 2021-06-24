@@ -160,7 +160,7 @@ fn turbulence_impl(
     fractal_sum: bool,
     do_stitching: bool,
     lattice_selector: &[usize],
-    gradient: &Vec<Vec<Vec<f64>>>,
+    gradient: &[Vec<Vec<f64>>],
 ) -> f64 {
     // Adjust the base frequencies if necessary for stitching.
     let mut stitch = if do_stitching {
@@ -233,7 +233,7 @@ fn noise2(
     x: f64,
     y: f64,
     lattice_selector: &[usize],
-    gradient: &Vec<Vec<Vec<f64>>>,
+    gradient: &[Vec<Vec<f64>>],
     stitch_info: Option<StitchInfo>,
 ) -> f64 {
     let t = x + PERLIN_N as f64;

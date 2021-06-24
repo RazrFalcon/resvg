@@ -43,8 +43,8 @@ impl<'a> TransferFunction<'a> {
     fn is_dummy(&self) -> bool {
         match self {
             TransferFunction::Identity => true,
-            TransferFunction::Table(ref values) => values.is_empty(),
-            TransferFunction::Discrete(ref values) => values.is_empty(),
+            TransferFunction::Table(values) => values.is_empty(),
+            TransferFunction::Discrete(values) => values.is_empty(),
             TransferFunction::Linear { .. } => false,
             TransferFunction::Gamma { .. } => false,
         }
@@ -56,7 +56,7 @@ impl<'a> TransferFunction<'a> {
             TransferFunction::Identity => {
                 c
             }
-            TransferFunction::Table(ref values) => {
+            TransferFunction::Table(values) => {
                 let n = values.len() - 1;
                 let k = (c * (n as f64)).floor() as usize;
                 let k = cmp::min(k, n);
@@ -70,7 +70,7 @@ impl<'a> TransferFunction<'a> {
                     vk + (c - k / n) * n * (vk1 - vk)
                 }
             }
-            TransferFunction::Discrete(ref values) => {
+            TransferFunction::Discrete(values) => {
                 let n = values.len();
                 let k = (c * (n as f64)).floor() as usize;
                 values[cmp::min(k, n - 1)]
