@@ -1039,12 +1039,12 @@ impl FeLightSource {
                 let (x, y) = ts.apply(light.x, light.y);
                 light.x = x - region.x() as f64;
                 light.y = y - region.x() as f64;
-                light.z = light.z * sz;
+                light.z *= sz;
 
                 let (x, y) = ts.apply(light.points_at_x, light.points_at_y);
                 light.points_at_x = x - region.x() as f64;
                 light.points_at_y = y - region.x() as f64;
-                light.points_at_z = light.points_at_z * sz;
+                light.points_at_z *= sz;
             }
         }
 

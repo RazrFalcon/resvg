@@ -4,7 +4,6 @@
 
 use std::fmt::Display;
 use std::io::Write;
-use std::ops::Deref;
 
 use svgtypes::WriteBuffer;
 use xmlwriter::XmlWriter;
@@ -171,14 +170,11 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
                                 FeCompositeOperator::Arithmetic { .. }  => "arithmetic",
                             });
 
-                            match composite.operator {
-                                FeCompositeOperator::Arithmetic { k1, k2, k3, k4 } => {
+                           if let FeCompositeOperator::Arithmetic { k1, k2, k3, k4 } = composite.operator {
                                     xml.write_svg_attribute(AId::K1, &k1);
                                     xml.write_svg_attribute(AId::K2, &k2);
                                     xml.write_svg_attribute(AId::K3, &k3);
                                     xml.write_svg_attribute(AId::K4, &k4);
-                                }
-                                _ => {}
                             }
 
                             xml.write_svg_attribute(AId::Result, &fe.result);
@@ -443,7 +439,7 @@ fn conv_element(
                 // `clip-path` on it.
 
                 if let NodeKind::Path(ref path) = *node.first_child().unwrap().borrow() {
-                    let clip_id = g.clip_path.as_ref().map(String::deref);
+                    let clip_id = g.clip_path.as_deref();
                     write_path(path, is_clip_path, clip_id, opt, xml);
                 }
 

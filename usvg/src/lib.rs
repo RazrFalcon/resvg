@@ -62,6 +62,13 @@ Full spec can be found [here](https://github.com/RazrFalcon/resvg/blob/master/do
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_copy_implementations)]
+#![allow(clippy::many_single_char_names)]
+#![allow(clippy::collapsible_else_if)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::neg_cmp_op_on_partial_ord)]
+#![allow(clippy::identity_op)]
+#![allow(clippy::question_mark)]
+#![allow(clippy::upper_case_acronyms)]
 
 /// Unwraps `Option` and invokes `return` on `None`.
 macro_rules! try_opt {

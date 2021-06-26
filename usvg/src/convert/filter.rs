@@ -66,7 +66,7 @@ fn find_filter_with_children(
         }
 
         if link.has_children() {
-            return Some(link.clone());
+            return Some(link);
         }
     }
 
@@ -490,10 +490,7 @@ fn convert_fe_convolve_matrix(
         _      => tree::FeEdgeMode::Duplicate,
     };
 
-    let preserve_alpha = match fe.attribute(AId::PreserveAlpha).unwrap_or("false") {
-        "true" => true,
-        _      => false,
-    };
+    let preserve_alpha = fe.attribute(AId::PreserveAlpha).unwrap_or("false") == "true";
 
     tree::FilterKind::FeConvolveMatrix(tree::FeConvolveMatrix {
         input: resolve_input(fe, AId::In, primitives),

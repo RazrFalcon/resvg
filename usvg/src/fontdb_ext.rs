@@ -46,7 +46,7 @@ impl DatabaseExt for Database {
                     let thickness = u16::try_from(metrics.thickness).ok()
                         .and_then(NonZeroU16::new)
                         // `ttf_parser` guarantees that units_per_em is >= 16
-                        .unwrap_or(NonZeroU16::new(units_per_em.get() / 12).unwrap());
+                        .unwrap_or_else(|| NonZeroU16::new(units_per_em.get() / 12).unwrap());
 
                     (metrics.position, thickness)
                 }
@@ -103,10 +103,7 @@ impl DatabaseExt for Database {
             Some(true)
         });
 
-        match res {
-            Some(Some(true)) => true,
-            _ => false,
-        }
+       res == Some(Some(true))
     }
 }
 

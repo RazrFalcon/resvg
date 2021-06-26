@@ -184,7 +184,7 @@ fn collect_text_chunks_impl(
                     continue;
                 }
 
-                match resolve_text_flow(child.clone(), state) {
+                match resolve_text_flow(child, state) {
                     Some(v) => {
                         iter_state.text_flow = v;
                     }
@@ -613,9 +613,9 @@ fn resolve_decoration(
 
     let mut gen_style = |in_tspan: bool, in_text: bool| {
         let n = if in_tspan {
-            tspan.clone()
+            tspan
         } else if in_text {
-            (*text_node).clone()
+            *text_node
         } else {
             return None;
         };

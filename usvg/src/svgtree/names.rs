@@ -136,8 +136,8 @@ impl EId {
     }
 
     #[inline(never)]
-    pub fn to_str(&self) -> &'static str {
-        ELEMENTS.key(self)
+    pub fn to_str(self) -> &'static str {
+        ELEMENTS.key(&self)
     }
 }
 
@@ -482,8 +482,8 @@ impl AId {
     }
 
     #[inline(never)]
-    pub fn to_str(&self) -> &'static str {
-        ATTRIBUTES.key(self)
+    pub fn to_str(self) -> &'static str {
+        ATTRIBUTES.key(&self)
     }
 }
 

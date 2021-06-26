@@ -139,8 +139,8 @@ fn gen_map(
     writeln!(f, "    }}")?;
     writeln!(f, "")?;
     writeln!(f, "    #[inline(never)]")?;
-    writeln!(f, "    pub fn to_str(&self) -> &'static str {{")?;
-    writeln!(f, "        {}.key(self)", map_name)?;
+    writeln!(f, "    pub fn to_str(self) -> &'static str {{")?;
+    writeln!(f, "        {}.key(&self)", map_name)?;
     writeln!(f, "    }}")?;
     writeln!(f, "}}\n")?;
 

@@ -72,7 +72,7 @@ fn image_to_mask(width: u32, height: u32, data: &mut [rgb::RGBA8]) {
     for y in 0..height {
         for x in 0..width {
             let idx = (y * width + x) as usize;
-            let ref mut pixel = data[idx];
+            let pixel = &mut data[idx];
 
             let r = pixel.r as f64;
             let g = pixel.g as f64;

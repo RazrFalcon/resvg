@@ -32,7 +32,7 @@ fn process() -> Result<(), String> {
         Ok(args) => args,
         Err(e) => {
             println!("{}", HELP);
-            return Err(format!("{}", e));
+            return Err(e);
         }
     };
 
@@ -317,7 +317,7 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
         background:         input.opt_value_from_str("--background")?,
 
         languages:          input.opt_value_from_fn("--languages", parse_languages)?
-            .unwrap_or(vec!["en".to_string()]), // TODO: use system language
+            .unwrap_or_else(|| vec!["en".to_string()]), // TODO: use system language
         shape_rendering:    input.opt_value_from_str("--shape-rendering")?.unwrap_or_default(),
         text_rendering:     input.opt_value_from_str("--text-rendering")?.unwrap_or_default(),
         image_rendering:    input.opt_value_from_str("--image-rendering")?.unwrap_or_default(),
@@ -350,7 +350,7 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
 fn parse_dpi(s: &str) -> Result<u32, String> {
     let n: u32 = s.parse().map_err(|_| "invalid number")?;
 
-    if n >= 10 && n <= 4000 {
+    if (10..=4000).contains(&n) {
         Ok(n)
     } else {
         Err("DPI out of bounds".to_string())
@@ -533,7 +533,7 @@ impl log::Log for SimpleLogger {
 
     fn log(&self, record: &log::Record) {
         if self.enabled(record.metadata()) {
-            let target = if record.target().len() > 0 {
+            let target = if !record.target().is_empty() {
                 record.target()
             } else {
                 record.module_path().unwrap_or_default()

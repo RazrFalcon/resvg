@@ -60,7 +60,7 @@ pub fn convert(
     parent: &mut tree::Node,
     tree: &mut tree::Tree,
 ) {
-    let text_node = TextNode::new(node.clone());
+    let text_node = TextNode::new(node);
     let (mut new_paths, bbox) = text_to_paths(text_node, state, id_generator, parent, tree);
 
     if new_paths.len() == 1 {
@@ -132,7 +132,7 @@ fn text_to_paths(
         for span in &mut chunk.spans {
             let decoration_spans = collect_decoration_spans(span, &clusters);
 
-            let mut span_ts = text_ts.clone();
+            let mut span_ts = text_ts;
             span_ts.translate(x, y);
             if let TextFlow::Horizontal = chunk.text_flow {
                 // In case of a horizontal flow, shift transform and not clusters,
@@ -432,7 +432,7 @@ fn paint_server_to_user_space_on_use(
     bbox: Rect,
     tree: &mut tree::Tree,
 ) -> Option<String> {
-    if let Some(ps) = tree.defs_by_id(id) {
+    if let Some(mut ps) = tree.defs_by_id(id) {
         if ps.units() != Some(tree::Units::ObjectBoundingBox) {
             return None;
         }
@@ -440,7 +440,7 @@ fn paint_server_to_user_space_on_use(
         // TODO: is `pattern` copying safe? Maybe we should reset id's on all `pattern` children.
         // We have to clone a paint server, in case some other element is already using it.
         // If not, the `convert` module will remove unused defs anyway.
-        let mut new_ps = ps.clone().make_deep_copy();
+        let mut new_ps = ps.make_deep_copy();
         tree.defs().append(new_ps.clone());
 
         let new_id = gen_paint_server_id(tree);

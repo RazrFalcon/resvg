@@ -9,6 +9,9 @@
 #![doc(html_root_url = "https://docs.rs/resvg/0.15.0")]
 
 #![warn(missing_docs)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::identity_op)]
+#![allow(clippy::upper_case_acronyms)]
 
 pub use usvg::ScreenSize;
 
