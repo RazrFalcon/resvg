@@ -347,7 +347,7 @@ impl<'a> Node<'a> {
     }
 
     pub fn parent_element(&self) -> Option<Self> {
-        self.ancestors().skip(1).filter(|n| n.is_element()).next()
+        self.ancestors().skip(1).find(|n| n.is_element())
     }
 
     pub fn prev_sibling(&self) -> Option<Self> {
@@ -363,7 +363,7 @@ impl<'a> Node<'a> {
     }
 
     pub fn first_element_child(&self) -> Option<Self> {
-        self.children().filter(|n| n.is_element()).next()
+        self.children().find(|n| n.is_element())
     }
 
     pub fn last_child(&self) -> Option<Self> {
@@ -458,11 +458,10 @@ impl<'a> Iterator for Children<'a> {
         let node = self.front.take();
         if self.front == self.back {
             self.back = None;
-            node
         } else {
             self.front = node.as_ref().and_then(Node::next_sibling);
-            node
         }
+        node
     }
 }
 
@@ -471,11 +470,10 @@ impl<'a> DoubleEndedIterator for Children<'a> {
         let node = self.back.take();
         if self.back == self.front {
             self.front = None;
-            node
         } else {
             self.back = node.as_ref().and_then(Node::prev_sibling);
-            node
         }
+        node
     }
 }
 
