@@ -11,5 +11,6 @@ cc = "1.0"
 pkg-config = "0.3"
 
 [dependencies]
-skia-safe = "0.39.1"
+# Make this "0" so it's easier to keep up to date
+skia-safe = "0"
 png = "0.16.8"
