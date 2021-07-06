@@ -11,9 +11,6 @@ repository = "https://github.com/RazrFalcon/resvg"
 [workspace]
 members = ["c-api", "svgfilters", "usvg"]
 
-[badges]
-travis-ci = { repository = "RazrFalcon/resvg" }
-
 [[bin]]
 name = "resvg"
 required-features = ["text"]

@@ -932,7 +932,7 @@ fn parse_svg_use_element(
     // TODO: this
     // We don't support 'use' elements linked to 'svg' element.
     if tag_name == EId::Svg {
-        warn!("'use' elements linked to an 'svg' element are not supported. Skipped.");
+        warn!("'use' elements linked to 'svg' elements are not supported. Skipped.");
         return Ok(());
     }
 

@@ -27,10 +27,10 @@ pub fn convert(
     tree: &mut tree::Tree,
 ) -> Option<ServerOrColor> {
     // Check for existing.
-    if let Some(exist_node) = tree.defs_by_id(node.element_id()) {
+    if let Some(existing_node) = tree.defs_by_id(node.element_id()) {
         return Some(ServerOrColor::Server {
             id: node.element_id().to_string(),
-            units: exist_node.units()?,
+            units: existing_node.units()?,
         });
     }
 

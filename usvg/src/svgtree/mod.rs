@@ -281,6 +281,7 @@ impl<'a> Node<'a> {
             if self.has_attribute(aid) {
                 Some(*self)
             } else {
+                // Non-inheritable attributes can inherit a value only from a direct parent.
                 let n = self.parent_element()?;
                 if n.has_attribute(aid) {
                     Some(n)

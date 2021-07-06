@@ -801,7 +801,7 @@ fn convert_path(
         .unwrap_or(state.opt.shape_rendering);
 
     // If a path doesn't have a fill or a stroke than it's invisible.
-    // By setting `visibility` to `hidden` we are disabling the rendering of this path.
+    // By setting `visibility` to `hidden` we are disabling rendering of this path.
     if fill.is_none() && stroke.is_none() {
         visibility = tree::Visibility::Hidden;
     }

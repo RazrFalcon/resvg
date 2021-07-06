@@ -13,9 +13,6 @@ readme = "README.md"
 exclude = ["testing-tools/**"]
 workspace = ".."
 
-[badges]
-travis-ci = { repository = "RazrFalcon/resvg" }
-
 [[bin]]
 name = "usvg"
 required-features = ["system-fonts", "text"]
