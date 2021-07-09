@@ -419,6 +419,7 @@ fn resolve_font(
     state.opt.fontdb.load_font(id)
 }
 
+// TODO: properly resolve narrower/wider
 fn conv_font_stretch(node: svgtree::Node) -> fontdb::Stretch {
     if let Some(n) = node.find_node_with_attribute(AId::FontStretch) {
         match n.attribute(AId::FontStretch).unwrap_or("") {

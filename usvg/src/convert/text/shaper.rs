@@ -55,7 +55,6 @@ impl Glyph {
     }
 }
 
-
 /// An outlined cluster.
 ///
 /// Cluster/grapheme is a single, unbroken, renderable character.

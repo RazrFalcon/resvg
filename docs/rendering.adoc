@@ -121,12 +121,12 @@ There are a few reasons for that:
 
 1. https://www.w3.org/TR/SVG11/text.html[SVG Text specification] is very large.
    It includes 8 elements and like 30 attributes.
-1. No application has a complete SVG Text support (at least to my knowledge).
+2. No application has a complete SVG Text support (at least to my knowledge).
    Even browsers like Chrome and Firefox have a very limited text support.
-1. Text rendering is OS-dependent. This is the only part of the SVG, except `systemLanguage`
+3. Text rendering is OS-dependent. This is the only part of the SVG, except `systemLanguage`
    attribute, that relies on system settings.
    We can have different locales, fonts, rendering libraries, shaping libraries, etc.
-1. We need an ability to control each glyph, which is not something many 2D rendering libraries
+4. We need an ability to control each glyph, which is not something many 2D rendering libraries
    allow. For example, Qt doesn't support this. Pango also has a very limited control over glyphs.
    So we have to use text shaping (harfbuzz) and font rendering (freetype) libraries directly.
 
@@ -204,7 +204,8 @@ Only complex parts are rect's `rx`/`ry` attributes resolving and units conversio
 Units conversion is fairly simple, except `em`/`ex` units.
 Lets say you have an SVG that looks like this:
 
-```xml
+[source,xml]
+----
 <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
     <g font-size="20">
         <g font-size="200%">
@@ -214,17 +215,17 @@ Lets say you have an SVG that looks like this:
         </g>
     </g>
 </svg>
-```
+----
 
 What's the rect's width and height? The answer is 24 and 12 respectively.
 
 The trick is that font units should be resolved from top to bottom, so:
 
 1. 20
-1. 20 * 200% = 40
-1. 40 * 1.2^1 = 48 (https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size[details])
-1. width: 48 * 0.5 = 24
-1. height: (48 * 0.5) / 2 = 12
+2. 20 * 200% = 40
+3. 40 * 1.2^1 = 48 (https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size[details])
+4. width: 48 * 0.5 = 24
+5. height: (48 * 0.5) / 2 = 12
 
 == Rendering
 
