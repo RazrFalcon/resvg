@@ -493,6 +493,7 @@ pub struct Filter {
     /// `x`, `y`, `width` and `height` in the SVG.
     pub rect: Rect,
 
+    // TODO: rename to `primitives`
     /// A list of filter primitives.
     pub children: Vec<FilterPrimitive>,
 }

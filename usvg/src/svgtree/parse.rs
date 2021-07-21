@@ -1013,7 +1013,7 @@ fn parse_svg_text_element_impl(
         let mut tag_name = try_opt_continue!(parse_tag_name(node));
 
         if tag_name == EId::A {
-            // Treat links as a simple text.
+            // Treat links as simple text.
             tag_name = EId::Tspan;
         }
 

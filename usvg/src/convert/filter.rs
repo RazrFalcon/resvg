@@ -33,9 +33,9 @@ pub fn convert(
         "Filter '{}' has an invalid region. Skipped.", node.element_id(),
     );
 
-    let node_with_children = find_filter_with_children(node)?;
-    let children = collect_children(&node_with_children, primitive_units, state);
-    if children.is_empty() {
+    let node_with_primitives = find_filter_with_primitives(node)?;
+    let primitives = collect_children(&node_with_primitives, primitive_units, state);
+    if primitives.is_empty() {
         return None;
     }
 
@@ -45,14 +45,14 @@ pub fn convert(
             units,
             primitive_units,
             rect,
-            children,
+            children: primitives,
         })
     );
 
     Some(node.element_id().to_string())
 }
 
-fn find_filter_with_children(
+fn find_filter_with_primitives(
     node: svgtree::Node,
 ) -> Option<svgtree::Node> {
     for link_id in node.href_iter() {
