@@ -13,7 +13,7 @@ members = ["c-api", "svgfilters", "usvg"]
 
 [[bin]]
 name = "resvg"
-required-features = ["text"]
+required-features = ["text", "system-fonts"]
 
 [dependencies]
 jpeg-decoder = { version = "0.1", default-features = false }
@@ -29,5 +29,6 @@ usvg = { path = "usvg", version = "0.15.0", default-features = false }
 once_cell = "1.5"
 
 [features]
-default = ["text"]
-text = ["usvg/system-fonts", "usvg/text"] # enables SVG Text support
+default = ["text", "system-fonts"]
+text = ["usvg/text"] # enables SVG Text support
+system-fonts = ["usvg/system-fonts"] # enables system fonts loading
