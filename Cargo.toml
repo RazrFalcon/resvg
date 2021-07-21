@@ -1,7 +1,7 @@
 [package]
 name = "resvg"
 version = "0.15.0"
-authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
+authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster", "skia"]
 license = "MPL-2.0"
 edition = "2018"
