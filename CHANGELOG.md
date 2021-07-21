@@ -9,6 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Fixed
 - Greatly improve `symbol` resolving speed in `usvg`.
+- `simplecss` updated with CSS specificity support.
 
 ## [0.15.0] - 2021-06-13
 ### Added
