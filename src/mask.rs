@@ -40,7 +40,7 @@ pub fn mask(
 
     {
         use rgb::FromSlice;
-        image_to_mask(mask_pixmap.width(), mask_pixmap.height(), mask_pixmap.data_mut().as_rgba_mut());
+        image_to_mask(mask_pixmap.data_mut().as_rgba_mut());
     }
 
     if let Some(ref id) = mask.mask {
@@ -64,26 +64,21 @@ pub fn mask(
 }
 
 /// Converts an image into an alpha mask.
-fn image_to_mask(width: u32, height: u32, data: &mut [rgb::RGBA8]) {
+fn image_to_mask(data: &mut [rgb::RGBA8]) {
     let coeff_r = 0.2125 / 255.0;
     let coeff_g = 0.7154 / 255.0;
     let coeff_b = 0.0721 / 255.0;
 
-    for y in 0..height {
-        for x in 0..width {
-            let idx = (y * width + x) as usize;
-            let pixel = &mut data[idx];
+    for pixel in data {
+        let r = pixel.r as f64;
+        let g = pixel.g as f64;
+        let b = pixel.b as f64;
 
-            let r = pixel.r as f64;
-            let g = pixel.g as f64;
-            let b = pixel.b as f64;
+        let luma = r * coeff_r + g * coeff_g + b * coeff_b;
 
-            let luma = r * coeff_r + g * coeff_g + b * coeff_b;
-
-            pixel.r = 0;
-            pixel.g = 0;
-            pixel.b = 0;
-            pixel.a = usvg::utils::f64_bound(0.0, luma * 255.0, 255.0).ceil() as u8;
-        }
+        pixel.r = 0;
+        pixel.g = 0;
+        pixel.b = 0;
+        pixel.a = usvg::utils::f64_bound(0.0, luma * 255.0, 255.0).ceil() as u8;
     }
 }
