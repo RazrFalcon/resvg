@@ -34,7 +34,7 @@ pub fn fill(
                     usvg::NodeKind::Pattern(ref pattern) => {
                         let global_ts = usvg::Transform::from_native(canvas.transform);
                         let (patt_pix, patt_ts)
-                            = try_opt!(prepare_pattern_pixmap(&node, pattern, &global_ts, bbox));
+                            = try_opt!(prepare_pattern_pixmap(tree, &node, pattern, &global_ts, bbox));
 
                         pattern_pixmap = patt_pix;
                         paint.shader = prepare_pattern(&pattern_pixmap, patt_ts, opacity);
@@ -89,7 +89,7 @@ pub fn stroke(
                         usvg::NodeKind::Pattern(ref pattern) => {
                             let global_ts = usvg::Transform::from_native(canvas.transform);
                             let (patt_pix, patt_ts)
-                                = try_opt!(prepare_pattern_pixmap(&node, pattern, &global_ts, bbox));
+                                = try_opt!(prepare_pattern_pixmap(tree, &node, pattern, &global_ts, bbox));
 
                             pattern_pixmap = patt_pix;
                             paint.shader = prepare_pattern(&pattern_pixmap, patt_ts, opacity);
@@ -215,6 +215,7 @@ fn prepare_radial(
 }
 
 fn prepare_pattern_pixmap(
+    tree: &usvg::Tree,
     pattern_node: &usvg::Node,
     pattern: &usvg::Pattern,
     global_ts: &usvg::Transform,
@@ -244,7 +245,7 @@ fn prepare_pattern_pixmap(
         canvas.scale(bbox.width() as f32, bbox.height() as f32);
     }
 
-    crate::render::render_group(pattern_node, &mut RenderState::Ok, &mut canvas);
+    crate::render::render_group(tree, pattern_node, &mut RenderState::Ok, &mut canvas);
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);

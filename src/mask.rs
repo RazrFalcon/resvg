@@ -5,6 +5,7 @@
 use crate::render::prelude::*;
 
 pub fn mask(
+    tree: &usvg::Tree,
     node: &usvg::Node,
     mask: &usvg::Mask,
     bbox: Rect,
@@ -35,7 +36,7 @@ pub fn mask(
             mask_canvas.apply_transform(usvg::Transform::from_bbox(bbox).to_native());
         }
 
-        crate::render::render_group(node, &mut RenderState::Ok, &mut mask_canvas);
+        crate::render::render_group(tree, node, &mut RenderState::Ok, &mut mask_canvas);
     }
 
     {
@@ -44,9 +45,9 @@ pub fn mask(
     }
 
     if let Some(ref id) = mask.mask {
-        if let Some(ref mask_node) = node.tree().defs_by_id(id) {
+        if let Some(ref mask_node) = tree.defs_by_id(id) {
             if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                self::mask(mask_node, mask, bbox, canvas);
+                self::mask(tree, mask_node, mask, bbox, canvas);
             }
         }
     }

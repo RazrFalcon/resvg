@@ -541,7 +541,7 @@ fn ungroup_groups(
     opt: &Options,
     tree: &mut tree::Tree,
 ) {
-    fn ungroup(parent: tree::Node, opt: &Options) -> bool {
+    fn ungroup(tree: &tree::Tree, parent: tree::Node, opt: &Options) -> bool {
         let mut changed = false;
 
         let mut curr_node = parent.first_child();
@@ -558,7 +558,7 @@ fn ungroup_groups(
                 && g.filter.is_none()
                 && g.enable_background.is_none()
                 && !(opt.keep_named_groups && !g.id.is_empty())
-                && !is_id_used(&parent.tree(), &g.id)
+                && !is_id_used(tree, &g.id)
             } else {
                 false
             };
@@ -589,7 +589,7 @@ fn ungroup_groups(
                 node.detach();
                 changed = true;
             } else {
-                if ungroup(node, opt) {
+                if ungroup(tree, node, opt) {
                     changed = true;
                 }
             }
@@ -598,7 +598,7 @@ fn ungroup_groups(
         changed
     }
 
-    while ungroup(tree.root(), opt) {}
+    while ungroup(tree, tree.root(), opt) {}
 }
 
 fn remove_unused_defs(

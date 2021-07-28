@@ -833,7 +833,7 @@ fn apply_image(
                 canvas.scale(sx as f32, sy as f32);
                 canvas.apply_transform(node.transform().to_native());
 
-                crate::render::render_node(node, &mut RenderState::Ok, &mut canvas);
+                crate::render::render_node(tree, node, &mut RenderState::Ok, &mut canvas);
             }
         }
     }

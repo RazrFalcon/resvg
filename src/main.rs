@@ -132,7 +132,7 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
                     background.red, background.green, background.blue, 255));
             }
 
-            resvg::render_node(&node, args.fit_to, pixmap.as_mut());
+            resvg::render_node(tree, &node, args.fit_to, pixmap.as_mut());
             pixmap
         } else {
             return Err(format!("SVG doesn't have '{}' ID", id));

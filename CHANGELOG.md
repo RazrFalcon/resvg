@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- `resvg::render_node` requires `usvg::Tree` now.
+
+### Removed
+- `Node::tree`. Cannot be implemented efficiently anymore.
+
 ### Fixed
 - Greatly improve `symbol` resolving speed in `usvg`.
 - `simplecss` updated with CSS specificity support.

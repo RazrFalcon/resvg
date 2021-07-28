@@ -5,6 +5,7 @@
 use crate::render::prelude::*;
 
 pub fn clip(
+    tree: &usvg::Tree,
     node: &usvg::Node,
     cp: &usvg::ClipPath,
     bbox: Rect,
@@ -28,14 +29,14 @@ pub fn clip(
         match *node.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
                 crate::path::draw(
-                    &node.tree(),
+                    tree,
                     path_node,
                     tiny_skia::BlendMode::Clear,
                     &mut clip_canvas,
                 );
             }
             usvg::NodeKind::Group(ref g) => {
-                clip_group(&node, g, bbox, &mut clip_canvas);
+                clip_group(tree, &node, g, bbox, &mut clip_canvas);
             }
             _ => {}
         }
@@ -44,9 +45,9 @@ pub fn clip(
     }
 
     if let Some(ref id) = cp.clip_path {
-        if let Some(ref clip_node) = node.tree().defs_by_id(id) {
+        if let Some(ref clip_node) = tree.defs_by_id(id) {
             if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                clip(clip_node, cp, bbox, canvas);
+                clip(tree, clip_node, cp, bbox, canvas);
             }
         }
     }
@@ -58,13 +59,14 @@ pub fn clip(
 }
 
 fn clip_group(
+    tree: &usvg::Tree,
     node: &usvg::Node,
     g: &usvg::Group,
     bbox: Rect,
     canvas: &mut Canvas,
 ) {
     if let Some(ref id) = g.clip_path {
-        if let Some(ref clip_node) = node.tree().defs_by_id(id) {
+        if let Some(ref clip_node) = tree.defs_by_id(id) {
             if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
                 // If a `clipPath` child also has a `clip-path`
                 // then we should render this child on a new canvas,
@@ -74,8 +76,8 @@ fn clip_group(
                 let mut clip_canvas = Canvas::from(clip_pixmap.as_mut());
                 clip_canvas.transform = canvas.transform;
 
-                draw_group_child(node, &mut clip_canvas);
-                clip(clip_node, cp, bbox, &mut clip_canvas);
+                draw_group_child(tree, node, &mut clip_canvas);
+                clip(tree, clip_node, cp, bbox, &mut clip_canvas);
 
                 let mut paint = tiny_skia::PixmapPaint::default();
                 paint.blend_mode = tiny_skia::BlendMode::Xor;
@@ -86,12 +88,12 @@ fn clip_group(
     }
 }
 
-fn draw_group_child(node: &usvg::Node, canvas: &mut Canvas) {
+fn draw_group_child(tree: &usvg::Tree, node: &usvg::Node, canvas: &mut Canvas) {
     if let Some(child) = node.first_child() {
         canvas.apply_transform(child.transform().to_native());
 
          if let usvg::NodeKind::Path(ref path_node) = *child.borrow() {
-                crate::path::draw(&child.tree(), path_node, tiny_skia::BlendMode::SourceOver, canvas);
+                crate::path::draw(tree, path_node, tiny_skia::BlendMode::SourceOver, canvas);
         }
     }
 }

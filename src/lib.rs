@@ -48,6 +48,7 @@ pub fn render(
 /// If `fit_to` differs from `node.calculate_bbox()`,
 /// SVG would be scaled accordingly.
 pub fn render_node(
+    tree: &usvg::Tree,
     node: &usvg::Node,
     fit_to: usvg::FitTo,
     pixmap: tiny_skia::PixmapMut,
@@ -66,6 +67,6 @@ pub fn render_node(
 
     let size = fit_to.fit_to(node_bbox.size().to_screen_size())?;
     let mut canvas = render::Canvas::from(pixmap);
-    render::render_node_to_canvas(node, vbox, size, &mut render::RenderState::Ok, &mut canvas);
+    render::render_node_to_canvas(tree, node, vbox, size, &mut render::RenderState::Ok, &mut canvas);
     Some(())
 }

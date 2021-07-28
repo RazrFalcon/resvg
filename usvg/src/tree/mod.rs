@@ -190,9 +190,6 @@ pub trait NodeExt {
     /// Shorthand for `Node::append(Node::new(Box::new(kind)))`.
     fn append_kind(&mut self, kind: NodeKind) -> Node;
 
-    /// Returns a node's tree.
-    fn tree(&self) -> Tree;
-
     /// Calculates node's absolute bounding box.
     ///
     /// Can be expensive on large paths and groups.
@@ -242,11 +239,6 @@ impl NodeExt for Node {
         let new_node = Node::new(kind);
         self.append(new_node.clone());
         new_node
-    }
-
-    #[inline]
-    fn tree(&self) -> Tree {
-        Tree { root: self.root() }
     }
 
     #[inline]
