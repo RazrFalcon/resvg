@@ -314,16 +314,21 @@ fn resolve_text_flow(
     node: svgtree::Node,
     state: &State,
 ) -> Option<TextFlow> {
-    let path_node = node.attribute::<svgtree::Node>(AId::Href)?;
+    let linked_node = node.attribute::<svgtree::Node>(AId::Href)?;
 
-    if !path_node.has_tag_name(EId::Path) {
-        return None;
-    }
-
-    let path = path_node.attribute::<tree::SharedPathData>(AId::D)?;
+    let path = match linked_node.tag_name()? {
+          EId::Rect
+        | EId::Circle
+        | EId::Ellipse
+        | EId::Line
+        | EId::Polyline
+        | EId::Polygon => super::super::shapes::convert(linked_node, state)?,
+        EId::Path => linked_node.attribute::<tree::SharedPathData>(AId::D)?,
+        _ => return None,
+    };
 
     // The reference path's transform needs to be applied
-    let path = if let Some(node_transform) = path_node.attribute::<Transform>(AId::Transform) {
+    let path = if let Some(node_transform) = linked_node.attribute::<Transform>(AId::Transform) {
         let mut path_copy = path.as_ref().clone();
         path_copy.transform(node_transform);
         Rc::new(path_copy)
