@@ -1,22 +1,22 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
-     font-family="Noto Sans" font-size="26">
+     font-family="Noto Sans" font-size="64">
     <title>Nested with `baseline` (2)</title>
 
     <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
           stroke="gray" stroke-width="0.5"/>
 
     <!-- should be hovered -->
-    <text id="text1" x="66" y="100" fill="red">
-        <tspan id="tspan1" baseline-shift="50%">
-            <tspan id="tspan2" baseline-shift="50%">
+    <text id="text1" x="32" y="100" fill="red">
+        <tspan id="tspan1" baseline-shift="20%">
+            <tspan id="tspan2" baseline-shift="20%">
                 Text
             </tspan>
         </tspan>
     </text>
 
-    <text id="text2" x="66" y="100">
-        <tspan id="tspan3" baseline-shift="50%">
-            <tspan id="tspan4" baseline-shift="50%">
+    <text id="text2" x="32" y="100">
+        <tspan id="tspan3" baseline-shift="20%">
+            <tspan id="tspan4" baseline-shift="20%">
                 <tspan id="tspan5" baseline-shift="baseline">
                     Text
                 </tspan>

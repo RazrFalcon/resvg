@@ -13,6 +13,7 @@ This changelog also contains important changes in dependencies.
 - Allow markers on all shapes. SVG2
 - `textPath` can reference basic shapes now. SVG2
 - `usvg::OptionsRef`, which is a non-owned `usvg::Options` variant.
+- `simplecss` updated with CSS specificity support.
 
 ### Changed
 - `resvg::render_node` requires `usvg::Tree` now.
@@ -24,7 +25,7 @@ This changelog also contains important changes in dependencies.
 
 ### Fixed
 - Greatly improve `symbol` resolving speed in `usvg`.
-- `simplecss` updated with CSS specificity support.
+- Whitespaces trimming on nested `tspan`.
 
 ## [0.15.0] - 2021-06-13
 ### Added

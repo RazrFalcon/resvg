@@ -1208,14 +1208,16 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
             // To:   '<text>Text <tspan>text</tspan></text>'
             //
             // See text-tspan-02-b.svg for details.
-            if c2 == Some(b' ') && c2 == c3 {
-                if depth1 < depth2 {
+            if depth1 < depth2 {
+                if c3 == Some(b' ') {
                     if xmlspace2 == XmlSpace::Default {
                         if let NodeKind::Text(ref mut text) = doc.nodes[node2_id.0].kind {
                             text.remove_first_space();
                         }
                     }
-                } else {
+                }
+            } else {
+                if c2 == Some(b' ') && c2 == c3 {
                     if xmlspace1 == XmlSpace::Default && xmlspace2 == XmlSpace::Default {
                         if let NodeKind::Text(ref mut text) = doc.nodes[node1_id.0].kind {
                             text.remove_last_space();
