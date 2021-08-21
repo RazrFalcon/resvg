@@ -1,8 +1,8 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>Negative `ry` attribute</title>
-    <desc>Nothing should be rendered</desc>
+    <title>Negative `ry` attribute (SVG 2)</title>
+    <desc>Nothing should be rendered in SVG 1</desc>
 
-    <ellipse id="ellipse1" cx="90" cy="100" rx="80" ry="-60" fill="red"/>
+    <ellipse id="ellipse1" cx="100" cy="100" rx="80" ry="-80" fill="green"/>
 
     <!-- image frame -->
     <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>

@@ -47,32 +47,7 @@ fn convert_rect(
     let x = node.convert_user_length(AId::X, state, Length::zero());
     let y = node.convert_user_length(AId::Y, state, Length::zero());
 
-    // Resolve rx, ry.
-    let mut rx_opt = node.attribute::<Length>(AId::Rx);
-    let mut ry_opt = node.attribute::<Length>(AId::Ry);
-
-    // Remove negative values first.
-    if let Some(v) = rx_opt {
-        if v.num.is_sign_negative() {
-            rx_opt = None;
-        }
-    }
-    if let Some(v) = ry_opt {
-        if v.num.is_sign_negative() {
-            ry_opt = None;
-        }
-    }
-
-    // Resolve.
-    let (rx, ry) = match (rx_opt, ry_opt) {
-        (None,     None)     => (Length::zero(), Length::zero()),
-        (Some(rx), None)     => (rx, rx),
-        (None,     Some(ry)) => (ry, ry),
-        (Some(rx), Some(ry)) => (rx, ry),
-    };
-
-    let mut rx = units::convert_length(rx, node, AId::Rx, tree::Units::UserSpaceOnUse, state);
-    let mut ry = units::convert_length(ry, node, AId::Ry, tree::Units::UserSpaceOnUse, state);
+    let (mut rx, mut ry) = resolve_rx_ry(node, state);
 
     // Clamp rx/ry to the half of the width/height.
     //
@@ -105,6 +80,39 @@ fn convert_rect(
     };
 
     Some(Rc::new(path))
+}
+
+fn resolve_rx_ry(
+    node: svgtree::Node,
+    state: &State,
+) -> (f64, f64) {
+    let mut rx_opt = node.attribute::<Length>(AId::Rx);
+    let mut ry_opt = node.attribute::<Length>(AId::Ry);
+
+    // Remove negative values first.
+    if let Some(v) = rx_opt {
+        if v.num.is_sign_negative() {
+            rx_opt = None;
+        }
+    }
+    if let Some(v) = ry_opt {
+        if v.num.is_sign_negative() {
+            ry_opt = None;
+        }
+    }
+
+    // Resolve.
+    let (rx, ry) = match (rx_opt, ry_opt) {
+        (None,     None)     => (Length::zero(), Length::zero()),
+        (Some(rx), None)     => (rx, rx),
+        (None,     Some(ry)) => (ry, ry),
+        (Some(rx), Some(ry)) => (rx, ry),
+    };
+
+    let rx = units::convert_length(rx, node, AId::Rx, tree::Units::UserSpaceOnUse, state);
+    let ry = units::convert_length(ry, node, AId::Ry, tree::Units::UserSpaceOnUse, state);
+
+    (rx, ry)
 }
 
 fn convert_line(
@@ -189,8 +197,7 @@ fn convert_ellipse(
 ) -> Option<tree::SharedPathData> {
     let cx = node.convert_user_length(AId::Cx, state, Length::zero());
     let cy = node.convert_user_length(AId::Cy, state, Length::zero());
-    let rx = node.convert_user_length(AId::Rx, state, Length::zero());
-    let ry = node.convert_user_length(AId::Ry, state, Length::zero());
+    let (rx, ry) = resolve_rx_ry(node, state);
 
     if !rx.is_valid_length() {
         warn!("Ellipse '{}' has an invalid 'rx' value. Skipped.", node.element_id());
