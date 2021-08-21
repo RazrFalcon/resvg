@@ -262,9 +262,9 @@ fn convert_stops(grad: svgtree::Node) -> Vec<tree::Stop> {
             // `number` can be either a number or a percentage.
             let offset = stop.attribute(AId::Offset).unwrap_or(prev_offset);
             let offset = match offset.unit {
-                Unit::None => offset.num,
-                Unit::Percent => offset.num / 100.0,
-                _ => prev_offset.num,
+                Unit::None => offset.number,
+                Unit::Percent => offset.number / 100.0,
+                _ => prev_offset.number,
             };
             let offset = crate::utils::f64_bound(0.0, offset, 1.0);
             prev_offset = Length::new_number(offset);

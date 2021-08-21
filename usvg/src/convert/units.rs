@@ -15,7 +15,7 @@ pub fn convert_length(
     state: &State,
 ) -> f64 {
     let dpi = state.opt.dpi;
-    let n = length.num;
+    let n = length.number;
     match length.unit {
         Unit::None | Unit::Px => n,
         Unit::Em => n * resolve_font_size(node, state),
@@ -27,7 +27,7 @@ pub fn convert_length(
         Unit::Pc => n * dpi / 6.0,
         Unit::Percent => {
             if object_units == tree::Units::ObjectBoundingBox {
-                length.num / 100.0
+                length.number / 100.0
             } else {
                 let view_box = state.view_box;
 
@@ -73,7 +73,7 @@ pub fn convert_list(
 }
 
 fn convert_percent(length: Length, base: f64) -> f64 {
-    base * length.num / 100.0
+    base * length.number / 100.0
 }
 
 #[inline(never)]
@@ -83,7 +83,7 @@ pub fn resolve_font_size(node: svgtree::Node, state: &State) -> f64 {
     for n in nodes.iter().rev().skip(1) { // skip Root
         if let Some(length) = n.attribute::<Length>(AId::FontSize) {
             let dpi = state.opt.dpi;
-            let n = length.num;
+            let n = length.number;
             font_size = match length.unit {
                 Unit::None | Unit::Px => n,
                 Unit::Em => n * font_size,
@@ -96,7 +96,7 @@ pub fn resolve_font_size(node: svgtree::Node, state: &State) -> f64 {
                 Unit::Percent => {
                     // If `font-size` has percent units that it's value
                     // is relative to the parent node `font-size`.
-                    length.num * font_size * 0.01
+                    length.number * font_size * 0.01
                 }
             }
         } else if let Some(name) = n.attribute(AId::FontSize) {

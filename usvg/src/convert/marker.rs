@@ -461,24 +461,12 @@ fn convert_rect(
 fn convert_orientation(
     node: svgtree::Node,
 ) -> MarkerOrientation {
-    use svgtypes::{Angle, AngleUnit};
-
     if node.attribute(AId::Orient) == Some("auto") {
         MarkerOrientation::Auto
     } else {
-        match node.attribute::<Angle>(AId::Orient) {
-            Some(angle) => {
-                let a = match angle.unit {
-                    AngleUnit::Degrees  => angle.num,
-                    AngleUnit::Gradians => angle.num * 180.0 / 200.0,
-                    AngleUnit::Radians  => angle.num.to_degrees(),
-                };
-
-                MarkerOrientation::Angle(a)
-            }
-            None => {
-                MarkerOrientation::Angle(0.0)
-            }
+        match node.attribute::<svgtypes::Angle>(AId::Orient) {
+            Some(angle) => MarkerOrientation::Angle(angle.to_degrees()),
+            None => MarkerOrientation::Angle(0.0),
         }
     }
 }

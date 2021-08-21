@@ -171,13 +171,13 @@ fn resolve_svg_size(
         state.view_box = vbox;
 
         let w = if width.unit == Unit::Percent {
-            vbox.width() * (width.num / 100.0)
+            vbox.width() * (width.number / 100.0)
         } else {
             svg.convert_user_length(AId::Width, &state, def)
         };
 
         let h = if height.unit == Unit::Percent {
-            vbox.height() * (height.num / 100.0)
+            vbox.height() * (height.number / 100.0)
         } else {
             svg.convert_user_length(AId::Height, &state, def)
         };

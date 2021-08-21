@@ -91,12 +91,12 @@ fn resolve_rx_ry(
 
     // Remove negative values first.
     if let Some(v) = rx_opt {
-        if v.num.is_sign_negative() {
+        if v.number.is_sign_negative() {
             rx_opt = None;
         }
     }
     if let Some(v) = ry_opt {
-        if v.num.is_sign_negative() {
+        if v.number.is_sign_negative() {
             ry_opt = None;
         }
     }

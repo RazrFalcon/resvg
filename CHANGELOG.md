@@ -14,6 +14,7 @@ This changelog also contains important changes in dependencies.
 - `textPath` can reference basic shapes now. SVG2
 - `usvg::OptionsRef`, which is a non-owned `usvg::Options` variant.
 - `simplecss` updated with CSS specificity support.
+- `turn` angle unit support. SVG2
 
 ### Changed
 - `resvg::render_node` requires `usvg::Tree` now.

@@ -341,7 +341,7 @@ fn resolve_text_flow(
         // 'If a percentage is given, then the `startOffset` represents
         // a percentage distance along the entire path.'
         let path_len = path.length();
-        path_len * (start_offset.num / 100.0)
+        path_len * (start_offset.number / 100.0)
     } else {
         node.resolve_length(AId::StartOffset, state, 0.0)
     };
@@ -683,7 +683,7 @@ fn resolve_baseline_shift(
     for n in nodes.iter().rev().cloned() {
         if let Some(len) = n.attribute::<Length>(AId::BaselineShift) {
             if len.unit == Unit::Percent {
-                shift += units::resolve_font_size(n, state) * (len.num / 100.0);
+                shift += units::resolve_font_size(n, state) * (len.number / 100.0);
             } else {
                 shift += units::convert_length(
                     len, n, AId::BaselineShift, tree::Units::ObjectBoundingBox, state,

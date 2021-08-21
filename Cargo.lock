@@ -297,7 +297,7 @@ dependencies = [
 [[package]]
 name = "svgtypes"
 version = "0.5.0"
-source = "git+https://github.com/RazrFalcon/svgtypes?rev=266ee2c#266ee2caff9bd6a75d9a63b6e9850554f6de87b4"
+source = "git+https://github.com/RazrFalcon/svgtypes?rev=6b0891f#6b0891f9d9d463c1d88cb72222d75684007bd009"
 dependencies = [
  "float-cmp",
  "siphasher",
