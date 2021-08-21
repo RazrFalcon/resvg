@@ -72,6 +72,21 @@ oxipng -o 6 -Z out.png
 
 And then place it into the `png` dir.
 
+## resvg tests vs resvg-test-suite tests
+
+resvg tests are stored in two repos: this one and in
+[resvg-test-suite](https://github.com/RazrFalcon/resvg-test-suite).
+Which can be a bit confusing.
+
+`resvg-test-suite` is the source of truth. It contains the latest version of the tests
+and intended to help people with writing SVG processing apps.
+`resvg/tests/svg` directory contains the exact copy of `resvg-test-suite/svg`,
+maybe a bit outdated at times.
+The major difference is `png` directories. `resvg-test-suite/png` contains reference image.
+This is how the SVG files should be rendered.
+While `resvg/tests/png` contains PNGs rendered by the resvg itself
+and used only for regression testing.
+
 ## License
 
 MIT
