@@ -2,7 +2,7 @@
     <title>Recursive (4)</title>
 
     <style id="style1">
-        * { marker:url(#marker1) }
+        path { marker:url(#marker1) }
     </style>
 
     <marker id="marker1" refX="10" refY="10" markerWidth="20" markerHeight="20">

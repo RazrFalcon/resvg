@@ -13,15 +13,6 @@ use crate::convert::NodeIdGenerator;
 pub fn is_valid(
     node: svgtree::Node,
 ) -> bool {
-    // `marker-*` attributes can only be set on `path`, `line`, `polyline` and `polygon`.
-    match try_opt_or!(node.tag_name(), false) {
-          EId::Path
-        | EId::Line
-        | EId::Polyline
-        | EId::Polygon => {}
-        _ => return false,
-    }
-
     // `marker-*` attributes cannot be set on shapes inside a `clipPath`.
     if node.ancestors().any(|n| n.has_tag_name(EId::ClipPath)) {
         return false;

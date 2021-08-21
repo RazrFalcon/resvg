@@ -10,6 +10,7 @@ This changelog also contains important changes in dependencies.
 ### Added
 - CSS3 colors support. Specifically `rgba`, `hsl`, `hsla` and `transparent`. SVG2
 - Allow missing `rx`/`ry` attributes on `ellipse`. SVG2
+- Allow markers on all shapes. SVG2
 
 ### Changed
 - `resvg::render_node` requires `usvg::Tree` now.
