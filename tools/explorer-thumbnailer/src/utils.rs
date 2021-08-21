@@ -27,9 +27,8 @@ pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvg::Tree, Error> 
 
         let mut opt = usvg::Options::default();
         opt.fontdb.load_system_fonts();
-        opt.fontdb.set_generic_families();
 
-        usvg::Tree::from_data(&svg_data, &opt).map_err(|e| Error::TreeError(e))
+        usvg::Tree::from_data(&svg_data, &opt.to_ref()).map_err(|e| Error::TreeError(e))
 }
 
 pub fn render_thumbnail(tree: &Option<usvg::Tree>, cx: u32) -> Result<tiny_skia::Pixmap, Error> {

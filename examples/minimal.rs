@@ -11,7 +11,7 @@ fn main() {
     opt.fontdb.load_system_fonts();
 
     let svg_data = std::fs::read(&args[1]).unwrap();
-    let rtree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
+    let rtree = usvg::Tree::from_data(&svg_data, &opt.to_ref()).unwrap();
 
     let pixmap_size = rtree.svg_node().size.to_screen_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();

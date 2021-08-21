@@ -25,7 +25,7 @@ mod use_node;
 mod prelude {
     pub use log::warn;
     pub use svgtypes::{FuzzyEq, FuzzyZero, Length};
-    pub use crate::{geom::*, short::*, svgtree::{AId, EId}, Options, IsValidLength};
+    pub use crate::{geom::*, short::*, svgtree::{AId, EId}, Options, OptionsRef, IsValidLength};
     pub use super::{SvgNodeExt, State};
 }
 use self::prelude::*;
@@ -38,7 +38,7 @@ pub struct State<'a> {
     fe_image_link: bool,
     size: Size,
     view_box: Rect,
-    opt: &'a Options,
+    opt: &'a OptionsRef<'a>,
 }
 
 pub struct NodeIdGenerator {
@@ -90,7 +90,7 @@ fn string_hash(s: &str) -> u64 {
 /// - If `Document` doesn't have a valid size - returns `Error::InvalidSize`.
 pub fn convert_doc(
     svg_doc: &svgtree::Document,
-    opt: &Options,
+    opt: &OptionsRef,
 ) -> Result<tree::Tree, Error> {
     let svg = svg_doc.root_element();
     let size = resolve_svg_size(&svg, opt)?;
@@ -144,7 +144,7 @@ pub fn convert_doc(
 
 fn resolve_svg_size(
     svg: &svgtree::Node,
-    opt: &Options,
+    opt: &OptionsRef,
 ) -> Result<Size, Error> {
     let mut state = State {
         parent_clip_path: None,
@@ -417,7 +417,7 @@ fn convert_group(
             return GroupKind::Ignore;
         }
     }
-    
+
     let filter_fill = resolve_filter_fill(node, state, filter.as_deref(), id_generator, tree);
     let filter_stroke = resolve_filter_stroke(node, state, filter.as_deref(), id_generator, tree);
 
@@ -538,10 +538,10 @@ fn remove_empty_groups(tree: &mut tree::Tree) {
 }
 
 fn ungroup_groups(
-    opt: &Options,
+    opt: &OptionsRef,
     tree: &mut tree::Tree,
 ) {
-    fn ungroup(tree: &tree::Tree, parent: tree::Node, opt: &Options) -> bool {
+    fn ungroup(tree: &tree::Tree, parent: tree::Node, opt: &OptionsRef) -> bool {
         let mut changed = false;
 
         let mut curr_node = parent.first_child();
@@ -839,7 +839,7 @@ pub trait SvgNodeExt {
     fn try_convert_length(&self, aid: AId, object_units: tree::Units, state: &State) -> Option<f64>;
     fn convert_user_length(&self, aid: AId, state: &State, def: Length) -> f64;
     fn try_convert_user_length(&self, aid: AId, state: &State) -> Option<f64>;
-    fn is_visible_element(&self, opt: &Options) -> bool;
+    fn is_visible_element(&self, opt: &OptionsRef) -> bool;
 }
 
 impl<'a> SvgNodeExt for svgtree::Node<'a> {
@@ -877,7 +877,7 @@ impl<'a> SvgNodeExt for svgtree::Node<'a> {
         self.try_convert_length(aid, tree::Units::UserSpaceOnUse, state)
     }
 
-    fn is_visible_element(&self, opt: &Options) -> bool {
+    fn is_visible_element(&self, opt: &OptionsRef) -> bool {
            self.attribute(AId::Display) != Some("none")
         && self.has_valid_transform(AId::Transform)
         && switch::is_condition_passed(*self, opt)

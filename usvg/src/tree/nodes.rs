@@ -661,7 +661,7 @@ pub struct FeComponentTransfer {
 
 /// A transfer function used by `FeComponentTransfer`.
 ///
-/// https://www.w3.org/TR/SVG11/filters.html#transferFuncElements
+/// <https://www.w3.org/TR/SVG11/filters.html#transferFuncElements>
 #[derive(Clone, Debug)]
 pub enum TransferFunction {
     /// Keeps a component as is.

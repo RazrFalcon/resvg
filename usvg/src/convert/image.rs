@@ -58,7 +58,7 @@ pub fn convert(
 pub fn get_href_data(
     element_id: &str,
     href: &str,
-    opt: &Options,
+    opt: &OptionsRef,
 ) -> Option<tree::ImageKind> {
     if let Ok(url) = data_url::DataUrl::process(href) {
         let (data, _) = url.decode_to_vec().ok()?;
@@ -141,20 +141,10 @@ fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
 ///
 /// Unlike `Tree::from_*` methods, this one will also remove all `image` elements
 /// from the loaded SVG, as required by the spec.
-pub fn load_sub_svg(data: &[u8], opt: &Options) -> Option<tree::ImageKind> {
-    let sub_opt = Options {
-        resources_dir: None,
-        dpi: opt.dpi,
-        font_family: opt.font_family.clone(),
-        font_size: opt.font_size,
-        languages: opt.languages.clone(),
-        shape_rendering: opt.shape_rendering,
-        text_rendering: opt.text_rendering,
-        image_rendering: opt.image_rendering,
-        keep_named_groups: false,
-        #[cfg(feature = "text")]
-        fontdb: opt.fontdb.clone(),
-    };
+pub fn load_sub_svg(data: &[u8], opt: &OptionsRef) -> Option<tree::ImageKind> {
+    let mut sub_opt = opt.clone();
+    sub_opt.resources_dir = None;
+    sub_opt.keep_named_groups = false;
 
     let tree = match tree::Tree::from_data(data, &sub_opt) {
         Ok(tree) => tree,

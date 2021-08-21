@@ -8,7 +8,7 @@ use crate::{ImageRefMut, f64_bound};
 
 /// A transfer function used `component_transfer`.
 ///
-/// https://www.w3.org/TR/SVG11/filters.html#transferFuncElements
+/// <https://www.w3.org/TR/SVG11/filters.html#transferFuncElements>
 #[allow(missing_docs)]
 #[derive(Clone, Copy, Debug)]
 pub enum TransferFunction<'a> {

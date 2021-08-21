@@ -344,7 +344,7 @@ fn process(args: Args) -> Result<(), String> {
         InputFrom::File(ref path) => std::fs::read(path).map_err(|e| e.to_string()),
     }?;
 
-    let tree = usvg::Tree::from_data(&input_svg, &re_opt).map_err(|e| format!("{}", e))?;
+    let tree = usvg::Tree::from_data(&input_svg, &re_opt.to_ref()).map_err(|e| format!("{}", e))?;
 
     let xml_opt = usvg::XmlOptions {
         id_prefix: args.id_prefix,

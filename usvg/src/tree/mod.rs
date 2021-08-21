@@ -7,7 +7,7 @@
 use std::cell::Ref;
 
 pub use self::{nodes::*, attributes::*, pathdata::*};
-use crate::{svgtree, Rect, Error, Options, XmlOptions};
+use crate::{svgtree, Rect, Error, OptionsRef, XmlOptions};
 
 mod attributes;
 mod export;
@@ -40,7 +40,7 @@ impl Tree {
     /// Parses `Tree` from the SVG data.
     ///
     /// Can contain an SVG string or a gzip compressed data.
-    pub fn from_data(data: &[u8], opt: &Options) -> Result<Self, Error> {
+    pub fn from_data(data: &[u8], opt: &OptionsRef) -> Result<Self, Error> {
         if data.starts_with(&[0x1f, 0x8b]) {
             let text = deflate(data)?;
             Self::from_str(&text, opt)
@@ -51,7 +51,7 @@ impl Tree {
     }
 
     /// Parses `Tree` from the SVG string.
-    pub fn from_str(text: &str, opt: &Options) -> Result<Self, Error> {
+    pub fn from_str(text: &str, opt: &OptionsRef) -> Result<Self, Error> {
         let mut xml_opt = roxmltree::ParsingOptions::default();
         xml_opt.allow_dtd = true;
 
@@ -62,7 +62,7 @@ impl Tree {
     }
 
     /// Parses `Tree` from `roxmltree::Document`.
-    pub fn from_xmltree(doc: &roxmltree::Document, opt: &Options) -> Result<Self, Error> {
+    pub fn from_xmltree(doc: &roxmltree::Document, opt: &OptionsRef) -> Result<Self, Error> {
         let doc = svgtree::Document::parse(doc)?;
         Self::from_svgtree(doc, opt)
     }
@@ -70,7 +70,7 @@ impl Tree {
     /// Parses `Tree` from the `svgtree::Document`.
     ///
     /// An empty `Tree` will be returned on any error.
-    fn from_svgtree(doc: svgtree::Document, opt: &Options) -> Result<Self, Error> {
+    fn from_svgtree(doc: svgtree::Document, opt: &OptionsRef) -> Result<Self, Error> {
         super::convert::convert_doc(&doc, opt)
     }
 

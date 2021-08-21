@@ -12,6 +12,7 @@ This changelog also contains important changes in dependencies.
 - Allow missing `rx`/`ry` attributes on `ellipse`. SVG2
 - Allow markers on all shapes. SVG2
 - `textPath` can reference basic shapes now. SVG2
+- `usvg::OptionsRef`, which is a non-owned `usvg::Options` variant.
 
 ### Changed
 - `resvg::render_node` requires `usvg::Tree` now.

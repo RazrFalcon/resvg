@@ -27,7 +27,7 @@ fn main() {
     let fit_to = usvg::FitTo::Zoom(zoom);
 
     let svg_data = std::fs::read(&args[1]).unwrap();
-    let rtree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
+    let rtree = usvg::Tree::from_data(&svg_data, &opt.to_ref()).unwrap();
 
     let mut bboxes = Vec::new();
     let mut text_bboxes = Vec::new();

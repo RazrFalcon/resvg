@@ -59,7 +59,7 @@ fn process() -> Result<(), String> {
     });
 
     let tree = timed!(args, "Parsing",
-        usvg::Tree::from_data(&svg_data, &args.usvg).map_err(|e| e.to_string())
+        usvg::Tree::from_data(&svg_data, &args.usvg.to_ref()).map_err(|e| e.to_string())
     )?;
 
     if args.query_all {

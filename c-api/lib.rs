@@ -296,7 +296,7 @@ pub extern "C" fn resvg_parse_tree_from_file(
         Err(_) => return ErrorId::FileOpenFailed as i32,
     };
 
-    let tree = match usvg::Tree::from_data(&file_data, &raw_opt.0) {
+    let tree = match usvg::Tree::from_data(&file_data, &raw_opt.0.to_ref()) {
         Ok(tree) => tree,
         Err(e) => return convert_error(e) as i32,
     };
@@ -321,7 +321,7 @@ pub extern "C" fn resvg_parse_tree_from_data(
         &*opt
     };
 
-    let tree = match usvg::Tree::from_data(data, &raw_opt.0) {
+    let tree = match usvg::Tree::from_data(data, &raw_opt.0.to_ref()) {
         Ok(tree) => tree,
         Err(e) => return convert_error(e) as i32,
     };

@@ -2,8 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::path::PathBuf;
-
 use crate::{ImageRendering, ShapeRendering, TextRendering, Size, ScreenSize};
 
 
@@ -62,7 +60,7 @@ pub struct Options {
     /// but can be set to any.
     ///
     /// Default: `None`
-    pub resources_dir: Option<PathBuf>,
+    pub resources_dir: Option<std::path::PathBuf>,
 
     /// Target DPI.
     ///
@@ -91,7 +89,7 @@ pub struct Options {
     ///
     /// Format: en, en-US.
     ///
-    /// Default: [en]
+    /// Default: `[en]`
     pub languages: Vec<String>,
 
     /// Specifies the default shape rendering method.
@@ -130,18 +128,6 @@ pub struct Options {
     pub fontdb: fontdb::Database,
 }
 
-impl Options {
-    /// Converts a relative path into absolute relative to the SVG file itself.
-    ///
-    /// If `Options::resources_dir` is not set, returns itself.
-    pub fn get_abs_path(&self, rel_path: &std::path::Path) -> std::path::PathBuf {
-        match self.resources_dir {
-            Some(ref dir) => dir.join(rel_path),
-            None => rel_path.into(),
-        }
-    }
-}
-
 impl Default for Options {
     fn default() -> Options {
         Options {
@@ -157,6 +143,58 @@ impl Default for Options {
             keep_named_groups: false,
             #[cfg(feature = "text")]
             fontdb: fontdb::Database::new(),
+        }
+    }
+}
+
+impl Options {
+    /// Creates a reference to `Options`.
+    #[inline]
+    pub fn to_ref(&self) -> OptionsRef {
+        OptionsRef {
+            resources_dir: self.resources_dir.as_deref(),
+            dpi: self.dpi,
+            font_family: &self.font_family,
+            font_size: self.font_size,
+            languages: self.languages.as_slice(),
+            shape_rendering: self.shape_rendering,
+            text_rendering: self.text_rendering,
+            image_rendering: self.image_rendering,
+            keep_named_groups: self.keep_named_groups,
+            #[cfg(feature = "text")]
+            fontdb: &self.fontdb,
+        }
+    }
+}
+
+
+/// A reference to processing options.
+///
+/// See [`Options`] for details.
+#[derive(Clone, Debug)]
+#[allow(missing_docs)]
+pub struct OptionsRef<'a> {
+    pub resources_dir: Option<&'a std::path::Path>,
+    pub dpi: f64,
+    pub font_family: &'a str,
+    pub font_size: f64,
+    pub languages: &'a [String],
+    pub shape_rendering: ShapeRendering,
+    pub text_rendering: TextRendering,
+    pub image_rendering: ImageRendering,
+    pub keep_named_groups: bool,
+    #[cfg(feature = "text")]
+    pub fontdb: &'a fontdb::Database,
+}
+
+impl OptionsRef<'_> {
+    /// Converts a relative path into absolute relative to the SVG file itself.
+    ///
+    /// If `OptionsRef::resources_dir` is not set, returns itself.
+    pub fn get_abs_path(&self, rel_path: &std::path::Path) -> std::path::PathBuf {
+        match self.resources_dir {
+            Some(ref dir) => dir.join(rel_path),
+            None => rel_path.into(),
         }
     }
 }

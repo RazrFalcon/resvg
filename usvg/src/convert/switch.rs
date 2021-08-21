@@ -64,7 +64,7 @@ pub fn convert(
 
 pub fn is_condition_passed(
     node: svgtree::Node,
-    opt: &Options,
+    opt: &OptionsRef,
 ) -> bool {
     if !node.is_element() {
         return false;
@@ -97,7 +97,7 @@ pub fn is_condition_passed(
 /// SVG spec 5.8.5
 fn is_valid_sys_lang(
     node: svgtree::Node,
-    opt: &Options,
+    opt: &OptionsRef,
 ) -> bool {
     // 'The attribute value is a comma-separated list of language names
     // as defined in BCP 47.'

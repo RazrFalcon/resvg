@@ -23,7 +23,7 @@ pub fn render(name: &str) -> usize {
     // Do not unwrap on the from_data line, because panic will poison GLOBAL_OPT.
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
-        let tree = usvg::Tree::from_data(&svg_data, &GLOBAL_OPT.lock().unwrap());
+        let tree = usvg::Tree::from_data(&svg_data, &GLOBAL_OPT.lock().unwrap().to_ref());
         tree.unwrap()
     };
 
