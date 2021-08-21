@@ -15,6 +15,7 @@ This changelog also contains important changes in dependencies.
 - `usvg::OptionsRef`, which is a non-owned `usvg::Options` variant.
 - `simplecss` updated with CSS specificity support.
 - `turn` angle unit support. SVG2
+- Basic `font-variant=small-caps` support. No font fallback.
 
 ### Changed
 - `resvg::render_node` requires `usvg::Tree` now.

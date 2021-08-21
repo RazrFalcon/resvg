@@ -168,7 +168,7 @@ pub fn outline_chunk(
 ) -> Vec<OutlinedCluster> {
     let mut glyphs = Vec::new();
     for span in &chunk.spans {
-        let tmp_glyphs = shape_text(&chunk.text, span.font, state);
+        let tmp_glyphs = shape_text(&chunk.text, span.font, span.small_caps, state);
 
         // Do nothing with the first run.
         if glyphs.is_empty() {
@@ -207,9 +207,10 @@ pub fn outline_chunk(
 fn shape_text(
     text: &str,
     font: fontdb_ext::Font,
+    small_caps: bool,
     state: &State,
 ) -> Vec<Glyph> {
-    let mut glyphs = shape_text_with_font(text, font, state).unwrap_or_default();
+    let mut glyphs = shape_text_with_font(text, font, small_caps, state).unwrap_or_default();
 
     // Remember all fonts used for shaping.
     let mut used_fonts = vec![font.id];
@@ -231,7 +232,7 @@ fn shape_text(
             };
 
             // Shape again, using a new font.
-            let fallback_glyphs = shape_text_with_font(text, fallback_font, state)
+            let fallback_glyphs = shape_text_with_font(text, fallback_font, small_caps, state)
                 .unwrap_or_default();
 
             let all_matched = fallback_glyphs.iter().all(|g| !g.is_missing());
@@ -281,6 +282,7 @@ fn shape_text(
 fn shape_text_with_font(
     text: &str,
     font: fontdb_ext::Font,
+    small_caps: bool,
     state: &State,
 ) -> Option<Vec<Glyph>> {
     state.opt.fontdb.with_face_data(font.id, |font_data, face_index| -> Option<Vec<Glyph>> {
@@ -309,7 +311,12 @@ fn shape_text_with_font(
             buffer.push_str(sub_text);
             buffer.set_direction(hb_direction);
 
-            let output = rustybuzz::shape(&rb_font, &[], buffer);
+            let mut features = Vec::new();
+            if small_caps {
+                features.push(rustybuzz::Feature::new(rustybuzz::Tag::from_bytes(b"smcp"), 1, ..));
+            }
+
+            let output = rustybuzz::shape(&rb_font, &features, buffer);
 
             let positions = output.glyph_positions();
             let infos = output.glyph_infos();
