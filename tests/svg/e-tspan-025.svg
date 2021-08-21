@@ -1,6 +1,6 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
      font-family="Noto Sans" font-size="24">
-    <title>`tspan` bbox</title>
+    <title>`tspan` bbox (1)</title>
     <desc>`tspan` doesn't have a bbox and `text` bbox should be used</desc>
 
     <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"

@@ -6,7 +6,6 @@
         <stop id="stop1" offset="0" stop-color="white"/>
         <stop id="stop2" offset="1" stop-color="black"/>
     </linearGradient>
-    <text id="text1" x="100" y="100" text-anchor="middle">Failed</text>
     <rect id="rect1" x="40" y="40" width="120" height="120" fill="gray"
           stroke="url(#lg1)" stroke-opacity="0.5" stroke-width="40"/>
 

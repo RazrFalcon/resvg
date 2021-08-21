@@ -1,6 +1,6 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
     <title>BBox impact</title>
-    <desc>`rect3` is invisible, but impacts the bbox</desc>
+    <desc>`rect3` is invisible and does not impact the bbox</desc>
 
     <clipPath id="clip1" clipPathUnits="objectBoundingBox">
         <circle id="circle1" cx="0.5" cy="0.5" r="0.45"/>

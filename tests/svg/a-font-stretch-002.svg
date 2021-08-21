@@ -2,7 +2,7 @@
      font-family="Noto Sans" font-size="40">
     <title>`inherit`</title>
 
-    <g id="g1" font-stretch="wider">
+    <g id="g1" font-stretch="extra-condensed">
         <text id="text1" x="100" y="100" text-anchor="middle" font-stretch="inherit">Text</text>
     </g>
 

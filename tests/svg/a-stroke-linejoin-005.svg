@@ -1,0 +1,12 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>`arcs` (SVG 2) (UB)</title>
+    <desc>
+        No one supports this, so I have no idea what is the correct result should look like.
+    </desc>
+
+    <path id="path1" fill="none" stroke="green" stroke-width="8" stroke-linejoin="arcs"
+          d="M 25 130 c 0 -40 50 -75 100 -75 c -35 20 -50 50 -50 75"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

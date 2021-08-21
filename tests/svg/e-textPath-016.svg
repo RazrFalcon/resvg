@@ -1,7 +1,6 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>Link to `rect`</title>
-    <desc>`textPath` can link only `path` elements</desc>
+    <title>Link to `rect` (SVG 2)</title>
 
     <rect id="rectForText1" x="40" y="40" width="120" height="120" fill="none" stroke="gray"/>
 

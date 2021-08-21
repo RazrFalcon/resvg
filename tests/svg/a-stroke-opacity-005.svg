@@ -2,7 +2,6 @@
     <title>Nested</title>
     <desc>Unlike `opacity`, `stroke-opacity` isn't accumulated</desc>
 
-    <text id="text1" x="100" y="100" text-anchor="middle">Failed</text>
     <g id="g1" stroke-opacity="0.5">
         <rect id="rect1" x="40" y="40" width="120" height="120" fill="gray"
               stroke="green" stroke-opacity="0.5" stroke-width="40"/>

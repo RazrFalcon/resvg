@@ -1,0 +1,22 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Style resolving (4)</title>
+    <desc>Decoration can have it's own font properties.</desc>
+
+    <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
+          stroke="gray" stroke-width="0.5"/>
+
+    <text id="text1" font-family="Noto Sans" x="50" y="80">
+        <tspan id="tspan1" font-size="200" text-decoration="underline">
+            <tspan id="tspan2" font-size="48" fill="black">Text</tspan>
+        </tspan>
+    </text>
+
+    <text id="text2" font-family="Noto Sans" x="50" y="160">
+        <tspan id="tspan3" font-size="48" text-decoration="underline">
+            <tspan id="tspan4" font-size="48" fill="black">Text</tspan>
+        </tspan>
+    </text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

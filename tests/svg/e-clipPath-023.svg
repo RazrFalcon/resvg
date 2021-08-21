@@ -4,9 +4,6 @@
     <clipPath id="clip1">
         <path id="path1" d=""/>
     </clipPath>
-
-    <text id="text1" x="100" y="100" font-family="Noto Sans" font-size="20"
-          text-anchor="middle" fill="green">Passed</text>
     <rect id="rect1" x="0" y="0" width="200" height="200" fill="red" clip-path="url(#clip1)"/>
 
     <!-- image frame -->

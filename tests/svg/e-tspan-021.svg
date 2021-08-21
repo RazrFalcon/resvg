@@ -1,13 +1,13 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
      font-family="Noto Sans" font-size="64">
-    <title>With `clip-path`</title>
+    <title>With `clip-path` (SVG 2)</title>
 
     <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
           stroke="gray" stroke-width="0.5"/>
 
     <defs id="defs1">
         <clipPath id="clip1">
-            <rect id="rect1" x="20" y="20" width="20" height="20"/>
+            <rect id="rect1" x="0" y="0" width="200" height="80"/>
         </clipPath>
     </defs>
 

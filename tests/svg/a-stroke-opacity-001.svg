@@ -1,7 +1,6 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
     <title>Half opacity</title>
 
-    <text id="text1" x="100" y="100" text-anchor="middle">Failed</text>
     <rect id="rect1" x="40" y="40" width="120" height="120" fill="gray"
           stroke="green" stroke-opacity="0.5" stroke-width="40"/>
 

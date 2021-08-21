@@ -1,0 +1,34 @@
+<svg id="svg1" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Image with float size scaling</title>
+
+    <image id="image1" x="4" y="4" width="1" height="1.5" xlink:href="data:image/png;base64,
+iVBORw0KGgoAAAANSUhEUgAAAAoAAAAPAQMAAADnMcxNAAAAB3RJTUUH5QECDSgsemmQsAAAAvV6
+VFh0UmF3IHByb2ZpbGUgdHlwZSBleGlmAAB42u2XXZbkJgyF31lFloAkhMRyMD/nZAdZfi6Y6q7q
+6SQzSR7LHBssgyTfT6a6w/jj9xl+w0E5pZDUPJecI45UUuGKgcf7KPtKMe3rfdTT06s9xHkeMEyC
+Xu5bOwuowq6fCx4x6Hq1Bz9P2I+jR+TjUFZkxqA/Jwk733ZKx1EZ9yAXt+dUL777dibuVM7ZxnYd
+6QRb9+HZkAwqdcUsYR4CM64sJwNZJ0lFf1+Z10gxThLD7h6ZQJCX13v0MT4L9CJyrQ+xv6j/Mfoi
+Ptdjly9a5oej/P0D0u/F3xI/BZYzCjC/PtAN9fV1zjln9znH/XY1ZSiaT0XF8FBnrcHEC5LLXpbR
+DKdibLsVNEdBNiDvscULrVEhBpUZKFGnSpPG7hs1pJh4sKFnbgC1bC7GhdsmllajySZFujhYNh5B
+BGb+yIV23LLjNXJE7oSpTHBGWPKXLfzdw19pYc62JKLot06oC+TFq3KRxiK3rpgFIDQPN90CP9rB
+H5/qB6UKgrpldrxgjdft4lL6rC3ZnCUuvinenxAF68cBJEJsRTIkIBAzqp8yRWM2IujoAFSROUvi
+CwRIlTuS5CSSORg7r9hYY7TnsnLmZcbeBBAqWQxsilTASklRP5YcNVRVNKlqVlMPWrRmySlrztny
+2uSqiSVTy2bmVqy6eHL17ObuxWvhItgDteRixUsptXKoCFThq2J+heXiS6506ZUvu/wqV20on5aa
+ttyseSutdu7SsU303K17L70OCgM7xUhDRx42fJRRJ2ptykxTZ542fZZZP6jR+Wy/tl+gRocab1Jr
+nn1QgzWYPVzQ2k50MQMxTgTitgigoHkxi04p8SK3mMXC+CiUkaQuNqHTIgaEaRDrpA92n+R+iltQ
+/ylu/E/kwkL3f5ALQPcjt2+o9bU3t03s/gqXplHw9Q1GeA5eZ6kysKXgzuv6gftXfYj/0cHb0dvR
+29Hb0dsR/sCcHf8/hD8BXK0DaeMvBx8AAAGFaUNDUElDQyBwcm9maWxlAAB4nH2RPUjDUBSFT1NF
+kRYHO4g4BKziYEFUxFGrUIQKoVZo1cHkpX/QpCFJcXEUXAsO/ixWHVycdXVwFQTBHxA3NydFFynx
+vqTQIsYLj/dx3j2H9+4DhHqZaVbHOKDptplKxMVMdlXsekUAAsIYxZDMLGNOkpLwra976qa6i/Es
+/74/K6zmLAYEROJZZpg28Qbx9KZtcN4njrCirBKfE4+ZdEHiR64rHr9xLrgs8MyImU7NE0eIxUIb
+K23MiqZGPEUcVTWd8oWMxyrnLc5aucqa9+QvDOX0lWWu0xpEAotYggQRCqoooQwbMdp1Uiyk6Dzu
+4x9w/RK5FHKVwMixgAo0yK4f/A9+z9bKT054SaE40PniOB/DQNcu0Kg5zvex4zROgOAzcKW3/JU6
+MPNJeq2lRY+A3m3g4rqlKXvA5Q7Q/2TIpuxKQVpCPg+8n9E3ZYG+W6BnzZtb8xynD0CaZpW8AQ4O
+gZECZa/7vLu7fW7/9jTn9wNPrXKZ/lGudwAAAAlwSFlzAAAOwwAADsMBx2+oZAAAAAZQTFRFAIAA
+////FD8vTwAAAAFiS0dEAf8CLd4AAAALSURBVHjaYyAFAAAALQAB6cmHwQAAAABJRU5ErkJggg=="/>
+    <rect id="rect1" x="4" y="4" width="1" height="1.5" fill="none"
+          stroke="black" stroke-width="0.05"/>
+
+    <rect id="frame" x="0.1" y="0.1" width="9.8" height="9.8" fill="none"
+          stroke="black" stroke-width="0.1"/>
+</svg>

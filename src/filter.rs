@@ -776,7 +776,8 @@ fn apply_flood(
     let c = fe.color;
 
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
-    pixmap.fill(tiny_skia::Color::from_rgba8(c.red, c.green, c.blue, fe.opacity.to_u8()));
+    let alpha = crate::paint_server::multiply_a8(fe.opacity.to_u8(), c.alpha);
+    pixmap.fill(tiny_skia::Color::from_rgba8(c.red, c.green, c.blue, alpha));
 
     Ok(Image::from_image(pixmap, ColorSpace::SRGB))
 }

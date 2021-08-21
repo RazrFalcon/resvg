@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- CSS3 colors support. Specifically `rgba`, `hsl`, `hsla` and `transparent`.
+
 ### Changed
 - `resvg::render_node` requires `usvg::Tree` now.
+- `usvg::Color` gained an `alpha` field.
 
 ### Removed
 - `Node::tree`. Cannot be implemented efficiently anymore.

@@ -20,7 +20,8 @@ pub fn fill(
     let opacity = fill.opacity;
     match fill.paint {
         usvg::Paint::Color(c) => {
-            paint.set_color_rgba8(c.red, c.green, c.blue, opacity.to_u8());
+            let alpha = multiply_a8(c.alpha, opacity.to_u8());
+            paint.set_color_rgba8(c.red, c.green, c.blue, alpha);
         }
         usvg::Paint::Link(ref id) => {
             if let Some(node) = tree.defs_by_id(id) {
@@ -75,7 +76,8 @@ pub fn stroke(
         let opacity = stroke.opacity;
         match stroke.paint {
             usvg::Paint::Color(c) => {
-                paint.set_color_rgba8(c.red, c.green, c.blue, opacity.to_u8());
+                let alpha = multiply_a8(c.alpha, opacity.to_u8());
+                paint.set_color_rgba8(c.red, c.green, c.blue, alpha);
             }
             usvg::Paint::Link(ref id) => {
                 if let Some(node) = tree.defs_by_id(id) {
@@ -153,8 +155,9 @@ fn prepare_linear(
 
     let mut points = Vec::with_capacity(g.stops.len());
     for stop in &g.stops {
-        let a = stop.opacity * opacity;
-        let color = tiny_skia::Color::from_rgba8(stop.color.red, stop.color.green, stop.color.blue, a.to_u8());
+        let alpha = stop.opacity * opacity * Opacity::new(f64::from(stop.color.alpha) / 255.0);
+        let color = tiny_skia::Color::from_rgba8(
+            stop.color.red, stop.color.green, stop.color.blue, alpha.to_u8());
         points.push(tiny_skia::GradientStop::new(stop.offset.value() as f32, color))
     }
 
@@ -195,8 +198,9 @@ fn prepare_radial(
 
     let mut points = Vec::with_capacity(g.stops.len());
     for stop in &g.stops {
-        let a = stop.opacity * opacity;
-        let color = tiny_skia::Color::from_rgba8(stop.color.red, stop.color.green, stop.color.blue, a.to_u8());
+        let alpha = stop.opacity * opacity * Opacity::new(f64::from(stop.color.alpha) / 255.0);
+        let color = tiny_skia::Color::from_rgba8(
+            stop.color.red, stop.color.green, stop.color.blue, alpha.to_u8());
         points.push(tiny_skia::GradientStop::new(stop.offset.value() as f32, color))
     }
 
@@ -267,4 +271,10 @@ fn prepare_pattern(
         opacity.value() as f32,
         ts.to_native(),
     )
+}
+
+/// Return a*b/255, rounding any fractional bits.
+pub fn multiply_a8(c: u8, a: u8) -> u8 {
+    let prod = u32::from(c) * u32::from(a) + 128;
+    ((prod + (prod >> 8)) >> 8) as u8
 }

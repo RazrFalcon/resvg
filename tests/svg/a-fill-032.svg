@@ -1,12 +1,12 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
-     font-family="Noto Sans" font-size="40">
+     font-family="Noto Sans" font-size="80">
     <title>Radial gradient on text</title>
 
     <radialGradient id="rg1">
         <stop id="stop1" offset="0" stop-color="white"/>
         <stop id="stop2" offset="1" stop-color="black"/>
     </radialGradient>
-    <text id="text1" x="100" y="100" text-anchor="middle" fill="url(#rg1)">Text</text>
+    <text id="text1" x="100" y="120" text-anchor="middle" fill="url(#rg1)">Text</text>
 
     <!-- image frame -->
     <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>

@@ -1,8 +1,8 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>Missing `rx` attribute</title>
-    <desc>Nothing should be rendered</desc>
+    <title>Missing `rx` attribute (SVG 2)</title>
+    <desc>Error in SVG 1, but not in SVG 2.</desc>
 
-    <ellipse id="ellipse1" cx="90" cy="100" ry="60" fill="red"/>
+    <ellipse id="ellipse1" cx="100" cy="100" ry="60" fill="green"/>
 
     <!-- image frame -->
     <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>

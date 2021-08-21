@@ -1,8 +1,8 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
      font-family="Noto Sans" font-size="40">
-    <title>`wider`</title>
+    <title>`narrower`</title>
 
-    <text id="text1" x="100" y="100" text-anchor="middle" font-stretch="wider">Text</text>
+    <text id="text1" x="100" y="100" text-anchor="middle" font-stretch="narrower">Text</text>
 
     <!-- image frame -->
     <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>

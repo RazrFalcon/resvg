@@ -25,12 +25,12 @@ fn main() {
             stops: vec![
                 usvg::Stop {
                     offset: usvg::StopOffset::new(0.0),
-                    color: usvg::Color::new(0, 255, 0),
+                    color: usvg::Color::new_rgb(0, 255, 0),
                     opacity: usvg::Opacity::new(1.0),
                 },
                 usvg::Stop {
                     offset: usvg::StopOffset::new(1.0),
-                    color: usvg::Color::new(0, 255, 0),
+                    color: usvg::Color::new_rgb(0, 255, 0),
                     opacity: usvg::Opacity::new(0.0),
                 },
             ],
