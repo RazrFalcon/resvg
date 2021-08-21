@@ -19,10 +19,10 @@ required-features = ["text", "system-fonts"]
 jpeg-decoder = { version = "0.1", default-features = false }
 log = "0.4"
 pico-args = "0.4"
-png = "0.16"
+png = "0.17"
 rgb = "0.8"
 svgfilters = { path = "svgfilters", version = "0.3" }
-tiny-skia = "0.5"
+tiny-skia = "0.6"
 usvg = { path = "usvg", version = "0.15.0", default-features = false }
 
 [dev-dependencies]

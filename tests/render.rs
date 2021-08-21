@@ -57,17 +57,17 @@ pub fn render(name: &str) -> usize {
 
 fn load_png(path: &str) -> Vec<u8> {
     let data = std::fs::read(path).unwrap();
-    let decoder = png::Decoder::new(data.as_slice());
-    let (info, mut reader) = decoder.read_info().unwrap();
-
-    let mut img_data = vec![0; info.buffer_size()];
-    reader.next_frame(&mut img_data).unwrap();
+    let mut decoder = png::Decoder::new(data.as_slice());
+    decoder.set_transformations(png::Transformations::normalize_to_color8());
+    let mut reader = decoder.read_info().unwrap();
+    let mut img_data = vec![0; reader.output_buffer_size()];
+    let info = reader.next_frame(&mut img_data).unwrap();
 
     match info.color_type {
-        png::ColorType::RGB => {
+        png::ColorType::Rgb => {
             panic!("RGB PNG is not supported.");
         }
-        png::ColorType::RGBA => {
+        png::ColorType::Rgba => {
             img_data
         }
         png::ColorType::Grayscale => {
@@ -130,7 +130,7 @@ fn gen_diff(name: &str, img1: &[u8], img2: &[u8]) -> Result<(), png::EncodingErr
     let ref mut w = std::io::BufWriter::new(file);
 
     let mut encoder = png::Encoder::new(w, IMAGE_SIZE, IMAGE_SIZE);
-    encoder.set_color(png::ColorType::RGB);
+    encoder.set_color(png::ColorType::Rgb);
     encoder.set_depth(png::BitDepth::Eight);
     let mut writer = encoder.write_header()?;
     writer.write_image_data(&img3)

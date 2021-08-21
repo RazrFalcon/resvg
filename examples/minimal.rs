@@ -1,5 +1,3 @@
-use usvg::SystemFontDB;
-
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 3 {
@@ -11,7 +9,6 @@ fn main() {
     // Get file's absolute directory.
     opt.resources_dir = std::fs::canonicalize(&args[1]).ok().and_then(|p| p.parent().map(|p| p.to_path_buf()));
     opt.fontdb.load_system_fonts();
-    opt.fontdb.set_generic_families();
 
     let svg_data = std::fs::read(&args[1]).unwrap();
     let rtree = usvg::Tree::from_data(&svg_data, &opt).unwrap();

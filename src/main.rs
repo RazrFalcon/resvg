@@ -5,7 +5,7 @@
 use std::io::Write;
 use std::path;
 
-use usvg::{NodeExt, SystemFontDB};
+use usvg::NodeExt;
 
 macro_rules! timed {
     ($args:expr, $name:expr, $task:expr) => {
@@ -497,7 +497,6 @@ fn load_fonts(args: &mut CliArgs) -> usvg::fontdb::Database {
     let mut fontdb = usvg::fontdb::Database::new();
     if !args.skip_system_fonts {
         fontdb.load_system_fonts();
-        fontdb.set_generic_families();
     }
 
     for path in &args.font_files {

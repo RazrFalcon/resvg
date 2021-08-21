@@ -8,7 +8,6 @@ use std::path::PathBuf;
 use std::process;
 
 use pico_args::Arguments;
-use usvg::SystemFontDB;
 
 
 const HELP: &str = "\
@@ -281,7 +280,6 @@ fn process(args: Args) -> Result<(), String> {
     let mut fontdb = usvg::fontdb::Database::new();
     if !args.skip_system_fonts {
         fontdb.load_system_fonts();
-        fontdb.set_generic_families();
     }
 
     for path in &args.font_files {

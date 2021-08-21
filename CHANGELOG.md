@@ -15,7 +15,8 @@ This changelog also contains important changes in dependencies.
 - `usvg::Color` gained an `alpha` field.
 
 ### Removed
-- `Node::tree`. Cannot be implemented efficiently anymore.
+- `usvg::Node::tree`. Cannot be implemented efficiently anymore.
+- `usvg::SystemFontDB`. No longer needed.
 
 ### Fixed
 - Greatly improve `symbol` resolving speed in `usvg`.

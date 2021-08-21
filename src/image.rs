@@ -176,17 +176,17 @@ enum ImageData {
 }
 
 fn read_png(data: &[u8]) -> Option<Image> {
-    let decoder = png::Decoder::new(data);
-    let (info, mut reader) = decoder.read_info().ok()?;
+    let mut decoder = png::Decoder::new(data);
+    decoder.set_transformations(png::Transformations::normalize_to_color8());
+    let mut reader = decoder.read_info().ok()?;
+    let mut img_data = vec![0; reader.output_buffer_size()];
+    let info = reader.next_frame(&mut img_data).ok()?;
 
     let size = ScreenSize::new(info.width, info.height)?;
 
-    let mut img_data = vec![0; info.buffer_size()];
-    reader.next_frame(&mut img_data).ok()?;
-
     let data = match info.color_type {
-        png::ColorType::RGB => ImageData::RGB(img_data),
-        png::ColorType::RGBA => ImageData::RGBA(img_data),
+        png::ColorType::Rgb => ImageData::RGB(img_data),
+        png::ColorType::Rgba => ImageData::RGBA(img_data),
         png::ColorType::Grayscale => {
             let mut rgb_data = Vec::with_capacity(img_data.len() * 3);
             for gray in img_data {

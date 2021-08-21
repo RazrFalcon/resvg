@@ -250,33 +250,3 @@ impl TransformFromBBox for tree::Transform {
         Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
     }
 }
-
-
-/// An extension trait for `fontdb::Database`.
-#[cfg(feature = "text")]
-pub trait SystemFontDB {
-    /// Sets generic font families.
-    ///
-    /// Sans, serif, cursive, monospace and fantasy.
-    fn set_generic_families(&mut self);
-}
-
-#[cfg(feature = "system-fonts")]
-impl SystemFontDB for fontdb::Database {
-    fn set_generic_families(&mut self) {
-        self.set_serif_family("Times New Roman");
-        self.set_sans_serif_family("Arial");
-        self.set_cursive_family("Comic Sans MS");
-        self.set_monospace_family("Courier New");
-
-        #[cfg(not(target_os = "macos"))]
-        {
-            self.set_fantasy_family("Impact");
-        }
-
-        #[cfg(target_os = "macos")]
-        {
-            self.set_fantasy_family("Papyrus");
-        }
-    }
-}

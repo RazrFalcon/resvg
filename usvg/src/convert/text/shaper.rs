@@ -320,7 +320,7 @@ fn shape_text_with_font(
 
                 glyphs.push(Glyph {
                     byte_idx: ByteIndex::new(idx),
-                    id: GlyphId(info.codepoint as u16),
+                    id: GlyphId(info.glyph_id as u16),
                     dx: pos.x_offset,
                     dy: pos.y_offset,
                     width: pos.x_advance,

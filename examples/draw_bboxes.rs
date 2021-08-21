@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use usvg::{NodeExt, SystemFontDB};
+use usvg::NodeExt;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -24,7 +24,6 @@ fn main() {
     opt.resources_dir = std::fs::canonicalize(&args[1]).ok().and_then(|p| p.parent().map(|p| p.to_path_buf()));
     opt.keep_named_groups = true;
     opt.fontdb.load_system_fonts();
-    opt.fontdb.set_generic_families();
     let fit_to = usvg::FitTo::Zoom(zoom);
 
     let svg_data = std::fs::read(&args[1]).unwrap();

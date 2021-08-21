@@ -9,7 +9,7 @@ use std::os::raw::c_char;
 use std::slice;
 
 use log::warn;
-use usvg::{NodeExt, SystemFontDB};
+use usvg::NodeExt;
 
 
 enum ErrorId {
@@ -223,7 +223,6 @@ pub extern "C" fn resvg_options_load_system_fonts(opt: *mut resvg_options) {
     };
 
     opt.0.fontdb.load_system_fonts();
-    opt.0.fontdb.set_generic_families();
 }
 
 #[no_mangle]
