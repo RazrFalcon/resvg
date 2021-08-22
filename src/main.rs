@@ -117,25 +117,54 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
     let now = std::time::Instant::now();
 
     let img = if let Some(ref id) = args.export_id {
-        if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
-            let bbox = node.calculate_bbox()
-                .ok_or_else(|| "node has zero size".to_string())?;
+        let node = match tree.root().descendants().find(|n| &*n.id() == id) {
+            Some(node) => node,
+            None => return Err(format!("SVG doesn't have '{}' ID", id)),
+        };
 
-            let size = args.fit_to.fit_to(bbox.to_screen_size())
-                .ok_or_else(|| "target size is zero".to_string())?;
+        let bbox = node.calculate_bbox()
+            .ok_or_else(|| "node has zero size".to_string())?;
 
-            // Unwrap is safe, because `size` is already valid.
-            let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
+        let size = args.fit_to.fit_to(bbox.to_screen_size())
+            .ok_or_else(|| "target size is zero".to_string())?;
 
+        // Unwrap is safe, because `size` is already valid.
+        let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
+
+        if !args.export_area_page {
             if let Some(background) = args.background {
                 pixmap.fill(tiny_skia::Color::from_rgba8(
                     background.red, background.green, background.blue, 255));
             }
+        }
 
-            resvg::render_node(tree, &node, args.fit_to, pixmap.as_mut());
-            pixmap
+        resvg::render_node(tree, &node, args.fit_to, pixmap.as_mut());
+
+        if args.export_area_page {
+            // TODO: add offset support to render_node() so we would not need an additional pixmap
+
+            let size = args.fit_to.fit_to(tree.svg_node().size.to_screen_size())
+                .ok_or_else(|| "target size is zero".to_string())?;
+
+            // Unwrap is safe, because `size` is already valid.
+            let mut page_pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
+
+            if let Some(background) = args.background {
+                page_pixmap.fill(tiny_skia::Color::from_rgba8(
+                    background.red, background.green, background.blue, 255));
+            }
+
+            page_pixmap.draw_pixmap(
+                bbox.x() as i32,
+                bbox.y() as i32,
+                pixmap.as_ref(),
+                &tiny_skia::PixmapPaint::default(),
+                tiny_skia::Transform::default(),
+                None
+            );
+            page_pixmap
         } else {
-            return Err(format!("SVG doesn't have '{}' ID", id));
+            pixmap
         }
     } else {
         let size = args.fit_to.fit_to(tree.svg_node().size.to_screen_size())
@@ -249,6 +278,7 @@ OPTIONS:
 
   --query-all                   Queries all valid SVG ids with bounding boxes
   --export-id ID                Renders an object only with a specified ID
+  --export-area-page            Use an image size instead of an object size during ID exporting
 
   --perf                        Prints performance stats
   --quiet                       Disables warnings
@@ -287,6 +317,7 @@ struct CliArgs {
 
     query_all: bool,
     export_id: Option<String>,
+    export_area_page: bool,
 
     perf: bool,
     quiet: bool,
@@ -337,6 +368,7 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
 
         query_all:          input.contains("--query-all"),
         export_id:          input.opt_value_from_str("--export-id")?,
+        export_area_page:   input.contains("--export-area-page"),
 
         perf:               input.contains("--perf"),
         quiet:              input.contains("--quiet"),
@@ -405,6 +437,7 @@ struct Args {
     out_png: Option<path::PathBuf>,
     query_all: bool,
     export_id: Option<String>,
+    export_area_page: bool,
     dump: Option<path::PathBuf>,
     perf: bool,
     quiet: bool,
@@ -484,6 +517,7 @@ fn parse_args() -> Result<Args, String> {
         out_png,
         query_all: args.query_all,
         export_id,
+        export_area_page: args.export_area_page,
         dump,
         perf: args.perf,
         quiet: args.quiet,

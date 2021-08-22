@@ -16,6 +16,7 @@ This changelog also contains important changes in dependencies.
 - `simplecss` updated with CSS specificity support.
 - `turn` angle unit support. SVG2
 - Basic `font-variant=small-caps` support. No font fallback.
+- `--export-area-page` to resvg.
 
 ### Changed
 - `resvg::render_node` requires `usvg::Tree` now.
