@@ -27,6 +27,8 @@ mod paint_server;
 mod path;
 mod render;
 
+pub use crate::render::trim_transparency;
+
 
 /// Renders an SVG to pixmap.
 ///

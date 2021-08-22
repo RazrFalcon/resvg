@@ -173,13 +173,38 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
         // Unwrap is safe, because `size` is already valid.
         let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
 
-        if let Some(background) = args.background {
-            pixmap.fill(tiny_skia::Color::from_rgba8(
-                background.red, background.green, background.blue, 255));
+        if !args.export_area_drawing {
+            if let Some(background) = args.background {
+                pixmap.fill(tiny_skia::Color::from_rgba8(
+                    background.red, background.green, background.blue, 255));
+            }
         }
 
         resvg::render(tree, args.fit_to, pixmap.as_mut());
-        pixmap
+
+        if args.export_area_drawing {
+            let (_, _, pixmap) = resvg::trim_transparency(pixmap)
+                .ok_or_else(|| "target size is zero".to_string())?;
+
+            if let Some(background) = args.background {
+                let mut bg = pixmap.clone();
+                bg.fill(tiny_skia::Color::from_rgba8(
+                    background.red, background.green, background.blue, 255));
+                bg.draw_pixmap(
+                    0,
+                    0,
+                    pixmap.as_ref(),
+                    &tiny_skia::PixmapPaint::default(),
+                    tiny_skia::Transform::default(),
+                    None
+                );
+                bg
+            } else {
+                pixmap
+            }
+        } else {
+            pixmap
+        }
     };
 
     if args.perf {
@@ -280,6 +305,9 @@ OPTIONS:
   --export-id ID                Renders an object only with a specified ID
   --export-area-page            Use an image size instead of an object size during ID exporting
 
+  --export-area-drawing         Use drawing's tight bounding box instead of image size.
+                                Used during normal rendering and not during --export-id
+
   --perf                        Prints performance stats
   --quiet                       Disables warnings
   --dump-svg PATH               Saves the preprocessed SVG into the selected file
@@ -318,6 +346,8 @@ struct CliArgs {
     query_all: bool,
     export_id: Option<String>,
     export_area_page: bool,
+
+    export_area_drawing: bool,
 
     perf: bool,
     quiet: bool,
@@ -369,6 +399,8 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
         query_all:          input.contains("--query-all"),
         export_id:          input.opt_value_from_str("--export-id")?,
         export_area_page:   input.contains("--export-area-page"),
+
+        export_area_drawing:input.contains("--export-area-drawing"),
 
         perf:               input.contains("--perf"),
         quiet:              input.contains("--quiet"),
@@ -438,6 +470,7 @@ struct Args {
     query_all: bool,
     export_id: Option<String>,
     export_area_page: bool,
+    export_area_drawing: bool,
     dump: Option<path::PathBuf>,
     perf: bool,
     quiet: bool,
@@ -468,6 +501,14 @@ fn parse_args() -> Result<Args, String> {
 
     if args.input == "-" && args.resources_dir.is_none() {
         println!("Warning: Make sure to set --resources-dir when reading SVG from stdin.");
+    }
+
+    if args.export_area_page && args.export_id.is_none() {
+        println!("Warning: --export-area-page has no effect without --export-id.");
+    }
+
+    if !args.export_area_drawing && args.export_id.is_some() {
+        println!("Warning: --export-area-drawing has no effect when --export-id is set.");
     }
 
     let in_svg = args.input.clone();
@@ -518,6 +559,7 @@ fn parse_args() -> Result<Args, String> {
         query_all: args.query_all,
         export_id,
         export_area_page: args.export_area_page,
+        export_area_drawing: args.export_area_drawing,
         dump,
         perf: args.perf,
         quiet: args.quiet,

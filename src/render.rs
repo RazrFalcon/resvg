@@ -299,7 +299,7 @@ fn render_group_impl(
 /// But because of anti-aliasing, float precision and especially stroking,
 /// this can be fairly complicated and error-prone.
 /// So for now we're using this method.
-fn trim_transparency(pixmap: tiny_skia::Pixmap) -> Option<(i32, i32, tiny_skia::Pixmap)> {
+pub fn trim_transparency(pixmap: tiny_skia::Pixmap) -> Option<(i32, i32, tiny_skia::Pixmap)> {
     let mut x = 0;
     let mut y = 0;
     let width = pixmap.width() as i32;
