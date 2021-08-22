@@ -6,7 +6,7 @@ use winapi::shared::windef::{HBITMAP, HDC};
 use winapi::um::objidlbase::{LPSTREAM, STATSTG};
 use winapi::um::wingdi::{BI_RGB, BITMAPINFO, BITMAPINFOHEADER, DIB_RGB_COLORS, CreateDIBSection};
 use com::sys::S_OK;
-use usvg::{FitTo, SystemFontDB};
+use usvg::FitTo;
 use crate::error::Error;
 
 pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvg::Tree, Error> {

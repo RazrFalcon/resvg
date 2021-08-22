@@ -296,8 +296,9 @@ dependencies = [
 
 [[package]]
 name = "svgtypes"
-version = "0.5.0"
-source = "git+https://github.com/RazrFalcon/svgtypes?rev=6b0891f#6b0891f9d9d463c1d88cb72222d75684007bd009"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8199d1b4aa7d4aa9dc39665c6edcbaacc8deeab2811638b9127c7f956736fa8b"
 dependencies = [
  "float-cmp",
  "siphasher",
