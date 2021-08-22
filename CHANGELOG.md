@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.16.0] - 2021-08-22
 ### Added
 - CSS3 colors support. Specifically `rgba`, `hsl`, `hsla` and `transparent`. SVG2
 - Allow missing `rx`/`ry` attributes on `ellipse`. SVG2
@@ -496,7 +498,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/RazrFalcon/resvg/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/RazrFalcon/resvg/compare/v0.14.1...v0.15.0
 [0.14.1]: https://github.com/RazrFalcon/resvg/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/RazrFalcon/resvg/compare/v0.13.1...v0.14.0

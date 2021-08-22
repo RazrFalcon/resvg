@@ -9,4 +9,3 @@
 - usvg/src/lib.rs
 - tools/explorer-thumbnailer/install/installer.iss
 - tools/explorer-thumbnailer/Cargo.toml
-- make-vendored.sh

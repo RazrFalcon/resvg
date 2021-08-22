@@ -36,6 +36,10 @@ Results of the [resvg test suite](./tests/README.md):
 
 ![](./.github/chart.svg)
 
+SVG 2 only results:
+
+![](./.github/chart-svg2.svg)
+
 You can find a complete table of supported features
 [here](https://razrfalcon.github.io/resvg-test-suite/svg-support-table.html).
 It also includes alternative libraries.
