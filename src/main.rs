@@ -80,151 +80,6 @@ fn process() -> Result<(), String> {
     render_svg(args, &tree, &out_png)
 }
 
-fn query_all(tree: &usvg::Tree) -> Result<(), String> {
-    let mut count = 0;
-    for node in tree.root().descendants() {
-        if tree.is_in_defs(&node) {
-            continue;
-        }
-
-        if node.id().is_empty() {
-            continue;
-        }
-
-        count += 1;
-
-        fn round_len(v: f64) -> f64 {
-            (v * 1000.0).round() / 1000.0
-        }
-
-        if let Some(bbox) = node.calculate_bbox() {
-            println!(
-                "{},{},{},{},{}", node.id(),
-                round_len(bbox.x()), round_len(bbox.y()),
-                round_len(bbox.width()), round_len(bbox.height())
-            );
-        }
-    }
-
-    if count == 0 {
-        return Err("the file has no valid ID's".to_string());
-    }
-
-    Ok(())
-}
-
-fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(), String> {
-    let now = std::time::Instant::now();
-
-    let img = if let Some(ref id) = args.export_id {
-        let node = match tree.root().descendants().find(|n| &*n.id() == id) {
-            Some(node) => node,
-            None => return Err(format!("SVG doesn't have '{}' ID", id)),
-        };
-
-        let bbox = node.calculate_bbox()
-            .ok_or_else(|| "node has zero size".to_string())?;
-
-        let size = args.fit_to.fit_to(bbox.to_screen_size())
-            .ok_or_else(|| "target size is zero".to_string())?;
-
-        // Unwrap is safe, because `size` is already valid.
-        let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
-
-        if !args.export_area_page {
-            if let Some(background) = args.background {
-                pixmap.fill(tiny_skia::Color::from_rgba8(
-                    background.red, background.green, background.blue, 255));
-            }
-        }
-
-        resvg::render_node(tree, &node, args.fit_to, pixmap.as_mut());
-
-        if args.export_area_page {
-            // TODO: add offset support to render_node() so we would not need an additional pixmap
-
-            let size = args.fit_to.fit_to(tree.svg_node().size.to_screen_size())
-                .ok_or_else(|| "target size is zero".to_string())?;
-
-            // Unwrap is safe, because `size` is already valid.
-            let mut page_pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
-
-            if let Some(background) = args.background {
-                page_pixmap.fill(tiny_skia::Color::from_rgba8(
-                    background.red, background.green, background.blue, 255));
-            }
-
-            page_pixmap.draw_pixmap(
-                bbox.x() as i32,
-                bbox.y() as i32,
-                pixmap.as_ref(),
-                &tiny_skia::PixmapPaint::default(),
-                tiny_skia::Transform::default(),
-                None
-            );
-            page_pixmap
-        } else {
-            pixmap
-        }
-    } else {
-        let size = args.fit_to.fit_to(tree.svg_node().size.to_screen_size())
-            .ok_or_else(|| "target size is zero".to_string())?;
-
-        // Unwrap is safe, because `size` is already valid.
-        let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
-
-        if !args.export_area_drawing {
-            if let Some(background) = args.background {
-                pixmap.fill(tiny_skia::Color::from_rgba8(
-                    background.red, background.green, background.blue, 255));
-            }
-        }
-
-        resvg::render(tree, args.fit_to, pixmap.as_mut());
-
-        if args.export_area_drawing {
-            let (_, _, pixmap) = resvg::trim_transparency(pixmap)
-                .ok_or_else(|| "target size is zero".to_string())?;
-
-            if let Some(background) = args.background {
-                let mut bg = pixmap.clone();
-                bg.fill(tiny_skia::Color::from_rgba8(
-                    background.red, background.green, background.blue, 255));
-                bg.draw_pixmap(
-                    0,
-                    0,
-                    pixmap.as_ref(),
-                    &tiny_skia::PixmapPaint::default(),
-                    tiny_skia::Transform::default(),
-                    None
-                );
-                bg
-            } else {
-                pixmap
-            }
-        } else {
-            pixmap
-        }
-    };
-
-    if args.perf {
-        println!("Rendering: {:.2}ms", now.elapsed().as_micros() as f64 / 1000.0);
-    }
-
-    timed!(args, "Saving", img.save_png(out_png).map_err(|e| e.to_string()))
-}
-
-fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), String> {
-    let mut f = std::fs::File::create(path)
-        .map_err(|_| format!("failed to create a file {:?}", path))?;
-
-    f.write_all(tree.to_string(&usvg::XmlOptions::default()).as_bytes())
-        .map_err(|_| format!("failed to write a file {:?}", path))?;
-
-    Ok(())
-}
-
-
 const HELP: &str = "\
 resvg is an SVG rendering application.
 
@@ -595,6 +450,150 @@ fn load_fonts(args: &mut CliArgs) -> usvg::fontdb::Database {
     fontdb.set_monospace_family(take_or(args.monospace_family.take(), "Courier New"));
 
     fontdb
+}
+
+fn query_all(tree: &usvg::Tree) -> Result<(), String> {
+    let mut count = 0;
+    for node in tree.root().descendants() {
+        if tree.is_in_defs(&node) {
+            continue;
+        }
+
+        if node.id().is_empty() {
+            continue;
+        }
+
+        count += 1;
+
+        fn round_len(v: f64) -> f64 {
+            (v * 1000.0).round() / 1000.0
+        }
+
+        if let Some(bbox) = node.calculate_bbox() {
+            println!(
+                "{},{},{},{},{}", node.id(),
+                round_len(bbox.x()), round_len(bbox.y()),
+                round_len(bbox.width()), round_len(bbox.height())
+            );
+        }
+    }
+
+    if count == 0 {
+        return Err("the file has no valid ID's".to_string());
+    }
+
+    Ok(())
+}
+
+fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), String> {
+    let mut f = std::fs::File::create(path)
+        .map_err(|_| format!("failed to create a file {:?}", path))?;
+
+    f.write_all(tree.to_string(&usvg::XmlOptions::default()).as_bytes())
+        .map_err(|_| format!("failed to write a file {:?}", path))?;
+
+    Ok(())
+}
+
+fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(), String> {
+    let now = std::time::Instant::now();
+
+    let img = if let Some(ref id) = args.export_id {
+        let node = match tree.root().descendants().find(|n| &*n.id() == id) {
+            Some(node) => node,
+            None => return Err(format!("SVG doesn't have '{}' ID", id)),
+        };
+
+        let bbox = node.calculate_bbox()
+            .ok_or_else(|| "node has zero size".to_string())?;
+
+        let size = args.fit_to.fit_to(bbox.to_screen_size())
+            .ok_or_else(|| "target size is zero".to_string())?;
+
+        // Unwrap is safe, because `size` is already valid.
+        let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
+
+        if !args.export_area_page {
+            if let Some(background) = args.background {
+                pixmap.fill(tiny_skia::Color::from_rgba8(
+                    background.red, background.green, background.blue, 255));
+            }
+        }
+
+        resvg::render_node(tree, &node, args.fit_to, pixmap.as_mut());
+
+        if args.export_area_page {
+            // TODO: add offset support to render_node() so we would not need an additional pixmap
+
+            let size = args.fit_to.fit_to(tree.svg_node().size.to_screen_size())
+                .ok_or_else(|| "target size is zero".to_string())?;
+
+            // Unwrap is safe, because `size` is already valid.
+            let mut page_pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
+
+            if let Some(background) = args.background {
+                page_pixmap.fill(tiny_skia::Color::from_rgba8(
+                    background.red, background.green, background.blue, 255));
+            }
+
+            page_pixmap.draw_pixmap(
+                bbox.x() as i32,
+                bbox.y() as i32,
+                pixmap.as_ref(),
+                &tiny_skia::PixmapPaint::default(),
+                tiny_skia::Transform::default(),
+                None
+            );
+            page_pixmap
+        } else {
+            pixmap
+        }
+    } else {
+        let size = args.fit_to.fit_to(tree.svg_node().size.to_screen_size())
+            .ok_or_else(|| "target size is zero".to_string())?;
+
+        // Unwrap is safe, because `size` is already valid.
+        let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
+
+        if !args.export_area_drawing {
+            if let Some(background) = args.background {
+                pixmap.fill(tiny_skia::Color::from_rgba8(
+                    background.red, background.green, background.blue, 255));
+            }
+        }
+
+        resvg::render(tree, args.fit_to, pixmap.as_mut());
+
+        if args.export_area_drawing {
+            let (_, _, pixmap) = resvg::trim_transparency(pixmap)
+                .ok_or_else(|| "target size is zero".to_string())?;
+
+            if let Some(background) = args.background {
+                let mut bg = pixmap.clone();
+                bg.fill(tiny_skia::Color::from_rgba8(
+                    background.red, background.green, background.blue, 255));
+                bg.draw_pixmap(
+                    0,
+                    0,
+                    pixmap.as_ref(),
+                    &tiny_skia::PixmapPaint::default(),
+                    tiny_skia::Transform::default(),
+                    None
+                );
+                bg
+            } else {
+                pixmap
+            }
+        } else {
+            pixmap
+        }
+    };
+
+    if args.perf {
+        println!("Rendering: {:.2}ms", now.elapsed().as_micros() as f64 / 1000.0);
+    }
+
+    timed!(args, "Saving", img.save_png(out_png).map_err(|e| e.to_string()))
 }
 
 
