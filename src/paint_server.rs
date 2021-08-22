@@ -231,9 +231,11 @@ fn prepare_pattern_pixmap(
         pattern.rect
     };
 
-    let (sx, sy) = global_ts.get_scale();
+    let mut ts2 = global_ts.clone();
+    ts2.append(&pattern.transform);
+    let (sx, sy) = ts2.get_scale();
 
-    let img_size = Size::new(r.width() * sx as f64, r.height() * sy as f64)?.to_screen_size();
+    let img_size = Size::new(r.width() * sx, r.height() * sy)?.to_screen_size();
     let mut pixmap = tiny_skia::Pixmap::new(img_size.width(), img_size.height())?;
     let mut canvas = Canvas::from(pixmap.as_mut());
 
@@ -254,7 +256,7 @@ fn prepare_pattern_pixmap(
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);
     ts.translate(r.x(), r.y());
-    ts.scale(1.0 / sx as f64, 1.0 / sy as f64);
+    ts.scale(1.0 / sx, 1.0 / sy);
 
     Some((pixmap, ts))
 }

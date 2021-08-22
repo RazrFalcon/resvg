@@ -26,6 +26,7 @@ This changelog also contains important changes in dependencies.
 - `usvg::SystemFontDB`. No longer needed.
 
 ### Fixed
+- `pattern` scaling.
 - Greatly improve `symbol` resolving speed in `usvg`.
 - Whitespaces trimming on nested `tspan`.
 

@@ -1111,6 +1111,7 @@ use render::render;
 #[test] fn e_pattern_027() { assert_eq!(render("e-pattern-027"), 0); }
 #[test] fn e_pattern_028() { assert_eq!(render("e-pattern-028"), 0); }
 #[test] fn e_pattern_029() { assert_eq!(render("e-pattern-029"), 0); }
+#[test] fn e_pattern_030() { assert_eq!(render("e-pattern-030"), 0); }
 #[test] fn e_polygon_001() { assert_eq!(render("e-polygon-001"), 0); }
 #[test] fn e_polygon_002() { assert_eq!(render("e-polygon-002"), 0); }
 #[test] fn e_polygon_003() { assert_eq!(render("e-polygon-003"), 0); }
