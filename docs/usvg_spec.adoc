@@ -510,6 +510,18 @@ Only one of:
 * `yChannelSelector` = `R | G | B | A`
 * <<Filter primitive attributes>>
 
+=== Filter primitive `feDropShadow`
+
+*Attributes:*
+
+* `in` = <<filter-input-type,<filter-input> >>
+* `stdDeviation` = <<positive-number-type,<positive-number> >> " " <<positive-number-type,<positive-number> >>
+* `dx` = <<number-type,<number> >>
+* `dy` = <<number-type,<number> >>
+* `flood-color` = <<color-type,<color> >>
+* `flood-opacity` = <<opacity-type,<opacity> >>
+* <<Filter primitive attributes>>
+
 === Filter primitive `feFlood`
 
 *Attributes:*

@@ -113,6 +113,21 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
 
                 for fe in &filter.children {
                     match fe.kind {
+                        FilterKind::FeDropShadow(ref shadow) => {
+                            xml.start_svg_element(EId::FeDropShadow);
+                            xml.write_filter_primitive_attrs(fe);
+                            xml.write_filter_input(AId::In, &shadow.input);
+                            xml.write_attribute_fmt(
+                                AId::StdDeviation.to_str(),
+                                format_args!("{} {}", shadow.std_dev_x.value(), shadow.std_dev_y.value()),
+                            );
+                            xml.write_svg_attribute(AId::Dx, &shadow.dx);
+                            xml.write_svg_attribute(AId::Dy, &shadow.dy);
+                            xml.write_svg_attribute(AId::FloodColor, &shadow.color);
+                            xml.write_svg_attribute(AId::FloodOpacity, &shadow.opacity.value());
+                            xml.write_svg_attribute(AId::Result, &fe.result);
+                            xml.end_element();
+                        }
                         FilterKind::FeGaussianBlur(ref blur) => {
                             xml.start_svg_element(EId::FeGaussianBlur);
                             xml.write_filter_primitive_attrs(fe);

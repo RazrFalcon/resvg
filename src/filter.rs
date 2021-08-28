@@ -286,6 +286,10 @@ fn _apply(
                 let input2 = get_input(&fe.input2, region, inputs, &results)?;
                 apply_blend(fe, cs, region, input1, input2)
             }
+            usvg::FilterKind::FeDropShadow(ref fe) => {
+                let input = get_input(&fe.input, region, inputs, &results)?;
+                apply_drop_shadow(fe, filter.primitive_units, cs, bbox, ts, input)
+            }
             usvg::FilterKind::FeFlood(ref fe) => {
                 apply_flood(fe, region)
             }
@@ -592,6 +596,63 @@ fn get_input(
     }
 }
 
+fn apply_drop_shadow(
+    fe: &usvg::FeDropShadow,
+    units: usvg::Units,
+    cs: ColorSpace,
+    bbox: Option<Rect>,
+    ts: &usvg::Transform,
+    input: Image,
+) -> Result<Image, Error> {
+    let (dx, dy) = try_opt_or!(scale_coordinates(fe.dx, fe.dy, units, bbox, ts), Ok(input));
+
+    let mut pixmap = tiny_skia::Pixmap::try_create(input.width(), input.height())?;
+    let input_pixmap = input.into_color_space(cs)?.take()?;
+    let mut shadow_pixmap = input_pixmap.clone();
+
+    if let Some((std_dx, std_dy, box_blur)) = resolve_std_dev(fe.std_dev_x, fe.std_dev_y, units, bbox, ts) {
+        if box_blur {
+            svgfilters::box_blur(std_dx, std_dy, into_svgfilters_image_mut!(shadow_pixmap));
+        } else {
+            svgfilters::iir_blur(std_dx, std_dy, into_svgfilters_image_mut!(shadow_pixmap));
+        }
+    }
+
+    // flood
+    let alpha = crate::paint_server::multiply_a8(fe.opacity.to_u8(), fe.color.alpha);
+    let color = tiny_skia::Color::from_rgba8(fe.color.red, fe.color.green, fe.color.blue, alpha);
+    for p in shadow_pixmap.pixels_mut() {
+        let mut color = color.clone();
+        color.apply_opacity(p.alpha() as f32 / 255.0);
+        *p = color.premultiply().to_color_u8();
+    }
+
+    match cs {
+        ColorSpace::SRGB => shadow_pixmap.into_srgb(),
+        ColorSpace::LinearRGB => shadow_pixmap.into_linear_rgb(),
+    }
+
+    pixmap.draw_pixmap(
+        dx as i32,
+        dy as i32,
+        shadow_pixmap.as_ref(),
+        &tiny_skia::PixmapPaint::default(),
+        tiny_skia::Transform::identity(),
+        None,
+    );
+
+    pixmap.draw_pixmap(
+        0,
+        0,
+        input_pixmap.as_ref(),
+        &tiny_skia::PixmapPaint::default(),
+        tiny_skia::Transform::identity(),
+        None,
+    );
+
+    Ok(Image::from_image(pixmap, cs))
+}
+
 fn apply_blur(
     fe: &usvg::FeGaussianBlur,
     units: usvg::Units,
@@ -601,7 +662,7 @@ fn apply_blur(
     input: Image,
 ) -> Result<Image, Error> {
     let (std_dx, std_dy, box_blur)
-        = try_opt_or!(resolve_std_dev(fe, units, bbox, ts), Ok(input));
+        = try_opt_or!(resolve_std_dev(fe.std_dev_x, fe.std_dev_y, units, bbox, ts), Ok(input));
 
     let mut pixmap = input.into_color_space(cs)?.take()?;
 
@@ -1084,19 +1145,20 @@ fn apply_to_canvas(
 ///
 /// If the last flag is set, then a box blur should be used. Or IIR otherwise.
 fn resolve_std_dev(
-    fe: &usvg::FeGaussianBlur,
+    std_dev_x: PositiveNumber,
+    std_dev_y: PositiveNumber,
     units: usvg::Units,
     bbox: Option<Rect>,
     ts: &usvg::Transform,
 ) -> Option<(f64, f64, bool)> {
     // 'A negative value or a value of zero disables the effect of the given filter primitive
     // (i.e., the result is the filter input image).'
-    if fe.std_dev_x.is_zero() && fe.std_dev_y.is_zero() {
+    if std_dev_x.is_zero() && std_dev_y.is_zero() {
         return None;
     }
 
     let (mut std_dx, mut std_dy) = scale_coordinates(
-        fe.std_dev_x.value(), fe.std_dev_y.value(), units, bbox, ts,
+        std_dev_x.value(), std_dev_y.value(), units, bbox, ts,
     )?;
     if std_dx.is_fuzzy_zero() && std_dy.is_fuzzy_zero() {
         None

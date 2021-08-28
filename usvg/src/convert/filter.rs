@@ -92,6 +92,7 @@ fn collect_children(
 
     for child in filter.children() {
         let kind = match try_opt_continue!(child.tag_name()) {
+            EId::FeDropShadow => convert_fe_drop_shadow(child, &primitives, &state),
             EId::FeGaussianBlur => convert_fe_gaussian_blur(child, &primitives),
             EId::FeOffset => convert_fe_offset(child, &primitives, state),
             EId::FeBlend => convert_fe_blend(child, &primitives),
@@ -142,11 +143,38 @@ fn convert_primitive(
     }
 }
 
+fn convert_fe_drop_shadow(
+    fe: svgtree::Node,
+    primitives: &[tree::FilterPrimitive],
+    state: &State,
+) -> tree::FilterKind {
+    let (std_dev_x, std_dev_y) = convert_std_dev_attr(fe, "2 2");
+
+    tree::FilterKind::FeDropShadow(tree::FeDropShadow {
+        input: resolve_input(fe, AId::In, primitives),
+        dx: fe.convert_user_length(AId::Dx, state, Length::new_number(2.0)),
+        dy: fe.convert_user_length(AId::Dy, state, Length::new_number(2.0)),
+        std_dev_x: std_dev_x.into(),
+        std_dev_y: std_dev_y.into(),
+        color: fe.attribute(AId::FloodColor).unwrap_or_else(tree::Color::black),
+        opacity: fe.attribute(AId::FloodOpacity).unwrap_or_default(),
+    })
+}
+
 fn convert_fe_gaussian_blur(
     fe: svgtree::Node,
     primitives: &[tree::FilterPrimitive],
 ) -> tree::FilterKind {
-    let text = fe.attribute::<&str>(AId::StdDeviation).unwrap_or("0 0");
+    let (std_dev_x, std_dev_y) = convert_std_dev_attr(fe, "0 0");
+    tree::FilterKind::FeGaussianBlur(tree::FeGaussianBlur {
+        input: resolve_input(fe, AId::In, primitives),
+        std_dev_x: std_dev_x.into(),
+        std_dev_y: std_dev_y.into(),
+    })
+}
+
+fn convert_std_dev_attr(fe: svgtree::Node, default: &str) -> (f64, f64) {
+    let text = fe.attribute::<&str>(AId::StdDeviation).unwrap_or(default);
     let mut parser = svgtypes::NumberListParser::from(text);
 
     let n1 = parser.next().and_then(|n| n.ok());
@@ -164,11 +192,7 @@ fn convert_fe_gaussian_blur(
     if std_dev_x.is_sign_negative() { std_dev_x = 0.0; }
     if std_dev_y.is_sign_negative() { std_dev_y = 0.0; }
 
-    tree::FilterKind::FeGaussianBlur(tree::FeGaussianBlur {
-        input: resolve_input(fe, AId::In, primitives),
-        std_dev_x: std_dev_x.into(),
-        std_dev_y: std_dev_y.into(),
-    })
+    (std_dev_x, std_dev_y)
 }
 
 fn convert_fe_offset(
@@ -208,11 +232,9 @@ fn convert_fe_blend(
 fn convert_fe_flood(
     fe: svgtree::Node,
 ) -> tree::FilterKind {
-    let color = fe.attribute(AId::FloodColor).unwrap_or_else(tree::Color::black);
-    let opacity = fe.attribute(AId::FloodOpacity).unwrap_or_default();
     tree::FilterKind::FeFlood(tree::FeFlood {
-        color,
-        opacity,
+        color: fe.attribute(AId::FloodColor).unwrap_or_else(tree::Color::black),
+        opacity: fe.attribute(AId::FloodOpacity).unwrap_or_default(),
     })
 }
 

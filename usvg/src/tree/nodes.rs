@@ -540,6 +540,7 @@ pub enum FilterKind {
     FeConvolveMatrix(FeConvolveMatrix),
     FeDiffuseLighting(FeDiffuseLighting),
     FeDisplacementMap(FeDisplacementMap),
+    FeDropShadow(FeDropShadow),
     FeFlood(FeFlood),
     FeGaussianBlur(FeGaussianBlur),
     FeImage(FeImage),
@@ -562,6 +563,7 @@ impl FilterKind {
             FilterKind::FeConvolveMatrix(ref fe) => fe.input == *input,
             FilterKind::FeDiffuseLighting(ref fe) => fe.input == *input,
             FilterKind::FeDisplacementMap(ref fe) => fe.input1 == *input || fe.input2 == *input,
+            FilterKind::FeDropShadow(ref fe) => fe.input == *input,
             FilterKind::FeFlood(_) => false,
             FilterKind::FeGaussianBlur(ref fe) => fe.input == *input,
             FilterKind::FeImage(_) => false,
@@ -810,6 +812,46 @@ pub struct FeDisplacementMap {
     ///
     /// `yChannelSelector` in the SVG.
     pub y_channel_selector: ColorChannel,
+}
+
+
+/// A drop shadow filter primitive.
+///
+/// This is essentially `feGaussianBlur`, `feOffset` and `feFlood` joined together.
+///
+/// `feDropShadow` element in the SVG.
+#[derive(Clone, Debug)]
+pub struct FeDropShadow {
+    /// Identifies input for the given filter primitive.
+    ///
+    /// `in` in the SVG.
+    pub input: FilterInput,
+
+    /// The amount to offset the input graphic along the X-axis.
+    pub dx: f64,
+
+    /// The amount to offset the input graphic along the Y-axis.
+    pub dy: f64,
+
+    /// A standard deviation along the X-axis.
+    ///
+    /// `stdDeviation` in the SVG.
+    pub std_dev_x: PositiveNumber,
+
+    /// A standard deviation along the Y-axis.
+    ///
+    /// `stdDeviation` in the SVG.
+    pub std_dev_y: PositiveNumber,
+
+    /// A flood color.
+    ///
+    /// `flood-color` in the SVG.
+    pub color: Color,
+
+    /// A flood opacity.
+    ///
+    /// `flood-opacity` in the SVG.
+    pub opacity: Opacity,
 }
 
 

@@ -1,8 +1,8 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>With `flood-opacity` (SVG 2)</title>
+    <title>stdDeviation=0 (SVG 2)</title>
 
     <filter id="filter1" x="0" y="0" width="200" height="200" filterUnits="userSpaceOnUse">
-        <feDropShadow stdDeviation="6" flood-color="blue" flood-opacity="0.5"/>
+        <feDropShadow stdDeviation="0" dx="6" dy="6"/>
     </filter>
     <circle id="circle1" cx="100" cy="100" r="60" fill="seagreen" filter="url(#filter1)"/>
 

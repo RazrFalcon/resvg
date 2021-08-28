@@ -644,6 +644,8 @@ use render::render;
 #[test] fn e_feDropShadow_003() { assert_eq!(render("e-feDropShadow-003"), 0); }
 #[test] fn e_feDropShadow_004() { assert_eq!(render("e-feDropShadow-004"), 0); }
 #[test] fn e_feDropShadow_005() { assert_eq!(render("e-feDropShadow-005"), 0); }
+#[test] fn e_feDropShadow_006() { assert_eq!(render("e-feDropShadow-006"), 0); }
+#[test] fn e_feDropShadow_007() { assert_eq!(render("e-feDropShadow-007"), 0); }
 #[test] fn e_feFlood_001() { assert_eq!(render("e-feFlood-001"), 0); }
 #[test] fn e_feFlood_002() { assert_eq!(render("e-feFlood-002"), 0); }
 #[test] fn e_feFlood_003() { assert_eq!(render("e-feFlood-003"), 0); }
