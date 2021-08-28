@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- `tiny-skia` updated with support of images larger than 8000x8000 pixels.
 
 ## [0.16.0] - 2021-08-22
 ### Added

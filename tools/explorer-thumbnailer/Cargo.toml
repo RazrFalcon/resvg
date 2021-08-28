@@ -15,7 +15,7 @@ log = "0.4"
 winlog = "0.2"
 resvg = { path = "../.." }
 usvg = { path = "../../usvg" }
-tiny-skia = "0.6"
+tiny-skia = "0.6.1"
 
 [lib]
 # name can only be "server.dll", see https://github.com/microsoft/com-rs/issues/157

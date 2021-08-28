@@ -22,7 +22,7 @@ pico-args = "0.4"
 png = "0.17"
 rgb = "0.8"
 svgfilters = { path = "svgfilters", version = "0.3" }
-tiny-skia = "0.6"
+tiny-skia = "0.6.1"
 usvg = { path = "usvg", version = "0.16.0", default-features = false }
 
 [dev-dependencies]

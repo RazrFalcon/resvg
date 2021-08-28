@@ -16,7 +16,7 @@ crate-type = ["cdylib", "staticlib"]
 log = "0.4"
 resvg = { path = "../" }
 usvg = { path = "../usvg", default-features = false }
-tiny-skia = "0.6"
+tiny-skia = "0.6.1"
 
 [features]
 default = ["text", "system-fonts"]
