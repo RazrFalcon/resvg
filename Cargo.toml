@@ -32,3 +32,4 @@ once_cell = "1.5"
 default = ["text", "system-fonts"]
 text = ["usvg/text"] # enables SVG Text support
 system-fonts = ["usvg/system-fonts"] # enables system fonts loading
+memmap = ["usvg/memmap"] # allows font files memory mapping, greatly improves performance

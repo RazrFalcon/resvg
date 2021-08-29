@@ -54,5 +54,10 @@ text = [
 ]
 system-fonts = [
     "fontdb/fs",
-    "memmap2",
 ]
+
+memmap = [
+    "memmap2",
+    "fontdb/memmap"
+]
+
