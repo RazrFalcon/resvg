@@ -78,6 +78,15 @@ OPTIONS:
                                 Otherwise, text elements will not be processes
   --list-fonts                  Lists successfully loaded font faces.
                                 Useful for debugging
+  --default-width LENGTH        Sets the default width of the SVG viewport. Like
+                                the '--default-height' option, this option
+                                controlls what size relative units in the document
+                                will use as a base if there is no viewBox and
+                                document width or height are relative.
+                                [values: 1..2^32] [default: 100]
+  --default-height LENGTH       Sets the default height of the SVG viewport.
+                                Refer to the explanation of the '--default-width'
+                                option. [values: 1..2^32] [default: 100]
 
   --keep-named-groups           Disables removing of groups with non-empty ID
   --id-prefix                   Adds a prefix to each ID attribute
@@ -113,6 +122,8 @@ struct Args {
     font_dirs: Vec<PathBuf>,
     skip_system_fonts: bool,
     list_fonts: bool,
+    default_width: u32,
+    default_height: u32,
 
     keep_named_groups: bool,
     id_prefix: Option<String>,
@@ -158,6 +169,8 @@ fn collect_args() -> Result<Args, pico_args::Error> {
         font_dirs:          input.values_from_str("--use-fonts-dir")?,
         skip_system_fonts:  input.contains("--skip-system-fonts"),
         list_fonts:         input.contains("--list-fonts"),
+        default_width:      input.opt_value_from_fn("--default-width", parse_length)?.unwrap_or(100),
+        default_height:     input.opt_value_from_fn("--default-height", parse_length)?.unwrap_or(100),
 
         keep_named_groups:  input.contains("--keep-named-groups"),
         id_prefix:          input.opt_value_from_str("--id-prefix")?,
@@ -219,6 +232,16 @@ fn parse_indent(s: &str) -> Result<xmlwriter::Indent, String> {
     };
 
     Ok(indent)
+}
+
+fn parse_length(s: &str) -> Result<u32, String> {
+    let n: u32 = s.parse().map_err(|_| "invalid length")?;
+
+    if n > 0 {
+        Ok(n)
+    } else {
+        Err("LENGTH cannot be zero".to_string())
+    }
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -336,6 +359,7 @@ fn process(args: Args) -> Result<(), String> {
         text_rendering: args.text_rendering,
         image_rendering: args.image_rendering,
         keep_named_groups: args.keep_named_groups,
+        default_size: usvg::Size::new(args.default_width as f64, args.default_height as f64).unwrap(),
         fontdb,
     };
 

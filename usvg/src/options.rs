@@ -121,6 +121,12 @@ pub struct Options {
     /// Default: false
     pub keep_named_groups: bool,
 
+    /// Default viewport size to assume if there is no `viewBox` attribute and
+    /// the `width` or `height` attributes are relative.
+    ///
+    /// Default: `(100, 100)`
+    pub default_size: Size,
+
     /// When empty, `text` elements will be skipped.
     ///
     /// Default: empty
@@ -141,6 +147,7 @@ impl Default for Options {
             text_rendering: TextRendering::default(),
             image_rendering: ImageRendering::default(),
             keep_named_groups: false,
+            default_size: Size::new(100.0, 100.0).unwrap(),
             #[cfg(feature = "text")]
             fontdb: fontdb::Database::new(),
         }
@@ -161,6 +168,7 @@ impl Options {
             text_rendering: self.text_rendering,
             image_rendering: self.image_rendering,
             keep_named_groups: self.keep_named_groups,
+            default_size: self.default_size,
             #[cfg(feature = "text")]
             fontdb: &self.fontdb,
         }
@@ -183,6 +191,7 @@ pub struct OptionsRef<'a> {
     pub text_rendering: TextRendering,
     pub image_rendering: ImageRendering,
     pub keep_named_groups: bool,
+    pub default_size: Size,
     #[cfg(feature = "text")]
     pub fontdb: &'a fontdb::Database,
 }

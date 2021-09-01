@@ -7,7 +7,7 @@
 use std::cell::Ref;
 
 pub use self::{nodes::*, attributes::*, pathdata::*};
-use crate::{svgtree, Rect, Error, OptionsRef, XmlOptions};
+use crate::{svgtree, Size, Rect, Error, OptionsRef, XmlOptions};
 
 mod attributes;
 mod export;
@@ -157,6 +157,22 @@ impl Tree {
     #[inline]
     pub fn to_string(&self, opt: &XmlOptions) -> String {
         export::convert(self, opt)
+    }
+
+    /// Set a view box for the tree.
+    pub(crate) fn set_view_box(&mut self, rect: Rect) {
+        if let NodeKind::Svg(svg) = &mut *self.root.borrow_mut() {
+            svg.view_box.rect = rect;
+        }
+    }
+
+    /// Set dimensions for the tree.
+    pub(crate) fn set_dimensions(&mut self, width: f64, height: f64) {
+        if let NodeKind::Svg(svg) = &mut *self.root.borrow_mut() {
+            if let Some(size) = Size::new(width, height) {
+                svg.size = size;
+            }
+        }
     }
 }
 

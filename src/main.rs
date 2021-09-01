@@ -377,11 +377,15 @@ fn parse_args() -> Result<Args, String> {
     let keep_named_groups = args.query_all || export_id.is_some();
 
     let mut fit_to = usvg::FitTo::Original;
+    let mut default_size = usvg::Size::new(100.0, 100.0).unwrap();
     if let (Some(w), Some(h)) = (args.width, args.height) {
+        default_size = usvg::Size::new(w as f64, h as f64).unwrap();
         fit_to = usvg::FitTo::Size(w, h);
     } else if let Some(w) = args.width {
+        default_size = usvg::Size::new(w as f64, 100.0).unwrap();
         fit_to = usvg::FitTo::Width(w);
     } else if let Some(h) = args.height {
+        default_size = usvg::Size::new(100.0, h as f64).unwrap();
         fit_to = usvg::FitTo::Height(h);
     } else if let Some(z) = args.zoom {
         fit_to = usvg::FitTo::Zoom(z);
@@ -405,6 +409,7 @@ fn parse_args() -> Result<Args, String> {
         text_rendering: args.text_rendering,
         image_rendering: args.image_rendering,
         keep_named_groups,
+        default_size,
         fontdb,
     };
 

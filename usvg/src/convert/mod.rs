@@ -93,7 +93,8 @@ pub fn convert_doc(
     opt: &OptionsRef,
 ) -> Result<tree::Tree, Error> {
     let svg = svg_doc.root_element();
-    let size = resolve_svg_size(&svg, opt)?;
+    let (size, restore_viewbox) = resolve_svg_size(&svg, opt);
+    let size = size?;
     let view_box = tree::ViewBox {
         rect: svg.get_viewbox().unwrap_or_else(|| size.to_rect(0.0, 0.0)),
         aspect: svg.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
@@ -139,13 +140,37 @@ pub fn convert_doc(
     ungroup_groups(opt, &mut tree);
     remove_unused_defs(&mut tree);
 
+    if restore_viewbox {
+        let mut right = 0.0;
+        let mut bottom = 0.0;
+
+        for node in tree.root().descendants() {
+            if !tree.is_in_defs(&node) {
+                if let Some(bbox) = node.calculate_bbox() {
+                    if bbox.right() > right {
+                        right = bbox.right();
+                    }
+                    if bbox.bottom() > bottom {
+                        bottom = bbox.bottom();
+                    }
+                }
+            }
+        }
+
+        if let Some(rect) = Rect::new(0.0, 0.0, right, bottom) {
+            tree.set_view_box(rect);
+        }
+
+        tree.set_dimensions(right, bottom);
+    }
+
     Ok(tree)
 }
 
 fn resolve_svg_size(
     svg: &svgtree::Node,
     opt: &OptionsRef,
-) -> Result<Size, Error> {
+) -> (Result<Size, Error>, bool) {
     let mut state = State {
         parent_clip_path: None,
         parent_marker: None,
@@ -156,16 +181,25 @@ fn resolve_svg_size(
     };
 
     let def = Length::new(100.0, Unit::Percent);
-    let width: Length = svg.attribute(AId::Width).unwrap_or(def);
-    let height: Length = svg.attribute(AId::Height).unwrap_or(def);
+    let mut width: Length = svg.attribute(AId::Width).unwrap_or(def);
+    let mut height: Length = svg.attribute(AId::Height).unwrap_or(def);
 
     let view_box = svg.get_viewbox();
 
-    if (width.unit == Unit::Percent || height.unit == Unit::Percent) && view_box.is_none() {
-        // TODO: it this case we should detect the bounding box of all elements,
-        //       which is currently impossible
-        return Err(Error::InvalidSize);
-    }
+    let restore_viewbox = if (width.unit == Unit::Percent || height.unit == Unit::Percent) && view_box.is_none() {
+        // Apply the percentages to the fallback size.
+        if width.unit == Unit::Percent {
+            width = Length::new((width.number / 100.0) * state.opt.default_size.width(), Unit::None);
+        }
+
+        if height.unit == Unit::Percent {
+            height = Length::new((height.number / 100.0) * state.opt.default_size.height(), Unit::None);
+        }
+
+        true
+    } else {
+        false
+    };
 
     let size = if let Some(vbox) = view_box {
         state.view_box = vbox;
@@ -190,7 +224,7 @@ fn resolve_svg_size(
         )
     };
 
-    size.ok_or(Error::InvalidSize)
+    (size.ok_or(Error::InvalidSize), restore_viewbox)
 }
 
 #[inline(never)]
