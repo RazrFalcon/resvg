@@ -215,6 +215,7 @@ NOTE: This list is not final. This this just things I was able to find so far. P
 - An [`edgeMode`](https://www.w3.org/TR/filter-effects-1/#element-attrdef-fegaussianblur-edgemode) attribute to `feGaussianBlur` element.
 - [Filter functions](https://www.w3.org/TR/filter-effects-1/#filter-functions).
 - New [blend modes](https://www.w3.org/TR/compositing-1/#ltblendmodegt) to [`feBlend`](https://www.w3.org/TR/filter-effects-1/#feBlendElement) element.
+- A [`no-composite`](https://www.w3.org/TR/filter-effects-1/#element-attrdef-feblend-no-composite) property to [`feBlend`](https://www.w3.org/TR/filter-effects-1/#feBlendElement) element.
 
 ### Changed
 
