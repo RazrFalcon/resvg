@@ -113,6 +113,8 @@ struct Args {
     font_dirs: Vec<PathBuf>,
     skip_system_fonts: bool,
     list_fonts: bool,
+    default_width: u32,
+    default_height: u32,
 
     keep_named_groups: bool,
     id_prefix: Option<String>,
@@ -158,6 +160,8 @@ fn collect_args() -> Result<Args, pico_args::Error> {
         font_dirs:          input.values_from_str("--use-fonts-dir")?,
         skip_system_fonts:  input.contains("--skip-system-fonts"),
         list_fonts:         input.contains("--list-fonts"),
+        default_width:      input.opt_value_from_fn("--default-width", parse_length)?.unwrap_or(100),
+        default_height:     input.opt_value_from_fn("--default-height", parse_length)?.unwrap_or(100),
 
         keep_named_groups:  input.contains("--keep-named-groups"),
         id_prefix:          input.opt_value_from_str("--id-prefix")?,
@@ -219,6 +223,16 @@ fn parse_indent(s: &str) -> Result<xmlwriter::Indent, String> {
     };
 
     Ok(indent)
+}
+
+fn parse_length(s: &str) -> Result<u32, String> {
+    let n: u32 = s.parse().map_err(|_| "invalid length")?;
+
+    if n > 0 {
+        Ok(n)
+    } else {
+        Err("LENGTH cannot be zero".to_string())
+    }
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -336,6 +350,7 @@ fn process(args: Args) -> Result<(), String> {
         text_rendering: args.text_rendering,
         image_rendering: args.image_rendering,
         keep_named_groups: args.keep_named_groups,
+        default_size: usvg::Size::new(args.default_width as f64, args.default_height as f64).unwrap(),
         fontdb,
     };
 
