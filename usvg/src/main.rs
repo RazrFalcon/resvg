@@ -78,6 +78,15 @@ OPTIONS:
                                 Otherwise, text elements will not be processes
   --list-fonts                  Lists successfully loaded font faces.
                                 Useful for debugging
+  --default-width LENGTH        Sets the default width of the SVG viewport. Like
+                                the '--default-height' option, this option
+                                controlls what size relative units in the document
+                                will use as a base if there is no viewBox and
+                                document width or height are relative.
+                                [values: 1..2^32] [default: 100]
+  --default-height LENGTH       Sets the default height of the SVG viewport.
+                                Refer to the explanation of the '--default-width'
+                                option. [values: 1..2^32] [default: 100]
 
   --keep-named-groups           Disables removing of groups with non-empty ID
   --id-prefix                   Adds a prefix to each ID attribute
