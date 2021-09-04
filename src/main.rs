@@ -2,7 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::io::Write;
 use std::path;
 
 use usvg::NodeExt;
@@ -490,13 +489,22 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(feature = "dump-svg")]
 fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), String> {
+    use std::io::Write;
+
     let mut f = std::fs::File::create(path)
         .map_err(|_| format!("failed to create a file {:?}", path))?;
 
     f.write_all(tree.to_string(&usvg::XmlOptions::default()).as_bytes())
         .map_err(|_| format!("failed to write a file {:?}", path))?;
 
+    Ok(())
+}
+
+#[cfg(not(feature = "dump-svg"))]
+fn dump_svg(_: &usvg::Tree, _: &path::Path) -> Result<(), String> {
+    log::warn!("The dump-svg feature is not enabled.");
     Ok(())
 }
 

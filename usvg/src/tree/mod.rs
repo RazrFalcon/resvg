@@ -7,10 +7,12 @@
 use std::cell::Ref;
 
 pub use self::{nodes::*, attributes::*, pathdata::*};
-use crate::{svgtree, Size, Rect, Error, OptionsRef, XmlOptions};
+use crate::{svgtree, Size, Rect, Error, OptionsRef};
+
+#[cfg(feature = "export")] use crate::XmlOptions;
 
 mod attributes;
-mod export;
+#[cfg(feature = "export")] mod export;
 mod nodes;
 mod numbers;
 mod pathdata;
@@ -155,6 +157,7 @@ impl Tree {
 
     /// Converts an SVG.
     #[inline]
+    #[cfg(feature = "export")]
     pub fn to_string(&self, opt: &XmlOptions) -> String {
         export::convert(self, opt)
     }

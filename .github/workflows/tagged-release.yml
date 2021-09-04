@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build resvg
-        run: cargo build --release
+        run: cargo build --release --features dump-svg
 
       - name: Build usvg
         working-directory: usvg
@@ -98,7 +98,7 @@ jobs:
       - name: Build resvg
         env:
           RUSTFLAGS: -Ctarget-feature=+crt-static # make sure it's static
-        run: cargo build --release
+        run: cargo build --release --features dump-svg
 
       - name: Build usvg
         working-directory: usvg
@@ -178,10 +178,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Build resvg x86
-        run: cargo build --release
+      - name: Build resvg
+        run: cargo build --release --features dump-svg
 
-      - name: Build usvg x86
+      - name: Build usvg
         working-directory: usvg
         run: cargo build --release
 

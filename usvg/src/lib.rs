@@ -200,6 +200,7 @@ pub use crate::tree::*;
 
 
 /// XML writing options.
+#[cfg(feature = "export")]
 #[derive(Clone, Default, Debug)]
 pub struct XmlOptions {
     /// Used to add a custom prefix to each element ID during writing.

@@ -19,6 +19,7 @@ usvg = { path = "../usvg", default-features = false }
 tiny-skia = "0.6.1"
 
 [features]
+# we do not provide the dump-svg/export feature here, because it's not available to C API anyway
 default = ["text", "system-fonts", "memmap-fonts"]
 # enables SVG Text support
 text = ["resvg/text", "usvg/text"]

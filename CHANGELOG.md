@@ -23,6 +23,9 @@ This changelog also contains important changes in dependencies.
 - Fonts memory mapping was split into a separate build feature: `memmap-fonts`.
   Now you can build resvg/usvg with `system-fonts`, but without `memmap-fonts`.
   Enabled by default.
+- The `--dump-svg` argument in resvg CLI tool should be enabled using `--features dump-svg` now.
+  No enabled by default.
+- `usvg::Tree::to_string` is behind the `export` build feature now.
 
 ## [0.16.0] - 2021-08-22
 ### Added
