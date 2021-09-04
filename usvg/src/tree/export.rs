@@ -157,8 +157,19 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
                                 FeBlendMode::Normal     => "normal",
                                 FeBlendMode::Multiply   => "multiply",
                                 FeBlendMode::Screen     => "screen",
+                                FeBlendMode::Overlay    => "overlay",
                                 FeBlendMode::Darken     => "darken",
                                 FeBlendMode::Lighten    => "lighten",
+                                FeBlendMode::ColorDodge => "color-dodge",
+                                FeBlendMode::ColorBurn  => "color-burn",
+                                FeBlendMode::HardLight  => "hard-light",
+                                FeBlendMode::SoftLight  => "soft-light",
+                                FeBlendMode::Difference => "difference",
+                                FeBlendMode::Exclusion  => "exclusion",
+                                FeBlendMode::Hue        => "hue",
+                                FeBlendMode::Saturation => "saturation",
+                                FeBlendMode::Color      => "color",
+                                FeBlendMode::Luminosity => "luminosity",
                             });
                             xml.write_svg_attribute(AId::Result, &fe.result);
                             xml.end_element();

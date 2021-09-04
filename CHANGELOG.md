@@ -14,6 +14,7 @@ This changelog also contains important changes in dependencies.
   Meaning that the `filter` attribute can have multiple values now.
   Like `url(#filter1) blur(2)`. SVG2
 - All [filter functions](https://www.w3.org/TR/filter-effects-1/#filter-functions). SVG2
+- Support all [new](https://www.w3.org/TR/compositing-1/#ltblendmodegt) `feBlend` modes. SVG2
 
 ### Changed
 - `usvg::Group::filter` is a list of filter IDs now.

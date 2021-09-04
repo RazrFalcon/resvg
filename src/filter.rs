@@ -725,8 +725,19 @@ fn apply_blend(
         usvg::FeBlendMode::Normal => tiny_skia::BlendMode::SourceOver,
         usvg::FeBlendMode::Multiply => tiny_skia::BlendMode::Multiply,
         usvg::FeBlendMode::Screen => tiny_skia::BlendMode::Screen,
+        usvg::FeBlendMode::Overlay => tiny_skia::BlendMode::Overlay,
         usvg::FeBlendMode::Darken => tiny_skia::BlendMode::Darken,
         usvg::FeBlendMode::Lighten => tiny_skia::BlendMode::Lighten,
+        usvg::FeBlendMode::ColorDodge => tiny_skia::BlendMode::ColorDodge,
+        usvg::FeBlendMode::ColorBurn => tiny_skia::BlendMode::ColorBurn,
+        usvg::FeBlendMode::HardLight => tiny_skia::BlendMode::HardLight,
+        usvg::FeBlendMode::SoftLight => tiny_skia::BlendMode::SoftLight,
+        usvg::FeBlendMode::Difference => tiny_skia::BlendMode::Difference,
+        usvg::FeBlendMode::Exclusion => tiny_skia::BlendMode::Exclusion,
+        usvg::FeBlendMode::Hue => tiny_skia::BlendMode::Hue,
+        usvg::FeBlendMode::Saturation => tiny_skia::BlendMode::Saturation,
+        usvg::FeBlendMode::Color => tiny_skia::BlendMode::Color,
+        usvg::FeBlendMode::Luminosity => tiny_skia::BlendMode::Luminosity,
     };
 
     pixmap.draw_pixmap(

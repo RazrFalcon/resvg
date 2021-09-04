@@ -337,11 +337,23 @@ fn convert_fe_blend(
     primitives: &[tree::FilterPrimitive],
 ) -> tree::FilterKind {
     let mode = match fe.attribute(AId::Mode).unwrap_or("normal") {
-        "multiply"  => tree::FeBlendMode::Multiply,
-        "screen"    => tree::FeBlendMode::Screen,
-        "darken"    => tree::FeBlendMode::Darken,
-        "lighten"   => tree::FeBlendMode::Lighten,
-        _           => tree::FeBlendMode::Normal,
+        "normal" => tree::FeBlendMode::Normal,
+        "multiply" => tree::FeBlendMode::Multiply,
+        "screen" => tree::FeBlendMode::Screen,
+        "overlay" => tree::FeBlendMode::Overlay,
+        "darken" => tree::FeBlendMode::Darken,
+        "lighten" => tree::FeBlendMode::Lighten,
+        "color-dodge" => tree::FeBlendMode::ColorDodge,
+        "color-burn" => tree::FeBlendMode::ColorBurn,
+        "hard-light" => tree::FeBlendMode::HardLight,
+        "soft-light" => tree::FeBlendMode::SoftLight,
+        "difference" => tree::FeBlendMode::Difference,
+        "exclusion" => tree::FeBlendMode::Exclusion,
+        "hue" => tree::FeBlendMode::Hue,
+        "saturation" => tree::FeBlendMode::Saturation,
+        "color" => tree::FeBlendMode::Color,
+        "luminosity" => tree::FeBlendMode::Luminosity,
+        _ => tree::FeBlendMode::Normal,
     };
 
     let input1 = resolve_input(fe, AId::In, primitives);
