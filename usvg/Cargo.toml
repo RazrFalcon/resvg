@@ -21,6 +21,7 @@ required-features = ["system-fonts", "memmap-fonts", "text", "export"]
 base64 = "0.13" # for embedded images
 data-url = "0.1" # for href parsing
 flate2 = { version = "1.0", default-features = false, features = ["rust_backend"] } # SVGZ decoding
+float-cmp = { version = "0.9", default-features = false, features = ["std"] }
 kurbo = "=0.8.0" # https://github.com/linebender/kurbo/issues/176
 log = "0.4"
 pico-args = "0.4"
@@ -31,7 +32,7 @@ xmlwriter = { version = "0.1", optional = true }
 roxmltree = "0.14"
 simplecss = "0.2.1"
 siphasher = "0.3"
-svgtypes = { git = "https://github.com/RazrFalcon/svgtypes", rev = "90897f7" }
+svgtypes = "0.7"
 
 # for text to path
 fontdb = { version = "0.6.2", optional = true, default-features = false }

@@ -5,11 +5,11 @@
     xmlns="http://www.w3.org/2000/svg">
     <defs/>
     <path
-        fill="#000000"
+        fill="rgba(0,0,0,255)"
         stroke="none"
         d="M 10 20 L 10 30"/>
     <path
-        fill="#000000"
+        fill="rgba(0,0,0,255)"
         stroke="none"
         d="M 10 20 L 10 30"/>
 </svg>

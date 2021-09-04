@@ -27,6 +27,9 @@ This changelog also contains important changes in dependencies.
   No enabled by default.
 - `usvg::Tree::to_string` is behind the `export` build feature now.
 
+### Fixed
+- When writing SVG, `usvg` will use `rgba()` notations for colors instead of `#RRGGBB`.
+
 ## [0.16.0] - 2021-08-22
 ### Added
 - CSS3 colors support. Specifically `rgba`, `hsl`, `hsla` and `transparent`. SVG2

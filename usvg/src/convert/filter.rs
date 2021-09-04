@@ -507,14 +507,14 @@ fn convert_transfer_function(
             Some(tree::TransferFunction::Identity)
         }
         "table" => {
-            match node.attribute::<&svgtypes::NumberList>(AId::TableValues) {
-                Some(values) => Some(tree::TransferFunction::Table(values.0.clone())),
+            match node.attribute::<&Vec<f64>>(AId::TableValues) {
+                Some(values) => Some(tree::TransferFunction::Table(values.clone())),
                 None => Some(tree::TransferFunction::Table(Vec::new())),
             }
         }
         "discrete" => {
-            match node.attribute::<&svgtypes::NumberList>(AId::TableValues) {
-                Some(values) => Some(tree::TransferFunction::Discrete(values.0.clone())),
+            match node.attribute::<&Vec<f64>>(AId::TableValues) {
+                Some(values) => Some(tree::TransferFunction::Discrete(values.clone())),
                 None => Some(tree::TransferFunction::Discrete(Vec::new())),
             }
         }
@@ -551,7 +551,7 @@ fn convert_color_matrix_kind(
 ) -> Option<tree::FeColorMatrixKind> {
     match fe.attribute(AId::Type) {
         Some("saturate") => {
-            if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::Values) {
+            if let Some(list) = fe.attribute::<&Vec<f64>>(AId::Values) {
                 if !list.is_empty() {
                     let n = crate::utils::f64_bound(0.0, list[0], 1.0);
                     return Some(tree::FeColorMatrixKind::Saturate(n.into()));
@@ -561,7 +561,7 @@ fn convert_color_matrix_kind(
             }
         }
         Some("hueRotate") => {
-            if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::Values) {
+            if let Some(list) = fe.attribute::<&Vec<f64>>(AId::Values) {
                 if !list.is_empty() {
                     return Some(tree::FeColorMatrixKind::HueRotate(list[0]));
                 } else {
@@ -574,9 +574,9 @@ fn convert_color_matrix_kind(
         }
         _ => {
             // Fallback to `matrix`.
-            if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::Values) {
+            if let Some(list) = fe.attribute::<&Vec<f64>>(AId::Values) {
                 if list.len() == 20 {
-                    return Some(tree::FeColorMatrixKind::Matrix(list.0.clone()));
+                    return Some(tree::FeColorMatrixKind::Matrix(list.clone()));
                 }
             }
         }
@@ -612,9 +612,9 @@ fn convert_fe_convolve_matrix(
     }
 
     let mut matrix = Vec::new();
-    if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::KernelMatrix) {
+    if let Some(list) = fe.attribute::<&Vec<f64>>(AId::KernelMatrix) {
         if list.len() == (order_x * order_y) as usize {
-            matrix = list.0.clone();
+            matrix = list.clone();
         }
     }
 
@@ -673,7 +673,7 @@ fn convert_fe_morphology(
     // Both radius are zero by default.
     let mut radius_x = tree::PositiveNumber::new(0.0);
     let mut radius_y = tree::PositiveNumber::new(0.0);
-    if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::Radius) {
+    if let Some(list) = fe.attribute::<&Vec<f64>>(AId::Radius) {
         let mut rx = 0.0;
         let mut ry = 0.0;
         if list.len() == 2 {
@@ -734,7 +734,7 @@ fn convert_fe_turbulence(
     fe: svgtree::Node,
 ) -> tree::FilterKind {
     let mut base_frequency = Point::new(0.0.into(), 0.0.into());
-    if let Some(list) = fe.attribute::<&svgtypes::NumberList>(AId::BaseFrequency) {
+    if let Some(list) = fe.attribute::<&Vec<f64>>(AId::BaseFrequency) {
         let mut x = 0.0;
         let mut y = 0.0;
         if list.len() == 2 {

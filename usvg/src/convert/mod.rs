@@ -24,8 +24,9 @@ mod use_node;
 
 mod prelude {
     pub use log::warn;
-    pub use svgtypes::{FuzzyEq, FuzzyZero, Length};
+    pub use svgtypes::Length;
     pub use crate::{geom::*, short::*, svgtree::{AId, EId}, Options, OptionsRef, IsValidLength};
+    pub use crate::{FuzzyEq, FuzzyZero};
     pub use super::{SvgNodeExt, State};
 }
 use self::prelude::*;
@@ -740,7 +741,7 @@ fn link_fe_image(
 
             // Make sure the new element doesn't reference the current filter.
             if let tree::NodeKind::Group(ref mut g) = *new_node.borrow_mut() {
-                if g.filter.first().as_deref() == Some(&filter_id) {
+                if g.filter.iter().any(|id| *id == filter_id) {
                     warn!("Recursive 'feImage' detected. \
                           The 'filter' attribute will be removed from '{}'.",
                           id);

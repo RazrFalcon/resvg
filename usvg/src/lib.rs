@@ -197,6 +197,7 @@ pub use crate::error::*;
 pub use crate::geom::*;
 pub use crate::options::*;
 pub use crate::tree::*;
+pub use crate::utils::{FuzzyEq, FuzzyZero};
 
 
 /// XML writing options.

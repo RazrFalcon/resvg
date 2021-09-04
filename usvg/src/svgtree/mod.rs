@@ -7,10 +7,9 @@ use std::collections::HashMap;
 
 use log::warn;
 
-use svgtypes::FuzzyEq;
-
 use crate::geom::Rect;
 use crate::tree;
+use crate::{Transform, FuzzyEq};
 
 mod parse;
 pub use parse::*;
@@ -147,12 +146,12 @@ pub enum AttributeValue {
     Length(svgtypes::Length),
     Link(String),
     Number(f64),
-    NumberList(svgtypes::NumberList),
+    NumberList(Vec<f64>),
     Opacity(tree::Opacity),
     Paint(String, Option<svgtypes::PaintFallback>),
     Path(tree::SharedPathData),
     String(String),
-    Transform(svgtypes::Transform),
+    Transform(Transform),
     ViewBox(svgtypes::ViewBox),
 }
 
@@ -611,7 +610,7 @@ impl<'a> FromValue<'a> for &'a AttributeValue {
     }
 }
 
-impl<'a> FromValue<'a> for svgtypes::Transform {
+impl<'a> FromValue<'a> for Transform {
     fn get(node: Node<'a>, aid: AId) -> Option<Self> {
         let a = node.attributes().iter().find(|a| a.name == aid)?;
         let ts = match a.value {
@@ -621,7 +620,7 @@ impl<'a> FromValue<'a> for svgtypes::Transform {
 
         let (sx, sy) = ts.get_scale();
         if sx.fuzzy_eq(&0.0) || sy.fuzzy_eq(&0.0) {
-            Some(svgtypes::Transform::default())
+            Some(Transform::default())
         } else {
             Some(*ts)
         }
@@ -636,7 +635,7 @@ impl FromValue<'_> for tree::SharedPathData {
     }
 }
 
-impl<'a> FromValue<'a> for &'a svgtypes::NumberList {
+impl<'a> FromValue<'a> for &'a Vec<f64> {
     fn get(node: Node<'a>, aid: AId) -> Option<Self> {
         let a = node.attributes().iter().find(|a| a.name == aid)?;
         if let AttributeValue::NumberList(ref v) = a.value { Some(v) } else { None }

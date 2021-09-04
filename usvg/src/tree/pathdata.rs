@@ -4,11 +4,9 @@
 
 use std::rc::Rc;
 
-use svgtypes::FuzzyZero;
-
 use kurbo::{ParamCurveArclen, ParamCurveExtrema, ParamCurve};
 
-use crate::{Rect, Transform};
+use crate::{Rect, Transform, FuzzyZero};
 
 /// A path's absolute segment.
 ///

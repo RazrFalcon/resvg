@@ -52,7 +52,8 @@ impl Document {
 
     fn append_attribute(&mut self, tag_name: EId, aid: AId, value: &str) {
         let value2 = parse_svg_attribute(tag_name, aid, value);
-        if let Ok(value) = value2 {
+        // TODO: improve error logging
+        if let Some(value) = value2 {
             self.attrs.push(Attribute {
                 name: aid,
                 value,
@@ -310,8 +311,8 @@ fn parse_svg_attribute(
     tag_name: EId,
     aid: AId,
     value: &str,
-) -> Result<AttributeValue, svgtypes::Error> {
-    Ok(match aid {
+) -> Option<AttributeValue> {
+    Some(match aid {
         AId::Href => {
             // `href` can contain base64 data and we do store it as is.
             match svgtypes::Stream::from(value).parse_iri() {
@@ -331,10 +332,10 @@ fn parse_svg_attribute(
                 }
                   EId::FePointLight
                 | EId::FeSpotLight => {
-                    AttributeValue::Number(parse_number(value)?)
+                    AttributeValue::Number(parse_number(value).ok()?)
                 }
                 _ => {
-                    AttributeValue::Length(svgtypes::Length::from_str(value)?)
+                    AttributeValue::Length(svgtypes::Length::from_str(value).ok()?)
                 }
             }
         }
@@ -349,26 +350,26 @@ fn parse_svg_attribute(
         | AId::Width | AId::Height
         | AId::MarkerWidth | AId::MarkerHeight
         | AId::StartOffset => {
-            AttributeValue::Length(svgtypes::Length::from_str(value)?)
+            AttributeValue::Length(svgtypes::Length::from_str(value).ok()?)
         }
 
         AId::Offset => {
             if let EId::FeFuncR | EId::FeFuncG | EId::FeFuncB | EId::FeFuncA = tag_name {
-                AttributeValue::Number(parse_number(value)?)
+                AttributeValue::Number(parse_number(value).ok()?)
             } else {
                 // offset = <number> | <percentage>
-                let l = svgtypes::Length::from_str(value)?;
+                let l = svgtypes::Length::from_str(value).ok()?;
                 if l.unit == svgtypes::LengthUnit::None || l.unit == svgtypes::LengthUnit::Percent {
                     AttributeValue::Length(l)
                 } else {
-                    return Err(svgtypes::Error::InvalidValue);
+                    return None;
                 }
             }
         }
 
           AId::StrokeDashoffset
         | AId::StrokeWidth => {
-            AttributeValue::Length(svgtypes::Length::from_str(value)?)
+            AttributeValue::Length(svgtypes::Length::from_str(value).ok()?)
         }
 
           AId::Opacity
@@ -376,7 +377,7 @@ fn parse_svg_attribute(
         | AId::FloodOpacity
         | AId::StrokeOpacity
         | AId::StopOpacity => {
-            let n = parse_number(value)?;
+            let n = parse_number(value).ok()?;
             let n = crate::utils::f64_bound(0.0, n, 1.0);
             AttributeValue::Opacity(n.into())
         }
@@ -408,7 +409,7 @@ fn parse_svg_attribute(
         | AId::TargetX
         | AId::TargetY
         | AId::Z => {
-            AttributeValue::Number(parse_number(value)?)
+            AttributeValue::Number(parse_number(value).ok()?)
         }
 
         AId::StrokeDasharray => {
@@ -435,7 +436,7 @@ fn parse_svg_attribute(
         }
 
         AId::Stroke => {
-            match svgtypes::Paint::from_str(value)? {
+            match svgtypes::Paint::from_str(value).ok()? {
                 svgtypes::Paint::None => AttributeValue::None,
                 svgtypes::Paint::Inherit => unreachable!(),
                 svgtypes::Paint::CurrentColor => AttributeValue::CurrentColor,
@@ -455,14 +456,14 @@ fn parse_svg_attribute(
                 "none" => AttributeValue::None,
                 _ => {
                     let mut s = svgtypes::Stream::from(value);
-                    let link = s.parse_func_iri()?;
+                    let link = s.parse_func_iri().ok()?;
                     AttributeValue::Link(link.to_string())
                 }
             }
         }
 
         AId::Color => {
-            AttributeValue::Color(svgtypes::Color::from_str(value)?)
+            AttributeValue::Color(svgtypes::Color::from_str(value).ok()?)
         }
 
           AId::FloodColor
@@ -470,7 +471,7 @@ fn parse_svg_attribute(
         | AId::StopColor => {
             match value {
                 "currentColor" => AttributeValue::CurrentColor,
-                _ => AttributeValue::Color(svgtypes::Color::from_str(value)?),
+                _ => AttributeValue::Color(svgtypes::Color::from_str(value).ok()?),
             }
         }
 
@@ -479,14 +480,14 @@ fn parse_svg_attribute(
             if segments.len() >= 2 {
                 AttributeValue::Path(Rc::new(segments))
             } else {
-                return Err(svgtypes::Error::InvalidValue);
+                return None;
             }
         }
 
           AId::Transform
         | AId::GradientTransform
         | AId::PatternTransform => {
-            AttributeValue::Transform(svgtypes::Transform::from_str(value)?)
+            AttributeValue::Transform(svgtypes::Transform::from_str(value).ok()?.into())
         }
 
         AId::FontSize => {
@@ -507,30 +508,30 @@ fn parse_svg_attribute(
         | AId::WordSpacing => {
             match value {
                 "normal" => AttributeValue::String(value.to_string()),
-                _ => AttributeValue::Length(svgtypes::Length::from_str(value)?),
+                _ => AttributeValue::Length(svgtypes::Length::from_str(value).ok()?),
             }
         }
 
         AId::BaselineShift => {
             match value {
                 "baseline" | "sub" | "super" => AttributeValue::String(value.to_string()),
-                _ => AttributeValue::Length(svgtypes::Length::from_str(value)?),
+                _ => AttributeValue::Length(svgtypes::Length::from_str(value).ok()?),
             }
         }
 
         AId::Orient => {
             match value {
                 "auto" => AttributeValue::String(value.to_string()),
-                _ => AttributeValue::Angle(svgtypes::Angle::from_str(value)?),
+                _ => AttributeValue::Angle(svgtypes::Angle::from_str(value).ok()?),
             }
         }
 
         AId::ViewBox => {
-            AttributeValue::ViewBox(svgtypes::ViewBox::from_str(value)?)
+            AttributeValue::ViewBox(svgtypes::ViewBox::from_str(value).ok()?)
         }
 
         AId::PreserveAspectRatio => {
-            AttributeValue::AspectRatio(svgtypes::AspectRatio::from_str(value)?)
+            AttributeValue::AspectRatio(svgtypes::AspectRatio::from_str(value).ok()?)
         }
 
           AId::BaseFrequency
@@ -539,11 +540,16 @@ fn parse_svg_attribute(
         | AId::Rotate
         | AId::TableValues
         | AId::Values => {
-            AttributeValue::NumberList(svgtypes::NumberList::from_str(value)?)
+            let mut numbers = Vec::new();
+            for n in svgtypes::NumberListParser::from(value) {
+                numbers.push(n.ok()?);
+            }
+
+            AttributeValue::NumberList(numbers)
         }
 
         AId::EnableBackground => {
-            AttributeValue::EnableBackground(parse_enable_background(value)?)
+            AttributeValue::EnableBackground(parse_enable_background(value).ok()?)
         }
 
         _ => {

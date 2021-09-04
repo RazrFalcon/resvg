@@ -5,11 +5,10 @@
 use std::fmt::Display;
 use std::io::Write;
 
-use svgtypes::WriteBuffer;
 use xmlwriter::XmlWriter;
 
 use super::*;
-use crate::{geom::*, svgtree::{EId, AId}, IsDefault};
+use crate::{geom::*, svgtree::{EId, AId}, IsDefault, FuzzyZero};
 
 
 pub fn convert(tree: &Tree, opt: &XmlOptions) -> String {
@@ -123,7 +122,7 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
                             );
                             xml.write_svg_attribute(AId::Dx, &shadow.dx);
                             xml.write_svg_attribute(AId::Dy, &shadow.dy);
-                            xml.write_svg_attribute(AId::FloodColor, &shadow.color);
+                            xml.write_color(AId::FloodColor, shadow.color);
                             xml.write_svg_attribute(AId::FloodOpacity, &shadow.opacity.value());
                             xml.write_svg_attribute(AId::Result, &fe.result);
                             xml.end_element();
@@ -177,7 +176,7 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
                         FilterKind::FeFlood(ref flood) => {
                             xml.start_svg_element(EId::FeFlood);
                             xml.write_filter_primitive_attrs(fe);
-                            xml.write_svg_attribute(AId::FloodColor, &flood.color);
+                            xml.write_color(AId::FloodColor, flood.color);
                             xml.write_svg_attribute(AId::FloodOpacity, &flood.opacity.value());
                             xml.write_svg_attribute(AId::Result, &fe.result);
                             xml.end_element();
@@ -379,7 +378,7 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
 
                             xml.write_svg_attribute(AId::SurfaceScale, &light.surface_scale);
                             xml.write_svg_attribute(AId::DiffuseConstant, &light.diffuse_constant);
-                            xml.write_svg_attribute(AId::LightingColor, &light.lighting_color);
+                            xml.write_color(AId::LightingColor, light.lighting_color);
                             write_light_source(&light.light_source, xml);
 
                             xml.end_element();
@@ -392,7 +391,7 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
                             xml.write_svg_attribute(AId::SurfaceScale, &light.surface_scale);
                             xml.write_svg_attribute(AId::SpecularConstant, &light.specular_constant);
                             xml.write_svg_attribute(AId::SpecularExponent, &light.specular_exponent);
-                            xml.write_svg_attribute(AId::LightingColor, &light.lighting_color);
+                            xml.write_color(AId::LightingColor, light.lighting_color);
                             write_light_source(&light.light_source, xml);
 
                             xml.end_element();
@@ -523,6 +522,7 @@ trait XmlWriterExt {
     fn start_svg_element(&mut self, id: EId);
     fn write_svg_attribute<V: Display + ?Sized>(&mut self, id: AId, value: &V);
     fn write_id_attribute(&mut self, value: &str, opt: &XmlOptions);
+    fn write_color(&mut self, id: AId, color: Color);
     fn write_viewbox(&mut self, view_box: &ViewBox);
     fn write_aspect(&mut self, aspect: AspectRatio);
     fn write_units(&mut self, id: AId, units: Units, def: Units);
@@ -559,6 +559,14 @@ impl XmlWriterExt for XmlWriter {
         }
     }
 
+    #[inline(never)]
+    fn write_color(&mut self, id: AId, c: Color) {
+        self.write_attribute_fmt(
+            id.to_str(),
+            format_args!("rgba({},{},{},{})", c.red, c.green, c.blue, c.alpha)
+        )
+    }
+
     fn write_viewbox(&mut self, view_box: &ViewBox) {
         let r = view_box.rect;
         self.write_attribute_fmt(
@@ -572,7 +580,35 @@ impl XmlWriterExt for XmlWriter {
     }
 
     fn write_aspect(&mut self, aspect: AspectRatio) {
-        self.write_attribute_raw(AId::PreserveAspectRatio.to_str(), |buf| aspect.write_buf(buf));
+        let mut value = Vec::new();
+
+        if aspect.defer {
+            value.extend_from_slice(b"defer ");
+        }
+
+        let align = match aspect.align {
+            Align::None     => "none",
+            Align::XMinYMin => "xMinYMin",
+            Align::XMidYMin => "xMidYMin",
+            Align::XMaxYMin => "xMaxYMin",
+            Align::XMinYMid => "xMinYMid",
+            Align::XMidYMid => "xMidYMid",
+            Align::XMaxYMid => "xMaxYMid",
+            Align::XMinYMax => "xMinYMax",
+            Align::XMidYMax => "xMidYMax",
+            Align::XMaxYMax => "xMaxYMax",
+        };
+
+        value.extend_from_slice(align.as_bytes());
+
+        if aspect.slice {
+            value.extend_from_slice(b" slice");
+        }
+
+        self.write_attribute_raw(
+            AId::PreserveAspectRatio.to_str(),
+            |buf| buf.extend_from_slice(&value),
+        );
     }
 
     fn write_units(&mut self, id: AId, units: Units, def: Units) {
@@ -762,7 +798,7 @@ fn write_base_grad(
     for s in &g.stops {
         xml.start_svg_element(EId::Stop);
         xml.write_svg_attribute(AId::Offset, &s.offset.value());
-        xml.write_svg_attribute(AId::StopColor, &s.color);
+        xml.write_color(AId::StopColor, s.color);
         if !s.opacity.is_default() {
             xml.write_svg_attribute(AId::StopOpacity, &s.opacity.value());
         }
@@ -809,31 +845,31 @@ fn write_path(
             match *seg {
                 PathSegment::MoveTo { x, y } => {
                     buf.extend_from_slice(b"M ");
-                    x.write_buf(buf);
+                    write_num(x, buf);
                     buf.push(b' ');
-                    y.write_buf(buf);
+                    write_num(y, buf);
                     buf.push(b' ');
                 }
                 PathSegment::LineTo { x, y } => {
                     buf.extend_from_slice(b"L ");
-                    x.write_buf(buf);
+                    write_num(x, buf);
                     buf.push(b' ');
-                    y.write_buf(buf);
+                    write_num(y, buf);
                     buf.push(b' ');
                 }
                 PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
                     buf.extend_from_slice(b"C ");
-                    x1.write_buf(buf);
+                    write_num(x1, buf);
                     buf.push(b' ');
-                    y1.write_buf(buf);
+                    write_num(y1, buf);
                     buf.push(b' ');
-                    x2.write_buf(buf);
+                    write_num(x2, buf);
                     buf.push(b' ');
-                    y2.write_buf(buf);
+                    write_num(y2, buf);
                     buf.push(b' ');
-                    x.write_buf(buf);
+                    write_num(x, buf);
                     buf.push(b' ');
-                    y.write_buf(buf);
+                    write_num(y, buf);
                     buf.push(b' ');
                 }
                 PathSegment::ClosePath => {
@@ -931,7 +967,7 @@ fn write_paint(
     xml: &mut XmlWriter,
 ) {
     match paint {
-        Paint::Color(ref c) => xml.write_svg_attribute(aid, c),
+        Paint::Color(c) => xml.write_color(aid, *c),
         Paint::Link(ref id) => xml.write_func_iri(aid, id, opt),
     }
 }
@@ -968,4 +1004,19 @@ fn write_light_source(
     }
 
     xml.end_element();
+}
+
+fn write_num(num: f64, buf: &mut Vec<u8>) {
+    // If number is an integer, it's faster to write it as i32.
+    if num.fract().is_fuzzy_zero() {
+        write!(buf, "{}", num as i32).unwrap();
+        return;
+    }
+
+    // Round numbers up to 11 digits to prevent writing
+    // ugly numbers like 29.999999999999996.
+    // It's not 100% correct, but differences are insignificant.
+    let v = (num * 100_000_000_000.0).round() / 100_000_000_000.0;
+
+    write!(buf, "{}", v).unwrap();
 }

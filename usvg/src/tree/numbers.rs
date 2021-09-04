@@ -5,9 +5,7 @@
 
 use std::fmt;
 
-use svgtypes::{FuzzyEq, FuzzyZero};
-
-use crate::IsValidLength;
+use crate::{IsValidLength, FuzzyEq, FuzzyZero};
 use crate::utils::f64_bound;
 
 

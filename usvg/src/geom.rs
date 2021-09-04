@@ -4,9 +4,7 @@
 
 use std::{cmp, f64, fmt};
 
-use svgtypes::FuzzyEq;
-
-use crate::{tree, IsValidLength};
+use crate::{tree, IsValidLength, FuzzyEq};
 
 
 /// Line representation.

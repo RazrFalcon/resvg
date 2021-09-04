@@ -9,7 +9,7 @@
             id="clip1">
             <path
                 id="rect2"
-                fill="#000000"
+                fill="rgba(0,0,0,255)"
                 stroke="none"
                 d="M 0 0 L 10 0 L 10 10 L 0 10 Z"/>
         </clipPath>
@@ -21,10 +21,10 @@
             y2="0">
             <stop
                 offset="0"
-                stop-color="#ffffff"/>
+                stop-color="rgba(255,255,255,255)"/>
             <stop
                 offset="1"
-                stop-color="#000000"/>
+                stop-color="rgba(0,0,0,255)"/>
         </linearGradient>
         <radialGradient
             id="rg1"
@@ -35,10 +35,10 @@
             fy="0.5">
             <stop
                 offset="0"
-                stop-color="#ffffff"/>
+                stop-color="rgba(255,255,255,255)"/>
             <stop
                 offset="1"
-                stop-color="#000000"/>
+                stop-color="rgba(0,0,0,255)"/>
         </radialGradient>
         <pattern
             id="patt1"
@@ -47,7 +47,7 @@
             width="1"
             height="1">
             <path
-                fill="#000000"
+                fill="rgba(0,0,0,255)"
                 stroke="none"
                 d="M 0 0 L 10 0 L 10 10 L 0 10 Z"/>
         </pattern>

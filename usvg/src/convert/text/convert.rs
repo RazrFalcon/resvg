@@ -570,7 +570,7 @@ pub fn resolve_rotate_list(text_node: TextNode) -> Vec<f64> {
     let mut offset = 0;
     for child in text_node.descendants() {
         if child.is_element() {
-            if let Some(rotate) = child.attribute::<&svgtypes::NumberList>(AId::Rotate) {
+            if let Some(rotate) = child.attribute::<&Vec<f64>>(AId::Rotate) {
                 for i in 0..count_chars(child) {
                     if let Some(a) = rotate.get(i).cloned() {
                         list[offset + i] = a;

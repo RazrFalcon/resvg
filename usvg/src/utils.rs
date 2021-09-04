@@ -4,7 +4,71 @@
 
 //! Some useful utilities.
 
+use float_cmp::ApproxEqUlps;
+
 use crate::{tree, geom::*};
+
+/// A trait for fuzzy/approximate equality comparisons of float numbers.
+pub trait FuzzyEq<Rhs: ?Sized = Self> {
+    /// Returns `true` if values are approximately equal.
+    fn fuzzy_eq(&self, other: &Rhs) -> bool;
+
+    /// Returns `true` if values are not approximately equal.
+    #[inline]
+    fn fuzzy_ne(&self, other: &Rhs) -> bool {
+        !self.fuzzy_eq(other)
+    }
+}
+
+impl<T: FuzzyEq> FuzzyEq for Vec<T> {
+    fn fuzzy_eq(&self, other: &Self) -> bool {
+        if self.len() != other.len() {
+            return false;
+        }
+
+        for (a, b) in self.iter().zip(other.iter()) {
+            if a.fuzzy_ne(b) {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+/// A trait for fuzzy/approximate comparisons of float numbers.
+pub trait FuzzyZero: FuzzyEq {
+    /// Returns `true` if the number is approximately zero.
+    fn is_fuzzy_zero(&self) -> bool;
+}
+
+impl FuzzyEq for f32 {
+    #[inline]
+    fn fuzzy_eq(&self, other: &f32) -> bool {
+        self.approx_eq_ulps(other, 4)
+    }
+}
+
+impl FuzzyEq for f64 {
+    #[inline]
+    fn fuzzy_eq(&self, other: &f64) -> bool {
+        self.approx_eq_ulps(other, 4)
+    }
+}
+
+impl FuzzyZero for f32 {
+    #[inline]
+    fn is_fuzzy_zero(&self) -> bool {
+        self.fuzzy_eq(&0.0)
+    }
+}
+
+impl FuzzyZero for f64 {
+    #[inline]
+    fn is_fuzzy_zero(&self) -> bool {
+        self.fuzzy_eq(&0.0)
+    }
+}
 
 // TODO: https://github.com/rust-lang/rust/issues/44095
 /// Bounds `f64` number.

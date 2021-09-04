@@ -4,14 +4,8 @@
 
 use std::fmt;
 
-pub use svgtypes::{
-    Align,
-    AspectRatio,
-    Color,
-    FuzzyEq,
-    FuzzyZero,
-    Transform,
-};
+pub use svgtypes::{Align, AspectRatio, Color};
+pub use super::transform::Transform;
 
 use crate::geom::*;
 pub use super::numbers::*;
@@ -147,7 +141,7 @@ impl_enum_from_str!(Visibility,
 ///
 /// `paint` value type in the SVG.
 #[allow(missing_docs)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Paint {
     /// Paint with a color.
     Color(Color),
@@ -155,16 +149,6 @@ pub enum Paint {
     /// Paint using a paint server.
     Link(String),
 }
-
-impl fmt::Debug for Paint {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Paint::Color(c) => write!(f, "Color({})", c),
-            Paint::Link(ref id)  => write!(f, "Link({})", id),
-        }
-    }
-}
-
 
 /// A fill style.
 #[allow(missing_docs)]

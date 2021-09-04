@@ -26,14 +26,14 @@
         </filter>
         <path
             id="rect1"
-            fill="#000000"
+            fill="rgba(0,0,0,255)"
             stroke="none"
             d="M 0 0 L 120 0 L 120 120 L 0 120 Z"/>
     </defs>
     <g
         filter="url(#filter1)">
         <path
-            fill="#000000"
+            fill="rgba(0,0,0,255)"
             stroke="none"
             d="M 0 0 L 120 0 L 120 120 L 0 120 Z"/>
     </g>

@@ -7,6 +7,7 @@
 use std::cell::Ref;
 
 pub use self::{nodes::*, attributes::*, pathdata::*};
+pub use transform::Transform;
 use crate::{svgtree, Size, Rect, Error, OptionsRef};
 
 #[cfg(feature = "export")] use crate::XmlOptions;
@@ -16,14 +17,15 @@ mod attributes;
 mod nodes;
 mod numbers;
 mod pathdata;
+mod transform;
 
 /// Basic traits for tree manipulations.
 pub mod prelude {
     pub use crate::IsDefault;
     pub use crate::IsValidLength;
     pub use crate::TransformFromBBox;
-    pub use crate::tree::FuzzyEq;
-    pub use crate::tree::FuzzyZero;
+    pub use crate::utils::FuzzyEq;
+    pub use crate::utils::FuzzyZero;
     pub use super::NodeExt;
 }
 
