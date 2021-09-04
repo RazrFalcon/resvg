@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.17.0] - 2021-09-04
 ### Added
 - `tiny-skia` updated with support of images larger than 8000x8000 pixels.
 - `feDropShadow` support. SVG2
@@ -15,6 +17,10 @@ This changelog also contains important changes in dependencies.
   Like `url(#filter1) blur(2)`. SVG2
 - All [filter functions](https://www.w3.org/TR/filter-effects-1/#filter-functions). SVG2
 - Support all [new](https://www.w3.org/TR/compositing-1/#ltblendmodegt) `feBlend` modes. SVG2
+- Automatic SVG size detection when `width`/`height`/`viewBox` is not set.
+  Thanks to [reknih](https://github.com/reknih).
+- `usvg::Options::default_size`
+- `--default-width` and `--default-height` to usvg.
 
 ### Changed
 - `usvg::Group::filter` is a list of filter IDs now.
@@ -520,7 +526,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/RazrFalcon/resvg/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/RazrFalcon/resvg/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/RazrFalcon/resvg/compare/v0.14.1...v0.15.0
 [0.14.1]: https://github.com/RazrFalcon/resvg/compare/v0.14.0...v0.14.1

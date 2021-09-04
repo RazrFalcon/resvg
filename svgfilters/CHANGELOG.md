@@ -8,6 +8,13 @@ This changelog also contains important changes in dependencies.
 
 ## Unreleased
 
+## 0.4.0 - 2021-09-04
+### Changed
+- `svgfilters::ColorMatrix::Saturate` accepts any positive `f64` value now.
+
+### Removed
+- `NormalizedValue`
+
 ## 0.3.0 - 2021-03-06
 ### Added
 - no_std support

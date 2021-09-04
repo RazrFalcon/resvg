@@ -1,6 +1,6 @@
 [package]
 name = "svgfilters"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "filter"]
 license = "MPL-2.0"
