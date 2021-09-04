@@ -44,6 +44,7 @@ pub struct State<'a> {
 pub struct NodeIdGenerator {
     all_ids: HashSet<u64>,
     clip_path_index: usize,
+    filter_index: usize,
 }
 
 impl NodeIdGenerator {
@@ -58,6 +59,7 @@ impl NodeIdGenerator {
         NodeIdGenerator {
             all_ids,
             clip_path_index: 0,
+            filter_index: 0,
         }
     }
 
@@ -65,6 +67,17 @@ impl NodeIdGenerator {
         loop {
             self.clip_path_index += 1;
             let new_id = format!("clipPath{}", self.clip_path_index);
+            let new_hash = string_hash(&new_id);
+            if !self.all_ids.contains(&new_hash) {
+                return new_id;
+            }
+        }
+    }
+
+    pub fn gen_filter_id(&mut self) -> String {
+        loop {
+            self.filter_index += 1;
+            let new_id = format!("filter{}", self.filter_index);
             let new_hash = string_hash(&new_id);
             if !self.all_ids.contains(&new_hash) {
                 return new_id;
@@ -423,37 +436,33 @@ fn convert_group(
         None
     };
 
-
-    let mut filter = None;
+    let mut filter = Vec::new();
     if state.parent_clip_path.is_none() {
-        if let Some(link) = node.attribute::<svgtree::Node>(AId::Filter) {
-            filter = filter::convert(link, state, tree);
-
-            // If `filter` is linked to an invalid element - skip this group completely.
-            if filter.is_none() {
-                return GroupKind::Ignore;
-            }
-        } else if node.attribute(AId::Filter) == Some("none") {
+        if node.attribute(AId::Filter) == Some("none") {
             // Do nothing.
         } else if node.has_attribute(AId::Filter) {
-            // A filter that not a link or a filter with a link to a non existing element.
-            //
-            // Unlike `clip-path` and `mask`, when a `filter` link is invalid
-            // then the whole element should be ignored.
-            //
-            // This is kinda an undefined behaviour.
-            // In most cases, Chrome, Firefox and rsvg will ignore such elements,
-            // but in some cases Chrome allows it. Not sure why.
-            // Inkscape (0.92) simply ignores such attributes, rendering element as is.
-            // Batik (1.12) crashes.
-            //
-            // Test file: e-filter-051.svg
-            return GroupKind::Ignore;
+            if let Ok(id) = filter::convert(node, state, id_generator, tree) {
+                filter = id;
+            } else {
+                // A filter that not a link or a filter with a link to a non existing element.
+                //
+                // Unlike `clip-path` and `mask`, when a `filter` link is invalid
+                // then the whole element should be ignored.
+                //
+                // This is kinda an undefined behaviour.
+                // In most cases, Chrome, Firefox and rsvg will ignore such elements,
+                // but in some cases Chrome allows it. Not sure why.
+                // Inkscape (0.92) simply ignores such attributes, rendering element as is.
+                // Batik (1.12) crashes.
+                //
+                // Test file: e-filter-051.svg
+                return GroupKind::Ignore;
+            }
         }
     }
 
-    let filter_fill = resolve_filter_fill(node, state, filter.as_deref(), id_generator, tree);
-    let filter_stroke = resolve_filter_stroke(node, state, filter.as_deref(), id_generator, tree);
+    let filter_fill = resolve_filter_fill(node, state, &filter, id_generator, tree);
+    let filter_stroke = resolve_filter_stroke(node, state, &filter, id_generator, tree);
 
     let transform: tree::Transform = node.attribute(AId::Transform).unwrap_or_default();
 
@@ -464,7 +473,7 @@ fn convert_group(
            opacity.value().fuzzy_ne(&1.0)
         || clip_path.is_some()
         || mask.is_some()
-        || filter.is_some()
+        || !filter.is_empty()
         || !transform.is_default()
         || enable_background.is_some()
         || (is_g_or_use
@@ -500,15 +509,24 @@ fn convert_group(
 fn resolve_filter_fill(
     node: svgtree::Node,
     state: &State,
-    filter_id: Option<&str>,
+    filter_id: &[String],
     id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
 ) -> Option<tree::Paint> {
-    let filter_node = tree.defs_by_id(filter_id?)?;
-    if let tree::NodeKind::Filter(ref filter) = *filter_node.borrow() {
-        if !filter.children.iter().any(|c| c.kind.has_input(&tree::FilterInput::FillPaint)) {
-            return None;
+    let mut has_fill_paint = false;
+    for id in filter_id {
+        if let Some(filter_node) = tree.defs_by_id(id) {
+            if let tree::NodeKind::Filter(ref filter) = *filter_node.borrow() {
+                if filter.children.iter().any(|c| c.kind.has_input(&tree::FilterInput::FillPaint)) {
+                    has_fill_paint = true;
+                    break;
+                }
+            }
         }
+    }
+
+    if !has_fill_paint {
+        return None;
     }
 
     let stroke = style::resolve_fill(node, true, state, id_generator, tree)?;
@@ -518,15 +536,24 @@ fn resolve_filter_fill(
 fn resolve_filter_stroke(
     node: svgtree::Node,
     state: &State,
-    filter_id: Option<&str>,
+    filter_id: &[String],
     id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
 ) -> Option<tree::Paint> {
-    let filter_node = tree.defs_by_id(filter_id?)?;
-    if let tree::NodeKind::Filter(ref filter) = *filter_node.borrow() {
-        if !filter.children.iter().any(|c| c.kind.has_input(&tree::FilterInput::StrokePaint)) {
-            return None;
+    let mut has_fill_paint = false;
+    for id in filter_id {
+        if let Some(filter_node) = tree.defs_by_id(id) {
+            if let tree::NodeKind::Filter(ref filter) = *filter_node.borrow() {
+                if filter.children.iter().any(|c| c.kind.has_input(&tree::FilterInput::StrokePaint)) {
+                    has_fill_paint = true;
+                    break;
+                }
+            }
         }
+    }
+
+    if !has_fill_paint {
+        return None;
     }
 
     let stroke = style::resolve_stroke(node, true, state, id_generator, tree)?;
@@ -550,7 +577,7 @@ fn remove_empty_groups(tree: &mut tree::Tree) {
                 //   <feFlood flood-color="green"/>
                 // </filter>
                 // <g filter="url(#filter1)"/>
-                g.filter.is_none()
+                g.filter.is_empty()
             } else {
                 false
             };
@@ -589,7 +616,7 @@ fn ungroup_groups(
                    g.opacity.is_default()
                 && g.clip_path.is_none()
                 && g.mask.is_none()
-                && g.filter.is_none()
+                && g.filter.is_empty()
                 && g.enable_background.is_none()
                 && !(opt.keep_named_groups && !g.id.is_empty())
                 && !is_id_used(tree, &g.id)
@@ -713,12 +740,12 @@ fn link_fe_image(
 
             // Make sure the new element doesn't reference the current filter.
             if let tree::NodeKind::Group(ref mut g) = *new_node.borrow_mut() {
-                if g.filter.as_deref() == Some(&filter_id) {
+                if g.filter.first().as_deref() == Some(&filter_id) {
                     warn!("Recursive 'feImage' detected. \
                           The 'filter' attribute will be removed from '{}'.",
                           id);
 
-                    g.filter = None;
+                    g.filter = Vec::new();
                 }
             }
 
@@ -791,9 +818,12 @@ fn is_id_used(tree: &tree::Tree, id: &str) -> bool {
             tree::NodeKind::Group(ref g) => {
                 check_id!(g.clip_path, id);
                 check_id!(g.mask, id);
-                check_id!(g.filter, id);
                 check_paint_id2!(g.filter_fill, id);
                 check_paint_id2!(g.filter_stroke, id);
+
+                if g.filter.iter().any(|v| v == id) {
+                    return true;
+                }
             }
             tree::NodeKind::Filter(ref filter) => {
                 for fe in &filter.children {

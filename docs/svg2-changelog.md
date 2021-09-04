@@ -220,6 +220,7 @@ NOTE: This list is not final. This this just things I was able to find so far. P
 ### Changed
 
 - A `filter` property type changed from [`<FuncIRI>`](https://www.w3.org/TR/SVG11/filters.html#FilterProperty) to [`<filter-value-list>`](https://www.w3.org/TR/filter-effects-1/#typedef-filter-value-list).
+- The [`saturate`](https://www.w3.org/TR/filter-effects-1/#element-attrdef-fecolormatrix-values) type in `feColorMatrix` can be larger than 1 now.
 
 ### Deprecated
 

@@ -940,7 +940,7 @@ fn apply_color_matrix(
         usvg::FeColorMatrixKind::Matrix(ref data) =>
             svgfilters::ColorMatrix::Matrix(data.as_slice().try_into().unwrap()),
         usvg::FeColorMatrixKind::Saturate(n) =>
-            svgfilters::ColorMatrix::Saturate(svgfilters::NormalizedValue::new(n.value())),
+            svgfilters::ColorMatrix::Saturate(n.value()),
         usvg::FeColorMatrixKind::HueRotate(n) =>
             svgfilters::ColorMatrix::HueRotate(n),
         usvg::FeColorMatrixKind::LuminanceToAlpha =>

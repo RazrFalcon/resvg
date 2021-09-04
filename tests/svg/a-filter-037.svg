@@ -1,0 +1,38 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     font-family="Noto Sans" font-size="8">
+    <title>Color adjust functions, negative (SVG 2)</title>
+
+    <!-- column 1 -->
+    <rect id="rect1" x="20" y="20" width="40" height="40" fill="seagreen"
+          filter="brightness(-1)"/>
+    <text id="text1" x="20" y="68">brightness</text>
+
+    <rect id="rect2" x="20" y="80" width="40" height="40" fill="seagreen"
+          filter="contrast(-1)"/>
+    <text id="text2" x="20" y="128">contrast</text>
+
+    <rect id="rect3" x="20" y="140" width="40" height="40" fill="seagreen"
+          filter="grayscale(-1)"/>
+    <text id="text3" x="20" y="188">grayscale</text>
+
+    <!-- column 2 -->
+    <rect id="rect4" x="80" y="20" width="40" height="40" fill="seagreen"
+          filter="invert(-1)"/>
+    <text id="text4" x="80" y="68">invert</text>
+
+    <rect id="rect5" x="80" y="80" width="40" height="40" fill="seagreen"
+          filter="opacity(-1)"/>
+    <text id="text5" x="80" y="128">opacity</text>
+
+    <rect id="rect6" x="80" y="140" width="40" height="40" fill="seagreen"
+          filter="sepia(-1)"/>
+    <text id="text6" x="80" y="188">sepia</text>
+
+    <!-- column 3 -->
+    <rect id="rect7" x="140" y="20" width="40" height="40" fill="seagreen"
+          filter="saturate(-1)"/>
+    <text id="text7" x="140" y="68">saturate</text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

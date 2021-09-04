@@ -217,7 +217,7 @@ fn render_group_impl(
     //
     // Transparency trimming is not yet allowed on groups with filter,
     // because filter expands the pixmap and it should be handled separately.
-    let (tx, ty, mut sub_pixmap) = if g.filter.is_none() {
+    let (tx, ty, mut sub_pixmap) = if g.filter.is_empty() {
         trim_transparency(sub_pixmap)?
     } else {
         (0, 0, sub_pixmap)
@@ -239,7 +239,7 @@ fn render_group_impl(
 
     // Filter can be rendered on an object without a bbox,
     // as long as filter uses `userSpaceOnUse`.
-    if let Some(ref id) = g.filter {
+    for id in &g.filter {
         if let Some(filter_node) = tree.defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(curr_ts);

@@ -9,7 +9,16 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - `tiny-skia` updated with support of images larger than 8000x8000 pixels.
-- `feDropShadow` support.
+- `feDropShadow` support. SVG2
+- [`<filter-value-list>`](https://www.w3.org/TR/filter-effects-1/#typedef-filter-value-list) support.
+  Meaning that the `filter` attribute can have multiple values now.
+  Like `url(#filter1) blur(2)`. SVG2
+- All [filter functions](https://www.w3.org/TR/filter-effects-1/#filter-functions). SVG2
+
+### Changed
+- `usvg::Group::filter` is a list of filter IDs now.
+- `usvg::FeColorMatrixKind::Saturate` accepts any positive `f64` value now.
+- `svgfilters::ColorMatrix::Saturate` accepts any positive `f64` value now.
 
 ## [0.16.0] - 2021-08-22
 ### Added

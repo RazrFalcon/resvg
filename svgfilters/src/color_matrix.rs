@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ImageRefMut, NormalizedValue, RGBA8, f64_bound};
+use crate::{ImageRefMut, RGBA8, f64_bound};
 
 #[inline]
 fn to_normalized_components(pixel: RGBA8) -> (f64, f64, f64, f64) {
@@ -22,7 +22,7 @@ fn from_normalized(c: f64) -> u8 {
 #[allow(missing_docs)]
 pub enum ColorMatrix<'a> {
     Matrix(&'a [f64; 20]),
-    Saturate(NormalizedValue),
+    Saturate(f64),
     HueRotate(f64),
     LuminanceToAlpha,
 }
@@ -51,7 +51,7 @@ pub fn color_matrix(
             }
         }
         ColorMatrix::Saturate(v) => {
-            let v = v.value();
+            let v = v.max(0.0);
             let m = [
                 0.213 + 0.787 * v, 0.715 - 0.715 * v, 0.072 - 0.072 * v,
                 0.213 - 0.213 * v, 0.715 + 0.285 * v, 0.072 - 0.072 * v,

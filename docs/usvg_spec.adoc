@@ -267,7 +267,7 @@ A group will have at least one of the attributes present.
   Cannot be set to `none`.
 * `mask` = <<func-iri-type,<FuncIRI> >>? +
   Cannot be set to `none`.
-* `filter` = <<func-iri-type,<FuncIRI> >>? +
+* `filter` = <<func-iri-type,<FuncIRI> >>+ +
   Cannot be set to `none`.
 * `fill` = `none` | <<color-type,<color> >> | <<func-iri-type,<FuncIRI> >> +
   Will be set only when any of the `filter` primitives has a `FillPaint` input.

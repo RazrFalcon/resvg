@@ -1,0 +1,9 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>`drop-shadow` function, only offset (SVG 2)</title>
+
+    <circle id="circle1" cx="100" cy="100" r="60" fill="seagreen"
+            filter="drop-shadow(10 15)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

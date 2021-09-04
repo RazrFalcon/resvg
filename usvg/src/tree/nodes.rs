@@ -210,14 +210,14 @@ pub struct Group {
     /// it with a parent group using the specified opacity.
     pub opacity: Opacity,
 
-    /// Element clip path.
+    /// Element's clip path.
     pub clip_path: Option<String>,
 
-    /// Element mask.
+    /// Element's mask.
     pub mask: Option<String>,
 
-    /// Element filter.
-    pub filter: Option<String>,
+    /// Element's filters.
+    pub filter: Vec<String>,
 
     /// Contains a fill color or paint server used by `FilterInput::FillPaint`.
     ///
@@ -243,7 +243,7 @@ impl Default for Group {
             opacity: Opacity::default(),
             clip_path: None,
             mask: None,
-            filter: None,
+            filter: Vec::new(),
             filter_fill: None,
             filter_stroke: None,
             enable_background: None,
@@ -621,7 +621,7 @@ pub struct FeColorMatrix {
 #[allow(missing_docs)]
 pub enum FeColorMatrixKind {
     Matrix(Vec<f64>), // Guarantee to have 20 numbers.
-    Saturate(NormalizedValue),
+    Saturate(PositiveNumber),
     HueRotate(f64),
     LuminanceToAlpha,
 }

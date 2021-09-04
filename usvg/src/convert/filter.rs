@@ -8,15 +8,137 @@ use crate::svgtree;
 use crate::tree;
 use super::prelude::*;
 use super::paint_server::{resolve_number, convert_units};
+use crate::convert::NodeIdGenerator;
 
 
 pub fn convert(
     node: svgtree::Node,
     state: &State,
+    id_generator: &mut NodeIdGenerator,
     tree: &mut tree::Tree,
-) -> Option<String> {
+) -> Result<Vec<String>, ()> {
+    let value = match node.attribute::<&str>(AId::Filter) {
+        Some(v) => v,
+        None => return Ok(Vec::new()),
+    };
+
+    let mut has_invalid_urls = false;
+    let mut ids = Vec::new();
+
+    let mut create_base_filter_func = |kind, ids: &mut Vec<String>, tree: &mut tree::Tree| {
+        let id = id_generator.gen_filter_id();
+        ids.push(id.clone());
+
+        // Filter functions, unlike `filter` elements, do not have a filter region.
+        // We're currently do not support an unlimited region, so we simply use a fairly large one.
+        // This if far from ideal, but good for now.
+        // TODO: Should be fixed eventually.
+        let rect = match kind {
+            tree::FilterKind::FeDropShadow(_) | tree::FilterKind::FeGaussianBlur(_) => {
+                Rect::new(-1.0, -1.0, 2.0, 2.0).unwrap()
+            }
+            _ => Rect::new(-0.1, -0.1, 1.2, 1.2).unwrap(),
+        };
+
+        tree.append_to_defs(tree::NodeKind::Filter(tree::Filter {
+            id,
+            units: tree::Units::ObjectBoundingBox,
+            primitive_units: tree::Units::UserSpaceOnUse,
+            rect,
+            children: vec![
+                tree::FilterPrimitive {
+                    x: None,
+                    y: None,
+                    width: None,
+                    height: None,
+                    // Unlike `filter` elements, filter functions use sRGB colors by default.
+                    color_interpolation: tree::ColorInterpolation::SRGB,
+                    result: "result".to_string(),
+                    kind,
+                },
+            ],
+        }));
+    };
+
+    for func in svgtypes::FilterValueListParser::from(value) {
+        let func = match func {
+            Ok(v) => v,
+            Err(e) => {
+                // Skip the whole attribute list on error.
+                log::warn!("Failed to parse a filter value cause {}. Skipping.", e);
+                return Ok(Vec::new())
+            }
+        };
+
+        match func {
+            svgtypes::FilterValue::Blur(std_dev) => {
+                create_base_filter_func(convert_blur(node, std_dev, state), &mut ids, tree)
+            }
+            svgtypes::FilterValue::DropShadow { color, dx, dy, std_dev } => {
+                create_base_filter_func(
+                    convert_drop_shadow(node, color, dx, dy, std_dev, state),
+                    &mut ids,
+                    tree,
+                )
+            }
+            svgtypes::FilterValue::Brightness(amount) => {
+                create_base_filter_func(convert_brightness(amount), &mut ids, tree)
+            }
+            svgtypes::FilterValue::Contrast(amount) => {
+                create_base_filter_func(convert_contrast(amount), &mut ids, tree)
+            }
+            svgtypes::FilterValue::Grayscale(amount) => {
+                create_base_filter_func(convert_grayscale(amount), &mut ids, tree)
+            }
+            svgtypes::FilterValue::HueRotate(angle) => {
+                create_base_filter_func(convert_hue_rotate(angle), &mut ids, tree)
+            }
+            svgtypes::FilterValue::Invert(amount) => {
+                create_base_filter_func(convert_invert(amount), &mut ids, tree)
+            }
+            svgtypes::FilterValue::Opacity(amount) => {
+                create_base_filter_func(convert_opacity(amount), &mut ids, tree)
+            }
+            svgtypes::FilterValue::Sepia(amount) => {
+                create_base_filter_func(convert_sepia(amount), &mut ids, tree)
+            }
+            svgtypes::FilterValue::Saturate(amount) => {
+                create_base_filter_func(convert_saturate(amount), &mut ids, tree)
+            }
+            svgtypes::FilterValue::Url(url) => {
+                if let Some(link) = node.document().element_by_id(url) {
+                    if let Ok(res) = convert_url(link, state, tree) {
+                        if let Some(id) = res {
+                            ids.push(id);
+                        }
+                    } else {
+                        has_invalid_urls = true;
+                    }
+                } else {
+                    has_invalid_urls = true;
+                }
+            }
+        }
+    }
+
+    // If a `filter` attribute had urls pointing to a missing elements
+    // and there are no valid filters at all - this is an error.
+    //
+    // Note that an invalid url is not an error in general.
+    if ids.is_empty() && has_invalid_urls {
+        return Err(());
+    }
+
+    Ok(ids)
+}
+
+fn convert_url(
+    node: svgtree::Node,
+    state: &State,
+    tree: &mut tree::Tree,
+) -> Result<Option<String>, ()> {
     if tree.defs_by_id(node.element_id()).is_some() {
-        return Some(node.element_id().to_string());
+        return Ok(Some(node.element_id().to_string()));
     }
 
     let units = convert_units(node, AId::FilterUnits, tree::Units::ObjectBoundingBox);
@@ -29,14 +151,17 @@ pub fn convert(
         resolve_number(node, AId::Height, units, state, Length::new(120.0, Unit::Percent)),
     );
     let rect = try_opt_warn_or!(
-        rect, None,
+        rect, Err(()),
         "Filter '{}' has an invalid region. Skipped.", node.element_id(),
     );
 
-    let node_with_primitives = find_filter_with_primitives(node)?;
+    let node_with_primitives = match find_filter_with_primitives(node) {
+        Some(v) => v,
+        None => return Err(()),
+    };
     let primitives = collect_children(&node_with_primitives, primitive_units, state);
     if primitives.is_empty() {
-        return None;
+        return Err(());
     }
 
     tree.append_to_defs(
@@ -49,7 +174,7 @@ pub fn convert(
         })
     );
 
-    Some(node.element_id().to_string())
+    Ok(Some(node.element_id().to_string()))
 }
 
 fn find_filter_with_primitives(
@@ -813,4 +938,168 @@ fn gen_result(
             }
         }
     }
+}
+
+#[inline(never)]
+fn convert_grayscale(mut amount: f64) -> tree::FilterKind {
+    amount = amount.min(1.0);
+    tree::FilterKind::FeColorMatrix(tree::FeColorMatrix {
+        input: tree::FilterInput::SourceGraphic,
+        kind: tree::FeColorMatrixKind::Matrix(vec![
+            (0.2126 + 0.7874 * (1.0 - amount)),
+            (0.7152 - 0.7152 * (1.0 - amount)),
+            (0.0722 - 0.0722 * (1.0 - amount)),
+            0.0,
+            0.0,
+
+            (0.2126 - 0.2126 * (1.0 - amount)),
+            (0.7152 + 0.2848 * (1.0 - amount)),
+            (0.0722 - 0.0722 * (1.0 - amount)),
+            0.0,
+            0.0,
+
+            (0.2126 - 0.2126 * (1.0 - amount)),
+            (0.7152 - 0.7152 * (1.0 - amount)),
+            (0.0722 + 0.9278 * (1.0 - amount)),
+            0.0,
+            0.0,
+
+            0.0, 0.0, 0.0, 1.0, 0.0,
+        ]),
+    })
+}
+
+#[inline(never)]
+fn convert_sepia(mut amount: f64) -> tree::FilterKind {
+    amount = amount.min(1.0);
+    tree::FilterKind::FeColorMatrix(tree::FeColorMatrix {
+        input: tree::FilterInput::SourceGraphic,
+        kind: tree::FeColorMatrixKind::Matrix(vec![
+            (0.393 + 0.607 * (1.0 - amount)),
+            (0.769 - 0.769 * (1.0 - amount)),
+            (0.189 - 0.189 * (1.0 - amount)),
+            0.0,
+            0.0,
+
+            (0.349 - 0.349 * (1.0 - amount)),
+            (0.686 + 0.314 * (1.0 - amount)),
+            (0.168 - 0.168 * (1.0 - amount)),
+            0.0,
+            0.0,
+
+            (0.272 - 0.272 * (1.0 - amount)),
+            (0.534 - 0.534 * (1.0 - amount)),
+            (0.131 + 0.869 * (1.0 - amount)),
+            0.0,
+            0.0,
+
+            0.0, 0.0, 0.0, 1.0, 0.0,
+        ]),
+    })
+}
+
+#[inline(never)]
+fn convert_saturate(amount: f64) -> tree::FilterKind {
+    let amount = tree::PositiveNumber::new(amount.max(0.0));
+    tree::FilterKind::FeColorMatrix(tree::FeColorMatrix {
+        input: tree::FilterInput::SourceGraphic,
+        kind: tree::FeColorMatrixKind::Saturate(amount),
+    })
+}
+
+#[inline(never)]
+fn convert_hue_rotate(amount: svgtypes::Angle) -> tree::FilterKind {
+    tree::FilterKind::FeColorMatrix(tree::FeColorMatrix {
+        input: tree::FilterInput::SourceGraphic,
+        kind: tree::FeColorMatrixKind::HueRotate(amount.to_degrees()),
+    })
+}
+
+#[inline(never)]
+fn convert_invert(mut amount: f64) -> tree::FilterKind {
+    amount = amount.min(1.0);
+    tree::FilterKind::FeComponentTransfer(tree::FeComponentTransfer {
+        input: tree::FilterInput::SourceGraphic,
+        func_r: tree::TransferFunction::Table(vec![amount, 1.0 - amount]),
+        func_g: tree::TransferFunction::Table(vec![amount, 1.0 - amount]),
+        func_b: tree::TransferFunction::Table(vec![amount, 1.0 - amount]),
+        func_a: tree::TransferFunction::Identity,
+    })
+}
+
+#[inline(never)]
+fn convert_opacity(mut amount: f64) -> tree::FilterKind {
+    amount = amount.min(1.0);
+    tree::FilterKind::FeComponentTransfer(tree::FeComponentTransfer {
+        input: tree::FilterInput::SourceGraphic,
+        func_r: tree::TransferFunction::Identity,
+        func_g: tree::TransferFunction::Identity,
+        func_b: tree::TransferFunction::Identity,
+        func_a: tree::TransferFunction::Table(vec![0.0, amount]),
+    })
+}
+
+#[inline(never)]
+fn convert_brightness(amount: f64) -> tree::FilterKind {
+    tree::FilterKind::FeComponentTransfer(tree::FeComponentTransfer {
+        input: tree::FilterInput::SourceGraphic,
+        func_r: tree::TransferFunction::Linear { slope: amount, intercept: 0.0 },
+        func_g: tree::TransferFunction::Linear { slope: amount, intercept: 0.0 },
+        func_b: tree::TransferFunction::Linear { slope: amount, intercept: 0.0 },
+        func_a: tree::TransferFunction::Identity,
+    })
+}
+
+#[inline(never)]
+fn convert_contrast(amount: f64) -> tree::FilterKind {
+    tree::FilterKind::FeComponentTransfer(tree::FeComponentTransfer {
+        input: tree::FilterInput::SourceGraphic,
+        func_r: tree::TransferFunction::Linear { slope: amount, intercept: -(0.5 * amount) + 0.5 },
+        func_g: tree::TransferFunction::Linear { slope: amount, intercept: -(0.5 * amount) + 0.5 },
+        func_b: tree::TransferFunction::Linear { slope: amount, intercept: -(0.5 * amount) + 0.5 },
+        func_a: tree::TransferFunction::Identity,
+    })
+}
+
+#[inline(never)]
+fn convert_blur(
+    node: svgtree::Node,
+    std_dev: Length,
+    state: &State,
+) -> tree::FilterKind {
+    let std_dev = tree::PositiveNumber::new(
+        super::units::convert_length(std_dev, node, AId::Dx, tree::Units::UserSpaceOnUse, state)
+    );
+    tree::FilterKind::FeGaussianBlur(tree::FeGaussianBlur {
+        input: tree::FilterInput::SourceGraphic,
+        std_dev_x: std_dev,
+        std_dev_y: std_dev,
+    })
+}
+
+#[inline(never)]
+fn convert_drop_shadow(
+    node: svgtree::Node,
+    color: Option<tree::Color>,
+    dx: Length,
+    dy: Length,
+    std_dev: Length,
+    state: &State,
+) -> tree::FilterKind {
+    let std_dev = tree::PositiveNumber::new(
+        super::units::convert_length(std_dev, node, AId::Dx, tree::Units::UserSpaceOnUse, state)
+    );
+
+    let color = color.unwrap_or_else(||
+        node.find_attribute(AId::Color).unwrap_or_else(tree::Color::black));
+
+    tree::FilterKind::FeDropShadow(tree::FeDropShadow {
+        input: tree::FilterInput::SourceGraphic,
+        dx: super::units::convert_length(dx, node, AId::Dx, tree::Units::UserSpaceOnUse, state),
+        dy: super::units::convert_length(dy, node, AId::Dy, tree::Units::UserSpaceOnUse, state),
+        std_dev_x: std_dev,
+        std_dev_y: std_dev,
+        color,
+        opacity: tree::Opacity::default(),
+    })
 }

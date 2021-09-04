@@ -83,35 +83,6 @@ pub use morphology::{MorphologyOperator, morphology};
 pub use turbulence::turbulence;
 
 
-/// A normalized value.
-///
-/// Just like `f64` but immutable and guarantee to be in a 0..1 range.
-#[derive(Clone, Copy, Debug)]
-pub struct NormalizedValue(f64);
-
-impl NormalizedValue {
-    /// Creates a new `NormalizedValue` value.
-    #[inline]
-    pub fn new(n: f64) -> Self {
-        debug_assert!(n.is_finite());
-        debug_assert!((0.0..=1.0).contains(&n));
-        NormalizedValue(f64_bound(0.0, n, 1.0))
-    }
-
-    /// Returns an underlying value.
-    #[inline]
-    fn value(&self) -> f64 {
-        self.0
-    }
-}
-
-impl From<f64> for NormalizedValue {
-    fn from(v: f64) -> Self {
-        NormalizedValue::new(v)
-    }
-}
-
-
 /// An image reference.
 ///
 /// Image pixels should be stored in RGBA order.

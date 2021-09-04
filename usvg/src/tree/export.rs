@@ -474,8 +474,12 @@ fn conv_element(
                 xml.write_func_iri(AId::Mask, id, opt);
             }
 
-            if let Some(ref id) = g.filter {
-                xml.write_func_iri(AId::Filter, id, opt);
+            if !g.filter.is_empty() {
+                let prefix = opt.id_prefix.as_deref().unwrap_or_default();
+                let ids: Vec<_> = g.filter.iter()
+                    .map(|id| format!("url(#{}{})", prefix, id))
+                    .collect();
+                xml.write_svg_attribute(AId::Filter, &ids.join(" "));
 
                 if let Some(ref fill) = g.filter_fill {
                     write_paint(AId::Fill, fill, opt, xml);

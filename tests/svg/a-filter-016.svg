@@ -1,0 +1,13 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>`drop-shadow` function, filter region (SVG 2)</title>
+    <desc>
+        Filter function doesn't have a filter region,
+        like the `filter` element.
+    </desc>
+
+    <circle id="circle1" cx="100" cy="100" r="60" fill="seagreen"
+            filter="drop-shadow(blue 0 0 30)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

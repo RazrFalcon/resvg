@@ -447,7 +447,6 @@ fn parse_svg_attribute(
         }
 
           AId::ClipPath
-        | AId::Filter
         | AId::MarkerEnd
         | AId::MarkerMid
         | AId::MarkerStart
