@@ -48,7 +48,10 @@ fn main() {
         .. usvg::Path::default()
     }));
 
-    println!("{}", rtree.to_string(&usvg::XmlOptions::default()));
+    #[cfg(feature = "dump-svg")]
+    {
+        println!("{}", rtree.to_string(&usvg::XmlOptions::default()));
+    }
 
     let pixmap_size = rtree.svg_node().size.to_screen_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
