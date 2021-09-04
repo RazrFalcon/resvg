@@ -19,6 +19,10 @@ usvg = { path = "../usvg", default-features = false }
 tiny-skia = "0.6.1"
 
 [features]
-default = ["text", "system-fonts"]
-text = ["resvg/text", "usvg/text"] # enables SVG Text support
-system-fonts = ["resvg/system-fonts", "usvg/system-fonts"] # enables system fonts loading
+default = ["text", "system-fonts", "memmap-fonts"]
+# enables SVG Text support
+text = ["resvg/text", "usvg/text"]
+# enables system fonts loading (only for `text`)
+system-fonts = ["resvg/system-fonts", "usvg/system-fonts"]
+# enables font files memmaping for faster loading (only for `text`)
+memmap-fonts = ["resvg/system-fonts", "usvg/memmap-fonts"]

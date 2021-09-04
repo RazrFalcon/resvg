@@ -103,9 +103,9 @@ checksum = "e1267f4ac4f343772758f7b1bdcbe767c218bbab93bb432acbf5162bbf85a6c4"
 
 [[package]]
 name = "fontdb"
-version = "0.6.0"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab02a3061fd849214f362db473817d3955b368e885f8224ca5bdeb98997abec7"
+checksum = "1d66551cc28351f0bc6a73da86459ee7765caaad03ce284f2dc36472dbf539cd"
 dependencies = [
  "log",
  "memmap2",
@@ -369,7 +369,6 @@ dependencies = [
  "fontdb",
  "kurbo",
  "log",
- "memmap2",
  "pico-args",
  "rctree",
  "roxmltree",

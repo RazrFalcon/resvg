@@ -19,6 +19,9 @@ This changelog also contains important changes in dependencies.
 - `usvg::Group::filter` is a list of filter IDs now.
 - `usvg::FeColorMatrixKind::Saturate` accepts any positive `f64` value now.
 - `svgfilters::ColorMatrix::Saturate` accepts any positive `f64` value now.
+- Fonts memory mapping was split into a separate build feature: `memmap-fonts`.
+  Now you can build resvg/usvg with `system-fonts`, but without `memmap-fonts`.
+  Enabled by default.
 
 ## [0.16.0] - 2021-08-22
 ### Added
