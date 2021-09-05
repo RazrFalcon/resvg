@@ -123,8 +123,17 @@ fn image_to_pixmap(image: &Image, pixmap: &mut [u8]) {
                 i += tiny_skia::BYTES_PER_PIXEL;
             }
 
-            svgfilters::multiply_alpha(pixmap.as_rgba_mut());
+            multiply_alpha(pixmap.as_rgba_mut());
         }
+    }
+}
+
+fn multiply_alpha(data: &mut [rgb::RGBA8]) {
+    for p in data {
+        let a = p.a as f64 / 255.0;
+        p.b = (p.b as f64 * a + 0.5) as u8;
+        p.g = (p.g as f64 * a + 0.5) as u8;
+        p.r = (p.r as f64 * a + 0.5) as u8;
     }
 }
 

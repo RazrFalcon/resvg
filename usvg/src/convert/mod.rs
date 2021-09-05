@@ -10,7 +10,7 @@ use svgtypes::Length;
 use crate::{svgtree, tree, tree::prelude::*, Error};
 
 mod clip;
-mod filter;
+#[cfg(feature = "filter")] mod filter;
 mod image;
 mod marker;
 mod mask;
@@ -45,7 +45,7 @@ pub struct State<'a> {
 pub struct NodeIdGenerator {
     all_ids: HashSet<u64>,
     clip_path_index: usize,
-    filter_index: usize,
+    #[allow(dead_code)] filter_index: usize,
 }
 
 impl NodeIdGenerator {
@@ -75,6 +75,7 @@ impl NodeIdGenerator {
         }
     }
 
+    #[cfg(feature = "filter")]
     pub fn gen_filter_id(&mut self) -> String {
         loop {
             self.filter_index += 1;
@@ -148,7 +149,9 @@ pub fn convert_doc(
     // we have to run it until there are no more links left.
     // For example, when `feImage` references an element that also uses `feImage`,
     // we have to run this methods twice. And so on.
-    while link_fe_image(svg_doc, &state, &mut id_generator, &mut tree) {}
+    #[cfg(feature = "filter")] {
+        while link_fe_image(svg_doc, &state, &mut id_generator, &mut tree) {}
+    }
 
     remove_empty_groups(&mut tree);
     ungroup_groups(opt, &mut tree);
@@ -437,7 +440,9 @@ fn convert_group(
         None
     };
 
+    #[allow(unused_mut)]
     let mut filter = Vec::new();
+    #[cfg(feature = "filter")]
     if state.parent_clip_path.is_none() {
         if node.attribute(AId::Filter) == Some("none") {
             // Do nothing.
@@ -682,6 +687,7 @@ fn remove_unused_defs(
     }
 }
 
+#[cfg(feature = "filter")]
 fn link_fe_image(
     svg_doc: &svgtree::Document,
     state: &State,

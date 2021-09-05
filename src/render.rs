@@ -57,6 +57,7 @@ pub(crate) enum RenderState {
     /// A default value. Doesn't indicate anything.
     Ok,
     /// Indicates that the current rendering task should stop after reaching the specified node.
+    #[allow(dead_code)]
     RenderUntil(usvg::Node),
     /// Indicates that `usvg::FilterInput::BackgroundImage` rendering task was finished.
     BackgroundFinished,
@@ -239,6 +240,7 @@ fn render_group_impl(
 
     // Filter can be rendered on an object without a bbox,
     // as long as filter uses `userSpaceOnUse`.
+    #[cfg(feature = "filter")]
     for id in &g.filter {
         if let Some(filter_node) = tree.defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
@@ -338,6 +340,7 @@ pub fn trim_transparency(pixmap: tiny_skia::Pixmap) -> Option<(i32, i32, tiny_sk
 }
 
 /// Renders an image used by `BackgroundImage` or `BackgroundAlpha` filter inputs.
+#[cfg(feature = "filter")]
 fn prepare_filter_background(
     tree: &usvg::Tree,
     parent: &usvg::Node,
@@ -366,6 +369,7 @@ fn prepare_filter_background(
 /// And since there are no expected behaviour, we will simply fill the filter region.
 ///
 /// https://github.com/w3c/fxtf-drafts/issues/323
+#[cfg(feature = "filter")]
 fn prepare_filter_fill_paint(
     tree: &usvg::Tree,
     parent: &usvg::Node,
@@ -394,6 +398,7 @@ fn prepare_filter_fill_paint(
 }
 
 /// The same as `prepare_filter_fill_paint`, but for `StrokePaint`.
+#[cfg(feature = "filter")]
 fn prepare_filter_stroke_paint(
     tree: &usvg::Tree,
     parent: &usvg::Node,

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- `filter` build feature. Enabled by default.
 
 ### Fixed
 - C API building without the `text` feature.

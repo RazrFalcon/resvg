@@ -20,7 +20,7 @@ use log::warn;
 
 #[macro_use] mod macros;
 mod clip;
-mod filter;
+#[cfg(feature = "filter")] mod filter;
 mod image;
 mod mask;
 mod paint_server;

@@ -20,10 +20,14 @@ jobs:
       working-directory: c-api
       run: cargo build
 
+    - name: Build C API without default features
+      working-directory: c-api
+      run: cargo build --no-default-features
+
     - name: Test usvg
       working-directory: usvg
       run: cargo test
 
-    - name: Build usvg without text support
+    - name: Build usvg without default support
       working-directory: usvg
       run: cargo build --no-default-features

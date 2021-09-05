@@ -20,10 +20,14 @@ tiny-skia = "0.6.1"
 
 [features]
 # we do not provide the dump-svg/export feature here, because it's not available to C API anyway
-default = ["text", "system-fonts", "memmap-fonts"]
+default = ["filter", "text", "system-fonts", "memmap-fonts"]
+# enables SVG Filter support
+# adds around 100KiB to your binary
+filter = ["resvg/filter", "usvg/filter"]
 # enables SVG Text support
+# adds around 500KiB to your binary
 text = ["resvg/text", "usvg/text"]
 # enables system fonts loading (only for `text`)
-system-fonts = ["resvg/system-fonts", "usvg/system-fonts"]
+system-fonts = ["usvg/system-fonts"]
 # enables font files memmaping for faster loading (only for `text`)
-memmap-fonts = ["resvg/system-fonts", "usvg/memmap-fonts"]
+memmap-fonts = ["usvg/memmap-fonts"]

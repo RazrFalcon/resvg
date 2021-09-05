@@ -15,7 +15,7 @@ workspace = ".."
 
 [[bin]]
 name = "usvg"
-required-features = ["system-fonts", "memmap-fonts", "text", "export"]
+required-features = ["filter", "text", "system-fonts", "memmap-fonts", "export"]
 
 [dependencies]
 base64 = "0.13" # for embedded images
@@ -43,8 +43,11 @@ unicode-script = { version = "0.5", optional = true }
 unicode-vo = { version = "0.1", optional = true }
 
 [features]
-default = ["text", "system-fonts", "memmap-fonts", "export"]
+default = ["filter", "text", "system-fonts", "memmap-fonts", "export"]
+# enables SVG Filter support
+filter = []
 # enables SVG Text support
+# adds around 500KiB to your binary
 text = [
     "fontdb",
     "rustybuzz",
@@ -58,5 +61,5 @@ system-fonts = ["fontdb/fs"]
 # enables font files memmaping for faster loading (only for `text`)
 memmap-fonts = ["fontdb/memmap"]
 # enables SVG generation using Tree::to_string
-# greatly reduces the binary size when disabled
+# adds around 50KiB to your binary
 export = ["xmlwriter"]
