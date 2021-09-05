@@ -12,10 +12,11 @@ use crate::tree;
 use crate::{Transform, FuzzyEq};
 
 mod parse;
-pub use parse::*;
 
 mod names;
 pub use names::*;
+
+#[cfg(feature = "text")] mod text;
 
 type Range = std::ops::Range<usize>;
 
@@ -123,6 +124,7 @@ enum NodeKind {
         tag_name: EId,
         attributes: Range,
     },
+    #[cfg(feature = "text")]
     Text(String),
 }
 
@@ -203,6 +205,7 @@ impl<'a> Node<'a> {
         matches!(self.d.kind, NodeKind::Element { .. })
     }
 
+    #[cfg(feature = "text")]
     #[inline]
     pub fn is_text(&self) -> bool {
        matches!(self.d.kind, NodeKind::Text(_))
@@ -319,6 +322,7 @@ impl<'a> Node<'a> {
         Rect::new(vb.x, vb.y, vb.w, vb.h)
     }
 
+    #[cfg(feature = "text")]
     pub fn text(&self) -> &'a str {
         match self.d.kind {
             NodeKind::Element { .. } => {
@@ -413,6 +417,7 @@ impl fmt::Debug for Node<'_> {
                 write!(f, "Element {{ tag_name: {:?}, attributes: {:?} }}",
                        self.tag_name(), self.attributes())
             }
+            #[cfg(feature = "text")]
             NodeKind::Text(ref text) => write!(f, "Text({:?})", text),
         }
     }
