@@ -137,28 +137,43 @@ pub extern "C" fn resvg_options_set_font_size(opt: *mut resvg_options, font_size
 }
 
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn resvg_options_set_serif_family(opt: *mut resvg_options, family: *const c_char) {
-    cast_opt(opt).fontdb.set_serif_family(cstr_to_str(family).unwrap().to_string());
+    #[cfg(feature = "text")] {
+        cast_opt(opt).fontdb.set_serif_family(cstr_to_str(family).unwrap().to_string());
+    }
 }
 
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn resvg_options_set_sans_serif_family(opt: *mut resvg_options, family: *const c_char) {
-    cast_opt(opt).fontdb.set_sans_serif_family(cstr_to_str(family).unwrap().to_string());
+    #[cfg(feature = "text")] {
+        cast_opt(opt).fontdb.set_sans_serif_family(cstr_to_str(family).unwrap().to_string());
+    }
 }
 
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn resvg_options_set_cursive_family(opt: *mut resvg_options, family: *const c_char) {
-    cast_opt(opt).fontdb.set_cursive_family(cstr_to_str(family).unwrap().to_string());
+    #[cfg(feature = "text")] {
+        cast_opt(opt).fontdb.set_cursive_family(cstr_to_str(family).unwrap().to_string());
+    }
 }
 
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn resvg_options_set_fantasy_family(opt: *mut resvg_options, family: *const c_char) {
-    cast_opt(opt).fontdb.set_fantasy_family(cstr_to_str(family).unwrap().to_string());
+    #[cfg(feature = "text")] {
+        cast_opt(opt).fontdb.set_fantasy_family(cstr_to_str(family).unwrap().to_string());
+    }
 }
 
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn resvg_options_set_monospace_family(opt: *mut resvg_options, family: *const c_char) {
-    cast_opt(opt).fontdb.set_monospace_family(cstr_to_str(family).unwrap().to_string());
+    #[cfg(feature = "text")] {
+        cast_opt(opt).fontdb.set_monospace_family(cstr_to_str(family).unwrap().to_string());
+    }
 }
 
 #[no_mangle]
@@ -216,51 +231,64 @@ pub extern "C" fn resvg_options_set_keep_named_groups(opt: *mut resvg_options, k
 }
 
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn resvg_options_load_system_fonts(opt: *mut resvg_options) {
-    let opt = unsafe {
-        assert!(!opt.is_null());
-        &mut *opt
-    };
+    #[cfg(feature = "text")] {
+        let opt = unsafe {
+            assert!(!opt.is_null());
+            &mut *opt
+        };
 
-    opt.0.fontdb.load_system_fonts();
-}
-
-#[no_mangle]
-pub extern "C" fn resvg_options_load_font_file(
-    opt: *mut resvg_options,
-    file_path: *const c_char,
-) -> i32 {
-    let file_path = match cstr_to_str(file_path) {
-        Some(v) => v,
-        None => return ErrorId::NotAnUtf8Str as i32,
-    };
-
-    let opt = unsafe {
-        assert!(!opt.is_null());
-        &mut *opt
-    };
-
-    if opt.0.fontdb.load_font_file(file_path).is_ok() {
-        ErrorId::Ok as i32
-    } else {
-        ErrorId::FileOpenFailed as i32
+        opt.0.fontdb.load_system_fonts();
     }
 }
 
 #[no_mangle]
+#[allow(unused_variables)]
+pub extern "C" fn resvg_options_load_font_file(
+    opt: *mut resvg_options,
+    file_path: *const c_char,
+) -> i32 {
+    #[cfg(feature = "text")] {
+        let file_path = match cstr_to_str(file_path) {
+            Some(v) => v,
+            None => return ErrorId::NotAnUtf8Str as i32,
+        };
+
+        let opt = unsafe {
+            assert!(!opt.is_null());
+            &mut *opt
+        };
+
+        if opt.0.fontdb.load_font_file(file_path).is_ok() {
+            ErrorId::Ok as i32
+        } else {
+            ErrorId::FileOpenFailed as i32
+        }
+    }
+
+    #[cfg(not(feature = "text"))] {
+        ErrorId::Ok as i32
+    }
+}
+
+#[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn resvg_options_load_font_data(
     opt: *mut resvg_options,
     data: *const c_char,
     len: usize,
 ) {
-    let data = unsafe { slice::from_raw_parts(data as *const u8, len) };
+    #[cfg(feature = "text")] {
+        let data = unsafe { slice::from_raw_parts(data as *const u8, len) };
 
-    let opt = unsafe {
-        assert!(!opt.is_null());
-        &mut *opt
-    };
+        let opt = unsafe {
+            assert!(!opt.is_null());
+            &mut *opt
+        };
 
-    opt.0.fontdb.load_font_data(data.to_vec())
+        opt.0.fontdb.load_font_data(data.to_vec())
+    }
 }
 
 #[no_mangle]

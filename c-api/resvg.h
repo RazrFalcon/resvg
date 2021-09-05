@@ -214,6 +214,8 @@ void resvg_options_set_font_size(resvg_options *opt, double size);
  *
  * Must be UTF-8. NULL is not allowed.
  *
+ * Has no effect when the `text` feature is not enabled.
+ *
  * Default: Times New Roman
  */
 void resvg_options_set_serif_family(resvg_options *opt, const char *family);
@@ -222,6 +224,8 @@ void resvg_options_set_serif_family(resvg_options *opt, const char *family);
  * @brief Sets the `sans-serif` font family.
  *
  * Must be UTF-8. NULL is not allowed.
+ *
+ * Has no effect when the `text` feature is not enabled.
  *
  * Default: Arial
  */
@@ -232,6 +236,8 @@ void resvg_options_set_sans_serif_family(resvg_options *opt, const char *family)
  *
  * Must be UTF-8. NULL is not allowed.
  *
+ * Has no effect when the `text` feature is not enabled.
+ *
  * Default: Comic Sans MS
  */
 void resvg_options_set_cursive_family(resvg_options *opt, const char *family);
@@ -241,6 +247,8 @@ void resvg_options_set_cursive_family(resvg_options *opt, const char *family);
  *
  * Must be UTF-8. NULL is not allowed.
  *
+ * Has no effect when the `text` feature is not enabled.
+ *
  * Default: Papyrus on macOS, Impact on other OS'es
  */
 void resvg_options_set_fantasy_family(resvg_options *opt, const char *family);
@@ -249,6 +257,8 @@ void resvg_options_set_fantasy_family(resvg_options *opt, const char *family);
  * @brief Sets the `monospace` font family.
  *
  * Must be UTF-8. NULL is not allowed.
+ *
+ * Has no effect when the `text` feature is not enabled.
  *
  * Default: Courier New
  */
@@ -307,6 +317,8 @@ void resvg_options_set_keep_named_groups(resvg_options *opt, bool keep);
  * @brief Loads a font data into the internal fonts database.
  *
  * Prints a warning into the log when the data is not a valid TrueType font.
+ *
+ * Has no effect when the `text` feature is not enabled.
  */
 void resvg_options_load_font_data(resvg_options *opt, const char *data, size_t len);
 
@@ -314,6 +326,8 @@ void resvg_options_load_font_data(resvg_options *opt, const char *data, size_t l
  * @brief Loads a font file into the internal fonts database.
  *
  * Prints a warning into the log when the data is not a valid TrueType font.
+ *
+ * Has no effect when the `text` feature is not enabled.
  *
  * @return #resvg_error with RESVG_OK, RESVG_ERROR_NOT_AN_UTF8_STR or RESVG_ERROR_FILE_OPEN_FAILED
  */
@@ -330,6 +344,8 @@ int resvg_options_load_font_file(resvg_options *opt, const char *file_path);
  * Please send a bug report in this case.
  *
  * Prints warnings into the log.
+ *
+ * Has no effect when the `text` feature is not enabled.
  */
 void resvg_options_load_system_fonts(resvg_options *opt);
 

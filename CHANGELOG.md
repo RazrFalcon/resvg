@@ -8,6 +8,9 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 
+### Fixed
+- C API building without the `text` feature.
+
 ## [0.17.0] - 2021-09-04
 ### Added
 - `tiny-skia` updated with support of images larger than 8000x8000 pixels.

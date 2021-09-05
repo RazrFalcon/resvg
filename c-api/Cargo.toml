@@ -14,7 +14,7 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 log = "0.4"
-resvg = { path = "../" }
+resvg = { path = "../", default-features = false }
 usvg = { path = "../usvg", default-features = false }
 tiny-skia = "0.6.1"
 
