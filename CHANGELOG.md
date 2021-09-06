@@ -10,6 +10,10 @@ This changelog also contains important changes in dependencies.
 ### Added
 - `filter` build feature. Enabled by default.
 
+### Changed
+- (usvg) All filter related types are under the `filter` module now.
+- (usvg) Remove `Fe` prefix from all filter types.
+
 ### Fixed
 - C API building without the `text` feature.
 

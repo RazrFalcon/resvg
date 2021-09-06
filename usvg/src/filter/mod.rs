@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+//! A collection of SVG filters.
+
 use std::collections::HashSet;
 
 use svgtypes::{Length, LengthUnit as Unit};
@@ -71,15 +73,14 @@ pub struct Filter {
     /// `x`, `y`, `width` and `height` in the SVG.
     pub rect: Rect,
 
-    // TODO: rename to `primitives`
     /// A list of filter primitives.
-    pub children: Vec<FilterPrimitive>,
+    pub primitives: Vec<Primitive>,
 }
 
 
 /// A filter primitive element.
 #[derive(Clone, Debug)]
-pub struct FilterPrimitive {
+pub struct Primitive {
     /// `x` coordinate of the filter subregion.
     pub x: Option<f64>,
 
@@ -103,54 +104,54 @@ pub struct FilterPrimitive {
     pub result: String,
 
     /// Filter primitive kind.
-    pub kind: FilterKind,
+    pub kind: Kind,
 }
 
 
 /// A filter kind.
 #[allow(missing_docs)]
 #[derive(Clone, Debug)]
-pub enum FilterKind {
-    FeBlend(FeBlend),
-    FeColorMatrix(FeColorMatrix),
-    FeComponentTransfer(FeComponentTransfer),
-    FeComposite(FeComposite),
-    FeConvolveMatrix(FeConvolveMatrix),
-    FeDiffuseLighting(FeDiffuseLighting),
-    FeDisplacementMap(FeDisplacementMap),
-    FeDropShadow(FeDropShadow),
-    FeFlood(FeFlood),
-    FeGaussianBlur(FeGaussianBlur),
-    FeImage(FeImage),
-    FeMerge(FeMerge),
-    FeMorphology(FeMorphology),
-    FeOffset(FeOffset),
-    FeSpecularLighting(FeSpecularLighting),
-    FeTile(FeTile),
-    FeTurbulence(FeTurbulence),
+pub enum Kind {
+    Blend(Blend),
+    ColorMatrix(ColorMatrix),
+    ComponentTransfer(ComponentTransfer),
+    Composite(Composite),
+    ConvolveMatrix(ConvolveMatrix),
+    DiffuseLighting(DiffuseLighting),
+    DisplacementMap(DisplacementMap),
+    DropShadow(DropShadow),
+    Flood(Flood),
+    GaussianBlur(GaussianBlur),
+    Image(Image),
+    Merge(Merge),
+    Morphology(Morphology),
+    Offset(Offset),
+    SpecularLighting(SpecularLighting),
+    Tile(Tile),
+    Turbulence(Turbulence),
 }
 
-impl FilterKind {
+impl Kind {
     /// Checks that `FilterKind` has a specific input.
-    pub fn has_input(&self, input: &FilterInput) -> bool {
+    pub fn has_input(&self, input: &Input) -> bool {
         match self {
-            FilterKind::FeBlend(ref fe) => fe.input1 == *input || fe.input2 == *input,
-            FilterKind::FeColorMatrix(ref fe) => fe.input == *input,
-            FilterKind::FeComponentTransfer(ref fe) => fe.input == *input,
-            FilterKind::FeComposite(ref fe) => fe.input1 == *input || fe.input2 == *input,
-            FilterKind::FeConvolveMatrix(ref fe) => fe.input == *input,
-            FilterKind::FeDiffuseLighting(ref fe) => fe.input == *input,
-            FilterKind::FeDisplacementMap(ref fe) => fe.input1 == *input || fe.input2 == *input,
-            FilterKind::FeDropShadow(ref fe) => fe.input == *input,
-            FilterKind::FeFlood(_) => false,
-            FilterKind::FeGaussianBlur(ref fe) => fe.input == *input,
-            FilterKind::FeImage(_) => false,
-            FilterKind::FeMerge(ref fe) => fe.inputs.iter().any(|i| i == input),
-            FilterKind::FeMorphology(ref fe) => fe.input == *input,
-            FilterKind::FeOffset(ref fe) => fe.input == *input,
-            FilterKind::FeSpecularLighting(ref fe) => fe.input == *input,
-            FilterKind::FeTile(ref fe) => fe.input == *input,
-            FilterKind::FeTurbulence(_) => false,
+            Kind::Blend(ref fe) => fe.input1 == *input || fe.input2 == *input,
+            Kind::ColorMatrix(ref fe) => fe.input == *input,
+            Kind::ComponentTransfer(ref fe) => fe.input == *input,
+            Kind::Composite(ref fe) => fe.input1 == *input || fe.input2 == *input,
+            Kind::ConvolveMatrix(ref fe) => fe.input == *input,
+            Kind::DiffuseLighting(ref fe) => fe.input == *input,
+            Kind::DisplacementMap(ref fe) => fe.input1 == *input || fe.input2 == *input,
+            Kind::DropShadow(ref fe) => fe.input == *input,
+            Kind::Flood(_) => false,
+            Kind::GaussianBlur(ref fe) => fe.input == *input,
+            Kind::Image(_) => false,
+            Kind::Merge(ref fe) => fe.inputs.iter().any(|i| i == input),
+            Kind::Morphology(ref fe) => fe.input == *input,
+            Kind::Offset(ref fe) => fe.input == *input,
+            Kind::SpecularLighting(ref fe) => fe.input == *input,
+            Kind::Tile(ref fe) => fe.input == *input,
+            Kind::Turbulence(_) => false,
         }
     }
 }
@@ -159,7 +160,7 @@ impl FilterKind {
 /// Identifies input for a filter primitive.
 #[allow(missing_docs)]
 #[derive(Clone, PartialEq, Debug)]
-pub enum FilterInput {
+pub enum Input {
     SourceGraphic,
     SourceAlpha,
     BackgroundImage,
@@ -209,7 +210,7 @@ pub(crate) fn convert(
         // This if far from ideal, but good for now.
         // TODO: Should be fixed eventually.
         let rect = match kind {
-            FilterKind::FeDropShadow(_) | FilterKind::FeGaussianBlur(_) => {
+            Kind::DropShadow(_) | Kind::GaussianBlur(_) => {
                 Rect::new(-1.0, -1.0, 2.0, 2.0).unwrap()
             }
             _ => Rect::new(-0.1, -0.1, 1.2, 1.2).unwrap(),
@@ -220,8 +221,8 @@ pub(crate) fn convert(
             units: Units::ObjectBoundingBox,
             primitive_units: Units::UserSpaceOnUse,
             rect,
-            children: vec![
-                FilterPrimitive {
+            primitives: vec![
+                Primitive {
                     x: None,
                     y: None,
                     width: None,
@@ -345,7 +346,7 @@ fn convert_url(
             units,
             primitive_units,
             rect,
-            children: primitives,
+            primitives,
         })
     );
 
@@ -382,7 +383,7 @@ fn collect_children(
     filter: &svgtree::Node,
     units: Units,
     state: &converter::State,
-) -> Vec<FilterPrimitive> {
+) -> Vec<Primitive> {
     let mut primitives = Vec::new();
 
     let mut results = FilterResults {
@@ -426,12 +427,12 @@ fn collect_children(
 
 fn convert_primitive(
     fe: svgtree::Node,
-    kind: FilterKind,
+    kind: Kind,
     units: Units,
     state: &converter::State,
     results: &mut FilterResults,
-) -> FilterPrimitive {
-    FilterPrimitive {
+) -> Primitive {
+    Primitive {
         x: fe.try_convert_length(AId::X, units, state),
         y: fe.try_convert_length(AId::Y, units, state),
         // TODO: validate and test
@@ -447,8 +448,8 @@ fn convert_primitive(
 // But since `FilterKind` structs are designed to always be valid,
 // we are using `FeFlood` as fallback.
 #[inline(never)]
-pub(crate) fn create_dummy_primitive() -> FilterKind {
-    FilterKind::FeFlood(FeFlood {
+pub(crate) fn create_dummy_primitive() -> Kind {
+    Kind::Flood(Flood {
         color: Color::black(),
         opacity: Opacity::new(0.0),
     })
@@ -458,20 +459,20 @@ pub(crate) fn create_dummy_primitive() -> FilterKind {
 fn resolve_input(
     node: svgtree::Node,
     aid: AId,
-    primitives: &[FilterPrimitive],
-) -> FilterInput {
+    primitives: &[Primitive],
+) -> Input {
     match node.attribute(aid) {
         Some(s) => {
             let input = parse_in(s);
 
             // If `in` references an unknown `result` than fallback
             // to previous result or `SourceGraphic`.
-            if let FilterInput::Reference(ref name) = input {
+            if let Input::Reference(ref name) = input {
                 if !primitives.iter().any(|p| p.result == *name) {
                     return if let Some(prev) = primitives.last() {
-                        FilterInput::Reference(prev.result.clone())
+                        Input::Reference(prev.result.clone())
                     } else {
-                        FilterInput::SourceGraphic
+                        Input::SourceGraphic
                     };
                 }
             }
@@ -482,11 +483,11 @@ fn resolve_input(
             if let Some(prev) = primitives.last() {
                 // If `in` is not set and this is not the first primitive
                 // than the input is a result of the previous primitive.
-                FilterInput::Reference(prev.result.clone())
+                Input::Reference(prev.result.clone())
             } else {
                 // If `in` is not set and this is the first primitive
                 // than the input is `SourceGraphic`.
-                FilterInput::SourceGraphic
+                Input::SourceGraphic
             }
         }
     }
@@ -494,15 +495,15 @@ fn resolve_input(
 
 fn parse_in(
     s: &str,
-) -> FilterInput {
+) -> Input {
     match s {
-        "SourceGraphic"     => FilterInput::SourceGraphic,
-        "SourceAlpha"       => FilterInput::SourceAlpha,
-        "BackgroundImage"   => FilterInput::BackgroundImage,
-        "BackgroundAlpha"   => FilterInput::BackgroundAlpha,
-        "FillPaint"         => FilterInput::FillPaint,
-        "StrokePaint"       => FilterInput::StrokePaint,
-        _                   => FilterInput::Reference(s.to_string())
+        "SourceGraphic"     => Input::SourceGraphic,
+        "SourceAlpha"       => Input::SourceAlpha,
+        "BackgroundImage"   => Input::BackgroundImage,
+        "BackgroundAlpha"   => Input::BackgroundAlpha,
+        "FillPaint"         => Input::FillPaint,
+        "StrokePaint"       => Input::StrokePaint,
+        _                   => Input::Reference(s.to_string())
     }
 }
 

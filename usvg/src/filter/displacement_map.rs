@@ -3,22 +3,22 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::svgtree::{self, AId};
-use crate::{FilterInput, FilterKind, FilterPrimitive};
+use super::{Input, Kind, Primitive};
 
 /// A displacement map filter primitive.
 ///
 /// `feDisplacementMap` element in the SVG.
 #[derive(Clone, Debug)]
-pub struct FeDisplacementMap {
+pub struct DisplacementMap {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input1: FilterInput,
+    pub input1: Input,
 
     /// Identifies input for the given filter primitive.
     ///
     /// `in2` in the SVG.
-    pub input2: FilterInput,
+    pub input2: Input,
 
     /// Scale factor.
     ///
@@ -46,7 +46,7 @@ pub enum ColorChannel {
     A,
 }
 
-pub(crate) fn convert(fe: svgtree::Node, primitives: &[FilterPrimitive]) -> FilterKind {
+pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     let parse_channel = |aid| {
         match fe.attribute(aid).unwrap_or("A") {
             "R" => ColorChannel::R,
@@ -56,7 +56,7 @@ pub(crate) fn convert(fe: svgtree::Node, primitives: &[FilterPrimitive]) -> Filt
         }
     };
 
-    FilterKind::FeDisplacementMap(FeDisplacementMap {
+    Kind::DisplacementMap(DisplacementMap {
         input1: super::resolve_input(fe, AId::In, primitives),
         input2: super::resolve_input(fe, AId::In2, primitives),
         scale: fe.attribute(AId::Scale).unwrap_or(0.0),

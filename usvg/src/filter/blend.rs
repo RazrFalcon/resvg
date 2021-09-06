@@ -3,33 +3,33 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::svgtree::{self, AId};
-use super::{FilterInput, FilterKind, FilterPrimitive};
+use super::{Input, Kind, Primitive};
 
 /// A blend filter primitive.
 ///
 /// `feBlend` element in the SVG.
 #[derive(Clone, Debug)]
-pub struct FeBlend {
+pub struct Blend {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input1: FilterInput,
+    pub input1: Input,
 
     /// Identifies input for the given filter primitive.
     ///
     /// `in2` in the SVG.
-    pub input2: FilterInput,
+    pub input2: Input,
 
     /// A blending mode.
     ///
     /// `mode` in the SVG.
-    pub mode: FeBlendMode,
+    pub mode: BlendMode,
 }
 
 /// An images blending mode.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub enum FeBlendMode {
+pub enum BlendMode {
     Normal,
     Multiply,
     Screen,
@@ -48,31 +48,31 @@ pub enum FeBlendMode {
     Luminosity,
 }
 
-pub(crate) fn convert(fe: svgtree::Node, primitives: &[FilterPrimitive]) -> FilterKind {
+pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     let mode = match fe.attribute(AId::Mode).unwrap_or("normal") {
-        "normal" => FeBlendMode::Normal,
-        "multiply" => FeBlendMode::Multiply,
-        "screen" => FeBlendMode::Screen,
-        "overlay" => FeBlendMode::Overlay,
-        "darken" => FeBlendMode::Darken,
-        "lighten" => FeBlendMode::Lighten,
-        "color-dodge" => FeBlendMode::ColorDodge,
-        "color-burn" => FeBlendMode::ColorBurn,
-        "hard-light" => FeBlendMode::HardLight,
-        "soft-light" => FeBlendMode::SoftLight,
-        "difference" => FeBlendMode::Difference,
-        "exclusion" => FeBlendMode::Exclusion,
-        "hue" => FeBlendMode::Hue,
-        "saturation" => FeBlendMode::Saturation,
-        "color" => FeBlendMode::Color,
-        "luminosity" => FeBlendMode::Luminosity,
-        _ => FeBlendMode::Normal,
+        "normal" => BlendMode::Normal,
+        "multiply" => BlendMode::Multiply,
+        "screen" => BlendMode::Screen,
+        "overlay" => BlendMode::Overlay,
+        "darken" => BlendMode::Darken,
+        "lighten" => BlendMode::Lighten,
+        "color-dodge" => BlendMode::ColorDodge,
+        "color-burn" => BlendMode::ColorBurn,
+        "hard-light" => BlendMode::HardLight,
+        "soft-light" => BlendMode::SoftLight,
+        "difference" => BlendMode::Difference,
+        "exclusion" => BlendMode::Exclusion,
+        "hue" => BlendMode::Hue,
+        "saturation" => BlendMode::Saturation,
+        "color" => BlendMode::Color,
+        "luminosity" => BlendMode::Luminosity,
+        _ => BlendMode::Normal,
     };
 
     let input1 = super::resolve_input(fe, AId::In, primitives);
     let input2 = super::resolve_input(fe, AId::In2, primitives);
 
-    FilterKind::FeBlend(FeBlend {
+    Kind::Blend(Blend {
         mode,
         input1,
         input2,

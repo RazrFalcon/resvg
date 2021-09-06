@@ -3,17 +3,18 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::svgtree::{self, AId, EId};
-use crate::{Color, FilterInput, FilterKind, FilterPrimitive, PositiveNumber, ScreenRect, Transform};
+use crate::{Color, PositiveNumber, ScreenRect, Transform};
+use super::{Input, Kind, Primitive};
 
 /// A diffuse lighting filter primitive.
 ///
 /// `feDiffuseLighting` element in the SVG.
 #[derive(Clone, Debug)]
-pub struct FeDiffuseLighting {
+pub struct DiffuseLighting {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: FilterInput,
+    pub input: Input,
 
     /// A surface scale.
     ///
@@ -31,12 +32,12 @@ pub struct FeDiffuseLighting {
     pub lighting_color: Color,
 
     /// A light source.
-    pub light_source: FeLightSource,
+    pub light_source: LightSource,
 }
 
-pub(crate) fn convert_diffuse(fe: svgtree::Node, primitives: &[FilterPrimitive]) -> FilterKind {
+pub(crate) fn convert_diffuse(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     let light_source = try_opt_or!(convert_light_source(fe), super::create_dummy_primitive());
-    FilterKind::FeDiffuseLighting(FeDiffuseLighting {
+    Kind::DiffuseLighting(DiffuseLighting {
         input: super::resolve_input(fe, AId::In, primitives),
         surface_scale: fe.attribute(AId::SurfaceScale).unwrap_or(1.0),
         diffuse_constant: fe.attribute(AId::DiffuseConstant).unwrap_or(1.0),
@@ -49,11 +50,11 @@ pub(crate) fn convert_diffuse(fe: svgtree::Node, primitives: &[FilterPrimitive])
 ///
 /// `feSpecularLighting` element in the SVG.
 #[derive(Clone, Debug)]
-pub struct FeSpecularLighting {
+pub struct SpecularLighting {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: FilterInput,
+    pub input: Input,
 
     /// A surface scale.
     ///
@@ -78,10 +79,10 @@ pub struct FeSpecularLighting {
     pub lighting_color: Color,
 
     /// A light source.
-    pub light_source: FeLightSource,
+    pub light_source: LightSource,
 }
 
-pub(crate) fn convert_specular(fe: svgtree::Node, primitives: &[FilterPrimitive]) -> FilterKind {
+pub(crate) fn convert_specular(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     let light_source = try_opt_or!(convert_light_source(fe), super::create_dummy_primitive());
 
     let specular_exponent = fe.attribute(AId::SpecularExponent).unwrap_or(1.0);
@@ -92,7 +93,7 @@ pub(crate) fn convert_specular(fe: svgtree::Node, primitives: &[FilterPrimitive]
 
     let specular_exponent = crate::utils::f64_bound(1.0, specular_exponent, 128.0);
 
-    FilterKind::FeSpecularLighting(FeSpecularLighting {
+    Kind::SpecularLighting(SpecularLighting {
         input: super::resolve_input(fe, AId::In, primitives),
         surface_scale: fe.attribute(AId::SurfaceScale).unwrap_or(1.0),
         specular_constant: fe.attribute(AId::SpecularConstant).unwrap_or(1.0),
@@ -116,26 +117,26 @@ fn convert_lighting_color(node: svgtree::Node) -> Color {
 /// A light source kind.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, Debug)]
-pub enum FeLightSource {
-    FeDistantLight(FeDistantLight),
-    FePointLight(FePointLight),
-    FeSpotLight(FeSpotLight),
+pub enum LightSource {
+    DistantLight(DistantLight),
+    PointLight(PointLight),
+    SpotLight(SpotLight),
 }
 
-impl FeLightSource {
+impl LightSource {
     /// Applies a transform to the light source.
     pub fn transform(mut self, region: ScreenRect, ts: &Transform) -> Self {
         use std::f64::consts::SQRT_2;
 
         match self {
-            FeLightSource::FeDistantLight(..) => {}
-            FeLightSource::FePointLight(ref mut light) => {
+            LightSource::DistantLight(..) => {}
+            LightSource::PointLight(ref mut light) => {
                 let (x, y) = ts.apply(light.x, light.y);
                 light.x = x - region.x() as f64;
                 light.y = y - region.y() as f64;
                 light.z = light.z * (ts.a*ts.a + ts.d*ts.d).sqrt() / SQRT_2;
             }
-            FeLightSource::FeSpotLight(ref mut light) => {
+            LightSource::SpotLight(ref mut light) => {
                 let sz = (ts.a*ts.a + ts.d*ts.d).sqrt() / SQRT_2;
 
                 let (x, y) = ts.apply(light.x, light.y);
@@ -159,7 +160,7 @@ impl FeLightSource {
 ///
 /// `feDistantLight` element in the SVG.
 #[derive(Clone, Copy, Debug)]
-pub struct FeDistantLight {
+pub struct DistantLight {
     /// Direction angle for the light source on the XY plane (clockwise),
     /// in degrees from the x axis.
     ///
@@ -177,7 +178,7 @@ pub struct FeDistantLight {
 ///
 /// `fePointLight` element in the SVG.
 #[derive(Clone, Copy, Debug)]
-pub struct FePointLight {
+pub struct PointLight {
     /// X location for the light source.
     ///
     /// `x` in the SVG.
@@ -199,7 +200,7 @@ pub struct FePointLight {
 ///
 /// `feSpotLight` element in the SVG.
 #[derive(Clone, Copy, Debug)]
-pub struct FeSpotLight {
+pub struct SpotLight {
     /// X location for the light source.
     ///
     /// `x` in the SVG.
@@ -242,20 +243,20 @@ pub struct FeSpotLight {
 }
 
 #[inline(never)]
-fn convert_light_source(parent: svgtree::Node) -> Option<FeLightSource> {
+fn convert_light_source(parent: svgtree::Node) -> Option<LightSource> {
     let child = parent.children().find(|n|
         matches!(n.tag_name(), Some(EId::FeDistantLight) | Some(EId::FePointLight) | Some(EId::FeSpotLight))
     )?;
 
     match child.tag_name() {
         Some(EId::FeDistantLight) => {
-            Some(FeLightSource::FeDistantLight(FeDistantLight {
+            Some(LightSource::DistantLight(DistantLight {
                 azimuth: child.attribute(AId::Azimuth).unwrap_or(0.0),
                 elevation: child.attribute(AId::Elevation).unwrap_or(0.0),
             }))
         }
         Some(EId::FePointLight) => {
-            Some(FeLightSource::FePointLight(FePointLight {
+            Some(LightSource::PointLight(PointLight {
                 x: child.attribute(AId::X).unwrap_or(0.0),
                 y: child.attribute(AId::Y).unwrap_or(0.0),
                 z: child.attribute(AId::Z).unwrap_or(0.0),
@@ -267,7 +268,7 @@ fn convert_light_source(parent: svgtree::Node) -> Option<FeLightSource> {
                 specular_exponent = 1.0;
             }
 
-            Some(FeLightSource::FeSpotLight(FeSpotLight {
+            Some(LightSource::SpotLight(SpotLight {
                 x: child.attribute(AId::X).unwrap_or(0.0),
                 y: child.attribute(AId::Y).unwrap_or(0.0),
                 z: child.attribute(AId::Z).unwrap_or(0.0),

@@ -3,13 +3,13 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::svgtree::{self, AId};
-use crate::{Color, FilterKind, Opacity};
+use super::{Color, Kind, Opacity};
 
 /// A flood filter primitive.
 ///
 /// `feFlood` element in the SVG.
 #[derive(Clone, Copy, Debug)]
-pub struct FeFlood {
+pub struct Flood {
     /// A flood color.
     ///
     /// `flood-color` in the SVG.
@@ -21,8 +21,8 @@ pub struct FeFlood {
     pub opacity: Opacity,
 }
 
-pub(crate) fn convert(fe: svgtree::Node) -> FilterKind {
-    FilterKind::FeFlood(FeFlood {
+pub(crate) fn convert(fe: svgtree::Node) -> Kind {
+    Kind::Flood(Flood {
         color: fe.attribute(AId::FloodColor).unwrap_or_else(Color::black),
         opacity: fe.attribute(AId::FloodOpacity).unwrap_or_default(),
     })

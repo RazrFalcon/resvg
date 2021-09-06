@@ -192,7 +192,7 @@ mod clippath;
 mod converter;
 mod error;
 #[cfg(feature = "export")] mod export;
-#[cfg(feature = "filter")] mod filter;
+#[cfg(feature = "filter")] pub mod filter;
 mod geom;
 mod image;
 mod marker;
@@ -215,7 +215,6 @@ pub use svgtypes::{Align, AspectRatio};
 
 pub use crate::clippath::*;
 pub use crate::error::*;
-#[cfg(feature = "filter")] pub use crate::filter::*;
 pub use crate::geom::*;
 pub use crate::image::*;
 pub use crate::mask::*;
@@ -374,7 +373,7 @@ pub enum NodeKind {
     ClipPath(ClipPath),
     Mask(Mask),
     Pattern(Pattern),
-    #[cfg(feature = "filter")] Filter(Filter),
+    #[cfg(feature = "filter")] Filter(filter::Filter),
     Path(Path),
     Image(Image),
     Group(Group),
@@ -768,7 +767,7 @@ pub trait NodeExt {
 
     /// Returns the node starting from which the filter background should be rendered.
     #[cfg(feature = "filter")]
-    fn filter_background_start_node(&self, filter: &crate::Filter) -> Option<Node>;
+    fn filter_background_start_node(&self, filter: &filter::Filter) -> Option<Node>;
 }
 
 impl NodeExt for Node {
@@ -819,7 +818,7 @@ impl NodeExt for Node {
     }
 
     #[cfg(feature = "filter")]
-    fn filter_background_start_node(&self, filter: &crate::Filter) -> Option<Node> {
+    fn filter_background_start_node(&self, filter: &filter::Filter) -> Option<Node> {
         fn has_enable_background(node: &Node) -> bool {
             if let NodeKind::Group(ref g) = *node.borrow() {
                 g.enable_background.is_some()
@@ -828,8 +827,8 @@ impl NodeExt for Node {
             }
         }
 
-        if !filter.children.iter().any(|c| c.kind.has_input(&crate::FilterInput::BackgroundImage)) &&
-           !filter.children.iter().any(|c| c.kind.has_input(&crate::FilterInput::BackgroundAlpha))
+        if !filter.primitives.iter().any(|c| c.kind.has_input(&filter::Input::BackgroundImage)) &&
+           !filter.primitives.iter().any(|c| c.kind.has_input(&filter::Input::BackgroundAlpha))
         {
             return None;
         }

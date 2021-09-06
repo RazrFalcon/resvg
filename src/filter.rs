@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use rgb::FromSlice;
 use log::warn;
-use usvg::ColorInterpolation as ColorSpace;
+use usvg::filter::ColorInterpolation as ColorSpace;
 
 use crate::render::prelude::*;
 
@@ -38,23 +38,23 @@ impl IntoSvgFilters<svgfilters::RGB8> for usvg::Color {
     }
 }
 
-impl IntoSvgFilters<svgfilters::LightSource> for usvg::FeLightSource {
+impl IntoSvgFilters<svgfilters::LightSource> for usvg::filter::LightSource {
     fn into_svgf(self) -> svgfilters::LightSource {
         match self {
-            usvg::FeLightSource::FeDistantLight(ref light) => {
+            usvg::filter::LightSource::DistantLight(ref light) => {
                 svgfilters::LightSource::DistantLight {
                     azimuth: light.azimuth,
                     elevation: light.elevation,
                 }
             }
-            usvg::FeLightSource::FePointLight(ref light) => {
+            usvg::filter::LightSource::PointLight(ref light) => {
                 svgfilters::LightSource::PointLight {
                     x: light.x,
                     y: light.y,
                     z: light.z,
                 }
             }
-            usvg::FeLightSource::FeSpotLight(ref light) => {
+            usvg::filter::LightSource::SpotLight(ref light) => {
                 svgfilters::LightSource::SpotLight {
                     x: light.x,
                     y: light.y,
@@ -70,30 +70,30 @@ impl IntoSvgFilters<svgfilters::LightSource> for usvg::FeLightSource {
     }
 }
 
-impl<'a> IntoSvgFilters<svgfilters::TransferFunction<'a>> for &'a usvg::TransferFunction {
+impl<'a> IntoSvgFilters<svgfilters::TransferFunction<'a>> for &'a usvg::filter::TransferFunction {
     fn into_svgf(self) -> svgfilters::TransferFunction<'a> {
         match *self {
-            usvg::TransferFunction::Identity =>
+            usvg::filter::TransferFunction::Identity =>
                 svgfilters::TransferFunction::Identity,
-            usvg::TransferFunction::Table(ref data) =>
+            usvg::filter::TransferFunction::Table(ref data) =>
                 svgfilters::TransferFunction::Table(data),
-            usvg::TransferFunction::Discrete(ref data) =>
+            usvg::filter::TransferFunction::Discrete(ref data) =>
                 svgfilters::TransferFunction::Discrete(data),
-            usvg::TransferFunction::Linear { slope, intercept } =>
+            usvg::filter::TransferFunction::Linear { slope, intercept } =>
                 svgfilters::TransferFunction::Linear { slope, intercept },
-            usvg::TransferFunction::Gamma { amplitude, exponent, offset } =>
+            usvg::filter::TransferFunction::Gamma { amplitude, exponent, offset } =>
                 svgfilters::TransferFunction::Gamma { amplitude, exponent, offset },
         }
     }
 }
 
-impl IntoSvgFilters<svgfilters::ColorChannel> for usvg::ColorChannel {
+impl IntoSvgFilters<svgfilters::ColorChannel> for usvg::filter::ColorChannel {
     fn into_svgf(self) -> svgfilters::ColorChannel {
         match self {
-            usvg::ColorChannel::R => svgfilters::ColorChannel::R,
-            usvg::ColorChannel::G => svgfilters::ColorChannel::G,
-            usvg::ColorChannel::B => svgfilters::ColorChannel::B,
-            usvg::ColorChannel::A => svgfilters::ColorChannel::A,
+            usvg::filter::ColorChannel::R => svgfilters::ColorChannel::R,
+            usvg::filter::ColorChannel::G => svgfilters::ColorChannel::G,
+            usvg::filter::ColorChannel::B => svgfilters::ColorChannel::B,
+            usvg::filter::ColorChannel::A => svgfilters::ColorChannel::A,
         }
     }
 }
@@ -230,7 +230,7 @@ struct FilterResult {
 
 
 pub fn apply(
-    filter: &usvg::Filter,
+    filter: &usvg::filter::Filter,
     bbox: Option<Rect>,
     ts: &usvg::Transform,
     tree: &usvg::Tree,
@@ -267,7 +267,7 @@ pub fn apply(
 }
 
 fn _apply(
-    filter: &usvg::Filter,
+    filter: &usvg::filter::Filter,
     inputs: &FilterInputs,
     bbox: Option<Rect>,
     ts: &usvg::Transform,
@@ -276,75 +276,75 @@ fn _apply(
     let mut results = Vec::new();
     let region = calc_region(filter, bbox, ts, inputs.source)?;
 
-    for primitive in &filter.children {
+    for primitive in &filter.primitives {
         let cs = primitive.color_interpolation;
         let subregion = calc_subregion(filter, primitive, bbox, region, ts, &results)?;
 
         let mut result = match primitive.kind {
-            usvg::FilterKind::FeBlend(ref fe) => {
+            usvg::filter::Kind::Blend(ref fe) => {
                 let input1 = get_input(&fe.input1, region, inputs, &results)?;
                 let input2 = get_input(&fe.input2, region, inputs, &results)?;
                 apply_blend(fe, cs, region, input1, input2)
             }
-            usvg::FilterKind::FeDropShadow(ref fe) => {
+            usvg::filter::Kind::DropShadow(ref fe) => {
                 let input = get_input(&fe.input, region, inputs, &results)?;
                 apply_drop_shadow(fe, filter.primitive_units, cs, bbox, ts, input)
             }
-            usvg::FilterKind::FeFlood(ref fe) => {
+            usvg::filter::Kind::Flood(ref fe) => {
                 apply_flood(fe, region)
             }
-            usvg::FilterKind::FeGaussianBlur(ref fe) => {
+            usvg::filter::Kind::GaussianBlur(ref fe) => {
                 let input = get_input(&fe.input, region, inputs, &results)?;
                 apply_blur(fe, filter.primitive_units, cs, bbox, ts, input)
             }
-            usvg::FilterKind::FeOffset(ref fe) => {
+            usvg::filter::Kind::Offset(ref fe) => {
                 let input = get_input(&fe.input, region, inputs, &results)?;
                 apply_offset(fe, filter.primitive_units, bbox, ts, input)
             }
-            usvg::FilterKind::FeComposite(ref fe) => {
+            usvg::filter::Kind::Composite(ref fe) => {
                 let input1 = get_input(&fe.input1, region, inputs, &results)?;
                 let input2 = get_input(&fe.input2, region, inputs, &results)?;
                 apply_composite(fe, cs, region, input1, input2)
             }
-            usvg::FilterKind::FeMerge(ref fe) => {
+            usvg::filter::Kind::Merge(ref fe) => {
                 apply_merge(fe, cs, region, inputs, &results)
             }
-            usvg::FilterKind::FeTile(ref fe) => {
+            usvg::filter::Kind::Tile(ref fe) => {
                 let input = get_input(&fe.input, region, inputs, &results)?;
                 apply_tile(input, region)
             }
-            usvg::FilterKind::FeImage(ref fe) => {
+            usvg::filter::Kind::Image(ref fe) => {
                 apply_image(fe, region, subregion, tree, ts)
             }
-            usvg::FilterKind::FeComponentTransfer(ref fe) => {
+            usvg::filter::Kind::ComponentTransfer(ref fe) => {
                 let input = get_input(&fe.input, region, inputs, &results)?;
                 apply_component_transfer(fe, cs, input)
             }
-            usvg::FilterKind::FeColorMatrix(ref fe) => {
+            usvg::filter::Kind::ColorMatrix(ref fe) => {
                 let input = get_input(&fe.input, region, inputs, &results)?;
                 apply_color_matrix(fe, cs, input)
             }
-            usvg::FilterKind::FeConvolveMatrix(ref fe) => {
+            usvg::filter::Kind::ConvolveMatrix(ref fe) => {
                 let input = get_input(&fe.input, region, inputs, &results)?;
                 apply_convolve_matrix(fe, cs, input)
             }
-            usvg::FilterKind::FeMorphology(ref fe) => {
+            usvg::filter::Kind::Morphology(ref fe) => {
                 let input = get_input(&fe.input, region, inputs, &results)?;
                 apply_morphology(fe, filter.primitive_units, cs, bbox, ts, input)
             }
-            usvg::FilterKind::FeDisplacementMap(ref fe) => {
+            usvg::filter::Kind::DisplacementMap(ref fe) => {
                 let input1 = get_input(&fe.input1, region, inputs, &results)?;
                 let input2 = get_input(&fe.input2, region, inputs, &results)?;
                 apply_displacement_map(fe, region, filter.primitive_units, cs, bbox, ts, input1, input2)
             }
-            usvg::FilterKind::FeTurbulence(ref fe) => {
+            usvg::filter::Kind::Turbulence(ref fe) => {
                 apply_turbulence(fe, region, cs, ts)
             }
-            usvg::FilterKind::FeDiffuseLighting(ref fe) => {
+            usvg::filter::Kind::DiffuseLighting(ref fe) => {
                 let input = get_input(&fe.input, region, inputs, &results)?;
                 apply_diffuse_lighting(fe, region, cs, ts, input)
             }
-            usvg::FilterKind::FeSpecularLighting(ref fe) => {
+            usvg::filter::Kind::SpecularLighting(ref fe) => {
                 let input = get_input(&fe.input, region, inputs, &results)?;
                 apply_specular_lighting(fe, region, cs, ts, input)
             }
@@ -354,7 +354,7 @@ fn _apply(
             // Clip result.
 
             // TODO: explain
-            let subregion2 = if let usvg::FilterKind::FeOffset(..) = primitive.kind {
+            let subregion2 = if let usvg::filter::Kind::Offset(..) = primitive.kind {
                 // We do not support clipping on feOffset.
                 region.translate_to(0, 0)
             } else {
@@ -413,7 +413,7 @@ fn _apply(
 }
 
 pub(crate) fn calc_region(
-    filter: &usvg::Filter,
+    filter: &usvg::filter::Filter,
     bbox: Option<Rect>,
     ts: &usvg::Transform,
     pixmap: &tiny_skia::Pixmap,
@@ -441,8 +441,8 @@ pub(crate) fn calc_region(
 
 /// Returns filter primitive region.
 fn calc_subregion(
-    filter: &usvg::Filter,
-    primitive: &usvg::FilterPrimitive,
+    filter: &usvg::filter::Filter,
+    primitive: &usvg::filter::Primitive,
     bbox: Option<Rect>,
     filter_region: ScreenRect,
     ts: &usvg::Transform,
@@ -451,10 +451,10 @@ fn calc_subregion(
     // TODO: rewrite/simplify/explain/whatever
 
     let region = match primitive.kind {
-        usvg::FilterKind::FeOffset(ref fe) => {
+        usvg::filter::Kind::Offset(ref fe) => {
             // `feOffset` inherits it's region from the input.
             match fe.input {
-                usvg::FilterInput::Reference(ref name) => {
+                usvg::filter::Input::Reference(ref name) => {
                     match results.iter().rev().find(|v| v.name == *name) {
                         Some(res) => res.image.region,
                         None => filter_region,
@@ -465,8 +465,8 @@ fn calc_subregion(
                 }
             }
         }
-        usvg::FilterKind::FeFlood(..) |
-        usvg::FilterKind::FeImage(..) => {
+        usvg::filter::Kind::Flood(..) |
+        usvg::filter::Kind::Image(..) => {
             // `feImage` uses the object bbox.
             if filter.primitive_units == usvg::Units::ObjectBoundingBox {
                 let bbox = bbox.ok_or(Error::InvalidRegion)?;
@@ -519,7 +519,7 @@ fn calc_subregion(
 }
 
 fn get_input(
-    input: &usvg::FilterInput,
+    input: &usvg::filter::Input,
     region: ScreenRect,
     inputs: &FilterInputs,
     results: &[FilterResult],
@@ -554,7 +554,7 @@ fn get_input(
     };
 
     match input {
-        usvg::FilterInput::SourceGraphic => {
+        usvg::filter::Input::SourceGraphic => {
             let image = inputs.source.copy_region(region)?;
 
             Ok(Image {
@@ -563,33 +563,33 @@ fn get_input(
                 color_space: ColorSpace::SRGB,
             })
         }
-        usvg::FilterInput::SourceAlpha => {
+        usvg::filter::Input::SourceAlpha => {
             let image = inputs.source.copy_region(region)?;
             convert_alpha(image)
         }
-        usvg::FilterInput::BackgroundImage => {
+        usvg::filter::Input::BackgroundImage => {
             convert(inputs.background, region)
         }
-        usvg::FilterInput::BackgroundAlpha => {
+        usvg::filter::Input::BackgroundAlpha => {
             let image = get_input(
-                &usvg::FilterInput::BackgroundImage, region, inputs, results,
+                &usvg::filter::Input::BackgroundImage, region, inputs, results,
             )?;
             convert_alpha(image.take()?)
         }
-        usvg::FilterInput::FillPaint => {
+        usvg::filter::Input::FillPaint => {
             convert(inputs.fill_paint, region.translate_to(0, 0))
         }
-        usvg::FilterInput::StrokePaint => {
+        usvg::filter::Input::StrokePaint => {
             convert(inputs.stroke_paint, region.translate_to(0, 0))
         }
-        usvg::FilterInput::Reference(ref name) => {
+        usvg::filter::Input::Reference(ref name) => {
             if let Some(v) = results.iter().rev().find(|v| v.name == *name) {
                 Ok(v.image.clone())
             } else {
                 // Technically unreachable.
                 warn!("Unknown filter primitive reference '{}'.", name);
                 get_input(
-                    &usvg::FilterInput::SourceGraphic, region, inputs, results,
+                    &usvg::filter::Input::SourceGraphic, region, inputs, results,
                 )
             }
         }
@@ -597,7 +597,7 @@ fn get_input(
 }
 
 fn apply_drop_shadow(
-    fe: &usvg::FeDropShadow,
+    fe: &usvg::filter::DropShadow,
     units: usvg::Units,
     cs: ColorSpace,
     bbox: Option<Rect>,
@@ -654,7 +654,7 @@ fn apply_drop_shadow(
 }
 
 fn apply_blur(
-    fe: &usvg::FeGaussianBlur,
+    fe: &usvg::filter::GaussianBlur,
     units: usvg::Units,
     cs: ColorSpace,
     bbox: Option<Rect>,
@@ -676,7 +676,7 @@ fn apply_blur(
 }
 
 fn apply_offset(
-    fe: &usvg::FeOffset,
+    fe: &usvg::filter::Offset,
     units: usvg::Units,
     bbox: Option<Rect>,
     ts: &usvg::Transform,
@@ -701,7 +701,7 @@ fn apply_offset(
 }
 
 fn apply_blend(
-    fe: &usvg::FeBlend,
+    fe: &usvg::filter::Blend,
     cs: ColorSpace,
     region: ScreenRect,
     input1: Image,
@@ -722,22 +722,22 @@ fn apply_blend(
     );
 
     let blend_mode = match fe.mode {
-        usvg::FeBlendMode::Normal => tiny_skia::BlendMode::SourceOver,
-        usvg::FeBlendMode::Multiply => tiny_skia::BlendMode::Multiply,
-        usvg::FeBlendMode::Screen => tiny_skia::BlendMode::Screen,
-        usvg::FeBlendMode::Overlay => tiny_skia::BlendMode::Overlay,
-        usvg::FeBlendMode::Darken => tiny_skia::BlendMode::Darken,
-        usvg::FeBlendMode::Lighten => tiny_skia::BlendMode::Lighten,
-        usvg::FeBlendMode::ColorDodge => tiny_skia::BlendMode::ColorDodge,
-        usvg::FeBlendMode::ColorBurn => tiny_skia::BlendMode::ColorBurn,
-        usvg::FeBlendMode::HardLight => tiny_skia::BlendMode::HardLight,
-        usvg::FeBlendMode::SoftLight => tiny_skia::BlendMode::SoftLight,
-        usvg::FeBlendMode::Difference => tiny_skia::BlendMode::Difference,
-        usvg::FeBlendMode::Exclusion => tiny_skia::BlendMode::Exclusion,
-        usvg::FeBlendMode::Hue => tiny_skia::BlendMode::Hue,
-        usvg::FeBlendMode::Saturation => tiny_skia::BlendMode::Saturation,
-        usvg::FeBlendMode::Color => tiny_skia::BlendMode::Color,
-        usvg::FeBlendMode::Luminosity => tiny_skia::BlendMode::Luminosity,
+        usvg::filter::BlendMode::Normal => tiny_skia::BlendMode::SourceOver,
+        usvg::filter::BlendMode::Multiply => tiny_skia::BlendMode::Multiply,
+        usvg::filter::BlendMode::Screen => tiny_skia::BlendMode::Screen,
+        usvg::filter::BlendMode::Overlay => tiny_skia::BlendMode::Overlay,
+        usvg::filter::BlendMode::Darken => tiny_skia::BlendMode::Darken,
+        usvg::filter::BlendMode::Lighten => tiny_skia::BlendMode::Lighten,
+        usvg::filter::BlendMode::ColorDodge => tiny_skia::BlendMode::ColorDodge,
+        usvg::filter::BlendMode::ColorBurn => tiny_skia::BlendMode::ColorBurn,
+        usvg::filter::BlendMode::HardLight => tiny_skia::BlendMode::HardLight,
+        usvg::filter::BlendMode::SoftLight => tiny_skia::BlendMode::SoftLight,
+        usvg::filter::BlendMode::Difference => tiny_skia::BlendMode::Difference,
+        usvg::filter::BlendMode::Exclusion => tiny_skia::BlendMode::Exclusion,
+        usvg::filter::BlendMode::Hue => tiny_skia::BlendMode::Hue,
+        usvg::filter::BlendMode::Saturation => tiny_skia::BlendMode::Saturation,
+        usvg::filter::BlendMode::Color => tiny_skia::BlendMode::Color,
+        usvg::filter::BlendMode::Luminosity => tiny_skia::BlendMode::Luminosity,
     };
 
     pixmap.draw_pixmap(
@@ -756,13 +756,13 @@ fn apply_blend(
 }
 
 fn apply_composite(
-    fe: &usvg::FeComposite,
+    fe: &usvg::filter::Composite,
     cs: ColorSpace,
     region: ScreenRect,
     input1: Image,
     input2: Image,
 ) -> Result<Image, Error> {
-    use usvg::FeCompositeOperator as Operator;
+    use usvg::filter::CompositeOperator as Operator;
 
     let input1 = input1.into_color_space(cs)?;
     let input2 = input2.into_color_space(cs)?;
@@ -817,7 +817,7 @@ fn apply_composite(
 }
 
 fn apply_merge(
-    fe: &usvg::FeMerge,
+    fe: &usvg::filter::Merge,
     cs: ColorSpace,
     region: ScreenRect,
     inputs: &FilterInputs,
@@ -842,7 +842,7 @@ fn apply_merge(
 }
 
 fn apply_flood(
-    fe: &usvg::FeFlood,
+    fe: &usvg::filter::Flood,
     region: ScreenRect,
 ) -> Result<Image, Error> {
     let c = fe.color;
@@ -878,7 +878,7 @@ fn apply_tile(
 }
 
 fn apply_image(
-    fe: &usvg::FeImage,
+    fe: &usvg::filter::Image,
     region: ScreenRect,
     subregion: ScreenRect,
     tree: &usvg::Tree,
@@ -888,7 +888,7 @@ fn apply_image(
     let mut canvas = Canvas::from(pixmap.as_mut());
 
     match fe.data {
-        usvg::FeImageKind::Image(ref kind) => {
+        usvg::filter::ImageKind::Image(ref kind) => {
             let dx = (subregion.x() - region.x()) as f32;
             let dy = (subregion.y() - region.y()) as f32;
             canvas.translate(dx, dy);
@@ -900,7 +900,7 @@ fn apply_image(
 
             crate::image::draw_kind(kind, view_box, fe.rendering_mode, &mut canvas);
         }
-        usvg::FeImageKind::Use(ref id) => {
+        usvg::filter::ImageKind::Use(ref id) => {
             if let Some(ref node) = tree.defs_by_id(id).or_else(|| tree.node_by_id(id)) {
                 let (sx, sy) = ts.get_scale();
                 canvas.scale(sx as f32, sy as f32);
@@ -915,7 +915,7 @@ fn apply_image(
 }
 
 fn apply_component_transfer(
-    fe: &usvg::FeComponentTransfer,
+    fe: &usvg::filter::ComponentTransfer,
     cs: ColorSpace,
     input: Image,
 ) -> Result<Image, Error> {
@@ -937,7 +937,7 @@ fn apply_component_transfer(
 }
 
 fn apply_color_matrix(
-    fe: &usvg::FeColorMatrix,
+    fe: &usvg::filter::ColorMatrix,
     cs: ColorSpace,
     input: Image,
 ) -> Result<Image, Error> {
@@ -948,13 +948,13 @@ fn apply_color_matrix(
     svgfilters::demultiply_alpha(pixmap.data_mut().as_rgba_mut());
 
     let kind = match fe.kind {
-        usvg::FeColorMatrixKind::Matrix(ref data) =>
+        usvg::filter::ColorMatrixKind::Matrix(ref data) =>
             svgfilters::ColorMatrix::Matrix(data.as_slice().try_into().unwrap()),
-        usvg::FeColorMatrixKind::Saturate(n) =>
+        usvg::filter::ColorMatrixKind::Saturate(n) =>
             svgfilters::ColorMatrix::Saturate(n.value()),
-        usvg::FeColorMatrixKind::HueRotate(n) =>
+        usvg::filter::ColorMatrixKind::HueRotate(n) =>
             svgfilters::ColorMatrix::HueRotate(n),
-        usvg::FeColorMatrixKind::LuminanceToAlpha =>
+        usvg::filter::ColorMatrixKind::LuminanceToAlpha =>
             svgfilters::ColorMatrix::LuminanceToAlpha,
     };
 
@@ -966,7 +966,7 @@ fn apply_color_matrix(
 }
 
 fn apply_convolve_matrix(
-    fe: &usvg::FeConvolveMatrix,
+    fe: &usvg::filter::ConvolveMatrix,
     cs: ColorSpace,
     input: Image,
 ) -> Result<Image, Error> {
@@ -983,9 +983,9 @@ fn apply_convolve_matrix(
     ).unwrap();
 
     let edge_mode = match fe.edge_mode {
-        usvg::FeEdgeMode::None => svgfilters::EdgeMode::None,
-        usvg::FeEdgeMode::Duplicate => svgfilters::EdgeMode::Duplicate,
-        usvg::FeEdgeMode::Wrap => svgfilters::EdgeMode::Wrap,
+        usvg::filter::EdgeMode::None => svgfilters::EdgeMode::None,
+        usvg::filter::EdgeMode::Duplicate => svgfilters::EdgeMode::Duplicate,
+        usvg::filter::EdgeMode::Wrap => svgfilters::EdgeMode::Wrap,
     };
 
     svgfilters::convolve_matrix(
@@ -997,7 +997,7 @@ fn apply_convolve_matrix(
 }
 
 fn apply_morphology(
-    fe: &usvg::FeMorphology,
+    fe: &usvg::filter::Morphology,
     units: usvg::Units,
     cs: ColorSpace,
     bbox: Option<Rect>,
@@ -1016,8 +1016,8 @@ fn apply_morphology(
     }
 
     let operator = match fe.operator {
-        usvg::FeMorphologyOperator::Erode => svgfilters::MorphologyOperator::Erode,
-        usvg::FeMorphologyOperator::Dilate => svgfilters::MorphologyOperator::Dilate,
+        usvg::filter::MorphologyOperator::Erode => svgfilters::MorphologyOperator::Erode,
+        usvg::filter::MorphologyOperator::Dilate => svgfilters::MorphologyOperator::Dilate,
     };
 
     svgfilters::morphology(operator, rx, ry, into_svgfilters_image_mut!(pixmap));
@@ -1026,7 +1026,7 @@ fn apply_morphology(
 }
 
 fn apply_displacement_map(
-    fe: &usvg::FeDisplacementMap,
+    fe: &usvg::filter::DisplacementMap,
     region: ScreenRect,
     units: usvg::Units,
     cs: ColorSpace,
@@ -1057,7 +1057,7 @@ fn apply_displacement_map(
 }
 
 fn apply_turbulence(
-    fe: &usvg::FeTurbulence,
+    fe: &usvg::filter::Turbulence,
     region: ScreenRect,
     cs: ColorSpace,
     ts: &usvg::Transform,
@@ -1076,7 +1076,7 @@ fn apply_turbulence(
         fe.num_octaves,
         fe.seed,
         fe.stitch_tiles,
-        fe.kind == usvg::FeTurbulenceKind::FractalNoise,
+        fe.kind == usvg::filter::TurbulenceKind::FractalNoise,
         into_svgfilters_image_mut!(pixmap),
     );
 
@@ -1086,7 +1086,7 @@ fn apply_turbulence(
 }
 
 fn apply_diffuse_lighting(
-    fe: &usvg::FeDiffuseLighting,
+    fe: &usvg::filter::DiffuseLighting,
     region: ScreenRect,
     cs: ColorSpace,
     ts: &usvg::Transform,
@@ -1109,7 +1109,7 @@ fn apply_diffuse_lighting(
 }
 
 fn apply_specular_lighting(
-    fe: &usvg::FeSpecularLighting,
+    fe: &usvg::filter::SpecularLighting,
     region: ScreenRect,
     cs: ColorSpace,
     ts: &usvg::Transform,

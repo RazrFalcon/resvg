@@ -3,13 +3,14 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::svgtree::{self, AId};
-use crate::{FilterKind, ImageKind, AspectRatio, ImageRendering, converter};
+use crate::{AspectRatio, ImageRendering, converter};
+use super::Kind;
 
 /// An image filter primitive.
 ///
 /// `feImage` element in the SVG.
 #[derive(Clone, Debug)]
-pub struct FeImage {
+pub struct Image {
     /// Value of the `preserveAspectRatio` attribute.
     pub aspect: AspectRatio,
 
@@ -19,14 +20,14 @@ pub struct FeImage {
     pub rendering_mode: ImageRendering,
 
     /// Image data.
-    pub data: FeImageKind,
+    pub data: ImageKind,
 }
 
 /// Kind of the `feImage` data.
 #[derive(Clone, Debug)]
-pub enum FeImageKind {
+pub enum ImageKind {
     /// An image data.
-    Image(ImageKind),
+    Image(crate::ImageKind),
 
     /// A reference to an SVG object.
     ///
@@ -34,7 +35,7 @@ pub enum FeImageKind {
     Use(String),
 }
 
-pub(crate) fn convert(fe: svgtree::Node, state: &converter::State) -> FilterKind {
+pub(crate) fn convert(fe: svgtree::Node, state: &converter::State) -> Kind {
     let aspect = fe.attribute(AId::PreserveAspectRatio).unwrap_or_default();
     let rendering_mode = fe
         .find_attribute(AId::ImageRendering)
@@ -47,10 +48,10 @@ pub(crate) fn convert(fe: svgtree::Node, state: &converter::State) -> FilterKind
         // and we should not create it manually.
         // Instead, after document conversion is finished, we should search for this ID
         // and if it does not exist - create it inside `defs`.
-        return FilterKind::FeImage(FeImage {
+        return Kind::Image(Image {
             aspect,
             rendering_mode,
-            data: FeImageKind::Use(node.element_id().to_string()),
+            data: ImageKind::Use(node.element_id().to_string()),
         });
     }
 
@@ -68,9 +69,9 @@ pub(crate) fn convert(fe: svgtree::Node, state: &converter::State) -> FilterKind
         None => return super::create_dummy_primitive(),
     };
 
-    FilterKind::FeImage(FeImage {
+    Kind::Image(Image {
         aspect,
         rendering_mode,
-        data: FeImageKind::Image(img_data),
+        data: ImageKind::Image(img_data),
     })
 }

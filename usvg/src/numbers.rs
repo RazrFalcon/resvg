@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{IsValidLength, FuzzyEq, FuzzyZero};
+use crate::{FuzzyEq, FuzzyZero};
 use crate::utils::f64_bound;
 
 
@@ -73,35 +73,6 @@ wrap!(NormalizedValue);
 
 /// An alias to `NormalizedValue`.
 pub type Opacity = NormalizedValue;
-
-
-/// A `font-size` value.
-///
-/// Just like `f64` but immutable and guarantee to be >0.0.
-#[derive(Clone, Copy, Debug)]
-pub struct FontSize(f64);
-
-impl FontSize {
-    /// Creates a new `FontSize` value.
-    #[inline]
-    pub fn new(n: f64) -> Self {
-        debug_assert!(n.is_finite());
-        debug_assert!(n > 0.0);
-
-        // Fallback to `12.0` when value is invalid.
-        let n = if !n.is_valid_length() { 12.0 } else { n };
-
-        FontSize(n)
-    }
-
-    /// Returns an underlying value.
-    #[inline]
-    pub fn value(&self) -> f64 {
-        self.0
-    }
-}
-
-wrap!(FontSize);
 
 
 /// A positive number.

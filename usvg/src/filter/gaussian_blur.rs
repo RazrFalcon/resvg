@@ -3,17 +3,18 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::svgtree::{self, AId};
-use crate::{FilterInput, FilterKind, FilterPrimitive, PositiveNumber};
+use crate::PositiveNumber;
+use super::{Input, Kind, Primitive};
 
 /// A Gaussian blur filter primitive.
 ///
 /// `feGaussianBlur` element in the SVG.
 #[derive(Clone, Debug)]
-pub struct FeGaussianBlur {
+pub struct GaussianBlur {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: FilterInput,
+    pub input: Input,
 
     /// A standard deviation along the X-axis.
     ///
@@ -26,9 +27,9 @@ pub struct FeGaussianBlur {
     pub std_dev_y: PositiveNumber,
 }
 
-pub(crate) fn convert(fe: svgtree::Node, primitives: &[FilterPrimitive]) -> FilterKind {
+pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     let (std_dev_x, std_dev_y) = convert_std_dev_attr(fe, "0 0");
-    FilterKind::FeGaussianBlur(FeGaussianBlur {
+    Kind::GaussianBlur(GaussianBlur {
         input: super::resolve_input(fe, AId::In, primitives),
         std_dev_x: std_dev_x.into(),
         std_dev_y: std_dev_y.into(),

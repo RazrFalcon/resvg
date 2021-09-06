@@ -3,20 +3,21 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::svgtree::{self, AId};
-use crate::{FilterInput, FilterKind, FilterPrimitive, FuzzyZero, NonZeroF64};
+use crate::{FuzzyZero, NonZeroF64};
+use super::{Input, Kind, Primitive};
 
 /// A matrix convolution filter primitive.
 ///
 /// `feConvolveMatrix` element in the SVG.
 #[derive(Clone, Debug)]
-pub struct FeConvolveMatrix {
+pub struct ConvolveMatrix {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: FilterInput,
+    pub input: Input,
 
     /// A convolve matrix.
-    pub matrix: ConvolveMatrix,
+    pub matrix: ConvolveMatrixData,
 
     /// A matrix divisor.
     ///
@@ -31,7 +32,7 @@ pub struct FeConvolveMatrix {
     /// An edges processing mode.
     ///
     /// `edgeMode` in the SVG.
-    pub edge_mode: FeEdgeMode,
+    pub edge_mode: EdgeMode,
 
     /// An alpha preserving flag.
     ///
@@ -41,9 +42,9 @@ pub struct FeConvolveMatrix {
 
 /// A convolve matrix representation.
 ///
-/// Used primarily by [`FeConvolveMatrix`].
+/// Used primarily by [`ConvolveMatrix`].
 #[derive(Clone, Debug)]
-pub struct ConvolveMatrix {
+pub struct ConvolveMatrixData {
     x: u32,
     y: u32,
     columns: u32,
@@ -51,8 +52,8 @@ pub struct ConvolveMatrix {
     data: Vec<f64>,
 }
 
-impl ConvolveMatrix {
-    /// Creates a new `ConvolveMatrix`.
+impl ConvolveMatrixData {
+    /// Creates a new `ConvolveMatrixData`.
     ///
     /// Returns `None` when:
     ///
@@ -67,7 +68,7 @@ impl ConvolveMatrix {
             return None;
         }
 
-        Some(ConvolveMatrix {
+        Some(ConvolveMatrixData {
             x: target_x,
             y: target_y,
             columns,
@@ -128,13 +129,13 @@ impl ConvolveMatrix {
 /// An edges processing mode.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub enum FeEdgeMode {
+pub enum EdgeMode {
     None,
     Duplicate,
     Wrap,
 }
 
-pub(crate) fn convert(fe: svgtree::Node, primitives: &[FilterPrimitive]) -> FilterKind {
+pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     fn parse_target(target: Option<f64>, order: u32) -> Option<u32> {
         let default_target = (order as f32 / 2.0).floor() as u32;
         let target = target.unwrap_or(default_target as f64) as i32;
@@ -184,20 +185,20 @@ pub(crate) fn convert(fe: svgtree::Node, primitives: &[FilterPrimitive]) -> Filt
     let target_x = try_opt_or!(target_x, super::create_dummy_primitive());
     let target_y = try_opt_or!(target_y, super::create_dummy_primitive());
 
-    let kernel_matrix = ConvolveMatrix::new(
+    let kernel_matrix = ConvolveMatrixData::new(
         target_x, target_y, order_x, order_y, matrix,
     );
     let kernel_matrix = try_opt_or!(kernel_matrix, super::create_dummy_primitive());
 
     let edge_mode = match fe.attribute(AId::EdgeMode).unwrap_or("duplicate") {
-        "none" => FeEdgeMode::None,
-        "wrap" => FeEdgeMode::Wrap,
-        _      => FeEdgeMode::Duplicate,
+        "none" => EdgeMode::None,
+        "wrap" => EdgeMode::Wrap,
+        _      => EdgeMode::Duplicate,
     };
 
     let preserve_alpha = fe.attribute(AId::PreserveAlpha).unwrap_or("false") == "true";
 
-    FilterKind::FeConvolveMatrix(FeConvolveMatrix {
+    Kind::ConvolveMatrix(ConvolveMatrix {
         input: super::resolve_input(fe, AId::In, primitives),
         matrix: kernel_matrix,
         divisor: NonZeroF64::new(divisor).unwrap(),

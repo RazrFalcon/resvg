@@ -5,7 +5,8 @@
 use svgtypes::Length;
 
 use crate::svgtree::{self, AId};
-use crate::{Color, FilterInput, FilterKind, FilterPrimitive, Opacity, PositiveNumber, converter};
+use crate::{Color, Opacity, PositiveNumber, converter};
+use super::{Input, Kind, Primitive};
 
 /// A drop shadow filter primitive.
 ///
@@ -13,11 +14,11 @@ use crate::{Color, FilterInput, FilterKind, FilterPrimitive, Opacity, PositiveNu
 ///
 /// `feDropShadow` element in the SVG.
 #[derive(Clone, Debug)]
-pub struct FeDropShadow {
+pub struct DropShadow {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: FilterInput,
+    pub input: Input,
 
     /// The amount to offset the input graphic along the X-axis.
     pub dx: f64,
@@ -48,12 +49,12 @@ pub struct FeDropShadow {
 
 pub(crate) fn convert(
     fe: svgtree::Node,
-    primitives: &[FilterPrimitive],
+    primitives: &[Primitive],
     state: &converter::State,
-) -> FilterKind {
+) -> Kind {
     let (std_dev_x, std_dev_y) = super::gaussian_blur::convert_std_dev_attr(fe, "2 2");
 
-    FilterKind::FeDropShadow(FeDropShadow {
+    Kind::DropShadow(DropShadow {
         input: super::resolve_input(fe, AId::In, primitives),
         dx: fe.convert_user_length(AId::Dx, state, Length::new_number(2.0)),
         dy: fe.convert_user_length(AId::Dy, state, Length::new_number(2.0)),

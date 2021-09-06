@@ -5,17 +5,17 @@
 use svgtypes::Length;
 
 use crate::svgtree::{self, AId};
-use crate::{FilterInput, FilterKind, FilterPrimitive, converter};
+use super::{Input, Kind, Primitive, converter};
 
 /// An offset filter primitive.
 ///
 /// `feOffset` element in the SVG.
 #[derive(Clone, Debug)]
-pub struct FeOffset {
+pub struct Offset {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: FilterInput,
+    pub input: Input,
 
     /// The amount to offset the input graphic along the X-axis.
     pub dx: f64,
@@ -26,10 +26,10 @@ pub struct FeOffset {
 
 pub(crate) fn convert(
     fe: svgtree::Node,
-    primitives: &[FilterPrimitive],
+    primitives: &[Primitive],
     state: &converter::State,
-) -> FilterKind {
-    FilterKind::FeOffset(FeOffset {
+) -> Kind {
+    Kind::Offset(Offset {
         input: super::resolve_input(fe, AId::In, primitives),
         dx: fe.convert_user_length(AId::Dx, state, Length::zero()),
         dy: fe.convert_user_length(AId::Dy, state, Length::zero()),

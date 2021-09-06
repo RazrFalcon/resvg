@@ -344,7 +344,7 @@ pub fn trim_transparency(pixmap: tiny_skia::Pixmap) -> Option<(i32, i32, tiny_sk
 fn prepare_filter_background(
     tree: &usvg::Tree,
     parent: &usvg::Node,
-    filter: &usvg::Filter,
+    filter: &usvg::filter::Filter,
     pixmap: &tiny_skia::Pixmap,
 ) -> Option<tiny_skia::Pixmap> {
     let start_node = parent.filter_background_start_node(filter)?;
@@ -373,7 +373,7 @@ fn prepare_filter_background(
 fn prepare_filter_fill_paint(
     tree: &usvg::Tree,
     parent: &usvg::Node,
-    filter: &usvg::Filter,
+    filter: &usvg::filter::Filter,
     bbox: Option<Rect>,
     ts: usvg::Transform,
     pixmap: &tiny_skia::Pixmap,
@@ -402,7 +402,7 @@ fn prepare_filter_fill_paint(
 fn prepare_filter_stroke_paint(
     tree: &usvg::Tree,
     parent: &usvg::Node,
-    filter: &usvg::Filter,
+    filter: &usvg::filter::Filter,
     bbox: Option<Rect>,
     ts: usvg::Transform,
     pixmap: &tiny_skia::Pixmap,

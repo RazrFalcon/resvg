@@ -3,17 +3,17 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::svgtree::{self, AId, EId};
-use crate::{FilterInput, FilterKind, FilterPrimitive};
+use super::{Input, Kind, Primitive};
 
 /// A component-wise remapping filter primitive.
 ///
 /// `feComponentTransfer` element in the SVG.
 #[derive(Clone, Debug)]
-pub struct FeComponentTransfer {
+pub struct ComponentTransfer {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: FilterInput,
+    pub input: Input,
 
     /// `feFuncR` in the SVG.
     pub func_r: TransferFunction,
@@ -62,8 +62,8 @@ pub enum TransferFunction {
     },
 }
 
-pub(crate) fn convert(fe: svgtree::Node, primitives: &[FilterPrimitive]) -> FilterKind {
-    let mut kind = FeComponentTransfer {
+pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
+    let mut kind = ComponentTransfer {
         input: super::resolve_input(fe, AId::In, primitives),
         func_r: TransferFunction::Identity,
         func_g: TransferFunction::Identity,
@@ -83,7 +83,7 @@ pub(crate) fn convert(fe: svgtree::Node, primitives: &[FilterPrimitive]) -> Filt
         }
     }
 
-    FilterKind::FeComponentTransfer(kind)
+    Kind::ComponentTransfer(kind)
 }
 
 fn convert_transfer_function(node: svgtree::Node) -> Option<TransferFunction> {

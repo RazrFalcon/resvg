@@ -509,7 +509,7 @@ fn resolve_filter_fill(
     for id in filter_id {
         if let Some(filter_node) = tree.defs_by_id(id) {
             if let NodeKind::Filter(ref filter) = *filter_node.borrow() {
-                if filter.children.iter().any(|c| c.kind.has_input(&FilterInput::FillPaint)) {
+                if filter.primitives.iter().any(|c| c.kind.has_input(&filter::Input::FillPaint)) {
                     has_fill_paint = true;
                     break;
                 }
@@ -537,7 +537,7 @@ fn resolve_filter_stroke(
     for id in filter_id {
         if let Some(filter_node) = tree.defs_by_id(id) {
             if let NodeKind::Filter(ref filter) = *filter_node.borrow() {
-                if filter.children.iter().any(|c| c.kind.has_input(&FilterInput::StrokePaint)) {
+                if filter.primitives.iter().any(|c| c.kind.has_input(&filter::Input::StrokePaint)) {
                     has_fill_paint = true;
                     break;
                 }
@@ -685,9 +685,9 @@ fn link_fe_image(
     // TODO: simplify
     for filter_node in tree.defs().children() {
         if let NodeKind::Filter(ref filter) = *filter_node.borrow() {
-            for fe in &filter.children {
-                if let FilterKind::FeImage(ref fe_img) = fe.kind {
-                    if let FeImageKind::Use(ref id) = fe_img.data {
+            for fe in &filter.primitives {
+                if let filter::Kind::Image(ref fe_img) = fe.kind {
+                    if let filter::ImageKind::Use(ref id) = fe_img.data {
                         if tree.defs_by_id(id).or_else(|| tree.node_by_id(id)).is_none() {
                             // If `feImage` references a non-existing element,
                             // create it in `defs`.
@@ -750,7 +750,7 @@ fn link_fe_image(
             if !tree.defs().children().any(|n| *n.id() == id) {
                 for mut filter_node in tree.defs().children() {
                     if let NodeKind::Filter(ref mut filter) = *filter_node.borrow_mut() {
-                        for fe in &mut filter.children {
+                        for fe in &mut filter.primitives {
                             fe.kind = filter::create_dummy_primitive();
                         }
                     }
@@ -823,9 +823,9 @@ fn is_id_used(tree: & Tree, id: &str) -> bool {
             }
             #[cfg(feature = "filter")]
             NodeKind::Filter(ref filter) => {
-                for fe in &filter.children {
-                    if let FilterKind::FeImage(ref fe_img) = fe.kind {
-                        if let FeImageKind::Use(ref fe_id) = fe_img.data {
+                for fe in &filter.primitives {
+                    if let filter::Kind::Image(ref fe_img) = fe.kind {
+                        if let filter::ImageKind::Use(ref fe_id) = fe_img.data {
                             if fe_id == id {
                                 return true;
                             }

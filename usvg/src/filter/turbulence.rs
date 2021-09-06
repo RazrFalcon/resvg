@@ -3,13 +3,14 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::svgtree::{self, AId};
-use crate::{FilterKind, Point, PositiveNumber};
+use crate::{Point, PositiveNumber};
+use super::Kind;
 
 /// A turbulence generation filter primitive.
 ///
 /// `feTurbulence` element in the SVG.
 #[derive(Clone, Copy, Debug)]
-pub struct FeTurbulence {
+pub struct Turbulence {
     /// Identifies the base frequency for the noise function.
     ///
     /// `baseFrequency` in the SVG.
@@ -33,18 +34,18 @@ pub struct FeTurbulence {
     /// Indicates whether the filter primitive should perform a noise or turbulence function.
     ///
     /// `type` in the SVG.
-    pub kind: FeTurbulenceKind,
+    pub kind: TurbulenceKind,
 }
 
 /// A turbulence kind for the `feTurbulence` filter.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub enum FeTurbulenceKind {
+pub enum TurbulenceKind {
     FractalNoise,
     Turbulence,
 }
 
-pub(crate) fn convert(fe: svgtree::Node) -> FilterKind {
+pub(crate) fn convert(fe: svgtree::Node) -> Kind {
     let mut base_frequency = Point::new(0.0.into(), 0.0.into());
     if let Some(list) = fe.attribute::<&Vec<f64>>(AId::BaseFrequency) {
         let mut x = 0.0;
@@ -68,11 +69,11 @@ pub(crate) fn convert(fe: svgtree::Node) -> FilterKind {
     }
 
     let kind = match fe.attribute(AId::Type).unwrap_or("turbulence") {
-        "fractalNoise" => FeTurbulenceKind::FractalNoise,
-        _              => FeTurbulenceKind::Turbulence,
+        "fractalNoise" => TurbulenceKind::FractalNoise,
+        _              => TurbulenceKind::Turbulence,
     };
 
-    FilterKind::FeTurbulence(FeTurbulence {
+    Kind::Turbulence(Turbulence {
         base_frequency,
         num_octaves: num_octaves.round() as u32,
         seed: fe.attribute(AId::Seed).unwrap_or(0.0).trunc() as i32,

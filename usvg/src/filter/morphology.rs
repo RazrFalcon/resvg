@@ -3,22 +3,23 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::svgtree::{self, AId};
-use crate::{FilterInput, FilterKind, FilterPrimitive, FuzzyZero, PositiveNumber};
+use crate::{FuzzyZero, PositiveNumber};
+use super::{Input, Kind, Primitive};
 
 /// A morphology filter primitive.
 ///
 /// `feMorphology` element in the SVG.
 #[derive(Clone, Debug)]
-pub struct FeMorphology {
+pub struct Morphology {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: FilterInput,
+    pub input: Input,
 
     /// A filter operator.
     ///
     /// `operator` in the SVG.
-    pub operator: FeMorphologyOperator,
+    pub operator: MorphologyOperator,
 
     /// A filter radius along the X-axis.
     ///
@@ -38,15 +39,15 @@ pub struct FeMorphology {
 /// A morphology operation.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub enum FeMorphologyOperator {
+pub enum MorphologyOperator {
     Erode,
     Dilate,
 }
 
-pub(crate) fn convert(fe: svgtree::Node, primitives: &[FilterPrimitive]) -> FilterKind {
+pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     let operator = match fe.attribute(AId::Operator).unwrap_or("erode") {
-        "dilate" => FeMorphologyOperator::Dilate,
-        _        => FeMorphologyOperator::Erode,
+        "dilate" => MorphologyOperator::Dilate,
+        _        => MorphologyOperator::Erode,
     };
 
     // Both radius are zero by default.
@@ -79,7 +80,7 @@ pub(crate) fn convert(fe: svgtree::Node, primitives: &[FilterPrimitive]) -> Filt
         }
     }
 
-    FilterKind::FeMorphology(FeMorphology {
+    Kind::Morphology(Morphology {
         input: super::resolve_input(fe, AId::In, primitives),
         operator,
         radius_x,
