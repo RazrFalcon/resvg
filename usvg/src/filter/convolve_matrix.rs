@@ -149,9 +149,9 @@ pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     let mut order_x = 3;
     let mut order_y = 3;
     if let Some(value) = fe.attribute::<&str>(AId::Order) {
-        let mut s = svgtypes::Stream::from(value);
-        let x = s.parse_list_integer().unwrap_or(3);
-        let y = s.parse_list_integer().unwrap_or(x);
+        let mut s = svgtypes::NumberListParser::from(value);
+        let x = s.next().and_then(|a| a.ok()).map(|n| n as i32).unwrap_or(3);
+        let y = s.next().and_then(|a| a.ok()).map(|n| n as i32).unwrap_or(x);
         if x > 0 && y > 0 {
             order_x = x as u32;
             order_y = y as u32;

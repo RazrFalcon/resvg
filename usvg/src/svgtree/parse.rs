@@ -315,8 +315,8 @@ fn parse_svg_attribute(
     Some(match aid {
         AId::Href => {
             // `href` can contain base64 data and we do store it as is.
-            match svgtypes::Stream::from(value).parse_iri() {
-                Ok(link) => AttributeValue::Link(link.to_string()),
+            match svgtypes::IRI::from_str(value) {
+                Ok(link) => AttributeValue::Link(link.0.to_string()),
                 Err(_) => AttributeValue::String(value.to_string()),
             }
         }
@@ -332,7 +332,7 @@ fn parse_svg_attribute(
                 }
                   EId::FePointLight
                 | EId::FeSpotLight => {
-                    AttributeValue::Number(parse_number(value).ok()?)
+                    AttributeValue::Number(svgtypes::Number::from_str(value).ok()?.0)
                 }
                 _ => {
                     AttributeValue::Length(svgtypes::Length::from_str(value).ok()?)
@@ -355,7 +355,7 @@ fn parse_svg_attribute(
 
         AId::Offset => {
             if let EId::FeFuncR | EId::FeFuncG | EId::FeFuncB | EId::FeFuncA = tag_name {
-                AttributeValue::Number(parse_number(value).ok()?)
+                AttributeValue::Number(svgtypes::Number::from_str(value).ok()?.0)
             } else {
                 // offset = <number> | <percentage>
                 let l = svgtypes::Length::from_str(value).ok()?;
@@ -377,7 +377,7 @@ fn parse_svg_attribute(
         | AId::FloodOpacity
         | AId::StrokeOpacity
         | AId::StopOpacity => {
-            let n = parse_number(value).ok()?;
+            let n = svgtypes::Number::from_str(value).ok()?.0;
             let n = crate::utils::f64_bound(0.0, n, 1.0);
             AttributeValue::Opacity(n.into())
         }
@@ -409,7 +409,7 @@ fn parse_svg_attribute(
         | AId::TargetX
         | AId::TargetY
         | AId::Z => {
-            AttributeValue::Number(parse_number(value).ok()?)
+            AttributeValue::Number(svgtypes::Number::from_str(value).ok()?.0)
         }
 
         AId::StrokeDasharray => {
@@ -455,9 +455,8 @@ fn parse_svg_attribute(
             match value {
                 "none" => AttributeValue::None,
                 _ => {
-                    let mut s = svgtypes::Stream::from(value);
-                    let link = s.parse_func_iri().ok()?;
-                    AttributeValue::Link(link.to_string())
+                    let link = svgtypes::FuncIRI::from_str(value).ok()?;
+                    AttributeValue::Link(link.0.to_string())
                 }
             }
         }
@@ -549,25 +548,25 @@ fn parse_svg_attribute(
         }
 
         AId::EnableBackground => {
-            AttributeValue::EnableBackground(parse_enable_background(value).ok()?)
+            let eb = svgtypes::EnableBackground::from_str(value).ok()?;
+            match eb {
+                svgtypes::EnableBackground::Accumulate => {
+                    return None
+                }
+                svgtypes::EnableBackground::New => {
+                    AttributeValue::EnableBackground(EnableBackground(None))
+                }
+                svgtypes::EnableBackground::NewWithRegion { x, y, width, height } => {
+                    let r = Rect::new(x, y, width, height)?;
+                    AttributeValue::EnableBackground(EnableBackground(Some(r)))
+                }
+            }
         }
 
         _ => {
             AttributeValue::String(value.to_string())
         }
     })
-}
-
-#[inline(never)]
-fn parse_number(value: &str) -> Result<f64, svgtypes::Error> {
-    let mut s = svgtypes::Stream::from(value);
-    let n = s.parse_number()?;
-
-    if !s.at_end() {
-        return Err(svgtypes::Error::InvalidNumber(0));
-    }
-
-    Ok(n)
 }
 
 #[inline(never)]
@@ -777,34 +776,6 @@ fn parse_path(text: &str) -> crate::PathData {
     path
 }
 
-// TODO: to svgtypes
-fn parse_enable_background(value: &str) -> Result<EnableBackground, svgtypes::Error> {
-    let mut s = svgtypes::Stream::from(value);
-    s.skip_spaces();
-    if s.starts_with(b"new") {
-        s.advance(3);
-        s.skip_spaces();
-        if s.at_end() {
-            return Ok(EnableBackground(None));
-        }
-
-        let x = s.parse_list_number()?;
-        let y = s.parse_list_number()?;
-        let w = s.parse_list_number()?;
-        let h = s.parse_list_number()?;
-
-        s.skip_spaces();
-        if !s.at_end() {
-            return Err(svgtypes::Error::InvalidValue);
-        }
-
-        let r = Rect::new(x, y, w, h).ok_or(svgtypes::Error::InvalidValue)?;
-        Ok(EnableBackground(Some(r)))
-    } else {
-        Err(svgtypes::Error::InvalidValue)
-    }
-}
-
 fn resolve_inherit(
     parent_id: NodeId,
     tag_name: EId,
@@ -899,7 +870,7 @@ fn resolve_href<'a>(
     let link_value = node.attribute((XLINK_NS, "href"))
         .or_else(|| node.attribute("href"))?;
 
-    let link_id = svgtypes::Stream::from(link_value).parse_iri().ok()?;
+    let link_id = svgtypes::IRI::from_str(link_value).ok()?.0;
 
     // We're using `descendants` each time instead of HashTable because
     // we have to preserve the original elements order.
