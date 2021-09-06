@@ -4,76 +4,12 @@
 
 //! Some useful utilities.
 
-use float_cmp::ApproxEqUlps;
-
-use crate::{tree, geom::*};
-
-/// A trait for fuzzy/approximate equality comparisons of float numbers.
-pub trait FuzzyEq<Rhs: ?Sized = Self> {
-    /// Returns `true` if values are approximately equal.
-    fn fuzzy_eq(&self, other: &Rhs) -> bool;
-
-    /// Returns `true` if values are not approximately equal.
-    #[inline]
-    fn fuzzy_ne(&self, other: &Rhs) -> bool {
-        !self.fuzzy_eq(other)
-    }
-}
-
-impl<T: FuzzyEq> FuzzyEq for Vec<T> {
-    fn fuzzy_eq(&self, other: &Self) -> bool {
-        if self.len() != other.len() {
-            return false;
-        }
-
-        for (a, b) in self.iter().zip(other.iter()) {
-            if a.fuzzy_ne(b) {
-                return false;
-            }
-        }
-
-        true
-    }
-}
-
-/// A trait for fuzzy/approximate comparisons of float numbers.
-pub trait FuzzyZero: FuzzyEq {
-    /// Returns `true` if the number is approximately zero.
-    fn is_fuzzy_zero(&self) -> bool;
-}
-
-impl FuzzyEq for f32 {
-    #[inline]
-    fn fuzzy_eq(&self, other: &f32) -> bool {
-        self.approx_eq_ulps(other, 4)
-    }
-}
-
-impl FuzzyEq for f64 {
-    #[inline]
-    fn fuzzy_eq(&self, other: &f64) -> bool {
-        self.approx_eq_ulps(other, 4)
-    }
-}
-
-impl FuzzyZero for f32 {
-    #[inline]
-    fn is_fuzzy_zero(&self) -> bool {
-        self.fuzzy_eq(&0.0)
-    }
-}
-
-impl FuzzyZero for f64 {
-    #[inline]
-    fn is_fuzzy_zero(&self) -> bool {
-        self.fuzzy_eq(&0.0)
-    }
-}
+use crate::{Align, AspectRatio, Rect, ScreenSize, Size, Transform, ViewBox};
 
 // TODO: https://github.com/rust-lang/rust/issues/44095
 /// Bounds `f64` number.
 #[inline]
-pub fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
+pub(crate) fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
     debug_assert!(min.is_finite());
     debug_assert!(val.is_finite());
     debug_assert!(max.is_finite());
@@ -90,15 +26,15 @@ pub fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
 /// Converts `viewBox` to `Transform`.
 pub fn view_box_to_transform(
     view_box: Rect,
-    aspect: tree::AspectRatio,
+    aspect: AspectRatio,
     img_size: Size,
-) -> tree::Transform {
+) -> Transform {
     let vr = view_box;
 
     let sx = img_size.width() / vr.width();
     let sy = img_size.height() / vr.height();
 
-    let (sx, sy) = if aspect.align == tree::Align::None {
+    let (sx, sy) = if aspect.align == Align::None {
         (sx, sy)
     } else {
         let s = if aspect.slice {
@@ -116,7 +52,7 @@ pub fn view_box_to_transform(
     let h = img_size.height() - vr.height() * sy;
 
     let (tx, ty) = aligned_pos(aspect.align, x, y, w, h);
-    tree::Transform::new(sx, 0.0, 0.0, sy, tx, ty)
+    Transform::new(sx, 0.0, 0.0, sy, tx, ty)
 }
 
 /// Converts `viewBox` to `Transform` with an optional clip rectangle.
@@ -124,9 +60,9 @@ pub fn view_box_to_transform(
 /// Unlike `view_box_to_transform`, returns an optional clip rectangle
 /// that should be applied before rendering the image.
 pub fn view_box_to_transform_with_clip(
-    view_box: &tree::ViewBox,
+    view_box: &ViewBox,
     img_size: ScreenSize,
-) -> (tree::Transform, Option<Rect>) {
+) -> (Transform, Option<Rect>) {
     let r = view_box.rect;
 
     let new_size = img_size.fit_view_box(view_box);
@@ -149,27 +85,27 @@ pub fn view_box_to_transform_with_clip(
 
     let sx = new_size.width() as f64 / img_size.width() as f64;
     let sy = new_size.height() as f64 / img_size.height() as f64;
-    let ts = tree::Transform::new(sx, 0.0, 0.0, sy, tx, ty);
+    let ts = Transform::new(sx, 0.0, 0.0, sy, tx, ty);
 
     (ts, clip)
 }
 
 /// Returns object aligned position.
 pub fn aligned_pos(
-    align: tree::Align,
+    align: Align,
     x: f64, y: f64, w: f64, h: f64,
 ) -> (f64, f64) {
     match align {
-        tree::Align::None     => (x,           y          ),
-        tree::Align::XMinYMin => (x,           y          ),
-        tree::Align::XMidYMin => (x + w / 2.0, y          ),
-        tree::Align::XMaxYMin => (x + w,       y          ),
-        tree::Align::XMinYMid => (x,           y + h / 2.0),
-        tree::Align::XMidYMid => (x + w / 2.0, y + h / 2.0),
-        tree::Align::XMaxYMid => (x + w,       y + h / 2.0),
-        tree::Align::XMinYMax => (x,           y + h      ),
-        tree::Align::XMidYMax => (x + w / 2.0, y + h      ),
-        tree::Align::XMaxYMax => (x + w,       y + h      ),
+        Align::None     => (x,           y          ),
+        Align::XMinYMin => (x,           y          ),
+        Align::XMidYMin => (x + w / 2.0, y          ),
+        Align::XMaxYMin => (x + w,       y          ),
+        Align::XMinYMid => (x,           y + h / 2.0),
+        Align::XMidYMid => (x + w / 2.0, y + h / 2.0),
+        Align::XMaxYMid => (x + w,       y + h / 2.0),
+        Align::XMinYMax => (x,           y + h      ),
+        Align::XMidYMax => (x + w / 2.0, y + h      ),
+        Align::XMaxYMax => (x + w,       y + h      ),
     }
 }
 

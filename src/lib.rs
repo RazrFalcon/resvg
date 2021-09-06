@@ -6,8 +6,6 @@
 [resvg](https://github.com/RazrFalcon/resvg) is an SVG rendering library.
 */
 
-#![doc(html_root_url = "https://docs.rs/resvg/0.17.0")]
-
 #![warn(missing_docs)]
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::identity_op)]

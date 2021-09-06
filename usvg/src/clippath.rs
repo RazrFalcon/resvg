@@ -2,17 +2,54 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::tree;
-use crate::svgtree;
-use super::prelude::*;
-use crate::convert::NodeIdGenerator;
+use crate::svgtree::{self, EId, AId};
+use crate::{converter, Tree, NodeKind, Units, Transform};
 
 
-pub fn convert(
+/// A clip-path element.
+///
+/// `clipPath` element in SVG.
+#[derive(Clone, Debug)]
+pub struct ClipPath {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Can't be empty.
+    pub id: String,
+
+    /// Coordinate system units.
+    ///
+    /// `clipPathUnits` in SVG.
+    pub units: Units,
+
+    /// Clip path transform.
+    ///
+    /// `transform` in SVG.
+    pub transform: Transform,
+
+    /// Additional clip path.
+    ///
+    /// `clip-path` in SVG.
+    pub clip_path: Option<String>,
+}
+
+impl Default for ClipPath {
+    fn default() -> Self {
+        ClipPath {
+            id: String::new(),
+            units: Units::UserSpaceOnUse,
+            transform: Transform::default(),
+            clip_path: None,
+        }
+    }
+}
+
+
+pub(crate) fn convert(
     node: svgtree::Node,
-    state: &State,
-    id_generator: &mut NodeIdGenerator,
-    tree: &mut tree::Tree,
+    state: &converter::State,
+    id_generator: &mut converter::NodeIdGenerator,
+    tree: &mut Tree,
 ) -> Option<String> {
     // A `clip-path` attribute must reference a `clipPath` element.
     if !node.has_tag_name(EId::ClipPath) {
@@ -41,9 +78,9 @@ pub fn convert(
         }
     }
 
-    let units = node.attribute(AId::ClipPathUnits).unwrap_or(tree::Units::UserSpaceOnUse);
+    let units = node.attribute(AId::ClipPathUnits).unwrap_or(Units::UserSpaceOnUse);
     let mut clip = tree.append_to_defs(
-        tree::NodeKind::ClipPath(tree::ClipPath {
+        NodeKind::ClipPath(ClipPath {
             id: node.element_id().to_string(),
             units,
             transform: node.attribute(AId::Transform).unwrap_or_default(),
@@ -53,7 +90,7 @@ pub fn convert(
 
     let mut clip_state = state.clone();
     clip_state.parent_clip_path = Some(node);
-    super::convert_clip_path_elements(node, &clip_state, id_generator, &mut clip, tree);
+    converter::convert_clip_path_elements(node, &clip_state, id_generator, &mut clip, tree);
 
     if clip.has_children() {
         Some(node.element_id().to_string())

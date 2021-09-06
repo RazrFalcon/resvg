@@ -5,14 +5,16 @@
 use std::f64;
 use std::rc::Rc;
 
-use crate::{utils, svgtree, tree, tree::prelude::*, tree::PathSegment as Segment};
-use super::prelude::*;
-use crate::convert::NodeIdGenerator;
+use svgtypes::Length;
+
+use crate::svgtree::{self, EId, AId};
+use crate::{converter, style, utils};
+use crate::{ClipPath, Group, Node, NodeExt, NodeKind, Path, PathData, Tree, Units};
+use crate::geom::{FuzzyEq, FuzzyZero, Rect, Size, Transform, ViewBox};
+use crate::PathSegment as Segment;
 
 
-pub fn is_valid(
-    node: svgtree::Node,
-) -> bool {
+pub(crate) fn is_valid(node: svgtree::Node) -> bool {
     // `marker-*` attributes cannot be set on shapes inside a `clipPath`.
     if node.ancestors().any(|n| n.has_tag_name(EId::ClipPath)) {
         return false;
@@ -23,13 +25,13 @@ pub fn is_valid(
     || node.find_attribute::<svgtree::Node>(AId::MarkerEnd).is_some()
 }
 
-pub fn convert(
+pub(crate) fn convert(
     node: svgtree::Node,
-    path: &tree::PathData,
-    state: &State,
-    id_generator: &mut NodeIdGenerator,
-    parent: &mut tree::Node,
-    tree: &mut tree::Tree,
+    path: &PathData,
+    state: &converter::State,
+    id_generator: &mut converter::NodeIdGenerator,
+    parent: &mut Node,
+    tree: &mut Tree,
 ) {
     let list = [
         (AId::MarkerStart, MarkerKind::Start),
@@ -70,20 +72,20 @@ enum MarkerOrientation {
 
 fn resolve(
     shape_node: svgtree::Node,
-    path: &tree::PathData,
+    path: &PathData,
     marker_node: svgtree::Node,
     marker_kind: MarkerKind,
-    state: &State,
-    id_generator: &mut NodeIdGenerator,
-    parent: &mut tree::Node,
-    tree: &mut tree::Tree,
+    state: &converter::State,
+    id_generator: &mut converter::NodeIdGenerator,
+    parent: &mut Node,
+    tree: &mut Tree,
 ) {
     let stroke_scale = try_opt!(stroke_scale(shape_node, marker_node, state));
 
     let r = try_opt!(convert_rect(marker_node, state));
 
     let view_box = marker_node.get_viewbox().map(|vb|
-        tree::ViewBox {
+        ViewBox {
             rect: vb,
             aspect: marker_node.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
         }
@@ -105,18 +107,18 @@ fn resolve(
         let id = id_generator.gen_clip_path_id();
 
         let mut clip_path = tree.append_to_defs(
-            tree::NodeKind::ClipPath(tree::ClipPath {
+            NodeKind::ClipPath(ClipPath {
                 id: id.clone(),
-                units: tree::Units::UserSpaceOnUse,
-                transform: tree::Transform::default(),
+                units: Units::UserSpaceOnUse,
+                transform: Transform::default(),
                 clip_path: None,
             })
         );
 
-        clip_path.append_kind(tree::NodeKind::Path(tree::Path {
-            fill: Some(tree::Fill::default()),
-            data: Rc::new(tree::PathData::from_rect(clip_rect)),
-            ..tree::Path::default()
+        clip_path.append_kind(NodeKind::Path(Path {
+            fill: Some(style::Fill::default()),
+            data: Rc::new(PathData::from_rect(clip_rect)),
+            ..Path::default()
         }));
 
         Some(id)
@@ -125,7 +127,7 @@ fn resolve(
     };
 
     let draw_marker = |x: f64, y: f64, idx: usize| {
-        let mut ts = tree::Transform::new_translate(x, y);
+        let mut ts = Transform::new_translate(x, y);
 
         let angle = match convert_orientation(marker_node) {
             MarkerOrientation::Auto => calc_vertex_angle(path, idx),
@@ -149,15 +151,15 @@ fn resolve(
 
 
         // TODO: do not create a group when no clipPath
-        let mut g_node = parent.append_kind(tree::NodeKind::Group(tree::Group {
+        let mut g_node = parent.append_kind(NodeKind::Group(Group {
             transform: ts,
             clip_path: clip_path.clone(),
-            .. tree::Group::default()
+            .. Group::default()
         }));
 
         let mut marker_state = state.clone();
         marker_state.parent_marker = Some(marker_node);
-        super::convert_children(marker_node, &marker_state, id_generator, &mut g_node, tree);
+        converter::convert_children(marker_node, &marker_state, id_generator, &mut g_node, tree);
 
         if !g_node.has_children() {
             g_node.detach();
@@ -170,7 +172,7 @@ fn resolve(
 fn stroke_scale(
     path_node: svgtree::Node,
     marker_node: svgtree::Node,
-    state: &State,
+    state: &converter::State,
 ) -> Option<f64> {
     match marker_node.attribute(AId::MarkerUnits) {
         Some("userSpaceOnUse") => Some(1.0),
@@ -179,7 +181,7 @@ fn stroke_scale(
 }
 
 fn draw_markers<P>(
-    path: &tree::PathData,
+    path: &PathData,
     kind: MarkerKind,
     mut draw_marker: P,
 )
@@ -188,7 +190,7 @@ where
 {
     match kind {
         MarkerKind::Start => {
-            if let Some(tree::PathSegment::MoveTo { x, y }) = path.first().cloned() {
+            if let Some(Segment::MoveTo { x, y }) = path.first().cloned() {
                 draw_marker(x, y, 0);
             }
         }
@@ -197,9 +199,9 @@ where
             let mut i = 1;
             while i < total {
                 let (x, y) = match path[i] {
-                    tree::PathSegment::MoveTo { x, y } => (x, y),
-                    tree::PathSegment::LineTo { x, y } => (x, y),
-                    tree::PathSegment::CurveTo { x, y, .. } => (x, y),
+                    Segment::MoveTo { x, y } => (x, y),
+                    Segment::LineTo { x, y } => (x, y),
+                    Segment::CurveTo { x, y, .. } => (x, y),
                     _ => {
                         i += 1;
                         continue;
@@ -230,7 +232,7 @@ where
     }
 }
 
-fn calc_vertex_angle(path: &tree::PathData, idx: usize) -> f64 {
+fn calc_vertex_angle(path: &PathData, idx: usize) -> f64 {
     if idx == 0 {
         // First segment.
 
@@ -448,7 +450,7 @@ fn get_prev_vertex(
 
 fn convert_rect(
     node: svgtree::Node,
-    state: &State,
+    state: &converter::State,
 ) -> Option<Rect> {
     Rect::new(
         node.convert_user_length(AId::RefX, state, Length::zero()),

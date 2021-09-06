@@ -5,41 +5,19 @@
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 
-use svgtypes::Length;
+use svgtypes::{Length, LengthUnit as Unit};
 
-use crate::{svgtree, tree, tree::prelude::*, Error};
-
-mod clip;
-#[cfg(feature = "filter")] mod filter;
-mod image;
-mod marker;
-mod mask;
-mod paint_server;
-mod shapes;
-mod style;
-mod switch;
-mod units;
-mod use_node;
-#[cfg(feature = "text")] mod text;
-
-mod prelude {
-    pub use log::warn;
-    pub use svgtypes::Length;
-    pub use crate::{geom::*, short::*, svgtree::{AId, EId}, Options, OptionsRef, IsValidLength};
-    pub use crate::{FuzzyEq, FuzzyZero};
-    pub use super::{SvgNodeExt, State};
-}
-use self::prelude::*;
-
+use crate::svgtree::{self, AId, EId};
+use crate::*;
 
 #[derive(Clone)]
 pub struct State<'a> {
-    parent_clip_path: Option<svgtree::Node<'a>>,
-    parent_marker: Option<svgtree::Node<'a>>,
-    fe_image_link: bool,
-    size: Size,
-    view_box: Rect,
-    opt: &'a OptionsRef<'a>,
+    pub(crate) parent_clip_path: Option<svgtree::Node<'a>>,
+    pub(crate) parent_marker: Option<svgtree::Node<'a>>,
+    pub(crate) fe_image_link: bool,
+    pub(crate) size: Size,
+    pub(crate) view_box: Rect,
+    pub(crate) opt: &'a OptionsRef<'a>,
 }
 
 pub struct NodeIdGenerator {
@@ -103,20 +81,20 @@ fn string_hash(s: &str) -> u64 {
 ///
 /// - If `Document` doesn't have an SVG node - returns an empty tree.
 /// - If `Document` doesn't have a valid size - returns `Error::InvalidSize`.
-pub fn convert_doc(
+pub(crate) fn convert_doc(
     svg_doc: &svgtree::Document,
     opt: &OptionsRef,
-) -> Result<tree::Tree, Error> {
+) -> Result<Tree, Error> {
     let svg = svg_doc.root_element();
     let (size, restore_viewbox) = resolve_svg_size(&svg, opt);
     let size = size?;
-    let view_box = tree::ViewBox {
+    let view_box = ViewBox {
         rect: svg.get_viewbox().unwrap_or_else(|| size.to_rect(0.0, 0.0)),
         aspect: svg.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
 
-    let svg_kind = tree::Svg { size, view_box };
-    let mut tree = tree::Tree::create(svg_kind);
+    let svg_kind = Svg { size, view_box };
+    let mut tree = Tree::create(svg_kind);
 
     if !svg.is_visible_element(opt) {
         return Ok(tree);
@@ -245,12 +223,12 @@ fn resolve_svg_size(
 }
 
 #[inline(never)]
-fn convert_children(
+pub(crate) fn convert_children(
     parent_node: svgtree::Node,
     state: &State,
     id_generator: &mut NodeIdGenerator,
-    parent: &mut tree::Node,
-    tree: &mut tree::Tree,
+    parent: &mut Node,
+    tree: &mut Tree,
 ) {
     for node in parent_node.children() {
         convert_element(node, state, id_generator, parent, tree);
@@ -258,13 +236,13 @@ fn convert_children(
 }
 
 #[inline(never)]
-fn convert_element(
+pub(crate) fn convert_element(
     node: svgtree::Node,
     state: &State,
     id_generator: &mut NodeIdGenerator,
-    parent: &mut tree::Node,
-    tree: &mut tree::Tree,
-) -> Option<tree::Node> {
+    parent: &mut Node,
+    tree: &mut Tree,
+) -> Option<Node> {
     let tag_name = node.tag_name()?;
 
     if !tag_name.is_graphic() && !matches!(tag_name, EId::G | EId::Switch | EId::Svg) {
@@ -308,7 +286,9 @@ fn convert_element(
         }
         EId::Text => {
             #[cfg(feature = "text")]
-            text::convert(node, state, id_generator, parent, tree);
+            if !state.opt.fontdb.is_empty() {
+                text::convert(node, state, id_generator, parent, tree);
+            }
         }
         EId::Svg => {
             if node.parent_element().is_some() {
@@ -332,12 +312,12 @@ fn convert_element(
 // `line` doesn't impact rendering because stroke is always disabled
 // for `clipPath` children.
 #[inline(never)]
-fn convert_clip_path_elements(
+pub(crate) fn convert_clip_path_elements(
     clip_node: svgtree::Node,
     state: &State,
     id_generator: &mut NodeIdGenerator,
-    parent: &mut tree::Node,
-    tree: &mut tree::Tree,
+    parent: &mut Node,
+    tree: &mut Tree,
 ) {
     for node in clip_node.children() {
         let tag_name = try_opt!(node.tag_name());
@@ -374,42 +354,40 @@ fn convert_clip_path_elements(
             }
             EId::Text => {
                 #[cfg(feature = "text")]
-                {
-                    if !state.opt.fontdb.is_empty() {
-                        text::convert(node, state, id_generator, parent, tree);
-                    }
+                if !state.opt.fontdb.is_empty() {
+                    text::convert(node, state, id_generator, parent, tree);
                 }
             }
             _ => {
-                warn!("'{}' is no a valid 'clip-path' child.", tag_name);
+                log::warn!("'{}' is no a valid 'clip-path' child.", tag_name);
             }
         }
     }
 }
 
 #[derive(Debug)]
-enum GroupKind {
+pub enum GroupKind {
     /// Creates a new group.
-    Create(tree::Node),
+    Create(Node),
     /// Skips an existing group, but processes its children.
     Skip,
     /// Skips an existing group and all its children.
     Ignore,
 }
 
-fn convert_group(
+pub(crate) fn convert_group(
     node: svgtree::Node,
     state: &State,
     force: bool,
     id_generator: &mut NodeIdGenerator,
-    parent: &mut tree::Node,
-    tree: &mut tree::Tree,
+    parent: &mut Node,
+    tree: &mut Tree,
 ) -> GroupKind {
     // A `clipPath` child cannot have an opacity.
     let opacity = if state.parent_clip_path.is_none() {
         node.attribute(AId::Opacity).unwrap_or_default()
     } else {
-        tree::Opacity::default()
+        Opacity::default()
     };
 
     macro_rules! resolve_link {
@@ -432,7 +410,7 @@ fn convert_group(
     // `mask` and `filter` cannot be set on `clipPath` children.
     // But `clip-path` can.
 
-    let clip_path = resolve_link!(AId::ClipPath, clip::convert);
+    let clip_path = resolve_link!(AId::ClipPath, clippath::convert);
 
     let mask = if state.parent_clip_path.is_none() {
         resolve_link!(AId::Mask, mask::convert)
@@ -467,10 +445,17 @@ fn convert_group(
         }
     }
 
+    #[cfg(feature = "filter")]
     let filter_fill = resolve_filter_fill(node, state, &filter, id_generator, tree);
+    #[cfg(feature = "filter")]
     let filter_stroke = resolve_filter_stroke(node, state, &filter, id_generator, tree);
 
-    let transform: tree::Transform = node.attribute(AId::Transform).unwrap_or_default();
+    #[cfg(not(feature = "filter"))]
+    let filter_fill = None;
+    #[cfg(not(feature = "filter"))]
+    let filter_stroke = None;
+
+    let transform: Transform = node.attribute(AId::Transform).unwrap_or_default();
 
     let enable_background = node.attribute(AId::EnableBackground);
 
@@ -494,7 +479,7 @@ fn convert_group(
             String::new()
         };
 
-        let g = parent.append_kind(tree::NodeKind::Group(tree::Group {
+        let g = parent.append_kind(NodeKind::Group(Group {
             id,
             transform,
             opacity,
@@ -512,18 +497,19 @@ fn convert_group(
     }
 }
 
+#[cfg(feature = "filter")]
 fn resolve_filter_fill(
     node: svgtree::Node,
     state: &State,
     filter_id: &[String],
     id_generator: &mut NodeIdGenerator,
-    tree: &mut tree::Tree,
-) -> Option<tree::Paint> {
+    tree: &mut  Tree,
+) -> Option<Paint> {
     let mut has_fill_paint = false;
     for id in filter_id {
         if let Some(filter_node) = tree.defs_by_id(id) {
-            if let tree::NodeKind::Filter(ref filter) = *filter_node.borrow() {
-                if filter.children.iter().any(|c| c.kind.has_input(&tree::FilterInput::FillPaint)) {
+            if let NodeKind::Filter(ref filter) = *filter_node.borrow() {
+                if filter.children.iter().any(|c| c.kind.has_input(&FilterInput::FillPaint)) {
                     has_fill_paint = true;
                     break;
                 }
@@ -539,18 +525,19 @@ fn resolve_filter_fill(
     Some(stroke.paint)
 }
 
+#[cfg(feature = "filter")]
 fn resolve_filter_stroke(
     node: svgtree::Node,
     state: &State,
     filter_id: &[String],
     id_generator: &mut NodeIdGenerator,
-    tree: &mut tree::Tree,
-) -> Option<tree::Paint> {
+    tree: &mut  Tree,
+) -> Option<Paint> {
     let mut has_fill_paint = false;
     for id in filter_id {
         if let Some(filter_node) = tree.defs_by_id(id) {
-            if let tree::NodeKind::Filter(ref filter) = *filter_node.borrow() {
-                if filter.children.iter().any(|c| c.kind.has_input(&tree::FilterInput::StrokePaint)) {
+            if let NodeKind::Filter(ref filter) = *filter_node.borrow() {
+                if filter.children.iter().any(|c| c.kind.has_input(&FilterInput::StrokePaint)) {
                     has_fill_paint = true;
                     break;
                 }
@@ -566,15 +553,15 @@ fn resolve_filter_stroke(
     Some(stroke.paint)
 }
 
-fn remove_empty_groups(tree: &mut tree::Tree) {
-    fn rm(parent: tree::Node) -> bool {
+fn remove_empty_groups(tree: &mut  Tree) {
+    fn rm(parent: Node) -> bool {
         let mut changed = false;
 
         let mut curr_node = parent.first_child();
         while let Some(mut node) = curr_node {
             curr_node = node.next_sibling();
 
-            let is_g = if let tree::NodeKind::Group(ref g) = *node.borrow() {
+            let is_g = if let NodeKind::Group(ref g) = *node.borrow() {
                 // Skip empty groups when they do not have a `filter` property.
                 // The `filter` property can be set on empty groups. For example:
                 //
@@ -606,17 +593,17 @@ fn remove_empty_groups(tree: &mut tree::Tree) {
 
 fn ungroup_groups(
     opt: &OptionsRef,
-    tree: &mut tree::Tree,
+    tree: &mut  Tree,
 ) {
-    fn ungroup(tree: &tree::Tree, parent: tree::Node, opt: &OptionsRef) -> bool {
+    fn ungroup(tree: & Tree, parent: Node, opt: &OptionsRef) -> bool {
         let mut changed = false;
 
         let mut curr_node = parent.first_child();
         while let Some(mut node) = curr_node {
             curr_node = node.next_sibling();
 
-            let mut ts = tree::Transform::default();
-            let is_ok = if let tree::NodeKind::Group(ref g) = *node.borrow() {
+            let mut ts = Transform::default();
+            let is_ok = if let NodeKind::Group(ref g) = *node.borrow() {
                 ts = g.transform;
 
                    g.opacity.is_default()
@@ -637,13 +624,13 @@ fn ungroup_groups(
 
                     // Update transform.
                     match *child.borrow_mut() {
-                        tree::NodeKind::Path(ref mut path) => {
+                        NodeKind::Path(ref mut path) => {
                             path.transform.prepend(&ts);
                         }
-                        tree::NodeKind::Image(ref mut img) => {
+                        NodeKind::Image(ref mut img) => {
                             img.transform.prepend(&ts);
                         }
-                        tree::NodeKind::Group(ref mut g) => {
+                        NodeKind::Group(ref mut g) => {
                             g.transform.prepend(&ts);
                         }
                         _ => {}
@@ -669,7 +656,7 @@ fn ungroup_groups(
 }
 
 fn remove_unused_defs(
-    tree: &mut tree::Tree,
+    tree: &mut  Tree,
 ) {
     let mut is_changed = true;
     while is_changed {
@@ -692,15 +679,15 @@ fn link_fe_image(
     svg_doc: &svgtree::Document,
     state: &State,
     id_generator: &mut NodeIdGenerator,
-    tree: &mut tree::Tree,
+    tree: &mut  Tree,
 ) -> bool {
     let mut ids = Vec::new();
     // TODO: simplify
     for filter_node in tree.defs().children() {
-        if let tree::NodeKind::Filter(ref filter) = *filter_node.borrow() {
+        if let NodeKind::Filter(ref filter) = *filter_node.borrow() {
             for fe in &filter.children {
-                if let tree::FilterKind::FeImage(ref fe_img) = fe.kind {
-                    if let tree::FeImageKind::Use(ref id) = fe_img.data {
+                if let FilterKind::FeImage(ref fe_img) = fe.kind {
+                    if let FeImageKind::Use(ref id) = fe_img.data {
                         if tree.defs_by_id(id).or_else(|| tree.node_by_id(id)).is_none() {
                             // If `feImage` references a non-existing element,
                             // create it in `defs`.
@@ -731,26 +718,28 @@ fn link_fe_image(
             // In this case we should move child element's id to the group,
             // so `feImage` would reference the whole group and not just a child.
             if new_node != tree.defs() {
-                if let tree::NodeKind::Group(ref mut g) = *new_node.borrow_mut() {
+                if let NodeKind::Group(ref mut g) = *new_node.borrow_mut() {
                     g.id = id.clone();
                 }
 
                 // Remove ids from children.
                 for mut n in new_node.children() {
                     match *n.borrow_mut() {
-                        tree::NodeKind::Path(ref mut p) => p.id.clear(),
-                        tree::NodeKind::Image(ref mut p) => p.id.clear(),
+                        NodeKind::Path(ref mut p) => p.id.clear(),
+                        NodeKind::Image(ref mut p) => p.id.clear(),
                         _ => {}
                     }
                 }
             }
 
             // Make sure the new element doesn't reference the current filter.
-            if let tree::NodeKind::Group(ref mut g) = *new_node.borrow_mut() {
+            if let NodeKind::Group(ref mut g) = *new_node.borrow_mut() {
                 if g.filter.iter().any(|id| *id == filter_id) {
-                    warn!("Recursive 'feImage' detected. \
-                          The 'filter' attribute will be removed from '{}'.",
-                          id);
+                    log::warn!(
+                        "Recursive 'feImage' detected. \
+                         The 'filter' attribute will be removed from '{}'.",
+                        id
+                    );
 
                     g.filter = Vec::new();
                 }
@@ -760,7 +749,7 @@ fn link_fe_image(
             // If not, reset to a dummy primitive.
             if !tree.defs().children().any(|n| *n.id() == id) {
                 for mut filter_node in tree.defs().children() {
-                    if let tree::NodeKind::Filter(ref mut filter) = *filter_node.borrow_mut() {
+                    if let NodeKind::Filter(ref mut filter) = *filter_node.borrow_mut() {
                         for fe in &mut filter.children {
                             fe.kind = filter::create_dummy_primitive();
                         }
@@ -775,7 +764,7 @@ fn link_fe_image(
     has_resolved
 }
 
-fn is_id_used(tree: &tree::Tree, id: &str) -> bool {
+fn is_id_used(tree: & Tree, id: &str) -> bool {
     macro_rules! check_id {
         ($from:expr, $id:expr) => {
             if let Some(ref id) = $from {
@@ -789,7 +778,7 @@ fn is_id_used(tree: &tree::Tree, id: &str) -> bool {
     macro_rules! check_paint_id {
         ($from:expr, $id:expr) => {
             if let Some(ref v) = $from {
-                if let tree::Paint::Link(ref paint_id) = v.paint {
+                if let Paint::Link(ref paint_id) = v.paint {
                     if $id == paint_id {
                         return true;
                     }
@@ -801,7 +790,7 @@ fn is_id_used(tree: &tree::Tree, id: &str) -> bool {
     macro_rules! check_paint_id2 {
         ($from:expr, $id:expr) => {
             if let Some(ref v) = $from {
-                if let tree::Paint::Link(ref paint_id) = v {
+                if let Paint::Link(ref paint_id) = v {
                     if $id == paint_id {
                         return true;
                     }
@@ -812,17 +801,17 @@ fn is_id_used(tree: &tree::Tree, id: &str) -> bool {
 
     for node in tree.root().descendants() {
         match *node.borrow() {
-            tree::NodeKind::ClipPath(ref clip) => {
+            NodeKind::ClipPath(ref clip) => {
                 check_id!(clip.clip_path, id);
             }
-            tree::NodeKind::Mask(ref mask) => {
+            NodeKind::Mask(ref mask) => {
                 check_id!(mask.mask, id);
             }
-            tree::NodeKind::Path(ref path) => {
+            NodeKind::Path(ref path) => {
                 check_paint_id!(path.fill, id);
                 check_paint_id!(path.stroke, id);
             }
-            tree::NodeKind::Group(ref g) => {
+            NodeKind::Group(ref g) => {
                 check_id!(g.clip_path, id);
                 check_id!(g.mask, id);
                 check_paint_id2!(g.filter_fill, id);
@@ -832,10 +821,11 @@ fn is_id_used(tree: &tree::Tree, id: &str) -> bool {
                     return true;
                 }
             }
-            tree::NodeKind::Filter(ref filter) => {
+            #[cfg(feature = "filter")]
+            NodeKind::Filter(ref filter) => {
                 for fe in &filter.children {
-                    if let tree::FilterKind::FeImage(ref fe_img) = fe.kind {
-                        if let tree::FeImageKind::Use(ref fe_id) = fe_img.data {
+                    if let FilterKind::FeImage(ref fe_img) = fe.kind {
+                        if let FeImageKind::Use(ref fe_id) = fe_img.data {
                             if fe_id == id {
                                 return true;
                             }
@@ -852,11 +842,11 @@ fn is_id_used(tree: &tree::Tree, id: &str) -> bool {
 
 fn convert_path(
     node: svgtree::Node,
-    path: tree::SharedPathData,
+    path: SharedPathData,
     state: &State,
     id_generator: &mut NodeIdGenerator,
-    parent: &mut tree::Node,
-    tree: &mut tree::Tree,
+    parent: &mut Node,
+    tree: &mut  Tree,
 ) {
     debug_assert!(path.len() >= 2);
     if path.len() < 2 {
@@ -874,17 +864,17 @@ fn convert_path(
     // If a path doesn't have a fill or a stroke than it's invisible.
     // By setting `visibility` to `hidden` we are disabling rendering of this path.
     if fill.is_none() && stroke.is_none() {
-        visibility = tree::Visibility::Hidden;
+        visibility = Visibility::Hidden;
     }
 
     let mut markers_group = None;
-    if marker::is_valid(node) && visibility == tree::Visibility::Visible {
-        let mut g = parent.append_kind(tree::NodeKind::Group(tree::Group::default()));
+    if marker::is_valid(node) && visibility == Visibility::Visible {
+        let mut g = parent.append_kind(NodeKind::Group(Group::default()));
         marker::convert(node, &path, state, id_generator, &mut g, tree);
         markers_group = Some(g);
     }
 
-    parent.append_kind(tree::NodeKind::Path(tree::Path {
+    parent.append_kind(NodeKind::Path(Path {
         id: node.element_id().to_string(),
         transform: Default::default(),
         visibility,
@@ -899,58 +889,5 @@ fn convert_path(
     if let Some(mut g) = markers_group {
         g.detach();
         parent.append(g);
-    }
-}
-
-
-pub trait SvgNodeExt {
-    fn resolve_length(&self, aid: AId, state: &State, def: f64) -> f64;
-    fn resolve_valid_length(&self, aid: AId, state: &State, def: f64) -> Option<f64>;
-    fn convert_length(&self, aid: AId, object_units: tree::Units, state: &State, def: Length) -> f64;
-    fn try_convert_length(&self, aid: AId, object_units: tree::Units, state: &State) -> Option<f64>;
-    fn convert_user_length(&self, aid: AId, state: &State, def: Length) -> f64;
-    fn try_convert_user_length(&self, aid: AId, state: &State) -> Option<f64>;
-    fn is_visible_element(&self, opt: &OptionsRef) -> bool;
-}
-
-impl<'a> SvgNodeExt for svgtree::Node<'a> {
-    fn resolve_length(&self, aid: AId, state: &State, def: f64) -> f64 {
-        debug_assert!(!matches!(aid, AId::BaselineShift | AId::FontSize),
-                      "{} cannot be resolved via this function", aid);
-
-        if let Some(n) = self.find_node_with_attribute(aid) {
-            if let Some(length) = n.attribute(aid) {
-                return units::convert_length(length, n, aid, tree::Units::UserSpaceOnUse, state);
-            }
-        }
-
-        def
-    }
-
-    fn resolve_valid_length(&self, aid: AId, state: &State, def: f64) -> Option<f64> {
-        let n = self.resolve_length(aid, state, def);
-        if n.is_valid_length() { Some(n) } else { None }
-    }
-
-    fn convert_length(&self, aid: AId, object_units: tree::Units, state: &State, def: Length) -> f64 {
-        units::convert_length(self.attribute(aid).unwrap_or(def), *self, aid, object_units, state)
-    }
-
-    fn try_convert_length(&self, aid: AId, object_units: tree::Units, state: &State) -> Option<f64> {
-        Some(units::convert_length(self.attribute(aid)?, *self, aid, object_units, state))
-    }
-
-    fn convert_user_length(&self, aid: AId, state: &State, def: Length) -> f64 {
-        self.convert_length(aid, tree::Units::UserSpaceOnUse, state, def)
-    }
-
-    fn try_convert_user_length(&self, aid: AId, state: &State) -> Option<f64> {
-        self.try_convert_length(aid, tree::Units::UserSpaceOnUse, state)
-    }
-
-    fn is_visible_element(&self, opt: &OptionsRef) -> bool {
-           self.attribute(AId::Display) != Some("none")
-        && self.has_valid_transform(AId::Transform)
-        && switch::is_condition_passed(*self, opt)
     }
 }

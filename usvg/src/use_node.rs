@@ -4,17 +4,19 @@
 
 use std::rc::Rc;
 
-use crate::{svgtree, tree, tree::prelude::*, utils};
-use super::prelude::*;
-use crate::convert::NodeIdGenerator;
+use svgtypes::{Length, LengthUnit};
 
+use crate::svgtree::{self, EId, AId};
+use crate::{converter, clippath, style, utils};
+use crate::{Group, Node, NodeExt, NodeKind, Path, PathData, Tree};
+use crate::geom::{FuzzyEq, IsValidLength, Rect, Size, Transform};
 
-pub fn convert(
+pub(crate) fn convert(
     node: svgtree::Node,
-    state: &State,
-    id_generator: &mut NodeIdGenerator,
-    parent: &mut tree::Node,
-    tree: &mut tree::Tree,
+    state: &converter::State,
+    id_generator: &mut converter::NodeIdGenerator,
+    parent: &mut Node,
+    tree: &mut Tree,
 ) {
     let child = try_opt!(node.first_child());
 
@@ -26,8 +28,8 @@ pub fn convert(
     }
 
     // We require an original transformation to setup 'clipPath'.
-    let mut orig_ts: tree::Transform = node.attribute(AId::Transform).unwrap_or_default();
-    let mut new_ts = tree::Transform::default();
+    let mut orig_ts: Transform = node.attribute(AId::Transform).unwrap_or_default();
+    let mut new_ts = Transform::default();
 
     {
         let x = node.convert_user_length(AId::X, state, Length::zero());
@@ -46,18 +48,18 @@ pub fn convert(
             let mut g = clip_element(node, clip_rect, orig_ts, id_generator, parent, tree);
 
             // Make group for `use`.
-            let mut parent = match super::convert_group(node, state, true, id_generator, &mut g, tree) {
-                super::GroupKind::Create(mut g) => {
+            let mut parent = match converter::convert_group(node, state, true, id_generator, &mut g, tree) {
+                converter::GroupKind::Create(mut g) => {
                     // We must reset transform, because it was already set
                     // to the group with clip-path.
-                    if let tree::NodeKind::Group(ref mut g) = *g.borrow_mut() {
-                        g.transform = tree::Transform::default();
+                    if let NodeKind::Group(ref mut g) = *g.borrow_mut() {
+                        g.transform = Transform::default();
                     }
 
                     g
                 }
-                super::GroupKind::Skip => g.clone(),
-                super::GroupKind::Ignore => return,
+                converter::GroupKind::Skip => g.clone(),
+                converter::GroupKind::Ignore => return,
             };
 
             convert_children(child, new_ts, state, id_generator, &mut parent, tree);
@@ -69,10 +71,10 @@ pub fn convert(
 
     if linked_to_symbol {
         // Make group for `use`.
-        let mut parent = match super::convert_group(node, state, false, id_generator, parent, tree) {
-            super::GroupKind::Create(g) => g,
-            super::GroupKind::Skip => parent.clone(),
-            super::GroupKind::Ignore => return,
+        let mut parent = match converter::convert_group(node, state, false, id_generator, parent, tree) {
+            converter::GroupKind::Create(g) => g,
+            converter::GroupKind::Skip => parent.clone(),
+            converter::GroupKind::Ignore => return,
         };
 
         convert_children(child, orig_ts, state, id_generator, &mut parent, tree);
@@ -81,16 +83,16 @@ pub fn convert(
     }
 }
 
-pub fn convert_svg(
+pub(crate) fn convert_svg(
     node: svgtree::Node,
-    state: &State,
-    id_generator: &mut NodeIdGenerator,
-    parent: &mut tree::Node,
-    tree: &mut tree::Tree,
+    state: &converter::State,
+    id_generator: &mut converter::NodeIdGenerator,
+    parent: &mut Node,
+    tree: &mut Tree,
 ) {
     // We require original transformation to setup 'clipPath'.
-    let mut orig_ts: tree::Transform = node.attribute(AId::Transform).unwrap_or_default();
-    let mut new_ts = tree::Transform::default();
+    let mut orig_ts: Transform = node.attribute(AId::Transform).unwrap_or_default();
+    let mut new_ts = Transform::default();
 
     {
         let x = node.convert_user_length(AId::X, state, Length::zero());
@@ -114,11 +116,11 @@ pub fn convert_svg(
 fn clip_element(
     node: svgtree::Node,
     clip_rect: Rect,
-    transform: tree::Transform,
-    id_generator: &mut NodeIdGenerator,
-    parent: &mut tree::Node,
-    tree: &mut tree::Tree,
-) -> tree::Node {
+    transform: Transform,
+    id_generator: &mut converter::NodeIdGenerator,
+    parent: &mut Node,
+    tree: &mut Tree,
+) -> Node {
     // We can't set `clip-path` on the element itself,
     // because it will be affected by a possible transform.
     // So we have to create an additional group.
@@ -141,59 +143,59 @@ fn clip_element(
 
     let id = id_generator.gen_clip_path_id();
 
-    let mut clip_path = tree.append_to_defs(tree::NodeKind::ClipPath(tree::ClipPath {
+    let mut clip_path = tree.append_to_defs(NodeKind::ClipPath(clippath::ClipPath {
         id: id.clone(),
-        ..tree::ClipPath::default()
+        ..clippath::ClipPath::default()
     }));
 
-    clip_path.append_kind(tree::NodeKind::Path(tree::Path {
-        fill: Some(tree::Fill::default()),
-        data: Rc::new(tree::PathData::from_rect(clip_rect)),
-        ..tree::Path::default()
+    clip_path.append_kind(NodeKind::Path(Path {
+        fill: Some(style::Fill::default()),
+        data: Rc::new(PathData::from_rect(clip_rect)),
+        ..Path::default()
     }));
 
-    parent.append_kind(tree::NodeKind::Group(tree::Group {
+    parent.append_kind(NodeKind::Group(Group {
         id: node.element_id().to_string(),
         transform,
         clip_path: Some(id),
-        ..tree::Group::default()
+        ..Group::default()
     }))
 }
 
 fn convert_children(
     node: svgtree::Node,
-    transform: tree::Transform,
-    state: &State,
-    id_generator: &mut NodeIdGenerator,
-    parent: &mut tree::Node,
-    tree: &mut tree::Tree,
+    transform: Transform,
+    state: &converter::State,
+    id_generator: &mut converter::NodeIdGenerator,
+    parent: &mut Node,
+    tree: &mut Tree,
 ) {
     let required = !transform.is_default();
-    let mut parent = match super::convert_group(node, state, required, id_generator, parent, tree) {
-        super::GroupKind::Create(mut g) => {
-            if let tree::NodeKind::Group(ref mut g) = *g.borrow_mut() {
+    let mut parent = match converter::convert_group(node, state, required, id_generator, parent, tree) {
+        converter::GroupKind::Create(mut g) => {
+            if let NodeKind::Group(ref mut g) = *g.borrow_mut() {
                 g.transform = transform;
             }
 
             g
         }
-        super::GroupKind::Skip => {
+        converter::GroupKind::Skip => {
             parent.clone()
         }
-        super::GroupKind::Ignore => return,
+        converter::GroupKind::Ignore => return,
     };
 
     if state.parent_clip_path.is_some() {
-        super::convert_clip_path_elements(node, state, id_generator, &mut parent, tree);
+        converter::convert_clip_path_elements(node, state, id_generator, &mut parent, tree);
     } else {
-        super::convert_children(node, state, id_generator, &mut parent, tree);
+        converter::convert_children(node, state, id_generator, &mut parent, tree);
     }
 }
 
 fn get_clip_rect(
     use_node: svgtree::Node,
     symbol_node: svgtree::Node,
-    state: &State,
+    state: &converter::State,
 ) -> Option<Rect> {
     // No need to clip elements with overflow:visible.
     if matches!(symbol_node.attribute(AId::Overflow), Some("visible") | Some("auto")) {
@@ -203,8 +205,8 @@ fn get_clip_rect(
     let (x, y, w, h) = {
         let x = use_node.convert_user_length(AId::X, state, Length::zero());
         let y = use_node.convert_user_length(AId::Y, state, Length::zero());
-        let w = use_node.convert_user_length(AId::Width, state, Length::new(100.0, Unit::Percent));
-        let h = use_node.convert_user_length(AId::Height, state, Length::new(100.0, Unit::Percent));
+        let w = use_node.convert_user_length(AId::Width, state, Length::new(100.0, LengthUnit::Percent));
+        let h = use_node.convert_user_length(AId::Height, state, Length::new(100.0, LengthUnit::Percent));
         (x, y, w, h)
     };
 
@@ -224,10 +226,10 @@ fn get_clip_rect(
 fn viewbox_transform(
     node: svgtree::Node,
     linked: svgtree::Node,
-    state: &State,
-) -> Option<tree::Transform> {
+    state: &converter::State,
+) -> Option<Transform> {
     let size = {
-        let def = Length::new(100.0, Unit::Percent);
+        let def = Length::new(100.0, LengthUnit::Percent);
         let w = node.convert_user_length(AId::Width, state, def);
         let h = node.convert_user_length(AId::Height, state, def);
         Size::new(w, h)

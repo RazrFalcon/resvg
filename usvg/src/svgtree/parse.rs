@@ -6,10 +6,7 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::collections::HashMap;
 
-use log::warn;
-
-use crate::tree;
-use crate::{Rect, Error};
+use crate::{Rect, Error, EnableBackground};
 use super::{Document, Attribute, AId, EId, Node, NodeId, NodeKind, NodeData, AttributeValue};
 
 const SVG_NS: &str = "http://www.w3.org/2000/svg";
@@ -62,7 +59,7 @@ impl Document {
             // Invalid `enable-background` is not an error
             // since we are ignoring the `accumulate` value.
             if aid != AId::EnableBackground {
-                warn!("Failed to parse {} value: '{}'.", aid, value);
+                log::warn!("Failed to parse {} value: '{}'.", aid, value);
             }
         }
     }
@@ -432,7 +429,7 @@ fn parse_svg_attribute(
                     AttributeValue::Paint(link.to_string(), fallback)
                 }
                 Err(_) => {
-                    warn!("Failed to parse fill value: '{}'. Fallback to black.", value);
+                    log::warn!("Failed to parse fill value: '{}'. Fallback to black.", value);
                     AttributeValue::Color(svgtypes::Color::black())
                 }
             }
@@ -574,7 +571,7 @@ fn parse_number(value: &str) -> Result<f64, svgtypes::Error> {
 }
 
 #[inline(never)]
-fn parse_path(text: &str) -> tree::PathData {
+fn parse_path(text: &str) -> crate::PathData {
     // Previous MoveTo coordinates.
     let mut prev_mx = 0.0;
     let mut prev_my = 0.0;
@@ -589,7 +586,7 @@ fn parse_path(text: &str) -> tree::PathData {
 
     let mut prev_seg = svgtypes::PathSegment::MoveTo { abs: true, x: 0.0, y: 0.0 };
 
-    let mut path = tree::PathData::with_capacity(32);
+    let mut path = crate::PathData::with_capacity(32);
 
     for segment in svgtypes::PathParser::from(text) {
         let segment = match segment {
@@ -602,7 +599,7 @@ fn parse_path(text: &str) -> tree::PathData {
                 if !abs {
                     // When we get 'm'(relative) segment, which is not first segment - then it's
                     // relative to a previous 'M'(absolute) segment, not to the first segment.
-                    if let Some(tree::PathSegment::ClosePath) = path.last() {
+                    if let Some(crate::PathSegment::ClosePath) = path.last() {
                         x += prev_mx;
                         y += prev_my;
                     } else {
@@ -738,7 +735,7 @@ fn parse_path(text: &str) -> tree::PathData {
                 prev_seg = segment;
             }
             svgtypes::PathSegment::ClosePath { .. } => {
-                if let Some(tree::PathSegment::ClosePath) = path.last() {
+                if let Some(crate::PathSegment::ClosePath) = path.last() {
                     // Do not add sequential ClosePath segments.
                     // Otherwise it will break marker rendering.
                 } else {
@@ -752,21 +749,21 @@ fn parse_path(text: &str) -> tree::PathData {
         // Remember last position.
         if let Some(seg) = path.last() {
             match *seg {
-                tree::PathSegment::MoveTo { x, y } => {
+                crate::PathSegment::MoveTo { x, y } => {
                     prev_x = x;
                     prev_y = y;
                     prev_mx = x;
                     prev_my = y;
                 }
-                tree::PathSegment::LineTo { x, y } => {
+                crate::PathSegment::LineTo { x, y } => {
                     prev_x = x;
                     prev_y = y;
                 }
-                tree::PathSegment::CurveTo { x, y, .. } => {
+                crate::PathSegment::CurveTo { x, y, .. } => {
                     prev_x = x;
                     prev_y = y;
                 }
-                tree::PathSegment::ClosePath => {
+                crate::PathSegment::ClosePath => {
                     // ClosePath moves us to the last MoveTo coordinate,
                     // not previous.
                     prev_x = prev_mx;
@@ -780,14 +777,15 @@ fn parse_path(text: &str) -> tree::PathData {
     path
 }
 
-fn parse_enable_background(value: &str) -> Result<tree::EnableBackground, svgtypes::Error> {
+// TODO: to svgtypes
+fn parse_enable_background(value: &str) -> Result<EnableBackground, svgtypes::Error> {
     let mut s = svgtypes::Stream::from(value);
     s.skip_spaces();
     if s.starts_with(b"new") {
         s.advance(3);
         s.skip_spaces();
         if s.at_end() {
-            return Ok(tree::EnableBackground(None));
+            return Ok(EnableBackground(None));
         }
 
         let x = s.parse_list_number()?;
@@ -801,7 +799,7 @@ fn parse_enable_background(value: &str) -> Result<tree::EnableBackground, svgtyp
         }
 
         let r = Rect::new(x, y, w, h).ok_or(svgtypes::Error::InvalidValue)?;
-        Ok(tree::EnableBackground(Some(r)))
+        Ok(EnableBackground(Some(r)))
     } else {
         Err(svgtypes::Error::InvalidValue)
     }
@@ -927,7 +925,7 @@ fn parse_svg_use_element(
     };
 
     if link == node || link == origin {
-        warn!("Recursive 'use' detected. '{}' will be skipped.",
+        log::warn!("Recursive 'use' detected. '{}' will be skipped.",
               node.attribute((SVG_NS, "id")).unwrap_or_default());
         return Ok(());
     }
@@ -940,7 +938,7 @@ fn parse_svg_use_element(
     // TODO: this
     // We don't support 'use' elements linked to 'svg' element.
     if tag_name == EId::Svg {
-        warn!("'use' elements linked to 'svg' elements are not supported. Skipped.");
+        log::warn!("'use' elements linked to 'svg' elements are not supported. Skipped.");
         return Ok(());
     }
 
@@ -972,8 +970,8 @@ fn parse_svg_use_element(
     }
 
     if is_recursive {
-        warn!("Recursive 'use' detected. '{}' will be skipped.",
-              node.attribute((SVG_NS, "id")).unwrap_or_default());
+        log::warn!("Recursive 'use' detected. '{}' will be skipped.",
+                   node.attribute((SVG_NS, "id")).unwrap_or_default());
         return Ok(());
     }
 

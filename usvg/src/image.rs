@@ -2,11 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::path;
+use svgtypes::Length;
 
-use crate::{svgtree, tree, tree::prelude::*, utils};
-use super::prelude::*;
-
+use crate::{converter, Tree, Node, NodeExt, NodeKind, OptionsRef, Visibility, ImageRendering};
+use crate::geom::{Rect, Transform, ViewBox};
+use crate::svgtree::{self, AId};
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum ImageFormat {
@@ -16,10 +16,66 @@ enum ImageFormat {
 }
 
 
-pub fn convert(
+/// An embedded image kind.
+#[derive(Clone)]
+pub enum ImageKind {
+    /// A raw JPEG data. Should be decoded by the caller.
+    JPEG(Vec<u8>),
+    /// A raw PNG data. Should be decoded by the caller.
+    PNG(Vec<u8>),
+    /// A preprocessed SVG tree. Can be rendered as is.
+    SVG(crate::Tree),
+}
+
+impl std::fmt::Debug for ImageKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            ImageKind::JPEG(_) => f.write_str("ImageKind::JPEG(..)"),
+            ImageKind::PNG(_) => f.write_str("ImageKind::PNG(..)"),
+            ImageKind::SVG(_) => f.write_str("ImageKind::SVG(..)"),
+        }
+    }
+}
+
+
+/// A raster image element.
+///
+/// `image` element in SVG.
+#[derive(Clone, Debug)]
+pub struct Image {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Isn't automatically generated.
+    /// Can be empty.
+    pub id: String,
+
+    /// Element transform.
+    pub transform: Transform,
+
+    /// Element visibility.
+    pub visibility: Visibility,
+
+    /// An image rectangle in which it should be fit.
+    ///
+    /// Combination of the `x`, `y`, `width`, `height` and `preserveAspectRatio`
+    /// attributes.
+    pub view_box: ViewBox,
+
+    /// Rendering mode.
+    ///
+    /// `image-rendering` in SVG.
+    pub rendering_mode: ImageRendering,
+
+    /// Image data.
+    pub kind: ImageKind,
+}
+
+
+pub(crate) fn convert(
     node: svgtree::Node,
-    state: &State,
-    parent: &mut tree::Node,
+    state: &converter::State,
+    parent: &mut Node,
 ) {
     let visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
     let rendering_mode = node
@@ -34,7 +90,7 @@ pub fn convert(
     );
     let rect = try_opt_warn!(rect, "Image has an invalid size. Skipped.");
 
-    let view_box = tree::ViewBox {
+    let view_box = ViewBox {
         rect,
         aspect: node.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
@@ -45,7 +101,7 @@ pub fn convert(
     );
 
     let kind = try_opt!(get_href_data(node.element_id(), href, state.opt));
-    parent.append_kind(tree::NodeKind::Image(tree::Image {
+    parent.append_kind(NodeKind::Image(Image {
         id: node.element_id().to_string(),
         transform: Default::default(),
         visibility,
@@ -55,24 +111,24 @@ pub fn convert(
     }));
 }
 
-pub fn get_href_data(
+pub(crate) fn get_href_data(
     element_id: &str,
     href: &str,
     opt: &OptionsRef,
-) -> Option<tree::ImageKind> {
+) -> Option<ImageKind> {
     if let Ok(url) = data_url::DataUrl::process(href) {
         let (data, _) = url.decode_to_vec().ok()?;
         match (url.mime_type().type_.as_str(), url.mime_type().subtype.as_str()) {
-            ("image", "jpg") | ("image", "jpeg") => Some(tree::ImageKind::JPEG(data)),
-            ("image", "png") => Some(tree::ImageKind::PNG(data)),
+            ("image", "jpg") | ("image", "jpeg") => Some(ImageKind::JPEG(data)),
+            ("image", "png") => Some(ImageKind::PNG(data)),
             ("image", "svg+xml") => load_sub_svg(&data, opt),
             ("text", "plain") => {
                 match get_image_data_format(&data) {
                     Some(ImageFormat::JPEG) => {
-                        Some(tree::ImageKind::JPEG(data))
+                        Some(ImageKind::JPEG(data))
                     }
                     Some(ImageFormat::PNG) => {
-                        Some(tree::ImageKind::PNG(data))
+                        Some(ImageKind::PNG(data))
                     }
                     _ => {
                         load_sub_svg(&data, opt)
@@ -82,33 +138,33 @@ pub fn get_href_data(
             _ => None,
         }
     } else {
-        let path = opt.get_abs_path(path::Path::new(href));
+        let path = opt.get_abs_path(std::path::Path::new(href));
         if path.exists() {
             let data = match std::fs::read(&path) {
                 Ok(data) => data,
                 Err(_) => {
-                    warn!("Failed to load '{}'. Skipped.", href);
+                    log::warn!("Failed to load '{}'. Skipped.", href);
                     return None;
                 }
             };
 
             match get_image_file_format(&path, &data) {
                 Some(ImageFormat::JPEG) => {
-                    Some(tree::ImageKind::JPEG(data))
+                    Some(ImageKind::JPEG(data))
                 }
                 Some(ImageFormat::PNG) => {
-                    Some(tree::ImageKind::PNG(data))
+                    Some(ImageKind::PNG(data))
                 }
                 Some(ImageFormat::SVG) => {
                     load_sub_svg(&data, opt)
                 }
                 _ => {
-                    warn!("'{}' is not a PNG, JPEG or SVG(Z) image.", href);
+                    log::warn!("'{}' is not a PNG, JPEG or SVG(Z) image.", href);
                     None
                 }
             }
         } else {
-            warn!("Image '{}' has an invalid 'xlink:href' content.", element_id);
+            log::warn!("Image '{}' has an invalid 'xlink:href' content.", element_id);
             None
         }
     }
@@ -116,8 +172,8 @@ pub fn get_href_data(
 
 /// Checks that file has a PNG or a JPEG magic bytes.
 /// Or an SVG(Z) extension.
-fn get_image_file_format(path: &path::Path, data: &[u8]) -> Option<ImageFormat> {
-    let ext = utils::file_extension(path)?.to_lowercase();
+fn get_image_file_format(path: &std::path::Path, data: &[u8]) -> Option<ImageFormat> {
+    let ext = crate::utils::file_extension(path)?.to_lowercase();
     if ext == "svg" || ext == "svgz" {
         return Some(ImageFormat::SVG);
     }
@@ -141,21 +197,21 @@ fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
 ///
 /// Unlike `Tree::from_*` methods, this one will also remove all `image` elements
 /// from the loaded SVG, as required by the spec.
-pub fn load_sub_svg(data: &[u8], opt: &OptionsRef) -> Option<tree::ImageKind> {
+pub(crate) fn load_sub_svg(data: &[u8], opt: &OptionsRef) -> Option<ImageKind> {
     let mut sub_opt = opt.clone();
     sub_opt.resources_dir = None;
     sub_opt.keep_named_groups = false;
 
-    let tree = match tree::Tree::from_data(data, &sub_opt) {
+    let tree = match Tree::from_data(data, &sub_opt) {
         Ok(tree) => tree,
         Err(_) => {
-            warn!("Failed to load subsvg image.");
+            log::warn!("Failed to load subsvg image.");
             return None;
         }
     };
 
     sanitize_sub_svg(&tree);
-    Some(tree::ImageKind::SVG(tree))
+    Some(ImageKind::SVG(tree))
 }
 
 fn sanitize_sub_svg(tree: &crate::Tree) {
@@ -172,7 +228,7 @@ fn sanitize_sub_svg(tree: &crate::Tree) {
         for mut node in tree.root().descendants() {
             let mut rm = false;
             // TODO: feImage?
-            if let tree::NodeKind::Image(_) = *node.borrow() {
+            if let NodeKind::Image(_) = *node.borrow() {
                 rm = true;
             };
 

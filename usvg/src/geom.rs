@@ -2,9 +2,100 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::{cmp, f64, fmt};
+use float_cmp::ApproxEqUlps;
 
-use crate::{tree, IsValidLength, FuzzyEq};
+use crate::{Align, AspectRatio};
+
+
+/// A trait for fuzzy/approximate equality comparisons of float numbers.
+pub trait FuzzyEq<Rhs: ?Sized = Self> {
+    /// Returns `true` if values are approximately equal.
+    fn fuzzy_eq(&self, other: &Rhs) -> bool;
+
+    /// Returns `true` if values are not approximately equal.
+    #[inline]
+    fn fuzzy_ne(&self, other: &Rhs) -> bool {
+        !self.fuzzy_eq(other)
+    }
+}
+
+impl<T: FuzzyEq> FuzzyEq for Vec<T> {
+    fn fuzzy_eq(&self, other: &Self) -> bool {
+        if self.len() != other.len() {
+            return false;
+        }
+
+        for (a, b) in self.iter().zip(other.iter()) {
+            if a.fuzzy_ne(b) {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+/// A trait for fuzzy/approximate comparisons of float numbers.
+pub trait FuzzyZero: FuzzyEq {
+    /// Returns `true` if the number is approximately zero.
+    fn is_fuzzy_zero(&self) -> bool;
+}
+
+impl FuzzyEq for f32 {
+    #[inline]
+    fn fuzzy_eq(&self, other: &f32) -> bool {
+        self.approx_eq_ulps(other, 4)
+    }
+}
+
+impl FuzzyEq for f64 {
+    #[inline]
+    fn fuzzy_eq(&self, other: &f64) -> bool {
+        self.approx_eq_ulps(other, 4)
+    }
+}
+
+impl FuzzyZero for f32 {
+    #[inline]
+    fn is_fuzzy_zero(&self) -> bool {
+        self.fuzzy_eq(&0.0)
+    }
+}
+
+impl FuzzyZero for f64 {
+    #[inline]
+    fn is_fuzzy_zero(&self) -> bool {
+        self.fuzzy_eq(&0.0)
+    }
+}
+
+
+/// Checks that the current number is > 0.
+pub trait IsValidLength {
+    /// Checks that the current number is > 0.
+    fn is_valid_length(&self) -> bool;
+}
+
+impl IsValidLength for f64 {
+    #[inline]
+    fn is_valid_length(&self) -> bool {
+        *self > 0.0
+    }
+}
+
+
+/// Converts `Rect` into bbox `Transform`.
+pub trait TransformFromBBox: Sized {
+    /// Converts `Rect` into bbox `Transform`.
+    fn from_bbox(bbox: Rect) -> Self;
+}
+
+impl TransformFromBBox for Transform {
+    #[inline]
+    fn from_bbox(bbox: Rect) -> Self {
+        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
+    }
+}
 
 
 /// Line representation.
@@ -48,6 +139,7 @@ impl Line {
 }
 
 
+// TODO: remove
 /// A 2D point representation.
 #[derive(Clone, Copy)]
 pub struct Point<T> {
@@ -65,14 +157,14 @@ impl<T> Point<T> {
     }
 }
 
-impl<T: fmt::Display> fmt::Debug for Point<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl<T: std::fmt::Display> std::fmt::Debug for Point<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "Point({} {})", self.x, self.y)
     }
 }
 
-impl<T: fmt::Display> fmt::Display for Point<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl<T: std::fmt::Display> std::fmt::Display for Point<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
 }
@@ -123,10 +215,10 @@ impl Size {
     }
 
     /// Fits size into a viewbox.
-    pub fn fit_view_box(&self, vb: &tree::ViewBox) -> Self {
+    pub fn fit_view_box(&self, vb: &ViewBox) -> Self {
         let s = vb.rect.size();
 
-        if vb.aspect.align == tree::Align::None {
+        if vb.aspect.align == Align::None {
             s
         } else {
             if vb.aspect.slice {
@@ -141,8 +233,8 @@ impl Size {
     #[inline]
     pub fn to_screen_size(&self) -> ScreenSize {
         ScreenSize::new(
-            cmp::max(1, self.width().round() as u32),
-            cmp::max(1, self.height().round() as u32),
+            std::cmp::max(1, self.width().round() as u32),
+            std::cmp::max(1, self.height().round() as u32),
         ).unwrap()
     }
 
@@ -153,14 +245,14 @@ impl Size {
     }
 }
 
-impl fmt::Debug for Size {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Debug for Size {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "Size({} {})", self.width, self.height)
     }
 }
 
-impl fmt::Display for Size {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for Size {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
 }
@@ -226,10 +318,10 @@ impl ScreenSize {
     }
 
     /// Fits size into a viewbox.
-    pub fn fit_view_box(&self, vb: &tree::ViewBox) -> Self {
+    pub fn fit_view_box(&self, vb: &ViewBox) -> Self {
         let s = vb.rect.to_screen_size();
 
-        if vb.aspect.align == tree::Align::None {
+        if vb.aspect.align == Align::None {
             s
         } else {
             if vb.aspect.slice {
@@ -248,14 +340,14 @@ impl ScreenSize {
     }
 }
 
-impl fmt::Debug for ScreenSize {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Debug for ScreenSize {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "ScreenSize({} {})", self.width, self.height)
     }
 }
 
-impl fmt::Display for ScreenSize {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for ScreenSize {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
 }
@@ -439,25 +531,27 @@ impl Rect {
     /// Transforms the `Rect` using the provided `Transform`.
     ///
     /// This method is expensive.
-    pub fn transform(&self, ts: &tree::Transform) -> Option<Self> {
+    pub fn transform(&self, ts: &Transform) -> Option<Self> {
+        use crate::pathdata::{PathSegment, SubPathData};
+
         if !ts.is_default() {
             let path = &[
-                tree::PathSegment::MoveTo {
+                PathSegment::MoveTo {
                     x: self.x(), y: self.y()
                 },
-                tree::PathSegment::LineTo {
+                PathSegment::LineTo {
                     x: self.right(), y: self.y()
                 },
-                tree::PathSegment::LineTo {
+                PathSegment::LineTo {
                     x: self.right(), y: self.bottom()
                 },
-                tree::PathSegment::LineTo {
+                PathSegment::LineTo {
                     x: self.x(), y: self.bottom()
                 },
-                tree::PathSegment::ClosePath,
+                PathSegment::ClosePath,
             ];
 
-            tree::SubPathData(path).bbox_with_transform(*ts, None)
+            SubPathData(path).bbox_with_transform(*ts, None)
         } else {
             Some(*self)
         }
@@ -475,8 +569,8 @@ impl Rect {
         ScreenRect::new(
             self.x() as i32,
             self.y() as i32,
-            cmp::max(1, self.width().round() as u32),
-            cmp::max(1, self.height().round() as u32),
+            std::cmp::max(1, self.width().round() as u32),
+            std::cmp::max(1, self.height().round() as u32),
         ).unwrap()
     }
 }
@@ -491,14 +585,14 @@ impl FuzzyEq for Rect {
     }
 }
 
-impl fmt::Debug for Rect {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Debug for Rect {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "Rect({} {} {} {})", self.x, self.y, self.width, self.height)
     }
 }
 
-impl fmt::Display for Rect {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for Rect {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
 }
@@ -627,11 +721,11 @@ impl ScreenRect {
         if r.y < 0 { r.y = 0; }
 
         if r.right() > bounds.width as i32 {
-            r.width = cmp::max(1, bounds.width as i32 - r.x) as u32;
+            r.width = std::cmp::max(1, bounds.width as i32 - r.x) as u32;
         }
 
         if r.bottom() > bounds.height as i32 {
-            r.height = cmp::max(1, bounds.height as i32 - r.y) as u32;
+            r.height = std::cmp::max(1, bounds.height as i32 - r.y) as u32;
         }
 
         r
@@ -645,16 +739,200 @@ impl ScreenRect {
     }
 }
 
-impl fmt::Debug for ScreenRect {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Debug for ScreenRect {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "ScreenRect({} {} {} {})", self.x, self.y, self.width, self.height)
     }
 }
 
-impl fmt::Display for ScreenRect {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for ScreenRect {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
+}
+
+
+/// Representation of the [`<transform>`] type.
+///
+/// [`<transform>`]: https://www.w3.org/TR/SVG2/coords.html#InterfaceSVGTransform
+#[derive(Clone, Copy, PartialEq, Debug)]
+#[allow(missing_docs)]
+pub struct Transform {
+    pub a: f64,
+    pub b: f64,
+    pub c: f64,
+    pub d: f64,
+    pub e: f64,
+    pub f: f64,
+}
+
+impl From<svgtypes::Transform> for Transform {
+    fn from(ts: svgtypes::Transform) -> Self {
+        Transform::new(ts.a, ts.b, ts.c, ts.d, ts.e, ts.f)
+    }
+}
+
+impl Transform {
+    /// Constructs a new transform.
+    #[inline]
+    pub fn new(a: f64, b: f64, c: f64, d: f64, e: f64, f: f64) -> Self {
+        Transform { a, b, c, d, e, f, }
+    }
+
+    /// Constructs a new translate transform.
+    #[inline]
+    pub fn new_translate(x: f64, y: f64) -> Self {
+        Transform::new(1.0, 0.0, 0.0, 1.0, x, y)
+    }
+
+    /// Constructs a new scale transform.
+    #[inline]
+    pub fn new_scale(sx: f64, sy: f64) -> Self {
+        Transform::new(sx, 0.0, 0.0, sy, 0.0, 0.0)
+    }
+
+    /// Constructs a new rotate transform.
+    #[inline]
+    pub fn new_rotate(angle: f64) -> Self {
+        let v = angle.to_radians();
+        let a =  v.cos();
+        let b =  v.sin();
+        let c = -b;
+        let d =  a;
+        Transform::new(a, b, c, d, 0.0, 0.0)
+    }
+
+    /// Translates the current transform.
+    #[inline]
+    pub fn translate(&mut self, x: f64, y: f64) {
+        self.append(&Transform::new_translate(x, y));
+    }
+
+    /// Scales the current transform.
+    #[inline]
+    pub fn scale(&mut self, sx: f64, sy: f64) {
+        self.append(&Transform::new_scale(sx, sy));
+    }
+
+    /// Rotates the current transform.
+    #[inline]
+    pub fn rotate(&mut self, angle: f64) {
+        self.append(&Transform::new_rotate(angle));
+    }
+
+    /// Rotates the current transform at the specified position.
+    #[inline]
+    pub fn rotate_at(&mut self, angle: f64, x: f64, y: f64) {
+        self.translate(x, y);
+        self.rotate(angle);
+        self.translate(-x, -y);
+    }
+
+    /// Appends transform to the current transform.
+    #[inline]
+    pub fn append(&mut self, other: &Transform) {
+        let ts = multiply(self, other);
+        self.a = ts.a;
+        self.b = ts.b;
+        self.c = ts.c;
+        self.d = ts.d;
+        self.e = ts.e;
+        self.f = ts.f;
+    }
+
+    /// Prepends transform to the current transform.
+    #[inline]
+    pub fn prepend(&mut self, other: &Transform) {
+        let ts = multiply(other, self);
+        self.a = ts.a;
+        self.b = ts.b;
+        self.c = ts.c;
+        self.d = ts.d;
+        self.e = ts.e;
+        self.f = ts.f;
+    }
+
+    /// Returns `true` if the transform is default, aka `(1 0 0 1 0 0)`.
+    pub fn is_default(&self) -> bool {
+           self.a.fuzzy_eq(&1.0)
+        && self.b.fuzzy_eq(&0.0)
+        && self.c.fuzzy_eq(&0.0)
+        && self.d.fuzzy_eq(&1.0)
+        && self.e.fuzzy_eq(&0.0)
+        && self.f.fuzzy_eq(&0.0)
+    }
+
+    /// Returns transform's translate part.
+    #[inline]
+    pub fn get_translate(&self) -> (f64, f64) {
+        (self.e, self.f)
+    }
+
+    /// Returns transform's scale part.
+    #[inline]
+    pub fn get_scale(&self) -> (f64, f64) {
+        let x_scale = (self.a * self.a + self.c * self.c).sqrt();
+        let y_scale = (self.b * self.b + self.d * self.d).sqrt();
+        (x_scale, y_scale)
+    }
+
+    /// Applies transform to selected coordinates.
+    #[inline]
+    pub fn apply(&self, x: f64, y: f64) -> (f64, f64) {
+        let new_x = self.a * x + self.c * y + self.e;
+        let new_y = self.b * x + self.d * y + self.f;
+        (new_x, new_y)
+    }
+
+    /// Applies transform to selected coordinates.
+    #[inline]
+    pub fn apply_to(&self, x: &mut f64, y: &mut f64) {
+        let tx = *x;
+        let ty = *y;
+        *x = self.a * tx + self.c * ty + self.e;
+        *y = self.b * tx + self.d * ty + self.f;
+    }
+}
+
+#[inline(never)]
+fn multiply(ts1: &Transform, ts2: &Transform) -> Transform {
+    Transform {
+        a: ts1.a * ts2.a + ts1.c * ts2.b,
+        b: ts1.b * ts2.a + ts1.d * ts2.b,
+        c: ts1.a * ts2.c + ts1.c * ts2.d,
+        d: ts1.b * ts2.c + ts1.d * ts2.d,
+        e: ts1.a * ts2.e + ts1.c * ts2.f + ts1.e,
+        f: ts1.b * ts2.e + ts1.d * ts2.f + ts1.f,
+    }
+}
+
+impl Default for Transform {
+    #[inline]
+    fn default() -> Transform {
+        Transform::new(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+    }
+}
+
+impl FuzzyEq for Transform {
+    fn fuzzy_eq(&self, other: &Self) -> bool {
+           self.a.fuzzy_eq(&other.a)
+        && self.b.fuzzy_eq(&other.b)
+        && self.c.fuzzy_eq(&other.c)
+        && self.d.fuzzy_eq(&other.d)
+        && self.e.fuzzy_eq(&other.e)
+        && self.f.fuzzy_eq(&other.f)
+    }
+}
+
+
+/// View box.
+#[derive(Clone, Copy, Debug)]
+pub struct ViewBox {
+    /// Value of the `viewBox` attribute.
+    pub rect: Rect,
+
+    /// Value of the `preserveAspectRatio` attribute.
+    pub aspect: AspectRatio,
 }
 
 

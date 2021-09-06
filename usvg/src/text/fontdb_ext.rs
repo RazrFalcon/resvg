@@ -1,15 +1,19 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 use std::convert::TryFrom;
 use std::num::NonZeroU16;
 
 use fontdb::{ID, Database};
 use ttf_parser::GlyphId;
 
-use crate::tree;
+use crate::PathData;
 
 
 pub trait DatabaseExt {
     fn load_font(&self, id: ID) -> Option<Font>;
-    fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tree::PathData>;
+    fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<PathData>;
     fn has_char(&self, id: ID, c: char) -> bool;
 }
 
@@ -85,11 +89,11 @@ impl DatabaseExt for Database {
     }
 
     #[inline(never)]
-    fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tree::PathData> {
-        self.with_face_data(id, |data, face_index| -> Option<tree::PathData> {
+    fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<PathData> {
+        self.with_face_data(id, |data, face_index| -> Option<PathData> {
             let font = ttf_parser::Face::from_slice(data, face_index).ok()?;
 
-            let mut builder = PathBuilder { path: tree::PathData::with_capacity(16) };
+            let mut builder = PathBuilder { path: PathData::with_capacity(16) };
             font.outline_glyph(glyph_id, &mut builder)?;
             Some(builder.path)
         })?
@@ -185,7 +189,7 @@ impl Font {
 
 
 struct PathBuilder {
-    path: tree::PathData,
+    path: PathData,
 }
 
 impl ttf_parser::OutlineBuilder for PathBuilder {

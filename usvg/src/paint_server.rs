@@ -2,29 +2,194 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::f64;
+use svgtypes::{Length, LengthUnit as Unit};
 
-use crate::{svgtree, tree, tree::prelude::*};
-use super::prelude::*;
-use crate::convert::NodeIdGenerator;
+use crate::svgtree::{self, AId, EId};
+use crate::{converter, Color, NodeExt, NodeKind, NormalizedValue, Opacity, PositiveNumber, Tree, Units};
+use crate::geom::{FuzzyEq, FuzzyZero, IsValidLength, Line, Rect, Transform, ViewBox};
 
 
-pub enum ServerOrColor {
+/// A spread method.
+///
+/// `spreadMethod` attribute in the SVG.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum SpreadMethod {
+    Pad,
+    Reflect,
+    Repeat,
+}
+
+impl_enum_default!(SpreadMethod, Pad);
+
+impl_enum_from_str!(SpreadMethod,
+    "pad"       => SpreadMethod::Pad,
+    "reflect"   => SpreadMethod::Reflect,
+    "repeat"    => SpreadMethod::Repeat
+);
+
+
+/// A generic gradient.
+#[derive(Clone, Debug)]
+pub struct BaseGradient {
+    /// Coordinate system units.
+    ///
+    /// `gradientUnits` in SVG.
+    pub units: Units,
+
+    /// Gradient transform.
+    ///
+    /// `gradientTransform` in SVG.
+    pub transform: Transform,
+
+    /// Gradient spreading method.
+    ///
+    /// `spreadMethod` in SVG.
+    pub spread_method: SpreadMethod,
+
+    /// A list of `stop` elements.
+    pub stops: Vec<Stop>,
+}
+
+
+/// A linear gradient.
+///
+/// `linearGradient` element in SVG.
+#[allow(missing_docs)]
+#[derive(Clone, Debug)]
+pub struct LinearGradient {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Can't be empty.
+    pub id: String,
+
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
+
+    /// Base gradient data.
+    pub base: BaseGradient,
+}
+
+impl std::ops::Deref for LinearGradient {
+    type Target = BaseGradient;
+
+    fn deref(&self) -> &Self::Target {
+        &self.base
+    }
+}
+
+
+/// A radial gradient.
+///
+/// `radialGradient` element in SVG.
+#[allow(missing_docs)]
+#[derive(Clone, Debug)]
+pub struct RadialGradient {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Can't be empty.
+    pub id: String,
+
+    pub cx: f64,
+    pub cy: f64,
+    pub r: PositiveNumber,
+    pub fx: f64,
+    pub fy: f64,
+
+    /// Base gradient data.
+    pub base: BaseGradient,
+}
+
+impl std::ops::Deref for RadialGradient {
+    type Target = BaseGradient;
+
+    fn deref(&self) -> &Self::Target {
+        &self.base
+    }
+}
+
+/// An alias to `NormalizedValue`.
+pub type StopOffset = NormalizedValue;
+
+/// Gradient's stop element.
+///
+/// `stop` element in SVG.
+#[derive(Clone, Copy, Debug)]
+pub struct Stop {
+    /// Gradient stop offset.
+    ///
+    /// `offset` in SVG.
+    pub offset: StopOffset,
+
+    /// Gradient stop color.
+    ///
+    /// `stop-color` in SVG.
+    pub color: Color,
+
+    /// Gradient stop opacity.
+    ///
+    /// `stop-opacity` in SVG.
+    pub opacity: Opacity,
+}
+
+
+/// A pattern element.
+///
+/// `pattern` element in SVG.
+#[derive(Clone, Debug)]
+pub struct Pattern {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Can't be empty.
+    pub id: String,
+
+    /// Coordinate system units.
+    ///
+    /// `patternUnits` in SVG.
+    pub units: Units,
+
+    // TODO: should not be accessible when `viewBox` is present.
+    /// Content coordinate system units.
+    ///
+    /// `patternContentUnits` in SVG.
+    pub content_units: Units,
+
+    /// Pattern transform.
+    ///
+    /// `patternTransform` in SVG.
+    pub transform: Transform,
+
+    /// Pattern rectangle.
+    ///
+    /// `x`, `y`, `width` and `height` in SVG.
+    pub rect: Rect,
+
+    /// Pattern viewbox.
+    pub view_box: Option<ViewBox>,
+}
+
+
+pub(crate) enum ServerOrColor {
     Server {
         id: String,
-        units: tree::Units,
+        units: Units,
     },
     Color {
-        color: tree::Color,
-        opacity: tree::Opacity,
+        color: Color,
+        opacity: Opacity,
     },
 }
 
-pub fn convert(
+pub(crate) fn convert(
     node: svgtree::Node,
-    state: &State,
-    id_generator: &mut NodeIdGenerator,
-    tree: &mut tree::Tree,
+    state: &converter::State,
+    id_generator: &mut converter::NodeIdGenerator,
+    tree: &mut Tree,
 ) -> Option<ServerOrColor> {
     // Check for existing.
     if let Some(existing_node) = tree.defs_by_id(node.element_id()) {
@@ -46,26 +211,26 @@ pub fn convert(
 #[inline(never)]
 fn convert_linear(
     node: svgtree::Node,
-    state: &State,
-    tree: &mut tree::Tree,
+    state: &converter::State,
+    tree: &mut Tree,
 ) -> Option<ServerOrColor> {
     let stops = convert_stops(find_gradient_with_stops(node)?);
     if stops.len() < 2 {
         return stops_to_color(&stops);
     }
 
-    let units = convert_units(node, AId::GradientUnits, tree::Units::ObjectBoundingBox);
+    let units = convert_units(node, AId::GradientUnits, Units::ObjectBoundingBox);
     let transform = resolve_attr(node, AId::GradientTransform)
         .attribute(AId::GradientTransform).unwrap_or_default();
 
     tree.append_to_defs(
-        tree::NodeKind::LinearGradient(tree::LinearGradient {
+        NodeKind::LinearGradient(LinearGradient {
             id: node.element_id().to_string(),
             x1: resolve_number(node, AId::X1, units, state, Length::zero()),
             y1: resolve_number(node, AId::Y1, units, state, Length::zero()),
             x2: resolve_number(node, AId::X2, units, state, Length::new(100.0, Unit::Percent)),
             y2: resolve_number(node, AId::Y2, units, state, Length::zero()),
-            base: tree::BaseGradient {
+            base: BaseGradient {
                 units,
                 transform,
                 spread_method: convert_spread_method(node),
@@ -83,15 +248,15 @@ fn convert_linear(
 #[inline(never)]
 fn convert_radial(
     node: svgtree::Node,
-    state: &State,
-    tree: &mut tree::Tree,
+    state: &converter::State,
+    tree: &mut Tree,
 ) -> Option<ServerOrColor> {
     let stops = convert_stops(find_gradient_with_stops(node)?);
     if stops.len() < 2 {
         return stops_to_color(&stops);
     }
 
-    let units = convert_units(node, AId::GradientUnits, tree::Units::ObjectBoundingBox);
+    let units = convert_units(node, AId::GradientUnits, Units::ObjectBoundingBox);
     let r = resolve_number(node, AId::R, units, state, Length::new(50.0, Unit::Percent));
 
     // 'A value of zero will cause the area to be painted as a single color
@@ -116,14 +281,14 @@ fn convert_radial(
         .attribute(AId::GradientTransform).unwrap_or_default();
 
     tree.append_to_defs(
-        tree::NodeKind::RadialGradient(tree::RadialGradient {
+        NodeKind::RadialGradient(RadialGradient {
             id: node.element_id().to_string(),
             cx,
             cy,
             r: r.into(),
             fx,
             fy,
-            base: tree::BaseGradient {
+            base: BaseGradient {
                 units,
                 transform,
                 spread_method,
@@ -141,9 +306,9 @@ fn convert_radial(
 #[inline(never)]
 fn convert_pattern(
     node: svgtree::Node,
-    state: &State,
-    id_generator: &mut NodeIdGenerator,
-    tree: &mut tree::Tree,
+    state: &converter::State,
+    id_generator: &mut converter::NodeIdGenerator,
+    tree: &mut Tree,
 ) -> Option<ServerOrColor> {
     let node_with_children = find_pattern_with_children(node)?;
 
@@ -151,15 +316,15 @@ fn convert_pattern(
         let n1 = resolve_attr(node, AId::ViewBox);
         let n2 = resolve_attr(node, AId::PreserveAspectRatio);
         n1.get_viewbox().map(|vb|
-            tree::ViewBox {
+            ViewBox {
                 rect: vb,
                 aspect: n2.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
             }
         )
     };
 
-    let units = convert_units(node, AId::PatternUnits, tree::Units::ObjectBoundingBox);
-    let content_units = convert_units(node, AId::PatternContentUnits, tree::Units::UserSpaceOnUse);
+    let units = convert_units(node, AId::PatternUnits, Units::ObjectBoundingBox);
+    let content_units = convert_units(node, AId::PatternContentUnits, Units::UserSpaceOnUse);
 
     let transform = resolve_attr(node, AId::PatternTransform)
         .attribute(AId::PatternTransform).unwrap_or_default();
@@ -175,7 +340,7 @@ fn convert_pattern(
         "Pattern '{}' has an invalid size. Skipped.", node.element_id()
     );
 
-    let mut patt = tree.append_to_defs(tree::NodeKind::Pattern(tree::Pattern {
+    let mut patt = tree.append_to_defs(NodeKind::Pattern(Pattern {
         id: node.element_id().to_string(),
         units,
         content_units,
@@ -184,7 +349,7 @@ fn convert_pattern(
         view_box,
     }));
 
-    super::convert_children(node_with_children, state, id_generator, &mut patt, tree);
+    converter::convert_children(node_with_children, state, id_generator, &mut patt, tree);
 
     if !patt.has_children() {
         return None;
@@ -196,16 +361,16 @@ fn convert_pattern(
     })
 }
 
-fn convert_spread_method(node: svgtree::Node) -> tree::SpreadMethod {
+fn convert_spread_method(node: svgtree::Node) -> SpreadMethod {
     let node = resolve_attr(node, AId::SpreadMethod);
     node.attribute(AId::SpreadMethod).unwrap_or_default()
 }
 
-pub fn convert_units(
+pub(crate) fn convert_units(
     node: svgtree::Node,
     name: AId,
-    def: tree::Units,
-) -> tree::Units {
+    def: Units,
+) -> Units {
     let node = resolve_attr(node, name);
     node.attribute(name).unwrap_or(def)
 }
@@ -214,7 +379,7 @@ fn find_gradient_with_stops(node: svgtree::Node) -> Option<svgtree::Node> {
     for link_id in node.href_iter() {
         let link = node.document().get(link_id);
         if !link.tag_name().unwrap().is_gradient() {
-            warn!(
+            log::warn!(
                 "Gradient '{}' cannot reference '{}' via 'xlink:href'.",
                 node.element_id(), link.tag_name().unwrap()
             );
@@ -233,7 +398,7 @@ fn find_pattern_with_children(node: svgtree::Node) -> Option<svgtree::Node> {
     for link_id in node.href_iter() {
         let link = node.document().get(link_id);
         if !link.has_tag_name(EId::Pattern) {
-            warn!(
+            log::warn!(
                 "Pattern '{}' cannot reference '{}' via 'xlink:href'.",
                 node.element_id(), link.tag_name().unwrap()
             );
@@ -248,14 +413,14 @@ fn find_pattern_with_children(node: svgtree::Node) -> Option<svgtree::Node> {
     None
 }
 
-fn convert_stops(grad: svgtree::Node) -> Vec<tree::Stop> {
+fn convert_stops(grad: svgtree::Node) -> Vec<Stop> {
     let mut stops = Vec::new();
 
     {
         let mut prev_offset = Length::zero();
         for stop in grad.children() {
             if !stop.has_tag_name(EId::Stop) {
-                warn!("Invalid gradient child: '{:?}'.", stop.tag_name().unwrap());
+                log::warn!("Invalid gradient child: '{:?}'.", stop.tag_name().unwrap());
                 continue;
             }
 
@@ -271,7 +436,7 @@ fn convert_stops(grad: svgtree::Node) -> Vec<tree::Stop> {
 
             let color = match stop.attribute(AId::StopColor) {
                 Some(&svgtree::AttributeValue::CurrentColor) => {
-                    stop.find_attribute(AId::Color).unwrap_or_else(tree::Color::black)
+                    stop.find_attribute(AId::Color).unwrap_or_else(Color::black)
                 }
                 Some(&svgtree::AttributeValue::Color(c)) => {
                     c
@@ -281,7 +446,7 @@ fn convert_stops(grad: svgtree::Node) -> Vec<tree::Stop> {
                 }
             };
 
-            stops.push(tree::Stop {
+            stops.push(Stop {
                 offset: offset.into(),
                 color,
                 opacity: stop.attribute(AId::StopOpacity).unwrap_or_default(),
@@ -371,8 +536,8 @@ fn convert_stops(grad: svgtree::Node) -> Vec<tree::Stop> {
 }
 
 #[inline(never)]
-pub fn resolve_number(
-    node: svgtree::Node, name: AId, units: tree::Units, state: &State, def: Length
+pub(crate) fn resolve_number(
+    node: svgtree::Node, name: AId, units: Units, state: &converter::State, def: Length
 ) -> f64 {
     resolve_attr(node, name).convert_length(name, units, state, def)
 }
@@ -521,9 +686,7 @@ fn prepare_focal(cx: f64, cy: f64, r: f64, fx: f64, fy: f64) -> (f64, f64) {
     (line.x2, line.y2)
 }
 
-fn stops_to_color(
-    stops: &[tree::Stop],
-) -> Option<ServerOrColor> {
+fn stops_to_color(stops: &[Stop]) -> Option<ServerOrColor> {
     if stops.is_empty() {
         None
     } else {

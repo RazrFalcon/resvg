@@ -7,18 +7,9 @@ use unicode_vo::Orientation as CharOrientation;
 use unicode_script::UnicodeScript;
 use ttf_parser::GlyphId;
 
-use crate::{tree, fontdb_ext, convert::prelude::*};
-use crate::tree::CubicBezExt;
-use crate::fontdb_ext::DatabaseExt;
-use super::convert::{
-    ByteIndex,
-    CharacterPosition,
-    TextAnchor,
-    TextChunk,
-    TextFlow,
-    TextPath,
-    WritingMode,
-};
+use crate::{CubicBezExt, FuzzyZero, IsValidLength, PathData, PathSegment, Transform, converter};
+use super::convert::{ByteIndex, CharacterPosition, TextAnchor, TextChunk, TextFlow, TextPath, WritingMode};
+use super::fontdb_ext::{self, DatabaseExt};
 
 
 /// A glyph.
@@ -102,10 +93,10 @@ pub struct OutlinedCluster {
     pub has_relative_shift: bool,
 
     /// An actual outline.
-    pub path: tree::PathData,
+    pub path: PathData,
 
     /// A cluster's transform that contains it's position, rotation, etc.
-    pub transform: tree::Transform,
+    pub transform: Transform,
 
     /// Not all clusters should be rendered.
     ///
@@ -164,7 +155,7 @@ impl<'a> Iterator for GlyphClusters<'a> {
 /// but not the text layouting. So all clusters are in the 0x0 position.
 pub fn outline_chunk(
     chunk: &TextChunk,
-    state: &State,
+    state: &converter::State,
 ) -> Vec<OutlinedCluster> {
     let mut glyphs = Vec::new();
     for span in &chunk.spans {
@@ -179,7 +170,7 @@ pub fn outline_chunk(
         // We assume, that shaping with an any font will produce the same amount of glyphs.
         // Otherwise an error.
         if glyphs.len() != tmp_glyphs.len() {
-            warn!("Text layouting failed.");
+            log::warn!("Text layouting failed.");
             return Vec::new();
         }
 
@@ -208,7 +199,7 @@ fn shape_text(
     text: &str,
     font: fontdb_ext::Font,
     small_caps: bool,
-    state: &State,
+    state: &converter::State,
 ) -> Vec<Glyph> {
     let mut glyphs = shape_text_with_font(text, font, small_caps, state).unwrap_or_default();
 
@@ -269,7 +260,7 @@ fn shape_text(
         if glyph.is_missing() {
             let c = glyph.byte_idx.char_from(text);
             // TODO: print a full grapheme
-            warn!("No fonts with a {}/U+{:X} character were found.", c, c as u32);
+            log::warn!("No fonts with a {}/U+{:X} character were found.", c, c as u32);
         }
     }
 
@@ -283,7 +274,7 @@ fn shape_text_with_font(
     text: &str,
     font: fontdb_ext::Font,
     small_caps: bool,
-    state: &State,
+    state: &converter::State,
 ) -> Option<Vec<Glyph>> {
     state.opt.fontdb.with_face_data(font.id, |font_data, face_index| -> Option<Vec<Glyph>> {
         let rb_font = rustybuzz::Face::from_slice(font_data, face_index)?;
@@ -351,7 +342,7 @@ fn outline_cluster(
 ) -> OutlinedCluster {
     debug_assert!(!glyphs.is_empty());
 
-    let mut path = tree::PathData::new();
+    let mut path = PathData::new();
     let mut width = 0.0;
     let mut x = 0.0;
 
@@ -362,7 +353,7 @@ fn outline_cluster(
 
         if !outline.is_empty() {
             // By default, glyphs are upside-down, so we have to mirror them.
-            let mut ts = tree::Transform::new_scale(1.0, -1.0);
+            let mut ts = Transform::new_scale(1.0, -1.0);
 
             // Scale to font-size.
             ts.scale(sx, sx);
@@ -400,7 +391,7 @@ fn outline_cluster(
         x_height: font.x_height(font_size),
         has_relative_shift: false,
         path,
-        transform: tree::Transform::default(),
+        transform: Transform::default(),
         visible: true,
     }
 }
@@ -411,7 +402,7 @@ fn outline_cluster(
 fn find_font_for_char(
     c: char,
     exclude_fonts: &[fontdb::ID],
-    state: &State,
+    state: &converter::State,
 ) -> Option<fontdb_ext::Font> {
     let base_font_id = exclude_fonts[0];
 
@@ -435,7 +426,7 @@ fn find_font_for_char(
             continue;
         }
 
-        warn!("Fallback from {} to {}.", base_face.family, face.family);
+        log::warn!("Fallback from {} to {}.", base_face.family, face.family);
         return state.opt.fontdb.load_font(face.id);
     }
 
@@ -608,7 +599,7 @@ struct PathNormal {
 fn collect_normals(
     chunk: &TextChunk,
     clusters: &[OutlinedCluster],
-    path: &tree::PathData,
+    path: &PathData,
     pos_list: &[CharacterPosition],
     char_offset: usize,
     offset: f64,
@@ -642,7 +633,7 @@ fn collect_normals(
     }
 
     let (mut prev_mx, mut prev_my, mut prev_x, mut prev_y) = {
-        if let tree::PathSegment::MoveTo { x, y } = path[0] {
+        if let PathSegment::MoveTo { x, y } = path[0] {
             (x, y, x, y)
         } else {
             unreachable!();
@@ -659,20 +650,20 @@ fn collect_normals(
     let mut length = 0.0;
     for seg in path.iter() {
         let curve = match *seg {
-            tree::PathSegment::MoveTo { x, y } => {
+            PathSegment::MoveTo { x, y } => {
                 prev_mx = x;
                 prev_my = y;
                 prev_x = x;
                 prev_y = y;
                 continue;
             }
-            tree::PathSegment::LineTo { x, y } => {
+            PathSegment::LineTo { x, y } => {
                 create_curve_from_line(prev_x, prev_y, x, y)
             }
-            tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+            PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
                 kurbo::CubicBez::from_points(prev_x, prev_y, x1, y1, x2, y2, x, y)
             }
-            tree::PathSegment::ClosePath => {
+            PathSegment::ClosePath => {
                 create_curve_from_line(prev_x, prev_y, prev_mx, prev_my)
             }
         };
@@ -832,7 +823,7 @@ pub fn apply_writing_mode(
             let dy = cluster.width - cluster.height();
 
             // Rotate a cluster 90deg counter clockwise by the center.
-            let mut ts = tree::Transform::default();
+            let mut ts = Transform::default();
             ts.translate(cluster.width / 2.0, 0.0);
             ts.rotate(-90.0);
             ts.translate(-cluster.width / 2.0, -dy);

@@ -2,11 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{svgtree, tree};
-use super::prelude::*;
-use super::{GroupKind, convert_group, convert_element};
-use crate::convert::NodeIdGenerator;
-
+use crate::svgtree::{self, AId};
+use crate::{converter, Node, OptionsRef, Tree};
 
 // Full list can be found here: https://www.w3.org/TR/SVG11/feature.html
 static FEATURES: &[&str] = &[
@@ -43,26 +40,26 @@ static FEATURES: &[&str] = &[
 ];
 
 
-pub fn convert(
+pub(crate) fn convert(
     node: svgtree::Node,
-    state: &State,
-    id_generator: &mut NodeIdGenerator,
-    parent: &mut tree::Node,
-    tree: &mut tree::Tree,
+    state: &converter::State,
+    id_generator: &mut converter::NodeIdGenerator,
+    parent: &mut Node,
+    tree: &mut Tree,
 ) {
     let child = try_opt!(node.children().find(|n| is_condition_passed(*n, state.opt)));
-    match convert_group(node, state, false, id_generator, parent, tree) {
-        GroupKind::Create(ref mut g) => {
-            convert_element(child, state, id_generator, g, tree);
+    match converter::convert_group(node, state, false, id_generator, parent, tree) {
+        converter::GroupKind::Create(ref mut g) => {
+            converter::convert_element(child, state, id_generator, g, tree);
         }
-        GroupKind::Skip => {
-            convert_element(child, state, id_generator, parent, tree);
+        converter::GroupKind::Skip => {
+            converter::convert_element(child, state, id_generator, parent, tree);
         }
-        GroupKind::Ignore => {}
+        converter::GroupKind::Ignore => {}
     }
 }
 
-pub fn is_condition_passed(
+pub(crate) fn is_condition_passed(
     node: svgtree::Node,
     opt: &OptionsRef,
 ) -> bool {

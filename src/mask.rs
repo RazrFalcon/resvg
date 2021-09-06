@@ -80,6 +80,23 @@ fn image_to_mask(data: &mut [rgb::RGBA8]) {
         pixel.r = 0;
         pixel.g = 0;
         pixel.b = 0;
-        pixel.a = usvg::utils::f64_bound(0.0, luma * 255.0, 255.0).ceil() as u8;
+        pixel.a = f64_bound(0.0, luma * 255.0, 255.0).ceil() as u8;
+    }
+}
+
+// TODO: https://github.com/rust-lang/rust/issues/44095
+/// Bounds `f64` number.
+#[inline]
+fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
+    debug_assert!(min.is_finite());
+    debug_assert!(val.is_finite());
+    debug_assert!(max.is_finite());
+
+    if val > max {
+        max
+    } else if val < min {
+        min
+    } else {
+        val
     }
 }

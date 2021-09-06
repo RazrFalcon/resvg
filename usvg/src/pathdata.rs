@@ -45,7 +45,7 @@ pub struct PathData(pub Vec<PathSegment>);
 ///
 /// `PathData` is usually pretty big and it's expensive to clone it,
 /// so we are using `Rc`.
-pub type SharedPathData = Rc<PathData>;
+pub(crate) type SharedPathData = Rc<PathData>;
 
 impl PathData {
     /// Creates a new path.

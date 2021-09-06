@@ -2,17 +2,48 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::tree;
-use crate::svgtree;
-use super::prelude::*;
-use crate::convert::NodeIdGenerator;
+use svgtypes::{Length, LengthUnit as Unit};
 
+use crate::{converter, NodeKind, Rect, Tree, Units};
+use crate::svgtree::{self, AId, EId};
 
-pub fn convert(
+/// A mask element.
+///
+/// `mask` element in SVG.
+#[derive(Clone, Debug)]
+pub struct Mask {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Can't be empty.
+    pub id: String,
+
+    /// Coordinate system units.
+    ///
+    /// `maskUnits` in SVG.
+    pub units: Units,
+
+    /// Content coordinate system units.
+    ///
+    /// `maskContentUnits` in SVG.
+    pub content_units: Units,
+
+    /// Mask rectangle.
+    ///
+    /// `x`, `y`, `width` and `height` in SVG.
+    pub rect: Rect,
+
+    /// Additional mask.
+    ///
+    /// `mask` in SVG.
+    pub mask: Option<String>,
+}
+
+pub(crate) fn convert(
     node: svgtree::Node,
-    state: &State,
-    id_generator: &mut NodeIdGenerator,
-    tree: &mut tree::Tree,
+    state: &converter::State,
+    id_generator: &mut converter::NodeIdGenerator,
+    tree: &mut Tree,
 ) -> Option<String> {
     // A `mask` attribute must reference a `mask` element.
     if !node.has_tag_name(EId::Mask) {
@@ -26,8 +57,8 @@ pub fn convert(
         }
     }
 
-    let units = node.attribute(AId::MaskUnits).unwrap_or(tree::Units::ObjectBoundingBox);
-    let content_units = node.attribute(AId::MaskContentUnits).unwrap_or(tree::Units::UserSpaceOnUse);
+    let units = node.attribute(AId::MaskUnits).unwrap_or(Units::ObjectBoundingBox);
+    let content_units = node.attribute(AId::MaskContentUnits).unwrap_or(Units::UserSpaceOnUse);
 
     let rect = Rect::new(
         node.convert_length(AId::X, units, state, Length::new(-10.0, Unit::Percent)),
@@ -51,7 +82,7 @@ pub fn convert(
         }
     }
 
-    let mut mask = tree.append_to_defs(tree::NodeKind::Mask(tree::Mask {
+    let mut mask = tree.append_to_defs(NodeKind::Mask(Mask {
         id: node.element_id().to_string(),
         units,
         content_units,
@@ -59,7 +90,7 @@ pub fn convert(
         mask,
     }));
 
-    super::convert_children(node, state, id_generator, &mut mask, tree);
+    converter::convert_children(node, state, id_generator, &mut mask, tree);
 
     if mask.has_children() {
         Some(node.element_id().to_string())

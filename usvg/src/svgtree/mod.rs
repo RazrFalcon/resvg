@@ -2,21 +2,20 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::fmt;
+#![allow(missing_debug_implementations)]
+
 use std::collections::HashMap;
 
-use log::warn;
-
-use crate::geom::Rect;
-use crate::tree;
-use crate::{Transform, FuzzyEq};
+use crate::geom::{Rect, Transform, FuzzyEq};
+use crate::{converter, units};
+use crate::{EnableBackground, IsValidLength, Opacity, OptionsRef, SharedPathData, Units};
 
 mod parse;
-
 mod names;
-pub use names::*;
-
 #[cfg(feature = "text")] mod text;
+
+pub use names::{EId, AId};
+use svgtypes::Length;
 
 type Range = std::ops::Range<usize>;
 
@@ -54,8 +53,8 @@ impl Document {
     }
 }
 
-impl fmt::Debug for Document {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+impl std::fmt::Debug for Document {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         if !self.root().has_children() {
             return write!(f, "Document []");
         }
@@ -71,8 +70,8 @@ impl fmt::Debug for Document {
             };
         }
 
-        fn print_children(parent: Node, depth: usize, f: &mut fmt::Formatter)
-            -> Result<(), fmt::Error>
+        fn print_children(parent: Node, depth: usize, f: &mut std::fmt::Formatter)
+            -> Result<(), std::fmt::Error>
         {
             for child in parent.children() {
                 if child.is_element() {
@@ -144,14 +143,14 @@ pub enum AttributeValue {
     Angle(svgtypes::Angle),
     AspectRatio(svgtypes::AspectRatio),
     Color(svgtypes::Color),
-    EnableBackground(tree::EnableBackground),
+    EnableBackground(EnableBackground),
     Length(svgtypes::Length),
     Link(String),
     Number(f64),
     NumberList(Vec<f64>),
-    Opacity(tree::Opacity),
+    Opacity(Opacity),
     Paint(String, Option<svgtypes::PaintFallback>),
-    Path(tree::SharedPathData),
+    Path(SharedPathData),
     String(String),
     Transform(Transform),
     ViewBox(svgtypes::ViewBox),
@@ -163,8 +162,8 @@ pub struct Attribute {
     pub value: AttributeValue,
 }
 
-impl fmt::Debug for Attribute {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+impl std::fmt::Debug for Attribute {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         write!(f, "Attribute {{ name: {:?}, value: {:?} }}", self.name, self.value)
     }
 }
@@ -407,10 +406,47 @@ impl<'a> Node<'a> {
             is_finished: false,
         }
     }
+
+    pub fn resolve_length(&self, aid: AId, state: &converter::State, def: f64) -> f64 {
+        debug_assert!(!matches!(aid, AId::BaselineShift | AId::FontSize),
+                      "{} cannot be resolved via this function", aid);
+
+        if let Some(n) = self.find_node_with_attribute(aid) {
+            if let Some(length) = n.attribute(aid) {
+                return units::convert_length(length, n, aid, Units::UserSpaceOnUse, state);
+            }
+        }
+
+        def
+    }
+
+    pub fn resolve_valid_length(&self, aid: AId, state: &converter::State, def: f64) -> Option<f64> {
+        let n = self.resolve_length(aid, state, def);
+        if n.is_valid_length() { Some(n) } else { None }
+    }
+
+    pub fn convert_length(&self, aid: AId, object_units: Units, state: &converter::State, def: Length) -> f64 {
+        units::convert_length(self.attribute(aid).unwrap_or(def), *self, aid, object_units, state)
+    }
+
+    #[allow(dead_code)]
+    pub fn try_convert_length(&self, aid: AId, object_units: Units, state: &converter::State) -> Option<f64> {
+        Some(units::convert_length(self.attribute(aid)?, *self, aid, object_units, state))
+    }
+
+    pub fn convert_user_length(&self, aid: AId, state: &converter::State, def: Length) -> f64 {
+        self.convert_length(aid, Units::UserSpaceOnUse, state, def)
+    }
+
+    pub fn is_visible_element(&self, opt: &OptionsRef) -> bool {
+           self.attribute(AId::Display) != Some("none")
+        && self.has_valid_transform(AId::Transform)
+        && crate::switch::is_condition_passed(*self, opt)
+    }
 }
 
-impl fmt::Debug for Node<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+impl std::fmt::Debug for Node<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         match self.d.kind {
             NodeKind::Root => write!(f, "Root"),
             NodeKind::Element { .. } => {
@@ -568,7 +604,7 @@ impl<'a> Iterator for HrefIter<'a> {
 
         if let Some(link) = self.doc.get(self.curr).attribute::<Node>(AId::Href) {
             if link.id() == self.curr || link.id() == self.origin {
-                warn!(
+                log::warn!(
                     "Element '#{}' cannot reference itself via 'xlink:href'.",
                     self.doc.get(self.origin).element_id()
                 );
@@ -606,8 +642,8 @@ impl_from_value!(svgtypes::ViewBox, ViewBox);
 impl_from_value!(svgtypes::AspectRatio, AspectRatio);
 impl_from_value!(svgtypes::Angle, Angle);
 impl_from_value!(f64, Number);
-impl_from_value!(tree::Opacity, Opacity);
-impl_from_value!(tree::EnableBackground, EnableBackground);
+impl_from_value!(Opacity, Opacity);
+impl_from_value!(EnableBackground, EnableBackground);
 
 impl<'a> FromValue<'a> for &'a AttributeValue {
     fn get(node: Node<'a>, aid: AId) -> Option<Self> {
@@ -632,7 +668,7 @@ impl<'a> FromValue<'a> for Transform {
     }
 }
 
-impl FromValue<'_> for tree::SharedPathData {
+impl FromValue<'_> for crate::SharedPathData {
     fn get(node: Node, aid: AId) -> Option<Self> {
         let a = node.attributes().iter().find(|a| a.name == aid)?;
         // Cloning is cheap, since it's a Rc.

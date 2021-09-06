@@ -7,11 +7,10 @@ use std::io::Write;
 
 use xmlwriter::XmlWriter;
 
-use super::*;
-use crate::{geom::*, svgtree::{EId, AId}, IsDefault, FuzzyZero};
+use crate::svgtree::{EId, AId};
+use crate::*;
 
-
-pub fn convert(tree: &Tree, opt: &XmlOptions) -> String {
+pub(crate) fn convert(tree: &Tree, opt: &XmlOptions) -> String {
     let mut xml = XmlWriter::new(opt.writer_opts);
 
     let svg_node = tree.svg_node();

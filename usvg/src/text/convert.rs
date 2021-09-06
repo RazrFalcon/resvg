@@ -2,13 +2,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::cmp;
 use std::rc::Rc;
 
-use crate::{fontdb_ext, svgtree, tree, Transform};
-use crate::convert::{prelude::*, style, units, NodeIdGenerator};
-use crate::fontdb_ext::DatabaseExt;
+use svgtypes::{Length, LengthUnit};
+
+use crate::svgtree::{self, AId, EId};
+use crate::{ShapeRendering, TextRendering, Visibility, converter, style, units};
+use crate::{IsValidLength, SharedPathData, Transform, Tree, Units};
 use super::TextNode;
+use super::fontdb_ext::{self, DatabaseExt};
 
 
 /// A read-only text index in bytes.
@@ -72,7 +74,7 @@ pub struct TextPath {
     /// Percentage values already resolved.
     pub start_offset: f64,
 
-    pub path: tree::SharedPathData,
+    pub path: SharedPathData,
 }
 
 
@@ -113,14 +115,14 @@ impl TextChunk {
 pub struct TextSpan {
     pub start: usize,
     pub end: usize,
-    pub fill: Option<tree::Fill>,
-    pub stroke: Option<tree::Stroke>,
-    pub font: fontdb_ext::Font,
+    pub fill: Option<style::Fill>,
+    pub stroke: Option<style::Stroke>,
+    pub font: super::fontdb_ext::Font,
     pub font_size: f64,
     pub small_caps: bool,
     pub decoration: TextDecoration,
     pub baseline_shift: f64,
-    pub visibility: tree::Visibility,
+    pub visibility: Visibility,
     pub letter_spacing: f64,
     pub word_spacing: f64,
 }
@@ -150,9 +152,9 @@ struct IterState {
 pub fn collect_text_chunks(
     text_node: TextNode,
     pos_list: &[CharacterPosition],
-    state: &State,
-    id_generator: &mut NodeIdGenerator,
-    tree: &mut tree::Tree,
+    state: &converter::State,
+    id_generator: &mut converter::NodeIdGenerator,
+    tree: &mut Tree,
 ) -> Vec<TextChunk> {
     let mut iter_state = IterState {
         chars_count: 0,
@@ -171,9 +173,9 @@ fn collect_text_chunks_impl(
     text_node: TextNode,
     parent: svgtree::Node,
     pos_list: &[CharacterPosition],
-    state: &State,
-    id_generator: &mut NodeIdGenerator,
-    tree: &mut tree::Tree,
+    state: &converter::State,
+    id_generator: &mut converter::NodeIdGenerator,
+    tree: &mut Tree,
     iter_state: &mut IterState,
 ) {
     for child in parent.children() {
@@ -314,7 +316,7 @@ fn collect_text_chunks_impl(
 
 fn resolve_text_flow(
     node: svgtree::Node,
-    state: &State,
+    state: &converter::State,
 ) -> Option<TextFlow> {
     let linked_node = node.attribute::<svgtree::Node>(AId::Href)?;
 
@@ -325,7 +327,7 @@ fn resolve_text_flow(
         | EId::Line
         | EId::Polyline
         | EId::Polygon => super::super::shapes::convert(linked_node, state)?,
-        EId::Path => linked_node.attribute::<tree::SharedPathData>(AId::D)?,
+        EId::Path => linked_node.attribute::<SharedPathData>(AId::D)?,
         _ => return None,
     };
 
@@ -339,7 +341,7 @@ fn resolve_text_flow(
     };
 
     let start_offset: Length = node.attribute(AId::StartOffset).unwrap_or_default();
-    let start_offset = if start_offset.unit == Unit::Percent {
+    let start_offset = if start_offset.unit == LengthUnit::Percent {
         // 'If a percentage is given, then the `startOffset` represents
         // a percentage distance along the entire path.'
         let path_len = path.length();
@@ -357,22 +359,22 @@ fn resolve_text_flow(
 
 pub fn resolve_rendering_mode(
     text_node: TextNode,
-    state: &State,
-) -> tree::ShapeRendering {
-    let mode: tree::TextRendering = text_node
+    state: &converter::State,
+) -> ShapeRendering {
+    let mode: TextRendering = text_node
         .find_attribute(AId::TextRendering)
         .unwrap_or(state.opt.text_rendering);
 
     match mode {
-        tree::TextRendering::OptimizeSpeed      => tree::ShapeRendering::CrispEdges,
-        tree::TextRendering::OptimizeLegibility => tree::ShapeRendering::GeometricPrecision,
-        tree::TextRendering::GeometricPrecision => tree::ShapeRendering::GeometricPrecision,
+        TextRendering::OptimizeSpeed      => ShapeRendering::CrispEdges,
+        TextRendering::OptimizeLegibility => ShapeRendering::GeometricPrecision,
+        TextRendering::GeometricPrecision => ShapeRendering::GeometricPrecision,
     }
 }
 
 fn resolve_font(
     node: svgtree::Node,
-    state: &State,
+    state: &converter::State,
 ) -> Option<fontdb_ext::Font> {
     let style = node.find_attribute(AId::FontStyle).unwrap_or_default();
     let stretch = conv_font_stretch(node);
@@ -514,7 +516,7 @@ pub struct CharacterPosition {
 /// The result should be: `[100, 50, 120, None]`
 pub fn resolve_positions_list(
     text_node: TextNode,
-    state: &State,
+    state: &converter::State,
 ) -> Vec<CharacterPosition> {
     // Allocate a list that has all characters positions set to `None`.
     let total_chars = count_chars(*text_node);
@@ -534,7 +536,7 @@ pub fn resolve_positions_list(
                     if let Some(num_list) = units::convert_list(child, $aid, state) {
                         // Note that we are using not the total count,
                         // but the amount of characters in the current `tspan` (with children).
-                        let len = cmp::min(num_list.len(), child_chars);
+                        let len = std::cmp::min(num_list.len(), child_chars);
                         for i in 0..len {
                             list[offset + i].$field = Some(num_list[i]);
                         }
@@ -593,8 +595,8 @@ pub fn resolve_rotate_list(text_node: TextNode) -> Vec<f64> {
 
 #[derive(Clone)]
 pub struct TextDecorationStyle {
-    pub fill: Option<tree::Fill>,
-    pub stroke: Option<tree::Stroke>,
+    pub fill: Option<style::Fill>,
+    pub stroke: Option<style::Stroke>,
 }
 
 #[derive(Clone)]
@@ -610,9 +612,9 @@ pub struct TextDecoration {
 fn resolve_decoration(
     text_node: TextNode,
     tspan: svgtree::Node,
-    state: &State,
-    id_generator: &mut NodeIdGenerator,
-    tree: &mut tree::Tree,
+    state: &converter::State,
+    id_generator: &mut converter::NodeIdGenerator,
+    tree: &mut Tree,
 ) -> TextDecoration {
     // TODO: explain the algorithm
 
@@ -678,17 +680,17 @@ fn conv_text_decoration2(tspan: svgtree::Node) -> TextDecorationTypes {
 
 fn resolve_baseline_shift(
     node: svgtree::Node,
-    state: &State,
+    state: &converter::State,
 ) -> f64 {
     let mut shift = 0.0;
     let nodes: Vec<_> = node.ancestors().take_while(|n| !n.has_tag_name(EId::Text)).collect();
     for n in nodes.iter().rev().cloned() {
         if let Some(len) = n.attribute::<Length>(AId::BaselineShift) {
-            if len.unit == Unit::Percent {
+            if len.unit == LengthUnit::Percent {
                 shift += units::resolve_font_size(n, state) * (len.number / 100.0);
             } else {
                 shift += units::convert_length(
-                    len, n, AId::BaselineShift, tree::Units::ObjectBoundingBox, state,
+                    len, n, AId::BaselineShift, Units::ObjectBoundingBox, state,
                 );
             }
         } else if let Some(s) = n.attribute(AId::BaselineShift) {
@@ -716,7 +718,7 @@ fn resolve_baseline_shift(
 
 fn resolve_font_weight(node: svgtree::Node) -> fontdb::Weight {
     fn bound(min: usize, val: usize, max: usize) -> usize {
-        cmp::max(min, cmp::min(max, val))
+        std::cmp::max(min, std::cmp::min(max, val))
     }
 
     let nodes: Vec<_> = node.ancestors().collect();

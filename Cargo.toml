@@ -40,6 +40,6 @@ text = ["usvg/text"]
 system-fonts = ["usvg/system-fonts"]
 # enables font files memmaping for faster loading (only for `text`)
 memmap-fonts = ["usvg/memmap-fonts"]
-# enables SVG the --dump-svg flag in CLI
+# enables the --dump-svg flag in CLI
 # adds around 50KiB to your binary
 dump-svg = ["usvg/export"]

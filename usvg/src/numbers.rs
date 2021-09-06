@@ -2,9 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-
-use std::fmt;
-
 use crate::{IsValidLength, FuzzyEq, FuzzyZero};
 use crate::utils::f64_bound;
 
@@ -77,80 +74,6 @@ wrap!(NormalizedValue);
 /// An alias to `NormalizedValue`.
 pub type Opacity = NormalizedValue;
 
-/// An alias to `NormalizedValue`.
-pub type StopOffset = NormalizedValue;
-
-
-/// A `stroke-width` value.
-///
-/// Just like `f64` but immutable and guarantee to be >0.0.
-#[derive(Clone, Copy, Debug)]
-pub struct StrokeWidth(f64);
-
-impl StrokeWidth {
-    /// Creates a new `StrokeWidth` value.
-    #[inline]
-    pub fn new(n: f64) -> Self {
-        debug_assert!(n.is_finite());
-        debug_assert!(n.is_valid_length());
-
-        // Fallback to `1.0` when value is invalid.
-        let n = if !n.is_valid_length() { 1.0 } else { n };
-
-        StrokeWidth(n)
-    }
-
-    /// Returns an underlying value.
-    #[inline]
-    pub fn value(&self) -> f64 {
-        self.0
-    }
-}
-
-impl Default for StrokeWidth {
-    #[inline]
-    fn default() -> Self {
-        StrokeWidth::new(1.0)
-    }
-}
-
-wrap!(StrokeWidth);
-
-
-/// A `stroke-miterlimit` value.
-///
-/// Just like `f64` but immutable and guarantee to be >=1.0.
-#[derive(Clone, Copy, Debug)]
-pub struct StrokeMiterlimit(f64);
-
-impl StrokeMiterlimit {
-    /// Creates a new `StrokeMiterlimit` value.
-    #[inline]
-    pub fn new(n: f64) -> Self {
-        debug_assert!(n.is_finite());
-        debug_assert!(n >= 1.0);
-
-        let n = if !(n >= 1.0) { 1.0 } else { n };
-
-        StrokeMiterlimit(n)
-    }
-
-    /// Returns an underlying value.
-    #[inline]
-    pub fn value(&self) -> f64 {
-        self.0
-    }
-}
-
-impl Default for StrokeMiterlimit {
-    #[inline]
-    fn default() -> Self {
-        StrokeMiterlimit::new(4.0)
-    }
-}
-
-wrap!(StrokeMiterlimit);
-
 
 /// A `font-size` value.
 ///
@@ -215,8 +138,8 @@ impl PositiveNumber {
 
 wrap!(PositiveNumber);
 
-impl fmt::Display for PositiveNumber {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for PositiveNumber {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
