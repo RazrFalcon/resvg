@@ -60,4 +60,4 @@ features = ["cairo-backend", "qt-backend", "raqote-backend", "skia-backend"]
 doctest = false
 
 [patch.crates-io]
-skia-safe = { git = "https://github.com/StewartCanva/rust-skia", rev = "6b0e16b4a22f22b6baba4cbf0476fd60e87e64dc" }
+skia-safe = { git = "https://github.com/StewartCanva/rust-skia", rev = "b5dce15c21ffc0e245e136423bebb20b590ea62a" }

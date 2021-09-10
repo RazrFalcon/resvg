@@ -1305,4 +1305,4 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 [[patch.unused]]
 name = "skia-safe"
 version = "0.40.2"
-source = "git+https://github.com/StewartCanva/rust-skia?rev=6b0e16b4a22f22b6baba4cbf0476fd60e87e64dc#6b0e16b4a22f22b6baba4cbf0476fd60e87e64dc"
+source = "git+https://github.com/StewartCanva/rust-skia?rev=b5dce15c21ffc0e245e136423bebb20b590ea62a#b5dce15c21ffc0e245e136423bebb20b590ea62a"
