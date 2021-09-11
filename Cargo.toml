@@ -13,7 +13,6 @@ members = ["c-api", "svgfilters", "usvg"]
 
 [[bin]]
 name = "resvg"
-required-features = ["filter", "text", "system-fonts", "memmap-fonts"]
 
 [dependencies]
 jpeg-decoder = { version = "0.1", default-features = false }
