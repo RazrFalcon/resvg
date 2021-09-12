@@ -8,7 +8,7 @@ pub fn clip(
     tree: &usvg::Tree,
     node: &usvg::Node,
     cp: &usvg::ClipPath,
-    bbox: Rect,
+    bbox: PathBbox,
     canvas: &mut Canvas,
 ) {
     let mut clip_pixmap = try_opt!(tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height()));
@@ -19,6 +19,9 @@ pub fn clip(
     clip_canvas.apply_transform(cp.transform.to_native());
 
     if cp.units == usvg::Units::ObjectBoundingBox {
+        let bbox = try_opt_warn_or!(bbox.to_rect(), (),
+            "Clipping of zero-sized shapes is not allowed.");
+
         clip_canvas.apply_transform(usvg::Transform::from_bbox(bbox).to_native());
     }
 
@@ -62,7 +65,7 @@ fn clip_group(
     tree: &usvg::Tree,
     node: &usvg::Node,
     g: &usvg::Group,
-    bbox: Rect,
+    bbox: PathBbox,
     canvas: &mut Canvas,
 ) {
     if let Some(ref id) = g.clip_path {

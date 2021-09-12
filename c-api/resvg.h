@@ -121,7 +121,21 @@ typedef enum resvg_image_rendering {
 } resvg_image_rendering;
 
 /**
+ * @brief A path bbox representation.
+ *
+ * Width *or* height are guarantee to be > 0.
+ */
+typedef struct resvg_path_bbox {
+    double x;
+    double y;
+    double width;
+    double height;
+} resvg_path_bbox;
+
+/**
  * @brief A rectangle representation.
+ *
+ * Width *and* height are guarantee to be > 0.
  */
 typedef struct resvg_rect {
     double x;
@@ -132,6 +146,8 @@ typedef struct resvg_rect {
 
 /**
  * @brief A size representation.
+ *
+ * Width and height are guarantee to be > 0.
  */
 typedef struct resvg_size {
     double width;
@@ -466,7 +482,7 @@ bool resvg_get_node_transform(const resvg_render_tree *tree,
  */
 bool resvg_get_node_bbox(const resvg_render_tree *tree,
                          const char *id,
-                         resvg_rect *bbox);
+                         resvg_path_bbox *bbox);
 
 /**
  * @brief Destroys the #resvg_render_tree.

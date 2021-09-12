@@ -383,6 +383,168 @@ fn size_scale_f64(
 }
 
 
+/// A path bbox representation.
+///
+/// The same as [`Rect`], but width or height are allowed to be zero
+/// to represent horizontal or vertical lines.
+#[derive(Clone, Copy)]
+pub struct PathBbox {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+}
+
+impl PathBbox {
+    /// Creates a new `PathBbox` from values.
+    #[inline]
+    pub fn new(x: f64, y: f64, width: f64, height: f64) -> Option<Self> {
+        if width.is_valid_length() || height.is_valid_length() {
+            Some(PathBbox { x, y, width, height })
+        } else {
+            None
+        }
+    }
+
+    /// Creates a new `PathBbox` for bounding box calculation.
+    ///
+    /// Shorthand for `PathBbox::new(f64::MAX, f64::MAX, 1.0, 1.0)`.
+    #[inline]
+    pub fn new_bbox() -> Self {
+        PathBbox::new(f64::MAX, f64::MAX, 1.0, 1.0).unwrap()
+    }
+
+    /// Returns X position.
+    #[inline]
+    pub fn x(&self) -> f64 {
+        self.x
+    }
+
+    /// Returns Y position.
+    #[inline]
+    pub fn y(&self) -> f64 {
+        self.y
+    }
+
+    /// Returns width.
+    #[inline]
+    pub fn width(&self) -> f64 {
+        self.width
+    }
+
+    /// Returns height.
+    #[inline]
+    pub fn height(&self) -> f64 {
+        self.height
+    }
+
+    /// Returns left edge position.
+    #[inline]
+    pub fn left(&self) -> f64 {
+        self.x
+    }
+
+    /// Returns right edge position.
+    #[inline]
+    pub fn right(&self) -> f64 {
+        self.x + self.width
+    }
+
+    /// Returns top edge position.
+    #[inline]
+    pub fn top(&self) -> f64 {
+        self.y
+    }
+
+    /// Returns bottom edge position.
+    #[inline]
+    pub fn bottom(&self) -> f64 {
+        self.y + self.height
+    }
+
+    /// Expands the `PathBbox` to the provided size.
+    #[inline]
+    pub fn expand(&self, r: PathBbox) -> Self {
+        if self.fuzzy_eq(&PathBbox::new_bbox()) {
+            r
+        } else {
+            let x1 = self.x().min(r.x());
+            let y1 = self.y().min(r.y());
+
+            let x2 = self.right().max(r.right());
+            let y2 = self.bottom().max(r.bottom());
+
+            PathBbox::new(x1, y1, x2 - x1, y2 - y1).unwrap()
+        }
+    }
+
+    /// Transforms the `PathBbox` using the provided `bbox`.
+    pub fn bbox_transform(&self, bbox: Rect) -> Self {
+        let x = self.x() * bbox.width() + bbox.x();
+        let y = self.y() * bbox.height() + bbox.y();
+        let w = self.width() * bbox.width();
+        let h = self.height() * bbox.height();
+        PathBbox::new(x, y, w, h).unwrap()
+    }
+
+    /// Transforms the `PathBbox` using the provided `Transform`.
+    ///
+    /// This method is expensive.
+    pub fn transform(&self, ts: &Transform) -> Option<Self> {
+        use crate::pathdata::{PathSegment, SubPathData};
+
+        if !ts.is_default() {
+            let path = &[
+                PathSegment::MoveTo {
+                    x: self.x(), y: self.y()
+                },
+                PathSegment::LineTo {
+                    x: self.right(), y: self.y()
+                },
+                PathSegment::LineTo {
+                    x: self.right(), y: self.bottom()
+                },
+                PathSegment::LineTo {
+                    x: self.x(), y: self.bottom()
+                },
+                PathSegment::ClosePath,
+            ];
+
+            SubPathData(path).bbox_with_transform(*ts, None)
+        } else {
+            Some(*self)
+        }
+    }
+
+    /// Converts into a [`Rect`].
+    pub fn to_rect(&self) -> Option<Rect> {
+        Rect::new(self.x, self.y, self.width, self.height)
+    }
+}
+
+impl FuzzyEq for PathBbox {
+    #[inline]
+    fn fuzzy_eq(&self, other: &Self) -> bool {
+           self.x.fuzzy_eq(&other.x)
+        && self.y.fuzzy_eq(&other.y)
+        && self.width.fuzzy_eq(&other.width)
+        && self.height.fuzzy_eq(&other.height)
+    }
+}
+
+impl std::fmt::Debug for PathBbox {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "PathBbox({} {} {} {})", self.x, self.y, self.width, self.height)
+    }
+}
+
+impl std::fmt::Display for PathBbox {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+
 /// A rect representation.
 ///
 /// Width and height are guarantee to be > 0.
@@ -551,10 +713,17 @@ impl Rect {
                 PathSegment::ClosePath,
             ];
 
-            SubPathData(path).bbox_with_transform(*ts, None)
+            SubPathData(path).bbox_with_transform(*ts, None).and_then(|r| r.to_rect())
         } else {
             Some(*self)
         }
+    }
+
+    /// Returns rect's size in screen units.
+    #[inline]
+    pub fn to_path_bbox(&self) -> PathBbox {
+        // Never fails, because `Rect` is more strict than `PathBbox`.
+        PathBbox::new(self.x, self.y, self.width, self.height).unwrap()
     }
 
     /// Returns rect's size in screen units.

@@ -517,7 +517,7 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
             None => return Err(format!("SVG doesn't have '{}' ID", id)),
         };
 
-        let bbox = node.calculate_bbox()
+        let bbox = node.calculate_bbox().and_then(|r| r.to_rect())
             .ok_or_else(|| "node has zero size".to_string())?;
 
         let size = args.fit_to.fit_to(bbox.to_screen_size())

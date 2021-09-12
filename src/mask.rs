@@ -8,9 +8,24 @@ pub fn mask(
     tree: &usvg::Tree,
     node: &usvg::Node,
     mask: &usvg::Mask,
-    bbox: Rect,
+    bbox: PathBbox,
     canvas: &mut Canvas,
 ) {
+    let bbox = if mask.units == usvg::Units::ObjectBoundingBox ||
+                  mask.content_units == usvg::Units::ObjectBoundingBox
+    {
+        if let Some(bbox) = bbox.to_rect() {
+            bbox
+        } else {
+            // `objectBoundingBox` units and zero-sized bbox? Clear the canvas and return.
+            // Technically a UB, but this is what Chrome and Firefox do.
+            canvas.pixmap.fill(tiny_skia::Color::TRANSPARENT);
+            return;
+        }
+    } else {
+        Rect::new_bbox() // actual value doesn't matter, unreachable
+    };
+
     let mut mask_pixmap = try_opt!(tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height()));
     {
         let mut mask_canvas = Canvas::from(mask_pixmap.as_mut());
@@ -47,7 +62,7 @@ pub fn mask(
     if let Some(ref id) = mask.mask {
         if let Some(ref mask_node) = tree.defs_by_id(id) {
             if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                self::mask(tree, mask_node, mask, bbox, canvas);
+                self::mask(tree, mask_node, mask, bbox.to_path_bbox(), canvas);
             }
         }
     }

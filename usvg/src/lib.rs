@@ -763,7 +763,7 @@ pub trait NodeExt {
     /// Calculates node's absolute bounding box.
     ///
     /// Can be expensive on large paths and groups.
-    fn calculate_bbox(&self) -> Option<Rect>;
+    fn calculate_bbox(&self) -> Option<PathBbox>;
 
     /// Returns the node starting from which the filter background should be rendered.
     #[cfg(feature = "filter")]
@@ -813,7 +813,7 @@ impl NodeExt for Node {
     }
 
     #[inline]
-    fn calculate_bbox(&self) -> Option<Rect> {
+    fn calculate_bbox(&self) -> Option<PathBbox> {
         calc_node_bbox(self, self.abs_transform())
     }
 
@@ -852,7 +852,7 @@ fn deflate(data: &[u8]) -> Result<String, Error> {
 fn calc_node_bbox(
     node: &Node,
     ts: Transform,
-) -> Option<Rect> {
+) -> Option<PathBbox> {
     let mut ts2 = ts;
     ts2.append(&node.transform());
 
@@ -865,7 +865,7 @@ fn calc_node_bbox(
             path.bbox_with_transform(ts2, None)
         }
         NodeKind::Svg(_) | NodeKind::Group(_) => {
-            let mut bbox = Rect::new_bbox();
+            let mut bbox = PathBbox::new_bbox();
 
             for child in node.children() {
                 if let Some(c_bbox) = calc_node_bbox(&child, ts2) {

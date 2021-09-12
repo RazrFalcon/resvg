@@ -8,8 +8,9 @@ mod convert;
 mod shaper;
 mod fontdb_ext;
 
-use crate::{FillRule, Group, Node, NodeExt, NodeKind, Paint, Path, PathData, PathSegment, Rect,};
+use crate::{FillRule, Group, Node, NodeExt, NodeKind, Paint, Path, PathData, PathSegment, Rect};
 use crate::{ShapeRendering, Stroke, StrokeWidth, Transform, TransformFromBBox, Tree, Units};
+use crate::PathBbox;
 use crate::{converter, svgtree};
 use convert::{TextFlow, WritingMode, TextSpan};
 use shaper::OutlinedCluster;
@@ -93,12 +94,12 @@ fn text_to_paths(
     id_generator: &mut converter::NodeIdGenerator,
     parent: &mut Node,
     tree: &mut Tree,
-) -> (Vec<Path>, Rect) {
+) -> (Vec<Path>, PathBbox) {
     let pos_list = convert::resolve_positions_list(text_node, state);
     let rotate_list = convert::resolve_rotate_list(text_node);
     let writing_mode = convert::convert_writing_mode(text_node);
 
-    let mut bbox = Rect::new_bbox();
+    let mut bbox = PathBbox::new_bbox();
     let mut chunks = convert::collect_text_chunks(text_node, &pos_list, state, id_generator, tree);
     let mut char_offset = 0;
     let mut last_x = 0.0;
@@ -183,7 +184,7 @@ fn text_to_paths(
             if let Some(path) = convert_span(span, &mut clusters, &span_ts, parent, false) {
                 // Use `text_bbox` here and not `path.data.bbox()`.
                 if let Some(r) = path.text_bbox {
-                    bbox = bbox.expand(r);
+                    bbox = bbox.expand(r.to_path_bbox());
                 }
 
                 new_paths.push(path);
@@ -282,7 +283,7 @@ fn convert_span(
         fill,
         stroke: span.stroke.take(),
         rendering_mode: ShapeRendering::default(),
-        text_bbox: bboxes_data.bbox(),
+        text_bbox: bboxes_data.bbox().and_then(|r| r.to_rect()),
         data: Rc::new(path_data),
     };
 
@@ -403,7 +404,7 @@ fn convert_decoration(
 /// all linked paint servers (gradients and patterns) too.
 fn fix_obj_bounding_box(
     path: &mut Path,
-    bbox: Rect,
+    bbox: PathBbox,
     tree: &mut Tree,
 ) {
     if let Some(ref mut fill) = path.fill {
@@ -430,7 +431,7 @@ fn fix_obj_bounding_box(
 /// Returns `None` if a paint server already uses `UserSpaceOnUse`.
 fn paint_server_to_user_space_on_use(
     id: &str,
-    bbox: Rect,
+    bbox: PathBbox,
     tree: &mut Tree,
 ) -> Option<String> {
     if let Some(mut ps) = tree.defs_by_id(id) {
@@ -447,7 +448,7 @@ fn paint_server_to_user_space_on_use(
         let new_id = gen_paint_server_id(tree);
 
         // Update id, transform and units.
-        let ts = Transform::from_bbox(bbox);
+        let ts = Transform::from_bbox(bbox.to_rect()?);
         match *new_ps.borrow_mut() {
             NodeKind::LinearGradient(ref mut lg) => {
                 lg.id = new_id.clone();

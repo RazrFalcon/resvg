@@ -131,7 +131,7 @@ pub(crate) fn render_node(
     node: &usvg::Node,
     state: &mut RenderState,
     canvas: &mut Canvas,
-) -> Option<Rect> {
+) -> Option<PathBbox> {
     match *node.borrow() {
         usvg::NodeKind::Svg(_) => {
             render_group(tree, node, state, canvas)
@@ -154,9 +154,9 @@ pub(crate) fn render_group(
     parent: &usvg::Node,
     state: &mut RenderState,
     canvas: &mut Canvas,
-) -> Option<Rect> {
+) -> Option<PathBbox> {
     let curr_ts = canvas.transform;
-    let mut g_bbox = Rect::new_bbox();
+    let mut g_bbox = PathBbox::new_bbox();
 
     for node in parent.children() {
         match state {
@@ -185,7 +185,7 @@ pub(crate) fn render_group(
     }
 
     // Check that bbox was changed, otherwise we will have a rect with x/y set to f64::MAX.
-    if g_bbox.fuzzy_ne(&Rect::new_bbox()) {
+    if g_bbox.fuzzy_ne(&PathBbox::new_bbox()) {
         Some(g_bbox)
     } else {
         None
@@ -198,7 +198,7 @@ fn render_group_impl(
     g: &usvg::Group,
     state: &mut RenderState,
     canvas: &mut Canvas,
-) -> Option<Rect> {
+) -> Option<PathBbox> {
     let mut sub_pixmap = tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height())?;
     let curr_ts = canvas.transform;
 
@@ -244,13 +244,14 @@ fn render_group_impl(
     for id in &g.filter {
         if let Some(filter_node) = tree.defs_by_id(id) {
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
+                let bbox = bbox.and_then(|r| r.to_rect());
                 let ts = usvg::Transform::from_native(curr_ts);
                 let background = prepare_filter_background(tree, node, filter, &sub_pixmap);
                 let fill_paint = prepare_filter_fill_paint(tree, node, filter, bbox, ts, &sub_pixmap);
                 let stroke_paint = prepare_filter_stroke_paint(tree, node, filter, bbox, ts, &sub_pixmap);
                 crate::filter::apply(filter, bbox, &ts, tree,
-                                     background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
-                                     &mut sub_pixmap);
+                                    background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
+                                    &mut sub_pixmap);
             }
         }
     }
@@ -389,8 +390,15 @@ fn prepare_filter_fill_paint(
             let path = tiny_skia::PathBuilder::from_rect(rect);
 
             let fill = usvg::Fill::from_paint(paint);
-            crate::paint_server::fill(tree, &fill, style_bbox, &path, true, tiny_skia::BlendMode::SourceOver, &mut sub_canvas);
-
+            crate::paint_server::fill(
+                tree,
+                &fill,
+                style_bbox.to_path_bbox(),
+                &path,
+                true,
+                tiny_skia::BlendMode::SourceOver,
+                &mut sub_canvas,
+            );
         }
     }
 
@@ -418,7 +426,15 @@ fn prepare_filter_stroke_paint(
             let path = tiny_skia::PathBuilder::from_rect(rect);
 
             let fill = usvg::Fill::from_paint(paint);
-            crate::paint_server::fill(tree, &fill, style_bbox, &path, true, tiny_skia::BlendMode::SourceOver, &mut sub_canvas);
+            crate::paint_server::fill(
+                tree,
+                &fill,
+                style_bbox.to_path_bbox(),
+                &path,
+                true,
+                tiny_skia::BlendMode::SourceOver,
+                &mut sub_canvas,
+            );
         }
     }
 

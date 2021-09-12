@@ -9,12 +9,15 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - `filter` build feature. Enabled by default.
+- `usvg::PathBbox` and `resvg_path_bbox` (to C API).
 
 ### Changed
 - (usvg) All filter related types are under the `filter` module now.
 - (usvg) Remove `Fe` prefix from all filter types.
+- (c-api) `resvg_get_node_bbox` returns `resvg_path_bbox` now.
 
 ### Fixed
+- Horizontal and vertical lines processing.
 - C API building without the `text` feature.
 
 ## [0.17.0] - 2021-09-04

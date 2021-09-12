@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use kurbo::{ParamCurveArclen, ParamCurveExtrema, ParamCurve};
 
-use crate::{Rect, Transform, FuzzyZero};
+use crate::{Rect, PathBbox, Transform, FuzzyZero};
 
 /// A path's absolute segment.
 ///
@@ -166,7 +166,7 @@ impl PathData {
     ///
     /// This operation is expensive.
     #[inline]
-    pub fn bbox(&self) -> Option<Rect> {
+    pub fn bbox(&self) -> Option<PathBbox> {
         calc_bbox(self)
     }
 
@@ -178,7 +178,7 @@ impl PathData {
         &self,
         ts: Transform,
         stroke: Option<&super::Stroke>,
-    ) -> Option<Rect> {
+    ) -> Option<PathBbox> {
         calc_bbox_with_transform(self, ts, stroke)
     }
 
@@ -289,7 +289,7 @@ impl<'a> SubPathData<'a> {
     ///
     /// This operation is expensive.
     #[inline]
-    pub fn bbox(&self) -> Option<Rect> {
+    pub fn bbox(&self) -> Option<PathBbox> {
         calc_bbox(self)
     }
 
@@ -301,7 +301,7 @@ impl<'a> SubPathData<'a> {
         &self,
         ts: Transform,
         stroke: Option<&super::Stroke>,
-    ) -> Option<Rect> {
+    ) -> Option<PathBbox> {
         calc_bbox_with_transform(self, ts, stroke)
     }
 
@@ -332,7 +332,7 @@ impl std::ops::Deref for SubPathData<'_> {
 }
 
 
-fn calc_bbox(segments: &[PathSegment]) -> Option<Rect> {
+fn calc_bbox(segments: &[PathSegment]) -> Option<PathBbox> {
     if segments.is_empty() {
         return None;
     }
@@ -382,14 +382,14 @@ fn calc_bbox(segments: &[PathSegment]) -> Option<Rect> {
     let width = maxx - minx;
     let height = maxy - miny;
 
-    Rect::new(minx, miny, width, height)
+    PathBbox::new(minx, miny, width, height)
 }
 
 fn calc_bbox_with_transform(
     segments: &[PathSegment],
     ts: Transform,
     stroke: Option<&super::Stroke>,
-) -> Option<Rect> {
+) -> Option<PathBbox> {
     if segments.is_empty() {
         return None;
     }
@@ -449,7 +449,7 @@ fn calc_bbox_with_transform(
     let width = maxx - minx;
     let height = maxy - miny;
 
-    Rect::new(minx, miny, width, height)
+    PathBbox::new(minx, miny, width, height)
 }
 
 fn has_bbox(segments: &[PathSegment]) -> bool {

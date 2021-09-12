@@ -431,8 +431,8 @@ pub(crate) fn calc_region(
     };
 
     let canvas_rect = ScreenRect::new(0, 0, pixmap.width(), pixmap.height()).unwrap();
-    let region = path.bbox_with_transform(region_ts, None)
-        .ok_or(Error::InvalidRegion)?
+    let region = path.bbox_with_transform(region_ts, None).ok_or(Error::InvalidRegion)?
+        .to_rect().ok_or(Error::InvalidRegion)?
         .to_screen_rect()
         .fit_to_rect(canvas_rect);
 

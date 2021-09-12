@@ -548,6 +548,7 @@ use render::render;
 #[test] fn e_clipPath_046() { assert_eq!(render("e-clipPath-046"), 0); }
 #[test] fn e_clipPath_047() { assert_eq!(render("e-clipPath-047"), 0); }
 #[test] fn e_clipPath_048() { assert_eq!(render("e-clipPath-048"), 0); }
+#[test] fn e_clipPath_049() { assert_eq!(render("e-clipPath-049"), 0); }
 #[test] fn e_defs_001() { assert_eq!(render("e-defs-001"), 0); }
 #[test] fn e_defs_002() { assert_eq!(render("e-defs-002"), 0); }
 #[test] fn e_defs_003() { assert_eq!(render("e-defs-003"), 0); }
@@ -1056,6 +1057,7 @@ use render::render;
 #[test] fn e_mask_028() { assert_eq!(render("e-mask-028"), 0); }
 #[test] fn e_mask_029() { assert_eq!(render("e-mask-029"), 0); }
 #[test] fn e_mask_030() { assert_eq!(render("e-mask-030"), 0); }
+#[test] fn e_mask_031() { assert_eq!(render("e-mask-031"), 0); }
 #[test] fn e_path_001() { assert_eq!(render("e-path-001"), 0); }
 #[test] fn e_path_002() { assert_eq!(render("e-path-002"), 0); }
 #[test] fn e_path_003() { assert_eq!(render("e-path-003"), 0); }

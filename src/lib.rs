@@ -53,7 +53,7 @@ pub fn render_node(
     fit_to: usvg::FitTo,
     pixmap: tiny_skia::PixmapMut,
 ) -> Option<()> {
-    let node_bbox = if let Some(bbox) = node.calculate_bbox() {
+    let node_bbox = if let Some(bbox) = node.calculate_bbox().and_then(|r| r.to_rect()) {
         bbox
     } else {
         warn!("Node '{}' has zero size.", node.id());

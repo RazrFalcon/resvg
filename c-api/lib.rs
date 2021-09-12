@@ -24,6 +24,15 @@ enum ErrorId {
 
 #[repr(C)]
 #[derive(Copy, Clone)]
+pub struct resvg_path_bbox {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
 pub struct resvg_rect {
     pub x: f64,
     pub y: f64,
@@ -423,7 +432,7 @@ pub extern "C" fn resvg_get_image_bbox(
         &*tree
     };
 
-    if let Some(r) = tree.0.root().calculate_bbox() {
+    if let Some(r) = tree.0.root().calculate_bbox().and_then(|r| r.to_rect()) {
         unsafe {
             *bbox = resvg_rect {
                 x: r.x(),
@@ -443,7 +452,7 @@ pub extern "C" fn resvg_get_image_bbox(
 pub extern "C" fn resvg_get_node_bbox(
     tree: *const resvg_render_tree,
     id: *const c_char,
-    bbox: *mut resvg_rect,
+    bbox: *mut resvg_path_bbox,
 ) -> bool {
     let id = match cstr_to_str(id) {
         Some(v) => v,
@@ -467,7 +476,7 @@ pub extern "C" fn resvg_get_node_bbox(
         Some(node) => {
             if let Some(r) = node.calculate_bbox() {
                 unsafe {
-                    *bbox = resvg_rect {
+                    *bbox = resvg_path_bbox {
                         x: r.x(),
                         y: r.y(),
                         width: r.width(),

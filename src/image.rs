@@ -8,13 +8,13 @@ use crate::render::prelude::*;
 pub fn draw(
     image: &usvg::Image,
     canvas: &mut Canvas,
-) -> Rect {
+) -> PathBbox {
     if image.visibility != usvg::Visibility::Visible {
-        return image.view_box.rect;
+        return image.view_box.rect.to_path_bbox();
     }
 
     draw_kind(&image.kind, image.view_box, image.rendering_mode, canvas);
-    image.view_box.rect
+    image.view_box.rect.to_path_bbox()
 }
 
 pub fn draw_kind(

@@ -33,7 +33,7 @@ fn main() {
     let mut text_bboxes = Vec::new();
     for node in rtree.root().descendants() {
         if !rtree.is_in_defs(&node) {
-            if let Some(bbox) = node.calculate_bbox() {
+            if let Some(bbox) = node.calculate_bbox().and_then(|r| r.to_rect()) {
                 bboxes.push(bbox);
             }
 
