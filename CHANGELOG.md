@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.18.0] - 2021-09-12
 ### Added
 - `filter` build feature. Enabled by default.
 - `usvg::PathBbox` and `resvg_path_bbox` (to C API).
@@ -538,7 +540,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/RazrFalcon/resvg/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/RazrFalcon/resvg/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/RazrFalcon/resvg/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/RazrFalcon/resvg/compare/v0.14.1...v0.15.0
