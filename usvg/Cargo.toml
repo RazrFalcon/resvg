@@ -32,7 +32,7 @@ xmlwriter = { version = "0.1", optional = true }
 roxmltree = "0.14"
 simplecss = "0.2.1"
 siphasher = "0.3"
-svgtypes = { git = "https://github.com/RazrFalcon/svgtypes", rev = "595b1a3" }
+svgtypes = "0.8"
 
 # for text to path
 fontdb = { version = "0.6.2", optional = true, default-features = false }

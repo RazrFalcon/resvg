@@ -469,7 +469,7 @@ public:
 
         const auto utf8Str = id.toUtf8();
         const auto rawId = utf8Str.constData();
-        resvg_rect bbox;
+        resvg_path_bbox bbox;
         if (resvg_get_node_bbox(d->tree, rawId, &bbox))
             return QRectF(bbox.x, bbox.y, bbox.width, bbox.height);
 
