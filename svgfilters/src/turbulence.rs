@@ -239,12 +239,12 @@ fn noise2(
     let t = x + PERLIN_N as f64;
     let mut bx0 = t as i32;
     let mut bx1 = bx0 + 1;
-    let rx0 = t.fract();
+    let rx0 = t - t as i64 as f64;
     let rx1 = rx0 - 1.0;
     let t = y + PERLIN_N as f64;
     let mut by0 = t as i32;
     let mut by1 = by0 + 1;
-    let ry0 = t.fract();
+    let ry0 = t - t as i64 as f64;
     let ry1 = ry0 - 1.0;
 
     // If stitching, adjust lattice points accordingly.
