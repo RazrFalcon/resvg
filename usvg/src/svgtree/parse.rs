@@ -202,7 +202,10 @@ pub(super) fn parse_svg_element(
             _ => continue,
         }
 
-        let aid = try_opt_continue!(AId::from_str(attr.name()));
+        let aid = match AId::from_str(attr.name()) {
+            Some(v) => v,
+            None => continue,
+        };
 
         // During a `use` resolving, all `id` attributes must be ignored.
         // Otherwise we will get elements with duplicated id's.
@@ -959,7 +962,12 @@ fn resolve_css<'a>(xml: &'a roxmltree::Document<'a>) -> simplecss::StyleSheet<'a
             None => {}
         }
 
-        sheet.parse_more(try_opt_continue!(node.text()));
+        let text = match node.text() {
+            Some(v) => v,
+            None => continue,
+        };
+
+        sheet.parse_more(text);
     }
 
     sheet

@@ -16,7 +16,6 @@ pub use usvg::ScreenSize;
 use usvg::NodeExt;
 use log::warn;
 
-#[macro_use] mod macros;
 mod clip;
 #[cfg(feature = "filter")] mod filter;
 mod image;
@@ -26,6 +25,18 @@ mod path;
 mod render;
 
 pub use crate::render::trim_transparency;
+
+
+trait OptionLog {
+    fn log_none<F: FnOnce()>(self, f: F) -> Self;
+}
+
+impl<T> OptionLog for Option<T> {
+    #[inline]
+    fn log_none<F: FnOnce()>(self, f: F) -> Self {
+        self.or_else(|| { f(); None })
+    }
+}
 
 
 /// Renders an SVG to pixmap.

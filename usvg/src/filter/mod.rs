@@ -8,7 +8,7 @@ use std::collections::HashSet;
 
 use svgtypes::{Length, LengthUnit as Unit};
 
-use crate::{converter, Color, NodeKind, Opacity, Tree, Units, Rect};
+use crate::{Color, NodeKind, Opacity, OptionLog, Rect, Tree, Units, converter};
 use crate::paint_server::{resolve_number, convert_units};
 use crate::svgtree::{self, EId, AId};
 
@@ -326,10 +326,8 @@ fn convert_url(
         resolve_number(node, AId::Width, units, state, Length::new(120.0, Unit::Percent)),
         resolve_number(node, AId::Height, units, state, Length::new(120.0, Unit::Percent)),
     );
-    let rect = try_opt_warn_or!(
-        rect, Err(()),
-        "Filter '{}' has an invalid region. Skipped.", node.element_id(),
-    );
+    let rect = rect.log_none(|| log::warn!("Filter '{}' has an invalid region. Skipped.", node.element_id()))
+        .ok_or(())?;
 
     let node_with_primitives = match find_filter_with_primitives(node) {
         Some(v) => v,
@@ -392,7 +390,12 @@ fn collect_children(
     };
 
     for child in filter.children() {
-        let kind = match try_opt_continue!(child.tag_name()) {
+        let tag_name = match child.tag_name() {
+            Some(v) => v,
+            None => continue,
+        };
+
+        let kind = match tag_name {
             EId::FeDropShadow => drop_shadow::convert(child, &primitives, &state),
             EId::FeGaussianBlur => gaussian_blur::convert(child, &primitives),
             EId::FeOffset => offset::convert(child, &primitives, state),
@@ -404,12 +407,15 @@ fn collect_children(
             EId::FeImage => image::convert(child, state),
             EId::FeComponentTransfer => component_transfer::convert(child, &primitives),
             EId::FeColorMatrix => color_matrix::convert(child, &primitives),
-            EId::FeConvolveMatrix => convolve_matrix::convert(child, &primitives),
+            EId::FeConvolveMatrix => convolve_matrix::convert(child, &primitives)
+                .unwrap_or_else(|| create_dummy_primitive()),
             EId::FeMorphology => morphology::convert(child, &primitives),
             EId::FeDisplacementMap => displacement_map::convert(child, &primitives),
             EId::FeTurbulence => turbulence::convert(child),
-            EId::FeDiffuseLighting => lighting::convert_diffuse(child, &primitives),
-            EId::FeSpecularLighting => lighting::convert_specular(child, &primitives),
+            EId::FeDiffuseLighting => lighting::convert_diffuse(child, &primitives)
+                .unwrap_or_else(|| create_dummy_primitive()),
+            EId::FeSpecularLighting => lighting::convert_specular(child, &primitives)
+                .unwrap_or_else(|| create_dummy_primitive()),
             tag_name => {
                 log::warn!("'{}' is not a valid filter primitive. Skipped.", tag_name);
                 continue;

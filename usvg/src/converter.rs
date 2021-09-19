@@ -320,7 +320,10 @@ pub(crate) fn convert_clip_path_elements(
     tree: &mut Tree,
 ) {
     for node in clip_node.children() {
-        let tag_name = try_opt!(node.tag_name());
+        let tag_name = match node.tag_name() {
+            Some(v) => v,
+            None => continue,
+        };
 
         if !tag_name.is_graphic() {
             continue;

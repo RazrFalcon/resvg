@@ -135,7 +135,7 @@ pub enum EdgeMode {
     Wrap,
 }
 
-pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
+pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Option<Kind> {
     fn parse_target(target: Option<f64>, order: u32) -> Option<u32> {
         let default_target = (order as f32 / 2.0).floor() as u32;
         let target = target.unwrap_or(default_target as f64) as i32;
@@ -174,21 +174,17 @@ pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
 
     let divisor = fe.attribute::<f64>(AId::Divisor).unwrap_or(kernel_sum);
     if divisor.is_fuzzy_zero() {
-        return super::create_dummy_primitive();
+        return None;
     }
 
     let bias = fe.attribute(AId::Bias).unwrap_or(0.0);
 
-    let target_x = parse_target(fe.attribute(AId::TargetX), order_x);
-    let target_y = parse_target(fe.attribute(AId::TargetY), order_y);
-
-    let target_x = try_opt_or!(target_x, super::create_dummy_primitive());
-    let target_y = try_opt_or!(target_y, super::create_dummy_primitive());
+    let target_x = parse_target(fe.attribute(AId::TargetX), order_x)?;
+    let target_y = parse_target(fe.attribute(AId::TargetY), order_y)?;
 
     let kernel_matrix = ConvolveMatrixData::new(
         target_x, target_y, order_x, order_y, matrix,
-    );
-    let kernel_matrix = try_opt_or!(kernel_matrix, super::create_dummy_primitive());
+    )?;
 
     let edge_mode = match fe.attribute(AId::EdgeMode).unwrap_or("duplicate") {
         "none" => EdgeMode::None,
@@ -198,12 +194,12 @@ pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
 
     let preserve_alpha = fe.attribute(AId::PreserveAlpha).unwrap_or("false") == "true";
 
-    Kind::ConvolveMatrix(ConvolveMatrix {
+    Some(Kind::ConvolveMatrix(ConvolveMatrix {
         input: super::resolve_input(fe, AId::In, primitives),
         matrix: kernel_matrix,
         divisor: NonZeroF64::new(divisor).unwrap(),
         bias,
         edge_mode,
         preserve_alpha,
-    })
+    }))
 }

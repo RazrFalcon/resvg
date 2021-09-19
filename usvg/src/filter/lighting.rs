@@ -35,15 +35,15 @@ pub struct DiffuseLighting {
     pub light_source: LightSource,
 }
 
-pub(crate) fn convert_diffuse(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
-    let light_source = try_opt_or!(convert_light_source(fe), super::create_dummy_primitive());
-    Kind::DiffuseLighting(DiffuseLighting {
+pub(crate) fn convert_diffuse(fe: svgtree::Node, primitives: &[Primitive]) -> Option<Kind> {
+    let light_source = convert_light_source(fe)?;
+    Some(Kind::DiffuseLighting(DiffuseLighting {
         input: super::resolve_input(fe, AId::In, primitives),
         surface_scale: fe.attribute(AId::SurfaceScale).unwrap_or(1.0),
         diffuse_constant: fe.attribute(AId::DiffuseConstant).unwrap_or(1.0),
         lighting_color: convert_lighting_color(fe),
         light_source,
-    })
+    }))
 }
 
 /// A specular lighting filter primitive.
@@ -82,25 +82,25 @@ pub struct SpecularLighting {
     pub light_source: LightSource,
 }
 
-pub(crate) fn convert_specular(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
-    let light_source = try_opt_or!(convert_light_source(fe), super::create_dummy_primitive());
+pub(crate) fn convert_specular(fe: svgtree::Node, primitives: &[Primitive]) -> Option<Kind> {
+    let light_source = convert_light_source(fe)?;
 
     let specular_exponent = fe.attribute(AId::SpecularExponent).unwrap_or(1.0);
     if !(1.0..=128.0).contains(&specular_exponent) {
         // When exponent is out of range, the whole filter primitive should be ignored.
-        return super::create_dummy_primitive();
+        return None;
     }
 
     let specular_exponent = crate::utils::f64_bound(1.0, specular_exponent, 128.0);
 
-    Kind::SpecularLighting(SpecularLighting {
+    Some(Kind::SpecularLighting(SpecularLighting {
         input: super::resolve_input(fe, AId::In, primitives),
         surface_scale: fe.attribute(AId::SurfaceScale).unwrap_or(1.0),
         specular_constant: fe.attribute(AId::SpecularConstant).unwrap_or(1.0),
         specular_exponent,
         lighting_color: convert_lighting_color(fe),
         light_source,
-    })
+    }))
 }
 
 #[inline(never)]

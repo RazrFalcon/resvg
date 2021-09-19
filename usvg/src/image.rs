@@ -4,7 +4,7 @@
 
 use svgtypes::Length;
 
-use crate::{converter, Tree, Node, NodeExt, NodeKind, OptionsRef, Visibility, ImageRendering};
+use crate::{ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Tree, Visibility, converter};
 use crate::geom::{Rect, Transform, ViewBox};
 use crate::svgtree::{self, AId};
 
@@ -76,7 +76,7 @@ pub(crate) fn convert(
     node: svgtree::Node,
     state: &converter::State,
     parent: &mut Node,
-) {
+) -> Option<()> {
     let visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
     let rendering_mode = node
         .find_attribute(AId::ImageRendering)
@@ -88,19 +88,17 @@ pub(crate) fn convert(
         node.convert_user_length(AId::Width, state, Length::zero()),
         node.convert_user_length(AId::Height, state, Length::zero()),
     );
-    let rect = try_opt_warn!(rect, "Image has an invalid size. Skipped.");
+    let rect = rect.log_none(|| log::warn!("Image has an invalid size. Skipped."))?;
 
     let view_box = ViewBox {
         rect,
         aspect: node.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
 
-    let href = try_opt_warn!(
-        node.attribute(AId::Href),
-        "The 'image' element lacks the 'xlink:href' attribute. Skipped."
-    );
+    let href = node.attribute(AId::Href)
+        .log_none(|| log::warn!("Image lacks the 'xlink:href' attribute. Skipped."))?;
 
-    let kind = try_opt!(get_href_data(node.element_id(), href, state.opt));
+    let kind = get_href_data(node.element_id(), href, state.opt)?;
     parent.append_kind(NodeKind::Image(Image {
         id: node.element_id().to_string(),
         transform: Default::default(),
@@ -109,6 +107,8 @@ pub(crate) fn convert(
         rendering_mode,
         kind,
     }));
+
+    Some(())
 }
 
 pub(crate) fn get_href_data(

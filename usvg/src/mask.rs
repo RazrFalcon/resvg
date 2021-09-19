@@ -4,7 +4,7 @@
 
 use svgtypes::{Length, LengthUnit as Unit};
 
-use crate::{converter, NodeKind, Rect, Tree, Units};
+use crate::{NodeKind, OptionLog, Rect, Tree, Units, converter};
 use crate::svgtree::{self, AId, EId};
 
 /// A mask element.
@@ -66,10 +66,7 @@ pub(crate) fn convert(
         node.convert_length(AId::Width, units, state, Length::new(120.0, Unit::Percent)),
         node.convert_length(AId::Height, units, state, Length::new(120.0, Unit::Percent)),
     );
-    let rect = try_opt_warn_or!(
-        rect, None,
-        "Mask '{}' has an invalid size. Skipped.", node.element_id(),
-    );
+    let rect = rect.log_none(|| log::warn!("Mask '{}' has an invalid size. Skipped.", node.element_id()))?;
 
     // Resolve linked mask.
     let mut mask = None;

@@ -41,7 +41,10 @@ fn parse_svg_text_element_impl(
             continue;
         }
 
-        let mut tag_name = try_opt_continue!(super::parse::parse_tag_name(node));
+        let mut tag_name = match super::parse::parse_tag_name(node) {
+            Some(v) => v,
+            None => continue,
+        };
 
         if tag_name == EId::A {
             // Treat links as simple text.

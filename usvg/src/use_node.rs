@@ -17,14 +17,14 @@ pub(crate) fn convert(
     id_generator: &mut converter::NodeIdGenerator,
     parent: &mut Node,
     tree: &mut Tree,
-) {
-    let child = try_opt!(node.first_child());
+) -> Option<()> {
+    let child = node.first_child()?;
 
     if state.parent_clip_path.is_some() && child.tag_name() == Some(EId::Symbol) {
         // Ignore `symbol` referenced by `use` inside a `clipPath`.
         // It will be ignored later anyway, but this will prevent
         // a redundant `clipPath` creation (which is required for `symbol`).
-        return;
+        return None;
     }
 
     // We require an original transformation to setup 'clipPath'.
@@ -59,11 +59,11 @@ pub(crate) fn convert(
                     g
                 }
                 converter::GroupKind::Skip => g.clone(),
-                converter::GroupKind::Ignore => return,
+                converter::GroupKind::Ignore => return None,
             };
 
             convert_children(child, new_ts, state, id_generator, &mut parent, tree);
-            return;
+            return None;
         }
     }
 
@@ -74,13 +74,15 @@ pub(crate) fn convert(
         let mut parent = match converter::convert_group(node, state, false, id_generator, parent, tree) {
             converter::GroupKind::Create(g) => g,
             converter::GroupKind::Skip => parent.clone(),
-            converter::GroupKind::Ignore => return,
+            converter::GroupKind::Ignore => return None,
         };
 
         convert_children(child, orig_ts, state, id_generator, &mut parent, tree);
     } else {
         convert_children(node, orig_ts, state, id_generator, parent, tree);
     }
+
+    Some(())
 }
 
 pub(crate) fn convert_svg(

@@ -46,8 +46,8 @@ pub(crate) fn convert(
     id_generator: &mut converter::NodeIdGenerator,
     parent: &mut Node,
     tree: &mut Tree,
-) {
-    let child = try_opt!(node.children().find(|n| is_condition_passed(*n, state.opt)));
+) -> Option<()> {
+    let child = node.children().find(|n| is_condition_passed(*n, state.opt))?;
     match converter::convert_group(node, state, false, id_generator, parent, tree) {
         converter::GroupKind::Create(ref mut g) => {
             converter::convert_element(child, state, id_generator, g, tree);
@@ -57,6 +57,8 @@ pub(crate) fn convert(
         }
         converter::GroupKind::Ignore => {}
     }
+
+    Some(())
 }
 
 pub(crate) fn is_condition_passed(

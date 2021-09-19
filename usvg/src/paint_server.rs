@@ -5,7 +5,7 @@
 use svgtypes::{Length, LengthUnit as Unit};
 
 use crate::svgtree::{self, AId, EId};
-use crate::{converter, Color, NodeExt, NodeKind, NormalizedValue, Opacity, PositiveNumber, Tree, Units};
+use crate::{Color, NodeExt, NodeKind, NormalizedValue, Opacity, OptionLog, PositiveNumber, Tree, Units, converter};
 use crate::geom::{FuzzyEq, FuzzyZero, IsValidLength, Line, Rect, Transform, ViewBox};
 
 
@@ -335,10 +335,7 @@ fn convert_pattern(
         resolve_number(node, AId::Width, units, state, Length::zero()),
         resolve_number(node, AId::Height, units, state, Length::zero()),
     );
-    let rect = try_opt_warn_or!(
-        rect, None,
-        "Pattern '{}' has an invalid size. Skipped.", node.element_id()
-    );
+    let rect = rect.log_none(|| log::warn!("Pattern '{}' has an invalid size. Skipped.", node.element_id()))?;
 
     let mut patt = tree.append_to_defs(NodeKind::Pattern(Pattern {
         id: node.element_id().to_string(),
@@ -565,7 +562,11 @@ fn resolve_lg_attr(
 ) -> svgtree::Node {
     for link_id in node.href_iter() {
         let link = node.document().get(link_id);
-        let tag_name = try_opt_or!(link.tag_name(), node);
+        let tag_name = match link.tag_name() {
+            Some(v) => v,
+            None => return node,
+        };
+
         match (name, tag_name) {
             // Coordinates can be resolved only from
             // ref element with the same type.
@@ -598,7 +599,11 @@ fn resolve_rg_attr(
 ) -> svgtree::Node {
     for link_id in node.href_iter() {
         let link = node.document().get(link_id);
-        let tag_name = try_opt_or!(link.tag_name(), node);
+        let tag_name = match link.tag_name() {
+            Some(v) => v,
+            None => return node,
+        };
+
         match (name, tag_name) {
             // Coordinates can be resolved only from
             // ref element with the same type.
@@ -632,7 +637,10 @@ fn resolve_pattern_attr(
 ) -> svgtree::Node {
     for link_id in node.href_iter() {
         let link = node.document().get(link_id);
-        let tag_name = try_opt_or!(link.tag_name(), node);
+        let tag_name = match link.tag_name() {
+            Some(v) => v,
+            None => return node,
+        };
 
         if tag_name != EId::Pattern {
             break;
@@ -652,7 +660,10 @@ fn resolve_filter_attr(
 ) -> svgtree::Node {
     for link_id in node.href_iter() {
         let link = node.document().get(link_id);
-        let tag_name = try_opt_or!(link.tag_name(), node);
+        let tag_name = match link.tag_name() {
+            Some(v) => v,
+            None => return node,
+        };
 
         if tag_name != EId::Filter {
             break;

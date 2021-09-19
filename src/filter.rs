@@ -604,7 +604,10 @@ fn apply_drop_shadow(
     ts: &usvg::Transform,
     input: Image,
 ) -> Result<Image, Error> {
-    let (dx, dy) = try_opt_or!(scale_coordinates(fe.dx, fe.dy, units, bbox, ts), Ok(input));
+    let (dx, dy) = match scale_coordinates(fe.dx, fe.dy, units, bbox, ts) {
+        Some(v) => v,
+        None => return Ok(input),
+    };
 
     let mut pixmap = tiny_skia::Pixmap::try_create(input.width(), input.height())?;
     let input_pixmap = input.into_color_space(cs)?.take()?;
@@ -661,8 +664,10 @@ fn apply_blur(
     ts: &usvg::Transform,
     input: Image,
 ) -> Result<Image, Error> {
-    let (std_dx, std_dy, box_blur)
-        = try_opt_or!(resolve_std_dev(fe.std_dev_x, fe.std_dev_y, units, bbox, ts), Ok(input));
+    let (std_dx, std_dy, box_blur) = match resolve_std_dev(fe.std_dev_x, fe.std_dev_y, units, bbox, ts) {
+        Some(v) => v,
+        None => return Ok(input),
+    };
 
     let mut pixmap = input.into_color_space(cs)?.take()?;
 
@@ -682,7 +687,11 @@ fn apply_offset(
     ts: &usvg::Transform,
     input: Image,
 ) -> Result<Image, Error> {
-    let (dx, dy) = try_opt_or!(scale_coordinates(fe.dx, fe.dy, units, bbox, ts), Ok(input));
+    let (dx, dy) = match scale_coordinates(fe.dx, fe.dy, units, bbox, ts) {
+        Some(v) => v,
+        None => return Ok(input),
+    };
+
     if dx.is_fuzzy_zero() && dy.is_fuzzy_zero() {
         return Ok(input);
     }
@@ -1005,10 +1014,10 @@ fn apply_morphology(
     input: Image,
 ) -> Result<Image, Error> {
     let mut pixmap = input.into_color_space(cs)?.take()?;
-    let (rx, ry) = try_opt_or!(
-        scale_coordinates(fe.radius_x.value(), fe.radius_y.value(), units, bbox, ts),
-        Ok(Image::from_image(pixmap, cs))
-    );
+    let (rx, ry) = match scale_coordinates(fe.radius_x.value(), fe.radius_y.value(), units, bbox, ts) {
+        Some(v) => v,
+        None => return Ok(Image::from_image(pixmap, cs)),
+    };
 
     if !(rx > 0.0 && ry > 0.0) {
         pixmap.clear();
@@ -1037,10 +1046,10 @@ fn apply_displacement_map(
 ) -> Result<Image, Error> {
     let pixmap1 = input1.into_color_space(cs)?.take()?;
     let pixmap2 = input2.into_color_space(cs)?.take()?;
-    let (sx, sy) = try_opt_or!(
-        scale_coordinates(fe.scale, fe.scale, units, bbox, ts),
-        Ok(Image::from_image(pixmap1, cs))
-    );
+    let (sx, sy) = match scale_coordinates(fe.scale, fe.scale, units, bbox, ts) {
+        Some(v) => v,
+        None => return Ok(Image::from_image(pixmap1, cs))
+    };
 
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
 

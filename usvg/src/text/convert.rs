@@ -7,7 +7,7 @@ use std::rc::Rc;
 use svgtypes::{Length, LengthUnit};
 
 use crate::svgtree::{self, AId, EId};
-use crate::{ShapeRendering, TextRendering, Visibility, converter, style, units};
+use crate::{OptionLog, ShapeRendering, TextRendering, Visibility, converter, style, units};
 use crate::{IsValidLength, SharedPathData, Transform, Tree, Units};
 use super::TextNode;
 use super::fontdb_ext::{self, DatabaseExt};
@@ -420,10 +420,8 @@ fn resolve_font(
         style,
     };
 
-    let id = try_opt_warn_or!(
-        state.opt.fontdb.query(&query), None,
-        "No match for '{}' font-family.", font_family
-    );
+    let id = state.opt.fontdb.query(&query)
+        .log_none(|| log::warn!("No match for '{}' font-family.", font_family))?;
 
     state.opt.fontdb.load_font(id)
 }

@@ -68,80 +68,6 @@ Full spec can be found [here](https://github.com/RazrFalcon/resvg/blob/master/do
 #![allow(clippy::question_mark)]
 #![allow(clippy::upper_case_acronyms)]
 
-/// Unwraps `Option` and invokes `return` on `None`.
-macro_rules! try_opt {
-    ($task:expr) => {
-        match $task {
-            Some(v) => v,
-            None => return,
-        }
-    };
-}
-
-/// Unwraps `Option` and invokes `continue` on `None`.
-macro_rules! try_opt_continue {
-    ($task:expr) => {
-        match $task {
-            Some(v) => v,
-            None => continue,
-        }
-    };
-}
-
-/// Unwraps `Option` and invokes `return $ret` on `None`.
-macro_rules! try_opt_or {
-    ($task:expr, $ret:expr) => {
-        match $task {
-            Some(v) => v,
-            None => return $ret,
-        }
-    };
-}
-
-/// Unwraps `Option` and invokes `return` on `None` with a warning.
-macro_rules! try_opt_warn {
-    ($task:expr, $msg:expr) => {
-        match $task {
-            Some(v) => v,
-            None => {
-                log::warn!($msg);
-                return;
-            }
-        }
-    };
-    ($task:expr, $fmt:expr, $($arg:tt)*) => {
-        match $task {
-            Some(v) => v,
-            None => {
-                log::warn!($fmt, $($arg)*);
-                return;
-            }
-        }
-    };
-}
-
-/// Unwraps `Option` and invokes `return $ret` on `None` with a warning.
-macro_rules! try_opt_warn_or {
-    ($task:expr, $ret:expr, $msg:expr) => {
-        match $task {
-            Some(v) => v,
-            None => {
-                log::warn!($msg);
-                return $ret;
-            }
-        }
-    };
-    ($task:expr, $ret:expr, $fmt:expr, $($arg:tt)*) => {
-        match $task {
-            Some(v) => v,
-            None => {
-                log::warn!($fmt, $($arg)*);
-                return $ret;
-            }
-        }
-    };
-}
-
 macro_rules! impl_enum_default {
     ($name:ident, $def_value:ident) => {
         impl Default for $name {
@@ -176,15 +102,6 @@ macro_rules! impl_from_str {
             }
         }
     };
-}
-
-macro_rules! matches {
-    ($expression:expr, $($pattern:tt)+) => {
-        match $expression {
-            $($pattern)+ => true,
-            _ => false
-        }
-    }
 }
 
 pub mod utils;
@@ -223,6 +140,18 @@ pub use crate::options::*;
 pub use crate::paint_server::*;
 pub use crate::pathdata::*;
 pub use crate::style::*;
+
+
+trait OptionLog {
+    fn log_none<F: FnOnce()>(self, f: F) -> Self;
+}
+
+impl<T> OptionLog for Option<T> {
+    #[inline]
+    fn log_none<F: FnOnce()>(self, f: F) -> Self {
+        self.or_else(|| { f(); None })
+    }
+}
 
 
 /// XML writing options.

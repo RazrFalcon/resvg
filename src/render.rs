@@ -5,6 +5,7 @@
 pub(crate) mod prelude {
     pub(crate) use usvg::*;
     pub(crate) use super::*;
+    pub(crate) use crate::OptionLog;
 }
 
 use prelude::*;

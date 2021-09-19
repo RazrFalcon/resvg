@@ -79,10 +79,10 @@ fn resolve(
     id_generator: &mut converter::NodeIdGenerator,
     parent: &mut Node,
     tree: &mut Tree,
-) {
-    let stroke_scale = try_opt!(stroke_scale(shape_node, marker_node, state));
+) -> Option<()> {
+    let stroke_scale = stroke_scale(shape_node, marker_node, state)?;
 
-    let r = try_opt!(convert_rect(marker_node, state));
+    let r = convert_rect(marker_node, state)?;
 
     let view_box = marker_node.get_viewbox().map(|vb|
         ViewBox {
@@ -167,6 +167,8 @@ fn resolve(
     };
 
     draw_markers(path, marker_kind, draw_marker);
+
+    Some(())
 }
 
 fn stroke_scale(

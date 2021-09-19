@@ -10,7 +10,7 @@ pub fn mask(
     mask: &usvg::Mask,
     bbox: PathBbox,
     canvas: &mut Canvas,
-) {
+) -> Option<()> {
     let bbox = if mask.units == usvg::Units::ObjectBoundingBox ||
                   mask.content_units == usvg::Units::ObjectBoundingBox
     {
@@ -20,13 +20,13 @@ pub fn mask(
             // `objectBoundingBox` units and zero-sized bbox? Clear the canvas and return.
             // Technically a UB, but this is what Chrome and Firefox do.
             canvas.pixmap.fill(tiny_skia::Color::TRANSPARENT);
-            return;
+            return None;
         }
     } else {
         Rect::new_bbox() // actual value doesn't matter, unreachable
     };
 
-    let mut mask_pixmap = try_opt!(tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height()));
+    let mut mask_pixmap = tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height())?;
     {
         let mut mask_canvas = Canvas::from(mask_pixmap.as_mut());
         mask_canvas.transform = canvas.transform;
@@ -77,6 +77,8 @@ pub fn mask(
         tiny_skia::Transform::identity(),
         None,
     );
+
+    Some(())
 }
 
 /// Converts an image into an alpha mask.

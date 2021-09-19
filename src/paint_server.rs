@@ -12,7 +12,7 @@ pub fn fill(
     anti_alias: bool,
     blend_mode: tiny_skia::BlendMode,
     canvas: &mut Canvas,
-) {
+) -> Option<()> {
     let pattern_pixmap;
 
     let mut paint = tiny_skia::Paint::default();
@@ -35,7 +35,7 @@ pub fn fill(
                     usvg::NodeKind::Pattern(ref pattern) => {
                         let global_ts = usvg::Transform::from_native(canvas.transform);
                         let (patt_pix, patt_ts)
-                            = try_opt!(prepare_pattern_pixmap(tree, &node, pattern, &global_ts, bbox));
+                            = prepare_pattern_pixmap(tree, &node, pattern, &global_ts, bbox)?;
 
                         pattern_pixmap = patt_pix;
                         paint.shader = prepare_pattern(&pattern_pixmap, patt_ts, opacity);
@@ -56,6 +56,8 @@ pub fn fill(
     };
 
     canvas.pixmap.fill_path(path, &paint, rule, canvas.transform, canvas.clip.as_ref());
+
+    Some(())
 }
 
 pub fn stroke(
@@ -66,7 +68,7 @@ pub fn stroke(
     anti_alias: bool,
     blend_mode: tiny_skia::BlendMode,
     canvas: &mut Canvas,
-) {
+) -> Option<()> {
     let pattern_pixmap;
 
     let mut paint = tiny_skia::Paint::default();
@@ -91,7 +93,7 @@ pub fn stroke(
                         usvg::NodeKind::Pattern(ref pattern) => {
                             let global_ts = usvg::Transform::from_native(canvas.transform);
                             let (patt_pix, patt_ts)
-                                = try_opt!(prepare_pattern_pixmap(tree, &node, pattern, &global_ts, bbox));
+                                = prepare_pattern_pixmap(tree, &node, pattern, &global_ts, bbox)?;
 
                             pattern_pixmap = patt_pix;
                             paint.shader = prepare_pattern(&pattern_pixmap, patt_ts, opacity);
@@ -129,6 +131,8 @@ pub fn stroke(
     paint.blend_mode = blend_mode;
 
     canvas.pixmap.stroke_path(path, &paint, &props, canvas.transform, canvas.clip.as_ref());
+
+    Some(())
 }
 
 fn prepare_linear(
@@ -136,7 +140,7 @@ fn prepare_linear(
     opacity: usvg::Opacity,
     bbox: PathBbox,
     paint: &mut tiny_skia::Paint,
-) {
+) -> Option<()> {
     let mode = match g.spread_method {
         usvg::SpreadMethod::Pad => tiny_skia::SpreadMode::Pad,
         usvg::SpreadMethod::Reflect => tiny_skia::SpreadMode::Reflect,
@@ -145,8 +149,8 @@ fn prepare_linear(
 
     let transform = {
         if g.units == usvg::Units::ObjectBoundingBox {
-            let bbox = try_opt_warn_or!(bbox.to_rect(), (),
-                "Gradient on zero-sized shapes is not allowed.");
+            let bbox = bbox.to_rect()
+                .log_none(|| log::warn!("Gradient on zero-sized shapes is not allowed."))?;
 
             let mut ts = usvg::Transform::from_bbox(bbox);
             ts.append(&g.transform);
@@ -175,6 +179,8 @@ fn prepare_linear(
     if let Some(gradient) = gradient {
         paint.shader = gradient;
     }
+
+    Some(())
 }
 
 fn prepare_radial(
@@ -182,7 +188,7 @@ fn prepare_radial(
     opacity: usvg::Opacity,
     bbox: PathBbox,
     paint: &mut tiny_skia::Paint,
-) {
+) -> Option<()> {
     let mode = match g.spread_method {
         usvg::SpreadMethod::Pad => tiny_skia::SpreadMode::Pad,
         usvg::SpreadMethod::Reflect => tiny_skia::SpreadMode::Reflect,
@@ -191,8 +197,8 @@ fn prepare_radial(
 
     let transform = {
         if g.units == usvg::Units::ObjectBoundingBox {
-            let bbox = try_opt_warn_or!(bbox.to_rect(), (),
-                "Gradient on zero-sized shapes is not allowed.");
+            let bbox = bbox.to_rect()
+                .log_none(|| log::warn!("Gradient on zero-sized shapes is not allowed."))?;
 
             let mut ts = usvg::Transform::from_bbox(bbox);
             ts.append(&g.transform);
@@ -222,6 +228,8 @@ fn prepare_radial(
     if let Some(gradient) = gradient {
         paint.shader = gradient;
     }
+
+    Some(())
 }
 
 fn prepare_pattern_pixmap(
@@ -232,8 +240,8 @@ fn prepare_pattern_pixmap(
     bbox: PathBbox,
 ) -> Option<(tiny_skia::Pixmap, usvg::Transform)> {
     let r = if pattern.units == usvg::Units::ObjectBoundingBox {
-        let bbox = try_opt_warn_or!(bbox.to_rect(), None,
-            "Pattern on zero-sized shapes is not allowed.");
+        let bbox = bbox.to_rect()
+            .log_none(|| log::warn!("Pattern on zero-sized shapes is not allowed."))?;
 
         pattern.rect.bbox_transform(bbox)
     } else {
