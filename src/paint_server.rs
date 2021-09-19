@@ -2,12 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::render::prelude::*;
+use usvg::TransformFromBBox;
+
+use crate::{ConvTransform, OptionLog, render::{Canvas, RenderState}};
 
 pub fn fill(
     tree: &usvg::Tree,
     fill: &usvg::Fill,
-    bbox: PathBbox,
+    bbox: usvg::PathBbox,
     path: &tiny_skia::Path,
     anti_alias: bool,
     blend_mode: tiny_skia::BlendMode,
@@ -63,7 +65,7 @@ pub fn fill(
 pub fn stroke(
     tree: &usvg::Tree,
     stroke: &Option<usvg::Stroke>,
-    bbox: PathBbox,
+    bbox: usvg::PathBbox,
     path: &tiny_skia::Path,
     anti_alias: bool,
     blend_mode: tiny_skia::BlendMode,
@@ -138,7 +140,7 @@ pub fn stroke(
 fn prepare_linear(
     g: &usvg::LinearGradient,
     opacity: usvg::Opacity,
-    bbox: PathBbox,
+    bbox: usvg::PathBbox,
     paint: &mut tiny_skia::Paint,
 ) -> Option<()> {
     let mode = match g.spread_method {
@@ -162,7 +164,7 @@ fn prepare_linear(
 
     let mut points = Vec::with_capacity(g.stops.len());
     for stop in &g.stops {
-        let alpha = stop.opacity * opacity * Opacity::new(f64::from(stop.color.alpha) / 255.0);
+        let alpha = stop.opacity * opacity * usvg::Opacity::new(f64::from(stop.color.alpha) / 255.0);
         let color = tiny_skia::Color::from_rgba8(
             stop.color.red, stop.color.green, stop.color.blue, alpha.to_u8());
         points.push(tiny_skia::GradientStop::new(stop.offset.value() as f32, color))
@@ -186,7 +188,7 @@ fn prepare_linear(
 fn prepare_radial(
     g: &usvg::RadialGradient,
     opacity: usvg::Opacity,
-    bbox: PathBbox,
+    bbox: usvg::PathBbox,
     paint: &mut tiny_skia::Paint,
 ) -> Option<()> {
     let mode = match g.spread_method {
@@ -210,7 +212,7 @@ fn prepare_radial(
 
     let mut points = Vec::with_capacity(g.stops.len());
     for stop in &g.stops {
-        let alpha = stop.opacity * opacity * Opacity::new(f64::from(stop.color.alpha) / 255.0);
+        let alpha = stop.opacity * opacity * usvg::Opacity::new(f64::from(stop.color.alpha) / 255.0);
         let color = tiny_skia::Color::from_rgba8(
             stop.color.red, stop.color.green, stop.color.blue, alpha.to_u8());
         points.push(tiny_skia::GradientStop::new(stop.offset.value() as f32, color))
@@ -237,7 +239,7 @@ fn prepare_pattern_pixmap(
     pattern_node: &usvg::Node,
     pattern: &usvg::Pattern,
     global_ts: &usvg::Transform,
-    bbox: PathBbox,
+    bbox: usvg::PathBbox,
 ) -> Option<(tiny_skia::Pixmap, usvg::Transform)> {
     let r = if pattern.units == usvg::Units::ObjectBoundingBox {
         let bbox = bbox.to_rect()
@@ -252,7 +254,7 @@ fn prepare_pattern_pixmap(
     ts2.append(&pattern.transform);
     let (sx, sy) = ts2.get_scale();
 
-    let img_size = Size::new(r.width() * sx, r.height() * sy)?.to_screen_size();
+    let img_size = usvg::Size::new(r.width() * sx, r.height() * sy)?.to_screen_size();
     let mut pixmap = tiny_skia::Pixmap::new(img_size.width(), img_size.height())?;
     let mut canvas = Canvas::from(pixmap.as_mut());
 

@@ -2,13 +2,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::render::prelude::*;
+use usvg::{NodeExt, TransformFromBBox};
+
+use crate::{ConvTransform, OptionLog, render::Canvas};
 
 pub fn clip(
     tree: &usvg::Tree,
     node: &usvg::Node,
     cp: &usvg::ClipPath,
-    bbox: PathBbox,
+    bbox: usvg::PathBbox,
     canvas: &mut Canvas,
 ) -> Option<()> {
     let mut clip_pixmap = tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height())?;
@@ -67,7 +69,7 @@ fn clip_group(
     tree: &usvg::Tree,
     node: &usvg::Node,
     g: &usvg::Group,
-    bbox: PathBbox,
+    bbox: usvg::PathBbox,
     canvas: &mut Canvas,
 ) -> Option<()> {
     if let Some(ref id) = g.clip_path {

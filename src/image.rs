@@ -2,13 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use log::warn;
-use crate::render::prelude::*;
+use crate::{ConvTransform, render::Canvas};
 
-pub fn draw(
-    image: &usvg::Image,
-    canvas: &mut Canvas,
-) -> PathBbox {
+pub fn draw(image: &usvg::Image, canvas: &mut Canvas) -> usvg::PathBbox {
     if image.visibility != usvg::Visibility::Visible {
         return image.view_box.rect.to_path_bbox();
     }
@@ -27,13 +23,13 @@ pub fn draw_kind(
         usvg::ImageKind::JPEG(ref data) => {
             match read_jpeg(data) {
                 Some(image) => { draw_raster(&image, view_box, rendering_mode, canvas); }
-                None => warn!("Failed to load an embedded image."),
+                None => log::warn!("Failed to load an embedded image."),
             }
         }
         usvg::ImageKind::PNG(ref data) => {
             match read_png(data) {
                 Some(image) => { draw_raster(&image, view_box, rendering_mode, canvas); }
-                None => warn!("Failed to load an embedded image."),
+                None => log::warn!("Failed to load an embedded image."),
             }
         }
         usvg::ImageKind::SVG(ref subtree) => {
@@ -150,7 +146,7 @@ fn draw_svg(
     let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
     sub_canvas.transform = canvas.transform;
     sub_canvas.apply_transform(ts.to_native());
-    render_to_canvas(tree, img_size, &mut sub_canvas);
+    crate::render::render_to_canvas(tree, img_size, &mut sub_canvas);
 
     if let Some(clip) = clip {
         let rr = tiny_skia::Rect::from_xywh(
@@ -176,7 +172,7 @@ fn draw_svg(
 
 struct Image {
     data: ImageData,
-    size: ScreenSize,
+    size: usvg::ScreenSize,
 }
 
 enum ImageData {
@@ -191,7 +187,7 @@ fn read_png(data: &[u8]) -> Option<Image> {
     let mut img_data = vec![0; reader.output_buffer_size()];
     let info = reader.next_frame(&mut img_data).ok()?;
 
-    let size = ScreenSize::new(info.width, info.height)?;
+    let size = usvg::ScreenSize::new(info.width, info.height)?;
 
     let data = match info.color_type {
         png::ColorType::Rgb => ImageData::RGB(img_data),
@@ -220,7 +216,7 @@ fn read_png(data: &[u8]) -> Option<Image> {
             ImageData::RGBA(rgba_data)
         }
         png::ColorType::Indexed => {
-            warn!("Indexed PNG is not supported.");
+            log::warn!("Indexed PNG is not supported.");
             return None
         }
     };
@@ -236,7 +232,7 @@ fn read_jpeg(data: &[u8]) -> Option<Image> {
     let img_data = decoder.decode().ok()?;
     let info = decoder.info()?;
 
-    let size = ScreenSize::new(info.width as u32, info.height as u32)?;
+    let size = usvg::ScreenSize::new(info.width as u32, info.height as u32)?;
 
     let data = match info.pixel_format {
         jpeg_decoder::PixelFormat::RGB24 => ImageData::RGB(img_data),
@@ -262,8 +258,8 @@ fn read_jpeg(data: &[u8]) -> Option<Image> {
 /// Calculates an image rect depending on the provided view box.
 fn image_rect(
     view_box: &usvg::ViewBox,
-    img_size: ScreenSize,
-) -> Rect {
+    img_size: usvg::ScreenSize,
+) -> usvg::Rect {
     let new_size = img_size.to_size().fit_view_box(view_box);
     let (x, y) = usvg::utils::aligned_pos(
         view_box.aspect.align,

@@ -2,13 +2,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::render::prelude::*;
+use usvg::TransformFromBBox;
+
+use crate::{ConvTransform, render::{Canvas, RenderState}};
 
 pub fn mask(
     tree: &usvg::Tree,
     node: &usvg::Node,
     mask: &usvg::Mask,
-    bbox: PathBbox,
+    bbox: usvg::PathBbox,
     canvas: &mut Canvas,
 ) -> Option<()> {
     let bbox = if mask.units == usvg::Units::ObjectBoundingBox ||
@@ -23,7 +25,7 @@ pub fn mask(
             return None;
         }
     } else {
-        Rect::new_bbox() // actual value doesn't matter, unreachable
+        usvg::Rect::new_bbox() // actual value doesn't matter, unreachable
     };
 
     let mut mask_pixmap = tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height())?;

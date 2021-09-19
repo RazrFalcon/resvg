@@ -8,7 +8,6 @@ use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::slice;
 
-use log::warn;
 use usvg::NodeExt;
 
 
@@ -457,13 +456,13 @@ pub extern "C" fn resvg_get_node_bbox(
     let id = match cstr_to_str(id) {
         Some(v) => v,
         None => {
-            warn!("Provided ID is no an UTF-8 string.");
+            log::warn!("Provided ID is no an UTF-8 string.");
             return false;
         }
     };
 
     if id.is_empty() {
-        warn!("Node ID must not be empty.");
+        log::warn!("Node ID must not be empty.");
         return false;
     }
 
@@ -490,7 +489,7 @@ pub extern "C" fn resvg_get_node_bbox(
             }
         }
         None => {
-            warn!("No node with '{}' ID is in the tree.", id);
+            log::warn!("No node with '{}' ID is in the tree.", id);
             false
         }
     }
@@ -504,7 +503,7 @@ pub extern "C" fn resvg_node_exists(
     let id = match cstr_to_str(id) {
         Some(v) => v,
         None => {
-            warn!("Provided ID is no an UTF-8 string.");
+            log::warn!("Provided ID is no an UTF-8 string.");
             return false;
         }
     };
@@ -526,7 +525,7 @@ pub extern "C" fn resvg_get_node_transform(
     let id = match cstr_to_str(id) {
         Some(v) => v,
         None => {
-            warn!("Provided ID is no an UTF-8 string.");
+            log::warn!("Provided ID is no an UTF-8 string.");
             return false;
         }
     };
@@ -617,7 +616,7 @@ pub extern "C" fn resvg_render_node(
     };
 
     if id.is_empty() {
-        warn!("Node with an empty ID cannot be rendered.");
+        log::warn!("Node with an empty ID cannot be rendered.");
         return false;
     }
 
@@ -628,7 +627,7 @@ pub extern "C" fn resvg_render_node(
 
         resvg::render_node(&tree.0, &node, fit_to.to_usvg(), pixmap).is_some()
     } else {
-        warn!("A node with '{}' ID wasn't found.", id);
+        log::warn!("A node with '{}' ID wasn't found.", id);
         false
     }
 }

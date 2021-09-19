@@ -2,14 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-pub(crate) mod prelude {
-    pub(crate) use usvg::*;
-    pub(crate) use super::*;
-    pub(crate) use crate::OptionLog;
-}
+use usvg::{FuzzyEq, IsDefault, NodeExt};
 
-use prelude::*;
-
+use crate::ConvTransform;
 
 pub struct Canvas<'a> {
     pub pixmap: tiny_skia::PixmapMut<'a>,
@@ -65,33 +60,9 @@ pub(crate) enum RenderState {
 }
 
 
-pub(crate) trait ConvTransform {
-    fn to_native(&self) -> tiny_skia::Transform;
-    fn from_native(_: tiny_skia::Transform) -> Self;
-}
-
-impl ConvTransform for usvg::Transform {
-    fn to_native(&self) -> tiny_skia::Transform {
-        tiny_skia::Transform::from_row(
-            self.a as f32, self.b as f32,
-            self.c as f32, self.d as f32,
-            self.e as f32, self.f as f32,
-        )
-    }
-
-    fn from_native(ts: tiny_skia::Transform) -> Self {
-        Self::new(
-            ts.sx as f64, ts.ky as f64,
-            ts.kx as f64, ts.sy as f64,
-            ts.tx as f64, ts.ty as f64,
-        )
-    }
-}
-
-
 pub(crate) fn render_to_canvas(
     tree: &usvg::Tree,
-    img_size: ScreenSize,
+    img_size: usvg::ScreenSize,
     canvas: &mut Canvas,
 ) {
     render_node_to_canvas(tree, &tree.root(), tree.svg_node().view_box, img_size, &mut RenderState::Ok, canvas);
@@ -101,7 +72,7 @@ pub(crate) fn render_node_to_canvas(
     tree: &usvg::Tree,
     node: &usvg::Node,
     view_box: usvg::ViewBox,
-    img_size: ScreenSize,
+    img_size: usvg::ScreenSize,
     state: &mut RenderState,
     canvas: &mut Canvas,
 ) {
@@ -120,7 +91,7 @@ pub(crate) fn render_node_to_canvas(
 /// Applies viewbox transformation to the painter.
 fn apply_viewbox_transform(
     view_box: usvg::ViewBox,
-    img_size: ScreenSize,
+    img_size: usvg::ScreenSize,
     canvas: &mut Canvas,
 ) {
     let ts = usvg::utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_size());
@@ -132,7 +103,7 @@ pub(crate) fn render_node(
     node: &usvg::Node,
     state: &mut RenderState,
     canvas: &mut Canvas,
-) -> Option<PathBbox> {
+) -> Option<usvg::PathBbox> {
     match *node.borrow() {
         usvg::NodeKind::Svg(_) => {
             render_group(tree, node, state, canvas)
@@ -155,9 +126,9 @@ pub(crate) fn render_group(
     parent: &usvg::Node,
     state: &mut RenderState,
     canvas: &mut Canvas,
-) -> Option<PathBbox> {
+) -> Option<usvg::PathBbox> {
     let curr_ts = canvas.transform;
-    let mut g_bbox = PathBbox::new_bbox();
+    let mut g_bbox = usvg::PathBbox::new_bbox();
 
     for node in parent.children() {
         match state {
@@ -186,7 +157,7 @@ pub(crate) fn render_group(
     }
 
     // Check that bbox was changed, otherwise we will have a rect with x/y set to f64::MAX.
-    if g_bbox.fuzzy_ne(&PathBbox::new_bbox()) {
+    if g_bbox.fuzzy_ne(&usvg::PathBbox::new_bbox()) {
         Some(g_bbox)
     } else {
         None
@@ -199,7 +170,7 @@ fn render_group_impl(
     g: &usvg::Group,
     state: &mut RenderState,
     canvas: &mut Canvas,
-) -> Option<PathBbox> {
+) -> Option<usvg::PathBbox> {
     let mut sub_pixmap = tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height())?;
     let curr_ts = canvas.transform;
 
@@ -351,7 +322,7 @@ fn prepare_filter_background(
 ) -> Option<tiny_skia::Pixmap> {
     let start_node = parent.filter_background_start_node(filter)?;
 
-    let img_size = ScreenSize::new(pixmap.width(), pixmap.height()).unwrap();
+    let img_size = usvg::ScreenSize::new(pixmap.width(), pixmap.height()).unwrap();
 
     let mut pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
     let mut canvas = Canvas::from(pixmap.as_mut());
@@ -376,7 +347,7 @@ fn prepare_filter_fill_paint(
     tree: &usvg::Tree,
     parent: &usvg::Node,
     filter: &usvg::filter::Filter,
-    bbox: Option<Rect>,
+    bbox: Option<usvg::Rect>,
     ts: usvg::Transform,
     pixmap: &tiny_skia::Pixmap,
 ) -> Option<tiny_skia::Pixmap> {
@@ -385,7 +356,7 @@ fn prepare_filter_fill_paint(
     let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
     if let usvg::NodeKind::Group(ref g) = *parent.borrow() {
         if let Some(paint) = g.filter_fill.clone() {
-            let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
+            let style_bbox = bbox.unwrap_or_else(|| usvg::Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
 
             let rect = tiny_skia::Rect::from_xywh(0.0, 0.0, region.width() as f32, region.height() as f32)?;
             let path = tiny_skia::PathBuilder::from_rect(rect);
@@ -412,7 +383,7 @@ fn prepare_filter_stroke_paint(
     tree: &usvg::Tree,
     parent: &usvg::Node,
     filter: &usvg::filter::Filter,
-    bbox: Option<Rect>,
+    bbox: Option<usvg::Rect>,
     ts: usvg::Transform,
     pixmap: &tiny_skia::Pixmap,
 ) -> Option<tiny_skia::Pixmap> {
@@ -421,7 +392,7 @@ fn prepare_filter_stroke_paint(
     let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
     if let usvg::NodeKind::Group(ref g) = *parent.borrow() {
         if let Some(paint) = g.filter_stroke.clone() {
-            let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
+            let style_bbox = bbox.unwrap_or_else(|| usvg::Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
 
             let rect = tiny_skia::Rect::from_xywh(0.0, 0.0, region.width() as f32, region.height() as f32)?;
             let path = tiny_skia::PathBuilder::from_rect(rect);
