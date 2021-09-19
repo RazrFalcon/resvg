@@ -61,10 +61,8 @@ pub(crate) fn convert_list(
 ) -> Option<Vec<f64>> {
     if let Some(text) = node.attribute::<&str>(aid) {
         let mut num_list = Vec::new();
-        for length in svgtypes::LengthListParser::from(text) {
-            if let Ok(length) = length {
-                num_list.push(convert_length(length, node, aid, Units::UserSpaceOnUse, state));
-            }
+        for length in svgtypes::LengthListParser::from(text).flatten() {
+            num_list.push(convert_length(length, node, aid, Units::UserSpaceOnUse, state));
         }
 
         Some(num_list)

@@ -152,7 +152,7 @@ fn collect_args() -> Result<Args, pico_args::Error> {
     Ok(Args {
         dpi:                input.opt_value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
         languages:          input.opt_value_from_fn("--languages", parse_languages)?
-                                 .unwrap_or(vec!["en".to_string()]), // TODO: use system language
+                                 .unwrap_or_else(|| vec!["en".to_string()]), // TODO: use system language
         shape_rendering:    input.opt_value_from_str("--shape-rendering")?.unwrap_or_default(),
         text_rendering:     input.opt_value_from_str("--text-rendering")?.unwrap_or_default(),
         image_rendering:    input.opt_value_from_str("--image-rendering")?.unwrap_or_default(),
@@ -273,7 +273,7 @@ fn main() {
     }
 
     if let Err(e) = process(args) {
-        eprintln!("Error: {}.", e.to_string());
+        eprintln!("Error: {}.", e);
         std::process::exit(1);
     }
 }
@@ -420,7 +420,7 @@ impl log::Log for SimpleLogger {
 
     fn log(&self, record: &log::Record) {
         if self.enabled(record.metadata()) {
-            let target = if record.target().len() > 0 {
+            let target = if !record.target().is_empty() {
                 record.target()
             } else {
                 record.module_path().unwrap_or_default()

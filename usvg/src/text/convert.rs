@@ -381,7 +381,7 @@ fn resolve_font(
     let weight = resolve_font_weight(node);
 
     let font_family = if let Some(n) = node.find_node_with_attribute(AId::FontFamily) {
-        n.attribute::<&str>(AId::FontFamily).unwrap_or(&state.opt.font_family).to_owned()
+        n.attribute::<&str>(AId::FontFamily).unwrap_or(state.opt.font_family).to_owned()
     } else {
         state.opt.font_family.to_owned()
     };
@@ -411,7 +411,7 @@ fn resolve_font(
     }
 
     // Use the default font as fallback.
-    name_list.push(fontdb::Family::Name(&state.opt.font_family));
+    name_list.push(fontdb::Family::Name(state.opt.font_family));
 
     let query = fontdb::Query {
         families: &name_list,

@@ -202,7 +202,7 @@ impl OptionsRef<'_> {
     /// If `OptionsRef::resources_dir` is not set, returns itself.
     pub fn get_abs_path(&self, rel_path: &std::path::Path) -> std::path::PathBuf {
         match self.resources_dir {
-            Some(ref dir) => dir.join(rel_path),
+            Some(dir) => dir.join(rel_path),
             None => rel_path.into(),
         }
     }

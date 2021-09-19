@@ -240,7 +240,7 @@ fn prepare_pattern_pixmap(
         pattern.rect
     };
 
-    let mut ts2 = global_ts.clone();
+    let mut ts2 = *global_ts;
     ts2.append(&pattern.transform);
     let (sx, sy) = ts2.get_scale();
 

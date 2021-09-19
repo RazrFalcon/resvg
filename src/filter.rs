@@ -622,7 +622,7 @@ fn apply_drop_shadow(
     let alpha = crate::paint_server::multiply_a8(fe.opacity.to_u8(), fe.color.alpha);
     let color = tiny_skia::Color::from_rgba8(fe.color.red, fe.color.green, fe.color.blue, alpha);
     for p in shadow_pixmap.pixels_mut() {
-        let mut color = color.clone();
+        let mut color = color;
         color.apply_opacity(p.alpha() as f32 / 255.0);
         *p = color.premultiply().to_color_u8();
     }
