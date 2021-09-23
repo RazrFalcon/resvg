@@ -22,7 +22,7 @@ base64 = "0.13" # for embedded images
 data-url = "0.1" # for href parsing
 flate2 = { version = "1.0", default-features = false, features = ["rust_backend"] } # SVGZ decoding
 float-cmp = { version = "0.9", default-features = false, features = ["std"] }
-kurbo = "=0.8.0" # https://github.com/linebender/kurbo/issues/176
+kurbo = "0.8"
 log = "0.4"
 pico-args = "0.4"
 rctree = "0.4"

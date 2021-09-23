@@ -95,6 +95,12 @@ fn text_to_paths(
     parent: &mut Node,
     tree: &mut Tree,
 ) -> (Vec<Path>, PathBbox) {
+    let abs_ts = {
+        let mut ts = parent.abs_transform();
+        ts.append(&text_node.attribute(svgtree::AId::Transform).unwrap_or_default());
+        ts
+    };
+
     let pos_list = convert::resolve_positions_list(text_node, state);
     let rotate_list = convert::resolve_rotate_list(text_node);
     let writing_mode = convert::convert_writing_mode(text_node);
@@ -121,7 +127,7 @@ fn text_to_paths(
         shaper::apply_letter_spacing(chunk, &mut clusters);
         shaper::apply_word_spacing(chunk, &mut clusters);
         let mut curr_pos = shaper::resolve_clusters_positions(
-            chunk, char_offset, &pos_list, &rotate_list, writing_mode, &mut clusters
+            chunk, char_offset, &pos_list, &rotate_list, writing_mode, abs_ts, &mut clusters
         );
 
         let mut text_ts = Transform::default();

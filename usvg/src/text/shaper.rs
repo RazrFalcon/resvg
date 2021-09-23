@@ -444,6 +444,7 @@ pub fn resolve_clusters_positions(
     pos_list: &[CharacterPosition],
     rotate_list: &[f64],
     writing_mode: WritingMode,
+    ts: Transform,
     clusters: &mut [OutlinedCluster],
 ) -> (f64, f64) {
     match chunk.text_flow {
@@ -454,7 +455,7 @@ pub fn resolve_clusters_positions(
         }
         TextFlow::Path(ref path) => {
             resolve_clusters_positions_path(
-                chunk, char_offset, path, pos_list, rotate_list, writing_mode, clusters,
+                chunk, char_offset, path, pos_list, rotate_list, writing_mode, ts, clusters,
             )
         }
     }
@@ -506,6 +507,7 @@ fn resolve_clusters_positions_path(
     pos_list: &[CharacterPosition],
     rotate_list: &[f64],
     writing_mode: WritingMode,
+    ts: Transform,
     clusters: &mut [OutlinedCluster],
 ) -> (f64, f64) {
     let mut last_x = 0.0;
@@ -524,7 +526,7 @@ fn resolve_clusters_positions_path(
         + process_anchor(chunk.anchor, clusters_length(clusters));
 
     let normals = collect_normals(
-        chunk, clusters, &path.path, pos_list, char_offset, start_offset,
+        chunk, clusters, &path.path, pos_list, char_offset, start_offset, ts,
     );
     for (cluster, normal) in clusters.iter_mut().zip(normals) {
         let (x, y, angle) = match normal {
@@ -603,6 +605,7 @@ fn collect_normals(
     pos_list: &[CharacterPosition],
     char_offset: usize,
     offset: f64,
+    ts: Transform,
 ) -> Vec<Option<PathNormal>> {
     debug_assert!(!path.is_empty());
 
@@ -668,7 +671,16 @@ fn collect_normals(
             }
         };
 
-        let arclen_accuracy = 0.5;
+        let arclen_accuracy = {
+            let base_arclen_accuracy = 0.5;
+            // Accuracy depends on a current scale.
+            // When we have a tiny path scaled by a large value,
+            // we have to increase out accuracy accordingly.
+            let (sx, sy) = ts.get_scale();
+            // 1.0 acts as a threshold to prevent division by 0 and/or low accuracy.
+            base_arclen_accuracy / (sx * sy).sqrt().max(1.0)
+        };
+
         let curve_len = curve.arclen(arclen_accuracy);
 
         for offset in &offsets[normals.len()..] {
