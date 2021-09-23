@@ -536,8 +536,7 @@ pub extern "C" fn resvg_get_node_transform(
     };
 
     if let Some(node) = tree.0.node_by_id(id) {
-        let mut abs_ts = node.abs_transform();
-        abs_ts.append(&node.transform());
+        let abs_ts = node.abs_transform();
 
         unsafe {
             *ts = resvg_transform {

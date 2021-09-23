@@ -712,7 +712,7 @@ impl NodeExt for Node {
 
     fn abs_transform(&self) -> Transform {
         let mut ts_list = Vec::new();
-        for p in self.ancestors().skip(1) {
+        for p in self.ancestors() {
             ts_list.push(p.transform());
         }
 
@@ -782,22 +782,19 @@ fn calc_node_bbox(
     node: &Node,
     ts: Transform,
 ) -> Option<PathBbox> {
-    let mut ts2 = ts;
-    ts2.append(&node.transform());
-
     match *node.borrow() {
         NodeKind::Path(ref path) => {
-            path.data.bbox_with_transform(ts2, path.stroke.as_ref())
+            path.data.bbox_with_transform(ts, path.stroke.as_ref())
         }
         NodeKind::Image(ref img) => {
             let path = PathData::from_rect(img.view_box.rect);
-            path.bbox_with_transform(ts2, None)
+            path.bbox_with_transform(ts, None)
         }
         NodeKind::Svg(_) | NodeKind::Group(_) => {
             let mut bbox = PathBbox::new_bbox();
 
             for child in node.children() {
-                if let Some(c_bbox) = calc_node_bbox(&child, ts2) {
+                if let Some(c_bbox) = calc_node_bbox(&child, ts) {
                     bbox = bbox.expand(c_bbox);
                 }
             }

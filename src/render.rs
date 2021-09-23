@@ -80,8 +80,7 @@ pub(crate) fn render_node_to_canvas(
 
     let curr_ts = canvas.transform;
 
-    let mut ts = node.abs_transform();
-    ts.append(&node.transform());
+    let ts = node.abs_transform();
 
     canvas.apply_transform(ts.to_native());
     render_node(tree, node, state, canvas);

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- `usvg::NodeExt::abs_transform` includes current node transform now.
 
 ## [0.18.0] - 2021-09-12
 ### Added
