@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.19.0] - 2021-10-04
 ### Added
 - Better text-on-path converter accuracy by accounting the current transform.
 
 ### Changed
 - `usvg::NodeExt::abs_transform` includes current node transform now.
+- Improved turbulence filter performance. Thanks to [akindle](https://github.com/akindle).
+- Multiple dependencies updated.
 
 ## [0.18.0] - 2021-09-12
 ### Added
@@ -545,7 +549,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.18.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.19.0...HEAD
+[0.19.0]: https://github.com/RazrFalcon/resvg/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/RazrFalcon/resvg/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/RazrFalcon/resvg/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/RazrFalcon/resvg/compare/v0.15.0...v0.16.0
