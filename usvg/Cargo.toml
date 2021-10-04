@@ -35,7 +35,7 @@ siphasher = "0.3"
 svgtypes = "0.8"
 
 # for text to path
-fontdb = { version = "0.6.2", optional = true, default-features = false }
+fontdb = { version = "0.7.0", optional = true, default-features = false }
 rustybuzz = { version = "0.4", optional = true }
 ttf-parser = { version = "0.12", optional = true }
 unicode-bidi = { version = "0.3", optional = true }
