@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- Better text-on-path converter accuracy by accounting the current transform.
+
 ### Changed
 - `usvg::NodeExt::abs_transform` includes current node transform now.
 

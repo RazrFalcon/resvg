@@ -339,7 +339,7 @@ fn parse_args() -> Result<Args, String> {
     let fontdb = timed!(args, "FontDB init", load_fonts(&mut args));
     if args.list_fonts {
         for face in fontdb.faces() {
-            if let usvg::fontdb::Source::File(ref path) = &*face.source {
+            if let usvg::fontdb::Source::File(ref path) = &face.source {
                 println!(
                     "{}: '{}', {}, {:?}, {:?}, {:?}",
                     path.display(), face.family, face.index,
