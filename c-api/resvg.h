@@ -64,6 +64,31 @@ typedef enum resvg_error {
     RESVG_ERROR_INVALID_SIZE,
     /** Failed to parse an SVG data. */
     RESVG_ERROR_PARSING_FAILED,
+    /** Pointer which is passed to function is null */
+    RESVG_POINTER_IS_NULL,
+    /** Provided invalid fit value for specified fit type */
+    RESVG_INVALID_FIT_VALUE,
+    /** Enum value doesn't match any of its variants */
+    RESVG_INVALID_ENUM_VALUE,
+    /** SVG rendering failed */
+    RESVG_RENDER_FAILED,
+    /** SVG bounding box calculation failed */
+    RESVG_BBOX_CALC_FAILED,
+    /** Empty string provided as node ID */
+    RESVG_EMPTY_NODE_ID,
+    /** Node with specified ID is not found */
+    RESVG_NODE_NOT_FOUND,
+    /** Cannot create pixmap */
+    RESVG_PIXMAP_CREATION_FAILED,
+    /** This API function is not implemented */
+    RESVG_NOT_IMPLEMENTED,
+    /**
+     * Irrecoverable error occured inside of API function call.
+     * 
+     * At this point all resources passed to panicked call are poisoned
+     * and should be destroyed.
+     */
+    RESVG_PANIC_CAUGHT,
 } resvg_error;
 
 /**
@@ -175,14 +200,14 @@ typedef struct resvg_transform {
  *
  * All warnings will be printed to the `stderr`.
  */
-void resvg_init_log();
+int resvg_init_log();
 
 /**
  * @brief Creates a new #resvg_options object.
  *
  * Should be destroyed via #resvg_options_destroy.
  */
-resvg_options* resvg_options_create();
+int resvg_options_create(resvg_options **opt);
 
 /**
  * @brief Sets a directory that will be used during relative paths resolving.
@@ -193,8 +218,10 @@ resvg_options* resvg_options_create();
  * Must be UTF-8. Can be set to NULL.
  *
  * Default: NULL
+ * 
+ * @return #resvg_error
  */
-void resvg_options_set_resources_dir(resvg_options *opt, const char *path);
+int resvg_options_set_resources_dir(resvg_options *opt, const char *path);
 
 /**
  * @brief Sets the target DPI.
@@ -202,8 +229,10 @@ void resvg_options_set_resources_dir(resvg_options *opt, const char *path);
  * Impact units conversion.
  *
  * Default: 96
+ * 
+ * @return #resvg_error
  */
-void resvg_options_set_dpi(resvg_options *opt, double dpi);
+int resvg_options_set_dpi(resvg_options *opt, double dpi);
 
 /**
  * @brief Sets the default font family.
@@ -213,8 +242,10 @@ void resvg_options_set_dpi(resvg_options *opt, double dpi);
  * Must be UTF-8. NULL is not allowed.
  *
  * Default: Times New Roman
+ * 
+ * @return #resvg_error
  */
-void resvg_options_set_font_family(resvg_options *opt, const char *family);
+int resvg_options_set_font_family(resvg_options *opt, const char *family);
 
 /**
  * @brief Sets the default font size.
@@ -222,8 +253,10 @@ void resvg_options_set_font_family(resvg_options *opt, const char *family);
  * Will be used when no `font-size` attribute is set in the SVG.
  *
  * Default: 12
+ * 
+ * @return #resvg_error
  */
-void resvg_options_set_font_size(resvg_options *opt, double size);
+int resvg_options_set_font_size(resvg_options *opt, double size);
 
 /**
  * @brief Sets the `serif` font family.
@@ -233,8 +266,10 @@ void resvg_options_set_font_size(resvg_options *opt, double size);
  * Has no effect when the `text` feature is not enabled.
  *
  * Default: Times New Roman
+ * 
+ * @return #resvg_error
  */
-void resvg_options_set_serif_family(resvg_options *opt, const char *family);
+int resvg_options_set_serif_family(resvg_options *opt, const char *family);
 
 /**
  * @brief Sets the `sans-serif` font family.
@@ -244,8 +279,10 @@ void resvg_options_set_serif_family(resvg_options *opt, const char *family);
  * Has no effect when the `text` feature is not enabled.
  *
  * Default: Arial
+ * 
+ * @return #resvg_error
  */
-void resvg_options_set_sans_serif_family(resvg_options *opt, const char *family);
+int resvg_options_set_sans_serif_family(resvg_options *opt, const char *family);
 
 /**
  * @brief Sets the `cursive` font family.
@@ -255,8 +292,10 @@ void resvg_options_set_sans_serif_family(resvg_options *opt, const char *family)
  * Has no effect when the `text` feature is not enabled.
  *
  * Default: Comic Sans MS
+ * 
+ * @return #resvg_error
  */
-void resvg_options_set_cursive_family(resvg_options *opt, const char *family);
+int resvg_options_set_cursive_family(resvg_options *opt, const char *family);
 
 /**
  * @brief Sets the `fantasy` font family.
@@ -266,8 +305,10 @@ void resvg_options_set_cursive_family(resvg_options *opt, const char *family);
  * Has no effect when the `text` feature is not enabled.
  *
  * Default: Papyrus on macOS, Impact on other OS'es
+ * 
+ * @return #resvg_error
  */
-void resvg_options_set_fantasy_family(resvg_options *opt, const char *family);
+int resvg_options_set_fantasy_family(resvg_options *opt, const char *family);
 
 /**
  * @brief Sets the `monospace` font family.
@@ -277,8 +318,10 @@ void resvg_options_set_fantasy_family(resvg_options *opt, const char *family);
  * Has no effect when the `text` feature is not enabled.
  *
  * Default: Courier New
+ * 
+ * @return #resvg_error
  */
-void resvg_options_set_monospace_family(resvg_options *opt, const char *family);
+int resvg_options_set_monospace_family(resvg_options *opt, const char *family);
 
 /**
  * @brief Sets a comma-separated list of languages.
@@ -290,8 +333,10 @@ void resvg_options_set_monospace_family(resvg_options *opt, const char *family);
  * Must be UTF-8. Can be NULL.
  *
  * Default: en
+ * 
+ * @return #resvg_error
  */
-void resvg_options_set_languages(resvg_options *opt, const char *languages);
+int resvg_options_set_languages(resvg_options *opt, const char *languages);
 
 /**
  * @brief Sets the default shape rendering method.
@@ -299,8 +344,10 @@ void resvg_options_set_languages(resvg_options *opt, const char *languages);
  * Will be used when an SVG element's `shape-rendering` property is set to `auto`.
  *
  * Default: `RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION`
+ * 
+ * @return #resvg_error
  */
-void resvg_options_set_shape_rendering_mode(resvg_options *opt, resvg_shape_rendering mode);
+int resvg_options_set_shape_rendering_mode(resvg_options *opt, resvg_shape_rendering mode);
 
 /**
  * @brief Sets the default text rendering method.
@@ -308,8 +355,10 @@ void resvg_options_set_shape_rendering_mode(resvg_options *opt, resvg_shape_rend
  * Will be used when an SVG element's `text-rendering` property is set to `auto`.
  *
  * Default: `RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY`
+ * 
+ * @return #resvg_error
  */
-void resvg_options_set_text_rendering_mode(resvg_options *opt, resvg_text_rendering mode);
+int resvg_options_set_text_rendering_mode(resvg_options *opt, resvg_text_rendering mode);
 
 /**
  * @brief Sets the default image rendering method.
@@ -317,8 +366,10 @@ void resvg_options_set_text_rendering_mode(resvg_options *opt, resvg_text_render
  * Will be used when an SVG element's `image-rendering` property is set to `auto`.
  *
  * Default: `RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY`
+ * 
+ * @return #resvg_error
  */
-void resvg_options_set_image_rendering_mode(resvg_options *opt, resvg_image_rendering mode);
+int resvg_options_set_image_rendering_mode(resvg_options *opt, resvg_image_rendering mode);
 
 /**
  * @brief Keep named groups.
@@ -326,8 +377,10 @@ void resvg_options_set_image_rendering_mode(resvg_options *opt, resvg_image_rend
  * If set to `true`, all non-empty groups with `id` attribute will not be removed.
  *
  * Default: false
+ * 
+ * @return #resvg_error
  */
-void resvg_options_set_keep_named_groups(resvg_options *opt, bool keep);
+int resvg_options_set_keep_named_groups(resvg_options *opt, bool keep);
 
 /**
  * @brief Loads a font data into the internal fonts database.
@@ -335,8 +388,10 @@ void resvg_options_set_keep_named_groups(resvg_options *opt, bool keep);
  * Prints a warning into the log when the data is not a valid TrueType font.
  *
  * Has no effect when the `text` feature is not enabled.
+ * 
+ * @return #resvg_error
  */
-void resvg_options_load_font_data(resvg_options *opt, const char *data, size_t len);
+int resvg_options_load_font_data(resvg_options *opt, const char *data, size_t len);
 
 /**
  * @brief Loads a font file into the internal fonts database.
@@ -345,7 +400,7 @@ void resvg_options_load_font_data(resvg_options *opt, const char *data, size_t l
  *
  * Has no effect when the `text` feature is not enabled.
  *
- * @return #resvg_error with RESVG_OK, RESVG_ERROR_NOT_AN_UTF8_STR or RESVG_ERROR_FILE_OPEN_FAILED
+ * @return #resvg_error
  */
 int resvg_options_load_font_file(resvg_options *opt, const char *file_path);
 
@@ -362,13 +417,17 @@ int resvg_options_load_font_file(resvg_options *opt, const char *file_path);
  * Prints warnings into the log.
  *
  * Has no effect when the `text` feature is not enabled.
+ * 
+ * @return #resvg_error
  */
-void resvg_options_load_system_fonts(resvg_options *opt);
+int resvg_options_load_system_fonts(resvg_options *opt);
 
 /**
  * @brief Destroys the #resvg_options.
+ * 
+ * @return #resvg_error
  */
-void resvg_options_destroy(resvg_options *opt);
+int resvg_options_destroy(resvg_options *opt);
 
 /**
  * @brief Creates #resvg_render_tree from file.
@@ -406,55 +465,55 @@ int resvg_parse_tree_from_data(const char *data,
  * @brief Checks that tree has any nodes.
  *
  * @param tree Render tree.
- * @return Returns `true` if tree has any nodes.
+ * @param is_empty `false` if tree has any nodes.
+ * @return #resvg_error
  */
-bool resvg_is_image_empty(const resvg_render_tree *tree);
+int resvg_is_image_empty(const resvg_render_tree *tree, bool *is_empty);
 
 /**
- * @brief Returns an image size.
+ * @brief Provides an image size.
  *
  * The size of a canvas that required to render this SVG.
  *
  * The `width` and `height` attributes in SVG.
  *
  * @param tree Render tree.
- * @return Image size.
+ * @param size Image size.
+ * @return #resvg_error
  */
-resvg_size resvg_get_image_size(const resvg_render_tree *tree);
+int resvg_get_image_size(const resvg_render_tree *tree, resvg_size *size);
 
 /**
- * @brief Returns an image viewbox.
+ * @brief Provides an image viewbox.
  *
  * The `viewBox` attribute in SVG.
  *
  * @param tree Render tree.
- * @return Image viewbox.
+ * @param rect Image viewbox.
+ * @return #resvg_error
  */
-resvg_rect resvg_get_image_viewbox(const resvg_render_tree *tree);
+int resvg_get_image_viewbox(const resvg_render_tree *tree, resvg_rect *rect);
 
 /**
- * @brief Returns an image bounding box.
+ * @brief Provides an image bounding box.
  *
  * Can be smaller or bigger than a `viewbox`.
  *
  * @param tree Render tree.
  * @param bbox Image's bounding box.
- * @return `false` if an image has no elements.
+ * @return #resvg_error
  */
-bool resvg_get_image_bbox(const resvg_render_tree *tree,
-                          resvg_rect *bbox);
+int resvg_get_image_bbox(const resvg_render_tree *tree, resvg_rect *bbox);
 
 /**
  * @brief Returns `true` if a renderable node with such an ID exists.
  *
  * @param tree Render tree.
  * @param id Node's ID. UTF-8 string.
- * @return `true` if a node exists.
- * @return `false` if a node doesn't exist or ID isn't a UTF-8 string.
- * @return `false` if a node exists, but not renderable.
+ * @param exist `true` if a node exists, `false` otherwise.
+ * @return #resvg_error
  */
-bool resvg_node_exists(const resvg_render_tree *tree,
-                       const char *id);
+int resvg_node_exists(const resvg_render_tree *tree, const char *id, bool *exist);
 
 /**
  * @brief Returns node's transform by ID.
@@ -462,13 +521,11 @@ bool resvg_node_exists(const resvg_render_tree *tree,
  * @param tree Render tree.
  * @param id Node's ID. UTF-8 string.
  * @param ts Node's transform.
- * @return `true` if a node exists.
- * @return `false` if a node doesn't exist or ID isn't a UTF-8 string.
- * @return `false` if a node exists, but not renderable.
+ * @return #resvg_error
  */
-bool resvg_get_node_transform(const resvg_render_tree *tree,
-                              const char *id,
-                              resvg_transform *ts);
+int resvg_get_node_transform(const resvg_render_tree *tree,
+                             const char *id,
+                             resvg_transform *ts);
 
 /**
  * @brief Returns node's bounding box by ID.
@@ -476,18 +533,18 @@ bool resvg_get_node_transform(const resvg_render_tree *tree,
  * @param tree Render tree.
  * @param id Node's ID.
  * @param bbox Node's bounding box.
- * @return `false` if a node with such an ID does not exist
- * @return `false` if ID isn't a UTF-8 string.
- * @return `false` if ID is an empty string
+ * @return #resvg_error
  */
-bool resvg_get_node_bbox(const resvg_render_tree *tree,
-                         const char *id,
-                         resvg_path_bbox *bbox);
+int resvg_get_node_bbox(const resvg_render_tree *tree,
+                        const char *id,
+                        resvg_path_bbox *bbox);
 
 /**
  * @brief Destroys the #resvg_render_tree.
+ * 
+ * @return #resvg_error
  */
-void resvg_tree_destroy(resvg_render_tree *tree);
+int resvg_tree_destroy(resvg_render_tree *tree);
 
 /**
  * @brief Renders the #resvg_render_tree onto the pixmap.
@@ -498,12 +555,13 @@ void resvg_tree_destroy(resvg_render_tree *tree);
  * @param height Pixmap height.
  * @param pixmap Pixmap data. Should have width*height*4 size and contain
  *               premultiplied RGBA8888 pixels.
+ * @return #resvg_error
  */
-void resvg_render(const resvg_render_tree *tree,
-                  resvg_fit_to fit_to,
-                  uint32_t width,
-                  uint32_t height,
-                  char* pixmap);
+int resvg_render(const resvg_render_tree *tree,
+                 resvg_fit_to fit_to,
+                 uint32_t width,
+                 uint32_t height,
+                 char* pixmap);
 
 /**
  * @brief Renders a Node by ID onto the image.
@@ -515,16 +573,14 @@ void resvg_render(const resvg_render_tree *tree,
  * @param height Pixmap height.
  * @param pixmap Pixmap data. Should have width*height*4 size and contain
  *               premultiplied RGBA8888 pixels.
- * @return `false` when `id` is not a non-empty UTF-8 string.
- * @return `false` when the selected `id` is not present.
- * @return `false` when an element has a zero bbox.
+ * @return #resvg_error
  */
-bool resvg_render_node(const resvg_render_tree *tree,
-                       const char *id,
-                       resvg_fit_to fit_to,
-                       uint32_t width,
-                       uint32_t height,
-                       char* pixmap);
+int resvg_render_node(const resvg_render_tree *tree,
+                      const char *id,
+                      resvg_fit_to fit_to,
+                      uint32_t width,
+                      uint32_t height,
+                      char* pixmap);
 
 #ifdef __cplusplus
 }
