@@ -65,13 +65,17 @@ impl ConvTransform for usvg::Transform {
 ///
 /// If `fit_to` size differs from `tree.svg_node().size`,
 /// SVG would be scaled accordingly.
+/// `transform` can be used to translate, scale, or rotate
+/// the rendering within the target pixmap.
 pub fn render(
     tree: &usvg::Tree,
     fit_to: usvg::FitTo,
+    transform: tiny_skia::Transform,
     pixmap: tiny_skia::PixmapMut,
 ) -> Option<()> {
     let size = fit_to.fit_to(tree.svg_node().size.to_screen_size())?;
     let mut canvas = render::Canvas::from(pixmap);
+    canvas.apply_transform(transform);
     render::render_to_canvas(tree, size, &mut canvas);
     Some(())
 }
@@ -80,10 +84,13 @@ pub fn render(
 ///
 /// If `fit_to` differs from `node.calculate_bbox()`,
 /// SVG would be scaled accordingly.
+/// `transform` can be used to translate, scale, or rotate
+/// the rendering within the target pixmap.
 pub fn render_node(
     tree: &usvg::Tree,
     node: &usvg::Node,
     fit_to: usvg::FitTo,
+    transform: tiny_skia::Transform,
     pixmap: tiny_skia::PixmapMut,
 ) -> Option<()> {
     let node_bbox = if let Some(bbox) = node.calculate_bbox().and_then(|r| r.to_rect()) {
@@ -100,6 +107,7 @@ pub fn render_node(
 
     let size = fit_to.fit_to(node_bbox.size().to_screen_size())?;
     let mut canvas = render::Canvas::from(pixmap);
+    canvas.apply_transform(transform);
     render::render_node_to_canvas(tree, node, vbox, size, &mut render::RenderState::Ok, &mut canvas);
     Some(())
 }
