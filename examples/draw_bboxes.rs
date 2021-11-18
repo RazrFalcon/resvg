@@ -76,6 +76,6 @@ fn main() {
 
     let pixmap_size = fit_to.fit_to(rtree.svg_node().size.to_screen_size()).unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
-    resvg::render(&rtree, fit_to, pixmap.as_mut()).unwrap();
+    resvg::render(&rtree, fit_to, tiny_skia::Transform::default(), pixmap.as_mut()).unwrap();
     pixmap.save_png(&args[2]).unwrap();
 }
