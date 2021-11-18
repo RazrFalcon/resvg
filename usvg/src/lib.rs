@@ -794,7 +794,9 @@ fn calc_node_bbox(
             let mut bbox = PathBbox::new_bbox();
 
             for child in node.children() {
-                if let Some(c_bbox) = calc_node_bbox(&child, ts) {
+                let mut child_transform = ts.clone();
+                child_transform.append(&child.transform());
+                if let Some(c_bbox) = calc_node_bbox(&child, child_transform) {
                     bbox = bbox.expand(c_bbox);
                 }
             }
