@@ -530,6 +530,7 @@ public:
      */
     QImage renderToImage(const QSize &size = QSize()) const
     {
+        resvg_transform xf = resvg_transform_default();
         resvg_fit_to fit_to = { RESVG_FIT_TO_ORIGINAL, 1 };
         if (size.isValid()) {
             // TODO: support height too.
@@ -544,7 +545,7 @@ public:
 
         QImage qImg(svgSize.width(), svgSize.height(), QImage::Format_ARGB32_Premultiplied);
         qImg.fill(Qt::transparent);
-        resvg_render(d->tree, fit_to, qImg.width(), qImg.height(), (char*)qImg.bits());
+        resvg_render(d->tree, fit_to, xf, qImg.width(), qImg.height(), (char*)qImg.bits());
 
         // resvg renders onto the RGBA canvas, while QImage is ARGB.
         // std::move is required to call inplace version of rgbSwapped().

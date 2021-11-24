@@ -167,6 +167,11 @@ typedef struct resvg_transform {
 } resvg_transform;
 
 /**
+ * @brief Returns an identity transform.
+ */
+resvg_transform resvg_transform_default();
+
+/**
  * @brief Initializes the library log.
  *
  * Use it if you want to see any warnings.
@@ -496,11 +501,13 @@ void resvg_tree_destroy(resvg_render_tree *tree);
  * @param fit_to Specifies into which region SVG should be fit.
  * @param width Pixmap width.
  * @param height Pixmap height.
+ * @param resvg_transform Transform the SVG within the given pixmap.
  * @param pixmap Pixmap data. Should have width*height*4 size and contain
  *               premultiplied RGBA8888 pixels.
  */
 void resvg_render(const resvg_render_tree *tree,
                   resvg_fit_to fit_to,
+                  resvg_transform transform,
                   uint32_t width,
                   uint32_t height,
                   char* pixmap);
@@ -513,6 +520,7 @@ void resvg_render(const resvg_render_tree *tree,
  * @param fit_to Specifies into which region the image should be fit.
  * @param width Pixmap width.
  * @param height Pixmap height.
+ * @param resvg_transform Transform the SVG within the given pixmap.
  * @param pixmap Pixmap data. Should have width*height*4 size and contain
  *               premultiplied RGBA8888 pixels.
  * @return `false` when `id` is not a non-empty UTF-8 string.
@@ -522,6 +530,7 @@ void resvg_render(const resvg_render_tree *tree,
 bool resvg_render_node(const resvg_render_tree *tree,
                        const char *id,
                        resvg_fit_to fit_to,
+                       resvg_transform transform,
                        uint32_t width,
                        uint32_t height,
                        char* pixmap);
