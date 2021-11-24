@@ -169,7 +169,7 @@ typedef struct resvg_transform {
 /**
  * @brief Returns an identity transform.
  */
-resvg_transform resvg_transform_default();
+resvg_transform resvg_transform_identity();
 
 /**
  * @brief Initializes the library log.

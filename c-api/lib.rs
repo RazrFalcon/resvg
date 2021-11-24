@@ -57,6 +57,20 @@ pub struct resvg_transform {
     pub f: f64,
 }
 
+impl resvg_transform {
+    #[inline]
+    fn to_tiny_skia(&self) -> tiny_skia::Transform {
+        tiny_skia::Transform::from_row(
+            self.a as f32, 
+            self.b as f32, 
+            self.c as f32, 
+            self.d as f32, 
+            self.e as f32, 
+            self.f as f32,
+        )
+    }
+}
+
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub enum resvg_fit_to_type {
@@ -575,7 +589,7 @@ fn convert_error(e: usvg::Error) -> ErrorId {
 }
 
 #[no_mangle]
-pub extern "C" fn resvg_transform_default() -> resvg_transform {
+pub extern "C" fn resvg_transform_identity() -> resvg_transform {
     resvg_transform {
         a: 1.0,
         b: 0.0,
@@ -604,16 +618,7 @@ pub extern "C" fn resvg_render(
     let pixmap: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
     let pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
 
-    let skia_xf = tiny_skia::Transform::from_row(
-        transform.a as f32, 
-        transform.b as f32, 
-        transform.c as f32, 
-        transform.d as f32, 
-        transform.e as f32, 
-        transform.f as f32,
-    );
-
-    resvg::render(&tree.0, fit_to.to_usvg(), skia_xf, pixmap).unwrap()
+    resvg::render(&tree.0, fit_to.to_usvg(), transform.to_tiny_skia(), pixmap).unwrap()
 }
 
 #[no_mangle]
@@ -646,16 +651,7 @@ pub extern "C" fn resvg_render_node(
         let pixmap: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
         let pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
 
-        let skia_xf = tiny_skia::Transform::from_row(
-            transform.a as f32, 
-            transform.b as f32, 
-            transform.c as f32, 
-            transform.d as f32, 
-            transform.e as f32, 
-            transform.f as f32,
-        );
-    
-        resvg::render_node(&tree.0, &node, fit_to.to_usvg(), skia_xf, pixmap).is_some()
+        resvg::render_node(&tree.0, &node, fit_to.to_usvg(), transform.to_tiny_skia(), pixmap).is_some()
     } else {
         log::warn!("A node with '{}' ID wasn't found.", id);
         false
