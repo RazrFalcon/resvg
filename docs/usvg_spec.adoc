@@ -690,9 +690,10 @@ that this attribute is optional.
 
 [[color-type]]
 
-*<color>* - RGBA color.
+*<color>* - A hex-encoded RGB color.
 ```
-color    ::= "rgba(" integer "," integer "," integer "," integer ")"
+color    ::= "#" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit
+hexdigit ::= [0-9a-f]
 ```
 
 

@@ -208,6 +208,7 @@ dependencies = [
  "png",
  "rgb",
  "svgfilters",
+ "svgtypes",
  "tiny-skia",
  "usvg",
 ]

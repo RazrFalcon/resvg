@@ -621,8 +621,7 @@ fn apply_drop_shadow(
     }
 
     // flood
-    let alpha = crate::paint_server::multiply_a8(fe.opacity.to_u8(), fe.color.alpha);
-    let color = tiny_skia::Color::from_rgba8(fe.color.red, fe.color.green, fe.color.blue, alpha);
+    let color = tiny_skia::Color::from_rgba8(fe.color.red, fe.color.green, fe.color.blue, fe.opacity.to_u8());
     for p in shadow_pixmap.pixels_mut() {
         let mut color = color.clone();
         color.apply_opacity(p.alpha() as f32 / 255.0);
@@ -856,8 +855,7 @@ fn apply_flood(
     let c = fe.color;
 
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
-    let alpha = crate::paint_server::multiply_a8(fe.opacity.to_u8(), c.alpha);
-    pixmap.fill(tiny_skia::Color::from_rgba8(c.red, c.green, c.blue, alpha));
+    pixmap.fill(tiny_skia::Color::from_rgba8(c.red, c.green, c.blue, fe.opacity.to_u8()));
 
     Ok(Image::from_image(pixmap, usvg::filter::ColorInterpolation::SRGB))
 }

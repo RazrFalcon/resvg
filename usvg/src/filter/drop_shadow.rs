@@ -5,7 +5,7 @@
 use svgtypes::Length;
 
 use crate::svgtree::{self, AId};
-use crate::{Color, Opacity, PositiveNumber, converter};
+use crate::{Color, Opacity, PositiveNumber, converter, SvgColorExt};
 use super::{Input, Kind, Primitive};
 
 /// A drop shadow filter primitive.
@@ -54,13 +54,17 @@ pub(crate) fn convert(
 ) -> Kind {
     let (std_dev_x, std_dev_y) = super::gaussian_blur::convert_std_dev_attr(fe, "2 2");
 
+    let (color, opacity) = fe.attribute(AId::FloodColor)
+        .unwrap_or_else(svgtypes::Color::black)
+        .split_alpha();
+
     Kind::DropShadow(DropShadow {
         input: super::resolve_input(fe, AId::In, primitives),
         dx: fe.convert_user_length(AId::Dx, state, Length::new_number(2.0)),
         dy: fe.convert_user_length(AId::Dy, state, Length::new_number(2.0)),
         std_dev_x: std_dev_x.into(),
         std_dev_y: std_dev_y.into(),
-        color: fe.attribute(AId::FloodColor).unwrap_or_else(Color::black),
-        opacity: fe.attribute(AId::FloodOpacity).unwrap_or_default(),
+        color,
+        opacity: opacity * fe.attribute(AId::FloodOpacity).unwrap_or_default(),
     })
 }

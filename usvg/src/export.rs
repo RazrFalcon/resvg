@@ -560,10 +560,21 @@ impl XmlWriterExt for XmlWriter {
 
     #[inline(never)]
     fn write_color(&mut self, id: AId, c: Color) {
-        self.write_attribute_fmt(
+        static CHARS: &[u8] = b"0123456789abcdef";
+
+        #[inline]
+        fn int2hex(n: u8) -> (u8, u8) {
+            (CHARS[(n >> 4) as usize], CHARS[(n & 0xf) as usize])
+        }
+
+        let (r1, r2) = int2hex(c.red);
+        let (g1, g2) = int2hex(c.green);
+        let (b1, b2) = int2hex(c.blue);
+
+        self.write_attribute_raw(
             id.to_str(),
-            format_args!("rgba({},{},{},{})", c.red, c.green, c.blue, c.alpha)
-        )
+            |buf| buf.extend_from_slice(&[b'#', r1, r2, g1, g2, b1, b2]),
+        );
     }
 
     fn write_viewbox(&mut self, view_box: &ViewBox) {

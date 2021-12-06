@@ -5,7 +5,8 @@
 use svgtypes::{Length, LengthUnit as Unit};
 
 use crate::svgtree::{self, AId, EId};
-use crate::{Color, NodeExt, NodeKind, NormalizedValue, Opacity, OptionLog, PositiveNumber, Tree, Units, converter};
+use crate::{Color, NodeExt, NodeKind, NormalizedValue, Opacity, OptionLog, PositiveNumber};
+use crate::{Tree, Units, converter, SvgColorExt};
 use crate::geom::{FuzzyEq, FuzzyZero, IsValidLength, Line, Rect, Transform, ViewBox};
 
 
@@ -431,9 +432,9 @@ fn convert_stops(grad: svgtree::Node) -> Vec<Stop> {
             let offset = crate::utils::f64_bound(0.0, offset, 1.0);
             prev_offset = Length::new_number(offset);
 
-            let color = match stop.attribute(AId::StopColor) {
+            let (color, opacity) = match stop.attribute(AId::StopColor) {
                 Some(&svgtree::AttributeValue::CurrentColor) => {
-                    stop.find_attribute(AId::Color).unwrap_or_else(Color::black)
+                    stop.find_attribute(AId::Color).unwrap_or_else(svgtypes::Color::black)
                 }
                 Some(&svgtree::AttributeValue::Color(c)) => {
                     c
@@ -441,12 +442,12 @@ fn convert_stops(grad: svgtree::Node) -> Vec<Stop> {
                 _ => {
                     svgtypes::Color::black()
                 }
-            };
+            }.split_alpha();
 
             stops.push(Stop {
                 offset: offset.into(),
                 color,
-                opacity: stop.attribute(AId::StopOpacity).unwrap_or_default(),
+                opacity: opacity * stop.attribute(AId::StopOpacity).unwrap_or_default(),
             });
         }
     }

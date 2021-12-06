@@ -177,7 +177,7 @@ struct CliArgs {
     height: Option<u32>,
     zoom: Option<f32>,
     dpi: u32,
-    background: Option<usvg::Color>,
+    background: Option<svgtypes::Color>,
 
     languages: Vec<String>,
     shape_rendering: usvg::ShapeRendering,
@@ -330,7 +330,7 @@ struct Args {
     quiet: bool,
     usvg: usvg::Options,
     fit_to: usvg::FitTo,
-    background: Option<usvg::Color>,
+    background: Option<svgtypes::Color>,
 }
 
 fn parse_args() -> Result<Args, String> {
@@ -528,8 +528,7 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
 
         if !args.export_area_page {
             if let Some(background) = args.background {
-                pixmap.fill(tiny_skia::Color::from_rgba8(
-                    background.red, background.green, background.blue, 255));
+                pixmap.fill(svg_to_skia_color(background));
             }
         }
 
@@ -545,8 +544,7 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
             let mut page_pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
 
             if let Some(background) = args.background {
-                page_pixmap.fill(tiny_skia::Color::from_rgba8(
-                    background.red, background.green, background.blue, 255));
+                page_pixmap.fill(svg_to_skia_color(background));
             }
 
             page_pixmap.draw_pixmap(
@@ -570,8 +568,7 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
 
         if !args.export_area_drawing {
             if let Some(background) = args.background {
-                pixmap.fill(tiny_skia::Color::from_rgba8(
-                    background.red, background.green, background.blue, 255));
+                pixmap.fill(svg_to_skia_color(background));
             }
         }
 
@@ -583,8 +580,7 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
 
             if let Some(background) = args.background {
                 let mut bg = pixmap.clone();
-                bg.fill(tiny_skia::Color::from_rgba8(
-                    background.red, background.green, background.blue, 255));
+                bg.fill(svg_to_skia_color(background));
                 bg.draw_pixmap(
                     0,
                     0,
@@ -607,6 +603,15 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
     }
 
     timed!(args, "Saving", img.save_png(out_png).map_err(|e| e.to_string()))
+}
+
+fn svg_to_skia_color(color: svgtypes::Color) -> tiny_skia::Color {
+    tiny_skia::Color::from_rgba8(
+        color.red,
+        color.green,
+        color.blue,
+        color.alpha,
+    )
 }
 
 

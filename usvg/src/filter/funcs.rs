@@ -5,7 +5,7 @@
 use svgtypes::Length;
 
 use crate::svgtree::{self, AId};
-use crate::{converter, Opacity, PositiveNumber, Units, Color};
+use crate::{converter, PositiveNumber, Units, SvgColorExt};
 use super::{ColorMatrix, ColorMatrixKind, ComponentTransfer, DropShadow};
 use super::{GaussianBlur, Input, Kind, TransferFunction};
 
@@ -149,7 +149,7 @@ pub fn convert_blur(
 #[inline(never)]
 pub fn convert_drop_shadow(
     node: svgtree::Node,
-    color: Option<Color>,
+    color: Option<svgtypes::Color>,
     dx: Length,
     dy: Length,
     std_dev: Length,
@@ -159,8 +159,8 @@ pub fn convert_drop_shadow(
         crate::units::convert_length(std_dev, node, AId::Dx, Units::UserSpaceOnUse, state)
     );
 
-    let color = color.unwrap_or_else(||
-        node.find_attribute(AId::Color).unwrap_or_else(Color::black));
+    let (color, opacity) = color.unwrap_or_else(||
+        node.find_attribute(AId::Color).unwrap_or_else(svgtypes::Color::black)).split_alpha();
 
     Kind::DropShadow(DropShadow {
         input: Input::SourceGraphic,
@@ -169,6 +169,6 @@ pub fn convert_drop_shadow(
         std_dev_x: std_dev,
         std_dev_y: std_dev,
         color,
-        opacity: Opacity::default(),
+        opacity,
     })
 }

@@ -2,8 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-pub use svgtypes::Color;
-
 use crate::svgtree::{self, AId};
 use crate::{converter, paint_server, FuzzyEq, IsValidLength, Opacity, Tree, Units};
 
@@ -216,6 +214,50 @@ impl Default for Fill {
 }
 
 
+/// A 8-bit RGB color.
+#[derive(Clone, Copy, PartialEq, Debug)]
+#[allow(missing_docs)]
+pub struct Color {
+    pub red: u8,
+    pub green: u8,
+    pub blue: u8,
+}
+
+impl Color {
+    /// Constructs a new `Color` from RGB values.
+    #[inline]
+    pub fn new_rgb(red: u8, green: u8, blue: u8) -> Color {
+        Color { red, green, blue }
+    }
+
+    /// Constructs a new `Color` set to black.
+    #[inline]
+    pub fn black() -> Color {
+        Color::new_rgb(0, 0, 0)
+    }
+
+    /// Constructs a new `Color` set to white.
+    #[inline]
+    pub fn white() -> Color {
+        Color::new_rgb(255, 255, 255)
+    }
+}
+
+
+pub(crate) trait SvgColorExt {
+    fn split_alpha(self) -> (Color, Opacity);
+}
+
+impl SvgColorExt for svgtypes::Color {
+    fn split_alpha(self) -> (Color, Opacity) {
+        (
+            Color::new_rgb(self.red, self.green, self.blue),
+            Opacity::new(f64::from(self.alpha) / 255.0)
+        )
+    }
+}
+
+
 /// A paint style.
 ///
 /// `paint` value type in the SVG.
@@ -311,11 +353,16 @@ fn convert_paint(
 ) -> Option<Paint> {
     match node.attribute::<&svgtree::AttributeValue>(aid)? {
         svgtree::AttributeValue::CurrentColor => {
-            let c = node.find_attribute(AId::Color).unwrap_or_else(Color::black);
-            Some(Paint::Color(c))
+            let svg_color: svgtypes::Color = node.find_attribute(AId::Color)
+                .unwrap_or_else(svgtypes::Color::black);
+            let (color, alpha) = svg_color.split_alpha();
+            *opacity = alpha;
+            Some(Paint::Color(color))
         }
-        svgtree::AttributeValue::Color(c) => {
-            Some(Paint::Color(*c))
+        svgtree::AttributeValue::Color(svg_color) => {
+            let (color, alpha) = svg_color.split_alpha();
+            *opacity = alpha;
+            Some(Paint::Color(color))
         }
         svgtree::AttributeValue::Paint(func_iri, fallback) => {
             if let Some(link) = node.document().element_by_id(func_iri) {
@@ -328,7 +375,7 @@ fn convert_paint(
                             //
                             // See SVG spec 7.11 for details.
                             if !has_bbox && units == Units::ObjectBoundingBox {
-                                from_fallback(node, *fallback)
+                                from_fallback(node, *fallback, opacity)
                             } else {
                                 Some(Paint::Link(id))
                             }
@@ -338,7 +385,7 @@ fn convert_paint(
                             Some(Paint::Color(color))
                         }
                         None => {
-                            from_fallback(node, *fallback)
+                            from_fallback(node, *fallback, opacity)
                         }
                     }
                 } else {
@@ -346,7 +393,7 @@ fn convert_paint(
                     None
                 }
             } else {
-                from_fallback(node, *fallback)
+                from_fallback(node, *fallback, opacity)
             }
         }
         _ => {
@@ -358,17 +405,23 @@ fn convert_paint(
 fn from_fallback(
     node: svgtree::Node,
     fallback: Option<svgtypes::PaintFallback>,
+    opacity: &mut Opacity,
 ) -> Option<Paint> {
     match fallback? {
         svgtypes::PaintFallback::None => {
             None
         }
         svgtypes::PaintFallback::CurrentColor => {
-            let c = node.find_attribute(AId::Color).unwrap_or_else(Color::black);
-            Some(Paint::Color(c))
+            let svg_color: svgtypes::Color = node.find_attribute(AId::Color)
+                .unwrap_or_else(svgtypes::Color::black);
+            let (color, alpha) = svg_color.split_alpha();
+            *opacity = alpha;
+            Some(Paint::Color(color))
         }
-        svgtypes::PaintFallback::Color(c) => {
-            Some(Paint::Color(c))
+        svgtypes::PaintFallback::Color(svg_color) => {
+            let (color, alpha) = svg_color.split_alpha();
+            *opacity = alpha;
+            Some(Paint::Color(color))
         }
     }
 }

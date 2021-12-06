@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- `usvg::Color` is a custom type and not a `svgtypes::Color` reexport now.
+- `usvg::Color` doesn't contain alpha anymore, which have been added in v0.16
+  Alpha would be automatically flattened.
+  This makes [Micro SVG](https://github.com/RazrFalcon/resvg/blob/master/docs/usvg_spec.adoc)
+  compatible with SVG 1.1 again.
+
+### Fixed
+- The `--background` argument in `resvg` correctly handles alpha now.
 
 ## [0.19.0] - 2021-10-04
 ### Added

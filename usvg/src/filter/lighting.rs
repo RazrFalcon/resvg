@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::svgtree::{self, AId, EId};
-use crate::{Color, PositiveNumber, ScreenRect, Transform};
+use crate::{Color, PositiveNumber, ScreenRect, Transform, SvgColorExt};
 use super::{Input, Kind, Primitive};
 
 /// A diffuse lighting filter primitive.
@@ -105,11 +105,12 @@ pub(crate) fn convert_specular(fe: svgtree::Node, primitives: &[Primitive]) -> O
 
 #[inline(never)]
 fn convert_lighting_color(node: svgtree::Node) -> Color {
+    // Color's alpha doesn't affect lighting-color. Simply skip it.
     match node.attribute::<&svgtree::AttributeValue>(AId::LightingColor) {
         Some(svgtree::AttributeValue::CurrentColor) => {
-            node.find_attribute(AId::Color).unwrap_or_else(Color::black)
+            node.find_attribute(AId::Color).unwrap_or_else(svgtypes::Color::black).split_alpha().0
         }
-        Some(svgtree::AttributeValue::Color(c)) => *c,
+        Some(svgtree::AttributeValue::Color(c)) => c.split_alpha().0,
         _ => Color::white(),
     }
 }

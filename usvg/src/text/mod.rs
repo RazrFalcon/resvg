@@ -8,7 +8,7 @@ mod convert;
 mod shaper;
 mod fontdb_ext;
 
-use crate::{FillRule, Group, Node, NodeExt, NodeKind, Paint, Path, PathData, PathSegment, Rect};
+use crate::{FillRule, Group, Node, NodeExt, NodeKind, Paint, Path, PathData, PathSegment, Rect, Color};
 use crate::{ShapeRendering, Stroke, StrokeWidth, Transform, TransformFromBBox, Tree, Units};
 use crate::PathBbox;
 use crate::{converter, svgtree};
@@ -41,7 +41,6 @@ mod private {
     }
 }
 use private::TextNode;
-use svgtypes::Color;
 
 
 /// A text decoration span.
@@ -317,12 +316,12 @@ fn dump_cluster(
 
     // Cluster bbox.
     let r = Rect::new(0.0, -cluster.ascent, cluster.advance, cluster.height()).unwrap();
-    base_path.stroke = new_stroke(Color::blue());
+    base_path.stroke = new_stroke(Color::new_rgb(0, 0, 255));
     base_path.data = Rc::new(PathData::from_rect(r));
     parent.append_kind(NodeKind::Path(base_path.clone()));
 
     // Baseline.
-    base_path.stroke = new_stroke(Color::red());
+    base_path.stroke = new_stroke(Color::new_rgb(255, 0, 0));
     base_path.data = Rc::new(PathData(vec![
         PathSegment::MoveTo { x: 0.0,             y: 0.0 },
         PathSegment::LineTo { x: cluster.advance, y: 0.0 },
