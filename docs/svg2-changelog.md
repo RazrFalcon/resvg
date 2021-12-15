@@ -207,6 +207,34 @@ NOTE: This list is not final. This this just things I was able to find so far. P
 
 <!-- ----------------------------------- -->
 
+## Clipping, Masking and Compositing
+
+### Added
+
+- [`<basic-shape>`](https://www.w3.org/TR/css-shapes-1/#typedef-basic-shape) and [`<geometry-box>`](https://www.w3.org/TR/css-masking-1/#typedef-geometry-box) variants to the [`clip-path`](https://www.w3.org/TR/css-masking-1/#the-clip-path) property.
+- A [`mask-image`](https://www.w3.org/TR/css-masking-1/#the-mask-image) property.
+- A [`mask-mode`](https://www.w3.org/TR/css-masking-1/#the-mask-mode) property.
+- A [`mask-position`](https://www.w3.org/TR/css-masking-1/#the-mask-position) property.
+- A [`mask-clip`](https://www.w3.org/TR/css-masking-1/#the-mask-clip) property.
+- A [`mask-origin`](https://www.w3.org/TR/css-masking-1/#the-mask-origin) property.
+- A [`mask-size`](https://www.w3.org/TR/css-masking-1/#the-mask-size) property.
+- A [`mask-composite`](https://www.w3.org/TR/css-masking-1/#the-mask-composite) property.
+- A [`mask-type`](https://www.w3.org/TR/css-masking-1/#the-mask-type) property.
+- A [`mask-border-source`](https://www.w3.org/TR/css-masking-1/#the-mask-border-source) property.
+- A [`mask-border-mode`](https://www.w3.org/TR/css-masking-1/#the-mask-border-mode) property.
+- A [`mask-border-slice`](https://www.w3.org/TR/css-masking-1/#the-mask-border-slice) property.
+- A [`mask-border-width`](https://www.w3.org/TR/css-masking-1/#the-mask-border-width) property.
+- A [`mask-border-outset`](https://www.w3.org/TR/css-masking-1/#the-mask-border-outset) property.
+- A [`mask-border-repeat`](https://www.w3.org/TR/css-masking-1/#the-mask-border-repeat) property.
+- A [`mask-border`](https://www.w3.org/TR/css-masking-1/#the-mask-border) property.
+
+### Changed
+
+- A [`mask`](https://www.w3.org/TR/css-masking-1/#the-mask) property has [a new grammar](https://www.w3.org/TR/css-masking-1/#typedef-mask-layer), backward compatible with SVG 1.1 one.
+- An element can have multiple masks now.
+
+<!-- ----------------------------------- -->
+
 ## Filter Effects
 
 ### Added
