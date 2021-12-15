@@ -1,3 +1,5 @@
+## A list of unsupported SVG 1.1 features
+
 ### Elements
 
 - Font based
@@ -30,7 +32,6 @@
 - `font`
 - `font-size-adjust`
 - `font-stretch`
-- `font-variant`
 - `glyph-orientation-horizontal` (removed in the SVG 2)
 - `glyph-orientation-vertical` (deprecated in the SVG 2)
 - `kerning` (removed in the SVG 2)
