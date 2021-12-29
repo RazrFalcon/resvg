@@ -42,7 +42,7 @@ pub fn render_thumbnail(tree: &Option<usvg::Tree>, cx: u32) -> Result<tiny_skia:
 
     let size = fit_to.fit_to(tree.svg_node().size.to_screen_size()).ok_or(Error::RenderError)?;
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
-    resvg::render(&tree, fit_to, pixmap.as_mut()).ok_or(Error::RenderError)?;
+    resvg::render(&tree, tiny_skia::Transform::default(), fit_to, pixmap.as_mut()).ok_or(Error::RenderError)?;
     Ok(pixmap)
 }
 
