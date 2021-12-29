@@ -492,7 +492,7 @@ pub extern "C" fn resvg_options_load_font_file(
     }
 
     #[cfg(not(feature = "text"))] {
-        ErrorId::Ok as i32
+        resvg_error::OK as i32
     }
 }
 
