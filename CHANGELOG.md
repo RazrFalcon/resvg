@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.20.0] - 2021-12-29
 ### Changed
+- `resvg::render` and `resvg::render_node` accept a transform now.
+- (c-api) `resvg_render` and `resvg_render_node` accept a transform now.
 - `usvg::Color` is a custom type and not a `svgtypes::Color` reexport now.
 - `usvg::Color` doesn't contain alpha anymore, which have been added in v0.16
   Alpha would be automatically flattened.
@@ -17,6 +21,7 @@ This changelog also contains important changes in dependencies.
 
 ### Fixed
 - The `--background` argument in `resvg` correctly handles alpha now.
+- Fix building usvg without filter feature but with export.
 
 ## [0.19.0] - 2021-10-04
 ### Added
@@ -559,7 +564,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.20.0...HEAD
+[0.19.0]: https://github.com/RazrFalcon/resvg/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/RazrFalcon/resvg/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/RazrFalcon/resvg/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/RazrFalcon/resvg/compare/v0.16.0...v0.17.0

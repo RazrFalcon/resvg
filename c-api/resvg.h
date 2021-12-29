@@ -17,9 +17,9 @@
 #include <stdint.h>
 
 #define RESVG_MAJOR_VERSION 0
-#define RESVG_MINOR_VERSION 19
+#define RESVG_MINOR_VERSION 20
 #define RESVG_PATCH_VERSION 0
-#define RESVG_VERSION "0.19.0"
+#define RESVG_VERSION "0.20.0"
 
 /**
  * @brief List of possible errors.
@@ -519,9 +519,9 @@ void resvg_tree_destroy(resvg_render_tree *tree);
  *
  * @param tree A render tree.
  * @param fit_to Specifies into which region SVG should be fit.
+ * @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
  * @param width Pixmap width.
  * @param height Pixmap height.
- * @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
  * @param pixmap Pixmap data. Should have width*height*4 size and contain
  *               premultiplied RGBA8888 pixels.
  */
@@ -538,9 +538,9 @@ void resvg_render(const resvg_render_tree *tree,
  * @param tree A render tree.
  * @param id Node's ID. Must not be NULL.
  * @param fit_to Specifies into which region the image should be fit.
+ * @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
  * @param width Pixmap width.
  * @param height Pixmap height.
- * @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
  * @param pixmap Pixmap data. Should have width*height*4 size and contain
  *               premultiplied RGBA8888 pixels.
  * @return `false` when `id` is not a non-empty UTF-8 string.

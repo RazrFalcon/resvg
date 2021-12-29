@@ -868,9 +868,9 @@ fn convert_error(e: usvg::Error) -> resvg_error {
 ///
 /// @param tree A render tree.
 /// @param fit_to Specifies into which region SVG should be fit.
+/// @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
 /// @param width Pixmap width.
 /// @param height Pixmap height.
-/// @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
 /// @param pixmap Pixmap data. Should have width*height*4 size and contain
 ///               premultiplied RGBA8888 pixels.
 #[no_mangle]
@@ -899,9 +899,9 @@ pub extern "C" fn resvg_render(
 /// @param tree A render tree.
 /// @param id Node's ID. Must not be NULL.
 /// @param fit_to Specifies into which region the image should be fit.
+/// @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
 /// @param width Pixmap width.
 /// @param height Pixmap height.
-/// @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
 /// @param pixmap Pixmap data. Should have width*height*4 size and contain
 ///               premultiplied RGBA8888 pixels.
 /// @return `false` when `id` is not a non-empty UTF-8 string.
