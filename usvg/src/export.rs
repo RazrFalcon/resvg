@@ -102,6 +102,7 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
 
                 xml.end_element();
             }
+            #[cfg(feature = "filter")]
             NodeKind::Filter(ref filter) => {
                 xml.start_svg_element(EId::Filter);
                 xml.write_id_attribute(&filter.id, opt);
@@ -532,10 +533,14 @@ trait XmlWriterExt {
     fn write_rect_attrs(&mut self, r: Rect);
     fn write_numbers(&mut self, aid: AId, list: &[f64]);
     fn write_point<T: Display>(&mut self, id: AId, p: Point<T>);
-    fn write_filter_input(&mut self, id: AId, input: &filter::Input);
-    fn write_filter_primitive_attrs(&mut self, fe: &filter::Primitive);
-    fn write_filter_transfer_function(&mut self, eid: EId, fe: &filter::TransferFunction);
     fn write_image_data(&mut self, kind: &ImageKind);
+
+    #[cfg(feature = "filter")]
+    fn write_filter_input(&mut self, id: AId, input: &filter::Input);
+    #[cfg(feature = "filter")]
+    fn write_filter_primitive_attrs(&mut self, fe: &filter::Primitive);
+    #[cfg(feature = "filter")]
+    fn write_filter_transfer_function(&mut self, eid: EId, fe: &filter::TransferFunction);
 }
 
 impl XmlWriterExt for XmlWriter {
@@ -690,6 +695,7 @@ impl XmlWriterExt for XmlWriter {
         self.write_attribute_fmt(id.to_str(), format_args!("{} {}", p.x, p.y));
     }
 
+    #[cfg(feature = "filter")]
     fn write_filter_input(&mut self, id: AId, input: &filter::Input) {
         self.write_attribute(id.to_str(), match input {
             filter::Input::SourceGraphic      => "SourceGraphic",
@@ -702,6 +708,7 @@ impl XmlWriterExt for XmlWriter {
         });
     }
 
+    #[cfg(feature = "filter")]
     fn write_filter_primitive_attrs(&mut self, fe: &filter::Primitive) {
         if let Some(n) = fe.x { self.write_svg_attribute(AId::X, &n); }
         if let Some(n) = fe.y { self.write_svg_attribute(AId::Y, &n); }
@@ -714,6 +721,7 @@ impl XmlWriterExt for XmlWriter {
         });
     }
 
+    #[cfg(feature = "filter")]
     fn write_filter_transfer_function(&mut self, eid: EId, fe: &filter::TransferFunction) {
         self.start_svg_element(eid);
 
@@ -775,6 +783,7 @@ impl XmlWriterExt for XmlWriter {
 fn has_xlink(tree: &Tree) -> bool {
     for n in tree.root().descendants() {
         match *n.borrow() {
+            #[cfg(feature = "filter")]
             NodeKind::Filter(ref filter) => {
                 for fe in &filter.primitives {
                     if let filter::Kind::Image(..) = fe.kind {
@@ -982,6 +991,7 @@ fn write_paint(
     }
 }
 
+#[cfg(feature = "filter")]
 fn write_light_source(
     light: &filter::LightSource,
     xml: &mut XmlWriter,
