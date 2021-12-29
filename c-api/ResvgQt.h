@@ -331,18 +331,16 @@ public:
         // Check for Qt resource path.
         if (filePath.startsWith(QLatin1String(":/"))) {
             QFile file(filePath);
-            if (file.open(QFile::ReadOnly)) {
+            if (file.open(QFile::ReadOnly))
                 return load(file.readAll(), opt);
-            } else {
+            else
                 return false;
-            }
         }
 
         d->reset();
 
         auto filePathC = filePath.toUtf8();
         filePathC.append('\0');
-//        resvg_options_set_file_path(opt.d, filePathC.constData());
 
         const auto err = resvg_parse_tree_from_file(filePathC.constData(), opt.d, &d->tree);
         if (err != RESVG_OK) {
@@ -539,9 +537,8 @@ public:
         }
 
         auto svgSize = size;
-        if (svgSize.isEmpty()) {
+        if (svgSize.isEmpty())
             svgSize = defaultSize();
-        }
 
         QImage qImg(svgSize.width(), svgSize.height(), QImage::Format_ARGB32_Premultiplied);
         qImg.fill(Qt::transparent);

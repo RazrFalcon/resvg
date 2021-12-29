@@ -65,8 +65,9 @@ impl ConvTransform for usvg::Transform {
 ///
 /// If `fit_to` size differs from `tree.svg_node().size`,
 /// SVG would be scaled accordingly.
-/// `transform` can be used to translate, scale, or rotate
-/// the rendering within the target pixmap.
+///
+/// `transform` will be used as a root transform.
+/// Can be used to position SVG inside the `pixmap`.
 pub fn render(
     tree: &usvg::Tree,
     fit_to: usvg::FitTo,
@@ -84,8 +85,9 @@ pub fn render(
 ///
 /// If `fit_to` differs from `node.calculate_bbox()`,
 /// SVG would be scaled accordingly.
-/// `transform` can be used to translate, scale, or rotate
-/// the rendering within the target pixmap.
+///
+/// `transform` will be used as a root transform.
+/// Can be used to position SVG inside the `pixmap`.
 pub fn render_node(
     tree: &usvg::Tree,
     node: &usvg::Node,

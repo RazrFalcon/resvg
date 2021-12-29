@@ -167,7 +167,7 @@ typedef struct resvg_transform {
 } resvg_transform;
 
 /**
- * @brief Returns an identity transform.
+ * @brief Creates an identity transform.
  */
 resvg_transform resvg_transform_identity();
 
@@ -473,7 +473,7 @@ bool resvg_node_exists(const resvg_render_tree *tree,
  */
 bool resvg_get_node_transform(const resvg_render_tree *tree,
                               const char *id,
-                              resvg_transform *ts);
+                              resvg_transform *transform);
 
 /**
  * @brief Returns node's bounding box by ID.
@@ -501,7 +501,7 @@ void resvg_tree_destroy(resvg_render_tree *tree);
  * @param fit_to Specifies into which region SVG should be fit.
  * @param width Pixmap width.
  * @param height Pixmap height.
- * @param resvg_transform Transform the SVG within the given pixmap.
+ * @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
  * @param pixmap Pixmap data. Should have width*height*4 size and contain
  *               premultiplied RGBA8888 pixels.
  */
@@ -520,7 +520,7 @@ void resvg_render(const resvg_render_tree *tree,
  * @param fit_to Specifies into which region the image should be fit.
  * @param width Pixmap width.
  * @param height Pixmap height.
- * @param resvg_transform Transform the SVG within the given pixmap.
+ * @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
  * @param pixmap Pixmap data. Should have width*height*4 size and contain
  *               premultiplied RGBA8888 pixels.
  * @return `false` when `id` is not a non-empty UTF-8 string.
