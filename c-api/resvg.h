@@ -407,7 +407,7 @@ void resvg_options_destroy(resvg_options *opt);
  * See #resvg_is_image_empty for details.
  *
  * @param file_path UTF-8 file path.
- * @param opt Rendering options.
+ * @param opt Rendering options. Must not be NULL.
  * @param tree Parsed render tree. Should be destroyed via #resvg_tree_destroy.
  * @return #resvg_error
  */
@@ -420,9 +420,9 @@ int32_t resvg_parse_tree_from_file(const char *file_path,
  *
  * See #resvg_is_image_empty for details.
  *
- * @param data SVG data. Can contain SVG string or gzip compressed data.
+ * @param data SVG data. Can contain SVG string or gzip compressed data. Must not be NULL.
  * @param len Data length.
- * @param opt Rendering options.
+ * @param opt Rendering options. Must not be NULL.
  * @param tree Parsed render tree. Should be destroyed via #resvg_tree_destroy.
  * @return #resvg_error
  */
@@ -476,7 +476,7 @@ bool resvg_get_image_bbox(const resvg_render_tree *tree, resvg_rect *bbox);
  * @brief Returns `true` if a renderable node with such an ID exists.
  *
  * @param tree Render tree.
- * @param id Node's ID. UTF-8 string.
+ * @param id Node's ID. UTF-8 string. Must not be NULL.
  * @return `true` if a node exists.
  * @return `false` if a node doesn't exist or ID isn't a UTF-8 string.
  * @return `false` if a node exists, but not renderable.
@@ -487,7 +487,7 @@ bool resvg_node_exists(const resvg_render_tree *tree, const char *id);
  * @brief Returns node's transform by ID.
  *
  * @param tree Render tree.
- * @param id Node's ID. UTF-8 string.
+ * @param id Node's ID. UTF-8 string. Must not be NULL.
  * @param transform Node's transform.
  * @return `true` if a node exists.
  * @return `false` if a node doesn't exist or ID isn't a UTF-8 string.
@@ -501,7 +501,7 @@ bool resvg_get_node_transform(const resvg_render_tree *tree,
  * @brief Returns node's bounding box by ID.
  *
  * @param tree Render tree.
- * @param id Node's ID.
+ * @param id Node's ID. Must not be NULL.
  * @param bbox Node's bounding box.
  * @return `false` if a node with such an ID does not exist
  * @return `false` if ID isn't a UTF-8 string.
@@ -536,7 +536,7 @@ void resvg_render(const resvg_render_tree *tree,
  * @brief Renders a Node by ID onto the image.
  *
  * @param tree A render tree.
- * @param id Node's ID.
+ * @param id Node's ID. Must not be NULL.
  * @param fit_to Specifies into which region the image should be fit.
  * @param width Pixmap width.
  * @param height Pixmap height.

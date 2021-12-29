@@ -541,7 +541,7 @@ pub struct resvg_render_tree(pub usvg::Tree);
 /// See #resvg_is_image_empty for details.
 ///
 /// @param file_path UTF-8 file path.
-/// @param opt Rendering options.
+/// @param opt Rendering options. Must not be NULL.
 /// @param tree Parsed render tree. Should be destroyed via #resvg_tree_destroy.
 /// @return #resvg_error
 #[no_mangle]
@@ -580,9 +580,9 @@ pub extern "C" fn resvg_parse_tree_from_file(
 ///
 /// See #resvg_is_image_empty for details.
 ///
-/// @param data SVG data. Can contain SVG string or gzip compressed data.
+/// @param data SVG data. Can contain SVG string or gzip compressed data. Must not be NULL.
 /// @param len Data length.
-/// @param opt Rendering options.
+/// @param opt Rendering options. Must not be NULL.
 /// @param tree Parsed render tree. Should be destroyed via #resvg_tree_destroy.
 /// @return #resvg_error
 #[no_mangle]
@@ -708,7 +708,7 @@ pub extern "C" fn resvg_get_image_bbox(
 /// @brief Returns `true` if a renderable node with such an ID exists.
 ///
 /// @param tree Render tree.
-/// @param id Node's ID. UTF-8 string.
+/// @param id Node's ID. UTF-8 string. Must not be NULL.
 /// @return `true` if a node exists.
 /// @return `false` if a node doesn't exist or ID isn't a UTF-8 string.
 /// @return `false` if a node exists, but not renderable.
@@ -736,7 +736,7 @@ pub extern "C" fn resvg_node_exists(
 /// @brief Returns node's transform by ID.
 ///
 /// @param tree Render tree.
-/// @param id Node's ID. UTF-8 string.
+/// @param id Node's ID. UTF-8 string. Must not be NULL.
 /// @param transform Node's transform.
 /// @return `true` if a node exists.
 /// @return `false` if a node doesn't exist or ID isn't a UTF-8 string.
@@ -783,7 +783,7 @@ pub extern "C" fn resvg_get_node_transform(
 /// @brief Returns node's bounding box by ID.
 ///
 /// @param tree Render tree.
-/// @param id Node's ID.
+/// @param id Node's ID. Must not be NULL.
 /// @param bbox Node's bounding box.
 /// @return `false` if a node with such an ID does not exist
 /// @return `false` if ID isn't a UTF-8 string.
@@ -897,7 +897,7 @@ pub extern "C" fn resvg_render(
 /// @brief Renders a Node by ID onto the image.
 ///
 /// @param tree A render tree.
-/// @param id Node's ID.
+/// @param id Node's ID. Must not be NULL.
 /// @param fit_to Specifies into which region the image should be fit.
 /// @param width Pixmap width.
 /// @param height Pixmap height.
