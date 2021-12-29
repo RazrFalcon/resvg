@@ -13,6 +13,7 @@ This changelog also contains important changes in dependencies.
   Alpha would be automatically flattened.
   This makes [Micro SVG](https://github.com/RazrFalcon/resvg/blob/master/docs/usvg_spec.adoc)
   compatible with SVG 1.1 again.
+- (c-api) Rename `RESVG_FIT_TO_*` into `RESVG_FIT_TO_TYPE_*`.
 
 ### Fixed
 - The `--background` argument in `resvg` correctly handles alpha now.

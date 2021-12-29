@@ -529,10 +529,10 @@ public:
     QImage renderToImage(const QSize &size = QSize()) const
     {
         resvg_transform ts = resvg_transform_identity();
-        resvg_fit_to fit_to = { RESVG_FIT_TO_ORIGINAL, 1 };
+        resvg_fit_to fit_to = { RESVG_FIT_TO_TYPE_ORIGINAL, 1 };
         if (size.isValid()) {
             // TODO: support height too.
-            fit_to.type = RESVG_FIT_TO_WIDTH;
+            fit_to.type = RESVG_FIT_TO_TYPE_WIDTH;
             fit_to.value = size.width();
         }
 

@@ -19,7 +19,6 @@ pub enum Error {
     /// Occurs when width and/or height are <= 0.
     ///
     /// Also occurs if width, height and viewBox are not set.
-    /// This is against the SVG spec, but an automatic size detection is not supported yet.
     InvalidSize,
 
     /// Failed to parse an SVG data.

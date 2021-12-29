@@ -1,0 +1,35 @@
+language = "C"
+include_guard = "RESVG_H"
+braces = "SameLine"
+tab_width = 4
+documentation_style = "doxy"
+header = """/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+/**
+ * @file resvg.h
+ *
+ * resvg C API
+ */"""
+cpp_compat = true
+no_includes = true
+sys_includes = ["stdbool.h", "stdint.h"]
+style = "type"
+
+[fn]
+sort_by = "None"
+
+[enum]
+rename_variants = "ScreamingSnakeCase"
+prefix_with_name = true
+
+[export]
+include = [
+    "resvg_error",
+    "resvg_shape_rendering",
+    "resvg_text_rendering",
+    "resvg_image_rendering",
+]
