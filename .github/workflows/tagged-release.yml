@@ -130,7 +130,7 @@ jobs:
         with:
           version: '5.15.2'
 
-      # Unlike other binaries, viewsvg isn't build with crt-static
+      # Unlike other binaries, viewsvg isn't built with crt-static
       - name: Build C API
         working-directory: c-api
         run: cargo build --release
