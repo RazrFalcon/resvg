@@ -1,5 +1,5 @@
-.directory
 target
-.idea
-build-*
-workdir-*
+.directory
+.DS_Store
+.vscode
+tools/build-*
