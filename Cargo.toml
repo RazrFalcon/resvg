@@ -17,7 +17,7 @@ name = "resvg"
 required-features = ["filter", "text", "system-fonts", "memmap-fonts"]
 
 [dependencies]
-jpeg-decoder = { version = "0.1", default-features = false }
+jpeg-decoder = { version = "0.2", default-features = false }
 log = "0.4"
 pico-args = "0.4"
 png = "0.17"
