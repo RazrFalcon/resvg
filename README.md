@@ -63,3 +63,12 @@ The main exception is fonts memory mapping.
 
 [rustybuzz]: https://github.com/RazrFalcon/rustybuzz
 [tiny-skia]: https://github.com/RazrFalcon/tiny-skia
+
+## Converting svg to usvg
+
+If you want to use usvg in some other language, create the binary and use it
+to preprocess your graphics.
+
+```
+cargo run --all-features --bin usvg_converter
+```
