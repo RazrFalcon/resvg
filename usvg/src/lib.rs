@@ -801,7 +801,11 @@ fn calc_node_bbox(
                 }
             }
 
-            Some(bbox)
+            if bbox.x() == f64::MAX && bbox.y() == f64::MAX && bbox.width() == 1.0 && bbox.height() == 1.0 {
+                PathBbox::new(0.0, 0.0, 300.0, 150.0)
+            } else {
+                Some(bbox)
+            }
         }
         _ => None,
     }
