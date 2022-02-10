@@ -19,7 +19,7 @@ fn main() {
     // We know that our SVG won't have DataUrl hrefs.
     let resolve_data = Box::new(|_: &str, _: Arc<Vec<u8>>| None);
 
-    // Let's treat href as URL and download PNG image via network
+    // Let's treat href as URL and download PNG image via network.
     let resolve_string = Box::new(|href: &str| {
         reqwest::blocking::get(href)
             .and_then(|data| data.bytes())
@@ -28,7 +28,7 @@ fn main() {
             .map(|data: Vec<u8>| ImageKind::PNG(Arc::new(data)))
     });
 
-    // Assign new ImageHrefResolver option using our closurs.
+    // Assign new ImageHrefResolver option using our closures.
     // Now `href` strings in `<image>` elements will be treated as URLs to PNG images.
     opt.image_href_resolver = Some(ImageHrefResolver {
         resolve_data,
