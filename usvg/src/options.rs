@@ -2,8 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ImageRendering, ShapeRendering, TextRendering, Size, ScreenSize};
-
+use crate::image_href_resolver::default_resolver::{
+    create_default_data_resolver, create_default_string_resolver,
+};
+use crate::{
+    image_href_resolver::ImageHrefResolver, ImageRendering, ScreenSize, ShapeRendering, Size,
+    TextRendering,
+};
 
 /// Image fit options.
 ///
@@ -53,7 +58,7 @@ impl FitTo {
 
 /// Processing options.
 #[derive(Clone, Debug)]
-pub struct Options {
+pub struct Options<'a> {
     /// Directory that will be used during relative paths resolving.
     ///
     /// Expected to be the same as the directory that contains the SVG file,
@@ -132,11 +137,16 @@ pub struct Options {
     /// Default: empty
     #[cfg(feature = "text")]
     pub fontdb: fontdb::Database,
+
+    /// Specifies the way to parse `<image>` elements `xlink:href` value.
+    ///
+    /// Default: either parse `href` as DataUrl, or parse it as a path to the local image file.
+    pub image_href_resolver: Option<ImageHrefResolver<'a>>,
 }
 
-impl Default for Options {
-    fn default() -> Options {
-        Options {
+impl<'a> Default for Options<'a> {
+    fn default() -> Options<'a> {
+        let mut options = Options {
             resources_dir: None,
             dpi: 96.0,
             // Default font is user-agent dependent so we can use whichever we like.
@@ -150,11 +160,16 @@ impl Default for Options {
             default_size: Size::new(100.0, 100.0).unwrap(),
             #[cfg(feature = "text")]
             fontdb: fontdb::Database::new(),
-        }
+            image_href_resolver: None,
+        };
+
+        options.use_default_href_resolver();
+
+        options
     }
 }
 
-impl Options {
+impl<'a> Options<'a> {
     /// Creates a reference to `Options`.
     #[inline]
     pub fn to_ref(&self) -> OptionsRef {
@@ -171,10 +186,18 @@ impl Options {
             default_size: self.default_size,
             #[cfg(feature = "text")]
             fontdb: &self.fontdb,
+            image_href_resolver: self.image_href_resolver.as_ref(),
         }
     }
-}
 
+    /// Use `usvg`'s default `xlink:href` resolver
+    pub fn use_default_href_resolver(&mut self) {
+        self.image_href_resolver = Some(ImageHrefResolver {
+            resolve_data: create_default_data_resolver(self.clone()),
+            resolve_string: create_default_string_resolver(self.clone()),
+        });
+    }
+}
 
 /// A reference to processing options.
 ///
@@ -194,6 +217,7 @@ pub struct OptionsRef<'a> {
     pub default_size: Size,
     #[cfg(feature = "text")]
     pub fontdb: &'a fontdb::Database,
+    pub image_href_resolver: Option<&'a ImageHrefResolver<'a>>,
 }
 
 impl OptionsRef<'_> {
@@ -202,7 +226,7 @@ impl OptionsRef<'_> {
     /// If `OptionsRef::resources_dir` is not set, returns itself.
     pub fn get_abs_path(&self, rel_path: &std::path::Path) -> std::path::PathBuf {
         match self.resources_dir {
-            Some(ref dir) => dir.join(rel_path),
+            Some(dir) => dir.join(rel_path),
             None => rel_path.into(),
         }
     }

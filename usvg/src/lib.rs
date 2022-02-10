@@ -112,6 +112,7 @@ mod error;
 #[cfg(feature = "filter")] pub mod filter;
 mod geom;
 mod image;
+mod image_href_resolver;
 mod marker;
 mod mask;
 mod numbers;
@@ -126,6 +127,8 @@ mod switch;
 mod units;
 mod use_node;
 
+pub use image_href_resolver::ImageHrefResolver;
+pub use image_href_resolver::default_resolver::{create_default_data_resolver, create_default_string_resolver};
 pub use svgtypes::{Align, AspectRatio};
 
 #[cfg(feature = "text")] pub use fontdb;

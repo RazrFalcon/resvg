@@ -1,0 +1,8 @@
+<svg id="svg1" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Custom xlink:href resolver that downloads images as PNG via network</title>
+
+    <image id="image1" x="0" y="0" width="200" height="200" xlink:href="https://rustacean.net/assets/rustacean-flat-happy.png"/>
+    <image id="image2" x="200" y="200" width="200" height="200" xlink:href="https://rustacean.net/assets/rustacean-flat-gesture.png"/>
+
+</svg>
