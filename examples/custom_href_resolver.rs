@@ -18,10 +18,10 @@ fn main() {
     });
 
     // Assign new ImageHrefResolver option using our closures.
-    opt.image_href_resolver = Some(ImageHrefResolver {
+    opt.image_href_resolver = ImageHrefResolver {
         resolve_data,
         resolve_string,
-    });
+    };
 
     let svg_with_ferris_path = "./examples/custom_href_resolver.svg";
     let svg_data = std::fs::read(svg_with_ferris_path).unwrap();
