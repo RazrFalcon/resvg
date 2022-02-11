@@ -131,23 +131,18 @@ pub(crate) fn convert(
 }
 
 pub(crate) fn get_href_data(href: &str, opt: &OptionsRef) -> Option<ImageKind> {
-    if let Some(href_resolver) = opt.image_href_resolver {
-        if let Ok(url) = data_url::DataUrl::process(href) {
-            let (data, _) = url.decode_to_vec().ok()?;
+    if let Ok(url) = data_url::DataUrl::process(href) {
+        let (data, _) = url.decode_to_vec().ok()?;
 
-            let mime = format!(
-                "{}/{}",
-                url.mime_type().type_.as_str(),
-                url.mime_type().subtype.as_str()
-            );
+        let mime = format!(
+            "{}/{}",
+            url.mime_type().type_.as_str(),
+            url.mime_type().subtype.as_str()
+        );
 
-            (href_resolver.resolve_data)(&mime, Arc::new(data), opt)
-        } else {
-            (href_resolver.resolve_string)(href, opt)
-        }
+        (opt.image_href_resolver.resolve_data)(&mime, Arc::new(data), opt)
     } else {
-        log::warn!("ImageHrefResolver is not set in the Options!");
-        None
+        (opt.image_href_resolver.resolve_string)(href, opt)
     }
 }
 

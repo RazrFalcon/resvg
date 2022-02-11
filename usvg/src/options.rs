@@ -138,12 +138,12 @@ pub struct Options {
     /// Specifies the way to parse `<image>` elements `xlink:href` value.
     ///
     /// Default: either parse `href` as DataUrl, or parse it as a path to the local image file.
-    pub image_href_resolver: Option<ImageHrefResolver>,
+    pub image_href_resolver: ImageHrefResolver,
 }
 
 impl Default for Options {
     fn default() -> Options {
-        let mut options = Options {
+        Options {
             resources_dir: None,
             dpi: 96.0,
             // Default font is user-agent dependent so we can use whichever we like.
@@ -157,12 +157,11 @@ impl Default for Options {
             default_size: Size::new(100.0, 100.0).unwrap(),
             #[cfg(feature = "text")]
             fontdb: fontdb::Database::new(),
-            image_href_resolver: None,
-        };
-
-        options.use_default_href_resolver();
-
-        options
+            image_href_resolver: ImageHrefResolver {
+                resolve_data: create_default_data_resolver(),
+                resolve_string: create_default_string_resolver(),
+            },
+        }
     }
 }
 
@@ -183,16 +182,8 @@ impl Options {
             default_size: self.default_size,
             #[cfg(feature = "text")]
             fontdb: &self.fontdb,
-            image_href_resolver: self.image_href_resolver.as_ref(),
+            image_href_resolver: &self.image_href_resolver
         }
-    }
-
-    /// Use `usvg`'s default `xlink:href` resolver
-    pub fn use_default_href_resolver(&mut self) {
-        self.image_href_resolver = Some(ImageHrefResolver {
-            resolve_data: create_default_data_resolver(),
-            resolve_string: create_default_string_resolver(),
-        });
     }
 }
 
@@ -214,7 +205,7 @@ pub struct OptionsRef<'a> {
     pub default_size: Size,
     #[cfg(feature = "text")]
     pub fontdb: &'a fontdb::Database,
-    pub image_href_resolver: Option<&'a ImageHrefResolver>,
+    pub image_href_resolver: &'a ImageHrefResolver,
 }
 
 impl OptionsRef<'_> {

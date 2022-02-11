@@ -349,7 +349,7 @@ fn process(args: Args) -> Result<(), String> {
         }
     };
 
-    let mut re_opt = usvg::Options {
+    let re_opt = usvg::Options {
         resources_dir,
         dpi: args.dpi as f64,
         font_family: take_or(args.font_family, "Times New Roman"),
@@ -361,10 +361,11 @@ fn process(args: Args) -> Result<(), String> {
         keep_named_groups: args.keep_named_groups,
         default_size: usvg::Size::new(args.default_width as f64, args.default_height as f64).unwrap(),
         fontdb,
-        image_href_resolver: None
+        image_href_resolver: usvg::ImageHrefResolver {
+            resolve_data: usvg::create_default_data_resolver(),
+            resolve_string: usvg::create_default_string_resolver(),
+        }
     };
-
-    re_opt.use_default_href_resolver();
 
     let input_svg = match in_svg {
         InputFrom::Stdin => load_stdin(),
