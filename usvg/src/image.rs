@@ -42,16 +42,17 @@ impl std::fmt::Debug for ImageKind {
 #[allow(clippy::type_complexity)]
 pub struct ImageHrefResolver {
     /// Resolver function that will be used if `xlink:href` is a DataUrl with encoded base64 string.
-    pub resolve_data: Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind>>,
+    pub resolve_data: Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + Send + Sync>,
 
     /// Resolver function that will be used to handle arbitrary string in `xlink:href`.
-    pub resolve_string: Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind>>,
+    pub resolve_string: Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + Send + Sync>,
 }
 
 impl ImageHrefResolver {
     /// Create DataUrl resolver function that handles standard mime types for JPEG, PNG and SVG.
     #[allow(clippy::type_complexity)]
-    pub fn default_data_resolver<'a>() -> Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + 'a> {
+    pub fn default_data_resolver<'a>(
+    ) -> Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + Send + Sync + 'a> {
         Box::new(
             move |mime: &str, data: Arc<Vec<u8>>, opts: &OptionsRef| match mime {
                 "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
@@ -68,7 +69,8 @@ impl ImageHrefResolver {
     }
 
     /// Create resolver function that handles `href` string as path to local JPEG, PNG or SVG file.
-    pub fn default_string_resolver<'a>() -> Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + 'a> {
+    pub fn default_string_resolver<'a>(
+    ) -> Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + Send + Sync + 'a> {
         Box::new(move |href: &str, opts: &OptionsRef| {
             let path = opts.get_abs_path(std::path::Path::new(href));
 
