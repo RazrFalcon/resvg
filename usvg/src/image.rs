@@ -8,8 +8,15 @@ use svgtypes::Length;
 use crate::geom::{Rect, Transform, ViewBox};
 use crate::svgtree::{self, AId};
 use crate::{
-    converter, ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Visibility,
+    converter, ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Visibility, Tree,
 };
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum ImageFormat {
+    PNG,
+    JPEG,
+    SVG,
+}
 
 /// An embedded image kind.
 #[derive(Clone)]
@@ -29,6 +36,23 @@ impl std::fmt::Debug for ImageKind {
             ImageKind::PNG(_) => f.write_str("ImageKind::PNG(..)"),
             ImageKind::SVG(_) => f.write_str("ImageKind::SVG(..)"),
         }
+    }
+}
+
+/// Functions that accept various representations of `xlink:href` value of the `<image`>
+/// element and return ImageKind that holds reference to the image buffer determined by these functions.
+#[allow(clippy::type_complexity)]
+pub struct ImageHrefResolver {
+    /// Resolver function that will be used if `xlink:href` is a DataUrl with encoded base64 string.
+    pub resolve_data: Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind>>,
+
+    /// Resolver function that will be used to handle arbitrary string in `xlink:href`.
+    pub resolve_string: Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind>>,
+}
+
+impl std::fmt::Debug for ImageHrefResolver {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ImageHrefResolver closures (..)")
     }
 }
 
@@ -117,12 +141,130 @@ pub(crate) fn get_href_data(href: &str, opt: &OptionsRef) -> Option<ImageKind> {
                 url.mime_type().subtype.as_str()
             );
 
-            (href_resolver.resolve_data)(&mime, Arc::new(data))
+            (href_resolver.resolve_data)(&mime, Arc::new(data), opt)
         } else {
-            (href_resolver.resolve_string)(href)
+            (href_resolver.resolve_string)(href, opt)
         }
     } else {
         log::warn!("ImageHrefResolver is not set in the Options!");
         None
+    }
+}
+
+/// Create DataUrl resolver function that handles standard mime types for JPEG, PNG and SVG.
+#[allow(clippy::type_complexity)]
+pub fn create_default_data_resolver<'a>() -> Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + 'a> {
+    Box::new(
+        move |mime: &str, data: Arc<Vec<u8>>, opts: &OptionsRef| match mime {
+            "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
+            "image/png" => Some(ImageKind::PNG(data)),
+            "image/svg+xml" => load_sub_svg(&data, opts),
+            "text/plain" => match get_image_data_format(&data) {
+                Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(data)),
+                Some(ImageFormat::PNG) => Some(ImageKind::PNG(data)),
+                _ => load_sub_svg(&data, opts),
+            },
+            _ => None,
+        },
+    )
+}
+
+/// Create resolver function that handles `href` string as path to local JPEG, PNG or SVG file.
+pub fn create_default_string_resolver<'a>() -> Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + 'a> {
+    Box::new(move |href: &str, opts: &OptionsRef| {
+        let path = opts.get_abs_path(std::path::Path::new(href));
+
+        if path.exists() {
+            let data = match std::fs::read(&path) {
+                Ok(data) => data,
+                Err(_) => {
+                    log::warn!("Failed to load '{}'. Skipped.", href);
+                    return None;
+                }
+            };
+
+            match get_image_file_format(&path, &data) {
+                Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(Arc::new(data))),
+                Some(ImageFormat::PNG) => Some(ImageKind::PNG(Arc::new(data))),
+                Some(ImageFormat::SVG) => load_sub_svg(&data, opts),
+                _ => {
+                    log::warn!("'{}' is not a PNG, JPEG or SVG(Z) image.", href);
+                    None
+                }
+            }
+        } else {
+            log::warn!("'{}' is not a path to an image.", href);
+            None
+        }
+    })
+}
+
+/// Checks that file has a PNG or a JPEG magic bytes.
+/// Or an SVG(Z) extension.
+fn get_image_file_format(path: &std::path::Path, data: &[u8]) -> Option<ImageFormat> {
+    let ext = crate::utils::file_extension(path)?.to_lowercase();
+    if ext == "svg" || ext == "svgz" {
+        return Some(ImageFormat::SVG);
+    }
+
+    get_image_data_format(data.get(0..8)?)
+}
+
+/// Checks that file has a PNG or a JPEG magic bytes.
+fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
+    if data.starts_with(b"\x89PNG\r\n\x1a\n") {
+        Some(ImageFormat::PNG)
+    } else if data.starts_with(&[0xff, 0xd8, 0xff]) {
+        Some(ImageFormat::JPEG)
+    } else {
+        None
+    }
+}
+
+/// Tries to load the `ImageData` content as an SVG image.
+///
+/// Unlike `Tree::from_*` methods, this one will also remove all `image` elements
+/// from the loaded SVG, as required by the spec.
+pub(crate) fn load_sub_svg(data: &[u8], opt: &OptionsRef) -> Option<ImageKind> {
+    let mut sub_opt = opt.clone();
+    sub_opt.resources_dir = None;
+    sub_opt.keep_named_groups = false;
+
+    let tree = match Tree::from_data(data, &sub_opt) {
+        Ok(tree) => tree,
+        Err(_) => {
+            log::warn!("Failed to load subsvg image.");
+            return None;
+        }
+    };
+
+    sanitize_sub_svg(&tree);
+    Some(ImageKind::SVG(tree))
+}
+
+fn sanitize_sub_svg(tree: &crate::Tree) {
+    // Remove all Image nodes.
+    //
+    // The referenced SVG image cannot have any 'image' elements by itself.
+    // Not only recursive. Any. Don't know why.
+
+    // TODO: implement drain or something to the rctree.
+    let mut changed = true;
+    while changed {
+        changed = false;
+
+        for mut node in tree.root().descendants() {
+            let mut rm = false;
+            // TODO: feImage?
+            if let NodeKind::Image(_) = *node.borrow() {
+                rm = true;
+            };
+
+            if rm {
+                node.detach();
+                changed = true;
+                break;
+            }
+        }
     }
 }

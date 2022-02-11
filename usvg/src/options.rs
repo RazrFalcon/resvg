@@ -2,12 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::image_href_resolver::default_resolver::{
-    create_default_data_resolver, create_default_string_resolver,
-};
 use crate::{
-    image_href_resolver::ImageHrefResolver, ImageRendering, ScreenSize, ShapeRendering, Size,
-    TextRendering,
+    image::{create_default_data_resolver, create_default_string_resolver, ImageHrefResolver},
+    ImageRendering, ScreenSize, ShapeRendering, Size, TextRendering,
 };
 
 /// Image fit options.
@@ -57,8 +54,8 @@ impl FitTo {
 
 
 /// Processing options.
-#[derive(Clone, Debug)]
-pub struct Options<'a> {
+#[derive(Debug)]
+pub struct Options {
     /// Directory that will be used during relative paths resolving.
     ///
     /// Expected to be the same as the directory that contains the SVG file,
@@ -141,11 +138,11 @@ pub struct Options<'a> {
     /// Specifies the way to parse `<image>` elements `xlink:href` value.
     ///
     /// Default: either parse `href` as DataUrl, or parse it as a path to the local image file.
-    pub image_href_resolver: Option<ImageHrefResolver<'a>>,
+    pub image_href_resolver: Option<ImageHrefResolver>,
 }
 
-impl<'a> Default for Options<'a> {
-    fn default() -> Options<'a> {
+impl Default for Options {
+    fn default() -> Options {
         let mut options = Options {
             resources_dir: None,
             dpi: 96.0,
@@ -169,7 +166,7 @@ impl<'a> Default for Options<'a> {
     }
 }
 
-impl<'a> Options<'a> {
+impl Options {
     /// Creates a reference to `Options`.
     #[inline]
     pub fn to_ref(&self) -> OptionsRef {
@@ -193,8 +190,8 @@ impl<'a> Options<'a> {
     /// Use `usvg`'s default `xlink:href` resolver
     pub fn use_default_href_resolver(&mut self) {
         self.image_href_resolver = Some(ImageHrefResolver {
-            resolve_data: create_default_data_resolver(self.clone()),
-            resolve_string: create_default_string_resolver(self.clone()),
+            resolve_data: create_default_data_resolver(),
+            resolve_string: create_default_string_resolver(),
         });
     }
 }
@@ -217,7 +214,7 @@ pub struct OptionsRef<'a> {
     pub default_size: Size,
     #[cfg(feature = "text")]
     pub fontdb: &'a fontdb::Database,
-    pub image_href_resolver: Option<&'a ImageHrefResolver<'a>>,
+    pub image_href_resolver: Option<&'a ImageHrefResolver>,
 }
 
 impl OptionsRef<'_> {
