@@ -410,6 +410,7 @@ fn parse_args() -> Result<Args, String> {
         keep_named_groups,
         default_size,
         fontdb,
+        image_href_resolver: usvg::ImageHrefResolver::default()
     };
 
     Ok(Args {

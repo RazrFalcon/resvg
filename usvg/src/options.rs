@@ -3,8 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::{
-    image::{create_default_data_resolver, create_default_string_resolver, ImageHrefResolver},
-    ImageRendering, ScreenSize, ShapeRendering, Size, TextRendering,
+    image::ImageHrefResolver,
+    ImageRendering, ShapeRendering, TextRendering, Size, ScreenSize,
 };
 
 /// Image fit options.
@@ -157,10 +157,7 @@ impl Default for Options {
             default_size: Size::new(100.0, 100.0).unwrap(),
             #[cfg(feature = "text")]
             fontdb: fontdb::Database::new(),
-            image_href_resolver: ImageHrefResolver {
-                resolve_data: create_default_data_resolver(),
-                resolve_string: create_default_string_resolver(),
-            },
+            image_href_resolver: ImageHrefResolver::default(),
         }
     }
 }
@@ -182,7 +179,7 @@ impl Options {
             default_size: self.default_size,
             #[cfg(feature = "text")]
             fontdb: &self.fontdb,
-            image_href_resolver: &self.image_href_resolver
+            image_href_resolver: &self.image_href_resolver,
         }
     }
 }

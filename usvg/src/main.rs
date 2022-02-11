@@ -361,10 +361,7 @@ fn process(args: Args) -> Result<(), String> {
         keep_named_groups: args.keep_named_groups,
         default_size: usvg::Size::new(args.default_width as f64, args.default_height as f64).unwrap(),
         fontdb,
-        image_href_resolver: usvg::ImageHrefResolver {
-            resolve_data: usvg::create_default_data_resolver(),
-            resolve_string: usvg::create_default_string_resolver(),
-        }
+        image_href_resolver: usvg::ImageHrefResolver::default()
     };
 
     let input_svg = match in_svg {

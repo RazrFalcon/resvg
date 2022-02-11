@@ -127,7 +127,6 @@ mod units;
 mod use_node;
 
 pub use image::ImageHrefResolver;
-pub use image::{create_default_data_resolver, create_default_string_resolver};
 pub use svgtypes::{Align, AspectRatio};
 
 #[cfg(feature = "text")] pub use fontdb;

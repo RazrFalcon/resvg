@@ -5,11 +5,9 @@
 use std::sync::Arc;
 use svgtypes::Length;
 
+use crate::{ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Tree, Visibility, converter};
 use crate::geom::{Rect, Transform, ViewBox};
 use crate::svgtree::{self, AId};
-use crate::{
-    converter, ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Visibility, Tree,
-};
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum ImageFormat {
@@ -39,7 +37,7 @@ impl std::fmt::Debug for ImageKind {
     }
 }
 
-/// Functions that accept various representations of `xlink:href` value of the `<image`>
+/// Functions that accept various representations of `xlink:href` value of the `<image>`
 /// element and return ImageKind that holds reference to the image buffer determined by these functions.
 #[allow(clippy::type_complexity)]
 pub struct ImageHrefResolver {
@@ -50,9 +48,68 @@ pub struct ImageHrefResolver {
     pub resolve_string: Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind>>,
 }
 
+impl ImageHrefResolver {
+    /// Create DataUrl resolver function that handles standard mime types for JPEG, PNG and SVG.
+    #[allow(clippy::type_complexity)]
+    pub fn default_data_resolver<'a>() -> Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + 'a> {
+        Box::new(
+            move |mime: &str, data: Arc<Vec<u8>>, opts: &OptionsRef| match mime {
+                "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
+                "image/png" => Some(ImageKind::PNG(data)),
+                "image/svg+xml" => load_sub_svg(&data, opts),
+                "text/plain" => match get_image_data_format(&data) {
+                    Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(data)),
+                    Some(ImageFormat::PNG) => Some(ImageKind::PNG(data)),
+                    _ => load_sub_svg(&data, opts),
+                },
+                _ => None,
+            },
+        )
+    }
+
+    /// Create resolver function that handles `href` string as path to local JPEG, PNG or SVG file.
+    pub fn default_string_resolver<'a>() -> Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + 'a> {
+        Box::new(move |href: &str, opts: &OptionsRef| {
+            let path = opts.get_abs_path(std::path::Path::new(href));
+
+            if path.exists() {
+                let data = match std::fs::read(&path) {
+                    Ok(data) => data,
+                    Err(_) => {
+                        log::warn!("Failed to load '{}'. Skipped.", href);
+                        return None;
+                    }
+                };
+
+                match get_image_file_format(&path, &data) {
+                    Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(Arc::new(data))),
+                    Some(ImageFormat::PNG) => Some(ImageKind::PNG(Arc::new(data))),
+                    Some(ImageFormat::SVG) => load_sub_svg(&data, opts),
+                    _ => {
+                        log::warn!("'{}' is not a PNG, JPEG or SVG(Z) image.", href);
+                        None
+                    }
+                }
+            } else {
+                log::warn!("'{}' is not a path to an image.", href);
+                None
+            }
+        })
+    }
+}
+
 impl std::fmt::Debug for ImageHrefResolver {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("ImageHrefResolver closures (..)")
+        f.write_str("ImageHrefResolver { .. }")
+    }
+}
+
+impl Default for ImageHrefResolver {
+    fn default() -> Self {
+        ImageHrefResolver {
+            resolve_data: ImageHrefResolver::default_data_resolver(),
+            resolve_string: ImageHrefResolver::default_string_resolver()
+        }
     }
 }
 
@@ -112,8 +169,7 @@ pub(crate) fn convert(
         aspect: node.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
 
-    let href = node
-        .attribute(AId::Href)
+    let href = node.attribute(AId::Href)
         .log_none(|| log::warn!("Image lacks the 'xlink:href' attribute. Skipped."))?;
 
     let kind = get_href_data(href, state.opt)?;
@@ -144,54 +200,6 @@ pub(crate) fn get_href_data(href: &str, opt: &OptionsRef) -> Option<ImageKind> {
     } else {
         (opt.image_href_resolver.resolve_string)(href, opt)
     }
-}
-
-/// Create DataUrl resolver function that handles standard mime types for JPEG, PNG and SVG.
-#[allow(clippy::type_complexity)]
-pub fn create_default_data_resolver<'a>() -> Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + 'a> {
-    Box::new(
-        move |mime: &str, data: Arc<Vec<u8>>, opts: &OptionsRef| match mime {
-            "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
-            "image/png" => Some(ImageKind::PNG(data)),
-            "image/svg+xml" => load_sub_svg(&data, opts),
-            "text/plain" => match get_image_data_format(&data) {
-                Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(data)),
-                Some(ImageFormat::PNG) => Some(ImageKind::PNG(data)),
-                _ => load_sub_svg(&data, opts),
-            },
-            _ => None,
-        },
-    )
-}
-
-/// Create resolver function that handles `href` string as path to local JPEG, PNG or SVG file.
-pub fn create_default_string_resolver<'a>() -> Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + 'a> {
-    Box::new(move |href: &str, opts: &OptionsRef| {
-        let path = opts.get_abs_path(std::path::Path::new(href));
-
-        if path.exists() {
-            let data = match std::fs::read(&path) {
-                Ok(data) => data,
-                Err(_) => {
-                    log::warn!("Failed to load '{}'. Skipped.", href);
-                    return None;
-                }
-            };
-
-            match get_image_file_format(&path, &data) {
-                Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(Arc::new(data))),
-                Some(ImageFormat::PNG) => Some(ImageKind::PNG(Arc::new(data))),
-                Some(ImageFormat::SVG) => load_sub_svg(&data, opts),
-                _ => {
-                    log::warn!("'{}' is not a PNG, JPEG or SVG(Z) image.", href);
-                    None
-                }
-            }
-        } else {
-            log::warn!("'{}' is not a path to an image.", href);
-            None
-        }
-    })
 }
 
 /// Checks that file has a PNG or a JPEG magic bytes.
