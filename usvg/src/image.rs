@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::sync::Arc;
 use svgtypes::Length;
 
 use crate::{ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Tree, Visibility, converter};
@@ -15,14 +16,13 @@ enum ImageFormat {
     SVG,
 }
 
-
 /// An embedded image kind.
 #[derive(Clone)]
 pub enum ImageKind {
-    /// A raw JPEG data. Should be decoded by the caller.
-    JPEG(Vec<u8>),
-    /// A raw PNG data. Should be decoded by the caller.
-    PNG(Vec<u8>),
+    /// A reference to raw JPEG data. Should be decoded by the caller.
+    JPEG(Arc<Vec<u8>>),
+    /// A reference to raw PNG data. Should be decoded by the caller.
+    PNG(Arc<Vec<u8>>),
     /// A preprocessed SVG tree. Can be rendered as is.
     SVG(crate::Tree),
 }
@@ -37,6 +37,83 @@ impl std::fmt::Debug for ImageKind {
     }
 }
 
+/// Functions that accept various representations of `xlink:href` value of the `<image>`
+/// element and return ImageKind that holds reference to the image buffer determined by these functions.
+#[allow(clippy::type_complexity)]
+pub struct ImageHrefResolver {
+    /// Resolver function that will be used if `xlink:href` is a DataUrl with encoded base64 string.
+    pub resolve_data: Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + Send + Sync>,
+
+    /// Resolver function that will be used to handle arbitrary string in `xlink:href`.
+    pub resolve_string: Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + Send + Sync>,
+}
+
+impl ImageHrefResolver {
+    /// Create DataUrl resolver function that handles standard mime types for JPEG, PNG and SVG.
+    #[allow(clippy::type_complexity)]
+    pub fn default_data_resolver<'a>(
+    ) -> Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + Send + Sync + 'a> {
+        Box::new(
+            move |mime: &str, data: Arc<Vec<u8>>, opts: &OptionsRef| match mime {
+                "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
+                "image/png" => Some(ImageKind::PNG(data)),
+                "image/svg+xml" => load_sub_svg(&data, opts),
+                "text/plain" => match get_image_data_format(&data) {
+                    Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(data)),
+                    Some(ImageFormat::PNG) => Some(ImageKind::PNG(data)),
+                    _ => load_sub_svg(&data, opts),
+                },
+                _ => None,
+            },
+        )
+    }
+
+    /// Create resolver function that handles `href` string as path to local JPEG, PNG or SVG file.
+    pub fn default_string_resolver<'a>(
+    ) -> Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + Send + Sync + 'a> {
+        Box::new(move |href: &str, opts: &OptionsRef| {
+            let path = opts.get_abs_path(std::path::Path::new(href));
+
+            if path.exists() {
+                let data = match std::fs::read(&path) {
+                    Ok(data) => data,
+                    Err(_) => {
+                        log::warn!("Failed to load '{}'. Skipped.", href);
+                        return None;
+                    }
+                };
+
+                match get_image_file_format(&path, &data) {
+                    Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(Arc::new(data))),
+                    Some(ImageFormat::PNG) => Some(ImageKind::PNG(Arc::new(data))),
+                    Some(ImageFormat::SVG) => load_sub_svg(&data, opts),
+                    _ => {
+                        log::warn!("'{}' is not a PNG, JPEG or SVG(Z) image.", href);
+                        None
+                    }
+                }
+            } else {
+                log::warn!("'{}' is not a path to an image.", href);
+                None
+            }
+        })
+    }
+}
+
+impl std::fmt::Debug for ImageHrefResolver {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ImageHrefResolver { .. }")
+    }
+}
+
+impl Default for ImageHrefResolver {
+    fn default() -> Self {
+        ImageHrefResolver {
+            resolve_data: ImageHrefResolver::default_data_resolver(),
+            resolve_string: ImageHrefResolver::default_string_resolver()
+        }
+    }
+}
 
 /// A raster image element.
 ///
@@ -71,7 +148,6 @@ pub struct Image {
     pub kind: ImageKind,
 }
 
-
 pub(crate) fn convert(
     node: svgtree::Node,
     state: &converter::State,
@@ -98,7 +174,8 @@ pub(crate) fn convert(
     let href = node.attribute(AId::Href)
         .log_none(|| log::warn!("Image lacks the 'xlink:href' attribute. Skipped."))?;
 
-    let kind = get_href_data(node.element_id(), href, state.opt)?;
+    let kind = get_href_data(href, state.opt)?;
+
     parent.append_kind(NodeKind::Image(Image {
         id: node.element_id().to_string(),
         transform: Default::default(),
@@ -111,62 +188,19 @@ pub(crate) fn convert(
     Some(())
 }
 
-pub(crate) fn get_href_data(
-    element_id: &str,
-    href: &str,
-    opt: &OptionsRef,
-) -> Option<ImageKind> {
+pub(crate) fn get_href_data(href: &str, opt: &OptionsRef) -> Option<ImageKind> {
     if let Ok(url) = data_url::DataUrl::process(href) {
         let (data, _) = url.decode_to_vec().ok()?;
-        match (url.mime_type().type_.as_str(), url.mime_type().subtype.as_str()) {
-            ("image", "jpg") | ("image", "jpeg") => Some(ImageKind::JPEG(data)),
-            ("image", "png") => Some(ImageKind::PNG(data)),
-            ("image", "svg+xml") => load_sub_svg(&data, opt),
-            ("text", "plain") => {
-                match get_image_data_format(&data) {
-                    Some(ImageFormat::JPEG) => {
-                        Some(ImageKind::JPEG(data))
-                    }
-                    Some(ImageFormat::PNG) => {
-                        Some(ImageKind::PNG(data))
-                    }
-                    _ => {
-                        load_sub_svg(&data, opt)
-                    }
-                }
-            }
-            _ => None,
-        }
-    } else {
-        let path = opt.get_abs_path(std::path::Path::new(href));
-        if path.exists() {
-            let data = match std::fs::read(&path) {
-                Ok(data) => data,
-                Err(_) => {
-                    log::warn!("Failed to load '{}'. Skipped.", href);
-                    return None;
-                }
-            };
 
-            match get_image_file_format(&path, &data) {
-                Some(ImageFormat::JPEG) => {
-                    Some(ImageKind::JPEG(data))
-                }
-                Some(ImageFormat::PNG) => {
-                    Some(ImageKind::PNG(data))
-                }
-                Some(ImageFormat::SVG) => {
-                    load_sub_svg(&data, opt)
-                }
-                _ => {
-                    log::warn!("'{}' is not a PNG, JPEG or SVG(Z) image.", href);
-                    None
-                }
-            }
-        } else {
-            log::warn!("Image '{}' has an invalid 'xlink:href' content.", element_id);
-            None
-        }
+        let mime = format!(
+            "{}/{}",
+            url.mime_type().type_.as_str(),
+            url.mime_type().subtype.as_str()
+        );
+
+        (opt.image_href_resolver.resolve_data)(&mime, Arc::new(data), opt)
+    } else {
+        (opt.image_href_resolver.resolve_string)(href, opt)
     }
 }
 
@@ -191,7 +225,6 @@ fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
         None
     }
 }
-
 
 /// Tries to load the `ImageData` content as an SVG image.
 ///
