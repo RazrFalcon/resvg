@@ -12,6 +12,9 @@ This changelog also contains important changes in dependencies.
   Thanks to [antmelnyk](https://github.com/antmelnyk).
 - `usvg::Options::image_href_resolver`
 - Support for GIF images inside the `<image>` element.
+- (fontdb) Support for loading user fonts on Windows.
+- (fontdb) Support for parsing fontconfig config files on Linux.
+  For now, only to retrieve a list of font dirs.
 
 ### Changed
 - `usvg::ImageKind` stores data as `Arc<Vec<u8>>` and not just `Vec<u8>` now.

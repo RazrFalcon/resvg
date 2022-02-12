@@ -35,7 +35,7 @@ siphasher = "0.3"
 svgtypes = "0.8"
 
 # for text to path
-fontdb = { version = "0.7", optional = true, default-features = false }
+fontdb = { version = "0.8", optional = true, default-features = false }
 rustybuzz = { version = "0.4", optional = true }
 ttf-parser = { version = "0.12", optional = true }
 unicode-bidi = { version = "0.3", optional = true }
@@ -57,7 +57,7 @@ text = [
     "unicode-vo",
 ]
 # enables system fonts loading (only for `text`)
-system-fonts = ["fontdb/fs"]
+system-fonts = ["fontdb/fs", "fontdb/fontconfig"]
 # enables font files memmaping for faster loading (only for `text`)
 memmap-fonts = ["fontdb/memmap"]
 # enables SVG generation using Tree::to_string
