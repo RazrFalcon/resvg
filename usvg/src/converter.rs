@@ -15,7 +15,10 @@ pub struct State<'a> {
     pub(crate) parent_clip_path: Option<svgtree::Node<'a>>,
     pub(crate) parent_marker: Option<svgtree::Node<'a>>,
     pub(crate) fe_image_link: bool,
+    /// The size of the root SVG element.
+    /// Right now, used only by use_node::get_clip_rect.
     pub(crate) size: Size,
+    /// A viewBox of the parent SVG element.
     pub(crate) view_box: Rect,
     pub(crate) opt: &'a OptionsRef<'a>,
 }

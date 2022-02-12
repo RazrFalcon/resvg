@@ -20,6 +20,7 @@ This changelog also contains important changes in dependencies.
 - `usvg::ImageKind` stores data as `Arc<Vec<u8>>` and not just `Vec<u8>` now.
 
 ### Fixed
+- Every nested `svg` element defines a new viewBox now. Previously, we were always using the root one.
 - Correctly handle SVG size calculation when SVG doesn't have a size and any elements.
 - Improve groups ungrouping speed.
 

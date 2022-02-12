@@ -1308,6 +1308,9 @@ use render::render;
 #[test] fn e_svg_031() { assert_eq!(render("e-svg-031"), 0); }
 #[test] fn e_svg_032() { assert_eq!(render("e-svg-032"), 0); }
 #[test] fn e_svg_033() { assert_eq!(render("e-svg-033"), 0); }
+#[test] fn e_svg_037() { assert_eq!(render("e-svg-037"), 0); }
+#[test] fn e_svg_038() { assert_eq!(render("e-svg-038"), 0); }
+#[test] fn e_svg_039() { assert_eq!(render("e-svg-039"), 0); }
 #[test] fn e_switch_001() { assert_eq!(render("e-switch-001"), 0); }
 #[test] fn e_switch_002() { assert_eq!(render("e-switch-002"), 0); }
 #[test] fn e_switch_003() { assert_eq!(render("e-switch-003"), 0); }

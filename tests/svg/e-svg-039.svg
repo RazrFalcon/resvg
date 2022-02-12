@@ -1,0 +1,12 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Nested svg with rect and viewBox and percent values</title>
+    <desc>Percent values should be resolved using the parent SVG element, not the root one.</desc>
+
+    <svg id="svg2" x="75" y="75" width="50" height="50" viewBox="0 0 200 100"
+         xmlns="http://www.w3.org/2000/svg">
+        <circle id="circle1" cx="50%" cy="100%" r="70%" fill="green"/>
+    </svg>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>
