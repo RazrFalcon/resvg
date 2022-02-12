@@ -2,10 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{
-    image::ImageHrefResolver,
-    ImageRendering, ShapeRendering, TextRendering, Size, ScreenSize,
-};
+use crate::{ImageHrefResolver, ImageRendering, ShapeRendering, TextRendering, Size, ScreenSize};
 
 /// Image fit options.
 ///
@@ -135,9 +132,9 @@ pub struct Options {
     #[cfg(feature = "text")]
     pub fontdb: fontdb::Database,
 
-    /// Specifies the way to parse `<image>` elements `xlink:href` value.
+    /// Specifies the way `xlink:href` in `<image>` elements should be handled.
     ///
-    /// Default: either parse `href` as DataUrl, or parse it as a path to the local image file.
+    /// Default: see type's documentation for details
     pub image_href_resolver: ImageHrefResolver,
 }
 

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- `usvg::ImageHrefResolver` that allows a custom `xlink:href` handling.
+  Thanks to [antmelnyk](https://github.com/antmelnyk).
 
 ## [0.20.0] - 2021-12-29
 ### Changed

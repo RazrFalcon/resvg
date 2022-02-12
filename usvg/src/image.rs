@@ -37,22 +37,47 @@ impl std::fmt::Debug for ImageKind {
     }
 }
 
-/// Functions that accept various representations of `xlink:href` value of the `<image>`
-/// element and return ImageKind that holds reference to the image buffer determined by these functions.
-#[allow(clippy::type_complexity)]
-pub struct ImageHrefResolver {
-    /// Resolver function that will be used if `xlink:href` is a DataUrl with encoded base64 string.
-    pub resolve_data: Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + Send + Sync>,
+/// A shorthand for [ImageHrefResolver]'s data function.
+pub type ImageHrefDataResolverFn = Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + Send + Sync>;
+/// A shorthand for [ImageHrefResolver]'s string function.
+pub type ImageHrefStringResolverFn = Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + Send + Sync>;
 
-    /// Resolver function that will be used to handle arbitrary string in `xlink:href`.
-    pub resolve_string: Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + Send + Sync>,
+/// An `xlink:href` resolver for `<image>` elements.
+///
+/// This type can be useful if you want to have an alternative `xlink:href` handling
+/// to the default one. For example, you can forbid access to local files (which is allowed by default)
+/// or add support for resolving actual URLs (usvg doesn't do any network requests).
+pub struct ImageHrefResolver {
+    /// Resolver function that will be used when `xlink:href` contains a
+    /// [Data URL](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs).
+    ///
+    /// A function would be called with mime, decoded base64 data and parsing options.
+    pub resolve_data: ImageHrefDataResolverFn,
+
+    /// Resolver function that will be used to handle an arbitrary string in `xlink:href`.
+    pub resolve_string: ImageHrefStringResolverFn,
+}
+
+impl Default for ImageHrefResolver {
+    fn default() -> Self {
+        ImageHrefResolver {
+            resolve_data: ImageHrefResolver::default_data_resolver(),
+            resolve_string: ImageHrefResolver::default_string_resolver()
+        }
+    }
 }
 
 impl ImageHrefResolver {
-    /// Create DataUrl resolver function that handles standard mime types for JPEG, PNG and SVG.
-    #[allow(clippy::type_complexity)]
-    pub fn default_data_resolver<'a>(
-    ) -> Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + Send + Sync + 'a> {
+    /// Creates a default
+    /// [Data URL](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs)
+    /// resolver closure.
+    ///
+    /// base64 encoded data is already decoded.
+    ///
+    /// The default implementation would try to load JPEG, PNG, SVG and SVGZ types.
+    /// Note that it will simply match the `mime` or data's magic.
+    /// The actual images would not be decoded. It's up to the renderer.
+    pub fn default_data_resolver() -> ImageHrefDataResolverFn {
         Box::new(
             move |mime: &str, data: Arc<Vec<u8>>, opts: &OptionsRef| match mime {
                 "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
@@ -64,13 +89,18 @@ impl ImageHrefResolver {
                     _ => load_sub_svg(&data, opts),
                 },
                 _ => None,
-            },
+            }
         )
     }
 
-    /// Create resolver function that handles `href` string as path to local JPEG, PNG or SVG file.
-    pub fn default_string_resolver<'a>(
-    ) -> Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + Send + Sync + 'a> {
+    /// Creates a default string resolver.
+    ///
+    /// The default implementation treats an input string as a file path and tries to open.
+    /// If a string is an URL or something else it would be ignored.
+    ///
+    /// Paths have to be absolute or relative to the input SVG file or relative to
+    /// [Options::resources_dir](crate::Options::resources_dir).
+    pub fn default_string_resolver() -> ImageHrefStringResolverFn {
         Box::new(move |href: &str, opts: &OptionsRef| {
             let path = opts.get_abs_path(std::path::Path::new(href));
 
@@ -103,15 +133,6 @@ impl ImageHrefResolver {
 impl std::fmt::Debug for ImageHrefResolver {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("ImageHrefResolver { .. }")
-    }
-}
-
-impl Default for ImageHrefResolver {
-    fn default() -> Self {
-        ImageHrefResolver {
-            resolve_data: ImageHrefResolver::default_data_resolver(),
-            resolve_string: ImageHrefResolver::default_string_resolver()
-        }
     }
 }
 

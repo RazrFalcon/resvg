@@ -64,7 +64,6 @@ pub(crate) fn convert(fe: svgtree::Node, state: &converter::State) -> Kind {
     };
 
     let href = crate::image::get_href_data(href, state.opt);
-
     let img_data = match href {
         Some(data) => data,
         None => return super::create_dummy_primitive(),
