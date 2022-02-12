@@ -21,6 +21,7 @@ This changelog also contains important changes in dependencies.
 
 ### Fixed
 - Correctly handle SVG size calculation when SVG doesn't have a size and any elements.
+- Improve groups ungrouping speed.
 
 ## [0.20.0] - 2021-12-29
 ### Changed

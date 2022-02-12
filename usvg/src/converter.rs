@@ -775,6 +775,10 @@ fn link_fe_image(
 }
 
 fn is_id_used(tree: & Tree, id: &str) -> bool {
+    if id.is_empty() {
+        return false;
+    }
+
     macro_rules! check_id {
         ($from:expr, $id:expr) => {
             if let Some(ref id) = $from {
