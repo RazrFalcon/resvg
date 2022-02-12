@@ -802,6 +802,11 @@ fn calc_node_bbox(
                 }
             }
 
+            // Make sure bbox was changed.
+            if bbox.fuzzy_eq(&PathBbox::new_bbox()) {
+                return None;
+            }
+
             Some(bbox)
         }
         _ => None,

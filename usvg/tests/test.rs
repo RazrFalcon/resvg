@@ -129,6 +129,11 @@ test_size!(size_detection_4,
     usvg::Size::new(36.0, 36.0).unwrap()
 );
 
+test_size!(size_detection_5,
+    "<svg xmlns='http://www.w3.org/2000/svg'/>",
+    usvg::Size::new(100.0, 100.0).unwrap()
+);
+
 #[test]
 fn viewbox_detection() {
     use usvg::FuzzyEq;

@@ -19,6 +19,9 @@ This changelog also contains important changes in dependencies.
 ### Changed
 - `usvg::ImageKind` stores data as `Arc<Vec<u8>>` and not just `Vec<u8>` now.
 
+### Fixed
+- Correctly handle SVG size calculation when SVG doesn't have a size and any elements.
+
 ## [0.20.0] - 2021-12-29
 ### Changed
 - `resvg::render` and `resvg::render_node` accept a transform now.

@@ -136,27 +136,7 @@ pub(crate) fn convert_doc(
     remove_unused_defs(&mut tree);
 
     if restore_viewbox {
-        let mut right = 0.0;
-        let mut bottom = 0.0;
-
-        for node in tree.root().descendants() {
-            if !tree.is_in_defs(&node) {
-                if let Some(bbox) = node.calculate_bbox() {
-                    if bbox.right() > right {
-                        right = bbox.right();
-                    }
-                    if bbox.bottom() > bottom {
-                        bottom = bbox.bottom();
-                    }
-                }
-            }
-        }
-
-        if let Some(rect) = Rect::new(0.0, 0.0, right, bottom) {
-            tree.set_view_box(rect);
-        }
-
-        tree.set_dimensions(right, bottom);
+        calculate_svg_bbox(&mut tree);
     }
 
     Ok(tree)
@@ -220,6 +200,33 @@ fn resolve_svg_size(
     };
 
     (size.ok_or(Error::InvalidSize), restore_viewbox)
+}
+
+/// Calculates SVG's size and viewBox in case there were not set.
+///
+/// Simply iterates over all nodes and calculates a bounding box.
+fn calculate_svg_bbox(tree: &mut Tree) {
+    let mut right = 0.0;
+    let mut bottom = 0.0;
+
+    for node in tree.root().descendants() {
+        if !tree.is_in_defs(&node) {
+            if let Some(bbox) = node.calculate_bbox() {
+                if bbox.right() > right {
+                    right = bbox.right();
+                }
+                if bbox.bottom() > bottom {
+                    bottom = bbox.bottom();
+                }
+            }
+        }
+    }
+
+    if let Some(rect) = Rect::new(0.0, 0.0, right, bottom) {
+        tree.set_view_box(rect);
+    }
+
+    tree.set_dimensions(right, bottom);
 }
 
 #[inline(never)]
