@@ -762,6 +762,9 @@ impl XmlWriterExt for XmlWriter {
             crate::ImageKind::PNG(ref data) => {
                 ("png", data.as_slice())
             }
+            crate::ImageKind::GIF(ref data) => {
+                ("gif", data.as_slice())
+            }
             crate::ImageKind::SVG(ref tree) => {
                 svg_string = tree.to_string(&XmlOptions::default());
                 ("svg+xml", svg_string.as_bytes())

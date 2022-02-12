@@ -10,6 +10,11 @@ This changelog also contains important changes in dependencies.
 ### Added
 - `usvg::ImageHrefResolver` that allows a custom `xlink:href` handling.
   Thanks to [antmelnyk](https://github.com/antmelnyk).
+- `usvg::Options::image_href_resolver`
+- Support for GIF images inside the `<image>` element.
+
+### Changed
+- `usvg::ImageKind` stores data as `Arc<Vec<u8>>` and not just `Vec<u8>` now.
 
 ## [0.20.0] - 2021-12-29
 ### Changed

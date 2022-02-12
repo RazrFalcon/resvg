@@ -23,13 +23,19 @@ pub fn draw_kind(
         usvg::ImageKind::JPEG(ref data) => {
             match read_jpeg(data) {
                 Some(image) => { draw_raster(&image, view_box, rendering_mode, canvas); }
-                None => log::warn!("Failed to load an embedded image."),
+                None => log::warn!("Failed to decode a JPEG image."),
             }
         }
         usvg::ImageKind::PNG(ref data) => {
             match read_png(data) {
                 Some(image) => { draw_raster(&image, view_box, rendering_mode, canvas); }
-                None => log::warn!("Failed to load an embedded image."),
+                None => log::warn!("Failed to decode a PNG image."),
+            }
+        }
+        usvg::ImageKind::GIF(ref data) => {
+            match read_gif(data) {
+                Some(image) => { draw_raster(&image, view_box, rendering_mode, canvas); }
+                None => log::warn!("Failed to decode a GIF image."),
             }
         }
         usvg::ImageKind::SVG(ref subtree) => {
@@ -251,6 +257,20 @@ fn read_jpeg(data: &[u8]) -> Option<Image> {
 
     Some(Image {
         data,
+        size,
+    })
+}
+
+fn read_gif(data: &[u8]) -> Option<Image> {
+    let mut decoder = gif::DecodeOptions::new();
+    decoder.set_color_output(gif::ColorOutput::RGBA);
+    let mut decoder = decoder.read_info(data).ok()?;
+    let first_frame = decoder.read_next_frame().ok()??;
+
+    let size = usvg::ScreenSize::new(u32::from(first_frame.width), u32::from(first_frame.height))?;
+
+    Some(Image {
+        data: ImageData::RGBA(first_frame.buffer.to_vec()),
         size,
     })
 }

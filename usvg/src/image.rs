@@ -13,6 +13,7 @@ use crate::svgtree::{self, AId};
 enum ImageFormat {
     PNG,
     JPEG,
+    GIF,
     SVG,
 }
 
@@ -23,6 +24,8 @@ pub enum ImageKind {
     JPEG(Arc<Vec<u8>>),
     /// A reference to raw PNG data. Should be decoded by the caller.
     PNG(Arc<Vec<u8>>),
+    /// A reference to raw GIF data. Should be decoded by the caller.
+    GIF(Arc<Vec<u8>>),
     /// A preprocessed SVG tree. Can be rendered as is.
     SVG(crate::Tree),
 }
@@ -32,6 +35,7 @@ impl std::fmt::Debug for ImageKind {
         match self {
             ImageKind::JPEG(_) => f.write_str("ImageKind::JPEG(..)"),
             ImageKind::PNG(_) => f.write_str("ImageKind::PNG(..)"),
+            ImageKind::GIF(_) => f.write_str("ImageKind::GIF(..)"),
             ImageKind::SVG(_) => f.write_str("ImageKind::SVG(..)"),
         }
     }
@@ -74,7 +78,7 @@ impl ImageHrefResolver {
     ///
     /// base64 encoded data is already decoded.
     ///
-    /// The default implementation would try to load JPEG, PNG, SVG and SVGZ types.
+    /// The default implementation would try to load JPEG, PNG, GIF, SVG and SVGZ types.
     /// Note that it will simply match the `mime` or data's magic.
     /// The actual images would not be decoded. It's up to the renderer.
     pub fn default_data_resolver() -> ImageHrefDataResolverFn {
@@ -82,10 +86,12 @@ impl ImageHrefResolver {
             move |mime: &str, data: Arc<Vec<u8>>, opts: &OptionsRef| match mime {
                 "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
                 "image/png" => Some(ImageKind::PNG(data)),
+                "image/gif" => Some(ImageKind::GIF(data)),
                 "image/svg+xml" => load_sub_svg(&data, opts),
                 "text/plain" => match get_image_data_format(&data) {
                     Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(data)),
                     Some(ImageFormat::PNG) => Some(ImageKind::PNG(data)),
+                    Some(ImageFormat::GIF) => Some(ImageKind::GIF(data)),
                     _ => load_sub_svg(&data, opts),
                 },
                 _ => None,
@@ -116,9 +122,10 @@ impl ImageHrefResolver {
                 match get_image_file_format(&path, &data) {
                     Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(Arc::new(data))),
                     Some(ImageFormat::PNG) => Some(ImageKind::PNG(Arc::new(data))),
+                    Some(ImageFormat::GIF) => Some(ImageKind::GIF(Arc::new(data))),
                     Some(ImageFormat::SVG) => load_sub_svg(&data, opts),
                     _ => {
-                        log::warn!("'{}' is not a PNG, JPEG or SVG(Z) image.", href);
+                        log::warn!("'{}' is not a PNG, JPEG, GIF or SVG(Z) image.", href);
                         None
                     }
                 }
@@ -225,7 +232,7 @@ pub(crate) fn get_href_data(href: &str, opt: &OptionsRef) -> Option<ImageKind> {
     }
 }
 
-/// Checks that file has a PNG or a JPEG magic bytes.
+/// Checks that file has a PNG, a GIF or a JPEG magic bytes.
 /// Or an SVG(Z) extension.
 fn get_image_file_format(path: &std::path::Path, data: &[u8]) -> Option<ImageFormat> {
     let ext = crate::utils::file_extension(path)?.to_lowercase();
@@ -236,12 +243,14 @@ fn get_image_file_format(path: &std::path::Path, data: &[u8]) -> Option<ImageFor
     get_image_data_format(data.get(0..8)?)
 }
 
-/// Checks that file has a PNG or a JPEG magic bytes.
+/// Checks that file has a PNG, a GIF or a JPEG magic bytes.
 fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
     if data.starts_with(b"\x89PNG\r\n\x1a\n") {
         Some(ImageFormat::PNG)
     } else if data.starts_with(&[0xff, 0xd8, 0xff]) {
         Some(ImageFormat::JPEG)
+    } else if data.starts_with(b"GIF87a") || data.starts_with(b"GIF89a") {
+        Some(ImageFormat::GIF)
     } else {
         None
     }
