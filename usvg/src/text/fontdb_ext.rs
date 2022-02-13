@@ -23,7 +23,7 @@ impl DatabaseExt for Database {
         self.with_face_data(id, |data, face_index| -> Option<Font> {
             let font = ttf_parser::Face::from_slice(data, face_index).ok()?;
 
-            let units_per_em = NonZeroU16::new(font.units_per_em()?)?;
+            let units_per_em = NonZeroU16::new(font.units_per_em())?;
 
             let ascent = font.ascender();
             let descent = font.descender();
