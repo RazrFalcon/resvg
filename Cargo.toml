@@ -18,7 +18,7 @@ required-features = ["filter", "text", "system-fonts", "memmap-fonts"]
 
 [dependencies]
 gif = "0.11"
-jpeg-decoder = { version = "0.2", default-features = false }
+jpeg-decoder = { version = "0.2", default-features = false, features = ["platform_independent"] }
 log = "0.4"
 pico-args = "0.4"
 png = "0.17"
