@@ -17,6 +17,7 @@ This changelog also contains important changes in dependencies.
   For now, only to retrieve a list of font dirs.
 
 ### Changed
+- MSRV bumped to 1.51
 - `usvg::ImageKind` stores data as `Arc<Vec<u8>>` and not just `Vec<u8>` now.
 
 ### Fixed
