@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.21.0] - 2022-02-13
 ### Added
 - `usvg::ImageHrefResolver` that allows a custom `xlink:href` handling.
   Thanks to [antmelnyk](https://github.com/antmelnyk).
@@ -581,8 +583,9 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.20.0...HEAD
-[0.19.0]: https://github.com/RazrFalcon/resvg/compare/v0.19.0...v0.20.0
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.21.0...HEAD
+[0.21.0]: https://github.com/RazrFalcon/resvg/compare/v0.20.0...v0.21.0
+[0.20.0]: https://github.com/RazrFalcon/resvg/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/RazrFalcon/resvg/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/RazrFalcon/resvg/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/RazrFalcon/resvg/compare/v0.16.0...v0.17.0
