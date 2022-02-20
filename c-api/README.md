@@ -6,7 +6,7 @@
 cargo build --release
 ```
 
-This will produce a dynamic C library that can be found at `../target/release`.
+This will produce dynamic and static C libraries that can be found at `../target/release`.
 
 ## Header generation
 
