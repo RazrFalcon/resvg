@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.22.0] - 2022-02-20
 ### Added
 - Support `svg` referenced by `use`. External SVG files are still not supported.
 
@@ -588,7 +590,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.21.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.22.0...HEAD
+[0.22.0]: https://github.com/RazrFalcon/resvg/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/RazrFalcon/resvg/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/RazrFalcon/resvg/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/RazrFalcon/resvg/compare/v0.18.0...v0.19.0
