@@ -20,6 +20,10 @@ pub struct State<'a> {
     pub(crate) size: Size,
     /// A viewBox of the parent SVG element.
     pub(crate) view_box: Rect,
+    /// A size of the parent `use` element.
+    /// Used only during nested `svg` size resolving.
+    /// Width and height can be set independently.
+    pub(crate) use_size: (Option<f64>, Option<f64>),
     pub(crate) opt: &'a OptionsRef<'a>,
 }
 
@@ -109,6 +113,7 @@ pub(crate) fn convert_doc(
         fe_image_link: false,
         size,
         view_box: view_box.rect,
+        use_size: (None, None),
         opt,
     };
 
@@ -155,6 +160,7 @@ fn resolve_svg_size(
         fe_image_link: false,
         size: Size::new(100.0, 100.0).unwrap(),
         view_box: Rect::new(0.0, 0.0, 100.0, 100.0).unwrap(),
+        use_size: (None, None),
         opt,
     };
 

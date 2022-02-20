@@ -79,7 +79,40 @@ pub(crate) fn convert(
 
         convert_children(child, orig_ts, state, id_generator, &mut parent, tree);
     } else {
-        convert_children(node, orig_ts, state, id_generator, parent, tree);
+        let linked_to_svg = child.tag_name() == Some(EId::Svg);
+        if linked_to_svg {
+            // When a `use` element references a `svg` element,
+            // we have to remember `use` element size and use it
+            // instead of `svg` element size.
+
+            let def = Length::new(100.0, LengthUnit::Percent);
+
+            let mut state = state.clone();
+            // As per usual, the SVG spec doesn't clarify this edge case,
+            // but it seems like `use` size has to be reset by each `use`.
+            // Meaning if we have two nested `use` elements, where one had set `width` and
+            // other set `height`, we have to ignore the first `width`.
+            //
+            // Example:
+            // <use id="use1" xlink:href="#use2" width="100"/>
+            // <use id="use2" xlink:href="#svg2" height="100"/>
+            // <svg id="svg2" x="40" y="40" width="80" height="80" xmlns="http://www.w3.org/2000/svg"/>
+            //
+            // In this case `svg2` size is 80x100 and not 100x100.
+            state.use_size = (None, None);
+
+            // Width and height can be set independently.
+            if node.has_attribute(AId::Width) {
+                state.use_size.0 = Some(node.convert_user_length(AId::Width, &state, def));
+            }
+            if node.has_attribute(AId::Height) {
+                state.use_size.1 = Some(node.convert_user_length(AId::Height, &state, def));
+            }
+
+            convert_children(node, orig_ts, &state, id_generator, parent, tree);
+        } else {
+            convert_children(node, orig_ts, state, id_generator, parent, tree);
+        }
     }
 
     Some(())
@@ -116,9 +149,14 @@ pub(crate) fn convert_svg(
             // No `viewBox` attribute? Then use `x`, `y`, `width` and `height` instead.
             let x = node.convert_user_length(AId::X, &state, Length::zero());
             let y = node.convert_user_length(AId::Y, &state, Length::zero());
-            let def = Length::new(100.0, LengthUnit::Percent);
-            let w = node.convert_user_length(AId::Width, &state, def);
-            let h = node.convert_user_length(AId::Height, &state, def);
+            let (mut w, mut h) = use_node_size(node, &state);
+
+            // If attributes `width` and/or `height` are provided on the `use` element,
+            // then these values will override the corresponding attributes
+            // on the `svg` in the generated tree.
+            w = state.use_size.0.unwrap_or(w);
+            h = state.use_size.1.unwrap_or(h);
+
             Rect::new(x, y, w, h).unwrap_or(state.view_box)
         }
     };
@@ -221,13 +259,20 @@ fn get_clip_rect(
         return None;
     }
 
-    let (x, y, w, h) = {
+    let (x, y, mut w, mut h) = {
         let x = use_node.convert_user_length(AId::X, state, Length::zero());
         let y = use_node.convert_user_length(AId::Y, state, Length::zero());
-        let w = use_node.convert_user_length(AId::Width, state, Length::new(100.0, LengthUnit::Percent));
-        let h = use_node.convert_user_length(AId::Height, state, Length::new(100.0, LengthUnit::Percent));
+        let (w, h) = use_node_size(use_node, state);
         (x, y, w, h)
     };
+
+    if use_node.tag_name() == Some(EId::Svg) {
+        // If attributes `width` and/or `height` are provided on the `use` element,
+        // then these values will override the corresponding attributes
+        // on the `svg` in the generated tree.
+        w = state.use_size.0.unwrap_or(w);
+        h = state.use_size.1.unwrap_or(h);
+    }
 
     if !w.is_valid_length() || !h.is_valid_length() {
         return None;
@@ -242,18 +287,29 @@ fn get_clip_rect(
     Rect::new(x, y, w, h)
 }
 
+fn use_node_size(node: svgtree::Node, state: &converter::State) -> (f64, f64) {
+    let def = Length::new(100.0, LengthUnit::Percent);
+    let w = node.convert_user_length(AId::Width, state, def);
+    let h = node.convert_user_length(AId::Height, state, def);
+    (w, h)
+}
+
 fn viewbox_transform(
     node: svgtree::Node,
     linked: svgtree::Node,
     state: &converter::State,
 ) -> Option<Transform> {
-    let size = {
-        let def = Length::new(100.0, LengthUnit::Percent);
-        let w = node.convert_user_length(AId::Width, state, def);
-        let h = node.convert_user_length(AId::Height, state, def);
-        Size::new(w, h)
-    }?;
+    let (mut w, mut h) = use_node_size(node, state);
 
+    if node.tag_name() == Some(EId::Svg) {
+        // If attributes `width` and/or `height` are provided on the `use` element,
+        // then these values will override the corresponding attributes
+        // on the `svg` in the generated tree.
+        w = state.use_size.0.unwrap_or(w);
+        h = state.use_size.1.unwrap_or(h);
+    }
+
+    let size = Size::new(w, h)?;
     let vb = linked.get_viewbox()?;
     let aspect = linked.attribute(AId::PreserveAspectRatio).unwrap_or_default();
 

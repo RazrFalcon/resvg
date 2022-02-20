@@ -904,15 +904,8 @@ fn parse_svg_use_element(
         return Ok(());
     }
 
-    let tag_name = match parse_tag_name(link) {
-        Some(v) => v,
-        None => return Ok(()),
-    };
-
-    // TODO: this
-    // We don't support 'use' elements linked to 'svg' element.
-    if tag_name == EId::Svg {
-        log::warn!("'use' elements linked to 'svg' elements are not supported. Skipped.");
+    // Make sure we're linked to an SVG element.
+    if parse_tag_name(link).is_none() {
         return Ok(());
     }
 

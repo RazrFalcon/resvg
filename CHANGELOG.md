@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- Support `svg` referenced by `use`. External SVG files are still not supported.
 
 ## [0.21.0] - 2022-02-13
 ### Added

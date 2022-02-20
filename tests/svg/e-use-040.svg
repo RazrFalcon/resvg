@@ -1,0 +1,15 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>xlink to `svg` element with rect, only `width`</title>
+
+    <defs id="defs1">
+        <!-- width must be replaced with 100 form `use2` -->
+        <svg id="svg2" x="40" y="40" width="80" height="80" xmlns="http://www.w3.org/2000/svg">
+            <circle id="circle1" cx="100" cy="100" r="120" fill="green"/>
+        </svg>
+    </defs>
+    <use id="use1" xlink:href="#svg2" width="100"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

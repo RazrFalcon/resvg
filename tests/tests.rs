@@ -1499,3 +1499,10 @@ use render::render;
 #[test] fn e_use_032() { assert_eq!(render("e-use-032"), 0); }
 #[test] fn e_use_033() { assert_eq!(render("e-use-033"), 0); }
 #[test] fn e_use_034() { assert_eq!(render("e-use-034"), 0); }
+#[test] fn e_use_035() { assert_eq!(render("e-use-035"), 0); }
+#[test] fn e_use_036() { assert_eq!(render("e-use-036"), 0); }
+#[test] fn e_use_037() { assert_eq!(render("e-use-037"), 0); }
+#[test] fn e_use_038() { assert_eq!(render("e-use-038"), 0); }
+#[test] fn e_use_039() { assert_eq!(render("e-use-039"), 0); }
+#[test] fn e_use_040() { assert_eq!(render("e-use-040"), 0); }
+#[test] fn e_use_041() { assert_eq!(render("e-use-041"), 0); }
