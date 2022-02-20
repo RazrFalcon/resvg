@@ -124,14 +124,14 @@ dependencies = [
 
 [[package]]
 name = "fontdb"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "029fc9730885d89fa728b849a381d0ffa739ff0eacfefed236284cb37852fe24"
+checksum = "db856ee8cca3b9f23dd11c13bf3d4854b663ae86ed0c4a627a354431fc265f66"
 dependencies = [
  "fontconfig-parser",
  "log",
  "memmap2",
- "ttf-parser 0.14.0",
+ "ttf-parser",
 ]
 
 [[package]]
@@ -161,9 +161,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.117"
+version = "0.2.119"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e74d72e0f9b65b5b4ca49a346af3976df0f9c61d550727f349ecd559f251a26c"
+checksum = "1bf2e165bb3457c8e098ea76f3e3bc9db55f87aa90d52d0e6be741470916aaa4"
 
 [[package]]
 name = "log"
@@ -285,14 +285,14 @@ dependencies = [
 
 [[package]]
 name = "rustybuzz"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44561062e583c4873162861261f16fd1d85fe927c4904d71329a4fe43dc355ef"
+checksum = "25ff94f20221325d000e552781713e53b0d85c1d9551b6f420d12daf5a08eace"
 dependencies = [
  "bitflags",
  "bytemuck",
  "smallvec",
- "ttf-parser 0.12.3",
+ "ttf-parser",
  "unicode-bidi-mirroring",
  "unicode-ccc",
  "unicode-general-category",
@@ -362,15 +362,9 @@ dependencies = [
 
 [[package]]
 name = "ttf-parser"
-version = "0.12.3"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ae2f58a822f08abdaf668897e96a5656fe72f5a9ce66422423e8849384872e6"
-
-[[package]]
-name = "ttf-parser"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ccbe8381883510b6a2d8f1e32905bddd178c11caef8083086d0c0c9ab0ac281"
+checksum = "c74c96594835e10fa545e2a51e8709f30b173a092bfd6036ef2cec53376244f3"
 
 [[package]]
 name = "unicode-bidi"
@@ -426,7 +420,7 @@ dependencies = [
  "simplecss",
  "siphasher",
  "svgtypes",
- "ttf-parser 0.14.0",
+ "ttf-parser",
  "unicode-bidi",
  "unicode-script",
  "unicode-vo",

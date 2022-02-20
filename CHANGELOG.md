@@ -10,6 +10,9 @@ This changelog also contains important changes in dependencies.
 ### Added
 - Support `svg` referenced by `use`. External SVG files are still not supported.
 
+### Changed
+- `ttf-parser`, `fontdb` and `rustybuzz` have been updated.
+
 ## [0.21.0] - 2022-02-13
 ### Added
 - `usvg::ImageHrefResolver` that allows a custom `xlink:href` handling.
