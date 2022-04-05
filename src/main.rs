@@ -361,7 +361,7 @@ fn parse_args() -> Result<Args, String> {
         println!("Warning: --export-area-page has no effect without --export-id.");
     }
 
-    if !args.export_area_drawing && args.export_id.is_some() {
+    if args.export_area_drawing && args.export_id.is_some() {
         println!("Warning: --export-area-drawing has no effect when --export-id is set.");
     }
 
