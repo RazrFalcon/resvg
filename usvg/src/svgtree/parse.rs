@@ -1023,10 +1023,12 @@ fn find_recursive_pattern(
                     return Some(node.id);
                 } else {
                     // Check that linked node children doesn't link this pattern.
-                    for node2 in doc.element_by_id(link_id).unwrap().descendants() {
-                        if let Some(&AttributeValue::Paint(ref link_id2, _)) = node2.attribute(aid) {
-                            if link_id2 == pattern_node.element_id() {
-                                return Some(node2.id);
+                    if let Some(linked_node) = doc.element_by_id(link_id) {
+                        for node2 in linked_node.descendants() {
+                            if let Some(&AttributeValue::Paint(ref link_id2, _)) = node2.attribute(aid) {
+                                if link_id2 == pattern_node.element_id() {
+                                    return Some(node2.id);
+                                }
                             }
                         }
                     }
