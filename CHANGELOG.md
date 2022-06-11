@@ -8,6 +8,17 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 
+## [0.23.0] - 2022-06-11
+### Added
+- `#RRGGBBAA` and `#RGBA` color notation support.
+  Thanks to [demurgos](https://github.com/demurgos).
+
+### Fixed
+- Panic during recursive `pattern` resolving.
+  Thanks to [FylmTM](https://github.com/FylmTM).
+- Spurious warning when using `--export-id`.
+  Thanks to [benoit-pierre](https://github.com/benoit-pierre).
+
 ## [0.22.0] - 2022-02-20
 ### Added
 - Support `svg` referenced by `use`. External SVG files are still not supported.
@@ -590,7 +601,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.22.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.23.0...HEAD
+[0.23.0]: https://github.com/RazrFalcon/resvg/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/RazrFalcon/resvg/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/RazrFalcon/resvg/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/RazrFalcon/resvg/compare/v0.19.0...v0.20.0
