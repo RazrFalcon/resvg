@@ -22,15 +22,15 @@ base64 = "0.13" # for embedded images
 data-url = "0.1" # for href parsing
 flate2 = { version = "1.0", default-features = false, features = ["rust_backend"] } # SVGZ decoding
 float-cmp = { version = "0.9", default-features = false, features = ["std"] }
-kurbo = "0.8"
+kurbo = "0.8" # Bezier curves utils
 log = "0.4"
-pico-args = "0.4"
+pico-args =  { version = "0.5", features = ["eq-separator"] }
 rctree = "0.4"
 xmlwriter = { version = "0.1", optional = true }
 
 # for svgtree
 roxmltree = "0.14"
-simplecss = "0.2.1"
+simplecss = "0.2"
 siphasher = "0.3"
 svgtypes = "0.8"
 

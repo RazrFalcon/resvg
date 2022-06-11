@@ -20,12 +20,12 @@ required-features = ["filter", "text", "system-fonts", "memmap-fonts"]
 gif = "0.11"
 jpeg-decoder = { version = "0.2", default-features = false, features = ["platform_independent"] }
 log = "0.4"
-pico-args = "0.4"
+pico-args =  { version = "0.5", features = ["eq-separator"] }
 png = "0.17"
 rgb = "0.8"
 svgfilters = { path = "svgfilters", version = "0.4", optional = true }
 svgtypes = "0.8"
-tiny-skia = "0.6.1"
+tiny-skia = "0.6"
 usvg = { path = "usvg", version = "0.22.0", default-features = false }
 
 [dev-dependencies]
