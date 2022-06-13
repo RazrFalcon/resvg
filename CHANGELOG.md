@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- Path bbox calculation scales stroke width too.
+  Thanks to [growler](https://github.com/growler).
 
 ## [0.23.0] - 2022-06-11
 ### Added
