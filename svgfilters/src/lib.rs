@@ -251,21 +251,13 @@ pub fn from_linear_rgb(data: &mut [RGBA8]) {
     }
 }
 
-
-// TODO: https://github.com/rust-lang/rust/issues/44095
 #[inline]
 fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
     debug_assert!(min.is_finite());
     debug_assert!(val.is_finite());
     debug_assert!(max.is_finite());
 
-    if val > max {
-        max
-    } else if val < min {
-        min
-    } else {
-        val
-    }
+    val.clamp(min, max)
 }
 
 

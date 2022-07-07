@@ -103,7 +103,6 @@ fn image_to_mask(data: &mut [rgb::RGBA8]) {
     }
 }
 
-// TODO: https://github.com/rust-lang/rust/issues/44095
 /// Bounds `f64` number.
 #[inline]
 fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
@@ -111,11 +110,5 @@ fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
     debug_assert!(val.is_finite());
     debug_assert!(max.is_finite());
 
-    if val > max {
-        max
-    } else if val < min {
-        min
-    } else {
-        val
-    }
+    val.clamp(min, max)
 }
