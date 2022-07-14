@@ -769,9 +769,13 @@ fn count_chars(node: svgtree::Node) -> usize {
 
 /// Converts the writing mode.
 ///
-/// According to the [SVG 2.0] spec, there are only two writing modes:
+/// [SVG 2] references [CSS Writing Modes Level 3] for the definition of the
+/// 'writing-mode' property, there are only two writing modes:
 /// horizontal left-to-right and vertical right-to-left.
-/// E.g:
+/// 
+/// That specification introduces new values for the property. The SVG 1.1
+/// values are obsolete but must still be supported by converting the specified
+/// values to computed values as follows:
 ///
 /// - `lr`, `lr-tb`, `rl`, `rl-tb` => `horizontal-tb`
 /// - `tb`, `tb-rl` => `vertical-rl`
@@ -782,11 +786,13 @@ fn count_chars(node: svgtree::Node) -> usize {
 /// So we will ignore it as well, mainly because I have no idea how exactly
 /// it should affect the rendering.
 ///
-/// [SVG 2.0]: https://www.w3.org/TR/SVG2/text.html#WritingModeProperty
+/// [SVG 2]: https://www.w3.org/TR/SVG2/text.html#WritingModeProperty
+/// [CSS Writing Modes Level 3]: https://www.w3.org/TR/css-writing-modes-3/#svg-writing-mode-css
 pub fn convert_writing_mode(text_node: TextNode) -> WritingMode {
     if let Some(n) = text_node.find_node_with_attribute(AId::WritingMode) {
         match n.attribute(AId::WritingMode).unwrap_or("lr-tb") {
-            "tb" | "tb-rl" => WritingMode::TopToBottom,
+            "horizontal-tb" => WritingMode::LeftToRight,
+            "tb" | "tb-rl" | "vertical-rl" => WritingMode::TopToBottom,
             _ => WritingMode::LeftToRight,
         }
     } else {
