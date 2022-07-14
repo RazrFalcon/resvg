@@ -779,6 +779,8 @@ fn count_chars(node: svgtree::Node) -> usize {
 ///
 /// - `lr`, `lr-tb`, `rl`, `rl-tb` => `horizontal-tb`
 /// - `tb`, `tb-rl` => `vertical-rl`
+/// 
+/// The current `vertical-lr` behaves exactly the same as `vertical-rl`.
 ///
 /// Also, looks like no one really supports the `rl` and `rl-tb`, except `Batik`.
 /// And I'm not sure if its behaviour is correct.
@@ -791,8 +793,7 @@ fn count_chars(node: svgtree::Node) -> usize {
 pub fn convert_writing_mode(text_node: TextNode) -> WritingMode {
     if let Some(n) = text_node.find_node_with_attribute(AId::WritingMode) {
         match n.attribute(AId::WritingMode).unwrap_or("lr-tb") {
-            "horizontal-tb" => WritingMode::LeftToRight,
-            "tb" | "tb-rl" | "vertical-rl" => WritingMode::TopToBottom,
+            "tb" | "tb-rl" | "vertical-rl" | "vertical-lr" => WritingMode::TopToBottom,
             _ => WritingMode::LeftToRight,
         }
     } else {

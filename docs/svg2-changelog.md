@@ -146,7 +146,7 @@ NOTE: This list is not final. This just things I was able to find so far. Patche
 
 - [x] [`textPath`](https://www.w3.org/TR/SVG2/text.html#TextPathElement) can reference [basic shapes](https://www.w3.org/TR/SVG2/shapes.html) now.
 - [ ] Since CSS Fonts Module Level 4, the [`font-weight`](https://www.w3.org/TR/css-fonts-4/#font-weight-prop) property allows any value in a 1..1000 range.
-- [ ] A [`writing-mode`](https://www.w3.org/TR/SVG2/text.html#WritingModeProperty) property has a new set of allowed values.
+- [x] A [`writing-mode`](https://www.w3.org/TR/SVG2/text.html#WritingModeProperty) property introduces the `horizontal-tb` and `vertical-lr` values from [CSS Writing Modes Level 3](https://www.w3.org/TR/css-writing-modes-3/#svg-writing-mode-css).
 - [ ] [`dominant-baseline`](https://www.w3.org/TR/css-inline-3/#propdef-dominant-baseline) is inherited now.
 - [ ] [`baseline-shift`](https://www.w3.org/TR/css-inline-3/#propdef-baseline-shift) is `0` by default, instead of `baseline`.
 - [ ] Percentage values in a [`word-spacing`](https://www.w3.org/TR/css-text-3/#word-spacing-property) relate to a percentage of the affected character's width and not to viewport size now.

@@ -491,6 +491,7 @@ use render::render;
 #[test] fn a_writing_mode_020() { assert_eq!(render("a-writing-mode-020"), 0); }
 #[test] fn a_writing_mode_021() { assert_eq!(render("a-writing-mode-021"), 0); }
 #[test] fn a_writing_mode_022() { assert_eq!(render("a-writing-mode-022"), 0); }
+#[test] fn a_writing_mode_023() { assert_eq!(render("a-writing-mode-023"), 0); }
 #[test] fn e_a_001() { assert_eq!(render("e-a-001"), 0); }
 #[test] fn e_a_002() { assert_eq!(render("e-a-002"), 0); }
 #[test] fn e_a_003() { assert_eq!(render("e-a-003"), 0); }
