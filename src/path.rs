@@ -1,7 +1,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
+use usvg::{PaintOrder};
 use crate::render::Canvas;
 
 pub fn draw(
@@ -24,12 +24,26 @@ pub fn draw(
 
     let antialias = path.rendering_mode.use_shape_antialiasing();
 
-    if let Some(ref fill) = path.fill {
-        crate::paint_server::fill(tree, fill, style_bbox, &skia_path, antialias, blend_mode, canvas);
-    }
+    // `paint-order` support control of the order of filling, stroke and painting markers on shapes
+    // The default is to fill first, then the stroke
 
-    if path.stroke.is_some() {
-        crate::paint_server::stroke(tree, &path.stroke, style_bbox, &skia_path, antialias, blend_mode, canvas);
+    match path.paint_order {
+        PaintOrder::Fill => {
+            if let Some(ref fill) = path.fill {
+                crate::paint_server::fill(tree, fill, style_bbox, &skia_path, antialias, blend_mode, canvas);
+            };
+            if path.stroke.is_some() {
+                crate::paint_server::stroke(tree, &path.stroke, style_bbox, &skia_path, antialias, blend_mode, canvas);
+            };
+        }
+        PaintOrder::Stroke => {
+            if path.stroke.is_some() {
+                crate::paint_server::stroke(tree, &path.stroke, style_bbox, &skia_path, antialias, blend_mode, canvas);
+            };
+            if let Some(ref fill) = path.fill {
+                crate::paint_server::fill(tree, fill, style_bbox, &skia_path, antialias, blend_mode, canvas);
+            };
+        }
     }
 
     bbox
@@ -58,3 +72,4 @@ fn convert_path(
 
     pb.finish()
 }
+

@@ -396,6 +396,9 @@ pub struct Path {
     /// Stroke style.
     pub stroke: Option<Stroke>,
 
+    /// paint-order rule
+    pub paint_order: PaintOrder,
+
     /// Rendering mode.
     ///
     /// `shape-rendering` in SVG.
@@ -427,6 +430,7 @@ impl Default for Path {
             visibility: Visibility::Visible,
             fill: None,
             stroke: None,
+            paint_order: PaintOrder::Fill,
             rendering_mode: ShapeRendering::default(),
             text_bbox: None,
             data: std::rc::Rc::new(PathData::default()),

@@ -7,7 +7,7 @@ use std::rc::Rc;
 use svgtypes::{Length, LengthUnit};
 
 use crate::svgtree::{self, AId, EId};
-use crate::{OptionLog, ShapeRendering, TextRendering, Visibility, converter, style, units};
+use crate::{OptionLog, ShapeRendering, TextRendering, Visibility, PaintOrder, converter, style, units};
 use crate::{IsValidLength, SharedPathData, Transform, Tree, Units};
 use super::TextNode;
 use super::fontdb_ext::{self, DatabaseExt};
@@ -117,6 +117,7 @@ pub struct TextSpan {
     pub end: usize,
     pub fill: Option<style::Fill>,
     pub stroke: Option<style::Stroke>,
+    pub paint_order: PaintOrder,
     pub font: super::fontdb_ext::Font,
     pub font_size: f64,
     pub small_caps: bool,
@@ -244,6 +245,7 @@ fn collect_text_chunks_impl(
             end: 0,
             fill: style::resolve_fill(parent, true, state, id_generator, tree),
             stroke: style::resolve_stroke(parent, true, state, id_generator, tree),
+            paint_order: parent.find_attribute(AId::PaintOrder).unwrap_or_default(),
             font,
             font_size,
             small_caps: parent.find_attribute(AId::FontVariant) == Some("small-caps"),

@@ -213,6 +213,22 @@ impl Default for Fill {
     }
 }
 
+/// A paint order rule
+/// 
+/// `paint-order` attribute in the SVG.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum PaintOrder {
+    Fill,
+    Stroke,
+}
+
+impl_enum_default!(PaintOrder, Fill);
+
+impl_enum_from_str!(PaintOrder,
+    "fill" => PaintOrder::Fill,
+    "stroke" => PaintOrder::Stroke
+);
 
 /// A 8-bit RGB color.
 #[derive(Clone, Copy, PartialEq, Debug)]

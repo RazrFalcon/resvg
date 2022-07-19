@@ -1,0 +1,17 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>paint order fill</title>
+
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop stop-color="#888"/>
+        <stop stop-color="#ccc" offset="1"/>
+    </linearGradient>
+    <rect width="200" height="200" fill="url(#g)"/>
+    <g fill="crimson" stroke="white" stroke-width="6" stroke-linejoin="round"
+        text-anchor="middle" font-family="sans-serif" font-size="30px" font-weight="bold">
+        <text x="100" y="75" paint-order="stroke">stroke under</text>
+        <text x="100" y="150" paint-order="fill" id="stroke-over">stroke over</text>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

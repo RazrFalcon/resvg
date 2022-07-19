@@ -72,6 +72,7 @@ operator
 order
 orient
 overflow
+paint-order
 patternContentUnits
 patternTransform
 patternUnits

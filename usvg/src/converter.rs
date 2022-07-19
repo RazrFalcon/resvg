@@ -879,6 +879,7 @@ fn convert_path(
     let has_bbox = path.has_bbox();
     let fill = style::resolve_fill(node, has_bbox, state, id_generator, tree);
     let stroke = style::resolve_stroke(node, has_bbox, state, id_generator, tree);
+    let paint_order = node.find_attribute(AId::PaintOrder).unwrap_or_default();
     let mut visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
     let rendering_mode = node
         .find_attribute(AId::ShapeRendering)
@@ -903,6 +904,7 @@ fn convert_path(
         visibility,
         fill,
         stroke,
+        paint_order,
         rendering_mode,
         text_bbox: None,
         data: path,
