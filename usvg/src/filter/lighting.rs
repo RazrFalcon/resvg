@@ -2,8 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use strict_num::PositiveF64;
+
 use crate::svgtree::{self, AId, EId};
-use crate::{Color, PositiveNumber, ScreenRect, Transform, SvgColorExt};
+use crate::{Color, ScreenRect, Transform, SvgColorExt};
 use super::{Input, Kind, Primitive};
 
 /// A diffuse lighting filter primitive.
@@ -235,7 +237,7 @@ pub struct SpotLight {
     /// Exponent value controlling the focus for the light source.
     ///
     /// `specularExponent` in the SVG.
-    pub specular_exponent: PositiveNumber,
+    pub specular_exponent: PositiveF64,
 
     /// A limiting cone which restricts the region where the light is projected.
     ///
@@ -264,10 +266,9 @@ fn convert_light_source(parent: svgtree::Node) -> Option<LightSource> {
             }))
         }
         Some(EId::FeSpotLight) => {
-            let mut specular_exponent = child.attribute(AId::SpecularExponent).unwrap_or(1.0);
-            if specular_exponent.is_sign_negative() {
-                specular_exponent = 1.0;
-            }
+            let specular_exponent = child.attribute(AId::SpecularExponent).unwrap_or(1.0);
+            let specular_exponent = PositiveF64::new(specular_exponent)
+                .unwrap_or_else(|| PositiveF64::new(1.0).unwrap());
 
             Some(LightSource::SpotLight(SpotLight {
                 x: child.attribute(AId::X).unwrap_or(0.0),
@@ -276,7 +277,7 @@ fn convert_light_source(parent: svgtree::Node) -> Option<LightSource> {
                 points_at_x: child.attribute(AId::PointsAtX).unwrap_or(0.0),
                 points_at_y: child.attribute(AId::PointsAtY).unwrap_or(0.0),
                 points_at_z: child.attribute(AId::PointsAtZ).unwrap_or(0.0),
-                specular_exponent: PositiveNumber::new(specular_exponent),
+                specular_exponent,
                 limiting_cone_angle: child.attribute(AId::LimitingConeAngle),
             }))
         }

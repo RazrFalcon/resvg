@@ -61,7 +61,7 @@ impl IntoSvgFilters<svgfilters::LightSource> for usvg::filter::LightSource {
                     points_at_x: light.points_at_x,
                     points_at_y: light.points_at_y,
                     points_at_z: light.points_at_z,
-                    specular_exponent: light.specular_exponent.value(),
+                    specular_exponent: light.specular_exponent.get(),
                     limiting_cone_angle: light.limiting_cone_angle,
                 }
             }
@@ -957,7 +957,7 @@ fn apply_color_matrix(
         usvg::filter::ColorMatrixKind::Matrix(ref data) =>
             svgfilters::ColorMatrix::Matrix(data.as_slice().try_into().unwrap()),
         usvg::filter::ColorMatrixKind::Saturate(n) =>
-            svgfilters::ColorMatrix::Saturate(n.value()),
+            svgfilters::ColorMatrix::Saturate(n.get()),
         usvg::filter::ColorMatrixKind::HueRotate(n) =>
             svgfilters::ColorMatrix::HueRotate(n),
         usvg::filter::ColorMatrixKind::LuminanceToAlpha =>
@@ -1011,7 +1011,7 @@ fn apply_morphology(
     input: Image,
 ) -> Result<Image, Error> {
     let mut pixmap = input.into_color_space(cs)?.take()?;
-    let (rx, ry) = match scale_coordinates(fe.radius_x.value(), fe.radius_y.value(), units, bbox, ts) {
+    let (rx, ry) = match scale_coordinates(fe.radius_x.get(), fe.radius_y.get(), units, bbox, ts) {
         Some(v) => v,
         None => return Ok(Image::from_image(pixmap, cs)),
     };
@@ -1078,7 +1078,7 @@ fn apply_turbulence(
     svgfilters::turbulence(
         region.x() as f64, region.y() as f64,
         sx, sy,
-        fe.base_frequency.x.value(), fe.base_frequency.y.value(),
+        fe.base_frequency.x.get(), fe.base_frequency.y.get(),
         fe.num_octaves,
         fe.seed,
         fe.stitch_tiles,
@@ -1162,20 +1162,22 @@ fn apply_to_canvas(
 ///
 /// If the last flag is set, then a box blur should be used. Or IIR otherwise.
 fn resolve_std_dev(
-    std_dev_x: usvg::PositiveNumber,
-    std_dev_y: usvg::PositiveNumber,
+    std_dev_x: usvg::PositiveF64,
+    std_dev_y: usvg::PositiveF64,
     units: usvg::Units,
     bbox: Option<usvg::Rect>,
     ts: &usvg::Transform,
 ) -> Option<(f64, f64, bool)> {
+    use usvg::ApproxEqUlps;
+
     // 'A negative value or a value of zero disables the effect of the given filter primitive
     // (i.e., the result is the filter input image).'
-    if std_dev_x.is_zero() && std_dev_y.is_zero() {
+    if std_dev_x.get().approx_eq_ulps(&0.0, 4) && std_dev_y.get().approx_eq_ulps(&0.0, 4) {
         return None;
     }
 
     let (mut std_dx, mut std_dy) = scale_coordinates(
-        std_dev_x.value(), std_dev_y.value(), units, bbox, ts,
+        std_dev_x.get(), std_dev_y.get(), units, bbox, ts,
     )?;
     if std_dx.is_fuzzy_zero() && std_dy.is_fuzzy_zero() {
         None

@@ -2,8 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use strict_num::PositiveF64;
+
 use crate::svgtree::{self, AId};
-use crate::PositiveNumber;
 use super::{Input, Kind, Primitive};
 
 /// A color matrix filter primitive.
@@ -27,7 +28,7 @@ pub struct ColorMatrix {
 #[allow(missing_docs)]
 pub enum ColorMatrixKind {
     Matrix(Vec<f64>), // Guarantee to have 20 numbers.
-    Saturate(PositiveNumber),
+    Saturate(PositiveF64),
     HueRotate(f64),
     LuminanceToAlpha,
 }
@@ -57,9 +58,9 @@ fn convert_color_matrix_kind(fe: svgtree::Node) -> Option<ColorMatrixKind> {
             if let Some(list) = fe.attribute::<&Vec<f64>>(AId::Values) {
                 if !list.is_empty() {
                     let n = crate::utils::f64_bound(0.0, list[0], 1.0);
-                    return Some(ColorMatrixKind::Saturate(n.into()));
+                    return Some(ColorMatrixKind::Saturate(PositiveF64::new(n).unwrap()));
                 } else {
-                    return Some(ColorMatrixKind::Saturate(1.0.into()));
+                    return Some(ColorMatrixKind::Saturate(PositiveF64::new(1.0).unwrap()));
                 }
             }
         }

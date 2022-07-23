@@ -2,8 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use strict_num::PositiveF64;
+
 use crate::svgtree::{self, AId};
-use crate::PositiveNumber;
 use super::{Input, Kind, Primitive};
 
 /// A Gaussian blur filter primitive.
@@ -19,24 +20,24 @@ pub struct GaussianBlur {
     /// A standard deviation along the X-axis.
     ///
     /// `stdDeviation` in the SVG.
-    pub std_dev_x: PositiveNumber,
+    pub std_dev_x: PositiveF64,
 
     /// A standard deviation along the Y-axis.
     ///
     /// `stdDeviation` in the SVG.
-    pub std_dev_y: PositiveNumber,
+    pub std_dev_y: PositiveF64,
 }
 
 pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     let (std_dev_x, std_dev_y) = convert_std_dev_attr(fe, "0 0");
     Kind::GaussianBlur(GaussianBlur {
         input: super::resolve_input(fe, AId::In, primitives),
-        std_dev_x: std_dev_x.into(),
-        std_dev_y: std_dev_y.into(),
+        std_dev_x,
+        std_dev_y,
     })
 }
 
-pub(crate) fn convert_std_dev_attr(fe: svgtree::Node, default: &str) -> (f64, f64) {
+pub(crate) fn convert_std_dev_attr(fe: svgtree::Node, default: &str) -> (PositiveF64, PositiveF64) {
     let text = fe.attribute::<&str>(AId::StdDeviation).unwrap_or(default);
     let mut parser = svgtypes::NumberListParser::from(text);
 
@@ -46,14 +47,14 @@ pub(crate) fn convert_std_dev_attr(fe: svgtree::Node, default: &str) -> (f64, f6
     // Otherwise we should fallback to `0 0`.
     let n3 = parser.next().and_then(|n| n.ok());
 
-    let (mut std_dev_x, mut std_dev_y) = match (n1, n2, n3) {
+    let (std_dev_x, std_dev_y) = match (n1, n2, n3) {
         (Some(n1), Some(n2), None) => (n1, n2),
         (Some(n1), None, None) => (n1, n1),
         _ => (0.0, 0.0),
     };
 
-    if std_dev_x.is_sign_negative() { std_dev_x = 0.0; }
-    if std_dev_y.is_sign_negative() { std_dev_y = 0.0; }
+    let std_dev_x = PositiveF64::new(std_dev_x).unwrap_or(PositiveF64::ZERO);
+    let std_dev_y = PositiveF64::new(std_dev_y).unwrap_or(PositiveF64::ZERO);
 
     (std_dev_x, std_dev_y)
 }

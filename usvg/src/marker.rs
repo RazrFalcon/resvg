@@ -6,6 +6,7 @@ use std::f64;
 use std::rc::Rc;
 
 use svgtypes::Length;
+use strict_num::NonZeroPositiveF64;
 
 use crate::svgtree::{self, EId, AId};
 use crate::{converter, style, utils};
@@ -80,7 +81,7 @@ fn resolve(
     parent: &mut Node,
     tree: &mut Tree,
 ) -> Option<()> {
-    let stroke_scale = stroke_scale(shape_node, marker_node, state)?;
+    let stroke_scale = stroke_scale(shape_node, marker_node, state)?.get();
 
     let r = convert_rect(marker_node, state)?;
 
@@ -175,9 +176,9 @@ fn stroke_scale(
     path_node: svgtree::Node,
     marker_node: svgtree::Node,
     state: &converter::State,
-) -> Option<f64> {
+) -> Option<NonZeroPositiveF64> {
     match marker_node.attribute(AId::MarkerUnits) {
-        Some("userSpaceOnUse") => Some(1.0),
+        Some("userSpaceOnUse") => NonZeroPositiveF64::new(1.0),
         _ => path_node.resolve_valid_length(AId::StrokeWidth, state, 1.0),
     }
 }

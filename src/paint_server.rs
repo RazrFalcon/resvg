@@ -118,8 +118,8 @@ pub fn stroke(
         };
         props.line_join = stroke_join;
 
-        props.miter_limit = stroke.miterlimit.value() as f32;
-        props.width = stroke.width.value() as f32;
+        props.miter_limit = stroke.miterlimit.get() as f32;
+        props.width = stroke.width.get() as f32;
 
         if let Some(ref list) = stroke.dasharray {
             let list: Vec<_> = list.iter().map(|n| *n as f32).collect();
@@ -165,7 +165,7 @@ fn prepare_linear(
         let alpha = stop.opacity * opacity;
         let color = tiny_skia::Color::from_rgba8(
             stop.color.red, stop.color.green, stop.color.blue, alpha.to_u8());
-        points.push(tiny_skia::GradientStop::new(stop.offset.value() as f32, color))
+        points.push(tiny_skia::GradientStop::new(stop.offset.get() as f32, color))
     }
 
     let gradient = tiny_skia::LinearGradient::new(
@@ -213,13 +213,13 @@ fn prepare_radial(
         let alpha = stop.opacity * opacity;
         let color = tiny_skia::Color::from_rgba8(
             stop.color.red, stop.color.green, stop.color.blue, alpha.to_u8());
-        points.push(tiny_skia::GradientStop::new(stop.offset.value() as f32, color))
+        points.push(tiny_skia::GradientStop::new(stop.offset.get() as f32, color))
     }
 
     let gradient = tiny_skia::RadialGradient::new(
         (g.fx as f32, g.fy as f32).into(),
         (g.cx as f32, g.cy as f32).into(),
-        g.r.value() as f32,
+        g.r.get() as f32,
         points,
         mode,
         transform,
@@ -287,7 +287,7 @@ fn prepare_pattern(
         pixmap.as_ref(),
         tiny_skia::SpreadMode::Repeat,
         tiny_skia::FilterQuality::Bicubic,
-        opacity.value() as f32,
+        opacity.get() as f32,
         ts.to_native(),
     )
 }

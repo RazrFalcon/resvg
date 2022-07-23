@@ -5,10 +5,11 @@
 use std::rc::Rc;
 
 use svgtypes::{Length, LengthUnit};
+use strict_num::NonZeroPositiveF64;
 
 use crate::svgtree::{self, AId, EId};
 use crate::{OptionLog, ShapeRendering, TextRendering, Visibility, converter, style, units};
-use crate::{IsValidLength, SharedPathData, Transform, Tree, Units};
+use crate::{SharedPathData, Transform, Tree, Units};
 use super::TextNode;
 use super::fontdb_ext::{self, DatabaseExt};
 
@@ -118,7 +119,7 @@ pub struct TextSpan {
     pub fill: Option<style::Fill>,
     pub stroke: Option<style::Stroke>,
     pub font: super::fontdb_ext::Font,
-    pub font_size: f64,
+    pub font_size: NonZeroPositiveF64,
     pub small_caps: bool,
     pub decoration: TextDecoration,
     pub baseline_shift: f64,
@@ -224,11 +225,14 @@ fn collect_text_chunks_impl(
 
         // TODO: what to do when <= 0? UB?
         let font_size = units::resolve_font_size(parent, state);
-        if !font_size.is_valid_length() {
-            // Skip this span.
-            iter_state.chars_count += child.text().chars().count();
-            continue;
-        }
+        let font_size = match NonZeroPositiveF64::new(font_size) {
+            Some(n) => n,
+            None => {
+                // Skip this span.
+                iter_state.chars_count += child.text().chars().count();
+                continue;
+            }
+        };
 
         let font = match resolve_font(parent, state) {
             Some(v) => v,

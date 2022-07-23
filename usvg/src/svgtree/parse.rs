@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::collections::HashMap;
 
-use crate::{Rect, Error, EnableBackground};
+use crate::{Rect, Error, EnableBackground, Opacity};
 use super::{Document, Attribute, AId, EId, Node, NodeId, NodeKind, NodeData, AttributeValue};
 
 const SVG_NS: &str = "http://www.w3.org/2000/svg";
@@ -381,8 +381,7 @@ fn parse_svg_attribute(
         | AId::StrokeOpacity
         | AId::StopOpacity => {
             let n = svgtypes::Number::from_str(value).ok()?.0;
-            let n = crate::utils::f64_bound(0.0, n, 1.0);
-            AttributeValue::Opacity(n.into())
+            AttributeValue::Opacity(Opacity::new_clamped(n))
         }
 
           AId::Amplitude

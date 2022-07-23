@@ -3,9 +3,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use svgtypes::{Length, LengthUnit as Unit};
+use strict_num::PositiveF64;
 
 use crate::svgtree::{self, AId, EId};
-use crate::{Color, NodeExt, NodeKind, NormalizedValue, Opacity, OptionLog, PositiveNumber};
+use crate::{Color, NodeExt, NodeKind, NormalizedF64, Opacity, OptionLog};
 use crate::{Tree, Units, converter, SvgColorExt};
 use crate::geom::{FuzzyEq, FuzzyZero, IsValidLength, Line, Rect, Transform, ViewBox};
 
@@ -97,7 +98,7 @@ pub struct RadialGradient {
 
     pub cx: f64,
     pub cy: f64,
-    pub r: PositiveNumber,
+    pub r: PositiveF64,
     pub fx: f64,
     pub fy: f64,
 
@@ -113,8 +114,8 @@ impl std::ops::Deref for RadialGradient {
     }
 }
 
-/// An alias to `NormalizedValue`.
-pub type StopOffset = NormalizedValue;
+/// An alias to `NormalizedF64`.
+pub type StopOffset = NormalizedF64;
 
 /// Gradient's stop element.
 ///
@@ -286,7 +287,7 @@ fn convert_radial(
             id: node.element_id().to_string(),
             cx,
             cy,
-            r: r.into(),
+            r: PositiveF64::new(r).unwrap(),
             fx,
             fy,
             base: BaseGradient {
@@ -445,9 +446,9 @@ fn convert_stops(grad: svgtree::Node) -> Vec<Stop> {
             }.split_alpha();
 
             stops.push(Stop {
-                offset: offset.into(),
+                offset: StopOffset::new_clamped(offset),
                 color,
-                opacity: opacity * stop.attribute(AId::StopOpacity).unwrap_or_default(),
+                opacity: opacity * stop.attribute(AId::StopOpacity).unwrap_or(Opacity::ONE),
             });
         }
     }
@@ -463,9 +464,9 @@ fn convert_stops(grad: svgtree::Node) -> Vec<Stop> {
     if stops.len() >= 3 {
         let mut i = 0;
         while i < stops.len() - 2 {
-            let offset1 = stops[i + 0].offset.value();
-            let offset2 = stops[i + 1].offset.value();
-            let offset3 = stops[i + 2].offset.value();
+            let offset1 = stops[i + 0].offset.get();
+            let offset2 = stops[i + 1].offset.get();
+            let offset3 = stops[i + 2].offset.get();
 
             if offset1.fuzzy_eq(&offset2) && offset2.fuzzy_eq(&offset3) {
                 // Remove offset in the middle.
@@ -490,11 +491,11 @@ fn convert_stops(grad: svgtree::Node) -> Vec<Stop> {
     if stops.len() >= 2 {
         let mut i = 0;
         while i < stops.len() - 1 {
-            let offset1 = stops[i + 0].offset.value();
-            let offset2 = stops[i + 1].offset.value();
+            let offset1 = stops[i + 0].offset.get();
+            let offset2 = stops[i + 1].offset.get();
 
             if offset1.is_fuzzy_zero() && offset2.is_fuzzy_zero() {
-                stops[i + 1].offset = (offset1 + f64::EPSILON).into();
+                stops[i + 1].offset = StopOffset::new_clamped(offset1 + f64::EPSILON);
             }
 
             i += 1;
@@ -515,15 +516,15 @@ fn convert_stops(grad: svgtree::Node) -> Vec<Stop> {
     {
         let mut i = 1;
         while i < stops.len() {
-            let offset1 = stops[i - 1].offset.value();
-            let offset2 = stops[i - 0].offset.value();
+            let offset1 = stops[i - 1].offset.get();
+            let offset2 = stops[i - 0].offset.get();
 
             // Next offset must be smaller then previous.
             if offset1 > offset2 || offset1.fuzzy_eq(&offset2) {
                 // Make previous offset a bit smaller.
                 let new_offset = offset1 - f64::EPSILON;
-                stops[i - 1].offset = crate::utils::f64_bound(0.0, new_offset, 1.0).into();
-                stops[i - 0].offset = offset1.into();
+                stops[i - 1].offset = StopOffset::new_clamped(new_offset);
+                stops[i - 0].offset = StopOffset::new_clamped(offset1);
             }
 
             i += 1;

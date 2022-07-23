@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- Most numeric types have been moved to the `strict-num` crate.
+- Rename `NormalizedValue` into `NormalizedF64`.
+- Rename `PositiveNumber` into `PositiveF64`.
+- Raw number of numeric types should be accessed via `get()` method instead of `value()` now.
+- `usvg::TextSpan::font_size` is `NonZeroPositiveF64` instead of `f64` now.
+
 ### Fixed
 - Path bbox calculation scales stroke width too.
   Thanks to [growler](https://github.com/growler).

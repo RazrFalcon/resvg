@@ -48,13 +48,13 @@ fn main() {
 
     let stroke = Some(usvg::Stroke {
         paint: usvg::Paint::Color(usvg::Color::new_rgb(255, 0, 0)),
-        opacity: 0.5.into(),
+        opacity: usvg::Opacity::new_clamped(0.5),
         .. usvg::Stroke::default()
     });
 
     let stroke2 = Some(usvg::Stroke {
         paint: usvg::Paint::Color(usvg::Color::new_rgb(0, 0, 200)),
-        opacity: 0.5.into(),
+        opacity: usvg::Opacity::new_clamped(0.5),
         .. usvg::Stroke::default()
     });
 

@@ -2,8 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use strict_num::PositiveF64;
+
 use crate::svgtree::{self, AId};
-use crate::{Point, PositiveNumber};
+use crate::Point;
 use super::Kind;
 
 /// A turbulence generation filter primitive.
@@ -14,7 +16,7 @@ pub struct Turbulence {
     /// Identifies the base frequency for the noise function.
     ///
     /// `baseFrequency` in the SVG.
-    pub base_frequency: Point<PositiveNumber>,
+    pub base_frequency: Point<PositiveF64>,
 
     /// Identifies the number of octaves for the noise function.
     ///
@@ -46,7 +48,7 @@ pub enum TurbulenceKind {
 }
 
 pub(crate) fn convert(fe: svgtree::Node) -> Kind {
-    let mut base_frequency = Point::new(0.0.into(), 0.0.into());
+    let mut base_frequency = Point::new(PositiveF64::ZERO, PositiveF64::ZERO);
     if let Some(list) = fe.attribute::<&Vec<f64>>(AId::BaseFrequency) {
         let mut x = 0.0;
         let mut y = 0.0;
@@ -59,7 +61,7 @@ pub(crate) fn convert(fe: svgtree::Node) -> Kind {
         }
 
         if x.is_sign_positive() && y.is_sign_positive() {
-            base_frequency = Point::new(x.into(), y.into());
+            base_frequency = Point::new(PositiveF64::new(x).unwrap(), PositiveF64::new(y).unwrap());
         }
     }
 

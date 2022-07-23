@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use crate::geom::{Rect, Transform, FuzzyEq};
 use crate::{converter, units};
-use crate::{EnableBackground, IsValidLength, Opacity, OptionsRef, SharedPathData, Units};
+use crate::{EnableBackground, Opacity, OptionsRef, SharedPathData, Units};
 
 mod parse;
 mod names;
@@ -16,6 +16,7 @@ mod names;
 
 pub use names::{EId, AId};
 use svgtypes::Length;
+use strict_num::NonZeroPositiveF64;
 
 type Range = std::ops::Range<usize>;
 
@@ -420,9 +421,9 @@ impl<'a> Node<'a> {
         def
     }
 
-    pub fn resolve_valid_length(&self, aid: AId, state: &converter::State, def: f64) -> Option<f64> {
+    pub fn resolve_valid_length(&self, aid: AId, state: &converter::State, def: f64) -> Option<NonZeroPositiveF64> {
         let n = self.resolve_length(aid, state, def);
-        if n.is_valid_length() { Some(n) } else { None }
+        NonZeroPositiveF64::new(n)
     }
 
     pub fn convert_length(&self, aid: AId, object_units: Units, state: &converter::State, def: Length) -> f64 {

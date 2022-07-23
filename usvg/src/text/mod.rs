@@ -154,8 +154,8 @@ fn text_to_paths(
                 // https://www.w3.org/TR/css-text-decor-3/#text-underline-position-property
                 // but it doesn't go into details.
                 let offset = match writing_mode {
-                    WritingMode::LeftToRight => -span.font.underline_position(span.font_size),
-                    WritingMode::TopToBottom => span.font.height(span.font_size) / 2.0,
+                    WritingMode::LeftToRight => -span.font.underline_position(span.font_size.get()),
+                    WritingMode::TopToBottom => span.font.height(span.font_size.get()) / 2.0,
                 };
 
                 let path = convert_decoration(
@@ -171,8 +171,8 @@ fn text_to_paths(
 
             if let Some(decoration) = span.decoration.overline.take() {
                 let offset = match writing_mode {
-                    WritingMode::LeftToRight => -span.font.ascent(span.font_size),
-                    WritingMode::TopToBottom => -span.font.height(span.font_size) / 2.0,
+                    WritingMode::LeftToRight => -span.font.ascent(span.font_size.get()),
+                    WritingMode::TopToBottom => -span.font.height(span.font_size.get()) / 2.0,
                 };
 
                 let path = convert_decoration(
@@ -197,7 +197,7 @@ fn text_to_paths(
 
             if let Some(decoration) = span.decoration.line_through.take() {
                 let offset = match writing_mode {
-                    WritingMode::LeftToRight => -span.font.line_through_position(span.font_size),
+                    WritingMode::LeftToRight => -span.font.line_through_position(span.font_size.get()),
                     WritingMode::TopToBottom => 0.0,
                 };
 
@@ -304,7 +304,7 @@ fn dump_cluster(
     fn new_stroke(color: Color) -> Option<Stroke> {
         Some(Stroke {
             paint: Paint::Color(color),
-            width: StrokeWidth::new(0.2),
+            width: StrokeWidth::new(0.2).unwrap(),
             .. Stroke::default()
         })
     }
@@ -374,7 +374,7 @@ fn convert_decoration(
 ) -> Path {
     debug_assert!(!decoration_spans.is_empty());
 
-    let thickness = span.font.underline_thickness(span.font_size);
+    let thickness = span.font.underline_thickness(span.font_size.get());
 
     let mut path = PathData::new();
     for dec_span in decoration_spans {

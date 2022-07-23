@@ -457,7 +457,7 @@ fn convert_primitive(
 pub(crate) fn create_dummy_primitive() -> Kind {
     Kind::Flood(Flood {
         color: Color::black(),
-        opacity: Opacity::new(0.0),
+        opacity: Opacity::ZERO,
     })
 }
 

@@ -24,14 +24,14 @@ fn main() {
             spread_method: usvg::SpreadMethod::Pad,
             stops: vec![
                 usvg::Stop {
-                    offset: usvg::StopOffset::new(0.0),
+                    offset: usvg::StopOffset::ZERO,
                     color: usvg::Color::new_rgb(0, 255, 0),
-                    opacity: usvg::Opacity::new(1.0),
+                    opacity: usvg::Opacity::ONE,
                 },
                 usvg::Stop {
-                    offset: usvg::StopOffset::new(1.0),
+                    offset: usvg::StopOffset::ONE,
                     color: usvg::Color::new_rgb(0, 255, 0),
-                    opacity: usvg::Opacity::new(0.0),
+                    opacity: usvg::Opacity::ZERO,
                 },
             ],
         },

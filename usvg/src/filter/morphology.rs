@@ -2,8 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use strict_num::PositiveF64;
+
 use crate::svgtree::{self, AId};
-use crate::{FuzzyZero, PositiveNumber};
+use crate::FuzzyZero;
 use super::{Input, Kind, Primitive};
 
 /// A morphology filter primitive.
@@ -26,14 +28,14 @@ pub struct Morphology {
     /// A value of zero disables the effect of the given filter primitive.
     ///
     /// `radius` in the SVG.
-    pub radius_x: PositiveNumber,
+    pub radius_x: PositiveF64,
 
     /// A filter radius along the Y-axis.
     ///
     /// A value of zero disables the effect of the given filter primitive.
     ///
     /// `radius` in the SVG.
-    pub radius_y: PositiveNumber,
+    pub radius_y: PositiveF64,
 }
 
 /// A morphology operation.
@@ -51,8 +53,8 @@ pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     };
 
     // Both radius are zero by default.
-    let mut radius_x = PositiveNumber::new(0.0);
-    let mut radius_y = PositiveNumber::new(0.0);
+    let mut radius_x = PositiveF64::ZERO;
+    let mut radius_y = PositiveF64::ZERO;
     if let Some(list) = fe.attribute::<&Vec<f64>>(AId::Radius) {
         let mut rx = 0.0;
         let mut ry = 0.0;
@@ -75,8 +77,8 @@ pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
 
         // Both values must be positive.
         if rx.is_sign_positive() && ry.is_sign_positive() {
-            radius_x = PositiveNumber::new(rx);
-            radius_y = PositiveNumber::new(ry);
+            radius_x = PositiveF64::new(rx).unwrap();
+            radius_y = PositiveF64::new(ry).unwrap();
         }
     }
 

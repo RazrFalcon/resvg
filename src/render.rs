@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use usvg::{FuzzyEq, IsDefault, NodeExt};
+use usvg::{FuzzyEq, NodeExt};
 
 use crate::ConvTransform;
 
@@ -254,8 +254,8 @@ fn render_group_impl(
 
     let mut paint = tiny_skia::PixmapPaint::default();
     paint.quality = tiny_skia::FilterQuality::Nearest;
-    if !g.opacity.is_default() {
-        paint.opacity = g.opacity.value() as f32;
+    if g.opacity != usvg::Opacity::ONE {
+        paint.opacity = g.opacity.get() as f32;
     }
 
     canvas.pixmap.draw_pixmap(tx, ty, sub_pixmap.as_ref(), &paint,

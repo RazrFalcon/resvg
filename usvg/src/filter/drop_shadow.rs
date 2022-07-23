@@ -3,9 +3,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use svgtypes::Length;
+use strict_num::PositiveF64;
 
 use crate::svgtree::{self, AId};
-use crate::{Color, Opacity, PositiveNumber, converter, SvgColorExt};
+use crate::{Color, Opacity, converter, SvgColorExt};
 use super::{Input, Kind, Primitive};
 
 /// A drop shadow filter primitive.
@@ -29,12 +30,12 @@ pub struct DropShadow {
     /// A standard deviation along the X-axis.
     ///
     /// `stdDeviation` in the SVG.
-    pub std_dev_x: PositiveNumber,
+    pub std_dev_x: PositiveF64,
 
     /// A standard deviation along the Y-axis.
     ///
     /// `stdDeviation` in the SVG.
-    pub std_dev_y: PositiveNumber,
+    pub std_dev_y: PositiveF64,
 
     /// A flood color.
     ///
@@ -62,9 +63,9 @@ pub(crate) fn convert(
         input: super::resolve_input(fe, AId::In, primitives),
         dx: fe.convert_user_length(AId::Dx, state, Length::new_number(2.0)),
         dy: fe.convert_user_length(AId::Dy, state, Length::new_number(2.0)),
-        std_dev_x: std_dev_x.into(),
-        std_dev_y: std_dev_y.into(),
+        std_dev_x,
+        std_dev_y,
         color,
-        opacity: opacity * fe.attribute(AId::FloodOpacity).unwrap_or_default(),
+        opacity: opacity * fe.attribute(AId::FloodOpacity).unwrap_or(Opacity::ONE),
     })
 }

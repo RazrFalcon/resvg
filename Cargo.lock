@@ -312,6 +312,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2dd574626839106c320a323308629dcb1acfc96e32a8cba364ddc61ac23ee83"
 
 [[package]]
+name = "strict-num"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9df65f20698aeed245efdde3628a6b559ea1239bbb871af1b6e3b58c413b2bd1"
+dependencies = [
+ "float-cmp",
+]
+
+[[package]]
 name = "svgfilters"
 version = "0.4.0"
 dependencies = [
@@ -391,7 +400,6 @@ dependencies = [
  "base64",
  "data-url",
  "flate2",
- "float-cmp",
  "fontdb",
  "kurbo",
  "log",
@@ -401,6 +409,7 @@ dependencies = [
  "rustybuzz",
  "simplecss",
  "siphasher",
+ "strict-num",
  "svgtypes",
  "ttf-parser",
  "unicode-bidi",

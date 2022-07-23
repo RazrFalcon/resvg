@@ -3,9 +3,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use svgtypes::Length;
+use strict_num::PositiveF64;
 
 use crate::svgtree::{self, AId};
-use crate::{converter, PositiveNumber, Units, SvgColorExt};
+use crate::{converter, Units, SvgColorExt};
 use super::{ColorMatrix, ColorMatrixKind, ComponentTransfer, DropShadow};
 use super::{GaussianBlur, Input, Kind, TransferFunction};
 
@@ -69,7 +70,7 @@ pub fn convert_sepia(mut amount: f64) -> Kind {
 
 #[inline(never)]
 pub fn convert_saturate(amount: f64) -> Kind {
-    let amount = PositiveNumber::new(amount.max(0.0));
+    let amount = PositiveF64::new(amount).unwrap_or(PositiveF64::ZERO);
     Kind::ColorMatrix(ColorMatrix {
         input: Input::SourceGraphic,
         kind: ColorMatrixKind::Saturate(amount),
@@ -136,9 +137,9 @@ pub fn convert_blur(
     std_dev: Length,
     state: &converter::State,
 ) -> Kind {
-    let std_dev = PositiveNumber::new(
+    let std_dev = PositiveF64::new(
         crate::units::convert_length(std_dev, node, AId::Dx, Units::UserSpaceOnUse, state)
-    );
+    ).unwrap_or(PositiveF64::ZERO);
     Kind::GaussianBlur(GaussianBlur {
         input: Input::SourceGraphic,
         std_dev_x: std_dev,
@@ -155,9 +156,9 @@ pub fn convert_drop_shadow(
     std_dev: Length,
     state: &converter::State,
 ) -> Kind {
-    let std_dev = PositiveNumber::new(
+    let std_dev = PositiveF64::new(
         crate::units::convert_length(std_dev, node, AId::Dx, Units::UserSpaceOnUse, state)
-    );
+    ).unwrap_or(PositiveF64::ZERO);
 
     let (color, opacity) = color.unwrap_or_else(||
         node.find_attribute(AId::Color).unwrap_or_else(svgtypes::Color::black)).split_alpha();

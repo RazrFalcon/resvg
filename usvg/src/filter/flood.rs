@@ -29,6 +29,6 @@ pub(crate) fn convert(fe: svgtree::Node) -> Kind {
 
     Kind::Flood(Flood {
         color,
-        opacity: opacity * fe.attribute(AId::FloodOpacity).unwrap_or_default(),
+        opacity: opacity * fe.attribute(AId::FloodOpacity).unwrap_or(Opacity::ONE),
     })
 }

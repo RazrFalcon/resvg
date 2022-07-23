@@ -439,7 +439,7 @@ fn calc_bbox_with_transform(
     // TODO: find a better way
     // It's an approximation, but it's better than nothing.
     if let Some(stroke) = stroke {
-        let w = stroke.width.value() / if ts.is_default() {
+        let w = stroke.width.get() / if ts.is_default() {
             2.0
         } else {
             2.0 / (ts.a * ts.d - ts.b * ts.c).abs().sqrt()

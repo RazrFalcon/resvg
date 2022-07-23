@@ -3,7 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::svgtree::{self, AId};
-use crate::{converter, paint_server, FuzzyEq, IsValidLength, Opacity, Tree, Units};
+use crate::{converter, paint_server, FuzzyEq, Opacity, Tree, Units};
+use strict_num::NonZeroPositiveF64;
 
 macro_rules! wrap {
     ($name:ident) => {
@@ -23,40 +24,9 @@ macro_rules! wrap {
     };
 }
 
-/// A `stroke-width` value.
-///
-/// Just like `f64` but immutable and guarantee to be >0.0.
-#[derive(Clone, Copy, Debug)]
-pub struct StrokeWidth(f64);
 
-impl StrokeWidth {
-    /// Creates a new `StrokeWidth` value.
-    #[inline]
-    pub fn new(n: f64) -> Self {
-        debug_assert!(n.is_finite());
-        debug_assert!(n.is_valid_length());
-
-        // Fallback to `1.0` when value is invalid.
-        let n = if !n.is_valid_length() { 1.0 } else { n };
-
-        StrokeWidth(n)
-    }
-
-    /// Returns an underlying value.
-    #[inline]
-    pub fn value(&self) -> f64 {
-        self.0
-    }
-}
-
-impl Default for StrokeWidth {
-    #[inline]
-    fn default() -> Self {
-        StrokeWidth::new(1.0)
-    }
-}
-
-wrap!(StrokeWidth);
+/// An alias to `NonZeroPositiveF64`.
+pub type StrokeWidth = NonZeroPositiveF64;
 
 
 /// A `stroke-miterlimit` value.
@@ -79,7 +49,7 @@ impl StrokeMiterlimit {
 
     /// Returns an underlying value.
     #[inline]
-    pub fn value(&self) -> f64 {
+    pub fn get(&self) -> f64 {
         self.0
     }
 }
@@ -156,8 +126,8 @@ impl Default for Stroke {
             dasharray: None,
             dashoffset: 0.0,
             miterlimit: StrokeMiterlimit::default(),
-            opacity: Opacity::default(),
-            width: StrokeWidth::default(),
+            opacity: Opacity::ONE,
+            width: StrokeWidth::new(1.0).unwrap(),
             linecap: LineCap::default(),
             linejoin: LineJoin::default(),
         }
@@ -207,7 +177,7 @@ impl Default for Fill {
     fn default() -> Self {
         Fill {
             paint: Paint::Color(Color::black()),
-            opacity: Opacity::default(),
+            opacity: Opacity::ONE,
             rule: FillRule::default(),
         }
     }
@@ -252,7 +222,7 @@ impl SvgColorExt for svgtypes::Color {
     fn split_alpha(self) -> (Color, Opacity) {
         (
             Color::new_rgb(self.red, self.green, self.blue),
-            Opacity::new(f64::from(self.alpha) / 255.0)
+            Opacity::new_u8(self.alpha)
         )
     }
 }
@@ -283,12 +253,12 @@ pub(crate) fn resolve_fill(
         // A `clipPath` child can be filled only with a black color.
         return Some(Fill {
             paint: Paint::Color(Color::black()),
-            opacity: Opacity::default(),
+            opacity: Opacity::ONE,
             rule: node.find_attribute(AId::ClipRule).unwrap_or_default(),
         });
     }
 
-    let mut sub_opacity = Opacity::default();
+    let mut sub_opacity = Opacity::ONE;
     let paint = if let Some(n) = node.find_node_with_attribute(AId::Fill) {
         convert_paint(n, AId::Fill, has_bbox, state, &mut sub_opacity, id_generator, tree)?
     } else {
@@ -297,7 +267,7 @@ pub(crate) fn resolve_fill(
 
     Some(Fill {
         paint,
-        opacity: sub_opacity * node.find_attribute(AId::FillOpacity).unwrap_or_default(),
+        opacity: sub_opacity * node.find_attribute(AId::FillOpacity).unwrap_or(Opacity::ONE),
         rule: node.find_attribute(AId::FillRule).unwrap_or_default(),
     })
 }
@@ -314,7 +284,7 @@ pub(crate) fn resolve_stroke(
         return None;
     }
 
-    let mut sub_opacity = Opacity::default();
+    let mut sub_opacity = Opacity::ONE;
     let paint = if let Some(n) = node.find_node_with_attribute(AId::Stroke) {
         convert_paint(n, AId::Stroke, has_bbox, state, &mut sub_opacity, id_generator, tree)?
     } else {
@@ -333,8 +303,8 @@ pub(crate) fn resolve_stroke(
         dasharray: conv_dasharray(node, state),
         dashoffset: node.resolve_length(AId::StrokeDashoffset, state, 0.0) as f32,
         miterlimit,
-        opacity: sub_opacity * node.find_attribute(AId::StrokeOpacity).unwrap_or_default(),
-        width: StrokeWidth::new(width),
+        opacity: sub_opacity * node.find_attribute(AId::StrokeOpacity).unwrap_or(Opacity::ONE),
+        width,
         linecap: node.find_attribute(AId::StrokeLinecap).unwrap_or_default(),
         linejoin: node.find_attribute(AId::StrokeLinejoin).unwrap_or_default(),
     };

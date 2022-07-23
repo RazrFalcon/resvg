@@ -187,7 +187,7 @@ pub fn outline_chunk(
     for (range, byte_idx) in GlyphClusters::new(&glyphs) {
         if let Some(span) = chunk.span_at(byte_idx) {
             let db = &state.opt.fontdb;
-            clusters.push(outline_cluster(&glyphs[range], &chunk.text, span.font_size, db));
+            clusters.push(outline_cluster(&glyphs[range], &chunk.text, span.font_size.get(), db));
         }
     }
 

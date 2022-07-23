@@ -404,9 +404,9 @@ pub(crate) fn convert_group(
 ) -> GroupKind {
     // A `clipPath` child cannot have an opacity.
     let opacity = if state.parent_clip_path.is_none() {
-        node.attribute(AId::Opacity).unwrap_or_default()
+        node.attribute(AId::Opacity).unwrap_or(Opacity::ONE)
     } else {
-        Opacity::default()
+        Opacity::ONE
     };
 
     macro_rules! resolve_link {
@@ -480,7 +480,7 @@ pub(crate) fn convert_group(
 
     let is_g_or_use = node.has_tag_name(EId::G) || node.has_tag_name(EId::Use);
     let required =
-           opacity.value().fuzzy_ne(&1.0)
+           opacity.get().fuzzy_ne(&1.0)
         || clip_path.is_some()
         || mask.is_some()
         || !filter.is_empty()
@@ -625,7 +625,7 @@ fn ungroup_groups(
             let is_ok = if let NodeKind::Group(ref g) = *node.borrow() {
                 ts = g.transform;
 
-                   g.opacity.is_default()
+                   g.opacity == Opacity::ONE
                 && g.clip_path.is_none()
                 && g.mask.is_none()
                 && g.filter.is_empty()

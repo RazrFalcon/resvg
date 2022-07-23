@@ -51,7 +51,7 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
                 xml.write_id_attribute(&rg.id, opt);
                 xml.write_svg_attribute(AId::Cx, &rg.cx);
                 xml.write_svg_attribute(AId::Cy, &rg.cy);
-                xml.write_svg_attribute(AId::R,  &rg.r.value());
+                xml.write_svg_attribute(AId::R,  &rg.r.get());
                 xml.write_svg_attribute(AId::Fx, &rg.fx);
                 xml.write_svg_attribute(AId::Fy, &rg.fy);
                 write_base_grad(&rg.base, xml);
@@ -118,12 +118,12 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
                             xml.write_filter_input(AId::In, &shadow.input);
                             xml.write_attribute_fmt(
                                 AId::StdDeviation.to_str(),
-                                format_args!("{} {}", shadow.std_dev_x.value(), shadow.std_dev_y.value()),
+                                format_args!("{} {}", shadow.std_dev_x.get(), shadow.std_dev_y.get()),
                             );
                             xml.write_svg_attribute(AId::Dx, &shadow.dx);
                             xml.write_svg_attribute(AId::Dy, &shadow.dy);
                             xml.write_color(AId::FloodColor, shadow.color);
-                            xml.write_svg_attribute(AId::FloodOpacity, &shadow.opacity.value());
+                            xml.write_svg_attribute(AId::FloodOpacity, &shadow.opacity.get());
                             xml.write_svg_attribute(AId::Result, &fe.result);
                             xml.end_element();
                         }
@@ -133,7 +133,7 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
                             xml.write_filter_input(AId::In, &blur.input);
                             xml.write_attribute_fmt(
                                 AId::StdDeviation.to_str(),
-                                format_args!("{} {}", blur.std_dev_x.value(), blur.std_dev_y.value()),
+                                format_args!("{} {}", blur.std_dev_x.get(), blur.std_dev_y.get()),
                             );
                             xml.write_svg_attribute(AId::Result, &fe.result);
                             xml.end_element();
@@ -177,7 +177,7 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
                             xml.start_svg_element(EId::FeFlood);
                             xml.write_filter_primitive_attrs(fe);
                             xml.write_color(AId::FloodColor, flood.color);
-                            xml.write_svg_attribute(AId::FloodOpacity, &flood.opacity.value());
+                            xml.write_svg_attribute(AId::FloodOpacity, &flood.opacity.get());
                             xml.write_svg_attribute(AId::Result, &fe.result);
                             xml.end_element();
                         }
@@ -274,7 +274,7 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
                                 }
                                 filter::ColorMatrixKind::Saturate(value) => {
                                     xml.write_svg_attribute(AId::Type, "saturate");
-                                    xml.write_svg_attribute(AId::Values, &value.value());
+                                    xml.write_svg_attribute(AId::Values, &value.get());
                                 }
                                 filter::ColorMatrixKind::HueRotate(angle) => {
                                     xml.write_svg_attribute(AId::Type, "hueRotate");
@@ -324,8 +324,8 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
                             });
                             xml.write_attribute_fmt(
                                 AId::Radius.to_str(),
-                                format_args!("{} {}", morphology.radius_x.value(),
-                                                      morphology.radius_y.value()),
+                                format_args!("{} {}", morphology.radius_x.get(),
+                                                      morphology.radius_y.get()),
                             );
 
                             xml.end_element();
@@ -500,8 +500,8 @@ fn conv_element(
                 }
             }
 
-            if !g.opacity.is_default() {
-                xml.write_svg_attribute(AId::Opacity, &g.opacity.value());
+            if g.opacity != Opacity::ONE {
+                xml.write_svg_attribute(AId::Opacity, &g.opacity.get());
             }
 
             xml.write_transform(AId::Transform, g.transform);
@@ -819,10 +819,10 @@ fn write_base_grad(
 
     for s in &g.stops {
         xml.start_svg_element(EId::Stop);
-        xml.write_svg_attribute(AId::Offset, &s.offset.value());
+        xml.write_svg_attribute(AId::Offset, &s.offset.get());
         xml.write_color(AId::StopColor, s.color);
-        if !s.opacity.is_default() {
-            xml.write_svg_attribute(AId::StopOpacity, &s.opacity.value());
+        if s.opacity != Opacity::ONE {
+            xml.write_svg_attribute(AId::StopOpacity, &s.opacity.get());
         }
 
         xml.end_element();
@@ -917,8 +917,8 @@ fn write_fill(
     if let Some(ref fill) = fill {
         write_paint(AId::Fill, &fill.paint, opt, xml);
 
-        if !fill.opacity.is_default() {
-            xml.write_svg_attribute(AId::FillOpacity, &fill.opacity.value());
+        if fill.opacity != Opacity::ONE {
+            xml.write_svg_attribute(AId::FillOpacity, &fill.opacity.get());
         }
 
         if !fill.rule.is_default() {
@@ -943,8 +943,8 @@ fn write_stroke(
     if let Some(ref stroke) = stroke {
         write_paint(AId::Stroke, &stroke.paint, opt, xml);
 
-        if !stroke.opacity.is_default() {
-            xml.write_svg_attribute(AId::StrokeOpacity, &stroke.opacity.value());
+        if stroke.opacity != Opacity::ONE {
+            xml.write_svg_attribute(AId::StrokeOpacity, &stroke.opacity.get());
         }
 
         if !(stroke.dashoffset as f64).is_fuzzy_zero() {
@@ -952,11 +952,11 @@ fn write_stroke(
         }
 
         if !stroke.miterlimit.is_default() {
-            xml.write_svg_attribute(AId::StrokeMiterlimit, &stroke.miterlimit.value());
+            xml.write_svg_attribute(AId::StrokeMiterlimit, &stroke.miterlimit.get());
         }
 
-        if !stroke.width.is_default() {
-            xml.write_svg_attribute(AId::StrokeWidth, &stroke.width.value());
+        if stroke.width.get() != 1.0 {
+            xml.write_svg_attribute(AId::StrokeWidth, &stroke.width.get());
         }
 
         match stroke.linecap {
