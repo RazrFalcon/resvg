@@ -16,7 +16,7 @@ crate-type = ["cdylib", "staticlib"]
 log = "0.4"
 resvg = { path = "../", default-features = false }
 usvg = { path = "../usvg", default-features = false }
-tiny-skia = "0.6.1"
+tiny-skia = "0.7.0"
 
 [features]
 # we do not provide the dump-svg/export feature here, because it's not available to C API anyway

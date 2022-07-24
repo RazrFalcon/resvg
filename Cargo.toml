@@ -25,7 +25,7 @@ png = "0.17"
 rgb = "0.8"
 svgfilters = { path = "svgfilters", version = "0.4", optional = true }
 svgtypes = "0.8"
-tiny-skia = "0.6"
+tiny-skia = "0.7"
 usvg = { path = "usvg", version = "0.23.0", default-features = false }
 
 [dev-dependencies]
