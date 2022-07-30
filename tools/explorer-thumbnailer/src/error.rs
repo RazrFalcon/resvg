@@ -1,5 +1,5 @@
 use com::sys::{E_POINTER, HRESULT, S_FALSE};
-use crate::resvg::usvg;
+use resvg::usvg;
 use Error::*;
 
 #[derive(Debug)]
