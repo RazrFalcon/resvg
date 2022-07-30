@@ -14,8 +14,6 @@ winapi = { version = "0.3.9", features = ["impl-default", "objidlbase", "windef"
 log = "0.4"
 winlog = "0.2"
 resvg = { path = "../.." }
-usvg = { path = "../../usvg" }
-tiny-skia = "0.6.1"
 
 [lib]
 # name can only be "server.dll", see https://github.com/microsoft/com-rs/issues/157

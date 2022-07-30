@@ -130,6 +130,8 @@ pub use image::ImageHrefResolver;
 pub use svgtypes::{Align, AspectRatio};
 pub use strict_num::{NormalizedF64, NonZeroPositiveF64, PositiveF64, ApproxEq, ApproxEqUlps};
 
+pub use roxmltree;
+
 #[cfg(feature = "text")] pub use fontdb;
 
 pub use crate::clippath::*;
@@ -549,7 +551,7 @@ pub struct Tree {
 }
 
 impl Tree {
-    /// Parses `Tree` from the SVG data.
+    /// Parses `Tree` from an SVG data.
     ///
     /// Can contain an SVG string or a gzip compressed data.
     pub fn from_data(data: &[u8], opt: &OptionsRef) -> Result<Self, Error> {
@@ -562,7 +564,7 @@ impl Tree {
         }
     }
 
-    /// Parses `Tree` from the SVG string.
+    /// Parses `Tree` from an SVG string.
     pub fn from_str(text: &str, opt: &OptionsRef) -> Result<Self, Error> {
         let mut xml_opt = roxmltree::ParsingOptions::default();
         xml_opt.allow_dtd = true;

@@ -12,7 +12,8 @@
 #![allow(clippy::identity_op)]
 #![allow(clippy::upper_case_acronyms)]
 
-pub use usvg::ScreenSize;
+pub use usvg;
+pub use tiny_skia;
 
 use usvg::NodeExt;
 

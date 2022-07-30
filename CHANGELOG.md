@@ -7,12 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- CSS3 `writing-mode` variants `vertical-rl` and `vertical-lr`.
+  Thanks to [yisibl](https://github.com/yisibl).
+
 ### Changed
 - Most numeric types have been moved to the `strict-num` crate.
 - Rename `NormalizedValue` into `NormalizedF64`.
 - Rename `PositiveNumber` into `PositiveF64`.
 - Raw number of numeric types should be accessed via `get()` method instead of `value()` now.
 - `usvg::TextSpan::font_size` is `NonZeroPositiveF64` instead of `f64` now.
+- Re-export `usvg` and `tiny-skia` dependencies in `resvg`.
+- Re-export `roxmltree` dependency in `usvg`.
 
 ### Fixed
 - Path bbox calculation scales stroke width too.

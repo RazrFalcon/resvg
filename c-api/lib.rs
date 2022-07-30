@@ -12,7 +12,8 @@ use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::slice;
 
-use usvg::NodeExt;
+use resvg::usvg::{self, NodeExt};
+use resvg::tiny_skia;
 
 
 /// @brief List of possible errors.

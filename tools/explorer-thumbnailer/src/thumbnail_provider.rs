@@ -8,6 +8,7 @@ use log::error;
 use crate::WINLOG_SOURCE;
 use crate::interfaces::{IThumbnailProvider, IInitializeWithStream};
 use crate::utils::{img_to_hbitmap, render_thumbnail, tree_from_istream};
+use crate::resvg::usvg;
 
 // {4432C229-DFD0-4B18-8C4D-F58932AF6105}
 pub const CLSID_THUMBNAIL_PROVIDER_CLASS: IID = IID {

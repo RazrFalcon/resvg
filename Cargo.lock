@@ -243,8 +243,6 @@ version = "0.23.0"
 dependencies = [
  "log",
  "resvg",
- "tiny-skia",
- "usvg",
 ]
 
 [[package]]
