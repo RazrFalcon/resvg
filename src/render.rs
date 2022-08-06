@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::convert::TryInto;
+
 use usvg::{FuzzyEq, NodeExt};
 
 use crate::ConvTransform;
@@ -274,25 +276,88 @@ fn render_group_impl(
 /// this can be fairly complicated and error-prone.
 /// So for now we're using this method.
 pub fn trim_transparency(pixmap: tiny_skia::Pixmap) -> Option<(i32, i32, tiny_skia::Pixmap)> {
-    let mut x = 0;
-    let mut y = 0;
+    let pixels = pixmap.data();
     let width = pixmap.width() as i32;
+    let height = pixmap.height() as i32;
     let mut min_x = pixmap.width() as i32;
     let mut min_y = pixmap.height() as i32;
     let mut max_x = 0;
     let mut max_y = 0;
-    for pixel in pixmap.pixels() {
-        if pixel.alpha() != 0 {
-            if x < min_x { min_x = x; }
-            if y < min_y { min_y = y; }
-            if x > max_x { max_x = x; }
-            if y > max_y { max_y = y; }
+
+    let first_non_zero = {
+        let max_safe_index = pixels.len() >> 4;
+
+        // Find first non-zero byte by looking at 16 bytes a time. If not found
+        // checking the remaining bytes. This is a lot faster than checking one
+        // byte a time.
+        (0..max_safe_index)
+            .position(|i| {
+                let idx = i << 4;
+                u128::from_ne_bytes((&pixels[idx..(idx + 16)]).try_into().unwrap()) != 0
+            })
+            .map_or_else(
+                || ((max_safe_index << 4)..pixels.len()).position(|i| pixels[i] != 0),
+                |i| Some(i << 4)
+            )
+    };
+
+    // We skip all the transparent pixels at the beginning of the image. It's
+    // very likely that transparent pixels all have rgba(0, 0, 0, 0) so skipping
+    // zero bytes can be used as a quick optimization.
+    // If the entire image is transparent, we don't need to continue.
+    if first_non_zero != None {
+        let get_alpha = |x, y| {
+            pixels[((width * y + x) * 4 + 3) as usize]
+        };
+
+        // Find the top boundary.
+        let start_y = first_non_zero.unwrap() as i32 / 4 / width;
+        'top: for y in start_y..height {
+            for x in 0..width {
+                if get_alpha(x, y) != 0 {
+                    min_x = x;
+                    max_x = x;
+                    min_y = y;
+                    max_y = y;
+                    break 'top;
+                }
+            }
         }
 
-        x += 1;
-        if x == width {
-            x = 0;
-            y += 1;
+        // Find the bottom boundary.
+        'bottom: for y in (max_y..height).rev() {
+            for x in 0..width {
+                if get_alpha(x, y) != 0 {
+                    max_y = y;
+                    if x < min_x {
+                        min_x = x;
+                    }
+                    if x > max_x {
+                        max_x = x;
+                    }
+                    break 'bottom;
+                }
+            }
+        }
+
+        // Find the left boundary.
+        'left: for x in 0..min_x {
+            for y in min_y..max_y {
+                if get_alpha(x, y) != 0 {
+                    min_x = x;
+                    break 'left;
+                }
+            }
+        }
+
+        // Find the right boundary.
+        'right: for x in (max_x..width).rev() {
+            for y in min_y..max_y {
+                if get_alpha(x, y) != 0 {
+                    max_x = x;
+                    break 'right;
+                }
+            }
         }
     }
 
