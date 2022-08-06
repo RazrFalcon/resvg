@@ -117,25 +117,15 @@ fn image_to_pixmap(image: &Image, pixmap: &mut [u8]) {
         }
         ImageData::RGBA(data) => {
             for p in data.as_rgba() {
-                pixmap[i + 0] = p.r;
-                pixmap[i + 1] = p.g;
-                pixmap[i + 2] = p.b;
+                let a = p.a as f64 / 255.0;
+                pixmap[i + 0] = (p.r as f64 * a + 0.5) as u8;
+                pixmap[i + 1] = (p.g as f64 * a + 0.5) as u8;
+                pixmap[i + 2] = (p.b as f64 * a + 0.5) as u8;
                 pixmap[i + 3] = p.a;
 
                 i += tiny_skia::BYTES_PER_PIXEL;
             }
-
-            multiply_alpha(pixmap.as_rgba_mut());
         }
-    }
-}
-
-fn multiply_alpha(data: &mut [rgb::RGBA8]) {
-    for p in data {
-        let a = p.a as f64 / 255.0;
-        p.b = (p.b as f64 * a + 0.5) as u8;
-        p.g = (p.g as f64 * a + 0.5) as u8;
-        p.r = (p.r as f64 * a + 0.5) as u8;
     }
 }
 
