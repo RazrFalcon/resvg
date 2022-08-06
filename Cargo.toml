@@ -17,11 +17,14 @@ name = "resvg"
 required-features = ["filter", "text", "system-fonts", "memmap-fonts"]
 
 [dependencies]
-gif = "0.11"
-jpeg-decoder = { version = "0.2", default-features = false, features = ["platform_independent"] }
+# enables embedded GIF support
+gif = { version = "0.11", optional = true }
+# enables embedded JPEG support
+jpeg-decoder = { version = "0.2", default-features = false, features = ["platform_independent"], optional = true }
 log = "0.4"
 pico-args =  { version = "0.5", features = ["eq-separator"] }
-png = "0.17"
+# enables embedded PNG support
+png = { version = "0.17", optional = true }
 rgb = "0.8"
 svgfilters = { path = "svgfilters", version = "0.4", optional = true }
 svgtypes = "0.8"
@@ -32,7 +35,7 @@ usvg = { path = "usvg", version = "0.23.0", default-features = false }
 once_cell = "1.5"
 
 [features]
-default = ["filter", "text", "system-fonts", "memmap-fonts"]
+default = ["filter", "text", "system-fonts", "memmap-fonts", "gif", "jpeg-decoder", "png"]
 # enables SVG Filter support
 # adds around 100KiB to your binary
 filter = ["svgfilters", "usvg/filter"]

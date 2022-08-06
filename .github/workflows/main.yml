@@ -28,9 +28,12 @@ jobs:
       working-directory: usvg
       run: cargo test
 
+    - name: Build resvg without default support
+      run: cargo check --no-default-features
+
     - name: Build usvg without default support
       working-directory: usvg
-      run: cargo build --no-default-features
+      run: cargo check --no-default-features
 
   msrv:
     runs-on: ubuntu-18.04
