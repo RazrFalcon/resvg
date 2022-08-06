@@ -285,19 +285,19 @@ pub fn trim_transparency(pixmap: tiny_skia::Pixmap) -> Option<(i32, i32, tiny_sk
     let mut max_y = 0;
 
     let first_non_zero = {
-        let max_safe_index = pixels.len() >> 4;
+        let max_safe_index = pixels.len() / 8;
 
-        // Find first non-zero byte by looking at 16 bytes a time. If not found
+        // Find first non-zero byte by looking at 8 bytes a time. If not found
         // checking the remaining bytes. This is a lot faster than checking one
         // byte a time.
         (0..max_safe_index)
             .position(|i| {
-                let idx = i << 4;
-                u128::from_ne_bytes((&pixels[idx..(idx + 16)]).try_into().unwrap()) != 0
+                let idx = i * 8;
+                u64::from_ne_bytes((&pixels[idx..(idx + 8)]).try_into().unwrap()) != 0
             })
             .map_or_else(
-                || ((max_safe_index << 4)..pixels.len()).position(|i| pixels[i] != 0),
-                |i| Some(i << 4)
+                || ((max_safe_index * 8)..pixels.len()).position(|i| pixels[i] != 0),
+                |i| Some(i * 8)
             )
     };
 
