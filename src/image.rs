@@ -23,35 +23,35 @@ pub fn draw_kind(
         usvg::ImageKind::SVG(ref subtree) => {
             draw_svg(subtree, view_box, canvas);
         }
-        #[cfg(feature = "image")]
+        #[cfg(feature = "raster-images")]
         usvg::ImageKind::JPEG(ref data) => {
             match read_jpeg(data) {
                 Some(image) => { draw_raster(&image, view_box, rendering_mode, canvas); }
                 None => log::warn!("Failed to decode a JPEG image."),
             }
         }
-        #[cfg(feature = "image")]
+        #[cfg(feature = "raster-images")]
         usvg::ImageKind::PNG(ref data) => {
             match read_png(data) {
                 Some(image) => { draw_raster(&image, view_box, rendering_mode, canvas); }
                 None => log::warn!("Failed to decode a PNG image."),
             }
         }
-        #[cfg(feature = "image")]
+        #[cfg(feature = "raster-images")]
         usvg::ImageKind::GIF(ref data) => {
             match read_gif(data) {
                 Some(image) => { draw_raster(&image, view_box, rendering_mode, canvas); }
                 None => log::warn!("Failed to decode a GIF image."),
             }
         }
-        #[cfg(not(feature = "image"))]
+        #[cfg(not(feature = "raster-images"))]
         _ => {
             log::debug!("Not decoding embedded image because feature is not enabled.");
         }
     }
 }
 
-#[cfg(feature = "image")]
+#[cfg(feature = "raster-images")]
 fn draw_raster(
     img: &Image,
     view_box: usvg::ViewBox,
@@ -108,7 +108,7 @@ fn draw_raster(
     Some(())
 }
 
-#[cfg(feature = "image")]
+#[cfg(feature = "raster-images")]
 fn image_to_pixmap(image: &Image, pixmap: &mut [u8]) {
     use rgb::FromSlice;
 
@@ -175,19 +175,19 @@ fn draw_svg(
     Some(())
 }
 
-#[cfg(feature = "image")]
+#[cfg(feature = "raster-images")]
 struct Image {
     data: ImageData,
     size: usvg::ScreenSize,
 }
 
-#[cfg(feature = "image")]
+#[cfg(feature = "raster-images")]
 enum ImageData {
     RGB(Vec<u8>),
     RGBA(Vec<u8>),
 }
 
-#[cfg(feature = "image")]
+#[cfg(feature = "raster-images")]
 fn read_png(data: &[u8]) -> Option<Image> {
     let mut decoder = png::Decoder::new(data);
     decoder.set_transformations(png::Transformations::normalize_to_color8());
@@ -235,7 +235,7 @@ fn read_png(data: &[u8]) -> Option<Image> {
     })
 }
 
-#[cfg(feature = "image")]
+#[cfg(feature = "raster-images")]
 fn read_jpeg(data: &[u8]) -> Option<Image> {
     let mut decoder = jpeg_decoder::Decoder::new(data);
     let img_data = decoder.decode().ok()?;
@@ -264,7 +264,7 @@ fn read_jpeg(data: &[u8]) -> Option<Image> {
     })
 }
 
-#[cfg(feature = "image")]
+#[cfg(feature = "raster-images")]
 fn read_gif(data: &[u8]) -> Option<Image> {
     let mut decoder = gif::DecodeOptions::new();
     decoder.set_color_output(gif::ColorOutput::RGBA);
@@ -279,7 +279,7 @@ fn read_gif(data: &[u8]) -> Option<Image> {
     })
 }
 
-#[cfg(feature = "image")]
+#[cfg(feature = "raster-images")]
 /// Calculates an image rect depending on the provided view box.
 fn image_rect(
     view_box: &usvg::ViewBox,

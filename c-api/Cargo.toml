@@ -18,7 +18,7 @@ resvg = { path = "../", default-features = false }
 
 [features]
 # we do not provide the dump-svg/export feature here, because it's not available to C API anyway
-default = ["filter", "text", "system-fonts", "memmap-fonts", "image"]
+default = ["filter", "text", "system-fonts", "memmap-fonts", "raster-images"]
 # enables SVG Filter support
 # adds around 100KiB to your binary
 filter = ["resvg/filter"]
@@ -29,4 +29,4 @@ text = ["resvg/text"]
 system-fonts = ["resvg/system-fonts"]
 # enables font files memmaping for faster loading (only for `text`)
 memmap-fonts = ["resvg/memmap-fonts"]
-image = ["resvg/image"]
+raster-images = ["resvg/raster-images"]
