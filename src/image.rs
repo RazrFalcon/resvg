@@ -20,46 +20,38 @@ pub fn draw_kind(
     canvas: &mut Canvas,
 ) {
     match kind {
-        #[cfg(any(feature = "jpeg-decoder"))]
+        usvg::ImageKind::SVG(ref subtree) => {
+            draw_svg(subtree, view_box, canvas);
+        }
+        #[cfg(feature = "image")]
         usvg::ImageKind::JPEG(ref data) => {
             match read_jpeg(data) {
                 Some(image) => { draw_raster(&image, view_box, rendering_mode, canvas); }
                 None => log::warn!("Failed to decode a JPEG image."),
             }
         }
-        #[cfg(not(feature = "jpeg-decoder"))]
-        usvg::ImageKind::JPEG(_) => {
-            log::debug!("Not decoding JPEG because feature is not enabled.");
-        }
-        #[cfg(any(feature = "png"))]
+        #[cfg(feature = "image")]
         usvg::ImageKind::PNG(ref data) => {
             match read_png(data) {
                 Some(image) => { draw_raster(&image, view_box, rendering_mode, canvas); }
                 None => log::warn!("Failed to decode a PNG image."),
             }
         }
-        #[cfg(not(feature = "png"))]
-        usvg::ImageKind::PNG(_) => {
-            log::debug!("Not decoding PNG because feature is not enabled.");
-        }
-        #[cfg(any(feature = "gif"))]
+        #[cfg(feature = "image")]
         usvg::ImageKind::GIF(ref data) => {
             match read_gif(data) {
                 Some(image) => { draw_raster(&image, view_box, rendering_mode, canvas); }
                 None => log::warn!("Failed to decode a GIF image."),
             }
         }
-        #[cfg(not(feature = "gif"))]
-        usvg::ImageKind::GIF(_) => {
-            log::debug!("Not decoding GIF because feature is not enabled.");
-        }
-        usvg::ImageKind::SVG(ref subtree) => {
-            draw_svg(subtree, view_box, canvas);
+        #[cfg(not(feature = "image"))]
+        _ => {
+            log::debug!("Not decoding embedded image because feature is not enabled.");
         }
     }
 }
 
-#[cfg(any(feature = "png", feature = "jpeg-decoder", feature = "gif"))]
+#[cfg(feature = "image")]
 fn draw_raster(
     img: &Image,
     view_box: usvg::ViewBox,
@@ -116,7 +108,7 @@ fn draw_raster(
     Some(())
 }
 
-#[cfg(any(feature = "png", feature = "jpeg-decoder", feature = "gif"))]
+#[cfg(feature = "image")]
 fn image_to_pixmap(image: &Image, pixmap: &mut [u8]) {
     use rgb::FromSlice;
 
@@ -183,19 +175,19 @@ fn draw_svg(
     Some(())
 }
 
-#[cfg(any(feature = "png", feature = "jpeg-decoder", feature = "gif"))]
+#[cfg(feature = "image")]
 struct Image {
     data: ImageData,
     size: usvg::ScreenSize,
 }
 
-#[cfg(any(feature = "png", feature = "jpeg-decoder", feature = "gif"))]
+#[cfg(feature = "image")]
 enum ImageData {
     RGB(Vec<u8>),
     RGBA(Vec<u8>),
 }
 
-#[cfg(feature = "png")]
+#[cfg(feature = "image")]
 fn read_png(data: &[u8]) -> Option<Image> {
     let mut decoder = png::Decoder::new(data);
     decoder.set_transformations(png::Transformations::normalize_to_color8());
@@ -243,7 +235,7 @@ fn read_png(data: &[u8]) -> Option<Image> {
     })
 }
 
-#[cfg(feature = "jpeg-decoder")]
+#[cfg(feature = "image")]
 fn read_jpeg(data: &[u8]) -> Option<Image> {
     let mut decoder = jpeg_decoder::Decoder::new(data);
     let img_data = decoder.decode().ok()?;
@@ -272,7 +264,7 @@ fn read_jpeg(data: &[u8]) -> Option<Image> {
     })
 }
 
-#[cfg(feature = "gif")]
+#[cfg(feature = "image")]
 fn read_gif(data: &[u8]) -> Option<Image> {
     let mut decoder = gif::DecodeOptions::new();
     decoder.set_color_output(gif::ColorOutput::RGBA);
@@ -287,7 +279,7 @@ fn read_gif(data: &[u8]) -> Option<Image> {
     })
 }
 
-#[cfg(any(feature = "png", feature = "jpeg-decoder", feature = "gif"))]
+#[cfg(feature = "image")]
 /// Calculates an image rect depending on the provided view box.
 fn image_rect(
     view_box: &usvg::ViewBox,
