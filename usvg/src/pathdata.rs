@@ -374,6 +374,9 @@ fn calc_bbox(segments: &[PathSegment]) -> Option<PathBbox> {
                 if r.x1 > maxx { maxx = r.x1; }
                 if r.y0 < miny { miny = r.y0; }
                 if r.y1 > maxy { maxy = r.y1; }
+
+                prev_x = x;
+                prev_y = y;
             }
             PathSegment::ClosePath => {}
         }
@@ -431,6 +434,9 @@ fn calc_bbox_with_transform(
                 if r.x1 > maxx { maxx = r.x1; }
                 if r.y0 < miny { miny = r.y0; }
                 if r.y1 > maxy { maxy = r.y1; }
+
+                prev_x = x;
+                prev_y = y;
             }
             PathSegment::ClosePath => {}
         }
@@ -498,6 +504,9 @@ fn has_bbox(segments: &[PathSegment]) -> bool {
                 if r.x1 > maxx { maxx = r.x1; }
                 if r.x0 < miny { miny = r.y0; }
                 if r.y1 > maxy { maxy = r.y1; }
+
+                prev_x = x;
+                prev_y = y;
             }
             PathSegment::ClosePath => {}
         }
