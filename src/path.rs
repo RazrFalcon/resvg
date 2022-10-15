@@ -39,8 +39,8 @@ fn convert_path(
     path: &usvg::PathData,
 ) -> Option<tiny_skia::Path> {
     let mut pb = tiny_skia::PathBuilder::new();
-    for seg in path.iter() {
-        match *seg {
+    for seg in path.segments() {
+        match seg {
             usvg::PathSegment::MoveTo { x, y } => {
                 pb.move_to(x as f32, y as f32);
             }

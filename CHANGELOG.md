@@ -12,6 +12,8 @@ This changelog also contains important changes in dependencies.
   Thanks to [yisibl](https://github.com/yisibl).
 
 ### Changed
+- `usvg::PathData` stores commands and points separately now to reduce overall memory usage.
+- `usvg::PathData` segments should be accessed via `segments()` now.
 - Most numeric types have been moved to the `strict-num` crate.
 - Rename `NormalizedValue` into `NormalizedF64`.
 - Rename `PositiveNumber` into `PositiveF64`.
@@ -19,6 +21,9 @@ This changelog also contains important changes in dependencies.
 - `usvg::TextSpan::font_size` is `NonZeroPositiveF64` instead of `f64` now.
 - Re-export `usvg` and `tiny-skia` dependencies in `resvg`.
 - Re-export `roxmltree` dependency in `usvg`.
+
+### Removed
+- `usvg::SubPathIter` and `usvg::PathData::subpaths`. No longer used.
 
 ### Fixed
 - Path bbox calculation scales stroke width too.

@@ -7,7 +7,7 @@ use std::rc::Rc;
 use svgtypes::Length;
 
 use crate::svgtree::{self, EId, AId};
-use crate::{converter, units, FuzzyEq, IsValidLength, PathData, PathSegment, Rect, SharedPathData, Units};
+use crate::{converter, units, FuzzyEq, IsValidLength, PathData, Rect, SharedPathData, Units};
 
 pub(crate) fn convert(
     node: svgtree::Node,
@@ -60,7 +60,7 @@ fn convert_rect(
     let path = if rx.fuzzy_eq(&0.0) {
         PathData::from_rect(Rect::new(x, y, width, height)?)
     } else {
-        let mut p = PathData::with_capacity(16);
+        let mut p = PathData::new();
         p.push_move_to(x + rx, y);
 
         p.push_line_to(x + width - rx, y);
@@ -137,7 +137,7 @@ fn convert_polyline(node: svgtree::Node) -> Option<SharedPathData> {
 
 fn convert_polygon(node: svgtree::Node) -> Option<SharedPathData> {
     if let Some(mut path) = points_to_path(node, "Polygon") {
-        path.push(PathSegment::ClosePath);
+        path.push_close_path();
         Some(Rc::new(path))
     } else {
         None
@@ -214,7 +214,7 @@ fn convert_ellipse(
 }
 
 fn ellipse_to_path(cx: f64, cy: f64, rx: f64, ry: f64) -> PathData {
-    let mut p = PathData::with_capacity(6);
+    let mut p = PathData::new();
     p.push_move_to(cx + rx, cy);
     p.push_arc_to(rx, ry, 0.0, false, true, cx,      cy + ry);
     p.push_arc_to(rx, ry, 0.0, false, true, cx - rx, cy     );

@@ -93,7 +93,7 @@ impl DatabaseExt for Database {
         self.with_face_data(id, |data, face_index| -> Option<PathData> {
             let font = ttf_parser::Face::from_slice(data, face_index).ok()?;
 
-            let mut builder = PathBuilder { path: PathData::with_capacity(16) };
+            let mut builder = PathBuilder { path: PathData::new() };
             font.outline_glyph(glyph_id, &mut builder)?;
             Some(builder.path)
         })?

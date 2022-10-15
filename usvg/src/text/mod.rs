@@ -8,7 +8,7 @@ mod convert;
 mod shaper;
 mod fontdb_ext;
 
-use crate::{FillRule, Group, Node, NodeExt, NodeKind, Paint, Path, PathData, PathSegment, Rect, Color};
+use crate::{FillRule, Group, Node, NodeExt, NodeKind, Paint, Path, PathData, Rect, Color};
 use crate::{ShapeRendering, Stroke, StrokeWidth, Transform, TransformFromBBox, Tree, Units};
 use crate::PathBbox;
 use crate::{converter, svgtree};
@@ -253,7 +253,7 @@ fn convert_span(
             let mut path = std::mem::replace(&mut cluster.path, PathData::new());
             path.transform(cluster.transform);
 
-            path_data.extend_from_slice(&path);
+            path_data.push_path(&path);
 
             // We have to calculate text bbox using font metrics and not glyph shape.
             if let Some(r) = Rect::new(0.0, -cluster.ascent, cluster.advance, cluster.height()) {
@@ -322,10 +322,12 @@ fn dump_cluster(
 
     // Baseline.
     base_path.stroke = new_stroke(Color::new_rgb(255, 0, 0));
-    base_path.data = Rc::new(PathData(vec![
-        PathSegment::MoveTo { x: 0.0,             y: 0.0 },
-        PathSegment::LineTo { x: cluster.advance, y: 0.0 },
-    ]));
+
+    let mut path = PathData::new();
+    path.push_move_to(0.0, 0.0);
+    path.push_line_to(cluster.advance, 0.0);
+
+    base_path.data = Rc::new(path);
     parent.append_kind(NodeKind::Path(base_path));
 }
 

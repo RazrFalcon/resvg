@@ -8,6 +8,16 @@ use kurbo::{ParamCurveArclen, ParamCurveExtrema, ParamCurve};
 
 use crate::{Rect, PathBbox, Transform, FuzzyZero};
 
+/// A path command.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum PathCommand {
+    MoveTo,
+    LineTo,
+    CurveTo,
+    ClosePath,
+}
+
 /// A path's absolute segment.
 ///
 /// Unlike the SVG spec, can contain only `M`, `L`, `C` and `Z` segments.
@@ -39,7 +49,10 @@ pub enum PathSegment {
 ///
 /// All segments are in absolute coordinates.
 #[derive(Clone, Default, Debug)]
-pub struct PathData(pub Vec<PathSegment>);
+pub struct PathData {
+    commands: Vec<PathCommand>,
+    points: Vec<f64>,
+}
 
 /// A reference-counted `PathData`.
 ///
@@ -51,19 +64,49 @@ impl PathData {
     /// Creates a new path.
     #[inline]
     pub fn new() -> Self {
-        PathData(Vec::new())
+        PathData::default()
     }
 
-    /// Creates a new path with a specified capacity.
+    /// Returns `true` if the path contains no segment.
     #[inline]
-    pub fn with_capacity(capacity: usize) -> Self {
-        PathData(Vec::with_capacity(capacity))
+    pub fn is_empty(&self) -> bool {
+        self.commands.is_empty()
+    }
+
+    /// Returns the number of segments in the path.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.commands.len()
+    }
+
+    /// Returns a slice of the path commands.
+    #[inline]
+    pub fn commands(&self) -> &[PathCommand] {
+        &self.commands
+    }
+
+    /// Returns a slice of the path points.
+    #[inline]
+    pub fn points(&self) -> &[f64] {
+        &self.points
+    }
+
+    /// Clears the path.
+    pub fn clear(&mut self) {
+        self.commands.clear();
+        self.points.clear();
+    }
+
+    /// Shrinks the capacity of the path as much as possible.
+    pub fn shrink_to_fit(&mut self) {
+        self.commands.shrink_to_fit();
+        self.points.shrink_to_fit();
     }
 
     /// Creates a path from a rect.
     #[inline]
     pub fn from_rect(rect: Rect) -> Self {
-        let mut path = PathData::with_capacity(5);
+        let mut path = PathData::default();
         path.push_rect(rect);
         path
     }
@@ -71,19 +114,17 @@ impl PathData {
     /// Pushes a MoveTo segment to the path.
     #[inline]
     pub fn push_move_to(&mut self, x: f64, y: f64) {
-        self.push(PathSegment::MoveTo { x, y });
+        self.commands.push(PathCommand::MoveTo);
+        self.points.push(x);
+        self.points.push(y);
     }
 
     /// Pushes a LineTo segment to the path.
     #[inline]
     pub fn push_line_to(&mut self, x: f64, y: f64) {
-        self.push(PathSegment::LineTo { x, y });
-    }
-
-    /// Pushes a CurveTo segment to the path.
-    #[inline]
-    pub fn push_curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64) {
-        self.push(PathSegment::CurveTo { x1, y1, x2, y2, x, y });
+        self.commands.push(PathCommand::LineTo);
+        self.points.push(x);
+        self.points.push(y);
     }
 
     /// Pushes a QuadTo segment to the path.
@@ -91,8 +132,25 @@ impl PathData {
     /// Will be converted into cubic curve.
     #[inline]
     pub fn push_quad_to(&mut self, x1: f64, y1: f64, x: f64, y: f64) {
-        let (prev_x, prev_y) = self.last_pos();
-        self.push(quad_to_curve(prev_x, prev_y, x1, y1, x, y));
+        #[inline]
+        fn calc(n1: f64, n2: f64) -> f64 {
+            (n1 + n2 * 2.0) / 3.0
+        }
+
+        let (px, py) = self.last_pos();
+        self.push_curve_to(calc(px, x1), calc(py, y1), calc(x, x1), calc(y, y1), x, y)
+    }
+
+    /// Pushes a CurveTo segment to the path.
+    #[inline]
+    pub fn push_curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64) {
+        self.commands.push(PathCommand::CurveTo);
+        self.points.push(x1);
+        self.points.push(y1);
+        self.points.push(x2);
+        self.points.push(y2);
+        self.points.push(x);
+        self.points.push(y);
     }
 
     /// Pushes an ArcTo segment to the path.
@@ -132,32 +190,36 @@ impl PathData {
     /// Pushes a ClosePath segment to the path.
     #[inline]
     pub fn push_close_path(&mut self) {
-        self.push(PathSegment::ClosePath);
+        self.commands.push(PathCommand::ClosePath);
     }
 
     /// Pushes a rect to the path.
     #[inline]
     pub fn push_rect(&mut self, rect: Rect) {
-        self.extend_from_slice(&[
-            PathSegment::MoveTo { x: rect.x(),     y: rect.y() },
-            PathSegment::LineTo { x: rect.right(), y: rect.y() },
-            PathSegment::LineTo { x: rect.right(), y: rect.bottom() },
-            PathSegment::LineTo { x: rect.x(),     y: rect.bottom() },
-            PathSegment::ClosePath,
-        ]);
+        self.push_move_to(rect.x(), rect.y());
+        self.push_line_to(rect.right(), rect.y());
+        self.push_line_to(rect.right(), rect.bottom());
+        self.push_line_to(rect.x(), rect.bottom());
+        self.push_close_path();
+    }
+
+    /// Pushes a path to the path.
+    #[inline]
+    pub fn push_path(&mut self, path: &PathData) {
+        self.commands.extend_from_slice(&path.commands);
+        self.points.extend_from_slice(&path.points);
     }
 
     #[inline]
     fn last_pos(&self) -> (f64, f64) {
-        let seg = self.last().expect("path must not be empty");
+        let seg = self.commands.last().expect("path must not be empty");
         match seg {
-              PathSegment::MoveTo { x, y }
-            | PathSegment::LineTo { x, y }
-            | PathSegment::CurveTo { x, y, .. } => {
-               (*x, *y)
-            }
-            PathSegment::ClosePath => {
+            PathCommand::ClosePath => {
                 panic!("the previous segment must be M/L/C")
+            }
+            _ => {
+                let index = self.points.len() - 2;
+                (self.points[index], self.points[index + 1])
             }
         }
     }
@@ -203,157 +265,103 @@ impl PathData {
     /// Applies the transform to the path.
     #[inline]
     pub fn transform(&mut self, ts: Transform) {
-        transform_path(self, ts);
+        transform_path(&mut self.points, ts);
     }
 
     /// Applies the transform to the path from the specified offset.
     #[inline]
-    pub fn transform_from(&mut self, offset: usize, ts: Transform) {
-        transform_path(&mut self[offset..], ts);
+    pub(crate) fn transform_from(&mut self, offset: usize, ts: Transform) {
+        let mut points_offset = 0;
+        for command in self.commands().iter().take(offset) {
+            match command {
+                PathCommand::MoveTo | PathCommand::LineTo => points_offset += 2,
+                PathCommand::CurveTo => points_offset += 6,
+                PathCommand::ClosePath => {}
+            }
+        }
+
+        transform_path(&mut self.points[points_offset..], ts);
     }
 
-    /// Returns an iterator over path subpaths.
+    /// Returns an iterator over path segments.
     #[inline]
-    pub fn subpaths(&self) -> SubPathIter {
-        SubPathIter {
+    pub fn segments(&self) -> PathSegmentsIter {
+        PathSegmentsIter {
             path: self,
-            index: 0,
+            cmd_index: 0,
+            points_index: 0,
         }
     }
 }
 
-impl std::ops::Deref for PathData {
-    type Target = Vec<PathSegment>;
 
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl std::ops::DerefMut for PathData {
-    #[inline]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-
-/// An iterator over `PathData` subpaths.
+/// A path segments iterator.
 #[allow(missing_debug_implementations)]
-pub struct SubPathIter<'a> {
-    path: &'a [PathSegment],
-    index: usize,
+#[derive(Clone)]
+pub struct PathSegmentsIter<'a> {
+    path: &'a PathData,
+    cmd_index: usize,
+    points_index: usize,
 }
 
-impl<'a> Iterator for SubPathIter<'a> {
-    type Item = SubPathData<'a>;
+impl<'a> Iterator for PathSegmentsIter<'a> {
+    type Item = PathSegment;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index == self.path.len() {
-            return None;
-        }
+        if self.cmd_index < self.path.commands.len() {
+            let verb = self.path.commands[self.cmd_index];
+            self.cmd_index += 1;
 
-        let mut i = self.index;
-        while i < self.path.len() {
-            match self.path[i] {
-                PathSegment::MoveTo { .. } => {
-                    if i != self.index {
-                        break;
-                    }
+            match verb {
+                PathCommand::MoveTo => {
+                    self.points_index += 2;
+                    Some(PathSegment::MoveTo {
+                        x: self.path.points[self.points_index - 2],
+                        y: self.path.points[self.points_index - 1],
+                    })
                 }
-                PathSegment::ClosePath => {
-                    i += 1;
-                    break;
+                PathCommand::LineTo => {
+                    self.points_index += 2;
+                    Some(PathSegment::LineTo {
+                        x: self.path.points[self.points_index - 2],
+                        y: self.path.points[self.points_index - 1],
+                    })
                 }
-                _ => {}
+                PathCommand::CurveTo => {
+                    self.points_index += 6;
+                    Some(PathSegment::CurveTo {
+                        x1: self.path.points[self.points_index - 6],
+                        y1: self.path.points[self.points_index - 5],
+                        x2: self.path.points[self.points_index - 4],
+                        y2: self.path.points[self.points_index - 3],
+                        x: self.path.points[self.points_index - 2],
+                        y: self.path.points[self.points_index - 1],
+                    })
+                }
+                PathCommand::ClosePath => {
+                    Some(PathSegment::ClosePath)
+                }
             }
-
-            i += 1;
+        } else {
+            None
         }
-
-        let start = self.index;
-        self.index = i;
-
-        Some(SubPathData(&self.path[start..i]))
     }
 }
 
 
-/// A reference to a `PathData` subpath.
-#[derive(Clone, Copy, Debug)]
-pub struct SubPathData<'a>(pub &'a [PathSegment]);
-
-impl<'a> SubPathData<'a> {
-    /// Calculates path's bounding box.
-    ///
-    /// This operation is expensive.
-    #[inline]
-    pub fn bbox(&self) -> Option<PathBbox> {
-        calc_bbox(self)
-    }
-
-    /// Calculates path's bounding box with a specified transform.
-    ///
-    /// This operation is expensive.
-    #[inline]
-    pub fn bbox_with_transform(
-        &self,
-        ts: Transform,
-        stroke: Option<&super::Stroke>,
-    ) -> Option<PathBbox> {
-        calc_bbox_with_transform(self, ts, stroke)
-    }
-
-    /// Checks that path has a bounding box.
-    ///
-    /// This operation is expensive.
-    #[inline]
-    pub fn has_bbox(&self) -> bool {
-        has_bbox(self)
-    }
-
-    /// Calculates path's length.
-    ///
-    /// This operation is expensive.
-    #[inline]
-    pub fn length(&self) -> f64 {
-        calc_length(self)
-    }
-}
-
-impl std::ops::Deref for SubPathData<'_> {
-    type Target = [PathSegment];
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        self.0
-    }
-}
-
-
-fn calc_bbox(segments: &[PathSegment]) -> Option<PathBbox> {
-    if segments.is_empty() {
+fn calc_bbox(path: &PathData) -> Option<PathBbox> {
+    if path.is_empty() {
         return None;
     }
 
-    let mut prev_x = 0.0;
-    let mut prev_y = 0.0;
-    let mut minx = 0.0;
-    let mut miny = 0.0;
-    let mut maxx = 0.0;
-    let mut maxy = 0.0;
+    let mut prev_x = path.points[0];
+    let mut prev_y = path.points[1];
+    let mut minx = prev_x;
+    let mut miny = prev_y;
+    let mut maxx = prev_x;
+    let mut maxy = prev_y;
 
-    if let PathSegment::MoveTo { x, y } = segments[0] {
-        prev_x = x;
-        prev_y = y;
-        minx = x;
-        miny = y;
-        maxx = x;
-        maxy = y;
-    }
-
-    for seg in segments.iter().cloned() {
+    for seg in path.segments() {
         match seg {
               PathSegment::MoveTo { x, y }
             | PathSegment::LineTo { x, y } => {
@@ -389,11 +397,11 @@ fn calc_bbox(segments: &[PathSegment]) -> Option<PathBbox> {
 }
 
 fn calc_bbox_with_transform(
-    segments: &[PathSegment],
+    path: &PathData,
     ts: Transform,
     stroke: Option<&super::Stroke>,
 ) -> Option<PathBbox> {
-    if segments.is_empty() {
+    if path.is_empty() {
         return None;
     }
 
@@ -404,7 +412,7 @@ fn calc_bbox_with_transform(
     let mut maxx = 0.0;
     let mut maxy = 0.0;
 
-    if let Some(PathSegment::MoveTo { x, y }) = TransformedPath::new(segments, ts).next() {
+    if let Some(PathSegment::MoveTo { x, y }) = TransformedPath::new(path, ts).next() {
         prev_x = x;
         prev_y = y;
         minx = x;
@@ -413,7 +421,7 @@ fn calc_bbox_with_transform(
         maxy = y;
     }
 
-    for seg in TransformedPath::new(segments, ts) {
+    for seg in TransformedPath::new(path, ts) {
         match seg {
               PathSegment::MoveTo { x, y }
             | PathSegment::LineTo { x, y } => {
@@ -462,29 +470,20 @@ fn calc_bbox_with_transform(
     PathBbox::new(minx, miny, width, height)
 }
 
-fn has_bbox(segments: &[PathSegment]) -> bool {
-    if segments.is_empty() {
+fn has_bbox(path: &PathData) -> bool {
+    if path.is_empty() {
         return false;
     }
 
-    let mut prev_x = 0.0;
-    let mut prev_y = 0.0;
-    let mut minx = 0.0;
-    let mut miny = 0.0;
-    let mut maxx = 0.0;
-    let mut maxy = 0.0;
+    let mut prev_x = path.points[0];
+    let mut prev_y = path.points[1];
+    let mut minx = prev_x;
+    let mut miny = prev_y;
+    let mut maxx = prev_x;
+    let mut maxy = prev_y;
 
-    if let PathSegment::MoveTo { x, y } = segments[0] {
-        prev_x = x;
-        prev_y = y;
-        minx = x;
-        miny = y;
-        maxx = x;
-        maxy = y;
-    }
-
-    for seg in segments {
-        match *seg {
+    for seg in path.segments() {
+        match seg {
               PathSegment::MoveTo { x, y }
             | PathSegment::LineTo { x, y } => {
                 prev_x = x;
@@ -521,18 +520,15 @@ fn has_bbox(segments: &[PathSegment]) -> bool {
     false
 }
 
-fn calc_length(segments: &[PathSegment]) -> f64 {
-    if segments.is_empty() {
+fn calc_length(path: &PathData) -> f64 {
+    if path.is_empty() {
         return 0.0;
     }
 
-    let (mut prev_mx, mut prev_my, mut prev_x, mut prev_y) = {
-        if let PathSegment::MoveTo { x, y } = segments[0] {
-            (x, y, x, y)
-        } else {
-            unreachable!();
-        }
-    };
+    let mut prev_mx = path.points[0];
+    let mut prev_my = path.points[1];
+    let mut prev_x = prev_mx;
+    let mut prev_y = prev_my;
 
     fn create_curve_from_line(px: f64, py: f64, x: f64, y: f64) -> kurbo::CubicBez {
         let line = kurbo::Line::new(kurbo::Point::new(px, py), kurbo::Point::new(x, y));
@@ -542,8 +538,8 @@ fn calc_length(segments: &[PathSegment]) -> f64 {
     }
 
     let mut length = 0.0;
-    for seg in segments {
-        let curve = match *seg {
+    for seg in path.segments() {
+        let curve = match seg {
             PathSegment::MoveTo { x, y } => {
                 prev_mx = x;
                 prev_my = y;
@@ -570,22 +566,23 @@ fn calc_length(segments: &[PathSegment]) -> f64 {
     length
 }
 
-fn transform_path(segments: &mut [PathSegment], ts: Transform) {
-    for seg in segments {
-        match seg {
-            PathSegment::MoveTo { x, y } => {
-                ts.apply_to(x, y);
-            }
-            PathSegment::LineTo { x, y } => {
-                ts.apply_to(x, y);
-            }
-            PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                ts.apply_to(x1, y1);
-                ts.apply_to(x2, y2);
-                ts.apply_to(x, y);
-            }
-            PathSegment::ClosePath => {}
-        }
+// TODO: port tiny-skia logic
+fn transform_path(
+    points: &mut [f64],
+    ts: Transform,
+) {
+    if points.is_empty() {
+        return;
+    }
+
+    if ts.is_default() {
+        return;
+    }
+
+    for p in points.chunks_exact_mut(2) {
+        let (x, y) = ts.apply(p[0], p[1]);
+        p[0] = x;
+        p[1] = y;
     }
 }
 
@@ -593,16 +590,15 @@ fn transform_path(segments: &mut [PathSegment], ts: Transform) {
 /// An iterator over transformed path segments.
 #[allow(missing_debug_implementations)]
 pub struct TransformedPath<'a> {
-    segments: &'a [PathSegment],
+    iter: PathSegmentsIter<'a>,
     ts: Transform,
-    idx: usize,
 }
 
 impl<'a> TransformedPath<'a> {
     /// Creates a new `TransformedPath` iterator.
     #[inline]
-    pub fn new(segments: &'a [PathSegment], ts: Transform) -> Self {
-        TransformedPath { segments, ts, idx: 0 }
+    pub fn new(path: &'a PathData, ts: Transform) -> Self {
+        TransformedPath { iter: path.segments(), ts }
     }
 }
 
@@ -610,46 +606,25 @@ impl<'a> Iterator for TransformedPath<'a> {
     type Item = PathSegment;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.idx == self.segments.len() {
-            return None;
-        }
-
-        let seg = match self.segments[self.idx] {
-            PathSegment::MoveTo { x, y } => {
-                let (x, y) = self.ts.apply(x, y);
-                PathSegment::MoveTo { x, y }
+        self.iter.next().map(|segment| {
+            match segment {
+                PathSegment::MoveTo { x, y } => {
+                    let (x, y) = self.ts.apply(x, y);
+                    PathSegment::MoveTo { x, y }
+                }
+                PathSegment::LineTo { x, y } => {
+                    let (x, y) = self.ts.apply(x, y);
+                    PathSegment::LineTo { x, y }
+                }
+                PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
+                    let (x1, y1) = self.ts.apply(x1, y1);
+                    let (x2, y2) = self.ts.apply(x2, y2);
+                    let (x,  y)  = self.ts.apply(x, y);
+                    PathSegment::CurveTo { x1, y1, x2, y2, x, y }
+                }
+                PathSegment::ClosePath => PathSegment::ClosePath,
             }
-            PathSegment::LineTo { x, y } => {
-                let (x, y) = self.ts.apply(x, y);
-                PathSegment::LineTo { x, y }
-            }
-            PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                let (x1, y1) = self.ts.apply(x1, y1);
-                let (x2, y2) = self.ts.apply(x2, y2);
-                let (x,  y)  = self.ts.apply(x, y);
-                PathSegment::CurveTo { x1, y1, x2, y2, x, y }
-            }
-            PathSegment::ClosePath => PathSegment::ClosePath,
-        };
-
-        self.idx += 1;
-
-        Some(seg)
-    }
-}
-
-
-#[inline]
-fn quad_to_curve(px: f64, py: f64, x1: f64, y1: f64, x: f64, y: f64) -> PathSegment {
-    #[inline]
-    fn calc(n1: f64, n2: f64) -> f64 {
-        (n1 + n2 * 2.0) / 3.0
-    }
-
-    PathSegment::CurveTo {
-        x1: calc(px, x1), y1: calc(py, y1),
-        x2:  calc(x, x1), y2:  calc(y, y1),
-        x, y,
+        })
     }
 }
 

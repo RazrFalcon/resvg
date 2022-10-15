@@ -491,26 +491,12 @@ impl PathBbox {
     ///
     /// This method is expensive.
     pub fn transform(&self, ts: &Transform) -> Option<Self> {
-        use crate::pathdata::{PathSegment, SubPathData};
+        use crate::pathdata::PathData;
 
         if !ts.is_default() {
-            let path = &[
-                PathSegment::MoveTo {
-                    x: self.x(), y: self.y()
-                },
-                PathSegment::LineTo {
-                    x: self.right(), y: self.y()
-                },
-                PathSegment::LineTo {
-                    x: self.right(), y: self.bottom()
-                },
-                PathSegment::LineTo {
-                    x: self.x(), y: self.bottom()
-                },
-                PathSegment::ClosePath,
-            ];
-
-            SubPathData(path).bbox_with_transform(*ts, None)
+            // TODO: remove allocation
+            let path = PathData::from_rect(self.to_rect()?);
+            path.bbox_with_transform(*ts, None)
         } else {
             Some(*self)
         }
@@ -694,26 +680,11 @@ impl Rect {
     ///
     /// This method is expensive.
     pub fn transform(&self, ts: &Transform) -> Option<Self> {
-        use crate::pathdata::{PathSegment, SubPathData};
+        use crate::pathdata::PathData;
 
         if !ts.is_default() {
-            let path = &[
-                PathSegment::MoveTo {
-                    x: self.x(), y: self.y()
-                },
-                PathSegment::LineTo {
-                    x: self.right(), y: self.y()
-                },
-                PathSegment::LineTo {
-                    x: self.right(), y: self.bottom()
-                },
-                PathSegment::LineTo {
-                    x: self.x(), y: self.bottom()
-                },
-                PathSegment::ClosePath,
-            ];
-
-            SubPathData(path).bbox_with_transform(*ts, None).and_then(|r| r.to_rect())
+            let path = PathData::from_rect(*self);
+            path.bbox_with_transform(*ts, None).and_then(|r| r.to_rect())
         } else {
             Some(*self)
         }

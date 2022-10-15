@@ -587,7 +587,7 @@ fn parse_path(text: &str) -> crate::PathData {
 
     let mut prev_seg = svgtypes::PathSegment::MoveTo { abs: true, x: 0.0, y: 0.0 };
 
-    let mut path = crate::PathData::with_capacity(32);
+    let mut path = crate::PathData::default();
 
     for segment in svgtypes::PathParser::from(text) {
         let segment = match segment {
@@ -600,7 +600,7 @@ fn parse_path(text: &str) -> crate::PathData {
                 if !abs {
                     // When we get 'm'(relative) segment, which is not first segment - then it's
                     // relative to a previous 'M'(absolute) segment, not to the first segment.
-                    if let Some(crate::PathSegment::ClosePath) = path.last() {
+                    if let Some(crate::PathCommand::ClosePath) = path.commands().last() {
                         x += prev_mx;
                         y += prev_my;
                     } else {
@@ -736,7 +736,7 @@ fn parse_path(text: &str) -> crate::PathData {
                 prev_seg = segment;
             }
             svgtypes::PathSegment::ClosePath { .. } => {
-                if let Some(crate::PathSegment::ClosePath) = path.last() {
+                if let Some(crate::PathCommand::ClosePath) = path.commands().last() {
                     // Do not add sequential ClosePath segments.
                     // Otherwise it will break marker rendering.
                 } else {
@@ -748,23 +748,24 @@ fn parse_path(text: &str) -> crate::PathData {
         }
 
         // Remember last position.
-        if let Some(seg) = path.last() {
-            match *seg {
-                crate::PathSegment::MoveTo { x, y } => {
-                    prev_x = x;
-                    prev_y = y;
-                    prev_mx = x;
-                    prev_my = y;
+        if let Some(command) = path.commands().last() {
+            let last = path.points().len();
+            match command {
+                crate::PathCommand::MoveTo => {
+                    prev_x = path.points()[last - 2];
+                    prev_y = path.points()[last - 1];
+                    prev_mx = prev_x;
+                    prev_my = prev_y;
                 }
-                crate::PathSegment::LineTo { x, y } => {
-                    prev_x = x;
-                    prev_y = y;
+                crate::PathCommand::LineTo => {
+                    prev_x = path.points()[last - 2];
+                    prev_y = path.points()[last - 1];
                 }
-                crate::PathSegment::CurveTo { x, y, .. } => {
-                    prev_x = x;
-                    prev_y = y;
+                crate::PathCommand::CurveTo => {
+                    prev_x = path.points()[last - 2];
+                    prev_y = path.points()[last - 1];
                 }
-                crate::PathSegment::ClosePath => {
+                crate::PathCommand::ClosePath => {
                     // ClosePath moves us to the last MoveTo coordinate,
                     // not previous.
                     prev_x = prev_mx;

@@ -368,7 +368,7 @@ fn outline_cluster(
 
             outline.transform(ts);
 
-            path.extend_from_slice(&outline);
+            path.push_path(&outline);
         }
 
         x += glyph.width as f64;
@@ -635,13 +635,10 @@ fn collect_normals(
         }
     }
 
-    let (mut prev_mx, mut prev_my, mut prev_x, mut prev_y) = {
-        if let PathSegment::MoveTo { x, y } = path[0] {
-            (x, y, x, y)
-        } else {
-            unreachable!();
-        }
-    };
+    let mut prev_mx = path.points()[0];
+    let mut prev_my = path.points()[1];
+    let mut prev_x = prev_mx;
+    let mut prev_y = prev_my;
 
     fn create_curve_from_line(px: f64, py: f64, x: f64, y: f64) -> kurbo::CubicBez {
         let line = kurbo::Line::new(kurbo::Point::new(px, py), kurbo::Point::new(x, y));
@@ -651,8 +648,8 @@ fn collect_normals(
     }
 
     let mut length = 0.0;
-    for seg in path.iter() {
-        let curve = match *seg {
+    for seg in path.segments() {
+        let curve = match seg {
             PathSegment::MoveTo { x, y } => {
                 prev_mx = x;
                 prev_my = y;

@@ -127,11 +127,14 @@ fn resolve(
         None
     };
 
+    // TODO: avoid allocation
+    let segments: Vec<Segment> = path.segments().collect();
+
     let draw_marker = |x: f64, y: f64, idx: usize| {
         let mut ts = Transform::new_translate(x, y);
 
         let angle = match convert_orientation(marker_node) {
-            MarkerOrientation::Auto => calc_vertex_angle(path, idx),
+            MarkerOrientation::Auto => calc_vertex_angle(&segments, idx),
             MarkerOrientation::Angle(angle) => angle,
         };
 
@@ -167,7 +170,7 @@ fn resolve(
         }
     };
 
-    draw_markers(path, marker_kind, draw_marker);
+    draw_markers(&segments, marker_kind, draw_marker);
 
     Some(())
 }
@@ -184,7 +187,7 @@ fn stroke_scale(
 }
 
 fn draw_markers<P>(
-    path: &PathData,
+    path: &[Segment],
     kind: MarkerKind,
     mut draw_marker: P,
 )
@@ -235,7 +238,7 @@ where
     }
 }
 
-fn calc_vertex_angle(path: &PathData, idx: usize) -> f64 {
+fn calc_vertex_angle(path: &[Segment], idx: usize) -> f64 {
     if idx == 0 {
         // First segment.
 
