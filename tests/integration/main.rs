@@ -1,6 +1,8 @@
 use once_cell::sync::Lazy;
 use rgb::FromSlice;
 
+mod render;
+
 const IMAGE_SIZE: u32 = 300;
 
 static GLOBAL_OPT: Lazy<std::sync::Mutex<usvg::Options>> = Lazy::new(|| {

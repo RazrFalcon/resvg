@@ -2,8 +2,7 @@
 
 #![allow(non_snake_case)]
 
-mod render;
-use render::render;
+use crate::render;
 
 #[test] fn a_alignment_baseline_001() { assert_eq!(render("a-alignment-baseline-001"), 0); }
 #[test] fn a_baseline_shift_001() { assert_eq!(render("a-baseline-shift-001"), 0); }
