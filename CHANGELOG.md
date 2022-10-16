@@ -21,6 +21,7 @@ This changelog also contains important changes in dependencies.
 - `usvg::TextSpan::font_size` is `NonZeroPositiveF64` instead of `f64` now.
 - Re-export `usvg` and `tiny-skia` dependencies in `resvg`.
 - Re-export `roxmltree` dependency in `usvg`.
+- (usvg) Output float precision is reduced from 11 to 8 digits.
 
 ### Removed
 - `usvg::SubPathIter` and `usvg::PathData::subpaths`. No longer used.

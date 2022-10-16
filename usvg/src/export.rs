@@ -637,10 +637,21 @@ impl XmlWriterExt for XmlWriter {
 
     fn write_transform(&mut self, id: AId, ts: Transform) {
         if !ts.is_default() {
-            self.write_attribute_fmt(
-                id.to_str(),
-                format_args!("matrix({} {} {} {} {} {})", ts.a, ts.b, ts.c, ts.d, ts.e, ts.f),
-            );
+            self.write_attribute_raw(id.to_str(), |buf| {
+                buf.extend_from_slice(b"matrix(");
+                write_num(ts.a, buf);
+                buf.push(b' ');
+                write_num(ts.b, buf);
+                buf.push(b' ');
+                write_num(ts.c, buf);
+                buf.push(b' ');
+                write_num(ts.d, buf);
+                buf.push(b' ');
+                write_num(ts.e, buf);
+                buf.push(b' ');
+                write_num(ts.f, buf);
+                buf.extend_from_slice(b")");
+            });
         }
     }
 
@@ -1036,10 +1047,14 @@ fn write_num(num: f64, buf: &mut Vec<u8>) {
         return;
     }
 
-    // Round numbers up to 11 digits to prevent writing
+    // Round numbers up to 8 digits to prevent writing
     // ugly numbers like 29.999999999999996.
     // It's not 100% correct, but differences are insignificant.
-    let v = (num * 100_000_000_000.0).round() / 100_000_000_000.0;
+    //
+    // Note that at least in Rust 1.64 the number formatting in debug and release modes
+    // can be slightly different. So having a lower precision makes
+    // our output and tests reproducible.
+    let v = (num * 100_000_000.0).round() / 100_000_000.0;
 
     write!(buf, "{}", v).unwrap();
 }
