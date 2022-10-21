@@ -24,11 +24,7 @@ pub(crate) fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
 }
 
 /// Converts `viewBox` to `Transform`.
-pub fn view_box_to_transform(
-    view_box: Rect,
-    aspect: AspectRatio,
-    img_size: Size,
-) -> Transform {
+pub fn view_box_to_transform(view_box: Rect, aspect: AspectRatio, img_size: Size) -> Transform {
     let vr = view_box;
 
     let sx = img_size.width() / vr.width();
@@ -38,9 +34,17 @@ pub fn view_box_to_transform(
         (sx, sy)
     } else {
         let s = if aspect.slice {
-            if sx < sy { sy } else { sx }
+            if sx < sy {
+                sy
+            } else {
+                sx
+            }
         } else {
-            if sx > sy { sy } else { sx }
+            if sx > sy {
+                sy
+            } else {
+                sx
+            }
         };
 
         (s, s)
@@ -70,14 +74,20 @@ pub fn view_box_to_transform_with_clip(
     let (tx, ty, clip) = if view_box.aspect.slice {
         let (dx, dy) = aligned_pos(
             view_box.aspect.align,
-            0.0, 0.0, new_size.width() as f64 - r.width(), new_size.height() as f64 - r.height(),
+            0.0,
+            0.0,
+            new_size.width() as f64 - r.width(),
+            new_size.height() as f64 - r.height(),
         );
 
         (r.x() - dx, r.y() - dy, Some(r))
     } else {
         let (dx, dy) = aligned_pos(
             view_box.aspect.align,
-            r.x(), r.y(), r.width() - new_size.width() as f64, r.height() - new_size.height() as f64,
+            r.x(),
+            r.y(),
+            r.width() - new_size.width() as f64,
+            r.height() - new_size.height() as f64,
         );
 
         (dx, dy, None)
@@ -91,21 +101,18 @@ pub fn view_box_to_transform_with_clip(
 }
 
 /// Returns object aligned position.
-pub fn aligned_pos(
-    align: Align,
-    x: f64, y: f64, w: f64, h: f64,
-) -> (f64, f64) {
+pub fn aligned_pos(align: Align, x: f64, y: f64, w: f64, h: f64) -> (f64, f64) {
     match align {
-        Align::None     => (x,           y          ),
-        Align::XMinYMin => (x,           y          ),
-        Align::XMidYMin => (x + w / 2.0, y          ),
-        Align::XMaxYMin => (x + w,       y          ),
-        Align::XMinYMid => (x,           y + h / 2.0),
+        Align::None => (x, y),
+        Align::XMinYMin => (x, y),
+        Align::XMidYMin => (x + w / 2.0, y),
+        Align::XMaxYMin => (x + w, y),
+        Align::XMinYMid => (x, y + h / 2.0),
         Align::XMidYMid => (x + w / 2.0, y + h / 2.0),
-        Align::XMaxYMid => (x + w,       y + h / 2.0),
-        Align::XMinYMax => (x,           y + h      ),
-        Align::XMidYMax => (x + w / 2.0, y + h      ),
-        Align::XMaxYMax => (x + w,       y + h      ),
+        Align::XMaxYMid => (x + w, y + h / 2.0),
+        Align::XMinYMax => (x, y + h),
+        Align::XMidYMax => (x + w / 2.0, y + h),
+        Align::XMaxYMax => (x + w, y + h),
     }
 }
 

@@ -12,9 +12,8 @@ use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::slice;
 
-use resvg::usvg::{self, NodeExt};
 use resvg::tiny_skia;
-
+use resvg::usvg::{self, NodeExt};
 
 /// @brief List of possible errors.
 #[repr(C)]
@@ -138,9 +137,7 @@ impl resvg_fit_to {
     #[inline]
     fn to_usvg(&self) -> usvg::FitTo {
         match self.kind {
-            resvg_fit_to_type::ORIGINAL => {
-                usvg::FitTo::Original
-            }
+            resvg_fit_to_type::ORIGINAL => usvg::FitTo::Original,
             resvg_fit_to_type::WIDTH => {
                 assert!(self.value >= 1.0);
                 usvg::FitTo::Width(self.value as u32)
@@ -149,20 +146,23 @@ impl resvg_fit_to {
                 assert!(self.value >= 1.0);
                 usvg::FitTo::Height(self.value as u32)
             }
-            resvg_fit_to_type::ZOOM => {
-                usvg::FitTo::Zoom(self.value)
-            }
+            resvg_fit_to_type::ZOOM => usvg::FitTo::Zoom(self.value),
         }
     }
 }
 
-
 /// @brief Creates an identity transform.
 #[no_mangle]
 pub extern "C" fn resvg_transform_identity() -> resvg_transform {
-    resvg_transform { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: 0.0, f: 0.0 }
+    resvg_transform {
+        a: 1.0,
+        b: 0.0,
+        c: 0.0,
+        d: 1.0,
+        e: 0.0,
+        f: 0.0,
+    }
 }
-
 
 /// @brief Initializes the library log.
 ///
@@ -177,7 +177,6 @@ pub extern "C" fn resvg_init_log() {
         log::set_max_level(log::LevelFilter::Warn);
     }
 }
-
 
 /// @brief An SVG to #resvg_render_tree conversion options.
 ///
@@ -260,8 +259,11 @@ pub extern "C" fn resvg_options_set_font_size(opt: *mut resvg_options, size: f64
 #[no_mangle]
 #[allow(unused_variables)]
 pub extern "C" fn resvg_options_set_serif_family(opt: *mut resvg_options, family: *const c_char) {
-    #[cfg(feature = "text")] {
-        cast_opt(opt).fontdb.set_serif_family(cstr_to_str(family).unwrap().to_string());
+    #[cfg(feature = "text")]
+    {
+        cast_opt(opt)
+            .fontdb
+            .set_serif_family(cstr_to_str(family).unwrap().to_string());
     }
 }
 
@@ -274,9 +276,15 @@ pub extern "C" fn resvg_options_set_serif_family(opt: *mut resvg_options, family
 /// Default: Arial
 #[no_mangle]
 #[allow(unused_variables)]
-pub extern "C" fn resvg_options_set_sans_serif_family(opt: *mut resvg_options, family: *const c_char) {
-    #[cfg(feature = "text")] {
-        cast_opt(opt).fontdb.set_sans_serif_family(cstr_to_str(family).unwrap().to_string());
+pub extern "C" fn resvg_options_set_sans_serif_family(
+    opt: *mut resvg_options,
+    family: *const c_char,
+) {
+    #[cfg(feature = "text")]
+    {
+        cast_opt(opt)
+            .fontdb
+            .set_sans_serif_family(cstr_to_str(family).unwrap().to_string());
     }
 }
 
@@ -290,8 +298,11 @@ pub extern "C" fn resvg_options_set_sans_serif_family(opt: *mut resvg_options, f
 #[no_mangle]
 #[allow(unused_variables)]
 pub extern "C" fn resvg_options_set_cursive_family(opt: *mut resvg_options, family: *const c_char) {
-    #[cfg(feature = "text")] {
-        cast_opt(opt).fontdb.set_cursive_family(cstr_to_str(family).unwrap().to_string());
+    #[cfg(feature = "text")]
+    {
+        cast_opt(opt)
+            .fontdb
+            .set_cursive_family(cstr_to_str(family).unwrap().to_string());
     }
 }
 
@@ -305,8 +316,11 @@ pub extern "C" fn resvg_options_set_cursive_family(opt: *mut resvg_options, fami
 #[no_mangle]
 #[allow(unused_variables)]
 pub extern "C" fn resvg_options_set_fantasy_family(opt: *mut resvg_options, family: *const c_char) {
-    #[cfg(feature = "text")] {
-        cast_opt(opt).fontdb.set_fantasy_family(cstr_to_str(family).unwrap().to_string());
+    #[cfg(feature = "text")]
+    {
+        cast_opt(opt)
+            .fontdb
+            .set_fantasy_family(cstr_to_str(family).unwrap().to_string());
     }
 }
 
@@ -319,9 +333,15 @@ pub extern "C" fn resvg_options_set_fantasy_family(opt: *mut resvg_options, fami
 /// Default: Courier New
 #[no_mangle]
 #[allow(unused_variables)]
-pub extern "C" fn resvg_options_set_monospace_family(opt: *mut resvg_options, family: *const c_char) {
-    #[cfg(feature = "text")] {
-        cast_opt(opt).fontdb.set_monospace_family(cstr_to_str(family).unwrap().to_string());
+pub extern "C" fn resvg_options_set_monospace_family(
+    opt: *mut resvg_options,
+    family: *const c_char,
+) {
+    #[cfg(feature = "text")]
+    {
+        cast_opt(opt)
+            .fontdb
+            .set_monospace_family(cstr_to_str(family).unwrap().to_string());
     }
 }
 
@@ -370,7 +390,10 @@ pub enum resvg_shape_rendering {
 ///
 /// Default: `RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION`
 #[no_mangle]
-pub extern "C" fn resvg_options_set_shape_rendering_mode(opt: *mut resvg_options, mode: resvg_shape_rendering) {
+pub extern "C" fn resvg_options_set_shape_rendering_mode(
+    opt: *mut resvg_options,
+    mode: resvg_shape_rendering,
+) {
     cast_opt(opt).shape_rendering = match mode as i32 {
         0 => usvg::ShapeRendering::OptimizeSpeed,
         1 => usvg::ShapeRendering::CrispEdges,
@@ -395,7 +418,10 @@ pub enum resvg_text_rendering {
 ///
 /// Default: `RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY`
 #[no_mangle]
-pub extern "C" fn resvg_options_set_text_rendering_mode(opt: *mut resvg_options, mode: resvg_text_rendering) {
+pub extern "C" fn resvg_options_set_text_rendering_mode(
+    opt: *mut resvg_options,
+    mode: resvg_text_rendering,
+) {
     cast_opt(opt).text_rendering = match mode as i32 {
         0 => usvg::TextRendering::OptimizeSpeed,
         1 => usvg::TextRendering::OptimizeLegibility,
@@ -419,7 +445,10 @@ pub enum resvg_image_rendering {
 ///
 /// Default: `RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY`
 #[no_mangle]
-pub extern "C" fn resvg_options_set_image_rendering_mode(opt: *mut resvg_options, mode: resvg_image_rendering) {
+pub extern "C" fn resvg_options_set_image_rendering_mode(
+    opt: *mut resvg_options,
+    mode: resvg_image_rendering,
+) {
     cast_opt(opt).image_rendering = match mode as i32 {
         0 => usvg::ImageRendering::OptimizeQuality,
         1 => usvg::ImageRendering::OptimizeSpeed,
@@ -449,7 +478,8 @@ pub extern "C" fn resvg_options_load_font_data(
     data: *const c_char,
     len: usize,
 ) {
-    #[cfg(feature = "text")] {
+    #[cfg(feature = "text")]
+    {
         let data = unsafe { slice::from_raw_parts(data as *const u8, len) };
 
         let opt = unsafe {
@@ -474,7 +504,8 @@ pub extern "C" fn resvg_options_load_font_file(
     opt: *mut resvg_options,
     file_path: *const c_char,
 ) -> i32 {
-    #[cfg(feature = "text")] {
+    #[cfg(feature = "text")]
+    {
         let file_path = match cstr_to_str(file_path) {
             Some(v) => v,
             None => return resvg_error::NOT_AN_UTF8_STR as i32,
@@ -492,7 +523,8 @@ pub extern "C" fn resvg_options_load_font_file(
         }
     }
 
-    #[cfg(not(feature = "text"))] {
+    #[cfg(not(feature = "text"))]
+    {
         resvg_error::OK as i32
     }
 }
@@ -512,7 +544,8 @@ pub extern "C" fn resvg_options_load_font_file(
 #[no_mangle]
 #[allow(unused_variables)]
 pub extern "C" fn resvg_options_load_system_fonts(opt: *mut resvg_options) {
-    #[cfg(feature = "text")] {
+    #[cfg(feature = "text")]
+    {
         let opt = unsafe {
             assert!(!opt.is_null());
             &mut *opt
@@ -530,7 +563,6 @@ pub extern "C" fn resvg_options_destroy(opt: *mut resvg_options) {
         Box::from_raw(opt)
     };
 }
-
 
 /// @brief An opaque pointer to the rendering tree.
 pub struct resvg_render_tree(pub usvg::Tree);
@@ -572,7 +604,9 @@ pub extern "C" fn resvg_parse_tree_from_file(
     };
 
     let tree_box = Box::new(resvg_render_tree(utree));
-    unsafe { *tree = Box::into_raw(tree_box); }
+    unsafe {
+        *tree = Box::into_raw(tree_box);
+    }
 
     resvg_error::OK as i32
 }
@@ -606,7 +640,9 @@ pub extern "C" fn resvg_parse_tree_from_data(
     };
 
     let tree_box = Box::new(resvg_render_tree(utree));
-    unsafe { *tree = Box::into_raw(tree_box); }
+    unsafe {
+        *tree = Box::into_raw(tree_box);
+    }
 
     resvg_error::OK as i32
 }
@@ -712,10 +748,7 @@ pub extern "C" fn resvg_get_image_bbox(
 /// @return `false` if a node doesn't exist or ID isn't a UTF-8 string.
 /// @return `false` if a node exists, but not renderable.
 #[no_mangle]
-pub extern "C" fn resvg_node_exists(
-    tree: *const resvg_render_tree,
-    id: *const c_char,
-) -> bool {
+pub extern "C" fn resvg_node_exists(tree: *const resvg_render_tree, id: *const c_char) -> bool {
     let id = match cstr_to_str(id) {
         Some(v) => v,
         None => {
@@ -887,7 +920,8 @@ pub extern "C" fn resvg_render(
     };
 
     let pixmap_len = width as usize * height as usize * tiny_skia::BYTES_PER_PIXEL;
-    let pixmap: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
+    let pixmap: &mut [u8] =
+        unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
     let pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
 
     resvg::render(&tree.0, fit_to.to_usvg(), transform.to_tiny_skia(), pixmap).unwrap()
@@ -933,16 +967,23 @@ pub extern "C" fn resvg_render_node(
 
     if let Some(node) = tree.0.node_by_id(id) {
         let pixmap_len = width as usize * height as usize * tiny_skia::BYTES_PER_PIXEL;
-        let pixmap: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
+        let pixmap: &mut [u8] =
+            unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
         let pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
 
-        resvg::render_node(&tree.0, &node, fit_to.to_usvg(), transform.to_tiny_skia(), pixmap).is_some()
+        resvg::render_node(
+            &tree.0,
+            &node,
+            fit_to.to_usvg(),
+            transform.to_tiny_skia(),
+            pixmap,
+        )
+        .is_some()
     } else {
         log::warn!("A node with '{}' ID wasn't found.", id);
         false
     }
 }
-
 
 /// A simple stderr logger.
 static LOGGER: SimpleLogger = SimpleLogger;
@@ -964,8 +1005,10 @@ impl log::Log for SimpleLogger {
 
             match record.level() {
                 log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, record.args()),
-                log::Level::Warn  => eprintln!("Warning (in {}:{}): {}", target, line, record.args()),
-                log::Level::Info  => eprintln!("Info (in {}:{}): {}", target, line, record.args()),
+                log::Level::Warn => {
+                    eprintln!("Warning (in {}:{}): {}", target, line, record.args())
+                }
+                log::Level::Info => eprintln!("Info (in {}:{}): {}", target, line, record.args()),
                 log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, record.args()),
                 log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, record.args()),
             }

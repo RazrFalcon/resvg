@@ -4,7 +4,7 @@
 
 use alloc::vec;
 
-use crate::{ImageRefMut, FuzzyZero, RGBA8, f64_bound};
+use crate::{f64_bound, FuzzyZero, ImageRefMut, RGBA8};
 
 /// An edges processing mode used by `convolve_matrix`.
 #[allow(missing_docs)]
@@ -33,11 +33,14 @@ impl<'a> ConvolveMatrix<'a> {
     /// - `columns` * `rows` != `data.len()`
     /// - `target_x` >= `columns`
     /// - `target_y` >= `rows`
-    pub fn new(target_x: u32, target_y: u32, columns: u32, rows: u32, data: &'a [f64]) -> Option<Self> {
-        if    (columns * rows) as usize != data.len()
-           || target_x >= columns
-           || target_y >= rows
-        {
+    pub fn new(
+        target_x: u32,
+        target_y: u32,
+        columns: u32,
+        rows: u32,
+        data: &'a [f64],
+    ) -> Option<Self> {
+        if (columns * rows) as usize != data.len() || target_x >= columns || target_y >= rows {
             return None;
         }
 
@@ -164,8 +167,7 @@ pub fn convolve_matrix(
                     }
                 }
 
-                let k = matrix.get(matrix.columns() - ox - 1,
-                                   matrix.rows() - oy - 1);
+                let k = matrix.get(matrix.columns() - ox - 1, matrix.rows() - oy - 1);
 
                 let p = src.pixel_at(tx as u32, ty as u32);
                 new_r += (p.r as f64) / 255.0 * k;

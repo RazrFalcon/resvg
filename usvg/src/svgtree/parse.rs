@@ -2,17 +2,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::str::FromStr;
-use std::collections::HashMap;
 
-use crate::{Rect, Error, EnableBackground, Opacity};
-use super::{Document, Attribute, AId, EId, Node, NodeId, NodeKind, NodeData, AttributeValue};
+use super::{AId, Attribute, AttributeValue, Document, EId, Node, NodeData, NodeId, NodeKind};
+use crate::{EnableBackground, Error, Opacity, Rect};
 
 const SVG_NS: &str = "http://www.w3.org/2000/svg";
 const XLINK_NS: &str = "http://www.w3.org/1999/xlink";
 const XML_NAMESPACE_NS: &str = "http://www.w3.org/XML/1998/namespace";
-
 
 impl Document {
     pub fn parse(xml: &roxmltree::Document) -> Result<Document, Error> {
@@ -41,7 +40,7 @@ impl Document {
                 (first_child_id, new_child_id)
             } else {
                 (new_child_id, new_child_id)
-            }
+            },
         );
 
         new_child_id
@@ -51,10 +50,7 @@ impl Document {
         let value2 = parse_svg_attribute(tag_name, aid, value);
         // TODO: improve error logging
         if let Some(value) = value2 {
-            self.attrs.push(Attribute {
-                name: aid,
-                value,
-            });
+            self.attrs.push(Attribute { name: aid, value });
         } else {
             // Invalid `enable-background` is not an error
             // since we are ignoring the `accumulate` value.
@@ -83,13 +79,21 @@ fn parse(xml: &roxmltree::Document) -> Result<Document, Error> {
 
     let style_sheet = resolve_css(xml);
 
-    parse_xml_node_children(xml.root(), xml.root(), doc.root().id, &style_sheet, false, 0, &mut doc)?;
+    parse_xml_node_children(
+        xml.root(),
+        xml.root(),
+        doc.root().id,
+        &style_sheet,
+        false,
+        0,
+        &mut doc,
+    )?;
 
     // Check that the root element is `svg`.
     match doc.root().first_element_child() {
         Some(child) => {
             if child.tag_name() != Some(EId::Svg) {
-                return Err(roxmltree::Error::NoRootNode.into())
+                return Err(roxmltree::Error::NoRootNode.into());
             }
         }
         None => return Err(roxmltree::Error::NoRootNode.into()),
@@ -177,7 +181,15 @@ fn parse_xml_node(
     } else if tag_name == EId::Use {
         parse_svg_use_element(node, origin, node_id, style_sheet, depth + 1, doc)?;
     } else {
-        parse_xml_node_children(node, origin, node_id, style_sheet, ignore_ids, depth + 1, doc)?;
+        parse_xml_node_children(
+            node,
+            origin,
+            node_id,
+            style_sheet,
+            ignore_ids,
+            depth + 1,
+            doc,
+        )?;
     }
 
     Ok(())
@@ -196,10 +208,7 @@ pub(super) fn parse_svg_element(
     // Copy presentational attributes first.
     for attr in xml_node.attributes() {
         match attr.namespace() {
-              None
-            | Some(SVG_NS)
-            | Some(XLINK_NS)
-            | Some(XML_NAMESPACE_NS) => {}
+            None | Some(SVG_NS) | Some(XLINK_NS) | Some(XML_NAMESPACE_NS) => {}
             _ => continue,
         }
 
@@ -219,7 +228,9 @@ pub(super) fn parse_svg_element(
 
     let mut insert_attribute = |aid, value: &str| {
         // Check that attribute already exists.
-        let idx = doc.attrs[attrs_start_idx..].iter_mut().position(|a| a.name == aid);
+        let idx = doc.attrs[attrs_start_idx..]
+            .iter_mut()
+            .position(|a| a.name == aid);
 
         // Append an attribute as usual.
         let added = append_attribute(parent_id, tag_name, aid, value, doc);
@@ -274,10 +285,13 @@ pub(super) fn parse_svg_element(
         return Err(Error::ElementsLimitReached);
     }
 
-    let node_id = doc.append(parent_id, NodeKind::Element {
-        tag_name,
-        attributes: attrs_start_idx..doc.attrs.len(),
-    });
+    let node_id = doc.append(
+        parent_id,
+        NodeKind::Element {
+            tag_name,
+            attributes: attrs_start_idx..doc.attrs.len(),
+        },
+    );
 
     Ok(node_id)
 }
@@ -311,11 +325,7 @@ fn append_attribute(
     true
 }
 
-fn parse_svg_attribute(
-    tag_name: EId,
-    aid: AId,
-    value: &str,
-) -> Option<AttributeValue> {
+fn parse_svg_attribute(tag_name: EId, aid: AId, value: &str) -> Option<AttributeValue> {
     Some(match aid {
         AId::Href => {
             // `href` can contain base64 data and we do store it as is.
@@ -325,37 +335,35 @@ fn parse_svg_attribute(
             }
         }
 
-          AId::X  | AId::Y
-        | AId::Dx | AId::Dy => {
+        AId::X | AId::Y | AId::Dx | AId::Dy => {
             // Some attributes can contain different data based on the element type.
             match tag_name {
-                  EId::Text
-                | EId::Tref
-                | EId::Tspan => {
-                    AttributeValue::String(value.to_string())
-                }
-                  EId::FePointLight
-                | EId::FeSpotLight => {
+                EId::Text | EId::Tref | EId::Tspan => AttributeValue::String(value.to_string()),
+                EId::FePointLight | EId::FeSpotLight => {
                     AttributeValue::Number(svgtypes::Number::from_str(value).ok()?.0)
                 }
-                _ => {
-                    AttributeValue::Length(svgtypes::Length::from_str(value).ok()?)
-                }
+                _ => AttributeValue::Length(svgtypes::Length::from_str(value).ok()?),
             }
         }
 
-          AId::X1 | AId::Y1
-        | AId::X2 | AId::Y2
+        AId::X1
+        | AId::Y1
+        | AId::X2
+        | AId::Y2
         | AId::R
-        | AId::Rx | AId::Ry
-        | AId::Cx | AId::Cy
-        | AId::Fx | AId::Fy
-        | AId::RefX | AId::RefY
-        | AId::Width | AId::Height
-        | AId::MarkerWidth | AId::MarkerHeight
-        | AId::StartOffset => {
-            AttributeValue::Length(svgtypes::Length::from_str(value).ok()?)
-        }
+        | AId::Rx
+        | AId::Ry
+        | AId::Cx
+        | AId::Cy
+        | AId::Fx
+        | AId::Fy
+        | AId::RefX
+        | AId::RefY
+        | AId::Width
+        | AId::Height
+        | AId::MarkerWidth
+        | AId::MarkerHeight
+        | AId::StartOffset => AttributeValue::Length(svgtypes::Length::from_str(value).ok()?),
 
         AId::Offset => {
             if let EId::FeFuncR | EId::FeFuncG | EId::FeFuncB | EId::FeFuncA = tag_name {
@@ -371,12 +379,11 @@ fn parse_svg_attribute(
             }
         }
 
-          AId::StrokeDashoffset
-        | AId::StrokeWidth => {
+        AId::StrokeDashoffset | AId::StrokeWidth => {
             AttributeValue::Length(svgtypes::Length::from_str(value).ok()?)
         }
 
-          AId::Opacity
+        AId::Opacity
         | AId::FillOpacity
         | AId::FloodOpacity
         | AId::StrokeOpacity
@@ -385,7 +392,7 @@ fn parse_svg_attribute(
             AttributeValue::Opacity(Opacity::new_clamped(n))
         }
 
-          AId::Amplitude
+        AId::Amplitude
         | AId::Azimuth
         | AId::Bias
         | AId::DiffuseConstant
@@ -411,50 +418,41 @@ fn parse_svg_attribute(
         | AId::SurfaceScale
         | AId::TargetX
         | AId::TargetY
-        | AId::Z => {
-            AttributeValue::Number(svgtypes::Number::from_str(value).ok()?.0)
-        }
+        | AId::Z => AttributeValue::Number(svgtypes::Number::from_str(value).ok()?.0),
 
-        AId::StrokeDasharray => {
-            match value {
-                "none" => AttributeValue::None,
-                _ => AttributeValue::String(value.to_string()),
+        AId::StrokeDasharray => match value {
+            "none" => AttributeValue::None,
+            _ => AttributeValue::String(value.to_string()),
+        },
+
+        AId::Fill => match svgtypes::Paint::from_str(value) {
+            Ok(svgtypes::Paint::None) => AttributeValue::None,
+            Ok(svgtypes::Paint::Inherit) => unreachable!(),
+            Ok(svgtypes::Paint::CurrentColor) => AttributeValue::CurrentColor,
+            Ok(svgtypes::Paint::Color(color)) => AttributeValue::Color(color),
+            Ok(svgtypes::Paint::FuncIRI(link, fallback)) => {
+                AttributeValue::Paint(link.to_string(), fallback)
             }
-        }
-
-        AId::Fill => {
-            match svgtypes::Paint::from_str(value) {
-                Ok(svgtypes::Paint::None) => AttributeValue::None,
-                Ok(svgtypes::Paint::Inherit) => unreachable!(),
-                Ok(svgtypes::Paint::CurrentColor) => AttributeValue::CurrentColor,
-                Ok(svgtypes::Paint::Color(color)) => AttributeValue::Color(color),
-                Ok(svgtypes::Paint::FuncIRI(link, fallback)) => {
-                    AttributeValue::Paint(link.to_string(), fallback)
-                }
-                Err(_) => {
-                    log::warn!("Failed to parse fill value: '{}'. Fallback to black.", value);
-                    AttributeValue::Color(svgtypes::Color::black())
-                }
+            Err(_) => {
+                log::warn!(
+                    "Failed to parse fill value: '{}'. Fallback to black.",
+                    value
+                );
+                AttributeValue::Color(svgtypes::Color::black())
             }
-        }
+        },
 
-        AId::Stroke => {
-            match svgtypes::Paint::from_str(value).ok()? {
-                svgtypes::Paint::None => AttributeValue::None,
-                svgtypes::Paint::Inherit => unreachable!(),
-                svgtypes::Paint::CurrentColor => AttributeValue::CurrentColor,
-                svgtypes::Paint::Color(color) => AttributeValue::Color(color),
-                svgtypes::Paint::FuncIRI(link, fallback) => {
-                    AttributeValue::Paint(link.to_string(), fallback)
-                }
+        AId::Stroke => match svgtypes::Paint::from_str(value).ok()? {
+            svgtypes::Paint::None => AttributeValue::None,
+            svgtypes::Paint::Inherit => unreachable!(),
+            svgtypes::Paint::CurrentColor => AttributeValue::CurrentColor,
+            svgtypes::Paint::Color(color) => AttributeValue::Color(color),
+            svgtypes::Paint::FuncIRI(link, fallback) => {
+                AttributeValue::Paint(link.to_string(), fallback)
             }
-        }
+        },
 
-          AId::ClipPath
-        | AId::MarkerEnd
-        | AId::MarkerMid
-        | AId::MarkerStart
-        | AId::Mask => {
+        AId::ClipPath | AId::MarkerEnd | AId::MarkerMid | AId::MarkerStart | AId::Mask => {
             match value {
                 "none" => AttributeValue::None,
                 _ => {
@@ -464,18 +462,12 @@ fn parse_svg_attribute(
             }
         }
 
-        AId::Color => {
-            AttributeValue::Color(svgtypes::Color::from_str(value).ok()?)
-        }
+        AId::Color => AttributeValue::Color(svgtypes::Color::from_str(value).ok()?),
 
-          AId::FloodColor
-        | AId::LightingColor
-        | AId::StopColor => {
-            match value {
-                "currentColor" => AttributeValue::CurrentColor,
-                _ => AttributeValue::Color(svgtypes::Color::from_str(value).ok()?),
-            }
-        }
+        AId::FloodColor | AId::LightingColor | AId::StopColor => match value {
+            "currentColor" => AttributeValue::CurrentColor,
+            _ => AttributeValue::Color(svgtypes::Color::from_str(value).ok()?),
+        },
 
         AId::D => {
             let segments = parse_path(value);
@@ -486,57 +478,41 @@ fn parse_svg_attribute(
             }
         }
 
-          AId::Transform
-        | AId::GradientTransform
-        | AId::PatternTransform => {
+        AId::Transform | AId::GradientTransform | AId::PatternTransform => {
             AttributeValue::Transform(svgtypes::Transform::from_str(value).ok()?.into())
         }
 
-        AId::FontSize => {
-            match svgtypes::Length::from_str(value) {
-                Ok(l) => AttributeValue::Length(l),
-                Err(_) => AttributeValue::String(value.to_string()),
-            }
-        }
+        AId::FontSize => match svgtypes::Length::from_str(value) {
+            Ok(l) => AttributeValue::Length(l),
+            Err(_) => AttributeValue::String(value.to_string()),
+        },
 
-          AId::Display
-        | AId::TextDecoration => {
-            match value {
-                "none" => AttributeValue::None,
-                _ => AttributeValue::String(value.to_string()),
-            }
-        }
-          AId::LetterSpacing
-        | AId::WordSpacing => {
-            match value {
-                "normal" => AttributeValue::String(value.to_string()),
-                _ => AttributeValue::Length(svgtypes::Length::from_str(value).ok()?),
-            }
-        }
+        AId::Display | AId::TextDecoration => match value {
+            "none" => AttributeValue::None,
+            _ => AttributeValue::String(value.to_string()),
+        },
+        AId::LetterSpacing | AId::WordSpacing => match value {
+            "normal" => AttributeValue::String(value.to_string()),
+            _ => AttributeValue::Length(svgtypes::Length::from_str(value).ok()?),
+        },
 
-        AId::BaselineShift => {
-            match value {
-                "baseline" | "sub" | "super" => AttributeValue::String(value.to_string()),
-                _ => AttributeValue::Length(svgtypes::Length::from_str(value).ok()?),
-            }
-        }
+        AId::BaselineShift => match value {
+            "baseline" | "sub" | "super" => AttributeValue::String(value.to_string()),
+            _ => AttributeValue::Length(svgtypes::Length::from_str(value).ok()?),
+        },
 
-        AId::Orient => {
-            match value {
-                "auto" => AttributeValue::String(value.to_string()),
-                _ => AttributeValue::Angle(svgtypes::Angle::from_str(value).ok()?),
-            }
-        }
+        AId::Orient => match value {
+            "auto" => AttributeValue::String(value.to_string()),
+            _ => AttributeValue::Angle(svgtypes::Angle::from_str(value).ok()?),
+        },
 
-        AId::ViewBox => {
-            AttributeValue::ViewBox(svgtypes::ViewBox::from_str(value).ok()?)
-        }
+        AId::ViewBox => AttributeValue::ViewBox(svgtypes::ViewBox::from_str(value).ok()?),
 
         AId::PreserveAspectRatio => {
             AttributeValue::AspectRatio(svgtypes::AspectRatio::from_str(value).ok()?)
         }
 
-          AId::BaseFrequency
+        AId::BaseFrequency
         | AId::KernelMatrix
         | AId::Radius
         | AId::Rotate
@@ -553,22 +529,23 @@ fn parse_svg_attribute(
         AId::EnableBackground => {
             let eb = svgtypes::EnableBackground::from_str(value).ok()?;
             match eb {
-                svgtypes::EnableBackground::Accumulate => {
-                    return None
-                }
+                svgtypes::EnableBackground::Accumulate => return None,
                 svgtypes::EnableBackground::New => {
                     AttributeValue::EnableBackground(EnableBackground(None))
                 }
-                svgtypes::EnableBackground::NewWithRegion { x, y, width, height } => {
+                svgtypes::EnableBackground::NewWithRegion {
+                    x,
+                    y,
+                    width,
+                    height,
+                } => {
                     let r = Rect::new(x, y, width, height)?;
                     AttributeValue::EnableBackground(EnableBackground(Some(r)))
                 }
             }
         }
 
-        _ => {
-            AttributeValue::String(value.to_string())
-        }
+        _ => AttributeValue::String(value.to_string()),
     })
 }
 
@@ -586,7 +563,11 @@ fn parse_path(text: &str) -> crate::PathData {
     let mut prev_x = 0.0;
     let mut prev_y = 0.0;
 
-    let mut prev_seg = svgtypes::PathSegment::MoveTo { abs: true, x: 0.0, y: 0.0 };
+    let mut prev_seg = svgtypes::PathSegment::MoveTo {
+        abs: true,
+        x: 0.0,
+        y: 0.0,
+    };
 
     let mut path = crate::PathData::default();
 
@@ -638,7 +619,15 @@ fn parse_path(text: &str) -> crate::PathData {
                 path.push_line_to(prev_x, y);
                 prev_seg = segment;
             }
-            svgtypes::PathSegment::CurveTo { abs, mut x1, mut y1, mut x2, mut y2, mut x, mut y } => {
+            svgtypes::PathSegment::CurveTo {
+                abs,
+                mut x1,
+                mut y1,
+                mut x2,
+                mut y2,
+                mut x,
+                mut y,
+            } => {
                 if !abs {
                     x1 += prev_x;
                     y1 += prev_y;
@@ -651,22 +640,34 @@ fn parse_path(text: &str) -> crate::PathData {
                 path.push_curve_to(x1, y1, x2, y2, x, y);
 
                 // Remember as absolute.
-                prev_seg = svgtypes::PathSegment::CurveTo { abs: true, x1, y1, x2, y2, x, y };
+                prev_seg = svgtypes::PathSegment::CurveTo {
+                    abs: true,
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    x,
+                    y,
+                };
             }
-            svgtypes::PathSegment::SmoothCurveTo { abs, mut x2, mut y2, mut x, mut y } => {
+            svgtypes::PathSegment::SmoothCurveTo {
+                abs,
+                mut x2,
+                mut y2,
+                mut x,
+                mut y,
+            } => {
                 // 'The first control point is assumed to be the reflection of the second control
                 // point on the previous command relative to the current point.
                 // (If there is no previous command or if the previous command
                 // was not an C, c, S or s, assume the first control point is
                 // coincident with the current point.)'
                 let (x1, y1) = match prev_seg {
-                    svgtypes::PathSegment::CurveTo { x2, y2, x, y, .. } |
-                    svgtypes::PathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
+                    svgtypes::PathSegment::CurveTo { x2, y2, x, y, .. }
+                    | svgtypes::PathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
                         (x * 2.0 - x2, y * 2.0 - y2)
                     }
-                    _ => {
-                        (prev_x, prev_y)
-                    }
+                    _ => (prev_x, prev_y),
                 };
 
                 if !abs {
@@ -679,9 +680,21 @@ fn parse_path(text: &str) -> crate::PathData {
                 path.push_curve_to(x1, y1, x2, y2, x, y);
 
                 // Remember as absolute.
-                prev_seg = svgtypes::PathSegment::SmoothCurveTo { abs: true, x2, y2, x, y };
+                prev_seg = svgtypes::PathSegment::SmoothCurveTo {
+                    abs: true,
+                    x2,
+                    y2,
+                    x,
+                    y,
+                };
             }
-            svgtypes::PathSegment::Quadratic { abs, mut x1, mut y1, mut x, mut y } => {
+            svgtypes::PathSegment::Quadratic {
+                abs,
+                mut x1,
+                mut y1,
+                mut x,
+                mut y,
+            } => {
                 if !abs {
                     x1 += prev_x;
                     y1 += prev_y;
@@ -692,7 +705,13 @@ fn parse_path(text: &str) -> crate::PathData {
                 path.push_quad_to(x1, y1, x, y);
 
                 // Remember as absolute.
-                prev_seg = svgtypes::PathSegment::Quadratic { abs: true, x1, y1, x, y };
+                prev_seg = svgtypes::PathSegment::Quadratic {
+                    abs: true,
+                    x1,
+                    y1,
+                    x,
+                    y,
+                };
             }
             svgtypes::PathSegment::SmoothQuadratic { abs, mut x, mut y } => {
                 // 'The control point is assumed to be the reflection of
@@ -707,9 +726,7 @@ fn parse_path(text: &str) -> crate::PathData {
                     svgtypes::PathSegment::SmoothQuadratic { x, y, .. } => {
                         (x * 2.0 - prev_tx, y * 2.0 - prev_ty)
                     }
-                    _ => {
-                        (prev_x, prev_y)
-                    }
+                    _ => (prev_x, prev_y),
                 };
 
                 prev_tx = x1;
@@ -726,7 +743,14 @@ fn parse_path(text: &str) -> crate::PathData {
                 prev_seg = svgtypes::PathSegment::SmoothQuadratic { abs: true, x, y };
             }
             svgtypes::PathSegment::EllipticalArc {
-                abs, rx, ry, x_axis_rotation, large_arc, sweep, mut x, mut y
+                abs,
+                rx,
+                ry,
+                x_axis_rotation,
+                large_arc,
+                sweep,
+                mut x,
+                mut y,
             } => {
                 if !abs {
                     x += prev_x;
@@ -780,17 +804,21 @@ fn parse_path(text: &str) -> crate::PathData {
     path
 }
 
-fn resolve_inherit(
-    parent_id: NodeId,
-    tag_name: EId,
-    aid: AId,
-    doc: &mut Document,
-) -> bool {
+fn resolve_inherit(parent_id: NodeId, tag_name: EId, aid: AId, doc: &mut Document) -> bool {
     if aid.is_inheritable() {
         // Inheritable attributes can inherit a value from an any ancestor.
-        let node_id = doc.get(parent_id).find_node_with_attribute(aid).map(|n| n.id);
+        let node_id = doc
+            .get(parent_id)
+            .find_node_with_attribute(aid)
+            .map(|n| n.id);
         if let Some(node_id) = node_id {
-            if let Some(attr) = doc.get(node_id).attributes().iter().find(|a| a.name == aid).cloned() {
+            if let Some(attr) = doc
+                .get(node_id)
+                .attributes()
+                .iter()
+                .find(|a| a.name == aid)
+                .cloned()
+            {
                 doc.attrs.push(Attribute {
                     name: aid,
                     value: attr.value,
@@ -801,7 +829,13 @@ fn resolve_inherit(
         }
     } else {
         // Non-inheritable attributes can inherit a value only from a direct parent.
-        if let Some(attr) = doc.get(parent_id).attributes().iter().find(|a| a.name == aid).cloned() {
+        if let Some(attr) = doc
+            .get(parent_id)
+            .attributes()
+            .iter()
+            .find(|a| a.name == aid)
+            .cloned()
+        {
             doc.attrs.push(Attribute {
                 name: aid,
                 value: attr.value,
@@ -813,11 +847,9 @@ fn resolve_inherit(
 
     // Fallback to a default value if possible.
     let value = match aid {
-          AId::ImageRendering
-        | AId::ShapeRendering
-        | AId::TextRendering => "auto",
+        AId::ImageRendering | AId::ShapeRendering | AId::TextRendering => "auto",
 
-          AId::ClipPath
+        AId::ClipPath
         | AId::Filter
         | AId::MarkerEnd
         | AId::MarkerMid
@@ -827,40 +859,37 @@ fn resolve_inherit(
         | AId::StrokeDasharray
         | AId::TextDecoration => "none",
 
-          AId::FontStretch
+        AId::FontStretch
         | AId::FontStyle
         | AId::FontVariant
         | AId::FontWeight
         | AId::LetterSpacing
         | AId::WordSpacing => "normal",
 
-          AId::Fill
-        | AId::FloodColor
-        | AId::StopColor => "black",
+        AId::Fill | AId::FloodColor | AId::StopColor => "black",
 
-          AId::FillOpacity
+        AId::FillOpacity
         | AId::FloodOpacity
         | AId::Opacity
         | AId::StopOpacity
         | AId::StrokeOpacity => "1",
 
-          AId::ClipRule
-        | AId::FillRule => "nonzero",
+        AId::ClipRule | AId::FillRule => "nonzero",
 
-        AId::BaselineShift =>               "baseline",
-        AId::ColorInterpolationFilters =>   "linearRGB",
-        AId::Direction =>                   "ltr",
-        AId::Display =>                     "inline",
-        AId::FontSize =>                    "medium",
-        AId::Overflow =>                    "visible",
-        AId::StrokeDashoffset =>            "0",
-        AId::StrokeLinecap =>               "butt",
-        AId::StrokeLinejoin =>              "miter",
-        AId::StrokeMiterlimit =>            "4",
-        AId::StrokeWidth =>                 "1",
-        AId::TextAnchor =>                  "start",
-        AId::Visibility =>                  "visible",
-        AId::WritingMode =>                 "lr-tb",
+        AId::BaselineShift => "baseline",
+        AId::ColorInterpolationFilters => "linearRGB",
+        AId::Direction => "ltr",
+        AId::Display => "inline",
+        AId::FontSize => "medium",
+        AId::Overflow => "visible",
+        AId::StrokeDashoffset => "0",
+        AId::StrokeLinecap => "butt",
+        AId::StrokeLinejoin => "miter",
+        AId::StrokeMiterlimit => "4",
+        AId::StrokeWidth => "1",
+        AId::TextAnchor => "start",
+        AId::Visibility => "visible",
+        AId::WritingMode => "lr-tb",
         _ => return false,
     };
 
@@ -868,10 +897,9 @@ fn resolve_inherit(
     true
 }
 
-fn resolve_href<'a>(
-    node: roxmltree::Node<'a, 'a>,
-) -> Option<roxmltree::Node<'a, 'a>> {
-    let link_value = node.attribute((XLINK_NS, "href"))
+fn resolve_href<'a>(node: roxmltree::Node<'a, 'a>) -> Option<roxmltree::Node<'a, 'a>> {
+    let link_value = node
+        .attribute((XLINK_NS, "href"))
         .or_else(|| node.attribute("href"))?;
 
     let link_id = svgtypes::IRI::from_str(link_value).ok()?.0;
@@ -883,7 +911,9 @@ fn resolve_href<'a>(
     // Technically we can use https://crates.io/crates/hashlink,
     // but this is an additional dependency.
     // And performance even on huge files is still good enough.
-    node.document().descendants().find(|n| n.attribute("id") == Some(link_id))
+    node.document()
+        .descendants()
+        .find(|n| n.attribute("id") == Some(link_id))
 }
 
 fn parse_svg_use_element(
@@ -900,8 +930,10 @@ fn parse_svg_use_element(
     };
 
     if link == node || link == origin {
-        log::warn!("Recursive 'use' detected. '{}' will be skipped.",
-              node.attribute((SVG_NS, "id")).unwrap_or_default());
+        log::warn!(
+            "Recursive 'use' detected. '{}' will be skipped.",
+            node.attribute((SVG_NS, "id")).unwrap_or_default()
+        );
         return Ok(());
     }
 
@@ -928,7 +960,11 @@ fn parse_svg_use_element(
     //
     // `use1` should be removed.
     let mut is_recursive = false;
-    for link_child in link.descendants().skip(1).filter(|n| n.has_tag_name((SVG_NS, "use"))) {
+    for link_child in link
+        .descendants()
+        .skip(1)
+        .filter(|n| n.has_tag_name((SVG_NS, "use")))
+    {
         if let Some(link2) = resolve_href(link_child) {
             if link2 == node || link2 == link {
                 is_recursive = true;
@@ -938,8 +974,10 @@ fn parse_svg_use_element(
     }
 
     if is_recursive {
-        log::warn!("Recursive 'use' detected. '{}' will be skipped.",
-                   node.attribute((SVG_NS, "id")).unwrap_or_default());
+        log::warn!(
+            "Recursive 'use' detected. '{}' will be skipped.",
+            node.attribute((SVG_NS, "id")).unwrap_or_default()
+        );
         return Ok(());
     }
 
@@ -1010,11 +1048,12 @@ fn fix_recursive_patterns(doc: &mut Document) {
     }
 }
 
-fn find_recursive_pattern(
-    aid: AId,
-    doc: &mut Document,
-) -> Option<NodeId> {
-    for pattern_node in doc.root().descendants().filter(|n| n.has_tag_name(EId::Pattern)) {
+fn find_recursive_pattern(aid: AId, doc: &mut Document) -> Option<NodeId> {
+    for pattern_node in doc
+        .root()
+        .descendants()
+        .filter(|n| n.has_tag_name(EId::Pattern))
+    {
         for node in pattern_node.descendants() {
             if let Some(&AttributeValue::Paint(ref link_id, _)) = node.attribute(aid) {
                 if link_id == pattern_node.element_id() {
@@ -1026,7 +1065,9 @@ fn find_recursive_pattern(
                     // Check that linked node children doesn't link this pattern.
                     if let Some(linked_node) = doc.element_by_id(link_id) {
                         for node2 in linked_node.descendants() {
-                            if let Some(&AttributeValue::Paint(ref link_id2, _)) = node2.attribute(aid) {
+                            if let Some(&AttributeValue::Paint(ref link_id2, _)) =
+                                node2.attribute(aid)
+                            {
                                 if link_id2 == pattern_node.element_id() {
                                     return Some(node2.id);
                                 }
@@ -1041,22 +1082,14 @@ fn find_recursive_pattern(
     None
 }
 
-fn fix_recursive_links(
-    eid: EId,
-    aid: AId,
-    doc: &mut Document,
-) {
+fn fix_recursive_links(eid: EId, aid: AId, doc: &mut Document) {
     while let Some(node_id) = find_recursive_link(eid, aid, doc) {
         let idx = doc.get(node_id).attribute_id(aid).unwrap();
         doc.attrs[idx.0].value = AttributeValue::None;
     }
 }
 
-fn find_recursive_link(
-    eid: EId,
-    aid: AId,
-    doc: &Document,
-) -> Option<NodeId> {
+fn find_recursive_link(eid: EId, aid: AId, doc: &Document) -> Option<NodeId> {
     for node in doc.root().descendants().filter(|n| n.has_tag_name(eid)) {
         for child in node.descendants() {
             if let Some(link) = child.attribute::<Node>(aid) {
@@ -1092,7 +1125,11 @@ fn find_recursive_link(
 /// ```
 fn fix_recursive_fe_image(doc: &mut Document) {
     let mut ids = Vec::new();
-    for fe_node in doc.root().descendants().filter(|n| n.has_tag_name(EId::FeImage)) {
+    for fe_node in doc
+        .root()
+        .descendants()
+        .filter(|n| n.has_tag_name(EId::FeImage))
+    {
         if let Some(link) = fe_node.attribute::<Node>(AId::Href) {
             if let Some(filter_uri) = link.attribute::<&str>(AId::Filter) {
                 let filter_id = fe_node.parent().unwrap().element_id().to_string();

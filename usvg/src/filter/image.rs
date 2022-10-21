@@ -2,9 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::svgtree::{self, AId};
-use crate::{AspectRatio, ImageRendering, converter, Node, NodeKind, Group};
 use super::Kind;
+use crate::svgtree::{self, AId};
+use crate::{converter, AspectRatio, Group, ImageRendering, Node, NodeKind};
 
 /// An image filter primitive.
 ///

@@ -4,8 +4,8 @@
 
 use strict_num::PositiveF64;
 
-use crate::svgtree::{self, AId};
 use super::{Input, Kind, Primitive};
+use crate::svgtree::{self, AId};
 
 /// A Gaussian blur filter primitive.
 ///

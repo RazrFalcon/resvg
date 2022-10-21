@@ -4,7 +4,10 @@
 
 use usvg::TransformFromBBox;
 
-use crate::{ConvTransform, render::{Canvas, RenderState}};
+use crate::{
+    render::{Canvas, RenderState},
+    ConvTransform,
+};
 
 pub fn mask(
     tree: &usvg::Tree,
@@ -12,8 +15,8 @@ pub fn mask(
     bbox: usvg::PathBbox,
     canvas: &mut Canvas,
 ) -> Option<()> {
-    let bbox = if mask.units == usvg::Units::ObjectBoundingBox ||
-                  mask.content_units == usvg::Units::ObjectBoundingBox
+    let bbox = if mask.units == usvg::Units::ObjectBoundingBox
+        || mask.content_units == usvg::Units::ObjectBoundingBox
     {
         if let Some(bbox) = bbox.to_rect() {
             bbox
@@ -68,7 +71,8 @@ pub fn mask(
     paint.blend_mode = tiny_skia::BlendMode::DestinationIn;
 
     canvas.pixmap.draw_pixmap(
-        0, 0,
+        0,
+        0,
         mask_pixmap.as_ref(),
         &paint,
         tiny_skia::Transform::identity(),

@@ -25,19 +25,27 @@ pub fn draw(
     let antialias = path.rendering_mode.use_shape_antialiasing();
 
     if let Some(ref fill) = path.fill {
-        crate::paint_server::fill(tree, fill, style_bbox, &skia_path, antialias, blend_mode, canvas);
+        crate::paint_server::fill(
+            tree, fill, style_bbox, &skia_path, antialias, blend_mode, canvas,
+        );
     }
 
     if path.stroke.is_some() {
-        crate::paint_server::stroke(tree, &path.stroke, style_bbox, &skia_path, antialias, blend_mode, canvas);
+        crate::paint_server::stroke(
+            tree,
+            &path.stroke,
+            style_bbox,
+            &skia_path,
+            antialias,
+            blend_mode,
+            canvas,
+        );
     }
 
     bbox
 }
 
-fn convert_path(
-    path: &usvg::PathData,
-) -> Option<tiny_skia::Path> {
+fn convert_path(path: &usvg::PathData) -> Option<tiny_skia::Path> {
     let mut pb = tiny_skia::PathBuilder::new();
     for seg in path.segments() {
         match seg {
@@ -47,8 +55,17 @@ fn convert_path(
             usvg::PathSegment::LineTo { x, y } => {
                 pb.line_to(x as f32, y as f32);
             }
-            usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                pb.cubic_to(x1 as f32, y1 as f32, x2 as f32, y2 as f32, x as f32, y as f32);
+            usvg::PathSegment::CurveTo {
+                x1,
+                y1,
+                x2,
+                y2,
+                x,
+                y,
+            } => {
+                pb.cubic_to(
+                    x1 as f32, y1 as f32, x2 as f32, y2 as f32, x as f32, y as f32,
+                );
             }
             usvg::PathSegment::ClosePath => {
                 pb.close();

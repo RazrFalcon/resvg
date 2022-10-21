@@ -45,8 +45,10 @@ fn main() {
 
     rtree.root.append_kind(usvg::NodeKind::Path(usvg::Path {
         fill,
-        data: Rc::new(usvg::PathData::from_rect(usvg::Rect::new(20.0, 20.0, 160.0, 160.0).unwrap())),
-        .. usvg::Path::default()
+        data: Rc::new(usvg::PathData::from_rect(
+            usvg::Rect::new(20.0, 20.0, 160.0, 160.0).unwrap(),
+        )),
+        ..usvg::Path::default()
     }));
 
     #[cfg(feature = "dump-svg")]
@@ -56,6 +58,12 @@ fn main() {
 
     let pixmap_size = rtree.size.to_screen_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
-    resvg::render(&rtree, usvg::FitTo::Original, tiny_skia::Transform::default(), pixmap.as_mut()).unwrap();
+    resvg::render(
+        &rtree,
+        usvg::FitTo::Original,
+        tiny_skia::Transform::default(),
+        pixmap.as_mut(),
+    )
+    .unwrap();
     pixmap.save_png("out.png").unwrap();
 }

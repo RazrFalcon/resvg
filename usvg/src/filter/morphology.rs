@@ -4,9 +4,9 @@
 
 use strict_num::PositiveF64;
 
+use super::{Input, Kind, Primitive};
 use crate::svgtree::{self, AId};
 use crate::FuzzyZero;
-use super::{Input, Kind, Primitive};
 
 /// A morphology filter primitive.
 ///
@@ -49,7 +49,7 @@ pub enum MorphologyOperator {
 pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     let operator = match fe.attribute(AId::Operator).unwrap_or("erode") {
         "dilate" => MorphologyOperator::Dilate,
-        _        => MorphologyOperator::Erode,
+        _ => MorphologyOperator::Erode,
     };
 
     // Both radius are zero by default.

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ImageRef, ImageRefMut, FuzzyZero, RGBA8, f64_bound};
+use crate::{f64_bound, FuzzyZero, ImageRef, ImageRefMut, RGBA8};
 
 /// Performs an arithmetic composition.
 ///

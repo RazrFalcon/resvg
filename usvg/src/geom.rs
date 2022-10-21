@@ -6,7 +6,6 @@ use strict_num::ApproxEqUlps;
 
 use crate::{Align, AspectRatio};
 
-
 /// A trait for fuzzy/approximate equality comparisons of float numbers.
 pub trait FuzzyEq<Rhs: ?Sized = Self> {
     /// Returns `true` if values are approximately equal.
@@ -69,7 +68,6 @@ impl FuzzyZero for f64 {
     }
 }
 
-
 /// Checks that the current number is > 0.
 pub trait IsValidLength {
     /// Checks that the current number is > 0.
@@ -83,7 +81,6 @@ impl IsValidLength for f64 {
     }
 }
 
-
 /// Converts `Rect` into bbox `Transform`.
 pub trait TransformFromBBox: Sized {
     /// Converts `Rect` into bbox `Transform`.
@@ -96,7 +93,6 @@ impl TransformFromBBox for Transform {
         Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
     }
 }
-
 
 /// Line representation.
 #[allow(missing_docs)]
@@ -120,24 +116,25 @@ impl Line {
     pub fn length(&self) -> f64 {
         let x = self.x2 - self.x1;
         let y = self.y2 - self.y1;
-        (x*x + y*y).sqrt()
+        (x * x + y * y).sqrt()
     }
 
     /// Sets the line length.
     pub fn set_length(&mut self, len: f64) {
         let x = self.x2 - self.x1;
         let y = self.y2 - self.y1;
-        let len2 = (x*x + y*y).sqrt();
+        let len2 = (x * x + y * y).sqrt();
         let line = Line {
-            x1: self.x1, y1: self.y1,
-            x2: self.x1 + x/len2, y2: self.y1 + y/len2
+            x1: self.x1,
+            y1: self.y1,
+            x2: self.x1 + x / len2,
+            y2: self.y1 + y / len2,
         };
 
         self.x2 = self.x1 + (line.x2 - line.x1) * len;
         self.y2 = self.y1 + (line.y2 - line.y1) * len;
     }
 }
-
 
 // TODO: remove
 /// A 2D point representation.
@@ -168,7 +165,6 @@ impl<T: std::fmt::Display> std::fmt::Display for Point<T> {
         write!(f, "{:?}", self)
     }
 }
-
 
 /// A 2D size representation.
 ///
@@ -235,7 +231,8 @@ impl Size {
         ScreenSize::new(
             std::cmp::max(1, self.width().round() as u32),
             std::cmp::max(1, self.height().round() as u32),
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     /// Converts the current size to `Rect` at provided position.
@@ -260,11 +257,9 @@ impl std::fmt::Display for Size {
 impl FuzzyEq for Size {
     #[inline]
     fn fuzzy_eq(&self, other: &Self) -> bool {
-           self.width.fuzzy_eq(&other.width)
-        && self.height.fuzzy_eq(&other.height)
+        self.width.fuzzy_eq(&other.width) && self.height.fuzzy_eq(&other.height)
     }
 }
-
 
 /// A 2D screen size representation.
 ///
@@ -352,13 +347,13 @@ impl std::fmt::Display for ScreenSize {
     }
 }
 
-fn size_scale(
-    s1: ScreenSize,
-    s2: ScreenSize,
-    expand: bool,
-) -> ScreenSize {
+fn size_scale(s1: ScreenSize, s2: ScreenSize, expand: bool) -> ScreenSize {
     let rw = (s2.height as f64 * s1.width as f64 / s1.height as f64).ceil() as u32;
-    let with_h = if expand { rw <= s2.width } else { rw >= s2.width };
+    let with_h = if expand {
+        rw <= s2.width
+    } else {
+        rw >= s2.width
+    };
     if !with_h {
         ScreenSize::new(rw, s2.height).unwrap()
     } else {
@@ -367,13 +362,13 @@ fn size_scale(
     }
 }
 
-fn size_scale_f64(
-    s1: Size,
-    s2: Size,
-    expand: bool,
-) -> Size {
+fn size_scale_f64(s1: Size, s2: Size, expand: bool) -> Size {
     let rw = s2.height * s1.width / s1.height;
-    let with_h = if expand { rw <= s2.width } else { rw >= s2.width };
+    let with_h = if expand {
+        rw <= s2.width
+    } else {
+        rw >= s2.width
+    };
     if !with_h {
         Size::new(rw, s2.height).unwrap()
     } else {
@@ -381,7 +376,6 @@ fn size_scale_f64(
         Size::new(s2.width, h).unwrap()
     }
 }
-
 
 /// A path bbox representation.
 ///
@@ -400,7 +394,12 @@ impl PathBbox {
     #[inline]
     pub fn new(x: f64, y: f64, width: f64, height: f64) -> Option<Self> {
         if width.is_valid_length() || height.is_valid_length() {
-            Some(PathBbox { x, y, width, height })
+            Some(PathBbox {
+                x,
+                y,
+                width,
+                height,
+            })
         } else {
             None
         }
@@ -511,16 +510,20 @@ impl PathBbox {
 impl FuzzyEq for PathBbox {
     #[inline]
     fn fuzzy_eq(&self, other: &Self) -> bool {
-           self.x.fuzzy_eq(&other.x)
-        && self.y.fuzzy_eq(&other.y)
-        && self.width.fuzzy_eq(&other.width)
-        && self.height.fuzzy_eq(&other.height)
+        self.x.fuzzy_eq(&other.x)
+            && self.y.fuzzy_eq(&other.y)
+            && self.width.fuzzy_eq(&other.width)
+            && self.height.fuzzy_eq(&other.height)
     }
 }
 
 impl std::fmt::Debug for PathBbox {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "PathBbox({} {} {} {})", self.x, self.y, self.width, self.height)
+        write!(
+            f,
+            "PathBbox({} {} {} {})",
+            self.x, self.y, self.width, self.height
+        )
     }
 }
 
@@ -529,7 +532,6 @@ impl std::fmt::Display for PathBbox {
         write!(f, "{:?}", self)
     }
 }
-
 
 /// A rect representation.
 ///
@@ -547,7 +549,12 @@ impl Rect {
     #[inline]
     pub fn new(x: f64, y: f64, width: f64, height: f64) -> Option<Self> {
         if width.is_valid_length() && height.is_valid_length() {
-            Some(Rect { x, y, width, height })
+            Some(Rect {
+                x,
+                y,
+                width,
+                height,
+            })
         } else {
             None
         }
@@ -684,7 +691,8 @@ impl Rect {
 
         if !ts.is_default() {
             let path = PathData::from_rect(*self);
-            path.bbox_with_transform(*ts, None).and_then(|r| r.to_rect())
+            path.bbox_with_transform(*ts, None)
+                .and_then(|r| r.to_rect())
         } else {
             Some(*self)
         }
@@ -711,23 +719,28 @@ impl Rect {
             self.y() as i32,
             std::cmp::max(1, self.width().round() as u32),
             std::cmp::max(1, self.height().round() as u32),
-        ).unwrap()
+        )
+        .unwrap()
     }
 }
 
 impl FuzzyEq for Rect {
     #[inline]
     fn fuzzy_eq(&self, other: &Self) -> bool {
-           self.x.fuzzy_eq(&other.x)
-        && self.y.fuzzy_eq(&other.y)
-        && self.width.fuzzy_eq(&other.width)
-        && self.height.fuzzy_eq(&other.height)
+        self.x.fuzzy_eq(&other.x)
+            && self.y.fuzzy_eq(&other.y)
+            && self.width.fuzzy_eq(&other.width)
+            && self.height.fuzzy_eq(&other.height)
     }
 }
 
 impl std::fmt::Debug for Rect {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Rect({} {} {} {})", self.x, self.y, self.width, self.height)
+        write!(
+            f,
+            "Rect({} {} {} {})",
+            self.x, self.y, self.width, self.height
+        )
     }
 }
 
@@ -736,7 +749,6 @@ impl std::fmt::Display for Rect {
         write!(f, "{:?}", self)
     }
 }
-
 
 /// A 2D screen rect representation.
 ///
@@ -755,7 +767,12 @@ impl ScreenRect {
     #[inline]
     pub fn new(x: i32, y: i32, width: u32, height: u32) -> Option<Self> {
         if width > 0 && height > 0 {
-            Some(ScreenRect { x, y, width, height })
+            Some(ScreenRect {
+                x,
+                y,
+                width,
+                height,
+            })
         } else {
             None
         }
@@ -857,8 +874,12 @@ impl ScreenRect {
     pub fn fit_to_rect(&self, bounds: ScreenRect) -> Self {
         let mut r = *self;
 
-        if r.x < 0 { r.x = 0; }
-        if r.y < 0 { r.y = 0; }
+        if r.x < 0 {
+            r.x = 0;
+        }
+        if r.y < 0 {
+            r.y = 0;
+        }
 
         if r.right() > bounds.width as i32 {
             r.width = std::cmp::max(1, bounds.width as i32 - r.x) as u32;
@@ -875,13 +896,23 @@ impl ScreenRect {
     #[inline]
     pub fn to_rect(&self) -> Rect {
         // Can't fail, because `ScreenRect` is always valid.
-        Rect::new(self.x as f64, self.y as f64, self.width as f64, self.height as f64).unwrap()
+        Rect::new(
+            self.x as f64,
+            self.y as f64,
+            self.width as f64,
+            self.height as f64,
+        )
+        .unwrap()
     }
 }
 
 impl std::fmt::Debug for ScreenRect {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "ScreenRect({} {} {} {})", self.x, self.y, self.width, self.height)
+        write!(
+            f,
+            "ScreenRect({} {} {} {})",
+            self.x, self.y, self.width, self.height
+        )
     }
 }
 
@@ -890,7 +921,6 @@ impl std::fmt::Display for ScreenRect {
         write!(f, "{:?}", self)
     }
 }
-
 
 /// Representation of the [`<transform>`] type.
 ///
@@ -916,7 +946,7 @@ impl Transform {
     /// Constructs a new transform.
     #[inline]
     pub fn new(a: f64, b: f64, c: f64, d: f64, e: f64, f: f64) -> Self {
-        Transform { a, b, c, d, e, f, }
+        Transform { a, b, c, d, e, f }
     }
 
     /// Constructs a new translate transform.
@@ -935,10 +965,10 @@ impl Transform {
     #[inline]
     pub fn new_rotate(angle: f64) -> Self {
         let v = angle.to_radians();
-        let a =  v.cos();
-        let b =  v.sin();
+        let a = v.cos();
+        let b = v.sin();
         let c = -b;
-        let d =  a;
+        let d = a;
         Transform::new(a, b, c, d, 0.0, 0.0)
     }
 
@@ -994,12 +1024,12 @@ impl Transform {
 
     /// Returns `true` if the transform is default, aka `(1 0 0 1 0 0)`.
     pub fn is_default(&self) -> bool {
-           self.a.fuzzy_eq(&1.0)
-        && self.b.fuzzy_eq(&0.0)
-        && self.c.fuzzy_eq(&0.0)
-        && self.d.fuzzy_eq(&1.0)
-        && self.e.fuzzy_eq(&0.0)
-        && self.f.fuzzy_eq(&0.0)
+        self.a.fuzzy_eq(&1.0)
+            && self.b.fuzzy_eq(&0.0)
+            && self.c.fuzzy_eq(&0.0)
+            && self.d.fuzzy_eq(&1.0)
+            && self.e.fuzzy_eq(&0.0)
+            && self.f.fuzzy_eq(&0.0)
     }
 
     /// Returns transform's translate part.
@@ -1055,15 +1085,14 @@ impl Default for Transform {
 
 impl FuzzyEq for Transform {
     fn fuzzy_eq(&self, other: &Self) -> bool {
-           self.a.fuzzy_eq(&other.a)
-        && self.b.fuzzy_eq(&other.b)
-        && self.c.fuzzy_eq(&other.c)
-        && self.d.fuzzy_eq(&other.d)
-        && self.e.fuzzy_eq(&other.e)
-        && self.f.fuzzy_eq(&other.f)
+        self.a.fuzzy_eq(&other.a)
+            && self.b.fuzzy_eq(&other.b)
+            && self.c.fuzzy_eq(&other.c)
+            && self.d.fuzzy_eq(&other.d)
+            && self.e.fuzzy_eq(&other.e)
+            && self.f.fuzzy_eq(&other.f)
     }
 }
-
 
 /// View box.
 #[derive(Clone, Copy, Debug)]
@@ -1075,7 +1104,6 @@ pub struct ViewBox {
     pub aspect: AspectRatio,
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1083,7 +1111,8 @@ mod tests {
     #[test]
     fn bbox_transform_1() {
         let r = Rect::new(10.0, 20.0, 30.0, 40.0).unwrap();
-        assert!(r.bbox_transform(Rect::new(0.2, 0.3, 0.4, 0.5).unwrap())
+        assert!(r
+            .bbox_transform(Rect::new(0.2, 0.3, 0.4, 0.5).unwrap())
             .fuzzy_eq(&Rect::new(4.2, 10.3, 12.0, 20.0).unwrap()));
     }
 }

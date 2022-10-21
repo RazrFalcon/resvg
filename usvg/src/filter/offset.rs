@@ -4,8 +4,8 @@
 
 use svgtypes::Length;
 
+use super::{converter, Input, Kind, Primitive};
 use crate::svgtree::{self, AId};
-use super::{Input, Kind, Primitive, converter};
 
 /// An offset filter primitive.
 ///

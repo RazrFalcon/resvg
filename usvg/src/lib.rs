@@ -105,12 +105,13 @@ macro_rules! impl_from_str {
     };
 }
 
-pub mod utils;
 mod clippath;
 mod converter;
 mod error;
-#[cfg(feature = "export")] mod export;
-#[cfg(feature = "filter")] pub mod filter;
+#[cfg(feature = "export")]
+mod export;
+#[cfg(feature = "filter")]
+pub mod filter;
 mod geom;
 mod image;
 mod marker;
@@ -122,19 +123,22 @@ mod shapes;
 mod style;
 mod svgtree;
 mod switch;
-#[cfg(feature = "text")] mod text;
+#[cfg(feature = "text")]
+mod text;
 mod units;
 mod use_node;
+pub mod utils;
 
 pub use image::ImageHrefResolver;
+pub use strict_num::{ApproxEq, ApproxEqUlps, NonZeroPositiveF64, NormalizedF64, PositiveF64};
 pub use svgtypes::{Align, AspectRatio};
-pub use strict_num::{NormalizedF64, NonZeroPositiveF64, PositiveF64, ApproxEq, ApproxEqUlps};
 
 use std::rc::Rc;
 
 pub use roxmltree;
 
-#[cfg(feature = "text")] pub use fontdb;
+#[cfg(feature = "text")]
+pub use fontdb;
 
 pub use crate::clippath::*;
 pub use crate::error::*;
@@ -146,7 +150,6 @@ pub use crate::paint_server::*;
 pub use crate::pathdata::*;
 pub use crate::style::*;
 
-
 trait OptionLog {
     fn log_none<F: FnOnce()>(self, f: F) -> Self;
 }
@@ -154,10 +157,12 @@ trait OptionLog {
 impl<T> OptionLog for Option<T> {
     #[inline]
     fn log_none<F: FnOnce()>(self, f: F) -> Self {
-        self.or_else(|| { f(); None })
+        self.or_else(|| {
+            f();
+            None
+        })
     }
 }
-
 
 /// XML writing options.
 #[cfg(feature = "export")]
@@ -169,7 +174,6 @@ pub struct XmlOptions {
     /// `xmlwriter` options.
     pub writer_opts: xmlwriter::Options,
 }
-
 
 /// Checks that type has a default value.
 pub trait IsDefault: Default {
@@ -184,10 +188,8 @@ impl<T: Default + PartialEq + Copy> IsDefault for T {
     }
 }
 
-
 /// An alias to `NormalizedF64`.
 pub type Opacity = NormalizedF64;
-
 
 /// A non-zero `f64`.
 ///
@@ -213,7 +215,6 @@ impl NonZeroF64 {
     }
 }
 
-
 /// An element units.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -228,7 +229,6 @@ impl_enum_from_str!(Units,
     "userSpaceOnUse"    => Units::UserSpaceOnUse,
     "objectBoundingBox" => Units::ObjectBoundingBox
 );
-
 
 /// A visibility property.
 ///
@@ -249,7 +249,6 @@ impl_enum_from_str!(Visibility,
     "collapse"  => Visibility::Collapse
 );
 
-
 /// A shape rendering method.
 ///
 /// `shape-rendering` attribute in the SVG.
@@ -265,9 +264,9 @@ impl ShapeRendering {
     /// Checks if anti-aliasing should be enabled.
     pub fn use_shape_antialiasing(self) -> bool {
         match self {
-            ShapeRendering::OptimizeSpeed         => false,
-            ShapeRendering::CrispEdges            => false,
-            ShapeRendering::GeometricPrecision    => true,
+            ShapeRendering::OptimizeSpeed => false,
+            ShapeRendering::CrispEdges => false,
+            ShapeRendering::GeometricPrecision => true,
         }
     }
 }
@@ -281,7 +280,6 @@ impl_enum_from_str!(ShapeRendering,
 );
 
 impl_from_str!(ShapeRendering);
-
 
 /// A text rendering method.
 ///
@@ -304,7 +302,6 @@ impl_enum_from_str!(TextRendering,
 
 impl_from_str!(TextRendering);
 
-
 /// An image rendering method.
 ///
 /// `image-rendering` attribute in the SVG.
@@ -323,7 +320,6 @@ impl_enum_from_str!(ImageRendering,
 );
 
 impl_from_str!(ImageRendering);
-
 
 /// Node's kind.
 #[allow(missing_docs)]
@@ -353,7 +349,6 @@ impl NodeKind {
         }
     }
 }
-
 
 /// A path element.
 #[derive(Clone, Debug)]
@@ -415,14 +410,12 @@ impl Default for Path {
     }
 }
 
-
 /// An `enable-background`.
 ///
 /// Contains only the `new [ <x> <y> <width> <height> ]` value.
 #[derive(Clone, Copy, Debug)]
 #[allow(missing_docs)]
 pub struct EnableBackground(pub Option<Rect>);
-
 
 /// A group container.
 ///
@@ -490,7 +483,6 @@ impl Default for Group {
     }
 }
 
-
 /// Alias for `rctree::Node<NodeKind>`.
 pub type Node = rctree::Node<NodeKind>;
 
@@ -538,8 +530,8 @@ impl Tree {
         let mut xml_opt = roxmltree::ParsingOptions::default();
         xml_opt.allow_dtd = true;
 
-        let doc = roxmltree::Document::parse_with_options(text, xml_opt)
-            .map_err(Error::ParsingFailed)?;
+        let doc =
+            roxmltree::Document::parse_with_options(text, xml_opt).map_err(Error::ParsingFailed)?;
 
         Self::from_xmltree(&doc, opt)
     }
@@ -659,15 +651,23 @@ impl NodeExt for Node {
             }
         }
 
-        if !filter.primitives.iter().any(|c| c.kind.has_input(&filter::Input::BackgroundImage)) &&
-           !filter.primitives.iter().any(|c| c.kind.has_input(&filter::Input::BackgroundAlpha))
+        if !filter
+            .primitives
+            .iter()
+            .any(|c| c.kind.has_input(&filter::Input::BackgroundImage))
+            && !filter
+                .primitives
+                .iter()
+                .any(|c| c.kind.has_input(&filter::Input::BackgroundAlpha))
         {
             return None;
         }
 
         // We should have an ancestor with `enable-background=new`.
         // Skip the current element.
-        self.ancestors().skip(1).find(|node| has_enable_background(node))
+        self.ancestors()
+            .skip(1)
+            .find(|node| has_enable_background(node))
     }
 }
 
@@ -676,19 +676,16 @@ fn deflate(data: &[u8]) -> Result<String, Error> {
 
     let mut decoder = flate2::read::GzDecoder::new(data);
     let mut decoded = Vec::with_capacity(data.len() * 2);
-    decoder.read_to_end(&mut decoded).map_err(|_| Error::MalformedGZip)?;
+    decoder
+        .read_to_end(&mut decoded)
+        .map_err(|_| Error::MalformedGZip)?;
     let decoded = String::from_utf8(decoded).map_err(|_| Error::NotAnUtf8Str)?;
     Ok(decoded)
 }
 
-fn calc_node_bbox(
-    node: &Node,
-    ts: Transform,
-) -> Option<PathBbox> {
+fn calc_node_bbox(node: &Node, ts: Transform) -> Option<PathBbox> {
     match *node.borrow() {
-        NodeKind::Path(ref path) => {
-            path.data.bbox_with_transform(ts, path.stroke.as_ref())
-        }
+        NodeKind::Path(ref path) => path.data.bbox_with_transform(ts, path.stroke.as_ref()),
         NodeKind::Image(ref img) => {
             let path = PathData::from_rect(img.view_box.rect);
             path.bbox_with_transform(ts, None)

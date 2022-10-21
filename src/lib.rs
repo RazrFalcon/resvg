@@ -12,13 +12,14 @@
 #![allow(clippy::identity_op)]
 #![allow(clippy::upper_case_acronyms)]
 
-pub use usvg;
 pub use tiny_skia;
+pub use usvg;
 
 use usvg::NodeExt;
 
 mod clip;
-#[cfg(feature = "filter")] mod filter;
+#[cfg(feature = "filter")]
+mod filter;
 mod image;
 mod mask;
 mod paint_server;
@@ -34,10 +35,12 @@ trait OptionLog {
 impl<T> OptionLog for Option<T> {
     #[inline]
     fn log_none<F: FnOnce()>(self, f: F) -> Self {
-        self.or_else(|| { f(); None })
+        self.or_else(|| {
+            f();
+            None
+        })
     }
 }
-
 
 trait ConvTransform {
     fn to_native(&self) -> tiny_skia::Transform;
@@ -47,21 +50,26 @@ trait ConvTransform {
 impl ConvTransform for usvg::Transform {
     fn to_native(&self) -> tiny_skia::Transform {
         tiny_skia::Transform::from_row(
-            self.a as f32, self.b as f32,
-            self.c as f32, self.d as f32,
-            self.e as f32, self.f as f32,
+            self.a as f32,
+            self.b as f32,
+            self.c as f32,
+            self.d as f32,
+            self.e as f32,
+            self.f as f32,
         )
     }
 
     fn from_native(ts: tiny_skia::Transform) -> Self {
         Self::new(
-            ts.sx as f64, ts.ky as f64,
-            ts.kx as f64, ts.sy as f64,
-            ts.tx as f64, ts.ty as f64,
+            ts.sx as f64,
+            ts.ky as f64,
+            ts.kx as f64,
+            ts.sy as f64,
+            ts.tx as f64,
+            ts.ty as f64,
         )
     }
 }
-
 
 /// Renders an SVG to pixmap.
 ///
@@ -112,6 +120,13 @@ pub fn render_node(
     let size = fit_to.fit_to(node_bbox.size().to_screen_size())?;
     let mut canvas = render::Canvas::from(pixmap);
     canvas.apply_transform(transform);
-    render::render_node_to_canvas(tree, node, vbox, size, &mut render::RenderState::Ok, &mut canvas);
+    render::render_node_to_canvas(
+        tree,
+        node,
+        vbox,
+        size,
+        &mut render::RenderState::Ok,
+        &mut canvas,
+    );
     Some(())
 }

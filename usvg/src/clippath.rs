@@ -4,9 +4,8 @@
 
 use std::rc::Rc;
 
-use crate::svgtree::{self, EId, AId};
-use crate::{converter, NodeKind, Units, Transform, Node, Group};
-
+use crate::svgtree::{self, AId, EId};
+use crate::{converter, Group, Node, NodeKind, Transform, Units};
 
 /// A clip-path element.
 ///
@@ -52,7 +51,6 @@ impl Default for ClipPath {
     }
 }
 
-
 pub(crate) fn convert(
     node: svgtree::Node,
     state: &converter::State,
@@ -83,7 +81,9 @@ pub(crate) fn convert(
         }
     }
 
-    let units = node.attribute(AId::ClipPathUnits).unwrap_or(Units::UserSpaceOnUse);
+    let units = node
+        .attribute(AId::ClipPathUnits)
+        .unwrap_or(Units::UserSpaceOnUse);
     let mut clip = ClipPath {
         id: node.element_id().to_string(),
         units,
@@ -99,7 +99,9 @@ pub(crate) fn convert(
 
     if clip.root.has_children() {
         let clip = Rc::new(clip);
-        cache.clip_paths.insert(node.element_id().to_string(), clip.clone());
+        cache
+            .clip_paths
+            .insert(node.element_id().to_string(), clip.clone());
         Some(clip)
     } else {
         // A clip path without children is invalid.

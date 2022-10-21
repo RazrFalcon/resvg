@@ -4,8 +4,8 @@
 
 use svgtypes::{Length, LengthUnit as Unit};
 
-use crate::{converter, Units};
 use crate::svgtree::{self, AId};
+use crate::{converter, Units};
 
 #[inline(never)]
 pub(crate) fn convert_length(
@@ -33,17 +33,13 @@ pub(crate) fn convert_length(
                 let view_box = state.view_box;
 
                 match aid {
-                    AId::X | AId::Cx | AId::Width  => {
-                        convert_percent(length, view_box.width())
-                    }
-                    AId::Y | AId::Cy | AId::Height => {
-                        convert_percent(length, view_box.height())
-                    }
+                    AId::X | AId::Cx | AId::Width => convert_percent(length, view_box.width()),
+                    AId::Y | AId::Cy | AId::Height => convert_percent(length, view_box.height()),
                     _ => {
-                        let vb_len = (
-                              view_box.width() * view_box.width()
-                            + view_box.height() * view_box.height()
-                        ).sqrt() / 2.0_f64.sqrt();
+                        let vb_len = (view_box.width() * view_box.width()
+                            + view_box.height() * view_box.height())
+                        .sqrt()
+                            / 2.0_f64.sqrt();
 
                         convert_percent(length, vb_len)
                     }
@@ -63,7 +59,13 @@ pub(crate) fn convert_list(
         let mut num_list = Vec::new();
         for length in svgtypes::LengthListParser::from(text) {
             if let Ok(length) = length {
-                num_list.push(convert_length(length, node, aid, Units::UserSpaceOnUse, state));
+                num_list.push(convert_length(
+                    length,
+                    node,
+                    aid,
+                    Units::UserSpaceOnUse,
+                    state,
+                ));
             }
         }
 
@@ -81,7 +83,8 @@ fn convert_percent(length: Length, base: f64) -> f64 {
 pub(crate) fn resolve_font_size(node: svgtree::Node, state: &converter::State) -> f64 {
     let nodes: Vec<_> = node.ancestors().collect();
     let mut font_size = state.opt.font_size;
-    for n in nodes.iter().rev().skip(1) { // skip Root
+    for n in nodes.iter().rev().skip(1) {
+        // skip Root
         if let Some(length) = n.attribute::<Length>(AId::FontSize) {
             let dpi = state.opt.dpi;
             let n = length.number;
@@ -108,20 +111,17 @@ pub(crate) fn resolve_font_size(node: svgtree::Node, state: &converter::State) -
     font_size
 }
 
-fn convert_named_font_size(
-    name: &str,
-    parent_font_size: f64,
-) -> f64 {
+fn convert_named_font_size(name: &str, parent_font_size: f64) -> f64 {
     let factor = match name {
-        "xx-small"  => -3,
-        "x-small"   => -2,
-        "small"     => -1,
-        "medium"    => 0,
-        "large"     => 1,
-        "x-large"   => 2,
-        "xx-large"  => 3,
-        "smaller"   => -1,
-        "larger"    => 1,
+        "xx-small" => -3,
+        "x-small" => -2,
+        "small" => -1,
+        "medium" => 0,
+        "large" => 1,
+        "x-large" => 2,
+        "xx-large" => 3,
+        "smaller" => -1,
+        "larger" => 1,
         _ => {
             log::warn!("Invalid 'font-size' value: '{}'.", name);
             0

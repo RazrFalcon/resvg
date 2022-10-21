@@ -2,12 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use svgtypes::Length;
 use strict_num::PositiveF64;
+use svgtypes::Length;
 
-use crate::svgtree::{self, AId};
-use crate::{Color, Opacity, converter, SvgColorExt};
 use super::{Input, Kind, Primitive};
+use crate::svgtree::{self, AId};
+use crate::{converter, Color, Opacity, SvgColorExt};
 
 /// A drop shadow filter primitive.
 ///
@@ -55,7 +55,8 @@ pub(crate) fn convert(
 ) -> Kind {
     let (std_dev_x, std_dev_y) = super::gaussian_blur::convert_std_dev_attr(fe, "2 2");
 
-    let (color, opacity) = fe.attribute(AId::FloodColor)
+    let (color, opacity) = fe
+        .attribute(AId::FloodColor)
         .unwrap_or_else(svgtypes::Color::black)
         .split_alpha();
 

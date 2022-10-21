@@ -4,9 +4,9 @@
 
 use strict_num::PositiveF64;
 
+use super::Kind;
 use crate::svgtree::{self, AId};
 use crate::Point;
-use super::Kind;
 
 /// A turbulence generation filter primitive.
 ///
@@ -72,7 +72,7 @@ pub(crate) fn convert(fe: svgtree::Node) -> Kind {
 
     let kind = match fe.attribute(AId::Type).unwrap_or("turbulence") {
         "fractalNoise" => TurbulenceKind::FractalNoise,
-        _              => TurbulenceKind::Turbulence,
+        _ => TurbulenceKind::Turbulence,
     };
 
     Kind::Turbulence(Turbulence {

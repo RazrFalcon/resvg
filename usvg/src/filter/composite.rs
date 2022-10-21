@@ -2,8 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::svgtree::{self, AId};
 use super::{Input, Kind, Primitive};
+use crate::svgtree::{self, AId};
 
 /// A composite filter primitive.
 ///
@@ -35,28 +35,21 @@ pub enum CompositeOperator {
     Out,
     Atop,
     Xor,
-    Arithmetic {
-        k1: f64,
-        k2: f64,
-        k3: f64,
-        k4: f64,
-    },
+    Arithmetic { k1: f64, k2: f64, k3: f64, k4: f64 },
 }
 
 pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     let operator = match fe.attribute(AId::Operator).unwrap_or("over") {
-        "in"            => CompositeOperator::In,
-        "out"           => CompositeOperator::Out,
-        "atop"          => CompositeOperator::Atop,
-        "xor"           => CompositeOperator::Xor,
-        "arithmetic"    => {
-            CompositeOperator::Arithmetic {
-                k1: fe.attribute(AId::K1).unwrap_or(0.0),
-                k2: fe.attribute(AId::K2).unwrap_or(0.0),
-                k3: fe.attribute(AId::K3).unwrap_or(0.0),
-                k4: fe.attribute(AId::K4).unwrap_or(0.0),
-            }
-        }
+        "in" => CompositeOperator::In,
+        "out" => CompositeOperator::Out,
+        "atop" => CompositeOperator::Atop,
+        "xor" => CompositeOperator::Xor,
+        "arithmetic" => CompositeOperator::Arithmetic {
+            k1: fe.attribute(AId::K1).unwrap_or(0.0),
+            k2: fe.attribute(AId::K2).unwrap_or(0.0),
+            k3: fe.attribute(AId::K3).unwrap_or(0.0),
+            k4: fe.attribute(AId::K4).unwrap_or(0.0),
+        },
         _ => CompositeOperator::Over,
     };
 

@@ -6,13 +6,10 @@ use std::rc::Rc;
 
 use svgtypes::Length;
 
-use crate::svgtree::{self, EId, AId};
+use crate::svgtree::{self, AId, EId};
 use crate::{converter, units, FuzzyEq, IsValidLength, PathData, Rect, SharedPathData, Units};
 
-pub(crate) fn convert(
-    node: svgtree::Node,
-    state: &converter::State,
-) -> Option<SharedPathData> {
+pub(crate) fn convert(node: svgtree::Node, state: &converter::State) -> Option<SharedPathData> {
     match node.tag_name()? {
         EId::Rect => convert_rect(node, state),
         EId::Circle => convert_circle(node, state),
@@ -29,19 +26,22 @@ fn convert_path(node: svgtree::Node) -> Option<SharedPathData> {
     node.attribute::<SharedPathData>(AId::D)
 }
 
-fn convert_rect(
-    node: svgtree::Node,
-    state: &converter::State,
-) -> Option<SharedPathData> {
+fn convert_rect(node: svgtree::Node, state: &converter::State) -> Option<SharedPathData> {
     // 'width' and 'height' attributes must be positive and non-zero.
-    let width  = node.convert_user_length(AId::Width, state, Length::zero());
+    let width = node.convert_user_length(AId::Width, state, Length::zero());
     let height = node.convert_user_length(AId::Height, state, Length::zero());
     if !width.is_valid_length() {
-        log::warn!("Rect '{}' has an invalid 'width' value. Skipped.", node.element_id());
+        log::warn!(
+            "Rect '{}' has an invalid 'width' value. Skipped.",
+            node.element_id()
+        );
         return None;
     }
     if !height.is_valid_length() {
-        log::warn!("Rect '{}' has an invalid 'height' value. Skipped.", node.element_id());
+        log::warn!(
+            "Rect '{}' has an invalid 'height' value. Skipped.",
+            node.element_id()
+        );
         return None;
     }
 
@@ -53,8 +53,12 @@ fn convert_rect(
     // Clamp rx/ry to the half of the width/height.
     //
     // Should be done only after resolving.
-    if rx > width  / 2.0 { rx = width  / 2.0; }
-    if ry > height / 2.0 { ry = height / 2.0; }
+    if rx > width / 2.0 {
+        rx = width / 2.0;
+    }
+    if ry > height / 2.0 {
+        ry = height / 2.0;
+    }
 
     // Conversion according to https://www.w3.org/TR/SVG11/shapes.html#RectElement
     let path = if rx.fuzzy_eq(&0.0) {
@@ -83,10 +87,7 @@ fn convert_rect(
     Some(Rc::new(path))
 }
 
-fn resolve_rx_ry(
-    node: svgtree::Node,
-    state: &converter::State,
-) -> (f64, f64) {
+fn resolve_rx_ry(node: svgtree::Node, state: &converter::State) -> (f64, f64) {
     let mut rx_opt = node.attribute::<Length>(AId::Rx);
     let mut ry_opt = node.attribute::<Length>(AId::Ry);
 
@@ -104,9 +105,9 @@ fn resolve_rx_ry(
 
     // Resolve.
     let (rx, ry) = match (rx_opt, ry_opt) {
-        (None,     None)     => (Length::zero(), Length::zero()),
-        (Some(rx), None)     => (rx, rx),
-        (None,     Some(ry)) => (ry, ry),
+        (None, None) => (Length::zero(), Length::zero()),
+        (Some(rx), None) => (rx, rx),
+        (None, Some(ry)) => (ry, ry),
         (Some(rx), Some(ry)) => (rx, ry),
     };
 
@@ -116,10 +117,7 @@ fn resolve_rx_ry(
     (rx, ry)
 }
 
-fn convert_line(
-    node: svgtree::Node,
-    state: &converter::State,
-) -> Option<SharedPathData> {
+fn convert_line(node: svgtree::Node, state: &converter::State) -> Option<SharedPathData> {
     let x1 = node.convert_user_length(AId::X1, state, Length::zero());
     let y1 = node.convert_user_length(AId::Y1, state, Length::zero());
     let x2 = node.convert_user_length(AId::X2, state, Length::zero());
@@ -144,10 +142,7 @@ fn convert_polygon(node: svgtree::Node) -> Option<SharedPathData> {
     }
 }
 
-fn points_to_path(
-    node: svgtree::Node,
-    eid: &str,
-) -> Option<PathData> {
+fn points_to_path(node: svgtree::Node, eid: &str) -> Option<PathData> {
     use svgtypes::PointsParser;
 
     let mut path = PathData::new();
@@ -162,51 +157,62 @@ fn points_to_path(
             }
         }
         _ => {
-            log::warn!("{} '{}' has an invalid 'points' value. Skipped.", eid, node.element_id());
+            log::warn!(
+                "{} '{}' has an invalid 'points' value. Skipped.",
+                eid,
+                node.element_id()
+            );
             return None;
         }
     };
 
     // 'polyline' and 'polygon' elements must contain at least 2 points.
     if path.len() < 2 {
-        log::warn!("{} '{}' has less than 2 points. Skipped.", eid, node.element_id());
+        log::warn!(
+            "{} '{}' has less than 2 points. Skipped.",
+            eid,
+            node.element_id()
+        );
         return None;
     }
 
     Some(path)
 }
 
-fn convert_circle(
-    node: svgtree::Node,
-    state: &converter::State,
-) -> Option<SharedPathData> {
+fn convert_circle(node: svgtree::Node, state: &converter::State) -> Option<SharedPathData> {
     let cx = node.convert_user_length(AId::Cx, state, Length::zero());
     let cy = node.convert_user_length(AId::Cy, state, Length::zero());
-    let r  = node.convert_user_length(AId::R,  state, Length::zero());
+    let r = node.convert_user_length(AId::R, state, Length::zero());
 
     if !r.is_valid_length() {
-        log::warn!("Circle '{}' has an invalid 'r' value. Skipped.", node.element_id());
+        log::warn!(
+            "Circle '{}' has an invalid 'r' value. Skipped.",
+            node.element_id()
+        );
         return None;
     }
 
     Some(Rc::new(ellipse_to_path(cx, cy, r, r)))
 }
 
-fn convert_ellipse(
-    node: svgtree::Node,
-    state: &converter::State,
-) -> Option<SharedPathData> {
+fn convert_ellipse(node: svgtree::Node, state: &converter::State) -> Option<SharedPathData> {
     let cx = node.convert_user_length(AId::Cx, state, Length::zero());
     let cy = node.convert_user_length(AId::Cy, state, Length::zero());
     let (rx, ry) = resolve_rx_ry(node, state);
 
     if !rx.is_valid_length() {
-        log::warn!("Ellipse '{}' has an invalid 'rx' value. Skipped.", node.element_id());
+        log::warn!(
+            "Ellipse '{}' has an invalid 'rx' value. Skipped.",
+            node.element_id()
+        );
         return None;
     }
 
     if !ry.is_valid_length() {
-        log::warn!("Ellipse '{}' has an invalid 'ry' value. Skipped.", node.element_id());
+        log::warn!(
+            "Ellipse '{}' has an invalid 'ry' value. Skipped.",
+            node.element_id()
+        );
         return None;
     }
 
@@ -216,10 +222,10 @@ fn convert_ellipse(
 fn ellipse_to_path(cx: f64, cy: f64, rx: f64, ry: f64) -> PathData {
     let mut p = PathData::new();
     p.push_move_to(cx + rx, cy);
-    p.push_arc_to(rx, ry, 0.0, false, true, cx,      cy + ry);
-    p.push_arc_to(rx, ry, 0.0, false, true, cx - rx, cy     );
-    p.push_arc_to(rx, ry, 0.0, false, true, cx,      cy - ry);
-    p.push_arc_to(rx, ry, 0.0, false, true, cx + rx, cy     );
+    p.push_arc_to(rx, ry, 0.0, false, true, cx, cy + ry);
+    p.push_arc_to(rx, ry, 0.0, false, true, cx - rx, cy);
+    p.push_arc_to(rx, ry, 0.0, false, true, cx, cy - ry);
+    p.push_arc_to(rx, ry, 0.0, false, true, cx + rx, cy);
     p.push_close_path();
     p
 }

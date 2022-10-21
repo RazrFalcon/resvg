@@ -27,7 +27,6 @@ pub struct State<'a> {
     pub(crate) opt: &'a OptionsRef<'a>,
 }
 
-
 #[derive(Default)]
 pub struct Cache {
     pub clip_paths: HashMap<String, Rc<ClipPath>>,
@@ -39,7 +38,8 @@ pub struct Cache {
     // used for ID generation
     pub all_ids: HashSet<u64>,
     pub clip_path_index: usize,
-    #[allow(dead_code)] pub filter_index: usize,
+    #[allow(dead_code)]
+    pub filter_index: usize,
 }
 
 impl Cache {
@@ -74,17 +74,13 @@ fn string_hash(s: &str) -> u64 {
     h.finish()
 }
 
-
 /// Converts an input `Document` into a `Tree`.
 ///
 /// # Errors
 ///
 /// - If `Document` doesn't have an SVG node - returns an empty tree.
 /// - If `Document` doesn't have a valid size - returns `Error::InvalidSize`.
-pub(crate) fn convert_doc(
-    svg_doc: &svgtree::Document,
-    opt: &OptionsRef,
-) -> Result<Tree, Error> {
+pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &OptionsRef) -> Result<Tree, Error> {
     let svg = svg_doc.root_element();
     let (size, restore_viewbox) = resolve_svg_size(&svg, opt);
     let size = size?;
@@ -136,10 +132,7 @@ pub(crate) fn convert_doc(
     Ok(tree)
 }
 
-fn resolve_svg_size(
-    svg: &svgtree::Node,
-    opt: &OptionsRef,
-) -> (Result<Size, Error>, bool) {
+fn resolve_svg_size(svg: &svgtree::Node, opt: &OptionsRef) -> (Result<Size, Error>, bool) {
     let mut state = State {
         parent_clip_path: None,
         parent_marker: None,
@@ -156,20 +149,27 @@ fn resolve_svg_size(
 
     let view_box = svg.get_viewbox();
 
-    let restore_viewbox = if (width.unit == Unit::Percent || height.unit == Unit::Percent) && view_box.is_none() {
-        // Apply the percentages to the fallback size.
-        if width.unit == Unit::Percent {
-            width = Length::new((width.number / 100.0) * state.opt.default_size.width(), Unit::None);
-        }
+    let restore_viewbox =
+        if (width.unit == Unit::Percent || height.unit == Unit::Percent) && view_box.is_none() {
+            // Apply the percentages to the fallback size.
+            if width.unit == Unit::Percent {
+                width = Length::new(
+                    (width.number / 100.0) * state.opt.default_size.width(),
+                    Unit::None,
+                );
+            }
 
-        if height.unit == Unit::Percent {
-            height = Length::new((height.number / 100.0) * state.opt.default_size.height(), Unit::None);
-        }
+            if height.unit == Unit::Percent {
+                height = Length::new(
+                    (height.number / 100.0) * state.opt.default_size.height(),
+                    Unit::None,
+                );
+            }
 
-        true
-    } else {
-        false
-    };
+            true
+        } else {
+            false
+        };
 
     let size = if let Some(vbox) = view_box {
         state.view_box = vbox;
@@ -270,7 +270,7 @@ pub(crate) fn convert_element(
     };
 
     match tag_name {
-          EId::Rect
+        EId::Rect
         | EId::Circle
         | EId::Ellipse
         | EId::Line
@@ -284,7 +284,8 @@ pub(crate) fn convert_element(
         EId::Image => {
             image::convert(node, state, parent);
         }
-        EId::Text => {
+        EId::Text =>
+        {
             #[cfg(feature = "text")]
             if !state.opt.fontdb.is_empty() {
                 text::convert(node, state, cache, parent);
@@ -344,17 +345,13 @@ pub(crate) fn convert_clip_path_elements(
         };
 
         match tag_name {
-              EId::Rect
-            | EId::Circle
-            | EId::Ellipse
-            | EId::Polyline
-            | EId::Polygon
-            | EId::Path => {
+            EId::Rect | EId::Circle | EId::Ellipse | EId::Polyline | EId::Polygon | EId::Path => {
                 if let Some(path) = shapes::convert(node, state) {
                     convert_path(node, path, state, cache, parent);
                 }
             }
-            EId::Text => {
+            EId::Text =>
+            {
                 #[cfg(feature = "text")]
                 if !state.opt.fontdb.is_empty() {
                     text::convert(node, state, cache, parent);
@@ -462,8 +459,7 @@ pub(crate) fn convert_group(
     let enable_background = node.attribute(AId::EnableBackground);
 
     let is_g_or_use = node.has_tag_name(EId::G) || node.has_tag_name(EId::Use);
-    let required =
-           opacity.get().fuzzy_ne(&1.0)
+    let required = opacity.get().fuzzy_ne(&1.0)
         || clip_path.is_some()
         || mask.is_some()
         || !filter.is_empty()
@@ -508,7 +504,11 @@ fn resolve_filter_fill(
 ) -> Option<Paint> {
     let mut has_fill_paint = false;
     for filter in filters {
-        if filter.primitives.iter().any(|c| c.kind.has_input(&filter::Input::FillPaint)) {
+        if filter
+            .primitives
+            .iter()
+            .any(|c| c.kind.has_input(&filter::Input::FillPaint))
+        {
             has_fill_paint = true;
             break;
         }
@@ -531,7 +531,11 @@ fn resolve_filter_stroke(
 ) -> Option<Paint> {
     let mut has_stroke_paint = false;
     for filter in filters {
-        if filter.primitives.iter().any(|c| c.kind.has_input(&filter::Input::StrokePaint)) {
+        if filter
+            .primitives
+            .iter()
+            .any(|c| c.kind.has_input(&filter::Input::StrokePaint))
+        {
             has_stroke_paint = true;
             break;
         }
@@ -583,10 +587,7 @@ fn remove_empty_groups(tree: &mut Tree) {
     while rm(tree.root.clone()) {}
 }
 
-pub(crate) fn ungroup_groups(
-    root: Node,
-    keep_named_groups: bool
-) {
+pub(crate) fn ungroup_groups(root: Node, keep_named_groups: bool) {
     fn ungroup(root: Node, parent: Node, keep_named_groups: bool) -> bool {
         let mut changed = false;
 
@@ -598,12 +599,12 @@ pub(crate) fn ungroup_groups(
             let is_ok = if let NodeKind::Group(ref g) = *node.borrow() {
                 ts = g.transform;
 
-                   g.opacity == Opacity::ONE
-                && g.clip_path.is_none()
-                && g.mask.is_none()
-                && g.filters.is_empty()
-                && g.enable_background.is_none()
-                && !(keep_named_groups && !g.id.is_empty())
+                g.opacity == Opacity::ONE
+                    && g.clip_path.is_none()
+                    && g.mask.is_none()
+                    && g.filters.is_empty()
+                    && g.enable_background.is_none()
+                    && !(keep_named_groups && !g.id.is_empty())
             } else {
                 false
             };

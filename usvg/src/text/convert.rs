@@ -4,15 +4,14 @@
 
 use std::rc::Rc;
 
-use svgtypes::{Length, LengthUnit};
 use strict_num::NonZeroPositiveF64;
+use svgtypes::{Length, LengthUnit};
 
-use crate::svgtree::{self, AId, EId};
-use crate::{OptionLog, ShapeRendering, TextRendering, Visibility, converter, style, units};
-use crate::{SharedPathData, Transform, Units};
-use super::TextNode;
 use super::fontdb_ext::{self, DatabaseExt};
-
+use super::TextNode;
+use crate::svgtree::{self, AId, EId};
+use crate::{converter, style, units, OptionLog, ShapeRendering, TextRendering, Visibility};
+use crate::{SharedPathData, Transform, Units};
 
 /// A read-only text index in bytes.
 ///
@@ -31,7 +30,9 @@ impl ByteIndex {
 
     /// Converts byte position into a code point position.
     pub fn code_point_at(&self, text: &str) -> usize {
-        text.char_indices().take_while(|(i, _)| *i != self.0).count()
+        text.char_indices()
+            .take_while(|(i, _)| *i != self.0)
+            .count()
     }
 
     /// Converts byte position into a character.
@@ -39,7 +40,6 @@ impl ByteIndex {
         text[self.0..].chars().next().unwrap()
     }
 }
-
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum TextAnchor {
@@ -56,18 +56,16 @@ impl_enum_from_str!(TextAnchor,
     "end"       => TextAnchor::End
 );
 
-
 impl crate::svgtree::EnumFromStr for fontdb::Style {
     fn enum_from_str(s: &str) -> Option<Self> {
         match s {
-            "normal"    => Some(fontdb::Style::Normal),
-            "italic"    => Some(fontdb::Style::Italic),
-            "oblique"   => Some(fontdb::Style::Oblique),
+            "normal" => Some(fontdb::Style::Normal),
+            "italic" => Some(fontdb::Style::Italic),
+            "oblique" => Some(fontdb::Style::Oblique),
             _ => None,
         }
     }
 }
-
 
 pub struct TextPath {
     /// A text offset in SVG coordinates.
@@ -78,13 +76,11 @@ pub struct TextPath {
     pub path: SharedPathData,
 }
 
-
 #[derive(Clone)]
 pub enum TextFlow {
     Horizontal,
     Path(Rc<TextPath>),
 }
-
 
 /// A text chunk.
 ///
@@ -110,7 +106,6 @@ impl TextChunk {
     }
 }
 
-
 /// Spans do not overlap.
 #[derive(Clone)]
 pub struct TextSpan {
@@ -134,13 +129,11 @@ impl TextSpan {
     }
 }
 
-
 #[derive(Clone, Copy, PartialEq)]
 pub enum WritingMode {
     LeftToRight,
     TopToBottom,
 }
-
 
 struct IterState {
     chars_count: usize,
@@ -164,7 +157,14 @@ pub fn collect_text_chunks(
         chunks: Vec::new(),
     };
 
-    collect_text_chunks_impl(text_node, *text_node, pos_list, state, cache, &mut iter_state);
+    collect_text_chunks_impl(
+        text_node,
+        *text_node,
+        pos_list,
+        state,
+        cache,
+        &mut iter_state,
+    );
 
     iter_state.chunks
 }
@@ -265,8 +265,7 @@ fn collect_text_chunks_impl(
             // - text character has an absolute coordinate assigned to it (via x/y attribute)
             // - `c` is the first char of the `textPath`
             // - `c` is the first char after `textPath`
-            let is_new_chunk =
-                   pos_list[iter_state.chars_count].x.is_some()
+            let is_new_chunk = pos_list[iter_state.chars_count].x.is_some()
                 || pos_list[iter_state.chars_count].y.is_some()
                 || iter_state.split_chunk
                 || iter_state.chunks.is_empty();
@@ -316,19 +315,13 @@ fn collect_text_chunks_impl(
     }
 }
 
-fn resolve_text_flow(
-    node: svgtree::Node,
-    state: &converter::State,
-) -> Option<TextFlow> {
+fn resolve_text_flow(node: svgtree::Node, state: &converter::State) -> Option<TextFlow> {
     let linked_node = node.attribute::<svgtree::Node>(AId::Href)?;
 
     let path = match linked_node.tag_name()? {
-          EId::Rect
-        | EId::Circle
-        | EId::Ellipse
-        | EId::Line
-        | EId::Polyline
-        | EId::Polygon => super::super::shapes::convert(linked_node, state)?,
+        EId::Rect | EId::Circle | EId::Ellipse | EId::Line | EId::Polyline | EId::Polygon => {
+            super::super::shapes::convert(linked_node, state)?
+        }
         EId::Path => linked_node.attribute::<SharedPathData>(AId::D)?,
         _ => return None,
     };
@@ -352,38 +345,30 @@ fn resolve_text_flow(
         node.resolve_length(AId::StartOffset, state, 0.0)
     };
 
-
-    Some(TextFlow::Path(Rc::new(TextPath {
-        start_offset,
-        path,
-    })))
+    Some(TextFlow::Path(Rc::new(TextPath { start_offset, path })))
 }
 
-pub fn resolve_rendering_mode(
-    text_node: TextNode,
-    state: &converter::State,
-) -> ShapeRendering {
+pub fn resolve_rendering_mode(text_node: TextNode, state: &converter::State) -> ShapeRendering {
     let mode: TextRendering = text_node
         .find_attribute(AId::TextRendering)
         .unwrap_or(state.opt.text_rendering);
 
     match mode {
-        TextRendering::OptimizeSpeed      => ShapeRendering::CrispEdges,
+        TextRendering::OptimizeSpeed => ShapeRendering::CrispEdges,
         TextRendering::OptimizeLegibility => ShapeRendering::GeometricPrecision,
         TextRendering::GeometricPrecision => ShapeRendering::GeometricPrecision,
     }
 }
 
-fn resolve_font(
-    node: svgtree::Node,
-    state: &converter::State,
-) -> Option<fontdb_ext::Font> {
+fn resolve_font(node: svgtree::Node, state: &converter::State) -> Option<fontdb_ext::Font> {
     let style = node.find_attribute(AId::FontStyle).unwrap_or_default();
     let stretch = conv_font_stretch(node);
     let weight = resolve_font_weight(node);
 
     let font_family = if let Some(n) = node.find_node_with_attribute(AId::FontFamily) {
-        n.attribute::<&str>(AId::FontFamily).unwrap_or(&state.opt.font_family).to_owned()
+        n.attribute::<&str>(AId::FontFamily)
+            .unwrap_or(&state.opt.font_family)
+            .to_owned()
     } else {
         state.opt.font_family.to_owned()
     };
@@ -397,7 +382,7 @@ fn resolve_font(
         }
 
         if family.ends_with('\'') {
-            family = &family[..family.len()-1];
+            family = &family[..family.len() - 1];
         }
 
         family = family.trim();
@@ -422,7 +407,10 @@ fn resolve_font(
         style,
     };
 
-    let id = state.opt.fontdb.query(&query)
+    let id = state
+        .opt
+        .fontdb
+        .query(&query)
         .log_none(|| log::warn!("No match for '{}' font-family.", font_family))?;
 
     state.opt.fontdb.load_font(id)
@@ -433,14 +421,14 @@ fn conv_font_stretch(node: svgtree::Node) -> fontdb::Stretch {
     if let Some(n) = node.find_node_with_attribute(AId::FontStretch) {
         match n.attribute(AId::FontStretch).unwrap_or("") {
             "narrower" | "condensed" => fontdb::Stretch::Condensed,
-            "ultra-condensed"        => fontdb::Stretch::UltraCondensed,
-            "extra-condensed"        => fontdb::Stretch::ExtraCondensed,
-            "semi-condensed"         => fontdb::Stretch::SemiCondensed,
-            "semi-expanded"          => fontdb::Stretch::SemiExpanded,
-            "wider" | "expanded"     => fontdb::Stretch::Expanded,
-            "extra-expanded"         => fontdb::Stretch::ExtraExpanded,
-            "ultra-expanded"         => fontdb::Stretch::UltraExpanded,
-            _                        => fontdb::Stretch::Normal,
+            "ultra-condensed" => fontdb::Stretch::UltraCondensed,
+            "extra-condensed" => fontdb::Stretch::ExtraCondensed,
+            "semi-condensed" => fontdb::Stretch::SemiCondensed,
+            "semi-expanded" => fontdb::Stretch::SemiExpanded,
+            "wider" | "expanded" => fontdb::Stretch::Expanded,
+            "extra-expanded" => fontdb::Stretch::ExtraExpanded,
+            "ultra-expanded" => fontdb::Stretch::UltraExpanded,
+            _ => fontdb::Stretch::Normal,
         }
     } else {
         fontdb::Stretch::Normal
@@ -520,12 +508,15 @@ pub fn resolve_positions_list(
 ) -> Vec<CharacterPosition> {
     // Allocate a list that has all characters positions set to `None`.
     let total_chars = count_chars(*text_node);
-    let mut list = vec![CharacterPosition {
-        x: None,
-        y: None,
-        dx: None,
-        dy: None,
-    }; total_chars];
+    let mut list = vec![
+        CharacterPosition {
+            x: None,
+            y: None,
+            dx: None,
+            dy: None,
+        };
+        total_chars
+    ];
 
     let mut offset = 0;
     for child in text_node.descendants() {
@@ -636,8 +627,8 @@ fn resolve_decoration(
     };
 
     TextDecoration {
-        underline:    gen_style(tspan_dec.has_underline,    text_dec.has_underline),
-        overline:     gen_style(tspan_dec.has_overline,     text_dec.has_overline),
+        underline: gen_style(tspan_dec.has_underline, text_dec.has_underline),
+        overline: gen_style(tspan_dec.has_overline, text_dec.has_overline),
         line_through: gen_style(tspan_dec.has_line_through, text_dec.has_line_through),
     }
 }
@@ -671,25 +662,29 @@ fn conv_text_decoration(text_node: TextNode) -> TextDecorationTypes {
 fn conv_text_decoration2(tspan: svgtree::Node) -> TextDecorationTypes {
     let s = tspan.attribute(AId::TextDecoration);
     TextDecorationTypes {
-        has_underline:    s == Some("underline"),
-        has_overline:     s == Some("overline"),
+        has_underline: s == Some("underline"),
+        has_overline: s == Some("overline"),
         has_line_through: s == Some("line-through"),
     }
 }
 
-fn resolve_baseline_shift(
-    node: svgtree::Node,
-    state: &converter::State,
-) -> f64 {
+fn resolve_baseline_shift(node: svgtree::Node, state: &converter::State) -> f64 {
     let mut shift = 0.0;
-    let nodes: Vec<_> = node.ancestors().take_while(|n| !n.has_tag_name(EId::Text)).collect();
+    let nodes: Vec<_> = node
+        .ancestors()
+        .take_while(|n| !n.has_tag_name(EId::Text))
+        .collect();
     for n in nodes.iter().rev().cloned() {
         if let Some(len) = n.attribute::<Length>(AId::BaselineShift) {
             if len.unit == LengthUnit::Percent {
                 shift += units::resolve_font_size(n, state) * (len.number / 100.0);
             } else {
                 shift += units::convert_length(
-                    len, n, AId::BaselineShift, Units::ObjectBoundingBox, state,
+                    len,
+                    n,
+                    AId::BaselineShift,
+                    Units::ObjectBoundingBox,
+                    state,
                 );
             }
         } else if let Some(s) = n.attribute(AId::BaselineShift) {
@@ -722,7 +717,8 @@ fn resolve_font_weight(node: svgtree::Node) -> fontdb::Weight {
 
     let nodes: Vec<_> = node.ancestors().collect();
     let mut weight = 400;
-    for n in nodes.iter().rev().skip(1) { // skip Root
+    for n in nodes.iter().rev().skip(1) {
+        // skip Root
         weight = match n.attribute(AId::FontWeight).unwrap_or("") {
             "normal" => 400,
             "bold" => 700,

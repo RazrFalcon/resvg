@@ -2,13 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ImageRef, ImageRefMut, FuzzyEq, FuzzyZero, RGB8, RGBA8, f64_bound};
+use crate::{f64_bound, FuzzyEq, FuzzyZero, ImageRef, ImageRefMut, RGB8, RGBA8};
 
 const FACTOR_1_2: f64 = 1.0 / 2.0;
 const FACTOR_1_3: f64 = 1.0 / 3.0;
 const FACTOR_1_4: f64 = 1.0 / 4.0;
 const FACTOR_2_3: f64 = 2.0 / 3.0;
-
 
 /// A light source.
 #[allow(missing_docs)]
@@ -35,7 +34,6 @@ pub enum LightSource {
     },
 }
 
-
 #[derive(Clone, Copy, Debug)]
 struct Vector2 {
     x: f64,
@@ -50,8 +48,7 @@ impl Vector2 {
 
     #[inline]
     fn is_fuzzy_zero(&self) -> bool {
-           self.x.is_fuzzy_zero()
-        && self.y.is_fuzzy_zero()
+        self.x.is_fuzzy_zero() && self.y.is_fuzzy_zero()
     }
 }
 
@@ -66,7 +63,6 @@ impl core::ops::Mul<f64> for Vector2 {
         }
     }
 }
-
 
 #[derive(Clone, Copy, Debug)]
 struct Vector3 {
@@ -88,7 +84,7 @@ impl Vector3 {
 
     #[inline]
     fn length(&self) -> f64 {
-        (self.x*self.x + self.y*self.y + self.z*self.z).sqrt()
+        (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
     }
 
     #[inline]
@@ -132,7 +128,6 @@ impl core::ops::Sub<Vector3> for Vector3 {
     }
 }
 
-
 #[derive(Clone, Copy, Debug)]
 struct Normal {
     factor: Vector2,
@@ -148,7 +143,6 @@ impl Normal {
         }
     }
 }
-
 
 /// Renders a diffuse lighting.
 ///
@@ -171,7 +165,10 @@ pub fn diffuse_lighting(
 ) {
     assert!(src.width == dest.width && src.height == dest.height);
 
-    if let LightSource::SpotLight { specular_exponent, .. } = light_source {
+    if let LightSource::SpotLight {
+        specular_exponent, ..
+    } = light_source
+    {
         assert!(!specular_exponent.is_sign_negative());
     }
 
@@ -191,8 +188,15 @@ pub fn diffuse_lighting(
         diffuse_constant * k
     };
 
-    apply(light_source, surface_scale, lighting_color, &light_factor,
-          calc_diffuse_alpha, src, dest);
+    apply(
+        light_source,
+        surface_scale,
+        lighting_color,
+        &light_factor,
+        calc_diffuse_alpha,
+        src,
+        dest,
+    );
 }
 
 /// Renders a specular lighting.
@@ -217,7 +221,10 @@ pub fn specular_lighting(
 ) {
     assert!(src.width == dest.width && src.height == dest.height);
 
-    if let LightSource::SpotLight { specular_exponent, .. } = light_source {
+    if let LightSource::SpotLight {
+        specular_exponent, ..
+    } = light_source
+    {
         assert!(!specular_exponent.is_sign_negative());
     }
 
@@ -254,8 +261,15 @@ pub fn specular_lighting(
         specular_constant * k
     };
 
-    apply(light_source, surface_scale, lighting_color, &light_factor,
-          calc_specular_alpha, src, dest);
+    apply(
+        light_source,
+        surface_scale,
+        lighting_color,
+        &light_factor,
+        calc_specular_alpha,
+        src,
+        dest,
+    );
 }
 
 fn apply(
@@ -312,39 +326,40 @@ fn apply(
         *dest.pixel_at_mut(nx, ny) = RGBA8 { b, g, r, a };
     };
 
-    calc(0,         0,          top_left_normal(src));
-    calc(width - 1, 0,          top_right_normal(src));
-    calc(0,         height - 1, bottom_left_normal(src));
+    calc(0, 0, top_left_normal(src));
+    calc(width - 1, 0, top_right_normal(src));
+    calc(0, height - 1, bottom_left_normal(src));
     calc(width - 1, height - 1, bottom_right_normal(src));
 
-    for x in 1..width-1 {
-        calc(x, 0,          top_row_normal(src, x));
+    for x in 1..width - 1 {
+        calc(x, 0, top_row_normal(src, x));
         calc(x, height - 1, bottom_row_normal(src, x));
     }
 
-    for y in 1..height-1 {
-        calc(0,         y, left_column_normal(src, y));
+    for y in 1..height - 1 {
+        calc(0, y, left_column_normal(src, y));
         calc(width - 1, y, right_column_normal(src, y));
     }
 
-    for y in 1..height-1 {
-        for x in 1..width-1 {
+    for y in 1..height - 1 {
+        for x in 1..width - 1 {
             calc(x, y, interior_normal(src, x, y));
         }
     }
 }
 
-fn light_color(
-    light: &LightSource,
-    lighting_color: RGB8,
-    light_vector: Vector3,
-) -> RGB8 {
+fn light_color(light: &LightSource, lighting_color: RGB8, light_vector: Vector3) -> RGB8 {
     match *light {
-        LightSource::DistantLight { .. } | LightSource::PointLight { .. } => {
-            lighting_color
-        }
+        LightSource::DistantLight { .. } | LightSource::PointLight { .. } => lighting_color,
         LightSource::SpotLight {
-            x, y, z, points_at_x, points_at_y, points_at_z, specular_exponent, limiting_cone_angle
+            x,
+            y,
+            z,
+            points_at_x,
+            points_at_y,
+            points_at_z,
+            specular_exponent,
+            limiting_cone_angle,
         } => {
             let origin = Vector3::new(x, y, z);
             let direction = Vector3::new(points_at_x, points_at_y, points_at_z);
@@ -374,9 +389,9 @@ fn light_color(
 }
 
 fn top_left_normal(img: ImageRef) -> Normal {
-    let center       = img.alpha_at(0, 0);
-    let right        = img.alpha_at(1, 0);
-    let bottom       = img.alpha_at(0, 1);
+    let center = img.alpha_at(0, 0);
+    let right = img.alpha_at(1, 0);
+    let bottom = img.alpha_at(0, 1);
     let bottom_right = img.alpha_at(1, 1);
 
     Normal::new(
@@ -388,10 +403,10 @@ fn top_left_normal(img: ImageRef) -> Normal {
 }
 
 fn top_right_normal(img: ImageRef) -> Normal {
-    let left         = img.alpha_at(img.width - 2, 0);
-    let center       = img.alpha_at(img.width - 1, 0);
-    let bottom_left  = img.alpha_at(img.width - 2, 1);
-    let bottom       = img.alpha_at(img.width - 1, 1);
+    let left = img.alpha_at(img.width - 2, 0);
+    let center = img.alpha_at(img.width - 1, 0);
+    let bottom_left = img.alpha_at(img.width - 2, 1);
+    let bottom = img.alpha_at(img.width - 1, 1);
 
     Normal::new(
         FACTOR_2_3,
@@ -402,10 +417,10 @@ fn top_right_normal(img: ImageRef) -> Normal {
 }
 
 fn bottom_left_normal(img: ImageRef) -> Normal {
-    let top          = img.alpha_at(0, img.height - 2);
-    let top_right    = img.alpha_at(1, img.height - 2);
-    let center       = img.alpha_at(0, img.height - 1);
-    let right        = img.alpha_at(1, img.height - 1);
+    let top = img.alpha_at(0, img.height - 2);
+    let top_right = img.alpha_at(1, img.height - 2);
+    let center = img.alpha_at(0, img.height - 1);
+    let right = img.alpha_at(1, img.height - 1);
 
     Normal::new(
         FACTOR_2_3,
@@ -416,10 +431,10 @@ fn bottom_left_normal(img: ImageRef) -> Normal {
 }
 
 fn bottom_right_normal(img: ImageRef) -> Normal {
-    let top_left     = img.alpha_at(img.width - 2, img.height - 2);
-    let top          = img.alpha_at(img.width - 1, img.height - 2);
-    let left         = img.alpha_at(img.width - 2, img.height - 1);
-    let center       = img.alpha_at(img.width - 1, img.height - 1);
+    let top_left = img.alpha_at(img.width - 2, img.height - 2);
+    let top = img.alpha_at(img.width - 1, img.height - 2);
+    let left = img.alpha_at(img.width - 2, img.height - 1);
+    let center = img.alpha_at(img.width - 1, img.height - 1);
 
     Normal::new(
         FACTOR_2_3,
@@ -430,11 +445,11 @@ fn bottom_right_normal(img: ImageRef) -> Normal {
 }
 
 fn top_row_normal(img: ImageRef, x: u32) -> Normal {
-    let left         = img.alpha_at(x - 1, 0);
-    let center       = img.alpha_at(x,     0);
-    let right        = img.alpha_at(x + 1, 0);
-    let bottom_left  = img.alpha_at(x - 1, 1);
-    let bottom       = img.alpha_at(x,     1);
+    let left = img.alpha_at(x - 1, 0);
+    let center = img.alpha_at(x, 0);
+    let right = img.alpha_at(x + 1, 0);
+    let bottom_left = img.alpha_at(x - 1, 1);
+    let bottom = img.alpha_at(x, 1);
     let bottom_right = img.alpha_at(x + 1, 1);
 
     Normal::new(
@@ -446,12 +461,12 @@ fn top_row_normal(img: ImageRef, x: u32) -> Normal {
 }
 
 fn bottom_row_normal(img: ImageRef, x: u32) -> Normal {
-    let top_left     = img.alpha_at(x - 1, img.height - 2);
-    let top          = img.alpha_at(x,     img.height - 2);
-    let top_right    = img.alpha_at(x + 1, img.height - 2);
-    let left         = img.alpha_at(x - 1, img.height - 1);
-    let center       = img.alpha_at(x,     img.height - 1);
-    let right        = img.alpha_at(x + 1, img.height - 1);
+    let top_left = img.alpha_at(x - 1, img.height - 2);
+    let top = img.alpha_at(x, img.height - 2);
+    let top_right = img.alpha_at(x + 1, img.height - 2);
+    let left = img.alpha_at(x - 1, img.height - 1);
+    let center = img.alpha_at(x, img.height - 1);
+    let right = img.alpha_at(x + 1, img.height - 1);
 
     Normal::new(
         FACTOR_1_3,
@@ -462,11 +477,11 @@ fn bottom_row_normal(img: ImageRef, x: u32) -> Normal {
 }
 
 fn left_column_normal(img: ImageRef, y: u32) -> Normal {
-    let top          = img.alpha_at(0, y - 1);
-    let top_right    = img.alpha_at(1, y - 1);
-    let center       = img.alpha_at(0, y);
-    let right        = img.alpha_at(1, y);
-    let bottom       = img.alpha_at(0, y + 1);
+    let top = img.alpha_at(0, y - 1);
+    let top_right = img.alpha_at(1, y - 1);
+    let center = img.alpha_at(0, y);
+    let right = img.alpha_at(1, y);
+    let bottom = img.alpha_at(0, y + 1);
     let bottom_right = img.alpha_at(1, y + 1);
 
     Normal::new(
@@ -478,12 +493,12 @@ fn left_column_normal(img: ImageRef, y: u32) -> Normal {
 }
 
 fn right_column_normal(img: ImageRef, y: u32) -> Normal {
-    let top_left     = img.alpha_at(img.width - 2, y - 1);
-    let top          = img.alpha_at(img.width - 1, y - 1);
-    let left         = img.alpha_at(img.width - 2, y);
-    let center       = img.alpha_at(img.width - 1, y);
-    let bottom_left  = img.alpha_at(img.width - 2, y + 1);
-    let bottom       = img.alpha_at(img.width - 1, y + 1);
+    let top_left = img.alpha_at(img.width - 2, y - 1);
+    let top = img.alpha_at(img.width - 1, y - 1);
+    let left = img.alpha_at(img.width - 2, y);
+    let center = img.alpha_at(img.width - 1, y);
+    let bottom_left = img.alpha_at(img.width - 2, y + 1);
+    let bottom = img.alpha_at(img.width - 1, y + 1);
 
     Normal::new(
         FACTOR_1_2,
@@ -494,13 +509,13 @@ fn right_column_normal(img: ImageRef, y: u32) -> Normal {
 }
 
 fn interior_normal(img: ImageRef, x: u32, y: u32) -> Normal {
-    let top_left     = img.alpha_at(x - 1, y - 1);
-    let top          = img.alpha_at(x,     y - 1);
-    let top_right    = img.alpha_at(x + 1, y - 1);
-    let left         = img.alpha_at(x - 1, y);
-    let right        = img.alpha_at(x + 1, y);
-    let bottom_left  = img.alpha_at(x - 1, y + 1);
-    let bottom       = img.alpha_at(x,     y + 1);
+    let top_left = img.alpha_at(x - 1, y - 1);
+    let top = img.alpha_at(x, y - 1);
+    let top_right = img.alpha_at(x + 1, y - 1);
+    let left = img.alpha_at(x - 1, y);
+    let right = img.alpha_at(x + 1, y);
+    let bottom_left = img.alpha_at(x - 1, y + 1);
+    let bottom = img.alpha_at(x, y + 1);
     let bottom_right = img.alpha_at(x + 1, y + 1);
 
     Normal::new(

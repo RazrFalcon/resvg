@@ -11,7 +11,11 @@ macro_rules! timed {
         if $args.perf {
             let now = std::time::Instant::now();
             let res = $task;
-            println!("{}: {:.2}ms", $name, now.elapsed().as_micros() as f64 / 1000.0);
+            println!(
+                "{}: {:.2}ms",
+                $name,
+                now.elapsed().as_micros() as f64 / 1000.0
+            );
             res
         } else {
             $task
@@ -50,14 +54,18 @@ fn process() -> Result<(), String> {
             let mut buf = Vec::new();
             let stdin = std::io::stdin();
             let mut handle = stdin.lock();
-            handle.read_to_end(&mut buf).map_err(|_| "failed to read stdin")?;
+            handle
+                .read_to_end(&mut buf)
+                .map_err(|_| "failed to read stdin")?;
             buf
         } else {
             std::fs::read(&args.in_svg).map_err(|_| "failed to open the provided file")?
         }
     });
 
-    let tree = timed!(args, "Parsing",
+    let tree = timed!(
+        args,
+        "Parsing",
         usvg::Tree::from_data(&svg_data, &args.usvg.to_ref()).map_err(|e| e.to_string())
     )?;
 
@@ -225,43 +233,54 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
     }
 
     Ok(CliArgs {
-        width:              input.opt_value_from_fn(["-w", "--width"], parse_length)?,
-        height:             input.opt_value_from_fn(["-h", "--height"], parse_length)?,
-        zoom:               input.opt_value_from_fn(["-z", "--zoom"], parse_zoom)?,
-        dpi:                input.opt_value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
-        background:         input.opt_value_from_str("--background")?,
+        width: input.opt_value_from_fn(["-w", "--width"], parse_length)?,
+        height: input.opt_value_from_fn(["-h", "--height"], parse_length)?,
+        zoom: input.opt_value_from_fn(["-z", "--zoom"], parse_zoom)?,
+        dpi: input.opt_value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
+        background: input.opt_value_from_str("--background")?,
 
-        languages:          input.opt_value_from_fn("--languages", parse_languages)?
+        languages: input
+            .opt_value_from_fn("--languages", parse_languages)?
             .unwrap_or_else(|| vec!["en".to_string()]), // TODO: use system language
-        shape_rendering:    input.opt_value_from_str("--shape-rendering")?.unwrap_or_default(),
-        text_rendering:     input.opt_value_from_str("--text-rendering")?.unwrap_or_default(),
-        image_rendering:    input.opt_value_from_str("--image-rendering")?.unwrap_or_default(),
-        resources_dir:      input.opt_value_from_str("--resources-dir").unwrap_or_default(),
+        shape_rendering: input
+            .opt_value_from_str("--shape-rendering")?
+            .unwrap_or_default(),
+        text_rendering: input
+            .opt_value_from_str("--text-rendering")?
+            .unwrap_or_default(),
+        image_rendering: input
+            .opt_value_from_str("--image-rendering")?
+            .unwrap_or_default(),
+        resources_dir: input
+            .opt_value_from_str("--resources-dir")
+            .unwrap_or_default(),
 
-        font_family:        input.opt_value_from_str("--font-family")?,
-        font_size:          input.opt_value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
-        serif_family:       input.opt_value_from_str("--serif-family")?,
-        sans_serif_family:  input.opt_value_from_str("--sans-serif-family")?,
-        cursive_family:     input.opt_value_from_str("--cursive-family")?,
-        fantasy_family:     input.opt_value_from_str("--fantasy-family")?,
-        monospace_family:   input.opt_value_from_str("--monospace-family")?,
-        font_files:         input.values_from_str("--use-font-file")?,
-        font_dirs:          input.values_from_str("--use-fonts-dir")?,
-        skip_system_fonts:  input.contains("--skip-system-fonts"),
-        list_fonts:         input.contains("--list-fonts"),
+        font_family: input.opt_value_from_str("--font-family")?,
+        font_size: input
+            .opt_value_from_fn("--font-size", parse_font_size)?
+            .unwrap_or(12),
+        serif_family: input.opt_value_from_str("--serif-family")?,
+        sans_serif_family: input.opt_value_from_str("--sans-serif-family")?,
+        cursive_family: input.opt_value_from_str("--cursive-family")?,
+        fantasy_family: input.opt_value_from_str("--fantasy-family")?,
+        monospace_family: input.opt_value_from_str("--monospace-family")?,
+        font_files: input.values_from_str("--use-font-file")?,
+        font_dirs: input.values_from_str("--use-fonts-dir")?,
+        skip_system_fonts: input.contains("--skip-system-fonts"),
+        list_fonts: input.contains("--list-fonts"),
 
-        query_all:          input.contains("--query-all"),
-        export_id:          input.opt_value_from_str("--export-id")?,
-        export_area_page:   input.contains("--export-area-page"),
+        query_all: input.contains("--query-all"),
+        export_id: input.opt_value_from_str("--export-id")?,
+        export_area_page: input.contains("--export-area-page"),
 
-        export_area_drawing:input.contains("--export-area-drawing"),
+        export_area_drawing: input.contains("--export-area-drawing"),
 
-        perf:               input.contains("--perf"),
-        quiet:              input.contains("--quiet"),
-        dump_svg:           input.opt_value_from_str("--dump-svg")?,
+        perf: input.contains("--perf"),
+        quiet: input.contains("--quiet"),
+        dump_svg: input.opt_value_from_str("--dump-svg")?,
 
-        input:              input.free_from_str()?,
-        output:             input.opt_free_from_str()?,
+        input: input.free_from_str()?,
+        output: input.opt_free_from_str()?,
     })
 }
 
@@ -342,8 +361,12 @@ fn parse_args() -> Result<Args, String> {
             if let usvg::fontdb::Source::File(ref path) = &face.source {
                 println!(
                     "{}: '{}', {}, {:?}, {:?}, {:?}",
-                    path.display(), face.family, face.index,
-                    face.style, face.weight.0, face.stretch
+                    path.display(),
+                    face.family,
+                    face.index,
+                    face.style,
+                    face.weight.0,
+                    face.stretch
                 );
             }
         }
@@ -394,14 +417,19 @@ fn parse_args() -> Result<Args, String> {
         Some(v) => Some(v),
         None => {
             // Get input file absolute directory.
-            std::fs::canonicalize(&in_svg).ok().and_then(|p| p.parent().map(|p| p.to_path_buf()))
+            std::fs::canonicalize(&in_svg)
+                .ok()
+                .and_then(|p| p.parent().map(|p| p.to_path_buf()))
         }
     };
 
     let usvg = usvg::Options {
         resources_dir,
         dpi: args.dpi as f64,
-        font_family: args.font_family.take().unwrap_or_else(|| "Times New Roman".to_string()),
+        font_family: args
+            .font_family
+            .take()
+            .unwrap_or_else(|| "Times New Roman".to_string()),
         font_size: args.font_size as f64,
         languages: args.languages,
         shape_rendering: args.shape_rendering,
@@ -410,7 +438,7 @@ fn parse_args() -> Result<Args, String> {
         keep_named_groups,
         default_size,
         fontdb,
-        image_href_resolver: usvg::ImageHrefResolver::default()
+        image_href_resolver: usvg::ImageHrefResolver::default(),
     };
 
     Ok(Args {
@@ -445,8 +473,8 @@ fn load_fonts(args: &mut CliArgs) -> usvg::fontdb::Database {
         fontdb.load_fonts_dir(path);
     }
 
-    let take_or = |family: Option<String>, fallback: &str|
-        family.unwrap_or_else(|| fallback.to_string());
+    let take_or =
+        |family: Option<String>, fallback: &str| family.unwrap_or_else(|| fallback.to_string());
 
     fontdb.set_serif_family(take_or(args.serif_family.take(), "Times New Roman"));
     fontdb.set_sans_serif_family(take_or(args.sans_serif_family.take(), "Arial"));
@@ -472,9 +500,12 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
 
         if let Some(bbox) = node.calculate_bbox() {
             println!(
-                "{},{},{},{},{}", node.id(),
-                round_len(bbox.x()), round_len(bbox.y()),
-                round_len(bbox.width()), round_len(bbox.height())
+                "{},{},{},{},{}",
+                node.id(),
+                round_len(bbox.x()),
+                round_len(bbox.y()),
+                round_len(bbox.width()),
+                round_len(bbox.height())
             );
         }
     }
@@ -490,8 +521,8 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
 fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), String> {
     use std::io::Write;
 
-    let mut f = std::fs::File::create(path)
-        .map_err(|_| format!("failed to create a file {:?}", path))?;
+    let mut f =
+        std::fs::File::create(path).map_err(|_| format!("failed to create a file {:?}", path))?;
 
     f.write_all(tree.to_string(&usvg::XmlOptions::default()).as_bytes())
         .map_err(|_| format!("failed to write a file {:?}", path))?;
@@ -514,10 +545,14 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
             None => return Err(format!("SVG doesn't have '{}' ID", id)),
         };
 
-        let bbox = node.calculate_bbox().and_then(|r| r.to_rect())
+        let bbox = node
+            .calculate_bbox()
+            .and_then(|r| r.to_rect())
             .ok_or_else(|| "node has zero size".to_string())?;
 
-        let size = args.fit_to.fit_to(bbox.to_screen_size())
+        let size = args
+            .fit_to
+            .fit_to(bbox.to_screen_size())
             .ok_or_else(|| "target size is zero".to_string())?;
 
         // Unwrap is safe, because `size` is already valid.
@@ -529,12 +564,20 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
             }
         }
 
-        resvg::render_node(tree, &node, args.fit_to, tiny_skia::Transform::default(), pixmap.as_mut());
+        resvg::render_node(
+            tree,
+            &node,
+            args.fit_to,
+            tiny_skia::Transform::default(),
+            pixmap.as_mut(),
+        );
 
         if args.export_area_page {
             // TODO: add offset support to render_node() so we would not need an additional pixmap
 
-            let size = args.fit_to.fit_to(tree.size.to_screen_size())
+            let size = args
+                .fit_to
+                .fit_to(tree.size.to_screen_size())
                 .ok_or_else(|| "target size is zero".to_string())?;
 
             // Unwrap is safe, because `size` is already valid.
@@ -550,14 +593,16 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
                 pixmap.as_ref(),
                 &tiny_skia::PixmapPaint::default(),
                 tiny_skia::Transform::default(),
-                None
+                None,
             );
             page_pixmap
         } else {
             pixmap
         }
     } else {
-        let size = args.fit_to.fit_to(tree.size.to_screen_size())
+        let size = args
+            .fit_to
+            .fit_to(tree.size.to_screen_size())
             .ok_or_else(|| "target size is zero".to_string())?;
 
         // Unwrap is safe, because `size` is already valid.
@@ -569,7 +614,12 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
             }
         }
 
-        resvg::render(tree, args.fit_to, tiny_skia::Transform::default(), pixmap.as_mut());
+        resvg::render(
+            tree,
+            args.fit_to,
+            tiny_skia::Transform::default(),
+            pixmap.as_mut(),
+        );
 
         if args.export_area_drawing {
             let (_, _, pixmap) = resvg::trim_transparency(pixmap)
@@ -584,7 +634,7 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
                     pixmap.as_ref(),
                     &tiny_skia::PixmapPaint::default(),
                     tiny_skia::Transform::default(),
-                    None
+                    None,
                 );
                 bg
             } else {
@@ -596,21 +646,22 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
     };
 
     if args.perf {
-        println!("Rendering: {:.2}ms", now.elapsed().as_micros() as f64 / 1000.0);
+        println!(
+            "Rendering: {:.2}ms",
+            now.elapsed().as_micros() as f64 / 1000.0
+        );
     }
 
-    timed!(args, "Saving", img.save_png(out_png).map_err(|e| e.to_string()))
-}
-
-fn svg_to_skia_color(color: svgtypes::Color) -> tiny_skia::Color {
-    tiny_skia::Color::from_rgba8(
-        color.red,
-        color.green,
-        color.blue,
-        color.alpha,
+    timed!(
+        args,
+        "Saving",
+        img.save_png(out_png).map_err(|e| e.to_string())
     )
 }
 
+fn svg_to_skia_color(color: svgtypes::Color) -> tiny_skia::Color {
+    tiny_skia::Color::from_rgba8(color.red, color.green, color.blue, color.alpha)
+}
 
 /// A simple stderr logger.
 static LOGGER: SimpleLogger = SimpleLogger;
@@ -632,8 +683,10 @@ impl log::Log for SimpleLogger {
 
             match record.level() {
                 log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, record.args()),
-                log::Level::Warn  => eprintln!("Warning (in {}:{}): {}", target, line, record.args()),
-                log::Level::Info  => eprintln!("Info (in {}:{}): {}", target, line, record.args()),
+                log::Level::Warn => {
+                    eprintln!("Warning (in {}:{}): {}", target, line, record.args())
+                }
+                log::Level::Info => eprintln!("Info (in {}:{}): {}", target, line, record.args()),
                 log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, record.args()),
                 log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, record.args()),
             }

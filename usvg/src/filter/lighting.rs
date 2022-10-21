@@ -4,9 +4,9 @@
 
 use strict_num::PositiveF64;
 
-use crate::svgtree::{self, AId, EId};
-use crate::{Color, ScreenRect, Transform, SvgColorExt};
 use super::{Input, Kind, Primitive};
+use crate::svgtree::{self, AId, EId};
+use crate::{Color, ScreenRect, SvgColorExt, Transform};
 
 /// A diffuse lighting filter primitive.
 ///
@@ -110,7 +110,10 @@ fn convert_lighting_color(node: svgtree::Node) -> Color {
     // Color's alpha doesn't affect lighting-color. Simply skip it.
     match node.attribute::<&svgtree::AttributeValue>(AId::LightingColor) {
         Some(svgtree::AttributeValue::CurrentColor) => {
-            node.find_attribute(AId::Color).unwrap_or_else(svgtypes::Color::black).split_alpha().0
+            node.find_attribute(AId::Color)
+                .unwrap_or_else(svgtypes::Color::black)
+                .split_alpha()
+                .0
         }
         Some(svgtree::AttributeValue::Color(c)) => c.split_alpha().0,
         _ => Color::white(),
@@ -137,10 +140,10 @@ impl LightSource {
                 let (x, y) = ts.apply(light.x, light.y);
                 light.x = x - region.x() as f64;
                 light.y = y - region.y() as f64;
-                light.z = light.z * (ts.a*ts.a + ts.d*ts.d).sqrt() / SQRT_2;
+                light.z = light.z * (ts.a * ts.a + ts.d * ts.d).sqrt() / SQRT_2;
             }
             LightSource::SpotLight(ref mut light) => {
-                let sz = (ts.a*ts.a + ts.d*ts.d).sqrt() / SQRT_2;
+                let sz = (ts.a * ts.a + ts.d * ts.d).sqrt() / SQRT_2;
 
                 let (x, y) = ts.apply(light.x, light.y);
                 light.x = x - region.x() as f64;
@@ -158,7 +161,6 @@ impl LightSource {
     }
 }
 
-
 /// A distant light source.
 ///
 /// `feDistantLight` element in the SVG.
@@ -175,7 +177,6 @@ pub struct DistantLight {
     /// `elevation` in the SVG.
     pub elevation: f64,
 }
-
 
 /// A point light source.
 ///
@@ -197,7 +198,6 @@ pub struct PointLight {
     /// `z` in the SVG.
     pub z: f64,
 }
-
 
 /// A spot light source.
 ///
@@ -247,24 +247,23 @@ pub struct SpotLight {
 
 #[inline(never)]
 fn convert_light_source(parent: svgtree::Node) -> Option<LightSource> {
-    let child = parent.children().find(|n|
-        matches!(n.tag_name(), Some(EId::FeDistantLight) | Some(EId::FePointLight) | Some(EId::FeSpotLight))
-    )?;
+    let child = parent.children().find(|n| {
+        matches!(
+            n.tag_name(),
+            Some(EId::FeDistantLight) | Some(EId::FePointLight) | Some(EId::FeSpotLight)
+        )
+    })?;
 
     match child.tag_name() {
-        Some(EId::FeDistantLight) => {
-            Some(LightSource::DistantLight(DistantLight {
-                azimuth: child.attribute(AId::Azimuth).unwrap_or(0.0),
-                elevation: child.attribute(AId::Elevation).unwrap_or(0.0),
-            }))
-        }
-        Some(EId::FePointLight) => {
-            Some(LightSource::PointLight(PointLight {
-                x: child.attribute(AId::X).unwrap_or(0.0),
-                y: child.attribute(AId::Y).unwrap_or(0.0),
-                z: child.attribute(AId::Z).unwrap_or(0.0),
-            }))
-        }
+        Some(EId::FeDistantLight) => Some(LightSource::DistantLight(DistantLight {
+            azimuth: child.attribute(AId::Azimuth).unwrap_or(0.0),
+            elevation: child.attribute(AId::Elevation).unwrap_or(0.0),
+        })),
+        Some(EId::FePointLight) => Some(LightSource::PointLight(PointLight {
+            x: child.attribute(AId::X).unwrap_or(0.0),
+            y: child.attribute(AId::Y).unwrap_or(0.0),
+            z: child.attribute(AId::Z).unwrap_or(0.0),
+        })),
         Some(EId::FeSpotLight) => {
             let specular_exponent = child.attribute(AId::SpecularExponent).unwrap_or(1.0);
             let specular_exponent = PositiveF64::new(specular_exponent)

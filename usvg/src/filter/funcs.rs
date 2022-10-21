@@ -2,13 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use svgtypes::Length;
 use strict_num::PositiveF64;
+use svgtypes::Length;
 
-use crate::svgtree::{self, AId};
-use crate::{converter, Units, SvgColorExt};
 use super::{ColorMatrix, ColorMatrixKind, ComponentTransfer, DropShadow};
 use super::{GaussianBlur, Input, Kind, TransferFunction};
+use crate::svgtree::{self, AId};
+use crate::{converter, SvgColorExt, Units};
 
 #[inline(never)]
 pub fn convert_grayscale(mut amount: f64) -> Kind {
@@ -21,20 +21,21 @@ pub fn convert_grayscale(mut amount: f64) -> Kind {
             (0.0722 - 0.0722 * (1.0 - amount)),
             0.0,
             0.0,
-
             (0.2126 - 0.2126 * (1.0 - amount)),
             (0.7152 + 0.2848 * (1.0 - amount)),
             (0.0722 - 0.0722 * (1.0 - amount)),
             0.0,
             0.0,
-
             (0.2126 - 0.2126 * (1.0 - amount)),
             (0.7152 - 0.7152 * (1.0 - amount)),
             (0.0722 + 0.9278 * (1.0 - amount)),
             0.0,
             0.0,
-
-            0.0, 0.0, 0.0, 1.0, 0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
         ]),
     })
 }
@@ -50,20 +51,21 @@ pub fn convert_sepia(mut amount: f64) -> Kind {
             (0.189 - 0.189 * (1.0 - amount)),
             0.0,
             0.0,
-
             (0.349 - 0.349 * (1.0 - amount)),
             (0.686 + 0.314 * (1.0 - amount)),
             (0.168 - 0.168 * (1.0 - amount)),
             0.0,
             0.0,
-
             (0.272 - 0.272 * (1.0 - amount)),
             (0.534 - 0.534 * (1.0 - amount)),
             (0.131 + 0.869 * (1.0 - amount)),
             0.0,
             0.0,
-
-            0.0, 0.0, 0.0, 1.0, 0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
         ]),
     })
 }
@@ -113,9 +115,18 @@ pub fn convert_opacity(mut amount: f64) -> Kind {
 pub fn convert_brightness(amount: f64) -> Kind {
     Kind::ComponentTransfer(ComponentTransfer {
         input: Input::SourceGraphic,
-        func_r: TransferFunction::Linear { slope: amount, intercept: 0.0 },
-        func_g: TransferFunction::Linear { slope: amount, intercept: 0.0 },
-        func_b: TransferFunction::Linear { slope: amount, intercept: 0.0 },
+        func_r: TransferFunction::Linear {
+            slope: amount,
+            intercept: 0.0,
+        },
+        func_g: TransferFunction::Linear {
+            slope: amount,
+            intercept: 0.0,
+        },
+        func_b: TransferFunction::Linear {
+            slope: amount,
+            intercept: 0.0,
+        },
         func_a: TransferFunction::Identity,
     })
 }
@@ -124,22 +135,32 @@ pub fn convert_brightness(amount: f64) -> Kind {
 pub fn convert_contrast(amount: f64) -> Kind {
     Kind::ComponentTransfer(ComponentTransfer {
         input: Input::SourceGraphic,
-        func_r: TransferFunction::Linear { slope: amount, intercept: -(0.5 * amount) + 0.5 },
-        func_g: TransferFunction::Linear { slope: amount, intercept: -(0.5 * amount) + 0.5 },
-        func_b: TransferFunction::Linear { slope: amount, intercept: -(0.5 * amount) + 0.5 },
+        func_r: TransferFunction::Linear {
+            slope: amount,
+            intercept: -(0.5 * amount) + 0.5,
+        },
+        func_g: TransferFunction::Linear {
+            slope: amount,
+            intercept: -(0.5 * amount) + 0.5,
+        },
+        func_b: TransferFunction::Linear {
+            slope: amount,
+            intercept: -(0.5 * amount) + 0.5,
+        },
         func_a: TransferFunction::Identity,
     })
 }
 
 #[inline(never)]
-pub fn convert_blur(
-    node: svgtree::Node,
-    std_dev: Length,
-    state: &converter::State,
-) -> Kind {
-    let std_dev = PositiveF64::new(
-        crate::units::convert_length(std_dev, node, AId::Dx, Units::UserSpaceOnUse, state)
-    ).unwrap_or(PositiveF64::ZERO);
+pub fn convert_blur(node: svgtree::Node, std_dev: Length, state: &converter::State) -> Kind {
+    let std_dev = PositiveF64::new(crate::units::convert_length(
+        std_dev,
+        node,
+        AId::Dx,
+        Units::UserSpaceOnUse,
+        state,
+    ))
+    .unwrap_or(PositiveF64::ZERO);
     Kind::GaussianBlur(GaussianBlur {
         input: Input::SourceGraphic,
         std_dev_x: std_dev,
@@ -156,12 +177,21 @@ pub fn convert_drop_shadow(
     std_dev: Length,
     state: &converter::State,
 ) -> Kind {
-    let std_dev = PositiveF64::new(
-        crate::units::convert_length(std_dev, node, AId::Dx, Units::UserSpaceOnUse, state)
-    ).unwrap_or(PositiveF64::ZERO);
+    let std_dev = PositiveF64::new(crate::units::convert_length(
+        std_dev,
+        node,
+        AId::Dx,
+        Units::UserSpaceOnUse,
+        state,
+    ))
+    .unwrap_or(PositiveF64::ZERO);
 
-    let (color, opacity) = color.unwrap_or_else(||
-        node.find_attribute(AId::Color).unwrap_or_else(svgtypes::Color::black)).split_alpha();
+    let (color, opacity) = color
+        .unwrap_or_else(|| {
+            node.find_attribute(AId::Color)
+                .unwrap_or_else(svgtypes::Color::black)
+        })
+        .split_alpha();
 
     Kind::DropShadow(DropShadow {
         input: Input::SourceGraphic,

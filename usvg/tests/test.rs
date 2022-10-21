@@ -1,6 +1,5 @@
 use std::fmt;
 
-
 #[derive(Clone, Copy, PartialEq)]
 struct MStr<'a>(&'a str);
 
@@ -27,7 +26,7 @@ macro_rules! test {
                     use_single_quote: false,
                     indent: xmlwriter::Indent::Spaces(4),
                     attributes_indent: xmlwriter::Indent::Spaces(4),
-                }
+                },
             };
 
             assert_eq!(MStr(&tree.to_string(&xml_opt)), MStr(&out_str));
@@ -45,7 +44,7 @@ macro_rules! test_preserve {
 
             let re_opt = usvg::Options {
                 keep_named_groups: true,
-                .. usvg::Options::default()
+                ..usvg::Options::default()
             };
             let tree = usvg::Tree::from_str(&in_str, &re_opt.to_ref()).unwrap();
 
@@ -55,7 +54,7 @@ macro_rules! test_preserve {
                     use_single_quote: false,
                     indent: xmlwriter::Indent::Spaces(4),
                     attributes_indent: xmlwriter::Indent::Spaces(4),
-                }
+                },
             };
 
             assert_eq!(MStr(&tree.to_string(&xml_opt)), MStr(&out_str));
@@ -96,7 +95,6 @@ test_preserve!(ignore_empty_groups_with_id);
 
 test_preserve!(keep_groups_with_id);
 
-
 macro_rules! test_size {
     ($name:ident, $input:expr, $expected:expr) => {
         #[test]
@@ -109,27 +107,32 @@ macro_rules! test_size {
     };
 }
 
-test_size!(size_detection_1,
+test_size!(
+    size_detection_1,
     "<svg viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>",
     usvg::Size::new(10.0, 20.0).unwrap()
 );
 
-test_size!(size_detection_2,
+test_size!(
+    size_detection_2,
     "<svg width='30' height='40' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>",
     usvg::Size::new(30.0, 40.0).unwrap()
 );
 
-test_size!(size_detection_3,
+test_size!(
+    size_detection_3,
     "<svg width='50%' height='100%' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>",
     usvg::Size::new(5.0, 20.0).unwrap()
 );
 
-test_size!(size_detection_4,
+test_size!(
+    size_detection_4,
     "<svg xmlns='http://www.w3.org/2000/svg'><circle fill='#F4900C' cx='18' cy='18' r='18'/></svg>",
     usvg::Size::new(36.0, 36.0).unwrap()
 );
 
-test_size!(size_detection_5,
+test_size!(
+    size_detection_5,
     "<svg xmlns='http://www.w3.org/2000/svg'/>",
     usvg::Size::new(100.0, 100.0).unwrap()
 );
@@ -139,7 +142,10 @@ fn viewbox_detection() {
     use usvg::FuzzyEq;
     let opt = usvg::Options::default();
     let tree = usvg::Tree::from_str("<svg xmlns='http://www.w3.org/2000/svg'><circle fill='#F4900C' cx='18' cy='18' r='18'/></svg>", &opt.to_ref()).unwrap();
-    assert!(tree.view_box.rect.fuzzy_eq(&usvg::Rect::new(0.0, 0.0, 36.0, 36.0).unwrap()));
+    assert!(tree
+        .view_box
+        .rect
+        .fuzzy_eq(&usvg::Rect::new(0.0, 0.0, 36.0, 36.0).unwrap()));
 }
 
 macro_rules! test_size_err {
@@ -152,5 +158,7 @@ macro_rules! test_size_err {
     };
 }
 
-test_size_err!(size_detection_err,
-    "<svg width='0' height='0' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>");
+test_size_err!(
+    size_detection_err,
+    "<svg width='0' height='0' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'>"
+);

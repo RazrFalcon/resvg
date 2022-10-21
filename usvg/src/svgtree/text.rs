@@ -1,4 +1,4 @@
-use super::{Document, Node, NodeId, EId, AId, NodeKind};
+use super::{AId, Document, EId, Node, NodeId, NodeKind};
 use crate::Error;
 
 const XLINK_NS: &str = "http://www.w3.org/1999/xlink";
@@ -14,7 +14,11 @@ pub fn parse_svg_text_element(
     let space = if doc.get(parent_id).has_attribute(AId::Space) {
         get_xmlspace(doc, parent_id, XmlSpace::Default)
     } else {
-        if let Some(node) = doc.get(parent_id).ancestors().find(|n| n.has_attribute(AId::Space)) {
+        if let Some(node) = doc
+            .get(parent_id)
+            .ancestors()
+            .find(|n| n.has_attribute(AId::Space))
+        {
             get_xmlspace(doc, node.id, XmlSpace::Default)
         } else {
             XmlSpace::Default
@@ -67,11 +71,13 @@ fn parse_svg_text_element_impl(
             is_tref = true;
         }
 
-        let node_id = super::parse::parse_svg_element(node, parent_id, tag_name, style_sheet, false, doc)?;
+        let node_id =
+            super::parse::parse_svg_element(node, parent_id, tag_name, style_sheet, false, doc)?;
         let space = get_xmlspace(doc, node_id, space);
 
         if is_tref {
-            let link_value = node.attribute((XLINK_NS, "href"))
+            let link_value = node
+                .attribute((XLINK_NS, "href"))
                 .or_else(|| node.attribute("href"));
 
             if let Some(href) = link_value {
@@ -88,10 +94,7 @@ fn parse_svg_text_element_impl(
     Ok(())
 }
 
-fn resolve_tref_text(
-    xml: &roxmltree::Document,
-    href: &str,
-) -> Option<String> {
+fn resolve_tref_text(xml: &roxmltree::Document, href: &str) -> Option<String> {
     let id = svgtypes::IRI::from_str(href).ok()?.0;
 
     // Find linked element in the original tree.
@@ -107,8 +110,16 @@ fn resolve_tref_text(
     //
     // Note: we have to filter nodes by `is_text()` first since `text()` will look up
     // for text nodes in element children therefore we will get duplicates.
-    let text: String = node.descendants().filter(|n| n.is_text()).filter_map(|n| n.text()).collect();
-    if text.is_empty() { None } else { Some(text) }
+    let text: String = node
+        .descendants()
+        .filter(|n| n.is_text())
+        .filter_map(|n| n.text())
+        .collect();
+    if text.is_empty() {
+        None
+    } else {
+        Some(text)
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -267,9 +278,9 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
             }
 
             let is_first = i == 0;
-            let is_last  = i == len - 1;
+            let is_last = i == len - 1;
 
-            if     is_first
+            if is_first
                 && c1 == Some(b' ')
                 && xmlspace1 == XmlSpace::Default
                 && !doc.get(node1_id).text().is_empty()
@@ -278,8 +289,7 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
                 if let NodeKind::Text(ref mut text) = doc.nodes[node1_id.0].kind {
                     text.remove_first_space();
                 }
-            } else if
-                   is_last
+            } else if is_last
                 && c4 == Some(b' ')
                 && !doc.get(node2_id).text().is_empty()
                 && xmlspace2 == XmlSpace::Default
@@ -291,7 +301,7 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
                 }
             }
 
-            if     is_last
+            if is_last
                 && c2 == Some(b' ')
                 && !doc.get(node1_id).text().is_empty()
                 && doc.get(node2_id).text().is_empty()

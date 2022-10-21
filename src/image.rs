@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ConvTransform, render::Canvas};
+use crate::{render::Canvas, ConvTransform};
 
 pub fn draw(image: &usvg::Image, canvas: &mut Canvas) -> usvg::PathBbox {
     if image.visibility != usvg::Visibility::Visible {
@@ -24,26 +24,26 @@ pub fn draw_kind(
             draw_svg(subtree, view_box, canvas);
         }
         #[cfg(feature = "raster-images")]
-        usvg::ImageKind::JPEG(ref data) => {
-            match raster_images::read_jpeg(data) {
-                Some(image) => { raster_images::draw_raster(&image, view_box, rendering_mode, canvas); }
-                None => log::warn!("Failed to decode a JPEG image."),
+        usvg::ImageKind::JPEG(ref data) => match raster_images::read_jpeg(data) {
+            Some(image) => {
+                raster_images::draw_raster(&image, view_box, rendering_mode, canvas);
             }
-        }
+            None => log::warn!("Failed to decode a JPEG image."),
+        },
         #[cfg(feature = "raster-images")]
-        usvg::ImageKind::PNG(ref data) => {
-            match raster_images::read_png(data) {
-                Some(image) => { raster_images::draw_raster(&image, view_box, rendering_mode, canvas); }
-                None => log::warn!("Failed to decode a PNG image."),
+        usvg::ImageKind::PNG(ref data) => match raster_images::read_png(data) {
+            Some(image) => {
+                raster_images::draw_raster(&image, view_box, rendering_mode, canvas);
             }
-        }
+            None => log::warn!("Failed to decode a PNG image."),
+        },
         #[cfg(feature = "raster-images")]
-        usvg::ImageKind::GIF(ref data) => {
-            match raster_images::read_gif(data) {
-                Some(image) => { raster_images::draw_raster(&image, view_box, rendering_mode, canvas); }
-                None => log::warn!("Failed to decode a GIF image."),
+        usvg::ImageKind::GIF(ref data) => match raster_images::read_gif(data) {
+            Some(image) => {
+                raster_images::draw_raster(&image, view_box, rendering_mode, canvas);
             }
-        }
+            None => log::warn!("Failed to decode a GIF image."),
+        },
         #[cfg(not(feature = "raster-images"))]
         _ => {
             log::warn!("Images decoding was disabled by a build feature.");
@@ -51,11 +51,7 @@ pub fn draw_kind(
     }
 }
 
-fn draw_svg(
-    tree: &usvg::Tree,
-    view_box: usvg::ViewBox,
-    canvas: &mut Canvas,
-) -> Option<()> {
+fn draw_svg(tree: &usvg::Tree, view_box: usvg::ViewBox, canvas: &mut Canvas) -> Option<()> {
     let img_size = tree.size.to_screen_size();
     let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&view_box, img_size);
 
@@ -77,7 +73,8 @@ fn draw_svg(
     }
 
     canvas.pixmap.draw_pixmap(
-        0, 0,
+        0,
+        0,
         sub_pixmap.as_ref(),
         &tiny_skia::PixmapPaint::default(),
         tiny_skia::Transform::identity(),
@@ -109,8 +106,10 @@ mod raster_images {
 
         let r = image_rect(&view_box, img.size);
         let rect = tiny_skia::Rect::from_xywh(
-            r.x() as f32, r.y() as f32,
-            r.width() as f32, r.height() as f32,
+            r.x() as f32,
+            r.y() as f32,
+            r.width() as f32,
+            r.height() as f32,
         )?;
 
         let ts = tiny_skia::Transform::from_row(
@@ -122,27 +121,26 @@ mod raster_images {
             r.y() as f32,
         );
 
-        let pattern = tiny_skia::Pattern::new(
-            pixmap.as_ref(),
-            tiny_skia::SpreadMode::Pad,
-            filter,
-            1.0,
-            ts,
-        );
+        let pattern =
+            tiny_skia::Pattern::new(pixmap.as_ref(), tiny_skia::SpreadMode::Pad, filter, 1.0, ts);
         let mut paint = tiny_skia::Paint::default();
         paint.shader = pattern;
 
         if view_box.aspect.slice {
             let r = view_box.rect;
             let rect = tiny_skia::Rect::from_xywh(
-                r.x() as f32, r.y() as f32,
-                r.width() as f32, r.height() as f32,
+                r.x() as f32,
+                r.y() as f32,
+                r.width() as f32,
+                r.height() as f32,
             )?;
 
             canvas.set_clip_rect(rect);
         }
 
-        canvas.pixmap.fill_rect(rect, &paint, canvas.transform, canvas.clip.as_ref());
+        canvas
+            .pixmap
+            .fill_rect(rect, &paint, canvas.transform, canvas.clip.as_ref());
         canvas.clip = None;
 
         Some(())
@@ -224,14 +222,11 @@ mod raster_images {
             }
             png::ColorType::Indexed => {
                 log::warn!("Indexed PNG is not supported.");
-                return None
+                return None;
             }
         };
 
-        Some(Image {
-            data,
-            size,
-        })
+        Some(Image { data, size })
     }
 
     pub fn read_jpeg(data: &[u8]) -> Option<Image> {
@@ -256,10 +251,7 @@ mod raster_images {
             _ => return None,
         };
 
-        Some(Image {
-            data,
-            size,
-        })
+        Some(Image { data, size })
     }
 
     pub fn read_gif(data: &[u8]) -> Option<Image> {
@@ -268,7 +260,8 @@ mod raster_images {
         let mut decoder = decoder.read_info(data).ok()?;
         let first_frame = decoder.read_next_frame().ok()??;
 
-        let size = usvg::ScreenSize::new(u32::from(first_frame.width), u32::from(first_frame.height))?;
+        let size =
+            usvg::ScreenSize::new(u32::from(first_frame.width), u32::from(first_frame.height))?;
 
         Some(Image {
             data: ImageData::RGBA(first_frame.buffer.to_vec()),
@@ -277,10 +270,7 @@ mod raster_images {
     }
 
     /// Calculates an image rect depending on the provided view box.
-    fn image_rect(
-        view_box: &usvg::ViewBox,
-        img_size: usvg::ScreenSize,
-    ) -> usvg::Rect {
+    fn image_rect(view_box: &usvg::ViewBox, img_size: usvg::ScreenSize) -> usvg::Rect {
         let new_size = img_size.to_size().fit_view_box(view_box);
         let (x, y) = usvg::utils::aligned_pos(
             view_box.aspect.align,

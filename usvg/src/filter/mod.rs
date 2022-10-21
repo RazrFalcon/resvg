@@ -4,16 +4,15 @@
 
 //! A collection of SVG filters.
 
-use std::rc::Rc;
 use std::collections::HashSet;
+use std::rc::Rc;
 
 use svgtypes::{Length, LengthUnit as Unit};
 
-use crate::{Color, Opacity, OptionLog, Rect, Units, converter};
-use crate::paint_server::{resolve_number, convert_units};
-use crate::svgtree::{self, EId, AId};
+use crate::paint_server::{convert_units, resolve_number};
+use crate::svgtree::{self, AId, EId};
+use crate::{converter, Color, Opacity, OptionLog, Rect, Units};
 
-mod funcs;
 mod blend;
 mod color_matrix;
 mod component_transfer;
@@ -22,6 +21,7 @@ mod convolve_matrix;
 mod displacement_map;
 mod drop_shadow;
 mod flood;
+mod funcs;
 mod gaussian_blur;
 mod image;
 mod lighting;
@@ -78,7 +78,6 @@ pub struct Filter {
     pub primitives: Vec<Primitive>,
 }
 
-
 /// A filter primitive element.
 #[derive(Clone, Debug)]
 pub struct Primitive {
@@ -107,7 +106,6 @@ pub struct Primitive {
     /// Filter primitive kind.
     pub kind: Kind,
 }
-
 
 /// A filter kind.
 #[allow(missing_docs)]
@@ -157,7 +155,6 @@ impl Kind {
     }
 }
 
-
 /// Identifies input for a filter primitive.
 #[allow(missing_docs)]
 #[derive(Clone, PartialEq, Debug)]
@@ -170,7 +167,6 @@ pub enum Input {
     StrokePaint,
     Reference(String),
 }
-
 
 /// A color interpolation mode.
 #[allow(missing_docs)]
@@ -187,7 +183,6 @@ impl_enum_from_str!(ColorInterpolation,
     "linearRGB" => ColorInterpolation::LinearRGB
 );
 
-
 pub(crate) fn convert(
     node: svgtree::Node,
     state: &converter::State,
@@ -201,15 +196,15 @@ pub(crate) fn convert(
     let mut has_invalid_urls = false;
     let mut filters = Vec::new();
 
-    let create_base_filter_func = |kind, filters: &mut Vec<Rc<Filter>>, cache: &mut converter::Cache| {
+    let create_base_filter_func = |kind,
+                                   filters: &mut Vec<Rc<Filter>>,
+                                   cache: &mut converter::Cache| {
         // Filter functions, unlike `filter` elements, do not have a filter region.
         // We're currently do not support an unlimited region, so we simply use a fairly large one.
         // This if far from ideal, but good for now.
         // TODO: Should be fixed eventually.
         let rect = match kind {
-            Kind::DropShadow(_) | Kind::GaussianBlur(_) => {
-                Rect::new(-1.0, -1.0, 2.0, 2.0).unwrap()
-            }
+            Kind::DropShadow(_) | Kind::GaussianBlur(_) => Rect::new(-1.0, -1.0, 2.0, 2.0).unwrap(),
             _ => Rect::new(-0.1, -0.1, 1.2, 1.2).unwrap(),
         };
 
@@ -218,18 +213,16 @@ pub(crate) fn convert(
             units: Units::ObjectBoundingBox,
             primitive_units: Units::UserSpaceOnUse,
             rect,
-            primitives: vec![
-                Primitive {
-                    x: None,
-                    y: None,
-                    width: None,
-                    height: None,
-                    // Unlike `filter` elements, filter functions use sRGB colors by default.
-                    color_interpolation: ColorInterpolation::SRGB,
-                    result: "result".to_string(),
-                    kind,
-                },
-            ],
+            primitives: vec![Primitive {
+                x: None,
+                y: None,
+                width: None,
+                height: None,
+                // Unlike `filter` elements, filter functions use sRGB colors by default.
+                color_interpolation: ColorInterpolation::SRGB,
+                result: "result".to_string(),
+                kind,
+            }],
         }));
     };
 
@@ -239,21 +232,26 @@ pub(crate) fn convert(
             Err(e) => {
                 // Skip the whole attribute list on error.
                 log::warn!("Failed to parse a filter value cause {}. Skipping.", e);
-                return Ok(Vec::new())
+                return Ok(Vec::new());
             }
         };
 
         match func {
-            svgtypes::FilterValue::Blur(std_dev) => {
-                create_base_filter_func(funcs::convert_blur(node, std_dev, state), &mut filters, cache)
-            }
-            svgtypes::FilterValue::DropShadow { color, dx, dy, std_dev } => {
-                create_base_filter_func(
-                    funcs::convert_drop_shadow(node, color, dx, dy, std_dev, state),
-                    &mut filters,
-                    cache,
-                )
-            }
+            svgtypes::FilterValue::Blur(std_dev) => create_base_filter_func(
+                funcs::convert_blur(node, std_dev, state),
+                &mut filters,
+                cache,
+            ),
+            svgtypes::FilterValue::DropShadow {
+                color,
+                dx,
+                dy,
+                std_dev,
+            } => create_base_filter_func(
+                funcs::convert_drop_shadow(node, color, dx, dy, std_dev, state),
+                &mut filters,
+                cache,
+            ),
             svgtypes::FilterValue::Brightness(amount) => {
                 create_base_filter_func(funcs::convert_brightness(amount), &mut filters, cache)
             }
@@ -318,12 +316,42 @@ fn convert_url(
     let primitive_units = convert_units(node, AId::PrimitiveUnits, Units::UserSpaceOnUse);
 
     let rect = Rect::new(
-        resolve_number(node, AId::X, units, state, Length::new(-10.0, Unit::Percent)),
-        resolve_number(node, AId::Y, units, state, Length::new(-10.0, Unit::Percent)),
-        resolve_number(node, AId::Width, units, state, Length::new(120.0, Unit::Percent)),
-        resolve_number(node, AId::Height, units, state, Length::new(120.0, Unit::Percent)),
+        resolve_number(
+            node,
+            AId::X,
+            units,
+            state,
+            Length::new(-10.0, Unit::Percent),
+        ),
+        resolve_number(
+            node,
+            AId::Y,
+            units,
+            state,
+            Length::new(-10.0, Unit::Percent),
+        ),
+        resolve_number(
+            node,
+            AId::Width,
+            units,
+            state,
+            Length::new(120.0, Unit::Percent),
+        ),
+        resolve_number(
+            node,
+            AId::Height,
+            units,
+            state,
+            Length::new(120.0, Unit::Percent),
+        ),
     );
-    let rect = rect.log_none(|| log::warn!("Filter '{}' has an invalid region. Skipped.", node.element_id()))
+    let rect = rect
+        .log_none(|| {
+            log::warn!(
+                "Filter '{}' has an invalid region. Skipped.",
+                node.element_id()
+            )
+        })
         .ok_or(())?;
 
     let node_with_primitives = match find_filter_with_primitives(node) {
@@ -343,20 +371,21 @@ fn convert_url(
         primitives,
     });
 
-    cache.filters.insert(node.element_id().to_string(), filter.clone());
+    cache
+        .filters
+        .insert(node.element_id().to_string(), filter.clone());
 
     Ok(Some(filter))
 }
 
-fn find_filter_with_primitives(
-    node: svgtree::Node,
-) -> Option<svgtree::Node> {
+fn find_filter_with_primitives(node: svgtree::Node) -> Option<svgtree::Node> {
     for link_id in node.href_iter() {
         let link = node.document().get(link_id);
         if !link.has_tag_name(EId::Filter) {
             log::warn!(
                 "Filter '{}' cannot reference '{}' via 'xlink:href'.",
-                node.element_id(), link.tag_name().unwrap()
+                node.element_id(),
+                link.tag_name().unwrap()
             );
             return None;
         }
@@ -442,7 +471,9 @@ fn convert_primitive(
         // TODO: validate and test
         width: fe.try_convert_length(AId::Width, units, state),
         height: fe.try_convert_length(AId::Height, units, state),
-        color_interpolation: fe.find_attribute(AId::ColorInterpolationFilters).unwrap_or_default(),
+        color_interpolation: fe
+            .find_attribute(AId::ColorInterpolationFilters)
+            .unwrap_or_default(),
         result: gen_result(fe, results),
         kind,
     }
@@ -460,11 +491,7 @@ pub(crate) fn create_dummy_primitive() -> Kind {
 }
 
 #[inline(never)]
-fn resolve_input(
-    node: svgtree::Node,
-    aid: AId,
-    primitives: &[Primitive],
-) -> Input {
+fn resolve_input(node: svgtree::Node, aid: AId, primitives: &[Primitive]) -> Input {
     match node.attribute(aid) {
         Some(s) => {
             let input = parse_in(s);
@@ -497,24 +524,19 @@ fn resolve_input(
     }
 }
 
-fn parse_in(
-    s: &str,
-) -> Input {
+fn parse_in(s: &str) -> Input {
     match s {
-        "SourceGraphic"     => Input::SourceGraphic,
-        "SourceAlpha"       => Input::SourceAlpha,
-        "BackgroundImage"   => Input::BackgroundImage,
-        "BackgroundAlpha"   => Input::BackgroundAlpha,
-        "FillPaint"         => Input::FillPaint,
-        "StrokePaint"       => Input::StrokePaint,
-        _                   => Input::Reference(s.to_string())
+        "SourceGraphic" => Input::SourceGraphic,
+        "SourceAlpha" => Input::SourceAlpha,
+        "BackgroundImage" => Input::BackgroundImage,
+        "BackgroundAlpha" => Input::BackgroundAlpha,
+        "FillPaint" => Input::FillPaint,
+        "StrokePaint" => Input::StrokePaint,
+        _ => Input::Reference(s.to_string()),
     }
 }
 
-fn gen_result(
-    node: svgtree::Node,
-    results: &mut FilterResults,
-) -> String {
+fn gen_result(node: svgtree::Node, results: &mut FilterResults) -> String {
     match node.attribute::<&str>(AId::Result) {
         Some(s) => {
             // Remember predefined result.

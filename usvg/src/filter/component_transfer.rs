@@ -2,8 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::svgtree::{self, AId, EId};
 use super::{Input, Kind, Primitive};
+use crate::svgtree::{self, AId, EId};
 
 /// A component-wise remapping filter primitive.
 ///
@@ -48,10 +48,7 @@ pub enum TransferFunction {
 
     /// Applies a linear shift to a component.
     #[allow(missing_docs)]
-    Linear {
-        slope: f64,
-        intercept: f64,
-    },
+    Linear { slope: f64, intercept: f64 },
 
     /// Applies an exponential shift to a component.
     #[allow(missing_docs)]
@@ -88,34 +85,24 @@ pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
 
 fn convert_transfer_function(node: svgtree::Node) -> Option<TransferFunction> {
     match node.attribute(AId::Type)? {
-        "identity" => {
-            Some(TransferFunction::Identity)
-        }
-        "table" => {
-            match node.attribute::<&Vec<f64>>(AId::TableValues) {
-                Some(values) => Some(TransferFunction::Table(values.clone())),
-                None => Some(TransferFunction::Table(Vec::new())),
-            }
-        }
-        "discrete" => {
-            match node.attribute::<&Vec<f64>>(AId::TableValues) {
-                Some(values) => Some(TransferFunction::Discrete(values.clone())),
-                None => Some(TransferFunction::Discrete(Vec::new())),
-            }
-        }
-        "linear" => {
-            Some(TransferFunction::Linear {
-                slope: node.attribute(AId::Slope).unwrap_or(1.0),
-                intercept: node.attribute(AId::Intercept).unwrap_or(0.0),
-            })
-        }
-        "gamma" => {
-            Some(TransferFunction::Gamma {
-                amplitude: node.attribute(AId::Amplitude).unwrap_or(1.0),
-                exponent: node.attribute(AId::Exponent).unwrap_or(1.0),
-                offset: node.attribute(AId::Offset).unwrap_or(0.0),
-            })
-        }
+        "identity" => Some(TransferFunction::Identity),
+        "table" => match node.attribute::<&Vec<f64>>(AId::TableValues) {
+            Some(values) => Some(TransferFunction::Table(values.clone())),
+            None => Some(TransferFunction::Table(Vec::new())),
+        },
+        "discrete" => match node.attribute::<&Vec<f64>>(AId::TableValues) {
+            Some(values) => Some(TransferFunction::Discrete(values.clone())),
+            None => Some(TransferFunction::Discrete(Vec::new())),
+        },
+        "linear" => Some(TransferFunction::Linear {
+            slope: node.attribute(AId::Slope).unwrap_or(1.0),
+            intercept: node.attribute(AId::Intercept).unwrap_or(0.0),
+        }),
+        "gamma" => Some(TransferFunction::Gamma {
+            amplitude: node.attribute(AId::Amplitude).unwrap_or(1.0),
+            exponent: node.attribute(AId::Exponent).unwrap_or(1.0),
+            offset: node.attribute(AId::Offset).unwrap_or(0.0),
+        }),
         _ => None,
     }
 }

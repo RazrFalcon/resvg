@@ -1,6 +1,7 @@
 use once_cell::sync::Lazy;
 use rgb::FromSlice;
 
+#[rustfmt::skip]
 mod render;
 
 const IMAGE_SIZE: u32 = 300;
@@ -32,7 +33,13 @@ pub fn render(name: &str) -> usize {
     let fit_to = usvg::FitTo::Width(IMAGE_SIZE);
     let size = fit_to.fit_to(tree.size.to_screen_size()).unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
-    resvg::render(&tree, fit_to, tiny_skia::Transform::default(), pixmap.as_mut()).unwrap();
+    resvg::render(
+        &tree,
+        fit_to,
+        tiny_skia::Transform::default(),
+        pixmap.as_mut(),
+    )
+    .unwrap();
 
     // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
 
@@ -43,7 +50,12 @@ pub fn render(name: &str) -> usize {
     assert_eq!(expected_data.len(), rgba.len());
 
     let mut pixels_d = 0;
-    for (a, b) in expected_data.as_slice().as_rgba().iter().zip(rgba.as_rgba()) {
+    for (a, b) in expected_data
+        .as_slice()
+        .as_rgba()
+        .iter()
+        .zip(rgba.as_rgba())
+    {
         if is_pix_diff(*a, *b) {
             pixels_d += 1;
         }
@@ -69,9 +81,7 @@ fn load_png(path: &str) -> Vec<u8> {
         png::ColorType::Rgb => {
             panic!("RGB PNG is not supported.");
         }
-        png::ColorType::Rgba => {
-            img_data
-        }
+        png::ColorType::Rgba => img_data,
         png::ColorType::Grayscale => {
             let mut rgba_data = Vec::with_capacity(img_data.len() * 4);
             for gray in img_data {
@@ -104,10 +114,10 @@ fn load_png(path: &str) -> Vec<u8> {
 
 // TODO: remove
 fn is_pix_diff(c1: rgb::RGBA8, c2: rgb::RGBA8) -> bool {
-    (c1.r as i32 - c2.r as i32).abs() > 1 ||
-        (c1.g as i32 - c2.g as i32).abs() > 1 ||
-        (c1.b as i32 - c2.b as i32).abs() > 1 ||
-        (c1.a as i32 - c2.a as i32).abs() > 1
+    (c1.r as i32 - c2.r as i32).abs() > 1
+        || (c1.g as i32 - c2.g as i32).abs() > 1
+        || (c1.b as i32 - c2.b as i32).abs() > 1
+        || (c1.a as i32 - c2.a as i32).abs() > 1
 }
 
 #[allow(dead_code)]

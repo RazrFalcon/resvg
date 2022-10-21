@@ -4,14 +4,13 @@
 
 use std::rc::Rc;
 
-use svgtypes::{Length, LengthUnit as Unit};
 use strict_num::PositiveF64;
+use svgtypes::{Length, LengthUnit as Unit};
 
-use crate::svgtree::{self, AId, EId};
-use crate::{Color, NodeKind, NormalizedF64, Opacity, OptionLog, Node, Paint, Group};
-use crate::{Units, converter, SvgColorExt};
 use crate::geom::{FuzzyEq, FuzzyZero, IsValidLength, Line, Rect, Transform, ViewBox};
-
+use crate::svgtree::{self, AId, EId};
+use crate::{converter, SvgColorExt, Units};
+use crate::{Color, Group, Node, NodeKind, NormalizedF64, Opacity, OptionLog, Paint};
 
 /// A spread method.
 ///
@@ -31,7 +30,6 @@ impl_enum_from_str!(SpreadMethod,
     "reflect"   => SpreadMethod::Reflect,
     "repeat"    => SpreadMethod::Repeat
 );
-
 
 /// A generic gradient.
 #[derive(Clone, Debug)]
@@ -54,7 +52,6 @@ pub struct BaseGradient {
     /// A list of `stop` elements.
     pub stops: Vec<Stop>,
 }
-
 
 /// A linear gradient.
 ///
@@ -84,7 +81,6 @@ impl std::ops::Deref for LinearGradient {
         &self.base
     }
 }
-
 
 /// A radial gradient.
 ///
@@ -140,7 +136,6 @@ pub struct Stop {
     pub opacity: Opacity,
 }
 
-
 /// A pattern element.
 ///
 /// `pattern` element in SVG.
@@ -182,13 +177,9 @@ pub struct Pattern {
     pub root: Node,
 }
 
-
 pub(crate) enum ServerOrColor {
     Server(Paint),
-    Color {
-        color: Color,
-        opacity: Opacity,
-    },
+    Color { color: Color, opacity: Opacity },
 }
 
 pub(crate) fn convert(
@@ -210,17 +201,16 @@ pub(crate) fn convert(
     };
 
     if let Some(ServerOrColor::Server(ref paint)) = paint {
-        cache.paint.insert(node.element_id().to_string(), paint.clone());
+        cache
+            .paint
+            .insert(node.element_id().to_string(), paint.clone());
     }
 
     paint
 }
 
 #[inline(never)]
-fn convert_linear(
-    node: svgtree::Node,
-    state: &converter::State,
-) -> Option<ServerOrColor> {
+fn convert_linear(node: svgtree::Node, state: &converter::State) -> Option<ServerOrColor> {
     let stops = convert_stops(find_gradient_with_stops(node)?);
     if stops.len() < 2 {
         return stops_to_color(&stops);
@@ -228,30 +218,36 @@ fn convert_linear(
 
     let units = convert_units(node, AId::GradientUnits, Units::ObjectBoundingBox);
     let transform = resolve_attr(node, AId::GradientTransform)
-        .attribute(AId::GradientTransform).unwrap_or_default();
+        .attribute(AId::GradientTransform)
+        .unwrap_or_default();
 
     let gradient = LinearGradient {
         id: node.element_id().to_string(),
         x1: resolve_number(node, AId::X1, units, state, Length::zero()),
         y1: resolve_number(node, AId::Y1, units, state, Length::zero()),
-        x2: resolve_number(node, AId::X2, units, state, Length::new(100.0, Unit::Percent)),
+        x2: resolve_number(
+            node,
+            AId::X2,
+            units,
+            state,
+            Length::new(100.0, Unit::Percent),
+        ),
         y2: resolve_number(node, AId::Y2, units, state, Length::zero()),
         base: BaseGradient {
             units,
             transform,
             spread_method: convert_spread_method(node),
             stops,
-        }
+        },
     };
 
-    Some(ServerOrColor::Server(Paint::LinearGradient(Rc::new(gradient))))
+    Some(ServerOrColor::Server(Paint::LinearGradient(Rc::new(
+        gradient,
+    ))))
 }
 
 #[inline(never)]
-fn convert_radial(
-    node: svgtree::Node,
-    state: &converter::State,
-) -> Option<ServerOrColor> {
+fn convert_radial(node: svgtree::Node, state: &converter::State) -> Option<ServerOrColor> {
     let stops = convert_stops(find_gradient_with_stops(node)?);
     if stops.len() < 2 {
         return stops_to_color(&stops);
@@ -273,13 +269,26 @@ fn convert_radial(
     }
 
     let spread_method = convert_spread_method(node);
-    let cx = resolve_number(node, AId::Cx, units, state, Length::new(50.0, Unit::Percent));
-    let cy = resolve_number(node, AId::Cy, units, state, Length::new(50.0, Unit::Percent));
+    let cx = resolve_number(
+        node,
+        AId::Cx,
+        units,
+        state,
+        Length::new(50.0, Unit::Percent),
+    );
+    let cy = resolve_number(
+        node,
+        AId::Cy,
+        units,
+        state,
+        Length::new(50.0, Unit::Percent),
+    );
     let fx = resolve_number(node, AId::Fx, units, state, Length::new_number(cx));
     let fy = resolve_number(node, AId::Fy, units, state, Length::new_number(cy));
     let (fx, fy) = prepare_focal(cx, cy, r, fx, fy);
     let transform = resolve_attr(node, AId::GradientTransform)
-        .attribute(AId::GradientTransform).unwrap_or_default();
+        .attribute(AId::GradientTransform)
+        .unwrap_or_default();
 
     let gradient = RadialGradient {
         id: node.element_id().to_string(),
@@ -293,10 +302,12 @@ fn convert_radial(
             transform,
             spread_method,
             stops,
-        }
+        },
     };
 
-    Some(ServerOrColor::Server(Paint::RadialGradient(Rc::new(gradient))))
+    Some(ServerOrColor::Server(Paint::RadialGradient(Rc::new(
+        gradient,
+    ))))
 }
 
 #[inline(never)]
@@ -310,19 +321,18 @@ fn convert_pattern(
     let view_box = {
         let n1 = resolve_attr(node, AId::ViewBox);
         let n2 = resolve_attr(node, AId::PreserveAspectRatio);
-        n1.get_viewbox().map(|vb|
-            ViewBox {
-                rect: vb,
-                aspect: n2.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
-            }
-        )
+        n1.get_viewbox().map(|vb| ViewBox {
+            rect: vb,
+            aspect: n2.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
+        })
     };
 
     let units = convert_units(node, AId::PatternUnits, Units::ObjectBoundingBox);
     let content_units = convert_units(node, AId::PatternContentUnits, Units::UserSpaceOnUse);
 
     let transform = resolve_attr(node, AId::PatternTransform)
-        .attribute(AId::PatternTransform).unwrap_or_default();
+        .attribute(AId::PatternTransform)
+        .unwrap_or_default();
 
     let rect = Rect::new(
         resolve_number(node, AId::X, units, state, Length::zero()),
@@ -330,7 +340,12 @@ fn convert_pattern(
         resolve_number(node, AId::Width, units, state, Length::zero()),
         resolve_number(node, AId::Height, units, state, Length::zero()),
     );
-    let rect = rect.log_none(|| log::warn!("Pattern '{}' has an invalid size. Skipped.", node.element_id()))?;
+    let rect = rect.log_none(|| {
+        log::warn!(
+            "Pattern '{}' has an invalid size. Skipped.",
+            node.element_id()
+        )
+    })?;
 
     let mut patt = Pattern {
         id: node.element_id().to_string(),
@@ -356,11 +371,7 @@ fn convert_spread_method(node: svgtree::Node) -> SpreadMethod {
     node.attribute(AId::SpreadMethod).unwrap_or_default()
 }
 
-pub(crate) fn convert_units(
-    node: svgtree::Node,
-    name: AId,
-    def: Units,
-) -> Units {
+pub(crate) fn convert_units(node: svgtree::Node, name: AId, def: Units) -> Units {
     let node = resolve_attr(node, name);
     node.attribute(name).unwrap_or(def)
 }
@@ -371,7 +382,8 @@ fn find_gradient_with_stops(node: svgtree::Node) -> Option<svgtree::Node> {
         if !link.tag_name().unwrap().is_gradient() {
             log::warn!(
                 "Gradient '{}' cannot reference '{}' via 'xlink:href'.",
-                node.element_id(), link.tag_name().unwrap()
+                node.element_id(),
+                link.tag_name().unwrap()
             );
             return None;
         }
@@ -390,7 +402,8 @@ fn find_pattern_with_children(node: svgtree::Node) -> Option<svgtree::Node> {
         if !link.has_tag_name(EId::Pattern) {
             log::warn!(
                 "Pattern '{}' cannot reference '{}' via 'xlink:href'.",
-                node.element_id(), link.tag_name().unwrap()
+                node.element_id(),
+                link.tag_name().unwrap()
             );
             return None;
         }
@@ -425,16 +438,13 @@ fn convert_stops(grad: svgtree::Node) -> Vec<Stop> {
             prev_offset = Length::new_number(offset);
 
             let (color, opacity) = match stop.attribute(AId::StopColor) {
-                Some(&svgtree::AttributeValue::CurrentColor) => {
-                    stop.find_attribute(AId::Color).unwrap_or_else(svgtypes::Color::black)
-                }
-                Some(&svgtree::AttributeValue::Color(c)) => {
-                    c
-                }
-                _ => {
-                    svgtypes::Color::black()
-                }
-            }.split_alpha();
+                Some(&svgtree::AttributeValue::CurrentColor) => stop
+                    .find_attribute(AId::Color)
+                    .unwrap_or_else(svgtypes::Color::black),
+                Some(&svgtree::AttributeValue::Color(c)) => c,
+                _ => svgtypes::Color::black(),
+            }
+            .split_alpha();
 
             stops.push(Stop {
                 offset: StopOffset::new_clamped(offset),
@@ -527,15 +537,16 @@ fn convert_stops(grad: svgtree::Node) -> Vec<Stop> {
 
 #[inline(never)]
 pub(crate) fn resolve_number(
-    node: svgtree::Node, name: AId, units: Units, state: &converter::State, def: Length
+    node: svgtree::Node,
+    name: AId,
+    units: Units,
+    state: &converter::State,
+    def: Length,
 ) -> f64 {
     resolve_attr(node, name).convert_length(name, units, state, def)
 }
 
-fn resolve_attr(
-    node: svgtree::Node,
-    name: AId,
-) -> svgtree::Node {
+fn resolve_attr(node: svgtree::Node, name: AId) -> svgtree::Node {
     if node.has_attribute(name) {
         return node;
     }
@@ -549,10 +560,7 @@ fn resolve_attr(
     }
 }
 
-fn resolve_lg_attr(
-    node: svgtree::Node,
-    name: AId,
-) -> svgtree::Node {
+fn resolve_lg_attr(node: svgtree::Node, name: AId) -> svgtree::Node {
     for link_id in node.href_iter() {
         let link = node.document().get(link_id);
         let tag_name = match link.tag_name() {
@@ -586,10 +594,7 @@ fn resolve_lg_attr(
     node
 }
 
-fn resolve_rg_attr(
-    node: svgtree::Node,
-    name: AId,
-) -> svgtree::Node {
+fn resolve_rg_attr(node: svgtree::Node, name: AId) -> svgtree::Node {
     for link_id in node.href_iter() {
         let link = node.document().get(link_id);
         let tag_name = match link.tag_name() {
@@ -624,10 +629,7 @@ fn resolve_rg_attr(
     node
 }
 
-fn resolve_pattern_attr(
-    node: svgtree::Node,
-    name: AId,
-) -> svgtree::Node {
+fn resolve_pattern_attr(node: svgtree::Node, name: AId) -> svgtree::Node {
     for link_id in node.href_iter() {
         let link = node.document().get(link_id);
         let tag_name = match link.tag_name() {
@@ -647,10 +649,7 @@ fn resolve_pattern_attr(
     node
 }
 
-fn resolve_filter_attr(
-    node: svgtree::Node,
-    aid: AId,
-) -> svgtree::Node {
+fn resolve_filter_attr(node: svgtree::Node, aid: AId) -> svgtree::Node {
     for link_id in node.href_iter() {
         let link = node.document().get(link_id);
         let tag_name = match link.tag_name() {

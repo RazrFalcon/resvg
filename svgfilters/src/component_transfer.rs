@@ -4,7 +4,7 @@
 
 use core::cmp;
 
-use crate::{ImageRefMut, f64_bound};
+use crate::{f64_bound, ImageRefMut};
 
 /// A transfer function used `component_transfer`.
 ///
@@ -26,10 +26,7 @@ pub enum TransferFunction<'a> {
     Discrete(&'a [f64]),
 
     /// Applies a linear shift to a component.
-    Linear {
-        slope: f64,
-        intercept: f64,
-    },
+    Linear { slope: f64, intercept: f64 },
 
     /// Applies an exponential shift to a component.
     Gamma {
@@ -53,9 +50,7 @@ impl<'a> TransferFunction<'a> {
     fn apply(&self, c: u8) -> u8 {
         let c = c as f64 / 255.0;
         let c = match self {
-            TransferFunction::Identity => {
-                c
-            }
+            TransferFunction::Identity => c,
             TransferFunction::Table(values) => {
                 let n = values.len() - 1;
                 let k = (c * (n as f64)).floor() as usize;
@@ -75,12 +70,12 @@ impl<'a> TransferFunction<'a> {
                 let k = (c * (n as f64)).floor() as usize;
                 values[cmp::min(k, n - 1)]
             }
-            TransferFunction::Linear { slope, intercept } => {
-                slope * c + intercept
-            }
-            TransferFunction::Gamma { amplitude, exponent, offset } => {
-                amplitude * c.powf(*exponent) + offset
-            }
+            TransferFunction::Linear { slope, intercept } => slope * c + intercept,
+            TransferFunction::Gamma {
+                amplitude,
+                exponent,
+                offset,
+            } => amplitude * c.powf(*exponent) + offset,
         };
 
         (f64_bound(0.0, c, 1.0) * 255.0) as u8

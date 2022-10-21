@@ -6,10 +6,10 @@ use std::rc::Rc;
 
 use svgtypes::{Length, LengthUnit};
 
-use crate::svgtree::{self, EId, AId};
-use crate::{converter, clippath, style, utils};
-use crate::{Group, Node, NodeExt, NodeKind, Path, PathData};
 use crate::geom::{FuzzyEq, IsValidLength, Rect, Size, Transform};
+use crate::svgtree::{self, AId, EId};
+use crate::{clippath, converter, style, utils};
+use crate::{Group, Node, NodeExt, NodeKind, Path, PathData};
 
 pub(crate) fn convert(
     node: svgtree::Node,
@@ -228,9 +228,7 @@ fn convert_children(
 
             g
         }
-        converter::GroupKind::Skip => {
-            parent.clone()
-        }
+        converter::GroupKind::Skip => parent.clone(),
         converter::GroupKind::Ignore => return,
     };
 
@@ -247,7 +245,10 @@ fn get_clip_rect(
     state: &converter::State,
 ) -> Option<Rect> {
     // No need to clip elements with overflow:visible.
-    if matches!(symbol_node.attribute(AId::Overflow), Some("visible") | Some("auto")) {
+    if matches!(
+        symbol_node.attribute(AId::Overflow),
+        Some("visible") | Some("auto")
+    ) {
         return None;
     }
 
@@ -303,7 +304,9 @@ fn viewbox_transform(
 
     let size = Size::new(w, h)?;
     let vb = linked.get_viewbox()?;
-    let aspect = linked.attribute(AId::PreserveAspectRatio).unwrap_or_default();
+    let aspect = linked
+        .attribute(AId::PreserveAspectRatio)
+        .unwrap_or_default();
 
     Some(utils::view_box_to_transform(vb, aspect, size))
 }

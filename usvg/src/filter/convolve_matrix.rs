@@ -2,9 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use super::{Input, Kind, Primitive};
 use crate::svgtree::{self, AId};
 use crate::{FuzzyZero, NonZeroF64};
-use super::{Input, Kind, Primitive};
 
 /// A matrix convolution filter primitive.
 ///
@@ -60,11 +60,14 @@ impl ConvolveMatrixData {
     /// - `columns` * `rows` != `data.len()`
     /// - `target_x` >= `columns`
     /// - `target_y` >= `rows`
-    pub fn new(target_x: u32, target_y: u32, columns: u32, rows: u32, data: Vec<f64>) -> Option<Self> {
-        if (columns * rows) as usize != data.len()
-           || target_x >= columns
-           || target_y >= rows
-        {
+    pub fn new(
+        target_x: u32,
+        target_y: u32,
+        columns: u32,
+        rows: u32,
+        data: Vec<f64>,
+    ) -> Option<Self> {
+        if (columns * rows) as usize != data.len() || target_x >= columns || target_y >= rows {
             return None;
         }
 
@@ -182,14 +185,12 @@ pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Option<Kin
     let target_x = parse_target(fe.attribute(AId::TargetX), order_x)?;
     let target_y = parse_target(fe.attribute(AId::TargetY), order_y)?;
 
-    let kernel_matrix = ConvolveMatrixData::new(
-        target_x, target_y, order_x, order_y, matrix,
-    )?;
+    let kernel_matrix = ConvolveMatrixData::new(target_x, target_y, order_x, order_y, matrix)?;
 
     let edge_mode = match fe.attribute(AId::EdgeMode).unwrap_or("duplicate") {
         "none" => EdgeMode::None,
         "wrap" => EdgeMode::Wrap,
-        _      => EdgeMode::Duplicate,
+        _ => EdgeMode::Duplicate,
     };
 
     let preserve_alpha = fe.attribute(AId::PreserveAlpha).unwrap_or("false") == "true";

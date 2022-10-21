@@ -6,20 +6,20 @@
 
 use std::collections::HashMap;
 
-use crate::geom::{Rect, Transform, FuzzyEq};
+use crate::geom::{FuzzyEq, Rect, Transform};
 use crate::{converter, units};
 use crate::{EnableBackground, Opacity, OptionsRef, SharedPathData, Units};
 
+#[rustfmt::skip] mod names;
 mod parse;
-mod names;
-#[cfg(feature = "text")] mod text;
+#[cfg(feature = "text")]
+mod text;
 
-pub use names::{EId, AId};
-use svgtypes::Length;
+pub use names::{AId, EId};
 use strict_num::NonZeroPositiveF64;
+use svgtypes::Length;
 
 type Range = std::ops::Range<usize>;
-
 
 pub struct Document {
     nodes: Vec<NodeData>,
@@ -30,7 +30,11 @@ pub struct Document {
 impl Document {
     #[inline]
     pub fn root(&self) -> Node {
-        Node { id: NodeId(0), d: &self.nodes[0], doc: self }
+        Node {
+            id: NodeId(0),
+            d: &self.nodes[0],
+            doc: self,
+        }
     }
 
     pub fn root_element(&self) -> Node {
@@ -50,7 +54,11 @@ impl Document {
 
     #[inline]
     pub fn get(&self, id: NodeId) -> Node {
-        Node { id, d: &self.nodes[id.0], doc: self }
+        Node {
+            id,
+            d: &self.nodes[id.0],
+            doc: self,
+        }
     }
 }
 
@@ -71,9 +79,11 @@ impl std::fmt::Debug for Document {
             };
         }
 
-        fn print_children(parent: Node, depth: usize, f: &mut std::fmt::Formatter)
-            -> Result<(), std::fmt::Error>
-        {
+        fn print_children(
+            parent: Node,
+            depth: usize,
+            f: &mut std::fmt::Formatter,
+        ) -> Result<(), std::fmt::Error> {
             for child in parent.children() {
                 if child.is_element() {
                     writeln_indented!(depth, f, "Element {{");
@@ -110,13 +120,11 @@ impl std::fmt::Debug for Document {
     }
 }
 
-
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct NodeId(usize);
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 struct AttributeId(usize);
-
 
 enum NodeKind {
     Root,
@@ -127,7 +135,6 @@ enum NodeKind {
     #[cfg(feature = "text")]
     Text(String),
 }
-
 
 struct NodeData {
     parent: Option<NodeId>,
@@ -165,10 +172,13 @@ pub struct Attribute {
 
 impl std::fmt::Debug for Attribute {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        write!(f, "Attribute {{ name: {:?}, value: {:?} }}", self.name, self.value)
+        write!(
+            f,
+            "Attribute {{ name: {:?}, value: {:?} }}",
+            self.name, self.value
+        )
     }
 }
-
 
 #[derive(Clone, Copy)]
 pub struct Node<'a> {
@@ -182,9 +192,7 @@ impl Eq for Node<'_> {}
 impl PartialEq for Node<'_> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-           self.id == other.id
-        && std::ptr::eq(self.doc, other.doc)
-        && std::ptr::eq(self.d, other.d)
+        self.id == other.id && std::ptr::eq(self.doc, other.doc) && std::ptr::eq(self.d, other.d)
     }
 }
 
@@ -208,7 +216,7 @@ impl<'a> Node<'a> {
     #[cfg(feature = "text")]
     #[inline]
     pub fn is_text(&self) -> bool {
-       matches!(self.d.kind, NodeKind::Text(_))
+        matches!(self.d.kind, NodeKind::Text(_))
     }
 
     #[inline]
@@ -325,17 +333,13 @@ impl<'a> Node<'a> {
     #[cfg(feature = "text")]
     pub fn text(&self) -> &'a str {
         match self.d.kind {
-            NodeKind::Element { .. } => {
-                match self.first_child() {
-                    Some(child) if child.is_text() => {
-                        match self.doc.nodes[child.id.0].kind {
-                            NodeKind::Text(ref text) => text,
-                            _ => ""
-                        }
-                    }
+            NodeKind::Element { .. } => match self.first_child() {
+                Some(child) if child.is_text() => match self.doc.nodes[child.id.0].kind {
+                    NodeKind::Text(ref text) => text,
                     _ => "",
-                }
-            }
+                },
+                _ => "",
+            },
             NodeKind::Text(ref text) => text,
             _ => "",
         }
@@ -343,7 +347,11 @@ impl<'a> Node<'a> {
 
     #[inline]
     fn gen_node(&self, id: NodeId) -> Node<'a> {
-        Node { id, d: &self.doc.nodes[id.0], doc: self.doc }
+        Node {
+            id,
+            d: &self.doc.nodes[id.0],
+            doc: self.doc,
+        }
     }
 
     pub fn parent(&self) -> Option<Self> {
@@ -385,12 +393,18 @@ impl<'a> Node<'a> {
 
     /// Returns an iterator over children nodes.
     pub fn children(&self) -> Children<'a> {
-        Children { front: self.first_child(), back: self.last_child() }
+        Children {
+            front: self.first_child(),
+            back: self.last_child(),
+        }
     }
 
     /// Returns an iterator which traverses the subtree starting at this node.
     pub fn traverse(&self) -> Traverse<'a> {
-        Traverse { root: *self, edge: None }
+        Traverse {
+            root: *self,
+            edge: None,
+        }
     }
 
     /// Returns an iterator over this node and its descendants.
@@ -409,8 +423,11 @@ impl<'a> Node<'a> {
     }
 
     pub fn resolve_length(&self, aid: AId, state: &converter::State, def: f64) -> f64 {
-        debug_assert!(!matches!(aid, AId::BaselineShift | AId::FontSize),
-                      "{} cannot be resolved via this function", aid);
+        debug_assert!(
+            !matches!(aid, AId::BaselineShift | AId::FontSize),
+            "{} cannot be resolved via this function",
+            aid
+        );
 
         if let Some(n) = self.find_node_with_attribute(aid) {
             if let Some(length) = n.attribute(aid) {
@@ -421,18 +438,46 @@ impl<'a> Node<'a> {
         def
     }
 
-    pub fn resolve_valid_length(&self, aid: AId, state: &converter::State, def: f64) -> Option<NonZeroPositiveF64> {
+    pub fn resolve_valid_length(
+        &self,
+        aid: AId,
+        state: &converter::State,
+        def: f64,
+    ) -> Option<NonZeroPositiveF64> {
         let n = self.resolve_length(aid, state, def);
         NonZeroPositiveF64::new(n)
     }
 
-    pub fn convert_length(&self, aid: AId, object_units: Units, state: &converter::State, def: Length) -> f64 {
-        units::convert_length(self.attribute(aid).unwrap_or(def), *self, aid, object_units, state)
+    pub fn convert_length(
+        &self,
+        aid: AId,
+        object_units: Units,
+        state: &converter::State,
+        def: Length,
+    ) -> f64 {
+        units::convert_length(
+            self.attribute(aid).unwrap_or(def),
+            *self,
+            aid,
+            object_units,
+            state,
+        )
     }
 
     #[allow(dead_code)]
-    pub fn try_convert_length(&self, aid: AId, object_units: Units, state: &converter::State) -> Option<f64> {
-        Some(units::convert_length(self.attribute(aid)?, *self, aid, object_units, state))
+    pub fn try_convert_length(
+        &self,
+        aid: AId,
+        object_units: Units,
+        state: &converter::State,
+    ) -> Option<f64> {
+        Some(units::convert_length(
+            self.attribute(aid)?,
+            *self,
+            aid,
+            object_units,
+            state,
+        ))
     }
 
     pub fn convert_user_length(&self, aid: AId, state: &converter::State, def: Length) -> f64 {
@@ -440,9 +485,9 @@ impl<'a> Node<'a> {
     }
 
     pub fn is_visible_element(&self, opt: &OptionsRef) -> bool {
-           self.attribute(AId::Display) != Some("none")
-        && self.has_valid_transform(AId::Transform)
-        && crate::switch::is_condition_passed(*self, opt)
+        self.attribute(AId::Display) != Some("none")
+            && self.has_valid_transform(AId::Transform)
+            && crate::switch::is_condition_passed(*self, opt)
     }
 }
 
@@ -451,8 +496,12 @@ impl std::fmt::Debug for Node<'_> {
         match self.d.kind {
             NodeKind::Root => write!(f, "Root"),
             NodeKind::Element { .. } => {
-                write!(f, "Element {{ tag_name: {:?}, attributes: {:?} }}",
-                       self.tag_name(), self.attributes())
+                write!(
+                    f,
+                    "Element {{ tag_name: {:?}, attributes: {:?} }}",
+                    self.tag_name(),
+                    self.attributes()
+                )
             }
             #[cfg(feature = "text")]
             NodeKind::Text(ref text) => write!(f, "Text({:?})", text),
@@ -486,7 +535,6 @@ axis_iterators! {
     NextSiblings(Node::next_sibling);
 }
 
-
 #[derive(Clone)]
 pub struct Children<'a> {
     front: Option<Node<'a>>,
@@ -519,13 +567,11 @@ impl<'a> DoubleEndedIterator for Children<'a> {
     }
 }
 
-
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Edge<'a> {
     Open(Node<'a>),
     Close(Node<'a>),
 }
-
 
 #[derive(Clone)]
 pub struct Traverse<'a> {
@@ -562,7 +608,6 @@ impl<'a> Iterator for Traverse<'a> {
     }
 }
 
-
 #[derive(Clone)]
 pub struct Descendants<'a>(Traverse<'a>);
 
@@ -580,7 +625,6 @@ impl<'a> Iterator for Descendants<'a> {
         None
     }
 }
-
 
 pub struct HrefIter<'a> {
     doc: &'a Document,
@@ -621,20 +665,23 @@ impl<'a> Iterator for HrefIter<'a> {
     }
 }
 
-
 pub trait FromValue<'a>: Sized {
     fn get(node: Node<'a>, aid: AId) -> Option<Self>;
 }
 
 macro_rules! impl_from_value {
-    ($rtype:ty, $etype:ident) => (
+    ($rtype:ty, $etype:ident) => {
         impl FromValue<'_> for $rtype {
             fn get(node: Node, aid: AId) -> Option<Self> {
                 let a = node.attributes().iter().find(|a| a.name == aid)?;
-                if let AttributeValue::$etype(ref v) = a.value { Some(*v) } else { None }
+                if let AttributeValue::$etype(ref v) = a.value {
+                    Some(*v)
+                } else {
+                    None
+                }
             }
         }
-    )
+    };
 }
 
 impl_from_value!(svgtypes::Color, Color);
@@ -648,7 +695,10 @@ impl_from_value!(EnableBackground, EnableBackground);
 
 impl<'a> FromValue<'a> for &'a AttributeValue {
     fn get(node: Node<'a>, aid: AId) -> Option<Self> {
-        node.attributes().iter().find(|a| a.name == aid).map(|a| &a.value)
+        node.attributes()
+            .iter()
+            .find(|a| a.name == aid)
+            .map(|a| &a.value)
     }
 }
 
@@ -673,14 +723,22 @@ impl FromValue<'_> for crate::SharedPathData {
     fn get(node: Node, aid: AId) -> Option<Self> {
         let a = node.attributes().iter().find(|a| a.name == aid)?;
         // Cloning is cheap, since it's a Rc.
-        if let AttributeValue::Path(ref v) = a.value { Some(v.clone()) } else { None }
+        if let AttributeValue::Path(ref v) = a.value {
+            Some(v.clone())
+        } else {
+            None
+        }
     }
 }
 
 impl<'a> FromValue<'a> for &'a Vec<f64> {
     fn get(node: Node<'a>, aid: AId) -> Option<Self> {
         let a = node.attributes().iter().find(|a| a.name == aid)?;
-        if let AttributeValue::NumberList(ref v) = a.value { Some(v) } else { None }
+        if let AttributeValue::NumberList(ref v) = a.value {
+            Some(v)
+        } else {
+            None
+        }
     }
 }
 
@@ -710,7 +768,7 @@ impl<'a> FromValue<'a> for &'a str {
 impl<'a> FromValue<'a> for Node<'a> {
     fn get(node: Node<'a>, aid: AId) -> Option<Self> {
         let a = node.attributes().iter().find(|a| a.name == aid)?;
-        let id = match a.value  {
+        let id = match a.value {
             AttributeValue::Link(ref id) => id,
             _ => return None,
         };
@@ -730,86 +788,84 @@ impl<'a, T: EnumFromStr> FromValue<'a> for T {
     }
 }
 
-
 impl EId {
     pub fn is_graphic(&self) -> bool {
-        matches!(self,
-              EId::Circle
-            | EId::Ellipse
-            | EId::Image
-            | EId::Line
-            | EId::Path
-            | EId::Polygon
-            | EId::Polyline
-            | EId::Rect
-            | EId::Text
-            | EId::Use
+        matches!(
+            self,
+            EId::Circle
+                | EId::Ellipse
+                | EId::Image
+                | EId::Line
+                | EId::Path
+                | EId::Polygon
+                | EId::Polyline
+                | EId::Rect
+                | EId::Text
+                | EId::Use
         )
     }
 
     pub fn is_gradient(&self) -> bool {
-        matches!(self,
-              EId::LinearGradient
-            | EId::RadialGradient
-        )
+        matches!(self, EId::LinearGradient | EId::RadialGradient)
     }
 
     pub fn is_paint_server(&self) -> bool {
-        matches!(self,
-              EId::LinearGradient
-            | EId::RadialGradient
-            | EId::Pattern
+        matches!(
+            self,
+            EId::LinearGradient | EId::RadialGradient | EId::Pattern
         )
     }
 }
 
 impl AId {
     pub fn is_presentation(&self) -> bool {
-        matches!(self,
-              AId::BaselineShift
-            | AId::ClipPath
-            | AId::ClipRule
-            | AId::Color
-            | AId::ColorInterpolationFilters
-            | AId::Direction
-            | AId::Display
-            | AId::Fill
-            | AId::FillOpacity
-            | AId::FillRule
-            | AId::Filter
-            | AId::FloodColor
-            | AId::FloodOpacity
-            | AId::FontFamily
-            | AId::FontSize
-            | AId::FontStretch
-            | AId::FontStyle
-            | AId::FontVariant
-            | AId::FontWeight
-            | AId::ImageRendering
-            | AId::LetterSpacing
-            | AId::MarkerEnd
-            | AId::MarkerMid
-            | AId::MarkerStart
-            | AId::Mask
-            | AId::Opacity
-            | AId::Overflow
-            | AId::ShapeRendering
-            | AId::StopColor
-            | AId::StopOpacity
-            | AId::Stroke
-            | AId::StrokeDasharray
-            | AId::StrokeDashoffset
-            | AId::StrokeLinecap
-            | AId::StrokeLinejoin
-            | AId::StrokeMiterlimit
-            | AId::StrokeOpacity
-            | AId::StrokeWidth
-            | AId::TextAnchor
-            | AId::TextDecoration
-            | AId::TextRendering
-            | AId::Visibility
-            | AId::WordSpacing
-            | AId::WritingMode)
+        matches!(
+            self,
+            AId::BaselineShift
+                | AId::ClipPath
+                | AId::ClipRule
+                | AId::Color
+                | AId::ColorInterpolationFilters
+                | AId::Direction
+                | AId::Display
+                | AId::Fill
+                | AId::FillOpacity
+                | AId::FillRule
+                | AId::Filter
+                | AId::FloodColor
+                | AId::FloodOpacity
+                | AId::FontFamily
+                | AId::FontSize
+                | AId::FontStretch
+                | AId::FontStyle
+                | AId::FontVariant
+                | AId::FontWeight
+                | AId::ImageRendering
+                | AId::LetterSpacing
+                | AId::MarkerEnd
+                | AId::MarkerMid
+                | AId::MarkerStart
+                | AId::Mask
+                | AId::Opacity
+                | AId::Overflow
+                | AId::ShapeRendering
+                | AId::StopColor
+                | AId::StopOpacity
+                | AId::Stroke
+                | AId::StrokeDasharray
+                | AId::StrokeDashoffset
+                | AId::StrokeLinecap
+                | AId::StrokeLinejoin
+                | AId::StrokeMiterlimit
+                | AId::StrokeOpacity
+                | AId::StrokeWidth
+                | AId::TextAnchor
+                | AId::TextDecoration
+                | AId::TextRendering
+                | AId::Visibility
+                | AId::WordSpacing
+                | AId::WritingMode
+        )
     }
 
     pub fn is_inheritable(&self) -> bool {
@@ -821,66 +877,70 @@ impl AId {
     }
 
     pub fn allows_inherit_value(&self) -> bool {
-        matches!(self,
-              AId::BaselineShift
-            | AId::ClipPath
-            | AId::ClipRule
-            | AId::Color
-            | AId::ColorInterpolationFilters
-            | AId::Direction
-            | AId::Display
-            | AId::Fill
-            | AId::FillOpacity
-            | AId::FillRule
-            | AId::Filter
-            | AId::FloodColor
-            | AId::FloodOpacity
-            | AId::FontFamily
-            | AId::FontSize
-            | AId::FontStretch
-            | AId::FontStyle
-            | AId::FontVariant
-            | AId::FontWeight
-            | AId::ImageRendering
-            | AId::LetterSpacing
-            | AId::MarkerEnd
-            | AId::MarkerMid
-            | AId::MarkerStart
-            | AId::Mask
-            | AId::Opacity
-            | AId::Overflow
-            | AId::ShapeRendering
-            | AId::StopColor
-            | AId::StopOpacity
-            | AId::Stroke
-            | AId::StrokeDasharray
-            | AId::StrokeDashoffset
-            | AId::StrokeLinecap
-            | AId::StrokeLinejoin
-            | AId::StrokeMiterlimit
-            | AId::StrokeOpacity
-            | AId::StrokeWidth
-            | AId::TextAnchor
-            | AId::TextDecoration
-            | AId::TextRendering
-            | AId::Visibility
-            | AId::WordSpacing
-            | AId::WritingMode)
+        matches!(
+            self,
+            AId::BaselineShift
+                | AId::ClipPath
+                | AId::ClipRule
+                | AId::Color
+                | AId::ColorInterpolationFilters
+                | AId::Direction
+                | AId::Display
+                | AId::Fill
+                | AId::FillOpacity
+                | AId::FillRule
+                | AId::Filter
+                | AId::FloodColor
+                | AId::FloodOpacity
+                | AId::FontFamily
+                | AId::FontSize
+                | AId::FontStretch
+                | AId::FontStyle
+                | AId::FontVariant
+                | AId::FontWeight
+                | AId::ImageRendering
+                | AId::LetterSpacing
+                | AId::MarkerEnd
+                | AId::MarkerMid
+                | AId::MarkerStart
+                | AId::Mask
+                | AId::Opacity
+                | AId::Overflow
+                | AId::ShapeRendering
+                | AId::StopColor
+                | AId::StopOpacity
+                | AId::Stroke
+                | AId::StrokeDasharray
+                | AId::StrokeDashoffset
+                | AId::StrokeLinecap
+                | AId::StrokeLinejoin
+                | AId::StrokeMiterlimit
+                | AId::StrokeOpacity
+                | AId::StrokeWidth
+                | AId::TextAnchor
+                | AId::TextDecoration
+                | AId::TextRendering
+                | AId::Visibility
+                | AId::WordSpacing
+                | AId::WritingMode
+        )
     }
 }
 
 fn is_non_inheritable(id: AId) -> bool {
-    matches!(id,
-          AId::BaselineShift
-        | AId::ClipPath
-        | AId::Display
-        | AId::Filter
-        | AId::FloodColor
-        | AId::FloodOpacity
-        | AId::Mask
-        | AId::Opacity
-        | AId::Overflow
-        | AId::StopColor
-        | AId::StopOpacity
-        | AId::TextDecoration)
+    matches!(
+        id,
+        AId::BaselineShift
+            | AId::ClipPath
+            | AId::Display
+            | AId::Filter
+            | AId::FloodColor
+            | AId::FloodOpacity
+            | AId::Mask
+            | AId::Opacity
+            | AId::Overflow
+            | AId::StopColor
+            | AId::StopOpacity
+            | AId::TextDecoration
+    )
 }

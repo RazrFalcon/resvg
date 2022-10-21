@@ -2,8 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::svgtree::{self, AId};
 use super::{Input, Kind, Primitive};
+use crate::svgtree::{self, AId};
 
 /// A merge filter primitive.
 ///
@@ -22,7 +22,5 @@ pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
         inputs.push(super::resolve_input(child, AId::In, primitives));
     }
 
-    Kind::Merge(Merge {
-        inputs,
-    })
+    Kind::Merge(Merge { inputs })
 }

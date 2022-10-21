@@ -2,8 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::svgtree::{self, AId};
 use super::{Input, Kind, Primitive};
+use crate::svgtree::{self, AId};
 
 /// A displacement map filter primitive.
 ///
@@ -47,13 +47,11 @@ pub enum ColorChannel {
 }
 
 pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
-    let parse_channel = |aid| {
-        match fe.attribute(aid).unwrap_or("A") {
-            "R" => ColorChannel::R,
-            "G" => ColorChannel::G,
-            "B" => ColorChannel::B,
-            _   => ColorChannel::A,
-        }
+    let parse_channel = |aid| match fe.attribute(aid).unwrap_or("A") {
+        "R" => ColorChannel::R,
+        "G" => ColorChannel::G,
+        "B" => ColorChannel::B,
+        _ => ColorChannel::A,
     };
 
     Kind::DisplacementMap(DisplacementMap {

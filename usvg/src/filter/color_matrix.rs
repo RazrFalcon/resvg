@@ -4,8 +4,8 @@
 
 use strict_num::PositiveF64;
 
-use crate::svgtree::{self, AId};
 use super::{Input, Kind, Primitive};
+use crate::svgtree::{self, AId};
 
 /// A color matrix filter primitive.
 ///
@@ -36,10 +36,8 @@ pub enum ColorMatrixKind {
 impl Default for ColorMatrixKind {
     fn default() -> Self {
         ColorMatrixKind::Matrix(vec![
-            1.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 1.0, 0.0,
+            1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0,
         ])
     }
 }

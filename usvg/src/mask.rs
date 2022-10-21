@@ -6,8 +6,8 @@ use std::rc::Rc;
 
 use svgtypes::{Length, LengthUnit as Unit};
 
-use crate::{NodeKind, OptionLog, Rect, Units, converter, Node, Group};
 use crate::svgtree::{self, AId, EId};
+use crate::{converter, Group, Node, NodeKind, OptionLog, Rect, Units};
 
 /// A mask element.
 ///
@@ -61,8 +61,12 @@ pub(crate) fn convert(
         return Some(mask.clone());
     }
 
-    let units = node.attribute(AId::MaskUnits).unwrap_or(Units::ObjectBoundingBox);
-    let content_units = node.attribute(AId::MaskContentUnits).unwrap_or(Units::UserSpaceOnUse);
+    let units = node
+        .attribute(AId::MaskUnits)
+        .unwrap_or(Units::ObjectBoundingBox);
+    let content_units = node
+        .attribute(AId::MaskContentUnits)
+        .unwrap_or(Units::UserSpaceOnUse);
 
     let rect = Rect::new(
         node.convert_length(AId::X, units, state, Length::new(-10.0, Unit::Percent)),
@@ -70,7 +74,8 @@ pub(crate) fn convert(
         node.convert_length(AId::Width, units, state, Length::new(120.0, Unit::Percent)),
         node.convert_length(AId::Height, units, state, Length::new(120.0, Unit::Percent)),
     );
-    let rect = rect.log_none(|| log::warn!("Mask '{}' has an invalid size. Skipped.", node.element_id()))?;
+    let rect =
+        rect.log_none(|| log::warn!("Mask '{}' has an invalid size. Skipped.", node.element_id()))?;
 
     // Resolve linked mask.
     let mut mask = None;
@@ -96,11 +101,12 @@ pub(crate) fn convert(
 
     if mask.root.has_children() {
         let mask = Rc::new(mask);
-        cache.masks.insert(node.element_id().to_string(), mask.clone());
+        cache
+            .masks
+            .insert(node.element_id().to_string(), mask.clone());
         Some(mask)
     } else {
         // A mask without children is invalid.
         None
     }
 }
-

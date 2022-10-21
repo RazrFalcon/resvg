@@ -41,13 +41,17 @@ impl Canvas<'_> {
         let path = tiny_skia::PathBuilder::from_rect(rect);
         if let Some(path) = path.transform(self.transform) {
             let mut clip = tiny_skia::ClipMask::new();
-            clip.set_path(self.pixmap.width(), self.pixmap.height(), &path,
-                          tiny_skia::FillRule::Winding, true);
+            clip.set_path(
+                self.pixmap.width(),
+                self.pixmap.height(),
+                &path,
+                tiny_skia::FillRule::Winding,
+                true,
+            );
             self.clip = Some(clip);
         }
     }
 }
-
 
 /// Indicates the current rendering state.
 #[derive(Clone, PartialEq, Debug)]
@@ -61,13 +65,15 @@ pub(crate) enum RenderState {
     BackgroundFinished,
 }
 
-
-pub(crate) fn render_to_canvas(
-    tree: &usvg::Tree,
-    img_size: usvg::ScreenSize,
-    canvas: &mut Canvas,
-) {
-    render_node_to_canvas(tree, &tree.root, tree.view_box, img_size, &mut RenderState::Ok, canvas);
+pub(crate) fn render_to_canvas(tree: &usvg::Tree, img_size: usvg::ScreenSize, canvas: &mut Canvas) {
+    render_node_to_canvas(
+        tree,
+        &tree.root,
+        tree.view_box,
+        img_size,
+        &mut RenderState::Ok,
+        canvas,
+    );
 }
 
 pub(crate) fn render_node_to_canvas(
@@ -109,12 +115,8 @@ pub(crate) fn render_node(
         usvg::NodeKind::Path(ref path) => {
             crate::path::draw(tree, path, tiny_skia::BlendMode::SourceOver, canvas)
         }
-        usvg::NodeKind::Image(ref img) => {
-            Some(crate::image::draw(img, canvas))
-        }
-        usvg::NodeKind::Group(ref g) => {
-            render_group_impl(tree, node, g, state, canvas)
-        }
+        usvg::NodeKind::Image(ref img) => Some(crate::image::draw(img, canvas)),
+        usvg::NodeKind::Group(ref g) => render_group_impl(tree, node, g, state, canvas),
     }
 }
 
@@ -202,8 +204,14 @@ fn render_group_impl(
     // when rendering the children of A[i] into BUF[i].'
     if *state == RenderState::BackgroundFinished {
         let paint = tiny_skia::PixmapPaint::default();
-        canvas.pixmap.draw_pixmap(tx, ty, sub_pixmap.as_ref(), &paint,
-                                  tiny_skia::Transform::identity(), None);
+        canvas.pixmap.draw_pixmap(
+            tx,
+            ty,
+            sub_pixmap.as_ref(),
+            &paint,
+            tiny_skia::Transform::identity(),
+            None,
+        );
         return bbox;
     }
 
@@ -216,9 +224,16 @@ fn render_group_impl(
         let background = prepare_filter_background(tree, node, filter, &sub_pixmap);
         let fill_paint = prepare_filter_fill_paint(tree, node, filter, bbox, ts, &sub_pixmap);
         let stroke_paint = prepare_filter_stroke_paint(tree, node, filter, bbox, ts, &sub_pixmap);
-        crate::filter::apply(filter, bbox, &ts,
-                             tree, background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
-                             &mut sub_pixmap);
+        crate::filter::apply(
+            filter,
+            bbox,
+            &ts,
+            tree,
+            background.as_ref(),
+            fill_paint.as_ref(),
+            stroke_paint.as_ref(),
+            &mut sub_pixmap,
+        );
     }
 
     // Clipping and masking can be done only for objects with a valid bbox.
@@ -244,8 +259,14 @@ fn render_group_impl(
         paint.opacity = g.opacity.get() as f32;
     }
 
-    canvas.pixmap.draw_pixmap(tx, ty, sub_pixmap.as_ref(), &paint,
-                              tiny_skia::Transform::identity(), None);
+    canvas.pixmap.draw_pixmap(
+        tx,
+        ty,
+        sub_pixmap.as_ref(),
+        &paint,
+        tiny_skia::Transform::identity(),
+        None,
+    );
 
     bbox
 }
@@ -281,7 +302,7 @@ pub fn trim_transparency(pixmap: tiny_skia::Pixmap) -> Option<(i32, i32, tiny_sk
             })
             .map_or_else(
                 || ((max_safe_index * 8)..pixels.len()).position(|i| pixels[i] != 0),
-                |i| Some(i * 8)
+                |i| Some(i * 8),
             )
     };
 
@@ -290,9 +311,7 @@ pub fn trim_transparency(pixmap: tiny_skia::Pixmap) -> Option<(i32, i32, tiny_sk
     // zero bytes can be used as a quick optimization.
     // If the entire image is transparent, we don't need to continue.
     if first_non_zero != None {
-        let get_alpha = |x, y| {
-            pixels[((width * y + x) * 4 + 3) as usize]
-        };
+        let get_alpha = |x, y| pixels[((width * y + x) * 4 + 3) as usize];
 
         // Find the top boundary.
         let start_y = first_non_zero.unwrap() as i32 / 4 / width;
@@ -377,7 +396,14 @@ fn prepare_filter_background(
 
     // Render from the `start_node` until the `parent`. The `parent` itself is excluded.
     let mut state = RenderState::RenderUntil(parent.clone());
-    crate::render::render_node_to_canvas(tree, &start_node, tree.view_box, img_size, &mut state, &mut canvas);
+    crate::render::render_node_to_canvas(
+        tree,
+        &start_node,
+        tree.view_box,
+        img_size,
+        &mut state,
+        &mut canvas,
+    );
 
     Some(pixmap)
 }
@@ -405,7 +431,12 @@ fn prepare_filter_fill_paint(
         if let Some(paint) = g.filter_fill.clone() {
             let style_bbox = bbox.unwrap_or_else(|| usvg::Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
 
-            let rect = tiny_skia::Rect::from_xywh(0.0, 0.0, region.width() as f32, region.height() as f32)?;
+            let rect = tiny_skia::Rect::from_xywh(
+                0.0,
+                0.0,
+                region.width() as f32,
+                region.height() as f32,
+            )?;
             let path = tiny_skia::PathBuilder::from_rect(rect);
 
             let fill = usvg::Fill::from_paint(paint);
@@ -441,7 +472,12 @@ fn prepare_filter_stroke_paint(
         if let Some(paint) = g.filter_stroke.clone() {
             let style_bbox = bbox.unwrap_or_else(|| usvg::Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
 
-            let rect = tiny_skia::Rect::from_xywh(0.0, 0.0, region.width() as f32, region.height() as f32)?;
+            let rect = tiny_skia::Rect::from_xywh(
+                0.0,
+                0.0,
+                region.width() as f32,
+                region.height() as f32,
+            )?;
             let path = tiny_skia::PathBuilder::from_rect(rect);
 
             let fill = usvg::Fill::from_paint(paint);

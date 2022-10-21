@@ -2,14 +2,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ImageRefMut, RGBA8, f64_bound};
+use crate::{f64_bound, ImageRefMut, RGBA8};
 
 #[inline]
 fn to_normalized_components(pixel: RGBA8) -> (f64, f64, f64, f64) {
-    (pixel.r as f64 / 255.0,
-     pixel.g as f64 / 255.0,
-     pixel.b as f64 / 255.0,
-     pixel.a as f64 / 255.0)
+    (
+        pixel.r as f64 / 255.0,
+        pixel.g as f64 / 255.0,
+        pixel.b as f64 / 255.0,
+        pixel.a as f64 / 255.0,
+    )
 }
 
 #[inline]
@@ -30,17 +32,14 @@ pub enum ColorMatrix<'a> {
 /// Applies a color matrix filter.
 ///
 /// Input image pixels should have an **unpremultiplied alpha**.
-pub fn color_matrix(
-    matrix: ColorMatrix,
-    src: ImageRefMut,
-) {
+pub fn color_matrix(matrix: ColorMatrix, src: ImageRefMut) {
     match matrix {
         ColorMatrix::Matrix(m) => {
             for pixel in src.data {
                 let (r, g, b, a) = to_normalized_components(*pixel);
 
-                let new_r = r * m[0]  + g * m[1]  + b * m[2]  + a * m[3]  + m[4];
-                let new_g = r * m[5]  + g * m[6]  + b * m[7]  + a * m[8]  + m[9];
+                let new_r = r * m[0] + g * m[1] + b * m[2] + a * m[3] + m[4];
+                let new_g = r * m[5] + g * m[6] + b * m[7] + a * m[8] + m[9];
                 let new_b = r * m[10] + g * m[11] + b * m[12] + a * m[13] + m[14];
                 let new_a = r * m[15] + g * m[16] + b * m[17] + a * m[18] + m[19];
 
@@ -53,9 +52,15 @@ pub fn color_matrix(
         ColorMatrix::Saturate(v) => {
             let v = v.max(0.0);
             let m = [
-                0.213 + 0.787 * v, 0.715 - 0.715 * v, 0.072 - 0.072 * v,
-                0.213 - 0.213 * v, 0.715 + 0.285 * v, 0.072 - 0.072 * v,
-                0.213 - 0.213 * v, 0.715 - 0.715 * v, 0.072 + 0.928 * v,
+                0.213 + 0.787 * v,
+                0.715 - 0.715 * v,
+                0.072 - 0.072 * v,
+                0.213 - 0.213 * v,
+                0.715 + 0.285 * v,
+                0.072 - 0.072 * v,
+                0.213 - 0.213 * v,
+                0.715 - 0.715 * v,
+                0.072 + 0.928 * v,
             ];
 
             for pixel in src.data {

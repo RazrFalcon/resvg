@@ -4,7 +4,7 @@
 
 use usvg::{NodeExt, TransformFromBBox};
 
-use crate::{ConvTransform, OptionLog, render::Canvas};
+use crate::{render::Canvas, ConvTransform, OptionLog};
 
 pub fn clip(
     tree: &usvg::Tree,
@@ -20,7 +20,8 @@ pub fn clip(
     clip_canvas.apply_transform(cp.transform.to_native());
 
     if cp.units == usvg::Units::ObjectBoundingBox {
-        let bbox = bbox.to_rect()
+        let bbox = bbox
+            .to_rect()
             .log_none(|| log::warn!("Clipping of zero-sized shapes is not allowed."))?;
 
         clip_canvas.apply_transform(usvg::Transform::from_bbox(bbox).to_native());
@@ -54,8 +55,14 @@ pub fn clip(
 
     let mut paint = tiny_skia::PixmapPaint::default();
     paint.blend_mode = tiny_skia::BlendMode::DestinationOut;
-    canvas.pixmap.draw_pixmap(0, 0, clip_pixmap.as_ref(), &paint,
-                              tiny_skia::Transform::identity(), None);
+    canvas.pixmap.draw_pixmap(
+        0,
+        0,
+        clip_pixmap.as_ref(),
+        &paint,
+        tiny_skia::Transform::identity(),
+        None,
+    );
 
     Some(())
 }
@@ -72,7 +79,8 @@ fn clip_group(
         // then we should render this child on a new canvas,
         // clip it, and only then draw it to the `clipPath`.
 
-        let mut clip_pixmap = tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height())?;
+        let mut clip_pixmap =
+            tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height())?;
         let mut clip_canvas = Canvas::from(clip_pixmap.as_mut());
         clip_canvas.transform = canvas.transform;
 
@@ -81,8 +89,14 @@ fn clip_group(
 
         let mut paint = tiny_skia::PixmapPaint::default();
         paint.blend_mode = tiny_skia::BlendMode::Xor;
-        canvas.pixmap.draw_pixmap(0, 0, clip_pixmap.as_ref(), &paint,
-                                    tiny_skia::Transform::identity(), None);
+        canvas.pixmap.draw_pixmap(
+            0,
+            0,
+            clip_pixmap.as_ref(),
+            &paint,
+            tiny_skia::Transform::identity(),
+            None,
+        );
     }
 
     Some(())

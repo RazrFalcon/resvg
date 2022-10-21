@@ -2,9 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use super::Kind;
 use crate::svgtree::{self, AId};
 use crate::{Color, Opacity, SvgColorExt};
-use super::Kind;
 
 /// A flood filter primitive.
 ///
@@ -23,7 +23,8 @@ pub struct Flood {
 }
 
 pub(crate) fn convert(fe: svgtree::Node) -> Kind {
-    let (color, opacity) = fe.attribute(AId::FloodColor)
+    let (color, opacity) = fe
+        .attribute(AId::FloodColor)
         .unwrap_or_else(svgtypes::Color::black)
         .split_alpha();
 

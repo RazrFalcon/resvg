@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ImageHrefResolver, ImageRendering, ShapeRendering, TextRendering, Size, ScreenSize};
+use crate::{ImageHrefResolver, ImageRendering, ScreenSize, ShapeRendering, Size, TextRendering};
 
 /// Image fit options.
 ///
@@ -27,9 +27,7 @@ impl FitTo {
         let sizef = size.to_size();
 
         match *self {
-            FitTo::Original => {
-                Some(size)
-            }
+            FitTo::Original => Some(size),
             FitTo::Width(w) => {
                 let h = (w as f64 * sizef.height() / sizef.width()).ceil();
                 ScreenSize::new(w, h as u32)
@@ -38,17 +36,16 @@ impl FitTo {
                 let w = (h as f64 * sizef.width() / sizef.height()).ceil();
                 ScreenSize::new(w as u32, h)
             }
-            FitTo::Size(w, h) => {
-                Some(sizef.scale_to(Size::new(w as f64, h as f64)?).to_screen_size())
-            }
-            FitTo::Zoom(z) => {
-                Size::new(sizef.width() * z as f64, sizef.height() * z as f64)
-                    .map(|s| s.to_screen_size())
-            }
+            FitTo::Size(w, h) => Some(
+                sizef
+                    .scale_to(Size::new(w as f64, h as f64)?)
+                    .to_screen_size(),
+            ),
+            FitTo::Zoom(z) => Size::new(sizef.width() * z as f64, sizef.height() * z as f64)
+                .map(|s| s.to_screen_size()),
         }
     }
 }
-
 
 /// Processing options.
 #[derive(Debug)]

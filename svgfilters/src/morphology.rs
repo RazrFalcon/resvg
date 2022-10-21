@@ -25,18 +25,13 @@ pub enum MorphologyOperator {
 /// # Allocations
 ///
 /// This method will allocate a copy of the `src` image as a back buffer.
-pub fn morphology(
-    operator: MorphologyOperator,
-    rx: f64,
-    ry: f64,
-    src: ImageRefMut,
-) {
+pub fn morphology(operator: MorphologyOperator, rx: f64, ry: f64, src: ImageRefMut) {
     assert!(!rx.is_sign_negative());
     assert!(!ry.is_sign_negative());
 
     // No point in making matrix larger than image.
     let columns = core::cmp::min(rx.ceil() as u32 * 2, src.width);
-    let rows    = core::cmp::min(ry.ceil() as u32 * 2, src.height);
+    let rows = core::cmp::min(ry.ceil() as u32 * 2, src.height);
     let target_x = (columns as f32 / 2.0).floor() as u32;
     let target_y = (rows as f32 / 2.0).floor() as u32;
 

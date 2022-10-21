@@ -5,9 +5,11 @@
 use std::sync::Arc;
 use svgtypes::Length;
 
-use crate::{ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Tree, Visibility, converter};
 use crate::geom::{Rect, Transform, ViewBox};
 use crate::svgtree::{self, AId};
+use crate::{
+    converter, ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Tree, Visibility,
+};
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum ImageFormat {
@@ -42,9 +44,11 @@ impl std::fmt::Debug for ImageKind {
 }
 
 /// A shorthand for [ImageHrefResolver]'s data function.
-pub type ImageHrefDataResolverFn = Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + Send + Sync>;
+pub type ImageHrefDataResolverFn =
+    Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + Send + Sync>;
 /// A shorthand for [ImageHrefResolver]'s string function.
-pub type ImageHrefStringResolverFn = Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + Send + Sync>;
+pub type ImageHrefStringResolverFn =
+    Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + Send + Sync>;
 
 /// An `xlink:href` resolver for `<image>` elements.
 ///
@@ -66,7 +70,7 @@ impl Default for ImageHrefResolver {
     fn default() -> Self {
         ImageHrefResolver {
             resolve_data: ImageHrefResolver::default_data_resolver(),
-            resolve_string: ImageHrefResolver::default_string_resolver()
+            resolve_string: ImageHrefResolver::default_string_resolver(),
         }
     }
 }
@@ -95,7 +99,7 @@ impl ImageHrefResolver {
                     _ => load_sub_svg(&data, opts),
                 },
                 _ => None,
-            }
+            },
         )
     }
 
@@ -199,7 +203,8 @@ pub(crate) fn convert(
         aspect: node.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
 
-    let href = node.attribute(AId::Href)
+    let href = node
+        .attribute(AId::Href)
         .log_none(|| log::warn!("Image lacks the 'xlink:href' attribute. Skipped."))?;
 
     let kind = get_href_data(href, state.opt)?;
