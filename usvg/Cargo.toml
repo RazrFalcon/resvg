@@ -19,7 +19,7 @@ required-features = ["filter", "text", "system-fonts", "memmap-fonts", "export"]
 
 [dependencies]
 base64 = "0.13" # for embedded images
-data-url = "0.1" # for href parsing
+data-url = "0.2" # for href parsing
 flate2 = { version = "1.0", default-features = false, features = ["rust_backend"] } # SVGZ decoding
 kurbo = "0.8" # Bezier curves utils
 log = "0.4"
