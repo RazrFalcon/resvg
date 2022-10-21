@@ -24,7 +24,7 @@ flate2 = { version = "1.0", default-features = false, features = ["rust_backend"
 kurbo = "0.8" # Bezier curves utils
 log = "0.4"
 pico-args =  { version = "0.5", features = ["eq-separator"] }
-rctree = "0.4"
+rctree = "0.5"
 strict-num = "0.1"
 xmlwriter = { version = "0.1", optional = true }
 

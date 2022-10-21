@@ -48,7 +48,7 @@ pub(crate) fn convert(
 
             // Make group for `use`.
             let mut parent = match converter::convert_group(node, state, true, cache, &mut g) {
-                converter::GroupKind::Create(mut g) => {
+                converter::GroupKind::Create(g) => {
                     // We must reset transform, because it was already set
                     // to the group with clip-path.
                     if let NodeKind::Group(ref mut g) = *g.borrow_mut() {
@@ -221,7 +221,7 @@ fn convert_children(
 ) {
     let required = !transform.is_default();
     let mut parent = match converter::convert_group(node, state, required, cache, parent) {
-        converter::GroupKind::Create(mut g) => {
+        converter::GroupKind::Create(g) => {
             if let NodeKind::Group(ref mut g) = *g.borrow_mut() {
                 g.transform = transform;
             }

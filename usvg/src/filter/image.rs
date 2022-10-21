@@ -51,7 +51,7 @@ pub(crate) fn convert(
         state.fe_image_link = true;
         let mut root = Node::new(NodeKind::Group(Group::default()));
         crate::converter::convert_element(node, &state, cache, &mut root);
-        return if let Some(mut node) = root.first_child() {
+        return if let Some(node) = root.first_child() {
             node.detach(); // drops `root` node
             Kind::Image(Image {
                 aspect,

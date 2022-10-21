@@ -554,7 +554,7 @@ fn remove_empty_groups(tree: &mut Tree) {
         let mut changed = false;
 
         let mut curr_node = parent.first_child();
-        while let Some(mut node) = curr_node {
+        while let Some(node) = curr_node {
             curr_node = node.next_sibling();
 
             let is_g = if let NodeKind::Group(ref g) = *node.borrow() {
@@ -592,7 +592,7 @@ pub(crate) fn ungroup_groups(root: Node, keep_named_groups: bool) {
         let mut changed = false;
 
         let mut curr_node = parent.first_child();
-        while let Some(mut node) = curr_node {
+        while let Some(node) = curr_node {
             curr_node = node.next_sibling();
 
             let mut ts = Transform::default();
@@ -611,7 +611,7 @@ pub(crate) fn ungroup_groups(root: Node, keep_named_groups: bool) {
 
             if is_ok {
                 let mut curr_child = node.last_child();
-                while let Some(mut child) = curr_child {
+                while let Some(child) = curr_child {
                     curr_child = child.previous_sibling();
 
                     // Update transform.
@@ -691,7 +691,7 @@ fn convert_path(
     }));
 
     // Insert markers group after `path`.
-    if let Some(mut g) = markers_group {
+    if let Some(g) = markers_group {
         g.detach();
         parent.append(g);
     }
