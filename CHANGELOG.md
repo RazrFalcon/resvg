@@ -47,6 +47,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - Path bbox calculation scales stroke width too.
   Thanks to [growler](https://github.com/growler).
+- (xmlparser) Stack overflow on specific files.
+- (c-api) `resvg_is_image_empty` output was inverted.
 
 ## [0.23.0] - 2022-06-11
 ### Added

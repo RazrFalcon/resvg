@@ -435,7 +435,7 @@ int32_t resvg_parse_tree_from_data(const char *data,
  * @brief Checks that tree has any nodes.
  *
  * @param tree Render tree.
- * @return Returns `true` if tree has any nodes.
+ * @return Returns `true` if tree has no nodes.
  */
 bool resvg_is_image_empty(const resvg_render_tree *tree);
 

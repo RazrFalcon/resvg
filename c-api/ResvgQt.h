@@ -399,12 +399,12 @@ public:
      * will set an error only if a file does not exist or it has a non-UTF-8 encoding.
      * All other errors will result in an empty tree with a 100x100px size.
      *
-     * @return Returns \b true if tree has any nodes.
+     * @return Returns \b true if tree has no nodes.
      */
     bool isEmpty() const
     {
         if (d->tree)
-            return !resvg_is_image_empty(d->tree);
+            return resvg_is_image_empty(d->tree);
         else
             return true;
     }
