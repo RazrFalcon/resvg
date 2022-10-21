@@ -13,7 +13,7 @@ fn main() {
     let svg_data = std::fs::read(&args[1]).unwrap();
     let rtree = usvg::Tree::from_data(&svg_data, &opt.to_ref()).unwrap();
 
-    let pixmap_size = rtree.svg_node().size.to_screen_size();
+    let pixmap_size = rtree.size.to_screen_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
     resvg::render(&rtree, usvg::FitTo::Original, tiny_skia::Transform::default(), pixmap.as_mut()).unwrap();
     pixmap.save_png(&args[2]).unwrap();

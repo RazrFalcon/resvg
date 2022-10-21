@@ -906,14 +906,12 @@ fn apply_image(
 
             crate::image::draw_kind(kind, view_box, fe.rendering_mode, &mut canvas);
         }
-        usvg::filter::ImageKind::Use(ref id) => {
-            if let Some(ref node) = tree.defs_by_id(id).or_else(|| tree.node_by_id(id)) {
-                let (sx, sy) = ts.get_scale();
-                canvas.scale(sx as f32, sy as f32);
-                canvas.apply_transform(node.transform().to_native());
+        usvg::filter::ImageKind::Use(ref node) => {
+            let (sx, sy) = ts.get_scale();
+            canvas.scale(sx as f32, sy as f32);
+            canvas.apply_transform(node.transform().to_native());
 
-                crate::render::render_node(tree, node, &mut RenderState::Ok, &mut canvas);
-            }
+            crate::render::render_node(tree, node, &mut RenderState::Ok, &mut canvas);
         }
     }
 

@@ -8,7 +8,6 @@ use crate::{ConvTransform, render::{Canvas, RenderState}};
 
 pub fn mask(
     tree: &usvg::Tree,
-    node: &usvg::Node,
     mask: &usvg::Mask,
     bbox: usvg::PathBbox,
     canvas: &mut Canvas,
@@ -53,7 +52,7 @@ pub fn mask(
             mask_canvas.apply_transform(usvg::Transform::from_bbox(bbox).to_native());
         }
 
-        crate::render::render_group(tree, node, &mut RenderState::Ok, &mut mask_canvas);
+        crate::render::render_group(tree, &mask.root, &mut RenderState::Ok, &mut mask_canvas);
     }
 
     {
@@ -61,12 +60,8 @@ pub fn mask(
         image_to_mask(mask_pixmap.data_mut().as_rgba_mut());
     }
 
-    if let Some(ref id) = mask.mask {
-        if let Some(ref mask_node) = tree.defs_by_id(id) {
-            if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                self::mask(tree, mask_node, mask, bbox.to_path_bbox(), canvas);
-            }
-        }
+    if let Some(ref mask) = mask.mask {
+        self::mask(tree, mask, bbox.to_path_bbox(), canvas);
     }
 
     let mut paint = tiny_skia::PixmapPaint::default();

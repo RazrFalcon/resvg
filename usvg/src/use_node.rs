@@ -8,15 +8,14 @@ use svgtypes::{Length, LengthUnit};
 
 use crate::svgtree::{self, EId, AId};
 use crate::{converter, clippath, style, utils};
-use crate::{Group, Node, NodeExt, NodeKind, Path, PathData, Tree};
+use crate::{Group, Node, NodeExt, NodeKind, Path, PathData};
 use crate::geom::{FuzzyEq, IsValidLength, Rect, Size, Transform};
 
 pub(crate) fn convert(
     node: svgtree::Node,
     state: &converter::State,
-    id_generator: &mut converter::NodeIdGenerator,
+    cache: &mut converter::Cache,
     parent: &mut Node,
-    tree: &mut Tree,
 ) -> Option<()> {
     let child = node.first_child()?;
 
@@ -45,10 +44,10 @@ pub(crate) fn convert(
         }
 
         if let Some(clip_rect) = get_clip_rect(node, child, state) {
-            let mut g = clip_element(node, clip_rect, orig_ts, id_generator, parent, tree);
+            let mut g = clip_element(node, clip_rect, orig_ts, cache, parent);
 
             // Make group for `use`.
-            let mut parent = match converter::convert_group(node, state, true, id_generator, &mut g, tree) {
+            let mut parent = match converter::convert_group(node, state, true, cache, &mut g) {
                 converter::GroupKind::Create(mut g) => {
                     // We must reset transform, because it was already set
                     // to the group with clip-path.
@@ -62,7 +61,7 @@ pub(crate) fn convert(
                 converter::GroupKind::Ignore => return None,
             };
 
-            convert_children(child, new_ts, state, id_generator, &mut parent, tree);
+            convert_children(child, new_ts, state, cache, &mut parent);
             return None;
         }
     }
@@ -71,13 +70,13 @@ pub(crate) fn convert(
 
     if linked_to_symbol {
         // Make group for `use`.
-        let mut parent = match converter::convert_group(node, state, false, id_generator, parent, tree) {
+        let mut parent = match converter::convert_group(node, state, false, cache, parent) {
             converter::GroupKind::Create(g) => g,
             converter::GroupKind::Skip => parent.clone(),
             converter::GroupKind::Ignore => return None,
         };
 
-        convert_children(child, orig_ts, state, id_generator, &mut parent, tree);
+        convert_children(child, orig_ts, state, cache, &mut parent);
     } else {
         let linked_to_svg = child.tag_name() == Some(EId::Svg);
         if linked_to_svg {
@@ -109,9 +108,9 @@ pub(crate) fn convert(
                 state.use_size.1 = Some(node.convert_user_length(AId::Height, &state, def));
             }
 
-            convert_children(node, orig_ts, &state, id_generator, parent, tree);
+            convert_children(node, orig_ts, &state, cache, parent);
         } else {
-            convert_children(node, orig_ts, state, id_generator, parent, tree);
+            convert_children(node, orig_ts, state, cache, parent);
         }
     }
 
@@ -121,9 +120,8 @@ pub(crate) fn convert(
 pub(crate) fn convert_svg(
     node: svgtree::Node,
     state: &converter::State,
-    id_generator: &mut converter::NodeIdGenerator,
+    cache: &mut converter::Cache,
     parent: &mut Node,
-    tree: &mut Tree,
 ) {
     // We require original transformation to setup 'clipPath'.
     let mut orig_ts: Transform = node.attribute(AId::Transform).unwrap_or_default();
@@ -162,11 +160,11 @@ pub(crate) fn convert_svg(
     };
 
     if let Some(clip_rect) = get_clip_rect(node, node, &state) {
-        let mut g = clip_element(node, clip_rect, orig_ts, id_generator, parent, tree);
-        convert_children(node, new_ts, &state, id_generator, &mut g, tree);
+        let mut g = clip_element(node, clip_rect, orig_ts, cache, parent);
+        convert_children(node, new_ts, &state, cache, &mut g);
     } else {
         orig_ts.append(&new_ts);
-        convert_children(node, orig_ts, &state, id_generator, parent, tree);
+        convert_children(node, orig_ts, &state, cache, parent);
     }
 }
 
@@ -174,9 +172,8 @@ fn clip_element(
     node: svgtree::Node,
     clip_rect: Rect,
     transform: Transform,
-    id_generator: &mut converter::NodeIdGenerator,
+    cache: &mut converter::Cache,
     parent: &mut Node,
-    tree: &mut Tree,
 ) -> Node {
     // We can't set `clip-path` on the element itself,
     // because it will be affected by a possible transform.
@@ -198,14 +195,10 @@ fn clip_element(
     //   <elem/>
     // </g>
 
-    let id = id_generator.gen_clip_path_id();
+    let mut clip_path = clippath::ClipPath::default();
+    clip_path.id = cache.gen_clip_path_id();
 
-    let mut clip_path = tree.append_to_defs(NodeKind::ClipPath(clippath::ClipPath {
-        id: id.clone(),
-        ..clippath::ClipPath::default()
-    }));
-
-    clip_path.append_kind(NodeKind::Path(Path {
+    clip_path.root.append_kind(NodeKind::Path(Path {
         fill: Some(style::Fill::default()),
         data: Rc::new(PathData::from_rect(clip_rect)),
         ..Path::default()
@@ -214,7 +207,7 @@ fn clip_element(
     parent.append_kind(NodeKind::Group(Group {
         id: node.element_id().to_string(),
         transform,
-        clip_path: Some(id),
+        clip_path: Some(Rc::new(clip_path)),
         ..Group::default()
     }))
 }
@@ -223,12 +216,11 @@ fn convert_children(
     node: svgtree::Node,
     transform: Transform,
     state: &converter::State,
-    id_generator: &mut converter::NodeIdGenerator,
+    cache: &mut converter::Cache,
     parent: &mut Node,
-    tree: &mut Tree,
 ) {
     let required = !transform.is_default();
-    let mut parent = match converter::convert_group(node, state, required, id_generator, parent, tree) {
+    let mut parent = match converter::convert_group(node, state, required, cache, parent) {
         converter::GroupKind::Create(mut g) => {
             if let NodeKind::Group(ref mut g) = *g.borrow_mut() {
                 g.transform = transform;
@@ -243,9 +235,9 @@ fn convert_children(
     };
 
     if state.parent_clip_path.is_some() {
-        converter::convert_clip_path_elements(node, state, id_generator, &mut parent, tree);
+        converter::convert_clip_path_elements(node, state, cache, &mut parent);
     } else {
-        converter::convert_children(node, state, id_generator, &mut parent, tree);
+        converter::convert_children(node, state, cache, &mut parent);
     }
 }
 

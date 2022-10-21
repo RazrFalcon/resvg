@@ -30,7 +30,7 @@ pub fn render(name: &str) -> usize {
     };
 
     let fit_to = usvg::FitTo::Width(IMAGE_SIZE);
-    let size = fit_to.fit_to(tree.svg_node().size.to_screen_size()).unwrap();
+    let size = fit_to.fit_to(tree.size.to_screen_size()).unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
     resvg::render(&tree, fit_to, tiny_skia::Transform::default(), pixmap.as_mut()).unwrap();
 

@@ -67,7 +67,7 @@ pub(crate) fn render_to_canvas(
     img_size: usvg::ScreenSize,
     canvas: &mut Canvas,
 ) {
-    render_node_to_canvas(tree, &tree.root(), tree.svg_node().view_box, img_size, &mut RenderState::Ok, canvas);
+    render_node_to_canvas(tree, &tree.root, tree.view_box, img_size, &mut RenderState::Ok, canvas);
 }
 
 pub(crate) fn render_node_to_canvas(
@@ -106,9 +106,6 @@ pub(crate) fn render_node(
     canvas: &mut Canvas,
 ) -> Option<usvg::PathBbox> {
     match *node.borrow() {
-        usvg::NodeKind::Svg(_) => {
-            render_group(tree, node, state, canvas)
-        }
         usvg::NodeKind::Path(ref path) => {
             crate::path::draw(tree, path, tiny_skia::BlendMode::SourceOver, canvas)
         }
@@ -118,7 +115,6 @@ pub(crate) fn render_node(
         usvg::NodeKind::Group(ref g) => {
             render_group_impl(tree, node, g, state, canvas)
         }
-        _ => None,
     }
 }
 
@@ -191,7 +187,7 @@ fn render_group_impl(
     //
     // Transparency trimming is not yet allowed on groups with filter,
     // because filter expands the pixmap and it should be handled separately.
-    let (tx, ty, mut sub_pixmap) = if g.filter.is_empty() {
+    let (tx, ty, mut sub_pixmap) = if g.filters.is_empty() {
         trim_transparency(sub_pixmap)?
     } else {
         (0, 0, sub_pixmap)
@@ -214,43 +210,31 @@ fn render_group_impl(
     // Filter can be rendered on an object without a bbox,
     // as long as filter uses `userSpaceOnUse`.
     #[cfg(feature = "filter")]
-    for id in &g.filter {
-        if let Some(filter_node) = tree.defs_by_id(id) {
-            if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
-                let bbox = bbox.and_then(|r| r.to_rect());
-                let ts = usvg::Transform::from_native(curr_ts);
-                let background = prepare_filter_background(tree, node, filter, &sub_pixmap);
-                let fill_paint = prepare_filter_fill_paint(tree, node, filter, bbox, ts, &sub_pixmap);
-                let stroke_paint = prepare_filter_stroke_paint(tree, node, filter, bbox, ts, &sub_pixmap);
-                crate::filter::apply(filter, bbox, &ts, tree,
-                                    background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
-                                    &mut sub_pixmap);
-            }
-        }
+    for filter in &g.filters {
+        let bbox = bbox.and_then(|r| r.to_rect());
+        let ts = usvg::Transform::from_native(curr_ts);
+        let background = prepare_filter_background(tree, node, filter, &sub_pixmap);
+        let fill_paint = prepare_filter_fill_paint(tree, node, filter, bbox, ts, &sub_pixmap);
+        let stroke_paint = prepare_filter_stroke_paint(tree, node, filter, bbox, ts, &sub_pixmap);
+        crate::filter::apply(filter, bbox, &ts,
+                             tree, background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
+                             &mut sub_pixmap);
     }
 
     // Clipping and masking can be done only for objects with a valid bbox.
     if let Some(bbox) = bbox {
-        if let Some(ref id) = g.clip_path {
-            if let Some(clip_node) = tree.defs_by_id(id) {
-                if let usvg::NodeKind::ClipPath(ref cp) = *clip_node.borrow() {
-                    let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
-                    sub_canvas.translate(-tx as f32, -ty as f32);
-                    sub_canvas.apply_transform(curr_ts);
-                    crate::clip::clip(tree, &clip_node, cp, bbox, &mut sub_canvas);
-                }
-            }
+        if let Some(ref clip_path) = g.clip_path {
+            let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
+            sub_canvas.translate(-tx as f32, -ty as f32);
+            sub_canvas.apply_transform(curr_ts);
+            crate::clip::clip(tree, clip_path, bbox, &mut sub_canvas);
         }
 
-        if let Some(ref id) = g.mask {
-            if let Some(mask_node) = tree.defs_by_id(id) {
-                if let usvg::NodeKind::Mask(ref mask) = *mask_node.borrow() {
-                    let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
-                    sub_canvas.translate(-tx as f32, -ty as f32);
-                    sub_canvas.apply_transform(curr_ts);
-                    crate::mask::mask(tree, &mask_node, mask, bbox, &mut sub_canvas);
-                }
-            }
+        if let Some(ref mask) = g.mask {
+            let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
+            sub_canvas.translate(-tx as f32, -ty as f32);
+            sub_canvas.apply_transform(curr_ts);
+            crate::mask::mask(tree, mask, bbox, &mut sub_canvas);
         }
     }
 
@@ -390,11 +374,10 @@ fn prepare_filter_background(
 
     let mut pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
     let mut canvas = Canvas::from(pixmap.as_mut());
-    let view_box = tree.svg_node().view_box;
 
     // Render from the `start_node` until the `parent`. The `parent` itself is excluded.
     let mut state = RenderState::RenderUntil(parent.clone());
-    crate::render::render_node_to_canvas(tree, &start_node, view_box, img_size, &mut state, &mut canvas);
+    crate::render::render_node_to_canvas(tree, &start_node, tree.view_box, img_size, &mut state, &mut canvas);
 
     Some(pixmap)
 }

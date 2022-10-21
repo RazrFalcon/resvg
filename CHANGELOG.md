@@ -12,6 +12,16 @@ This changelog also contains important changes in dependencies.
   Thanks to [yisibl](https://github.com/yisibl).
 
 ### Changed
+- `usvg::Tree` stores only `Group`, `Path` and `Image` nodes now.
+  Instead of emulating an SVG file structure, where gradients, patterns, filters, clips and masks
+  are part of the nodes tree (usually inside the `defs` element), we reference them using `Rc`
+  from now.
+  This change makes `usvg` a bit simpler. Makes `usvg` API way easier, since instead of
+  looking for a node via `usvg::Tree::defs_by_id` the caller can access the type directly via `Rc`.
+  And makes creation of custom `usvg::Tree`s way easier.
+- `clip_path`, `mask` and `filters` `usvg::Group` fields store `Rc` instead of `String` now.
+- `usvg::NodeExt::units` was moved to `usvg::Paint::units`.
+- `usvg::filter::ImageKind::Use` stores `usvg::Node` instead of `String`.
 - `usvg::PathData` stores commands and points separately now to reduce overall memory usage.
 - `usvg::PathData` segments should be accessed via `segments()` now.
 - Most numeric types have been moved to the `strict-num` crate.
@@ -24,6 +34,14 @@ This changelog also contains important changes in dependencies.
 - (usvg) Output float precision is reduced from 11 to 8 digits.
 
 ### Removed
+- `usvg::Tree::create`. `usvg::Tree` is an open struct now.
+- `usvg::Tree::root`. It's a public field now.
+- `usvg::Tree::svg_node`. Replaced with `usvg::Tree` public fields.
+- `defs`, `is_in_defs`, `append_to_defs` and `defs_by_id` from `usvg::Tree`.
+  We no longer emulate SVG structure. No alternative.
+- `usvg::Tree::is_in_defs`. There are no `defs` anymore.
+- `usvg::Paint::Link`. We store gradient and patterns directly in `usvg::Paint` now.
+- `usvg::Svg`. No longer needed. `size` and `view_box` are `usvg::Tree` fields now.
 - `usvg::SubPathIter` and `usvg::PathData::subpaths`. No longer used.
 
 ### Fixed

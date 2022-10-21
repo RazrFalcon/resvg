@@ -9,7 +9,7 @@ use strict_num::NonZeroPositiveF64;
 
 use crate::svgtree::{self, AId, EId};
 use crate::{OptionLog, ShapeRendering, TextRendering, Visibility, converter, style, units};
-use crate::{SharedPathData, Transform, Tree, Units};
+use crate::{SharedPathData, Transform, Units};
 use super::TextNode;
 use super::fontdb_ext::{self, DatabaseExt};
 
@@ -154,8 +154,7 @@ pub fn collect_text_chunks(
     text_node: TextNode,
     pos_list: &[CharacterPosition],
     state: &converter::State,
-    id_generator: &mut converter::NodeIdGenerator,
-    tree: &mut Tree,
+    cache: &mut converter::Cache,
 ) -> Vec<TextChunk> {
     let mut iter_state = IterState {
         chars_count: 0,
@@ -165,7 +164,7 @@ pub fn collect_text_chunks(
         chunks: Vec::new(),
     };
 
-    collect_text_chunks_impl(text_node, *text_node, pos_list, state, id_generator, tree, &mut iter_state);
+    collect_text_chunks_impl(text_node, *text_node, pos_list, state, cache, &mut iter_state);
 
     iter_state.chunks
 }
@@ -175,8 +174,7 @@ fn collect_text_chunks_impl(
     parent: svgtree::Node,
     pos_list: &[CharacterPosition],
     state: &converter::State,
-    id_generator: &mut converter::NodeIdGenerator,
-    tree: &mut Tree,
+    cache: &mut converter::Cache,
     iter_state: &mut IterState,
 ) {
     for child in parent.children() {
@@ -204,7 +202,7 @@ fn collect_text_chunks_impl(
                 iter_state.split_chunk = true;
             }
 
-            collect_text_chunks_impl(text_node, child, pos_list, state, id_generator, tree, iter_state);
+            collect_text_chunks_impl(text_node, child, pos_list, state, cache, iter_state);
 
             iter_state.text_flow = TextFlow::Horizontal;
 
@@ -246,12 +244,12 @@ fn collect_text_chunks_impl(
         let span = TextSpan {
             start: 0,
             end: 0,
-            fill: style::resolve_fill(parent, true, state, id_generator, tree),
-            stroke: style::resolve_stroke(parent, true, state, id_generator, tree),
+            fill: style::resolve_fill(parent, true, state, cache),
+            stroke: style::resolve_stroke(parent, true, state, cache),
             font,
             font_size,
             small_caps: parent.find_attribute(AId::FontVariant) == Some("small-caps"),
-            decoration: resolve_decoration(text_node, parent, state, id_generator, tree),
+            decoration: resolve_decoration(text_node, parent, state, cache),
             visibility: parent.find_attribute(AId::Visibility).unwrap_or_default(),
             baseline_shift: resolve_baseline_shift(parent, state),
             letter_spacing: parent.resolve_length(AId::LetterSpacing, state, 0.0),
@@ -615,8 +613,7 @@ fn resolve_decoration(
     text_node: TextNode,
     tspan: svgtree::Node,
     state: &converter::State,
-    id_generator: &mut converter::NodeIdGenerator,
-    tree: &mut Tree,
+    cache: &mut converter::Cache,
 ) -> TextDecoration {
     // TODO: explain the algorithm
 
@@ -633,8 +630,8 @@ fn resolve_decoration(
         };
 
         Some(TextDecorationStyle {
-            fill: style::resolve_fill(n, true, state, id_generator, tree),
-            stroke: style::resolve_stroke(n, true, state, id_generator, tree),
+            fill: style::resolve_fill(n, true, state, cache),
+            stroke: style::resolve_stroke(n, true, state, cache),
         })
     };
 
@@ -776,14 +773,14 @@ fn count_chars(node: svgtree::Node) -> usize {
 /// [SVG 2] references [CSS Writing Modes Level 3] for the definition of the
 /// 'writing-mode' property, there are only two writing modes:
 /// horizontal left-to-right and vertical right-to-left.
-/// 
+///
 /// That specification introduces new values for the property. The SVG 1.1
 /// values are obsolete but must still be supported by converting the specified
 /// values to computed values as follows:
 ///
 /// - `lr`, `lr-tb`, `rl`, `rl-tb` => `horizontal-tb`
 /// - `tb`, `tb-rl` => `vertical-rl`
-/// 
+///
 /// The current `vertical-lr` behaves exactly the same as `vertical-rl`.
 ///
 /// Also, looks like no one really supports the `rl` and `rl-tb`, except `Batik`.

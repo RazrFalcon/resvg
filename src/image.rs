@@ -56,7 +56,7 @@ fn draw_svg(
     view_box: usvg::ViewBox,
     canvas: &mut Canvas,
 ) -> Option<()> {
-    let img_size = tree.svg_node().size.to_screen_size();
+    let img_size = tree.size.to_screen_size();
     let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&view_box, img_size);
 
     let mut sub_pixmap = canvas.pixmap.to_owned();

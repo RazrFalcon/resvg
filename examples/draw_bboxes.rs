@@ -27,21 +27,19 @@ fn main() {
     let fit_to = usvg::FitTo::Zoom(zoom);
 
     let svg_data = std::fs::read(&args[1]).unwrap();
-    let rtree = usvg::Tree::from_data(&svg_data, &opt.to_ref()).unwrap();
+    let mut rtree = usvg::Tree::from_data(&svg_data, &opt.to_ref()).unwrap();
 
     let mut bboxes = Vec::new();
     let mut text_bboxes = Vec::new();
-    for node in rtree.root().descendants() {
-        if !rtree.is_in_defs(&node) {
-            if let Some(bbox) = node.calculate_bbox().and_then(|r| r.to_rect()) {
-                bboxes.push(bbox);
-            }
+    for node in rtree.root.descendants() {
+        if let Some(bbox) = node.calculate_bbox().and_then(|r| r.to_rect()) {
+            bboxes.push(bbox);
+        }
 
-            // Text bboxes are different from path bboxes.
-            if let usvg::NodeKind::Path(ref path) = *node.borrow() {
-                if let Some(ref bbox) = path.text_bbox {
-                    text_bboxes.push(*bbox);
-                }
+        // Text bboxes are different from path bboxes.
+        if let usvg::NodeKind::Path(ref path) = *node.borrow() {
+            if let Some(ref bbox) = path.text_bbox {
+                text_bboxes.push(*bbox);
             }
         }
     }
@@ -59,7 +57,7 @@ fn main() {
     });
 
     for bbox in bboxes {
-        rtree.root().append_kind(usvg::NodeKind::Path(usvg::Path {
+        rtree.root.append_kind(usvg::NodeKind::Path(usvg::Path {
             stroke: stroke.clone(),
             data: Rc::new(usvg::PathData::from_rect(bbox)),
             .. usvg::Path::default()
@@ -67,14 +65,14 @@ fn main() {
     }
 
     for bbox in text_bboxes {
-        rtree.root().append_kind(usvg::NodeKind::Path(usvg::Path {
+        rtree.root.append_kind(usvg::NodeKind::Path(usvg::Path {
             stroke: stroke2.clone(),
             data: Rc::new(usvg::PathData::from_rect(bbox)),
             .. usvg::Path::default()
         }));
     }
 
-    let pixmap_size = fit_to.fit_to(rtree.svg_node().size.to_screen_size()).unwrap();
+    let pixmap_size = fit_to.fit_to(rtree.size.to_screen_size()).unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
     resvg::render(&rtree, fit_to, tiny_skia::Transform::default(), pixmap.as_mut()).unwrap();
     pixmap.save_png(&args[2]).unwrap();

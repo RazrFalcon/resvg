@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::svgtree::{self, AId};
-use crate::{converter, Node, OptionsRef, Tree};
+use crate::{converter, Node, OptionsRef};
 
 // Full list can be found here: https://www.w3.org/TR/SVG11/feature.html
 static FEATURES: &[&str] = &[
@@ -43,17 +43,16 @@ static FEATURES: &[&str] = &[
 pub(crate) fn convert(
     node: svgtree::Node,
     state: &converter::State,
-    id_generator: &mut converter::NodeIdGenerator,
+    cache: &mut converter::Cache,
     parent: &mut Node,
-    tree: &mut Tree,
 ) -> Option<()> {
     let child = node.children().find(|n| is_condition_passed(*n, state.opt))?;
-    match converter::convert_group(node, state, false, id_generator, parent, tree) {
+    match converter::convert_group(node, state, false, cache, parent) {
         converter::GroupKind::Create(ref mut g) => {
-            converter::convert_element(child, state, id_generator, g, tree);
+            converter::convert_element(child, state, cache, g);
         }
         converter::GroupKind::Skip => {
-            converter::convert_element(child, state, id_generator, parent, tree);
+            converter::convert_element(child, state, cache, parent);
         }
         converter::GroupKind::Ignore => {}
     }

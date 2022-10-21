@@ -24,26 +24,19 @@ pub fn fill(
         usvg::Paint::Color(c) => {
             paint.set_color_rgba8(c.red, c.green, c.blue, opacity.to_u8());
         }
-        usvg::Paint::Link(ref id) => {
-            if let Some(node) = tree.defs_by_id(id) {
-                match *node.borrow() {
-                    usvg::NodeKind::LinearGradient(ref lg) => {
-                        prepare_linear(lg, opacity, bbox, &mut paint);
-                    }
-                    usvg::NodeKind::RadialGradient(ref rg) => {
-                        prepare_radial(rg, opacity, bbox, &mut paint);
-                    }
-                    usvg::NodeKind::Pattern(ref pattern) => {
-                        let global_ts = usvg::Transform::from_native(canvas.transform);
-                        let (patt_pix, patt_ts)
-                            = prepare_pattern_pixmap(tree, &node, pattern, &global_ts, bbox)?;
+        usvg::Paint::LinearGradient(ref lg) => {
+            prepare_linear(lg, opacity, bbox, &mut paint);
+        }
+        usvg::Paint::RadialGradient(ref rg) => {
+            prepare_radial(rg, opacity, bbox, &mut paint);
+        }
+        usvg::Paint::Pattern(ref pattern) => {
+            let global_ts = usvg::Transform::from_native(canvas.transform);
+            let (patt_pix, patt_ts)
+                = prepare_pattern_pixmap(tree, pattern, &global_ts, bbox)?;
 
-                        pattern_pixmap = patt_pix;
-                        paint.shader = prepare_pattern(&pattern_pixmap, patt_ts, opacity);
-                    }
-                    _ => {}
-                }
-            }
+            pattern_pixmap = patt_pix;
+            paint.shader = prepare_pattern(&pattern_pixmap, patt_ts, opacity);
         }
     }
 
@@ -81,26 +74,19 @@ pub fn stroke(
             usvg::Paint::Color(c) => {
                 paint.set_color_rgba8(c.red, c.green, c.blue, opacity.to_u8());
             }
-            usvg::Paint::Link(ref id) => {
-                if let Some(node) = tree.defs_by_id(id) {
-                    match *node.borrow() {
-                        usvg::NodeKind::LinearGradient(ref lg) => {
-                            prepare_linear(lg, opacity, bbox, &mut paint);
-                        }
-                        usvg::NodeKind::RadialGradient(ref rg) => {
-                            prepare_radial(rg, opacity, bbox, &mut paint);
-                        }
-                        usvg::NodeKind::Pattern(ref pattern) => {
-                            let global_ts = usvg::Transform::from_native(canvas.transform);
-                            let (patt_pix, patt_ts)
-                                = prepare_pattern_pixmap(tree, &node, pattern, &global_ts, bbox)?;
+            usvg::Paint::LinearGradient(ref lg) => {
+                prepare_linear(lg, opacity, bbox, &mut paint);
+            }
+            usvg::Paint::RadialGradient(ref rg) => {
+                prepare_radial(rg, opacity, bbox, &mut paint);
+            }
+            usvg::Paint::Pattern(ref pattern) => {
+                let global_ts = usvg::Transform::from_native(canvas.transform);
+                let (patt_pix, patt_ts)
+                    = prepare_pattern_pixmap(tree, pattern, &global_ts, bbox)?;
 
-                            pattern_pixmap = patt_pix;
-                            paint.shader = prepare_pattern(&pattern_pixmap, patt_ts, opacity);
-                        }
-                        _ => {}
-                    }
-                }
+                pattern_pixmap = patt_pix;
+                paint.shader = prepare_pattern(&pattern_pixmap, patt_ts, opacity);
             }
         }
 
@@ -234,7 +220,6 @@ fn prepare_radial(
 
 fn prepare_pattern_pixmap(
     tree: &usvg::Tree,
-    pattern_node: &usvg::Node,
     pattern: &usvg::Pattern,
     global_ts: &usvg::Transform,
     bbox: usvg::PathBbox,
@@ -268,7 +253,7 @@ fn prepare_pattern_pixmap(
         canvas.scale(bbox.width() as f32, bbox.height() as f32);
     }
 
-    crate::render::render_group(tree, pattern_node, &mut RenderState::Ok, &mut canvas);
+    crate::render::render_group(tree, &pattern.root, &mut RenderState::Ok, &mut canvas);
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);

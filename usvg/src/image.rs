@@ -288,7 +288,7 @@ fn sanitize_sub_svg(tree: &crate::Tree) {
     while changed {
         changed = false;
 
-        for mut node in tree.root().descendants() {
+        for mut node in tree.root.descendants() {
             let mut rm = false;
             // TODO: feImage?
             if let NodeKind::Image(_) = *node.borrow() {

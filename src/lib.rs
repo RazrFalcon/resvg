@@ -76,7 +76,7 @@ pub fn render(
     transform: tiny_skia::Transform,
     pixmap: tiny_skia::PixmapMut,
 ) -> Option<()> {
-    let size = fit_to.fit_to(tree.svg_node().size.to_screen_size())?;
+    let size = fit_to.fit_to(tree.size.to_screen_size())?;
     let mut canvas = render::Canvas::from(pixmap);
     canvas.apply_transform(transform);
     render::render_to_canvas(tree, size, &mut canvas);

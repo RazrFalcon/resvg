@@ -2,12 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::rc::Rc;
+
 use svgtypes::{Length, LengthUnit as Unit};
 use strict_num::PositiveF64;
 
 use crate::svgtree::{self, AId, EId};
-use crate::{Color, NodeExt, NodeKind, NormalizedF64, Opacity, OptionLog};
-use crate::{Tree, Units, converter, SvgColorExt};
+use crate::{Color, NodeKind, NormalizedF64, Opacity, OptionLog, Node, Paint, Group};
+use crate::{Units, converter, SvgColorExt};
 use crate::geom::{FuzzyEq, FuzzyZero, IsValidLength, Line, Rect, Transform, ViewBox};
 
 
@@ -173,14 +175,16 @@ pub struct Pattern {
 
     /// Pattern viewbox.
     pub view_box: Option<ViewBox>,
+
+    /// Pattern children.
+    ///
+    /// The root node is always `Group`.
+    pub root: Node,
 }
 
 
 pub(crate) enum ServerOrColor {
-    Server {
-        id: String,
-        units: Units,
-    },
+    Server(Paint),
     Color {
         color: Color,
         opacity: Opacity,
@@ -190,31 +194,32 @@ pub(crate) enum ServerOrColor {
 pub(crate) fn convert(
     node: svgtree::Node,
     state: &converter::State,
-    id_generator: &mut converter::NodeIdGenerator,
-    tree: &mut Tree,
+    cache: &mut converter::Cache,
 ) -> Option<ServerOrColor> {
     // Check for existing.
-    if let Some(existing_node) = tree.defs_by_id(node.element_id()) {
-        return Some(ServerOrColor::Server {
-            id: node.element_id().to_string(),
-            units: existing_node.units()?,
-        });
+    if let Some(paint) = cache.paint.get(node.element_id()) {
+        return Some(ServerOrColor::Server(paint.clone()));
     }
 
     // Unwrap is safe, because we already checked for is_paint_server().
-    match node.tag_name().unwrap() {
-        EId::LinearGradient => convert_linear(node, state, tree),
-        EId::RadialGradient => convert_radial(node, state, tree),
-        EId::Pattern => convert_pattern(node, state, id_generator, tree),
+    let paint = match node.tag_name().unwrap() {
+        EId::LinearGradient => convert_linear(node, state),
+        EId::RadialGradient => convert_radial(node, state),
+        EId::Pattern => convert_pattern(node, state, cache),
         _ => unreachable!(),
+    };
+
+    if let Some(ServerOrColor::Server(ref paint)) = paint {
+        cache.paint.insert(node.element_id().to_string(), paint.clone());
     }
+
+    paint
 }
 
 #[inline(never)]
 fn convert_linear(
     node: svgtree::Node,
     state: &converter::State,
-    tree: &mut Tree,
 ) -> Option<ServerOrColor> {
     let stops = convert_stops(find_gradient_with_stops(node)?);
     if stops.len() < 2 {
@@ -225,33 +230,27 @@ fn convert_linear(
     let transform = resolve_attr(node, AId::GradientTransform)
         .attribute(AId::GradientTransform).unwrap_or_default();
 
-    tree.append_to_defs(
-        NodeKind::LinearGradient(LinearGradient {
-            id: node.element_id().to_string(),
-            x1: resolve_number(node, AId::X1, units, state, Length::zero()),
-            y1: resolve_number(node, AId::Y1, units, state, Length::zero()),
-            x2: resolve_number(node, AId::X2, units, state, Length::new(100.0, Unit::Percent)),
-            y2: resolve_number(node, AId::Y2, units, state, Length::zero()),
-            base: BaseGradient {
-                units,
-                transform,
-                spread_method: convert_spread_method(node),
-                stops,
-            }
-        })
-    );
-
-    Some(ServerOrColor::Server {
+    let gradient = LinearGradient {
         id: node.element_id().to_string(),
-        units,
-    })
+        x1: resolve_number(node, AId::X1, units, state, Length::zero()),
+        y1: resolve_number(node, AId::Y1, units, state, Length::zero()),
+        x2: resolve_number(node, AId::X2, units, state, Length::new(100.0, Unit::Percent)),
+        y2: resolve_number(node, AId::Y2, units, state, Length::zero()),
+        base: BaseGradient {
+            units,
+            transform,
+            spread_method: convert_spread_method(node),
+            stops,
+        }
+    };
+
+    Some(ServerOrColor::Server(Paint::LinearGradient(Rc::new(gradient))))
 }
 
 #[inline(never)]
 fn convert_radial(
     node: svgtree::Node,
     state: &converter::State,
-    tree: &mut Tree,
 ) -> Option<ServerOrColor> {
     let stops = convert_stops(find_gradient_with_stops(node)?);
     if stops.len() < 2 {
@@ -282,35 +281,29 @@ fn convert_radial(
     let transform = resolve_attr(node, AId::GradientTransform)
         .attribute(AId::GradientTransform).unwrap_or_default();
 
-    tree.append_to_defs(
-        NodeKind::RadialGradient(RadialGradient {
-            id: node.element_id().to_string(),
-            cx,
-            cy,
-            r: PositiveF64::new(r).unwrap(),
-            fx,
-            fy,
-            base: BaseGradient {
-                units,
-                transform,
-                spread_method,
-                stops,
-            }
-        })
-    );
-
-    Some(ServerOrColor::Server {
+    let gradient = RadialGradient {
         id: node.element_id().to_string(),
-        units,
-    })
+        cx,
+        cy,
+        r: PositiveF64::new(r).unwrap(),
+        fx,
+        fy,
+        base: BaseGradient {
+            units,
+            transform,
+            spread_method,
+            stops,
+        }
+    };
+
+    Some(ServerOrColor::Server(Paint::RadialGradient(Rc::new(gradient))))
 }
 
 #[inline(never)]
 fn convert_pattern(
     node: svgtree::Node,
     state: &converter::State,
-    id_generator: &mut converter::NodeIdGenerator,
-    tree: &mut Tree,
+    cache: &mut converter::Cache,
 ) -> Option<ServerOrColor> {
     let node_with_children = find_pattern_with_children(node)?;
 
@@ -339,25 +332,23 @@ fn convert_pattern(
     );
     let rect = rect.log_none(|| log::warn!("Pattern '{}' has an invalid size. Skipped.", node.element_id()))?;
 
-    let mut patt = tree.append_to_defs(NodeKind::Pattern(Pattern {
+    let mut patt = Pattern {
         id: node.element_id().to_string(),
         units,
         content_units,
         transform,
         rect,
         view_box,
-    }));
+        root: Node::new(NodeKind::Group(Group::default())),
+    };
 
-    converter::convert_children(node_with_children, state, id_generator, &mut patt, tree);
+    converter::convert_children(node_with_children, state, cache, &mut patt.root);
 
-    if !patt.has_children() {
+    if !patt.root.has_children() {
         return None;
     }
 
-    Some(ServerOrColor::Server {
-        id: node.element_id().to_string(),
-        units,
-    })
+    Some(ServerOrColor::Server(Paint::Pattern(Rc::new(patt))))
 }
 
 fn convert_spread_method(node: svgtree::Node) -> SpreadMethod {

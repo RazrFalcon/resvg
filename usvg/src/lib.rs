@@ -130,6 +130,8 @@ pub use image::ImageHrefResolver;
 pub use svgtypes::{Align, AspectRatio};
 pub use strict_num::{NormalizedF64, NonZeroPositiveF64, PositiveF64, ApproxEq, ApproxEqUlps};
 
+use std::rc::Rc;
+
 pub use roxmltree;
 
 #[cfg(feature = "text")] pub use fontdb;
@@ -327,80 +329,29 @@ impl_from_str!(ImageRendering);
 #[allow(missing_docs)]
 #[derive(Clone, Debug)]
 pub enum NodeKind {
-    Svg(Svg),
-    Defs,
-    LinearGradient(LinearGradient),
-    RadialGradient(RadialGradient),
-    ClipPath(ClipPath),
-    Mask(Mask),
-    Pattern(Pattern),
-    #[cfg(feature = "filter")] Filter(filter::Filter),
+    Group(Group),
     Path(Path),
     Image(Image),
-    Group(Group),
 }
 
 impl NodeKind {
     /// Returns node's ID.
-    ///
-    /// If a current node doesn't support ID - an empty string
-    /// will be returned.
     pub fn id(&self) -> &str {
-        match *self {
-            NodeKind::Svg(_) => "",
-            NodeKind::Defs => "",
-            NodeKind::LinearGradient(ref e) => e.id.as_str(),
-            NodeKind::RadialGradient(ref e) => e.id.as_str(),
-            NodeKind::ClipPath(ref e) => e.id.as_str(),
-            NodeKind::Mask(ref e) => e.id.as_str(),
-            NodeKind::Pattern(ref e) => e.id.as_str(),
-            #[cfg(feature = "filter")]
-            NodeKind::Filter(ref e) => e.id.as_str(),
+        match self {
+            NodeKind::Group(ref e) => e.id.as_str(),
             NodeKind::Path(ref e) => e.id.as_str(),
             NodeKind::Image(ref e) => e.id.as_str(),
-            NodeKind::Group(ref e) => e.id.as_str(),
         }
     }
 
     /// Returns node's transform.
-    ///
-    /// If a current node doesn't support transformation - a default
-    /// transform will be returned.
     pub fn transform(&self) -> Transform {
-        match *self {
-            NodeKind::Svg(_) => Transform::default(),
-            NodeKind::Defs => Transform::default(),
-            NodeKind::LinearGradient(ref e) => e.transform,
-            NodeKind::RadialGradient(ref e) => e.transform,
-            NodeKind::ClipPath(ref e) => e.transform,
-            NodeKind::Mask(_) => Transform::default(),
-            NodeKind::Pattern(ref e) => e.transform,
-            #[cfg(feature = "filter")]
-            NodeKind::Filter(_) => Transform::default(),
+        match self {
+            NodeKind::Group(ref e) => e.transform,
             NodeKind::Path(ref e) => e.transform,
             NodeKind::Image(ref e) => e.transform,
-            NodeKind::Group(ref e) => e.transform,
         }
     }
-}
-
-
-/// An SVG root element.
-#[derive(Clone, Copy, Debug)]
-pub struct Svg {
-    /// Image size.
-    ///
-    /// Size of an image that should be created to fit the SVG.
-    ///
-    /// `width` and `height` in SVG.
-    pub size: Size,
-
-    /// SVG viewbox.
-    ///
-    /// Specifies which part of the SVG image should be rendered.
-    ///
-    /// `viewBox` and `preserveAspectRatio` in SVG.
-    pub view_box: ViewBox,
 }
 
 
@@ -446,7 +397,7 @@ pub struct Path {
     /// Segments list.
     ///
     /// All segments are in absolute coordinates.
-    pub data: std::rc::Rc<PathData>,
+    pub data: Rc<PathData>,
 }
 
 impl Default for Path {
@@ -459,7 +410,7 @@ impl Default for Path {
             stroke: None,
             rendering_mode: ShapeRendering::default(),
             text_bbox: None,
-            data: std::rc::Rc::new(PathData::default()),
+            data: Rc::new(PathData::default()),
         }
     }
 }
@@ -498,13 +449,14 @@ pub struct Group {
     pub opacity: Opacity,
 
     /// Element's clip path.
-    pub clip_path: Option<String>,
+    pub clip_path: Option<Rc<ClipPath>>,
 
     /// Element's mask.
-    pub mask: Option<String>,
+    pub mask: Option<Rc<Mask>>,
 
     /// Element's filters.
-    pub filter: Vec<String>,
+    #[cfg(feature = "filter")]
+    pub filters: Vec<Rc<filter::Filter>>,
 
     /// Contains a fill color or paint server used by `FilterInput::FillPaint`.
     ///
@@ -530,7 +482,7 @@ impl Default for Group {
             opacity: Opacity::ONE,
             clip_path: None,
             mask: None,
-            filter: Vec::new(),
+            filters: Vec::new(),
             filter_fill: None,
             filter_stroke: None,
             enable_background: None,
@@ -547,7 +499,24 @@ pub type Node = rctree::Node<NodeKind>;
 #[allow(missing_debug_implementations)]
 #[derive(Clone)]
 pub struct Tree {
-    root: Node,
+    /// Image size.
+    ///
+    /// Size of an image that should be created to fit the SVG.
+    ///
+    /// `width` and `height` in SVG.
+    pub size: Size,
+
+    /// SVG viewbox.
+    ///
+    /// Specifies which part of the SVG image should be rendered.
+    ///
+    /// `viewBox` and `preserveAspectRatio` in SVG.
+    pub view_box: ViewBox,
+
+    /// The root element of the SVG tree.
+    ///
+    /// The root node is always `Group`.
+    pub root: Node,
 }
 
 impl Tree {
@@ -588,67 +557,6 @@ impl Tree {
         crate::converter::convert_doc(&doc, opt)
     }
 
-    /// Creates a new `Tree`.
-    pub fn create(svg: Svg) -> Self {
-        let mut root_node = Node::new(NodeKind::Svg(svg));
-        let defs_node = Node::new(NodeKind::Defs);
-        root_node.append(defs_node);
-
-        Tree {
-            root: root_node,
-        }
-    }
-
-    /// Returns the `Svg` node.
-    #[inline]
-    pub fn root(&self) -> Node {
-        self.root.clone()
-    }
-
-    /// Returns the `Svg` node value.
-    #[inline]
-    pub fn svg_node(&self) -> std::cell::Ref<Svg> {
-        std::cell::Ref::map(self.root.borrow(), |v| {
-            match *v {
-                NodeKind::Svg(ref svg) => svg,
-                _ => unreachable!(),
-            }
-        })
-    }
-
-    /// Returns the `Defs` node.
-    #[inline]
-    pub fn defs(&self) -> Node {
-        self.root.first_child().unwrap()
-    }
-
-    /// Checks that `node` is part of the `Defs` children.
-    pub fn is_in_defs(&self, node: &Node) -> bool {
-        let defs = self.defs();
-        node.ancestors().any(|n| n == defs)
-    }
-
-    /// Appends `NodeKind` to the `Defs` node.
-    pub fn append_to_defs(&mut self, kind: NodeKind) -> Node {
-        debug_assert!(self.defs_by_id(kind.id()).is_none(),
-                      "Element #{} already exists in 'defs'.", kind.id());
-
-        let new_node = Node::new(kind);
-        self.defs().append(new_node.clone());
-        new_node
-    }
-
-    /// Returns `defs` child node by ID.
-    pub fn defs_by_id(&self, id: &str) -> Option<Node> {
-        for n in self.defs().children() {
-            if &*n.id() == id {
-                return Some(n);
-            }
-        }
-
-        None
-    }
-
     /// Returns renderable node by ID.
     ///
     /// If an empty ID is provided, than this method will always return `None`.
@@ -658,13 +566,7 @@ impl Tree {
             return None;
         }
 
-        for node in self.root().descendants() {
-            if !self.is_in_defs(&node) && &*node.id() == id {
-                    return Some(node);
-                }
-        }
-
-        None
+        self.root.descendants().find(|node| &*node.id() == id)
     }
 
     /// Converts an SVG.
@@ -672,22 +574,6 @@ impl Tree {
     #[cfg(feature = "export")]
     pub fn to_string(&self, opt: &XmlOptions) -> String {
         crate::export::convert(self, opt)
-    }
-
-    /// Set a view box for the tree.
-    pub(crate) fn set_view_box(&mut self, rect: Rect) {
-        if let NodeKind::Svg(svg) = &mut *self.root.borrow_mut() {
-            svg.view_box.rect = rect;
-        }
-    }
-
-    /// Set dimensions for the tree.
-    pub(crate) fn set_dimensions(&mut self, width: f64, height: f64) {
-        if let NodeKind::Svg(svg) = &mut *self.root.borrow_mut() {
-            if let Some(size) = Size::new(width, height) {
-                svg.size = size;
-            }
-        }
     }
 }
 
@@ -710,11 +596,6 @@ pub trait NodeExt {
     /// If a current node doesn't support transformation - a default
     /// transform will be returned.
     fn abs_transform(&self) -> Transform;
-
-    /// Returns node's paint server units.
-    ///
-    /// Returns `None` when node is not a `LinearGradient`, `RadialGradient` or `Pattern`.
-    fn units(&self) -> Option<Units>;
 
     /// Appends `kind` as a node child.
     ///
@@ -754,16 +635,6 @@ impl NodeExt for Node {
         }
 
         abs_ts
-    }
-
-    #[inline]
-    fn units(&self) -> Option<Units> {
-        match *self.borrow() {
-            NodeKind::LinearGradient(ref lg) => Some(lg.units),
-            NodeKind::RadialGradient(ref rg) => Some(rg.units),
-            NodeKind::Pattern(ref patt) => Some(patt.units),
-            _ => None,
-        }
     }
 
     #[inline]
@@ -822,7 +693,7 @@ fn calc_node_bbox(
             let path = PathData::from_rect(img.view_box.rect);
             path.bbox_with_transform(ts, None)
         }
-        NodeKind::Svg(_) | NodeKind::Group(_) => {
+        NodeKind::Group(_) => {
             let mut bbox = PathBbox::new_bbox();
 
             for child in node.children() {
@@ -840,6 +711,5 @@ fn calc_node_bbox(
 
             Some(bbox)
         }
-        _ => None,
     }
 }

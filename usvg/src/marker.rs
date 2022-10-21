@@ -10,7 +10,7 @@ use strict_num::NonZeroPositiveF64;
 
 use crate::svgtree::{self, EId, AId};
 use crate::{converter, style, utils};
-use crate::{ClipPath, Group, Node, NodeExt, NodeKind, Path, PathData, Tree, Units};
+use crate::{ClipPath, Group, Node, NodeExt, NodeKind, Path, PathData};
 use crate::geom::{FuzzyEq, FuzzyZero, Rect, Size, Transform, ViewBox};
 use crate::PathSegment as Segment;
 
@@ -30,9 +30,8 @@ pub(crate) fn convert(
     node: svgtree::Node,
     path: &PathData,
     state: &converter::State,
-    id_generator: &mut converter::NodeIdGenerator,
+    cache: &mut converter::Cache,
     parent: &mut Node,
-    tree: &mut Tree,
 ) {
     let list = [
         (AId::MarkerStart, MarkerKind::Start),
@@ -54,7 +53,7 @@ pub(crate) fn convert(
                 continue;
             }
 
-            resolve(node, path, marker, *kind, state, id_generator, parent, tree);
+            resolve(node, path, marker, *kind, state, cache, parent);
         }
     }
 }
@@ -77,9 +76,8 @@ fn resolve(
     marker_node: svgtree::Node,
     marker_kind: MarkerKind,
     state: &converter::State,
-    id_generator: &mut converter::NodeIdGenerator,
+    cache: &mut converter::Cache,
     parent: &mut Node,
-    tree: &mut Tree,
 ) -> Option<()> {
     let stroke_scale = stroke_scale(shape_node, marker_node, state)?.get();
 
@@ -105,24 +103,16 @@ fn resolve(
             r.size().to_rect(0.0, 0.0)
         };
 
-        let id = id_generator.gen_clip_path_id();
+        let mut clip_path = ClipPath::default();
+        clip_path.id = cache.gen_clip_path_id();
 
-        let mut clip_path = tree.append_to_defs(
-            NodeKind::ClipPath(ClipPath {
-                id: id.clone(),
-                units: Units::UserSpaceOnUse,
-                transform: Transform::default(),
-                clip_path: None,
-            })
-        );
-
-        clip_path.append_kind(NodeKind::Path(Path {
+        clip_path.root.append_kind(NodeKind::Path(Path {
             fill: Some(style::Fill::default()),
             data: Rc::new(PathData::from_rect(clip_rect)),
             ..Path::default()
         }));
 
-        Some(id)
+        Some(Rc::new(clip_path))
     } else {
         None
     };
@@ -163,7 +153,7 @@ fn resolve(
 
         let mut marker_state = state.clone();
         marker_state.parent_marker = Some(marker_node);
-        converter::convert_children(marker_node, &marker_state, id_generator, &mut g_node, tree);
+        converter::convert_children(marker_node, &marker_state, cache, &mut g_node);
 
         if !g_node.has_children() {
             g_node.detach();

@@ -614,7 +614,7 @@ pub extern "C" fn resvg_parse_tree_from_data(
 /// @brief Checks that tree has any nodes.
 ///
 /// @param tree Render tree.
-/// @return Returns `true` if tree has any nodes.
+/// @return Returns `true` if tree has no nodes.
 #[no_mangle]
 pub extern "C" fn resvg_is_image_empty(tree: *const resvg_render_tree) -> bool {
     let tree = unsafe {
@@ -622,9 +622,7 @@ pub extern "C" fn resvg_is_image_empty(tree: *const resvg_render_tree) -> bool {
         &*tree
     };
 
-    // The root/svg node should have at least two children.
-    // The first child is `defs` and it always present.
-    tree.0.root().children().count() > 1
+    !tree.0.root.has_children()
 }
 
 /// @brief Returns an image size.
@@ -642,7 +640,7 @@ pub extern "C" fn resvg_get_image_size(tree: *const resvg_render_tree) -> resvg_
         &*tree
     };
 
-    let size = tree.0.svg_node().size;
+    let size = tree.0.size;
 
     resvg_size {
         width: size.width(),
@@ -663,7 +661,7 @@ pub extern "C" fn resvg_get_image_viewbox(tree: *const resvg_render_tree) -> res
         &*tree
     };
 
-    let r = tree.0.svg_node().view_box.rect;
+    let r = tree.0.view_box.rect;
 
     resvg_rect {
         x: r.x(),
@@ -690,7 +688,7 @@ pub extern "C" fn resvg_get_image_bbox(
         &*tree
     };
 
-    if let Some(r) = tree.0.root().calculate_bbox().and_then(|r| r.to_rect()) {
+    if let Some(r) = tree.0.root.calculate_bbox().and_then(|r| r.to_rect()) {
         unsafe {
             *bbox = resvg_rect {
                 x: r.x(),
