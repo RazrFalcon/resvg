@@ -454,11 +454,13 @@ pub struct Group {
     /// Contains a fill color or paint server used by `FilterInput::FillPaint`.
     ///
     /// Will be set only when filter actually has a `FilterInput::FillPaint`.
+    #[cfg(feature = "filter")]
     pub filter_fill: Option<Paint>,
 
     /// Contains a fill color or paint server used by `FilterInput::StrokePaint`.
     ///
     /// Will be set only when filter actually has a `FilterInput::StrokePaint`.
+    #[cfg(feature = "filter")]
     pub filter_stroke: Option<Paint>,
 
     /// Indicates that this node can be accessed via `filter`.
@@ -475,9 +477,9 @@ impl Default for Group {
             opacity: Opacity::ONE,
             clip_path: None,
             mask: None,
-            filters: Vec::new(),
-            filter_fill: None,
-            filter_stroke: None,
+            #[cfg(feature = "filter")] filters: Vec::new(),
+            #[cfg(feature = "filter")] filter_fill: None,
+            #[cfg(feature = "filter")] filter_stroke: None,
             enable_background: None,
         }
     }

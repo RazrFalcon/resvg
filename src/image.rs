@@ -16,7 +16,7 @@ pub fn draw(image: &usvg::Image, canvas: &mut Canvas) -> usvg::PathBbox {
 pub fn draw_kind(
     kind: &usvg::ImageKind,
     view_box: usvg::ViewBox,
-    rendering_mode: usvg::ImageRendering,
+    #[allow(unused_variables)] rendering_mode: usvg::ImageRendering,
     canvas: &mut Canvas,
 ) {
     match kind {

@@ -417,42 +417,42 @@ pub(crate) fn convert_group(
         None
     };
 
-    #[allow(unused_mut)]
-    let mut filter = Vec::new();
+
     #[cfg(feature = "filter")]
-    if state.parent_clip_path.is_none() {
-        if node.attribute(AId::Filter) == Some("none") {
-            // Do nothing.
-        } else if node.has_attribute(AId::Filter) {
-            if let Ok(id) = filter::convert(node, state, cache) {
-                filter = id;
-            } else {
-                // A filter that not a link or a filter with a link to a non existing element.
-                //
-                // Unlike `clip-path` and `mask`, when a `filter` link is invalid
-                // then the whole element should be ignored.
-                //
-                // This is kinda an undefined behaviour.
-                // In most cases, Chrome, Firefox and rsvg will ignore such elements,
-                // but in some cases Chrome allows it. Not sure why.
-                // Inkscape (0.92) simply ignores such attributes, rendering element as is.
-                // Batik (1.12) crashes.
-                //
-                // Test file: e-filter-051.svg
-                return GroupKind::Ignore;
+    let (filters, filter_fill, filter_stroke) = {
+        let mut filters = Vec::new();
+        if state.parent_clip_path.is_none() {
+            if node.attribute(AId::Filter) == Some("none") {
+                // Do nothing.
+            } else if node.has_attribute(AId::Filter) {
+                if let Ok(f) = filter::convert(node, state, cache) {
+                    filters = f;
+                } else {
+                    // A filter that not a link or a filter with a link to a non existing element.
+                    //
+                    // Unlike `clip-path` and `mask`, when a `filter` link is invalid
+                    // then the whole element should be ignored.
+                    //
+                    // This is kinda an undefined behaviour.
+                    // In most cases, Chrome, Firefox and rsvg will ignore such elements,
+                    // but in some cases Chrome allows it. Not sure why.
+                    // Inkscape (0.92) simply ignores such attributes, rendering element as is.
+                    // Batik (1.12) crashes.
+                    //
+                    // Test file: e-filter-051.svg
+                    return GroupKind::Ignore;
+                }
             }
         }
-    }
 
-    #[cfg(feature = "filter")]
-    let filter_fill = resolve_filter_fill(node, state, &filter, cache);
-    #[cfg(feature = "filter")]
-    let filter_stroke = resolve_filter_stroke(node, state, &filter, cache);
+        let filter_fill = resolve_filter_fill(node, state, &filters, cache);
+        let filter_stroke = resolve_filter_stroke(node, state, &filters, cache);
+
+        (filters, filter_fill, filter_stroke)
+    };
 
     #[cfg(not(feature = "filter"))]
-    let filter_fill = None;
-    #[cfg(not(feature = "filter"))]
-    let filter_stroke = None;
+    let filters: Vec<usize> = Vec::new();
 
     let transform: Transform = node.attribute(AId::Transform).unwrap_or_default();
 
@@ -462,7 +462,7 @@ pub(crate) fn convert_group(
     let required = opacity.get().fuzzy_ne(&1.0)
         || clip_path.is_some()
         || mask.is_some()
-        || !filter.is_empty()
+        || !filters.is_empty()
         || !transform.is_default()
         || enable_background.is_some()
         || (is_g_or_use
@@ -483,8 +483,11 @@ pub(crate) fn convert_group(
             opacity,
             clip_path,
             mask,
-            filters: filter,
+            #[cfg(feature = "filter")]
+            filters,
+            #[cfg(feature = "filter")]
             filter_fill,
+            #[cfg(feature = "filter")]
             filter_stroke,
             enable_background,
         }));
@@ -557,6 +560,7 @@ fn remove_empty_groups(tree: &mut Tree) {
         while let Some(node) = curr_node {
             curr_node = node.next_sibling();
 
+            #[cfg(feature = "filter")]
             let is_g = if let NodeKind::Group(ref g) = *node.borrow() {
                 // Skip empty groups when they do not have a `filter` property.
                 // The `filter` property can be set on empty groups. For example:
@@ -567,6 +571,13 @@ fn remove_empty_groups(tree: &mut Tree) {
                 // </filter>
                 // <g filter="url(#filter1)"/>
                 g.filters.is_empty()
+            } else {
+                false
+            };
+
+            #[cfg(not(feature = "filter"))]
+            let is_g = if let NodeKind::Group(_) = *node.borrow() {
+                true
             } else {
                 false
             };
@@ -599,10 +610,16 @@ pub(crate) fn ungroup_groups(root: Node, keep_named_groups: bool) {
             let is_ok = if let NodeKind::Group(ref g) = *node.borrow() {
                 ts = g.transform;
 
+                #[cfg(feature = "filter")]
+                let no_filters = g.filters.is_empty();
+
+                #[cfg(not(feature = "filter"))]
+                let no_filters = true;
+
                 g.opacity == Opacity::ONE
                     && g.clip_path.is_none()
                     && g.mask.is_none()
-                    && g.filters.is_empty()
+                    && no_filters
                     && g.enable_background.is_none()
                     && !(keep_named_groups && !g.id.is_empty())
             } else {

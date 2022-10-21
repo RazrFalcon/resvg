@@ -189,11 +189,15 @@ fn render_group_impl(
     //
     // Transparency trimming is not yet allowed on groups with filter,
     // because filter expands the pixmap and it should be handled separately.
+    #[cfg(feature = "filter")]
     let (tx, ty, mut sub_pixmap) = if g.filters.is_empty() {
         trim_transparency(sub_pixmap)?
     } else {
         (0, 0, sub_pixmap)
     };
+
+    #[cfg(not(feature = "filter"))]
+    let (tx, ty, mut sub_pixmap) = (0, 0, sub_pixmap);
 
     // During the background rendering for filters,
     // an opacity, a filter, a clip and a mask should be ignored for the inner group.
