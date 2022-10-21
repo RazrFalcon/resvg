@@ -34,14 +34,13 @@ pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvg::Tree, Error> 
 
 pub fn render_thumbnail(tree: &Option<usvg::Tree>, cx: u32) -> Result<tiny_skia::Pixmap, Error> {
     let tree = tree.as_ref().ok_or(Error::TreeEmpty)?;
-    let size = tree.svg_node().size;
-    let fit_to = if size.width() > size.height() {
+    let fit_to = if tree.size.width() > tree.size.height() {
         FitTo::Width(cx)
     } else {
         FitTo::Height(cx)
     };
 
-    let size = fit_to.fit_to(tree.svg_node().size.to_screen_size()).ok_or(Error::RenderError)?;
+    let size = fit_to.fit_to(tree.size.to_screen_size()).ok_or(Error::RenderError)?;
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
     resvg::render(&tree, fit_to, tiny_skia::Transform::default(), pixmap.as_mut()).ok_or(Error::RenderError)?;
     Ok(pixmap)
