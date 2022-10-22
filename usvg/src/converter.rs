@@ -417,7 +417,6 @@ pub(crate) fn convert_group(
         None
     };
 
-
     #[cfg(feature = "filter")]
     let (filters, filter_fill, filter_stroke) = {
         let mut filters = Vec::new();
@@ -683,6 +682,11 @@ fn convert_path(
         .find_attribute(AId::ShapeRendering)
         .unwrap_or(state.opt.shape_rendering);
 
+    // TODO: handle `markers` before `stroke`
+    let raw_paint_order: svgtypes::PaintOrder =
+        node.find_attribute(AId::PaintOrder).unwrap_or_default();
+    let paint_order = svg_paint_order_to_usvg(raw_paint_order);
+
     // If a path doesn't have a fill or a stroke than it's invisible.
     // By setting `visibility` to `hidden` we are disabling rendering of this path.
     if fill.is_none() && stroke.is_none() {
@@ -702,14 +706,27 @@ fn convert_path(
         visibility,
         fill,
         stroke,
+        paint_order,
         rendering_mode,
         text_bbox: None,
         data: path,
     }));
 
-    // Insert markers group after `path`.
-    if let Some(g) = markers_group {
-        g.detach();
-        parent.append(g);
+    if raw_paint_order.order[2] == svgtypes::PaintOrderKind::Markers {
+        // Insert markers group after `path`.
+        if let Some(g) = markers_group {
+            g.detach();
+            parent.append(g);
+        }
+    }
+}
+
+pub fn svg_paint_order_to_usvg(order: svgtypes::PaintOrder) -> PaintOrder {
+    match (order.order[0], order.order[1]) {
+        (svgtypes::PaintOrderKind::Stroke, _) => PaintOrder::StrokeAndFill,
+        (svgtypes::PaintOrderKind::Markers, svgtypes::PaintOrderKind::Stroke) => {
+            PaintOrder::StrokeAndFill
+        }
+        _ => PaintOrder::FillAndStroke,
     }
 }

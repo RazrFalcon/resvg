@@ -24,22 +24,34 @@ pub fn draw(
 
     let antialias = path.rendering_mode.use_shape_antialiasing();
 
-    if let Some(ref fill) = path.fill {
-        crate::paint_server::fill(
-            tree, fill, style_bbox, &skia_path, antialias, blend_mode, canvas,
-        );
-    }
+    let fill_path = |canvas| {
+        if let Some(ref fill) = path.fill {
+            crate::paint_server::fill(
+                tree, fill, style_bbox, &skia_path, antialias, blend_mode, canvas,
+            );
+        }
+    };
 
-    if path.stroke.is_some() {
-        crate::paint_server::stroke(
-            tree,
-            &path.stroke,
-            style_bbox,
-            &skia_path,
-            antialias,
-            blend_mode,
-            canvas,
-        );
+    let stroke_path = |canvas| {
+        if path.stroke.is_some() {
+            crate::paint_server::stroke(
+                tree,
+                &path.stroke,
+                style_bbox,
+                &skia_path,
+                antialias,
+                blend_mode,
+                canvas,
+            );
+        }
+    };
+
+    if path.paint_order == usvg::PaintOrder::FillAndStroke {
+        fill_path(canvas);
+        stroke_path(canvas);
+    } else {
+        stroke_path(canvas);
+        fill_path(canvas);
     }
 
     bbox

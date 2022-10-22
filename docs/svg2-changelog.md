@@ -185,7 +185,7 @@ NOTE: This list is not final. This just things I was able to find so far. Patche
 
 - [ ] An `arcs` variant to the [`stroke-linejoin`](https://www.w3.org/TR/SVG2/painting.html#LineJoin) property.
 - [ ] A `miter-clip` variant to the [`stroke-linejoin`](https://www.w3.org/TR/SVG2/painting.html#LineJoin) property.
-- [ ] A [`paint-order`](https://www.w3.org/TR/SVG2/painting.html#PaintOrder) property.
+- [x] (partial support) A [`paint-order`](https://www.w3.org/TR/SVG2/painting.html#PaintOrder) property.
 - [ ] `context-fill` and `context-stroke` variants to the [`<paint>`](https://www.w3.org/TR/SVG2/painting.html#SpecifyingPaint) type.
 - [ ] A [`mix-blend-mode`](https://www.w3.org/TR/compositing-1/#mix-blend-mode) property.
 - [ ] An [`isolation`](https://www.w3.org/TR/compositing-1/#isolation) property.

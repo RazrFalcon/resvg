@@ -314,6 +314,9 @@ A group will have at least one of the attributes present.
 * `stroke-dashoffset` = <<number-type,<number> >>?
 * `stroke-opacity` = <<opacity-type,<opacity> >>? +
   Default: 1
+* `paint-order` = `normal | stroke`? +
+  Default: `normal` +
+  Only `stroke` will be written.
 * `clip-rule` = `evenodd`? +
   Will be set only inside the <<clipPath-element,clipPath>>, instead of `fill-rule`.
 * `clip-path` = <<func-iri-type,<FuncIRI> >>? +

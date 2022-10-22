@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- Partial `paint-order` attribute support.
+  Markers can only be under or above the shape.
 
 ## [0.24.0] - 2022-10-22
 ### Added

@@ -10,7 +10,9 @@ use svgtypes::{Length, LengthUnit};
 use super::fontdb_ext::{self, DatabaseExt};
 use super::TextNode;
 use crate::svgtree::{self, AId, EId};
-use crate::{converter, style, units, OptionLog, ShapeRendering, TextRendering, Visibility};
+use crate::{
+    converter, style, units, OptionLog, PaintOrder, ShapeRendering, TextRendering, Visibility,
+};
 use crate::{SharedPathData, Transform, Units};
 
 /// A read-only text index in bytes.
@@ -113,6 +115,7 @@ pub struct TextSpan {
     pub end: usize,
     pub fill: Option<style::Fill>,
     pub stroke: Option<style::Stroke>,
+    pub paint_order: PaintOrder,
     pub font: super::fontdb_ext::Font,
     pub font_size: NonZeroPositiveF64,
     pub small_caps: bool,
@@ -241,11 +244,17 @@ fn collect_text_chunks_impl(
             }
         };
 
+        let raw_paint_order: svgtypes::PaintOrder = parent
+            .find_attribute(svgtree::AId::PaintOrder)
+            .unwrap_or_default();
+        let paint_order = crate::converter::svg_paint_order_to_usvg(raw_paint_order);
+
         let span = TextSpan {
             start: 0,
             end: 0,
             fill: style::resolve_fill(parent, true, state, cache),
             stroke: style::resolve_stroke(parent, true, state, cache),
+            paint_order,
             font,
             font_size,
             small_caps: parent.find_attribute(AId::FontVariant) == Some("small-caps"),

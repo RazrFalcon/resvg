@@ -32,7 +32,7 @@ xmlwriter = { version = "0.1", optional = true }
 roxmltree = "0.15"
 simplecss = "0.2"
 siphasher = "0.3"
-svgtypes = "0.8"
+svgtypes = "0.8.2"
 
 # for text to path
 fontdb = { version = "0.9.2", optional = true, default-features = false }

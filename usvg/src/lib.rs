@@ -350,6 +350,25 @@ impl NodeKind {
     }
 }
 
+/// Representation of the [`paint-order`] property.
+///
+/// `usvg` will handle `markers` automatically,
+/// therefore we provide only `fill` and `stroke` variants.
+///
+/// [`paint-order`]: https://www.w3.org/TR/SVG2/painting.html#PaintOrder
+#[derive(Clone, Copy, PartialEq, Debug)]
+#[allow(missing_docs)]
+pub enum PaintOrder {
+    FillAndStroke,
+    StrokeAndFill,
+}
+
+impl Default for PaintOrder {
+    fn default() -> Self {
+        Self::FillAndStroke
+    }
+}
+
 /// A path element.
 #[derive(Clone, Debug)]
 pub struct Path {
@@ -371,6 +390,14 @@ pub struct Path {
 
     /// Stroke style.
     pub stroke: Option<Stroke>,
+
+    /// Fill and stroke paint order.
+    ///
+    /// Since markers will be replaced with regular nodes automatically,
+    /// `usvg` doesn't provide the `markers` order type. It's was already done.
+    ///
+    /// `paint-order` in SVG.
+    pub paint_order: PaintOrder,
 
     /// Rendering mode.
     ///
@@ -403,6 +430,7 @@ impl Default for Path {
             visibility: Visibility::Visible,
             fill: None,
             stroke: None,
+            paint_order: PaintOrder::default(),
             rendering_mode: ShapeRendering::default(),
             text_bbox: None,
             data: Rc::new(PathData::default()),
@@ -477,9 +505,12 @@ impl Default for Group {
             opacity: Opacity::ONE,
             clip_path: None,
             mask: None,
-            #[cfg(feature = "filter")] filters: Vec::new(),
-            #[cfg(feature = "filter")] filter_fill: None,
-            #[cfg(feature = "filter")] filter_stroke: None,
+            #[cfg(feature = "filter")]
+            filters: Vec::new(),
+            #[cfg(feature = "filter")]
+            filter_fill: None,
+            #[cfg(feature = "filter")]
+            filter_stroke: None,
             enable_background: None,
         }
     }

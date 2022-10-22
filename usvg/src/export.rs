@@ -1007,6 +1007,10 @@ fn write_path(
 
     xml.write_visibility(path.visibility);
 
+    if path.paint_order == PaintOrder::StrokeAndFill {
+        xml.write_svg_attribute(AId::PaintOrder, "stroke");
+    }
+
     match path.rendering_mode {
         ShapeRendering::OptimizeSpeed => {
             xml.write_svg_attribute(AId::ShapeRendering, "optimizeSpeed");

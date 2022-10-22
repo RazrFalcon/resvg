@@ -162,6 +162,7 @@ pub enum AttributeValue {
     String(String),
     Transform(Transform),
     ViewBox(svgtypes::ViewBox),
+    PaintOrder(svgtypes::PaintOrder),
 }
 
 #[derive(Clone)]
@@ -689,6 +690,7 @@ impl_from_value!(svgtypes::Length, Length);
 impl_from_value!(svgtypes::ViewBox, ViewBox);
 impl_from_value!(svgtypes::AspectRatio, AspectRatio);
 impl_from_value!(svgtypes::Angle, Angle);
+impl_from_value!(svgtypes::PaintOrder, PaintOrder);
 impl_from_value!(f64, Number);
 impl_from_value!(Opacity, Opacity);
 impl_from_value!(EnableBackground, EnableBackground);
@@ -848,6 +850,7 @@ impl AId {
                 | AId::Mask
                 | AId::Opacity
                 | AId::Overflow
+                | AId::PaintOrder
                 | AId::ShapeRendering
                 | AId::StopColor
                 | AId::StopOpacity

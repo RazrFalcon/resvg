@@ -512,6 +512,8 @@ fn parse_svg_attribute(tag_name: EId, aid: AId, value: &str) -> Option<Attribute
             AttributeValue::AspectRatio(svgtypes::AspectRatio::from_str(value).ok()?)
         }
 
+        AId::PaintOrder => AttributeValue::PaintOrder(svgtypes::PaintOrder::from_str(value).ok()?),
+
         AId::BaseFrequency
         | AId::KernelMatrix
         | AId::Radius

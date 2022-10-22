@@ -289,6 +289,7 @@ fn convert_span(
         visibility: span.visibility,
         fill,
         stroke: span.stroke.take(),
+        paint_order: span.paint_order,
         rendering_mode: ShapeRendering::default(),
         text_bbox: bboxes_data.bbox().and_then(|r| r.to_rect()),
         data: Rc::new(path_data),
