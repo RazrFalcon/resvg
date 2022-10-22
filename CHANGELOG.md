@@ -47,6 +47,7 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - Path bbox calculation scales stroke width too.
   Thanks to [growler](https://github.com/growler).
+- (tiny-skia) Round caps roundness.
 - (xmlparser) Stack overflow on specific files.
 - (c-api) `resvg_is_image_empty` output was inverted.
 
