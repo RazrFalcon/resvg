@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
-use ttf_parser::GlyphId;
+use rustybuzz::ttf_parser::GlyphId;
 use unicode_script::UnicodeScript;
 use unicode_vo::Orientation as CharOrientation;
 

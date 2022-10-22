@@ -10,6 +10,7 @@ This changelog also contains important changes in dependencies.
 ### Added
 - CSS3 `writing-mode` variants `vertical-rl` and `vertical-lr`.
   Thanks to [yisibl](https://github.com/yisibl).
+- (tiny-skia) AArch64 Neon SIMD support. Up to 3x faster on Apple M1.
 
 ### Changed
 - `usvg::Tree` stores only `Group`, `Path` and `Image` nodes now.

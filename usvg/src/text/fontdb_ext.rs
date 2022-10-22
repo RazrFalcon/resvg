@@ -5,6 +5,8 @@
 use std::convert::TryFrom;
 use std::num::NonZeroU16;
 
+use rustybuzz::ttf_parser;
+
 use fontdb::{Database, ID};
 use ttf_parser::GlyphId;
 
@@ -20,7 +22,7 @@ impl DatabaseExt for Database {
     #[inline(never)]
     fn load_font(&self, id: ID) -> Option<Font> {
         self.with_face_data(id, |data, face_index| -> Option<Font> {
-            let font = ttf_parser::Face::from_slice(data, face_index).ok()?;
+            let font = ttf_parser::Face::parse(data, face_index).ok()?;
 
             let units_per_em = NonZeroU16::new(font.units_per_em())?;
 
@@ -93,7 +95,7 @@ impl DatabaseExt for Database {
     #[inline(never)]
     fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<PathData> {
         self.with_face_data(id, |data, face_index| -> Option<PathData> {
-            let font = ttf_parser::Face::from_slice(data, face_index).ok()?;
+            let font = ttf_parser::Face::parse(data, face_index).ok()?;
 
             let mut builder = PathBuilder {
                 path: PathData::new(),
@@ -106,7 +108,7 @@ impl DatabaseExt for Database {
     #[inline(never)]
     fn has_char(&self, id: ID, c: char) -> bool {
         let res = self.with_face_data(id, |font_data, face_index| -> Option<bool> {
-            let font = ttf_parser::Face::from_slice(font_data, face_index).ok()?;
+            let font = ttf_parser::Face::parse(font_data, face_index).ok()?;
             font.glyph_index(c)?;
             Some(true)
         });
