@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.24.0] - 2022-10-22
 ### Added
 - CSS3 `writing-mode` variants `vertical-rl` and `vertical-lr`.
   Thanks to [yisibl](https://github.com/yisibl).
@@ -645,7 +647,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.23.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.24.0...HEAD
+[0.24.0]: https://github.com/RazrFalcon/resvg/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/RazrFalcon/resvg/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/RazrFalcon/resvg/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/RazrFalcon/resvg/compare/v0.20.0...v0.21.0
