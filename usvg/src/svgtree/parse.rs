@@ -22,14 +22,12 @@ impl Document {
         let new_child_id = NodeId(self.nodes.len());
         self.nodes.push(NodeData {
             parent: Some(parent_id),
-            prev_sibling: None,
             next_sibling: None,
             children: None,
             kind,
         });
 
         let last_child_id = self.nodes[parent_id.0].children.map(|(_, id)| id);
-        self.nodes[new_child_id.0].prev_sibling = last_child_id;
 
         if let Some(id) = last_child_id {
             self.nodes[id.0].next_sibling = Some(new_child_id);
@@ -71,7 +69,6 @@ fn parse(xml: &roxmltree::Document) -> Result<Document, Error> {
     // Add a root node.
     doc.nodes.push(NodeData {
         parent: None,
-        prev_sibling: None,
         next_sibling: None,
         children: None,
         kind: NodeKind::Root,
@@ -251,10 +248,11 @@ pub(super) fn parse_svg_element(
     for rule in &style_sheet.rules {
         if rule.selector.matches(&XmlNode(xml_node)) {
             for declaration in &rule.declarations {
-                // TODO: preform XML attribute normalization
+                // TODO: perform XML attribute normalization
                 if let Some(aid) = AId::from_str(declaration.name) {
                     // Parse only the presentation attributes.
                     // `transform` isn't a presentation attribute, but should be parsed anyway.
+                    // TODO: `transform` is presentation in SVG 2?
                     if aid.is_presentation() || aid == AId::Transform {
                         insert_attribute(aid, declaration.value);
                     }
@@ -331,6 +329,7 @@ fn parse_svg_attribute(tag_name: EId, aid: AId, value: &str) -> Option<Attribute
             // `href` can contain base64 data and we do store it as is.
             match svgtypes::IRI::from_str(value) {
                 Ok(link) => AttributeValue::Link(link.0.to_string()),
+                // TODO: avoid string allocation
                 Err(_) => AttributeValue::String(value.to_string()),
             }
         }
@@ -551,6 +550,7 @@ fn parse_svg_attribute(tag_name: EId, aid: AId, value: &str) -> Option<Attribute
     })
 }
 
+// TODO: move to svgtypes
 #[inline(never)]
 fn parse_path(text: &str) -> crate::PathData {
     // Previous MoveTo coordinates.

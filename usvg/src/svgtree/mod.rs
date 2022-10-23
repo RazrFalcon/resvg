@@ -120,6 +120,7 @@ impl std::fmt::Debug for Document {
     }
 }
 
+// TODO: use u32
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct NodeId(usize);
 
@@ -138,7 +139,6 @@ enum NodeKind {
 
 struct NodeData {
     parent: Option<NodeId>,
-    prev_sibling: Option<NodeId>,
     next_sibling: Option<NodeId>,
     children: Option<(NodeId, NodeId)>,
     kind: NodeKind,
@@ -363,10 +363,6 @@ impl<'a> Node<'a> {
         self.ancestors().skip(1).find(|n| n.is_element())
     }
 
-    pub fn prev_sibling(&self) -> Option<Self> {
-        self.d.prev_sibling.map(|id| self.gen_node(id))
-    }
-
     pub fn next_sibling(&self) -> Option<Self> {
         self.d.next_sibling.map(|id| self.gen_node(id))
     }
@@ -510,30 +506,18 @@ impl std::fmt::Debug for Node<'_> {
     }
 }
 
-macro_rules! axis_iterators {
-    ($($i:ident($f:path);)*) => {
-        $(
-            #[derive(Clone)]
-            pub struct $i<'a>(Option<Node<'a>>);
+#[derive(Clone)]
+pub struct Ancestors<'a>(Option<Node<'a>>);
 
-            impl<'a> Iterator for $i<'a> {
-                type Item = Node<'a>;
+impl<'a> Iterator for Ancestors<'a> {
+    type Item = Node<'a>;
 
-                #[inline]
-                fn next(&mut self) -> Option<Self::Item> {
-                    let node = self.0.take();
-                    self.0 = node.as_ref().and_then($f);
-                    node
-                }
-            }
-        )*
-    };
-}
-
-axis_iterators! {
-    Ancestors(Node::parent);
-    PrevSiblings(Node::prev_sibling);
-    NextSiblings(Node::next_sibling);
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        let node = self.0.take();
+        self.0 = node.as_ref().and_then(Node::parent);
+        node
+    }
 }
 
 #[derive(Clone)]
@@ -551,18 +535,6 @@ impl<'a> Iterator for Children<'a> {
             self.back = None;
         } else {
             self.front = node.as_ref().and_then(Node::next_sibling);
-        }
-        node
-    }
-}
-
-impl<'a> DoubleEndedIterator for Children<'a> {
-    fn next_back(&mut self) -> Option<Self::Item> {
-        let node = self.back.take();
-        if self.back == self.front {
-            self.front = None;
-        } else {
-            self.back = node.as_ref().and_then(Node::prev_sibling);
         }
         node
     }
