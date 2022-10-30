@@ -14,9 +14,9 @@
 #define RESVG_QT_H
 
 #define RESVG_QT_MAJOR_VERSION 0
-#define RESVG_QT_MINOR_VERSION 24
+#define RESVG_QT_MINOR_VERSION 25
 #define RESVG_QT_PATCH_VERSION 0
-#define RESVG_QT_VERSION "0.24.0"
+#define RESVG_QT_VERSION "0.25.0"
 
 #include <QDebug>
 #include <QFile>

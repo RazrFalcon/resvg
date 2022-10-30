@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.25.0] - 2022-10-30
 ### Added
 - Partial `paint-order` attribute support.
   Markers can only be under or above the shape.
+
+### Fixed
+- Compilation issues caused by `rustybuzz` update.
 
 ## [0.24.0] - 2022-10-22
 ### Added
@@ -650,7 +655,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.24.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.25.0...HEAD
+[0.25.0]: https://github.com/RazrFalcon/resvg/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/RazrFalcon/resvg/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/RazrFalcon/resvg/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/RazrFalcon/resvg/compare/v0.21.0...v0.22.0
