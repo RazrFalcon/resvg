@@ -5,6 +5,23 @@
 use crate::render;
 
 #[test] fn a_alignment_baseline_001() { assert_eq!(render("a-alignment-baseline-001"), 0); }
+#[test] fn a_alignment_baseline_002() { assert_eq!(render("a-alignment-baseline-002"), 0); }
+#[test] fn a_alignment_baseline_003() { assert_eq!(render("a-alignment-baseline-003"), 0); }
+#[test] fn a_alignment_baseline_004() { assert_eq!(render("a-alignment-baseline-004"), 0); }
+#[test] fn a_alignment_baseline_005() { assert_eq!(render("a-alignment-baseline-005"), 0); }
+#[test] fn a_alignment_baseline_006() { assert_eq!(render("a-alignment-baseline-006"), 0); }
+#[test] fn a_alignment_baseline_007() { assert_eq!(render("a-alignment-baseline-007"), 0); }
+#[test] fn a_alignment_baseline_008() { assert_eq!(render("a-alignment-baseline-008"), 0); }
+#[test] fn a_alignment_baseline_009() { assert_eq!(render("a-alignment-baseline-009"), 0); }
+#[test] fn a_alignment_baseline_010() { assert_eq!(render("a-alignment-baseline-010"), 0); }
+#[test] fn a_alignment_baseline_011() { assert_eq!(render("a-alignment-baseline-011"), 0); }
+#[test] fn a_alignment_baseline_012() { assert_eq!(render("a-alignment-baseline-012"), 0); }
+#[test] fn a_alignment_baseline_013() { assert_eq!(render("a-alignment-baseline-013"), 0); }
+#[test] fn a_alignment_baseline_014() { assert_eq!(render("a-alignment-baseline-014"), 0); }
+#[test] fn a_alignment_baseline_015() { assert_eq!(render("a-alignment-baseline-015"), 0); }
+#[test] fn a_alignment_baseline_016() { assert_eq!(render("a-alignment-baseline-016"), 0); }
+#[test] fn a_alignment_baseline_017() { assert_eq!(render("a-alignment-baseline-017"), 0); }
+#[test] fn a_alignment_baseline_018() { assert_eq!(render("a-alignment-baseline-018"), 0); }
 #[test] fn a_baseline_shift_001() { assert_eq!(render("a-baseline-shift-001"), 0); }
 #[test] fn a_baseline_shift_002() { assert_eq!(render("a-baseline-shift-002"), 0); }
 #[test] fn a_baseline_shift_003() { assert_eq!(render("a-baseline-shift-003"), 0); }

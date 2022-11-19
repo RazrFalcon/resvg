@@ -12,6 +12,8 @@ use ttf_parser::GlyphId;
 
 use crate::PathData;
 
+use super::convert::AlignmentBaseline;
+
 pub trait DatabaseExt {
     fn load_font(&self, id: ID) -> Option<Font>;
     fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<PathData>;
@@ -189,6 +191,48 @@ impl Font {
     #[inline]
     pub fn superscript_offset(&self, font_size: f64) -> f64 {
         self.superscript_offset as f64 * self.scale(font_size)
+    }
+
+    // The `alignment-baseline` property is a mess.
+    //
+    // The SVG 1.1 spec (https://www.w3.org/TR/SVG11/text.html#BaselineAlignmentProperties)
+    // goes on and on about what this property suppose to do, but doesn't actually explain
+    // how it should be implemented. It's just a very verbose overview.
+    //
+    // As of Nov 2022, only Chrome and Safari support `alignment-baseline`. Firefox isn't.
+    // Same goes for basically every SVG library in existence.
+    // Meaning we have no idea how exactly it should be implemented.
+    //
+    // And even Chrome and Safari cannot agree on how to handle `baseline`, `after-edge`,
+    // `text-after-edge` and `ideographic` variants. Producing vastly different output.
+    //
+    // As per spec, a proper implementation should get baseline values from the font itself,
+    // using `BASE` and `bsln` TrueType tables. If those tables are not present,
+    // we have to synthesize them (https://drafts.csswg.org/css-inline/#baseline-synthesis-fonts).
+    // And in the worst case scenario simply fallback to hardcoded values.
+    //
+    // Again, as of Nov 2022, Chrome does only the latter:
+    // https://github.com/chromium/chromium/blob/main/third_party/blink/renderer/platform/fonts/font_metrics.cc#L153
+    //
+    // Since baseline TrueType tables parsing and baseline synthesis are pretty hard,
+    // we do what Chrome does - use hardcoded values. And it seems like Safari does the same.
+    //
+    //
+    // But that's not all! SVG 2 and CSS Inline Layout 3 did a baseline handling overhaul,
+    // and it's far more complex now. Not sure if anyone actually supports it.
+    pub fn alignment_baseline_shift(&self, alignment: AlignmentBaseline, font_size: f64) -> f64 {
+        match alignment {
+            AlignmentBaseline::Auto => 0.0,
+            AlignmentBaseline::Baseline => 0.0,
+            AlignmentBaseline::BeforeEdge | AlignmentBaseline::TextBeforeEdge => 0.0, // unsupported
+            AlignmentBaseline::Middle => self.x_height(font_size) * 0.5,
+            AlignmentBaseline::Central => self.ascent(font_size) - self.height(font_size) * 0.5,
+            AlignmentBaseline::AfterEdge | AlignmentBaseline::TextAfterEdge => 0.0, // unsupported
+            AlignmentBaseline::Ideographic => self.descent(font_size),
+            AlignmentBaseline::Alphabetic => 0.0,
+            AlignmentBaseline::Hanging => self.ascent(font_size) * 0.8,
+            AlignmentBaseline::Mathematical => self.ascent(font_size) * 0.5,
+        }
     }
 }
 

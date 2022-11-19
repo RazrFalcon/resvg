@@ -58,6 +58,39 @@ impl_enum_from_str!(TextAnchor,
     "end"       => TextAnchor::End
 );
 
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum AlignmentBaseline {
+    Auto,
+    Baseline,
+    BeforeEdge,
+    TextBeforeEdge,
+    Middle,
+    Central,
+    AfterEdge,
+    TextAfterEdge,
+    Ideographic,
+    Alphabetic,
+    Hanging,
+    Mathematical,
+}
+
+impl_enum_default!(AlignmentBaseline, Auto);
+
+impl_enum_from_str!(AlignmentBaseline,
+    "auto" => AlignmentBaseline::Auto,
+    "baseline" => AlignmentBaseline::Baseline,
+    "before-edge" => AlignmentBaseline::BeforeEdge,
+    "text-before-edge" => AlignmentBaseline::TextBeforeEdge,
+    "middle" => AlignmentBaseline::Middle,
+    "central" => AlignmentBaseline::Central,
+    "after-edge" => AlignmentBaseline::AfterEdge,
+    "text-after-edge" => AlignmentBaseline::TextAfterEdge,
+    "ideographic" => AlignmentBaseline::Ideographic,
+    "alphabetic" => AlignmentBaseline::Alphabetic,
+    "hanging" => AlignmentBaseline::Hanging,
+    "mathematical" => AlignmentBaseline::Mathematical
+);
+
 impl crate::svgtree::EnumFromStr for fontdb::Style {
     fn enum_from_str(s: &str) -> Option<Self> {
         match s {
@@ -120,6 +153,7 @@ pub struct TextSpan {
     pub font_size: NonZeroPositiveF64,
     pub small_caps: bool,
     pub decoration: TextDecoration,
+    pub alignment_baseline: AlignmentBaseline,
     pub baseline_shift: f64,
     pub visibility: Visibility,
     pub letter_spacing: f64,
@@ -260,6 +294,9 @@ fn collect_text_chunks_impl(
             small_caps: parent.find_attribute(AId::FontVariant) == Some("small-caps"),
             decoration: resolve_decoration(text_node, parent, state, cache),
             visibility: parent.find_attribute(AId::Visibility).unwrap_or_default(),
+            alignment_baseline: parent
+                .find_attribute(AId::AlignmentBaseline)
+                .unwrap_or_default(),
             baseline_shift: resolve_baseline_shift(parent, state),
             letter_spacing: parent.resolve_length(AId::LetterSpacing, state, 0.0),
             word_spacing: parent.resolve_length(AId::WordSpacing, state, 0.0),

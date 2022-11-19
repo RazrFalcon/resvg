@@ -854,7 +854,8 @@ impl AId {
     pub fn allows_inherit_value(&self) -> bool {
         matches!(
             self,
-            AId::BaselineShift
+            AId::AlignmentBaseline
+                | AId::BaselineShift
                 | AId::ClipPath
                 | AId::ClipRule
                 | AId::Color

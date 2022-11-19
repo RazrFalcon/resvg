@@ -152,6 +152,14 @@ fn text_to_paths(
                 // because clusters can be rotated and an additional shift will lead
                 // to invalid results.
                 span_ts.translate(0.0, -span.baseline_shift);
+
+                // TODO: support vertical layout as well
+                if writing_mode == WritingMode::LeftToRight {
+                    let alignment_baseline_shift = span
+                        .font
+                        .alignment_baseline_shift(span.alignment_baseline, span.font_size.get());
+                    span_ts.translate(0.0, alignment_baseline_shift);
+                }
             }
 
             if let Some(decoration) = span.decoration.underline.take() {
