@@ -224,10 +224,14 @@ impl Font {
         match alignment {
             AlignmentBaseline::Auto => 0.0,
             AlignmentBaseline::Baseline => 0.0,
-            AlignmentBaseline::BeforeEdge | AlignmentBaseline::TextBeforeEdge => 0.0, // unsupported
+            AlignmentBaseline::BeforeEdge | AlignmentBaseline::TextBeforeEdge => {
+                self.ascent(font_size)
+            }
             AlignmentBaseline::Middle => self.x_height(font_size) * 0.5,
             AlignmentBaseline::Central => self.ascent(font_size) - self.height(font_size) * 0.5,
-            AlignmentBaseline::AfterEdge | AlignmentBaseline::TextAfterEdge => 0.0, // unsupported
+            AlignmentBaseline::AfterEdge | AlignmentBaseline::TextAfterEdge => {
+                self.descent(font_size)
+            }
             AlignmentBaseline::Ideographic => self.descent(font_size),
             AlignmentBaseline::Alphabetic => 0.0,
             AlignmentBaseline::Hanging => self.ascent(font_size) * 0.8,
