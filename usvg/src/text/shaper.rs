@@ -579,19 +579,7 @@ fn resolve_clusters_positions_path(
 
         let baseline_shift = chunk
             .span_at(cluster.byte_idx)
-            .map(|span| {
-                let mut shift = span.baseline_shift;
-
-                // TODO: support vertical layout as well
-                if writing_mode == WritingMode::LeftToRight {
-                    let alignment_baseline_shift = span
-                        .font
-                        .alignment_baseline_shift(span.alignment_baseline, span.font_size.get());
-                    shift -= alignment_baseline_shift;
-                }
-
-                shift
-            })
+            .map(|span| -span.resolve_baseline(writing_mode))
             .unwrap_or(0.0);
 
         // Shift only by `dy` since we already applied `dx`

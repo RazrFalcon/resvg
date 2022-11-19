@@ -4,7 +4,7 @@
 
     <!-- text cannot have markers, so nothing to test -->
     <text id="text1" x="32" y="100" fill="green" stroke="blue" stroke-width="5">
-        Te<tspan paint-order="stroke fill">xt</tspan>
+        Te<tspan id="tspan1" paint-order="stroke fill">xt</tspan>
     </text>
 
     <!-- image frame -->

@@ -1,0 +1,14 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>`use-script` (UB)</title>
+    <desc>
+        Deprecated in SVG 2
+
+        Should technically detect baseline by text script, but seems like no one supports it.
+    </desc>
+
+    <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
+          stroke="gray" stroke-width="0.5"/>
+
+    <text id="text1" x="100" y="100" text-anchor="middle" font-family="Noto Sans Devanagari" font-size="36"
+          dominant-baseline="use-script">क</text>
+</svg>

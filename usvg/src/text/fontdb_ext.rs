@@ -12,7 +12,7 @@ use ttf_parser::GlyphId;
 
 use crate::PathData;
 
-use super::convert::AlignmentBaseline;
+use super::convert::{AlignmentBaseline, DominantBaseline};
 
 pub trait DatabaseExt {
     fn load_font(&self, id: ID) -> Option<Font>;
@@ -193,6 +193,25 @@ impl Font {
         self.superscript_offset as f64 * self.scale(font_size)
     }
 
+    pub fn dominant_baseline_shift(&self, baseline: DominantBaseline, font_size: f64) -> f64 {
+        let alignment = match baseline {
+            DominantBaseline::Auto => AlignmentBaseline::Auto,
+            DominantBaseline::UseScript => AlignmentBaseline::Auto, // unsupported
+            DominantBaseline::NoChange => AlignmentBaseline::Auto,  // already resolved
+            DominantBaseline::ResetSize => AlignmentBaseline::Auto, // unsupported
+            DominantBaseline::Ideographic => AlignmentBaseline::Ideographic,
+            DominantBaseline::Alphabetic => AlignmentBaseline::Alphabetic,
+            DominantBaseline::Hanging => AlignmentBaseline::Hanging,
+            DominantBaseline::Mathematical => AlignmentBaseline::Mathematical,
+            DominantBaseline::Central => AlignmentBaseline::Central,
+            DominantBaseline::Middle => AlignmentBaseline::Middle,
+            DominantBaseline::TextAfterEdge => AlignmentBaseline::TextAfterEdge,
+            DominantBaseline::TextBeforeEdge => AlignmentBaseline::TextBeforeEdge,
+        };
+
+        self.alignment_baseline_shift(alignment, font_size)
+    }
+
     // The `alignment-baseline` property is a mess.
     //
     // The SVG 1.1 spec (https://www.w3.org/TR/SVG11/text.html#BaselineAlignmentProperties)
@@ -210,6 +229,8 @@ impl Font {
     // using `BASE` and `bsln` TrueType tables. If those tables are not present,
     // we have to synthesize them (https://drafts.csswg.org/css-inline/#baseline-synthesis-fonts).
     // And in the worst case scenario simply fallback to hardcoded values.
+    //
+    // Also, most fonts do not provide `BASE` and `bsln` tables to begin with.
     //
     // Again, as of Nov 2022, Chrome does only the latter:
     // https://github.com/chromium/chromium/blob/main/third_party/blink/renderer/platform/fonts/font_metrics.cc#L153

@@ -22,14 +22,12 @@
 
 ### Attributes
 
-- `alignment-baseline`
 - `clip` (deprecated in the SVG 2)
 - `color-interpolation`
 - `color-profile`
 - `color-rendering`
 - `direction`
-- `dominant-baseline`
-- `font`
+- `font` (do not confuse with `font-family`)
 - `font-size-adjust`
 - `font-stretch`
 - `glyph-orientation-horizontal` (removed in the SVG 2)

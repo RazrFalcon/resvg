@@ -862,6 +862,7 @@ impl AId {
                 | AId::ColorInterpolationFilters
                 | AId::Direction
                 | AId::Display
+                | AId::DominantBaseline
                 | AId::Fill
                 | AId::FillOpacity
                 | AId::FillRule
@@ -906,9 +907,11 @@ impl AId {
 fn is_non_inheritable(id: AId) -> bool {
     matches!(
         id,
-        AId::BaselineShift
+        AId::AlignmentBaseline
+            | AId::BaselineShift
             | AId::ClipPath
             | AId::Display
+            | AId::DominantBaseline
             | AId::Filter
             | AId::FloodColor
             | AId::FloodOpacity

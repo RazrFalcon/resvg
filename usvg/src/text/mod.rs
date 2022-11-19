@@ -148,18 +148,12 @@ fn text_to_paths(
             let mut span_ts = text_ts;
             span_ts.translate(x, y);
             if let TextFlow::Horizontal = chunk.text_flow {
+                let shift = span.resolve_baseline(writing_mode);
+
                 // In case of a horizontal flow, shift transform and not clusters,
                 // because clusters can be rotated and an additional shift will lead
                 // to invalid results.
-                span_ts.translate(0.0, -span.baseline_shift);
-
-                // TODO: support vertical layout as well
-                if writing_mode == WritingMode::LeftToRight {
-                    let alignment_baseline_shift = span
-                        .font
-                        .alignment_baseline_shift(span.alignment_baseline, span.font_size.get());
-                    span_ts.translate(0.0, alignment_baseline_shift);
-                }
+                span_ts.translate(0.0, shift);
             }
 
             if let Some(decoration) = span.decoration.underline.take() {
