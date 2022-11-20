@@ -7,7 +7,7 @@ use std::rc::Rc;
 use strict_num::PositiveF64;
 use svgtypes::{Length, LengthUnit as Unit};
 
-use crate::geom::{FuzzyEq, FuzzyZero, IsValidLength, Line, Rect, Transform, ViewBox};
+use crate::geom::{FuzzyEq, FuzzyZero, IsValidLength, Rect, Transform, ViewBox};
 use crate::svgtree::{self, AId, EId};
 use crate::{converter, SvgColorExt, Units};
 use crate::{Color, Group, Node, NodeKind, NormalizedF64, Opacity, OptionLog, Paint};
@@ -285,7 +285,6 @@ fn convert_radial(node: svgtree::Node, state: &converter::State) -> Option<Serve
     );
     let fx = resolve_number(node, AId::Fx, units, state, Length::new_number(cx));
     let fy = resolve_number(node, AId::Fy, units, state, Length::new_number(cy));
-    let (fx, fy) = prepare_focal(cx, cy, r, fx, fy);
     let transform = resolve_attr(node, AId::GradientTransform)
         .attribute(AId::GradientTransform)
         .unwrap_or_default();
@@ -667,26 +666,6 @@ fn resolve_filter_attr(node: svgtree::Node, aid: AId) -> svgtree::Node {
     }
 
     node
-}
-
-/// Prepares the radial gradient focal radius.
-///
-/// According to the SVG spec:
-///
-/// If the point defined by `fx` and `fy` lies outside the circle defined by
-/// `cx`, `cy` and `r`, then the user agent shall set the focal point to the
-/// intersection of the line from (`cx`, `cy`) to (`fx`, `fy`) with the circle
-/// defined by `cx`, `cy` and `r`.
-fn prepare_focal(cx: f64, cy: f64, r: f64, fx: f64, fy: f64) -> (f64, f64) {
-    let max_r = r - r * 0.001;
-
-    let mut line = Line::new(cx, cy, fx, fy);
-
-    if line.length() > max_r {
-        line.set_length(max_r);
-    }
-
-    (line.x2, line.y2)
 }
 
 fn stops_to_color(stops: &[Stop]) -> Option<ServerOrColor> {
