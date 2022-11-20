@@ -10,6 +10,7 @@ This changelog also contains important changes in dependencies.
 ### Added
 - Minimal `dominant-baseline` and `alignment-baseline` support.
 - `mix-blend-mode` and `isolation` support.
+- Allow writing resvg output to stdout.
 
 ### Fixed
 - Do not clip nested `svg` when only the `viewBox` attribute is present.

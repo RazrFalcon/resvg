@@ -49,7 +49,9 @@ fn process() -> Result<(), String> {
     }
 
     let svg_data = timed!(args, "Reading", {
-        if args.in_svg == "-" {
+        if let InputFrom::File(ref file) = args.in_svg {
+            std::fs::read(file).map_err(|_| "failed to open the provided file")?
+        } else {
             use std::io::Read;
             let mut buf = Vec::new();
             let stdin = std::io::stdin();
@@ -58,8 +60,6 @@ fn process() -> Result<(), String> {
                 .read_to_end(&mut buf)
                 .map_err(|_| "failed to read stdin")?;
             buf
-        } else {
-            std::fs::read(&args.in_svg).map_err(|_| "failed to open the provided file")?
         }
     });
 
@@ -78,13 +78,25 @@ fn process() -> Result<(), String> {
         dump_svg(&tree, dump_path)?;
     }
 
-    let out_png = match args.out_png {
-        Some(ref path) => path.clone(),
-        None => return Ok(()),
+    // Render.
+    let img = render_svg(&args, &tree)?;
+
+    match args.out_png {
+        OutputTo::Stdout => {
+            use std::io::Write;
+            let buf = img.encode_png().map_err(|e| e.to_string())?;
+            std::io::stdout().write_all(&buf).unwrap();
+        }
+        OutputTo::File(ref file) => {
+            timed!(
+                args,
+                "Saving",
+                img.save_png(file).map_err(|e| e.to_string())?
+            );
+        }
     };
 
-    // Render.
-    render_svg(args, &tree, &out_png)
+    Ok(())
 }
 
 const HELP: &str = "\
@@ -92,7 +104,9 @@ resvg is an SVG rendering application.
 
 USAGE:
   resvg [OPTIONS] <in-svg> <out-png>  # from file to file
+  resvg [OPTIONS] <in-svg> -c         # from file to stdout
   resvg [OPTIONS] - <out-png>         # from stdin to file
+  resvg [OPTIONS] - -c                # from stdin to stdout
 
   resvg in.svg out.png
   resvg -z 4 in.svg out.png
@@ -101,6 +115,7 @@ USAGE:
 OPTIONS:
       --help                    Prints this help
   -V, --version                 Prints version
+  -c                            Prints the output PNG to the stdout
 
   -w, --width LENGTH            Sets the width in pixels
   -h, --height LENGTH           Sets the height in pixels
@@ -216,7 +231,7 @@ struct CliArgs {
     dump_svg: Option<String>,
 
     input: String,
-    output: Option<path::PathBuf>,
+    output: String,
 }
 
 fn collect_args() -> Result<CliArgs, pico_args::Error> {
@@ -280,7 +295,7 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
         dump_svg: input.opt_value_from_str("--dump-svg")?,
 
         input: input.free_from_str()?,
-        output: input.opt_free_from_str()?,
+        output: input.free_from_str()?,
     })
 }
 
@@ -337,9 +352,21 @@ fn parse_languages(s: &str) -> Result<Vec<String>, String> {
     Ok(langs)
 }
 
+#[derive(Clone, PartialEq, Debug)]
+enum InputFrom {
+    Stdin,
+    File(path::PathBuf),
+}
+
+#[derive(Clone, PartialEq, Debug)]
+enum OutputTo {
+    Stdout,
+    File(path::PathBuf),
+}
+
 struct Args {
-    in_svg: String,
-    out_png: Option<path::PathBuf>,
+    in_svg: InputFrom,
+    out_png: OutputTo,
     query_all: bool,
     export_id: Option<String>,
     export_area_page: bool,
@@ -354,6 +381,27 @@ struct Args {
 
 fn parse_args() -> Result<Args, String> {
     let mut args = collect_args().map_err(|e| e.to_string())?;
+
+    let (in_svg, out_png) = {
+        let in_svg = args.input.as_str();
+        let out_png = args.output.as_str();
+
+        let svg_from = if in_svg == "-" {
+            InputFrom::Stdin
+        } else if in_svg == "-c" {
+            return Err(format!("-c should be set after input"));
+        } else {
+            InputFrom::File(in_svg.into())
+        };
+
+        let svg_to = if out_png == "-c" {
+            OutputTo::Stdout
+        } else {
+            OutputTo::File(out_png.into())
+        };
+
+        (svg_from, svg_to)
+    };
 
     let fontdb = timed!(args, "FontDB init", load_fonts(&mut args));
     if args.list_fonts {
@@ -372,7 +420,7 @@ fn parse_args() -> Result<Args, String> {
         }
     }
 
-    if !args.query_all && args.output.is_none() {
+    if !args.query_all && args.output.is_empty() {
         return Err("<out-png> must be set".to_string());
     }
 
@@ -387,9 +435,6 @@ fn parse_args() -> Result<Args, String> {
     if args.export_area_drawing && args.export_id.is_some() {
         println!("Warning: --export-area-drawing has no effect when --export-id is set.");
     }
-
-    let in_svg = args.input.clone();
-    let out_png = args.output.clone();
 
     let dump = args.dump_svg.as_ref().map(|v| v.into());
     let export_id = args.export_id.as_ref().map(|v| v.to_string());
@@ -415,12 +460,13 @@ fn parse_args() -> Result<Args, String> {
 
     let resources_dir = match args.resources_dir {
         Some(v) => Some(v),
-        None => {
+        None if args.input != "-" => {
             // Get input file absolute directory.
-            std::fs::canonicalize(&in_svg)
+            std::fs::canonicalize(args.input)
                 .ok()
                 .and_then(|p| p.parent().map(|p| p.to_path_buf()))
         }
+        None => None,
     };
 
     let usvg = usvg::Options {
@@ -536,7 +582,7 @@ fn dump_svg(_: &usvg::Tree, _: &path::Path) -> Result<(), String> {
     Ok(())
 }
 
-fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(), String> {
+fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, String> {
     let now = std::time::Instant::now();
 
     let img = if let Some(ref id) = args.export_id {
@@ -652,11 +698,7 @@ fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(),
         );
     }
 
-    timed!(
-        args,
-        "Saving",
-        img.save_png(out_png).map_err(|e| e.to_string())
-    )
+    Ok(img)
 }
 
 fn svg_to_skia_color(color: svgtypes::Color) -> tiny_skia::Color {

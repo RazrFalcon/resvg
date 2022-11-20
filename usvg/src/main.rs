@@ -14,7 +14,7 @@ usvg (micro SVG) is an SVG simplification tool.
 
 USAGE:
   usvg [OPTIONS] <in-svg> <out-svg>  # from file to file
-  usvg [OPTIONS] -c <in-svg>         # from file to stdout
+  usvg [OPTIONS] <in-svg> -c         # from file to stdout
   usvg [OPTIONS] - <out-svg>         # from stdin to file
   usvg [OPTIONS] - -c                # from stdin to stdout
 
