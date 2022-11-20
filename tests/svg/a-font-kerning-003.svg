@@ -1,11 +1,12 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
-     font-family="Noto Sans" font-size="48">
-    <title>10%</title>
+     font-family="Amiri" font-size="48">
+    <title>Arabic script</title>
+    <desc>Should have no effect.</desc>
 
     <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
           stroke="gray" stroke-width="0.5"/>
 
-    <text id="text1" x="100" y="100" text-anchor="middle" kerning="10%">Text</text>
+    <text id="text2" x="100" y="100" text-anchor="middle" style="font-kerning:none">الويب</text>
 
     <!-- image frame -->
     <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>

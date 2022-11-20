@@ -155,7 +155,13 @@ impl<'a> Iterator for GlyphClusters<'a> {
 pub fn outline_chunk(chunk: &TextChunk, state: &converter::State) -> Vec<OutlinedCluster> {
     let mut glyphs = Vec::new();
     for span in &chunk.spans {
-        let tmp_glyphs = shape_text(&chunk.text, span.font, span.small_caps, state);
+        let tmp_glyphs = shape_text(
+            &chunk.text,
+            span.font,
+            span.small_caps,
+            span.apply_kerning,
+            state,
+        );
 
         // Do nothing with the first run.
         if glyphs.is_empty() {
@@ -200,9 +206,11 @@ fn shape_text(
     text: &str,
     font: fontdb_ext::Font,
     small_caps: bool,
+    apply_kerning: bool,
     state: &converter::State,
 ) -> Vec<Glyph> {
-    let mut glyphs = shape_text_with_font(text, font, small_caps, state).unwrap_or_default();
+    let mut glyphs =
+        shape_text_with_font(text, font, small_caps, apply_kerning, state).unwrap_or_default();
 
     // Remember all fonts used for shaping.
     let mut used_fonts = vec![font.id];
@@ -225,7 +233,8 @@ fn shape_text(
 
             // Shape again, using a new font.
             let fallback_glyphs =
-                shape_text_with_font(text, fallback_font, small_caps, state).unwrap_or_default();
+                shape_text_with_font(text, fallback_font, small_caps, apply_kerning, state)
+                    .unwrap_or_default();
 
             let all_matched = fallback_glyphs.iter().all(|g| !g.is_missing());
             if all_matched {
@@ -279,6 +288,7 @@ fn shape_text_with_font(
     text: &str,
     font: fontdb_ext::Font,
     small_caps: bool,
+    apply_kerning: bool,
     state: &converter::State,
 ) -> Option<Vec<Glyph>> {
     state
@@ -315,6 +325,14 @@ fn shape_text_with_font(
                     features.push(rustybuzz::Feature::new(
                         rustybuzz::Tag::from_bytes(b"smcp"),
                         1,
+                        ..,
+                    ));
+                }
+
+                if !apply_kerning {
+                    features.push(rustybuzz::Feature::new(
+                        rustybuzz::Tag::from_bytes(b"kern"),
+                        0,
                         ..,
                     ));
                 }

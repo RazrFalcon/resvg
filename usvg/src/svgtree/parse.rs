@@ -221,7 +221,7 @@ pub(super) fn parse_svg_element(
         }
 
         // For some reason those properties are allowed only inside a `style` attribute and CSS.
-        if aid == AId::MixBlendMode || aid == AId::Isolation {
+        if matches!(aid, AId::MixBlendMode | AId::Isolation | AId::FontKerning) {
             continue;
         }
 
@@ -365,6 +365,7 @@ fn parse_svg_attribute(tag_name: EId, aid: AId, value: &str) -> Option<Attribute
         | AId::RefY
         | AId::Width
         | AId::Height
+        | AId::Kerning
         | AId::MarkerWidth
         | AId::MarkerHeight
         | AId::StartOffset => AttributeValue::Length(svgtypes::Length::from_str(value).ok()?),

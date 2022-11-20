@@ -11,6 +11,7 @@ This changelog also contains important changes in dependencies.
 - Minimal `dominant-baseline` and `alignment-baseline` support.
 - `mix-blend-mode` and `isolation` support.
 - Allow writing resvg output to stdout.
+- Allow disabling text kerning using `kerning="0"` and `style="font-kerning:none"`.
 
 ### Fixed
 - Do not clip nested `svg` when only the `viewBox` attribute is present.

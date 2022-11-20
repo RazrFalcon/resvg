@@ -185,6 +185,7 @@ pub struct TextSpan {
     pub font: super::fontdb_ext::Font,
     pub font_size: NonZeroPositiveF64,
     pub small_caps: bool,
+    pub apply_kerning: bool,
     pub decoration: TextDecoration,
     pub dominant_baseline: DominantBaseline,
     pub alignment_baseline: AlignmentBaseline,
@@ -359,6 +360,13 @@ fn collect_text_chunks_impl(
                 .unwrap_or_default();
         }
 
+        let mut apply_kerning = true;
+        if parent.resolve_length(AId::Kerning, state, -1.0) == 0.0 {
+            apply_kerning = false;
+        } else if parent.find_attribute::<&str>(AId::FontKerning) == Some("none") {
+            apply_kerning = false;
+        }
+
         let span = TextSpan {
             start: 0,
             end: 0,
@@ -368,6 +376,7 @@ fn collect_text_chunks_impl(
             font,
             font_size,
             small_caps: parent.find_attribute(AId::FontVariant) == Some("small-caps"),
+            apply_kerning,
             decoration: resolve_decoration(text_node, parent, state, cache),
             visibility: parent.find_attribute(AId::Visibility).unwrap_or_default(),
             dominant_baseline,

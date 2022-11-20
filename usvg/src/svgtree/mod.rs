@@ -809,6 +809,7 @@ impl AId {
                 | AId::FloodColor
                 | AId::FloodOpacity
                 | AId::FontFamily
+                | AId::FontKerning
                 | AId::FontSize
                 | AId::FontStretch
                 | AId::FontStyle
@@ -872,12 +873,14 @@ impl AId {
                 | AId::FloodColor
                 | AId::FloodOpacity
                 | AId::FontFamily
+                | AId::FontKerning
                 | AId::FontSize
                 | AId::FontStretch
                 | AId::FontStyle
                 | AId::FontVariant
                 | AId::FontWeight
                 | AId::ImageRendering
+                | AId::Kerning
                 | AId::LetterSpacing
                 | AId::MarkerEnd
                 | AId::MarkerMid

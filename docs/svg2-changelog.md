@@ -109,7 +109,7 @@ NOTE: This list is not final. This just things I was able to find so far. Patche
 - [ ] A [`path`](https://www.w3.org/TR/SVG2/text.html#TextPathElementPathAttribute) property to [`textPath`](https://www.w3.org/TR/SVG2/text.html#TextPathElement).
 - [ ] A [`side`](https://www.w3.org/TR/SVG2/text.html#TextPathElementSideAttribute) property to [`textPath`](https://www.w3.org/TR/SVG2/text.html#TextPathElement).
 - [ ] A [`font-feature-settings`](https://www.w3.org/TR/css-fonts-3/#propdef-font-feature-settings) property.
-- [ ] A [`font-kerning`](https://www.w3.org/TR/css-fonts-3/#propdef-font-kerning) property.
+- [x] A [`font-kerning`](https://www.w3.org/TR/css-fonts-3/#propdef-font-kerning) property.
 - [ ] A [`font-synthesis`](https://www.w3.org/TR/css-fonts-3/#propdef-font-synthesis) property.
 - [ ] A [`font-variant-caps`](https://www.w3.org/TR/css-fonts-3/#propdef-font-variant-caps) property.
 - [ ] A [`font-variant-east-asian`](https://www.w3.org/TR/css-fonts-3/#propdef-font-variant-east-asian) property.

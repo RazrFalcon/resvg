@@ -234,6 +234,9 @@ use crate::render;
 #[test] fn a_font_family_009() { assert_eq!(render("a-font-family-009"), 0); }
 #[test] fn a_font_family_010() { assert_eq!(render("a-font-family-010"), 0); }
 #[test] fn a_font_family_011() { assert_eq!(render("a-font-family-011"), 0); }
+#[test] fn a_font_kerning_001() { assert_eq!(render("a-font-kerning-001"), 0); }
+#[test] fn a_font_kerning_002() { assert_eq!(render("a-font-kerning-002"), 0); }
+#[test] fn a_font_kerning_003() { assert_eq!(render("a-font-kerning-003"), 0); }
 #[test] fn a_font_size_001() { assert_eq!(render("a-font-size-001"), 0); }
 #[test] fn a_font_size_002() { assert_eq!(render("a-font-size-002"), 0); }
 #[test] fn a_font_size_003() { assert_eq!(render("a-font-size-003"), 0); }
@@ -283,6 +286,7 @@ use crate::render;
 #[test] fn a_isolation_001() { assert_eq!(render("a-isolation-001"), 0); }
 #[test] fn a_isolation_002() { assert_eq!(render("a-isolation-002"), 0); }
 #[test] fn a_kerning_001() { assert_eq!(render("a-kerning-001"), 0); }
+#[test] fn a_kerning_002() { assert_eq!(render("a-kerning-002"), 0); }
 #[test] fn a_lengthAdjust_001() { assert_eq!(render("a-lengthAdjust-001"), 0); }
 #[test] fn a_letter_spacing_001() { assert_eq!(render("a-letter-spacing-001"), 0); }
 #[test] fn a_letter_spacing_002() { assert_eq!(render("a-letter-spacing-002"), 0); }
