@@ -187,8 +187,8 @@ NOTE: This list is not final. This just things I was able to find so far. Patche
 - [ ] A `miter-clip` variant to the [`stroke-linejoin`](https://www.w3.org/TR/SVG2/painting.html#LineJoin) property.
 - [x] (partial support) A [`paint-order`](https://www.w3.org/TR/SVG2/painting.html#PaintOrder) property.
 - [ ] `context-fill` and `context-stroke` variants to the [`<paint>`](https://www.w3.org/TR/SVG2/painting.html#SpecifyingPaint) type.
-- [ ] A [`mix-blend-mode`](https://www.w3.org/TR/compositing-1/#mix-blend-mode) property.
-- [ ] An [`isolation`](https://www.w3.org/TR/compositing-1/#isolation) property.
+- [x] A [`mix-blend-mode`](https://www.w3.org/TR/compositing-1/#mix-blend-mode) property.
+- [x] An [`isolation`](https://www.w3.org/TR/compositing-1/#isolation) property.
 - [ ] `left`, `center` and `right` variants to `refX` and `refY` properties of the the [`marker`](https://www.w3.org/TR/SVG2/painting.html#MarkerElement) element.
 - [ ] A `auto-start-reverse` variant to [`orient`](https://www.w3.org/TR/SVG2/painting.html#OrientAttribute) property of the the [`marker`](https://www.w3.org/TR/SVG2/painting.html#MarkerElement) element
 

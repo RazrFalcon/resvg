@@ -364,6 +364,19 @@ pub(crate) fn convert_clip_path_elements(
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum Isolation {
+    Auto,
+    Isolate,
+}
+
+impl_enum_default!(Isolation, Auto);
+
+impl_enum_from_str!(Isolation,
+    "auto" => Isolation::Auto,
+    "isolate" => Isolation::Isolate
+);
+
 #[derive(Debug)]
 pub enum GroupKind {
     /// Creates a new group.
@@ -454,7 +467,9 @@ pub(crate) fn convert_group(
     let filters: Vec<usize> = Vec::new();
 
     let transform: Transform = node.attribute(AId::Transform).unwrap_or_default();
-
+    let blend_mode: BlendMode = node.attribute(AId::MixBlendMode).unwrap_or_default();
+    let isolation: Isolation = node.attribute(AId::Isolation).unwrap_or_default();
+    let isolate = isolation == Isolation::Isolate;
     let enable_background = node.attribute(AId::EnableBackground);
 
     let is_g_or_use = node.has_tag_name(EId::G) || node.has_tag_name(EId::Use);
@@ -464,6 +479,8 @@ pub(crate) fn convert_group(
         || !filters.is_empty()
         || !transform.is_default()
         || enable_background.is_some()
+        || blend_mode != BlendMode::Normal
+        || isolate
         || (is_g_or_use
             && node.has_element_id()
             && (state.opt.keep_named_groups || state.fe_image_link))
@@ -480,6 +497,8 @@ pub(crate) fn convert_group(
             id,
             transform,
             opacity,
+            blend_mode,
+            isolate,
             clip_path,
             mask,
             #[cfg(feature = "filter")]
@@ -620,6 +639,8 @@ pub(crate) fn ungroup_groups(root: Node, keep_named_groups: bool) {
                     && g.mask.is_none()
                     && no_filters
                     && g.enable_background.is_none()
+                    && g.blend_mode == BlendMode::Normal
+                    && !g.isolate
                     && !(keep_named_groups && !g.id.is_empty())
             } else {
                 false

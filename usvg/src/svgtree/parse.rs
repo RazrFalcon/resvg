@@ -220,6 +220,11 @@ pub(super) fn parse_svg_element(
             continue;
         }
 
+        // For some reason those properties are allowed only inside a `style` attribute and CSS.
+        if aid == AId::MixBlendMode || aid == AId::Isolation {
+            continue;
+        }
+
         append_attribute(parent_id, tag_name, aid, attr.value(), doc);
     }
 

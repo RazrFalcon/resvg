@@ -815,11 +815,13 @@ impl AId {
                 | AId::FontVariant
                 | AId::FontWeight
                 | AId::ImageRendering
+                | AId::Isolation
                 | AId::LetterSpacing
                 | AId::MarkerEnd
                 | AId::MarkerMid
                 | AId::MarkerStart
                 | AId::Mask
+                | AId::MixBlendMode
                 | AId::Opacity
                 | AId::Overflow
                 | AId::PaintOrder

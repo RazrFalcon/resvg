@@ -321,6 +321,51 @@ impl_enum_from_str!(ImageRendering,
 
 impl_from_str!(ImageRendering);
 
+/// A blending mode property.
+///
+/// `mix-blend-mode` attribute in the SVG.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum BlendMode {
+    Normal,
+    Multiply,
+    Screen,
+    Overlay,
+    Darken,
+    Lighten,
+    ColorDodge,
+    ColorBurn,
+    HardLight,
+    SoftLight,
+    Difference,
+    Exclusion,
+    Hue,
+    Saturation,
+    Color,
+    Luminosity,
+}
+
+impl_enum_default!(BlendMode, Normal);
+
+impl_enum_from_str!(BlendMode,
+    "normal" => BlendMode::Normal,
+    "multiply" => BlendMode::Multiply,
+    "screen" => BlendMode::Screen,
+    "overlay" => BlendMode::Overlay,
+    "darken" => BlendMode::Darken,
+    "lighten" => BlendMode::Lighten,
+    "color-dodge" => BlendMode::ColorDodge,
+    "color-burn" => BlendMode::ColorBurn,
+    "hard-light" => BlendMode::HardLight,
+    "soft-light" => BlendMode::SoftLight,
+    "difference" => BlendMode::Difference,
+    "exclusion" => BlendMode::Exclusion,
+    "hue" => BlendMode::Hue,
+    "saturation" => BlendMode::Saturation,
+    "color" => BlendMode::Color,
+    "luminosity" => BlendMode::Luminosity
+);
+
 /// Node's kind.
 #[allow(missing_docs)]
 #[derive(Clone, Debug)]
@@ -469,6 +514,16 @@ pub struct Group {
     /// it with a parent group using the specified opacity.
     pub opacity: Opacity,
 
+    /// Group blend mode.
+    ///
+    /// `mix-blend-mode` in SVG.
+    pub blend_mode: BlendMode,
+
+    /// Group isolation.
+    ///
+    /// `isolation` in SVG.
+    pub isolate: bool,
+
     /// Element's clip path.
     pub clip_path: Option<Rc<ClipPath>>,
 
@@ -503,6 +558,8 @@ impl Default for Group {
             id: String::new(),
             transform: Transform::default(),
             opacity: Opacity::ONE,
+            blend_mode: BlendMode::Normal,
+            isolate: false,
             clip_path: None,
             mask: None,
             #[cfg(feature = "filter")]

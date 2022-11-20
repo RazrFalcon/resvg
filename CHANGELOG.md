@@ -9,6 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - Minimal `dominant-baseline` and `alignment-baseline` support.
+- `mix-blend-mode` and `isolation` support.
 
 ### Fixed
 - Do not clip nested `svg` when only the `viewBox` attribute is present.

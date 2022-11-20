@@ -258,6 +258,7 @@ fn render_group_impl(
     }
 
     let mut paint = tiny_skia::PixmapPaint::default();
+    paint.blend_mode = convert_blend_mode(g.blend_mode);
     paint.quality = tiny_skia::FilterQuality::Nearest;
     if g.opacity != usvg::Opacity::ONE {
         paint.opacity = g.opacity.get() as f32;
@@ -498,4 +499,25 @@ fn prepare_filter_stroke_paint(
     }
 
     Some(sub_pixmap)
+}
+
+fn convert_blend_mode(mode: usvg::BlendMode) -> tiny_skia::BlendMode {
+    match mode {
+        usvg::BlendMode::Normal => tiny_skia::BlendMode::SourceOver,
+        usvg::BlendMode::Multiply => tiny_skia::BlendMode::Multiply,
+        usvg::BlendMode::Screen => tiny_skia::BlendMode::Screen,
+        usvg::BlendMode::Overlay => tiny_skia::BlendMode::Overlay,
+        usvg::BlendMode::Darken => tiny_skia::BlendMode::Darken,
+        usvg::BlendMode::Lighten => tiny_skia::BlendMode::Lighten,
+        usvg::BlendMode::ColorDodge => tiny_skia::BlendMode::ColorDodge,
+        usvg::BlendMode::ColorBurn => tiny_skia::BlendMode::ColorBurn,
+        usvg::BlendMode::HardLight => tiny_skia::BlendMode::HardLight,
+        usvg::BlendMode::SoftLight => tiny_skia::BlendMode::SoftLight,
+        usvg::BlendMode::Difference => tiny_skia::BlendMode::Difference,
+        usvg::BlendMode::Exclusion => tiny_skia::BlendMode::Exclusion,
+        usvg::BlendMode::Hue => tiny_skia::BlendMode::Hue,
+        usvg::BlendMode::Saturation => tiny_skia::BlendMode::Saturation,
+        usvg::BlendMode::Color => tiny_skia::BlendMode::Color,
+        usvg::BlendMode::Luminosity => tiny_skia::BlendMode::Luminosity,
+    }
 }

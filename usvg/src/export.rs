@@ -646,6 +646,35 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                 xml.write_enable_background(eb);
             }
 
+            if g.blend_mode != BlendMode::Normal || g.isolate {
+                let blend_mode = match g.blend_mode {
+                    BlendMode::Normal => "normal",
+                    BlendMode::Multiply => "multiply",
+                    BlendMode::Screen => "screen",
+                    BlendMode::Overlay => "overlay",
+                    BlendMode::Darken => "darken",
+                    BlendMode::Lighten => "lighten",
+                    BlendMode::ColorDodge => "color-dodge",
+                    BlendMode::ColorBurn => "color-burn",
+                    BlendMode::HardLight => "hard-light",
+                    BlendMode::SoftLight => "soft-light",
+                    BlendMode::Difference => "difference",
+                    BlendMode::Exclusion => "exclusion",
+                    BlendMode::Hue => "hue",
+                    BlendMode::Saturation => "saturation",
+                    BlendMode::Color => "color",
+                    BlendMode::Luminosity => "luminosity",
+                };
+
+                // For reasons unknown, `mix-blend-mode` and `isolation` must be written
+                // as `style` attribute.
+                let isolation = if g.isolate { "isolate" } else { "auto" };
+                xml.write_attribute_fmt(
+                    AId::Style.to_str(),
+                    format_args!("mix-blend-mode:{};isolation:{}", blend_mode, isolation),
+                );
+            }
+
             conv_elements(node, false, opt, xml);
 
             xml.end_element();

@@ -19,7 +19,7 @@ Here is the main differences between SVG Full and SVG Micro.
 - No unused elements.
 - No redundant groups.
 - No units.
-- No `style` attribute.
+- No `style` attribute, except for `mix-blend-mode` and `isolation`
 - Default attributes are implicit.
 
 You can use
@@ -275,6 +275,13 @@ A group will have at least one of the attributes present.
   Will be set only when any of the `filter` primitives has a `StrokePaint` input.
 * `transform` = <<transform-type,<transform> >>?
 * `enable-background` = `new | new <number> <number> <positive-number> <positive-number>`?
+* `style` = <<string-type,<string> >>? +
+  This is the only place where the `style` attribute is used.
+  For reasons unknown, `mix-blend-mode` and `isolation` properties must not be set as attributes,
+  only as part of the `style` attribute. +
+  The set attribute will look like `mix-blend-mode:screen;isolation:isolate`.
+  Both properties are always set. +
+  The attribute is not present only in case of `mix-blend-mode:norma;isolation:auto`
 
 [[path-element]]
 
