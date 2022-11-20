@@ -52,9 +52,8 @@ pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
         _ => MorphologyOperator::Erode,
     };
 
-    // Both radius are zero by default.
-    let mut radius_x = PositiveF64::ZERO;
-    let mut radius_y = PositiveF64::ZERO;
+    let mut radius_x = PositiveF64::new(1.0).unwrap();
+    let mut radius_y = PositiveF64::new(1.0).unwrap();
     if let Some(list) = fe.attribute::<&Vec<f64>>(AId::Radius) {
         let mut rx = 0.0;
         let mut ry = 0.0;
@@ -66,8 +65,13 @@ pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
             ry = list[0]; // The same as `rx`.
         }
 
+        if rx.is_fuzzy_zero() && ry.is_fuzzy_zero() {
+            rx = 1.0;
+            ry = 1.0;
+        }
+
         // If only one of the values is zero, reset it to 1.0
-        // This is not specified in the spec, but this is how Chrome and Firefox works.
+        // This is not specified in the spec, but this is how Chrome and Safari work.
         if rx.is_fuzzy_zero() && !ry.is_fuzzy_zero() {
             rx = 1.0;
         }

@@ -15,6 +15,7 @@ This changelog also contains important changes in dependencies.
 
 ### Changed
 - Disable focal point correction on radial gradients to conform with SVG 2.
+- Update `feMorphology` radius value resolving.
 
 ### Fixed
 - Do not clip nested `svg` when only the `viewBox` attribute is present.
