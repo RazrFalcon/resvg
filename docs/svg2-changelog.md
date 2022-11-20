@@ -19,6 +19,7 @@ NOTE: This list is not final. This just things I was able to find so far. Patche
 - [x] [`rgba()`](https://www.w3.org/TR/css-color-3/#rgba-color), [`hsl()`](https://www.w3.org/TR/css-color-3/#hsl-color) and [`hsla()`](https://www.w3.org/TR/css-color-3/#hsla-color) notations to [`<color>`](https://www.w3.org/TR/css-color-3/#colorunits).
 - [x] A [`transparent`](https://www.w3.org/TR/css-color-3/#transparent) keyword to [`<color>`](https://www.w3.org/TR/css-color-3/#colorunits).
 - [x] A `#RRGGBBAA` and `#RGBA` notation for colors. Part of [CSS Color 4](https://www.w3.org/TR/css-color-4/#hex-notation).
+- [x] A [`opacity`](https://www.w3.org/TR/css-color-4/#transparency) property allows `<percentage>` now.
 
 ### Changed
 

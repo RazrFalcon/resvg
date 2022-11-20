@@ -169,6 +169,7 @@ use crate::render;
 #[test] fn a_fill_opacity_004() { assert_eq!(render("a-fill-opacity-004"), 0); }
 #[test] fn a_fill_opacity_005() { assert_eq!(render("a-fill-opacity-005"), 0); }
 #[test] fn a_fill_opacity_006() { assert_eq!(render("a-fill-opacity-006"), 0); }
+#[test] fn a_fill_opacity_007() { assert_eq!(render("a-fill-opacity-007"), 0); }
 #[test] fn a_fill_rule_001() { assert_eq!(render("a-fill-rule-001"), 0); }
 #[test] fn a_fill_rule_002() { assert_eq!(render("a-fill-rule-002"), 0); }
 #[test] fn a_filter_001() { assert_eq!(render("a-filter-001"), 0); }
@@ -222,6 +223,7 @@ use crate::render;
 #[test] fn a_flood_color_006() { assert_eq!(render("a-flood-color-006"), 0); }
 #[test] fn a_flood_color_007() { assert_eq!(render("a-flood-color-007"), 0); }
 #[test] fn a_flood_opacity_001() { assert_eq!(render("a-flood-opacity-001"), 0); }
+#[test] fn a_flood_opacity_002() { assert_eq!(render("a-flood-opacity-002"), 0); }
 #[test] fn a_font_001() { assert_eq!(render("a-font-001"), 0); }
 #[test] fn a_font_family_001() { assert_eq!(render("a-font-family-001"), 0); }
 #[test] fn a_font_family_002() { assert_eq!(render("a-font-family-002"), 0); }
@@ -360,6 +362,7 @@ use crate::render;
 #[test] fn a_shape_rendering_008() { assert_eq!(render("a-shape-rendering-008"), 0); }
 #[test] fn a_stop_color_001() { assert_eq!(render("a-stop-color-001"), 0); }
 #[test] fn a_stop_opacity_001() { assert_eq!(render("a-stop-opacity-001"), 0); }
+#[test] fn a_stop_opacity_002() { assert_eq!(render("a-stop-opacity-002"), 0); }
 #[test] fn a_stroke_001() { assert_eq!(render("a-stroke-001"), 0); }
 #[test] fn a_stroke_002() { assert_eq!(render("a-stroke-002"), 0); }
 #[test] fn a_stroke_003() { assert_eq!(render("a-stroke-003"), 0); }
@@ -424,6 +427,7 @@ use crate::render;
 #[test] fn a_stroke_opacity_004() { assert_eq!(render("a-stroke-opacity-004"), 0); }
 #[test] fn a_stroke_opacity_005() { assert_eq!(render("a-stroke-opacity-005"), 0); }
 #[test] fn a_stroke_opacity_006() { assert_eq!(render("a-stroke-opacity-006"), 0); }
+#[test] fn a_stroke_opacity_007() { assert_eq!(render("a-stroke-opacity-007"), 0); }
 #[test] fn a_stroke_width_001() { assert_eq!(render("a-stroke-width-001"), 0); }
 #[test] fn a_stroke_width_002() { assert_eq!(render("a-stroke-width-002"), 0); }
 #[test] fn a_stroke_width_003() { assert_eq!(render("a-stroke-width-003"), 0); }

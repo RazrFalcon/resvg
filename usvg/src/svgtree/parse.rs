@@ -393,8 +393,14 @@ fn parse_svg_attribute(tag_name: EId, aid: AId, value: &str) -> Option<Attribute
         | AId::FloodOpacity
         | AId::StrokeOpacity
         | AId::StopOpacity => {
-            let n = svgtypes::Number::from_str(value).ok()?.0;
-            AttributeValue::Opacity(Opacity::new_clamped(n))
+            let length = svgtypes::Length::from_str(value).ok()?;
+            if length.unit == svgtypes::LengthUnit::Percent {
+                AttributeValue::Opacity(Opacity::new_clamped(length.number / 100.0))
+            } else if length.unit == svgtypes::LengthUnit::None {
+                AttributeValue::Opacity(Opacity::new_clamped(length.number))
+            } else {
+                return None;
+            }
         }
 
         AId::Amplitude
