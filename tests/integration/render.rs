@@ -977,6 +977,7 @@ use crate::render;
 #[test] fn e_image_041() { assert_eq!(render("e-image-041"), 0); }
 #[test] fn e_image_042() { assert_eq!(render("e-image-042"), 0); }
 #[test] fn e_image_043() { assert_eq!(render("e-image-043"), 0); }
+#[test] fn e_image_044() { assert_eq!(render("e-image-044"), 0); }
 #[test] fn e_image_045() { assert_eq!(render("e-image-045"), 0); }
 #[test] fn e_image_046() { assert_eq!(render("e-image-046"), 0); }
 #[test] fn e_line_001() { assert_eq!(render("e-line-001"), 0); }
@@ -1438,6 +1439,7 @@ use crate::render;
 #[test] fn e_text_040() { assert_eq!(render("e-text-040"), 0); }
 #[test] fn e_text_041() { assert_eq!(render("e-text-041"), 0); }
 #[test] fn e_text_042() { assert_eq!(render("e-text-042"), 0); }
+#[test] fn e_text_043() { assert_eq!(render("e-text-043"), 0); }
 #[test] fn e_textPath_001() { assert_eq!(render("e-textPath-001"), 0); }
 #[test] fn e_textPath_002() { assert_eq!(render("e-textPath-002"), 0); }
 #[test] fn e_textPath_003() { assert_eq!(render("e-textPath-003"), 0); }

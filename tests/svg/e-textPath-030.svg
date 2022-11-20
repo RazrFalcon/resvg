@@ -1,6 +1,6 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>Complex</title>
+    <title>Complex (UB)</title>
 
     <path id="pathForText1" fill="none" stroke="gray"
           d="M 40 100 A 60 60 0 0 1 100 40 60 60 0 0 1 160 100 60 60 0 0 1 100 160
