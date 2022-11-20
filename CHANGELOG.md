@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.26.0] - 2022-11-20
 ### Added
 - Minimal `dominant-baseline` and `alignment-baseline` support.
 - `mix-blend-mode` and `isolation` support. SVG2
@@ -670,7 +672,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.25.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.26.0...HEAD
+[0.26.0]: https://github.com/RazrFalcon/resvg/compare/v0.25.0...v0.26.0
 [0.25.0]: https://github.com/RazrFalcon/resvg/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/RazrFalcon/resvg/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/RazrFalcon/resvg/compare/v0.22.0...v0.23.0
