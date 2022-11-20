@@ -4,7 +4,8 @@
     <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
           stroke="gray" stroke-width="0.5"/>
 
-    <text id="text1" x="100" y="100" text-anchor="middle" font-family="Noto Sans" font-size="24" text-decoration="underline">
+    <text id="text1" x="100" y="100" text-anchor="middle" font-family="Noto Sans" font-size="24"
+          text-decoration="underline">
         Some
         <tspan id="tspan1" alignment-baseline="hanging">long</tspan>
         text

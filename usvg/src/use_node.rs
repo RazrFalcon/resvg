@@ -252,6 +252,17 @@ fn get_clip_rect(
         return None;
     }
 
+    // A nested `svg` with only the `viewBox` attribute and no "rectangle" (x, y, width, height)
+    // should not be clipped.
+    if use_node.tag_name() == Some(EId::Svg) {
+        // Nested `svg` referenced by `use` still should be clipped, but by `use` bounds.
+        if state.use_size.0.is_none() && state.use_size.1.is_none() {
+            if !(use_node.has_attribute(AId::Width) && use_node.has_attribute(AId::Height)) {
+                return None;
+            }
+        }
+    }
+
     let (x, y, mut w, mut h) = {
         let x = use_node.convert_user_length(AId::X, state, Length::zero());
         let y = use_node.convert_user_length(AId::Y, state, Length::zero());

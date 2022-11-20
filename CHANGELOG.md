@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- Minimal `dominant-baseline` and `alignment-baseline` support.
+
+### Fixed
+- Do not clip nested `svg` when only the `viewBox` attribute is present.
 
 ## [0.25.0] - 2022-10-30
 ### Added

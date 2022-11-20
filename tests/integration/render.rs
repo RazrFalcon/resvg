@@ -1365,6 +1365,7 @@ use crate::render;
 #[test] fn e_svg_037() { assert_eq!(render("e-svg-037"), 0); }
 #[test] fn e_svg_038() { assert_eq!(render("e-svg-038"), 0); }
 #[test] fn e_svg_039() { assert_eq!(render("e-svg-039"), 0); }
+#[test] fn e_svg_040() { assert_eq!(render("e-svg-040"), 0); }
 #[test] fn e_switch_001() { assert_eq!(render("e-switch-001"), 0); }
 #[test] fn e_switch_002() { assert_eq!(render("e-switch-002"), 0); }
 #[test] fn e_switch_003() { assert_eq!(render("e-switch-003"), 0); }
