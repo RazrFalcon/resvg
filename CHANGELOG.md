@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.26.1] - 2022-11-21
 ### Fixed
 - Allow `dominant-baseline` and `alignment-baseline` to be set via CSS.
 
@@ -674,7 +676,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.26.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.26.1...HEAD
+[0.26.1]: https://github.com/RazrFalcon/resvg/compare/v0.26.0...v0.26.1
 [0.26.0]: https://github.com/RazrFalcon/resvg/compare/v0.25.0...v0.26.0
 [0.25.0]: https://github.com/RazrFalcon/resvg/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/RazrFalcon/resvg/compare/v0.23.0...v0.24.0
