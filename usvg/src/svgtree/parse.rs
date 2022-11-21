@@ -256,9 +256,7 @@ pub(super) fn parse_svg_element(
                 // TODO: perform XML attribute normalization
                 if let Some(aid) = AId::from_str(declaration.name) {
                     // Parse only the presentation attributes.
-                    // `transform` isn't a presentation attribute, but should be parsed anyway.
-                    // TODO: `transform` is presentation in SVG 2?
-                    if aid.is_presentation() || aid == AId::Transform {
+                    if aid.is_presentation() {
                         insert_attribute(aid, declaration.value);
                     }
                 } else if declaration.name == "marker" {
@@ -276,8 +274,7 @@ pub(super) fn parse_svg_element(
             // TODO: preform XML attribute normalization
             if let Some(aid) = AId::from_str(declaration.name) {
                 // Parse only the presentation attributes.
-                // `transform` isn't a presentation attribute, but should be parsed anyway.
-                if aid.is_presentation() || aid == AId::Transform {
+                if aid.is_presentation() {
                     insert_attribute(aid, declaration.value);
                 }
             }

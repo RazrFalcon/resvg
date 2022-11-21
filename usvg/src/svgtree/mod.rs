@@ -795,13 +795,17 @@ impl AId {
     pub fn is_presentation(&self) -> bool {
         matches!(
             self,
-            AId::BaselineShift
+            AId::AlignmentBaseline
+                | AId::BaselineShift
                 | AId::ClipPath
                 | AId::ClipRule
                 | AId::Color
+                | AId::ColorInterpolation
                 | AId::ColorInterpolationFilters
+                | AId::ColorRendering
                 | AId::Direction
                 | AId::Display
+                | AId::DominantBaseline
                 | AId::Fill
                 | AId::FillOpacity
                 | AId::FillRule
@@ -809,20 +813,24 @@ impl AId {
                 | AId::FloodColor
                 | AId::FloodOpacity
                 | AId::FontFamily
-                | AId::FontKerning
+                | AId::FontKerning // technically not presentation
                 | AId::FontSize
+                | AId::FontSizeAdjust
                 | AId::FontStretch
                 | AId::FontStyle
                 | AId::FontVariant
                 | AId::FontWeight
+                | AId::GlyphOrientationHorizontal
+                | AId::GlyphOrientationVertical
                 | AId::ImageRendering
-                | AId::Isolation
+                | AId::Isolation // technically not presentation
                 | AId::LetterSpacing
+                | AId::LightingColor
                 | AId::MarkerEnd
                 | AId::MarkerMid
                 | AId::MarkerStart
                 | AId::Mask
-                | AId::MixBlendMode
+                | AId::MixBlendMode // technically not presentation
                 | AId::Opacity
                 | AId::Overflow
                 | AId::PaintOrder
@@ -839,8 +847,13 @@ impl AId {
                 | AId::StrokeWidth
                 | AId::TextAnchor
                 | AId::TextDecoration
+                | AId::TextOverflow
                 | AId::TextRendering
+                | AId::Transform
+                | AId::UnicodeBidi
+                | AId::VectorEffect
                 | AId::Visibility
+                | AId::WhiteSpace
                 | AId::WordSpacing
                 | AId::WritingMode
         )
@@ -923,8 +936,10 @@ fn is_non_inheritable(id: AId) -> bool {
             | AId::Mask
             | AId::Opacity
             | AId::Overflow
+            | AId::LightingColor
             | AId::StopColor
             | AId::StopOpacity
             | AId::TextDecoration
+            | AId::Transform
     )
 }

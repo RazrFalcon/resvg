@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- Allow `dominant-baseline` and `alignment-baseline` to be set via CSS.
 
 ## [0.26.0] - 2022-11-20
 ### Added
