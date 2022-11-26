@@ -365,7 +365,8 @@ fn parse_svg_attribute(tag_name: EId, aid: AId, value: &str) -> Option<Attribute
         | AId::Kerning
         | AId::MarkerWidth
         | AId::MarkerHeight
-        | AId::StartOffset => AttributeValue::Length(svgtypes::Length::from_str(value).ok()?),
+        | AId::StartOffset
+        | AId::TextLength => AttributeValue::Length(svgtypes::Length::from_str(value).ok()?),
 
         AId::Offset => {
             if let EId::FeFuncR | EId::FeFuncG | EId::FeFuncB | EId::FeFuncA = tag_name {

@@ -124,6 +124,19 @@ impl_enum_from_str!(DominantBaseline,
     "text-before-edge" => DominantBaseline::TextBeforeEdge
 );
 
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum LengthAdjust {
+    Spacing,
+    SpacingAndGlyphs,
+}
+
+impl_enum_default!(LengthAdjust, Spacing);
+
+impl_enum_from_str!(LengthAdjust,
+    "spacing" => LengthAdjust::Spacing,
+    "spacingAndGlyphs" => LengthAdjust::SpacingAndGlyphs
+);
+
 impl crate::svgtree::EnumFromStr for fontdb::Style {
     fn enum_from_str(s: &str) -> Option<Self> {
         match s {
@@ -193,6 +206,8 @@ pub struct TextSpan {
     pub visibility: Visibility,
     pub letter_spacing: f64,
     pub word_spacing: f64,
+    pub text_length: Option<f64>,
+    pub length_adjust: LengthAdjust,
 }
 
 impl TextSpan {
@@ -367,6 +382,15 @@ fn collect_text_chunks_impl(
             apply_kerning = false;
         }
 
+        let mut text_length =
+            parent.try_convert_length(AId::TextLength, Units::UserSpaceOnUse, state);
+        // Negative values should be ignored.
+        if let Some(n) = text_length {
+            if n < 0.0 {
+                text_length = None;
+            }
+        }
+
         let span = TextSpan {
             start: 0,
             end: 0,
@@ -386,6 +410,8 @@ fn collect_text_chunks_impl(
             baseline_shift: resolve_baseline_shift(parent, state),
             letter_spacing: parent.resolve_length(AId::LetterSpacing, state, 0.0),
             word_spacing: parent.resolve_length(AId::WordSpacing, state, 0.0),
+            text_length,
+            length_adjust: parent.find_attribute(AId::LengthAdjust).unwrap_or_default(),
         };
 
         let mut is_new_span = true;

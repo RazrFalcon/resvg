@@ -1,13 +1,14 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
-     font-family="Noto Sans" font-size="48">
-    <title>On `text` and `tspan`</title>
+     font-family="Noto Sans" font-size="12">
+    <title>On a single `tspan`</title>
 
     <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
           stroke="gray" stroke-width="0.5"/>
 
-    <text id="text1" textLength="500">
-        <tspan id="tspan1" x="20" y="100" textLength="50">Text1</tspan>
-        <tspan id="tspan2" x="20" y="140" textLength="150">Text2</tspan>
+    <text id="text1" x="20" y="100">
+        Some
+        <tspan id="tspan1" textLength="80">long</tspan>
+        text
     </text>
 
     <!-- image frame -->

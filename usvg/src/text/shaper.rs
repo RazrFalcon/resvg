@@ -8,7 +8,8 @@ use unicode_script::UnicodeScript;
 use unicode_vo::Orientation as CharOrientation;
 
 use super::convert::{
-    ByteIndex, CharacterPosition, TextAnchor, TextChunk, TextFlow, TextPath, WritingMode,
+    ByteIndex, CharacterPosition, LengthAdjust, TextAnchor, TextChunk, TextFlow, TextPath,
+    WritingMode,
 };
 use super::fontdb_ext::{self, DatabaseExt};
 use crate::{converter, CubicBezExt, FuzzyZero, IsValidLength, PathData, PathSegment, Transform};
@@ -585,8 +586,11 @@ fn resolve_clusters_positions_path(
         // We have to break a decoration line for each cluster during text-on-path.
         cluster.has_relative_shift = true;
 
+        let orig_ts = cluster.transform;
+
         // Clusters should be rotated by the x-midpoint x baseline position.
         let half_width = cluster.width / 2.0;
+        cluster.transform = Transform::default();
         cluster.transform.translate(x - half_width, y);
         cluster.transform.rotate_at(angle, half_width, 0.0);
 
@@ -612,6 +616,9 @@ fn resolve_clusters_positions_path(
                 cluster.transform.rotate(angle);
             }
         }
+
+        // The possible `lengthAdjust` transform should be applied after text-on-path positioning.
+        cluster.transform.append(&orig_ts);
 
         last_x = x + cluster.advance;
         last_y = y;
@@ -861,6 +868,62 @@ fn is_word_separator_characters(c: char) -> bool {
         c as u32,
         0x0020 | 0x00A0 | 0x1361 | 0x010100 | 0x010101 | 0x01039F | 0x01091F
     )
+}
+
+pub fn apply_length_adjust(chunk: &TextChunk, clusters: &mut [OutlinedCluster]) {
+    let is_horizontal = matches!(chunk.text_flow, TextFlow::Horizontal);
+
+    for span in &chunk.spans {
+        let target_width = if let Some(w) = span.text_length {
+            w
+        } else {
+            continue;
+        };
+
+        let mut width = 0.0;
+        let mut cluster_indexes = Vec::new();
+        for i in span.start..span.end {
+            if let Some(index) = clusters.iter().position(|c| c.byte_idx.value() == i) {
+                cluster_indexes.push(index);
+            }
+        }
+        // Complex scripts can have mutli-codepoint clusters therefore we have to remove duplicates.
+        cluster_indexes.sort();
+        cluster_indexes.dedup();
+
+        for i in &cluster_indexes {
+            // Use the original cluster `width` and not `advance`.
+            // This method essentially discards any `word-spacing` and `letter-spacing`.
+            width += clusters[*i].width;
+        }
+
+        if cluster_indexes.is_empty() {
+            continue;
+        }
+
+        if span.length_adjust == LengthAdjust::Spacing {
+            let factor = (target_width - width) / (cluster_indexes.len() - 1) as f64;
+            for i in cluster_indexes {
+                clusters[i].advance = clusters[i].width + factor;
+            }
+        } else {
+            let factor = target_width / width;
+            // Prevent multiplying by zero.
+            if factor < 0.001 {
+                continue;
+            }
+
+            for i in cluster_indexes {
+                clusters[i].transform.scale(factor, 1.0);
+
+                // Technically just a hack to support the current text-on-path algorithm.
+                if !is_horizontal {
+                    clusters[i].advance *= factor;
+                    clusters[i].width *= factor;
+                }
+            }
+        }
+    }
 }
 
 /// Rotates clusters according to

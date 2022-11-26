@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- `lengthAdjust` and `textLength` attributes support.
 
 ## [0.26.1] - 2022-11-21
 ### Fixed

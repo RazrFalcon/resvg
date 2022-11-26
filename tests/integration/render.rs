@@ -290,6 +290,9 @@ use crate::render;
 #[test] fn a_kerning_001() { assert_eq!(render("a-kerning-001"), 0); }
 #[test] fn a_kerning_002() { assert_eq!(render("a-kerning-002"), 0); }
 #[test] fn a_lengthAdjust_001() { assert_eq!(render("a-lengthAdjust-001"), 0); }
+#[test] fn a_lengthAdjust_002() { assert_eq!(render("a-lengthAdjust-002"), 0); }
+#[test] fn a_lengthAdjust_003() { assert_eq!(render("a-lengthAdjust-003"), 0); }
+#[test] fn a_lengthAdjust_004() { assert_eq!(render("a-lengthAdjust-004"), 0); }
 #[test] fn a_letter_spacing_001() { assert_eq!(render("a-letter-spacing-001"), 0); }
 #[test] fn a_letter_spacing_002() { assert_eq!(render("a-letter-spacing-002"), 0); }
 #[test] fn a_letter_spacing_003() { assert_eq!(render("a-letter-spacing-003"), 0); }
@@ -493,6 +496,9 @@ use crate::render;
 #[test] fn a_textLength_007() { assert_eq!(render("a-textLength-007"), 0); }
 #[test] fn a_textLength_008() { assert_eq!(render("a-textLength-008"), 0); }
 #[test] fn a_textLength_009() { assert_eq!(render("a-textLength-009"), 0); }
+#[test] fn a_textLength_010() { assert_eq!(render("a-textLength-010"), 0); }
+#[test] fn a_textLength_011() { assert_eq!(render("a-textLength-011"), 0); }
+#[test] fn a_textLength_012() { assert_eq!(render("a-textLength-012"), 0); }
 #[test] fn a_transform_001() { assert_eq!(render("a-transform-001"), 0); }
 #[test] fn a_transform_002() { assert_eq!(render("a-transform-002"), 0); }
 #[test] fn a_transform_003() { assert_eq!(render("a-transform-003"), 0); }
