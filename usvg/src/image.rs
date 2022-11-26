@@ -5,7 +5,7 @@
 use std::sync::Arc;
 use svgtypes::Length;
 
-use crate::geom::{Rect, Transform, ViewBox};
+use crate::geom::{Rect, Size, Transform, ViewBox};
 use crate::svgtree::{self, AId};
 use crate::{
     converter, ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Tree, Visibility,
@@ -185,16 +185,32 @@ pub(crate) fn convert(
     state: &converter::State,
     parent: &mut Node,
 ) -> Option<()> {
+    let href = node
+        .attribute(AId::Href)
+        .log_none(|| log::warn!("Image lacks the 'xlink:href' attribute. Skipped."))?;
+
+    let kind = get_href_data(href, state.opt)?;
+
     let visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
     let rendering_mode = node
         .find_attribute(AId::ImageRendering)
         .unwrap_or(state.opt.image_rendering);
 
+    let actual_size = match kind {
+        ImageKind::JPEG(ref data) | ImageKind::PNG(ref data) | ImageKind::GIF(ref data) => {
+            imagesize::blob_size(data)
+                .ok()
+                .and_then(|size| Size::new(size.width as f64, size.height as f64))
+                .log_none(|| log::warn!("Image has an invalid size. Skipped."))?
+        }
+        ImageKind::SVG(ref svg) => svg.size,
+    };
+
     let rect = Rect::new(
         node.convert_user_length(AId::X, state, Length::zero()),
         node.convert_user_length(AId::Y, state, Length::zero()),
-        node.convert_user_length(AId::Width, state, Length::zero()),
-        node.convert_user_length(AId::Height, state, Length::zero()),
+        node.convert_user_length(AId::Width, state, Length::new_number(actual_size.width())),
+        node.convert_user_length(AId::Height, state, Length::new_number(actual_size.height())),
     );
     let rect = rect.log_none(|| log::warn!("Image has an invalid size. Skipped."))?;
 
@@ -202,12 +218,6 @@ pub(crate) fn convert(
         rect,
         aspect: node.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
-
-    let href = node
-        .attribute(AId::Href)
-        .log_none(|| log::warn!("Image lacks the 'xlink:href' attribute. Skipped."))?;
-
-    let kind = get_href_data(href, state.opt)?;
 
     parent.append_kind(NodeKind::Image(Image {
         id: node.element_id().to_string(),
@@ -250,14 +260,11 @@ fn get_image_file_format(path: &std::path::Path, data: &[u8]) -> Option<ImageFor
 
 /// Checks that file has a PNG, a GIF or a JPEG magic bytes.
 fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
-    if data.starts_with(b"\x89PNG\r\n\x1a\n") {
-        Some(ImageFormat::PNG)
-    } else if data.starts_with(&[0xff, 0xd8, 0xff]) {
-        Some(ImageFormat::JPEG)
-    } else if data.starts_with(b"GIF87a") || data.starts_with(b"GIF89a") {
-        Some(ImageFormat::GIF)
-    } else {
-        None
+    match imagesize::image_type(data).ok()? {
+        imagesize::ImageType::Gif => Some(ImageFormat::GIF),
+        imagesize::ImageType::Jpeg => Some(ImageFormat::JPEG),
+        imagesize::ImageType::Png => Some(ImageFormat::PNG),
+        _ => None,
     }
 }
 

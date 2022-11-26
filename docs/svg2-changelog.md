@@ -41,7 +41,7 @@ NOTE: This list is not final. This just things I was able to find so far. Patche
 ### Added
 
 - [ ] `refX` and `refY` [properties](https://www.w3.org/TR/SVG2/struct.html#SymbolAttributes) to the [`symbol`](https://www.w3.org/TR/SVG2/struct.html#SymbolElement) element.
-- [ ] An [`auto`](https://www.w3.org/TR/SVG2/geometry.html#Sizing) variant to [`image`](https://www.w3.org/TR/SVG2/embedded.html#ImageElement) element's `width` and `height` properties.
+- [x] An [`auto`](https://www.w3.org/TR/SVG2/geometry.html#Sizing) variant to [`image`](https://www.w3.org/TR/SVG2/embedded.html#ImageElement) element's `width` and `height` properties.
 - [ ] A `lang` attribute. The same as `xml:lang`, but without the namespace.
 
 ### Changed

@@ -9,6 +9,8 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - `lengthAdjust` and `textLength` attributes support.
+- Support automatic `image` size detection. SVG2
+  `width` and `height` attributes can be omitted or set to `auto` on `image` now.
 
 ### Fixed
 - `--query-all` flag in `resvg` CLI.

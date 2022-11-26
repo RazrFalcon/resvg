@@ -360,13 +360,21 @@ fn parse_svg_attribute(tag_name: EId, aid: AId, value: &str) -> Option<Attribute
         | AId::Fy
         | AId::RefX
         | AId::RefY
-        | AId::Width
-        | AId::Height
         | AId::Kerning
         | AId::MarkerWidth
         | AId::MarkerHeight
         | AId::StartOffset
         | AId::TextLength => AttributeValue::Length(svgtypes::Length::from_str(value).ok()?),
+
+        AId::Width | AId::Height => {
+            if value != "auto" {
+                AttributeValue::Length(svgtypes::Length::from_str(value).ok()?)
+            } else {
+                // For now, we simply treat the `auto` value as `none`.
+                // Since the resolving logic for `auto` is the same as no attribute.
+                AttributeValue::None
+            }
+        }
 
         AId::Offset => {
             if let EId::FeFuncR | EId::FeFuncG | EId::FeFuncB | EId::FeFuncA = tag_name {

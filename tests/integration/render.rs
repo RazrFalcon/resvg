@@ -994,6 +994,7 @@ use crate::render;
 #[test] fn e_image_044() { assert_eq!(render("e-image-044"), 0); }
 #[test] fn e_image_045() { assert_eq!(render("e-image-045"), 0); }
 #[test] fn e_image_046() { assert_eq!(render("e-image-046"), 0); }
+#[test] fn e_image_047() { assert_eq!(render("e-image-047"), 0); }
 #[test] fn e_line_001() { assert_eq!(render("e-line-001"), 0); }
 #[test] fn e_line_002() { assert_eq!(render("e-line-002"), 0); }
 #[test] fn e_line_003() { assert_eq!(render("e-line-003"), 0); }
