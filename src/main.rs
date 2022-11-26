@@ -81,7 +81,7 @@ fn process() -> Result<(), String> {
     // Render.
     let img = render_svg(&args, &tree)?;
 
-    match args.out_png {
+    match args.out_png.unwrap() {
         OutputTo::Stdout => {
             use std::io::Write;
             let buf = img.encode_png().map_err(|e| e.to_string())?;
@@ -231,7 +231,7 @@ struct CliArgs {
     dump_svg: Option<String>,
 
     input: String,
-    output: String,
+    output: Option<String>,
 }
 
 fn collect_args() -> Result<CliArgs, pico_args::Error> {
@@ -295,7 +295,7 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
         dump_svg: input.opt_value_from_str("--dump-svg")?,
 
         input: input.free_from_str()?,
-        output: input.free_from_str()?,
+        output: input.opt_free_from_str()?,
     })
 }
 
@@ -366,7 +366,7 @@ enum OutputTo {
 
 struct Args {
     in_svg: InputFrom,
-    out_png: OutputTo,
+    out_png: Option<OutputTo>,
     query_all: bool,
     export_id: Option<String>,
     export_area_page: bool,
@@ -384,7 +384,7 @@ fn parse_args() -> Result<Args, String> {
 
     let (in_svg, out_png) = {
         let in_svg = args.input.as_str();
-        let out_png = args.output.as_str();
+
 
         let svg_from = if in_svg == "-" {
             InputFrom::Stdin
@@ -394,13 +394,17 @@ fn parse_args() -> Result<Args, String> {
             InputFrom::File(in_svg.into())
         };
 
-        let svg_to = if out_png == "-c" {
-            OutputTo::Stdout
+        let out_png = if let Some(ref out_png) = args.output {
+            if out_png == "-c" {
+                Some(OutputTo::Stdout)
+            } else {
+                Some(OutputTo::File(out_png.into()))
+            }
         } else {
-            OutputTo::File(out_png.into())
+            None
         };
 
-        (svg_from, svg_to)
+        (svg_from, out_png)
     };
 
     let fontdb = timed!(args, "FontDB init", load_fonts(&mut args));
@@ -420,7 +424,7 @@ fn parse_args() -> Result<Args, String> {
         }
     }
 
-    if !args.query_all && args.output.is_empty() {
+    if !args.query_all && out_png.is_none() {
         return Err("<out-png> must be set".to_string());
     }
 

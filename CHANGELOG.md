@@ -10,6 +10,9 @@ This changelog also contains important changes in dependencies.
 ### Added
 - `lengthAdjust` and `textLength` attributes support.
 
+### Fixed
+- `--query-all` flag in `resvg` CLI.
+
 ## [0.26.1] - 2022-11-21
 ### Fixed
 - Allow `dominant-baseline` and `alignment-baseline` to be set via CSS.
