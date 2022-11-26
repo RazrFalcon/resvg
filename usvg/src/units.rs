@@ -33,14 +33,29 @@ pub(crate) fn convert_length(
                 let view_box = state.view_box;
 
                 match aid {
-                    AId::X | AId::Cx | AId::Width => convert_percent(length, view_box.width()),
-                    AId::Y | AId::Cy | AId::Height => convert_percent(length, view_box.height()),
+                    AId::Cx
+                    | AId::Dx
+                    | AId::Fx
+                    | AId::MarkerWidth
+                    | AId::RefX
+                    | AId::Rx
+                    | AId::Width
+                    | AId::X
+                    | AId::X1
+                    | AId::X2 => convert_percent(length, view_box.width()),
+                    AId::Cy
+                    | AId::Dy
+                    | AId::Fy
+                    | AId::Height
+                    | AId::MarkerHeight
+                    | AId::RefY
+                    | AId::Ry
+                    | AId::Y
+                    | AId::Y1
+                    | AId::Y2 => convert_percent(length, view_box.height()),
                     _ => {
-                        let vb_len = (view_box.width() * view_box.width()
-                            + view_box.height() * view_box.height())
-                        .sqrt()
-                            / 2.0_f64.sqrt();
-
+                        let mut vb_len = view_box.width().powi(2) + view_box.height().powi(2);
+                        vb_len = (vb_len / 2.0).sqrt();
                         convert_percent(length, vb_len)
                     }
                 }

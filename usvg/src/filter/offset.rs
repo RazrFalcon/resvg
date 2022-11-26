@@ -2,9 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use svgtypes::Length;
-
-use super::{converter, Input, Kind, Primitive};
+use super::{Input, Kind, Primitive};
 use crate::svgtree::{self, AId};
 
 /// An offset filter primitive.
@@ -24,14 +22,10 @@ pub struct Offset {
     pub dy: f64,
 }
 
-pub(crate) fn convert(
-    fe: svgtree::Node,
-    primitives: &[Primitive],
-    state: &converter::State,
-) -> Kind {
+pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     Kind::Offset(Offset {
         input: super::resolve_input(fe, AId::In, primitives),
-        dx: fe.convert_user_length(AId::Dx, state, Length::zero()),
-        dy: fe.convert_user_length(AId::Dy, state, Length::zero()),
+        dx: fe.attribute::<f64>(AId::Dx).unwrap_or(0.0),
+        dy: fe.attribute::<f64>(AId::Dy).unwrap_or(0.0),
     })
 }

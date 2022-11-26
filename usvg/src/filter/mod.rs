@@ -423,9 +423,9 @@ fn collect_children(
         };
 
         let kind = match tag_name {
-            EId::FeDropShadow => drop_shadow::convert(child, &primitives, &state),
+            EId::FeDropShadow => drop_shadow::convert(child, &primitives),
             EId::FeGaussianBlur => gaussian_blur::convert(child, &primitives),
-            EId::FeOffset => offset::convert(child, &primitives, state),
+            EId::FeOffset => offset::convert(child, &primitives),
             EId::FeBlend => blend::convert(child, &primitives),
             EId::FeFlood => flood::convert(child),
             EId::FeComposite => composite::convert(child, &primitives),

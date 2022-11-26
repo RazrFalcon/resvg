@@ -104,17 +104,22 @@ fn resolve_rx_ry(node: svgtree::Node, state: &converter::State) -> (f64, f64) {
     }
 
     // Resolve.
-    let (rx, ry) = match (rx_opt, ry_opt) {
-        (None, None) => (Length::zero(), Length::zero()),
-        (Some(rx), None) => (rx, rx),
-        (None, Some(ry)) => (ry, ry),
-        (Some(rx), Some(ry)) => (rx, ry),
-    };
-
-    let rx = units::convert_length(rx, node, AId::Rx, Units::UserSpaceOnUse, state);
-    let ry = units::convert_length(ry, node, AId::Ry, Units::UserSpaceOnUse, state);
-
-    (rx, ry)
+    match (rx_opt, ry_opt) {
+        (None, None) => (0.0, 0.0),
+        (Some(rx), None) => {
+            let rx = units::convert_length(rx, node, AId::Rx, Units::UserSpaceOnUse, state);
+            (rx, rx)
+        }
+        (None, Some(ry)) => {
+            let ry = units::convert_length(ry, node, AId::Ry, Units::UserSpaceOnUse, state);
+            (ry, ry)
+        }
+        (Some(rx), Some(ry)) => {
+            let rx = units::convert_length(rx, node, AId::Rx, Units::UserSpaceOnUse, state);
+            let ry = units::convert_length(ry, node, AId::Ry, Units::UserSpaceOnUse, state);
+            (rx, ry)
+        }
+    }
 }
 
 fn convert_line(node: svgtree::Node, state: &converter::State) -> Option<SharedPathData> {

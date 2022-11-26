@@ -340,7 +340,7 @@ fn parse_svg_attribute(tag_name: EId, aid: AId, value: &str) -> Option<Attribute
             // Some attributes can contain different data based on the element type.
             match tag_name {
                 EId::Text | EId::Tref | EId::Tspan => AttributeValue::String(value.to_string()),
-                EId::FePointLight | EId::FeSpotLight => {
+                EId::FePointLight | EId::FeSpotLight | EId::FeOffset | EId::FeDropShadow => {
                     AttributeValue::Number(svgtypes::Number::from_str(value).ok()?.0)
                 }
                 _ => AttributeValue::Length(svgtypes::Length::from_str(value).ok()?),

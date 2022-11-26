@@ -633,6 +633,8 @@ use crate::render;
 #[test] fn e_ellipse_008() { assert_eq!(render("e-ellipse-008"), 0); }
 #[test] fn e_ellipse_009() { assert_eq!(render("e-ellipse-009"), 0); }
 #[test] fn e_ellipse_010() { assert_eq!(render("e-ellipse-010"), 0); }
+#[test] fn e_ellipse_011() { assert_eq!(render("e-ellipse-011"), 0); }
+#[test] fn e_ellipse_012() { assert_eq!(render("e-ellipse-012"), 0); }
 #[test] fn e_feBlend_001() { assert_eq!(render("e-feBlend-001"), 0); }
 #[test] fn e_feBlend_002() { assert_eq!(render("e-feBlend-002"), 0); }
 #[test] fn e_feBlend_003() { assert_eq!(render("e-feBlend-003"), 0); }
@@ -758,6 +760,7 @@ use crate::render;
 #[test] fn e_feDropShadow_005() { assert_eq!(render("e-feDropShadow-005"), 0); }
 #[test] fn e_feDropShadow_006() { assert_eq!(render("e-feDropShadow-006"), 0); }
 #[test] fn e_feDropShadow_007() { assert_eq!(render("e-feDropShadow-007"), 0); }
+#[test] fn e_feDropShadow_008() { assert_eq!(render("e-feDropShadow-008"), 0); }
 #[test] fn e_feFlood_001() { assert_eq!(render("e-feFlood-001"), 0); }
 #[test] fn e_feFlood_002() { assert_eq!(render("e-feFlood-002"), 0); }
 #[test] fn e_feFlood_003() { assert_eq!(render("e-feFlood-003"), 0); }
@@ -827,6 +830,7 @@ use crate::render;
 #[test] fn e_feOffset_006() { assert_eq!(render("e-feOffset-006"), 0); }
 #[test] fn e_feOffset_007() { assert_eq!(render("e-feOffset-007"), 0); }
 #[test] fn e_feOffset_008() { assert_eq!(render("e-feOffset-008"), 0); }
+#[test] fn e_feOffset_009() { assert_eq!(render("e-feOffset-009"), 0); }
 #[test] fn e_fePointLight_001() { assert_eq!(render("e-fePointLight-001"), 0); }
 #[test] fn e_fePointLight_002() { assert_eq!(render("e-fePointLight-002"), 0); }
 #[test] fn e_fePointLight_003() { assert_eq!(render("e-fePointLight-003"), 0); }
@@ -999,6 +1003,7 @@ use crate::render;
 #[test] fn e_line_007() { assert_eq!(render("e-line-007"), 0); }
 #[test] fn e_line_008() { assert_eq!(render("e-line-008"), 0); }
 #[test] fn e_line_009() { assert_eq!(render("e-line-009"), 0); }
+#[test] fn e_line_010() { assert_eq!(render("e-line-010"), 0); }
 #[test] fn e_linearGradient_001() { assert_eq!(render("e-linearGradient-001"), 0); }
 #[test] fn e_linearGradient_002() { assert_eq!(render("e-linearGradient-002"), 0); }
 #[test] fn e_linearGradient_003() { assert_eq!(render("e-linearGradient-003"), 0); }
@@ -1097,6 +1102,7 @@ use crate::render;
 #[test] fn e_marker_058() { assert_eq!(render("e-marker-058"), 0); }
 #[test] fn e_marker_059() { assert_eq!(render("e-marker-059"), 0); }
 #[test] fn e_marker_060() { assert_eq!(render("e-marker-060"), 0); }
+#[test] fn e_marker_061() { assert_eq!(render("e-marker-061"), 0); }
 #[test] fn e_mask_001() { assert_eq!(render("e-mask-001"), 0); }
 #[test] fn e_mask_002() { assert_eq!(render("e-mask-002"), 0); }
 #[test] fn e_mask_003() { assert_eq!(render("e-mask-003"), 0); }
@@ -1302,6 +1308,7 @@ use crate::render;
 #[test] fn e_rect_035() { assert_eq!(render("e-rect-035"), 0); }
 #[test] fn e_rect_036() { assert_eq!(render("e-rect-036"), 0); }
 #[test] fn e_rect_037() { assert_eq!(render("e-rect-037"), 0); }
+#[test] fn e_rect_038() { assert_eq!(render("e-rect-038"), 0); }
 #[test] fn e_stop_001() { assert_eq!(render("e-stop-001"), 0); }
 #[test] fn e_stop_002() { assert_eq!(render("e-stop-002"), 0); }
 #[test] fn e_stop_003() { assert_eq!(render("e-stop-003"), 0); }
@@ -1450,6 +1457,7 @@ use crate::render;
 #[test] fn e_text_041() { assert_eq!(render("e-text-041"), 0); }
 #[test] fn e_text_042() { assert_eq!(render("e-text-042"), 0); }
 #[test] fn e_text_043() { assert_eq!(render("e-text-043"), 0); }
+#[test] fn e_text_044() { assert_eq!(render("e-text-044"), 0); }
 #[test] fn e_textPath_001() { assert_eq!(render("e-textPath-001"), 0); }
 #[test] fn e_textPath_002() { assert_eq!(render("e-textPath-002"), 0); }
 #[test] fn e_textPath_003() { assert_eq!(render("e-textPath-003"), 0); }

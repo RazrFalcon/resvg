@@ -385,7 +385,6 @@ fn parse_args() -> Result<Args, String> {
     let (in_svg, out_png) = {
         let in_svg = args.input.as_str();
 
-
         let svg_from = if in_svg == "-" {
             InputFrom::Stdin
         } else if in_svg == "-c" {

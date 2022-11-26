@@ -3,11 +3,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use strict_num::PositiveF64;
-use svgtypes::Length;
 
 use super::{Input, Kind, Primitive};
 use crate::svgtree::{self, AId};
-use crate::{converter, Color, Opacity, SvgColorExt};
+use crate::{Color, Opacity, SvgColorExt};
 
 /// A drop shadow filter primitive.
 ///
@@ -48,11 +47,7 @@ pub struct DropShadow {
     pub opacity: Opacity,
 }
 
-pub(crate) fn convert(
-    fe: svgtree::Node,
-    primitives: &[Primitive],
-    state: &converter::State,
-) -> Kind {
+pub(crate) fn convert(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     let (std_dev_x, std_dev_y) = super::gaussian_blur::convert_std_dev_attr(fe, "2 2");
 
     let (color, opacity) = fe
@@ -62,8 +57,8 @@ pub(crate) fn convert(
 
     Kind::DropShadow(DropShadow {
         input: super::resolve_input(fe, AId::In, primitives),
-        dx: fe.convert_user_length(AId::Dx, state, Length::new_number(2.0)),
-        dy: fe.convert_user_length(AId::Dy, state, Length::new_number(2.0)),
+        dx: fe.attribute::<f64>(AId::Dx).unwrap_or(2.0),
+        dy: fe.attribute::<f64>(AId::Dy).unwrap_or(2.0),
         std_dev_x,
         std_dev_y,
         color,

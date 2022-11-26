@@ -12,6 +12,7 @@ This changelog also contains important changes in dependencies.
 
 ### Fixed
 - `--query-all` flag in `resvg` CLI.
+- Percentage values resolving.
 
 ## [0.26.1] - 2022-11-21
 ### Fixed
