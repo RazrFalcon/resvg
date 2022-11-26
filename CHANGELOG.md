@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.27.0] - 2022-11-27
 ### Added
 - `lengthAdjust` and `textLength` attributes support.
-- Support automatic `image` size detection. SVG2
-  `width` and `height` attributes can be omitted or set to `auto` on `image` now.
+- Support automatic `image` size detection.
+  `width` and `height` attributes can be omitted or set to `auto` on `image` now. SVG2
 
 ### Fixed
 - `--query-all` flag in `resvg` CLI.
@@ -684,7 +686,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.26.1...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.27.0...HEAD
+[0.27.0]: https://github.com/RazrFalcon/resvg/compare/v0.26.1...v0.27.0
 [0.26.1]: https://github.com/RazrFalcon/resvg/compare/v0.26.0...v0.26.1
 [0.26.0]: https://github.com/RazrFalcon/resvg/compare/v0.25.0...v0.26.0
 [0.25.0]: https://github.com/RazrFalcon/resvg/compare/v0.24.0...v0.25.0
