@@ -123,7 +123,6 @@ mod shapes;
 mod style;
 mod svgtree;
 mod switch;
-#[cfg(feature = "text")]
 mod text;
 mod units;
 mod use_node;
@@ -149,6 +148,7 @@ pub use crate::options::*;
 pub use crate::paint_server::*;
 pub use crate::pathdata::*;
 pub use crate::style::*;
+pub use crate::text::*;
 
 trait OptionLog {
     fn log_none<F: FnOnce()>(self, f: F) -> Self;
@@ -373,6 +373,7 @@ pub enum NodeKind {
     Group(Group),
     Path(Path),
     Image(Image),
+    Text(Text),
 }
 
 impl NodeKind {
@@ -382,6 +383,7 @@ impl NodeKind {
             NodeKind::Group(ref e) => e.id.as_str(),
             NodeKind::Path(ref e) => e.id.as_str(),
             NodeKind::Image(ref e) => e.id.as_str(),
+            NodeKind::Text(ref e) => e.id.as_str(),
         }
     }
 
@@ -391,6 +393,7 @@ impl NodeKind {
             NodeKind::Group(ref e) => e.transform,
             NodeKind::Path(ref e) => e.transform,
             NodeKind::Image(ref e) => e.transform,
+            NodeKind::Text(ref e) => e.transform,
         }
     }
 }
@@ -605,7 +608,7 @@ impl Tree {
     /// Parses `Tree` from an SVG data.
     ///
     /// Can contain an SVG string or a gzip compressed data.
-    pub fn from_data(data: &[u8], opt: &OptionsRef) -> Result<Self, Error> {
+    pub fn from_data(data: &[u8], opt: &Options) -> Result<Self, Error> {
         if data.starts_with(&[0x1f, 0x8b]) {
             let text = deflate(data)?;
             Self::from_str(&text, opt)
@@ -616,7 +619,7 @@ impl Tree {
     }
 
     /// Parses `Tree` from an SVG string.
-    pub fn from_str(text: &str, opt: &OptionsRef) -> Result<Self, Error> {
+    pub fn from_str(text: &str, opt: &Options) -> Result<Self, Error> {
         let mut xml_opt = roxmltree::ParsingOptions::default();
         xml_opt.allow_dtd = true;
 
@@ -627,7 +630,7 @@ impl Tree {
     }
 
     /// Parses `Tree` from `roxmltree::Document`.
-    pub fn from_xmltree(doc: &roxmltree::Document, opt: &OptionsRef) -> Result<Self, Error> {
+    pub fn from_xmltree(doc: &roxmltree::Document, opt: &Options) -> Result<Self, Error> {
         let doc = svgtree::Document::parse(doc)?;
         Self::from_svgtree(doc, opt)
     }
@@ -635,10 +638,11 @@ impl Tree {
     /// Parses `Tree` from the `svgtree::Document`.
     ///
     /// An empty `Tree` will be returned on any error.
-    fn from_svgtree(doc: svgtree::Document, opt: &OptionsRef) -> Result<Self, Error> {
+    fn from_svgtree(doc: svgtree::Document, opt: &Options) -> Result<Self, Error> {
         crate::converter::convert_doc(&doc, opt)
     }
 
+    // TODO: remove
     /// Returns renderable node by ID.
     ///
     /// If an empty ID is provided, than this method will always return `None`.
@@ -651,7 +655,18 @@ impl Tree {
         self.root.descendants().find(|node| &*node.id() == id)
     }
 
-    /// Converts an SVG.
+    /// Converts text nodes into paths.
+    ///
+    /// We have not pass `Options::keep_named_groups` again,
+    /// since this method affects the tree structure.
+    #[cfg(feature = "text")]
+    pub fn convert_text(&mut self, fontdb: &fontdb::Database, keep_named_groups: bool) {
+        convert_text(self.root.clone(), fontdb, keep_named_groups);
+    }
+
+    /// Converts into an SVG.
+    ///
+    /// Text nodes are ignored. Call [`Tree::convert_text`] beforehand.
     #[inline]
     #[cfg(feature = "export")]
     pub fn to_string(&self, opt: &XmlOptions) -> String {
@@ -682,11 +697,14 @@ pub trait NodeExt {
     /// Appends `kind` as a node child.
     ///
     /// Shorthand for `Node::append(Node::new(Box::new(kind)))`.
-    fn append_kind(&mut self, kind: NodeKind) -> Node;
+    fn append_kind(&self, kind: NodeKind) -> Node;
 
     /// Calculates node's absolute bounding box.
     ///
     /// Can be expensive on large paths and groups.
+    ///
+    /// Always returns `None` for `NodeKind::Text` since we cannot calculate its bbox
+    /// without converting it into paths first.
     fn calculate_bbox(&self) -> Option<PathBbox>;
 
     /// Returns the node starting from which the filter background should be rendered.
@@ -720,7 +738,7 @@ impl NodeExt for Node {
     }
 
     #[inline]
-    fn append_kind(&mut self, kind: NodeKind) -> Node {
+    fn append_kind(&self, kind: NodeKind) -> Node {
         let new_node = Node::new(kind);
         self.append(new_node.clone());
         new_node
@@ -798,5 +816,76 @@ fn calc_node_bbox(node: &Node, ts: Transform) -> Option<PathBbox> {
 
             Some(bbox)
         }
+        NodeKind::Text(_) => None,
     }
+}
+
+#[cfg(feature = "text")]
+fn convert_text(root: Node, fontdb: &fontdb::Database, keep_named_groups: bool) {
+    let mut text_nodes = Vec::new();
+    // We have to update text nodes in clipPaths, masks and patterns as well.
+    for node in root.descendants() {
+        match *node.borrow() {
+            NodeKind::Group(ref g) => {
+                if let Some(ref clip) = g.clip_path {
+                    convert_text(clip.root.clone(), fontdb, keep_named_groups);
+                }
+
+                if let Some(ref mask) = g.mask {
+                    convert_text(mask.root.clone(), fontdb, keep_named_groups);
+                }
+            }
+            NodeKind::Path(ref path) => {
+                if let Some(ref fill) = path.fill {
+                    if let Paint::Pattern(ref p) = fill.paint {
+                        convert_text(p.root.clone(), fontdb, keep_named_groups);
+                    }
+                }
+                if let Some(ref stroke) = path.stroke {
+                    if let Paint::Pattern(ref p) = stroke.paint {
+                        convert_text(p.root.clone(), fontdb, keep_named_groups);
+                    }
+                }
+            }
+            NodeKind::Image(_) => {}
+            NodeKind::Text(ref text) => {
+                text_nodes.push(node.clone());
+
+                for chunk in &text.chunks {
+                    for span in &chunk.spans {
+                        if let Some(ref fill) = span.fill {
+                            if let Paint::Pattern(ref p) = fill.paint {
+                                convert_text(p.root.clone(), fontdb, keep_named_groups);
+                            }
+                        }
+                        if let Some(ref stroke) = span.stroke {
+                            if let Paint::Pattern(ref p) = stroke.paint {
+                                convert_text(p.root.clone(), fontdb, keep_named_groups);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if text_nodes.is_empty() {
+        return;
+    }
+
+    for node in &text_nodes {
+        let mut new_node = None;
+        if let NodeKind::Text(ref text) = *node.borrow() {
+            let mut absolute_ts = node.parent().unwrap().abs_transform();
+            absolute_ts.append(&text.transform);
+            new_node = text.convert(fontdb, absolute_ts);
+        }
+
+        if let Some(new_node) = new_node {
+            node.insert_after(new_node);
+        }
+    }
+
+    text_nodes.iter().for_each(|n| n.detach());
+    converter::ungroup_groups(root, keep_named_groups);
 }

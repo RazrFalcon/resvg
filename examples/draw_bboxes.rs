@@ -25,15 +25,18 @@ fn main() {
         .ok()
         .and_then(|p| p.parent().map(|p| p.to_path_buf()));
     opt.keep_named_groups = true;
-    opt.fontdb.load_system_fonts();
     let fit_to = usvg::FitTo::Zoom(zoom);
 
+    let mut fontdb = usvg::fontdb::Database::new();
+    fontdb.load_system_fonts();
+
     let svg_data = std::fs::read(&args[1]).unwrap();
-    let mut rtree = usvg::Tree::from_data(&svg_data, &opt.to_ref()).unwrap();
+    let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
+    tree.convert_text(&fontdb, opt.keep_named_groups);
 
     let mut bboxes = Vec::new();
     let mut text_bboxes = Vec::new();
-    for node in rtree.root.descendants() {
+    for node in tree.root.descendants() {
         if let Some(bbox) = node.calculate_bbox().and_then(|r| r.to_rect()) {
             bboxes.push(bbox);
         }
@@ -59,7 +62,7 @@ fn main() {
     });
 
     for bbox in bboxes {
-        rtree.root.append_kind(usvg::NodeKind::Path(usvg::Path {
+        tree.root.append_kind(usvg::NodeKind::Path(usvg::Path {
             stroke: stroke.clone(),
             data: Rc::new(usvg::PathData::from_rect(bbox)),
             ..usvg::Path::default()
@@ -67,17 +70,17 @@ fn main() {
     }
 
     for bbox in text_bboxes {
-        rtree.root.append_kind(usvg::NodeKind::Path(usvg::Path {
+        tree.root.append_kind(usvg::NodeKind::Path(usvg::Path {
             stroke: stroke2.clone(),
             data: Rc::new(usvg::PathData::from_rect(bbox)),
             ..usvg::Path::default()
         }));
     }
 
-    let pixmap_size = fit_to.fit_to(rtree.size.to_screen_size()).unwrap();
+    let pixmap_size = fit_to.fit_to(tree.size.to_screen_size()).unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
     resvg::render(
-        &rtree,
+        &tree,
         fit_to,
         tiny_skia::Transform::default(),
         pixmap.as_mut(),

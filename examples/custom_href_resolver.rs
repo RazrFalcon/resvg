@@ -4,11 +4,11 @@ fn main() {
     let ferris_image = std::sync::Arc::new(std::fs::read("./examples/ferris.png").unwrap());
 
     // We know that our SVG won't have DataUrl hrefs, just return None for such case.
-    let resolve_data = Box::new(|_: &str, _: std::sync::Arc<Vec<u8>>, _: &usvg::OptionsRef| None);
+    let resolve_data = Box::new(|_: &str, _: std::sync::Arc<Vec<u8>>, _: &usvg::Options| None);
 
     // Here we handle xlink:href attribute as string,
     // let's use already loaded Ferris image to match that string.
-    let resolve_string = Box::new(move |href: &str, _: &usvg::OptionsRef| match href {
+    let resolve_string = Box::new(move |href: &str, _: &usvg::Options| match href {
         "ferris_image" => Some(usvg::ImageKind::PNG(ferris_image.clone())),
         _ => None,
     });
@@ -20,7 +20,7 @@ fn main() {
     };
 
     let svg_data = std::fs::read("./examples/custom_href_resolver.svg").unwrap();
-    let rtree = usvg::Tree::from_data(&svg_data, &opt.to_ref()).unwrap();
+    let rtree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
 
     let pixmap_size = rtree.size.to_screen_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();

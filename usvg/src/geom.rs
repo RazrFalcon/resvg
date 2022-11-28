@@ -81,19 +81,6 @@ impl IsValidLength for f64 {
     }
 }
 
-/// Converts `Rect` into bbox `Transform`.
-pub trait TransformFromBBox: Sized {
-    /// Converts `Rect` into bbox `Transform`.
-    fn from_bbox(bbox: Rect) -> Self;
-}
-
-impl TransformFromBBox for Transform {
-    #[inline]
-    fn from_bbox(bbox: Rect) -> Self {
-        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
-    }
-}
-
 // TODO: remove
 /// A 2D point representation.
 #[derive(Clone, Copy)]
@@ -928,6 +915,12 @@ impl Transform {
         let c = -b;
         let d = a;
         Transform::new(a, b, c, d, 0.0, 0.0)
+    }
+
+    /// Converts `Rect` into bbox `Transform`.
+    #[inline]
+    pub fn from_bbox(bbox: Rect) -> Self {
+        Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
     }
 
     /// Translates the current transform.

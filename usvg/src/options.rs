@@ -65,13 +65,6 @@ pub struct Options {
     /// Default: 96.0
     pub dpi: f64,
 
-    /// A default font family.
-    ///
-    /// Will be used when no `font-family` attribute is set in the SVG.
-    ///
-    /// Default: Times New Roman
-    pub font_family: String,
-
     /// A default font size.
     ///
     /// Will be used when no `font-size` attribute is set in the SVG.
@@ -123,12 +116,6 @@ pub struct Options {
     /// Default: `(100, 100)`
     pub default_size: Size,
 
-    /// When empty, `text` elements will be skipped.
-    ///
-    /// Default: empty
-    #[cfg(feature = "text")]
-    pub fontdb: fontdb::Database,
-
     /// Specifies the way `xlink:href` in `<image>` elements should be handled.
     ///
     /// Default: see type's documentation for details
@@ -140,8 +127,6 @@ impl Default for Options {
         Options {
             resources_dir: None,
             dpi: 96.0,
-            // Default font is user-agent dependent so we can use whichever we like.
-            font_family: "Times New Roman".to_owned(),
             font_size: 12.0,
             languages: vec!["en".to_string()],
             shape_rendering: ShapeRendering::default(),
@@ -149,63 +134,18 @@ impl Default for Options {
             image_rendering: ImageRendering::default(),
             keep_named_groups: false,
             default_size: Size::new(100.0, 100.0).unwrap(),
-            #[cfg(feature = "text")]
-            fontdb: fontdb::Database::new(),
             image_href_resolver: ImageHrefResolver::default(),
         }
     }
 }
 
 impl Options {
-    /// Creates a reference to `Options`.
-    #[inline]
-    pub fn to_ref(&self) -> OptionsRef {
-        OptionsRef {
-            resources_dir: self.resources_dir.as_deref(),
-            dpi: self.dpi,
-            font_family: &self.font_family,
-            font_size: self.font_size,
-            languages: self.languages.as_slice(),
-            shape_rendering: self.shape_rendering,
-            text_rendering: self.text_rendering,
-            image_rendering: self.image_rendering,
-            keep_named_groups: self.keep_named_groups,
-            default_size: self.default_size,
-            #[cfg(feature = "text")]
-            fontdb: &self.fontdb,
-            image_href_resolver: &self.image_href_resolver,
-        }
-    }
-}
-
-/// A reference to processing options.
-///
-/// See [`Options`] for details.
-#[derive(Clone, Debug)]
-#[allow(missing_docs)]
-pub struct OptionsRef<'a> {
-    pub resources_dir: Option<&'a std::path::Path>,
-    pub dpi: f64,
-    pub font_family: &'a str,
-    pub font_size: f64,
-    pub languages: &'a [String],
-    pub shape_rendering: ShapeRendering,
-    pub text_rendering: TextRendering,
-    pub image_rendering: ImageRendering,
-    pub keep_named_groups: bool,
-    pub default_size: Size,
-    #[cfg(feature = "text")]
-    pub fontdb: &'a fontdb::Database,
-    pub image_href_resolver: &'a ImageHrefResolver,
-}
-
-impl OptionsRef<'_> {
     /// Converts a relative path into absolute relative to the SVG file itself.
     ///
     /// If `OptionsRef::resources_dir` is not set, returns itself.
     pub fn get_abs_path(&self, rel_path: &std::path::Path) -> std::path::PathBuf {
         match self.resources_dir {
-            Some(dir) => dir.join(rel_path),
+            Some(ref dir) => dir.join(rel_path),
             None => rel_path.into(),
         }
     }

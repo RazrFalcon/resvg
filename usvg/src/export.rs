@@ -679,6 +679,7 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
 
             xml.end_element();
         }
+        NodeKind::Text(_) => {}
     }
 }
 

@@ -8,7 +8,7 @@ use svgtypes::Length;
 use crate::geom::{Rect, Size, Transform, ViewBox};
 use crate::svgtree::{self, AId};
 use crate::{
-    converter, ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Tree, Visibility,
+    converter, ImageRendering, Node, NodeExt, NodeKind, OptionLog, Options, Tree, Visibility,
 };
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -45,10 +45,9 @@ impl std::fmt::Debug for ImageKind {
 
 /// A shorthand for [ImageHrefResolver]'s data function.
 pub type ImageHrefDataResolverFn =
-    Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + Send + Sync>;
+    Box<dyn Fn(&str, Arc<Vec<u8>>, &Options) -> Option<ImageKind> + Send + Sync>;
 /// A shorthand for [ImageHrefResolver]'s string function.
-pub type ImageHrefStringResolverFn =
-    Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + Send + Sync>;
+pub type ImageHrefStringResolverFn = Box<dyn Fn(&str, &Options) -> Option<ImageKind> + Send + Sync>;
 
 /// An `xlink:href` resolver for `<image>` elements.
 ///
@@ -87,7 +86,7 @@ impl ImageHrefResolver {
     /// The actual images would not be decoded. It's up to the renderer.
     pub fn default_data_resolver() -> ImageHrefDataResolverFn {
         Box::new(
-            move |mime: &str, data: Arc<Vec<u8>>, opts: &OptionsRef| match mime {
+            move |mime: &str, data: Arc<Vec<u8>>, opts: &Options| match mime {
                 "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
                 "image/png" => Some(ImageKind::PNG(data)),
                 "image/gif" => Some(ImageKind::GIF(data)),
@@ -111,7 +110,7 @@ impl ImageHrefResolver {
     /// Paths have to be absolute or relative to the input SVG file or relative to
     /// [Options::resources_dir](crate::Options::resources_dir).
     pub fn default_string_resolver() -> ImageHrefStringResolverFn {
-        Box::new(move |href: &str, opts: &OptionsRef| {
+        Box::new(move |href: &str, opts: &Options| {
             let path = opts.get_abs_path(std::path::Path::new(href));
 
             if path.exists() {
@@ -231,7 +230,7 @@ pub(crate) fn convert(
     Some(())
 }
 
-pub(crate) fn get_href_data(href: &str, opt: &OptionsRef) -> Option<ImageKind> {
+pub(crate) fn get_href_data(href: &str, opt: &Options) -> Option<ImageKind> {
     if let Ok(url) = data_url::DataUrl::process(href) {
         let (data, _) = url.decode_to_vec().ok()?;
 
@@ -272,10 +271,17 @@ fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
 ///
 /// Unlike `Tree::from_*` methods, this one will also remove all `image` elements
 /// from the loaded SVG, as required by the spec.
-pub(crate) fn load_sub_svg(data: &[u8], opt: &OptionsRef) -> Option<ImageKind> {
-    let mut sub_opt = opt.clone();
+pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
+    let mut sub_opt = Options::default();
     sub_opt.resources_dir = None;
+    sub_opt.dpi = opt.dpi;
+    sub_opt.font_size = opt.font_size;
+    sub_opt.languages = opt.languages.clone();
+    sub_opt.shape_rendering = opt.shape_rendering;
+    sub_opt.text_rendering = opt.text_rendering;
+    sub_opt.image_rendering = opt.image_rendering;
     sub_opt.keep_named_groups = false;
+    sub_opt.default_size = opt.default_size;
 
     let tree = match Tree::from_data(data, &sub_opt) {
         Ok(tree) => tree,
@@ -289,6 +295,7 @@ pub(crate) fn load_sub_svg(data: &[u8], opt: &OptionsRef) -> Option<ImageKind> {
     Some(ImageKind::SVG(tree))
 }
 
+// TODO: technically can simply override Options::image_href_resolver?
 fn sanitize_sub_svg(tree: &crate::Tree) {
     // Remove all Image nodes.
     //

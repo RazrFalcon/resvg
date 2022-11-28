@@ -5,7 +5,7 @@
 use std::rc::Rc;
 
 use rgb::FromSlice;
-use usvg::{FuzzyZero, NodeExt, TransformFromBBox};
+use usvg::{FuzzyZero, NodeExt};
 
 use crate::{
     render::{Canvas, RenderState},

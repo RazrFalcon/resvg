@@ -6,28 +6,30 @@ mod render;
 
 const IMAGE_SIZE: u32 = 300;
 
-static GLOBAL_OPT: Lazy<std::sync::Mutex<usvg::Options>> = Lazy::new(|| {
-    let mut opt = usvg::Options::default();
-    opt.font_family = "Noto Sans".to_string();
-    opt.fontdb.load_fonts_dir("tests/fonts");
-    opt.fontdb.set_serif_family("Noto Serif");
-    opt.fontdb.set_sans_serif_family("Noto Sans");
-    opt.fontdb.set_cursive_family("Yellowtail");
-    opt.fontdb.set_fantasy_family("Sedgwick Ave Display");
-    opt.fontdb.set_monospace_family("Noto Mono");
-    opt.resources_dir = Some(std::path::PathBuf::from("tests/svg"));
-    std::sync::Mutex::new(opt)
+static GLOBAL_FONTDB: Lazy<std::sync::Mutex<usvg::fontdb::Database>> = Lazy::new(|| {
+    let mut fontdb = usvg::fontdb::Database::new();
+    fontdb.load_fonts_dir("tests/fonts");
+    fontdb.set_serif_family("Noto Serif");
+    fontdb.set_sans_serif_family("Noto Sans");
+    fontdb.set_cursive_family("Yellowtail");
+    fontdb.set_fantasy_family("Sedgwick Ave Display");
+    fontdb.set_monospace_family("Noto Mono");
+    std::sync::Mutex::new(fontdb)
 });
 
 pub fn render(name: &str) -> usize {
     let svg_path = format!("tests/svg/{}.svg", name);
     let png_path = format!("tests/png/{}.png", name);
 
-    // Do not unwrap on the from_data line, because panic will poison GLOBAL_OPT.
+    let mut opt = usvg::Options::default();
+    opt.resources_dir = Some(std::path::PathBuf::from("tests/svg"));
+
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
-        let tree = usvg::Tree::from_data(&svg_data, &GLOBAL_OPT.lock().unwrap().to_ref());
-        tree.unwrap()
+        let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
+        let db = GLOBAL_FONTDB.lock().unwrap();
+        tree.convert_text(&db, false);
+        tree
     };
 
     let fit_to = usvg::FitTo::Width(IMAGE_SIZE);

@@ -117,6 +117,7 @@ pub(crate) fn render_node(
         }
         usvg::NodeKind::Image(ref img) => Some(crate::image::draw(img, canvas)),
         usvg::NodeKind::Group(ref g) => render_group_impl(tree, node, g, state, canvas),
+        usvg::NodeKind::Text(_) => None,
     }
 }
 

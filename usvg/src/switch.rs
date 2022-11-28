@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::svgtree::{self, AId};
-use crate::{converter, Node, OptionsRef};
+use crate::{converter, Node, Options};
 
 // Full list can be found here: https://www.w3.org/TR/SVG11/feature.html
 static FEATURES: &[&str] = &[
@@ -62,7 +62,7 @@ pub(crate) fn convert(
     Some(())
 }
 
-pub(crate) fn is_condition_passed(node: svgtree::Node, opt: &OptionsRef) -> bool {
+pub(crate) fn is_condition_passed(node: svgtree::Node, opt: &Options) -> bool {
     if !node.is_element() {
         return false;
     }
@@ -92,7 +92,7 @@ pub(crate) fn is_condition_passed(node: svgtree::Node, opt: &OptionsRef) -> bool
 }
 
 /// SVG spec 5.8.5
-fn is_valid_sys_lang(node: svgtree::Node, opt: &OptionsRef) -> bool {
+fn is_valid_sys_lang(node: svgtree::Node, opt: &Options) -> bool {
     // 'The attribute value is a comma-separated list of language names
     // as defined in BCP 47.'
     //

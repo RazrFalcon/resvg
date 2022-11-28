@@ -182,21 +182,35 @@ pub extern "C" fn resvg_init_log() {
 ///
 /// Also, contains a fonts database used during text to path conversion.
 /// The database is empty by default.
-pub struct resvg_options(usvg::Options);
+pub struct resvg_options {
+    options: usvg::Options,
+    fontdb: usvg::fontdb::Database,
+}
 
 /// @brief Creates a new #resvg_options object.
 ///
 /// Should be destroyed via #resvg_options_destroy.
 #[no_mangle]
 pub extern "C" fn resvg_options_create() -> *mut resvg_options {
-    Box::into_raw(Box::new(resvg_options(usvg::Options::default())))
+    Box::into_raw(Box::new(resvg_options {
+        options: usvg::Options::default(),
+        fontdb: usvg::fontdb::Database::new(),
+    }))
 }
 
 #[inline]
 fn cast_opt(opt: *mut resvg_options) -> &'static mut usvg::Options {
     unsafe {
         assert!(!opt.is_null());
-        &mut (*opt).0
+        &mut (*opt).options
+    }
+}
+
+#[inline]
+fn cast_fontdb(opt: *mut resvg_options) -> &'static mut usvg::fontdb::Database {
+    unsafe {
+        assert!(!opt.is_null());
+        &mut (*opt).fontdb
     }
 }
 
@@ -227,18 +241,6 @@ pub extern "C" fn resvg_options_set_dpi(opt: *mut resvg_options, dpi: f64) {
     cast_opt(opt).dpi = dpi;
 }
 
-/// @brief Sets the default font family.
-///
-/// Will be used when no `font-family` attribute is set in the SVG.
-///
-/// Must be UTF-8. NULL is not allowed.
-///
-/// Default: Times New Roman
-#[no_mangle]
-pub extern "C" fn resvg_options_set_font_family(opt: *mut resvg_options, family: *const c_char) {
-    cast_opt(opt).font_family = cstr_to_str(family).unwrap().to_string();
-}
-
 /// @brief Sets the default font size.
 ///
 /// Will be used when no `font-size` attribute is set in the SVG.
@@ -261,9 +263,7 @@ pub extern "C" fn resvg_options_set_font_size(opt: *mut resvg_options, size: f64
 pub extern "C" fn resvg_options_set_serif_family(opt: *mut resvg_options, family: *const c_char) {
     #[cfg(feature = "text")]
     {
-        cast_opt(opt)
-            .fontdb
-            .set_serif_family(cstr_to_str(family).unwrap().to_string());
+        cast_fontdb(opt).set_serif_family(cstr_to_str(family).unwrap().to_string());
     }
 }
 
@@ -282,9 +282,7 @@ pub extern "C" fn resvg_options_set_sans_serif_family(
 ) {
     #[cfg(feature = "text")]
     {
-        cast_opt(opt)
-            .fontdb
-            .set_sans_serif_family(cstr_to_str(family).unwrap().to_string());
+        cast_fontdb(opt).set_sans_serif_family(cstr_to_str(family).unwrap().to_string());
     }
 }
 
@@ -300,9 +298,7 @@ pub extern "C" fn resvg_options_set_sans_serif_family(
 pub extern "C" fn resvg_options_set_cursive_family(opt: *mut resvg_options, family: *const c_char) {
     #[cfg(feature = "text")]
     {
-        cast_opt(opt)
-            .fontdb
-            .set_cursive_family(cstr_to_str(family).unwrap().to_string());
+        cast_fontdb(opt).set_cursive_family(cstr_to_str(family).unwrap().to_string());
     }
 }
 
@@ -318,9 +314,7 @@ pub extern "C" fn resvg_options_set_cursive_family(opt: *mut resvg_options, fami
 pub extern "C" fn resvg_options_set_fantasy_family(opt: *mut resvg_options, family: *const c_char) {
     #[cfg(feature = "text")]
     {
-        cast_opt(opt)
-            .fontdb
-            .set_fantasy_family(cstr_to_str(family).unwrap().to_string());
+        cast_fontdb(opt).set_fantasy_family(cstr_to_str(family).unwrap().to_string());
     }
 }
 
@@ -339,9 +333,7 @@ pub extern "C" fn resvg_options_set_monospace_family(
 ) {
     #[cfg(feature = "text")]
     {
-        cast_opt(opt)
-            .fontdb
-            .set_monospace_family(cstr_to_str(family).unwrap().to_string());
+        cast_fontdb(opt).set_monospace_family(cstr_to_str(family).unwrap().to_string());
     }
 }
 
@@ -487,7 +479,7 @@ pub extern "C" fn resvg_options_load_font_data(
             &mut *opt
         };
 
-        opt.0.fontdb.load_font_data(data.to_vec())
+        opt.fontdb.load_font_data(data.to_vec())
     }
 }
 
@@ -516,7 +508,7 @@ pub extern "C" fn resvg_options_load_font_file(
             &mut *opt
         };
 
-        if opt.0.fontdb.load_font_file(file_path).is_ok() {
+        if opt.fontdb.load_font_file(file_path).is_ok() {
             resvg_error::OK as i32
         } else {
             resvg_error::FILE_OPEN_FAILED as i32
@@ -551,7 +543,7 @@ pub extern "C" fn resvg_options_load_system_fonts(opt: *mut resvg_options) {
             &mut *opt
         };
 
-        opt.0.fontdb.load_system_fonts();
+        opt.fontdb.load_system_fonts();
     }
 }
 
@@ -598,7 +590,7 @@ pub extern "C" fn resvg_parse_tree_from_file(
         Err(_) => return resvg_error::FILE_OPEN_FAILED as i32,
     };
 
-    let utree = match usvg::Tree::from_data(&file_data, &raw_opt.0.to_ref()) {
+    let utree = match usvg::Tree::from_data(&file_data, &raw_opt.options) {
         Ok(tree) => tree,
         Err(e) => return convert_error(e) as i32,
     };
@@ -634,7 +626,7 @@ pub extern "C" fn resvg_parse_tree_from_data(
         &*opt
     };
 
-    let utree = match usvg::Tree::from_data(data, &raw_opt.0.to_ref()) {
+    let utree = match usvg::Tree::from_data(data, &raw_opt.options) {
         Ok(tree) => tree,
         Err(e) => return convert_error(e) as i32,
     };

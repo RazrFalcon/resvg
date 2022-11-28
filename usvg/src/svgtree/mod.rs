@@ -8,11 +8,10 @@ use std::collections::HashMap;
 
 use crate::geom::{FuzzyEq, Rect, Transform};
 use crate::{converter, units};
-use crate::{EnableBackground, Opacity, OptionsRef, SharedPathData, Units};
+use crate::{EnableBackground, Opacity, Options, SharedPathData, Units};
 
 #[rustfmt::skip] mod names;
 mod parse;
-#[cfg(feature = "text")]
 mod text;
 
 pub use names::{AId, EId};
@@ -129,11 +128,7 @@ struct AttributeId(usize);
 
 enum NodeKind {
     Root,
-    Element {
-        tag_name: EId,
-        attributes: Range,
-    },
-    #[cfg(feature = "text")]
+    Element { tag_name: EId, attributes: Range },
     Text(String),
 }
 
@@ -214,7 +209,6 @@ impl<'a> Node<'a> {
         matches!(self.d.kind, NodeKind::Element { .. })
     }
 
-    #[cfg(feature = "text")]
     #[inline]
     pub fn is_text(&self) -> bool {
         matches!(self.d.kind, NodeKind::Text(_))
@@ -331,7 +325,6 @@ impl<'a> Node<'a> {
         Rect::new(vb.x, vb.y, vb.w, vb.h)
     }
 
-    #[cfg(feature = "text")]
     pub fn text(&self) -> &'a str {
         match self.d.kind {
             NodeKind::Element { .. } => match self.first_child() {
@@ -481,7 +474,7 @@ impl<'a> Node<'a> {
         self.convert_length(aid, Units::UserSpaceOnUse, state, def)
     }
 
-    pub fn is_visible_element(&self, opt: &OptionsRef) -> bool {
+    pub fn is_visible_element(&self, opt: &Options) -> bool {
         self.attribute(AId::Display) != Some("none")
             && self.has_valid_transform(AId::Transform)
             && crate::switch::is_condition_passed(*self, opt)
@@ -500,7 +493,6 @@ impl std::fmt::Debug for Node<'_> {
                     self.attributes()
                 )
             }
-            #[cfg(feature = "text")]
             NodeKind::Text(ref text) => write!(f, "Text({:?})", text),
         }
     }

@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- `usvg::Text` and `usvg::NodeKind::Text`.
+
+### Changed
+- `usvg` isn't converting text to path by default now. A caller must call
+  `usvg::Tree::convert_text` on demand.
+- Text elements are always parsed now, even when the `text` build flag is disabled.
+  The `text` build flag only enabled text to path conversion now.
+- During SVG size recovery, when no `width`, `height` and `viewBox` attributes have been set,
+  text nodes no longer taken into an account. This is because text node has no bbox
+  before converting to path(s), which we no longer doing during parsing.
+
+### Removed
+- `usvg::TransformFromBBox` trait. This is just a regular `usvg::Transform` method now.
+- `usvg::OptionsRef`. `usvg::Options` is enough from now.
+- `usvg::Options::fontdb`. Should only be passed to `usvg::Tree::convert_text` now.
+- `usvg::Options::font_family`. A font set via `fontdb::Database::set_serif_family`
+  will be used now. By default it is set to _Times New Roman_, so the default behavior
+  will not change.
+- `--font-family` options from `resvg` and `usvg` CLIs. See above.
+- (c-api) `resvg_options_set_font_family`. Use `resvg_options_set_serif_family` instead.
 
 ## [0.27.0] - 2022-11-27
 ### Added

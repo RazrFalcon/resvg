@@ -44,10 +44,11 @@ unicode-vo = { version = "0.1", optional = true }
 
 [features]
 default = ["filter", "text", "system-fonts", "memmap-fonts", "export"]
-# enables SVG Filter support
+# Enables SVG Filter support.
 filter = []
-# enables SVG Text support
-# adds around 500KiB to your binary
+# Enables text to path conversion support.
+# Adds around 500KiB to your binary.
+# Note that text nodes will be parsed even when this options is disabled.
 text = [
     "fontdb",
     "rustybuzz",
@@ -55,10 +56,10 @@ text = [
     "unicode-script",
     "unicode-vo",
 ]
-# enables system fonts loading (only for `text`)
+# Enables system fonts loading (only for `text`).
 system-fonts = ["fontdb/fs", "fontdb/fontconfig"]
-# enables font files memmaping for faster loading (only for `text`)
+# Enables font files memmaping for faster loading (only for `text`).
 memmap-fonts = ["fontdb/memmap"]
-# enables SVG generation using Tree::to_string
-# adds around 50KiB to your binary
+# Enables SVG generation using Tree::to_string.
+# Adds around 50KiB to your binary.
 export = ["xmlwriter"]

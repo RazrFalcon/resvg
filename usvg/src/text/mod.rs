@@ -2,488 +2,316 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
-
 mod convert;
-mod fontdb_ext;
-mod shaper;
+#[cfg(feature = "text")]
+mod text_to_path;
 
-use crate::{converter, svgtree};
-use crate::{BaseGradient, Color, LinearGradient, Pattern, RadialGradient};
-use crate::{FillRule, Group, Node, NodeExt, NodeKind, Paint, Path, PathBbox, PathData, Rect};
-use crate::{ShapeRendering, Stroke, StrokeWidth, Transform, TransformFromBBox, Units};
-use convert::TextDecorationStyle;
-use convert::{TextFlow, TextSpan, WritingMode};
-use shaper::OutlinedCluster;
+use std::rc::Rc;
+use strict_num::NonZeroPositiveF64;
 
-mod private {
-    use crate::svgtree::{self, EId};
+use crate::{style, PaintOrder, PathData, TextRendering, Transform, Visibility};
+pub(crate) use convert::convert;
 
-    /// A type-safe container for a `text` node.
+/// A font stretch property.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
+pub enum Stretch {
+    UltraCondensed,
+    ExtraCondensed,
+    Condensed,
+    SemiCondensed,
+    Normal,
+    SemiExpanded,
+    Expanded,
+    ExtraExpanded,
+    UltraExpanded,
+}
+
+impl Default for Stretch {
+    #[inline]
+    fn default() -> Self {
+        Stretch::Normal
+    }
+}
+
+/// A font style property.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
+pub enum Style {
+    /// A face that is neither italic not obliqued.
+    Normal,
+    /// A form that is generally cursive in nature.
+    Italic,
+    /// A typically-sloped version of the regular face.
+    Oblique,
+}
+
+impl Default for Style {
+    #[inline]
+    fn default() -> Style {
+        Style::Normal
+    }
+}
+
+/// Text font properties.
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct Font {
+    /// A list of family names.
+    /// Can be empty.
+    pub families: Vec<String>,
+    /// A font style.
+    pub style: Style,
+    /// A font stretch.
+    pub stretch: Stretch,
+    /// A font width.
+    pub weight: u16,
+}
+
+/// A dominant baseline property.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum DominantBaseline {
+    Auto,
+    UseScript,
+    NoChange,
+    ResetSize,
+    Ideographic,
+    Alphabetic,
+    Hanging,
+    Mathematical,
+    Central,
+    Middle,
+    TextAfterEdge,
+    TextBeforeEdge,
+}
+
+/// An alignment baseline property.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum AlignmentBaseline {
+    Auto,
+    Baseline,
+    BeforeEdge,
+    TextBeforeEdge,
+    Middle,
+    Central,
+    AfterEdge,
+    TextAfterEdge,
+    Ideographic,
+    Alphabetic,
+    Hanging,
+    Mathematical,
+}
+
+/// A baseline shift property.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum BaselineShift {
+    Baseline,
+    Subscript,
+    Superscript,
+    Number(f64),
+}
+
+impl Default for BaselineShift {
+    #[inline]
+    fn default() -> BaselineShift {
+        BaselineShift::Baseline
+    }
+}
+
+/// A length adjust property.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum LengthAdjust {
+    Spacing,
+    SpacingAndGlyphs,
+}
+
+/// A text span decoration style.
+///
+/// In SVG, text decoration and text it's applied to can have different styles.
+/// So you can have black text and green underline.
+///
+/// Also, in SVG you can specify text decoration stroking.
+#[derive(Clone, Debug)]
+pub struct TextDecorationStyle {
+    /// A fill style.
+    pub fill: Option<style::Fill>,
+    /// A stroke style.
+    pub stroke: Option<style::Stroke>,
+}
+
+/// A text span decoration.
+#[derive(Clone, Debug)]
+pub struct TextDecoration {
+    /// An optional underline and its style.
+    pub underline: Option<TextDecorationStyle>,
+    /// An optional overline and its style.
+    pub overline: Option<TextDecorationStyle>,
+    /// An optional line-through and its style.
+    pub line_through: Option<TextDecorationStyle>,
+}
+
+/// A text style span.
+///
+/// Spans do not overlap inside a text chunk.
+#[derive(Clone, Debug)]
+pub struct TextSpan {
+    /// A span start in UTF-8 codepoints.
     ///
-    /// This way we can be sure that we are passing the `text` node and not just a random node.
-    #[derive(Clone, Copy)]
-    pub struct TextNode<'a>(svgtree::Node<'a>);
-
-    impl<'a> TextNode<'a> {
-        pub fn new(node: svgtree::Node<'a>) -> Self {
-            debug_assert!(node.has_tag_name(EId::Text));
-            TextNode(node)
-        }
-    }
-
-    impl<'a> std::ops::Deref for TextNode<'a> {
-        type Target = svgtree::Node<'a>;
-
-        fn deref(&self) -> &Self::Target {
-            &self.0
-        }
-    }
+    /// Offset is relative to the parent text chunk and not the parent text element.
+    pub start: usize,
+    /// A span end in UTF-8 codepoints.
+    ///
+    /// Offset is relative to the parent text chunk and not the parent text element.
+    pub end: usize,
+    /// A fill style.
+    pub fill: Option<style::Fill>,
+    /// A stroke style.
+    pub stroke: Option<style::Stroke>,
+    /// A paint order style.
+    pub paint_order: PaintOrder,
+    /// A font.
+    pub font: Font,
+    /// A font size.
+    pub font_size: NonZeroPositiveF64,
+    /// Indicates that small caps should be used.
+    ///
+    /// Set by `font-variant="small-caps"`
+    pub small_caps: bool,
+    /// Indicates that a kerning should be applied.
+    ///
+    /// Supports both `kerning` and `font-kerning` properties.
+    pub apply_kerning: bool,
+    /// A span decorations.
+    pub decoration: TextDecoration,
+    /// A span dominant baseline.
+    pub dominant_baseline: DominantBaseline,
+    /// A span alignment baseline.
+    pub alignment_baseline: AlignmentBaseline,
+    /// A list of all baseline shift that should be applied to this span.
+    ///
+    /// Ordered from `text` element down to the actual `span` element.
+    pub baseline_shift: Vec<BaselineShift>,
+    /// A visibility property.
+    pub visibility: Visibility,
+    /// A letter spacing property.
+    pub letter_spacing: f64,
+    /// A word spacing property.
+    pub word_spacing: f64,
+    /// A text length property.
+    pub text_length: Option<f64>,
+    /// A length adjust property.
+    pub length_adjust: LengthAdjust,
 }
-use private::TextNode;
 
-/// A text decoration span.
+/// A text chunk anchor property.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum TextAnchor {
+    Start,
+    Middle,
+    End,
+}
+
+/// A path used by text-on-path.
+#[derive(Clone, Debug)]
+pub struct TextPath {
+    /// A text offset in SVG coordinates.
+    ///
+    /// Percentage values already resolved.
+    pub start_offset: f64,
+
+    /// A path.
+    pub path: Rc<PathData>,
+}
+
+/// A text chunk flow property.
+#[derive(Clone, Debug)]
+pub enum TextFlow {
+    /// A linear layout.
+    ///
+    /// Includes left-to-right, right-to-left and top-to-bottom.
+    Linear,
+    /// A text-on-path layout.
+    Path(Rc<TextPath>),
+}
+
+/// A text chunk.
 ///
-/// Basically a horizontal line, that will be used for underline, overline and line-through.
-/// It doesn't have a height, since it depends on the font metrics.
-#[derive(Clone, Copy)]
-struct DecorationSpan {
-    width: f64,
-    transform: Transform,
+/// Text alignment and BIDI reordering can only be done inside a text chunk.
+#[derive(Clone, Debug)]
+pub struct TextChunk {
+    /// An absolute X axis offset.
+    pub x: Option<f64>,
+    /// An absolute Y axis offset.
+    pub y: Option<f64>,
+    /// A text anchor.
+    pub anchor: TextAnchor,
+    /// A list of text chunk style spans.
+    pub spans: Vec<TextSpan>,
+    /// A text chunk flow.
+    pub text_flow: TextFlow,
+    /// A text chunk actual text.
+    pub text: String,
 }
 
-pub(crate) fn convert(
-    node: svgtree::Node,
-    state: &converter::State,
-    cache: &mut converter::Cache,
-    parent: &mut Node,
-) {
-    let text_node = TextNode::new(node);
-    let (mut new_paths, bbox) = text_to_paths(text_node, state, cache, parent);
-
-    if new_paths.len() == 1 {
-        // Copy `text` id to the first path.
-        new_paths[0].id = node.element_id().to_string();
-    }
-
-    let mut parent = if state.opt.keep_named_groups && new_paths.len() > 1 {
-        // Create a group will all paths that was created during text-to-path conversion.
-        parent.append_kind(NodeKind::Group(Group {
-            id: node.element_id().to_string(),
-            ..Group::default()
-        }))
-    } else {
-        parent.clone()
-    };
-
-    let rendering_mode = convert::resolve_rendering_mode(text_node, state);
-    for mut path in new_paths {
-        fix_obj_bounding_box(&mut path, bbox);
-        path.rendering_mode = rendering_mode;
-        parent.append_kind(NodeKind::Path(path));
-    }
-}
-
-fn text_to_paths(
-    text_node: TextNode,
-    state: &converter::State,
-    cache: &mut converter::Cache,
-    parent: &mut Node,
-) -> (Vec<Path>, PathBbox) {
-    let abs_ts = {
-        let mut ts = parent.abs_transform();
-        ts.append(
-            &text_node
-                .attribute(svgtree::AId::Transform)
-                .unwrap_or_default(),
-        );
-        ts
-    };
-
-    let pos_list = convert::resolve_positions_list(text_node, state);
-    let rotate_list = convert::resolve_rotate_list(text_node);
-    let writing_mode = convert::convert_writing_mode(text_node);
-
-    let mut bbox = PathBbox::new_bbox();
-    let mut chunks = convert::collect_text_chunks(text_node, &pos_list, state, cache);
-    let mut char_offset = 0;
-    let mut last_x = 0.0;
-    let mut last_y = 0.0;
-    let mut new_paths = Vec::new();
-    for chunk in &mut chunks {
-        let (x, y) = match chunk.text_flow {
-            TextFlow::Horizontal => (chunk.x.unwrap_or(last_x), chunk.y.unwrap_or(last_y)),
-            TextFlow::Path(_) => (0.0, 0.0),
-        };
-
-        let mut clusters = shaper::outline_chunk(chunk, state);
-        if clusters.is_empty() {
-            char_offset += chunk.text.chars().count();
-            continue;
-        }
-
-        shaper::apply_writing_mode(writing_mode, &mut clusters);
-        shaper::apply_letter_spacing(chunk, &mut clusters);
-        shaper::apply_word_spacing(chunk, &mut clusters);
-        shaper::apply_length_adjust(chunk, &mut clusters);
-        let mut curr_pos = shaper::resolve_clusters_positions(
-            chunk,
-            char_offset,
-            &pos_list,
-            &rotate_list,
-            writing_mode,
-            abs_ts,
-            &mut clusters,
-        );
-
-        let mut text_ts = Transform::default();
-        if writing_mode == WritingMode::TopToBottom {
-            if let TextFlow::Horizontal = chunk.text_flow {
-                text_ts.rotate_at(90.0, x, y);
-            }
-        }
-
-        for span in &mut chunk.spans {
-            let decoration_spans = collect_decoration_spans(span, &clusters);
-
-            let mut span_ts = text_ts;
-            span_ts.translate(x, y);
-            if let TextFlow::Horizontal = chunk.text_flow {
-                let shift = span.resolve_baseline(writing_mode);
-
-                // In case of a horizontal flow, shift transform and not clusters,
-                // because clusters can be rotated and an additional shift will lead
-                // to invalid results.
-                span_ts.translate(0.0, shift);
-            }
-
-            if let Some(decoration) = span.decoration.underline.take() {
-                // TODO: No idea what offset should be used for top-to-bottom layout.
-                // There is
-                // https://www.w3.org/TR/css-text-decor-3/#text-underline-position-property
-                // but it doesn't go into details.
-                let offset = match writing_mode {
-                    WritingMode::LeftToRight => -span.font.underline_position(span.font_size.get()),
-                    WritingMode::TopToBottom => span.font.height(span.font_size.get()) / 2.0,
-                };
-
-                let path = convert_decoration(offset, span, decoration, &decoration_spans, span_ts);
-
-                if let Some(r) = path.data.bbox() {
-                    bbox = bbox.expand(r);
-                }
-
-                new_paths.push(path);
-            }
-
-            if let Some(decoration) = span.decoration.overline.take() {
-                let offset = match writing_mode {
-                    WritingMode::LeftToRight => -span.font.ascent(span.font_size.get()),
-                    WritingMode::TopToBottom => -span.font.height(span.font_size.get()) / 2.0,
-                };
-
-                let path = convert_decoration(offset, span, decoration, &decoration_spans, span_ts);
-
-                if let Some(r) = path.data.bbox() {
-                    bbox = bbox.expand(r);
-                }
-
-                new_paths.push(path);
-            }
-
-            if let Some(path) = convert_span(span, &mut clusters, &span_ts, parent, false) {
-                // Use `text_bbox` here and not `path.data.bbox()`.
-                if let Some(r) = path.text_bbox {
-                    bbox = bbox.expand(r.to_path_bbox());
-                }
-
-                new_paths.push(path);
-            }
-
-            if let Some(decoration) = span.decoration.line_through.take() {
-                let offset = match writing_mode {
-                    WritingMode::LeftToRight => {
-                        -span.font.line_through_position(span.font_size.get())
-                    }
-                    WritingMode::TopToBottom => 0.0,
-                };
-
-                let path = convert_decoration(offset, span, decoration, &decoration_spans, span_ts);
-
-                if let Some(r) = path.data.bbox() {
-                    bbox = bbox.expand(r);
-                }
-
-                new_paths.push(path);
-            }
-        }
-
-        char_offset += chunk.text.chars().count();
-
-        if writing_mode == WritingMode::TopToBottom {
-            if let TextFlow::Horizontal = chunk.text_flow {
-                std::mem::swap(&mut curr_pos.0, &mut curr_pos.1);
-            }
-        }
-
-        last_x = x + curr_pos.0;
-        last_y = y + curr_pos.1;
-    }
-
-    (new_paths, bbox)
-}
-
-fn convert_span(
-    span: &mut TextSpan,
-    clusters: &mut [OutlinedCluster],
-    text_ts: &Transform,
-    parent: &mut Node,
-    dump_clusters: bool,
-) -> Option<Path> {
-    let mut path_data = PathData::new();
-    let mut bboxes_data = PathData::new();
-
-    for cluster in clusters {
-        if !cluster.visible {
-            continue;
-        }
-
-        if span.contains(cluster.byte_idx) {
-            if dump_clusters {
-                let mut ts = *text_ts;
-                ts.append(&cluster.transform);
-                dump_cluster(cluster, ts, parent);
-            }
-
-            let mut path = std::mem::replace(&mut cluster.path, PathData::new());
-            path.transform(cluster.transform);
-
-            path_data.push_path(&path);
-
-            // We have to calculate text bbox using font metrics and not glyph shape.
-            if let Some(r) = Rect::new(0.0, -cluster.ascent, cluster.advance, cluster.height()) {
-                if let Some(r) = r.transform(&cluster.transform) {
-                    bboxes_data.push_rect(r);
-                }
-            }
-        }
-    }
-
-    if path_data.is_empty() {
-        return None;
-    }
-
-    path_data.transform(*text_ts);
-    bboxes_data.transform(*text_ts);
-
-    let mut fill = span.fill.take();
-    if let Some(ref mut fill) = fill {
-        // The `fill-rule` should be ignored.
-        // https://www.w3.org/TR/SVG2/text.html#TextRenderingOrder
-        //
-        // 'Since the fill-rule property does not apply to SVG text elements,
-        // the specific order of the subpaths within the equivalent path does not matter.'
-        fill.rule = FillRule::NonZero;
-    }
-
-    let path = Path {
-        id: String::new(),
-        transform: Transform::default(),
-        visibility: span.visibility,
-        fill,
-        stroke: span.stroke.take(),
-        paint_order: span.paint_order,
-        rendering_mode: ShapeRendering::default(),
-        text_bbox: bboxes_data.bbox().and_then(|r| r.to_rect()),
-        data: Rc::new(path_data),
-    };
-
-    Some(path)
-}
-
-// Only for debug purposes.
-fn dump_cluster(cluster: &OutlinedCluster, text_ts: Transform, parent: &mut Node) {
-    fn new_stroke(color: Color) -> Option<Stroke> {
-        Some(Stroke {
-            paint: Paint::Color(color),
-            width: StrokeWidth::new(0.2).unwrap(),
-            ..Stroke::default()
-        })
-    }
-
-    let mut base_path = Path {
-        transform: text_ts,
-        ..Path::default()
-    };
-
-    // Cluster bbox.
-    let r = Rect::new(0.0, -cluster.ascent, cluster.advance, cluster.height()).unwrap();
-    base_path.stroke = new_stroke(Color::new_rgb(0, 0, 255));
-    base_path.data = Rc::new(PathData::from_rect(r));
-    parent.append_kind(NodeKind::Path(base_path.clone()));
-
-    // Baseline.
-    base_path.stroke = new_stroke(Color::new_rgb(255, 0, 0));
-
-    let mut path = PathData::new();
-    path.push_move_to(0.0, 0.0);
-    path.push_line_to(cluster.advance, 0.0);
-
-    base_path.data = Rc::new(path);
-    parent.append_kind(NodeKind::Path(base_path));
-}
-
-fn collect_decoration_spans(span: &TextSpan, clusters: &[OutlinedCluster]) -> Vec<DecorationSpan> {
-    let mut spans = Vec::new();
-
-    let mut started = false;
-    let mut width = 0.0;
-    let mut transform = Transform::default();
-    for cluster in clusters {
-        if span.contains(cluster.byte_idx) {
-            if started && cluster.has_relative_shift {
-                started = false;
-                spans.push(DecorationSpan { width, transform });
-            }
-
-            if !started {
-                width = cluster.advance;
-                started = true;
-                transform = cluster.transform;
-            } else {
-                width += cluster.advance;
-            }
-        } else if started {
-            spans.push(DecorationSpan { width, transform });
-            started = false;
-        }
-    }
-
-    if started {
-        spans.push(DecorationSpan { width, transform });
-    }
-
-    spans
-}
-
-fn convert_decoration(
-    dy: f64,
-    span: &TextSpan,
-    mut decoration: TextDecorationStyle,
-    decoration_spans: &[DecorationSpan],
-    transform: Transform,
-) -> Path {
-    debug_assert!(!decoration_spans.is_empty());
-
-    let thickness = span.font.underline_thickness(span.font_size.get());
-
-    let mut path = PathData::new();
-    for dec_span in decoration_spans {
-        let rect = Rect::new(0.0, -thickness / 2.0, dec_span.width, thickness).unwrap();
-
-        let start_idx = path.len();
-        path.push_rect(rect);
-
-        let mut ts = dec_span.transform;
-        ts.translate(0.0, dy);
-        path.transform_from(start_idx, ts);
-    }
-
-    path.transform(transform);
-
-    Path {
-        visibility: span.visibility,
-        fill: decoration.fill.take(),
-        stroke: decoration.stroke.take(),
-        data: Rc::new(path),
-        ..Path::default()
-    }
-}
-
-/// By the SVG spec, `tspan` doesn't have a bbox and uses the parent `text` bbox.
-/// Since we converted `text` and `tspan` to `path`, we have to update
-/// all linked paint servers (gradients and patterns) too.
-fn fix_obj_bounding_box(path: &mut Path, bbox: PathBbox) {
-    if let Some(ref mut fill) = path.fill {
-        if let Some(new_paint) = paint_server_to_user_space_on_use(fill.paint.clone(), bbox) {
-            fill.paint = new_paint;
-        }
-    }
-
-    if let Some(ref mut stroke) = path.stroke {
-        if let Some(new_paint) = paint_server_to_user_space_on_use(stroke.paint.clone(), bbox) {
-            stroke.paint = new_paint;
-        }
-    }
-}
-
-/// Converts a selected paint server's units to `UserSpaceOnUse`.
+/// A text character position.
 ///
-/// Creates a deep copy of a selected paint server and returns its ID.
+/// _Character_ is a Unicode codepoint.
+#[derive(Clone, Copy, Debug)]
+pub struct CharacterPosition {
+    /// An absolute X axis position.
+    pub x: Option<f64>,
+    /// An absolute Y axis position.
+    pub y: Option<f64>,
+    /// A relative X axis offset.
+    pub dx: Option<f64>,
+    /// A relative Y axis offset.
+    pub dy: Option<f64>,
+}
+
+/// A writing mode.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum WritingMode {
+    LeftToRight,
+    TopToBottom,
+}
+
+/// A text element.
 ///
-/// Returns `None` if a paint server already uses `UserSpaceOnUse`.
-fn paint_server_to_user_space_on_use(paint: Paint, bbox: PathBbox) -> Option<Paint> {
-    if paint.units() != Some(Units::ObjectBoundingBox) {
-        return None;
-    }
+/// `text` element in SVG.
+#[derive(Clone, Debug)]
+pub struct Text {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Isn't automatically generated.
+    /// Can be empty.
+    pub id: String,
 
-    // TODO: is `pattern` copying safe? Maybe we should reset id's on all `pattern` children.
-    // We have to clone a paint server, in case some other element is already using it.
-    // If not, the `convert` module will remove unused defs anyway.
+    /// Element transform.
+    pub transform: Transform,
 
-    // Update id, transform and units.
-    let ts = Transform::from_bbox(bbox.to_rect()?);
-    let paint = match paint {
-        Paint::Color(_) => paint,
-        Paint::LinearGradient(ref lg) => {
-            let mut transform = lg.transform;
-            transform.prepend(&ts);
-            Paint::LinearGradient(Rc::new(LinearGradient {
-                id: String::new(),
-                x1: lg.x1,
-                y1: lg.y1,
-                x2: lg.x2,
-                y2: lg.y2,
-                base: BaseGradient {
-                    units: Units::UserSpaceOnUse,
-                    transform,
-                    spread_method: lg.spread_method,
-                    stops: lg.stops.clone(),
-                },
-            }))
-        }
-        Paint::RadialGradient(ref rg) => {
-            let mut transform = rg.transform;
-            transform.prepend(&ts);
-            Paint::RadialGradient(Rc::new(RadialGradient {
-                id: String::new(),
-                cx: rg.cx,
-                cy: rg.cy,
-                r: rg.r,
-                fx: rg.fx,
-                fy: rg.fy,
-                base: BaseGradient {
-                    units: Units::UserSpaceOnUse,
-                    transform,
-                    spread_method: rg.spread_method,
-                    stops: rg.stops.clone(),
-                },
-            }))
-        }
-        Paint::Pattern(ref patt) => {
-            let mut transform = patt.transform;
-            transform.prepend(&ts);
-            Paint::Pattern(Rc::new(Pattern {
-                id: String::new(),
-                units: Units::UserSpaceOnUse,
-                content_units: patt.content_units,
-                transform: transform,
-                rect: patt.rect,
-                view_box: patt.view_box,
-                root: patt.root.clone().make_deep_copy(),
-            }))
-        }
-    };
+    /// Rendering mode.
+    ///
+    /// `text-rendering` in SVG.
+    pub rendering_mode: TextRendering,
 
-    Some(paint)
+    /// A list of character positions.
+    ///
+    /// One position for each Unicode codepoint. Aka `char` in Rust and not UTF-8 byte.
+    pub positions: Vec<CharacterPosition>,
+
+    /// A list of rotation angles.
+    ///
+    /// One angle for each Unicode codepoint. Aka `char` in Rust and not UTF-8 byte.
+    pub rotate: Vec<f64>,
+
+    /// A writing mode.
+    pub writing_mode: WritingMode,
+
+    /// A list of text chunks.
+    pub chunks: Vec<TextChunk>,
 }

@@ -235,17 +235,6 @@ void resvg_options_set_resources_dir(resvg_options *opt, const char *path);
 void resvg_options_set_dpi(resvg_options *opt, double dpi);
 
 /**
- * @brief Sets the default font family.
- *
- * Will be used when no `font-family` attribute is set in the SVG.
- *
- * Must be UTF-8. NULL is not allowed.
- *
- * Default: Times New Roman
- */
-void resvg_options_set_font_family(resvg_options *opt, const char *family);
-
-/**
  * @brief Sets the default font size.
  *
  * Will be used when no `font-size` attribute is set in the SVG.

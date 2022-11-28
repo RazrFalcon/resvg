@@ -24,7 +24,7 @@ pub struct State<'a> {
     /// Used only during nested `svg` size resolving.
     /// Width and height can be set independently.
     pub(crate) use_size: (Option<f64>, Option<f64>),
-    pub(crate) opt: &'a OptionsRef<'a>,
+    pub(crate) opt: &'a Options,
 }
 
 #[derive(Default)]
@@ -80,7 +80,7 @@ fn string_hash(s: &str) -> u64 {
 ///
 /// - If `Document` doesn't have an SVG node - returns an empty tree.
 /// - If `Document` doesn't have a valid size - returns `Error::InvalidSize`.
-pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &OptionsRef) -> Result<Tree, Error> {
+pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<Tree, Error> {
     let svg = svg_doc.root_element();
     let (size, restore_viewbox) = resolve_svg_size(&svg, opt);
     let size = size?;
@@ -132,7 +132,7 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &OptionsRef) -> Resu
     Ok(tree)
 }
 
-fn resolve_svg_size(svg: &svgtree::Node, opt: &OptionsRef) -> (Result<Size, Error>, bool) {
+fn resolve_svg_size(svg: &svgtree::Node, opt: &Options) -> (Result<Size, Error>, bool) {
     let mut state = State {
         parent_clip_path: None,
         parent_marker: None,
@@ -284,12 +284,8 @@ pub(crate) fn convert_element(
         EId::Image => {
             image::convert(node, state, parent);
         }
-        EId::Text =>
-        {
-            #[cfg(feature = "text")]
-            if !state.opt.fontdb.is_empty() {
-                text::convert(node, state, cache, parent);
-            }
+        EId::Text => {
+            text::convert(node, state, cache, parent);
         }
         EId::Svg => {
             if node.parent_element().is_some() {
@@ -350,12 +346,8 @@ pub(crate) fn convert_clip_path_elements(
                     convert_path(node, path, state, cache, parent);
                 }
             }
-            EId::Text =>
-            {
-                #[cfg(feature = "text")]
-                if !state.opt.fontdb.is_empty() {
-                    text::convert(node, state, cache, parent);
-                }
+            EId::Text => {
+                text::convert(node, state, cache, parent);
             }
             _ => {
                 log::warn!("'{}' is no a valid 'clip-path' child.", tag_name);
@@ -661,6 +653,9 @@ pub(crate) fn ungroup_groups(root: Node, keep_named_groups: bool) {
                         }
                         NodeKind::Group(ref mut g) => {
                             g.transform.prepend(&ts);
+                        }
+                        NodeKind::Text(ref mut text) => {
+                            text.transform.prepend(&ts);
                         }
                     }
 

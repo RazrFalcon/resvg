@@ -18,7 +18,7 @@ macro_rules! test {
             let out_str = std::fs::read_to_string(format!("tests/files/{}-out.svg", name)).unwrap();
 
             let opt = usvg::Options::default();
-            let tree = usvg::Tree::from_str(&in_str, &opt.to_ref()).unwrap();
+            let tree = usvg::Tree::from_str(&in_str, &opt).unwrap();
 
             let xml_opt = usvg::XmlOptions {
                 id_prefix: None,
@@ -46,7 +46,7 @@ macro_rules! test_preserve {
                 keep_named_groups: true,
                 ..usvg::Options::default()
             };
-            let tree = usvg::Tree::from_str(&in_str, &re_opt.to_ref()).unwrap();
+            let tree = usvg::Tree::from_str(&in_str, &re_opt).unwrap();
 
             let xml_opt = usvg::XmlOptions {
                 id_prefix: None,
@@ -101,7 +101,7 @@ macro_rules! test_size {
         fn $name() {
             use usvg::FuzzyEq;
             let opt = usvg::Options::default();
-            let tree = usvg::Tree::from_str($input, &opt.to_ref()).unwrap();
+            let tree = usvg::Tree::from_str($input, &opt).unwrap();
             assert!(tree.size.fuzzy_eq(&$expected));
         }
     };
@@ -141,7 +141,7 @@ test_size!(
 fn viewbox_detection() {
     use usvg::FuzzyEq;
     let opt = usvg::Options::default();
-    let tree = usvg::Tree::from_str("<svg xmlns='http://www.w3.org/2000/svg'><circle fill='#F4900C' cx='18' cy='18' r='18'/></svg>", &opt.to_ref()).unwrap();
+    let tree = usvg::Tree::from_str("<svg xmlns='http://www.w3.org/2000/svg'><circle fill='#F4900C' cx='18' cy='18' r='18'/></svg>", &opt).unwrap();
     assert!(tree
         .view_box
         .rect
@@ -153,7 +153,7 @@ macro_rules! test_size_err {
         #[test]
         fn $name() {
             let opt = usvg::Options::default();
-            assert!(usvg::Tree::from_str($input, &opt.to_ref()).is_err());
+            assert!(usvg::Tree::from_str($input, &opt).is_err());
         }
     };
 }

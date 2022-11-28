@@ -171,10 +171,7 @@ fn parse_xml_node(
 
     let node_id = parse_svg_element(node, parent_id, tag_name, style_sheet, ignore_ids, doc)?;
     if tag_name == EId::Text {
-        #[cfg(feature = "text")]
-        {
-            super::text::parse_svg_text_element(node, node_id, style_sheet, doc)?;
-        }
+        super::text::parse_svg_text_element(node, node_id, style_sheet, doc)?;
     } else if tag_name == EId::Use {
         parse_svg_use_element(node, origin, node_id, style_sheet, depth + 1, doc)?;
     } else {
