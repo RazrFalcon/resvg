@@ -11,23 +11,31 @@ This changelog also contains important changes in dependencies.
 - `usvg::Text` and `usvg::NodeKind::Text`.
 
 ### Changed
-- `usvg` isn't converting text to path by default now. A caller must call
-  `usvg::Tree::convert_text` on demand.
-- Text elements are always parsed now, even when the `text` build flag is disabled.
-  The `text` build flag only enabled text to path conversion now.
+- `usvg` isn't converting text to paths by default now. A caller must call
+  `usvg::Tree::convert_text` or `usvg::Text::convert` from `usvg-text-layout` crate on demand.
+- `usvg` text layout implementation moved into `usvg-text-layout` crate.
 - During SVG size recovery, when no `width`, `height` and `viewBox` attributes have been set,
-  text nodes no longer taken into an account. This is because text node has no bbox
-  before converting to path(s), which we no longer doing during parsing.
+  text nodes are no longer taken into an account. This is because a text node has no bbox
+  before conversion into path(s), which we no longer doing during parsing.
+- `usvg` is purely an SVG parser now. It doesn't convert text to paths
+  and doesn't write SVG anymore.
 
 ### Removed
+- `usvg` CLI binary. No alternatives for now.
+- All `usvg` build features.
+  - `filter`. Filter elements are always parsed by `usvg` now.
+  - `text`. Text elements are always parsed by `usvg` now.
+  - `export`. `usvg` cannot write an SVG anymore.
+- `usvg::Tree::to_string`. `usvg` cannot write an SVG anymore.
 - `usvg::TransformFromBBox` trait. This is just a regular `usvg::Transform` method now.
 - `usvg::OptionsRef`. `usvg::Options` is enough from now.
-- `usvg::Options::fontdb`. Should only be passed to `usvg::Tree::convert_text` now.
+- `usvg::Options::fontdb`. Used only by `usvg-text-layout` now.
 - `usvg::Options::font_family`. A font set via `fontdb::Database::set_serif_family`
-  will be used now. By default it is set to _Times New Roman_, so the default behavior
+  will be used now. Which by default it is set to _Times New Roman_, so the default behavior
   will not change.
-- `--font-family` options from `resvg` and `usvg` CLIs. See above.
+- `--font-family` option from `resvg` and `usvg` CLIs. See above. Use `--serif-family` instead.
 - (c-api) `resvg_options_set_font_family`. Use `resvg_options_set_serif_family` instead.
+- `--dump-svg` from `resvg`.
 
 ## [0.27.0] - 2022-11-27
 ### Added

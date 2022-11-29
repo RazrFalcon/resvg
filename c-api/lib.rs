@@ -14,6 +14,8 @@ use std::slice;
 
 use resvg::tiny_skia;
 use resvg::usvg::{self, NodeExt};
+#[cfg(feature = "text")]
+use resvg::usvg_text_layout::{fontdb, TreeTextToPath};
 
 /// @brief List of possible errors.
 #[repr(C)]
@@ -184,7 +186,8 @@ pub extern "C" fn resvg_init_log() {
 /// The database is empty by default.
 pub struct resvg_options {
     options: usvg::Options,
-    fontdb: usvg::fontdb::Database,
+    #[cfg(feature = "text")]
+    fontdb: fontdb::Database,
 }
 
 /// @brief Creates a new #resvg_options object.
@@ -194,7 +197,8 @@ pub struct resvg_options {
 pub extern "C" fn resvg_options_create() -> *mut resvg_options {
     Box::into_raw(Box::new(resvg_options {
         options: usvg::Options::default(),
-        fontdb: usvg::fontdb::Database::new(),
+        #[cfg(feature = "text")]
+        fontdb: fontdb::Database::new(),
     }))
 }
 
@@ -206,8 +210,9 @@ fn cast_opt(opt: *mut resvg_options) -> &'static mut usvg::Options {
     }
 }
 
+#[cfg(feature = "text")]
 #[inline]
-fn cast_fontdb(opt: *mut resvg_options) -> &'static mut usvg::fontdb::Database {
+fn cast_fontdb(opt: *mut resvg_options) -> &'static mut fontdb::Database {
     unsafe {
         assert!(!opt.is_null());
         &mut (*opt).fontdb
@@ -590,10 +595,16 @@ pub extern "C" fn resvg_parse_tree_from_file(
         Err(_) => return resvg_error::FILE_OPEN_FAILED as i32,
     };
 
-    let utree = match usvg::Tree::from_data(&file_data, &raw_opt.options) {
+    #[allow(unused_mut)]
+    let mut utree = match usvg::Tree::from_data(&file_data, &raw_opt.options) {
         Ok(tree) => tree,
         Err(e) => return convert_error(e) as i32,
     };
+
+    #[cfg(feature = "text")]
+    {
+        utree.convert_text(&raw_opt.fontdb, raw_opt.options.keep_named_groups);
+    }
 
     let tree_box = Box::new(resvg_render_tree(utree));
     unsafe {
@@ -626,10 +637,16 @@ pub extern "C" fn resvg_parse_tree_from_data(
         &*opt
     };
 
-    let utree = match usvg::Tree::from_data(data, &raw_opt.options) {
+    #[allow(unused_mut)]
+    let mut utree = match usvg::Tree::from_data(data, &raw_opt.options) {
         Ok(tree) => tree,
         Err(e) => return convert_error(e) as i32,
     };
+
+    #[cfg(feature = "text")]
+    {
+        utree.convert_text(&raw_opt.fontdb, raw_opt.options.keep_named_groups);
+    }
 
     let tree_box = Box::new(resvg_render_tree(utree));
     unsafe {

@@ -3,56 +3,46 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 /*!
-`usvg` (micro SVG) is an [SVG] simplification tool.
+`usvg` (micro SVG) is an [SVG] parser that tries to solve most of SVG complexity.
 
-## Purpose
+SVG is notoriously hard to parse. `usvg` presents a layer between an XML library and
+a potential SVG rendering library. It will parse an input SVG into a strongly-typed tree structure
+were all the elements, attributes, references and other SVG features are already resolved
+and presented in a simplest way possible.
+So a caller doesn't have to worry about most of the issues related to SVG parsing
+and can focus just on the rendering part.
 
-Imagine, that you have to extract some data from the [SVG] file, but your
-library/framework/language doesn't have a good SVG library.
-And all you need is paths data.
+## Features
 
-You can try to export it by yourself (how hard can it be, right).
-All you need is an XML library (I'll hope that your language has one).
-But soon you realize that paths data has a pretty complex format and a lot
-of edge-cases. And we didn't mention attributes propagation, transforms,
-visibility flags, attribute values validation, XML quirks, etc.
-It will take a lot of time and code to implement this stuff correctly.
-
-So, instead of creating a library that can be used from any language (impossible),
-*usvg* takes a different approach. It converts an input SVG to an extremely
-simple representation, which is still a valid SVG.
-And now, all you need is to convert your SVG to a simplified one via *usvg*
-and an XML library with some small amount of code.
-
-## Key features of the simplified SVG
-
-- No basic shapes (rect, circle, etc). Only paths
-- Simple paths:
-  - Only MoveTo, LineTo, CurveTo and ClosePath will be produced
-  - All path segments are in absolute coordinates
-  - No implicit segment commands
-  - All values are separated by space
-- All (supported) attributes are resolved. No implicit one
-- No `use`. Everything is resolved
-- No invisible elements
-- No invalid elements (like `rect` with negative/zero size)
-- No units (mm, em, etc.)
-- No comments
-- No DTD
-- No CSS (partial support)
-- No `script` (simply ignoring it)
-
-Full spec can be found [here](https://github.com/RazrFalcon/resvg/blob/master/docs/usvg_spec.adoc).
+- All supported attributes are resolved.
+  No need to worry about inheritable, implicit and default attributes
+- CSS will be applied
+- Only simple paths
+  - Basic shapes (like `rect` and `circle`) will be converted into paths
+  - Paths contain only absolute *MoveTo*, *LineTo*, *CurveTo* and *ClosePath* segments.
+    ArcTo, implicit and relative segments will be converted
+- `use` will be resolved and replaced with the reference content
+- Nested `svg` will be resolved
+- Invalid, malformed elements will be removed
+- Relative length units (mm, em, etc.) will be converted into pixels/points
+- External images will be loaded
+- Internal, base64 images will be decoded
+- Dummy groups will be removed
+- All references (like `#elem` and `url(#elem)`) will be resolved
+- `switch` will be resolved
+- Text elements, which are probably the hardest part of SVG, will be completely resolved.
+  This includes all the attributes resolving, whitespaces preprocessing (`xml:space`),
+  text chunks and spans resolving
+- Markers will be converted into regular elements. No need to place them manually
+- All filters are supported. Including filter functions, like `filter="contrast(50%)"`
+- Recursive elements will be detected an removed
 
 ## Limitations
 
-- Currently, it's not lossless. Some SVG features isn't supported yet and will be ignored.
-- CSS support is minimal.
-- Scripting and animation isn't supported and not planned.
-- `a` elements will be removed.
-- Unsupported elements:
-  - some filter-based elements
-  - font-based elements
+- Unsupported SVG features will be ignored
+- CSS support is minimal
+- Only [static](http://www.w3.org/TR/SVG11/feature#SVG-static) SVG features,
+  e.g. no `a`, `view`, `cursor`, `script`, no events and no animations
 
 [SVG]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 */
@@ -108,9 +98,6 @@ macro_rules! impl_from_str {
 mod clippath;
 mod converter;
 mod error;
-#[cfg(feature = "export")]
-mod export;
-#[cfg(feature = "filter")]
 pub mod filter;
 mod geom;
 mod image;
@@ -136,9 +123,6 @@ use std::rc::Rc;
 
 pub use roxmltree;
 
-#[cfg(feature = "text")]
-pub use fontdb;
-
 pub use crate::clippath::*;
 pub use crate::error::*;
 pub use crate::geom::*;
@@ -162,17 +146,6 @@ impl<T> OptionLog for Option<T> {
             None
         })
     }
-}
-
-/// XML writing options.
-#[cfg(feature = "export")]
-#[derive(Clone, Default, Debug)]
-pub struct XmlOptions {
-    /// Used to add a custom prefix to each element ID during writing.
-    pub id_prefix: Option<String>,
-
-    /// `xmlwriter` options.
-    pub writer_opts: xmlwriter::Options,
 }
 
 /// Checks that type has a default value.
@@ -534,19 +507,16 @@ pub struct Group {
     pub mask: Option<Rc<Mask>>,
 
     /// Element's filters.
-    #[cfg(feature = "filter")]
     pub filters: Vec<Rc<filter::Filter>>,
 
     /// Contains a fill color or paint server used by `FilterInput::FillPaint`.
     ///
     /// Will be set only when filter actually has a `FilterInput::FillPaint`.
-    #[cfg(feature = "filter")]
     pub filter_fill: Option<Paint>,
 
     /// Contains a fill color or paint server used by `FilterInput::StrokePaint`.
     ///
     /// Will be set only when filter actually has a `FilterInput::StrokePaint`.
-    #[cfg(feature = "filter")]
     pub filter_stroke: Option<Paint>,
 
     /// Indicates that this node can be accessed via `filter`.
@@ -565,11 +535,8 @@ impl Default for Group {
             isolate: false,
             clip_path: None,
             mask: None,
-            #[cfg(feature = "filter")]
             filters: Vec::new(),
-            #[cfg(feature = "filter")]
             filter_fill: None,
-            #[cfg(feature = "filter")]
             filter_stroke: None,
             enable_background: None,
         }
@@ -655,22 +622,9 @@ impl Tree {
         self.root.descendants().find(|node| &*node.id() == id)
     }
 
-    /// Converts text nodes into paths.
-    ///
-    /// We have not pass `Options::keep_named_groups` again,
-    /// since this method affects the tree structure.
-    #[cfg(feature = "text")]
-    pub fn convert_text(&mut self, fontdb: &fontdb::Database, keep_named_groups: bool) {
-        convert_text(self.root.clone(), fontdb, keep_named_groups);
-    }
-
-    /// Converts into an SVG.
-    ///
-    /// Text nodes are ignored. Call [`Tree::convert_text`] beforehand.
-    #[inline]
-    #[cfg(feature = "export")]
-    pub fn to_string(&self, opt: &XmlOptions) -> String {
-        crate::export::convert(self, opt)
+    /// Ungroups groups inside the `root` node.
+    pub fn ungroup_groups(root: Node, keep_named_groups: bool) {
+        converter::ungroup_groups(root, keep_named_groups);
     }
 }
 
@@ -708,7 +662,6 @@ pub trait NodeExt {
     fn calculate_bbox(&self) -> Option<PathBbox>;
 
     /// Returns the node starting from which the filter background should be rendered.
-    #[cfg(feature = "filter")]
     fn filter_background_start_node(&self, filter: &filter::Filter) -> Option<Node>;
 }
 
@@ -749,7 +702,6 @@ impl NodeExt for Node {
         calc_node_bbox(self, self.abs_transform())
     }
 
-    #[cfg(feature = "filter")]
     fn filter_background_start_node(&self, filter: &filter::Filter) -> Option<Node> {
         fn has_enable_background(node: &Node) -> bool {
             if let NodeKind::Group(ref g) = *node.borrow() {
@@ -818,74 +770,4 @@ fn calc_node_bbox(node: &Node, ts: Transform) -> Option<PathBbox> {
         }
         NodeKind::Text(_) => None,
     }
-}
-
-#[cfg(feature = "text")]
-fn convert_text(root: Node, fontdb: &fontdb::Database, keep_named_groups: bool) {
-    let mut text_nodes = Vec::new();
-    // We have to update text nodes in clipPaths, masks and patterns as well.
-    for node in root.descendants() {
-        match *node.borrow() {
-            NodeKind::Group(ref g) => {
-                if let Some(ref clip) = g.clip_path {
-                    convert_text(clip.root.clone(), fontdb, keep_named_groups);
-                }
-
-                if let Some(ref mask) = g.mask {
-                    convert_text(mask.root.clone(), fontdb, keep_named_groups);
-                }
-            }
-            NodeKind::Path(ref path) => {
-                if let Some(ref fill) = path.fill {
-                    if let Paint::Pattern(ref p) = fill.paint {
-                        convert_text(p.root.clone(), fontdb, keep_named_groups);
-                    }
-                }
-                if let Some(ref stroke) = path.stroke {
-                    if let Paint::Pattern(ref p) = stroke.paint {
-                        convert_text(p.root.clone(), fontdb, keep_named_groups);
-                    }
-                }
-            }
-            NodeKind::Image(_) => {}
-            NodeKind::Text(ref text) => {
-                text_nodes.push(node.clone());
-
-                for chunk in &text.chunks {
-                    for span in &chunk.spans {
-                        if let Some(ref fill) = span.fill {
-                            if let Paint::Pattern(ref p) = fill.paint {
-                                convert_text(p.root.clone(), fontdb, keep_named_groups);
-                            }
-                        }
-                        if let Some(ref stroke) = span.stroke {
-                            if let Paint::Pattern(ref p) = stroke.paint {
-                                convert_text(p.root.clone(), fontdb, keep_named_groups);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if text_nodes.is_empty() {
-        return;
-    }
-
-    for node in &text_nodes {
-        let mut new_node = None;
-        if let NodeKind::Text(ref text) = *node.borrow() {
-            let mut absolute_ts = node.parent().unwrap().abs_transform();
-            absolute_ts.append(&text.transform);
-            new_node = text.convert(fontdb, absolute_ts);
-        }
-
-        if let Some(new_node) = new_node {
-            node.insert_after(new_node);
-        }
-    }
-
-    text_nodes.iter().for_each(|n| n.detach());
-    converter::ungroup_groups(root, keep_named_groups);
 }

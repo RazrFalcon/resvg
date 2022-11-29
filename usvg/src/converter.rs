@@ -31,14 +31,12 @@ pub struct State<'a> {
 pub struct Cache {
     pub clip_paths: HashMap<String, Rc<ClipPath>>,
     pub masks: HashMap<String, Rc<Mask>>,
-    #[cfg(feature = "filter")]
     pub filters: HashMap<String, Rc<filter::Filter>>,
     pub paint: HashMap<String, Paint>,
 
     // used for ID generation
     pub all_ids: HashSet<u64>,
     pub clip_path_index: usize,
-    #[allow(dead_code)]
     pub filter_index: usize,
 }
 
@@ -54,7 +52,6 @@ impl Cache {
         }
     }
 
-    #[cfg(feature = "filter")]
     pub fn gen_filter_id(&mut self) -> String {
         loop {
             self.filter_index += 1;
@@ -422,7 +419,6 @@ pub(crate) fn convert_group(
         None
     };
 
-    #[cfg(feature = "filter")]
     let (filters, filter_fill, filter_stroke) = {
         let mut filters = Vec::new();
         if state.parent_clip_path.is_none() {
@@ -454,9 +450,6 @@ pub(crate) fn convert_group(
 
         (filters, filter_fill, filter_stroke)
     };
-
-    #[cfg(not(feature = "filter"))]
-    let filters: Vec<usize> = Vec::new();
 
     let transform: Transform = node.attribute(AId::Transform).unwrap_or_default();
     let blend_mode: BlendMode = node.attribute(AId::MixBlendMode).unwrap_or_default();
@@ -493,11 +486,8 @@ pub(crate) fn convert_group(
             isolate,
             clip_path,
             mask,
-            #[cfg(feature = "filter")]
             filters,
-            #[cfg(feature = "filter")]
             filter_fill,
-            #[cfg(feature = "filter")]
             filter_stroke,
             enable_background,
         }));
@@ -508,7 +498,6 @@ pub(crate) fn convert_group(
     }
 }
 
-#[cfg(feature = "filter")]
 fn resolve_filter_fill(
     node: svgtree::Node,
     state: &State,
@@ -535,7 +524,6 @@ fn resolve_filter_fill(
     Some(stroke.paint)
 }
 
-#[cfg(feature = "filter")]
 fn resolve_filter_stroke(
     node: svgtree::Node,
     state: &State,
@@ -570,7 +558,6 @@ fn remove_empty_groups(tree: &mut Tree) {
         while let Some(node) = curr_node {
             curr_node = node.next_sibling();
 
-            #[cfg(feature = "filter")]
             let is_g = if let NodeKind::Group(ref g) = *node.borrow() {
                 // Skip empty groups when they do not have a `filter` property.
                 // The `filter` property can be set on empty groups. For example:
@@ -581,13 +568,6 @@ fn remove_empty_groups(tree: &mut Tree) {
                 // </filter>
                 // <g filter="url(#filter1)"/>
                 g.filters.is_empty()
-            } else {
-                false
-            };
-
-            #[cfg(not(feature = "filter"))]
-            let is_g = if let NodeKind::Group(_) = *node.borrow() {
-                true
             } else {
                 false
             };
@@ -619,17 +599,10 @@ pub(crate) fn ungroup_groups(root: Node, keep_named_groups: bool) {
             let mut ts = Transform::default();
             let is_ok = if let NodeKind::Group(ref g) = *node.borrow() {
                 ts = g.transform;
-
-                #[cfg(feature = "filter")]
-                let no_filters = g.filters.is_empty();
-
-                #[cfg(not(feature = "filter"))]
-                let no_filters = true;
-
                 g.opacity == Opacity::ONE
                     && g.clip_path.is_none()
                     && g.mask.is_none()
-                    && no_filters
+                    && g.filters.is_empty()
                     && g.enable_background.is_none()
                     && g.blend_mode == BlendMode::Normal
                     && !g.isolate

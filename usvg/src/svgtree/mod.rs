@@ -198,12 +198,6 @@ impl<'a> Node<'a> {
         self.id
     }
 
-    #[allow(dead_code)]
-    #[inline]
-    pub fn is_root(&self) -> bool {
-        matches!(self.d.kind, NodeKind::Root)
-    }
-
     #[inline]
     pub fn is_element(&self) -> bool {
         matches!(self.d.kind, NodeKind::Element { .. })
@@ -454,7 +448,6 @@ impl<'a> Node<'a> {
         )
     }
 
-    #[allow(dead_code)]
     pub fn try_convert_length(
         &self,
         aid: AId,

@@ -5,6 +5,7 @@
 use std::path;
 
 use usvg::NodeExt;
+use usvg_text_layout::{fontdb, TreeTextToPath};
 
 macro_rules! timed {
     ($args:expr, $name:expr, $task:expr) => {
@@ -78,11 +79,6 @@ fn process() -> Result<(), String> {
 
     if args.query_all {
         return query_all(&tree);
-    }
-
-    // Dump before rendering in case of panic.
-    if let Some(ref dump_path) = args.dump {
-        dump_svg(&tree, dump_path)?;
     }
 
     // Render.
@@ -191,7 +187,6 @@ OPTIONS:
 
   --perf                        Prints performance stats
   --quiet                       Disables warnings
-  --dump-svg PATH               Saves the preprocessed SVG into the selected file
 
 ARGS:
   <in-svg>                      Input file
@@ -231,7 +226,6 @@ struct CliArgs {
 
     perf: bool,
     quiet: bool,
-    dump_svg: Option<String>,
 
     input: String,
     output: Option<String>,
@@ -294,7 +288,6 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
 
         perf: input.contains("--perf"),
         quiet: input.contains("--quiet"),
-        dump_svg: input.opt_value_from_str("--dump-svg")?,
 
         input: input.free_from_str()?,
         output: input.opt_free_from_str()?,
@@ -373,11 +366,10 @@ struct Args {
     export_id: Option<String>,
     export_area_page: bool,
     export_area_drawing: bool,
-    dump: Option<path::PathBuf>,
     perf: bool,
     quiet: bool,
     usvg: usvg::Options,
-    fontdb: usvg::fontdb::Database,
+    fontdb: fontdb::Database,
     fit_to: usvg::FitTo,
     background: Option<svgtypes::Color>,
 }
@@ -412,7 +404,7 @@ fn parse_args() -> Result<Args, String> {
     let fontdb = timed!(args, "FontDB init", load_fonts(&mut args));
     if args.list_fonts {
         for face in fontdb.faces() {
-            if let usvg::fontdb::Source::File(ref path) = &face.source {
+            if let fontdb::Source::File(ref path) = &face.source {
                 println!(
                     "{}: '{}', {}, {:?}, {:?}, {:?}",
                     path.display(),
@@ -442,7 +434,6 @@ fn parse_args() -> Result<Args, String> {
         println!("Warning: --export-area-drawing has no effect when --export-id is set.");
     }
 
-    let dump = args.dump_svg.as_ref().map(|v| v.into());
     let export_id = args.export_id.as_ref().map(|v| v.to_string());
 
     // We don't have to keep named groups when we don't need them
@@ -495,7 +486,6 @@ fn parse_args() -> Result<Args, String> {
         export_id,
         export_area_page: args.export_area_page,
         export_area_drawing: args.export_area_drawing,
-        dump,
         perf: args.perf,
         quiet: args.quiet,
         usvg,
@@ -505,8 +495,8 @@ fn parse_args() -> Result<Args, String> {
     })
 }
 
-fn load_fonts(args: &mut CliArgs) -> usvg::fontdb::Database {
-    let mut fontdb = usvg::fontdb::Database::new();
+fn load_fonts(args: &mut CliArgs) -> fontdb::Database {
+    let mut fontdb = fontdb::Database::new();
     if !args.skip_system_fonts {
         fontdb.load_system_fonts();
     }
@@ -562,25 +552,6 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
         return Err("the file has no valid ID's".to_string());
     }
 
-    Ok(())
-}
-
-#[cfg(feature = "dump-svg")]
-fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), String> {
-    use std::io::Write;
-
-    let mut f =
-        std::fs::File::create(path).map_err(|_| format!("failed to create a file {:?}", path))?;
-
-    f.write_all(tree.to_string(&usvg::XmlOptions::default()).as_bytes())
-        .map_err(|_| format!("failed to write a file {:?}", path))?;
-
-    Ok(())
-}
-
-#[cfg(not(feature = "dump-svg"))]
-fn dump_svg(_: &usvg::Tree, _: &path::Path) -> Result<(), String> {
-    log::warn!("The dump-svg feature is not enabled.");
     Ok(())
 }
 

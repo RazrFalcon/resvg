@@ -10,12 +10,8 @@ categories = ["multimedia::images"]
 repository = "https://github.com/RazrFalcon/resvg"
 documentation = "https://docs.rs/usvg/"
 readme = "README.md"
-exclude = ["testing-tools/**"]
+exclude = ["tests"]
 workspace = ".."
-
-[[bin]]
-name = "usvg"
-required-features = ["filter", "text", "system-fonts", "memmap-fonts", "export"]
 
 [dependencies]
 base64 = "0.13" # for embedded images
@@ -24,42 +20,9 @@ flate2 = { version = "1.0", default-features = false, features = ["rust_backend"
 imagesize = "0.10.1" # raster images size detection
 kurbo = "0.8" # Bezier curves utils
 log = "0.4"
-pico-args =  { version = "0.5", features = ["eq-separator"] }
 rctree = "0.5"
+roxmltree = "0.15" # XML parsing
+simplecss = "0.2" # CSS parsing and selector
+siphasher = "0.3" # perfect hash implementation
 strict-num = "0.1"
-xmlwriter = { version = "0.1", optional = true }
-
-# for svgtree
-roxmltree = "0.15"
-simplecss = "0.2"
-siphasher = "0.3"
 svgtypes = "0.8.2"
-
-# for text to path
-fontdb = { version = "0.10", optional = true, default-features = false }
-rustybuzz = { version = "0.6.0", optional = true }
-unicode-bidi = { version = "0.3", optional = true }
-unicode-script = { version = "0.5", optional = true }
-unicode-vo = { version = "0.1", optional = true }
-
-[features]
-default = ["filter", "text", "system-fonts", "memmap-fonts", "export"]
-# Enables SVG Filter support.
-filter = []
-# Enables text to path conversion support.
-# Adds around 500KiB to your binary.
-# Note that text nodes will be parsed even when this options is disabled.
-text = [
-    "fontdb",
-    "rustybuzz",
-    "unicode-bidi",
-    "unicode-script",
-    "unicode-vo",
-]
-# Enables system fonts loading (only for `text`).
-system-fonts = ["fontdb/fs", "fontdb/fontconfig"]
-# Enables font files memmaping for faster loading (only for `text`).
-memmap-fonts = ["fontdb/memmap"]
-# Enables SVG generation using Tree::to_string.
-# Adds around 50KiB to your binary.
-export = ["xmlwriter"]

@@ -2,25 +2,155 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+/*!
+An [SVG] text layout implementation on top of [`usvg`] crate.
+
+[usvg]: https://github.com/RazrFalcon/resvg/usvg
+[SVG]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
+*/
+
+#![forbid(unsafe_code)]
+#![warn(missing_docs)]
+#![warn(missing_debug_implementations)]
+#![warn(missing_copy_implementations)]
+#![allow(clippy::many_single_char_names)]
+#![allow(clippy::collapsible_else_if)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::neg_cmp_op_on_partial_ord)]
+#![allow(clippy::identity_op)]
+#![allow(clippy::question_mark)]
+#![allow(clippy::upper_case_acronyms)]
+
+pub use fontdb;
 
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::num::NonZeroU16;
+use std::rc::Rc;
 
 use fontdb::{Database, ID};
 use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
 use rustybuzz::ttf_parser;
 use ttf_parser::GlyphId;
 use unicode_script::UnicodeScript;
+use usvg::*;
 
-use super::*;
-use crate::{
-    CubicBezExt, FillRule, FuzzyZero, Group, IsValidLength, Node, NodeExt, NodeKind, OptionLog,
-    Paint, Path, PathBbox, PathData, PathSegment, Rect, ShapeRendering,
-};
+/// A `usvg::Tree` extension trait.
+pub trait TreeTextToPath {
+    /// Converts text nodes into paths.
+    ///
+    /// We have not pass `Options::keep_named_groups` again,
+    /// since this method affects the tree structure.
+    fn convert_text(&mut self, fontdb: &fontdb::Database, keep_named_groups: bool);
+}
+
+impl TreeTextToPath for usvg::Tree {
+    fn convert_text(&mut self, fontdb: &fontdb::Database, keep_named_groups: bool) {
+        convert_text(self.root.clone(), fontdb, keep_named_groups);
+    }
+}
+
+/// A `usvg::Text` extension trait.
+pub trait TextToPath {
+    /// Converts the text node into path(s).
+    ///
+    /// `absolute_ts` is node's absolute transform. Used primarily during text-on-path resolving.
+    fn convert(&self, fontdb: &fontdb::Database, absolute_ts: Transform) -> Option<Node>;
+}
+
+impl TextToPath for Text {
+    fn convert(&self, fontdb: &fontdb::Database, absolute_ts: Transform) -> Option<Node> {
+        let (new_paths, bbox) = text_to_paths(self, fontdb, absolute_ts);
+        if new_paths.is_empty() {
+            return None;
+        }
+
+        // Create a group will all paths that was created during text-to-path conversion.
+        let group = Node::new(NodeKind::Group(Group {
+            id: self.id.clone(),
+            transform: self.transform,
+            ..Group::default()
+        }));
+
+        let rendering_mode = resolve_rendering_mode(self);
+        for mut path in new_paths {
+            fix_obj_bounding_box(&mut path, bbox);
+            path.rendering_mode = rendering_mode;
+            group.append_kind(NodeKind::Path(path));
+        }
+
+        Some(group)
+    }
+}
+
+fn convert_text(root: Node, fontdb: &fontdb::Database, keep_named_groups: bool) {
+    let mut text_nodes = Vec::new();
+    // We have to update text nodes in clipPaths, masks and patterns as well.
+    for node in root.descendants() {
+        match *node.borrow() {
+            NodeKind::Group(ref g) => {
+                if let Some(ref clip) = g.clip_path {
+                    convert_text(clip.root.clone(), fontdb, keep_named_groups);
+                }
+
+                if let Some(ref mask) = g.mask {
+                    convert_text(mask.root.clone(), fontdb, keep_named_groups);
+                }
+            }
+            NodeKind::Path(ref path) => {
+                if let Some(ref fill) = path.fill {
+                    if let Paint::Pattern(ref p) = fill.paint {
+                        convert_text(p.root.clone(), fontdb, keep_named_groups);
+                    }
+                }
+                if let Some(ref stroke) = path.stroke {
+                    if let Paint::Pattern(ref p) = stroke.paint {
+                        convert_text(p.root.clone(), fontdb, keep_named_groups);
+                    }
+                }
+            }
+            NodeKind::Image(_) => {}
+            NodeKind::Text(ref text) => {
+                text_nodes.push(node.clone());
+
+                for chunk in &text.chunks {
+                    for span in &chunk.spans {
+                        if let Some(ref fill) = span.fill {
+                            if let Paint::Pattern(ref p) = fill.paint {
+                                convert_text(p.root.clone(), fontdb, keep_named_groups);
+                            }
+                        }
+                        if let Some(ref stroke) = span.stroke {
+                            if let Paint::Pattern(ref p) = stroke.paint {
+                                convert_text(p.root.clone(), fontdb, keep_named_groups);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if text_nodes.is_empty() {
+        return;
+    }
+
+    for node in &text_nodes {
+        let mut new_node = None;
+        if let NodeKind::Text(ref text) = *node.borrow() {
+            let mut absolute_ts = node.parent().unwrap().abs_transform();
+            absolute_ts.append(&text.transform);
+            new_node = text.convert(fontdb, absolute_ts);
+        }
+
+        if let Some(new_node) = new_node {
+            node.insert_after(new_node);
+        }
+    }
+
+    text_nodes.iter().for_each(|n| n.detach());
+    Tree::ungroup_groups(root, keep_named_groups);
+}
 
 trait DatabaseExt {
     fn load_font(&self, id: ID) -> Option<ResolvedFont>;
@@ -326,89 +456,51 @@ impl ByteIndex {
     }
 }
 
-impl Text {
-    /// Converts the text node into path(s).
-    ///
-    /// `absolute_ts` is node's absolute transform. Used primarily during text-on-path resolving.
-    pub fn convert(&self, fontdb: &fontdb::Database, absolute_ts: Transform) -> Option<Node> {
-        let (new_paths, bbox) = text_to_paths(self, fontdb, absolute_ts);
-        if new_paths.is_empty() {
-            return None;
-        }
-
-        // Create a group will all paths that was created during text-to-path conversion.
-        let group = Node::new(NodeKind::Group(Group {
-            id: self.id.clone(),
-            transform: self.transform,
-            ..Group::default()
-        }));
-
-        let rendering_mode = self.resolve_rendering_mode();
-        for mut path in new_paths {
-            fix_obj_bounding_box(&mut path, bbox);
-            path.rendering_mode = rendering_mode;
-            group.append_kind(NodeKind::Path(path));
-        }
-
-        Some(group)
-    }
-
-    fn resolve_rendering_mode(&self) -> ShapeRendering {
-        match self.rendering_mode {
-            TextRendering::OptimizeSpeed => ShapeRendering::CrispEdges,
-            TextRendering::OptimizeLegibility => ShapeRendering::GeometricPrecision,
-            TextRendering::GeometricPrecision => ShapeRendering::GeometricPrecision,
-        }
+fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
+    match text.rendering_mode {
+        TextRendering::OptimizeSpeed => ShapeRendering::CrispEdges,
+        TextRendering::OptimizeLegibility => ShapeRendering::GeometricPrecision,
+        TextRendering::GeometricPrecision => ShapeRendering::GeometricPrecision,
     }
 }
 
-impl TextChunk {
-    fn span_at(&self, byte_offset: ByteIndex) -> Option<&TextSpan> {
-        for span in &self.spans {
-            if span.contains(byte_offset) {
-                return Some(span);
-            }
+fn chunk_span_at(chunk: &TextChunk, byte_offset: ByteIndex) -> Option<&TextSpan> {
+    for span in &chunk.spans {
+        if span_contains(span, byte_offset) {
+            return Some(span);
         }
-
-        None
     }
+
+    None
 }
 
-impl TextSpan {
-    fn contains(&self, byte_offset: ByteIndex) -> bool {
-        byte_offset.value() >= self.start && byte_offset.value() < self.end
-    }
+fn span_contains(span: &TextSpan, byte_offset: ByteIndex) -> bool {
+    byte_offset.value() >= span.start && byte_offset.value() < span.end
+}
 
-    // Baseline resolving in SVG is a mess.
-    // Not only it's poorly documented, but as soon as you start mixing
-    // `dominant-baseline` and `alignment-baseline` each application/browser will produce
-    // different results.
-    //
-    // For now, resvg simply tries to match Chrome's output and not the mythical SVG spec output.
-    //
-    // See `alignment_baseline_shift` method comment for more details.
-    fn resolve_baseline(
-        &self,
-        font: &ResolvedFont,
-        font_size: f64,
-        writing_mode: WritingMode,
-    ) -> f64 {
-        let mut shift = -resolve_baseline_shift(&self.baseline_shift, font, font_size);
+// Baseline resolving in SVG is a mess.
+// Not only it's poorly documented, but as soon as you start mixing
+// `dominant-baseline` and `alignment-baseline` each application/browser will produce
+// different results.
+//
+// For now, resvg simply tries to match Chrome's output and not the mythical SVG spec output.
+//
+// See `alignment_baseline_shift` method comment for more details.
+fn resolve_baseline(span: &TextSpan, font: &ResolvedFont, writing_mode: WritingMode) -> f64 {
+    let mut shift = -resolve_baseline_shift(&span.baseline_shift, font, span.font_size.get());
 
-        // TODO: support vertical layout as well
-        if writing_mode == WritingMode::LeftToRight {
-            if self.alignment_baseline == AlignmentBaseline::Auto
-                || self.alignment_baseline == AlignmentBaseline::Baseline
-            {
-                shift += font.dominant_baseline_shift(self.dominant_baseline, self.font_size.get());
-            } else {
-                shift +=
-                    font.alignment_baseline_shift(self.alignment_baseline, self.font_size.get());
-            }
+    // TODO: support vertical layout as well
+    if writing_mode == WritingMode::LeftToRight {
+        if span.alignment_baseline == AlignmentBaseline::Auto
+            || span.alignment_baseline == AlignmentBaseline::Baseline
+        {
+            shift += font.dominant_baseline_shift(span.dominant_baseline, span.font_size.get());
+        } else {
+            shift += font.alignment_baseline_shift(span.alignment_baseline, span.font_size.get());
         }
-
-        return shift;
     }
+
+    return shift;
 }
 
 type FontsCache = HashMap<Font, Rc<ResolvedFont>>;
@@ -479,8 +571,7 @@ fn text_to_paths(
             let mut span_ts = text_ts;
             span_ts.translate(x, y);
             if let TextFlow::Linear = chunk.text_flow {
-                let shift =
-                    span.resolve_baseline(font, span.font_size.get(), text_node.writing_mode);
+                let shift = resolve_baseline(span, font, text_node.writing_mode);
 
                 // In case of a horizontal flow, shift transform and not clusters,
                 // because clusters can be rotated and an additional shift will lead
@@ -606,11 +697,12 @@ fn resolve_font(font: &Font, fontdb: &fontdb::Database) -> Option<ResolvedFont> 
         style,
     };
 
-    let id = fontdb
-        .query(&query)
-        .log_none(|| log::warn!("No match for '{}' font-family.", font.families.join(", ")))?;
+    let id = fontdb.query(&query);
+    if id.is_none() {
+        log::warn!("No match for '{}' font-family.", font.families.join(", "));
+    }
 
-    fontdb.load_font(id)
+    fontdb.load_font(id?)
 }
 
 fn convert_span(
@@ -626,7 +718,7 @@ fn convert_span(
             continue;
         }
 
-        if span.contains(cluster.byte_idx) {
+        if span_contains(span, cluster.byte_idx) {
             let mut path = std::mem::replace(&mut cluster.path, PathData::new());
             path.transform(cluster.transform);
 
@@ -680,7 +772,7 @@ fn collect_decoration_spans(span: &TextSpan, clusters: &[OutlinedCluster]) -> Ve
     let mut width = 0.0;
     let mut transform = Transform::default();
     for cluster in clusters {
-        if span.contains(cluster.byte_idx) {
+        if span_contains(span, cluster.byte_idx) {
             if started && cluster.has_relative_shift {
                 started = false;
                 spans.push(DecorationSpan { width, transform });
@@ -764,8 +856,6 @@ fn fix_obj_bounding_box(path: &mut Path, bbox: PathBbox) {
 ///
 /// Returns `None` if a paint server already uses `UserSpaceOnUse`.
 fn paint_server_to_user_space_on_use(paint: Paint, bbox: PathBbox) -> Option<Paint> {
-    use crate::{BaseGradient, LinearGradient, Pattern, RadialGradient, Units};
-
     if paint.units() != Some(Units::ObjectBoundingBox) {
         return None;
     }
@@ -1015,7 +1105,7 @@ fn outline_chunk(
 
         // Copy span's glyphs.
         for (i, glyph) in tmp_glyphs.iter().enumerate() {
-            if span.contains(glyph.byte_idx) {
+            if span_contains(span, glyph.byte_idx) {
                 glyphs[i] = glyph.clone();
             }
         }
@@ -1024,7 +1114,7 @@ fn outline_chunk(
     // Convert glyphs to clusters.
     let mut clusters = Vec::new();
     for (range, byte_idx) in GlyphClusters::new(&glyphs) {
-        if let Some(span) = chunk.span_at(byte_idx) {
+        if let Some(span) = chunk_span_at(chunk, byte_idx) {
             clusters.push(outline_cluster(
                 &glyphs[range],
                 &chunk.text,
@@ -1439,14 +1529,13 @@ fn resolve_clusters_positions_path(
             dy += pos.dy.unwrap_or(0.0);
         }
 
-        let baseline_shift = chunk
-            .span_at(cluster.byte_idx)
+        let baseline_shift = chunk_span_at(chunk, cluster.byte_idx)
             .map(|span| {
                 let font = match fonts_cache.get(&span.font) {
                     Some(v) => v,
                     None => return 0.0,
                 };
-                -span.resolve_baseline(font, span.font_size.get(), writing_mode)
+                -resolve_baseline(span, font, writing_mode)
             })
             .unwrap_or(0.0);
 
@@ -1537,7 +1626,7 @@ fn collect_normals(
         let line = kurbo::Line::new(kurbo::Point::new(px, py), kurbo::Point::new(x, y));
         let p1 = line.eval(0.33);
         let p2 = line.eval(0.66);
-        kurbo::CubicBez::from_points(px, py, p1.x, p1.y, p2.x, p2.y, x, y)
+        cubic_from_points(px, py, p1.x, p1.y, p2.x, p2.y, x, y)
     }
 
     let mut length = 0.0;
@@ -1558,7 +1647,7 @@ fn collect_normals(
                 y2,
                 x,
                 y,
-            } => kurbo::CubicBez::from_points(prev_x, prev_y, x1, y1, x2, y2, x, y),
+            } => cubic_from_points(prev_x, prev_y, x1, y1, x2, y2, x, y),
             PathSegment::ClosePath => create_curve_from_line(prev_x, prev_y, prev_mx, prev_my),
         };
 
@@ -1631,7 +1720,7 @@ fn apply_letter_spacing(chunk: &TextChunk, clusters: &mut [OutlinedCluster]) {
         // We are checking only the first code point, since it should be enough.
         let script = cluster.codepoint.script();
         if script_supports_letter_spacing(script) {
-            if let Some(span) = chunk.span_at(cluster.byte_idx) {
+            if let Some(span) = chunk_span_at(chunk, cluster.byte_idx) {
                 // A space after the last cluster should be ignored,
                 // since it affects the bbox and text alignment.
                 if i != num_clusters - 1 {
@@ -1694,7 +1783,7 @@ fn apply_word_spacing(chunk: &TextChunk, clusters: &mut [OutlinedCluster]) {
 
     for cluster in clusters {
         if is_word_separator_characters(cluster.codepoint) {
-            if let Some(span) = chunk.span_at(cluster.byte_idx) {
+            if let Some(span) = chunk_span_at(chunk, cluster.byte_idx) {
                 // Technically, word spacing 'should be applied half on each
                 // side of the character', but it doesn't affect us in any way,
                 // so we are ignoring this.
@@ -1816,4 +1905,22 @@ fn resolve_baseline_shift(baselines: &[BaselineShift], font: &ResolvedFont, font
     }
 
     shift
+}
+
+fn cubic_from_points(
+    px: f64,
+    py: f64,
+    x1: f64,
+    y1: f64,
+    x2: f64,
+    y2: f64,
+    x: f64,
+    y: f64,
+) -> kurbo::CubicBez {
+    kurbo::CubicBez {
+        p0: kurbo::Point::new(px, py),
+        p1: kurbo::Point::new(x1, y1),
+        p2: kurbo::Point::new(x2, y2),
+        p3: kurbo::Point::new(x, y),
+    }
 }

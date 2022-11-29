@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use usvg::NodeExt;
+use usvg_text_layout::{fontdb, TreeTextToPath};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -27,7 +28,7 @@ fn main() {
     opt.keep_named_groups = true;
     let fit_to = usvg::FitTo::Zoom(zoom);
 
-    let mut fontdb = usvg::fontdb::Database::new();
+    let mut fontdb = fontdb::Database::new();
     fontdb.load_system_fonts();
 
     let svg_data = std::fs::read(&args[1]).unwrap();

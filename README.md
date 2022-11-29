@@ -56,8 +56,6 @@ Another major difference from other SVG rendering libraries is that in `resvg`
 SVG parsing and rendering are two completely separate steps.
 Those steps are also split into two separate libraries: `resvg` and [usvg].
 Meaning you can easily write your own renderer on top of `usvg` using any 2D library of your liking.
-Or you can work with a preprocessed and simplified SVG format called [Micro SVG](./docs/usvg_spec.adoc)
-in which case you could avoid dealing with most of SVG's complexity.
 
 ### Performance
 

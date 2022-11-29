@@ -271,8 +271,7 @@ impl PathData {
 
     /// Applies the transform to the path from the specified offset.
     #[inline]
-    #[allow(dead_code)]
-    pub(crate) fn transform_from(&mut self, offset: usize, ts: Transform) {
+    pub fn transform_from(&mut self, offset: usize, ts: Transform) {
         let mut points_offset = 0;
         for command in self.commands().iter().take(offset) {
             match command {

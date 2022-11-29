@@ -1,3 +1,5 @@
+use usvg_text_layout::{fontdb, TreeTextToPath};
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 3 {
@@ -11,7 +13,7 @@ fn main() {
         .ok()
         .and_then(|p| p.parent().map(|p| p.to_path_buf()));
 
-    let mut fontdb = usvg::fontdb::Database::new();
+    let mut fontdb = fontdb::Database::new();
     fontdb.load_system_fonts();
 
     let svg_data = std::fs::read(&args[1]).unwrap();

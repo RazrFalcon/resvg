@@ -1,13 +1,14 @@
 use once_cell::sync::Lazy;
 use rgb::FromSlice;
+use usvg_text_layout::{fontdb, TreeTextToPath};
 
 #[rustfmt::skip]
 mod render;
 
 const IMAGE_SIZE: u32 = 300;
 
-static GLOBAL_FONTDB: Lazy<std::sync::Mutex<usvg::fontdb::Database>> = Lazy::new(|| {
-    let mut fontdb = usvg::fontdb::Database::new();
+static GLOBAL_FONTDB: Lazy<std::sync::Mutex<fontdb::Database>> = Lazy::new(|| {
+    let mut fontdb = fontdb::Database::new();
     fontdb.load_fonts_dir("tests/fonts");
     fontdb.set_serif_family("Noto Serif");
     fontdb.set_sans_serif_family("Noto Sans");

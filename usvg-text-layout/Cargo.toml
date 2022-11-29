@@ -1,0 +1,30 @@
+[package]
+name = "usvg-text-layout"
+version = "0.27.0"
+authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
+keywords = ["svg"]
+license = "MPL-2.0"
+edition = "2018"
+description = "An SVG text layout implementation."
+categories = ["multimedia::images"]
+repository = "https://github.com/RazrFalcon/resvg"
+documentation = "https://docs.rs/usvg-text-layout/"
+readme = "README.md"
+workspace = ".."
+
+[dependencies]
+fontdb = { version = "0.10", default-features = false }
+kurbo = "0.8" # Bezier curves utils for text-on-path
+log = "0.4"
+rustybuzz = "0.6.0"
+unicode-bidi = "0.3"
+unicode-script = "0.5"
+unicode-vo = "0.1"
+usvg = { path = "../usvg", version = "0.27.0" }
+
+[features]
+default = ["system-fonts", "memmap-fonts"]
+# Enables system fonts loading.
+system-fonts = ["fontdb/fs", "fontdb/fontconfig"]
+# Enables font files memmaping for faster loading.
+memmap-fonts = ["fontdb/memmap"]

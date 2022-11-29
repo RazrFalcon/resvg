@@ -3,13 +3,318 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::rc::Rc;
-
 use strict_num::NonZeroPositiveF64;
+
+use crate::svgtree::{AId, EId};
+use crate::{converter, style, svgtree, Node, NodeExt, NodeKind, SharedPathData, Units};
+use crate::{PaintOrder, PathData, TextRendering, Transform, Visibility};
 use svgtypes::{Length, LengthUnit};
 
-use super::*;
-use crate::svgtree::{self, AId, EId};
-use crate::{converter, style, units, Node, NodeExt, NodeKind, SharedPathData, Transform, Units};
+/// A font stretch property.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
+pub enum Stretch {
+    UltraCondensed,
+    ExtraCondensed,
+    Condensed,
+    SemiCondensed,
+    Normal,
+    SemiExpanded,
+    Expanded,
+    ExtraExpanded,
+    UltraExpanded,
+}
+
+impl Default for Stretch {
+    #[inline]
+    fn default() -> Self {
+        Stretch::Normal
+    }
+}
+
+/// A font style property.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
+pub enum Style {
+    /// A face that is neither italic not obliqued.
+    Normal,
+    /// A form that is generally cursive in nature.
+    Italic,
+    /// A typically-sloped version of the regular face.
+    Oblique,
+}
+
+impl Default for Style {
+    #[inline]
+    fn default() -> Style {
+        Style::Normal
+    }
+}
+
+/// Text font properties.
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct Font {
+    /// A list of family names.
+    /// Can be empty.
+    pub families: Vec<String>,
+    /// A font style.
+    pub style: Style,
+    /// A font stretch.
+    pub stretch: Stretch,
+    /// A font width.
+    pub weight: u16,
+}
+
+/// A dominant baseline property.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum DominantBaseline {
+    Auto,
+    UseScript,
+    NoChange,
+    ResetSize,
+    Ideographic,
+    Alphabetic,
+    Hanging,
+    Mathematical,
+    Central,
+    Middle,
+    TextAfterEdge,
+    TextBeforeEdge,
+}
+
+/// An alignment baseline property.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum AlignmentBaseline {
+    Auto,
+    Baseline,
+    BeforeEdge,
+    TextBeforeEdge,
+    Middle,
+    Central,
+    AfterEdge,
+    TextAfterEdge,
+    Ideographic,
+    Alphabetic,
+    Hanging,
+    Mathematical,
+}
+
+/// A baseline shift property.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum BaselineShift {
+    Baseline,
+    Subscript,
+    Superscript,
+    Number(f64),
+}
+
+impl Default for BaselineShift {
+    #[inline]
+    fn default() -> BaselineShift {
+        BaselineShift::Baseline
+    }
+}
+
+/// A length adjust property.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum LengthAdjust {
+    Spacing,
+    SpacingAndGlyphs,
+}
+
+/// A text span decoration style.
+///
+/// In SVG, text decoration and text it's applied to can have different styles.
+/// So you can have black text and green underline.
+///
+/// Also, in SVG you can specify text decoration stroking.
+#[derive(Clone, Debug)]
+pub struct TextDecorationStyle {
+    /// A fill style.
+    pub fill: Option<style::Fill>,
+    /// A stroke style.
+    pub stroke: Option<style::Stroke>,
+}
+
+/// A text span decoration.
+#[derive(Clone, Debug)]
+pub struct TextDecoration {
+    /// An optional underline and its style.
+    pub underline: Option<TextDecorationStyle>,
+    /// An optional overline and its style.
+    pub overline: Option<TextDecorationStyle>,
+    /// An optional line-through and its style.
+    pub line_through: Option<TextDecorationStyle>,
+}
+
+/// A text style span.
+///
+/// Spans do not overlap inside a text chunk.
+#[derive(Clone, Debug)]
+pub struct TextSpan {
+    /// A span start in UTF-8 codepoints.
+    ///
+    /// Offset is relative to the parent text chunk and not the parent text element.
+    pub start: usize,
+    /// A span end in UTF-8 codepoints.
+    ///
+    /// Offset is relative to the parent text chunk and not the parent text element.
+    pub end: usize,
+    /// A fill style.
+    pub fill: Option<style::Fill>,
+    /// A stroke style.
+    pub stroke: Option<style::Stroke>,
+    /// A paint order style.
+    pub paint_order: PaintOrder,
+    /// A font.
+    pub font: Font,
+    /// A font size.
+    pub font_size: NonZeroPositiveF64,
+    /// Indicates that small caps should be used.
+    ///
+    /// Set by `font-variant="small-caps"`
+    pub small_caps: bool,
+    /// Indicates that a kerning should be applied.
+    ///
+    /// Supports both `kerning` and `font-kerning` properties.
+    pub apply_kerning: bool,
+    /// A span decorations.
+    pub decoration: TextDecoration,
+    /// A span dominant baseline.
+    pub dominant_baseline: DominantBaseline,
+    /// A span alignment baseline.
+    pub alignment_baseline: AlignmentBaseline,
+    /// A list of all baseline shift that should be applied to this span.
+    ///
+    /// Ordered from `text` element down to the actual `span` element.
+    pub baseline_shift: Vec<BaselineShift>,
+    /// A visibility property.
+    pub visibility: Visibility,
+    /// A letter spacing property.
+    pub letter_spacing: f64,
+    /// A word spacing property.
+    pub word_spacing: f64,
+    /// A text length property.
+    pub text_length: Option<f64>,
+    /// A length adjust property.
+    pub length_adjust: LengthAdjust,
+}
+
+/// A text chunk anchor property.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum TextAnchor {
+    Start,
+    Middle,
+    End,
+}
+
+/// A path used by text-on-path.
+#[derive(Clone, Debug)]
+pub struct TextPath {
+    /// A text offset in SVG coordinates.
+    ///
+    /// Percentage values already resolved.
+    pub start_offset: f64,
+
+    /// A path.
+    pub path: Rc<PathData>,
+}
+
+/// A text chunk flow property.
+#[derive(Clone, Debug)]
+pub enum TextFlow {
+    /// A linear layout.
+    ///
+    /// Includes left-to-right, right-to-left and top-to-bottom.
+    Linear,
+    /// A text-on-path layout.
+    Path(Rc<TextPath>),
+}
+
+/// A text chunk.
+///
+/// Text alignment and BIDI reordering can only be done inside a text chunk.
+#[derive(Clone, Debug)]
+pub struct TextChunk {
+    /// An absolute X axis offset.
+    pub x: Option<f64>,
+    /// An absolute Y axis offset.
+    pub y: Option<f64>,
+    /// A text anchor.
+    pub anchor: TextAnchor,
+    /// A list of text chunk style spans.
+    pub spans: Vec<TextSpan>,
+    /// A text chunk flow.
+    pub text_flow: TextFlow,
+    /// A text chunk actual text.
+    pub text: String,
+}
+
+/// A text character position.
+///
+/// _Character_ is a Unicode codepoint.
+#[derive(Clone, Copy, Debug)]
+pub struct CharacterPosition {
+    /// An absolute X axis position.
+    pub x: Option<f64>,
+    /// An absolute Y axis position.
+    pub y: Option<f64>,
+    /// A relative X axis offset.
+    pub dx: Option<f64>,
+    /// A relative Y axis offset.
+    pub dy: Option<f64>,
+}
+
+/// A writing mode.
+#[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum WritingMode {
+    LeftToRight,
+    TopToBottom,
+}
+
+/// A text element.
+///
+/// `text` element in SVG.
+#[derive(Clone, Debug)]
+pub struct Text {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Isn't automatically generated.
+    /// Can be empty.
+    pub id: String,
+
+    /// Element transform.
+    pub transform: Transform,
+
+    /// Rendering mode.
+    ///
+    /// `text-rendering` in SVG.
+    pub rendering_mode: TextRendering,
+
+    /// A list of character positions.
+    ///
+    /// One position for each Unicode codepoint. Aka `char` in Rust and not UTF-8 byte.
+    pub positions: Vec<CharacterPosition>,
+
+    /// A list of rotation angles.
+    ///
+    /// One angle for each Unicode codepoint. Aka `char` in Rust and not UTF-8 byte.
+    pub rotate: Vec<f64>,
+
+    /// A writing mode.
+    pub writing_mode: WritingMode,
+
+    /// A list of text chunks.
+    pub chunks: Vec<TextChunk>,
+}
+
+// Converter.
 
 impl_enum_default!(TextAnchor, Start);
 
@@ -107,7 +412,7 @@ struct IterState {
     chunks: Vec<TextChunk>,
 }
 
-pub fn collect_text_chunks(
+fn collect_text_chunks(
     text_node: svgtree::Node,
     pos_list: &[CharacterPosition],
     state: &converter::State,
@@ -186,7 +491,7 @@ fn collect_text_chunks_impl(
         let anchor = parent.find_attribute(AId::TextAnchor).unwrap_or_default();
 
         // TODO: what to do when <= 0? UB?
-        let font_size = units::resolve_font_size(parent, state);
+        let font_size = crate::units::resolve_font_size(parent, state);
         let font_size = match NonZeroPositiveF64::new(font_size) {
             Some(n) => n,
             None => {
@@ -319,7 +624,7 @@ fn resolve_text_flow(node: svgtree::Node, state: &converter::State) -> Option<Te
 
     let path = match linked_node.tag_name()? {
         EId::Rect | EId::Circle | EId::Ellipse | EId::Line | EId::Polyline | EId::Polygon => {
-            super::super::shapes::convert(linked_node, state)?
+            crate::shapes::convert(linked_node, state)?
         }
         EId::Path => linked_node.attribute::<SharedPathData>(AId::D)?,
         _ => return None,
@@ -509,7 +814,7 @@ fn resolve_font_weight(node: svgtree::Node) -> u16 {
 /// ```
 ///
 /// The result should be: `[100, 50, 120, None]`
-pub fn resolve_positions_list(
+fn resolve_positions_list(
     text_node: svgtree::Node,
     state: &converter::State,
 ) -> Vec<CharacterPosition> {
@@ -531,7 +836,7 @@ pub fn resolve_positions_list(
             let child_chars = count_chars(child);
             macro_rules! push_list {
                 ($aid:expr, $field:ident) => {
-                    if let Some(num_list) = units::convert_list(child, $aid, state) {
+                    if let Some(num_list) = crate::units::convert_list(child, $aid, state) {
                         // Note that we are using not the total count,
                         // but the amount of characters in the current `tspan` (with children).
                         let len = std::cmp::min(num_list.len(), child_chars);
@@ -563,7 +868,7 @@ pub fn resolve_positions_list(
 /// ![](https://www.w3.org/TR/SVG11/images/text/tspan05-diagram.png)
 ///
 /// Note: this algorithm differs from the position resolving one.
-pub fn resolve_rotate_list(text_node: svgtree::Node) -> Vec<f64> {
+fn resolve_rotate_list(text_node: svgtree::Node) -> Vec<f64> {
     // Allocate a list that has all characters angles set to `0.0`.
     let mut list = vec![0.0; count_chars(text_node)];
     let mut last = 0.0;
@@ -671,10 +976,10 @@ fn convert_baseline_shift(node: svgtree::Node, state: &converter::State) -> Vec<
     for n in nodes {
         if let Some(len) = n.attribute::<Length>(AId::BaselineShift) {
             if len.unit == LengthUnit::Percent {
-                let n = units::resolve_font_size(n, state) * (len.number / 100.0);
+                let n = crate::units::resolve_font_size(n, state) * (len.number / 100.0);
                 shift.push(BaselineShift::Number(n));
             } else {
-                let n = units::convert_length(
+                let n = crate::units::convert_length(
                     len,
                     n,
                     AId::BaselineShift,
@@ -731,7 +1036,7 @@ fn count_chars(node: svgtree::Node) -> usize {
 ///
 /// [SVG 2]: https://www.w3.org/TR/SVG2/text.html#WritingModeProperty
 /// [CSS Writing Modes Level 3]: https://www.w3.org/TR/css-writing-modes-3/#svg-writing-mode-css
-pub fn convert_writing_mode(text_node: svgtree::Node) -> WritingMode {
+fn convert_writing_mode(text_node: svgtree::Node) -> WritingMode {
     if let Some(n) = text_node.find_node_with_attribute(AId::WritingMode) {
         match n.attribute(AId::WritingMode).unwrap_or("lr-tb") {
             "tb" | "tb-rl" | "vertical-rl" | "vertical-lr" => WritingMode::TopToBottom,
