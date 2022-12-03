@@ -246,6 +246,18 @@ pub extern "C" fn resvg_options_set_dpi(opt: *mut resvg_options, dpi: f64) {
     cast_opt(opt).dpi = dpi;
 }
 
+/// @brief Sets the default font family.
+///
+/// Will be used when no `font-family` attribute is set in the SVG.
+///
+/// Must be UTF-8. NULL is not allowed.
+///
+/// Default: Times New Roman
+#[no_mangle]
+pub extern "C" fn resvg_options_set_font_family(opt: *mut resvg_options, family: *const c_char) {
+    cast_opt(opt).font_family = cstr_to_str(family).unwrap().to_string();
+}
+
 /// @brief Sets the default font size.
 ///
 /// Will be used when no `font-size` attribute is set in the SVG.

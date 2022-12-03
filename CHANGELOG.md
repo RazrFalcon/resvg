@@ -31,11 +31,6 @@ This changelog also contains important changes in dependencies.
 - `usvg::TransformFromBBox` trait. This is just a regular `usvg::Transform` method now.
 - `usvg::OptionsRef`. `usvg::Options` is enough from now.
 - `usvg::Options::fontdb`. Used only by `usvg-text-layout` now.
-- `usvg::Options::font_family`. A font set via `fontdb::Database::set_serif_family`
-  will be used now. Which by default it is set to _Times New Roman_, so the default behavior
-  will not change.
-- `--font-family` option from `resvg` and `usvg` CLIs. See above. Use `--serif-family` instead.
-- (c-api) `resvg_options_set_font_family`. Use `resvg_options_set_serif_family` instead.
 - `--dump-svg` from `resvg`.
 
 ## [0.27.0] - 2022-11-27

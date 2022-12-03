@@ -54,7 +54,8 @@ impl Default for Style {
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Font {
     /// A list of family names.
-    /// Can be empty.
+    ///
+    /// Never empty. Uses [`Options::font_family`](crate::Options::font_family) as fallback.
     pub families: Vec<String>,
     /// A font style.
     pub style: Style,
@@ -501,7 +502,7 @@ fn collect_text_chunks_impl(
             }
         };
 
-        let font = convert_font(parent);
+        let font = convert_font(parent, state);
 
         let raw_paint_order: svgtypes::PaintOrder = parent
             .find_attribute(svgtree::AId::PaintOrder)
@@ -652,7 +653,7 @@ fn resolve_text_flow(node: svgtree::Node, state: &converter::State) -> Option<Te
     Some(TextFlow::Path(Rc::new(TextPath { start_offset, path })))
 }
 
-fn convert_font(node: svgtree::Node) -> Font {
+fn convert_font(node: svgtree::Node, state: &converter::State) -> Font {
     let style: Style = node.find_attribute(AId::FontStyle).unwrap_or_default();
     let stretch = conv_font_stretch(node);
     let weight = resolve_font_weight(node);
@@ -678,6 +679,10 @@ fn convert_font(node: svgtree::Node) -> Font {
         family = family.trim();
 
         families.push(family.to_string());
+    }
+
+    if families.is_empty() {
+        families.push(state.opt.font_family.clone())
     }
 
     Font {

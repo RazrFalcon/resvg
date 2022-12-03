@@ -150,11 +150,14 @@ OPTIONS:
                                 contains the SVG file, but can be set to any.
                                 [default: input file directory]
 
+  --font-family FAMILY          Sets the default font family that will be
+                                used when no 'font-family' is present
+                                [default: Times New Roman]
   --font-size SIZE              Sets the default font size that will be
                                 used when no 'font-size' is present
                                 [default: 12] [possible values: 1..192]
-  --serif-family FAMILY         Sets the 'serif' font family.
-                                Will be used when no 'font-family' is present
+  --serif-family FAMILY         Sets the 'serif' font family
+                                [default: Times New Roman]
   --sans-serif-family FAMILY    Sets the 'sans-serif' font family
                                 [default: Arial]
   --cursive-family FAMILY       Sets the 'cursive' font family
@@ -207,6 +210,7 @@ struct CliArgs {
     image_rendering: usvg::ImageRendering,
     resources_dir: Option<path::PathBuf>,
 
+    font_family: Option<String>,
     font_size: u32,
     serif_family: Option<String>,
     sans_serif_family: Option<String>,
@@ -267,6 +271,7 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
             .opt_value_from_str("--resources-dir")
             .unwrap_or_default(),
 
+        font_family: input.opt_value_from_str("--font-family")?,
         font_size: input
             .opt_value_from_fn("--font-size", parse_font_size)?
             .unwrap_or(12),
@@ -469,6 +474,10 @@ fn parse_args() -> Result<Args, String> {
     let usvg = usvg::Options {
         resources_dir,
         dpi: args.dpi as f64,
+        font_family: args
+            .font_family
+            .take()
+            .unwrap_or_else(|| "Times New Roman".to_string()),
         font_size: args.font_size as f64,
         languages: args.languages,
         shape_rendering: args.shape_rendering,

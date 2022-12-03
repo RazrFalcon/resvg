@@ -65,6 +65,13 @@ pub struct Options {
     /// Default: 96.0
     pub dpi: f64,
 
+    /// A default font family.
+    ///
+    /// Will be used when no `font-family` attribute is set in the SVG.
+    ///
+    /// Default: Times New Roman
+    pub font_family: String,
+
     /// A default font size.
     ///
     /// Will be used when no `font-size` attribute is set in the SVG.
@@ -127,6 +134,8 @@ impl Default for Options {
         Options {
             resources_dir: None,
             dpi: 96.0,
+            // Default font is user-agent dependent so we can use whichever we like.
+            font_family: "Times New Roman".to_owned(),
             font_size: 12.0,
             languages: vec!["en".to_string()],
             shape_rendering: ShapeRendering::default(),

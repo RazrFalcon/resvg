@@ -156,7 +156,7 @@ public:
 
         auto familyC = family.toUtf8();
         familyC.append('\0');
-        resvg_options_set_serif_family(d, familyC.constData());
+        resvg_options_set_font_family(d, familyC.constData());
     }
 
     /**
