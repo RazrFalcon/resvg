@@ -7,28 +7,28 @@ use std::path;
 use usvg::NodeExt;
 use usvg_text_layout::{fontdb, TreeTextToPath};
 
-macro_rules! timed {
-    ($args:expr, $name:expr, $task:expr) => {
-        if $args.perf {
-            let now = std::time::Instant::now();
-            let res = $task;
-            println!(
-                "{}: {:.2}ms",
-                $name,
-                now.elapsed().as_micros() as f64 / 1000.0
-            );
-            res
-        } else {
-            $task
-        }
-    };
-}
-
 fn main() {
     if let Err(e) = process() {
         eprintln!("Error: {}.", e);
         std::process::exit(1);
     }
+}
+
+fn timed<F, T>(perf: bool, name: &str, mut f: F) -> T
+where
+    F: FnMut() -> T,
+{
+    let now = std::time::Instant::now();
+    let result = f();
+    if perf {
+        println!(
+            "{}: {:.2}ms",
+            name,
+            now.elapsed().as_micros() as f64 / 1000.0
+        );
+    }
+
+    result
 }
 
 fn process() -> Result<(), String> {
@@ -49,9 +49,9 @@ fn process() -> Result<(), String> {
         }
     }
 
-    let svg_data = timed!(args, "Reading", {
+    let mut svg_data = timed(args.perf, "Reading", || -> Result<Vec<u8>, &str> {
         if let InputFrom::File(ref file) = args.in_svg {
-            std::fs::read(file).map_err(|_| "failed to open the provided file")?
+            std::fs::read(file).map_err(|_| "failed to open the provided file")
         } else {
             use std::io::Read;
             let mut buf = Vec::new();
@@ -60,22 +60,30 @@ fn process() -> Result<(), String> {
             handle
                 .read_to_end(&mut buf)
                 .map_err(|_| "failed to read stdin")?;
-            buf
+            Ok(buf)
         }
-    });
+    })?;
 
-    // TODO: use from_xmltree for better timings
-    let mut tree = timed!(
-        args,
-        "Parsing",
-        usvg::Tree::from_data(&svg_data, &args.usvg).map_err(|e| e.to_string())
-    )?;
+    if svg_data.starts_with(&[0x1f, 0x8b]) {
+        svg_data = timed(args.perf, "SVGZ Decoding", || {
+            usvg::decompress_svgz(&svg_data).map_err(|e| e.to_string())
+        })?;
+    };
 
-    timed!(
-        args,
-        "Text conversion",
+    let svg_string = std::str::from_utf8(&svg_data)
+        .map_err(|_| "provided data has not an UTF-8 encoding".to_string())?;
+
+    let xml_tree = timed(args.perf, "XML Parsing", || {
+        usvg::roxmltree::Document::parse(&svg_string).map_err(|e| e.to_string())
+    })?;
+
+    let mut tree = timed(args.perf, "SVG Parsing", || {
+        usvg::Tree::from_xmltree(&xml_tree, &args.usvg).map_err(|e| e.to_string())
+    })?;
+
+    timed(args.perf, "Text Conversion", || {
         tree.convert_text(&args.fontdb, args.usvg.keep_named_groups)
-    );
+    });
 
     if args.query_all {
         return query_all(&tree);
@@ -91,11 +99,9 @@ fn process() -> Result<(), String> {
             std::io::stdout().write_all(&buf).unwrap();
         }
         OutputTo::File(ref file) => {
-            timed!(
-                args,
-                "Saving",
-                img.save_png(file).map_err(|e| e.to_string())?
-            );
+            timed(args.perf, "Saving", || {
+                img.save_png(file).map_err(|e| e.to_string())
+            })?;
         }
     };
 
@@ -406,7 +412,7 @@ fn parse_args() -> Result<Args, String> {
         (svg_from, out_png)
     };
 
-    let fontdb = timed!(args, "FontDB init", load_fonts(&mut args));
+    let fontdb = timed(args.perf, "FontDB", || load_fonts(&mut args));
     if args.list_fonts {
         for face in fontdb.faces() {
             if let fontdb::Source::File(ref path) = &face.source {

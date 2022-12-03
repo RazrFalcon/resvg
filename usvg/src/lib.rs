@@ -577,8 +577,9 @@ impl Tree {
     /// Can contain an SVG string or a gzip compressed data.
     pub fn from_data(data: &[u8], opt: &Options) -> Result<Self, Error> {
         if data.starts_with(&[0x1f, 0x8b]) {
-            let text = deflate(data)?;
-            Self::from_str(&text, opt)
+            let data = decompress_svgz(data)?;
+            let text = std::str::from_utf8(&data).map_err(|_| Error::NotAnUtf8Str)?;
+            Self::from_str(text, opt)
         } else {
             let text = std::str::from_utf8(data).map_err(|_| Error::NotAnUtf8Str)?;
             Self::from_str(text, opt)
@@ -731,7 +732,8 @@ impl NodeExt for Node {
     }
 }
 
-fn deflate(data: &[u8]) -> Result<String, Error> {
+/// Decompresses an SVGZ file.
+pub fn decompress_svgz(data: &[u8]) -> Result<Vec<u8>, Error> {
     use std::io::Read;
 
     let mut decoder = flate2::read::GzDecoder::new(data);
@@ -739,7 +741,6 @@ fn deflate(data: &[u8]) -> Result<String, Error> {
     decoder
         .read_to_end(&mut decoded)
         .map_err(|_| Error::MalformedGZip)?;
-    let decoded = String::from_utf8(decoded).map_err(|_| Error::NotAnUtf8Str)?;
     Ok(decoded)
 }
 
