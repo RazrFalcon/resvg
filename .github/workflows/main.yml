@@ -47,7 +47,7 @@ jobs:
           toolchain: 1.51.0
 
       - name: Build
-        run: cargo build --features dump-svg
+        run: cargo build
 
   # We have some Windows specific code that we should check on each commit.
   windows:
