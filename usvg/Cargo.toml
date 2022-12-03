@@ -1,6 +1,6 @@
 [package]
 name = "usvg"
-version = "0.27.0"
+version = "0.28.0"
 authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg"]
 license = "MPL-2.0"

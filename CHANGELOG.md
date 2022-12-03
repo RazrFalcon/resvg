@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.28.0] - 2022-12-03
 ### Added
 - `usvg::Text` and `usvg::NodeKind::Text`.
 
@@ -711,7 +713,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.27.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.28.0...HEAD
+[0.28.0]: https://github.com/RazrFalcon/resvg/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/RazrFalcon/resvg/compare/v0.26.1...v0.27.0
 [0.26.1]: https://github.com/RazrFalcon/resvg/compare/v0.26.0...v0.26.1
 [0.26.0]: https://github.com/RazrFalcon/resvg/compare/v0.25.0...v0.26.0
