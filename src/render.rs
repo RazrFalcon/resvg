@@ -502,7 +502,7 @@ fn prepare_filter_stroke_paint(
     Some(sub_pixmap)
 }
 
-fn convert_blend_mode(mode: usvg::BlendMode) -> tiny_skia::BlendMode {
+pub(crate) fn convert_blend_mode(mode: usvg::BlendMode) -> tiny_skia::BlendMode {
     match mode {
         usvg::BlendMode::Normal => tiny_skia::BlendMode::SourceOver,
         usvg::BlendMode::Multiply => tiny_skia::BlendMode::Multiply,

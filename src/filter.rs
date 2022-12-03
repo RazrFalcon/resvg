@@ -5,7 +5,7 @@
 use std::rc::Rc;
 
 use rgb::FromSlice;
-use usvg::{FuzzyZero, NodeExt};
+use usvg::{FuzzyZero, NodeExt, ScreenRect, Transform};
 
 use crate::{
     render::{Canvas, RenderState},
@@ -762,31 +762,12 @@ fn apply_blend(
         None,
     );
 
-    let blend_mode = match fe.mode {
-        usvg::filter::BlendMode::Normal => tiny_skia::BlendMode::SourceOver,
-        usvg::filter::BlendMode::Multiply => tiny_skia::BlendMode::Multiply,
-        usvg::filter::BlendMode::Screen => tiny_skia::BlendMode::Screen,
-        usvg::filter::BlendMode::Overlay => tiny_skia::BlendMode::Overlay,
-        usvg::filter::BlendMode::Darken => tiny_skia::BlendMode::Darken,
-        usvg::filter::BlendMode::Lighten => tiny_skia::BlendMode::Lighten,
-        usvg::filter::BlendMode::ColorDodge => tiny_skia::BlendMode::ColorDodge,
-        usvg::filter::BlendMode::ColorBurn => tiny_skia::BlendMode::ColorBurn,
-        usvg::filter::BlendMode::HardLight => tiny_skia::BlendMode::HardLight,
-        usvg::filter::BlendMode::SoftLight => tiny_skia::BlendMode::SoftLight,
-        usvg::filter::BlendMode::Difference => tiny_skia::BlendMode::Difference,
-        usvg::filter::BlendMode::Exclusion => tiny_skia::BlendMode::Exclusion,
-        usvg::filter::BlendMode::Hue => tiny_skia::BlendMode::Hue,
-        usvg::filter::BlendMode::Saturation => tiny_skia::BlendMode::Saturation,
-        usvg::filter::BlendMode::Color => tiny_skia::BlendMode::Color,
-        usvg::filter::BlendMode::Luminosity => tiny_skia::BlendMode::Luminosity,
-    };
-
     pixmap.draw_pixmap(
         0,
         0,
         input1.as_ref().as_ref(),
         &tiny_skia::PixmapPaint {
-            blend_mode,
+            blend_mode: crate::render::convert_blend_mode(fe.mode),
             ..tiny_skia::PixmapPaint::default()
         },
         tiny_skia::Transform::identity(),
@@ -1027,11 +1008,11 @@ fn apply_convolve_matrix(
     }
 
     let matrix = svgfilters::ConvolveMatrix::new(
-        fe.matrix.target_x(),
-        fe.matrix.target_y(),
-        fe.matrix.columns(),
-        fe.matrix.rows(),
-        fe.matrix.data(),
+        fe.matrix.target_x,
+        fe.matrix.target_y,
+        fe.matrix.columns,
+        fe.matrix.rows,
+        &fe.matrix.data,
     )
     .unwrap();
 
@@ -1155,7 +1136,7 @@ fn apply_diffuse_lighting(
 ) -> Result<Image, Error> {
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
 
-    let light_source = fe.light_source.transform(region, ts);
+    let light_source = transform_light_source(fe.light_source, region, ts);
 
     svgfilters::diffuse_lighting(
         fe.surface_scale,
@@ -1178,7 +1159,7 @@ fn apply_specular_lighting(
 ) -> Result<Image, Error> {
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
 
-    let light_source = fe.light_source.transform(region, ts);
+    let light_source = transform_light_source(fe.light_source, region, ts);
 
     svgfilters::specular_lighting(
         fe.surface_scale,
@@ -1191,6 +1172,40 @@ fn apply_specular_lighting(
     );
 
     Ok(Image::from_image(pixmap, cs))
+}
+
+fn transform_light_source(
+    mut source: usvg::filter::LightSource,
+    region: ScreenRect,
+    ts: &Transform,
+) -> usvg::filter::LightSource {
+    use std::f64::consts::SQRT_2;
+    use usvg::filter::LightSource;
+
+    match source {
+        LightSource::DistantLight(..) => {}
+        LightSource::PointLight(ref mut light) => {
+            let (x, y) = ts.apply(light.x, light.y);
+            light.x = x - region.x() as f64;
+            light.y = y - region.y() as f64;
+            light.z = light.z * (ts.a * ts.a + ts.d * ts.d).sqrt() / SQRT_2;
+        }
+        LightSource::SpotLight(ref mut light) => {
+            let sz = (ts.a * ts.a + ts.d * ts.d).sqrt() / SQRT_2;
+
+            let (x, y) = ts.apply(light.x, light.y);
+            light.x = x - region.x() as f64;
+            light.y = y - region.x() as f64;
+            light.z *= sz;
+
+            let (x, y) = ts.apply(light.points_at_x, light.points_at_y);
+            light.points_at_x = x - region.x() as f64;
+            light.points_at_y = y - region.x() as f64;
+            light.points_at_z *= sz;
+        }
+    }
+
+    source
 }
 
 fn apply_to_canvas(

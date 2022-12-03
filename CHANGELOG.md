@@ -19,6 +19,7 @@ This changelog also contains important changes in dependencies.
   before conversion into path(s), which we no longer doing during parsing.
 - `usvg` is purely an SVG parser now. It doesn't convert text to paths
   and doesn't write SVG anymore.
+- `usvg::filter::ConvolveMatrixData` methods are fields now.
 
 ### Removed
 - `usvg` CLI binary. No alternatives for now.
