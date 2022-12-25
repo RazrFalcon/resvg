@@ -25,4 +25,4 @@ roxmltree = "0.15" # XML parsing
 simplecss = "0.2" # CSS parsing and selector
 siphasher = "0.3" # perfect hash implementation
 strict-num = "0.1"
-svgtypes = "0.8.2"
+svgtypes = "0.9"

@@ -106,6 +106,8 @@ NOTE: This list is not final. This just things I was able to find so far. Patche
 
 ### Added
 
+Basically everything from [CSS Text Module Level 3](https://www.w3.org/TR/css-text-3/).
+
 - [ ] WOFF font support is required now.
 - [ ] A [`path`](https://www.w3.org/TR/SVG2/text.html#TextPathElementPathAttribute) property to [`textPath`](https://www.w3.org/TR/SVG2/text.html#TextPathElement).
 - [ ] A [`side`](https://www.w3.org/TR/SVG2/text.html#TextPathElementSideAttribute) property to [`textPath`](https://www.w3.org/TR/SVG2/text.html#TextPathElement).
@@ -123,6 +125,7 @@ NOTE: This list is not final. This just things I was able to find so far. Patche
 - [ ] A [`text-indent`](https://www.w3.org/TR/css-text-3/#propdef-text-indent) property.
 - [ ] A [`text-orientation`](https://www.w3.org/TR/css-writing-modes-3/#text-orientation) property.
 - [ ] A [`text-overflow`](https://www.w3.org/TR/SVG2/text.html#TextOverflowProperty) property.
+- [ ] A [`text-transform`](https://www.w3.org/TR/css-text-3/#text-transform-property) property.
 - [ ] A [`unicode-range`](https://www.w3.org/TR/css-fonts-3/#descdef-unicode-range) property.
 - [ ] A [`white-space`](https://www.w3.org/TR/SVG2/text.html#WhiteSpace) property.
 - [ ] A [`text-decoration-line`](https://www.w3.org/TR/css-text-decor-3/#propdef-text-decoration-line) property.
@@ -177,6 +180,7 @@ NOTE: This list is not final. This just things I was able to find so far. Patche
 ### Quirks
 
 - As of 2021, only Inkscape has [Text layout – Content Area](https://www.w3.org/TR/SVG2/text.html#TextLayoutContentArea) support, but still a very minimal one.
+- `text-transform` is technically a CSS 2.1 property, but was not allowed in SVG 1.1
 
 <!-- ----------------------------------- -->
 

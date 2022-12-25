@@ -1718,6 +1718,7 @@ fn apply_letter_spacing(chunk: &TextChunk, clusters: &mut [OutlinedCluster]) {
         // Spacing must be applied only to characters that belongs to the script
         // that supports spacing.
         // We are checking only the first code point, since it should be enough.
+        // https://www.w3.org/TR/css-text-3/#cursive-tracking
         let script = cluster.codepoint.script();
         if script_supports_letter_spacing(script) {
             if let Some(span) = chunk_span_at(chunk, cluster.byte_idx) {
