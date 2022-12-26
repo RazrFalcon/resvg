@@ -678,7 +678,9 @@ fn convert_font(node: svgtree::Node, state: &converter::State) -> Font {
 
         family = family.trim();
 
-        families.push(family.to_string());
+        if !family.is_empty() {
+            families.push(family.to_string());
+        }
     }
 
     if families.is_empty() {
