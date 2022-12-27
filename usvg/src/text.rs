@@ -683,9 +683,8 @@ fn convert_font(node: svgtree::Node, state: &converter::State) -> Font {
         }
     }
 
-    if families.is_empty() {
-        families.push(state.opt.font_family.clone())
-    }
+    // Use the default font as fallback.
+    families.push(state.opt.font_family.clone());
 
     Font {
         families,
