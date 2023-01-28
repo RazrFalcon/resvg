@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- Some `usvg` internals were moved into the new `rosvgtree` crate.
+
 ### Fixed
 - Missing `font-family` handling.
 

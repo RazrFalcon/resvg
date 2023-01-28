@@ -72,24 +72,12 @@ macro_rules! impl_enum_default {
 
 macro_rules! impl_enum_from_str {
     ($name:ident, $($string:pat => $result:expr),+) => {
-        impl crate::svgtree::EnumFromStr for $name {
-            fn enum_from_str(s: &str) -> Option<Self> {
-                match s {
+        impl<'a, 'input: 'a> rosvgtree::FromValue<'a, 'input> for $name {
+            fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<$name> {
+                match value {
                     $($string => Some($result)),+,
                     _ => None,
                 }
-            }
-        }
-    };
-}
-
-macro_rules! impl_from_str {
-    ($name:ident) => {
-        impl std::str::FromStr for $name {
-            type Err = &'static str;
-
-            fn from_str(s: &str) -> Result<Self, Self::Err> {
-                crate::svgtree::EnumFromStr::enum_from_str(s).ok_or("invalid value")
             }
         }
     };
@@ -106,22 +94,22 @@ mod mask;
 mod options;
 mod paint_server;
 mod pathdata;
+mod rosvgtree_ext;
 mod shapes;
 mod style;
-mod svgtree;
 mod switch;
 mod text;
 mod units;
 mod use_node;
 pub mod utils;
 
-pub use image::ImageHrefResolver;
-pub use strict_num::{ApproxEq, ApproxEqUlps, NonZeroPositiveF64, NormalizedF64, PositiveF64};
-pub use svgtypes::{Align, AspectRatio};
-
 use std::rc::Rc;
 
-pub use roxmltree;
+pub use image::ImageHrefResolver;
+
+pub use rosvgtree::roxmltree;
+pub use rosvgtree::svgtypes::{Align, AspectRatio};
+pub use strict_num::{ApproxEq, ApproxEqUlps, NonZeroPositiveF64, NormalizedF64, PositiveF64};
 
 pub use crate::clippath::*;
 pub use crate::error::*;
@@ -133,6 +121,8 @@ pub use crate::paint_server::*;
 pub use crate::pathdata::*;
 pub use crate::style::*;
 pub use crate::text::*;
+
+use crate::rosvgtree_ext::SvgNodeExt;
 
 trait OptionLog {
     fn log_none<F: FnOnce()>(self, f: F) -> Self;
@@ -198,10 +188,15 @@ pub enum Units {
 
 // `Units` cannot have a default value, because it changes depending on an element.
 
-impl_enum_from_str!(Units,
-    "userSpaceOnUse"    => Units::UserSpaceOnUse,
-    "objectBoundingBox" => Units::ObjectBoundingBox
-);
+impl<'a, 'input: 'a> rosvgtree::FromValue<'a, 'input> for Units {
+    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+        match value {
+            "userSpaceOnUse" => Some(Units::UserSpaceOnUse),
+            "objectBoundingBox" => Some(Units::ObjectBoundingBox),
+            _ => None,
+        }
+    }
+}
 
 /// A visibility property.
 ///
@@ -252,7 +247,18 @@ impl_enum_from_str!(ShapeRendering,
     "geometricPrecision"    => ShapeRendering::GeometricPrecision
 );
 
-impl_from_str!(ShapeRendering);
+impl std::str::FromStr for ShapeRendering {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "optimizeSpeed" => Ok(ShapeRendering::OptimizeSpeed),
+            "crispEdges" => Ok(ShapeRendering::CrispEdges),
+            "geometricPrecision" => Ok(ShapeRendering::GeometricPrecision),
+            _ => Err("invalid"),
+        }
+    }
+}
 
 /// A text rendering method.
 ///
@@ -273,7 +279,18 @@ impl_enum_from_str!(TextRendering,
     "geometricPrecision"    => TextRendering::GeometricPrecision
 );
 
-impl_from_str!(TextRendering);
+impl std::str::FromStr for TextRendering {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "optimizeSpeed" => Ok(TextRendering::OptimizeSpeed),
+            "optimizeLegibility" => Ok(TextRendering::OptimizeLegibility),
+            "geometricPrecision" => Ok(TextRendering::GeometricPrecision),
+            _ => Err("invalid"),
+        }
+    }
+}
 
 /// An image rendering method.
 ///
@@ -292,7 +309,17 @@ impl_enum_from_str!(ImageRendering,
     "optimizeSpeed"     => ImageRendering::OptimizeSpeed
 );
 
-impl_from_str!(ImageRendering);
+impl std::str::FromStr for ImageRendering {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "optimizeQuality" => Ok(ImageRendering::OptimizeQuality),
+            "optimizeSpeed" => Ok(ImageRendering::OptimizeSpeed),
+            _ => Err("invalid"),
+        }
+    }
+}
 
 /// A blending mode property.
 ///
@@ -599,14 +626,14 @@ impl Tree {
 
     /// Parses `Tree` from `roxmltree::Document`.
     pub fn from_xmltree(doc: &roxmltree::Document, opt: &Options) -> Result<Self, Error> {
-        let doc = svgtree::Document::parse(doc)?;
-        Self::from_svgtree(doc, opt)
+        let doc = rosvgtree::Document::parse_tree(doc)?;
+        Self::from_rosvgtree(doc, opt)
     }
 
     /// Parses `Tree` from the `svgtree::Document`.
     ///
     /// An empty `Tree` will be returned on any error.
-    fn from_svgtree(doc: svgtree::Document, opt: &Options) -> Result<Self, Error> {
+    fn from_rosvgtree(doc: rosvgtree::Document, opt: &Options) -> Result<Self, Error> {
         crate::converter::convert_doc(&doc, opt)
     }
 

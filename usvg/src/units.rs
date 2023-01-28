@@ -2,15 +2,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use rosvgtree::{self, svgtypes, AttributeId as AId};
 use svgtypes::{Length, LengthUnit as Unit};
 
-use crate::svgtree::{self, AId};
 use crate::{converter, Units};
 
 #[inline(never)]
 pub(crate) fn convert_length(
     length: Length,
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     aid: AId,
     object_units: Units,
     state: &converter::State,
@@ -66,7 +66,7 @@ pub(crate) fn convert_length(
 
 #[inline(never)]
 pub(crate) fn convert_list(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     aid: AId,
     state: &converter::State,
 ) -> Option<Vec<f64>> {
@@ -95,7 +95,7 @@ fn convert_percent(length: Length, base: f64) -> f64 {
 }
 
 #[inline(never)]
-pub(crate) fn resolve_font_size(node: svgtree::Node, state: &converter::State) -> f64 {
+pub(crate) fn resolve_font_size(node: rosvgtree::Node, state: &converter::State) -> f64 {
     let nodes: Vec<_> = node.ancestors().collect();
     let mut font_size = state.opt.font_size;
     for n in nodes.iter().rev().skip(1) {

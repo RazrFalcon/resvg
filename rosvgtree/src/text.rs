@@ -1,23 +1,24 @@
-use super::{AId, Document, EId, Node, NodeId, NodeKind};
-use crate::Error;
+use roxmltree::Error;
+
+use crate::{AttributeId, Document, ElementId, Node, NodeId, NodeKind};
 
 const XLINK_NS: &str = "http://www.w3.org/1999/xlink";
 
-pub fn parse_svg_text_element(
-    parent: roxmltree::Node,
+pub(crate) fn parse_svg_text_element<'input>(
+    parent: roxmltree::Node<'_, 'input>,
     parent_id: NodeId,
     style_sheet: &simplecss::StyleSheet,
-    doc: &mut Document,
+    doc: &mut Document<'input>,
 ) -> Result<(), Error> {
     debug_assert_eq!(parent.tag_name().name(), "text");
 
-    let space = if doc.get(parent_id).has_attribute(AId::Space) {
+    let space = if doc.get(parent_id).has_attribute(AttributeId::Space) {
         get_xmlspace(doc, parent_id, XmlSpace::Default)
     } else {
         if let Some(node) = doc
             .get(parent_id)
             .ancestors()
-            .find(|n| n.has_attribute(AId::Space))
+            .find(|n| n.has_attribute(AttributeId::Space))
         {
             get_xmlspace(doc, node.id, XmlSpace::Default)
         } else {
@@ -31,12 +32,12 @@ pub fn parse_svg_text_element(
     Ok(())
 }
 
-fn parse_svg_text_element_impl(
-    parent: roxmltree::Node,
+fn parse_svg_text_element_impl<'input>(
+    parent: roxmltree::Node<'_, 'input>,
     parent_id: NodeId,
     style_sheet: &simplecss::StyleSheet,
     space: XmlSpace,
-    doc: &mut Document,
+    doc: &mut Document<'input>,
 ) -> Result<(), Error> {
     for node in parent.children() {
         if node.is_text() {
@@ -45,34 +46,37 @@ fn parse_svg_text_element_impl(
             continue;
         }
 
-        let mut tag_name = match super::parse::parse_tag_name(node) {
+        let mut tag_name = match crate::parse::parse_tag_name(node) {
             Some(v) => v,
             None => continue,
         };
 
-        if tag_name == EId::A {
+        if tag_name == ElementId::A {
             // Treat links as simple text.
-            tag_name = EId::Tspan;
+            tag_name = ElementId::Tspan;
         }
 
-        if !matches!(tag_name, EId::Tspan | EId::Tref | EId::TextPath) {
+        if !matches!(
+            tag_name,
+            ElementId::Tspan | ElementId::Tref | ElementId::TextPath
+        ) {
             continue;
         }
 
         // `textPath` must be a direct `text` child.
-        if tag_name == EId::TextPath && parent.tag_name().name() != "text" {
+        if tag_name == ElementId::TextPath && parent.tag_name().name() != "text" {
             continue;
         }
 
         // We are converting `tref` into `tspan` to simplify later use.
         let mut is_tref = false;
-        if tag_name == EId::Tref {
-            tag_name = EId::Tspan;
+        if tag_name == ElementId::Tref {
+            tag_name = ElementId::Tspan;
             is_tref = true;
         }
 
         let node_id =
-            super::parse::parse_svg_element(node, parent_id, tag_name, style_sheet, false, doc)?;
+            crate::parse::parse_svg_element(node, parent_id, tag_name, style_sheet, false, doc)?;
         let space = get_xmlspace(doc, node_id, space);
 
         if is_tref {
@@ -101,7 +105,7 @@ fn resolve_tref_text(xml: &roxmltree::Document, href: &str) -> Option<String> {
     let node = xml.descendants().find(|n| n.attribute("id") == Some(id))?;
 
     // `tref` should be linked to an SVG element.
-    super::parse::parse_tag_name(node)?;
+    crate::parse::parse_tag_name(node)?;
 
     // 'All character data within the referenced element, including character data enclosed
     // within additional markup, will be rendered.'
@@ -129,7 +133,7 @@ enum XmlSpace {
 }
 
 fn get_xmlspace(doc: &Document, node_id: NodeId, default: XmlSpace) -> XmlSpace {
-    match doc.get(node_id).attribute(AId::Space) {
+    match doc.get(node_id).attribute(AttributeId::Space) {
         Some("preserve") => XmlSpace::Preserve,
         Some(_) => XmlSpace::Default,
         _ => default,
@@ -172,7 +176,7 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
         let node_id = nodes[0].0;
 
         if xmlspace == XmlSpace::Default {
-            if let NodeKind::Text(ref mut text) = doc.nodes[node_id.0].kind {
+            if let NodeKind::Text(ref mut text) = doc.nodes[node_id.get_usize()].kind {
                 match text.len() {
                     0 => {} // An empty string. Do nothing.
                     1 => {
@@ -256,7 +260,7 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
             if depth1 < depth2 {
                 if c3 == Some(b' ') {
                     if xmlspace2 == XmlSpace::Default {
-                        if let NodeKind::Text(ref mut text) = doc.nodes[node2_id.0].kind {
+                        if let NodeKind::Text(ref mut text) = doc.nodes[node2_id.get_usize()].kind {
                             text.remove_first_space();
                         }
                     }
@@ -264,12 +268,14 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
             } else {
                 if c2 == Some(b' ') && c2 == c3 {
                     if xmlspace1 == XmlSpace::Default && xmlspace2 == XmlSpace::Default {
-                        if let NodeKind::Text(ref mut text) = doc.nodes[node1_id.0].kind {
+                        if let NodeKind::Text(ref mut text) = doc.nodes[node1_id.get_usize()].kind {
                             text.remove_last_space();
                         }
                     } else {
                         if xmlspace1 == XmlSpace::Preserve && xmlspace2 == XmlSpace::Default {
-                            if let NodeKind::Text(ref mut text) = doc.nodes[node2_id.0].kind {
+                            if let NodeKind::Text(ref mut text) =
+                                doc.nodes[node2_id.get_usize()].kind
+                            {
                                 text.remove_first_space();
                             }
                         }
@@ -286,7 +292,7 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
                 && !doc.get(node1_id).text().is_empty()
             {
                 // Remove a leading space from a first text node.
-                if let NodeKind::Text(ref mut text) = doc.nodes[node1_id.0].kind {
+                if let NodeKind::Text(ref mut text) = doc.nodes[node1_id.get_usize()].kind {
                     text.remove_first_space();
                 }
             } else if is_last
@@ -296,7 +302,7 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
             {
                 // Remove a trailing space from a last text node.
                 // Also check that 'text2' is not empty already.
-                if let NodeKind::Text(ref mut text) = doc.nodes[node2_id.0].kind {
+                if let NodeKind::Text(ref mut text) = doc.nodes[node2_id.get_usize()].kind {
                     text.remove_last_space();
                 }
             }
@@ -307,7 +313,7 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
                 && doc.get(node2_id).text().is_empty()
                 && doc.get(node1_id).text().ends_with(' ')
             {
-                if let NodeKind::Text(ref mut text) = doc.nodes[node1_id.0].kind {
+                if let NodeKind::Text(ref mut text) = doc.nodes[node1_id.get_usize()].kind {
                     text.remove_last_space();
                 }
             }

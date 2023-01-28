@@ -151,7 +151,7 @@ impl Default for Options {
 impl Options {
     /// Converts a relative path into absolute relative to the SVG file itself.
     ///
-    /// If `OptionsRef::resources_dir` is not set, returns itself.
+    /// If `Options::resources_dir` is not set, returns itself.
     pub fn get_abs_path(&self, rel_path: &std::path::Path) -> std::path::PathBuf {
         match self.resources_dir {
             Some(ref dir) => dir.join(rel_path),

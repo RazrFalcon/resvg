@@ -122,6 +122,7 @@ Here are some of them:
 - [rustybuzz] - a [harfbuzz](https://github.com/harfbuzz/harfbuzz) subset ported to Rust
 - [ttf-parser] - a TrueType/OpenType font parser
 - [fontdb] - a simple, in-memory font database with CSS-like queries
+- [rosvgtree] - an SVG parsing library
 - [roxmltree] + [xmlparser] - an XML parsing libraries
 - [simplecss] - a pretty decent CSS 2 parser and selector
 - [pico-args] - an absolutely minimal, but surprisingly popular command-line arguments parser

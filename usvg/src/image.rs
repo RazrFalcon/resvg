@@ -3,12 +3,14 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::sync::Arc;
+
+use rosvgtree::{self, svgtypes, AttributeId as AId};
 use svgtypes::Length;
 
 use crate::geom::{Rect, Size, Transform, ViewBox};
-use crate::svgtree::{self, AId};
 use crate::{
-    converter, ImageRendering, Node, NodeExt, NodeKind, OptionLog, Options, Tree, Visibility,
+    converter, ImageRendering, Node, NodeExt, NodeKind, OptionLog, Options, SvgNodeExt, Tree,
+    Visibility,
 };
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -180,7 +182,7 @@ pub struct Image {
 }
 
 pub(crate) fn convert(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     state: &converter::State,
     parent: &mut Node,
 ) -> Option<()> {

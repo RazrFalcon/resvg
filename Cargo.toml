@@ -10,7 +10,7 @@ repository = "https://github.com/RazrFalcon/resvg"
 exclude = ["tests"]
 
 [workspace]
-members = ["c-api", "svgfilters", "usvg", "usvg-text-layout"]
+members = ["c-api", "svgfilters", "rosvgtree", "usvg", "usvg-text-layout"]
 
 [[bin]]
 name = "resvg"

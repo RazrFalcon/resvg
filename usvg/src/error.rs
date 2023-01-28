@@ -22,11 +22,11 @@ pub enum Error {
     InvalidSize,
 
     /// Failed to parse an SVG data.
-    ParsingFailed(roxmltree::Error),
+    ParsingFailed(rosvgtree::Error),
 }
 
-impl From<roxmltree::Error> for Error {
-    fn from(e: roxmltree::Error) -> Self {
+impl From<rosvgtree::Error> for Error {
+    fn from(e: rosvgtree::Error) -> Self {
         Error::ParsingFailed(e)
     }
 }

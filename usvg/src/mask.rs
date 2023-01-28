@@ -4,10 +4,10 @@
 
 use std::rc::Rc;
 
+use rosvgtree::{self, svgtypes, AttributeId as AId, ElementId as EId};
 use svgtypes::{Length, LengthUnit as Unit};
 
-use crate::svgtree::{self, AId, EId};
-use crate::{converter, Group, Node, NodeKind, OptionLog, Rect, Units};
+use crate::{converter, Group, Node, NodeKind, OptionLog, Rect, SvgNodeExt, Units};
 
 /// A mask element.
 ///
@@ -47,12 +47,12 @@ pub struct Mask {
 }
 
 pub(crate) fn convert(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     state: &converter::State,
     cache: &mut converter::Cache,
 ) -> Option<Rc<Mask>> {
     // A `mask` attribute must reference a `mask` element.
-    if !node.has_tag_name(EId::Mask) {
+    if node.tag_name() != Some(EId::Mask) {
         return None;
     }
 
@@ -79,7 +79,7 @@ pub(crate) fn convert(
 
     // Resolve linked mask.
     let mut mask = None;
-    if let Some(link) = node.attribute::<svgtree::Node>(AId::Mask) {
+    if let Some(link) = node.attribute::<rosvgtree::Node>(AId::Mask) {
         mask = convert(link, state, cache);
 
         // Linked `mask` must be valid.

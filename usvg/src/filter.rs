@@ -6,12 +6,14 @@
 
 use std::collections::HashSet;
 use std::rc::Rc;
+use std::str::FromStr;
 
+use rosvgtree::{self, svgtypes, AttributeId as AId, ElementId as EId};
 use strict_num::PositiveF64;
 use svgtypes::{AspectRatio, Length, LengthUnit as Unit};
 
 use crate::paint_server::{convert_units, resolve_number};
-use crate::svgtree::{self, AId, EId};
+use crate::rosvgtree_ext::{OpacityWrapper, SvgNodeExt};
 use crate::{
     converter, BlendMode, Color, FuzzyZero, Group, ImageRendering, Node, NodeKind, NonZeroF64,
     Opacity, OptionLog, Point, Rect, SvgColorExt, Units,
@@ -153,7 +155,7 @@ impl_enum_from_str!(ColorInterpolation,
 );
 
 pub(crate) fn convert(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     state: &converter::State,
     cache: &mut converter::Cache,
 ) -> Result<Vec<Rc<Filter>>, ()> {
@@ -273,7 +275,7 @@ pub(crate) fn convert(
 }
 
 fn convert_url(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     state: &converter::State,
     cache: &mut converter::Cache,
 ) -> Result<Option<Rc<Filter>>, ()> {
@@ -347,10 +349,11 @@ fn convert_url(
     Ok(Some(filter))
 }
 
-fn find_filter_with_primitives(node: svgtree::Node) -> Option<svgtree::Node> {
-    for link_id in node.href_iter() {
-        let link = node.document().get(link_id);
-        if !link.has_tag_name(EId::Filter) {
+fn find_filter_with_primitives<'a>(
+    node: rosvgtree::Node<'a, 'a>,
+) -> Option<rosvgtree::Node<'a, 'a>> {
+    for link in node.href_iter() {
+        if link.tag_name() != Some(EId::Filter) {
             log::warn!(
                 "Filter '{}' cannot reference '{}' via 'xlink:href'.",
                 node.element_id(),
@@ -373,7 +376,7 @@ struct FilterResults {
 }
 
 fn collect_children(
-    filter: &svgtree::Node,
+    filter: &rosvgtree::Node,
     units: Units,
     state: &converter::State,
     cache: &mut converter::Cache,
@@ -428,7 +431,7 @@ fn collect_children(
 }
 
 fn convert_primitive(
-    fe: svgtree::Node,
+    fe: rosvgtree::Node,
     kind: Kind,
     units: Units,
     state: &converter::State,
@@ -460,7 +463,7 @@ pub(crate) fn create_dummy_primitive() -> Kind {
 }
 
 #[inline(never)]
-fn resolve_input(node: svgtree::Node, aid: AId, primitives: &[Primitive]) -> Input {
+fn resolve_input(node: rosvgtree::Node, aid: AId, primitives: &[Primitive]) -> Input {
     match node.attribute(aid) {
         Some(s) => {
             let input = parse_in(s);
@@ -505,7 +508,7 @@ fn parse_in(s: &str) -> Input {
     }
 }
 
-fn gen_result(node: svgtree::Node, results: &mut FilterResults) -> String {
+fn gen_result(node: rosvgtree::Node, results: &mut FilterResults) -> String {
     match node.attribute::<&str>(AId::Result) {
         Some(s) => {
             // Remember predefined result.
@@ -549,7 +552,7 @@ pub struct Blend {
     pub mode: BlendMode,
 }
 
-fn convert_blend(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
+fn convert_blend(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
     let mode = fe.attribute(AId::Mode).unwrap_or_default();
     let input1 = resolve_input(fe, AId::In, primitives);
     let input2 = resolve_input(fe, AId::In2, primitives);
@@ -595,7 +598,7 @@ impl Default for ColorMatrixKind {
     }
 }
 
-fn convert_color_matrix(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
+fn convert_color_matrix(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
     let kind = convert_color_matrix_kind(fe).unwrap_or_default();
     Kind::ColorMatrix(ColorMatrix {
         input: resolve_input(fe, AId::In, primitives),
@@ -603,10 +606,10 @@ fn convert_color_matrix(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     })
 }
 
-fn convert_color_matrix_kind(fe: svgtree::Node) -> Option<ColorMatrixKind> {
+fn convert_color_matrix_kind(fe: rosvgtree::Node) -> Option<ColorMatrixKind> {
     match fe.attribute(AId::Type) {
         Some("saturate") => {
-            if let Some(list) = fe.attribute::<&Vec<f64>>(AId::Values) {
+            if let Some(list) = fe.attribute::<Vec<f64>>(AId::Values) {
                 if !list.is_empty() {
                     let n = crate::utils::f64_bound(0.0, list[0], 1.0);
                     return Some(ColorMatrixKind::Saturate(PositiveF64::new(n).unwrap()));
@@ -616,7 +619,7 @@ fn convert_color_matrix_kind(fe: svgtree::Node) -> Option<ColorMatrixKind> {
             }
         }
         Some("hueRotate") => {
-            if let Some(list) = fe.attribute::<&Vec<f64>>(AId::Values) {
+            if let Some(list) = fe.attribute::<Vec<f64>>(AId::Values) {
                 if !list.is_empty() {
                     return Some(ColorMatrixKind::HueRotate(list[0]));
                 } else {
@@ -629,7 +632,7 @@ fn convert_color_matrix_kind(fe: svgtree::Node) -> Option<ColorMatrixKind> {
         }
         _ => {
             // Fallback to `matrix`.
-            if let Some(list) = fe.attribute::<&Vec<f64>>(AId::Values) {
+            if let Some(list) = fe.attribute::<Vec<f64>>(AId::Values) {
                 if list.len() == 20 {
                     return Some(ColorMatrixKind::Matrix(list.clone()));
                 }
@@ -694,7 +697,7 @@ pub enum TransferFunction {
     },
 }
 
-fn convert_component_transfer(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
+fn convert_component_transfer(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
     let mut kind = ComponentTransfer {
         input: resolve_input(fe, AId::In, primitives),
         func_r: TransferFunction::Identity,
@@ -718,14 +721,14 @@ fn convert_component_transfer(fe: svgtree::Node, primitives: &[Primitive]) -> Ki
     Kind::ComponentTransfer(kind)
 }
 
-fn convert_transfer_function(node: svgtree::Node) -> Option<TransferFunction> {
+fn convert_transfer_function(node: rosvgtree::Node) -> Option<TransferFunction> {
     match node.attribute(AId::Type)? {
         "identity" => Some(TransferFunction::Identity),
-        "table" => match node.attribute::<&Vec<f64>>(AId::TableValues) {
+        "table" => match node.attribute::<Vec<f64>>(AId::TableValues) {
             Some(values) => Some(TransferFunction::Table(values.clone())),
             None => Some(TransferFunction::Table(Vec::new())),
         },
-        "discrete" => match node.attribute::<&Vec<f64>>(AId::TableValues) {
+        "discrete" => match node.attribute::<Vec<f64>>(AId::TableValues) {
             Some(values) => Some(TransferFunction::Discrete(values.clone())),
             None => Some(TransferFunction::Discrete(Vec::new())),
         },
@@ -775,17 +778,17 @@ pub enum CompositeOperator {
     Arithmetic { k1: f64, k2: f64, k3: f64, k4: f64 },
 }
 
-fn convert_composite(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
+fn convert_composite(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
     let operator = match fe.attribute(AId::Operator).unwrap_or("over") {
         "in" => CompositeOperator::In,
         "out" => CompositeOperator::Out,
         "atop" => CompositeOperator::Atop,
         "xor" => CompositeOperator::Xor,
         "arithmetic" => CompositeOperator::Arithmetic {
-            k1: fe.attribute(AId::K1).unwrap_or(0.0),
-            k2: fe.attribute(AId::K2).unwrap_or(0.0),
-            k3: fe.attribute(AId::K3).unwrap_or(0.0),
-            k4: fe.attribute(AId::K4).unwrap_or(0.0),
+            k1: fe.attribute::<f64>(AId::K1).unwrap_or(0.0),
+            k2: fe.attribute::<f64>(AId::K2).unwrap_or(0.0),
+            k3: fe.attribute::<f64>(AId::K3).unwrap_or(0.0),
+            k4: fe.attribute::<f64>(AId::K4).unwrap_or(0.0),
         },
         _ => CompositeOperator::Over,
     };
@@ -901,7 +904,7 @@ pub enum EdgeMode {
     Wrap,
 }
 
-fn convert_convolve_matrix(fe: svgtree::Node, primitives: &[Primitive]) -> Option<Kind> {
+fn convert_convolve_matrix(fe: rosvgtree::Node, primitives: &[Primitive]) -> Option<Kind> {
     fn parse_target(target: Option<f64>, order: u32) -> Option<u32> {
         let default_target = (order as f32 / 2.0).floor() as u32;
         let target = target.unwrap_or(default_target as f64) as i32;
@@ -925,7 +928,7 @@ fn convert_convolve_matrix(fe: svgtree::Node, primitives: &[Primitive]) -> Optio
     }
 
     let mut matrix = Vec::new();
-    if let Some(list) = fe.attribute::<&Vec<f64>>(AId::KernelMatrix) {
+    if let Some(list) = fe.attribute::<Vec<f64>>(AId::KernelMatrix) {
         if list.len() == (order_x * order_y) as usize {
             matrix = list.clone();
         }
@@ -938,7 +941,7 @@ fn convert_convolve_matrix(fe: svgtree::Node, primitives: &[Primitive]) -> Optio
         kernel_sum = 1.0;
     }
 
-    let divisor = fe.attribute::<f64>(AId::Divisor).unwrap_or(kernel_sum);
+    let divisor = fe.attribute(AId::Divisor).unwrap_or(kernel_sum);
     if divisor.is_fuzzy_zero() {
         return None;
     }
@@ -1009,7 +1012,7 @@ pub enum ColorChannel {
     A,
 }
 
-fn convert_displacement_map(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
+fn convert_displacement_map(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
     let parse_channel = |aid| match fe.attribute(aid).unwrap_or("A") {
         "R" => ColorChannel::R,
         "G" => ColorChannel::G,
@@ -1065,7 +1068,7 @@ pub struct DropShadow {
     pub opacity: Opacity,
 }
 
-fn convert_drop_shadow(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
+fn convert_drop_shadow(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
     let (std_dev_x, std_dev_y) = convert_std_dev_attr(fe, "2 2");
 
     let (color, opacity) = fe
@@ -1073,14 +1076,19 @@ fn convert_drop_shadow(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
         .unwrap_or_else(svgtypes::Color::black)
         .split_alpha();
 
+    let flood_opacity = fe
+        .attribute::<OpacityWrapper>(AId::FloodOpacity)
+        .map(|v| v.0)
+        .unwrap_or(Opacity::ONE);
+
     Kind::DropShadow(DropShadow {
         input: resolve_input(fe, AId::In, primitives),
-        dx: fe.attribute::<f64>(AId::Dx).unwrap_or(2.0),
-        dy: fe.attribute::<f64>(AId::Dy).unwrap_or(2.0),
+        dx: fe.attribute(AId::Dx).unwrap_or(2.0),
+        dy: fe.attribute(AId::Dy).unwrap_or(2.0),
         std_dev_x,
         std_dev_y,
         color,
-        opacity: opacity * fe.attribute(AId::FloodOpacity).unwrap_or(Opacity::ONE),
+        opacity: opacity * flood_opacity,
     })
 }
 
@@ -1100,15 +1108,20 @@ pub struct Flood {
     pub opacity: Opacity,
 }
 
-fn convert_flood(fe: svgtree::Node) -> Kind {
+fn convert_flood(fe: rosvgtree::Node) -> Kind {
     let (color, opacity) = fe
         .attribute(AId::FloodColor)
         .unwrap_or_else(svgtypes::Color::black)
         .split_alpha();
 
+    let flood_opacity = fe
+        .attribute::<OpacityWrapper>(AId::FloodOpacity)
+        .map(|v| v.0)
+        .unwrap_or(Opacity::ONE);
+
     Kind::Flood(Flood {
         color,
-        opacity: opacity * fe.attribute(AId::FloodOpacity).unwrap_or(Opacity::ONE),
+        opacity: opacity * flood_opacity,
     })
 }
 
@@ -1133,7 +1146,7 @@ pub struct GaussianBlur {
     pub std_dev_y: PositiveF64,
 }
 
-fn convert_gaussian_blur(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
+fn convert_gaussian_blur(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
     let (std_dev_x, std_dev_y) = convert_std_dev_attr(fe, "0 0");
     Kind::GaussianBlur(GaussianBlur {
         input: resolve_input(fe, AId::In, primitives),
@@ -1142,8 +1155,8 @@ fn convert_gaussian_blur(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
     })
 }
 
-fn convert_std_dev_attr(fe: svgtree::Node, default: &str) -> (PositiveF64, PositiveF64) {
-    let text = fe.attribute::<&str>(AId::StdDeviation).unwrap_or(default);
+fn convert_std_dev_attr(fe: rosvgtree::Node, default: &str) -> (PositiveF64, PositiveF64) {
+    let text = fe.attribute(AId::StdDeviation).unwrap_or(default);
     let mut parser = svgtypes::NumberListParser::from(text);
 
     let n1 = parser.next().and_then(|n| n.ok());
@@ -1195,7 +1208,7 @@ pub enum ImageKind {
 }
 
 fn convert_image(
-    fe: svgtree::Node,
+    fe: rosvgtree::Node,
     state: &converter::State,
     cache: &mut converter::Cache,
 ) -> Kind {
@@ -1204,7 +1217,7 @@ fn convert_image(
         .find_attribute(AId::ImageRendering)
         .unwrap_or(state.opt.image_rendering);
 
-    if let Some(node) = fe.attribute::<svgtree::Node>(AId::Href) {
+    if let Some(node) = fe.attribute::<rosvgtree::Node>(AId::Href) {
         let mut state = state.clone();
         state.fe_image_link = true;
         let mut root = Node::new(NodeKind::Group(Group::default()));
@@ -1271,7 +1284,7 @@ pub struct DiffuseLighting {
     pub light_source: LightSource,
 }
 
-fn convert_diffuse_lighting(fe: svgtree::Node, primitives: &[Primitive]) -> Option<Kind> {
+fn convert_diffuse_lighting(fe: rosvgtree::Node, primitives: &[Primitive]) -> Option<Kind> {
     let light_source = convert_light_source(fe)?;
     Some(Kind::DiffuseLighting(DiffuseLighting {
         input: resolve_input(fe, AId::In, primitives),
@@ -1318,7 +1331,7 @@ pub struct SpecularLighting {
     pub light_source: LightSource,
 }
 
-fn convert_specular_lighting(fe: svgtree::Node, primitives: &[Primitive]) -> Option<Kind> {
+fn convert_specular_lighting(fe: rosvgtree::Node, primitives: &[Primitive]) -> Option<Kind> {
     let light_source = convert_light_source(fe)?;
 
     let specular_exponent = fe.attribute(AId::SpecularExponent).unwrap_or(1.0);
@@ -1340,16 +1353,24 @@ fn convert_specular_lighting(fe: svgtree::Node, primitives: &[Primitive]) -> Opt
 }
 
 #[inline(never)]
-fn convert_lighting_color(node: svgtree::Node) -> Color {
+fn convert_lighting_color(node: rosvgtree::Node) -> Color {
     // Color's alpha doesn't affect lighting-color. Simply skip it.
-    match node.attribute::<&svgtree::AttributeValue>(AId::LightingColor) {
-        Some(svgtree::AttributeValue::CurrentColor) => {
+    match node.attribute(AId::LightingColor) {
+        Some("currentColor") => {
             node.find_attribute(AId::Color)
-                .unwrap_or_else(svgtypes::Color::black)
+                // Yes, a missing `currentColor` resolves to black and not white.
+                .unwrap_or(svgtypes::Color::black())
                 .split_alpha()
                 .0
         }
-        Some(svgtree::AttributeValue::Color(c)) => c.split_alpha().0,
+        Some(value) => {
+            if let Ok(c) = svgtypes::Color::from_str(value) {
+                c.split_alpha().0
+            } else {
+                log::warn!("Failed to parse lighting-color value: '{}'.", value);
+                Color::white()
+            }
+        }
         _ => Color::white(),
     }
 }
@@ -1448,7 +1469,7 @@ pub struct SpotLight {
 }
 
 #[inline(never)]
-fn convert_light_source(parent: svgtree::Node) -> Option<LightSource> {
+fn convert_light_source(parent: rosvgtree::Node) -> Option<LightSource> {
     let child = parent.children().find(|n| {
         matches!(
             n.tag_name(),
@@ -1497,7 +1518,7 @@ pub struct Merge {
     pub inputs: Vec<Input>,
 }
 
-fn convert_merge(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
+fn convert_merge(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
     let mut inputs = Vec::new();
     for child in fe.children() {
         inputs.push(resolve_input(child, AId::In, primitives));
@@ -1544,7 +1565,7 @@ pub enum MorphologyOperator {
     Dilate,
 }
 
-fn convert_morphology(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
+fn convert_morphology(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
     let operator = match fe.attribute(AId::Operator).unwrap_or("erode") {
         "dilate" => MorphologyOperator::Dilate,
         _ => MorphologyOperator::Erode,
@@ -1552,7 +1573,7 @@ fn convert_morphology(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
 
     let mut radius_x = PositiveF64::new(1.0).unwrap();
     let mut radius_y = PositiveF64::new(1.0).unwrap();
-    if let Some(list) = fe.attribute::<&Vec<f64>>(AId::Radius) {
+    if let Some(list) = fe.attribute::<Vec<f64>>(AId::Radius) {
         let mut rx = 0.0;
         let mut ry = 0.0;
         if list.len() == 2 {
@@ -1609,7 +1630,7 @@ pub struct Offset {
     pub dy: f64,
 }
 
-fn convert_offset(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
+fn convert_offset(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
     Kind::Offset(Offset {
         input: resolve_input(fe, AId::In, primitives),
         dx: fe.attribute::<f64>(AId::Dx).unwrap_or(0.0),
@@ -1628,7 +1649,7 @@ pub struct Tile {
     pub input: Input,
 }
 
-fn convert_tile(fe: svgtree::Node, primitives: &[Primitive]) -> Kind {
+fn convert_tile(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
     Kind::Tile(Tile {
         input: resolve_input(fe, AId::In, primitives),
     })
@@ -1673,9 +1694,9 @@ pub enum TurbulenceKind {
     Turbulence,
 }
 
-fn convert_turbulence(fe: svgtree::Node) -> Kind {
+fn convert_turbulence(fe: rosvgtree::Node) -> Kind {
     let mut base_frequency = Point::new(PositiveF64::ZERO, PositiveF64::ZERO);
-    if let Some(list) = fe.attribute::<&Vec<f64>>(AId::BaseFrequency) {
+    if let Some(list) = fe.attribute::<Vec<f64>>(AId::BaseFrequency) {
         let mut x = 0.0;
         let mut y = 0.0;
         if list.len() == 2 {
@@ -1852,7 +1873,7 @@ fn convert_contrast_function(amount: f64) -> Kind {
 }
 
 #[inline(never)]
-fn convert_blur_function(node: svgtree::Node, std_dev: Length, state: &converter::State) -> Kind {
+fn convert_blur_function(node: rosvgtree::Node, std_dev: Length, state: &converter::State) -> Kind {
     let std_dev = PositiveF64::new(crate::units::convert_length(
         std_dev,
         node,
@@ -1870,7 +1891,7 @@ fn convert_blur_function(node: svgtree::Node, std_dev: Length, state: &converter
 
 #[inline(never)]
 fn convert_drop_shadow_function(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     color: Option<svgtypes::Color>,
     dx: Length,
     dy: Length,

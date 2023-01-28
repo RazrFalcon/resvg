@@ -4,11 +4,14 @@
 
 use std::rc::Rc;
 
-use crate::svgtree::{self, AId};
-use crate::{
-    converter, paint_server, FuzzyEq, LinearGradient, Opacity, Pattern, RadialGradient, Units,
-};
+use rosvgtree::{self, svgtypes, AttributeId as AId};
 use strict_num::NonZeroPositiveF64;
+
+use crate::rosvgtree_ext::OpacityWrapper;
+use crate::{
+    converter, paint_server, FuzzyEq, LinearGradient, Opacity, Pattern, RadialGradient, SvgNodeExt,
+    Units,
+};
 
 macro_rules! wrap {
     ($name:ident) => {
@@ -265,7 +268,7 @@ impl PartialEq for Paint {
 }
 
 pub(crate) fn resolve_fill(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     has_bbox: bool,
     state: &converter::State,
     cache: &mut converter::Cache,
@@ -280,24 +283,26 @@ pub(crate) fn resolve_fill(
     }
 
     let mut sub_opacity = Opacity::ONE;
-    let paint = if let Some(n) = node.find_node_with_attribute(AId::Fill) {
+    let paint = if let Some(n) = node.ancestors().find(|n| n.has_attribute(AId::Fill)) {
         convert_paint(n, AId::Fill, has_bbox, state, &mut sub_opacity, cache)?
     } else {
         Paint::Color(Color::black())
     };
 
+    let fill_opacity = node
+        .attribute::<OpacityWrapper>(AId::FillOpacity)
+        .map(|v| v.0)
+        .unwrap_or(Opacity::ONE);
+
     Some(Fill {
         paint,
-        opacity: sub_opacity
-            * node
-                .find_attribute(AId::FillOpacity)
-                .unwrap_or(Opacity::ONE),
+        opacity: sub_opacity * fill_opacity,
         rule: node.find_attribute(AId::FillRule).unwrap_or_default(),
     })
 }
 
 pub(crate) fn resolve_stroke(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     has_bbox: bool,
     state: &converter::State,
     cache: &mut converter::Cache,
@@ -308,7 +313,7 @@ pub(crate) fn resolve_stroke(
     }
 
     let mut sub_opacity = Opacity::ONE;
-    let paint = if let Some(n) = node.find_node_with_attribute(AId::Stroke) {
+    let paint = if let Some(n) = node.ancestors().find(|n| n.has_attribute(AId::Stroke)) {
         convert_paint(n, AId::Stroke, has_bbox, state, &mut sub_opacity, cache)?
     } else {
         return None;
@@ -321,15 +326,17 @@ pub(crate) fn resolve_stroke(
     let miterlimit = if miterlimit < 1.0 { 1.0 } else { miterlimit };
     let miterlimit = StrokeMiterlimit::new(miterlimit);
 
+    let stroke_opacity = node
+        .attribute::<OpacityWrapper>(AId::StrokeOpacity)
+        .map(|v| v.0)
+        .unwrap_or(Opacity::ONE);
+
     let stroke = Stroke {
         paint,
         dasharray: conv_dasharray(node, state),
         dashoffset: node.resolve_length(AId::StrokeDashoffset, state, 0.0) as f32,
         miterlimit,
-        opacity: sub_opacity
-            * node
-                .find_attribute(AId::StrokeOpacity)
-                .unwrap_or(Opacity::ONE),
+        opacity: sub_opacity * stroke_opacity,
         width,
         linecap: node.find_attribute(AId::StrokeLinecap).unwrap_or_default(),
         linejoin: node.find_attribute(AId::StrokeLinejoin).unwrap_or_default(),
@@ -339,15 +346,33 @@ pub(crate) fn resolve_stroke(
 }
 
 fn convert_paint(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     aid: AId,
     has_bbox: bool,
     state: &converter::State,
     opacity: &mut Opacity,
     cache: &mut converter::Cache,
 ) -> Option<Paint> {
-    match node.attribute::<&svgtree::AttributeValue>(aid)? {
-        svgtree::AttributeValue::CurrentColor => {
+    let value: &str = node.attribute(aid)?;
+    let paint = match svgtypes::Paint::from_str(value) {
+        Ok(v) => v,
+        Err(_) => {
+            if aid == AId::Fill {
+                log::warn!(
+                    "Failed to parse fill value: '{}'. Fallback to black.",
+                    value
+                );
+                svgtypes::Paint::Color(svgtypes::Color::black())
+            } else {
+                return None;
+            }
+        }
+    };
+
+    match paint {
+        svgtypes::Paint::None => None,
+        svgtypes::Paint::Inherit => None, // already resolved by rosvgtree
+        svgtypes::Paint::CurrentColor => {
             let svg_color: svgtypes::Color = node
                 .find_attribute(AId::Color)
                 .unwrap_or_else(svgtypes::Color::black);
@@ -355,12 +380,12 @@ fn convert_paint(
             *opacity = alpha;
             Some(Paint::Color(color))
         }
-        svgtree::AttributeValue::Color(svg_color) => {
+        svgtypes::Paint::Color(svg_color) => {
             let (color, alpha) = svg_color.split_alpha();
             *opacity = alpha;
             Some(Paint::Color(color))
         }
-        svgtree::AttributeValue::Paint(func_iri, fallback) => {
+        svgtypes::Paint::FuncIRI(func_iri, fallback) => {
             if let Some(link) = node.document().element_by_id(func_iri) {
                 let tag_name = link.tag_name().unwrap();
                 if tag_name.is_paint_server() {
@@ -371,7 +396,7 @@ fn convert_paint(
                             //
                             // See SVG spec 7.11 for details.
                             if !has_bbox && paint.units() == Some(Units::ObjectBoundingBox) {
-                                from_fallback(node, *fallback, opacity)
+                                from_fallback(node, fallback, opacity)
                             } else {
                                 Some(paint)
                             }
@@ -380,22 +405,21 @@ fn convert_paint(
                             *opacity = so;
                             Some(Paint::Color(color))
                         }
-                        None => from_fallback(node, *fallback, opacity),
+                        None => from_fallback(node, fallback, opacity),
                     }
                 } else {
                     log::warn!("'{}' cannot be used to {} a shape.", tag_name, aid);
                     None
                 }
             } else {
-                from_fallback(node, *fallback, opacity)
+                from_fallback(node, fallback, opacity)
             }
         }
-        _ => None,
     }
 }
 
 fn from_fallback(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     fallback: Option<svgtypes::PaintFallback>,
     opacity: &mut Opacity,
 ) -> Option<Paint> {
@@ -419,8 +443,10 @@ fn from_fallback(
 
 // Prepare the 'stroke-dasharray' according to:
 // https://www.w3.org/TR/SVG11/painting.html#StrokeDasharrayProperty
-fn conv_dasharray(node: svgtree::Node, state: &converter::State) -> Option<Vec<f64>> {
-    let node = node.find_node_with_attribute(AId::StrokeDasharray)?;
+fn conv_dasharray(node: rosvgtree::Node, state: &converter::State) -> Option<Vec<f64>> {
+    let node = node
+        .ancestors()
+        .find(|n| n.has_attribute(AId::StrokeDasharray))?;
     let list = super::units::convert_list(node, AId::StrokeDasharray, state)?;
 
     // `A negative value is an error`

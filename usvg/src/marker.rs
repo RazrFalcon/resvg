@@ -5,33 +5,36 @@
 use std::f64;
 use std::rc::Rc;
 
+use rosvgtree::{self, svgtypes, AttributeId as AId, ElementId as EId};
 use strict_num::NonZeroPositiveF64;
 use svgtypes::Length;
 
 use crate::geom::{FuzzyEq, FuzzyZero, Rect, Size, Transform, ViewBox};
-use crate::svgtree::{self, AId, EId};
 use crate::PathSegment as Segment;
 use crate::{converter, style, utils};
-use crate::{ClipPath, Group, Node, NodeExt, NodeKind, Path, PathData};
+use crate::{ClipPath, Group, Node, NodeExt, NodeKind, Path, PathData, SvgNodeExt};
 
-pub(crate) fn is_valid(node: svgtree::Node) -> bool {
+pub(crate) fn is_valid(node: rosvgtree::Node) -> bool {
     // `marker-*` attributes cannot be set on shapes inside a `clipPath`.
-    if node.ancestors().any(|n| n.has_tag_name(EId::ClipPath)) {
+    if node
+        .ancestors()
+        .any(|n| n.tag_name() == Some(EId::ClipPath))
+    {
         return false;
     }
 
-    node.find_attribute::<svgtree::Node>(AId::MarkerStart)
+    node.find_attribute::<rosvgtree::Node>(AId::MarkerStart)
         .is_some()
         || node
-            .find_attribute::<svgtree::Node>(AId::MarkerMid)
+            .find_attribute::<rosvgtree::Node>(AId::MarkerMid)
             .is_some()
         || node
-            .find_attribute::<svgtree::Node>(AId::MarkerEnd)
+            .find_attribute::<rosvgtree::Node>(AId::MarkerEnd)
             .is_some()
 }
 
 pub(crate) fn convert(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     path: &PathData,
     state: &converter::State,
     cache: &mut converter::Cache,
@@ -45,8 +48,8 @@ pub(crate) fn convert(
 
     for (aid, kind) in &list {
         let mut marker = None;
-        if let Some(link) = node.find_attribute::<svgtree::Node>(*aid) {
-            if link.has_tag_name(EId::Marker) {
+        if let Some(link) = node.find_attribute::<rosvgtree::Node>(*aid) {
+            if link.tag_name() == Some(EId::Marker) {
                 marker = Some(link);
             }
         }
@@ -75,9 +78,9 @@ enum MarkerOrientation {
 }
 
 fn resolve(
-    shape_node: svgtree::Node,
+    shape_node: rosvgtree::Node,
     path: &PathData,
-    marker_node: svgtree::Node,
+    marker_node: rosvgtree::Node,
     marker_kind: MarkerKind,
     state: &converter::State,
     cache: &mut converter::Cache,
@@ -87,7 +90,7 @@ fn resolve(
 
     let r = convert_rect(marker_node, state)?;
 
-    let view_box = marker_node.get_viewbox().map(|vb| ViewBox {
+    let view_box = marker_node.parse_viewbox().map(|vb| ViewBox {
         rect: vb,
         aspect: marker_node
             .attribute(AId::PreserveAspectRatio)
@@ -169,8 +172,8 @@ fn resolve(
 }
 
 fn stroke_scale(
-    path_node: svgtree::Node,
-    marker_node: svgtree::Node,
+    path_node: rosvgtree::Node,
+    marker_node: rosvgtree::Node,
     state: &converter::State,
 ) -> Option<NonZeroPositiveF64> {
     match marker_node.attribute(AId::MarkerUnits) {
@@ -449,7 +452,7 @@ fn get_prev_vertex(segments: &[Segment], idx: usize) -> (f64, f64) {
     }
 }
 
-fn convert_rect(node: svgtree::Node, state: &converter::State) -> Option<Rect> {
+fn convert_rect(node: rosvgtree::Node, state: &converter::State) -> Option<Rect> {
     Rect::new(
         node.convert_user_length(AId::RefX, state, Length::zero()),
         node.convert_user_length(AId::RefY, state, Length::zero()),
@@ -458,7 +461,7 @@ fn convert_rect(node: svgtree::Node, state: &converter::State) -> Option<Rect> {
     )
 }
 
-fn convert_orientation(node: svgtree::Node) -> MarkerOrientation {
+fn convert_orientation(node: rosvgtree::Node) -> MarkerOrientation {
     if node.attribute(AId::Orient) == Some("auto") {
         MarkerOrientation::Auto
     } else {

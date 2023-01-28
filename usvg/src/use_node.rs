@@ -4,15 +4,15 @@
 
 use std::rc::Rc;
 
+use rosvgtree::{self, svgtypes, AttributeId as AId, ElementId as EId};
 use svgtypes::{Length, LengthUnit};
 
 use crate::geom::{FuzzyEq, IsValidLength, Rect, Size, Transform};
-use crate::svgtree::{self, AId, EId};
 use crate::{clippath, converter, style, utils};
-use crate::{Group, Node, NodeExt, NodeKind, Path, PathData};
+use crate::{Group, Node, NodeExt, NodeKind, Path, PathData, SvgNodeExt};
 
 pub(crate) fn convert(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     state: &converter::State,
     cache: &mut converter::Cache,
     parent: &mut Node,
@@ -118,7 +118,7 @@ pub(crate) fn convert(
 }
 
 pub(crate) fn convert_svg(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     state: &converter::State,
     cache: &mut converter::Cache,
     parent: &mut Node,
@@ -141,7 +141,7 @@ pub(crate) fn convert_svg(
     // Note that we're not updating State::size - it's a completely different property.
     let mut state = state.clone();
     state.view_box = {
-        if let Some(vb) = node.get_viewbox() {
+        if let Some(vb) = node.parse_viewbox() {
             vb
         } else {
             // No `viewBox` attribute? Then use `x`, `y`, `width` and `height` instead.
@@ -169,7 +169,7 @@ pub(crate) fn convert_svg(
 }
 
 fn clip_element(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     clip_rect: Rect,
     transform: Transform,
     cache: &mut converter::Cache,
@@ -213,7 +213,7 @@ fn clip_element(
 }
 
 fn convert_children(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     transform: Transform,
     state: &converter::State,
     cache: &mut converter::Cache,
@@ -240,8 +240,8 @@ fn convert_children(
 }
 
 fn get_clip_rect(
-    use_node: svgtree::Node,
-    symbol_node: svgtree::Node,
+    use_node: rosvgtree::Node,
+    symbol_node: rosvgtree::Node,
     state: &converter::State,
 ) -> Option<Rect> {
     // No need to clip elements with overflow:visible.
@@ -291,7 +291,7 @@ fn get_clip_rect(
     Rect::new(x, y, w, h)
 }
 
-fn use_node_size(node: svgtree::Node, state: &converter::State) -> (f64, f64) {
+fn use_node_size(node: rosvgtree::Node, state: &converter::State) -> (f64, f64) {
     let def = Length::new(100.0, LengthUnit::Percent);
     let w = node.convert_user_length(AId::Width, state, def);
     let h = node.convert_user_length(AId::Height, state, def);
@@ -299,8 +299,8 @@ fn use_node_size(node: svgtree::Node, state: &converter::State) -> (f64, f64) {
 }
 
 fn viewbox_transform(
-    node: svgtree::Node,
-    linked: svgtree::Node,
+    node: rosvgtree::Node,
+    linked: rosvgtree::Node,
     state: &converter::State,
 ) -> Option<Transform> {
     let (mut w, mut h) = use_node_size(node, state);
@@ -314,7 +314,7 @@ fn viewbox_transform(
     }
 
     let size = Size::new(w, h)?;
-    let vb = linked.get_viewbox()?;
+    let vb = linked.parse_viewbox()?;
     let aspect = linked
         .attribute(AId::PreserveAspectRatio)
         .unwrap_or_default();

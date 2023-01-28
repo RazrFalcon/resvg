@@ -1,0 +1,23 @@
+[package]
+name = "rosvgtree"
+version = "0.1.0"
+authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
+keywords = ["svg"]
+license = "MIT OR Apache-2.0"
+edition = "2018"
+description = "Represent an SVG as a read-only tree."
+categories = ["parser-implementations"]
+repository = "https://github.com/RazrFalcon/resvg"
+documentation = "https://docs.rs/rosvgtree/"
+readme = "README.md"
+workspace = ".."
+
+[dependencies]
+log = "0.4"
+roxmltree = "0.18"
+simplecss = "0.2"
+siphasher = "0.3" # perfect hash implementation
+svgtypes = "0.9"
+
+[dev-dependencies]
+xmlwriter = "0.1"

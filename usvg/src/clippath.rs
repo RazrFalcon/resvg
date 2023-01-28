@@ -3,9 +3,11 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::rc::Rc;
+use std::str::FromStr;
 
-use crate::svgtree::{self, AId, EId};
-use crate::{converter, Group, Node, NodeKind, Transform, Units};
+use rosvgtree::{self, svgtypes, AttributeId as AId, ElementId as EId};
+
+use crate::{converter, FuzzyEq, Group, Node, NodeKind, Transform, Units};
 
 /// A clip-path element.
 ///
@@ -52,18 +54,17 @@ impl Default for ClipPath {
 }
 
 pub(crate) fn convert(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     state: &converter::State,
     cache: &mut converter::Cache,
 ) -> Option<Rc<ClipPath>> {
     // A `clip-path` attribute must reference a `clipPath` element.
-    if !node.has_tag_name(EId::ClipPath) {
+    if node.tag_name() != Some(EId::ClipPath) {
         return None;
     }
 
-    if !node.has_valid_transform(AId::Transform) {
-        return None;
-    }
+    // The whole clip path should be ignored when a transform is invalid.
+    let transform = resolve_transform(node)?;
 
     // Check if this element was already converted.
     if let Some(clip) = cache.clip_paths.get(node.element_id()) {
@@ -72,7 +73,7 @@ pub(crate) fn convert(
 
     // Resolve linked clip path.
     let mut clip_path = None;
-    if let Some(link) = node.attribute::<svgtree::Node>(AId::ClipPath) {
+    if let Some(link) = node.attribute::<rosvgtree::Node>(AId::ClipPath) {
         clip_path = convert(link, state, cache);
 
         // Linked `clipPath` must be valid.
@@ -87,7 +88,7 @@ pub(crate) fn convert(
     let mut clip = ClipPath {
         id: node.element_id().to_string(),
         units,
-        transform: node.attribute(AId::Transform).unwrap_or_default(),
+        transform,
         clip_path,
         root: Node::new(NodeKind::Group(Group::default())),
     };
@@ -106,5 +107,31 @@ pub(crate) fn convert(
     } else {
         // A clip path without children is invalid.
         None
+    }
+}
+
+fn resolve_transform(node: rosvgtree::Node) -> Option<Transform> {
+    // Do not use Node::attribute::<Transform>, because it will always
+    // return a valid transform.
+
+    let value: &str = match node.attribute(AId::Transform) {
+        Some(v) => v,
+        None => return Some(Transform::default()),
+    };
+
+    let ts = match svgtypes::Transform::from_str(value) {
+        Ok(v) => v,
+        Err(_) => {
+            log::warn!("Failed to parse {} value: '{}'.", AId::Transform, value);
+            return None;
+        }
+    };
+
+    let ts = crate::Transform::from(ts);
+    let (sx, sy) = ts.get_scale();
+    if sx.fuzzy_eq(&0.0) || sy.fuzzy_eq(&0.0) {
+        None
+    } else {
+        Some(ts)
     }
 }

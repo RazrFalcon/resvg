@@ -5,15 +5,16 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 
+use rosvgtree::{self, svgtypes, AttributeId as AId, ElementId as EId};
 use svgtypes::{Length, LengthUnit as Unit};
 
-use crate::svgtree::{self, AId, EId};
+use crate::rosvgtree_ext::OpacityWrapper;
 use crate::*;
 
 #[derive(Clone)]
 pub struct State<'a> {
-    pub(crate) parent_clip_path: Option<svgtree::Node<'a>>,
-    pub(crate) parent_marker: Option<svgtree::Node<'a>>,
+    pub(crate) parent_clip_path: Option<rosvgtree::Node<'a, 'a>>,
+    pub(crate) parent_marker: Option<rosvgtree::Node<'a, 'a>>,
     pub(crate) fe_image_link: bool,
     /// The size of the root SVG element.
     /// Right now, used only by use_node::get_clip_rect.
@@ -77,12 +78,14 @@ fn string_hash(s: &str) -> u64 {
 ///
 /// - If `Document` doesn't have an SVG node - returns an empty tree.
 /// - If `Document` doesn't have a valid size - returns `Error::InvalidSize`.
-pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<Tree, Error> {
+pub(crate) fn convert_doc(svg_doc: &rosvgtree::Document, opt: &Options) -> Result<Tree, Error> {
     let svg = svg_doc.root_element();
     let (size, restore_viewbox) = resolve_svg_size(&svg, opt);
     let size = size?;
     let view_box = ViewBox {
-        rect: svg.get_viewbox().unwrap_or_else(|| size.to_rect(0.0, 0.0)),
+        rect: svg
+            .parse_viewbox()
+            .unwrap_or_else(|| size.to_rect(0.0, 0.0)),
         aspect: svg.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
 
@@ -110,7 +113,7 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
     for node in svg_doc.descendants() {
         if let Some(tag) = node.tag_name() {
             if matches!(tag, EId::Filter | EId::ClipPath) {
-                if node.has_element_id() {
+                if !node.element_id().is_empty() {
                     cache.all_ids.insert(string_hash(node.element_id()));
                 }
             }
@@ -129,7 +132,7 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
     Ok(tree)
 }
 
-fn resolve_svg_size(svg: &svgtree::Node, opt: &Options) -> (Result<Size, Error>, bool) {
+fn resolve_svg_size(svg: &rosvgtree::Node, opt: &Options) -> (Result<Size, Error>, bool) {
     let mut state = State {
         parent_clip_path: None,
         parent_marker: None,
@@ -144,7 +147,7 @@ fn resolve_svg_size(svg: &svgtree::Node, opt: &Options) -> (Result<Size, Error>,
     let mut width: Length = svg.attribute(AId::Width).unwrap_or(def);
     let mut height: Length = svg.attribute(AId::Height).unwrap_or(def);
 
-    let view_box = svg.get_viewbox();
+    let view_box = svg.parse_viewbox();
 
     let restore_viewbox =
         if (width.unit == Unit::Percent || height.unit == Unit::Percent) && view_box.is_none() {
@@ -223,7 +226,7 @@ fn calculate_svg_bbox(tree: &mut Tree) {
 
 #[inline(never)]
 pub(crate) fn convert_children(
-    parent_node: svgtree::Node,
+    parent_node: rosvgtree::Node,
     state: &State,
     cache: &mut converter::Cache,
     parent: &mut Node,
@@ -235,7 +238,7 @@ pub(crate) fn convert_children(
 
 #[inline(never)]
 pub(crate) fn convert_element(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     state: &State,
     cache: &mut converter::Cache,
     parent: &mut Node,
@@ -307,7 +310,7 @@ pub(crate) fn convert_element(
 // for `clipPath` children.
 #[inline(never)]
 pub(crate) fn convert_clip_path_elements(
-    clip_node: svgtree::Node,
+    clip_node: rosvgtree::Node,
     state: &State,
     cache: &mut converter::Cache,
     parent: &mut Node,
@@ -378,7 +381,7 @@ pub enum GroupKind {
 
 // TODO: explain
 pub(crate) fn convert_group(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     state: &State,
     force: bool,
     cache: &mut Cache,
@@ -386,7 +389,9 @@ pub(crate) fn convert_group(
 ) -> GroupKind {
     // A `clipPath` child cannot have an opacity.
     let opacity = if state.parent_clip_path.is_none() {
-        node.attribute(AId::Opacity).unwrap_or(Opacity::ONE)
+        node.attribute::<OpacityWrapper>(AId::Opacity)
+            .map(|v| v.0)
+            .unwrap_or(Opacity::ONE)
     } else {
         Opacity::ONE
     };
@@ -395,7 +400,7 @@ pub(crate) fn convert_group(
         ($aid:expr, $f:expr) => {{
             let mut v = None;
 
-            if let Some(link) = node.attribute::<svgtree::Node>($aid) {
+            if let Some(link) = node.attribute::<rosvgtree::Node>($aid) {
                 v = $f(link, state, cache);
 
                 // If `$aid` is linked to an invalid element - skip this group completely.
@@ -457,7 +462,7 @@ pub(crate) fn convert_group(
     let isolate = isolation == Isolation::Isolate;
     let enable_background = node.attribute(AId::EnableBackground);
 
-    let is_g_or_use = node.has_tag_name(EId::G) || node.has_tag_name(EId::Use);
+    let is_g_or_use = matches!(node.tag_name(), Some(EId::G) | Some(EId::Use));
     let required = opacity.get().fuzzy_ne(&1.0)
         || clip_path.is_some()
         || mask.is_some()
@@ -467,7 +472,7 @@ pub(crate) fn convert_group(
         || blend_mode != BlendMode::Normal
         || isolate
         || (is_g_or_use
-            && node.has_element_id()
+            && !node.element_id().is_empty()
             && (state.opt.keep_named_groups || state.fe_image_link))
         || force;
 
@@ -499,7 +504,7 @@ pub(crate) fn convert_group(
 }
 
 fn resolve_filter_fill(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     state: &State,
     filters: &[Rc<filter::Filter>],
     cache: &mut converter::Cache,
@@ -525,7 +530,7 @@ fn resolve_filter_fill(
 }
 
 fn resolve_filter_stroke(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     state: &State,
     filters: &[Rc<filter::Filter>],
     cache: &mut converter::Cache,
@@ -652,7 +657,7 @@ pub(crate) fn ungroup_groups(root: Node, keep_named_groups: bool) {
 }
 
 fn convert_path(
-    node: svgtree::Node,
+    node: rosvgtree::Node,
     path: SharedPathData,
     state: &State,
     cache: &mut converter::Cache,
@@ -666,8 +671,8 @@ fn convert_path(
     let has_bbox = path.has_bbox();
     let fill = style::resolve_fill(node, has_bbox, state, cache);
     let stroke = style::resolve_stroke(node, has_bbox, state, cache);
-    let mut visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
-    let rendering_mode = node
+    let mut visibility: Visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
+    let rendering_mode: ShapeRendering = node
         .find_attribute(AId::ShapeRendering)
         .unwrap_or(state.opt.shape_rendering);
 
