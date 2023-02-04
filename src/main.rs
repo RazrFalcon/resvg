@@ -416,10 +416,16 @@ fn parse_args() -> Result<Args, String> {
     if args.list_fonts {
         for face in fontdb.faces() {
             if let fontdb::Source::File(ref path) = &face.source {
+                let families: Vec<_> = face
+                    .families
+                    .iter()
+                    .map(|f| format!("{} ({}, {})", f.0, f.1.primary_language(), f.1.region()))
+                    .collect();
+
                 println!(
                     "{}: '{}', {}, {:?}, {:?}, {:?}",
                     path.display(),
-                    face.family,
+                    families.join("', '"),
                     face.index,
                     face.style,
                     face.weight.0,

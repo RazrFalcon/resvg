@@ -139,6 +139,7 @@ It's definitely the smallest option out there.
 [rustybuzz]: https://github.com/RazrFalcon/rustybuzz
 [tiny-skia]: https://github.com/RazrFalcon/tiny-skia
 [ttf-parser]: https://github.com/RazrFalcon/ttf-parser
+[rosvgtree]: https://github.com/RazrFalcon/resvg/tree/master/rosvgtree
 [roxmltree]: https://github.com/RazrFalcon/roxmltree
 [xmlparser]: https://github.com/RazrFalcon/xmlparser
 [simplecss]: https://github.com/RazrFalcon/simplecss

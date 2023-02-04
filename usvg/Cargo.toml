@@ -14,11 +14,11 @@ exclude = ["tests"]
 workspace = ".."
 
 [dependencies]
-base64 = "0.13" # for embedded images
+base64 = "0.21" # for embedded images
 data-url = "0.2" # for href parsing
 flate2 = { version = "1.0", default-features = false, features = ["rust_backend"] } # SVGZ decoding
-imagesize = "0.10.1" # raster images size detection
-kurbo = "0.8" # Bezier curves utils
+imagesize = "0.11" # raster images size detection
+kurbo = "0.9" # Bezier curves utils
 log = "0.4"
 rctree = "0.5"
 rosvgtree = { path = "../rosvgtree" }
