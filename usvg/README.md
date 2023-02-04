@@ -1,7 +1,7 @@
 # usvg
 [![Crates.io](https://img.shields.io/crates/v/usvg.svg)](https://crates.io/crates/usvg)
 [![Documentation](https://docs.rs/usvg/badge.svg)](https://docs.rs/usvg)
-[![Rust 1.51+](https://img.shields.io/badge/rust-1.51+-orange.svg)](https://www.rust-lang.org)
+[![Rust 1.65+](https://img.shields.io/badge/rust-1.65+-orange.svg)](https://www.rust-lang.org)
 
 `usvg` (micro SVG) is an [SVG] parser that tries to solve most of SVG complexity.
 

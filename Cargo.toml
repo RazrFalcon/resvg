@@ -24,7 +24,7 @@ pico-args =  { version = "0.5", features = ["eq-separator"] }
 png = { version = "0.17", optional = true }
 rgb = "0.8"
 svgfilters = { path = "svgfilters", version = "0.4", optional = true }
-svgtypes = "0.9"
+svgtypes = "0.10"
 tiny-skia = "0.8.2"
 usvg = { path = "usvg", version = "0.28.0" }
 usvg-text-layout = { path = "usvg-text-layout", version = "0.28.0", default-features = false, optional = true }

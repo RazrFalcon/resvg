@@ -126,15 +126,6 @@ checksum = "bc0000e42512c92e31c2252315bda326620a4e034105e900c98ec492fa077b3e"
 
 [[package]]
 name = "kurbo"
-version = "0.8.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a53776d271cfb873b17c618af0298445c88afc52837f3e948fa3fafd131f449"
-dependencies = [
- "arrayvec",
-]
-
-[[package]]
-name = "kurbo"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e119590a03caff1f7a582e8ee8c2164ddcc975791701188132fd1d1b518d3871"
@@ -326,11 +317,11 @@ dependencies = [
 
 [[package]]
 name = "svgtypes"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c9ee29c1407a5b18ccfe5f6ac82ac11bab3b14407e09c209a6c1a32098b19734"
+checksum = "98ffacedcdcf1da6579c907279b4f3c5492fbce99fbbf227f5ed270a589c2765"
 dependencies = [
- "kurbo 0.8.3",
+ "kurbo",
  "siphasher",
 ]
 
@@ -409,7 +400,7 @@ dependencies = [
  "data-url",
  "flate2",
  "imagesize",
- "kurbo 0.9.0",
+ "kurbo",
  "log",
  "rctree",
  "rosvgtree",
@@ -421,7 +412,7 @@ name = "usvg-text-layout"
 version = "0.28.0"
 dependencies = [
  "fontdb",
- "kurbo 0.9.0",
+ "kurbo",
  "log",
  "rustybuzz",
  "unicode-bidi",

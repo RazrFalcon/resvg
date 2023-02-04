@@ -1,7 +1,7 @@
 # rosvgtree
 [![Crates.io](https://img.shields.io/crates/v/rosvgtree.svg)](https://crates.io/crates/rosvgtree)
 [![Documentation](https://docs.rs/rosvgtree/badge.svg)](https://docs.rs/rosvgtree)
-[![Rust 1.51+](https://img.shields.io/badge/rust-1.51+-orange.svg)](https://www.rust-lang.org)
+[![Rust 1.65+](https://img.shields.io/badge/rust-1.65+-orange.svg)](https://www.rust-lang.org)
 
 Represent an [SVG] document as a read-only tree.
 

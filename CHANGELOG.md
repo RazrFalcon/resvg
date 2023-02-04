@@ -14,6 +14,7 @@ This changelog also contains important changes in dependencies.
 ### Changed
 - Some `usvg` internals were moved into the new `rosvgtree` crate.
 - MSRV bumped to 1.65
+- Update dependencies.
 
 ### Fixed
 - Missing `font-family` handling.
