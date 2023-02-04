@@ -32,7 +32,7 @@ where
 }
 
 fn process() -> Result<(), String> {
-    let args = match parse_args() {
+    let mut args = match parse_args() {
         Ok(args) => args,
         Err(e) => {
             println!("{}", HELP);
@@ -81,9 +81,35 @@ fn process() -> Result<(), String> {
         usvg::Tree::from_xmltree(&xml_tree, &args.usvg).map_err(|e| e.to_string())
     })?;
 
-    timed(args.perf, "Text Conversion", || {
-        tree.convert_text(&args.fontdb, args.usvg.keep_named_groups)
-    });
+    // fontdb initialization is pretty expensive, so perform it only when needed.
+    if tree.root.descendants().any(|node| matches!(&*node.borrow(), usvg::NodeKind::Text(_))) {
+        let fontdb = timed(args.perf, "FontDB", || load_fonts(&mut args));
+        if args.list_fonts {
+            for face in fontdb.faces() {
+                if let fontdb::Source::File(ref path) = &face.source {
+                    let families: Vec<_> = face
+                        .families
+                        .iter()
+                        .map(|f| format!("{} ({}, {})", f.0, f.1.primary_language(), f.1.region()))
+                        .collect();
+
+                    println!(
+                        "{}: '{}', {}, {:?}, {:?}, {:?}",
+                        path.display(),
+                        families.join("', '"),
+                        face.index,
+                        face.style,
+                        face.weight.0,
+                        face.stretch
+                    );
+                }
+            }
+        }
+
+        timed(args.perf, "Text Conversion", || {
+            tree.convert_text(&fontdb, args.usvg.keep_named_groups)
+        });
+    }
 
     if args.query_all {
         return query_all(&tree);
@@ -380,9 +406,18 @@ struct Args {
     perf: bool,
     quiet: bool,
     usvg: usvg::Options,
-    fontdb: fontdb::Database,
     fit_to: usvg::FitTo,
     background: Option<svgtypes::Color>,
+
+    serif_family: Option<String>,
+    sans_serif_family: Option<String>,
+    cursive_family: Option<String>,
+    fantasy_family: Option<String>,
+    monospace_family: Option<String>,
+    font_files: Vec<path::PathBuf>,
+    font_dirs: Vec<path::PathBuf>,
+    skip_system_fonts: bool,
+    list_fonts: bool,
 }
 
 fn parse_args() -> Result<Args, String> {
@@ -411,29 +446,6 @@ fn parse_args() -> Result<Args, String> {
 
         (svg_from, out_png)
     };
-
-    let fontdb = timed(args.perf, "FontDB", || load_fonts(&mut args));
-    if args.list_fonts {
-        for face in fontdb.faces() {
-            if let fontdb::Source::File(ref path) = &face.source {
-                let families: Vec<_> = face
-                    .families
-                    .iter()
-                    .map(|f| format!("{} ({}, {})", f.0, f.1.primary_language(), f.1.region()))
-                    .collect();
-
-                println!(
-                    "{}: '{}', {}, {:?}, {:?}, {:?}",
-                    path.display(),
-                    families.join("', '"),
-                    face.index,
-                    face.style,
-                    face.weight.0,
-                    face.stretch
-                );
-            }
-        }
-    }
 
     if !args.query_all && out_png.is_none() {
         return Err("<out-png> must be set".to_string());
@@ -510,13 +522,21 @@ fn parse_args() -> Result<Args, String> {
         perf: args.perf,
         quiet: args.quiet,
         usvg,
-        fontdb,
         fit_to,
         background: args.background,
+        serif_family: args.serif_family,
+        sans_serif_family: args.sans_serif_family,
+        cursive_family: args.cursive_family,
+        fantasy_family: args.fantasy_family,
+        monospace_family: args.monospace_family,
+        font_files: args.font_files,
+        font_dirs: args.font_dirs,
+        skip_system_fonts: args.skip_system_fonts,
+        list_fonts: args.list_fonts,
     })
 }
 
-fn load_fonts(args: &mut CliArgs) -> fontdb::Database {
+fn load_fonts(args: &mut Args) -> fontdb::Database {
     let mut fontdb = fontdb::Database::new();
     if !args.skip_system_fonts {
         fontdb.load_system_fonts();

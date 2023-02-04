@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- `resvg` CLI loads system fonts only when an input SVG has text nodes now.
+  Fonts loading is an IO-heavy operation and by avoiding it we can speed up `resvg` execution.
+
 ### Changed
 - Some `usvg` internals were moved into the new `rosvgtree` crate.
 - MSRV bumped to 1.65
