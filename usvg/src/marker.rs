@@ -100,7 +100,7 @@ fn resolve(
     let has_overflow = {
         let overflow = marker_node.attribute(AId::Overflow);
         // `overflow` is `hidden` by default.
-        overflow == None || overflow == Some("hidden") || overflow == Some("scroll")
+        overflow.is_none() || overflow == Some("hidden") || overflow == Some("scroll")
     };
 
     let clip_path = if has_overflow {

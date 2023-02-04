@@ -20,7 +20,7 @@ impl<V: PartialEq> Map<V> {
         use std::borrow::Borrow;
 
         let hash = hash(key, self.key);
-        let index = get_index(hash, &*self.disps, self.entries.len());
+        let index = get_index(hash, self.disps, self.entries.len());
         let entry = &self.entries[index as usize];
         let b = entry.0.borrow();
         if b == key {

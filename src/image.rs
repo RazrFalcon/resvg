@@ -113,10 +113,10 @@ mod raster_images {
         )?;
 
         let ts = tiny_skia::Transform::from_row(
-            rect.width() as f32 / pixmap.width() as f32,
+            rect.width() / pixmap.width() as f32,
             0.0,
             0.0,
-            rect.height() as f32 / pixmap.height() as f32,
+            rect.height() / pixmap.height() as f32,
             r.x() as f32,
             r.y() as f32,
         );

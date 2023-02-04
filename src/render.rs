@@ -316,11 +316,11 @@ pub fn trim_transparency(pixmap: tiny_skia::Pixmap) -> Option<(i32, i32, tiny_sk
     // very likely that transparent pixels all have rgba(0, 0, 0, 0) so skipping
     // zero bytes can be used as a quick optimization.
     // If the entire image is transparent, we don't need to continue.
-    if first_non_zero != None {
+    if let Some(first_non_zero) = first_non_zero {
         let get_alpha = |x, y| pixels[((width * y + x) * 4 + 3) as usize];
 
         // Find the top boundary.
-        let start_y = first_non_zero.unwrap() as i32 / 4 / width;
+        let start_y = first_non_zero as i32 / 4 / width;
         'top: for y in start_y..height {
             for x in 0..width {
                 if get_alpha(x, y) != 0 {

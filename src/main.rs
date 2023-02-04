@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#![allow(clippy::uninlined_format_args)]
+
 use std::path;
 
 use usvg::NodeExt;
@@ -74,7 +76,7 @@ fn process() -> Result<(), String> {
         .map_err(|_| "provided data has not an UTF-8 encoding".to_string())?;
 
     let xml_tree = timed(args.perf, "XML Parsing", || {
-        usvg::roxmltree::Document::parse(&svg_string).map_err(|e| e.to_string())
+        usvg::roxmltree::Document::parse(svg_string).map_err(|e| e.to_string())
     })?;
 
     let mut tree = timed(args.perf, "SVG Parsing", || {
@@ -82,7 +84,11 @@ fn process() -> Result<(), String> {
     })?;
 
     // fontdb initialization is pretty expensive, so perform it only when needed.
-    if tree.root.descendants().any(|node| matches!(&*node.borrow(), usvg::NodeKind::Text(_))) {
+    if tree
+        .root
+        .descendants()
+        .any(|node| matches!(&*node.borrow(), usvg::NodeKind::Text(_)))
+    {
         let fontdb = timed(args.perf, "FontDB", || load_fonts(&mut args));
         if args.list_fonts {
             for face in fontdb.faces() {
@@ -429,7 +435,7 @@ fn parse_args() -> Result<Args, String> {
         let svg_from = if in_svg == "-" {
             InputFrom::Stdin
         } else if in_svg == "-c" {
-            return Err(format!("-c should be set after input"));
+            return Err("-c should be set after input".to_string());
         } else {
             InputFrom::File(in_svg.into())
         };

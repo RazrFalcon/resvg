@@ -140,9 +140,9 @@ fn init(mut seed: i32) -> (Vec<usize>, Vec<Vec<Vec<f64>>>) {
 
     for i in 0..B_SIZE + 2 {
         lattice_selector[B_SIZE + i] = lattice_selector[i];
-        for k in 0..4 {
+        for g in gradient.iter_mut().take(4) {
             for j in 0..2 {
-                gradient[k][B_SIZE + i][j] = gradient[k][i][j];
+                g[B_SIZE + i][j] = g[i][j];
             }
         }
     }

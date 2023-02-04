@@ -51,12 +51,16 @@ and can focus just on the rendering part.
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_copy_implementations)]
-#![allow(clippy::many_single_char_names)]
 #![allow(clippy::collapsible_else_if)]
-#![allow(clippy::too_many_arguments)]
-#![allow(clippy::neg_cmp_op_on_partial_ord)]
+#![allow(clippy::collapsible_if)]
+#![allow(clippy::field_reassign_with_default)]
 #![allow(clippy::identity_op)]
+#![allow(clippy::many_single_char_names)]
+#![allow(clippy::neg_cmp_op_on_partial_ord)]
+#![allow(clippy::nonminimal_bool)]
 #![allow(clippy::question_mark)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::uninlined_format_args)]
 #![allow(clippy::upper_case_acronyms)]
 
 macro_rules! impl_enum_default {
@@ -615,8 +619,10 @@ impl Tree {
 
     /// Parses `Tree` from an SVG string.
     pub fn from_str(text: &str, opt: &Options) -> Result<Self, Error> {
-        let mut xml_opt = roxmltree::ParsingOptions::default();
-        xml_opt.allow_dtd = true;
+        let xml_opt = roxmltree::ParsingOptions {
+            allow_dtd: true,
+            ..Default::default()
+        };
 
         let doc =
             roxmltree::Document::parse_with_options(text, xml_opt).map_err(Error::ParsingFailed)?;
@@ -753,9 +759,7 @@ impl NodeExt for Node {
 
         // We should have an ancestor with `enable-background=new`.
         // Skip the current element.
-        self.ancestors()
-            .skip(1)
-            .find(|node| has_enable_background(node))
+        self.ancestors().skip(1).find(has_enable_background)
     }
 }
 
@@ -782,7 +786,7 @@ fn calc_node_bbox(node: &Node, ts: Transform) -> Option<PathBbox> {
             let mut bbox = PathBbox::new_bbox();
 
             for child in node.children() {
-                let mut child_transform = ts.clone();
+                let mut child_transform = ts;
                 child_transform.append(&child.transform());
                 if let Some(c_bbox) = calc_node_bbox(&child, child_transform) {
                     bbox = bbox.expand(c_bbox);

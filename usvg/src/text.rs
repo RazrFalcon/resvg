@@ -518,6 +518,7 @@ fn collect_text_chunks_impl(
         }
 
         let mut apply_kerning = true;
+        #[allow(clippy::if_same_then_else)]
         if parent.resolve_length(AId::Kerning, state, -1.0) == 0.0 {
             apply_kerning = false;
         } else if parent.find_attribute::<&str>(AId::FontKerning) == Some("none") {

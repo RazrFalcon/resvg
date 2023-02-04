@@ -568,8 +568,8 @@ fn has_bbox(path: &PathData) -> bool {
             PathSegment::ClosePath => {}
         }
 
-        let width = (maxx - minx) as f64;
-        let height = (maxy - miny) as f64;
+        let width = maxx - minx;
+        let height = maxy - miny;
         if !(width.is_fuzzy_zero() || height.is_fuzzy_zero()) {
             return true;
         }

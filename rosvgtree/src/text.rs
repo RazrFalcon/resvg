@@ -1,3 +1,5 @@
+#![allow(clippy::comparison_chain)]
+
 use roxmltree::Error;
 
 use crate::{AttributeId, Document, ElementId, Node, NodeId, NodeKind};

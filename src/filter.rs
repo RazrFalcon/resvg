@@ -656,7 +656,7 @@ fn apply_drop_shadow(
         fe.opacity.to_u8(),
     );
     for p in shadow_pixmap.pixels_mut() {
-        let mut color = color.clone();
+        let mut color = color;
         color.apply_opacity(p.alpha() as f32 / 255.0);
         *p = color.premultiply().to_color_u8();
     }
@@ -1217,8 +1217,8 @@ fn apply_to_canvas(
 
     pixmap.fill(tiny_skia::Color::TRANSPARENT);
     pixmap.draw_pixmap(
-        region.x() as i32,
-        region.y() as i32,
+        region.x(),
+        region.y(),
         input.as_ref().as_ref(),
         &tiny_skia::PixmapPaint::default(),
         tiny_skia::Transform::identity(),

@@ -394,32 +394,33 @@ fn collect_children(
             None => continue,
         };
 
-        let kind = match tag_name {
-            EId::FeDropShadow => convert_drop_shadow(child, &primitives),
-            EId::FeGaussianBlur => convert_gaussian_blur(child, &primitives),
-            EId::FeOffset => convert_offset(child, &primitives),
-            EId::FeBlend => convert_blend(child, &primitives),
-            EId::FeFlood => convert_flood(child),
-            EId::FeComposite => convert_composite(child, &primitives),
-            EId::FeMerge => convert_merge(child, &primitives),
-            EId::FeTile => convert_tile(child, &primitives),
-            EId::FeImage => convert_image(child, state, cache),
-            EId::FeComponentTransfer => convert_component_transfer(child, &primitives),
-            EId::FeColorMatrix => convert_color_matrix(child, &primitives),
-            EId::FeConvolveMatrix => convert_convolve_matrix(child, &primitives)
-                .unwrap_or_else(|| create_dummy_primitive()),
-            EId::FeMorphology => convert_morphology(child, &primitives),
-            EId::FeDisplacementMap => convert_displacement_map(child, &primitives),
-            EId::FeTurbulence => convert_turbulence(child),
-            EId::FeDiffuseLighting => convert_diffuse_lighting(child, &primitives)
-                .unwrap_or_else(|| create_dummy_primitive()),
-            EId::FeSpecularLighting => convert_specular_lighting(child, &primitives)
-                .unwrap_or_else(|| create_dummy_primitive()),
-            tag_name => {
-                log::warn!("'{}' is not a valid filter primitive. Skipped.", tag_name);
-                continue;
-            }
-        };
+        let kind =
+            match tag_name {
+                EId::FeDropShadow => convert_drop_shadow(child, &primitives),
+                EId::FeGaussianBlur => convert_gaussian_blur(child, &primitives),
+                EId::FeOffset => convert_offset(child, &primitives),
+                EId::FeBlend => convert_blend(child, &primitives),
+                EId::FeFlood => convert_flood(child),
+                EId::FeComposite => convert_composite(child, &primitives),
+                EId::FeMerge => convert_merge(child, &primitives),
+                EId::FeTile => convert_tile(child, &primitives),
+                EId::FeImage => convert_image(child, state, cache),
+                EId::FeComponentTransfer => convert_component_transfer(child, &primitives),
+                EId::FeColorMatrix => convert_color_matrix(child, &primitives),
+                EId::FeConvolveMatrix => convert_convolve_matrix(child, &primitives)
+                    .unwrap_or_else(create_dummy_primitive),
+                EId::FeMorphology => convert_morphology(child, &primitives),
+                EId::FeDisplacementMap => convert_displacement_map(child, &primitives),
+                EId::FeTurbulence => convert_turbulence(child),
+                EId::FeDiffuseLighting => convert_diffuse_lighting(child, &primitives)
+                    .unwrap_or_else(create_dummy_primitive),
+                EId::FeSpecularLighting => convert_specular_lighting(child, &primitives)
+                    .unwrap_or_else(create_dummy_primitive),
+                tag_name => {
+                    log::warn!("'{}' is not a valid filter primitive. Skipped.", tag_name);
+                    continue;
+                }
+            };
 
         let fe = convert_primitive(child, kind, units, state, &mut results);
         primitives.push(fe);
@@ -634,7 +635,7 @@ fn convert_color_matrix_kind(fe: rosvgtree::Node) -> Option<ColorMatrixKind> {
             // Fallback to `matrix`.
             if let Some(list) = fe.attribute::<Vec<f64>>(AId::Values) {
                 if list.len() == 20 {
-                    return Some(ColorMatrixKind::Matrix(list.clone()));
+                    return Some(ColorMatrixKind::Matrix(list));
                 }
             }
         }
@@ -725,11 +726,11 @@ fn convert_transfer_function(node: rosvgtree::Node) -> Option<TransferFunction> 
     match node.attribute(AId::Type)? {
         "identity" => Some(TransferFunction::Identity),
         "table" => match node.attribute::<Vec<f64>>(AId::TableValues) {
-            Some(values) => Some(TransferFunction::Table(values.clone())),
+            Some(values) => Some(TransferFunction::Table(values)),
             None => Some(TransferFunction::Table(Vec::new())),
         },
         "discrete" => match node.attribute::<Vec<f64>>(AId::TableValues) {
-            Some(values) => Some(TransferFunction::Discrete(values.clone())),
+            Some(values) => Some(TransferFunction::Discrete(values)),
             None => Some(TransferFunction::Discrete(Vec::new())),
         },
         "linear" => Some(TransferFunction::Linear {
@@ -930,7 +931,7 @@ fn convert_convolve_matrix(fe: rosvgtree::Node, primitives: &[Primitive]) -> Opt
     let mut matrix = Vec::new();
     if let Some(list) = fe.attribute::<Vec<f64>>(AId::KernelMatrix) {
         if list.len() == (order_x * order_y) as usize {
-            matrix = list.clone();
+            matrix = list;
         }
     }
 

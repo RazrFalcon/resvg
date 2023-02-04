@@ -50,6 +50,7 @@ But majority of methods will work on provided buffers.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 #![allow(clippy::many_single_char_names)]
+#![allow(clippy::needless_range_loop)]
 #![allow(clippy::too_many_arguments)]
 
 extern crate alloc;

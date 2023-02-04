@@ -12,6 +12,9 @@ XML, to make SVG parsing easier.
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_copy_implementations)]
+#![allow(clippy::collapsible_else_if)]
+#![allow(clippy::collapsible_if)]
+#![allow(clippy::uninlined_format_args)]
 
 use std::collections::HashMap;
 use std::num::NonZeroU32;

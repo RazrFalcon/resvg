@@ -465,13 +465,10 @@ fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
 }
 
 fn chunk_span_at(chunk: &TextChunk, byte_offset: ByteIndex) -> Option<&TextSpan> {
-    for span in &chunk.spans {
-        if span_contains(span, byte_offset) {
-            return Some(span);
-        }
-    }
-
-    None
+    chunk
+        .spans
+        .iter()
+        .find(|&span| span_contains(span, byte_offset))
 }
 
 fn span_contains(span: &TextSpan, byte_offset: ByteIndex) -> bool {
@@ -500,7 +497,7 @@ fn resolve_baseline(span: &TextSpan, font: &ResolvedFont, writing_mode: WritingM
         }
     }
 
-    return shift;
+    shift
 }
 
 type FontsCache = HashMap<Font, Rc<ResolvedFont>>;
@@ -910,7 +907,7 @@ fn paint_server_to_user_space_on_use(paint: Paint, bbox: PathBbox) -> Option<Pai
                 id: String::new(),
                 units: Units::UserSpaceOnUse,
                 content_units: patt.content_units,
-                transform: transform,
+                transform,
                 rect: patt.rect,
                 view_box: patt.view_box,
                 root: patt.root.clone().make_deep_copy(),

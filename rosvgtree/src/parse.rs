@@ -84,10 +84,10 @@ fn parse<'input>(xml: &roxmltree::Document<'input>) -> Result<Document<'input>, 
     match doc.root().first_element_child() {
         Some(child) => {
             if child.tag_name() != Some(ElementId::Svg) {
-                return Err(roxmltree::Error::NoRootNode.into());
+                return Err(roxmltree::Error::NoRootNode);
             }
         }
-        None => return Err(roxmltree::Error::NoRootNode.into()),
+        None => return Err(roxmltree::Error::NoRootNode),
     }
 
     // Collect all elements with `id` attribute.
@@ -326,11 +326,7 @@ fn append_attribute<'input>(
     true
 }
 
-fn resolve_inherit<'input>(
-    parent_id: NodeId,
-    aid: AttributeId,
-    doc: &mut Document<'input>,
-) -> bool {
+fn resolve_inherit(parent_id: NodeId, aid: AttributeId, doc: &mut Document) -> bool {
     if aid.is_inheritable() {
         // Inheritable attributes can inherit a value from an any ancestor.
         let node_id = doc
@@ -668,12 +664,10 @@ fn fix_recursive_fe_image(doc: &mut Document) {
         if let Some(link) = fe_node.attribute::<Node>(AttributeId::Href) {
             if let Some(filter_uri) = link.attribute::<&str>(AttributeId::Filter) {
                 let filter_id = fe_node.parent().unwrap().element_id().to_string();
-                for func in svgtypes::FilterValueListParser::from(filter_uri) {
-                    if let Ok(func) = func {
-                        if let svgtypes::FilterValue::Url(url) = func {
-                            if url == filter_id {
-                                ids.push(link.id);
-                            }
+                for func in svgtypes::FilterValueListParser::from(filter_uri).flatten() {
+                    if let svgtypes::FilterValue::Url(url) = func {
+                        if url == filter_id {
+                            ids.push(link.id);
                         }
                     }
                 }
