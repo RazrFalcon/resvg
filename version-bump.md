@@ -1,9 +1,11 @@
 - .github/chart.svg
+- .github/chart-svg2.svg
 - CHANGELOG.md
 - Cargo.toml
 - c-api/Cargo.toml
 - c-api/resvg.h
 - c-api/ResvgQt.h
 - usvg/Cargo.toml
+- usvg-text-layout/Cargo.toml
 - tools/explorer-thumbnailer/install/installer.iss
 - tools/explorer-thumbnailer/Cargo.toml

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.29.0] - 2022-02-04
 ### Added
 - `resvg` CLI loads system fonts only when an input SVG has text nodes now.
   Fonts loading is an IO-heavy operation and by avoiding it we can speed up `resvg` execution.
@@ -735,7 +737,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.28.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.29.0...HEAD
+[0.29.0]: https://github.com/RazrFalcon/resvg/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/RazrFalcon/resvg/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/RazrFalcon/resvg/compare/v0.26.1...v0.27.0
 [0.26.1]: https://github.com/RazrFalcon/resvg/compare/v0.26.0...v0.26.1
