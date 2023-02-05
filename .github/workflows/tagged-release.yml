@@ -157,11 +157,15 @@ jobs:
 
   release-macos:
     name: Release macOS
-    runs-on: macos-10.15
+    runs-on: macos-latest
     needs: ["create-release"]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      # Some weird CI glitch. Make sure we have the latest Rust.
+      - name: Install latest stable toolchain
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Build resvg
         run: cargo build --release
