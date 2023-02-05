@@ -228,18 +228,6 @@ public:
     }
 
     /**
-     * @brief Keep named groups.
-     *
-     * If set to `true`, all non-empty groups with `id` attribute will not be removed.
-     *
-     * Default: false
-     */
-    void setKeepNamedGroups(const bool keep)
-    {
-        resvg_options_set_keep_named_groups(d, keep);
-    }
-
-    /**
      * @brief Loads a font data into the internal fonts database.
      *
      * Prints a warning into the log when the data is not a valid TrueType font.

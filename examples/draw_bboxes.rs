@@ -25,7 +25,6 @@ fn main() {
     opt.resources_dir = std::fs::canonicalize(&args[1])
         .ok()
         .and_then(|p| p.parent().map(|p| p.to_path_buf()));
-    opt.keep_named_groups = true;
     let fit_to = usvg::FitTo::Zoom(zoom);
 
     let mut fontdb = fontdb::Database::new();
@@ -33,7 +32,7 @@ fn main() {
 
     let svg_data = std::fs::read(&args[1]).unwrap();
     let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
-    tree.convert_text(&fontdb, opt.keep_named_groups);
+    tree.convert_text(&fontdb);
 
     let mut bboxes = Vec::new();
     let mut text_bboxes = Vec::new();

@@ -1,28 +1,6 @@
 use usvg::FuzzyEq;
 
 #[test]
-fn groups() {
-    let svg = "
-    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'>
-        <g>
-            <g>
-                <rect width='10' height='10'/>
-            </g>
-        </g>
-    </svg>
-    ";
-
-    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
-    // Excluding root.
-    let has_groups = tree
-        .root
-        .descendants()
-        .skip(1)
-        .any(|n| matches!(*n.borrow(), usvg::NodeKind::Group(_)));
-    assert!(!has_groups);
-}
-
-#[test]
 fn clippath_with_invalid_child() {
     let svg = "
     <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'>

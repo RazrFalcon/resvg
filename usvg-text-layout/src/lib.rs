@@ -38,15 +38,12 @@ use usvg::*;
 /// A `usvg::Tree` extension trait.
 pub trait TreeTextToPath {
     /// Converts text nodes into paths.
-    ///
-    /// We have not pass `Options::keep_named_groups` again,
-    /// since this method affects the tree structure.
-    fn convert_text(&mut self, fontdb: &fontdb::Database, keep_named_groups: bool);
+    fn convert_text(&mut self, fontdb: &fontdb::Database);
 }
 
 impl TreeTextToPath for usvg::Tree {
-    fn convert_text(&mut self, fontdb: &fontdb::Database, keep_named_groups: bool) {
-        convert_text(self.root.clone(), fontdb, keep_named_groups);
+    fn convert_text(&mut self, fontdb: &fontdb::Database) {
+        convert_text(self.root.clone(), fontdb);
     }
 }
 
@@ -83,29 +80,29 @@ impl TextToPath for Text {
     }
 }
 
-fn convert_text(root: Node, fontdb: &fontdb::Database, keep_named_groups: bool) {
+fn convert_text(root: Node, fontdb: &fontdb::Database) {
     let mut text_nodes = Vec::new();
     // We have to update text nodes in clipPaths, masks and patterns as well.
     for node in root.descendants() {
         match *node.borrow() {
             NodeKind::Group(ref g) => {
                 if let Some(ref clip) = g.clip_path {
-                    convert_text(clip.root.clone(), fontdb, keep_named_groups);
+                    convert_text(clip.root.clone(), fontdb);
                 }
 
                 if let Some(ref mask) = g.mask {
-                    convert_text(mask.root.clone(), fontdb, keep_named_groups);
+                    convert_text(mask.root.clone(), fontdb);
                 }
             }
             NodeKind::Path(ref path) => {
                 if let Some(ref fill) = path.fill {
                     if let Paint::Pattern(ref p) = fill.paint {
-                        convert_text(p.root.clone(), fontdb, keep_named_groups);
+                        convert_text(p.root.clone(), fontdb);
                     }
                 }
                 if let Some(ref stroke) = path.stroke {
                     if let Paint::Pattern(ref p) = stroke.paint {
-                        convert_text(p.root.clone(), fontdb, keep_named_groups);
+                        convert_text(p.root.clone(), fontdb);
                     }
                 }
             }
@@ -117,12 +114,12 @@ fn convert_text(root: Node, fontdb: &fontdb::Database, keep_named_groups: bool) 
                     for span in &chunk.spans {
                         if let Some(ref fill) = span.fill {
                             if let Paint::Pattern(ref p) = fill.paint {
-                                convert_text(p.root.clone(), fontdb, keep_named_groups);
+                                convert_text(p.root.clone(), fontdb);
                             }
                         }
                         if let Some(ref stroke) = span.stroke {
                             if let Paint::Pattern(ref p) = stroke.paint {
-                                convert_text(p.root.clone(), fontdb, keep_named_groups);
+                                convert_text(p.root.clone(), fontdb);
                             }
                         }
                     }
@@ -149,7 +146,6 @@ fn convert_text(root: Node, fontdb: &fontdb::Database, keep_named_groups: bool) 
     }
 
     text_nodes.iter().for_each(|n| n.detach());
-    Tree::ungroup_groups(root, keep_named_groups);
 }
 
 trait DatabaseExt {

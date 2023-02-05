@@ -18,7 +18,7 @@ fn main() {
 
     let svg_data = std::fs::read(&args[1]).unwrap();
     let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
-    tree.convert_text(&fontdb, opt.keep_named_groups);
+    tree.convert_text(&fontdb);
 
     let pixmap_size = tree.size.to_screen_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();

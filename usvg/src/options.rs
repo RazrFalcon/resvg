@@ -109,14 +109,6 @@ pub struct Options {
     /// Default: OptimizeQuality
     pub image_rendering: ImageRendering,
 
-    /// Keep named groups.
-    ///
-    /// If set to `true`, all non-empty groups with `id` attribute will not
-    /// be removed.
-    ///
-    /// Default: false
-    pub keep_named_groups: bool,
-
     /// Default viewport size to assume if there is no `viewBox` attribute and
     /// the `width` or `height` attributes are relative.
     ///
@@ -141,7 +133,6 @@ impl Default for Options {
             shape_rendering: ShapeRendering::default(),
             text_rendering: TextRendering::default(),
             image_rendering: ImageRendering::default(),
-            keep_named_groups: false,
             default_size: Size::new(100.0, 100.0).unwrap(),
             image_href_resolver: ImageHrefResolver::default(),
         }

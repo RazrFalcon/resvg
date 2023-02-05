@@ -282,7 +282,6 @@ pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
     sub_opt.shape_rendering = opt.shape_rendering;
     sub_opt.text_rendering = opt.text_rendering;
     sub_opt.image_rendering = opt.image_rendering;
-    sub_opt.keep_named_groups = false;
     sub_opt.default_size = opt.default_size;
 
     let tree = match Tree::from_data(data, &sub_opt) {

@@ -84,11 +84,7 @@ fn process() -> Result<(), String> {
     })?;
 
     // fontdb initialization is pretty expensive, so perform it only when needed.
-    if tree
-        .root
-        .descendants()
-        .any(|node| matches!(&*node.borrow(), usvg::NodeKind::Text(_)))
-    {
+    if tree.has_text_nodes() {
         let fontdb = timed(args.perf, "FontDB", || load_fonts(&mut args));
         if args.list_fonts {
             for face in fontdb.faces() {
@@ -112,9 +108,7 @@ fn process() -> Result<(), String> {
             }
         }
 
-        timed(args.perf, "Text Conversion", || {
-            tree.convert_text(&fontdb, args.usvg.keep_named_groups)
-        });
+        timed(args.perf, "Text Conversion", || tree.convert_text(&fontdb));
     }
 
     if args.query_all {
@@ -471,10 +465,6 @@ fn parse_args() -> Result<Args, String> {
 
     let export_id = args.export_id.as_ref().map(|v| v.to_string());
 
-    // We don't have to keep named groups when we don't need them
-    // because it will slow down rendering.
-    let keep_named_groups = args.query_all || export_id.is_some();
-
     let mut fit_to = usvg::FitTo::Original;
     let mut default_size = usvg::Size::new(100.0, 100.0).unwrap();
     if let (Some(w), Some(h)) = (args.width, args.height) {
@@ -513,7 +503,6 @@ fn parse_args() -> Result<Args, String> {
         shape_rendering: args.shape_rendering,
         text_rendering: args.text_rendering,
         image_rendering: args.image_rendering,
-        keep_named_groups,
         default_size,
         image_href_resolver: usvg::ImageHrefResolver::default(),
     };

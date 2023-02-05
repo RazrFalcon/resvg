@@ -27,7 +27,6 @@ and can focus just on the rendering part.
 - Relative length units (mm, em, etc.) will be converted into pixels/points
 - External images will be loaded
 - Internal, base64 images will be decoded
-- Dummy groups will be removed
 - All references (like `#elem` and `url(#elem)`) will be resolved
 - `switch` will be resolved
 - Text elements, which are probably the hardest part of SVG, will be completely resolved.
@@ -574,6 +573,18 @@ impl Default for Group {
     }
 }
 
+impl Group {
+    /// Checks if this group should be isolated during rendering.
+    pub fn should_isolate(&self) -> bool {
+        self.isolate
+            || self.opacity != Opacity::ONE
+            || self.clip_path.is_some()
+            || self.mask.is_some()
+            || !self.filters.is_empty()
+            || self.blend_mode != BlendMode::Normal // TODO: probably not needed?
+    }
+}
+
 /// Alias for `rctree::Node<NodeKind>`.
 pub type Node = rctree::Node<NodeKind>;
 
@@ -656,10 +667,53 @@ impl Tree {
         self.root.descendants().find(|node| &*node.id() == id)
     }
 
-    /// Ungroups groups inside the `root` node.
-    pub fn ungroup_groups(root: Node, keep_named_groups: bool) {
-        converter::ungroup_groups(root, keep_named_groups);
+    /// Checks if the current tree has any text nodes.
+    pub fn has_text_nodes(&self) -> bool {
+        has_text_nodes(&self.root)
     }
+}
+
+fn has_text_nodes(root: &Node) -> bool {
+    // We have to update text nodes in clipPaths, masks and patterns as well.
+    for node in root.descendants() {
+        match *node.borrow() {
+            NodeKind::Group(ref g) => {
+                if let Some(ref clip) = g.clip_path {
+                    if has_text_nodes(&clip.root) {
+                        return true;
+                    }
+                }
+
+                if let Some(ref mask) = g.mask {
+                    if has_text_nodes(&mask.root) {
+                        return true;
+                    }
+                }
+            }
+            NodeKind::Path(ref path) => {
+                if let Some(ref fill) = path.fill {
+                    if let Paint::Pattern(ref p) = fill.paint {
+                        if has_text_nodes(&p.root) {
+                            return true;
+                        }
+                    }
+                }
+                if let Some(ref stroke) = path.stroke {
+                    if let Paint::Pattern(ref p) = stroke.paint {
+                        if has_text_nodes(&p.root) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            NodeKind::Image(_) => {}
+            NodeKind::Text(_) => {
+                return true;
+            }
+        }
+    }
+
+    false
 }
 
 /// Additional `Node` methods.

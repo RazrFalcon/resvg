@@ -116,7 +116,13 @@ pub(crate) fn render_node(
             crate::path::draw(tree, path, tiny_skia::BlendMode::SourceOver, canvas)
         }
         usvg::NodeKind::Image(ref img) => Some(crate::image::draw(img, canvas)),
-        usvg::NodeKind::Group(ref g) => render_group_impl(tree, node, g, state, canvas),
+        usvg::NodeKind::Group(ref g) => {
+            if g.should_isolate() {
+                render_group_impl(tree, node, g, state, canvas)
+            } else {
+                render_group(tree, node, state, canvas)
+            }
+        }
         usvg::NodeKind::Text(_) => None,
     }
 }

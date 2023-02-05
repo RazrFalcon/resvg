@@ -465,16 +465,6 @@ pub extern "C" fn resvg_options_set_image_rendering_mode(
     }
 }
 
-/// @brief Keep named groups.
-///
-/// If set to `true`, all non-empty groups with `id` attribute will not be removed.
-///
-/// Default: false
-#[no_mangle]
-pub extern "C" fn resvg_options_set_keep_named_groups(opt: *mut resvg_options, keep: bool) {
-    cast_opt(opt).keep_named_groups = keep;
-}
-
 /// @brief Loads a font data into the internal fonts database.
 ///
 /// Prints a warning into the log when the data is not a valid TrueType font.
@@ -615,7 +605,7 @@ pub extern "C" fn resvg_parse_tree_from_file(
 
     #[cfg(feature = "text")]
     {
-        utree.convert_text(&raw_opt.fontdb, raw_opt.options.keep_named_groups);
+        utree.convert_text(&raw_opt.fontdb);
     }
 
     let tree_box = Box::new(resvg_render_tree(utree));
@@ -657,7 +647,7 @@ pub extern "C" fn resvg_parse_tree_from_data(
 
     #[cfg(feature = "text")]
     {
-        utree.convert_text(&raw_opt.fontdb, raw_opt.options.keep_named_groups);
+        utree.convert_text(&raw_opt.fontdb);
     }
 
     let tree_box = Box::new(resvg_render_tree(utree));

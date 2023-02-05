@@ -350,15 +350,6 @@ void resvg_options_set_text_rendering_mode(resvg_options *opt, resvg_text_render
 void resvg_options_set_image_rendering_mode(resvg_options *opt, resvg_image_rendering mode);
 
 /**
- * @brief Keep named groups.
- *
- * If set to `true`, all non-empty groups with `id` attribute will not be removed.
- *
- * Default: false
- */
-void resvg_options_set_keep_named_groups(resvg_options *opt, bool keep);
-
-/**
  * @brief Loads a font data into the internal fonts database.
  *
  * Prints a warning into the log when the data is not a valid TrueType font.

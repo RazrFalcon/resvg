@@ -123,7 +123,6 @@ pub(crate) fn convert_doc(svg_doc: &rosvgtree::Document, opt: &Options) -> Resul
     convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
 
     remove_empty_groups(&mut tree);
-    ungroup_groups(tree.root.clone(), opt.keep_named_groups);
 
     if restore_viewbox {
         calculate_svg_bbox(&mut tree);
@@ -471,9 +470,7 @@ pub(crate) fn convert_group(
         || enable_background.is_some()
         || blend_mode != BlendMode::Normal
         || isolate
-        || (is_g_or_use
-            && !node.element_id().is_empty()
-            && (state.opt.keep_named_groups || state.fe_image_link))
+        || is_g_or_use
         || force;
 
     if required {
@@ -591,69 +588,6 @@ fn remove_empty_groups(tree: &mut Tree) {
     }
 
     while rm(tree.root.clone()) {}
-}
-
-pub(crate) fn ungroup_groups(root: Node, keep_named_groups: bool) {
-    fn ungroup(root: Node, parent: Node, keep_named_groups: bool) -> bool {
-        let mut changed = false;
-
-        let mut curr_node = parent.first_child();
-        while let Some(node) = curr_node {
-            curr_node = node.next_sibling();
-
-            let mut ts = Transform::default();
-            let is_ok = if let NodeKind::Group(ref g) = *node.borrow() {
-                ts = g.transform;
-                g.opacity == Opacity::ONE
-                    && g.clip_path.is_none()
-                    && g.mask.is_none()
-                    && g.filters.is_empty()
-                    && g.enable_background.is_none()
-                    && g.blend_mode == BlendMode::Normal
-                    && !g.isolate
-                    && !(keep_named_groups && !g.id.is_empty())
-            } else {
-                false
-            };
-
-            if is_ok {
-                let mut curr_child = node.last_child();
-                while let Some(child) = curr_child {
-                    curr_child = child.previous_sibling();
-
-                    // Update transform.
-                    match *child.borrow_mut() {
-                        NodeKind::Path(ref mut path) => {
-                            path.transform.prepend(&ts);
-                        }
-                        NodeKind::Image(ref mut img) => {
-                            img.transform.prepend(&ts);
-                        }
-                        NodeKind::Group(ref mut g) => {
-                            g.transform.prepend(&ts);
-                        }
-                        NodeKind::Text(ref mut text) => {
-                            text.transform.prepend(&ts);
-                        }
-                    }
-
-                    child.detach();
-                    node.insert_after(child.clone());
-                }
-
-                node.detach();
-                changed = true;
-            } else {
-                if ungroup(root.clone(), node, keep_named_groups) {
-                    changed = true;
-                }
-            }
-        }
-
-        changed
-    }
-
-    while ungroup(root.clone(), root.clone(), keep_named_groups) {}
 }
 
 fn convert_path(

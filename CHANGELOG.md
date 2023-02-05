@@ -10,11 +10,21 @@ This changelog also contains important changes in dependencies.
 ### Added
 - `resvg` CLI loads system fonts only when an input SVG has text nodes now.
   Fonts loading is an IO-heavy operation and by avoiding it we can speed up `resvg` execution.
+- `usvg::Group::should_isolate`
+- `usvg::Tree::has_text_nodes`
 
 ### Changed
 - Some `usvg` internals were moved into the new `rosvgtree` crate.
+- Dummy groups are no longer removed. Use `usvg::Group::should_isolate` to check
+  if a group affects rendering.
+- `usvg-text-layout::TreeTextToPath::convert_text` no longer has the `keep_named_groups` argument.
 - MSRV bumped to 1.65
 - Update dependencies.
+
+### Removed
+- `usvg::Options::keep_named_groups`. Dummy groups are no longer removed.
+- (c-api) `resvg_options_set_keep_named_groups`
+- (Qt API) `ResvgOptions::setKeepNamedGroups`
 
 ### Fixed
 - Missing `font-family` handling.

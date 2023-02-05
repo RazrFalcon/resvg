@@ -27,7 +27,6 @@ and can focus just on the rendering part.
 - Relative length units (mm, em, etc.) will be converted into pixels/points
 - External images will be loaded
 - Internal, base64 images will be decoded
-- Dummy groups will be removed
 - All references (like `#elem` and `url(#elem)`) will be resolved
 - `switch` will be resolved
 - Text elements, which are probably the hardest part of SVG, will be completely resolved.

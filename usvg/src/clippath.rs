@@ -96,7 +96,6 @@ pub(crate) fn convert(
     let mut clip_state = state.clone();
     clip_state.parent_clip_path = Some(node);
     converter::convert_clip_path_elements(node, &clip_state, cache, &mut clip.root);
-    converter::ungroup_groups(clip.root.clone(), false);
 
     if clip.root.has_children() {
         let clip = Rc::new(clip);
