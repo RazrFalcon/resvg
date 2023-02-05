@@ -28,6 +28,7 @@ This changelog also contains important changes in dependencies.
 
 ### Fixed
 - Missing `font-family` handling.
+- `font-weight` resolving.
 
 ## [0.28.0] - 2022-12-03
 ### Added
