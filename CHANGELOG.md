@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- Skip malformed `transform` attributes without skipping the whole element.
 
 ## [0.29.0] - 2022-02-04
 ### Added

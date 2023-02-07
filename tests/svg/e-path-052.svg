@@ -1,0 +1,13 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Invalid transform</title>
+    <desc>
+      Invalid transform should simply be ignored.
+      The element should be rendered anyway using the default transform.
+    </desc>
+
+    <path id="path1" d="M 30 40 C 16 137 171 45 180 155"
+          fill="none" stroke="green" stroke-width="5" transform="qwe"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

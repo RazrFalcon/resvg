@@ -23,14 +23,12 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for OpacityWrapper {
     }
 }
 
+// TODO: move to rosvgtree
 impl<'a, 'input: 'a> FromValue<'a, 'input> for Transform {
-    fn parse(_: Node, aid: AttributeId, value: &str) -> Option<Self> {
+    fn parse(_: Node, _: AttributeId, value: &str) -> Option<Self> {
         let ts = match svgtypes::Transform::from_str(value) {
             Ok(v) => v,
-            Err(_) => {
-                log::warn!("Failed to parse {} value: '{}'.", aid, value);
-                return None;
-            }
+            Err(_) => return None,
         };
 
         let ts = crate::Transform::from(ts);
@@ -107,7 +105,7 @@ impl SvgNodeExt for Node<'_, '_> {
 
         let ts = match svgtypes::Transform::from_str(attr) {
             Ok(v) => v,
-            Err(_) => return false,
+            Err(_) => return true,
         };
 
         let ts = crate::Transform::from(ts);
