@@ -361,6 +361,9 @@ public:
         const auto r = resvg_get_image_viewbox(d->tree);
         d->viewBox = QRectF(r.x, r.y, r.width, r.height);
 
+        const auto s = resvg_get_image_size(d->tree);
+        d->size = QSizeF(s.width, s.height);
+
         return true;
     }
 
