@@ -139,32 +139,32 @@ pub(crate) fn convert_svg(
 
     // We have to create a new state which would have its viewBox set to the current SVG element.
     // Note that we're not updating State::size - it's a completely different property.
-    let mut state = state.clone();
-    state.view_box = {
+    let mut new_state = state.clone();
+    new_state.view_box = {
         if let Some(vb) = node.parse_viewbox() {
             vb
         } else {
             // No `viewBox` attribute? Then use `x`, `y`, `width` and `height` instead.
-            let x = node.convert_user_length(AId::X, &state, Length::zero());
-            let y = node.convert_user_length(AId::Y, &state, Length::zero());
-            let (mut w, mut h) = use_node_size(node, &state);
+            let x = node.convert_user_length(AId::X, &new_state, Length::zero());
+            let y = node.convert_user_length(AId::Y, &new_state, Length::zero());
+            let (mut w, mut h) = use_node_size(node, &new_state);
 
             // If attributes `width` and/or `height` are provided on the `use` element,
             // then these values will override the corresponding attributes
             // on the `svg` in the generated tree.
-            w = state.use_size.0.unwrap_or(w);
-            h = state.use_size.1.unwrap_or(h);
+            w = new_state.use_size.0.unwrap_or(w);
+            h = new_state.use_size.1.unwrap_or(h);
 
-            Rect::new(x, y, w, h).unwrap_or(state.view_box)
+            Rect::new(x, y, w, h).unwrap_or(new_state.view_box)
         }
     };
 
     if let Some(clip_rect) = get_clip_rect(node, node, &state) {
         let mut g = clip_element(node, clip_rect, orig_ts, cache, parent);
-        convert_children(node, new_ts, &state, cache, &mut g);
+        convert_children(node, new_ts, &new_state, cache, &mut g);
     } else {
         orig_ts.append(&new_ts);
-        convert_children(node, orig_ts, &state, cache, parent);
+        convert_children(node, orig_ts, &new_state, cache, parent);
     }
 }
 
