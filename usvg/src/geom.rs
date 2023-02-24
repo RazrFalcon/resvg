@@ -78,7 +78,7 @@ pub trait IsValidLength {
 impl IsValidLength for f64 {
     #[inline]
     fn is_valid_length(&self) -> bool {
-        *self > 0.0
+        *self > 0.0 && self.is_finite()
     }
 }
 
