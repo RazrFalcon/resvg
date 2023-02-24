@@ -13,7 +13,7 @@ use std::os::raw::c_char;
 use std::slice;
 
 use resvg::tiny_skia;
-use resvg::usvg::{self, NodeExt};
+use resvg::usvg::{self, NodeExt, NodeKind, PathCommand, PathSegment};
 #[cfg(feature = "text")]
 use resvg::usvg_text_layout::{fontdb, TreeTextToPath};
 
@@ -151,6 +151,101 @@ impl resvg_fit_to {
             resvg_fit_to_type::ZOOM => usvg::FitTo::Zoom(self.value),
         }
     }
+}
+
+/// An opaque pointer to a node of the render tree.
+pub struct resvg_node(pub usvg::Node);
+
+/// @brief Render tree node types.
+/// The same as usvg::NodeKind but with no internal values.
+#[repr(C)]
+#[allow(missing_docs)]
+#[derive(Copy, Clone)]
+pub enum resvg_node_kind {
+    Path,
+    Image,
+    Group,
+    Text,
+}
+
+ /// @brief A colour representation.
+#[repr(C)]
+#[allow(missing_docs)]
+#[derive(Copy, Clone)]
+pub struct resvg_color {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
+}
+
+/// @brief A path segment representation.
+#[repr(C)]
+#[allow(missing_docs)]
+#[derive(Copy, Clone)]
+pub struct resvg_path_segment_points {
+    pub x: f64,
+    pub y: f64,
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
+}
+
+/// @brief Node line cap.
+#[repr(C)]
+#[allow(missing_docs)]
+#[derive(Copy, Clone)]
+pub enum resvg_line_cap {
+    LINECAP_BUTT,
+    LINECAP_ROUND,
+    LINECAP_SQUARE,
+    LINECAP_NONE,
+}
+
+/// @brief Node line join.
+#[repr(C)]
+#[allow(missing_docs)]
+#[derive(Copy, Clone)]
+pub enum resvg_line_join {
+    LINEJOIN_MITER,
+    LINEJOIN_ROUND,
+    LINEJOIN_BEVEL,
+    LINEJOIN_NONE,
+}
+
+/// @brief Node fill mode.
+#[repr(C)]
+#[allow(missing_docs)]
+#[derive(Copy, Clone)]
+pub enum resvg_fill_mode {
+    FILLMODE_EVENODD,
+    FILLMODE_NONZERO,
+    FILLMODE_NONE,
+}
+
+/// @brief Path segment type.
+#[repr(C)]
+#[allow(missing_docs)]
+#[derive(Copy, Clone)]
+pub enum resvg_segment_type {
+    SEGMENT_LINETO,
+    SEGMENT_CURVETO,
+    SEGMENT_MOVETO,
+    SEGMENT_CLOSEPATH,
+    SEGMENT_NONE,
+}
+
+/// @brief Included image format.
+#[repr(C)]
+#[allow(missing_docs)]
+#[derive(Copy, Clone)]
+pub enum resvg_image_format {
+    IMAGE_JPEG,
+    IMAGE_PNG,
+    IMAGE_SVG,
+    IMAGE_GIF,
+    IMAGE_INVALID,
 }
 
 /// @brief Creates an identity transform.
@@ -1027,4 +1122,691 @@ impl log::Log for SimpleLogger {
     }
 
     fn flush(&self) {}
+}
+
+unsafe fn unwrap_nullable_ptr<'a, T>(ptr: &'a *const T) -> &'a T {
+    assert!(!ptr.is_null());
+    &**ptr
+}
+
+/*
+ *   ------------------- Tree traversal functions -------------------
+ */
+
+/// brief Populates the pointer to the render tree root.
+///
+/// @param tree A render tree. Must not be null.
+/// @param target_node Pointer to the variable where the result should be stored.
+///        Should be destroyed via #resvg_node_destroy.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_tree_root_node(
+    tree: *const resvg_render_tree,
+    target_node: *mut *const resvg_node,
+) {
+    let tree: &resvg_render_tree = unwrap_nullable_ptr(&tree);
+    let root = tree.0.root.clone();
+    let root_box = Box::new(resvg_node(root));
+    unsafe { *target_node = Box::into_raw(root_box); }
+}
+
+/// @brief Calculates the number of children of the given render tree node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @return Number of children of the given node.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_node_children_count(
+    node: *const resvg_node,
+) -> usize {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+    node.0.children().count()
+}
+
+/// @brief Populates the pointer to n-th child of the given render tree node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @param idx 0-based index of the child to get.
+/// @param target_node Pointer to the variable where the result should be stored.
+///        Should be destroyed via #resvg_node_destroy.
+/// @return `true` if the target variable was populated.
+/// @return `false` if `idx` is too large.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_node_child_at_idx(
+    node: *const resvg_node,
+    idx: usize,
+    target_node: *mut *const resvg_node
+) -> bool {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    if let Some(child) = node.0.children().nth(idx) {
+        let ch_box = Box::new(resvg_node(child));
+        unsafe { *target_node = Box::into_raw(ch_box); }
+        true
+    } else {
+        false
+    }
+}
+
+/// @brief Destroys the #resvg_node.
+#[no_mangle]
+pub extern "C" fn resvg_node_destroy(node: *mut resvg_node) {
+    unsafe {
+        assert!(!node.is_null());
+        Box::from_raw(node)
+    };
+}
+
+/*
+ *   ------------------- Functions extracting information from a tree node -------------------
+ */
+
+/// @brief Gets type of the node (corrensponding to usvg::src::NodeKind)
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @return Node kind.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_node_kind(
+    node: *const resvg_node
+) -> resvg_node_kind {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+    match *node.0.borrow() {
+        usvg::NodeKind::Path(_) => resvg_node_kind::Path,
+        usvg::NodeKind::Image(_) => resvg_node_kind::Image,
+        usvg::NodeKind::Group(_) => resvg_node_kind::Group,
+        usvg::NodeKind::Text(_) => resvg_node_kind::Text,
+    }
+}
+
+/// @brief Gets transform of the node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @param transform Pointer to the variable that should store the result.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_node_transform2(
+    node: *const resvg_node,
+    target_transform: *mut resvg_transform
+) {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+    let transform = node.0.borrow().transform();
+
+    unsafe {
+        *target_transform = resvg_transform {
+            a: transform.a,
+            b: transform.b,
+            c: transform.c,
+            d: transform.d,
+            e: transform.e,
+            f: transform.f,
+        }
+    }
+}
+
+/// @brief Gets bounding box of the node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @param bbox Pointer to the variable that should store the result.
+/// @return `true` if the target variable was populated.
+/// @return `false` if the node does not have a bounding box or the calculation failed.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_node_bbox2(
+    node: *const resvg_node,
+    target_bbox: *mut resvg_path_bbox
+) -> bool {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    if let Some(bbox) = node.0.calculate_bbox() {
+        unsafe {
+            *target_bbox = resvg_path_bbox {
+                x: bbox.x(),
+                y: bbox.y(),
+                width: bbox.width(),
+                height: bbox.height(),
+            }
+        }
+
+        true
+    } else {
+        false
+    }
+}
+
+/// @brief Gets line cap of a path node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @return Node's line cap.
+/// @return `LINECAP_NONE` if the path node does not have line cap.
+/// @return `LINECAP_NONE` if the node is not a path node.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_node_line_cap(
+    node: *const resvg_node,
+) -> resvg_line_cap {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    match &*node.0.borrow() {
+        NodeKind::Path(path) => {
+            if let Some(stroke) = &path.stroke {
+                match stroke.linecap {
+                    usvg::LineCap::Butt => resvg_line_cap::LINECAP_BUTT,
+                    usvg::LineCap::Round => resvg_line_cap::LINECAP_ROUND,
+                    usvg::LineCap::Square => resvg_line_cap::LINECAP_SQUARE,
+                }
+            } else {
+                resvg_line_cap::LINECAP_NONE
+            }
+        }
+        ,
+        _ => resvg_line_cap::LINECAP_NONE
+    }
+}
+
+/// @brief Gets line join of a path node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @return Node's line join.
+/// @return `RESVG_LINEJOIN_NONE` if the path node does not have line join.
+/// @return `RESVG_LINEJOIN_NONE` if the node is not a path node.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_node_line_join(
+    node: *const resvg_node,
+) -> resvg_line_join {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    match &*node.0.borrow() {
+        NodeKind::Path(path) => {
+            if let Some(stroke) = &path.stroke {
+                match stroke.linejoin {
+                    usvg::LineJoin::Miter => resvg_line_join::LINEJOIN_MITER,
+                    usvg::LineJoin::Round => resvg_line_join::LINEJOIN_ROUND,
+                    usvg::LineJoin::Bevel => resvg_line_join::LINEJOIN_BEVEL,
+                }
+            } else {
+                resvg_line_join::LINEJOIN_NONE
+            }
+        }
+        ,
+        _ => resvg_line_join::LINEJOIN_NONE
+    }
+}
+
+/// @brief Gets fill colour of the node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @param color Pointer to the variable that should store the result.
+/// @return `true` if the target variable was populated.
+/// @return `false` if the node does not have fill color.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_node_fill_color(
+    node: *const resvg_node,
+    target_color: *mut resvg_color
+) -> bool {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+    let paint: Option<&usvg::Paint>;
+    let opacity: u8;
+    let n = &*node.0.borrow();
+
+    match n {
+        NodeKind::Path(path) => {
+            paint = path.fill.as_ref().map(|x| &x.paint);
+            opacity = if let Some(fill) = &path.fill {
+                fill.opacity.to_u8()
+            } else { 255 }
+        },
+        NodeKind::Group(group) => {
+            paint = group.filter_fill.as_ref();
+            opacity = group.opacity.to_u8();
+        },
+        _ => {
+            paint = None;
+            opacity = 255;
+        }
+    }
+
+    if let Some(usvg::Paint::Color(color)) = paint {
+        unsafe {
+            *target_color = resvg_color {
+                r: color.red,
+                g: color.green,
+                b: color.blue,
+                a: opacity,
+            }
+        }
+        return true;
+    } else if opacity != 255 {
+        // No paint but custom opacity
+        unsafe {
+            *target_color = resvg_color {
+                r: 255,
+                g: 255,
+                b: 255,
+                a: opacity,
+            }
+        }
+        return true;
+    }
+    false
+}
+
+/// @brief Gets fill mode of a path node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @return Node's fill mode.
+/// @return `FILLMODE_NONE` if the path node does not have fill mode.
+/// @return `FILLMODE_NONE` if the node is not a path node.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_path_fill_mode(
+    node: *const resvg_node,
+) -> resvg_fill_mode {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    match &*node.0.borrow() {
+        NodeKind::Path(path) => {
+            if let Some(fill) = &path.fill {
+                match fill.rule {
+                    usvg::FillRule::EvenOdd => resvg_fill_mode::FILLMODE_EVENODD,
+                    usvg::FillRule::NonZero => resvg_fill_mode::FILLMODE_NONZERO,
+                }
+            } else {
+                resvg_fill_mode::FILLMODE_NONE
+            }
+        }
+        ,
+        _ => resvg_fill_mode::FILLMODE_NONE
+    }
+}
+
+/// @brief Gets stroke colour of the node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @param color Pointer to the variable that should store the result.
+/// @return `true` if the target variable was populated.
+/// @return `false` if the node does not have stroke color.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_node_stroke_color(
+    node: *const resvg_node,
+    target_color: *mut resvg_color
+) -> bool {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+    let paint: Option<&usvg::Paint>;
+    let opacity: u8;
+    let n = &*node.0.borrow();
+
+    match n {
+        NodeKind::Path(path) => {
+            paint = path.stroke.as_ref().map(|x| &x.paint);
+            opacity = if let Some(stroke) = &path.stroke {
+                stroke.opacity.to_u8()
+            } else { 255 }
+        },
+        NodeKind::Group(group) => {
+            paint = group.filter_stroke.as_ref();
+            opacity = group.opacity.to_u8();
+        },
+        _ => {
+            paint = None;
+            opacity = 255;
+        }
+    }
+
+    if let Some(usvg::Paint::Color(color)) = paint {
+        unsafe {
+            *target_color = resvg_color {
+                r: color.red,
+                g: color.green,
+                b: color.blue,
+                a: opacity,
+            }
+        }
+        return true;
+    } else if opacity != 255 {
+        // No paint but custom opacity
+        unsafe {
+            *target_color = resvg_color {
+                r: 255,
+                g: 255,
+                b: 255,
+                a: opacity,
+            }
+        }
+        return true;
+    }
+    false
+}
+
+/// @brief Gets stroke width of a path node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @return Node's stroke width.
+/// @return `0.` if the path node does not have an assigned stroke width.
+/// @return `0.` if the node is not a path node.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_node_stroke_width(
+    node: *const resvg_node,
+) -> f64 {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    match &*node.0.borrow() {
+        NodeKind::Path(path) => {
+            if let Some(stroke) = &path.stroke {
+                stroke.width.get()
+            } else {
+                0.
+            }
+        }
+        ,
+        _ => 0.
+    }
+}
+
+/// @brief Gets dash offset of a path node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @return Node's dash offset.
+/// @return `0.` if the path node does not have an assigned dash offset.
+/// @return `0.` if the node is not a path node.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_node_dash_offset(
+    node: *const resvg_node,
+) -> f32 {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    match &*node.0.borrow() {
+        NodeKind::Path(path) => {
+            if let Some(stroke) = &path.stroke {
+                stroke.dashoffset
+            } else {
+                0.
+            }
+        }
+        ,
+        _ => 0.
+    }
+}
+
+/// @brief Gets the number of dashes stored by the node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @return Node's dash count.
+/// @return `0` if the path node does not store any dashes.
+/// @return `0` if the node is not a path node.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_node_dash_count(
+    node: *const resvg_node,
+) -> usize {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    match &*node.0.borrow() {
+        NodeKind::Path(path) => {
+            if let Some(dasharray) = path.stroke.as_ref().and_then(|stroke| stroke.dasharray.as_ref()) {
+                dasharray.len()
+            } else {
+                0
+            }
+        }
+        ,
+        _ => 0
+    }
+}
+
+/// @brief Gets the n-th dash of a path node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @param dashIdx 0-based index of the dash in the dash array.
+///                The function will panic if `dashIdx` is too large.
+/// @return Node's stroke width.
+/// @return `0.` if the path node does not have assigned stroke width.
+/// @return `0.` if the node is not a path node.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_node_dash_at_idx(
+    node: *const resvg_node,
+    dash_idx: usize
+) -> f64 {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    match &*node.0.borrow() {
+        NodeKind::Path(path) => {
+            if let Some(dasharray) = path.stroke.as_ref().and_then(|stroke| stroke.dasharray.as_ref()) {
+                dasharray[dash_idx]
+            } else {
+                0.
+            }
+        }
+        ,
+        _ => 0.
+    }
+}
+
+/// @brief Gets the number of path segments of a path node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @return Node's number of path segments.
+/// @return `0` if the node is not a path node.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_path_segment_count(
+    node: *const resvg_node,
+) -> usize {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    match &*node.0.borrow() {
+        NodeKind::Path(path) => {
+            path.data.len()
+        }
+        ,
+        _ => 0
+    }
+}
+
+/// @brief Gets the path segment type of a path node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @return Node's segment type.
+/// @return `SEGMENT_NONE` if the node is not a path node.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_path_segment_type(
+    node: *const resvg_node,
+    segment_idx: usize
+) -> resvg_segment_type {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    match &*node.0.borrow() {
+        NodeKind::Path(path) => {
+            match path.data.commands()[segment_idx] {
+                PathCommand::MoveTo => resvg_segment_type::SEGMENT_MOVETO,
+                PathCommand::LineTo => resvg_segment_type::SEGMENT_LINETO,
+                PathCommand::CurveTo => resvg_segment_type::SEGMENT_CURVETO,
+                PathCommand::ClosePath => resvg_segment_type::SEGMENT_CLOSEPATH,
+            }
+        }
+        ,
+        _ => resvg_segment_type::SEGMENT_NONE
+    }
+}
+
+/// @brief Gets the points of a segment at a given index of a path node.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @param segmentIdx 0-based index of the path segment of the node.
+///                   The function will panic if `segmentIdx` is too large.
+/// @param points Pointer to the variable that should store the result.
+/// @return `true` if the target variable was populated.
+/// @return `false` if the node is not a path node.
+/// @return `false` if the path segment has type SEGMENT_CLOSEPATH and thus has no points associated with it.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_path_segment_points(
+    node: *const resvg_node,
+    segment_idx: usize,
+    target_points: *mut resvg_path_segment_points
+) -> bool {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    match &*node.0.borrow() {
+        NodeKind::Path(path) => {
+            let segment = path.data.segments().nth(segment_idx).unwrap();
+
+            match segment {
+                PathSegment::MoveTo { x, y } => {
+                    unsafe {
+                        *target_points = resvg_path_segment_points {
+                            x, y,
+                            x1: 0., y1: 0., x2: 0., y2: 0.,
+                        }
+                    }
+                    true
+                },
+                PathSegment::LineTo { x, y } => {
+                    unsafe {
+                        *target_points = resvg_path_segment_points {
+                            x, y,
+                            x1: 0., y1: 0., x2: 0., y2: 0.,
+                        }
+                    }
+                    true
+                },
+                PathSegment::CurveTo { 
+                    x, y, x1, y1, x2, y2 
+                } => {
+                    unsafe {
+                        *target_points = resvg_path_segment_points {
+                            x, y, x1, y1, x2, y2,
+                        }
+                    }
+                    true
+                },
+                PathSegment::ClosePath => false
+            }
+        }
+        ,
+        _ => false
+    }
+}
+
+/*
+ *   Functions to handle included images
+ */
+
+/// @brief Gets the format of an image included in the SVG file being parsed.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @return The format of the included image.
+/// @return `IMAGE_INVALID` if `node` is not an image node.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_included_image_format(
+    node: *const resvg_node,
+) -> resvg_image_format {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    match &*node.0.borrow() {
+        NodeKind::Image(image) => {
+            match image.kind {
+                usvg::ImageKind::JPEG(_) => resvg_image_format::IMAGE_JPEG,
+                usvg::ImageKind::PNG(_) => resvg_image_format::IMAGE_PNG,
+                usvg::ImageKind::GIF(_) => resvg_image_format::IMAGE_GIF,
+                usvg::ImageKind::SVG(_) => resvg_image_format::IMAGE_SVG,
+            }
+        }
+        ,
+        _ => resvg_image_format::IMAGE_INVALID
+    }
+}
+
+/// @brief Gets the render tree of the included SVG image.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @param included_tree Pointer to the variable that should store the result.
+///        Should be destroyed via #resvg_tree_destroy.
+/// @return `true` if the target variable was populated.
+/// @return `false` if `node` is not an SVG image node.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_included_svg_tree(
+    node: *const resvg_node,
+    target_tree: *mut *mut resvg_render_tree,
+) -> bool {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    match &*node.0.borrow() {
+        NodeKind::Image(image) => {
+            match &image.kind {
+                usvg::ImageKind::SVG(tree) => {
+                    let tree_box = Box::new(resvg_render_tree(tree.clone()));
+                    unsafe { *target_tree = Box::into_raw(tree_box); }
+                    true
+                }
+                _ => false,
+            }
+        }
+        ,
+        _ => false
+    }
+}
+
+/// @brief Gets the dimensions of the included image.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @param width Pointer to the variable that should store the width of the included image.
+/// @param height Pointer to the variable that should store the height of the included image.
+/// @return `true` if the target variables were populated.
+/// @return `false` if `node` is not an image node.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_included_image_dimensions(
+    node: *const resvg_node,
+    target_width: *mut f64,
+    target_height: *mut f64,
+) -> bool {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    match &*node.0.borrow() {
+        NodeKind::Image(image) => {
+            unsafe {
+                *target_width = image.view_box.rect.width();
+                *target_height = image.view_box.rect.height();
+                true
+            }
+        }
+        ,
+        _ => false
+    }
+}
+
+/// @brief Gets the bytes of the included raster image.
+///
+/// @param tree A node of the render tree. Must not be null.
+/// @param width Pointer to the variable that should store the byte data of the included image.
+/// @param height Pointer to the variable that should store the length in bytes of the included image data.
+/// @return `true` if the target variables were populated.
+/// @return `false` if `node` is not a raster image node.
+#[no_mangle]
+pub unsafe extern "C" fn resvg_get_included_image_bytes(
+    node: *const resvg_node,
+    target_bytes: *mut *const u8,
+    target_len: *mut usize,
+) -> bool {
+    let node: &resvg_node = unwrap_nullable_ptr(&node);
+
+    match &*node.0.borrow() {
+        NodeKind::Image(image) => {
+            match &image.kind {
+                usvg::ImageKind::PNG(bytes) => {
+                    unsafe { 
+                        *target_bytes = bytes.as_ptr();
+                        *target_len = bytes.len();
+                    }
+                    true
+                },
+                usvg::ImageKind::JPEG(bytes) => {
+                    unsafe { 
+                        *target_bytes = bytes.as_ptr();
+                        *target_len = bytes.len();
+                    }
+                    true
+                },
+                usvg::ImageKind::GIF(bytes) => {
+                    unsafe { 
+                        *target_bytes = bytes.as_ptr();
+                        *target_len = bytes.len();
+                    }
+                    true
+                },
+                _ => false,
+            }
+        },
+        _ => false
+    }
 }

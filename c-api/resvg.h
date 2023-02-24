@@ -15,6 +15,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #define RESVG_MAJOR_VERSION 0
 #define RESVG_MINOR_VERSION 29
@@ -185,6 +186,60 @@ typedef struct {
      */
     float value;
 } resvg_fit_to;
+
+typedef struct resvg_node resvg_node;
+
+typedef enum {
+    PATH,
+    IMAGE,
+    GROUP,
+    TEXT
+} resvg_node_kind;
+
+typedef struct {
+    uint8_t r, g, b, a;
+} resvg_color;
+
+typedef struct {
+    double x, y;
+    double x1, y1, x2, y2; // only used for CurveTo segments
+} resvg_path_segment_points;
+
+typedef enum {
+    RESVG_LINECAP_BUTT,
+    RESVG_LINECAP_ROUND,
+    RESVG_LINECAP_SQUARE,
+    RESVG_LINECAP_NONE
+} resvg_line_cap;
+
+typedef enum {
+    RESVG_LINEJOIN_MITER,
+    RESVG_LINEJOIN_ROUND,
+    RESVG_LINEJOIN_BEVEL,
+    RESVG_LINEJOIN_NONE
+} resvg_line_join;
+
+typedef enum {
+    RESVG_FILLMODE_EVENODD,
+    RESVG_FILLMODE_NONZERO,
+    RESVG_FILLMODE_NONE
+} resvg_fill_mode;
+
+typedef enum {
+    RESVG_SEGMENT_LINETO,
+    RESVG_SEGMENT_CURVETO,
+    RESVG_SEGMENT_MOVETO,
+    RESVG_SEGMENT_CLOSEPATH,
+    RESVG_SEGMENT_NONE
+} resvg_segment_type;
+
+typedef enum {
+    IMAGE_JPEG,
+    IMAGE_PNG,
+    IMAGE_GIF,
+    IMAGE_SVG,
+    IMAGE_INVALID
+} resvg_image_format;
 
 #ifdef __cplusplus
 extern "C" {
@@ -545,6 +600,247 @@ bool resvg_render_node(const resvg_render_tree *tree,
                        uint32_t width,
                        uint32_t height,
                        char *pixmap);
+
+/*
+ *   ------------------- Tree traversal functions -------------------
+ */
+
+/**
+ * @brief Populates the pointer to the render tree root.
+ *
+ * @param tree A render tree. Must not be null.
+ * @param target_node Pointer to the variable where the result should be stored.
+ *        Should be destroyed via #resvg_node_destroy.
+ */
+void resvg_get_tree_root_node(const resvg_render_tree* tree, resvg_node** target_node);
+
+/**
+ * @brief Calculates the number of children of the given render tree node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @return Number of children of the given node.
+ */
+size_t resvg_get_node_children_count(const resvg_node* node);
+
+/**
+ * @brief Populates the pointer to n-th child of the given render tree node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @param idx 0-based index of the child to get.
+ * @param target_node Pointer to the variable where the result should be stored.
+ *        Should be destroyed with #resvg_node_destroy.
+ * @return `true` if the target variable was populated.
+ * @return `false` if `idx` is too large.
+ */
+bool resvg_get_node_child_at_idx(const resvg_node* node, size_t idx, resvg_node** target_node);
+
+/**
+ * @brief Destroys the #resvg_node.
+ */
+void resvg_node_destroy(resvg_node *node);
+
+/*
+ *   ------------------- Functions extracting information from a tree node -------------------
+ */
+
+/**
+ * @brief Gets type of the node (corrensponding to usvg::src::NodeKind)
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @return Node kind.
+ */
+resvg_node_kind resvg_get_node_kind(const resvg_node* node);
+
+/**
+ * @brief Gets transform of the node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @param transform Pointer to the variable that should store the result.
+ */
+void resvg_get_node_transform2(const resvg_node* node, resvg_transform* transform);
+
+/**
+ * @brief Gets bounding box of the node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @param bbox Pointer to the variable that should store the result.
+ * @return `true` if the target variable was populated.
+ * @return `false` if the node does not have a bounding box or the calculation failed.
+ */
+bool resvg_get_node_bbox2(const resvg_node* node, resvg_path_bbox* bbox);
+
+/**
+ * @brief Gets line cap of a path node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @return Node's line cap.
+ * @return `RESVG_LINECAP_NONE` if the path node does not have line cap.
+ * @return `RESVG_LINECAP_NONE` if the node is not a path node.
+ */
+resvg_line_cap resvg_get_node_line_cap(const resvg_node* node);
+
+/**
+ * @brief Gets line join of a path node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @return Node's line join.
+ * @return `RESVG_LINEJOIN_NONE` if the path node does not have line join.
+ * @return `RESVG_LINEJOIN_NONE` if the node is not a path node.
+ */
+resvg_line_join resvg_get_node_line_join(const resvg_node* node);
+
+/**
+ * @brief Gets fill colour of the node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @param color Pointer to the variable that should store the result.
+ * @return `true` if the target variable was populated.
+ * @return `false` if the node does not have fill color.
+ */
+bool resvg_get_node_fill_color(const resvg_node* node, resvg_color* color);
+
+/**
+ * @brief Gets fill mode of a path node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @return Node's fill mode.
+ * @return `RESVG_FILLMODE_NONE` if the path node does not have fill mode.
+ * @return `RESVG_FILLMODE_NONE` if the node is not a path node.
+ */
+resvg_fill_mode resvg_get_path_fill_mode(const resvg_node* node);
+
+/**
+ * @brief Gets stroke colour of the node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @param color Pointer to the variable that should store the result.
+ * @return `true` if the target variable was populated.
+ * @return `false` if the node does not have stroke color.
+ */
+bool resvg_get_node_stroke_color(const resvg_node* node, resvg_color* color);
+
+/**
+ * @brief Gets stroke width of a path node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @return Node's stroke width.
+ * @return `0.` if the path node does not have an assigned stroke width.
+ * @return `0.` if the node is not a path node.
+ */
+double resvg_get_node_stroke_width(const resvg_node* node);
+
+/**
+ * @brief Gets dash offset of a path node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @return Node's dash offset.
+ * @return `0.` if the path node does not have an assigned dash offset.
+ * @return `0.` if the node is not a path node.
+ */
+float resvg_get_node_dash_offset(const resvg_node* node);
+
+/**
+ * @brief Gets the number of dashes stored by the node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @return Node's dash count.
+ * @return `0` if the path node does not store any dashes.
+ * @return `0` if the node is not a path node.
+ */
+size_t resvg_get_node_dash_count(const resvg_node* node);
+
+/**
+ * @brief Gets the n-th dash of a path node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @param dashIdx 0-based index of the dash in the dash array.
+ *                The function will panic if `dashIdx` is too large.
+ * @return Node's stroke width.
+ * @return `0.` if the path node does not have assigned stroke width.
+ * @return `0.` if the node is not a path node.
+ */
+double resvg_get_node_dash_at_idx(const resvg_node* node, size_t dashIdx);
+
+/**
+ * @brief Gets the number of path segments of a path node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @return Node's number of path segments.
+ * @return `0` if the node is not a path node.
+ */
+size_t resvg_get_path_segment_count(const resvg_node* node);
+
+/**
+ * @brief Gets the path segment type of a path node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @return Node's segment type.
+ * @return `RESVG_SEGMENT_NONE` if the node is not a path node.
+ */
+resvg_segment_type resvg_get_path_segment_type(const resvg_node* node, size_t segmentIdx);
+
+/**
+ * @brief Gets the points of a segment at a given index of a path node.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @param segmentIdx 0-based index of the path segment of the node.
+ *                   The function will panic if `segmentIdx` is too large.
+ * @param points Pointer to the variable that should store the result.
+ * @return `true` if the target variable was populated.
+ * @return `false` if the node is not a path node.
+ * @return `false` if the path segment has type RESVG_SEGMENT_CLOSEPATH and thus has no points associated with it.
+ */
+bool resvg_get_path_segment_points(const resvg_node* node, size_t segmentIdx, resvg_path_segment_points* points);
+
+/*
+ *   Functions to handle included images.
+ *
+ *   SVG files can include raster images, or other SVG images. A parsed tree may contain image nodes,
+ *   which carry the full data and the display boundaries of the included image.
+ *   If the included image is an SVG image, it can be rendered recursively; if it is a raster image, call
+ *   `resvg_get_included_image_bytes` to get its raw bytes.
+ */
+
+/**
+ * @brief Gets the format of an image included in the SVG file being parsed.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @return The format of the included image.
+ * @return `IMAGE_INVALID` if `node` is not an image node.
+ */
+resvg_image_format resvg_get_included_image_format(const resvg_node* node);
+
+/**
+ * @brief Gets the render tree of the included SVG image.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @param included_tree Pointer to the variable that should store the result.
+ * @return `true` if the target variable was populated.
+ * @return `false` if `node` is not an SVG image node.
+ */
+bool resvg_get_included_svg_tree(const resvg_node* node, resvg_render_tree **included_tree);
+
+/**
+ * @brief Gets the dimensions of the included image.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @param width Pointer to the variable that should store the width of the included image.
+ * @param height Pointer to the variable that should store the height of the included image.
+ * @return `true` if the target variables were populated.
+ * @return `false` if `node` is not an image node.
+ */
+bool resvg_get_included_image_dimensions(const resvg_node* node, double* width, double* height);
+
+/**
+ * @brief Gets the bytes of the included raster image.
+ *
+ * @param tree A node of the render tree. Must not be null.
+ * @param width Pointer to the variable that should store the byte data of the included image.
+ * @param height Pointer to the variable that should store the length in bytes of the included image data.
+ * @return `true` if the target variables were populated.
+ * @return `false` if `node` is not a raster image node.
+ */
+bool resvg_get_included_image_bytes(const resvg_node* node, uint8_t** bytes, size_t* len);
 
 #ifdef __cplusplus
 } // extern "C"
