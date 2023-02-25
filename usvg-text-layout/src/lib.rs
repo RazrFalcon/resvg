@@ -805,7 +805,13 @@ fn convert_decoration(
 
     let mut path = PathData::new();
     for dec_span in decoration_spans {
-        let rect = Rect::new(0.0, -thickness / 2.0, dec_span.width, thickness).unwrap();
+        let rect = match Rect::new(0.0, -thickness / 2.0, dec_span.width, thickness) {
+            Some(v) => v,
+            None => {
+                log::warn!("a decoration span has a malformed bbox");
+                continue;
+            }
+        };
 
         let start_idx = path.len();
         path.push_rect(rect);
