@@ -14,7 +14,7 @@ members = ["c-api", "svgfilters", "rosvgtree", "usvg", "usvg-text-layout"]
 
 [[bin]]
 name = "resvg"
-required-features = ["filter", "text", "system-fonts", "memmap-fonts"]
+required-features = ["filter", "text", "system-fonts", "memmap-fonts", "png-format"]
 
 [dependencies]
 gif = { version = "0.12", optional = true }
@@ -25,7 +25,7 @@ png = { version = "0.17", optional = true }
 rgb = "0.8"
 svgfilters = { path = "svgfilters", version = "0.4", optional = true }
 svgtypes = "0.10"
-tiny-skia = "0.8.3"
+tiny-skia = { version = "0.8.3", default-features = false, features = ["std"] }
 usvg = { path = "usvg", version = "0.29.0" }
 usvg-text-layout = { path = "usvg-text-layout", version = "0.29.0", default-features = false, optional = true }
 
@@ -33,7 +33,7 @@ usvg-text-layout = { path = "usvg-text-layout", version = "0.29.0", default-feat
 once_cell = "1.5"
 
 [features]
-default = ["filter", "text", "system-fonts", "memmap-fonts", "raster-images"]
+default = ["filter", "text", "system-fonts", "memmap-fonts", "raster-images", "png-format", "simd"]
 # Enables SVG Filter support.
 # Adds around 100KiB to your binary.
 filter = ["svgfilters"]
@@ -48,3 +48,7 @@ memmap-fonts = ["usvg-text-layout/memmap-fonts"]
 # When disabled, `image` elements with SVG data will still be rendered.
 # Adds around 200KiB to your binary.
 raster-images = ["gif", "jpeg-decoder", "png"]
+# Enables tiny-skia's simd support.
+simd = ["tiny-skia/simd"]
+# Enables tiny-skia's png support.
+png-format = ["tiny-skia/png-format"]
