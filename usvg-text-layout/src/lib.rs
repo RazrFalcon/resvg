@@ -805,7 +805,13 @@ fn convert_decoration(
 
     let mut path = PathData::new();
     for dec_span in decoration_spans {
-        let rect = Rect::new(0.0, -thickness / 2.0, dec_span.width, thickness).unwrap();
+        let rect = match Rect::new(0.0, -thickness / 2.0, dec_span.width, thickness) {
+            Some(v) => v,
+            None => {
+                log::warn!("a decoration span has a malformed bbox");
+                continue;
+            }
+        };
 
         let start_idx = path.len();
         path.push_rect(rect);
@@ -1843,7 +1849,12 @@ fn apply_length_adjust(chunk: &TextChunk, clusters: &mut [OutlinedCluster]) {
         }
 
         if span.length_adjust == LengthAdjust::Spacing {
-            let factor = (target_width - width) / (cluster_indexes.len() - 1) as f64;
+            let factor = if cluster_indexes.len() > 1 {
+                (target_width - width) / (cluster_indexes.len() - 1) as f64
+            }   else {
+                0 as f64
+            };
+
             for i in cluster_indexes {
                 clusters[i].advance = clusters[i].width + factor;
             }
