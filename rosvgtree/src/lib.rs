@@ -279,7 +279,7 @@ impl<'a, 'input: 'a> Node<'a, 'input> {
     ///
     /// Returns an empty string otherwise.
     #[inline]
-    pub fn element_id(&self) -> &str {
+    pub fn element_id(&self) -> &'a str {
         self.attribute(AttributeId::Id).unwrap_or("")
     }
 

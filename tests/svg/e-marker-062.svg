@@ -1,0 +1,20 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Recursive (5)</title>
+
+    <defs>
+        <marker id="marker1" markerHeight="6" markerWidth="6" orient="auto" refX="1" refY="3">
+            <use xlink:href="#path1" transform="matrix(-1 0 0 1 6 0)"/>
+        </marker>
+        <marker id="marker2" markerHeight="6" markerWidth="6" orient="auto" refX="5" refY="3">
+            <use xlink:href="#path1"/>
+        </marker>
+        <path id="path1" d="M 1 1 5 3 1 5" fill="none" stroke="blue"
+              marker-start="url(#marker1)" marker-end="url(#marker2)"/>
+    </defs>
+    <path id="path2" d="M 10 10 L 190 190" fill="none" stroke="green" stroke-width="5"
+          marker-start="url(#marker1)" marker-end="url(#marker2)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

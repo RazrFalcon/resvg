@@ -1105,6 +1105,7 @@ use crate::render;
 #[test] fn e_marker_059() { assert_eq!(render("e-marker-059"), 0); }
 #[test] fn e_marker_060() { assert_eq!(render("e-marker-060"), 0); }
 #[test] fn e_marker_061() { assert_eq!(render("e-marker-061"), 0); }
+#[test] fn e_marker_062() { assert_eq!(render("e-marker-062"), 0); }
 #[test] fn e_mask_001() { assert_eq!(render("e-mask-001"), 0); }
 #[test] fn e_mask_002() { assert_eq!(render("e-mask-002"), 0); }
 #[test] fn e_mask_003() { assert_eq!(render("e-mask-003"), 0); }

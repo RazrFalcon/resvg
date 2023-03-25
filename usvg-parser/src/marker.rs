@@ -53,8 +53,10 @@ pub(crate) fn convert(
         }
 
         if let Some(marker) = marker {
+            // TODO: move to rosvgtree
             // Check for recursive marker.
-            if state.parent_marker == Some(marker) {
+            if state.parent_markers.contains(&marker) {
+                log::warn!("Recursive marker detected: {}", marker.element_id());
                 continue;
             }
 
@@ -156,7 +158,7 @@ fn resolve(
         }));
 
         let mut marker_state = state.clone();
-        marker_state.parent_marker = Some(marker_node);
+        marker_state.parent_markers.push(marker_node);
         converter::convert_children(marker_node, &marker_state, cache, &mut g_node);
 
         if !g_node.has_children() {

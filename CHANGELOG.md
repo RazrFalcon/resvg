@@ -31,6 +31,7 @@ This changelog also contains important changes in dependencies.
 - `rosvgtree::FromValue`. Due to Rust's orphan rules this trait is pretty useless.
 
 ### Fixed
+- Recursive markers detection.
 - Skip malformed `transform` attributes without skipping the whole element.
 - Clipping path rectangle calculation for nested `svg` elements.
   Thanks to [@LaurenzV](https://github.com/LaurenzV).
