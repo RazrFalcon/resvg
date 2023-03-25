@@ -19,7 +19,7 @@ flate2 = { version = "1.0", default-features = false, features = ["rust_backend"
 imagesize = "0.11" # raster images size detection
 kurbo = "0.9" # Bezier curves utils
 log = "0.4"
-rosvgtree = { path = "../rosvgtree", version = "0.1" }
+rosvgtree = { path = "../rosvgtree", version = "0.2" }
 strict-num = "0.1"
 svgtypes = "0.11"
 usvg-tree = { path = "../usvg-tree", version = "0.30.0" }
