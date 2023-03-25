@@ -1,6 +1,6 @@
 [package]
 name = "resvg-capi"
-version = "0.29.0"
+version = "0.30.0"
 authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster", "c-api"]
 license = "MPL-2.0"
@@ -17,7 +17,6 @@ log = "0.4"
 resvg = { path = "../", default-features = false }
 
 [features]
-# we do not provide the dump-svg/export feature here, because it's not available to C API anyway
 default = ["filter", "text", "system-fonts", "memmap-fonts", "raster-images"]
 # enables SVG Filter support
 # adds around 100KiB to your binary
