@@ -6,9 +6,8 @@ use winapi::shared::windef::{HBITMAP, HDC};
 use winapi::um::objidlbase::{LPSTREAM, STATSTG};
 use winapi::um::wingdi::{BI_RGB, BITMAPINFO, BITMAPINFOHEADER, DIB_RGB_COLORS, CreateDIBSection};
 use com::sys::S_OK;
-use resvg::{usvg, tiny_skia, usvg_text_layout};
-use usvg::FitTo;
-use usvg_text_layout::{fontdb, TreeTextToPath};
+use resvg::{usvg, tiny_skia, usvg_text_layout, FitTo};
+use usvg::{fontdb, TreeTextToPath, TreeParsing};
 use crate::error::Error;
 
 pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvg::Tree, Error> {

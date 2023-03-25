@@ -1851,7 +1851,7 @@ fn apply_length_adjust(chunk: &TextChunk, clusters: &mut [OutlinedCluster]) {
         if span.length_adjust == LengthAdjust::Spacing {
             let factor = if cluster_indexes.len() > 1 {
                 (target_width - width) / (cluster_indexes.len() - 1) as f64
-            }   else {
+            } else {
                 0 as f64
             };
 
