@@ -4,12 +4,14 @@
 
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
+use std::rc::Rc;
 
-use rosvgtree::{self, svgtypes, AttributeId as AId, ElementId as EId};
+use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use svgtypes::{Length, LengthUnit as Unit};
+use usvg_tree::*;
 
-use crate::rosvgtree_ext::OpacityWrapper;
-use crate::*;
+use crate::rosvgtree_ext::{FromValue, OpacityWrapper, SvgNodeExt, SvgNodeExt2};
+use crate::{Error, Options};
 
 #[derive(Clone)]
 pub struct State<'a> {
@@ -32,7 +34,7 @@ pub struct State<'a> {
 pub struct Cache {
     pub clip_paths: HashMap<String, Rc<ClipPath>>,
     pub masks: HashMap<String, Rc<Mask>>,
-    pub filters: HashMap<String, Rc<filter::Filter>>,
+    pub filters: HashMap<String, Rc<usvg_tree::filter::Filter>>,
     pub paint: HashMap<String, Paint>,
 
     // used for ID generation
@@ -86,7 +88,9 @@ pub(crate) fn convert_doc(svg_doc: &rosvgtree::Document, opt: &Options) -> Resul
         rect: svg
             .parse_viewbox()
             .unwrap_or_else(|| size.to_rect(0.0, 0.0)),
-        aspect: svg.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
+        aspect: svg
+            .parse_attribute(AId::PreserveAspectRatio)
+            .unwrap_or_default(),
     };
 
     let mut tree = Tree {
@@ -143,8 +147,8 @@ fn resolve_svg_size(svg: &rosvgtree::Node, opt: &Options) -> (Result<Size, Error
     };
 
     let def = Length::new(100.0, Unit::Percent);
-    let mut width: Length = svg.attribute(AId::Width).unwrap_or(def);
-    let mut height: Length = svg.attribute(AId::Height).unwrap_or(def);
+    let mut width: Length = svg.parse_attribute(AId::Width).unwrap_or(def);
+    let mut height: Length = svg.parse_attribute(AId::Height).unwrap_or(def);
 
     let view_box = svg.parse_viewbox();
 
@@ -227,7 +231,7 @@ fn calculate_svg_bbox(tree: &mut Tree) {
 pub(crate) fn convert_children(
     parent_node: rosvgtree::Node,
     state: &State,
-    cache: &mut converter::Cache,
+    cache: &mut Cache,
     parent: &mut Node,
 ) {
     for node in parent_node.children() {
@@ -239,7 +243,7 @@ pub(crate) fn convert_children(
 pub(crate) fn convert_element(
     node: rosvgtree::Node,
     state: &State,
-    cache: &mut converter::Cache,
+    cache: &mut Cache,
     parent: &mut Node,
 ) -> Option<Node> {
     let tag_name = node.tag_name()?;
@@ -253,12 +257,12 @@ pub(crate) fn convert_element(
     }
 
     if tag_name == EId::Use {
-        use_node::convert(node, state, cache, parent);
+        crate::use_node::convert(node, state, cache, parent);
         return None;
     }
 
     if tag_name == EId::Switch {
-        switch::convert(node, state, cache, parent);
+        crate::switch::convert(node, state, cache, parent);
         return None;
     }
 
@@ -276,19 +280,19 @@ pub(crate) fn convert_element(
         | EId::Polyline
         | EId::Polygon
         | EId::Path => {
-            if let Some(path) = shapes::convert(node, state) {
+            if let Some(path) = crate::shapes::convert(node, state) {
                 convert_path(node, path, state, cache, parent);
             }
         }
         EId::Image => {
-            image::convert(node, state, parent);
+            crate::image::convert(node, state, parent);
         }
         EId::Text => {
-            text::convert(node, state, cache, parent);
+            crate::text::convert(node, state, cache, parent);
         }
         EId::Svg => {
             if node.parent_element().is_some() {
-                use_node::convert_svg(node, state, cache, parent);
+                crate::use_node::convert_svg(node, state, cache, parent);
             } else {
                 // Skip root `svg`.
                 convert_children(node, state, cache, parent);
@@ -311,7 +315,7 @@ pub(crate) fn convert_element(
 pub(crate) fn convert_clip_path_elements(
     clip_node: rosvgtree::Node,
     state: &State,
-    cache: &mut converter::Cache,
+    cache: &mut Cache,
     parent: &mut Node,
 ) {
     for node in clip_node.children() {
@@ -329,7 +333,7 @@ pub(crate) fn convert_clip_path_elements(
         }
 
         if tag_name == EId::Use {
-            use_node::convert(node, state, cache, parent);
+            crate::use_node::convert(node, state, cache, parent);
             continue;
         }
 
@@ -341,12 +345,12 @@ pub(crate) fn convert_clip_path_elements(
 
         match tag_name {
             EId::Rect | EId::Circle | EId::Ellipse | EId::Polyline | EId::Polygon | EId::Path => {
-                if let Some(path) = shapes::convert(node, state) {
+                if let Some(path) = crate::shapes::convert(node, state) {
                     convert_path(node, path, state, cache, parent);
                 }
             }
             EId::Text => {
-                text::convert(node, state, cache, parent);
+                crate::text::convert(node, state, cache, parent);
             }
             _ => {
                 log::warn!("'{}' is no a valid 'clip-path' child.", tag_name);
@@ -361,12 +365,21 @@ enum Isolation {
     Isolate,
 }
 
-impl_enum_default!(Isolation, Auto);
+impl Default for Isolation {
+    fn default() -> Self {
+        Self::Auto
+    }
+}
 
-impl_enum_from_str!(Isolation,
-    "auto" => Isolation::Auto,
-    "isolate" => Isolation::Isolate
-);
+impl<'a, 'input: 'a> FromValue<'a, 'input> for Isolation {
+    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+        match value {
+            "auto" => Some(Isolation::Auto),
+            "isolate" => Some(Isolation::Isolate),
+            _ => None,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum GroupKind {
@@ -388,18 +401,19 @@ pub(crate) fn convert_group(
 ) -> GroupKind {
     // A `clipPath` child cannot have an opacity.
     let opacity = if state.parent_clip_path.is_none() {
-        node.attribute::<OpacityWrapper>(AId::Opacity)
+        node.parse_attribute::<OpacityWrapper>(AId::Opacity)
             .map(|v| v.0)
             .unwrap_or(Opacity::ONE)
     } else {
         Opacity::ONE
     };
 
+    // TODO: remove macro
     macro_rules! resolve_link {
         ($aid:expr, $f:expr) => {{
             let mut v = None;
 
-            if let Some(link) = node.attribute::<rosvgtree::Node>($aid) {
+            if let Some(link) = node.parse_attribute::<rosvgtree::Node>($aid) {
                 v = $f(link, state, cache);
 
                 // If `$aid` is linked to an invalid element - skip this group completely.
@@ -415,10 +429,10 @@ pub(crate) fn convert_group(
     // `mask` and `filter` cannot be set on `clipPath` children.
     // But `clip-path` can.
 
-    let clip_path = resolve_link!(AId::ClipPath, clippath::convert);
+    let clip_path = resolve_link!(AId::ClipPath, crate::clippath::convert);
 
     let mask = if state.parent_clip_path.is_none() {
-        resolve_link!(AId::Mask, mask::convert)
+        resolve_link!(AId::Mask, crate::mask::convert)
     } else {
         None
     };
@@ -429,7 +443,7 @@ pub(crate) fn convert_group(
             if node.attribute(AId::Filter) == Some("none") {
                 // Do nothing.
             } else if node.has_attribute(AId::Filter) {
-                if let Ok(f) = filter::convert(node, state, cache) {
+                if let Ok(f) = crate::filter::convert(node, state, cache) {
                     filters = f;
                 } else {
                     // A filter that not a link or a filter with a link to a non existing element.
@@ -455,11 +469,11 @@ pub(crate) fn convert_group(
         (filters, filter_fill, filter_stroke)
     };
 
-    let transform: Transform = node.attribute(AId::Transform).unwrap_or_default();
-    let blend_mode: BlendMode = node.attribute(AId::MixBlendMode).unwrap_or_default();
-    let isolation: Isolation = node.attribute(AId::Isolation).unwrap_or_default();
+    let transform: Transform = node.parse_attribute(AId::Transform).unwrap_or_default();
+    let blend_mode: BlendMode = node.parse_attribute(AId::MixBlendMode).unwrap_or_default();
+    let isolation: Isolation = node.parse_attribute(AId::Isolation).unwrap_or_default();
     let isolate = isolation == Isolation::Isolate;
-    let enable_background = node.attribute(AId::EnableBackground);
+    let enable_background = node.parse_attribute(AId::EnableBackground);
 
     let is_g_or_use = matches!(node.tag_name(), Some(EId::G) | Some(EId::Use));
     let required = opacity.get().fuzzy_ne(&1.0)
@@ -504,7 +518,7 @@ fn resolve_filter_fill(
     node: rosvgtree::Node,
     state: &State,
     filters: &[Rc<filter::Filter>],
-    cache: &mut converter::Cache,
+    cache: &mut Cache,
 ) -> Option<Paint> {
     let mut has_fill_paint = false;
     for filter in filters {
@@ -522,7 +536,7 @@ fn resolve_filter_fill(
         return None;
     }
 
-    let stroke = style::resolve_fill(node, true, state, cache)?;
+    let stroke = crate::style::resolve_fill(node, true, state, cache)?;
     Some(stroke.paint)
 }
 
@@ -530,7 +544,7 @@ fn resolve_filter_stroke(
     node: rosvgtree::Node,
     state: &State,
     filters: &[Rc<filter::Filter>],
-    cache: &mut converter::Cache,
+    cache: &mut Cache,
 ) -> Option<Paint> {
     let mut has_stroke_paint = false;
     for filter in filters {
@@ -548,7 +562,7 @@ fn resolve_filter_stroke(
         return None;
     }
 
-    let stroke = style::resolve_stroke(node, true, state, cache)?;
+    let stroke = crate::style::resolve_stroke(node, true, state, cache)?;
     Some(stroke.paint)
 }
 
@@ -592,9 +606,9 @@ fn remove_empty_groups(tree: &mut Tree) {
 
 fn convert_path(
     node: rosvgtree::Node,
-    path: SharedPathData,
+    path: Rc<PathData>,
     state: &State,
-    cache: &mut converter::Cache,
+    cache: &mut Cache,
     parent: &mut Node,
 ) {
     debug_assert!(path.len() >= 2);
@@ -603,16 +617,19 @@ fn convert_path(
     }
 
     let has_bbox = path.has_bbox();
-    let fill = style::resolve_fill(node, has_bbox, state, cache);
-    let stroke = style::resolve_stroke(node, has_bbox, state, cache);
-    let mut visibility: Visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
+    let fill = crate::style::resolve_fill(node, has_bbox, state, cache);
+    let stroke = crate::style::resolve_stroke(node, has_bbox, state, cache);
+    let mut visibility: Visibility = node
+        .find_and_parse_attribute(AId::Visibility)
+        .unwrap_or_default();
     let rendering_mode: ShapeRendering = node
-        .find_attribute(AId::ShapeRendering)
+        .find_and_parse_attribute(AId::ShapeRendering)
         .unwrap_or(state.opt.shape_rendering);
 
     // TODO: handle `markers` before `stroke`
-    let raw_paint_order: svgtypes::PaintOrder =
-        node.find_attribute(AId::PaintOrder).unwrap_or_default();
+    let raw_paint_order: svgtypes::PaintOrder = node
+        .find_and_parse_attribute(AId::PaintOrder)
+        .unwrap_or_default();
     let paint_order = svg_paint_order_to_usvg(raw_paint_order);
 
     // If a path doesn't have a fill or a stroke than it's invisible.
@@ -622,9 +639,9 @@ fn convert_path(
     }
 
     let mut markers_group = None;
-    if marker::is_valid(node) && visibility == Visibility::Visible {
+    if crate::marker::is_valid(node) && visibility == Visibility::Visible {
         let mut g = parent.append_kind(NodeKind::Group(Group::default()));
-        marker::convert(node, &path, state, cache, &mut g);
+        crate::marker::convert(node, &path, state, cache, &mut g);
         markers_group = Some(g);
     }
 

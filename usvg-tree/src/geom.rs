@@ -2,7 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use rosvgtree::svgtypes;
 use strict_num::ApproxEqUlps;
 
 use crate::{Align, AspectRatio};
@@ -696,6 +695,7 @@ impl std::fmt::Display for Rect {
     }
 }
 
+// TODO: move to resvg
 /// A 2D screen rect representation.
 ///
 /// Width and height are guarantee to be > 0.

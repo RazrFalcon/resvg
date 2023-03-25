@@ -13,13 +13,30 @@ readme = "README.md"
 exclude = ["tests"]
 workspace = ".."
 
+[[bin]]
+name = "usvg"
+required-features = ["text", "system-fonts", "memmap-fonts"]
+
 [dependencies]
 base64 = "0.21" # for embedded images
-data-url = "0.2" # for href parsing
-flate2 = { version = "1.0", default-features = false, features = ["rust_backend"] } # SVGZ decoding
-imagesize = "0.11" # raster images size detection
-kurbo = "0.9" # Bezier curves utils
 log = "0.4"
-rctree = "0.5"
-rosvgtree = { path = "../rosvgtree", version = "0.1" }
-strict-num = "0.1"
+pico-args = { version = "0.5", features = ["eq-separator"] }
+usvg-parser = { path = "../usvg-parser", version = "0.29.0" }
+usvg-tree = { path = "../usvg-tree", version = "0.29.0" }
+xmlwriter = "0.1"
+
+[dependencies.usvg-text-layout]
+path = "../usvg-text-layout"
+version = "0.29.0"
+default-features = false
+optional = true
+
+[features]
+default = ["text", "system-fonts", "memmap-fonts"]
+# Enables text-to-path conversion support.
+# Adds around 400KiB to your binary.
+text = ["usvg-text-layout"]
+# Enables system fonts loading.
+system-fonts = ["usvg-text-layout/system-fonts"]
+# Enables font files memmaping for faster loading.
+memmap-fonts = ["usvg-text-layout/memmap-fonts"]

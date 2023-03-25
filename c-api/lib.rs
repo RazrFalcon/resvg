@@ -13,9 +13,9 @@ use std::os::raw::c_char;
 use std::slice;
 
 use resvg::tiny_skia;
-use resvg::usvg::{self, NodeExt};
+use resvg::usvg::{self, NodeExt, TreeParsing};
 #[cfg(feature = "text")]
-use resvg::usvg_text_layout::{fontdb, TreeTextToPath};
+use resvg::usvg::{fontdb, TreeTextToPath};
 
 /// @brief List of possible errors.
 #[repr(C)]
@@ -137,18 +137,18 @@ pub struct resvg_fit_to {
 
 impl resvg_fit_to {
     #[inline]
-    fn to_usvg(&self) -> usvg::FitTo {
+    fn to_usvg(&self) -> resvg::FitTo {
         match self.kind {
-            resvg_fit_to_type::ORIGINAL => usvg::FitTo::Original,
+            resvg_fit_to_type::ORIGINAL => resvg::FitTo::Original,
             resvg_fit_to_type::WIDTH => {
                 assert!(self.value >= 1.0);
-                usvg::FitTo::Width(self.value as u32)
+                resvg::FitTo::Width(self.value as u32)
             }
             resvg_fit_to_type::HEIGHT => {
                 assert!(self.value >= 1.0);
-                usvg::FitTo::Height(self.value as u32)
+                resvg::FitTo::Height(self.value as u32)
             }
-            resvg_fit_to_type::ZOOM => usvg::FitTo::Zoom(self.value),
+            resvg_fit_to_type::ZOOM => resvg::FitTo::Zoom(self.value),
         }
     }
 }

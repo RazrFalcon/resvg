@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 /*!
-An [SVG] text layout implementation on top of [`usvg`] crate.
+An [SVG] text layout implementation on top of [usvg] crate.
 
 [usvg]: https://github.com/RazrFalcon/resvg/usvg
 [SVG]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
@@ -33,7 +33,7 @@ use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
 use rustybuzz::ttf_parser;
 use ttf_parser::GlyphId;
 use unicode_script::UnicodeScript;
-use usvg::*;
+use usvg_tree::*;
 
 /// A `usvg::Tree` extension trait.
 pub trait TreeTextToPath {
@@ -41,7 +41,7 @@ pub trait TreeTextToPath {
     fn convert_text(&mut self, fontdb: &fontdb::Database);
 }
 
-impl TreeTextToPath for usvg::Tree {
+impl TreeTextToPath for usvg_tree::Tree {
     fn convert_text(&mut self, fontdb: &fontdb::Database) {
         convert_text(self.root.clone(), fontdb);
     }
@@ -666,21 +666,21 @@ fn resolve_font(font: &Font, fontdb: &fontdb::Database) -> Option<ResolvedFont> 
     name_list.push(fontdb::Family::Serif);
 
     let stretch = match font.stretch {
-        Stretch::UltraCondensed => fontdb::Stretch::UltraCondensed,
-        Stretch::ExtraCondensed => fontdb::Stretch::ExtraCondensed,
-        Stretch::Condensed => fontdb::Stretch::Condensed,
-        Stretch::SemiCondensed => fontdb::Stretch::SemiCondensed,
-        Stretch::Normal => fontdb::Stretch::Normal,
-        Stretch::SemiExpanded => fontdb::Stretch::SemiExpanded,
-        Stretch::Expanded => fontdb::Stretch::Expanded,
-        Stretch::ExtraExpanded => fontdb::Stretch::ExtraExpanded,
-        Stretch::UltraExpanded => fontdb::Stretch::UltraExpanded,
+        FontStretch::UltraCondensed => fontdb::Stretch::UltraCondensed,
+        FontStretch::ExtraCondensed => fontdb::Stretch::ExtraCondensed,
+        FontStretch::Condensed => fontdb::Stretch::Condensed,
+        FontStretch::SemiCondensed => fontdb::Stretch::SemiCondensed,
+        FontStretch::Normal => fontdb::Stretch::Normal,
+        FontStretch::SemiExpanded => fontdb::Stretch::SemiExpanded,
+        FontStretch::Expanded => fontdb::Stretch::Expanded,
+        FontStretch::ExtraExpanded => fontdb::Stretch::ExtraExpanded,
+        FontStretch::UltraExpanded => fontdb::Stretch::UltraExpanded,
     };
 
     let style = match font.style {
-        Style::Normal => fontdb::Style::Normal,
-        Style::Italic => fontdb::Style::Italic,
-        Style::Oblique => fontdb::Style::Oblique,
+        FontStyle::Normal => fontdb::Style::Normal,
+        FontStyle::Italic => fontdb::Style::Italic,
+        FontStyle::Oblique => fontdb::Style::Oblique,
     };
 
     let query = fontdb::Query {

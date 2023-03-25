@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use rgb::FromSlice;
-use usvg_text_layout::{fontdb, TreeTextToPath};
+use usvg::{fontdb, TreeParsing, TreeTextToPath};
 
 #[rustfmt::skip]
 mod render;
@@ -33,7 +33,7 @@ pub fn render(name: &str) -> usize {
         tree
     };
 
-    let fit_to = usvg::FitTo::Width(IMAGE_SIZE);
+    let fit_to = resvg::FitTo::Width(IMAGE_SIZE);
     let size = fit_to.fit_to(tree.size.to_screen_size()).unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
     resvg::render(

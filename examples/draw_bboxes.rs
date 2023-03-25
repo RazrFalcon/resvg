@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
-use usvg::NodeExt;
-use usvg_text_layout::{fontdb, TreeTextToPath};
+use usvg::{fontdb, NodeExt, TreeParsing, TreeTextToPath};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -25,7 +24,7 @@ fn main() {
     opt.resources_dir = std::fs::canonicalize(&args[1])
         .ok()
         .and_then(|p| p.parent().map(|p| p.to_path_buf()));
-    let fit_to = usvg::FitTo::Zoom(zoom);
+    let fit_to = resvg::FitTo::Zoom(zoom);
 
     let mut fontdb = fontdb::Database::new();
     fontdb.load_system_fonts();

@@ -2,9 +2,7 @@ use std::collections::HashMap;
 
 use roxmltree::Error;
 
-use crate::{
-    Attribute, AttributeId, Document, ElementId, Node, NodeData, NodeId, NodeKind, ShortRange,
-};
+use crate::{Attribute, AttributeId, Document, ElementId, NodeData, NodeId, NodeKind, ShortRange};
 
 const SVG_NS: &str = "http://www.w3.org/2000/svg";
 const XLINK_NS: &str = "http://www.w3.org/1999/xlink";
@@ -93,7 +91,7 @@ fn parse<'input>(xml: &roxmltree::Document<'input>) -> Result<Document<'input>, 
     // Collect all elements with `id` attribute.
     let mut links = HashMap::new();
     for node in doc.descendants() {
-        if let Some(id) = node.attribute::<&str>(AttributeId::Id) {
+        if let Some(id) = node.attribute(AttributeId::Id) {
             links.insert(id.to_string(), node.id);
         }
     }
@@ -582,7 +580,12 @@ fn find_recursive_pattern(aid: AttributeId, doc: &mut Document) -> Option<NodeId
         .filter(|n| n.tag_name() == Some(ElementId::Pattern))
     {
         for node in pattern_node.descendants() {
-            if let Some(svgtypes::Paint::FuncIRI(link_id, _)) = node.attribute(aid) {
+            let value = match node.attribute(aid) {
+                Some(v) => v,
+                None => continue,
+            };
+
+            if let Ok(svgtypes::Paint::FuncIRI(link_id, _)) = svgtypes::Paint::from_str(value) {
                 if link_id == pattern_node.element_id() {
                     // If a pattern child has a link to the pattern itself
                     // then we have to replace it with `none`.
@@ -592,8 +595,13 @@ fn find_recursive_pattern(aid: AttributeId, doc: &mut Document) -> Option<NodeId
                     // Check that linked node children doesn't link this pattern.
                     if let Some(linked_node) = doc.element_by_id(link_id) {
                         for node2 in linked_node.descendants() {
-                            if let Some(svgtypes::Paint::FuncIRI(link_id2, _)) =
-                                node2.attribute(aid)
+                            let value2 = match node2.attribute(aid) {
+                                Some(v) => v,
+                                None => continue,
+                            };
+
+                            if let Ok(svgtypes::Paint::FuncIRI(link_id2, _)) =
+                                svgtypes::Paint::from_str(value2)
                             {
                                 if link_id2 == pattern_node.element_id() {
                                     return Some(node2.id);
@@ -623,7 +631,7 @@ fn find_recursive_link(eid: ElementId, aid: AttributeId, doc: &Document) -> Opti
         .filter(|n| n.tag_name() == Some(eid))
     {
         for child in node.descendants() {
-            if let Some(link) = child.attribute::<Node>(aid) {
+            if let Some(link) = child.node_attribute(aid) {
                 if link == node {
                     // If an element child has a link to the element itself
                     // then we have to replace it with `none`.
@@ -632,7 +640,7 @@ fn find_recursive_link(eid: ElementId, aid: AttributeId, doc: &Document) -> Opti
                 } else {
                     // Check that linked node children doesn't link this element.
                     for node2 in link.descendants() {
-                        if let Some(link2) = node2.attribute::<Node>(aid) {
+                        if let Some(link2) = node2.node_attribute(aid) {
                             if link2 == node {
                                 return Some(node2.id);
                             }
@@ -661,8 +669,8 @@ fn fix_recursive_fe_image(doc: &mut Document) {
         .descendants()
         .filter(|n| n.tag_name() == Some(ElementId::FeImage))
     {
-        if let Some(link) = fe_node.attribute::<Node>(AttributeId::Href) {
-            if let Some(filter_uri) = link.attribute::<&str>(AttributeId::Filter) {
+        if let Some(link) = fe_node.node_attribute(AttributeId::Href) {
+            if let Some(filter_uri) = link.attribute(AttributeId::Filter) {
                 let filter_id = fe_node.parent().unwrap().element_id().to_string();
                 for func in svgtypes::FilterValueListParser::from(filter_uri).flatten() {
                     if let svgtypes::FilterValue::Url(url) = func {

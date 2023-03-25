@@ -18,7 +18,6 @@ XML, to make SVG parsing easier.
 
 use std::collections::HashMap;
 use std::num::NonZeroU32;
-use std::str::FromStr;
 
 #[rustfmt::skip] mod names;
 mod parse;
@@ -27,7 +26,6 @@ mod text;
 pub use names::{AttributeId, ElementId};
 
 pub use roxmltree::{self, Error};
-pub use svgtypes;
 
 /// An SVG tree container.
 ///
@@ -285,25 +283,25 @@ impl<'a, 'input: 'a> Node<'a, 'input> {
         self.attribute(AttributeId::Id).unwrap_or("")
     }
 
-    /// Parses an attribute value.
-    ///
-    /// See `examples/attributes.rs` for more details.
+    /// Returns an attribute value.
     #[inline]
-    pub fn attribute<T: FromValue<'a, 'input>>(&self, aid: AttributeId) -> Option<T> {
-        let value = self
-            .attributes()
+    pub fn attribute(&self, aid: AttributeId) -> Option<&'a str> {
+        self.attributes()
             .iter()
             .find(|a| a.name == aid)
-            .map(|a| a.value.as_str())?;
+            .map(|a| a.value.as_str())
+    }
 
-        match T::parse(*self, aid, value) {
-            Some(v) => Some(v),
-            None => {
-                // TODO: show position in XML
-                log::warn!("Failed to parse {} value: '{}'.", aid, value);
-                None
-            }
-        }
+    #[inline]
+    fn node_attribute(&self, aid: AttributeId) -> Option<Node<'a, 'input>> {
+        let value = self.attribute(aid)?;
+        let id = if aid == AttributeId::Href {
+            svgtypes::IRI::from_str(value).ok().map(|v| v.0)
+        } else {
+            svgtypes::FuncIRI::from_str(value).ok().map(|v| v.0)
+        }?;
+
+        self.document().element_by_id(id)
     }
 
     /// Checks if an attribute is present.
@@ -332,21 +330,15 @@ impl<'a, 'input: 'a> Node<'a, 'input> {
         }
     }
 
-    /// Finds and parses an attribute starting from the current node.
+    /// Finds a [`Node`] that contains the required attribute.
     ///
-    /// For inheritable attributes walks over ancestors until an element with
-    /// a specified attribute is found.
+    /// For inheritable attributes walks over ancestors until a node with
+    /// the specified attribute is found.
     ///
-    /// For non-inheritable checks only the current node and the parent one.
+    /// For non-inheritable attributes checks only the current node and the parent one.
     /// As per SVG spec.
-    ///
-    /// The parsing logic is identical to `attribute()` method.
     #[inline]
-    pub fn find_attribute<T: FromValue<'a, 'input>>(&self, aid: AttributeId) -> Option<T> {
-        self.find_attribute_impl(aid).and_then(|n| n.attribute(aid))
-    }
-
-    fn find_attribute_impl(&self, aid: AttributeId) -> Option<Node<'a, 'input>> {
+    pub fn find_attribute(&self, aid: AttributeId) -> Option<Node<'a, 'input>> {
         if aid.is_inheritable() {
             for n in self.ancestors() {
                 if n.has_attribute(aid) {
@@ -609,7 +601,7 @@ impl<'a, 'input: 'a> Iterator for HrefIter<'a, 'input> {
             return Some(self.doc.get(self.curr));
         }
 
-        if let Some(link) = self.doc.get(self.curr).attribute::<Node>(AttributeId::Href) {
+        if let Some(link) = self.doc.get(self.curr).node_attribute(AttributeId::Href) {
             if link.id() == self.curr || link.id() == self.origin {
                 log::warn!(
                     "Element '#{}' cannot reference itself via 'xlink:href'.",
@@ -814,111 +806,4 @@ fn is_non_inheritable(id: AttributeId) -> bool {
             | AttributeId::TextDecoration
             | AttributeId::Transform
     )
-}
-
-/// A trait for parsing attribute values.
-pub trait FromValue<'a, 'input: 'a>: Sized {
-    /// Parses an attribute value.
-    ///
-    /// When `None` is returned, the attribute value will be logged as a parsing failure.
-    fn parse(node: Node<'a, 'input>, aid: AttributeId, value: &'a str) -> Option<Self>;
-}
-
-impl<'a, 'input: 'a> FromValue<'a, 'input> for &'a str {
-    #[inline]
-    fn parse(_: Node, _: AttributeId, value: &'a str) -> Option<Self> {
-        Some(value)
-    }
-}
-
-// Sadly, Rust doesn't allow us to write
-// impl<'a, T: FromStr> FromValue<'a> for T {}
-// Therefore we have implement everything manually.
-
-impl<'a, 'input: 'a> FromValue<'a, 'input> for f64 {
-    fn parse(_: Node, _: AttributeId, value: &str) -> Option<Self> {
-        svgtypes::Number::from_str(value).ok().map(|v| v.0)
-    }
-}
-
-impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::Length {
-    fn parse(_: Node, _: AttributeId, value: &str) -> Option<Self> {
-        svgtypes::Length::from_str(value).ok()
-    }
-}
-
-impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::AspectRatio {
-    fn parse(_: Node, _: AttributeId, value: &str) -> Option<Self> {
-        Self::from_str(value).ok()
-    }
-}
-
-impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::PaintOrder {
-    fn parse(_: Node, _: AttributeId, value: &str) -> Option<Self> {
-        Self::from_str(value).ok()
-    }
-}
-
-impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::Color {
-    fn parse(_: Node, _: AttributeId, value: &str) -> Option<Self> {
-        Self::from_str(value).ok()
-    }
-}
-
-impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::Angle {
-    fn parse(_: Node, _: AttributeId, value: &str) -> Option<Self> {
-        Self::from_str(value).ok()
-    }
-}
-
-impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::ViewBox {
-    fn parse(_: Node, _: AttributeId, value: &str) -> Option<Self> {
-        Self::from_str(value).ok()
-    }
-}
-
-impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::EnableBackground {
-    fn parse(_: Node, _: AttributeId, value: &str) -> Option<Self> {
-        Self::from_str(value).ok()
-    }
-}
-
-impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::Paint<'a> {
-    fn parse(_: Node, _: AttributeId, value: &'a str) -> Option<Self> {
-        Self::from_str(value).ok()
-    }
-}
-
-impl<'a, 'input: 'a> FromValue<'a, 'input> for Vec<f64> {
-    fn parse(_: Node, _: AttributeId, value: &str) -> Option<Self> {
-        let mut list = Vec::new();
-        for n in svgtypes::NumberListParser::from(value) {
-            list.push(n.ok()?);
-        }
-
-        Some(list)
-    }
-}
-
-impl<'a, 'input: 'a> FromValue<'a, 'input> for Vec<svgtypes::Length> {
-    fn parse(_: Node, _: AttributeId, value: &str) -> Option<Self> {
-        let mut list = Vec::new();
-        for n in svgtypes::LengthListParser::from(value) {
-            list.push(n.ok()?);
-        }
-
-        Some(list)
-    }
-}
-
-impl<'a, 'input: 'a> FromValue<'a, 'input> for Node<'a, 'input> {
-    fn parse(node: Node<'a, 'input>, aid: AttributeId, value: &str) -> Option<Self> {
-        let id = if aid == AttributeId::Href {
-            svgtypes::IRI::from_str(value).ok().map(|v| v.0)
-        } else {
-            svgtypes::FuncIRI::from_str(value).ok().map(|v| v.0)
-        }?;
-
-        node.document().element_by_id(id)
-    }
 }

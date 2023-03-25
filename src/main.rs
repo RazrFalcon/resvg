@@ -6,8 +6,7 @@
 
 use std::path;
 
-use usvg::NodeExt;
-use usvg_text_layout::{fontdb, TreeTextToPath};
+use usvg::{fontdb, NodeExt, TreeParsing, TreeTextToPath};
 
 fn main() {
     if let Err(e) = process() {
@@ -406,7 +405,7 @@ struct Args {
     perf: bool,
     quiet: bool,
     usvg: usvg::Options,
-    fit_to: usvg::FitTo,
+    fit_to: resvg::FitTo,
     background: Option<svgtypes::Color>,
 
     serif_family: Option<String>,
@@ -465,19 +464,19 @@ fn parse_args() -> Result<Args, String> {
 
     let export_id = args.export_id.as_ref().map(|v| v.to_string());
 
-    let mut fit_to = usvg::FitTo::Original;
+    let mut fit_to = resvg::FitTo::Original;
     let mut default_size = usvg::Size::new(100.0, 100.0).unwrap();
     if let (Some(w), Some(h)) = (args.width, args.height) {
         default_size = usvg::Size::new(w as f64, h as f64).unwrap();
-        fit_to = usvg::FitTo::Size(w, h);
+        fit_to = resvg::FitTo::Size(w, h);
     } else if let Some(w) = args.width {
         default_size = usvg::Size::new(w as f64, 100.0).unwrap();
-        fit_to = usvg::FitTo::Width(w);
+        fit_to = resvg::FitTo::Width(w);
     } else if let Some(h) = args.height {
         default_size = usvg::Size::new(100.0, h as f64).unwrap();
-        fit_to = usvg::FitTo::Height(h);
+        fit_to = resvg::FitTo::Height(h);
     } else if let Some(z) = args.zoom {
-        fit_to = usvg::FitTo::Zoom(z);
+        fit_to = resvg::FitTo::Zoom(z);
     }
 
     let resources_dir = match args.resources_dir {

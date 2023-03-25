@@ -1,3 +1,5 @@
+use usvg::TreeParsing;
+
 fn main() {
     let mut opt = usvg::Options::default();
 
@@ -27,7 +29,7 @@ fn main() {
 
     resvg::render(
         &rtree,
-        usvg::FitTo::Original,
+        resvg::FitTo::Original,
         tiny_skia::Transform::default(),
         pixmap.as_mut(),
     )

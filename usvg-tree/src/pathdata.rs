@@ -2,8 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
-
 use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveExtrema};
 
 use crate::{FuzzyZero, PathBbox, Rect, Transform};
@@ -52,12 +50,6 @@ pub struct PathData {
     commands: Vec<PathCommand>,
     points: Vec<f64>,
 }
-
-/// A reference-counted `PathData`.
-///
-/// `PathData` is usually pretty big and it's expensive to clone it,
-/// so we are using `Rc`.
-pub(crate) type SharedPathData = Rc<PathData>;
 
 impl PathData {
     /// Creates a new path.

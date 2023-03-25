@@ -6,6 +6,8 @@
 - c-api/resvg.h
 - c-api/ResvgQt.h
 - usvg/Cargo.toml
+- usvg-parser/Cargo.toml
 - usvg-text-layout/Cargo.toml
+- usvg-tree/Cargo.toml
 - tools/explorer-thumbnailer/install/installer.iss
 - tools/explorer-thumbnailer/Cargo.toml

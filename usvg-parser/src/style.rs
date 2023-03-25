@@ -2,267 +2,40 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use rosvgtree::{self, AttributeId as AId};
+use usvg_tree::{Color, Fill, FuzzyEq, Opacity, Paint, Stroke, StrokeMiterlimit, Units};
 
-use rosvgtree::{self, svgtypes, AttributeId as AId};
-use strict_num::NonZeroPositiveF64;
+use crate::rosvgtree_ext::{FromValue, OpacityWrapper, SvgColorExt, SvgNodeExt2};
+use crate::{converter, paint_server, SvgNodeExt};
 
-use crate::rosvgtree_ext::OpacityWrapper;
-use crate::{
-    converter, paint_server, FuzzyEq, LinearGradient, Opacity, Pattern, RadialGradient, SvgNodeExt,
-    Units,
-};
-
-macro_rules! wrap {
-    ($name:ident) => {
-        impl From<f64> for $name {
-            #[inline]
-            fn from(n: f64) -> Self {
-                $name::new(n)
-            }
-        }
-
-        impl PartialEq for $name {
-            #[inline]
-            fn eq(&self, other: &Self) -> bool {
-                self.0.fuzzy_eq(&other.0)
-            }
-        }
-    };
-}
-
-/// An alias to `NonZeroPositiveF64`.
-pub type StrokeWidth = NonZeroPositiveF64;
-
-/// A `stroke-miterlimit` value.
-///
-/// Just like `f64` but immutable and guarantee to be >=1.0.
-#[derive(Clone, Copy, Debug)]
-pub struct StrokeMiterlimit(f64);
-
-impl StrokeMiterlimit {
-    /// Creates a new `StrokeMiterlimit` value.
-    #[inline]
-    pub fn new(n: f64) -> Self {
-        debug_assert!(n.is_finite());
-        debug_assert!(n >= 1.0);
-
-        let n = if !(n >= 1.0) { 1.0 } else { n };
-
-        StrokeMiterlimit(n)
-    }
-
-    /// Returns an underlying value.
-    #[inline]
-    pub fn get(&self) -> f64 {
-        self.0
-    }
-}
-
-impl Default for StrokeMiterlimit {
-    #[inline]
-    fn default() -> Self {
-        StrokeMiterlimit::new(4.0)
-    }
-}
-
-wrap!(StrokeMiterlimit);
-
-/// A line cap.
-///
-/// `stroke-linecap` attribute in the SVG.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum LineCap {
-    Butt,
-    Round,
-    Square,
-}
-
-impl_enum_default!(LineCap, Butt);
-
-impl_enum_from_str!(LineCap,
-    "butt"      => LineCap::Butt,
-    "round"     => LineCap::Round,
-    "square"    => LineCap::Square
-);
-
-/// A line join.
-///
-/// `stroke-linejoin` attribute in the SVG.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum LineJoin {
-    Miter,
-    Round,
-    Bevel,
-}
-
-impl_enum_default!(LineJoin, Miter);
-
-impl_enum_from_str!(LineJoin,
-    "miter" => LineJoin::Miter,
-    "round" => LineJoin::Round,
-    "bevel" => LineJoin::Bevel
-);
-
-/// A stroke style.
-#[allow(missing_docs)]
-#[derive(Clone, Debug)]
-pub struct Stroke {
-    pub paint: Paint,
-    pub dasharray: Option<Vec<f64>>,
-    pub dashoffset: f32, // f32 and not f64 to reduce the struct size.
-    pub miterlimit: StrokeMiterlimit,
-    pub opacity: Opacity,
-    pub width: StrokeWidth,
-    pub linecap: LineCap,
-    pub linejoin: LineJoin,
-}
-
-impl Default for Stroke {
-    fn default() -> Self {
-        Stroke {
-            // The actual default color is `none`,
-            // but to simplify the `Stroke` object creation we use `black`.
-            paint: Paint::Color(Color::black()),
-            dasharray: None,
-            dashoffset: 0.0,
-            miterlimit: StrokeMiterlimit::default(),
-            opacity: Opacity::ONE,
-            width: StrokeWidth::new(1.0).unwrap(),
-            linecap: LineCap::default(),
-            linejoin: LineJoin::default(),
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::LineCap {
+    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+        match value {
+            "butt" => Some(usvg_tree::LineCap::Butt),
+            "round" => Some(usvg_tree::LineCap::Round),
+            "square" => Some(usvg_tree::LineCap::Square),
+            _ => None,
         }
     }
 }
 
-/// A fill rule.
-///
-/// `fill-rule` attribute in the SVG.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum FillRule {
-    NonZero,
-    EvenOdd,
-}
-
-impl_enum_default!(FillRule, NonZero);
-
-impl_enum_from_str!(FillRule,
-    "nonzero" => FillRule::NonZero,
-    "evenodd" => FillRule::EvenOdd
-);
-
-/// A fill style.
-#[allow(missing_docs)]
-#[derive(Clone, Debug)]
-pub struct Fill {
-    pub paint: Paint,
-    pub opacity: Opacity,
-    pub rule: FillRule,
-}
-
-impl Fill {
-    /// Creates a `Fill` from `Paint`.
-    ///
-    /// `opacity` and `rule` will be set to default values.
-    pub fn from_paint(paint: Paint) -> Self {
-        Fill {
-            paint,
-            ..Fill::default()
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::LineJoin {
+    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+        match value {
+            "miter" => Some(usvg_tree::LineJoin::Miter),
+            "round" => Some(usvg_tree::LineJoin::Round),
+            "bevel" => Some(usvg_tree::LineJoin::Bevel),
+            _ => None,
         }
     }
 }
 
-impl Default for Fill {
-    fn default() -> Self {
-        Fill {
-            paint: Paint::Color(Color::black()),
-            opacity: Opacity::ONE,
-            rule: FillRule::default(),
-        }
-    }
-}
-
-/// A 8-bit RGB color.
-#[derive(Clone, Copy, PartialEq, Debug)]
-#[allow(missing_docs)]
-pub struct Color {
-    pub red: u8,
-    pub green: u8,
-    pub blue: u8,
-}
-
-impl Color {
-    /// Constructs a new `Color` from RGB values.
-    #[inline]
-    pub fn new_rgb(red: u8, green: u8, blue: u8) -> Color {
-        Color { red, green, blue }
-    }
-
-    /// Constructs a new `Color` set to black.
-    #[inline]
-    pub fn black() -> Color {
-        Color::new_rgb(0, 0, 0)
-    }
-
-    /// Constructs a new `Color` set to white.
-    #[inline]
-    pub fn white() -> Color {
-        Color::new_rgb(255, 255, 255)
-    }
-}
-
-pub(crate) trait SvgColorExt {
-    fn split_alpha(self) -> (Color, Opacity);
-}
-
-impl SvgColorExt for svgtypes::Color {
-    fn split_alpha(self) -> (Color, Opacity) {
-        (
-            Color::new_rgb(self.red, self.green, self.blue),
-            Opacity::new_u8(self.alpha),
-        )
-    }
-}
-
-/// A paint style.
-///
-/// `paint` value type in the SVG.
-#[allow(missing_docs)]
-#[derive(Clone, Debug)]
-pub enum Paint {
-    Color(Color),
-    LinearGradient(Rc<LinearGradient>),
-    RadialGradient(Rc<RadialGradient>),
-    Pattern(Rc<Pattern>),
-}
-
-impl Paint {
-    /// Returns paint server units.
-    ///
-    /// Returns `None` for `Color`.
-    #[inline]
-    pub fn units(&self) -> Option<Units> {
-        match self {
-            Self::Color(_) => None,
-            Self::LinearGradient(ref lg) => Some(lg.units),
-            Self::RadialGradient(ref rg) => Some(rg.units),
-            Self::Pattern(ref patt) => Some(patt.units),
-        }
-    }
-}
-
-impl PartialEq for Paint {
-    #[inline]
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Color(lc), Self::Color(rc)) => lc == rc,
-            (Self::LinearGradient(ref lg1), Self::LinearGradient(ref lg2)) => Rc::ptr_eq(lg1, lg2),
-            (Self::RadialGradient(ref rg1), Self::RadialGradient(ref rg2)) => Rc::ptr_eq(rg1, rg2),
-            (Self::Pattern(ref p1), Self::Pattern(ref p2)) => Rc::ptr_eq(p1, p2),
-            _ => false,
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::FillRule {
+    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+        match value {
+            "nonzero" => Some(usvg_tree::FillRule::NonZero),
+            "evenodd" => Some(usvg_tree::FillRule::EvenOdd),
+            _ => None,
         }
     }
 }
@@ -278,7 +51,9 @@ pub(crate) fn resolve_fill(
         return Some(Fill {
             paint: Paint::Color(Color::black()),
             opacity: Opacity::ONE,
-            rule: node.find_attribute(AId::ClipRule).unwrap_or_default(),
+            rule: node
+                .find_and_parse_attribute(AId::ClipRule)
+                .unwrap_or_default(),
         });
     }
 
@@ -290,14 +65,16 @@ pub(crate) fn resolve_fill(
     };
 
     let fill_opacity = node
-        .attribute::<OpacityWrapper>(AId::FillOpacity)
+        .parse_attribute::<OpacityWrapper>(AId::FillOpacity)
         .map(|v| v.0)
         .unwrap_or(Opacity::ONE);
 
     Some(Fill {
         paint,
         opacity: sub_opacity * fill_opacity,
-        rule: node.find_attribute(AId::FillRule).unwrap_or_default(),
+        rule: node
+            .find_and_parse_attribute(AId::FillRule)
+            .unwrap_or_default(),
     })
 }
 
@@ -322,12 +99,14 @@ pub(crate) fn resolve_stroke(
     let width = node.resolve_valid_length(AId::StrokeWidth, state, 1.0)?;
 
     // Must be bigger than 1.
-    let miterlimit = node.find_attribute(AId::StrokeMiterlimit).unwrap_or(4.0);
+    let miterlimit = node
+        .find_and_parse_attribute(AId::StrokeMiterlimit)
+        .unwrap_or(4.0);
     let miterlimit = if miterlimit < 1.0 { 1.0 } else { miterlimit };
     let miterlimit = StrokeMiterlimit::new(miterlimit);
 
     let stroke_opacity = node
-        .attribute::<OpacityWrapper>(AId::StrokeOpacity)
+        .parse_attribute::<OpacityWrapper>(AId::StrokeOpacity)
         .map(|v| v.0)
         .unwrap_or(Opacity::ONE);
 
@@ -338,8 +117,12 @@ pub(crate) fn resolve_stroke(
         miterlimit,
         opacity: sub_opacity * stroke_opacity,
         width,
-        linecap: node.find_attribute(AId::StrokeLinecap).unwrap_or_default(),
-        linejoin: node.find_attribute(AId::StrokeLinejoin).unwrap_or_default(),
+        linecap: node
+            .find_and_parse_attribute(AId::StrokeLinecap)
+            .unwrap_or_default(),
+        linejoin: node
+            .find_and_parse_attribute(AId::StrokeLinejoin)
+            .unwrap_or_default(),
     };
 
     Some(stroke)
@@ -374,7 +157,7 @@ fn convert_paint(
         svgtypes::Paint::Inherit => None, // already resolved by rosvgtree
         svgtypes::Paint::CurrentColor => {
             let svg_color: svgtypes::Color = node
-                .find_attribute(AId::Color)
+                .find_and_parse_attribute(AId::Color)
                 .unwrap_or_else(svgtypes::Color::black);
             let (color, alpha) = svg_color.split_alpha();
             *opacity = alpha;
@@ -427,7 +210,7 @@ fn from_fallback(
         svgtypes::PaintFallback::None => None,
         svgtypes::PaintFallback::CurrentColor => {
             let svg_color: svgtypes::Color = node
-                .find_attribute(AId::Color)
+                .find_and_parse_attribute(AId::Color)
                 .unwrap_or_else(svgtypes::Color::black);
             let (color, alpha) = svg_color.split_alpha();
             *opacity = alpha;

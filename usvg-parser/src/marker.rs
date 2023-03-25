@@ -5,14 +5,16 @@
 use std::f64;
 use std::rc::Rc;
 
-use rosvgtree::{self, svgtypes, AttributeId as AId, ElementId as EId};
+use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use strict_num::NonZeroPositiveF64;
 use svgtypes::Length;
+use usvg_tree::{
+    ClipPath, FuzzyEq, FuzzyZero, Group, Node, NodeExt, NodeKind, Path, PathData,
+    PathSegment as Segment, Rect, Size, Transform, ViewBox,
+};
 
-use crate::geom::{FuzzyEq, FuzzyZero, Rect, Size, Transform, ViewBox};
-use crate::PathSegment as Segment;
-use crate::{converter, style, utils};
-use crate::{ClipPath, Group, Node, NodeExt, NodeKind, Path, PathData, SvgNodeExt};
+use crate::rosvgtree_ext::SvgNodeExt2;
+use crate::{converter, SvgNodeExt};
 
 pub(crate) fn is_valid(node: rosvgtree::Node) -> bool {
     // `marker-*` attributes cannot be set on shapes inside a `clipPath`.
@@ -23,14 +25,10 @@ pub(crate) fn is_valid(node: rosvgtree::Node) -> bool {
         return false;
     }
 
-    node.find_attribute::<rosvgtree::Node>(AId::MarkerStart)
-        .is_some()
-        || node
-            .find_attribute::<rosvgtree::Node>(AId::MarkerMid)
-            .is_some()
-        || node
-            .find_attribute::<rosvgtree::Node>(AId::MarkerEnd)
-            .is_some()
+    let start = node.find_and_parse_attribute::<rosvgtree::Node>(AId::MarkerStart);
+    let mid = node.find_and_parse_attribute::<rosvgtree::Node>(AId::MarkerMid);
+    let end = node.find_and_parse_attribute::<rosvgtree::Node>(AId::MarkerEnd);
+    start.is_some() || mid.is_some() || end.is_some()
 }
 
 pub(crate) fn convert(
@@ -48,7 +46,7 @@ pub(crate) fn convert(
 
     for (aid, kind) in &list {
         let mut marker = None;
-        if let Some(link) = node.find_attribute::<rosvgtree::Node>(*aid) {
+        if let Some(link) = node.find_and_parse_attribute::<rosvgtree::Node>(*aid) {
             if link.tag_name() == Some(EId::Marker) {
                 marker = Some(link);
             }
@@ -93,7 +91,7 @@ fn resolve(
     let view_box = marker_node.parse_viewbox().map(|vb| ViewBox {
         rect: vb,
         aspect: marker_node
-            .attribute(AId::PreserveAspectRatio)
+            .parse_attribute(AId::PreserveAspectRatio)
             .unwrap_or_default(),
     });
 
@@ -114,7 +112,7 @@ fn resolve(
         clip_path.id = cache.gen_clip_path_id();
 
         clip_path.root.append_kind(NodeKind::Path(Path {
-            fill: Some(style::Fill::default()),
+            fill: Some(usvg_tree::Fill::default()),
             data: Rc::new(PathData::from_rect(clip_rect)),
             ..Path::default()
         }));
@@ -141,7 +139,7 @@ fn resolve(
 
         if let Some(vbox) = view_box {
             let size = Size::new(r.width() * stroke_scale, r.height() * stroke_scale).unwrap();
-            let vbox_ts = utils::view_box_to_transform(vbox.rect, vbox.aspect, size);
+            let vbox_ts = usvg_tree::utils::view_box_to_transform(vbox.rect, vbox.aspect, size);
             let (sx, sy) = vbox_ts.get_scale();
             ts.scale(sx, sy);
         } else {
@@ -465,7 +463,7 @@ fn convert_orientation(node: rosvgtree::Node) -> MarkerOrientation {
     if node.attribute(AId::Orient) == Some("auto") {
         MarkerOrientation::Auto
     } else {
-        match node.attribute::<svgtypes::Angle>(AId::Orient) {
+        match node.parse_attribute::<svgtypes::Angle>(AId::Orient) {
             Some(angle) => MarkerOrientation::Angle(angle.to_degrees()),
             None => MarkerOrientation::Angle(0.0),
         }

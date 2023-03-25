@@ -4,46 +4,12 @@
 
 use std::sync::Arc;
 
-use rosvgtree::{self, svgtypes, AttributeId as AId};
+use rosvgtree::{self, AttributeId as AId};
 use svgtypes::Length;
+use usvg_tree::{Image, ImageKind, Node, NodeExt, NodeKind, Rect, Size, Tree, ViewBox};
 
-use crate::geom::{Rect, Size, Transform, ViewBox};
-use crate::{
-    converter, ImageRendering, Node, NodeExt, NodeKind, OptionLog, Options, SvgNodeExt, Tree,
-    Visibility,
-};
-
-#[derive(Clone, Copy, PartialEq, Debug)]
-enum ImageFormat {
-    PNG,
-    JPEG,
-    GIF,
-    SVG,
-}
-
-/// An embedded image kind.
-#[derive(Clone)]
-pub enum ImageKind {
-    /// A reference to raw JPEG data. Should be decoded by the caller.
-    JPEG(Arc<Vec<u8>>),
-    /// A reference to raw PNG data. Should be decoded by the caller.
-    PNG(Arc<Vec<u8>>),
-    /// A reference to raw GIF data. Should be decoded by the caller.
-    GIF(Arc<Vec<u8>>),
-    /// A preprocessed SVG tree. Can be rendered as is.
-    SVG(crate::Tree),
-}
-
-impl std::fmt::Debug for ImageKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            ImageKind::JPEG(_) => f.write_str("ImageKind::JPEG(..)"),
-            ImageKind::PNG(_) => f.write_str("ImageKind::PNG(..)"),
-            ImageKind::GIF(_) => f.write_str("ImageKind::GIF(..)"),
-            ImageKind::SVG(_) => f.write_str("ImageKind::SVG(..)"),
-        }
-    }
-}
+use crate::rosvgtree_ext::SvgNodeExt2;
+use crate::{converter, OptionLog, Options, SvgNodeExt, TreeParsing};
 
 /// A shorthand for [ImageHrefResolver]'s data function.
 pub type ImageHrefDataResolverFn =
@@ -148,37 +114,12 @@ impl std::fmt::Debug for ImageHrefResolver {
     }
 }
 
-/// A raster image element.
-///
-/// `image` element in SVG.
-#[derive(Clone, Debug)]
-pub struct Image {
-    /// Element's ID.
-    ///
-    /// Taken from the SVG itself.
-    /// Isn't automatically generated.
-    /// Can be empty.
-    pub id: String,
-
-    /// Element transform.
-    pub transform: Transform,
-
-    /// Element visibility.
-    pub visibility: Visibility,
-
-    /// An image rectangle in which it should be fit.
-    ///
-    /// Combination of the `x`, `y`, `width`, `height` and `preserveAspectRatio`
-    /// attributes.
-    pub view_box: ViewBox,
-
-    /// Rendering mode.
-    ///
-    /// `image-rendering` in SVG.
-    pub rendering_mode: ImageRendering,
-
-    /// Image data.
-    pub kind: ImageKind,
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum ImageFormat {
+    PNG,
+    JPEG,
+    GIF,
+    SVG,
 }
 
 pub(crate) fn convert(
@@ -192,9 +133,11 @@ pub(crate) fn convert(
 
     let kind = get_href_data(href, state.opt)?;
 
-    let visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
+    let visibility = node
+        .find_and_parse_attribute(AId::Visibility)
+        .unwrap_or_default();
     let rendering_mode = node
-        .find_attribute(AId::ImageRendering)
+        .find_and_parse_attribute(AId::ImageRendering)
         .unwrap_or(state.opt.image_rendering);
 
     let actual_size = match kind {
@@ -217,7 +160,9 @@ pub(crate) fn convert(
 
     let view_box = ViewBox {
         rect,
-        aspect: node.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
+        aspect: node
+            .parse_attribute(AId::PreserveAspectRatio)
+            .unwrap_or_default(),
     };
 
     parent.append_kind(NodeKind::Image(Image {
@@ -251,7 +196,7 @@ pub(crate) fn get_href_data(href: &str, opt: &Options) -> Option<ImageKind> {
 /// Checks that file has a PNG, a GIF or a JPEG magic bytes.
 /// Or an SVG(Z) extension.
 fn get_image_file_format(path: &std::path::Path, data: &[u8]) -> Option<ImageFormat> {
-    let ext = crate::utils::file_extension(path)?.to_lowercase();
+    let ext = path.extension().and_then(|e| e.to_str())?.to_lowercase();
     if ext == "svg" || ext == "svgz" {
         return Some(ImageFormat::SVG);
     }
@@ -297,7 +242,7 @@ pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
 }
 
 // TODO: technically can simply override Options::image_href_resolver?
-fn sanitize_sub_svg(tree: &crate::Tree) {
+fn sanitize_sub_svg(tree: &Tree) {
     // Remove all Image nodes.
     //
     // The referenced SVG image cannot have any 'image' elements by itself.

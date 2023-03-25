@@ -4,12 +4,14 @@
 
 use std::rc::Rc;
 
-use rosvgtree::{self, svgtypes, AttributeId as AId, ElementId as EId};
+use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use svgtypes::{Length, LengthUnit};
+use usvg_tree::{
+    FuzzyEq, Group, IsValidLength, Node, NodeExt, NodeKind, Path, PathData, Rect, Size, Transform,
+};
 
-use crate::geom::{FuzzyEq, IsValidLength, Rect, Size, Transform};
-use crate::{clippath, converter, style, utils};
-use crate::{Group, Node, NodeExt, NodeKind, Path, PathData, SvgNodeExt};
+use crate::rosvgtree_ext::SvgNodeExt2;
+use crate::{converter, SvgNodeExt};
 
 pub(crate) fn convert(
     node: rosvgtree::Node,
@@ -27,7 +29,7 @@ pub(crate) fn convert(
     }
 
     // We require an original transformation to setup 'clipPath'.
-    let mut orig_ts: Transform = node.attribute(AId::Transform).unwrap_or_default();
+    let mut orig_ts: Transform = node.parse_attribute(AId::Transform).unwrap_or_default();
     let mut new_ts = Transform::default();
 
     {
@@ -124,7 +126,7 @@ pub(crate) fn convert_svg(
     parent: &mut Node,
 ) {
     // We require original transformation to setup 'clipPath'.
-    let mut orig_ts: Transform = node.attribute(AId::Transform).unwrap_or_default();
+    let mut orig_ts: Transform = node.parse_attribute(AId::Transform).unwrap_or_default();
     let mut new_ts = Transform::default();
 
     {
@@ -195,11 +197,11 @@ fn clip_element(
     //   <elem/>
     // </g>
 
-    let mut clip_path = clippath::ClipPath::default();
+    let mut clip_path = usvg_tree::ClipPath::default();
     clip_path.id = cache.gen_clip_path_id();
 
     clip_path.root.append_kind(NodeKind::Path(Path {
-        fill: Some(style::Fill::default()),
+        fill: Some(usvg_tree::Fill::default()),
         data: Rc::new(PathData::from_rect(clip_rect)),
         ..Path::default()
     }));
@@ -316,8 +318,8 @@ fn viewbox_transform(
     let size = Size::new(w, h)?;
     let vb = linked.parse_viewbox()?;
     let aspect = linked
-        .attribute(AId::PreserveAspectRatio)
+        .parse_attribute(AId::PreserveAspectRatio)
         .unwrap_or_default();
 
-    Some(utils::view_box_to_transform(vb, aspect, size))
+    Some(usvg_tree::utils::view_box_to_transform(vb, aspect, size))
 }

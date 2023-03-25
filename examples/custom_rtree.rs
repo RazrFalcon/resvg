@@ -60,7 +60,7 @@ fn main() {
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
     resvg::render(
         &tree,
-        usvg::FitTo::Original,
+        resvg::FitTo::Original,
         tiny_skia::Transform::default(),
         pixmap.as_mut(),
     )

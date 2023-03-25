@@ -6,23 +6,6 @@
 
 use crate::{Align, AspectRatio, Rect, ScreenSize, Size, Transform, ViewBox};
 
-// TODO: https://github.com/rust-lang/rust/issues/44095
-/// Bounds `f64` number.
-#[inline]
-pub(crate) fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
-    debug_assert!(min.is_finite());
-    debug_assert!(val.is_finite());
-    debug_assert!(max.is_finite());
-
-    if val > max {
-        max
-    } else if val < min {
-        min
-    } else {
-        val
-    }
-}
-
 /// Converts `viewBox` to `Transform`.
 pub fn view_box_to_transform(view_box: Rect, aspect: AspectRatio, img_size: Size) -> Transform {
     let vr = view_box;
@@ -114,8 +97,4 @@ pub fn aligned_pos(align: Align, x: f64, y: f64, w: f64, h: f64) -> (f64, f64) {
         Align::XMidYMax => (x + w / 2.0, y + h),
         Align::XMaxYMax => (x + w, y + h),
     }
-}
-
-pub(crate) fn file_extension(path: &std::path::Path) -> Option<&str> {
-    path.extension().and_then(|e| e.to_str())
 }

@@ -17,8 +17,6 @@
 
 pub use tiny_skia;
 pub use usvg;
-#[cfg(feature = "text")]
-pub use usvg_text_layout;
 
 use usvg::NodeExt;
 
@@ -76,6 +74,49 @@ impl ConvTransform for usvg::Transform {
     }
 }
 
+/// Image fit options.
+///
+/// All variants will preserve the original aspect.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum FitTo {
+    /// Keep original size.
+    Original,
+    /// Scale to width.
+    Width(u32),
+    /// Scale to height.
+    Height(u32),
+    /// Scale to size.
+    Size(u32, u32),
+    /// Zoom by factor.
+    Zoom(f32),
+}
+
+impl FitTo {
+    /// Returns `size` preprocessed according to `FitTo`.
+    pub fn fit_to(&self, size: usvg::ScreenSize) -> Option<usvg::ScreenSize> {
+        let sizef = size.to_size();
+
+        match *self {
+            FitTo::Original => Some(size),
+            FitTo::Width(w) => {
+                let h = (w as f64 * sizef.height() / sizef.width()).ceil();
+                usvg::ScreenSize::new(w, h as u32)
+            }
+            FitTo::Height(h) => {
+                let w = (h as f64 * sizef.width() / sizef.height()).ceil();
+                usvg::ScreenSize::new(w as u32, h)
+            }
+            FitTo::Size(w, h) => Some(
+                sizef
+                    .scale_to(usvg::Size::new(w as f64, h as f64)?)
+                    .to_screen_size(),
+            ),
+            FitTo::Zoom(z) => usvg::Size::new(sizef.width() * z as f64, sizef.height() * z as f64)
+                .map(|s| s.to_screen_size()),
+        }
+    }
+}
+
 /// Renders an SVG to pixmap.
 ///
 /// If `fit_to` size differs from `tree.svg_node().size`,
@@ -85,7 +126,7 @@ impl ConvTransform for usvg::Transform {
 /// Can be used to position SVG inside the `pixmap`.
 pub fn render(
     tree: &usvg::Tree,
-    fit_to: usvg::FitTo,
+    fit_to: FitTo,
     transform: tiny_skia::Transform,
     pixmap: tiny_skia::PixmapMut,
 ) -> Option<()> {
@@ -106,7 +147,7 @@ pub fn render(
 pub fn render_node(
     tree: &usvg::Tree,
     node: &usvg::Node,
-    fit_to: usvg::FitTo,
+    fit_to: FitTo,
     transform: tiny_skia::Transform,
     pixmap: tiny_skia::PixmapMut,
 ) -> Option<()> {

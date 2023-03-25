@@ -1,4 +1,4 @@
-use usvg_text_layout::{fontdb, TreeTextToPath};
+use usvg::{fontdb, TreeParsing, TreeTextToPath};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -24,7 +24,7 @@ fn main() {
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
     resvg::render(
         &tree,
-        usvg::FitTo::Original,
+        resvg::FitTo::Original,
         tiny_skia::Transform::default(),
         pixmap.as_mut(),
     )

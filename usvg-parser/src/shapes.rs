@@ -4,14 +4,14 @@
 
 use std::rc::Rc;
 
-use rosvgtree::{self, svgtypes, AttributeId as AId, ElementId as EId};
+use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use svgtypes::Length;
+use usvg_tree::{FuzzyEq, IsValidLength, PathData, Rect, Units};
 
-use crate::{
-    converter, units, FuzzyEq, IsValidLength, PathData, Rect, SharedPathData, SvgNodeExt, Units,
-};
+use crate::rosvgtree_ext::SvgNodeExt2;
+use crate::{converter, units, SvgNodeExt};
 
-pub(crate) fn convert(node: rosvgtree::Node, state: &converter::State) -> Option<SharedPathData> {
+pub(crate) fn convert(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<PathData>> {
     match node.tag_name()? {
         EId::Rect => convert_rect(node, state),
         EId::Circle => convert_circle(node, state),
@@ -24,7 +24,7 @@ pub(crate) fn convert(node: rosvgtree::Node, state: &converter::State) -> Option
     }
 }
 
-pub(crate) fn convert_path(node: rosvgtree::Node) -> Option<SharedPathData> {
+pub(crate) fn convert_path(node: rosvgtree::Node) -> Option<Rc<PathData>> {
     let value: &str = node.attribute(AId::D)?;
     let mut path = PathData::new();
     for segment in svgtypes::SimplifyingPathParser::from(value) {
@@ -66,7 +66,7 @@ pub(crate) fn convert_path(node: rosvgtree::Node) -> Option<SharedPathData> {
     }
 }
 
-fn convert_rect(node: rosvgtree::Node, state: &converter::State) -> Option<SharedPathData> {
+fn convert_rect(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<PathData>> {
     // 'width' and 'height' attributes must be positive and non-zero.
     let width = node.convert_user_length(AId::Width, state, Length::zero());
     let height = node.convert_user_length(AId::Height, state, Length::zero());
@@ -128,8 +128,8 @@ fn convert_rect(node: rosvgtree::Node, state: &converter::State) -> Option<Share
 }
 
 fn resolve_rx_ry(node: rosvgtree::Node, state: &converter::State) -> (f64, f64) {
-    let mut rx_opt = node.attribute::<Length>(AId::Rx);
-    let mut ry_opt = node.attribute::<Length>(AId::Ry);
+    let mut rx_opt = node.parse_attribute::<Length>(AId::Rx);
+    let mut ry_opt = node.parse_attribute::<Length>(AId::Ry);
 
     // Remove negative values first.
     if let Some(v) = rx_opt {
@@ -162,7 +162,7 @@ fn resolve_rx_ry(node: rosvgtree::Node, state: &converter::State) -> (f64, f64) 
     }
 }
 
-fn convert_line(node: rosvgtree::Node, state: &converter::State) -> Option<SharedPathData> {
+fn convert_line(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<PathData>> {
     let x1 = node.convert_user_length(AId::X1, state, Length::zero());
     let y1 = node.convert_user_length(AId::Y1, state, Length::zero());
     let x2 = node.convert_user_length(AId::X2, state, Length::zero());
@@ -174,11 +174,11 @@ fn convert_line(node: rosvgtree::Node, state: &converter::State) -> Option<Share
     Some(Rc::new(path))
 }
 
-fn convert_polyline(node: rosvgtree::Node) -> Option<SharedPathData> {
+fn convert_polyline(node: rosvgtree::Node) -> Option<Rc<PathData>> {
     points_to_path(node, "Polyline").map(Rc::new)
 }
 
-fn convert_polygon(node: rosvgtree::Node) -> Option<SharedPathData> {
+fn convert_polygon(node: rosvgtree::Node) -> Option<Rc<PathData>> {
     if let Some(mut path) = points_to_path(node, "Polygon") {
         path.push_close_path();
         Some(Rc::new(path))
@@ -191,7 +191,7 @@ fn points_to_path(node: rosvgtree::Node, eid: &str) -> Option<PathData> {
     use svgtypes::PointsParser;
 
     let mut path = PathData::new();
-    match node.attribute::<&str>(AId::Points) {
+    match node.attribute(AId::Points) {
         Some(text) => {
             for (x, y) in PointsParser::from(text) {
                 if path.is_empty() {
@@ -224,7 +224,7 @@ fn points_to_path(node: rosvgtree::Node, eid: &str) -> Option<PathData> {
     Some(path)
 }
 
-fn convert_circle(node: rosvgtree::Node, state: &converter::State) -> Option<SharedPathData> {
+fn convert_circle(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<PathData>> {
     let cx = node.convert_user_length(AId::Cx, state, Length::zero());
     let cy = node.convert_user_length(AId::Cy, state, Length::zero());
     let r = node.convert_user_length(AId::R, state, Length::zero());
@@ -240,7 +240,7 @@ fn convert_circle(node: rosvgtree::Node, state: &converter::State) -> Option<Sha
     Some(Rc::new(ellipse_to_path(cx, cy, r, r)))
 }
 
-fn convert_ellipse(node: rosvgtree::Node, state: &converter::State) -> Option<SharedPathData> {
+fn convert_ellipse(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<PathData>> {
     let cx = node.convert_user_length(AId::Cx, state, Length::zero());
     let cy = node.convert_user_length(AId::Cy, state, Length::zero());
     let (rx, ry) = resolve_rx_ry(node, state);

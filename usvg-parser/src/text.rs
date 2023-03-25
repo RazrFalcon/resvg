@@ -4,374 +4,85 @@
 
 use std::rc::Rc;
 
-use rosvgtree::{self, svgtypes, AttributeId as AId, ElementId as EId};
+use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use strict_num::NonZeroPositiveF64;
 use svgtypes::{Length, LengthUnit};
+use usvg_tree::*;
 
-use crate::{converter, style, Node, NodeExt, NodeKind, Units};
-use crate::{PaintOrder, PathData, SvgNodeExt, TextRendering, Transform, Visibility};
+use crate::rosvgtree_ext::{FromValue, SvgNodeExt2};
+use crate::{converter, style, SvgNodeExt};
 
-/// A font stretch property.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
-pub enum Stretch {
-    UltraCondensed,
-    ExtraCondensed,
-    Condensed,
-    SemiCondensed,
-    Normal,
-    SemiExpanded,
-    Expanded,
-    ExtraExpanded,
-    UltraExpanded,
-}
-
-impl Default for Stretch {
-    #[inline]
-    fn default() -> Self {
-        Stretch::Normal
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::TextAnchor {
+    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+        match value {
+            "start" => Some(usvg_tree::TextAnchor::Start),
+            "middle" => Some(usvg_tree::TextAnchor::Middle),
+            "end" => Some(usvg_tree::TextAnchor::End),
+            _ => None,
+        }
     }
 }
 
-/// A font style property.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
-pub enum Style {
-    /// A face that is neither italic not obliqued.
-    Normal,
-    /// A form that is generally cursive in nature.
-    Italic,
-    /// A typically-sloped version of the regular face.
-    Oblique,
-}
-
-impl Default for Style {
-    #[inline]
-    fn default() -> Style {
-        Style::Normal
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::AlignmentBaseline {
+    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+        match value {
+            "auto" => Some(usvg_tree::AlignmentBaseline::Auto),
+            "baseline" => Some(usvg_tree::AlignmentBaseline::Baseline),
+            "before-edge" => Some(usvg_tree::AlignmentBaseline::BeforeEdge),
+            "text-before-edge" => Some(usvg_tree::AlignmentBaseline::TextBeforeEdge),
+            "middle" => Some(usvg_tree::AlignmentBaseline::Middle),
+            "central" => Some(usvg_tree::AlignmentBaseline::Central),
+            "after-edge" => Some(usvg_tree::AlignmentBaseline::AfterEdge),
+            "text-after-edge" => Some(usvg_tree::AlignmentBaseline::TextAfterEdge),
+            "ideographic" => Some(usvg_tree::AlignmentBaseline::Ideographic),
+            "alphabetic" => Some(usvg_tree::AlignmentBaseline::Alphabetic),
+            "hanging" => Some(usvg_tree::AlignmentBaseline::Hanging),
+            "mathematical" => Some(usvg_tree::AlignmentBaseline::Mathematical),
+            _ => None,
+        }
     }
 }
 
-/// Text font properties.
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub struct Font {
-    /// A list of family names.
-    ///
-    /// Never empty. Uses [`Options::font_family`](crate::Options::font_family) as fallback.
-    pub families: Vec<String>,
-    /// A font style.
-    pub style: Style,
-    /// A font stretch.
-    pub stretch: Stretch,
-    /// A font width.
-    pub weight: u16,
-}
-
-/// A dominant baseline property.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum DominantBaseline {
-    Auto,
-    UseScript,
-    NoChange,
-    ResetSize,
-    Ideographic,
-    Alphabetic,
-    Hanging,
-    Mathematical,
-    Central,
-    Middle,
-    TextAfterEdge,
-    TextBeforeEdge,
-}
-
-/// An alignment baseline property.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum AlignmentBaseline {
-    Auto,
-    Baseline,
-    BeforeEdge,
-    TextBeforeEdge,
-    Middle,
-    Central,
-    AfterEdge,
-    TextAfterEdge,
-    Ideographic,
-    Alphabetic,
-    Hanging,
-    Mathematical,
-}
-
-/// A baseline shift property.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum BaselineShift {
-    Baseline,
-    Subscript,
-    Superscript,
-    Number(f64),
-}
-
-impl Default for BaselineShift {
-    #[inline]
-    fn default() -> BaselineShift {
-        BaselineShift::Baseline
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::DominantBaseline {
+    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+        match value {
+            "auto" => Some(usvg_tree::DominantBaseline::Auto),
+            "use-script" => Some(usvg_tree::DominantBaseline::UseScript),
+            "no-change" => Some(usvg_tree::DominantBaseline::NoChange),
+            "reset-size" => Some(usvg_tree::DominantBaseline::ResetSize),
+            "ideographic" => Some(usvg_tree::DominantBaseline::Ideographic),
+            "alphabetic" => Some(usvg_tree::DominantBaseline::Alphabetic),
+            "hanging" => Some(usvg_tree::DominantBaseline::Hanging),
+            "mathematical" => Some(usvg_tree::DominantBaseline::Mathematical),
+            "central" => Some(usvg_tree::DominantBaseline::Central),
+            "middle" => Some(usvg_tree::DominantBaseline::Middle),
+            "text-after-edge" => Some(usvg_tree::DominantBaseline::TextAfterEdge),
+            "text-before-edge" => Some(usvg_tree::DominantBaseline::TextBeforeEdge),
+            _ => None,
+        }
     }
 }
 
-/// A length adjust property.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum LengthAdjust {
-    Spacing,
-    SpacingAndGlyphs,
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::LengthAdjust {
+    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+        match value {
+            "spacing" => Some(usvg_tree::LengthAdjust::Spacing),
+            "spacingAndGlyphs" => Some(usvg_tree::LengthAdjust::SpacingAndGlyphs),
+            _ => None,
+        }
+    }
 }
 
-/// A text span decoration style.
-///
-/// In SVG, text decoration and text it's applied to can have different styles.
-/// So you can have black text and green underline.
-///
-/// Also, in SVG you can specify text decoration stroking.
-#[derive(Clone, Debug)]
-pub struct TextDecorationStyle {
-    /// A fill style.
-    pub fill: Option<style::Fill>,
-    /// A stroke style.
-    pub stroke: Option<style::Stroke>,
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::FontStyle {
+    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+        match value {
+            "normal" => Some(usvg_tree::FontStyle::Normal),
+            "italic" => Some(usvg_tree::FontStyle::Italic),
+            "oblique" => Some(usvg_tree::FontStyle::Oblique),
+            _ => None,
+        }
+    }
 }
-
-/// A text span decoration.
-#[derive(Clone, Debug)]
-pub struct TextDecoration {
-    /// An optional underline and its style.
-    pub underline: Option<TextDecorationStyle>,
-    /// An optional overline and its style.
-    pub overline: Option<TextDecorationStyle>,
-    /// An optional line-through and its style.
-    pub line_through: Option<TextDecorationStyle>,
-}
-
-/// A text style span.
-///
-/// Spans do not overlap inside a text chunk.
-#[derive(Clone, Debug)]
-pub struct TextSpan {
-    /// A span start in UTF-8 codepoints.
-    ///
-    /// Offset is relative to the parent text chunk and not the parent text element.
-    pub start: usize,
-    /// A span end in UTF-8 codepoints.
-    ///
-    /// Offset is relative to the parent text chunk and not the parent text element.
-    pub end: usize,
-    /// A fill style.
-    pub fill: Option<style::Fill>,
-    /// A stroke style.
-    pub stroke: Option<style::Stroke>,
-    /// A paint order style.
-    pub paint_order: PaintOrder,
-    /// A font.
-    pub font: Font,
-    /// A font size.
-    pub font_size: NonZeroPositiveF64,
-    /// Indicates that small caps should be used.
-    ///
-    /// Set by `font-variant="small-caps"`
-    pub small_caps: bool,
-    /// Indicates that a kerning should be applied.
-    ///
-    /// Supports both `kerning` and `font-kerning` properties.
-    pub apply_kerning: bool,
-    /// A span decorations.
-    pub decoration: TextDecoration,
-    /// A span dominant baseline.
-    pub dominant_baseline: DominantBaseline,
-    /// A span alignment baseline.
-    pub alignment_baseline: AlignmentBaseline,
-    /// A list of all baseline shift that should be applied to this span.
-    ///
-    /// Ordered from `text` element down to the actual `span` element.
-    pub baseline_shift: Vec<BaselineShift>,
-    /// A visibility property.
-    pub visibility: Visibility,
-    /// A letter spacing property.
-    pub letter_spacing: f64,
-    /// A word spacing property.
-    pub word_spacing: f64,
-    /// A text length property.
-    pub text_length: Option<f64>,
-    /// A length adjust property.
-    pub length_adjust: LengthAdjust,
-}
-
-/// A text chunk anchor property.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum TextAnchor {
-    Start,
-    Middle,
-    End,
-}
-
-/// A path used by text-on-path.
-#[derive(Clone, Debug)]
-pub struct TextPath {
-    /// A text offset in SVG coordinates.
-    ///
-    /// Percentage values already resolved.
-    pub start_offset: f64,
-
-    /// A path.
-    pub path: Rc<PathData>,
-}
-
-/// A text chunk flow property.
-#[derive(Clone, Debug)]
-pub enum TextFlow {
-    /// A linear layout.
-    ///
-    /// Includes left-to-right, right-to-left and top-to-bottom.
-    Linear,
-    /// A text-on-path layout.
-    Path(Rc<TextPath>),
-}
-
-/// A text chunk.
-///
-/// Text alignment and BIDI reordering can only be done inside a text chunk.
-#[derive(Clone, Debug)]
-pub struct TextChunk {
-    /// An absolute X axis offset.
-    pub x: Option<f64>,
-    /// An absolute Y axis offset.
-    pub y: Option<f64>,
-    /// A text anchor.
-    pub anchor: TextAnchor,
-    /// A list of text chunk style spans.
-    pub spans: Vec<TextSpan>,
-    /// A text chunk flow.
-    pub text_flow: TextFlow,
-    /// A text chunk actual text.
-    pub text: String,
-}
-
-/// A text character position.
-///
-/// _Character_ is a Unicode codepoint.
-#[derive(Clone, Copy, Debug)]
-pub struct CharacterPosition {
-    /// An absolute X axis position.
-    pub x: Option<f64>,
-    /// An absolute Y axis position.
-    pub y: Option<f64>,
-    /// A relative X axis offset.
-    pub dx: Option<f64>,
-    /// A relative Y axis offset.
-    pub dy: Option<f64>,
-}
-
-/// A writing mode.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum WritingMode {
-    LeftToRight,
-    TopToBottom,
-}
-
-/// A text element.
-///
-/// `text` element in SVG.
-#[derive(Clone, Debug)]
-pub struct Text {
-    /// Element's ID.
-    ///
-    /// Taken from the SVG itself.
-    /// Isn't automatically generated.
-    /// Can be empty.
-    pub id: String,
-
-    /// Element transform.
-    pub transform: Transform,
-
-    /// Rendering mode.
-    ///
-    /// `text-rendering` in SVG.
-    pub rendering_mode: TextRendering,
-
-    /// A list of character positions.
-    ///
-    /// One position for each Unicode codepoint. Aka `char` in Rust and not UTF-8 byte.
-    pub positions: Vec<CharacterPosition>,
-
-    /// A list of rotation angles.
-    ///
-    /// One angle for each Unicode codepoint. Aka `char` in Rust and not UTF-8 byte.
-    pub rotate: Vec<f64>,
-
-    /// A writing mode.
-    pub writing_mode: WritingMode,
-
-    /// A list of text chunks.
-    pub chunks: Vec<TextChunk>,
-}
-
-// Converter.
-
-impl_enum_default!(TextAnchor, Start);
-
-impl_enum_from_str!(TextAnchor,
-    "start" => TextAnchor::Start,
-    "middle" => TextAnchor::Middle,
-    "end" => TextAnchor::End
-);
-
-impl_enum_default!(AlignmentBaseline, Auto);
-
-impl_enum_from_str!(AlignmentBaseline,
-    "auto" => AlignmentBaseline::Auto,
-    "baseline" => AlignmentBaseline::Baseline,
-    "before-edge" => AlignmentBaseline::BeforeEdge,
-    "text-before-edge" => AlignmentBaseline::TextBeforeEdge,
-    "middle" => AlignmentBaseline::Middle,
-    "central" => AlignmentBaseline::Central,
-    "after-edge" => AlignmentBaseline::AfterEdge,
-    "text-after-edge" => AlignmentBaseline::TextAfterEdge,
-    "ideographic" => AlignmentBaseline::Ideographic,
-    "alphabetic" => AlignmentBaseline::Alphabetic,
-    "hanging" => AlignmentBaseline::Hanging,
-    "mathematical" => AlignmentBaseline::Mathematical
-);
-
-impl_enum_default!(DominantBaseline, Auto);
-
-impl_enum_from_str!(DominantBaseline,
-    "auto" => DominantBaseline::Auto,
-    "use-script" => DominantBaseline::UseScript,
-    "no-change" => DominantBaseline::NoChange,
-    "reset-size" => DominantBaseline::ResetSize,
-    "ideographic" => DominantBaseline::Ideographic,
-    "alphabetic" => DominantBaseline::Alphabetic,
-    "hanging" => DominantBaseline::Hanging,
-    "mathematical" => DominantBaseline::Mathematical,
-    "central" => DominantBaseline::Central,
-    "middle" => DominantBaseline::Middle,
-    "text-after-edge" => DominantBaseline::TextAfterEdge,
-    "text-before-edge" => DominantBaseline::TextBeforeEdge
-);
-
-impl_enum_default!(LengthAdjust, Spacing);
-
-impl_enum_from_str!(LengthAdjust,
-    "spacing" => LengthAdjust::Spacing,
-    "spacingAndGlyphs" => LengthAdjust::SpacingAndGlyphs
-);
-
-impl_enum_from_str!(Style,
-    "normal" => Style::Normal,
-    "italic" => Style::Italic,
-    "oblique" => Style::Oblique
-);
 
 pub(crate) fn convert(
     text_node: rosvgtree::Node,
@@ -386,7 +97,7 @@ pub(crate) fn convert(
     let chunks = collect_text_chunks(text_node, &pos_list, state, cache);
 
     let rendering_mode: TextRendering = text_node
-        .find_attribute(AId::TextRendering)
+        .find_and_parse_attribute(AId::TextRendering)
         .unwrap_or(state.opt.text_rendering);
 
     let text = Text {
@@ -485,7 +196,9 @@ fn collect_text_chunks_impl(
             continue;
         }
 
-        let anchor = parent.find_attribute(AId::TextAnchor).unwrap_or_default();
+        let anchor = parent
+            .find_and_parse_attribute(AId::TextAnchor)
+            .unwrap_or_default();
 
         // TODO: what to do when <= 0? UB?
         let font_size = crate::units::resolve_font_size(parent, state);
@@ -500,12 +213,13 @@ fn collect_text_chunks_impl(
 
         let font = convert_font(parent, state);
 
-        let raw_paint_order: svgtypes::PaintOrder =
-            parent.find_attribute(AId::PaintOrder).unwrap_or_default();
+        let raw_paint_order: svgtypes::PaintOrder = parent
+            .find_and_parse_attribute(AId::PaintOrder)
+            .unwrap_or_default();
         let paint_order = crate::converter::svg_paint_order_to_usvg(raw_paint_order);
 
         let mut dominant_baseline = parent
-            .find_attribute(AId::DominantBaseline)
+            .find_and_parse_attribute(AId::DominantBaseline)
             .unwrap_or_default();
 
         // `no-change` means "use parent".
@@ -513,7 +227,7 @@ fn collect_text_chunks_impl(
             dominant_baseline = parent
                 .parent_element()
                 .unwrap()
-                .find_attribute(AId::DominantBaseline)
+                .find_and_parse_attribute(AId::DominantBaseline)
                 .unwrap_or_default();
         }
 
@@ -521,7 +235,11 @@ fn collect_text_chunks_impl(
         #[allow(clippy::if_same_then_else)]
         if parent.resolve_length(AId::Kerning, state, -1.0) == 0.0 {
             apply_kerning = false;
-        } else if parent.find_attribute::<&str>(AId::FontKerning) == Some("none") {
+        } else if parent
+            .find_attribute(AId::FontKerning)
+            .and_then(|n| n.attribute(AId::FontKerning))
+            == Some("none")
+        {
             apply_kerning = false;
         }
 
@@ -542,19 +260,26 @@ fn collect_text_chunks_impl(
             paint_order,
             font,
             font_size,
-            small_caps: parent.find_attribute(AId::FontVariant) == Some("small-caps"),
+            small_caps: parent
+                .find_attribute(AId::FontVariant)
+                .and_then(|n| n.attribute(AId::FontVariant))
+                == Some("small-caps"),
             apply_kerning,
             decoration: resolve_decoration(text_node, parent, state, cache),
-            visibility: parent.find_attribute(AId::Visibility).unwrap_or_default(),
+            visibility: parent
+                .find_and_parse_attribute(AId::Visibility)
+                .unwrap_or_default(),
             dominant_baseline,
             alignment_baseline: parent
-                .find_attribute(AId::AlignmentBaseline)
+                .find_and_parse_attribute(AId::AlignmentBaseline)
                 .unwrap_or_default(),
             baseline_shift: convert_baseline_shift(parent, state),
             letter_spacing: parent.resolve_length(AId::LetterSpacing, state, 0.0),
             word_spacing: parent.resolve_length(AId::WordSpacing, state, 0.0),
             text_length,
-            length_adjust: parent.find_attribute(AId::LengthAdjust).unwrap_or_default(),
+            length_adjust: parent
+                .find_and_parse_attribute(AId::LengthAdjust)
+                .unwrap_or_default(),
         };
 
         let mut is_new_span = true;
@@ -617,19 +342,20 @@ fn collect_text_chunks_impl(
 }
 
 fn resolve_text_flow(node: rosvgtree::Node, state: &converter::State) -> Option<TextFlow> {
-    let linked_node = node.attribute::<rosvgtree::Node>(AId::Href)?;
+    let linked_node = node.parse_attribute::<rosvgtree::Node>(AId::Href)?;
     let path = crate::shapes::convert(linked_node, state)?;
 
     // The reference path's transform needs to be applied
-    let path = if let Some(node_transform) = linked_node.attribute::<Transform>(AId::Transform) {
-        let mut path_copy = path.as_ref().clone();
-        path_copy.transform(node_transform);
-        Rc::new(path_copy)
-    } else {
-        path
-    };
+    let path =
+        if let Some(node_transform) = linked_node.parse_attribute::<Transform>(AId::Transform) {
+            let mut path_copy = path.as_ref().clone();
+            path_copy.transform(node_transform);
+            Rc::new(path_copy)
+        } else {
+            path
+        };
 
-    let start_offset: Length = node.attribute(AId::StartOffset).unwrap_or_default();
+    let start_offset: Length = node.parse_attribute(AId::StartOffset).unwrap_or_default();
     let start_offset = if start_offset.unit == LengthUnit::Percent {
         // 'If a percentage is given, then the `startOffset` represents
         // a percentage distance along the entire path.'
@@ -643,7 +369,9 @@ fn resolve_text_flow(node: rosvgtree::Node, state: &converter::State) -> Option<
 }
 
 fn convert_font(node: rosvgtree::Node, state: &converter::State) -> Font {
-    let style: Style = node.find_attribute(AId::FontStyle).unwrap_or_default();
+    let style: FontStyle = node
+        .find_and_parse_attribute(AId::FontStyle)
+        .unwrap_or_default();
     let stretch = conv_font_stretch(node);
     let weight = resolve_font_weight(node);
 
@@ -685,21 +413,21 @@ fn convert_font(node: rosvgtree::Node, state: &converter::State) -> Font {
 }
 
 // TODO: properly resolve narrower/wider
-fn conv_font_stretch(node: rosvgtree::Node) -> Stretch {
+fn conv_font_stretch(node: rosvgtree::Node) -> FontStretch {
     if let Some(n) = node.ancestors().find(|n| n.has_attribute(AId::FontStretch)) {
         match n.attribute(AId::FontStretch).unwrap_or("") {
-            "narrower" | "condensed" => Stretch::Condensed,
-            "ultra-condensed" => Stretch::UltraCondensed,
-            "extra-condensed" => Stretch::ExtraCondensed,
-            "semi-condensed" => Stretch::SemiCondensed,
-            "semi-expanded" => Stretch::SemiExpanded,
-            "wider" | "expanded" => Stretch::Expanded,
-            "extra-expanded" => Stretch::ExtraExpanded,
-            "ultra-expanded" => Stretch::UltraExpanded,
-            _ => Stretch::Normal,
+            "narrower" | "condensed" => FontStretch::Condensed,
+            "ultra-condensed" => FontStretch::UltraCondensed,
+            "extra-condensed" => FontStretch::ExtraCondensed,
+            "semi-condensed" => FontStretch::SemiCondensed,
+            "semi-expanded" => FontStretch::SemiExpanded,
+            "wider" | "expanded" => FontStretch::Expanded,
+            "extra-expanded" => FontStretch::ExtraExpanded,
+            "ultra-expanded" => FontStretch::UltraExpanded,
+            _ => FontStretch::Normal,
         }
     } else {
-        Stretch::Normal
+        FontStretch::Normal
     }
 }
 
@@ -876,7 +604,7 @@ fn resolve_rotate_list(text_node: rosvgtree::Node) -> Vec<f64> {
     let mut offset = 0;
     for child in text_node.descendants() {
         if child.is_element() {
-            if let Some(rotate) = child.attribute::<Vec<f64>>(AId::Rotate) {
+            if let Some(rotate) = child.parse_attribute::<Vec<f64>>(AId::Rotate) {
                 for i in 0..count_chars(child) {
                     if let Some(a) = rotate.get(i).cloned() {
                         list[offset + i] = a;
@@ -943,7 +671,7 @@ struct TextDecorationTypes {
 fn conv_text_decoration(text_node: rosvgtree::Node) -> TextDecorationTypes {
     fn find_decoration(node: rosvgtree::Node, value: &str) -> bool {
         node.ancestors().any(|n| {
-            if let Some(str_value) = n.attribute::<&str>(AId::TextDecoration) {
+            if let Some(str_value) = n.attribute(AId::TextDecoration) {
                 str_value.split(' ').any(|v| v == value)
             } else {
                 false
@@ -975,7 +703,7 @@ fn convert_baseline_shift(node: rosvgtree::Node, state: &converter::State) -> Ve
         .take_while(|n| n.tag_name() != Some(EId::Text))
         .collect();
     for n in nodes {
-        if let Some(len) = n.attribute::<Length>(AId::BaselineShift) {
+        if let Some(len) = n.parse_attribute::<Length>(AId::BaselineShift) {
             if len.unit == LengthUnit::Percent {
                 let n = crate::units::resolve_font_size(n, state) * (len.number / 100.0);
                 shift.push(BaselineShift::Number(n));

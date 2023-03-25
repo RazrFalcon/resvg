@@ -19,7 +19,7 @@ rustybuzz = "0.7"
 unicode-bidi = "0.3"
 unicode-script = "0.5"
 unicode-vo = "0.1"
-usvg = { path = "../usvg", version = "0.29.0" }
+usvg-tree = { path = "../usvg-tree", version = "0.29.0" }
 
 [features]
 default = ["system-fonts", "memmap-fonts"]

@@ -3,181 +3,15 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::rc::Rc;
-
-use rosvgtree::{self, svgtypes, AttributeId as AId, ElementId as EId};
-use strict_num::PositiveF64;
-use svgtypes::{Length, LengthUnit as Unit};
-
-use crate::geom::{FuzzyEq, FuzzyZero, IsValidLength, Rect, Transform, ViewBox};
-use crate::rosvgtree_ext::OpacityWrapper;
-use crate::{converter, SvgColorExt, SvgNodeExt, Units};
-use crate::{Color, Group, Node, NodeKind, NormalizedF64, Opacity, OptionLog, Paint};
 use std::str::FromStr;
 
-/// A spread method.
-///
-/// `spreadMethod` attribute in the SVG.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum SpreadMethod {
-    Pad,
-    Reflect,
-    Repeat,
-}
+use rosvgtree::{self, AttributeId as AId, ElementId as EId};
+use strict_num::PositiveF64;
+use svgtypes::{Length, LengthUnit as Unit};
+use usvg_tree::*;
 
-impl_enum_default!(SpreadMethod, Pad);
-
-impl_enum_from_str!(SpreadMethod,
-    "pad"       => SpreadMethod::Pad,
-    "reflect"   => SpreadMethod::Reflect,
-    "repeat"    => SpreadMethod::Repeat
-);
-
-/// A generic gradient.
-#[derive(Clone, Debug)]
-pub struct BaseGradient {
-    /// Coordinate system units.
-    ///
-    /// `gradientUnits` in SVG.
-    pub units: Units,
-
-    /// Gradient transform.
-    ///
-    /// `gradientTransform` in SVG.
-    pub transform: Transform,
-
-    /// Gradient spreading method.
-    ///
-    /// `spreadMethod` in SVG.
-    pub spread_method: SpreadMethod,
-
-    /// A list of `stop` elements.
-    pub stops: Vec<Stop>,
-}
-
-/// A linear gradient.
-///
-/// `linearGradient` element in SVG.
-#[allow(missing_docs)]
-#[derive(Clone, Debug)]
-pub struct LinearGradient {
-    /// Element's ID.
-    ///
-    /// Taken from the SVG itself.
-    /// Can't be empty.
-    pub id: String,
-
-    pub x1: f64,
-    pub y1: f64,
-    pub x2: f64,
-    pub y2: f64,
-
-    /// Base gradient data.
-    pub base: BaseGradient,
-}
-
-impl std::ops::Deref for LinearGradient {
-    type Target = BaseGradient;
-
-    fn deref(&self) -> &Self::Target {
-        &self.base
-    }
-}
-
-/// A radial gradient.
-///
-/// `radialGradient` element in SVG.
-#[allow(missing_docs)]
-#[derive(Clone, Debug)]
-pub struct RadialGradient {
-    /// Element's ID.
-    ///
-    /// Taken from the SVG itself.
-    /// Can't be empty.
-    pub id: String,
-
-    pub cx: f64,
-    pub cy: f64,
-    pub r: PositiveF64,
-    pub fx: f64,
-    pub fy: f64,
-
-    /// Base gradient data.
-    pub base: BaseGradient,
-}
-
-impl std::ops::Deref for RadialGradient {
-    type Target = BaseGradient;
-
-    fn deref(&self) -> &Self::Target {
-        &self.base
-    }
-}
-
-/// An alias to `NormalizedF64`.
-pub type StopOffset = NormalizedF64;
-
-/// Gradient's stop element.
-///
-/// `stop` element in SVG.
-#[derive(Clone, Copy, Debug)]
-pub struct Stop {
-    /// Gradient stop offset.
-    ///
-    /// `offset` in SVG.
-    pub offset: StopOffset,
-
-    /// Gradient stop color.
-    ///
-    /// `stop-color` in SVG.
-    pub color: Color,
-
-    /// Gradient stop opacity.
-    ///
-    /// `stop-opacity` in SVG.
-    pub opacity: Opacity,
-}
-
-/// A pattern element.
-///
-/// `pattern` element in SVG.
-#[derive(Clone, Debug)]
-pub struct Pattern {
-    /// Element's ID.
-    ///
-    /// Taken from the SVG itself.
-    /// Can't be empty.
-    pub id: String,
-
-    /// Coordinate system units.
-    ///
-    /// `patternUnits` in SVG.
-    pub units: Units,
-
-    // TODO: should not be accessible when `viewBox` is present.
-    /// Content coordinate system units.
-    ///
-    /// `patternContentUnits` in SVG.
-    pub content_units: Units,
-
-    /// Pattern transform.
-    ///
-    /// `patternTransform` in SVG.
-    pub transform: Transform,
-
-    /// Pattern rectangle.
-    ///
-    /// `x`, `y`, `width` and `height` in SVG.
-    pub rect: Rect,
-
-    /// Pattern viewbox.
-    pub view_box: Option<ViewBox>,
-
-    /// Pattern children.
-    ///
-    /// The root node is always `Group`.
-    pub root: Node,
-}
+use crate::rosvgtree_ext::{OpacityWrapper, SvgColorExt, SvgNodeExt2};
+use crate::{converter, OptionLog, SvgNodeExt};
 
 pub(crate) enum ServerOrColor {
     Server(Paint),
@@ -220,7 +54,7 @@ fn convert_linear(node: rosvgtree::Node, state: &converter::State) -> Option<Ser
 
     let units = convert_units(node, AId::GradientUnits, Units::ObjectBoundingBox);
     let transform = resolve_attr(node, AId::GradientTransform)
-        .attribute(AId::GradientTransform)
+        .parse_attribute(AId::GradientTransform)
         .unwrap_or_default();
 
     let gradient = LinearGradient {
@@ -288,7 +122,7 @@ fn convert_radial(node: rosvgtree::Node, state: &converter::State) -> Option<Ser
     let fx = resolve_number(node, AId::Fx, units, state, Length::new_number(cx));
     let fy = resolve_number(node, AId::Fy, units, state, Length::new_number(cy));
     let transform = resolve_attr(node, AId::GradientTransform)
-        .attribute(AId::GradientTransform)
+        .parse_attribute(AId::GradientTransform)
         .unwrap_or_default();
 
     let gradient = RadialGradient {
@@ -324,7 +158,9 @@ fn convert_pattern(
         let n2 = resolve_attr(node, AId::PreserveAspectRatio);
         n1.parse_viewbox().map(|vb| ViewBox {
             rect: vb,
-            aspect: n2.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
+            aspect: n2
+                .parse_attribute(AId::PreserveAspectRatio)
+                .unwrap_or_default(),
         })
     };
 
@@ -332,7 +168,7 @@ fn convert_pattern(
     let content_units = convert_units(node, AId::PatternContentUnits, Units::UserSpaceOnUse);
 
     let transform = resolve_attr(node, AId::PatternTransform)
-        .attribute(AId::PatternTransform)
+        .parse_attribute(AId::PatternTransform)
         .unwrap_or_default();
 
     let rect = Rect::new(
@@ -369,12 +205,12 @@ fn convert_pattern(
 
 fn convert_spread_method(node: rosvgtree::Node) -> SpreadMethod {
     let node = resolve_attr(node, AId::SpreadMethod);
-    node.attribute(AId::SpreadMethod).unwrap_or_default()
+    node.parse_attribute(AId::SpreadMethod).unwrap_or_default()
 }
 
 pub(crate) fn convert_units(node: rosvgtree::Node, name: AId, def: Units) -> Units {
     let node = resolve_attr(node, name);
-    node.attribute(name).unwrap_or(def)
+    node.parse_attribute(name).unwrap_or(def)
 }
 
 fn find_gradient_with_stops<'a, 'input: 'a>(
@@ -431,18 +267,18 @@ fn convert_stops(grad: rosvgtree::Node) -> Vec<Stop> {
             }
 
             // `number` can be either a number or a percentage.
-            let offset = stop.attribute(AId::Offset).unwrap_or(prev_offset);
+            let offset = stop.parse_attribute(AId::Offset).unwrap_or(prev_offset);
             let offset = match offset.unit {
                 Unit::None => offset.number,
                 Unit::Percent => offset.number / 100.0,
                 _ => prev_offset.number,
             };
-            let offset = crate::utils::f64_bound(0.0, offset, 1.0);
+            let offset = crate::f64_bound(0.0, offset, 1.0);
             prev_offset = Length::new_number(offset);
 
             let (color, opacity) = match stop.attribute(AId::StopColor) {
                 Some("currentColor") => stop
-                    .find_attribute(AId::Color)
+                    .find_and_parse_attribute(AId::Color)
                     .unwrap_or_else(svgtypes::Color::black),
                 Some(value) => {
                     if let Ok(c) = svgtypes::Color::from_str(value) {
@@ -457,7 +293,7 @@ fn convert_stops(grad: rosvgtree::Node) -> Vec<Stop> {
             .split_alpha();
 
             let stop_opacity = stop
-                .attribute::<OpacityWrapper>(AId::StopOpacity)
+                .parse_attribute::<OpacityWrapper>(AId::StopOpacity)
                 .map(|v| v.0)
                 .unwrap_or(Opacity::ONE);
             stops.push(Stop {

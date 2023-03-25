@@ -42,6 +42,7 @@ and can focus just on the rendering part.
 - CSS support is minimal
 - Only [static](http://www.w3.org/TR/SVG11/feature#SVG-static) SVG features,
   e.g. no `a`, `view`, `cursor`, `script`, no events and no animations
+- Text elements must be converted into paths before writing to SVG.
 
 ## License
 

@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- Readd `usvg` CLI tool. Can be installed via cargo as before.
+
+### Changed
+- Extract most `usvg` internals into new `usvg-tree` and `usvg-parser` crates.
+  `usvg-tree` contains just the SVG tree and all the types.
+  `usvg-parser` parsers SVG into `usvg-tree`.
+  And `usvg` is just an umbrella crate now.
+- To use `usvg::Tree::from*` methods one should import the `usvg::TreeParsing` trait now.
+- No need to import `usvg-text-layout` manually anymore. It is part of `usvg` now.
+- `rosvgtree` no longer reexports `svgtypes`.
+- `rosvgtree::Node::attribute` returns just a string now.
+- `rosvgtree::Node::find_attribute` returns just a `rosvgtree::Node` now.
+- Rename `usvg::Stretch` into `usvg::FontStretch`.
+- Rename `usvg::Style` into `usvg::FontStyle`.
+- `usvg::FitTo` moved to `resvg::FitTo`.
+- `usvg::IsDefault` trait is private now.
+
+### Removed
+- `rosvgtree::FromValue`. Due to Rust's orphan rules this trait is pretty useless.
+
 ### Fixed
 - Skip malformed `transform` attributes without skipping the whole element.
 

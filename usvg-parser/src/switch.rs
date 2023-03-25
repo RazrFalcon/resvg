@@ -3,8 +3,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use rosvgtree::{self, AttributeId as AId};
+use usvg_tree::Node;
 
-use crate::{converter, Node, Options};
+use crate::{converter, Options};
 
 // Full list can be found here: https://www.w3.org/TR/SVG11/feature.html
 static FEATURES: &[&str] = &[
@@ -77,7 +78,7 @@ pub(crate) fn is_condition_passed(node: rosvgtree::Node, opt: &Options) -> bool 
     // Only feature strings defined in the Feature String appendix are allowed.
     // If all of the given features are supported, then the attribute evaluates to true;
     // otherwise, the current element and its children are skipped and thus will not be rendered.'
-    if let Some(features) = node.attribute::<&str>(AId::RequiredFeatures) {
+    if let Some(features) = node.attribute(AId::RequiredFeatures) {
         for feature in features.split(' ') {
             if !FEATURES.contains(&feature) {
                 return false;
@@ -99,7 +100,7 @@ fn is_valid_sys_lang(node: rosvgtree::Node, opt: &Options) -> bool {
     //
     // But we support only simple cases like `en` or `en-US`.
     // No one really uses this, especially with complex BCP 47 values.
-    if let Some(langs) = node.attribute::<&str>(AId::SystemLanguage) {
+    if let Some(langs) = node.attribute(AId::SystemLanguage) {
         let mut has_match = false;
         for lang in langs.split(',') {
             let lang = lang.trim();

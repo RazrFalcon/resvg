@@ -2,50 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ImageHrefResolver, ImageRendering, ScreenSize, ShapeRendering, Size, TextRendering};
+use usvg_tree::{ImageRendering, ShapeRendering, Size, TextRendering};
 
-/// Image fit options.
-///
-/// All variants will preserve the original aspect.
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum FitTo {
-    /// Keep original size.
-    Original,
-    /// Scale to width.
-    Width(u32),
-    /// Scale to height.
-    Height(u32),
-    /// Scale to size.
-    Size(u32, u32),
-    /// Zoom by factor.
-    Zoom(f32),
-}
-
-impl FitTo {
-    /// Returns `size` preprocessed according to `FitTo`.
-    pub fn fit_to(&self, size: ScreenSize) -> Option<ScreenSize> {
-        let sizef = size.to_size();
-
-        match *self {
-            FitTo::Original => Some(size),
-            FitTo::Width(w) => {
-                let h = (w as f64 * sizef.height() / sizef.width()).ceil();
-                ScreenSize::new(w, h as u32)
-            }
-            FitTo::Height(h) => {
-                let w = (h as f64 * sizef.width() / sizef.height()).ceil();
-                ScreenSize::new(w as u32, h)
-            }
-            FitTo::Size(w, h) => Some(
-                sizef
-                    .scale_to(Size::new(w as f64, h as f64)?)
-                    .to_screen_size(),
-            ),
-            FitTo::Zoom(z) => Size::new(sizef.width() * z as f64, sizef.height() * z as f64)
-                .map(|s| s.to_screen_size()),
-        }
-    }
-}
+use crate::ImageHrefResolver;
 
 /// Processing options.
 #[derive(Debug)]

@@ -2,10 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use rosvgtree::{self, svgtypes, AttributeId as AId};
+use rosvgtree::{self, AttributeId as AId};
 use svgtypes::{Length, LengthUnit as Unit};
+use usvg_tree::Units;
 
-use crate::{converter, Units};
+use crate::converter;
+use crate::rosvgtree_ext::SvgNodeExt2;
 
 #[inline(never)]
 pub(crate) fn convert_length(
@@ -70,7 +72,7 @@ pub(crate) fn convert_list(
     aid: AId,
     state: &converter::State,
 ) -> Option<Vec<f64>> {
-    if let Some(text) = node.attribute::<&str>(aid) {
+    if let Some(text) = node.attribute(aid) {
         let mut num_list = Vec::new();
         for length in svgtypes::LengthListParser::from(text).flatten() {
             num_list.push(convert_length(
@@ -98,7 +100,7 @@ pub(crate) fn resolve_font_size(node: rosvgtree::Node, state: &converter::State)
     let mut font_size = state.opt.font_size;
     for n in nodes.iter().rev().skip(1) {
         // skip Root
-        if let Some(length) = n.attribute::<Length>(AId::FontSize) {
+        if let Some(length) = n.parse_attribute::<Length>(AId::FontSize) {
             let dpi = state.opt.dpi;
             let n = length.number;
             font_size = match length.unit {

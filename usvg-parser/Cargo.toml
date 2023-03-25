@@ -1,0 +1,25 @@
+[package]
+name = "usvg-parser"
+version = "0.29.0"
+authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
+keywords = ["svg"]
+license = "MPL-2.0"
+edition = "2018"
+description = "An SVG parser used by usvg."
+categories = ["multimedia::images"]
+repository = "https://github.com/RazrFalcon/resvg"
+documentation = "https://docs.rs/usvg-parser/"
+readme = "README.md"
+exclude = ["tests"]
+workspace = ".."
+
+[dependencies]
+data-url = "0.2" # for href parsing
+flate2 = { version = "1.0", default-features = false, features = ["rust_backend"] } # SVGZ decoding
+imagesize = "0.11" # raster images size detection
+kurbo = "0.9" # Bezier curves utils
+log = "0.4"
+rosvgtree = { path = "../rosvgtree", version = "0.1" }
+strict-num = "0.1"
+svgtypes = "0.10"
+usvg-tree = { path = "../usvg-tree", version = "0.29.0" }
