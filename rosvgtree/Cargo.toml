@@ -17,7 +17,7 @@ log = "0.4"
 roxmltree = "0.18"
 simplecss = "0.2"
 siphasher = "0.3" # perfect hash implementation
-svgtypes = "0.10"
+svgtypes = "0.11"
 
 [dev-dependencies]
 xmlwriter = "0.1"

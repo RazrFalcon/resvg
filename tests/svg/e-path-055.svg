@@ -1,8 +1,8 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>M L z A</title>
-    <desc>MoveTo after ClosePath is implicit here.</desc>
+    <title>A</title>
+    <desc>MoveTo is required.</desc>
 
-    <path id="path1" fill="green" d="M 10 50 L 10 10 L 50 10 z A 5 5 0 0 1 150 150"/>
+    <path id="path1" fill="green" d="A 5 5 0 0 1 50 50"/>
 
     <!-- image frame -->
     <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>

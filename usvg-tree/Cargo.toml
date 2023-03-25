@@ -16,4 +16,4 @@ workspace = ".."
 kurbo = "0.9" # Bezier curves utils
 rctree = "0.5"
 strict-num = "0.1"
-svgtypes = "0.10"
+svgtypes = "0.11"

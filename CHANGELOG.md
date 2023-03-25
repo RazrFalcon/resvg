@@ -9,8 +9,6 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - Readd `usvg` CLI tool. Can be installed via cargo as before.
-- A new test to make sure malformed arcs would not lead to a panic.
-  Thanks to [@yisibl](https://github.com/yisibl).
 
 ### Changed
 - Extract most `usvg` internals into new `usvg-tree` and `usvg-parser` crates.
@@ -39,6 +37,7 @@ This changelog also contains important changes in dependencies.
   Thanks to [@LaurenzV](https://github.com/LaurenzV).
 - (Qt API) Image size wasn't initialized. Thanks to [@missdeer](https://github.com/missdeer).
 - `resvg` CLI allows files with XML DTD again.
+- (svgtypes) Handle implicit MoveTo after ClosePath segments.
 
 ## [0.29.0] - 2022-02-04
 ### Added

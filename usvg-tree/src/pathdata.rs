@@ -110,6 +110,7 @@ impl PathData {
         self.points.push(y);
     }
 
+    // TODO: we have to add MoveTo if the last segment was ClosePath
     /// Pushes a LineTo segment to the path.
     #[inline]
     pub fn push_line_to(&mut self, x: f64, y: f64) {

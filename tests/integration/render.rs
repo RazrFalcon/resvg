@@ -1190,6 +1190,8 @@ use crate::render;
 #[test] fn e_path_051() { assert_eq!(render("e-path-051"), 0); }
 #[test] fn e_path_052() { assert_eq!(render("e-path-052"), 0); }
 #[test] fn e_path_053() { assert_eq!(render("e-path-053"), 0); }
+#[test] fn e_path_054() { assert_eq!(render("e-path-054"), 0); }
+#[test] fn e_path_055() { assert_eq!(render("e-path-055"), 0); }
 #[test] fn e_pattern_001() { assert_eq!(render("e-pattern-001"), 0); }
 #[test] fn e_pattern_002() { assert_eq!(render("e-pattern-002"), 0); }
 #[test] fn e_pattern_003() { assert_eq!(render("e-pattern-003"), 0); }
