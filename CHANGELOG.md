@@ -37,6 +37,7 @@ This changelog also contains important changes in dependencies.
 - Panic when applying `text-decoration` on text with only one cluster.
   Thanks to [@LaurenzV](https://github.com/LaurenzV).
 - (Qt API) Image size wasn't initialized. Thanks to [@missdeer](https://github.com/missdeer).
+- `resvg` CLI allows files with XML DTD again.
 
 ## [0.29.0] - 2022-02-04
 ### Added

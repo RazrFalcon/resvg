@@ -75,7 +75,12 @@ fn process() -> Result<(), String> {
         .map_err(|_| "provided data has not an UTF-8 encoding".to_string())?;
 
     let xml_tree = timed(args.perf, "XML Parsing", || {
-        usvg::roxmltree::Document::parse(svg_string).map_err(|e| e.to_string())
+        let xml_opt = usvg::roxmltree::ParsingOptions {
+            allow_dtd: true,
+            ..Default::default()
+        };
+        usvg::roxmltree::Document::parse_with_options(svg_string, xml_opt)
+            .map_err(|e| e.to_string())
     })?;
 
     let mut tree = timed(args.perf, "SVG Parsing", || {
