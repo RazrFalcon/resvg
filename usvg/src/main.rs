@@ -27,7 +27,7 @@ OPTIONS:
   -c                                Prints the output SVG to the stdout
 
   --dpi DPI                         Sets the resolution
-                                    [default: 96] [possible values: 10..4000]
+                                    [default: 96] [possible values: 10..4000 (inclusive)]
   --languages LANG                  Sets a comma-separated list of languages that
                                     will be used during the 'systemLanguage'
                                     attribute resolving
@@ -56,7 +56,7 @@ OPTIONS:
                                     [default: Times New Roman]
   --font-size SIZE                  Sets the default font size that will be
                                     used when no 'font-size' is present
-                                    [default: 12] [possible values: 1..192]
+                                    [default: 12] [possible values: 1..192 (inclusive)]
   --serif-family FAMILY             Sets the 'serif' font family.
                                     Will be used when no 'font-family' is present
                                     [default: Times New Roman]
@@ -86,10 +86,10 @@ OPTIONS:
                                     controls what size relative units in the document
                                     will use as a base if there is no viewBox and
                                     document width or height are relative.
-                                    [values: 1..2^32] [default: 100]
+                                    [values: 1..4294967295 (inclusive)] [default: 100]
   --default-height LENGTH           Sets the default height of the SVG viewport.
                                     Refer to the explanation of the '--default-width'
-                                    option. [values: 1..2^32] [default: 100]
+                                    option. [values: 1..4294967295 (inclusive)] [default: 100]
 
   --id-prefix                       Adds a prefix to each ID attribute
   --indent INDENT                   Sets the XML nodes indent
@@ -98,10 +98,10 @@ OPTIONS:
                                     [values: none, 0, 1, 2, 3, 4, tabs] [default: none]
   --coordinates-precision NUM       Set the coordinates numeric precision.
                                     Smaller precision can lead to a malformed output in some cases
-                                    [values: 2..8] [default: 8]
+                                    [values: 2..8 (inclusive)] [default: 8]
   --transforms-precision NUM        Set the transform values numeric precision.
                                     Smaller precision can lead to a malformed output in some cases
-                                    [values: 2..8] [default: 8]
+                                    [values: 2..8 (inclusive)] [default: 8]
   --quiet                           Disables warnings
 
 ARGS:
