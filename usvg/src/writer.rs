@@ -30,8 +30,13 @@ pub struct XmlOptions {
     /// Used to add a custom prefix to each element ID during writing.
     pub id_prefix: Option<String>,
 
-    /// specifies the limit for decimal places when writing numbers.
-    pub num_n_decimal_places: u8,
+    /// Set the coordinates numeric precision.
+    /// Smaller precision can lead to a malformed output in some cases
+    pub coordinates_precision: u8,
+
+    /// Set the transform values numeric precision.
+    /// Smaller precision can lead to a malformed output in some cases
+    pub transforms_precision: u8,
 
     /// `xmlwriter` options.
     pub writer_opts: xmlwriter::Options,
@@ -41,7 +46,8 @@ impl Default for XmlOptions {
     fn default() -> Self {
         Self {
             id_prefix: Default::default(),
-            num_n_decimal_places: 8,
+            coordinates_precision: 8,
+            transforms_precision: 8,
             writer_opts: Default::default(),
         }
     }
@@ -838,17 +844,17 @@ impl XmlWriterExt for XmlWriter {
         if !ts.is_default() {
             self.write_attribute_raw(id.to_str(), |buf| {
                 buf.extend_from_slice(b"matrix(");
-                write_num(ts.a, buf, opt.num_n_decimal_places);
+                write_num(ts.a, buf, opt.transforms_precision);
                 buf.push(b' ');
-                write_num(ts.b, buf, opt.num_n_decimal_places);
+                write_num(ts.b, buf, opt.transforms_precision);
                 buf.push(b' ');
-                write_num(ts.c, buf, opt.num_n_decimal_places);
+                write_num(ts.c, buf, opt.transforms_precision);
                 buf.push(b' ');
-                write_num(ts.d, buf, opt.num_n_decimal_places);
+                write_num(ts.d, buf, opt.transforms_precision);
                 buf.push(b' ');
-                write_num(ts.e, buf, opt.num_n_decimal_places);
+                write_num(ts.e, buf, opt.transforms_precision);
                 buf.push(b' ');
-                write_num(ts.f, buf, opt.num_n_decimal_places);
+                write_num(ts.f, buf, opt.transforms_precision);
                 buf.extend_from_slice(b")");
             });
         }
@@ -1089,16 +1095,16 @@ fn write_path(
             match seg {
                 PathSegment::MoveTo { x, y } => {
                     buf.extend_from_slice(b"M ");
-                    write_num(x, buf, opt.num_n_decimal_places);
+                    write_num(x, buf, opt.coordinates_precision);
                     buf.push(b' ');
-                    write_num(y, buf, opt.num_n_decimal_places);
+                    write_num(y, buf, opt.coordinates_precision);
                     buf.push(b' ');
                 }
                 PathSegment::LineTo { x, y } => {
                     buf.extend_from_slice(b"L ");
-                    write_num(x, buf, opt.num_n_decimal_places);
+                    write_num(x, buf, opt.coordinates_precision);
                     buf.push(b' ');
-                    write_num(y, buf, opt.num_n_decimal_places);
+                    write_num(y, buf, opt.coordinates_precision);
                     buf.push(b' ');
                 }
                 PathSegment::CurveTo {
@@ -1110,17 +1116,17 @@ fn write_path(
                     y,
                 } => {
                     buf.extend_from_slice(b"C ");
-                    write_num(x1, buf, opt.num_n_decimal_places);
+                    write_num(x1, buf, opt.coordinates_precision);
                     buf.push(b' ');
-                    write_num(y1, buf, opt.num_n_decimal_places);
+                    write_num(y1, buf, opt.coordinates_precision);
                     buf.push(b' ');
-                    write_num(x2, buf, opt.num_n_decimal_places);
+                    write_num(x2, buf, opt.coordinates_precision);
                     buf.push(b' ');
-                    write_num(y2, buf, opt.num_n_decimal_places);
+                    write_num(y2, buf, opt.coordinates_precision);
                     buf.push(b' ');
-                    write_num(x, buf, opt.num_n_decimal_places);
+                    write_num(x, buf, opt.coordinates_precision);
                     buf.push(b' ');
-                    write_num(y, buf, opt.num_n_decimal_places);
+                    write_num(y, buf, opt.coordinates_precision);
                     buf.push(b' ');
                 }
                 PathSegment::ClosePath => {
@@ -1242,22 +1248,37 @@ fn write_light_source(light: &filter::LightSource, xml: &mut XmlWriter) {
     xml.end_element();
 }
 
-fn write_num(num: f64, buf: &mut Vec<u8>, num_n_decimal_places: u8) {
+static POW_VEC: &'static [f64] = &[
+    0.0,
+    10.0,
+    100.0,
+    1_000.0,
+    10_000.0,
+    100_000.0,
+    1_000_000.0,
+    10_000_000.0,
+    100_000_000.0,
+    1_000_000_000.0,
+    10_000_000_000.0,
+    100_000_000_000.0,
+    1_000_000_000_000.0,
+];
+
+fn write_num(num: f64, buf: &mut Vec<u8>, precision: u8) {
     // If number is an integer, it's faster to write it as i32.
     if num.fract().is_fuzzy_zero() {
         write!(buf, "{}", num as i32).unwrap();
         return;
     }
 
-    // Round numbers up to the specified n of decimal places to prevent writing
+    // Round numbers up to the specified precision to prevent writing
     // ugly numbers like 29.999999999999996.
     // It's not 100% correct, but differences are insignificant.
     //
     // Note that at least in Rust 1.64 the number formatting in debug and release modes
     // can be slightly different. So having a lower precision makes
     // our output and tests reproducible.
-    let v = (num * (10_u32.pow(num_n_decimal_places as u32) as f64)).round()
-        / (10_u32.pow(num_n_decimal_places as u32) as f64);
+    let v = (num * POW_VEC[precision as usize]).round() / POW_VEC[precision as usize];
 
     write!(buf, "{}", v).unwrap();
 }

@@ -22,88 +22,91 @@ USAGE:
   usvg [OPTIONS] - -c                # from stdin to stdout
 
 OPTIONS:
-  -h, --help                    Prints help information
-  -V, --version                 Prints version information
-  -c                            Prints the output SVG to the stdout
+  -h, --help                        Prints help information
+  -V, --version                     Prints version information
+  -c                                Prints the output SVG to the stdout
 
-  --dpi DPI                     Sets the resolution
-                                [default: 96] [possible values: 10..4000]
-  --languages LANG              Sets a comma-separated list of languages that
-                                will be used during the 'systemLanguage'
-                                attribute resolving
-                                Examples: 'en-US', 'en-US, ru-RU', 'en, ru'
-                                [default: en]
-  --shape-rendering HINT        Selects the default shape rendering method
-                                [default: geometricPrecision]
-                                [possible values: optimizeSpeed, crispEdges,
-                                geometricPrecision]
-  --text-rendering HINT         Selects the default text rendering method
-                                [default: optimizeLegibility]
-                                [possible values: optimizeSpeed, optimizeLegibility,
-                                geometricPrecision]
-  --image-rendering HINT        Selects the default image rendering method
-                                [default: optimizeQuality]
-                                [possible values: optimizeQuality, optimizeSpeed]
-  --resources-dir DIR           Sets a directory that will be used during
-                                relative paths resolving.
-                                Expected to be the same as the directory that
-                                contains the SVG file, but can be set to any.
-                                [default: input file directory
-                                or none when reading from stdin]
+  --dpi DPI                         Sets the resolution
+                                    [default: 96] [possible values: 10..4000]
+  --languages LANG                  Sets a comma-separated list of languages that
+                                    will be used during the 'systemLanguage'
+                                    attribute resolving
+                                    Examples: 'en-US', 'en-US, ru-RU', 'en, ru'
+                                    [default: en]
+  --shape-rendering HINT            Selects the default shape rendering method
+                                    [default: geometricPrecision]
+                                    [possible values: optimizeSpeed, crispEdges,
+                                    geometricPrecision]
+  --text-rendering HINT             Selects the default text rendering method
+                                    [default: optimizeLegibility]
+                                    [possible values: optimizeSpeed, optimizeLegibility,
+                                    geometricPrecision]
+  --image-rendering HINT            Selects the default image rendering method
+                                    [default: optimizeQuality]
+                                    [possible values: optimizeQuality, optimizeSpeed]
+  --resources-dir DIR               Sets a directory that will be used during
+                                    relative paths resolving.
+                                    Expected to be the same as the directory that
+                                    contains the SVG file, but can be set to any.
+                                    [default: input file directory
+                                    or none when reading from stdin]
 
-  --font-family FAMILY          Sets the default font family that will be
-                                used when no 'font-family' is present
-                                [default: Times New Roman]
-  --font-size SIZE              Sets the default font size that will be
-                                used when no 'font-size' is present
-                                [default: 12] [possible values: 1..192]
-  --serif-family FAMILY         Sets the 'serif' font family.
-                                Will be used when no 'font-family' is present
-                                [default: Times New Roman]
-  --sans-serif-family FAMILY    Sets the 'sans-serif' font family
-                                [default: Arial]
-  --cursive-family FAMILY       Sets the 'cursive' font family
-                                [default: Comic Sans MS]
-  --fantasy-family FAMILY       Sets the 'fantasy' font family
-                                [default: Impact]
-  --monospace-family FAMILY     Sets the 'monospace' font family
-                                [default: Courier New]
-  --use-font-file PATH          Load a specified font file into the fonts database.
-                                Will be used during text to path conversion.
-                                This option can be set multiple times
-  --use-fonts-dir PATH          Loads all fonts from the specified directory
-                                into the fonts database.
-                                Will be used during text to path conversion.
-                                This option can be set multiple times
-  --skip-system-fonts           Disables system fonts loading.
-                                You should add some fonts manually using
-                                --use-font-file and/or --use-fonts-dir
-                                Otherwise, text elements will not be processes
-  --list-fonts                  Lists successfully loaded font faces.
-                                Useful for debugging
-  --default-width LENGTH        Sets the default width of the SVG viewport. Like
-                                the '--default-height' option, this option
-                                controls what size relative units in the document
-                                will use as a base if there is no viewBox and
-                                document width or height are relative.
-                                [values: 1..2^32] [default: 100]
-  --default-height LENGTH       Sets the default height of the SVG viewport.
-                                Refer to the explanation of the '--default-width'
-                                option. [values: 1..2^32] [default: 100]
+  --font-family FAMILY              Sets the default font family that will be
+                                    used when no 'font-family' is present
+                                    [default: Times New Roman]
+  --font-size SIZE                  Sets the default font size that will be
+                                    used when no 'font-size' is present
+                                    [default: 12] [possible values: 1..192]
+  --serif-family FAMILY             Sets the 'serif' font family.
+                                    Will be used when no 'font-family' is present
+                                    [default: Times New Roman]
+  --sans-serif-family FAMILY        Sets the 'sans-serif' font family
+                                    [default: Arial]
+  --cursive-family FAMILY           Sets the 'cursive' font family
+                                    [default: Comic Sans MS]
+  --fantasy-family FAMILY           Sets the 'fantasy' font family
+                                    [default: Impact]
+  --monospace-family FAMILY         Sets the 'monospace' font family
+                                    [default: Courier New]
+  --use-font-file PATH              Load a specified font file into the fonts database.
+                                    Will be used during text to path conversion.
+                                    This option can be set multiple times
+  --use-fonts-dir PATH              Loads all fonts from the specified directory
+                                    into the fonts database.
+                                    Will be used during text to path conversion.
+                                    This option can be set multiple times
+  --skip-system-fonts               Disables system fonts loading.
+                                    You should add some fonts manually using
+                                    --use-font-file and/or --use-fonts-dir
+                                    Otherwise, text elements will not be processes
+  --list-fonts                      Lists successfully loaded font faces.
+                                    Useful for debugging
+  --default-width LENGTH            Sets the default width of the SVG viewport. Like
+                                    the '--default-height' option, this option
+                                    controls what size relative units in the document
+                                    will use as a base if there is no viewBox and
+                                    document width or height are relative.
+                                    [values: 1..2^32] [default: 100]
+  --default-height LENGTH           Sets the default height of the SVG viewport.
+                                    Refer to the explanation of the '--default-width'
+                                    option. [values: 1..2^32] [default: 100]
 
-  --id-prefix                   Adds a prefix to each ID attribute
-  --num-n-decimal-places NUM    limits the decimal places when writing numbers
-                                [values: 0..2^8] [default: 8]
-  --indent INDENT               Sets the XML nodes indent
-                                [values: none, 0, 1, 2, 3, 4, tabs] [default: 4]
-  --attrs-indent INDENT         Sets the XML attributes indent
-                                [values: none, 0, 1, 2, 3, 4, tabs] [default: none]
-
-  --quiet                       Disables warnings
+  --id-prefix                       Adds a prefix to each ID attribute
+  --indent INDENT                   Sets the XML nodes indent
+                                    [values: none, 0, 1, 2, 3, 4, tabs] [default: 4]
+  --attrs-indent INDENT             Sets the XML attributes indent
+                                    [values: none, 0, 1, 2, 3, 4, tabs] [default: none]
+  --coordinates-precision NUM       Set the coordinates numeric precision.
+                                    Smaller precision can lead to a malformed output in some cases
+                                    [values: 2..8] [default: 8]
+  --transforms-precision NUM        Set the transform values numeric precision.
+                                    Smaller precision can lead to a malformed output in some cases
+                                    [values: 2..8] [default: 8]
+  --quiet                           Disables warnings
 
 ARGS:
-  <in-svg>                      Input file
-  <out-svg>                     Output file
+  <in-svg>                          Input file
+  <out-svg>                         Output file
 ";
 
 #[derive(Debug)]
@@ -130,9 +133,10 @@ struct Args {
     default_height: u32,
 
     id_prefix: Option<String>,
-    num_n_decimal_places: Option<u8>,
     indent: xmlwriter::Indent,
     attrs_indent: xmlwriter::Indent,
+    coordinates_precision: Option<u8>,
+    transforms_precision: Option<u8>,
 
     quiet: bool,
 
@@ -192,13 +196,14 @@ fn collect_args() -> Result<Args, pico_args::Error> {
             .unwrap_or(100),
 
         id_prefix: input.opt_value_from_str("--id-prefix")?,
-        num_n_decimal_places: input.opt_value_from_str("--num-n-decimal-places")?,
         indent: input
             .opt_value_from_fn("--indent", parse_indent)?
             .unwrap_or(xmlwriter::Indent::Spaces(4)),
         attrs_indent: input
             .opt_value_from_fn("--attrs-indent", parse_indent)?
             .unwrap_or(xmlwriter::Indent::None),
+        coordinates_precision: input.opt_value_from_fn("--coordinates-precision", parse_precision)?,
+        transforms_precision: input.opt_value_from_fn("--transforms-precision", parse_precision)?,
 
         quiet: input.contains("--quiet"),
 
@@ -262,6 +267,16 @@ fn parse_length(s: &str) -> Result<u32, String> {
         Ok(n)
     } else {
         Err("LENGTH cannot be zero".to_string())
+    }
+}
+
+fn parse_precision(s: &str) -> Result<u8, String> {
+    let n: u8 = s.parse().map_err(|_| "invalid length")?;
+
+    if n <= 8 {
+        Ok(n)
+    } else {
+        Err("precision NUM cannot be larger than eight".to_string())
     }
 }
 
@@ -411,7 +426,8 @@ fn process(args: Args) -> Result<(), String> {
 
     let xml_opt = usvg::XmlOptions {
         id_prefix: args.id_prefix,
-        num_n_decimal_places: args.num_n_decimal_places.unwrap_or(8),
+        coordinates_precision: args.coordinates_precision.unwrap_or(8),
+        transforms_precision: args.transforms_precision.unwrap_or(8),
         writer_opts: xmlwriter::Options {
             use_single_quote: false,
             indent: args.indent,
