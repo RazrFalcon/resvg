@@ -273,10 +273,10 @@ fn parse_length(s: &str) -> Result<u32, String> {
 fn parse_precision(s: &str) -> Result<u8, String> {
     let n: u8 = s.parse().map_err(|_| "invalid precision NUM value")?;
 
-    if n <= 8 {
+    if !(2..=8).contains(&n) {
         Ok(n)
     } else {
-        Err("precision NUM cannot be larger than eight".to_string())
+        Err("precision NUM cannot be smaller than 2 or larger than 8".to_string())
     }
 }
 
