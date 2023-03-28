@@ -92,6 +92,8 @@ OPTIONS:
                                 option. [values: 1..2^32] [default: 100]
 
   --id-prefix                   Adds a prefix to each ID attribute
+  --num-n-decimal-places NUM    limits the decimal places when writing numbers
+                                [values: 0..2^8] [default: 8]
   --indent INDENT               Sets the XML nodes indent
                                 [values: none, 0, 1, 2, 3, 4, tabs] [default: 4]
   --attrs-indent INDENT         Sets the XML attributes indent
@@ -128,6 +130,7 @@ struct Args {
     default_height: u32,
 
     id_prefix: Option<String>,
+    num_n_decimal_places: Option<u8>,
     indent: xmlwriter::Indent,
     attrs_indent: xmlwriter::Indent,
 
@@ -189,6 +192,7 @@ fn collect_args() -> Result<Args, pico_args::Error> {
             .unwrap_or(100),
 
         id_prefix: input.opt_value_from_str("--id-prefix")?,
+        num_n_decimal_places: input.opt_value_from_str("--num-n-decimal-places")?,
         indent: input
             .opt_value_from_fn("--indent", parse_indent)?
             .unwrap_or(xmlwriter::Indent::Spaces(4)),
@@ -407,6 +411,7 @@ fn process(args: Args) -> Result<(), String> {
 
     let xml_opt = usvg::XmlOptions {
         id_prefix: args.id_prefix,
+        num_n_decimal_places: args.num_n_decimal_places.unwrap_or(8),
         writer_opts: xmlwriter::Options {
             use_single_quote: false,
             indent: args.indent,
