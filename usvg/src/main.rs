@@ -271,7 +271,7 @@ fn parse_length(s: &str) -> Result<u32, String> {
 }
 
 fn parse_precision(s: &str) -> Result<u8, String> {
-    let n: u8 = s.parse().map_err(|_| "invalid length")?;
+    let n: u8 = s.parse().map_err(|_| "invalid precision NUM value")?;
 
     if n <= 8 {
         Ok(n)
