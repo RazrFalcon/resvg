@@ -160,7 +160,7 @@ OPTIONS:
   -h, --height LENGTH           Sets the height in pixels
   -z, --zoom FACTOR             Zooms the image by a factor
       --dpi DPI                 Sets the resolution
-                                [default: 96] [possible values: 10..4000]
+                                [default: 96] [possible values: 10..4000 (inclusive)]
   --background COLOR            Sets the background color
                                 Examples: red, #fff, #fff000
 
@@ -191,7 +191,7 @@ OPTIONS:
                                 [default: Times New Roman]
   --font-size SIZE              Sets the default font size that will be
                                 used when no 'font-size' is present
-                                [default: 12] [possible values: 1..192]
+                                [default: 12] [possible values: 1..192 (inclusive)]
   --serif-family FAMILY         Sets the 'serif' font family
                                 [default: Times New Roman]
   --sans-serif-family FAMILY    Sets the 'sans-serif' font family
