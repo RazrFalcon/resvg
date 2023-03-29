@@ -31,11 +31,17 @@ pub struct XmlOptions {
     pub id_prefix: Option<String>,
 
     /// Set the coordinates numeric precision.
-    /// Smaller precision can lead to a malformed output in some cases
+    ///
+    /// Smaller precision can lead to a malformed output in some cases.
+    ///
+    /// Default: 8
     pub coordinates_precision: u8,
 
     /// Set the transform values numeric precision.
-    /// Smaller precision can lead to a malformed output in some cases
+    ///
+    /// Smaller precision can lead to a malformed output in some cases.
+    ///
+    /// Default: 8
     pub transforms_precision: u8,
 
     /// `xmlwriter` options.
