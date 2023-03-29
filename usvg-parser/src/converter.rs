@@ -204,25 +204,19 @@ fn resolve_svg_size(svg: &rosvgtree::Node, opt: &Options) -> (Result<Size, Error
 ///
 /// Simply iterates over all nodes and calculates a bounding box.
 fn calculate_svg_bbox(tree: &mut Tree) {
+    let mut rect =  Rect::new_bbox();
     let mut right = 0.0;
     let mut bottom = 0.0;
 
     for node in tree.root.descendants() {
-        if let Some(bbox) = node.calculate_bbox() {
-            if bbox.right() > right {
-                right = bbox.right();
-            }
-            if bbox.bottom() > bottom {
-                bottom = bbox.bottom();
-            }
+        if let Some(bbox) = node.calculate_bbox().and_then(|b| b.to_rect()) {
+            rect = rect.expand(bbox);
         }
     }
 
-    if let Some(rect) = Rect::new(0.0, 0.0, right, bottom) {
-        tree.view_box.rect = rect;
-    }
+    tree.view_box.rect = rect;
 
-    if let Some(size) = Size::new(right, bottom) {
+    if let Some(size) = Size::new(rect.width(), rect.height()) {
         tree.size = size;
     }
 }
