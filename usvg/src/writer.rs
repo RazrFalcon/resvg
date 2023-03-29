@@ -1249,7 +1249,7 @@ fn write_light_source(light: &filter::LightSource, xml: &mut XmlWriter) {
 }
 
 static POW_VEC: &'static [f64] = &[
-    0.0,
+    1.0,
     10.0,
     100.0,
     1_000.0,
