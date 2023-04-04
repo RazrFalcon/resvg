@@ -41,13 +41,20 @@ jobs:
       - name: Build resvg
         run: cargo build --release
 
+      - name: Build usvg
+        working-directory: usvg
+        run: cargo build --release
+
       - name: Collect
         working-directory: target/release
         run: |
           strip -s resvg
+          strip -s usvg
           tar czf resvg-linux-x86_64.tar.gz resvg
+          tar czf usvg-linux-x86_64.tar.gz usvg
           mkdir ../../bin
           cp resvg-linux-x86_64.tar.gz ../../bin/
+          cp usvg-linux-x86_64.tar.gz ../../bin/
 
       - name: Get version
         id: get_version
@@ -93,11 +100,18 @@ jobs:
           RUSTFLAGS: -Ctarget-feature=+crt-static # make sure it's static
         run: cargo build --release
 
+      - name: Build usvg
+        working-directory: usvg
+        env:
+          RUSTFLAGS: -Ctarget-feature=+crt-static # make sure it's static
+        run: cargo build --release
+
       - name: Compress
         working-directory: target/release
         shell: cmd
         run: |
           7z a -tzip -mx9 resvg-win64.zip resvg.exe
+          7z a -tzip -mx9 usvg-win64.zip usvg.exe
 
       - name: Build thumbnailer
         working-directory: tools/explorer-thumbnailer
@@ -145,6 +159,7 @@ jobs:
         run: |
           mkdir bin
           cp target/release/resvg-win64.zip bin/
+          cp target/release/usvg-win64.zip bin/
           cp tools/explorer-thumbnailer/install/resvg-explorer-extension.exe bin/
           cp tools/viewsvg/viewsvg-bin/viewsvg-win64.zip bin/
 
@@ -170,10 +185,15 @@ jobs:
       - name: Build resvg
         run: cargo build --release
 
+      - name: Build usvg
+        working-directory: usvg
+        run: cargo build --release
+
       - name: Compress
         working-directory: target/release
         run: |
           7z a -tzip -mx9 resvg-macos-x86_64.zip resvg
+          7z a -tzip -mx9 usvg-macos-x86_64.zip usvg
 
       - name: Build C API
         working-directory: c-api
@@ -198,6 +218,7 @@ jobs:
         run: |
           mkdir bin
           cp target/release/resvg-macos-x86_64.zip bin/
+          cp target/release/usvg-macos-x86_64.zip bin/
           cp tools/viewsvg/viewsvg-macos-x86_64.zip bin/
 
       - name: Upload binaries
