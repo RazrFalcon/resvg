@@ -65,7 +65,7 @@ pub(crate) fn resolve_fill(
     };
 
     let fill_opacity = node
-        .parse_attribute::<OpacityWrapper>(AId::FillOpacity)
+        .find_and_parse_attribute::<OpacityWrapper>(AId::FillOpacity)
         .map(|v| v.0)
         .unwrap_or(Opacity::ONE);
 
@@ -106,7 +106,7 @@ pub(crate) fn resolve_stroke(
     let miterlimit = StrokeMiterlimit::new(miterlimit);
 
     let stroke_opacity = node
-        .parse_attribute::<OpacityWrapper>(AId::StrokeOpacity)
+        .find_and_parse_attribute::<OpacityWrapper>(AId::StrokeOpacity)
         .map(|v| v.0)
         .unwrap_or(Opacity::ONE);
 

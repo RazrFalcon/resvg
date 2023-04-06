@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- `fill-opacity` and `stroke-opacity` resolving.
 
 ## [0.30.0] - 2023-03-25
 ### Added
