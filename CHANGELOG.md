@@ -7,12 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- `usvg::Tree::paint_servers`
+- `usvg::Tree::clip_paths`
+- `usvg::Tree::masks`
+- `usvg::Tree::filters`
+
 ### Fixed
 - `fill-opacity` and `stroke-opacity` resolving.
 - Double `transform` when resolving `symbol`.
 - `symbol` clipping when its viewbox is the same as the document one.
-- Gradients and patterns writing back to SVG when they are defined
-  inside masks, feImage filters or used as filter inputs.
+- (usvg) Deeply nested gradients, patterns, clip paths, masks and filters
+  were ignored during SVG writing.
 
 ## [0.30.0] - 2023-03-25
 ### Added

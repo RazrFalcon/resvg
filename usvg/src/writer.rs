@@ -80,109 +80,13 @@ pub(crate) fn convert(tree: &Tree, opt: &XmlOptions) -> String {
     xml.end_document()
 }
 
-fn collect_clip_paths(root: Node, clip_paths: &mut Vec<Rc<ClipPath>>) {
-    for n in root.descendants() {
-        if let NodeKind::Group(ref g) = *n.borrow() {
-            if let Some(ref cp) = g.clip_path {
-                if !clip_paths.iter().any(|other| Rc::ptr_eq(cp, other)) {
-                    clip_paths.push(cp.clone());
-                }
-
-                if let Some(ref cp) = cp.clip_path {
-                    collect_clip_paths(cp.root.clone(), clip_paths);
-                }
-
-                collect_clip_paths(cp.root.clone(), clip_paths);
-            }
-        }
-    }
-}
-
-fn collect_masks(root: Node, masks: &mut Vec<Rc<Mask>>) {
-    for n in root.descendants() {
-        if let NodeKind::Group(ref g) = *n.borrow() {
-            if let Some(ref mask) = g.mask {
-                if !masks.iter().any(|other| Rc::ptr_eq(mask, other)) {
-                    masks.push(mask.clone());
-                }
-
-                if let Some(ref mask) = mask.mask {
-                    collect_masks(mask.root.clone(), masks);
-                }
-
-                collect_masks(mask.root.clone(), masks);
-            }
-        }
-    }
-}
-
-fn collect_paint_servers(root: Node, paint_servers: &mut Vec<Paint>) {
-    for n in root.descendants() {
-        if let NodeKind::Group(ref group) = *n.borrow() {
-            if let Some(ref mask) = group.mask {
-                collect_paint_servers(mask.root.clone(), paint_servers);
-            }
-
-            if let Some(ref filter_fill) = group.filter_fill {
-                if !paint_servers.contains(&filter_fill) {
-                    paint_servers.push(filter_fill.clone());
-                }
-            }
-
-            if let Some(ref filter_stroke) = group.filter_stroke {
-                if !paint_servers.contains(&filter_stroke) {
-                    paint_servers.push(filter_stroke.clone());
-                }
-            }
-
-            for filter in &group.filters {
-                for primitive in &filter.primitives {
-                    if let filter::Kind::Image(ref image) = primitive.kind {
-                        if let filter::ImageKind::Use(ref use_node) = image.data {
-                            collect_paint_servers(use_node.clone(), paint_servers);
-                        }
-                    }
-                }
-            }
-        } else if let NodeKind::Path(ref path) = *n.borrow() {
-            if let Some(ref fill) = path.fill {
-                if !paint_servers.contains(&fill.paint) {
-                    paint_servers.push(fill.paint.clone());
-                }
-
-                if let Paint::Pattern(ref patt) = fill.paint {
-                    collect_paint_servers(patt.root.clone(), paint_servers);
-                }
-            }
-
-            if let Some(ref stroke) = path.stroke {
-                if !paint_servers.contains(&stroke.paint) {
-                    paint_servers.push(stroke.paint.clone());
-                }
-
-                if let Paint::Pattern(ref patt) = stroke.paint {
-                    collect_paint_servers(patt.root.clone(), paint_servers);
-                }
-            }
-        }
-    }
-}
-
-fn collect_filters(root: Node, filters: &mut Vec<Rc<filter::Filter>>) {
-    for n in root.descendants() {
-        if let NodeKind::Group(ref g) = *n.borrow() {
-            for filter in &g.filters {
-                if !filters.iter().any(|other| Rc::ptr_eq(other, filter)) {
-                    filters.push(filter.clone());
-                }
-            }
-        }
-    }
-}
-
 fn conv_filters(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
     let mut filters = Vec::new();
-    collect_filters(tree.root.clone(), &mut filters);
+    tree.filters(|filter| {
+        if !filters.iter().any(|other| Rc::ptr_eq(&filter, other)) {
+            filters.push(filter.clone());
+        }
+    });
 
     let mut written_fe_image_nodes: Vec<String> = Vec::new();
     for filter in filters {
@@ -536,8 +440,13 @@ fn conv_filters(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
 }
 
 fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
-    let mut paint_servers = Vec::new();
-    collect_paint_servers(tree.root.clone(), &mut paint_servers);
+    let mut paint_servers: Vec<Paint> = Vec::new();
+    tree.paint_servers(|paint| {
+        if !paint_servers.contains(paint) {
+            paint_servers.push(paint.clone());
+        }
+    });
+
     for paint in paint_servers {
         match paint {
             Paint::Color(_) => {}
@@ -588,7 +497,11 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
     conv_filters(tree, opt, xml);
 
     let mut clip_paths = Vec::new();
-    collect_clip_paths(tree.root.clone(), &mut clip_paths);
+    tree.clip_paths(|clip| {
+        if !clip_paths.iter().any(|other| Rc::ptr_eq(&clip, other)) {
+            clip_paths.push(clip.clone());
+        }
+    });
     for clip in clip_paths {
         xml.start_svg_element(EId::ClipPath);
         xml.write_id_attribute(&clip.id, opt);
@@ -605,7 +518,11 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
     }
 
     let mut masks = Vec::new();
-    collect_masks(tree.root.clone(), &mut masks);
+    tree.masks(|mask| {
+        if !masks.iter().any(|other| Rc::ptr_eq(&mask, other)) {
+            masks.push(mask.clone());
+        }
+    });
     for mask in masks {
         xml.start_svg_element(EId::Mask);
         xml.write_id_attribute(&mask.id, opt);

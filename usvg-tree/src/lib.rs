@@ -1011,49 +1011,215 @@ impl Tree {
     pub fn has_text_nodes(&self) -> bool {
         has_text_nodes(&self.root)
     }
+
+    /// Calls a closure for each [`Paint`] in the tree.
+    ///
+    /// Doesn't guarantee to have unique paint servers. A caller must deduplicate them manually.
+    pub fn paint_servers<F: FnMut(&Paint)>(&self, mut f: F) {
+        loop_over_paint_servers(&self.root, &mut f)
+    }
+
+    /// Calls a closure for each [`ClipPath`] in the tree.
+    ///
+    /// Doesn't guarantee to have unique clip paths. A caller must deduplicate them manually.
+    pub fn clip_paths<F: FnMut(Rc<ClipPath>)>(&self, mut f: F) {
+        loop_over_clip_paths(&self.root, &mut f)
+    }
+
+    /// Calls a closure for each [`Mask`] in the tree.
+    ///
+    /// Doesn't guarantee to have unique masks. A caller must deduplicate them manually.
+    pub fn masks<F: FnMut(Rc<Mask>)>(&self, mut f: F) {
+        loop_over_masks(&self.root, &mut f)
+    }
+
+    /// Calls a closure for each [`Filter`](filter::Filter) in the tree.
+    ///
+    /// Doesn't guarantee to have unique filters. A caller must deduplicate them manually.
+    pub fn filters<F: FnMut(Rc<filter::Filter>)>(&self, mut f: F) {
+        loop_over_filters(&self.root, &mut f)
+    }
 }
 
 fn has_text_nodes(root: &Node) -> bool {
-    // We have to update text nodes in clipPaths, masks and patterns as well.
     for node in root.descendants() {
-        match *node.borrow() {
-            NodeKind::Group(ref g) => {
-                if let Some(ref clip) = g.clip_path {
-                    if has_text_nodes(&clip.root) {
-                        return true;
-                    }
-                }
+        if let NodeKind::Text(_) = *node.borrow() {
+            return true;
+        }
 
-                if let Some(ref mask) = g.mask {
-                    if has_text_nodes(&mask.root) {
-                        return true;
-                    }
-                }
+        let mut has_text = false;
+        node_subroots(&node, |subroot| {
+            if has_text_nodes(&subroot) {
+                has_text = true;
             }
-            NodeKind::Path(ref path) => {
-                if let Some(ref fill) = path.fill {
-                    if let Paint::Pattern(ref p) = fill.paint {
-                        if has_text_nodes(&p.root) {
-                            return true;
-                        }
-                    }
-                }
-                if let Some(ref stroke) = path.stroke {
-                    if let Paint::Pattern(ref p) = stroke.paint {
-                        if has_text_nodes(&p.root) {
-                            return true;
-                        }
-                    }
-                }
-            }
-            NodeKind::Image(_) => {}
-            NodeKind::Text(_) => {
-                return true;
-            }
+        });
+
+        if has_text {
+            return true;
         }
     }
 
     false
+}
+
+fn loop_over_paint_servers(root: &Node, f: &mut dyn FnMut(&Paint)) {
+    fn push(paint: Option<&Paint>, f: &mut dyn FnMut(&Paint)) {
+        if let Some(paint) = paint {
+            f(paint);
+        }
+    }
+
+    for node in root.descendants() {
+        if let NodeKind::Group(ref group) = *node.borrow() {
+            push(group.filter_fill.as_ref(), f);
+            push(group.filter_stroke.as_ref(), f);
+        } else if let NodeKind::Path(ref path) = *node.borrow() {
+            push(path.fill.as_ref().map(|f| &f.paint), f);
+            push(path.stroke.as_ref().map(|f| &f.paint), f);
+        } else if let NodeKind::Text(ref text) = *node.borrow() {
+            for chunk in &text.chunks {
+                for span in &chunk.spans {
+                    push(span.fill.as_ref().map(|f| &f.paint), f);
+                    push(span.stroke.as_ref().map(|f| &f.paint), f);
+
+                    if let Some(ref underline) = span.decoration.underline {
+                        push(underline.fill.as_ref().map(|f| &f.paint), f);
+                        push(underline.stroke.as_ref().map(|f| &f.paint), f);
+                    }
+
+                    if let Some(ref overline) = span.decoration.overline {
+                        push(overline.fill.as_ref().map(|f| &f.paint), f);
+                        push(overline.stroke.as_ref().map(|f| &f.paint), f);
+                    }
+
+                    if let Some(ref line_through) = span.decoration.line_through {
+                        push(line_through.fill.as_ref().map(|f| &f.paint), f);
+                        push(line_through.stroke.as_ref().map(|f| &f.paint), f);
+                    }
+                }
+            }
+        }
+
+        node_subroots(&node, |subroot| loop_over_paint_servers(&subroot, f));
+    }
+}
+
+fn loop_over_clip_paths(root: &Node, f: &mut dyn FnMut(Rc<ClipPath>)) {
+    for node in root.descendants() {
+        if let NodeKind::Group(ref g) = *node.borrow() {
+            if let Some(ref clip) = g.clip_path {
+                f(clip.clone());
+
+                if let Some(ref sub_clip) = clip.clip_path {
+                    f(sub_clip.clone());
+                }
+            }
+        }
+
+        node_subroots(&node, |subroot| loop_over_clip_paths(&subroot, f));
+    }
+}
+
+fn loop_over_masks(root: &Node, f: &mut dyn FnMut(Rc<Mask>)) {
+    for node in root.descendants() {
+        if let NodeKind::Group(ref g) = *node.borrow() {
+            if let Some(ref mask) = g.mask {
+                f(mask.clone());
+
+                if let Some(ref sub_mask) = mask.mask {
+                    f(sub_mask.clone());
+                }
+            }
+        }
+
+        node_subroots(&node, |subroot| loop_over_masks(&subroot, f));
+    }
+}
+
+fn loop_over_filters(root: &Node, f: &mut dyn FnMut(Rc<filter::Filter>)) {
+    for node in root.descendants() {
+        if let NodeKind::Group(ref g) = *node.borrow() {
+            for filter in &g.filters {
+                f(filter.clone());
+            }
+        }
+
+        node_subroots(&node, |subroot| loop_over_filters(&subroot, f));
+    }
+}
+
+fn node_subroots<F: FnMut(Node)>(node: &Node, mut f: F) {
+    node_subroots_impl(node, &mut f)
+}
+
+fn node_subroots_impl(node: &Node, f: &mut dyn FnMut(Node)) {
+    let mut push_patt = |paint: Option<&Paint>| {
+        if let Some(Paint::Pattern(ref patt)) = paint {
+            f(patt.root.clone());
+        }
+    };
+
+    match *node.borrow() {
+        NodeKind::Group(ref g) => {
+            push_patt(g.filter_fill.as_ref());
+            push_patt(g.filter_stroke.as_ref());
+
+            if let Some(ref clip) = g.clip_path {
+                f(clip.root.clone());
+
+                if let Some(ref sub_clip) = clip.clip_path {
+                    f(sub_clip.root.clone());
+                }
+            }
+
+            if let Some(ref mask) = g.mask {
+                f(mask.root.clone());
+
+                if let Some(ref sub_mask) = mask.mask {
+                    f(sub_mask.root.clone());
+                }
+            }
+
+            for filter in &g.filters {
+                for primitive in &filter.primitives {
+                    if let filter::Kind::Image(ref image) = primitive.kind {
+                        if let filter::ImageKind::Use(ref use_node) = image.data {
+                            f(use_node.clone());
+                        }
+                    }
+                }
+            }
+        }
+        NodeKind::Path(ref path) => {
+            push_patt(path.fill.as_ref().map(|f| &f.paint));
+            push_patt(path.stroke.as_ref().map(|f| &f.paint));
+        }
+        NodeKind::Image(_) => {}
+        NodeKind::Text(ref text) => {
+            for chunk in &text.chunks {
+                for span in &chunk.spans {
+                    push_patt(span.fill.as_ref().map(|f| &f.paint));
+                    push_patt(span.stroke.as_ref().map(|f| &f.paint));
+
+                    // Each text decoration can have paint.
+                    if let Some(ref underline) = span.decoration.underline {
+                        push_patt(underline.fill.as_ref().map(|f| &f.paint));
+                        push_patt(underline.stroke.as_ref().map(|f| &f.paint));
+                    }
+
+                    if let Some(ref overline) = span.decoration.overline {
+                        push_patt(overline.fill.as_ref().map(|f| &f.paint));
+                        push_patt(overline.stroke.as_ref().map(|f| &f.paint));
+                    }
+
+                    if let Some(ref line_through) = span.decoration.line_through {
+                        push_patt(line_through.fill.as_ref().map(|f| &f.paint));
+                        push_patt(line_through.stroke.as_ref().map(|f| &f.paint));
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// Additional `Node` methods.
