@@ -7,12 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.31.0] - 2023-04-10
 ### Added
 - `usvg::Tree::paint_servers`
 - `usvg::Tree::clip_paths`
 - `usvg::Tree::masks`
 - `usvg::Tree::filters`
 - `usvg::Node::subroots`
+- (usvg) `--coordinates-precision` and `--transforms-precision` writing options.
+  Thanks to [@flxzt](https://github.com/flxzt).
 
 ### Fixed
 - `fill-opacity` and `stroke-opacity` resolving.
@@ -784,7 +788,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.30.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.31.0...HEAD
+[0.31.0]: https://github.com/RazrFalcon/resvg/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/RazrFalcon/resvg/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/RazrFalcon/resvg/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/RazrFalcon/resvg/compare/v0.27.0...v0.28.0

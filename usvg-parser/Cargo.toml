@@ -1,6 +1,6 @@
 [package]
 name = "usvg-parser"
-version = "0.30.0"
+version = "0.31.0"
 authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg"]
 license = "MPL-2.0"
@@ -22,4 +22,4 @@ log = "0.4"
 rosvgtree = { path = "../rosvgtree", version = "0.2" }
 strict-num = "0.1"
 svgtypes = "0.11"
-usvg-tree = { path = "../usvg-tree", version = "0.30.0" }
+usvg-tree = { path = "../usvg-tree", version = "0.31.0" }
