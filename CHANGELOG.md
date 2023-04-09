@@ -11,6 +11,8 @@ This changelog also contains important changes in dependencies.
 - `fill-opacity` and `stroke-opacity` resolving.
 - Double `transform` when resolving `symbol`.
 - `symbol` clipping when its viewbox is the same as the document one.
+- Gradients and patterns writing back to SVG when they are defined
+  inside masks, feImage filters or used as filter inputs.
 
 ## [0.30.0] - 2023-03-25
 ### Added

@@ -118,7 +118,33 @@ fn collect_masks(root: Node, masks: &mut Vec<Rc<Mask>>) {
 
 fn collect_paint_servers(root: Node, paint_servers: &mut Vec<Paint>) {
     for n in root.descendants() {
-        if let NodeKind::Path(ref path) = *n.borrow() {
+        if let NodeKind::Group(ref group) = *n.borrow() {
+            if let Some(ref mask) = group.mask {
+                collect_paint_servers(mask.root.clone(), paint_servers);
+            }
+
+            if let Some(ref filter_fill) = group.filter_fill {
+                if !paint_servers.contains(&filter_fill) {
+                    paint_servers.push(filter_fill.clone());
+                }
+            }
+
+            if let Some(ref filter_stroke) = group.filter_stroke {
+                if !paint_servers.contains(&filter_stroke) {
+                    paint_servers.push(filter_stroke.clone());
+                }
+            }
+
+            for filter in &group.filters {
+                for primitive in &filter.primitives {
+                    if let filter::Kind::Image(ref image) = primitive.kind {
+                        if let filter::ImageKind::Use(ref use_node) = image.data {
+                            collect_paint_servers(use_node.clone(), paint_servers);
+                        }
+                    }
+                }
+            }
+        } else if let NodeKind::Path(ref path) = *n.borrow() {
             if let Some(ref fill) = path.fill {
                 if !paint_servers.contains(&fill.paint) {
                     paint_servers.push(fill.paint.clone());
