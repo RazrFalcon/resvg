@@ -170,6 +170,7 @@ use crate::render;
 #[test] fn a_fill_opacity_005() { assert_eq!(render("a-fill-opacity-005"), 0); }
 #[test] fn a_fill_opacity_006() { assert_eq!(render("a-fill-opacity-006"), 0); }
 #[test] fn a_fill_opacity_007() { assert_eq!(render("a-fill-opacity-007"), 0); }
+#[test] fn a_fill_opacity_008() { assert_eq!(render("a-fill-opacity-008"), 0); }
 #[test] fn a_fill_rule_001() { assert_eq!(render("a-fill-rule-001"), 0); }
 #[test] fn a_fill_rule_002() { assert_eq!(render("a-fill-rule-002"), 0); }
 #[test] fn a_filter_001() { assert_eq!(render("a-filter-001"), 0); }
@@ -431,6 +432,7 @@ use crate::render;
 #[test] fn a_stroke_opacity_005() { assert_eq!(render("a-stroke-opacity-005"), 0); }
 #[test] fn a_stroke_opacity_006() { assert_eq!(render("a-stroke-opacity-006"), 0); }
 #[test] fn a_stroke_opacity_007() { assert_eq!(render("a-stroke-opacity-007"), 0); }
+#[test] fn a_stroke_opacity_008() { assert_eq!(render("a-stroke-opacity-008"), 0); }
 #[test] fn a_stroke_width_001() { assert_eq!(render("a-stroke-width-001"), 0); }
 #[test] fn a_stroke_width_002() { assert_eq!(render("a-stroke-width-002"), 0); }
 #[test] fn a_stroke_width_003() { assert_eq!(render("a-stroke-width-003"), 0); }
@@ -1423,6 +1425,7 @@ use crate::render;
 #[test] fn e_symbol_012() { assert_eq!(render("e-symbol-012"), 0); }
 #[test] fn e_symbol_013() { assert_eq!(render("e-symbol-013"), 0); }
 #[test] fn e_symbol_014() { assert_eq!(render("e-symbol-014"), 0); }
+#[test] fn e_symbol_015() { assert_eq!(render("e-symbol-015"), 0); }
 #[test] fn e_text_001() { assert_eq!(render("e-text-001"), 0); }
 #[test] fn e_text_002() { assert_eq!(render("e-text-002"), 0); }
 #[test] fn e_text_003() { assert_eq!(render("e-text-003"), 0); }

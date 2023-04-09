@@ -202,7 +202,8 @@ fn collect_args() -> Result<Args, pico_args::Error> {
         attrs_indent: input
             .opt_value_from_fn("--attrs-indent", parse_indent)?
             .unwrap_or(xmlwriter::Indent::None),
-        coordinates_precision: input.opt_value_from_fn("--coordinates-precision", parse_precision)?,
+        coordinates_precision: input
+            .opt_value_from_fn("--coordinates-precision", parse_precision)?,
         transforms_precision: input.opt_value_from_fn("--transforms-precision", parse_precision)?,
 
         quiet: input.contains("--quiet"),

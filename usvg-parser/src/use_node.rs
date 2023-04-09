@@ -54,6 +54,7 @@ pub(crate) fn convert(
                     // We must reset transform, because it was already set
                     // to the group with clip-path.
                     if let NodeKind::Group(ref mut g) = *g.borrow_mut() {
+                        g.id = String::new(); // Prevent ID duplication.
                         g.transform = Transform::default();
                     }
 
@@ -73,7 +74,13 @@ pub(crate) fn convert(
     if linked_to_symbol {
         // Make group for `use`.
         let mut parent = match converter::convert_group(node, state, false, cache, parent) {
-            converter::GroupKind::Create(g) => g,
+            converter::GroupKind::Create(g) => {
+                if let NodeKind::Group(ref mut g) = *g.borrow_mut() {
+                    g.transform = Transform::default();
+                }
+
+                g
+            }
             converter::GroupKind::Skip => parent.clone(),
             converter::GroupKind::Ignore => return None,
         };
