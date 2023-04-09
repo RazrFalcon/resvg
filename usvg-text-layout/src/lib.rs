@@ -84,48 +84,11 @@ fn convert_text(root: Node, fontdb: &fontdb::Database) {
     let mut text_nodes = Vec::new();
     // We have to update text nodes in clipPaths, masks and patterns as well.
     for node in root.descendants() {
-        match *node.borrow() {
-            NodeKind::Group(ref g) => {
-                if let Some(ref clip) = g.clip_path {
-                    convert_text(clip.root.clone(), fontdb);
-                }
-
-                if let Some(ref mask) = g.mask {
-                    convert_text(mask.root.clone(), fontdb);
-                }
-            }
-            NodeKind::Path(ref path) => {
-                if let Some(ref fill) = path.fill {
-                    if let Paint::Pattern(ref p) = fill.paint {
-                        convert_text(p.root.clone(), fontdb);
-                    }
-                }
-                if let Some(ref stroke) = path.stroke {
-                    if let Paint::Pattern(ref p) = stroke.paint {
-                        convert_text(p.root.clone(), fontdb);
-                    }
-                }
-            }
-            NodeKind::Image(_) => {}
-            NodeKind::Text(ref text) => {
-                text_nodes.push(node.clone());
-
-                for chunk in &text.chunks {
-                    for span in &chunk.spans {
-                        if let Some(ref fill) = span.fill {
-                            if let Paint::Pattern(ref p) = fill.paint {
-                                convert_text(p.root.clone(), fontdb);
-                            }
-                        }
-                        if let Some(ref stroke) = span.stroke {
-                            if let Paint::Pattern(ref p) = stroke.paint {
-                                convert_text(p.root.clone(), fontdb);
-                            }
-                        }
-                    }
-                }
-            }
+        if let NodeKind::Text(_) = *node.borrow() {
+            text_nodes.push(node.clone());
         }
+
+        node.subroots(|subroot| convert_text(subroot, fontdb))
     }
 
     if text_nodes.is_empty() {

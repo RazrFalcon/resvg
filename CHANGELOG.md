@@ -12,6 +12,7 @@ This changelog also contains important changes in dependencies.
 - `usvg::Tree::clip_paths`
 - `usvg::Tree::masks`
 - `usvg::Tree::filters`
+- `usvg::Node::subroots`
 
 ### Fixed
 - `fill-opacity` and `stroke-opacity` resolving.
@@ -19,6 +20,7 @@ This changelog also contains important changes in dependencies.
 - `symbol` clipping when its viewbox is the same as the document one.
 - (usvg) Deeply nested gradients, patterns, clip paths, masks and filters
   were ignored during SVG writing.
+- Missing text in nested clip paths and mask, text decoration patterns, filter inputs and feImage.
 
 ## [0.30.0] - 2023-03-25
 ### Added

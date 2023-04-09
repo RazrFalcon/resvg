@@ -918,7 +918,7 @@ pub enum ImageKind {
     /// A reference to raw GIF data. Should be decoded by the caller.
     GIF(Arc<Vec<u8>>),
     /// A preprocessed SVG tree. Can be rendered as is.
-    SVG(crate::Tree),
+    SVG(Tree),
 }
 
 impl std::fmt::Debug for ImageKind {
@@ -1048,7 +1048,7 @@ fn has_text_nodes(root: &Node) -> bool {
         }
 
         let mut has_text = false;
-        node_subroots(&node, |subroot| {
+        node.subroots(|subroot| {
             if has_text_nodes(&subroot) {
                 has_text = true;
             }
@@ -1100,7 +1100,7 @@ fn loop_over_paint_servers(root: &Node, f: &mut dyn FnMut(&Paint)) {
             }
         }
 
-        node_subroots(&node, |subroot| loop_over_paint_servers(&subroot, f));
+        node.subroots(|subroot| loop_over_paint_servers(&subroot, f));
     }
 }
 
@@ -1116,7 +1116,7 @@ fn loop_over_clip_paths(root: &Node, f: &mut dyn FnMut(Rc<ClipPath>)) {
             }
         }
 
-        node_subroots(&node, |subroot| loop_over_clip_paths(&subroot, f));
+        node.subroots(|subroot| loop_over_clip_paths(&subroot, f));
     }
 }
 
@@ -1132,7 +1132,7 @@ fn loop_over_masks(root: &Node, f: &mut dyn FnMut(Rc<Mask>)) {
             }
         }
 
-        node_subroots(&node, |subroot| loop_over_masks(&subroot, f));
+        node.subroots(|subroot| loop_over_masks(&subroot, f));
     }
 }
 
@@ -1144,15 +1144,11 @@ fn loop_over_filters(root: &Node, f: &mut dyn FnMut(Rc<filter::Filter>)) {
             }
         }
 
-        node_subroots(&node, |subroot| loop_over_filters(&subroot, f));
+        node.subroots(|subroot| loop_over_filters(&subroot, f));
     }
 }
 
-fn node_subroots<F: FnMut(Node)>(node: &Node, mut f: F) {
-    node_subroots_impl(node, &mut f)
-}
-
-fn node_subroots_impl(node: &Node, f: &mut dyn FnMut(Node)) {
+fn node_subroots(node: &Node, f: &mut dyn FnMut(Node)) {
     let mut push_patt = |paint: Option<&Paint>| {
         if let Some(Paint::Pattern(ref patt)) = paint {
             f(patt.root.clone());
@@ -1257,6 +1253,30 @@ pub trait NodeExt {
 
     /// Returns the node starting from which the filter background should be rendered.
     fn filter_background_start_node(&self, filter: &filter::Filter) -> Option<Node>;
+
+    /// Calls a closure for each subroot this `Node` has.
+    ///
+    /// The [`Tree::root`](Tree::root) field contain only render-able SVG elements.
+    /// But some elements, specifically clip paths, masks, patterns and feImage
+    /// can store their own SVG subtrees.
+    /// And while one can access them manually, it's pretty verbose.
+    /// This methods allows looping over _all_ SVG elements present in the `Tree`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use usvg_tree::NodeExt;
+    ///
+    /// fn all_nodes(root: &usvg_tree::Node) {
+    ///     for node in root.descendants() {
+    ///         // do stuff...
+    ///
+    ///         // hand subroots as well
+    ///         node.subroots(|subroot| all_nodes(&subroot));
+    ///     }
+    /// }
+    /// ```
+    fn subroots<F: FnMut(Node)>(&self, f: F);
 }
 
 impl NodeExt for Node {
@@ -1320,6 +1340,10 @@ impl NodeExt for Node {
         // We should have an ancestor with `enable-background=new`.
         // Skip the current element.
         self.ancestors().skip(1).find(has_enable_background)
+    }
+
+    fn subroots<F: FnMut(Node)>(&self, mut f: F) {
+        node_subroots(self, &mut f)
     }
 }
 
