@@ -10,6 +10,7 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `fill-opacity` and `stroke-opacity` resolving.
 - Double `transform` when resolving `symbol`.
+- `symbol` clipping when its viewbox is the same as the document one.
 
 ## [0.30.0] - 2023-03-25
 ### Added

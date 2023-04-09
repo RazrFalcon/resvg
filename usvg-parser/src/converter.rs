@@ -18,9 +18,6 @@ pub struct State<'a> {
     pub(crate) parent_clip_path: Option<rosvgtree::Node<'a, 'a>>,
     pub(crate) parent_markers: Vec<rosvgtree::Node<'a, 'a>>,
     pub(crate) fe_image_link: bool,
-    /// The size of the root SVG element.
-    /// Right now, used only by use_node::get_clip_rect.
-    pub(crate) size: Size,
     /// A viewBox of the parent SVG element.
     pub(crate) view_box: Rect,
     /// A size of the parent `use` element.
@@ -107,7 +104,6 @@ pub(crate) fn convert_doc(svg_doc: &rosvgtree::Document, opt: &Options) -> Resul
         parent_clip_path: None,
         parent_markers: Vec::new(),
         fe_image_link: false,
-        size,
         view_box: view_box.rect,
         use_size: (None, None),
         opt,
@@ -140,7 +136,6 @@ fn resolve_svg_size(svg: &rosvgtree::Node, opt: &Options) -> (Result<Size, Error
         parent_clip_path: None,
         parent_markers: Vec::new(),
         fe_image_link: false,
-        size: Size::new(100.0, 100.0).unwrap(),
         view_box: Rect::new(0.0, 0.0, 100.0, 100.0).unwrap(),
         use_size: (None, None),
         opt,

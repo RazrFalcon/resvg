@@ -1,0 +1,22 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Content outside the viewbox</title>
+    <desc>
+        A `symbol` defines a new viewport and anything outside it must be clipped.
+        By default, this viewport would have the same viewbox as the parent `svg` element.
+
+        When moving the viewport, like using `transform` on `use`,
+        we have to move the clip rect as well.
+    </desc>
+
+    <defs>
+        <symbol id="symbol1">
+            <rect id="rect1" x="-20" y="-10" width="120" height="120" fill="green"
+                  stroke="blue" stroke-width="5"/>
+        </symbol>
+    </defs>
+    <use id="use1" xlink:href="#symbol1" transform="translate(50,50)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

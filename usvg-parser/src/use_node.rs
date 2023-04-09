@@ -7,7 +7,7 @@ use std::rc::Rc;
 use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use svgtypes::{Length, LengthUnit};
 use usvg_tree::{
-    FuzzyEq, Group, IsValidLength, Node, NodeExt, NodeKind, Path, PathData, Rect, Size, Transform,
+    Group, IsValidLength, Node, NodeExt, NodeKind, Path, PathData, Rect, Size, Transform,
 };
 
 use crate::rosvgtree_ext::SvgNodeExt2;
@@ -288,12 +288,6 @@ fn get_clip_rect(
     }
 
     if !w.is_valid_length() || !h.is_valid_length() {
-        return None;
-    }
-
-    // TODO: add a test case
-    // Clip rect is not needed when it has the same size as a whole image.
-    if w.fuzzy_eq(&state.size.width()) && h.fuzzy_eq(&state.size.height()) {
         return None;
     }
 

@@ -1426,6 +1426,7 @@ use crate::render;
 #[test] fn e_symbol_013() { assert_eq!(render("e-symbol-013"), 0); }
 #[test] fn e_symbol_014() { assert_eq!(render("e-symbol-014"), 0); }
 #[test] fn e_symbol_015() { assert_eq!(render("e-symbol-015"), 0); }
+#[test] fn e_symbol_016() { assert_eq!(render("e-symbol-016"), 0); }
 #[test] fn e_text_001() { assert_eq!(render("e-text-001"), 0); }
 #[test] fn e_text_002() { assert_eq!(render("e-text-002"), 0); }
 #[test] fn e_text_003() { assert_eq!(render("e-text-003"), 0); }
