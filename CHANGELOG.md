@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.31.1] - 2023-04-22
 ### Fixed
 - Use the latest `tiny-skia` to fix SVGs with large masks rendering.
 
@@ -790,7 +792,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.31.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.31.1...HEAD
+[0.31.1]: https://github.com/RazrFalcon/resvg/compare/v0.31.0...v0.31.1
 [0.31.0]: https://github.com/RazrFalcon/resvg/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/RazrFalcon/resvg/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/RazrFalcon/resvg/compare/v0.28.0...v0.29.0
