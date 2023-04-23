@@ -39,16 +39,9 @@ pub fn clip(
         clip(tree, cp, bbox, canvas);
     }
 
-    let mut paint = tiny_skia::PixmapPaint::default();
-    paint.blend_mode = tiny_skia::BlendMode::DestinationOut;
-    canvas.pixmap.draw_pixmap(
-        0,
-        0,
-        clip_pixmap.as_ref(),
-        &paint,
-        tiny_skia::Transform::identity(),
-        None,
-    );
+    let mut mask = tiny_skia::Mask::from_pixmap(clip_pixmap.as_ref(), tiny_skia::MaskType::Alpha);
+    mask.invert();
+    canvas.pixmap.apply_mask(&mask);
 
     Some(())
 }

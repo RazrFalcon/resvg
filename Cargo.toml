@@ -33,7 +33,7 @@ png = { version = "0.17", optional = true }
 rgb = "0.8"
 svgfilters = { path = "svgfilters", version = "0.4", optional = true }
 svgtypes = "0.11"
-tiny-skia = { git = "https://github.com/RazrFalcon/tiny-skia", rev = "465404a" }
+tiny-skia = { git = "https://github.com/RazrFalcon/tiny-skia", rev = "3690003" }
 usvg = { path = "usvg", version = "0.31.0", default-features = false }
 
 [dev-dependencies]

@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- Clipping and masking is up to 20% faster.
+
 ### Fixed
 - Improve rectangular clipping anti-aliasing quality.
+- Mask's RGB to Luminosity converter was ignoring premultiplied alpha.
 
 ## [0.31.1] - 2023-04-22
 ### Fixed

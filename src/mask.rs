@@ -56,63 +56,12 @@ pub fn mask(
         crate::render::render_group(tree, &mask.root, &mut RenderState::Ok, &mut mask_canvas);
     }
 
-    {
-        use rgb::FromSlice;
-        image_to_mask(mask_pixmap.data_mut().as_rgba_mut());
-    }
-
     if let Some(ref mask) = mask.mask {
         self::mask(tree, mask, bbox.to_path_bbox(), canvas);
     }
 
-    let mut paint = tiny_skia::PixmapPaint::default();
-    paint.blend_mode = tiny_skia::BlendMode::DestinationIn;
-
-    canvas.pixmap.draw_pixmap(
-        0,
-        0,
-        mask_pixmap.as_ref(),
-        &paint,
-        tiny_skia::Transform::identity(),
-        None,
-    );
+    let mask = tiny_skia::Mask::from_pixmap(mask_pixmap.as_ref(), tiny_skia::MaskType::Luminosity);
+    canvas.pixmap.apply_mask(&mask);
 
     Some(())
-}
-
-/// Converts an image into an alpha mask.
-fn image_to_mask(data: &mut [rgb::RGBA8]) {
-    let coeff_r = 0.2125 / 255.0;
-    let coeff_g = 0.7154 / 255.0;
-    let coeff_b = 0.0721 / 255.0;
-
-    for pixel in data {
-        let r = pixel.r as f64;
-        let g = pixel.g as f64;
-        let b = pixel.b as f64;
-
-        let luma = r * coeff_r + g * coeff_g + b * coeff_b;
-
-        pixel.r = 0;
-        pixel.g = 0;
-        pixel.b = 0;
-        pixel.a = f64_bound(0.0, luma * 255.0, 255.0).ceil() as u8;
-    }
-}
-
-// TODO: https://github.com/rust-lang/rust/issues/44095
-/// Bounds `f64` number.
-#[inline]
-fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
-    debug_assert!(min.is_finite());
-    debug_assert!(val.is_finite());
-    debug_assert!(max.is_finite());
-
-    if val > max {
-        max
-    } else if val < min {
-        min
-    } else {
-        val
-    }
 }

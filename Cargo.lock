@@ -354,7 +354,7 @@ dependencies = [
 [[package]]
 name = "tiny-skia"
 version = "0.8.4"
-source = "git+https://github.com/RazrFalcon/tiny-skia?rev=465404a#465404a43916c6cec0aed576b26142a01a59ec3b"
+source = "git+https://github.com/RazrFalcon/tiny-skia?rev=3690003#3690003615b67c952b7fe135b4d79015c29fe8e7"
 dependencies = [
  "arrayref",
  "arrayvec",
@@ -368,7 +368,7 @@ dependencies = [
 [[package]]
 name = "tiny-skia-path"
 version = "0.8.4"
-source = "git+https://github.com/RazrFalcon/tiny-skia?rev=465404a#465404a43916c6cec0aed576b26142a01a59ec3b"
+source = "git+https://github.com/RazrFalcon/tiny-skia?rev=3690003#3690003615b67c952b7fe135b4d79015c29fe8e7"
 dependencies = [
  "arrayref",
  "bytemuck",
