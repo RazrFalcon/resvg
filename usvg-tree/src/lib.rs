@@ -655,6 +655,21 @@ impl Default for ClipPath {
     }
 }
 
+/// A mask type.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum MaskType {
+    /// Indicates that the luminance values of the mask should be used.
+    Luminance,
+    /// Indicates that the alpha values of the mask should be used.
+    Alpha,
+}
+
+impl Default for MaskType {
+    fn default() -> Self {
+        Self::Luminance
+    }
+}
+
 /// A mask element.
 ///
 /// `mask` element in SVG.
@@ -680,6 +695,11 @@ pub struct Mask {
     ///
     /// `x`, `y`, `width` and `height` in SVG.
     pub rect: Rect,
+
+    /// Mask type.
+    ///
+    /// `mask-type` in SVG.
+    pub kind: MaskType,
 
     /// Additional mask.
     ///

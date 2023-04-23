@@ -9,6 +9,10 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - Clipping and masking is up to 20% faster.
+- `mask-type` property support. SVG2
+- `usvg_tree::MaskType`
+- `usvg_tree::Mask::kind`
+- (rosvgtree) New SVG 2 mask attributes.
 
 ### Fixed
 - Improve rectangular clipping anti-aliasing quality.

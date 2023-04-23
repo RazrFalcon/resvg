@@ -60,7 +60,12 @@ pub fn mask(
         self::mask(tree, mask, bbox.to_path_bbox(), canvas);
     }
 
-    let mask = tiny_skia::Mask::from_pixmap(mask_pixmap.as_ref(), tiny_skia::MaskType::Luminosity);
+    let mask_type = match mask.kind {
+        usvg::MaskType::Luminance => tiny_skia::MaskType::Luminance,
+        usvg::MaskType::Alpha => tiny_skia::MaskType::Alpha,
+    };
+
+    let mask = tiny_skia::Mask::from_pixmap(mask_pixmap.as_ref(), mask_type);
     canvas.pixmap.apply_mask(&mask);
 
     Some(())

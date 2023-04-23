@@ -1139,6 +1139,11 @@ use crate::render;
 #[test] fn e_mask_029() { assert_eq!(render("e-mask-029"), 0); }
 #[test] fn e_mask_030() { assert_eq!(render("e-mask-030"), 0); }
 #[test] fn e_mask_031() { assert_eq!(render("e-mask-031"), 0); }
+#[test] fn e_mask_032() { assert_eq!(render("e-mask-032"), 0); }
+#[test] fn e_mask_033() { assert_eq!(render("e-mask-033"), 0); }
+#[test] fn e_mask_034() { assert_eq!(render("e-mask-034"), 0); }
+#[test] fn e_mask_035() { assert_eq!(render("e-mask-035"), 0); }
+#[test] fn e_mask_036() { assert_eq!(render("e-mask-036"), 0); }
 #[test] fn e_path_001() { assert_eq!(render("e-path-001"), 0); }
 #[test] fn e_path_002() { assert_eq!(render("e-path-002"), 0); }
 #[test] fn e_path_003() { assert_eq!(render("e-path-003"), 0); }

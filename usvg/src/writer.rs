@@ -526,6 +526,9 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
     for mask in masks {
         xml.start_svg_element(EId::Mask);
         xml.write_id_attribute(&mask.id, opt);
+        if mask.kind == MaskType::Alpha {
+            xml.write_svg_attribute(AId::MaskType, "alpha");
+        }
         xml.write_units(AId::MaskUnits, mask.units, Units::ObjectBoundingBox);
         xml.write_units(
             AId::MaskContentUnits,

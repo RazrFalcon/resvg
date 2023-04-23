@@ -227,7 +227,7 @@ Basically everything from [CSS Text Module Level 3](https://www.w3.org/TR/css-te
 - [ ] A [`mask-origin`](https://www.w3.org/TR/css-masking-1/#the-mask-origin) property.
 - [ ] A [`mask-size`](https://www.w3.org/TR/css-masking-1/#the-mask-size) property.
 - [ ] A [`mask-composite`](https://www.w3.org/TR/css-masking-1/#the-mask-composite) property.
-- [ ] A [`mask-type`](https://www.w3.org/TR/css-masking-1/#the-mask-type) property.
+- [x] A [`mask-type`](https://www.w3.org/TR/css-masking-1/#the-mask-type) property.
 - [ ] A [`mask-border-source`](https://www.w3.org/TR/css-masking-1/#the-mask-border-source) property.
 - [ ] A [`mask-border-mode`](https://www.w3.org/TR/css-masking-1/#the-mask-border-mode) property.
 - [ ] A [`mask-border-slice`](https://www.w3.org/TR/css-masking-1/#the-mask-border-slice) property.

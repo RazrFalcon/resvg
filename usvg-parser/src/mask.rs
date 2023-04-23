@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use svgtypes::{Length, LengthUnit as Unit};
-use usvg_tree::{Group, Mask, Node, NodeKind, Rect, Units};
+use usvg_tree::{Group, Mask, MaskType, Node, NodeKind, Rect, Units};
 
 use crate::rosvgtree_ext::SvgNodeExt2;
 use crate::{converter, OptionLog, SvgNodeExt};
@@ -53,11 +53,18 @@ pub(crate) fn convert(
         }
     }
 
+    let kind = if node.attribute(AId::MaskType) == Some("alpha") {
+        MaskType::Alpha
+    } else {
+        MaskType::Luminance
+    };
+
     let mut mask = Mask {
         id: node.element_id().to_string(),
         units,
         content_units,
         rect,
+        kind,
         mask,
         root: Node::new(NodeKind::Group(Group::default())),
     };
