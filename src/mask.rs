@@ -2,10 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{
-    render::{Canvas, RenderState},
-    ConvTransform,
-};
+use crate::{render::Canvas, ConvTransform};
 
 pub fn mask(
     tree: &usvg::Tree,
@@ -53,7 +50,7 @@ pub fn mask(
             mask_canvas.apply_transform(usvg::Transform::from_bbox(bbox).to_native());
         }
 
-        crate::render::render_group(tree, &mask.root, &mut RenderState::Ok, &mut mask_canvas);
+        crate::render::render_group(tree, &mask.root, &mut mask_canvas);
     }
 
     if let Some(ref mask) = mask.mask {

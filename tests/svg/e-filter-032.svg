@@ -1,5 +1,5 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>in=BackgroundImage</title>
+    <title>in=BackgroundImage with enable-background</title>
 
     <filter id="filter1" filterUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
         <feOffset in="BackgroundImage" dx="100"/>

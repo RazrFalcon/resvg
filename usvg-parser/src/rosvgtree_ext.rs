@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 use rosvgtree::{AttributeId, Node};
 use strict_num::NonZeroPositiveF64;
-use usvg_tree::{EnableBackground, FuzzyEq, Opacity, Rect, Transform, Units};
+use usvg_tree::{FuzzyEq, Opacity, Rect, Transform, Units};
 
 use crate::{converter, units};
 
@@ -51,25 +51,6 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for Transform {
             Some(Transform::default())
         } else {
             Some(ts)
-        }
-    }
-}
-
-impl<'a, 'input: 'a> FromValue<'a, 'input> for EnableBackground {
-    fn parse(_: Node, _: AttributeId, value: &str) -> Option<Self> {
-        let eb = svgtypes::EnableBackground::from_str(value).ok()?;
-        match eb {
-            svgtypes::EnableBackground::Accumulate => None,
-            svgtypes::EnableBackground::New => Some(EnableBackground(None)),
-            svgtypes::EnableBackground::NewWithRegion {
-                x,
-                y,
-                width,
-                height,
-            } => {
-                let r = Rect::new(x, y, width, height)?;
-                Some(EnableBackground(Some(r)))
-            }
         }
     }
 }

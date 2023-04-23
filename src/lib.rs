@@ -166,13 +166,6 @@ pub fn render_node(
     let size = fit_to.fit_to(node_bbox.size().to_screen_size())?;
     let mut canvas = render::Canvas::from(pixmap);
     canvas.apply_transform(transform);
-    render::render_node_to_canvas(
-        tree,
-        node,
-        vbox,
-        size,
-        &mut render::RenderState::Ok,
-        &mut canvas,
-    );
+    render::render_node_to_canvas(tree, node, vbox, size, &mut canvas);
     Some(())
 }

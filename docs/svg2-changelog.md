@@ -260,7 +260,7 @@ Basically everything from [CSS Text Module Level 3](https://www.w3.org/TR/css-te
 
 ### Deprecated
 
-- An [`enable-background`](https://www.w3.org/TR/filter-effects-1/#AccessBackgroundImage) property.
+- [x] An [`enable-background`](https://www.w3.org/TR/filter-effects-1/#AccessBackgroundImage) property.
 
 ### Quirks
 

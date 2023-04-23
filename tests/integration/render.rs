@@ -949,6 +949,8 @@ use crate::render;
 #[test] fn e_filter_063() { assert_eq!(render("e-filter-063"), 0); }
 #[test] fn e_filter_064() { assert_eq!(render("e-filter-064"), 0); }
 #[test] fn e_filter_065() { assert_eq!(render("e-filter-065"), 0); }
+#[test] fn e_filter_066() { assert_eq!(render("e-filter-066"), 0); }
+#[test] fn e_filter_067() { assert_eq!(render("e-filter-067"), 0); }
 #[test] fn e_g_001() { assert_eq!(render("e-g-001"), 0); }
 #[test] fn e_g_002() { assert_eq!(render("e-g-002"), 0); }
 #[test] fn e_image_001() { assert_eq!(render("e-image-001"), 0); }

@@ -7,10 +7,7 @@ use std::rc::Rc;
 use rgb::FromSlice;
 use usvg::{FuzzyZero, NodeExt, ScreenRect, Transform};
 
-use crate::{
-    render::{Canvas, RenderState},
-    ConvTransform,
-};
+use crate::{render::Canvas, ConvTransform};
 
 macro_rules! into_svgfilters_image {
     ($img:expr) => {
@@ -230,7 +227,6 @@ impl Image {
 
 struct FilterInputs<'a> {
     source: &'a mut tiny_skia::Pixmap,
-    background: Option<&'a tiny_skia::Pixmap>,
     fill_paint: Option<&'a tiny_skia::Pixmap>,
     stroke_paint: Option<&'a tiny_skia::Pixmap>,
 }
@@ -245,7 +241,6 @@ pub fn apply(
     bbox: Option<usvg::Rect>,
     ts: &usvg::Transform,
     tree: &usvg::Tree,
-    background: Option<&tiny_skia::Pixmap>,
     fill_paint: Option<&tiny_skia::Pixmap>,
     stroke_paint: Option<&tiny_skia::Pixmap>,
     source: &mut tiny_skia::Pixmap,
@@ -253,7 +248,6 @@ pub fn apply(
     let res = {
         let inputs = FilterInputs {
             source,
-            background,
             fill_paint,
             stroke_paint,
         };
@@ -597,15 +591,11 @@ fn get_input(
             let image = inputs.source.copy_region(region)?;
             convert_alpha(image)
         }
-        usvg::filter::Input::BackgroundImage => convert(inputs.background, region),
+        usvg::filter::Input::BackgroundImage => {
+            get_input(&usvg::filter::Input::SourceGraphic, region, inputs, results)
+        }
         usvg::filter::Input::BackgroundAlpha => {
-            let image = get_input(
-                &usvg::filter::Input::BackgroundImage,
-                region,
-                inputs,
-                results,
-            )?;
-            convert_alpha(image.take()?)
+            get_input(&usvg::filter::Input::SourceAlpha, region, inputs, results)
         }
         usvg::filter::Input::FillPaint => convert(inputs.fill_paint, region.translate_to(0, 0)),
         usvg::filter::Input::StrokePaint => convert(inputs.stroke_paint, region.translate_to(0, 0)),
@@ -935,7 +925,7 @@ fn apply_image(
             canvas.scale(sx as f32, sy as f32);
             canvas.apply_transform(node.transform().to_native());
 
-            crate::render::render_node(tree, node, &mut RenderState::Ok, &mut canvas);
+            crate::render::render_node(tree, node, &mut canvas);
         }
     }
 

@@ -55,27 +55,8 @@ impl Canvas<'_> {
     }
 }
 
-/// Indicates the current rendering state.
-#[derive(Clone, PartialEq, Debug)]
-pub(crate) enum RenderState {
-    /// A default value. Doesn't indicate anything.
-    Ok,
-    /// Indicates that the current rendering task should stop after reaching the specified node.
-    #[allow(dead_code)]
-    RenderUntil(usvg::Node),
-    /// Indicates that `usvg::FilterInput::BackgroundImage` rendering task was finished.
-    BackgroundFinished,
-}
-
 pub(crate) fn render_to_canvas(tree: &usvg::Tree, img_size: usvg::ScreenSize, canvas: &mut Canvas) {
-    render_node_to_canvas(
-        tree,
-        &tree.root,
-        tree.view_box,
-        img_size,
-        &mut RenderState::Ok,
-        canvas,
-    );
+    render_node_to_canvas(tree, &tree.root, tree.view_box, img_size, canvas);
 }
 
 pub(crate) fn render_node_to_canvas(
@@ -83,7 +64,6 @@ pub(crate) fn render_node_to_canvas(
     node: &usvg::Node,
     view_box: usvg::ViewBox,
     img_size: usvg::ScreenSize,
-    state: &mut RenderState,
     canvas: &mut Canvas,
 ) {
     apply_viewbox_transform(view_box, img_size, canvas);
@@ -93,7 +73,7 @@ pub(crate) fn render_node_to_canvas(
     let ts = node.abs_transform();
 
     canvas.apply_transform(ts.to_native());
-    render_node(tree, node, state, canvas);
+    render_node(tree, node, canvas);
     canvas.transform = curr_ts;
 }
 
@@ -110,7 +90,6 @@ fn apply_viewbox_transform(
 pub(crate) fn render_node(
     tree: &usvg::Tree,
     node: &usvg::Node,
-    state: &mut RenderState,
     canvas: &mut Canvas,
 ) -> Option<usvg::PathBbox> {
     match *node.borrow() {
@@ -120,9 +99,9 @@ pub(crate) fn render_node(
         usvg::NodeKind::Image(ref img) => Some(crate::image::draw(img, canvas)),
         usvg::NodeKind::Group(ref g) => {
             if g.should_isolate() {
-                render_group_impl(tree, node, g, state, canvas)
+                render_group_impl(tree, node, g, canvas)
             } else {
-                render_group(tree, node, state, canvas)
+                render_group(tree, node, canvas)
             }
         }
         usvg::NodeKind::Text(_) => None,
@@ -132,28 +111,15 @@ pub(crate) fn render_node(
 pub(crate) fn render_group(
     tree: &usvg::Tree,
     parent: &usvg::Node,
-    state: &mut RenderState,
     canvas: &mut Canvas,
 ) -> Option<usvg::PathBbox> {
     let curr_ts = canvas.transform;
     let mut g_bbox = usvg::PathBbox::new_bbox();
 
     for node in parent.children() {
-        match state {
-            RenderState::Ok => {}
-            RenderState::RenderUntil(ref last) => {
-                if node == *last {
-                    // Stop rendering.
-                    *state = RenderState::BackgroundFinished;
-                    break;
-                }
-            }
-            RenderState::BackgroundFinished => break,
-        }
-
         canvas.apply_transform(node.transform().to_native());
 
-        let bbox = render_node(tree, &node, state, canvas);
+        let bbox = render_node(tree, &node, canvas);
         if let Some(bbox) = bbox {
             if let Some(bbox) = bbox.transform(&node.transform()) {
                 g_bbox = g_bbox.expand(bbox);
@@ -176,7 +142,6 @@ fn render_group_impl(
     tree: &usvg::Tree,
     node: &usvg::Node,
     g: &usvg::Group,
-    state: &mut RenderState,
     canvas: &mut Canvas,
 ) -> Option<usvg::PathBbox> {
     let mut sub_pixmap = tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height())?;
@@ -185,7 +150,7 @@ fn render_group_impl(
     let bbox = {
         let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
         sub_canvas.transform = curr_ts;
-        render_group(tree, node, state, &mut sub_canvas)
+        render_group(tree, node, &mut sub_canvas)
     };
 
     // At this point, `sub_pixmap` has probably the same size as the viewbox.
@@ -208,33 +173,12 @@ fn render_group_impl(
     #[cfg(not(feature = "filter"))]
     let (tx, ty, mut sub_pixmap) = (0, 0, sub_pixmap);
 
-    // During the background rendering for filters,
-    // an opacity, a filter, a clip and a mask should be ignored for the inner group.
-    // So we are simply rendering the `sub_img` without any postprocessing.
-    //
-    // SVG spec, 15.6 Accessing the background image
-    // 'Any filter effects, masking and group opacity that might be set on A[i] do not apply
-    // when rendering the children of A[i] into BUF[i].'
-    if *state == RenderState::BackgroundFinished {
-        let paint = tiny_skia::PixmapPaint::default();
-        canvas.pixmap.draw_pixmap(
-            tx,
-            ty,
-            sub_pixmap.as_ref(),
-            &paint,
-            tiny_skia::Transform::identity(),
-            None,
-        );
-        return bbox;
-    }
-
     // Filter can be rendered on an object without a bbox,
     // as long as filter uses `userSpaceOnUse`.
     #[cfg(feature = "filter")]
     for filter in &g.filters {
         let bbox = bbox.and_then(|r| r.to_rect());
         let ts = usvg::Transform::from_native(curr_ts);
-        let background = prepare_filter_background(tree, node, filter, &sub_pixmap);
         let fill_paint = prepare_filter_fill_paint(tree, node, filter, bbox, ts, &sub_pixmap);
         let stroke_paint = prepare_filter_stroke_paint(tree, node, filter, bbox, ts, &sub_pixmap);
         crate::filter::apply(
@@ -242,7 +186,6 @@ fn render_group_impl(
             bbox,
             &ts,
             tree,
-            background.as_ref(),
             fill_paint.as_ref(),
             stroke_paint.as_ref(),
             &mut sub_pixmap,
@@ -391,35 +334,6 @@ pub fn trim_transparency(pixmap: tiny_skia::Pixmap) -> Option<(i32, i32, tiny_sk
     } else {
         Some((0, 0, pixmap))
     }
-}
-
-/// Renders an image used by `BackgroundImage` or `BackgroundAlpha` filter inputs.
-#[cfg(feature = "filter")]
-fn prepare_filter_background(
-    tree: &usvg::Tree,
-    parent: &usvg::Node,
-    filter: &usvg::filter::Filter,
-    pixmap: &tiny_skia::Pixmap,
-) -> Option<tiny_skia::Pixmap> {
-    let start_node = parent.filter_background_start_node(filter)?;
-
-    let img_size = usvg::ScreenSize::new(pixmap.width(), pixmap.height()).unwrap();
-
-    let mut pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
-    let mut canvas = Canvas::from(pixmap.as_mut());
-
-    // Render from the `start_node` until the `parent`. The `parent` itself is excluded.
-    let mut state = RenderState::RenderUntil(parent.clone());
-    crate::render::render_node_to_canvas(
-        tree,
-        &start_node,
-        tree.view_box,
-        img_size,
-        &mut state,
-        &mut canvas,
-    );
-
-    Some(pixmap)
 }
 
 /// Renders an image used by `FillPaint`/`StrokePaint` filter input.

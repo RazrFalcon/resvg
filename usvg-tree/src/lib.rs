@@ -744,13 +744,6 @@ impl NodeKind {
     }
 }
 
-/// An `enable-background`.
-///
-/// Contains only the `new [ <x> <y> <width> <height> ]` value.
-#[derive(Clone, Copy, Debug)]
-#[allow(missing_docs)]
-pub struct EnableBackground(pub Option<Rect>);
-
 /// A group container.
 ///
 /// The preprocessor will remove all groups that don't impact rendering.
@@ -803,11 +796,6 @@ pub struct Group {
     ///
     /// Will be set only when filter actually has a `FilterInput::StrokePaint`.
     pub filter_stroke: Option<Paint>,
-
-    /// Indicates that this node can be accessed via `filter`.
-    ///
-    /// `None` indicates an `accumulate` value.
-    pub enable_background: Option<EnableBackground>,
 }
 
 impl Default for Group {
@@ -823,7 +811,6 @@ impl Default for Group {
             filters: Vec::new(),
             filter_fill: None,
             filter_stroke: None,
-            enable_background: None,
         }
     }
 }
@@ -1271,9 +1258,6 @@ pub trait NodeExt {
     /// without converting it into paths first.
     fn calculate_bbox(&self) -> Option<PathBbox>;
 
-    /// Returns the node starting from which the filter background should be rendered.
-    fn filter_background_start_node(&self, filter: &filter::Filter) -> Option<Node>;
-
     /// Calls a closure for each subroot this `Node` has.
     ///
     /// The [`Tree::root`](Tree::root) field contain only render-able SVG elements.
@@ -1334,32 +1318,6 @@ impl NodeExt for Node {
     #[inline]
     fn calculate_bbox(&self) -> Option<PathBbox> {
         calc_node_bbox(self, self.abs_transform())
-    }
-
-    fn filter_background_start_node(&self, filter: &filter::Filter) -> Option<Node> {
-        fn has_enable_background(node: &Node) -> bool {
-            if let NodeKind::Group(ref g) = *node.borrow() {
-                g.enable_background.is_some()
-            } else {
-                false
-            }
-        }
-
-        if !filter
-            .primitives
-            .iter()
-            .any(|c| c.kind.has_input(&filter::Input::BackgroundImage))
-            && !filter
-                .primitives
-                .iter()
-                .any(|c| c.kind.has_input(&filter::Input::BackgroundAlpha))
-        {
-            return None;
-        }
-
-        // We should have an ancestor with `enable-background=new`.
-        // Skip the current element.
-        self.ancestors().skip(1).find(has_enable_background)
     }
 
     fn subroots<F: FnMut(Node)>(&self, mut f: F) {

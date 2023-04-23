@@ -634,10 +634,6 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
 
             xml.write_transform(AId::Transform, g.transform, opt);
 
-            if let Some(eb) = g.enable_background {
-                xml.write_enable_background(eb);
-            }
-
             if g.blend_mode != BlendMode::Normal || g.isolate {
                 let blend_mode = match g.blend_mode {
                     BlendMode::Normal => "normal",
@@ -686,7 +682,6 @@ trait XmlWriterExt {
     fn write_aspect(&mut self, aspect: AspectRatio);
     fn write_units(&mut self, id: AId, units: Units, def: Units);
     fn write_transform(&mut self, id: AId, units: Transform, opt: &XmlOptions);
-    fn write_enable_background(&mut self, eb: EnableBackground);
     fn write_visibility(&mut self, value: Visibility);
     fn write_func_iri(&mut self, aid: AId, id: &str, opt: &XmlOptions);
     fn write_rect_attrs(&mut self, r: Rect);
@@ -809,21 +804,6 @@ impl XmlWriterExt for XmlWriter {
                 write_num(ts.f, buf, opt.transforms_precision);
                 buf.extend_from_slice(b")");
             });
-        }
-    }
-
-    fn write_enable_background(&mut self, eb: EnableBackground) {
-        let id = AId::EnableBackground.to_str();
-        match eb {
-            EnableBackground(None) => {
-                self.write_attribute(id, "new");
-            }
-            EnableBackground(Some(r)) => {
-                self.write_attribute_fmt(
-                    id,
-                    format_args!("new {} {} {} {}", r.x(), r.y(), r.width(), r.height()),
-                );
-            }
         }
     }
 

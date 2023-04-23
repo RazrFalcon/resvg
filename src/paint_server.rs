@@ -2,10 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{
-    render::{Canvas, RenderState},
-    ConvTransform, OptionLog,
-};
+use crate::{render::Canvas, ConvTransform, OptionLog};
 
 pub fn fill(
     tree: &usvg::Tree,
@@ -273,7 +270,7 @@ fn prepare_pattern_pixmap(
         canvas.scale(bbox.width() as f32, bbox.height() as f32);
     }
 
-    crate::render::render_group(tree, &pattern.root, &mut RenderState::Ok, &mut canvas);
+    crate::render::render_group(tree, &pattern.root, &mut canvas);
 
     let mut ts = usvg::Transform::default();
     ts.append(&pattern.transform);

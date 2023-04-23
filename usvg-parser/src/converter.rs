@@ -468,7 +468,6 @@ pub(crate) fn convert_group(
     let blend_mode: BlendMode = node.parse_attribute(AId::MixBlendMode).unwrap_or_default();
     let isolation: Isolation = node.parse_attribute(AId::Isolation).unwrap_or_default();
     let isolate = isolation == Isolation::Isolate;
-    let enable_background = node.parse_attribute(AId::EnableBackground);
 
     let is_g_or_use = matches!(node.tag_name(), Some(EId::G) | Some(EId::Use));
     let required = opacity.get().fuzzy_ne(&1.0)
@@ -476,7 +475,6 @@ pub(crate) fn convert_group(
         || mask.is_some()
         || !filters.is_empty()
         || !transform.is_default()
-        || enable_background.is_some()
         || blend_mode != BlendMode::Normal
         || isolate
         || is_g_or_use
@@ -500,7 +498,6 @@ pub(crate) fn convert_group(
             filters,
             filter_fill,
             filter_stroke,
-            enable_background,
         }));
 
         GroupKind::Create(g)
