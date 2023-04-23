@@ -101,9 +101,9 @@ dependencies = [
 
 [[package]]
 name = "fontdb"
-version = "0.13.0"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfec8f19f9b89b2901219cc62604810d2bfef15dc1182e95320f57e7cbbe041a"
+checksum = "237ff9f0813bbfc9de836016472e0c9ae7802f174a51594607e5f4ff334cb2f5"
 dependencies = [
  "fontconfig-parser",
  "log",
@@ -219,7 +219,7 @@ checksum = "3b42e27ef78c35d3998403c1d26f3efd9e135d3e5121b0a4845cc5cc27547f4f"
 
 [[package]]
 name = "resvg"
-version = "0.31.1"
+version = "0.32.0"
 dependencies = [
  "gif",
  "jpeg-decoder",
@@ -236,7 +236,7 @@ dependencies = [
 
 [[package]]
 name = "resvg-capi"
-version = "0.31.1"
+version = "0.32.0"
 dependencies = [
  "log",
  "resvg",
@@ -253,7 +253,7 @@ dependencies = [
 
 [[package]]
 name = "rosvgtree"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "log",
  "roxmltree",
@@ -353,8 +353,9 @@ dependencies = [
 
 [[package]]
 name = "tiny-skia"
-version = "0.8.4"
-source = "git+https://github.com/RazrFalcon/tiny-skia?rev=e4f4095#e4f4095c4b08f6264d836744483bb8492d5c6cbb"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b610cd8b9a29feb9029c30f1e7bff634651b6e4e925388ee6cff4c68d901a3e"
 dependencies = [
  "arrayref",
  "arrayvec",
@@ -367,8 +368,9 @@ dependencies = [
 
 [[package]]
 name = "tiny-skia-path"
-version = "0.8.4"
-source = "git+https://github.com/RazrFalcon/tiny-skia?rev=e4f4095#e4f4095c4b08f6264d836744483bb8492d5c6cbb"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7acb0ccda1ac91084353a56d0b69b0e29c311fd809d2088b1ed2f9ae1841c47"
 dependencies = [
  "arrayref",
  "bytemuck",
@@ -419,7 +421,7 @@ checksum = "b1d386ff53b415b7fe27b50bb44679e2cc4660272694b7b6f3326d8480823a94"
 
 [[package]]
 name = "usvg"
-version = "0.31.0"
+version = "0.32.0"
 dependencies = [
  "base64",
  "log",
@@ -432,7 +434,7 @@ dependencies = [
 
 [[package]]
 name = "usvg-parser"
-version = "0.31.0"
+version = "0.32.0"
 dependencies = [
  "data-url",
  "flate2",
@@ -447,7 +449,7 @@ dependencies = [
 
 [[package]]
 name = "usvg-text-layout"
-version = "0.31.0"
+version = "0.32.0"
 dependencies = [
  "fontdb",
  "kurbo",
@@ -461,7 +463,7 @@ dependencies = [
 
 [[package]]
 name = "usvg-tree"
-version = "0.31.0"
+version = "0.32.0"
 dependencies = [
  "kurbo",
  "rctree",

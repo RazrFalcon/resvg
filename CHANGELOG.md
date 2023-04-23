@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.32.0] - 2023-04-23
 ### Added
 - Clipping and masking is up to 20% faster.
 - `mask-type` property support. SVG2
@@ -814,7 +816,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.31.1...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.32.0...HEAD
+[0.32.0]: https://github.com/RazrFalcon/resvg/compare/v0.31.1...v0.32.0
 [0.31.1]: https://github.com/RazrFalcon/resvg/compare/v0.31.0...v0.31.1
 [0.31.0]: https://github.com/RazrFalcon/resvg/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/RazrFalcon/resvg/compare/v0.29.0...v0.30.0

@@ -1,6 +1,6 @@
 [package]
 name = "resvg-capi"
-version = "0.31.1"
+version = "0.32.0"
 authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster", "c-api"]
 license = "MPL-2.0"
