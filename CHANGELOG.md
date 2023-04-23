@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- Improve rectangular clipping anti-aliasing quality.
 
 ## [0.31.1] - 2023-04-22
 ### Fixed

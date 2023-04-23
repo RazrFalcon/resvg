@@ -11,7 +11,7 @@ use crate::ConvTransform;
 pub struct Canvas<'a> {
     pub pixmap: tiny_skia::PixmapMut<'a>,
     pub transform: tiny_skia::Transform,
-    pub clip: Option<tiny_skia::ClipMask>,
+    pub clip: Option<tiny_skia::Mask>,
 }
 
 impl<'a> From<tiny_skia::PixmapMut<'a>> for Canvas<'a> {
@@ -39,17 +39,19 @@ impl Canvas<'_> {
 
     pub fn set_clip_rect(&mut self, rect: tiny_skia::Rect) {
         let path = tiny_skia::PathBuilder::from_rect(rect);
-        if let Some(path) = path.transform(self.transform) {
-            let mut clip = tiny_skia::ClipMask::new();
-            clip.set_path(
-                self.pixmap.width(),
-                self.pixmap.height(),
-                &path,
-                tiny_skia::FillRule::Winding,
-                true,
-            );
-            self.clip = Some(clip);
-        }
+        let path = match path.transform(self.transform) {
+            Some(v) => v,
+            None => return,
+        };
+
+        let mut clip = tiny_skia::Mask::new(self.pixmap.width(), self.pixmap.height()).unwrap();
+        clip.fill_path(
+            &path,
+            tiny_skia::FillRule::Winding,
+            true,
+            tiny_skia::Transform::default(),
+        );
+        self.clip = Some(clip);
     }
 }
 
