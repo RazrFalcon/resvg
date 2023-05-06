@@ -6,7 +6,7 @@
 `usvg-tree` is an [SVG] tree representation used by [usvg].
 
 [SVG]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
-[usvg]: https://github.com/RazrFalcon/resvg/tree/master/usvg
+[usvg]: https://github.com/RazrFalcon/resvg/tree/master/crates/usvg
 */
 
 #![forbid(unsafe_code)]

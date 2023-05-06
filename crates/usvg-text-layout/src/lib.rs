@@ -5,7 +5,7 @@
 /*!
 An [SVG] text layout implementation on top of [usvg] crate.
 
-[usvg]: https://github.com/RazrFalcon/resvg/usvg
+[usvg]: https://github.com/RazrFalcon/resvg/crates/usvg
 [SVG]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 */
 

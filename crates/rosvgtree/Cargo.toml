@@ -10,7 +10,7 @@ categories = ["parser-implementations"]
 repository = "https://github.com/RazrFalcon/resvg"
 documentation = "https://docs.rs/rosvgtree/"
 readme = "README.md"
-workspace = ".."
+workspace = "../.."
 
 [dependencies]
 log = "0.4"

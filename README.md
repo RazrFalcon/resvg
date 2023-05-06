@@ -135,11 +135,11 @@ It's definitely the smallest option out there.
 
 `resvg` project is licensed under the [MPLv2.0](https://www.mozilla.org/en-US/MPL/).
 
-[usvg]: https://github.com/RazrFalcon/resvg/tree/master/usvg
+[usvg]: https://github.com/RazrFalcon/resvg/tree/master/crates/usvg
 [rustybuzz]: https://github.com/RazrFalcon/rustybuzz
 [tiny-skia]: https://github.com/RazrFalcon/tiny-skia
 [ttf-parser]: https://github.com/RazrFalcon/ttf-parser
-[rosvgtree]: https://github.com/RazrFalcon/resvg/tree/master/rosvgtree
+[rosvgtree]: https://github.com/RazrFalcon/resvg/tree/master/crates/rosvgtree
 [roxmltree]: https://github.com/RazrFalcon/roxmltree
 [xmlparser]: https://github.com/RazrFalcon/xmlparser
 [simplecss]: https://github.com/RazrFalcon/simplecss

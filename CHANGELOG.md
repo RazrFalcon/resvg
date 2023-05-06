@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- Restructure the root directory. All crates are in the `crates` directory now.
+- Restructure tests. New directory structure and naming scheme.
 
 ## [0.32.0] - 2023-04-23
 ### Added

@@ -10,7 +10,7 @@ categories = ["multimedia::images"]
 repository = "https://github.com/RazrFalcon/resvg"
 documentation = "https://docs.rs/usvg-tree/"
 readme = "README.md"
-workspace = ".."
+workspace = "../.."
 
 [dependencies]
 kurbo = "0.9" # Bezier curves utils

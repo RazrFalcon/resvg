@@ -15,7 +15,7 @@ find_package(KF5 REQUIRED COMPONENTS KIO I18n Config)
 
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../c-api
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../crates/c-api
 )
 
 set(resvgthumbnailer_PART_SRCS

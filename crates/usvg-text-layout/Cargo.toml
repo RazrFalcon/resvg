@@ -9,7 +9,7 @@ description = "An SVG text layout implementation."
 categories = ["multimedia::images"]
 repository = "https://github.com/RazrFalcon/resvg"
 documentation = "https://docs.rs/usvg-text-layout/"
-workspace = ".."
+workspace = "../.."
 
 [dependencies]
 fontdb = { version = "0.13", default-features = false }

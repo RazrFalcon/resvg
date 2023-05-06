@@ -11,7 +11,7 @@ repository = "https://github.com/RazrFalcon/resvg"
 documentation = "https://docs.rs/usvg/"
 readme = "README.md"
 exclude = ["tests"]
-workspace = ".."
+workspace = "../.."
 
 [[bin]]
 name = "usvg"

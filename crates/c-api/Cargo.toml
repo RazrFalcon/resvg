@@ -5,7 +5,7 @@ authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster", "c-api"]
 license = "MPL-2.0"
 edition = "2018"
-workspace = ".."
+workspace = "../.."
 
 [lib]
 name = "resvg"
@@ -14,7 +14,7 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 log = "0.4"
-resvg = { path = "../", default-features = false }
+resvg = { path = "../resvg", default-features = false }
 
 [features]
 default = ["filter", "text", "system-fonts", "memmap-fonts", "raster-images"]

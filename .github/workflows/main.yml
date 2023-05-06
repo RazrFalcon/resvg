@@ -14,25 +14,22 @@ jobs:
 
     # We have to use the Release mode, otherwise it would take forever.
     - name: Test
-      run: cargo test --release
+      run: cargo test --all --release
 
     - name: Build C API
-      working-directory: c-api
+      working-directory: crates/c-api
       run: cargo build
 
     - name: Build C API without default features
-      working-directory: c-api
+      working-directory: crates/c-api
       run: cargo build --no-default-features
 
-    - name: Test usvg
-      working-directory: usvg
-      run: cargo test
-
     - name: Build resvg without default support
+      working-directory: crates/resvg
       run: cargo check --no-default-features
 
     - name: Build usvg without default support
-      working-directory: usvg
+      working-directory: crates/usvg
       run: cargo check --no-default-features
 
   msrv:
@@ -71,7 +68,7 @@ jobs:
 
       # Unlike other binaries, viewsvg isn't built with crt-static
       - name: Build C API
-        working-directory: c-api
+        working-directory: crates/c-api
         run: cargo build --release
 
       - name: Prepare Developer Command Prompt for MSVC

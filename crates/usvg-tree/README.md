@@ -10,4 +10,4 @@
 *usvg-tree* is licensed under the [MPLv2.0](https://www.mozilla.org/en-US/MPL/).
 
 [SVG]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
-[usvg]: https://github.com/RazrFalcon/resvg/tree/master/usvg
+[usvg]: https://github.com/RazrFalcon/resvg/tree/master/crates/usvg

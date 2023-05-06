@@ -21,5 +21,5 @@ else:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../target/debug/ -lresvg
 
 windows:LIBS += -lWs2_32 -lAdvapi32 -lBcrypt -lUserenv
 
-INCLUDEPATH += $$PWD/../../c-api
-DEPENDPATH += $$PWD/../../c-api
+INCLUDEPATH += $$PWD/../../crates/c-api
+DEPENDPATH += $$PWD/../../crates/c-api

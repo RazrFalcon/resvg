@@ -6,7 +6,7 @@
 Represent an [SVG] document as a read-only tree.
 
 Note that while this is a public crate, it's designed with
-[usvg](https://github.com/RazrFalcon/resvg/tree/master/usvg) in mind.
+[usvg](https://github.com/RazrFalcon/resvg/tree/master/crates/usvg) in mind.
 You should treat it is as `usvg` internals.
 
 ## Purpose
@@ -20,7 +20,7 @@ It creates a [`roxmltree`](https://github.com/RazrFalcon/roxmltree)-like tree,
 but tailored to SVG parsing needs.
 
 A complete list of post-processing steps can be found
-[here](https://github.com/RazrFalcon/resvg/blob/master/rosvgtree/docs/post-processing.md).
+[here](https://github.com/RazrFalcon/resvg/blob/master/crates/rosvgtree/docs/post-processing.md).
 
 ## License
 

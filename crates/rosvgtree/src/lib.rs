@@ -4,7 +4,7 @@ Represents an [SVG](https://www.w3.org/TR/SVG11/Overview.html) document as a rea
 `rosvgtree` is similar to [`roxmltree`](https://github.com/RazrFalcon/roxmltree),
 and even uses it for parsing, but instead of producing an XML tree,
 it produces an SVG tree by
-[post-processing](https://github.com/RazrFalcon/resvg/blob/master/rosvgtree/docs/post-processing.md)
+[post-processing](https://github.com/RazrFalcon/resvg/blob/master/crates/rosvgtree/docs/post-processing.md)
 XML, to make SVG parsing easier.
 */
 

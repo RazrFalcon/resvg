@@ -42,7 +42,7 @@ jobs:
         run: cargo build --release
 
       - name: Build usvg
-        working-directory: usvg
+        working-directory: crates/usvg
         run: cargo build --release
 
       - name: Collect
@@ -101,7 +101,7 @@ jobs:
         run: cargo build --release
 
       - name: Build usvg
-        working-directory: usvg
+        working-directory: crates/usvg
         env:
           RUSTFLAGS: -Ctarget-feature=+crt-static # make sure it's static
         run: cargo build --release
@@ -132,7 +132,7 @@ jobs:
 
       # Unlike other binaries, viewsvg isn't built with crt-static
       - name: Build C API
-        working-directory: c-api
+        working-directory: crates/c-api
         run: cargo build --release
 
       - name: Prepare Developer Command Prompt for MSVC
@@ -186,7 +186,7 @@ jobs:
         run: cargo build --release
 
       - name: Build usvg
-        working-directory: usvg
+        working-directory: crates/usvg
         run: cargo build --release
 
       - name: Compress
@@ -196,7 +196,7 @@ jobs:
           7z a -tzip -mx9 usvg-macos-x86_64.zip usvg
 
       - name: Build C API
-        working-directory: c-api
+        working-directory: crates/c-api
         run: cargo build --release
 
       - name: Install Qt
