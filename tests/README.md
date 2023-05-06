@@ -4,14 +4,6 @@ This directory contains a collection of SVG files used during *resvg* regression
 
 ## Adding a new test
 
-### Select a correct name
-
-Each test has a `type-name-index.svg` format.
-
-- `type` can be either an `a`(attribute) or an `e`(element)
-- `name` corresponds to an actual SVG attribute or element
-- `index` is just a serial number
-
 ### Create an SVG file
 
 We are using SVG files with a fixed, 200x200 viewbox for all tests.

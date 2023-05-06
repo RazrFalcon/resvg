@@ -23,14 +23,14 @@ This changelog also contains important changes in dependencies.
 ### Removed
 - `enable-background` support. This feature was never supported by browsers
   and was deprecated in SVG 2. To my knowledge, only Batik has a good support of it.
-  Also, it's performance nightmare, which caused multiple issues in resvg already.
+  Also, it's a performance nightmare, which caused multiple issues in resvg already.
 - `usvg_tree::EnableBackground`
 - `usvg_tree::Group::enable_background`
 - `usvg_tree::NodeExt::filter_background_start_node`
 
 ### Fixed
 - Improve rectangular clipping anti-aliasing quality.
-- Mask's RGB to Luminosity converter was ignoring premultiplied alpha.
+- Mask's RGB to Luminance converter was ignoring premultiplied alpha.
 
 ## [0.31.1] - 2023-04-22
 ### Fixed

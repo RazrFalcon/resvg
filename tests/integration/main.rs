@@ -19,11 +19,11 @@ static GLOBAL_FONTDB: Lazy<std::sync::Mutex<fontdb::Database>> = Lazy::new(|| {
 });
 
 pub fn render(name: &str) -> usize {
-    let svg_path = format!("tests/svg/{}.svg", name);
-    let png_path = format!("tests/png/{}.png", name);
+    let svg_path = format!("tests/{}.svg", name);
+    let png_path = format!("tests/{}.png", name);
 
     let mut opt = usvg::Options::default();
-    opt.resources_dir = Some(std::path::PathBuf::from("tests/svg"));
+    opt.resources_dir = Some(std::path::PathBuf::from(&svg_path).parent().unwrap().to_owned());
 
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();

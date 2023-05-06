@@ -1,0 +1,12 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>`image` is not a valid child</title>
+
+    <clipPath id="clip1">
+        <image id="image1" x="8" y="8" width="64" height="64" xlink:href="../../../resources/image.jpg"/>
+    </clipPath>
+    <rect id="rect2" x="0" y="0" width="200" height="200" fill="red" clip-path="url(#clip1)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>
