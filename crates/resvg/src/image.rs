@@ -44,6 +44,7 @@ pub fn convert(
         #[cfg(not(feature = "raster-images"))]
         _ => {
             log::warn!("Images decoding was disabled by a build feature.");
+            return None;
         }
     };
 

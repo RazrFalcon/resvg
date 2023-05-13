@@ -6,7 +6,7 @@ use winapi::shared::windef::{HBITMAP, HDC};
 use winapi::um::objidlbase::{LPSTREAM, STATSTG};
 use winapi::um::wingdi::{BI_RGB, BITMAPINFO, BITMAPINFOHEADER, DIB_RGB_COLORS, CreateDIBSection};
 use com::sys::S_OK;
-use resvg::{usvg, tiny_skia, FitTo};
+use resvg::{usvg, tiny_skia};
 use usvg::{fontdb, TreeTextToPath, TreeParsing};
 use crate::error::Error;
 
@@ -54,7 +54,7 @@ pub fn render_thumbnail(tree: &Option<usvg::Tree>, cx: u32) -> Result<tiny_skia:
     );
 
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
-    resvg::render(&tree, transform, pixmap.as_mut()).ok_or(Error::RenderError)?;
+    tree.render(transform, pixmap.as_mut());
     Ok(pixmap)
 }
 
