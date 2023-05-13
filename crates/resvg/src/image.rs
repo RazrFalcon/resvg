@@ -2,75 +2,98 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{render::Canvas, ConvTransform};
+use crate::render::Canvas;
+use crate::tree::{ConvTransform, Node, Tree};
 
-pub fn draw(image: &usvg::Image, canvas: &mut Canvas) -> usvg::PathBbox {
-    if image.visibility != usvg::Visibility::Visible {
-        return image.view_box.rect.to_path_bbox();
-    }
-
-    draw_kind(&image.kind, image.view_box, image.rendering_mode, canvas);
-    image.view_box.rect.to_path_bbox()
+pub enum ImageKind {
+    #[cfg(feature = "raster-images")]
+    Raster(tiny_skia::Pixmap),
+    Vector(Tree),
 }
 
-pub fn draw_kind(
-    kind: &usvg::ImageKind,
-    view_box: usvg::ViewBox,
-    #[allow(unused_variables)] rendering_mode: usvg::ImageRendering,
-    canvas: &mut Canvas,
-) {
-    match kind {
-        usvg::ImageKind::SVG(ref subtree) => {
-            draw_svg(subtree, view_box, canvas);
-        }
+pub struct Image {
+    pub transform: tiny_skia::Transform,
+    pub view_box: usvg::ViewBox,
+    pub quality: tiny_skia::FilterQuality,
+    pub kind: ImageKind,
+}
+
+pub fn convert(
+    image: &usvg::Image,
+    parent_transform: tiny_skia::Transform,
+    children: &mut Vec<Node>,
+) -> Option<(usvg::PathBbox, usvg::PathBbox)> {
+    let transform = parent_transform.pre_concat(image.transform.to_native());
+
+    let object_bbox = image.view_box.rect.to_path_bbox();
+    let layer_bbox = object_bbox.transform(&usvg::Transform::from_native(transform))?;
+
+    if image.visibility != usvg::Visibility::Visible {
+        return Some((layer_bbox, object_bbox));
+    }
+
+    let mut quality = tiny_skia::FilterQuality::Bicubic;
+    if image.rendering_mode == usvg::ImageRendering::OptimizeSpeed {
+        quality = tiny_skia::FilterQuality::Nearest;
+    }
+
+    let kind = match image.kind {
+        usvg::ImageKind::SVG(ref utree) => ImageKind::Vector(Tree::from_usvg(utree)),
         #[cfg(feature = "raster-images")]
-        usvg::ImageKind::JPEG(ref data) => match raster_images::read_jpeg(data) {
-            Some(image) => {
-                raster_images::draw_raster(&image, view_box, rendering_mode, canvas);
-            }
-            None => log::warn!("Failed to decode a JPEG image."),
-        },
-        #[cfg(feature = "raster-images")]
-        usvg::ImageKind::PNG(ref data) => match raster_images::read_png(data) {
-            Some(image) => {
-                raster_images::draw_raster(&image, view_box, rendering_mode, canvas);
-            }
-            None => log::warn!("Failed to decode a PNG image."),
-        },
-        #[cfg(feature = "raster-images")]
-        usvg::ImageKind::GIF(ref data) => match raster_images::read_gif(data) {
-            Some(image) => {
-                raster_images::draw_raster(&image, view_box, rendering_mode, canvas);
-            }
-            None => log::warn!("Failed to decode a GIF image."),
-        },
+        _ => ImageKind::Raster(raster_images::decode_raster(image)?),
         #[cfg(not(feature = "raster-images"))]
         _ => {
             log::warn!("Images decoding was disabled by a build feature.");
         }
+    };
+
+    children.push(Node::Image(Image {
+        transform,
+        view_box: image.view_box,
+        quality,
+        kind,
+    }));
+
+    Some((layer_bbox, object_bbox))
+}
+
+pub fn render_image(image: &Image, canvas: &mut Canvas) {
+    match image.kind {
+        #[cfg(feature = "raster-images")]
+        ImageKind::Raster(ref pixmap) => {
+            raster_images::render_raster(image, pixmap, canvas);
+        }
+        ImageKind::Vector(ref rtree) => {
+            render_vector(image, rtree, canvas);
+        }
     }
 }
 
-fn draw_svg(tree: &usvg::Tree, view_box: usvg::ViewBox, canvas: &mut Canvas) -> Option<()> {
+fn render_vector(image: &Image, tree: &Tree, canvas: &mut Canvas) -> Option<()> {
     let img_size = tree.size.to_screen_size();
-    let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&view_box, img_size);
+    let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&image.view_box, img_size);
 
     let mut sub_pixmap = canvas.pixmap.to_owned();
     sub_pixmap.fill(tiny_skia::Color::TRANSPARENT);
-    let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
-    sub_canvas.transform = canvas.transform;
-    sub_canvas.apply_transform(ts.to_native());
-    crate::render::render_to_canvas(tree, img_size, &mut sub_canvas);
 
-    if let Some(clip) = clip {
+    let canvas_transform = canvas
+        .transform
+        .pre_concat(image.transform)
+        .pre_concat(ts.to_native());
+
+    tree.render(canvas_transform, sub_pixmap.as_mut());
+
+    let mask = if let Some(clip) = clip {
         let rr = tiny_skia::Rect::from_xywh(
             clip.x() as f32,
             clip.y() as f32,
             clip.width() as f32,
             clip.height() as f32,
         )?;
-        canvas.set_clip_rect(rr);
-    }
+        canvas.create_rect_mask(rr)
+    } else {
+        None
+    };
 
     canvas.pixmap.draw_pixmap(
         0,
@@ -78,33 +101,118 @@ fn draw_svg(tree: &usvg::Tree, view_box: usvg::ViewBox, canvas: &mut Canvas) -> 
         sub_pixmap.as_ref(),
         &tiny_skia::PixmapPaint::default(),
         tiny_skia::Transform::identity(),
-        canvas.clip.as_ref(),
+        mask.as_ref(),
     );
-    canvas.clip = None;
 
     Some(())
 }
 
 #[cfg(feature = "raster-images")]
 mod raster_images {
+    use super::Image;
     use crate::render::Canvas;
+    use crate::tree::OptionLog;
 
-    pub fn draw_raster(
-        img: &Image,
-        view_box: usvg::ViewBox,
-        rendering_mode: usvg::ImageRendering,
+    pub fn decode_raster(image: &usvg::Image) -> Option<tiny_skia::Pixmap> {
+        match image.kind {
+            usvg::ImageKind::SVG(_) => None,
+            usvg::ImageKind::JPEG(ref data) => {
+                decode_jpeg(data).log_none(|| log::warn!("Failed to decode a JPEG image."))
+            }
+            usvg::ImageKind::PNG(ref data) => {
+                decode_png(data).log_none(|| log::warn!("Failed to decode a PNG image."))
+            }
+            usvg::ImageKind::GIF(ref data) => {
+                decode_gif(data).log_none(|| log::warn!("Failed to decode a GIF image."))
+            }
+        }
+    }
+
+    fn decode_png(data: &[u8]) -> Option<tiny_skia::Pixmap> {
+        tiny_skia::Pixmap::decode_png(data).ok()
+    }
+
+    fn decode_jpeg(data: &[u8]) -> Option<tiny_skia::Pixmap> {
+        let mut decoder = jpeg_decoder::Decoder::new(data);
+        let img_data = decoder.decode().ok()?;
+        let info = decoder.info()?;
+
+        let size = usvg::ScreenSize::new(info.width as u32, info.height as u32)?;
+
+        let data = match info.pixel_format {
+            jpeg_decoder::PixelFormat::RGB24 => img_data,
+            jpeg_decoder::PixelFormat::L8 => {
+                let mut rgb_data: Vec<u8> = Vec::with_capacity(img_data.len() * 3);
+                for gray in img_data {
+                    rgb_data.push(gray);
+                    rgb_data.push(gray);
+                    rgb_data.push(gray);
+                }
+
+                rgb_data
+            }
+            _ => return None,
+        };
+
+        let (w, h) = size.dimensions();
+        let mut pixmap = tiny_skia::Pixmap::new(w, h)?;
+        rgb_to_pixmap(&data, &mut pixmap);
+        Some(pixmap)
+    }
+
+    fn decode_gif(data: &[u8]) -> Option<tiny_skia::Pixmap> {
+        let mut decoder = gif::DecodeOptions::new();
+        decoder.set_color_output(gif::ColorOutput::RGBA);
+        let mut decoder = decoder.read_info(data).ok()?;
+        let first_frame = decoder.read_next_frame().ok()??;
+
+        let size =
+            usvg::ScreenSize::new(u32::from(first_frame.width), u32::from(first_frame.height))?;
+
+        let (w, h) = size.dimensions();
+        let mut pixmap = tiny_skia::Pixmap::new(w, h)?;
+        rgba_to_pixmap(&first_frame.buffer, &mut pixmap);
+        Some(pixmap)
+    }
+
+    fn rgb_to_pixmap(data: &[u8], pixmap: &mut tiny_skia::Pixmap) {
+        use rgb::FromSlice;
+
+        let mut i = 0;
+        let dst = pixmap.data_mut();
+        for p in data.as_rgb() {
+            dst[i + 0] = p.r;
+            dst[i + 1] = p.g;
+            dst[i + 2] = p.b;
+            dst[i + 3] = 255;
+
+            i += tiny_skia::BYTES_PER_PIXEL;
+        }
+    }
+
+    fn rgba_to_pixmap(data: &[u8], pixmap: &mut tiny_skia::Pixmap) {
+        use rgb::FromSlice;
+
+        let mut i = 0;
+        let dst = pixmap.data_mut();
+        for p in data.as_rgba() {
+            let a = p.a as f64 / 255.0;
+            dst[i + 0] = (p.r as f64 * a + 0.5) as u8;
+            dst[i + 1] = (p.g as f64 * a + 0.5) as u8;
+            dst[i + 2] = (p.b as f64 * a + 0.5) as u8;
+            dst[i + 3] = p.a;
+
+            i += tiny_skia::BYTES_PER_PIXEL;
+        }
+    }
+
+    pub(crate) fn render_raster(
+        image: &Image,
+        pixmap: &tiny_skia::Pixmap,
         canvas: &mut Canvas,
     ) -> Option<()> {
-        let (w, h) = img.size.dimensions();
-        let mut pixmap = tiny_skia::Pixmap::new(w, h)?;
-        image_to_pixmap(img, pixmap.data_mut());
-
-        let mut filter = tiny_skia::FilterQuality::Bicubic;
-        if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
-            filter = tiny_skia::FilterQuality::Nearest;
-        }
-
-        let r = image_rect(&view_box, img.size);
+        let img_size = usvg::ScreenSize::new(pixmap.width(), pixmap.height())?;
+        let r = image_rect(&image.view_box, img_size);
         let rect = tiny_skia::Rect::from_xywh(
             r.x() as f32,
             r.y() as f32,
@@ -121,13 +229,18 @@ mod raster_images {
             r.y() as f32,
         );
 
-        let pattern =
-            tiny_skia::Pattern::new(pixmap.as_ref(), tiny_skia::SpreadMode::Pad, filter, 1.0, ts);
+        let pattern = tiny_skia::Pattern::new(
+            pixmap.as_ref(),
+            tiny_skia::SpreadMode::Pad,
+            image.quality,
+            1.0,
+            ts,
+        );
         let mut paint = tiny_skia::Paint::default();
         paint.shader = pattern;
 
-        if view_box.aspect.slice {
-            let r = view_box.rect;
+        let mask = if image.view_box.aspect.slice {
+            let r = image.view_box.rect;
             let rect = tiny_skia::Rect::from_xywh(
                 r.x() as f32,
                 r.y() as f32,
@@ -135,138 +248,15 @@ mod raster_images {
                 r.height() as f32,
             )?;
 
-            canvas.set_clip_rect(rect);
-        }
+            canvas.create_rect_mask(rect)
+        } else {
+            None
+        };
 
-        canvas
-            .pixmap
-            .fill_rect(rect, &paint, canvas.transform, canvas.clip.as_ref());
-        canvas.clip = None;
+        let ts = canvas.transform.pre_concat(image.transform);
+        canvas.pixmap.fill_rect(rect, &paint, ts, mask.as_ref());
 
         Some(())
-    }
-
-    fn image_to_pixmap(image: &Image, pixmap: &mut [u8]) {
-        use rgb::FromSlice;
-
-        let mut i = 0;
-        match &image.data {
-            ImageData::RGB(data) => {
-                for p in data.as_rgb() {
-                    pixmap[i + 0] = p.r;
-                    pixmap[i + 1] = p.g;
-                    pixmap[i + 2] = p.b;
-                    pixmap[i + 3] = 255;
-
-                    i += tiny_skia::BYTES_PER_PIXEL;
-                }
-            }
-            ImageData::RGBA(data) => {
-                for p in data.as_rgba() {
-                    let a = p.a as f64 / 255.0;
-                    pixmap[i + 0] = (p.r as f64 * a + 0.5) as u8;
-                    pixmap[i + 1] = (p.g as f64 * a + 0.5) as u8;
-                    pixmap[i + 2] = (p.b as f64 * a + 0.5) as u8;
-                    pixmap[i + 3] = p.a;
-
-                    i += tiny_skia::BYTES_PER_PIXEL;
-                }
-            }
-        }
-    }
-
-    pub struct Image {
-        data: ImageData,
-        size: usvg::ScreenSize,
-    }
-
-    enum ImageData {
-        RGB(Vec<u8>),
-        RGBA(Vec<u8>),
-    }
-
-    pub fn read_png(data: &[u8]) -> Option<Image> {
-        let mut decoder = png::Decoder::new(data);
-        decoder.set_transformations(png::Transformations::normalize_to_color8());
-        let mut reader = decoder.read_info().ok()?;
-        let mut img_data = vec![0; reader.output_buffer_size()];
-        let info = reader.next_frame(&mut img_data).ok()?;
-
-        let size = usvg::ScreenSize::new(info.width, info.height)?;
-
-        let data = match info.color_type {
-            png::ColorType::Rgb => ImageData::RGB(img_data),
-            png::ColorType::Rgba => ImageData::RGBA(img_data),
-            png::ColorType::Grayscale => {
-                let mut rgb_data = Vec::with_capacity(img_data.len() * 3);
-                for gray in img_data {
-                    rgb_data.push(gray);
-                    rgb_data.push(gray);
-                    rgb_data.push(gray);
-                }
-
-                ImageData::RGB(rgb_data)
-            }
-            png::ColorType::GrayscaleAlpha => {
-                let mut rgba_data = Vec::with_capacity(img_data.len() * 2);
-                for slice in img_data.chunks(2) {
-                    let gray = slice[0];
-                    let alpha = slice[1];
-                    rgba_data.push(gray);
-                    rgba_data.push(gray);
-                    rgba_data.push(gray);
-                    rgba_data.push(alpha);
-                }
-
-                ImageData::RGBA(rgba_data)
-            }
-            png::ColorType::Indexed => {
-                log::warn!("Indexed PNG is not supported.");
-                return None;
-            }
-        };
-
-        Some(Image { data, size })
-    }
-
-    pub fn read_jpeg(data: &[u8]) -> Option<Image> {
-        let mut decoder = jpeg_decoder::Decoder::new(data);
-        let img_data = decoder.decode().ok()?;
-        let info = decoder.info()?;
-
-        let size = usvg::ScreenSize::new(info.width as u32, info.height as u32)?;
-
-        let data = match info.pixel_format {
-            jpeg_decoder::PixelFormat::RGB24 => ImageData::RGB(img_data),
-            jpeg_decoder::PixelFormat::L8 => {
-                let mut rgb_data = Vec::with_capacity(img_data.len() * 3);
-                for gray in img_data {
-                    rgb_data.push(gray);
-                    rgb_data.push(gray);
-                    rgb_data.push(gray);
-                }
-
-                ImageData::RGB(rgb_data)
-            }
-            _ => return None,
-        };
-
-        Some(Image { data, size })
-    }
-
-    pub fn read_gif(data: &[u8]) -> Option<Image> {
-        let mut decoder = gif::DecodeOptions::new();
-        decoder.set_color_output(gif::ColorOutput::RGBA);
-        let mut decoder = decoder.read_info(data).ok()?;
-        let first_frame = decoder.read_next_frame().ok()??;
-
-        let size =
-            usvg::ScreenSize::new(u32::from(first_frame.width), u32::from(first_frame.height))?;
-
-        Some(Image {
-            data: ImageData::RGBA(first_frame.buffer.to_vec()),
-            size,
-        })
     }
 
     /// Calculates an image rect depending on the provided view box.

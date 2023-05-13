@@ -17,10 +17,7 @@ log = "0.4"
 resvg = { path = "../resvg", default-features = false }
 
 [features]
-default = ["filter", "text", "system-fonts", "memmap-fonts", "raster-images"]
-# enables SVG Filter support
-# adds around 100KiB to your binary
-filter = ["resvg/filter"]
+default = ["text", "system-fonts", "memmap-fonts", "raster-images"]
 # enables SVG Text support
 # adds around 500KiB to your binary
 text = ["resvg/text"]

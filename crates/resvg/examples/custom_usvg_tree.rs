@@ -51,19 +51,10 @@ fn main() {
         ..usvg::Path::default()
     }));
 
-    #[cfg(feature = "dump-svg")]
-    {
-        println!("{}", rtree.to_string(&usvg::XmlOptions::default()));
-    }
+    let rtree = resvg::Tree::from_usvg(&tree);
 
     let pixmap_size = tree.size.to_screen_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
-    resvg::render(
-        &tree,
-        resvg::FitTo::Original,
-        tiny_skia::Transform::default(),
-        pixmap.as_mut(),
-    )
-    .unwrap();
+    rtree.render(tiny_skia::Transform::default(), pixmap.as_mut());
     pixmap.save_png("out.png").unwrap();
 }

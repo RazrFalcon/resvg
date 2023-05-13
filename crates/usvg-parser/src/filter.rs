@@ -49,7 +49,7 @@ pub(crate) fn convert(
         // This if far from ideal, but good for now.
         // TODO: Should be fixed eventually.
         let rect = match kind {
-            Kind::DropShadow(_) | Kind::GaussianBlur(_) => Rect::new(-1.0, -1.0, 2.0, 2.0).unwrap(),
+            Kind::DropShadow(_) | Kind::GaussianBlur(_) => Rect::new(-0.5, -0.5, 2.0, 2.0).unwrap(),
             _ => Rect::new(-0.1, -0.1, 1.2, 1.2).unwrap(),
         };
 

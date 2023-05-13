@@ -2,101 +2,104 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use usvg::NodeExt;
+use std::rc::Rc;
 
-use crate::{render::Canvas, ConvTransform, OptionLog};
+use crate::render::{Canvas, Context};
+use crate::tree::{ConvTransform, Node, OptionLog};
 
-pub fn clip(
-    tree: &usvg::Tree,
-    cp: &usvg::ClipPath,
-    bbox: usvg::PathBbox,
-    canvas: &mut Canvas,
-) -> Option<()> {
-    let mut clip_pixmap = tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height())?;
+pub struct ClipPath {
+    pub clip_path: Option<Box<Self>>,
+    pub children: Vec<Node>,
+}
+
+pub fn convert(
+    upath: Option<Rc<usvg::ClipPath>>,
+    object_bbox: usvg::PathBbox,
+    mut transform: tiny_skia::Transform,
+) -> Option<ClipPath> {
+    let upath = upath?;
+
+    transform = transform.pre_concat(upath.transform.to_native());
+
+    if upath.units == usvg::Units::ObjectBoundingBox {
+        let object_bbox = object_bbox
+            .to_rect()
+            .log_none(|| log::warn!("Clipping of zero-sized shapes is not allowed."))?;
+
+        let ts = usvg::Transform::from_bbox(object_bbox);
+        transform = transform.pre_concat(ts.to_native());
+    }
+
+    let (children, _) = crate::tree::convert_node(upath.root.clone(), transform);
+    Some(ClipPath {
+        clip_path: convert(upath.clip_path.clone(), object_bbox, transform).map(Box::new),
+        children,
+    })
+}
+
+pub fn apply(clip: &ClipPath, transform: tiny_skia::Transform, pixmap: &mut tiny_skia::Pixmap) {
+    let mut canvas = Canvas::from(pixmap.as_mut());
+    canvas.transform = transform;
+    apply_inner(clip, &mut canvas);
+}
+
+fn apply_inner(clip: &ClipPath, canvas: &mut Canvas) {
+    let mut clip_pixmap = canvas.new_pixmap();
     clip_pixmap.fill(tiny_skia::Color::BLACK);
 
     let mut clip_canvas = Canvas::from(clip_pixmap.as_mut());
     clip_canvas.transform = canvas.transform;
-    clip_canvas.apply_transform(cp.transform.to_native());
-
-    if cp.units == usvg::Units::ObjectBoundingBox {
-        let bbox = bbox
-            .to_rect()
-            .log_none(|| log::warn!("Clipping of zero-sized shapes is not allowed."))?;
-
-        clip_canvas.apply_transform(usvg::Transform::from_bbox(bbox).to_native());
-    }
 
     draw_children(
-        tree,
-        &cp.root,
-        bbox,
+        &clip.children,
         tiny_skia::BlendMode::Clear,
         &mut clip_canvas,
     );
 
-    if let Some(ref cp) = cp.clip_path {
-        clip(tree, cp, bbox, canvas);
+    if let Some(ref clip) = clip.clip_path {
+        apply_inner(clip, canvas);
     }
 
     let mut mask = tiny_skia::Mask::from_pixmap(clip_pixmap.as_ref(), tiny_skia::MaskType::Alpha);
     mask.invert();
     canvas.pixmap.apply_mask(&mask);
-
-    Some(())
 }
 
-fn draw_children(
-    tree: &usvg::Tree,
-    node: &usvg::Node,
-    bbox: usvg::PathBbox,
-    mode: tiny_skia::BlendMode,
-    canvas: &mut Canvas,
-) {
-    let ts = canvas.transform;
-    for child in node.children() {
-        canvas.apply_transform(child.transform().to_native());
+fn draw_children(children: &[Node], mode: tiny_skia::BlendMode, canvas: &mut Canvas) {
+    for child in children {
+        match child {
+            Node::FillPath(ref path) => {
+                // We could use any values here. They will not be used anyway.
+                let ctx = Context {
+                    root_transform: usvg::Transform::default(),
+                    target_size: usvg::ScreenSize::new(1, 1).unwrap(),
+                    max_filter_region: usvg::ScreenRect::new(0, 0, 1, 1).unwrap(),
+                };
 
-        match *child.borrow() {
-            usvg::NodeKind::Path(ref path_node) => {
-                crate::path::draw(tree, path_node, mode, canvas);
+                crate::path::render_fill_path(path, mode, &ctx, canvas);
             }
-            usvg::NodeKind::Group(ref g) => {
-                if let Some(ref cp) = g.clip_path {
+            Node::Group(ref group) => {
+                if let Some(ref clip) = group.clip_path {
                     // If a `clipPath` child also has a `clip-path`
                     // then we should render this child on a new canvas,
                     // clip it, and only then draw it to the `clipPath`.
-                    clip_group(tree, &child, cp, bbox, canvas);
+                    clip_group(&group.children, clip, canvas);
                 } else {
-                    draw_children(tree, &child, bbox, mode, canvas);
+                    draw_children(&group.children, mode, canvas);
                 }
             }
             _ => {}
         }
-
-        canvas.transform = ts;
     }
 }
 
-fn clip_group(
-    tree: &usvg::Tree,
-    node: &usvg::Node,
-    cp: &usvg::ClipPath,
-    bbox: usvg::PathBbox,
-    canvas: &mut Canvas,
-) -> Option<()> {
-    let mut clip_pixmap = tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height())?;
+fn clip_group(children: &[Node], clip: &ClipPath, canvas: &mut Canvas) -> Option<()> {
+    let mut clip_pixmap = canvas.new_pixmap();
     let mut clip_canvas = Canvas::from(clip_pixmap.as_mut());
     clip_canvas.transform = canvas.transform;
 
-    draw_children(
-        tree,
-        node,
-        bbox,
-        tiny_skia::BlendMode::SourceOver,
-        &mut clip_canvas,
-    );
-    clip(tree, cp, bbox, &mut clip_canvas);
+    draw_children(children, tiny_skia::BlendMode::SourceOver, &mut clip_canvas);
+    apply_inner(clip, &mut clip_canvas);
 
     let mut paint = tiny_skia::PixmapPaint::default();
     paint.blend_mode = tiny_skia::BlendMode::Xor;

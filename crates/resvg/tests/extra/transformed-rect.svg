@@ -1,0 +1,9 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- opacity is required to make sure the group would not be flattened -->
+    <g opacity="0.5">
+        <rect x="0" y="30" width="120" height="120" fill="green"
+              transform="skewX(25)"/>
+    </g>
+
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

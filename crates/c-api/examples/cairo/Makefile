@@ -1,5 +1,5 @@
 TARGET = example
-LIBS = -lm -L../../../target/debug -lresvg `pkg-config --libs cairo`
+LIBS = -lm -L../../../../target/debug -lresvg `pkg-config --libs cairo`
 CC = gcc
 CFLAGS = -g -Wall `pkg-config --cflags cairo` -I../../
 

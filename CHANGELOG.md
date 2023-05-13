@@ -7,9 +7,38 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- A new rendering algorithm.<br>
+  When rendering [isolated groups](https://razrfalcon.github.io/notes-on-svg-parsing/isolated-groups.html),
+  aka layers, we have to know the layer bounding box beforehand, which is ridiculously hard in SVG.<br>
+  Previously, resvg would simply use the canvas size for all the layers.
+  Meaning that to render a 10x10px layer on a 1000x1000px canvas, we would have to allocate and then blend
+  a 1000x1000px layer, which is just a waste of performance.<br>
+  Now, resvg is able to calculate the layer bounding box beforehand, which dramatically improves
+  performance when rendering a lot of tiny layers on a large canvas.<br>
+  Moreover, it makes performance more linear with canvas size increase.<br>
+  The [paris-30k.svg](https://github.com/google/forma/blob/681e8bfd348caa61aab47437e7d857764c2ce522/assets/svgs/paris-30k.svg)
+  sample from [google/forma](https://github.com/google/forma) is rendered _115 times_ faster on M1 Pro now.
+  From ~33760ms down to ~290ms. 5269x3593px canvas.<br>
+  If we restrict the canvas to 1000x1000px, which would contain only the actual `paris-30k.svg` content,
+  then we're _13 times_ faster. From ~3252ms down to ~253ms.
+- `resvg::Tree`, aka a render tree, which is an even simpler version of `usvg::Tree`.
+  `usvg::Tree` had to be converted into `resvg::Tree` before rendering now.
+
 ### Changed
 - Restructure the root directory. All crates are in the `crates` directory now.
 - Restructure tests. New directory structure and naming scheme.
+- Use `resvg::Tree::render` instead of `resvg::render`.
+- resvg's `--export-area-drawing` option uses calculated bounds instead of trimming
+  excessive alpha now. It's faster, but can lead to a slightly different output.
+- (c-api) Removed `fit_to` argument from `resvg_render`.
+- (c-api) Removed `fit_to` argument from `resvg_render_node`.
+
+### Removed
+- `filter` build feature from `resvg`. Filters are always enabled now.
+- `resvg::FitTo`
+- (c-api) `resvg_fit_to`
+- (c-api) `resvg_fit_to_type`
 
 ## [0.32.0] - 2023-04-23
 ### Added

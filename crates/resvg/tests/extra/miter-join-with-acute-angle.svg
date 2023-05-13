@@ -1,0 +1,4 @@
+<svg id="svg1" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 20 20 L 300 40 L 20 60" fill="none" stroke="green" stroke-width="10" stroke-linecap="square"
+          stroke-miterlimit="20"/>
+</svg>

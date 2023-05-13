@@ -2,16 +2,19 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::convert::TryInto;
+use usvg::FuzzyEq;
 
-use usvg::{FuzzyEq, NodeExt};
+use crate::tree::{ConvTransform, Group, Node, OptionLog, Tree};
 
-use crate::ConvTransform;
+pub struct Context {
+    pub root_transform: usvg::Transform,
+    pub target_size: usvg::ScreenSize,
+    pub max_filter_region: usvg::ScreenRect,
+}
 
 pub struct Canvas<'a> {
     pub pixmap: tiny_skia::PixmapMut<'a>,
     pub transform: tiny_skia::Transform,
-    pub clip: Option<tiny_skia::Mask>,
 }
 
 impl<'a> From<tiny_skia::PixmapMut<'a>> for Canvas<'a> {
@@ -19,7 +22,6 @@ impl<'a> From<tiny_skia::PixmapMut<'a>> for Canvas<'a> {
         Canvas {
             pixmap,
             transform: tiny_skia::Transform::identity(),
-            clip: None,
         }
     }
 }
@@ -37,303 +39,191 @@ impl Canvas<'_> {
         self.transform = self.transform.pre_concat(ts);
     }
 
-    pub fn set_clip_rect(&mut self, rect: tiny_skia::Rect) {
+    pub fn create_rect_mask(&self, rect: tiny_skia::Rect) -> Option<tiny_skia::Mask> {
         let path = tiny_skia::PathBuilder::from_rect(rect);
-        let path = match path.transform(self.transform) {
-            Some(v) => v,
-            None => return,
+
+        let mut mask = tiny_skia::Mask::new(self.pixmap.width(), self.pixmap.height())?;
+        mask.fill_path(&path, tiny_skia::FillRule::Winding, true, self.transform);
+
+        Some(mask)
+    }
+
+    pub fn new_pixmap(&self) -> tiny_skia::Pixmap {
+        tiny_skia::Pixmap::new(self.pixmap.width(), self.pixmap.height()).unwrap()
+    }
+}
+
+impl Tree {
+    /// Renders an SVG tree onto the pixmap.
+    ///
+    /// `transform` will be used as a root transform.
+    /// Can be used to position SVG inside the `pixmap`.
+    pub fn render(&self, transform: tiny_skia::Transform, pixmap: tiny_skia::PixmapMut) {
+        let target_size = usvg::ScreenSize::new(pixmap.width(), pixmap.height()).unwrap();
+
+        let max_filter_region = usvg::ScreenRect::new(
+            -(target_size.width() as i32),
+            -(target_size.height() as i32),
+            target_size.width() * 2,
+            target_size.height() * 2,
+        )
+        .unwrap();
+
+        let mut canvas = Canvas::from(pixmap);
+
+        let ts =
+            usvg::utils::view_box_to_transform(self.view_box.rect, self.view_box.aspect, self.size);
+        canvas.apply_transform(transform);
+        canvas.apply_transform(ts.to_native());
+
+        let ctx = Context {
+            root_transform: usvg::Transform::from_native(canvas.transform),
+            target_size,
+            max_filter_region,
         };
 
-        let mut clip = tiny_skia::Mask::new(self.pixmap.width(), self.pixmap.height()).unwrap();
-        clip.fill_path(
-            &path,
-            tiny_skia::FillRule::Winding,
-            true,
-            tiny_skia::Transform::default(),
-        );
-        self.clip = Some(clip);
+        render_nodes(&self.children, &ctx, (0, 0), &mut canvas);
     }
 }
 
-pub(crate) fn render_to_canvas(tree: &usvg::Tree, img_size: usvg::ScreenSize, canvas: &mut Canvas) {
-    render_node_to_canvas(tree, &tree.root, tree.view_box, img_size, canvas);
-}
-
-pub(crate) fn render_node_to_canvas(
-    tree: &usvg::Tree,
-    node: &usvg::Node,
-    view_box: usvg::ViewBox,
-    img_size: usvg::ScreenSize,
+pub fn render_nodes(
+    children: &[Node],
+    ctx: &Context,
+    parent_offset: (i32, i32),
     canvas: &mut Canvas,
 ) {
-    apply_viewbox_transform(view_box, img_size, canvas);
-
-    let curr_ts = canvas.transform;
-
-    let ts = node.abs_transform();
-
-    canvas.apply_transform(ts.to_native());
-    render_node(tree, node, canvas);
-    canvas.transform = curr_ts;
-}
-
-/// Applies viewbox transformation to the painter.
-fn apply_viewbox_transform(
-    view_box: usvg::ViewBox,
-    img_size: usvg::ScreenSize,
-    canvas: &mut Canvas,
-) {
-    let ts = usvg::utils::view_box_to_transform(view_box.rect, view_box.aspect, img_size.to_size());
-    canvas.apply_transform(ts.to_native());
-}
-
-pub(crate) fn render_node(
-    tree: &usvg::Tree,
-    node: &usvg::Node,
-    canvas: &mut Canvas,
-) -> Option<usvg::PathBbox> {
-    match *node.borrow() {
-        usvg::NodeKind::Path(ref path) => {
-            crate::path::draw(tree, path, tiny_skia::BlendMode::SourceOver, canvas)
-        }
-        usvg::NodeKind::Image(ref img) => Some(crate::image::draw(img, canvas)),
-        usvg::NodeKind::Group(ref g) => {
-            if g.should_isolate() {
-                render_group_impl(tree, node, g, canvas)
-            } else {
-                render_group(tree, node, canvas)
-            }
-        }
-        usvg::NodeKind::Text(_) => None,
+    for node in children {
+        render_node(node, ctx, parent_offset, canvas);
     }
 }
 
-pub(crate) fn render_group(
-    tree: &usvg::Tree,
-    parent: &usvg::Node,
-    canvas: &mut Canvas,
-) -> Option<usvg::PathBbox> {
-    let curr_ts = canvas.transform;
-    let mut g_bbox = usvg::PathBbox::new_bbox();
-
-    for node in parent.children() {
-        canvas.apply_transform(node.transform().to_native());
-
-        let bbox = render_node(tree, &node, canvas);
-        if let Some(bbox) = bbox {
-            if let Some(bbox) = bbox.transform(&node.transform()) {
-                g_bbox = g_bbox.expand(bbox);
-            }
+fn render_node(node: &Node, ctx: &Context, parent_offset: (i32, i32), canvas: &mut Canvas) {
+    match node {
+        Node::Group(ref group) => {
+            render_group(group, ctx, parent_offset, canvas);
         }
+        Node::FillPath(ref path) => {
+            crate::path::render_fill_path(path, tiny_skia::BlendMode::SourceOver, ctx, canvas);
+        }
+        Node::StrokePath(ref path) => {
+            crate::path::render_stroke_path(path, tiny_skia::BlendMode::SourceOver, ctx, canvas);
+        }
+        Node::Image(ref image) => {
+            crate::image::render_image(image, canvas);
+        }
+    }
+}
 
-        // Revert transform.
-        canvas.transform = curr_ts;
+fn render_group(
+    group: &Group,
+    ctx: &Context,
+    parent_offset: (i32, i32), // TODO: test
+    canvas: &mut Canvas,
+) -> Option<()> {
+    if group.bbox.fuzzy_eq(&usvg::PathBbox::new_bbox()) {
+        log::warn!("Invalid group layer bbox detected.");
+        return None;
     }
 
-    // Check that bbox was changed, otherwise we will have a rect with x/y set to f64::MAX.
-    if g_bbox.fuzzy_ne(&usvg::PathBbox::new_bbox()) {
-        Some(g_bbox)
+    let bbox = group.bbox.transform(&ctx.root_transform)?;
+
+    let ibbox = if group.filters.is_empty() {
+        // Convert group bbox into an integer one, expanding each side outwards by 2px
+        // to make sure that anti-aliased pixels would not be clipped.
+        let ibbox = usvg::ScreenRect::new(
+            bbox.x().floor() as i32 - 2 - parent_offset.0,
+            bbox.y().floor() as i32 - 2 - parent_offset.1,
+            bbox.width().ceil() as u32 + 4,
+            bbox.height().ceil() as u32 + 4,
+        )?;
+
+        // Make sure that our bbox is not bigger than the canvas.
+        // There is no point in rendering anything outside the canvas,
+        // since it will be clipped anyway.
+        ibbox.fit_to_rect(ctx.target_size.to_screen_rect())
     } else {
-        None
-    }
-}
+        // Bounding box for groups with filters is special, because it's a filter region
+        // and not object bounding box. We should to use it as is.
+        let ibbox = usvg::ScreenRect::new(
+            bbox.x().floor() as i32,
+            bbox.y().floor() as i32,
+            bbox.width().ceil() as u32,
+            bbox.height().ceil() as u32,
+        )?;
 
-fn render_group_impl(
-    tree: &usvg::Tree,
-    node: &usvg::Node,
-    g: &usvg::Group,
-    canvas: &mut Canvas,
-) -> Option<usvg::PathBbox> {
-    let mut sub_pixmap = tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height())?;
-    let curr_ts = canvas.transform;
+        // Unlike a normal group, a group with filters can be larger than target size.
+        // But we're still clipping it to 2x the target size to prevent absurdly large layers.
+        ibbox.fit_to_rect(ctx.max_filter_region)
+    };
 
-    let bbox = {
+    // Account for subpixel positioned layers.
+    let sub_x = bbox.x() as f32 - ibbox.x() as f32;
+    let sub_y = bbox.y() as f32 - ibbox.y() as f32;
+
+    let shift_ts = tiny_skia::Transform::from_translate(
+        -(bbox.x() as f32 - sub_x),
+        -(bbox.y() as f32 - sub_y),
+    );
+
+    let transform = shift_ts.pre_concat(canvas.transform);
+
+    let mut sub_pixmap = tiny_skia::Pixmap::new(ibbox.width(), ibbox.height())
+        .log_none(|| log::warn!("Failed to allocate a group layer for: {:?}.", ibbox))?;
+
+    {
         let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
-        sub_canvas.transform = curr_ts;
-        render_group(tree, node, &mut sub_canvas)
-    };
+        sub_canvas.transform = transform;
+        render_nodes(
+            &group.children,
+            ctx,
+            (parent_offset.0 + ibbox.x(), parent_offset.1 + ibbox.y()),
+            &mut sub_canvas,
+        );
+    }
 
-    // At this point, `sub_pixmap` has probably the same size as the viewbox.
-    // So instead of clipping, masking and blending the whole viewbox, which can be very expensive,
-    // we're trying to reduce `sub_pixmap` to it's actual content trimming
-    // all transparent borders.
-    //
-    // Basically, if viewbox is 2000x2000 and the current group is 20x20, there is no point
-    // in blending the whole viewbox, we can blend just the current group region.
-    //
-    // Transparency trimming is not yet allowed on groups with filter,
-    // because filter expands the pixmap and it should be handled separately.
-    #[cfg(feature = "filter")]
-    let (tx, ty, mut sub_pixmap) = if g.filters.is_empty() {
-        trim_transparency(sub_pixmap)?
-    } else {
-        (0, 0, sub_pixmap)
-    };
-
-    #[cfg(not(feature = "filter"))]
-    let (tx, ty, mut sub_pixmap) = (0, 0, sub_pixmap);
-
-    // Filter can be rendered on an object without a bbox,
-    // as long as filter uses `userSpaceOnUse`.
-    #[cfg(feature = "filter")]
-    for filter in &g.filters {
-        let bbox = bbox.and_then(|r| r.to_rect());
-        let ts = usvg::Transform::from_native(curr_ts);
-        let fill_paint = prepare_filter_fill_paint(tree, node, filter, bbox, ts, &sub_pixmap);
-        let stroke_paint = prepare_filter_stroke_paint(tree, node, filter, bbox, ts, &sub_pixmap);
+    for filter in &group.filters {
+        let fill_paint = prepare_filter_paint(group.filter_fill.as_ref(), ctx, &sub_pixmap);
+        let stroke_paint = prepare_filter_paint(group.filter_stroke.as_ref(), ctx, &sub_pixmap);
         crate::filter::apply(
             filter,
-            bbox,
-            &ts,
-            tree,
+            ibbox,
+            &ctx.root_transform,
             fill_paint.as_ref(),
             stroke_paint.as_ref(),
             &mut sub_pixmap,
         );
     }
 
-    // Clipping and masking can be done only for objects with a valid bbox.
-    if let Some(bbox) = bbox {
-        if let Some(ref clip_path) = g.clip_path {
-            let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
-            sub_canvas.translate(-tx as f32, -ty as f32);
-            sub_canvas.apply_transform(curr_ts);
-            crate::clip::clip(tree, clip_path, bbox, &mut sub_canvas);
-        }
-
-        if let Some(ref mask) = g.mask {
-            let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
-            sub_canvas.translate(-tx as f32, -ty as f32);
-            sub_canvas.apply_transform(curr_ts);
-            crate::mask::mask(tree, mask, bbox, &mut sub_canvas);
-        }
+    if let Some(ref clip_path) = group.clip_path {
+        crate::clip::apply(clip_path, transform, &mut sub_pixmap);
     }
 
-    let mut paint = tiny_skia::PixmapPaint::default();
-    paint.blend_mode = convert_blend_mode(g.blend_mode);
-    paint.quality = tiny_skia::FilterQuality::Nearest;
-    if g.opacity != usvg::Opacity::ONE {
-        paint.opacity = g.opacity.get() as f32;
+    if let Some(ref mask) = group.mask {
+        crate::mask::apply(
+            mask,
+            ctx,
+            (ibbox.x(), ibbox.y()),
+            transform,
+            &mut sub_pixmap,
+        );
     }
+
+    let paint = tiny_skia::PixmapPaint {
+        opacity: group.opacity,
+        blend_mode: group.blend_mode,
+        quality: tiny_skia::FilterQuality::Nearest,
+    };
 
     canvas.pixmap.draw_pixmap(
-        tx,
-        ty,
+        ibbox.x(),
+        ibbox.y(),
         sub_pixmap.as_ref(),
         &paint,
         tiny_skia::Transform::identity(),
         None,
     );
 
-    bbox
-}
-
-/// Removes transparent borders from the image leaving only a tight bbox content.
-///
-/// Detects graphics element bbox on the raster images in absolute coordinates.
-///
-/// The current implementation is extremely simple and fairly slow.
-/// Ideally, we should calculate the absolute bbox based on the current transform and bbox.
-/// But because of anti-aliasing, float precision and especially stroking,
-/// this can be fairly complicated and error-prone.
-/// So for now we're using this method.
-pub fn trim_transparency(pixmap: tiny_skia::Pixmap) -> Option<(i32, i32, tiny_skia::Pixmap)> {
-    let pixels = pixmap.data();
-    let width = pixmap.width() as i32;
-    let height = pixmap.height() as i32;
-    let mut min_x = pixmap.width() as i32;
-    let mut min_y = pixmap.height() as i32;
-    let mut max_x = 0;
-    let mut max_y = 0;
-
-    let first_non_zero = {
-        let max_safe_index = pixels.len() / 8;
-
-        // Find first non-zero byte by looking at 8 bytes a time. If not found
-        // checking the remaining bytes. This is a lot faster than checking one
-        // byte a time.
-        (0..max_safe_index)
-            .position(|i| {
-                let idx = i * 8;
-                u64::from_ne_bytes((&pixels[idx..(idx + 8)]).try_into().unwrap()) != 0
-            })
-            .map_or_else(
-                || ((max_safe_index * 8)..pixels.len()).position(|i| pixels[i] != 0),
-                |i| Some(i * 8),
-            )
-    };
-
-    // We skip all the transparent pixels at the beginning of the image. It's
-    // very likely that transparent pixels all have rgba(0, 0, 0, 0) so skipping
-    // zero bytes can be used as a quick optimization.
-    // If the entire image is transparent, we don't need to continue.
-    if let Some(first_non_zero) = first_non_zero {
-        let get_alpha = |x, y| pixels[((width * y + x) * 4 + 3) as usize];
-
-        // Find the top boundary.
-        let start_y = first_non_zero as i32 / 4 / width;
-        'top: for y in start_y..height {
-            for x in 0..width {
-                if get_alpha(x, y) != 0 {
-                    min_x = x;
-                    max_x = x;
-                    min_y = y;
-                    max_y = y;
-                    break 'top;
-                }
-            }
-        }
-
-        // Find the bottom boundary.
-        'bottom: for y in (max_y..height).rev() {
-            for x in 0..width {
-                if get_alpha(x, y) != 0 {
-                    max_y = y;
-                    if x < min_x {
-                        min_x = x;
-                    }
-                    if x > max_x {
-                        max_x = x;
-                    }
-                    break 'bottom;
-                }
-            }
-        }
-
-        // Find the left boundary.
-        'left: for x in 0..min_x {
-            for y in min_y..max_y {
-                if get_alpha(x, y) != 0 {
-                    min_x = x;
-                    break 'left;
-                }
-            }
-        }
-
-        // Find the right boundary.
-        'right: for x in (max_x..width).rev() {
-            for y in min_y..max_y {
-                if get_alpha(x, y) != 0 {
-                    max_x = x;
-                    break 'right;
-                }
-            }
-        }
-    }
-
-    // Expand in all directions by 1px.
-    min_x = (min_x - 1).max(0);
-    min_y = (min_y - 1).max(0);
-    max_x = (max_x + 2).min(pixmap.width() as i32);
-    max_y = (max_y + 2).min(pixmap.height() as i32);
-
-    if min_x < max_x && min_y < max_y {
-        let rect = tiny_skia::IntRect::from_ltrb(min_x, min_y, max_x, max_y)?;
-        let pixmap = pixmap.clone_rect(rect)?;
-        Some((min_x, min_y, pixmap))
-    } else {
-        Some((0, 0, pixmap))
-    }
+    Some(())
 }
 
 /// Renders an image used by `FillPaint`/`StrokePaint` filter input.
@@ -343,104 +233,34 @@ pub fn trim_transparency(pixmap: tiny_skia::Pixmap) -> Option<(i32, i32, tiny_sk
 /// And since there are no expected behaviour, we will simply fill the filter region.
 ///
 /// https://github.com/w3c/fxtf-drafts/issues/323
-#[cfg(feature = "filter")]
-fn prepare_filter_fill_paint(
-    tree: &usvg::Tree,
-    parent: &usvg::Node,
-    filter: &usvg::filter::Filter,
-    bbox: Option<usvg::Rect>,
-    ts: usvg::Transform,
+fn prepare_filter_paint(
+    paint: Option<&crate::paint_server::Paint>,
+    ctx: &Context,
     pixmap: &tiny_skia::Pixmap,
 ) -> Option<tiny_skia::Pixmap> {
-    let region = crate::filter::calc_region(filter, bbox, &ts, pixmap).ok()?;
-    let mut sub_pixmap = tiny_skia::Pixmap::new(region.width(), region.height()).unwrap();
+    use std::rc::Rc;
+
+    let paint = paint?;
+    let mut sub_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
     let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
-    if let usvg::NodeKind::Group(ref g) = *parent.borrow() {
-        if let Some(paint) = g.filter_fill.clone() {
-            let style_bbox = bbox.unwrap_or_else(|| usvg::Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
 
-            let rect = tiny_skia::Rect::from_xywh(
-                0.0,
-                0.0,
-                region.width() as f32,
-                region.height() as f32,
-            )?;
-            let path = tiny_skia::PathBuilder::from_rect(rect);
+    let rect = tiny_skia::Rect::from_xywh(0.0, 0.0, pixmap.width() as f32, pixmap.height() as f32)?;
+    let path = tiny_skia::PathBuilder::from_rect(rect);
 
-            let fill = usvg::Fill::from_paint(paint);
-            crate::paint_server::fill(
-                tree,
-                &fill,
-                style_bbox.to_path_bbox(),
-                &path,
-                true,
-                tiny_skia::BlendMode::SourceOver,
-                &mut sub_canvas,
-            );
-        }
-    }
+    let path = crate::path::FillPath {
+        transform: tiny_skia::Transform::default(),
+        paint: paint.clone(), // TODO: remove clone
+        rule: tiny_skia::FillRule::Winding,
+        anti_alias: true,
+        path: Rc::new(path),
+    };
+
+    crate::path::render_fill_path(
+        &path,
+        tiny_skia::BlendMode::SourceOver,
+        ctx,
+        &mut sub_canvas,
+    );
 
     Some(sub_pixmap)
-}
-
-/// The same as `prepare_filter_fill_paint`, but for `StrokePaint`.
-#[cfg(feature = "filter")]
-fn prepare_filter_stroke_paint(
-    tree: &usvg::Tree,
-    parent: &usvg::Node,
-    filter: &usvg::filter::Filter,
-    bbox: Option<usvg::Rect>,
-    ts: usvg::Transform,
-    pixmap: &tiny_skia::Pixmap,
-) -> Option<tiny_skia::Pixmap> {
-    let region = crate::filter::calc_region(filter, bbox, &ts, pixmap).ok()?;
-    let mut sub_pixmap = tiny_skia::Pixmap::new(region.width(), region.height()).unwrap();
-    let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
-    if let usvg::NodeKind::Group(ref g) = *parent.borrow() {
-        if let Some(paint) = g.filter_stroke.clone() {
-            let style_bbox = bbox.unwrap_or_else(|| usvg::Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
-
-            let rect = tiny_skia::Rect::from_xywh(
-                0.0,
-                0.0,
-                region.width() as f32,
-                region.height() as f32,
-            )?;
-            let path = tiny_skia::PathBuilder::from_rect(rect);
-
-            let fill = usvg::Fill::from_paint(paint);
-            crate::paint_server::fill(
-                tree,
-                &fill,
-                style_bbox.to_path_bbox(),
-                &path,
-                true,
-                tiny_skia::BlendMode::SourceOver,
-                &mut sub_canvas,
-            );
-        }
-    }
-
-    Some(sub_pixmap)
-}
-
-pub(crate) fn convert_blend_mode(mode: usvg::BlendMode) -> tiny_skia::BlendMode {
-    match mode {
-        usvg::BlendMode::Normal => tiny_skia::BlendMode::SourceOver,
-        usvg::BlendMode::Multiply => tiny_skia::BlendMode::Multiply,
-        usvg::BlendMode::Screen => tiny_skia::BlendMode::Screen,
-        usvg::BlendMode::Overlay => tiny_skia::BlendMode::Overlay,
-        usvg::BlendMode::Darken => tiny_skia::BlendMode::Darken,
-        usvg::BlendMode::Lighten => tiny_skia::BlendMode::Lighten,
-        usvg::BlendMode::ColorDodge => tiny_skia::BlendMode::ColorDodge,
-        usvg::BlendMode::ColorBurn => tiny_skia::BlendMode::ColorBurn,
-        usvg::BlendMode::HardLight => tiny_skia::BlendMode::HardLight,
-        usvg::BlendMode::SoftLight => tiny_skia::BlendMode::SoftLight,
-        usvg::BlendMode::Difference => tiny_skia::BlendMode::Difference,
-        usvg::BlendMode::Exclusion => tiny_skia::BlendMode::Exclusion,
-        usvg::BlendMode::Hue => tiny_skia::BlendMode::Hue,
-        usvg::BlendMode::Saturation => tiny_skia::BlendMode::Saturation,
-        usvg::BlendMode::Color => tiny_skia::BlendMode::Color,
-        usvg::BlendMode::Luminosity => tiny_skia::BlendMode::Luminosity,
-    }
 }

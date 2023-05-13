@@ -37,16 +37,24 @@ pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvg::Tree, Error> 
 }
 
 pub fn render_thumbnail(tree: &Option<usvg::Tree>, cx: u32) -> Result<tiny_skia::Pixmap, Error> {
-    let tree = tree.as_ref().ok_or(Error::TreeEmpty)?;
-    let fit_to = if tree.size.width() > tree.size.height() {
-        FitTo::Width(cx)
-    } else {
-        FitTo::Height(cx)
-    };
+    if cx == 0 {
+        return Err(Error::RenderError);
+    }
 
-    let size = fit_to.fit_to(tree.size.to_screen_size()).ok_or(Error::RenderError)?;
+    let tree = tree.as_ref().ok_or(Error::TreeEmpty)?;
+    let size = if tree.size.width() > tree.size.height() {
+        tree.size.to_screen_size().scale_to_width(cx)
+    } else {
+        tree.size.to_screen_size().scale_to_height(cx)
+    }.ok_or(Error::RenderError)?;
+
+    let transform = tiny_skia::Transform::from_scale(
+        size.width() as f32 / tree.size.width() as f32,
+        size.height() as f32 / tree.size.height() as f32,
+    );
+
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
-    resvg::render(&tree, fit_to, tiny_skia::Transform::default(), pixmap.as_mut()).ok_or(Error::RenderError)?;
+    resvg::render(&tree, transform, pixmap.as_mut()).ok_or(Error::RenderError)?;
     Ok(pixmap)
 }
 

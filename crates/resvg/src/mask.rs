@@ -2,59 +2,94 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{render::Canvas, ConvTransform};
+use std::rc::Rc;
 
-pub fn mask(
-    tree: &usvg::Tree,
-    mask: &usvg::Mask,
-    bbox: usvg::PathBbox,
-    canvas: &mut Canvas,
-) -> Option<()> {
-    let bbox = if mask.units == usvg::Units::ObjectBoundingBox
-        || mask.content_units == usvg::Units::ObjectBoundingBox
-    {
-        if let Some(bbox) = bbox.to_rect() {
-            bbox
+use crate::render::{Canvas, Context};
+use crate::tree::{ConvTransform, Node, OptionLog, UsvgRectExt};
+
+pub struct Mask {
+    pub mask_all: bool,
+    pub rect: tiny_skia::Rect,
+    pub kind: usvg::MaskType,
+    pub mask: Option<Box<Self>>,
+    pub children: Vec<Node>,
+}
+
+pub fn convert(
+    umask: Option<Rc<usvg::Mask>>,
+    object_bbox: usvg::PathBbox,
+    mut transform: tiny_skia::Transform,
+) -> Option<Mask> {
+    let umask = umask?;
+
+    if umask.content_units == usvg::Units::ObjectBoundingBox {
+        let object_bbox = object_bbox
+            .to_rect()
+            .log_none(|| log::warn!("Masking of zero-sized shapes is not allowed."))?;
+
+        let ts = usvg::Transform::from_bbox(object_bbox);
+        transform = transform.pre_concat(ts.to_native());
+    }
+
+    let mut mask_all = false;
+    if umask.units == usvg::Units::ObjectBoundingBox && object_bbox.to_rect().is_none() {
+        // `objectBoundingBox` units and zero-sized bbox? Clear the canvas and return.
+        // Technically a UB, but this is what Chrome and Firefox do.
+        mask_all = true;
+    }
+
+    let rect = if umask.units == usvg::Units::ObjectBoundingBox {
+        if let Some(bbox) = object_bbox.to_rect() {
+            umask.rect.bbox_transform(bbox)
         } else {
-            // `objectBoundingBox` units and zero-sized bbox? Clear the canvas and return.
-            // Technically a UB, but this is what Chrome and Firefox do.
-            canvas.pixmap.fill(tiny_skia::Color::TRANSPARENT);
-            return None;
+            // The actual values does not matter. Will not be used anyway.
+            usvg::Rect::new(0.0, 0.0, 1.0, 1.0).unwrap()
         }
     } else {
-        usvg::Rect::new_bbox() // actual value doesn't matter, unreachable
-    };
+        umask.rect
+    }
+    .to_skia_rect()?;
 
-    let mut mask_pixmap = tiny_skia::Pixmap::new(canvas.pixmap.width(), canvas.pixmap.height())?;
+    let (children, _) = crate::tree::convert_node(umask.root.clone(), transform);
+    Some(Mask {
+        mask_all,
+        rect,
+        kind: umask.kind,
+        mask: convert(umask.mask.clone(), object_bbox, transform).map(Box::new),
+        children,
+    })
+}
+
+pub fn apply(
+    mask: &Mask,
+    ctx: &Context,
+    parent_offset: (i32, i32),
+    transform: tiny_skia::Transform,
+    pixmap: &mut tiny_skia::Pixmap,
+) {
+    if mask.mask_all {
+        pixmap.fill(tiny_skia::Color::TRANSPARENT);
+        return;
+    }
+
+    let mut mask_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
+
     {
         let mut mask_canvas = Canvas::from(mask_pixmap.as_mut());
-        mask_canvas.transform = canvas.transform;
+        mask_canvas.transform = transform;
 
-        let r = if mask.units == usvg::Units::ObjectBoundingBox {
-            mask.rect.bbox_transform(bbox)
-        } else {
-            mask.rect
-        };
+        // Mask has to be clipped to the mask.rect
+        let alpha_mask = mask_canvas.create_rect_mask(mask.rect);
 
-        let rr = tiny_skia::Rect::from_xywh(
-            r.x() as f32,
-            r.y() as f32,
-            r.width() as f32,
-            r.height() as f32,
-        );
-        if let Some(rr) = rr {
-            mask_canvas.set_clip_rect(rr);
+        crate::render::render_nodes(&mask.children, ctx, parent_offset, &mut mask_canvas);
+
+        if let Some(alpha_mask) = alpha_mask {
+            mask_canvas.pixmap.apply_mask(&alpha_mask);
         }
-
-        if mask.content_units == usvg::Units::ObjectBoundingBox {
-            mask_canvas.apply_transform(usvg::Transform::from_bbox(bbox).to_native());
-        }
-
-        crate::render::render_group(tree, &mask.root, &mut mask_canvas);
     }
 
     if let Some(ref mask) = mask.mask {
-        self::mask(tree, mask, bbox.to_path_bbox(), canvas);
+        self::apply(mask, ctx, parent_offset, transform, pixmap);
     }
 
     let mask_type = match mask.kind {
@@ -63,7 +98,5 @@ pub fn mask(
     };
 
     let mask = tiny_skia::Mask::from_pixmap(mask_pixmap.as_ref(), mask_type);
-    canvas.pixmap.apply_mask(&mask);
-
-    Some(())
+    pixmap.apply_mask(&mask);
 }

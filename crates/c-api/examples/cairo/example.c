@@ -37,8 +37,7 @@ int main(int argc, char **argv)
 
     unsigned char *surface_data = cairo_image_surface_get_data(surface);
 
-    resvg_fit_to fit_to = { RESVG_FIT_TO_TYPE_ORIGINAL, 1 };
-    resvg_render(tree, fit_to, resvg_transform_identity(), width, height, (char*)surface_data);
+    resvg_render(tree, resvg_transform_identity(), width, height, (char*)surface_data);
 
     /* RGBA -> BGRA */
     for (int i = 0; i < width * height * 4; i += 4)

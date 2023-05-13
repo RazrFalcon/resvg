@@ -105,54 +105,6 @@ impl resvg_transform {
     }
 }
 
-/// @brief A "fit to" type.
-///
-/// All types produce proportional scaling.
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub enum resvg_fit_to_type {
-    /// Use an original image size.
-    ORIGINAL,
-    /// Fit an image to a specified width.
-    WIDTH,
-    /// Fit an image to a specified height.
-    HEIGHT,
-    /// Zoom an image using scaling factor.
-    ZOOM,
-}
-
-/// @brief A "fit to" property.
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct resvg_fit_to {
-    /// A fit type.
-    kind: resvg_fit_to_type,
-    /// @brief Fit to value
-    ///
-    /// Not used by RESVG_FIT_TO_ORIGINAL.
-    /// Must be >= 1 for RESVG_FIT_TO_WIDTH and RESVG_FIT_TO_HEIGHT.
-    /// Must be > 0 for RESVG_FIT_TO_ZOOM.
-    value: f32,
-}
-
-impl resvg_fit_to {
-    #[inline]
-    fn to_usvg(&self) -> resvg::FitTo {
-        match self.kind {
-            resvg_fit_to_type::ORIGINAL => resvg::FitTo::Original,
-            resvg_fit_to_type::WIDTH => {
-                assert!(self.value >= 1.0);
-                resvg::FitTo::Width(self.value as u32)
-            }
-            resvg_fit_to_type::HEIGHT => {
-                assert!(self.value >= 1.0);
-                resvg::FitTo::Height(self.value as u32)
-            }
-            resvg_fit_to_type::ZOOM => resvg::FitTo::Zoom(self.value),
-        }
-    }
-}
-
 /// @brief Creates an identity transform.
 #[no_mangle]
 pub extern "C" fn resvg_transform_identity() -> resvg_transform {
@@ -563,6 +515,7 @@ pub extern "C" fn resvg_options_destroy(opt: *mut resvg_options) {
     };
 }
 
+// TODO: use resvg::Tree
 /// @brief An opaque pointer to the rendering tree.
 pub struct resvg_render_tree(pub usvg::Tree);
 
@@ -910,7 +863,6 @@ fn convert_error(e: usvg::Error) -> resvg_error {
 /// @brief Renders the #resvg_render_tree onto the pixmap.
 ///
 /// @param tree A render tree.
-/// @param fit_to Specifies into which region SVG should be fit.
 /// @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
 /// @param width Pixmap width.
 /// @param height Pixmap height.
@@ -919,7 +871,6 @@ fn convert_error(e: usvg::Error) -> resvg_error {
 #[no_mangle]
 pub extern "C" fn resvg_render(
     tree: *const resvg_render_tree,
-    fit_to: resvg_fit_to,
     transform: resvg_transform,
     width: u32,
     height: u32,
@@ -935,14 +886,14 @@ pub extern "C" fn resvg_render(
         unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
     let pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
 
-    resvg::render(&tree.0, fit_to.to_usvg(), transform.to_tiny_skia(), pixmap).unwrap()
+    let rtree = resvg::Tree::from_usvg(&tree.0);
+    rtree.render(transform.to_tiny_skia(), pixmap);
 }
 
 /// @brief Renders a Node by ID onto the image.
 ///
 /// @param tree A render tree.
 /// @param id Node's ID. Must not be NULL.
-/// @param fit_to Specifies into which region the image should be fit.
 /// @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
 /// @param width Pixmap width.
 /// @param height Pixmap height.
@@ -955,7 +906,6 @@ pub extern "C" fn resvg_render(
 pub extern "C" fn resvg_render_node(
     tree: *const resvg_render_tree,
     id: *const c_char,
-    fit_to: resvg_fit_to,
     transform: resvg_transform,
     width: u32,
     height: u32,
@@ -982,14 +932,12 @@ pub extern "C" fn resvg_render_node(
             unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
         let pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
 
-        resvg::render_node(
-            &tree.0,
-            &node,
-            fit_to.to_usvg(),
-            transform.to_tiny_skia(),
-            pixmap,
-        )
-        .is_some()
+        if let Some(rtree) = resvg::Tree::from_usvg_node(&node) {
+            rtree.render(transform.to_tiny_skia(), pixmap);
+            true
+        } else {
+            false
+        }
     } else {
         log::warn!("A node with '{}' ID wasn't found.", id);
         false

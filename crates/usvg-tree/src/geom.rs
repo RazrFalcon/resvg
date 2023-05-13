@@ -245,13 +245,36 @@ impl ScreenSize {
         (self.width, self.height)
     }
 
-    /// Scales current size to specified size.
+    /// Scales current size by the specified factor.
+    #[inline]
+    pub fn scale_by(&self, factor: f64) -> Option<Self> {
+        Self::new(
+            (self.width as f64 * factor).round() as u32,
+            (self.height as f64 * factor).round() as u32,
+        )
+    }
+
+    /// Scales current size to the specified size.
     #[inline]
     pub fn scale_to(&self, to: Self) -> Self {
         size_scale(*self, to, false)
     }
 
-    /// Expands current size to specified size.
+    /// Scales current size to the specified width.
+    #[inline]
+    pub fn scale_to_width(&self, new_width: u32) -> Option<Self> {
+        let new_height = (new_width as f32 * self.height as f32 / self.width as f32).ceil();
+        Self::new(new_width, new_height as u32)
+    }
+
+    /// Scales current size to the specified height.
+    #[inline]
+    pub fn scale_to_height(&self, new_height: u32) -> Option<Self> {
+        let new_width = (new_height as f32 * self.width as f32 / self.height as f32).ceil();
+        Self::new(new_width as u32, new_height)
+    }
+
+    /// Expands current size to the specified size.
     #[inline]
     pub fn expand_to(&self, to: Self) -> Self {
         size_scale(*self, to, true)
@@ -277,6 +300,13 @@ impl ScreenSize {
     pub fn to_size(&self) -> Size {
         // Can't fail, because `ScreenSize` is always valid.
         Size::new(self.width as f64, self.height as f64).unwrap()
+    }
+
+    /// Converts the current `ScreenSize` to `ScreenRect`.
+    #[inline]
+    pub fn to_screen_rect(&self) -> ScreenRect {
+        // Can't fail, because `ScreenSize` is always valid.
+        ScreenRect::new(0, 0, self.width, self.height).unwrap()
     }
 }
 
@@ -820,11 +850,11 @@ impl ScreenRect {
     pub fn fit_to_rect(&self, bounds: ScreenRect) -> Self {
         let mut r = *self;
 
-        if r.x < 0 {
-            r.x = 0;
+        if r.x < bounds.x() {
+            r.x = bounds.x();
         }
-        if r.y < 0 {
-            r.y = 0;
+        if r.y < bounds.y() {
+            r.y = bounds.y();
         }
 
         if r.right() > bounds.width as i32 {

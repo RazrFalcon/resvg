@@ -1,0 +1,4 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- nothing to render, should be completely ignored -->
+    <path d="M 20 100 L 180 100" fill="none"/>
+</svg>

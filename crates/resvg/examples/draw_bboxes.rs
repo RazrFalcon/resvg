@@ -24,7 +24,7 @@ fn main() {
     opt.resources_dir = std::fs::canonicalize(&args[1])
         .ok()
         .and_then(|p| p.parent().map(|p| p.to_path_buf()));
-    let fit_to = resvg::FitTo::Zoom(zoom);
+    // let fit_to = resvg::FitTo::Zoom(zoom);
 
     let mut fontdb = fontdb::Database::new();
     fontdb.load_system_fonts();
@@ -76,14 +76,11 @@ fn main() {
         }));
     }
 
-    let pixmap_size = fit_to.fit_to(tree.size.to_screen_size()).unwrap();
+    let rtree = resvg::Tree::from_usvg(&tree);
+
+    let pixmap_size = tree.size.to_screen_size().scale_by(zoom as f64).unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
-    resvg::render(
-        &tree,
-        fit_to,
-        tiny_skia::Transform::default(),
-        pixmap.as_mut(),
-    )
-    .unwrap();
+    let render_ts = tiny_skia::Transform::from_scale(zoom, zoom);
+    rtree.render(render_ts, pixmap.as_mut());
     pixmap.save_png(&args[2]).unwrap();
 }
