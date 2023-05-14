@@ -19,6 +19,7 @@ pub struct Group {
     pub filters: Vec<crate::filter::Filter>,
     pub filter_fill: Option<Paint>,
     pub filter_stroke: Option<Paint>,
+    pub filter_bbox: Option<usvg::PathBbox>,
 
     /// Group's layer bounding box in canvas coordinates.
     pub bbox: usvg::PathBbox,
@@ -157,22 +158,18 @@ fn convert_group(
     }
 
     let mut group_children = Vec::new();
-    let (mut layer_bbox, object_bbox) = match convert_children(node, transform, &mut group_children)
-    {
+    let (layer_bbox, object_bbox) = match convert_children(node, transform, &mut group_children) {
         Some(v) => v,
         None => return convert_empty_group(ugroup, transform, children),
     };
 
+    let mut filter_bbox = None;
     if !ugroup.filters.is_empty() {
-        let bbox = crate::filter::calc_filters_region(
+        filter_bbox = crate::filter::calc_filters_region(
             &ugroup.filters,
             object_bbox.to_rect(),
             &usvg::Transform::from_native(transform),
         );
-
-        if let Some(bbox) = bbox {
-            layer_bbox = bbox;
-        }
     }
 
     let mut filter_fill = None;
@@ -195,6 +192,7 @@ fn convert_group(
         filters: crate::filter::convert(&ugroup.filters, Some(object_bbox), transform)?,
         filter_fill,
         filter_stroke,
+        filter_bbox,
         bbox: layer_bbox,
         children: group_children,
     };
@@ -238,6 +236,7 @@ fn convert_empty_group(
         filters: crate::filter::convert(&ugroup.filters, None, transform)?,
         filter_fill,
         filter_stroke,
+        filter_bbox: Some(layer_bbox),
         bbox: layer_bbox,
         children: Vec::new(),
     };

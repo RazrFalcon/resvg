@@ -167,6 +167,7 @@ fn convert_stroke_path(
         stroke.dash = tiny_skia::StrokeDash::new(list, ustroke.dashoffset);
     }
 
+    // TODO: expand by stroke width for round/bevel joins
     let resolution_scale = tiny_skia::PathStroker::compute_resolution_scale(&transform);
     let resolution_scale = resolution_scale.max(10.0);
     let stroked_path = path.stroke(&stroke, resolution_scale)?;

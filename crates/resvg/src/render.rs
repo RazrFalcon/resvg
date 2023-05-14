@@ -104,45 +104,41 @@ fn render_group(
 
     let bbox = group.bbox.transform(&ctx.root_transform)?;
 
-    let ibbox = if group.filters.is_empty() {
-        // Convert group bbox into an integer one, expanding each side outwards by 2px
-        // to make sure that anti-aliased pixels would not be clipped.
-        let ibbox = usvg::ScreenRect::new(
-            bbox.x().floor() as i32 - 2 - parent_offset.0,
-            bbox.y().floor() as i32 - 2 - parent_offset.1,
-            bbox.width().ceil() as u32 + 4,
-            bbox.height().ceil() as u32 + 4,
-        )?;
+    // Convert group bbox into an integer one, expanding each side outwards by 2px
+    // to make sure that anti-aliased pixels would not be clipped.
+    let mut ibbox = usvg::ScreenRect::new(
+        bbox.x().floor() as i32 - 2,
+        bbox.y().floor() as i32 - 2,
+        bbox.width().ceil() as u32 + 4,
+        bbox.height().ceil() as u32 + 4,
+    )?;
 
-        // Make sure that our bbox is not bigger than the canvas.
-        // There is no point in rendering anything outside the canvas,
-        // since it will be clipped anyway.
-        ibbox.fit_to_rect(ctx.target_size.to_screen_rect())
-    } else {
-        // Bounding box for groups with filters is special, because it's a filter region
-        // and not object bounding box. We should to use it as is.
-        let ibbox = usvg::ScreenRect::new(
-            bbox.x().floor() as i32,
-            bbox.y().floor() as i32,
-            bbox.width().ceil() as u32,
-            bbox.height().ceil() as u32,
-        )?;
+    let original_ibbox = ibbox;
 
-        // Unlike a normal group, a group with filters can be larger than target size.
-        // But we're still clipping it to 2x the target size to prevent absurdly large layers.
-        ibbox.fit_to_rect(ctx.max_filter_region)
+    ibbox = ibbox.translate(-parent_offset.0, -parent_offset.1);
+
+    // Make sure that our bbox is not bigger than the canvas.
+    // There is no point in rendering anything outside the canvas,
+    // since it will be clipped anyway.
+    ibbox = ibbox.fit_to_rect(ctx.target_size.to_screen_rect());
+
+    let shift_ts = {
+        // Original shift.
+        let mut dx = bbox.x() as f32;
+        let mut dy = bbox.y() as f32;
+
+        // Account for subpixel positioned layers.
+        dx -= bbox.x() as f32 - original_ibbox.x() as f32;
+        dy -= bbox.y() as f32 - original_ibbox.y() as f32;
+
+        // Include `parent_offset` and fit to canvas offsets.
+        dx -= (original_ibbox.x() - ibbox.x()) as f32;
+        dy -= (original_ibbox.y() - ibbox.y()) as f32;
+
+        tiny_skia::Transform::from_translate(-dx, -dy)
     };
 
-    // Account for subpixel positioned layers.
-    let sub_x = bbox.x() as f32 - ibbox.x() as f32;
-    let sub_y = bbox.y() as f32 - ibbox.y() as f32;
-
-    let shift_ts = tiny_skia::Transform::from_translate(
-        -(bbox.x() as f32 - sub_x),
-        -(bbox.y() as f32 - sub_y),
-    );
-
-    let transform = shift_ts.pre_concat(transform);
+    let mut transform = shift_ts.pre_concat(transform);
 
     let mut sub_pixmap = tiny_skia::Pixmap::new(ibbox.width(), ibbox.height())
         .log_none(|| log::warn!("Failed to allocate a group layer for: {:?}.", ibbox))?;
@@ -155,17 +151,55 @@ fn render_group(
         &mut sub_pixmap.as_mut(),
     );
 
-    for filter in &group.filters {
-        let fill_paint = prepare_filter_paint(group.filter_fill.as_ref(), ctx, &sub_pixmap);
-        let stroke_paint = prepare_filter_paint(group.filter_stroke.as_ref(), ctx, &sub_pixmap);
-        crate::filter::apply(
-            filter,
-            ibbox,
-            &ctx.root_transform,
-            fill_paint.as_ref(),
-            stroke_paint.as_ref(),
-            &mut sub_pixmap,
+    if let Some(filter_bbox) = group.filter_bbox {
+        let filter_bbox = filter_bbox.transform(&ctx.root_transform)?;
+
+        // Convert to screen/int rect rounding out.
+        let filter_bbox = usvg::ScreenRect::new(
+            filter_bbox.x().floor() as i32,
+            filter_bbox.y().floor() as i32,
+            filter_bbox.width().ceil() as u32,
+            filter_bbox.height().ceil() as u32,
+        )?;
+
+        // Unlike a normal group, a group with filters can be larger than target size.
+        // But we're still clipping it to 2x the target size to prevent absurdly large layers.
+        let filter_bbox = filter_bbox.fit_to_rect(ctx.max_filter_region);
+
+        let dx = original_ibbox.x() - filter_bbox.x();
+        let dy = original_ibbox.y() - filter_bbox.y();
+
+        ibbox = ibbox.translate(-dx, -dy);
+
+        transform =
+            tiny_skia::Transform::from_translate(dx as f32, dy as f32).pre_concat(transform);
+
+        // TODO: avoid new pixmap creation.
+        // Replace out layer pixmap with a filter region one.
+        // Draw the layer in the center of the "filter layer".
+        let mut sub_pixmap2 = tiny_skia::Pixmap::new(filter_bbox.width(), filter_bbox.height())?;
+        sub_pixmap2.draw_pixmap(
+            dx,
+            dy,
+            sub_pixmap.as_ref(),
+            &tiny_skia::PixmapPaint::default(),
+            tiny_skia::Transform::identity(),
+            None,
         );
+        sub_pixmap = sub_pixmap2;
+
+        for filter in &group.filters {
+            let fill_paint = prepare_filter_paint(group.filter_fill.as_ref(), ctx, &sub_pixmap);
+            let stroke_paint = prepare_filter_paint(group.filter_stroke.as_ref(), ctx, &sub_pixmap);
+            crate::filter::apply(
+                filter,
+                filter_bbox,
+                &ctx.root_transform,
+                fill_paint.as_ref(),
+                stroke_paint.as_ref(),
+                &mut sub_pixmap,
+            );
+        }
     }
 
     if let Some(ref clip_path) = group.clip_path {

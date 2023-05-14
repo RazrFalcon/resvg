@@ -119,7 +119,6 @@ pub struct Primitive {
 }
 
 pub struct Filter {
-    pub rect: usvg::Rect,
     pub primitives: Vec<Primitive>,
 }
 
@@ -182,10 +181,7 @@ fn convert_filter(
         }
     }
 
-    Some(Filter {
-        rect: region,
-        primitives,
-    })
+    Some(Filter { primitives })
 }
 
 fn convert_primitive(
