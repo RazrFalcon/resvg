@@ -188,9 +188,9 @@ fn render_group(
         );
         sub_pixmap = sub_pixmap2;
 
+        let fill_paint = prepare_filter_paint(group.filter_fill.as_ref(), ctx, &sub_pixmap);
+        let stroke_paint = prepare_filter_paint(group.filter_stroke.as_ref(), ctx, &sub_pixmap);
         for filter in &group.filters {
-            let fill_paint = prepare_filter_paint(group.filter_fill.as_ref(), ctx, &sub_pixmap);
-            let stroke_paint = prepare_filter_paint(group.filter_stroke.as_ref(), ctx, &sub_pixmap);
             crate::filter::apply(
                 filter,
                 filter_bbox,

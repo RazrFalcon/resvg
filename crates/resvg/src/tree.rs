@@ -158,7 +158,7 @@ fn convert_group(
     }
 
     let mut group_children = Vec::new();
-    let (layer_bbox, object_bbox) = match convert_children(node, transform, &mut group_children) {
+    let (mut layer_bbox, object_bbox) = match convert_children(node, transform, &mut group_children) {
         Some(v) => v,
         None => return convert_empty_group(ugroup, transform, children),
     };
@@ -170,6 +170,10 @@ fn convert_group(
             object_bbox.to_rect(),
             &usvg::Transform::from_native(transform),
         );
+    }
+
+    if let Some(filter_bbox) = filter_bbox {
+        layer_bbox = filter_bbox;
     }
 
     let mut filter_fill = None;

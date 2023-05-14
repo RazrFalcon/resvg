@@ -325,6 +325,7 @@ use crate::render;
 #[test] fn filters_filter_unresolved_xlink_href() { assert_eq!(render("tests/filters/filter/unresolved-xlink-href"), 0); }
 #[test] fn filters_filter_with_clip_path_and_mask() { assert_eq!(render("tests/filters/filter/with-clip-path-and-mask"), 0); }
 #[test] fn filters_filter_with_clip_path() { assert_eq!(render("tests/filters/filter/with-clip-path"), 0); }
+#[test] fn filters_filter_with_mask_on_parent() { assert_eq!(render("tests/filters/filter/with-mask-on-parent"), 0); }
 #[test] fn filters_filter_with_mask() { assert_eq!(render("tests/filters/filter/with-mask"), 0); }
 #[test] fn filters_filter_with_multiple_transforms_1() { assert_eq!(render("tests/filters/filter/with-multiple-transforms-1"), 0); }
 #[test] fn filters_filter_with_multiple_transforms_2() { assert_eq!(render("tests/filters/filter/with-multiple-transforms-2"), 0); }
