@@ -4,7 +4,7 @@
 
 use std::rc::Rc;
 
-use crate::render::{Canvas, Context};
+use crate::render::{Context, TinySkiaPixmapMutExt};
 use crate::tree::{ConvTransform, Node, OptionLog, UsvgRectExt};
 
 pub struct Mask {
@@ -75,16 +75,19 @@ pub fn apply(
     let mut mask_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
 
     {
-        let mut mask_canvas = Canvas::from(mask_pixmap.as_mut());
-        mask_canvas.transform = transform;
-
         // Mask has to be clipped to the mask.rect
-        let alpha_mask = mask_canvas.create_rect_mask(mask.rect);
+        let alpha_mask = mask_pixmap.as_mut().create_rect_mask(transform, mask.rect);
 
-        crate::render::render_nodes(&mask.children, ctx, parent_offset, &mut mask_canvas);
+        crate::render::render_nodes(
+            &mask.children,
+            ctx,
+            parent_offset,
+            transform,
+            &mut mask_pixmap.as_mut(),
+        );
 
         if let Some(alpha_mask) = alpha_mask {
-            mask_canvas.pixmap.apply_mask(&alpha_mask);
+            mask_pixmap.apply_mask(&alpha_mask);
         }
     }
 

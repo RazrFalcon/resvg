@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::render::Canvas;
+use crate::render::TinySkiaPixmapMutExt;
 use crate::tree::{ConvTransform, Node, Tree};
 
 pub enum ImageKind {
@@ -58,31 +58,39 @@ pub fn convert(
     Some((layer_bbox, object_bbox))
 }
 
-pub fn render_image(image: &Image, canvas: &mut Canvas) {
+pub fn render_image(
+    image: &Image,
+    transform: tiny_skia::Transform,
+    pixmap: &mut tiny_skia::PixmapMut,
+) {
     match image.kind {
         #[cfg(feature = "raster-images")]
-        ImageKind::Raster(ref pixmap) => {
-            raster_images::render_raster(image, pixmap, canvas);
+        ImageKind::Raster(ref raster) => {
+            raster_images::render_raster(image, raster, transform, pixmap);
         }
         ImageKind::Vector(ref rtree) => {
-            render_vector(image, rtree, canvas);
+            render_vector(image, rtree, transform, pixmap);
         }
     }
 }
 
-fn render_vector(image: &Image, tree: &Tree, canvas: &mut Canvas) -> Option<()> {
+fn render_vector(
+    image: &Image,
+    tree: &Tree,
+    transform: tiny_skia::Transform,
+    pixmap: &mut tiny_skia::PixmapMut,
+) -> Option<()> {
     let img_size = tree.size.to_screen_size();
     let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&image.view_box, img_size);
 
-    let mut sub_pixmap = canvas.pixmap.to_owned();
-    sub_pixmap.fill(tiny_skia::Color::TRANSPARENT);
+    let mut sub_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
 
-    let canvas_transform = canvas
-        .transform
+    let source_transform = transform;
+    let transform = transform
         .pre_concat(image.transform)
         .pre_concat(ts.to_native());
 
-    tree.render(canvas_transform, sub_pixmap.as_mut());
+    tree.render(transform, &mut sub_pixmap.as_mut());
 
     let mask = if let Some(clip) = clip {
         let rr = tiny_skia::Rect::from_xywh(
@@ -91,12 +99,12 @@ fn render_vector(image: &Image, tree: &Tree, canvas: &mut Canvas) -> Option<()> 
             clip.width() as f32,
             clip.height() as f32,
         )?;
-        canvas.create_rect_mask(rr)
+        pixmap.create_rect_mask(source_transform, rr)
     } else {
         None
     };
 
-    canvas.pixmap.draw_pixmap(
+    pixmap.draw_pixmap(
         0,
         0,
         sub_pixmap.as_ref(),
@@ -111,7 +119,7 @@ fn render_vector(image: &Image, tree: &Tree, canvas: &mut Canvas) -> Option<()> 
 #[cfg(feature = "raster-images")]
 mod raster_images {
     use super::Image;
-    use crate::render::Canvas;
+    use crate::render::TinySkiaPixmapMutExt;
     use crate::tree::OptionLog;
 
     pub fn decode_raster(image: &usvg::Image) -> Option<tiny_skia::Pixmap> {
@@ -209,10 +217,11 @@ mod raster_images {
 
     pub(crate) fn render_raster(
         image: &Image,
-        pixmap: &tiny_skia::Pixmap,
-        canvas: &mut Canvas,
+        raster: &tiny_skia::Pixmap,
+        transform: tiny_skia::Transform,
+        pixmap: &mut tiny_skia::PixmapMut,
     ) -> Option<()> {
-        let img_size = usvg::ScreenSize::new(pixmap.width(), pixmap.height())?;
+        let img_size = usvg::ScreenSize::new(raster.width(), raster.height())?;
         let r = image_rect(&image.view_box, img_size);
         let rect = tiny_skia::Rect::from_xywh(
             r.x() as f32,
@@ -222,16 +231,16 @@ mod raster_images {
         )?;
 
         let ts = tiny_skia::Transform::from_row(
-            rect.width() / pixmap.width() as f32,
+            rect.width() / raster.width() as f32,
             0.0,
             0.0,
-            rect.height() / pixmap.height() as f32,
+            rect.height() / raster.height() as f32,
             r.x() as f32,
             r.y() as f32,
         );
 
         let pattern = tiny_skia::Pattern::new(
-            pixmap.as_ref(),
+            raster.as_ref(),
             tiny_skia::SpreadMode::Pad,
             image.quality,
             1.0,
@@ -249,13 +258,13 @@ mod raster_images {
                 r.height() as f32,
             )?;
 
-            canvas.create_rect_mask(rect)
+            pixmap.create_rect_mask(transform, rect)
         } else {
             None
         };
 
-        let ts = canvas.transform.pre_concat(image.transform);
-        canvas.pixmap.fill_rect(rect, &paint, ts, mask.as_ref());
+        let transform = transform.pre_concat(image.transform);
+        pixmap.fill_rect(rect, &paint, transform, mask.as_ref());
 
         Some(())
     }

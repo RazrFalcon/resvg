@@ -884,10 +884,10 @@ pub extern "C" fn resvg_render(
     let pixmap_len = width as usize * height as usize * tiny_skia::BYTES_PER_PIXEL;
     let pixmap: &mut [u8] =
         unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
-    let pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
+    let mut pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
 
     let rtree = resvg::Tree::from_usvg(&tree.0);
-    rtree.render(transform.to_tiny_skia(), pixmap);
+    rtree.render(transform.to_tiny_skia(), &mut pixmap);
 }
 
 /// @brief Renders a Node by ID onto the image.
@@ -930,10 +930,10 @@ pub extern "C" fn resvg_render_node(
         let pixmap_len = width as usize * height as usize * tiny_skia::BYTES_PER_PIXEL;
         let pixmap: &mut [u8] =
             unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
-        let pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
+        let mut pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
 
         if let Some(rtree) = resvg::Tree::from_usvg_node(&node) {
-            rtree.render(transform.to_tiny_skia(), pixmap);
+            rtree.render(transform.to_tiny_skia(), &mut pixmap);
             true
         } else {
             false

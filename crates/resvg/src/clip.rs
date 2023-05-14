@@ -4,7 +4,7 @@
 
 use std::rc::Rc;
 
-use crate::render::{Canvas, Context};
+use crate::render::Context;
 use crate::tree::{ConvTransform, Node, OptionLog};
 
 pub struct ClipPath {
@@ -38,34 +38,31 @@ pub fn convert(
 }
 
 pub fn apply(clip: &ClipPath, transform: tiny_skia::Transform, pixmap: &mut tiny_skia::Pixmap) {
-    let mut canvas = Canvas::from(pixmap.as_mut());
-    canvas.transform = transform;
-    apply_inner(clip, &mut canvas);
-}
-
-fn apply_inner(clip: &ClipPath, canvas: &mut Canvas) {
-    let mut clip_pixmap = canvas.new_pixmap();
+    let mut clip_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
     clip_pixmap.fill(tiny_skia::Color::BLACK);
-
-    let mut clip_canvas = Canvas::from(clip_pixmap.as_mut());
-    clip_canvas.transform = canvas.transform;
 
     draw_children(
         &clip.children,
         tiny_skia::BlendMode::Clear,
-        &mut clip_canvas,
+        transform,
+        &mut clip_pixmap.as_mut(),
     );
 
     if let Some(ref clip) = clip.clip_path {
-        apply_inner(clip, canvas);
+        apply(clip, transform, pixmap);
     }
 
     let mut mask = tiny_skia::Mask::from_pixmap(clip_pixmap.as_ref(), tiny_skia::MaskType::Alpha);
     mask.invert();
-    canvas.pixmap.apply_mask(&mask);
+    pixmap.apply_mask(&mask);
 }
 
-fn draw_children(children: &[Node], mode: tiny_skia::BlendMode, canvas: &mut Canvas) {
+fn draw_children(
+    children: &[Node],
+    mode: tiny_skia::BlendMode,
+    transform: tiny_skia::Transform,
+    pixmap: &mut tiny_skia::PixmapMut,
+) {
     for child in children {
         match child {
             Node::FillPath(ref path) => {
@@ -76,16 +73,16 @@ fn draw_children(children: &[Node], mode: tiny_skia::BlendMode, canvas: &mut Can
                     max_filter_region: usvg::ScreenRect::new(0, 0, 1, 1).unwrap(),
                 };
 
-                crate::path::render_fill_path(path, mode, &ctx, canvas);
+                crate::path::render_fill_path(path, mode, &ctx, transform, pixmap);
             }
             Node::Group(ref group) => {
                 if let Some(ref clip) = group.clip_path {
                     // If a `clipPath` child also has a `clip-path`
                     // then we should render this child on a new canvas,
                     // clip it, and only then draw it to the `clipPath`.
-                    clip_group(&group.children, clip, canvas);
+                    clip_group(&group.children, clip, transform, pixmap);
                 } else {
-                    draw_children(&group.children, mode, canvas);
+                    draw_children(&group.children, mode, transform, pixmap);
                 }
             }
             _ => {}
@@ -93,17 +90,25 @@ fn draw_children(children: &[Node], mode: tiny_skia::BlendMode, canvas: &mut Can
     }
 }
 
-fn clip_group(children: &[Node], clip: &ClipPath, canvas: &mut Canvas) -> Option<()> {
-    let mut clip_pixmap = canvas.new_pixmap();
-    let mut clip_canvas = Canvas::from(clip_pixmap.as_mut());
-    clip_canvas.transform = canvas.transform;
+fn clip_group(
+    children: &[Node],
+    clip: &ClipPath,
+    transform: tiny_skia::Transform,
+    pixmap: &mut tiny_skia::PixmapMut,
+) -> Option<()> {
+    let mut clip_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
 
-    draw_children(children, tiny_skia::BlendMode::SourceOver, &mut clip_canvas);
-    apply_inner(clip, &mut clip_canvas);
+    draw_children(
+        children,
+        tiny_skia::BlendMode::SourceOver,
+        transform,
+        &mut clip_pixmap.as_mut(),
+    );
+    apply(clip, transform, &mut clip_pixmap);
 
     let mut paint = tiny_skia::PixmapPaint::default();
     paint.blend_mode = tiny_skia::BlendMode::Xor;
-    canvas.pixmap.draw_pixmap(
+    pixmap.draw_pixmap(
         0,
         0,
         clip_pixmap.as_ref(),

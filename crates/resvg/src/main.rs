@@ -666,7 +666,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
         let rtree = resvg::Tree::from_usvg_node(&node)
             .ok_or_else(|| "zero-size node detected".to_string())?;
 
-        rtree.render(ts, pixmap.as_mut());
+        rtree.render(ts, &mut pixmap.as_mut());
 
         if args.export_area_page {
             // TODO: add offset support to render_node() so we would not need an additional pixmap
@@ -711,7 +711,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
         let ts = args.fit_to.fit_to_transform(tree.size.to_screen_size());
 
         let rtree = resvg::Tree::from_usvg(tree);
-        rtree.render(ts, pixmap.as_mut());
+        rtree.render(ts, &mut pixmap.as_mut());
 
         if args.export_area_drawing {
             trim_pixmap(&rtree, ts, &pixmap).unwrap_or(pixmap)

@@ -28,7 +28,7 @@ fn main() {
     let pixmap_size = rtree.size.to_screen_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
 
-    rtree.render(tiny_skia::Transform::default(), pixmap.as_mut());
+    rtree.render(tiny_skia::Transform::default(), &mut pixmap.as_mut());
 
     pixmap.save_png("custom_href_resolver.png").unwrap();
 }

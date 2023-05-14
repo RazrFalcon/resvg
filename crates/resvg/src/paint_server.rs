@@ -4,7 +4,7 @@
 
 use std::rc::Rc;
 
-use crate::render::{Canvas, Context};
+use crate::render::Context;
 use crate::tree::{ConvTransform, Node, OptionLog, TinySkiaRectExt, TinySkiaTransformExt};
 
 pub struct Pattern {
@@ -181,14 +181,19 @@ pub fn prepare_pattern_pixmap(
         usvg::Size::new(pattern.rect.width() * sx, pattern.rect.height() * sy)?.to_screen_size();
     let mut pixmap = tiny_skia::Pixmap::new(img_size.width(), img_size.height())?;
 
-    let mut canvas = Canvas::from(pixmap.as_mut());
-    canvas.scale(sx as f32, sy as f32);
+    let mut transform = tiny_skia::Transform::from_scale(sx as f32, sy as f32);
     if let Some(vbox) = pattern.view_box {
         let ts = usvg::utils::view_box_to_transform(vbox.rect, vbox.aspect, pattern.rect.size());
-        canvas.apply_transform(ts.to_native());
+        transform = transform.pre_concat(ts.to_native());
     }
 
-    crate::render::render_nodes(&pattern.children, ctx, (0, 0), &mut canvas);
+    crate::render::render_nodes(
+        &pattern.children,
+        ctx,
+        (0, 0),
+        transform,
+        &mut pixmap.as_mut(),
+    );
 
     let mut ts = tiny_skia::Transform::default();
     ts = ts.pre_concat(pattern.transform);

@@ -7,7 +7,6 @@ use std::rc::Rc;
 use rgb::FromSlice;
 use usvg::{FuzzyEq, FuzzyZero, ScreenRect, Transform};
 
-use crate::render::Canvas;
 use crate::tree::{ConvTransform, Node, OptionLog};
 
 // TODO: apply single primitive filters in-place
@@ -1058,10 +1057,9 @@ fn apply_image(
 
     match fe.data {
         usvg::filter::ImageKind::Image(ref kind) => {
-            let mut canvas = Canvas::from(pixmap.as_mut());
             let dx = (subregion.x() - region.x()) as f32;
             let dy = (subregion.y() - region.y()) as f32;
-            canvas.translate(dx, dy);
+            let transform = tiny_skia::Transform::from_translate(dx, dy);
 
             let view_box = usvg::ViewBox {
                 rect: subregion.translate_to(0, 0).to_rect(),
@@ -1080,16 +1078,16 @@ fn apply_image(
             let mut children = Vec::new();
             crate::image::convert(&uimage, tiny_skia::Transform::default(), &mut children);
             if let Some(Node::Image(image)) = children.first() {
-                crate::image::render_image(&image, &mut canvas);
+                crate::image::render_image(&image, transform, &mut pixmap.as_mut());
             }
         }
         usvg::filter::ImageKind::Use(ref node) => {
             let (sx, sy) = ts.get_scale();
-            let canvas_ts = tiny_skia::Transform::from_scale(sx as f32, sy as f32);
+            let transform = tiny_skia::Transform::from_scale(sx as f32, sy as f32);
 
             if let Some(mut rtree) = crate::Tree::from_usvg_node(node) {
                 rtree.view_box.rect = rtree.view_box.rect.translate_to(0.0, 0.0);
-                rtree.render(canvas_ts, pixmap.as_mut());
+                rtree.render(transform, &mut pixmap.as_mut());
             }
         }
     }

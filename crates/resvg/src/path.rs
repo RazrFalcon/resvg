@@ -5,7 +5,7 @@
 use std::rc::Rc;
 
 use crate::paint_server::Paint;
-use crate::render::{Canvas, Context};
+use crate::render::Context;
 use crate::tree::{ConvTransform, Node, TinySkiaRectExt};
 
 pub struct FillPath {
@@ -217,7 +217,8 @@ pub fn render_fill_path(
     path: &FillPath,
     blend_mode: tiny_skia::BlendMode,
     ctx: &Context,
-    canvas: &mut Canvas,
+    transform: tiny_skia::Transform,
+    pixmap: &mut tiny_skia::PixmapMut,
 ) -> Option<()> {
     let pattern_pixmap;
     let mut paint = tiny_skia::Paint::default();
@@ -242,10 +243,8 @@ pub fn render_fill_path(
     paint.anti_alias = path.anti_alias;
     paint.blend_mode = blend_mode;
 
-    let transform = canvas.transform.pre_concat(path.transform);
-    canvas
-        .pixmap
-        .fill_path(&path.path, &paint, path.rule, transform, None);
+    let transform = transform.pre_concat(path.transform);
+    pixmap.fill_path(&path.path, &paint, path.rule, transform, None);
 
     Some(())
 }
@@ -254,7 +253,8 @@ pub fn render_stroke_path(
     path: &StrokePath,
     blend_mode: tiny_skia::BlendMode,
     ctx: &Context,
-    canvas: &mut Canvas,
+    transform: tiny_skia::Transform,
+    pixmap: &mut tiny_skia::PixmapMut,
 ) -> Option<()> {
     let pattern_pixmap;
     let mut paint = tiny_skia::Paint::default();
@@ -279,12 +279,10 @@ pub fn render_stroke_path(
     paint.anti_alias = path.anti_alias;
     paint.blend_mode = blend_mode;
 
-    // TODO: fallback to stroked path when possible
+    // TODO: fallback to a stroked path when possible
 
-    let transform = canvas.transform.pre_concat(path.transform);
-    canvas
-        .pixmap
-        .stroke_path(&path.path, &paint, &path.stroke, transform, None);
+    let transform = transform.pre_concat(path.transform);
+    pixmap.stroke_path(&path.path, &paint, &path.stroke, transform, None);
 
     Some(())
 }

@@ -12,53 +12,12 @@ pub struct Context {
     pub max_filter_region: usvg::ScreenRect,
 }
 
-pub struct Canvas<'a> {
-    pub pixmap: tiny_skia::PixmapMut<'a>,
-    pub transform: tiny_skia::Transform,
-}
-
-impl<'a> From<tiny_skia::PixmapMut<'a>> for Canvas<'a> {
-    fn from(pixmap: tiny_skia::PixmapMut<'a>) -> Self {
-        Canvas {
-            pixmap,
-            transform: tiny_skia::Transform::identity(),
-        }
-    }
-}
-
-impl Canvas<'_> {
-    pub fn translate(&mut self, tx: f32, ty: f32) {
-        self.transform = self.transform.pre_translate(tx, ty);
-    }
-
-    pub fn scale(&mut self, sx: f32, sy: f32) {
-        self.transform = self.transform.pre_scale(sx, sy);
-    }
-
-    pub fn apply_transform(&mut self, ts: tiny_skia::Transform) {
-        self.transform = self.transform.pre_concat(ts);
-    }
-
-    pub fn create_rect_mask(&self, rect: tiny_skia::Rect) -> Option<tiny_skia::Mask> {
-        let path = tiny_skia::PathBuilder::from_rect(rect);
-
-        let mut mask = tiny_skia::Mask::new(self.pixmap.width(), self.pixmap.height())?;
-        mask.fill_path(&path, tiny_skia::FillRule::Winding, true, self.transform);
-
-        Some(mask)
-    }
-
-    pub fn new_pixmap(&self) -> tiny_skia::Pixmap {
-        tiny_skia::Pixmap::new(self.pixmap.width(), self.pixmap.height()).unwrap()
-    }
-}
-
 impl Tree {
     /// Renders an SVG tree onto the pixmap.
     ///
     /// `transform` will be used as a root transform.
     /// Can be used to position SVG inside the `pixmap`.
-    pub fn render(&self, transform: tiny_skia::Transform, pixmap: tiny_skia::PixmapMut) {
+    pub fn render(&self, transform: tiny_skia::Transform, pixmap: &mut tiny_skia::PixmapMut) {
         let target_size = usvg::ScreenSize::new(pixmap.width(), pixmap.height()).unwrap();
 
         let max_filter_region = usvg::ScreenRect::new(
@@ -69,20 +28,18 @@ impl Tree {
         )
         .unwrap();
 
-        let mut canvas = Canvas::from(pixmap);
-
         let ts =
             usvg::utils::view_box_to_transform(self.view_box.rect, self.view_box.aspect, self.size);
-        canvas.apply_transform(transform);
-        canvas.apply_transform(ts.to_native());
+
+        let root_transform = transform.pre_concat(ts.to_native());
 
         let ctx = Context {
-            root_transform: usvg::Transform::from_native(canvas.transform),
+            root_transform: usvg::Transform::from_native(root_transform),
             target_size,
             max_filter_region,
         };
 
-        render_nodes(&self.children, &ctx, (0, 0), &mut canvas);
+        render_nodes(&self.children, &ctx, (0, 0), root_transform, pixmap);
     }
 }
 
@@ -90,26 +47,45 @@ pub fn render_nodes(
     children: &[Node],
     ctx: &Context,
     parent_offset: (i32, i32),
-    canvas: &mut Canvas,
+    transform: tiny_skia::Transform,
+    pixmap: &mut tiny_skia::PixmapMut,
 ) {
     for node in children {
-        render_node(node, ctx, parent_offset, canvas);
+        render_node(node, ctx, parent_offset, transform, pixmap);
     }
 }
 
-fn render_node(node: &Node, ctx: &Context, parent_offset: (i32, i32), canvas: &mut Canvas) {
+fn render_node(
+    node: &Node,
+    ctx: &Context,
+    parent_offset: (i32, i32),
+    transform: tiny_skia::Transform,
+    pixmap: &mut tiny_skia::PixmapMut,
+) {
     match node {
         Node::Group(ref group) => {
-            render_group(group, ctx, parent_offset, canvas);
+            render_group(group, ctx, parent_offset, transform, pixmap);
         }
         Node::FillPath(ref path) => {
-            crate::path::render_fill_path(path, tiny_skia::BlendMode::SourceOver, ctx, canvas);
+            crate::path::render_fill_path(
+                path,
+                tiny_skia::BlendMode::SourceOver,
+                ctx,
+                transform,
+                pixmap,
+            );
         }
         Node::StrokePath(ref path) => {
-            crate::path::render_stroke_path(path, tiny_skia::BlendMode::SourceOver, ctx, canvas);
+            crate::path::render_stroke_path(
+                path,
+                tiny_skia::BlendMode::SourceOver,
+                ctx,
+                transform,
+                pixmap,
+            );
         }
         Node::Image(ref image) => {
-            crate::image::render_image(image, canvas);
+            crate::image::render_image(image, transform, pixmap);
         }
     }
 }
@@ -118,7 +94,8 @@ fn render_group(
     group: &Group,
     ctx: &Context,
     parent_offset: (i32, i32), // TODO: test
-    canvas: &mut Canvas,
+    transform: tiny_skia::Transform,
+    pixmap: &mut tiny_skia::PixmapMut,
 ) -> Option<()> {
     if group.bbox.fuzzy_eq(&usvg::PathBbox::new_bbox()) {
         log::warn!("Invalid group layer bbox detected.");
@@ -165,21 +142,18 @@ fn render_group(
         -(bbox.y() as f32 - sub_y),
     );
 
-    let transform = shift_ts.pre_concat(canvas.transform);
+    let transform = shift_ts.pre_concat(transform);
 
     let mut sub_pixmap = tiny_skia::Pixmap::new(ibbox.width(), ibbox.height())
         .log_none(|| log::warn!("Failed to allocate a group layer for: {:?}.", ibbox))?;
 
-    {
-        let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
-        sub_canvas.transform = transform;
-        render_nodes(
-            &group.children,
-            ctx,
-            (parent_offset.0 + ibbox.x(), parent_offset.1 + ibbox.y()),
-            &mut sub_canvas,
-        );
-    }
+    render_nodes(
+        &group.children,
+        ctx,
+        (parent_offset.0 + ibbox.x(), parent_offset.1 + ibbox.y()),
+        transform,
+        &mut sub_pixmap.as_mut(),
+    );
 
     for filter in &group.filters {
         let fill_paint = prepare_filter_paint(group.filter_fill.as_ref(), ctx, &sub_pixmap);
@@ -214,7 +188,7 @@ fn render_group(
         quality: tiny_skia::FilterQuality::Nearest,
     };
 
-    canvas.pixmap.draw_pixmap(
+    pixmap.draw_pixmap(
         ibbox.x(),
         ibbox.y(),
         sub_pixmap.as_ref(),
@@ -242,7 +216,6 @@ fn prepare_filter_paint(
 
     let paint = paint?;
     let mut sub_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
-    let mut sub_canvas = Canvas::from(sub_pixmap.as_mut());
 
     let rect = tiny_skia::Rect::from_xywh(0.0, 0.0, pixmap.width() as f32, pixmap.height() as f32)?;
     let path = tiny_skia::PathBuilder::from_rect(rect);
@@ -259,8 +232,32 @@ fn prepare_filter_paint(
         &path,
         tiny_skia::BlendMode::SourceOver,
         ctx,
-        &mut sub_canvas,
+        tiny_skia::Transform::default(),
+        &mut sub_pixmap.as_mut(),
     );
 
     Some(sub_pixmap)
+}
+
+pub trait TinySkiaPixmapMutExt {
+    fn create_rect_mask(
+        &self,
+        transform: tiny_skia::Transform,
+        rect: tiny_skia::Rect,
+    ) -> Option<tiny_skia::Mask>;
+}
+
+impl TinySkiaPixmapMutExt for tiny_skia::PixmapMut<'_> {
+    fn create_rect_mask(
+        &self,
+        transform: tiny_skia::Transform,
+        rect: tiny_skia::Rect,
+    ) -> Option<tiny_skia::Mask> {
+        let path = tiny_skia::PathBuilder::from_rect(rect);
+
+        let mut mask = tiny_skia::Mask::new(self.width(), self.height())?;
+        mask.fill_path(&path, tiny_skia::FillRule::Winding, true, transform);
+
+        Some(mask)
+    }
 }
