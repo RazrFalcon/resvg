@@ -81,7 +81,7 @@ pub fn render(name: &str) -> usize {
     pixels_d
 }
 
-pub fn render_extra(name: &str) -> usize {
+pub fn render_extra_with_scale(name: &str, scale: f32) -> usize {
     let svg_path = format!("tests/{}.svg", name);
     let png_path = format!("tests/{}.png", name);
 
@@ -92,10 +92,10 @@ pub fn render_extra(name: &str) -> usize {
         usvg::Tree::from_data(&svg_data, &opt).unwrap()
     };
 
-    let size = tree.size.to_screen_size();
+    let size = tree.size.to_screen_size().scale_by(scale as f64).unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
     let rtree = resvg::Tree::from_usvg(&tree);
-    let render_ts = tiny_skia::Transform::default();
+    let render_ts = tiny_skia::Transform::from_scale(scale, scale);
     rtree.render(render_ts, &mut pixmap.as_mut());
 
     // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
@@ -124,6 +124,10 @@ pub fn render_extra(name: &str) -> usize {
     // }
 
     pixels_d
+}
+
+pub fn render_extra(name: &str) -> usize {
+    render_extra_with_scale(name, 1.0)
 }
 
 fn load_png(path: &str) -> Vec<u8> {

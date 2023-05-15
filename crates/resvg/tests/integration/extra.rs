@@ -1,4 +1,4 @@
-use crate::render_extra;
+use crate::{render_extra, render_extra_with_scale};
 
 #[test]
 fn group_with_only_transform() {
@@ -53,4 +53,9 @@ fn horizontal_line() {
 #[test]
 fn horizontal_line_no_stroke() {
     assert_eq!(render_extra("extra/horizontal-line-no-stroke"), 0);
+}
+
+#[test]
+fn filter_region_precision() {
+    assert_eq!(render_extra_with_scale("extra/filter-region-precision", 10.0), 0);
 }

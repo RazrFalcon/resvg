@@ -580,11 +580,11 @@ fn calc_region(
     filter: &usvg::filter::Filter,
     bbox: Option<usvg::Rect>,
     ts: &usvg::Transform,
-) -> Result<usvg::ScreenRect, Error> {
+) -> Option<usvg::PathBbox> {
     let path = usvg::PathData::from_rect(filter.rect);
 
     let region_ts = if filter.units == usvg::Units::ObjectBoundingBox {
-        let bbox = bbox.ok_or(Error::InvalidRegion)?;
+        let bbox = bbox?;
         let bbox_ts = usvg::Transform::from_bbox(bbox);
         let mut ts2 = *ts;
         ts2.append(&bbox_ts);
@@ -593,14 +593,7 @@ fn calc_region(
         *ts
     };
 
-    let region = path
-        .bbox_with_transform(region_ts, None)
-        .ok_or(Error::InvalidRegion)?
-        .to_rect()
-        .ok_or(Error::InvalidRegion)?
-        .to_screen_rect();
-
-    Ok(region)
+    path.bbox_with_transform(region_ts, None)
 }
 
 pub fn calc_filters_region(
@@ -611,8 +604,8 @@ pub fn calc_filters_region(
     let mut global_region = usvg::PathBbox::new_bbox();
 
     for filter in filters {
-        if let Ok(region) = calc_region(filter, bbox, ts) {
-            global_region = global_region.expand(region.to_rect().to_path_bbox());
+        if let Some(region) = calc_region(filter, bbox, ts) {
+            global_region = global_region.expand(region);
         }
     }
 
