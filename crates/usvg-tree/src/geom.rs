@@ -697,6 +697,18 @@ impl Rect {
         )
         .unwrap()
     }
+
+    /// Returns rect in screen units rounding outwards.
+    #[inline]
+    pub fn to_screen_rect_round_out(&self) -> ScreenRect {
+        ScreenRect::new(
+            self.x().floor() as i32,
+            self.y().floor() as i32,
+            std::cmp::max(1, self.width().ceil() as u32),
+            std::cmp::max(1, self.height().ceil() as u32),
+        )
+        .unwrap()
+    }
 }
 
 impl FuzzyEq for Rect {

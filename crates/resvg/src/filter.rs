@@ -7,7 +7,7 @@ use std::rc::Rc;
 use rgb::FromSlice;
 use usvg::{FuzzyEq, FuzzyZero, ScreenRect, Transform};
 
-use crate::tree::{ConvTransform, Node, OptionLog};
+use crate::tree::{ConvTransform, Node};
 
 // TODO: apply single primitive filters in-place
 
@@ -124,46 +124,42 @@ pub struct Filter {
 
 pub fn convert(
     ufilters: &[Rc<usvg::filter::Filter>],
+    layer_bbox: Option<usvg::PathBbox>,
     object_bbox: Option<usvg::PathBbox>,
     transform: tiny_skia::Transform,
-) -> Option<Vec<Filter>> {
+) -> (Vec<Filter>, Option<usvg::PathBbox>) {
+    let layer_bbox = layer_bbox.and_then(|bbox| bbox.to_rect());
     let object_bbox = object_bbox.and_then(|bbox| bbox.to_rect());
+
+    let region = match calc_filters_region(ufilters, layer_bbox, object_bbox) {
+        Some(v) => v,
+        None => return (Vec::new(), None),
+    };
+
     let transform = usvg::Transform::from_native(transform);
     let mut filters = Vec::new();
     for ufilter in ufilters {
-        let filter = convert_filter(&ufilter, object_bbox, &transform)?;
+        let filter = match convert_filter(&ufilter, object_bbox, region, &transform) {
+            Some(v) => v,
+            None => return (Vec::new(), None),
+        };
         filters.push(filter);
     }
 
-    Some(filters)
+    (filters, Some(region.to_path_bbox()))
 }
 
 fn convert_filter(
     ufilter: &usvg::filter::Filter,
     object_bbox: Option<usvg::Rect>,
+    region: usvg::Rect,
     transform: &usvg::Transform,
 ) -> Option<Filter> {
-    let region_ts = if ufilter.units == usvg::Units::ObjectBoundingBox {
-        // A filter with an invalid region should disable element rendering completely.
-        let object_bbox = object_bbox.log_none(|| {
-            log::warn!("Filter with objectBoundingBox cannot be used on zero-sized element.")
-        })?;
-
-        let bbox_ts = usvg::Transform::from_bbox(object_bbox);
-        let mut ts2 = *transform;
-        ts2.append(&bbox_ts);
-        ts2
-    } else {
-        *transform
-    };
-
-    let region = ufilter.rect.transform(&region_ts)?;
-
     let mut primitives = Vec::with_capacity(ufilter.primitives.len());
     for uprimitive in &ufilter.primitives {
         let subregion = match calc_subregion(ufilter, uprimitive, object_bbox, region, transform) {
-            Ok(v) => v,
-            Err(_) => {
+            Some(v) => v,
+            None => {
                 log::warn!("Invalid filter primitive region.");
                 continue;
             }
@@ -437,7 +433,7 @@ fn apply_inner(
         let mut subregion = primitive
             .rect
             .transform(ts)
-            .map(|r| r.to_screen_rect())
+            .map(|r| r.to_screen_rect_round_out())
             .ok_or(Error::InvalidRegion)?;
 
         // `feOffset` inherits its region from the input.
@@ -576,40 +572,41 @@ fn apply_inner(
     }
 }
 
-fn calc_region(
-    filter: &usvg::filter::Filter,
-    bbox: Option<usvg::Rect>,
-    ts: &usvg::Transform,
-) -> Option<usvg::PathBbox> {
-    let path = usvg::PathData::from_rect(filter.rect);
-
-    let region_ts = if filter.units == usvg::Units::ObjectBoundingBox {
+fn calc_region(filter: &usvg::filter::Filter, bbox: Option<usvg::Rect>) -> Option<usvg::Rect> {
+    if filter.units == usvg::Units::ObjectBoundingBox {
         let bbox = bbox?;
         let bbox_ts = usvg::Transform::from_bbox(bbox);
-        let mut ts2 = *ts;
-        ts2.append(&bbox_ts);
-        ts2
+        let path = usvg::PathData::from_rect(filter.rect);
+        path.bbox_with_transform(bbox_ts, None)
+            .and_then(|bbox| bbox.to_rect())
     } else {
-        *ts
-    };
-
-    path.bbox_with_transform(region_ts, None)
+        Some(filter.rect)
+    }
 }
 
 pub fn calc_filters_region(
     filters: &[Rc<usvg::filter::Filter>],
-    bbox: Option<usvg::Rect>,
-    ts: &usvg::Transform,
-) -> Option<usvg::PathBbox> {
-    let mut global_region = usvg::PathBbox::new_bbox();
+    layer_bbox: Option<usvg::Rect>,
+    object_bbox: Option<usvg::Rect>,
+) -> Option<usvg::Rect> {
+    let mut global_region = usvg::Rect::new_bbox();
 
     for filter in filters {
-        if let Some(region) = calc_region(filter, bbox, ts) {
+        // Ignore zero-region filter.
+        // We use `object_bbox` and not `layer_bbox` here.
+        // A stroked hor/ver line would have `layer_bbox`, but not `object_bbox`.
+        if filter.units == usvg::Units::ObjectBoundingBox {
+            if object_bbox.is_none() {
+                continue;
+            }
+        }
+
+        if let Some(region) = calc_region(filter, layer_bbox) {
             global_region = global_region.expand(region);
         }
     }
 
-    if global_region.fuzzy_ne(&usvg::PathBbox::new_bbox()) {
+    if global_region.fuzzy_ne(&usvg::Rect::new_bbox()) {
         Some(global_region)
     } else {
         None
@@ -621,16 +618,16 @@ fn calc_subregion(
     filter: &usvg::filter::Filter,
     primitive: &usvg::filter::Primitive,
     bbox: Option<usvg::Rect>,
-    filter_region: usvg::Rect,
+    region: usvg::Rect,
     ts: &usvg::Transform,
-) -> Result<usvg::Rect, Error> {
+) -> Option<usvg::Rect> {
     // TODO: rewrite/simplify/explain/whatever
 
     let region = match primitive.kind {
         usvg::filter::Kind::Flood(..) | usvg::filter::Kind::Image(..) => {
             // `feImage` uses the object bbox.
             if filter.primitive_units == usvg::Units::ObjectBoundingBox {
-                let bbox = bbox.ok_or(Error::InvalidRegion)?;
+                let bbox = bbox?;
 
                 // TODO: wrong
                 let ts_bbox = usvg::Rect::new(ts.e, ts.f, ts.a, ts.d).unwrap();
@@ -640,17 +637,16 @@ fn calc_subregion(
                     primitive.y.unwrap_or(0.0),
                     primitive.width.unwrap_or(1.0),
                     primitive.height.unwrap_or(1.0),
-                )
-                .ok_or(Error::InvalidRegion)?;
+                )?;
 
                 let r = r.bbox_transform(bbox).bbox_transform(ts_bbox);
 
-                return Ok(r);
+                return Some(r);
             } else {
-                filter_region
+                region
             }
         }
-        _ => filter_region,
+        _ => region,
     };
 
     // TODO: Wrong! Does not account rotate and skew.
@@ -660,8 +656,7 @@ fn calc_subregion(
             primitive.y.unwrap_or(0.0),
             primitive.width.unwrap_or(1.0),
             primitive.height.unwrap_or(1.0),
-        )
-        .ok_or(Error::InvalidRegion)?;
+        )?;
 
         region.bbox_transform(subregion_bbox)
     } else {
@@ -684,11 +679,10 @@ fn calc_subregion(
                 .height
                 .map(|n| n * sy)
                 .unwrap_or(region.height() as f64),
-        )
-        .ok_or(Error::InvalidRegion)?
+        )?
     };
 
-    Ok(subregion)
+    Some(subregion)
 }
 
 fn get_input(

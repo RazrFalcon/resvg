@@ -1,8 +1,8 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
     <title>Huge region</title>
+    <desc>The output doesn't really matter as long as the app doesn't hang or crash.</desc>
 
-    <!-- (100000 * 100000 * 4) / 1024 / 1024 / 1024 ~= 37GiB -->
-    <filter id="filter1" filterUnits="userSpaceOnUse" x="0" y="0" width="100000" height="100000">
+    <filter id="filter1" filterUnits="userSpaceOnUse" x="-10000" y="-10000" width="100000" height="100000">
         <feGaussianBlur stdDeviation="2" x="0" y="0" width="100000" height="100000"/>
     </filter>
     <rect id="rect1" x="20" y="20" width="160" height="160" fill="seagreen" filter="url(#filter1)"/>

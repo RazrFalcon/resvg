@@ -19,8 +19,6 @@ pub struct Group {
     pub filters: Vec<crate::filter::Filter>,
     pub filter_fill: Option<Paint>,
     pub filter_stroke: Option<Paint>,
-    pub filter_bbox: Option<usvg::PathBbox>,
-
     /// Group's layer bounding box in canvas coordinates.
     pub bbox: usvg::PathBbox,
 
@@ -158,18 +156,23 @@ fn convert_group(
     }
 
     let mut group_children = Vec::new();
-    let (mut layer_bbox, object_bbox) = match convert_children(node, transform, &mut group_children) {
+    let (mut layer_bbox, object_bbox) = match convert_children(node, transform, &mut group_children)
+    {
         Some(v) => v,
         None => return convert_empty_group(ugroup, transform, children),
     };
 
-    let mut filter_bbox = None;
-    if !ugroup.filters.is_empty() {
-        filter_bbox = crate::filter::calc_filters_region(
-            &ugroup.filters,
-            object_bbox.to_rect(),
-            &usvg::Transform::from_native(transform),
-        );
+    let (filters, filter_bbox) = crate::filter::convert(
+        &ugroup.filters,
+        Some(layer_bbox),
+        Some(object_bbox),
+        transform,
+    );
+
+    // TODO: figure out a nicer solution
+    // Ignore groups with filters but invalid filter bboxes.
+    if !ugroup.filters.is_empty() && filter_bbox.is_none() {
+        return None;
     }
 
     if let Some(filter_bbox) = filter_bbox {
@@ -193,10 +196,9 @@ fn convert_group(
         blend_mode: convert_blend_mode(ugroup.blend_mode),
         clip_path: crate::clip::convert(ugroup.clip_path.clone(), object_bbox, transform),
         mask: crate::mask::convert(ugroup.mask.clone(), object_bbox, transform),
-        filters: crate::filter::convert(&ugroup.filters, Some(object_bbox), transform)?,
+        filters,
         filter_fill,
         filter_stroke,
-        filter_bbox,
         bbox: layer_bbox,
         children: group_children,
     };
@@ -214,11 +216,8 @@ fn convert_empty_group(
         return None;
     }
 
-    let layer_bbox = crate::filter::calc_filters_region(
-        &ugroup.filters,
-        None,
-        &usvg::Transform::from_native(transform),
-    )?;
+    let (filters, layer_bbox) = crate::filter::convert(&ugroup.filters, None, None, transform);
+    let layer_bbox = layer_bbox?;
 
     let mut filter_fill = None;
     if let Some(ref paint) = ugroup.filter_fill {
@@ -237,10 +236,9 @@ fn convert_empty_group(
         blend_mode: convert_blend_mode(ugroup.blend_mode),
         clip_path: None,
         mask: None,
-        filters: crate::filter::convert(&ugroup.filters, None, transform)?,
+        filters,
         filter_fill,
         filter_stroke,
-        filter_bbox: Some(layer_bbox),
         bbox: layer_bbox,
         children: Vec::new(),
     };

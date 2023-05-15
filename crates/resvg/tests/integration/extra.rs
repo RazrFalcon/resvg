@@ -57,5 +57,8 @@ fn horizontal_line_no_stroke() {
 
 #[test]
 fn filter_region_precision() {
-    assert_eq!(render_extra_with_scale("extra/filter-region-precision", 10.0), 0);
+    assert_eq!(
+        render_extra_with_scale("extra/filter-region-precision", 10.0),
+        0
+    );
 }
