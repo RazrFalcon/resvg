@@ -5,12 +5,12 @@
 use std::rc::Rc;
 
 use crate::geom::UsvgRectExt;
-use crate::render::{Context, TinySkiaPixmapMutExt};
+use crate::render::Context;
 use crate::tree::{ConvTransform, Node, OptionLog};
 
 pub struct Mask {
     pub mask_all: bool,
-    pub rect: tiny_skia::Rect,
+    pub region: tiny_skia::Path,
     pub kind: usvg::MaskType,
     pub mask: Option<Box<Self>>,
     pub children: Vec<Node>,
@@ -42,23 +42,22 @@ pub fn convert(
 
     let rect = if umask.units == usvg::Units::ObjectBoundingBox {
         if let Some(bbox) = object_bbox.to_rect() {
-            umask
-                .rect
-                .bbox_transform(bbox)
-                .transform(&usvg::Transform::from_native(transform))?
+            umask.rect.bbox_transform(bbox)
         } else {
             // The actual values does not matter. Will not be used anyway.
             usvg::Rect::new(0.0, 0.0, 1.0, 1.0).unwrap()
         }
     } else {
         umask.rect
-    }
-    .to_skia_rect()?;
+    };
+
+    let region = tiny_skia::PathBuilder::from_rect(rect.to_skia_rect()?);
+    let region = region.transform(transform)?;
 
     let (children, _) = crate::tree::convert_node(umask.root.clone(), content_transform);
     Some(Mask {
         mask_all,
-        rect,
+        region,
         kind: umask.kind,
         mask: convert(umask.mask.clone(), object_bbox, transform).map(Box::new),
         children,
@@ -80,8 +79,10 @@ pub fn apply(
     let mut mask_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
 
     {
-        // Mask has to be clipped to the mask.rect
-        let alpha_mask = mask_pixmap.as_mut().create_rect_mask(transform, mask.rect);
+        // TODO: only when needed
+        // Mask has to be clipped by mask.region
+        let mut alpha_mask = tiny_skia::Mask::new(pixmap.width(), pixmap.height()).unwrap();
+        alpha_mask.fill_path(&mask.region, tiny_skia::FillRule::Winding, true, transform);
 
         crate::render::render_nodes(
             &mask.children,
@@ -91,9 +92,7 @@ pub fn apply(
             &mut mask_pixmap.as_mut(),
         );
 
-        if let Some(alpha_mask) = alpha_mask {
-            mask_pixmap.apply_mask(&alpha_mask);
-        }
+        mask_pixmap.apply_mask(&alpha_mask);
     }
 
     if let Some(ref mask) = mask.mask {

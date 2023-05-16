@@ -444,6 +444,7 @@ use crate::render;
 #[test] fn masking_clipPath_with_marker_on_clip() { assert_eq!(render("tests/masking/clipPath/with-marker-on-clip"), 0); }
 #[test] fn masking_clipPath_with_use_child() { assert_eq!(render("tests/masking/clipPath/with-use-child"), 0); }
 #[test] fn masking_mask_color_interpolation_eq_linearRGB() { assert_eq!(render("tests/masking/mask/color-interpolation=linearRGB"), 0); }
+#[test] fn masking_mask_half_width_region_with_rotation() { assert_eq!(render("tests/masking/mask/half-width-region-with-rotation"), 0); }
 #[test] fn masking_mask_invalid_FuncIRI() { assert_eq!(render("tests/masking/mask/invalid-FuncIRI"), 0); }
 #[test] fn masking_mask_invalid_child() { assert_eq!(render("tests/masking/mask/invalid-child"), 0); }
 #[test] fn masking_mask_invisible_child_1() { assert_eq!(render("tests/masking/mask/invisible-child-1"), 0); }
