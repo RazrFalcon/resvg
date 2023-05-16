@@ -4,8 +4,9 @@
 
 use std::rc::Rc;
 
+use crate::geom::UsvgRectExt;
 use crate::render::{Context, TinySkiaPixmapMutExt};
-use crate::tree::{ConvTransform, Node, OptionLog, UsvgRectExt};
+use crate::tree::{ConvTransform, Node, OptionLog};
 
 pub struct Mask {
     pub mask_all: bool,

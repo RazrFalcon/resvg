@@ -4,6 +4,7 @@
 
 use crate::render::TinySkiaPixmapMutExt;
 use crate::tree::{ConvTransform, Node, Tree};
+use crate::ScreenSize;
 
 pub enum ImageKind {
     #[cfg(feature = "raster-images")]
@@ -80,8 +81,8 @@ fn render_vector(
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
 ) -> Option<()> {
-    let img_size = tree.size.to_screen_size();
-    let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&image.view_box, img_size);
+    let img_size = ScreenSize::from_usvg(tree.size);
+    let (ts, clip) = crate::geom::view_box_to_transform_with_clip(&image.view_box, img_size);
 
     let mut sub_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
 
@@ -119,6 +120,7 @@ fn render_vector(
 #[cfg(feature = "raster-images")]
 mod raster_images {
     use super::Image;
+    use crate::geom::ScreenSize;
     use crate::render::TinySkiaPixmapMutExt;
     use crate::tree::OptionLog;
 
@@ -146,7 +148,7 @@ mod raster_images {
         let img_data = decoder.decode().ok()?;
         let info = decoder.info()?;
 
-        let size = usvg::ScreenSize::new(info.width as u32, info.height as u32)?;
+        let size = ScreenSize::new(info.width as u32, info.height as u32)?;
 
         let data = match info.pixel_format {
             jpeg_decoder::PixelFormat::RGB24 => img_data,
@@ -175,8 +177,7 @@ mod raster_images {
         let mut decoder = decoder.read_info(data).ok()?;
         let first_frame = decoder.read_next_frame().ok()??;
 
-        let size =
-            usvg::ScreenSize::new(u32::from(first_frame.width), u32::from(first_frame.height))?;
+        let size = ScreenSize::new(u32::from(first_frame.width), u32::from(first_frame.height))?;
 
         let (w, h) = size.dimensions();
         let mut pixmap = tiny_skia::Pixmap::new(w, h)?;
@@ -221,7 +222,7 @@ mod raster_images {
         transform: tiny_skia::Transform,
         pixmap: &mut tiny_skia::PixmapMut,
     ) -> Option<()> {
-        let img_size = usvg::ScreenSize::new(raster.width(), raster.height())?;
+        let img_size = ScreenSize::new(raster.width(), raster.height())?;
         let r = image_rect(&image.view_box, img_size);
         let rect = tiny_skia::Rect::from_xywh(
             r.x() as f32,
@@ -270,7 +271,7 @@ mod raster_images {
     }
 
     /// Calculates an image rect depending on the provided view box.
-    fn image_rect(view_box: &usvg::ViewBox, img_size: usvg::ScreenSize) -> usvg::Rect {
+    fn image_rect(view_box: &usvg::ViewBox, img_size: ScreenSize) -> usvg::Rect {
         let new_size = img_size.to_size().fit_view_box(view_box);
         let (x, y) = usvg::utils::aligned_pos(
             view_box.aspect.align,

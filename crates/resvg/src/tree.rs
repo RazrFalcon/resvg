@@ -355,21 +355,6 @@ impl TinySkiaRectExt for tiny_skia::Rect {
     }
 }
 
-pub trait UsvgRectExt {
-    fn to_skia_rect(&self) -> Option<tiny_skia::Rect>;
-}
-
-impl UsvgRectExt for usvg::Rect {
-    fn to_skia_rect(&self) -> Option<tiny_skia::Rect> {
-        tiny_skia::Rect::from_xywh(
-            self.x() as f32,
-            self.y() as f32,
-            self.width() as f32,
-            self.height() as f32,
-        )
-    }
-}
-
 pub trait UsvgPathBboxExt {
     fn to_skia_rect(&self) -> tiny_skia::Rect;
 }

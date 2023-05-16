@@ -4,7 +4,7 @@
 
 //! Some useful utilities.
 
-use crate::{Align, AspectRatio, Rect, ScreenSize, Size, Transform, ViewBox};
+use crate::{Align, AspectRatio, Rect, Size, Transform};
 
 /// Converts `viewBox` to `Transform`.
 pub fn view_box_to_transform(view_box: Rect, aspect: AspectRatio, img_size: Size) -> Transform {
@@ -40,47 +40,6 @@ pub fn view_box_to_transform(view_box: Rect, aspect: AspectRatio, img_size: Size
 
     let (tx, ty) = aligned_pos(aspect.align, x, y, w, h);
     Transform::new(sx, 0.0, 0.0, sy, tx, ty)
-}
-
-/// Converts `viewBox` to `Transform` with an optional clip rectangle.
-///
-/// Unlike `view_box_to_transform`, returns an optional clip rectangle
-/// that should be applied before rendering the image.
-pub fn view_box_to_transform_with_clip(
-    view_box: &ViewBox,
-    img_size: ScreenSize,
-) -> (Transform, Option<Rect>) {
-    let r = view_box.rect;
-
-    let new_size = img_size.fit_view_box(view_box);
-
-    let (tx, ty, clip) = if view_box.aspect.slice {
-        let (dx, dy) = aligned_pos(
-            view_box.aspect.align,
-            0.0,
-            0.0,
-            new_size.width() as f64 - r.width(),
-            new_size.height() as f64 - r.height(),
-        );
-
-        (r.x() - dx, r.y() - dy, Some(r))
-    } else {
-        let (dx, dy) = aligned_pos(
-            view_box.aspect.align,
-            r.x(),
-            r.y(),
-            r.width() - new_size.width() as f64,
-            r.height() - new_size.height() as f64,
-        );
-
-        (dx, dy, None)
-    };
-
-    let sx = new_size.width() as f64 / img_size.width() as f64;
-    let sy = new_size.height() as f64 / img_size.height() as f64;
-    let ts = Transform::new(sx, 0.0, 0.0, sy, tx, ty);
-
-    (ts, clip)
 }
 
 /// Returns object aligned position.

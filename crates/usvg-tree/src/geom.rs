@@ -170,20 +170,25 @@ impl Size {
         }
     }
 
-    /// Converts `Size` to `ScreenSize`.
-    #[inline]
-    pub fn to_screen_size(&self) -> ScreenSize {
-        ScreenSize::new(
-            std::cmp::max(1, self.width().round() as u32),
-            std::cmp::max(1, self.height().round() as u32),
-        )
-        .unwrap()
-    }
-
     /// Converts the current size to `Rect` at provided position.
     #[inline]
     pub fn to_rect(&self, x: f64, y: f64) -> Rect {
         Rect::new(x, y, self.width, self.height).unwrap()
+    }
+}
+
+fn size_scale_f64(s1: Size, s2: Size, expand: bool) -> Size {
+    let rw = s2.height * s1.width / s1.height;
+    let with_h = if expand {
+        rw <= s2.width
+    } else {
+        rw >= s2.width
+    };
+    if !with_h {
+        Size::new(rw, s2.height).unwrap()
+    } else {
+        let h = s2.width * s1.height / s1.width;
+        Size::new(s2.width, h).unwrap()
     }
 }
 
@@ -203,152 +208,6 @@ impl FuzzyEq for Size {
     #[inline]
     fn fuzzy_eq(&self, other: &Self) -> bool {
         self.width.fuzzy_eq(&other.width) && self.height.fuzzy_eq(&other.height)
-    }
-}
-
-/// A 2D screen size representation.
-///
-/// Width and height are guarantee to be > 0.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq)]
-pub struct ScreenSize {
-    width: u32,
-    height: u32,
-}
-
-impl ScreenSize {
-    /// Creates a new `ScreenSize` from values.
-    #[inline]
-    pub fn new(width: u32, height: u32) -> Option<Self> {
-        if width > 0 && height > 0 {
-            Some(ScreenSize { width, height })
-        } else {
-            None
-        }
-    }
-
-    /// Returns width.
-    #[inline]
-    pub fn width(&self) -> u32 {
-        self.width
-    }
-
-    /// Returns height.
-    #[inline]
-    pub fn height(&self) -> u32 {
-        self.height
-    }
-
-    /// Returns width and height as a tuple.
-    #[inline]
-    pub fn dimensions(&self) -> (u32, u32) {
-        (self.width, self.height)
-    }
-
-    /// Scales current size by the specified factor.
-    #[inline]
-    pub fn scale_by(&self, factor: f64) -> Option<Self> {
-        Self::new(
-            (self.width as f64 * factor).round() as u32,
-            (self.height as f64 * factor).round() as u32,
-        )
-    }
-
-    /// Scales current size to the specified size.
-    #[inline]
-    pub fn scale_to(&self, to: Self) -> Self {
-        size_scale(*self, to, false)
-    }
-
-    /// Scales current size to the specified width.
-    #[inline]
-    pub fn scale_to_width(&self, new_width: u32) -> Option<Self> {
-        let new_height = (new_width as f32 * self.height as f32 / self.width as f32).ceil();
-        Self::new(new_width, new_height as u32)
-    }
-
-    /// Scales current size to the specified height.
-    #[inline]
-    pub fn scale_to_height(&self, new_height: u32) -> Option<Self> {
-        let new_width = (new_height as f32 * self.width as f32 / self.height as f32).ceil();
-        Self::new(new_width as u32, new_height)
-    }
-
-    /// Expands current size to the specified size.
-    #[inline]
-    pub fn expand_to(&self, to: Self) -> Self {
-        size_scale(*self, to, true)
-    }
-
-    /// Fits size into a viewbox.
-    pub fn fit_view_box(&self, vb: &ViewBox) -> Self {
-        let s = vb.rect.to_screen_size();
-
-        if vb.aspect.align == Align::None {
-            s
-        } else {
-            if vb.aspect.slice {
-                self.expand_to(s)
-            } else {
-                self.scale_to(s)
-            }
-        }
-    }
-
-    /// Converts the current `ScreenSize` to `Size`.
-    #[inline]
-    pub fn to_size(&self) -> Size {
-        // Can't fail, because `ScreenSize` is always valid.
-        Size::new(self.width as f64, self.height as f64).unwrap()
-    }
-
-    /// Converts the current `ScreenSize` to `ScreenRect`.
-    #[inline]
-    pub fn to_screen_rect(&self) -> ScreenRect {
-        // Can't fail, because `ScreenSize` is always valid.
-        ScreenRect::new(0, 0, self.width, self.height).unwrap()
-    }
-}
-
-impl std::fmt::Debug for ScreenSize {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "ScreenSize({} {})", self.width, self.height)
-    }
-}
-
-impl std::fmt::Display for ScreenSize {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-fn size_scale(s1: ScreenSize, s2: ScreenSize, expand: bool) -> ScreenSize {
-    let rw = (s2.height as f64 * s1.width as f64 / s1.height as f64).ceil() as u32;
-    let with_h = if expand {
-        rw <= s2.width
-    } else {
-        rw >= s2.width
-    };
-    if !with_h {
-        ScreenSize::new(rw, s2.height).unwrap()
-    } else {
-        let h = (s2.width as f64 * s1.height as f64 / s1.width as f64).ceil() as u32;
-        ScreenSize::new(s2.width, h).unwrap()
-    }
-}
-
-fn size_scale_f64(s1: Size, s2: Size, expand: bool) -> Size {
-    let rw = s2.height * s1.width / s1.height;
-    let with_h = if expand {
-        rw <= s2.width
-    } else {
-        rw >= s2.width
-    };
-    if !with_h {
-        Size::new(rw, s2.height).unwrap()
-    } else {
-        let h = s2.width * s1.height / s1.width;
-        Size::new(s2.width, h).unwrap()
     }
 }
 
@@ -679,36 +538,6 @@ impl Rect {
         // Never fails, because `Rect` is more strict than `PathBbox`.
         PathBbox::new(self.x, self.y, self.width, self.height).unwrap()
     }
-
-    /// Returns rect's size in screen units.
-    #[inline]
-    pub fn to_screen_size(&self) -> ScreenSize {
-        self.size().to_screen_size()
-    }
-
-    /// Returns rect in screen units.
-    #[inline]
-    pub fn to_screen_rect(&self) -> ScreenRect {
-        ScreenRect::new(
-            self.x() as i32,
-            self.y() as i32,
-            std::cmp::max(1, self.width().round() as u32),
-            std::cmp::max(1, self.height().round() as u32),
-        )
-        .unwrap()
-    }
-
-    /// Returns rect in screen units rounding outwards.
-    #[inline]
-    pub fn to_screen_rect_round_out(&self) -> ScreenRect {
-        ScreenRect::new(
-            self.x().floor() as i32,
-            self.y().floor() as i32,
-            std::cmp::max(1, self.width().ceil() as u32),
-            std::cmp::max(1, self.height().ceil() as u32),
-        )
-        .unwrap()
-    }
 }
 
 impl FuzzyEq for Rect {
@@ -732,179 +561,6 @@ impl std::fmt::Debug for Rect {
 }
 
 impl std::fmt::Display for Rect {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-// TODO: move to resvg
-/// A 2D screen rect representation.
-///
-/// Width and height are guarantee to be > 0.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq)]
-pub struct ScreenRect {
-    x: i32,
-    y: i32,
-    width: u32,
-    height: u32,
-}
-
-impl ScreenRect {
-    /// Creates a new `Rect` from values.
-    #[inline]
-    pub fn new(x: i32, y: i32, width: u32, height: u32) -> Option<Self> {
-        if width > 0 && height > 0 {
-            Some(ScreenRect {
-                x,
-                y,
-                width,
-                height,
-            })
-        } else {
-            None
-        }
-    }
-
-    /// Returns rect's size.
-    #[inline]
-    pub fn size(&self) -> ScreenSize {
-        // Can't fail, because `ScreenSize` is always valid.
-        ScreenSize::new(self.width, self.height).unwrap()
-    }
-
-    /// Returns rect's X position.
-    #[inline]
-    pub fn x(&self) -> i32 {
-        self.x
-    }
-
-    /// Returns rect's Y position.
-    #[inline]
-    pub fn y(&self) -> i32 {
-        self.y
-    }
-
-    /// Returns rect's width.
-    #[inline]
-    pub fn width(&self) -> u32 {
-        self.width
-    }
-
-    /// Returns rect's height.
-    #[inline]
-    pub fn height(&self) -> u32 {
-        self.height
-    }
-
-    /// Returns rect's left edge position.
-    #[inline]
-    pub fn left(&self) -> i32 {
-        self.x
-    }
-
-    /// Returns rect's right edge position.
-    #[inline]
-    pub fn right(&self) -> i32 {
-        self.x + self.width as i32
-    }
-
-    /// Returns rect's top edge position.
-    #[inline]
-    pub fn top(&self) -> i32 {
-        self.y
-    }
-
-    /// Returns rect's bottom edge position.
-    #[inline]
-    pub fn bottom(&self) -> i32 {
-        self.y + self.height as i32
-    }
-
-    /// Translates the rect by the specified offset.
-    #[inline]
-    pub fn translate(&self, tx: i32, ty: i32) -> Self {
-        ScreenRect {
-            x: self.x + tx,
-            y: self.y + ty,
-            width: self.width,
-            height: self.height,
-        }
-    }
-
-    /// Translates the rect to the specified position.
-    #[inline]
-    pub fn translate_to(&self, x: i32, y: i32) -> Self {
-        ScreenRect {
-            x,
-            y,
-            width: self.width,
-            height: self.height,
-        }
-    }
-
-    /// Checks that rect contains a point.
-    #[inline]
-    pub fn contains(&self, x: i32, y: i32) -> bool {
-        if x < self.x || x > self.x + self.width as i32 - 1 {
-            return false;
-        }
-
-        if y < self.y || y > self.y + self.height as i32 - 1 {
-            return false;
-        }
-
-        true
-    }
-
-    /// Fits the current rect into the specified bounds.
-    #[inline]
-    pub fn fit_to_rect(&self, bounds: ScreenRect) -> Self {
-        let mut r = *self;
-
-        if r.x < bounds.x() {
-            r.x = bounds.x();
-        }
-        if r.y < bounds.y() {
-            r.y = bounds.y();
-        }
-
-        if r.right() > bounds.width as i32 {
-            r.width = std::cmp::max(1, bounds.width as i32 - r.x) as u32;
-        }
-
-        if r.bottom() > bounds.height as i32 {
-            r.height = std::cmp::max(1, bounds.height as i32 - r.y) as u32;
-        }
-
-        r
-    }
-
-    /// Converts into `Rect`.
-    #[inline]
-    pub fn to_rect(&self) -> Rect {
-        // Can't fail, because `ScreenRect` is always valid.
-        Rect::new(
-            self.x as f64,
-            self.y as f64,
-            self.width as f64,
-            self.height as f64,
-        )
-        .unwrap()
-    }
-}
-
-impl std::fmt::Debug for ScreenRect {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(
-            f,
-            "ScreenRect({} {} {} {})",
-            self.x, self.y, self.width, self.height
-        )
-    }
-}
-
-impl std::fmt::Display for ScreenRect {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }

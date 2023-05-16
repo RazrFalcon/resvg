@@ -4,12 +4,13 @@
 
 use usvg::FuzzyEq;
 
+use crate::geom::{ScreenRect, ScreenSize, UsvgRectExt};
 use crate::tree::{ConvTransform, Group, Node, OptionLog, Tree};
 
 pub struct Context {
     pub root_transform: usvg::Transform,
-    pub target_size: usvg::ScreenSize,
-    pub max_filter_region: usvg::ScreenRect,
+    pub target_size: ScreenSize,
+    pub max_filter_region: ScreenRect,
 }
 
 impl Tree {
@@ -18,9 +19,9 @@ impl Tree {
     /// `transform` will be used as a root transform.
     /// Can be used to position SVG inside the `pixmap`.
     pub fn render(&self, transform: tiny_skia::Transform, pixmap: &mut tiny_skia::PixmapMut) {
-        let target_size = usvg::ScreenSize::new(pixmap.width(), pixmap.height()).unwrap();
+        let target_size = ScreenSize::new(pixmap.width(), pixmap.height()).unwrap();
 
-        let max_filter_region = usvg::ScreenRect::new(
+        let max_filter_region = ScreenRect::new(
             -(target_size.width() as i32),
             -(target_size.height() as i32),
             target_size.width() * 2,
@@ -107,7 +108,7 @@ fn render_group(
     let mut ibbox = if group.filters.is_empty() {
         // Convert group bbox into an integer one, expanding each side outwards by 2px
         // to make sure that anti-aliased pixels would not be clipped.
-        usvg::ScreenRect::new(
+        ScreenRect::new(
             bbox.x().floor() as i32 - 2,
             bbox.y().floor() as i32 - 2,
             bbox.width().ceil() as u32 + 4,

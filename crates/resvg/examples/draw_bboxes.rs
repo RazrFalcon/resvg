@@ -78,7 +78,9 @@ fn main() {
 
     let rtree = resvg::Tree::from_usvg(&tree);
 
-    let pixmap_size = tree.size.to_screen_size().scale_by(zoom as f64).unwrap();
+    let pixmap_size = resvg::ScreenSize::from_usvg(rtree.size)
+        .scale_by(zoom as f64)
+        .unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
     let render_ts = tiny_skia::Transform::from_scale(zoom, zoom);
     rtree.render(render_ts, &mut pixmap.as_mut());

@@ -4,6 +4,7 @@
 
 use std::rc::Rc;
 
+use crate::geom::{ScreenRect, ScreenSize};
 use crate::render::Context;
 use crate::tree::{ConvTransform, Node, OptionLog};
 
@@ -69,8 +70,8 @@ fn draw_children(
                 // We could use any values here. They will not be used anyway.
                 let ctx = Context {
                     root_transform: usvg::Transform::default(),
-                    target_size: usvg::ScreenSize::new(1, 1).unwrap(),
-                    max_filter_region: usvg::ScreenRect::new(0, 0, 1, 1).unwrap(),
+                    target_size: ScreenSize::new(1, 1).unwrap(),
+                    max_filter_region: ScreenRect::new(0, 0, 1, 1).unwrap(),
                 };
 
                 crate::path::render_fill_path(path, mode, &ctx, transform, pixmap);

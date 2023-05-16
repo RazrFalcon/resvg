@@ -5,8 +5,9 @@
 use std::rc::Rc;
 
 use rgb::FromSlice;
-use usvg::{FuzzyEq, FuzzyZero, ScreenRect, Transform};
+use usvg::{FuzzyEq, FuzzyZero, Transform};
 
+use crate::geom::{ScreenRect, UsvgRectExt};
 use crate::tree::{ConvTransform, Node};
 
 // TODO: apply single primitive filters in-place
@@ -269,7 +270,7 @@ pub(crate) enum Error {
 
 trait PixmapExt: Sized {
     fn try_create(width: u32, height: u32) -> Result<tiny_skia::Pixmap, Error>;
-    fn copy_region(&self, region: usvg::ScreenRect) -> Result<tiny_skia::Pixmap, Error>;
+    fn copy_region(&self, region: ScreenRect) -> Result<tiny_skia::Pixmap, Error>;
     fn clear(&mut self);
     fn into_srgb(&mut self);
     fn into_linear_rgb(&mut self);
@@ -280,7 +281,7 @@ impl PixmapExt for tiny_skia::Pixmap {
         tiny_skia::Pixmap::new(width, height).ok_or(Error::InvalidRegion)
     }
 
-    fn copy_region(&self, region: usvg::ScreenRect) -> Result<tiny_skia::Pixmap, Error> {
+    fn copy_region(&self, region: ScreenRect) -> Result<tiny_skia::Pixmap, Error> {
         let rect =
             tiny_skia::IntRect::from_xywh(region.x(), region.y(), region.width(), region.height())
                 .ok_or(Error::InvalidRegion)?;
@@ -318,7 +319,7 @@ struct Image {
     /// Image's content outside this region will be transparent/cleared.
     ///
     /// Currently used only for `feTile`.
-    region: usvg::ScreenRect,
+    region: ScreenRect,
 
     /// The current color space.
     color_space: usvg::filter::ColorInterpolation,
@@ -329,7 +330,7 @@ impl Image {
         let (w, h) = (image.width(), image.height());
         Image {
             image: Rc::new(image),
-            region: usvg::ScreenRect::new(0, 0, w, h).unwrap(),
+            region: ScreenRect::new(0, 0, w, h).unwrap(),
             color_space,
         }
     }
@@ -391,7 +392,7 @@ struct FilterResult {
 
 pub fn apply(
     filter: &Filter,
-    region: usvg::ScreenRect,
+    region: ScreenRect,
     ts: &usvg::Transform,
     fill_paint: Option<&tiny_skia::Pixmap>,
     stroke_paint: Option<&tiny_skia::Pixmap>,
@@ -423,7 +424,7 @@ pub fn apply(
 fn apply_inner(
     filter: &Filter,
     inputs: &FilterInputs,
-    region: usvg::ScreenRect,
+    region: ScreenRect,
     ts: &usvg::Transform,
 ) -> Result<Image, Error> {
     let mut results: Vec<FilterResult> = Vec::new();
@@ -687,11 +688,11 @@ fn calc_subregion(
 
 fn get_input(
     input: &usvg::filter::Input,
-    region: usvg::ScreenRect,
+    region: ScreenRect,
     inputs: &FilterInputs,
     results: &[FilterResult],
 ) -> Result<Image, Error> {
-    let convert = |in_image: Option<&tiny_skia::Pixmap>, region: usvg::ScreenRect| {
+    let convert = |in_image: Option<&tiny_skia::Pixmap>, region: ScreenRect| {
         let image = if let Some(image) = in_image {
             image.clone()
         } else {
@@ -867,7 +868,7 @@ fn apply_offset(
 fn apply_blend(
     fe: &usvg::filter::Blend,
     cs: usvg::filter::ColorInterpolation,
-    region: usvg::ScreenRect,
+    region: ScreenRect,
     input1: Image,
     input2: Image,
 ) -> Result<Image, Error> {
@@ -903,7 +904,7 @@ fn apply_blend(
 fn apply_composite(
     fe: &usvg::filter::Composite,
     cs: usvg::filter::ColorInterpolation,
-    region: usvg::ScreenRect,
+    region: ScreenRect,
     input1: Image,
     input2: Image,
 ) -> Result<Image, Error> {
@@ -967,7 +968,7 @@ fn apply_composite(
 fn apply_merge(
     fe: &usvg::filter::Merge,
     cs: usvg::filter::ColorInterpolation,
-    region: usvg::ScreenRect,
+    region: ScreenRect,
     inputs: &FilterInputs,
     results: &[FilterResult],
 ) -> Result<Image, Error> {
@@ -989,7 +990,7 @@ fn apply_merge(
     Ok(Image::from_image(pixmap, cs))
 }
 
-fn apply_flood(fe: &usvg::filter::Flood, region: usvg::ScreenRect) -> Result<Image, Error> {
+fn apply_flood(fe: &usvg::filter::Flood, region: ScreenRect) -> Result<Image, Error> {
     let c = fe.color;
 
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
@@ -1006,7 +1007,7 @@ fn apply_flood(fe: &usvg::filter::Flood, region: usvg::ScreenRect) -> Result<Ima
     ))
 }
 
-fn apply_tile(input: Image, region: usvg::ScreenRect) -> Result<Image, Error> {
+fn apply_tile(input: Image, region: ScreenRect) -> Result<Image, Error> {
     let subregion = input.region.translate(-region.x(), -region.y());
 
     let tile_pixmap = input.image.copy_region(subregion)?;
@@ -1032,8 +1033,8 @@ fn apply_tile(input: Image, region: usvg::ScreenRect) -> Result<Image, Error> {
 
 fn apply_image(
     fe: &usvg::filter::Image,
-    region: usvg::ScreenRect,
-    subregion: usvg::ScreenRect,
+    region: ScreenRect,
+    subregion: ScreenRect,
     ts: &usvg::Transform,
 ) -> Result<Image, Error> {
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
@@ -1199,7 +1200,7 @@ fn apply_morphology(
 
 fn apply_displacement_map(
     fe: &usvg::filter::DisplacementMap,
-    region: usvg::ScreenRect,
+    region: ScreenRect,
     cs: usvg::filter::ColorInterpolation,
     ts: &usvg::Transform,
     input1: Image,
@@ -1227,7 +1228,7 @@ fn apply_displacement_map(
 
 fn apply_turbulence(
     fe: &usvg::filter::Turbulence,
-    region: usvg::ScreenRect,
+    region: ScreenRect,
     cs: usvg::filter::ColorInterpolation,
     ts: &usvg::Transform,
 ) -> Result<Image, Error> {
@@ -1259,7 +1260,7 @@ fn apply_turbulence(
 
 fn apply_diffuse_lighting(
     fe: &usvg::filter::DiffuseLighting,
-    region: usvg::ScreenRect,
+    region: ScreenRect,
     cs: usvg::filter::ColorInterpolation,
     ts: &usvg::Transform,
     input: Image,
@@ -1282,7 +1283,7 @@ fn apply_diffuse_lighting(
 
 fn apply_specular_lighting(
     fe: &usvg::filter::SpecularLighting,
-    region: usvg::ScreenRect,
+    region: ScreenRect,
     cs: usvg::filter::ColorInterpolation,
     ts: &usvg::Transform,
     input: Image,

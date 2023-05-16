@@ -33,10 +33,16 @@ This changelog also contains important changes in dependencies.
   excessive alpha now. It's faster, but can lead to a slightly different output.
 - (c-api) Removed `fit_to` argument from `resvg_render`.
 - (c-api) Removed `fit_to` argument from `resvg_render_node`.
+- `usvg::ScreenSize` moved to `resvg`.
+- `usvg::ScreenRect` moved to `resvg`.
 
 ### Removed
 - `filter` build feature from `resvg`. Filters are always enabled now.
 - `resvg::FitTo`
+- `usvg::utils::view_box_to_transform_with_clip`
+- `usvg::Size::to_screen_size`. Use `resvg::ScreenSize::from_usvg` instead.
+- `usvg::Rect::to_screen_size`. Use `resvg::ScreenSize::from_usvg(rect.size())` instead.
+- `usvg::Rect::to_screen_rect`. Use `resvg::ScreenRect::from_usvg` instead.
 - (c-api) `resvg_fit_to`
 - (c-api) `resvg_fit_to_type`
 

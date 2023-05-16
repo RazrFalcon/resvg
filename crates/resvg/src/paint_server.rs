@@ -6,6 +6,7 @@ use std::rc::Rc;
 
 use crate::render::Context;
 use crate::tree::{ConvTransform, Node, OptionLog, TinySkiaRectExt, TinySkiaTransformExt};
+use crate::ScreenSize;
 
 pub struct Pattern {
     pub rect: usvg::Rect,
@@ -177,8 +178,10 @@ pub fn prepare_pattern_pixmap(
         ts2.get_scale()
     };
 
-    let img_size =
-        usvg::Size::new(pattern.rect.width() * sx, pattern.rect.height() * sy)?.to_screen_size();
+    let img_size = ScreenSize::new(
+        (pattern.rect.width() * sx).round() as u32,
+        (pattern.rect.height() * sy).round() as u32,
+    )?;
     let mut pixmap = tiny_skia::Pixmap::new(img_size.width(), img_size.height())?;
 
     let mut transform = tiny_skia::Transform::from_scale(sx as f32, sy as f32);

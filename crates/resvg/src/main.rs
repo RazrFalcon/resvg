@@ -415,17 +415,17 @@ enum FitTo {
 }
 
 impl FitTo {
-    fn fit_to_size(&self, size: usvg::ScreenSize) -> Option<usvg::ScreenSize> {
+    fn fit_to_size(&self, size: resvg::ScreenSize) -> Option<resvg::ScreenSize> {
         match *self {
             FitTo::Original => Some(size),
             FitTo::Width(w) => size.scale_to_width(w),
             FitTo::Height(h) => size.scale_to_height(h),
-            FitTo::Size(w, h) => usvg::ScreenSize::new(w, h).map(|s| size.scale_to(s)),
+            FitTo::Size(w, h) => resvg::ScreenSize::new(w, h).map(|s| size.scale_to(s)),
             FitTo::Zoom(z) => size.scale_by(z as f64),
         }
     }
 
-    fn fit_to_transform(&self, size: usvg::ScreenSize) -> tiny_skia::Transform {
+    fn fit_to_transform(&self, size: resvg::ScreenSize) -> tiny_skia::Transform {
         let size1 = size.to_size();
         let size2 = match self.fit_to_size(size) {
             Some(v) => v.to_size(),
@@ -649,7 +649,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
 
         let size = args
             .fit_to
-            .fit_to_size(bbox.to_screen_size())
+            .fit_to_size(resvg::ScreenSize::from_usvg(bbox.size()))
             .ok_or_else(|| "target size is zero".to_string())?;
 
         // Unwrap is safe, because `size` is already valid.
@@ -661,7 +661,9 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
             }
         }
 
-        let ts = args.fit_to.fit_to_transform(tree.size.to_screen_size());
+        let ts = args
+            .fit_to
+            .fit_to_transform(resvg::ScreenSize::from_usvg(tree.size));
 
         let rtree = resvg::Tree::from_usvg_node(&node)
             .ok_or_else(|| "zero-size node detected".to_string())?;
@@ -673,7 +675,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
 
             let size = args
                 .fit_to
-                .fit_to_size(tree.size.to_screen_size())
+                .fit_to_size(resvg::ScreenSize::from_usvg(tree.size))
                 .ok_or_else(|| "target size is zero".to_string())?;
 
             // Unwrap is safe, because `size` is already valid.
@@ -698,7 +700,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
     } else {
         let size = args
             .fit_to
-            .fit_to_size(tree.size.to_screen_size())
+            .fit_to_size(resvg::ScreenSize::from_usvg(tree.size))
             .ok_or_else(|| "target size is zero".to_string())?;
 
         // Unwrap is safe, because `size` is already valid.
@@ -708,7 +710,9 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
             pixmap.fill(svg_to_skia_color(background));
         }
 
-        let ts = args.fit_to.fit_to_transform(tree.size.to_screen_size());
+        let ts = args
+            .fit_to
+            .fit_to_transform(resvg::ScreenSize::from_usvg(tree.size));
 
         let rtree = resvg::Tree::from_usvg(tree);
         rtree.render(ts, &mut pixmap.as_mut());
@@ -745,9 +749,9 @@ fn trim_pixmap(
         transform.ty as f64,
     );
 
-    let limit = usvg::ScreenRect::new(0, 0, pixmap.width(), pixmap.height()).unwrap();
+    let limit = resvg::ScreenRect::new(0, 0, pixmap.width(), pixmap.height()).unwrap();
 
-    let content_area = content_area.transform(&uts)?.to_screen_rect();
+    let content_area = resvg::ScreenRect::from_usvg(content_area.transform(&uts)?);
     let content_area = content_area.fit_to_rect(limit);
     let content_area = tiny_skia::IntRect::from_xywh(
         content_area.x(),

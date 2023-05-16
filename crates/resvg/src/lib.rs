@@ -20,6 +20,7 @@ pub use usvg;
 
 mod clip;
 mod filter;
+mod geom;
 mod image;
 mod mask;
 mod paint_server;
@@ -27,4 +28,5 @@ mod path;
 mod render;
 mod tree;
 
+pub use crate::geom::{ScreenRect, ScreenSize};
 pub use crate::tree::Tree;
