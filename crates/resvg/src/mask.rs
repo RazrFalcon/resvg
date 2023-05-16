@@ -19,17 +19,18 @@ pub struct Mask {
 pub fn convert(
     umask: Option<Rc<usvg::Mask>>,
     object_bbox: usvg::PathBbox,
-    mut transform: tiny_skia::Transform,
+    transform: tiny_skia::Transform,
 ) -> Option<Mask> {
     let umask = umask?;
 
+    let mut content_transform = transform;
     if umask.content_units == usvg::Units::ObjectBoundingBox {
         let object_bbox = object_bbox
             .to_rect()
             .log_none(|| log::warn!("Masking of zero-sized shapes is not allowed."))?;
 
         let ts = usvg::Transform::from_bbox(object_bbox);
-        transform = transform.pre_concat(ts.to_native());
+        content_transform = transform.pre_concat(ts.to_native());
     }
 
     let mut mask_all = false;
@@ -41,7 +42,10 @@ pub fn convert(
 
     let rect = if umask.units == usvg::Units::ObjectBoundingBox {
         if let Some(bbox) = object_bbox.to_rect() {
-            umask.rect.bbox_transform(bbox)
+            umask
+                .rect
+                .bbox_transform(bbox)
+                .transform(&usvg::Transform::from_native(transform))?
         } else {
             // The actual values does not matter. Will not be used anyway.
             usvg::Rect::new(0.0, 0.0, 1.0, 1.0).unwrap()
@@ -51,7 +55,7 @@ pub fn convert(
     }
     .to_skia_rect()?;
 
-    let (children, _) = crate::tree::convert_node(umask.root.clone(), transform);
+    let (children, _) = crate::tree::convert_node(umask.root.clone(), content_transform);
     Some(Mask {
         mask_all,
         rect,

@@ -466,6 +466,7 @@ use crate::render;
 #[test] fn masking_mask_none() { assert_eq!(render("tests/masking/mask/none"), 0); }
 #[test] fn masking_mask_on_a_horizontal_line() { assert_eq!(render("tests/masking/mask/on-a-horizontal-line"), 0); }
 #[test] fn masking_mask_on_a_small_object() { assert_eq!(render("tests/masking/mask/on-a-small-object"), 0); }
+#[test] fn masking_mask_on_group_with_transform() { assert_eq!(render("tests/masking/mask/on-group-with-transform"), 0); }
 #[test] fn masking_mask_recursive_on_child() { assert_eq!(render("tests/masking/mask/recursive-on-child"), 0); }
 #[test] fn masking_mask_recursive_on_self() { assert_eq!(render("tests/masking/mask/recursive-on-self"), 0); }
 #[test] fn masking_mask_recursive() { assert_eq!(render("tests/masking/mask/recursive"), 0); }

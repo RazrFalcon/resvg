@@ -29,6 +29,7 @@ impl Tree {
         )
         .unwrap();
 
+        // TODO: apply during parsing?
         let ts =
             usvg::utils::view_box_to_transform(self.view_box.rect, self.view_box.aspect, self.size);
 
