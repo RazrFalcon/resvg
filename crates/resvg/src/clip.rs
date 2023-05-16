@@ -4,9 +4,9 @@
 
 use std::rc::Rc;
 
-use crate::geom::{ScreenRect, ScreenSize};
 use crate::render::Context;
 use crate::tree::{ConvTransform, Node, OptionLog};
+use crate::{IntRect, IntSize};
 
 pub struct ClipPath {
     pub clip_path: Option<Box<Self>>,
@@ -70,8 +70,8 @@ fn draw_children(
                 // We could use any values here. They will not be used anyway.
                 let ctx = Context {
                     root_transform: usvg::Transform::default(),
-                    target_size: ScreenSize::new(1, 1).unwrap(),
-                    max_filter_region: ScreenRect::new(0, 0, 1, 1).unwrap(),
+                    target_size: IntSize::new(1, 1).unwrap(),
+                    max_filter_region: IntRect::new(0, 0, 1, 1).unwrap(),
                 };
 
                 crate::path::render_fill_path(path, mode, &ctx, transform, pixmap);

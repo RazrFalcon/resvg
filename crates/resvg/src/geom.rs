@@ -2,31 +2,31 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-/// A 2D screen size representation.
+/// A 2D integer size representation.
 ///
 /// Width and height are guarantee to be > 0.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq)]
-pub struct ScreenSize {
+pub struct IntSize {
     width: u32,
     height: u32,
 }
 
-impl ScreenSize {
-    /// Creates a new `ScreenSize` from values.
+impl IntSize {
+    /// Creates a new `IntSize` from values.
     #[inline]
     pub fn new(width: u32, height: u32) -> Option<Self> {
         if width > 0 && height > 0 {
-            Some(ScreenSize { width, height })
+            Some(IntSize { width, height })
         } else {
             None
         }
     }
 
-    /// Creates a new `ScreenSize` from [`usvg::Size`].
+    /// Creates a new `IntSize` from [`usvg::Size`].
     #[inline]
     pub fn from_usvg(size: usvg::Size) -> Self {
-        ScreenSize::new(
+        IntSize::new(
             std::cmp::max(1, size.width().round() as u32),
             std::cmp::max(1, size.height().round() as u32),
         )
@@ -88,7 +88,7 @@ impl ScreenSize {
 
     /// Fits size into a viewbox.
     pub fn fit_view_box(&self, vb: &usvg::ViewBox) -> Self {
-        let s = ScreenSize::from_usvg(vb.rect.size());
+        let s = IntSize::from_usvg(vb.rect.size());
 
         if vb.aspect.align == usvg::Align::None {
             s
@@ -101,34 +101,34 @@ impl ScreenSize {
         }
     }
 
-    /// Converts the current `ScreenSize` to `Size`.
+    /// Converts the current `IntSize` to `Size`.
     #[inline]
     pub fn to_size(&self) -> usvg::Size {
-        // Can't fail, because `ScreenSize` is always valid.
+        // Can't fail, because `IntSize` is always valid.
         usvg::Size::new(self.width as f64, self.height as f64).unwrap()
     }
 
-    /// Converts the current `ScreenSize` to `ScreenRect`.
+    /// Converts the current `IntSize` to `IntRect`.
     #[inline]
-    pub fn to_screen_rect(&self) -> ScreenRect {
-        // Can't fail, because `ScreenSize` is always valid.
-        ScreenRect::new(0, 0, self.width, self.height).unwrap()
+    pub fn to_int_rect(&self) -> IntRect {
+        // Can't fail, because `IntSize` is always valid.
+        IntRect::new(0, 0, self.width, self.height).unwrap()
     }
 }
 
-impl std::fmt::Debug for ScreenSize {
+impl std::fmt::Debug for IntSize {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "ScreenSize({} {})", self.width, self.height)
+        write!(f, "IntSize({} {})", self.width, self.height)
     }
 }
 
-impl std::fmt::Display for ScreenSize {
+impl std::fmt::Display for IntSize {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-fn size_scale(s1: ScreenSize, s2: ScreenSize, expand: bool) -> ScreenSize {
+fn size_scale(s1: IntSize, s2: IntSize, expand: bool) -> IntSize {
     let rw = (s2.height as f64 * s1.width as f64 / s1.height as f64).ceil() as u32;
     let with_h = if expand {
         rw <= s2.width
@@ -136,31 +136,31 @@ fn size_scale(s1: ScreenSize, s2: ScreenSize, expand: bool) -> ScreenSize {
         rw >= s2.width
     };
     if !with_h {
-        ScreenSize::new(rw, s2.height).unwrap()
+        IntSize::new(rw, s2.height).unwrap()
     } else {
         let h = (s2.width as f64 * s1.height as f64 / s1.width as f64).ceil() as u32;
-        ScreenSize::new(s2.width, h).unwrap()
+        IntSize::new(s2.width, h).unwrap()
     }
 }
 
-/// A 2D screen rect representation.
+/// A 2D integer rect representation.
 ///
 /// Width and height are guarantee to be > 0.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq)]
-pub struct ScreenRect {
+pub struct IntRect {
     x: i32,
     y: i32,
     width: u32,
     height: u32,
 }
 
-impl ScreenRect {
+impl IntRect {
     /// Creates a new `Rect` from values.
     #[inline]
     pub fn new(x: i32, y: i32, width: u32, height: u32) -> Option<Self> {
         if width > 0 && height > 0 {
-            Some(ScreenRect {
+            Some(IntRect {
                 x,
                 y,
                 width,
@@ -171,10 +171,10 @@ impl ScreenRect {
         }
     }
 
-    /// Creates a new `ScreenRect` from [`usvg::Rect`].
+    /// Creates a new `IntRect` from [`usvg::Rect`].
     #[inline]
     pub fn from_usvg(rect: usvg::Rect) -> Self {
-        ScreenRect::new(
+        IntRect::new(
             rect.x() as i32,
             rect.y() as i32,
             std::cmp::max(1, rect.width().round() as u32),
@@ -185,9 +185,9 @@ impl ScreenRect {
 
     /// Returns rect's size.
     #[inline]
-    pub fn size(&self) -> ScreenSize {
-        // Can't fail, because `ScreenSize` is always valid.
-        ScreenSize::new(self.width, self.height).unwrap()
+    pub fn size(&self) -> IntSize {
+        // Can't fail, because `IntSize` is always valid.
+        IntSize::new(self.width, self.height).unwrap()
     }
 
     /// Returns rect's X position.
@@ -241,7 +241,7 @@ impl ScreenRect {
     /// Translates the rect by the specified offset.
     #[inline]
     pub fn translate(&self, tx: i32, ty: i32) -> Self {
-        ScreenRect {
+        IntRect {
             x: self.x + tx,
             y: self.y + ty,
             width: self.width,
@@ -252,7 +252,7 @@ impl ScreenRect {
     /// Translates the rect to the specified position.
     #[inline]
     pub fn translate_to(&self, x: i32, y: i32) -> Self {
-        ScreenRect {
+        IntRect {
             x,
             y,
             width: self.width,
@@ -276,7 +276,7 @@ impl ScreenRect {
 
     /// Fits the current rect into the specified bounds.
     #[inline]
-    pub fn fit_to_rect(&self, bounds: ScreenRect) -> Self {
+    pub fn fit_to_rect(&self, bounds: IntRect) -> Self {
         let mut r = *self;
 
         if r.x < bounds.x() {
@@ -300,7 +300,7 @@ impl ScreenRect {
     /// Converts into `Rect`.
     #[inline]
     pub fn to_rect(&self) -> usvg::Rect {
-        // Can't fail, because `ScreenRect` is always valid.
+        // Can't fail, because `IntRect` is always valid.
         usvg::Rect::new(
             self.x as f64,
             self.y as f64,
@@ -311,17 +311,17 @@ impl ScreenRect {
     }
 }
 
-impl std::fmt::Debug for ScreenRect {
+impl std::fmt::Debug for IntRect {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f,
-            "ScreenRect({} {} {} {})",
+            "IntRect({} {} {} {})",
             self.x, self.y, self.width, self.height
         )
     }
 }
 
-impl std::fmt::Display for ScreenRect {
+impl std::fmt::Display for IntRect {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -333,7 +333,7 @@ impl std::fmt::Display for ScreenRect {
 /// that should be applied before rendering the image.
 pub fn view_box_to_transform_with_clip(
     view_box: &usvg::ViewBox,
-    img_size: ScreenSize,
+    img_size: IntSize,
 ) -> (usvg::Transform, Option<usvg::Rect>) {
     let r = view_box.rect;
 
@@ -369,13 +369,13 @@ pub fn view_box_to_transform_with_clip(
 }
 
 pub trait UsvgRectExt {
-    fn to_screen_rect_round_out(&self) -> ScreenRect;
+    fn to_int_rect_round_out(&self) -> IntRect;
     fn to_skia_rect(&self) -> Option<tiny_skia::Rect>;
 }
 
 impl UsvgRectExt for usvg::Rect {
-    fn to_screen_rect_round_out(&self) -> ScreenRect {
-        ScreenRect::new(
+    fn to_int_rect_round_out(&self) -> IntRect {
+        IntRect::new(
             self.x().floor() as i32,
             self.y().floor() as i32,
             std::cmp::max(1, self.width().ceil() as u32),

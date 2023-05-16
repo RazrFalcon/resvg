@@ -4,13 +4,13 @@
 
 use usvg::FuzzyEq;
 
-use crate::geom::{ScreenRect, ScreenSize, UsvgRectExt};
+use crate::geom::{IntRect, IntSize, UsvgRectExt};
 use crate::tree::{ConvTransform, Group, Node, OptionLog, Tree};
 
 pub struct Context {
     pub root_transform: usvg::Transform,
-    pub target_size: ScreenSize,
-    pub max_filter_region: ScreenRect,
+    pub target_size: IntSize,
+    pub max_filter_region: IntRect,
 }
 
 impl Tree {
@@ -19,9 +19,9 @@ impl Tree {
     /// `transform` will be used as a root transform.
     /// Can be used to position SVG inside the `pixmap`.
     pub fn render(&self, transform: tiny_skia::Transform, pixmap: &mut tiny_skia::PixmapMut) {
-        let target_size = ScreenSize::new(pixmap.width(), pixmap.height()).unwrap();
+        let target_size = IntSize::new(pixmap.width(), pixmap.height()).unwrap();
 
-        let max_filter_region = ScreenRect::new(
+        let max_filter_region = IntRect::new(
             -(target_size.width() as i32),
             -(target_size.height() as i32),
             target_size.width() * 2,
@@ -108,7 +108,7 @@ fn render_group(
     let mut ibbox = if group.filters.is_empty() {
         // Convert group bbox into an integer one, expanding each side outwards by 2px
         // to make sure that anti-aliased pixels would not be clipped.
-        ScreenRect::new(
+        IntRect::new(
             bbox.x().floor() as i32 - 2,
             bbox.y().floor() as i32 - 2,
             bbox.width().ceil() as u32 + 4,
@@ -117,7 +117,7 @@ fn render_group(
     } else {
         // The bounding box for groups with filters is special and should not be expanded by 2px,
         // because it's already acting as a clipping region.
-        let bbox = bbox.to_rect()?.to_screen_rect_round_out();
+        let bbox = bbox.to_rect()?.to_int_rect_round_out();
         // Make sure our filter region is not bigger than 2x the canvas size.
         // This is required mainly to prevent huge filter regions that would tank the performance.
         // It should not affect the final result in any way.
@@ -132,7 +132,7 @@ fn render_group(
     // There is no point in rendering anything outside the canvas,
     // since it will be clipped anyway.
     if group.filters.is_empty() {
-        ibbox = ibbox.fit_to_rect(ctx.target_size.to_screen_rect());
+        ibbox = ibbox.fit_to_rect(ctx.target_size.to_int_rect());
     }
 
     let shift_ts = {

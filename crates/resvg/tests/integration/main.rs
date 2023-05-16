@@ -41,7 +41,7 @@ pub fn render(name: &str) -> usize {
     };
 
     let rtree = resvg::Tree::from_usvg(&tree);
-    let size = resvg::ScreenSize::from_usvg(rtree.size)
+    let size = resvg::IntSize::from_usvg(rtree.size)
         .scale_to_width(IMAGE_SIZE)
         .unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
@@ -91,7 +91,7 @@ pub fn render_extra_with_scale(name: &str, scale: f32) -> usize {
     };
     let rtree = resvg::Tree::from_usvg(&tree);
 
-    let size = resvg::ScreenSize::from_usvg(rtree.size)
+    let size = resvg::IntSize::from_usvg(rtree.size)
         .scale_by(scale as f64)
         .unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
