@@ -201,7 +201,7 @@ fn get_image_file_format(path: &std::path::Path, data: &[u8]) -> Option<ImageFor
         return Some(ImageFormat::SVG);
     }
 
-    get_image_data_format(data.get(0..8)?)
+    get_image_data_format(data)
 }
 
 /// Checks that file has a PNG, a GIF or a JPEG magic bytes.
