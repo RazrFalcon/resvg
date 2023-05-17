@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use crate::render::Context;
 use crate::tree::{ConvTransform, Node, OptionLog};
-use crate::{IntRect, IntSize};
+use crate::IntRect;
 
 pub struct ClipPath {
     pub transform: tiny_skia::Transform,
@@ -67,8 +67,7 @@ fn draw_children(
             Node::FillPath(ref path) => {
                 // We could use any values here. They will not be used anyway.
                 let ctx = Context {
-                    target_size: IntSize::new(1, 1).unwrap(),
-                    max_filter_region: IntRect::new(0, 0, 1, 1).unwrap(),
+                    max_bbox: IntRect::new(0, 0, 1, 1).unwrap(),
                 };
 
                 crate::path::render_fill_path(path, mode, &ctx, transform, pixmap);

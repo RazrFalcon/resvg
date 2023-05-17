@@ -8,8 +8,7 @@ use crate::geom::{IntRect, IntSize, UsvgRectExt};
 use crate::tree::{ConvTransform, Group, Node, OptionLog, Tree};
 
 pub struct Context {
-    pub target_size: IntSize,
-    pub max_filter_region: IntRect,
+    pub max_bbox: IntRect,
 }
 
 impl Tree {
@@ -19,12 +18,11 @@ impl Tree {
     /// Can be used to position SVG inside the `pixmap`.
     pub fn render(&self, transform: tiny_skia::Transform, pixmap: &mut tiny_skia::PixmapMut) {
         let target_size = IntSize::new(pixmap.width(), pixmap.height()).unwrap();
-
-        let max_filter_region = IntRect::new(
-            -(target_size.width() as i32),
-            -(target_size.height() as i32),
-            target_size.width() * 2,
-            target_size.height() * 2,
+        let max_bbox = IntRect::new(
+            -(target_size.width() as i32) * 2,
+            -(target_size.height() as i32) * 2,
+            target_size.width() * 4,
+            target_size.height() * 4,
         )
         .unwrap();
 
@@ -33,10 +31,7 @@ impl Tree {
 
         let root_transform = transform.pre_concat(ts.to_native());
 
-        let ctx = Context {
-            target_size,
-            max_filter_region,
-        };
+        let ctx = Context { max_bbox: max_bbox };
 
         render_nodes(&self.children, &ctx, root_transform, pixmap);
     }
@@ -122,17 +117,16 @@ fn render_group(
         // The bounding box for groups with filters is special and should not be expanded by 2px,
         // because it's already acting as a clipping region.
         let bbox = bbox.to_rect()?.to_int_rect_round_out();
-        // Make sure our filter region is not bigger than 2x the canvas size.
+        // Make sure our filter region is not bigger than 4x the canvas size.
         // This is required mainly to prevent huge filter regions that would tank the performance.
         // It should not affect the final result in any way.
-        bbox.fit_to_rect(ctx.max_filter_region)
+        bbox.fit_to_rect(ctx.max_bbox)
     };
 
-    // Make sure that our bbox is not bigger than the canvas.
-    // There is no point in rendering anything outside the canvas,
-    // since it will be clipped anyway.
+    // Make sure our layer is not bigger than 4x the canvas size.
+    // This is required to prevent huge layers.
     if group.filters.is_empty() {
-        ibbox = ibbox.fit_to_rect(ctx.target_size.to_int_rect());
+        ibbox = ibbox.fit_to_rect(ctx.max_bbox);
     }
 
     let shift_ts = {
