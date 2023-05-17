@@ -1,6 +1,6 @@
 [package]
 name = "usvg-tree"
-version = "0.32.0"
+version = "0.33.0"
 authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg"]
 license = "MPL-2.0"

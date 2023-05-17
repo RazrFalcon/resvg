@@ -45,15 +45,15 @@ pub enum Node {
     Image(Image),
 }
 
+// - No hidden nodes.
+// - No text.
+// - Uses mostly tiny-skia types.
+// - No paint-order. Already resolved.
+// - PNG/JPEG/GIF bitmaps are already decoded and are stored as tiny_skia::Pixmap.
+//   SVG images will be rendered each time.
+// - No `objectBoundingBox` units.
+
 /// A render tree.
-///
-/// - No hidden nodes.
-/// - No text.
-/// - Uses mostly tiny-skia types.
-/// - No paint-order. Already resolved.
-/// - PNG/JPEG/GIF bitmaps are already decoded and are stored as tiny_skia::Pixmap.
-///   SVG images will be rendered each time.
-/// - No `objectBoundingBox` units.
 pub struct Tree {
     /// Image size.
     ///

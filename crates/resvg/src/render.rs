@@ -12,7 +12,7 @@ pub struct Context {
 }
 
 impl Tree {
-    /// Renders an SVG tree onto the pixmap.
+    /// Renders the tree onto the pixmap.
     ///
     /// `transform` will be used as a root transform.
     /// Can be used to position SVG inside the `pixmap`.
