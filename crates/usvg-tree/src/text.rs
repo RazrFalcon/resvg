@@ -172,11 +172,11 @@ pub struct TextDecoration {
 /// Spans do not overlap inside a text chunk.
 #[derive(Clone, Debug)]
 pub struct TextSpan {
-    /// A span start in UTF-8 codepoints.
+    /// A span start in bytes.
     ///
     /// Offset is relative to the parent text chunk and not the parent text element.
     pub start: usize,
-    /// A span end in UTF-8 codepoints.
+    /// A span end in bytes.
     ///
     /// Offset is relative to the parent text chunk and not the parent text element.
     pub end: usize,
@@ -322,12 +322,12 @@ pub struct Text {
 
     /// A list of character positions.
     ///
-    /// One position for each Unicode codepoint. Aka `char` in Rust and not UTF-8 byte.
+    /// One position for each Unicode codepoint. Aka `char` in Rust.
     pub positions: Vec<CharacterPosition>,
 
     /// A list of rotation angles.
     ///
-    /// One angle for each Unicode codepoint. Aka `char` in Rust and not UTF-8 byte.
+    /// One angle for each Unicode codepoint. Aka `char` in Rust.
     pub rotate: Vec<f64>,
 
     /// A writing mode.
