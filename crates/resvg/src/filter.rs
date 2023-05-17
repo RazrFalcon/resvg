@@ -125,14 +125,14 @@ pub struct Filter {
 
 pub fn convert(
     ufilters: &[Rc<usvg::filter::Filter>],
-    layer_bbox: Option<usvg::PathBbox>,
+    scaled_object_bbox: Option<usvg::PathBbox>,
     object_bbox: Option<usvg::PathBbox>,
     transform: tiny_skia::Transform,
 ) -> (Vec<Filter>, Option<usvg::PathBbox>) {
-    let layer_bbox = layer_bbox.and_then(|bbox| bbox.to_rect());
+    let scaled_object_bbox = scaled_object_bbox.and_then(|bbox| bbox.to_rect());
     let object_bbox = object_bbox.and_then(|bbox| bbox.to_rect());
 
-    let region = match calc_filters_region(ufilters, layer_bbox, object_bbox) {
+    let region = match calc_filters_region(ufilters, scaled_object_bbox) {
         Some(v) => v,
         None => return (Vec::new(), None),
     };
@@ -573,13 +573,13 @@ fn apply_inner(
     }
 }
 
-fn calc_region(filter: &usvg::filter::Filter, bbox: Option<usvg::Rect>) -> Option<usvg::Rect> {
+// TODO: merge with mask region logic
+fn calc_region(
+    filter: &usvg::filter::Filter,
+    object_bbox: Option<usvg::Rect>,
+) -> Option<usvg::Rect> {
     if filter.units == usvg::Units::ObjectBoundingBox {
-        let bbox = bbox?;
-        let bbox_ts = usvg::Transform::from_bbox(bbox);
-        let path = usvg::PathData::from_rect(filter.rect);
-        path.bbox_with_transform(bbox_ts, None)
-            .and_then(|bbox| bbox.to_rect())
+        Some(filter.rect.bbox_transform(object_bbox?))
     } else {
         Some(filter.rect)
     }
@@ -587,22 +587,12 @@ fn calc_region(filter: &usvg::filter::Filter, bbox: Option<usvg::Rect>) -> Optio
 
 pub fn calc_filters_region(
     filters: &[Rc<usvg::filter::Filter>],
-    layer_bbox: Option<usvg::Rect>,
     object_bbox: Option<usvg::Rect>,
 ) -> Option<usvg::Rect> {
     let mut global_region = usvg::Rect::new_bbox();
 
     for filter in filters {
-        // Ignore zero-region filter.
-        // We use `object_bbox` and not `layer_bbox` here.
-        // A stroked hor/ver line would have `layer_bbox`, but not `object_bbox`.
-        if filter.units == usvg::Units::ObjectBoundingBox {
-            if object_bbox.is_none() {
-                continue;
-            }
-        }
-
-        if let Some(region) = calc_region(filter, layer_bbox) {
+        if let Some(region) = calc_region(filter, object_bbox) {
             global_region = global_region.expand(region);
         }
     }

@@ -123,14 +123,40 @@ pub fn convert_node(
 ) -> (Vec<Node>, Option<usvg::PathBbox>) {
     let mut children = Vec::new();
     let bboxes = convert_node_inner(node, transform, &mut children);
-    (children, bboxes.map(|b| b.0))
+    (children, bboxes.map(|b| b.layer))
+}
+
+#[derive(Debug)]
+pub struct BBoxes {
+    /// The object bounding box.
+    ///
+    /// Just a shape/image bbox as per SVG spec.
+    pub object: usvg::PathBbox,
+
+    /// The same as above, but transformed to user/canvas coordinates.
+    ///
+    /// Technically just a hack until we implement a proper filter region.
+    pub transformed_object: usvg::PathBbox,
+
+    /// Similar to `transformed_object`, but expanded to fit the stroke as well.
+    pub layer: usvg::PathBbox,
+}
+
+impl Default for BBoxes {
+    fn default() -> Self {
+        Self {
+            object: usvg::PathBbox::new_bbox(),
+            transformed_object: usvg::PathBbox::new_bbox(),
+            layer: usvg::PathBbox::new_bbox(),
+        }
+    }
 }
 
 fn convert_node_inner(
     node: usvg::Node,
     parent_transform: tiny_skia::Transform,
     children: &mut Vec<Node>,
-) -> Option<(usvg::PathBbox, usvg::PathBbox)> {
+) -> Option<BBoxes> {
     match &*node.borrow() {
         usvg::NodeKind::Group(ref ugroup) => {
             convert_group(node.clone(), ugroup, parent_transform, children)
@@ -148,7 +174,7 @@ fn convert_group(
     ugroup: &usvg::Group,
     parent_transform: tiny_skia::Transform,
     children: &mut Vec<Node>,
-) -> Option<(usvg::PathBbox, usvg::PathBbox)> {
+) -> Option<BBoxes> {
     let transform = parent_transform.pre_concat(ugroup.transform.to_native());
 
     if !ugroup.should_isolate() {
@@ -156,16 +182,15 @@ fn convert_group(
     }
 
     let mut group_children = Vec::new();
-    let (mut layer_bbox, object_bbox) = match convert_children(node, transform, &mut group_children)
-    {
+    let mut bboxes = match convert_children(node, transform, &mut group_children) {
         Some(v) => v,
         None => return convert_empty_group(ugroup, transform, children),
     };
 
     let (filters, filter_bbox) = crate::filter::convert(
         &ugroup.filters,
-        Some(layer_bbox),
-        Some(object_bbox),
+        Some(bboxes.transformed_object),
+        Some(bboxes.object),
         transform,
     );
 
@@ -176,42 +201,42 @@ fn convert_group(
     }
 
     if let Some(filter_bbox) = filter_bbox {
-        layer_bbox = filter_bbox;
+        bboxes.layer = filter_bbox;
     }
 
     let mut filter_fill = None;
     if let Some(ref paint) = ugroup.filter_fill {
         filter_fill =
-            crate::paint_server::convert(&paint, usvg::Opacity::ONE, layer_bbox.to_skia_rect());
+            crate::paint_server::convert(&paint, usvg::Opacity::ONE, bboxes.layer.to_skia_rect());
     }
 
     let mut filter_stroke = None;
     if let Some(ref paint) = ugroup.filter_stroke {
         filter_stroke =
-            crate::paint_server::convert(&paint, usvg::Opacity::ONE, layer_bbox.to_skia_rect());
+            crate::paint_server::convert(&paint, usvg::Opacity::ONE, bboxes.layer.to_skia_rect());
     }
 
     let group = Group {
         opacity: ugroup.opacity.get() as f32,
         blend_mode: convert_blend_mode(ugroup.blend_mode),
-        clip_path: crate::clip::convert(ugroup.clip_path.clone(), object_bbox, transform),
-        mask: crate::mask::convert(ugroup.mask.clone(), object_bbox, transform),
+        clip_path: crate::clip::convert(ugroup.clip_path.clone(), bboxes.object, transform),
+        mask: crate::mask::convert(ugroup.mask.clone(), bboxes.object, transform),
         filters,
         filter_fill,
         filter_stroke,
-        bbox: layer_bbox,
+        bbox: bboxes.layer,
         children: group_children,
     };
 
     children.push(Node::Group(group));
-    Some((layer_bbox, object_bbox))
+    Some(bboxes)
 }
 
 fn convert_empty_group(
     ugroup: &usvg::Group,
     transform: tiny_skia::Transform,
     children: &mut Vec<Node>,
-) -> Option<(usvg::PathBbox, usvg::PathBbox)> {
+) -> Option<BBoxes> {
     if ugroup.filters.is_empty() {
         return None;
     }
@@ -243,34 +268,37 @@ fn convert_empty_group(
         children: Vec::new(),
     };
 
-    // TODO: find a better solution
-    let object_bbox = usvg::PathBbox::new(0.0, 0.0, 1.0, 1.0).unwrap();
+    let bboxes = BBoxes {
+        // TODO: find a better solution
+        object: usvg::PathBbox::new(0.0, 0.0, 1.0, 1.0).unwrap(),
+        transformed_object: usvg::PathBbox::new(0.0, 0.0, 1.0, 1.0).unwrap(),
+        layer: layer_bbox,
+    };
 
     children.push(Node::Group(group));
-    Some((layer_bbox, object_bbox))
+    Some(bboxes)
 }
 
 fn convert_children(
     parent: usvg::Node,
     parent_transform: tiny_skia::Transform,
     children: &mut Vec<Node>,
-) -> Option<(usvg::PathBbox, usvg::PathBbox)> {
-    let mut layer_bbox = usvg::PathBbox::new_bbox();
-    let mut object_bbox = usvg::PathBbox::new_bbox();
+) -> Option<BBoxes> {
+    let mut bboxes = BBoxes::default();
 
     for node in parent.children() {
-        if let Some((node_layer_bbox, node_object_bbox)) =
-            convert_node_inner(node, parent_transform, children)
-        {
-            object_bbox = object_bbox.expand(node_object_bbox);
-            layer_bbox = layer_bbox.expand(node_layer_bbox);
+        if let Some(bboxes2) = convert_node_inner(node, parent_transform, children) {
+            bboxes.object = bboxes.object.expand(bboxes2.object);
+            bboxes.transformed_object =
+                bboxes.transformed_object.expand(bboxes2.transformed_object);
+            bboxes.layer = bboxes.layer.expand(bboxes2.layer);
         }
     }
 
-    if layer_bbox.fuzzy_ne(&usvg::PathBbox::new_bbox())
-        && object_bbox.fuzzy_ne(&usvg::PathBbox::new_bbox())
+    if bboxes.layer.fuzzy_ne(&usvg::PathBbox::new_bbox())
+        && bboxes.object.fuzzy_ne(&usvg::PathBbox::new_bbox())
     {
-        Some((layer_bbox, object_bbox))
+        Some(bboxes)
     } else {
         None
     }

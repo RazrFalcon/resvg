@@ -314,6 +314,7 @@ use crate::render;
 #[test] fn filters_filter_on_zero_sized_shape() { assert_eq!(render("tests/filters/filter/on-zero-sized-shape"), 0); }
 #[test] fn filters_filter_primitiveUnits_eq_objectBoundingBox() { assert_eq!(render("tests/filters/filter/primitiveUnits=objectBoundingBox"), 0); }
 #[test] fn filters_filter_recursive_xlink_href() { assert_eq!(render("tests/filters/filter/recursive-xlink-href"), 0); }
+#[test] fn filters_filter_region_with_stroke() { assert_eq!(render("tests/filters/filter/region-with-stroke"), 0); }
 #[test] fn filters_filter_self_recursive_xlink_href() { assert_eq!(render("tests/filters/filter/self-recursive-xlink-href"), 0); }
 #[test] fn filters_filter_simple_case() { assert_eq!(render("tests/filters/filter/simple-case"), 0); }
 #[test] fn filters_filter_some_attributes_via_xlink_href() { assert_eq!(render("tests/filters/filter/some-attributes-via-xlink-href"), 0); }

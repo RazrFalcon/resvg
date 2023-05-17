@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::render::TinySkiaPixmapMutExt;
-use crate::tree::{ConvTransform, Node, Tree};
+use crate::tree::{BBoxes, ConvTransform, Node, Tree};
 use crate::IntSize;
 
 pub enum ImageKind {
@@ -23,14 +23,19 @@ pub fn convert(
     image: &usvg::Image,
     parent_transform: tiny_skia::Transform,
     children: &mut Vec<Node>,
-) -> Option<(usvg::PathBbox, usvg::PathBbox)> {
+) -> Option<BBoxes> {
     let transform = parent_transform.pre_concat(image.transform.to_native());
 
     let object_bbox = image.view_box.rect.to_path_bbox();
     let layer_bbox = object_bbox.transform(&usvg::Transform::from_native(transform))?;
+    let bboxes = BBoxes {
+        object: object_bbox,
+        transformed_object: layer_bbox,
+        layer: layer_bbox,
+    };
 
     if image.visibility != usvg::Visibility::Visible {
-        return Some((layer_bbox, object_bbox));
+        return Some(bboxes);
     }
 
     let mut quality = tiny_skia::FilterQuality::Bicubic;
@@ -56,7 +61,7 @@ pub fn convert(
         kind,
     }));
 
-    Some((layer_bbox, object_bbox))
+    Some(bboxes)
 }
 
 pub fn render_image(

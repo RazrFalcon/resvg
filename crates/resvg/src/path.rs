@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use crate::paint_server::Paint;
 use crate::render::Context;
-use crate::tree::{ConvTransform, Node, TinySkiaRectExt};
+use crate::tree::{BBoxes, ConvTransform, Node, TinySkiaRectExt};
 
 pub struct FillPath {
     pub transform: tiny_skia::Transform,
@@ -28,7 +28,7 @@ pub fn convert(
     upath: &usvg::Path,
     parent_transform: tiny_skia::Transform,
     children: &mut Vec<Node>,
-) -> Option<(usvg::PathBbox, usvg::PathBbox)> {
+) -> Option<BBoxes> {
     let transform = parent_transform.pre_concat(upath.transform.to_native());
     let anti_alias = upath.rendering_mode.use_shape_antialiasing();
     let path = match convert_path_data(&upath.data) {
@@ -54,23 +54,28 @@ pub fn convert(
         return None;
     }
 
-    let mut layer_bbox = usvg::PathBbox::new_bbox();
-    let mut object_bbox = usvg::PathBbox::new_bbox();
+    let mut bboxes = BBoxes::default();
+
     if let Some((_, l_bbox, o_bbox)) = fill_path {
-        layer_bbox = layer_bbox.expand(l_bbox);
-        object_bbox = object_bbox.expand(o_bbox);
+        bboxes.layer = bboxes.layer.expand(l_bbox);
+        bboxes.object = bboxes.object.expand(o_bbox);
     }
     if let Some((_, l_bbox, o_bbox)) = stroke_path {
-        layer_bbox = layer_bbox.expand(l_bbox);
-        object_bbox = object_bbox.expand(o_bbox);
+        bboxes.layer = bboxes.layer.expand(l_bbox);
+        bboxes.object = bboxes.object.expand(o_bbox);
     }
 
-    layer_bbox = layer_bbox.transform(&usvg::Transform::from_native(transform))?;
+    bboxes.transformed_object = bboxes
+        .object
+        .transform(&usvg::Transform::from_native(transform))?;
+    bboxes.layer = bboxes
+        .layer
+        .transform(&usvg::Transform::from_native(transform))?;
 
     // Do not add hidden paths, but preserve the bbox.
     // visibility=hidden still affects the bbox calculation.
     if upath.visibility != usvg::Visibility::Visible {
-        return Some((layer_bbox, object_bbox));
+        return Some(bboxes);
     }
 
     if upath.paint_order == usvg::PaintOrder::FillAndStroke {
@@ -91,7 +96,7 @@ pub fn convert(
         }
     }
 
-    Some((layer_bbox, object_bbox))
+    Some(bboxes)
 }
 
 fn convert_fill_path(
