@@ -173,7 +173,7 @@ use crate::render;
 #[test] fn filters_feGaussianBlur_stdDeviation_eq_5_0() { assert_eq!(render("tests/filters/feGaussianBlur/stdDeviation=5-0"), 0); }
 #[test] fn filters_feGaussianBlur_tiny_stdDeviation() { assert_eq!(render("tests/filters/feGaussianBlur/tiny-stdDeviation"), 0); }
 #[test] fn filters_feImage_chained_feImage() { assert_eq!(render("tests/filters/feImage/chained-feImage"), 0); }
-#[test] fn filters_feImage_embedded_PNG() { assert_eq!(render("tests/filters/feImage/embedded-PNG"), 0); }
+#[test] fn filters_feImage_embedded_png() { assert_eq!(render("tests/filters/feImage/embedded-png"), 0); }
 #[test] fn filters_feImage_empty() { assert_eq!(render("tests/filters/feImage/empty"), 0); }
 #[test] fn filters_feImage_link_on_an_element_with_complex_transform() { assert_eq!(render("tests/filters/feImage/link-on-an-element-with-complex-transform"), 0); }
 #[test] fn filters_feImage_link_on_an_element_with_transform() { assert_eq!(render("tests/filters/feImage/link-on-an-element-with-transform"), 0); }
@@ -188,9 +188,9 @@ use crate::render;
 #[test] fn filters_feImage_preserveAspectRatio_eq_none() { assert_eq!(render("tests/filters/feImage/preserveAspectRatio=none"), 0); }
 #[test] fn filters_feImage_recursive_links_1() { assert_eq!(render("tests/filters/feImage/recursive-links-1"), 0); }
 #[test] fn filters_feImage_recursive_links_2() { assert_eq!(render("tests/filters/feImage/recursive-links-2"), 0); }
-#[test] fn filters_feImage_sVG() { assert_eq!(render("tests/filters/feImage/sVG"), 0); }
 #[test] fn filters_feImage_self_recursive() { assert_eq!(render("tests/filters/feImage/self-recursive"), 0); }
 #[test] fn filters_feImage_simple_case() { assert_eq!(render("tests/filters/feImage/simple-case"), 0); }
+#[test] fn filters_feImage_svg() { assert_eq!(render("tests/filters/feImage/svg"), 0); }
 #[test] fn filters_feImage_with_subregion_1() { assert_eq!(render("tests/filters/feImage/with-subregion-1"), 0); }
 #[test] fn filters_feImage_with_subregion_2() { assert_eq!(render("tests/filters/feImage/with-subregion-2"), 0); }
 #[test] fn filters_feImage_with_subregion_3() { assert_eq!(render("tests/filters/feImage/with-subregion-3"), 0); }
@@ -905,9 +905,9 @@ use crate::render;
 #[test] fn painting_stroke_width_negative() { assert_eq!(render("tests/painting/stroke-width/negative"), 0); }
 #[test] fn painting_stroke_width_percentage() { assert_eq!(render("tests/painting/stroke-width/percentage"), 0); }
 #[test] fn painting_stroke_width_zero() { assert_eq!(render("tests/painting/stroke-width/zero"), 0); }
-#[test] fn painting_visibility_bBox_impact_1() { assert_eq!(render("tests/painting/visibility/bBox-impact-1"), 0); }
-#[test] fn painting_visibility_bBox_impact_2() { assert_eq!(render("tests/painting/visibility/bBox-impact-2"), 0); }
-#[test] fn painting_visibility_bBox_impact_3() { assert_eq!(render("tests/painting/visibility/bBox-impact-3"), 0); }
+#[test] fn painting_visibility_bbox_impact_1() { assert_eq!(render("tests/painting/visibility/bbox-impact-1"), 0); }
+#[test] fn painting_visibility_bbox_impact_2() { assert_eq!(render("tests/painting/visibility/bbox-impact-2"), 0); }
+#[test] fn painting_visibility_bbox_impact_3() { assert_eq!(render("tests/painting/visibility/bbox-impact-3"), 0); }
 #[test] fn painting_visibility_collapse_on_tspan() { assert_eq!(render("tests/painting/visibility/collapse-on-tspan"), 0); }
 #[test] fn painting_visibility_hidden_on_group() { assert_eq!(render("tests/painting/visibility/hidden-on-group"), 0); }
 #[test] fn painting_visibility_hidden_on_shape() { assert_eq!(render("tests/painting/visibility/hidden-on-shape"), 0); }
@@ -1333,10 +1333,10 @@ use crate::render;
 #[test] fn text_font_family_fantasy() { assert_eq!(render("tests/text/font-family/fantasy"), 0); }
 #[test] fn text_font_family_font_list() { assert_eq!(render("tests/text/font-family/font-list"), 0); }
 #[test] fn text_font_family_monospace() { assert_eq!(render("tests/text/font-family/monospace"), 0); }
-#[test] fn text_font_family_noto_Sans() { assert_eq!(render("tests/text/font-family/noto-Sans"), 0); }
+#[test] fn text_font_family_noto_sans() { assert_eq!(render("tests/text/font-family/noto-sans"), 0); }
 #[test] fn text_font_family_sans_serif() { assert_eq!(render("tests/text/font-family/sans-serif"), 0); }
 #[test] fn text_font_family_serif() { assert_eq!(render("tests/text/font-family/serif"), 0); }
-#[test] fn text_font_family_source_Sans_Pro() { assert_eq!(render("tests/text/font-family/source-Sans-Pro"), 0); }
+#[test] fn text_font_family_source_sans_pro() { assert_eq!(render("tests/text/font-family/source-sans-pro"), 0); }
 #[test] fn text_font_kerning_arabic_script() { assert_eq!(render("tests/text/font-kerning/arabic-script"), 0); }
 #[test] fn text_font_kerning_as_property() { assert_eq!(render("tests/text/font-kerning/as-property"), 0); }
 #[test] fn text_font_kerning_none() { assert_eq!(render("tests/text/font-kerning/none"), 0); }
