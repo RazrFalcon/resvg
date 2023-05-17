@@ -9,18 +9,15 @@ use crate::tree::{ConvTransform, Node, OptionLog};
 use crate::{IntRect, IntSize};
 
 pub struct ClipPath {
+    pub transform: tiny_skia::Transform,
     pub clip_path: Option<Box<Self>>,
     pub children: Vec<Node>,
 }
 
-pub fn convert(
-    upath: Option<Rc<usvg::ClipPath>>,
-    object_bbox: usvg::PathBbox,
-    mut transform: tiny_skia::Transform,
-) -> Option<ClipPath> {
+pub fn convert(upath: Option<Rc<usvg::ClipPath>>, object_bbox: usvg::PathBbox) -> Option<ClipPath> {
     let upath = upath?;
 
-    transform = transform.pre_concat(upath.transform.to_native());
+    let mut transform = upath.transform.to_native();
 
     if upath.units == usvg::Units::ObjectBoundingBox {
         let object_bbox = object_bbox
@@ -31,9 +28,10 @@ pub fn convert(
         transform = transform.pre_concat(ts.to_native());
     }
 
-    let (children, _) = crate::tree::convert_node(upath.root.clone(), transform);
+    let (children, _) = crate::tree::convert_node(upath.root.clone());
     Some(ClipPath {
-        clip_path: convert(upath.clip_path.clone(), object_bbox, transform).map(Box::new),
+        transform,
+        clip_path: convert(upath.clip_path.clone(), object_bbox).map(Box::new),
         children,
     })
 }
@@ -45,7 +43,7 @@ pub fn apply(clip: &ClipPath, transform: tiny_skia::Transform, pixmap: &mut tiny
     draw_children(
         &clip.children,
         tiny_skia::BlendMode::Clear,
-        transform,
+        transform.pre_concat(clip.transform),
         &mut clip_pixmap.as_mut(),
     );
 
@@ -69,7 +67,6 @@ fn draw_children(
             Node::FillPath(ref path) => {
                 // We could use any values here. They will not be used anyway.
                 let ctx = Context {
-                    root_transform: usvg::Transform::default(),
                     target_size: IntSize::new(1, 1).unwrap(),
                     max_filter_region: IntRect::new(0, 0, 1, 1).unwrap(),
                 };
@@ -77,6 +74,8 @@ fn draw_children(
                 crate::path::render_fill_path(path, mode, &ctx, transform, pixmap);
             }
             Node::Group(ref group) => {
+                let transform = transform.pre_concat(group.transform);
+
                 if let Some(ref clip) = group.clip_path {
                     // If a `clipPath` child also has a `clip-path`
                     // then we should render this child on a new canvas,

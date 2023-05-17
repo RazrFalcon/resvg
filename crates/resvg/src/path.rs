@@ -24,12 +24,8 @@ pub struct StrokePath {
     pub path: Rc<tiny_skia::Path>,
 }
 
-pub fn convert(
-    upath: &usvg::Path,
-    parent_transform: tiny_skia::Transform,
-    children: &mut Vec<Node>,
-) -> Option<BBoxes> {
-    let transform = parent_transform.pre_concat(upath.transform.to_native());
+pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
+    let transform = upath.transform.to_native();
     let anti_alias = upath.rendering_mode.use_shape_antialiasing();
     let path = match convert_path_data(&upath.data) {
         Some(v) => Rc::new(v),
@@ -65,12 +61,7 @@ pub fn convert(
         bboxes.object = bboxes.object.expand(o_bbox);
     }
 
-    bboxes.transformed_object = bboxes
-        .object
-        .transform(&usvg::Transform::from_native(transform))?;
-    bboxes.layer = bboxes
-        .layer
-        .transform(&usvg::Transform::from_native(transform))?;
+    bboxes.transformed_object = bboxes.object.transform(&upath.transform)?;
 
     // Do not add hidden paths, but preserve the bbox.
     // visibility=hidden still affects the bbox calculation.
@@ -172,6 +163,7 @@ fn convert_stroke_path(
         stroke.dash = tiny_skia::StrokeDash::new(list, ustroke.dashoffset);
     }
 
+    // TODO: explain
     // TODO: expand by stroke width for round/bevel joins
     let resolution_scale = tiny_skia::PathStroker::compute_resolution_scale(&transform);
     let resolution_scale = resolution_scale.max(10.0);
@@ -233,7 +225,8 @@ pub fn render_fill_path(
             paint.shader = shader.clone(); // TODO: avoid clone
         }
         Paint::Pattern(ref pattern) => {
-            let (patt_pix, patt_ts) = crate::paint_server::prepare_pattern_pixmap(pattern, ctx)?;
+            let (patt_pix, patt_ts) =
+                crate::paint_server::prepare_pattern_pixmap(pattern, ctx, transform)?;
 
             pattern_pixmap = patt_pix;
             paint.shader = tiny_skia::Pattern::new(
@@ -269,7 +262,8 @@ pub fn render_stroke_path(
             paint.shader = shader.clone(); // TODO: avoid clone
         }
         Paint::Pattern(ref pattern) => {
-            let (patt_pix, patt_ts) = crate::paint_server::prepare_pattern_pixmap(pattern, ctx)?;
+            let (patt_pix, patt_ts) =
+                crate::paint_server::prepare_pattern_pixmap(pattern, ctx, transform)?;
 
             pattern_pixmap = patt_pix;
             paint.shader = tiny_skia::Pattern::new(

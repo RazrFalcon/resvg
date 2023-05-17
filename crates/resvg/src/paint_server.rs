@@ -13,6 +13,7 @@ pub struct Pattern {
     pub view_box: Option<usvg::ViewBox>,
     pub opacity: usvg::Opacity,
     pub transform: tiny_skia::Transform,
+    pub content_transform: tiny_skia::Transform,
     pub children: Vec<Node>,
 }
 
@@ -124,7 +125,7 @@ fn convert_pattern(
     opacity: usvg::Opacity,
     object_bbox: tiny_skia::Rect,
 ) -> Option<Paint> {
-    let transform =
+    let content_transform =
         if pattern.content_units == usvg::Units::ObjectBoundingBox && pattern.view_box.is_none() {
             if object_bbox.width() <= 0.0 || object_bbox.height() <= 0.0 {
                 log::warn!("Pattern on zero-sized shapes is not allowed.");
@@ -143,7 +144,7 @@ fn convert_pattern(
             tiny_skia::Transform::default()
         };
 
-    let (children, _) = crate::tree::convert_node(pattern.root.clone(), transform);
+    let (children, _) = crate::tree::convert_node(pattern.root.clone());
     if children.is_empty() {
         return None;
     }
@@ -164,6 +165,7 @@ fn convert_pattern(
         view_box: pattern.view_box,
         opacity,
         transform: pattern.transform.to_native(),
+        content_transform,
         children,
     })))
 }
@@ -171,9 +173,10 @@ fn convert_pattern(
 pub fn prepare_pattern_pixmap(
     pattern: &Pattern,
     ctx: &Context,
+    transform: tiny_skia::Transform,
 ) -> Option<(tiny_skia::Pixmap, tiny_skia::Transform)> {
     let (sx, sy) = {
-        let mut ts2 = ctx.root_transform;
+        let mut ts2 = usvg::Transform::from_native(transform);
         ts2.append(&usvg::Transform::from_native(pattern.transform));
         ts2.get_scale()
     };
@@ -190,13 +193,9 @@ pub fn prepare_pattern_pixmap(
         transform = transform.pre_concat(ts.to_native());
     }
 
-    crate::render::render_nodes(
-        &pattern.children,
-        ctx,
-        (0, 0),
-        transform,
-        &mut pixmap.as_mut(),
-    );
+    transform = transform.pre_concat(pattern.content_transform);
+
+    crate::render::render_nodes(&pattern.children, ctx, transform, &mut pixmap.as_mut());
 
     let mut ts = tiny_skia::Transform::default();
     ts = ts.pre_concat(pattern.transform);

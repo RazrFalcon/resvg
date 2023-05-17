@@ -469,6 +469,7 @@ pub(crate) fn convert_group(
     let isolation: Isolation = node.parse_attribute(AId::Isolation).unwrap_or_default();
     let isolate = isolation == Isolation::Isolate;
 
+    // TODO: ignore just transform
     let is_g_or_use = matches!(node.tag_name(), Some(EId::G) | Some(EId::Use));
     let required = opacity.get().fuzzy_ne(&1.0)
         || clip_path.is_some()

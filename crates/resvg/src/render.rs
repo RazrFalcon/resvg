@@ -8,7 +8,6 @@ use crate::geom::{IntRect, IntSize, UsvgRectExt};
 use crate::tree::{ConvTransform, Group, Node, OptionLog, Tree};
 
 pub struct Context {
-    pub root_transform: usvg::Transform,
     pub target_size: IntSize,
     pub max_filter_region: IntRect,
 }
@@ -29,44 +28,40 @@ impl Tree {
         )
         .unwrap();
 
-        // TODO: apply during parsing?
         let ts =
             usvg::utils::view_box_to_transform(self.view_box.rect, self.view_box.aspect, self.size);
 
         let root_transform = transform.pre_concat(ts.to_native());
 
         let ctx = Context {
-            root_transform: usvg::Transform::from_native(root_transform),
             target_size,
             max_filter_region,
         };
 
-        render_nodes(&self.children, &ctx, (0, 0), root_transform, pixmap);
+        render_nodes(&self.children, &ctx, root_transform, pixmap);
     }
 }
 
 pub fn render_nodes(
     children: &[Node],
     ctx: &Context,
-    parent_offset: (i32, i32),
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
     for node in children {
-        render_node(node, ctx, parent_offset, transform, pixmap);
+        render_node(node, ctx, transform, pixmap);
     }
 }
 
 fn render_node(
     node: &Node,
     ctx: &Context,
-    parent_offset: (i32, i32),
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
     match node {
         Node::Group(ref group) => {
-            render_group(group, ctx, parent_offset, transform, pixmap);
+            render_group(group, ctx, transform, pixmap);
         }
         Node::FillPath(ref path) => {
             crate::path::render_fill_path(
@@ -95,7 +90,6 @@ fn render_node(
 fn render_group(
     group: &Group,
     ctx: &Context,
-    parent_offset: (i32, i32), // TODO: test
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
 ) -> Option<()> {
@@ -104,7 +98,16 @@ fn render_group(
         return None;
     }
 
-    let bbox = group.bbox.transform(&ctx.root_transform)?;
+    let transform = transform.pre_concat(group.transform);
+
+    if group.is_transform_only() {
+        render_nodes(&group.children, ctx, transform, pixmap);
+        return Some(());
+    }
+
+    let bbox = group
+        .bbox
+        .transform(&usvg::Transform::from_native(transform))?;
 
     let mut ibbox = if group.filters.is_empty() {
         // Convert group bbox into an integer one, expanding each side outwards by 2px
@@ -125,10 +128,6 @@ fn render_group(
         bbox.fit_to_rect(ctx.max_filter_region)
     };
 
-    let original_ibbox = ibbox;
-
-    ibbox = ibbox.translate(-parent_offset.0, -parent_offset.1);
-
     // Make sure that our bbox is not bigger than the canvas.
     // There is no point in rendering anything outside the canvas,
     // since it will be clipped anyway.
@@ -142,12 +141,8 @@ fn render_group(
         let mut dy = bbox.y() as f32;
 
         // Account for subpixel positioned layers.
-        dx -= bbox.x() as f32 - original_ibbox.x() as f32;
-        dy -= bbox.y() as f32 - original_ibbox.y() as f32;
-
-        // Include `parent_offset` and fit to canvas offsets.
-        dx -= (original_ibbox.x() - ibbox.x()) as f32;
-        dy -= (original_ibbox.y() - ibbox.y()) as f32;
+        dx -= bbox.x() as f32 - ibbox.x() as f32;
+        dy -= bbox.y() as f32 - ibbox.y() as f32;
 
         tiny_skia::Transform::from_translate(-dx, -dy)
     };
@@ -157,13 +152,7 @@ fn render_group(
     let mut sub_pixmap = tiny_skia::Pixmap::new(ibbox.width(), ibbox.height())
         .log_none(|| log::warn!("Failed to allocate a group layer for: {:?}.", ibbox))?;
 
-    render_nodes(
-        &group.children,
-        ctx,
-        (parent_offset.0 + ibbox.x(), parent_offset.1 + ibbox.y()),
-        transform,
-        &mut sub_pixmap.as_mut(),
-    );
+    render_nodes(&group.children, ctx, transform, &mut sub_pixmap.as_mut());
 
     if !group.filters.is_empty() {
         let fill_paint = prepare_filter_paint(group.filter_fill.as_ref(), ctx, &sub_pixmap);
@@ -171,8 +160,7 @@ fn render_group(
         for filter in &group.filters {
             crate::filter::apply(
                 filter,
-                original_ibbox,
-                &ctx.root_transform,
+                transform,
                 fill_paint.as_ref(),
                 stroke_paint.as_ref(),
                 &mut sub_pixmap,
@@ -185,13 +173,7 @@ fn render_group(
     }
 
     if let Some(ref mask) = group.mask {
-        crate::mask::apply(
-            mask,
-            ctx,
-            (ibbox.x(), ibbox.y()),
-            transform,
-            &mut sub_pixmap,
-        );
+        crate::mask::apply(mask, ctx, transform, &mut sub_pixmap);
     }
 
     let paint = tiny_skia::PixmapPaint {

@@ -309,6 +309,19 @@ impl IntRect {
         )
         .unwrap()
     }
+
+    /// Converts into `PathBbox`.
+    #[inline]
+    pub fn to_path_bbox(&self) -> usvg::PathBbox {
+        // Can't fail, because `IntRect` is always valid.
+        usvg::PathBbox::new(
+            self.x as f64,
+            self.y as f64,
+            self.width as f64,
+            self.height as f64,
+        )
+        .unwrap()
+    }
 }
 
 impl std::fmt::Debug for IntRect {

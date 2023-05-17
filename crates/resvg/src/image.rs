@@ -19,19 +19,12 @@ pub struct Image {
     pub kind: ImageKind,
 }
 
-pub fn convert(
-    image: &usvg::Image,
-    parent_transform: tiny_skia::Transform,
-    children: &mut Vec<Node>,
-) -> Option<BBoxes> {
-    let transform = parent_transform.pre_concat(image.transform.to_native());
-
+pub fn convert(image: &usvg::Image, children: &mut Vec<Node>) -> Option<BBoxes> {
     let object_bbox = image.view_box.rect.to_path_bbox();
-    let layer_bbox = object_bbox.transform(&usvg::Transform::from_native(transform))?;
     let bboxes = BBoxes {
         object: object_bbox,
-        transformed_object: layer_bbox,
-        layer: layer_bbox,
+        transformed_object: object_bbox.transform(&image.transform)?,
+        layer: object_bbox,
     };
 
     if image.visibility != usvg::Visibility::Visible {
@@ -55,7 +48,7 @@ pub fn convert(
     };
 
     children.push(Node::Image(Image {
-        transform,
+        transform: image.transform.to_native(),
         view_box: image.view_box,
         quality,
         kind,

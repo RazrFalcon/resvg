@@ -113,34 +113,31 @@ impl IntoSvgFilters<svgfilters::ColorChannel> for usvg::filter::ColorChannel {
 }
 
 pub struct Primitive {
-    pub rect: usvg::Rect,
+    pub region: usvg::Rect,
     pub color_interpolation: usvg::filter::ColorInterpolation,
     pub result: String,
     pub kind: usvg::filter::Kind,
 }
 
 pub struct Filter {
+    pub region: usvg::Rect,
     pub primitives: Vec<Primitive>,
 }
 
 pub fn convert(
     ufilters: &[Rc<usvg::filter::Filter>],
-    scaled_object_bbox: Option<usvg::PathBbox>,
     object_bbox: Option<usvg::PathBbox>,
-    transform: tiny_skia::Transform,
 ) -> (Vec<Filter>, Option<usvg::PathBbox>) {
-    let scaled_object_bbox = scaled_object_bbox.and_then(|bbox| bbox.to_rect());
     let object_bbox = object_bbox.and_then(|bbox| bbox.to_rect());
 
-    let region = match calc_filters_region(ufilters, scaled_object_bbox) {
+    let region = match calc_filters_region(ufilters, object_bbox) {
         Some(v) => v,
         None => return (Vec::new(), None),
     };
 
-    let transform = usvg::Transform::from_native(transform);
     let mut filters = Vec::new();
     for ufilter in ufilters {
-        let filter = match convert_filter(&ufilter, object_bbox, region, &transform) {
+        let filter = match convert_filter(&ufilter, object_bbox, region) {
             Some(v) => v,
             None => return (Vec::new(), None),
         };
@@ -154,11 +151,10 @@ fn convert_filter(
     ufilter: &usvg::filter::Filter,
     object_bbox: Option<usvg::Rect>,
     region: usvg::Rect,
-    transform: &usvg::Transform,
 ) -> Option<Filter> {
     let mut primitives = Vec::with_capacity(ufilter.primitives.len());
     for uprimitive in &ufilter.primitives {
-        let subregion = match calc_subregion(ufilter, uprimitive, object_bbox, region, transform) {
+        let subregion = match calc_subregion(ufilter, uprimitive, object_bbox, region) {
             Some(v) => v,
             None => {
                 log::warn!("Invalid filter primitive region.");
@@ -166,11 +162,9 @@ fn convert_filter(
             }
         };
 
-        if let Some(kind) =
-            convert_primitive(&uprimitive, ufilter.primitive_units, object_bbox, transform)
-        {
+        if let Some(kind) = convert_primitive(&uprimitive, ufilter.primitive_units, object_bbox) {
             primitives.push(Primitive {
-                rect: subregion,
+                region: subregion,
                 color_interpolation: uprimitive.color_interpolation,
                 result: uprimitive.result.clone(),
                 kind,
@@ -178,18 +172,17 @@ fn convert_filter(
         }
     }
 
-    Some(Filter { primitives })
+    Some(Filter { region, primitives })
 }
 
 fn convert_primitive(
     uprimitive: &usvg::filter::Primitive,
     units: usvg::Units,
     object_bbox: Option<usvg::Rect>,
-    transform: &usvg::Transform,
 ) -> Option<usvg::filter::Kind> {
     match uprimitive.kind {
         usvg::filter::Kind::DisplacementMap(ref fe) => {
-            let (sx, _) = scale_coordinates(fe.scale, fe.scale, units, object_bbox, transform)?;
+            let (sx, _) = scale_coordinates(fe.scale, fe.scale, units, object_bbox)?;
             Some(usvg::filter::Kind::DisplacementMap(
                 usvg::filter::DisplacementMap {
                     input1: fe.input1.clone(),
@@ -201,14 +194,9 @@ fn convert_primitive(
             ))
         }
         usvg::filter::Kind::DropShadow(ref fe) => {
-            let (dx, dy) = scale_coordinates(fe.dx, fe.dy, units, object_bbox, transform)?;
-            let (std_dev_x, std_dev_y) = scale_coordinates(
-                fe.std_dev_x.get(),
-                fe.std_dev_y.get(),
-                units,
-                object_bbox,
-                transform,
-            )?;
+            let (dx, dy) = scale_coordinates(fe.dx, fe.dy, units, object_bbox)?;
+            let (std_dev_x, std_dev_y) =
+                scale_coordinates(fe.std_dev_x.get(), fe.std_dev_y.get(), units, object_bbox)?;
             Some(usvg::filter::Kind::DropShadow(usvg::filter::DropShadow {
                 input: fe.input.clone(),
                 dx,
@@ -220,13 +208,8 @@ fn convert_primitive(
             }))
         }
         usvg::filter::Kind::GaussianBlur(ref fe) => {
-            let (std_dev_x, std_dev_y) = scale_coordinates(
-                fe.std_dev_x.get(),
-                fe.std_dev_y.get(),
-                units,
-                object_bbox,
-                transform,
-            )?;
+            let (std_dev_x, std_dev_y) =
+                scale_coordinates(fe.std_dev_x.get(), fe.std_dev_y.get(), units, object_bbox)?;
             Some(usvg::filter::Kind::GaussianBlur(
                 usvg::filter::GaussianBlur {
                     input: fe.input.clone(),
@@ -236,13 +219,8 @@ fn convert_primitive(
             ))
         }
         usvg::filter::Kind::Morphology(ref fe) => {
-            let (radius_x, radius_y) = scale_coordinates(
-                fe.radius_x.get(),
-                fe.radius_y.get(),
-                units,
-                object_bbox,
-                transform,
-            )?;
+            let (radius_x, radius_y) =
+                scale_coordinates(fe.radius_x.get(), fe.radius_y.get(), units, object_bbox)?;
             Some(usvg::filter::Kind::Morphology(usvg::filter::Morphology {
                 input: fe.input.clone(),
                 operator: fe.operator,
@@ -251,7 +229,7 @@ fn convert_primitive(
             }))
         }
         usvg::filter::Kind::Offset(ref fe) => {
-            let (dx, dy) = scale_coordinates(fe.dx, fe.dy, units, object_bbox, transform)?;
+            let (dx, dy) = scale_coordinates(fe.dx, fe.dy, units, object_bbox)?;
             Some(usvg::filter::Kind::Offset(usvg::filter::Offset {
                 input: fe.input.clone(),
                 dx,
@@ -392,8 +370,7 @@ struct FilterResult {
 
 pub fn apply(
     filter: &Filter,
-    region: IntRect,
-    ts: &usvg::Transform,
+    ts: tiny_skia::Transform,
     fill_paint: Option<&tiny_skia::Pixmap>,
     stroke_paint: Option<&tiny_skia::Pixmap>,
     source: &mut tiny_skia::Pixmap,
@@ -404,7 +381,9 @@ pub fn apply(
         stroke_paint,
     };
 
-    let result = apply_inner(filter, &inputs, region, ts);
+    let ts = usvg::Transform::from_native(ts);
+
+    let result = apply_inner(filter, &inputs, &ts);
     let result = result.and_then(|image| apply_to_canvas(image, source));
 
     // Clear on error.
@@ -424,15 +403,20 @@ pub fn apply(
 fn apply_inner(
     filter: &Filter,
     inputs: &FilterInputs,
-    region: IntRect,
     ts: &usvg::Transform,
 ) -> Result<Image, Error> {
     let mut results: Vec<FilterResult> = Vec::new();
 
+    let region = filter
+        .region
+        .transform(ts)
+        .map(|r| r.to_int_rect_round_out())
+        .ok_or(Error::InvalidRegion)?;
+
     for primitive in &filter.primitives {
         let cs = primitive.color_interpolation;
         let mut subregion = primitive
-            .rect
+            .region
             .transform(ts)
             .map(|r| r.to_int_rect_round_out())
             .ok_or(Error::InvalidRegion)?;
@@ -604,13 +588,11 @@ pub fn calc_filters_region(
     }
 }
 
-/// Returns filter primitive region.
 fn calc_subregion(
     filter: &usvg::filter::Filter,
     primitive: &usvg::filter::Primitive,
     bbox: Option<usvg::Rect>,
     region: usvg::Rect,
-    ts: &usvg::Transform,
 ) -> Option<usvg::Rect> {
     // TODO: rewrite/simplify/explain/whatever
 
@@ -621,7 +603,7 @@ fn calc_subregion(
                 let bbox = bbox?;
 
                 // TODO: wrong
-                let ts_bbox = usvg::Rect::new(ts.e, ts.f, ts.a, ts.d).unwrap();
+                // let ts_bbox = usvg::Rect::new(ts.e, ts.f, ts.a, ts.d).unwrap();
 
                 let r = usvg::Rect::new(
                     primitive.x.unwrap_or(0.0),
@@ -630,7 +612,8 @@ fn calc_subregion(
                     primitive.height.unwrap_or(1.0),
                 )?;
 
-                let r = r.bbox_transform(bbox).bbox_transform(ts_bbox);
+                let r = r.bbox_transform(bbox);
+                // .bbox_transform(ts_bbox);
 
                 return Some(r);
             } else {
@@ -651,25 +634,11 @@ fn calc_subregion(
 
         region.bbox_transform(subregion_bbox)
     } else {
-        let (dx, dy) = ts.get_translate();
-        let (sx, sy) = ts.get_scale();
         usvg::Rect::new(
-            primitive
-                .x
-                .map(|n| n * sx + dx)
-                .unwrap_or(region.x() as f64),
-            primitive
-                .y
-                .map(|n| n * sy + dy)
-                .unwrap_or(region.y() as f64),
-            primitive
-                .width
-                .map(|n| n * sx)
-                .unwrap_or(region.width() as f64),
-            primitive
-                .height
-                .map(|n| n * sy)
-                .unwrap_or(region.height() as f64),
+            primitive.x.unwrap_or(region.x() as f64),
+            primitive.y.unwrap_or(region.y() as f64),
+            primitive.width.unwrap_or(region.width() as f64),
+            primitive.height.unwrap_or(region.height() as f64),
         )?
     };
 
@@ -1050,7 +1019,7 @@ fn apply_image(
             };
 
             let mut children = Vec::new();
-            crate::image::convert(&uimage, tiny_skia::Transform::default(), &mut children);
+            crate::image::convert(&uimage, &mut children);
             if let Some(Node::Image(image)) = children.first() {
                 crate::image::render_image(&image, transform, &mut pixmap.as_mut());
             }
@@ -1225,13 +1194,14 @@ fn apply_turbulence(
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
 
     let (sx, sy) = ts.get_scale();
+    let (dx, dy) = ts.get_translate();
     if sx.is_fuzzy_zero() || sy.is_fuzzy_zero() {
         return Ok(Image::from_image(pixmap, cs));
     }
 
     svgfilters::turbulence(
-        region.x() as f64,
-        region.y() as f64,
+        region.x() as f64 - dx,
+        region.y() as f64 - dy,
         sx,
         sy,
         fe.base_frequency.x.get(),
@@ -1379,13 +1349,11 @@ fn scale_coordinates(
     y: f64,
     units: usvg::Units,
     bbox: Option<usvg::Rect>,
-    ts: &usvg::Transform,
 ) -> Option<(f64, f64)> {
-    let (sx, sy) = ts.get_scale();
     if units == usvg::Units::ObjectBoundingBox {
         let bbox = bbox?;
-        Some((x * sx * bbox.width(), y * sy * bbox.height()))
+        Some((x * bbox.width(), y * bbox.height()))
     } else {
-        Some((x * sx, y * sy))
+        Some((x, y))
     }
 }

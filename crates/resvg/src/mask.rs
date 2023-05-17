@@ -10,27 +10,24 @@ use crate::tree::{ConvTransform, Node, OptionLog};
 
 pub struct Mask {
     pub mask_all: bool,
-    pub region: tiny_skia::Path,
+    pub region: tiny_skia::Rect,
+    pub content_transform: tiny_skia::Transform,
     pub kind: usvg::MaskType,
     pub mask: Option<Box<Self>>,
     pub children: Vec<Node>,
 }
 
-pub fn convert(
-    umask: Option<Rc<usvg::Mask>>,
-    object_bbox: usvg::PathBbox,
-    transform: tiny_skia::Transform,
-) -> Option<Mask> {
+pub fn convert(umask: Option<Rc<usvg::Mask>>, object_bbox: usvg::PathBbox) -> Option<Mask> {
     let umask = umask?;
 
-    let mut content_transform = transform;
+    let mut content_transform = tiny_skia::Transform::default();
     if umask.content_units == usvg::Units::ObjectBoundingBox {
         let object_bbox = object_bbox
             .to_rect()
             .log_none(|| log::warn!("Masking of zero-sized shapes is not allowed."))?;
 
         let ts = usvg::Transform::from_bbox(object_bbox);
-        content_transform = transform.pre_concat(ts.to_native());
+        content_transform = ts.to_native();
     }
 
     let mut mask_all = false;
@@ -40,7 +37,7 @@ pub fn convert(
         mask_all = true;
     }
 
-    let rect = if umask.units == usvg::Units::ObjectBoundingBox {
+    let region = if umask.units == usvg::Units::ObjectBoundingBox {
         if let Some(bbox) = object_bbox.to_rect() {
             umask.rect.bbox_transform(bbox)
         } else {
@@ -51,15 +48,13 @@ pub fn convert(
         umask.rect
     };
 
-    let region = tiny_skia::PathBuilder::from_rect(rect.to_skia_rect()?);
-    let region = region.transform(transform)?;
-
-    let (children, _) = crate::tree::convert_node(umask.root.clone(), content_transform);
+    let (children, _) = crate::tree::convert_node(umask.root.clone());
     Some(Mask {
         mask_all,
-        region,
+        region: region.to_skia_rect()?,
+        content_transform,
         kind: umask.kind,
-        mask: convert(umask.mask.clone(), object_bbox, transform).map(Box::new),
+        mask: convert(umask.mask.clone(), object_bbox).map(Box::new),
         children,
     })
 }
@@ -67,7 +62,6 @@ pub fn convert(
 pub fn apply(
     mask: &Mask,
     ctx: &Context,
-    parent_offset: (i32, i32),
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::Pixmap,
 ) {
@@ -82,13 +76,18 @@ pub fn apply(
         // TODO: only when needed
         // Mask has to be clipped by mask.region
         let mut alpha_mask = tiny_skia::Mask::new(pixmap.width(), pixmap.height()).unwrap();
-        alpha_mask.fill_path(&mask.region, tiny_skia::FillRule::Winding, true, transform);
+        alpha_mask.fill_path(
+            &tiny_skia::PathBuilder::from_rect(mask.region),
+            tiny_skia::FillRule::Winding,
+            true,
+            transform,
+        );
 
+        let content_transform = transform.pre_concat(mask.content_transform);
         crate::render::render_nodes(
             &mask.children,
             ctx,
-            parent_offset,
-            transform,
+            content_transform,
             &mut mask_pixmap.as_mut(),
         );
 
@@ -96,7 +95,7 @@ pub fn apply(
     }
 
     if let Some(ref mask) = mask.mask {
-        self::apply(mask, ctx, parent_offset, transform, pixmap);
+        self::apply(mask, ctx, transform, pixmap);
     }
 
     let mask_type = match mask.kind {
