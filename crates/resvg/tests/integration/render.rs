@@ -1327,6 +1327,7 @@ use crate::render;
 #[test] fn text_font_simple_case() { assert_eq!(render("tests/text/font/simple-case"), 0); }
 #[test] fn text_font_family_bold_sans_serif() { assert_eq!(render("tests/text/font-family/bold-sans-serif"), 0); }
 #[test] fn text_font_family_cursive() { assert_eq!(render("tests/text/font-family/cursive"), 0); }
+#[test] fn text_font_family_double_quoted() { assert_eq!(render("tests/text/font-family/double-quoted"), 0); }
 #[test] fn text_font_family_fallback_1() { assert_eq!(render("tests/text/font-family/fallback-1"), 0); }
 #[test] fn text_font_family_fallback_2() { assert_eq!(render("tests/text/font-family/fallback-2"), 0); }
 #[test] fn text_font_family_fantasy() { assert_eq!(render("tests/text/font-family/fantasy"), 0); }

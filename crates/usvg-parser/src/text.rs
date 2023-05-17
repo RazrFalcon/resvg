@@ -385,11 +385,11 @@ fn convert_font(node: rosvgtree::Node, state: &converter::State) -> Font {
     for mut family in font_family.split(',') {
         // TODO: to a proper parser
 
-        if family.starts_with('\'') {
+        if family.starts_with(&['\'', '"']) {
             family = &family[1..];
         }
 
-        if family.ends_with('\'') {
+        if family.ends_with(&['\'', '"']) {
             family = &family[..family.len() - 1];
         }
 

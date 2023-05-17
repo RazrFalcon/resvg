@@ -48,6 +48,9 @@ This changelog also contains important changes in dependencies.
 - (c-api) `resvg_fit_to`
 - (c-api) `resvg_fit_to_type`
 
+### Fixed
+- Double quotes parsing in `font-family`.
+
 ## [0.32.0] - 2023-04-23
 ### Added
 - Clipping and masking is up to 20% faster.
