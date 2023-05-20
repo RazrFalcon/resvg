@@ -2,7 +2,7 @@
     <title>Simple case</title>
 
     <!-- should be covered -->
-    <path id="path1" d="M 20 40 L 160 180" fill="none" stroke="red"/>
+    <path id="path1" d="M 20 40 L 160 180 L 30 150 Z" fill="none" stroke="red"/>
 
     <polygon id="polygon1" points="20 40 160 180 30 150" fill="none" stroke="green"/>
 
