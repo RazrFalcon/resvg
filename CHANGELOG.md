@@ -15,10 +15,10 @@ This changelog also contains important changes in dependencies.
   aka layers, we have to know the layer bounding box beforehand, which is ridiculously hard in SVG.<br>
   Previously, resvg would simply use the canvas size for all the layers.
   Meaning that to render a 10x10px layer on a 1000x1000px canvas, we would have to allocate and then blend
-  a 1000x1000px layer, which is just a waste of performance.<br>
-  Now, resvg is able to calculate the layer bounding box beforehand, which dramatically improves
+  a 1000x1000px layer, which is just a waste of CPU cycles.<br>
+  The new rendering algorithm is able to calculate layer bounding boxes, which dramatically improves
   performance when rendering a lot of tiny layers on a large canvas.<br>
-  Moreover, it makes performance more linear with canvas size increase.<br>
+  Moreover, it makes performance more linear with a canvas size increase.<br>
   The [paris-30k.svg](https://github.com/google/forma/blob/681e8bfd348caa61aab47437e7d857764c2ce522/assets/svgs/paris-30k.svg)
   sample from [google/forma](https://github.com/google/forma) is rendered _115 times_ faster on M1 Pro now.
   From ~33760ms down to ~290ms. 5269x3593px canvas.<br>
