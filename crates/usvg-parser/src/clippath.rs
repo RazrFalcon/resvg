@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 use rosvgtree::{self, AttributeId as AId, ElementId as EId};
-use usvg_tree::{ClipPath, FuzzyEq, Group, Node, NodeKind, Transform, Units};
+use usvg_tree::{ClipPath, Group, Node, NodeKind, Transform, Units};
 
 use crate::{converter, SvgNodeExt2};
 
@@ -83,11 +83,17 @@ fn resolve_transform(node: rosvgtree::Node) -> Option<Transform> {
         }
     };
 
-    let ts = Transform::from(ts);
-    let (sx, sy) = ts.get_scale();
-    if sx.fuzzy_eq(&0.0) || sy.fuzzy_eq(&0.0) {
-        None
-    } else {
+    let ts = Transform::from_row(
+        ts.a as f32,
+        ts.b as f32,
+        ts.c as f32,
+        ts.d as f32,
+        ts.e as f32,
+        ts.f as f32,
+    );
+    if ts.is_valid() {
         Some(ts)
+    } else {
+        None
     }
 }

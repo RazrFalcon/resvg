@@ -19,11 +19,11 @@ pub struct State<'a> {
     pub(crate) parent_markers: Vec<rosvgtree::Node<'a, 'a>>,
     pub(crate) fe_image_link: bool,
     /// A viewBox of the parent SVG element.
-    pub(crate) view_box: Rect,
+    pub(crate) view_box: NonZeroRect,
     /// A size of the parent `use` element.
     /// Used only during nested `svg` size resolving.
     /// Width and height can be set independently.
-    pub(crate) use_size: (Option<f64>, Option<f64>),
+    pub(crate) use_size: (Option<f32>, Option<f32>),
     pub(crate) opt: &'a Options,
 }
 
@@ -84,7 +84,7 @@ pub(crate) fn convert_doc(svg_doc: &rosvgtree::Document, opt: &Options) -> Resul
     let view_box = ViewBox {
         rect: svg
             .parse_viewbox()
-            .unwrap_or_else(|| size.to_rect(0.0, 0.0)),
+            .unwrap_or_else(|| size.to_non_zero_rect(0.0, 0.0)),
         aspect: svg
             .parse_attribute(AId::PreserveAspectRatio)
             .unwrap_or_default(),
@@ -136,7 +136,7 @@ fn resolve_svg_size(svg: &rosvgtree::Node, opt: &Options) -> (Result<Size, Error
         parent_clip_path: None,
         parent_markers: Vec::new(),
         fe_image_link: false,
-        view_box: Rect::new(0.0, 0.0, 100.0, 100.0).unwrap(),
+        view_box: NonZeroRect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
         use_size: (None, None),
         opt,
     };
@@ -152,14 +152,14 @@ fn resolve_svg_size(svg: &rosvgtree::Node, opt: &Options) -> (Result<Size, Error
             // Apply the percentages to the fallback size.
             if width.unit == Unit::Percent {
                 width = Length::new(
-                    (width.number / 100.0) * state.opt.default_size.width(),
+                    (width.number / 100.0) * state.opt.default_size.width() as f64,
                     Unit::None,
                 );
             }
 
             if height.unit == Unit::Percent {
                 height = Length::new(
-                    (height.number / 100.0) * state.opt.default_size.height(),
+                    (height.number / 100.0) * state.opt.default_size.height() as f64,
                     Unit::None,
                 );
             }
@@ -173,20 +173,20 @@ fn resolve_svg_size(svg: &rosvgtree::Node, opt: &Options) -> (Result<Size, Error
         state.view_box = vbox;
 
         let w = if width.unit == Unit::Percent {
-            vbox.width() * (width.number / 100.0)
+            vbox.width() * (width.number as f32 / 100.0)
         } else {
             svg.convert_user_length(AId::Width, &state, def)
         };
 
         let h = if height.unit == Unit::Percent {
-            vbox.height() * (height.number / 100.0)
+            vbox.height() * (height.number as f32 / 100.0)
         } else {
             svg.convert_user_length(AId::Height, &state, def)
         };
 
-        Size::new(w, h)
+        Size::from_wh(w, h)
     } else {
-        Size::new(
+        Size::from_wh(
             svg.convert_user_length(AId::Width, &state, def),
             svg.convert_user_length(AId::Height, &state, def),
         )
@@ -213,11 +213,11 @@ fn calculate_svg_bbox(tree: &mut Tree) {
         }
     }
 
-    if let Some(rect) = Rect::new(0.0, 0.0, right, bottom) {
+    if let Some(rect) = NonZeroRect::from_xywh(0.0, 0.0, right, bottom) {
         tree.view_box.rect = rect;
     }
 
-    if let Some(size) = Size::new(right, bottom) {
+    if let Some(size) = Size::from_wh(right, bottom) {
         tree.size = size;
     }
 }
@@ -471,11 +471,11 @@ pub(crate) fn convert_group(
 
     // TODO: ignore just transform
     let is_g_or_use = matches!(node.tag_name(), Some(EId::G) | Some(EId::Use));
-    let required = opacity.get().fuzzy_ne(&1.0)
+    let required = opacity.get().approx_ne_ulps(&1.0, 4)
         || clip_path.is_some()
         || mask.is_some()
         || !filters.is_empty()
-        || !transform.is_default()
+        || !transform.is_identity()
         || blend_mode != BlendMode::Normal
         || isolate
         || is_g_or_use
@@ -599,7 +599,7 @@ fn remove_empty_groups(tree: &mut Tree) {
 
 fn convert_path(
     node: rosvgtree::Node,
-    path: Rc<PathData>,
+    path: Rc<tiny_skia_path::Path>,
     state: &State,
     cache: &mut Cache,
     parent: &mut Node,
@@ -609,7 +609,7 @@ fn convert_path(
         return;
     }
 
-    let has_bbox = path.has_bbox();
+    let has_bbox = path.bounds().width() > 0.0 && path.bounds().height() > 0.0;
     let fill = crate::style::resolve_fill(node, has_bbox, state, cache);
     let stroke = crate::style::resolve_stroke(node, has_bbox, state, cache);
     let mut visibility: Visibility = node

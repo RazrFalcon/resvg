@@ -2,13 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use usvg::FuzzyEq;
-
-use crate::geom::{IntRect, IntSize, UsvgRectExt};
-use crate::tree::{ConvTransform, Group, Node, OptionLog, Tree};
+use crate::tree::{Group, Node, OptionLog, Tree};
 
 pub struct Context {
-    pub max_bbox: IntRect,
+    pub max_bbox: tiny_skia::IntRect,
 }
 
 impl Tree {
@@ -17,8 +14,8 @@ impl Tree {
     /// `transform` will be used as a root transform.
     /// Can be used to position SVG inside the `pixmap`.
     pub fn render(&self, transform: tiny_skia::Transform, pixmap: &mut tiny_skia::PixmapMut) {
-        let target_size = IntSize::new(pixmap.width(), pixmap.height()).unwrap();
-        let max_bbox = IntRect::new(
+        let target_size = tiny_skia::IntSize::from_wh(pixmap.width(), pixmap.height()).unwrap();
+        let max_bbox = tiny_skia::IntRect::from_xywh(
             -(target_size.width() as i32) * 2,
             -(target_size.height() as i32) * 2,
             target_size.width() * 4,
@@ -29,10 +26,9 @@ impl Tree {
         let ts =
             usvg::utils::view_box_to_transform(self.view_box.rect, self.view_box.aspect, self.size);
 
-        let root_transform = transform.pre_concat(ts.to_native());
+        let root_transform = transform.pre_concat(ts);
 
-        let ctx = Context { max_bbox: max_bbox };
-
+        let ctx = Context { max_bbox };
         render_nodes(&self.children, &ctx, root_transform, pixmap);
     }
 }
@@ -88,11 +84,6 @@ fn render_group(
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
 ) -> Option<()> {
-    if group.bbox.fuzzy_eq(&usvg::PathBbox::new_bbox()) {
-        log::warn!("Invalid group layer bbox detected.");
-        return None;
-    }
-
     let transform = transform.pre_concat(group.transform);
 
     if group.is_transform_only() {
@@ -100,14 +91,12 @@ fn render_group(
         return Some(());
     }
 
-    let bbox = group
-        .bbox
-        .transform(&usvg::Transform::from_native(transform))?;
+    let bbox = group.bbox.transform(transform)?;
 
     let mut ibbox = if group.filters.is_empty() {
         // Convert group bbox into an integer one, expanding each side outwards by 2px
         // to make sure that anti-aliased pixels would not be clipped.
-        IntRect::new(
+        tiny_skia::IntRect::from_xywh(
             bbox.x().floor() as i32 - 2,
             bbox.y().floor() as i32 - 2,
             bbox.width().ceil() as u32 + 4,
@@ -116,27 +105,27 @@ fn render_group(
     } else {
         // The bounding box for groups with filters is special and should not be expanded by 2px,
         // because it's already acting as a clipping region.
-        let bbox = bbox.to_rect()?.to_int_rect_round_out();
+        let bbox = bbox.to_non_zero_rect()?.to_int_rect();
         // Make sure our filter region is not bigger than 4x the canvas size.
         // This is required mainly to prevent huge filter regions that would tank the performance.
         // It should not affect the final result in any way.
-        bbox.fit_to_rect(ctx.max_bbox)
+        crate::geom::fit_to_rect(bbox, ctx.max_bbox)
     };
 
     // Make sure our layer is not bigger than 4x the canvas size.
     // This is required to prevent huge layers.
     if group.filters.is_empty() {
-        ibbox = ibbox.fit_to_rect(ctx.max_bbox);
+        ibbox = crate::geom::fit_to_rect(ibbox, ctx.max_bbox);
     }
 
     let shift_ts = {
         // Original shift.
-        let mut dx = bbox.x() as f32;
-        let mut dy = bbox.y() as f32;
+        let mut dx = bbox.x();
+        let mut dy = bbox.y();
 
         // Account for subpixel positioned layers.
-        dx -= bbox.x() as f32 - ibbox.x() as f32;
-        dy -= bbox.y() as f32 - ibbox.y() as f32;
+        dx -= bbox.x() - ibbox.x() as f32;
+        dy -= bbox.y() - ibbox.y() as f32;
 
         tiny_skia::Transform::from_translate(-dx, -dy)
     };
@@ -171,7 +160,7 @@ fn render_group(
     }
 
     let paint = tiny_skia::PixmapPaint {
-        opacity: group.opacity,
+        opacity: group.opacity.get(),
         blend_mode: group.blend_mode,
         quality: tiny_skia::FilterQuality::Nearest,
     };

@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use crate::paint_server::Paint;
 use crate::render::Context;
-use crate::tree::{BBoxes, ConvTransform, Node, TinySkiaRectExt};
+use crate::tree::{BBoxes, Node};
 
 pub struct FillPath {
     pub transform: tiny_skia::Transform,
@@ -25,21 +25,23 @@ pub struct StrokePath {
 }
 
 pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
-    let transform = upath.transform.to_native();
+    let transform = upath.transform;
     let anti_alias = upath.rendering_mode.use_shape_antialiasing();
-    let path = match convert_path_data(&upath.data) {
-        Some(v) => Rc::new(v),
-        None => return None,
-    };
 
     let fill_path = upath.fill.as_ref().and_then(|ufill| {
-        convert_fill_path(ufill, path.clone(), transform, upath.text_bbox, anti_alias)
+        convert_fill_path(
+            ufill,
+            upath.data.clone(),
+            transform,
+            upath.text_bbox,
+            anti_alias,
+        )
     });
 
     let stroke_path = upath.stroke.as_ref().and_then(|ustroke| {
         convert_stroke_path(
             ustroke,
-            path.clone(),
+            upath.data.clone(),
             transform,
             upath.text_bbox,
             anti_alias,
@@ -61,7 +63,7 @@ pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
         bboxes.object = bboxes.object.expand(o_bbox);
     }
 
-    bboxes.transformed_object = bboxes.object.transform(&upath.transform)?;
+    bboxes.transformed_object = bboxes.object.transform(upath.transform)?;
 
     // Do not add hidden paths, but preserve the bbox.
     // visibility=hidden still affects the bbox calculation.
@@ -94,25 +96,26 @@ fn convert_fill_path(
     ufill: &usvg::Fill,
     path: Rc<tiny_skia::Path>,
     transform: tiny_skia::Transform,
-    text_bbox: Option<usvg::Rect>,
+    text_bbox: Option<tiny_skia::NonZeroRect>,
     anti_alias: bool,
-) -> Option<(FillPath, usvg::PathBbox, usvg::PathBbox)> {
+) -> Option<(FillPath, usvg::BBox, usvg::BBox)> {
     // Horizontal and vertical lines cannot be filled. Skip.
     if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
         return None;
     }
-
-    let paint = crate::paint_server::convert(&ufill.paint, ufill.opacity, path.bounds())?;
 
     let rule = match ufill.rule {
         usvg::FillRule::NonZero => tiny_skia::FillRule::Winding,
         usvg::FillRule::EvenOdd => tiny_skia::FillRule::EvenOdd,
     };
 
-    let mut object_bbox = path.bounds().to_path_bbox()?;
+    let mut object_bbox = usvg::BBox::from(path.bounds());
     if let Some(text_bbox) = text_bbox {
-        object_bbox = object_bbox.expand(text_bbox.to_path_bbox());
+        object_bbox = object_bbox.expand(usvg::BBox::from(text_bbox));
     }
+
+    let paint =
+        crate::paint_server::convert(&ufill.paint, ufill.opacity, object_bbox.to_non_zero_rect())?;
 
     let path = FillPath {
         transform,
@@ -129,14 +132,12 @@ fn convert_stroke_path(
     ustroke: &usvg::Stroke,
     path: Rc<tiny_skia::Path>,
     transform: tiny_skia::Transform,
-    text_bbox: Option<usvg::Rect>,
+    text_bbox: Option<tiny_skia::NonZeroRect>,
     anti_alias: bool,
-) -> Option<(StrokePath, usvg::PathBbox, usvg::PathBbox)> {
-    let paint = crate::paint_server::convert(&ustroke.paint, ustroke.opacity, path.bounds())?;
-
+) -> Option<(StrokePath, usvg::BBox, usvg::BBox)> {
     let mut stroke = tiny_skia::Stroke {
-        width: ustroke.width.get() as f32,
-        miter_limit: ustroke.miterlimit.get() as f32,
+        width: ustroke.width.get(),
+        miter_limit: ustroke.miterlimit.get(),
         line_cap: match ustroke.linecap {
             usvg::LineCap::Butt => tiny_skia::LineCap::Butt,
             usvg::LineCap::Round => tiny_skia::LineCap::Round,
@@ -153,14 +154,20 @@ fn convert_stroke_path(
     // Zero-sized stroke path is not an error, because linecap round or square
     // would produce the shape either way.
     // TODO: Find a better way to handle it.
-    let object_bbox = path
-        .bounds()
-        .to_path_bbox()
-        .unwrap_or_else(|| usvg::PathBbox::new(0.0, 0.0, 1.0, 1.0).unwrap());
+    let object_bbox = usvg::BBox::from(path.bounds());
+
+    let mut complete_object_bbox = object_bbox;
+    if let Some(text_bbox) = text_bbox {
+        complete_object_bbox = complete_object_bbox.expand(usvg::BBox::from(text_bbox));
+    }
+    let paint = crate::paint_server::convert(
+        &ustroke.paint,
+        ustroke.opacity,
+        complete_object_bbox.to_non_zero_rect(),
+    )?;
 
     if let Some(ref list) = ustroke.dasharray {
-        let list: Vec<_> = list.iter().map(|n| *n as f32).collect();
-        stroke.dash = tiny_skia::StrokeDash::new(list, ustroke.dashoffset);
+        stroke.dash = tiny_skia::StrokeDash::new(list.clone(), ustroke.dashoffset);
     }
 
     // TODO: explain
@@ -169,9 +176,9 @@ fn convert_stroke_path(
     let resolution_scale = resolution_scale.max(10.0);
     let stroked_path = path.stroke(&stroke, resolution_scale)?;
 
-    let mut layer_bbox = stroked_path.bounds().to_path_bbox()?;
+    let mut layer_bbox = usvg::BBox::from(stroked_path.bounds());
     if let Some(text_bbox) = text_bbox {
-        layer_bbox = layer_bbox.expand(text_bbox.to_path_bbox());
+        layer_bbox = layer_bbox.expand(usvg::BBox::from(text_bbox));
     }
 
     // TODO: dash beforehand
@@ -180,35 +187,12 @@ fn convert_stroke_path(
     let path = StrokePath {
         transform,
         paint,
-        stroke: stroke,
+        stroke,
         anti_alias,
         path,
     };
 
     Some((path, layer_bbox, object_bbox))
-}
-
-fn convert_path_data(path: &usvg::PathData) -> Option<tiny_skia::Path> {
-    let mut pb = tiny_skia::PathBuilder::new();
-    for seg in path.segments() {
-        match seg {
-            usvg::PathSegment::MoveTo { x, y } => {
-                pb.move_to(x as f32, y as f32);
-            }
-            usvg::PathSegment::LineTo { x, y } => {
-                pb.line_to(x as f32, y as f32);
-            }
-            #[rustfmt::skip]
-            usvg::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                pb.cubic_to(x1 as f32, y1 as f32, x2 as f32, y2 as f32, x as f32, y as f32);
-            }
-            usvg::PathSegment::ClosePath => {
-                pb.close();
-            }
-        }
-    }
-
-    pb.finish()
 }
 
 pub fn render_fill_path(
@@ -233,7 +217,7 @@ pub fn render_fill_path(
                 pattern_pixmap.as_ref(),
                 tiny_skia::SpreadMode::Repeat,
                 tiny_skia::FilterQuality::Bicubic,
-                pattern.opacity.get() as f32,
+                pattern.opacity.get(),
                 patt_ts,
             )
         }
@@ -270,7 +254,7 @@ pub fn render_stroke_path(
                 pattern_pixmap.as_ref(),
                 tiny_skia::SpreadMode::Repeat,
                 tiny_skia::FilterQuality::Bicubic,
-                pattern.opacity.get() as f32,
+                pattern.opacity.get(),
                 patt_ts,
             )
         }

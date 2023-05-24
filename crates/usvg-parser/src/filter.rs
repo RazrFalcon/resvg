@@ -9,10 +9,13 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 use rosvgtree::{self, AttributeId as AId, ElementId as EId};
-use strict_num::PositiveF64;
+use strict_num::PositiveF32;
 use svgtypes::{Length, LengthUnit as Unit};
 use usvg_tree::filter::*;
-use usvg_tree::{Color, FuzzyZero, Group, Node, NodeKind, NonZeroF64, Opacity, Point, Rect, Units};
+use usvg_tree::{
+    strict_num, ApproxZeroUlps, Color, Group, Node, NodeKind, NonZeroF32, NonZeroRect, Opacity,
+    Units,
+};
 
 use crate::paint_server::{convert_units, resolve_number};
 use crate::rosvgtree_ext::{OpacityWrapper, SvgColorExt, SvgNodeExt, SvgNodeExt2};
@@ -41,35 +44,36 @@ pub(crate) fn convert(
     let mut has_invalid_urls = false;
     let mut filters = Vec::new();
 
-    let create_base_filter_func = |kind,
-                                   filters: &mut Vec<Rc<Filter>>,
-                                   cache: &mut converter::Cache| {
-        // Filter functions, unlike `filter` elements, do not have a filter region.
-        // We're currently do not support an unlimited region, so we simply use a fairly large one.
-        // This if far from ideal, but good for now.
-        // TODO: Should be fixed eventually.
-        let rect = match kind {
-            Kind::DropShadow(_) | Kind::GaussianBlur(_) => Rect::new(-0.5, -0.5, 2.0, 2.0).unwrap(),
-            _ => Rect::new(-0.1, -0.1, 1.2, 1.2).unwrap(),
-        };
+    let create_base_filter_func =
+        |kind, filters: &mut Vec<Rc<Filter>>, cache: &mut converter::Cache| {
+            // Filter functions, unlike `filter` elements, do not have a filter region.
+            // We're currently do not support an unlimited region, so we simply use a fairly large one.
+            // This if far from ideal, but good for now.
+            // TODO: Should be fixed eventually.
+            let rect = match kind {
+                Kind::DropShadow(_) | Kind::GaussianBlur(_) => {
+                    NonZeroRect::from_xywh(-0.5, -0.5, 2.0, 2.0).unwrap()
+                }
+                _ => NonZeroRect::from_xywh(-0.1, -0.1, 1.2, 1.2).unwrap(),
+            };
 
-        filters.push(Rc::new(Filter {
-            id: cache.gen_filter_id(),
-            units: Units::ObjectBoundingBox,
-            primitive_units: Units::UserSpaceOnUse,
-            rect,
-            primitives: vec![Primitive {
-                x: None,
-                y: None,
-                width: None,
-                height: None,
-                // Unlike `filter` elements, filter functions use sRGB colors by default.
-                color_interpolation: ColorInterpolation::SRGB,
-                result: "result".to_string(),
-                kind,
-            }],
-        }));
-    };
+            filters.push(Rc::new(Filter {
+                id: cache.gen_filter_id(),
+                units: Units::ObjectBoundingBox,
+                primitive_units: Units::UserSpaceOnUse,
+                rect,
+                primitives: vec![Primitive {
+                    x: None,
+                    y: None,
+                    width: None,
+                    height: None,
+                    // Unlike `filter` elements, filter functions use sRGB colors by default.
+                    color_interpolation: ColorInterpolation::SRGB,
+                    result: "result".to_string(),
+                    kind,
+                }],
+            }));
+        };
 
     for func in svgtypes::FilterValueListParser::from(value) {
         let func = match func {
@@ -160,7 +164,7 @@ fn convert_url(
     let units = convert_units(node, AId::FilterUnits, Units::ObjectBoundingBox);
     let primitive_units = convert_units(node, AId::PrimitiveUnits, Units::UserSpaceOnUse);
 
-    let rect = Rect::new(
+    let rect = NonZeroRect::from_xywh(
         resolve_number(
             node,
             AId::X,
@@ -428,17 +432,17 @@ fn convert_color_matrix(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
 fn convert_color_matrix_kind(fe: rosvgtree::Node) -> Option<ColorMatrixKind> {
     match fe.attribute(AId::Type) {
         Some("saturate") => {
-            if let Some(list) = fe.parse_attribute::<Vec<f64>>(AId::Values) {
+            if let Some(list) = fe.parse_attribute::<Vec<f32>>(AId::Values) {
                 if !list.is_empty() {
-                    let n = crate::f64_bound(0.0, list[0], 1.0);
-                    return Some(ColorMatrixKind::Saturate(PositiveF64::new(n).unwrap()));
+                    let n = crate::f32_bound(0.0, list[0], 1.0);
+                    return Some(ColorMatrixKind::Saturate(PositiveF32::new(n).unwrap()));
                 } else {
-                    return Some(ColorMatrixKind::Saturate(PositiveF64::new(1.0).unwrap()));
+                    return Some(ColorMatrixKind::Saturate(PositiveF32::new(1.0).unwrap()));
                 }
             }
         }
         Some("hueRotate") => {
-            if let Some(list) = fe.parse_attribute::<Vec<f64>>(AId::Values) {
+            if let Some(list) = fe.parse_attribute::<Vec<f32>>(AId::Values) {
                 if !list.is_empty() {
                     return Some(ColorMatrixKind::HueRotate(list[0]));
                 } else {
@@ -451,7 +455,7 @@ fn convert_color_matrix_kind(fe: rosvgtree::Node) -> Option<ColorMatrixKind> {
         }
         _ => {
             // Fallback to `matrix`.
-            if let Some(list) = fe.parse_attribute::<Vec<f64>>(AId::Values) {
+            if let Some(list) = fe.parse_attribute::<Vec<f32>>(AId::Values) {
                 if list.len() == 20 {
                     return Some(ColorMatrixKind::Matrix(list));
                 }
@@ -489,11 +493,11 @@ fn convert_component_transfer(fe: rosvgtree::Node, primitives: &[Primitive]) -> 
 fn convert_transfer_function(node: rosvgtree::Node) -> Option<TransferFunction> {
     match node.attribute(AId::Type)? {
         "identity" => Some(TransferFunction::Identity),
-        "table" => match node.parse_attribute::<Vec<f64>>(AId::TableValues) {
+        "table" => match node.parse_attribute::<Vec<f32>>(AId::TableValues) {
             Some(values) => Some(TransferFunction::Table(values)),
             None => Some(TransferFunction::Table(Vec::new())),
         },
-        "discrete" => match node.parse_attribute::<Vec<f64>>(AId::TableValues) {
+        "discrete" => match node.parse_attribute::<Vec<f32>>(AId::TableValues) {
             Some(values) => Some(TransferFunction::Discrete(values)),
             None => Some(TransferFunction::Discrete(Vec::new())),
         },
@@ -517,10 +521,10 @@ fn convert_composite(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
         "atop" => CompositeOperator::Atop,
         "xor" => CompositeOperator::Xor,
         "arithmetic" => CompositeOperator::Arithmetic {
-            k1: fe.parse_attribute::<f64>(AId::K1).unwrap_or(0.0),
-            k2: fe.parse_attribute::<f64>(AId::K2).unwrap_or(0.0),
-            k3: fe.parse_attribute::<f64>(AId::K3).unwrap_or(0.0),
-            k4: fe.parse_attribute::<f64>(AId::K4).unwrap_or(0.0),
+            k1: fe.parse_attribute(AId::K1).unwrap_or(0.0),
+            k2: fe.parse_attribute(AId::K2).unwrap_or(0.0),
+            k3: fe.parse_attribute(AId::K3).unwrap_or(0.0),
+            k4: fe.parse_attribute(AId::K4).unwrap_or(0.0),
         },
         _ => CompositeOperator::Over,
     };
@@ -536,9 +540,9 @@ fn convert_composite(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
 }
 
 fn convert_convolve_matrix(fe: rosvgtree::Node, primitives: &[Primitive]) -> Option<Kind> {
-    fn parse_target(target: Option<f64>, order: u32) -> Option<u32> {
+    fn parse_target(target: Option<f32>, order: u32) -> Option<u32> {
         let default_target = (order as f32 / 2.0).floor() as u32;
-        let target = target.unwrap_or(default_target as f64) as i32;
+        let target = target.unwrap_or(default_target as f32) as i32;
         if target < 0 || target >= order as i32 {
             None
         } else {
@@ -559,21 +563,21 @@ fn convert_convolve_matrix(fe: rosvgtree::Node, primitives: &[Primitive]) -> Opt
     }
 
     let mut matrix = Vec::new();
-    if let Some(list) = fe.parse_attribute::<Vec<f64>>(AId::KernelMatrix) {
+    if let Some(list) = fe.parse_attribute::<Vec<f32>>(AId::KernelMatrix) {
         if list.len() == (order_x * order_y) as usize {
             matrix = list;
         }
     }
 
-    let mut kernel_sum: f64 = matrix.iter().sum();
+    let mut kernel_sum: f32 = matrix.iter().sum();
     // Round up to prevent float precision issues.
     kernel_sum = (kernel_sum * 1_000_000.0).round() / 1_000_000.0;
-    if kernel_sum.is_fuzzy_zero() {
+    if kernel_sum.approx_zero_ulps(4) {
         kernel_sum = 1.0;
     }
 
     let divisor = fe.parse_attribute(AId::Divisor).unwrap_or(kernel_sum);
-    if divisor.is_fuzzy_zero() {
+    if divisor.approx_zero_ulps(4) {
         return None;
     }
 
@@ -595,7 +599,7 @@ fn convert_convolve_matrix(fe: rosvgtree::Node, primitives: &[Primitive]) -> Opt
     Some(Kind::ConvolveMatrix(ConvolveMatrix {
         input: resolve_input(fe, AId::In, primitives),
         matrix: kernel_matrix,
-        divisor: NonZeroF64::new(divisor).unwrap(),
+        divisor: NonZeroF32::new(divisor).unwrap(),
         bias,
         edge_mode,
         preserve_alpha,
@@ -669,7 +673,7 @@ fn convert_gaussian_blur(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind 
     })
 }
 
-fn convert_std_dev_attr(fe: rosvgtree::Node, default: &str) -> (PositiveF64, PositiveF64) {
+fn convert_std_dev_attr(fe: rosvgtree::Node, default: &str) -> (PositiveF32, PositiveF32) {
     let text = fe.attribute(AId::StdDeviation).unwrap_or(default);
     let mut parser = svgtypes::NumberListParser::from(text);
 
@@ -685,8 +689,8 @@ fn convert_std_dev_attr(fe: rosvgtree::Node, default: &str) -> (PositiveF64, Pos
         _ => (0.0, 0.0),
     };
 
-    let std_dev_x = PositiveF64::new(std_dev_x).unwrap_or(PositiveF64::ZERO);
-    let std_dev_y = PositiveF64::new(std_dev_y).unwrap_or(PositiveF64::ZERO);
+    let std_dev_x = PositiveF32::new(std_dev_x as f32).unwrap_or(PositiveF32::ZERO);
+    let std_dev_y = PositiveF32::new(std_dev_y as f32).unwrap_or(PositiveF32::ZERO);
 
     (std_dev_x, std_dev_y)
 }
@@ -761,7 +765,7 @@ fn convert_specular_lighting(fe: rosvgtree::Node, primitives: &[Primitive]) -> O
         return None;
     }
 
-    let specular_exponent = crate::f64_bound(1.0, specular_exponent, 128.0);
+    let specular_exponent = crate::f32_bound(1.0, specular_exponent, 128.0);
 
     Some(Kind::SpecularLighting(SpecularLighting {
         input: resolve_input(fe, AId::In, primitives),
@@ -817,8 +821,8 @@ fn convert_light_source(parent: rosvgtree::Node) -> Option<LightSource> {
         })),
         Some(EId::FeSpotLight) => {
             let specular_exponent = child.parse_attribute(AId::SpecularExponent).unwrap_or(1.0);
-            let specular_exponent = PositiveF64::new(specular_exponent)
-                .unwrap_or_else(|| PositiveF64::new(1.0).unwrap());
+            let specular_exponent = PositiveF32::new(specular_exponent)
+                .unwrap_or_else(|| PositiveF32::new(1.0).unwrap());
 
             Some(LightSource::SpotLight(SpotLight {
                 x: child.parse_attribute(AId::X).unwrap_or(0.0),
@@ -850,9 +854,9 @@ fn convert_morphology(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
         _ => MorphologyOperator::Erode,
     };
 
-    let mut radius_x = PositiveF64::new(1.0).unwrap();
-    let mut radius_y = PositiveF64::new(1.0).unwrap();
-    if let Some(list) = fe.parse_attribute::<Vec<f64>>(AId::Radius) {
+    let mut radius_x = PositiveF32::new(1.0).unwrap();
+    let mut radius_y = PositiveF32::new(1.0).unwrap();
+    if let Some(list) = fe.parse_attribute::<Vec<f32>>(AId::Radius) {
         let mut rx = 0.0;
         let mut ry = 0.0;
         if list.len() == 2 {
@@ -863,24 +867,24 @@ fn convert_morphology(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
             ry = list[0]; // The same as `rx`.
         }
 
-        if rx.is_fuzzy_zero() && ry.is_fuzzy_zero() {
+        if rx.approx_zero_ulps(4) && ry.approx_zero_ulps(4) {
             rx = 1.0;
             ry = 1.0;
         }
 
         // If only one of the values is zero, reset it to 1.0
         // This is not specified in the spec, but this is how Chrome and Safari work.
-        if rx.is_fuzzy_zero() && !ry.is_fuzzy_zero() {
+        if rx.approx_zero_ulps(4) && !ry.approx_zero_ulps(4) {
             rx = 1.0;
         }
-        if !rx.is_fuzzy_zero() && ry.is_fuzzy_zero() {
+        if !rx.approx_zero_ulps(4) && ry.approx_zero_ulps(4) {
             ry = 1.0;
         }
 
         // Both values must be positive.
         if rx.is_sign_positive() && ry.is_sign_positive() {
-            radius_x = PositiveF64::new(rx).unwrap();
-            radius_y = PositiveF64::new(ry).unwrap();
+            radius_x = PositiveF32::new(rx).unwrap();
+            radius_y = PositiveF32::new(ry).unwrap();
         }
     }
 
@@ -895,8 +899,8 @@ fn convert_morphology(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
 fn convert_offset(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
     Kind::Offset(Offset {
         input: resolve_input(fe, AId::In, primitives),
-        dx: fe.parse_attribute::<f64>(AId::Dx).unwrap_or(0.0),
-        dy: fe.parse_attribute::<f64>(AId::Dy).unwrap_or(0.0),
+        dx: fe.parse_attribute(AId::Dx).unwrap_or(0.0),
+        dy: fe.parse_attribute(AId::Dy).unwrap_or(0.0),
     })
 }
 
@@ -907,8 +911,9 @@ fn convert_tile(fe: rosvgtree::Node, primitives: &[Primitive]) -> Kind {
 }
 
 fn convert_turbulence(fe: rosvgtree::Node) -> Kind {
-    let mut base_frequency = Point::new(PositiveF64::ZERO, PositiveF64::ZERO);
-    if let Some(list) = fe.parse_attribute::<Vec<f64>>(AId::BaseFrequency) {
+    let mut base_frequency_x = PositiveF32::ZERO;
+    let mut base_frequency_y = PositiveF32::ZERO;
+    if let Some(list) = fe.parse_attribute::<Vec<f32>>(AId::BaseFrequency) {
         let mut x = 0.0;
         let mut y = 0.0;
         if list.len() == 2 {
@@ -920,7 +925,8 @@ fn convert_turbulence(fe: rosvgtree::Node) -> Kind {
         }
 
         if x.is_sign_positive() && y.is_sign_positive() {
-            base_frequency = Point::new(PositiveF64::new(x).unwrap(), PositiveF64::new(y).unwrap());
+            base_frequency_x = PositiveF32::new(x).unwrap();
+            base_frequency_y = PositiveF32::new(y).unwrap();
         }
     }
 
@@ -935,17 +941,18 @@ fn convert_turbulence(fe: rosvgtree::Node) -> Kind {
     };
 
     Kind::Turbulence(Turbulence {
-        base_frequency,
+        base_frequency_x,
+        base_frequency_y,
         num_octaves: num_octaves.round() as u32,
-        seed: fe.parse_attribute(AId::Seed).unwrap_or(0.0).trunc() as i32,
+        seed: fe.parse_attribute::<f32>(AId::Seed).unwrap_or(0.0).trunc() as i32,
         stitch_tiles: fe.attribute(AId::StitchTiles) == Some("stitch"),
         kind,
     })
 }
 
 #[inline(never)]
-fn convert_grayscale_function(mut amount: f64) -> Kind {
-    amount = amount.min(1.0);
+fn convert_grayscale_function(amount: f64) -> Kind {
+    let amount = amount.min(1.0) as f32;
     Kind::ColorMatrix(ColorMatrix {
         input: Input::SourceGraphic,
         kind: ColorMatrixKind::Matrix(vec![
@@ -974,8 +981,8 @@ fn convert_grayscale_function(mut amount: f64) -> Kind {
 }
 
 #[inline(never)]
-fn convert_sepia_function(mut amount: f64) -> Kind {
-    amount = amount.min(1.0);
+fn convert_sepia_function(amount: f64) -> Kind {
+    let amount = amount.min(1.0) as f32;
     Kind::ColorMatrix(ColorMatrix {
         input: Input::SourceGraphic,
         kind: ColorMatrixKind::Matrix(vec![
@@ -1005,7 +1012,7 @@ fn convert_sepia_function(mut amount: f64) -> Kind {
 
 #[inline(never)]
 fn convert_saturate_function(amount: f64) -> Kind {
-    let amount = PositiveF64::new(amount).unwrap_or(PositiveF64::ZERO);
+    let amount = PositiveF32::new(amount as f32).unwrap_or(PositiveF32::ZERO);
     Kind::ColorMatrix(ColorMatrix {
         input: Input::SourceGraphic,
         kind: ColorMatrixKind::Saturate(amount),
@@ -1016,13 +1023,13 @@ fn convert_saturate_function(amount: f64) -> Kind {
 fn convert_hue_rotate_function(amount: svgtypes::Angle) -> Kind {
     Kind::ColorMatrix(ColorMatrix {
         input: Input::SourceGraphic,
-        kind: ColorMatrixKind::HueRotate(amount.to_degrees()),
+        kind: ColorMatrixKind::HueRotate(amount.to_degrees() as f32),
     })
 }
 
 #[inline(never)]
-fn convert_invert_function(mut amount: f64) -> Kind {
-    amount = amount.min(1.0);
+fn convert_invert_function(amount: f64) -> Kind {
+    let amount = amount.min(1.0) as f32;
     Kind::ComponentTransfer(ComponentTransfer {
         input: Input::SourceGraphic,
         func_r: TransferFunction::Table(vec![amount, 1.0 - amount]),
@@ -1033,8 +1040,8 @@ fn convert_invert_function(mut amount: f64) -> Kind {
 }
 
 #[inline(never)]
-fn convert_opacity_function(mut amount: f64) -> Kind {
-    amount = amount.min(1.0);
+fn convert_opacity_function(amount: f64) -> Kind {
+    let amount = amount.min(1.0) as f32;
     Kind::ComponentTransfer(ComponentTransfer {
         input: Input::SourceGraphic,
         func_r: TransferFunction::Identity,
@@ -1046,6 +1053,7 @@ fn convert_opacity_function(mut amount: f64) -> Kind {
 
 #[inline(never)]
 fn convert_brightness_function(amount: f64) -> Kind {
+    let amount = amount as f32;
     Kind::ComponentTransfer(ComponentTransfer {
         input: Input::SourceGraphic,
         func_r: TransferFunction::Linear {
@@ -1066,6 +1074,7 @@ fn convert_brightness_function(amount: f64) -> Kind {
 
 #[inline(never)]
 fn convert_contrast_function(amount: f64) -> Kind {
+    let amount = amount as f32;
     Kind::ComponentTransfer(ComponentTransfer {
         input: Input::SourceGraphic,
         func_r: TransferFunction::Linear {
@@ -1086,14 +1095,14 @@ fn convert_contrast_function(amount: f64) -> Kind {
 
 #[inline(never)]
 fn convert_blur_function(node: rosvgtree::Node, std_dev: Length, state: &converter::State) -> Kind {
-    let std_dev = PositiveF64::new(crate::units::convert_length(
+    let std_dev = PositiveF32::new(crate::units::convert_length(
         std_dev,
         node,
         AId::Dx,
         Units::UserSpaceOnUse,
         state,
     ))
-    .unwrap_or(PositiveF64::ZERO);
+    .unwrap_or(PositiveF32::ZERO);
     Kind::GaussianBlur(GaussianBlur {
         input: Input::SourceGraphic,
         std_dev_x: std_dev,
@@ -1110,14 +1119,14 @@ fn convert_drop_shadow_function(
     std_dev: Length,
     state: &converter::State,
 ) -> Kind {
-    let std_dev = PositiveF64::new(crate::units::convert_length(
+    let std_dev = PositiveF32::new(crate::units::convert_length(
         std_dev,
         node,
         AId::Dx,
         Units::UserSpaceOnUse,
         state,
     ))
-    .unwrap_or(PositiveF64::ZERO);
+    .unwrap_or(PositiveF32::ZERO);
 
     let (color, opacity) = color
         .unwrap_or_else(|| {

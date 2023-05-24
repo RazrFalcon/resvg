@@ -2,28 +2,28 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{f64_bound, ImageRefMut, RGBA8};
+use crate::{f32_bound, ImageRefMut, RGBA8};
 
 #[inline]
-fn to_normalized_components(pixel: RGBA8) -> (f64, f64, f64, f64) {
+fn to_normalized_components(pixel: RGBA8) -> (f32, f32, f32, f32) {
     (
-        pixel.r as f64 / 255.0,
-        pixel.g as f64 / 255.0,
-        pixel.b as f64 / 255.0,
-        pixel.a as f64 / 255.0,
+        pixel.r as f32 / 255.0,
+        pixel.g as f32 / 255.0,
+        pixel.b as f32 / 255.0,
+        pixel.a as f32 / 255.0,
     )
 }
 
 #[inline]
-fn from_normalized(c: f64) -> u8 {
-    (f64_bound(0.0, c, 1.0) * 255.0) as u8
+fn from_normalized(c: f32) -> u8 {
+    (f32_bound(0.0, c, 1.0) * 255.0) as u8
 }
 
 /// A color matrix used by `color_matrix`.
 #[derive(Clone, Copy, Debug)]
 #[allow(missing_docs)]
 pub enum ColorMatrix<'a> {
-    Matrix(&'a [f64; 20]),
+    Matrix(&'a [f32; 20]),
     Saturate(f64),
     HueRotate(f64),
     LuminanceToAlpha,
@@ -50,7 +50,7 @@ pub fn color_matrix(matrix: ColorMatrix, src: ImageRefMut) {
             }
         }
         ColorMatrix::Saturate(v) => {
-            let v = v.max(0.0);
+            let v = v.max(0.0) as f32;
             let m = [
                 0.213 + 0.787 * v,
                 0.715 - 0.715 * v,
@@ -77,8 +77,8 @@ pub fn color_matrix(matrix: ColorMatrix, src: ImageRefMut) {
         }
         ColorMatrix::HueRotate(angle) => {
             let angle = angle.to_radians();
-            let a1 = angle.cos();
-            let a2 = angle.sin();
+            let a1 = angle.cos() as f32;
+            let a2 = angle.sin() as f32;
             let m = [
                 0.213 + 0.787 * a1 - 0.213 * a2,
                 0.715 - 0.715 * a1 - 0.715 * a2,

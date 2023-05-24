@@ -18,12 +18,12 @@ pub enum TransferFunction<'a> {
     /// Applies a linear interpolation to a component.
     ///
     /// The number list can be empty.
-    Table(&'a [f64]),
+    Table(&'a [f32]),
 
     /// Applies a step function to a component.
     ///
     /// The number list can be empty.
-    Discrete(&'a [f64]),
+    Discrete(&'a [f32]),
 
     /// Applies a linear shift to a component.
     Linear { slope: f64, intercept: f64 },
@@ -56,10 +56,10 @@ impl<'a> TransferFunction<'a> {
                 let k = (c * (n as f64)).floor() as usize;
                 let k = cmp::min(k, n);
                 if k == n {
-                    values[k]
+                    values[k] as f64
                 } else {
-                    let vk = values[k];
-                    let vk1 = values[k + 1];
+                    let vk = values[k] as f64;
+                    let vk1 = values[k + 1] as f64;
                     let k = k as f64;
                     let n = n as f64;
                     vk + (c - k / n) * n * (vk1 - vk)
@@ -68,7 +68,7 @@ impl<'a> TransferFunction<'a> {
             TransferFunction::Discrete(values) => {
                 let n = values.len();
                 let k = (c * (n as f64)).floor() as usize;
-                values[cmp::min(k, n - 1)]
+                values[cmp::min(k, n - 1)] as f64
             }
             TransferFunction::Linear { slope, intercept } => slope * c + intercept,
             TransferFunction::Gamma {

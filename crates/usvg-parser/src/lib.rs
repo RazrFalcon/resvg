@@ -183,10 +183,8 @@ pub fn decompress_svgz(data: &[u8]) -> Result<Vec<u8>, Error> {
     Ok(decoded)
 }
 
-// TODO: https://github.com/rust-lang/rust/issues/44095
-/// Bounds `f64` number.
 #[inline]
-pub(crate) fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
+pub(crate) fn f32_bound(min: f32, val: f32, max: f32) -> f32 {
     debug_assert!(min.is_finite());
     debug_assert!(val.is_finite());
     debug_assert!(max.is_finite());

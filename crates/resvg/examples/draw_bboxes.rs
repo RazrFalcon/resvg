@@ -36,14 +36,14 @@ fn main() {
     let mut bboxes = Vec::new();
     let mut text_bboxes = Vec::new();
     for node in tree.root.descendants() {
-        if let Some(bbox) = node.calculate_bbox().and_then(|r| r.to_rect()) {
+        if let Some(bbox) = node.calculate_bbox() {
             bboxes.push(bbox);
         }
 
         // Text bboxes are different from path bboxes.
         if let usvg::NodeKind::Path(ref path) = *node.borrow() {
             if let Some(ref bbox) = path.text_bbox {
-                text_bboxes.push(*bbox);
+                text_bboxes.push(bbox.to_rect());
             }
         }
     }
@@ -61,26 +61,20 @@ fn main() {
     });
 
     for bbox in bboxes {
-        tree.root.append_kind(usvg::NodeKind::Path(usvg::Path {
-            stroke: stroke.clone(),
-            data: Rc::new(usvg::PathData::from_rect(bbox)),
-            ..usvg::Path::default()
-        }));
+        let mut path = usvg::Path::new(Rc::new(tiny_skia::PathBuilder::from_rect(bbox)));
+        path.stroke = stroke.clone();
+        tree.root.append_kind(usvg::NodeKind::Path(path));
     }
 
     for bbox in text_bboxes {
-        tree.root.append_kind(usvg::NodeKind::Path(usvg::Path {
-            stroke: stroke2.clone(),
-            data: Rc::new(usvg::PathData::from_rect(bbox)),
-            ..usvg::Path::default()
-        }));
+        let mut path = usvg::Path::new(Rc::new(tiny_skia::PathBuilder::from_rect(bbox)));
+        path.stroke = stroke2.clone();
+        tree.root.append_kind(usvg::NodeKind::Path(path));
     }
 
     let rtree = resvg::Tree::from_usvg(&tree);
 
-    let pixmap_size = resvg::IntSize::from_usvg(rtree.size)
-        .scale_by(zoom as f64)
-        .unwrap();
+    let pixmap_size = rtree.size.to_int_size().scale_by(zoom).unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
     let render_ts = tiny_skia::Transform::from_scale(zoom, zoom);
     rtree.render(render_ts, &mut pixmap.as_mut());

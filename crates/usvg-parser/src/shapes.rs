@@ -6,12 +6,13 @@ use std::rc::Rc;
 
 use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use svgtypes::Length;
-use usvg_tree::{FuzzyEq, IsValidLength, PathData, Rect, Units};
+use tiny_skia_path::Path;
+use usvg_tree::{tiny_skia_path, ApproxEqUlps, IsValidLength, Units};
 
 use crate::rosvgtree_ext::SvgNodeExt2;
 use crate::{converter, units, SvgNodeExt};
 
-pub(crate) fn convert(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<PathData>> {
+pub(crate) fn convert(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<Path>> {
     match node.tag_name()? {
         EId::Rect => convert_rect(node, state),
         EId::Circle => convert_circle(node, state),
@@ -24,9 +25,9 @@ pub(crate) fn convert(node: rosvgtree::Node, state: &converter::State) -> Option
     }
 }
 
-pub(crate) fn convert_path(node: rosvgtree::Node) -> Option<Rc<PathData>> {
+pub(crate) fn convert_path(node: rosvgtree::Node) -> Option<Rc<Path>> {
     let value: &str = node.attribute(AId::D)?;
-    let mut path = PathData::new();
+    let mut builder = tiny_skia_path::PathBuilder::new();
     for segment in svgtypes::SimplifyingPathParser::from(value) {
         let segment = match segment {
             Ok(v) => v,
@@ -35,10 +36,13 @@ pub(crate) fn convert_path(node: rosvgtree::Node) -> Option<Rc<PathData>> {
 
         match segment {
             svgtypes::SimplePathSegment::MoveTo { x, y } => {
-                path.push_move_to(x, y);
+                builder.move_to(x as f32, y as f32);
             }
             svgtypes::SimplePathSegment::LineTo { x, y } => {
-                path.push_line_to(x, y);
+                builder.line_to(x as f32, y as f32);
+            }
+            svgtypes::SimplePathSegment::Quadratic { x1, y1, x, y } => {
+                builder.quad_to(x1 as f32, y1 as f32, x as f32, y as f32);
             }
             svgtypes::SimplePathSegment::CurveTo {
                 x1,
@@ -48,25 +52,20 @@ pub(crate) fn convert_path(node: rosvgtree::Node) -> Option<Rc<PathData>> {
                 x,
                 y,
             } => {
-                path.push_curve_to(x1, y1, x2, y2, x, y);
-            }
-            svgtypes::SimplePathSegment::Quadratic { x1, y1, x, y } => {
-                path.push_quad_to(x1, y1, x, y);
+                builder.cubic_to(
+                    x1 as f32, y1 as f32, x2 as f32, y2 as f32, x as f32, y as f32,
+                );
             }
             svgtypes::SimplePathSegment::ClosePath => {
-                path.push_close_path();
+                builder.close();
             }
         }
     }
 
-    if path.len() >= 2 {
-        Some(Rc::new(path))
-    } else {
-        None
-    }
+    builder.finish().map(Rc::new)
 }
 
-fn convert_rect(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<PathData>> {
+fn convert_rect(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<Path>> {
     // 'width' and 'height' attributes must be positive and non-zero.
     let width = node.convert_user_length(AId::Width, state, Length::zero());
     let height = node.convert_user_length(AId::Height, state, Length::zero());
@@ -101,33 +100,33 @@ fn convert_rect(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<Pa
     }
 
     // Conversion according to https://www.w3.org/TR/SVG11/shapes.html#RectElement
-    let path = if rx.fuzzy_eq(&0.0) {
-        PathData::from_rect(Rect::new(x, y, width, height)?)
+    let path = if rx.approx_eq_ulps(&0.0, 4) {
+        tiny_skia_path::PathBuilder::from_rect(usvg_tree::Rect::from_xywh(x, y, width, height)?)
     } else {
-        let mut p = PathData::new();
-        p.push_move_to(x + rx, y);
+        let mut builder = tiny_skia_path::PathBuilder::new();
+        builder.move_to(x + rx, y);
 
-        p.push_line_to(x + width - rx, y);
-        p.push_arc_to(rx, ry, 0.0, false, true, x + width, y + ry);
+        builder.line_to(x + width - rx, y);
+        builder.arc_to(rx, ry, 0.0, false, true, x + width, y + ry);
 
-        p.push_line_to(x + width, y + height - ry);
-        p.push_arc_to(rx, ry, 0.0, false, true, x + width - rx, y + height);
+        builder.line_to(x + width, y + height - ry);
+        builder.arc_to(rx, ry, 0.0, false, true, x + width - rx, y + height);
 
-        p.push_line_to(x + rx, y + height);
-        p.push_arc_to(rx, ry, 0.0, false, true, x, y + height - ry);
+        builder.line_to(x + rx, y + height);
+        builder.arc_to(rx, ry, 0.0, false, true, x, y + height - ry);
 
-        p.push_line_to(x, y + ry);
-        p.push_arc_to(rx, ry, 0.0, false, true, x + rx, y);
+        builder.line_to(x, y + ry);
+        builder.arc_to(rx, ry, 0.0, false, true, x + rx, y);
 
-        p.push_close_path();
+        builder.close();
 
-        p
+        builder.finish()?
     };
 
     Some(Rc::new(path))
 }
 
-fn resolve_rx_ry(node: rosvgtree::Node, state: &converter::State) -> (f64, f64) {
+fn resolve_rx_ry(node: rosvgtree::Node, state: &converter::State) -> (f32, f32) {
     let mut rx_opt = node.parse_attribute::<Length>(AId::Rx);
     let mut ry_opt = node.parse_attribute::<Length>(AId::Ry);
 
@@ -162,42 +161,40 @@ fn resolve_rx_ry(node: rosvgtree::Node, state: &converter::State) -> (f64, f64) 
     }
 }
 
-fn convert_line(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<PathData>> {
+fn convert_line(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<Path>> {
     let x1 = node.convert_user_length(AId::X1, state, Length::zero());
     let y1 = node.convert_user_length(AId::Y1, state, Length::zero());
     let x2 = node.convert_user_length(AId::X2, state, Length::zero());
     let y2 = node.convert_user_length(AId::Y2, state, Length::zero());
 
-    let mut path = PathData::new();
-    path.push_move_to(x1, y1);
-    path.push_line_to(x2, y2);
-    Some(Rc::new(path))
+    let mut builder = tiny_skia_path::PathBuilder::new();
+    builder.move_to(x1, y1);
+    builder.line_to(x2, y2);
+    builder.finish().map(Rc::new)
 }
 
-fn convert_polyline(node: rosvgtree::Node) -> Option<Rc<PathData>> {
-    points_to_path(node, "Polyline").map(Rc::new)
+fn convert_polyline(node: rosvgtree::Node) -> Option<Rc<Path>> {
+    let builder = points_to_path(node, "Polyline")?;
+    builder.finish().map(Rc::new)
 }
 
-fn convert_polygon(node: rosvgtree::Node) -> Option<Rc<PathData>> {
-    if let Some(mut path) = points_to_path(node, "Polygon") {
-        path.push_close_path();
-        Some(Rc::new(path))
-    } else {
-        None
-    }
+fn convert_polygon(node: rosvgtree::Node) -> Option<Rc<Path>> {
+    let mut builder = points_to_path(node, "Polygon")?;
+    builder.close();
+    builder.finish().map(Rc::new)
 }
 
-fn points_to_path(node: rosvgtree::Node, eid: &str) -> Option<PathData> {
+fn points_to_path(node: rosvgtree::Node, eid: &str) -> Option<tiny_skia_path::PathBuilder> {
     use svgtypes::PointsParser;
 
-    let mut path = PathData::new();
+    let mut builder = tiny_skia_path::PathBuilder::new();
     match node.attribute(AId::Points) {
         Some(text) => {
             for (x, y) in PointsParser::from(text) {
-                if path.is_empty() {
-                    path.push_move_to(x, y);
+                if builder.is_empty() {
+                    builder.move_to(x as f32, y as f32);
                 } else {
-                    path.push_line_to(x, y);
+                    builder.line_to(x as f32, y as f32);
                 }
             }
         }
@@ -212,7 +209,7 @@ fn points_to_path(node: rosvgtree::Node, eid: &str) -> Option<PathData> {
     };
 
     // 'polyline' and 'polygon' elements must contain at least 2 points.
-    if path.len() < 2 {
+    if builder.len() < 2 {
         log::warn!(
             "{} '{}' has less than 2 points. Skipped.",
             eid,
@@ -221,10 +218,10 @@ fn points_to_path(node: rosvgtree::Node, eid: &str) -> Option<PathData> {
         return None;
     }
 
-    Some(path)
+    Some(builder)
 }
 
-fn convert_circle(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<PathData>> {
+fn convert_circle(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<Path>> {
     let cx = node.convert_user_length(AId::Cx, state, Length::zero());
     let cy = node.convert_user_length(AId::Cy, state, Length::zero());
     let r = node.convert_user_length(AId::R, state, Length::zero());
@@ -237,10 +234,10 @@ fn convert_circle(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<
         return None;
     }
 
-    Some(Rc::new(ellipse_to_path(cx, cy, r, r)))
+    ellipse_to_path(cx, cy, r, r)
 }
 
-fn convert_ellipse(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<PathData>> {
+fn convert_ellipse(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<Path>> {
     let cx = node.convert_user_length(AId::Cx, state, Length::zero());
     let cy = node.convert_user_length(AId::Cy, state, Length::zero());
     let (rx, ry) = resolve_rx_ry(node, state);
@@ -261,16 +258,74 @@ fn convert_ellipse(node: rosvgtree::Node, state: &converter::State) -> Option<Rc
         return None;
     }
 
-    Some(Rc::new(ellipse_to_path(cx, cy, rx, ry)))
+    ellipse_to_path(cx, cy, rx, ry)
 }
 
-fn ellipse_to_path(cx: f64, cy: f64, rx: f64, ry: f64) -> PathData {
-    let mut p = PathData::new();
-    p.push_move_to(cx + rx, cy);
-    p.push_arc_to(rx, ry, 0.0, false, true, cx, cy + ry);
-    p.push_arc_to(rx, ry, 0.0, false, true, cx - rx, cy);
-    p.push_arc_to(rx, ry, 0.0, false, true, cx, cy - ry);
-    p.push_arc_to(rx, ry, 0.0, false, true, cx + rx, cy);
-    p.push_close_path();
-    p
+fn ellipse_to_path(cx: f32, cy: f32, rx: f32, ry: f32) -> Option<Rc<Path>> {
+    let mut builder = tiny_skia_path::PathBuilder::new();
+    builder.move_to(cx + rx, cy);
+    builder.arc_to(rx, ry, 0.0, false, true, cx, cy + ry);
+    builder.arc_to(rx, ry, 0.0, false, true, cx - rx, cy);
+    builder.arc_to(rx, ry, 0.0, false, true, cx, cy - ry);
+    builder.arc_to(rx, ry, 0.0, false, true, cx + rx, cy);
+    builder.close();
+    builder.finish().map(Rc::new)
+}
+
+trait PathBuilderExt {
+    fn arc_to(
+        &mut self,
+        rx: f32,
+        ry: f32,
+        x_axis_rotation: f32,
+        large_arc: bool,
+        sweep: bool,
+        x: f32,
+        y: f32,
+    );
+}
+
+impl PathBuilderExt for tiny_skia_path::PathBuilder {
+    fn arc_to(
+        &mut self,
+        rx: f32,
+        ry: f32,
+        x_axis_rotation: f32,
+        large_arc: bool,
+        sweep: bool,
+        x: f32,
+        y: f32,
+    ) {
+        let prev = match self.last_point() {
+            Some(v) => v,
+            None => return,
+        };
+
+        let svg_arc = kurbo::SvgArc {
+            from: kurbo::Point::new(prev.x as f64, prev.y as f64),
+            to: kurbo::Point::new(x as f64, y as f64),
+            radii: kurbo::Vec2::new(rx as f64, ry as f64),
+            x_rotation: (x_axis_rotation as f64).to_radians(),
+            large_arc,
+            sweep,
+        };
+
+        match kurbo::Arc::from_svg_arc(&svg_arc) {
+            Some(arc) => {
+                arc.to_cubic_beziers(0.1, |p1, p2, p| {
+                    self.cubic_to(
+                        p1.x as f32,
+                        p1.y as f32,
+                        p2.x as f32,
+                        p2.y as f32,
+                        p.x as f32,
+                        p.y as f32,
+                    );
+                });
+            }
+            None => {
+                self.line_to(x, y);
+            }
+        }
+    }
 }

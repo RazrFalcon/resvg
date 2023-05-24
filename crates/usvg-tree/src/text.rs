@@ -4,9 +4,9 @@
 
 use std::rc::Rc;
 
-use strict_num::NonZeroPositiveF64;
+use strict_num::NonZeroPositiveF32;
 
-use crate::{Fill, PaintOrder, PathData, Stroke, TextRendering, Transform, Visibility};
+use crate::{Fill, PaintOrder, Stroke, TextRendering, Transform, Visibility};
 
 /// A font stretch property.
 #[allow(missing_docs)]
@@ -118,7 +118,7 @@ pub enum BaselineShift {
     Baseline,
     Subscript,
     Superscript,
-    Number(f64),
+    Number(f32),
 }
 
 impl Default for BaselineShift {
@@ -189,7 +189,7 @@ pub struct TextSpan {
     /// A font.
     pub font: Font,
     /// A font size.
-    pub font_size: NonZeroPositiveF64,
+    pub font_size: NonZeroPositiveF32,
     /// Indicates that small caps should be used.
     ///
     /// Set by `font-variant="small-caps"`
@@ -211,11 +211,11 @@ pub struct TextSpan {
     /// A visibility property.
     pub visibility: Visibility,
     /// A letter spacing property.
-    pub letter_spacing: f64,
+    pub letter_spacing: f32,
     /// A word spacing property.
-    pub word_spacing: f64,
+    pub word_spacing: f32,
     /// A text length property.
-    pub text_length: Option<f64>,
+    pub text_length: Option<f32>,
     /// A length adjust property.
     pub length_adjust: LengthAdjust,
 }
@@ -241,10 +241,10 @@ pub struct TextPath {
     /// A text offset in SVG coordinates.
     ///
     /// Percentage values already resolved.
-    pub start_offset: f64,
+    pub start_offset: f32,
 
     /// A path.
-    pub path: Rc<PathData>,
+    pub path: Rc<tiny_skia_path::Path>,
 }
 
 /// A text chunk flow property.
@@ -264,9 +264,9 @@ pub enum TextFlow {
 #[derive(Clone, Debug)]
 pub struct TextChunk {
     /// An absolute X axis offset.
-    pub x: Option<f64>,
+    pub x: Option<f32>,
     /// An absolute Y axis offset.
-    pub y: Option<f64>,
+    pub y: Option<f32>,
     /// A text anchor.
     pub anchor: TextAnchor,
     /// A list of text chunk style spans.
@@ -283,13 +283,13 @@ pub struct TextChunk {
 #[derive(Clone, Copy, Debug)]
 pub struct CharacterPosition {
     /// An absolute X axis position.
-    pub x: Option<f64>,
+    pub x: Option<f32>,
     /// An absolute Y axis position.
-    pub y: Option<f64>,
+    pub y: Option<f32>,
     /// A relative X axis offset.
-    pub dx: Option<f64>,
+    pub dx: Option<f32>,
     /// A relative Y axis offset.
-    pub dy: Option<f64>,
+    pub dy: Option<f32>,
 }
 
 /// A writing mode.
@@ -328,7 +328,7 @@ pub struct Text {
     /// A list of rotation angles.
     ///
     /// One angle for each Unicode codepoint. Aka `char` in Rust.
-    pub rotate: Vec<f64>,
+    pub rotate: Vec<f32>,
 
     /// A writing mode.
     pub writing_mode: WritingMode,

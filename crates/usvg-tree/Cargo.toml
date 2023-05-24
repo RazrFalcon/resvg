@@ -13,7 +13,7 @@ readme = "README.md"
 workspace = "../.."
 
 [dependencies]
-kurbo = "0.9" # Bezier curves utils
 rctree = "0.5"
-strict-num = "0.1"
+strict-num = "0.1.1"
 svgtypes = "0.11"
+tiny-skia-path = "0.10"

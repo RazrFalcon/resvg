@@ -1,13 +1,11 @@
 use std::rc::Rc;
 
-use usvg::NodeExt;
-
 fn main() {
-    let size = usvg::Size::new(200.0, 200.0).unwrap();
+    let size = usvg::Size::from_wh(200.0, 200.0).unwrap();
     let tree = usvg::Tree {
         size,
         view_box: usvg::ViewBox {
-            rect: size.to_rect(0.0, 0.0),
+            rect: size.to_non_zero_rect(0.0, 0.0),
             aspect: usvg::AspectRatio::default(),
         },
         root: usvg::Node::new(usvg::NodeKind::Group(usvg::Group::default())),
@@ -43,17 +41,14 @@ fn main() {
         ..usvg::Fill::default()
     });
 
-    tree.root.append_kind(usvg::NodeKind::Path(usvg::Path {
-        fill,
-        data: Rc::new(usvg::PathData::from_rect(
-            usvg::Rect::new(20.0, 20.0, 160.0, 160.0).unwrap(),
-        )),
-        ..usvg::Path::default()
-    }));
+    let mut path = usvg::Path::new(Rc::new(tiny_skia::PathBuilder::from_rect(
+        tiny_skia::Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap(),
+    )));
+    path.fill = fill;
 
     let rtree = resvg::Tree::from_usvg(&tree);
 
-    let pixmap_size = resvg::IntSize::from_usvg(rtree.size);
+    let pixmap_size = rtree.size.to_int_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
     rtree.render(tiny_skia::Transform::default(), &mut pixmap.as_mut());
     pixmap.save_png("out.png").unwrap();

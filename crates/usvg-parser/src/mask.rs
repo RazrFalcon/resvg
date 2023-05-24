@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use svgtypes::{Length, LengthUnit as Unit};
-use usvg_tree::{Group, Mask, MaskType, Node, NodeKind, Rect, Units};
+use usvg_tree::{Group, Mask, MaskType, Node, NodeKind, NonZeroRect, Units};
 
 use crate::rosvgtree_ext::SvgNodeExt2;
 use crate::{converter, OptionLog, SvgNodeExt};
@@ -33,7 +33,7 @@ pub(crate) fn convert(
         .parse_attribute(AId::MaskContentUnits)
         .unwrap_or(Units::UserSpaceOnUse);
 
-    let rect = Rect::new(
+    let rect = NonZeroRect::from_xywh(
         node.convert_length(AId::X, units, state, Length::new(-10.0, Unit::Percent)),
         node.convert_length(AId::Y, units, state, Length::new(-10.0, Unit::Percent)),
         node.convert_length(AId::Width, units, state, Length::new(120.0, Unit::Percent)),

@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use rosvgtree::{self, AttributeId as AId};
-use usvg_tree::{Color, Fill, FuzzyEq, Opacity, Paint, Stroke, StrokeMiterlimit, Units};
+use usvg_tree::{ApproxEqUlps, Color, Fill, Opacity, Paint, Stroke, StrokeMiterlimit, Units};
 
 use crate::rosvgtree_ext::{FromValue, OpacityWrapper, SvgColorExt, SvgNodeExt2};
 use crate::{converter, paint_server, SvgNodeExt};
@@ -103,7 +103,7 @@ pub(crate) fn resolve_stroke(
         .find_and_parse_attribute(AId::StrokeMiterlimit)
         .unwrap_or(4.0);
     let miterlimit = if miterlimit < 1.0 { 1.0 } else { miterlimit };
-    let miterlimit = StrokeMiterlimit::new(miterlimit);
+    let miterlimit = StrokeMiterlimit::new(miterlimit as f32);
 
     let stroke_opacity = node
         .find_and_parse_attribute::<OpacityWrapper>(AId::StrokeOpacity)
@@ -113,7 +113,7 @@ pub(crate) fn resolve_stroke(
     let stroke = Stroke {
         paint,
         dasharray: conv_dasharray(node, state),
-        dashoffset: node.resolve_length(AId::StrokeDashoffset, state, 0.0) as f32,
+        dashoffset: node.resolve_length(AId::StrokeDashoffset, state, 0.0),
         miterlimit,
         opacity: sub_opacity * stroke_opacity,
         width,
@@ -226,7 +226,7 @@ fn from_fallback(
 
 // Prepare the 'stroke-dasharray' according to:
 // https://www.w3.org/TR/SVG11/painting.html#StrokeDasharrayProperty
-fn conv_dasharray(node: rosvgtree::Node, state: &converter::State) -> Option<Vec<f64>> {
+fn conv_dasharray(node: rosvgtree::Node, state: &converter::State) -> Option<Vec<f32>> {
     let node = node
         .ancestors()
         .find(|n| n.has_attribute(AId::StrokeDasharray))?;
@@ -242,12 +242,12 @@ fn conv_dasharray(node: rosvgtree::Node, state: &converter::State) -> Option<Vec
     {
         // no Iter::sum(), because of f64
 
-        let mut sum = 0.0f64;
+        let mut sum: f32 = 0.0;
         for n in list.iter() {
             sum += *n;
         }
 
-        if sum.fuzzy_eq(&0.0) {
+        if sum.approx_eq_ulps(&0.0, 4) {
             return None;
         }
     }

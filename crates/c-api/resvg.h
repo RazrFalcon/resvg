@@ -102,47 +102,31 @@ typedef struct resvg_render_tree resvg_render_tree;
  * @brief A 2D transform representation.
  */
 typedef struct {
-    double a;
-    double b;
-    double c;
-    double d;
-    double e;
-    double f;
+    float a;
+    float b;
+    float c;
+    float d;
+    float e;
+    float f;
 } resvg_transform;
 
 /**
  * @brief A size representation.
- *
- * Width and height are guarantee to be > 0.
  */
 typedef struct {
-    double width;
-    double height;
+    float width;
+    float height;
 } resvg_size;
 
 /**
  * @brief A rectangle representation.
- *
- * Width *and* height are guarantee to be > 0.
  */
 typedef struct {
-    double x;
-    double y;
-    double width;
-    double height;
+    float x;
+    float y;
+    float width;
+    float height;
 } resvg_rect;
-
-/**
- * @brief A path bbox representation.
- *
- * Width *or* height are guarantee to be > 0.
- */
-typedef struct {
-    double x;
-    double y;
-    double width;
-    double height;
-} resvg_path_bbox;
 
 #ifdef __cplusplus
 extern "C" {
@@ -190,7 +174,7 @@ void resvg_options_set_resources_dir(resvg_options *opt, const char *path);
  *
  * Default: 96
  */
-void resvg_options_set_dpi(resvg_options *opt, double dpi);
+void resvg_options_set_dpi(resvg_options *opt, float dpi);
 
 /**
  * @brief Sets the default font family.
@@ -210,7 +194,7 @@ void resvg_options_set_font_family(resvg_options *opt, const char *family);
  *
  * Default: 12
  */
-void resvg_options_set_font_size(resvg_options *opt, double size);
+void resvg_options_set_font_size(resvg_options *opt, float size);
 
 /**
  * @brief Sets the `serif` font family.
@@ -456,7 +440,7 @@ bool resvg_get_node_transform(const resvg_render_tree *tree,
  * @return `false` if ID isn't a UTF-8 string.
  * @return `false` if ID is an empty string
  */
-bool resvg_get_node_bbox(const resvg_render_tree *tree, const char *id, resvg_path_bbox *bbox);
+bool resvg_get_node_bbox(const resvg_render_tree *tree, const char *id, resvg_rect *bbox);
 
 /**
  * @brief Destroys the #resvg_render_tree.

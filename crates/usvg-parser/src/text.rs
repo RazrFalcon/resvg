@@ -5,12 +5,12 @@
 use std::rc::Rc;
 
 use rosvgtree::{self, AttributeId as AId, ElementId as EId};
-use strict_num::NonZeroPositiveF64;
 use svgtypes::{Length, LengthUnit};
 use usvg_tree::*;
 
 use crate::rosvgtree_ext::{FromValue, SvgNodeExt2};
 use crate::{converter, style, SvgNodeExt};
+use kurbo::{ParamCurve, ParamCurveArclen};
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::TextAnchor {
     fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
@@ -202,7 +202,7 @@ fn collect_text_chunks_impl(
 
         // TODO: what to do when <= 0? UB?
         let font_size = crate::units::resolve_font_size(parent, state);
-        let font_size = match NonZeroPositiveF64::new(font_size) {
+        let font_size = match NonZeroPositiveF32::new(font_size) {
             Some(n) => n,
             None => {
                 // Skip this span.
@@ -349,7 +349,7 @@ fn resolve_text_flow(node: rosvgtree::Node, state: &converter::State) -> Option<
     let path =
         if let Some(node_transform) = linked_node.parse_attribute::<Transform>(AId::Transform) {
             let mut path_copy = path.as_ref().clone();
-            path_copy.transform(node_transform);
+            path_copy = path_copy.transform(node_transform)?;
             Rc::new(path_copy)
         } else {
             path
@@ -359,8 +359,8 @@ fn resolve_text_flow(node: rosvgtree::Node, state: &converter::State) -> Option<
     let start_offset = if start_offset.unit == LengthUnit::Percent {
         // 'If a percentage is given, then the `startOffset` represents
         // a percentage distance along the entire path.'
-        let path_len = path.length();
-        path_len * (start_offset.number / 100.0)
+        let path_len = path_length(&path);
+        (path_len * (start_offset.number / 100.0)) as f32
     } else {
         node.resolve_length(AId::StartOffset, state, 0.0)
     };
@@ -385,11 +385,11 @@ fn convert_font(node: rosvgtree::Node, state: &converter::State) -> Font {
     for mut family in font_family.split(',') {
         // TODO: to a proper parser
 
-        if family.starts_with(&['\'', '"']) {
+        if family.starts_with(['\'', '"']) {
             family = &family[1..];
         }
 
-        if family.ends_with(&['\'', '"']) {
+        if family.ends_with(['\'', '"']) {
             family = &family[..family.len() - 1];
         }
 
@@ -597,14 +597,14 @@ fn resolve_positions_list(
 /// ![](https://www.w3.org/TR/SVG11/images/text/tspan05-diagram.png)
 ///
 /// Note: this algorithm differs from the position resolving one.
-fn resolve_rotate_list(text_node: rosvgtree::Node) -> Vec<f64> {
+fn resolve_rotate_list(text_node: rosvgtree::Node) -> Vec<f32> {
     // Allocate a list that has all characters angles set to `0.0`.
     let mut list = vec![0.0; count_chars(text_node)];
     let mut last = 0.0;
     let mut offset = 0;
     for child in text_node.descendants() {
         if child.is_element() {
-            if let Some(rotate) = child.parse_attribute::<Vec<f64>>(AId::Rotate) {
+            if let Some(rotate) = child.parse_attribute::<Vec<f32>>(AId::Rotate) {
                 for i in 0..count_chars(child) {
                     if let Some(a) = rotate.get(i).cloned() {
                         list[offset + i] = a;
@@ -705,7 +705,7 @@ fn convert_baseline_shift(node: rosvgtree::Node, state: &converter::State) -> Ve
     for n in nodes {
         if let Some(len) = n.parse_attribute::<Length>(AId::BaselineShift) {
             if len.unit == LengthUnit::Percent {
-                let n = crate::units::resolve_font_size(n, state) * (len.number / 100.0);
+                let n = crate::units::resolve_font_size(n, state) * (len.number as f32 / 100.0);
                 shift.push(BaselineShift::Number(n));
             } else {
                 let n = crate::units::convert_length(
@@ -777,4 +777,58 @@ fn convert_writing_mode(text_node: rosvgtree::Node) -> WritingMode {
     } else {
         WritingMode::LeftToRight
     }
+}
+
+fn path_length(path: &tiny_skia_path::Path) -> f64 {
+    let mut prev_mx = path.points()[0].x;
+    let mut prev_my = path.points()[0].y;
+    let mut prev_x = prev_mx;
+    let mut prev_y = prev_my;
+
+    fn create_curve_from_line(px: f32, py: f32, x: f32, y: f32) -> kurbo::CubicBez {
+        let line = kurbo::Line::new(
+            kurbo::Point::new(px as f64, py as f64),
+            kurbo::Point::new(x as f64, y as f64),
+        );
+        let p1 = line.eval(0.33);
+        let p2 = line.eval(0.66);
+        kurbo::CubicBez::new(line.p0, p1, p2, line.p1)
+    }
+
+    let mut length = 0.0;
+    for seg in path.segments() {
+        let curve = match seg {
+            tiny_skia_path::PathSegment::MoveTo(p) => {
+                prev_mx = p.x;
+                prev_my = p.y;
+                prev_x = p.x;
+                prev_y = p.y;
+                continue;
+            }
+            tiny_skia_path::PathSegment::LineTo(p) => {
+                create_curve_from_line(prev_x, prev_y, p.x, p.y)
+            }
+            tiny_skia_path::PathSegment::QuadTo(p1, p) => kurbo::QuadBez::new(
+                kurbo::Point::new(prev_x as f64, prev_y as f64),
+                kurbo::Point::new(p1.x as f64, p1.y as f64),
+                kurbo::Point::new(p.x as f64, p.y as f64),
+            )
+            .raise(),
+            tiny_skia_path::PathSegment::CubicTo(p1, p2, p) => kurbo::CubicBez::new(
+                kurbo::Point::new(prev_x as f64, prev_y as f64),
+                kurbo::Point::new(p1.x as f64, p1.y as f64),
+                kurbo::Point::new(p2.x as f64, p2.y as f64),
+                kurbo::Point::new(p.x as f64, p.y as f64),
+            ),
+            tiny_skia_path::PathSegment::Close => {
+                create_curve_from_line(prev_x, prev_y, prev_mx, prev_my)
+            }
+        };
+
+        length += curve.arclen(0.5);
+        prev_x = curve.p3.x as f32;
+        prev_y = curve.p3.y as f32;
+    }
+
+    length
 }

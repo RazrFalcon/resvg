@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 use rosvgtree::{self, AttributeId as AId, ElementId as EId};
-use strict_num::PositiveF64;
+use strict_num::PositiveF32;
 use svgtypes::{Length, LengthUnit as Unit};
 use usvg_tree::*;
 
@@ -119,8 +119,8 @@ fn convert_radial(node: rosvgtree::Node, state: &converter::State) -> Option<Ser
         state,
         Length::new(50.0, Unit::Percent),
     );
-    let fx = resolve_number(node, AId::Fx, units, state, Length::new_number(cx));
-    let fy = resolve_number(node, AId::Fy, units, state, Length::new_number(cy));
+    let fx = resolve_number(node, AId::Fx, units, state, Length::new_number(cx as f64));
+    let fy = resolve_number(node, AId::Fy, units, state, Length::new_number(cy as f64));
     let transform = resolve_attr(node, AId::GradientTransform)
         .parse_attribute(AId::GradientTransform)
         .unwrap_or_default();
@@ -129,7 +129,7 @@ fn convert_radial(node: rosvgtree::Node, state: &converter::State) -> Option<Ser
         id: node.element_id().to_string(),
         cx,
         cy,
-        r: PositiveF64::new(r).unwrap(),
+        r: PositiveF32::new(r).unwrap(),
         fx,
         fy,
         base: BaseGradient {
@@ -171,7 +171,7 @@ fn convert_pattern(
         .parse_attribute(AId::PatternTransform)
         .unwrap_or_default();
 
-    let rect = Rect::new(
+    let rect = NonZeroRect::from_xywh(
         resolve_number(node, AId::X, units, state, Length::zero()),
         resolve_number(node, AId::Y, units, state, Length::zero()),
         resolve_number(node, AId::Width, units, state, Length::zero()),
@@ -273,8 +273,8 @@ fn convert_stops(grad: rosvgtree::Node) -> Vec<Stop> {
                 Unit::Percent => offset.number / 100.0,
                 _ => prev_offset.number,
             };
-            let offset = crate::f64_bound(0.0, offset, 1.0);
             prev_offset = Length::new_number(offset);
+            let offset = crate::f32_bound(0.0, offset as f32, 1.0);
 
             let (color, opacity) = match stop.attribute(AId::StopColor) {
                 Some("currentColor") => stop
@@ -319,7 +319,7 @@ fn convert_stops(grad: rosvgtree::Node) -> Vec<Stop> {
             let offset2 = stops[i + 1].offset.get();
             let offset3 = stops[i + 2].offset.get();
 
-            if offset1.fuzzy_eq(&offset2) && offset2.fuzzy_eq(&offset3) {
+            if offset1.approx_eq_ulps(&offset2, 4) && offset2.approx_eq_ulps(&offset3, 4) {
                 // Remove offset in the middle.
                 stops.remove(i + 1);
             } else {
@@ -345,8 +345,8 @@ fn convert_stops(grad: rosvgtree::Node) -> Vec<Stop> {
             let offset1 = stops[i + 0].offset.get();
             let offset2 = stops[i + 1].offset.get();
 
-            if offset1.is_fuzzy_zero() && offset2.is_fuzzy_zero() {
-                stops[i + 1].offset = StopOffset::new_clamped(offset1 + f64::EPSILON);
+            if offset1.approx_eq_ulps(&0.0, 4) && offset2.approx_eq_ulps(&0.0, 4) {
+                stops[i + 1].offset = StopOffset::new_clamped(offset1 + f32::EPSILON);
             }
 
             i += 1;
@@ -371,9 +371,9 @@ fn convert_stops(grad: rosvgtree::Node) -> Vec<Stop> {
             let offset2 = stops[i - 0].offset.get();
 
             // Next offset must be smaller then previous.
-            if offset1 > offset2 || offset1.fuzzy_eq(&offset2) {
+            if offset1 > offset2 || offset1.approx_eq_ulps(&offset2, 4) {
                 // Make previous offset a bit smaller.
-                let new_offset = offset1 - f64::EPSILON;
+                let new_offset = offset1 - f32::EPSILON;
                 stops[i - 1].offset = StopOffset::new_clamped(new_offset);
                 stops[i - 0].offset = StopOffset::new_clamped(offset1);
             }
@@ -392,7 +392,7 @@ pub(crate) fn resolve_number(
     units: Units,
     state: &converter::State,
     def: Length,
-) -> f64 {
+) -> f32 {
     resolve_attr(node, name).convert_length(name, units, state, def)
 }
 

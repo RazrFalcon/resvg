@@ -401,19 +401,22 @@ fn process(args: Args) -> Result<(), String> {
 
     let re_opt = usvg_parser::Options {
         resources_dir,
-        dpi: args.dpi as f64,
+        dpi: args.dpi as f32,
         font_family: args
             .font_family
             .as_deref()
             .unwrap_or("Times New Roman")
             .to_string(),
-        font_size: args.font_size as f64,
+        font_size: args.font_size as f32,
         languages: args.languages,
         shape_rendering: args.shape_rendering,
         text_rendering: args.text_rendering,
         image_rendering: args.image_rendering,
-        default_size: usvg_tree::Size::new(args.default_width as f64, args.default_height as f64)
-            .unwrap(),
+        default_size: usvg_tree::Size::from_wh(
+            args.default_width as f32,
+            args.default_height as f32,
+        )
+        .unwrap(),
         image_href_resolver: usvg_parser::ImageHrefResolver::default(),
     };
 

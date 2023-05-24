@@ -5,8 +5,8 @@
 use std::str::FromStr;
 
 use rosvgtree::{AttributeId, Node};
-use strict_num::NonZeroPositiveF64;
-use usvg_tree::{FuzzyEq, Opacity, Rect, Transform, Units};
+use strict_num::NonZeroPositiveF32;
+use usvg_tree::{strict_num, NonZeroRect, Opacity, Transform, Units};
 
 use crate::{converter, units};
 
@@ -28,9 +28,11 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for OpacityWrapper {
     fn parse(_: Node, _: AttributeId, value: &str) -> Option<Self> {
         let length = svgtypes::Length::from_str(value).ok()?;
         if length.unit == svgtypes::LengthUnit::Percent {
-            Some(OpacityWrapper(Opacity::new_clamped(length.number / 100.0)))
+            Some(OpacityWrapper(Opacity::new_clamped(
+                length.number as f32 / 100.0,
+            )))
         } else if length.unit == svgtypes::LengthUnit::None {
-            Some(OpacityWrapper(Opacity::new_clamped(length.number)))
+            Some(OpacityWrapper(Opacity::new_clamped(length.number as f32)))
         } else {
             None
         }
@@ -44,13 +46,19 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for Transform {
             Err(_) => return None,
         };
 
-        let ts = Transform::from(ts);
+        let ts = Transform::from_row(
+            ts.a as f32,
+            ts.b as f32,
+            ts.c as f32,
+            ts.d as f32,
+            ts.e as f32,
+            ts.f as f32,
+        );
 
-        let (sx, sy) = ts.get_scale();
-        if sx.fuzzy_eq(&0.0) || sy.fuzzy_eq(&0.0) {
-            Some(Transform::default())
-        } else {
+        if ts.is_valid() {
             Some(ts)
+        } else {
+            Some(Transform::default())
         }
     }
 }
@@ -65,9 +73,9 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::Units {
     }
 }
 
-impl<'a, 'input: 'a> FromValue<'a, 'input> for f64 {
+impl<'a, 'input: 'a> FromValue<'a, 'input> for f32 {
     fn parse(_: Node, _: AttributeId, value: &str) -> Option<Self> {
-        svgtypes::Number::from_str(value).ok().map(|v| v.0)
+        svgtypes::Number::from_str(value).ok().map(|v| v.0 as f32)
     }
 }
 
@@ -119,11 +127,11 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::Paint<'a> {
     }
 }
 
-impl<'a, 'input: 'a> FromValue<'a, 'input> for Vec<f64> {
+impl<'a, 'input: 'a> FromValue<'a, 'input> for Vec<f32> {
     fn parse(_: Node, _: AttributeId, value: &str) -> Option<Self> {
         let mut list = Vec::new();
         for n in svgtypes::NumberListParser::from(value) {
-            list.push(n.ok()?);
+            list.push(n.ok()? as f32);
         }
 
         Some(list)
@@ -233,33 +241,33 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for Node<'a, 'input> {
 
 pub trait SvgNodeExt {
     fn has_valid_transform(&self, aid: AttributeId) -> bool;
-    fn parse_viewbox(&self) -> Option<Rect>;
-    fn resolve_length(&self, aid: AttributeId, state: &converter::State, def: f64) -> f64;
+    fn parse_viewbox(&self) -> Option<NonZeroRect>;
+    fn resolve_length(&self, aid: AttributeId, state: &converter::State, def: f32) -> f32;
     fn resolve_valid_length(
         &self,
         aid: AttributeId,
         state: &converter::State,
-        def: f64,
-    ) -> Option<NonZeroPositiveF64>;
+        def: f32,
+    ) -> Option<NonZeroPositiveF32>;
     fn convert_length(
         &self,
         aid: AttributeId,
         object_units: Units,
         state: &converter::State,
         def: svgtypes::Length,
-    ) -> f64;
+    ) -> f32;
     fn try_convert_length(
         &self,
         aid: AttributeId,
         object_units: Units,
         state: &converter::State,
-    ) -> Option<f64>;
+    ) -> Option<f32>;
     fn convert_user_length(
         &self,
         aid: AttributeId,
         state: &converter::State,
         def: svgtypes::Length,
-    ) -> f64;
+    ) -> f32;
     fn is_visible_element(&self, opt: &crate::Options) -> bool;
 }
 
@@ -278,21 +286,23 @@ impl SvgNodeExt for Node<'_, '_> {
             Err(_) => return true,
         };
 
-        let ts = Transform::from(ts);
-        let (sx, sy) = ts.get_scale();
-        if sx.fuzzy_eq(&0.0) || sy.fuzzy_eq(&0.0) {
-            return false;
-        }
-
-        true
+        let ts = Transform::from_row(
+            ts.a as f32,
+            ts.b as f32,
+            ts.c as f32,
+            ts.d as f32,
+            ts.e as f32,
+            ts.f as f32,
+        );
+        ts.is_valid()
     }
 
-    fn parse_viewbox(&self) -> Option<Rect> {
+    fn parse_viewbox(&self) -> Option<NonZeroRect> {
         let vb: svgtypes::ViewBox = self.parse_attribute(AttributeId::ViewBox)?;
-        Rect::new(vb.x, vb.y, vb.w, vb.h)
+        NonZeroRect::from_xywh(vb.x as f32, vb.y as f32, vb.w as f32, vb.h as f32)
     }
 
-    fn resolve_length(&self, aid: AttributeId, state: &converter::State, def: f64) -> f64 {
+    fn resolve_length(&self, aid: AttributeId, state: &converter::State, def: f32) -> f32 {
         debug_assert!(
             !matches!(aid, AttributeId::BaselineShift | AttributeId::FontSize),
             "{} cannot be resolved via this function",
@@ -312,10 +322,10 @@ impl SvgNodeExt for Node<'_, '_> {
         &self,
         aid: AttributeId,
         state: &converter::State,
-        def: f64,
-    ) -> Option<NonZeroPositiveF64> {
+        def: f32,
+    ) -> Option<NonZeroPositiveF32> {
         let n = self.resolve_length(aid, state, def);
-        NonZeroPositiveF64::new(n)
+        NonZeroPositiveF32::new(n)
     }
 
     fn convert_length(
@@ -324,7 +334,7 @@ impl SvgNodeExt for Node<'_, '_> {
         object_units: Units,
         state: &converter::State,
         def: svgtypes::Length,
-    ) -> f64 {
+    ) -> f32 {
         units::convert_length(
             self.parse_attribute(aid).unwrap_or(def),
             *self,
@@ -339,7 +349,7 @@ impl SvgNodeExt for Node<'_, '_> {
         aid: AttributeId,
         object_units: Units,
         state: &converter::State,
-    ) -> Option<f64> {
+    ) -> Option<f32> {
         Some(units::convert_length(
             self.parse_attribute(aid)?,
             *self,
@@ -354,7 +364,7 @@ impl SvgNodeExt for Node<'_, '_> {
         aid: AttributeId,
         state: &converter::State,
         def: svgtypes::Length,
-    ) -> f64 {
+    ) -> f32 {
         self.convert_length(aid, Units::UserSpaceOnUse, state, def)
     }
 

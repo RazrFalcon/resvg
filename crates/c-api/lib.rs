@@ -41,41 +41,24 @@ pub enum resvg_error {
     PARSING_FAILED,
 }
 
-/// @brief A path bbox representation.
-///
-/// Width *or* height are guarantee to be > 0.
-#[repr(C)]
-#[allow(missing_docs)]
-#[derive(Copy, Clone)]
-pub struct resvg_path_bbox {
-    pub x: f64,
-    pub y: f64,
-    pub width: f64,
-    pub height: f64,
-}
-
 /// @brief A rectangle representation.
-///
-/// Width *and* height are guarantee to be > 0.
 #[repr(C)]
 #[allow(missing_docs)]
 #[derive(Copy, Clone)]
 pub struct resvg_rect {
-    pub x: f64,
-    pub y: f64,
-    pub width: f64,
-    pub height: f64,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
 }
 
 /// @brief A size representation.
-///
-/// Width and height are guarantee to be > 0.
 #[repr(C)]
 #[allow(missing_docs)]
 #[derive(Copy, Clone)]
 pub struct resvg_size {
-    pub width: f64,
-    pub height: f64,
+    pub width: f32,
+    pub height: f32,
 }
 
 /// @brief A 2D transform representation.
@@ -83,25 +66,18 @@ pub struct resvg_size {
 #[allow(missing_docs)]
 #[derive(Copy, Clone)]
 pub struct resvg_transform {
-    pub a: f64,
-    pub b: f64,
-    pub c: f64,
-    pub d: f64,
-    pub e: f64,
-    pub f: f64,
+    pub a: f32,
+    pub b: f32,
+    pub c: f32,
+    pub d: f32,
+    pub e: f32,
+    pub f: f32,
 }
 
 impl resvg_transform {
     #[inline]
     fn to_tiny_skia(&self) -> tiny_skia::Transform {
-        tiny_skia::Transform::from_row(
-            self.a as f32,
-            self.b as f32,
-            self.c as f32,
-            self.d as f32,
-            self.e as f32,
-            self.f as f32,
-        )
+        tiny_skia::Transform::from_row(self.a, self.b, self.c, self.d, self.e, self.f)
     }
 }
 
@@ -194,8 +170,8 @@ pub extern "C" fn resvg_options_set_resources_dir(opt: *mut resvg_options, path:
 ///
 /// Default: 96
 #[no_mangle]
-pub extern "C" fn resvg_options_set_dpi(opt: *mut resvg_options, dpi: f64) {
-    cast_opt(opt).dpi = dpi;
+pub extern "C" fn resvg_options_set_dpi(opt: *mut resvg_options, dpi: f32) {
+    cast_opt(opt).dpi = dpi as f32;
 }
 
 /// @brief Sets the default font family.
@@ -216,7 +192,7 @@ pub extern "C" fn resvg_options_set_font_family(opt: *mut resvg_options, family:
 ///
 /// Default: 12
 #[no_mangle]
-pub extern "C" fn resvg_options_set_font_size(opt: *mut resvg_options, size: f64) {
+pub extern "C" fn resvg_options_set_font_size(opt: *mut resvg_options, size: f32) {
     cast_opt(opt).font_size = size;
 }
 
@@ -688,7 +664,12 @@ pub extern "C" fn resvg_get_image_bbox(
         &*tree
     };
 
-    if let Some(r) = tree.0.root.calculate_bbox().and_then(|r| r.to_rect()) {
+    if let Some(r) = tree
+        .0
+        .root
+        .calculate_bbox()
+        .and_then(|r| r.to_non_zero_rect())
+    {
         unsafe {
             *bbox = resvg_rect {
                 x: r.x(),
@@ -761,12 +742,12 @@ pub extern "C" fn resvg_get_node_transform(
 
         unsafe {
             *transform = resvg_transform {
-                a: abs_ts.a,
-                b: abs_ts.b,
-                c: abs_ts.c,
-                d: abs_ts.d,
-                e: abs_ts.e,
-                f: abs_ts.f,
+                a: abs_ts.sx,
+                b: abs_ts.kx,
+                c: abs_ts.ky,
+                d: abs_ts.sy,
+                e: abs_ts.tx,
+                f: abs_ts.ty,
             }
         }
 
@@ -788,7 +769,7 @@ pub extern "C" fn resvg_get_node_transform(
 pub extern "C" fn resvg_get_node_bbox(
     tree: *const resvg_render_tree,
     id: *const c_char,
-    bbox: *mut resvg_path_bbox,
+    bbox: *mut resvg_rect,
 ) -> bool {
     let id = match cstr_to_str(id) {
         Some(v) => v,
@@ -812,7 +793,7 @@ pub extern "C" fn resvg_get_node_bbox(
         Some(node) => {
             if let Some(r) = node.calculate_bbox() {
                 unsafe {
-                    *bbox = resvg_path_bbox {
+                    *bbox = resvg_rect {
                         x: r.x(),
                         y: r.y(),
                         width: r.width(),

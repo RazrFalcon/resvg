@@ -22,7 +22,7 @@ pub struct ConvolveMatrix<'a> {
     y: u32,
     columns: u32,
     rows: u32,
-    data: &'a [f64],
+    data: &'a [f32],
 }
 
 impl<'a> ConvolveMatrix<'a> {
@@ -38,7 +38,7 @@ impl<'a> ConvolveMatrix<'a> {
         target_y: u32,
         columns: u32,
         rows: u32,
-        data: &'a [f64],
+        data: &'a [f32],
     ) -> Option<Self> {
         if (columns * rows) as usize != data.len() || target_x >= columns || target_y >= rows {
             return None;
@@ -92,12 +92,12 @@ impl<'a> ConvolveMatrix<'a> {
     /// - When position is out of bounds.
     #[inline]
     pub fn get(&self, x: u32, y: u32) -> f64 {
-        self.data[(y * self.columns + x) as usize]
+        self.data[(y * self.columns + x) as usize] as f64
     }
 
     /// Returns a reference to an internal data.
     #[inline]
-    pub fn data(&self) -> &[f64] {
+    pub fn data(&self) -> &[f32] {
         self.data
     }
 }

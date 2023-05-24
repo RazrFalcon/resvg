@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- `usvg` uses `tiny-skia` geometry primitives now, including the `Path` container.<br>
+  The main difference compared to the old `usvg` primitives
+  is that `tiny-skia` uses `f32` instead of `f64`.
+  So while in theory we could loose some precision, in practice, `f32` is used mainly
+  as a storage type and precise math operations are still done using `f64`.<br>
+  `tiny-skia` primitives are move robust, strict and have a nicer API.<br>
+  More importantly, this change reduces the peak memory usages for SVGs with large paths
+  (in terms of the number of segments).
+  And removes the need to convert `usvg::PathData` into `tiny-skia::Path` before rendering.
+  Which was just a useless reallocation.
+- All numbers are stored as `f32` instead of `f64` now.
+- Because we use `tiny-skia::Path` now, we allow _quadratic curves_ as well.
+  This includes `usvg` CLI output.
+- Because we allow _quadratic curves_ now, text might render slightly differently (better?).
+  This is because TrueType fonts contain only _quadratic curves_
+  and we were converting them to cubic before.
+- `usvg::Path` no longer implements `Default`. Use `usvg::Path::new` instead.
+- Replace `usvg::Rect` with `tiny_skia::NonZeroRect`.
+- Replace `usvg::PathBbox` with `tiny_skia::Rect`.
+- Unlike the old `usvg::PathBbox`, `tiny_skia::Rect` allows both width and height to be zero.
+  This is not an error.
+- `usvg::filter::Turbulence::base_frequency` was split into `base_frequency_x` and `base_frequency_y`.
+- `usvg::NodeExt::calculate_bbox` no longer includes stroke bbox.
+- (c-api) Use `float` instead of `double` everywhere.
+
+### Remove
+- `usvg::Point`. Use `tiny_skia::Point` instead.
+- `usvg::FuzzyEq`. Use `usvg::ApproxEqUlps` instead.
+- `usvg::FuzzyZero`. Use `usvg::ApproxZeroUlps` instead.
+- (c-api) `resvg_path_bbox`. Use `resvg_rect` instead.
 
 ## [0.33.0] - 2023-05-17
 ### Added

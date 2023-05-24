@@ -7,4 +7,3 @@ cargo build --manifest-path ../../Cargo.toml
 make
 LD_LIBRARY_PATH=../../../../target/debug ./example image.svg image.png
 ```
-

@@ -28,5 +28,4 @@ mod path;
 mod render;
 mod tree;
 
-pub use crate::geom::{IntRect, IntSize};
 pub use crate::tree::Tree;

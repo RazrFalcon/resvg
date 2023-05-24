@@ -4,10 +4,10 @@
 
 //! SVG filter types.
 
-use strict_num::PositiveF64;
+use strict_num::PositiveF32;
 use svgtypes::AspectRatio;
 
-use crate::{BlendMode, Color, ImageRendering, Node, NonZeroF64, Opacity, Point, Rect, Units};
+use crate::{BlendMode, Color, ImageRendering, Node, NonZeroF32, NonZeroRect, Opacity, Units};
 
 /// A filter element.
 ///
@@ -33,7 +33,7 @@ pub struct Filter {
     /// Filter region.
     ///
     /// `x`, `y`, `width` and `height` in the SVG.
-    pub rect: Rect,
+    pub rect: NonZeroRect,
 
     /// A list of filter primitives.
     pub primitives: Vec<Primitive>,
@@ -43,16 +43,16 @@ pub struct Filter {
 #[derive(Clone, Debug)]
 pub struct Primitive {
     /// `x` coordinate of the filter subregion.
-    pub x: Option<f64>,
+    pub x: Option<f32>,
 
     /// `y` coordinate of the filter subregion.
-    pub y: Option<f64>,
+    pub y: Option<f32>,
 
     /// The filter subregion width.
-    pub width: Option<f64>,
+    pub width: Option<f32>,
 
     /// The filter subregion height.
-    pub height: Option<f64>,
+    pub height: Option<f32>,
 
     /// Color interpolation mode.
     ///
@@ -184,9 +184,9 @@ pub struct ColorMatrix {
 #[derive(Clone, Debug)]
 #[allow(missing_docs)]
 pub enum ColorMatrixKind {
-    Matrix(Vec<f64>), // Guarantee to have 20 numbers.
-    Saturate(PositiveF64),
-    HueRotate(f64),
+    Matrix(Vec<f32>), // Guarantee to have 20 numbers.
+    Saturate(PositiveF32),
+    HueRotate(f32),
     LuminanceToAlpha,
 }
 
@@ -233,23 +233,23 @@ pub enum TransferFunction {
     /// Applies a linear interpolation to a component.
     ///
     /// The number list can be empty.
-    Table(Vec<f64>),
+    Table(Vec<f32>),
 
     /// Applies a step function to a component.
     ///
     /// The number list can be empty.
-    Discrete(Vec<f64>),
+    Discrete(Vec<f32>),
 
     /// Applies a linear shift to a component.
     #[allow(missing_docs)]
-    Linear { slope: f64, intercept: f64 },
+    Linear { slope: f32, intercept: f32 },
 
     /// Applies an exponential shift to a component.
     #[allow(missing_docs)]
     Gamma {
-        amplitude: f64,
-        exponent: f64,
-        offset: f64,
+        amplitude: f32,
+        exponent: f32,
+        offset: f32,
     },
 }
 
@@ -283,7 +283,7 @@ pub enum CompositeOperator {
     Out,
     Atop,
     Xor,
-    Arithmetic { k1: f64, k2: f64, k3: f64, k4: f64 },
+    Arithmetic { k1: f32, k2: f32, k3: f32, k4: f32 },
 }
 
 /// A matrix convolution filter primitive.
@@ -302,12 +302,12 @@ pub struct ConvolveMatrix {
     /// A matrix divisor.
     ///
     /// `divisor` in the SVG.
-    pub divisor: NonZeroF64,
+    pub divisor: NonZeroF32,
 
     /// A kernel matrix bias.
     ///
     /// `bias` in the SVG.
-    pub bias: f64,
+    pub bias: f32,
 
     /// An edges processing mode.
     ///
@@ -346,7 +346,7 @@ pub struct ConvolveMatrixData {
     pub rows: u32,
 
     /// The actual matrix.
-    pub data: Vec<f64>,
+    pub data: Vec<f32>,
 }
 
 impl ConvolveMatrixData {
@@ -362,7 +362,7 @@ impl ConvolveMatrixData {
         target_y: u32,
         columns: u32,
         rows: u32,
-        data: Vec<f64>,
+        data: Vec<f32>,
     ) -> Option<Self> {
         if (columns * rows) as usize != data.len() || target_x >= columns || target_y >= rows {
             return None;
@@ -405,7 +405,7 @@ pub struct DisplacementMap {
     /// Scale factor.
     ///
     /// `scale` in the SVG.
-    pub scale: f64,
+    pub scale: f32,
 
     /// Indicates a source color channel along the X-axis.
     ///
@@ -441,20 +441,20 @@ pub struct DropShadow {
     pub input: Input,
 
     /// The amount to offset the input graphic along the X-axis.
-    pub dx: f64,
+    pub dx: f32,
 
     /// The amount to offset the input graphic along the Y-axis.
-    pub dy: f64,
+    pub dy: f32,
 
     /// A standard deviation along the X-axis.
     ///
     /// `stdDeviation` in the SVG.
-    pub std_dev_x: PositiveF64,
+    pub std_dev_x: PositiveF32,
 
     /// A standard deviation along the Y-axis.
     ///
     /// `stdDeviation` in the SVG.
-    pub std_dev_y: PositiveF64,
+    pub std_dev_y: PositiveF32,
 
     /// A flood color.
     ///
@@ -496,12 +496,12 @@ pub struct GaussianBlur {
     /// A standard deviation along the X-axis.
     ///
     /// `stdDeviation` in the SVG.
-    pub std_dev_x: PositiveF64,
+    pub std_dev_x: PositiveF32,
 
     /// A standard deviation along the Y-axis.
     ///
     /// `stdDeviation` in the SVG.
-    pub std_dev_y: PositiveF64,
+    pub std_dev_y: PositiveF32,
 }
 
 /// An image filter primitive.
@@ -547,12 +547,12 @@ pub struct DiffuseLighting {
     /// A surface scale.
     ///
     /// `surfaceScale` in the SVG.
-    pub surface_scale: f64,
+    pub surface_scale: f32,
 
     /// A diffuse constant.
     ///
     /// `diffuseConstant` in the SVG.
-    pub diffuse_constant: f64,
+    pub diffuse_constant: f32,
 
     /// A lighting color.
     ///
@@ -576,19 +576,19 @@ pub struct SpecularLighting {
     /// A surface scale.
     ///
     /// `surfaceScale` in the SVG.
-    pub surface_scale: f64,
+    pub surface_scale: f32,
 
     /// A specular constant.
     ///
     /// `specularConstant` in the SVG.
-    pub specular_constant: f64,
+    pub specular_constant: f32,
 
     /// A specular exponent.
     ///
     /// Should be in 1..128 range.
     ///
     /// `specularExponent` in the SVG.
-    pub specular_exponent: f64,
+    pub specular_exponent: f32,
 
     /// A lighting color.
     ///
@@ -617,12 +617,12 @@ pub struct DistantLight {
     /// in degrees from the x axis.
     ///
     /// `azimuth` in the SVG.
-    pub azimuth: f64,
+    pub azimuth: f32,
 
     /// Direction angle for the light source from the XY plane towards the z axis, in degrees.
     ///
     /// `elevation` in the SVG.
-    pub elevation: f64,
+    pub elevation: f32,
 }
 
 /// A point light source.
@@ -633,17 +633,17 @@ pub struct PointLight {
     /// X location for the light source.
     ///
     /// `x` in the SVG.
-    pub x: f64,
+    pub x: f32,
 
     /// Y location for the light source.
     ///
     /// `y` in the SVG.
-    pub y: f64,
+    pub y: f32,
 
     /// Z location for the light source.
     ///
     /// `z` in the SVG.
-    pub z: f64,
+    pub z: f32,
 }
 
 /// A spot light source.
@@ -654,42 +654,42 @@ pub struct SpotLight {
     /// X location for the light source.
     ///
     /// `x` in the SVG.
-    pub x: f64,
+    pub x: f32,
 
     /// Y location for the light source.
     ///
     /// `y` in the SVG.
-    pub y: f64,
+    pub y: f32,
 
     /// Z location for the light source.
     ///
     /// `z` in the SVG.
-    pub z: f64,
+    pub z: f32,
 
     /// X point at which the light source is pointing.
     ///
     /// `pointsAtX` in the SVG.
-    pub points_at_x: f64,
+    pub points_at_x: f32,
 
     /// Y point at which the light source is pointing.
     ///
     /// `pointsAtY` in the SVG.
-    pub points_at_y: f64,
+    pub points_at_y: f32,
 
     /// Z point at which the light source is pointing.
     ///
     /// `pointsAtZ` in the SVG.
-    pub points_at_z: f64,
+    pub points_at_z: f32,
 
     /// Exponent value controlling the focus for the light source.
     ///
     /// `specularExponent` in the SVG.
-    pub specular_exponent: PositiveF64,
+    pub specular_exponent: PositiveF32,
 
     /// A limiting cone which restricts the region where the light is projected.
     ///
     /// `limitingConeAngle` in the SVG.
-    pub limiting_cone_angle: Option<f64>,
+    pub limiting_cone_angle: Option<f32>,
 }
 
 /// A merge filter primitive.
@@ -723,14 +723,14 @@ pub struct Morphology {
     /// A value of zero disables the effect of the given filter primitive.
     ///
     /// `radius` in the SVG.
-    pub radius_x: PositiveF64,
+    pub radius_x: PositiveF32,
 
     /// A filter radius along the Y-axis.
     ///
     /// A value of zero disables the effect of the given filter primitive.
     ///
     /// `radius` in the SVG.
-    pub radius_y: PositiveF64,
+    pub radius_y: PositiveF32,
 }
 
 /// A morphology operation.
@@ -752,10 +752,10 @@ pub struct Offset {
     pub input: Input,
 
     /// The amount to offset the input graphic along the X-axis.
-    pub dx: f64,
+    pub dx: f32,
 
     /// The amount to offset the input graphic along the Y-axis.
-    pub dy: f64,
+    pub dy: f32,
 }
 
 /// A tile filter primitive.
@@ -777,7 +777,12 @@ pub struct Turbulence {
     /// Identifies the base frequency for the noise function.
     ///
     /// `baseFrequency` in the SVG.
-    pub base_frequency: Point<PositiveF64>,
+    pub base_frequency_x: PositiveF32,
+
+    /// Identifies the base frequency for the noise function.
+    ///
+    /// `baseFrequency` in the SVG.
+    pub base_frequency_y: PositiveF32,
 
     /// Identifies the number of octaves for the noise function.
     ///

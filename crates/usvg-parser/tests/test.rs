@@ -1,5 +1,4 @@
 use usvg_parser::TreeParsing;
-use usvg_tree::FuzzyEq;
 
 #[test]
 fn clippath_with_invalid_child() {
@@ -29,8 +28,8 @@ fn simplify_paths() {
     let path = tree.root.first_child().unwrap();
     match *path.borrow() {
         usvg_tree::NodeKind::Path(ref path) => {
-            // Make use we have MLZ and not MLZZZ
-            assert_eq!(path.data.commands().len(), 3);
+            // Make sure we have MLZ and not MLZZZ
+            assert_eq!(path.data.verbs().len(), 3);
         }
         _ => unreachable!(),
     };
@@ -40,9 +39,7 @@ fn simplify_paths() {
 fn size_detection_1() {
     let svg = "<svg viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'/>";
     let tree = usvg_tree::Tree::from_str(&svg, &usvg_parser::Options::default()).unwrap();
-    assert!(tree
-        .size
-        .fuzzy_eq(&usvg_tree::Size::new(10.0, 20.0).unwrap()));
+    assert_eq!(tree.size, usvg_tree::Size::from_wh(10.0, 20.0).unwrap());
 }
 
 #[test]
@@ -50,9 +47,7 @@ fn size_detection_2() {
     let svg =
         "<svg width='30' height='40' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'/>";
     let tree = usvg_tree::Tree::from_str(&svg, &usvg_parser::Options::default()).unwrap();
-    assert!(tree
-        .size
-        .fuzzy_eq(&usvg_tree::Size::new(30.0, 40.0).unwrap()));
+    assert_eq!(tree.size, usvg_tree::Size::from_wh(30.0, 40.0).unwrap());
 }
 
 #[test]
@@ -60,9 +55,7 @@ fn size_detection_3() {
     let svg =
         "<svg width='50%' height='100%' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'/>";
     let tree = usvg_tree::Tree::from_str(&svg, &usvg_parser::Options::default()).unwrap();
-    assert!(tree
-        .size
-        .fuzzy_eq(&usvg_tree::Size::new(5.0, 20.0).unwrap()));
+    assert_eq!(tree.size, usvg_tree::Size::from_wh(5.0, 20.0).unwrap());
 }
 
 #[test]
@@ -73,22 +66,18 @@ fn size_detection_4() {
     </svg>
     ";
     let tree = usvg_tree::Tree::from_str(&svg, &usvg_parser::Options::default()).unwrap();
-    assert!(tree
-        .size
-        .fuzzy_eq(&usvg_tree::Size::new(36.0, 36.0).unwrap()));
-    assert!(tree
-        .view_box
-        .rect
-        .fuzzy_eq(&usvg_tree::Rect::new(0.0, 0.0, 36.0, 36.0).unwrap()));
+    assert_eq!(tree.size, usvg_tree::Size::from_wh(36.0, 36.0).unwrap());
+    assert_eq!(
+        tree.view_box.rect,
+        usvg_tree::NonZeroRect::from_xywh(0.0, 0.0, 36.0, 36.0).unwrap()
+    );
 }
 
 #[test]
 fn size_detection_5() {
     let svg = "<svg xmlns='http://www.w3.org/2000/svg'/>";
     let tree = usvg_tree::Tree::from_str(&svg, &usvg_parser::Options::default()).unwrap();
-    assert!(tree
-        .size
-        .fuzzy_eq(&usvg_tree::Size::new(100.0, 100.0).unwrap()));
+    assert_eq!(tree.size, usvg_tree::Size::from_wh(100.0, 100.0).unwrap());
 }
 
 #[test]

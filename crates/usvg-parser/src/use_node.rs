@@ -7,7 +7,8 @@ use std::rc::Rc;
 use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use svgtypes::{Length, LengthUnit};
 use usvg_tree::{
-    Group, IsValidLength, Node, NodeExt, NodeKind, Path, PathData, Rect, Size, Transform,
+    tiny_skia_path, Group, IsValidLength, Node, NodeExt, NodeKind, NonZeroRect, Path, Size,
+    Transform,
 };
 
 use crate::rosvgtree_ext::SvgNodeExt2;
@@ -35,14 +36,14 @@ pub(crate) fn convert(
     {
         let x = node.convert_user_length(AId::X, state, Length::zero());
         let y = node.convert_user_length(AId::Y, state, Length::zero());
-        new_ts.translate(x, y);
+        new_ts = new_ts.pre_translate(x, y);
     }
 
     let linked_to_symbol = child.tag_name() == Some(EId::Symbol);
 
     if linked_to_symbol {
         if let Some(ts) = viewbox_transform(node, child, state) {
-            new_ts.append(&ts);
+            new_ts = new_ts.pre_concat(ts);
         }
 
         if let Some(clip_rect) = get_clip_rect(node, child, state) {
@@ -69,7 +70,7 @@ pub(crate) fn convert(
         }
     }
 
-    orig_ts.append(&new_ts);
+    orig_ts = orig_ts.pre_concat(new_ts);
 
     if linked_to_symbol {
         // Make group for `use`.
@@ -139,11 +140,11 @@ pub(crate) fn convert_svg(
     {
         let x = node.convert_user_length(AId::X, state, Length::zero());
         let y = node.convert_user_length(AId::Y, state, Length::zero());
-        new_ts.translate(x, y);
+        new_ts = new_ts.pre_translate(x, y);
     }
 
     if let Some(ts) = viewbox_transform(node, node, state) {
-        new_ts.append(&ts);
+        new_ts = new_ts.pre_concat(ts);
     }
 
     // We have to create a new state which would have its viewBox set to the current SVG element.
@@ -164,22 +165,22 @@ pub(crate) fn convert_svg(
             w = new_state.use_size.0.unwrap_or(w);
             h = new_state.use_size.1.unwrap_or(h);
 
-            Rect::new(x, y, w, h).unwrap_or(new_state.view_box)
+            NonZeroRect::from_xywh(x, y, w, h).unwrap_or(new_state.view_box)
         }
     };
 
-    if let Some(clip_rect) = get_clip_rect(node, node, &state) {
+    if let Some(clip_rect) = get_clip_rect(node, node, state) {
         let mut g = clip_element(node, clip_rect, orig_ts, cache, parent);
         convert_children(node, new_ts, &new_state, cache, &mut g);
     } else {
-        orig_ts.append(&new_ts);
+        orig_ts = orig_ts.pre_concat(new_ts);
         convert_children(node, orig_ts, &new_state, cache, parent);
     }
 }
 
 fn clip_element(
     node: rosvgtree::Node,
-    clip_rect: Rect,
+    clip_rect: NonZeroRect,
     transform: Transform,
     cache: &mut converter::Cache,
     parent: &mut Node,
@@ -207,11 +208,11 @@ fn clip_element(
     let mut clip_path = usvg_tree::ClipPath::default();
     clip_path.id = cache.gen_clip_path_id();
 
-    clip_path.root.append_kind(NodeKind::Path(Path {
-        fill: Some(usvg_tree::Fill::default()),
-        data: Rc::new(PathData::from_rect(clip_rect)),
-        ..Path::default()
-    }));
+    let mut path = Path::new(Rc::new(tiny_skia_path::PathBuilder::from_rect(
+        clip_rect.to_rect(),
+    )));
+    path.fill = Some(usvg_tree::Fill::default());
+    clip_path.root.append_kind(NodeKind::Path(path));
 
     parent.append_kind(NodeKind::Group(Group {
         id: node.element_id().to_string(),
@@ -228,7 +229,7 @@ fn convert_children(
     cache: &mut converter::Cache,
     parent: &mut Node,
 ) {
-    let required = !transform.is_default();
+    let required = !transform.is_identity();
     let mut parent = match converter::convert_group(node, state, required, cache, parent) {
         converter::GroupKind::Create(g) => {
             if let NodeKind::Group(ref mut g) = *g.borrow_mut() {
@@ -252,7 +253,7 @@ fn get_clip_rect(
     use_node: rosvgtree::Node,
     symbol_node: rosvgtree::Node,
     state: &converter::State,
-) -> Option<Rect> {
+) -> Option<NonZeroRect> {
     // No need to clip elements with overflow:visible.
     if matches!(
         symbol_node.attribute(AId::Overflow),
@@ -291,10 +292,10 @@ fn get_clip_rect(
         return None;
     }
 
-    Rect::new(x, y, w, h)
+    NonZeroRect::from_xywh(x, y, w, h)
 }
 
-fn use_node_size(node: rosvgtree::Node, state: &converter::State) -> (f64, f64) {
+fn use_node_size(node: rosvgtree::Node, state: &converter::State) -> (f32, f32) {
     let def = Length::new(100.0, LengthUnit::Percent);
     let w = node.convert_user_length(AId::Width, state, def);
     let h = node.convert_user_length(AId::Height, state, def);
@@ -316,7 +317,7 @@ fn viewbox_transform(
         h = state.use_size.1.unwrap_or(h);
     }
 
-    let size = Size::new(w, h)?;
+    let size = Size::from_wh(w, h)?;
     let vb = linked.parse_viewbox()?;
     let aspect = linked
         .parse_attribute(AId::PreserveAspectRatio)

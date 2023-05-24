@@ -22,7 +22,7 @@ pub struct Options {
     /// Impacts units conversion.
     ///
     /// Default: 96.0
-    pub dpi: f64,
+    pub dpi: f32,
 
     /// A default font family.
     ///
@@ -36,7 +36,7 @@ pub struct Options {
     /// Will be used when no `font-size` attribute is set in the SVG.
     ///
     /// Default: 12
-    pub font_size: f64,
+    pub font_size: f32,
 
     /// A list of languages.
     ///
@@ -92,7 +92,7 @@ impl Default for Options {
             shape_rendering: ShapeRendering::default(),
             text_rendering: TextRendering::default(),
             image_rendering: ImageRendering::default(),
-            default_size: Size::new(100.0, 100.0).unwrap(),
+            default_size: Size::from_wh(100.0, 100.0).unwrap(),
             image_href_resolver: ImageHrefResolver::default(),
         }
     }

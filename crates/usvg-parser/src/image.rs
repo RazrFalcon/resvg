@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use rosvgtree::{self, AttributeId as AId};
 use svgtypes::Length;
-use usvg_tree::{Image, ImageKind, Node, NodeExt, NodeKind, Rect, Size, Tree, ViewBox};
+use usvg_tree::{Image, ImageKind, Node, NodeExt, NodeKind, NonZeroRect, Size, Tree, ViewBox};
 
 use crate::rosvgtree_ext::SvgNodeExt2;
 use crate::{converter, OptionLog, Options, SvgNodeExt, TreeParsing};
@@ -144,17 +144,25 @@ pub(crate) fn convert(
         ImageKind::JPEG(ref data) | ImageKind::PNG(ref data) | ImageKind::GIF(ref data) => {
             imagesize::blob_size(data)
                 .ok()
-                .and_then(|size| Size::new(size.width as f64, size.height as f64))
+                .and_then(|size| Size::from_wh(size.width as f32, size.height as f32))
                 .log_none(|| log::warn!("Image has an invalid size. Skipped."))?
         }
         ImageKind::SVG(ref svg) => svg.size,
     };
 
-    let rect = Rect::new(
+    let rect = NonZeroRect::from_xywh(
         node.convert_user_length(AId::X, state, Length::zero()),
         node.convert_user_length(AId::Y, state, Length::zero()),
-        node.convert_user_length(AId::Width, state, Length::new_number(actual_size.width())),
-        node.convert_user_length(AId::Height, state, Length::new_number(actual_size.height())),
+        node.convert_user_length(
+            AId::Width,
+            state,
+            Length::new_number(actual_size.width() as f64),
+        ),
+        node.convert_user_length(
+            AId::Height,
+            state,
+            Length::new_number(actual_size.height() as f64),
+        ),
     );
     let rect = rect.log_none(|| log::warn!("Image has an invalid size. Skipped."))?;
 

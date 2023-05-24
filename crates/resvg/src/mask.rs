@@ -4,9 +4,8 @@
 
 use std::rc::Rc;
 
-use crate::geom::UsvgRectExt;
 use crate::render::Context;
-use crate::tree::{ConvTransform, Node, OptionLog};
+use crate::tree::{Node, OptionLog};
 
 pub struct Mask {
     pub mask_all: bool,
@@ -17,32 +16,32 @@ pub struct Mask {
     pub children: Vec<Node>,
 }
 
-pub fn convert(umask: Option<Rc<usvg::Mask>>, object_bbox: usvg::PathBbox) -> Option<Mask> {
+pub fn convert(umask: Option<Rc<usvg::Mask>>, object_bbox: tiny_skia::Rect) -> Option<Mask> {
     let umask = umask?;
 
     let mut content_transform = tiny_skia::Transform::default();
     if umask.content_units == usvg::Units::ObjectBoundingBox {
         let object_bbox = object_bbox
-            .to_rect()
+            .to_non_zero_rect()
             .log_none(|| log::warn!("Masking of zero-sized shapes is not allowed."))?;
 
         let ts = usvg::Transform::from_bbox(object_bbox);
-        content_transform = ts.to_native();
+        content_transform = ts;
     }
 
     let mut mask_all = false;
-    if umask.units == usvg::Units::ObjectBoundingBox && object_bbox.to_rect().is_none() {
+    if umask.units == usvg::Units::ObjectBoundingBox && object_bbox.to_non_zero_rect().is_none() {
         // `objectBoundingBox` units and zero-sized bbox? Clear the canvas and return.
         // Technically a UB, but this is what Chrome and Firefox do.
         mask_all = true;
     }
 
     let region = if umask.units == usvg::Units::ObjectBoundingBox {
-        if let Some(bbox) = object_bbox.to_rect() {
+        if let Some(bbox) = object_bbox.to_non_zero_rect() {
             umask.rect.bbox_transform(bbox)
         } else {
             // The actual values does not matter. Will not be used anyway.
-            usvg::Rect::new(0.0, 0.0, 1.0, 1.0).unwrap()
+            tiny_skia::NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()
         }
     } else {
         umask.rect
@@ -51,7 +50,7 @@ pub fn convert(umask: Option<Rc<usvg::Mask>>, object_bbox: usvg::PathBbox) -> Op
     let (children, _) = crate::tree::convert_node(umask.root.clone());
     Some(Mask {
         mask_all,
-        region: region.to_skia_rect()?,
+        region: region.to_rect(),
         content_transform,
         kind: umask.kind,
         mask: convert(umask.mask.clone(), object_bbox).map(Box::new),

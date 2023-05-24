@@ -5,8 +5,7 @@
 use std::rc::Rc;
 
 use crate::render::Context;
-use crate::tree::{ConvTransform, Node, OptionLog};
-use crate::IntRect;
+use crate::tree::{Node, OptionLog};
 
 pub struct ClipPath {
     pub transform: tiny_skia::Transform,
@@ -14,18 +13,21 @@ pub struct ClipPath {
     pub children: Vec<Node>,
 }
 
-pub fn convert(upath: Option<Rc<usvg::ClipPath>>, object_bbox: usvg::PathBbox) -> Option<ClipPath> {
+pub fn convert(
+    upath: Option<Rc<usvg::ClipPath>>,
+    object_bbox: tiny_skia::Rect,
+) -> Option<ClipPath> {
     let upath = upath?;
 
-    let mut transform = upath.transform.to_native();
+    let mut transform = upath.transform;
 
     if upath.units == usvg::Units::ObjectBoundingBox {
         let object_bbox = object_bbox
-            .to_rect()
+            .to_non_zero_rect()
             .log_none(|| log::warn!("Clipping of zero-sized shapes is not allowed."))?;
 
         let ts = usvg::Transform::from_bbox(object_bbox);
-        transform = transform.pre_concat(ts.to_native());
+        transform = transform.pre_concat(ts);
     }
 
     let (children, _) = crate::tree::convert_node(upath.root.clone());
@@ -67,7 +69,7 @@ fn draw_children(
             Node::FillPath(ref path) => {
                 // We could use any values here. They will not be used anyway.
                 let ctx = Context {
-                    max_bbox: IntRect::new(0, 0, 1, 1).unwrap(),
+                    max_bbox: tiny_skia::IntRect::from_xywh(0, 0, 1, 1).unwrap(),
                 };
 
                 crate::path::render_fill_path(path, mode, &ctx, transform, pixmap);

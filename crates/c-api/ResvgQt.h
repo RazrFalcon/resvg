@@ -136,7 +136,7 @@ public:
      *
      * Default: 96
      */
-    void setDpi(const double dpi)
+    void setDpi(const float dpi)
     {
         resvg_options_set_dpi(d, dpi);
     }
@@ -166,7 +166,7 @@ public:
      *
      * Default: 12
      */
-    void setFontSize(const double size)
+    void setFontSize(const float size)
     {
         resvg_options_set_font_size(d, size);
     }
@@ -458,7 +458,7 @@ public:
 
         const auto utf8Str = id.toUtf8();
         const auto rawId = utf8Str.constData();
-        resvg_path_bbox bbox;
+        resvg_rect bbox;
         if (resvg_get_node_bbox(d->tree, rawId, &bbox))
             return QRectF(bbox.x, bbox.y, bbox.width, bbox.height);
 

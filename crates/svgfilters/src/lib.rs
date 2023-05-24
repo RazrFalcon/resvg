@@ -257,6 +257,22 @@ pub fn from_linear_rgb(data: &mut [RGBA8]) {
 
 // TODO: https://github.com/rust-lang/rust/issues/44095
 #[inline]
+fn f32_bound(min: f32, val: f32, max: f32) -> f32 {
+    debug_assert!(min.is_finite());
+    debug_assert!(val.is_finite());
+    debug_assert!(max.is_finite());
+
+    if val > max {
+        max
+    } else if val < min {
+        min
+    } else {
+        val
+    }
+}
+
+// TODO: https://github.com/rust-lang/rust/issues/44095
+#[inline]
 fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
     debug_assert!(min.is_finite());
     debug_assert!(val.is_finite());
@@ -271,6 +287,7 @@ fn f64_bound(min: f64, val: f64, max: f64) -> f64 {
     }
 }
 
+// TODO: remove
 trait FuzzyEq<Rhs: ?Sized = Self> {
     fn fuzzy_eq(&self, other: &Rhs) -> bool;
 
