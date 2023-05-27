@@ -55,7 +55,7 @@ impl NonZeroF32 {
 
     /// Returns an underlying value.
     #[inline]
-    pub fn value(&self) -> f32 {
+    pub fn get(&self) -> f32 {
         self.0
     }
 }

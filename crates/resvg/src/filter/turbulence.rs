@@ -2,10 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use alloc::vec;
-use alloc::vec::Vec;
-
-use crate::{f64_bound, FuzzyZero, ImageRefMut};
+use super::{f32_bound, ImageRefMut};
+use usvg::ApproxZeroUlps;
 
 const RAND_M: i32 = 2147483647; // 2**31 - 1
 const RAND_A: i32 = 16807; // 7**5; primitive root of m
@@ -31,12 +29,7 @@ struct StitchInfo {
 ///
 /// - `offset_x` and `offset_y` indicate filter region offset.
 /// - `sx` and `sy` indicate canvas scale.
-///
-/// # Panics
-///
-/// - When `sx` or `sy` is negative.
-/// - When `base_frequency_x` or `base_frequency_y` is negative.
-pub fn turbulence(
+pub fn apply(
     offset_x: f64,
     offset_y: f64,
     sx: f64,
@@ -49,11 +42,6 @@ pub fn turbulence(
     fractal_noise: bool,
     dest: ImageRefMut,
 ) {
-    assert!(!sx.is_fuzzy_zero());
-    assert!(!sy.is_fuzzy_zero());
-    assert!(!base_frequency_x.is_sign_negative());
-    assert!(!base_frequency_y.is_sign_negative());
-
     let (lattice_selector, gradient) = init(seed);
     let width = dest.width;
     let height = dest.height;
@@ -62,7 +50,7 @@ pub fn turbulence(
     for pixel in dest.data.iter_mut() {
         let turb = |channel| {
             let (tx, ty) = ((x as f64 + offset_x) / sx, (y as f64 + offset_y) / sy);
-            let n = turbulence_impl(
+            let n = turbulence(
                 channel,
                 tx,
                 ty,
@@ -85,7 +73,7 @@ pub fn turbulence(
                 n * 255.0
             };
 
-            (f64_bound(0.0, n, 255.0) + 0.5) as u8
+            (f32_bound(0.0, n as f32, 255.0) + 0.5) as u8
         };
 
         pixel.r = turb(0);
@@ -150,7 +138,7 @@ fn init(mut seed: i32) -> (Vec<usize>, Vec<Vec<Vec<f64>>>) {
     (lattice_selector, gradient)
 }
 
-fn turbulence_impl(
+fn turbulence(
     color_channel: usize,
     mut x: f64,
     mut y: f64,
@@ -170,7 +158,7 @@ fn turbulence_impl(
     let mut stitch = if do_stitching {
         // When stitching tiled turbulence, the frequencies must be adjusted
         // so that the tile borders will be continuous.
-        if !base_freq_x.is_fuzzy_zero() {
+        if !base_freq_x.approx_zero_ulps(4) {
             let lo_freq = (tile_width * base_freq_x).floor() / tile_width;
             let hi_freq = (tile_width * base_freq_x).ceil() / tile_width;
             if base_freq_x / lo_freq < hi_freq / base_freq_x {
@@ -180,7 +168,7 @@ fn turbulence_impl(
             }
         }
 
-        if !base_freq_y.is_fuzzy_zero() {
+        if !base_freq_y.approx_zero_ulps(4) {
             let lo_freq = (tile_height * base_freq_y).floor() / tile_height;
             let hi_freq = (tile_height * base_freq_y).ceil() / tile_height;
             if base_freq_y / lo_freq < hi_freq / base_freq_y {

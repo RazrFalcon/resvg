@@ -2,37 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{f32_bound, ImageRefMut, RGBA8};
-
-#[inline]
-fn to_normalized_components(pixel: RGBA8) -> (f32, f32, f32, f32) {
-    (
-        pixel.r as f32 / 255.0,
-        pixel.g as f32 / 255.0,
-        pixel.b as f32 / 255.0,
-        pixel.a as f32 / 255.0,
-    )
-}
-
-#[inline]
-fn from_normalized(c: f32) -> u8 {
-    (f32_bound(0.0, c, 1.0) * 255.0) as u8
-}
-
-/// A color matrix used by `color_matrix`.
-#[derive(Clone, Copy, Debug)]
-#[allow(missing_docs)]
-pub enum ColorMatrix<'a> {
-    Matrix(&'a [f32; 20]),
-    Saturate(f64),
-    HueRotate(f64),
-    LuminanceToAlpha,
-}
+use super::{f32_bound, ImageRefMut};
+use rgb::RGBA8;
+use usvg::filter::ColorMatrixKind as ColorMatrix;
 
 /// Applies a color matrix filter.
 ///
 /// Input image pixels should have an **unpremultiplied alpha**.
-pub fn color_matrix(matrix: ColorMatrix, src: ImageRefMut) {
+pub fn apply(matrix: &ColorMatrix, src: ImageRefMut) {
     match matrix {
         ColorMatrix::Matrix(m) => {
             for pixel in src.data {
@@ -50,7 +27,7 @@ pub fn color_matrix(matrix: ColorMatrix, src: ImageRefMut) {
             }
         }
         ColorMatrix::Saturate(v) => {
-            let v = v.max(0.0) as f32;
+            let v = v.get().max(0.0);
             let m = [
                 0.213 + 0.787 * v,
                 0.715 - 0.715 * v,
@@ -116,4 +93,19 @@ pub fn color_matrix(matrix: ColorMatrix, src: ImageRefMut) {
             }
         }
     }
+}
+
+#[inline]
+fn to_normalized_components(pixel: RGBA8) -> (f32, f32, f32, f32) {
+    (
+        pixel.r as f32 / 255.0,
+        pixel.g as f32 / 255.0,
+        pixel.b as f32 / 255.0,
+        pixel.a as f32 / 255.0,
+    )
+}
+
+#[inline]
+fn from_normalized(c: f32) -> u8 {
+    (f32_bound(0.0, c, 1.0) * 255.0) as u8
 }

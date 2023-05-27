@@ -4,114 +4,85 @@
 
 use std::rc::Rc;
 
-use rgb::FromSlice;
+use rgb::{FromSlice, RGBA8};
 use tiny_skia::IntRect;
 use usvg::{ApproxEqUlps, ApproxZeroUlps};
 
 use crate::tree::Node;
 
+mod box_blur;
+mod color_matrix;
+mod component_transfer;
+mod composite;
+mod convolve_matrix;
+mod displacement_map;
+mod iir_blur;
+mod lighting;
+mod morphology;
+mod turbulence;
+
 // TODO: apply single primitive filters in-place
 
-macro_rules! into_svgfilters_image {
-    ($img:expr) => {
-        svgfilters::ImageRef::new($img.data().as_rgba(), $img.width(), $img.height())
-    };
+/// An image reference.
+///
+/// Image pixels should be stored in RGBA order.
+///
+/// Some filters will require premultipled channels, some not.
+/// See specific filter documentation for details.
+#[derive(Clone, Copy)]
+pub struct ImageRef<'a> {
+    data: &'a [RGBA8],
+    width: u32,
+    height: u32,
 }
 
-macro_rules! into_svgfilters_image_mut {
-    ($img:expr) => {
-        into_svgfilters_image_mut($img.width(), $img.height(), &mut $img.data_mut())
-    };
-}
-
-// We need a macro and a function to resolve lifetimes.
-fn into_svgfilters_image_mut(width: u32, height: u32, data: &mut [u8]) -> svgfilters::ImageRefMut {
-    svgfilters::ImageRefMut::new(data.as_rgba_mut(), width, height)
-}
-
-/// A helper trait to convert `usvg` types into `svgfilters` one.
-trait IntoSvgFilters<T>: Sized {
-    /// Converts an `usvg` type into `svgfilters` one.
-    fn into_svgf(self) -> T;
-}
-
-impl IntoSvgFilters<svgfilters::RGB8> for usvg::Color {
-    fn into_svgf(self) -> svgfilters::RGB8 {
-        svgfilters::RGB8 {
-            r: self.red,
-            g: self.green,
-            b: self.blue,
+impl<'a> ImageRef<'a> {
+    /// Creates a new image reference.
+    ///
+    /// Doesn't clone the provided data.
+    #[inline]
+    pub fn new(width: u32, height: u32, data: &'a [RGBA8]) -> Self {
+        ImageRef {
+            data,
+            width,
+            height,
         }
+    }
+
+    #[inline]
+    fn alpha_at(&self, x: u32, y: u32) -> i16 {
+        self.data[(self.width * y + x) as usize].a as i16
     }
 }
 
-impl IntoSvgFilters<svgfilters::LightSource> for usvg::filter::LightSource {
-    fn into_svgf(self) -> svgfilters::LightSource {
-        match self {
-            usvg::filter::LightSource::DistantLight(ref light) => {
-                svgfilters::LightSource::DistantLight {
-                    azimuth: light.azimuth as f64,
-                    elevation: light.elevation as f64,
-                }
-            }
-            usvg::filter::LightSource::PointLight(ref light) => {
-                svgfilters::LightSource::PointLight {
-                    x: light.x as f64,
-                    y: light.y as f64,
-                    z: light.z as f64,
-                }
-            }
-            usvg::filter::LightSource::SpotLight(ref light) => svgfilters::LightSource::SpotLight {
-                x: light.x as f64,
-                y: light.y as f64,
-                z: light.z as f64,
-                points_at_x: light.points_at_x as f64,
-                points_at_y: light.points_at_y as f64,
-                points_at_z: light.points_at_z as f64,
-                specular_exponent: light.specular_exponent.get() as f64,
-                limiting_cone_angle: light.limiting_cone_angle.map(|a| a as f64),
-            },
-        }
-    }
+/// A mutable `ImageRef` variant.
+pub struct ImageRefMut<'a> {
+    data: &'a mut [RGBA8],
+    width: u32,
+    height: u32,
 }
 
-impl<'a> IntoSvgFilters<svgfilters::TransferFunction<'a>> for &'a usvg::filter::TransferFunction {
-    fn into_svgf(self) -> svgfilters::TransferFunction<'a> {
-        match *self {
-            usvg::filter::TransferFunction::Identity => svgfilters::TransferFunction::Identity,
-            usvg::filter::TransferFunction::Table(ref data) => {
-                svgfilters::TransferFunction::Table(data)
-            }
-            usvg::filter::TransferFunction::Discrete(ref data) => {
-                svgfilters::TransferFunction::Discrete(data)
-            }
-            usvg::filter::TransferFunction::Linear { slope, intercept } => {
-                svgfilters::TransferFunction::Linear {
-                    slope: slope as f64,
-                    intercept: intercept as f64,
-                }
-            }
-            usvg::filter::TransferFunction::Gamma {
-                amplitude,
-                exponent,
-                offset,
-            } => svgfilters::TransferFunction::Gamma {
-                amplitude: amplitude as f64,
-                exponent: exponent as f64,
-                offset: offset as f64,
-            },
+impl<'a> ImageRefMut<'a> {
+    /// Creates a new mutable image reference.
+    ///
+    /// Doesn't clone the provided data.
+    #[inline]
+    pub fn new(width: u32, height: u32, data: &'a mut [RGBA8]) -> Self {
+        ImageRefMut {
+            data,
+            width,
+            height,
         }
     }
-}
 
-impl IntoSvgFilters<svgfilters::ColorChannel> for usvg::filter::ColorChannel {
-    fn into_svgf(self) -> svgfilters::ColorChannel {
-        match self {
-            usvg::filter::ColorChannel::R => svgfilters::ColorChannel::R,
-            usvg::filter::ColorChannel::G => svgfilters::ColorChannel::G,
-            usvg::filter::ColorChannel::B => svgfilters::ColorChannel::B,
-            usvg::filter::ColorChannel::A => svgfilters::ColorChannel::A,
-        }
+    #[inline]
+    fn pixel_at(&self, x: u32, y: u32) -> RGBA8 {
+        self.data[(self.width * y + x) as usize]
+    }
+
+    #[inline]
+    fn pixel_at_mut(&mut self, x: u32, y: u32) -> &mut RGBA8 {
+        &mut self.data[(self.width * y + x) as usize]
     }
 }
 
@@ -273,15 +244,143 @@ impl PixmapExt for tiny_skia::Pixmap {
     }
 
     fn into_srgb(&mut self) {
-        svgfilters::demultiply_alpha(self.data_mut().as_rgba_mut());
-        svgfilters::from_linear_rgb(self.data_mut().as_rgba_mut());
-        svgfilters::multiply_alpha(self.data_mut().as_rgba_mut());
+        demultiply_alpha(self.data_mut().as_rgba_mut());
+        from_linear_rgb(self.data_mut().as_rgba_mut());
+        multiply_alpha(self.data_mut().as_rgba_mut());
     }
 
     fn into_linear_rgb(&mut self) {
-        svgfilters::demultiply_alpha(self.data_mut().as_rgba_mut());
-        svgfilters::into_linear_rgb(self.data_mut().as_rgba_mut());
-        svgfilters::multiply_alpha(self.data_mut().as_rgba_mut());
+        demultiply_alpha(self.data_mut().as_rgba_mut());
+        into_linear_rgb(self.data_mut().as_rgba_mut());
+        multiply_alpha(self.data_mut().as_rgba_mut());
+    }
+}
+
+/// Multiplies provided pixels alpha.
+fn multiply_alpha(data: &mut [RGBA8]) {
+    for p in data {
+        let a = p.a as f32 / 255.0;
+        p.b = (p.b as f32 * a + 0.5) as u8;
+        p.g = (p.g as f32 * a + 0.5) as u8;
+        p.r = (p.r as f32 * a + 0.5) as u8;
+    }
+}
+
+/// Demultiplies provided pixels alpha.
+fn demultiply_alpha(data: &mut [RGBA8]) {
+    for p in data {
+        let a = p.a as f32 / 255.0;
+        p.b = (p.b as f32 / a + 0.5) as u8;
+        p.g = (p.g as f32 / a + 0.5) as u8;
+        p.r = (p.r as f32 / a + 0.5) as u8;
+    }
+}
+
+/// Precomputed sRGB to LinearRGB table.
+///
+/// Since we are storing the result in `u8`, there is no need to compute those
+/// values each time. Mainly because it's very expensive.
+///
+/// ```text
+/// if (C_srgb <= 0.04045)
+///     C_lin = C_srgb / 12.92;
+///  else
+///     C_lin = pow((C_srgb + 0.055) / 1.055, 2.4);
+/// ```
+///
+/// Thanks to librsvg for the idea.
+#[rustfmt::skip]
+const SRGB_TO_LINEAR_RGB_TABLE: &[u8; 256] = &[
+    0,   0,   0,   0,   0,   0,  0,    1,   1,   1,   1,   1,   1,   1,   1,   1,
+    1,   1,   2,   2,   2,   2,  2,    2,   2,   2,   3,   3,   3,   3,   3,   3,
+    4,   4,   4,   4,   4,   5,  5,    5,   5,   6,   6,   6,   6,   7,   7,   7,
+    8,   8,   8,   8,   9,   9,  9,   10,  10,  10,  11,  11,  12,  12,  12,  13,
+    13,  13,  14,  14,  15,  15,  16,  16,  17,  17,  17,  18,  18,  19,  19,  20,
+    20,  21,  22,  22,  23,  23,  24,  24,  25,  25,  26,  27,  27,  28,  29,  29,
+    30,  30,  31,  32,  32,  33,  34,  35,  35,  36,  37,  37,  38,  39,  40,  41,
+    41,  42,  43,  44,  45,  45,  46,  47,  48,  49,  50,  51,  51,  52,  53,  54,
+    55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,
+    71,  72,  73,  74,  76,  77,  78,  79,  80,  81,  82,  84,  85,  86,  87,  88,
+    90,  91,  92,  93,  95,  96,  97,  99, 100, 101, 103, 104, 105, 107, 108, 109,
+    111, 112, 114, 115, 116, 118, 119, 121, 122, 124, 125, 127, 128, 130, 131, 133,
+    134, 136, 138, 139, 141, 142, 144, 146, 147, 149, 151, 152, 154, 156, 157, 159,
+    161, 163, 164, 166, 168, 170, 171, 173, 175, 177, 179, 181, 183, 184, 186, 188,
+    190, 192, 194, 196, 198, 200, 202, 204, 206, 208, 210, 212, 214, 216, 218, 220,
+    222, 224, 226, 229, 231, 233, 235, 237, 239, 242, 244, 246, 248, 250, 253, 255,
+];
+
+/// Precomputed LinearRGB to sRGB table.
+///
+/// Since we are storing the result in `u8`, there is no need to compute those
+/// values each time. Mainly because it's very expensive.
+///
+/// ```text
+/// if (C_lin <= 0.0031308)
+///     C_srgb = C_lin * 12.92;
+/// else
+///     C_srgb = 1.055 * pow(C_lin, 1.0 / 2.4) - 0.055;
+/// ```
+///
+/// Thanks to librsvg for the idea.
+#[rustfmt::skip]
+const LINEAR_RGB_TO_SRGB_TABLE: &[u8; 256] = &[
+    0,  13,  22,  28,  34,  38,  42,  46,  50,  53,  56,  59,  61,  64,  66,  69,
+    71,  73,  75,  77,  79,  81,  83,  85,  86,  88,  90,  92,  93,  95,  96,  98,
+    99, 101, 102, 104, 105, 106, 108, 109, 110, 112, 113, 114, 115, 117, 118, 119,
+    120, 121, 122, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136,
+    137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 148, 149, 150, 151,
+    152, 153, 154, 155, 155, 156, 157, 158, 159, 159, 160, 161, 162, 163, 163, 164,
+    165, 166, 167, 167, 168, 169, 170, 170, 171, 172, 173, 173, 174, 175, 175, 176,
+    177, 178, 178, 179, 180, 180, 181, 182, 182, 183, 184, 185, 185, 186, 187, 187,
+    188, 189, 189, 190, 190, 191, 192, 192, 193, 194, 194, 195, 196, 196, 197, 197,
+    198, 199, 199, 200, 200, 201, 202, 202, 203, 203, 204, 205, 205, 206, 206, 207,
+    208, 208, 209, 209, 210, 210, 211, 212, 212, 213, 213, 214, 214, 215, 215, 216,
+    216, 217, 218, 218, 219, 219, 220, 220, 221, 221, 222, 222, 223, 223, 224, 224,
+    225, 226, 226, 227, 227, 228, 228, 229, 229, 230, 230, 231, 231, 232, 232, 233,
+    233, 234, 234, 235, 235, 236, 236, 237, 237, 238, 238, 238, 239, 239, 240, 240,
+    241, 241, 242, 242, 243, 243, 244, 244, 245, 245, 246, 246, 246, 247, 247, 248,
+    248, 249, 249, 250, 250, 251, 251, 251, 252, 252, 253, 253, 254, 254, 255, 255,
+];
+
+/// Converts input pixel from sRGB into LinearRGB.
+///
+/// Provided pixels should have an **unpremultiplied alpha**.
+///
+/// RGB channels order of the input image doesn't matter, but alpha channel must be the last one.
+fn into_linear_rgb(data: &mut [RGBA8]) {
+    for p in data {
+        p.r = SRGB_TO_LINEAR_RGB_TABLE[p.r as usize];
+        p.g = SRGB_TO_LINEAR_RGB_TABLE[p.g as usize];
+        p.b = SRGB_TO_LINEAR_RGB_TABLE[p.b as usize];
+    }
+}
+
+/// Converts input pixel from LinearRGB into sRGB.
+///
+/// Provided pixels should have an **unpremultiplied alpha**.
+///
+/// RGB channels order of the input image doesn't matter, but alpha channel must be the last one.
+fn from_linear_rgb(data: &mut [RGBA8]) {
+    for p in data {
+        p.r = LINEAR_RGB_TO_SRGB_TABLE[p.r as usize];
+        p.g = LINEAR_RGB_TO_SRGB_TABLE[p.g as usize];
+        p.b = LINEAR_RGB_TO_SRGB_TABLE[p.b as usize];
+    }
+}
+
+// TODO: https://github.com/rust-lang/rust/issues/44095
+#[inline]
+fn f32_bound(min: f32, val: f32, max: f32) -> f32 {
+    debug_assert!(min.is_finite());
+    debug_assert!(val.is_finite());
+    debug_assert!(max.is_finite());
+
+    if val > max {
+        max
+    } else if val < min {
+        min
+    } else {
+        val
     }
 }
 
@@ -715,6 +814,21 @@ fn get_input(
     }
 }
 
+trait PixmapToImageRef<'a> {
+    fn as_image_ref(&'a self) -> ImageRef<'a>;
+    fn as_image_ref_mut(&'a mut self) -> ImageRefMut<'a>;
+}
+
+impl<'a> PixmapToImageRef<'a> for tiny_skia::Pixmap {
+    fn as_image_ref(&'a self) -> ImageRef<'a> {
+        ImageRef::new(self.width(), self.height(), self.data().as_rgba())
+    }
+
+    fn as_image_ref_mut(&'a mut self) -> ImageRefMut<'a> {
+        ImageRefMut::new(self.width(), self.height(), self.data_mut().as_rgba_mut())
+    }
+}
+
 fn apply_drop_shadow(
     fe: &usvg::filter::DropShadow,
     cs: usvg::filter::ColorInterpolation,
@@ -726,13 +840,13 @@ fn apply_drop_shadow(
     let mut shadow_pixmap = input_pixmap.clone();
 
     let (sx, sy) = ts.get_scale();
-    if let Some((std_dx, std_dy, box_blur)) =
+    if let Some((std_dx, std_dy, use_box_blur)) =
         resolve_std_dev(fe.std_dev_x.get() * sx, fe.std_dev_y.get() * sy)
     {
-        if box_blur {
-            svgfilters::box_blur(std_dx, std_dy, into_svgfilters_image_mut!(shadow_pixmap));
+        if use_box_blur {
+            box_blur::apply(std_dx, std_dy, shadow_pixmap.as_image_ref_mut());
         } else {
-            svgfilters::iir_blur(std_dx, std_dy, into_svgfilters_image_mut!(shadow_pixmap));
+            iir_blur::apply(std_dx, std_dy, shadow_pixmap.as_image_ref_mut());
         }
     }
 
@@ -782,7 +896,7 @@ fn apply_blur(
     input: Image,
 ) -> Result<Image, Error> {
     let (sx, sy) = ts.get_scale();
-    let (std_dx, std_dy, box_blur) =
+    let (std_dx, std_dy, use_box_blur) =
         match resolve_std_dev(fe.std_dev_x.get() * sx, fe.std_dev_y.get() * sy) {
             Some(v) => v,
             None => return Ok(input),
@@ -790,10 +904,10 @@ fn apply_blur(
 
     let mut pixmap = input.into_color_space(cs)?.take()?;
 
-    if box_blur {
-        svgfilters::box_blur(std_dx, std_dy, into_svgfilters_image_mut!(pixmap));
+    if use_box_blur {
+        box_blur::apply(std_dx, std_dy, pixmap.as_image_ref_mut());
     } else {
-        svgfilters::iir_blur(std_dx, std_dy, into_svgfilters_image_mut!(pixmap));
+        iir_blur::apply(std_dx, std_dy, pixmap.as_image_ref_mut());
     }
 
     Ok(Image::from_image(pixmap, cs))
@@ -879,14 +993,14 @@ fn apply_composite(
         let pixmap1 = input1.take()?;
         let pixmap2 = input2.take()?;
 
-        svgfilters::arithmetic_composite(
-            k1 as f64,
-            k2 as f64,
-            k3 as f64,
-            k4 as f64,
-            into_svgfilters_image!(pixmap1),
-            into_svgfilters_image!(pixmap2),
-            into_svgfilters_image_mut!(pixmap),
+        composite::arithmetic(
+            k1,
+            k2,
+            k3,
+            k4,
+            pixmap1.as_image_ref(),
+            pixmap2.as_image_ref(),
+            pixmap.as_image_ref_mut(),
         );
 
         return Ok(Image::from_image(pixmap, cs));
@@ -1054,17 +1168,9 @@ fn apply_component_transfer(
 ) -> Result<Image, Error> {
     let mut pixmap = input.into_color_space(cs)?.take()?;
 
-    svgfilters::demultiply_alpha(pixmap.data_mut().as_rgba_mut());
-
-    svgfilters::component_transfer(
-        fe.func_b.into_svgf(),
-        fe.func_g.into_svgf(),
-        fe.func_r.into_svgf(),
-        fe.func_a.into_svgf(),
-        into_svgfilters_image_mut!(pixmap),
-    );
-
-    svgfilters::multiply_alpha(pixmap.data_mut().as_rgba_mut());
+    demultiply_alpha(pixmap.data_mut().as_rgba_mut());
+    component_transfer::apply(fe, pixmap.as_image_ref_mut());
+    multiply_alpha(pixmap.data_mut().as_rgba_mut());
 
     Ok(Image::from_image(pixmap, cs))
 }
@@ -1074,28 +1180,11 @@ fn apply_color_matrix(
     cs: usvg::filter::ColorInterpolation,
     input: Image,
 ) -> Result<Image, Error> {
-    use std::convert::TryInto;
-
     let mut pixmap = input.into_color_space(cs)?.take()?;
 
-    svgfilters::demultiply_alpha(pixmap.data_mut().as_rgba_mut());
-
-    let kind = match fe.kind {
-        usvg::filter::ColorMatrixKind::Matrix(ref data) => {
-            svgfilters::ColorMatrix::Matrix(data.as_slice().try_into().unwrap())
-        }
-        usvg::filter::ColorMatrixKind::Saturate(n) => {
-            svgfilters::ColorMatrix::Saturate(n.get() as f64)
-        }
-        usvg::filter::ColorMatrixKind::HueRotate(n) => svgfilters::ColorMatrix::HueRotate(n as f64),
-        usvg::filter::ColorMatrixKind::LuminanceToAlpha => {
-            svgfilters::ColorMatrix::LuminanceToAlpha
-        }
-    };
-
-    svgfilters::color_matrix(kind, into_svgfilters_image_mut!(pixmap));
-
-    svgfilters::multiply_alpha(pixmap.data_mut().as_rgba_mut());
+    demultiply_alpha(pixmap.data_mut().as_rgba_mut());
+    color_matrix::apply(&fe.kind, pixmap.as_image_ref_mut());
+    multiply_alpha(pixmap.data_mut().as_rgba_mut());
 
     Ok(Image::from_image(pixmap, cs))
 }
@@ -1108,32 +1197,10 @@ fn apply_convolve_matrix(
     let mut pixmap = input.into_color_space(cs)?.take()?;
 
     if fe.preserve_alpha {
-        svgfilters::demultiply_alpha(pixmap.data_mut().as_rgba_mut());
+        demultiply_alpha(pixmap.data_mut().as_rgba_mut());
     }
 
-    let matrix = svgfilters::ConvolveMatrix::new(
-        fe.matrix.target_x,
-        fe.matrix.target_y,
-        fe.matrix.columns,
-        fe.matrix.rows,
-        &fe.matrix.data,
-    )
-    .unwrap();
-
-    let edge_mode = match fe.edge_mode {
-        usvg::filter::EdgeMode::None => svgfilters::EdgeMode::None,
-        usvg::filter::EdgeMode::Duplicate => svgfilters::EdgeMode::Duplicate,
-        usvg::filter::EdgeMode::Wrap => svgfilters::EdgeMode::Wrap,
-    };
-
-    svgfilters::convolve_matrix(
-        matrix,
-        fe.divisor.value() as f64,
-        fe.bias as f64,
-        edge_mode,
-        fe.preserve_alpha,
-        into_svgfilters_image_mut!(pixmap),
-    );
+    convolve_matrix::apply(fe, pixmap.as_image_ref_mut());
 
     Ok(Image::from_image(pixmap, cs))
 }
@@ -1155,17 +1222,7 @@ fn apply_morphology(
         return Ok(Image::from_image(pixmap, cs));
     }
 
-    let operator = match fe.operator {
-        usvg::filter::MorphologyOperator::Erode => svgfilters::MorphologyOperator::Erode,
-        usvg::filter::MorphologyOperator::Dilate => svgfilters::MorphologyOperator::Dilate,
-    };
-
-    svgfilters::morphology(
-        operator,
-        rx as f64,
-        ry as f64,
-        into_svgfilters_image_mut!(pixmap),
-    );
+    morphology::apply(fe.operator, rx, ry, pixmap.as_image_ref_mut());
 
     Ok(Image::from_image(pixmap, cs))
 }
@@ -1185,14 +1242,13 @@ fn apply_displacement_map(
 
     let (sx, sy) = ts.get_scale();
 
-    svgfilters::displacement_map(
-        fe.x_channel_selector.into_svgf(),
-        fe.y_channel_selector.into_svgf(),
-        (fe.scale * sx) as f64,
-        (fe.scale * sy) as f64,
-        into_svgfilters_image!(&pixmap1),
-        into_svgfilters_image!(&pixmap2),
-        into_svgfilters_image_mut!(pixmap),
+    displacement_map::apply(
+        &fe,
+        sx,
+        sy,
+        pixmap1.as_image_ref(),
+        pixmap2.as_image_ref(),
+        pixmap.as_image_ref_mut(),
     );
 
     Ok(Image::from_image(pixmap, cs))
@@ -1211,7 +1267,7 @@ fn apply_turbulence(
         return Ok(Image::from_image(pixmap, cs));
     }
 
-    svgfilters::turbulence(
+    turbulence::apply(
         region.x() as f64 - ts.tx as f64,
         region.y() as f64 - ts.ty as f64,
         sx as f64,
@@ -1222,10 +1278,10 @@ fn apply_turbulence(
         fe.seed,
         fe.stitch_tiles,
         fe.kind == usvg::filter::TurbulenceKind::FractalNoise,
-        into_svgfilters_image_mut!(pixmap),
+        pixmap.as_image_ref_mut(),
     );
 
-    svgfilters::multiply_alpha(pixmap.data_mut().as_rgba_mut());
+    multiply_alpha(pixmap.data_mut().as_rgba_mut());
 
     Ok(Image::from_image(pixmap, cs))
 }
@@ -1241,13 +1297,11 @@ fn apply_diffuse_lighting(
 
     let light_source = transform_light_source(fe.light_source, region, ts);
 
-    svgfilters::diffuse_lighting(
-        fe.surface_scale as f64,
-        fe.diffuse_constant as f64,
-        fe.lighting_color.into_svgf(),
-        light_source.into_svgf(),
-        into_svgfilters_image!(input.as_ref()),
-        into_svgfilters_image_mut!(pixmap),
+    lighting::diffuse_lighting(
+        fe,
+        light_source,
+        input.as_ref().as_image_ref(),
+        pixmap.as_image_ref_mut(),
     );
 
     Ok(Image::from_image(pixmap, cs))
@@ -1264,14 +1318,11 @@ fn apply_specular_lighting(
 
     let light_source = transform_light_source(fe.light_source, region, ts);
 
-    svgfilters::specular_lighting(
-        fe.surface_scale as f64,
-        fe.specular_constant as f64,
-        fe.specular_exponent as f64,
-        fe.lighting_color.into_svgf(),
-        light_source.into_svgf(),
-        into_svgfilters_image!(input.as_ref()),
-        into_svgfilters_image_mut!(pixmap),
+    lighting::specular_lighting(
+        fe,
+        light_source,
+        input.as_ref().as_image_ref(),
+        pixmap.as_image_ref_mut(),
     );
 
     Ok(Image::from_image(pixmap, cs))

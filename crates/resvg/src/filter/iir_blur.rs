@@ -26,11 +26,8 @@
 
 // TODO: Blurs right and bottom sides twice for some reason.
 
-use alloc::vec;
-use alloc::vec::Vec;
+use super::ImageRefMut;
 use rgb::ComponentSlice;
-
-use crate::ImageRefMut;
 
 struct BlurData {
     width: usize,
@@ -49,7 +46,7 @@ struct BlurData {
 /// # Allocations
 ///
 /// This method will allocate a 2x `src` buffer.
-pub fn iir_blur(sigma_x: f64, sigma_y: f64, src: ImageRefMut) {
+pub fn apply(sigma_x: f64, sigma_y: f64, src: ImageRefMut) {
     let buf_size = (src.width * src.height) as usize;
     let mut buf = vec![0.0; buf_size];
     let buf = &mut buf;

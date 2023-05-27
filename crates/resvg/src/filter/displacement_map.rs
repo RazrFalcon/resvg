@@ -2,17 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ImageRef, ImageRefMut};
-
-/// A color channel.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum ColorChannel {
-    R,
-    G,
-    B,
-    A,
-}
+use super::{ImageRef, ImageRefMut};
+use usvg::filter::{ColorChannel, DisplacementMap};
 
 /// Applies a displacement map.
 ///
@@ -24,11 +15,10 @@ pub enum ColorChannel {
 /// # Panics
 ///
 /// When `src`, `map` and `dest` have different sizes.
-pub fn displacement_map(
-    x_channel_selector: ColorChannel,
-    y_channel_selector: ColorChannel,
-    sx: f64,
-    sy: f64,
+pub fn apply(
+    fe: &DisplacementMap,
+    sx: f32,
+    sy: f32,
     src: ImageRef,
     map: ImageRef,
     dest: ImageRefMut,
@@ -50,13 +40,13 @@ pub fn displacement_map(
                 ColorChannel::A => pixel.a,
             };
 
-            c as f64 / 255.0 - 0.5
+            c as f32 / 255.0 - 0.5
         };
 
-        let dx = calc_offset(x_channel_selector);
-        let dy = calc_offset(y_channel_selector);
-        let ox = (x as f64 + dx * sx).round() as i32;
-        let oy = (y as f64 + dy * sy).round() as i32;
+        let dx = calc_offset(fe.x_channel_selector);
+        let dy = calc_offset(fe.y_channel_selector);
+        let ox = (x as f32 + dx * sx * fe.scale).round() as i32;
+        let oy = (y as f32 + dy * sy * fe.scale).round() as i32;
 
         // TODO: we should use some kind of anti-aliasing when offset is on a pixel border
 

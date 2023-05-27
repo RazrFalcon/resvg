@@ -4,9 +4,9 @@
 
 // Based on https://github.com/fschutt/fastblur
 
-use core::cmp;
-
-use crate::{ImageRefMut, RGBA8};
+use super::ImageRefMut;
+use rgb::RGBA8;
+use std::cmp;
 
 const STEPS: usize = 5;
 
@@ -19,11 +19,11 @@ const STEPS: usize = 5;
 /// # Allocations
 ///
 /// This method will allocate a copy of the `src` image as a back buffer.
-pub fn box_blur(sigma_x: f64, sigma_y: f64, mut src: ImageRefMut) {
+pub fn apply(sigma_x: f64, sigma_y: f64, mut src: ImageRefMut) {
     let boxes_horz = create_box_gauss(sigma_x as f32);
     let boxes_vert = create_box_gauss(sigma_y as f32);
     let mut backbuf = src.data.to_vec();
-    let mut backbuf = ImageRefMut::new(&mut backbuf, src.width, src.height);
+    let mut backbuf = ImageRefMut::new(src.width, src.height, &mut backbuf);
 
     for (box_size_horz, box_size_vert) in boxes_horz.iter().zip(boxes_vert.iter()) {
         let radius_horz = ((box_size_horz - 1) / 2) as usize;

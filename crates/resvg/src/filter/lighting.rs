@@ -2,61 +2,39 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{f64_bound, FuzzyEq, FuzzyZero, ImageRef, ImageRefMut, RGB8, RGBA8};
+use super::{f32_bound, ImageRef, ImageRefMut};
+use rgb::RGBA8;
+use usvg::filter::{DiffuseLighting, LightSource, SpecularLighting};
+use usvg::{ApproxEqUlps, ApproxZeroUlps, Color};
 
-const FACTOR_1_2: f64 = 1.0 / 2.0;
-const FACTOR_1_3: f64 = 1.0 / 3.0;
-const FACTOR_1_4: f64 = 1.0 / 4.0;
-const FACTOR_2_3: f64 = 2.0 / 3.0;
-
-/// A light source.
-#[allow(missing_docs)]
-#[derive(Clone, Copy, Debug)]
-pub enum LightSource {
-    DistantLight {
-        azimuth: f64,
-        elevation: f64,
-    },
-    PointLight {
-        x: f64,
-        y: f64,
-        z: f64,
-    },
-    SpotLight {
-        x: f64,
-        y: f64,
-        z: f64,
-        points_at_x: f64,
-        points_at_y: f64,
-        points_at_z: f64,
-        specular_exponent: f64,
-        limiting_cone_angle: Option<f64>,
-    },
-}
+const FACTOR_1_2: f32 = 1.0 / 2.0;
+const FACTOR_1_3: f32 = 1.0 / 3.0;
+const FACTOR_1_4: f32 = 1.0 / 4.0;
+const FACTOR_2_3: f32 = 2.0 / 3.0;
 
 #[derive(Clone, Copy, Debug)]
 struct Vector2 {
-    x: f64,
-    y: f64,
+    x: f32,
+    y: f32,
 }
 
 impl Vector2 {
     #[inline]
-    fn new(x: f64, y: f64) -> Self {
+    fn new(x: f32, y: f32) -> Self {
         Vector2 { x, y }
     }
 
     #[inline]
-    fn is_fuzzy_zero(&self) -> bool {
-        self.x.is_fuzzy_zero() && self.y.is_fuzzy_zero()
+    fn approx_zero(&self) -> bool {
+        self.x.approx_zero_ulps(4) && self.y.approx_zero_ulps(4)
     }
 }
 
-impl core::ops::Mul<f64> for Vector2 {
+impl core::ops::Mul<f32> for Vector2 {
     type Output = Self;
 
     #[inline]
-    fn mul(self, c: f64) -> Self::Output {
+    fn mul(self, c: f32) -> Self::Output {
         Vector2 {
             x: self.x * c,
             y: self.y * c,
@@ -66,31 +44,31 @@ impl core::ops::Mul<f64> for Vector2 {
 
 #[derive(Clone, Copy, Debug)]
 struct Vector3 {
-    x: f64,
-    y: f64,
-    z: f64,
+    x: f32,
+    y: f32,
+    z: f32,
 }
 
 impl Vector3 {
     #[inline]
-    fn new(x: f64, y: f64, z: f64) -> Self {
+    fn new(x: f32, y: f32, z: f32) -> Self {
         Vector3 { x, y, z }
     }
 
     #[inline]
-    fn dot(&self, other: &Self) -> f64 {
+    fn dot(&self, other: &Self) -> f32 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
     #[inline]
-    fn length(&self) -> f64 {
+    fn length(&self) -> f32 {
         (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
     }
 
     #[inline]
     fn normalized(&self) -> Option<Self> {
         let length = self.length();
-        if !length.is_fuzzy_zero() {
+        if !length.approx_zero_ulps(4) {
             Some(Vector3 {
                 x: self.x / length,
                 y: self.y / length,
@@ -136,10 +114,10 @@ struct Normal {
 
 impl Normal {
     #[inline]
-    fn new(factor_x: f64, factor_y: f64, nx: i16, ny: i16) -> Self {
+    fn new(factor_x: f32, factor_y: f32, nx: i16, ny: i16) -> Self {
         Normal {
             factor: Vector2::new(factor_x, factor_y),
-            normal: Vector2::new(-nx as f64, -ny as f64),
+            normal: Vector2::new(-nx as f32, -ny as f32),
         }
     }
 }
@@ -153,30 +131,20 @@ impl Normal {
 ///
 /// # Panics
 ///
-/// - When `LightSource::SpotLight::specular_exponent` is negative.
 /// - When `src` and `dest` have different sizes.
 pub fn diffuse_lighting(
-    surface_scale: f64,
-    diffuse_constant: f64,
-    lighting_color: RGB8,
+    fe: &DiffuseLighting,
     light_source: LightSource,
     src: ImageRef,
     dest: ImageRefMut,
 ) {
     assert!(src.width == dest.width && src.height == dest.height);
 
-    if let LightSource::SpotLight {
-        specular_exponent, ..
-    } = light_source
-    {
-        assert!(!specular_exponent.is_sign_negative());
-    }
-
     let light_factor = |normal: Normal, light_vector: Vector3| {
-        let k = if normal.normal.is_fuzzy_zero() {
+        let k = if normal.normal.approx_zero() {
             light_vector.z
         } else {
-            let mut n = normal.normal * (surface_scale / 255.0);
+            let mut n = normal.normal * (fe.surface_scale / 255.0);
             n.x *= normal.factor.x;
             n.y *= normal.factor.y;
 
@@ -185,13 +153,13 @@ pub fn diffuse_lighting(
             normal.dot(&light_vector) / normal.length()
         };
 
-        diffuse_constant * k
+        fe.diffuse_constant * k
     };
 
     apply(
         light_source,
-        surface_scale,
-        lighting_color,
+        fe.surface_scale,
+        fe.lighting_color,
         &light_factor,
         calc_diffuse_alpha,
         src,
@@ -208,63 +176,52 @@ pub fn diffuse_lighting(
 ///
 /// # Panics
 ///
-/// - When `LightSource::SpotLight::specular_exponent` is negative.
 /// - When `src` and `dest` have different sizes.
 pub fn specular_lighting(
-    surface_scale: f64,
-    specular_constant: f64,
-    specular_exponent: f64,
-    lighting_color: RGB8,
+    fe: &SpecularLighting,
     light_source: LightSource,
     src: ImageRef,
     dest: ImageRefMut,
 ) {
     assert!(src.width == dest.width && src.height == dest.height);
 
-    if let LightSource::SpotLight {
-        specular_exponent, ..
-    } = light_source
-    {
-        assert!(!specular_exponent.is_sign_negative());
-    }
-
     let light_factor = |normal: Normal, light_vector: Vector3| {
         let h = light_vector + Vector3::new(0.0, 0.0, 1.0);
         let h_length = h.length();
 
-        if h_length.is_fuzzy_zero() {
+        if h_length.approx_zero_ulps(4) {
             return 0.0;
         }
 
-        let k = if normal.normal.is_fuzzy_zero() {
+        let k = if normal.normal.approx_zero() {
             let n_dot_h = h.z / h_length;
-            if specular_exponent.fuzzy_eq(&1.0) {
+            if fe.specular_exponent.approx_eq_ulps(&1.0, 4) {
                 n_dot_h
             } else {
-                n_dot_h.powf(specular_exponent)
+                n_dot_h.powf(fe.specular_exponent)
             }
         } else {
-            let mut n = normal.normal * (surface_scale / 255.0);
+            let mut n = normal.normal * (fe.surface_scale / 255.0);
             n.x *= normal.factor.x;
             n.y *= normal.factor.y;
 
             let normal = Vector3::new(n.x, n.y, 1.0);
 
             let n_dot_h = normal.dot(&h) / normal.length() / h_length;
-            if specular_exponent.fuzzy_eq(&1.0) {
+            if fe.specular_exponent.approx_eq_ulps(&1.0, 4) {
                 n_dot_h
             } else {
-                n_dot_h.powf(specular_exponent)
+                n_dot_h.powf(fe.specular_exponent)
             }
         };
 
-        specular_constant * k
+        fe.specular_constant * k
     };
 
     apply(
         light_source,
-        surface_scale,
-        lighting_color,
+        fe.surface_scale,
+        fe.lighting_color,
         &light_factor,
         calc_specular_alpha,
         src,
@@ -274,9 +231,9 @@ pub fn specular_lighting(
 
 fn apply(
     light_source: LightSource,
-    surface_scale: f64,
-    lighting_color: RGB8,
-    light_factor: &dyn Fn(Normal, Vector3) -> f64,
+    surface_scale: f32,
+    lighting_color: Color,
+    light_factor: &dyn Fn(Normal, Vector3) -> f32,
     calc_alpha: fn(u8, u8, u8) -> u8,
     src: ImageRef,
     mut dest: ImageRefMut,
@@ -290,9 +247,9 @@ fn apply(
 
     // `feDistantLight` has a fixed vector, so calculate it beforehand.
     let mut light_vector = match light_source {
-        LightSource::DistantLight { azimuth, elevation } => {
-            let azimuth = azimuth.to_radians();
-            let elevation = elevation.to_radians();
+        LightSource::DistantLight(light) => {
+            let azimuth = light.azimuth.to_radians();
+            let elevation = light.elevation.to_radians();
             Vector3::new(
                 azimuth.cos() * elevation.cos(),
                 azimuth.sin() * elevation.cos(),
@@ -304,11 +261,17 @@ fn apply(
 
     let mut calc = |nx, ny, normal: Normal| {
         match light_source {
-            LightSource::DistantLight { .. } => {}
-            LightSource::PointLight { x, y, z } | LightSource::SpotLight { x, y, z, .. } => {
-                let nz = src.alpha_at(nx, ny) as f64 / 255.0 * surface_scale;
-                let origin = Vector3::new(x, y, z);
-                let v = origin - Vector3::new(nx as f64, ny as f64, nz);
+            LightSource::DistantLight(_) => {}
+            LightSource::PointLight(ref light) => {
+                let nz = src.alpha_at(nx, ny) as f32 / 255.0 * surface_scale;
+                let origin = Vector3::new(light.x, light.y, light.z);
+                let v = origin - Vector3::new(nx as f32, ny as f32, nz);
+                light_vector = v.normalized().unwrap_or(v);
+            }
+            LightSource::SpotLight(ref light) => {
+                let nz = src.alpha_at(nx, ny) as f32 / 255.0 * surface_scale;
+                let origin = Vector3::new(light.x, light.y, light.z);
+                let v = origin - Vector3::new(nx as f32, ny as f32, nz);
                 light_vector = v.normalized().unwrap_or(v);
             }
         }
@@ -316,11 +279,11 @@ fn apply(
         let light_color = light_color(&light_source, lighting_color, light_vector);
         let factor = light_factor(normal, light_vector);
 
-        let compute = |x| (f64_bound(0.0, x as f64 * factor, 255.0) + 0.5) as u8;
+        let compute = |x| (f32_bound(0.0, x as f32 * factor, 255.0) + 0.5) as u8;
 
-        let r = compute(light_color.r);
-        let g = compute(light_color.g);
-        let b = compute(light_color.b);
+        let r = compute(light_color.red);
+        let g = compute(light_color.green);
+        let b = compute(light_color.blue);
         let a = calc_alpha(r, g, b);
 
         *dest.pixel_at_mut(nx, ny) = RGBA8 { b, g, r, a };
@@ -348,42 +311,33 @@ fn apply(
     }
 }
 
-fn light_color(light: &LightSource, lighting_color: RGB8, light_vector: Vector3) -> RGB8 {
+fn light_color(light: &LightSource, lighting_color: Color, light_vector: Vector3) -> Color {
     match *light {
-        LightSource::DistantLight { .. } | LightSource::PointLight { .. } => lighting_color,
-        LightSource::SpotLight {
-            x,
-            y,
-            z,
-            points_at_x,
-            points_at_y,
-            points_at_z,
-            specular_exponent,
-            limiting_cone_angle,
-        } => {
-            let origin = Vector3::new(x, y, z);
-            let direction = Vector3::new(points_at_x, points_at_y, points_at_z);
+        LightSource::DistantLight(_) | LightSource::PointLight(_) => lighting_color,
+        LightSource::SpotLight(ref light) => {
+            let origin = Vector3::new(light.x, light.y, light.z);
+            let direction = Vector3::new(light.points_at_x, light.points_at_y, light.points_at_z);
             let direction = direction - origin;
             let direction = direction.normalized().unwrap_or(direction);
             let minus_l_dot_s = -light_vector.dot(&direction);
             if minus_l_dot_s <= 0.0 {
-                return RGB8::default();
+                return Color::black();
             }
 
-            if let Some(limiting_cone_angle) = limiting_cone_angle {
+            if let Some(limiting_cone_angle) = light.limiting_cone_angle {
                 if minus_l_dot_s < limiting_cone_angle.to_radians().cos() {
-                    return RGB8::default();
+                    return Color::black();
                 }
             }
 
-            let factor = minus_l_dot_s.powf(specular_exponent);
-            let compute = |x| (f64_bound(0.0, x as f64 * factor, 255.0) + 0.5) as u8;
+            let factor = minus_l_dot_s.powf(light.specular_exponent.get());
+            let compute = |x| (f32_bound(0.0, x as f32 * factor, 255.0) + 0.5) as u8;
 
-            RGB8 {
-                r: compute(lighting_color.r),
-                g: compute(lighting_color.g),
-                b: compute(lighting_color.b),
-            }
+            Color::new_rgb(
+                compute(lighting_color.red),
+                compute(lighting_color.green),
+                compute(lighting_color.blue),
+            )
         }
     }
 }

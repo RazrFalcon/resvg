@@ -220,7 +220,6 @@ dependencies = [
  "pico-args",
  "png",
  "rgb",
- "svgfilters",
  "svgtypes",
  "tiny-skia",
  "usvg",
@@ -323,14 +322,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6637bab7722d379c8b41ba849228d680cc12d0a45ba1fa2b48f2a30577a06731"
 dependencies = [
  "float-cmp",
-]
-
-[[package]]
-name = "svgfilters"
-version = "0.4.0"
-dependencies = [
- "float-cmp",
- "rgb",
 ]
 
 [[package]]

@@ -376,6 +376,15 @@ impl ConvolveMatrixData {
             data,
         })
     }
+
+    /// Returns a matrix value at the specified position.
+    ///
+    /// # Panics
+    ///
+    /// - When position is out of bounds.
+    pub fn get(&self, x: u32, y: u32) -> f32 {
+        self.data[(y * self.columns + x) as usize]
+    }
 }
 
 /// An edges processing mode.

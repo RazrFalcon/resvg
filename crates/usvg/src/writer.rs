@@ -310,7 +310,7 @@ fn conv_filters(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
                         format_args!("{} {}", matrix.matrix.columns, matrix.matrix.rows),
                     );
                     xml.write_numbers(AId::KernelMatrix, &matrix.matrix.data);
-                    xml.write_svg_attribute(AId::Divisor, &matrix.divisor.value());
+                    xml.write_svg_attribute(AId::Divisor, &matrix.divisor.get());
                     xml.write_svg_attribute(AId::Bias, &matrix.bias);
                     xml.write_svg_attribute(AId::TargetX, &matrix.matrix.target_x);
                     xml.write_svg_attribute(AId::TargetY, &matrix.matrix.target_y);

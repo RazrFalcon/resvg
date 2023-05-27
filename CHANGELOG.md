@@ -32,12 +32,14 @@ This changelog also contains important changes in dependencies.
 - `usvg::filter::Turbulence::base_frequency` was split into `base_frequency_x` and `base_frequency_y`.
 - `usvg::NodeExt::calculate_bbox` no longer includes stroke bbox.
 - (c-api) Use `float` instead of `double` everywhere.
+- The `svgfilters` create was merged into `resvg`.
 
 ### Remove
 - `usvg::Point`. Use `tiny_skia::Point` instead.
 - `usvg::FuzzyEq`. Use `usvg::ApproxEqUlps` instead.
 - `usvg::FuzzyZero`. Use `usvg::ApproxZeroUlps` instead.
 - (c-api) `resvg_path_bbox`. Use `resvg_rect` instead.
+- `svgfilters` crate.
 
 ## [0.33.0] - 2023-05-17
 ### Added
