@@ -22,9 +22,9 @@ checksum = "8da52d66c7071e2e3fa2a1e5c6d088fec47b593032b254f5e980de8ea54454d6"
 
 [[package]]
 name = "base64"
-version = "0.21.0"
+version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4a4ddaa51a5bc52a6948f74c06d20aaaddb71924eab79b8c97a8c556e942d6a"
+checksum = "604178f6c5c21f02dc555784810edfb88d34ac2c73b2eae109655649ee73ce3d"
 
 [[package]]
 name = "bitflags"
@@ -161,9 +161,9 @@ dependencies = [
 
 [[package]]
 name = "memmap2"
-version = "0.6.1"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0aa1b505aeecb0adb017db2b6a79a17a38e64f882a201f05e9de8a982cd6096"
+checksum = "6d28bba84adfe6646737845bc5ebbfa2c08424eb1c37e94a1fd2a82adb56a872"
 dependencies = [
  "libc",
 ]
@@ -211,7 +211,7 @@ checksum = "3b42e27ef78c35d3998403c1d26f3efd9e135d3e5121b0a4845cc5cc27547f4f"
 
 [[package]]
 name = "resvg"
-version = "0.33.0"
+version = "0.34.0"
 dependencies = [
  "gif",
  "jpeg-decoder",
@@ -227,7 +227,7 @@ dependencies = [
 
 [[package]]
 name = "resvg-capi"
-version = "0.33.0"
+version = "0.34.0"
 dependencies = [
  "log",
  "resvg",
@@ -413,7 +413,7 @@ checksum = "b1d386ff53b415b7fe27b50bb44679e2cc4660272694b7b6f3326d8480823a94"
 
 [[package]]
 name = "usvg"
-version = "0.33.0"
+version = "0.34.0"
 dependencies = [
  "base64",
  "log",
@@ -426,7 +426,7 @@ dependencies = [
 
 [[package]]
 name = "usvg-parser"
-version = "0.33.0"
+version = "0.34.0"
 dependencies = [
  "data-url",
  "flate2",
@@ -442,7 +442,7 @@ dependencies = [
 
 [[package]]
 name = "usvg-text-layout"
-version = "0.33.0"
+version = "0.34.0"
 dependencies = [
  "fontdb",
  "kurbo",
@@ -456,7 +456,7 @@ dependencies = [
 
 [[package]]
 name = "usvg-tree"
-version = "0.33.0"
+version = "0.34.0"
 dependencies = [
  "rctree",
  "strict-num",
