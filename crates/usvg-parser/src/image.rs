@@ -4,12 +4,11 @@
 
 use std::sync::Arc;
 
-use rosvgtree::{self, AttributeId as AId};
 use svgtypes::Length;
 use usvg_tree::{Image, ImageKind, Node, NodeExt, NodeKind, NonZeroRect, Size, Tree, ViewBox};
 
-use crate::rosvgtree_ext::SvgNodeExt2;
-use crate::{converter, OptionLog, Options, SvgNodeExt, TreeParsing};
+use crate::svgtree::{AId, SvgNode};
+use crate::{converter, OptionLog, Options, TreeParsing};
 
 /// A shorthand for [ImageHrefResolver]'s data function.
 pub type ImageHrefDataResolverFn =
@@ -122,22 +121,16 @@ enum ImageFormat {
     SVG,
 }
 
-pub(crate) fn convert(
-    node: rosvgtree::Node,
-    state: &converter::State,
-    parent: &mut Node,
-) -> Option<()> {
+pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Node) -> Option<()> {
     let href = node
         .attribute(AId::Href)
         .log_none(|| log::warn!("Image lacks the 'xlink:href' attribute. Skipped."))?;
 
     let kind = get_href_data(href, state.opt)?;
 
-    let visibility = node
-        .find_and_parse_attribute(AId::Visibility)
-        .unwrap_or_default();
+    let visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
     let rendering_mode = node
-        .find_and_parse_attribute(AId::ImageRendering)
+        .find_attribute(AId::ImageRendering)
         .unwrap_or(state.opt.image_rendering);
 
     let actual_size = match kind {
@@ -168,9 +161,7 @@ pub(crate) fn convert(
 
     let view_box = ViewBox {
         rect,
-        aspect: node
-            .parse_attribute(AId::PreserveAspectRatio)
-            .unwrap_or_default(),
+        aspect: node.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
 
     parent.append_kind(NodeKind::Image(Image {

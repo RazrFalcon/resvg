@@ -1,31 +1,16 @@
-/*!
-Represents an [SVG](https://www.w3.org/TR/SVG11/Overview.html) document as a read-only tree.
-
-`rosvgtree` is similar to [`roxmltree`](https://github.com/RazrFalcon/roxmltree),
-and even uses it for parsing, but instead of producing an XML tree,
-it produces an SVG tree by
-[post-processing](https://github.com/RazrFalcon/resvg/blob/master/crates/rosvgtree/docs/post-processing.md)
-XML, to make SVG parsing easier.
-*/
-
-#![forbid(unsafe_code)]
-#![warn(missing_docs)]
-#![warn(missing_debug_implementations)]
-#![warn(missing_copy_implementations)]
-#![allow(clippy::collapsible_else_if)]
-#![allow(clippy::collapsible_if)]
-#![allow(clippy::uninlined_format_args)]
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::collections::HashMap;
 use std::num::NonZeroU32;
+use std::str::FromStr;
 
 #[rustfmt::skip] mod names;
 mod parse;
 mod text;
 
-pub use names::{AttributeId, ElementId};
-
-pub use roxmltree::{self, Error};
+pub use names::{AId, EId};
 
 /// An SVG tree container.
 ///
@@ -40,8 +25,8 @@ pub struct Document<'input> {
 impl<'input> Document<'input> {
     /// Returns the root node.
     #[inline]
-    pub fn root<'a>(&'a self) -> Node<'a, 'input> {
-        Node {
+    pub fn root<'a>(&'a self) -> SvgNode<'a, 'input> {
+        SvgNode {
             id: NodeId::new(0),
             d: &self.nodes[0],
             doc: self,
@@ -50,7 +35,7 @@ impl<'input> Document<'input> {
 
     /// Returns the root element.
     #[inline]
-    pub fn root_element<'a>(&'a self) -> Node<'a, 'input> {
+    pub fn root_element<'a>(&'a self) -> SvgNode<'a, 'input> {
         // `unwrap` is safe, because `Document` is guarantee to have at least one element.
         self.root().first_element_child().unwrap()
     }
@@ -68,14 +53,14 @@ impl<'input> Document<'input> {
     /// Unlike the [`Descendants`] iterator, this is just a HashMap lookup.
     /// Meaning it's way faster.
     #[inline]
-    pub fn element_by_id<'a>(&'a self, id: &str) -> Option<Node<'a, 'input>> {
+    pub fn element_by_id<'a>(&'a self, id: &str) -> Option<SvgNode<'a, 'input>> {
         let node_id = self.links.get(id)?;
         Some(self.get(*node_id))
     }
 
     #[inline]
-    fn get<'a>(&'a self, id: NodeId) -> Node<'a, 'input> {
-        Node {
+    fn get<'a>(&'a self, id: NodeId) -> SvgNode<'a, 'input> {
+        SvgNode {
             id,
             d: &self.nodes[id.get_usize()],
             doc: self,
@@ -101,7 +86,7 @@ impl std::fmt::Debug for Document<'_> {
         }
 
         fn print_children(
-            parent: Node,
+            parent: SvgNode,
             depth: usize,
             f: &mut std::fmt::Formatter,
         ) -> Result<(), std::fmt::Error> {
@@ -142,7 +127,7 @@ impl std::fmt::Debug for Document<'_> {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct ShortRange {
+pub(crate) struct ShortRange {
     start: u32,
     end: u32,
 }
@@ -160,7 +145,7 @@ impl ShortRange {
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-struct NodeId(NonZeroU32);
+pub(crate) struct NodeId(NonZeroU32);
 
 impl NodeId {
     #[inline]
@@ -191,10 +176,10 @@ impl From<usize> for NodeId {
     }
 }
 
-enum NodeKind {
+pub(crate) enum NodeKind {
     Root,
     Element {
-        tag_name: ElementId,
+        tag_name: EId,
         attributes: ShortRange,
     },
     Text(String),
@@ -211,7 +196,7 @@ struct NodeData {
 #[derive(Clone)]
 pub struct Attribute<'input> {
     /// Attribute's name.
-    pub name: AttributeId,
+    pub name: AId,
     /// Attribute's value.
     pub value: roxmltree::StringStorage<'input>,
 }
@@ -228,22 +213,22 @@ impl std::fmt::Debug for Attribute<'_> {
 
 /// An SVG node.
 #[derive(Clone, Copy)]
-pub struct Node<'a, 'input: 'a> {
+pub struct SvgNode<'a, 'input: 'a> {
     id: NodeId,
     doc: &'a Document<'input>,
     d: &'a NodeData,
 }
 
-impl Eq for Node<'_, '_> {}
+impl Eq for SvgNode<'_, '_> {}
 
-impl PartialEq for Node<'_, '_> {
+impl PartialEq for SvgNode<'_, '_> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id && std::ptr::eq(self.doc, other.doc) && std::ptr::eq(self.d, other.d)
     }
 }
 
-impl<'a, 'input: 'a> Node<'a, 'input> {
+impl<'a, 'input: 'a> SvgNode<'a, 'input> {
     #[inline]
     fn id(&self) -> NodeId {
         self.id
@@ -269,7 +254,7 @@ impl<'a, 'input: 'a> Node<'a, 'input> {
 
     /// Returns element's tag name, unless the current node is text.
     #[inline]
-    pub fn tag_name(&self) -> Option<ElementId> {
+    pub fn tag_name(&self) -> Option<EId> {
         match self.d.kind {
             NodeKind::Element { tag_name, .. } => Some(tag_name),
             _ => None,
@@ -280,22 +265,30 @@ impl<'a, 'input: 'a> Node<'a, 'input> {
     /// Returns an empty string otherwise.
     #[inline]
     pub fn element_id(&self) -> &'a str {
-        self.attribute(AttributeId::Id).unwrap_or("")
+        self.attribute(AId::Id).unwrap_or("")
     }
 
     /// Returns an attribute value.
-    #[inline]
-    pub fn attribute(&self, aid: AttributeId) -> Option<&'a str> {
-        self.attributes()
+    pub fn attribute<T: FromValue<'a, 'input>>(&self, aid: AId) -> Option<T> {
+        let value = self
+            .attributes()
             .iter()
             .find(|a| a.name == aid)
-            .map(|a| a.value.as_str())
+            .map(|a| a.value.as_str())?;
+        match T::parse(*self, aid, value) {
+            Some(v) => Some(v),
+            None => {
+                // TODO: show position in XML
+                log::warn!("Failed to parse {} value: '{}'.", aid, value);
+                None
+            }
+        }
     }
 
     #[inline]
-    fn node_attribute(&self, aid: AttributeId) -> Option<Node<'a, 'input>> {
+    fn node_attribute(&self, aid: AId) -> Option<SvgNode<'a, 'input>> {
         let value = self.attribute(aid)?;
-        let id = if aid == AttributeId::Href {
+        let id = if aid == AId::Href {
             svgtypes::IRI::from_str(value).ok().map(|v| v.0)
         } else {
             svgtypes::FuncIRI::from_str(value).ok().map(|v| v.0)
@@ -306,7 +299,7 @@ impl<'a, 'input: 'a> Node<'a, 'input> {
 
     /// Checks if an attribute is present.
     #[inline]
-    pub fn has_attribute(&self, aid: AttributeId) -> bool {
+    pub fn has_attribute(&self, aid: AId) -> bool {
         self.attributes().iter().any(|a| a.name == aid)
     }
 
@@ -320,7 +313,7 @@ impl<'a, 'input: 'a> Node<'a, 'input> {
     }
 
     #[inline]
-    fn attribute_id(&self, aid: AttributeId) -> Option<usize> {
+    fn attribute_id(&self, aid: AId) -> Option<usize> {
         match self.d.kind {
             NodeKind::Element { ref attributes, .. } => {
                 let idx = self.attributes().iter().position(|attr| attr.name == aid)?;
@@ -337,8 +330,11 @@ impl<'a, 'input: 'a> Node<'a, 'input> {
     ///
     /// For non-inheritable attributes checks only the current node and the parent one.
     /// As per SVG spec.
-    #[inline]
-    pub fn find_attribute(&self, aid: AttributeId) -> Option<Node<'a, 'input>> {
+    pub fn find_attribute<T: FromValue<'a, 'input>>(&self, aid: AId) -> Option<T> {
+        self.find_attribute_impl(aid)?.attribute(aid)
+    }
+
+    fn find_attribute_impl(&self, aid: AId) -> Option<SvgNode<'a, 'input>> {
         if aid.is_inheritable() {
             for n in self.ancestors() {
                 if n.has_attribute(aid) {
@@ -465,7 +461,7 @@ impl<'a, 'input: 'a> Node<'a, 'input> {
     }
 }
 
-impl std::fmt::Debug for Node<'_, '_> {
+impl std::fmt::Debug for SvgNode<'_, '_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         match self.d.kind {
             NodeKind::Root => write!(f, "Root"),
@@ -484,15 +480,15 @@ impl std::fmt::Debug for Node<'_, '_> {
 
 /// An iterator over ancestor nodes.
 #[derive(Clone, Debug)]
-pub struct Ancestors<'a, 'input: 'a>(Option<Node<'a, 'input>>);
+pub struct Ancestors<'a, 'input: 'a>(Option<SvgNode<'a, 'input>>);
 
 impl<'a, 'input: 'a> Iterator for Ancestors<'a, 'input> {
-    type Item = Node<'a, 'input>;
+    type Item = SvgNode<'a, 'input>;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let node = self.0.take();
-        self.0 = node.as_ref().and_then(Node::parent);
+        self.0 = node.as_ref().and_then(SvgNode::parent);
         node
     }
 }
@@ -500,19 +496,19 @@ impl<'a, 'input: 'a> Iterator for Ancestors<'a, 'input> {
 /// An iterator over children nodes.
 #[derive(Clone, Debug)]
 pub struct Children<'a, 'input: 'a> {
-    front: Option<Node<'a, 'input>>,
-    back: Option<Node<'a, 'input>>,
+    front: Option<SvgNode<'a, 'input>>,
+    back: Option<SvgNode<'a, 'input>>,
 }
 
 impl<'a, 'input: 'a> Iterator for Children<'a, 'input> {
-    type Item = Node<'a, 'input>;
+    type Item = SvgNode<'a, 'input>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let node = self.front.take();
         if self.front == self.back {
             self.back = None;
         } else {
-            self.front = node.as_ref().and_then(Node::next_sibling);
+            self.front = node.as_ref().and_then(SvgNode::next_sibling);
         }
         node
     }
@@ -520,13 +516,13 @@ impl<'a, 'input: 'a> Iterator for Children<'a, 'input> {
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum Edge<'a, 'input: 'a> {
-    Open(Node<'a, 'input>),
-    Close(Node<'a, 'input>),
+    Open(SvgNode<'a, 'input>),
+    Close(SvgNode<'a, 'input>),
 }
 
 #[derive(Clone, Debug)]
 struct Traverse<'a, 'input: 'a> {
-    root: Node<'a, 'input>,
+    root: SvgNode<'a, 'input>,
     edge: Option<Edge<'a, 'input>>,
 }
 
@@ -564,7 +560,7 @@ impl<'a, 'input: 'a> Iterator for Traverse<'a, 'input> {
 pub struct Descendants<'a, 'input: 'a>(Traverse<'a, 'input>);
 
 impl<'a, 'input: 'a> Iterator for Descendants<'a, 'input> {
-    type Item = Node<'a, 'input>;
+    type Item = SvgNode<'a, 'input>;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -589,7 +585,7 @@ pub struct HrefIter<'a, 'input: 'a> {
 }
 
 impl<'a, 'input: 'a> Iterator for HrefIter<'a, 'input> {
-    type Item = Node<'a, 'input>;
+    type Item = SvgNode<'a, 'input>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.is_finished {
@@ -601,7 +597,7 @@ impl<'a, 'input: 'a> Iterator for HrefIter<'a, 'input> {
             return Some(self.doc.get(self.curr));
         }
 
-        if let Some(link) = self.doc.get(self.curr).node_attribute(AttributeId::Href) {
+        if let Some(link) = self.doc.get(self.curr).node_attribute(AId::Href) {
             if link.id() == self.curr || link.id() == self.origin {
                 log::warn!(
                     "Element '#{}' cannot reference itself via 'xlink:href'.",
@@ -619,29 +615,29 @@ impl<'a, 'input: 'a> Iterator for HrefIter<'a, 'input> {
     }
 }
 
-impl ElementId {
+impl EId {
     /// Checks if this is a
     /// [graphics element](https://www.w3.org/TR/SVG11/intro.html#TermGraphicsElement).
     pub fn is_graphic(&self) -> bool {
         matches!(
             self,
-            ElementId::Circle
-                | ElementId::Ellipse
-                | ElementId::Image
-                | ElementId::Line
-                | ElementId::Path
-                | ElementId::Polygon
-                | ElementId::Polyline
-                | ElementId::Rect
-                | ElementId::Text
-                | ElementId::Use
+            EId::Circle
+                | EId::Ellipse
+                | EId::Image
+                | EId::Line
+                | EId::Path
+                | EId::Polygon
+                | EId::Polyline
+                | EId::Rect
+                | EId::Text
+                | EId::Use
         )
     }
 
     /// Checks if this is a
     /// [gradient element](https://www.w3.org/TR/SVG11/intro.html#TermGradientElement).
     pub fn is_gradient(&self) -> bool {
-        matches!(self, ElementId::LinearGradient | ElementId::RadialGradient)
+        matches!(self, EId::LinearGradient | EId::RadialGradient)
     }
 
     /// Checks if this is a
@@ -649,76 +645,76 @@ impl ElementId {
     pub fn is_paint_server(&self) -> bool {
         matches!(
             self,
-            ElementId::LinearGradient | ElementId::RadialGradient | ElementId::Pattern
+            EId::LinearGradient | EId::RadialGradient | EId::Pattern
         )
     }
 }
 
-impl AttributeId {
+impl AId {
     fn is_presentation(&self) -> bool {
         matches!(
             self,
-            AttributeId::AlignmentBaseline
-                | AttributeId::BaselineShift
-                | AttributeId::ClipPath
-                | AttributeId::ClipRule
-                | AttributeId::Color
-                | AttributeId::ColorInterpolation
-                | AttributeId::ColorInterpolationFilters
-                | AttributeId::ColorRendering
-                | AttributeId::Direction
-                | AttributeId::Display
-                | AttributeId::DominantBaseline
-                | AttributeId::Fill
-                | AttributeId::FillOpacity
-                | AttributeId::FillRule
-                | AttributeId::Filter
-                | AttributeId::FloodColor
-                | AttributeId::FloodOpacity
-                | AttributeId::FontFamily
-                | AttributeId::FontKerning // technically not presentation
-                | AttributeId::FontSize
-                | AttributeId::FontSizeAdjust
-                | AttributeId::FontStretch
-                | AttributeId::FontStyle
-                | AttributeId::FontVariant
-                | AttributeId::FontWeight
-                | AttributeId::GlyphOrientationHorizontal
-                | AttributeId::GlyphOrientationVertical
-                | AttributeId::ImageRendering
-                | AttributeId::Isolation // technically not presentation
-                | AttributeId::LetterSpacing
-                | AttributeId::LightingColor
-                | AttributeId::MarkerEnd
-                | AttributeId::MarkerMid
-                | AttributeId::MarkerStart
-                | AttributeId::Mask
-                | AttributeId::MixBlendMode // technically not presentation
-                | AttributeId::Opacity
-                | AttributeId::Overflow
-                | AttributeId::PaintOrder
-                | AttributeId::ShapeRendering
-                | AttributeId::StopColor
-                | AttributeId::StopOpacity
-                | AttributeId::Stroke
-                | AttributeId::StrokeDasharray
-                | AttributeId::StrokeDashoffset
-                | AttributeId::StrokeLinecap
-                | AttributeId::StrokeLinejoin
-                | AttributeId::StrokeMiterlimit
-                | AttributeId::StrokeOpacity
-                | AttributeId::StrokeWidth
-                | AttributeId::TextAnchor
-                | AttributeId::TextDecoration
-                | AttributeId::TextOverflow
-                | AttributeId::TextRendering
-                | AttributeId::Transform
-                | AttributeId::UnicodeBidi
-                | AttributeId::VectorEffect
-                | AttributeId::Visibility
-                | AttributeId::WhiteSpace
-                | AttributeId::WordSpacing
-                | AttributeId::WritingMode
+            AId::AlignmentBaseline
+                | AId::BaselineShift
+                | AId::ClipPath
+                | AId::ClipRule
+                | AId::Color
+                | AId::ColorInterpolation
+                | AId::ColorInterpolationFilters
+                | AId::ColorRendering
+                | AId::Direction
+                | AId::Display
+                | AId::DominantBaseline
+                | AId::Fill
+                | AId::FillOpacity
+                | AId::FillRule
+                | AId::Filter
+                | AId::FloodColor
+                | AId::FloodOpacity
+                | AId::FontFamily
+                | AId::FontKerning // technically not presentation
+                | AId::FontSize
+                | AId::FontSizeAdjust
+                | AId::FontStretch
+                | AId::FontStyle
+                | AId::FontVariant
+                | AId::FontWeight
+                | AId::GlyphOrientationHorizontal
+                | AId::GlyphOrientationVertical
+                | AId::ImageRendering
+                | AId::Isolation // technically not presentation
+                | AId::LetterSpacing
+                | AId::LightingColor
+                | AId::MarkerEnd
+                | AId::MarkerMid
+                | AId::MarkerStart
+                | AId::Mask
+                | AId::MixBlendMode // technically not presentation
+                | AId::Opacity
+                | AId::Overflow
+                | AId::PaintOrder
+                | AId::ShapeRendering
+                | AId::StopColor
+                | AId::StopOpacity
+                | AId::Stroke
+                | AId::StrokeDasharray
+                | AId::StrokeDashoffset
+                | AId::StrokeLinecap
+                | AId::StrokeLinejoin
+                | AId::StrokeMiterlimit
+                | AId::StrokeOpacity
+                | AId::StrokeWidth
+                | AId::TextAnchor
+                | AId::TextDecoration
+                | AId::TextOverflow
+                | AId::TextRendering
+                | AId::Transform
+                | AId::UnicodeBidi
+                | AId::VectorEffect
+                | AId::Visibility
+                | AId::WhiteSpace
+                | AId::WordSpacing
+                | AId::WritingMode
         )
     }
 
@@ -734,76 +730,307 @@ impl AttributeId {
     fn allows_inherit_value(&self) -> bool {
         matches!(
             self,
-            AttributeId::AlignmentBaseline
-                | AttributeId::BaselineShift
-                | AttributeId::ClipPath
-                | AttributeId::ClipRule
-                | AttributeId::Color
-                | AttributeId::ColorInterpolationFilters
-                | AttributeId::Direction
-                | AttributeId::Display
-                | AttributeId::DominantBaseline
-                | AttributeId::Fill
-                | AttributeId::FillOpacity
-                | AttributeId::FillRule
-                | AttributeId::Filter
-                | AttributeId::FloodColor
-                | AttributeId::FloodOpacity
-                | AttributeId::FontFamily
-                | AttributeId::FontKerning
-                | AttributeId::FontSize
-                | AttributeId::FontStretch
-                | AttributeId::FontStyle
-                | AttributeId::FontVariant
-                | AttributeId::FontWeight
-                | AttributeId::ImageRendering
-                | AttributeId::Kerning
-                | AttributeId::LetterSpacing
-                | AttributeId::MarkerEnd
-                | AttributeId::MarkerMid
-                | AttributeId::MarkerStart
-                | AttributeId::Mask
-                | AttributeId::Opacity
-                | AttributeId::Overflow
-                | AttributeId::ShapeRendering
-                | AttributeId::StopColor
-                | AttributeId::StopOpacity
-                | AttributeId::Stroke
-                | AttributeId::StrokeDasharray
-                | AttributeId::StrokeDashoffset
-                | AttributeId::StrokeLinecap
-                | AttributeId::StrokeLinejoin
-                | AttributeId::StrokeMiterlimit
-                | AttributeId::StrokeOpacity
-                | AttributeId::StrokeWidth
-                | AttributeId::TextAnchor
-                | AttributeId::TextDecoration
-                | AttributeId::TextRendering
-                | AttributeId::Visibility
-                | AttributeId::WordSpacing
-                | AttributeId::WritingMode
+            AId::AlignmentBaseline
+                | AId::BaselineShift
+                | AId::ClipPath
+                | AId::ClipRule
+                | AId::Color
+                | AId::ColorInterpolationFilters
+                | AId::Direction
+                | AId::Display
+                | AId::DominantBaseline
+                | AId::Fill
+                | AId::FillOpacity
+                | AId::FillRule
+                | AId::Filter
+                | AId::FloodColor
+                | AId::FloodOpacity
+                | AId::FontFamily
+                | AId::FontKerning
+                | AId::FontSize
+                | AId::FontStretch
+                | AId::FontStyle
+                | AId::FontVariant
+                | AId::FontWeight
+                | AId::ImageRendering
+                | AId::Kerning
+                | AId::LetterSpacing
+                | AId::MarkerEnd
+                | AId::MarkerMid
+                | AId::MarkerStart
+                | AId::Mask
+                | AId::Opacity
+                | AId::Overflow
+                | AId::ShapeRendering
+                | AId::StopColor
+                | AId::StopOpacity
+                | AId::Stroke
+                | AId::StrokeDasharray
+                | AId::StrokeDashoffset
+                | AId::StrokeLinecap
+                | AId::StrokeLinejoin
+                | AId::StrokeMiterlimit
+                | AId::StrokeOpacity
+                | AId::StrokeWidth
+                | AId::TextAnchor
+                | AId::TextDecoration
+                | AId::TextRendering
+                | AId::Visibility
+                | AId::WordSpacing
+                | AId::WritingMode
         )
     }
 }
 
-fn is_non_inheritable(id: AttributeId) -> bool {
+fn is_non_inheritable(id: AId) -> bool {
     matches!(
         id,
-        AttributeId::AlignmentBaseline
-            | AttributeId::BaselineShift
-            | AttributeId::ClipPath
-            | AttributeId::Display
-            | AttributeId::DominantBaseline
-            | AttributeId::Filter
-            | AttributeId::FloodColor
-            | AttributeId::FloodOpacity
-            | AttributeId::Mask
-            | AttributeId::Opacity
-            | AttributeId::Overflow
-            | AttributeId::LightingColor
-            | AttributeId::StopColor
-            | AttributeId::StopOpacity
-            | AttributeId::TextDecoration
-            | AttributeId::Transform
+        AId::AlignmentBaseline
+            | AId::BaselineShift
+            | AId::ClipPath
+            | AId::Display
+            | AId::DominantBaseline
+            | AId::Filter
+            | AId::FloodColor
+            | AId::FloodOpacity
+            | AId::Mask
+            | AId::Opacity
+            | AId::Overflow
+            | AId::LightingColor
+            | AId::StopColor
+            | AId::StopOpacity
+            | AId::TextDecoration
+            | AId::Transform
     )
+}
+
+// TODO: is there a way yo make it less ugly? Too many lifetimes.
+/// A trait for parsing attribute values.
+pub trait FromValue<'a, 'input: 'a>: Sized {
+    /// Parses an attribute value.
+    ///
+    /// When `None` is returned, the attribute value will be logged as a parsing failure.
+    fn parse(node: SvgNode<'a, 'input>, aid: AId, value: &'a str) -> Option<Self>;
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for &'a str {
+    fn parse(_: SvgNode<'a, 'input>, _: AId, value: &'a str) -> Option<Self> {
+        Some(value)
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for f32 {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        svgtypes::Number::from_str(value).ok().map(|v| v.0 as f32)
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::Length {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        svgtypes::Length::from_str(value).ok()
+    }
+}
+
+// TODO: to svgtypes?
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::Opacity {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        let length = svgtypes::Length::from_str(value).ok()?;
+        if length.unit == svgtypes::LengthUnit::Percent {
+            Some(usvg_tree::Opacity::new_clamped(
+                length.number as f32 / 100.0,
+            ))
+        } else if length.unit == svgtypes::LengthUnit::None {
+            Some(usvg_tree::Opacity::new_clamped(length.number as f32))
+        } else {
+            None
+        }
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::Transform {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        let ts = match svgtypes::Transform::from_str(value) {
+            Ok(v) => v,
+            Err(_) => return None,
+        };
+
+        let ts = usvg_tree::Transform::from_row(
+            ts.a as f32,
+            ts.b as f32,
+            ts.c as f32,
+            ts.d as f32,
+            ts.e as f32,
+            ts.f as f32,
+        );
+
+        if ts.is_valid() {
+            Some(ts)
+        } else {
+            Some(usvg_tree::Transform::default())
+        }
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::ViewBox {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        Self::from_str(value).ok()
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::Units {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        match value {
+            "userSpaceOnUse" => Some(usvg_tree::Units::UserSpaceOnUse),
+            "objectBoundingBox" => Some(usvg_tree::Units::ObjectBoundingBox),
+            _ => None,
+        }
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::AspectRatio {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        Self::from_str(value).ok()
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::PaintOrder {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        Self::from_str(value).ok()
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::Color {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        Self::from_str(value).ok()
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::Angle {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        Self::from_str(value).ok()
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::EnableBackground {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        Self::from_str(value).ok()
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::Paint<'a> {
+    fn parse(_: SvgNode, _: AId, value: &'a str) -> Option<Self> {
+        Self::from_str(value).ok()
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for Vec<f32> {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        let mut list = Vec::new();
+        for n in svgtypes::NumberListParser::from(value) {
+            list.push(n.ok()? as f32);
+        }
+
+        Some(list)
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for Vec<svgtypes::Length> {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        let mut list = Vec::new();
+        for n in svgtypes::LengthListParser::from(value) {
+            list.push(n.ok()?);
+        }
+
+        Some(list)
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::Visibility {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        match value {
+            "visible" => Some(usvg_tree::Visibility::Visible),
+            "hidden" => Some(usvg_tree::Visibility::Hidden),
+            "collapse" => Some(usvg_tree::Visibility::Collapse),
+            _ => None,
+        }
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::SpreadMethod {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        match value {
+            "pad" => Some(usvg_tree::SpreadMethod::Pad),
+            "reflect" => Some(usvg_tree::SpreadMethod::Reflect),
+            "repeat" => Some(usvg_tree::SpreadMethod::Repeat),
+            _ => None,
+        }
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::ShapeRendering {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        match value {
+            "optimizeSpeed" => Some(usvg_tree::ShapeRendering::OptimizeSpeed),
+            "crispEdges" => Some(usvg_tree::ShapeRendering::CrispEdges),
+            "geometricPrecision" => Some(usvg_tree::ShapeRendering::GeometricPrecision),
+            _ => None,
+        }
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::TextRendering {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        match value {
+            "optimizeSpeed" => Some(usvg_tree::TextRendering::OptimizeSpeed),
+            "optimizeLegibility" => Some(usvg_tree::TextRendering::OptimizeLegibility),
+            "geometricPrecision" => Some(usvg_tree::TextRendering::GeometricPrecision),
+            _ => None,
+        }
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::ImageRendering {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        match value {
+            "optimizeQuality" => Some(usvg_tree::ImageRendering::OptimizeQuality),
+            "optimizeSpeed" => Some(usvg_tree::ImageRendering::OptimizeSpeed),
+            _ => None,
+        }
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::BlendMode {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        match value {
+            "normal" => Some(usvg_tree::BlendMode::Normal),
+            "multiply" => Some(usvg_tree::BlendMode::Multiply),
+            "screen" => Some(usvg_tree::BlendMode::Screen),
+            "overlay" => Some(usvg_tree::BlendMode::Overlay),
+            "darken" => Some(usvg_tree::BlendMode::Darken),
+            "lighten" => Some(usvg_tree::BlendMode::Lighten),
+            "color-dodge" => Some(usvg_tree::BlendMode::ColorDodge),
+            "color-burn" => Some(usvg_tree::BlendMode::ColorBurn),
+            "hard-light" => Some(usvg_tree::BlendMode::HardLight),
+            "soft-light" => Some(usvg_tree::BlendMode::SoftLight),
+            "difference" => Some(usvg_tree::BlendMode::Difference),
+            "exclusion" => Some(usvg_tree::BlendMode::Exclusion),
+            "hue" => Some(usvg_tree::BlendMode::Hue),
+            "saturation" => Some(usvg_tree::BlendMode::Saturation),
+            "color" => Some(usvg_tree::BlendMode::Color),
+            "luminosity" => Some(usvg_tree::BlendMode::Luminosity),
+            _ => None,
+        }
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for SvgNode<'a, 'input> {
+    fn parse(node: SvgNode<'a, 'input>, aid: AId, value: &str) -> Option<Self> {
+        let id = if aid == AId::Href {
+            svgtypes::IRI::from_str(value).ok().map(|v| v.0)
+        } else {
+            svgtypes::FuncIRI::from_str(value).ok().map(|v| v.0)
+        }?;
+
+        node.document().element_by_id(id)
+    }
 }

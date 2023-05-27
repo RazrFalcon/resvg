@@ -5,13 +5,13 @@
 use std::rc::Rc;
 use std::str::FromStr;
 
-use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use usvg_tree::{ClipPath, Group, Node, NodeKind, Transform, Units};
 
-use crate::{converter, SvgNodeExt2};
+use crate::converter;
+use crate::svgtree::{AId, EId, SvgNode};
 
 pub(crate) fn convert(
-    node: rosvgtree::Node,
+    node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
 ) -> Option<Rc<ClipPath>> {
@@ -30,7 +30,7 @@ pub(crate) fn convert(
 
     // Resolve linked clip path.
     let mut clip_path = None;
-    if let Some(link) = node.parse_attribute::<rosvgtree::Node>(AId::ClipPath) {
+    if let Some(link) = node.attribute::<SvgNode>(AId::ClipPath) {
         clip_path = convert(link, state, cache);
 
         // Linked `clipPath` must be valid.
@@ -40,7 +40,7 @@ pub(crate) fn convert(
     }
 
     let units = node
-        .parse_attribute(AId::ClipPathUnits)
+        .attribute(AId::ClipPathUnits)
         .unwrap_or(Units::UserSpaceOnUse);
     let mut clip = ClipPath {
         id: node.element_id().to_string(),
@@ -66,7 +66,7 @@ pub(crate) fn convert(
     }
 }
 
-fn resolve_transform(node: rosvgtree::Node) -> Option<Transform> {
+fn resolve_transform(node: SvgNode) -> Option<Transform> {
     // Do not use Node::attribute::<Transform>, because it will always
     // return a valid transform.
 

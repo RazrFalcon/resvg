@@ -7,7 +7,7 @@ use std::io::Write;
 use std::rc::Rc;
 
 use crate::TreeWriting;
-use usvg_parser::rosvgtree::{AttributeId as AId, ElementId as EId};
+use usvg_parser::{AId, EId};
 use usvg_tree::*;
 use xmlwriter::XmlWriter;
 

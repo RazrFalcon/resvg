@@ -4,16 +4,15 @@
 
 use std::rc::Rc;
 
-use rosvgtree::{self, AttributeId as AId, ElementId as EId};
+use kurbo::{ParamCurve, ParamCurveArclen};
 use svgtypes::{Length, LengthUnit};
 use usvg_tree::*;
 
-use crate::rosvgtree_ext::{FromValue, SvgNodeExt2};
-use crate::{converter, style, SvgNodeExt};
-use kurbo::{ParamCurve, ParamCurveArclen};
+use crate::svgtree::{AId, EId, FromValue, SvgNode};
+use crate::{converter, style};
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::TextAnchor {
-    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
         match value {
             "start" => Some(usvg_tree::TextAnchor::Start),
             "middle" => Some(usvg_tree::TextAnchor::Middle),
@@ -24,7 +23,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::TextAnchor {
 }
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::AlignmentBaseline {
-    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
         match value {
             "auto" => Some(usvg_tree::AlignmentBaseline::Auto),
             "baseline" => Some(usvg_tree::AlignmentBaseline::Baseline),
@@ -44,7 +43,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::AlignmentBaseline {
 }
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::DominantBaseline {
-    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
         match value {
             "auto" => Some(usvg_tree::DominantBaseline::Auto),
             "use-script" => Some(usvg_tree::DominantBaseline::UseScript),
@@ -64,7 +63,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::DominantBaseline {
 }
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::LengthAdjust {
-    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
         match value {
             "spacing" => Some(usvg_tree::LengthAdjust::Spacing),
             "spacingAndGlyphs" => Some(usvg_tree::LengthAdjust::SpacingAndGlyphs),
@@ -74,7 +73,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::LengthAdjust {
 }
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::FontStyle {
-    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
         match value {
             "normal" => Some(usvg_tree::FontStyle::Normal),
             "italic" => Some(usvg_tree::FontStyle::Italic),
@@ -85,7 +84,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::FontStyle {
 }
 
 pub(crate) fn convert(
-    text_node: rosvgtree::Node,
+    text_node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
     parent: &mut Node,
@@ -97,7 +96,7 @@ pub(crate) fn convert(
     let chunks = collect_text_chunks(text_node, &pos_list, state, cache);
 
     let rendering_mode: TextRendering = text_node
-        .find_and_parse_attribute(AId::TextRendering)
+        .find_attribute(AId::TextRendering)
         .unwrap_or(state.opt.text_rendering);
 
     let text = Text {
@@ -121,7 +120,7 @@ struct IterState {
 }
 
 fn collect_text_chunks(
-    text_node: rosvgtree::Node,
+    text_node: SvgNode,
     pos_list: &[CharacterPosition],
     state: &converter::State,
     cache: &mut converter::Cache,
@@ -147,8 +146,8 @@ fn collect_text_chunks(
 }
 
 fn collect_text_chunks_impl(
-    text_node: rosvgtree::Node,
-    parent: rosvgtree::Node,
+    text_node: SvgNode,
+    parent: SvgNode,
     pos_list: &[CharacterPosition],
     state: &converter::State,
     cache: &mut converter::Cache,
@@ -196,9 +195,7 @@ fn collect_text_chunks_impl(
             continue;
         }
 
-        let anchor = parent
-            .find_and_parse_attribute(AId::TextAnchor)
-            .unwrap_or_default();
+        let anchor = parent.find_attribute(AId::TextAnchor).unwrap_or_default();
 
         // TODO: what to do when <= 0? UB?
         let font_size = crate::units::resolve_font_size(parent, state);
@@ -213,13 +210,12 @@ fn collect_text_chunks_impl(
 
         let font = convert_font(parent, state);
 
-        let raw_paint_order: svgtypes::PaintOrder = parent
-            .find_and_parse_attribute(AId::PaintOrder)
-            .unwrap_or_default();
+        let raw_paint_order: svgtypes::PaintOrder =
+            parent.find_attribute(AId::PaintOrder).unwrap_or_default();
         let paint_order = crate::converter::svg_paint_order_to_usvg(raw_paint_order);
 
         let mut dominant_baseline = parent
-            .find_and_parse_attribute(AId::DominantBaseline)
+            .find_attribute(AId::DominantBaseline)
             .unwrap_or_default();
 
         // `no-change` means "use parent".
@@ -227,7 +223,7 @@ fn collect_text_chunks_impl(
             dominant_baseline = parent
                 .parent_element()
                 .unwrap()
-                .find_and_parse_attribute(AId::DominantBaseline)
+                .find_attribute(AId::DominantBaseline)
                 .unwrap_or_default();
         }
 
@@ -235,11 +231,7 @@ fn collect_text_chunks_impl(
         #[allow(clippy::if_same_then_else)]
         if parent.resolve_length(AId::Kerning, state, -1.0) == 0.0 {
             apply_kerning = false;
-        } else if parent
-            .find_attribute(AId::FontKerning)
-            .and_then(|n| n.attribute(AId::FontKerning))
-            == Some("none")
-        {
+        } else if parent.find_attribute::<&str>(AId::FontKerning) == Some("none") {
             apply_kerning = false;
         }
 
@@ -260,26 +252,19 @@ fn collect_text_chunks_impl(
             paint_order,
             font,
             font_size,
-            small_caps: parent
-                .find_attribute(AId::FontVariant)
-                .and_then(|n| n.attribute(AId::FontVariant))
-                == Some("small-caps"),
+            small_caps: parent.find_attribute::<&str>(AId::FontVariant) == Some("small-caps"),
             apply_kerning,
             decoration: resolve_decoration(text_node, parent, state, cache),
-            visibility: parent
-                .find_and_parse_attribute(AId::Visibility)
-                .unwrap_or_default(),
+            visibility: parent.find_attribute(AId::Visibility).unwrap_or_default(),
             dominant_baseline,
             alignment_baseline: parent
-                .find_and_parse_attribute(AId::AlignmentBaseline)
+                .find_attribute(AId::AlignmentBaseline)
                 .unwrap_or_default(),
             baseline_shift: convert_baseline_shift(parent, state),
             letter_spacing: parent.resolve_length(AId::LetterSpacing, state, 0.0),
             word_spacing: parent.resolve_length(AId::WordSpacing, state, 0.0),
             text_length,
-            length_adjust: parent
-                .find_and_parse_attribute(AId::LengthAdjust)
-                .unwrap_or_default(),
+            length_adjust: parent.find_attribute(AId::LengthAdjust).unwrap_or_default(),
         };
 
         let mut is_new_span = true;
@@ -341,21 +326,20 @@ fn collect_text_chunks_impl(
     }
 }
 
-fn resolve_text_flow(node: rosvgtree::Node, state: &converter::State) -> Option<TextFlow> {
-    let linked_node = node.parse_attribute::<rosvgtree::Node>(AId::Href)?;
+fn resolve_text_flow(node: SvgNode, state: &converter::State) -> Option<TextFlow> {
+    let linked_node = node.attribute::<SvgNode>(AId::Href)?;
     let path = crate::shapes::convert(linked_node, state)?;
 
     // The reference path's transform needs to be applied
-    let path =
-        if let Some(node_transform) = linked_node.parse_attribute::<Transform>(AId::Transform) {
-            let mut path_copy = path.as_ref().clone();
-            path_copy = path_copy.transform(node_transform)?;
-            Rc::new(path_copy)
-        } else {
-            path
-        };
+    let path = if let Some(node_transform) = linked_node.attribute::<Transform>(AId::Transform) {
+        let mut path_copy = path.as_ref().clone();
+        path_copy = path_copy.transform(node_transform)?;
+        Rc::new(path_copy)
+    } else {
+        path
+    };
 
-    let start_offset: Length = node.parse_attribute(AId::StartOffset).unwrap_or_default();
+    let start_offset: Length = node.attribute(AId::StartOffset).unwrap_or_default();
     let start_offset = if start_offset.unit == LengthUnit::Percent {
         // 'If a percentage is given, then the `startOffset` represents
         // a percentage distance along the entire path.'
@@ -368,10 +352,8 @@ fn resolve_text_flow(node: rosvgtree::Node, state: &converter::State) -> Option<
     Some(TextFlow::Path(Rc::new(TextPath { start_offset, path })))
 }
 
-fn convert_font(node: rosvgtree::Node, state: &converter::State) -> Font {
-    let style: FontStyle = node
-        .find_and_parse_attribute(AId::FontStyle)
-        .unwrap_or_default();
+fn convert_font(node: SvgNode, state: &converter::State) -> Font {
+    let style: FontStyle = node.find_attribute(AId::FontStyle).unwrap_or_default();
     let stretch = conv_font_stretch(node);
     let weight = resolve_font_weight(node);
 
@@ -413,7 +395,7 @@ fn convert_font(node: rosvgtree::Node, state: &converter::State) -> Font {
 }
 
 // TODO: properly resolve narrower/wider
-fn conv_font_stretch(node: rosvgtree::Node) -> FontStretch {
+fn conv_font_stretch(node: SvgNode) -> FontStretch {
     if let Some(n) = node.ancestors().find(|n| n.has_attribute(AId::FontStretch)) {
         match n.attribute(AId::FontStretch).unwrap_or("") {
             "narrower" | "condensed" => FontStretch::Condensed,
@@ -431,7 +413,7 @@ fn conv_font_stretch(node: rosvgtree::Node) -> FontStretch {
     }
 }
 
-fn resolve_font_weight(node: rosvgtree::Node) -> u16 {
+fn resolve_font_weight(node: SvgNode) -> u16 {
     fn bound(min: usize, val: usize, max: usize) -> usize {
         std::cmp::max(min, std::cmp::min(max, val))
     }
@@ -538,10 +520,7 @@ fn resolve_font_weight(node: rosvgtree::Node) -> u16 {
 /// ```
 ///
 /// The result should be: `[100, 50, 120, None]`
-fn resolve_positions_list(
-    text_node: rosvgtree::Node,
-    state: &converter::State,
-) -> Vec<CharacterPosition> {
+fn resolve_positions_list(text_node: SvgNode, state: &converter::State) -> Vec<CharacterPosition> {
     // Allocate a list that has all characters positions set to `None`.
     let total_chars = count_chars(text_node);
     let mut list = vec![
@@ -597,14 +576,14 @@ fn resolve_positions_list(
 /// ![](https://www.w3.org/TR/SVG11/images/text/tspan05-diagram.png)
 ///
 /// Note: this algorithm differs from the position resolving one.
-fn resolve_rotate_list(text_node: rosvgtree::Node) -> Vec<f32> {
+fn resolve_rotate_list(text_node: SvgNode) -> Vec<f32> {
     // Allocate a list that has all characters angles set to `0.0`.
     let mut list = vec![0.0; count_chars(text_node)];
     let mut last = 0.0;
     let mut offset = 0;
     for child in text_node.descendants() {
         if child.is_element() {
-            if let Some(rotate) = child.parse_attribute::<Vec<f32>>(AId::Rotate) {
+            if let Some(rotate) = child.attribute::<Vec<f32>>(AId::Rotate) {
                 for i in 0..count_chars(child) {
                     if let Some(a) = rotate.get(i).cloned() {
                         list[offset + i] = a;
@@ -629,8 +608,8 @@ fn resolve_rotate_list(text_node: rosvgtree::Node) -> Vec<f32> {
 ///
 /// `text` and `tspan` can point to the same node.
 fn resolve_decoration(
-    text_node: rosvgtree::Node,
-    tspan: rosvgtree::Node,
+    text_node: SvgNode,
+    tspan: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
 ) -> TextDecoration {
@@ -668,10 +647,10 @@ struct TextDecorationTypes {
 }
 
 /// Resolves the `text` node's `text-decoration` property.
-fn conv_text_decoration(text_node: rosvgtree::Node) -> TextDecorationTypes {
-    fn find_decoration(node: rosvgtree::Node, value: &str) -> bool {
+fn conv_text_decoration(text_node: SvgNode) -> TextDecorationTypes {
+    fn find_decoration(node: SvgNode, value: &str) -> bool {
         node.ancestors().any(|n| {
-            if let Some(str_value) = n.attribute(AId::TextDecoration) {
+            if let Some(str_value) = n.attribute::<&str>(AId::TextDecoration) {
                 str_value.split(' ').any(|v| v == value)
             } else {
                 false
@@ -687,7 +666,7 @@ fn conv_text_decoration(text_node: rosvgtree::Node) -> TextDecorationTypes {
 }
 
 /// Resolves the default `text-decoration` property.
-fn conv_text_decoration2(tspan: rosvgtree::Node) -> TextDecorationTypes {
+fn conv_text_decoration2(tspan: SvgNode) -> TextDecorationTypes {
     let s = tspan.attribute(AId::TextDecoration);
     TextDecorationTypes {
         has_underline: s == Some("underline"),
@@ -696,14 +675,14 @@ fn conv_text_decoration2(tspan: rosvgtree::Node) -> TextDecorationTypes {
     }
 }
 
-fn convert_baseline_shift(node: rosvgtree::Node, state: &converter::State) -> Vec<BaselineShift> {
+fn convert_baseline_shift(node: SvgNode, state: &converter::State) -> Vec<BaselineShift> {
     let mut shift = Vec::new();
     let nodes: Vec<_> = node
         .ancestors()
         .take_while(|n| n.tag_name() != Some(EId::Text))
         .collect();
     for n in nodes {
-        if let Some(len) = n.parse_attribute::<Length>(AId::BaselineShift) {
+        if let Some(len) = n.attribute::<Length>(AId::BaselineShift) {
             if len.unit == LengthUnit::Percent {
                 let n = crate::units::resolve_font_size(n, state) * (len.number as f32 / 100.0);
                 shift.push(BaselineShift::Number(n));
@@ -736,7 +715,7 @@ fn convert_baseline_shift(node: rosvgtree::Node, state: &converter::State) -> Ve
     shift
 }
 
-fn count_chars(node: rosvgtree::Node) -> usize {
+fn count_chars(node: SvgNode) -> usize {
     node.descendants()
         .filter(|n| n.is_text())
         .fold(0, |w, n| w + n.text().chars().count())
@@ -765,7 +744,7 @@ fn count_chars(node: rosvgtree::Node) -> usize {
 ///
 /// [SVG 2]: https://www.w3.org/TR/SVG2/text.html#WritingModeProperty
 /// [CSS Writing Modes Level 3]: https://www.w3.org/TR/css-writing-modes-3/#svg-writing-mode-css
-fn convert_writing_mode(text_node: rosvgtree::Node) -> WritingMode {
+fn convert_writing_mode(text_node: SvgNode) -> WritingMode {
     if let Some(n) = text_node
         .ancestors()
         .find(|n| n.has_attribute(AId::WritingMode))

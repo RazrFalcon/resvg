@@ -2,17 +2,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use rosvgtree::{self, AttributeId as AId};
 use svgtypes::{Length, LengthUnit as Unit};
 use usvg_tree::Units;
 
 use crate::converter;
-use crate::rosvgtree_ext::SvgNodeExt2;
+use crate::svgtree::{AId, SvgNode};
 
 #[inline(never)]
 pub(crate) fn convert_length(
     length: Length,
-    node: rosvgtree::Node,
+    node: SvgNode,
     aid: AId,
     object_units: Units,
     state: &converter::State,
@@ -67,12 +66,8 @@ pub(crate) fn convert_length(
 }
 
 #[inline(never)]
-pub(crate) fn convert_list(
-    node: rosvgtree::Node,
-    aid: AId,
-    state: &converter::State,
-) -> Option<Vec<f32>> {
-    if let Some(text) = node.attribute(aid) {
+pub(crate) fn convert_list(node: SvgNode, aid: AId, state: &converter::State) -> Option<Vec<f32>> {
+    if let Some(text) = node.attribute::<&str>(aid) {
         let mut num_list = Vec::new();
         for length in svgtypes::LengthListParser::from(text).flatten() {
             num_list.push(convert_length(
@@ -95,12 +90,12 @@ fn convert_percent(length: Length, base: f32) -> f32 {
 }
 
 #[inline(never)]
-pub(crate) fn resolve_font_size(node: rosvgtree::Node, state: &converter::State) -> f32 {
+pub(crate) fn resolve_font_size(node: SvgNode, state: &converter::State) -> f32 {
     let nodes: Vec<_> = node.ancestors().collect();
     let mut font_size = state.opt.font_size;
     for n in nodes.iter().rev().skip(1) {
         // skip Root
-        if let Some(length) = n.parse_attribute::<Length>(AId::FontSize) {
+        if let Some(length) = n.attribute::<Length>(AId::FontSize) {
             let dpi = state.opt.dpi;
             let n = length.number as f32;
             font_size = match length.unit {

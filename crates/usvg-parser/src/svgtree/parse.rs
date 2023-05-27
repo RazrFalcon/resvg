@@ -1,20 +1,18 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 use std::collections::HashMap;
 
 use roxmltree::Error;
 
-use crate::{Attribute, AttributeId, Document, ElementId, NodeData, NodeId, NodeKind, ShortRange};
+use super::{AId, Attribute, Document, EId, NodeData, NodeId, NodeKind, ShortRange};
 
 const SVG_NS: &str = "http://www.w3.org/2000/svg";
 const XLINK_NS: &str = "http://www.w3.org/1999/xlink";
 const XML_NAMESPACE_NS: &str = "http://www.w3.org/XML/1998/namespace";
 
 impl<'input> Document<'input> {
-    /// Parses a [`Document`] from a string.
-    pub fn parse_str(text: &'input str) -> Result<Document<'input>, Error> {
-        let xml = roxmltree::Document::parse(text)?;
-        parse(&xml)
-    }
-
     /// Parses a [`Document`] from a [`roxmltree::Document`].
     pub fn parse_tree(xml: &roxmltree::Document<'input>) -> Result<Document<'input>, Error> {
         parse(xml)
@@ -46,7 +44,7 @@ impl<'input> Document<'input> {
         new_child_id
     }
 
-    fn append_attribute(&mut self, name: AttributeId, value: roxmltree::StringStorage<'input>) {
+    fn append_attribute(&mut self, name: AId, value: roxmltree::StringStorage<'input>) {
         self.attrs.push(Attribute { name, value });
     }
 }
@@ -81,7 +79,7 @@ fn parse<'input>(xml: &roxmltree::Document<'input>) -> Result<Document<'input>, 
     // Check that the root element is `svg`.
     match doc.root().first_element_child() {
         Some(child) => {
-            if child.tag_name() != Some(ElementId::Svg) {
+            if child.tag_name() != Some(EId::Svg) {
                 return Err(roxmltree::Error::NoRootNode);
             }
         }
@@ -91,22 +89,22 @@ fn parse<'input>(xml: &roxmltree::Document<'input>) -> Result<Document<'input>, 
     // Collect all elements with `id` attribute.
     let mut links = HashMap::new();
     for node in doc.descendants() {
-        if let Some(id) = node.attribute(AttributeId::Id) {
+        if let Some(id) = node.attribute::<&str>(AId::Id) {
             links.insert(id.to_string(), node.id);
         }
     }
     doc.links = links;
 
     fix_recursive_patterns(&mut doc);
-    fix_recursive_links(ElementId::ClipPath, AttributeId::ClipPath, &mut doc);
-    fix_recursive_links(ElementId::Mask, AttributeId::Mask, &mut doc);
-    fix_recursive_links(ElementId::Filter, AttributeId::Filter, &mut doc);
+    fix_recursive_links(EId::ClipPath, AId::ClipPath, &mut doc);
+    fix_recursive_links(EId::Mask, AId::Mask, &mut doc);
+    fix_recursive_links(EId::Filter, AId::Filter, &mut doc);
     fix_recursive_fe_image(&mut doc);
 
     Ok(doc)
 }
 
-pub(crate) fn parse_tag_name(node: roxmltree::Node) -> Option<ElementId> {
+pub(crate) fn parse_tag_name(node: roxmltree::Node) -> Option<EId> {
     if !node.is_element() {
         return None;
     }
@@ -115,7 +113,7 @@ pub(crate) fn parse_tag_name(node: roxmltree::Node) -> Option<ElementId> {
         return None;
     }
 
-    ElementId::from_str(node.tag_name().name())
+    EId::from_str(node.tag_name().name())
 }
 
 fn parse_xml_node_children<'input>(
@@ -152,20 +150,20 @@ fn parse_xml_node<'input>(
         None => return Ok(()),
     };
 
-    if tag_name == ElementId::Style {
+    if tag_name == EId::Style {
         return Ok(());
     }
 
     // TODO: remove?
     // Treat links as groups.
-    if tag_name == ElementId::A {
-        tag_name = ElementId::G;
+    if tag_name == EId::A {
+        tag_name = EId::G;
     }
 
     let node_id = parse_svg_element(node, parent_id, tag_name, style_sheet, ignore_ids, doc)?;
-    if tag_name == ElementId::Text {
-        crate::text::parse_svg_text_element(node, node_id, style_sheet, doc)?;
-    } else if tag_name == ElementId::Use {
+    if tag_name == EId::Text {
+        super::text::parse_svg_text_element(node, node_id, style_sheet, doc)?;
+    } else if tag_name == EId::Use {
         parse_svg_use_element(node, origin, node_id, style_sheet, depth + 1, doc)?;
     } else {
         parse_xml_node_children(
@@ -185,7 +183,7 @@ fn parse_xml_node<'input>(
 pub(crate) fn parse_svg_element<'input>(
     xml_node: roxmltree::Node<'_, 'input>,
     parent_id: NodeId,
-    tag_name: ElementId,
+    tag_name: EId,
     style_sheet: &simplecss::StyleSheet,
     ignore_ids: bool,
     doc: &mut Document<'input>,
@@ -199,22 +197,19 @@ pub(crate) fn parse_svg_element<'input>(
             _ => continue,
         }
 
-        let aid = match AttributeId::from_str(attr.name()) {
+        let aid = match AId::from_str(attr.name()) {
             Some(v) => v,
             None => continue,
         };
 
         // During a `use` resolving, all `id` attributes must be ignored.
         // Otherwise we will get elements with duplicated id's.
-        if ignore_ids && aid == AttributeId::Id {
+        if ignore_ids && aid == AId::Id {
             continue;
         }
 
         // For some reason those properties are allowed only inside a `style` attribute and CSS.
-        if matches!(
-            aid,
-            AttributeId::MixBlendMode | AttributeId::Isolation | AttributeId::FontKerning
-        ) {
+        if matches!(aid, AId::MixBlendMode | AId::Isolation | AId::FontKerning) {
             continue;
         }
 
@@ -253,15 +248,15 @@ pub(crate) fn parse_svg_element<'input>(
         if rule.selector.matches(&XmlNode(xml_node)) {
             for declaration in &rule.declarations {
                 // TODO: perform XML attribute normalization
-                if let Some(aid) = AttributeId::from_str(declaration.name) {
+                if let Some(aid) = AId::from_str(declaration.name) {
                     // Parse only the presentation attributes.
                     if aid.is_presentation() {
                         insert_attribute(aid, declaration.value);
                     }
                 } else if declaration.name == "marker" {
-                    insert_attribute(AttributeId::MarkerStart, declaration.value);
-                    insert_attribute(AttributeId::MarkerMid, declaration.value);
-                    insert_attribute(AttributeId::MarkerEnd, declaration.value);
+                    insert_attribute(AId::MarkerStart, declaration.value);
+                    insert_attribute(AId::MarkerMid, declaration.value);
+                    insert_attribute(AId::MarkerEnd, declaration.value);
                 }
             }
         }
@@ -271,7 +266,7 @@ pub(crate) fn parse_svg_element<'input>(
     if let Some(value) = xml_node.attribute("style") {
         for declaration in simplecss::DeclarationTokenizer::from(value) {
             // TODO: preform XML attribute normalization
-            if let Some(aid) = AttributeId::from_str(declaration.name) {
+            if let Some(aid) = AId::from_str(declaration.name) {
                 // Parse only the presentation attributes.
                 if aid.is_presentation() {
                     insert_attribute(aid, declaration.value);
@@ -297,22 +292,22 @@ pub(crate) fn parse_svg_element<'input>(
 
 fn append_attribute<'input>(
     parent_id: NodeId,
-    tag_name: ElementId,
-    aid: AttributeId,
+    tag_name: EId,
+    aid: AId,
     value: roxmltree::StringStorage<'input>,
     doc: &mut Document<'input>,
 ) -> bool {
     match aid {
         // The `style` attribute will be split into attributes, so we don't need it.
-        AttributeId::Style |
+        AId::Style |
         // No need to copy a `class` attribute since CSS were already resolved.
-        AttributeId::Class => return false,
+        AId::Class => return false,
         _ => {}
     }
 
     // Ignore `xlink:href` on `tspan` (which was originally `tref` or `a`),
     // because we will convert `tref` into `tspan` anyway.
-    if tag_name == ElementId::Tspan && aid == AttributeId::Href {
+    if tag_name == EId::Tspan && aid == AId::Href {
         return false;
     }
 
@@ -324,7 +319,7 @@ fn append_attribute<'input>(
     true
 }
 
-fn resolve_inherit(parent_id: NodeId, aid: AttributeId, doc: &mut Document) -> bool {
+fn resolve_inherit(parent_id: NodeId, aid: AId, doc: &mut Document) -> bool {
     if aid.is_inheritable() {
         // Inheritable attributes can inherit a value from an any ancestor.
         let node_id = doc
@@ -368,51 +363,49 @@ fn resolve_inherit(parent_id: NodeId, aid: AttributeId, doc: &mut Document) -> b
 
     // Fallback to a default value if possible.
     let value = match aid {
-        AttributeId::ImageRendering | AttributeId::ShapeRendering | AttributeId::TextRendering => {
-            "auto"
-        }
+        AId::ImageRendering | AId::ShapeRendering | AId::TextRendering => "auto",
 
-        AttributeId::ClipPath
-        | AttributeId::Filter
-        | AttributeId::MarkerEnd
-        | AttributeId::MarkerMid
-        | AttributeId::MarkerStart
-        | AttributeId::Mask
-        | AttributeId::Stroke
-        | AttributeId::StrokeDasharray
-        | AttributeId::TextDecoration => "none",
+        AId::ClipPath
+        | AId::Filter
+        | AId::MarkerEnd
+        | AId::MarkerMid
+        | AId::MarkerStart
+        | AId::Mask
+        | AId::Stroke
+        | AId::StrokeDasharray
+        | AId::TextDecoration => "none",
 
-        AttributeId::FontStretch
-        | AttributeId::FontStyle
-        | AttributeId::FontVariant
-        | AttributeId::FontWeight
-        | AttributeId::LetterSpacing
-        | AttributeId::WordSpacing => "normal",
+        AId::FontStretch
+        | AId::FontStyle
+        | AId::FontVariant
+        | AId::FontWeight
+        | AId::LetterSpacing
+        | AId::WordSpacing => "normal",
 
-        AttributeId::Fill | AttributeId::FloodColor | AttributeId::StopColor => "black",
+        AId::Fill | AId::FloodColor | AId::StopColor => "black",
 
-        AttributeId::FillOpacity
-        | AttributeId::FloodOpacity
-        | AttributeId::Opacity
-        | AttributeId::StopOpacity
-        | AttributeId::StrokeOpacity => "1",
+        AId::FillOpacity
+        | AId::FloodOpacity
+        | AId::Opacity
+        | AId::StopOpacity
+        | AId::StrokeOpacity => "1",
 
-        AttributeId::ClipRule | AttributeId::FillRule => "nonzero",
+        AId::ClipRule | AId::FillRule => "nonzero",
 
-        AttributeId::BaselineShift => "baseline",
-        AttributeId::ColorInterpolationFilters => "linearRGB",
-        AttributeId::Direction => "ltr",
-        AttributeId::Display => "inline",
-        AttributeId::FontSize => "medium",
-        AttributeId::Overflow => "visible",
-        AttributeId::StrokeDashoffset => "0",
-        AttributeId::StrokeLinecap => "butt",
-        AttributeId::StrokeLinejoin => "miter",
-        AttributeId::StrokeMiterlimit => "4",
-        AttributeId::StrokeWidth => "1",
-        AttributeId::TextAnchor => "start",
-        AttributeId::Visibility => "visible",
-        AttributeId::WritingMode => "lr-tb",
+        AId::BaselineShift => "baseline",
+        AId::ColorInterpolationFilters => "linearRGB",
+        AId::Direction => "ltr",
+        AId::Display => "inline",
+        AId::FontSize => "medium",
+        AId::Overflow => "visible",
+        AId::StrokeDashoffset => "0",
+        AId::StrokeLinecap => "butt",
+        AId::StrokeLinejoin => "miter",
+        AId::StrokeMiterlimit => "4",
+        AId::StrokeWidth => "1",
+        AId::TextAnchor => "start",
+        AId::Visibility => "visible",
+        AId::WritingMode => "lr-tb",
         _ => return false,
     };
 
@@ -562,22 +555,22 @@ impl simplecss::Element for XmlNode<'_, '_> {
 }
 
 fn fix_recursive_patterns(doc: &mut Document) {
-    while let Some(node_id) = find_recursive_pattern(AttributeId::Fill, doc) {
-        let idx = doc.get(node_id).attribute_id(AttributeId::Fill).unwrap();
+    while let Some(node_id) = find_recursive_pattern(AId::Fill, doc) {
+        let idx = doc.get(node_id).attribute_id(AId::Fill).unwrap();
         doc.attrs[idx].value = roxmltree::StringStorage::Borrowed("none");
     }
 
-    while let Some(node_id) = find_recursive_pattern(AttributeId::Stroke, doc) {
-        let idx = doc.get(node_id).attribute_id(AttributeId::Stroke).unwrap();
+    while let Some(node_id) = find_recursive_pattern(AId::Stroke, doc) {
+        let idx = doc.get(node_id).attribute_id(AId::Stroke).unwrap();
         doc.attrs[idx].value = roxmltree::StringStorage::Borrowed("none");
     }
 }
 
-fn find_recursive_pattern(aid: AttributeId, doc: &mut Document) -> Option<NodeId> {
+fn find_recursive_pattern(aid: AId, doc: &mut Document) -> Option<NodeId> {
     for pattern_node in doc
         .root()
         .descendants()
-        .filter(|n| n.tag_name() == Some(ElementId::Pattern))
+        .filter(|n| n.tag_name() == Some(EId::Pattern))
     {
         for node in pattern_node.descendants() {
             let value = match node.attribute(aid) {
@@ -617,14 +610,14 @@ fn find_recursive_pattern(aid: AttributeId, doc: &mut Document) -> Option<NodeId
     None
 }
 
-fn fix_recursive_links(eid: ElementId, aid: AttributeId, doc: &mut Document) {
+fn fix_recursive_links(eid: EId, aid: AId, doc: &mut Document) {
     while let Some(node_id) = find_recursive_link(eid, aid, doc) {
         let idx = doc.get(node_id).attribute_id(aid).unwrap();
         doc.attrs[idx].value = roxmltree::StringStorage::Borrowed("none");
     }
 }
 
-fn find_recursive_link(eid: ElementId, aid: AttributeId, doc: &Document) -> Option<NodeId> {
+fn find_recursive_link(eid: EId, aid: AId, doc: &Document) -> Option<NodeId> {
     for node in doc
         .root()
         .descendants()
@@ -667,10 +660,10 @@ fn fix_recursive_fe_image(doc: &mut Document) {
     for fe_node in doc
         .root()
         .descendants()
-        .filter(|n| n.tag_name() == Some(ElementId::FeImage))
+        .filter(|n| n.tag_name() == Some(EId::FeImage))
     {
-        if let Some(link) = fe_node.node_attribute(AttributeId::Href) {
-            if let Some(filter_uri) = link.attribute(AttributeId::Filter) {
+        if let Some(link) = fe_node.node_attribute(AId::Href) {
+            if let Some(filter_uri) = link.attribute::<&str>(AId::Filter) {
                 let filter_id = fe_node.parent().unwrap().element_id().to_string();
                 for func in svgtypes::FilterValueListParser::from(filter_uri).flatten() {
                     if let svgtypes::FilterValue::Url(url) = func {
@@ -684,7 +677,7 @@ fn fix_recursive_fe_image(doc: &mut Document) {
     }
 
     for id in ids {
-        let idx = doc.get(id).attribute_id(AttributeId::Filter).unwrap();
+        let idx = doc.get(id).attribute_id(AId::Filter).unwrap();
         doc.attrs[idx].value = roxmltree::StringStorage::Borrowed("none");
     }
 }

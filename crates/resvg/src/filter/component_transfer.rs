@@ -47,10 +47,10 @@ fn transfer(func: &TransferFunction, c: u8) -> u8 {
             let k = (c * (n as f32)).floor() as usize;
             let k = std::cmp::min(k, n);
             if k == n {
-                values[k] as f32
+                values[k]
             } else {
-                let vk = values[k] as f32;
-                let vk1 = values[k + 1] as f32;
+                let vk = values[k];
+                let vk1 = values[k + 1];
                 let k = k as f32;
                 let n = n as f32;
                 vk + (c - k / n) * n * (vk1 - vk)
@@ -59,7 +59,7 @@ fn transfer(func: &TransferFunction, c: u8) -> u8 {
         TransferFunction::Discrete(values) => {
             let n = values.len();
             let k = (c * (n as f32)).floor() as usize;
-            values[std::cmp::min(k, n - 1)] as f32
+            values[std::cmp::min(k, n - 1)]
         }
         TransferFunction::Linear { slope, intercept } => slope * c + intercept,
         TransferFunction::Gamma {

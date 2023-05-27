@@ -4,15 +4,14 @@
 
 use std::rc::Rc;
 
-use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use svgtypes::{Length, LengthUnit as Unit};
 use usvg_tree::{Group, Mask, MaskType, Node, NodeKind, NonZeroRect, Units};
 
-use crate::rosvgtree_ext::SvgNodeExt2;
-use crate::{converter, OptionLog, SvgNodeExt};
+use crate::svgtree::{AId, EId, SvgNode};
+use crate::{converter, OptionLog};
 
 pub(crate) fn convert(
-    node: rosvgtree::Node,
+    node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
 ) -> Option<Rc<Mask>> {
@@ -27,10 +26,10 @@ pub(crate) fn convert(
     }
 
     let units = node
-        .parse_attribute(AId::MaskUnits)
+        .attribute(AId::MaskUnits)
         .unwrap_or(Units::ObjectBoundingBox);
     let content_units = node
-        .parse_attribute(AId::MaskContentUnits)
+        .attribute(AId::MaskContentUnits)
         .unwrap_or(Units::UserSpaceOnUse);
 
     let rect = NonZeroRect::from_xywh(
@@ -44,7 +43,7 @@ pub(crate) fn convert(
 
     // Resolve linked mask.
     let mut mask = None;
-    if let Some(link) = node.parse_attribute::<rosvgtree::Node>(AId::Mask) {
+    if let Some(link) = node.attribute::<SvgNode>(AId::Mask) {
         mask = convert(link, state, cache);
 
         // Linked `mask` must be valid.

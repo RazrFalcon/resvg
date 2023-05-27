@@ -1243,7 +1243,7 @@ fn apply_displacement_map(
     let (sx, sy) = ts.get_scale();
 
     displacement_map::apply(
-        &fe,
+        fe,
         sx,
         sy,
         pixmap1.as_image_ref(),

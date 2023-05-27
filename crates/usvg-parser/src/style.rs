@@ -2,14 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use rosvgtree::{self, AttributeId as AId};
 use usvg_tree::{ApproxEqUlps, Color, Fill, Opacity, Paint, Stroke, StrokeMiterlimit, Units};
 
-use crate::rosvgtree_ext::{FromValue, OpacityWrapper, SvgColorExt, SvgNodeExt2};
-use crate::{converter, paint_server, SvgNodeExt};
+use crate::converter::SvgColorExt;
+use crate::svgtree::{AId, FromValue, SvgNode};
+use crate::{converter, paint_server};
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::LineCap {
-    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
         match value {
             "butt" => Some(usvg_tree::LineCap::Butt),
             "round" => Some(usvg_tree::LineCap::Round),
@@ -20,7 +20,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::LineCap {
 }
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::LineJoin {
-    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
         match value {
             "miter" => Some(usvg_tree::LineJoin::Miter),
             "round" => Some(usvg_tree::LineJoin::Round),
@@ -31,7 +31,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::LineJoin {
 }
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::FillRule {
-    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
         match value {
             "nonzero" => Some(usvg_tree::FillRule::NonZero),
             "evenodd" => Some(usvg_tree::FillRule::EvenOdd),
@@ -41,7 +41,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::FillRule {
 }
 
 pub(crate) fn resolve_fill(
-    node: rosvgtree::Node,
+    node: SvgNode,
     has_bbox: bool,
     state: &converter::State,
     cache: &mut converter::Cache,
@@ -51,9 +51,7 @@ pub(crate) fn resolve_fill(
         return Some(Fill {
             paint: Paint::Color(Color::black()),
             opacity: Opacity::ONE,
-            rule: node
-                .find_and_parse_attribute(AId::ClipRule)
-                .unwrap_or_default(),
+            rule: node.find_attribute(AId::ClipRule).unwrap_or_default(),
         });
     }
 
@@ -65,21 +63,18 @@ pub(crate) fn resolve_fill(
     };
 
     let fill_opacity = node
-        .find_and_parse_attribute::<OpacityWrapper>(AId::FillOpacity)
-        .map(|v| v.0)
+        .find_attribute::<Opacity>(AId::FillOpacity)
         .unwrap_or(Opacity::ONE);
 
     Some(Fill {
         paint,
         opacity: sub_opacity * fill_opacity,
-        rule: node
-            .find_and_parse_attribute(AId::FillRule)
-            .unwrap_or_default(),
+        rule: node.find_attribute(AId::FillRule).unwrap_or_default(),
     })
 }
 
 pub(crate) fn resolve_stroke(
-    node: rosvgtree::Node,
+    node: SvgNode,
     has_bbox: bool,
     state: &converter::State,
     cache: &mut converter::Cache,
@@ -99,15 +94,12 @@ pub(crate) fn resolve_stroke(
     let width = node.resolve_valid_length(AId::StrokeWidth, state, 1.0)?;
 
     // Must be bigger than 1.
-    let miterlimit = node
-        .find_and_parse_attribute(AId::StrokeMiterlimit)
-        .unwrap_or(4.0);
+    let miterlimit = node.find_attribute(AId::StrokeMiterlimit).unwrap_or(4.0);
     let miterlimit = if miterlimit < 1.0 { 1.0 } else { miterlimit };
-    let miterlimit = StrokeMiterlimit::new(miterlimit as f32);
+    let miterlimit = StrokeMiterlimit::new(miterlimit);
 
     let stroke_opacity = node
-        .find_and_parse_attribute::<OpacityWrapper>(AId::StrokeOpacity)
-        .map(|v| v.0)
+        .find_attribute::<Opacity>(AId::StrokeOpacity)
         .unwrap_or(Opacity::ONE);
 
     let stroke = Stroke {
@@ -117,19 +109,15 @@ pub(crate) fn resolve_stroke(
         miterlimit,
         opacity: sub_opacity * stroke_opacity,
         width,
-        linecap: node
-            .find_and_parse_attribute(AId::StrokeLinecap)
-            .unwrap_or_default(),
-        linejoin: node
-            .find_and_parse_attribute(AId::StrokeLinejoin)
-            .unwrap_or_default(),
+        linecap: node.find_attribute(AId::StrokeLinecap).unwrap_or_default(),
+        linejoin: node.find_attribute(AId::StrokeLinejoin).unwrap_or_default(),
     };
 
     Some(stroke)
 }
 
 fn convert_paint(
-    node: rosvgtree::Node,
+    node: SvgNode,
     aid: AId,
     has_bbox: bool,
     state: &converter::State,
@@ -157,7 +145,7 @@ fn convert_paint(
         svgtypes::Paint::Inherit => None, // already resolved by rosvgtree
         svgtypes::Paint::CurrentColor => {
             let svg_color: svgtypes::Color = node
-                .find_and_parse_attribute(AId::Color)
+                .find_attribute(AId::Color)
                 .unwrap_or_else(svgtypes::Color::black);
             let (color, alpha) = svg_color.split_alpha();
             *opacity = alpha;
@@ -202,7 +190,7 @@ fn convert_paint(
 }
 
 fn from_fallback(
-    node: rosvgtree::Node,
+    node: SvgNode,
     fallback: Option<svgtypes::PaintFallback>,
     opacity: &mut Opacity,
 ) -> Option<Paint> {
@@ -210,7 +198,7 @@ fn from_fallback(
         svgtypes::PaintFallback::None => None,
         svgtypes::PaintFallback::CurrentColor => {
             let svg_color: svgtypes::Color = node
-                .find_and_parse_attribute(AId::Color)
+                .find_attribute(AId::Color)
                 .unwrap_or_else(svgtypes::Color::black);
             let (color, alpha) = svg_color.split_alpha();
             *opacity = alpha;
@@ -226,7 +214,7 @@ fn from_fallback(
 
 // Prepare the 'stroke-dasharray' according to:
 // https://www.w3.org/TR/SVG11/painting.html#StrokeDasharrayProperty
-fn conv_dasharray(node: rosvgtree::Node, state: &converter::State) -> Option<Vec<f32>> {
+fn conv_dasharray(node: SvgNode, state: &converter::State) -> Option<Vec<f32>> {
     let node = node
         .ancestors()
         .find(|n| n.has_attribute(AId::StrokeDasharray))?;

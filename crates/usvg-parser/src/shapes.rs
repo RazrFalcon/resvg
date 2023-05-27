@@ -4,15 +4,14 @@
 
 use std::rc::Rc;
 
-use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use svgtypes::Length;
 use tiny_skia_path::Path;
 use usvg_tree::{tiny_skia_path, ApproxEqUlps, IsValidLength, Units};
 
-use crate::rosvgtree_ext::SvgNodeExt2;
-use crate::{converter, units, SvgNodeExt};
+use crate::svgtree::{AId, EId, SvgNode};
+use crate::{converter, units};
 
-pub(crate) fn convert(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<Path>> {
+pub(crate) fn convert(node: SvgNode, state: &converter::State) -> Option<Rc<Path>> {
     match node.tag_name()? {
         EId::Rect => convert_rect(node, state),
         EId::Circle => convert_circle(node, state),
@@ -25,7 +24,7 @@ pub(crate) fn convert(node: rosvgtree::Node, state: &converter::State) -> Option
     }
 }
 
-pub(crate) fn convert_path(node: rosvgtree::Node) -> Option<Rc<Path>> {
+pub(crate) fn convert_path(node: SvgNode) -> Option<Rc<Path>> {
     let value: &str = node.attribute(AId::D)?;
     let mut builder = tiny_skia_path::PathBuilder::new();
     for segment in svgtypes::SimplifyingPathParser::from(value) {
@@ -65,7 +64,7 @@ pub(crate) fn convert_path(node: rosvgtree::Node) -> Option<Rc<Path>> {
     builder.finish().map(Rc::new)
 }
 
-fn convert_rect(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<Path>> {
+fn convert_rect(node: SvgNode, state: &converter::State) -> Option<Rc<Path>> {
     // 'width' and 'height' attributes must be positive and non-zero.
     let width = node.convert_user_length(AId::Width, state, Length::zero());
     let height = node.convert_user_length(AId::Height, state, Length::zero());
@@ -126,9 +125,9 @@ fn convert_rect(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<Pa
     Some(Rc::new(path))
 }
 
-fn resolve_rx_ry(node: rosvgtree::Node, state: &converter::State) -> (f32, f32) {
-    let mut rx_opt = node.parse_attribute::<Length>(AId::Rx);
-    let mut ry_opt = node.parse_attribute::<Length>(AId::Ry);
+fn resolve_rx_ry(node: SvgNode, state: &converter::State) -> (f32, f32) {
+    let mut rx_opt = node.attribute::<Length>(AId::Rx);
+    let mut ry_opt = node.attribute::<Length>(AId::Ry);
 
     // Remove negative values first.
     if let Some(v) = rx_opt {
@@ -161,7 +160,7 @@ fn resolve_rx_ry(node: rosvgtree::Node, state: &converter::State) -> (f32, f32) 
     }
 }
 
-fn convert_line(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<Path>> {
+fn convert_line(node: SvgNode, state: &converter::State) -> Option<Rc<Path>> {
     let x1 = node.convert_user_length(AId::X1, state, Length::zero());
     let y1 = node.convert_user_length(AId::Y1, state, Length::zero());
     let x2 = node.convert_user_length(AId::X2, state, Length::zero());
@@ -173,22 +172,22 @@ fn convert_line(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<Pa
     builder.finish().map(Rc::new)
 }
 
-fn convert_polyline(node: rosvgtree::Node) -> Option<Rc<Path>> {
+fn convert_polyline(node: SvgNode) -> Option<Rc<Path>> {
     let builder = points_to_path(node, "Polyline")?;
     builder.finish().map(Rc::new)
 }
 
-fn convert_polygon(node: rosvgtree::Node) -> Option<Rc<Path>> {
+fn convert_polygon(node: SvgNode) -> Option<Rc<Path>> {
     let mut builder = points_to_path(node, "Polygon")?;
     builder.close();
     builder.finish().map(Rc::new)
 }
 
-fn points_to_path(node: rosvgtree::Node, eid: &str) -> Option<tiny_skia_path::PathBuilder> {
+fn points_to_path(node: SvgNode, eid: &str) -> Option<tiny_skia_path::PathBuilder> {
     use svgtypes::PointsParser;
 
     let mut builder = tiny_skia_path::PathBuilder::new();
-    match node.attribute(AId::Points) {
+    match node.attribute::<&str>(AId::Points) {
         Some(text) => {
             for (x, y) in PointsParser::from(text) {
                 if builder.is_empty() {
@@ -221,7 +220,7 @@ fn points_to_path(node: rosvgtree::Node, eid: &str) -> Option<tiny_skia_path::Pa
     Some(builder)
 }
 
-fn convert_circle(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<Path>> {
+fn convert_circle(node: SvgNode, state: &converter::State) -> Option<Rc<Path>> {
     let cx = node.convert_user_length(AId::Cx, state, Length::zero());
     let cy = node.convert_user_length(AId::Cy, state, Length::zero());
     let r = node.convert_user_length(AId::R, state, Length::zero());
@@ -237,7 +236,7 @@ fn convert_circle(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<
     ellipse_to_path(cx, cy, r, r)
 }
 
-fn convert_ellipse(node: rosvgtree::Node, state: &converter::State) -> Option<Rc<Path>> {
+fn convert_ellipse(node: SvgNode, state: &converter::State) -> Option<Rc<Path>> {
     let cx = node.convert_user_length(AId::Cx, state, Length::zero());
     let cy = node.convert_user_length(AId::Cy, state, Length::zero());
     let (rx, ry) = resolve_rx_ry(node, state);

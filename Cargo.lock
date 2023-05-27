@@ -243,18 +243,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rosvgtree"
-version = "0.3.0"
-dependencies = [
- "log",
- "roxmltree",
- "simplecss",
- "siphasher",
- "svgtypes",
- "xmlwriter",
-]
-
-[[package]]
 name = "roxmltree"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -445,7 +433,9 @@ dependencies = [
  "imagesize",
  "kurbo",
  "log",
- "rosvgtree",
+ "roxmltree",
+ "simplecss",
+ "siphasher",
  "svgtypes",
  "usvg-tree",
 ]

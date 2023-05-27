@@ -29,9 +29,9 @@ mod marker;
 mod mask;
 mod options;
 mod paint_server;
-mod rosvgtree_ext;
 mod shapes;
 mod style;
+mod svgtree;
 mod switch;
 mod text;
 mod units;
@@ -39,9 +39,8 @@ mod use_node;
 
 pub use crate::options::*;
 pub use image::ImageHrefResolver;
-pub use rosvgtree::{self, roxmltree};
-
-use crate::rosvgtree_ext::{FromValue, SvgNodeExt, SvgNodeExt2};
+pub use roxmltree;
+pub use svgtree::{AId, EId};
 
 /// List of all errors.
 #[derive(Debug)]
@@ -63,11 +62,11 @@ pub enum Error {
     InvalidSize,
 
     /// Failed to parse an SVG data.
-    ParsingFailed(rosvgtree::Error),
+    ParsingFailed(roxmltree::Error),
 }
 
-impl From<rosvgtree::Error> for Error {
-    fn from(e: rosvgtree::Error) -> Self {
+impl From<roxmltree::Error> for Error {
+    fn from(e: roxmltree::Error) -> Self {
         Error::ParsingFailed(e)
     }
 }
@@ -122,11 +121,6 @@ pub trait TreeParsing: Sized {
 
     /// Parses `Tree` from `roxmltree::Document`.
     fn from_xmltree(doc: &roxmltree::Document, opt: &Options) -> Result<Self, Error>;
-
-    /// Parses `Tree` from the `svgtree::Document`.
-    ///
-    /// An empty `Tree` will be returned on any error.
-    fn from_rosvgtree(doc: rosvgtree::Document, opt: &Options) -> Result<Self, Error>;
 }
 
 impl TreeParsing for usvg_tree::Tree {
@@ -159,14 +153,7 @@ impl TreeParsing for usvg_tree::Tree {
 
     /// Parses `Tree` from `roxmltree::Document`.
     fn from_xmltree(doc: &roxmltree::Document, opt: &Options) -> Result<Self, Error> {
-        let doc = rosvgtree::Document::parse_tree(doc)?;
-        Self::from_rosvgtree(doc, opt)
-    }
-
-    /// Parses `Tree` from the `svgtree::Document`.
-    ///
-    /// An empty `Tree` will be returned on any error.
-    fn from_rosvgtree(doc: rosvgtree::Document, opt: &Options) -> Result<Self, Error> {
+        let doc = svgtree::Document::parse_tree(doc)?;
         crate::converter::convert_doc(&doc, opt)
     }
 }

@@ -1,8 +1,12 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 #![allow(clippy::comparison_chain)]
 
 use roxmltree::Error;
 
-use crate::{AttributeId, Document, ElementId, Node, NodeId, NodeKind};
+use super::{AId, Document, EId, NodeId, NodeKind, SvgNode};
 
 const XLINK_NS: &str = "http://www.w3.org/1999/xlink";
 
@@ -14,13 +18,13 @@ pub(crate) fn parse_svg_text_element<'input>(
 ) -> Result<(), Error> {
     debug_assert_eq!(parent.tag_name().name(), "text");
 
-    let space = if doc.get(parent_id).has_attribute(AttributeId::Space) {
+    let space = if doc.get(parent_id).has_attribute(AId::Space) {
         get_xmlspace(doc, parent_id, XmlSpace::Default)
     } else {
         if let Some(node) = doc
             .get(parent_id)
             .ancestors()
-            .find(|n| n.has_attribute(AttributeId::Space))
+            .find(|n| n.has_attribute(AId::Space))
         {
             get_xmlspace(doc, node.id, XmlSpace::Default)
         } else {
@@ -48,37 +52,34 @@ fn parse_svg_text_element_impl<'input>(
             continue;
         }
 
-        let mut tag_name = match crate::parse::parse_tag_name(node) {
+        let mut tag_name = match super::parse::parse_tag_name(node) {
             Some(v) => v,
             None => continue,
         };
 
-        if tag_name == ElementId::A {
+        if tag_name == EId::A {
             // Treat links as simple text.
-            tag_name = ElementId::Tspan;
+            tag_name = EId::Tspan;
         }
 
-        if !matches!(
-            tag_name,
-            ElementId::Tspan | ElementId::Tref | ElementId::TextPath
-        ) {
+        if !matches!(tag_name, EId::Tspan | EId::Tref | EId::TextPath) {
             continue;
         }
 
         // `textPath` must be a direct `text` child.
-        if tag_name == ElementId::TextPath && parent.tag_name().name() != "text" {
+        if tag_name == EId::TextPath && parent.tag_name().name() != "text" {
             continue;
         }
 
         // We are converting `tref` into `tspan` to simplify later use.
         let mut is_tref = false;
-        if tag_name == ElementId::Tref {
-            tag_name = ElementId::Tspan;
+        if tag_name == EId::Tref {
+            tag_name = EId::Tspan;
             is_tref = true;
         }
 
         let node_id =
-            crate::parse::parse_svg_element(node, parent_id, tag_name, style_sheet, false, doc)?;
+            super::parse::parse_svg_element(node, parent_id, tag_name, style_sheet, false, doc)?;
         let space = get_xmlspace(doc, node_id, space);
 
         if is_tref {
@@ -107,7 +108,7 @@ fn resolve_tref_text(xml: &roxmltree::Document, href: &str) -> Option<String> {
     let node = xml.descendants().find(|n| n.attribute("id") == Some(id))?;
 
     // `tref` should be linked to an SVG element.
-    crate::parse::parse_tag_name(node)?;
+    super::parse::parse_tag_name(node)?;
 
     // 'All character data within the referenced element, including character data enclosed
     // within additional markup, will be rendered.'
@@ -135,7 +136,7 @@ enum XmlSpace {
 }
 
 fn get_xmlspace(doc: &Document, node_id: NodeId, default: XmlSpace) -> XmlSpace {
-    match doc.get(node_id).attribute(AttributeId::Space) {
+    match doc.get(node_id).attribute(AId::Space) {
         Some("preserve") => XmlSpace::Preserve,
         Some(_) => XmlSpace::Default,
         _ => default,
@@ -331,7 +332,7 @@ fn trim_text_nodes(text_elem_id: NodeId, xmlspace: XmlSpace, doc: &mut Document)
     // TODO: find a way to remove all empty text nodes
 }
 
-fn collect_text_nodes(parent: Node, depth: usize, nodes: &mut Vec<(NodeId, usize)>) {
+fn collect_text_nodes(parent: SvgNode, depth: usize, nodes: &mut Vec<(NodeId, usize)>) {
     for child in parent.children() {
         if child.is_text() {
             nodes.push((child.id, depth));

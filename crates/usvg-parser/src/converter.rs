@@ -5,18 +5,19 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
+use std::str::FromStr;
 
-use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use svgtypes::{Length, LengthUnit as Unit};
 use usvg_tree::*;
 
-use crate::rosvgtree_ext::{FromValue, OpacityWrapper, SvgNodeExt, SvgNodeExt2};
+use crate::converter;
+use crate::svgtree::{self, AId, EId, FromValue, SvgNode};
 use crate::{Error, Options};
 
 #[derive(Clone)]
 pub struct State<'a> {
-    pub(crate) parent_clip_path: Option<rosvgtree::Node<'a, 'a>>,
-    pub(crate) parent_markers: Vec<rosvgtree::Node<'a, 'a>>,
+    pub(crate) parent_clip_path: Option<SvgNode<'a, 'a>>,
+    pub(crate) parent_markers: Vec<SvgNode<'a, 'a>>,
     pub(crate) fe_image_link: bool,
     /// A viewBox of the parent SVG element.
     pub(crate) view_box: NonZeroRect,
@@ -71,13 +72,130 @@ fn string_hash(s: &str) -> u64 {
     h.finish()
 }
 
+impl<'a, 'input: 'a> SvgNode<'a, 'input> {
+    pub fn convert_length(
+        &self,
+        aid: AId,
+        object_units: Units,
+        state: &converter::State,
+        def: svgtypes::Length,
+    ) -> f32 {
+        crate::units::convert_length(
+            self.attribute(aid).unwrap_or(def),
+            *self,
+            aid,
+            object_units,
+            state,
+        )
+    }
+
+    pub fn convert_user_length(
+        &self,
+        aid: AId,
+        state: &converter::State,
+        def: svgtypes::Length,
+    ) -> f32 {
+        self.convert_length(aid, Units::UserSpaceOnUse, state, def)
+    }
+
+    pub fn parse_viewbox(&self) -> Option<NonZeroRect> {
+        let vb: svgtypes::ViewBox = self.attribute(AId::ViewBox)?;
+        NonZeroRect::from_xywh(vb.x as f32, vb.y as f32, vb.w as f32, vb.h as f32)
+    }
+
+    pub fn resolve_length(&self, aid: AId, state: &converter::State, def: f32) -> f32 {
+        debug_assert!(
+            !matches!(aid, AId::BaselineShift | AId::FontSize),
+            "{} cannot be resolved via this function",
+            aid
+        );
+
+        if let Some(n) = self.ancestors().find(|n| n.has_attribute(aid)) {
+            if let Some(length) = n.attribute(aid) {
+                return crate::units::convert_length(length, n, aid, Units::UserSpaceOnUse, state);
+            }
+        }
+
+        def
+    }
+
+    pub fn resolve_valid_length(
+        &self,
+        aid: AId,
+        state: &converter::State,
+        def: f32,
+    ) -> Option<NonZeroPositiveF32> {
+        let n = self.resolve_length(aid, state, def);
+        NonZeroPositiveF32::new(n)
+    }
+
+    pub fn try_convert_length(
+        &self,
+        aid: AId,
+        object_units: Units,
+        state: &converter::State,
+    ) -> Option<f32> {
+        Some(crate::units::convert_length(
+            self.attribute(aid)?,
+            *self,
+            aid,
+            object_units,
+            state,
+        ))
+    }
+
+    pub fn has_valid_transform(&self, aid: AId) -> bool {
+        // Do not use Node::attribute::<Transform>, because it will always
+        // return a valid transform.
+
+        let attr = match self.attribute(aid) {
+            Some(attr) => attr,
+            None => return true,
+        };
+
+        let ts = match svgtypes::Transform::from_str(attr) {
+            Ok(v) => v,
+            Err(_) => return true,
+        };
+
+        let ts = Transform::from_row(
+            ts.a as f32,
+            ts.b as f32,
+            ts.c as f32,
+            ts.d as f32,
+            ts.e as f32,
+            ts.f as f32,
+        );
+        ts.is_valid()
+    }
+
+    pub fn is_visible_element(&self, opt: &crate::Options) -> bool {
+        self.attribute(AId::Display) != Some("none")
+            && self.has_valid_transform(AId::Transform)
+            && crate::switch::is_condition_passed(*self, opt)
+    }
+}
+
+pub trait SvgColorExt {
+    fn split_alpha(self) -> (usvg_tree::Color, Opacity);
+}
+
+impl SvgColorExt for svgtypes::Color {
+    fn split_alpha(self) -> (usvg_tree::Color, Opacity) {
+        (
+            usvg_tree::Color::new_rgb(self.red, self.green, self.blue),
+            Opacity::new_u8(self.alpha),
+        )
+    }
+}
+
 /// Converts an input `Document` into a `Tree`.
 ///
 /// # Errors
 ///
 /// - If `Document` doesn't have an SVG node - returns an empty tree.
 /// - If `Document` doesn't have a valid size - returns `Error::InvalidSize`.
-pub(crate) fn convert_doc(svg_doc: &rosvgtree::Document, opt: &Options) -> Result<Tree, Error> {
+pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<Tree, Error> {
     let svg = svg_doc.root_element();
     let (size, restore_viewbox) = resolve_svg_size(&svg, opt);
     let size = size?;
@@ -85,9 +203,7 @@ pub(crate) fn convert_doc(svg_doc: &rosvgtree::Document, opt: &Options) -> Resul
         rect: svg
             .parse_viewbox()
             .unwrap_or_else(|| size.to_non_zero_rect(0.0, 0.0)),
-        aspect: svg
-            .parse_attribute(AId::PreserveAspectRatio)
-            .unwrap_or_default(),
+        aspect: svg.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
 
     let mut tree = Tree {
@@ -131,7 +247,7 @@ pub(crate) fn convert_doc(svg_doc: &rosvgtree::Document, opt: &Options) -> Resul
     Ok(tree)
 }
 
-fn resolve_svg_size(svg: &rosvgtree::Node, opt: &Options) -> (Result<Size, Error>, bool) {
+fn resolve_svg_size(svg: &SvgNode, opt: &Options) -> (Result<Size, Error>, bool) {
     let mut state = State {
         parent_clip_path: None,
         parent_markers: Vec::new(),
@@ -142,8 +258,8 @@ fn resolve_svg_size(svg: &rosvgtree::Node, opt: &Options) -> (Result<Size, Error
     };
 
     let def = Length::new(100.0, Unit::Percent);
-    let mut width: Length = svg.parse_attribute(AId::Width).unwrap_or(def);
-    let mut height: Length = svg.parse_attribute(AId::Height).unwrap_or(def);
+    let mut width: Length = svg.attribute(AId::Width).unwrap_or(def);
+    let mut height: Length = svg.attribute(AId::Height).unwrap_or(def);
 
     let view_box = svg.parse_viewbox();
 
@@ -224,7 +340,7 @@ fn calculate_svg_bbox(tree: &mut Tree) {
 
 #[inline(never)]
 pub(crate) fn convert_children(
-    parent_node: rosvgtree::Node,
+    parent_node: SvgNode,
     state: &State,
     cache: &mut Cache,
     parent: &mut Node,
@@ -236,7 +352,7 @@ pub(crate) fn convert_children(
 
 #[inline(never)]
 pub(crate) fn convert_element(
-    node: rosvgtree::Node,
+    node: SvgNode,
     state: &State,
     cache: &mut Cache,
     parent: &mut Node,
@@ -308,7 +424,7 @@ pub(crate) fn convert_element(
 // for `clipPath` children.
 #[inline(never)]
 pub(crate) fn convert_clip_path_elements(
-    clip_node: rosvgtree::Node,
+    clip_node: SvgNode,
     state: &State,
     cache: &mut Cache,
     parent: &mut Node,
@@ -367,7 +483,7 @@ impl Default for Isolation {
 }
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for Isolation {
-    fn parse(_: rosvgtree::Node, _: rosvgtree::AttributeId, value: &str) -> Option<Self> {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
         match value {
             "auto" => Some(Isolation::Auto),
             "isolate" => Some(Isolation::Isolate),
@@ -388,7 +504,7 @@ pub enum GroupKind {
 
 // TODO: explain
 pub(crate) fn convert_group(
-    node: rosvgtree::Node,
+    node: SvgNode,
     state: &State,
     force: bool,
     cache: &mut Cache,
@@ -396,8 +512,7 @@ pub(crate) fn convert_group(
 ) -> GroupKind {
     // A `clipPath` child cannot have an opacity.
     let opacity = if state.parent_clip_path.is_none() {
-        node.parse_attribute::<OpacityWrapper>(AId::Opacity)
-            .map(|v| v.0)
+        node.attribute::<Opacity>(AId::Opacity)
             .unwrap_or(Opacity::ONE)
     } else {
         Opacity::ONE
@@ -408,7 +523,7 @@ pub(crate) fn convert_group(
         ($aid:expr, $f:expr) => {{
             let mut v = None;
 
-            if let Some(link) = node.parse_attribute::<rosvgtree::Node>($aid) {
+            if let Some(link) = node.attribute::<SvgNode>($aid) {
                 v = $f(link, state, cache);
 
                 // If `$aid` is linked to an invalid element - skip this group completely.
@@ -464,9 +579,9 @@ pub(crate) fn convert_group(
         (filters, filter_fill, filter_stroke)
     };
 
-    let transform: Transform = node.parse_attribute(AId::Transform).unwrap_or_default();
-    let blend_mode: BlendMode = node.parse_attribute(AId::MixBlendMode).unwrap_or_default();
-    let isolation: Isolation = node.parse_attribute(AId::Isolation).unwrap_or_default();
+    let transform: Transform = node.attribute(AId::Transform).unwrap_or_default();
+    let blend_mode: BlendMode = node.attribute(AId::MixBlendMode).unwrap_or_default();
+    let isolation: Isolation = node.attribute(AId::Isolation).unwrap_or_default();
     let isolate = isolation == Isolation::Isolate;
 
     // TODO: ignore just transform
@@ -508,7 +623,7 @@ pub(crate) fn convert_group(
 }
 
 fn resolve_filter_fill(
-    node: rosvgtree::Node,
+    node: SvgNode,
     state: &State,
     filters: &[Rc<filter::Filter>],
     cache: &mut Cache,
@@ -534,7 +649,7 @@ fn resolve_filter_fill(
 }
 
 fn resolve_filter_stroke(
-    node: rosvgtree::Node,
+    node: SvgNode,
     state: &State,
     filters: &[Rc<filter::Filter>],
     cache: &mut Cache,
@@ -598,7 +713,7 @@ fn remove_empty_groups(tree: &mut Tree) {
 }
 
 fn convert_path(
-    node: rosvgtree::Node,
+    node: SvgNode,
     path: Rc<tiny_skia_path::Path>,
     state: &State,
     cache: &mut Cache,
@@ -612,17 +727,14 @@ fn convert_path(
     let has_bbox = path.bounds().width() > 0.0 && path.bounds().height() > 0.0;
     let fill = crate::style::resolve_fill(node, has_bbox, state, cache);
     let stroke = crate::style::resolve_stroke(node, has_bbox, state, cache);
-    let mut visibility: Visibility = node
-        .find_and_parse_attribute(AId::Visibility)
-        .unwrap_or_default();
+    let mut visibility: Visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
     let rendering_mode: ShapeRendering = node
-        .find_and_parse_attribute(AId::ShapeRendering)
+        .find_attribute(AId::ShapeRendering)
         .unwrap_or(state.opt.shape_rendering);
 
     // TODO: handle `markers` before `stroke`
-    let raw_paint_order: svgtypes::PaintOrder = node
-        .find_and_parse_attribute(AId::PaintOrder)
-        .unwrap_or_default();
+    let raw_paint_order: svgtypes::PaintOrder =
+        node.find_attribute(AId::PaintOrder).unwrap_or_default();
     let paint_order = svg_paint_order_to_usvg(raw_paint_order);
 
     // If a path doesn't have a fill or a stroke than it's invisible.

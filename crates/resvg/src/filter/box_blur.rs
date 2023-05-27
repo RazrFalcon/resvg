@@ -4,6 +4,8 @@
 
 // Based on https://github.com/fschutt/fastblur
 
+#![allow(clippy::needless_range_loop)]
+
 use super::ImageRefMut;
 use rgb::RGBA8;
 use std::cmp;

@@ -4,18 +4,17 @@
 
 use std::rc::Rc;
 
-use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use svgtypes::{Length, LengthUnit};
 use usvg_tree::{
     tiny_skia_path, Group, IsValidLength, Node, NodeExt, NodeKind, NonZeroRect, Path, Size,
     Transform,
 };
 
-use crate::rosvgtree_ext::SvgNodeExt2;
-use crate::{converter, SvgNodeExt};
+use crate::converter;
+use crate::svgtree::{AId, EId, SvgNode};
 
 pub(crate) fn convert(
-    node: rosvgtree::Node,
+    node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
     parent: &mut Node,
@@ -30,7 +29,7 @@ pub(crate) fn convert(
     }
 
     // We require an original transformation to setup 'clipPath'.
-    let mut orig_ts: Transform = node.parse_attribute(AId::Transform).unwrap_or_default();
+    let mut orig_ts: Transform = node.attribute(AId::Transform).unwrap_or_default();
     let mut new_ts = Transform::default();
 
     {
@@ -128,13 +127,13 @@ pub(crate) fn convert(
 }
 
 pub(crate) fn convert_svg(
-    node: rosvgtree::Node,
+    node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
     parent: &mut Node,
 ) {
     // We require original transformation to setup 'clipPath'.
-    let mut orig_ts: Transform = node.parse_attribute(AId::Transform).unwrap_or_default();
+    let mut orig_ts: Transform = node.attribute(AId::Transform).unwrap_or_default();
     let mut new_ts = Transform::default();
 
     {
@@ -179,7 +178,7 @@ pub(crate) fn convert_svg(
 }
 
 fn clip_element(
-    node: rosvgtree::Node,
+    node: SvgNode,
     clip_rect: NonZeroRect,
     transform: Transform,
     cache: &mut converter::Cache,
@@ -223,7 +222,7 @@ fn clip_element(
 }
 
 fn convert_children(
-    node: rosvgtree::Node,
+    node: SvgNode,
     transform: Transform,
     state: &converter::State,
     cache: &mut converter::Cache,
@@ -250,8 +249,8 @@ fn convert_children(
 }
 
 fn get_clip_rect(
-    use_node: rosvgtree::Node,
-    symbol_node: rosvgtree::Node,
+    use_node: SvgNode,
+    symbol_node: SvgNode,
     state: &converter::State,
 ) -> Option<NonZeroRect> {
     // No need to clip elements with overflow:visible.
@@ -295,7 +294,7 @@ fn get_clip_rect(
     NonZeroRect::from_xywh(x, y, w, h)
 }
 
-fn use_node_size(node: rosvgtree::Node, state: &converter::State) -> (f32, f32) {
+fn use_node_size(node: SvgNode, state: &converter::State) -> (f32, f32) {
     let def = Length::new(100.0, LengthUnit::Percent);
     let w = node.convert_user_length(AId::Width, state, def);
     let h = node.convert_user_length(AId::Height, state, def);
@@ -303,8 +302,8 @@ fn use_node_size(node: rosvgtree::Node, state: &converter::State) -> (f32, f32) 
 }
 
 fn viewbox_transform(
-    node: rosvgtree::Node,
-    linked: rosvgtree::Node,
+    node: SvgNode,
+    linked: SvgNode,
     state: &converter::State,
 ) -> Option<Transform> {
     let (mut w, mut h) = use_node_size(node, state);
@@ -320,7 +319,7 @@ fn viewbox_transform(
     let size = Size::from_wh(w, h)?;
     let vb = linked.parse_viewbox()?;
     let aspect = linked
-        .parse_attribute(AId::PreserveAspectRatio)
+        .attribute(AId::PreserveAspectRatio)
         .unwrap_or_default();
 
     Some(usvg_tree::utils::view_box_to_transform(vb, aspect, size))

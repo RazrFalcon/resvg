@@ -4,7 +4,6 @@
 
 use std::rc::Rc;
 
-use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use strict_num::NonZeroPositiveF32;
 use svgtypes::Length;
 use tiny_skia_path::Point;
@@ -13,8 +12,8 @@ use usvg_tree::{
     NodeKind, NonZeroRect, Path, Size, Transform, ViewBox,
 };
 
-use crate::rosvgtree_ext::SvgNodeExt2;
-use crate::{converter, SvgNodeExt};
+use crate::converter;
+use crate::svgtree::{AId, EId, SvgNode};
 
 // Similar to `tiny_skia_path::PathSegment`, but without the `QuadTo`.
 #[derive(Copy, Clone, Debug)]
@@ -25,7 +24,7 @@ enum Segment {
     Close,
 }
 
-pub(crate) fn is_valid(node: rosvgtree::Node) -> bool {
+pub(crate) fn is_valid(node: SvgNode) -> bool {
     // `marker-*` attributes cannot be set on shapes inside a `clipPath`.
     if node
         .ancestors()
@@ -34,14 +33,14 @@ pub(crate) fn is_valid(node: rosvgtree::Node) -> bool {
         return false;
     }
 
-    let start = node.find_and_parse_attribute::<rosvgtree::Node>(AId::MarkerStart);
-    let mid = node.find_and_parse_attribute::<rosvgtree::Node>(AId::MarkerMid);
-    let end = node.find_and_parse_attribute::<rosvgtree::Node>(AId::MarkerEnd);
+    let start = node.find_attribute::<SvgNode>(AId::MarkerStart);
+    let mid = node.find_attribute::<SvgNode>(AId::MarkerMid);
+    let end = node.find_attribute::<SvgNode>(AId::MarkerEnd);
     start.is_some() || mid.is_some() || end.is_some()
 }
 
 pub(crate) fn convert(
-    node: rosvgtree::Node,
+    node: SvgNode,
     path: &tiny_skia_path::Path,
     state: &converter::State,
     cache: &mut converter::Cache,
@@ -55,7 +54,7 @@ pub(crate) fn convert(
 
     for (aid, kind) in &list {
         let mut marker = None;
-        if let Some(link) = node.find_and_parse_attribute::<rosvgtree::Node>(*aid) {
+        if let Some(link) = node.find_attribute::<SvgNode>(*aid) {
             if link.tag_name() == Some(EId::Marker) {
                 marker = Some(link);
             }
@@ -87,9 +86,9 @@ enum MarkerOrientation {
 }
 
 fn resolve(
-    shape_node: rosvgtree::Node,
+    shape_node: SvgNode,
     path: &tiny_skia_path::Path,
-    marker_node: rosvgtree::Node,
+    marker_node: SvgNode,
     marker_kind: MarkerKind,
     state: &converter::State,
     cache: &mut converter::Cache,
@@ -102,7 +101,7 @@ fn resolve(
     let view_box = marker_node.parse_viewbox().map(|vb| ViewBox {
         rect: vb,
         aspect: marker_node
-            .parse_attribute(AId::PreserveAspectRatio)
+            .attribute(AId::PreserveAspectRatio)
             .unwrap_or_default(),
     });
 
@@ -210,8 +209,8 @@ fn resolve(
 }
 
 fn stroke_scale(
-    path_node: rosvgtree::Node,
-    marker_node: rosvgtree::Node,
+    path_node: SvgNode,
+    marker_node: SvgNode,
     state: &converter::State,
 ) -> Option<NonZeroPositiveF32> {
     match marker_node.attribute(AId::MarkerUnits) {
@@ -458,7 +457,7 @@ fn get_prev_vertex(segments: &[Segment], idx: usize) -> tiny_skia_path::Point {
     }
 }
 
-fn convert_rect(node: rosvgtree::Node, state: &converter::State) -> Option<NonZeroRect> {
+fn convert_rect(node: SvgNode, state: &converter::State) -> Option<NonZeroRect> {
     NonZeroRect::from_xywh(
         node.convert_user_length(AId::RefX, state, Length::zero()),
         node.convert_user_length(AId::RefY, state, Length::zero()),
@@ -467,11 +466,11 @@ fn convert_rect(node: rosvgtree::Node, state: &converter::State) -> Option<NonZe
     )
 }
 
-fn convert_orientation(node: rosvgtree::Node) -> MarkerOrientation {
+fn convert_orientation(node: SvgNode) -> MarkerOrientation {
     if node.attribute(AId::Orient) == Some("auto") {
         MarkerOrientation::Auto
     } else {
-        match node.parse_attribute::<svgtypes::Angle>(AId::Orient) {
+        match node.attribute::<svgtypes::Angle>(AId::Orient) {
             Some(angle) => MarkerOrientation::Angle(angle.to_degrees() as f32),
             None => MarkerOrientation::Angle(0.0),
         }

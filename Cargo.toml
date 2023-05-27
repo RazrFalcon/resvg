@@ -5,7 +5,6 @@ members = [
     "crates/usvg-parser",
     "crates/usvg-text-layout",
     "crates/usvg-tree",
-    "crates/rosvgtree",
     "crates/c-api",
 ]
 

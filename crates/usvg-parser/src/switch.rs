@@ -2,9 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use rosvgtree::{self, AttributeId as AId};
 use usvg_tree::Node;
 
+use crate::svgtree::{AId, SvgNode};
 use crate::{converter, Options};
 
 // Full list can be found here: https://www.w3.org/TR/SVG11/feature.html
@@ -43,7 +43,7 @@ static FEATURES: &[&str] = &[
 ];
 
 pub(crate) fn convert(
-    node: rosvgtree::Node,
+    node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
     parent: &mut Node,
@@ -64,7 +64,7 @@ pub(crate) fn convert(
     Some(())
 }
 
-pub(crate) fn is_condition_passed(node: rosvgtree::Node, opt: &Options) -> bool {
+pub(crate) fn is_condition_passed(node: SvgNode, opt: &Options) -> bool {
     if !node.is_element() {
         return false;
     }
@@ -78,7 +78,7 @@ pub(crate) fn is_condition_passed(node: rosvgtree::Node, opt: &Options) -> bool 
     // Only feature strings defined in the Feature String appendix are allowed.
     // If all of the given features are supported, then the attribute evaluates to true;
     // otherwise, the current element and its children are skipped and thus will not be rendered.'
-    if let Some(features) = node.attribute(AId::RequiredFeatures) {
+    if let Some(features) = node.attribute::<&str>(AId::RequiredFeatures) {
         for feature in features.split(' ') {
             if !FEATURES.contains(&feature) {
                 return false;
@@ -94,13 +94,13 @@ pub(crate) fn is_condition_passed(node: rosvgtree::Node, opt: &Options) -> bool 
 }
 
 /// SVG spec 5.8.5
-fn is_valid_sys_lang(node: rosvgtree::Node, opt: &Options) -> bool {
+fn is_valid_sys_lang(node: SvgNode, opt: &Options) -> bool {
     // 'The attribute value is a comma-separated list of language names
     // as defined in BCP 47.'
     //
     // But we support only simple cases like `en` or `en-US`.
     // No one really uses this, especially with complex BCP 47 values.
-    if let Some(langs) = node.attribute(AId::SystemLanguage) {
+    if let Some(langs) = node.attribute::<&str>(AId::SystemLanguage) {
         let mut has_match = false;
         for lang in langs.split(',') {
             let lang = lang.trim();
