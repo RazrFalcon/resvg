@@ -13,6 +13,8 @@ impl Tree {
     ///
     /// `transform` will be used as a root transform.
     /// Can be used to position SVG inside the `pixmap`.
+    ///
+    /// The produced content is in the sRGB color space.
     pub fn render(&self, transform: tiny_skia::Transform, pixmap: &mut tiny_skia::PixmapMut) {
         let target_size = tiny_skia::IntSize::from_wh(pixmap.width(), pixmap.height()).unwrap();
         let max_bbox = tiny_skia::IntRect::from_xywh(
