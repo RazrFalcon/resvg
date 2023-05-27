@@ -972,7 +972,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::ShapeRendering {
         match value {
             "optimizeSpeed" => Some(usvg_tree::ShapeRendering::OptimizeSpeed),
             "crispEdges" => Some(usvg_tree::ShapeRendering::CrispEdges),
-            "geometricPrecision" => Some(usvg_tree::ShapeRendering::GeometricPrecision),
+            "auto" | "geometricPrecision" => Some(usvg_tree::ShapeRendering::GeometricPrecision),
             _ => None,
         }
     }
@@ -982,7 +982,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::TextRendering {
     fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
         match value {
             "optimizeSpeed" => Some(usvg_tree::TextRendering::OptimizeSpeed),
-            "optimizeLegibility" => Some(usvg_tree::TextRendering::OptimizeLegibility),
+            "auto" | "optimizeLegibility" => Some(usvg_tree::TextRendering::OptimizeLegibility),
             "geometricPrecision" => Some(usvg_tree::TextRendering::GeometricPrecision),
             _ => None,
         }
@@ -992,7 +992,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::TextRendering {
 impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::ImageRendering {
     fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
         match value {
-            "optimizeQuality" => Some(usvg_tree::ImageRendering::OptimizeQuality),
+            "auto" | "optimizeQuality" => Some(usvg_tree::ImageRendering::OptimizeQuality),
             "optimizeSpeed" => Some(usvg_tree::ImageRendering::OptimizeSpeed),
             _ => None,
         }
