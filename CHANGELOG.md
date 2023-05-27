@@ -44,7 +44,10 @@ This changelog also contains important changes in dependencies.
 - `rosvgtree` crate.
 
 ### Fixed
-- Write `transform` on `clipPath` children in `usvg` output.
+- Write `transform` on `clipPath` children in `usvg` SVG output.
+- Do not duplicate marker children IDs.
+  Previously, each element resolved for a marker would preserve its ID.
+  Affects only `usvg` SVG output and doesn't affect rendering.
 
 ## [0.33.0] - 2023-05-17
 ### Added

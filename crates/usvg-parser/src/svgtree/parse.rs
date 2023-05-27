@@ -664,7 +664,7 @@ fn fix_recursive_fe_image(doc: &mut Document) {
     {
         if let Some(link) = fe_node.node_attribute(AId::Href) {
             if let Some(filter_uri) = link.attribute::<&str>(AId::Filter) {
-                let filter_id = fe_node.parent().unwrap().element_id().to_string();
+                let filter_id = fe_node.parent().unwrap().element_id();
                 for func in svgtypes::FilterValueListParser::from(filter_uri).flatten() {
                     if let svgtypes::FilterValue::Url(url) = func {
                         if url == filter_id {
