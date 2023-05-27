@@ -597,8 +597,11 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                 // `clip-path` on it.
 
                 if let NodeKind::Path(ref path) = *node.first_child().unwrap().borrow() {
+                    let mut path = path.clone();
+                    path.transform = g.transform.pre_concat(path.transform);
+
                     let clip_id = g.clip_path.as_ref().map(|cp| cp.id.as_str());
-                    write_path(path, is_clip_path, clip_id, opt, xml);
+                    write_path(&path, is_clip_path, clip_id, opt, xml);
                 }
 
                 return;

@@ -43,6 +43,9 @@ This changelog also contains important changes in dependencies.
 - `svgfilters` crate.
 - `rosvgtree` crate.
 
+### Fixed
+- Write `transform` on `clipPath` children in `usvg` output.
+
 ## [0.33.0] - 2023-05-17
 ### Added
 - A new rendering algorithm.<br>
