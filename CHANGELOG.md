@@ -34,6 +34,8 @@ This changelog also contains important changes in dependencies.
 - (c-api) Use `float` instead of `double` everywhere.
 - The `svgfilters` crate was merged into `resvg`.
 - The `rosvgtree` crate was merged into `usvg-parser`.
+- `usvg::Group::filter_fill` moved to `usvg::filter::Filter::fill_paint`.
+- `usvg::Group::filter_stroke` moved to `usvg::filter::Filter::stroke_paint`.
 
 ### Remove
 - `usvg::Point`. Use `tiny_skia::Point` instead.

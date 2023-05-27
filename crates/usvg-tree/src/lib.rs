@@ -785,16 +785,6 @@ pub struct Group {
 
     /// Element's filters.
     pub filters: Vec<Rc<filter::Filter>>,
-
-    /// Contains a fill color or paint server used by `FilterInput::FillPaint`.
-    ///
-    /// Will be set only when filter actually has a `FilterInput::FillPaint`.
-    pub filter_fill: Option<Paint>,
-
-    /// Contains a fill color or paint server used by `FilterInput::StrokePaint`.
-    ///
-    /// Will be set only when filter actually has a `FilterInput::StrokePaint`.
-    pub filter_stroke: Option<Paint>,
 }
 
 impl Default for Group {
@@ -808,8 +798,6 @@ impl Default for Group {
             clip_path: None,
             mask: None,
             filters: Vec::new(),
-            filter_fill: None,
-            filter_stroke: None,
         }
     }
 }
@@ -823,6 +811,23 @@ impl Group {
             || self.mask.is_some()
             || !self.filters.is_empty()
             || self.blend_mode != BlendMode::Normal // TODO: probably not needed?
+    }
+
+    /// Contains a fill paint used by `FilterInput::FillPaint`.
+    pub fn filter_fill_paint(&self) -> Option<&Paint> {
+        // While we can have multiple filters, only one can have Paint.
+        self.filters
+            .iter()
+            .filter_map(|f| f.fill_paint.as_ref())
+            .next()
+    }
+
+    /// Contains a stroke paint used by `FilterInput::StrokePaint`.
+    pub fn filter_stroke_paint(&self) -> Option<&Paint> {
+        self.filters
+            .iter()
+            .filter_map(|f| f.stroke_paint.as_ref())
+            .next()
     }
 }
 
@@ -1078,8 +1083,10 @@ fn loop_over_paint_servers(root: &Node, f: &mut dyn FnMut(&Paint)) {
 
     for node in root.descendants() {
         if let NodeKind::Group(ref group) = *node.borrow() {
-            push(group.filter_fill.as_ref(), f);
-            push(group.filter_stroke.as_ref(), f);
+            for filter in &group.filters {
+                push(filter.fill_paint.as_ref(), f);
+                push(filter.stroke_paint.as_ref(), f);
+            }
         } else if let NodeKind::Path(ref path) = *node.borrow() {
             push(path.fill.as_ref().map(|f| &f.paint), f);
             push(path.stroke.as_ref().map(|f| &f.paint), f);
@@ -1164,8 +1171,10 @@ fn node_subroots(node: &Node, f: &mut dyn FnMut(Node)) {
 
     match *node.borrow() {
         NodeKind::Group(ref g) => {
-            push_patt(g.filter_fill.as_ref());
-            push_patt(g.filter_stroke.as_ref());
+            for filter in &g.filters {
+                push_patt(filter.fill_paint.as_ref());
+                push_patt(filter.stroke_paint.as_ref());
+            }
 
             if let Some(ref clip) = g.clip_path {
                 f(clip.root.clone());

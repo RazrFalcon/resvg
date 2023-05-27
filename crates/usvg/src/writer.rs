@@ -629,11 +629,11 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                     .collect();
                 xml.write_svg_attribute(AId::Filter, &ids.join(" "));
 
-                if let Some(ref fill) = g.filter_fill {
+                if let Some(ref fill) = g.filter_fill_paint() {
                     write_paint(AId::Fill, fill, opt, xml);
                 }
 
-                if let Some(ref stroke) = g.filter_stroke {
+                if let Some(ref stroke) = g.filter_stroke_paint() {
                     write_paint(AId::Stroke, stroke, opt, xml);
                 }
             }

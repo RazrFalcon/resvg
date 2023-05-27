@@ -13,7 +13,7 @@ use svgtypes::{Length, LengthUnit as Unit};
 use usvg_tree::filter::*;
 use usvg_tree::{
     strict_num, ApproxZeroUlps, Color, Group, Node, NodeKind, NonZeroF32, NonZeroRect, Opacity,
-    Units,
+    Paint, Units,
 };
 
 use crate::converter::SvgColorExt;
@@ -62,6 +62,8 @@ pub(crate) fn convert(
                 units: Units::ObjectBoundingBox,
                 primitive_units: Units::UserSpaceOnUse,
                 rect,
+                fill_paint: None,
+                stroke_paint: None,
                 primitives: vec![Primitive {
                     x: None,
                     y: None,
@@ -127,7 +129,7 @@ pub(crate) fn convert(
             }
             svgtypes::FilterValue::Url(url) => {
                 if let Some(link) = node.document().element_by_id(url) {
-                    if let Ok(res) = convert_url(link, state, cache) {
+                    if let Ok(res) = convert_url(node, link, state, cache) {
                         if let Some(f) = res {
                             filters.push(f);
                         }
@@ -153,6 +155,7 @@ pub(crate) fn convert(
 }
 
 fn convert_url(
+    group_node: SvgNode,
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
@@ -212,11 +215,16 @@ fn convert_url(
         return Err(());
     }
 
+    let fill_paint = resolve_filter_fill(group_node, state, &primitives, cache);
+    let stroke_paint = resolve_filter_stroke(group_node, state, &primitives, cache);
+
     let filter = Rc::new(Filter {
         id: node.element_id().to_string(),
         units,
         primitive_units,
         rect,
+        fill_paint,
+        stroke_paint,
         primitives,
     });
 
@@ -225,6 +233,42 @@ fn convert_url(
         .insert(node.element_id().to_string(), filter.clone());
 
     Ok(Some(filter))
+}
+
+fn resolve_filter_fill(
+    group_node: SvgNode,
+    state: &converter::State,
+    primitives: &[Primitive],
+    cache: &mut converter::Cache,
+) -> Option<Paint> {
+    let has_fill_paint = primitives
+        .iter()
+        .any(|c| c.kind.has_input(&Input::FillPaint));
+
+    if !has_fill_paint {
+        return None;
+    }
+
+    let stroke = crate::style::resolve_fill(group_node, true, state, cache)?;
+    Some(stroke.paint)
+}
+
+fn resolve_filter_stroke(
+    group_node: SvgNode,
+    state: &converter::State,
+    primitives: &[Primitive],
+    cache: &mut converter::Cache,
+) -> Option<Paint> {
+    let has_stroke_paint = primitives
+        .iter()
+        .any(|c| c.kind.has_input(&Input::StrokePaint));
+
+    if !has_stroke_paint {
+        return None;
+    }
+
+    let stroke = crate::style::resolve_stroke(group_node, true, state, cache)?;
+    Some(stroke.paint)
 }
 
 fn find_filter_with_primitives<'a>(node: SvgNode<'a, 'a>) -> Option<SvgNode<'a, 'a>> {

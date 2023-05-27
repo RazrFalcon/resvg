@@ -184,7 +184,7 @@ fn convert_group(
     }
 
     let mut filter_fill = None;
-    if let Some(ref paint) = ugroup.filter_fill {
+    if let Some(ref paint) = ugroup.filter_fill_paint() {
         filter_fill = crate::paint_server::convert(
             paint,
             usvg::Opacity::ONE,
@@ -193,7 +193,7 @@ fn convert_group(
     }
 
     let mut filter_stroke = None;
-    if let Some(ref paint) = ugroup.filter_stroke {
+    if let Some(ref paint) = ugroup.filter_stroke_paint() {
         filter_stroke = crate::paint_server::convert(
             paint,
             usvg::Opacity::ONE,
@@ -232,13 +232,13 @@ fn convert_empty_group(ugroup: &usvg::Group, children: &mut Vec<Node>) -> Option
     let layer_bbox = layer_bbox?;
 
     let mut filter_fill = None;
-    if let Some(ref paint) = ugroup.filter_fill {
+    if let Some(ref paint) = ugroup.filter_fill_paint() {
         filter_fill =
             crate::paint_server::convert(paint, usvg::Opacity::ONE, layer_bbox.to_non_zero_rect());
     }
 
     let mut filter_stroke = None;
-    if let Some(ref paint) = ugroup.filter_stroke {
+    if let Some(ref paint) = ugroup.filter_stroke_paint() {
         filter_stroke =
             crate::paint_server::convert(paint, usvg::Opacity::ONE, layer_bbox.to_non_zero_rect());
     }

@@ -547,7 +547,7 @@ pub(crate) fn convert_group(
         None
     };
 
-    let (filters, filter_fill, filter_stroke) = {
+    let filters = {
         let mut filters = Vec::new();
         if state.parent_clip_path.is_none() {
             if node.attribute(AId::Filter) == Some("none") {
@@ -573,10 +573,7 @@ pub(crate) fn convert_group(
             }
         }
 
-        let filter_fill = resolve_filter_fill(node, state, &filters, cache);
-        let filter_stroke = resolve_filter_stroke(node, state, &filters, cache);
-
-        (filters, filter_fill, filter_stroke)
+        filters
     };
 
     let transform: Transform = node.attribute(AId::Transform).unwrap_or_default();
@@ -613,66 +610,12 @@ pub(crate) fn convert_group(
             clip_path,
             mask,
             filters,
-            filter_fill,
-            filter_stroke,
         }));
 
         GroupKind::Create(g)
     } else {
         GroupKind::Skip
     }
-}
-
-fn resolve_filter_fill(
-    node: SvgNode,
-    state: &State,
-    filters: &[Rc<filter::Filter>],
-    cache: &mut Cache,
-) -> Option<Paint> {
-    let mut has_fill_paint = false;
-    for filter in filters {
-        if filter
-            .primitives
-            .iter()
-            .any(|c| c.kind.has_input(&filter::Input::FillPaint))
-        {
-            has_fill_paint = true;
-            break;
-        }
-    }
-
-    if !has_fill_paint {
-        return None;
-    }
-
-    let stroke = crate::style::resolve_fill(node, true, state, cache)?;
-    Some(stroke.paint)
-}
-
-fn resolve_filter_stroke(
-    node: SvgNode,
-    state: &State,
-    filters: &[Rc<filter::Filter>],
-    cache: &mut Cache,
-) -> Option<Paint> {
-    let mut has_stroke_paint = false;
-    for filter in filters {
-        if filter
-            .primitives
-            .iter()
-            .any(|c| c.kind.has_input(&filter::Input::StrokePaint))
-        {
-            has_stroke_paint = true;
-            break;
-        }
-    }
-
-    if !has_stroke_paint {
-        return None;
-    }
-
-    let stroke = crate::style::resolve_stroke(node, true, state, cache)?;
-    Some(stroke.paint)
 }
 
 fn remove_empty_groups(tree: &mut Tree) {
