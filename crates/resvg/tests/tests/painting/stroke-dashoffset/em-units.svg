@@ -1,8 +1,9 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>Negative value</title>
+    <title>`em` units</title>
 
     <circle id="circle1" cx="100" cy="100" r="70" fill="none"
-            stroke="green" stroke-width="10" stroke-dasharray="10 20" stroke-dashoffset="-15"/>
+            font-family="Noto Sans" font-size="20"
+            stroke="green" stroke-width="10" stroke-dasharray="10 20" stroke-dashoffset="1.5em"/>
 
     <!-- image frame -->
     <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>

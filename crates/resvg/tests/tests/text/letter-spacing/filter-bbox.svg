@@ -1,0 +1,19 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     font-family="Noto Sans" font-size="32">
+    <title>Filter bounding box</title>
+    <desc>
+        According to the spec (https://drafts.csswg.org/css-text/#letter-spacing-property)
+        `letter-spacing` must not introduce spaces before and after text. Only in-between.
+    </desc>
+
+    <filter id="filter1" x="0" y="0" width="1" height="1">
+        <feFlood flood-color="green"/>
+    </filter>
+
+    <text id="text1" x="20" y="100" letter-spacing="30"
+          filter="url(#filter1)">Text</text>
+    <text id="text2" x="20" y="100" letter-spacing="30">Text</text>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>
