@@ -743,8 +743,8 @@ pub extern "C" fn resvg_get_node_transform(
         unsafe {
             *transform = resvg_transform {
                 a: abs_ts.sx,
-                b: abs_ts.kx,
-                c: abs_ts.ky,
+                b: abs_ts.ky,
+                c: abs_ts.kx,
                 d: abs_ts.sy,
                 e: abs_ts.tx,
                 f: abs_ts.ty,

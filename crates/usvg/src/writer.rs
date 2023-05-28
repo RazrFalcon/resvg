@@ -802,9 +802,9 @@ impl XmlWriterExt for XmlWriter {
                 buf.extend_from_slice(b"matrix(");
                 write_num(ts.sx, buf, opt.transforms_precision);
                 buf.push(b' ');
-                write_num(ts.kx, buf, opt.transforms_precision);
-                buf.push(b' ');
                 write_num(ts.ky, buf, opt.transforms_precision);
+                buf.push(b' ');
+                write_num(ts.kx, buf, opt.transforms_precision);
                 buf.push(b' ');
                 write_num(ts.sy, buf, opt.transforms_precision);
                 buf.push(b' ');
