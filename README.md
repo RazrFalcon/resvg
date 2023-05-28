@@ -122,7 +122,6 @@ Here are some of them:
 - [rustybuzz] - a [harfbuzz](https://github.com/harfbuzz/harfbuzz) subset ported to Rust
 - [ttf-parser] - a TrueType/OpenType font parser
 - [fontdb] - a simple, in-memory font database with CSS-like queries
-- [rosvgtree] - an SVG parsing library
 - [roxmltree] + [xmlparser] - an XML parsing libraries
 - [simplecss] - a pretty decent CSS 2 parser and selector
 - [pico-args] - an absolutely minimal, but surprisingly popular command-line arguments parser
@@ -139,7 +138,6 @@ It's definitely the smallest option out there.
 [rustybuzz]: https://github.com/RazrFalcon/rustybuzz
 [tiny-skia]: https://github.com/RazrFalcon/tiny-skia
 [ttf-parser]: https://github.com/RazrFalcon/ttf-parser
-[rosvgtree]: https://github.com/RazrFalcon/resvg/tree/master/crates/rosvgtree
 [roxmltree]: https://github.com/RazrFalcon/roxmltree
 [xmlparser]: https://github.com/RazrFalcon/xmlparser
 [simplecss]: https://github.com/RazrFalcon/simplecss
