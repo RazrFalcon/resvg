@@ -1,6 +1,6 @@
 [package]
 name = "resvg"
-version = "0.34.0"
+version = "0.34.1"
 authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster"]
 license = "MPL-2.0"
@@ -23,7 +23,7 @@ png = { version = "0.17", optional = true }
 rgb = "0.8"
 svgtypes = "0.11"
 tiny-skia = "0.10"
-usvg = { path = "../usvg", version = "0.34.0", default-features = false }
+usvg = { path = "../usvg", version = "0.34.1", default-features = false }
 
 [dev-dependencies]
 once_cell = "1.5"
