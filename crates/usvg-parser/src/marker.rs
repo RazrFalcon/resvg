@@ -61,7 +61,7 @@ pub(crate) fn convert(
         }
 
         if let Some(marker) = marker {
-            // TODO: move to rosvgtree
+            // TODO: move to svgtree
             // Check for recursive marker.
             if state.parent_markers.contains(&marker) {
                 log::warn!("Recursive marker detected: {}", marker.element_id());

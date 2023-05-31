@@ -1129,11 +1129,10 @@ fn convert_contrast_function(amount: f64) -> Kind {
 
 #[inline(never)]
 fn convert_blur_function(node: SvgNode, std_dev: Length, state: &converter::State) -> Kind {
-    let std_dev = PositiveF32::new(crate::units::convert_length(
+    let std_dev = PositiveF32::new(crate::units::convert_user_length(
         std_dev,
         node,
         AId::Dx,
-        Units::UserSpaceOnUse,
         state,
     ))
     .unwrap_or(PositiveF32::ZERO);
@@ -1153,11 +1152,10 @@ fn convert_drop_shadow_function(
     std_dev: Length,
     state: &converter::State,
 ) -> Kind {
-    let std_dev = PositiveF32::new(crate::units::convert_length(
+    let std_dev = PositiveF32::new(crate::units::convert_user_length(
         std_dev,
         node,
         AId::Dx,
-        Units::UserSpaceOnUse,
         state,
     ))
     .unwrap_or(PositiveF32::ZERO);
@@ -1171,8 +1169,8 @@ fn convert_drop_shadow_function(
 
     Kind::DropShadow(DropShadow {
         input: Input::SourceGraphic,
-        dx: crate::units::convert_length(dx, node, AId::Dx, Units::UserSpaceOnUse, state),
-        dy: crate::units::convert_length(dy, node, AId::Dy, Units::UserSpaceOnUse, state),
+        dx: crate::units::convert_user_length(dx, node, AId::Dx, state),
+        dy: crate::units::convert_user_length(dy, node, AId::Dy, state),
         std_dev_x: std_dev,
         std_dev_y: std_dev,
         color,

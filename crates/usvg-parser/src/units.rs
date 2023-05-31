@@ -65,18 +65,21 @@ pub(crate) fn convert_length(
     }
 }
 
+pub(crate) fn convert_user_length(
+    length: Length,
+    node: SvgNode,
+    aid: AId,
+    state: &converter::State,
+) -> f32 {
+    convert_length(length, node, aid, Units::UserSpaceOnUse, state)
+}
+
 #[inline(never)]
 pub(crate) fn convert_list(node: SvgNode, aid: AId, state: &converter::State) -> Option<Vec<f32>> {
     if let Some(text) = node.attribute::<&str>(aid) {
         let mut num_list = Vec::new();
         for length in svgtypes::LengthListParser::from(text).flatten() {
-            num_list.push(convert_length(
-                length,
-                node,
-                aid,
-                Units::UserSpaceOnUse,
-                state,
-            ));
+            num_list.push(convert_user_length(length, node, aid, state));
         }
 
         Some(num_list)

@@ -19,7 +19,7 @@ and can focus just on the rendering part.
 - CSS will be applied
 - Only simple paths
   - Basic shapes (like `rect` and `circle`) will be converted into paths
-  - Paths contain only absolute *MoveTo*, *LineTo*, *CurveTo* and *ClosePath* segments.
+  - Paths contain only absolute *MoveTo*, *LineTo*, *QuadTo*, *CurveTo* and *ClosePath* segments.
     ArcTo, implicit and relative segments will be converted
 - `use` will be resolved and replaced with the reference content
 - Nested `svg` will be resolved
@@ -42,7 +42,7 @@ and can focus just on the rendering part.
 - CSS support is minimal
 - Only [static](http://www.w3.org/TR/SVG11/feature#SVG-static) SVG features,
   e.g. no `a`, `view`, `cursor`, `script`, no events and no animations
-- Text elements must be converted into paths before writing to SVG.
+- Text elements must be converted into paths before writing to SVG
 
 ## License
 

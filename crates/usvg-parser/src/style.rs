@@ -142,7 +142,7 @@ fn convert_paint(
 
     match paint {
         svgtypes::Paint::None => None,
-        svgtypes::Paint::Inherit => None, // already resolved by rosvgtree
+        svgtypes::Paint::Inherit => None, // already resolved by svgtree
         svgtypes::Paint::CurrentColor => {
             let svg_color: svgtypes::Color = node
                 .find_attribute(AId::Color)

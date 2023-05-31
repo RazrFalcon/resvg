@@ -10,8 +10,8 @@ use std::str::FromStr;
 use svgtypes::{Length, LengthUnit as Unit};
 use usvg_tree::*;
 
-use crate::converter;
 use crate::svgtree::{self, AId, EId, FromValue, SvgNode};
+use crate::units;
 use crate::{Error, Options};
 
 #[derive(Clone)]
@@ -73,14 +73,8 @@ fn string_hash(s: &str) -> u64 {
 }
 
 impl<'a, 'input: 'a> SvgNode<'a, 'input> {
-    pub fn convert_length(
-        &self,
-        aid: AId,
-        object_units: Units,
-        state: &converter::State,
-        def: svgtypes::Length,
-    ) -> f32 {
-        crate::units::convert_length(
+    pub fn convert_length(&self, aid: AId, object_units: Units, state: &State, def: Length) -> f32 {
+        units::convert_length(
             self.attribute(aid).unwrap_or(def),
             *self,
             aid,
@@ -89,12 +83,7 @@ impl<'a, 'input: 'a> SvgNode<'a, 'input> {
         )
     }
 
-    pub fn convert_user_length(
-        &self,
-        aid: AId,
-        state: &converter::State,
-        def: svgtypes::Length,
-    ) -> f32 {
+    pub fn convert_user_length(&self, aid: AId, state: &State, def: Length) -> f32 {
         self.convert_length(aid, Units::UserSpaceOnUse, state, def)
     }
 
@@ -103,7 +92,7 @@ impl<'a, 'input: 'a> SvgNode<'a, 'input> {
         NonZeroRect::from_xywh(vb.x as f32, vb.y as f32, vb.w as f32, vb.h as f32)
     }
 
-    pub fn resolve_length(&self, aid: AId, state: &converter::State, def: f32) -> f32 {
+    pub fn resolve_length(&self, aid: AId, state: &State, def: f32) -> f32 {
         debug_assert!(
             !matches!(aid, AId::BaselineShift | AId::FontSize),
             "{} cannot be resolved via this function",
@@ -112,7 +101,7 @@ impl<'a, 'input: 'a> SvgNode<'a, 'input> {
 
         if let Some(n) = self.ancestors().find(|n| n.has_attribute(aid)) {
             if let Some(length) = n.attribute(aid) {
-                return crate::units::convert_length(length, n, aid, Units::UserSpaceOnUse, state);
+                return units::convert_user_length(length, n, aid, state);
             }
         }
 
@@ -122,20 +111,15 @@ impl<'a, 'input: 'a> SvgNode<'a, 'input> {
     pub fn resolve_valid_length(
         &self,
         aid: AId,
-        state: &converter::State,
+        state: &State,
         def: f32,
     ) -> Option<NonZeroPositiveF32> {
         let n = self.resolve_length(aid, state, def);
         NonZeroPositiveF32::new(n)
     }
 
-    pub fn try_convert_length(
-        &self,
-        aid: AId,
-        object_units: Units,
-        state: &converter::State,
-    ) -> Option<f32> {
-        Some(crate::units::convert_length(
+    pub fn try_convert_length(&self, aid: AId, object_units: Units, state: &State) -> Option<f32> {
+        Some(units::convert_length(
             self.attribute(aid)?,
             *self,
             aid,

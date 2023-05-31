@@ -28,6 +28,7 @@ pub(crate) fn convert(
     let units = node
         .attribute(AId::MaskUnits)
         .unwrap_or(Units::ObjectBoundingBox);
+
     let content_units = node
         .attribute(AId::MaskContentUnits)
         .unwrap_or(Units::UserSpaceOnUse);

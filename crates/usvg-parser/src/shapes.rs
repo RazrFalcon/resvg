@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use svgtypes::Length;
 use tiny_skia_path::Path;
-use usvg_tree::{tiny_skia_path, ApproxEqUlps, IsValidLength, Units};
+use usvg_tree::{tiny_skia_path, ApproxEqUlps, IsValidLength};
 
 use crate::svgtree::{AId, EId, SvgNode};
 use crate::{converter, units};
@@ -145,16 +145,16 @@ fn resolve_rx_ry(node: SvgNode, state: &converter::State) -> (f32, f32) {
     match (rx_opt, ry_opt) {
         (None, None) => (0.0, 0.0),
         (Some(rx), None) => {
-            let rx = units::convert_length(rx, node, AId::Rx, Units::UserSpaceOnUse, state);
+            let rx = units::convert_user_length(rx, node, AId::Rx, state);
             (rx, rx)
         }
         (None, Some(ry)) => {
-            let ry = units::convert_length(ry, node, AId::Ry, Units::UserSpaceOnUse, state);
+            let ry = units::convert_user_length(ry, node, AId::Ry, state);
             (ry, ry)
         }
         (Some(rx), Some(ry)) => {
-            let rx = units::convert_length(rx, node, AId::Rx, Units::UserSpaceOnUse, state);
-            let ry = units::convert_length(ry, node, AId::Ry, Units::UserSpaceOnUse, state);
+            let rx = units::convert_user_length(rx, node, AId::Rx, state);
+            let ry = units::convert_user_length(ry, node, AId::Ry, state);
             (rx, ry)
         }
     }

@@ -42,6 +42,7 @@ pub(crate) fn convert(
     let units = node
         .attribute(AId::ClipPathUnits)
         .unwrap_or(Units::UserSpaceOnUse);
+
     let mut clip = ClipPath {
         id: node.element_id().to_string(),
         units,
@@ -91,6 +92,7 @@ fn resolve_transform(node: SvgNode) -> Option<Transform> {
         ts.e as f32,
         ts.f as f32,
     );
+
     if ts.is_valid() {
         Some(ts)
     } else {
