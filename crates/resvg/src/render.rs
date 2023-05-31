@@ -140,16 +140,8 @@ fn render_group(
     render_nodes(&group.children, ctx, transform, &mut sub_pixmap.as_mut());
 
     if !group.filters.is_empty() {
-        let fill_paint = prepare_filter_paint(group.filter_fill.as_ref(), ctx, &sub_pixmap);
-        let stroke_paint = prepare_filter_paint(group.filter_stroke.as_ref(), ctx, &sub_pixmap);
         for filter in &group.filters {
-            crate::filter::apply(
-                filter,
-                transform,
-                fill_paint.as_ref(),
-                stroke_paint.as_ref(),
-                &mut sub_pixmap,
-            );
+            crate::filter::apply(filter, transform, &mut sub_pixmap);
         }
     }
 
@@ -177,45 +169,6 @@ fn render_group(
     );
 
     Some(())
-}
-
-/// Renders an image used by `FillPaint`/`StrokePaint` filter input.
-///
-/// FillPaint/StrokePaint is mostly an undefined behavior and will produce different results
-/// in every application.
-/// And since there are no expected behaviour, we will simply fill the filter region.
-///
-/// https://github.com/w3c/fxtf-drafts/issues/323
-fn prepare_filter_paint(
-    paint: Option<&crate::paint_server::Paint>,
-    ctx: &Context,
-    pixmap: &tiny_skia::Pixmap,
-) -> Option<tiny_skia::Pixmap> {
-    use std::rc::Rc;
-
-    let paint = paint?;
-    let mut sub_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
-
-    let rect = tiny_skia::Rect::from_xywh(0.0, 0.0, pixmap.width() as f32, pixmap.height() as f32)?;
-    let path = tiny_skia::PathBuilder::from_rect(rect);
-
-    let path = crate::path::FillPath {
-        transform: tiny_skia::Transform::default(),
-        paint: paint.clone(), // TODO: remove clone
-        rule: tiny_skia::FillRule::Winding,
-        anti_alias: true,
-        path: Rc::new(path),
-    };
-
-    crate::path::render_fill_path(
-        &path,
-        tiny_skia::BlendMode::SourceOver,
-        ctx,
-        tiny_skia::Transform::default(),
-        &mut sub_pixmap.as_mut(),
-    );
-
-    Some(sub_pixmap)
 }
 
 pub trait TinySkiaPixmapMutExt {

@@ -458,31 +458,13 @@ impl Image {
     }
 }
 
-struct FilterInputs<'a> {
-    source: &'a mut tiny_skia::Pixmap,
-    fill_paint: Option<&'a tiny_skia::Pixmap>,
-    stroke_paint: Option<&'a tiny_skia::Pixmap>,
-}
-
 struct FilterResult {
     name: String,
     image: Image,
 }
 
-pub fn apply(
-    filter: &Filter,
-    ts: tiny_skia::Transform,
-    fill_paint: Option<&tiny_skia::Pixmap>,
-    stroke_paint: Option<&tiny_skia::Pixmap>,
-    source: &mut tiny_skia::Pixmap,
-) {
-    let inputs = FilterInputs {
-        source,
-        fill_paint,
-        stroke_paint,
-    };
-
-    let result = apply_inner(filter, &inputs, ts);
+pub fn apply(filter: &Filter, ts: tiny_skia::Transform, source: &mut tiny_skia::Pixmap) {
+    let result = apply_inner(filter, ts, source);
     let result = result.and_then(|image| apply_to_canvas(image, source));
 
     // Clear on error.
@@ -501,8 +483,8 @@ pub fn apply(
 
 fn apply_inner(
     filter: &Filter,
-    inputs: &FilterInputs,
     ts: usvg::Transform,
+    source: &mut tiny_skia::Pixmap,
 ) -> Result<Image, Error> {
     let mut results: Vec<FilterResult> = Vec::new();
 
@@ -531,62 +513,62 @@ fn apply_inner(
 
         let mut result = match primitive.kind {
             usvg::filter::Kind::Blend(ref fe) => {
-                let input1 = get_input(&fe.input1, region, inputs, &results)?;
-                let input2 = get_input(&fe.input2, region, inputs, &results)?;
+                let input1 = get_input(&fe.input1, region, source, &results)?;
+                let input2 = get_input(&fe.input2, region, source, &results)?;
                 apply_blend(fe, cs, region, input1, input2)
             }
             usvg::filter::Kind::DropShadow(ref fe) => {
-                let input = get_input(&fe.input, region, inputs, &results)?;
+                let input = get_input(&fe.input, region, source, &results)?;
                 apply_drop_shadow(fe, cs, ts, input)
             }
             usvg::filter::Kind::Flood(ref fe) => apply_flood(fe, region),
             usvg::filter::Kind::GaussianBlur(ref fe) => {
-                let input = get_input(&fe.input, region, inputs, &results)?;
+                let input = get_input(&fe.input, region, source, &results)?;
                 apply_blur(fe, cs, ts, input)
             }
             usvg::filter::Kind::Offset(ref fe) => {
-                let input = get_input(&fe.input, region, inputs, &results)?;
+                let input = get_input(&fe.input, region, source, &results)?;
                 apply_offset(fe, ts, input)
             }
             usvg::filter::Kind::Composite(ref fe) => {
-                let input1 = get_input(&fe.input1, region, inputs, &results)?;
-                let input2 = get_input(&fe.input2, region, inputs, &results)?;
+                let input1 = get_input(&fe.input1, region, source, &results)?;
+                let input2 = get_input(&fe.input2, region, source, &results)?;
                 apply_composite(fe, cs, region, input1, input2)
             }
-            usvg::filter::Kind::Merge(ref fe) => apply_merge(fe, cs, region, inputs, &results),
+            usvg::filter::Kind::Merge(ref fe) => apply_merge(fe, cs, region, source, &results),
             usvg::filter::Kind::Tile(ref fe) => {
-                let input = get_input(&fe.input, region, inputs, &results)?;
+                let input = get_input(&fe.input, region, source, &results)?;
                 apply_tile(input, region)
             }
             usvg::filter::Kind::Image(ref fe) => apply_image(fe, region, subregion, ts),
             usvg::filter::Kind::ComponentTransfer(ref fe) => {
-                let input = get_input(&fe.input, region, inputs, &results)?;
+                let input = get_input(&fe.input, region, source, &results)?;
                 apply_component_transfer(fe, cs, input)
             }
             usvg::filter::Kind::ColorMatrix(ref fe) => {
-                let input = get_input(&fe.input, region, inputs, &results)?;
+                let input = get_input(&fe.input, region, source, &results)?;
                 apply_color_matrix(fe, cs, input)
             }
             usvg::filter::Kind::ConvolveMatrix(ref fe) => {
-                let input = get_input(&fe.input, region, inputs, &results)?;
+                let input = get_input(&fe.input, region, source, &results)?;
                 apply_convolve_matrix(fe, cs, input)
             }
             usvg::filter::Kind::Morphology(ref fe) => {
-                let input = get_input(&fe.input, region, inputs, &results)?;
+                let input = get_input(&fe.input, region, source, &results)?;
                 apply_morphology(fe, cs, ts, input)
             }
             usvg::filter::Kind::DisplacementMap(ref fe) => {
-                let input1 = get_input(&fe.input1, region, inputs, &results)?;
-                let input2 = get_input(&fe.input2, region, inputs, &results)?;
+                let input1 = get_input(&fe.input1, region, source, &results)?;
+                let input2 = get_input(&fe.input2, region, source, &results)?;
                 apply_displacement_map(fe, region, cs, ts, input1, input2)
             }
             usvg::filter::Kind::Turbulence(ref fe) => apply_turbulence(fe, region, cs, ts),
             usvg::filter::Kind::DiffuseLighting(ref fe) => {
-                let input = get_input(&fe.input, region, inputs, &results)?;
+                let input = get_input(&fe.input, region, source, &results)?;
                 apply_diffuse_lighting(fe, region, cs, ts, input)
             }
             usvg::filter::Kind::SpecularLighting(ref fe) => {
-                let input = get_input(&fe.input, region, inputs, &results)?;
+                let input = get_input(&fe.input, region, source, &results)?;
                 apply_specular_lighting(fe, region, cs, ts, input)
             }
         }?;
@@ -748,41 +730,12 @@ fn calc_subregion(
 fn get_input(
     input: &usvg::filter::Input,
     region: IntRect,
-    inputs: &FilterInputs,
+    source: &tiny_skia::Pixmap,
     results: &[FilterResult],
 ) -> Result<Image, Error> {
-    let convert = |in_image: Option<&tiny_skia::Pixmap>, region: IntRect| {
-        let image = if let Some(image) = in_image {
-            image.clone()
-        } else {
-            tiny_skia::Pixmap::try_create(region.width(), region.height())?
-        };
-
-        Ok(Image {
-            image: Rc::new(image),
-            region,
-            color_space: usvg::filter::ColorInterpolation::SRGB,
-        })
-    };
-
-    let convert_alpha = |mut image: tiny_skia::Pixmap| {
-        // Set RGB to black. Keep alpha as is.
-        for p in image.data_mut().as_rgba_mut() {
-            p.r = 0;
-            p.g = 0;
-            p.b = 0;
-        }
-
-        Ok(Image {
-            image: Rc::new(image),
-            region,
-            color_space: usvg::filter::ColorInterpolation::SRGB,
-        })
-    };
-
     match input {
         usvg::filter::Input::SourceGraphic => {
-            let image = inputs.source.clone();
+            let image = source.clone();
 
             Ok(Image {
                 image: Rc::new(image),
@@ -791,24 +744,27 @@ fn get_input(
             })
         }
         usvg::filter::Input::SourceAlpha => {
-            let image = inputs.source.clone();
-            convert_alpha(image)
+            let mut image = source.clone();
+            // Set RGB to black. Keep alpha as is.
+            for p in image.data_mut().as_rgba_mut() {
+                p.r = 0;
+                p.g = 0;
+                p.b = 0;
+            }
+
+            Ok(Image {
+                image: Rc::new(image),
+                region,
+                color_space: usvg::filter::ColorInterpolation::SRGB,
+            })
         }
-        usvg::filter::Input::BackgroundImage => {
-            get_input(&usvg::filter::Input::SourceGraphic, region, inputs, results)
-        }
-        usvg::filter::Input::BackgroundAlpha => {
-            get_input(&usvg::filter::Input::SourceAlpha, region, inputs, results)
-        }
-        usvg::filter::Input::FillPaint => convert(inputs.fill_paint, region),
-        usvg::filter::Input::StrokePaint => convert(inputs.stroke_paint, region),
         usvg::filter::Input::Reference(ref name) => {
             if let Some(v) = results.iter().rev().find(|v| v.name == *name) {
                 Ok(v.image.clone())
             } else {
                 // Technically unreachable.
                 log::warn!("Unknown filter primitive reference '{}'.", name);
-                get_input(&usvg::filter::Input::SourceGraphic, region, inputs, results)
+                get_input(&usvg::filter::Input::SourceGraphic, region, source, results)
             }
         }
     }
@@ -1043,13 +999,13 @@ fn apply_merge(
     fe: &usvg::filter::Merge,
     cs: usvg::filter::ColorInterpolation,
     region: IntRect,
-    inputs: &FilterInputs,
+    source: &tiny_skia::Pixmap,
     results: &[FilterResult],
 ) -> Result<Image, Error> {
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
 
     for input in &fe.inputs {
-        let input = get_input(input, region, inputs, results)?;
+        let input = get_input(input, region, source, results)?;
         let input = input.into_color_space(cs)?;
         pixmap.draw_pixmap(
             0,

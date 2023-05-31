@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Removed
+- `FillPaint` and `StrokePaint` filter inputs support.
+  It's a mostly undocumented SVG feature that no one supports and no one uses.
+  And it was adding a significant complexity to the codebase.
+- `usvg::filter::Filter::fill_paint` and `usvg::filter::Filter::stroke_paint`.
+- `BackgroundImage`, `BackgroundAlpha`, `FillPaint` and `StrokePaint` from `usvg::filter::Input`.
+- `usvg::Group::filter_fill_paint` and `usvg::Group::filter_stroke_paint`.
 
 ## [0.34.1] - 2023-05-28
 ### Fixed

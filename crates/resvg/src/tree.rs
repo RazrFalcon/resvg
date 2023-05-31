@@ -7,7 +7,6 @@ use usvg::NodeExt;
 use crate::clip::ClipPath;
 use crate::image::Image;
 use crate::mask::Mask;
-use crate::paint_server::Paint;
 use crate::path::{FillPath, StrokePath};
 
 pub struct Group {
@@ -16,11 +15,8 @@ pub struct Group {
     pub blend_mode: tiny_skia::BlendMode,
     pub clip_path: Option<ClipPath>,
     pub mask: Option<Mask>,
-    pub isolate: bool,
-
     pub filters: Vec<crate::filter::Filter>,
-    pub filter_fill: Option<Paint>,
-    pub filter_stroke: Option<Paint>,
+    pub isolate: bool,
     /// Group's layer bounding box in canvas coordinates.
     pub bbox: tiny_skia::Rect,
 
@@ -183,24 +179,6 @@ fn convert_group(
         bboxes.layer = usvg::BBox::from(filter_bbox);
     }
 
-    let mut filter_fill = None;
-    if let Some(ref paint) = ugroup.filter_fill_paint() {
-        filter_fill = crate::paint_server::convert(
-            paint,
-            usvg::Opacity::ONE,
-            bboxes.layer.to_non_zero_rect(),
-        );
-    }
-
-    let mut filter_stroke = None;
-    if let Some(ref paint) = ugroup.filter_stroke_paint() {
-        filter_stroke = crate::paint_server::convert(
-            paint,
-            usvg::Opacity::ONE,
-            bboxes.layer.to_non_zero_rect(),
-        );
-    }
-
     let group = Group {
         transform: ugroup.transform,
         opacity: ugroup.opacity,
@@ -209,8 +187,6 @@ fn convert_group(
         mask: crate::mask::convert(ugroup.mask.clone(), bboxes.object.to_rect()?),
         isolate: ugroup.isolate,
         filters,
-        filter_fill,
-        filter_stroke,
         bbox: bboxes.layer.to_rect()?,
         children: group_children,
     };
@@ -231,18 +207,6 @@ fn convert_empty_group(ugroup: &usvg::Group, children: &mut Vec<Node>) -> Option
     let (filters, layer_bbox) = crate::filter::convert(&ugroup.filters, None);
     let layer_bbox = layer_bbox?;
 
-    let mut filter_fill = None;
-    if let Some(ref paint) = ugroup.filter_fill_paint() {
-        filter_fill =
-            crate::paint_server::convert(paint, usvg::Opacity::ONE, layer_bbox.to_non_zero_rect());
-    }
-
-    let mut filter_stroke = None;
-    if let Some(ref paint) = ugroup.filter_stroke_paint() {
-        filter_stroke =
-            crate::paint_server::convert(paint, usvg::Opacity::ONE, layer_bbox.to_non_zero_rect());
-    }
-
     let group = Group {
         transform: ugroup.transform,
         opacity: ugroup.opacity,
@@ -251,8 +215,6 @@ fn convert_empty_group(ugroup: &usvg::Group, children: &mut Vec<Node>) -> Option
         mask: None,
         isolate: ugroup.isolate,
         filters,
-        filter_fill,
-        filter_stroke,
         bbox: layer_bbox,
         children: Vec::new(),
     };

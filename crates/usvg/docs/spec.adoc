@@ -271,10 +271,6 @@ A group will have at least one of the attributes present.
   Cannot be set to `none`.
 * `filter` = <<func-iri-type,<FuncIRI> >>+ +
   Cannot be set to `none`.
-* `fill` = `none` | <<color-type,<color> >> | <<func-iri-type,<FuncIRI> >> +
-  Will be set only when any of the `filter` primitives has a `FillPaint` input.
-* `stroke` = `none` | <<color-type,<color> >> | <<func-iri-type,<FuncIRI> >> +
-  Will be set only when any of the `filter` primitives has a `StrokePaint` input.
 * `transform` = <<transform-type,<transform> >>?
 * `style` = <<string-type,<string> >>? +
   This is the only place where the `style` attribute is used.
@@ -727,10 +723,10 @@ Always a valid, local reference. +
 *<filter-input>* - A filter source. A reference to a _result_ guarantee to be valid.
 
 ```
-filter-input ::= SourceGraphic | SourceAlpha | BackgroundImage
-                 | BackgroundAlpha | FillPaint | StrokePaint
-                 | <string>
+filter-input ::= SourceGraphic | SourceAlpha | <string>
 ```
+
+We do not support `FillPaint`, `StrokePaint`, `BackgroundImage` and `BackgroundAlpha`.
 
 
 [[viewBox-type]]

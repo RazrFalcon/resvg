@@ -7,9 +7,7 @@
 use strict_num::PositiveF32;
 use svgtypes::AspectRatio;
 
-use crate::{
-    BlendMode, Color, ImageRendering, Node, NonZeroF32, NonZeroRect, Opacity, Paint, Units,
-};
+use crate::{BlendMode, Color, ImageRendering, Node, NonZeroF32, NonZeroRect, Opacity, Units};
 
 /// A filter element.
 ///
@@ -36,16 +34,6 @@ pub struct Filter {
     ///
     /// `x`, `y`, `width` and `height` in the SVG.
     pub rect: NonZeroRect,
-
-    /// Contains a fill color or paint server used by `FilterInput::FillPaint`.
-    ///
-    /// Will be set only when filter actually has a `FilterInput::FillPaint`.
-    pub fill_paint: Option<Paint>,
-
-    /// Contains a stroke color or paint server used by `FilterInput::StrokePaint`.
-    ///
-    /// Will be set only when filter actually has a `FilterInput::StrokePaint`.
-    pub stroke_paint: Option<Paint>,
 
     /// A list of filter primitives.
     pub primitives: Vec<Primitive>,
@@ -134,10 +122,6 @@ impl Kind {
 pub enum Input {
     SourceGraphic,
     SourceAlpha,
-    BackgroundImage,
-    BackgroundAlpha,
-    FillPaint,
-    StrokePaint,
     Reference(String),
 }
 

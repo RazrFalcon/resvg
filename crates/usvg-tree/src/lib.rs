@@ -812,23 +812,6 @@ impl Group {
             || !self.filters.is_empty()
             || self.blend_mode != BlendMode::Normal // TODO: probably not needed?
     }
-
-    /// Contains a fill paint used by `FilterInput::FillPaint`.
-    pub fn filter_fill_paint(&self) -> Option<&Paint> {
-        // While we can have multiple filters, only one can have Paint.
-        self.filters
-            .iter()
-            .filter_map(|f| f.fill_paint.as_ref())
-            .next()
-    }
-
-    /// Contains a stroke paint used by `FilterInput::StrokePaint`.
-    pub fn filter_stroke_paint(&self) -> Option<&Paint> {
-        self.filters
-            .iter()
-            .filter_map(|f| f.stroke_paint.as_ref())
-            .next()
-    }
 }
 
 /// Representation of the [`paint-order`] property.
@@ -1082,12 +1065,7 @@ fn loop_over_paint_servers(root: &Node, f: &mut dyn FnMut(&Paint)) {
     }
 
     for node in root.descendants() {
-        if let NodeKind::Group(ref group) = *node.borrow() {
-            for filter in &group.filters {
-                push(filter.fill_paint.as_ref(), f);
-                push(filter.stroke_paint.as_ref(), f);
-            }
-        } else if let NodeKind::Path(ref path) = *node.borrow() {
+        if let NodeKind::Path(ref path) = *node.borrow() {
             push(path.fill.as_ref().map(|f| &f.paint), f);
             push(path.stroke.as_ref().map(|f| &f.paint), f);
         } else if let NodeKind::Text(ref text) = *node.borrow() {
@@ -1171,11 +1149,6 @@ fn node_subroots(node: &Node, f: &mut dyn FnMut(Node)) {
 
     match *node.borrow() {
         NodeKind::Group(ref g) => {
-            for filter in &g.filters {
-                push_patt(filter.fill_paint.as_ref());
-                push_patt(filter.stroke_paint.as_ref());
-            }
-
             if let Some(ref clip) = g.clip_path {
                 f(clip.root.clone());
 
