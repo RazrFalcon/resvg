@@ -19,7 +19,7 @@ FORMS += \
 CONFIG(release, debug|release): LIBS += -L$$PWD/../../target/release/ -lresvg
 else:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../target/debug/ -lresvg
 
-windows:LIBS += -lWs2_32 -lAdvapi32 -lBcrypt -lUserenv
+windows:LIBS += -lWs2_32 -lAdvapi32 -lBcrypt -lUserenv -lNtdll
 
 INCLUDEPATH += $$PWD/../../crates/c-api
 DEPENDPATH += $$PWD/../../crates/c-api
