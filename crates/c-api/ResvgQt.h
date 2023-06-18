@@ -18,6 +18,8 @@
 #define RESVG_QT_PATCH_VERSION 1
 #define RESVG_QT_VERSION "0.34.1"
 
+#include <cmath>
+
 #include <QDebug>
 #include <QFile>
 #include <QFileInfo>
@@ -523,7 +525,7 @@ public:
         if (size.isValid()) {
             // TODO: support height too.
             auto sizef = defaultSizeF();
-            const auto newHeight = ceil(double(size.width()) * sizef.height() / sizef.width());
+            const auto newHeight = std::ceil(double(size.width()) * sizef.height() / sizef.width());
             ts.a = double(size.width()) / sizef.width();
             ts.d = newHeight / defaultSizeF().width();
         }
