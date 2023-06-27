@@ -24,6 +24,14 @@ pub fn fit_to_rect(r: tiny_skia::IntRect, bounds: tiny_skia::IntRect) -> tiny_sk
         bottom = bounds.bottom();
     }
 
+    if left >= right {
+        left = right - 1
+    }
+
+    if top >= bottom {
+        top = bottom - 1
+    }
+
     tiny_skia::IntRect::from_ltrb(left, top, right, bottom).unwrap()
 }
 
