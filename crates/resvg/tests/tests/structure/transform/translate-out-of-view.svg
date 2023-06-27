@@ -1,0 +1,12 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Translate out of view</title>
+
+    <!-- In view square-->
+    <path transform="translate(0,0)" d="M 40,40 H 160 V 160 H 40 Z" fill="red" opacity="1"/>
+
+    <!-- Out of view square that's semi-transparent -->
+    <path transform="translate(400,400)" d="M 40,40 H 160 V 160 H 40 Z" fill="blue" opacity="0.7"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

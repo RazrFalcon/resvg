@@ -1223,6 +1223,7 @@ use crate::render;
 #[test] fn structure_transform_skewX() { assert_eq!(render("tests/structure/transform/skewX"), 0); }
 #[test] fn structure_transform_skewY() { assert_eq!(render("tests/structure/transform/skewY"), 0); }
 #[test] fn structure_transform_transform_list() { assert_eq!(render("tests/structure/transform/transform-list"), 0); }
+#[test] fn structure_transform_translate_out_of_view() { assert_eq!(render("tests/structure/transform/translate-out-of-view"), 0); }
 #[test] fn structure_transform_translate_without_Y() { assert_eq!(render("tests/structure/transform/translate-without-Y"), 0); }
 #[test] fn structure_transform_translate() { assert_eq!(render("tests/structure/transform/translate"), 0); }
 #[test] fn structure_transform_zeroed_matrix() { assert_eq!(render("tests/structure/transform/zeroed-matrix"), 0); }
