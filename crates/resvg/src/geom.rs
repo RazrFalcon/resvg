@@ -3,7 +3,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 /// Fits the current rect into the specified bounds.
-pub fn fit_to_rect(r: tiny_skia::IntRect, bounds: tiny_skia::IntRect) -> tiny_skia::IntRect {
+pub fn fit_to_rect(
+    r: tiny_skia::IntRect,
+    bounds: tiny_skia::IntRect,
+) -> Option<tiny_skia::IntRect> {
     let mut left = r.left();
     if left < bounds.left() {
         left = bounds.left();
@@ -24,7 +27,7 @@ pub fn fit_to_rect(r: tiny_skia::IntRect, bounds: tiny_skia::IntRect) -> tiny_sk
         bottom = bounds.bottom();
     }
 
-    tiny_skia::IntRect::from_ltrb(left, top, right, bottom).unwrap()
+    tiny_skia::IntRect::from_ltrb(left, top, right, bottom)
 }
 
 /// Converts `viewBox` to `Transform` with an optional clip rectangle.

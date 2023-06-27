@@ -62,3 +62,8 @@ fn filter_region_precision() {
         0
     );
 }
+
+#[test]
+fn translate_outside_viewbox() {
+    assert_eq!(render_extra("extra/translate-outside-viewbox"), 0);
+}

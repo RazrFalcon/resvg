@@ -111,13 +111,13 @@ fn render_group(
         // Make sure our filter region is not bigger than 4x the canvas size.
         // This is required mainly to prevent huge filter regions that would tank the performance.
         // It should not affect the final result in any way.
-        crate::geom::fit_to_rect(bbox, ctx.max_bbox)
+        crate::geom::fit_to_rect(bbox, ctx.max_bbox)?
     };
 
     // Make sure our layer is not bigger than 4x the canvas size.
     // This is required to prevent huge layers.
     if group.filters.is_empty() {
-        ibbox = crate::geom::fit_to_rect(ibbox, ctx.max_bbox);
+        ibbox = crate::geom::fit_to_rect(ibbox, ctx.max_bbox)?;
     }
 
     let shift_ts = {

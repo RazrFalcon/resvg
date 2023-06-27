@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- Panic when an element is completely outside the viewbox.
+
 ### Removed
 - `FillPaint` and `StrokePaint` filter inputs support.
   It's a mostly undocumented SVG feature that no one supports and no one uses.
