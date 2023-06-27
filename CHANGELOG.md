@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.35.0] - 2023-06-27
 ### Fixed
 - Panic when an element is completely outside the viewbox.
 
@@ -920,7 +922,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.34.1...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.35.0...HEAD
+[0.35.0]: https://github.com/RazrFalcon/resvg/compare/v0.34.1...v0.35.0
 [0.34.1]: https://github.com/RazrFalcon/resvg/compare/v0.34.0...v0.34.1
 [0.34.0]: https://github.com/RazrFalcon/resvg/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/RazrFalcon/resvg/compare/v0.32.0...v0.33.0
