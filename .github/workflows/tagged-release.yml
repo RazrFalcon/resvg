@@ -38,23 +38,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Add musl target
+        run: rustup target add x86_64-unknown-linux-musl
+
       - name: Build resvg
         run: cargo build --release
+
+      - name: Build resvg musl
+        run: cargo build --release --target x86_64-unknown-linux-musl
 
       - name: Build usvg
         working-directory: crates/usvg
         run: cargo build --release
 
+      - name: Build usvg musl
+        working-directory: crates/usvg
+        run: cargo build --release --target x86_64-unknown-linux-musl
+
       - name: Collect
-        working-directory: target/release
+        working-directory: target
         run: |
-          strip -s resvg
-          strip -s usvg
-          tar czf resvg-linux-x86_64.tar.gz resvg
-          tar czf usvg-linux-x86_64.tar.gz usvg
-          mkdir ../../bin
-          cp resvg-linux-x86_64.tar.gz ../../bin/
-          cp usvg-linux-x86_64.tar.gz ../../bin/
+          mkdir ../bin
+
+          strip -s x86_64-unknown-linux-musl/release/resvg
+          strip -s x86_64-unknown-linux-musl/release/usvg
+          tar czf resvg-linux-x86_64-musl.tar.gz x86_64-unknown-linux-musl/release/resvg
+          tar czf usvg-linux-x86_64-musl.tar.gz x86_64-unknown-linux-musl/release/usvg
+          cp resvg-linux-x86_64-musl.tar.gz ../bin/
+          cp usvg-linux-x86_64-musl.tar.gz ../bin/
+
+          strip -s release/resvg
+          strip -s release/usvg
+          tar czf resvg-linux-x86_64.tar.gz release/resvg
+          tar czf usvg-linux-x86_64.tar.gz release/usvg
+          cp resvg-linux-x86_64.tar.gz ../bin/
+          cp usvg-linux-x86_64.tar.gz ../bin/
 
       - name: Get version
         id: get_version
