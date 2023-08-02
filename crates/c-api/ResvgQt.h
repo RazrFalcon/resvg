@@ -527,7 +527,7 @@ public:
             auto sizef = defaultSizeF();
             const auto newHeight = std::ceil(double(size.width()) * sizef.height() / sizef.width());
             ts.a = double(size.width()) / sizef.width();
-            ts.d = newHeight / defaultSizeF().width();
+            ts.d = newHeight / sizef.height();
         }
 
         auto svgSize = size;
