@@ -93,7 +93,7 @@ or our [SVG 2 changelog](https://github.com/RazrFalcon/resvg/blob/master/docs/sv
 
 [SVG Tiny 1.2](https://www.w3.org/TR/SVGTiny12/) is not supported and support is also not planned.
 
-Results of the [resvg test suite](./tests/README.md):
+Results of the [resvg test suite](https://github.com/RazrFalcon/resvg-test-suite):
 
 ![](./.github/chart.svg)
 
