@@ -56,6 +56,16 @@ fn parse<'input>(xml: &roxmltree::Document<'input>) -> Result<Document<'input>, 
         links: HashMap::new(),
     };
 
+    // build a map of id -> node for resolve_href
+    let mut id_map = HashMap::new();
+    for node in xml.descendants() {
+        if let Some(id) = node.attribute("id") {
+            if !id_map.contains_key(id) {
+                id_map.insert(id, node);
+            }
+        }
+    }
+
     // Add a root node.
     doc.nodes.push(NodeData {
         parent: None,
@@ -74,6 +84,7 @@ fn parse<'input>(xml: &roxmltree::Document<'input>) -> Result<Document<'input>, 
         false,
         0,
         &mut doc,
+        &id_map,
     )?;
 
     // Check that the root element is `svg`.
@@ -124,9 +135,19 @@ fn parse_xml_node_children<'input>(
     ignore_ids: bool,
     depth: u32,
     doc: &mut Document<'input>,
+    id_map: &HashMap<&str, roxmltree::Node<'_, 'input>>,
 ) -> Result<(), Error> {
     for node in parent.children() {
-        parse_xml_node(node, origin, parent_id, style_sheet, ignore_ids, depth, doc)?;
+        parse_xml_node(
+            node,
+            origin,
+            parent_id,
+            style_sheet,
+            ignore_ids,
+            depth,
+            doc,
+            id_map,
+        )?;
     }
 
     Ok(())
@@ -140,6 +161,7 @@ fn parse_xml_node<'input>(
     ignore_ids: bool,
     depth: u32,
     doc: &mut Document<'input>,
+    id_map: &HashMap<&str, roxmltree::Node<'_, 'input>>,
 ) -> Result<(), Error> {
     if depth > 1024 {
         return Err(Error::NodesLimitReached);
@@ -164,7 +186,7 @@ fn parse_xml_node<'input>(
     if tag_name == EId::Text {
         super::text::parse_svg_text_element(node, node_id, style_sheet, doc)?;
     } else if tag_name == EId::Use {
-        parse_svg_use_element(node, origin, node_id, style_sheet, depth + 1, doc)?;
+        parse_svg_use_element(node, origin, node_id, style_sheet, depth + 1, doc, id_map)?;
     } else {
         parse_xml_node_children(
             node,
@@ -174,6 +196,7 @@ fn parse_xml_node<'input>(
             ignore_ids,
             depth + 1,
             doc,
+            id_map,
         )?;
     }
 
@@ -415,6 +438,7 @@ fn resolve_inherit(parent_id: NodeId, aid: AId, doc: &mut Document) -> bool {
 
 fn resolve_href<'a, 'input: 'a>(
     node: roxmltree::Node<'a, 'input>,
+    id_map: &HashMap<&str, roxmltree::Node<'a, 'input>>,
 ) -> Option<roxmltree::Node<'a, 'input>> {
     let link_value = node
         .attribute((XLINK_NS, "href"))
@@ -422,16 +446,7 @@ fn resolve_href<'a, 'input: 'a>(
 
     let link_id = svgtypes::IRI::from_str(link_value).ok()?.0;
 
-    // We're using `descendants` each time instead of HashTable because
-    // we have to preserve the original elements order.
-    // See tests/svg/e-use-024.svg
-    //
-    // Technically we can use https://crates.io/crates/hashlink,
-    // but this is an additional dependency.
-    // And performance even on huge files is still good enough.
-    node.document()
-        .descendants()
-        .find(|n| n.attribute("id") == Some(link_id))
+    id_map.get(link_id).copied()
 }
 
 fn parse_svg_use_element<'input>(
@@ -441,8 +456,9 @@ fn parse_svg_use_element<'input>(
     style_sheet: &simplecss::StyleSheet,
     depth: u32,
     doc: &mut Document<'input>,
+    id_map: &HashMap<&str, roxmltree::Node<'_, 'input>>,
 ) -> Result<(), Error> {
-    let link = match resolve_href(node) {
+    let link = match resolve_href(node, id_map) {
         Some(v) => v,
         None => return Ok(()),
     };
@@ -483,7 +499,7 @@ fn parse_svg_use_element<'input>(
         .skip(1)
         .filter(|n| n.has_tag_name((SVG_NS, "use")))
     {
-        if let Some(link2) = resolve_href(link_child) {
+        if let Some(link2) = resolve_href(link_child, id_map) {
             if link2 == node || link2 == link {
                 is_recursive = true;
                 break;
@@ -499,7 +515,16 @@ fn parse_svg_use_element<'input>(
         return Ok(());
     }
 
-    parse_xml_node(link, node, parent_id, style_sheet, true, depth + 1, doc)
+    parse_xml_node(
+        link,
+        node,
+        parent_id,
+        style_sheet,
+        true,
+        depth + 1,
+        doc,
+        id_map,
+    )
 }
 
 fn resolve_css<'a>(xml: &'a roxmltree::Document<'a>) -> simplecss::StyleSheet<'a> {
