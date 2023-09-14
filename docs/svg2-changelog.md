@@ -195,7 +195,7 @@ Basically everything from [CSS Text Module Level 3](https://www.w3.org/TR/css-te
 - [x] A [`mix-blend-mode`](https://www.w3.org/TR/compositing-1/#mix-blend-mode) property.
 - [x] An [`isolation`](https://www.w3.org/TR/compositing-1/#isolation) property.
 - [ ] `left`, `center` and `right` variants to `refX` and `refY` properties of the the [`marker`](https://www.w3.org/TR/SVG2/painting.html#MarkerElement) element.
-- [ ] A `auto-start-reverse` variant to [`orient`](https://www.w3.org/TR/SVG2/painting.html#OrientAttribute) property of the the [`marker`](https://www.w3.org/TR/SVG2/painting.html#MarkerElement) element
+- [x] An `auto-start-reverse` variant to [`orient`](https://www.w3.org/TR/SVG2/painting.html#OrientAttribute) property of the the [`marker`](https://www.w3.org/TR/SVG2/painting.html#MarkerElement) element
 
 ### Changed
 

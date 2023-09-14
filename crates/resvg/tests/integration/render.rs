@@ -761,6 +761,7 @@ use crate::render;
 #[test] fn painting_marker_orient_eq_auto_on_M_L_M_C() { assert_eq!(render("tests/painting/marker/orient=auto-on-M-L-M-C"), 0); }
 #[test] fn painting_marker_orient_eq_auto_on_M_L_Z() { assert_eq!(render("tests/painting/marker/orient=auto-on-M-L-Z"), 0); }
 #[test] fn painting_marker_orient_eq_auto_on_M_L() { assert_eq!(render("tests/painting/marker/orient=auto-on-M-L"), 0); }
+#[test] fn painting_marker_orient_eq_auto_start_reverse() { assert_eq!(render("tests/painting/marker/orient=auto-start-reverse"), 0); }
 #[test] fn painting_marker_percent_values() { assert_eq!(render("tests/painting/marker/percent-values"), 0); }
 #[test] fn painting_marker_recursive_1() { assert_eq!(render("tests/painting/marker/recursive-1"), 0); }
 #[test] fn painting_marker_recursive_2() { assert_eq!(render("tests/painting/marker/recursive-2"), 0); }
