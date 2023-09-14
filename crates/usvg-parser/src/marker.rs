@@ -82,6 +82,7 @@ enum MarkerKind {
 
 enum MarkerOrientation {
     Auto,
+    AutoStartReverse,
     Angle(f32),
 }
 
@@ -168,7 +169,12 @@ fn resolve(
         let mut ts = Transform::from_translate(p.x, p.y);
 
         let angle = match convert_orientation(marker_node) {
-            MarkerOrientation::Auto => calc_vertex_angle(&segments, idx),
+            MarkerOrientation::AutoStartReverse if idx == 0 => {
+                (calc_vertex_angle(&segments, idx) + 180.0) % 360.0
+            }
+            MarkerOrientation::Auto | MarkerOrientation::AutoStartReverse => {
+                calc_vertex_angle(&segments, idx)
+            }
             MarkerOrientation::Angle(angle) => angle,
         };
 
@@ -467,10 +473,10 @@ fn convert_rect(node: SvgNode, state: &converter::State) -> Option<NonZeroRect> 
 }
 
 fn convert_orientation(node: SvgNode) -> MarkerOrientation {
-    if node.attribute(AId::Orient) == Some("auto") {
-        MarkerOrientation::Auto
-    } else {
-        match node.attribute::<svgtypes::Angle>(AId::Orient) {
+    match node.attribute(AId::Orient) {
+        Some("auto") => MarkerOrientation::Auto,
+        Some("auto-start-reverse") => MarkerOrientation::AutoStartReverse,
+        _ => match node.attribute::<svgtypes::Angle>(AId::Orient) {
             Some(angle) => MarkerOrientation::Angle(angle.to_degrees() as f32),
             None => MarkerOrientation::Angle(0.0),
         }
