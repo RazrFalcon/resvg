@@ -7,13 +7,29 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.36.0] - 2023-10-01
 ### Added
-- `stroke-linejoin=miter-clip` support.
+- `stroke-linejoin=miter-clip` support. SVG2.
   Thanks to [@torokati44](https://github.com/torokati44).
+- Quoted FuncIRI support. Like `fill="url('#gradient')"`. SVG2.
+  Thanks to [@romanzes](https://github.com/romanzes).
+- Allow float values in `rgb()` and `rgba()` colors. SVG2.
+  Thanks to [@yisibl](https://github.com/yisibl).
+- `auto-start-reverse` variant support to `orient` in markers. SVG2.
+  Thanks to [@EpicEricEE](https://github.com/EpicEricEE).
+
+### Changed
+- Update dependencies.
 
 ### Fixed
 - Increase precision of the zero-scale transform check.
   Was rejecting some valid transforms before.
+- Panic when rendering a very specific text.
+- Greatly improve parsing performance when an SVG has a lot of references.
+  Thanks to [@wez](https://github.com/wez).
+- (Qt API) Fix scaling factor calculation.
+  Thanks to [@missdeer](https://github.com/missdeer).
 
 ## [0.35.0] - 2023-06-27
 ### Fixed
@@ -929,7 +945,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.35.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.36.0...HEAD
+[0.36.0]: https://github.com/RazrFalcon/resvg/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/RazrFalcon/resvg/compare/v0.34.1...v0.35.0
 [0.34.1]: https://github.com/RazrFalcon/resvg/compare/v0.34.0...v0.34.1
 [0.34.0]: https://github.com/RazrFalcon/resvg/compare/v0.33.0...v0.34.0

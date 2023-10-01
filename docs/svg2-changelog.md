@@ -24,7 +24,7 @@ NOTE: This list is not final. This just things I was able to find so far. Patche
 ### Changed
 
 - [x] [`<length>`](https://www.w3.org/TR/css3-values/#lengths) no longer includes the `%` unit. This variant was moved into a separate type: [`<length-percentage>`](https://www.w3.org/TR/css3-values/#typedef-length-percentage).
-- [ ] [`<FuncIRI>`](https://www.w3.org/TR/SVG11/filters.html#FilterProperty) was replaced with an [`<url>`](https://www.w3.org/TR/css3-values/#url-value). The main change here is that `<url>` allows quoted strings.
+- [x] [`<FuncIRI>`](https://www.w3.org/TR/SVG11/filters.html#FilterProperty) was replaced with an [`<url>`](https://www.w3.org/TR/css3-values/#url-value). The main change here is that `<url>` allows quoted strings.
 
 ### Deprecated
 
