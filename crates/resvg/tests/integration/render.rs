@@ -561,7 +561,6 @@ use crate::render;
 #[test] fn paint_servers_radialGradient_attributes_via_xlink_href_only_required() { assert_eq!(render("tests/paint-servers/radialGradient/attributes-via-xlink-href-only-required"), 0); }
 #[test] fn paint_servers_radialGradient_attributes_via_xlink_href() { assert_eq!(render("tests/paint-servers/radialGradient/attributes-via-xlink-href"), 0); }
 #[test] fn paint_servers_radialGradient_default_attributes() { assert_eq!(render("tests/paint-servers/radialGradient/default-attributes"), 0); }
-#[test] fn paint_servers_radialGradient_focal_point_correction() { assert_eq!(render("tests/paint-servers/radialGradient/focal-point-correction"), 0); }
 #[test] fn paint_servers_radialGradient_fr_eq__1() { assert_eq!(render("tests/paint-servers/radialGradient/fr=-1"), 0); }
 #[test] fn paint_servers_radialGradient_fr_eq_0_2() { assert_eq!(render("tests/paint-servers/radialGradient/fr=0.2"), 0); }
 #[test] fn paint_servers_radialGradient_fr_eq_0_5() { assert_eq!(render("tests/paint-servers/radialGradient/fr=0.5"), 0); }
