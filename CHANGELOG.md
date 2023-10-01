@@ -11,6 +11,10 @@ This changelog also contains important changes in dependencies.
 - `stroke-linejoin=miter-clip` support.
   Thanks to [@torokati44](https://github.com/torokati44).
 
+### Fixed
+- Increase precision of the zero-scale transform check.
+  Was rejecting some valid transforms before.
+
 ## [0.35.0] - 2023-06-27
 ### Fixed
 - Panic when an element is completely outside the viewbox.
