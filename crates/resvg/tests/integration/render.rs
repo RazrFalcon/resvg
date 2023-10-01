@@ -689,6 +689,7 @@ use crate::render;
 #[test] fn painting_fill_rgb_color_with_a_big_fraction_part() { assert_eq!(render("tests/painting/fill/rgb-color-with-a-big-fraction-part"), 0); }
 #[test] fn painting_fill_rgb_color_with_extra_spaces() { assert_eq!(render("tests/painting/fill/rgb-color-with-extra-spaces"), 0); }
 #[test] fn painting_fill_rgb_color_with_float_percentage_values() { assert_eq!(render("tests/painting/fill/rgb-color-with-float-percentage-values"), 0); }
+#[test] fn painting_fill_rgb_color_with_floats() { assert_eq!(render("tests/painting/fill/rgb-color-with-floats"), 0); }
 #[test] fn painting_fill_rgb_color_with_percentage_overflow() { assert_eq!(render("tests/painting/fill/rgb-color-with-percentage-overflow"), 0); }
 #[test] fn painting_fill_rgb_color_with_percentage_values() { assert_eq!(render("tests/painting/fill/rgb-color-with-percentage-values"), 0); }
 #[test] fn painting_fill_rgb_color() { assert_eq!(render("tests/painting/fill/rgb-color"), 0); }
@@ -1139,6 +1140,7 @@ use crate::render;
 #[test] fn structure_svg_explicit_svg_namespace() { assert_eq!(render("tests/structure/svg/explicit-svg-namespace"), 0); }
 #[test] fn structure_svg_funcIRI_parsing() { assert_eq!(render("tests/structure/svg/funcIRI-parsing"), 0); }
 #[test] fn structure_svg_funcIRI_with_invalid_characters() { assert_eq!(render("tests/structure/svg/funcIRI-with-invalid-characters"), 0); }
+#[test] fn structure_svg_funcIRI_with_quotes() { assert_eq!(render("tests/structure/svg/funcIRI-with-quotes"), 0); }
 #[test] fn structure_svg_invalid_id_attribute_1() { assert_eq!(render("tests/structure/svg/invalid-id-attribute-1"), 0); }
 #[test] fn structure_svg_invalid_id_attribute_2() { assert_eq!(render("tests/structure/svg/invalid-id-attribute-2"), 0); }
 #[test] fn structure_svg_mixed_namespaces() { assert_eq!(render("tests/structure/svg/mixed-namespaces"), 0); }
