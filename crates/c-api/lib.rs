@@ -487,7 +487,7 @@ pub extern "C" fn resvg_options_load_system_fonts(opt: *mut resvg_options) {
 pub extern "C" fn resvg_options_destroy(opt: *mut resvg_options) {
     unsafe {
         assert!(!opt.is_null());
-        Box::from_raw(opt)
+        let _ = Box::from_raw(opt);
     };
 }
 
@@ -818,7 +818,7 @@ pub extern "C" fn resvg_get_node_bbox(
 pub extern "C" fn resvg_tree_destroy(tree: *mut resvg_render_tree) {
     unsafe {
         assert!(!tree.is_null());
-        Box::from_raw(tree)
+        let _ = Box::from_raw(tree);
     };
 }
 

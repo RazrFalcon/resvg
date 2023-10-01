@@ -15,5 +15,5 @@ workspace = "../.."
 [dependencies]
 rctree = "0.5"
 strict-num = "0.1.1"
-svgtypes = "0.11"
-tiny-skia-path = "0.10"
+svgtypes = "0.12"
+tiny-skia-path = "0.11.1"
