@@ -145,6 +145,7 @@ fn convert_stroke_path(
         },
         line_join: match ustroke.linejoin {
             usvg::LineJoin::Miter => tiny_skia::LineJoin::Miter,
+            usvg::LineJoin::MiterClip => tiny_skia::LineJoin::MiterClip,
             usvg::LineJoin::Round => tiny_skia::LineJoin::Round,
             usvg::LineJoin::Bevel => tiny_skia::LineJoin::Bevel,
         },

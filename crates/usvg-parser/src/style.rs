@@ -23,6 +23,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::LineJoin {
     fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
         match value {
             "miter" => Some(usvg_tree::LineJoin::Miter),
+            "miter-clip" => Some(usvg_tree::LineJoin::MiterClip),
             "round" => Some(usvg_tree::LineJoin::Round),
             "bevel" => Some(usvg_tree::LineJoin::Bevel),
             _ => None,

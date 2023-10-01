@@ -453,6 +453,7 @@ impl Default for LineCap {
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum LineJoin {
     Miter,
+    MiterClip,
     Round,
     Bevel,
 }

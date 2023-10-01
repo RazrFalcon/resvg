@@ -189,7 +189,7 @@ Basically everything from [CSS Text Module Level 3](https://www.w3.org/TR/css-te
 ### Added
 
 - [ ] An `arcs` variant to the [`stroke-linejoin`](https://www.w3.org/TR/SVG2/painting.html#LineJoin) property.
-- [ ] A `miter-clip` variant to the [`stroke-linejoin`](https://www.w3.org/TR/SVG2/painting.html#LineJoin) property.
+- [x] A `miter-clip` variant to the [`stroke-linejoin`](https://www.w3.org/TR/SVG2/painting.html#LineJoin) property.
 - [x] (partial support) A [`paint-order`](https://www.w3.org/TR/SVG2/painting.html#PaintOrder) property.
 - [ ] `context-fill` and `context-stroke` variants to the [`<paint>`](https://www.w3.org/TR/SVG2/painting.html#SpecifyingPaint) type.
 - [x] A [`mix-blend-mode`](https://www.w3.org/TR/compositing-1/#mix-blend-mode) property.

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- `stroke-linejoin=miter-clip` support.
+  Thanks to [@torokati44](https://github.com/torokati44).
 
 ## [0.35.0] - 2023-06-27
 ### Fixed

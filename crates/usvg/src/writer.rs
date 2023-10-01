@@ -1122,6 +1122,7 @@ fn write_stroke(stroke: &Option<Stroke>, opt: &XmlOptions, xml: &mut XmlWriter) 
 
         match stroke.linejoin {
             LineJoin::Miter => {}
+            LineJoin::MiterClip => xml.write_svg_attribute(AId::StrokeLinejoin, "miter-clip"),
             LineJoin::Round => xml.write_svg_attribute(AId::StrokeLinejoin, "round"),
             LineJoin::Bevel => xml.write_svg_attribute(AId::StrokeLinejoin, "bevel"),
         }
