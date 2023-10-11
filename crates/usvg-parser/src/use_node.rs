@@ -28,28 +28,32 @@ pub(crate) fn convert(
         return None;
     }
 
+    let mut use_state = state.clone();
+    use_state.context_fill = crate::style::resolve_fill(node, false, state, cache);
+    use_state.context_stroke = crate::style::resolve_stroke(node, false, state, cache);
+
     // We require an original transformation to setup 'clipPath'.
     let mut orig_ts: Transform = node.attribute(AId::Transform).unwrap_or_default();
     let mut new_ts = Transform::default();
 
     {
-        let x = node.convert_user_length(AId::X, state, Length::zero());
-        let y = node.convert_user_length(AId::Y, state, Length::zero());
+        let x = node.convert_user_length(AId::X, &use_state, Length::zero());
+        let y = node.convert_user_length(AId::Y, &use_state, Length::zero());
         new_ts = new_ts.pre_translate(x, y);
     }
 
     let linked_to_symbol = child.tag_name() == Some(EId::Symbol);
 
     if linked_to_symbol {
-        if let Some(ts) = viewbox_transform(node, child, state) {
+        if let Some(ts) = viewbox_transform(node, child, &use_state) {
             new_ts = new_ts.pre_concat(ts);
         }
 
-        if let Some(clip_rect) = get_clip_rect(node, child, state) {
-            let mut g = clip_element(node, clip_rect, orig_ts, state, cache, parent);
+        if let Some(clip_rect) = get_clip_rect(node, child, &use_state) {
+            let mut g = clip_element(node, clip_rect, orig_ts, &use_state, cache, parent);
 
             // Make group for `use`.
-            let mut parent = match converter::convert_group(node, state, true, cache, &mut g) {
+            let mut parent = match converter::convert_group(node, &use_state, true, cache, &mut g) {
                 converter::GroupKind::Create(g) => {
                     // We must reset transform, because it was already set
                     // to the group with clip-path.
@@ -64,7 +68,7 @@ pub(crate) fn convert(
                 converter::GroupKind::Ignore => return None,
             };
 
-            convert_children(child, new_ts, state, cache, &mut parent);
+            convert_children(child, new_ts, &use_state, cache, &mut parent);
             return None;
         }
     }
@@ -73,7 +77,7 @@ pub(crate) fn convert(
 
     if linked_to_symbol {
         // Make group for `use`.
-        let mut parent = match converter::convert_group(node, state, false, cache, parent) {
+        let mut parent = match converter::convert_group(node, &use_state, false, cache, parent) {
             converter::GroupKind::Create(g) => {
                 if let NodeKind::Group(ref mut g) = *g.borrow_mut() {
                     g.transform = Transform::default();
@@ -85,7 +89,7 @@ pub(crate) fn convert(
             converter::GroupKind::Ignore => return None,
         };
 
-        convert_children(child, orig_ts, state, cache, &mut parent);
+        convert_children(child, orig_ts, &use_state, cache, &mut parent);
     } else {
         let linked_to_svg = child.tag_name() == Some(EId::Svg);
         if linked_to_svg {
@@ -94,8 +98,6 @@ pub(crate) fn convert(
             // instead of `svg` element size.
 
             let def = Length::new(100.0, LengthUnit::Percent);
-
-            let mut state = state.clone();
             // As per usual, the SVG spec doesn't clarify this edge case,
             // but it seems like `use` size has to be reset by each `use`.
             // Meaning if we have two nested `use` elements, where one had set `width` and
@@ -107,19 +109,19 @@ pub(crate) fn convert(
             // <svg id="svg2" x="40" y="40" width="80" height="80" xmlns="http://www.w3.org/2000/svg"/>
             //
             // In this case `svg2` size is 80x100 and not 100x100.
-            state.use_size = (None, None);
+            use_state.use_size = (None, None);
 
             // Width and height can be set independently.
             if node.has_attribute(AId::Width) {
-                state.use_size.0 = Some(node.convert_user_length(AId::Width, &state, def));
+                use_state.use_size.0 = Some(node.convert_user_length(AId::Width, &use_state, def));
             }
             if node.has_attribute(AId::Height) {
-                state.use_size.1 = Some(node.convert_user_length(AId::Height, &state, def));
+                use_state.use_size.1 = Some(node.convert_user_length(AId::Height, &use_state, def));
             }
 
-            convert_children(node, orig_ts, &state, cache, parent);
+            convert_children(node, orig_ts, &use_state, cache, parent);
         } else {
-            convert_children(node, orig_ts, state, cache, parent);
+            convert_children(node, orig_ts, &use_state, cache, parent);
         }
     }
 
