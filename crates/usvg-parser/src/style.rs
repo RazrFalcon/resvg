@@ -135,6 +135,12 @@ fn convert_paint(
                     value
                 );
                 svgtypes::Paint::Color(svgtypes::Color::black())
+            } else if aid == AId::Stroke {
+                log::warn!(
+                    "Failed to parse stroke value: '{}'. Fallback to no stroke.",
+                    value
+                );
+                return None;
             } else {
                 return None;
             }
