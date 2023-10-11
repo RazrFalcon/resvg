@@ -634,6 +634,10 @@ use crate::render;
 #[test] fn paint_servers_stop_color_simple_case() { assert_eq!(render("tests/paint-servers/stop-color/simple-case"), 0); }
 #[test] fn paint_servers_stop_opacity_50percent() { assert_eq!(render("tests/paint-servers/stop-opacity/50percent"), 0); }
 #[test] fn paint_servers_stop_opacity_simple_case() { assert_eq!(render("tests/paint-servers/stop-opacity/simple-case"), 0); }
+#[test] fn painting_color_context_fill_in_marker() { assert_eq!(render("tests/painting/color/context-fill-in-marker"), 0); }
+#[test] fn painting_color_context_fill_no_context_element() { assert_eq!(render("tests/painting/color/context-fill-no-context-element"), 0); }
+#[test] fn painting_color_context_stroke_in_marker() { assert_eq!(render("tests/painting/color/context-stroke-in-marker"), 0); }
+#[test] fn painting_color_context_stroke_no_context_element() { assert_eq!(render("tests/painting/color/context-stroke-no-context-element"), 0); }
 #[test] fn painting_color_inherit() { assert_eq!(render("tests/painting/color/inherit"), 0); }
 #[test] fn painting_color_simple_case() { assert_eq!(render("tests/painting/color/simple-case"), 0); }
 #[test] fn painting_display_bBox_impact() { assert_eq!(render("tests/painting/display/bBox-impact"), 0); }

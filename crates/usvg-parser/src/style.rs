@@ -150,6 +150,8 @@ fn convert_paint(
     match paint {
         svgtypes::Paint::None => None,
         svgtypes::Paint::Inherit => None, // already resolved by svgtree
+        svgtypes::Paint::ContextFill => state.context_fill.as_ref().map(|f| f.paint.clone()),
+        svgtypes::Paint::ContextStroke => state.context_stroke.as_ref().map(|s| s.paint.clone()),
         svgtypes::Paint::CurrentColor => {
             let svg_color: svgtypes::Color = node
                 .find_attribute(AId::Color)

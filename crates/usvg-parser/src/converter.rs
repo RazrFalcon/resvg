@@ -18,6 +18,8 @@ use crate::{Error, Options};
 pub struct State<'a> {
     pub(crate) parent_clip_path: Option<SvgNode<'a, 'a>>,
     pub(crate) parent_markers: Vec<SvgNode<'a, 'a>>,
+    pub(crate) context_stroke: Option<Stroke>,
+    pub(crate) context_fill: Option<Fill>,
     pub(crate) fe_image_link: bool,
     /// A viewBox of the parent SVG element.
     pub(crate) view_box: NonZeroRect,
@@ -202,6 +204,8 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
 
     let state = State {
         parent_clip_path: None,
+        context_fill: None,
+        context_stroke: None,
         parent_markers: Vec::new(),
         fe_image_link: false,
         view_box: view_box.rect,
@@ -234,6 +238,8 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
 fn resolve_svg_size(svg: &SvgNode, opt: &Options) -> (Result<Size, Error>, bool) {
     let mut state = State {
         parent_clip_path: None,
+        context_fill: None,
+        context_stroke: None,
         parent_markers: Vec::new(),
         fe_image_link: false,
         view_box: NonZeroRect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
@@ -674,7 +680,10 @@ fn convert_path(
     let mut markers_group = None;
     if crate::marker::is_valid(node) && visibility == Visibility::Visible {
         let mut g = parent.append_kind(NodeKind::Group(Group::default()));
-        crate::marker::convert(node, &path, state, cache, &mut g);
+        let mut marker_state = state.clone();
+        marker_state.context_fill = fill.clone();
+        marker_state.context_stroke = stroke.clone();
+        crate::marker::convert(node, &path, &marker_state, cache, &mut g);
         markers_group = Some(g);
     }
 
