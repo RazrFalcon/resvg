@@ -18,8 +18,8 @@ use crate::{Error, Options};
 pub struct State<'a> {
     pub(crate) parent_clip_path: Option<SvgNode<'a, 'a>>,
     pub(crate) parent_markers: Vec<SvgNode<'a, 'a>>,
-    pub(crate) context_stroke: Option<Stroke>,
     pub(crate) context_fill: Option<Fill>,
+    pub(crate) context_stroke: Option<Stroke>,
     pub(crate) fe_image_link: bool,
     /// A viewBox of the parent SVG element.
     pub(crate) view_box: NonZeroRect,
