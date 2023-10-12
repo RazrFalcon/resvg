@@ -7,7 +7,7 @@
               d="M 100 15 l 50 160 l -130 -100 l 160 0 l -130 100 Z"/>
     </defs>
 
-    <use id="use2" xlink:href="#rect1" stroke="blue" fill="green"/>
+    <use id="use2" xlink:href="#path1" stroke="green" fill="blue"/>
     <use id="use1" xlink:href="#use2" stroke="red" fill="yellow"/>
 
     <!-- image frame -->

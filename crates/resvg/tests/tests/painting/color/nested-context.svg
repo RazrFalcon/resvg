@@ -7,7 +7,7 @@
     </defs>
 
     <use id="use2" xlink:href="#rect1" stroke="context-stroke" fill="context-fill"/>
-    <use id="use1" xlink:href="#use2" stroke="blue" fill="green"/>
+    <use id="use1" xlink:href="#use2" stroke="green" fill="blue"/>
 
     <!-- image frame -->
     <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
