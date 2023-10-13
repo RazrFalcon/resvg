@@ -57,7 +57,7 @@ pub enum EId {
     TextPath,
     Tref,
     Tspan,
-    Use
+    Use,
 }
 
 static ELEMENTS: Map<EId> = Map {
@@ -367,7 +367,7 @@ pub enum AId {
     Y1,
     Y2,
     YChannelSelector,
-    Z
+    Z,
 }
 
 static ATTRIBUTES: Map<AId> = Map {
@@ -454,7 +454,10 @@ static ATTRIBUTES: Map<AId> = Map {
         ("viewBox", AId::ViewBox),
         ("visibility", AId::Visibility),
         ("ry", AId::Ry),
-        ("glyph-orientation-horizontal", AId::GlyphOrientationHorizontal),
+        (
+            "glyph-orientation-horizontal",
+            AId::GlyphOrientationHorizontal,
+        ),
         ("gradientTransform", AId::GradientTransform),
         ("markerUnits", AId::MarkerUnits),
         ("shape-inside", AId::ShapeInside),
@@ -499,7 +502,10 @@ static ATTRIBUTES: Map<AId> = Map {
         ("text-rendering", AId::TextRendering),
         ("mask-border", AId::MaskBorder),
         ("exponent", AId::Exponent),
-        ("color-interpolation-filters", AId::ColorInterpolationFilters),
+        (
+            "color-interpolation-filters",
+            AId::ColorInterpolationFilters,
+        ),
         ("diffuseConstant", AId::DiffuseConstant),
         ("space", AId::Space),
         ("font-synthesis", AId::FontSynthesis),
@@ -659,18 +665,15 @@ impl std::fmt::Display for AId {
 struct Map<V: 'static> {
     pub key: u64,
     pub disps: &'static [(u32, u32)],
-    pub entries: &'static[(&'static str, V)],
+    pub entries: &'static [(&'static str, V)],
 }
 
 impl<V: PartialEq> Map<V> {
     fn get(&self, key: &str) -> Option<&V> {
-        use std::borrow::Borrow;
-
         let hash = hash(key, self.key);
         let index = get_index(hash, self.disps, self.entries.len());
         let entry = &self.entries[index as usize];
-        let b = entry.0.borrow();
-        if b == key {
+        if entry.0 == key {
             Some(&entry.1)
         } else {
             None
@@ -703,9 +706,11 @@ fn split(hash: u64) -> (u32, u32, u32) {
     const BITS: u32 = 21;
     const MASK: u64 = (1 << BITS) - 1;
 
-    ((hash & MASK) as u32,
-     ((hash >> BITS) & MASK) as u32,
-     ((hash >> (2 * BITS)) & MASK) as u32)
+    (
+        (hash & MASK) as u32,
+        ((hash >> BITS) & MASK) as u32,
+        ((hash >> (2 * BITS)) & MASK) as u32,
+    )
 }
 
 #[inline]

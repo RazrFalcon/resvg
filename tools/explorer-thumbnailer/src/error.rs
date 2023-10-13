@@ -28,11 +28,9 @@ impl std::fmt::Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &*self {
-            |IStreamStat(_)
-            |IStreamRead(_)
-            |TreeEmpty
-            |CreateDIBSectionError
-            |RenderError => None,
+            IStreamStat(_) | IStreamRead(_) | TreeEmpty | CreateDIBSectionError | RenderError => {
+                None
+            }
             TreeError(source) => Some(source),
         }
     }
@@ -43,7 +41,7 @@ impl From<Error> for HRESULT {
         match err {
             IStreamStat(code) | IStreamRead(code) => code,
             TreeError(_) | TreeEmpty | RenderError => S_FALSE,
-            CreateDIBSectionError => E_POINTER
+            CreateDIBSectionError => E_POINTER,
         }
     }
 }

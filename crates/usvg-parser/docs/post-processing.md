@@ -2,7 +2,7 @@
 
 ## No namespaces
 
-In an SVG tree all elements and attributes belong to to the SVG namespace.
+In an SVG tree all elements and attributes belong to the SVG namespace.
 
 ## No non-SVG elements and attributes
 
@@ -129,11 +129,11 @@ and more complex one like
 
 As mentioned above, SVG supports references. And it can reference any element in the document.<br>
 Instead of checking each element in the tree each time, which would be pretty slow,
-we have a ID<->Node HashMap to quickly retrieve a requested element.
+we have an ID<->Node HashMap to quickly retrieve a requested element.
 
 ## Links are groups
 
-The `<a>` element in SVG is just a `<g>` with an URL.<br>
+The `<a>` element in SVG is just a `<g>` with a URL.<br>
 Since we really support only the static SVG subset, we can replace `<a>` with `<g>`.
 
 ## `tref` resolving
