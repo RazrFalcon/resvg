@@ -98,7 +98,7 @@ impl std::fmt::Debug for Document<'_> {
                     if !child.attributes().is_empty() {
                         writeln_indented!(depth + 1, f, "attributes: [");
                         for attr in child.attributes() {
-                            writeln_indented!(depth + 2, f, "{:?}", attr);
+                            writeln_indented!(depth + 2, f, "{attr:?}");
                         }
                         writeln_indented!(depth + 1, f, "]");
                     }
@@ -111,7 +111,7 @@ impl std::fmt::Debug for Document<'_> {
 
                     writeln_indented!(depth, f, "}}");
                 } else {
-                    writeln_indented!(depth, f, "{:?}", child);
+                    writeln_indented!(depth, f, "{child:?}");
                 }
             }
 
@@ -279,7 +279,7 @@ impl<'a, 'input: 'a> SvgNode<'a, 'input> {
             Some(v) => Some(v),
             None => {
                 // TODO: show position in XML
-                log::warn!("Failed to parse {} value: '{}'.", aid, value);
+                log::warn!("Failed to parse {aid} value: '{value}'.");
                 None
             }
         }
@@ -473,7 +473,7 @@ impl std::fmt::Debug for SvgNode<'_, '_> {
                     self.attributes()
                 )
             }
-            NodeKind::Text(ref text) => write!(f, "Text({:?})", text),
+            NodeKind::Text(ref text) => write!(f, "Text({text:?})"),
         }
     }
 }

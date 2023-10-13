@@ -252,7 +252,7 @@ fn conv_filters(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
                             let prefix = opt.id_prefix.as_deref().unwrap_or_default();
                             xml.write_attribute_fmt(
                                 "xlink:href",
-                                format_args!("#{}{}", prefix, node.id()),
+                                format_args!("#{prefix}{}", node.id()),
                             );
                         }
                     }
@@ -625,7 +625,7 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                 let ids: Vec<_> = g
                     .filters
                     .iter()
-                    .map(|filter| format!("url(#{}{})", prefix, filter.id))
+                    .map(|filter| format!("url(#{prefix}{})", filter.id))
                     .collect();
                 xml.write_svg_attribute(AId::Filter, &ids.join(" "));
             }
@@ -661,7 +661,7 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                 let isolation = if g.isolate { "isolate" } else { "auto" };
                 xml.write_attribute_fmt(
                     AId::Style.to_str(),
-                    format_args!("mix-blend-mode:{};isolation:{}", blend_mode, isolation),
+                    format_args!("mix-blend-mode:{blend_mode};isolation:{isolation}"),
                 );
             }
 
@@ -709,7 +709,7 @@ impl XmlWriterExt for XmlWriter {
     fn write_id_attribute(&mut self, value: &str, opt: &XmlOptions) {
         debug_assert!(!value.is_empty());
         if let Some(ref prefix) = opt.id_prefix {
-            self.write_attribute_fmt("id", format_args!("{}{}", prefix, value));
+            self.write_attribute_fmt("id", format_args!("{prefix}{value}"));
         } else {
             self.write_attribute("id", value);
         }
@@ -818,7 +818,7 @@ impl XmlWriterExt for XmlWriter {
 
     fn write_func_iri(&mut self, aid: AId, id: &str, opt: &XmlOptions) {
         let prefix = opt.id_prefix.as_deref().unwrap_or_default();
-        self.write_attribute_fmt(aid.to_str(), format_args!("url(#{}{})", prefix, id));
+        self.write_attribute_fmt(aid.to_str(), format_args!("url(#{prefix}{id})"));
     }
 
     fn write_rect_attrs(&mut self, r: NonZeroRect) {
@@ -831,7 +831,7 @@ impl XmlWriterExt for XmlWriter {
     fn write_numbers(&mut self, aid: AId, list: &[f32]) {
         self.write_attribute_raw(aid.to_str(), |buf| {
             for n in list {
-                buf.write_fmt(format_args!("{} ", n)).unwrap();
+                buf.write_fmt(format_args!("{n} ")).unwrap();
             }
 
             if !list.is_empty() {
@@ -1210,5 +1210,5 @@ fn write_num(num: f32, buf: &mut Vec<u8>, precision: u8) {
     // our output and tests reproducible.
     let v = (num * POW_VEC[precision as usize]).round() / POW_VEC[precision as usize];
 
-    write!(buf, "{}", v).unwrap();
+    write!(buf, "{v}").unwrap();
 }

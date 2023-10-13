@@ -136,7 +136,7 @@ fn convert_named_font_size(name: &str, parent_font_size: f32) -> f32 {
         "smaller" => -1,
         "larger" => 1,
         _ => {
-            log::warn!("Invalid 'font-size' value: '{}'.", name);
+            log::warn!("Invalid 'font-size' value: '{name}'.");
             0
         }
     };

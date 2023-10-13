@@ -152,7 +152,7 @@ impl std::fmt::Debug for EId {
 
 impl std::fmt::Display for EId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -654,7 +654,7 @@ impl std::fmt::Debug for AId {
 
 impl std::fmt::Display for AId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 

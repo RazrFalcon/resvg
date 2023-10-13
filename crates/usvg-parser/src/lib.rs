@@ -87,7 +87,7 @@ impl std::fmt::Display for Error {
                 write!(f, "SVG has an invalid size")
             }
             Error::ParsingFailed(ref e) => {
-                write!(f, "SVG data parsing failed cause {}", e)
+                write!(f, "SVG data parsing failed cause {e}")
             }
         }
     }

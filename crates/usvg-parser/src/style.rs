@@ -130,10 +130,7 @@ fn convert_paint(
         Ok(v) => v,
         Err(_) => {
             if aid == AId::Fill {
-                log::warn!(
-                    "Failed to parse fill value: '{}'. Fallback to black.",
-                    value
-                );
+                log::warn!("Failed to parse fill value: '{value}'. Fallback to black.");
                 svgtypes::Paint::Color(svgtypes::Color::black())
             } else {
                 return None;
@@ -180,7 +177,7 @@ fn convert_paint(
                         None => from_fallback(node, fallback, opacity),
                     }
                 } else {
-                    log::warn!("'{}' cannot be used to {} a shape.", tag_name, aid);
+                    log::warn!("'{tag_name}' cannot be used to {aid} a shape.");
                     None
                 }
             } else {

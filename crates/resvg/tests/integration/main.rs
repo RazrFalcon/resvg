@@ -21,8 +21,8 @@ static GLOBAL_FONTDB: Lazy<std::sync::Mutex<fontdb::Database>> = Lazy::new(|| {
 });
 
 pub fn render(name: &str) -> usize {
-    let svg_path = format!("tests/{}.svg", name);
-    let png_path = format!("tests/{}.png", name);
+    let svg_path = format!("tests/{name}.svg");
+    let png_path = format!("tests/{name}.png");
 
     let mut opt = usvg::Options::default();
     opt.resources_dir = Some(
@@ -49,7 +49,7 @@ pub fn render(name: &str) -> usize {
     );
     rtree.render(render_ts, &mut pixmap.as_mut());
 
-    // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
+    // pixmap.save_png(&format!("tests/{name}.png")).unwrap();
 
     let mut rgba = pixmap.take();
     demultiply_alpha(rgba.as_mut_slice().as_rgba_mut());
@@ -78,8 +78,8 @@ pub fn render(name: &str) -> usize {
 }
 
 pub fn render_extra_with_scale(name: &str, scale: f32) -> usize {
-    let svg_path = format!("tests/{}.svg", name);
-    let png_path = format!("tests/{}.png", name);
+    let svg_path = format!("tests/{name}.svg");
+    let png_path = format!("tests/{name}.png");
 
     let opt = usvg::Options::default();
 
@@ -95,7 +95,7 @@ pub fn render_extra_with_scale(name: &str, scale: f32) -> usize {
     let render_ts = tiny_skia::Transform::from_scale(scale, scale);
     rtree.render(render_ts, &mut pixmap.as_mut());
 
-    // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
+    // pixmap.save_png(&format!("tests/{name}.png")).unwrap();
 
     let mut rgba = pixmap.take();
     demultiply_alpha(rgba.as_mut_slice().as_rgba_mut());
@@ -195,7 +195,7 @@ fn gen_diff(name: &str, img1: &[u8], img2: &[u8]) -> Result<(), png::EncodingErr
         }
     }
 
-    let path = std::path::PathBuf::from(format!("tests/{}-diff.png", name));
+    let path = std::path::PathBuf::from(format!("tests/{name}-diff.png"));
     let file = std::fs::File::create(path)?;
     let ref mut w = std::io::BufWriter::new(file);
 

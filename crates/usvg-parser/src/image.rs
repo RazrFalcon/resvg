@@ -84,7 +84,7 @@ impl ImageHrefResolver {
                 let data = match std::fs::read(&path) {
                     Ok(data) => data,
                     Err(_) => {
-                        log::warn!("Failed to load '{}'. Skipped.", href);
+                        log::warn!("Failed to load '{href}'. Skipped.");
                         return None;
                     }
                 };
@@ -95,12 +95,12 @@ impl ImageHrefResolver {
                     Some(ImageFormat::GIF) => Some(ImageKind::GIF(Arc::new(data))),
                     Some(ImageFormat::SVG) => load_sub_svg(&data, opts),
                     _ => {
-                        log::warn!("'{}' is not a PNG, JPEG, GIF or SVG(Z) image.", href);
+                        log::warn!("'{href}' is not a PNG, JPEG, GIF or SVG(Z) image.");
                         None
                     }
                 }
             } else {
-                log::warn!("'{}' is not a path to an image.", href);
+                log::warn!("'{href}' is not a path to an image.");
                 None
             }
         })

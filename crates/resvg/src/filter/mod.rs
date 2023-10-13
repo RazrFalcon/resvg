@@ -763,7 +763,7 @@ fn get_input(
                 Ok(v.image.clone())
             } else {
                 // Technically unreachable.
-                log::warn!("Unknown filter primitive reference '{}'.", name);
+                log::warn!("Unknown filter primitive reference '{name}'.");
                 get_input(&usvg::filter::Input::SourceGraphic, region, source, results)
             }
         }

@@ -80,7 +80,7 @@ pub(crate) fn convert(
             Ok(v) => v,
             Err(e) => {
                 // Skip the whole attribute list on error.
-                log::warn!("Failed to parse a filter value cause {}. Skipping.", e);
+                log::warn!("Failed to parse a filter value cause {e}. Skipping.");
                 return Ok(Vec::new());
             }
         };
@@ -293,7 +293,7 @@ fn collect_children(
                 EId::FeSpecularLighting => convert_specular_lighting(child, &primitives)
                     .unwrap_or_else(create_dummy_primitive),
                 tag_name => {
-                    log::warn!("'{}' is not a valid filter primitive. Skipped.", tag_name);
+                    log::warn!("'{tag_name}' is not a valid filter primitive. Skipped.");
                     continue;
                 }
             };
@@ -378,7 +378,7 @@ fn parse_in(s: &str) -> Input {
         "SourceGraphic" => Input::SourceGraphic,
         "SourceAlpha" => Input::SourceAlpha,
         "BackgroundImage" | "BackgroundAlpha" | "FillPaint" | "StrokePaint" => {
-            log::warn!("{} filter input isn't supported and not planed.", s);
+            log::warn!("{s} filter input isn't supported and not planed.");
             Input::SourceGraphic
         }
         _ => Input::Reference(s.to_string()),
@@ -782,7 +782,7 @@ fn convert_lighting_color(node: SvgNode) -> Color {
             if let Ok(c) = svgtypes::Color::from_str(value) {
                 c.split_alpha().0
             } else {
-                log::warn!("Failed to parse lighting-color value: '{}'.", value);
+                log::warn!("Failed to parse lighting-color value: '{value}'.");
                 Color::white()
             }
         }

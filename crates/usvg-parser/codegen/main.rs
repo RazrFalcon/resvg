@@ -68,7 +68,7 @@ fn displace(f1: u32, f2: u32, d1: u32, d2: u32) -> u32 {
 
 fn main() {
     if let Err(e) = gen() {
-        println!("{:?}", e);
+        println!("{e:?}");
         std::process::exit(1);
     }
 }
@@ -83,7 +83,7 @@ fn gen() -> Result<(), Box<dyn std::error::Error>> {
 
     gen_map("attributes.txt", "An attribute ID.", "AId", "ATTRIBUTES", f)?;
 
-    writeln!(f, "{}", PHF_SRC)?;
+    writeln!(f, "{PHF_SRC}")?;
 
     Ok(())
 }
@@ -104,7 +104,7 @@ fn gen_map(
 
     let mut map = phf_codegen::Map::new();
     for name in &names {
-        map.entry(*name, &format!("{}::{}", enum_name, to_enum_name(name)));
+        map.entry(*name, &format!("{enum_name}::{}", to_enum_name(name)));
     }
 
     let mut map_data = Vec::new();
@@ -114,36 +114,31 @@ fn gen_map(
     let map_data = map_data.replace("::phf::Slice::Static(", "");
     let map_data = map_data.replace("]),", "],");
 
-    writeln!(f, "/// {}", enum_docs)?;
+    writeln!(f, "/// {enum_docs}")?;
     writeln!(f, "#[allow(missing_docs)]")?;
     writeln!(f, "#[derive(Clone, Copy, PartialEq)]")?;
-    writeln!(f, "pub enum {} {{", enum_name)?;
-    writeln!(f, "    {}", joined_names)?;
+    writeln!(f, "pub enum {enum_name} {{")?;
+    writeln!(f, "    {joined_names}")?;
     writeln!(f, "}}\n")?;
 
-    writeln!(
-        f,
-        "static {}: Map<{}> = {};\n",
-        map_name, enum_name, map_data
-    )?;
+    writeln!(f, "static {map_name}: Map<{enum_name}> = {map_data};\n")?;
 
-    writeln!(f, "impl {} {{", enum_name)?;
+    writeln!(f, "impl {enum_name} {{")?;
     writeln!(
         f,
-        "    pub(crate) fn from_str(text: &str) -> Option<{}> {{",
-        enum_name
+        "    pub(crate) fn from_str(text: &str) -> Option<{enum_name}> {{"
     )?;
-    writeln!(f, "        {}.get(text).cloned()", map_name)?;
+    writeln!(f, "        {map_name}.get(text).cloned()")?;
     writeln!(f, "    }}")?;
     writeln!(f, "")?;
     writeln!(f, "    /// Returns the original string.")?;
     writeln!(f, "    #[inline(never)]")?;
     writeln!(f, "    pub fn to_str(self) -> &'static str {{")?;
-    writeln!(f, "        {}.key(&self)", map_name)?;
+    writeln!(f, "        {map_name}.key(&self)")?;
     writeln!(f, "    }}")?;
     writeln!(f, "}}\n")?;
 
-    writeln!(f, "impl std::fmt::Debug for {} {{", enum_name)?;
+    writeln!(f, "impl std::fmt::Debug for {enum_name} {{")?;
     writeln!(
         f,
         "    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {{"
@@ -152,12 +147,12 @@ fn gen_map(
     writeln!(f, "    }}")?;
     writeln!(f, "}}\n")?;
 
-    writeln!(f, "impl std::fmt::Display for {} {{", enum_name)?;
+    writeln!(f, "impl std::fmt::Display for {enum_name} {{")?;
     writeln!(
         f,
         "    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {{"
     )?;
-    writeln!(f, "        write!(f, \"{{:?}}\", self)")?;
+    writeln!(f, "        write!(f, \"{{self:?}}\")")?;
     writeln!(f, "    }}")?;
     writeln!(f, "}}")?;
     writeln!(f, "")?;

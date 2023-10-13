@@ -27,7 +27,7 @@ impl IInitializeWithStream for ThumbnailProvider {
     unsafe fn read(&self, pstream: LPSTREAM, _grf_mode: DWORD) -> HRESULT {
         tree_from_istream(pstream).map_or_else(
             |err| {
-                error!("{}", err);
+                error!("{err}");
                 err.into()
             },
             |tree| {
@@ -44,7 +44,7 @@ impl IThumbnailProvider for ThumbnailProvider {
             .and_then(|img| img_to_hbitmap(&img))
             .map_or_else(
                 |err| {
-                    error!("{}", err);
+                    error!("{err}");
                     err.into()
                 },
                 |hbmp| {

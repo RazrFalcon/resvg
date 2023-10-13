@@ -15,9 +15,9 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            IStreamStat(code) => write!(f, "IStream::stat failed with error {}", code),
-            IStreamRead(code) => write!(f, "IStream::read failed with error {}", code),
-            TreeError(err) => write!(f, "Tree::from_data failed with error \"{}\"", err),
+            IStreamStat(code) => write!(f, "IStream::stat failed with error {code}"),
+            IStreamRead(code) => write!(f, "IStream::read failed with error {code}"),
+            TreeError(err) => write!(f, "Tree::from_data failed with error \"{err}\""),
             TreeEmpty => write!(f, "SVG tree was not initialized"),
             CreateDIBSectionError => write!(f, "CreateDIBSection failed"),
             RenderError => write!(f, "resvg::render returned None"),

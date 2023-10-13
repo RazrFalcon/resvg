@@ -148,7 +148,7 @@ fn collect_args() -> Result<Args, pico_args::Error> {
     let mut input = Arguments::from_env();
 
     if input.contains(["-h", "--help"]) {
-        print!("{}", HELP);
+        print!("{HELP}");
         process::exit(0);
     }
 
@@ -297,7 +297,7 @@ fn main() {
     let args = match collect_args() {
         Ok(v) => v,
         Err(e) => {
-            eprintln!("Error: {}.", e);
+            eprintln!("Error: {e}.");
             process::exit(1);
         }
     };
@@ -425,7 +425,7 @@ fn process(args: Args) -> Result<(), String> {
         InputFrom::File(ref path) => std::fs::read(path).map_err(|e| e.to_string()),
     }?;
 
-    let mut tree = usvg_tree::Tree::from_data(&input_svg, &re_opt).map_err(|e| format!("{}", e))?;
+    let mut tree = usvg_tree::Tree::from_data(&input_svg, &re_opt).map_err(|e| format!("{e}"))?;
     tree.convert_text(&fontdb);
 
     let xml_opt = usvg::XmlOptions {
@@ -489,11 +489,11 @@ impl log::Log for SimpleLogger {
             let args = record.args();
 
             match record.level() {
-                log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, args),
-                log::Level::Warn => eprintln!("Warning (in {}:{}): {}", target, line, args),
-                log::Level::Info => eprintln!("Info (in {}:{}): {}", target, line, args),
-                log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, args),
-                log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, args),
+                log::Level::Error => eprintln!("Error (in {target}:{line}): {args}"),
+                log::Level::Warn => eprintln!("Warning (in {target}:{line}): {args}"),
+                log::Level::Info => eprintln!("Info (in {target}:{line}): {args}"),
+                log::Level::Debug => eprintln!("Debug (in {target}:{line}): {args}"),
+                log::Level::Trace => eprintln!("Trace (in {target}:{line}): {args}"),
             }
         }
     }

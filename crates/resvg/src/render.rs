@@ -135,7 +135,7 @@ fn render_group(
     let transform = shift_ts.pre_concat(transform);
 
     let mut sub_pixmap = tiny_skia::Pixmap::new(ibbox.width(), ibbox.height())
-        .log_none(|| log::warn!("Failed to allocate a group layer for: {:?}.", ibbox))?;
+        .log_none(|| log::warn!("Failed to allocate a group layer for: {ibbox:?}."))?;
 
     render_nodes(&group.children, ctx, transform, &mut sub_pixmap.as_mut());
 

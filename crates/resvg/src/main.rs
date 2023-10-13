@@ -10,7 +10,7 @@ use usvg::{fontdb, NodeExt, TreeParsing, TreeTextToPath};
 
 fn main() {
     if let Err(e) = process() {
-        eprintln!("Error: {}.", e);
+        eprintln!("Error: {e}.");
         std::process::exit(1);
     }
 }
@@ -23,7 +23,7 @@ where
     let result = f();
     if perf {
         let elapsed = now.elapsed().as_micros() as f64 / 1000.0;
-        println!("{}: {:.2}ms", name, elapsed);
+        println!("{name}: {elapsed:.2}ms");
     }
 
     result
@@ -33,7 +33,7 @@ fn process() -> Result<(), String> {
     let mut args = match parse_args() {
         Ok(args) => args,
         Err(e) => {
-            println!("{}", HELP);
+            println!("{HELP}");
             return Err(e);
         }
     };
@@ -272,7 +272,7 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
     let mut input = pico_args::Arguments::from_env();
 
     if input.contains("--help") {
-        print!("{}", HELP);
+        print!("{HELP}");
         std::process::exit(0);
     }
 
@@ -636,7 +636,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
     let img = if let Some(ref id) = args.export_id {
         let node = match tree.root.descendants().find(|n| &*n.id() == id) {
             Some(node) => node,
-            None => return Err(format!("SVG doesn't have '{}' ID", id)),
+            None => return Err(format!("SVG doesn't have '{id}' ID")),
         };
 
         let bbox = node
@@ -719,7 +719,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
 
     if args.perf {
         let elapsed = now.elapsed().as_micros() as f64 / 1000.0;
-        println!("Rendering: {:.2}ms", elapsed);
+        println!("Rendering: {elapsed:.2}ms");
     }
 
     Ok(img)
@@ -795,11 +795,11 @@ impl log::Log for SimpleLogger {
             let args = record.args();
 
             match record.level() {
-                log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, args),
-                log::Level::Warn => eprintln!("Warning (in {}:{}): {}", target, line, args),
-                log::Level::Info => eprintln!("Info (in {}:{}): {}", target, line, args),
-                log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, args),
-                log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, args),
+                log::Level::Error => eprintln!("Error (in {target}:{line}): {args}"),
+                log::Level::Warn => eprintln!("Warning (in {target}:{line}): {args}"),
+                log::Level::Info => eprintln!("Info (in {target}:{line}): {args}"),
+                log::Level::Debug => eprintln!("Debug (in {target}:{line}): {args}"),
+                log::Level::Trace => eprintln!("Trace (in {target}:{line}): {args}"),
             }
         }
     }

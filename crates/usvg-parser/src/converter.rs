@@ -95,8 +95,7 @@ impl<'a, 'input: 'a> SvgNode<'a, 'input> {
     pub fn resolve_length(&self, aid: AId, state: &State, def: f32) -> f32 {
         debug_assert!(
             !matches!(aid, AId::BaselineShift | AId::FontSize),
-            "{} cannot be resolved via this function",
-            aid
+            "{aid} cannot be resolved via this function"
         );
 
         if let Some(n) = self.ancestors().find(|n| n.has_attribute(aid)) {
@@ -448,7 +447,7 @@ pub(crate) fn convert_clip_path_elements(
                 crate::text::convert(node, state, cache, parent);
             }
             _ => {
-                log::warn!("'{}' is no a valid 'clip-path' child.", tag_name);
+                log::warn!("'{tag_name}' is no a valid 'clip-path' child.");
             }
         }
     }

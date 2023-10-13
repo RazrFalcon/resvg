@@ -199,8 +199,7 @@ fn points_to_path(node: SvgNode, eid: &str) -> Option<tiny_skia_path::PathBuilde
         }
         _ => {
             log::warn!(
-                "{} '{}' has an invalid 'points' value. Skipped.",
-                eid,
+                "{eid} '{}' has an invalid 'points' value. Skipped.",
                 node.element_id()
             );
             return None;
@@ -210,8 +209,7 @@ fn points_to_path(node: SvgNode, eid: &str) -> Option<tiny_skia_path::PathBuilde
     // 'polyline' and 'polygon' elements must contain at least 2 points.
     if builder.len() < 2 {
         log::warn!(
-            "{} '{}' has less than 2 points. Skipped.",
-            eid,
+            "{eid} '{}' has less than 2 points. Skipped.",
             node.element_id()
         );
         return None;

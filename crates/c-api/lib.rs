@@ -807,7 +807,7 @@ pub extern "C" fn resvg_get_node_bbox(
             }
         }
         None => {
-            log::warn!("No node with '{}' ID is in the tree.", id);
+            log::warn!("No node with '{id}' ID is in the tree.");
             false
         }
     }
@@ -920,7 +920,7 @@ pub extern "C" fn resvg_render_node(
             false
         }
     } else {
-        log::warn!("A node with '{}' ID wasn't found.", id);
+        log::warn!("A node with '{id}' ID wasn't found.");
         false
     }
 }
@@ -945,11 +945,11 @@ impl log::Log for SimpleLogger {
             let args = record.args();
 
             match record.level() {
-                log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, args),
-                log::Level::Warn => eprintln!("Warning (in {}:{}): {}", target, line, args),
-                log::Level::Info => eprintln!("Info (in {}:{}): {}", target, line, args),
-                log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, args),
-                log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, args),
+                log::Level::Error => eprintln!("Error (in {target}:{line}): {args}"),
+                log::Level::Warn => eprintln!("Warning (in {target}:{line}): {args}"),
+                log::Level::Info => eprintln!("Info (in {target}:{line}): {args}"),
+                log::Level::Debug => eprintln!("Debug (in {target}:{line}): {args}"),
+                log::Level::Trace => eprintln!("Trace (in {target}:{line}): {args}"),
             }
         }
     }

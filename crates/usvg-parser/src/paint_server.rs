@@ -282,7 +282,7 @@ fn convert_stops(grad: SvgNode) -> Vec<Stop> {
                     if let Ok(c) = svgtypes::Color::from_str(value) {
                         c
                     } else {
-                        log::warn!("Failed to parse stop-color value: '{}'.", value);
+                        log::warn!("Failed to parse stop-color value: '{value}'.");
                         svgtypes::Color::black()
                     }
                 }
