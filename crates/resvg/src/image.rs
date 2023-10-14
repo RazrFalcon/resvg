@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use usvg::Transform;
 use crate::render::TinySkiaPixmapMutExt;
 use crate::tree::{BBoxes, Node, Tree};
 
@@ -22,7 +23,7 @@ pub fn convert(image: &usvg::Image, children: &mut Vec<Node>) -> Option<BBoxes> 
     let object_bbox = image.view_box.rect.to_rect();
     let bboxes = BBoxes {
         object: usvg::BBox::from(object_bbox),
-        transformed_object: usvg::BBox::from(object_bbox.transform(image.transform)?),
+        transformed_object: usvg::BBox::from(object_bbox),
         layer: usvg::BBox::from(object_bbox),
     };
 
@@ -47,7 +48,7 @@ pub fn convert(image: &usvg::Image, children: &mut Vec<Node>) -> Option<BBoxes> 
     };
 
     children.push(Node::Image(Image {
-        transform: image.transform,
+        transform: Transform::default(),
         view_box: image.view_box,
         quality,
         kind,

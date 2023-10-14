@@ -738,7 +738,7 @@ impl NodeKind {
         match self {
             NodeKind::Group(ref e) => e.transform,
             NodeKind::Path(ref e) => Transform::default(),
-            NodeKind::Image(ref e) => e.transform,
+            NodeKind::Image(ref e) => Transform::default(),
             NodeKind::Text(ref e) => e.transform,
         }
     }
@@ -935,9 +935,6 @@ pub struct Image {
     /// Isn't automatically generated.
     /// Can be empty.
     pub id: String,
-
-    /// Element transform.
-    pub transform: Transform,
 
     /// Element visibility.
     pub visibility: Visibility,

@@ -585,7 +585,6 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                 }
             }
 
-            xml.write_transform(AId::Transform, img.transform, opt);
             xml.write_image_data(&img.kind);
 
             xml.end_element();
