@@ -563,7 +563,7 @@ fn conv_elements(parent: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut 
 fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut XmlWriter) {
     match *node.borrow() {
         NodeKind::Path(ref p) => {
-            write_path(p, is_clip_path, None, opt, xml);
+            write_path(p, is_clip_path, Transform::default(), None, opt, xml);
         }
         NodeKind::Image(ref img) => {
             xml.start_svg_element(EId::Image);
@@ -596,11 +596,10 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                 // `clip-path` on it.
 
                 if let NodeKind::Path(ref path) = *node.first_child().unwrap().borrow() {
-                    //TODO: verify
                     let path = path.clone();
 
                     let clip_id = g.clip_path.as_ref().map(|cp| cp.id.as_str());
-                    write_path(&path, is_clip_path, clip_id, opt, xml);
+                    write_path(&path, is_clip_path, g.transform, clip_id, opt, xml);
                 }
 
                 return;
@@ -982,6 +981,7 @@ fn write_base_grad(g: &BaseGradient, xml: &mut XmlWriter, opt: &XmlOptions) {
 fn write_path(
     path: &Path,
     is_clip_path: bool,
+    path_transform: Transform,
     clip_path: Option<&str>,
     opt: &XmlOptions,
     xml: &mut XmlWriter,
@@ -1012,7 +1012,7 @@ fn write_path(
         xml.write_func_iri(AId::ClipPath, id, opt);
     }
 
-    xml.write_transform(AId::Transform, Transform::default(), opt);
+    xml.write_transform(AId::Transform, path_transform, opt);
 
     xml.write_attribute_raw("d", |buf| {
         use tiny_skia_path::PathSegment;
