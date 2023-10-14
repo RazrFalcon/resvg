@@ -329,7 +329,8 @@ A group will have at least one of the attributes present.
   Default: geometricPrecision
 * `visibility` = `hidden | collapse`? +
   Default: visible
-* `transform` = <<transform-type,<transform> >>?
+* `transform` = <<transform-type,<transform> >>? +
+  Can only be set on paths inside of `clipPath`.
 
 [[image-element]]
 
@@ -354,7 +355,6 @@ A group will have at least one of the attributes present.
   Default: optimizeQuality
 * `visibility` = `hidden | collapse`? +
   Default: visible
-* `transform` = <<transform-type,<transform> >>?
 
 == Filter primitives
 
