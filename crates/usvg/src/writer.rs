@@ -597,8 +597,8 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                 // `clip-path` on it.
 
                 if let NodeKind::Path(ref path) = *node.first_child().unwrap().borrow() {
-                    let mut path = path.clone();
-                    path.transform = g.transform.pre_concat(path.transform);
+                    //TODO: verify
+                    let path = path.clone();
 
                     let clip_id = g.clip_path.as_ref().map(|cp| cp.id.as_str());
                     write_path(&path, is_clip_path, clip_id, opt, xml);
@@ -1013,7 +1013,7 @@ fn write_path(
         xml.write_func_iri(AId::ClipPath, id, opt);
     }
 
-    xml.write_transform(AId::Transform, path.transform, opt);
+    xml.write_transform(AId::Transform, Transform::default(), opt);
 
     xml.write_attribute_raw("d", |buf| {
         use tiny_skia_path::PathSegment;

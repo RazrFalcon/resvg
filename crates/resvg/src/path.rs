@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::rc::Rc;
+use usvg::Transform;
 
 use crate::paint_server::Paint;
 use crate::render::Context;
@@ -25,7 +26,7 @@ pub struct StrokePath {
 }
 
 pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
-    let transform = upath.transform;
+    let transform = Transform::default();
     let anti_alias = upath.rendering_mode.use_shape_antialiasing();
 
     let fill_path = upath.fill.as_ref().and_then(|ufill| {
@@ -63,7 +64,7 @@ pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
         bboxes.object = bboxes.object.expand(o_bbox);
     }
 
-    bboxes.transformed_object = bboxes.object.transform(upath.transform)?;
+    bboxes.transformed_object = bboxes.object.transform(Transform::default())?;
 
     // Do not add hidden paths, but preserve the bbox.
     // visibility=hidden still affects the bbox calculation.

@@ -737,7 +737,7 @@ impl NodeKind {
     pub fn transform(&self) -> Transform {
         match self {
             NodeKind::Group(ref e) => e.transform,
-            NodeKind::Path(ref e) => e.transform,
+            NodeKind::Path(ref e) => Transform::default(),
             NodeKind::Image(ref e) => e.transform,
             NodeKind::Text(ref e) => e.transform,
         }
@@ -844,9 +844,6 @@ pub struct Path {
     /// Can be empty.
     pub id: String,
 
-    /// Element transform.
-    pub transform: Transform,
-
     /// Element visibility.
     pub visibility: Visibility,
 
@@ -892,7 +889,6 @@ impl Path {
     pub fn new(data: Rc<tiny_skia_path::Path>) -> Self {
         Path {
             id: String::new(),
-            transform: Transform::default(),
             visibility: Visibility::Visible,
             fill: None,
             stroke: None,

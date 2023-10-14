@@ -707,7 +707,6 @@ fn convert_span(
 
     let path = Path {
         id: String::new(),
-        transform: Transform::default(),
         visibility: span.visibility,
         fill,
         stroke: span.stroke.clone(),
