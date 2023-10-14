@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::rc::Rc;
-use usvg::Transform;
 
 use crate::paint_server::Paint;
 use crate::render::Context;
@@ -164,9 +163,7 @@ fn convert_stroke_path(
 
     // TODO: explain
     // TODO: expand by stroke width for round/bevel joins
-    let resolution_scale = tiny_skia::PathStroker::compute_resolution_scale(&Transform::default());
-    let resolution_scale = resolution_scale.max(10.0);
-    let stroked_path = path.stroke(&stroke, resolution_scale)?;
+    let stroked_path = path.stroke(&stroke, 1.0)?;
 
     let mut layer_bbox = usvg::BBox::from(stroked_path.bounds());
     if let Some(text_bbox) = text_bbox {
