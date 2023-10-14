@@ -1087,7 +1087,6 @@ fn apply_image(
 
             let uimage = usvg::Image {
                 id: String::new(),
-                transform: usvg::Transform::default(),
                 visibility: usvg::Visibility::Visible,
                 view_box,
                 rendering_mode: fe.rendering_mode,

@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use strict_num::NonZeroPositiveF32;
 
-use crate::{Fill, PaintOrder, Stroke, TextRendering, Transform, Visibility};
+use crate::{Fill, PaintOrder, Stroke, TextRendering, Visibility};
 
 /// A font stretch property.
 #[allow(missing_docs)]
@@ -311,9 +311,6 @@ pub struct Text {
     /// Isn't automatically generated.
     /// Can be empty.
     pub id: String,
-
-    /// Element transform.
-    pub transform: Transform,
 
     /// Rendering mode.
     ///

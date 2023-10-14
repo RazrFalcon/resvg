@@ -62,7 +62,6 @@ impl TextToPath for Text {
         // Create a group will all paths that was created during text-to-path conversion.
         let group = Node::new(NodeKind::Group(Group {
             id: self.id.clone(),
-            transform: self.transform,
             ..Group::default()
         }));
 
@@ -95,8 +94,7 @@ fn convert_text(root: Node, fontdb: &fontdb::Database) {
     for node in &text_nodes {
         let mut new_node = None;
         if let NodeKind::Text(ref text) = *node.borrow() {
-            let mut absolute_ts = node.parent().unwrap().abs_transform();
-            absolute_ts = absolute_ts.pre_concat(text.transform);
+            let absolute_ts = node.parent().unwrap().abs_transform();
             new_node = text.convert(fontdb, absolute_ts);
         }
 
@@ -707,7 +705,6 @@ fn convert_span(
 
     let path = Path {
         id: String::new(),
-        transform: Transform::default(),
         visibility: span.visibility,
         fill,
         stroke: span.stroke.clone(),

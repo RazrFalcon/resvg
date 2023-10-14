@@ -687,7 +687,6 @@ fn convert_path(
 
     parent.append_kind(NodeKind::Path(Path {
         id,
-        transform: Default::default(),
         visibility,
         fill,
         stroke,

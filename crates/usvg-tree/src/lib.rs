@@ -732,16 +732,6 @@ impl NodeKind {
             NodeKind::Text(ref e) => e.id.as_str(),
         }
     }
-
-    /// Returns node's transform.
-    pub fn transform(&self) -> Transform {
-        match self {
-            NodeKind::Group(ref e) => e.transform,
-            NodeKind::Path(ref e) => e.transform,
-            NodeKind::Image(ref e) => e.transform,
-            NodeKind::Text(ref e) => e.transform,
-        }
-    }
 }
 
 /// A group container.
@@ -844,9 +834,6 @@ pub struct Path {
     /// Can be empty.
     pub id: String,
 
-    /// Element transform.
-    pub transform: Transform,
-
     /// Element visibility.
     pub visibility: Visibility,
 
@@ -892,7 +879,6 @@ impl Path {
     pub fn new(data: Rc<tiny_skia_path::Path>) -> Self {
         Path {
             id: String::new(),
-            transform: Transform::default(),
             visibility: Visibility::Visible,
             fill: None,
             stroke: None,
@@ -939,9 +925,6 @@ pub struct Image {
     /// Isn't automatically generated.
     /// Can be empty.
     pub id: String,
-
-    /// Element transform.
-    pub transform: Transform,
 
     /// Element visibility.
     pub visibility: Visibility,
@@ -1216,12 +1199,6 @@ pub trait NodeExt {
     /// will be returned.
     fn id(&self) -> std::cell::Ref<str>;
 
-    /// Returns node's transform.
-    ///
-    /// If a current node doesn't support transformation - a default
-    /// transform will be returned.
-    fn transform(&self) -> Transform;
-
     /// Returns node's absolute transform.
     ///
     /// If a current node doesn't support transformation - a default
@@ -1270,15 +1247,12 @@ impl NodeExt for Node {
         std::cell::Ref::map(self.borrow(), |v| v.id())
     }
 
-    #[inline]
-    fn transform(&self) -> Transform {
-        self.borrow().transform()
-    }
-
     fn abs_transform(&self) -> Transform {
         let mut ts_list = Vec::new();
         for p in self.ancestors() {
-            ts_list.push(p.transform());
+            if let NodeKind::Group(ref group) = *p.borrow() {
+                ts_list.push(group.transform);
+            }
         }
 
         let mut abs_ts = Transform::default();
@@ -1314,7 +1288,11 @@ fn calc_node_bbox(node: &Node, ts: Transform) -> Option<BBox> {
             let mut bbox = BBox::default();
 
             for child in node.children() {
-                let child_transform = ts.pre_concat(child.transform());
+                let child_transform = if let NodeKind::Group(ref group) = *child.borrow() {
+                    ts.pre_concat(group.transform)
+                }   else {
+                    ts
+                };
                 if let Some(c_bbox) = calc_node_bbox(&child, child_transform) {
                     bbox = bbox.expand(c_bbox);
                 }

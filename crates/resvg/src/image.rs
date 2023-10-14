@@ -12,7 +12,6 @@ pub enum ImageKind {
 }
 
 pub struct Image {
-    pub transform: tiny_skia::Transform,
     pub view_box: usvg::ViewBox,
     pub quality: tiny_skia::FilterQuality,
     pub kind: ImageKind,
@@ -22,7 +21,6 @@ pub fn convert(image: &usvg::Image, children: &mut Vec<Node>) -> Option<BBoxes> 
     let object_bbox = image.view_box.rect.to_rect();
     let bboxes = BBoxes {
         object: usvg::BBox::from(object_bbox),
-        transformed_object: usvg::BBox::from(object_bbox.transform(image.transform)?),
         layer: usvg::BBox::from(object_bbox),
     };
 
@@ -47,7 +45,6 @@ pub fn convert(image: &usvg::Image, children: &mut Vec<Node>) -> Option<BBoxes> 
     };
 
     children.push(Node::Image(Image {
-        transform: image.transform,
         view_box: image.view_box,
         quality,
         kind,
@@ -84,7 +81,7 @@ fn render_vector(
     let mut sub_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
 
     let source_transform = transform;
-    let transform = transform.pre_concat(image.transform).pre_concat(ts);
+    let transform = transform.pre_concat(ts);
 
     tree.render(transform, &mut sub_pixmap.as_mut());
 
@@ -241,7 +238,6 @@ mod raster_images {
             None
         };
 
-        let transform = transform.pre_concat(image.transform);
         pixmap.fill_rect(rect.to_rect(), &paint, transform, mask.as_ref());
 
         Some(())
