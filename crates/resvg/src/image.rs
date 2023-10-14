@@ -21,7 +21,6 @@ pub fn convert(image: &usvg::Image, children: &mut Vec<Node>) -> Option<BBoxes> 
     let object_bbox = image.view_box.rect.to_rect();
     let bboxes = BBoxes {
         object: usvg::BBox::from(object_bbox),
-        transformed_object: usvg::BBox::from(object_bbox),
         layer: usvg::BBox::from(object_bbox),
     };
 

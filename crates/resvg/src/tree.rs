@@ -139,9 +139,6 @@ pub struct BBoxes {
     /// Just a shape/image bbox as per SVG spec.
     pub object: usvg::BBox,
 
-    /// The same as above, but transformed using object's transform.
-    pub transformed_object: usvg::BBox,
-
     /// Similar to `object`, but expanded to fit the stroke as well.
     pub layer: usvg::BBox,
 }
@@ -167,7 +164,7 @@ fn convert_group(
     };
 
     let (filters, filter_bbox) =
-        crate::filter::convert(&ugroup.filters, bboxes.transformed_object.to_rect());
+        crate::filter::convert(&ugroup.filters, bboxes.object.to_rect());
 
     // TODO: figure out a nicer solution
     // Ignore groups with filters but invalid filter bboxes.
@@ -192,7 +189,6 @@ fn convert_group(
     };
 
     bboxes.object = bboxes.object.transform(ugroup.transform)?;
-    bboxes.transformed_object = bboxes.transformed_object.transform(ugroup.transform)?;
     bboxes.layer = bboxes.layer.transform(ugroup.transform)?;
 
     children.push(Node::Group(group));
@@ -222,7 +218,6 @@ fn convert_empty_group(ugroup: &usvg::Group, children: &mut Vec<Node>) -> Option
     let bboxes = BBoxes {
         // TODO: find a better solution
         object: usvg::BBox::default(),
-        transformed_object: usvg::BBox::default(),
         layer: usvg::BBox::from(layer_bbox),
     };
 
@@ -236,8 +231,6 @@ fn convert_children(parent: usvg::Node, children: &mut Vec<Node>) -> Option<BBox
     for node in parent.children() {
         if let Some(bboxes2) = convert_node_inner(node, children) {
             bboxes.object = bboxes.object.expand(bboxes2.object);
-            bboxes.transformed_object =
-                bboxes.transformed_object.expand(bboxes2.transformed_object);
             bboxes.layer = bboxes.layer.expand(bboxes2.layer);
         }
     }

@@ -59,8 +59,6 @@ pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
         bboxes.object = bboxes.object.expand(o_bbox);
     }
 
-    bboxes.transformed_object = bboxes.object.transform(Transform::default())?;
-
     // Do not add hidden paths, but preserve the bbox.
     // visibility=hidden still affects the bbox calculation.
     if upath.visibility != usvg::Visibility::Visible {
