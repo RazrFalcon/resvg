@@ -942,15 +942,14 @@ impl log::Log for SimpleLogger {
             };
 
             let line = record.line().unwrap_or(0);
+            let args = record.args();
 
             match record.level() {
-                log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, record.args()),
-                log::Level::Warn => {
-                    eprintln!("Warning (in {}:{}): {}", target, line, record.args())
-                }
-                log::Level::Info => eprintln!("Info (in {}:{}): {}", target, line, record.args()),
-                log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, record.args()),
-                log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, record.args()),
+                log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, args),
+                log::Level::Warn => eprintln!("Warning (in {}:{}): {}", target, line, args),
+                log::Level::Info => eprintln!("Info (in {}:{}): {}", target, line, args),
+                log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, args),
+                log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, args),
             }
         }
     }

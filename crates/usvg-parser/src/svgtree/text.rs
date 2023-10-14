@@ -155,7 +155,7 @@ impl StrTrim for String {
     }
 
     fn remove_last_space(&mut self) {
-        debug_assert_eq!(self.chars().rev().next().unwrap(), ' ');
+        debug_assert_eq!(self.chars().next_back().unwrap(), ' ');
         self.pop();
     }
 }

@@ -22,11 +22,8 @@ where
     let now = std::time::Instant::now();
     let result = f();
     if perf {
-        println!(
-            "{}: {:.2}ms",
-            name,
-            now.elapsed().as_micros() as f64 / 1000.0
-        );
+        let elapsed = now.elapsed().as_micros() as f64 / 1000.0;
+        println!("{}: {:.2}ms", name, elapsed);
     }
 
     result
@@ -721,10 +718,8 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
     };
 
     if args.perf {
-        println!(
-            "Rendering: {:.2}ms",
-            now.elapsed().as_micros() as f64 / 1000.0
-        );
+        let elapsed = now.elapsed().as_micros() as f64 / 1000.0;
+        println!("Rendering: {:.2}ms", elapsed);
     }
 
     Ok(img)
@@ -797,15 +792,14 @@ impl log::Log for SimpleLogger {
             };
 
             let line = record.line().unwrap_or(0);
+            let args = record.args();
 
             match record.level() {
-                log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, record.args()),
-                log::Level::Warn => {
-                    eprintln!("Warning (in {}:{}): {}", target, line, record.args())
-                }
-                log::Level::Info => eprintln!("Info (in {}:{}): {}", target, line, record.args()),
-                log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, record.args()),
-                log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, record.args()),
+                log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, args),
+                log::Level::Warn => eprintln!("Warning (in {}:{}): {}", target, line, args),
+                log::Level::Info => eprintln!("Info (in {}:{}): {}", target, line, args),
+                log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, args),
+                log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, args),
             }
         }
     }

@@ -149,12 +149,12 @@ fn collect_args() -> Result<Args, pico_args::Error> {
 
     if input.contains(["-h", "--help"]) {
         print!("{}", HELP);
-        std::process::exit(0);
+        process::exit(0);
     }
 
     if input.contains(["-V", "--version"]) {
         println!("{}", env!("CARGO_PKG_VERSION"));
-        std::process::exit(0);
+        process::exit(0);
     }
 
     Ok(Args {
@@ -310,7 +310,7 @@ fn main() {
 
     if let Err(e) = process(args) {
         eprintln!("Error: {}.", e.to_string());
-        std::process::exit(1);
+        process::exit(1);
     }
 }
 
@@ -486,15 +486,14 @@ impl log::Log for SimpleLogger {
             };
 
             let line = record.line().unwrap_or(0);
+            let args = record.args();
 
             match record.level() {
-                log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, record.args()),
-                log::Level::Warn => {
-                    eprintln!("Warning (in {}:{}): {}", target, line, record.args())
-                }
-                log::Level::Info => eprintln!("Info (in {}:{}): {}", target, line, record.args()),
-                log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, record.args()),
-                log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, record.args()),
+                log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, args),
+                log::Level::Warn => eprintln!("Warning (in {}:{}): {}", target, line, args),
+                log::Level::Info => eprintln!("Info (in {}:{}): {}", target, line, args),
+                log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, args),
+                log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, args),
             }
         }
     }

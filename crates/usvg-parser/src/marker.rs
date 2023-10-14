@@ -479,7 +479,7 @@ fn convert_orientation(node: SvgNode) -> MarkerOrientation {
         _ => match node.attribute::<svgtypes::Angle>(AId::Orient) {
             Some(angle) => MarkerOrientation::Angle(angle.to_degrees() as f32),
             None => MarkerOrientation::Angle(0.0),
-        }
+        },
     }
 }
 
