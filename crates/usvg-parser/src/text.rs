@@ -108,7 +108,6 @@ pub(crate) fn convert(
 
     let text = Text {
         id,
-        transform: Transform::default(),
         rendering_mode,
         positions: pos_list,
         rotate: rotate_list,

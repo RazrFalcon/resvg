@@ -739,7 +739,7 @@ impl NodeKind {
             NodeKind::Group(ref e) => e.transform,
             NodeKind::Path(_) => Transform::default(),
             NodeKind::Image(_) => Transform::default(),
-            NodeKind::Text(ref e) => e.transform,
+            NodeKind::Text(_) => Transform::default(),
         }
     }
 }
