@@ -2,7 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use usvg::Transform;
 use crate::render::TinySkiaPixmapMutExt;
 use crate::tree::{BBoxes, Node, Tree};
 
@@ -13,7 +12,6 @@ pub enum ImageKind {
 }
 
 pub struct Image {
-    pub transform: tiny_skia::Transform,
     pub view_box: usvg::ViewBox,
     pub quality: tiny_skia::FilterQuality,
     pub kind: ImageKind,
@@ -48,7 +46,6 @@ pub fn convert(image: &usvg::Image, children: &mut Vec<Node>) -> Option<BBoxes> 
     };
 
     children.push(Node::Image(Image {
-        transform: Transform::default(),
         view_box: image.view_box,
         quality,
         kind,
@@ -85,7 +82,7 @@ fn render_vector(
     let mut sub_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
 
     let source_transform = transform;
-    let transform = transform.pre_concat(image.transform).pre_concat(ts);
+    let transform = transform.pre_concat(ts);
 
     tree.render(transform, &mut sub_pixmap.as_mut());
 
@@ -242,7 +239,6 @@ mod raster_images {
             None
         };
 
-        let transform = transform.pre_concat(image.transform);
         pixmap.fill_rect(rect.to_rect(), &paint, transform, mask.as_ref());
 
         Some(())

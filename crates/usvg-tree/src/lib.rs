@@ -737,8 +737,8 @@ impl NodeKind {
     pub fn transform(&self) -> Transform {
         match self {
             NodeKind::Group(ref e) => e.transform,
-            NodeKind::Path(ref e) => Transform::default(),
-            NodeKind::Image(ref e) => Transform::default(),
+            NodeKind::Path(_) => Transform::default(),
+            NodeKind::Image(_) => Transform::default(),
             NodeKind::Text(ref e) => e.transform,
         }
     }
