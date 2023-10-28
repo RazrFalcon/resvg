@@ -592,11 +592,11 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
         NodeKind::Group(ref g) => {
             if is_clip_path {
                 // ClipPath with a Group element is an `usvg` special case.
-                // Group will contain a single Path element and we should set
+                // Group will contain a sequence of path elements and we should set
                 // `clip-path` on it.
 
-                if let Some(node) = node.first_child() {
-                    if let NodeKind::Path(ref path) = *node.borrow() {
+                for child in node.children() {
+                    if let NodeKind::Path(ref path) = *child.borrow() {
                         let path = path.clone();
 
                         let clip_id = g.clip_path.as_ref().map(|cp| cp.id.as_str());
