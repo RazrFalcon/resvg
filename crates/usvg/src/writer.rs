@@ -680,9 +680,8 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                 TextRendering::OptimizeLegibility => xml.write_svg_attribute(AId::TextRendering, "optimizeLegibility")
             }
 
-            if let Some(chunk) = text.chunks.get(0) {
-                let chunk = &text.chunks[0];
-
+            for chunk in &text.chunks {
+                xml.start_svg_element(EId::Tspan);
                 if let Some(x) = chunk.x {
                     xml.write_svg_attribute(AId::X, &x);
                 }
@@ -691,24 +690,28 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                     xml.write_svg_attribute(AId::Y, &y);
                 }
 
-                if let Some(span) = chunk.spans.get(0) {
-                    xml.write_svg_attribute(AId::FontFamily, &span.font.families[0]);
-                    xml.write_svg_attribute(AId::FontSize, &span.font_size);
-                    write_fill(&span.fill, is_clip_path, opt, xml);
-                    write_stroke(&span.stroke, opt, xml);
-                }
-
                 match chunk.anchor {
                     TextAnchor::Start => xml.write_svg_attribute(AId::TextAnchor, "start"),
                     TextAnchor::Middle => xml.write_svg_attribute(AId::TextAnchor, "middle"),
                     TextAnchor::End => xml.write_svg_attribute(AId::TextAnchor, "end"),
                 }
 
-                let text = chunk.text.replace("&", "&amp;");
-                xml.write_text(&text);
+                for span in &chunk.spans {
+                    xml.start_svg_element(EId::Tspan);
+
+                    xml.write_svg_attribute(AId::FontFamily, &span.font.families[0]);
+                    xml.write_svg_attribute(AId::FontSize, &span.font_size);
+                    write_fill(&span.fill, is_clip_path, opt, xml);
+                    write_stroke(&span.stroke, opt, xml);
+
+                    let text = chunk.text[span.start..span.end].replace("&", "&amp;");
+                    xml.write_text(&text);
+
+                    xml.end_element();
+                }
+
+                xml.end_element();
             }
-
-
 
             xml.end_element();
         }
