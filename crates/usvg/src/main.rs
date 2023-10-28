@@ -427,7 +427,7 @@ fn process(args: Args) -> Result<(), String> {
     }?;
 
     let mut tree = usvg_tree::Tree::from_data(&input_svg, &re_opt).map_err(|e| format!("{}", e))?;
-    tree.convert_text(&fontdb);
+    // tree.convert_text(&fontdb);
     tree.remap_ids();
 
     print_node(&tree.root);

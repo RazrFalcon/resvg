@@ -668,8 +668,41 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
 
             xml.end_element();
         }
-        NodeKind::Text(_) => {
-            log::warn!("Text must be converted into paths.");
+        NodeKind::Text(ref text) => {
+            xml.start_svg_element(EId::Text);
+            if !text.id.is_empty() {
+                xml.write_id_attribute(&text.id, opt);
+            }
+
+            match text.rendering_mode {
+                TextRendering::OptimizeSpeed => xml.write_svg_attribute(AId::TextRendering, "optimizeSpeed"),
+                TextRendering::GeometricPrecision => xml.write_svg_attribute(AId::TextRendering, "geometricPrecision"),
+                TextRendering::OptimizeLegibility => xml.write_svg_attribute(AId::TextRendering, "optimizeLegibility")
+            }
+
+            if let Some(chunk) = text.chunks.get(0) {
+                let chunk = &text.chunks[0];
+
+                if let Some(x) = chunk.x {
+                    xml.write_svg_attribute(AId::X, &x);
+                }
+
+                if let Some(y) = chunk.y {
+                    xml.write_svg_attribute(AId::Y, &y);
+                }
+
+                if let Some(span) = chunk.spans.get(0) {
+                    xml.write_svg_attribute(AId::FontFamily, &span.font.families[0]);
+                    xml.write_svg_attribute(AId::FontSize, &span.font_size);
+                }
+
+                let text = chunk.text.replace("&", "&amp;");
+                xml.write_text(&text);
+            }
+
+
+
+            xml.end_element();
         }
     }
 }
