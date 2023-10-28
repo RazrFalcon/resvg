@@ -55,7 +55,7 @@ and can focus just on the rendering part.
 mod writer;
 
 use std::collections::HashMap;
-use std::process::id;
+use std::rc::Rc;
 pub use usvg_parser::*;
 #[cfg(feature = "text")]
 pub use usvg_text_layout::*;
@@ -82,13 +82,10 @@ pub trait IdRemapping {
 #[derive(Default)]
 struct IdMap {
     id_map: HashMap<String, String>,
-    id_counters: IdCounters
-}
-
-#[derive(Default)]
-struct IdCounters {
     path: u64,
     group: u64,
+    text: u64,
+    filter: u64,
     mask: u64,
     clip_path: u64,
     pattern: u64,
@@ -99,67 +96,57 @@ struct IdCounters {
 
 impl IdMap {
     pub fn bump_path(&mut self, old_id: &str) -> String {
-        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
-            let id_counters = &mut self.id_counters;
-            id_counters.path += 1;
-            format!("p{}", id_counters.path)
-        }).clone()
+        IdMap::bump_impl(old_id, &mut self.id_map, &mut self.path, "p")
     }
 
     pub fn bump_group(&mut self, old_id: &str) -> String {
-        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
-            let id_counters = &mut self.id_counters;
-            id_counters.group += 1;
-            format!("g{}", id_counters.group)
-        }).clone()
+        IdMap::bump_impl(old_id, &mut self.id_map, &mut self.group, "g")
+    }
+
+    pub fn bump_text(&mut self, old_id: &str) -> String {
+        IdMap::bump_impl(old_id, &mut self.id_map, &mut self.text, "t")
+    }
+
+    pub fn bump_filter(&mut self, old_id: &str) -> String {
+        IdMap::bump_impl(old_id, &mut self.id_map, &mut self.filter, "f")
     }
 
     pub fn bump_mask(&mut self, old_id: &str) -> String {
-        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
-            let id_counters = &mut self.id_counters;
-            id_counters.mask += 1;
-            format!("m{}", id_counters.mask)
-        }).clone()
+        IdMap::bump_impl(old_id, &mut self.id_map, &mut self.mask, "m")
     }
 
     pub fn bump_clip_path(&mut self, old_id: &str) -> String {
-        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
-            let id_counters = &mut self.id_counters;
-            id_counters.clip_path += 1;
-            format!("cp{}", id_counters.clip_path)
-        }).clone()
+        IdMap::bump_impl(old_id, &mut self.id_map, &mut self.clip_path, "cp")
     }
 
     pub fn bump_pattern(&mut self, old_id: &str) -> String {
-        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
-            let id_counters = &mut self.id_counters;
-            id_counters.pattern += 1;
-            format!("pat{}", id_counters.pattern)
-        }).clone()
+        IdMap::bump_impl(old_id, &mut self.id_map, &mut self.pattern, "pat")
     }
 
     pub fn bump_radial_gradient(&mut self, old_id: &str) -> String {
-        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
-            let id_counters = &mut self.id_counters;
-            id_counters.radial_gradient += 1;
-            format!("rg{}", id_counters.radial_gradient)
-        }).clone()
+        IdMap::bump_impl(old_id, &mut self.id_map, &mut self.radial_gradient, "rg")
     }
 
     pub fn bump_linear_gradient(&mut self, old_id: &str) -> String {
-        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
-            let id_counters = &mut self.id_counters;
-            id_counters.linear_gradient += 1;
-            format!("lg{}", id_counters.linear_gradient)
-        }).clone()
+        IdMap::bump_impl(old_id, &mut self.id_map, &mut self.linear_gradient, "lg")
     }
 
     pub fn bump_image(&mut self, old_id: &str) -> String {
-        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
-            let id_counters = &mut self.id_counters;
-            id_counters.image += 1;
-            format!("i{}", id_counters.image)
-        }).clone()
+        IdMap::bump_impl(old_id, &mut self.id_map, &mut self.image, "i")
+    }
+
+    fn bump_impl(old_id: &str, id_map: &mut HashMap<String, String>, field: &mut u64, format_str: &str) -> String {
+        let mut bump = || {
+            *field += 1;
+            let result = format!("{}{}", format_str, field);
+            result
+        };
+
+        if !old_id.is_empty() {
+            id_map.entry(old_id.to_string()).or_insert_with(bump).clone()
+        }   else {
+            bump()
+        }
     }
 }
 
@@ -170,13 +157,46 @@ impl IdRemapping for usvg_tree::Tree {
 }
 
 fn remap_ids_impl(node: &Node, map: &mut IdMap) {
+    let map_paint = |map: &mut IdMap, paint: Paint| {
+        let paint = match paint {
+            Paint::Color(_) => paint,
+            Paint::LinearGradient(lg) => {
+                let mut new_lg = (*lg).clone();
+                new_lg.id = map.bump_linear_gradient(&lg.id);
+                Paint::LinearGradient(Rc::new(new_lg))
+            },
+            Paint::RadialGradient(rg) => {
+                let mut new_rg = (*rg).clone();
+                new_rg.id = map.bump_radial_gradient(&rg.id);
+                Paint::RadialGradient(Rc::new(new_rg))
+            }
+            Paint::Pattern(pattern) => {
+                let mut new_pattern = (*pattern).clone();
+                new_pattern.id = map.bump_pattern(&pattern.id);
+                Paint::Pattern(Rc::new(new_pattern))
+            }
+            _ => paint
+        };
+        paint
+    };
+
     for node in node.descendants() {
         match *node.borrow_mut() {
-            NodeKind::Group(ref mut group) => {
-                group.id = map.bump_group(&group.id);
-            },
+            NodeKind::Path(ref mut path) => {
+                path.id = map.bump_path(&path.id);
+                path.fill = path.fill.clone().map(|mut f| {
+                    f.paint = map_paint(map, f.paint);
+                    f
+                });
+                path.stroke = path.stroke.clone().map(|mut s| {
+                    s.paint = map_paint(map, s.paint);
+                    s
+                });
+            }
             _ => {}
         }
+
+        node.subroots(|node| remap_ids_impl(&node, map));
     }
 }
 
