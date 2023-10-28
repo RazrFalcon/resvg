@@ -694,6 +694,14 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                 if let Some(span) = chunk.spans.get(0) {
                     xml.write_svg_attribute(AId::FontFamily, &span.font.families[0]);
                     xml.write_svg_attribute(AId::FontSize, &span.font_size);
+                    write_fill(&span.fill, is_clip_path, opt, xml);
+                    write_stroke(&span.stroke, opt, xml);
+                }
+
+                match chunk.anchor {
+                    TextAnchor::Start => xml.write_svg_attribute(AId::TextAnchor, "start"),
+                    TextAnchor::Middle => xml.write_svg_attribute(AId::TextAnchor, "middle"),
+                    TextAnchor::End => xml.write_svg_attribute(AId::TextAnchor, "end"),
                 }
 
                 let text = chunk.text.replace("&", "&amp;");
