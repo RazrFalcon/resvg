@@ -54,6 +54,8 @@ and can focus just on the rendering part.
 
 mod writer;
 
+use std::collections::HashMap;
+use std::process::id;
 pub use usvg_parser::*;
 #[cfg(feature = "text")]
 pub use usvg_text_layout::*;
@@ -71,4 +73,113 @@ impl TreeWriting for usvg_tree::Tree {
     fn to_string(&self, opt: &XmlOptions) -> String {
         writer::convert(self, opt)
     }
+}
+
+pub trait IdRemapping {
+    fn remap_ids(&mut self);
+}
+
+#[derive(Default)]
+struct IdMap {
+    id_map: HashMap<String, String>,
+    id_counters: IdCounters
+}
+
+#[derive(Default)]
+struct IdCounters {
+    path: u64,
+    group: u64,
+    mask: u64,
+    clip_path: u64,
+    pattern: u64,
+    radial_gradient: u64,
+    linear_gradient: u64,
+    image: u64
+}
+
+impl IdMap {
+    pub fn bump_path(&mut self, old_id: &str) -> String {
+        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
+            let id_counters = &mut self.id_counters;
+            id_counters.path += 1;
+            format!("p{}", id_counters.path)
+        }).clone()
+    }
+
+    pub fn bump_group(&mut self, old_id: &str) -> String {
+        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
+            let id_counters = &mut self.id_counters;
+            id_counters.group += 1;
+            format!("g{}", id_counters.group)
+        }).clone()
+    }
+
+    pub fn bump_mask(&mut self, old_id: &str) -> String {
+        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
+            let id_counters = &mut self.id_counters;
+            id_counters.mask += 1;
+            format!("m{}", id_counters.mask)
+        }).clone()
+    }
+
+    pub fn bump_clip_path(&mut self, old_id: &str) -> String {
+        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
+            let id_counters = &mut self.id_counters;
+            id_counters.clip_path += 1;
+            format!("cp{}", id_counters.clip_path)
+        }).clone()
+    }
+
+    pub fn bump_pattern(&mut self, old_id: &str) -> String {
+        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
+            let id_counters = &mut self.id_counters;
+            id_counters.pattern += 1;
+            format!("pat{}", id_counters.pattern)
+        }).clone()
+    }
+
+    pub fn bump_radial_gradient(&mut self, old_id: &str) -> String {
+        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
+            let id_counters = &mut self.id_counters;
+            id_counters.radial_gradient += 1;
+            format!("rg{}", id_counters.radial_gradient)
+        }).clone()
+    }
+
+    pub fn bump_linear_gradient(&mut self, old_id: &str) -> String {
+        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
+            let id_counters = &mut self.id_counters;
+            id_counters.linear_gradient += 1;
+            format!("lg{}", id_counters.linear_gradient)
+        }).clone()
+    }
+
+    pub fn bump_image(&mut self, old_id: &str) -> String {
+        self.id_map.entry(old_id.to_string()).or_insert_with(|| {
+            let id_counters = &mut self.id_counters;
+            id_counters.image += 1;
+            format!("i{}", id_counters.image)
+        }).clone()
+    }
+}
+
+impl IdRemapping for usvg_tree::Tree {
+    fn remap_ids(&mut self) {
+        remap_ids_impl(&self.root, &mut IdMap::default());
+    }
+}
+
+fn remap_ids_impl(node: &Node, map: &mut IdMap) {
+    for node in node.descendants() {
+        match *node.borrow_mut() {
+            NodeKind::Group(ref mut group) => {
+                group.id = map.bump_group(&group.id);
+            },
+            _ => {}
+        }
+    }
+}
+
+pub fn print_node(root: &Node) {
+    root.descendants().for_each(|n| println!("{:#?}", n.borrow()));
 }
