@@ -84,6 +84,12 @@ fn convert_text(root: Node, fontdb: &fontdb::Database) {
             text_nodes.push(node.clone());
         }
 
+        if let NodeKind::Image(ref mut image) = *node.borrow_mut() {
+            if let ImageKind::SVG(ref mut tree) = image.kind {
+                tree.convert_text(fontdb);
+            }
+        }
+
         node.subroots(|subroot| convert_text(subroot, fontdb))
     }
 

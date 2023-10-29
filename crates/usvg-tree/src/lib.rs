@@ -1027,6 +1027,15 @@ fn has_text_nodes(root: &Node) -> bool {
         }
 
         let mut has_text = false;
+
+        if let NodeKind::Image(ref image) = *node.borrow() {
+            if let ImageKind::SVG(ref tree) = image.kind {
+                if has_text_nodes(&tree.root) {
+                    has_text = true;
+                }
+            }
+        }
+
         node.subroots(|subroot| {
             if has_text_nodes(&subroot) {
                 has_text = true;
@@ -1290,7 +1299,7 @@ fn calc_node_bbox(node: &Node, ts: Transform) -> Option<BBox> {
             for child in node.children() {
                 let child_transform = if let NodeKind::Group(ref group) = *child.borrow() {
                     ts.pre_concat(group.transform)
-                }   else {
+                } else {
                     ts
                 };
                 if let Some(c_bbox) = calc_node_bbox(&child, child_transform) {
