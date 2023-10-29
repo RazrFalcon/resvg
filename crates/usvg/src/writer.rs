@@ -684,13 +684,6 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
 
             for chunk in &text.chunks {
                 xml.start_svg_element(EId::Tspan);
-                if let Some(x) = chunk.x {
-                    xml.write_svg_attribute(AId::X, &x);
-                }
-
-                if let Some(y) = chunk.y {
-                    xml.write_svg_attribute(AId::Y, &y);
-                }
 
                 match chunk.anchor {
                     TextAnchor::Start => xml.write_svg_attribute(AId::TextAnchor, "start"),
@@ -706,39 +699,29 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                     write_fill(&span.fill, is_clip_path, opt, xml);
                     write_stroke(&span.stroke, opt, xml);
 
-                    let mut separated_spans: Vec<(String, f32, f32)> = Vec::new();
-                    let mut cur_pos = span.start;
-                    let mut last_text = String::new();
-                    let mut last_dx = 0.0;
-                    let mut last_dy = 0.0;
+                    let cur_text = std::str::from_utf8(&chunk.text.as_bytes()[span.start..span.end]).unwrap();
 
-                    for codepoint in std::str::from_utf8(&chunk.text.as_bytes()[span.start..span.end]).unwrap().chars()  {
-                        let cur_text_pos = text.positions[char_offset + cur_pos];
-                        if cur_text_pos.dx.is_some() || cur_text_pos.dy.is_some() {
-                            separated_spans.push((last_text, last_dx, last_dy));
-                            last_text = String::new();
-                            last_dx = cur_text_pos.dx.unwrap_or_default();
-                            last_dy = cur_text_pos.dy.unwrap_or_default();
-                        }
-                        last_text.push(codepoint);
-                        cur_pos += 1;
-                    }
+                    let num_chars = cur_text.chars().count();
+                    let collect_coordinates = |mapper: &dyn Fn(&CharacterPosition) -> f32| {
+                        let reversed = text.positions[char_offset..char_offset+num_chars]
+                            .iter()
+                            .map(mapper)
+                            .rev()
+                            .skip_while(|dx| *dx == 0.0).collect::<Vec<_>>();
+                        reversed.into_iter().rev().collect::<Vec<_>>()
+                    };
 
-                    separated_spans.push((last_text, last_dx, last_dy));
+                    let dx_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.dx.unwrap_or_default());
+                    let dy_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.dy.unwrap_or_default());
+                    let x_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.x.unwrap_or_default());
+                    let y_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.y.unwrap_or_default());
 
-                    let separated_spans: Vec<_> = separated_spans.into_iter().filter(|e| !e.0.is_empty()).collect();
-                    for span_tuple in &separated_spans {
-                        xml.start_svg_element(EId::Tspan);
-                        if span_tuple.1 != 0.0 {
-                            xml.write_svg_attribute(AId::Dx, &span_tuple.1);
-                        }
+                    xml.write_number_list(AId::Dx, &dx_values, opt);
+                    xml.write_number_list(AId::Dy, &dy_values, opt);
+                    xml.write_number_list(AId::X, &x_values, opt);
+                    xml.write_number_list(AId::Y, &y_values, opt);
 
-                        if span_tuple.2 != 0.0 {
-                            xml.write_svg_attribute(AId::Dy, &span_tuple.2);
-                        }
-                        xml.write_text(&span_tuple.0.replace("&", "&amp;"));
-                        xml.end_element();
-                    }
+                    xml.write_text(&cur_text.replace("&", "&amp;"));
 
                     xml.end_element();
                 }
@@ -762,6 +745,7 @@ trait XmlWriterExt {
     fn write_aspect(&mut self, aspect: AspectRatio);
     fn write_units(&mut self, id: AId, units: Units, def: Units);
     fn write_transform(&mut self, id: AId, units: Transform, opt: &XmlOptions);
+    fn write_number_list(&mut self, id: AId, numbers: &[f32], opt: &XmlOptions);
     fn write_visibility(&mut self, value: Visibility);
     fn write_func_iri(&mut self, aid: AId, id: &str, opt: &XmlOptions);
     fn write_rect_attrs(&mut self, r: NonZeroRect);
@@ -882,6 +866,18 @@ impl XmlWriterExt for XmlWriter {
                 buf.push(b' ');
                 write_num(ts.ty, buf, opt.transforms_precision);
                 buf.extend_from_slice(b")");
+            });
+        }
+    }
+
+    fn write_number_list(&mut self, id: AId, numbers: &[f32], opt: &XmlOptions) {
+        if !numbers.is_empty() {
+            self.write_attribute_raw(id.to_str(), |buf| {
+                for number in numbers {
+                    write_num(*number, buf, opt.coordinates_precision);
+                    buf.push(b' ');
+                }
+                buf.pop();
             });
         }
     }
