@@ -674,6 +674,10 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                 xml.write_id_attribute(&text.id, opt);
             }
 
+            xml.write_attribute_raw("xml:space", |buf| {
+                buf.extend_from_slice("preserve".as_bytes())
+            });
+
             match text.rendering_mode {
                 TextRendering::OptimizeSpeed => xml.write_svg_attribute(AId::TextRendering, "optimizeSpeed"),
                 TextRendering::GeometricPrecision => xml.write_svg_attribute(AId::TextRendering, "geometricPrecision"),
@@ -682,11 +686,13 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
 
             let mut char_offset: usize = 0;
 
+
+            xml.set_preserve_whitespaces(true);
             for chunk in &text.chunks {
                 xml.start_svg_element(EId::Tspan);
 
                 match chunk.anchor {
-                    TextAnchor::Start => xml.write_svg_attribute(AId::TextAnchor, "start"),
+                    TextAnchor::Start => {},
                     TextAnchor::Middle => xml.write_svg_attribute(AId::TextAnchor, "middle"),
                     TextAnchor::End => xml.write_svg_attribute(AId::TextAnchor, "end"),
                 }
@@ -703,7 +709,7 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
 
                     let num_chars = cur_text.chars().count();
                     let collect_coordinates = |mapper: &dyn Fn(&CharacterPosition) -> f32| {
-                        let reversed = text.positions[char_offset..char_offset+num_chars]
+                        let reversed = text.positions[char_offset+span.start..char_offset+span.start+num_chars]
                             .iter()
                             .map(mapper)
                             .rev()
@@ -715,23 +721,30 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                     let dy_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.dy.unwrap_or_default());
                     let x_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.x.unwrap_or_default());
                     let y_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.y.unwrap_or_default());
+                    let rotations = text.rotate[char_offset..char_offset+num_chars]
+                        .into_iter()
+                        .map(|rotate| *rotate)
+                        .rev()
+                        .skip_while(|rotate| *rotate == 0.0).collect::<Vec<_>>();
+                    let rotations = rotations.into_iter().rev().collect::<Vec<_>>();
 
                     xml.write_number_list(AId::Dx, &dx_values, opt);
                     xml.write_number_list(AId::Dy, &dy_values, opt);
                     xml.write_number_list(AId::X, &x_values, opt);
                     xml.write_number_list(AId::Y, &y_values, opt);
+                    xml.write_number_list(AId::Rotate, &rotations, opt);
 
                     xml.write_text(&cur_text.replace("&", "&amp;"));
 
                     xml.end_element();
                 }
-
                 xml.end_element();
 
                 char_offset += chunk.text.chars().count();
             }
 
             xml.end_element();
+            xml.set_preserve_whitespaces(false);
         }
     }
 }
