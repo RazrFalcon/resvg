@@ -702,6 +702,38 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
 
                     xml.write_svg_attribute(AId::FontFamily, &span.font.families[0]);
                     xml.write_svg_attribute(AId::FontSize, &span.font_size);
+                    if span.letter_spacing != 0.0 {
+                        xml.write_svg_attribute(AId::LetterSpacing, &span.letter_spacing);
+                    }
+
+                    if span.word_spacing != 0.0 {
+                        xml.write_svg_attribute(AId::WordSpacing, &span.word_spacing);
+                    }
+
+                    if let Some(text_length) = span.text_length {
+                        xml.write_svg_attribute(AId::TextLength, &text_length);
+                    }
+
+                    if span.length_adjust == LengthAdjust::SpacingAndGlyphs {
+                        xml.write_svg_attribute(AId::LengthAdjust, "spacingAndGlyphs");
+                    }
+
+                    match span.alignment_baseline {
+                        AlignmentBaseline::Auto => {},
+                        AlignmentBaseline::Baseline => xml.write_svg_attribute(AId::AlignmentBaseline, "baseline"),
+                        AlignmentBaseline::BeforeEdge => xml.write_svg_attribute(AId::AlignmentBaseline, "before-edge"),
+                        AlignmentBaseline::TextBeforeEdge => xml.write_svg_attribute(AId::AlignmentBaseline, "text-before-edge"),
+                        AlignmentBaseline::Middle => xml.write_svg_attribute(AId::AlignmentBaseline, "middle"),
+                        AlignmentBaseline::Central => xml.write_svg_attribute(AId::AlignmentBaseline, "central"),
+                        AlignmentBaseline::AfterEdge => xml.write_svg_attribute(AId::AlignmentBaseline, "after-edge"),
+                        AlignmentBaseline::TextAfterEdge => xml.write_svg_attribute(AId::AlignmentBaseline, "text-after-edge"),
+                        AlignmentBaseline::Ideographic => xml.write_svg_attribute(AId::AlignmentBaseline, "ideographic"),
+                        AlignmentBaseline::Alphabetic => xml.write_svg_attribute(AId::AlignmentBaseline, "alphabetic"),
+                        AlignmentBaseline::Hanging => xml.write_svg_attribute(AId::AlignmentBaseline, "hanging"),
+                        AlignmentBaseline::Mathematical => xml.write_svg_attribute(AId::AlignmentBaseline, "mathematical"),
+                    };
+
+
                     write_fill(&span.fill, is_clip_path, opt, xml);
                     write_stroke(&span.stroke, opt, xml);
 
@@ -728,11 +760,27 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                         .skip_while(|rotate| *rotate == 0.0).collect::<Vec<_>>();
                     let rotations = rotations.into_iter().rev().collect::<Vec<_>>();
 
-                    xml.write_number_list(AId::Dx, &dx_values, opt);
-                    xml.write_number_list(AId::Dy, &dy_values, opt);
-                    xml.write_number_list(AId::X, &x_values, opt);
-                    xml.write_number_list(AId::Y, &y_values, opt);
-                    xml.write_number_list(AId::Rotate, &rotations, opt);
+                    if !dx_values.is_empty() {
+                        xml.write_numbers(AId::Dx, &dx_values);
+                    }
+
+                    if !dy_values.is_empty() {
+                        xml.write_numbers(AId::Dy, &dy_values);
+                    }
+
+                    if !x_values.is_empty() {
+                        xml.write_numbers(AId::X, &x_values);
+                    }
+
+                    if !y_values.is_empty() {
+                        xml.write_numbers(AId::Y, &y_values);
+                    }
+
+                    if !rotations.is_empty() {
+                        xml.write_numbers(AId::Rotate, &rotations);
+                    }
+
+
 
                     xml.write_text(&cur_text.replace("&", "&amp;"));
 
@@ -758,7 +806,6 @@ trait XmlWriterExt {
     fn write_aspect(&mut self, aspect: AspectRatio);
     fn write_units(&mut self, id: AId, units: Units, def: Units);
     fn write_transform(&mut self, id: AId, units: Transform, opt: &XmlOptions);
-    fn write_number_list(&mut self, id: AId, numbers: &[f32], opt: &XmlOptions);
     fn write_visibility(&mut self, value: Visibility);
     fn write_func_iri(&mut self, aid: AId, id: &str, opt: &XmlOptions);
     fn write_rect_attrs(&mut self, r: NonZeroRect);
@@ -879,18 +926,6 @@ impl XmlWriterExt for XmlWriter {
                 buf.push(b' ');
                 write_num(ts.ty, buf, opt.transforms_precision);
                 buf.extend_from_slice(b")");
-            });
-        }
-    }
-
-    fn write_number_list(&mut self, id: AId, numbers: &[f32], opt: &XmlOptions) {
-        if !numbers.is_empty() {
-            self.write_attribute_raw(id.to_str(), |buf| {
-                for number in numbers {
-                    write_num(*number, buf, opt.coordinates_precision);
-                    buf.push(b' ');
-                }
-                buf.pop();
             });
         }
     }
