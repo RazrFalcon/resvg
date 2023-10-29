@@ -684,6 +684,11 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                 TextRendering::OptimizeLegibility => xml.write_svg_attribute(AId::TextRendering, "optimizeLegibility")
             }
 
+            match text.writing_mode {
+                WritingMode::LeftToRight => {},
+                WritingMode::TopToBottom => xml.write_svg_attribute(AId::WritingMode, "tb")
+            }
+
             let mut char_offset: usize = 0;
 
 
@@ -700,7 +705,18 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                 for span in &chunk.spans {
                     xml.start_svg_element(EId::Tspan);
 
-                    xml.write_svg_attribute(AId::FontFamily, &span.font.families[0]);
+                    xml.write_svg_attribute(AId::FontFamily, &span.font.families.join(", "));
+
+                    match span.font.style {
+                        FontStyle::Normal => {},
+                        FontStyle::Italic => xml.write_svg_attribute(AId::FontStyle, "italic"),
+                        FontStyle::Oblique => xml.write_svg_attribute(AId::FontStyle, "oblique"),
+                    }
+
+                    if span.font.weight != 400 {
+                        xml.write_svg_attribute(AId::FontWeight, &span.font.weight);
+                    }
+
                     xml.write_svg_attribute(AId::FontSize, &span.font_size);
                     if span.letter_spacing != 0.0 {
                         xml.write_svg_attribute(AId::LetterSpacing, &span.letter_spacing);
@@ -718,6 +734,16 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                         xml.write_svg_attribute(AId::LengthAdjust, "spacingAndGlyphs");
                     }
 
+                    if span.small_caps {
+                        xml.write_svg_attribute(AId::FontVariant, "small-caps");
+                    }
+
+                    if !span.apply_kerning {
+                        xml.write_attribute_raw("style", |buf| {
+                            buf.extend_from_slice("font-kerning:none".as_bytes())
+                        });
+                    }
+
                     match span.alignment_baseline {
                         AlignmentBaseline::Auto => {},
                         AlignmentBaseline::Baseline => xml.write_svg_attribute(AId::AlignmentBaseline, "baseline"),
@@ -732,6 +758,21 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                         AlignmentBaseline::Hanging => xml.write_svg_attribute(AId::AlignmentBaseline, "hanging"),
                         AlignmentBaseline::Mathematical => xml.write_svg_attribute(AId::AlignmentBaseline, "mathematical"),
                     };
+
+                    match span.dominant_baseline {
+                        DominantBaseline::Auto => {},
+                        DominantBaseline::UseScript => xml.write_svg_attribute(AId::DominantBaseline, "use-script"),
+                        DominantBaseline::NoChange => xml.write_svg_attribute(AId::DominantBaseline, "no-change"),
+                        DominantBaseline::ResetSize => xml.write_svg_attribute(AId::DominantBaseline, "reset-size"),
+                        DominantBaseline::TextBeforeEdge => xml.write_svg_attribute(AId::DominantBaseline, "text-before-edge"),
+                        DominantBaseline::Middle => xml.write_svg_attribute(AId::DominantBaseline, "middle"),
+                        DominantBaseline::Central => xml.write_svg_attribute(AId::DominantBaseline, "central"),
+                        DominantBaseline::TextAfterEdge => xml.write_svg_attribute(AId::DominantBaseline, "text-after-edge"),
+                        DominantBaseline::Ideographic => xml.write_svg_attribute(AId::DominantBaseline, "ideographic"),
+                        DominantBaseline::Alphabetic => xml.write_svg_attribute(AId::DominantBaseline, "alphabetic"),
+                        DominantBaseline::Hanging => xml.write_svg_attribute(AId::DominantBaseline, "hanging"),
+                        DominantBaseline::Mathematical => xml.write_svg_attribute(AId::DominantBaseline, "mathematical"),
+                    }
 
 
                     write_fill(&span.fill, is_clip_path, opt, xml);
@@ -753,7 +794,7 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                     let dy_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.dy.unwrap_or_default());
                     let x_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.x.unwrap_or_default());
                     let y_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.y.unwrap_or_default());
-                    let rotations = text.rotate[char_offset..char_offset+num_chars]
+                    let rotations = text.rotate[char_offset+span.start..char_offset+span.start+num_chars]
                         .into_iter()
                         .map(|rotate| *rotate)
                         .rev()
