@@ -680,6 +680,8 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                 TextRendering::OptimizeLegibility => xml.write_svg_attribute(AId::TextRendering, "optimizeLegibility")
             }
 
+            let mut char_offset: usize = 0;
+
             for chunk in &text.chunks {
                 xml.start_svg_element(EId::Tspan);
                 if let Some(x) = chunk.x {
@@ -704,13 +706,46 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
                     write_fill(&span.fill, is_clip_path, opt, xml);
                     write_stroke(&span.stroke, opt, xml);
 
-                    let text = chunk.text[span.start..span.end].replace("&", "&amp;");
-                    xml.write_text(&text);
+                    let mut separated_spans: Vec<(String, f32, f32)> = Vec::new();
+                    let mut cur_pos = span.start;
+                    let mut last_text = String::new();
+                    let mut last_dx = 0.0;
+                    let mut last_dy = 0.0;
+
+                    for codepoint in std::str::from_utf8(&chunk.text.as_bytes()[span.start..span.end]).unwrap().chars()  {
+                        let cur_text_pos = text.positions[char_offset + cur_pos];
+                        if cur_text_pos.dx.is_some() || cur_text_pos.dy.is_some() {
+                            separated_spans.push((last_text, last_dx, last_dy));
+                            last_text = String::new();
+                            last_dx = cur_text_pos.dx.unwrap_or_default();
+                            last_dy = cur_text_pos.dy.unwrap_or_default();
+                        }
+                        last_text.push(codepoint);
+                        cur_pos += 1;
+                    }
+
+                    separated_spans.push((last_text, last_dx, last_dy));
+
+                    let separated_spans: Vec<_> = separated_spans.into_iter().filter(|e| !e.0.is_empty()).collect();
+                    for span_tuple in &separated_spans {
+                        xml.start_svg_element(EId::Tspan);
+                        if span_tuple.1 != 0.0 {
+                            xml.write_svg_attribute(AId::Dx, &span_tuple.1);
+                        }
+
+                        if span_tuple.2 != 0.0 {
+                            xml.write_svg_attribute(AId::Dy, &span_tuple.2);
+                        }
+                        xml.write_text(&span_tuple.0.replace("&", "&amp;"));
+                        xml.end_element();
+                    }
 
                     xml.end_element();
                 }
 
                 xml.end_element();
+
+                char_offset += chunk.text.chars().count();
             }
 
             xml.end_element();
