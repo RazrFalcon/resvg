@@ -55,6 +55,7 @@ and can focus just on the rendering part.
 mod writer;
 
 use std::collections::HashMap;
+use std::process::id;
 use std::rc::Rc;
 pub use usvg_parser::*;
 #[cfg(feature = "text")]
@@ -71,16 +72,23 @@ pub trait TreeWriting {
 
 impl TreeWriting for usvg_tree::Tree {
     fn to_string(&self, opt: &XmlOptions) -> String {
-        writer::convert(self, opt)
+        let mut remapped_tree = usvg_tree::Tree {
+            root: self.root.make_deep_copy(),
+            size: self.size,
+            view_box: self.view_box
+        };
+        let mut id_map = IdMap::default();
+        remapped_tree.remap_ids(&mut id_map);
+        writer::convert(& remapped_tree, opt)
     }
 }
 
-pub trait IdRemapping {
-    fn remap_ids(&mut self);
+pub(crate) trait IdRemapping {
+    fn remap_ids(&mut self, id_map: &mut IdMap);
 }
 
 #[derive(Default)]
-struct IdMap {
+pub(crate) struct IdMap {
     id_map: HashMap<String, String>,
     path: u64,
     group: u64,
@@ -151,8 +159,8 @@ impl IdMap {
 }
 
 impl IdRemapping for usvg_tree::Tree {
-    fn remap_ids(&mut self) {
-        remap_ids_impl(&self.root, &mut IdMap::default());
+    fn remap_ids(&mut self, id_map: &mut IdMap) {
+        remap_ids_impl(&self.root, id_map);
     }
 }
 
@@ -192,14 +200,60 @@ fn remap_ids_impl(node: &Node, map: &mut IdMap) {
                     s.paint = map_paint(map, s.paint);
                     s
                 });
+            },
+            NodeKind::Image(ref mut image) => {
+                image.id = map.bump_image(&image.id);
+            },
+            NodeKind::Text(ref mut text) => {
+                text.id = map.bump_text(&text.id);
+                for chunk in &mut text.chunks {
+                    for span in &mut chunk.spans {
+                        span.fill = span.fill.clone().map(|mut f| {
+                            f.paint = map_paint(map, f.paint);
+                            f
+                        });
+                        span.stroke = span.stroke.clone().map(|mut s| {
+                            s.paint = map_paint(map, s.paint);
+                            s
+                        });
+                    }
+                }
+            },
+            NodeKind::Group(ref mut group) => {
+                group.id = map.bump_group(&group.id);
+                let filters = group.filters.iter().map(|filter| {
+                    let mut new_filter = (**filter).clone();
+                    new_filter.id = map.bump_filter(&filter.id);
+                    Rc::new(new_filter)
+                }).collect();
+                group.filters = filters;
+
+                group.mask = group.mask.as_ref().map(|mask| {
+                    let mut new_mask = (**mask).clone();
+                    new_mask.id = map.bump_mask(&mask.id);
+                    new_mask.mask = new_mask.mask.as_ref().map(|mask| {
+                        let mut new_mask = (**mask).clone();
+                        new_mask.id = map.bump_mask(&mask.id);
+                        Rc::new(new_mask)
+                    });
+
+                    Rc::new(new_mask)
+                });
+
+                group.clip_path = group.clip_path.as_ref().map(|clip_path| {
+                    let mut new_clip_path = (**clip_path).clone();
+                    new_clip_path.id = map.bump_clip_path(&clip_path.id);
+                    new_clip_path.clip_path = new_clip_path.clip_path.as_ref().map(|clip_path| {
+                        let mut new_clip_path = (**clip_path).clone();
+                        new_clip_path.id = map.bump_clip_path(&clip_path.id);
+                        Rc::new(new_clip_path)
+                    });
+
+                    Rc::new(new_clip_path)
+                });
             }
-            _ => {}
         }
 
         node.subroots(|node| remap_ids_impl(&node, map));
     }
-}
-
-pub fn print_node(root: &Node) {
-    root.descendants().for_each(|n| println!("{:#?}", n.borrow()));
 }
