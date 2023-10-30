@@ -1290,7 +1290,7 @@ fn calc_node_bbox(node: &Node, ts: Transform) -> Option<BBox> {
             for child in node.children() {
                 let child_transform = if let NodeKind::Group(ref group) = *child.borrow() {
                     ts.pre_concat(group.transform)
-                }   else {
+                } else {
                     ts
                 };
                 if let Some(c_bbox) = calc_node_bbox(&child, child_transform) {

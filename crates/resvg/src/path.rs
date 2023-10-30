@@ -26,21 +26,11 @@ pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
     let anti_alias = upath.rendering_mode.use_shape_antialiasing();
 
     let fill_path = upath.fill.as_ref().and_then(|ufill| {
-        convert_fill_path(
-            ufill,
-            upath.data.clone(),
-            upath.text_bbox,
-            anti_alias,
-        )
+        convert_fill_path(ufill, upath.data.clone(), upath.text_bbox, anti_alias)
     });
 
     let stroke_path = upath.stroke.as_ref().and_then(|ustroke| {
-        convert_stroke_path(
-            ustroke,
-            upath.data.clone(),
-            upath.text_bbox,
-            anti_alias,
-        )
+        convert_stroke_path(ustroke, upath.data.clone(), upath.text_bbox, anti_alias)
     });
 
     if fill_path.is_none() && stroke_path.is_none() {

@@ -61,8 +61,16 @@ pub use usvg_parser::*;
 #[cfg(feature = "text")]
 pub use usvg_text_layout::*;
 pub use usvg_tree::*;
+use xmlwriter::XmlWriter;
 
 pub use writer::XmlOptions;
+
+pub struct WriterContext<'a> {
+    pub tree: &'a Tree,
+    pub opt: &'a XmlOptions,
+    pub text_path_map: Vec<String>,
+    pub id_map: &'a mut IdMap,
+}
 
 /// A trait to write `usvg::Tree` back to SVG.
 pub trait TreeWriting {
@@ -75,20 +83,28 @@ impl TreeWriting for usvg_tree::Tree {
         let mut remapped_tree = usvg_tree::Tree {
             root: self.root.make_deep_copy(),
             size: self.size,
-            view_box: self.view_box
+            view_box: self.view_box,
         };
         let mut id_map = IdMap::default();
         remapped_tree.remap_ids(&mut id_map);
-        writer::convert(& remapped_tree, opt)
+
+        let mut writer_context = WriterContext {
+            tree: &remapped_tree,
+            opt,
+            text_path_map: Vec::new(),
+            id_map: &mut id_map,
+        };
+
+        writer::convert(&mut writer_context)
     }
 }
 
-pub(crate) trait IdRemapping {
+pub trait IdRemapping {
     fn remap_ids(&mut self, id_map: &mut IdMap);
 }
 
 #[derive(Default)]
-pub(crate) struct IdMap {
+pub struct IdMap {
     id_map: HashMap<String, String>,
     path: u64,
     group: u64,
@@ -99,7 +115,7 @@ pub(crate) struct IdMap {
     pattern: u64,
     radial_gradient: u64,
     linear_gradient: u64,
-    image: u64
+    image: u64,
 }
 
 impl IdMap {
@@ -143,7 +159,12 @@ impl IdMap {
         IdMap::bump_impl(old_id, &mut self.id_map, &mut self.image, "i")
     }
 
-    fn bump_impl(old_id: &str, id_map: &mut HashMap<String, String>, field: &mut u64, format_str: &str) -> String {
+    fn bump_impl(
+        old_id: &str,
+        id_map: &mut HashMap<String, String>,
+        field: &mut u64,
+        format_str: &str,
+    ) -> String {
         let mut bump = || {
             *field += 1;
             let result = format!("{}{}", format_str, field);
@@ -151,8 +172,11 @@ impl IdMap {
         };
 
         if !old_id.is_empty() {
-            id_map.entry(old_id.to_string()).or_insert_with(bump).clone()
-        }   else {
+            id_map
+                .entry(old_id.to_string())
+                .or_insert_with(bump)
+                .clone()
+        } else {
             bump()
         }
     }
@@ -172,7 +196,7 @@ fn remap_ids_impl(node: &Node, map: &mut IdMap) {
                 let mut new_lg = (*lg).clone();
                 new_lg.id = map.bump_linear_gradient(&lg.id);
                 Paint::LinearGradient(Rc::new(new_lg))
-            },
+            }
             Paint::RadialGradient(rg) => {
                 let mut new_rg = (*rg).clone();
                 new_rg.id = map.bump_radial_gradient(&rg.id);
@@ -183,7 +207,7 @@ fn remap_ids_impl(node: &Node, map: &mut IdMap) {
                 new_pattern.id = map.bump_pattern(&pattern.id);
                 Paint::Pattern(Rc::new(new_pattern))
             }
-            _ => paint
+            _ => paint,
         };
         paint
     };
@@ -200,10 +224,10 @@ fn remap_ids_impl(node: &Node, map: &mut IdMap) {
                     s.paint = map_paint(map, s.paint);
                     s
                 });
-            },
+            }
             NodeKind::Image(ref mut image) => {
                 image.id = map.bump_image(&image.id);
-            },
+            }
             NodeKind::Text(ref mut text) => {
                 text.id = map.bump_text(&text.id);
                 for chunk in &mut text.chunks {
@@ -218,14 +242,18 @@ fn remap_ids_impl(node: &Node, map: &mut IdMap) {
                         });
                     }
                 }
-            },
+            }
             NodeKind::Group(ref mut group) => {
                 group.id = map.bump_group(&group.id);
-                let filters = group.filters.iter().map(|filter| {
-                    let mut new_filter = (**filter).clone();
-                    new_filter.id = map.bump_filter(&filter.id);
-                    Rc::new(new_filter)
-                }).collect();
+                let filters = group
+                    .filters
+                    .iter()
+                    .map(|filter| {
+                        let mut new_filter = (**filter).clone();
+                        new_filter.id = map.bump_filter(&filter.id);
+                        Rc::new(new_filter)
+                    })
+                    .collect();
                 group.filters = filters;
 
                 group.mask = group.mask.as_ref().map(|mask| {
