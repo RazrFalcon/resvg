@@ -741,7 +741,7 @@ fn conv_element(
 
             xml.set_preserve_whitespaces(true);
             for chunk in &text.chunks {
-                if let TextFlow::Path(_) = chunk.text_flow {
+                if let TextFlow::Path(text_path) = &chunk.text_flow {
                     xml.start_svg_element(EId::TextPath);
 
                     xml.write_attribute_raw("xlink:href", |buf| {
@@ -750,6 +750,10 @@ fn conv_element(
                         let url = format!("#{}{}", prefix, ref_path);
                         buf.extend_from_slice(url.as_bytes());
                     });
+
+                    if text_path.start_offset != 0.0 {
+                        xml.write_svg_attribute(AId::StartOffset, &text_path.start_offset);
+                    }
 
                 }   else {
                     xml.start_svg_element(EId::Tspan);
@@ -785,7 +789,14 @@ fn conv_element(
                         xml.write_svg_attribute(AId::FontWeight, &span.font.weight);
                     }
 
+                    match span.visibility {
+                        Visibility::Visible => {},
+                        Visibility::Hidden => xml.write_svg_attribute(AId::Visibility, "hidden"),
+                        Visibility::Collapse => xml.write_svg_attribute(AId::Visibility, "collapse"),
+                    }
+
                     xml.write_svg_attribute(AId::FontSize, &span.font_size);
+
                     if span.letter_spacing != 0.0 {
                         xml.write_svg_attribute(AId::LetterSpacing, &span.letter_spacing);
                     }
@@ -804,6 +815,10 @@ fn conv_element(
 
                     if span.small_caps {
                         xml.write_svg_attribute(AId::FontVariant, "small-caps");
+                    }
+
+                    if span.paint_order == PaintOrder::StrokeAndFill {
+                        xml.write_svg_attribute(AId::PaintOrder, "stroke fill");
                     }
 
                     if !span.apply_kerning {
@@ -1316,9 +1331,7 @@ fn write_path(
     }
 
     match path.rendering_mode {
-        ShapeRendering::OptimizeSpeed => {
-            xml.write_svg_attribute(AId::ShapeRendering, "optimizeSpeed");
-        }
+        ShapeRendering::OptimizeSpeed => xml.write_svg_attribute(AId::ShapeRendering, "optimizeSpeed"),
         ShapeRendering::CrispEdges => xml.write_svg_attribute(AId::ShapeRendering, "crispEdges"),
         ShapeRendering::GeometricPrecision => {}
     }

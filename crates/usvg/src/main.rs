@@ -426,6 +426,9 @@ fn process(args: Args) -> Result<(), String> {
 
     let mut tree = usvg_tree::Tree::from_data(&input_svg, &re_opt).map_err(|e| format!("{}", e))?;
     // tree.convert_text(&fontdb);
+    tree.root.descendants().for_each(|n| {
+        println!("{:#?}", n.borrow());
+    });
 
     let xml_opt = usvg::XmlOptions {
         id_prefix: args.id_prefix,
