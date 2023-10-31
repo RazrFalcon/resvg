@@ -762,8 +762,17 @@ fn conv_element(
                 }
 
                 for span in &chunk.spans {
-                    xml.start_svg_element(EId::Tspan);
+                    for baseline_shift in &span.baseline_shift {
+                        xml.start_svg_element(EId::Tspan);
+                        match baseline_shift{
+                            BaselineShift::Number(num) => xml.write_svg_attribute(AId::BaselineShift, num),
+                            BaselineShift::Baseline => xml.write_svg_attribute(AId::BaselineShift, "baseline"),
+                            BaselineShift::Subscript => xml.write_svg_attribute(AId::BaselineShift, "sub"),
+                            BaselineShift::Superscript => xml.write_svg_attribute(AId::BaselineShift, "super")
+                        }
+                    }
 
+                    xml.start_svg_element(EId::Tspan);
                     xml.write_svg_attribute(AId::FontFamily, &span.font.families.join(", "));
 
                     match span.font.style {
@@ -935,6 +944,10 @@ fn conv_element(
                     xml.write_text(&cur_text.replace("&", "&amp;"));
 
                     xml.end_element();
+
+                    for _ in &span.baseline_shift {
+                        xml.end_element();
+                    }
                 }
                 xml.end_element();
 
