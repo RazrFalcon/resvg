@@ -67,7 +67,7 @@ pub(crate) fn convert(tree: &Tree, opt: &XmlOptions) -> String {
     xml.write_svg_attribute(AId::Height, &tree.size.height());
     xml.write_viewbox(&tree.view_box);
     xml.write_attribute("xmlns", "http://www.w3.org/2000/svg");
-    if has_xlink(tree) {
+    if has_xlink(&tree.root) {
         xml.write_attribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
     }
 
@@ -592,16 +592,21 @@ fn conv_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xml
         NodeKind::Group(ref g) => {
             if is_clip_path {
                 // ClipPath with a Group element is an `usvg` special case.
-                // Group will contain a single Path element and we should set
+                // Group will contain a single path element and we should set
                 // `clip-path` on it.
 
-                if let NodeKind::Path(ref path) = *node.first_child().unwrap().borrow() {
-                    let path = path.clone();
+                // TODO: As mentioned above, if it is a group element it should only contain a
+                // single path element. However when converting text nodes to path, multiple
+                // paths might be present. As a temporary workaround, we just loop over all
+                // children instead.
+                for child in node.children() {
+                    if let NodeKind::Path(ref path) = *child.borrow() {
+                        let path = path.clone();
 
-                    let clip_id = g.clip_path.as_ref().map(|cp| cp.id.as_str());
-                    write_path(&path, is_clip_path, g.transform, clip_id, opt, xml);
+                        let clip_id = g.clip_path.as_ref().map(|cp| cp.id.as_str());
+                        write_path(&path, is_clip_path, g.transform, clip_id, opt, xml);
+                    }
                 }
-
                 return;
             }
 
@@ -932,8 +937,8 @@ impl XmlWriterExt for XmlWriter {
     }
 }
 
-fn has_xlink(tree: &Tree) -> bool {
-    for n in tree.root.descendants() {
+fn has_xlink(node: &Node) -> bool {
+    for n in node.descendants() {
         match *n.borrow() {
             NodeKind::Group(ref g) => {
                 for filter in &g.filters {
@@ -943,6 +948,18 @@ fn has_xlink(tree: &Tree) -> bool {
                         .any(|p| matches!(p.kind, filter::Kind::Image(_)))
                     {
                         return true;
+                    }
+                }
+
+                if let Some(ref mask) = g.mask {
+                    if has_xlink(&mask.root) {
+                        return true;
+                    }
+
+                    if let Some(ref sub_mask) = mask.mask {
+                        if has_xlink(&sub_mask.root) {
+                            return true;
+                        }
                     }
                 }
             }
