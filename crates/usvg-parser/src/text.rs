@@ -616,16 +616,13 @@ fn resolve_decoration(
     state: &converter::State,
     cache: &mut converter::Cache,
 ) -> TextDecoration {
+    // Checks if a decoration is present in a single node.
     fn find_decoration(node: SvgNode, value: &str) -> bool {
         if let Some(str_value) = node.attribute::<&str>(AId::TextDecoration) {
             str_value.split(' ').any(|v| v == value)
         } else {
             false
         }
-    }
-
-    fn find_decoration_in_ancestors(node: SvgNode, value: &str) -> bool {
-        node.ancestors().any(|n| find_decoration(n, value))
     }
 
     // The algorithm is as follows: First, we check whether the given text decoration appears in ANY
@@ -635,7 +632,7 @@ fn resolve_decoration(
     // ancestors (i.e. tspans) until we find the text decoration declared. If not, we will
     // stop at latest at the text node, and use its fill/stroke.
     let mut gen_style = |text_decoration: &str| {
-        if !find_decoration_in_ancestors(tspan, text_decoration) {
+        if !tspan.ancestors().any(|n| find_decoration(n, text_decoration)) {
             return None;
         }
 
