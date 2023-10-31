@@ -780,6 +780,21 @@ fn conv_element(
                         }
                     }
 
+                    let decorations: Vec<_> = vec![("underline", &span.decoration.underline), ("line-through", &span.decoration.line_through), ("overline", &span.decoration.overline)]
+                        .iter()
+                        .filter_map(|&(key, option_value)| {
+                            // Filter out tuples where the Option is Some, and unwrap the Option.
+                            option_value.as_ref().map(|value| (key, value))
+                        })
+                        .collect();
+
+                    for (deco_name, deco) in &decorations {
+                        xml.start_svg_element(EId::Tspan);
+                        xml.write_svg_attribute(AId::TextDecoration, deco_name);
+                        write_fill(&deco.fill, false, opt, xml);
+                        write_stroke(&deco.stroke, opt, xml);
+                    }
+
                     xml.start_svg_element(EId::Tspan);
                     xml.write_svg_attribute(AId::FontFamily, &span.font.families.join(", "));
 
@@ -963,6 +978,10 @@ fn conv_element(
                     xml.write_text(&cur_text.replace("&", "&amp;"));
 
                     xml.end_element();
+
+                    for _ in &decorations {
+                        xml.end_element();
+                    }
 
                     for _ in &span.baseline_shift {
                         xml.end_element();
