@@ -1071,6 +1071,7 @@ use crate::render;
 #[test] fn structure_image_embedded_jpeg_as_image_jpg() { assert_eq!(render("tests/structure/image/embedded-jpeg-as-image-jpg"), 0); }
 #[test] fn structure_image_embedded_jpeg_without_mime() { assert_eq!(render("tests/structure/image/embedded-jpeg-without-mime"), 0); }
 #[test] fn structure_image_embedded_png() { assert_eq!(render("tests/structure/image/embedded-png"), 0); }
+#[test] fn structure_image_embedded_svg_with_text() { assert_eq!(render("tests/structure/image/embedded-svg-with-text"), 0); }
 #[test] fn structure_image_embedded_svg_without_mime() { assert_eq!(render("tests/structure/image/embedded-svg-without-mime"), 0); }
 #[test] fn structure_image_embedded_svg() { assert_eq!(render("tests/structure/image/embedded-svg"), 0); }
 #[test] fn structure_image_embedded_svgz() { assert_eq!(render("tests/structure/image/embedded-svgz"), 0); }
@@ -1471,6 +1472,7 @@ use crate::render;
 #[test] fn text_text_decoration_all_types_inline_no_spaces() { assert_eq!(render("tests/text/text-decoration/all-types-inline-no-spaces"), 0); }
 #[test] fn text_text_decoration_all_types_inline() { assert_eq!(render("tests/text/text-decoration/all-types-inline"), 0); }
 #[test] fn text_text_decoration_all_types_nested() { assert_eq!(render("tests/text/text-decoration/all-types-nested"), 0); }
+#[test] fn text_text_decoration_indirect_with_multiple_colors() { assert_eq!(render("tests/text/text-decoration/indirect-with-multiple-colors"), 0); }
 #[test] fn text_text_decoration_indirect() { assert_eq!(render("tests/text/text-decoration/indirect"), 0); }
 #[test] fn text_text_decoration_line_through() { assert_eq!(render("tests/text/text-decoration/line-through"), 0); }
 #[test] fn text_text_decoration_outside_the_text_element() { assert_eq!(render("tests/text/text-decoration/outside-the-text-element"), 0); }
