@@ -634,11 +634,15 @@ fn conv_element(
         NodeKind::Group(ref g) => {
             if is_clip_path {
                 // ClipPath with a Group element is an `usvg` special case.
-                // Group will contain a single Path element and we should set
+                // Group will contain a single path element and we should set
                 // `clip-path` on it.
 
-                if let Some(node) = node.first_child() {
-                    if let NodeKind::Path(ref path) = *node.borrow() {
+                // TODO: As mentioned above, if it is a group element it should only contain a
+                // single path element. However when converting text nodes to path, multiple
+                // paths might be present. As a temporary workaround, we just loop over all
+                // children instead.
+                for child in node.children() {
+                    if let NodeKind::Path(ref path) = *child.borrow() {
                         let path = path.clone();
 
                         let clip_id = g.clip_path.as_ref().map(|cp| cp.id.as_str());

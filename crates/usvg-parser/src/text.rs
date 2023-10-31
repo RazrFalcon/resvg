@@ -260,7 +260,7 @@ fn collect_text_chunks_impl(
             font_size,
             small_caps: parent.find_attribute::<&str>(AId::FontVariant) == Some("small-caps"),
             apply_kerning,
-            decoration: resolve_decoration(text_node, parent, state, cache),
+            decoration: resolve_decoration(parent, state, cache),
             visibility: parent.find_attribute(AId::Visibility).unwrap_or_default(),
             dominant_baseline,
             alignment_baseline: parent
@@ -611,73 +611,52 @@ fn resolve_rotate_list(text_node: SvgNode) -> Vec<f32> {
 }
 
 /// Resolves node's `text-decoration` property.
-///
-/// `text` and `tspan` can point to the same node.
 fn resolve_decoration(
-    text_node: SvgNode,
     tspan: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
 ) -> TextDecoration {
-    // TODO: explain the algorithm
-
-    let text_dec = conv_text_decoration(text_node);
-    let tspan_dec = conv_text_decoration2(tspan);
-
-    let mut gen_style = |in_tspan: bool, in_text: bool| {
-        let n = if in_tspan {
-            tspan
-        } else if in_text {
-            text_node
+    // Checks if a decoration is present in a single node.
+    fn find_decoration(node: SvgNode, value: &str) -> bool {
+        if let Some(str_value) = node.attribute::<&str>(AId::TextDecoration) {
+            str_value.split(' ').any(|v| v == value)
         } else {
+            false
+        }
+    }
+
+    // The algorithm is as follows: First, we check whether the given text decoration appears in ANY
+    // ancestor, i.e. it can also appear in ancestors outside of the <text> element. If the text
+    // decoration is declared somewhere, it means that this tspan will have it. However, we still
+    // need to find the corresponding fill/stroke for it. To do this, we iterate through all
+    // ancestors (i.e. tspans) until we find the text decoration declared. If not, we will
+    // stop at latest at the text node, and use its fill/stroke.
+    let mut gen_style = |text_decoration: &str| {
+        if !tspan.ancestors().any(|n| find_decoration(n, text_decoration)) {
             return None;
-        };
+        }
+
+        let mut fill_node = None;
+        let mut stroke_node = None;
+
+        for node in tspan.ancestors() {
+            if find_decoration(node, text_decoration) || node.tag_name() == Some(EId::Text) {
+                fill_node = fill_node.map_or(Some(node), |n| Some(n));
+                stroke_node = stroke_node.map_or(Some(node), |n| Some(n));
+                break;
+            }
+        }
 
         Some(TextDecorationStyle {
-            fill: style::resolve_fill(n, true, state, cache),
-            stroke: style::resolve_stroke(n, true, state, cache),
+            fill: fill_node.and_then(|node| style::resolve_fill(node, true, state, cache)),
+            stroke: stroke_node.and_then(|node| style::resolve_stroke(node, true, state, cache)),
         })
     };
 
     TextDecoration {
-        underline: gen_style(tspan_dec.has_underline, text_dec.has_underline),
-        overline: gen_style(tspan_dec.has_overline, text_dec.has_overline),
-        line_through: gen_style(tspan_dec.has_line_through, text_dec.has_line_through),
-    }
-}
-
-struct TextDecorationTypes {
-    has_underline: bool,
-    has_overline: bool,
-    has_line_through: bool,
-}
-
-/// Resolves the `text` node's `text-decoration` property.
-fn conv_text_decoration(text_node: SvgNode) -> TextDecorationTypes {
-    fn find_decoration(node: SvgNode, value: &str) -> bool {
-        node.ancestors().any(|n| {
-            if let Some(str_value) = n.attribute::<&str>(AId::TextDecoration) {
-                str_value.split(' ').any(|v| v == value)
-            } else {
-                false
-            }
-        })
-    }
-
-    TextDecorationTypes {
-        has_underline: find_decoration(text_node, "underline"),
-        has_overline: find_decoration(text_node, "overline"),
-        has_line_through: find_decoration(text_node, "line-through"),
-    }
-}
-
-/// Resolves the default `text-decoration` property.
-fn conv_text_decoration2(tspan: SvgNode) -> TextDecorationTypes {
-    let s = tspan.attribute(AId::TextDecoration);
-    TextDecorationTypes {
-        has_underline: s == Some("underline"),
-        has_overline: s == Some("overline"),
-        has_line_through: s == Some("line-through"),
+        underline: gen_style("underline"),
+        overline: gen_style("overline"),
+        line_through: gen_style("line-through"),
     }
 }
 

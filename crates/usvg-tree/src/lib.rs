@@ -1027,6 +1027,15 @@ fn has_text_nodes(root: &Node) -> bool {
         }
 
         let mut has_text = false;
+
+        if let NodeKind::Image(ref image) = *node.borrow() {
+            if let ImageKind::SVG(ref tree) = image.kind {
+                if has_text_nodes(&tree.root) {
+                    has_text = true;
+                }
+            }
+        }
+
         node.subroots(|subroot| {
             if has_text_nodes(&subroot) {
                 has_text = true;
