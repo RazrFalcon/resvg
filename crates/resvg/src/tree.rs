@@ -163,8 +163,7 @@ fn convert_group(
         None => return convert_empty_group(ugroup, children),
     };
 
-    let (filters, filter_bbox) =
-        crate::filter::convert(&ugroup.filters, bboxes.object.to_rect());
+    let (filters, filter_bbox) = crate::filter::convert(&ugroup.filters, bboxes.object.to_rect());
 
     // TODO: figure out a nicer solution
     // Ignore groups with filters but invalid filter bboxes.
