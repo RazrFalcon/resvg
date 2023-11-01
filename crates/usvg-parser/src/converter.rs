@@ -560,7 +560,7 @@ pub(crate) fn convert_group(
         filters
     };
 
-    let transform: Transform = node.attribute(AId::Transform).unwrap_or_default();
+    let transform: Transform = get_transform(&node);
     let blend_mode: BlendMode = node.attribute(AId::MixBlendMode).unwrap_or_default();
     let isolation: Isolation = node.attribute(AId::Isolation).unwrap_or_default();
     let isolate = isolation == Isolation::Isolate;
@@ -600,6 +600,16 @@ pub(crate) fn convert_group(
     } else {
         GroupKind::Skip
     }
+}
+
+fn get_transform(node: &SvgNode) -> Transform {
+    let transform: Transform = node.attribute(AId::Transform).unwrap_or_default();
+
+    let transform_origin: &str = node.attribute(AId::TransformOrigin).unwrap_or_default();
+    // transform_origin.split()
+
+    println!("{:?}", transform_origin);
+    transform
 }
 
 fn remove_empty_groups(tree: &mut Tree) {

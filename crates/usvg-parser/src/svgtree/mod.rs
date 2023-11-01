@@ -709,6 +709,7 @@ impl AId {
                 | AId::TextOverflow
                 | AId::TextRendering
                 | AId::Transform
+                | AId::TransformOrigin
                 | AId::UnicodeBidi
                 | AId::VectorEffect
                 | AId::Visibility
@@ -801,6 +802,7 @@ fn is_non_inheritable(id: AId) -> bool {
             | AId::StopOpacity
             | AId::TextDecoration
             | AId::Transform
+            | AId::TransformOrigin
     )
 }
 
