@@ -7,12 +7,13 @@ use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::str::FromStr;
 
-use svgtypes::{Length, LengthUnit as Unit};
+use svgtypes::{Length, LengthUnit as Unit, TransformOrigin};
 use usvg_tree::*;
 
 use crate::svgtree::{self, AId, EId, FromValue, SvgNode};
 use crate::units;
 use crate::{Error, Options};
+use crate::units::{convert_length, convert_user_length};
 
 #[derive(Clone)]
 pub struct State<'a> {
@@ -560,7 +561,7 @@ pub(crate) fn convert_group(
         filters
     };
 
-    let transform: Transform = get_transform(&node);
+    let transform: Transform = resolve_transform_origin(node, state, node.attribute(AId::Transform).unwrap_or_default());
     let blend_mode: BlendMode = node.attribute(AId::MixBlendMode).unwrap_or_default();
     let isolation: Isolation = node.attribute(AId::Isolation).unwrap_or_default();
     let isolate = isolation == Isolation::Isolate;
@@ -602,13 +603,18 @@ pub(crate) fn convert_group(
     }
 }
 
-fn get_transform(node: &SvgNode) -> Transform {
-    let transform: Transform = node.attribute(AId::Transform).unwrap_or_default();
+pub(crate) fn resolve_transform_origin(node: SvgNode, state: &State, mut transform: Transform) -> Transform {
 
-    let transform_origin: &str = node.attribute(AId::TransformOrigin).unwrap_or_default();
-    // transform_origin.split()
+    let transform_origin: Option<TransformOrigin> = node.attribute(AId::TransformOrigin);
 
-    println!("{:?}", transform_origin);
+    if let Some(transform_origin) = transform_origin {
+        let transform_origin = Transform::from_translate(
+            convert_length(transform_origin.x_offset, node, AId::Width, Units::UserSpaceOnUse, state),
+            convert_length(transform_origin.y_offset, node, AId::Height, Units::UserSpaceOnUse, state),
+        );
+        transform = transform_origin.pre_concat(transform).pre_concat(Transform::from_translate(-transform_origin.tx, -transform_origin.ty));
+    }
+
     transform
 }
 

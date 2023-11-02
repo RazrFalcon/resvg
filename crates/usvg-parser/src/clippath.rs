@@ -8,6 +8,7 @@ use std::str::FromStr;
 use usvg_tree::{ClipPath, Group, Node, NodeKind, Transform, Units};
 
 use crate::converter;
+use crate::converter::{resolve_transform_origin, State};
 use crate::svgtree::{AId, EId, SvgNode};
 
 pub(crate) fn convert(
@@ -21,7 +22,7 @@ pub(crate) fn convert(
     }
 
     // The whole clip path should be ignored when a transform is invalid.
-    let transform = resolve_transform(node)?;
+    let transform = resolve_clip_path_transform(node, state)?;
 
     // Check if this element was already converted.
     if let Some(clip) = cache.clip_paths.get(node.element_id()) {
@@ -67,7 +68,7 @@ pub(crate) fn convert(
     }
 }
 
-fn resolve_transform(node: SvgNode) -> Option<Transform> {
+fn resolve_clip_path_transform(node: SvgNode, state: &State) -> Option<Transform> {
     // Do not use Node::attribute::<Transform>, because it will always
     // return a valid transform.
 
@@ -94,7 +95,7 @@ fn resolve_transform(node: SvgNode) -> Option<Transform> {
     );
 
     if ts.is_valid() {
-        Some(ts)
+        Some(resolve_transform_origin(node, state, ts))
     } else {
         None
     }

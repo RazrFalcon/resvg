@@ -873,6 +873,12 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::Transform {
     }
 }
 
+impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::TransformOrigin {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        Self::from_str(value).ok()
+    }
+}
+
 impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::ViewBox {
     fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
         Self::from_str(value).ok()
