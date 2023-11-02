@@ -188,7 +188,7 @@ fn convert_paint(
             }
         }
         // Ignore `context-fill` and `context-stroke for now
-        _ => None
+        _ => None,
     }
 }
 

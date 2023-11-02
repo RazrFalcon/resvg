@@ -632,7 +632,10 @@ fn resolve_decoration(
     // ancestors (i.e. tspans) until we find the text decoration declared. If not, we will
     // stop at latest at the text node, and use its fill/stroke.
     let mut gen_style = |text_decoration: &str| {
-        if !tspan.ancestors().any(|n| find_decoration(n, text_decoration)) {
+        if !tspan
+            .ancestors()
+            .any(|n| find_decoration(n, text_decoration))
+        {
             return None;
         }
 

@@ -30,7 +30,11 @@ pub(crate) fn convert(
     }
 
     // We require an original transformation to setup 'clipPath'.
-    let mut orig_ts: Transform = resolve_transform_origin(node, state, node.attribute(AId::Transform).unwrap_or_default());
+    let mut orig_ts: Transform = resolve_transform_origin(
+        node,
+        state,
+        node.attribute(AId::Transform).unwrap_or_default(),
+    );
     let mut new_ts = Transform::default();
 
     {
