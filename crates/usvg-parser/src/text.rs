@@ -8,9 +8,9 @@ use kurbo::{ParamCurve, ParamCurveArclen};
 use svgtypes::{Length, LengthUnit};
 use usvg_tree::*;
 
+use crate::converter::resolve_transform_origin;
 use crate::svgtree::{AId, EId, FromValue, SvgNode};
 use crate::{converter, style};
-use crate::converter::resolve_transform_origin;
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::TextAnchor {
     fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
@@ -338,7 +338,8 @@ fn resolve_text_flow(node: SvgNode, state: &converter::State) -> Option<TextFlow
     let path = crate::shapes::convert(linked_node, state)?;
 
     // The reference path's transform needs to be applied
-    let path = if let Some(mut node_transform) = linked_node.attribute::<Transform>(AId::Transform) {
+    let path = if let Some(mut node_transform) = linked_node.attribute::<Transform>(AId::Transform)
+    {
         node_transform = resolve_transform_origin(linked_node, state, node_transform);
         let mut path_copy = path.as_ref().clone();
         path_copy = path_copy.transform(node_transform)?;
