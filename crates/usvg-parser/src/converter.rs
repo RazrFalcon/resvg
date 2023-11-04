@@ -564,6 +564,7 @@ pub(crate) fn convert_group(
     let transform: Transform = resolve_transform_origin(
         node,
         state,
+        Units::UserSpaceOnUse,
         node.attribute(AId::Transform).unwrap_or_default(),
     );
     let blend_mode: BlendMode = node.attribute(AId::MixBlendMode).unwrap_or_default();
@@ -610,26 +611,15 @@ pub(crate) fn convert_group(
 pub(crate) fn resolve_transform_origin(
     node: SvgNode,
     state: &State,
+    units: Units,
     mut transform: Transform,
 ) -> Transform {
     let transform_origin: Option<TransformOrigin> = node.attribute(AId::TransformOrigin);
 
     if let Some(transform_origin) = transform_origin {
         let transform_origin = Transform::from_translate(
-            convert_length(
-                transform_origin.x_offset,
-                node,
-                AId::Width,
-                Units::UserSpaceOnUse,
-                state,
-            ),
-            convert_length(
-                transform_origin.y_offset,
-                node,
-                AId::Height,
-                Units::UserSpaceOnUse,
-                state,
-            ),
+            convert_length(transform_origin.x_offset, node, AId::Width, units, state),
+            convert_length(transform_origin.y_offset, node, AId::Height, units, state),
         );
         transform = transform_origin
             .pre_concat(transform)

@@ -1236,10 +1236,13 @@ use crate::render;
 #[test] fn structure_transform_origin_length_percent() { assert_eq!(render("tests/structure/transform-origin/length-percent"), 0); }
 #[test] fn structure_transform_origin_length_px() { assert_eq!(render("tests/structure/transform-origin/length-px"), 0); }
 #[test] fn structure_transform_origin_no_transform() { assert_eq!(render("tests/structure/transform-origin/no-transform"), 0); }
+#[test] fn structure_transform_origin_on_clippath_objectBoundingBox() { assert_eq!(render("tests/structure/transform-origin/on-clippath-objectBoundingBox"), 0); }
 #[test] fn structure_transform_origin_on_clippath() { assert_eq!(render("tests/structure/transform-origin/on-clippath"), 0); }
+#[test] fn structure_transform_origin_on_gradient_object_bounding_box() { assert_eq!(render("tests/structure/transform-origin/on-gradient-object-bounding-box"), 0); }
 #[test] fn structure_transform_origin_on_gradient_user_space_on_use() { assert_eq!(render("tests/structure/transform-origin/on-gradient-user-space-on-use"), 0); }
 #[test] fn structure_transform_origin_on_group() { assert_eq!(render("tests/structure/transform-origin/on-group"), 0); }
 #[test] fn structure_transform_origin_on_image() { assert_eq!(render("tests/structure/transform-origin/on-image"), 0); }
+#[test] fn structure_transform_origin_on_pattern_object_bounding_box() { assert_eq!(render("tests/structure/transform-origin/on-pattern-object-bounding-box"), 0); }
 #[test] fn structure_transform_origin_on_pattern_user_space_on_use() { assert_eq!(render("tests/structure/transform-origin/on-pattern-user-space-on-use"), 0); }
 #[test] fn structure_transform_origin_on_shape() { assert_eq!(render("tests/structure/transform-origin/on-shape"), 0); }
 #[test] fn structure_transform_origin_on_text_path() { assert_eq!(render("tests/structure/transform-origin/on-text-path"), 0); }

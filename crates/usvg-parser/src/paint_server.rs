@@ -56,6 +56,7 @@ fn convert_linear(node: SvgNode, state: &converter::State) -> Option<ServerOrCol
     let transform = resolve_transform_origin(
         node,
         state,
+        units,
         resolve_attr(node, AId::GradientTransform)
             .attribute(AId::GradientTransform)
             .unwrap_or_default(),
@@ -128,6 +129,7 @@ fn convert_radial(node: SvgNode, state: &converter::State) -> Option<ServerOrCol
     let transform = resolve_transform_origin(
         node,
         state,
+        units,
         resolve_attr(node, AId::GradientTransform)
             .attribute(AId::GradientTransform)
             .unwrap_or_default(),
@@ -176,6 +178,7 @@ fn convert_pattern(
     let transform = resolve_transform_origin(
         node,
         state,
+        Units::UserSpaceOnUse,
         resolve_attr(node, AId::PatternTransform)
             .attribute(AId::PatternTransform)
             .unwrap_or_default(),
