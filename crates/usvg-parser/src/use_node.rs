@@ -7,7 +7,7 @@ use std::rc::Rc;
 use svgtypes::{Length, LengthUnit};
 use usvg_tree::{
     tiny_skia_path, Group, IsValidLength, Node, NodeExt, NodeKind, NonZeroRect, Path, Size,
-    Transform, Units,
+    Transform,
 };
 
 use crate::converter;
@@ -33,7 +33,6 @@ pub(crate) fn convert(
     let mut orig_ts: Transform = resolve_transform_origin(
         node,
         state,
-        Units::UserSpaceOnUse,
         node.attribute(AId::Transform).unwrap_or_default(),
     );
     let mut new_ts = Transform::default();
