@@ -615,16 +615,12 @@ pub(crate) fn resolve_transform_origin(
     let transform_origin: Option<TransformOrigin> = node.attribute(AId::TransformOrigin);
 
     if let Some(transform_origin) = transform_origin {
-        let transform_origin = Transform::from_translate(
-            convert_length(transform_origin.x_offset, node, AId::Width, Units::UserSpaceOnUse, state),
-            convert_length(transform_origin.y_offset, node, AId::Height, Units::UserSpaceOnUse, state),
-        );
-        transform = transform_origin
+        let dx = convert_length(transform_origin.x_offset, node, AId::Width, Units::UserSpaceOnUse, state);
+        let dy = convert_length(transform_origin.y_offset, node, AId::Height, Units::UserSpaceOnUse, state);
+        transform = Transform::default()
+            .pre_translate(dx, dy)
             .pre_concat(transform)
-            .pre_concat(Transform::from_translate(
-                -transform_origin.tx,
-                -transform_origin.ty,
-            ));
+            .pre_translate(-dx, -dy);
     }
 
     transform
