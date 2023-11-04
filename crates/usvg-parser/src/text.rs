@@ -340,8 +340,7 @@ fn resolve_text_flow(node: SvgNode, state: &converter::State) -> Option<TextFlow
     // The reference path's transform needs to be applied
     let path = if let Some(mut node_transform) = linked_node.attribute::<Transform>(AId::Transform)
     {
-        node_transform =
-            resolve_transform_origin(linked_node, state, node_transform);
+        node_transform = resolve_transform_origin(linked_node, state, node_transform);
         let mut path_copy = path.as_ref().clone();
         path_copy = path_copy.transform(node_transform)?;
         Rc::new(path_copy)

@@ -95,11 +95,7 @@ fn resolve_clip_path_transform(node: SvgNode, state: &State) -> Option<Transform
     );
 
     if ts.is_valid() {
-        Some(resolve_transform_origin(
-            node,
-            state,
-            ts,
-        ))
+        Some(resolve_transform_origin(node, state, ts))
     } else {
         None
     }
