@@ -730,7 +730,7 @@ fn convert_path(
                         parent.append(Node::new(NodeKind::Path(stroke_path)));
                     }
                 }
-                _ => unreachable!(),
+                _ => {}
             };
 
             append_single_paint_path(first);
