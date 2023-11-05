@@ -139,20 +139,12 @@ fn collect_text_chunks(
         chunks: Vec::new(),
     };
 
-    collect_text_chunks_impl(
-        text_node,
-        text_node,
-        pos_list,
-        state,
-        cache,
-        &mut iter_state,
-    );
+    collect_text_chunks_impl(text_node, pos_list, state, cache, &mut iter_state);
 
     iter_state.chunks
 }
 
 fn collect_text_chunks_impl(
-    text_node: SvgNode,
     parent: SvgNode,
     pos_list: &[CharacterPosition],
     state: &converter::State,
@@ -184,7 +176,7 @@ fn collect_text_chunks_impl(
                 iter_state.split_chunk = true;
             }
 
-            collect_text_chunks_impl(text_node, child, pos_list, state, cache, iter_state);
+            collect_text_chunks_impl(child, pos_list, state, cache, iter_state);
 
             iter_state.text_flow = TextFlow::Linear;
 
@@ -645,8 +637,8 @@ fn resolve_decoration(
 
         for node in tspan.ancestors() {
             if find_decoration(node, text_decoration) || node.tag_name() == Some(EId::Text) {
-                fill_node = fill_node.map_or(Some(node), |n| Some(n));
-                stroke_node = stroke_node.map_or(Some(node), |n| Some(n));
+                fill_node = fill_node.map_or(Some(node), Some);
+                stroke_node = stroke_node.map_or(Some(node), Some);
                 break;
             }
         }
