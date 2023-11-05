@@ -11,8 +11,7 @@ use svgtypes::{Length, LengthUnit as Unit, TransformOrigin};
 use usvg_tree::*;
 
 use crate::svgtree::{self, AId, EId, FromValue, SvgNode};
-use crate::units;
-use crate::units::convert_length;
+use crate::units::{self, convert_length};
 use crate::{Error, Options};
 
 #[derive(Clone)]
