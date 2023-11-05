@@ -8,7 +8,6 @@ use kurbo::{ParamCurve, ParamCurveArclen};
 use svgtypes::{Length, LengthUnit};
 use usvg_tree::*;
 
-use crate::converter::resolve_transform_origin;
 use crate::svgtree::{AId, EId, FromValue, SvgNode};
 use crate::{converter, style};
 
@@ -338,11 +337,10 @@ fn resolve_text_flow(node: SvgNode, state: &converter::State) -> Option<TextFlow
     let path = crate::shapes::convert(linked_node, state)?;
 
     // The reference path's transform needs to be applied
-    let path = if let Some(mut node_transform) = linked_node.attribute::<Transform>(AId::Transform)
-    {
-        node_transform = resolve_transform_origin(linked_node, state, node_transform);
+    let transform = linked_node.resolve_transform(AId::Transform, state);
+    let path = if !transform.is_identity() {
         let mut path_copy = path.as_ref().clone();
-        path_copy = path_copy.transform(node_transform)?;
+        path_copy = path_copy.transform(transform)?;
         Rc::new(path_copy)
     } else {
         path

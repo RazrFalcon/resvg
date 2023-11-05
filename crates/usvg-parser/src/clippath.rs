@@ -8,7 +8,6 @@ use std::str::FromStr;
 use usvg_tree::{ClipPath, Group, Node, NodeKind, Transform, Units};
 
 use crate::converter;
-use crate::converter::{resolve_transform_origin, State};
 use crate::svgtree::{AId, EId, SvgNode};
 
 pub(crate) fn convert(
@@ -68,7 +67,7 @@ pub(crate) fn convert(
     }
 }
 
-fn resolve_clip_path_transform(node: SvgNode, state: &State) -> Option<Transform> {
+fn resolve_clip_path_transform(node: SvgNode, state: &converter::State) -> Option<Transform> {
     // Do not use Node::attribute::<Transform>, because it will always
     // return a valid transform.
 
@@ -95,7 +94,7 @@ fn resolve_clip_path_transform(node: SvgNode, state: &State) -> Option<Transform
     );
 
     if ts.is_valid() {
-        Some(resolve_transform_origin(node, state, ts))
+        Some(node.resolve_transform(AId::Transform, state))
     } else {
         None
     }
