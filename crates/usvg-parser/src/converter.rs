@@ -7,11 +7,11 @@ use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::str::FromStr;
 
-use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind};
+use svgtypes::{Length, LengthUnit as Unit, TransformOrigin, PaintOrderKind};
 use usvg_tree::*;
 
 use crate::svgtree::{self, AId, EId, FromValue, SvgNode};
-use crate::units;
+use crate::units::{self, convert_length};
 use crate::{Error, Options};
 
 #[derive(Clone)]
@@ -560,7 +560,7 @@ pub(crate) fn convert_group(
         filters
     };
 
-    let transform: Transform = node.attribute(AId::Transform).unwrap_or_default();
+    let transform = node.resolve_transform(AId::Transform, state);
     let blend_mode: BlendMode = node.attribute(AId::MixBlendMode).unwrap_or_default();
     let isolation: Isolation = node.attribute(AId::Isolation).unwrap_or_default();
     let isolate = isolation == Isolation::Isolate;
@@ -752,5 +752,35 @@ pub fn svg_paint_order_to_usvg(order: svgtypes::PaintOrder) -> PaintOrder {
             PaintOrder::StrokeAndFill
         }
         _ => PaintOrder::FillAndStroke,
+    }
+}
+
+impl SvgNode<'_, '_> {
+    pub(crate) fn resolve_transform(&self, transform_aid: AId, state: &State) -> Transform {
+        let mut transform: Transform = self.attribute(transform_aid).unwrap_or_default();
+        let transform_origin: Option<TransformOrigin> = self.attribute(AId::TransformOrigin);
+
+        if let Some(transform_origin) = transform_origin {
+            let dx = convert_length(
+                transform_origin.x_offset,
+                *self,
+                AId::Width,
+                Units::UserSpaceOnUse,
+                state,
+            );
+            let dy = convert_length(
+                transform_origin.y_offset,
+                *self,
+                AId::Height,
+                Units::UserSpaceOnUse,
+                state,
+            );
+            transform = Transform::default()
+                .pre_translate(dx, dy)
+                .pre_concat(transform)
+                .pre_translate(-dx, -dy);
+        }
+
+        transform
     }
 }

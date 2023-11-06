@@ -22,5 +22,5 @@ log = "0.4"
 roxmltree = "0.18"
 simplecss = "0.2"
 siphasher = "0.3" # perfect hash implementation
-svgtypes = "0.12"
+svgtypes = { git = "https://github.com/RazrFalcon/svgtypes" }
 usvg-tree = { path = "../usvg-tree", version = "0.36.0" }

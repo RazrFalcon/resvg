@@ -73,7 +73,7 @@ NOTE: This list is not final. This just things I was able to find so far. Patche
 ### Added
 
 - [ ] A [`transform-box`](https://www.w3.org/TR/css-transforms-1/#transform-box) property.
-- [ ] A [`transform-origin`](https://www.w3.org/TR/css-transforms-1/#transform-origin-property) property.
+- [x] A [`transform-origin`](https://www.w3.org/TR/css-transforms-1/#transform-origin-property) property.
 - [ ] A [`vector-effect`](https://www.w3.org/TR/SVG2/coords.html#VectorEffects) property.
 
 ### Changed

@@ -709,6 +709,7 @@ impl AId {
                 | AId::TextOverflow
                 | AId::TextRendering
                 | AId::Transform
+                | AId::TransformOrigin
                 | AId::UnicodeBidi
                 | AId::VectorEffect
                 | AId::Visibility
@@ -801,6 +802,7 @@ fn is_non_inheritable(id: AId) -> bool {
             | AId::StopOpacity
             | AId::TextDecoration
             | AId::Transform
+            | AId::TransformOrigin
     )
 }
 
@@ -868,6 +870,12 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::Transform {
         } else {
             Some(usvg_tree::Transform::default())
         }
+    }
+}
+
+impl<'a, 'input: 'a> FromValue<'a, 'input> for svgtypes::TransformOrigin {
+    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+        Self::from_str(value).ok()
     }
 }
 

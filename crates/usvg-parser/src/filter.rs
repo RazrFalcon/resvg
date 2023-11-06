@@ -16,10 +16,10 @@ use usvg_tree::{
     Units,
 };
 
-use crate::converter::SvgColorExt;
+use crate::converter::{self, SvgColorExt};
 use crate::paint_server::{convert_units, resolve_number};
 use crate::svgtree::{AId, EId, FromValue, SvgNode};
-use crate::{converter, OptionLog};
+use crate::OptionLog;
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::filter::ColorInterpolation {
     fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
