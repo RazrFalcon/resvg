@@ -4,9 +4,9 @@
 
 use usvg_tree::{ApproxEqUlps, Color, Fill, Opacity, Paint, Stroke, StrokeMiterlimit, Units};
 
-use crate::converter::SvgColorExt;
+use crate::converter::{self, SvgColorExt};
+use crate::paint_server;
 use crate::svgtree::{AId, FromValue, SvgNode};
-use crate::{converter, paint_server};
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::LineCap {
     fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
@@ -187,6 +187,8 @@ fn convert_paint(
                 from_fallback(node, fallback, opacity)
             }
         }
+        // Ignore `context-fill` and `context-stroke for now
+        _ => None,
     }
 }
 

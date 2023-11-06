@@ -21,7 +21,7 @@ pub(crate) fn convert(
     }
 
     // The whole clip path should be ignored when a transform is invalid.
-    let transform = resolve_transform(node)?;
+    let transform = resolve_clip_path_transform(node, state)?;
 
     // Check if this element was already converted.
     if let Some(clip) = cache.clip_paths.get(node.element_id()) {
@@ -67,7 +67,7 @@ pub(crate) fn convert(
     }
 }
 
-fn resolve_transform(node: SvgNode) -> Option<Transform> {
+fn resolve_clip_path_transform(node: SvgNode, state: &converter::State) -> Option<Transform> {
     // Do not use Node::attribute::<Transform>, because it will always
     // return a valid transform.
 
@@ -94,7 +94,7 @@ fn resolve_transform(node: SvgNode) -> Option<Transform> {
     );
 
     if ts.is_valid() {
-        Some(ts)
+        Some(node.resolve_transform(AId::Transform, state))
     } else {
         None
     }

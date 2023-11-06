@@ -139,20 +139,12 @@ fn collect_text_chunks(
         chunks: Vec::new(),
     };
 
-    collect_text_chunks_impl(
-        text_node,
-        text_node,
-        pos_list,
-        state,
-        cache,
-        &mut iter_state,
-    );
+    collect_text_chunks_impl(text_node, pos_list, state, cache, &mut iter_state);
 
     iter_state.chunks
 }
 
 fn collect_text_chunks_impl(
-    text_node: SvgNode,
     parent: SvgNode,
     pos_list: &[CharacterPosition],
     state: &converter::State,
@@ -184,7 +176,7 @@ fn collect_text_chunks_impl(
                 iter_state.split_chunk = true;
             }
 
-            collect_text_chunks_impl(text_node, child, pos_list, state, cache, iter_state);
+            collect_text_chunks_impl(child, pos_list, state, cache, iter_state);
 
             iter_state.text_flow = TextFlow::Linear;
 
@@ -337,9 +329,10 @@ fn resolve_text_flow(node: SvgNode, state: &converter::State) -> Option<TextFlow
     let path = crate::shapes::convert(linked_node, state)?;
 
     // The reference path's transform needs to be applied
-    let path = if let Some(node_transform) = linked_node.attribute::<Transform>(AId::Transform) {
+    let transform = linked_node.resolve_transform(AId::Transform, state);
+    let path = if !transform.is_identity() {
         let mut path_copy = path.as_ref().clone();
-        path_copy = path_copy.transform(node_transform)?;
+        path_copy = path_copy.transform(transform)?;
         Rc::new(path_copy)
     } else {
         path
@@ -632,7 +625,10 @@ fn resolve_decoration(
     // ancestors (i.e. tspans) until we find the text decoration declared. If not, we will
     // stop at latest at the text node, and use its fill/stroke.
     let mut gen_style = |text_decoration: &str| {
-        if !tspan.ancestors().any(|n| find_decoration(n, text_decoration)) {
+        if !tspan
+            .ancestors()
+            .any(|n| find_decoration(n, text_decoration))
+        {
             return None;
         }
 
@@ -641,8 +637,8 @@ fn resolve_decoration(
 
         for node in tspan.ancestors() {
             if find_decoration(node, text_decoration) || node.tag_name() == Some(EId::Text) {
-                fill_node = fill_node.map_or(Some(node), |n| Some(n));
-                stroke_node = stroke_node.map_or(Some(node), |n| Some(n));
+                fill_node = fill_node.map_or(Some(node), Some);
+                stroke_node = stroke_node.map_or(Some(node), Some);
                 break;
             }
         }

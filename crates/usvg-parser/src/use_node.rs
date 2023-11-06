@@ -29,7 +29,7 @@ pub(crate) fn convert(
     }
 
     // We require an original transformation to setup 'clipPath'.
-    let mut orig_ts: Transform = node.attribute(AId::Transform).unwrap_or_default();
+    let mut orig_ts = node.resolve_transform(AId::Transform, state);
     let mut new_ts = Transform::default();
 
     {
@@ -133,7 +133,7 @@ pub(crate) fn convert_svg(
     parent: &mut Node,
 ) {
     // We require original transformation to setup 'clipPath'.
-    let mut orig_ts: Transform = node.attribute(AId::Transform).unwrap_or_default();
+    let mut orig_ts = node.resolve_transform(AId::Transform, state);
     let mut new_ts = Transform::default();
 
     {
