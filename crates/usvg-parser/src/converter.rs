@@ -7,7 +7,7 @@ use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::str::FromStr;
 
-use svgtypes::{Length, LengthUnit as Unit, TransformOrigin, PaintOrderKind};
+use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind, TransformOrigin};
 use usvg_tree::*;
 
 use crate::svgtree::{self, AId, EId, FromValue, SvgNode};

@@ -10,6 +10,7 @@ use std::process;
 use pico_args::Arguments;
 use usvg::TreeWriting;
 use usvg_parser::TreeParsing;
+use usvg_text_layout::TreeTextToPath;
 
 const HELP: &str = "\
 usvg (micro SVG) is an SVG simplification tool.
@@ -127,6 +128,7 @@ struct Args {
     font_files: Vec<PathBuf>,
     font_dirs: Vec<PathBuf>,
     skip_system_fonts: bool,
+    preserve_text: bool,
     list_fonts: bool,
     default_width: u32,
     default_height: u32,
@@ -186,6 +188,7 @@ fn collect_args() -> Result<Args, pico_args::Error> {
         font_files: input.values_from_str("--use-font-file")?,
         font_dirs: input.values_from_str("--use-fonts-dir")?,
         skip_system_fonts: input.contains("--skip-system-fonts"),
+        preserve_text: input.contains("--preserve-text"),
         list_fonts: input.contains("--list-fonts"),
         default_width: input
             .opt_value_from_fn("--default-width", parse_length)?
@@ -425,10 +428,9 @@ fn process(args: Args) -> Result<(), String> {
     }?;
 
     let mut tree = usvg_tree::Tree::from_data(&input_svg, &re_opt).map_err(|e| format!("{}", e))?;
-    // tree.convert_text(&fontdb);
-    tree.root.descendants().for_each(|n| {
-        println!("{:#?}", n.borrow());
-    });
+    if !args.preserve_text {
+        tree.convert_text(&fontdb);
+    }
 
     let xml_opt = usvg::XmlOptions {
         id_prefix: args.id_prefix,
