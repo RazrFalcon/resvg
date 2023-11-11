@@ -2,7 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::collections::HashMap;
 use std::fmt::Display;
 use std::io::Write;
 use std::rc::Rc;
@@ -716,41 +715,29 @@ fn conv_element(
         }
         NodeKind::Text(ref text) => {
             xml.start_svg_element(EId::Text);
+
             if !text.id.is_empty() {
-                xml.write_id_attribute(&text.id, opt);
+                xml.write_id_attribute(&text.id, writer_context.opt);
             }
 
             xml.write_attribute_raw("xml:space", |buf| {
                 buf.extend_from_slice("preserve".as_bytes())
             });
 
-            match text.rendering_mode {
-                TextRendering::OptimizeSpeed => {
-                    xml.write_svg_attribute(AId::TextRendering, "optimizeSpeed")
-                }
-                TextRendering::GeometricPrecision => {
-                    xml.write_svg_attribute(AId::TextRendering, "geometricPrecision")
-                }
-                TextRendering::OptimizeLegibility => {
-                    xml.write_svg_attribute(AId::TextRendering, "optimizeLegibility")
-                }
-            }
-
-            match text.writing_mode {
-                WritingMode::LeftToRight => {}
-                WritingMode::TopToBottom => xml.write_svg_attribute(AId::WritingMode, "tb"),
-            }
+            write_rendering_mode(xml, text);
+            write_writing_mode(xml, text);
 
             let mut char_offset: usize = 0;
 
             xml.set_preserve_whitespaces(true);
+
             for chunk in &text.chunks {
                 if let TextFlow::Path(text_path) = &chunk.text_flow {
                     xml.start_svg_element(EId::TextPath);
 
                     xml.write_attribute_raw("xlink:href", |buf| {
                         let ref_path = writer_context.text_path_map.pop().unwrap();
-                        let prefix = opt.id_prefix.as_deref().unwrap_or_default();
+                        let prefix = writer_context.opt.id_prefix.as_deref().unwrap_or_default();
                         let url = format!("#{}{}", prefix, ref_path);
                         buf.extend_from_slice(url.as_bytes());
                     });
@@ -758,231 +745,51 @@ fn conv_element(
                     if text_path.start_offset != 0.0 {
                         xml.write_svg_attribute(AId::StartOffset, &text_path.start_offset);
                     }
-
-                }   else {
+                } else {
                     xml.start_svg_element(EId::Tspan);
                 }
 
-                match chunk.anchor {
-                    TextAnchor::Start => {}
-                    TextAnchor::Middle => xml.write_svg_attribute(AId::TextAnchor, "middle"),
-                    TextAnchor::End => xml.write_svg_attribute(AId::TextAnchor, "end"),
-                }
+                write_anchor(xml, chunk);
 
                 for span in &chunk.spans {
                     for baseline_shift in &span.baseline_shift {
                         xml.start_svg_element(EId::Tspan);
-                        match baseline_shift{
-                            BaselineShift::Number(num) => xml.write_svg_attribute(AId::BaselineShift, num),
-                            BaselineShift::Baseline => xml.write_svg_attribute(AId::BaselineShift, "baseline"),
-                            BaselineShift::Subscript => xml.write_svg_attribute(AId::BaselineShift, "sub"),
-                            BaselineShift::Superscript => xml.write_svg_attribute(AId::BaselineShift, "super")
-                        }
+                        write_baseline_shift(xml, baseline_shift);
                     }
 
-                    let decorations: Vec<_> = vec![("underline", &span.decoration.underline), ("line-through", &span.decoration.line_through), ("overline", &span.decoration.overline)]
+                    let decorations: Vec<_> = [
+                        ("underline", &span.decoration.underline),
+                        ("line-through", &span.decoration.line_through),
+                        ("overline", &span.decoration.overline),
+                    ]
                         .iter()
-                        .filter_map(|&(key, option_value)| {
-                            // Filter out tuples where the Option is Some, and unwrap the Option.
-                            option_value.as_ref().map(|value| (key, value))
-                        })
+                        .filter_map(|&(key, option_value)| option_value.as_ref().map(|value| (key, value)))
                         .collect();
 
                     for (deco_name, deco) in &decorations {
                         xml.start_svg_element(EId::Tspan);
                         xml.write_svg_attribute(AId::TextDecoration, deco_name);
-                        write_fill(&deco.fill, false, opt, xml);
-                        write_stroke(&deco.stroke, opt, xml);
+                        write_fill(&deco.fill, false, writer_context.opt, xml);
+                        write_stroke(&deco.stroke, writer_context.opt, xml);
                     }
 
-                    xml.start_svg_element(EId::Tspan);
-                    xml.write_svg_attribute(AId::FontFamily, &span.font.families.join(", "));
+                    // Writes the remaining attributes of a span
+                    write_span(
+                        is_clip_path,
+                        writer_context,
+                        xml,
+                        text,
+                        &mut char_offset,
+                        chunk,
+                        span,
+                    );
 
-                    match span.font.style {
-                        FontStyle::Normal => {}
-                        FontStyle::Italic => xml.write_svg_attribute(AId::FontStyle, "italic"),
-                        FontStyle::Oblique => xml.write_svg_attribute(AId::FontStyle, "oblique"),
-                    }
-
-                    if span.font.weight != 400 {
-                        xml.write_svg_attribute(AId::FontWeight, &span.font.weight);
-                    }
-
-                    match span.visibility {
-                        Visibility::Visible => {},
-                        Visibility::Hidden => xml.write_svg_attribute(AId::Visibility, "hidden"),
-                        Visibility::Collapse => xml.write_svg_attribute(AId::Visibility, "collapse"),
-                    }
-
-                    xml.write_svg_attribute(AId::FontSize, &span.font_size);
-
-                    if span.letter_spacing != 0.0 {
-                        xml.write_svg_attribute(AId::LetterSpacing, &span.letter_spacing);
-                    }
-
-                    if span.word_spacing != 0.0 {
-                        xml.write_svg_attribute(AId::WordSpacing, &span.word_spacing);
-                    }
-
-                    if let Some(text_length) = span.text_length {
-                        xml.write_svg_attribute(AId::TextLength, &text_length);
-                    }
-
-                    if span.length_adjust == LengthAdjust::SpacingAndGlyphs {
-                        xml.write_svg_attribute(AId::LengthAdjust, "spacingAndGlyphs");
-                    }
-
-                    if span.small_caps {
-                        xml.write_svg_attribute(AId::FontVariant, "small-caps");
-                    }
-
-                    if span.paint_order == PaintOrder::StrokeAndFill {
-                        xml.write_svg_attribute(AId::PaintOrder, "stroke fill");
-                    }
-
-                    if !span.apply_kerning {
-                        xml.write_attribute_raw("style", |buf| {
-                            buf.extend_from_slice("font-kerning:none".as_bytes())
-                        });
-                    }
-
-                    match span.alignment_baseline {
-                        AlignmentBaseline::Auto => {}
-                        AlignmentBaseline::Baseline => {
-                            xml.write_svg_attribute(AId::AlignmentBaseline, "baseline")
-                        }
-                        AlignmentBaseline::BeforeEdge => {
-                            xml.write_svg_attribute(AId::AlignmentBaseline, "before-edge")
-                        }
-                        AlignmentBaseline::TextBeforeEdge => {
-                            xml.write_svg_attribute(AId::AlignmentBaseline, "text-before-edge")
-                        }
-                        AlignmentBaseline::Middle => {
-                            xml.write_svg_attribute(AId::AlignmentBaseline, "middle")
-                        }
-                        AlignmentBaseline::Central => {
-                            xml.write_svg_attribute(AId::AlignmentBaseline, "central")
-                        }
-                        AlignmentBaseline::AfterEdge => {
-                            xml.write_svg_attribute(AId::AlignmentBaseline, "after-edge")
-                        }
-                        AlignmentBaseline::TextAfterEdge => {
-                            xml.write_svg_attribute(AId::AlignmentBaseline, "text-after-edge")
-                        }
-                        AlignmentBaseline::Ideographic => {
-                            xml.write_svg_attribute(AId::AlignmentBaseline, "ideographic")
-                        }
-                        AlignmentBaseline::Alphabetic => {
-                            xml.write_svg_attribute(AId::AlignmentBaseline, "alphabetic")
-                        }
-                        AlignmentBaseline::Hanging => {
-                            xml.write_svg_attribute(AId::AlignmentBaseline, "hanging")
-                        }
-                        AlignmentBaseline::Mathematical => {
-                            xml.write_svg_attribute(AId::AlignmentBaseline, "mathematical")
-                        }
-                    };
-
-                    match span.dominant_baseline {
-                        DominantBaseline::Auto => {}
-                        DominantBaseline::UseScript => {
-                            xml.write_svg_attribute(AId::DominantBaseline, "use-script")
-                        }
-                        DominantBaseline::NoChange => {
-                            xml.write_svg_attribute(AId::DominantBaseline, "no-change")
-                        }
-                        DominantBaseline::ResetSize => {
-                            xml.write_svg_attribute(AId::DominantBaseline, "reset-size")
-                        }
-                        DominantBaseline::TextBeforeEdge => {
-                            xml.write_svg_attribute(AId::DominantBaseline, "text-before-edge")
-                        }
-                        DominantBaseline::Middle => {
-                            xml.write_svg_attribute(AId::DominantBaseline, "middle")
-                        }
-                        DominantBaseline::Central => {
-                            xml.write_svg_attribute(AId::DominantBaseline, "central")
-                        }
-                        DominantBaseline::TextAfterEdge => {
-                            xml.write_svg_attribute(AId::DominantBaseline, "text-after-edge")
-                        }
-                        DominantBaseline::Ideographic => {
-                            xml.write_svg_attribute(AId::DominantBaseline, "ideographic")
-                        }
-                        DominantBaseline::Alphabetic => {
-                            xml.write_svg_attribute(AId::DominantBaseline, "alphabetic")
-                        }
-                        DominantBaseline::Hanging => {
-                            xml.write_svg_attribute(AId::DominantBaseline, "hanging")
-                        }
-                        DominantBaseline::Mathematical => {
-                            xml.write_svg_attribute(AId::DominantBaseline, "mathematical")
-                        }
-                    }
-
-                    write_fill(&span.fill, is_clip_path, opt, xml);
-                    write_stroke(&span.stroke, opt, xml);
-
-                    let cur_text =
-                        std::str::from_utf8(&chunk.text.as_bytes()[span.start..span.end]).unwrap();
-
-                    let num_chars = cur_text.chars().count();
-                    let collect_coordinates = |mapper: &dyn Fn(&CharacterPosition) -> f32| {
-                        let reversed = text.positions
-                            [char_offset + span.start..char_offset + span.start + num_chars]
-                            .iter()
-                            .map(mapper)
-                            .rev()
-                            .skip_while(|dx| *dx == 0.0)
-                            .collect::<Vec<_>>();
-                        reversed.into_iter().rev().collect::<Vec<_>>()
-                    };
-
-                    let dx_values: Vec<f32> =
-                        collect_coordinates(&|p: &CharacterPosition| p.dx.unwrap_or_default());
-                    let dy_values: Vec<f32> =
-                        collect_coordinates(&|p: &CharacterPosition| p.dy.unwrap_or_default());
-                    let x_values: Vec<f32> =
-                        collect_coordinates(&|p: &CharacterPosition| p.x.unwrap_or_default());
-                    let y_values: Vec<f32> =
-                        collect_coordinates(&|p: &CharacterPosition| p.y.unwrap_or_default());
-                    let rotations = text.rotate
-                        [char_offset + span.start..char_offset + span.start + num_chars]
-                        .into_iter()
-                        .map(|rotate| *rotate)
-                        .rev()
-                        .skip_while(|rotate| *rotate == 0.0)
-                        .collect::<Vec<_>>();
-                    let rotations = rotations.into_iter().rev().collect::<Vec<_>>();
-
-                    if !dx_values.is_empty() {
-                        xml.write_numbers(AId::Dx, &dx_values);
-                    }
-
-                    if !dy_values.is_empty() {
-                        xml.write_numbers(AId::Dy, &dy_values);
-                    }
-
-                    if !x_values.is_empty() {
-                        xml.write_numbers(AId::X, &x_values);
-                    }
-
-                    if !y_values.is_empty() {
-                        xml.write_numbers(AId::Y, &y_values);
-                    }
-
-                    if !rotations.is_empty() {
-                        xml.write_numbers(AId::Rotate, &rotations);
-                    }
-
-                    xml.write_text(&cur_text.replace("&", "&amp;"));
-
-                    xml.end_element();
-
+                    // End for each tspan we needed to create for decorations
                     for _ in &decorations {
                         xml.end_element();
                     }
 
+                    // End for each tspan we needed to create for baseline_shift
                     for _ in &span.baseline_shift {
                         xml.end_element();
                     }
@@ -1561,4 +1368,275 @@ fn write_num(num: f32, buf: &mut Vec<u8>, precision: u8) {
     let v = (num * POW_VEC[precision as usize]).round() / POW_VEC[precision as usize];
 
     write!(buf, "{}", v).unwrap();
+}
+
+/// Write all of the tspan attributes except for baseline_shift and decorations.
+fn write_span(
+    is_clip_path: bool,
+    writer_context: &mut WriterContext,
+    xml: &mut XmlWriter,
+    text: &Text,
+    char_offset: &mut usize,
+    chunk: &TextChunk,
+    span: &TextSpan,
+) {
+    xml.start_svg_element(EId::Tspan);
+
+    write_font_family(xml, span);
+    write_font_style(xml, span);
+    write_font_weight(xml, span);
+    write_font_size(xml, span);
+
+    write_visibility(xml, span);
+    write_letter_spacing(xml, span);
+    write_word_spacing(xml, span);
+    write_text_length(xml, span);
+    write_length_adjust(xml, span);
+
+    write_smallcaps(xml, span);
+
+    write_paint_order(xml, span);
+
+    write_kerning(xml, span);
+
+    write_alignment_baseline(xml, span);
+    write_dominant_baseline(xml, span);
+
+    write_fill(&span.fill, is_clip_path, writer_context.opt, xml);
+    write_stroke(&span.stroke, writer_context.opt, xml);
+
+    let cur_text = &chunk.text[span.start..span.end];
+
+    let actual_start = *char_offset + span.start;
+    let num_chars = cur_text.chars().count();
+    let actual_end = *char_offset + span.start + num_chars;
+
+    write_coordinates(xml, text, actual_start, actual_end);
+    write_rotations(xml, text, actual_start, actual_end);
+    xml.write_text(&cur_text.replace('&', "&amp;"));
+
+    xml.end_element();
+}
+
+fn write_kerning(xml: &mut XmlWriter, span: &TextSpan) {
+    if !span.apply_kerning {
+        xml.write_attribute_raw("style", |buf| {
+            buf.extend_from_slice("font-kerning:none".as_bytes())
+        });
+    }
+}
+
+fn write_paint_order(xml: &mut XmlWriter, span: &TextSpan) {
+    if span.paint_order == PaintOrder::StrokeAndFill {
+        xml.write_svg_attribute(AId::PaintOrder, "stroke fill");
+    }
+}
+
+fn write_smallcaps(xml: &mut XmlWriter, span: &TextSpan) {
+    if span.small_caps {
+        xml.write_svg_attribute(AId::FontVariant, "small-caps");
+    }
+}
+
+fn write_length_adjust(xml: &mut XmlWriter, span: &TextSpan) {
+    if span.length_adjust == LengthAdjust::SpacingAndGlyphs {
+        xml.write_svg_attribute(AId::LengthAdjust, "spacingAndGlyphs");
+    }
+}
+
+fn write_text_length(xml: &mut XmlWriter, span: &TextSpan) {
+    if let Some(text_length) = span.text_length {
+        xml.write_svg_attribute(AId::TextLength, &text_length);
+    }
+}
+
+fn write_word_spacing(xml: &mut XmlWriter, span: &TextSpan) {
+    if span.word_spacing != 0.0 {
+        xml.write_svg_attribute(AId::WordSpacing, &span.word_spacing);
+    }
+}
+
+fn write_letter_spacing(xml: &mut XmlWriter, span: &TextSpan) {
+    if span.letter_spacing != 0.0 {
+        xml.write_svg_attribute(AId::LetterSpacing, &span.letter_spacing);
+    }
+}
+
+fn write_baseline_shift(xml: &mut XmlWriter, baseline_shift: &BaselineShift) {
+    match baseline_shift {
+        BaselineShift::Number(num) => xml.write_svg_attribute(AId::BaselineShift, num),
+        BaselineShift::Baseline => xml.write_svg_attribute(AId::BaselineShift, "baseline"),
+        BaselineShift::Subscript => xml.write_svg_attribute(AId::BaselineShift, "sub"),
+        BaselineShift::Superscript => xml.write_svg_attribute(AId::BaselineShift, "super"),
+    }
+}
+
+fn write_rotations(xml: &mut XmlWriter, text: &Text, actual_start: usize, actual_end: usize) {
+    let rotations = text.rotate[actual_start..actual_end]
+        .iter()
+        .copied()
+        .rev()
+        .skip_while(|rotate| *rotate == 0.0)
+        .collect::<Vec<f32>>()
+        .into_iter()
+        .rev()
+        .collect::<Vec<f32>>();
+
+    if !rotations.is_empty() {
+        xml.write_numbers(AId::Rotate, &rotations);
+    }
+}
+
+fn write_coordinates(xml: &mut XmlWriter, text: &Text, actual_start: usize, actual_end: usize) {
+    let collect_coordinates = |mapper: &dyn Fn(&CharacterPosition) -> f32| {
+        text.positions[actual_start..actual_end]
+            .iter()
+            .map(mapper)
+            .rev()
+            .skip_while(|dx| *dx == 0.0)
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .collect::<Vec<f32>>()
+    };
+
+    let dx_values: Vec<f32> =
+        collect_coordinates(&|p: &CharacterPosition| p.dx.unwrap_or_default());
+    let dy_values: Vec<f32> =
+        collect_coordinates(&|p: &CharacterPosition| p.dy.unwrap_or_default());
+    let x_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.x.unwrap_or_default());
+    let y_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.y.unwrap_or_default());
+
+    if !dx_values.is_empty() {
+        xml.write_numbers(AId::Dx, &dx_values);
+    }
+
+    if !dy_values.is_empty() {
+        xml.write_numbers(AId::Dy, &dy_values);
+    }
+
+    if !x_values.is_empty() {
+        xml.write_numbers(AId::X, &x_values);
+    }
+
+    if !y_values.is_empty() {
+        xml.write_numbers(AId::Y, &y_values);
+    }
+}
+
+fn write_dominant_baseline(xml: &mut XmlWriter, span: &TextSpan) {
+    match span.dominant_baseline {
+        DominantBaseline::Auto => {}
+        DominantBaseline::UseScript => xml.write_svg_attribute(AId::DominantBaseline, "use-script"),
+        DominantBaseline::NoChange => xml.write_svg_attribute(AId::DominantBaseline, "no-change"),
+        DominantBaseline::ResetSize => xml.write_svg_attribute(AId::DominantBaseline, "reset-size"),
+        DominantBaseline::TextBeforeEdge => {
+            xml.write_svg_attribute(AId::DominantBaseline, "text-before-edge")
+        }
+        DominantBaseline::Middle => xml.write_svg_attribute(AId::DominantBaseline, "middle"),
+        DominantBaseline::Central => xml.write_svg_attribute(AId::DominantBaseline, "central"),
+        DominantBaseline::TextAfterEdge => {
+            xml.write_svg_attribute(AId::DominantBaseline, "text-after-edge")
+        }
+        DominantBaseline::Ideographic => {
+            xml.write_svg_attribute(AId::DominantBaseline, "ideographic")
+        }
+        DominantBaseline::Alphabetic => {
+            xml.write_svg_attribute(AId::DominantBaseline, "alphabetic")
+        }
+        DominantBaseline::Hanging => xml.write_svg_attribute(AId::DominantBaseline, "hanging"),
+        DominantBaseline::Mathematical => {
+            xml.write_svg_attribute(AId::DominantBaseline, "mathematical")
+        }
+    }
+}
+
+fn write_alignment_baseline(xml: &mut XmlWriter, span: &TextSpan) {
+    match span.alignment_baseline {
+        AlignmentBaseline::Auto => {}
+        AlignmentBaseline::Baseline => xml.write_svg_attribute(AId::AlignmentBaseline, "baseline"),
+        AlignmentBaseline::BeforeEdge => {
+            xml.write_svg_attribute(AId::AlignmentBaseline, "before-edge")
+        }
+        AlignmentBaseline::TextBeforeEdge => {
+            xml.write_svg_attribute(AId::AlignmentBaseline, "text-before-edge")
+        }
+        AlignmentBaseline::Middle => xml.write_svg_attribute(AId::AlignmentBaseline, "middle"),
+        AlignmentBaseline::Central => xml.write_svg_attribute(AId::AlignmentBaseline, "central"),
+        AlignmentBaseline::AfterEdge => {
+            xml.write_svg_attribute(AId::AlignmentBaseline, "after-edge")
+        }
+        AlignmentBaseline::TextAfterEdge => {
+            xml.write_svg_attribute(AId::AlignmentBaseline, "text-after-edge")
+        }
+        AlignmentBaseline::Ideographic => {
+            xml.write_svg_attribute(AId::AlignmentBaseline, "ideographic")
+        }
+        AlignmentBaseline::Alphabetic => {
+            xml.write_svg_attribute(AId::AlignmentBaseline, "alphabetic")
+        }
+        AlignmentBaseline::Hanging => xml.write_svg_attribute(AId::AlignmentBaseline, "hanging"),
+        AlignmentBaseline::Mathematical => {
+            xml.write_svg_attribute(AId::AlignmentBaseline, "mathematical")
+        }
+    };
+}
+
+fn write_font_size(xml: &mut XmlWriter, span: &TextSpan) {
+    xml.write_svg_attribute(AId::FontSize, &span.font_size);
+}
+
+fn write_font_family(xml: &mut XmlWriter, span: &TextSpan) {
+    xml.write_svg_attribute(AId::FontFamily, &span.font.families.join(", "));
+}
+
+fn write_visibility(xml: &mut XmlWriter, span: &TextSpan) {
+    match span.visibility {
+        Visibility::Visible => {}
+        Visibility::Hidden => xml.write_svg_attribute(AId::Visibility, "hidden"),
+        Visibility::Collapse => xml.write_svg_attribute(AId::Visibility, "collapse"),
+    }
+}
+
+fn write_font_weight(xml: &mut XmlWriter, span: &TextSpan) {
+    if span.font.weight != 400 {
+        xml.write_svg_attribute(AId::FontWeight, &span.font.weight);
+    }
+}
+
+fn write_font_style(xml: &mut XmlWriter, span: &TextSpan) {
+    match span.font.style {
+        FontStyle::Normal => {}
+        FontStyle::Italic => xml.write_svg_attribute(AId::FontStyle, "italic"),
+        FontStyle::Oblique => xml.write_svg_attribute(AId::FontStyle, "oblique"),
+    }
+}
+
+fn write_anchor(xml: &mut XmlWriter, chunk: &TextChunk) {
+    match chunk.anchor {
+        TextAnchor::Start => {}
+        TextAnchor::Middle => xml.write_svg_attribute(AId::TextAnchor, "middle"),
+        TextAnchor::End => xml.write_svg_attribute(AId::TextAnchor, "end"),
+    }
+}
+
+fn write_writing_mode(xml: &mut XmlWriter, text: &Text) {
+    match text.writing_mode {
+        WritingMode::LeftToRight => {}
+        WritingMode::TopToBottom => xml.write_svg_attribute(AId::WritingMode, "tb"),
+    }
+}
+
+fn write_rendering_mode(xml: &mut XmlWriter, text: &Text) {
+    match text.rendering_mode {
+        TextRendering::OptimizeSpeed => {
+            xml.write_svg_attribute(AId::TextRendering, "optimizeSpeed")
+        }
+        TextRendering::GeometricPrecision => {
+            xml.write_svg_attribute(AId::TextRendering, "geometricPrecision")
+        }
+        TextRendering::OptimizeLegibility => {
+            xml.write_svg_attribute(AId::TextRendering, "optimizeLegibility")
+        }
+    }
 }
