@@ -81,10 +81,8 @@ pub(crate) fn convert(writer_context: &mut WriterContext) -> String {
 }
 
 fn conv_filters(writer_context: &mut WriterContext, xml: &mut XmlWriter) {
-    let tree = writer_context.tree;
-    let opt = writer_context.opt;
     let mut filters = Vec::new();
-    tree.filters(|filter| {
+    writer_context.tree.filters(|filter| {
         if !filters.iter().any(|other| Rc::ptr_eq(&filter, other)) {
             filters.push(filter);
         }
@@ -251,7 +249,7 @@ fn conv_filters(writer_context: &mut WriterContext, xml: &mut XmlWriter) {
                             xml.write_image_data(kind);
                         }
                         filter::ImageKind::Use(ref node) => {
-                            let prefix = opt.id_prefix.as_deref().unwrap_or_default();
+                            let prefix = writer_context.opt.id_prefix.as_deref().unwrap_or_default();
                             xml.write_attribute_fmt(
                                 "xlink:href",
                                 format_args!("#{}{}", prefix, node.id()),
