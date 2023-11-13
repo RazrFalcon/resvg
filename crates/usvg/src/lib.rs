@@ -81,7 +81,7 @@ pub trait TreeWriting {
 
 impl TreeWriting for usvg_tree::Tree {
     fn to_string(&self, opt: &XmlOptions) -> String {
-        let used_ids = get_ids(self);
+        let used_ids = collect_ids(self);
         let mut id_generator = IdGenerator::new(used_ids);
 
         let mut writer_context = WriterContext {
@@ -133,14 +133,14 @@ impl IdGenerator {
     }
 }
 
-fn get_ids(tree: &Tree) -> HashSet<String> {
+fn collect_ids(tree: &Tree) -> HashSet<String> {
     let mut ids = HashSet::new();
-    get_ids_impl(&tree.root, &mut ids);
+    collect_ids_impl(&tree.root, &mut ids);
     ids.remove("");
     ids
 }
 
-fn get_ids_impl(node: &Node, ids: &mut HashSet<String>) {
+fn collect_ids_impl(node: &Node, ids: &mut HashSet<String>) {
     let get_paint_id = |paint: &Paint| match paint {
         Paint::Color(_) => None,
         Paint::LinearGradient(lg) => Some(lg.id.clone()),
@@ -200,6 +200,6 @@ fn get_ids_impl(node: &Node, ids: &mut HashSet<String>) {
             }
         }
 
-        node.subroots(|node| get_ids_impl(&node, ids));
+        node.subroots(|node| collect_ids_impl(&node, ids));
     }
 }

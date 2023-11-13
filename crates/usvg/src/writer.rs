@@ -1481,9 +1481,7 @@ fn write_span(
     }
 
     if !span.apply_kerning {
-        xml.write_attribute_raw("style", |buf| {
-            buf.extend_from_slice("font-kerning:none".as_bytes())
-        });
+        xml.write_attribute("style", "font-kerning:none")
     }
 
     match span.dominant_baseline {
