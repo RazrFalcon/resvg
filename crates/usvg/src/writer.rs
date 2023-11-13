@@ -249,7 +249,8 @@ fn conv_filters(writer_context: &mut WriterContext, xml: &mut XmlWriter) {
                             xml.write_image_data(kind);
                         }
                         filter::ImageKind::Use(ref node) => {
-                            let prefix = writer_context.opt.id_prefix.as_deref().unwrap_or_default();
+                            let prefix =
+                                writer_context.opt.id_prefix.as_deref().unwrap_or_default();
                             xml.write_attribute_fmt(
                                 "xlink:href",
                                 format_args!("#{}{}", prefix, node.id()),
@@ -746,6 +747,28 @@ fn conv_element(
                 xml.write_numbers(AId::Rotate, &text.rotate);
             }
 
+            if !text.positions.is_empty() && text.positions.iter().any(|c| c.dx.is_some()) {
+                xml.write_numbers(
+                    AId::Dx,
+                    &text
+                        .positions
+                        .iter()
+                        .map(|c| c.dx.unwrap_or_default())
+                        .collect::<Vec<_>>(),
+                );
+            }
+
+            if !text.positions.is_empty() && text.positions.iter().any(|c| c.dy.is_some()) {
+                xml.write_numbers(
+                    AId::Dy,
+                    &text
+                        .positions
+                        .iter()
+                        .map(|c| c.dy.unwrap_or_default())
+                        .collect::<Vec<_>>(),
+                );
+            }
+
             let mut char_offset: usize = 0;
 
             xml.set_preserve_whitespaces(true);
@@ -779,9 +802,15 @@ fn conv_element(
                         xml.start_svg_element(EId::Tspan);
                         match baseline_shift {
                             BaselineShift::Baseline => {}
-                            BaselineShift::Number(num) => xml.write_svg_attribute(AId::BaselineShift, num),
-                            BaselineShift::Subscript => xml.write_svg_attribute(AId::BaselineShift, "sub"),
-                            BaselineShift::Superscript => xml.write_svg_attribute(AId::BaselineShift, "super"),
+                            BaselineShift::Number(num) => {
+                                xml.write_svg_attribute(AId::BaselineShift, num)
+                            }
+                            BaselineShift::Subscript => {
+                                xml.write_svg_attribute(AId::BaselineShift, "sub")
+                            }
+                            BaselineShift::Superscript => {
+                                xml.write_svg_attribute(AId::BaselineShift, "super")
+                            }
                         }
                     }
 
@@ -1542,20 +1571,8 @@ fn write_coordinates(xml: &mut XmlWriter, text: &Text, actual_start: usize, actu
             .collect::<Vec<f32>>()
     };
 
-    let dx_values: Vec<f32> =
-        collect_coordinates(&|p: &CharacterPosition| p.dx.unwrap_or_default());
-    let dy_values: Vec<f32> =
-        collect_coordinates(&|p: &CharacterPosition| p.dy.unwrap_or_default());
     let x_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.x.unwrap_or_default());
     let y_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.y.unwrap_or_default());
-
-    if !dx_values.is_empty() {
-        xml.write_numbers(AId::Dx, &dx_values);
-    }
-
-    if !dy_values.is_empty() {
-        xml.write_numbers(AId::Dy, &dy_values);
-    }
 
     if !x_values.is_empty() {
         xml.write_numbers(AId::X, &x_values);
