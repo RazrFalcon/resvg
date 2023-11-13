@@ -769,8 +769,6 @@ fn conv_element(
                 );
             }
 
-            let mut char_offset: usize = 0;
-
             xml.set_preserve_whitespaces(true);
 
             for chunk in &text.chunks {
@@ -787,8 +785,16 @@ fn conv_element(
                     if text_path.start_offset != 0.0 {
                         xml.write_svg_attribute(AId::StartOffset, &text_path.start_offset);
                     }
-                } else {
-                    xml.start_svg_element(EId::Tspan);
+                }
+
+                xml.start_svg_element(EId::Tspan);
+
+                if let Some(x) = chunk.x {
+                    xml.write_svg_attribute(AId::X, &x);
+                }
+
+                if let Some(y) = chunk.y {
+                    xml.write_svg_attribute(AId::Y, &y);
                 }
 
                 match chunk.anchor {
@@ -833,15 +839,7 @@ fn conv_element(
                     }
 
                     // Writes the remaining attributes of a span
-                    write_span(
-                        is_clip_path,
-                        writer_context,
-                        xml,
-                        text,
-                        &mut char_offset,
-                        chunk,
-                        span,
-                    );
+                    write_span(is_clip_path, writer_context, xml, chunk, span);
 
                     // End for each tspan we needed to create for decorations
                     for _ in &decorations {
@@ -855,7 +853,10 @@ fn conv_element(
                 }
                 xml.end_element();
 
-                char_offset += chunk.text.chars().count();
+                // End textPath element
+                if matches!(&chunk.text_flow, TextFlow::Path(_)) {
+                    xml.end_element();
+                }
             }
 
             xml.end_element();
@@ -1430,8 +1431,6 @@ fn write_span(
     is_clip_path: bool,
     writer_context: &mut WriterContext,
     xml: &mut XmlWriter,
-    text: &Text,
-    char_offset: &mut usize,
     chunk: &TextChunk,
     span: &TextSpan,
 ) {
@@ -1546,39 +1545,7 @@ fn write_span(
 
     let cur_text = &chunk.text[span.start..span.end];
 
-    let actual_start = *char_offset + span.start;
-    let num_chars = cur_text.chars().count();
-    let actual_end = *char_offset + span.start + num_chars;
-
-    write_coordinates(xml, text, actual_start, actual_end);
     xml.write_text(&cur_text.replace('&', "&amp;"));
 
     xml.end_element();
-}
-
-fn write_coordinates(xml: &mut XmlWriter, text: &Text, actual_start: usize, actual_end: usize) {
-    let collect_coordinates = |mapper: &dyn Fn(&CharacterPosition) -> f32| {
-        text.positions
-            .get(actual_start..actual_end)
-            .map_or(vec![], |a| a.to_vec())
-            .iter()
-            .map(mapper)
-            .rev()
-            .skip_while(|dx| *dx == 0.0)
-            .collect::<Vec<_>>()
-            .into_iter()
-            .rev()
-            .collect::<Vec<f32>>()
-    };
-
-    let x_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.x.unwrap_or_default());
-    let y_values: Vec<f32> = collect_coordinates(&|p: &CharacterPosition| p.y.unwrap_or_default());
-
-    if !x_values.is_empty() {
-        xml.write_numbers(AId::X, &x_values);
-    }
-
-    if !y_values.is_empty() {
-        xml.write_numbers(AId::Y, &y_values);
-    }
 }
