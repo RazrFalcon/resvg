@@ -277,21 +277,6 @@ pub struct TextChunk {
     pub text: String,
 }
 
-/// A text character position.
-///
-/// _Character_ is a Unicode codepoint.
-#[derive(Clone, Copy, Debug)]
-pub struct CharacterPosition {
-    /// An absolute X axis position.
-    pub x: Option<f32>,
-    /// An absolute Y axis position.
-    pub y: Option<f32>,
-    /// A relative X axis offset.
-    pub dx: Option<f32>,
-    /// A relative Y axis offset.
-    pub dy: Option<f32>,
-}
-
 /// A writing mode.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -317,10 +302,15 @@ pub struct Text {
     /// `text-rendering` in SVG.
     pub rendering_mode: TextRendering,
 
-    /// A list of character positions.
+    /// A relative X axis offsets.
     ///
-    /// One position for each Unicode codepoint. Aka `char` in Rust.
-    pub positions: Vec<CharacterPosition>,
+    /// One offset for each Unicode codepoint. Aka `char` in Rust.
+    pub dx: Vec<f32>,
+
+    /// A relative Y axis offsets.
+    ///
+    /// One offset for each Unicode codepoint. Aka `char` in Rust.
+    pub dy: Vec<f32>,
 
     /// A list of rotation angles.
     ///

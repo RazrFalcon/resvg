@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- `usvg_tree::Text::positions` was replaced with `usvg_tree::Text::dx` and `usvg_tree::Text::dy`.<br>
+  `usvg_tree::CharacterPosition::x` and `usvg_tree::CharacterPosition::y` are gone.
+  They were redundant and you should use `usvg_tree::TextChunk::x`
+  and `usvg_tree::TextChunk::y` instead.
+
+### Removed
+- `usvg_tree::CharacterPosition`
 
 ## [0.36.0] - 2023-10-01
 ### Added

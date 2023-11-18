@@ -497,10 +497,9 @@ fn text_to_paths(
         apply_word_spacing(chunk, &mut clusters);
         apply_length_adjust(chunk, &mut clusters);
         let mut curr_pos = resolve_clusters_positions(
+            text_node,
             chunk,
             char_offset,
-            &text_node.positions,
-            &text_node.rotate,
             text_node.writing_mode,
             abs_ts,
             &fonts_cache,
@@ -1370,30 +1369,23 @@ fn find_font_for_char(
 ///
 /// Returns the last text position. The next text chunk should start from that position.
 fn resolve_clusters_positions(
+    text: &Text,
     chunk: &TextChunk,
     char_offset: usize,
-    pos_list: &[CharacterPosition],
-    rotate_list: &[f32],
     writing_mode: WritingMode,
     ts: Transform,
     fonts_cache: &FontsCache,
     clusters: &mut [OutlinedCluster],
 ) -> (f32, f32) {
     match chunk.text_flow {
-        TextFlow::Linear => resolve_clusters_positions_horizontal(
-            chunk,
-            char_offset,
-            pos_list,
-            rotate_list,
-            writing_mode,
-            clusters,
-        ),
+        TextFlow::Linear => {
+            resolve_clusters_positions_horizontal(text, chunk, char_offset, writing_mode, clusters)
+        }
         TextFlow::Path(ref path) => resolve_clusters_positions_path(
+            text,
             chunk,
             char_offset,
             path,
-            pos_list,
-            rotate_list,
             writing_mode,
             ts,
             fonts_cache,
@@ -1403,10 +1395,9 @@ fn resolve_clusters_positions(
 }
 
 fn resolve_clusters_positions_horizontal(
+    text: &Text,
     chunk: &TextChunk,
     offset: usize,
-    pos_list: &[CharacterPosition],
-    rotate_list: &[f32],
     writing_mode: WritingMode,
     clusters: &mut [OutlinedCluster],
 ) -> (f32, f32) {
@@ -1415,20 +1406,20 @@ fn resolve_clusters_positions_horizontal(
 
     for cluster in clusters {
         let cp = offset + cluster.byte_idx.code_point_at(&chunk.text);
-        if let Some(pos) = pos_list.get(cp) {
+        if let (Some(dx), Some(dy)) = (text.dx.get(cp), text.dy.get(cp)) {
             if writing_mode == WritingMode::LeftToRight {
-                x += pos.dx.unwrap_or(0.0);
-                y += pos.dy.unwrap_or(0.0);
+                x += dx;
+                y += dy;
             } else {
-                y -= pos.dx.unwrap_or(0.0);
-                x += pos.dy.unwrap_or(0.0);
+                y -= dx;
+                x += dy;
             }
-            cluster.has_relative_shift = pos.dx.is_some() || pos.dy.is_some();
+            cluster.has_relative_shift = !dx.approx_zero_ulps(4) || !dy.approx_zero_ulps(4);
         }
 
         cluster.transform = cluster.transform.pre_translate(x, y);
 
-        if let Some(angle) = rotate_list.get(cp).cloned() {
+        if let Some(angle) = text.rotate.get(cp).cloned() {
             if !angle.approx_zero_ulps(4) {
                 cluster.transform = cluster.transform.pre_rotate(angle);
                 cluster.has_relative_shift = true;
@@ -1442,11 +1433,10 @@ fn resolve_clusters_positions_horizontal(
 }
 
 fn resolve_clusters_positions_path(
+    text: &Text,
     chunk: &TextChunk,
     char_offset: usize,
     path: &TextPath,
-    pos_list: &[CharacterPosition],
-    rotate_list: &[f32],
     writing_mode: WritingMode,
     ts: Transform,
     fonts_cache: &FontsCache,
@@ -1468,10 +1458,10 @@ fn resolve_clusters_positions_path(
         chunk_offset + path.start_offset + process_anchor(chunk.anchor, clusters_length(clusters));
 
     let normals = collect_normals(
+        text,
         chunk,
         clusters,
         &path.path,
-        pos_list,
         char_offset,
         start_offset,
         ts,
@@ -1498,9 +1488,7 @@ fn resolve_clusters_positions_path(
         cluster.transform = cluster.transform.pre_rotate_at(angle, half_width, 0.0);
 
         let cp = char_offset + cluster.byte_idx.code_point_at(&chunk.text);
-        if let Some(pos) = pos_list.get(cp) {
-            dy += pos.dy.unwrap_or(0.0);
-        }
+        dy += text.dy.get(cp).cloned().unwrap_or(0.0);
 
         let baseline_shift = chunk_span_at(chunk, cluster.byte_idx)
             .map(|span| {
@@ -1521,7 +1509,7 @@ fn resolve_clusters_positions_path(
                 .pre_translate(shift.x as f32, shift.y as f32);
         }
 
-        if let Some(angle) = rotate_list.get(cp).cloned() {
+        if let Some(angle) = text.rotate.get(cp).cloned() {
             if !angle.approx_zero_ulps(4) {
                 cluster.transform = cluster.transform.pre_rotate(angle);
             }
@@ -1556,10 +1544,10 @@ struct PathNormal {
 }
 
 fn collect_normals(
+    text: &Text,
     chunk: &TextChunk,
     clusters: &[OutlinedCluster],
     path: &tiny_skia_path::Path,
-    pos_list: &[CharacterPosition],
     char_offset: usize,
     offset: f32,
     ts: Transform,
@@ -1574,9 +1562,7 @@ fn collect_normals(
 
             // Include relative position.
             let cp = char_offset + cluster.byte_idx.code_point_at(&chunk.text);
-            if let Some(pos) = pos_list.get(cp) {
-                advance += pos.dx.unwrap_or(0.0);
-            }
+            advance += text.dx.get(cp).cloned().unwrap_or(0.0);
 
             let offset = advance + half_width;
 
