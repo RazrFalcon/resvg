@@ -12,13 +12,13 @@ workspace = "../.."
 
 [[bin]]
 name = "resvg"
-required-features = ["text", "system-fonts", "memmap-fonts"]
+required-features = ["text", "system-fonts", "memmap-fonts", "pico-args"]
 
 [dependencies]
 gif = { version = "0.12", optional = true }
 jpeg-decoder = { version = "0.3", default-features = false, features = ["platform_independent"], optional = true }
 log = "0.4"
-pico-args = { version = "0.5", features = ["eq-separator"] }
+pico-args = { version = "0.5", optional = true, features = ["eq-separator"] }
 png = { version = "0.17", optional = true }
 rgb = "0.8"
 svgtypes = { git = "https://github.com/RazrFalcon/svgtypes" }
