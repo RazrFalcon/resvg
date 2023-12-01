@@ -12,6 +12,8 @@ This changelog also contains important changes in dependencies.
   `usvg_tree::CharacterPosition::x` and `usvg_tree::CharacterPosition::y` are gone.
   They were redundant and you should use `usvg_tree::TextChunk::x`
   and `usvg_tree::TextChunk::y` instead.
+- `usvg_tree::LinearGradient::id` and `usvg_tree::RadialGradient::id` are moved to
+  `usvg_tree::BaseGradient::id`.
 
 ### Removed
 - `usvg_tree::CharacterPosition`

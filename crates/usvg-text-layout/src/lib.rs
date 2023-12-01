@@ -827,7 +827,6 @@ fn paint_server_to_user_space_on_use(paint: Paint, bbox: Rect) -> Option<Paint> 
 
     // TODO: is `pattern` copying safe? Maybe we should reset id's on all `pattern` children.
     // We have to clone a paint server, in case some other element is already using it.
-    // If not, the `convert` module will remove unused defs anyway.
 
     // Update id, transform and units.
     let ts = Transform::from_bbox(bbox.to_non_zero_rect()?);
@@ -836,12 +835,12 @@ fn paint_server_to_user_space_on_use(paint: Paint, bbox: Rect) -> Option<Paint> 
         Paint::LinearGradient(ref lg) => {
             let transform = lg.transform.post_concat(ts);
             Paint::LinearGradient(Rc::new(LinearGradient {
-                id: String::new(),
                 x1: lg.x1,
                 y1: lg.y1,
                 x2: lg.x2,
                 y2: lg.y2,
                 base: BaseGradient {
+                    id: String::new(),
                     units: Units::UserSpaceOnUse,
                     transform,
                     spread_method: lg.spread_method,
@@ -852,13 +851,13 @@ fn paint_server_to_user_space_on_use(paint: Paint, bbox: Rect) -> Option<Paint> 
         Paint::RadialGradient(ref rg) => {
             let transform = rg.transform.post_concat(ts);
             Paint::RadialGradient(Rc::new(RadialGradient {
-                id: String::new(),
                 cx: rg.cx,
                 cy: rg.cy,
                 r: rg.r,
                 fx: rg.fx,
                 fy: rg.fy,
                 base: BaseGradient {
+                    id: String::new(),
                     units: Units::UserSpaceOnUse,
                     transform,
                     spread_method: rg.spread_method,
