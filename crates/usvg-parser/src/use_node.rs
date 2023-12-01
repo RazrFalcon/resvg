@@ -46,7 +46,7 @@ pub(crate) fn convert(
         }
 
         if let Some(clip_rect) = get_clip_rect(node, child, state) {
-            let mut g = clip_element(node, clip_rect, orig_ts, state, cache, parent);
+            let mut g = clip_element(node, clip_rect, orig_ts, state, parent);
 
             // Make group for `use`.
             let mut parent = match converter::convert_group(node, state, true, cache, &mut g) {
@@ -169,7 +169,7 @@ pub(crate) fn convert_svg(
     };
 
     if let Some(clip_rect) = get_clip_rect(node, node, state) {
-        let mut g = clip_element(node, clip_rect, orig_ts, state, cache, parent);
+        let mut g = clip_element(node, clip_rect, orig_ts, state, parent);
         convert_children(node, new_ts, &new_state, cache, &mut g);
     } else {
         orig_ts = orig_ts.pre_concat(new_ts);
@@ -182,7 +182,6 @@ fn clip_element(
     clip_rect: NonZeroRect,
     transform: Transform,
     state: &converter::State,
-    cache: &mut converter::Cache,
     parent: &mut Node,
 ) -> Node {
     // We can't set `clip-path` on the element itself,
@@ -205,8 +204,7 @@ fn clip_element(
     //   <elem/>
     // </g>
 
-    let mut clip_path = usvg_tree::ClipPath::default();
-    clip_path.id = cache.gen_clip_path_id();
+    let clip_path = usvg_tree::ClipPath::default();
 
     let mut path = Path::new(Rc::new(tiny_skia_path::PathBuilder::from_rect(
         clip_rect.to_rect(),

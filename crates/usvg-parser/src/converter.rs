@@ -2,12 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::collections::{HashMap, HashSet};
-use std::hash::{Hash, Hasher};
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::str::FromStr;
 
-use svgtypes::{Length, LengthUnit as Unit, TransformOrigin, PaintOrderKind};
+use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind, TransformOrigin};
 use usvg_tree::*;
 
 use crate::svgtree::{self, AId, EId, FromValue, SvgNode};
@@ -34,42 +33,6 @@ pub struct Cache {
     pub masks: HashMap<String, Rc<Mask>>,
     pub filters: HashMap<String, Rc<usvg_tree::filter::Filter>>,
     pub paint: HashMap<String, Paint>,
-
-    // used for ID generation
-    pub all_ids: HashSet<u64>,
-    pub clip_path_index: usize,
-    pub filter_index: usize,
-}
-
-impl Cache {
-    pub fn gen_clip_path_id(&mut self) -> String {
-        loop {
-            self.clip_path_index += 1;
-            let new_id = format!("clipPath{}", self.clip_path_index);
-            let new_hash = string_hash(&new_id);
-            if !self.all_ids.contains(&new_hash) {
-                return new_id;
-            }
-        }
-    }
-
-    pub fn gen_filter_id(&mut self) -> String {
-        loop {
-            self.filter_index += 1;
-            let new_id = format!("filter{}", self.filter_index);
-            let new_hash = string_hash(&new_id);
-            if !self.all_ids.contains(&new_hash) {
-                return new_id;
-            }
-        }
-    }
-}
-
-// TODO: is there a simpler way?
-fn string_hash(s: &str) -> u64 {
-    let mut h = std::collections::hash_map::DefaultHasher::new();
-    s.hash(&mut h);
-    h.finish()
 }
 
 impl<'a, 'input: 'a> SvgNode<'a, 'input> {
@@ -210,16 +173,6 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
     };
 
     let mut cache = Cache::default();
-    for node in svg_doc.descendants() {
-        if let Some(tag) = node.tag_name() {
-            if matches!(tag, EId::Filter | EId::ClipPath) {
-                if !node.element_id().is_empty() {
-                    cache.all_ids.insert(string_hash(node.element_id()));
-                }
-            }
-        }
-    }
-
     convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
 
     remove_empty_groups(&mut tree);
@@ -715,7 +668,7 @@ fn convert_path(
             let append_single_paint_path = |paint_order_kind: PaintOrderKind| match paint_order_kind
             {
                 PaintOrderKind::Fill => {
-                    if !path.fill.is_none() {
+                    if path.fill.is_some() {
                         let mut fill_path = path.clone();
                         fill_path.stroke = None;
                         fill_path.id = String::new();
@@ -723,7 +676,7 @@ fn convert_path(
                     }
                 }
                 PaintOrderKind::Stroke => {
-                    if !path.stroke.is_none() {
+                    if path.stroke.is_some() {
                         let mut stroke_path = path.clone();
                         stroke_path.fill = None;
                         stroke_path.id = String::new();

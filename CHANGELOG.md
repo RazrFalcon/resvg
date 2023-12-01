@@ -14,6 +14,9 @@ This changelog also contains important changes in dependencies.
   and `usvg_tree::TextChunk::y` instead.
 - `usvg_tree::LinearGradient::id` and `usvg_tree::RadialGradient::id` are moved to
   `usvg_tree::BaseGradient::id`.
+- Do not generate element IDs during parsing. Previously, some elements like `clipPath`s
+  and `filter`s could have generated IDs, but it wasn't very reliable and mostly unnecessary.
+  Renderer doesn't rely on them and usvg writer would generate them by itself.
 
 ### Removed
 - `usvg_tree::CharacterPosition`
