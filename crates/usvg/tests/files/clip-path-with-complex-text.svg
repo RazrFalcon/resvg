@@ -1,0 +1,13 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- The `text` element will be converted into a group, -->
+    <!-- but `clipPath` doesn't allow group children. -->
+    <!-- Make sure the group will be skipped and only its content is written. -->
+    <!-- -->
+    <!-- Underline would create a separate path inside the text group. -->
+    <!-- Make sure it's written as well. -->
+    <clipPath id="my-clip">
+        <text id="text1" x="40" y="120" font-family="Noto Sans" font-size="64"
+              text-decoration="underline">Text</text>
+    </clipPath>
+    <rect id="rect1" x="0" y="0" width="200" height="200" fill="green" clip-path="url(#my-clip)"/>
+</svg>

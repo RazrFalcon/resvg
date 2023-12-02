@@ -407,6 +407,7 @@ version = "0.36.0"
 dependencies = [
  "base64",
  "log",
+ "once_cell",
  "pico-args",
  "usvg-parser",
  "usvg-text-layout",
