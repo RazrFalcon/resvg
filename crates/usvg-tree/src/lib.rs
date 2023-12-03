@@ -1297,7 +1297,7 @@ impl NodeExt for Node {
 
 fn calc_node_bbox(node: &Node, ts: Transform) -> Option<BBox> {
     match *node.borrow() {
-        NodeKind::Path(ref path) => path.data.bounds().transform(ts).map(BBox::from),
+        NodeKind::Path(ref path) => path.data.compute_tight_bounds()?.transform(ts).map(BBox::from),
         NodeKind::Image(ref img) => img.view_box.rect.transform(ts).map(BBox::from),
         NodeKind::Group(_) => {
             let mut bbox = BBox::default();

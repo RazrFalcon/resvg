@@ -16,4 +16,4 @@ workspace = "../.."
 rctree = "0.5"
 strict-num = "0.1.1"
 svgtypes = { git = "https://github.com/RazrFalcon/svgtypes" }
-tiny-skia-path = "0.11.2"
+tiny-skia-path = "0.11.3"

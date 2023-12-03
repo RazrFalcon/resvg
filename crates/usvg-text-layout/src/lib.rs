@@ -694,7 +694,7 @@ fn convert_span(
         fill.rule = FillRule::NonZero;
     }
 
-    let bbox = bboxes.bounds().to_non_zero_rect()?;
+    let bbox = bboxes.compute_tight_bounds()?.to_non_zero_rect()?;
 
     let path = Path {
         id: String::new(),

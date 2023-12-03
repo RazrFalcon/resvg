@@ -1,0 +1,16 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Path bounding box</title>
+    <desc>
+        Test that object bounding calculation for paths works as defined by the spec:
+        https://svgwg.org/svg2-draft/coords.html#BoundingBoxes
+    </desc>
+
+    <filter id="filter1" x="0%" y="0%" width="100%" height="100%" filterUnits="objectBoundingBox">
+        <feFlood flood-color="seagreen"/>
+    </filter>
+    <path id="path1" filter="url(#filter1)" d="M 50 85 L 65 135 H 150 V 85 Q 100 45 50 85 Z"/>
+    <path id="path2" fill="none" stroke="blue" d="M 50 85 L 65 135 H 150 V 85 Q 100 45 50 85 Z"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

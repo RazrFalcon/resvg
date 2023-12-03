@@ -32,6 +32,10 @@ This changelog also contains important changes in dependencies.
 - `usvg_text_layout::TextToPath` trait for `Text` nodes.
   Only the whole tree can be converted at once.
 
+### Fixed
+- Path object bounding box calculation. We were using point bounds instead of tight contour bounds.
+  Was broken since v0.34
+
 ## [0.36.0] - 2023-10-01
 ### Added
 - `stroke-linejoin=miter-clip` support. SVG2.

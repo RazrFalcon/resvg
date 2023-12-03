@@ -313,6 +313,7 @@ use crate::render;
 #[test] fn filters_filter_on_an_empty_group_2() { assert_eq!(render("tests/filters/filter/on-an-empty-group-2"), 0); }
 #[test] fn filters_filter_on_the_root_svg() { assert_eq!(render("tests/filters/filter/on-the-root-svg"), 0); }
 #[test] fn filters_filter_on_zero_sized_shape() { assert_eq!(render("tests/filters/filter/on-zero-sized-shape"), 0); }
+#[test] fn filters_filter_path_bbox() { assert_eq!(render("tests/filters/filter/path-bbox"), 0); }
 #[test] fn filters_filter_primitiveUnits_eq_objectBoundingBox() { assert_eq!(render("tests/filters/filter/primitiveUnits=objectBoundingBox"), 0); }
 #[test] fn filters_filter_recursive_xlink_href() { assert_eq!(render("tests/filters/filter/recursive-xlink-href"), 0); }
 #[test] fn filters_filter_region_with_stroke() { assert_eq!(render("tests/filters/filter/region-with-stroke"), 0); }
@@ -827,6 +828,7 @@ use crate::render;
 #[test] fn painting_paint_order_on_text() { assert_eq!(render("tests/painting/paint-order/on-text"), 0); }
 #[test] fn painting_paint_order_on_tspan() { assert_eq!(render("tests/painting/paint-order/on-tspan"), 0); }
 #[test] fn painting_paint_order_stroke_invalid() { assert_eq!(render("tests/painting/paint-order/stroke-invalid"), 0); }
+#[test] fn painting_paint_order_stroke_markers_fill() { assert_eq!(render("tests/painting/paint-order/stroke-markers-fill"), 0); }
 #[test] fn painting_paint_order_stroke_markers() { assert_eq!(render("tests/painting/paint-order/stroke-markers"), 0); }
 #[test] fn painting_paint_order_stroke() { assert_eq!(render("tests/painting/paint-order/stroke"), 0); }
 #[test] fn painting_paint_order_trailing_data() { assert_eq!(render("tests/painting/paint-order/trailing-data"), 0); }

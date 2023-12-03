@@ -96,7 +96,7 @@ fn convert_fill_path(
         usvg::FillRule::EvenOdd => tiny_skia::FillRule::EvenOdd,
     };
 
-    let mut object_bbox = usvg::BBox::from(path.bounds());
+    let mut object_bbox = usvg::BBox::from(path.compute_tight_bounds()?);
     if let Some(text_bbox) = text_bbox {
         object_bbox = object_bbox.expand(usvg::BBox::from(text_bbox));
     }
@@ -140,7 +140,7 @@ fn convert_stroke_path(
     // Zero-sized stroke path is not an error, because linecap round or square
     // would produce the shape either way.
     // TODO: Find a better way to handle it.
-    let object_bbox = usvg::BBox::from(path.bounds());
+    let object_bbox = usvg::BBox::from(path.compute_tight_bounds()?);
 
     let mut complete_object_bbox = object_bbox;
     if let Some(text_bbox) = text_bbox {
@@ -160,7 +160,7 @@ fn convert_stroke_path(
     // TODO: expand by stroke width for round/bevel joins
     let stroked_path = path.stroke(&stroke, 1.0)?;
 
-    let mut layer_bbox = usvg::BBox::from(stroked_path.bounds());
+    let mut layer_bbox = usvg::BBox::from(stroked_path.compute_tight_bounds()?);
     if let Some(text_bbox) = text_bbox {
         layer_bbox = layer_bbox.expand(usvg::BBox::from(text_bbox));
     }
