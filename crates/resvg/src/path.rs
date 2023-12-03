@@ -44,8 +44,8 @@ pub fn convert(
 
     let mut bboxes = BBoxes::default();
 
-    if let Some((_, l_bbox, o_bbox)) = fill_path {
-        bboxes.layer = bboxes.layer.expand(l_bbox);
+    if let Some((_, o_bbox)) = fill_path {
+        bboxes.layer = bboxes.layer.expand(o_bbox);
         bboxes.object = bboxes.object.expand(o_bbox);
     }
     if let Some((_, l_bbox, o_bbox)) = stroke_path {
@@ -60,7 +60,7 @@ pub fn convert(
     }
 
     if upath.paint_order == usvg::PaintOrder::FillAndStroke {
-        if let Some((path, _, _)) = fill_path {
+        if let Some((path, _)) = fill_path {
             children.push(Node::FillPath(path));
         }
 
@@ -72,7 +72,7 @@ pub fn convert(
             children.push(Node::StrokePath(path));
         }
 
-        if let Some((path, _, _)) = fill_path {
+        if let Some((path, _)) = fill_path {
             children.push(Node::FillPath(path));
         }
     }
@@ -85,7 +85,7 @@ fn convert_fill_path(
     path: Rc<tiny_skia::Path>,
     text_bbox: Option<tiny_skia::NonZeroRect>,
     anti_alias: bool,
-) -> Option<(FillPath, usvg::BBox, usvg::BBox)> {
+) -> Option<(FillPath, usvg::BBox)> {
     // Horizontal and vertical lines cannot be filled. Skip.
     if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
         return None;
@@ -111,7 +111,7 @@ fn convert_fill_path(
         path,
     };
 
-    Some((path, object_bbox, object_bbox))
+    Some((path, object_bbox))
 }
 
 fn convert_stroke_path(

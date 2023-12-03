@@ -17,7 +17,7 @@ pub struct Group {
     pub mask: Option<Mask>,
     pub filters: Vec<crate::filter::Filter>,
     pub isolate: bool,
-    /// Group's layer bounding box in canvas coordinates.
+    /// Group's layer bounding box in object coordinates.
     pub bbox: tiny_skia::Rect,
 
     pub children: Vec<Node>,
