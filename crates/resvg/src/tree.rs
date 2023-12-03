@@ -81,10 +81,6 @@ impl Tree {
     /// Text nodes should be already converted into paths using
     /// [`usvg::TreeTextToPath::convert_text`].
     pub fn from_usvg(tree: &usvg::Tree) -> Self {
-        if tree.has_text_nodes() {
-            log::warn!("Text nodes should be already converted into paths.");
-        }
-
         let (children, layer_bbox) = convert_node(tree.root.clone());
 
         Self {
@@ -148,7 +144,14 @@ fn convert_node_inner(node: usvg::Node, children: &mut Vec<Node>) -> Option<BBox
         usvg::NodeKind::Group(ref ugroup) => convert_group(node.clone(), ugroup, children),
         usvg::NodeKind::Path(ref upath) => crate::path::convert(upath, children),
         usvg::NodeKind::Image(ref uimage) => crate::image::convert(uimage, children),
-        usvg::NodeKind::Text(_) => None, // should be already converted into paths
+        usvg::NodeKind::Text(ref utext) => {
+            if let Some(ref flattened) = utext.flattened {
+                convert_node_inner(flattened.clone(), children)
+            } else {
+                log::warn!("Text nodes should be flattened before rendering.");
+                None
+            }
+        }
     }
 }
 

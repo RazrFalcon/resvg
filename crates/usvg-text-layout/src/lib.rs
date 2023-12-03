@@ -59,7 +59,6 @@ impl TextToPath for Text {
     fn convert(&self, fontdb: &fontdb::Database, absolute_ts: Transform) -> Option<Node> {
         let (new_paths, bbox) = text_to_paths(self, fontdb, absolute_ts)?;
 
-        // Create a group will all paths that was created during text-to-path conversion.
         let group = Node::new(NodeKind::Group(Group {
             id: self.id.clone(),
             ..Group::default()
@@ -98,18 +97,11 @@ fn convert_text(root: Node, fontdb: &fontdb::Database) {
     }
 
     for node in &text_nodes {
-        let mut new_node = None;
-        if let NodeKind::Text(ref text) = *node.borrow() {
-            let absolute_ts = node.parent().unwrap().abs_transform();
-            new_node = text.convert(fontdb, absolute_ts);
-        }
-
-        if let Some(new_node) = new_node {
-            node.insert_after(new_node);
+        let absolute_ts = node.parent().unwrap().abs_transform();
+        if let NodeKind::Text(ref mut text) = *node.borrow_mut() {
+            text.flattened = text.convert(fontdb, absolute_ts);
         }
     }
-
-    text_nodes.iter().for_each(|n| n.detach());
 }
 
 trait DatabaseExt {

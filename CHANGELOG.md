@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- `usvg_tree::Text::flattened` that will contain an flattened/outlined text.
+
 ### Changed
 - `usvg_tree::Text::positions` was replaced with `usvg_tree::Text::dx` and `usvg_tree::Text::dy`.<br>
   `usvg_tree::CharacterPosition::x` and `usvg_tree::CharacterPosition::y` are gone.
@@ -17,6 +20,8 @@ This changelog also contains important changes in dependencies.
 - Do not generate element IDs during parsing. Previously, some elements like `clipPath`s
   and `filter`s could have generated IDs, but it wasn't very reliable and mostly unnecessary.
   Renderer doesn't rely on them and usvg writer would generate them by itself.
+- Text-to-paths conversion via `usvg_text_layout::convert_text(tree)` no longer replaces
+  original text elements with paths, but instead puts them into `usvg_tree::Text::flattened`.
 
 ### Removed
 - `usvg_tree::CharacterPosition`

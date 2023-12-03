@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use strict_num::NonZeroPositiveF32;
 
-use crate::{Fill, PaintOrder, Stroke, TextRendering, Visibility};
+use crate::{Fill, Node, PaintOrder, Stroke, TextRendering, Visibility};
 
 /// A font stretch property.
 #[allow(missing_docs)]
@@ -322,4 +322,11 @@ pub struct Text {
 
     /// A list of text chunks.
     pub chunks: Vec<TextChunk>,
+
+    /// Text converted into paths, ready to render.
+    ///
+    /// Will be set by
+    /// [`usvg_text_layout::TreeTextToPath::convert_text`](
+    /// https://docs.rs/usvg-text-layout/latest/usvg_text_layout/trait.TreeTextToPath.html#tymethod.convert_text)
+    pub flattened: Option<Node>,
 }

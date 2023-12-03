@@ -859,8 +859,12 @@ fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &
 
             xml.end_element();
         }
-        NodeKind::Text(_) => {
-            log::warn!("Text must be converted into paths.");
+        NodeKind::Text(ref text) => {
+            if let Some(ref flattened) = text.flattened {
+                conv_element(flattened, is_clip_path, ctx, xml);
+            } else {
+                log::warn!("Text must be flattened.");
+            }
         }
     }
 }

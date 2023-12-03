@@ -1056,24 +1056,27 @@ fn loop_over_paint_servers(root: &Node, f: &mut dyn FnMut(&Paint)) {
             push(path.fill.as_ref().map(|f| &f.paint), f);
             push(path.stroke.as_ref().map(|f| &f.paint), f);
         } else if let NodeKind::Text(ref text) = *node.borrow() {
-            for chunk in &text.chunks {
-                for span in &chunk.spans {
-                    push(span.fill.as_ref().map(|f| &f.paint), f);
-                    push(span.stroke.as_ref().map(|f| &f.paint), f);
+            // A flattened text should be ignored, otherwise we would have duplicates.
+            if text.flattened.is_none() {
+                for chunk in &text.chunks {
+                    for span in &chunk.spans {
+                        push(span.fill.as_ref().map(|f| &f.paint), f);
+                        push(span.stroke.as_ref().map(|f| &f.paint), f);
 
-                    if let Some(ref underline) = span.decoration.underline {
-                        push(underline.fill.as_ref().map(|f| &f.paint), f);
-                        push(underline.stroke.as_ref().map(|f| &f.paint), f);
-                    }
+                        if let Some(ref underline) = span.decoration.underline {
+                            push(underline.fill.as_ref().map(|f| &f.paint), f);
+                            push(underline.stroke.as_ref().map(|f| &f.paint), f);
+                        }
 
-                    if let Some(ref overline) = span.decoration.overline {
-                        push(overline.fill.as_ref().map(|f| &f.paint), f);
-                        push(overline.stroke.as_ref().map(|f| &f.paint), f);
-                    }
+                        if let Some(ref overline) = span.decoration.overline {
+                            push(overline.fill.as_ref().map(|f| &f.paint), f);
+                            push(overline.stroke.as_ref().map(|f| &f.paint), f);
+                        }
 
-                    if let Some(ref line_through) = span.decoration.line_through {
-                        push(line_through.fill.as_ref().map(|f| &f.paint), f);
-                        push(line_through.stroke.as_ref().map(|f| &f.paint), f);
+                        if let Some(ref line_through) = span.decoration.line_through {
+                            push(line_through.fill.as_ref().map(|f| &f.paint), f);
+                            push(line_through.stroke.as_ref().map(|f| &f.paint), f);
+                        }
                     }
                 }
             }
@@ -1166,8 +1169,15 @@ fn node_subroots(node: &Node, f: &mut dyn FnMut(Node)) {
             push_patt(path.fill.as_ref().map(|f| &f.paint));
             push_patt(path.stroke.as_ref().map(|f| &f.paint));
         }
-        NodeKind::Image(_) => {}
+        NodeKind::Image(_) => {} // TODO: what about an SVG image?
         NodeKind::Text(ref text) => {
+            if let Some(ref flattened) = text.flattened {
+                f(flattened.clone());
+                // Return now, since text chunks would have the same styles
+                // as the flattened text, which would lead to duplicates.
+                return;
+            }
+
             for chunk in &text.chunks {
                 for span in &chunk.spans {
                     push_patt(span.fill.as_ref().map(|f| &f.paint));
