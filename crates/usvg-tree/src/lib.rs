@@ -743,8 +743,18 @@ pub struct Group {
     /// Can be empty.
     pub id: String,
 
-    /// Element transform.
+    /// Element's transform.
     pub transform: Transform,
+
+    /// Element's absolute transform.
+    ///
+    /// Contains all ancestors transforms.
+    /// Will be set automatically by the parser or can be recalculated manually using
+    /// [`Tree::calculate_abs_transforms`].
+    ///
+    /// Note that subroots, like clipPaths, masks and patterns, have their own root transform,
+    /// which isn't affected by the node that references this subroot.
+    pub abs_transform: Transform,
 
     /// Group opacity.
     ///
@@ -777,6 +787,7 @@ impl Default for Group {
         Group {
             id: String::new(),
             transform: Transform::default(),
+            abs_transform: Transform::default(),
             opacity: Opacity::ONE,
             blend_mode: BlendMode::Normal,
             isolate: false,
@@ -999,6 +1010,16 @@ impl Tree {
     pub fn filters<F: FnMut(Rc<filter::Filter>)>(&self, mut f: F) {
         loop_over_filters(&self.root, &mut f)
     }
+
+    /// Calculates absolute transforms for all nodes in the tree.
+    ///
+    /// As of now, sets [`Group::abs_transform`].
+    ///
+    /// Automatically called by the parser
+    /// and ideally should be called manually after each tree modification.
+    pub fn calculate_abs_transforms(&mut self) {
+        calculate_abs_transform(&self.root, Transform::identity());
+    }
 }
 
 fn has_text_nodes(root: &Node) -> bool {
@@ -1203,17 +1224,17 @@ pub trait NodeExt {
     ///
     /// If a current node doesn't support transformation - a default
     /// transform will be returned.
+    ///
+    /// This method is cheap, since an absolute transform is already stored in
+    /// [`Group::abs_transform`].
     fn abs_transform(&self) -> Transform;
 
     /// Appends `kind` as a node child.
-    ///
-    /// Shorthand for `Node::append(Node::new(Box::new(kind)))`.
     fn append_kind(&self, kind: NodeKind) -> Node;
 
     /// Calculates node's absolute bounding box.
     ///
-    /// Always returns `None` for `NodeKind::Text` since we cannot calculate its bbox
-    /// without converting it into paths first.
+    /// Returns `None` for `NodeKind::Text` unless it was flattened already.
     fn calculate_bbox(&self) -> Option<Rect>;
 
     /// Calls a closure for each subroot this `Node` has.
@@ -1248,19 +1269,13 @@ impl NodeExt for Node {
     }
 
     fn abs_transform(&self) -> Transform {
-        let mut ts_list = Vec::new();
-        for p in self.ancestors() {
-            if let NodeKind::Group(ref group) = *p.borrow() {
-                ts_list.push(group.transform);
-            }
+        if let NodeKind::Group(ref g) = *self.borrow() {
+            g.abs_transform
+        } else {
+            // Only groups can have a transform, therefore for paths, images and text
+            // we simply use the parent transform.
+            self.parent().map(|n| n.abs_transform()).unwrap_or_default()
         }
-
-        let mut abs_ts = Transform::default();
-        for ts in ts_list.iter().rev() {
-            abs_ts = abs_ts.pre_concat(*ts);
-        }
-
-        abs_ts
     }
 
     #[inline]
@@ -1313,4 +1328,22 @@ fn calc_node_bbox(node: &Node, ts: Transform) -> Option<BBox> {
             }
         }
     }
+}
+
+// TODO: test somehow
+fn calculate_abs_transform(node: &Node, ts: Transform) {
+    if matches!(*node.borrow(), NodeKind::Group(_)) {
+        let mut abs_ts = ts;
+        if let NodeKind::Group(ref mut group) = *node.borrow_mut() {
+            group.abs_transform = ts.pre_concat(group.transform);
+            abs_ts = group.abs_transform;
+        }
+
+        for child in node.children() {
+            calculate_abs_transform(&child, abs_ts);
+        }
+    }
+
+    // Yes, subroots are not affected by the node's transform.
+    node.subroots(|root| calculate_abs_transform(&root, Transform::identity()));
 }

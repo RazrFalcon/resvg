@@ -44,6 +44,7 @@ pub trait TreeTextToPath {
 impl TreeTextToPath for usvg_tree::Tree {
     fn convert_text(&mut self, fontdb: &fontdb::Database) {
         convert_text(self.root.clone(), fontdb);
+        self.calculate_abs_transforms();
     }
 }
 

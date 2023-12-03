@@ -10,6 +10,8 @@ This changelog also contains important changes in dependencies.
 ### Added
 - `usvg_tree::Text::flattened` that will contain an flattened/outlined text.
 - `usvg_tree::Text::bounding_box`. Will be set only after text flattening.
+- Optimize `usvg_tree::NodeExt::abs_transform` by storing absolute transforms in the tree
+  instead of calculating them each time.
 
 ### Changed
 - `usvg_tree::Text::positions` was replaced with `usvg_tree::Text::dx` and `usvg_tree::Text::dy`.<br>

@@ -176,6 +176,7 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
     convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
 
     remove_empty_groups(&mut tree);
+    tree.calculate_abs_transforms();
 
     if restore_viewbox {
         calculate_svg_bbox(&mut tree);
@@ -541,6 +542,7 @@ pub(crate) fn convert_group(
         let g = parent.append_kind(NodeKind::Group(Group {
             id,
             transform,
+            abs_transform: Transform::identity(),
             opacity,
             blend_mode,
             isolate,
