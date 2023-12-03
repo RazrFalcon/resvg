@@ -15,12 +15,12 @@ workspace = "../.."
 
 [[bin]]
 name = "usvg"
-required-features = ["text", "system-fonts", "memmap-fonts", "pico-args"]
+required-features = ["text", "system-fonts", "memmap-fonts"]
 
 [dependencies]
 base64 = "0.21" # for embedded images
 log = "0.4"
-pico-args = { version = "0.5", optional = true, features = ["eq-separator"] }
+pico-args = { version = "0.5", features = ["eq-separator"] }
 usvg-parser = { path = "../usvg-parser", version = "0.36.0" }
 usvg-tree = { path = "../usvg-tree", version = "0.36.0" }
 xmlwriter = "0.1"
