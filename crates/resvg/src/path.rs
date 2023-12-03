@@ -22,15 +22,20 @@ pub struct StrokePath {
     pub path: Rc<tiny_skia::Path>,
 }
 
-pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
+pub fn convert(
+    upath: &usvg::Path,
+    text_bbox: Option<tiny_skia::NonZeroRect>,
+    children: &mut Vec<Node>,
+) -> Option<BBoxes> {
     let anti_alias = upath.rendering_mode.use_shape_antialiasing();
 
-    let fill_path = upath.fill.as_ref().and_then(|ufill| {
-        convert_fill_path(ufill, upath.data.clone(), upath.text_bbox, anti_alias)
-    });
+    let fill_path = upath
+        .fill
+        .as_ref()
+        .and_then(|ufill| convert_fill_path(ufill, upath.data.clone(), text_bbox, anti_alias));
 
     let stroke_path = upath.stroke.as_ref().and_then(|ustroke| {
-        convert_stroke_path(ustroke, upath.data.clone(), upath.text_bbox, anti_alias)
+        convert_stroke_path(ustroke, upath.data.clone(), text_bbox, anti_alias)
     });
 
     if fill_path.is_none() && stroke_path.is_none() {

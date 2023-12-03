@@ -9,6 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - `usvg_tree::Text::flattened` that will contain an flattened/outlined text.
+- `usvg_tree::Text::bounding_box`. Will be set only after text flattening.
 
 ### Changed
 - `usvg_tree::Text::positions` was replaced with `usvg_tree::Text::dx` and `usvg_tree::Text::dy`.<br>
@@ -25,6 +26,9 @@ This changelog also contains important changes in dependencies.
 
 ### Removed
 - `usvg_tree::CharacterPosition`
+- `usvg_tree::Path::text_bbox`. Use `usvg_tree::Text::bounding_box` instead.
+- `usvg_text_layout::TextToPath` trait for `Text` nodes.
+  Only the whole tree can be converted at once.
 
 ## [0.36.0] - 2023-10-01
 ### Added

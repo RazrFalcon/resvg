@@ -124,7 +124,7 @@ impl Tree {
 
 pub fn convert_node(node: usvg::Node) -> (Vec<Node>, Option<tiny_skia::Rect>) {
     let mut children = Vec::new();
-    let bboxes = convert_node_inner(node, &mut children);
+    let bboxes = convert_node_inner(node, None, &mut children);
     (children, bboxes.and_then(|b| b.layer.to_rect()))
 }
 
@@ -139,14 +139,20 @@ pub struct BBoxes {
     pub layer: usvg::BBox,
 }
 
-fn convert_node_inner(node: usvg::Node, children: &mut Vec<Node>) -> Option<BBoxes> {
+fn convert_node_inner(
+    node: usvg::Node,
+    text_bbox: Option<tiny_skia::NonZeroRect>,
+    children: &mut Vec<Node>,
+) -> Option<BBoxes> {
     match &*node.borrow() {
-        usvg::NodeKind::Group(ref ugroup) => convert_group(node.clone(), ugroup, children),
-        usvg::NodeKind::Path(ref upath) => crate::path::convert(upath, children),
+        usvg::NodeKind::Group(ref ugroup) => {
+            convert_group(node.clone(), ugroup, text_bbox, children)
+        }
+        usvg::NodeKind::Path(ref upath) => crate::path::convert(upath, text_bbox, children),
         usvg::NodeKind::Image(ref uimage) => crate::image::convert(uimage, children),
         usvg::NodeKind::Text(ref utext) => {
-            if let Some(ref flattened) = utext.flattened {
-                convert_node_inner(flattened.clone(), children)
+            if let (Some(bbox), Some(flattened)) = (utext.bounding_box, &utext.flattened) {
+                convert_node_inner(flattened.clone(), Some(bbox), children)
             } else {
                 log::warn!("Text nodes should be flattened before rendering.");
                 None
@@ -158,10 +164,11 @@ fn convert_node_inner(node: usvg::Node, children: &mut Vec<Node>) -> Option<BBox
 fn convert_group(
     node: usvg::Node,
     ugroup: &usvg::Group,
+    text_bbox: Option<tiny_skia::NonZeroRect>,
     children: &mut Vec<Node>,
 ) -> Option<BBoxes> {
     let mut group_children = Vec::new();
-    let mut bboxes = match convert_children(node, &mut group_children) {
+    let mut bboxes = match convert_children(node, text_bbox, &mut group_children) {
         Some(v) => v,
         None => return convert_empty_group(ugroup, children),
     };
@@ -227,11 +234,15 @@ fn convert_empty_group(ugroup: &usvg::Group, children: &mut Vec<Node>) -> Option
     Some(bboxes)
 }
 
-fn convert_children(parent: usvg::Node, children: &mut Vec<Node>) -> Option<BBoxes> {
+fn convert_children(
+    parent: usvg::Node,
+    text_bbox: Option<tiny_skia::NonZeroRect>,
+    children: &mut Vec<Node>,
+) -> Option<BBoxes> {
     let mut bboxes = BBoxes::default();
 
     for node in parent.children() {
-        if let Some(bboxes2) = convert_node_inner(node, children) {
+        if let Some(bboxes2) = convert_node_inner(node, text_bbox, children) {
             bboxes.object = bboxes.object.expand(bboxes2.object);
             bboxes.layer = bboxes.layer.expand(bboxes2.layer);
         }

@@ -129,6 +129,7 @@ pub(crate) fn convert(
         rotate: rotate_list,
         writing_mode,
         chunks,
+        bounding_box: None,
         flattened: None,
     };
     parent.append_kind(NodeKind::Text(text));

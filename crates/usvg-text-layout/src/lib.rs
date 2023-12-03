@@ -47,34 +47,6 @@ impl TreeTextToPath for usvg_tree::Tree {
     }
 }
 
-/// A `usvg::Text` extension trait.
-pub trait TextToPath {
-    /// Converts the text node into path(s).
-    ///
-    /// `absolute_ts` is node's absolute transform. Used primarily during text-on-path resolving.
-    fn convert(&self, fontdb: &fontdb::Database, absolute_ts: Transform) -> Option<Node>;
-}
-
-impl TextToPath for Text {
-    fn convert(&self, fontdb: &fontdb::Database, absolute_ts: Transform) -> Option<Node> {
-        let (new_paths, bbox) = text_to_paths(self, fontdb, absolute_ts)?;
-
-        let group = Node::new(NodeKind::Group(Group {
-            id: self.id.clone(),
-            ..Group::default()
-        }));
-
-        let rendering_mode = resolve_rendering_mode(self);
-        for mut path in new_paths {
-            fix_obj_bounding_box(&mut path, bbox);
-            path.rendering_mode = rendering_mode;
-            group.append_kind(NodeKind::Path(path));
-        }
-
-        Some(group)
-    }
-}
-
 fn convert_text(root: Node, fontdb: &fontdb::Database) {
     let mut text_nodes = Vec::new();
     // We have to update text nodes in clipPaths, masks and patterns as well.
@@ -99,9 +71,34 @@ fn convert_text(root: Node, fontdb: &fontdb::Database) {
     for node in &text_nodes {
         let absolute_ts = node.parent().unwrap().abs_transform();
         if let NodeKind::Text(ref mut text) = *node.borrow_mut() {
-            text.flattened = text.convert(fontdb, absolute_ts);
+            if let Some((node, bbox)) = convert_node(text, fontdb, absolute_ts) {
+                text.bounding_box = Some(bbox);
+                text.flattened = Some(node);
+            }
         }
     }
+}
+
+fn convert_node(
+    text: &Text,
+    fontdb: &fontdb::Database,
+    absolute_ts: Transform,
+) -> Option<(Node, NonZeroRect)> {
+    let (new_paths, bbox) = text_to_paths(text, fontdb, absolute_ts)?;
+
+    let group = Node::new(NodeKind::Group(Group {
+        id: text.id.clone(),
+        ..Group::default()
+    }));
+
+    let rendering_mode = resolve_rendering_mode(text);
+    for mut path in new_paths {
+        fix_obj_bounding_box(&mut path, bbox);
+        path.rendering_mode = rendering_mode;
+        group.append_kind(NodeKind::Path(path));
+    }
+
+    Some((group, bbox))
 }
 
 trait DatabaseExt {
@@ -455,7 +452,7 @@ fn text_to_paths(
     text_node: &Text,
     fontdb: &fontdb::Database,
     abs_ts: Transform,
-) -> Option<(Vec<Path>, Rect)> {
+) -> Option<(Vec<Path>, NonZeroRect)> {
     let mut fonts_cache: FontsCache = HashMap::new();
     for chunk in &text_node.chunks {
         for span in &chunk.spans {
@@ -556,12 +553,8 @@ fn text_to_paths(
                 }
             }
 
-            if let Some(path) = convert_span(span, &mut clusters, span_ts) {
-                // Use `text_bbox` here and not `path.data.bbox()`.
-                if let Some(r) = path.text_bbox {
-                    bbox = bbox.expand(r);
-                }
-
+            if let Some((path, span_bbox)) = convert_span(span, &mut clusters, span_ts) {
+                bbox = bbox.expand(span_bbox);
                 new_paths.push(path);
             }
 
@@ -592,7 +585,7 @@ fn text_to_paths(
         last_y = y + curr_pos.1;
     }
 
-    let bbox = bbox.to_rect()?;
+    let bbox = bbox.to_non_zero_rect()?;
     Some((new_paths, bbox))
 }
 
@@ -649,7 +642,7 @@ fn convert_span(
     span: &TextSpan,
     clusters: &mut [OutlinedCluster],
     text_ts: Transform,
-) -> Option<Path> {
+) -> Option<(Path, NonZeroRect)> {
     let mut path_builder = tiny_skia_path::PathBuilder::new();
     let mut bboxes_builder = tiny_skia_path::PathBuilder::new();
 
@@ -700,6 +693,8 @@ fn convert_span(
         fill.rule = FillRule::NonZero;
     }
 
+    let bbox = bboxes.bounds().to_non_zero_rect()?;
+
     let path = Path {
         id: String::new(),
         visibility: span.visibility,
@@ -707,11 +702,10 @@ fn convert_span(
         stroke: span.stroke.clone(),
         paint_order: span.paint_order,
         rendering_mode: ShapeRendering::default(),
-        text_bbox: Some(bboxes.bounds().to_non_zero_rect()?),
         data: Rc::new(path),
     };
 
-    Some(path)
+    Some((path, bbox))
 }
 
 fn collect_decoration_spans(span: &TextSpan, clusters: &[OutlinedCluster]) -> Vec<DecorationSpan> {
@@ -793,7 +787,7 @@ fn convert_decoration(
 /// By the SVG spec, `tspan` doesn't have a bbox and uses the parent `text` bbox.
 /// Since we converted `text` and `tspan` to `path`, we have to update
 /// all linked paint servers (gradients and patterns) too.
-fn fix_obj_bounding_box(path: &mut Path, bbox: Rect) {
+fn fix_obj_bounding_box(path: &mut Path, bbox: NonZeroRect) {
     if let Some(ref mut fill) = path.fill {
         if let Some(new_paint) = paint_server_to_user_space_on_use(fill.paint.clone(), bbox) {
             fill.paint = new_paint;
@@ -812,7 +806,7 @@ fn fix_obj_bounding_box(path: &mut Path, bbox: Rect) {
 /// Creates a deep copy of a selected paint server and returns its ID.
 ///
 /// Returns `None` if a paint server already uses `UserSpaceOnUse`.
-fn paint_server_to_user_space_on_use(paint: Paint, bbox: Rect) -> Option<Paint> {
+fn paint_server_to_user_space_on_use(paint: Paint, bbox: NonZeroRect) -> Option<Paint> {
     if paint.units() != Some(Units::ObjectBoundingBox) {
         return None;
     }
@@ -821,7 +815,7 @@ fn paint_server_to_user_space_on_use(paint: Paint, bbox: Rect) -> Option<Paint> 
     // We have to clone a paint server, in case some other element is already using it.
 
     // Update id, transform and units.
-    let ts = Transform::from_bbox(bbox.to_non_zero_rect()?);
+    let ts = Transform::from_bbox(bbox);
     let paint = match paint {
         Paint::Color(_) => paint,
         Paint::LinearGradient(ref lg) => {

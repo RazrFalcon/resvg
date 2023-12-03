@@ -645,7 +645,6 @@ fn convert_path(
         stroke,
         paint_order,
         rendering_mode,
-        text_bbox: None,
         data: path,
     };
 
