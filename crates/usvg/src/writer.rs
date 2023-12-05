@@ -1484,59 +1484,41 @@ fn write_span(
         xml.write_attribute("style", "font-kerning:none")
     }
 
-    match span.dominant_baseline {
-        DominantBaseline::Auto => {}
-        DominantBaseline::UseScript => xml.write_svg_attribute(AId::DominantBaseline, "use-script"),
-        DominantBaseline::NoChange => xml.write_svg_attribute(AId::DominantBaseline, "no-change"),
-        DominantBaseline::ResetSize => xml.write_svg_attribute(AId::DominantBaseline, "reset-size"),
-        DominantBaseline::TextBeforeEdge => {
-            xml.write_svg_attribute(AId::DominantBaseline, "text-before-edge")
-        }
-        DominantBaseline::Middle => xml.write_svg_attribute(AId::DominantBaseline, "middle"),
-        DominantBaseline::Central => xml.write_svg_attribute(AId::DominantBaseline, "central"),
-        DominantBaseline::TextAfterEdge => {
-            xml.write_svg_attribute(AId::DominantBaseline, "text-after-edge")
-        }
-        DominantBaseline::Ideographic => {
-            xml.write_svg_attribute(AId::DominantBaseline, "ideographic")
-        }
-        DominantBaseline::Alphabetic => {
-            xml.write_svg_attribute(AId::DominantBaseline, "alphabetic")
-        }
-        DominantBaseline::Hanging => xml.write_svg_attribute(AId::DominantBaseline, "hanging"),
-        DominantBaseline::Mathematical => {
-            xml.write_svg_attribute(AId::DominantBaseline, "mathematical")
-        }
+    if span.dominant_baseline != DominantBaseline::Auto {
+        let name = match span.dominant_baseline {
+            DominantBaseline::UseScript => "use-script",
+            DominantBaseline::NoChange => "no-change",
+            DominantBaseline::ResetSize => "reset-size",
+            DominantBaseline::TextBeforeEdge => "text-before-edge",
+            DominantBaseline::Middle => "middle",
+            DominantBaseline::Central => "central",
+            DominantBaseline::TextAfterEdge => "text-after-edge",
+            DominantBaseline::Ideographic => "ideographic",
+            DominantBaseline::Alphabetic => "alphabetic",
+            DominantBaseline::Hanging => "hanging",
+            DominantBaseline::Mathematical => "mathematical",
+            DominantBaseline::Auto => unreachable!()
+        };
+        xml.write_svg_attribute(AId::DominantBaseline, name);
     }
 
-    match span.alignment_baseline {
-        AlignmentBaseline::Auto => {}
-        AlignmentBaseline::Baseline => xml.write_svg_attribute(AId::AlignmentBaseline, "baseline"),
-        AlignmentBaseline::BeforeEdge => {
-            xml.write_svg_attribute(AId::AlignmentBaseline, "before-edge")
-        }
-        AlignmentBaseline::TextBeforeEdge => {
-            xml.write_svg_attribute(AId::AlignmentBaseline, "text-before-edge")
-        }
-        AlignmentBaseline::Middle => xml.write_svg_attribute(AId::AlignmentBaseline, "middle"),
-        AlignmentBaseline::Central => xml.write_svg_attribute(AId::AlignmentBaseline, "central"),
-        AlignmentBaseline::AfterEdge => {
-            xml.write_svg_attribute(AId::AlignmentBaseline, "after-edge")
-        }
-        AlignmentBaseline::TextAfterEdge => {
-            xml.write_svg_attribute(AId::AlignmentBaseline, "text-after-edge")
-        }
-        AlignmentBaseline::Ideographic => {
-            xml.write_svg_attribute(AId::AlignmentBaseline, "ideographic")
-        }
-        AlignmentBaseline::Alphabetic => {
-            xml.write_svg_attribute(AId::AlignmentBaseline, "alphabetic")
-        }
-        AlignmentBaseline::Hanging => xml.write_svg_attribute(AId::AlignmentBaseline, "hanging"),
-        AlignmentBaseline::Mathematical => {
-            xml.write_svg_attribute(AId::AlignmentBaseline, "mathematical")
-        }
-    };
+    if span.alignment_baseline != AlignmentBaseline::Auto {
+        let name = match span.alignment_baseline {
+            AlignmentBaseline::Baseline =>  "baseline",
+            AlignmentBaseline::BeforeEdge => "before-edge",
+            AlignmentBaseline::TextBeforeEdge =>  "text-before-edge",
+            AlignmentBaseline::Middle =>  "middle",
+            AlignmentBaseline::Central =>  "central",
+            AlignmentBaseline::AfterEdge => "after-edge",
+            AlignmentBaseline::TextAfterEdge => "text-after-edge",
+            AlignmentBaseline::Ideographic => "ideographic",
+            AlignmentBaseline::Alphabetic => "alphabetic",
+            AlignmentBaseline::Hanging =>  "hanging",
+            AlignmentBaseline::Mathematical => "mathematical",
+            AlignmentBaseline::Auto => unreachable!()
+        };
+        xml.write_svg_attribute(AId::AlignmentBaseline, name);
+    }
 
     write_fill(&span.fill, is_clip_path, writer_context.opt, xml);
     write_stroke(&span.stroke, writer_context.opt, xml);
