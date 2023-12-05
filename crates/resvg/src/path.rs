@@ -22,15 +22,20 @@ pub struct StrokePath {
     pub path: Rc<tiny_skia::Path>,
 }
 
-pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
+pub fn convert(
+    upath: &usvg::Path,
+    text_bbox: Option<tiny_skia::NonZeroRect>,
+    children: &mut Vec<Node>,
+) -> Option<BBoxes> {
     let anti_alias = upath.rendering_mode.use_shape_antialiasing();
 
-    let fill_path = upath.fill.as_ref().and_then(|ufill| {
-        convert_fill_path(ufill, upath.data.clone(), upath.text_bbox, anti_alias)
-    });
+    let fill_path = upath
+        .fill
+        .as_ref()
+        .and_then(|ufill| convert_fill_path(ufill, upath.data.clone(), text_bbox, anti_alias));
 
     let stroke_path = upath.stroke.as_ref().and_then(|ustroke| {
-        convert_stroke_path(ustroke, upath.data.clone(), upath.text_bbox, anti_alias)
+        convert_stroke_path(ustroke, upath.data.clone(), text_bbox, anti_alias)
     });
 
     if fill_path.is_none() && stroke_path.is_none() {
@@ -39,8 +44,8 @@ pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
 
     let mut bboxes = BBoxes::default();
 
-    if let Some((_, l_bbox, o_bbox)) = fill_path {
-        bboxes.layer = bboxes.layer.expand(l_bbox);
+    if let Some((_, o_bbox)) = fill_path {
+        bboxes.layer = bboxes.layer.expand(o_bbox);
         bboxes.object = bboxes.object.expand(o_bbox);
     }
     if let Some((_, l_bbox, o_bbox)) = stroke_path {
@@ -55,7 +60,7 @@ pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
     }
 
     if upath.paint_order == usvg::PaintOrder::FillAndStroke {
-        if let Some((path, _, _)) = fill_path {
+        if let Some((path, _)) = fill_path {
             children.push(Node::FillPath(path));
         }
 
@@ -67,7 +72,7 @@ pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
             children.push(Node::StrokePath(path));
         }
 
-        if let Some((path, _, _)) = fill_path {
+        if let Some((path, _)) = fill_path {
             children.push(Node::FillPath(path));
         }
     }
@@ -80,7 +85,7 @@ fn convert_fill_path(
     path: Rc<tiny_skia::Path>,
     text_bbox: Option<tiny_skia::NonZeroRect>,
     anti_alias: bool,
-) -> Option<(FillPath, usvg::BBox, usvg::BBox)> {
+) -> Option<(FillPath, usvg::BBox)> {
     // Horizontal and vertical lines cannot be filled. Skip.
     if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
         return None;
@@ -91,7 +96,7 @@ fn convert_fill_path(
         usvg::FillRule::EvenOdd => tiny_skia::FillRule::EvenOdd,
     };
 
-    let mut object_bbox = usvg::BBox::from(path.bounds());
+    let mut object_bbox = usvg::BBox::from(path.compute_tight_bounds()?);
     if let Some(text_bbox) = text_bbox {
         object_bbox = object_bbox.expand(usvg::BBox::from(text_bbox));
     }
@@ -106,7 +111,7 @@ fn convert_fill_path(
         path,
     };
 
-    Some((path, object_bbox, object_bbox))
+    Some((path, object_bbox))
 }
 
 fn convert_stroke_path(
@@ -135,7 +140,7 @@ fn convert_stroke_path(
     // Zero-sized stroke path is not an error, because linecap round or square
     // would produce the shape either way.
     // TODO: Find a better way to handle it.
-    let object_bbox = usvg::BBox::from(path.bounds());
+    let object_bbox = usvg::BBox::from(path.compute_tight_bounds()?);
 
     let mut complete_object_bbox = object_bbox;
     if let Some(text_bbox) = text_bbox {
@@ -155,7 +160,7 @@ fn convert_stroke_path(
     // TODO: expand by stroke width for round/bevel joins
     let stroked_path = path.stroke(&stroke, 1.0)?;
 
-    let mut layer_bbox = usvg::BBox::from(stroked_path.bounds());
+    let mut layer_bbox = usvg::BBox::from(stroked_path.compute_tight_bounds()?);
     if let Some(text_bbox) = text_bbox {
         layer_bbox = layer_bbox.expand(usvg::BBox::from(text_bbox));
     }

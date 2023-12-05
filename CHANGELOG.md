@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- Support [`transform-origin`](https://drafts.csswg.org/css-transforms/#transform-origin-property)
+  property.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
+- Support non-default markers order via
+  [`paint-order`](https://svgwg.org/svg2-draft/painting.html#PaintOrder).
+  Previously, only fill and stroke could have been swapped.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
+- `usvg_tree::Text::flattened` that will contain a flattened/outlined text.
+- `usvg_tree::Text::bounding_box`. Will be set only after text flattening.
+- Optimize `usvg_tree::NodeExt::abs_transform` by storing absolute transforms in the tree
+  instead of calculating them each time.
+
+### Changed
+- `usvg_tree::Text::positions` was replaced with `usvg_tree::Text::dx` and `usvg_tree::Text::dy`.<br>
+  `usvg_tree::CharacterPosition::x` and `usvg_tree::CharacterPosition::y` are gone.
+  They were redundant and you should use `usvg_tree::TextChunk::x`
+  and `usvg_tree::TextChunk::y` instead.
+- `usvg_tree::LinearGradient::id` and `usvg_tree::RadialGradient::id` are moved to
+  `usvg_tree::BaseGradient::id`.
+- Do not generate element IDs during parsing. Previously, some elements like `clipPath`s
+  and `filter`s could have generated IDs, but it wasn't very reliable and mostly unnecessary.
+  Renderer doesn't rely on them and usvg writer would generate them anyway.
+- Text-to-paths conversion via `usvg_text_layout::Tree::convert_text` no longer replaces
+  original text elements with paths, but instead puts them into `usvg_tree::Text::flattened`.
+
+### Removed
+- The `transform` field from `usvg_tree::Path`, `usvg_tree::Image` and `usvg_tree::Text`.
+  Only `usvg_tree::Group` can have it.<br>
+  It doesn't break anything, because those properties were never used before anyway.<br>
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
+- `usvg_tree::CharacterPosition`
+- `usvg_tree::Path::text_bbox`. Use `usvg_tree::Text::bounding_box` instead.
+- `usvg_text_layout::TextToPath` trait for `Text` nodes.
+  Only the whole tree can be converted at once.
+
+### Fixed
+- Path object bounding box calculation. We were using point bounds instead of tight contour bounds.
+  Was broken since v0.34
+- Convert text-to-paths in embedded SVGs as well. The one inside the `Image` node.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
+- Indirect `text-decoration` resolving in some cases.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
+- (usvg) Clip paths writing to SVG.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
 
 ## [0.36.0] - 2023-10-01
 ### Added

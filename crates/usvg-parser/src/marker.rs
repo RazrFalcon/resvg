@@ -119,8 +119,7 @@ fn resolve(
             r.size().to_non_zero_rect(0.0, 0.0)
         };
 
-        let mut clip_path = ClipPath::default();
-        clip_path.id = cache.gen_clip_path_id();
+        let clip_path = ClipPath::default();
 
         let mut path = Path::new(Rc::new(tiny_skia_path::PathBuilder::from_rect(
             clip_rect.to_rect(),

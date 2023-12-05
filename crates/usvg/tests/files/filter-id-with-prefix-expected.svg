@@ -1,0 +1,25 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <filter id="prefix-filter2" x="-0.5" y="-0.5" width="2" height="2">
+            <feGaussianBlur color-interpolation-filters="sRGB" in="SourceGraphic" stdDeviation="4 4" result="result"/>
+        </filter>
+        <filter id="prefix-filter3" x="-0.5" y="-0.5" width="2" height="2">
+            <feGaussianBlur color-interpolation-filters="sRGB" in="SourceGraphic" stdDeviation="6 6" result="result"/>
+        </filter>
+        <filter id="prefix-filter4" x="-0.1" y="-0.1" width="1.2" height="1.2">
+            <feColorMatrix color-interpolation-filters="sRGB" in="SourceGraphic" result="result" type="matrix" values="0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0"/>
+        </filter>
+        <filter id="prefix-filter1" x="-0.1" y="-0.1" width="1.2" height="1.2">
+            <feGaussianBlur color-interpolation-filters="linearRGB" in="SourceGraphic" stdDeviation="4 4" result="result1"/>
+        </filter>
+    </defs>
+    <g filter="url(#prefix-filter2)">
+        <path id="prefix-rect1" fill="#2e8b57" stroke="none" d="M 20 20 L 180 20 L 180 180 L 20 180 Z"/>
+    </g>
+    <g filter="url(#prefix-filter3) url(#prefix-filter4)">
+        <path id="prefix-rect2" fill="#2e8b57" stroke="none" d="M 20 20 L 180 20 L 180 180 L 20 180 Z"/>
+    </g>
+    <g filter="url(#prefix-filter1)">
+        <path id="prefix-rect3" fill="#2e8b57" stroke="none" d="M 20 20 L 180 20 L 180 180 L 20 180 Z"/>
+    </g>
+</svg>

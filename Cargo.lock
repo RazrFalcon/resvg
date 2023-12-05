@@ -311,8 +311,9 @@ dependencies = [
 
 [[package]]
 name = "svgtypes"
-version = "0.12.0"
-source = "git+https://github.com/RazrFalcon/svgtypes#f485fb0c009e7a69b78a9fe457ceb7466b1e6b53"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e44e288cd960318917cbd540340968b90becc8bc81f171345d706e7a89d9d70"
 dependencies = [
  "kurbo",
  "siphasher",
@@ -320,9 +321,9 @@ dependencies = [
 
 [[package]]
 name = "tiny-skia"
-version = "0.11.2"
+version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b72a92a05db376db09fe6d50b7948d106011761c05a6a45e23e17ee9b556222"
+checksum = "b6a067b809476893fce6a254cf285850ff69c847e6cfbade6a20b655b6c7e80d"
 dependencies = [
  "arrayref",
  "arrayvec",
@@ -335,9 +336,9 @@ dependencies = [
 
 [[package]]
 name = "tiny-skia-path"
-version = "0.11.2"
+version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ac3865b9708fc7e1961a65c3a4fa55e984272f33092d3c859929f887fceb647"
+checksum = "5de35e8a90052baaaf61f171680ac2f8e925a1e43ea9d2e3a00514772250e541"
 dependencies = [
  "arrayref",
  "bytemuck",
@@ -407,6 +408,7 @@ version = "0.36.0"
 dependencies = [
  "base64",
  "log",
+ "once_cell",
  "pico-args",
  "usvg-parser",
  "usvg-text-layout",

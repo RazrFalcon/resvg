@@ -12,12 +12,12 @@ fn main() {
     };
 
     let gradient = usvg::LinearGradient {
-        id: "lg1".into(),
         x1: 0.0,
         y1: 0.0,
         x2: 1.0,
         y2: 0.0,
         base: usvg::BaseGradient {
+            id: "lg1".into(),
             units: usvg::Units::ObjectBoundingBox,
             transform: usvg::Transform::default(),
             spread_method: usvg::SpreadMethod::Pad,

@@ -41,8 +41,8 @@ fn main() {
         }
 
         // Text bboxes are different from path bboxes.
-        if let usvg::NodeKind::Path(ref path) = *node.borrow() {
-            if let Some(ref bbox) = path.text_bbox {
+        if let usvg::NodeKind::Text(ref text) = *node.borrow() {
+            if let Some(ref bbox) = text.bounding_box {
                 text_bboxes.push(bbox.to_rect());
             }
         }

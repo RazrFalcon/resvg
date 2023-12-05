@@ -83,6 +83,21 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::FontStyle {
     }
 }
 
+/// A text character position.
+///
+/// _Character_ is a Unicode codepoint.
+#[derive(Clone, Copy, Debug)]
+struct CharacterPosition {
+    /// An absolute X axis position.
+    x: Option<f32>,
+    /// An absolute Y axis position.
+    y: Option<f32>,
+    /// A relative X axis offset.
+    dx: Option<f32>,
+    /// A relative Y axis offset.
+    dy: Option<f32>,
+}
+
 pub(crate) fn convert(
     text_node: SvgNode,
     state: &converter::State,
@@ -109,10 +124,13 @@ pub(crate) fn convert(
     let text = Text {
         id,
         rendering_mode,
-        positions: pos_list,
+        dx: pos_list.iter().map(|v| v.dx.unwrap_or(0.0)).collect(),
+        dy: pos_list.iter().map(|v| v.dy.unwrap_or(0.0)).collect(),
         rotate: rotate_list,
         writing_mode,
         chunks,
+        bounding_box: None,
+        flattened: None,
     };
     parent.append_kind(NodeKind::Text(text));
 }
