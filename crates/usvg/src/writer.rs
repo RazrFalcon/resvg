@@ -923,15 +923,15 @@ fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &
                     }
                 }
 
-                if !text.rotate.is_empty() && text.rotate.iter().any(|r| *r != 0.0) {
+                if text.rotate.iter().any(|r| *r != 0.0) {
                     xml.write_numbers(AId::Rotate, &text.rotate);
                 }
 
-                if !text.dx.is_empty() && text.dx.iter().any(|dx| *dx != 0.0) {
+                if text.dx.iter().any(|dx| *dx != 0.0) {
                     xml.write_numbers(AId::Dx, &text.dx);
                 }
 
-                if !text.dy.is_empty() && text.dy.iter().any(|dy| *dy != 0.0) {
+                if text.dy.iter().any(|dy| *dy != 0.0) {
                     xml.write_numbers(AId::Dy, &text.dy);
                 }
 
