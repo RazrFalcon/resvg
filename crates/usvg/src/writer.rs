@@ -557,13 +557,13 @@ fn conv_defs(writer_context: &mut WriterContext, xml: &mut XmlWriter) {
     }
 
     if tree.has_text_nodes() {
+        // TODO: doesn't check for text in patterns and masks...
         for node in tree.root.descendants() {
             if let NodeKind::Text(ref text) = *node.borrow() {
                 for chunk in &text.chunks {
                     if let TextFlow::Path(ref text_path) = chunk.text_flow {
-                        let path_id = writer_context.id_generator.bump_path();
                         let path = Path {
-                            id: path_id.clone(),
+                            id: text_path.id.clone(),
                             data: text_path.path.clone(),
                             visibility: Visibility::default(),
                             fill: None,
@@ -573,7 +573,7 @@ fn conv_defs(writer_context: &mut WriterContext, xml: &mut XmlWriter) {
                             paint_order: PaintOrder::default(),
                         };
                         write_path(&path, false, Transform::default(), None, opt, xml);
-                        writer_context.text_path_map.push(path_id);
+                        writer_context.text_path_map.push(text_path.id.clone());
                     }
                 }
             }
