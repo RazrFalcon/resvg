@@ -866,7 +866,7 @@ fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &
                 xml.start_svg_element(EId::Text);
 
                 if !text.id.is_empty() {
-                    xml.write_id_attribute(&text.id, writer_context.opt);
+                    xml.write_id_attribute(&text.id, ctx);
                 }
 
                 xml.write_attribute("xml:space", "preserve");
@@ -892,25 +892,19 @@ fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &
                     xml.write_numbers(AId::Rotate, &text.rotate);
                 }
 
-                if !text.positions.is_empty() && text.positions.iter().any(|c| c.dx.is_some()) {
+                if !text.dx.is_empty() && text.dx.iter().any(|dx| *dx != 0.0) {
                     xml.write_numbers(
                         AId::Dx,
                         &text
-                            .positions
-                            .iter()
-                            .map(|c| c.dx.unwrap_or_default())
-                            .collect::<Vec<_>>(),
+                            .dx
                     );
                 }
 
-                if !text.positions.is_empty() && text.positions.iter().any(|c| c.dy.is_some()) {
+                if !text.dy.is_empty() && text.dy.iter().any(|dy| *dy != 0.0) {
                     xml.write_numbers(
                         AId::Dy,
                         &text
-                            .positions
-                            .iter()
-                            .map(|c| c.dy.unwrap_or_default())
-                            .collect::<Vec<_>>(),
+                            .dy
                     );
                 }
 
@@ -921,10 +915,10 @@ fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &
                         xml.start_svg_element(EId::TextPath);
 
                         xml.write_attribute_raw("xlink:href", |buf| {
-                            let ref_path = writer_context.text_path_map.pop().unwrap();
-                            let prefix = writer_context.opt.id_prefix.as_deref().unwrap_or_default();
-                            let url = format!("#{}{}", prefix, ref_path);
-                            buf.extend_from_slice(url.as_bytes());
+                            // let ref_path = writer_context.text_path_map.pop().unwrap();
+                            // let prefix = writer_context.opt.id_prefix.as_deref().unwrap_or_default();
+                            // let url = format!("#{}{}", prefix, ref_path);
+                            // buf.extend_from_slice(url.as_bytes());
                         });
 
                         if text_path.start_offset != 0.0 {
@@ -979,12 +973,12 @@ fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &
                         for (deco_name, deco) in &decorations {
                             xml.start_svg_element(EId::Tspan);
                             xml.write_svg_attribute(AId::TextDecoration, deco_name);
-                            write_fill(&deco.fill, false, writer_context.opt, xml);
-                            write_stroke(&deco.stroke, writer_context.opt, xml);
+                            write_fill(&deco.fill, false, ctx, xml);
+                            write_stroke(&deco.stroke, ctx, xml);
                         }
 
                         // Writes the remaining attributes of a span
-                        write_span(is_clip_path, writer_context, xml, chunk, span);
+                        write_span(is_clip_path, ctx, xml, chunk, span);
 
                         // End for each tspan we needed to create for decorations
                         for _ in &decorations {
@@ -1594,7 +1588,7 @@ fn write_num(num: f32, buf: &mut Vec<u8>, precision: u8) {
 /// Write all of the tspan attributes except for baseline_shift and decorations.
 fn write_span(
     is_clip_path: bool,
-    writer_context: &mut WriterContext,
+    ctx: &mut WriterContext,
     xml: &mut XmlWriter,
     chunk: &TextChunk,
     span: &TextSpan,
@@ -1685,8 +1679,8 @@ fn write_span(
         xml.write_svg_attribute(AId::AlignmentBaseline, name);
     }
 
-    write_fill(&span.fill, is_clip_path, writer_context.opt, xml);
-    write_stroke(&span.stroke, writer_context.opt, xml);
+    write_fill(&span.fill, is_clip_path, ctx, xml);
+    write_stroke(&span.stroke, ctx, xml);
 
     let cur_text = &chunk.text[span.start..span.end];
 
