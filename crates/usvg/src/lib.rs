@@ -71,4 +71,3 @@ impl TreeWriting for usvg_tree::Tree {
         writer::convert(self, opt)
     }
 }
-

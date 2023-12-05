@@ -35,14 +35,17 @@ pub fn render(name: &str) -> usize {
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
         // TODO: Revert this
+        let db = GLOBAL_FONTDB.lock().unwrap();
+        let mut original_tree = usvg::Tree::from_data(&svg_data, &opt)
+            .unwrap();
+        original_tree.convert_text(&db);
+
         let mut tree = usvg::Tree::from_str(
-            &usvg::Tree::from_data(&svg_data, &opt)
-                .unwrap()
+            &original_tree
                 .to_string(&XmlOptions::default()),
             &opt,
         )
         .unwrap();
-        let db = GLOBAL_FONTDB.lock().unwrap();
         tree.convert_text(&db);
         tree
     };

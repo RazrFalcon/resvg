@@ -71,6 +71,9 @@ struct WriterContext<'a> {
     next_linear_gradient_index: usize,
     next_radial_gradient_index: usize,
     next_pattern_index: usize,
+    next_path_index: usize,
+
+    text_path_map: HashMap<String, String>,
 }
 
 impl WriterContext<'_> {
@@ -129,6 +132,12 @@ impl WriterContext<'_> {
         id
     }
 
+    fn gen_path_id(&mut self) -> String {
+        let (new_index, id) = self.gen_id("path", self.next_path_index);
+        self.next_path_index = new_index;
+        id
+    }
+
     fn push_defs_id<T>(&mut self, node: &Rc<T>, id: String) {
         let key = Rc::as_ptr(node) as usize;
         if !self.id_map.contains_key(&key) {
@@ -180,6 +189,8 @@ pub(crate) fn convert(tree: &Tree, opt: &XmlOptions) -> String {
         next_linear_gradient_index: 0,
         next_radial_gradient_index: 0,
         next_pattern_index: 0,
+        next_path_index: 0,
+        text_path_map: HashMap::new(),
     };
     collect_ids(tree, &mut ctx);
 
@@ -722,6 +733,30 @@ fn conv_defs(tree: &Tree, ctx: &mut WriterContext, xml: &mut XmlWriter) {
 
         xml.end_element();
     }
+
+    if tree.has_text_nodes() {
+        // TODO: doesn't check for text in patterns and masks...
+        for node in tree.root.descendants() {
+            if let NodeKind::Text(ref text) = *node.borrow() {
+                for chunk in &text.chunks {
+                    if let TextFlow::Path(ref text_path) = chunk.text_flow {
+                        let path = Path {
+                            id: ctx.gen_path_id(),
+                            data: text_path.path.clone(),
+                            visibility: Visibility::default(),
+                            fill: None,
+                            stroke: None,
+                            rendering_mode: ShapeRendering::default(),
+                            paint_order: PaintOrder::default(),
+                        };
+                        write_path(&path, false, Transform::default(), None, ctx, xml);
+                        ctx.text_path_map
+                            .insert(text_path.id.clone(), path.id.clone());
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn conv_elements(parent: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &mut XmlWriter) {
@@ -893,19 +928,11 @@ fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &
                 }
 
                 if !text.dx.is_empty() && text.dx.iter().any(|dx| *dx != 0.0) {
-                    xml.write_numbers(
-                        AId::Dx,
-                        &text
-                            .dx
-                    );
+                    xml.write_numbers(AId::Dx, &text.dx);
                 }
 
                 if !text.dy.is_empty() && text.dy.iter().any(|dy| *dy != 0.0) {
-                    xml.write_numbers(
-                        AId::Dy,
-                        &text
-                            .dy
-                    );
+                    xml.write_numbers(AId::Dy, &text.dy);
                 }
 
                 xml.set_preserve_whitespaces(true);
@@ -915,10 +942,10 @@ fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &
                         xml.start_svg_element(EId::TextPath);
 
                         xml.write_attribute_raw("xlink:href", |buf| {
-                            // let ref_path = writer_context.text_path_map.pop().unwrap();
-                            // let prefix = writer_context.opt.id_prefix.as_deref().unwrap_or_default();
-                            // let url = format!("#{}{}", prefix, ref_path);
-                            // buf.extend_from_slice(url.as_bytes());
+                            let ref_path = ctx.text_path_map.get(&text_path.id).unwrap();
+                            let prefix = ctx.opt.id_prefix.as_deref().unwrap_or_default();
+                            let url = format!("#{}{}", prefix, ref_path);
+                            buf.extend_from_slice(url.as_bytes());
                         });
 
                         if text_path.start_offset != 0.0 {
@@ -964,11 +991,11 @@ fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &
                             ("line-through", &span.decoration.line_through),
                             ("overline", &span.decoration.overline),
                         ]
-                            .iter()
-                            .filter_map(|&(key, option_value)| {
-                                option_value.as_ref().map(|value| (key, value))
-                            })
-                            .collect();
+                        .iter()
+                        .filter_map(|&(key, option_value)| {
+                            option_value.as_ref().map(|value| (key, value))
+                        })
+                        .collect();
 
                         for (deco_name, deco) in &decorations {
                             xml.start_svg_element(EId::Tspan);
@@ -1656,25 +1683,25 @@ fn write_span(
             DominantBaseline::Alphabetic => "alphabetic",
             DominantBaseline::Hanging => "hanging",
             DominantBaseline::Mathematical => "mathematical",
-            DominantBaseline::Auto => unreachable!()
+            DominantBaseline::Auto => unreachable!(),
         };
         xml.write_svg_attribute(AId::DominantBaseline, name);
     }
 
     if span.alignment_baseline != AlignmentBaseline::Auto {
         let name = match span.alignment_baseline {
-            AlignmentBaseline::Baseline =>  "baseline",
+            AlignmentBaseline::Baseline => "baseline",
             AlignmentBaseline::BeforeEdge => "before-edge",
-            AlignmentBaseline::TextBeforeEdge =>  "text-before-edge",
-            AlignmentBaseline::Middle =>  "middle",
-            AlignmentBaseline::Central =>  "central",
+            AlignmentBaseline::TextBeforeEdge => "text-before-edge",
+            AlignmentBaseline::Middle => "middle",
+            AlignmentBaseline::Central => "central",
             AlignmentBaseline::AfterEdge => "after-edge",
             AlignmentBaseline::TextAfterEdge => "text-after-edge",
             AlignmentBaseline::Ideographic => "ideographic",
             AlignmentBaseline::Alphabetic => "alphabetic",
-            AlignmentBaseline::Hanging =>  "hanging",
+            AlignmentBaseline::Hanging => "hanging",
             AlignmentBaseline::Mathematical => "mathematical",
-            AlignmentBaseline::Auto => unreachable!()
+            AlignmentBaseline::Auto => unreachable!(),
         };
         xml.write_svg_attribute(AId::AlignmentBaseline, name);
     }
