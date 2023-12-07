@@ -26,12 +26,15 @@ fn resave_with_prefix(name: &str, id_prefix: &str) {
 
 fn resave_impl(name: &str, id_prefix: Option<String>) {
     let input_svg = std::fs::read_to_string(format!("tests/files/{}.svg", name)).unwrap();
+    let text_to_paths = input_svg.contains("<!-- text-to-paths -->");
 
     let tree = {
         let opt = usvg_parser::Options::default();
         let mut tree = usvg_tree::Tree::from_str(&input_svg, &opt).unwrap();
         let fontdb = GLOBAL_FONTDB.lock().unwrap();
-        tree.convert_text(&fontdb);
+        if text_to_paths {
+            tree.convert_text(&fontdb);
+        }
         tree
     };
     let mut xml_opt = usvg::XmlOptions::default();
@@ -59,8 +62,8 @@ fn ellipse_simple_case() {
 }
 
 #[test]
-fn text_simple_case() {
-    resave("text-simple-case");
+fn text_as_paths_simple_case() {
+    resave("text-as-paths-simple-case");
 }
 
 #[test]

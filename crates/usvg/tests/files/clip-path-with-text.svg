@@ -1,4 +1,5 @@
 <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- text-to-paths -->
     <!-- The `text` element will be converted into a group, -->
     <!-- but `clipPath` doesn't allow group children. -->
     <!-- Make sure the group will be skipped and only its content is written. -->
