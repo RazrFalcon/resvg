@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use rgb::{FromSlice, RGBA8};
-use usvg::{fontdb, TreeParsing, TreeTextToPath, TreeWriting, XmlOptions};
+use usvg::{fontdb, TreeParsing, TreeTextToPath};
 
 #[rustfmt::skip]
 mod render;
@@ -34,18 +34,8 @@ pub fn render(name: &str) -> usize {
 
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
-        // TODO: Revert this
+        let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
         let db = GLOBAL_FONTDB.lock().unwrap();
-        let mut original_tree = usvg::Tree::from_data(&svg_data, &opt)
-            .unwrap();
-        original_tree.convert_text(&db);
-
-        let mut tree = usvg::Tree::from_str(
-            &original_tree
-                .to_string(&XmlOptions::default()),
-            &opt,
-        )
-        .unwrap();
         tree.convert_text(&db);
         tree
     };
