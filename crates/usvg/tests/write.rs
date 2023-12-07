@@ -43,7 +43,7 @@ fn resave_impl(name: &str, id_prefix: Option<String>) {
     xml_opt.transforms_precision = 4;
     let output_svg = tree.to_string(&xml_opt);
 
-    // std::fs::write(format!("tests/files/{}-expected.svg", name), output_svg).unwrap();
+    std::fs::write(format!("tests/files/{}-expected.svg", name), output_svg.clone()).unwrap();
 
     let expected_svg =
         std::fs::read_to_string(format!("tests/files/{}-expected.svg", name)).unwrap();
@@ -114,4 +114,14 @@ fn clip_path_with_complex_text() {
 #[test]
 fn text_with_generated_gradients() {
     resave("text-with-generated-gradients");
+}
+
+#[test]
+fn text_on_path() {
+    resave("text-on-path");
+}
+
+#[test]
+fn text_simple_case() {
+    resave("text-simple-case");
 }
