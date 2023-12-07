@@ -970,33 +970,21 @@ fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &
                     }
 
                     for span in &chunk.spans {
-                        for baseline_shift in &span.baseline_shift {
-                            xml.start_svg_element(EId::Tspan);
-                            match baseline_shift {
-                                BaselineShift::Baseline => {}
-                                BaselineShift::Number(num) => {
-                                    xml.write_svg_attribute(AId::BaselineShift, num)
-                                }
-                                BaselineShift::Subscript => {
-                                    xml.write_svg_attribute(AId::BaselineShift, "sub")
-                                }
-                                BaselineShift::Superscript => {
-                                    xml.write_svg_attribute(AId::BaselineShift, "super")
-                                }
-                            }
-                        }
-
                         let decorations: Vec<_> = [
                             ("underline", &span.decoration.underline),
                             ("line-through", &span.decoration.line_through),
                             ("overline", &span.decoration.overline),
                         ]
-                        .iter()
-                        .filter_map(|&(key, option_value)| {
-                            option_value.as_ref().map(|value| (key, value))
-                        })
-                        .collect();
+                            .iter()
+                            .filter_map(|&(key, option_value)| {
+                                option_value.as_ref().map(|value| (key, value))
+                            })
+                            .collect();
 
+                        // Decorations need to be dumped BEFORE we write the actual span data
+                        // (so that for example stroke color of span doesn't affect the text
+                        // itself while baseline shifts need to be written after (since they are
+                        // affected by the font size)
                         for (deco_name, deco) in &decorations {
                             xml.start_svg_element(EId::Tspan);
                             xml.write_svg_attribute(AId::TextDecoration, deco_name);
@@ -1004,16 +992,10 @@ fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &
                             write_stroke(&deco.stroke, ctx, xml);
                         }
 
-                        // Writes the remaining attributes of a span
                         write_span(is_clip_path, ctx, xml, chunk, span);
 
                         // End for each tspan we needed to create for decorations
                         for _ in &decorations {
-                            xml.end_element();
-                        }
-
-                        // End for each tspan we needed to create for baseline_shift
-                        for _ in &span.baseline_shift {
                             xml.end_element();
                         }
                     }
@@ -1612,7 +1594,7 @@ fn write_num(num: f32, buf: &mut Vec<u8>, precision: u8) {
     write!(buf, "{}", v).unwrap();
 }
 
-/// Write all of the tspan attributes except for baseline_shift and decorations.
+/// Write all of the tspan attributes except for decorations.
 fn write_span(
     is_clip_path: bool,
     ctx: &mut WriterContext,
@@ -1709,9 +1691,30 @@ fn write_span(
     write_fill(&span.fill, is_clip_path, ctx, xml);
     write_stroke(&span.stroke, ctx, xml);
 
+    for baseline_shift in &span.baseline_shift {
+        xml.start_svg_element(EId::Tspan);
+        match baseline_shift {
+            BaselineShift::Baseline => {}
+            BaselineShift::Number(num) => {
+                xml.write_svg_attribute(AId::BaselineShift, num)
+            }
+            BaselineShift::Subscript => {
+                xml.write_svg_attribute(AId::BaselineShift, "sub")
+            }
+            BaselineShift::Superscript => {
+                xml.write_svg_attribute(AId::BaselineShift, "super")
+            }
+        }
+    }
+
     let cur_text = &chunk.text[span.start..span.end];
 
     xml.write_text(&cur_text.replace('&', "&amp;"));
+
+    // End for each tspan we needed to create for baseline_shift
+    for _ in &span.baseline_shift {
+        xml.end_element();
+    }
 
     xml.end_element();
 }
