@@ -135,3 +135,13 @@ fn text_with_dx_and_dy() {
 fn text_with_rotate() {
     resave("text-with-rotate");
 }
+
+#[test]
+fn text_with_complex_text_decoration() {
+    resave("text-with-complex-text-decoration");
+}
+
+#[test]
+fn text_with_nested_baseline_shift() {
+    resave("text-with-nested-baseline-shift");
+}
