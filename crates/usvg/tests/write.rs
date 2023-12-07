@@ -125,3 +125,13 @@ fn text_on_path() {
 fn text_simple_case() {
     resave("text-simple-case");
 }
+
+#[test]
+fn text_with_dx_and_dy() {
+    resave("text-with-dx-and-dy");
+}
+
+#[test]
+fn text_with_rotate() {
+    resave("text-with-rotate");
+}
