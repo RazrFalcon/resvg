@@ -975,11 +975,11 @@ fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &
                             ("line-through", &span.decoration.line_through),
                             ("overline", &span.decoration.overline),
                         ]
-                            .iter()
-                            .filter_map(|&(key, option_value)| {
-                                option_value.as_ref().map(|value| (key, value))
-                            })
-                            .collect();
+                        .iter()
+                        .filter_map(|&(key, option_value)| {
+                            option_value.as_ref().map(|value| (key, value))
+                        })
+                        .collect();
 
                         // Decorations need to be dumped BEFORE we write the actual span data
                         // (so that for example stroke color of span doesn't affect the text
@@ -1695,15 +1695,9 @@ fn write_span(
         xml.start_svg_element(EId::Tspan);
         match baseline_shift {
             BaselineShift::Baseline => {}
-            BaselineShift::Number(num) => {
-                xml.write_svg_attribute(AId::BaselineShift, num)
-            }
-            BaselineShift::Subscript => {
-                xml.write_svg_attribute(AId::BaselineShift, "sub")
-            }
-            BaselineShift::Superscript => {
-                xml.write_svg_attribute(AId::BaselineShift, "super")
-            }
+            BaselineShift::Number(num) => xml.write_svg_attribute(AId::BaselineShift, num),
+            BaselineShift::Subscript => xml.write_svg_attribute(AId::BaselineShift, "sub"),
+            BaselineShift::Superscript => xml.write_svg_attribute(AId::BaselineShift, "super"),
         }
     }
 
