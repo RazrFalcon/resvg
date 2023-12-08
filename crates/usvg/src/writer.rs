@@ -735,27 +735,32 @@ fn conv_defs(tree: &Tree, ctx: &mut WriterContext, xml: &mut XmlWriter) {
     }
 
     if tree.has_text_nodes() {
-        // TODO: doesn't check for text in patterns and masks...
-        for node in tree.root.descendants() {
-            if let NodeKind::Text(ref text) = *node.borrow() {
-                for chunk in &text.chunks {
-                    if let TextFlow::Path(ref text_path) = chunk.text_flow {
-                        let path = Path {
-                            id: ctx.gen_path_id(),
-                            data: text_path.path.clone(),
-                            visibility: Visibility::default(),
-                            fill: None,
-                            stroke: None,
-                            rendering_mode: ShapeRendering::default(),
-                            paint_order: PaintOrder::default(),
-                        };
-                        write_path(&path, false, Transform::default(), None, ctx, xml);
-                        ctx.text_path_map
-                            .insert(text_path.id.clone(), path.id.clone());
-                    }
+        write_text_path_paths(&tree.root, ctx, xml);
+    }
+}
+
+fn write_text_path_paths(node: &Node, ctx: &mut WriterContext, xml: &mut XmlWriter) {
+    for node in node.descendants() {
+        if let NodeKind::Text(ref text) = *node.borrow() {
+            for chunk in &text.chunks {
+                if let TextFlow::Path(ref text_path) = chunk.text_flow {
+                    let path = Path {
+                        id: ctx.gen_path_id(),
+                        data: text_path.path.clone(),
+                        visibility: Visibility::default(),
+                        fill: None,
+                        stroke: None,
+                        rendering_mode: ShapeRendering::default(),
+                        paint_order: PaintOrder::default(),
+                    };
+                    write_path(&path, false, Transform::default(), None, ctx, xml);
+                    ctx.text_path_map
+                        .insert(text_path.id.clone(), path.id.clone());
                 }
             }
         }
+
+        node.subroots(|subroot| write_text_path_paths(&subroot, ctx, xml));
     }
 }
 

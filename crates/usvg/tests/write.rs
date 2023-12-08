@@ -129,6 +129,11 @@ fn preserve_text_text_on_path() {
 }
 
 #[test]
+fn preserve_text_text_path_in_mask() {
+    resave_with_text("preserve-text-text-path-in-mask");
+}
+
+#[test]
 fn preserve_text_text_simple_case() {
     resave("preserve-text-text-simple-case");
 }
