@@ -923,9 +923,7 @@ fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &
                     TextRendering::GeometricPrecision => {
                         xml.write_svg_attribute(AId::TextRendering, "geometricPrecision")
                     }
-                    TextRendering::OptimizeLegibility => {
-                        xml.write_svg_attribute(AId::TextRendering, "optimizeLegibility")
-                    }
+                    TextRendering::OptimizeLegibility => {}
                 }
 
                 if text.rotate.iter().any(|r| *r != 0.0) {
