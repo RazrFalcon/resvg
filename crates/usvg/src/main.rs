@@ -91,6 +91,7 @@ OPTIONS:
                                     Refer to the explanation of the '--default-width'
                                     option. [values: 1..4294967295 (inclusive)] [default: 100]
 
+  --preserve-text                   Do not convert text into paths.
   --id-prefix                       Adds a prefix to each ID attribute
   --indent INDENT                   Sets the XML nodes indent
                                     [values: none, 0, 1, 2, 3, 4, tabs] [default: 4]
