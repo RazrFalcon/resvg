@@ -1,5 +1,4 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <!-- text-to-paths -->
     <!-- Due to various SVG Text idiosyncrasies, a gradient with `objectBoundingBox` units -->
     <!-- have to be converted into `userSpaceOnUse` one. -->
     <!-- To do so, `usvg` will create a new gradient, but without setting the gradient ID. -->

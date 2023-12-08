@@ -941,12 +941,12 @@ fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &
                     if let TextFlow::Path(text_path) = &chunk.text_flow {
                         xml.start_svg_element(EId::TextPath);
 
-                        xml.write_attribute_raw("xlink:href", |buf| {
-                            let ref_path = ctx.text_path_map.get(&text_path.id).unwrap();
-                            let prefix = ctx.opt.id_prefix.as_deref().unwrap_or_default();
-                            let url = format!("#{}{}", prefix, ref_path);
-                            buf.extend_from_slice(url.as_bytes());
-                        });
+                        let prefix = ctx.opt.id_prefix.as_deref().unwrap_or_default();
+                        let ref_path = ctx.text_path_map.get(&text_path.id).unwrap();
+                        xml.write_attribute_fmt(
+                            "xlink:href",
+                            format_args!("#{}{}", prefix, ref_path),
+                        );
 
                         if text_path.start_offset != 0.0 {
                             xml.write_svg_attribute(AId::StartOffset, &text_path.start_offset);

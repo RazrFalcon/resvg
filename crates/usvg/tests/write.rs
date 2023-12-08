@@ -17,22 +17,25 @@ static GLOBAL_FONTDB: Lazy<std::sync::Mutex<usvg_text_layout::fontdb::Database>>
     });
 
 fn resave(name: &str) {
-    resave_impl(name, None);
+    resave_impl(name, None, false);
+}
+
+fn resave_with_text(name: &str) {
+    resave_impl(name, None, true);
 }
 
 fn resave_with_prefix(name: &str, id_prefix: &str) {
-    resave_impl(name, Some(id_prefix.to_string()));
+    resave_impl(name, Some(id_prefix.to_string()), false);
 }
 
-fn resave_impl(name: &str, id_prefix: Option<String>) {
+fn resave_impl(name: &str, id_prefix: Option<String>, preserve_text: bool) {
     let input_svg = std::fs::read_to_string(format!("tests/files/{}.svg", name)).unwrap();
-    let text_to_paths = input_svg.contains("<!-- text-to-paths -->");
 
     let tree = {
         let opt = usvg_parser::Options::default();
         let mut tree = usvg_tree::Tree::from_str(&input_svg, &opt).unwrap();
-        let fontdb = GLOBAL_FONTDB.lock().unwrap();
-        if text_to_paths {
+        if !preserve_text {
+            let fontdb = GLOBAL_FONTDB.lock().unwrap();
             tree.convert_text(&fontdb);
         }
         tree
@@ -66,8 +69,8 @@ fn ellipse_simple_case() {
 }
 
 #[test]
-fn text_as_paths_simple_case() {
-    resave("text-as-paths-simple-case");
+fn text_simple_case() {
+    resave("text-simple-case");
 }
 
 #[test]
@@ -116,36 +119,36 @@ fn clip_path_with_complex_text() {
 }
 
 #[test]
-fn text_with_generated_gradients() {
-    resave("text-with-generated-gradients");
+fn preserve_text_text_with_generated_gradients() {
+    resave_with_text("preserve-text-text-with-generated-gradients");
 }
 
 #[test]
-fn text_on_path() {
-    resave("text-on-path");
+fn preserve_text_text_on_path() {
+    resave_with_text("preserve-text-text-on-path");
 }
 
 #[test]
-fn text_simple_case() {
-    resave("text-simple-case");
+fn preserve_text_text_simple_case() {
+    resave("preserve-text-text-simple-case");
 }
 
 #[test]
-fn text_with_dx_and_dy() {
-    resave("text-with-dx-and-dy");
+fn preserve_text_text_with_dx_and_dy() {
+    resave_with_text("preserve-text-text-with-dx-and-dy");
 }
 
 #[test]
-fn text_with_rotate() {
-    resave("text-with-rotate");
+fn preserve_text_text_with_rotate() {
+    resave_with_text("preserve-text-text-with-rotate");
 }
 
 #[test]
-fn text_with_complex_text_decoration() {
-    resave("text-with-complex-text-decoration");
+fn preserve_text_text_with_complex_text_decoration() {
+    resave_with_text("preserve-text-text-with-complex-text-decoration");
 }
 
 #[test]
-fn text_with_nested_baseline_shift() {
-    resave("text-with-nested-baseline-shift");
+fn preserve_text_text_with_nested_baseline_shift() {
+    resave_with_text("preserve-text-text-with-nested-baseline-shift");
 }
