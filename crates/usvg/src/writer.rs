@@ -1609,7 +1609,25 @@ fn write_span(
 ) {
     xml.start_svg_element(EId::Tspan);
 
-    xml.write_svg_attribute(AId::FontFamily, &span.font.families.join(", "));
+    if span.font.families.len() > 0 {
+        let families = if span.font.families.len() == 1 {
+            span.font.families[0].clone()
+        } else {
+            span.font
+                .families
+                .iter()
+                .map(|family| {
+                    if ctx.opt.writer_opts.use_single_quote {
+                        format!("\"{}\"", family)
+                    } else {
+                        format!("'{}'", family)
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(", ")
+        };
+        xml.write_svg_attribute(AId::FontFamily, &families);
+    }
 
     match span.font.style {
         FontStyle::Normal => {}

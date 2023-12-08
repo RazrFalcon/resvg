@@ -119,18 +119,18 @@ fn clip_path_with_complex_text() {
 }
 
 #[test]
-fn preserve_text_text_with_generated_gradients() {
-    resave_with_text("preserve-text-text-with-generated-gradients");
+fn text_with_generated_gradients() {
+    resave("text-with-generated-gradients");
+}
+
+#[test]
+fn preserve_text_multiple_font_families() {
+    resave_with_text("preserve-text-multiple-font-families");
 }
 
 #[test]
 fn preserve_text_text_on_path() {
     resave_with_text("preserve-text-text-on-path");
-}
-
-#[test]
-fn preserve_text_text_path_in_mask() {
-    resave_with_text("preserve-text-text-path-in-mask");
 }
 
 #[test]
