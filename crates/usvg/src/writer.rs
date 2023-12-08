@@ -1637,6 +1637,21 @@ fn write_span(
         xml.write_svg_attribute(AId::FontWeight, &span.font.weight);
     }
 
+    if span.font.stretch != FontStretch::Normal {
+        let name = match span.font.stretch {
+            FontStretch::Condensed => "condensed",
+            FontStretch::ExtraCondensed => "extra-condensed",
+            FontStretch::UltraCondensed => "ultra-condensed",
+            FontStretch::SemiCondensed => "semi-condensed",
+            FontStretch::Expanded => "expanded",
+            FontStretch::SemiExpanded => "semi-expanded",
+            FontStretch::ExtraExpanded => "extra-expanded",
+            FontStretch::UltraExpanded => "ultra-expanded",
+            FontStretch::Normal => unreachable!(),
+        };
+        xml.write_svg_attribute(AId::FontStretch, name);
+    }
+
     xml.write_svg_attribute(AId::FontSize, &span.font_size);
 
     match span.visibility {
