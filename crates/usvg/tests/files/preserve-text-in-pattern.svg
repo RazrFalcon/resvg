@@ -1,0 +1,7 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <pattern id="patt1" patternUnits="userSpaceOnUse" width="20" height="20">
+        <text y="15">H</text>
+    </pattern>
+    <rect id="rect3" x="0" y="0" width="200" height="200"
+          fill="url(#patt1)"/>
+</svg>

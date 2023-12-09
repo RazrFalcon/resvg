@@ -78,6 +78,11 @@ fn preserve_id_filter() {
     resave("preserve-id-filter");
 }
 
+// #[test]
+// fn preserve_id_fe_image() {
+//     resave("preserve-id-fe-image");
+// }
+
 #[test]
 fn generate_filter_id_function_v1() {
     resave("generate-id-filter-function-v1");
@@ -131,6 +136,21 @@ fn preserve_text_multiple_font_families() {
 #[test]
 fn preserve_text_on_path() {
     resave_with_text("preserve-text-on-path");
+}
+
+// #[test]
+// fn preserve_text_in_clip_path() {
+//     resave_with_text("preserve-text-in-clip-path");
+// }
+
+// #[test]
+// fn preserve_text_in_mask() {
+//     resave_with_text("preserve-text-in-mask");
+// }
+
+#[test]
+fn preserve_text_in_pattern() {
+    resave_with_text("preserve-text-in-pattern");
 }
 
 #[test]

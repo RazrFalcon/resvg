@@ -1,0 +1,14 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+        <path id="pathForText1" d="M 30 100 A 40 30 20 1 1 160 100"
+              fill="none" stroke="none"/>
+    </defs>
+    <clipPath id="clip1">
+        <text id="text1" fill="white" font-family="Noto Sans" font-size="24">
+            <textPath id="textPath1" xlink:href="#pathForText1">
+                abcdefghijklmnopqrstuvwxyz
+            </textPath>
+        </text>
+    </clipPath>
+    <rect id="rect2" x="0" y="0" width="200" height="200" fill="green" clip-path="url(#clip1)"/>
+</svg>
