@@ -129,31 +129,31 @@ fn preserve_text_multiple_font_families() {
 }
 
 #[test]
-fn preserve_text_text_on_path() {
-    resave_with_text("preserve-text-text-on-path");
+fn preserve_text_on_path() {
+    resave_with_text("preserve-text-on-path");
 }
 
 #[test]
-fn preserve_text_text_simple_case() {
-    resave("preserve-text-text-simple-case");
+fn preserve_text_simple_case() {
+    resave("preserve-text-simple-case");
 }
 
 #[test]
-fn preserve_text_text_with_dx_and_dy() {
-    resave_with_text("preserve-text-text-with-dx-and-dy");
+fn preserve_text_with_dx_and_dy() {
+    resave_with_text("preserve-text-with-dx-and-dy");
 }
 
 #[test]
-fn preserve_text_text_with_rotate() {
-    resave_with_text("preserve-text-text-with-rotate");
+fn preserve_text_with_rotate() {
+    resave_with_text("preserve-text-with-rotate");
 }
 
 #[test]
-fn preserve_text_text_with_complex_text_decoration() {
-    resave_with_text("preserve-text-text-with-complex-text-decoration");
+fn preserve_text_with_complex_text_decoration() {
+    resave_with_text("preserve-text-with-complex-text-decoration");
 }
 
 #[test]
-fn preserve_text_text_with_nested_baseline_shift() {
-    resave_with_text("preserve-text-text-with-nested-baseline-shift");
+fn preserve_text_with_nested_baseline_shift() {
+    resave_with_text("preserve-text-with-nested-baseline-shift");
 }
