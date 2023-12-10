@@ -366,7 +366,12 @@ fn resolve_text_flow(node: SvgNode, state: &converter::State) -> Option<TextFlow
         node.resolve_length(AId::StartOffset, state, 0.0)
     };
 
-    Some(TextFlow::Path(Rc::new(TextPath { start_offset, path })))
+    let id = linked_node.element_id().to_string();
+    Some(TextFlow::Path(Rc::new(TextPath {
+        id,
+        start_offset,
+        path,
+    })))
 }
 
 fn convert_font(node: SvgNode, state: &converter::State) -> Font {

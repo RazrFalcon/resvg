@@ -1,0 +1,6 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     font-family="Noto Sans" font-size="64">
+    <text dy="100 10 15">
+        <tspan dx="10">T</tspan>e<tspan dx="20">x</tspan><tspan dy="-20">t</tspan>
+    </text>
+</svg>

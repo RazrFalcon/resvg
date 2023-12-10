@@ -1,0 +1,12 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     font-family="Noto Sans" font-size="48">
+    <!-- Text decoration is affected by the fill/stroke of the element -->
+    <!-- where it was defined, so in case of complex text decorations -->
+    <!-- multiple tspans need to be generated. -->
+    <text id="text1" x="50" y="100" fill="yellow" stroke="green" text-decoration="line-through">
+        <tspan stroke="purple" text-decoration="overline">
+            <tspan id="tspan1" fill="blue" stroke="gray">Text</tspan>
+        </tspan>
+
+    </text>
+</svg>

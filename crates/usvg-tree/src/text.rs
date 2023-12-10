@@ -239,6 +239,11 @@ impl Default for TextAnchor {
 /// A path used by text-on-path.
 #[derive(Clone, Debug)]
 pub struct TextPath {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    pub id: String,
+
     /// A text offset in SVG coordinates.
     ///
     /// Percentage values already resolved.
