@@ -206,10 +206,10 @@ pub(crate) fn convert(tree: &Tree, opt: &XmlOptions) -> String {
     }
 
     xml.start_svg_element(EId::Defs);
-    conv_defs(tree, &mut ctx, &mut xml);
+    write_defs(tree, &mut ctx, &mut xml);
     xml.end_element();
 
-    conv_elements(&tree.root, false, &mut ctx, &mut xml);
+    write_elements(&tree.root, false, &mut ctx, &mut xml);
 
     xml.end_document()
 }
@@ -257,7 +257,7 @@ fn collect_node_ids(parent: &Node, ctx: &mut WriterContext) {
     }
 }
 
-fn conv_filters(tree: &Tree, ctx: &mut WriterContext, xml: &mut XmlWriter) {
+fn write_filters(tree: &Tree, ctx: &mut WriterContext, xml: &mut XmlWriter) {
     let mut filters = Vec::new();
     tree.filters(|filter| {
         if !filters.iter().any(|other| Rc::ptr_eq(&filter, other)) {
@@ -271,7 +271,7 @@ fn conv_filters(tree: &Tree, ctx: &mut WriterContext, xml: &mut XmlWriter) {
             if let filter::Kind::Image(ref img) = fe.kind {
                 if let filter::ImageKind::Use(ref node) = img.data {
                     if !written_fe_image_nodes.iter().any(|id| id == &*node.id()) {
-                        conv_element(node, false, ctx, xml);
+                        write_element(node, false, ctx, xml);
                         written_fe_image_nodes.push(node.id().to_string());
                     }
                 }
@@ -623,7 +623,9 @@ fn conv_filters(tree: &Tree, ctx: &mut WriterContext, xml: &mut XmlWriter) {
     }
 }
 
-fn conv_defs(tree: &Tree, ctx: &mut WriterContext, xml: &mut XmlWriter) {
+fn write_defs(tree: &Tree, ctx: &mut WriterContext, xml: &mut XmlWriter) {
+    // Write gradients and text paths first, because they cannot reference other nodes.
+
     let mut paint_servers: Vec<Paint> = Vec::new();
     tree.paint_servers(|paint| {
         if !paint_servers.contains(paint) {
@@ -631,7 +633,7 @@ fn conv_defs(tree: &Tree, ctx: &mut WriterContext, xml: &mut XmlWriter) {
         }
     });
 
-    for paint in paint_servers {
+    for paint in &paint_servers {
         match paint {
             Paint::Color(_) => {}
             Paint::LinearGradient(lg) => {
@@ -655,30 +657,40 @@ fn conv_defs(tree: &Tree, ctx: &mut WriterContext, xml: &mut XmlWriter) {
                 write_base_grad(&rg.base, ctx, xml);
                 xml.end_element();
             }
-            Paint::Pattern(pattern) => {
-                xml.start_svg_element(EId::Pattern);
-                ctx.prepare_defs_id(&pattern, &pattern.id, xml, |ctx| ctx.gen_pattern_id());
-                xml.write_rect_attrs(pattern.rect);
-                xml.write_units(AId::PatternUnits, pattern.units, Units::ObjectBoundingBox);
-                xml.write_units(
-                    AId::PatternContentUnits,
-                    pattern.content_units,
-                    Units::UserSpaceOnUse,
-                );
-                xml.write_transform(AId::PatternTransform, pattern.transform, ctx);
-
-                if let Some(ref vbox) = pattern.view_box {
-                    xml.write_viewbox(vbox);
-                }
-
-                conv_elements(&pattern.root, false, ctx, xml);
-
-                xml.end_element();
-            }
+            Paint::Pattern(_) => {} // will be written later
         }
     }
 
-    conv_filters(tree, ctx, xml);
+    if tree.has_text_nodes() {
+        write_text_path_paths(&tree.root, ctx, xml);
+    }
+
+    // Now write nodes that can reference other nodes.
+
+    for paint in paint_servers {
+        if let Paint::Pattern(pattern) = paint {
+            xml.start_svg_element(EId::Pattern);
+            ctx.prepare_defs_id(&pattern, &pattern.id, xml, |ctx| ctx.gen_pattern_id());
+            xml.write_rect_attrs(pattern.rect);
+            xml.write_units(AId::PatternUnits, pattern.units, Units::ObjectBoundingBox);
+            xml.write_units(
+                AId::PatternContentUnits,
+                pattern.content_units,
+                Units::UserSpaceOnUse,
+            );
+            xml.write_transform(AId::PatternTransform, pattern.transform, ctx);
+
+            if let Some(ref vbox) = pattern.view_box {
+                xml.write_viewbox(vbox);
+            }
+
+            write_elements(&pattern.root, false, ctx, xml);
+
+            xml.end_element();
+        }
+    }
+
+    write_filters(tree, ctx, xml);
 
     let mut clip_paths = Vec::new();
     tree.clip_paths(|clip| {
@@ -698,7 +710,7 @@ fn conv_defs(tree: &Tree, ctx: &mut WriterContext, xml: &mut XmlWriter) {
             xml.write_func_iri(AId::ClipPath, &clip.id, ctx);
         }
 
-        conv_elements(&clip.root, true, ctx, xml);
+        write_elements(&clip.root, true, ctx, xml);
 
         xml.end_element();
     }
@@ -729,13 +741,9 @@ fn conv_defs(tree: &Tree, ctx: &mut WriterContext, xml: &mut XmlWriter) {
             xml.write_func_iri(AId::Mask, &mask.id, ctx);
         }
 
-        conv_elements(&mask.root, false, ctx, xml);
+        write_elements(&mask.root, false, ctx, xml);
 
         xml.end_element();
-    }
-
-    if tree.has_text_nodes() {
-        write_text_path_paths(&tree.root, ctx, xml);
     }
 }
 
@@ -764,13 +772,13 @@ fn write_text_path_paths(node: &Node, ctx: &mut WriterContext, xml: &mut XmlWrit
     }
 }
 
-fn conv_elements(parent: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &mut XmlWriter) {
+fn write_elements(parent: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &mut XmlWriter) {
     for n in parent.children() {
-        conv_element(&n, is_clip_path, ctx, xml);
+        write_element(&n, is_clip_path, ctx, xml);
     }
 }
 
-fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &mut XmlWriter) {
+fn write_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &mut XmlWriter) {
     match *node.borrow() {
         NodeKind::Path(ref p) => {
             write_path(p, is_clip_path, Transform::default(), None, ctx, xml);
@@ -895,13 +903,13 @@ fn conv_element(node: &Node, is_clip_path: bool, ctx: &mut WriterContext, xml: &
                 );
             }
 
-            conv_elements(node, false, ctx, xml);
+            write_elements(node, false, ctx, xml);
 
             xml.end_element();
         }
         NodeKind::Text(ref text) => {
             if let Some(ref flattened) = text.flattened {
-                conv_element(flattened, is_clip_path, ctx, xml);
+                write_element(flattened, is_clip_path, ctx, xml);
             } else {
                 xml.start_svg_element(EId::Text);
 
@@ -1321,6 +1329,12 @@ fn has_xlink(node: &Node) -> bool {
                 }
             }
             _ => {}
+        }
+
+        let mut present = false;
+        n.subroots(|root| present |= has_xlink(&root));
+        if present {
+            return true;
         }
     }
 

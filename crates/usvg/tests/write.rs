@@ -138,15 +138,15 @@ fn preserve_text_on_path() {
     resave_with_text("preserve-text-on-path");
 }
 
-// #[test]
-// fn preserve_text_in_clip_path() {
-//     resave_with_text("preserve-text-in-clip-path");
-// }
+#[test]
+fn preserve_text_in_clip_path() {
+    resave_with_text("preserve-text-in-clip-path");
+}
 
-// #[test]
-// fn preserve_text_in_mask() {
-//     resave_with_text("preserve-text-in-mask");
-// }
+#[test]
+fn preserve_text_in_mask() {
+    resave_with_text("preserve-text-in-mask");
+}
 
 #[test]
 fn preserve_text_in_pattern() {
