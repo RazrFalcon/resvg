@@ -12,10 +12,10 @@ documentation = "https://docs.rs/usvg-text-layout/"
 workspace = "../.."
 
 [dependencies]
-fontdb = { version = "0.15", default-features = false }
+fontdb = { version = "0.16", default-features = false }
 kurbo = "0.9" # Bezier curves utils for text-on-path
 log = "0.4"
-rustybuzz = "0.10"
+rustybuzz = "0.12"
 unicode-bidi = "0.3"
 unicode-script = "0.5"
 unicode-vo = "0.1"

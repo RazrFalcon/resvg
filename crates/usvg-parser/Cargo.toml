@@ -19,7 +19,7 @@ flate2 = { version = "1.0", default-features = false, features = ["rust_backend"
 imagesize = "0.12" # raster images size detection
 kurbo = "0.9" # Bezier curves utils
 log = "0.4"
-roxmltree = "0.18"
+roxmltree = "0.19"
 simplecss = "0.2"
 siphasher = "0.3" # perfect hash implementation
 svgtypes = "0.13"
