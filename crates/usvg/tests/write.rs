@@ -78,10 +78,15 @@ fn preserve_id_filter() {
     resave("preserve-id-filter");
 }
 
-// #[test]
-// fn preserve_id_fe_image() {
-//     resave("preserve-id-fe-image");
-// }
+#[test]
+fn preserve_id_fe_image() {
+    resave("preserve-id-fe-image");
+}
+
+#[test]
+fn preserve_id_fe_image_with_opacity() {
+    resave("preserve-id-fe-image-with-opacity");
+}
 
 #[test]
 fn generate_filter_id_function_v1() {

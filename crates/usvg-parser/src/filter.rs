@@ -700,6 +700,22 @@ fn convert_image(fe: SvgNode, state: &converter::State, cache: &mut converter::C
         crate::converter::convert_element(node, &state, cache, &mut root);
         return if let Some(node) = root.first_child() {
             node.detach(); // drops `root` node
+
+            // Transfer node id from group's child to the group itself if needed.
+            let mut id = String::new();
+            if let Some(child) = node.first_child() {
+                id = child.borrow().id().to_string();
+                match *child.borrow_mut() {
+                    NodeKind::Group(ref mut g) => g.id.clear(),
+                    NodeKind::Path(ref mut path) => path.id.clear(),
+                    NodeKind::Image(ref mut image) => image.id.clear(),
+                    NodeKind::Text(ref mut text) => text.id.clear(),
+                }
+            }
+            if let NodeKind::Group(ref mut g) = *node.borrow_mut() {
+                g.id = id;
+            }
+
             Kind::Image(Image {
                 aspect,
                 rendering_mode,

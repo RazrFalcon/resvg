@@ -1,0 +1,14 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+        <g id="rect3" opacity="0.5">
+            <path fill="#008000" stroke="none" d="M 36 36 L 156 36 L 156 156 L 36 156 Z"/>
+        </g>
+        <filter id="filter1" x="-0.1" y="-0.1" width="1.2" height="1.2">
+            <feImage color-interpolation-filters="linearRGB" preserveAspectRatio="xMidYMid" image-rendering="optimizeQuality" xlink:href="#rect3" result="result1"/>
+        </filter>
+    </defs>
+    <g filter="url(#filter1)">
+        <path id="rect1" fill="#ff0000" stroke="none" d="M 20 20 L 180 20 L 180 180 L 20 180 Z"/>
+    </g>
+    <path id="rect2" fill="none" stroke="#000000" d="M 40 40 L 160 40 L 160 160 L 40 160 Z"/>
+</svg>
