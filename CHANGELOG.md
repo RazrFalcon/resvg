@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.37.0] - 2023-12-16
 ### Added
+- `usvg` can write text back to SVG now.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
+- `--preserve-text` flag to the `usvg` CLI tool.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
 - Support [`transform-origin`](https://drafts.csswg.org/css-transforms/#transform-origin-property)
   property.
   Thanks to [@LaurenzV](https://github.com/LaurenzV).
@@ -990,7 +996,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.36.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.37.0...HEAD
+[0.37.0]: https://github.com/RazrFalcon/resvg/compare/v0.36.0...v0.37.0
 [0.36.0]: https://github.com/RazrFalcon/resvg/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/RazrFalcon/resvg/compare/v0.34.1...v0.35.0
 [0.34.1]: https://github.com/RazrFalcon/resvg/compare/v0.34.0...v0.34.1
