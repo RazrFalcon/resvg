@@ -175,7 +175,6 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
     let mut cache = Cache::default();
     convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
 
-    remove_empty_groups(&mut tree);
     tree.calculate_abs_transforms();
 
     if restore_viewbox {
@@ -555,44 +554,6 @@ pub(crate) fn convert_group(
     } else {
         GroupKind::Skip
     }
-}
-
-fn remove_empty_groups(tree: &mut Tree) {
-    fn rm(parent: Node) -> bool {
-        let mut changed = false;
-
-        let mut curr_node = parent.first_child();
-        while let Some(node) = curr_node {
-            curr_node = node.next_sibling();
-
-            let is_g = if let NodeKind::Group(ref g) = *node.borrow() {
-                // Skip empty groups when they do not have a `filter` property.
-                // The `filter` property can be set on empty groups. For example:
-                //
-                // <filter id="filter1" filterUnits="userSpaceOnUse"
-                //         x="20" y="20" width="160" height="160">
-                //   <feFlood flood-color="green"/>
-                // </filter>
-                // <g filter="url(#filter1)"/>
-                g.filters.is_empty()
-            } else {
-                false
-            };
-
-            if is_g && !node.has_children() {
-                node.detach();
-                changed = true;
-            } else {
-                if rm(node) {
-                    changed = true;
-                }
-            }
-        }
-
-        changed
-    }
-
-    while rm(tree.root.clone()) {}
 }
 
 fn convert_path(
