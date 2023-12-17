@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::render::TinySkiaPixmapMutExt;
-use crate::tree::{BBoxes, Node, Tree};
+use crate::tree::{Node, Tree};
 
 pub enum ImageKind {
     #[cfg(feature = "raster-images")]
@@ -17,15 +17,12 @@ pub struct Image {
     pub kind: ImageKind,
 }
 
-pub fn convert(image: &usvg::Image, children: &mut Vec<Node>) -> Option<BBoxes> {
+pub fn convert(image: &usvg::Image, children: &mut Vec<Node>) -> Option<usvg::BBox> {
     let object_bbox = image.bounding_box?.to_rect();
-    let bboxes = BBoxes {
-        object: usvg::BBox::from(object_bbox),
-        layer: usvg::BBox::from(object_bbox),
-    };
+    let layer_bbox = usvg::BBox::from(object_bbox);
 
     if image.visibility != usvg::Visibility::Visible {
-        return Some(bboxes);
+        return Some(layer_bbox);
     }
 
     let mut quality = tiny_skia::FilterQuality::Bicubic;
@@ -50,7 +47,7 @@ pub fn convert(image: &usvg::Image, children: &mut Vec<Node>) -> Option<BBoxes> 
         kind,
     }));
 
-    Some(bboxes)
+    Some(layer_bbox)
 }
 
 pub fn render_image(

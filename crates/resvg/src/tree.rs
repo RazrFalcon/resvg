@@ -124,26 +124,15 @@ impl Tree {
 
 pub fn convert_node(node: usvg::Node) -> (Vec<Node>, Option<tiny_skia::Rect>) {
     let mut children = Vec::new();
-    let bboxes = convert_node_inner(node, None, &mut children);
-    (children, bboxes.and_then(|b| b.layer.to_rect()))
-}
-
-#[derive(Default, Debug)]
-pub struct BBoxes {
-    /// The object bounding box.
-    ///
-    /// Just a shape/image bbox as per SVG spec.
-    pub object: usvg::BBox,
-
-    /// Similar to `object`, but expanded to fit the stroke as well.
-    pub layer: usvg::BBox,
+    let layer_bbox = convert_node_inner(node, None, &mut children);
+    (children, layer_bbox.and_then(|r| r.to_rect()))
 }
 
 fn convert_node_inner(
     node: usvg::Node,
     text_bbox: Option<tiny_skia::NonZeroRect>,
     children: &mut Vec<Node>,
-) -> Option<BBoxes> {
+) -> Option<usvg::BBox> {
     match &*node.borrow() {
         usvg::NodeKind::Group(ref ugroup) => {
             convert_group(node.clone(), ugroup, text_bbox, children)
@@ -166,14 +155,14 @@ fn convert_group(
     ugroup: &usvg::Group,
     text_bbox: Option<tiny_skia::NonZeroRect>,
     children: &mut Vec<Node>,
-) -> Option<BBoxes> {
+) -> Option<usvg::BBox> {
     let mut group_children = Vec::new();
-    let mut bboxes = match convert_children(node, text_bbox, &mut group_children) {
+    let mut layer_bbox = match convert_children(node.clone(), text_bbox, &mut group_children) {
         Some(v) => v,
         None => return convert_empty_group(ugroup, children),
     };
 
-    let (filters, filter_bbox) = crate::filter::convert(&ugroup.filters, bboxes.object.to_rect());
+    let (filters, filter_bbox) = crate::filter::convert(&ugroup.filters, ugroup.bounding_box);
 
     // TODO: figure out a nicer solution
     // Ignore groups with filters but invalid filter bboxes.
@@ -182,29 +171,31 @@ fn convert_group(
     }
 
     if let Some(filter_bbox) = filter_bbox {
-        bboxes.layer = usvg::BBox::from(filter_bbox);
+        layer_bbox = usvg::BBox::from(filter_bbox);
     }
+
+    let bounding_box = ugroup.bounding_box?;
+    let bbox = layer_bbox.to_rect()?;
 
     let group = Group {
         transform: ugroup.transform,
         opacity: ugroup.opacity,
         blend_mode: convert_blend_mode(ugroup.blend_mode),
-        clip_path: crate::clip::convert(ugroup.clip_path.clone(), bboxes.object.to_rect()?),
-        mask: crate::mask::convert(ugroup.mask.clone(), bboxes.object.to_rect()?),
+        clip_path: crate::clip::convert(ugroup.clip_path.clone(), bounding_box),
+        mask: crate::mask::convert(ugroup.mask.clone(), bounding_box),
         isolate: ugroup.isolate,
         filters,
-        bbox: bboxes.layer.to_rect()?,
+        bbox,
         children: group_children,
     };
 
-    bboxes.object = bboxes.object.transform(ugroup.transform)?;
-    bboxes.layer = bboxes.layer.transform(ugroup.transform)?;
+    layer_bbox = layer_bbox.transform(ugroup.transform)?;
 
     children.push(Node::Group(group));
-    Some(bboxes)
+    Some(layer_bbox)
 }
 
-fn convert_empty_group(ugroup: &usvg::Group, children: &mut Vec<Node>) -> Option<BBoxes> {
+fn convert_empty_group(ugroup: &usvg::Group, children: &mut Vec<Node>) -> Option<usvg::BBox> {
     if ugroup.filters.is_empty() {
         return None;
     }
@@ -224,32 +215,25 @@ fn convert_empty_group(ugroup: &usvg::Group, children: &mut Vec<Node>) -> Option
         children: Vec::new(),
     };
 
-    let bboxes = BBoxes {
-        // TODO: find a better solution
-        object: usvg::BBox::default(),
-        layer: usvg::BBox::from(layer_bbox),
-    };
-
     children.push(Node::Group(group));
-    Some(bboxes)
+    Some(usvg::BBox::from(layer_bbox))
 }
 
 fn convert_children(
     parent: usvg::Node,
     text_bbox: Option<tiny_skia::NonZeroRect>,
     children: &mut Vec<Node>,
-) -> Option<BBoxes> {
-    let mut bboxes = BBoxes::default();
+) -> Option<usvg::BBox> {
+    let mut layer_bbox = usvg::BBox::default();
 
     for node in parent.children() {
-        if let Some(bboxes2) = convert_node_inner(node, text_bbox, children) {
-            bboxes.object = bboxes.object.expand(bboxes2.object);
-            bboxes.layer = bboxes.layer.expand(bboxes2.layer);
+        if let Some(layer_bbox_2) = convert_node_inner(node, text_bbox, children) {
+            layer_bbox = layer_bbox.expand(layer_bbox_2);
         }
     }
 
-    if !bboxes.layer.is_default() && !bboxes.object.is_default() {
-        Some(bboxes)
+    if !layer_bbox.is_default() {
+        Some(layer_bbox)
     } else {
         None
     }

@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use crate::paint_server::Paint;
 use crate::render::Context;
-use crate::tree::{BBoxes, Node, OptionLog};
+use crate::tree::{Node, OptionLog};
 
 pub struct FillPath {
     pub paint: Paint,
@@ -26,7 +26,7 @@ pub fn convert(
     upath: &usvg::Path,
     text_bbox: Option<tiny_skia::NonZeroRect>,
     children: &mut Vec<Node>,
-) -> Option<BBoxes> {
+) -> Option<usvg::BBox> {
     let anti_alias = upath.rendering_mode.use_shape_antialiasing();
 
     let mut bounding_box = upath.bounding_box.log_none(|| {
@@ -58,21 +58,19 @@ pub fn convert(
         return None;
     }
 
-    let mut bboxes = BBoxes::default();
+    let mut layer_bbox = usvg::BBox::default();
 
     if let Some(_) = fill_path {
-        bboxes.layer = bboxes.layer.expand(bounding_box);
-        bboxes.object = bboxes.object.expand(bounding_box);
+        layer_bbox = layer_bbox.expand(bounding_box);
     }
     if let Some((_, l_bbox)) = stroke_path {
-        bboxes.layer = bboxes.layer.expand(l_bbox);
-        bboxes.object = bboxes.object.expand(bounding_box);
+        layer_bbox = layer_bbox.expand(l_bbox);
     }
 
     // Do not add hidden paths, but preserve the bbox.
     // visibility=hidden still affects the bbox calculation.
     if upath.visibility != usvg::Visibility::Visible {
-        return Some(bboxes);
+        return Some(layer_bbox);
     }
 
     if upath.paint_order == usvg::PaintOrder::FillAndStroke {
@@ -93,7 +91,7 @@ pub fn convert(
         }
     }
 
-    Some(bboxes)
+    Some(layer_bbox)
 }
 
 fn convert_fill_path(
@@ -159,6 +157,7 @@ fn convert_stroke_path(
         object_bbox.to_non_zero_rect(),
     )?;
 
+    // TODO: seems like stroke shouldn't be dashed for bbox
     if let Some(ref list) = ustroke.dasharray {
         stroke.dash = tiny_skia::StrokeDash::new(list.clone(), ustroke.dashoffset);
     }

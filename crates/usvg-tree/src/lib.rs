@@ -1399,7 +1399,13 @@ fn calculate_bounding_box(node: &Node) {
         let mut bbox = BBox::default();
         for child in node.children() {
             calculate_bounding_box(&child);
-            if let Some(c_bbox) = child.bounding_box() {
+            if let Some(mut c_bbox) = child.bounding_box() {
+                if let NodeKind::Group(ref group) = *child.borrow() {
+                    if let Some(r) = c_bbox.transform(group.transform) {
+                        c_bbox = r;
+                    }
+                }
+
                 bbox = bbox.expand(c_bbox);
             }
         }
