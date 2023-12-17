@@ -489,6 +489,36 @@ impl Default for Stroke {
     }
 }
 
+impl Stroke {
+    /// Converts into a `tiny_skia_path::Stroke` type.
+    pub fn to_tiny_skia(&self) -> tiny_skia_path::Stroke {
+        let mut stroke = tiny_skia_path::Stroke {
+            width: self.width.get(),
+            miter_limit: self.miterlimit.get(),
+            line_cap: match self.linecap {
+                LineCap::Butt => tiny_skia_path::LineCap::Butt,
+                LineCap::Round => tiny_skia_path::LineCap::Round,
+                LineCap::Square => tiny_skia_path::LineCap::Square,
+            },
+            line_join: match self.linejoin {
+                LineJoin::Miter => tiny_skia_path::LineJoin::Miter,
+                LineJoin::MiterClip => tiny_skia_path::LineJoin::MiterClip,
+                LineJoin::Round => tiny_skia_path::LineJoin::Round,
+                LineJoin::Bevel => tiny_skia_path::LineJoin::Bevel,
+            },
+            // According to the spec, dash should not be accounted during
+            // bbox calculation.
+            dash: None,
+        };
+
+        if let Some(ref list) = self.dasharray {
+            stroke.dash = tiny_skia_path::StrokeDash::new(list.clone(), self.dashoffset);
+        }
+
+        stroke
+    }
+}
+
 /// A fill rule.
 ///
 /// `fill-rule` attribute in the SVG.
@@ -751,6 +781,22 @@ impl NodeKind {
     pub fn abs_bounding_box(&self) -> Option<Rect> {
         self.bounding_box()?.transform(self.abs_transform())
     }
+
+    /// Returns node's bounding box, including stroke, in object coordinates.
+    pub fn stroke_bounding_box(&self) -> Option<Rect> {
+        match self {
+            NodeKind::Group(ref group) => group.stroke_bounding_box,
+            NodeKind::Path(ref path) => path.stroke_bounding_box,
+            // Image cannot be stroked.
+            NodeKind::Image(ref image) => image.bounding_box.map(|r| r.to_rect()),
+            NodeKind::Text(ref text) => text.stroke_bounding_box,
+        }
+    }
+
+    /// Returns node's bounding box, including stroke, in canvas coordinates.
+    pub fn abs_stroke_bounding_box(&self) -> Option<Rect> {
+        self.stroke_bounding_box()?.transform(self.abs_transform())
+    }
 }
 
 /// A group container.
@@ -816,6 +862,11 @@ pub struct Group {
     ///
     /// Will be set only after calling [`Tree::calculate_bounding_boxes`].
     pub bounding_box: Option<Rect>,
+
+    /// Element's object bounding box including stroke.
+    ///
+    /// Similar to `bounding_box`, but includes stroke.
+    pub stroke_bounding_box: Option<Rect>,
 }
 
 impl Default for Group {
@@ -831,6 +882,7 @@ impl Default for Group {
             mask: None,
             filters: Vec::new(),
             bounding_box: None,
+            stroke_bounding_box: None,
         }
     }
 }
@@ -919,6 +971,13 @@ pub struct Path {
     ///
     /// Will be set only after calling [`Tree::calculate_bounding_boxes`].
     pub bounding_box: Option<Rect>,
+
+    /// Element's object bounding box including stroke.
+    ///
+    /// Similar to `bounding_box`, but includes stroke.
+    ///
+    /// Will have the same value as `bounding_box` when path has no stroke.
+    pub stroke_bounding_box: Option<Rect>,
 }
 
 impl Path {
@@ -934,7 +993,25 @@ impl Path {
             data,
             abs_transform: Transform::default(),
             bounding_box: None,
+            stroke_bounding_box: None,
         }
+    }
+
+    /// Calculates and sets path's stroke bounding box.
+    ///
+    /// This operation is expensive.
+    pub fn calculate_stroke_bounding_box(&self) -> Option<Rect> {
+        let stroke = self.stroke.as_ref()?;
+        let mut stroke = stroke.to_tiny_skia();
+        // According to the spec, dash should not be accounted during bbox calculation.
+        stroke.dash = None;
+
+        // Expensive, but there is not much we can do about it.
+        if let Some(stroked_path) = self.data.stroke(&stroke, 1.0) {
+            return stroked_path.compute_tight_bounds();
+        }
+
+        None
     }
 }
 
@@ -1316,6 +1393,16 @@ pub trait NodeExt {
     /// This method is cheap since bounding boxes are already calculated.
     fn abs_bounding_box(&self) -> Option<Rect>;
 
+    /// Returns node's bounding box, including stroke, in object coordinates if any.
+    ///
+    /// This method is cheap since bounding boxes are already calculated.
+    fn stroke_bounding_box(&self) -> Option<Rect>;
+
+    /// Returns node's bounding box, including stroke, in canvas coordinates if any.
+    ///
+    /// This method is cheap since bounding boxes are already calculated.
+    fn abs_stroke_bounding_box(&self) -> Option<Rect>;
+
     /// Appends `kind` as a node child.
     fn append_kind(&self, kind: NodeKind) -> Node;
 
@@ -1362,6 +1449,14 @@ impl NodeExt for Node {
         self.borrow().abs_bounding_box()
     }
 
+    fn stroke_bounding_box(&self) -> Option<Rect> {
+        self.borrow().stroke_bounding_box()
+    }
+
+    fn abs_stroke_bounding_box(&self) -> Option<Rect> {
+        self.borrow().abs_stroke_bounding_box()
+    }
+
     #[inline]
     fn append_kind(&self, kind: NodeKind) -> Node {
         let new_node = Node::new(kind);
@@ -1397,8 +1492,10 @@ fn calculate_abs_transform(node: &Node, ts: Transform) {
 fn calculate_bounding_box(node: &Node) {
     if node.has_children() {
         let mut bbox = BBox::default();
+        let mut stroke_bbox = BBox::default();
         for child in node.children() {
             calculate_bounding_box(&child);
+
             if let Some(mut c_bbox) = child.bounding_box() {
                 if let NodeKind::Group(ref group) = *child.borrow() {
                     if let Some(r) = c_bbox.transform(group.transform) {
@@ -1408,16 +1505,31 @@ fn calculate_bounding_box(node: &Node) {
 
                 bbox = bbox.expand(c_bbox);
             }
+
+            if let Some(mut c_bbox) = child.stroke_bounding_box() {
+                if let NodeKind::Group(ref group) = *child.borrow() {
+                    if let Some(r) = c_bbox.transform(group.transform) {
+                        c_bbox = r;
+                    }
+                }
+
+                stroke_bbox = stroke_bbox.expand(c_bbox);
+            }
         }
 
         if let NodeKind::Group(ref mut group) = *node.borrow_mut() {
             group.bounding_box = bbox.to_rect();
+            group.stroke_bounding_box = stroke_bbox.to_rect();
         }
     }
 
     match *node.borrow_mut() {
         NodeKind::Path(ref mut path) => {
             path.bounding_box = path.data.compute_tight_bounds();
+            path.stroke_bounding_box = path.calculate_stroke_bounding_box();
+            if path.stroke_bounding_box.is_none() {
+                path.stroke_bounding_box = path.bounding_box;
+            }
         }
         // TODO: should we account for `preserveAspectRatio`?
         NodeKind::Image(ref mut image) => image.bounding_box = Some(image.view_box.rect),

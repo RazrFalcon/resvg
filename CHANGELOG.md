@@ -13,6 +13,11 @@ This changelog also contains important changes in dependencies.
 - `usvg::Tree::calculate_bounding_boxes` to calculate all bounding boxes beforehand.
 - `usvg::Node::bounding_box` which returns a precalculated node's bounding box in object coordinates.
 - `usvg::Node::abs_bounding_box` which returns a precalculated node's bounding box in canvas coordinates.
+- `usvg::Node::stroke_bounding_box` which returns a precalculated node's bounding box,
+  including stroke, in object coordinates.
+- `usvg::Node::abs_stroke_bounding_box` which returns a precalculated node's bounding box,
+  including stroke, in canvas coordinates.
+- (c-api) `resvg_get_node_stroke_bbox`
 
 ### Removed
 - `usvg::Node::calculate_bbox`. Use `usvg::Node::abs_bounding_box`.

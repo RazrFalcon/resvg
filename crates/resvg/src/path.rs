@@ -45,26 +45,19 @@ pub fn convert(
         .and_then(|ufill| convert_fill_path(ufill, upath.data.clone(), bounding_box, anti_alias));
 
     let stroke_path = upath.stroke.as_ref().and_then(|ustroke| {
-        convert_stroke_path(
-            ustroke,
-            upath.data.clone(),
-            bounding_box,
-            text_bbox,
-            anti_alias,
-        )
+        convert_stroke_path(ustroke, upath.data.clone(), bounding_box, anti_alias)
     });
 
     if fill_path.is_none() && stroke_path.is_none() {
         return None;
     }
 
-    let mut layer_bbox = usvg::BBox::default();
+    let mut layer_bbox = usvg::BBox::from(bounding_box);
 
-    if let Some(_) = fill_path {
-        layer_bbox = layer_bbox.expand(bounding_box);
-    }
-    if let Some((_, l_bbox)) = stroke_path {
-        layer_bbox = layer_bbox.expand(l_bbox);
+    if stroke_path.is_some() {
+        if let Some(stroke_bbox) = upath.stroke_bounding_box {
+            layer_bbox = layer_bbox.expand(stroke_bbox);
+        }
     }
 
     // Do not add hidden paths, but preserve the bbox.
@@ -78,11 +71,11 @@ pub fn convert(
             children.push(Node::FillPath(path));
         }
 
-        if let Some((path, _)) = stroke_path {
+        if let Some(path) = stroke_path {
             children.push(Node::StrokePath(path));
         }
     } else {
-        if let Some((path, _)) = stroke_path {
+        if let Some(path) = stroke_path {
             children.push(Node::StrokePath(path));
         }
 
@@ -127,26 +120,8 @@ fn convert_stroke_path(
     ustroke: &usvg::Stroke,
     path: Rc<tiny_skia::Path>,
     object_bbox: tiny_skia::Rect,
-    text_bbox: Option<tiny_skia::NonZeroRect>,
     anti_alias: bool,
-) -> Option<(StrokePath, usvg::BBox)> {
-    let mut stroke = tiny_skia::Stroke {
-        width: ustroke.width.get(),
-        miter_limit: ustroke.miterlimit.get(),
-        line_cap: match ustroke.linecap {
-            usvg::LineCap::Butt => tiny_skia::LineCap::Butt,
-            usvg::LineCap::Round => tiny_skia::LineCap::Round,
-            usvg::LineCap::Square => tiny_skia::LineCap::Square,
-        },
-        line_join: match ustroke.linejoin {
-            usvg::LineJoin::Miter => tiny_skia::LineJoin::Miter,
-            usvg::LineJoin::MiterClip => tiny_skia::LineJoin::MiterClip,
-            usvg::LineJoin::Round => tiny_skia::LineJoin::Round,
-            usvg::LineJoin::Bevel => tiny_skia::LineJoin::Bevel,
-        },
-        dash: None,
-    };
-
+) -> Option<StrokePath> {
     // Zero-sized stroke path is not an error, because linecap round or square
     // would produce the shape either way.
     // TODO: Find a better way to handle it.
@@ -157,31 +132,14 @@ fn convert_stroke_path(
         object_bbox.to_non_zero_rect(),
     )?;
 
-    // TODO: seems like stroke shouldn't be dashed for bbox
-    if let Some(ref list) = ustroke.dasharray {
-        stroke.dash = tiny_skia::StrokeDash::new(list.clone(), ustroke.dashoffset);
-    }
-
-    // TODO: explain
-    // TODO: expand by stroke width for round/bevel joins
-    let stroked_path = path.stroke(&stroke, 1.0)?;
-
-    let mut layer_bbox = usvg::BBox::from(stroked_path.compute_tight_bounds()?);
-    if let Some(text_bbox) = text_bbox {
-        layer_bbox = layer_bbox.expand(usvg::BBox::from(text_bbox));
-    }
-
-    // TODO: dash beforehand
-    // TODO: preserve stroked path
-
     let path = StrokePath {
         paint,
-        stroke,
+        stroke: ustroke.to_tiny_skia(),
         anti_alias,
         path,
     };
 
-    Some((path, layer_bbox))
+    Some(path)
 }
 
 pub fn render_fill_path(

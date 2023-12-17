@@ -131,6 +131,7 @@ pub(crate) fn convert(
         chunks,
         abs_transform: Transform::default(),
         bounding_box: None,
+        stroke_bounding_box: None,
         flattened: None,
     };
     parent.append_kind(NodeKind::Text(text));

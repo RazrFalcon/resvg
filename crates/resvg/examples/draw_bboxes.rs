@@ -34,10 +34,17 @@ fn main() {
     tree.calculate_bounding_boxes();
 
     let mut bboxes = Vec::new();
+    let mut stroke_bboxes = Vec::new();
     let mut text_bboxes = Vec::new();
     for node in tree.root.descendants() {
         if let Some(bbox) = node.abs_bounding_box() {
             bboxes.push(bbox);
+
+            if let Some(stroke_bbox) = node.abs_stroke_bounding_box() {
+                if bbox != stroke_bbox {
+                    stroke_bboxes.push(stroke_bbox);
+                }
+            }
         }
 
         // Text bboxes are different from path bboxes.
@@ -55,6 +62,12 @@ fn main() {
     });
 
     let stroke2 = Some(usvg::Stroke {
+        paint: usvg::Paint::Color(usvg::Color::new_rgb(0, 200, 0)),
+        opacity: usvg::Opacity::new_clamped(0.5),
+        ..usvg::Stroke::default()
+    });
+
+    let stroke3 = Some(usvg::Stroke {
         paint: usvg::Paint::Color(usvg::Color::new_rgb(0, 0, 200)),
         opacity: usvg::Opacity::new_clamped(0.5),
         ..usvg::Stroke::default()
@@ -66,9 +79,15 @@ fn main() {
         tree.root.append_kind(usvg::NodeKind::Path(path));
     }
 
-    for bbox in text_bboxes {
+    for bbox in stroke_bboxes {
         let mut path = usvg::Path::new(Rc::new(tiny_skia::PathBuilder::from_rect(bbox)));
         path.stroke = stroke2.clone();
+        tree.root.append_kind(usvg::NodeKind::Path(path));
+    }
+
+    for bbox in text_bboxes {
+        let mut path = usvg::Path::new(Rc::new(tiny_skia::PathBuilder::from_rect(bbox)));
+        path.stroke = stroke3.clone();
         tree.root.append_kind(usvg::NodeKind::Path(path));
     }
 

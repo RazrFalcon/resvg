@@ -550,6 +550,7 @@ pub(crate) fn convert_group(
             mask,
             filters,
             bounding_box: None,
+            stroke_bounding_box: None,
         }));
 
         GroupKind::Create(g)
@@ -613,6 +614,7 @@ fn convert_path(
         data: path,
         abs_transform: Transform::default(),
         bounding_box: None,
+        stroke_bounding_box: None,
     };
 
     let append_marker = || {

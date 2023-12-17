@@ -761,7 +761,7 @@ pub extern "C" fn resvg_get_node_transform(
     false
 }
 
-/// @brief Returns node's bounding box by ID.
+/// @brief Returns node's bounding box in canvas coordinates by ID.
 ///
 /// @param tree Render tree.
 /// @param id Node's ID. Must not be NULL.
@@ -774,6 +774,32 @@ pub extern "C" fn resvg_get_node_bbox(
     tree: *const resvg_render_tree,
     id: *const c_char,
     bbox: *mut resvg_rect,
+) -> bool {
+    get_node_bbox(tree, id, bbox, &|node| node.abs_bounding_box())
+}
+
+/// @brief Returns node's bounding box, including stroke, in canvas coordinates by ID.
+///
+/// @param tree Render tree.
+/// @param id Node's ID. Must not be NULL.
+/// @param bbox Node's bounding box.
+/// @return `false` if a node with such an ID does not exist
+/// @return `false` if ID isn't a UTF-8 string.
+/// @return `false` if ID is an empty string
+#[no_mangle]
+pub extern "C" fn resvg_get_node_stroke_bbox(
+    tree: *const resvg_render_tree,
+    id: *const c_char,
+    bbox: *mut resvg_rect,
+) -> bool {
+    get_node_bbox(tree, id, bbox, &|node| node.abs_stroke_bounding_box())
+}
+
+fn get_node_bbox(
+    tree: *const resvg_render_tree,
+    id: *const c_char,
+    bbox: *mut resvg_rect,
+    f: &dyn Fn(usvg::Node) -> Option<usvg::Rect>,
 ) -> bool {
     let id = match cstr_to_str(id) {
         Some(v) => v,
@@ -795,7 +821,7 @@ pub extern "C" fn resvg_get_node_bbox(
 
     match tree.0.node_by_id(id) {
         Some(node) => {
-            if let Some(r) = node.abs_bounding_box() {
+            if let Some(r) = f(node) {
                 unsafe {
                     *bbox = resvg_rect {
                         x: r.x(),

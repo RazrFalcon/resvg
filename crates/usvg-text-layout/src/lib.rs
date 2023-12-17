@@ -72,16 +72,21 @@ fn convert_text(root: Node, fontdb: &fontdb::Database) {
 
     for node in &text_nodes {
         if let NodeKind::Text(ref mut text) = *node.borrow_mut() {
-            if let Some((node, bbox)) = convert_node(text, fontdb) {
+            if let Some((node, bbox, stroke_bbox)) = convert_node(text, fontdb) {
                 text.bounding_box = Some(bbox);
+                // TODO: test
+                text.stroke_bounding_box = Some(stroke_bbox.unwrap_or(bbox.to_rect()));
                 text.flattened = Some(node);
             }
         }
     }
 }
 
-fn convert_node(text: &Text, fontdb: &fontdb::Database) -> Option<(Node, NonZeroRect)> {
-    let (new_paths, bbox) = text_to_paths(text, fontdb)?;
+fn convert_node(
+    text: &Text,
+    fontdb: &fontdb::Database,
+) -> Option<(Node, NonZeroRect, Option<Rect>)> {
+    let (new_paths, bbox, stroke_bbox) = text_to_paths(text, fontdb)?;
 
     let group = Node::new(NodeKind::Group(Group {
         id: text.id.clone(),
@@ -95,7 +100,7 @@ fn convert_node(text: &Text, fontdb: &fontdb::Database) -> Option<(Node, NonZero
         group.append_kind(NodeKind::Path(path));
     }
 
-    Some((group, bbox))
+    Some((group, bbox, stroke_bbox))
 }
 
 trait DatabaseExt {
@@ -445,7 +450,10 @@ fn resolve_baseline(span: &TextSpan, font: &ResolvedFont, writing_mode: WritingM
 
 type FontsCache = HashMap<Font, Rc<ResolvedFont>>;
 
-fn text_to_paths(text_node: &Text, fontdb: &fontdb::Database) -> Option<(Vec<Path>, NonZeroRect)> {
+fn text_to_paths(
+    text_node: &Text,
+    fontdb: &fontdb::Database,
+) -> Option<(Vec<Path>, NonZeroRect, Option<Rect>)> {
     let mut fonts_cache: FontsCache = HashMap::new();
     for chunk in &text_node.chunks {
         for span in &chunk.spans {
@@ -458,6 +466,7 @@ fn text_to_paths(text_node: &Text, fontdb: &fontdb::Database) -> Option<(Vec<Pat
     }
 
     let mut bbox = BBox::default();
+    let mut stroke_bbox = BBox::default();
     let mut char_offset = 0;
     let mut last_x = 0.0;
     let mut last_y = 0.0;
@@ -527,6 +536,7 @@ fn text_to_paths(text_node: &Text, fontdb: &fontdb::Database) -> Option<(Vec<Pat
                     convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
                 {
                     bbox = bbox.expand(path.data.bounds());
+                    stroke_bbox = stroke_bbox.expand(path.data.bounds());
                     new_paths.push(path);
                 }
             }
@@ -541,12 +551,19 @@ fn text_to_paths(text_node: &Text, fontdb: &fontdb::Database) -> Option<(Vec<Pat
                     convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
                 {
                     bbox = bbox.expand(path.data.bounds());
+                    stroke_bbox = stroke_bbox.expand(path.data.bounds());
                     new_paths.push(path);
                 }
             }
 
             if let Some((path, span_bbox)) = convert_span(span, &mut clusters, span_ts) {
                 bbox = bbox.expand(span_bbox);
+
+                // TODO: find a way to cache it
+                if let Some(s_bbox) = path.calculate_stroke_bounding_box() {
+                    stroke_bbox = stroke_bbox.expand(s_bbox)
+                }
+
                 new_paths.push(path);
             }
 
@@ -560,6 +577,7 @@ fn text_to_paths(text_node: &Text, fontdb: &fontdb::Database) -> Option<(Vec<Pat
                     convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
                 {
                     bbox = bbox.expand(path.data.bounds());
+                    stroke_bbox = stroke_bbox.expand(path.data.bounds());
                     new_paths.push(path);
                 }
             }
@@ -578,7 +596,8 @@ fn text_to_paths(text_node: &Text, fontdb: &fontdb::Database) -> Option<(Vec<Pat
     }
 
     let bbox = bbox.to_non_zero_rect()?;
-    Some((new_paths, bbox))
+    let stroke_bbox = stroke_bbox.to_rect();
+    Some((new_paths, bbox, stroke_bbox))
 }
 
 fn resolve_font(font: &Font, fontdb: &fontdb::Database) -> Option<ResolvedFont> {
@@ -697,6 +716,7 @@ fn convert_span(
         data: Rc::new(path),
         abs_transform: Transform::default(),
         bounding_box: None,
+        stroke_bounding_box: None,
     };
 
     Some((path, bbox))

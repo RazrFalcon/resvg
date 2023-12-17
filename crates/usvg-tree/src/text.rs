@@ -7,7 +7,7 @@ use std::rc::Rc;
 use strict_num::NonZeroPositiveF32;
 
 use crate::{Fill, Node, PaintOrder, Stroke, TextRendering, Visibility};
-use tiny_skia_path::{NonZeroRect, Transform};
+use tiny_skia_path::{NonZeroRect, Rect, Transform};
 
 /// A font stretch property.
 #[allow(missing_docs)]
@@ -353,6 +353,13 @@ pub struct Text {
     /// and not [`Tree::calculate_bounding_boxes`], since we have to perform text layout
     /// to get the bounding box.
     pub bounding_box: Option<NonZeroRect>,
+
+    /// Element's object bounding box including stroke.
+    ///
+    /// Similar to `bounding_box`, but includes stroke.
+    ///
+    /// Will have the same value as `bounding_box` when path has no stroke.
+    pub stroke_bounding_box: Option<Rect>,
 
     /// Text converted into paths, ready to render.
     ///
