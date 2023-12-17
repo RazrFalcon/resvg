@@ -10,6 +10,12 @@ This changelog also contains important changes in dependencies.
 ### Added
 - Each `usvg::Node` stores its absolute transform now.
   `Node::abs_transform()` executes in constant time now.
+- `usvg::Tree::calculate_bounding_boxes` to calculate all bounding boxes beforehand.
+- `usvg::Node::bounding_box` which returns a precalculated node's bounding box in object coordinates.
+- `usvg::Node::abs_bounding_box` which returns a precalculated node's bounding box in canvas coordinates.
+
+### Removed
+- `usvg::Node::calculate_bbox`. Use `usvg::Node::abs_bounding_box`.
 
 ## [0.37.0] - 2023-12-16
 ### Added

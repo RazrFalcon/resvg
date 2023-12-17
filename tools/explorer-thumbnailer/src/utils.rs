@@ -33,6 +33,7 @@ pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvg::Tree, Error> 
 
     let mut tree = usvg::Tree::from_data(&svg_data, &opt).map_err(|e| Error::TreeError(e))?;
     tree.convert_text(&fontdb);
+    tree.calculate_bounding_boxes();
     Ok(tree)
 }
 

@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use crate::paint_server::Paint;
 use crate::render::Context;
-use crate::tree::{BBoxes, Node};
+use crate::tree::{BBoxes, Node, OptionLog};
 
 pub struct FillPath {
     pub paint: Paint,
@@ -29,13 +29,29 @@ pub fn convert(
 ) -> Option<BBoxes> {
     let anti_alias = upath.rendering_mode.use_shape_antialiasing();
 
+    let mut bounding_box = upath.bounding_box.log_none(|| {
+        log::warn!(
+            "Node bounding box should be already calculated. \
+            See `Tree::calculate_bounding_boxes`"
+        )
+    })?;
+    if let Some(text_bbox) = text_bbox {
+        bounding_box = text_bbox.to_rect();
+    }
+
     let fill_path = upath
         .fill
         .as_ref()
-        .and_then(|ufill| convert_fill_path(ufill, upath.data.clone(), text_bbox, anti_alias));
+        .and_then(|ufill| convert_fill_path(ufill, upath.data.clone(), bounding_box, anti_alias));
 
     let stroke_path = upath.stroke.as_ref().and_then(|ustroke| {
-        convert_stroke_path(ustroke, upath.data.clone(), text_bbox, anti_alias)
+        convert_stroke_path(
+            ustroke,
+            upath.data.clone(),
+            bounding_box,
+            text_bbox,
+            anti_alias,
+        )
     });
 
     if fill_path.is_none() && stroke_path.is_none() {
@@ -44,13 +60,13 @@ pub fn convert(
 
     let mut bboxes = BBoxes::default();
 
-    if let Some((_, o_bbox)) = fill_path {
-        bboxes.layer = bboxes.layer.expand(o_bbox);
-        bboxes.object = bboxes.object.expand(o_bbox);
+    if let Some(_) = fill_path {
+        bboxes.layer = bboxes.layer.expand(bounding_box);
+        bboxes.object = bboxes.object.expand(bounding_box);
     }
-    if let Some((_, l_bbox, o_bbox)) = stroke_path {
+    if let Some((_, l_bbox)) = stroke_path {
         bboxes.layer = bboxes.layer.expand(l_bbox);
-        bboxes.object = bboxes.object.expand(o_bbox);
+        bboxes.object = bboxes.object.expand(bounding_box);
     }
 
     // Do not add hidden paths, but preserve the bbox.
@@ -60,19 +76,19 @@ pub fn convert(
     }
 
     if upath.paint_order == usvg::PaintOrder::FillAndStroke {
-        if let Some((path, _)) = fill_path {
+        if let Some(path) = fill_path {
             children.push(Node::FillPath(path));
         }
 
-        if let Some((path, _, _)) = stroke_path {
+        if let Some((path, _)) = stroke_path {
             children.push(Node::StrokePath(path));
         }
     } else {
-        if let Some((path, _, _)) = stroke_path {
+        if let Some((path, _)) = stroke_path {
             children.push(Node::StrokePath(path));
         }
 
-        if let Some((path, _)) = fill_path {
+        if let Some(path) = fill_path {
             children.push(Node::FillPath(path));
         }
     }
@@ -83,9 +99,9 @@ pub fn convert(
 fn convert_fill_path(
     ufill: &usvg::Fill,
     path: Rc<tiny_skia::Path>,
-    text_bbox: Option<tiny_skia::NonZeroRect>,
+    object_bbox: tiny_skia::Rect,
     anti_alias: bool,
-) -> Option<(FillPath, usvg::BBox)> {
+) -> Option<FillPath> {
     // Horizontal and vertical lines cannot be filled. Skip.
     if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
         return None;
@@ -95,11 +111,6 @@ fn convert_fill_path(
         usvg::FillRule::NonZero => tiny_skia::FillRule::Winding,
         usvg::FillRule::EvenOdd => tiny_skia::FillRule::EvenOdd,
     };
-
-    let mut object_bbox = usvg::BBox::from(path.compute_tight_bounds()?);
-    if let Some(text_bbox) = text_bbox {
-        object_bbox = object_bbox.expand(usvg::BBox::from(text_bbox));
-    }
 
     let paint =
         crate::paint_server::convert(&ufill.paint, ufill.opacity, object_bbox.to_non_zero_rect())?;
@@ -111,15 +122,16 @@ fn convert_fill_path(
         path,
     };
 
-    Some((path, object_bbox))
+    Some(path)
 }
 
 fn convert_stroke_path(
     ustroke: &usvg::Stroke,
     path: Rc<tiny_skia::Path>,
+    object_bbox: tiny_skia::Rect,
     text_bbox: Option<tiny_skia::NonZeroRect>,
     anti_alias: bool,
-) -> Option<(StrokePath, usvg::BBox, usvg::BBox)> {
+) -> Option<(StrokePath, usvg::BBox)> {
     let mut stroke = tiny_skia::Stroke {
         width: ustroke.width.get(),
         miter_limit: ustroke.miterlimit.get(),
@@ -140,16 +152,11 @@ fn convert_stroke_path(
     // Zero-sized stroke path is not an error, because linecap round or square
     // would produce the shape either way.
     // TODO: Find a better way to handle it.
-    let object_bbox = usvg::BBox::from(path.compute_tight_bounds()?);
 
-    let mut complete_object_bbox = object_bbox;
-    if let Some(text_bbox) = text_bbox {
-        complete_object_bbox = complete_object_bbox.expand(usvg::BBox::from(text_bbox));
-    }
     let paint = crate::paint_server::convert(
         &ustroke.paint,
         ustroke.opacity,
-        complete_object_bbox.to_non_zero_rect(),
+        object_bbox.to_non_zero_rect(),
     )?;
 
     if let Some(ref list) = ustroke.dasharray {
@@ -175,7 +182,7 @@ fn convert_stroke_path(
         path,
     };
 
-    Some((path, layer_bbox, object_bbox))
+    Some((path, layer_bbox))
 }
 
 pub fn render_fill_path(

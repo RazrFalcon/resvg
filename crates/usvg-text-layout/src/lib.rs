@@ -59,6 +59,7 @@ fn convert_text(root: Node, fontdb: &fontdb::Database) {
         if let NodeKind::Image(ref mut image) = *node.borrow_mut() {
             if let ImageKind::SVG(ref mut tree) = image.kind {
                 tree.convert_text(fontdb);
+                tree.calculate_bounding_boxes();
             }
         }
 
@@ -693,8 +694,9 @@ fn convert_span(
         stroke: span.stroke.clone(),
         paint_order: span.paint_order,
         rendering_mode: ShapeRendering::default(),
-        abs_transform: Transform::default(),
         data: Rc::new(path),
+        abs_transform: Transform::default(),
+        bounding_box: None,
     };
 
     Some((path, bbox))

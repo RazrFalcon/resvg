@@ -537,6 +537,8 @@ pub extern "C" fn resvg_parse_tree_from_file(
         utree.convert_text(&raw_opt.fontdb);
     }
 
+    utree.calculate_bounding_boxes();
+
     let tree_box = Box::new(resvg_render_tree(utree));
     unsafe {
         *tree = Box::into_raw(tree_box);
@@ -578,6 +580,8 @@ pub extern "C" fn resvg_parse_tree_from_data(
     {
         utree.convert_text(&raw_opt.fontdb);
     }
+
+    utree.calculate_bounding_boxes();
 
     let tree_box = Box::new(resvg_render_tree(utree));
     unsafe {
@@ -667,7 +671,7 @@ pub extern "C" fn resvg_get_image_bbox(
     if let Some(r) = tree
         .0
         .root
-        .calculate_bbox()
+        .abs_bounding_box()
         .and_then(|r| r.to_non_zero_rect())
     {
         unsafe {
@@ -791,7 +795,7 @@ pub extern "C" fn resvg_get_node_bbox(
 
     match tree.0.node_by_id(id) {
         Some(node) => {
-            if let Some(r) = node.calculate_bbox() {
+            if let Some(r) = node.abs_bounding_box() {
                 unsafe {
                     *bbox = resvg_rect {
                         x: r.x(),

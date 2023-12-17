@@ -112,6 +112,8 @@ fn process() -> Result<(), String> {
         timed(args.perf, "Text Conversion", || tree.convert_text(&fontdb));
     }
 
+    tree.calculate_bounding_boxes();
+
     if args.query_all {
         return query_all(&tree);
     }
@@ -611,7 +613,7 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
             (v * 1000.0).round() / 1000.0
         }
 
-        if let Some(bbox) = node.calculate_bbox() {
+        if let Some(bbox) = node.abs_bounding_box() {
             println!(
                 "{},{},{},{},{}",
                 node.id(),
@@ -640,7 +642,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
         };
 
         let bbox = node
-            .calculate_bbox()
+            .abs_bounding_box()
             .and_then(|r| r.to_non_zero_rect())
             .ok_or_else(|| "node has zero size".to_string())?;
 

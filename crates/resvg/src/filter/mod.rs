@@ -1090,8 +1090,9 @@ fn apply_image(
                 visibility: usvg::Visibility::Visible,
                 view_box,
                 rendering_mode: fe.rendering_mode,
-                abs_transform: usvg::Transform::default(),
                 kind: kind.clone(),
+                abs_transform: usvg::Transform::default(),
+                bounding_box: Some(view_box.rect),
             };
 
             let mut children = Vec::new();

@@ -178,8 +178,9 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Node
         visibility,
         view_box,
         rendering_mode,
-        abs_transform: Transform::default(),
         kind,
+        abs_transform: Transform::default(),
+        bounding_box: None,
     }));
 
     Some(())
@@ -237,13 +238,14 @@ pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
     sub_opt.image_rendering = opt.image_rendering;
     sub_opt.default_size = opt.default_size;
 
-    let tree = match Tree::from_data(data, &sub_opt) {
+    let mut tree = match Tree::from_data(data, &sub_opt) {
         Ok(tree) => tree,
         Err(_) => {
             log::warn!("Failed to load subsvg image.");
             return None;
         }
     };
+    tree.calculate_bounding_boxes();
 
     sanitize_sub_svg(&tree);
     Some(ImageKind::SVG(tree))

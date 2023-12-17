@@ -98,13 +98,13 @@ impl Tree {
     ///
     /// Returns `None` when `node` has a zero size.
     pub fn from_usvg_node(node: &usvg::Node) -> Option<Self> {
-        let node_bbox = if let Some(bbox) = node.calculate_bbox().and_then(|r| r.to_non_zero_rect())
-        {
-            bbox
-        } else {
-            log::warn!("Node '{}' has zero size.", node.id());
-            return None;
-        };
+        let node_bbox =
+            if let Some(bbox) = node.abs_bounding_box().and_then(|r| r.to_non_zero_rect()) {
+                bbox
+            } else {
+                log::warn!("Node '{}' has zero size.", node.id());
+                return None;
+            };
 
         let view_box = usvg::ViewBox {
             rect: node_bbox,

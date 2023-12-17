@@ -24,7 +24,6 @@ fn main() {
     opt.resources_dir = std::fs::canonicalize(&args[1])
         .ok()
         .and_then(|p| p.parent().map(|p| p.to_path_buf()));
-    // let fit_to = resvg::FitTo::Zoom(zoom);
 
     let mut fontdb = fontdb::Database::new();
     fontdb.load_system_fonts();
@@ -32,11 +31,12 @@ fn main() {
     let svg_data = std::fs::read(&args[1]).unwrap();
     let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
     tree.convert_text(&fontdb);
+    tree.calculate_bounding_boxes();
 
     let mut bboxes = Vec::new();
     let mut text_bboxes = Vec::new();
     for node in tree.root.descendants() {
-        if let Some(bbox) = node.calculate_bbox() {
+        if let Some(bbox) = node.abs_bounding_box() {
             bboxes.push(bbox);
         }
 
@@ -71,6 +71,9 @@ fn main() {
         path.stroke = stroke2.clone();
         tree.root.append_kind(usvg::NodeKind::Path(path));
     }
+
+    // Calculate bboxes of newly added path.
+    tree.calculate_bounding_boxes();
 
     let rtree = resvg::Tree::from_usvg(&tree);
 

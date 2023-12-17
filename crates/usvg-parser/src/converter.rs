@@ -178,6 +178,7 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
     tree.calculate_abs_transforms();
 
     if restore_viewbox {
+        tree.calculate_bounding_boxes();
         calculate_svg_bbox(&mut tree);
     }
 
@@ -256,7 +257,7 @@ fn calculate_svg_bbox(tree: &mut Tree) {
     let mut bottom = 0.0;
 
     for node in tree.root.descendants() {
-        if let Some(bbox) = node.calculate_bbox() {
+        if let Some(bbox) = node.abs_bounding_box() {
             if bbox.right() > right {
                 right = bbox.right();
             }
@@ -548,6 +549,7 @@ pub(crate) fn convert_group(
             clip_path,
             mask,
             filters,
+            bounding_box: None,
         }));
 
         GroupKind::Create(g)
@@ -608,8 +610,9 @@ fn convert_path(
         stroke,
         paint_order,
         rendering_mode,
-        abs_transform: Transform::default(),
         data: path,
+        abs_transform: Transform::default(),
+        bounding_box: None,
     };
 
     let append_marker = || {

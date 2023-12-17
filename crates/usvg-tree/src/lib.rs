@@ -736,6 +736,21 @@ impl NodeKind {
             NodeKind::Text(ref text) => text.abs_transform,
         }
     }
+
+    /// Returns node's bounding box in object coordinates.
+    pub fn bounding_box(&self) -> Option<Rect> {
+        match self {
+            NodeKind::Group(ref group) => group.bounding_box,
+            NodeKind::Path(ref path) => path.bounding_box,
+            NodeKind::Image(ref image) => image.bounding_box.map(|r| r.to_rect()),
+            NodeKind::Text(ref text) => text.bounding_box.map(|r| r.to_rect()),
+        }
+    }
+
+    /// Returns node's bounding box in canvas coordinates.
+    pub fn abs_bounding_box(&self) -> Option<Rect> {
+        self.bounding_box()?.transform(self.abs_transform())
+    }
 }
 
 /// A group container.
@@ -792,6 +807,15 @@ pub struct Group {
 
     /// Element's filters.
     pub filters: Vec<Rc<filter::Filter>>,
+
+    /// Element's object bounding box.
+    ///
+    /// `ObjectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
+    ///
+    /// Can be set to `None` in case of an empty group.
+    ///
+    /// Will be set only after calling [`Tree::calculate_bounding_boxes`].
+    pub bounding_box: Option<Rect>,
 }
 
 impl Default for Group {
@@ -806,6 +830,7 @@ impl Default for Group {
             clip_path: None,
             mask: None,
             filters: Vec::new(),
+            bounding_box: None,
         }
     }
 }
@@ -873,6 +898,11 @@ pub struct Path {
     /// `shape-rendering` in SVG.
     pub rendering_mode: ShapeRendering,
 
+    /// Segments list.
+    ///
+    /// All segments are in absolute coordinates.
+    pub data: Rc<tiny_skia_path::Path>,
+
     /// Element's absolute transform.
     ///
     /// Contains all ancestors transforms.
@@ -883,10 +913,12 @@ pub struct Path {
     /// The SVG one would be set only on groups.
     pub abs_transform: Transform,
 
-    /// Segments list.
+    /// Element's object bounding box.
     ///
-    /// All segments are in absolute coordinates.
-    pub data: Rc<tiny_skia_path::Path>,
+    /// `ObjectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
+    ///
+    /// Will be set only after calling [`Tree::calculate_bounding_boxes`].
+    pub bounding_box: Option<Rect>,
 }
 
 impl Path {
@@ -899,8 +931,9 @@ impl Path {
             stroke: None,
             paint_order: PaintOrder::default(),
             rendering_mode: ShapeRendering::default(),
-            abs_transform: Transform::default(),
             data,
+            abs_transform: Transform::default(),
+            bounding_box: None,
         }
     }
 }
@@ -955,6 +988,9 @@ pub struct Image {
     /// `image-rendering` in SVG.
     pub rendering_mode: ImageRendering,
 
+    /// Image data.
+    pub kind: ImageKind,
+
     /// Element's absolute transform.
     ///
     /// Contains all ancestors transforms.
@@ -965,8 +1001,12 @@ pub struct Image {
     /// The SVG one would be set only on groups.
     pub abs_transform: Transform,
 
-    /// Image data.
-    pub kind: ImageKind,
+    /// Element's object bounding box.
+    ///
+    /// `ObjectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
+    ///
+    /// Will be set only after calling [`Tree::calculate_bounding_boxes`].
+    pub bounding_box: Option<NonZeroRect>,
 }
 
 /// Alias for `rctree::Node<NodeKind>`.
@@ -1050,6 +1090,13 @@ impl Tree {
     /// and ideally should be called manually after each tree modification.
     pub fn calculate_abs_transforms(&mut self) {
         calculate_abs_transform(&self.root, Transform::identity());
+    }
+
+    /// Calculates bounding boxes for all nodes in the tree.
+    ///
+    /// This method is pretty expensive and should be called on-demand.
+    pub fn calculate_bounding_boxes(&mut self) {
+        calculate_bounding_box(&self.root);
     }
 }
 
@@ -1259,13 +1306,18 @@ pub trait NodeExt {
     /// This method is cheap since absolute transforms are already resolved.
     fn abs_transform(&self) -> Transform;
 
+    /// Returns node's bounding box in object coordinates if any.
+    ///
+    /// This method is cheap since bounding boxes are already calculated.
+    fn bounding_box(&self) -> Option<Rect>;
+
+    /// Returns node's bounding box in canvas coordinates if any.
+    ///
+    /// This method is cheap since bounding boxes are already calculated.
+    fn abs_bounding_box(&self) -> Option<Rect>;
+
     /// Appends `kind` as a node child.
     fn append_kind(&self, kind: NodeKind) -> Node;
-
-    /// Calculates node's absolute bounding box.
-    ///
-    /// Returns `None` for `NodeKind::Text` unless it was flattened already.
-    fn calculate_bbox(&self) -> Option<Rect>;
 
     /// Calls a closure for each subroot this `Node` has.
     ///
@@ -1302,6 +1354,14 @@ impl NodeExt for Node {
         self.borrow().abs_transform()
     }
 
+    fn bounding_box(&self) -> Option<Rect> {
+        self.borrow().bounding_box()
+    }
+
+    fn abs_bounding_box(&self) -> Option<Rect> {
+        self.borrow().abs_bounding_box()
+    }
+
     #[inline]
     fn append_kind(&self, kind: NodeKind) -> Node {
         let new_node = Node::new(kind);
@@ -1309,52 +1369,8 @@ impl NodeExt for Node {
         new_node
     }
 
-    #[inline]
-    fn calculate_bbox(&self) -> Option<Rect> {
-        calc_node_bbox(self, self.abs_transform()).and_then(|r| r.to_rect())
-    }
-
     fn subroots<F: FnMut(Node)>(&self, mut f: F) {
         node_subroots(self, &mut f)
-    }
-}
-
-fn calc_node_bbox(node: &Node, ts: Transform) -> Option<BBox> {
-    match *node.borrow() {
-        NodeKind::Path(ref path) => path
-            .data
-            .compute_tight_bounds()?
-            .transform(ts)
-            .map(BBox::from),
-        NodeKind::Image(ref img) => img.view_box.rect.transform(ts).map(BBox::from),
-        NodeKind::Group(_) => {
-            let mut bbox = BBox::default();
-
-            for child in node.children() {
-                let child_transform = if let NodeKind::Group(ref group) = *child.borrow() {
-                    ts.pre_concat(group.transform)
-                } else {
-                    ts
-                };
-                if let Some(c_bbox) = calc_node_bbox(&child, child_transform) {
-                    bbox = bbox.expand(c_bbox);
-                }
-            }
-
-            // Make sure bbox was changed.
-            if bbox.is_default() {
-                return None;
-            }
-
-            Some(bbox)
-        }
-        NodeKind::Text(ref text) => {
-            if let Some(bbox) = text.bounding_box {
-                bbox.transform(ts).map(BBox::from)
-            } else {
-                None
-            }
-        }
     }
 }
 
@@ -1376,4 +1392,35 @@ fn calculate_abs_transform(node: &Node, ts: Transform) {
 
     // Yes, subroots are not affected by the node's transform.
     node.subroots(|root| calculate_abs_transform(&root, Transform::identity()));
+}
+
+fn calculate_bounding_box(node: &Node) {
+    if node.has_children() {
+        let mut bbox = BBox::default();
+        for child in node.children() {
+            calculate_bounding_box(&child);
+            if let Some(c_bbox) = child.bounding_box() {
+                bbox = bbox.expand(c_bbox);
+            }
+        }
+
+        if let NodeKind::Group(ref mut group) = *node.borrow_mut() {
+            group.bounding_box = bbox.to_rect();
+        }
+    }
+
+    match *node.borrow_mut() {
+        NodeKind::Path(ref mut path) => {
+            path.bounding_box = path.data.compute_tight_bounds();
+        }
+        // TODO: should we account for `preserveAspectRatio`?
+        NodeKind::Image(ref mut image) => image.bounding_box = Some(image.view_box.rect),
+        // Have to be handled separately to prevent multiple mutable reference to the tree.
+        NodeKind::Group(_) => {}
+        // Will be set only during text-to-path conversion.
+        NodeKind::Text(_) => {}
+    }
+
+    // Yes, subroots are not affected by the node's transform.
+    node.subroots(|root| calculate_bounding_box(&root));
 }

@@ -21,7 +21,11 @@ fn main() {
 
         let svg_data = std::fs::read(&args[1]).unwrap();
         let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
+        // `resvg` cannot render text as is. We have to convert it into paths first.
         tree.convert_text(&fontdb);
+        // `resvg` requires precalculated bounding boxes.
+        // Must be called only after converting text to paths.
+        tree.calculate_bounding_boxes();
         resvg::Tree::from_usvg(&tree)
     };
 

@@ -37,6 +37,7 @@ pub fn render(name: &str) -> usize {
         let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
         let db = GLOBAL_FONTDB.lock().unwrap();
         tree.convert_text(&db);
+        tree.calculate_bounding_boxes();
         tree
     };
 
@@ -85,7 +86,9 @@ pub fn render_extra_with_scale(name: &str, scale: f32) -> usize {
 
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
-        usvg::Tree::from_data(&svg_data, &opt).unwrap()
+        let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
+        tree.calculate_bounding_boxes();
+        tree
     };
     let rtree = resvg::Tree::from_usvg(&tree);
 

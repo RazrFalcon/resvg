@@ -342,12 +342,16 @@ pub struct Text {
     /// Contains a text bounding box.
     ///
     /// Text bounding box is special in SVG and doesn't represent
-    /// a tight bounding box of the element's content.
+    /// a tight bounds of the element's content.
     /// You can find more about it [here](https://razrfalcon.github.io/notes-on-svg-parsing/text/bbox.html).
     ///
-    /// Will be set by
+    /// `ObjectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
+    ///
+    /// Unlike other nodes, will be set by
     /// [`usvg_text_layout::TreeTextToPath::convert_text`](
     /// https://docs.rs/usvg-text-layout/latest/usvg_text_layout/trait.TreeTextToPath.html#tymethod.convert_text)
+    /// and not [`Tree::calculate_bounding_boxes`], since we have to perform text layout
+    /// to get the bounding box.
     pub bounding_box: Option<NonZeroRect>,
 
     /// Text converted into paths, ready to render.
