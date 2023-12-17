@@ -647,6 +647,7 @@ fn convert_path(
         stroke,
         paint_order,
         rendering_mode,
+        abs_transform: Transform::default(),
         data: path,
     };
 

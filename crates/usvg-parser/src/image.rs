@@ -5,7 +5,9 @@
 use std::sync::Arc;
 
 use svgtypes::Length;
-use usvg_tree::{Image, ImageKind, Node, NodeExt, NodeKind, NonZeroRect, Size, Tree, ViewBox};
+use usvg_tree::{
+    Image, ImageKind, Node, NodeExt, NodeKind, NonZeroRect, Size, Transform, Tree, ViewBox,
+};
 
 use crate::svgtree::{AId, SvgNode};
 use crate::{converter, OptionLog, Options, TreeParsing};
@@ -176,6 +178,7 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Node
         visibility,
         view_box,
         rendering_mode,
+        abs_transform: Transform::default(),
         kind,
     }));
 

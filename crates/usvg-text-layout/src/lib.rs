@@ -70,9 +70,8 @@ fn convert_text(root: Node, fontdb: &fontdb::Database) {
     }
 
     for node in &text_nodes {
-        let absolute_ts = node.parent().unwrap().abs_transform();
         if let NodeKind::Text(ref mut text) = *node.borrow_mut() {
-            if let Some((node, bbox)) = convert_node(text, fontdb, absolute_ts) {
+            if let Some((node, bbox)) = convert_node(text, fontdb) {
                 text.bounding_box = Some(bbox);
                 text.flattened = Some(node);
             }
@@ -80,12 +79,8 @@ fn convert_text(root: Node, fontdb: &fontdb::Database) {
     }
 }
 
-fn convert_node(
-    text: &Text,
-    fontdb: &fontdb::Database,
-    absolute_ts: Transform,
-) -> Option<(Node, NonZeroRect)> {
-    let (new_paths, bbox) = text_to_paths(text, fontdb, absolute_ts)?;
+fn convert_node(text: &Text, fontdb: &fontdb::Database) -> Option<(Node, NonZeroRect)> {
+    let (new_paths, bbox) = text_to_paths(text, fontdb)?;
 
     let group = Node::new(NodeKind::Group(Group {
         id: text.id.clone(),
@@ -449,11 +444,7 @@ fn resolve_baseline(span: &TextSpan, font: &ResolvedFont, writing_mode: WritingM
 
 type FontsCache = HashMap<Font, Rc<ResolvedFont>>;
 
-fn text_to_paths(
-    text_node: &Text,
-    fontdb: &fontdb::Database,
-    abs_ts: Transform,
-) -> Option<(Vec<Path>, NonZeroRect)> {
+fn text_to_paths(text_node: &Text, fontdb: &fontdb::Database) -> Option<(Vec<Path>, NonZeroRect)> {
     let mut fonts_cache: FontsCache = HashMap::new();
     for chunk in &text_node.chunks {
         for span in &chunk.spans {
@@ -491,7 +482,6 @@ fn text_to_paths(
             chunk,
             char_offset,
             text_node.writing_mode,
-            abs_ts,
             &fonts_cache,
             &mut clusters,
         );
@@ -703,6 +693,7 @@ fn convert_span(
         stroke: span.stroke.clone(),
         paint_order: span.paint_order,
         rendering_mode: ShapeRendering::default(),
+        abs_transform: Transform::default(),
         data: Rc::new(path),
     };
 
@@ -1359,7 +1350,6 @@ fn resolve_clusters_positions(
     chunk: &TextChunk,
     char_offset: usize,
     writing_mode: WritingMode,
-    ts: Transform,
     fonts_cache: &FontsCache,
     clusters: &mut [OutlinedCluster],
 ) -> (f32, f32) {
@@ -1373,7 +1363,6 @@ fn resolve_clusters_positions(
             char_offset,
             path,
             writing_mode,
-            ts,
             fonts_cache,
             clusters,
         ),
@@ -1424,7 +1413,6 @@ fn resolve_clusters_positions_path(
     char_offset: usize,
     path: &TextPath,
     writing_mode: WritingMode,
-    ts: Transform,
     fonts_cache: &FontsCache,
     clusters: &mut [OutlinedCluster],
 ) -> (f32, f32) {
@@ -1443,15 +1431,7 @@ fn resolve_clusters_positions_path(
     let start_offset =
         chunk_offset + path.start_offset + process_anchor(chunk.anchor, clusters_length(clusters));
 
-    let normals = collect_normals(
-        text,
-        chunk,
-        clusters,
-        &path.path,
-        char_offset,
-        start_offset,
-        ts,
-    );
+    let normals = collect_normals(text, chunk, clusters, &path.path, char_offset, start_offset);
     for (cluster, normal) in clusters.iter_mut().zip(normals) {
         let (x, y, angle) = match normal {
             Some(normal) => (normal.x, normal.y, normal.angle),
@@ -1536,7 +1516,6 @@ fn collect_normals(
     path: &tiny_skia_path::Path,
     char_offset: usize,
     offset: f32,
-    ts: Transform,
 ) -> Vec<Option<PathNormal>> {
     let mut offsets = Vec::with_capacity(clusters.len());
     let mut normals = Vec::with_capacity(clusters.len());
@@ -1617,7 +1596,7 @@ fn collect_normals(
             // Accuracy depends on a current scale.
             // When we have a tiny path scaled by a large value,
             // we have to increase out accuracy accordingly.
-            let (sx, sy) = ts.get_scale();
+            let (sx, sy) = text.abs_transform.get_scale();
             // 1.0 acts as a threshold to prevent division by 0 and/or low accuracy.
             base_arclen_accuracy / (sx * sy).sqrt().max(1.0)
         };

@@ -129,6 +129,7 @@ pub(crate) fn convert(
         rotate: rotate_list,
         writing_mode,
         chunks,
+        abs_transform: Transform::default(),
         bounding_box: None,
         flattened: None,
     };

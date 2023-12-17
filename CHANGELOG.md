@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- Each `usvg::Node` stores its absolute transform now.
+  `Node::abs_transform()` executes in constant time now.
 
 ## [0.37.0] - 2023-12-16
 ### Added

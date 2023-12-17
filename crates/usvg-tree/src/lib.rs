@@ -726,6 +726,16 @@ impl NodeKind {
             NodeKind::Text(ref e) => e.id.as_str(),
         }
     }
+
+    /// Returns node's absolute transform.
+    pub fn abs_transform(&self) -> Transform {
+        match self {
+            NodeKind::Group(ref group) => group.abs_transform,
+            NodeKind::Path(ref path) => path.abs_transform,
+            NodeKind::Image(ref image) => image.abs_transform,
+            NodeKind::Text(ref text) => text.abs_transform,
+        }
+    }
 }
 
 /// A group container.
@@ -744,6 +754,8 @@ pub struct Group {
     pub id: String,
 
     /// Element's transform.
+    ///
+    /// This is a relative transform. The one that is set via the `transform` attribute in SVG.
     pub transform: Transform,
 
     /// Element's absolute transform.
@@ -861,6 +873,16 @@ pub struct Path {
     /// `shape-rendering` in SVG.
     pub rendering_mode: ShapeRendering,
 
+    /// Element's absolute transform.
+    ///
+    /// Contains all ancestors transforms.
+    /// Will be set automatically by the parser or can be recalculated manually using
+    /// [`Tree::calculate_abs_transforms`].
+    ///
+    /// Note that this is not the relative transform present in SVG.
+    /// The SVG one would be set only on groups.
+    pub abs_transform: Transform,
+
     /// Segments list.
     ///
     /// All segments are in absolute coordinates.
@@ -877,6 +899,7 @@ impl Path {
             stroke: None,
             paint_order: PaintOrder::default(),
             rendering_mode: ShapeRendering::default(),
+            abs_transform: Transform::default(),
             data,
         }
     }
@@ -931,6 +954,16 @@ pub struct Image {
     ///
     /// `image-rendering` in SVG.
     pub rendering_mode: ImageRendering,
+
+    /// Element's absolute transform.
+    ///
+    /// Contains all ancestors transforms.
+    /// Will be set automatically by the parser or can be recalculated manually using
+    /// [`Tree::calculate_abs_transforms`].
+    ///
+    /// Note that this is not the relative transform present in SVG.
+    /// The SVG one would be set only on groups.
+    pub abs_transform: Transform,
 
     /// Image data.
     pub kind: ImageKind,
@@ -1012,8 +1045,6 @@ impl Tree {
     }
 
     /// Calculates absolute transforms for all nodes in the tree.
-    ///
-    /// As of now, sets [`Group::abs_transform`].
     ///
     /// Automatically called by the parser
     /// and ideally should be called manually after each tree modification.
@@ -1225,8 +1256,7 @@ pub trait NodeExt {
     /// If a current node doesn't support transformation - a default
     /// transform will be returned.
     ///
-    /// This method is cheap, since an absolute transform is already stored in
-    /// [`Group::abs_transform`].
+    /// This method is cheap since absolute transforms are already resolved.
     fn abs_transform(&self) -> Transform;
 
     /// Appends `kind` as a node child.
@@ -1269,13 +1299,7 @@ impl NodeExt for Node {
     }
 
     fn abs_transform(&self) -> Transform {
-        if let NodeKind::Group(ref g) = *self.borrow() {
-            g.abs_transform
-        } else {
-            // Only groups can have a transform, therefore for paths, images and text
-            // we simply use the parent transform.
-            self.parent().map(|n| n.abs_transform()).unwrap_or_default()
-        }
+        self.borrow().abs_transform()
     }
 
     #[inline]
@@ -1334,18 +1358,20 @@ fn calc_node_bbox(node: &Node, ts: Transform) -> Option<BBox> {
     }
 }
 
-// TODO: test somehow
 fn calculate_abs_transform(node: &Node, ts: Transform) {
-    if matches!(*node.borrow(), NodeKind::Group(_)) {
-        let mut abs_ts = ts;
-        if let NodeKind::Group(ref mut group) = *node.borrow_mut() {
-            group.abs_transform = ts.pre_concat(group.transform);
-            abs_ts = group.abs_transform;
+    let mut abs_ts = ts;
+    match *node.borrow_mut() {
+        NodeKind::Group(ref mut group) => {
+            abs_ts = ts.pre_concat(group.transform);
+            group.abs_transform = abs_ts;
         }
+        NodeKind::Path(ref mut path) => path.abs_transform = ts,
+        NodeKind::Image(ref mut image) => image.abs_transform = ts,
+        NodeKind::Text(ref mut text) => text.abs_transform = ts,
+    }
 
-        for child in node.children() {
-            calculate_abs_transform(&child, abs_ts);
-        }
+    for child in node.children() {
+        calculate_abs_transform(&child, abs_ts);
     }
 
     // Yes, subroots are not affected by the node's transform.

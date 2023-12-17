@@ -759,6 +759,7 @@ fn write_text_path_paths(node: &Node, ctx: &mut WriterContext, xml: &mut XmlWrit
                         fill: None,
                         stroke: None,
                         rendering_mode: ShapeRendering::default(),
+                        abs_transform: Transform::default(),
                         paint_order: PaintOrder::default(),
                     };
                     write_path(&path, false, Transform::default(), None, ctx, xml);

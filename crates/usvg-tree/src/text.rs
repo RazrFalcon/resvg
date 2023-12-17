@@ -7,7 +7,7 @@ use std::rc::Rc;
 use strict_num::NonZeroPositiveF32;
 
 use crate::{Fill, Node, PaintOrder, Stroke, TextRendering, Visibility};
-use tiny_skia_path::NonZeroRect;
+use tiny_skia_path::{NonZeroRect, Transform};
 
 /// A font stretch property.
 #[allow(missing_docs)]
@@ -328,6 +328,16 @@ pub struct Text {
 
     /// A list of text chunks.
     pub chunks: Vec<TextChunk>,
+
+    /// Element's absolute transform.
+    ///
+    /// Contains all ancestors transforms.
+    /// Will be set automatically by the parser or can be recalculated manually using
+    /// [`Tree::calculate_abs_transforms`].
+    ///
+    /// Note that this is not the relative transform present in SVG.
+    /// The SVG one would be set only on groups.
+    pub abs_transform: Transform,
 
     /// Contains a text bounding box.
     ///

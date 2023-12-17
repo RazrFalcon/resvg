@@ -1090,6 +1090,7 @@ fn apply_image(
                 visibility: usvg::Visibility::Visible,
                 view_box,
                 rendering_mode: fe.rendering_mode,
+                abs_transform: usvg::Transform::default(),
                 kind: kind.clone(),
             };
 
