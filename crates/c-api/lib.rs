@@ -13,7 +13,7 @@ use std::os::raw::c_char;
 use std::slice;
 
 use resvg::tiny_skia;
-use resvg::usvg::{self, NodeExt, TreeParsing};
+use resvg::usvg::{self, TreeParsing};
 #[cfg(feature = "text")]
 use resvg::usvg::{fontdb, TreeTextToPath};
 
@@ -799,7 +799,7 @@ fn get_node_bbox(
     tree: *const resvg_render_tree,
     id: *const c_char,
     bbox: *mut resvg_rect,
-    f: &dyn Fn(usvg::Node) -> Option<usvg::Rect>,
+    f: &dyn Fn(&usvg::Node) -> Option<usvg::Rect>,
 ) -> bool {
     let id = match cstr_to_str(id) {
         Some(v) => v,

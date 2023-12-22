@@ -5,16 +5,17 @@
 use std::rc::Rc;
 use std::str::FromStr;
 
-use usvg_tree::{ClipPath, Group, Node, NodeKind, Transform, Units};
+use usvg_tree::{ClipPath, Group, SharedClipPath, Transform, Units};
 
 use crate::converter;
 use crate::svgtree::{AId, EId, SvgNode};
+use std::cell::RefCell;
 
 pub(crate) fn convert(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Option<Rc<ClipPath>> {
+) -> Option<SharedClipPath> {
     // A `clip-path` attribute must reference a `clipPath` element.
     if node.tag_name() != Some(EId::ClipPath) {
         return None;
@@ -48,7 +49,7 @@ pub(crate) fn convert(
         units,
         transform,
         clip_path,
-        root: Node::new(NodeKind::Group(Group::default())),
+        root: Group::default(),
     };
 
     let mut clip_state = state.clone();
@@ -56,7 +57,7 @@ pub(crate) fn convert(
     converter::convert_clip_path_elements(node, &clip_state, cache, &mut clip.root);
 
     if clip.root.has_children() {
-        let clip = Rc::new(clip);
+        let clip = Rc::new(RefCell::new(clip));
         cache
             .clip_paths
             .insert(node.element_id().to_string(), clip.clone());

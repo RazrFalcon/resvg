@@ -207,12 +207,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rctree"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b42e27ef78c35d3998403c1d26f3efd9e135d3e5121b0a4845cc5cc27547f4f"
-
-[[package]]
 name = "resvg"
 version = "0.37.0"
 dependencies = [
@@ -462,7 +456,6 @@ dependencies = [
 name = "usvg-tree"
 version = "0.37.0"
 dependencies = [
- "rctree",
  "strict-num",
  "svgtypes",
  "tiny-skia-path",

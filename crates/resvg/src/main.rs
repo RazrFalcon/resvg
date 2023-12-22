@@ -6,7 +6,7 @@
 
 use std::path;
 
-use usvg::{fontdb, NodeExt, TreeParsing, TreeTextToPath};
+use usvg::{fontdb, TreeParsing, TreeTextToPath};
 
 fn main() {
     if let Err(e) = process() {
@@ -601,9 +601,22 @@ fn load_fonts(args: &mut Args) -> fontdb::Database {
 }
 
 fn query_all(tree: &usvg::Tree) -> Result<(), String> {
+    let count = query_all_impl(&tree.root);
+
+    if count == 0 {
+        return Err("the file has no valid ID's".to_string());
+    }
+
+    Ok(())
+}
+
+fn query_all_impl(parent: &usvg::Group) -> usize {
     let mut count = 0;
-    for node in tree.root.descendants() {
+    for node in &parent.children {
         if node.id().is_empty() {
+            if let usvg::Node::Group(ref group) = node {
+                count += query_all_impl(group);
+            }
             continue;
         }
 
@@ -623,20 +636,20 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
                 round_len(bbox.height())
             );
         }
+
+        if let usvg::Node::Group(ref group) = node {
+            count += query_all_impl(group);
+        }
     }
 
-    if count == 0 {
-        return Err("the file has no valid ID's".to_string());
-    }
-
-    Ok(())
+    count
 }
 
 fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, String> {
     let now = std::time::Instant::now();
 
     let img = if let Some(ref id) = args.export_id {
-        let node = match tree.root.descendants().find(|n| &*n.id() == id) {
+        let node = match tree.node_by_id(id) {
             Some(node) => node,
             None => return Err(format!("SVG doesn't have '{}' ID", id)),
         };
@@ -662,7 +675,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
 
         let ts = args.fit_to.fit_to_transform(tree.size.to_int_size());
 
-        let rtree = resvg::Tree::from_usvg_node(&node)
+        let rtree = resvg::Tree::from_usvg_node(node)
             .ok_or_else(|| "zero-size node detected".to_string())?;
 
         rtree.render(ts, &mut pixmap.as_mut());

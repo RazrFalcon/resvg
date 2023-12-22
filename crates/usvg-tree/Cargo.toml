@@ -13,7 +13,6 @@ readme = "README.md"
 workspace = "../.."
 
 [dependencies]
-rctree = "0.5"
 strict-num = "0.1.1"
 svgtypes = "0.13"
 tiny-skia-path = "0.11.3"

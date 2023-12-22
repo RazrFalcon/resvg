@@ -2,8 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
-
 use crate::render::Context;
 use crate::tree::{Node, OptionLog};
 
@@ -16,9 +14,11 @@ pub struct Mask {
     pub children: Vec<Node>,
 }
 
-pub fn convert(umask: Option<Rc<usvg::Mask>>, object_bbox: tiny_skia::Rect) -> Option<Mask> {
-    let umask = umask?;
+pub fn convert(umask: Option<usvg::SharedMask>, object_bbox: tiny_skia::Rect) -> Option<Mask> {
+    convert_impl(umask?.borrow(), object_bbox)
+}
 
+fn convert_impl(umask: std::cell::Ref<usvg::Mask>, object_bbox: tiny_skia::Rect) -> Option<Mask> {
     let mut content_transform = tiny_skia::Transform::default();
     if umask.content_units == usvg::Units::ObjectBoundingBox {
         let object_bbox = object_bbox
@@ -47,7 +47,7 @@ pub fn convert(umask: Option<Rc<usvg::Mask>>, object_bbox: tiny_skia::Rect) -> O
         umask.rect
     };
 
-    let (children, _) = crate::tree::convert_node(umask.root.clone());
+    let children = crate::tree::convert_root(&umask.root);
     Some(Mask {
         mask_all,
         region: region.to_rect(),

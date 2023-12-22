@@ -2,13 +2,13 @@ use std::rc::Rc;
 
 fn main() {
     let size = usvg::Size::from_wh(200.0, 200.0).unwrap();
-    let tree = usvg::Tree {
+    let mut tree = usvg::Tree {
         size,
         view_box: usvg::ViewBox {
             rect: size.to_non_zero_rect(0.0, 0.0),
             aspect: usvg::AspectRatio::default(),
         },
-        root: usvg::Node::new(usvg::NodeKind::Group(usvg::Group::default())),
+        root: usvg::Group::default(),
     };
 
     let gradient = usvg::LinearGradient {
@@ -45,6 +45,9 @@ fn main() {
         tiny_skia::Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap(),
     )));
     path.fill = fill;
+    tree.root.children.push(usvg::Node::Path(Box::new(path)));
+    tree.calculate_abs_transforms();
+    tree.calculate_bounding_boxes();
 
     let rtree = resvg::Tree::from_usvg(&tree);
 

@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use usvg::{fontdb, NodeExt, TreeParsing, TreeTextToPath};
+use usvg::{fontdb, TreeParsing, TreeTextToPath};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -35,27 +35,9 @@ fn main() {
 
     let mut bboxes = Vec::new();
     let mut stroke_bboxes = Vec::new();
-    let mut text_bboxes = Vec::new();
-    for node in tree.root.descendants() {
-        if let Some(bbox) = node.abs_bounding_box() {
-            bboxes.push(bbox);
+    collect_bboxes(&tree.root, &mut bboxes, &mut stroke_bboxes);
 
-            if let Some(stroke_bbox) = node.abs_stroke_bounding_box() {
-                if bbox != stroke_bbox {
-                    stroke_bboxes.push(stroke_bbox);
-                }
-            }
-        }
-
-        // Text bboxes are different from path bboxes.
-        if let usvg::NodeKind::Text(ref text) = *node.borrow() {
-            if let Some(ref bbox) = text.bounding_box {
-                text_bboxes.push(bbox.to_rect());
-            }
-        }
-    }
-
-    let stroke = Some(usvg::Stroke {
+    let stroke1 = Some(usvg::Stroke {
         paint: usvg::Paint::Color(usvg::Color::new_rgb(255, 0, 0)),
         opacity: usvg::Opacity::new_clamped(0.5),
         ..usvg::Stroke::default()
@@ -67,28 +49,16 @@ fn main() {
         ..usvg::Stroke::default()
     });
 
-    let stroke3 = Some(usvg::Stroke {
-        paint: usvg::Paint::Color(usvg::Color::new_rgb(0, 0, 200)),
-        opacity: usvg::Opacity::new_clamped(0.5),
-        ..usvg::Stroke::default()
-    });
-
     for bbox in bboxes {
         let mut path = usvg::Path::new(Rc::new(tiny_skia::PathBuilder::from_rect(bbox)));
-        path.stroke = stroke.clone();
-        tree.root.append_kind(usvg::NodeKind::Path(path));
+        path.stroke = stroke1.clone();
+        tree.root.children.push(usvg::Node::Path(Box::new(path)));
     }
 
     for bbox in stroke_bboxes {
         let mut path = usvg::Path::new(Rc::new(tiny_skia::PathBuilder::from_rect(bbox)));
         path.stroke = stroke2.clone();
-        tree.root.append_kind(usvg::NodeKind::Path(path));
-    }
-
-    for bbox in text_bboxes {
-        let mut path = usvg::Path::new(Rc::new(tiny_skia::PathBuilder::from_rect(bbox)));
-        path.stroke = stroke3.clone();
-        tree.root.append_kind(usvg::NodeKind::Path(path));
+        tree.root.children.push(usvg::Node::Path(Box::new(path)));
     }
 
     // Calculate bboxes of newly added path.
@@ -101,4 +71,26 @@ fn main() {
     let render_ts = tiny_skia::Transform::from_scale(zoom, zoom);
     rtree.render(render_ts, &mut pixmap.as_mut());
     pixmap.save_png(&args[2]).unwrap();
+}
+
+fn collect_bboxes(
+    parent: &usvg::Group,
+    bboxes: &mut Vec<usvg::Rect>,
+    stroke_bboxes: &mut Vec<usvg::Rect>,
+) {
+    for node in &parent.children {
+        if let usvg::Node::Group(ref group) = node {
+            collect_bboxes(group, bboxes, stroke_bboxes);
+        }
+
+        if let Some(bbox) = node.abs_bounding_box() {
+            bboxes.push(bbox);
+
+            if let Some(stroke_bbox) = node.abs_stroke_bounding_box() {
+                if bbox != stroke_bbox {
+                    stroke_bboxes.push(stroke_bbox);
+                }
+            }
+        }
+    }
 }

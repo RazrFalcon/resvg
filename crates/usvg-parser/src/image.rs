@@ -5,9 +5,7 @@
 use std::sync::Arc;
 
 use svgtypes::Length;
-use usvg_tree::{
-    Image, ImageKind, Node, NodeExt, NodeKind, NonZeroRect, Size, Transform, Tree, ViewBox,
-};
+use usvg_tree::{Group, Image, ImageKind, Node, NonZeroRect, Size, Transform, Tree, ViewBox};
 
 use crate::svgtree::{AId, SvgNode};
 use crate::{converter, OptionLog, Options, TreeParsing};
@@ -123,7 +121,7 @@ enum ImageFormat {
     SVG,
 }
 
-pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Node) -> Option<()> {
+pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Group) -> Option<()> {
     let href = node
         .attribute(AId::Href)
         .log_none(|| log::warn!("Image lacks the 'xlink:href' attribute. Skipped."))?;
@@ -173,7 +171,7 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Node
         String::new()
     };
 
-    parent.append_kind(NodeKind::Image(Image {
+    parent.children.push(Node::Image(Box::new(Image {
         id,
         visibility,
         view_box,
@@ -181,7 +179,7 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Node
         kind,
         abs_transform: Transform::default(),
         bounding_box: None,
-    }));
+    })));
 
     Some(())
 }
@@ -238,6 +236,13 @@ pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
     sub_opt.image_rendering = opt.image_rendering;
     sub_opt.default_size = opt.default_size;
 
+    // The referenced SVG image cannot have any 'image' elements by itself.
+    // Not only recursive. Any. Don't know why.
+    sub_opt.image_href_resolver = ImageHrefResolver {
+        resolve_data: Box::new(|_, _, _| None),
+        resolve_string: Box::new(|_, _| None),
+    };
+
     let mut tree = match Tree::from_data(data, &sub_opt) {
         Ok(tree) => tree,
         Err(_) => {
@@ -247,34 +252,5 @@ pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
     };
     tree.calculate_bounding_boxes();
 
-    sanitize_sub_svg(&tree);
     Some(ImageKind::SVG(tree))
-}
-
-// TODO: technically can simply override Options::image_href_resolver?
-fn sanitize_sub_svg(tree: &Tree) {
-    // Remove all Image nodes.
-    //
-    // The referenced SVG image cannot have any 'image' elements by itself.
-    // Not only recursive. Any. Don't know why.
-
-    // TODO: implement drain or something to the rctree.
-    let mut changed = true;
-    while changed {
-        changed = false;
-
-        for node in tree.root.descendants() {
-            let mut rm = false;
-            // TODO: feImage?
-            if let NodeKind::Image(_) = *node.borrow() {
-                rm = true;
-            };
-
-            if rm {
-                node.detach();
-                changed = true;
-                break;
-            }
-        }
-    }
 }

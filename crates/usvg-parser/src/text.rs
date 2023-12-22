@@ -102,7 +102,7 @@ pub(crate) fn convert(
     text_node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-    parent: &mut Node,
+    parent: &mut Group,
 ) {
     let pos_list = resolve_positions_list(text_node, state);
     let rotate_list = resolve_rotate_list(text_node);
@@ -134,7 +134,7 @@ pub(crate) fn convert(
         stroke_bounding_box: None,
         flattened: None,
     };
-    parent.append_kind(NodeKind::Text(text));
+    parent.children.push(Node::Text(Box::new(text)));
 }
 
 struct IterState {

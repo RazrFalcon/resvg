@@ -4,6 +4,7 @@
 
 //! A collection of SVG filters.
 
+use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
 use std::str::FromStr;
@@ -12,8 +13,7 @@ use strict_num::PositiveF32;
 use svgtypes::{Length, LengthUnit as Unit};
 use usvg_tree::filter::*;
 use usvg_tree::{
-    strict_num, ApproxZeroUlps, Color, Group, Node, NodeKind, NonZeroF32, NonZeroRect, Opacity,
-    Units,
+    strict_num, ApproxZeroUlps, Color, Group, Node, NonZeroF32, NonZeroRect, Opacity, Units,
 };
 
 use crate::converter::{self, SvgColorExt};
@@ -35,7 +35,7 @@ pub(crate) fn convert(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Result<Vec<Rc<Filter>>, ()> {
+) -> Result<Vec<SharedFilter>, ()> {
     let value = match node.attribute::<&str>(AId::Filter) {
         Some(v) => v,
         None => return Ok(Vec::new()),
@@ -44,7 +44,7 @@ pub(crate) fn convert(
     let mut has_invalid_urls = false;
     let mut filters = Vec::new();
 
-    let create_base_filter_func = |kind, filters: &mut Vec<Rc<Filter>>| {
+    let create_base_filter_func = |kind, filters: &mut Vec<SharedFilter>| {
         // Filter functions, unlike `filter` elements, do not have a filter region.
         // We're currently do not support an unlimited region, so we simply use a fairly large one.
         // This if far from ideal, but good for now.
@@ -56,7 +56,7 @@ pub(crate) fn convert(
             _ => NonZeroRect::from_xywh(-0.1, -0.1, 1.2, 1.2).unwrap(),
         };
 
-        filters.push(Rc::new(Filter {
+        filters.push(Rc::new(RefCell::new(Filter {
             id: String::new(),
             units: Units::ObjectBoundingBox,
             primitive_units: Units::UserSpaceOnUse,
@@ -71,7 +71,7 @@ pub(crate) fn convert(
                 result: "result".to_string(),
                 kind,
             }],
-        }));
+        })));
     };
 
     for func in svgtypes::FilterValueListParser::from(value) {
@@ -152,7 +152,7 @@ fn convert_url(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Result<Option<Rc<Filter>>, ()> {
+) -> Result<Option<SharedFilter>, ()> {
     if let Some(filter) = cache.filters.get(node.element_id()) {
         return Ok(Some(filter.clone()));
     }
@@ -208,13 +208,13 @@ fn convert_url(
         return Err(());
     }
 
-    let filter = Rc::new(Filter {
+    let filter = Rc::new(RefCell::new(Filter {
         id: node.element_id().to_string(),
         units,
         primitive_units,
         rect,
         primitives,
-    });
+    }));
 
     cache
         .filters
@@ -696,30 +696,26 @@ fn convert_image(fe: SvgNode, state: &converter::State, cache: &mut converter::C
     if let Some(node) = fe.attribute::<SvgNode>(AId::Href) {
         let mut state = state.clone();
         state.fe_image_link = true;
-        let mut root = Node::new(NodeKind::Group(Group::default()));
+        let mut root = Group::default();
         crate::converter::convert_element(node, &state, cache, &mut root);
-        return if let Some(node) = root.first_child() {
-            node.detach(); // drops `root` node
-
+        return if root.has_children() {
             // Transfer node id from group's child to the group itself if needed.
-            let mut id = String::new();
-            if let Some(child) = node.first_child() {
-                id = child.borrow().id().to_string();
-                match *child.borrow_mut() {
-                    NodeKind::Group(ref mut g) => g.id.clear(),
-                    NodeKind::Path(ref mut path) => path.id.clear(),
-                    NodeKind::Image(ref mut image) => image.id.clear(),
-                    NodeKind::Text(ref mut text) => text.id.clear(),
+            if let Some(Node::Group(ref mut g)) = root.children.first_mut() {
+                if let Some(child2) = g.children.first_mut() {
+                    g.id = child2.id().to_string();
+                    match child2 {
+                        Node::Group(ref mut g2) => g2.id.clear(),
+                        Node::Path(ref mut path) => path.id.clear(),
+                        Node::Image(ref mut image) => image.id.clear(),
+                        Node::Text(ref mut text) => text.id.clear(),
+                    }
                 }
-            }
-            if let NodeKind::Group(ref mut g) = *node.borrow_mut() {
-                g.id = id;
             }
 
             Kind::Image(Image {
                 aspect,
                 rendering_mode,
-                data: ImageKind::Use(node),
+                data: ImageKind::Use(Box::new(root)),
             })
         } else {
             create_dummy_primitive()

@@ -4,10 +4,13 @@
 
 //! SVG filter types.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use strict_num::PositiveF32;
 use svgtypes::AspectRatio;
 
-use crate::{BlendMode, Color, ImageRendering, Node, NonZeroF32, NonZeroRect, Opacity, Units};
+use crate::{BlendMode, Color, Group, ImageRendering, NonZeroF32, NonZeroRect, Opacity, Units};
 
 /// A filter element.
 ///
@@ -38,6 +41,9 @@ pub struct Filter {
     /// A list of filter primitives.
     pub primitives: Vec<Primitive>,
 }
+
+/// An alias for a shared `Filter`.
+pub type SharedFilter = Rc<RefCell<Filter>>;
 
 /// A filter primitive element.
 #[derive(Clone, Debug)]
@@ -533,10 +539,7 @@ pub enum ImageKind {
     Image(crate::ImageKind),
 
     /// An SVG node.
-    ///
-    /// Isn't inside a dummy group like clip, mask and pattern because
-    /// `feImage` can reference only a single element.
-    Use(Node),
+    Use(Box<Group>),
 }
 
 /// A diffuse lighting filter primitive.

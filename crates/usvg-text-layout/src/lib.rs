@@ -23,6 +23,7 @@ An [SVG] text layout implementation on top of [usvg] crate.
 
 pub use fontdb;
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::num::NonZeroU16;
@@ -43,61 +44,47 @@ pub trait TreeTextToPath {
 
 impl TreeTextToPath for usvg_tree::Tree {
     fn convert_text(&mut self, fontdb: &fontdb::Database) {
-        convert_text(self.root.clone(), fontdb);
+        convert_text(&mut self.root, fontdb);
         self.calculate_abs_transforms();
     }
 }
 
-fn convert_text(root: Node, fontdb: &fontdb::Database) {
-    let mut text_nodes = Vec::new();
-    // We have to update text nodes in clipPaths, masks and patterns as well.
-    for node in root.descendants() {
-        if let NodeKind::Text(_) = *node.borrow() {
-            text_nodes.push(node.clone());
-        }
-
-        if let NodeKind::Image(ref mut image) = *node.borrow_mut() {
-            if let ImageKind::SVG(ref mut tree) = image.kind {
-                tree.convert_text(fontdb);
-                tree.calculate_bounding_boxes();
-            }
-        }
-
-        node.subroots(|subroot| convert_text(subroot, fontdb))
-    }
-
-    if text_nodes.is_empty() {
-        return;
-    }
-
-    for node in &text_nodes {
-        if let NodeKind::Text(ref mut text) = *node.borrow_mut() {
+fn convert_text(root: &mut Group, fontdb: &fontdb::Database) {
+    for node in &mut root.children {
+        if let Node::Text(ref mut text) = node {
             if let Some((node, bbox, stroke_bbox)) = convert_node(text, fontdb) {
                 text.bounding_box = Some(bbox);
                 // TODO: test
                 text.stroke_bounding_box = Some(stroke_bbox.unwrap_or(bbox.to_rect()));
-                text.flattened = Some(node);
+                text.flattened = Some(Box::new(node));
             }
         }
+
+        if let Node::Group(ref mut g) = node {
+            convert_text(g, fontdb);
+        }
+
+        // We have to update text nodes in clipPaths, masks and patterns as well.
+        node.subroots_mut(|subroot| convert_text(subroot, fontdb))
     }
 }
 
 fn convert_node(
     text: &Text,
     fontdb: &fontdb::Database,
-) -> Option<(Node, NonZeroRect, Option<Rect>)> {
+) -> Option<(Group, NonZeroRect, Option<Rect>)> {
     let (new_paths, bbox, stroke_bbox) = text_to_paths(text, fontdb)?;
 
-    let group = Node::new(NodeKind::Group(Group {
+    let mut group = Group {
         id: text.id.clone(),
         ..Group::default()
-    }));
+    };
 
     let rendering_mode = resolve_rendering_mode(text);
     for mut path in new_paths {
         fix_obj_bounding_box(&mut path, bbox);
         path.rendering_mode = rendering_mode;
-        group.append_kind(NodeKind::Path(path));
+        group.children.push(Node::Path(Box::new(path)));
     }
 
     Some((group, bbox, stroke_bbox))
@@ -866,16 +853,16 @@ fn paint_server_to_user_space_on_use(paint: Paint, bbox: NonZeroRect) -> Option<
             }))
         }
         Paint::Pattern(ref patt) => {
-            let transform = patt.transform.post_concat(ts);
-            Paint::Pattern(Rc::new(Pattern {
+            let transform = patt.borrow().transform.post_concat(ts);
+            Paint::Pattern(Rc::new(RefCell::new(Pattern {
                 id: String::new(),
                 units: Units::UserSpaceOnUse,
-                content_units: patt.content_units,
+                content_units: patt.borrow().content_units,
                 transform,
-                rect: patt.rect,
-                view_box: patt.view_box,
-                root: patt.root.clone().make_deep_copy(),
-            }))
+                rect: patt.borrow().rect,
+                view_box: patt.borrow().view_box,
+                root: patt.borrow().root.clone(),
+            })))
         }
     };
 

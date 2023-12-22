@@ -34,7 +34,7 @@ pub fn convert(
         }
         usvg::Paint::LinearGradient(ref lg) => convert_linear_gradient(lg, opacity, object_bbox),
         usvg::Paint::RadialGradient(ref rg) => convert_radial_gradient(rg, opacity, object_bbox),
-        usvg::Paint::Pattern(ref patt) => convert_pattern(patt, opacity, object_bbox),
+        usvg::Paint::Pattern(ref patt) => convert_pattern(&patt.borrow(), opacity, object_bbox),
     }
 }
 
@@ -130,7 +130,7 @@ fn convert_pattern(
             tiny_skia::Transform::default()
         };
 
-    let (children, _) = crate::tree::convert_node(pattern.root.clone());
+    let children = crate::tree::convert_root(&pattern.root);
     if children.is_empty() {
         return None;
     }

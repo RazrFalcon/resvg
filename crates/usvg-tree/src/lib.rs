@@ -22,6 +22,7 @@ pub mod filter;
 mod geom;
 mod text;
 
+use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -369,9 +370,7 @@ pub struct Pattern {
     pub view_box: Option<ViewBox>,
 
     /// Pattern children.
-    ///
-    /// The root node is always `Group`.
-    pub root: Node,
+    pub root: Group,
 }
 
 /// An alias to `NonZeroPositiveF32`.
@@ -604,7 +603,7 @@ pub enum Paint {
     Color(Color),
     LinearGradient(Rc<LinearGradient>),
     RadialGradient(Rc<RadialGradient>),
-    Pattern(Rc<Pattern>),
+    Pattern(Rc<RefCell<Pattern>>),
 }
 
 impl Paint {
@@ -617,7 +616,7 @@ impl Paint {
             Self::Color(_) => None,
             Self::LinearGradient(ref lg) => Some(lg.units),
             Self::RadialGradient(ref rg) => Some(rg.units),
-            Self::Pattern(ref patt) => Some(patt.units),
+            Self::Pattern(ref patt) => Some(patt.borrow().units),
         }
     }
 }
@@ -659,13 +658,14 @@ pub struct ClipPath {
     /// Additional clip path.
     ///
     /// `clip-path` in SVG.
-    pub clip_path: Option<Rc<Self>>,
+    pub clip_path: Option<SharedClipPath>,
 
     /// Clip path children.
-    ///
-    /// The root node is always `Group`.
-    pub root: Node,
+    pub root: Group,
 }
+
+/// An alias for a shared `ClipPath`.
+pub type SharedClipPath = Rc<RefCell<ClipPath>>;
 
 impl Default for ClipPath {
     fn default() -> Self {
@@ -674,7 +674,7 @@ impl Default for ClipPath {
             units: Units::UserSpaceOnUse,
             transform: Transform::default(),
             clip_path: None,
-            root: Node::new(NodeKind::Group(Group::default())),
+            root: Group::default(),
         }
     }
 }
@@ -728,74 +728,133 @@ pub struct Mask {
     /// Additional mask.
     ///
     /// `mask` in SVG.
-    pub mask: Option<Rc<Self>>,
+    pub mask: Option<SharedMask>,
 
     /// Clip path children.
-    ///
-    /// The root node is always `Group`.
-    pub root: Node,
+    pub root: Group,
 }
+
+/// An alias for a shared `Mask`.
+pub type SharedMask = Rc<RefCell<Mask>>;
 
 /// Node's kind.
 #[allow(missing_docs)]
 #[derive(Clone, Debug)]
-pub enum NodeKind {
-    Group(Group),
-    Path(Path),
-    Image(Image),
-    Text(Text),
+pub enum Node {
+    Group(Box<Group>),
+    Path(Box<Path>),
+    Image(Box<Image>),
+    Text(Box<Text>),
 }
 
-impl NodeKind {
+impl Node {
     /// Returns node's ID.
     pub fn id(&self) -> &str {
         match self {
-            NodeKind::Group(ref e) => e.id.as_str(),
-            NodeKind::Path(ref e) => e.id.as_str(),
-            NodeKind::Image(ref e) => e.id.as_str(),
-            NodeKind::Text(ref e) => e.id.as_str(),
+            Node::Group(ref e) => e.id.as_str(),
+            Node::Path(ref e) => e.id.as_str(),
+            Node::Image(ref e) => e.id.as_str(),
+            Node::Text(ref e) => e.id.as_str(),
         }
     }
 
     /// Returns node's absolute transform.
+    ///
+    /// If a current node doesn't support transformation - a default
+    /// transform will be returned.
+    ///
+    /// This method is cheap since absolute transforms are already resolved.
     pub fn abs_transform(&self) -> Transform {
         match self {
-            NodeKind::Group(ref group) => group.abs_transform,
-            NodeKind::Path(ref path) => path.abs_transform,
-            NodeKind::Image(ref image) => image.abs_transform,
-            NodeKind::Text(ref text) => text.abs_transform,
+            Node::Group(ref group) => group.abs_transform,
+            Node::Path(ref path) => path.abs_transform,
+            Node::Image(ref image) => image.abs_transform,
+            Node::Text(ref text) => text.abs_transform,
         }
     }
 
-    /// Returns node's bounding box in object coordinates.
+    /// Returns node's bounding box in object coordinates if any.
+    ///
+    /// This method is cheap since bounding boxes are already calculated.
     pub fn bounding_box(&self) -> Option<Rect> {
         match self {
-            NodeKind::Group(ref group) => group.bounding_box,
-            NodeKind::Path(ref path) => path.bounding_box,
-            NodeKind::Image(ref image) => image.bounding_box.map(|r| r.to_rect()),
-            NodeKind::Text(ref text) => text.bounding_box.map(|r| r.to_rect()),
+            Node::Group(ref group) => group.bounding_box,
+            Node::Path(ref path) => path.bounding_box,
+            Node::Image(ref image) => image.bounding_box.map(|r| r.to_rect()),
+            Node::Text(ref text) => text.bounding_box.map(|r| r.to_rect()),
         }
     }
 
-    /// Returns node's bounding box in canvas coordinates.
+    /// Returns node's bounding box in canvas coordinates if any.
+    ///
+    /// This method is cheap since bounding boxes are already calculated.
     pub fn abs_bounding_box(&self) -> Option<Rect> {
         self.bounding_box()?.transform(self.abs_transform())
     }
 
-    /// Returns node's bounding box, including stroke, in object coordinates.
+    /// Returns node's bounding box, including stroke, in object coordinates if any.
+    ///
+    /// This method is cheap since bounding boxes are already calculated.
     pub fn stroke_bounding_box(&self) -> Option<Rect> {
         match self {
-            NodeKind::Group(ref group) => group.stroke_bounding_box,
-            NodeKind::Path(ref path) => path.stroke_bounding_box,
+            Node::Group(ref group) => group.stroke_bounding_box,
+            Node::Path(ref path) => path.stroke_bounding_box,
             // Image cannot be stroked.
-            NodeKind::Image(ref image) => image.bounding_box.map(|r| r.to_rect()),
-            NodeKind::Text(ref text) => text.stroke_bounding_box,
+            Node::Image(ref image) => image.bounding_box.map(|r| r.to_rect()),
+            Node::Text(ref text) => text.stroke_bounding_box,
         }
     }
 
-    /// Returns node's bounding box, including stroke, in canvas coordinates.
+    /// Returns node's bounding box, including stroke, in canvas coordinates if any.
+    ///
+    /// This method is cheap since bounding boxes are already calculated.
     pub fn abs_stroke_bounding_box(&self) -> Option<Rect> {
         self.stroke_bounding_box()?.transform(self.abs_transform())
+    }
+
+    /// Calls a closure for each subroot this `Node` has.
+    ///
+    /// The [`Tree::root`](Tree::root) field contain only render-able SVG elements.
+    /// But some elements, specifically clip paths, masks, patterns and feImage
+    /// can store their own SVG subtrees.
+    /// And while one can access them manually, it's pretty verbose.
+    /// This methods allows looping over _all_ SVG elements present in the `Tree`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// fn all_nodes(parent: &usvg_tree::Group) {
+    ///     for node in &parent.children {
+    ///         // do stuff...
+    ///
+    ///         if let usvg_tree::Node::Group(ref g) = node {
+    ///             all_nodes(g);
+    ///         }
+    ///
+    ///         // handle subroots as well
+    ///         node.subroots(|subroot| all_nodes(subroot));
+    ///     }
+    /// }
+    /// ```
+    pub fn subroots<F: FnMut(&Group)>(&self, mut f: F) {
+        match self {
+            Node::Group(ref group) => group.subroots(&mut f),
+            Node::Path(ref path) => path.subroots(&mut f),
+            Node::Image(ref image) => image.subroots(&mut f),
+            Node::Text(ref text) => text.subroots(&mut f),
+        }
+    }
+
+    /// Calls a closure for each subroot this `Node` has.
+    ///
+    /// A mutable version of `subroots()`.
+    pub fn subroots_mut<F: FnMut(&mut Group)>(&mut self, mut f: F) {
+        match self {
+            Node::Group(ref mut group) => group.subroots_mut(&mut f),
+            Node::Path(ref mut path) => path.subroots_mut(&mut f),
+            Node::Image(ref mut image) => image.subroots_mut(&mut f),
+            Node::Text(ref mut text) => text.subroots_mut(&mut f),
+        }
     }
 }
 
@@ -846,13 +905,13 @@ pub struct Group {
     pub isolate: bool,
 
     /// Element's clip path.
-    pub clip_path: Option<Rc<ClipPath>>,
+    pub clip_path: Option<SharedClipPath>,
 
     /// Element's mask.
-    pub mask: Option<Rc<Mask>>,
+    pub mask: Option<SharedMask>,
 
     /// Element's filters.
-    pub filters: Vec<Rc<filter::Filter>>,
+    pub filters: Vec<filter::SharedFilter>,
 
     /// Element's object bounding box.
     ///
@@ -867,6 +926,9 @@ pub struct Group {
     ///
     /// Similar to `bounding_box`, but includes stroke.
     pub stroke_bounding_box: Option<Rect>,
+
+    /// Group's children.
+    pub children: Vec<Node>,
 }
 
 impl Default for Group {
@@ -883,6 +945,7 @@ impl Default for Group {
             filters: Vec::new(),
             bounding_box: None,
             stroke_bounding_box: None,
+            children: Vec::new(),
         }
     }
 }
@@ -896,6 +959,72 @@ impl Group {
             || self.mask.is_some()
             || !self.filters.is_empty()
             || self.blend_mode != BlendMode::Normal // TODO: probably not needed?
+    }
+
+    /// Returns `true` if the group has any children.
+    pub fn has_children(&self) -> bool {
+        !self.children.is_empty()
+    }
+
+    /// Returns node's bounding box in canvas coordinates.
+    pub fn abs_bounding_box(&self) -> Option<Rect> {
+        self.bounding_box?.transform(self.abs_transform)
+    }
+
+    fn subroots(&self, f: &mut dyn FnMut(&Group)) {
+        if let Some(ref clip) = self.clip_path {
+            f(&clip.borrow().root);
+
+            if let Some(ref sub_clip) = clip.borrow().clip_path {
+                f(&sub_clip.borrow().root);
+            }
+        }
+
+        if let Some(ref mask) = self.mask {
+            f(&mask.borrow().root);
+
+            if let Some(ref sub_mask) = mask.borrow().mask {
+                f(&sub_mask.borrow().root);
+            }
+        }
+
+        for filter in &self.filters {
+            for primitive in &filter.borrow().primitives {
+                if let filter::Kind::Image(ref image) = primitive.kind {
+                    if let filter::ImageKind::Use(ref use_node) = image.data {
+                        f(use_node);
+                    }
+                }
+            }
+        }
+    }
+
+    fn subroots_mut(&mut self, f: &mut dyn FnMut(&mut Group)) {
+        if let Some(ref clip) = self.clip_path {
+            f(&mut clip.borrow_mut().root);
+
+            if let Some(ref sub_clip) = clip.borrow().clip_path {
+                f(&mut sub_clip.borrow_mut().root);
+            }
+        }
+
+        if let Some(ref mask) = self.mask {
+            f(&mut mask.borrow_mut().root);
+
+            if let Some(ref sub_mask) = mask.borrow_mut().mask {
+                f(&mut sub_mask.borrow_mut().root);
+            }
+        }
+
+        for filter in &mut self.filters {
+            for primitive in &mut filter.borrow_mut().primitives {
+                if let filter::Kind::Image(ref mut image) = primitive.kind {
+                    if let filter::ImageKind::Use(ref mut use_node) = image.data {
+                        f(use_node);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1013,6 +1142,24 @@ impl Path {
 
         None
     }
+
+    fn subroots(&self, f: &mut dyn FnMut(&Group)) {
+        if let Some(Paint::Pattern(ref patt)) = self.fill.as_ref().map(|f| &f.paint) {
+            f(&patt.borrow().root)
+        }
+        if let Some(Paint::Pattern(ref patt)) = self.stroke.as_ref().map(|f| &f.paint) {
+            f(&patt.borrow().root)
+        }
+    }
+
+    fn subroots_mut(&mut self, f: &mut dyn FnMut(&mut Group)) {
+        if let Some(Paint::Pattern(ref mut patt)) = self.fill.as_mut().map(|f| &mut f.paint) {
+            f(&mut patt.borrow_mut().root)
+        }
+        if let Some(Paint::Pattern(ref mut patt)) = self.stroke.as_mut().map(|f| &mut f.paint) {
+            f(&mut patt.borrow_mut().root)
+        }
+    }
 }
 
 /// An embedded image kind.
@@ -1086,13 +1233,23 @@ pub struct Image {
     pub bounding_box: Option<NonZeroRect>,
 }
 
-/// Alias for `rctree::Node<NodeKind>`.
-pub type Node = rctree::Node<NodeKind>;
+impl Image {
+    fn subroots(&self, f: &mut dyn FnMut(&Group)) {
+        if let ImageKind::SVG(ref tree) = self.kind {
+            f(&tree.root)
+        }
+    }
 
-// TODO: impl a Debug
+    fn subroots_mut(&mut self, f: &mut dyn FnMut(&mut Group)) {
+        if let ImageKind::SVG(ref mut tree) = self.kind {
+            f(&mut tree.root)
+        }
+    }
+}
+
 /// A nodes tree container.
 #[allow(missing_debug_implementations)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Tree {
     /// Image size.
     ///
@@ -1109,9 +1266,7 @@ pub struct Tree {
     pub view_box: ViewBox,
 
     /// The root element of the SVG tree.
-    ///
-    /// The root node is always `Group`.
-    pub root: Node,
+    pub root: Group,
 }
 
 impl Tree {
@@ -1120,12 +1275,12 @@ impl Tree {
     ///
     /// If an empty ID is provided, than this method will always return `None`.
     /// Even if tree has nodes with empty ID.
-    pub fn node_by_id(&self, id: &str) -> Option<Node> {
+    pub fn node_by_id(&self, id: &str) -> Option<&Node> {
         if id.is_empty() {
             return None;
         }
 
-        self.root.descendants().find(|node| &*node.id() == id)
+        node_by_id(&self.root, id)
     }
 
     /// Checks if the current tree has any text nodes.
@@ -1143,21 +1298,21 @@ impl Tree {
     /// Calls a closure for each [`ClipPath`] in the tree.
     ///
     /// Doesn't guarantee to have unique clip paths. A caller must deduplicate them manually.
-    pub fn clip_paths<F: FnMut(Rc<ClipPath>)>(&self, mut f: F) {
+    pub fn clip_paths<F: FnMut(SharedClipPath)>(&self, mut f: F) {
         loop_over_clip_paths(&self.root, &mut f)
     }
 
     /// Calls a closure for each [`Mask`] in the tree.
     ///
     /// Doesn't guarantee to have unique masks. A caller must deduplicate them manually.
-    pub fn masks<F: FnMut(Rc<Mask>)>(&self, mut f: F) {
+    pub fn masks<F: FnMut(SharedMask)>(&self, mut f: F) {
         loop_over_masks(&self.root, &mut f)
     }
 
     /// Calls a closure for each [`Filter`](filter::Filter) in the tree.
     ///
     /// Doesn't guarantee to have unique filters. A caller must deduplicate them manually.
-    pub fn filters<F: FnMut(Rc<filter::Filter>)>(&self, mut f: F) {
+    pub fn filters<F: FnMut(filter::SharedFilter)>(&self, mut f: F) {
         loop_over_filters(&self.root, &mut f)
     }
 
@@ -1166,26 +1321,42 @@ impl Tree {
     /// Automatically called by the parser
     /// and ideally should be called manually after each tree modification.
     pub fn calculate_abs_transforms(&mut self) {
-        calculate_abs_transform(&self.root, Transform::identity());
+        calculate_abs_transform(&mut self.root, Transform::identity());
     }
 
     /// Calculates bounding boxes for all nodes in the tree.
     ///
     /// This method is pretty expensive and should be called on-demand.
     pub fn calculate_bounding_boxes(&mut self) {
-        calculate_bounding_box(&self.root);
+        calculate_bounding_box(&mut self.root);
     }
 }
 
-fn has_text_nodes(root: &Node) -> bool {
-    for node in root.descendants() {
-        if let NodeKind::Text(_) = *node.borrow() {
+fn node_by_id<'a>(parent: &'a Group, id: &str) -> Option<&'a Node> {
+    for child in &parent.children {
+        if child.id() == id {
+            return Some(child);
+        }
+
+        if let Node::Group(ref g) = child {
+            if let Some(n) = node_by_id(g, id) {
+                return Some(n);
+            }
+        }
+    }
+
+    None
+}
+
+fn has_text_nodes(root: &Group) -> bool {
+    for node in &root.children {
+        if let Node::Text(_) = node {
             return true;
         }
 
         let mut has_text = false;
 
-        if let NodeKind::Image(ref image) = *node.borrow() {
+        if let Node::Image(ref image) = node {
             if let ImageKind::SVG(ref tree) = image.kind {
                 if has_text_nodes(&tree.root) {
                     has_text = true;
@@ -1193,352 +1364,187 @@ fn has_text_nodes(root: &Node) -> bool {
             }
         }
 
-        node.subroots(|subroot| {
-            if has_text_nodes(&subroot) {
-                has_text = true;
-            }
-        });
+        node.subroots(|subroot| has_text |= has_text_nodes(subroot));
 
         if has_text {
             return true;
         }
     }
 
-    false
+    true
 }
 
-fn loop_over_paint_servers(root: &Node, f: &mut dyn FnMut(&Paint)) {
+fn loop_over_paint_servers(parent: &Group, f: &mut dyn FnMut(&Paint)) {
     fn push(paint: Option<&Paint>, f: &mut dyn FnMut(&Paint)) {
         if let Some(paint) = paint {
             f(paint);
         }
     }
 
-    for node in root.descendants() {
-        if let NodeKind::Path(ref path) = *node.borrow() {
-            push(path.fill.as_ref().map(|f| &f.paint), f);
-            push(path.stroke.as_ref().map(|f| &f.paint), f);
-        } else if let NodeKind::Text(ref text) = *node.borrow() {
-            // A flattened text should be ignored, otherwise we would have duplicates.
-            if text.flattened.is_none() {
-                for chunk in &text.chunks {
-                    for span in &chunk.spans {
-                        push(span.fill.as_ref().map(|f| &f.paint), f);
-                        push(span.stroke.as_ref().map(|f| &f.paint), f);
+    for node in &parent.children {
+        match node {
+            Node::Group(ref group) => loop_over_paint_servers(group, f),
+            Node::Path(ref path) => {
+                push(path.fill.as_ref().map(|f| &f.paint), f);
+                push(path.stroke.as_ref().map(|f| &f.paint), f);
+            }
+            Node::Image(_) => {}
+            Node::Text(ref text) => {
+                // A flattened text should be ignored, otherwise we would have duplicates.
+                if text.flattened.is_none() {
+                    for chunk in &text.chunks {
+                        for span in &chunk.spans {
+                            push(span.fill.as_ref().map(|f| &f.paint), f);
+                            push(span.stroke.as_ref().map(|f| &f.paint), f);
 
-                        if let Some(ref underline) = span.decoration.underline {
-                            push(underline.fill.as_ref().map(|f| &f.paint), f);
-                            push(underline.stroke.as_ref().map(|f| &f.paint), f);
-                        }
+                            if let Some(ref underline) = span.decoration.underline {
+                                push(underline.fill.as_ref().map(|f| &f.paint), f);
+                                push(underline.stroke.as_ref().map(|f| &f.paint), f);
+                            }
 
-                        if let Some(ref overline) = span.decoration.overline {
-                            push(overline.fill.as_ref().map(|f| &f.paint), f);
-                            push(overline.stroke.as_ref().map(|f| &f.paint), f);
-                        }
+                            if let Some(ref overline) = span.decoration.overline {
+                                push(overline.fill.as_ref().map(|f| &f.paint), f);
+                                push(overline.stroke.as_ref().map(|f| &f.paint), f);
+                            }
 
-                        if let Some(ref line_through) = span.decoration.line_through {
-                            push(line_through.fill.as_ref().map(|f| &f.paint), f);
-                            push(line_through.stroke.as_ref().map(|f| &f.paint), f);
+                            if let Some(ref line_through) = span.decoration.line_through {
+                                push(line_through.fill.as_ref().map(|f| &f.paint), f);
+                                push(line_through.stroke.as_ref().map(|f| &f.paint), f);
+                            }
                         }
                     }
                 }
             }
         }
 
-        node.subroots(|subroot| loop_over_paint_servers(&subroot, f));
+        node.subroots(|subroot| loop_over_paint_servers(subroot, f));
     }
 }
 
-fn loop_over_clip_paths(root: &Node, f: &mut dyn FnMut(Rc<ClipPath>)) {
-    for node in root.descendants() {
-        if let NodeKind::Group(ref g) = *node.borrow() {
+fn loop_over_clip_paths(parent: &Group, f: &mut dyn FnMut(SharedClipPath)) {
+    for node in &parent.children {
+        if let Node::Group(ref g) = node {
             if let Some(ref clip) = g.clip_path {
                 f(clip.clone());
 
-                if let Some(ref sub_clip) = clip.clip_path {
+                if let Some(ref sub_clip) = clip.borrow().clip_path {
                     f(sub_clip.clone());
                 }
             }
         }
 
-        node.subroots(|subroot| loop_over_clip_paths(&subroot, f));
+        node.subroots(|subroot| loop_over_clip_paths(subroot, f));
+
+        if let Node::Group(ref g) = node {
+            loop_over_clip_paths(g, f);
+        }
     }
 }
 
-fn loop_over_masks(root: &Node, f: &mut dyn FnMut(Rc<Mask>)) {
-    for node in root.descendants() {
-        if let NodeKind::Group(ref g) = *node.borrow() {
+fn loop_over_masks(parent: &Group, f: &mut dyn FnMut(SharedMask)) {
+    for node in &parent.children {
+        if let Node::Group(ref g) = node {
             if let Some(ref mask) = g.mask {
                 f(mask.clone());
 
-                if let Some(ref sub_mask) = mask.mask {
+                if let Some(ref sub_mask) = mask.borrow().mask {
                     f(sub_mask.clone());
                 }
             }
+
+            loop_over_masks(g, f);
         }
 
-        node.subroots(|subroot| loop_over_masks(&subroot, f));
+        node.subroots(|subroot| loop_over_masks(subroot, f));
+
+        if let Node::Group(ref g) = node {
+            loop_over_masks(g, f);
+        }
     }
 }
 
-fn loop_over_filters(root: &Node, f: &mut dyn FnMut(Rc<filter::Filter>)) {
-    for node in root.descendants() {
-        if let NodeKind::Group(ref g) = *node.borrow() {
+fn loop_over_filters(parent: &Group, f: &mut dyn FnMut(filter::SharedFilter)) {
+    for node in &parent.children {
+        if let Node::Group(ref g) = node {
             for filter in &g.filters {
                 f(filter.clone());
             }
         }
 
-        node.subroots(|subroot| loop_over_filters(&subroot, f));
-    }
-}
+        node.subroots(|subroot| loop_over_filters(subroot, f));
 
-fn node_subroots(node: &Node, f: &mut dyn FnMut(Node)) {
-    let mut push_patt = |paint: Option<&Paint>| {
-        if let Some(Paint::Pattern(ref patt)) = paint {
-            f(patt.root.clone());
-        }
-    };
-
-    match *node.borrow() {
-        NodeKind::Group(ref g) => {
-            if let Some(ref clip) = g.clip_path {
-                f(clip.root.clone());
-
-                if let Some(ref sub_clip) = clip.clip_path {
-                    f(sub_clip.root.clone());
-                }
-            }
-
-            if let Some(ref mask) = g.mask {
-                f(mask.root.clone());
-
-                if let Some(ref sub_mask) = mask.mask {
-                    f(sub_mask.root.clone());
-                }
-            }
-
-            for filter in &g.filters {
-                for primitive in &filter.primitives {
-                    if let filter::Kind::Image(ref image) = primitive.kind {
-                        if let filter::ImageKind::Use(ref use_node) = image.data {
-                            f(use_node.clone());
-                        }
-                    }
-                }
-            }
-        }
-        NodeKind::Path(ref path) => {
-            push_patt(path.fill.as_ref().map(|f| &f.paint));
-            push_patt(path.stroke.as_ref().map(|f| &f.paint));
-        }
-        NodeKind::Image(_) => {} // TODO: what about an SVG image?
-        NodeKind::Text(ref text) => {
-            if let Some(ref flattened) = text.flattened {
-                f(flattened.clone());
-                // Return now, since text chunks would have the same styles
-                // as the flattened text, which would lead to duplicates.
-                return;
-            }
-
-            for chunk in &text.chunks {
-                for span in &chunk.spans {
-                    push_patt(span.fill.as_ref().map(|f| &f.paint));
-                    push_patt(span.stroke.as_ref().map(|f| &f.paint));
-
-                    // Each text decoration can have paint.
-                    if let Some(ref underline) = span.decoration.underline {
-                        push_patt(underline.fill.as_ref().map(|f| &f.paint));
-                        push_patt(underline.stroke.as_ref().map(|f| &f.paint));
-                    }
-
-                    if let Some(ref overline) = span.decoration.overline {
-                        push_patt(overline.fill.as_ref().map(|f| &f.paint));
-                        push_patt(overline.stroke.as_ref().map(|f| &f.paint));
-                    }
-
-                    if let Some(ref line_through) = span.decoration.line_through {
-                        push_patt(line_through.fill.as_ref().map(|f| &f.paint));
-                        push_patt(line_through.stroke.as_ref().map(|f| &f.paint));
-                    }
-                }
-            }
+        if let Node::Group(ref g) = node {
+            loop_over_filters(g, f);
         }
     }
 }
 
-/// Additional `Node` methods.
-pub trait NodeExt {
-    /// Returns node's ID.
-    ///
-    /// If a current node doesn't support ID - an empty string
-    /// will be returned.
-    fn id(&self) -> std::cell::Ref<str>;
-
-    /// Returns node's absolute transform.
-    ///
-    /// If a current node doesn't support transformation - a default
-    /// transform will be returned.
-    ///
-    /// This method is cheap since absolute transforms are already resolved.
-    fn abs_transform(&self) -> Transform;
-
-    /// Returns node's bounding box in object coordinates if any.
-    ///
-    /// This method is cheap since bounding boxes are already calculated.
-    fn bounding_box(&self) -> Option<Rect>;
-
-    /// Returns node's bounding box in canvas coordinates if any.
-    ///
-    /// This method is cheap since bounding boxes are already calculated.
-    fn abs_bounding_box(&self) -> Option<Rect>;
-
-    /// Returns node's bounding box, including stroke, in object coordinates if any.
-    ///
-    /// This method is cheap since bounding boxes are already calculated.
-    fn stroke_bounding_box(&self) -> Option<Rect>;
-
-    /// Returns node's bounding box, including stroke, in canvas coordinates if any.
-    ///
-    /// This method is cheap since bounding boxes are already calculated.
-    fn abs_stroke_bounding_box(&self) -> Option<Rect>;
-
-    /// Appends `kind` as a node child.
-    fn append_kind(&self, kind: NodeKind) -> Node;
-
-    /// Calls a closure for each subroot this `Node` has.
-    ///
-    /// The [`Tree::root`](Tree::root) field contain only render-able SVG elements.
-    /// But some elements, specifically clip paths, masks, patterns and feImage
-    /// can store their own SVG subtrees.
-    /// And while one can access them manually, it's pretty verbose.
-    /// This methods allows looping over _all_ SVG elements present in the `Tree`.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use usvg_tree::NodeExt;
-    ///
-    /// fn all_nodes(root: &usvg_tree::Node) {
-    ///     for node in root.descendants() {
-    ///         // do stuff...
-    ///
-    ///         // hand subroots as well
-    ///         node.subroots(|subroot| all_nodes(&subroot));
-    ///     }
-    /// }
-    /// ```
-    fn subroots<F: FnMut(Node)>(&self, f: F);
-}
-
-impl NodeExt for Node {
-    #[inline]
-    fn id(&self) -> std::cell::Ref<str> {
-        std::cell::Ref::map(self.borrow(), |v| v.id())
-    }
-
-    fn abs_transform(&self) -> Transform {
-        self.borrow().abs_transform()
-    }
-
-    fn bounding_box(&self) -> Option<Rect> {
-        self.borrow().bounding_box()
-    }
-
-    fn abs_bounding_box(&self) -> Option<Rect> {
-        self.borrow().abs_bounding_box()
-    }
-
-    fn stroke_bounding_box(&self) -> Option<Rect> {
-        self.borrow().stroke_bounding_box()
-    }
-
-    fn abs_stroke_bounding_box(&self) -> Option<Rect> {
-        self.borrow().abs_stroke_bounding_box()
-    }
-
-    #[inline]
-    fn append_kind(&self, kind: NodeKind) -> Node {
-        let new_node = Node::new(kind);
-        self.append(new_node.clone());
-        new_node
-    }
-
-    fn subroots<F: FnMut(Node)>(&self, mut f: F) {
-        node_subroots(self, &mut f)
-    }
-}
-
-fn calculate_abs_transform(node: &Node, ts: Transform) {
-    let mut abs_ts = ts;
-    match *node.borrow_mut() {
-        NodeKind::Group(ref mut group) => {
-            abs_ts = ts.pre_concat(group.transform);
-            group.abs_transform = abs_ts;
+fn calculate_abs_transform(parent: &mut Group, ts: Transform) {
+    for node in &mut parent.children {
+        match node {
+            Node::Group(ref mut group) => {
+                let abs_ts = ts.pre_concat(group.transform);
+                group.abs_transform = abs_ts;
+                calculate_abs_transform(group, abs_ts);
+            }
+            Node::Path(ref mut path) => path.abs_transform = ts,
+            Node::Image(ref mut image) => image.abs_transform = ts,
+            Node::Text(ref mut text) => text.abs_transform = ts,
         }
-        NodeKind::Path(ref mut path) => path.abs_transform = ts,
-        NodeKind::Image(ref mut image) => image.abs_transform = ts,
-        NodeKind::Text(ref mut text) => text.abs_transform = ts,
-    }
 
-    for child in node.children() {
-        calculate_abs_transform(&child, abs_ts);
+        // Yes, subroots are not affected by the node's transform.
+        node.subroots_mut(|root| calculate_abs_transform(root, Transform::identity()));
     }
-
-    // Yes, subroots are not affected by the node's transform.
-    node.subroots(|root| calculate_abs_transform(&root, Transform::identity()));
 }
 
-fn calculate_bounding_box(node: &Node) {
-    if node.has_children() {
-        let mut bbox = BBox::default();
-        let mut stroke_bbox = BBox::default();
-        for child in node.children() {
-            calculate_bounding_box(&child);
-
-            if let Some(mut c_bbox) = child.bounding_box() {
-                if let NodeKind::Group(ref group) = *child.borrow() {
-                    if let Some(r) = c_bbox.transform(group.transform) {
-                        c_bbox = r;
-                    }
+fn calculate_bounding_box(parent: &mut Group) {
+    for node in &mut parent.children {
+        match node {
+            Node::Path(ref mut path) => {
+                path.bounding_box = path.data.compute_tight_bounds();
+                path.stroke_bounding_box = path.calculate_stroke_bounding_box();
+                if path.stroke_bounding_box.is_none() {
+                    path.stroke_bounding_box = path.bounding_box;
                 }
-
-                bbox = bbox.expand(c_bbox);
             }
+            // TODO: should we account for `preserveAspectRatio`?
+            Node::Image(ref mut image) => image.bounding_box = Some(image.view_box.rect),
+            // Have to be handled separately to prevent multiple mutable reference to the tree.
+            Node::Group(ref mut group) => {
+                calculate_bounding_box(group);
+            }
+            // Will be set only during text-to-path conversion.
+            Node::Text(_) => {}
+        }
 
-            if let Some(mut c_bbox) = child.stroke_bounding_box() {
-                if let NodeKind::Group(ref group) = *child.borrow() {
-                    if let Some(r) = c_bbox.transform(group.transform) {
-                        c_bbox = r;
-                    }
+        // Yes, subroots are not affected by the node's transform.
+        node.subroots_mut(calculate_bounding_box);
+    }
+
+    let mut bbox = BBox::default();
+    let mut stroke_bbox = BBox::default();
+    for child in &parent.children {
+        if let Some(mut c_bbox) = child.bounding_box() {
+            if let Node::Group(ref group) = child {
+                if let Some(r) = c_bbox.transform(group.transform) {
+                    c_bbox = r;
                 }
-
-                stroke_bbox = stroke_bbox.expand(c_bbox);
             }
+
+            bbox = bbox.expand(c_bbox);
         }
 
-        if let NodeKind::Group(ref mut group) = *node.borrow_mut() {
-            group.bounding_box = bbox.to_rect();
-            group.stroke_bounding_box = stroke_bbox.to_rect();
+        if let Some(mut c_bbox) = child.stroke_bounding_box() {
+            if let Node::Group(ref group) = child {
+                if let Some(r) = c_bbox.transform(group.transform) {
+                    c_bbox = r;
+                }
+            }
+
+            stroke_bbox = stroke_bbox.expand(c_bbox);
         }
     }
 
-    match *node.borrow_mut() {
-        NodeKind::Path(ref mut path) => {
-            path.bounding_box = path.data.compute_tight_bounds();
-            path.stroke_bounding_box = path.calculate_stroke_bounding_box();
-            if path.stroke_bounding_box.is_none() {
-                path.stroke_bounding_box = path.bounding_box;
-            }
-        }
-        // TODO: should we account for `preserveAspectRatio`?
-        NodeKind::Image(ref mut image) => image.bounding_box = Some(image.view_box.rect),
-        // Have to be handled separately to prevent multiple mutable reference to the tree.
-        NodeKind::Group(_) => {}
-        // Will be set only during text-to-path conversion.
-        NodeKind::Text(_) => {}
-    }
-
-    // Yes, subroots are not affected by the node's transform.
-    node.subroots(|root| calculate_bounding_box(&root));
+    parent.bounding_box = bbox.to_rect();
+    parent.stroke_bounding_box = stroke_bbox.to_rect();
 }

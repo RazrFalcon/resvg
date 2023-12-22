@@ -99,7 +99,7 @@ pub struct Filter {
 }
 
 pub fn convert(
-    ufilters: &[Rc<usvg::filter::Filter>],
+    ufilters: &[usvg::filter::SharedFilter],
     object_bbox: Option<tiny_skia::Rect>,
 ) -> (Vec<Filter>, Option<tiny_skia::Rect>) {
     let object_bbox = object_bbox.and_then(|bbox| bbox.to_non_zero_rect());
@@ -111,7 +111,7 @@ pub fn convert(
 
     let mut filters = Vec::new();
     for ufilter in ufilters {
-        let filter = match convert_filter(ufilter, object_bbox, region) {
+        let filter = match convert_filter(&ufilter.borrow(), object_bbox, region) {
             Some(v) => v,
             None => return (Vec::new(), None),
         };
@@ -652,13 +652,13 @@ fn calc_region(
 }
 
 pub fn calc_filters_region(
-    filters: &[Rc<usvg::filter::Filter>],
+    filters: &[usvg::filter::SharedFilter],
     object_bbox: Option<tiny_skia::NonZeroRect>,
 ) -> Option<tiny_skia::NonZeroRect> {
     let mut global_region = usvg::BBox::default();
 
     for filter in filters {
-        if let Some(region) = calc_region(filter, object_bbox) {
+        if let Some(region) = calc_region(&filter.borrow(), object_bbox) {
             global_region = global_region.expand(usvg::BBox::from(region));
         }
     }
@@ -1105,7 +1105,7 @@ fn apply_image(
             let (sx, sy) = ts.get_scale();
             let transform = tiny_skia::Transform::from_scale(sx, sy);
 
-            if let Some(mut rtree) = crate::Tree::from_usvg_node(node) {
+            if let Some(mut rtree) = crate::Tree::from_usvg_group(node) {
                 rtree.view_box.rect = rtree.view_box.rect.translate_to(0.0, 0.0).unwrap();
                 rtree.render(transform, &mut pixmap.as_mut());
             }

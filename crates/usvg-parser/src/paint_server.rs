@@ -12,6 +12,7 @@ use usvg_tree::*;
 use crate::converter::{self, SvgColorExt};
 use crate::svgtree::{AId, EId, SvgNode};
 use crate::OptionLog;
+use std::cell::RefCell;
 
 pub(crate) enum ServerOrColor {
     Server(Paint),
@@ -183,7 +184,7 @@ fn convert_pattern(
         transform,
         rect,
         view_box,
-        root: Node::new(NodeKind::Group(Group::default())),
+        root: Group::default(),
     };
 
     converter::convert_children(node_with_children, state, cache, &mut patt.root);
@@ -192,7 +193,9 @@ fn convert_pattern(
         return None;
     }
 
-    Some(ServerOrColor::Server(Paint::Pattern(Rc::new(patt))))
+    Some(ServerOrColor::Server(Paint::Pattern(Rc::new(
+        RefCell::new(patt),
+    ))))
 }
 
 fn convert_spread_method(node: SvgNode) -> SpreadMethod {

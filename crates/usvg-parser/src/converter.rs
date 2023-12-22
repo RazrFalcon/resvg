@@ -29,9 +29,9 @@ pub struct State<'a> {
 
 #[derive(Default)]
 pub struct Cache {
-    pub clip_paths: HashMap<String, Rc<ClipPath>>,
-    pub masks: HashMap<String, Rc<Mask>>,
-    pub filters: HashMap<String, Rc<usvg_tree::filter::Filter>>,
+    pub clip_paths: HashMap<String, SharedClipPath>,
+    pub masks: HashMap<String, SharedMask>,
+    pub filters: HashMap<String, filter::SharedFilter>,
     pub paint: HashMap<String, Paint>,
 }
 
@@ -156,7 +156,7 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
     let mut tree = Tree {
         size,
         view_box,
-        root: Node::new(NodeKind::Group(Group::default())),
+        root: Group::default(),
     };
 
     if !svg.is_visible_element(opt) {
@@ -255,17 +255,7 @@ fn resolve_svg_size(svg: &SvgNode, opt: &Options) -> (Result<Size, Error>, bool)
 fn calculate_svg_bbox(tree: &mut Tree) {
     let mut right = 0.0;
     let mut bottom = 0.0;
-
-    for node in tree.root.descendants() {
-        if let Some(bbox) = node.abs_bounding_box() {
-            if bbox.right() > right {
-                right = bbox.right();
-            }
-            if bbox.bottom() > bottom {
-                bottom = bbox.bottom();
-            }
-        }
-    }
+    calculate_svg_bbox_impl(&tree.root, &mut right, &mut bottom);
 
     if let Some(rect) = NonZeroRect::from_xywh(0.0, 0.0, right, bottom) {
         tree.view_box.rect = rect;
@@ -276,12 +266,29 @@ fn calculate_svg_bbox(tree: &mut Tree) {
     }
 }
 
+fn calculate_svg_bbox_impl(parent: &Group, right: &mut f32, bottom: &mut f32) {
+    for node in &parent.children {
+        if let Node::Group(ref group) = node {
+            calculate_svg_bbox_impl(group, right, bottom);
+        }
+
+        if let Some(bbox) = node.abs_bounding_box() {
+            if bbox.right() > *right {
+                *right = bbox.right();
+            }
+            if bbox.bottom() > *bottom {
+                *bottom = bbox.bottom();
+            }
+        }
+    }
+}
+
 #[inline(never)]
 pub(crate) fn convert_children(
     parent_node: SvgNode,
     state: &State,
     cache: &mut Cache,
-    parent: &mut Node,
+    parent: &mut Group,
 ) {
     for node in parent_node.children() {
         convert_element(node, state, cache, parent);
@@ -289,38 +296,48 @@ pub(crate) fn convert_children(
 }
 
 #[inline(never)]
-pub(crate) fn convert_element(
-    node: SvgNode,
-    state: &State,
-    cache: &mut Cache,
-    parent: &mut Node,
-) -> Option<Node> {
-    let tag_name = node.tag_name()?;
+pub(crate) fn convert_element(node: SvgNode, state: &State, cache: &mut Cache, parent: &mut Group) {
+    let tag_name = match node.tag_name() {
+        Some(v) => v,
+        None => return,
+    };
 
     if !tag_name.is_graphic() && !matches!(tag_name, EId::G | EId::Switch | EId::Svg) {
-        return None;
+        return;
     }
 
     if !node.is_visible_element(state.opt) {
-        return None;
+        return;
     }
 
     if tag_name == EId::Use {
         crate::use_node::convert(node, state, cache, parent);
-        return None;
+        return;
     }
 
     if tag_name == EId::Switch {
         crate::switch::convert(node, state, cache, parent);
-        return None;
+        return;
     }
 
-    let parent = &mut match convert_group(node, state, false, cache, parent) {
-        GroupKind::Create(g) => g,
-        GroupKind::Skip => parent.clone(),
-        GroupKind::Ignore => return None,
-    };
+    match convert_group(node, state, false, cache) {
+        GroupKind::Create(mut g) => {
+            convert_element_impl(tag_name, node, state, cache, &mut g);
+            parent.children.push(Node::Group(Box::new(g)));
+        }
+        GroupKind::Skip => convert_element_impl(tag_name, node, state, cache, parent),
+        GroupKind::Ignore => {}
+    }
+}
 
+#[inline(never)]
+fn convert_element_impl(
+    tag_name: EId,
+    node: SvgNode,
+    state: &State,
+    cache: &mut Cache,
+    parent: &mut Group,
+) {
     match tag_name {
         EId::Rect
         | EId::Circle
@@ -352,8 +369,6 @@ pub(crate) fn convert_element(
         }
         _ => {}
     }
-
-    Some(parent.clone())
 }
 
 // `clipPath` can have only shape and `text` children.
@@ -365,7 +380,7 @@ pub(crate) fn convert_clip_path_elements(
     clip_node: SvgNode,
     state: &State,
     cache: &mut Cache,
-    parent: &mut Node,
+    parent: &mut Group,
 ) {
     for node in clip_node.children() {
         let tag_name = match node.tag_name() {
@@ -386,24 +401,38 @@ pub(crate) fn convert_clip_path_elements(
             continue;
         }
 
-        let parent = &mut match convert_group(node, state, false, cache, parent) {
-            GroupKind::Create(g) => g,
-            GroupKind::Skip => parent.clone(),
+        match convert_group(node, state, false, cache) {
+            GroupKind::Create(mut g) => {
+                convert_clip_path_elements_impl(tag_name, node, state, cache, &mut g);
+                parent.children.push(Node::Group(Box::new(g)));
+            }
+            GroupKind::Skip => {
+                convert_clip_path_elements_impl(tag_name, node, state, cache, parent)
+            }
             GroupKind::Ignore => continue,
-        };
+        }
+    }
+}
 
-        match tag_name {
-            EId::Rect | EId::Circle | EId::Ellipse | EId::Polyline | EId::Polygon | EId::Path => {
-                if let Some(path) = crate::shapes::convert(node, state) {
-                    convert_path(node, path, state, cache, parent);
-                }
+#[inline(never)]
+fn convert_clip_path_elements_impl(
+    tag_name: EId,
+    node: SvgNode,
+    state: &State,
+    cache: &mut Cache,
+    parent: &mut Group,
+) {
+    match tag_name {
+        EId::Rect | EId::Circle | EId::Ellipse | EId::Polyline | EId::Polygon | EId::Path => {
+            if let Some(path) = crate::shapes::convert(node, state) {
+                convert_path(node, path, state, cache, parent);
             }
-            EId::Text => {
-                crate::text::convert(node, state, cache, parent);
-            }
-            _ => {
-                log::warn!("'{}' is no a valid 'clip-path' child.", tag_name);
-            }
+        }
+        EId::Text => {
+            crate::text::convert(node, state, cache, parent);
+        }
+        _ => {
+            log::warn!("'{}' is no a valid 'clip-path' child.", tag_name);
         }
     }
 }
@@ -433,7 +462,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for Isolation {
 #[derive(Debug)]
 pub enum GroupKind {
     /// Creates a new group.
-    Create(Node),
+    Create(Group),
     /// Skips an existing group, but processes its children.
     Skip,
     /// Skips an existing group and all its children.
@@ -446,7 +475,6 @@ pub(crate) fn convert_group(
     state: &State,
     force: bool,
     cache: &mut Cache,
-    parent: &mut Node,
 ) -> GroupKind {
     // A `clipPath` child cannot have an opacity.
     let opacity = if state.parent_clip_path.is_none() {
@@ -539,7 +567,7 @@ pub(crate) fn convert_group(
             String::new()
         };
 
-        let g = parent.append_kind(NodeKind::Group(Group {
+        let g = Group {
             id,
             transform,
             abs_transform: Transform::identity(),
@@ -551,7 +579,8 @@ pub(crate) fn convert_group(
             filters,
             bounding_box: None,
             stroke_bounding_box: None,
-        }));
+            children: Vec::new(),
+        };
 
         GroupKind::Create(g)
     } else {
@@ -564,7 +593,7 @@ fn convert_path(
     path: Rc<tiny_skia_path::Path>,
     state: &State,
     cache: &mut Cache,
-    parent: &mut Node,
+    parent: &mut Group,
 ) {
     debug_assert!(path.len() >= 2);
     if path.len() < 2 {
@@ -592,7 +621,7 @@ fn convert_path(
 
     let mut markers_node = None;
     if crate::marker::is_valid(node) && visibility == Visibility::Visible {
-        let mut marker = Node::new(NodeKind::Group(Group::default()));
+        let mut marker = Group::default();
         crate::marker::convert(node, &path, state, cache, &mut marker);
         markers_node = Some(marker);
     }
@@ -617,52 +646,53 @@ fn convert_path(
         stroke_bounding_box: None,
     };
 
-    let append_marker = || {
-        if let Some(markers_node) = markers_node {
-            parent.append(markers_node);
-        }
-    };
-
-    let append_path = || {
-        parent.append(Node::new(NodeKind::Path(path.clone())));
-    };
-
     match raw_paint_order.order {
         [PaintOrderKind::Markers, _, _] => {
-            append_marker();
-            append_path();
+            if let Some(markers_node) = markers_node {
+                parent.children.push(Node::Group(Box::new(markers_node)));
+            }
+
+            parent.children.push(Node::Path(Box::new(path.clone())));
         }
         [first, PaintOrderKind::Markers, last] => {
-            let append_single_paint_path = |paint_order_kind: PaintOrderKind| match paint_order_kind
-            {
-                PaintOrderKind::Fill => {
-                    if path.fill.is_some() {
-                        let mut fill_path = path.clone();
-                        fill_path.stroke = None;
-                        fill_path.id = String::new();
-                        parent.append(Node::new(NodeKind::Path(fill_path)));
-                    }
-                }
-                PaintOrderKind::Stroke => {
-                    if path.stroke.is_some() {
-                        let mut stroke_path = path.clone();
-                        stroke_path.fill = None;
-                        stroke_path.id = String::new();
-                        parent.append(Node::new(NodeKind::Path(stroke_path)));
-                    }
-                }
-                _ => {}
-            };
+            append_single_paint_path(first, &path, parent);
 
-            append_single_paint_path(first);
-            append_marker();
-            append_single_paint_path(last)
+            if let Some(markers_node) = markers_node {
+                parent.children.push(Node::Group(Box::new(markers_node)));
+            }
+
+            append_single_paint_path(last, &path, parent);
         }
         [_, _, PaintOrderKind::Markers] => {
-            append_path();
-            append_marker();
+            parent.children.push(Node::Path(Box::new(path.clone())));
+
+            if let Some(markers_node) = markers_node {
+                parent.children.push(Node::Group(Box::new(markers_node)));
+            }
         }
-        _ => append_path(),
+        _ => parent.children.push(Node::Path(Box::new(path.clone()))),
+    }
+}
+
+fn append_single_paint_path(paint_order_kind: PaintOrderKind, path: &Path, parent: &mut Group) {
+    match paint_order_kind {
+        PaintOrderKind::Fill => {
+            if path.fill.is_some() {
+                let mut fill_path = path.clone();
+                fill_path.stroke = None;
+                fill_path.id = String::new();
+                parent.children.push(Node::Path(Box::new(fill_path)));
+            }
+        }
+        PaintOrderKind::Stroke => {
+            if path.stroke.is_some() {
+                let mut stroke_path = path.clone();
+                stroke_path.fill = None;
+                stroke_path.id = String::new();
+                parent.children.push(Node::Path(Box::new(stroke_path)));
+            }
+        }
+        _ => {}
     }
 }
 

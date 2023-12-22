@@ -19,7 +19,20 @@ This changelog also contains important changes in dependencies.
   including stroke, in canvas coordinates.
 - (c-api) `resvg_get_node_stroke_bbox`
 
+### Changed
+- `usvg` no longer uses `rctree` for the nodes tree implementation.
+  The tree is a regular `enum` now.
+  - A caller no longer need to use the awkward `*node.borrow()`.
+  - No more panics on incorrect mutable `Rc<RefCell>` access.
+  - Tree nodes respect tree's mutability rules. Before, one could mutate tree nodes when the tree
+    itself is not mutable. Because `Rc<RefCell>` provides a shared mutable access.
+- Filters, clip paths, masks and patterns are stored as `Rc<RefCell<T>>` instead of `Rc<T>`.
+  This is required for proper mutability since `Node` itself is no longer an `Rc`.
+- Rename `usvg::NodeKind` into `usvg::Node`.
+
 ### Removed
+- `rctree::Node` methods. The `Node` API is completely different now.
+- `usvg::NodeExt`. No longer needed.
 - `usvg::Node::calculate_bbox`. Use `usvg::Node::abs_bounding_box`.
 
 ## [0.37.0] - 2023-12-16

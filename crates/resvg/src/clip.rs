@@ -2,8 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
-
 use crate::render::Context;
 use crate::tree::{Node, OptionLog};
 
@@ -14,11 +12,16 @@ pub struct ClipPath {
 }
 
 pub fn convert(
-    upath: Option<Rc<usvg::ClipPath>>,
+    upath: Option<usvg::SharedClipPath>,
     object_bbox: tiny_skia::Rect,
 ) -> Option<ClipPath> {
-    let upath = upath?;
+    convert_impl(upath?.borrow(), object_bbox)
+}
 
+fn convert_impl(
+    upath: std::cell::Ref<usvg::ClipPath>,
+    object_bbox: tiny_skia::Rect,
+) -> Option<ClipPath> {
     let mut transform = upath.transform;
 
     if upath.units == usvg::Units::ObjectBoundingBox {
@@ -30,10 +33,11 @@ pub fn convert(
         transform = transform.pre_concat(ts);
     }
 
-    let (children, _) = crate::tree::convert_node(upath.root.clone());
+    let children = crate::tree::convert_root(&upath.root);
+    let clip_path = convert(upath.clip_path.clone(), object_bbox).map(Box::new);
     Some(ClipPath {
         transform,
-        clip_path: convert(upath.clip_path.clone(), object_bbox).map(Box::new),
+        clip_path,
         children,
     })
 }

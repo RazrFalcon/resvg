@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use usvg_tree::Node;
+use usvg_tree::{Group, Node};
 
 use crate::svgtree::{AId, SvgNode};
 use crate::{converter, Options};
@@ -46,14 +46,15 @@ pub(crate) fn convert(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-    parent: &mut Node,
+    parent: &mut Group,
 ) -> Option<()> {
     let child = node
         .children()
         .find(|n| is_condition_passed(*n, state.opt))?;
-    match converter::convert_group(node, state, false, cache, parent) {
-        converter::GroupKind::Create(ref mut g) => {
-            converter::convert_element(child, state, cache, g);
+    match converter::convert_group(node, state, false, cache) {
+        converter::GroupKind::Create(mut g) => {
+            converter::convert_element(child, state, cache, &mut g);
+            parent.children.push(Node::Group(Box::new(g)));
         }
         converter::GroupKind::Skip => {
             converter::convert_element(child, state, cache, parent);
