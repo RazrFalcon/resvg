@@ -18,6 +18,8 @@ This changelog also contains important changes in dependencies.
 - `usvg::Node::abs_stroke_bounding_box` which returns a precalculated node's bounding box,
   including stroke, in canvas coordinates.
 - (c-api) `resvg_get_node_stroke_bbox`
+- `usvg::Node::filters_bounding_box`.
+- `usvg::Node::abs_filters_bounding_box`.
 
 ### Changed
 - `usvg` no longer uses `rctree` for the nodes tree implementation.

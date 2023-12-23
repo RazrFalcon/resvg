@@ -98,23 +98,17 @@ pub struct Filter {
     pub primitives: Vec<Primitive>,
 }
 
-pub fn convert(
-    ufilters: &[usvg::filter::SharedFilter],
-    object_bbox: Option<tiny_skia::Rect>,
-) -> (Vec<Filter>, Option<tiny_skia::Rect>) {
-    let object_bbox = object_bbox.and_then(|bbox| bbox.to_non_zero_rect());
+pub fn convert(ugroup: &usvg::Group) -> (Vec<Filter>, Option<tiny_skia::Rect>) {
+    let object_bbox = ugroup.bounding_box.and_then(|bbox| bbox.to_non_zero_rect());
 
-    let region = match calc_filters_region(ufilters, object_bbox) {
+    let region = match ugroup.filters_bounding_box() {
         Some(v) => v,
         None => return (Vec::new(), None),
     };
 
     let mut filters = Vec::new();
-    for ufilter in ufilters {
-        let filter = match convert_filter(&ufilter.borrow(), object_bbox, region) {
-            Some(v) => v,
-            None => return (Vec::new(), None),
-        };
+    for ufilter in &ugroup.filters {
+        let filter = convert_filter(&ufilter.borrow(), object_bbox, region);
         filters.push(filter);
     }
 
@@ -125,7 +119,7 @@ fn convert_filter(
     ufilter: &usvg::filter::Filter,
     object_bbox: Option<tiny_skia::NonZeroRect>,
     region: tiny_skia::NonZeroRect,
-) -> Option<Filter> {
+) -> Filter {
     let mut primitives = Vec::with_capacity(ufilter.primitives.len());
     for uprimitive in &ufilter.primitives {
         let subregion = match calc_subregion(ufilter, uprimitive, object_bbox, region) {
@@ -146,7 +140,7 @@ fn convert_filter(
         }
     }
 
-    Some(Filter { region, primitives })
+    Filter { region, primitives }
 }
 
 fn convert_primitive(
@@ -636,37 +630,6 @@ fn apply_inner(
         Ok(res.image)
     } else {
         Err(Error::NoResults)
-    }
-}
-
-// TODO: merge with mask region logic
-fn calc_region(
-    filter: &usvg::filter::Filter,
-    object_bbox: Option<tiny_skia::NonZeroRect>,
-) -> Option<tiny_skia::NonZeroRect> {
-    if filter.units == usvg::Units::ObjectBoundingBox {
-        Some(filter.rect.bbox_transform(object_bbox?))
-    } else {
-        Some(filter.rect)
-    }
-}
-
-pub fn calc_filters_region(
-    filters: &[usvg::filter::SharedFilter],
-    object_bbox: Option<tiny_skia::NonZeroRect>,
-) -> Option<tiny_skia::NonZeroRect> {
-    let mut global_region = usvg::BBox::default();
-
-    for filter in filters {
-        if let Some(region) = calc_region(&filter.borrow(), object_bbox) {
-            global_region = global_region.expand(usvg::BBox::from(region));
-        }
-    }
-
-    if !global_region.is_default() {
-        global_region.to_non_zero_rect()
-    } else {
-        None
     }
 }
 

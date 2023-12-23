@@ -185,7 +185,7 @@ fn convert_group(
         None => return convert_empty_group(ugroup, children),
     };
 
-    let (filters, filter_bbox) = crate::filter::convert(&ugroup.filters, ugroup.bounding_box);
+    let (filters, filter_bbox) = crate::filter::convert(ugroup);
 
     // TODO: figure out a nicer solution
     // Ignore groups with filters but invalid filter bboxes.
@@ -223,7 +223,7 @@ fn convert_empty_group(ugroup: &usvg::Group, children: &mut Vec<Node>) -> Option
         return None;
     }
 
-    let (filters, layer_bbox) = crate::filter::convert(&ugroup.filters, None);
+    let (filters, layer_bbox) = crate::filter::convert(ugroup);
     let layer_bbox = layer_bbox?;
 
     let group = Group {

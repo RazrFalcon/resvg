@@ -730,7 +730,7 @@ pub struct Mask {
     /// `mask` in SVG.
     pub mask: Option<SharedMask>,
 
-    /// Clip path children.
+    /// Mask children.
     pub root: Group,
 }
 
@@ -969,6 +969,44 @@ impl Group {
     /// Returns node's bounding box in canvas coordinates.
     pub fn abs_bounding_box(&self) -> Option<Rect> {
         self.bounding_box?.transform(self.abs_transform)
+    }
+
+    /// Calculates a node's filter bounding box.
+    ///
+    /// Filters with `objectBoundingBox` and missing or zero `bounding_box` would be ignored.
+    ///
+    /// Note that a filter region can act like a clipping rectangle,
+    /// therefore this function can produce a bounding box smaller than `bounding_box`.
+    ///
+    /// Returns `None` when then group has no filters.
+    ///
+    /// This function is very fast, that's why we do not store this bbox as a `Group` field.
+    pub fn filters_bounding_box(&self) -> Option<NonZeroRect> {
+        let object_bbox = self.bounding_box.and_then(|bbox| bbox.to_non_zero_rect());
+
+        let mut full_region = BBox::default();
+
+        for filter in &self.filters {
+            let mut region = filter.borrow().rect;
+
+            if filter.borrow().units == Units::ObjectBoundingBox {
+                if let Some(object_bbox) = object_bbox {
+                    region = region.bbox_transform(object_bbox);
+                } else {
+                    // Skip filters with `objectBoundingBox` on nodes without a bbox.
+                    continue;
+                }
+            }
+
+            full_region = full_region.expand(BBox::from(region));
+        }
+
+        full_region.to_non_zero_rect()
+    }
+
+    /// Calculates a node's filter bounding box in canvas coordinates.
+    pub fn abs_filters_bounding_box(&self) -> Option<NonZeroRect> {
+        self.filters_bounding_box()?.transform(self.abs_transform)
     }
 
     fn subroots(&self, f: &mut dyn FnMut(&Group)) {
@@ -1270,11 +1308,9 @@ pub struct Tree {
 }
 
 impl Tree {
-    // TODO: remove
-    /// Returns renderable node by ID.
+    /// Returns a renderable node by ID.
     ///
     /// If an empty ID is provided, than this method will always return `None`.
-    /// Even if tree has nodes with empty ID.
     pub fn node_by_id(&self, id: &str) -> Option<&Node> {
         if id.is_empty() {
             return None;
