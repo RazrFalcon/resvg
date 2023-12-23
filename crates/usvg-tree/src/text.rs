@@ -345,7 +345,7 @@ pub struct Text {
     /// a tight bounds of the element's content.
     /// You can find more about it [here](https://razrfalcon.github.io/notes-on-svg-parsing/text/bbox.html).
     ///
-    /// `ObjectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
+    /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
     ///
     /// Unlike other nodes, will be set by
     /// [`usvg_text_layout::TreeTextToPath::convert_text`](

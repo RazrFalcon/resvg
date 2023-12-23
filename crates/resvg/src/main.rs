@@ -675,10 +675,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
 
         let ts = args.fit_to.fit_to_transform(tree.size.to_int_size());
 
-        let rtree = resvg::Tree::from_usvg_node(node)
-            .ok_or_else(|| "zero-size node detected".to_string())?;
-
-        rtree.render(ts, &mut pixmap.as_mut());
+        resvg::render_node(node, ts, &mut pixmap.as_mut());
 
         if args.export_area_page {
             // TODO: add offset support to render_node() so we would not need an additional pixmap
@@ -722,11 +719,10 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
 
         let ts = args.fit_to.fit_to_transform(tree.size.to_int_size());
 
-        let rtree = resvg::Tree::from_usvg(tree);
-        rtree.render(ts, &mut pixmap.as_mut());
+        resvg::render(tree, ts, &mut pixmap.as_mut());
 
         if args.export_area_drawing {
-            trim_pixmap(&rtree, ts, &pixmap).unwrap_or(pixmap)
+            trim_pixmap(&tree, ts, &pixmap).unwrap_or(pixmap)
         } else {
             pixmap
         }
@@ -741,11 +737,11 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
 }
 
 fn trim_pixmap(
-    rtree: &resvg::Tree,
+    tree: &usvg::Tree,
     transform: tiny_skia::Transform,
     pixmap: &tiny_skia::Pixmap,
 ) -> Option<tiny_skia::Pixmap> {
-    let content_area = rtree.content_area?.to_non_zero_rect()?;
+    let content_area = tree.root.layer_bounding_box?;
 
     let limit = tiny_skia::IntRect::from_xywh(0, 0, pixmap.width(), pixmap.height()).unwrap();
 

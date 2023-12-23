@@ -915,7 +915,7 @@ pub struct Group {
 
     /// Element's object bounding box.
     ///
-    /// `ObjectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
+    /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
     ///
     /// Can be set to `None` in case of an empty group.
     ///
@@ -926,6 +926,21 @@ pub struct Group {
     ///
     /// Similar to `bounding_box`, but includes stroke.
     pub stroke_bounding_box: Option<Rect>,
+
+    /// Element's "layer" bounding box in object units.
+    ///
+    /// Conceptually, this is `stroke_bounding_box` expanded and/or clipped
+    /// by `filters_bounding_box`, but also including all the children.
+    /// This is the bounding box `resvg` will later use to allocate layers/pixmaps
+    /// during isolated groups rendering.
+    ///
+    /// Only groups have it, because only groups can have filters.
+    /// For other nodes layer bounding box is the same as stroke bounding box.
+    ///
+    /// Unlike other bounding boxes, cannot have zero size.
+    ///
+    /// Will be set only after calling [`Tree::calculate_bounding_boxes`].
+    pub layer_bounding_box: Option<NonZeroRect>,
 
     /// Group's children.
     pub children: Vec<Node>,
@@ -945,6 +960,7 @@ impl Default for Group {
             filters: Vec::new(),
             bounding_box: None,
             stroke_bounding_box: None,
+            layer_bounding_box: None,
             children: Vec::new(),
         }
     }
@@ -982,14 +998,13 @@ impl Group {
     ///
     /// This function is very fast, that's why we do not store this bbox as a `Group` field.
     pub fn filters_bounding_box(&self) -> Option<NonZeroRect> {
-        let object_bbox = self.bounding_box.and_then(|bbox| bbox.to_non_zero_rect());
-
         let mut full_region = BBox::default();
 
         for filter in &self.filters {
             let mut region = filter.borrow().rect;
 
             if filter.borrow().units == Units::ObjectBoundingBox {
+                let object_bbox = self.bounding_box.and_then(|bbox| bbox.to_non_zero_rect());
                 if let Some(object_bbox) = object_bbox {
                     region = region.bbox_transform(object_bbox);
                 } else {
@@ -1134,7 +1149,7 @@ pub struct Path {
 
     /// Element's object bounding box.
     ///
-    /// `ObjectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
+    /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
     ///
     /// Will be set only after calling [`Tree::calculate_bounding_boxes`].
     pub bounding_box: Option<Rect>,
@@ -1265,7 +1280,7 @@ pub struct Image {
 
     /// Element's object bounding box.
     ///
-    /// `ObjectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
+    /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
     ///
     /// Will be set only after calling [`Tree::calculate_bounding_boxes`].
     pub bounding_box: Option<NonZeroRect>,
@@ -1559,6 +1574,7 @@ fn calculate_bounding_box(parent: &mut Group) {
 
     let mut bbox = BBox::default();
     let mut stroke_bbox = BBox::default();
+    let mut layer_bbox = BBox::default();
     for child in &parent.children {
         if let Some(mut c_bbox) = child.bounding_box() {
             if let Node::Group(ref group) = child {
@@ -1579,8 +1595,26 @@ fn calculate_bounding_box(parent: &mut Group) {
 
             stroke_bbox = stroke_bbox.expand(c_bbox);
         }
+
+        if let Node::Group(ref group) = child {
+            if let Some(r) = group.layer_bounding_box {
+                if let Some(r) = r.transform(group.transform) {
+                    layer_bbox = layer_bbox.expand(r);
+                }
+            }
+        } else if let Some(c_bbox) = child.stroke_bounding_box() {
+            // Not a group - no need to transform.
+            layer_bbox = layer_bbox.expand(c_bbox);
+        }
     }
 
     parent.bounding_box = bbox.to_rect();
     parent.stroke_bounding_box = stroke_bbox.to_rect();
+
+    // Filter bbox has a higher priority than layers bbox.
+    if let Some(filter_bbox) = parent.filters_bounding_box() {
+        parent.layer_bounding_box = Some(filter_bbox);
+    } else {
+        parent.layer_bounding_box = layer_bbox.to_non_zero_rect();
+    }
 }

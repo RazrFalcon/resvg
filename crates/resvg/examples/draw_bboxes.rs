@@ -64,12 +64,10 @@ fn main() {
     // Calculate bboxes of newly added path.
     tree.calculate_bounding_boxes();
 
-    let rtree = resvg::Tree::from_usvg(&tree);
-
-    let pixmap_size = rtree.size.to_int_size().scale_by(zoom).unwrap();
+    let pixmap_size = tree.size.to_int_size().scale_by(zoom).unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
     let render_ts = tiny_skia::Transform::from_scale(zoom, zoom);
-    rtree.render(render_ts, &mut pixmap.as_mut());
+    resvg::render(&tree, render_ts, &mut pixmap.as_mut());
     pixmap.save_png(&args[2]).unwrap();
 }
 

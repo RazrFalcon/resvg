@@ -41,14 +41,13 @@ pub fn render(name: &str) -> usize {
         tree
     };
 
-    let rtree = resvg::Tree::from_usvg(&tree);
-    let size = rtree.size.to_int_size().scale_to_width(IMAGE_SIZE).unwrap();
+    let size = tree.size.to_int_size().scale_to_width(IMAGE_SIZE).unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
     let render_ts = tiny_skia::Transform::from_scale(
         size.width() as f32 / tree.size.width() as f32,
         size.height() as f32 / tree.size.height() as f32,
     );
-    rtree.render(render_ts, &mut pixmap.as_mut());
+    resvg::render(&tree, render_ts, &mut pixmap.as_mut());
 
     // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
 
@@ -90,13 +89,12 @@ pub fn render_extra_with_scale(name: &str, scale: f32) -> usize {
         tree.calculate_bounding_boxes();
         tree
     };
-    let rtree = resvg::Tree::from_usvg(&tree);
 
-    let size = rtree.size.to_int_size().scale_by(scale).unwrap();
+    let size = tree.size.to_int_size().scale_by(scale).unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
 
     let render_ts = tiny_skia::Transform::from_scale(scale, scale);
-    rtree.render(render_ts, &mut pixmap.as_mut());
+    resvg::render(&tree, render_ts, &mut pixmap.as_mut());
 
     // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
 

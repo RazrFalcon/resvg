@@ -22,6 +22,7 @@ This changelog also contains important changes in dependencies.
 - `usvg::Node::abs_filters_bounding_box`.
 
 ### Changed
+- `resvg` renders `usvg::Tree` directly again. `resvg::Tree` is gone.
 - `usvg` no longer uses `rctree` for the nodes tree implementation.
   The tree is a regular `enum` now.
   - A caller no longer need to use the awkward `*node.borrow()`.
@@ -33,6 +34,7 @@ This changelog also contains important changes in dependencies.
 - Rename `usvg::NodeKind` into `usvg::Node`.
 
 ### Removed
+- `resvg::Tree`. No longer needed. `resvg` can render `usvg::Tree` directly once again.
 - `rctree::Node` methods. The `Node` API is completely different now.
 - `usvg::NodeExt`. No longer needed.
 - `usvg::Node::calculate_bbox`. Use `usvg::Node::abs_bounding_box`.
