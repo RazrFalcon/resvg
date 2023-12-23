@@ -102,7 +102,7 @@ fn render_vector(
 
 #[cfg(feature = "raster-images")]
 mod raster_images {
-    use image::{Rgb, Rgba};
+    use image::{ImageFormat, Rgb, Rgba};
     use super::Image;
     use crate::render::TinySkiaPixmapMutExt;
     use crate::tree::OptionLog;
@@ -111,31 +111,31 @@ mod raster_images {
         match image.kind {
             usvg::ImageKind::SVG(_) => None,
             usvg::ImageKind::JPEG(ref data) => {
-                decode(data).log_none(|| log::warn!("Failed to decode a JPEG image."))
+                decode(data, ImageFormat::Jpeg).log_none(|| log::warn!("Failed to decode a JPEG image."))
             },
             usvg::ImageKind::PNG(ref data) => {
                 tiny_skia::Pixmap::decode_png(data).ok().log_none(|| log::warn!("Failed to decode a PNG image."))
             },
             usvg::ImageKind::GIF(ref data) => {
-                decode(data).log_none(|| log::warn!("Failed to decode a GIF image."))
+                decode(data, ImageFormat::Gif).log_none(|| log::warn!("Failed to decode a GIF image."))
             },
             usvg::ImageKind::TIFF(ref data) => {
-                decode(data).log_none(|| log::warn!("Failed to decode a TIFF image."))
+                decode(data, ImageFormat::Tiff).log_none(|| log::warn!("Failed to decode a TIFF image."))
             },
             usvg::ImageKind::AVIF(ref data) => {
-                decode(data).log_none(|| log::warn!("Failed to decode a AVIF image."))
+                decode(data, ImageFormat::Avif).log_none(|| log::warn!("Failed to decode a AVIF image."))
             },
             usvg::ImageKind::WEBP(ref data) => {
-                decode(data).log_none(|| log::warn!("Failed to decode a WEBP image."))
+                decode(data, ImageFormat::WebP).log_none(|| log::warn!("Failed to decode a WEBP image."))
             },
             usvg::ImageKind::BMP(ref data) => {
-                decode(data).log_none(|| log::warn!("Failed to decode a WEBP image."))
+                decode(data, ImageFormat::Bmp).log_none(|| log::warn!("Failed to decode a WEBP image."))
             },
         }
     }
 
-    fn decode(data: &[u8]) -> Option<tiny_skia::Pixmap> {
-        let dynamic_image = image::load_from_memory(data).ok()?;
+    fn decode(data: &[u8], format: ImageFormat) -> Option<tiny_skia::Pixmap> {
+        let dynamic_image = image::load_from_memory_with_format(data, format).ok()?;
         let size = tiny_skia::IntSize::from_wh(dynamic_image.width(), dynamic_image.height())?;
         let res: Vec<u8> = dynamic_image.to_rgba8().pixels().flat_map(|&Rgba(c)| c).collect();
 
