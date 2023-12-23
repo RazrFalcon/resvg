@@ -116,27 +116,16 @@ fn render_group(
 
     if !group.filters.is_empty() {
         for filter in &group.filters {
-            crate::filter::apply(group, &*filter.borrow(), transform, &mut sub_pixmap);
+            crate::filter::apply(group, &filter.borrow(), transform, &mut sub_pixmap);
         }
     }
 
     if let (Some(ref clip_path), Some(object_bbox)) = (&group.clip_path, group.bounding_box) {
-        crate::clip::apply(
-            &*clip_path.borrow(),
-            object_bbox,
-            transform,
-            &mut sub_pixmap,
-        );
+        crate::clip::apply(&clip_path.borrow(), object_bbox, transform, &mut sub_pixmap);
     }
 
     if let (Some(ref mask), Some(object_bbox)) = (&group.mask, group.bounding_box) {
-        crate::mask::apply(
-            &*mask.borrow(),
-            ctx,
-            object_bbox,
-            transform,
-            &mut sub_pixmap,
-        );
+        crate::mask::apply(&mask.borrow(), ctx, object_bbox, transform, &mut sub_pixmap);
     }
 
     let paint = tiny_skia::PixmapPaint {

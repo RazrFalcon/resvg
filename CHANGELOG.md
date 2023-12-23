@@ -32,6 +32,7 @@ This changelog also contains important changes in dependencies.
 - Filters, clip paths, masks and patterns are stored as `Rc<RefCell<T>>` instead of `Rc<T>`.
   This is required for proper mutability since `Node` itself is no longer an `Rc`.
 - Rename `usvg::NodeKind` into `usvg::Node`.
+- Upgrade to Rust 2021 edition.
 
 ### Removed
 - `resvg::Tree`. No longer needed. `resvg` can render `usvg::Tree` directly once again.

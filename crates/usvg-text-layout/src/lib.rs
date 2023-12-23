@@ -25,7 +25,6 @@ pub use fontdb;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::convert::TryFrom;
 use std::num::NonZeroU16;
 use std::rc::Rc;
 

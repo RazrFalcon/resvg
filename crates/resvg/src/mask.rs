@@ -69,7 +69,7 @@ pub fn apply(
     }
 
     if let Some(ref mask) = mask.mask {
-        self::apply(&*mask.borrow(), ctx, object_bbox, transform, pixmap);
+        self::apply(&mask.borrow(), ctx, object_bbox, transform, pixmap);
     }
 
     let mask_type = match mask.kind {

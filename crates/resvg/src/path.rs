@@ -77,7 +77,7 @@ pub fn fill_path(
         }
         usvg::Paint::Pattern(ref pattern) => {
             let (patt_pix, patt_ts) =
-                render_pattern_pixmap(&*pattern.borrow(), ctx, transform, object_bbox)?;
+                render_pattern_pixmap(&pattern.borrow(), ctx, transform, object_bbox)?;
 
             pattern_pixmap = patt_pix;
             paint.shader = tiny_skia::Pattern::new(
@@ -122,7 +122,7 @@ fn stroke_path(
         }
         usvg::Paint::Pattern(ref pattern) => {
             let (patt_pix, patt_ts) =
-                render_pattern_pixmap(&*pattern.borrow(), ctx, transform, object_bbox)?;
+                render_pattern_pixmap(&pattern.borrow(), ctx, transform, object_bbox)?;
 
             pattern_pixmap = patt_pix;
             paint.shader = tiny_skia::Pattern::new(

@@ -722,7 +722,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
         resvg::render(tree, ts, &mut pixmap.as_mut());
 
         if args.export_area_drawing {
-            trim_pixmap(&tree, ts, &pixmap).unwrap_or(pixmap)
+            trim_pixmap(tree, ts, &pixmap).unwrap_or(pixmap)
         } else {
             pixmap
         }
