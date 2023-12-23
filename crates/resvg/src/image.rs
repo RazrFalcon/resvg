@@ -102,6 +102,7 @@ fn render_vector(
 
 #[cfg(feature = "raster-images")]
 mod raster_images {
+    use image::{Rgb, Rgba};
     use super::Image;
     use crate::render::TinySkiaPixmapMutExt;
     use crate::tree::OptionLog;
@@ -110,14 +111,16 @@ mod raster_images {
         match image.kind {
             usvg::ImageKind::SVG(_) => None,
             usvg::ImageKind::JPEG(ref data) => {
-                decode_jpeg(data).log_none(|| log::warn!("Failed to decode a JPEG image."))
+                decode(data).log_none(|| log::warn!("Failed to decode a JPEG image."))
             }
             usvg::ImageKind::PNG(ref data) => {
                 decode_png(data).log_none(|| log::warn!("Failed to decode a PNG image."))
             }
             usvg::ImageKind::GIF(ref data) => {
-                decode_gif(data).log_none(|| log::warn!("Failed to decode a GIF image."))
+                // decode_gif(data).log_none(|| log::warn!("Failed to decode a GIF image."))
+                None
             }
+            _ => None
         }
     }
 
@@ -125,48 +128,14 @@ mod raster_images {
         tiny_skia::Pixmap::decode_png(data).ok()
     }
 
-    fn decode_jpeg(data: &[u8]) -> Option<tiny_skia::Pixmap> {
-        let mut decoder = jpeg_decoder::Decoder::new(data);
-        let img_data = decoder.decode().ok()?;
-        let info = decoder.info()?;
-
-        let size = tiny_skia::IntSize::from_wh(info.width as u32, info.height as u32)?;
-
-        let data = match info.pixel_format {
-            jpeg_decoder::PixelFormat::RGB24 => img_data,
-            jpeg_decoder::PixelFormat::L8 => {
-                let mut rgb_data: Vec<u8> = Vec::with_capacity(img_data.len() * 3);
-                for gray in img_data {
-                    rgb_data.push(gray);
-                    rgb_data.push(gray);
-                    rgb_data.push(gray);
-                }
-
-                rgb_data
-            }
-            _ => return None,
-        };
+    fn decode(data: &[u8]) -> Option<tiny_skia::Pixmap> {
+        let dynamic_image = image::load_from_memory(data).ok()?;
+        let size = tiny_skia::IntSize::from_wh(dynamic_image.width(), dynamic_image.height())?;
+        let res: Vec<u8> = dynamic_image.to_rgb8().pixels().flat_map(|&Rgb(c)| c).collect();
 
         let (w, h) = size.dimensions();
         let mut pixmap = tiny_skia::Pixmap::new(w, h)?;
-        rgb_to_pixmap(&data, &mut pixmap);
-        Some(pixmap)
-    }
-
-    fn decode_gif(data: &[u8]) -> Option<tiny_skia::Pixmap> {
-        let mut decoder = gif::DecodeOptions::new();
-        decoder.set_color_output(gif::ColorOutput::RGBA);
-        let mut decoder = decoder.read_info(data).ok()?;
-        let first_frame = decoder.read_next_frame().ok()??;
-
-        let size = tiny_skia::IntSize::from_wh(
-            u32::from(first_frame.width),
-            u32::from(first_frame.height),
-        )?;
-
-        let (w, h) = size.dimensions();
-        let mut pixmap = tiny_skia::Pixmap::new(w, h)?;
-        rgba_to_pixmap(&first_frame.buffer, &mut pixmap);
+        rgb_to_pixmap(&res, &mut pixmap);
         Some(pixmap)
     }
 

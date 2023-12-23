@@ -1309,6 +1309,10 @@ impl XmlWriterExt for XmlWriter {
             usvg_tree::ImageKind::JPEG(ref data) => ("jpeg", data.as_slice()),
             usvg_tree::ImageKind::PNG(ref data) => ("png", data.as_slice()),
             usvg_tree::ImageKind::GIF(ref data) => ("gif", data.as_slice()),
+            usvg_tree::ImageKind::WEBP(ref data) => ("webp", data.as_slice()),
+            usvg_tree::ImageKind::BMP(ref data) => ("bmp", data.as_slice()),
+            usvg_tree::ImageKind::AVIF(ref data) => ("avif", data.as_slice()),
+            usvg_tree::ImageKind::TIFF(ref data) => ("tiff", data.as_slice()),
             usvg_tree::ImageKind::SVG(ref tree) => {
                 svg_string = tree.to_string(&XmlOptions::default());
                 ("svg+xml", svg_string.as_bytes())

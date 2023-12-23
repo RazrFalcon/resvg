@@ -93,6 +93,10 @@ impl ImageHrefResolver {
                     Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(Arc::new(data))),
                     Some(ImageFormat::PNG) => Some(ImageKind::PNG(Arc::new(data))),
                     Some(ImageFormat::GIF) => Some(ImageKind::GIF(Arc::new(data))),
+                    Some(ImageFormat::BMP) => Some(ImageKind::BMP(Arc::new(data))),
+                    Some(ImageFormat::AVIF) => Some(ImageKind::AVIF(Arc::new(data))),
+                    Some(ImageFormat::TIFF) => Some(ImageKind::TIFF(Arc::new(data))),
+                    Some(ImageFormat::WEBP) => Some(ImageKind::WEBP(Arc::new(data))),
                     Some(ImageFormat::SVG) => load_sub_svg(&data, opts),
                     _ => {
                         log::warn!("'{}' is not a PNG, JPEG, GIF or SVG(Z) image.", href);
@@ -115,6 +119,10 @@ impl std::fmt::Debug for ImageHrefResolver {
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum ImageFormat {
+    AVIF,
+    BMP,
+    WEBP,
+    TIFF,
     PNG,
     JPEG,
     GIF,
@@ -134,7 +142,13 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Grou
         .unwrap_or(state.opt.image_rendering);
 
     let actual_size = match kind {
-        ImageKind::JPEG(ref data) | ImageKind::PNG(ref data) | ImageKind::GIF(ref data) => {
+        ImageKind::JPEG(ref data)
+        | ImageKind::PNG(ref data)
+        | ImageKind::GIF(ref data)
+        | ImageKind::WEBP(ref data)
+        | ImageKind::TIFF(ref data)
+        | ImageKind::AVIF(ref data)
+        | ImageKind::BMP(ref data)=> {
             imagesize::blob_size(data)
                 .ok()
                 .and_then(|size| Size::from_wh(size.width as f32, size.height as f32))
@@ -214,9 +228,13 @@ fn get_image_file_format(path: &std::path::Path, data: &[u8]) -> Option<ImageFor
 /// Checks that file has a PNG, a GIF or a JPEG magic bytes.
 fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
     match imagesize::image_type(data).ok()? {
+        imagesize::ImageType::Avif => Some(ImageFormat::AVIF),
+        imagesize::ImageType::Bmp => Some(ImageFormat::BMP),
         imagesize::ImageType::Gif => Some(ImageFormat::GIF),
         imagesize::ImageType::Jpeg => Some(ImageFormat::JPEG),
         imagesize::ImageType::Png => Some(ImageFormat::PNG),
+        imagesize::ImageType::Tiff => Some(ImageFormat::TIFF),
+        imagesize::ImageType::Webp => Some(ImageFormat::WEBP),
         _ => None,
     }
 }

@@ -15,11 +15,9 @@ name = "resvg"
 required-features = ["text", "system-fonts", "memmap-fonts"]
 
 [dependencies]
-gif = { version = "0.12", optional = true }
-jpeg-decoder = { version = "0.3", default-features = false, features = ["platform_independent"], optional = true }
+image = {version = "0.24.7", optional = true, default-features = false, features = ["jpeg", "gif", "png", "webp", "bmp", "tiff"]}
 log = "0.4"
 pico-args = { version = "0.5", features = ["eq-separator"] }
-png = { version = "0.17", optional = true }
 rgb = "0.8"
 svgtypes = "0.13"
 tiny-skia = "0.11.3"
@@ -40,4 +38,4 @@ memmap-fonts = ["usvg/memmap-fonts"]
 # Enables decoding and rendering of raster images.
 # When disabled, `image` elements with SVG data will still be rendered.
 # Adds around 200KiB to your binary.
-raster-images = ["gif", "jpeg-decoder", "png"]
+raster-images = ["image"]

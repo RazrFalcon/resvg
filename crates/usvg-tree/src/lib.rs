@@ -1209,6 +1209,14 @@ pub enum ImageKind {
     PNG(Arc<Vec<u8>>),
     /// A reference to raw GIF data. Should be decoded by the caller.
     GIF(Arc<Vec<u8>>),
+    /// A reference to raw BMP data. Should be decoded by the caller.
+    BMP(Arc<Vec<u8>>),
+    /// A reference to raw TIFF data. Should be decoded by the caller.
+    TIFF(Arc<Vec<u8>>),
+    /// A reference to raw WEBP data. Should be decoded by the caller.
+    WEBP(Arc<Vec<u8>>),
+    /// A reference to raw AVIF data. Should be decoded by the caller.
+    AVIF(Arc<Vec<u8>>),
     /// A preprocessed SVG tree. Can be rendered as is.
     SVG(Tree),
 }
@@ -1219,6 +1227,10 @@ impl std::fmt::Debug for ImageKind {
             ImageKind::JPEG(_) => f.write_str("ImageKind::JPEG(..)"),
             ImageKind::PNG(_) => f.write_str("ImageKind::PNG(..)"),
             ImageKind::GIF(_) => f.write_str("ImageKind::GIF(..)"),
+            ImageKind::AVIF(_) => f.write_str("ImageKind::AVIF(..)"),
+            ImageKind::BMP(_) => f.write_str("ImageKind::BMP(..)"),
+            ImageKind::TIFF(_) => f.write_str("ImageKind::TIFF(..)"),
+            ImageKind::WEBP(_) => f.write_str("ImageKind::WEBP(..)"),
             ImageKind::SVG(_) => f.write_str("ImageKind::SVG(..)"),
         }
     }
