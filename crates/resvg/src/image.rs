@@ -112,46 +112,37 @@ mod raster_images {
             usvg::ImageKind::SVG(_) => None,
             usvg::ImageKind::JPEG(ref data) => {
                 decode(data).log_none(|| log::warn!("Failed to decode a JPEG image."))
-            }
+            },
             usvg::ImageKind::PNG(ref data) => {
-                decode_png(data).log_none(|| log::warn!("Failed to decode a PNG image."))
-            }
+                tiny_skia::Pixmap::decode_png(data).ok().log_none(|| log::warn!("Failed to decode a PNG image."))
+            },
             usvg::ImageKind::GIF(ref data) => {
-                // decode_gif(data).log_none(|| log::warn!("Failed to decode a GIF image."))
-                None
-            }
-            _ => None
+                decode(data).log_none(|| log::warn!("Failed to decode a GIF image."))
+            },
+            usvg::ImageKind::TIFF(ref data) => {
+                decode(data).log_none(|| log::warn!("Failed to decode a TIFF image."))
+            },
+            usvg::ImageKind::AVIF(ref data) => {
+                decode(data).log_none(|| log::warn!("Failed to decode a AVIF image."))
+            },
+            usvg::ImageKind::WEBP(ref data) => {
+                decode(data).log_none(|| log::warn!("Failed to decode a WEBP image."))
+            },
+            usvg::ImageKind::BMP(ref data) => {
+                decode(data).log_none(|| log::warn!("Failed to decode a WEBP image."))
+            },
         }
-    }
-
-    fn decode_png(data: &[u8]) -> Option<tiny_skia::Pixmap> {
-        tiny_skia::Pixmap::decode_png(data).ok()
     }
 
     fn decode(data: &[u8]) -> Option<tiny_skia::Pixmap> {
         let dynamic_image = image::load_from_memory(data).ok()?;
         let size = tiny_skia::IntSize::from_wh(dynamic_image.width(), dynamic_image.height())?;
-        let res: Vec<u8> = dynamic_image.to_rgb8().pixels().flat_map(|&Rgb(c)| c).collect();
+        let res: Vec<u8> = dynamic_image.to_rgba8().pixels().flat_map(|&Rgba(c)| c).collect();
 
         let (w, h) = size.dimensions();
         let mut pixmap = tiny_skia::Pixmap::new(w, h)?;
-        rgb_to_pixmap(&res, &mut pixmap);
+        rgba_to_pixmap(&res, &mut pixmap);
         Some(pixmap)
-    }
-
-    fn rgb_to_pixmap(data: &[u8], pixmap: &mut tiny_skia::Pixmap) {
-        use rgb::FromSlice;
-
-        let mut i = 0;
-        let dst = pixmap.data_mut();
-        for p in data.as_rgb() {
-            dst[i + 0] = p.r;
-            dst[i + 1] = p.g;
-            dst[i + 2] = p.b;
-            dst[i + 3] = 255;
-
-            i += tiny_skia::BYTES_PER_PIXEL;
-        }
     }
 
     fn rgba_to_pixmap(data: &[u8], pixmap: &mut tiny_skia::Pixmap) {

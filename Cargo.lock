@@ -154,7 +154,6 @@ dependencies = [
  "jpeg-decoder",
  "num-rational",
  "num-traits",
- "png",
  "tiff",
 ]
 
@@ -273,6 +272,7 @@ dependencies = [
  "log",
  "once_cell",
  "pico-args",
+ "png",
  "rgb",
  "svgtypes",
  "tiny-skia",
