@@ -44,7 +44,7 @@ pub fn render_thumbnail(tree: &Option<usvg::Tree>, cx: u32) -> Result<tiny_skia:
 
     let tree = tree.as_ref().ok_or(Error::TreeEmpty)?;
 
-    let size = if tree.size.width() > rtree.size.height() {
+    let size = if tree.size.width() > tree.size.height() {
         tree.size.to_int_size().scale_to_width(cx)
     } else {
         tree.size.to_int_size().scale_to_height(cx)
