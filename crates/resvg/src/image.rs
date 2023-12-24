@@ -83,7 +83,7 @@ mod raster_images {
             usvg::ImageKind::WEBP(ref data) => decode(data, ImageFormat::WebP)
                 .log_none(|| log::warn!("Failed to decode a WEBP image.")),
             usvg::ImageKind::BMP(ref data) => decode(data, ImageFormat::Bmp)
-                .log_none(|| log::warn!("Failed to decode a WEBP image.")),
+                .log_none(|| log::warn!("Failed to decode a BMP image.")),
         }
     }
 
