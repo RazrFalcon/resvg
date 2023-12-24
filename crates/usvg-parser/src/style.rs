@@ -195,8 +195,6 @@ fn convert_paint(
                 from_fallback(node, fallback, opacity)
             }
         }
-        // Ignore `context-fill` and `context-stroke for now
-        _ => None,
     }
 }
 
