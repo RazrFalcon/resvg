@@ -1,10 +1,10 @@
 [package]
 name = "usvg"
-version = "0.36.0"
+version = "0.37.0"
 authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg"]
 license = "MPL-2.0"
-edition = "2018"
+edition = "2021"
 description = "An SVG simplification library."
 categories = ["multimedia::images"]
 repository = "https://github.com/RazrFalcon/resvg"
@@ -21,15 +21,18 @@ required-features = ["text", "system-fonts", "memmap-fonts"]
 base64 = "0.21" # for embedded images
 log = "0.4"
 pico-args = { version = "0.5", features = ["eq-separator"] }
-usvg-parser = { path = "../usvg-parser", version = "0.36.0" }
-usvg-tree = { path = "../usvg-tree", version = "0.36.0" }
+usvg-parser = { path = "../usvg-parser", version = "0.37.0" }
+usvg-tree = { path = "../usvg-tree", version = "0.37.0" }
 xmlwriter = "0.1"
 
 [dependencies.usvg-text-layout]
 path = "../usvg-text-layout"
-version = "0.36.0"
+version = "0.37.0"
 default-features = false
 optional = true
+
+[dev-dependencies]
+once_cell = "1.5"
 
 [features]
 default = ["text", "system-fonts", "memmap-fonts"]

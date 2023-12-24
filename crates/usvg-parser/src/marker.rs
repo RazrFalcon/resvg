@@ -8,12 +8,13 @@ use strict_num::NonZeroPositiveF32;
 use svgtypes::Length;
 use tiny_skia_path::Point;
 use usvg_tree::{
-    strict_num, tiny_skia_path, ApproxEqUlps, ApproxZeroUlps, ClipPath, Group, Node, NodeExt,
-    NodeKind, NonZeroRect, Path, Size, Transform, ViewBox,
+    strict_num, tiny_skia_path, ApproxEqUlps, ApproxZeroUlps, ClipPath, Group, Node, NonZeroRect,
+    Path, Size, Transform, ViewBox,
 };
 
 use crate::converter;
 use crate::svgtree::{AId, EId, SvgNode};
+use std::cell::RefCell;
 
 // Similar to `tiny_skia_path::PathSegment`, but without the `QuadTo`.
 #[derive(Copy, Clone, Debug)]
@@ -44,7 +45,7 @@ pub(crate) fn convert(
     path: &tiny_skia_path::Path,
     state: &converter::State,
     cache: &mut converter::Cache,
-    parent: &mut Node,
+    parent: &mut Group,
 ) {
     let list = [
         (AId::MarkerStart, MarkerKind::Start),
@@ -93,7 +94,7 @@ fn resolve(
     marker_kind: MarkerKind,
     state: &converter::State,
     cache: &mut converter::Cache,
-    parent: &mut Node,
+    parent: &mut Group,
 ) -> Option<()> {
     let stroke_scale = stroke_scale(shape_node, marker_node, state)?.get();
 
@@ -120,16 +121,15 @@ fn resolve(
         };
 
         let mut clip_path = ClipPath::default();
-        clip_path.id = cache.gen_clip_path_id();
 
         let mut path = Path::new(Rc::new(tiny_skia_path::PathBuilder::from_rect(
             clip_rect.to_rect(),
         )));
         path.fill = Some(usvg_tree::Fill::default());
 
-        clip_path.root.append_kind(NodeKind::Path(path));
+        clip_path.root.children.push(Node::Path(Box::new(path)));
 
-        Some(Rc::new(clip_path))
+        Some(Rc::new(RefCell::new(clip_path)))
     } else {
         None
     };
@@ -194,18 +194,18 @@ fn resolve(
         ts = ts.pre_translate(-r.x(), -r.y());
 
         // TODO: do not create a group when no clipPath
-        let mut g_node = parent.append_kind(NodeKind::Group(Group {
+        let mut g = Group {
             transform: ts,
             clip_path: clip_path.clone(),
             ..Group::default()
-        }));
+        };
 
         let mut marker_state = state.clone();
         marker_state.parent_markers.push(marker_node);
-        converter::convert_children(marker_node, &marker_state, cache, &mut g_node);
+        converter::convert_children(marker_node, &marker_state, cache, &mut g);
 
-        if !g_node.has_children() {
-            g_node.detach();
+        if g.has_children() {
+            parent.children.push(Node::Group(Box::new(g)));
         }
     };
 

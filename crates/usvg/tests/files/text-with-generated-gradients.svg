@@ -1,0 +1,13 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- Due to various SVG Text idiosyncrasies, a gradient with `objectBoundingBox` units -->
+    <!-- have to be converted into `userSpaceOnUse` one. -->
+    <!-- To do so, `usvg` will create a new gradient, but without setting the gradient ID. -->
+    <!-- Make sure that a new gradient has a proper ID. -->
+    <linearGradient id="lg1" gradientUnits="objectBoundingBox">
+        <stop offset="0" stop-color="white"/>
+        <stop offset="1" stop-color="green"/>
+    </linearGradient>
+    <text id="text1" x="26" y="100" font-family="Amiri" font-size="32">
+        Hel<tspan id="tspan1" fill="url(#lg1)">lo مرح</tspan>با.
+    </text>
+</svg>

@@ -5,23 +5,24 @@
 use std::rc::Rc;
 use std::str::FromStr;
 
-use usvg_tree::{ClipPath, Group, Node, NodeKind, Transform, Units};
+use usvg_tree::{ClipPath, Group, SharedClipPath, Transform, Units};
 
 use crate::converter;
 use crate::svgtree::{AId, EId, SvgNode};
+use std::cell::RefCell;
 
 pub(crate) fn convert(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Option<Rc<ClipPath>> {
+) -> Option<SharedClipPath> {
     // A `clip-path` attribute must reference a `clipPath` element.
     if node.tag_name() != Some(EId::ClipPath) {
         return None;
     }
 
     // The whole clip path should be ignored when a transform is invalid.
-    let transform = resolve_transform(node)?;
+    let transform = resolve_clip_path_transform(node, state)?;
 
     // Check if this element was already converted.
     if let Some(clip) = cache.clip_paths.get(node.element_id()) {
@@ -48,7 +49,7 @@ pub(crate) fn convert(
         units,
         transform,
         clip_path,
-        root: Node::new(NodeKind::Group(Group::default())),
+        root: Group::default(),
     };
 
     let mut clip_state = state.clone();
@@ -56,7 +57,7 @@ pub(crate) fn convert(
     converter::convert_clip_path_elements(node, &clip_state, cache, &mut clip.root);
 
     if clip.root.has_children() {
-        let clip = Rc::new(clip);
+        let clip = Rc::new(RefCell::new(clip));
         cache
             .clip_paths
             .insert(node.element_id().to_string(), clip.clone());
@@ -67,7 +68,7 @@ pub(crate) fn convert(
     }
 }
 
-fn resolve_transform(node: SvgNode) -> Option<Transform> {
+fn resolve_clip_path_transform(node: SvgNode, state: &converter::State) -> Option<Transform> {
     // Do not use Node::attribute::<Transform>, because it will always
     // return a valid transform.
 
@@ -94,7 +95,7 @@ fn resolve_transform(node: SvgNode) -> Option<Transform> {
     );
 
     if ts.is_valid() {
-        Some(ts)
+        Some(node.resolve_transform(AId::Transform, state))
     } else {
         None
     }

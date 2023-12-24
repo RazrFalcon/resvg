@@ -2,22 +2,21 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use svgtypes::{Length, LengthUnit};
-use usvg_tree::{
-    tiny_skia_path, Group, IsValidLength, Node, NodeExt, NodeKind, NonZeroRect, Path, Size,
-    Transform,
-};
+use usvg_tree::{tiny_skia_path, Group, IsValidLength, Node, NonZeroRect, Path, Size, Transform};
 
 use crate::converter;
 use crate::svgtree::{AId, EId, SvgNode};
 
+// TODO: do not return Option<()>
 pub(crate) fn convert(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-    parent: &mut Node,
+    parent: &mut Group,
 ) -> Option<()> {
     let child = node.first_child()?;
 
@@ -33,7 +32,7 @@ pub(crate) fn convert(
     use_state.context_stroke = crate::style::resolve_stroke(node, false, state, cache);
 
     // We require an original transformation to setup 'clipPath'.
-    let mut orig_ts: Transform = node.attribute(AId::Transform).unwrap_or_default();
+    let mut orig_ts = node.resolve_transform(AId::Transform, state);
     let mut new_ts = Transform::default();
 
     {
@@ -50,25 +49,25 @@ pub(crate) fn convert(
         }
 
         if let Some(clip_rect) = get_clip_rect(node, child, &use_state) {
-            let mut g = clip_element(node, clip_rect, orig_ts, &use_state, cache, parent);
+            let mut g = clip_element(node, clip_rect, orig_ts, &use_state);
 
             // Make group for `use`.
-            let mut parent = match converter::convert_group(node, &use_state, true, cache, &mut g) {
-                converter::GroupKind::Create(g) => {
+            match converter::convert_group(node, &use_state, true, cache) {
+                converter::GroupKind::Create(mut g2) => {
                     // We must reset transform, because it was already set
                     // to the group with clip-path.
-                    if let NodeKind::Group(ref mut g) = *g.borrow_mut() {
-                        g.id = String::new(); // Prevent ID duplication.
-                        g.transform = Transform::default();
-                    }
-
-                    g
+                    g2.id = String::new(); // Prevent ID duplication.
+                    g2.transform = Transform::default();
+                    convert_children(child, new_ts, &use_state, cache, &mut g2);
+                    g.children.push(Node::Group(Box::new(g2)));
                 }
-                converter::GroupKind::Skip => g.clone(),
+                converter::GroupKind::Skip => {
+                    convert_children(child, new_ts, &use_state, cache, &mut g);
+                }
                 converter::GroupKind::Ignore => return None,
-            };
+            }
 
-            convert_children(child, new_ts, &use_state, cache, &mut parent);
+            parent.children.push(Node::Group(Box::new(g)));
             return None;
         }
     }
@@ -77,19 +76,17 @@ pub(crate) fn convert(
 
     if linked_to_symbol {
         // Make group for `use`.
-        let mut parent = match converter::convert_group(node, &use_state, false, cache, parent) {
-            converter::GroupKind::Create(g) => {
-                if let NodeKind::Group(ref mut g) = *g.borrow_mut() {
-                    g.transform = Transform::default();
-                }
-
-                g
+        match converter::convert_group(node, &use_state, false, cache) {
+            converter::GroupKind::Create(mut g) => {
+                g.transform = Transform::default();
+                convert_children(child, orig_ts, &use_state, cache, &mut g);
+                parent.children.push(Node::Group(Box::new(g)));
             }
-            converter::GroupKind::Skip => parent.clone(),
+            converter::GroupKind::Skip => {
+                convert_children(child, orig_ts, state, cache, parent);
+            }
             converter::GroupKind::Ignore => return None,
-        };
-
-        convert_children(child, orig_ts, &use_state, cache, &mut parent);
+        }
     } else {
         let linked_to_svg = child.tag_name() == Some(EId::Svg);
         if linked_to_svg {
@@ -132,10 +129,10 @@ pub(crate) fn convert_svg(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-    parent: &mut Node,
+    parent: &mut Group,
 ) {
     // We require original transformation to setup 'clipPath'.
-    let mut orig_ts: Transform = node.attribute(AId::Transform).unwrap_or_default();
+    let mut orig_ts = node.resolve_transform(AId::Transform, state);
     let mut new_ts = Transform::default();
 
     {
@@ -171,8 +168,9 @@ pub(crate) fn convert_svg(
     };
 
     if let Some(clip_rect) = get_clip_rect(node, node, state) {
-        let mut g = clip_element(node, clip_rect, orig_ts, state, cache, parent);
+        let mut g = clip_element(node, clip_rect, orig_ts, state);
         convert_children(node, new_ts, &new_state, cache, &mut g);
+        parent.children.push(Node::Group(Box::new(g)));
     } else {
         orig_ts = orig_ts.pre_concat(new_ts);
         convert_children(node, orig_ts, &new_state, cache, parent);
@@ -184,9 +182,7 @@ fn clip_element(
     clip_rect: NonZeroRect,
     transform: Transform,
     state: &converter::State,
-    cache: &mut converter::Cache,
-    parent: &mut Node,
-) -> Node {
+) -> Group {
     // We can't set `clip-path` on the element itself,
     // because it will be affected by a possible transform.
     // So we have to create an additional group.
@@ -208,13 +204,12 @@ fn clip_element(
     // </g>
 
     let mut clip_path = usvg_tree::ClipPath::default();
-    clip_path.id = cache.gen_clip_path_id();
 
     let mut path = Path::new(Rc::new(tiny_skia_path::PathBuilder::from_rect(
         clip_rect.to_rect(),
     )));
     path.fill = Some(usvg_tree::Fill::default());
-    clip_path.root.append_kind(NodeKind::Path(path));
+    clip_path.root.children.push(Node::Path(Box::new(path)));
 
     // Nodes generated by markers must not have an ID. Otherwise we would have duplicates.
     let id = if state.parent_markers.is_empty() {
@@ -223,12 +218,12 @@ fn clip_element(
         String::new()
     };
 
-    parent.append_kind(NodeKind::Group(Group {
+    Group {
         id,
         transform,
-        clip_path: Some(Rc::new(clip_path)),
+        clip_path: Some(Rc::new(RefCell::new(clip_path))),
         ..Group::default()
-    }))
+    }
 }
 
 fn convert_children(
@@ -236,25 +231,29 @@ fn convert_children(
     transform: Transform,
     state: &converter::State,
     cache: &mut converter::Cache,
-    parent: &mut Node,
+    parent: &mut Group,
 ) {
     let required = !transform.is_identity();
-    let mut parent = match converter::convert_group(node, state, required, cache, parent) {
-        converter::GroupKind::Create(g) => {
-            if let NodeKind::Group(ref mut g) = *g.borrow_mut() {
-                g.transform = transform;
+    match converter::convert_group(node, state, required, cache) {
+        converter::GroupKind::Create(mut g) => {
+            g.transform = transform;
+
+            if state.parent_clip_path.is_some() {
+                converter::convert_clip_path_elements(node, state, cache, &mut g);
+            } else {
+                converter::convert_children(node, state, cache, &mut g);
             }
 
-            g
+            parent.children.push(Node::Group(Box::new(g)));
         }
-        converter::GroupKind::Skip => parent.clone(),
-        converter::GroupKind::Ignore => return,
-    };
-
-    if state.parent_clip_path.is_some() {
-        converter::convert_clip_path_elements(node, state, cache, &mut parent);
-    } else {
-        converter::convert_children(node, state, cache, &mut parent);
+        converter::GroupKind::Skip => {
+            if state.parent_clip_path.is_some() {
+                converter::convert_clip_path_elements(node, state, cache, parent);
+            } else {
+                converter::convert_children(node, state, cache, parent);
+            }
+        }
+        converter::GroupKind::Ignore => {}
     }
 }
 

@@ -6,7 +6,7 @@
 
 use std::path;
 
-use usvg::{fontdb, NodeExt, TreeParsing, TreeTextToPath};
+use usvg::{fontdb, TreeParsing, TreeTextToPath};
 
 fn main() {
     if let Err(e) = process() {
@@ -111,6 +111,8 @@ fn process() -> Result<(), String> {
 
         timed(args.perf, "Text Conversion", || tree.convert_text(&fontdb));
     }
+
+    tree.calculate_bounding_boxes();
 
     if args.query_all {
         return query_all(&tree);
@@ -599,9 +601,22 @@ fn load_fonts(args: &mut Args) -> fontdb::Database {
 }
 
 fn query_all(tree: &usvg::Tree) -> Result<(), String> {
+    let count = query_all_impl(&tree.root);
+
+    if count == 0 {
+        return Err("the file has no valid ID's".to_string());
+    }
+
+    Ok(())
+}
+
+fn query_all_impl(parent: &usvg::Group) -> usize {
     let mut count = 0;
-    for node in tree.root.descendants() {
+    for node in &parent.children {
         if node.id().is_empty() {
+            if let usvg::Node::Group(ref group) = node {
+                count += query_all_impl(group);
+            }
             continue;
         }
 
@@ -611,7 +626,7 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
             (v * 1000.0).round() / 1000.0
         }
 
-        if let Some(bbox) = node.calculate_bbox() {
+        if let Some(bbox) = node.abs_bounding_box() {
             println!(
                 "{},{},{},{},{}",
                 node.id(),
@@ -621,26 +636,26 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
                 round_len(bbox.height())
             );
         }
+
+        if let usvg::Node::Group(ref group) = node {
+            count += query_all_impl(group);
+        }
     }
 
-    if count == 0 {
-        return Err("the file has no valid ID's".to_string());
-    }
-
-    Ok(())
+    count
 }
 
 fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, String> {
     let now = std::time::Instant::now();
 
     let img = if let Some(ref id) = args.export_id {
-        let node = match tree.root.descendants().find(|n| &*n.id() == id) {
+        let node = match tree.node_by_id(id) {
             Some(node) => node,
             None => return Err(format!("SVG doesn't have '{}' ID", id)),
         };
 
         let bbox = node
-            .calculate_bbox()
+            .abs_bounding_box()
             .and_then(|r| r.to_non_zero_rect())
             .ok_or_else(|| "node has zero size".to_string())?;
 
@@ -660,10 +675,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
 
         let ts = args.fit_to.fit_to_transform(tree.size.to_int_size());
 
-        let rtree = resvg::Tree::from_usvg_node(&node)
-            .ok_or_else(|| "zero-size node detected".to_string())?;
-
-        rtree.render(ts, &mut pixmap.as_mut());
+        resvg::render_node(node, ts, &mut pixmap.as_mut());
 
         if args.export_area_page {
             // TODO: add offset support to render_node() so we would not need an additional pixmap
@@ -707,11 +719,10 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
 
         let ts = args.fit_to.fit_to_transform(tree.size.to_int_size());
 
-        let rtree = resvg::Tree::from_usvg(tree);
-        rtree.render(ts, &mut pixmap.as_mut());
+        resvg::render(tree, ts, &mut pixmap.as_mut());
 
         if args.export_area_drawing {
-            trim_pixmap(&rtree, ts, &pixmap).unwrap_or(pixmap)
+            trim_pixmap(tree, ts, &pixmap).unwrap_or(pixmap)
         } else {
             pixmap
         }
@@ -726,11 +737,11 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
 }
 
 fn trim_pixmap(
-    rtree: &resvg::Tree,
+    tree: &usvg::Tree,
     transform: tiny_skia::Transform,
     pixmap: &tiny_skia::Pixmap,
 ) -> Option<tiny_skia::Pixmap> {
-    let content_area = rtree.content_area?.to_non_zero_rect()?;
+    let content_area = tree.root.layer_bounding_box?;
 
     let limit = tiny_skia::IntRect::from_xywh(0, 0, pixmap.width(), pixmap.height()).unwrap();
 

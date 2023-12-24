@@ -1,0 +1,10 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <filter id="filter1" x="-0.1" y="-0.1" width="1.2" height="1.2">
+            <feGaussianBlur color-interpolation-filters="linearRGB" in="SourceGraphic" stdDeviation="4 4" result="result1"/>
+        </filter>
+    </defs>
+    <g filter="url(#filter1)">
+        <path id="rect1" fill="#2e8b57" stroke="none" d="M 20 20 L 180 20 L 180 180 L 20 180 Z"/>
+    </g>
+</svg>

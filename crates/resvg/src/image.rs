@@ -3,75 +3,34 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::render::TinySkiaPixmapMutExt;
-use crate::tree::{BBoxes, Node, Tree};
 
-pub enum ImageKind {
-    #[cfg(feature = "raster-images")]
-    Raster(tiny_skia::Pixmap),
-    Vector(Tree),
-}
-
-pub struct Image {
-    pub view_box: usvg::ViewBox,
-    pub quality: tiny_skia::FilterQuality,
-    pub kind: ImageKind,
-}
-
-pub fn convert(image: &usvg::Image, children: &mut Vec<Node>) -> Option<BBoxes> {
-    let object_bbox = image.view_box.rect.to_rect();
-    let bboxes = BBoxes {
-        object: usvg::BBox::from(object_bbox),
-        layer: usvg::BBox::from(object_bbox),
-    };
-
-    if image.visibility != usvg::Visibility::Visible {
-        return Some(bboxes);
-    }
-
-    let mut quality = tiny_skia::FilterQuality::Bicubic;
-    if image.rendering_mode == usvg::ImageRendering::OptimizeSpeed {
-        quality = tiny_skia::FilterQuality::Nearest;
-    }
-
-    let kind = match image.kind {
-        usvg::ImageKind::SVG(ref utree) => ImageKind::Vector(Tree::from_usvg(utree)),
-        #[cfg(feature = "raster-images")]
-        _ => ImageKind::Raster(raster_images::decode_raster(image)?),
-        #[cfg(not(feature = "raster-images"))]
-        _ => {
-            log::warn!("Images decoding was disabled by a build feature.");
-            return None;
-        }
-    };
-
-    children.push(Node::Image(Image {
-        view_box: image.view_box,
-        quality,
-        kind,
-    }));
-
-    Some(bboxes)
-}
-
-pub fn render_image(
-    image: &Image,
+pub fn render(
+    image: &usvg::Image,
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
+    if image.visibility != usvg::Visibility::Visible {
+        return;
+    }
+
     match image.kind {
-        #[cfg(feature = "raster-images")]
-        ImageKind::Raster(ref raster) => {
-            raster_images::render_raster(image, raster, transform, pixmap);
+        usvg::ImageKind::SVG(ref tree) => {
+            render_vector(image, tree, transform, pixmap);
         }
-        ImageKind::Vector(ref rtree) => {
-            render_vector(image, rtree, transform, pixmap);
+        #[cfg(feature = "raster-images")]
+        _ => {
+            raster_images::render_raster(image, transform, pixmap);
+        }
+        #[cfg(not(feature = "raster-images"))]
+        _ => {
+            log::warn!("Images decoding was disabled by a build feature.");
         }
     }
 }
 
 fn render_vector(
-    image: &Image,
-    tree: &Tree,
+    image: &usvg::Image,
+    tree: &usvg::Tree,
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
 ) -> Option<()> {
@@ -83,7 +42,7 @@ fn render_vector(
     let source_transform = transform;
     let transform = transform.pre_concat(ts);
 
-    tree.render(transform, &mut sub_pixmap.as_mut());
+    crate::render(tree, transform, &mut sub_pixmap.as_mut());
 
     let mask = if let Some(clip) = clip {
         pixmap.create_rect_mask(source_transform, clip.to_rect())
@@ -105,11 +64,10 @@ fn render_vector(
 
 #[cfg(feature = "raster-images")]
 mod raster_images {
-    use super::Image;
     use crate::render::TinySkiaPixmapMutExt;
-    use crate::tree::OptionLog;
+    use crate::OptionLog;
 
-    pub fn decode_raster(image: &usvg::Image) -> Option<tiny_skia::Pixmap> {
+    fn decode_raster(image: &usvg::Image) -> Option<tiny_skia::Pixmap> {
         match image.kind {
             usvg::ImageKind::SVG(_) => None,
             usvg::ImageKind::JPEG(ref data) => {
@@ -205,11 +163,12 @@ mod raster_images {
     }
 
     pub(crate) fn render_raster(
-        image: &Image,
-        raster: &tiny_skia::Pixmap,
+        image: &usvg::Image,
         transform: tiny_skia::Transform,
         pixmap: &mut tiny_skia::PixmapMut,
     ) -> Option<()> {
+        let raster = decode_raster(image)?;
+
         let img_size = tiny_skia::IntSize::from_wh(raster.width(), raster.height())?;
         let rect = image_rect(&image.view_box, img_size);
 
@@ -222,10 +181,15 @@ mod raster_images {
             rect.y(),
         );
 
+        let mut quality = tiny_skia::FilterQuality::Bicubic;
+        if image.rendering_mode == usvg::ImageRendering::OptimizeSpeed {
+            quality = tiny_skia::FilterQuality::Nearest;
+        }
+
         let pattern = tiny_skia::Pattern::new(
             raster.as_ref(),
             tiny_skia::SpreadMode::Pad,
-            image.quality,
+            quality,
             1.0,
             ts,
         );

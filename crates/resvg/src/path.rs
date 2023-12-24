@@ -2,257 +2,273 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
-
-use crate::paint_server::Paint;
 use crate::render::Context;
-use crate::tree::{BBoxes, Node};
+use crate::OptionLog;
 
-pub struct FillPath {
-    pub paint: Paint,
-    pub rule: tiny_skia::FillRule,
-    pub anti_alias: bool,
-    pub path: Rc<tiny_skia::Path>,
-}
-
-pub struct StrokePath {
-    pub paint: Paint,
-    pub stroke: tiny_skia::Stroke,
-    pub anti_alias: bool,
-    pub path: Rc<tiny_skia::Path>,
-}
-
-pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
-    let anti_alias = upath.rendering_mode.use_shape_antialiasing();
-
-    let fill_path = upath.fill.as_ref().and_then(|ufill| {
-        convert_fill_path(
-            ufill,
-            upath.data.clone(),
-            upath.text_bbox,
-            anti_alias,
-        )
-    });
-
-    let stroke_path = upath.stroke.as_ref().and_then(|ustroke| {
-        convert_stroke_path(
-            ustroke,
-            upath.data.clone(),
-            upath.text_bbox,
-            anti_alias,
-        )
-    });
-
-    if fill_path.is_none() && stroke_path.is_none() {
-        return None;
-    }
-
-    let mut bboxes = BBoxes::default();
-
-    if let Some((_, l_bbox, o_bbox)) = fill_path {
-        bboxes.layer = bboxes.layer.expand(l_bbox);
-        bboxes.object = bboxes.object.expand(o_bbox);
-    }
-    if let Some((_, l_bbox, o_bbox)) = stroke_path {
-        bboxes.layer = bboxes.layer.expand(l_bbox);
-        bboxes.object = bboxes.object.expand(o_bbox);
-    }
-
-    // Do not add hidden paths, but preserve the bbox.
-    // visibility=hidden still affects the bbox calculation.
-    if upath.visibility != usvg::Visibility::Visible {
-        return Some(bboxes);
-    }
-
-    if upath.paint_order == usvg::PaintOrder::FillAndStroke {
-        if let Some((path, _, _)) = fill_path {
-            children.push(Node::FillPath(path));
-        }
-
-        if let Some((path, _, _)) = stroke_path {
-            children.push(Node::StrokePath(path));
-        }
-    } else {
-        if let Some((path, _, _)) = stroke_path {
-            children.push(Node::StrokePath(path));
-        }
-
-        if let Some((path, _, _)) = fill_path {
-            children.push(Node::FillPath(path));
-        }
-    }
-
-    Some(bboxes)
-}
-
-fn convert_fill_path(
-    ufill: &usvg::Fill,
-    path: Rc<tiny_skia::Path>,
+pub fn render(
+    path: &usvg::Path,
+    blend_mode: tiny_skia::BlendMode,
+    ctx: &Context,
     text_bbox: Option<tiny_skia::NonZeroRect>,
-    anti_alias: bool,
-) -> Option<(FillPath, usvg::BBox, usvg::BBox)> {
+    transform: tiny_skia::Transform,
+    pixmap: &mut tiny_skia::PixmapMut,
+) {
+    if path.visibility != usvg::Visibility::Visible {
+        return;
+    }
+
+    let mut object_bbox = match path.bounding_box {
+        Some(v) => v,
+        None => {
+            log::warn!(
+                "Node bounding box should be already calculated. \
+                See `usvg::Tree::calculate_bounding_boxes`"
+            );
+            return;
+        }
+    };
+
+    if let Some(text_bbox) = text_bbox {
+        object_bbox = text_bbox.to_rect();
+    }
+
+    if path.paint_order == usvg::PaintOrder::FillAndStroke {
+        fill_path(path, blend_mode, ctx, object_bbox, transform, pixmap);
+        stroke_path(path, blend_mode, ctx, object_bbox, transform, pixmap);
+    } else {
+        stroke_path(path, blend_mode, ctx, object_bbox, transform, pixmap);
+        fill_path(path, blend_mode, ctx, object_bbox, transform, pixmap);
+    }
+}
+
+pub fn fill_path(
+    path: &usvg::Path,
+    blend_mode: tiny_skia::BlendMode,
+    ctx: &Context,
+    object_bbox: tiny_skia::Rect,
+    transform: tiny_skia::Transform,
+    pixmap: &mut tiny_skia::PixmapMut,
+) -> Option<()> {
+    let fill = path.fill.as_ref()?;
+
     // Horizontal and vertical lines cannot be filled. Skip.
-    if path.bounds().width() == 0.0 || path.bounds().height() == 0.0 {
+    if path.data.bounds().width() == 0.0 || path.data.bounds().height() == 0.0 {
         return None;
     }
 
-    let rule = match ufill.rule {
+    let object_bbox = object_bbox.to_non_zero_rect();
+
+    let rule = match fill.rule {
         usvg::FillRule::NonZero => tiny_skia::FillRule::Winding,
         usvg::FillRule::EvenOdd => tiny_skia::FillRule::EvenOdd,
     };
 
-    let mut object_bbox = usvg::BBox::from(path.bounds());
-    if let Some(text_bbox) = text_bbox {
-        object_bbox = object_bbox.expand(usvg::BBox::from(text_bbox));
+    let pattern_pixmap;
+    let mut paint = tiny_skia::Paint::default();
+    match fill.paint {
+        usvg::Paint::Color(c) => {
+            paint.set_color_rgba8(c.red, c.green, c.blue, fill.opacity.to_u8());
+        }
+        usvg::Paint::LinearGradient(ref lg) => {
+            paint.shader = convert_linear_gradient(lg, fill.opacity, object_bbox)?;
+        }
+        usvg::Paint::RadialGradient(ref rg) => {
+            paint.shader = convert_radial_gradient(rg, fill.opacity, object_bbox)?;
+        }
+        usvg::Paint::Pattern(ref pattern) => {
+            let (patt_pix, patt_ts) =
+                render_pattern_pixmap(&pattern.borrow(), ctx, transform, object_bbox)?;
+
+            pattern_pixmap = patt_pix;
+            paint.shader = tiny_skia::Pattern::new(
+                pattern_pixmap.as_ref(),
+                tiny_skia::SpreadMode::Repeat,
+                tiny_skia::FilterQuality::Bicubic,
+                fill.opacity.get(),
+                patt_ts,
+            )
+        }
     }
+    paint.anti_alias = path.rendering_mode.use_shape_antialiasing();
+    paint.blend_mode = blend_mode;
 
-    let paint =
-        crate::paint_server::convert(&ufill.paint, ufill.opacity, object_bbox.to_non_zero_rect())?;
+    pixmap.fill_path(&path.data, &paint, rule, transform, None);
 
-    let path = FillPath {
-        paint,
-        rule,
-        anti_alias,
-        path,
-    };
-
-    Some((path, object_bbox, object_bbox))
+    Some(())
 }
 
-fn convert_stroke_path(
-    ustroke: &usvg::Stroke,
-    path: Rc<tiny_skia::Path>,
-    text_bbox: Option<tiny_skia::NonZeroRect>,
-    anti_alias: bool,
-) -> Option<(StrokePath, usvg::BBox, usvg::BBox)> {
-    let mut stroke = tiny_skia::Stroke {
-        width: ustroke.width.get(),
-        miter_limit: ustroke.miterlimit.get(),
-        line_cap: match ustroke.linecap {
-            usvg::LineCap::Butt => tiny_skia::LineCap::Butt,
-            usvg::LineCap::Round => tiny_skia::LineCap::Round,
-            usvg::LineCap::Square => tiny_skia::LineCap::Square,
-        },
-        line_join: match ustroke.linejoin {
-            usvg::LineJoin::Miter => tiny_skia::LineJoin::Miter,
-            usvg::LineJoin::MiterClip => tiny_skia::LineJoin::MiterClip,
-            usvg::LineJoin::Round => tiny_skia::LineJoin::Round,
-            usvg::LineJoin::Bevel => tiny_skia::LineJoin::Bevel,
-        },
-        dash: None,
-    };
+fn stroke_path(
+    path: &usvg::Path,
+    blend_mode: tiny_skia::BlendMode,
+    ctx: &Context,
+    object_bbox: tiny_skia::Rect,
+    transform: tiny_skia::Transform,
+    pixmap: &mut tiny_skia::PixmapMut,
+) -> Option<()> {
+    let stroke = path.stroke.as_ref()?;
+    let object_bbox = object_bbox.to_non_zero_rect();
 
-    // Zero-sized stroke path is not an error, because linecap round or square
-    // would produce the shape either way.
-    // TODO: Find a better way to handle it.
-    let object_bbox = usvg::BBox::from(path.bounds());
+    let pattern_pixmap;
+    let mut paint = tiny_skia::Paint::default();
+    match stroke.paint {
+        usvg::Paint::Color(c) => {
+            paint.set_color_rgba8(c.red, c.green, c.blue, stroke.opacity.to_u8());
+        }
+        usvg::Paint::LinearGradient(ref lg) => {
+            paint.shader = convert_linear_gradient(lg, stroke.opacity, object_bbox)?;
+        }
+        usvg::Paint::RadialGradient(ref rg) => {
+            paint.shader = convert_radial_gradient(rg, stroke.opacity, object_bbox)?;
+        }
+        usvg::Paint::Pattern(ref pattern) => {
+            let (patt_pix, patt_ts) =
+                render_pattern_pixmap(&pattern.borrow(), ctx, transform, object_bbox)?;
 
-    let mut complete_object_bbox = object_bbox;
-    if let Some(text_bbox) = text_bbox {
-        complete_object_bbox = complete_object_bbox.expand(usvg::BBox::from(text_bbox));
+            pattern_pixmap = patt_pix;
+            paint.shader = tiny_skia::Pattern::new(
+                pattern_pixmap.as_ref(),
+                tiny_skia::SpreadMode::Repeat,
+                tiny_skia::FilterQuality::Bicubic,
+                stroke.opacity.get(),
+                patt_ts,
+            )
+        }
     }
-    let paint = crate::paint_server::convert(
-        &ustroke.paint,
-        ustroke.opacity,
-        complete_object_bbox.to_non_zero_rect(),
+    paint.anti_alias = path.rendering_mode.use_shape_antialiasing();
+    paint.blend_mode = blend_mode;
+
+    pixmap.stroke_path(&path.data, &paint, &stroke.to_tiny_skia(), transform, None);
+
+    Some(())
+}
+
+fn convert_linear_gradient(
+    gradient: &usvg::LinearGradient,
+    opacity: usvg::Opacity,
+    object_bbox: Option<tiny_skia::NonZeroRect>,
+) -> Option<tiny_skia::Shader> {
+    let (mode, transform, points) = convert_base_gradient(gradient, opacity, object_bbox)?;
+
+    let shader = tiny_skia::LinearGradient::new(
+        (gradient.x1, gradient.y1).into(),
+        (gradient.x2, gradient.y2).into(),
+        points,
+        mode,
+        transform,
     )?;
 
-    if let Some(ref list) = ustroke.dasharray {
-        stroke.dash = tiny_skia::StrokeDash::new(list.clone(), ustroke.dashoffset);
-    }
+    Some(shader)
+}
 
-    // TODO: explain
-    // TODO: expand by stroke width for round/bevel joins
-    let stroked_path = path.stroke(&stroke, 1.0)?;
+fn convert_radial_gradient(
+    gradient: &usvg::RadialGradient,
+    opacity: usvg::Opacity,
+    object_bbox: Option<tiny_skia::NonZeroRect>,
+) -> Option<tiny_skia::Shader> {
+    let (mode, transform, points) = convert_base_gradient(gradient, opacity, object_bbox)?;
 
-    let mut layer_bbox = usvg::BBox::from(stroked_path.bounds());
-    if let Some(text_bbox) = text_bbox {
-        layer_bbox = layer_bbox.expand(usvg::BBox::from(text_bbox));
-    }
+    let shader = tiny_skia::RadialGradient::new(
+        (gradient.fx, gradient.fy).into(),
+        (gradient.cx, gradient.cy).into(),
+        gradient.r.get(),
+        points,
+        mode,
+        transform,
+    )?;
 
-    // TODO: dash beforehand
-    // TODO: preserve stroked path
+    Some(shader)
+}
 
-    let path = StrokePath {
-        paint,
-        stroke,
-        anti_alias,
-        path,
+fn convert_base_gradient(
+    gradient: &usvg::BaseGradient,
+    opacity: usvg::Opacity,
+    object_bbox: Option<tiny_skia::NonZeroRect>,
+) -> Option<(
+    tiny_skia::SpreadMode,
+    tiny_skia::Transform,
+    Vec<tiny_skia::GradientStop>,
+)> {
+    let mode = match gradient.spread_method {
+        usvg::SpreadMethod::Pad => tiny_skia::SpreadMode::Pad,
+        usvg::SpreadMethod::Reflect => tiny_skia::SpreadMode::Reflect,
+        usvg::SpreadMethod::Repeat => tiny_skia::SpreadMode::Repeat,
     };
 
-    Some((path, layer_bbox, object_bbox))
-}
+    let transform = if gradient.units == usvg::Units::ObjectBoundingBox {
+        let bbox =
+            object_bbox.log_none(|| log::warn!("Gradient on zero-sized shapes is not allowed."))?;
+        let ts = tiny_skia::Transform::from_bbox(bbox);
+        ts.pre_concat(gradient.transform)
+    } else {
+        gradient.transform
+    };
 
-pub fn render_fill_path(
-    path: &FillPath,
-    blend_mode: tiny_skia::BlendMode,
-    ctx: &Context,
-    transform: tiny_skia::Transform,
-    pixmap: &mut tiny_skia::PixmapMut,
-) -> Option<()> {
-    let pattern_pixmap;
-    let mut paint = tiny_skia::Paint::default();
-    match path.paint {
-        Paint::Shader(ref shader) => {
-            paint.shader = shader.clone(); // TODO: avoid clone
-        }
-        Paint::Pattern(ref pattern) => {
-            let (patt_pix, patt_ts) =
-                crate::paint_server::prepare_pattern_pixmap(pattern, ctx, transform)?;
-
-            pattern_pixmap = patt_pix;
-            paint.shader = tiny_skia::Pattern::new(
-                pattern_pixmap.as_ref(),
-                tiny_skia::SpreadMode::Repeat,
-                tiny_skia::FilterQuality::Bicubic,
-                pattern.opacity.get(),
-                patt_ts,
-            )
-        }
+    let mut points = Vec::with_capacity(gradient.stops.len());
+    for stop in &gradient.stops {
+        let alpha = stop.opacity * opacity;
+        let color = tiny_skia::Color::from_rgba8(
+            stop.color.red,
+            stop.color.green,
+            stop.color.blue,
+            alpha.to_u8(),
+        );
+        points.push(tiny_skia::GradientStop::new(stop.offset.get(), color))
     }
 
-    paint.anti_alias = path.anti_alias;
-    paint.blend_mode = blend_mode;
-
-    pixmap.fill_path(&path.path, &paint, path.rule, transform, None);
-
-    Some(())
+    Some((mode, transform, points))
 }
 
-pub fn render_stroke_path(
-    path: &StrokePath,
-    blend_mode: tiny_skia::BlendMode,
+fn render_pattern_pixmap(
+    pattern: &usvg::Pattern,
     ctx: &Context,
     transform: tiny_skia::Transform,
-    pixmap: &mut tiny_skia::PixmapMut,
-) -> Option<()> {
-    let pattern_pixmap;
-    let mut paint = tiny_skia::Paint::default();
-    match path.paint {
-        Paint::Shader(ref shader) => {
-            paint.shader = shader.clone(); // TODO: avoid clone
-        }
-        Paint::Pattern(ref pattern) => {
-            let (patt_pix, patt_ts) =
-                crate::paint_server::prepare_pattern_pixmap(pattern, ctx, transform)?;
+    object_bbox: Option<tiny_skia::NonZeroRect>,
+) -> Option<(tiny_skia::Pixmap, tiny_skia::Transform)> {
+    let content_transform =
+        if pattern.content_units == usvg::Units::ObjectBoundingBox && pattern.view_box.is_none() {
+            let bbox = object_bbox
+                .log_none(|| log::warn!("Pattern on zero-sized shapes is not allowed."))?;
 
-            pattern_pixmap = patt_pix;
-            paint.shader = tiny_skia::Pattern::new(
-                pattern_pixmap.as_ref(),
-                tiny_skia::SpreadMode::Repeat,
-                tiny_skia::FilterQuality::Bicubic,
-                pattern.opacity.get(),
-                patt_ts,
-            )
-        }
+            // No need to shift patterns.
+            tiny_skia::Transform::from_scale(bbox.width(), bbox.height())
+        } else {
+            tiny_skia::Transform::default()
+        };
+
+    let rect = if pattern.units == usvg::Units::ObjectBoundingBox {
+        let bbox =
+            object_bbox.log_none(|| log::warn!("Pattern on zero-sized shapes is not allowed."))?;
+
+        pattern.rect.bbox_transform(bbox)
+    } else {
+        pattern.rect
+    };
+
+    let (sx, sy) = {
+        let ts2 = transform.pre_concat(pattern.transform);
+        ts2.get_scale()
+    };
+
+    let img_size = tiny_skia::IntSize::from_wh(
+        (rect.width() * sx).round() as u32,
+        (rect.height() * sy).round() as u32,
+    )?;
+    let mut pixmap = tiny_skia::Pixmap::new(img_size.width(), img_size.height())?;
+
+    let mut transform = tiny_skia::Transform::from_scale(sx, sy);
+    if let Some(vbox) = pattern.view_box {
+        let ts = usvg::utils::view_box_to_transform(vbox.rect, vbox.aspect, rect.size());
+        transform = transform.pre_concat(ts);
     }
 
-    paint.anti_alias = path.anti_alias;
-    paint.blend_mode = blend_mode;
+    transform = transform.pre_concat(content_transform);
 
-    // TODO: fallback to a stroked path when possible
+    crate::render::render_nodes(&pattern.root, ctx, transform, None, &mut pixmap.as_mut());
 
-    pixmap.stroke_path(&path.path, &paint, &path.stroke, transform, None);
+    let mut ts = tiny_skia::Transform::default();
+    ts = ts.pre_concat(pattern.transform);
+    ts = ts.pre_translate(rect.x(), rect.y());
+    ts = ts.pre_scale(1.0 / sx, 1.0 / sy);
 
-    Some(())
+    Some((pixmap, ts))
 }

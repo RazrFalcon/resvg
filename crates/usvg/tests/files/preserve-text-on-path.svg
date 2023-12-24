@@ -1,0 +1,15 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- When converting text paths the actual text path element -->
+    <!-- will be discarded, so usvg needs to rewrite them. We need -->
+    <!-- to ensure that the ID is generated and referenced correctly. -->
+
+    <path id="pathForText1" d="M 30 100 A 40 30 20 1 1 160 100"
+          fill="none" stroke="gray"/>
+
+    <text id="text1" font-family="Noto Sans" font-size="24">
+        <textPath id="textPath1" xlink:href="#pathForText1">
+            abcdefghijklmnopqrstuvwxyz
+        </textPath>
+    </text>
+</svg>

@@ -13,7 +13,7 @@ use std::os::raw::c_char;
 use std::slice;
 
 use resvg::tiny_skia;
-use resvg::usvg::{self, NodeExt, TreeParsing};
+use resvg::usvg::{self, TreeParsing};
 #[cfg(feature = "text")]
 use resvg::usvg::{fontdb, TreeTextToPath};
 
@@ -537,6 +537,8 @@ pub extern "C" fn resvg_parse_tree_from_file(
         utree.convert_text(&raw_opt.fontdb);
     }
 
+    utree.calculate_bounding_boxes();
+
     let tree_box = Box::new(resvg_render_tree(utree));
     unsafe {
         *tree = Box::into_raw(tree_box);
@@ -578,6 +580,8 @@ pub extern "C" fn resvg_parse_tree_from_data(
     {
         utree.convert_text(&raw_opt.fontdb);
     }
+
+    utree.calculate_bounding_boxes();
 
     let tree_box = Box::new(resvg_render_tree(utree));
     unsafe {
@@ -667,7 +671,7 @@ pub extern "C" fn resvg_get_image_bbox(
     if let Some(r) = tree
         .0
         .root
-        .calculate_bbox()
+        .abs_bounding_box()
         .and_then(|r| r.to_non_zero_rect())
     {
         unsafe {
@@ -757,7 +761,7 @@ pub extern "C" fn resvg_get_node_transform(
     false
 }
 
-/// @brief Returns node's bounding box by ID.
+/// @brief Returns node's bounding box in canvas coordinates by ID.
 ///
 /// @param tree Render tree.
 /// @param id Node's ID. Must not be NULL.
@@ -770,6 +774,32 @@ pub extern "C" fn resvg_get_node_bbox(
     tree: *const resvg_render_tree,
     id: *const c_char,
     bbox: *mut resvg_rect,
+) -> bool {
+    get_node_bbox(tree, id, bbox, &|node| node.abs_bounding_box())
+}
+
+/// @brief Returns node's bounding box, including stroke, in canvas coordinates by ID.
+///
+/// @param tree Render tree.
+/// @param id Node's ID. Must not be NULL.
+/// @param bbox Node's bounding box.
+/// @return `false` if a node with such an ID does not exist
+/// @return `false` if ID isn't a UTF-8 string.
+/// @return `false` if ID is an empty string
+#[no_mangle]
+pub extern "C" fn resvg_get_node_stroke_bbox(
+    tree: *const resvg_render_tree,
+    id: *const c_char,
+    bbox: *mut resvg_rect,
+) -> bool {
+    get_node_bbox(tree, id, bbox, &|node| node.abs_stroke_bounding_box())
+}
+
+fn get_node_bbox(
+    tree: *const resvg_render_tree,
+    id: *const c_char,
+    bbox: *mut resvg_rect,
+    f: &dyn Fn(&usvg::Node) -> Option<usvg::Rect>,
 ) -> bool {
     let id = match cstr_to_str(id) {
         Some(v) => v,
@@ -791,7 +821,7 @@ pub extern "C" fn resvg_get_node_bbox(
 
     match tree.0.node_by_id(id) {
         Some(node) => {
-            if let Some(r) = node.calculate_bbox() {
+            if let Some(r) = f(node) {
                 unsafe {
                     *bbox = resvg_rect {
                         x: r.x(),
@@ -867,8 +897,7 @@ pub extern "C" fn resvg_render(
         unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
     let mut pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
 
-    let rtree = resvg::Tree::from_usvg(&tree.0);
-    rtree.render(transform.to_tiny_skia(), &mut pixmap);
+    resvg::render(&tree.0, transform.to_tiny_skia(), &mut pixmap)
 }
 
 /// @brief Renders a Node by ID onto the image.
@@ -913,12 +942,7 @@ pub extern "C" fn resvg_render_node(
             unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
         let mut pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
 
-        if let Some(rtree) = resvg::Tree::from_usvg_node(&node) {
-            rtree.render(transform.to_tiny_skia(), &mut pixmap);
-            true
-        } else {
-            false
-        }
+        resvg::render_node(node, transform.to_tiny_skia(), &mut pixmap).is_some()
     } else {
         log::warn!("A node with '{}' ID wasn't found.", id);
         false

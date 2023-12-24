@@ -1,0 +1,7 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     font-family="Noto Sans" font-size="26">
+    <text x="10" y="100">
+        <tspan rotate="25">Som</tspan>e <tspan rotate="10 50">lon</tspan>g
+        T<tspan rotate="-25 0">ext</tspan>
+    </text>
+</svg>

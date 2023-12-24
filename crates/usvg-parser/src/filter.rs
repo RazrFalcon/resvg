@@ -4,6 +4,7 @@
 
 //! A collection of SVG filters.
 
+use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
 use std::str::FromStr;
@@ -12,14 +13,13 @@ use strict_num::PositiveF32;
 use svgtypes::{Length, LengthUnit as Unit};
 use usvg_tree::filter::*;
 use usvg_tree::{
-    strict_num, ApproxZeroUlps, Color, Group, Node, NodeKind, NonZeroF32, NonZeroRect, Opacity,
-    Units,
+    strict_num, ApproxZeroUlps, Color, Group, Node, NonZeroF32, NonZeroRect, Opacity, Units,
 };
 
-use crate::converter::SvgColorExt;
+use crate::converter::{self, SvgColorExt};
 use crate::paint_server::{convert_units, resolve_number};
 use crate::svgtree::{AId, EId, FromValue, SvgNode};
-use crate::{converter, OptionLog};
+use crate::OptionLog;
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::filter::ColorInterpolation {
     fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
@@ -35,7 +35,7 @@ pub(crate) fn convert(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Result<Vec<Rc<Filter>>, ()> {
+) -> Result<Vec<SharedFilter>, ()> {
     let value = match node.attribute::<&str>(AId::Filter) {
         Some(v) => v,
         None => return Ok(Vec::new()),
@@ -44,36 +44,35 @@ pub(crate) fn convert(
     let mut has_invalid_urls = false;
     let mut filters = Vec::new();
 
-    let create_base_filter_func =
-        |kind, filters: &mut Vec<Rc<Filter>>, cache: &mut converter::Cache| {
-            // Filter functions, unlike `filter` elements, do not have a filter region.
-            // We're currently do not support an unlimited region, so we simply use a fairly large one.
-            // This if far from ideal, but good for now.
-            // TODO: Should be fixed eventually.
-            let rect = match kind {
-                Kind::DropShadow(_) | Kind::GaussianBlur(_) => {
-                    NonZeroRect::from_xywh(-0.5, -0.5, 2.0, 2.0).unwrap()
-                }
-                _ => NonZeroRect::from_xywh(-0.1, -0.1, 1.2, 1.2).unwrap(),
-            };
-
-            filters.push(Rc::new(Filter {
-                id: cache.gen_filter_id(),
-                units: Units::ObjectBoundingBox,
-                primitive_units: Units::UserSpaceOnUse,
-                rect,
-                primitives: vec![Primitive {
-                    x: None,
-                    y: None,
-                    width: None,
-                    height: None,
-                    // Unlike `filter` elements, filter functions use sRGB colors by default.
-                    color_interpolation: ColorInterpolation::SRGB,
-                    result: "result".to_string(),
-                    kind,
-                }],
-            }));
+    let create_base_filter_func = |kind, filters: &mut Vec<SharedFilter>| {
+        // Filter functions, unlike `filter` elements, do not have a filter region.
+        // We're currently do not support an unlimited region, so we simply use a fairly large one.
+        // This if far from ideal, but good for now.
+        // TODO: Should be fixed eventually.
+        let rect = match kind {
+            Kind::DropShadow(_) | Kind::GaussianBlur(_) => {
+                NonZeroRect::from_xywh(-0.5, -0.5, 2.0, 2.0).unwrap()
+            }
+            _ => NonZeroRect::from_xywh(-0.1, -0.1, 1.2, 1.2).unwrap(),
         };
+
+        filters.push(Rc::new(RefCell::new(Filter {
+            id: String::new(),
+            units: Units::ObjectBoundingBox,
+            primitive_units: Units::UserSpaceOnUse,
+            rect,
+            primitives: vec![Primitive {
+                x: None,
+                y: None,
+                width: None,
+                height: None,
+                // Unlike `filter` elements, filter functions use sRGB colors by default.
+                color_interpolation: ColorInterpolation::SRGB,
+                result: "result".to_string(),
+                kind,
+            }],
+        })));
+    };
 
     for func in svgtypes::FilterValueListParser::from(value) {
         let func = match func {
@@ -86,11 +85,9 @@ pub(crate) fn convert(
         };
 
         match func {
-            svgtypes::FilterValue::Blur(std_dev) => create_base_filter_func(
-                convert_blur_function(node, std_dev, state),
-                &mut filters,
-                cache,
-            ),
+            svgtypes::FilterValue::Blur(std_dev) => {
+                create_base_filter_func(convert_blur_function(node, std_dev, state), &mut filters)
+            }
             svgtypes::FilterValue::DropShadow {
                 color,
                 dx,
@@ -99,31 +96,30 @@ pub(crate) fn convert(
             } => create_base_filter_func(
                 convert_drop_shadow_function(node, color, dx, dy, std_dev, state),
                 &mut filters,
-                cache,
             ),
             svgtypes::FilterValue::Brightness(amount) => {
-                create_base_filter_func(convert_brightness_function(amount), &mut filters, cache)
+                create_base_filter_func(convert_brightness_function(amount), &mut filters)
             }
             svgtypes::FilterValue::Contrast(amount) => {
-                create_base_filter_func(convert_contrast_function(amount), &mut filters, cache)
+                create_base_filter_func(convert_contrast_function(amount), &mut filters)
             }
             svgtypes::FilterValue::Grayscale(amount) => {
-                create_base_filter_func(convert_grayscale_function(amount), &mut filters, cache)
+                create_base_filter_func(convert_grayscale_function(amount), &mut filters)
             }
             svgtypes::FilterValue::HueRotate(angle) => {
-                create_base_filter_func(convert_hue_rotate_function(angle), &mut filters, cache)
+                create_base_filter_func(convert_hue_rotate_function(angle), &mut filters)
             }
             svgtypes::FilterValue::Invert(amount) => {
-                create_base_filter_func(convert_invert_function(amount), &mut filters, cache)
+                create_base_filter_func(convert_invert_function(amount), &mut filters)
             }
             svgtypes::FilterValue::Opacity(amount) => {
-                create_base_filter_func(convert_opacity_function(amount), &mut filters, cache)
+                create_base_filter_func(convert_opacity_function(amount), &mut filters)
             }
             svgtypes::FilterValue::Sepia(amount) => {
-                create_base_filter_func(convert_sepia_function(amount), &mut filters, cache)
+                create_base_filter_func(convert_sepia_function(amount), &mut filters)
             }
             svgtypes::FilterValue::Saturate(amount) => {
-                create_base_filter_func(convert_saturate_function(amount), &mut filters, cache)
+                create_base_filter_func(convert_saturate_function(amount), &mut filters)
             }
             svgtypes::FilterValue::Url(url) => {
                 if let Some(link) = node.document().element_by_id(url) {
@@ -156,7 +152,7 @@ fn convert_url(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Result<Option<Rc<Filter>>, ()> {
+) -> Result<Option<SharedFilter>, ()> {
     if let Some(filter) = cache.filters.get(node.element_id()) {
         return Ok(Some(filter.clone()));
     }
@@ -212,13 +208,13 @@ fn convert_url(
         return Err(());
     }
 
-    let filter = Rc::new(Filter {
+    let filter = Rc::new(RefCell::new(Filter {
         id: node.element_id().to_string(),
         units,
         primitive_units,
         rect,
         primitives,
-    });
+    }));
 
     cache
         .filters
@@ -700,14 +696,26 @@ fn convert_image(fe: SvgNode, state: &converter::State, cache: &mut converter::C
     if let Some(node) = fe.attribute::<SvgNode>(AId::Href) {
         let mut state = state.clone();
         state.fe_image_link = true;
-        let mut root = Node::new(NodeKind::Group(Group::default()));
+        let mut root = Group::default();
         crate::converter::convert_element(node, &state, cache, &mut root);
-        return if let Some(node) = root.first_child() {
-            node.detach(); // drops `root` node
+        return if root.has_children() {
+            // Transfer node id from group's child to the group itself if needed.
+            if let Some(Node::Group(ref mut g)) = root.children.first_mut() {
+                if let Some(child2) = g.children.first_mut() {
+                    g.id = child2.id().to_string();
+                    match child2 {
+                        Node::Group(ref mut g2) => g2.id.clear(),
+                        Node::Path(ref mut path) => path.id.clear(),
+                        Node::Image(ref mut image) => image.id.clear(),
+                        Node::Text(ref mut text) => text.id.clear(),
+                    }
+                }
+            }
+
             Kind::Image(Image {
                 aspect,
                 rendering_mode,
-                data: ImageKind::Use(node),
+                data: ImageKind::Use(Box::new(root)),
             })
         } else {
             create_dummy_primitive()

@@ -91,6 +91,7 @@ OPTIONS:
                                     Refer to the explanation of the '--default-width'
                                     option. [values: 1..4294967295 (inclusive)] [default: 100]
 
+  --preserve-text                   Do not convert text into paths.
   --id-prefix                       Adds a prefix to each ID attribute
   --indent INDENT                   Sets the XML nodes indent
                                     [values: none, 0, 1, 2, 3, 4, tabs] [default: 4]
@@ -128,6 +129,7 @@ struct Args {
     font_files: Vec<PathBuf>,
     font_dirs: Vec<PathBuf>,
     skip_system_fonts: bool,
+    preserve_text: bool,
     list_fonts: bool,
     default_width: u32,
     default_height: u32,
@@ -187,6 +189,7 @@ fn collect_args() -> Result<Args, pico_args::Error> {
         font_files: input.values_from_str("--use-font-file")?,
         font_dirs: input.values_from_str("--use-fonts-dir")?,
         skip_system_fonts: input.contains("--skip-system-fonts"),
+        preserve_text: input.contains("--preserve-text"),
         list_fonts: input.contains("--list-fonts"),
         default_width: input
             .opt_value_from_fn("--default-width", parse_length)?
@@ -426,7 +429,9 @@ fn process(args: Args) -> Result<(), String> {
     }?;
 
     let mut tree = usvg_tree::Tree::from_data(&input_svg, &re_opt).map_err(|e| format!("{}", e))?;
-    tree.convert_text(&fontdb);
+    if !args.preserve_text {
+        tree.convert_text(&fontdb);
+    }
 
     let xml_opt = usvg::XmlOptions {
         id_prefix: args.id_prefix,

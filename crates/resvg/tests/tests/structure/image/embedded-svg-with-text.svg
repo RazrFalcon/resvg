@@ -1,0 +1,8 @@
+<svg id="svg1" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Embedded SVG with text</title>
+
+    <image id="image1" x="8" y="8" width="64" height="64" xlink:href="data:image/svg+xml;base64,PHN2ZyBpZD0ic3ZnMSIgdmlld0JveD0iMCAwIDIwMCAyMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKICAgICBmb250LWZhbWlseT0iTm90byBTYW5zIiBmb250LXNpemU9IjY0Ij4KICAgIDx0aXRsZT5TaW1wbGUgY2FzZTwvdGl0bGU+CgogICAgPHBhdGggaWQ9ImNyb3NzaGFpciIgZD0iTSAyMCAxMDAgTCAxODAgMTAwIE0gMTAwIDIwIEwgMTAwIDE4MCIKICAgICAgICAgIHN0cm9rZT0iZ3JheSIgc3Ryb2tlLXdpZHRoPSIwLjUiLz4KCiAgICA8dGV4dCBpZD0idGV4dDEiIHg9IjMyIiB5PSIxMDAiPlRleHQ8L3RleHQ+CgogICAgPCEtLSBpbWFnZSBmcmFtZSAtLT4KICAgIDxyZWN0IGlkPSJmcmFtZSIgeD0iMSIgeT0iMSIgd2lkdGg9IjE5OCIgaGVpZ2h0PSIxOTgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siLz4KPC9zdmc+Cg=="/>
+
+    <rect id="frame" x="1" y="1" width="78" height="78" fill="none" stroke="black"/>
+</svg>

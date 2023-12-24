@@ -1,0 +1,8 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <pattern id="patt1" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+            <text xml:space="preserve"><tspan y="15"><tspan font-family="Times New Roman" font-size="12" fill="#000000" stroke="none">H</tspan></tspan></text>
+        </pattern>
+    </defs>
+    <path id="rect3" fill="url(#patt1)" stroke="none" d="M 0 0 L 200 0 L 200 200 L 0 200 Z"/>
+</svg>

@@ -1,0 +1,9 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- Make sure ID prefix is written correctly for various filters. -->
+    <rect id="rect1" x="20" y="20" width="160" height="160" fill="seagreen" filter="blur(4)"/>
+    <rect id="rect2" x="20" y="20" width="160" height="160" fill="seagreen" filter="blur(6) grayscale()"/>
+    <filter id="filter1">
+        <feGaussianBlur stdDeviation="4"/>
+    </filter>
+    <rect id="rect3" x="20" y="20" width="160" height="160" fill="seagreen" filter="url(#filter1)"/>
+</svg>

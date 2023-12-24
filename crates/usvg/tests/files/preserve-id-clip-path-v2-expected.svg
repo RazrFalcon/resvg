@@ -1,0 +1,13 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <clipPath id="my-clip">
+            <path id="path1" fill="#000000" clip-rule="evenodd" stroke="none" clip-path="url(#my-clip-nested)" d="M 100 15 L 150 175 L 20 75 L 180 75 L 50 175 Z"/>
+        </clipPath>
+        <clipPath id="my-clip-nested">
+            <path id="circle1" fill="#000000" stroke="none" d="M 160 100 C 160 133.1371 133.1371 160 100 160 C 66.8629 160 40 133.1371 40 100 C 40 66.8629 66.8629 40 100 40 C 133.1371 40 160 66.8629 160 100 Z"/>
+        </clipPath>
+    </defs>
+    <g clip-path="url(#my-clip)">
+        <path id="rect1" fill="#008000" stroke="none" d="M 0 0 L 200 0 L 200 200 L 0 200 Z"/>
+    </g>
+</svg>

@@ -2,16 +2,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::collections::{HashMap, HashSet};
-use std::hash::{Hash, Hasher};
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::str::FromStr;
 
-use svgtypes::{Length, LengthUnit as Unit};
+use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind, TransformOrigin};
 use usvg_tree::*;
 
 use crate::svgtree::{self, AId, EId, FromValue, SvgNode};
-use crate::units;
+use crate::units::{self, convert_length};
 use crate::{Error, Options};
 
 #[derive(Clone)]
@@ -32,46 +31,10 @@ pub struct State<'a> {
 
 #[derive(Default)]
 pub struct Cache {
-    pub clip_paths: HashMap<String, Rc<ClipPath>>,
-    pub masks: HashMap<String, Rc<Mask>>,
-    pub filters: HashMap<String, Rc<usvg_tree::filter::Filter>>,
+    pub clip_paths: HashMap<String, SharedClipPath>,
+    pub masks: HashMap<String, SharedMask>,
+    pub filters: HashMap<String, filter::SharedFilter>,
     pub paint: HashMap<String, Paint>,
-
-    // used for ID generation
-    pub all_ids: HashSet<u64>,
-    pub clip_path_index: usize,
-    pub filter_index: usize,
-}
-
-impl Cache {
-    pub fn gen_clip_path_id(&mut self) -> String {
-        loop {
-            self.clip_path_index += 1;
-            let new_id = format!("clipPath{}", self.clip_path_index);
-            let new_hash = string_hash(&new_id);
-            if !self.all_ids.contains(&new_hash) {
-                return new_id;
-            }
-        }
-    }
-
-    pub fn gen_filter_id(&mut self) -> String {
-        loop {
-            self.filter_index += 1;
-            let new_id = format!("filter{}", self.filter_index);
-            let new_hash = string_hash(&new_id);
-            if !self.all_ids.contains(&new_hash) {
-                return new_id;
-            }
-        }
-    }
-}
-
-// TODO: is there a simpler way?
-fn string_hash(s: &str) -> u64 {
-    let mut h = std::collections::hash_map::DefaultHasher::new();
-    s.hash(&mut h);
-    h.finish()
 }
 
 impl<'a, 'input: 'a> SvgNode<'a, 'input> {
@@ -195,7 +158,7 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
     let mut tree = Tree {
         size,
         view_box,
-        root: Node::new(NodeKind::Group(Group::default())),
+        root: Group::default(),
     };
 
     if !svg.is_visible_element(opt) {
@@ -214,21 +177,12 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
     };
 
     let mut cache = Cache::default();
-    for node in svg_doc.descendants() {
-        if let Some(tag) = node.tag_name() {
-            if matches!(tag, EId::Filter | EId::ClipPath) {
-                if !node.element_id().is_empty() {
-                    cache.all_ids.insert(string_hash(node.element_id()));
-                }
-            }
-        }
-    }
-
     convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
 
-    remove_empty_groups(&mut tree);
+    tree.calculate_abs_transforms();
 
     if restore_viewbox {
+        tree.calculate_bounding_boxes();
         calculate_svg_bbox(&mut tree);
     }
 
@@ -307,17 +261,7 @@ fn resolve_svg_size(svg: &SvgNode, opt: &Options) -> (Result<Size, Error>, bool)
 fn calculate_svg_bbox(tree: &mut Tree) {
     let mut right = 0.0;
     let mut bottom = 0.0;
-
-    for node in tree.root.descendants() {
-        if let Some(bbox) = node.calculate_bbox() {
-            if bbox.right() > right {
-                right = bbox.right();
-            }
-            if bbox.bottom() > bottom {
-                bottom = bbox.bottom();
-            }
-        }
-    }
+    calculate_svg_bbox_impl(&tree.root, &mut right, &mut bottom);
 
     if let Some(rect) = NonZeroRect::from_xywh(0.0, 0.0, right, bottom) {
         tree.view_box.rect = rect;
@@ -328,12 +272,29 @@ fn calculate_svg_bbox(tree: &mut Tree) {
     }
 }
 
+fn calculate_svg_bbox_impl(parent: &Group, right: &mut f32, bottom: &mut f32) {
+    for node in &parent.children {
+        if let Node::Group(ref group) = node {
+            calculate_svg_bbox_impl(group, right, bottom);
+        }
+
+        if let Some(bbox) = node.abs_bounding_box() {
+            if bbox.right() > *right {
+                *right = bbox.right();
+            }
+            if bbox.bottom() > *bottom {
+                *bottom = bbox.bottom();
+            }
+        }
+    }
+}
+
 #[inline(never)]
 pub(crate) fn convert_children(
     parent_node: SvgNode,
     state: &State,
     cache: &mut Cache,
-    parent: &mut Node,
+    parent: &mut Group,
 ) {
     for node in parent_node.children() {
         convert_element(node, state, cache, parent);
@@ -341,38 +302,48 @@ pub(crate) fn convert_children(
 }
 
 #[inline(never)]
-pub(crate) fn convert_element(
-    node: SvgNode,
-    state: &State,
-    cache: &mut Cache,
-    parent: &mut Node,
-) -> Option<Node> {
-    let tag_name = node.tag_name()?;
+pub(crate) fn convert_element(node: SvgNode, state: &State, cache: &mut Cache, parent: &mut Group) {
+    let tag_name = match node.tag_name() {
+        Some(v) => v,
+        None => return,
+    };
 
     if !tag_name.is_graphic() && !matches!(tag_name, EId::G | EId::Switch | EId::Svg) {
-        return None;
+        return;
     }
 
     if !node.is_visible_element(state.opt) {
-        return None;
+        return;
     }
 
     if tag_name == EId::Use {
         crate::use_node::convert(node, state, cache, parent);
-        return None;
+        return;
     }
 
     if tag_name == EId::Switch {
         crate::switch::convert(node, state, cache, parent);
-        return None;
+        return;
     }
 
-    let parent = &mut match convert_group(node, state, false, cache, parent) {
-        GroupKind::Create(g) => g,
-        GroupKind::Skip => parent.clone(),
-        GroupKind::Ignore => return None,
-    };
+    match convert_group(node, state, false, cache) {
+        GroupKind::Create(mut g) => {
+            convert_element_impl(tag_name, node, state, cache, &mut g);
+            parent.children.push(Node::Group(Box::new(g)));
+        }
+        GroupKind::Skip => convert_element_impl(tag_name, node, state, cache, parent),
+        GroupKind::Ignore => {}
+    }
+}
 
+#[inline(never)]
+fn convert_element_impl(
+    tag_name: EId,
+    node: SvgNode,
+    state: &State,
+    cache: &mut Cache,
+    parent: &mut Group,
+) {
     match tag_name {
         EId::Rect
         | EId::Circle
@@ -404,8 +375,6 @@ pub(crate) fn convert_element(
         }
         _ => {}
     }
-
-    Some(parent.clone())
 }
 
 // `clipPath` can have only shape and `text` children.
@@ -417,7 +386,7 @@ pub(crate) fn convert_clip_path_elements(
     clip_node: SvgNode,
     state: &State,
     cache: &mut Cache,
-    parent: &mut Node,
+    parent: &mut Group,
 ) {
     for node in clip_node.children() {
         let tag_name = match node.tag_name() {
@@ -438,24 +407,38 @@ pub(crate) fn convert_clip_path_elements(
             continue;
         }
 
-        let parent = &mut match convert_group(node, state, false, cache, parent) {
-            GroupKind::Create(g) => g,
-            GroupKind::Skip => parent.clone(),
+        match convert_group(node, state, false, cache) {
+            GroupKind::Create(mut g) => {
+                convert_clip_path_elements_impl(tag_name, node, state, cache, &mut g);
+                parent.children.push(Node::Group(Box::new(g)));
+            }
+            GroupKind::Skip => {
+                convert_clip_path_elements_impl(tag_name, node, state, cache, parent)
+            }
             GroupKind::Ignore => continue,
-        };
+        }
+    }
+}
 
-        match tag_name {
-            EId::Rect | EId::Circle | EId::Ellipse | EId::Polyline | EId::Polygon | EId::Path => {
-                if let Some(path) = crate::shapes::convert(node, state) {
-                    convert_path(node, path, state, cache, parent);
-                }
+#[inline(never)]
+fn convert_clip_path_elements_impl(
+    tag_name: EId,
+    node: SvgNode,
+    state: &State,
+    cache: &mut Cache,
+    parent: &mut Group,
+) {
+    match tag_name {
+        EId::Rect | EId::Circle | EId::Ellipse | EId::Polyline | EId::Polygon | EId::Path => {
+            if let Some(path) = crate::shapes::convert(node, state) {
+                convert_path(node, path, state, cache, parent);
             }
-            EId::Text => {
-                crate::text::convert(node, state, cache, parent);
-            }
-            _ => {
-                log::warn!("'{}' is no a valid 'clip-path' child.", tag_name);
-            }
+        }
+        EId::Text => {
+            crate::text::convert(node, state, cache, parent);
+        }
+        _ => {
+            log::warn!("'{}' is no a valid 'clip-path' child.", tag_name);
         }
     }
 }
@@ -485,7 +468,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for Isolation {
 #[derive(Debug)]
 pub enum GroupKind {
     /// Creates a new group.
-    Create(Node),
+    Create(Group),
     /// Skips an existing group, but processes its children.
     Skip,
     /// Skips an existing group and all its children.
@@ -498,7 +481,6 @@ pub(crate) fn convert_group(
     state: &State,
     force: bool,
     cache: &mut Cache,
-    parent: &mut Node,
 ) -> GroupKind {
     // A `clipPath` child cannot have an opacity.
     let opacity = if state.parent_clip_path.is_none() {
@@ -566,7 +548,7 @@ pub(crate) fn convert_group(
         filters
     };
 
-    let transform: Transform = node.attribute(AId::Transform).unwrap_or_default();
+    let transform = node.resolve_transform(AId::Transform, state);
     let blend_mode: BlendMode = node.attribute(AId::MixBlendMode).unwrap_or_default();
     let isolation: Isolation = node.attribute(AId::Isolation).unwrap_or_default();
     let isolate = isolation == Isolation::Isolate;
@@ -591,16 +573,21 @@ pub(crate) fn convert_group(
             String::new()
         };
 
-        let g = parent.append_kind(NodeKind::Group(Group {
+        let g = Group {
             id,
             transform,
+            abs_transform: Transform::identity(),
             opacity,
             blend_mode,
             isolate,
             clip_path,
             mask,
             filters,
-        }));
+            bounding_box: None,
+            stroke_bounding_box: None,
+            layer_bounding_box: None,
+            children: Vec::new(),
+        };
 
         GroupKind::Create(g)
     } else {
@@ -608,50 +595,12 @@ pub(crate) fn convert_group(
     }
 }
 
-fn remove_empty_groups(tree: &mut Tree) {
-    fn rm(parent: Node) -> bool {
-        let mut changed = false;
-
-        let mut curr_node = parent.first_child();
-        while let Some(node) = curr_node {
-            curr_node = node.next_sibling();
-
-            let is_g = if let NodeKind::Group(ref g) = *node.borrow() {
-                // Skip empty groups when they do not have a `filter` property.
-                // The `filter` property can be set on empty groups. For example:
-                //
-                // <filter id="filter1" filterUnits="userSpaceOnUse"
-                //         x="20" y="20" width="160" height="160">
-                //   <feFlood flood-color="green"/>
-                // </filter>
-                // <g filter="url(#filter1)"/>
-                g.filters.is_empty()
-            } else {
-                false
-            };
-
-            if is_g && !node.has_children() {
-                node.detach();
-                changed = true;
-            } else {
-                if rm(node) {
-                    changed = true;
-                }
-            }
-        }
-
-        changed
-    }
-
-    while rm(tree.root.clone()) {}
-}
-
 fn convert_path(
     node: SvgNode,
     path: Rc<tiny_skia_path::Path>,
     state: &State,
     cache: &mut Cache,
-    parent: &mut Node,
+    parent: &mut Group,
 ) {
     debug_assert!(path.len() >= 2);
     if path.len() < 2 {
@@ -671,14 +620,17 @@ fn convert_path(
         node.find_attribute(AId::PaintOrder).unwrap_or_default();
     let paint_order = svg_paint_order_to_usvg(raw_paint_order);
 
-    // If a path doesn't have a fill or a stroke than it's invisible.
+    // If a path doesn't have a fill or a stroke then it's invisible.
     // By setting `visibility` to `hidden` we are disabling rendering of this path.
     if fill.is_none() && stroke.is_none() {
         visibility = Visibility::Hidden;
     }
 
-    let mut markers_group = None;
+    let mut markers_node = None;
     if crate::marker::is_valid(node) && visibility == Visibility::Visible {
+        let mut marker = Group::default();
+        crate::marker::convert(node, &path, state, cache, &mut marker);
+        markers_node = Some(marker);
         let mut g = parent.append_kind(NodeKind::Group(Group::default()));
         let mut marker_state = state.clone();
         marker_state.context_fill = fill.clone();
@@ -694,23 +646,66 @@ fn convert_path(
         String::new()
     };
 
-    parent.append_kind(NodeKind::Path(Path {
+    let path = Path {
         id,
         visibility,
         fill,
         stroke,
         paint_order,
         rendering_mode,
-        text_bbox: None,
         data: path,
-    }));
+        abs_transform: Transform::default(),
+        bounding_box: None,
+        stroke_bounding_box: None,
+    };
 
-    if raw_paint_order.order[2] == svgtypes::PaintOrderKind::Markers {
-        // Insert markers group after `path`.
-        if let Some(g) = markers_group {
-            g.detach();
-            parent.append(g);
+    match raw_paint_order.order {
+        [PaintOrderKind::Markers, _, _] => {
+            if let Some(markers_node) = markers_node {
+                parent.children.push(Node::Group(Box::new(markers_node)));
+            }
+
+            parent.children.push(Node::Path(Box::new(path.clone())));
         }
+        [first, PaintOrderKind::Markers, last] => {
+            append_single_paint_path(first, &path, parent);
+
+            if let Some(markers_node) = markers_node {
+                parent.children.push(Node::Group(Box::new(markers_node)));
+            }
+
+            append_single_paint_path(last, &path, parent);
+        }
+        [_, _, PaintOrderKind::Markers] => {
+            parent.children.push(Node::Path(Box::new(path.clone())));
+
+            if let Some(markers_node) = markers_node {
+                parent.children.push(Node::Group(Box::new(markers_node)));
+            }
+        }
+        _ => parent.children.push(Node::Path(Box::new(path.clone()))),
+    }
+}
+
+fn append_single_paint_path(paint_order_kind: PaintOrderKind, path: &Path, parent: &mut Group) {
+    match paint_order_kind {
+        PaintOrderKind::Fill => {
+            if path.fill.is_some() {
+                let mut fill_path = path.clone();
+                fill_path.stroke = None;
+                fill_path.id = String::new();
+                parent.children.push(Node::Path(Box::new(fill_path)));
+            }
+        }
+        PaintOrderKind::Stroke => {
+            if path.stroke.is_some() {
+                let mut stroke_path = path.clone();
+                stroke_path.fill = None;
+                stroke_path.id = String::new();
+                parent.children.push(Node::Path(Box::new(stroke_path)));
+            }
+        }
+        _ => {}
     }
 }
 
@@ -721,5 +716,35 @@ pub fn svg_paint_order_to_usvg(order: svgtypes::PaintOrder) -> PaintOrder {
             PaintOrder::StrokeAndFill
         }
         _ => PaintOrder::FillAndStroke,
+    }
+}
+
+impl SvgNode<'_, '_> {
+    pub(crate) fn resolve_transform(&self, transform_aid: AId, state: &State) -> Transform {
+        let mut transform: Transform = self.attribute(transform_aid).unwrap_or_default();
+        let transform_origin: Option<TransformOrigin> = self.attribute(AId::TransformOrigin);
+
+        if let Some(transform_origin) = transform_origin {
+            let dx = convert_length(
+                transform_origin.x_offset,
+                *self,
+                AId::Width,
+                Units::UserSpaceOnUse,
+                state,
+            );
+            let dy = convert_length(
+                transform_origin.y_offset,
+                *self,
+                AId::Height,
+                Units::UserSpaceOnUse,
+                state,
+            );
+            transform = Transform::default()
+                .pre_translate(dx, dy)
+                .pre_concat(transform)
+                .pre_translate(-dx, -dy);
+        }
+
+        transform
     }
 }

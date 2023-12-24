@@ -1,10 +1,10 @@
 [package]
 name = "usvg-parser"
-version = "0.36.0"
+version = "0.37.0"
 authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg"]
 license = "MPL-2.0"
-edition = "2018"
+edition = "2021"
 description = "An SVG parser used by usvg."
 categories = ["multimedia::images"]
 repository = "https://github.com/RazrFalcon/resvg"
@@ -19,8 +19,8 @@ flate2 = { version = "1.0", default-features = false, features = ["rust_backend"
 imagesize = "0.12" # raster images size detection
 kurbo = "0.9" # Bezier curves utils
 log = "0.4"
-roxmltree = "0.18"
+roxmltree = "0.19"
 simplecss = "0.2"
 siphasher = "0.3" # perfect hash implementation
-svgtypes = {git = "https://github.com/RazrFalcon/svgtypes"}
-usvg-tree = { path = "../usvg-tree", version = "0.36.0" }
+svgtypes = "0.13"
+usvg-tree = { path = "../usvg-tree", version = "0.37.0" }

@@ -83,11 +83,26 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::FontStyle {
     }
 }
 
+/// A text character position.
+///
+/// _Character_ is a Unicode codepoint.
+#[derive(Clone, Copy, Debug)]
+struct CharacterPosition {
+    /// An absolute X axis position.
+    x: Option<f32>,
+    /// An absolute Y axis position.
+    y: Option<f32>,
+    /// A relative X axis offset.
+    dx: Option<f32>,
+    /// A relative Y axis offset.
+    dy: Option<f32>,
+}
+
 pub(crate) fn convert(
     text_node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-    parent: &mut Node,
+    parent: &mut Group,
 ) {
     let pos_list = resolve_positions_list(text_node, state);
     let rotate_list = resolve_rotate_list(text_node);
@@ -109,12 +124,17 @@ pub(crate) fn convert(
     let text = Text {
         id,
         rendering_mode,
-        positions: pos_list,
+        dx: pos_list.iter().map(|v| v.dx.unwrap_or(0.0)).collect(),
+        dy: pos_list.iter().map(|v| v.dy.unwrap_or(0.0)).collect(),
         rotate: rotate_list,
         writing_mode,
         chunks,
+        abs_transform: Transform::default(),
+        bounding_box: None,
+        stroke_bounding_box: None,
+        flattened: None,
     };
-    parent.append_kind(NodeKind::Text(text));
+    parent.children.push(Node::Text(Box::new(text)));
 }
 
 struct IterState {
@@ -139,20 +159,12 @@ fn collect_text_chunks(
         chunks: Vec::new(),
     };
 
-    collect_text_chunks_impl(
-        text_node,
-        text_node,
-        pos_list,
-        state,
-        cache,
-        &mut iter_state,
-    );
+    collect_text_chunks_impl(text_node, pos_list, state, cache, &mut iter_state);
 
     iter_state.chunks
 }
 
 fn collect_text_chunks_impl(
-    text_node: SvgNode,
     parent: SvgNode,
     pos_list: &[CharacterPosition],
     state: &converter::State,
@@ -184,7 +196,7 @@ fn collect_text_chunks_impl(
                 iter_state.split_chunk = true;
             }
 
-            collect_text_chunks_impl(text_node, child, pos_list, state, cache, iter_state);
+            collect_text_chunks_impl(child, pos_list, state, cache, iter_state);
 
             iter_state.text_flow = TextFlow::Linear;
 
@@ -260,7 +272,7 @@ fn collect_text_chunks_impl(
             font_size,
             small_caps: parent.find_attribute::<&str>(AId::FontVariant) == Some("small-caps"),
             apply_kerning,
-            decoration: resolve_decoration(text_node, parent, state, cache),
+            decoration: resolve_decoration(parent, state, cache),
             visibility: parent.find_attribute(AId::Visibility).unwrap_or_default(),
             dominant_baseline,
             alignment_baseline: parent
@@ -337,9 +349,10 @@ fn resolve_text_flow(node: SvgNode, state: &converter::State) -> Option<TextFlow
     let path = crate::shapes::convert(linked_node, state)?;
 
     // The reference path's transform needs to be applied
-    let path = if let Some(node_transform) = linked_node.attribute::<Transform>(AId::Transform) {
+    let transform = linked_node.resolve_transform(AId::Transform, state);
+    let path = if !transform.is_identity() {
         let mut path_copy = path.as_ref().clone();
-        path_copy = path_copy.transform(node_transform)?;
+        path_copy = path_copy.transform(transform)?;
         Rc::new(path_copy)
     } else {
         path
@@ -355,7 +368,12 @@ fn resolve_text_flow(node: SvgNode, state: &converter::State) -> Option<TextFlow
         node.resolve_length(AId::StartOffset, state, 0.0)
     };
 
-    Some(TextFlow::Path(Rc::new(TextPath { start_offset, path })))
+    let id = linked_node.element_id().to_string();
+    Some(TextFlow::Path(Rc::new(TextPath {
+        id,
+        start_offset,
+        path,
+    })))
 }
 
 fn convert_font(node: SvgNode, state: &converter::State) -> Font {
@@ -611,73 +629,55 @@ fn resolve_rotate_list(text_node: SvgNode) -> Vec<f32> {
 }
 
 /// Resolves node's `text-decoration` property.
-///
-/// `text` and `tspan` can point to the same node.
 fn resolve_decoration(
-    text_node: SvgNode,
     tspan: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
 ) -> TextDecoration {
-    // TODO: explain the algorithm
-
-    let text_dec = conv_text_decoration(text_node);
-    let tspan_dec = conv_text_decoration2(tspan);
-
-    let mut gen_style = |in_tspan: bool, in_text: bool| {
-        let n = if in_tspan {
-            tspan
-        } else if in_text {
-            text_node
+    // Checks if a decoration is present in a single node.
+    fn find_decoration(node: SvgNode, value: &str) -> bool {
+        if let Some(str_value) = node.attribute::<&str>(AId::TextDecoration) {
+            str_value.split(' ').any(|v| v == value)
         } else {
+            false
+        }
+    }
+
+    // The algorithm is as follows: First, we check whether the given text decoration appears in ANY
+    // ancestor, i.e. it can also appear in ancestors outside of the <text> element. If the text
+    // decoration is declared somewhere, it means that this tspan will have it. However, we still
+    // need to find the corresponding fill/stroke for it. To do this, we iterate through all
+    // ancestors (i.e. tspans) until we find the text decoration declared. If not, we will
+    // stop at latest at the text node, and use its fill/stroke.
+    let mut gen_style = |text_decoration: &str| {
+        if !tspan
+            .ancestors()
+            .any(|n| find_decoration(n, text_decoration))
+        {
             return None;
-        };
+        }
+
+        let mut fill_node = None;
+        let mut stroke_node = None;
+
+        for node in tspan.ancestors() {
+            if find_decoration(node, text_decoration) || node.tag_name() == Some(EId::Text) {
+                fill_node = fill_node.map_or(Some(node), Some);
+                stroke_node = stroke_node.map_or(Some(node), Some);
+                break;
+            }
+        }
 
         Some(TextDecorationStyle {
-            fill: style::resolve_fill(n, true, state, cache),
-            stroke: style::resolve_stroke(n, true, state, cache),
+            fill: fill_node.and_then(|node| style::resolve_fill(node, true, state, cache)),
+            stroke: stroke_node.and_then(|node| style::resolve_stroke(node, true, state, cache)),
         })
     };
 
     TextDecoration {
-        underline: gen_style(tspan_dec.has_underline, text_dec.has_underline),
-        overline: gen_style(tspan_dec.has_overline, text_dec.has_overline),
-        line_through: gen_style(tspan_dec.has_line_through, text_dec.has_line_through),
-    }
-}
-
-struct TextDecorationTypes {
-    has_underline: bool,
-    has_overline: bool,
-    has_line_through: bool,
-}
-
-/// Resolves the `text` node's `text-decoration` property.
-fn conv_text_decoration(text_node: SvgNode) -> TextDecorationTypes {
-    fn find_decoration(node: SvgNode, value: &str) -> bool {
-        node.ancestors().any(|n| {
-            if let Some(str_value) = n.attribute::<&str>(AId::TextDecoration) {
-                str_value.split(' ').any(|v| v == value)
-            } else {
-                false
-            }
-        })
-    }
-
-    TextDecorationTypes {
-        has_underline: find_decoration(text_node, "underline"),
-        has_overline: find_decoration(text_node, "overline"),
-        has_line_through: find_decoration(text_node, "line-through"),
-    }
-}
-
-/// Resolves the default `text-decoration` property.
-fn conv_text_decoration2(tspan: SvgNode) -> TextDecorationTypes {
-    let s = tspan.attribute(AId::TextDecoration);
-    TextDecorationTypes {
-        has_underline: s == Some("underline"),
-        has_overline: s == Some("overline"),
-        has_line_through: s == Some("line-through"),
+        underline: gen_style("underline"),
+        overline: gen_style("overline"),
+        line_through: gen_style("line-through"),
     }
 }
 

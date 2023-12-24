@@ -6,7 +6,8 @@ use std::rc::Rc;
 
 use strict_num::NonZeroPositiveF32;
 
-use crate::{Fill, PaintOrder, Stroke, TextRendering, Visibility};
+use crate::{Fill, Group, Paint, PaintOrder, Stroke, TextRendering, Visibility};
+use tiny_skia_path::{NonZeroRect, Rect, Transform};
 
 /// A font stretch property.
 #[allow(missing_docs)]
@@ -238,6 +239,11 @@ impl Default for TextAnchor {
 /// A path used by text-on-path.
 #[derive(Clone, Debug)]
 pub struct TextPath {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    pub id: String,
+
     /// A text offset in SVG coordinates.
     ///
     /// Percentage values already resolved.
@@ -277,21 +283,6 @@ pub struct TextChunk {
     pub text: String,
 }
 
-/// A text character position.
-///
-/// _Character_ is a Unicode codepoint.
-#[derive(Clone, Copy, Debug)]
-pub struct CharacterPosition {
-    /// An absolute X axis position.
-    pub x: Option<f32>,
-    /// An absolute Y axis position.
-    pub y: Option<f32>,
-    /// A relative X axis offset.
-    pub dx: Option<f32>,
-    /// A relative Y axis offset.
-    pub dy: Option<f32>,
-}
-
 /// A writing mode.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -317,10 +308,15 @@ pub struct Text {
     /// `text-rendering` in SVG.
     pub rendering_mode: TextRendering,
 
-    /// A list of character positions.
+    /// A relative X axis offsets.
     ///
-    /// One position for each Unicode codepoint. Aka `char` in Rust.
-    pub positions: Vec<CharacterPosition>,
+    /// One offset for each Unicode codepoint. Aka `char` in Rust.
+    pub dx: Vec<f32>,
+
+    /// A relative Y axis offsets.
+    ///
+    /// One offset for each Unicode codepoint. Aka `char` in Rust.
+    pub dy: Vec<f32>,
 
     /// A list of rotation angles.
     ///
@@ -332,4 +328,121 @@ pub struct Text {
 
     /// A list of text chunks.
     pub chunks: Vec<TextChunk>,
+
+    /// Element's absolute transform.
+    ///
+    /// Contains all ancestors transforms.
+    /// Will be set automatically by the parser or can be recalculated manually using
+    /// [`Tree::calculate_abs_transforms`].
+    ///
+    /// Note that this is not the relative transform present in SVG.
+    /// The SVG one would be set only on groups.
+    pub abs_transform: Transform,
+
+    /// Contains a text bounding box.
+    ///
+    /// Text bounding box is special in SVG and doesn't represent
+    /// a tight bounds of the element's content.
+    /// You can find more about it [here](https://razrfalcon.github.io/notes-on-svg-parsing/text/bbox.html).
+    ///
+    /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
+    ///
+    /// Unlike other nodes, will be set by
+    /// [`usvg_text_layout::TreeTextToPath::convert_text`](
+    /// https://docs.rs/usvg-text-layout/latest/usvg_text_layout/trait.TreeTextToPath.html#tymethod.convert_text)
+    /// and not [`Tree::calculate_bounding_boxes`], since we have to perform text layout
+    /// to get the bounding box.
+    pub bounding_box: Option<NonZeroRect>,
+
+    /// Element's object bounding box including stroke.
+    ///
+    /// Similar to `bounding_box`, but includes stroke.
+    ///
+    /// Will have the same value as `bounding_box` when path has no stroke.
+    pub stroke_bounding_box: Option<Rect>,
+
+    /// Text converted into paths, ready to render.
+    ///
+    /// Will be set by
+    /// [`usvg_text_layout::TreeTextToPath::convert_text`](
+    /// https://docs.rs/usvg-text-layout/latest/usvg_text_layout/trait.TreeTextToPath.html#tymethod.convert_text)
+    pub flattened: Option<Box<Group>>,
+}
+
+impl Text {
+    pub(crate) fn subroots(&self, f: &mut dyn FnMut(&Group)) {
+        if let Some(ref flattened) = self.flattened {
+            f(flattened);
+            // Return now, since text chunks would have the same styles
+            // as the flattened text, which would lead to duplicates.
+            return;
+        }
+
+        let mut push_patt = |paint: Option<&Paint>| {
+            if let Some(Paint::Pattern(ref patt)) = paint {
+                f(&patt.borrow().root);
+            }
+        };
+
+        for chunk in &self.chunks {
+            for span in &chunk.spans {
+                push_patt(span.fill.as_ref().map(|f| &f.paint));
+                push_patt(span.stroke.as_ref().map(|f| &f.paint));
+
+                // Each text decoration can have paint.
+                if let Some(ref underline) = span.decoration.underline {
+                    push_patt(underline.fill.as_ref().map(|f| &f.paint));
+                    push_patt(underline.stroke.as_ref().map(|f| &f.paint));
+                }
+
+                if let Some(ref overline) = span.decoration.overline {
+                    push_patt(overline.fill.as_ref().map(|f| &f.paint));
+                    push_patt(overline.stroke.as_ref().map(|f| &f.paint));
+                }
+
+                if let Some(ref line_through) = span.decoration.line_through {
+                    push_patt(line_through.fill.as_ref().map(|f| &f.paint));
+                    push_patt(line_through.stroke.as_ref().map(|f| &f.paint));
+                }
+            }
+        }
+    }
+
+    pub(crate) fn subroots_mut(&mut self, f: &mut dyn FnMut(&mut Group)) {
+        if let Some(ref mut flattened) = self.flattened {
+            f(flattened);
+            // Return now, since text chunks would have the same styles
+            // as the flattened text, which would lead to duplicates.
+            return;
+        }
+
+        let mut push_patt = |paint: Option<&Paint>| {
+            if let Some(Paint::Pattern(ref patt)) = paint {
+                f(&mut patt.borrow_mut().root);
+            }
+        };
+
+        for chunk in &self.chunks {
+            for span in &chunk.spans {
+                push_patt(span.fill.as_ref().map(|f| &f.paint));
+                push_patt(span.stroke.as_ref().map(|f| &f.paint));
+
+                // Each text decoration can have paint.
+                if let Some(ref underline) = span.decoration.underline {
+                    push_patt(underline.fill.as_ref().map(|f| &f.paint));
+                    push_patt(underline.stroke.as_ref().map(|f| &f.paint));
+                }
+
+                if let Some(ref overline) = span.decoration.overline {
+                    push_patt(overline.fill.as_ref().map(|f| &f.paint));
+                    push_patt(overline.stroke.as_ref().map(|f| &f.paint));
+                }
+
+                if let Some(ref line_through) = span.decoration.line_through {
+                    push_patt(line_through.fill.as_ref().map(|f| &f.paint));
+                    push_patt(line_through.stroke.as_ref().map(|f| &f.paint));
+                }
+            }
+        }
+    }
 }

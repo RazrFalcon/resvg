@@ -1,10 +1,10 @@
 [package]
 name = "resvg"
-version = "0.36.0"
+version = "0.37.0"
 authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster"]
 license = "MPL-2.0"
-edition = "2018"
+edition = "2021"
 description = "An SVG rendering library."
 repository = "https://github.com/RazrFalcon/resvg"
 exclude = ["tests"]
@@ -21,9 +21,9 @@ log = "0.4"
 pico-args = { version = "0.5", features = ["eq-separator"] }
 png = { version = "0.17", optional = true }
 rgb = "0.8"
-svgtypes = {git = "https://github.com/RazrFalcon/svgtypes"}
-tiny-skia = "0.11.2"
-usvg = { path = "../usvg", version = "0.36.0", default-features = false }
+svgtypes = "0.13"
+tiny-skia = "0.11.3"
+usvg = { path = "../usvg", version = "0.37.0", default-features = false }
 
 [dev-dependencies]
 once_cell = "1.5"

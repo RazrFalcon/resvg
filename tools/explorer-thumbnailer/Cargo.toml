@@ -1,9 +1,9 @@
 [package]
 name = "explorer-thumbnailer"
-version = "0.36.0"
+version = "0.37.0"
 authors = ["gentoo90 <gentoo90@gmail.com>"]
 license = "MPL-2.0"
-edition = "2018"
+edition = "2021"
 publish = false
 
 [workspace]

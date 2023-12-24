@@ -1,0 +1,25 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     font-family="Noto Sans" font-size="26">
+    <!-- baseline shifts are affected by the parent as well, so they need -->
+    <!-- to be dumped in the same order instead of being merged together. -->
+    <!-- We also need to make sure that font-size etc. are set before applying -->
+    <!-- the baseline shifts since they are affected by that. -->
+    <text id="text1" x="30" y="100">
+        A
+        <tspan id="tspan1" fill="green" baseline-shift="super">
+            B
+            <tspan id="tspan2" fill="green" baseline-shift="super">
+                C
+                <tspan id="tspan3" fill="green" baseline-shift="super">
+                    D
+                    <tspan id="tspan4" fill="green" baseline-shift="super">
+                        E
+                        <tspan id="tspan5" fill="green" baseline-shift="super">
+                            F
+                        </tspan>
+                    </tspan>
+                </tspan>
+            </tspan>
+        </tspan>
+    </text>
+</svg>

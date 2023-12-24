@@ -25,9 +25,9 @@ fn simplify_paths() {
     ";
 
     let tree = usvg_tree::Tree::from_str(&svg, &usvg_parser::Options::default()).unwrap();
-    let path = tree.root.first_child().unwrap();
-    match *path.borrow() {
-        usvg_tree::NodeKind::Path(ref path) => {
+    let path = &tree.root.children[0];
+    match path {
+        usvg_tree::Node::Path(ref path) => {
             // Make sure we have MLZ and not MLZZZ
             assert_eq!(path.data.verbs().len(), 3);
         }
