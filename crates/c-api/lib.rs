@@ -897,8 +897,7 @@ pub extern "C" fn resvg_render(
         unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
     let mut pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
 
-    let rtree = resvg::Tree::from_usvg(&tree.0);
-    rtree.render(transform.to_tiny_skia(), &mut pixmap);
+    resvg::render(&tree.0, transform.to_tiny_skia(), &mut pixmap)
 }
 
 /// @brief Renders a Node by ID onto the image.
@@ -943,12 +942,7 @@ pub extern "C" fn resvg_render_node(
             unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
         let mut pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
 
-        if let Some(rtree) = resvg::Tree::from_usvg_node(&node) {
-            rtree.render(transform.to_tiny_skia(), &mut pixmap);
-            true
-        } else {
-            false
-        }
+        resvg::render_node(node, transform.to_tiny_skia(), &mut pixmap).is_some()
     } else {
         log::warn!("A node with '{}' ID wasn't found.", id);
         false

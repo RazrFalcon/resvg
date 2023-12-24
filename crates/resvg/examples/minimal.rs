@@ -7,9 +7,7 @@ fn main() {
         return;
     }
 
-    // resvg::Tree own all the required data and does not require
-    // the input file, usvg::Tree or anything else.
-    let rtree = {
+    let tree = {
         let mut opt = usvg::Options::default();
         // Get file's absolute directory.
         opt.resources_dir = std::fs::canonicalize(&args[1])
@@ -26,11 +24,11 @@ fn main() {
         // `resvg` requires precalculated bounding boxes.
         // Must be called only after converting text to paths.
         tree.calculate_bounding_boxes();
-        resvg::Tree::from_usvg(&tree)
+        tree
     };
 
-    let pixmap_size = rtree.size.to_int_size();
+    let pixmap_size = tree.size.to_int_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
-    rtree.render(tiny_skia::Transform::default(), &mut pixmap.as_mut());
+    resvg::render(&tree, tiny_skia::Transform::default(), &mut pixmap.as_mut());
     pixmap.save_png(&args[2]).unwrap();
 }

@@ -43,21 +43,20 @@ pub fn render_thumbnail(tree: &Option<usvg::Tree>, cx: u32) -> Result<tiny_skia:
     }
 
     let tree = tree.as_ref().ok_or(Error::TreeEmpty)?;
-    let rtree = resvg::Tree::from_usvg(tree);
 
-    let size = if rtree.size.width() > rtree.size.height() {
-        rtree.size.to_int_size().scale_to_width(cx)
+    let size = if tree.size.width() > tree.size.height() {
+        tree.size.to_int_size().scale_to_width(cx)
     } else {
-        rtree.size.to_int_size().scale_to_height(cx)
+        tree.size.to_int_size().scale_to_height(cx)
     }.ok_or(Error::RenderError)?;
 
     let transform = tiny_skia::Transform::from_scale(
-        size.width() as f32 / rtree.size.width() as f32,
-        size.height() as f32 / rtree.size.height() as f32,
+        size.width() as f32 / tree.size.width() as f32,
+        size.height() as f32 / tree.size.height() as f32,
     );
 
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
-    rtree.render(transform, &mut pixmap.as_mut());
+    resvg::render(&tree, transform, &mut pixmap.as_mut());
     Ok(pixmap)
 }
 

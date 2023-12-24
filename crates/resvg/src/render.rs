@@ -2,98 +2,73 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::tree::{Group, Node, OptionLog, Tree};
+use crate::OptionLog;
 
 pub struct Context {
     pub max_bbox: tiny_skia::IntRect,
 }
 
-impl Tree {
-    /// Renders the tree onto the pixmap.
-    ///
-    /// `transform` will be used as a root transform.
-    /// Can be used to position SVG inside the `pixmap`.
-    ///
-    /// The produced content is in the sRGB color space.
-    pub fn render(&self, transform: tiny_skia::Transform, pixmap: &mut tiny_skia::PixmapMut) {
-        let target_size = tiny_skia::IntSize::from_wh(pixmap.width(), pixmap.height()).unwrap();
-        let max_bbox = tiny_skia::IntRect::from_xywh(
-            -(target_size.width() as i32) * 2,
-            -(target_size.height() as i32) * 2,
-            target_size.width() * 4,
-            target_size.height() * 4,
-        )
-        .unwrap();
-
-        let ts =
-            usvg::utils::view_box_to_transform(self.view_box.rect, self.view_box.aspect, self.size);
-
-        let root_transform = transform.pre_concat(ts);
-
-        let ctx = Context { max_bbox };
-        render_nodes(&self.children, &ctx, root_transform, pixmap);
-    }
-}
-
 pub fn render_nodes(
-    children: &[Node],
+    parent: &usvg::Group,
     ctx: &Context,
     transform: tiny_skia::Transform,
+    text_bbox: Option<tiny_skia::NonZeroRect>,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
-    for node in children {
-        render_node(node, ctx, transform, pixmap);
+    for node in &parent.children {
+        render_node(node, ctx, transform, text_bbox, pixmap);
     }
 }
 
-fn render_node(
-    node: &Node,
+pub fn render_node(
+    node: &usvg::Node,
     ctx: &Context,
     transform: tiny_skia::Transform,
+    text_bbox: Option<tiny_skia::NonZeroRect>,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
     match node {
-        Node::Group(ref group) => {
-            render_group(group, ctx, transform, pixmap);
+        usvg::Node::Group(ref group) => {
+            render_group(group, ctx, transform, text_bbox, pixmap);
         }
-        Node::FillPath(ref path) => {
-            crate::path::render_fill_path(
+        usvg::Node::Path(ref path) => {
+            crate::path::render(
                 path,
                 tiny_skia::BlendMode::SourceOver,
                 ctx,
+                text_bbox,
                 transform,
                 pixmap,
             );
         }
-        Node::StrokePath(ref path) => {
-            crate::path::render_stroke_path(
-                path,
-                tiny_skia::BlendMode::SourceOver,
-                ctx,
-                transform,
-                pixmap,
-            );
+        usvg::Node::Image(ref image) => {
+            crate::image::render(image, transform, pixmap);
         }
-        Node::Image(ref image) => {
-            crate::image::render_image(image, transform, pixmap);
+        usvg::Node::Text(ref text) => {
+            if let (Some(bbox), Some(ref flattened)) = (text.bounding_box, &text.flattened) {
+                render_group(flattened, ctx, transform, Some(bbox), pixmap);
+            } else {
+                log::warn!("Text nodes should be flattened before rendering.");
+            }
         }
     }
 }
 
 fn render_group(
-    group: &Group,
+    group: &usvg::Group,
     ctx: &Context,
     transform: tiny_skia::Transform,
+    text_bbox: Option<tiny_skia::NonZeroRect>,
     pixmap: &mut tiny_skia::PixmapMut,
 ) -> Option<()> {
     let transform = transform.pre_concat(group.transform);
 
-    if group.is_transform_only() {
-        render_nodes(&group.children, ctx, transform, pixmap);
+    if !group.should_isolate() {
+        render_nodes(group, ctx, transform, text_bbox, pixmap);
         return Some(());
     }
 
-    let bbox = group.bbox.transform(transform)?;
+    let bbox = group.layer_bounding_box?.transform(transform)?;
 
     let mut ibbox = if group.filters.is_empty() {
         // Convert group bbox into an integer one, expanding each side outwards by 2px
@@ -107,7 +82,7 @@ fn render_group(
     } else {
         // The bounding box for groups with filters is special and should not be expanded by 2px,
         // because it's already acting as a clipping region.
-        let bbox = bbox.to_non_zero_rect()?.to_int_rect();
+        let bbox = bbox.to_int_rect();
         // Make sure our filter region is not bigger than 4x the canvas size.
         // This is required mainly to prevent huge filter regions that would tank the performance.
         // It should not affect the final result in any way.
@@ -137,25 +112,25 @@ fn render_group(
     let mut sub_pixmap = tiny_skia::Pixmap::new(ibbox.width(), ibbox.height())
         .log_none(|| log::warn!("Failed to allocate a group layer for: {:?}.", ibbox))?;
 
-    render_nodes(&group.children, ctx, transform, &mut sub_pixmap.as_mut());
+    render_nodes(group, ctx, transform, text_bbox, &mut sub_pixmap.as_mut());
 
     if !group.filters.is_empty() {
         for filter in &group.filters {
-            crate::filter::apply(filter, transform, &mut sub_pixmap);
+            crate::filter::apply(group, &filter.borrow(), transform, &mut sub_pixmap);
         }
     }
 
-    if let Some(ref clip_path) = group.clip_path {
-        crate::clip::apply(clip_path, transform, &mut sub_pixmap);
+    if let (Some(ref clip_path), Some(object_bbox)) = (&group.clip_path, group.bounding_box) {
+        crate::clip::apply(&clip_path.borrow(), object_bbox, transform, &mut sub_pixmap);
     }
 
-    if let Some(ref mask) = group.mask {
-        crate::mask::apply(mask, ctx, transform, &mut sub_pixmap);
+    if let (Some(ref mask), Some(object_bbox)) = (&group.mask, group.bounding_box) {
+        crate::mask::apply(&mask.borrow(), ctx, object_bbox, transform, &mut sub_pixmap);
     }
 
     let paint = tiny_skia::PixmapPaint {
         opacity: group.opacity.get(),
-        blend_mode: group.blend_mode,
+        blend_mode: convert_blend_mode(group.blend_mode),
         quality: tiny_skia::FilterQuality::Nearest,
     };
 
@@ -191,5 +166,26 @@ impl TinySkiaPixmapMutExt for tiny_skia::PixmapMut<'_> {
         mask.fill_path(&path, tiny_skia::FillRule::Winding, true, transform);
 
         Some(mask)
+    }
+}
+
+pub fn convert_blend_mode(mode: usvg::BlendMode) -> tiny_skia::BlendMode {
+    match mode {
+        usvg::BlendMode::Normal => tiny_skia::BlendMode::SourceOver,
+        usvg::BlendMode::Multiply => tiny_skia::BlendMode::Multiply,
+        usvg::BlendMode::Screen => tiny_skia::BlendMode::Screen,
+        usvg::BlendMode::Overlay => tiny_skia::BlendMode::Overlay,
+        usvg::BlendMode::Darken => tiny_skia::BlendMode::Darken,
+        usvg::BlendMode::Lighten => tiny_skia::BlendMode::Lighten,
+        usvg::BlendMode::ColorDodge => tiny_skia::BlendMode::ColorDodge,
+        usvg::BlendMode::ColorBurn => tiny_skia::BlendMode::ColorBurn,
+        usvg::BlendMode::HardLight => tiny_skia::BlendMode::HardLight,
+        usvg::BlendMode::SoftLight => tiny_skia::BlendMode::SoftLight,
+        usvg::BlendMode::Difference => tiny_skia::BlendMode::Difference,
+        usvg::BlendMode::Exclusion => tiny_skia::BlendMode::Exclusion,
+        usvg::BlendMode::Hue => tiny_skia::BlendMode::Hue,
+        usvg::BlendMode::Saturation => tiny_skia::BlendMode::Saturation,
+        usvg::BlendMode::Color => tiny_skia::BlendMode::Color,
+        usvg::BlendMode::Luminosity => tiny_skia::BlendMode::Luminosity,
     }
 }

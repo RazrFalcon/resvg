@@ -579,6 +579,7 @@ pub(crate) fn convert_group(
             filters,
             bounding_box: None,
             stroke_bounding_box: None,
+            layer_bounding_box: None,
             children: Vec::new(),
         };
 
