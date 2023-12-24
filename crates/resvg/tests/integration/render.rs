@@ -1068,6 +1068,7 @@ use crate::render;
 #[test] fn structure_g_deeply_nested_groups() { assert_eq!(render("tests/structure/g/deeply-nested-groups"), 0); }
 #[test] fn structure_g_recursive_inheritance() { assert_eq!(render("tests/structure/g/recursive-inheritance"), 0); }
 #[test] fn structure_image_embedded_16bit_png() { assert_eq!(render("tests/structure/image/embedded-16bit-png"), 0); }
+#[test] fn structure_image_embedded_bmp() { assert_eq!(render("tests/structure/image/embedded-bmp"), 0); }
 #[test] fn structure_image_embedded_gif() { assert_eq!(render("tests/structure/image/embedded-gif"), 0); }
 #[test] fn structure_image_embedded_jpeg_as_image_jpeg() { assert_eq!(render("tests/structure/image/embedded-jpeg-as-image-jpeg"), 0); }
 #[test] fn structure_image_embedded_jpeg_as_image_jpg() { assert_eq!(render("tests/structure/image/embedded-jpeg-as-image-jpg"), 0); }
@@ -1077,6 +1078,8 @@ use crate::render;
 #[test] fn structure_image_embedded_svg_without_mime() { assert_eq!(render("tests/structure/image/embedded-svg-without-mime"), 0); }
 #[test] fn structure_image_embedded_svg() { assert_eq!(render("tests/structure/image/embedded-svg"), 0); }
 #[test] fn structure_image_embedded_svgz() { assert_eq!(render("tests/structure/image/embedded-svgz"), 0); }
+#[test] fn structure_image_embedded_tiff() { assert_eq!(render("tests/structure/image/embedded-tiff"), 0); }
+#[test] fn structure_image_embedded_webp() { assert_eq!(render("tests/structure/image/embedded-webp"), 0); }
 #[test] fn structure_image_external_gif() { assert_eq!(render("tests/structure/image/external-gif"), 0); }
 #[test] fn structure_image_external_jpeg() { assert_eq!(render("tests/structure/image/external-jpeg"), 0); }
 #[test] fn structure_image_external_png() { assert_eq!(render("tests/structure/image/external-png"), 0); }

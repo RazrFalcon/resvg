@@ -60,13 +60,11 @@ impl ImageHrefResolver {
                 "image/bmp" => Some(ImageKind::BMP(data)),
                 "image/webp" => Some(ImageKind::WEBP(data)),
                 "image/tiff" => Some(ImageKind::TIFF(data)),
-                "image/avif" => Some(ImageKind::AVIF(data)),
                 "image/svg+xml" => load_sub_svg(&data, opts),
                 "text/plain" => match get_image_data_format(&data) {
                     Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(data)),
                     Some(ImageFormat::PNG) => Some(ImageKind::PNG(data)),
                     Some(ImageFormat::GIF) => Some(ImageKind::GIF(data)),
-                    Some(ImageFormat::AVIF) => Some(ImageKind::AVIF(data)),
                     Some(ImageFormat::WEBP) => Some(ImageKind::WEBP(data)),
                     Some(ImageFormat::TIFF) => Some(ImageKind::TIFF(data)),
                     Some(ImageFormat::BMP) => Some(ImageKind::BMP(data)),
@@ -102,12 +100,14 @@ impl ImageHrefResolver {
                     Some(ImageFormat::PNG) => Some(ImageKind::PNG(Arc::new(data))),
                     Some(ImageFormat::GIF) => Some(ImageKind::GIF(Arc::new(data))),
                     Some(ImageFormat::BMP) => Some(ImageKind::BMP(Arc::new(data))),
-                    Some(ImageFormat::AVIF) => Some(ImageKind::AVIF(Arc::new(data))),
                     Some(ImageFormat::TIFF) => Some(ImageKind::TIFF(Arc::new(data))),
                     Some(ImageFormat::WEBP) => Some(ImageKind::WEBP(Arc::new(data))),
                     Some(ImageFormat::SVG) => load_sub_svg(&data, opts),
                     _ => {
-                        log::warn!("'{}' is not a PNG, JPEG, GIF or SVG(Z) image.", href);
+                        log::warn!(
+                            "'{}' is not a PNG, JPEG, GIF, BMP, TIFF, WEBP or SVG(Z) image.",
+                            href
+                        );
                         None
                     }
                 }
@@ -155,13 +155,10 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Grou
         | ImageKind::GIF(ref data)
         | ImageKind::WEBP(ref data)
         | ImageKind::TIFF(ref data)
-        | ImageKind::AVIF(ref data)
-        | ImageKind::BMP(ref data)=> {
-            imagesize::blob_size(data)
-                .ok()
-                .and_then(|size| Size::from_wh(size.width as f32, size.height as f32))
-                .log_none(|| log::warn!("Image has an invalid size. Skipped."))?
-        }
+        | ImageKind::BMP(ref data) => imagesize::blob_size(data)
+            .ok()
+            .and_then(|size| Size::from_wh(size.width as f32, size.height as f32))
+            .log_none(|| log::warn!("Image has an invalid size. Skipped."))?,
         ImageKind::SVG(ref svg) => svg.size,
     };
 

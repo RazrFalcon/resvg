@@ -15,7 +15,7 @@ name = "resvg"
 required-features = ["text", "system-fonts", "memmap-fonts"]
 
 [dependencies]
-image = {version = "0.24.7", optional = true, default-features = false, features = ["jpeg", "gif", "webp", "bmp", "tiff", "avif"]}
+image = {version = "0.24.7", optional = true, default-features = false, features = ["jpeg", "gif", "webp", "bmp", "tiff"]}
 log = "0.4"
 pico-args = { version = "0.5", features = ["eq-separator"] }
 rgb = "0.8"
