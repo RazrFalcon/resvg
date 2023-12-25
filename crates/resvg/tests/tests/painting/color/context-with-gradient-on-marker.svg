@@ -1,0 +1,22 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>`context-fill` with gradient on marker</title>
+
+    <linearGradient id="lg">
+        <stop offset="0" stop-color="white"/>
+        <stop offset="0.25" stop-color="black"/>
+        <stop offset="0.5" stop-color="red"/>
+        <stop offset="0.9" stop-color="green"/>
+    </linearGradient>
+
+    <marker id="marker1" refX="10" refY="10" markerWidth="20" markerHeight="20" orient="0.25turn">
+        <g >
+            <path id="path-marker" d="M 10 0 16 20 H 4 Z" fill="context-fill"/>
+        </g>
+    </marker>
+
+    <path id="path1" fill="url(#lg)" d="M 100 15 l 50 160 l -130 -100 l 160 0 l -130 100 Z"
+          marker-start="url(#marker1)" marker-mid="url(#marker1)" marker-end="url(#marker1)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>
