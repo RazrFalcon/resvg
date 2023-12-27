@@ -972,7 +972,15 @@ fn apply_image(
         }
         usvg::filter::ImageKind::Use(ref node) => {
             let (sx, sy) = ts.get_scale();
-            let transform = tiny_skia::Transform::from_scale(sx, sy);
+
+            let transform = tiny_skia::Transform::from_row(
+                sx,
+                0.0,
+                0.0,
+                sy,
+                subregion.x() as f32,
+                subregion.y() as f32,
+            );
 
             let ctx = crate::render::Context {
                 max_bbox: tiny_skia::IntRect::from_xywh(0, 0, region.width(), region.height())

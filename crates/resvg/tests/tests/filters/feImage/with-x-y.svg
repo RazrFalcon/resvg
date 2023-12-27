@@ -1,0 +1,15 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>With x and y</title>
+    <defs>
+        <rect fill="green" id="rect3" width="100" height="100"/>
+        <filter id="filter1" >
+            <feImage xlink:href="#rect3" x="50" y="50"/>
+        </filter>
+    </defs>
+    <rect id="rect2" x="50" y="50" width="100" height="100" fill="#1e1705" filter="url(#filter1)"/>
+    <rect id="rect1" x="50" y="50" width="100" height="100" stroke="#00f" fill="none"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

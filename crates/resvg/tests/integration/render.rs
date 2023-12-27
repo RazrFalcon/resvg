@@ -196,6 +196,9 @@ use crate::render;
 #[test] fn filters_feImage_with_subregion_3() { assert_eq!(render("tests/filters/feImage/with-subregion-3"), 0); }
 #[test] fn filters_feImage_with_subregion_4() { assert_eq!(render("tests/filters/feImage/with-subregion-4"), 0); }
 #[test] fn filters_feImage_with_subregion_5() { assert_eq!(render("tests/filters/feImage/with-subregion-5"), 0); }
+#[test] fn filters_feImage_with_x_y_and_protruding_subregion_1() { assert_eq!(render("tests/filters/feImage/with-x-y-and-protruding-subregion-1"), 0); }
+#[test] fn filters_feImage_with_x_y_and_protruding_subregion_2() { assert_eq!(render("tests/filters/feImage/with-x-y-and-protruding-subregion-2"), 0); }
+#[test] fn filters_feImage_with_x_y() { assert_eq!(render("tests/filters/feImage/with-x-y"), 0); }
 #[test] fn filters_feMerge_color_interpolation_filters_eq_linearRGB() { assert_eq!(render("tests/filters/feMerge/color-interpolation-filters=linearRGB"), 0); }
 #[test] fn filters_feMerge_color_interpolation_filters_eq_sRGB() { assert_eq!(render("tests/filters/feMerge/color-interpolation-filters=sRGB"), 0); }
 #[test] fn filters_feMerge_complex_transform() { assert_eq!(render("tests/filters/feMerge/complex-transform"), 0); }
