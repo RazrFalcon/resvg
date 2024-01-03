@@ -160,6 +160,13 @@ OPTIONS:
   -z, --zoom FACTOR             Zooms the image by a factor
       --dpi DPI                 Sets the resolution
                                 [default: 96] [possible values: 10..4000 (inclusive)]
+                                
+  --max-width LENGTH            Sets the maximum width in pixels (default: no limit)
+                                Used during normal rendering and not during --export-id
+
+  --max-height LENGTH           Sets the maximum heght in pixels (default: no limit)
+                                Used during normal rendering and not during --export-id
+
   --background COLOR            Sets the background color
                                 Examples: red, #fff, #fff000
 
@@ -235,6 +242,8 @@ ARGS:
 struct CliArgs {
     width: Option<u32>,
     height: Option<u32>,
+    max_width: Option<u32>,
+    max_height: Option<u32>,
     zoom: Option<f32>,
     dpi: u32,
     background: Option<svgtypes::Color>,
@@ -286,6 +295,8 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
     Ok(CliArgs {
         width: input.opt_value_from_fn(["-w", "--width"], parse_length)?,
         height: input.opt_value_from_fn(["-h", "--height"], parse_length)?,
+        max_width: input.opt_value_from_fn("--max-width", parse_length)?,
+        max_height: input.opt_value_from_fn("--max-height", parse_length)?,
         zoom: input.opt_value_from_fn(["-z", "--zoom"], parse_zoom)?,
         dpi: input.opt_value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
         background: input.opt_value_from_str("--background")?,
@@ -459,6 +470,7 @@ struct Args {
     font_dirs: Vec<path::PathBuf>,
     skip_system_fonts: bool,
     list_fonts: bool,
+    max_size: tiny_skia::IntSize,
 }
 
 fn parse_args() -> Result<Args, String> {
@@ -521,6 +533,22 @@ fn parse_args() -> Result<Args, String> {
         fit_to = FitTo::Zoom(z);
     }
 
+    if args.export_id.is_some() && args.max_width.is_some() {
+        println!("Warning: --max-width has no effect when --export-id is set.");
+    }
+    if args.export_id.is_some() && args.max_height.is_some() {
+        println!("Warning: --max-height has no effect when --export-id is set.");
+    }
+
+    let mut max_size = usvg::Size::from_wh(u32::MAX as f32, u32::MAX as f32).unwrap();
+    if let (Some(w), Some(h)) = (args.max_width, args.max_height) {
+        max_size = usvg::Size::from_wh(w as f32, h as f32).unwrap();
+    } else if let Some(w) = args.max_width {
+        max_size = usvg::Size::from_wh(w as f32, u32::MAX as f32).unwrap();
+    } else if let Some(h) = args.max_height {
+        max_size = usvg::Size::from_wh(u32::MAX as f32, h as f32).unwrap();
+    }
+
     let resources_dir = match args.resources_dir {
         Some(v) => Some(v),
         None if args.input != "-" => {
@@ -569,6 +597,7 @@ fn parse_args() -> Result<Args, String> {
         font_dirs: args.font_dirs,
         skip_system_fonts: args.skip_system_fonts,
         list_fonts: args.list_fonts,
+        max_size: max_size.to_int_size(),
     })
 }
 
@@ -705,19 +734,26 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
             pixmap
         }
     } else {
-        let size = args
+        let base_size = args
             .fit_to
             .fit_to_size(tree.size.to_int_size())
             .ok_or_else(|| "target size is zero".to_string())?;
 
+            let max_size = args.max_size;
+
         // Unwrap is safe, because `size` is already valid.
+        let (size, ts) = if base_size.height()>max_size.height() || base_size.width()>max_size.width() {   
+            let new_size = tiny_skia::IntSize::from_wh(max_size.width(), max_size.height()).map(|s| base_size.scale_to(s)).unwrap();
+            (new_size, create_transform(tree.size.to_int_size(), new_size))
+        } else {
+            (base_size, args.fit_to.fit_to_transform(tree.size.to_int_size()))
+        };
+
         let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
 
         if let Some(background) = args.background {
             pixmap.fill(svg_to_skia_color(background));
         }
-
-        let ts = args.fit_to.fit_to_transform(tree.size.to_int_size());
 
         resvg::render(tree, ts, &mut pixmap.as_mut());
 
@@ -734,6 +770,17 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
     }
 
     Ok(img)
+}
+
+fn create_transform(_size1: tiny_skia::IntSize, _size2: tiny_skia::IntSize) -> tiny_skia::Transform {
+    let size1 = _size1.to_size();
+    let size2 = _size2.to_size();
+
+    tiny_skia::Transform::from_scale(
+        size2.width() / size1.width(),
+        size2.height() / size1.height(),
+    )
+
 }
 
 fn trim_pixmap(
