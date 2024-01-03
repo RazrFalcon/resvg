@@ -40,6 +40,9 @@ This changelog also contains important changes in dependencies.
 - `usvg::NodeExt`. No longer needed.
 - `usvg::Node::calculate_bbox`. Use `usvg::Node::abs_bounding_box`.
 
+### Fixed
+- Mark `mask-type` as a presentation attribute.
+
 ## [0.37.0] - 2023-12-16
 ### Added
 - `usvg` can write text back to SVG now.

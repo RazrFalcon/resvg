@@ -462,6 +462,7 @@ use crate::render;
 #[test] fn masking_mask_mask_on_self_with_mask_type_eq_alpha() { assert_eq!(render("tests/masking/mask/mask-on-self-with-mask-type=alpha"), 0); }
 #[test] fn masking_mask_mask_on_self_with_mixed_mask_type() { assert_eq!(render("tests/masking/mask/mask-on-self-with-mixed-mask-type"), 0); }
 #[test] fn masking_mask_mask_on_self() { assert_eq!(render("tests/masking/mask/mask-on-self"), 0); }
+#[test] fn masking_mask_mask_type_in_style() { assert_eq!(render("tests/masking/mask/mask-type-in-style"), 0); }
 #[test] fn masking_mask_mask_type_eq_alpha() { assert_eq!(render("tests/masking/mask/mask-type=alpha"), 0); }
 #[test] fn masking_mask_mask_type_eq_invalid() { assert_eq!(render("tests/masking/mask/mask-type=invalid"), 0); }
 #[test] fn masking_mask_mask_type_eq_luminance() { assert_eq!(render("tests/masking/mask/mask-type=luminance"), 0); }

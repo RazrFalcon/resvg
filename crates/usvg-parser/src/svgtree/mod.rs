@@ -689,6 +689,7 @@ impl AId {
                 | AId::MarkerMid
                 | AId::MarkerStart
                 | AId::Mask
+                | AId::MaskType
                 | AId::MixBlendMode // technically not presentation
                 | AId::Opacity
                 | AId::Overflow
