@@ -12,7 +12,7 @@ Note: make sure you have read the parent readme.
 
 ```sh
 # build C-API first
-cargo build --release --manifest-path ../../c-api/Cargo.toml
+cargo build --release --manifest-path ../../crates/c-api/Cargo.toml
 # build viewsvg
 qmake
 make
