@@ -1,6 +1,6 @@
 [package]
 name = "usvg-parser"
-version = "0.37.0"
+version = "0.38.0"
 authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg"]
 license = "MPL-2.0"
@@ -23,4 +23,4 @@ roxmltree = "0.19"
 simplecss = "0.2"
 siphasher = "0.3" # perfect hash implementation
 svgtypes = "0.13"
-usvg-tree = { path = "../usvg-tree", version = "0.37.0" }
+usvg-tree = { path = "../usvg-tree", version = "0.38.0" }

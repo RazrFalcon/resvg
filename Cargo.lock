@@ -208,7 +208,7 @@ dependencies = [
 
 [[package]]
 name = "resvg"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "gif",
  "jpeg-decoder",
@@ -224,7 +224,7 @@ dependencies = [
 
 [[package]]
 name = "resvg-capi"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "log",
  "resvg",
@@ -410,7 +410,7 @@ checksum = "b1d386ff53b415b7fe27b50bb44679e2cc4660272694b7b6f3326d8480823a94"
 
 [[package]]
 name = "usvg"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "base64",
  "log",
@@ -424,7 +424,7 @@ dependencies = [
 
 [[package]]
 name = "usvg-parser"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "data-url",
  "flate2",
@@ -440,7 +440,7 @@ dependencies = [
 
 [[package]]
 name = "usvg-text-layout"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "fontdb",
  "kurbo",
@@ -454,7 +454,7 @@ dependencies = [
 
 [[package]]
 name = "usvg-tree"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "strict-num",
  "svgtypes",

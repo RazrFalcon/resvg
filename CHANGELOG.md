@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.38.0] - 2024-01-21
 ### Added
 - Each `usvg::Node` stores its absolute transform now.
   `Node::abs_transform()` executes in constant time now.
@@ -46,6 +48,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - Mark `mask-type` as a presentation attribute.
 - Do not show needless warnings when parsing some attributes.
+- `feImage` rendering with a non-default position.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
 
 ## [0.37.0] - 2023-12-16
 ### Added
@@ -1035,7 +1039,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.37.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.38.0...HEAD
+[0.38.0]: https://github.com/RazrFalcon/resvg/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/RazrFalcon/resvg/compare/v0.36.0...v0.37.0
 [0.36.0]: https://github.com/RazrFalcon/resvg/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/RazrFalcon/resvg/compare/v0.34.1...v0.35.0
