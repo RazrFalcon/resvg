@@ -54,7 +54,7 @@ fn convert_text(root: &mut Group, fontdb: &fontdb::Database) {
             if let Some((node, bbox, stroke_bbox)) = convert_node(text, fontdb) {
                 text.bounding_box = Some(bbox);
                 // TODO: test
-                text.stroke_bounding_box = Some(stroke_bbox.unwrap_or(bbox.to_rect()));
+                text.stroke_bounding_box = Some(stroke_bbox);
                 text.flattened = Some(Box::new(node));
             }
         }
@@ -71,7 +71,7 @@ fn convert_text(root: &mut Group, fontdb: &fontdb::Database) {
 fn convert_node(
     text: &Text,
     fontdb: &fontdb::Database,
-) -> Option<(Group, NonZeroRect, Option<Rect>)> {
+) -> Option<(Group, NonZeroRect, NonZeroRect)> {
     let (new_paths, bbox, stroke_bbox) = text_to_paths(text, fontdb)?;
 
     let mut group = Group {
@@ -439,7 +439,7 @@ type FontsCache = HashMap<Font, Rc<ResolvedFont>>;
 fn text_to_paths(
     text_node: &Text,
     fontdb: &fontdb::Database,
-) -> Option<(Vec<Path>, NonZeroRect, Option<Rect>)> {
+) -> Option<(Vec<Path>, NonZeroRect, NonZeroRect)> {
     let mut fonts_cache: FontsCache = HashMap::new();
     for chunk in &text_node.chunks {
         for span in &chunk.spans {
@@ -582,7 +582,7 @@ fn text_to_paths(
     }
 
     let bbox = bbox.to_non_zero_rect()?;
-    let stroke_bbox = stroke_bbox.to_rect();
+    let stroke_bbox = stroke_bbox.to_non_zero_rect().unwrap_or(bbox);
     Some((new_paths, bbox, stroke_bbox))
 }
 

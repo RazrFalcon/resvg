@@ -792,7 +792,9 @@ pub extern "C" fn resvg_get_node_stroke_bbox(
     id: *const c_char,
     bbox: *mut resvg_rect,
 ) -> bool {
-    get_node_bbox(tree, id, bbox, &|node| node.abs_stroke_bounding_box())
+    get_node_bbox(tree, id, bbox, &|node| {
+        node.abs_stroke_bounding_box().map(|r| r.to_rect())
+    })
 }
 
 fn get_node_bbox(

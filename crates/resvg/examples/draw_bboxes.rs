@@ -85,8 +85,8 @@ fn collect_bboxes(
             bboxes.push(bbox);
 
             if let Some(stroke_bbox) = node.abs_stroke_bounding_box() {
-                if bbox != stroke_bbox {
-                    stroke_bboxes.push(stroke_bbox);
+                if bbox != stroke_bbox.to_rect() {
+                    stroke_bboxes.push(stroke_bbox.to_rect());
                 }
             }
         }

@@ -773,7 +773,7 @@ impl Node {
         }
     }
 
-    /// Returns node's bounding box in object coordinates if any.
+    /// Returns node's bounding box in object coordinates, if any.
     ///
     /// This method is cheap since bounding boxes are already calculated.
     pub fn bounding_box(&self) -> Option<Rect> {
@@ -785,30 +785,30 @@ impl Node {
         }
     }
 
-    /// Returns node's bounding box in canvas coordinates if any.
+    /// Returns node's bounding box in canvas coordinates, if any.
     ///
     /// This method is cheap since bounding boxes are already calculated.
     pub fn abs_bounding_box(&self) -> Option<Rect> {
         self.bounding_box()?.transform(self.abs_transform())
     }
 
-    /// Returns node's bounding box, including stroke, in object coordinates if any.
+    /// Returns node's bounding box, including stroke, in object coordinates, if any.
     ///
     /// This method is cheap since bounding boxes are already calculated.
-    pub fn stroke_bounding_box(&self) -> Option<Rect> {
+    pub fn stroke_bounding_box(&self) -> Option<NonZeroRect> {
         match self {
             Node::Group(ref group) => group.stroke_bounding_box,
             Node::Path(ref path) => path.stroke_bounding_box,
             // Image cannot be stroked.
-            Node::Image(ref image) => image.bounding_box.map(|r| r.to_rect()),
+            Node::Image(ref image) => image.bounding_box,
             Node::Text(ref text) => text.stroke_bounding_box,
         }
     }
 
-    /// Returns node's bounding box, including stroke, in canvas coordinates if any.
+    /// Returns node's bounding box, including stroke, in canvas coordinates, if any.
     ///
     /// This method is cheap since bounding boxes are already calculated.
-    pub fn abs_stroke_bounding_box(&self) -> Option<Rect> {
+    pub fn abs_stroke_bounding_box(&self) -> Option<NonZeroRect> {
         self.stroke_bounding_box()?.transform(self.abs_transform())
     }
 
@@ -925,7 +925,7 @@ pub struct Group {
     /// Element's object bounding box including stroke.
     ///
     /// Similar to `bounding_box`, but includes stroke.
-    pub stroke_bounding_box: Option<Rect>,
+    pub stroke_bounding_box: Option<NonZeroRect>,
 
     /// Element's "layer" bounding box in object units.
     ///
@@ -1159,7 +1159,7 @@ pub struct Path {
     /// Similar to `bounding_box`, but includes stroke.
     ///
     /// Will have the same value as `bounding_box` when path has no stroke.
-    pub stroke_bounding_box: Option<Rect>,
+    pub stroke_bounding_box: Option<NonZeroRect>,
 }
 
 impl Path {
@@ -1182,7 +1182,7 @@ impl Path {
     /// Calculates and sets path's stroke bounding box.
     ///
     /// This operation is expensive.
-    pub fn calculate_stroke_bounding_box(&self) -> Option<Rect> {
+    pub fn calculate_stroke_bounding_box(&self) -> Option<NonZeroRect> {
         let stroke = self.stroke.as_ref()?;
         let mut stroke = stroke.to_tiny_skia();
         // According to the spec, dash should not be accounted during bbox calculation.
@@ -1190,7 +1190,11 @@ impl Path {
 
         // Expensive, but there is not much we can do about it.
         if let Some(stroked_path) = self.data.stroke(&stroke, 1.0) {
-            return stroked_path.compute_tight_bounds();
+            // A stroked path cannot have zero width or height,
+            // therefore we use `NonZeroRect` here.
+            return stroked_path
+                .compute_tight_bounds()
+                .and_then(|r| r.to_non_zero_rect());
         }
 
         None
@@ -1555,7 +1559,7 @@ fn calculate_bounding_box(parent: &mut Group) {
                 path.bounding_box = path.data.compute_tight_bounds();
                 path.stroke_bounding_box = path.calculate_stroke_bounding_box();
                 if path.stroke_bounding_box.is_none() {
-                    path.stroke_bounding_box = path.bounding_box;
+                    path.stroke_bounding_box = path.bounding_box.and_then(|r| r.to_non_zero_rect());
                 }
             }
             // TODO: should we account for `preserveAspectRatio`?
@@ -1609,7 +1613,7 @@ fn calculate_bounding_box(parent: &mut Group) {
     }
 
     parent.bounding_box = bbox.to_rect();
-    parent.stroke_bounding_box = stroke_bbox.to_rect();
+    parent.stroke_bounding_box = stroke_bbox.to_non_zero_rect();
 
     // Filter bbox has a higher priority than layers bbox.
     if let Some(filter_bbox) = parent.filters_bounding_box() {
