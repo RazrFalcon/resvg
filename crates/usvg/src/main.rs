@@ -8,9 +8,8 @@ use std::path::PathBuf;
 use std::process;
 
 use pico_args::Arguments;
-use usvg::TreeWriting;
+use usvg::{TreeWriting, TreePostProc};
 use usvg_parser::TreeParsing;
-use usvg_text_layout::TreeTextToPath;
 
 const HELP: &str = "\
 usvg (micro SVG) is an SVG simplification tool.
@@ -429,9 +428,11 @@ fn process(args: Args) -> Result<(), String> {
     }?;
 
     let mut tree = usvg_tree::Tree::from_data(&input_svg, &re_opt).map_err(|e| format!("{}", e))?;
-    if !args.preserve_text {
-        tree.convert_text(&fontdb);
-    }
+    let steps = usvg::PostProcessingSteps {
+        convert_text_into_paths: !args.preserve_text,
+    };
+
+    tree.postprocess(steps, &fontdb);
 
     let xml_opt = usvg::XmlOptions {
         id_prefix: args.id_prefix,

@@ -7,7 +7,7 @@ use winapi::um::objidlbase::{LPSTREAM, STATSTG};
 use winapi::um::wingdi::{BI_RGB, BITMAPINFO, BITMAPINFOHEADER, DIB_RGB_COLORS, CreateDIBSection};
 use com::sys::S_OK;
 use resvg::{usvg, tiny_skia};
-use usvg::{fontdb, TreeTextToPath, TreeParsing};
+use usvg::{fontdb, TreePostProc, TreeParsing};
 use crate::error::Error;
 
 pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvg::Tree, Error> {
@@ -32,8 +32,7 @@ pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvg::Tree, Error> 
     fontdb.load_system_fonts();
 
     let mut tree = usvg::Tree::from_data(&svg_data, &opt).map_err(|e| Error::TreeError(e))?;
-    tree.convert_text(&fontdb);
-    tree.calculate_bounding_boxes();
+    tree.postprocess(usvg::PostProcessingSteps::default(), &fontdb);
     Ok(tree)
 }
 

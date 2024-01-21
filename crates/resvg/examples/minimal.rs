@@ -1,4 +1,4 @@
-use usvg::{fontdb, TreeParsing, TreeTextToPath};
+use usvg::{fontdb, TreeParsing, TreePostProc};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -19,11 +19,11 @@ fn main() {
 
         let svg_data = std::fs::read(&args[1]).unwrap();
         let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
-        // `resvg` cannot render text as is. We have to convert it into paths first.
-        tree.convert_text(&fontdb);
-        // `resvg` requires precalculated bounding boxes.
-        // Must be called only after converting text to paths.
-        tree.calculate_bounding_boxes();
+        let steps = usvg::PostProcessingSteps {
+            // `resvg` cannot render text as is. We have to convert it into paths first.
+            convert_text_into_paths: true,
+        };
+        tree.postprocess(steps, &fontdb);
         tree
     };
 

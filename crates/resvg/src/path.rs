@@ -22,7 +22,7 @@ pub fn render(
         None => {
             log::warn!(
                 "Node bounding box should be already calculated. \
-                See `usvg::Tree::calculate_bounding_boxes`"
+                See `usvg::Tree::postprocess`"
             );
             return;
         }

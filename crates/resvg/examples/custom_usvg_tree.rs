@@ -1,5 +1,7 @@
 use std::rc::Rc;
 
+use usvg::{fontdb, TreePostProc};
+
 fn main() {
     let size = usvg::Size::from_wh(200.0, 200.0).unwrap();
     let mut tree = usvg::Tree {
@@ -46,8 +48,7 @@ fn main() {
     )));
     path.fill = fill;
     tree.root.children.push(usvg::Node::Path(Box::new(path)));
-    tree.calculate_abs_transforms();
-    tree.calculate_bounding_boxes();
+    tree.postprocess(usvg::PostProcessingSteps::default(), &fontdb::Database::new());
 
     let pixmap_size = tree.size.to_int_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();

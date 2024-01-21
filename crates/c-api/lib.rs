@@ -13,9 +13,9 @@ use std::os::raw::c_char;
 use std::slice;
 
 use resvg::tiny_skia;
-use resvg::usvg::{self, TreeParsing};
+use resvg::usvg::{self, TreeParsing, TreePostProc};
 #[cfg(feature = "text")]
-use resvg::usvg::{fontdb, TreeTextToPath};
+use resvg::usvg::fontdb;
 
 /// @brief List of possible errors.
 #[repr(C)]
@@ -532,12 +532,17 @@ pub extern "C" fn resvg_parse_tree_from_file(
         Err(e) => return convert_error(e) as i32,
     };
 
+    let steps = usvg::PostProcessingSteps::default();
+
     #[cfg(feature = "text")]
     {
-        utree.convert_text(&raw_opt.fontdb);
+        utree.postprocess(steps, &raw_opt.fontdb);
     }
 
-    utree.calculate_bounding_boxes();
+    #[cfg(not(feature = "text"))]
+    {
+        utree.postprocess(steps);
+    }
 
     let tree_box = Box::new(resvg_render_tree(utree));
     unsafe {
@@ -576,12 +581,17 @@ pub extern "C" fn resvg_parse_tree_from_data(
         Err(e) => return convert_error(e) as i32,
     };
 
+    let steps = usvg::PostProcessingSteps::default();
+
     #[cfg(feature = "text")]
     {
-        utree.convert_text(&raw_opt.fontdb);
+        utree.postprocess(steps, &raw_opt.fontdb);
     }
 
-    utree.calculate_bounding_boxes();
+    #[cfg(not(feature = "text"))]
+    {
+        utree.postprocess(steps);
+    }
 
     let tree_box = Box::new(resvg_render_tree(utree));
     unsafe {

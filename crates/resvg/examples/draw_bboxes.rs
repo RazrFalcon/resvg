@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use usvg::{fontdb, TreeParsing, TreeTextToPath};
+use usvg::{fontdb, TreeParsing, TreePostProc};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -30,8 +30,7 @@ fn main() {
 
     let svg_data = std::fs::read(&args[1]).unwrap();
     let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
-    tree.convert_text(&fontdb);
-    tree.calculate_bounding_boxes();
+    tree.postprocess(usvg::PostProcessingSteps::default(), &fontdb);
 
     let mut bboxes = Vec::new();
     let mut stroke_bboxes = Vec::new();

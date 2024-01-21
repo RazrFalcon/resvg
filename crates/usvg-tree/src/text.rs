@@ -332,8 +332,8 @@ pub struct Text {
     /// Element's absolute transform.
     ///
     /// Contains all ancestors transforms.
-    /// Will be set automatically by the parser or can be recalculated manually using
-    /// [`Tree::calculate_abs_transforms`].
+    ///
+    /// Will be set after calling `usvg::Tree::postprocess`.
     ///
     /// Note that this is not the relative transform present in SVG.
     /// The SVG one would be set only on groups.
@@ -342,16 +342,16 @@ pub struct Text {
     /// Contains a text bounding box.
     ///
     /// Text bounding box is special in SVG and doesn't represent
-    /// a tight bounds of the element's content.
-    /// You can find more about it [here](https://razrfalcon.github.io/notes-on-svg-parsing/text/bbox.html).
+    /// tight bounds of the element's content.
+    /// You can find more about it
+    /// [here](https://razrfalcon.github.io/notes-on-svg-parsing/text/bbox.html).
     ///
     /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
     ///
-    /// Unlike other nodes, will be set by
-    /// [`usvg_text_layout::TreeTextToPath::convert_text`](
-    /// https://docs.rs/usvg-text-layout/latest/usvg_text_layout/trait.TreeTextToPath.html#tymethod.convert_text)
-    /// and not [`Tree::calculate_bounding_boxes`], since we have to perform text layout
-    /// to get the bounding box.
+    /// Will be set only after calling `usvg::Tree::postprocess` with
+    /// `usvg::PostProcessingSteps::convert_text_into_paths`.
+    /// Assuming the `text` build feature of `usvg` was enabled.
+    /// This is because we have to perform a text layout before calculating a bounding box.
     pub bounding_box: Option<NonZeroRect>,
 
     /// Element's object bounding box including stroke.
@@ -363,9 +363,9 @@ pub struct Text {
 
     /// Text converted into paths, ready to render.
     ///
-    /// Will be set by
-    /// [`usvg_text_layout::TreeTextToPath::convert_text`](
-    /// https://docs.rs/usvg-text-layout/latest/usvg_text_layout/trait.TreeTextToPath.html#tymethod.convert_text)
+    /// Will be set only after calling `usvg::Tree::postprocess` with
+    /// `usvg::PostProcessingSteps::convert_text_into_paths`.
+    /// Assuming the `text` build feature of `usvg` was enabled.
     pub flattened: Option<Box<Group>>,
 }
 

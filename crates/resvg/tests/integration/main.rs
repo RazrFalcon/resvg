@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use rgb::{FromSlice, RGBA8};
-use usvg::{fontdb, TreeParsing, TreeTextToPath};
+use usvg::{fontdb, TreeParsing, TreePostProc};
 
 #[rustfmt::skip]
 mod render;
@@ -36,8 +36,7 @@ pub fn render(name: &str) -> usize {
         let svg_data = std::fs::read(&svg_path).unwrap();
         let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
         let db = GLOBAL_FONTDB.lock().unwrap();
-        tree.convert_text(&db);
-        tree.calculate_bounding_boxes();
+        tree.postprocess(usvg::PostProcessingSteps::default(), &db);
         tree
     };
 
@@ -86,7 +85,8 @@ pub fn render_extra_with_scale(name: &str, scale: f32) -> usize {
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
         let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
-        tree.calculate_bounding_boxes();
+        let db = GLOBAL_FONTDB.lock().unwrap();
+        tree.postprocess(usvg::PostProcessingSteps::default(), &db);
         tree
     };
 

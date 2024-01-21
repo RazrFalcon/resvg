@@ -881,8 +881,8 @@ pub struct Group {
     /// Element's absolute transform.
     ///
     /// Contains all ancestors transforms.
-    /// Will be set automatically by the parser or can be recalculated manually using
-    /// [`Tree::calculate_abs_transforms`].
+    ///
+    /// Will be set after calling `usvg::Tree::postprocess`.
     ///
     /// Note that subroots, like clipPaths, masks and patterns, have their own root transform,
     /// which isn't affected by the node that references this subroot.
@@ -919,7 +919,7 @@ pub struct Group {
     ///
     /// Can be set to `None` in case of an empty group.
     ///
-    /// Will be set only after calling [`Tree::calculate_bounding_boxes`].
+    /// Will be set after calling `usvg::Tree::postprocess`.
     pub bounding_box: Option<Rect>,
 
     /// Element's object bounding box including stroke.
@@ -939,7 +939,7 @@ pub struct Group {
     ///
     /// Unlike other bounding boxes, cannot have zero size.
     ///
-    /// Will be set only after calling [`Tree::calculate_bounding_boxes`].
+    /// Will be set after calling `usvg::Tree::postprocess`.
     pub layer_bounding_box: Option<NonZeroRect>,
 
     /// Group's children.
@@ -1140,8 +1140,8 @@ pub struct Path {
     /// Element's absolute transform.
     ///
     /// Contains all ancestors transforms.
-    /// Will be set automatically by the parser or can be recalculated manually using
-    /// [`Tree::calculate_abs_transforms`].
+    ///
+    /// Will be set after calling `usvg::Tree::postprocess`.
     ///
     /// Note that this is not the relative transform present in SVG.
     /// The SVG one would be set only on groups.
@@ -1151,7 +1151,7 @@ pub struct Path {
     ///
     /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
     ///
-    /// Will be set only after calling [`Tree::calculate_bounding_boxes`].
+    /// Will be set after calling `usvg::Tree::postprocess`.
     pub bounding_box: Option<Rect>,
 
     /// Element's object bounding box including stroke.
@@ -1275,8 +1275,8 @@ pub struct Image {
     /// Element's absolute transform.
     ///
     /// Contains all ancestors transforms.
-    /// Will be set automatically by the parser or can be recalculated manually using
-    /// [`Tree::calculate_abs_transforms`].
+    ///
+    /// Will be set after calling `usvg::Tree::postprocess`.
     ///
     /// Note that this is not the relative transform present in SVG.
     /// The SVG one would be set only on groups.
@@ -1286,7 +1286,7 @@ pub struct Image {
     ///
     /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
     ///
-    /// Will be set only after calling [`Tree::calculate_bounding_boxes`].
+    /// Will be set after calling `usvg::Tree::postprocess`.
     pub bounding_box: Option<NonZeroRect>,
 }
 
@@ -1373,17 +1373,16 @@ impl Tree {
 
     /// Calculates absolute transforms for all nodes in the tree.
     ///
-    /// Automatically called by the parser
-    /// and ideally should be called manually after each tree modification.
+    /// A low-level methods. Prefer `usvg::Tree::postprocess` instead.
     pub fn calculate_abs_transforms(&mut self) {
-        calculate_abs_transform(&mut self.root, Transform::identity());
+        self.root.calculate_abs_transforms(Transform::identity());
     }
 
     /// Calculates bounding boxes for all nodes in the tree.
     ///
-    /// This method is pretty expensive and should be called on-demand.
+    /// A low-level methods. Prefer `usvg::Tree::postprocess` instead.
     pub fn calculate_bounding_boxes(&mut self) {
-        calculate_bounding_box(&mut self.root);
+        self.root.calculate_bounding_boxes();
     }
 }
 
@@ -1534,91 +1533,99 @@ fn loop_over_filters(parent: &Group, f: &mut dyn FnMut(filter::SharedFilter)) {
     }
 }
 
-fn calculate_abs_transform(parent: &mut Group, ts: Transform) {
-    for node in &mut parent.children {
-        match node {
-            Node::Group(ref mut group) => {
-                let abs_ts = ts.pre_concat(group.transform);
-                group.abs_transform = abs_ts;
-                calculate_abs_transform(group, abs_ts);
-            }
-            Node::Path(ref mut path) => path.abs_transform = ts,
-            Node::Image(ref mut image) => image.abs_transform = ts,
-            Node::Text(ref mut text) => text.abs_transform = ts,
-        }
-
-        // Yes, subroots are not affected by the node's transform.
-        node.subroots_mut(|root| calculate_abs_transform(root, Transform::identity()));
-    }
-}
-
-fn calculate_bounding_box(parent: &mut Group) {
-    for node in &mut parent.children {
-        match node {
-            Node::Path(ref mut path) => {
-                path.bounding_box = path.data.compute_tight_bounds();
-                path.stroke_bounding_box = path.calculate_stroke_bounding_box();
-                if path.stroke_bounding_box.is_none() {
-                    path.stroke_bounding_box = path.bounding_box.and_then(|r| r.to_non_zero_rect());
+impl Group {
+    /// Calculates absolute transforms for all children of this group.
+    ///
+    /// A low-level methods. Prefer `usvg::Tree::postprocess` instead.
+    pub fn calculate_abs_transforms(&mut self, transform: Transform) {
+        for node in &mut self.children {
+            match node {
+                Node::Group(ref mut group) => {
+                    let abs_ts = transform.pre_concat(group.transform);
+                    group.abs_transform = abs_ts;
+                    group.calculate_abs_transforms(abs_ts);
                 }
+                Node::Path(ref mut path) => path.abs_transform = transform,
+                Node::Image(ref mut image) => image.abs_transform = transform,
+                Node::Text(ref mut text) => text.abs_transform = transform,
             }
-            // TODO: should we account for `preserveAspectRatio`?
-            Node::Image(ref mut image) => image.bounding_box = Some(image.view_box.rect),
-            // Have to be handled separately to prevent multiple mutable reference to the tree.
-            Node::Group(ref mut group) => {
-                calculate_bounding_box(group);
-            }
-            // Will be set only during text-to-path conversion.
-            Node::Text(_) => {}
-        }
 
-        // Yes, subroots are not affected by the node's transform.
-        node.subroots_mut(calculate_bounding_box);
+            // Yes, subroots are not affected by the node's transform.
+            node.subroots_mut(|root| root.calculate_abs_transforms(Transform::identity()));
+        }
     }
 
-    let mut bbox = BBox::default();
-    let mut stroke_bbox = BBox::default();
-    let mut layer_bbox = BBox::default();
-    for child in &parent.children {
-        if let Some(mut c_bbox) = child.bounding_box() {
+    /// Calculates bounding boxes for all children of this group.
+    ///
+    /// A low-level methods. Prefer `usvg::Tree::postprocess` instead.
+    pub fn calculate_bounding_boxes(&mut self) {
+        for node in &mut self.children {
+            match node {
+                Node::Path(ref mut path) => {
+                    path.bounding_box = path.data.compute_tight_bounds();
+                    path.stroke_bounding_box = path.calculate_stroke_bounding_box();
+                    if path.stroke_bounding_box.is_none() {
+                        path.stroke_bounding_box = path.bounding_box.and_then(|r| r.to_non_zero_rect());
+                    }
+                }
+                // TODO: should we account for `preserveAspectRatio`?
+                Node::Image(ref mut image) => image.bounding_box = Some(image.view_box.rect),
+                // Have to be handled separately to prevent multiple mutable reference to the tree.
+                Node::Group(ref mut group) => {
+                    group.calculate_bounding_boxes();
+                }
+                // Will be set only during text-to-path conversion.
+                Node::Text(_) => {}
+            }
+
+            // Yes, subroots are not affected by the node's transform.
+            node.subroots_mut(|root| root.calculate_bounding_boxes());
+        }
+
+        let mut bbox = BBox::default();
+        let mut stroke_bbox = BBox::default();
+        let mut layer_bbox = BBox::default();
+        for child in &self.children {
+            if let Some(mut c_bbox) = child.bounding_box() {
+                if let Node::Group(ref group) = child {
+                    if let Some(r) = c_bbox.transform(group.transform) {
+                        c_bbox = r;
+                    }
+                }
+
+                bbox = bbox.expand(c_bbox);
+            }
+
+            if let Some(mut c_bbox) = child.stroke_bounding_box() {
+                if let Node::Group(ref group) = child {
+                    if let Some(r) = c_bbox.transform(group.transform) {
+                        c_bbox = r;
+                    }
+                }
+
+                stroke_bbox = stroke_bbox.expand(c_bbox);
+            }
+
             if let Node::Group(ref group) = child {
-                if let Some(r) = c_bbox.transform(group.transform) {
-                    c_bbox = r;
+                if let Some(r) = group.layer_bounding_box {
+                    if let Some(r) = r.transform(group.transform) {
+                        layer_bbox = layer_bbox.expand(r);
+                    }
                 }
+            } else if let Some(c_bbox) = child.stroke_bounding_box() {
+                // Not a group - no need to transform.
+                layer_bbox = layer_bbox.expand(c_bbox);
             }
-
-            bbox = bbox.expand(c_bbox);
         }
 
-        if let Some(mut c_bbox) = child.stroke_bounding_box() {
-            if let Node::Group(ref group) = child {
-                if let Some(r) = c_bbox.transform(group.transform) {
-                    c_bbox = r;
-                }
-            }
+        self.bounding_box = bbox.to_rect();
+        self.stroke_bounding_box = stroke_bbox.to_non_zero_rect();
 
-            stroke_bbox = stroke_bbox.expand(c_bbox);
+        // Filter bbox has a higher priority than layers bbox.
+        if let Some(filter_bbox) = self.filters_bounding_box() {
+            self.layer_bounding_box = Some(filter_bbox);
+        } else {
+            self.layer_bounding_box = layer_bbox.to_non_zero_rect();
         }
-
-        if let Node::Group(ref group) = child {
-            if let Some(r) = group.layer_bounding_box {
-                if let Some(r) = r.transform(group.transform) {
-                    layer_bbox = layer_bbox.expand(r);
-                }
-            }
-        } else if let Some(c_bbox) = child.stroke_bounding_box() {
-            // Not a group - no need to transform.
-            layer_bbox = layer_bbox.expand(c_bbox);
-        }
-    }
-
-    parent.bounding_box = bbox.to_rect();
-    parent.stroke_bounding_box = stroke_bbox.to_non_zero_rect();
-
-    // Filter bbox has a higher priority than layers bbox.
-    if let Some(filter_bbox) = parent.filters_bounding_box() {
-        parent.layer_bounding_box = Some(filter_bbox);
-    } else {
-        parent.layer_bounding_box = layer_bbox.to_non_zero_rect();
     }
 }

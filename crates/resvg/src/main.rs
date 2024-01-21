@@ -6,7 +6,7 @@
 
 use std::path;
 
-use usvg::{fontdb, TreeParsing, TreeTextToPath};
+use usvg::{fontdb, TreeParsing, TreePostProc};
 
 fn main() {
     if let Err(e) = process() {
@@ -85,8 +85,9 @@ fn process() -> Result<(), String> {
     })?;
 
     // fontdb initialization is pretty expensive, so perform it only when needed.
+    let mut fontdb = fontdb::Database::new();
     if tree.has_text_nodes() {
-        let fontdb = timed(args.perf, "FontDB", || load_fonts(&mut args));
+        timed(args.perf, "FontDB", || load_fonts(&mut args, &mut fontdb));
         if args.list_fonts {
             for face in fontdb.faces() {
                 if let fontdb::Source::File(ref path) = &face.source {
@@ -108,11 +109,12 @@ fn process() -> Result<(), String> {
                 }
             }
         }
-
-        timed(args.perf, "Text Conversion", || tree.convert_text(&fontdb));
     }
 
-    tree.calculate_bounding_boxes();
+    timed(args.perf, "Postprocessing", || {
+        let steps = usvg::PostProcessingSteps::default();
+        tree.postprocess(steps, &fontdb);
+    });
 
     if args.query_all {
         return query_all(&tree);
@@ -572,8 +574,7 @@ fn parse_args() -> Result<Args, String> {
     })
 }
 
-fn load_fonts(args: &mut Args) -> fontdb::Database {
-    let mut fontdb = fontdb::Database::new();
+fn load_fonts(args: &mut Args, fontdb: &mut fontdb::Database) {
     if !args.skip_system_fonts {
         fontdb.load_system_fonts();
     }
@@ -596,8 +597,6 @@ fn load_fonts(args: &mut Args) -> fontdb::Database {
     fontdb.set_cursive_family(take_or(args.cursive_family.take(), "Comic Sans MS"));
     fontdb.set_fantasy_family(take_or(args.fantasy_family.take(), "Impact"));
     fontdb.set_monospace_family(take_or(args.monospace_family.take(), "Courier New"));
-
-    fontdb
 }
 
 fn query_all(tree: &usvg::Tree) -> Result<(), String> {

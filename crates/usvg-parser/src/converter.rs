@@ -175,9 +175,8 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
     let mut cache = Cache::default();
     convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
 
-    tree.calculate_abs_transforms();
-
     if restore_viewbox {
+        tree.calculate_abs_transforms();
         tree.calculate_bounding_boxes();
         calculate_svg_bbox(&mut tree);
     }

@@ -56,7 +56,7 @@ mod writer;
 
 pub use usvg_parser::*;
 #[cfg(feature = "text")]
-pub use usvg_text_layout::*;
+pub use usvg_text_layout::fontdb;
 pub use usvg_tree::*;
 
 pub use writer::XmlOptions;
@@ -70,5 +70,61 @@ pub trait TreeWriting {
 impl TreeWriting for usvg_tree::Tree {
     fn to_string(&self, opt: &XmlOptions) -> String {
         writer::convert(self, opt)
+    }
+}
+
+/// A list of post-processing steps.
+#[derive(Clone, Copy, Debug)]
+pub struct PostProcessingSteps {
+    /// Convert text into paths.
+    ///
+    /// Specifically, it will set `usvg::Text::flattened`, `usvg::Text::bounding_box`
+    /// and `usvg::Text::stroke_bounding_box`.
+    pub convert_text_into_paths: bool,
+}
+
+impl Default for PostProcessingSteps {
+    fn default() -> Self {
+        Self {
+            convert_text_into_paths: true
+        }
+    }
+}
+
+/// A trait to postprocess/finalize `usvg::Tree` after parsing.
+pub trait TreePostProc {
+    /// Postprocesses the `usvg::Tree`.
+    ///
+    /// Must be called after parsing a `usvg::Tree`.
+    ///
+    /// `steps` contains a list of _additional_ post-processing steps.
+    /// This methods performs some operations even when `steps` is `PostProcessingSteps::default()`.
+    ///
+    /// `fontdb` is needed only for [`PostProcessingSteps::convert_text_into_paths`].
+    /// Otherwise you can pass just `fontdb::Database::new()`.
+    fn postprocess(
+        &mut self,
+        steps: PostProcessingSteps,
+        #[cfg(feature = "text")] fontdb: &fontdb::Database
+    );
+}
+
+impl TreePostProc for usvg_tree::Tree {
+    fn postprocess(
+        &mut self,
+        steps: PostProcessingSteps,
+        #[cfg(feature = "text")] fontdb: &fontdb::Database
+    ) {
+        self.calculate_abs_transforms();
+
+        if steps.convert_text_into_paths {
+            #[cfg(feature = "text")]
+            {
+
+                usvg_text_layout::convert_text(&mut self.root, &fontdb);
+            }
+        }
+
+        self.calculate_bounding_boxes();
     }
 }

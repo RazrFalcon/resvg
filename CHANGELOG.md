@@ -18,8 +18,9 @@ This changelog also contains important changes in dependencies.
 - `usvg::Node::abs_stroke_bounding_box` which returns a precalculated node's bounding box,
   including stroke, in canvas coordinates.
 - (c-api) `resvg_get_node_stroke_bbox`
-- `usvg::Node::filters_bounding_box`.
-- `usvg::Node::abs_filters_bounding_box`.
+- `usvg::Node::filters_bounding_box`
+- `usvg::Node::abs_filters_bounding_box`
+- `usvg::Tree::postprocess`
 
 ### Changed
 - `resvg` renders `usvg::Tree` directly again. `resvg::Tree` is gone.
@@ -38,7 +39,9 @@ This changelog also contains important changes in dependencies.
 - `resvg::Tree`. No longer needed. `resvg` can render `usvg::Tree` directly once again.
 - `rctree::Node` methods. The `Node` API is completely different now.
 - `usvg::NodeExt`. No longer needed.
-- `usvg::Node::calculate_bbox`. Use `usvg::Node::abs_bounding_box`.
+- `usvg::Node::calculate_bbox`. Use `usvg::Node::abs_bounding_box` instead.
+- `usvg::Tree::convert_text`. Use `usvg::Tree::postprocess` instead.
+- `usvg::TreeTextToPath` trait. No longer needed.
 
 ### Fixed
 - Mark `mask-type` as a presentation attribute.

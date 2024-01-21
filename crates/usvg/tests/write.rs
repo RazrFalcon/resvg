@@ -1,8 +1,7 @@
 use once_cell::sync::Lazy;
 
-use usvg::TreeWriting;
+use usvg::{TreeWriting, TreePostProc};
 use usvg_parser::TreeParsing;
-use usvg_text_layout::TreeTextToPath;
 
 static GLOBAL_FONTDB: Lazy<std::sync::Mutex<usvg_text_layout::fontdb::Database>> =
     Lazy::new(|| {
@@ -36,7 +35,8 @@ fn resave_impl(name: &str, id_prefix: Option<String>, preserve_text: bool) {
         let mut tree = usvg_tree::Tree::from_str(&input_svg, &opt).unwrap();
         if !preserve_text {
             let fontdb = GLOBAL_FONTDB.lock().unwrap();
-            tree.convert_text(&fontdb);
+            let steps = usvg::PostProcessingSteps::default();
+            tree.postprocess(steps, &fontdb);
         }
         tree
     };

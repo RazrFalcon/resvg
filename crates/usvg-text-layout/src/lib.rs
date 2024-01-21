@@ -35,20 +35,8 @@ use ttf_parser::GlyphId;
 use unicode_script::UnicodeScript;
 use usvg_tree::*;
 
-/// A `usvg::Tree` extension trait.
-pub trait TreeTextToPath {
-    /// Converts text nodes into paths.
-    fn convert_text(&mut self, fontdb: &fontdb::Database);
-}
-
-impl TreeTextToPath for usvg_tree::Tree {
-    fn convert_text(&mut self, fontdb: &fontdb::Database) {
-        convert_text(&mut self.root, fontdb);
-        self.calculate_abs_transforms();
-    }
-}
-
-fn convert_text(root: &mut Group, fontdb: &fontdb::Database) {
+/// Converts text nodes into paths.
+pub fn convert_text(root: &mut Group, fontdb: &fontdb::Database) {
     for node in &mut root.children {
         if let Node::Text(ref mut text) = node {
             if let Some((node, bbox, stroke_bbox)) = convert_node(text, fontdb) {
@@ -85,6 +73,8 @@ fn convert_node(
         path.rendering_mode = rendering_mode;
         group.children.push(Node::Path(Box::new(path)));
     }
+
+    group.calculate_abs_transforms(Transform::identity());
 
     Some((group, bbox, stroke_bbox))
 }
