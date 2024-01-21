@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::process;
 
 use pico_args::Arguments;
-use usvg::{TreeWriting, TreePostProc};
+use usvg::{TreePostProc, TreeWriting};
 use usvg_parser::TreeParsing;
 
 const HELP: &str = "\

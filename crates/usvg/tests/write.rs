@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 
-use usvg::{TreeWriting, TreePostProc};
+use usvg::{TreePostProc, TreeWriting};
 use usvg_parser::TreeParsing;
 
 static GLOBAL_FONTDB: Lazy<std::sync::Mutex<usvg_text_layout::fontdb::Database>> =

@@ -123,7 +123,7 @@ enum ImageFormat {
 
 pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Group) -> Option<()> {
     let href = node
-        .attribute(AId::Href)
+        .try_attribute(AId::Href)
         .log_none(|| log::warn!("Image lacks the 'xlink:href' attribute. Skipped."))?;
 
     let kind = get_href_data(href, state.opt)?;

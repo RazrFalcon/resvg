@@ -285,6 +285,18 @@ impl<'a, 'input: 'a> SvgNode<'a, 'input> {
         }
     }
 
+    /// Returns an attribute value.
+    ///
+    /// Same as `SvgNode::attribute`, but doesn't show a warning.
+    pub fn try_attribute<T: FromValue<'a, 'input>>(&self, aid: AId) -> Option<T> {
+        let value = self
+            .attributes()
+            .iter()
+            .find(|a| a.name == aid)
+            .map(|a| a.value.as_str())?;
+        T::parse(*self, aid, value)
+    }
+
     #[inline]
     fn node_attribute(&self, aid: AId) -> Option<SvgNode<'a, 'input>> {
         let value = self.attribute(aid)?;

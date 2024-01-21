@@ -13,9 +13,9 @@ use std::os::raw::c_char;
 use std::slice;
 
 use resvg::tiny_skia;
-use resvg::usvg::{self, TreeParsing, TreePostProc};
 #[cfg(feature = "text")]
 use resvg::usvg::fontdb;
+use resvg::usvg::{self, TreeParsing, TreePostProc};
 
 /// @brief List of possible errors.
 #[repr(C)]

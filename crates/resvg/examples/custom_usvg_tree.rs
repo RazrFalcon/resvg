@@ -48,7 +48,10 @@ fn main() {
     )));
     path.fill = fill;
     tree.root.children.push(usvg::Node::Path(Box::new(path)));
-    tree.postprocess(usvg::PostProcessingSteps::default(), &fontdb::Database::new());
+    tree.postprocess(
+        usvg::PostProcessingSteps::default(),
+        &fontdb::Database::new(),
+    );
 
     let pixmap_size = tree.size.to_int_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();

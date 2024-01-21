@@ -10,6 +10,10 @@ mod extra;
 const IMAGE_SIZE: u32 = 300;
 
 static GLOBAL_FONTDB: Lazy<std::sync::Mutex<fontdb::Database>> = Lazy::new(|| {
+    if let Ok(()) = log::set_logger(&LOGGER) {
+        log::set_max_level(log::LevelFilter::Warn);
+    }
+
     let mut fontdb = fontdb::Database::new();
     fontdb.load_fonts_dir("tests/fonts");
     fontdb.set_serif_family("Noto Serif");
@@ -215,4 +219,36 @@ fn demultiply_alpha(data: &mut [RGBA8]) {
         p.g = (p.g as f64 / a + 0.5) as u8;
         p.r = (p.r as f64 / a + 0.5) as u8;
     }
+}
+
+/// A simple stderr logger.
+static LOGGER: SimpleLogger = SimpleLogger;
+struct SimpleLogger;
+impl log::Log for SimpleLogger {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        metadata.level() <= log::LevelFilter::Warn
+    }
+
+    fn log(&self, record: &log::Record) {
+        if self.enabled(record.metadata()) {
+            let target = if !record.target().is_empty() {
+                record.target()
+            } else {
+                record.module_path().unwrap_or_default()
+            };
+
+            let line = record.line().unwrap_or(0);
+            let args = record.args();
+
+            match record.level() {
+                log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, args),
+                log::Level::Warn => eprintln!("Warning (in {}:{}): {}", target, line, args),
+                log::Level::Info => eprintln!("Info (in {}:{}): {}", target, line, args),
+                log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, args),
+                log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, args),
+            }
+        }
+    }
+
+    fn flush(&self) {}
 }

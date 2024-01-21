@@ -45,6 +45,7 @@ This changelog also contains important changes in dependencies.
 
 ### Fixed
 - Mark `mask-type` as a presentation attribute.
+- Do not show needless warnings when parsing some attributes.
 
 ## [0.37.0] - 2023-12-16
 ### Added

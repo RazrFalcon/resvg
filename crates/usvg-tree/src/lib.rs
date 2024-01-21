@@ -1565,7 +1565,8 @@ impl Group {
                     path.bounding_box = path.data.compute_tight_bounds();
                     path.stroke_bounding_box = path.calculate_stroke_bounding_box();
                     if path.stroke_bounding_box.is_none() {
-                        path.stroke_bounding_box = path.bounding_box.and_then(|r| r.to_non_zero_rect());
+                        path.stroke_bounding_box =
+                            path.bounding_box.and_then(|r| r.to_non_zero_rect());
                     }
                 }
                 // TODO: should we account for `preserveAspectRatio`?

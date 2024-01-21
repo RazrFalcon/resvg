@@ -688,7 +688,7 @@ fn convert_baseline_shift(node: SvgNode, state: &converter::State) -> Vec<Baseli
         .take_while(|n| n.tag_name() != Some(EId::Text))
         .collect();
     for n in nodes {
-        if let Some(len) = n.attribute::<Length>(AId::BaselineShift) {
+        if let Some(len) = n.try_attribute::<Length>(AId::BaselineShift) {
             if len.unit == LengthUnit::Percent {
                 let n = crate::units::resolve_font_size(n, state) * (len.number as f32 / 100.0);
                 shift.push(BaselineShift::Number(n));

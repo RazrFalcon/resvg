@@ -98,7 +98,7 @@ pub(crate) fn resolve_font_size(node: SvgNode, state: &converter::State) -> f32 
     let mut font_size = state.opt.font_size;
     for n in nodes.iter().rev().skip(1) {
         // skip Root
-        if let Some(length) = n.attribute::<Length>(AId::FontSize) {
+        if let Some(length) = n.try_attribute::<Length>(AId::FontSize) {
             let dpi = state.opt.dpi;
             let n = length.number as f32;
             font_size = match length.unit {

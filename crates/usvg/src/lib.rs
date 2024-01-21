@@ -86,7 +86,7 @@ pub struct PostProcessingSteps {
 impl Default for PostProcessingSteps {
     fn default() -> Self {
         Self {
-            convert_text_into_paths: true
+            convert_text_into_paths: true,
         }
     }
 }
@@ -105,7 +105,7 @@ pub trait TreePostProc {
     fn postprocess(
         &mut self,
         steps: PostProcessingSteps,
-        #[cfg(feature = "text")] fontdb: &fontdb::Database
+        #[cfg(feature = "text")] fontdb: &fontdb::Database,
     );
 }
 
@@ -113,14 +113,13 @@ impl TreePostProc for usvg_tree::Tree {
     fn postprocess(
         &mut self,
         steps: PostProcessingSteps,
-        #[cfg(feature = "text")] fontdb: &fontdb::Database
+        #[cfg(feature = "text")] fontdb: &fontdb::Database,
     ) {
         self.calculate_abs_transforms();
 
         if steps.convert_text_into_paths {
             #[cfg(feature = "text")]
             {
-
                 usvg_text_layout::convert_text(&mut self.root, &fontdb);
             }
         }

@@ -693,7 +693,7 @@ fn convert_image(fe: SvgNode, state: &converter::State, cache: &mut converter::C
         .find_attribute(AId::ImageRendering)
         .unwrap_or(state.opt.image_rendering);
 
-    if let Some(node) = fe.attribute::<SvgNode>(AId::Href) {
+    if let Some(node) = fe.try_attribute::<SvgNode>(AId::Href) {
         let mut state = state.clone();
         state.fe_image_link = true;
         let mut root = Group::default();
@@ -722,7 +722,7 @@ fn convert_image(fe: SvgNode, state: &converter::State, cache: &mut converter::C
         };
     }
 
-    let href = match fe.attribute(AId::Href) {
+    let href = match fe.try_attribute(AId::Href) {
         Some(s) => s,
         _ => {
             log::warn!("The 'feImage' element lacks the 'xlink:href' attribute. Skipped.");
