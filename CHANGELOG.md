@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- `font-family` parsing.
 
 ## [0.38.0] - 2024-01-21
 ### Added

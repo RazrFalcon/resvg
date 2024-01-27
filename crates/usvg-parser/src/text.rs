@@ -391,6 +391,8 @@ fn convert_font(node: SvgNode, state: &converter::State) -> Font {
     for mut family in font_family.split(',') {
         // TODO: to a proper parser
 
+        family = family.trim();
+
         if family.starts_with(['\'', '"']) {
             family = &family[1..];
         }
@@ -398,8 +400,6 @@ fn convert_font(node: SvgNode, state: &converter::State) -> Font {
         if family.ends_with(['\'', '"']) {
             family = &family[..family.len() - 1];
         }
-
-        family = family.trim();
 
         if !family.is_empty() {
             families.push(family.to_string());
