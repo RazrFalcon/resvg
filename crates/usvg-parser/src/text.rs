@@ -5,7 +5,7 @@
 use std::rc::Rc;
 
 use kurbo::{ParamCurve, ParamCurveArclen};
-use svgtypes::{Length, LengthUnit};
+use svgtypes::{parse_font_families, FontFamily, Length, LengthUnit};
 use usvg_tree::*;
 
 use crate::svgtree::{AId, EId, FromValue, SvgNode};
@@ -383,33 +383,17 @@ fn convert_font(node: SvgNode, state: &converter::State) -> Font {
     let stretch = conv_font_stretch(node);
     let weight = resolve_font_weight(node);
 
-    let font_family = if let Some(n) = node.ancestors().find(|n| n.has_attribute(AId::FontFamily)) {
+    let font_families = if let Some(n) = node.ancestors().find(|n| n.has_attribute(AId::FontFamily))
+    {
         n.attribute(AId::FontFamily).unwrap_or("")
     } else {
         ""
     };
 
-    let mut families = Vec::new();
-    for mut family in font_family.split(',') {
-        // TODO: to a proper parser
-
-        family = family.trim();
-
-        if family.starts_with(['\'', '"']) {
-            family = &family[1..];
-        }
-
-        if family.ends_with(['\'', '"']) {
-            family = &family[..family.len() - 1];
-        }
-
-        if !family.is_empty() {
-            families.push(family.to_string());
-        }
-    }
+    let mut families = parse_font_families(font_families).unwrap_or_default();
 
     if families.is_empty() {
-        families.push(state.opt.font_family.clone())
+        families.push(FontFamily::Named(state.opt.font_family.clone()))
     }
 
     Font {

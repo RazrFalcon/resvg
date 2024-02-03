@@ -21,7 +21,7 @@ log = "0.4"
 pico-args = { version = "0.5", features = ["eq-separator"] }
 png = { version = "0.17", optional = true }
 rgb = "0.8"
-svgtypes = "0.13"
+svgtypes = {path = "../../../svgtypes"}
 tiny-skia = "0.11.4"
 usvg = { path = "../usvg", version = "0.38.0", default-features = false }
 

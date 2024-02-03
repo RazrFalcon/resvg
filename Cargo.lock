@@ -317,9 +317,7 @@ dependencies = [
 
 [[package]]
 name = "svgtypes"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e44e288cd960318917cbd540340968b90becc8bc81f171345d706e7a89d9d70"
+version = "0.12.0"
 dependencies = [
  "kurbo",
  "siphasher",
@@ -416,6 +414,7 @@ dependencies = [
  "log",
  "once_cell",
  "pico-args",
+ "svgtypes",
  "usvg-parser",
  "usvg-text-layout",
  "usvg-tree",
@@ -446,6 +445,7 @@ dependencies = [
  "kurbo",
  "log",
  "rustybuzz",
+ "svgtypes",
  "unicode-bidi",
  "unicode-script",
  "unicode-vo",

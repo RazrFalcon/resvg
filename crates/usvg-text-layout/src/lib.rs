@@ -31,6 +31,7 @@ use std::rc::Rc;
 use fontdb::{Database, ID};
 use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
 use rustybuzz::ttf_parser;
+use svgtypes::FontFamily;
 use ttf_parser::GlyphId;
 use unicode_script::UnicodeScript;
 use usvg_tree::*;
@@ -582,13 +583,13 @@ fn text_to_paths(
 fn resolve_font(font: &Font, fontdb: &fontdb::Database) -> Option<ResolvedFont> {
     let mut name_list = Vec::new();
     for family in &font.families {
-        name_list.push(match family.as_str() {
-            "serif" => fontdb::Family::Serif,
-            "sans-serif" => fontdb::Family::SansSerif,
-            "cursive" => fontdb::Family::Cursive,
-            "fantasy" => fontdb::Family::Fantasy,
-            "monospace" => fontdb::Family::Monospace,
-            _ => fontdb::Family::Name(family),
+        name_list.push(match family {
+            FontFamily::Serif => fontdb::Family::Serif,
+            FontFamily::SansSerif => fontdb::Family::SansSerif,
+            FontFamily::Cursive => fontdb::Family::Cursive,
+            FontFamily::Fantasy => fontdb::Family::Fantasy,
+            FontFamily::Monospace => fontdb::Family::Monospace,
+            FontFamily::Named(s) => fontdb::Family::Name(s),
         });
     }
 
@@ -622,7 +623,14 @@ fn resolve_font(font: &Font, fontdb: &fontdb::Database) -> Option<ResolvedFont> 
 
     let id = fontdb.query(&query);
     if id.is_none() {
-        log::warn!("No match for '{}' font-family.", font.families.join(", "));
+        log::warn!(
+            "No match for '{}' font-family.",
+            font.families
+                .iter()
+                .map(|f| f.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
     }
 
     fontdb.load_font(id?)
