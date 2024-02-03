@@ -3,7 +3,7 @@
         <path id="path1" fill="none" stroke="none" d="M 30 100 C 23.2698 70.6265 46.9153 46.8146 82.8138 46.8146 C 118.7123 46.8146 153.2698 70.6265 160 100"/>
         <mask id="mask1" x="-0.1" y="-0.1" width="1.2" height="1.2">
             <path id="pathForText1" fill="none" stroke="#ffffff" d="M 30 100 C 23.2698 70.6265 46.9153 46.8146 82.8138 46.8146 C 118.7123 46.8146 153.2698 70.6265 160 100"/>
-            <text id="text1" xml:space="preserve"><textPath xlink:href="#path1"><tspan><tspan font-family="Noto Sans" font-size="24" fill="#ffffff" stroke="none">abcdefghijklmnopqrstuvwxyz</tspan></tspan></textPath></text>
+            <text id="text1" xml:space="preserve"><textPath xlink:href="#path1"><tspan><tspan font-family="'Noto Sans'" font-size="24" fill="#ffffff" stroke="none">abcdefghijklmnopqrstuvwxyz</tspan></tspan></textPath></text>
         </mask>
     </defs>
     <g mask="url(#mask1)">
