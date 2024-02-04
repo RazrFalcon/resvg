@@ -777,7 +777,9 @@ fn write_text_path_paths(parent: &Group, ctx: &mut WriterContext, xml: &mut XmlW
                         paint_order: PaintOrder::default(),
                         abs_transform: Transform::default(),
                         bounding_box: None,
+                        abs_bounding_box: None,
                         stroke_bounding_box: None,
+                        abs_stroke_bounding_box: None,
                     };
                     write_path(&path, false, Transform::default(), None, ctx, xml);
                     ctx.text_path_map

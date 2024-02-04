@@ -9,6 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Fixed
 - `font-family` parsing.
+- Absolute bounding box calculation for paths.
 
 ## [0.38.0] - 2024-01-21
 ### Added

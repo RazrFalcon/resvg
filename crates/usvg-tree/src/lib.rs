@@ -789,7 +789,12 @@ impl Node {
     ///
     /// This method is cheap since bounding boxes are already calculated.
     pub fn abs_bounding_box(&self) -> Option<Rect> {
-        self.bounding_box()?.transform(self.abs_transform())
+        match self {
+            Node::Group(ref group) => group.abs_bounding_box,
+            Node::Path(ref path) => path.abs_bounding_box,
+            Node::Image(ref image) => image.abs_bounding_box().map(|r| r.to_rect()),
+            Node::Text(ref text) => text.abs_bounding_box.map(|r| r.to_rect()),
+        }
     }
 
     /// Returns node's bounding box, including stroke, in object coordinates, if any.
@@ -809,7 +814,13 @@ impl Node {
     ///
     /// This method is cheap since bounding boxes are already calculated.
     pub fn abs_stroke_bounding_box(&self) -> Option<NonZeroRect> {
-        self.stroke_bounding_box()?.transform(self.abs_transform())
+        match self {
+            Node::Group(ref group) => group.abs_stroke_bounding_box,
+            Node::Path(ref path) => path.abs_stroke_bounding_box,
+            // Image cannot be stroked.
+            Node::Image(ref image) => image.abs_bounding_box(),
+            Node::Text(ref text) => text.abs_stroke_bounding_box,
+        }
     }
 
     /// Calls a closure for each subroot this `Node` has.
@@ -922,10 +933,22 @@ pub struct Group {
     /// Will be set after calling `usvg::Tree::postprocess`.
     pub bounding_box: Option<Rect>,
 
+    /// Element's bounding box in canvas coordinates.
+    ///
+    /// `userSpaceOnUse` in SVG terms.
+    ///
+    /// Will be set after calling `usvg::Tree::postprocess`.
+    pub abs_bounding_box: Option<Rect>,
+
     /// Element's object bounding box including stroke.
     ///
     /// Similar to `bounding_box`, but includes stroke.
     pub stroke_bounding_box: Option<NonZeroRect>,
+
+    /// Element's bounding box including stroke in user coordinates.
+    ///
+    /// Similar to `abs_bounding_box`, but includes stroke.
+    pub abs_stroke_bounding_box: Option<NonZeroRect>,
 
     /// Element's "layer" bounding box in object units.
     ///
@@ -959,7 +982,9 @@ impl Default for Group {
             mask: None,
             filters: Vec::new(),
             bounding_box: None,
+            abs_bounding_box: None,
             stroke_bounding_box: None,
+            abs_stroke_bounding_box: None,
             layer_bounding_box: None,
             children: Vec::new(),
         }
@@ -1154,12 +1179,26 @@ pub struct Path {
     /// Will be set after calling `usvg::Tree::postprocess`.
     pub bounding_box: Option<Rect>,
 
+    /// Element's bounding box in canvas coordinates.
+    ///
+    /// `userSpaceOnUse` in SVG terms.
+    ///
+    /// Will be set after calling `usvg::Tree::postprocess`.
+    pub abs_bounding_box: Option<Rect>,
+
     /// Element's object bounding box including stroke.
     ///
     /// Similar to `bounding_box`, but includes stroke.
     ///
     /// Will have the same value as `bounding_box` when path has no stroke.
     pub stroke_bounding_box: Option<NonZeroRect>,
+
+    /// Element's bounding box including stroke in canvas coordinates.
+    ///
+    /// Similar to `abs_bounding_box`, but includes stroke.
+    ///
+    /// Will have the same value as `abs_bounding_box` when path has no stroke.
+    pub abs_stroke_bounding_box: Option<NonZeroRect>,
 }
 
 impl Path {
@@ -1175,7 +1214,9 @@ impl Path {
             data,
             abs_transform: Transform::default(),
             bounding_box: None,
+            abs_bounding_box: None,
             stroke_bounding_box: None,
+            abs_stroke_bounding_box: None,
         }
     }
 
@@ -1183,13 +1224,21 @@ impl Path {
     ///
     /// This operation is expensive.
     pub fn calculate_stroke_bounding_box(&self) -> Option<NonZeroRect> {
-        let stroke = self.stroke.as_ref()?;
-        let mut stroke = stroke.to_tiny_skia();
+        Self::calculate_stroke_bounding_box_inner(self.stroke.as_ref(), &self.data)
+    }
+
+    fn calculate_stroke_bounding_box_inner(
+        stroke: Option<&Stroke>,
+        path: &tiny_skia_path::Path,
+    ) -> Option<NonZeroRect> {
+        let mut stroke = stroke?.to_tiny_skia();
         // According to the spec, dash should not be accounted during bbox calculation.
         stroke.dash = None;
 
+        // TODO: avoid for round and bevel caps
+
         // Expensive, but there is not much we can do about it.
-        if let Some(stroked_path) = self.data.stroke(&stroke, 1.0) {
+        if let Some(stroked_path) = path.stroke(&stroke, 1.0) {
             // A stroked path cannot have zero width or height,
             // therefore we use `NonZeroRect` here.
             return stroked_path
@@ -1291,6 +1340,11 @@ pub struct Image {
 }
 
 impl Image {
+    fn abs_bounding_box(&self) -> Option<NonZeroRect> {
+        self.bounding_box
+            .and_then(|r| r.transform(self.abs_transform))
+    }
+
     fn subroots(&self, f: &mut dyn FnMut(&Group)) {
         if let ImageKind::SVG(ref tree) = self.kind {
             f(&tree.root)
@@ -1373,14 +1427,14 @@ impl Tree {
 
     /// Calculates absolute transforms for all nodes in the tree.
     ///
-    /// A low-level methods. Prefer `usvg::Tree::postprocess` instead.
+    /// A low-level method. Prefer `usvg::Tree::postprocess` instead.
     pub fn calculate_abs_transforms(&mut self) {
         self.root.calculate_abs_transforms(Transform::identity());
     }
 
     /// Calculates bounding boxes for all nodes in the tree.
     ///
-    /// A low-level methods. Prefer `usvg::Tree::postprocess` instead.
+    /// A low-level method. Prefer `usvg::Tree::postprocess` instead.
     pub fn calculate_bounding_boxes(&mut self) {
         self.root.calculate_bounding_boxes();
     }
@@ -1536,7 +1590,7 @@ fn loop_over_filters(parent: &Group, f: &mut dyn FnMut(filter::SharedFilter)) {
 impl Group {
     /// Calculates absolute transforms for all children of this group.
     ///
-    /// A low-level methods. Prefer `usvg::Tree::postprocess` instead.
+    /// A low-level method. Prefer `usvg::Tree::postprocess` instead.
     pub fn calculate_abs_transforms(&mut self, transform: Transform) {
         for node in &mut self.children {
             match node {
@@ -1557,13 +1611,36 @@ impl Group {
 
     /// Calculates bounding boxes for all children of this group.
     ///
-    /// A low-level methods. Prefer `usvg::Tree::postprocess` instead.
+    /// A low-level method. Prefer `usvg::Tree::postprocess` instead.
     pub fn calculate_bounding_boxes(&mut self) {
         for node in &mut self.children {
             match node {
                 Node::Path(ref mut path) => {
                     path.bounding_box = path.data.compute_tight_bounds();
                     path.stroke_bounding_box = path.calculate_stroke_bounding_box();
+
+                    if path.abs_transform.has_skew() {
+                        // TODO: avoid re-alloc
+                        let path2 = path.data.as_ref().clone();
+                        if let Some(path2) = path2.transform(path.abs_transform) {
+                            path.abs_bounding_box = path2.compute_tight_bounds();
+                            path.abs_stroke_bounding_box =
+                                Path::calculate_stroke_bounding_box_inner(
+                                    path.stroke.as_ref(),
+                                    &path2,
+                                );
+                        }
+                    } else {
+                        // A transform without a skew can be performed just on a bbox.
+                        path.abs_bounding_box = path
+                            .bounding_box
+                            .and_then(|r| r.transform(path.abs_transform));
+
+                        path.abs_stroke_bounding_box = path
+                            .stroke_bounding_box
+                            .and_then(|r| r.transform(path.abs_transform));
+                    }
+
                     if path.stroke_bounding_box.is_none() {
                         path.stroke_bounding_box =
                             path.bounding_box.and_then(|r| r.to_non_zero_rect());
@@ -1584,7 +1661,9 @@ impl Group {
         }
 
         let mut bbox = BBox::default();
+        let mut abs_bbox = BBox::default();
         let mut stroke_bbox = BBox::default();
+        let mut abs_stroke_bbox = BBox::default();
         let mut layer_bbox = BBox::default();
         for child in &self.children {
             if let Some(mut c_bbox) = child.bounding_box() {
@@ -1597,6 +1676,10 @@ impl Group {
                 bbox = bbox.expand(c_bbox);
             }
 
+            if let Some(c_bbox) = child.abs_bounding_box() {
+                abs_bbox = abs_bbox.expand(c_bbox);
+            }
+
             if let Some(mut c_bbox) = child.stroke_bounding_box() {
                 if let Node::Group(ref group) = child {
                     if let Some(r) = c_bbox.transform(group.transform) {
@@ -1605,6 +1688,10 @@ impl Group {
                 }
 
                 stroke_bbox = stroke_bbox.expand(c_bbox);
+            }
+
+            if let Some(c_bbox) = child.abs_stroke_bounding_box() {
+                abs_stroke_bbox = abs_stroke_bbox.expand(c_bbox);
             }
 
             if let Node::Group(ref group) = child {
@@ -1620,7 +1707,9 @@ impl Group {
         }
 
         self.bounding_box = bbox.to_rect();
+        self.abs_bounding_box = abs_bbox.to_rect();
         self.stroke_bounding_box = stroke_bbox.to_non_zero_rect();
+        self.abs_stroke_bounding_box = abs_stroke_bbox.to_non_zero_rect();
 
         // Filter bbox has a higher priority than layers bbox.
         if let Some(filter_bbox) = self.filters_bounding_box() {

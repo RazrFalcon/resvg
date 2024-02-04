@@ -339,7 +339,7 @@ pub struct Text {
     /// The SVG one would be set only on groups.
     pub abs_transform: Transform,
 
-    /// Contains a text bounding box.
+    /// Element's text bounding box.
     ///
     /// Text bounding box is special in SVG and doesn't represent
     /// tight bounds of the element's content.
@@ -354,12 +354,20 @@ pub struct Text {
     /// This is because we have to perform a text layout before calculating a bounding box.
     pub bounding_box: Option<NonZeroRect>,
 
+    /// Element's text bounding box in canvas coordinates.
+    ///
+    /// `userSpaceOnUse` in SVG terms.
+    pub abs_bounding_box: Option<NonZeroRect>,
+
     /// Element's object bounding box including stroke.
     ///
     /// Similar to `bounding_box`, but includes stroke.
     ///
     /// Will have the same value as `bounding_box` when path has no stroke.
     pub stroke_bounding_box: Option<NonZeroRect>,
+
+    /// Element's bounding box including stroke in canvas coordinates.
+    pub abs_stroke_bounding_box: Option<NonZeroRect>,
 
     /// Text converted into paths, ready to render.
     ///

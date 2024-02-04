@@ -131,7 +131,9 @@ pub(crate) fn convert(
         chunks,
         abs_transform: Transform::default(),
         bounding_box: None,
+        abs_bounding_box: None,
         stroke_bounding_box: None,
+        abs_stroke_bounding_box: None,
         flattened: None,
     };
     parent.children.push(Node::Text(Box::new(text)));

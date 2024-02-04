@@ -577,7 +577,9 @@ pub(crate) fn convert_group(
             mask,
             filters,
             bounding_box: None,
+            abs_bounding_box: None,
             stroke_bounding_box: None,
+            abs_stroke_bounding_box: None,
             layer_bounding_box: None,
             children: Vec::new(),
         };
@@ -643,7 +645,9 @@ fn convert_path(
         data: path,
         abs_transform: Transform::default(),
         bounding_box: None,
+        abs_bounding_box: None,
         stroke_bounding_box: None,
+        abs_stroke_bounding_box: None,
     };
 
     match raw_paint_order.order {

@@ -41,8 +41,11 @@ pub fn convert_text(root: &mut Group, fontdb: &fontdb::Database) {
         if let Node::Text(ref mut text) = node {
             if let Some((node, bbox, stroke_bbox)) = convert_node(text, fontdb) {
                 text.bounding_box = Some(bbox);
+                text.abs_bounding_box = bbox.transform(text.abs_transform);
                 // TODO: test
+                // TODO: should we stroke transformed paths?
                 text.stroke_bounding_box = Some(stroke_bbox);
+                text.abs_stroke_bounding_box = stroke_bbox.transform(text.abs_transform);
                 text.flattened = Some(Box::new(node));
             }
         }
@@ -692,7 +695,9 @@ fn convert_span(
         data: Rc::new(path),
         abs_transform: Transform::default(),
         bounding_box: None,
+        abs_bounding_box: None,
         stroke_bounding_box: None,
+        abs_stroke_bounding_box: None,
     };
 
     Some((path, bbox))
