@@ -681,7 +681,7 @@ pub extern "C" fn resvg_get_image_bbox(
     if let Some(r) = tree
         .0
         .root
-        .abs_bounding_box()
+        .abs_bounding_box
         .and_then(|r| r.to_non_zero_rect())
     {
         unsafe {

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- `usvg::Group::abs_bounding_box`
+- `usvg::Group::abs_stroke_bounding_box`
+- `usvg::Path::abs_bounding_box`
+- `usvg::Path::abs_stroke_bounding_box`
+- `usvg::Text::abs_bounding_box`
+- `usvg::Text::abs_stroke_bounding_box`
+
+### Removed
+- `usvg::Group::abs_bounding_box()` method. It's a field now.
+- `usvg::Group::abs_filters_bounding_box()`
+
 ### Fixed
 - `font-family` parsing.
 - Absolute bounding box calculation for paths.

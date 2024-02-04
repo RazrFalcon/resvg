@@ -1007,11 +1007,6 @@ impl Group {
         !self.children.is_empty()
     }
 
-    /// Returns node's bounding box in canvas coordinates.
-    pub fn abs_bounding_box(&self) -> Option<Rect> {
-        self.bounding_box?.transform(self.abs_transform)
-    }
-
     /// Calculates a node's filter bounding box.
     ///
     /// Filters with `objectBoundingBox` and missing or zero `bounding_box` would be ignored.
@@ -1042,11 +1037,6 @@ impl Group {
         }
 
         full_region.to_non_zero_rect()
-    }
-
-    /// Calculates a node's filter bounding box in canvas coordinates.
-    pub fn abs_filters_bounding_box(&self) -> Option<NonZeroRect> {
-        self.filters_bounding_box()?.transform(self.abs_transform)
     }
 
     fn subroots(&self, f: &mut dyn FnMut(&Group)) {
