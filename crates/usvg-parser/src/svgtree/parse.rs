@@ -5,6 +5,8 @@
 use std::collections::HashMap;
 
 use roxmltree::Error;
+use simplecss::Declaration;
+use svgtypes::parse_font_shorthand;
 
 use super::{AId, Attribute, Document, EId, NodeData, NodeId, NodeKind, ShortRange};
 
@@ -266,21 +268,63 @@ pub(crate) fn parse_svg_element<'input>(
         }
     };
 
+    let mut write_declaration = |declaration: &Declaration| {
+        // TODO: perform XML attribute normalization
+        if declaration.name == "marker" {
+            insert_attribute(AId::MarkerStart, declaration.value);
+            insert_attribute(AId::MarkerMid, declaration.value);
+            insert_attribute(AId::MarkerEnd, declaration.value);
+        } else if declaration.name == "font" {
+            if let Ok(shorthand) = parse_font_shorthand(declaration.value) {
+                // First we need to reset all values to their default.
+                insert_attribute(AId::FontStyle, "normal");
+                insert_attribute(AId::FontVariant, "normal");
+                insert_attribute(AId::FontWeight, "normal");
+                insert_attribute(AId::FontStretch, "normal");
+                insert_attribute(AId::LineHeight, "normal");
+                insert_attribute(AId::FontSizeAdjust, "none");
+                insert_attribute(AId::FontKerning, "auto");
+                insert_attribute(AId::FontVariantCaps, "normal");
+                insert_attribute(AId::FontVariantLigatures, "normal");
+                insert_attribute(AId::FontVariantNumeric, "normal");
+                insert_attribute(AId::FontVariantEastAsian, "normal");
+                insert_attribute(AId::FontVariantPosition, "normal");
+
+                // Then, we set the properties that have been declared.
+                shorthand
+                    .font_stretch
+                    .map(|s| insert_attribute(AId::FontStretch, s));
+                shorthand
+                    .font_weight
+                    .map(|s| insert_attribute(AId::FontWeight, s));
+                shorthand
+                    .font_variant
+                    .map(|s| insert_attribute(AId::FontVariant, s));
+                shorthand
+                    .font_style
+                    .map(|s| insert_attribute(AId::FontStyle, s));
+                insert_attribute(AId::FontSize, shorthand.font_size);
+                insert_attribute(AId::FontFamily, shorthand.font_family);
+            } else {
+                log::warn!(
+                    "Failed to parse {} value: '{}'",
+                    AId::Font,
+                    declaration.value
+                );
+            }
+        } else if let Some(aid) = AId::from_str(declaration.name) {
+            // Parse only the presentation attributes.
+            if aid.is_presentation() {
+                insert_attribute(aid, declaration.value);
+            }
+        }
+    };
+
     // Apply CSS.
     for rule in &style_sheet.rules {
         if rule.selector.matches(&XmlNode(xml_node)) {
             for declaration in &rule.declarations {
-                // TODO: perform XML attribute normalization
-                if let Some(aid) = AId::from_str(declaration.name) {
-                    // Parse only the presentation attributes.
-                    if aid.is_presentation() {
-                        insert_attribute(aid, declaration.value);
-                    }
-                } else if declaration.name == "marker" {
-                    insert_attribute(AId::MarkerStart, declaration.value);
-                    insert_attribute(AId::MarkerMid, declaration.value);
-                    insert_attribute(AId::MarkerEnd, declaration.value);
-                }
+                write_declaration(declaration);
             }
         }
     }
@@ -288,13 +332,7 @@ pub(crate) fn parse_svg_element<'input>(
     // Split a `style` attribute.
     if let Some(value) = xml_node.attribute("style") {
         for declaration in simplecss::DeclarationTokenizer::from(value) {
-            // TODO: preform XML attribute normalization
-            if let Some(aid) = AId::from_str(declaration.name) {
-                // Parse only the presentation attributes.
-                if aid.is_presentation() {
-                    insert_attribute(aid, declaration.value);
-                }
-            }
+            write_declaration(&declaration);
         }
     }
 
