@@ -9,7 +9,7 @@ use svgtypes::{parse_font_families, FontFamily, Length, LengthUnit};
 use usvg_tree::*;
 
 use crate::svgtree::{AId, EId, FromValue, SvgNode};
-use crate::{converter, style};
+use crate::{converter, OptionLog, style};
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for usvg_tree::TextAnchor {
     fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
@@ -390,7 +390,12 @@ fn convert_font(node: SvgNode, state: &converter::State) -> Font {
         ""
     };
 
-    let mut families = parse_font_families(font_families).unwrap_or_default();
+    let mut families = parse_font_families(font_families).ok().log_none(|| {
+        log::warn!(
+                "Failed to parse {} value: '{}'. Falling back to {}.",
+                AId::FontFamily, font_families, state.opt.font_family
+            )
+    }).unwrap_or_default();
 
     if families.is_empty() {
         families.push(FontFamily::Named(state.opt.font_family.clone()))
@@ -424,7 +429,7 @@ fn conv_font_stretch(node: SvgNode) -> FontStretch {
 }
 
 fn resolve_font_weight(node: SvgNode) -> u16 {
-    fn bound(min: usize, val: usize, max: usize) -> usize {
+    fn `bound(min: usize, val: usize, max: usize) -> usize {
         std::cmp::max(min, std::cmp::min(max, val))
     }
 
