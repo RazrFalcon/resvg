@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 use roxmltree::Error;
 use simplecss::Declaration;
-use svgtypes::parse_font_shorthand;
+use svgtypes::FontShorthand;
 
 use super::{AId, Attribute, Document, EId, NodeData, NodeId, NodeKind, ShortRange};
 
@@ -275,7 +275,7 @@ pub(crate) fn parse_svg_element<'input>(
             insert_attribute(AId::MarkerMid, declaration.value);
             insert_attribute(AId::MarkerEnd, declaration.value);
         } else if declaration.name == "font" {
-            if let Ok(shorthand) = parse_font_shorthand(declaration.value) {
+            if let Ok(shorthand) = FontShorthand::from_str(declaration.value) {
                 // First we need to reset all values to their default.
                 insert_attribute(AId::FontStyle, "normal");
                 insert_attribute(AId::FontVariant, "normal");
