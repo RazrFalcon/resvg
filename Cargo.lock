@@ -328,6 +328,7 @@ dependencies = [
 [[package]]
 name = "svgtypes"
 version = "0.13.0"
+source = "git+https://github.com/RazrFalcon/svgtypes#41f871a9a5feb7808ce129773ec2696b0e887e50"
 dependencies = [
  "kurbo 0.10.4",
  "siphasher",

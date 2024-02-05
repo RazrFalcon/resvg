@@ -24,7 +24,7 @@ pico-args = { version = "0.5", features = ["eq-separator"] }
 usvg-parser = { path = "../usvg-parser", version = "0.38.0" }
 usvg-tree = { path = "../usvg-tree", version = "0.38.0" }
 xmlwriter = "0.1"
-svgtypes = {path = "../../../svgtypes"}
+svgtypes = { git = "https://github.com/RazrFalcon/svgtypes"}
 
 [dependencies.usvg-text-layout]
 path = "../usvg-text-layout"
