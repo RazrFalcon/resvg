@@ -20,7 +20,7 @@ unicode-bidi = "0.3"
 unicode-script = "0.5"
 unicode-vo = "0.1"
 usvg-tree = { path = "../usvg-tree", version = "0.38.0" }
-svgtypes = { git = "https://github.com/RazrFalcon/svgtypes"}
+svgtypes = "0.14.0"
 
 [features]
 default = ["system-fonts", "memmap-fonts"]
