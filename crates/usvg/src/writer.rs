@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::io::Write;
 use std::rc::Rc;
-use svgtypes::FontFamily;
+use svgtypes::{parse_font_families, FontFamily};
 
 use usvg_parser::{AId, EId};
 use usvg_tree::*;
@@ -1674,10 +1674,16 @@ fn write_span(
         FontFamily::Cursive => "cursive".to_string(),
         FontFamily::Fantasy => "fantasy".to_string(),
         FontFamily::Named(s) => {
-            if ctx.opt.writer_opts.use_single_quote {
-                format!("\"{}\"", s)
-            } else {
-                format!("'{}'", s)
+            // Only quote if absolutely necessary
+            match parse_font_families(s) {
+                Ok(_) => s.clone(),
+                Err(_) => {
+                    if ctx.opt.writer_opts.use_single_quote {
+                        format!("\"{}\"", s)
+                    } else {
+                        format!("'{}'", s)
+                    }
+                }
             }
         }
     };
