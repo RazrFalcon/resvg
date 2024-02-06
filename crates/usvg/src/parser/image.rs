@@ -6,9 +6,9 @@ use std::sync::Arc;
 
 use svgtypes::Length;
 
-use crate::{Group, Image, ImageKind, Node, NonZeroRect, Size, Transform, Tree, ViewBox};
 use super::svgtree::{AId, SvgNode};
 use super::{converter, OptionLog, Options};
+use crate::{Group, Image, ImageKind, Node, NonZeroRect, Size, Transform, Tree, ViewBox};
 
 /// A shorthand for [ImageHrefResolver]'s data function.
 pub type ImageHrefDataResolverFn =

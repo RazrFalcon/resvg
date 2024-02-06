@@ -18,8 +18,8 @@ mod text;
 mod units;
 mod use_node;
 
+pub use image::{ImageHrefDataResolverFn, ImageHrefResolver, ImageHrefStringResolverFn};
 pub use options::Options;
-pub use image::{ImageHrefResolver, ImageHrefDataResolverFn, ImageHrefStringResolverFn};
 pub(crate) use svgtree::{AId, EId};
 
 /// List of all errors.

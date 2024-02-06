@@ -4,9 +4,9 @@
 
 use svgtypes::{Length, LengthUnit as Unit};
 
-use crate::Units;
 use super::converter;
 use super::svgtree::{AId, SvgNode};
+use crate::Units;
 
 #[inline(never)]
 pub(crate) fn convert_length(

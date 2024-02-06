@@ -2,10 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{ApproxEqUlps, Color, Fill, FillRule, LineCap, LineJoin, Opacity, Paint, Stroke, StrokeMiterlimit, Units};
 use super::converter::{self, SvgColorExt};
 use super::paint_server;
 use super::svgtree::{AId, FromValue, SvgNode};
+use crate::{
+    ApproxEqUlps, Color, Fill, FillRule, LineCap, LineJoin, Opacity, Paint, Stroke,
+    StrokeMiterlimit, Units,
+};
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for LineCap {
     fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {

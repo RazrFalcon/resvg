@@ -7,9 +7,9 @@ use std::rc::Rc;
 use kurbo::{ParamCurve, ParamCurveArclen};
 use svgtypes::{parse_font_families, FontFamily, Length, LengthUnit};
 
-use crate::*;
 use super::svgtree::{AId, EId, FromValue, SvgNode};
 use super::{converter, style, OptionLog};
+use crate::*;
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for TextAnchor {
     fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {

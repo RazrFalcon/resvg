@@ -8,10 +8,10 @@ use std::str::FromStr;
 
 use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind, TransformOrigin};
 
-use crate::*;
 use super::svgtree::{self, AId, EId, FromValue, SvgNode};
 use super::units::{self, convert_length};
 use super::{Error, Options};
+use crate::*;
 
 #[derive(Clone)]
 pub struct State<'a> {

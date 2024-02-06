@@ -1,16 +1,15 @@
 use once_cell::sync::Lazy;
 
-static GLOBAL_FONTDB: Lazy<std::sync::Mutex<usvg::fontdb::Database>> =
-    Lazy::new(|| {
-        let mut fontdb = usvg::fontdb::Database::new();
-        fontdb.load_fonts_dir("../resvg/tests/fonts");
-        fontdb.set_serif_family("Noto Serif");
-        fontdb.set_sans_serif_family("Noto Sans");
-        fontdb.set_cursive_family("Yellowtail");
-        fontdb.set_fantasy_family("Sedgwick Ave Display");
-        fontdb.set_monospace_family("Noto Mono");
-        std::sync::Mutex::new(fontdb)
-    });
+static GLOBAL_FONTDB: Lazy<std::sync::Mutex<usvg::fontdb::Database>> = Lazy::new(|| {
+    let mut fontdb = usvg::fontdb::Database::new();
+    fontdb.load_fonts_dir("../resvg/tests/fonts");
+    fontdb.set_serif_family("Noto Serif");
+    fontdb.set_sans_serif_family("Noto Sans");
+    fontdb.set_cursive_family("Yellowtail");
+    fontdb.set_fantasy_family("Sedgwick Ave Display");
+    fontdb.set_monospace_family("Noto Mono");
+    std::sync::Mutex::new(fontdb)
+});
 
 fn resave(name: &str) {
     resave_impl(name, None, false);

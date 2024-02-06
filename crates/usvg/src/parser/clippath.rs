@@ -2,13 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::cell::RefCell;
 use std::rc::Rc;
 use std::str::FromStr;
-use std::cell::RefCell;
 
-use crate::{ClipPath, Group, SharedClipPath, Transform, Units};
 use super::converter;
 use super::svgtree::{AId, EId, SvgNode};
+use crate::{ClipPath, Group, SharedClipPath, Transform, Units};
 
 pub(crate) fn convert(
     node: SvgNode,

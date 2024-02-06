@@ -12,8 +12,11 @@ mod text;
 
 use tiny_skia_path::Transform;
 
+use crate::{
+    BlendMode, ImageRendering, Opacity, ShapeRendering, SpreadMethod, TextRendering, Units,
+    Visibility,
+};
 pub use names::{AId, EId};
-use crate::{BlendMode, ImageRendering, Opacity, ShapeRendering, SpreadMethod, TextRendering, Units, Visibility};
 
 /// An SVG tree container.
 ///
@@ -854,9 +857,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for Opacity {
     fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
         let length = svgtypes::Length::from_str(value).ok()?;
         if length.unit == svgtypes::LengthUnit::Percent {
-            Some(Opacity::new_clamped(
-                length.number as f32 / 100.0,
-            ))
+            Some(Opacity::new_clamped(length.number as f32 / 100.0))
         } else if length.unit == svgtypes::LengthUnit::None {
             Some(Opacity::new_clamped(length.number as f32))
         } else {

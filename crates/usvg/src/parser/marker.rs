@@ -2,18 +2,19 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use strict_num::NonZeroPositiveF32;
 use svgtypes::Length;
 use tiny_skia_path::Point;
 
-use crate::{
-    ApproxEqUlps, ApproxZeroUlps, ClipPath, Fill, Group, Node, NonZeroRect, Path, Size, Transform, ViewBox
-};
 use super::converter;
 use super::svgtree::{AId, EId, SvgNode};
+use crate::{
+    ApproxEqUlps, ApproxZeroUlps, ClipPath, Fill, Group, Node, NonZeroRect, Path, Size, Transform,
+    ViewBox,
+};
 
 // Similar to `tiny_skia_path::PathSegment`, but without the `QuadTo`.
 #[derive(Copy, Clone, Debug)]

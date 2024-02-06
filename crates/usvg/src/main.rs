@@ -412,11 +412,8 @@ fn process(args: Args) -> Result<(), String> {
         shape_rendering: args.shape_rendering,
         text_rendering: args.text_rendering,
         image_rendering: args.image_rendering,
-        default_size: usvg::Size::from_wh(
-            args.default_width as f32,
-            args.default_height as f32,
-        )
-        .unwrap(),
+        default_size: usvg::Size::from_wh(args.default_width as f32, args.default_height as f32)
+            .unwrap(),
         image_href_resolver: usvg::ImageHrefResolver::default(),
     };
 

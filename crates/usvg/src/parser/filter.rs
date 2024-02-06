@@ -13,8 +13,7 @@ use strict_num::PositiveF32;
 use svgtypes::{Length, LengthUnit as Unit};
 
 use crate::{
-    filter, filter::*,
-    ApproxZeroUlps, Color, Group, Node, NonZeroF32, NonZeroRect, Opacity, Units,
+    filter, filter::*, ApproxZeroUlps, Color, Group, Node, NonZeroF32, NonZeroRect, Opacity, Units,
 };
 
 use super::converter::{self, SvgColorExt};

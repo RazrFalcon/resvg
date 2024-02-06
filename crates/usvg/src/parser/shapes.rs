@@ -7,9 +7,9 @@ use std::rc::Rc;
 use svgtypes::Length;
 use tiny_skia_path::Path;
 
-use crate::{ApproxEqUlps, IsValidLength, Rect};
 use super::svgtree::{AId, EId, SvgNode};
 use super::{converter, units};
+use crate::{ApproxEqUlps, IsValidLength, Rect};
 
 pub(crate) fn convert(node: SvgNode, state: &converter::State) -> Option<Rc<Path>> {
     match node.tag_name()? {

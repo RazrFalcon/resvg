@@ -7,9 +7,9 @@ use std::rc::Rc;
 
 use svgtypes::{Length, LengthUnit as Unit};
 
-use crate::{Group, Mask, MaskType, NonZeroRect, SharedMask, Units};
 use super::svgtree::{AId, EId, SvgNode};
 use super::{converter, OptionLog};
+use crate::{Group, Mask, MaskType, NonZeroRect, SharedMask, Units};
 
 pub(crate) fn convert(
     node: SvgNode,

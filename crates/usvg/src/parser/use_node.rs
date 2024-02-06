@@ -7,9 +7,9 @@ use std::rc::Rc;
 
 use svgtypes::{Length, LengthUnit};
 
-use crate::{Group, IsValidLength, Node, NonZeroRect, Path, Size, Transform};
 use super::converter;
 use super::svgtree::{AId, EId, SvgNode};
+use crate::{Group, IsValidLength, Node, NonZeroRect, Path, Size, Transform};
 
 // TODO: do not return Option<()>
 pub(crate) fn convert(
