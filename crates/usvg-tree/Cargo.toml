@@ -14,5 +14,5 @@ workspace = "../.."
 
 [dependencies]
 strict-num = "0.1.1"
-svgtypes = "0.13"
+svgtypes = "0.14.0"
 tiny-skia-path = "0.11.4"

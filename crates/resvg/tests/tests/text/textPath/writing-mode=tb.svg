@@ -5,7 +5,7 @@
     <path id="pathForText1" d="M 20 100 C 35 135 85 135 100 100 C 115 65 165 65 180 100"
           fill="none" stroke="gray"/>
 
-    <text id="text1" font-family="Mplus 1p" font-size="24" writing-mode="tb">
+    <text id="text1" font-family="'Mplus 1p'" font-size="24" writing-mode="tb">
         <textPath id="textPath1" xlink:href="#pathForText1">日本語の表現</textPath>
     </text>
 

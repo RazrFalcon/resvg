@@ -6,6 +6,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::io::Write;
 use std::rc::Rc;
+use svgtypes::{parse_font_families, FontFamily};
 
 use usvg_parser::{AId, EId};
 use usvg_tree::*;
@@ -1666,23 +1667,35 @@ fn write_span(
 ) {
     xml.start_svg_element(EId::Tspan);
 
-    if !span.font.families.is_empty() {
-        let families = if span.font.families.len() == 1 {
-            span.font.families[0].clone()
-        } else {
-            span.font
-                .families
-                .iter()
-                .map(|family| {
+    let font_family_to_str = |font_family: &FontFamily| match font_family {
+        FontFamily::Monospace => "monospace".to_string(),
+        FontFamily::Serif => "serif".to_string(),
+        FontFamily::SansSerif => "sans-serif".to_string(),
+        FontFamily::Cursive => "cursive".to_string(),
+        FontFamily::Fantasy => "fantasy".to_string(),
+        FontFamily::Named(s) => {
+            // Only quote if absolutely necessary
+            match parse_font_families(s) {
+                Ok(_) => s.clone(),
+                Err(_) => {
                     if ctx.opt.writer_opts.use_single_quote {
-                        format!("\"{}\"", family)
+                        format!("\"{}\"", s)
                     } else {
-                        format!("'{}'", family)
+                        format!("'{}'", s)
                     }
-                })
-                .collect::<Vec<_>>()
-                .join(", ")
-        };
+                }
+            }
+        }
+    };
+
+    if !span.font.families.is_empty() {
+        let families = span
+            .font
+            .families
+            .iter()
+            .map(font_family_to_str)
+            .collect::<Vec<_>>()
+            .join(", ");
         xml.write_svg_attribute(AId::FontFamily, &families);
     }
 

@@ -141,7 +141,7 @@ Basically everything from [CSS Text Module Level 3](https://www.w3.org/TR/css-te
 - [ ] A [`shape-margin`](https://www.w3.org/TR/SVG2/text.html#TextShapeMargin) property.
 - [ ] A [`shape-padding`](https://www.w3.org/TR/SVG2/text.html#TextShapePadding) property.
 - [ ] New variants to [`font-variant`](https://drafts.csswg.org/css-fonts-3/#font-variant-prop) property. Previously it allowed only `small-caps`.
-- [ ] A `font-variant-css21` value to [`font`](https://www.w3.org/TR/css-fonts-3/#propdef-font) property.
+- [x] A `font-variant-css21` value to [`font`](https://www.w3.org/TR/css-fonts-3/#propdef-font) property.
 
 <!-- text-emphasis ? -->
 <!-- text-shadow ? -->

@@ -5,6 +5,7 @@
 use std::rc::Rc;
 
 use strict_num::NonZeroPositiveF32;
+pub use svgtypes::FontFamily;
 
 use crate::{Fill, Group, Paint, PaintOrder, Stroke, TextRendering, Visibility};
 use tiny_skia_path::{NonZeroRect, Transform};
@@ -55,7 +56,7 @@ pub struct Font {
     /// A list of family names.
     ///
     /// Never empty. Uses `usvg_parser::Options::font_family` as fallback.
-    pub families: Vec<String>,
+    pub families: Vec<FontFamily>,
     /// A font style.
     pub style: FontStyle,
     /// A font stretch.
