@@ -5,7 +5,7 @@
 use std::rc::Rc;
 
 use strict_num::NonZeroPositiveF32;
-use svgtypes::FontFamily;
+pub use svgtypes::FontFamily;
 
 use crate::{Fill, Group, Paint, PaintOrder, Stroke, TextRendering, Visibility};
 use tiny_skia_path::{NonZeroRect, Transform};
