@@ -2,9 +2,6 @@
 members = [
     "crates/resvg",
     "crates/usvg",
-    "crates/usvg-parser",
-    "crates/usvg-text-layout",
-    "crates/usvg-tree",
     "crates/c-api",
 ]
 default-members = ["crates/resvg"]

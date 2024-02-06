@@ -52,26 +52,21 @@ and can focus just on the rendering part.
 #![warn(missing_debug_implementations)]
 #![warn(missing_copy_implementations)]
 
+mod parser;
+mod tree;
 mod writer;
 
-pub use usvg_parser::*;
+pub use parser::*;
+pub use tree::*;
+
+pub use roxmltree;
+
 #[cfg(feature = "text")]
-pub use usvg_text_layout::fontdb;
-pub use usvg_tree::*;
+mod text_to_paths;
+#[cfg(feature = "text")]
+pub use fontdb;
 
 pub use writer::XmlOptions;
-
-/// A trait to write `usvg::Tree` back to SVG.
-pub trait TreeWriting {
-    /// Writes `usvg::Tree` back to SVG.
-    fn to_string(&self, opt: &XmlOptions) -> String;
-}
-
-impl TreeWriting for usvg_tree::Tree {
-    fn to_string(&self, opt: &XmlOptions) -> String {
-        writer::convert(self, opt)
-    }
-}
 
 /// A list of post-processing steps.
 #[derive(Clone, Copy, Debug)]
@@ -88,42 +83,5 @@ impl Default for PostProcessingSteps {
         Self {
             convert_text_into_paths: true,
         }
-    }
-}
-
-/// A trait to postprocess/finalize `usvg::Tree` after parsing.
-pub trait TreePostProc {
-    /// Postprocesses the `usvg::Tree`.
-    ///
-    /// Must be called after parsing a `usvg::Tree`.
-    ///
-    /// `steps` contains a list of _additional_ post-processing steps.
-    /// This methods performs some operations even when `steps` is `PostProcessingSteps::default()`.
-    ///
-    /// `fontdb` is needed only for [`PostProcessingSteps::convert_text_into_paths`].
-    /// Otherwise you can pass just `fontdb::Database::new()`.
-    fn postprocess(
-        &mut self,
-        steps: PostProcessingSteps,
-        #[cfg(feature = "text")] fontdb: &fontdb::Database,
-    );
-}
-
-impl TreePostProc for usvg_tree::Tree {
-    fn postprocess(
-        &mut self,
-        steps: PostProcessingSteps,
-        #[cfg(feature = "text")] fontdb: &fontdb::Database,
-    ) {
-        self.calculate_abs_transforms();
-
-        if steps.convert_text_into_paths {
-            #[cfg(feature = "text")]
-            {
-                usvg_text_layout::convert_text(&mut self.root, &fontdb);
-            }
-        }
-
-        self.calculate_bounding_boxes();
     }
 }

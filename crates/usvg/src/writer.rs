@@ -6,13 +6,19 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::io::Write;
 use std::rc::Rc;
-use svgtypes::{parse_font_families, FontFamily};
 
-use usvg_parser::{AId, EId};
-use usvg_tree::*;
+use svgtypes::{parse_font_families, FontFamily};
 use xmlwriter::XmlWriter;
 
-use crate::TreeWriting;
+use crate::parser::{AId, EId};
+use crate::*;
+
+impl Tree {
+    /// Writes `usvg::Tree` back to SVG.
+    pub fn to_string(&self, opt: &XmlOptions) -> String {
+        convert(self, opt)
+    }
+}
 
 /// Checks that type has a default value.
 trait IsDefault: Default {
@@ -1306,13 +1312,13 @@ impl XmlWriterExt for XmlWriter {
         self.end_element();
     }
 
-    fn write_image_data(&mut self, kind: &usvg_tree::ImageKind) {
+    fn write_image_data(&mut self, kind: &ImageKind) {
         let svg_string;
         let (mime, data) = match kind {
-            usvg_tree::ImageKind::JPEG(ref data) => ("jpeg", data.as_slice()),
-            usvg_tree::ImageKind::PNG(ref data) => ("png", data.as_slice()),
-            usvg_tree::ImageKind::GIF(ref data) => ("gif", data.as_slice()),
-            usvg_tree::ImageKind::SVG(ref tree) => {
+            ImageKind::JPEG(ref data) => ("jpeg", data.as_slice()),
+            ImageKind::PNG(ref data) => ("png", data.as_slice()),
+            ImageKind::GIF(ref data) => ("gif", data.as_slice()),
+            ImageKind::SVG(ref tree) => {
                 svg_string = tree.to_string(&XmlOptions::default());
                 ("svg+xml", svg_string.as_bytes())
             }

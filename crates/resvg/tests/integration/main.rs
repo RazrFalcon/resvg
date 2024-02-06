@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use rgb::{FromSlice, RGBA8};
-use usvg::{fontdb, TreeParsing, TreePostProc};
+use usvg::fontdb;
 
 #[rustfmt::skip]
 mod render;

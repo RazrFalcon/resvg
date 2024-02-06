@@ -15,7 +15,7 @@ use std::slice;
 use resvg::tiny_skia;
 #[cfg(feature = "text")]
 use resvg::usvg::fontdb;
-use resvg::usvg::{self, TreeParsing, TreePostProc};
+use resvg::usvg;
 
 /// @brief List of possible errors.
 #[repr(C)]

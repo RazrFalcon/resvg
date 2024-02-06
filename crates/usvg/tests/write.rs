@@ -1,11 +1,8 @@
 use once_cell::sync::Lazy;
 
-use usvg::{TreePostProc, TreeWriting};
-use usvg_parser::TreeParsing;
-
-static GLOBAL_FONTDB: Lazy<std::sync::Mutex<usvg_text_layout::fontdb::Database>> =
+static GLOBAL_FONTDB: Lazy<std::sync::Mutex<usvg::fontdb::Database>> =
     Lazy::new(|| {
-        let mut fontdb = usvg_text_layout::fontdb::Database::new();
+        let mut fontdb = usvg::fontdb::Database::new();
         fontdb.load_fonts_dir("../resvg/tests/fonts");
         fontdb.set_serif_family("Noto Serif");
         fontdb.set_sans_serif_family("Noto Sans");
@@ -31,8 +28,8 @@ fn resave_impl(name: &str, id_prefix: Option<String>, preserve_text: bool) {
     let input_svg = std::fs::read_to_string(format!("tests/files/{}.svg", name)).unwrap();
 
     let tree = {
-        let opt = usvg_parser::Options::default();
-        let mut tree = usvg_tree::Tree::from_str(&input_svg, &opt).unwrap();
+        let opt = usvg::Options::default();
+        let mut tree = usvg::Tree::from_str(&input_svg, &opt).unwrap();
         if !preserve_text {
             let fontdb = GLOBAL_FONTDB.lock().unwrap();
             let steps = usvg::PostProcessingSteps::default();

@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use usvg::{fontdb, TreeParsing, TreePostProc};
+use usvg::fontdb;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

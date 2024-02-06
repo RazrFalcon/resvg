@@ -423,54 +423,25 @@ name = "usvg"
 version = "0.38.0"
 dependencies = [
  "base64",
- "log",
- "once_cell",
- "pico-args",
- "svgtypes",
- "usvg-parser",
- "usvg-text-layout",
- "usvg-tree",
- "xmlwriter",
-]
-
-[[package]]
-name = "usvg-parser"
-version = "0.38.0"
-dependencies = [
  "data-url",
  "flate2",
+ "fontdb",
  "imagesize",
  "kurbo 0.9.5",
  "log",
+ "once_cell",
+ "pico-args",
  "roxmltree 0.19.0",
+ "rustybuzz",
  "simplecss",
  "siphasher",
- "svgtypes",
- "usvg-tree",
-]
-
-[[package]]
-name = "usvg-text-layout"
-version = "0.38.0"
-dependencies = [
- "fontdb",
- "kurbo 0.9.5",
- "log",
- "rustybuzz",
- "svgtypes",
- "unicode-bidi",
- "unicode-script",
- "unicode-vo",
- "usvg-tree",
-]
-
-[[package]]
-name = "usvg-tree"
-version = "0.38.0"
-dependencies = [
  "strict-num",
  "svgtypes",
  "tiny-skia-path",
+ "unicode-bidi",
+ "unicode-script",
+ "unicode-vo",
+ "xmlwriter",
 ]
 
 [[package]]

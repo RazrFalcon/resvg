@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use usvg::{fontdb, TreePostProc};
+use usvg::fontdb;
 
 fn main() {
     let size = usvg::Size::from_wh(200.0, 200.0).unwrap();

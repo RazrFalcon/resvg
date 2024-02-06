@@ -1,5 +1,3 @@
-use usvg::TreeParsing;
-
 fn main() {
     let mut opt = usvg::Options::default();
 

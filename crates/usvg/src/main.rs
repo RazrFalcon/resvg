@@ -8,8 +8,6 @@ use std::path::PathBuf;
 use std::process;
 
 use pico_args::Arguments;
-use usvg::{TreePostProc, TreeWriting};
-use usvg_parser::TreeParsing;
 
 const HELP: &str = "\
 usvg (micro SVG) is an SVG simplification tool.
@@ -113,9 +111,9 @@ ARGS:
 struct Args {
     dpi: u32,
     languages: Vec<String>,
-    shape_rendering: usvg_tree::ShapeRendering,
-    text_rendering: usvg_tree::TextRendering,
-    image_rendering: usvg_tree::ImageRendering,
+    shape_rendering: usvg::ShapeRendering,
+    text_rendering: usvg::TextRendering,
+    image_rendering: usvg::ImageRendering,
     resources_dir: Option<PathBuf>,
 
     font_family: Option<String>,
@@ -338,7 +336,7 @@ fn process(args: Args) -> Result<(), String> {
         (svg_from, svg_to)
     };
 
-    let mut fontdb = usvg_text_layout::fontdb::Database::new();
+    let mut fontdb = usvg::fontdb::Database::new();
     if !args.skip_system_fonts {
         // TODO: only when needed
         fontdb.load_system_fonts();
@@ -366,7 +364,7 @@ fn process(args: Args) -> Result<(), String> {
 
     if args.list_fonts {
         for face in fontdb.faces() {
-            if let usvg_text_layout::fontdb::Source::File(ref path) = &face.source {
+            if let usvg::fontdb::Source::File(ref path) = &face.source {
                 let families: Vec<_> = face
                     .families
                     .iter()
@@ -401,7 +399,7 @@ fn process(args: Args) -> Result<(), String> {
         }
     };
 
-    let re_opt = usvg_parser::Options {
+    let re_opt = usvg::Options {
         resources_dir,
         dpi: args.dpi as f32,
         font_family: args
@@ -414,12 +412,12 @@ fn process(args: Args) -> Result<(), String> {
         shape_rendering: args.shape_rendering,
         text_rendering: args.text_rendering,
         image_rendering: args.image_rendering,
-        default_size: usvg_tree::Size::from_wh(
+        default_size: usvg::Size::from_wh(
             args.default_width as f32,
             args.default_height as f32,
         )
         .unwrap(),
-        image_href_resolver: usvg_parser::ImageHrefResolver::default(),
+        image_href_resolver: usvg::ImageHrefResolver::default(),
     };
 
     let input_svg = match in_svg {
@@ -427,7 +425,7 @@ fn process(args: Args) -> Result<(), String> {
         InputFrom::File(ref path) => std::fs::read(path).map_err(|e| e.to_string()),
     }?;
 
-    let mut tree = usvg_tree::Tree::from_data(&input_svg, &re_opt).map_err(|e| format!("{}", e))?;
+    let mut tree = usvg::Tree::from_data(&input_svg, &re_opt).map_err(|e| format!("{}", e))?;
     let steps = usvg::PostProcessingSteps {
         convert_text_into_paths: !args.preserve_text,
     };

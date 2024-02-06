@@ -15,9 +15,14 @@ This changelog also contains important changes in dependencies.
 - `usvg::Text::abs_bounding_box`
 - `usvg::Text::abs_stroke_bounding_box`
 
+### Changed
+- All `usvg-*` crates merged into one. There is just the `usvg` crate now, as before.
+
 ### Removed
 - `usvg::Group::abs_bounding_box()` method. It's a field now.
 - `usvg::Group::abs_filters_bounding_box()`
+- `usvg::TreeParsing`, `usvg::TreePostProc` and `usvg::TreeWriting` traits.
+  They are no longer needed.
 
 ### Fixed
 - `font-family` parsing.

@@ -6,7 +6,7 @@
 
 use std::path;
 
-use usvg::{fontdb, TreeParsing, TreePostProc};
+use usvg::fontdb;
 
 fn main() {
     if let Err(e) = process() {
