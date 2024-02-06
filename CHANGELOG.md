@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.39.0] - 2024-02-06
 ### Added
+- `font` shorthand parsing.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
 - `usvg::Group::abs_bounding_box`
 - `usvg::Group::abs_stroke_bounding_box`
 - `usvg::Path::abs_bounding_box`
@@ -26,6 +30,7 @@ This changelog also contains important changes in dependencies.
 
 ### Fixed
 - `font-family` parsing.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
 - Absolute bounding box calculation for paths.
 
 ## [0.38.0] - 2024-01-21
@@ -1059,7 +1064,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.38.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.39.0...HEAD
+[0.39.0]: https://github.com/RazrFalcon/resvg/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/RazrFalcon/resvg/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/RazrFalcon/resvg/compare/v0.36.0...v0.37.0
 [0.36.0]: https://github.com/RazrFalcon/resvg/compare/v0.35.0...v0.36.0
