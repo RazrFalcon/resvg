@@ -17,29 +17,47 @@ use crate::{BlendMode, Color, Group, ImageRendering, NonZeroF32, NonZeroRect, Op
 /// `filter` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Filter {
+    pub(crate) id: String,
+    pub(crate) units: Units,
+    pub(crate) primitive_units: Units,
+    pub(crate) rect: NonZeroRect,
+    pub(crate) primitives: Vec<Primitive>,
+}
+
+impl Filter {
     /// Element's ID.
     ///
     /// Taken from the SVG itself.
     /// Used only during SVG writing. `resvg` doesn't rely on this property.
-    pub id: String,
+    pub fn id(&self) -> &str {
+        &self.id
+    }
 
     /// Region coordinate system units.
     ///
     /// `filterUnits` in the SVG.
-    pub units: Units,
+    pub fn units(&self) -> Units {
+        self.units
+    }
 
     /// Content coordinate system units.
     ///
     /// `primitiveUnits` in the SVG.
-    pub primitive_units: Units,
+    pub fn primitive_units(&self) -> Units {
+        self.primitive_units
+    }
 
     /// Filter region.
     ///
     /// `x`, `y`, `width` and `height` in the SVG.
-    pub rect: NonZeroRect,
+    pub fn rect(&self) -> NonZeroRect {
+        self.rect
+    }
 
     /// A list of filter primitives.
-    pub primitives: Vec<Primitive>,
+    pub fn primitives(&self) -> &[Primitive] {
+        &self.primitives
+    }
 }
 
 /// An alias for a shared `Filter`.
@@ -48,30 +66,54 @@ pub type SharedFilter = Rc<RefCell<Filter>>;
 /// A filter primitive element.
 #[derive(Clone, Debug)]
 pub struct Primitive {
+    pub(crate) x: Option<f32>,
+    pub(crate) y: Option<f32>,
+    pub(crate) width: Option<f32>,
+    pub(crate) height: Option<f32>,
+    pub(crate) color_interpolation: ColorInterpolation,
+    pub(crate) result: String,
+    pub(crate) kind: Kind,
+}
+
+impl Primitive {
     /// `x` coordinate of the filter subregion.
-    pub x: Option<f32>,
+    pub fn x(&self) -> Option<f32> {
+        self.x
+    }
 
     /// `y` coordinate of the filter subregion.
-    pub y: Option<f32>,
+    pub fn y(&self) -> Option<f32> {
+        self.y
+    }
 
     /// The filter subregion width.
-    pub width: Option<f32>,
+    pub fn width(&self) -> Option<f32> {
+        self.width
+    }
 
     /// The filter subregion height.
-    pub height: Option<f32>,
+    pub fn height(&self) -> Option<f32> {
+        self.height
+    }
 
     /// Color interpolation mode.
     ///
     /// `color-interpolation-filters` in the SVG.
-    pub color_interpolation: ColorInterpolation,
+    pub fn color_interpolation(&self) -> ColorInterpolation {
+        self.color_interpolation
+    }
 
     /// Assigned name for this filter primitive.
     ///
     /// `result` in the SVG.
-    pub result: String,
+    pub fn result(&self) -> &str {
+        &self.result
+    }
 
     /// Filter primitive kind.
-    pub kind: Kind,
+    pub fn kind(&self) -> &Kind {
+        &self.kind
+    }
 }
 
 /// A filter kind.
@@ -150,20 +192,32 @@ impl Default for ColorInterpolation {
 /// `feBlend` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Blend {
+    pub(crate) input1: Input,
+    pub(crate) input2: Input,
+    pub(crate) mode: BlendMode,
+}
+
+impl Blend {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input1: Input,
+    pub fn input1(&self) -> &Input {
+        &self.input1
+    }
 
     /// Identifies input for the given filter primitive.
     ///
     /// `in2` in the SVG.
-    pub input2: Input,
+    pub fn input2(&self) -> &Input {
+        &self.input2
+    }
 
     /// A blending mode.
     ///
     /// `mode` in the SVG.
-    pub mode: BlendMode,
+    pub fn mode(&self) -> BlendMode {
+        self.mode
+    }
 }
 
 /// A color matrix filter primitive.
@@ -171,15 +225,24 @@ pub struct Blend {
 /// `feColorMatrix` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct ColorMatrix {
+    pub(crate) input: Input,
+    pub(crate) kind: ColorMatrixKind,
+}
+
+impl ColorMatrix {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: Input,
+    pub fn input(&self) -> &Input {
+        &self.input
+    }
 
     /// A matrix kind.
     ///
     /// `type` in the SVG.
-    pub kind: ColorMatrixKind,
+    pub fn kind(&self) -> &ColorMatrixKind {
+        &self.kind
+    }
 }
 
 /// A color matrix filter primitive kind.
@@ -206,22 +269,40 @@ impl Default for ColorMatrixKind {
 /// `feComponentTransfer` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct ComponentTransfer {
+    pub(crate) input: Input,
+    pub(crate) func_r: TransferFunction,
+    pub(crate) func_g: TransferFunction,
+    pub(crate) func_b: TransferFunction,
+    pub(crate) func_a: TransferFunction,
+}
+
+impl ComponentTransfer {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: Input,
+    pub fn input(&self) -> &Input {
+        &self.input
+    }
 
     /// `feFuncR` in the SVG.
-    pub func_r: TransferFunction,
+    pub fn func_r(&self) -> &TransferFunction {
+        &self.func_r
+    }
 
     /// `feFuncG` in the SVG.
-    pub func_g: TransferFunction,
+    pub fn func_g(&self) -> &TransferFunction {
+        &self.func_g
+    }
 
     /// `feFuncB` in the SVG.
-    pub func_b: TransferFunction,
+    pub fn func_b(&self) -> &TransferFunction {
+        &self.func_b
+    }
 
     /// `feFuncA` in the SVG.
-    pub func_a: TransferFunction,
+    pub fn func_a(&self) -> &TransferFunction {
+        &self.func_a
+    }
 }
 
 /// A transfer function used by `FeComponentTransfer`.
@@ -260,20 +341,32 @@ pub enum TransferFunction {
 /// `feComposite` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Composite {
+    pub(crate) input1: Input,
+    pub(crate) input2: Input,
+    pub(crate) operator: CompositeOperator,
+}
+
+impl Composite {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input1: Input,
+    pub fn input1(&self) -> &Input {
+        &self.input1
+    }
 
     /// Identifies input for the given filter primitive.
     ///
     /// `in2` in the SVG.
-    pub input2: Input,
+    pub fn input2(&self) -> &Input {
+        &self.input2
+    }
 
     /// A compositing operation.
     ///
     /// `operator` in the SVG.
-    pub operator: CompositeOperator,
+    pub fn operator(&self) -> CompositeOperator {
+        self.operator
+    }
 }
 
 /// An images compositing operation.
@@ -293,33 +386,54 @@ pub enum CompositeOperator {
 /// `feConvolveMatrix` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct ConvolveMatrix {
+    pub(crate) input: Input,
+    pub(crate) matrix: ConvolveMatrixData,
+    pub(crate) divisor: NonZeroF32,
+    pub(crate) bias: f32,
+    pub(crate) edge_mode: EdgeMode,
+    pub(crate) preserve_alpha: bool,
+}
+
+impl ConvolveMatrix {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: Input,
+    pub fn input(&self) -> &Input {
+        &self.input
+    }
 
     /// A convolve matrix.
-    pub matrix: ConvolveMatrixData,
+    pub fn matrix(&self) -> &ConvolveMatrixData {
+        &self.matrix
+    }
 
     /// A matrix divisor.
     ///
     /// `divisor` in the SVG.
-    pub divisor: NonZeroF32,
+    pub fn divisor(&self) -> NonZeroF32 {
+        self.divisor
+    }
 
     /// A kernel matrix bias.
     ///
     /// `bias` in the SVG.
-    pub bias: f32,
+    pub fn bias(&self) -> f32 {
+        self.bias
+    }
 
     /// An edges processing mode.
     ///
     /// `edgeMode` in the SVG.
-    pub edge_mode: EdgeMode,
+    pub fn edge_mode(&self) -> EdgeMode {
+        self.edge_mode
+    }
 
     /// An alpha preserving flag.
     ///
     /// `preserveAlpha` in the SVG.
-    pub preserve_alpha: bool,
+    pub fn preserve_alpha(&self) -> bool {
+        self.preserve_alpha
+    }
 }
 
 /// A convolve matrix representation.
@@ -327,28 +441,46 @@ pub struct ConvolveMatrix {
 /// Used primarily by [`ConvolveMatrix`].
 #[derive(Clone, Debug)]
 pub struct ConvolveMatrixData {
+    pub(crate) target_x: u32,
+    pub(crate) target_y: u32,
+    pub(crate) columns: u32,
+    pub(crate) rows: u32,
+    pub(crate) data: Vec<f32>,
+}
+
+impl ConvolveMatrixData {
     /// Returns a matrix's X target.
     ///
     /// `targetX` in the SVG.
-    pub target_x: u32,
+    pub fn target_x(&self) -> u32 {
+        self.target_x
+    }
 
     /// Returns a matrix's Y target.
     ///
     /// `targetY` in the SVG.
-    pub target_y: u32,
+    pub fn target_y(&self) -> u32 {
+        self.target_y
+    }
 
     /// Returns a number of columns in the matrix.
     ///
     /// Part of the `order` attribute in the SVG.
-    pub columns: u32,
+    pub fn columns(&self) -> u32 {
+        self.columns
+    }
 
     /// Returns a number of rows in the matrix.
     ///
     /// Part of the `order` attribute in the SVG.
-    pub rows: u32,
+    pub fn rows(&self) -> u32 {
+        self.rows
+    }
 
     /// The actual matrix.
-    pub data: Vec<f32>,
+    pub fn data(&self) -> &[f32] {
+        &self.data
+    }
 }
 
 impl ConvolveMatrixData {
@@ -359,7 +491,7 @@ impl ConvolveMatrixData {
     /// - `columns` * `rows` != `data.len()`
     /// - `target_x` >= `columns`
     /// - `target_y` >= `rows`
-    pub fn new(
+    pub(crate) fn new(
         target_x: u32,
         target_y: u32,
         columns: u32,
@@ -403,30 +535,48 @@ pub enum EdgeMode {
 /// `feDisplacementMap` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct DisplacementMap {
+    pub(crate) input1: Input,
+    pub(crate) input2: Input,
+    pub(crate) scale: f32,
+    pub(crate) x_channel_selector: ColorChannel,
+    pub(crate) y_channel_selector: ColorChannel,
+}
+
+impl DisplacementMap {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input1: Input,
+    pub fn input1(&self) -> &Input {
+        &self.input1
+    }
 
     /// Identifies input for the given filter primitive.
     ///
     /// `in2` in the SVG.
-    pub input2: Input,
+    pub fn input2(&self) -> &Input {
+        &self.input2
+    }
 
     /// Scale factor.
     ///
     /// `scale` in the SVG.
-    pub scale: f32,
+    pub fn scale(&self) -> f32 {
+        self.scale
+    }
 
     /// Indicates a source color channel along the X-axis.
     ///
     /// `xChannelSelector` in the SVG.
-    pub x_channel_selector: ColorChannel,
+    pub fn x_channel_selector(&self) -> ColorChannel {
+        self.x_channel_selector
+    }
 
     /// Indicates a source color channel along the Y-axis.
     ///
     /// `yChannelSelector` in the SVG.
-    pub y_channel_selector: ColorChannel,
+    pub fn y_channel_selector(&self) -> ColorChannel {
+        self.y_channel_selector
+    }
 }
 
 /// A color channel.
@@ -446,36 +596,60 @@ pub enum ColorChannel {
 /// `feDropShadow` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct DropShadow {
+    pub(crate) input: Input,
+    pub(crate) dx: f32,
+    pub(crate) dy: f32,
+    pub(crate) std_dev_x: PositiveF32,
+    pub(crate) std_dev_y: PositiveF32,
+    pub(crate) color: Color,
+    pub(crate) opacity: Opacity,
+}
+
+impl DropShadow {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: Input,
+    pub fn input(&self) -> &Input {
+        &self.input
+    }
 
     /// The amount to offset the input graphic along the X-axis.
-    pub dx: f32,
+    pub fn dx(&self) -> f32 {
+        self.dx
+    }
 
     /// The amount to offset the input graphic along the Y-axis.
-    pub dy: f32,
+    pub fn dy(&self) -> f32 {
+        self.dy
+    }
 
     /// A standard deviation along the X-axis.
     ///
     /// `stdDeviation` in the SVG.
-    pub std_dev_x: PositiveF32,
+    pub fn std_dev_x(&self) -> PositiveF32 {
+        self.std_dev_x
+    }
 
     /// A standard deviation along the Y-axis.
     ///
     /// `stdDeviation` in the SVG.
-    pub std_dev_y: PositiveF32,
+    pub fn std_dev_y(&self) -> PositiveF32 {
+        self.std_dev_y
+    }
 
     /// A flood color.
     ///
     /// `flood-color` in the SVG.
-    pub color: Color,
+    pub fn color(&self) -> Color {
+        self.color
+    }
 
     /// A flood opacity.
     ///
     /// `flood-opacity` in the SVG.
-    pub opacity: Opacity,
+    pub fn opacity(&self) -> Opacity {
+        self.opacity
+    }
 }
 
 /// A flood filter primitive.
@@ -483,15 +657,24 @@ pub struct DropShadow {
 /// `feFlood` element in the SVG.
 #[derive(Clone, Copy, Debug)]
 pub struct Flood {
+    pub(crate) color: Color,
+    pub(crate) opacity: Opacity,
+}
+
+impl Flood {
     /// A flood color.
     ///
     /// `flood-color` in the SVG.
-    pub color: Color,
+    pub fn color(&self) -> Color {
+        self.color
+    }
 
     /// A flood opacity.
     ///
     /// `flood-opacity` in the SVG.
-    pub opacity: Opacity,
+    pub fn opacity(&self) -> Opacity {
+        self.opacity
+    }
 }
 
 /// A Gaussian blur filter primitive.
@@ -499,20 +682,32 @@ pub struct Flood {
 /// `feGaussianBlur` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct GaussianBlur {
+    pub(crate) input: Input,
+    pub(crate) std_dev_x: PositiveF32,
+    pub(crate) std_dev_y: PositiveF32,
+}
+
+impl GaussianBlur {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: Input,
+    pub fn input(&self) -> &Input {
+        &self.input
+    }
 
     /// A standard deviation along the X-axis.
     ///
     /// `stdDeviation` in the SVG.
-    pub std_dev_x: PositiveF32,
+    pub fn std_dev_x(&self) -> PositiveF32 {
+        self.std_dev_x
+    }
 
     /// A standard deviation along the Y-axis.
     ///
     /// `stdDeviation` in the SVG.
-    pub std_dev_y: PositiveF32,
+    pub fn std_dev_y(&self) -> PositiveF32 {
+        self.std_dev_y
+    }
 }
 
 /// An image filter primitive.
@@ -520,16 +715,28 @@ pub struct GaussianBlur {
 /// `feImage` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Image {
+    pub(crate) aspect: AspectRatio,
+    pub(crate) rendering_mode: ImageRendering,
+    pub(crate) data: ImageKind,
+}
+
+impl Image {
     /// Value of the `preserveAspectRatio` attribute.
-    pub aspect: AspectRatio,
+    pub fn aspect(&self) -> AspectRatio {
+        self.aspect
+    }
 
     /// Rendering method.
     ///
     /// `image-rendering` in SVG.
-    pub rendering_mode: ImageRendering,
+    pub fn rendering_mode(&self) -> ImageRendering {
+        self.rendering_mode
+    }
 
     /// Image data.
-    pub data: ImageKind,
+    pub fn data(&self) -> &ImageKind {
+        &self.data
+    }
 }
 
 /// Kind of the `feImage` data.
@@ -547,28 +754,46 @@ pub enum ImageKind {
 /// `feDiffuseLighting` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct DiffuseLighting {
+    pub(crate) input: Input,
+    pub(crate) surface_scale: f32,
+    pub(crate) diffuse_constant: f32,
+    pub(crate) lighting_color: Color,
+    pub(crate) light_source: LightSource,
+}
+
+impl DiffuseLighting {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: Input,
+    pub fn input(&self) -> &Input {
+        &self.input
+    }
 
     /// A surface scale.
     ///
     /// `surfaceScale` in the SVG.
-    pub surface_scale: f32,
+    pub fn surface_scale(&self) -> f32 {
+        self.surface_scale
+    }
 
     /// A diffuse constant.
     ///
     /// `diffuseConstant` in the SVG.
-    pub diffuse_constant: f32,
+    pub fn diffuse_constant(&self) -> f32 {
+        self.diffuse_constant
+    }
 
     /// A lighting color.
     ///
     /// `lighting-color` in the SVG.
-    pub lighting_color: Color,
+    pub fn lighting_color(&self) -> Color {
+        self.lighting_color
+    }
 
     /// A light source.
-    pub light_source: LightSource,
+    pub fn light_source(&self) -> LightSource {
+        self.light_source
+    }
 }
 
 /// A specular lighting filter primitive.
@@ -576,35 +801,56 @@ pub struct DiffuseLighting {
 /// `feSpecularLighting` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct SpecularLighting {
+    pub(crate) input: Input,
+    pub(crate) surface_scale: f32,
+    pub(crate) specular_constant: f32,
+    pub(crate) specular_exponent: f32,
+    pub(crate) lighting_color: Color,
+    pub(crate) light_source: LightSource,
+}
+
+impl SpecularLighting {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: Input,
+    pub fn input(&self) -> &Input {
+        &self.input
+    }
 
     /// A surface scale.
     ///
     /// `surfaceScale` in the SVG.
-    pub surface_scale: f32,
+    pub fn surface_scale(&self) -> f32 {
+        self.surface_scale
+    }
 
     /// A specular constant.
     ///
     /// `specularConstant` in the SVG.
-    pub specular_constant: f32,
+    pub fn specular_constant(&self) -> f32 {
+        self.specular_constant
+    }
 
     /// A specular exponent.
     ///
     /// Should be in 1..128 range.
     ///
     /// `specularExponent` in the SVG.
-    pub specular_exponent: f32,
+    pub fn specular_exponent(&self) -> f32 {
+        self.specular_exponent
+    }
 
     /// A lighting color.
     ///
     /// `lighting-color` in the SVG.
-    pub lighting_color: Color,
+    pub fn lighting_color(&self) -> Color {
+        self.lighting_color
+    }
 
     /// A light source.
-    pub light_source: LightSource,
+    pub fn light_source(&self) -> LightSource {
+        self.light_source
+    }
 }
 
 /// A light source kind.
@@ -705,10 +951,16 @@ pub struct SpotLight {
 /// `feMerge` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Merge {
+    pub(crate) inputs: Vec<Input>,
+}
+
+impl Merge {
     /// List of input layers that should be merged.
     ///
     /// List of `feMergeNode`'s in the SVG.
-    pub inputs: Vec<Input>,
+    pub fn inputs(&self) -> &[Input] {
+        &self.inputs
+    }
 }
 
 /// A morphology filter primitive.
@@ -716,29 +968,44 @@ pub struct Merge {
 /// `feMorphology` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Morphology {
+    pub(crate) input: Input,
+    pub(crate) operator: MorphologyOperator,
+    pub(crate) radius_x: PositiveF32,
+    pub(crate) radius_y: PositiveF32,
+}
+
+impl Morphology {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: Input,
+    pub fn input(&self) -> &Input {
+        &self.input
+    }
 
     /// A filter operator.
     ///
     /// `operator` in the SVG.
-    pub operator: MorphologyOperator,
+    pub fn operator(&self) -> MorphologyOperator {
+        self.operator
+    }
 
     /// A filter radius along the X-axis.
     ///
     /// A value of zero disables the effect of the given filter primitive.
     ///
     /// `radius` in the SVG.
-    pub radius_x: PositiveF32,
+    pub fn radius_x(&self) -> PositiveF32 {
+        self.radius_x
+    }
 
     /// A filter radius along the Y-axis.
     ///
     /// A value of zero disables the effect of the given filter primitive.
     ///
     /// `radius` in the SVG.
-    pub radius_y: PositiveF32,
+    pub fn radius_y(&self) -> PositiveF32 {
+        self.radius_y
+    }
 }
 
 /// A morphology operation.
@@ -754,16 +1021,28 @@ pub enum MorphologyOperator {
 /// `feOffset` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Offset {
+    pub(crate) input: Input,
+    pub(crate) dx: f32,
+    pub(crate) dy: f32,
+}
+
+impl Offset {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: Input,
+    pub fn input(&self) -> &Input {
+        &self.input
+    }
 
     /// The amount to offset the input graphic along the X-axis.
-    pub dx: f32,
+    pub fn dx(&self) -> f32 {
+        self.dx
+    }
 
     /// The amount to offset the input graphic along the Y-axis.
-    pub dy: f32,
+    pub fn dy(&self) -> f32 {
+        self.dy
+    }
 }
 
 /// A tile filter primitive.
@@ -771,10 +1050,16 @@ pub struct Offset {
 /// `feTile` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Tile {
+    pub(crate) input: Input,
+}
+
+impl Tile {
     /// Identifies input for the given filter primitive.
     ///
     /// `in` in the SVG.
-    pub input: Input,
+    pub fn input(&self) -> &Input {
+        &self.input
+    }
 }
 
 /// A turbulence generation filter primitive.
@@ -782,35 +1067,56 @@ pub struct Tile {
 /// `feTurbulence` element in the SVG.
 #[derive(Clone, Copy, Debug)]
 pub struct Turbulence {
+    pub(crate) base_frequency_x: PositiveF32,
+    pub(crate) base_frequency_y: PositiveF32,
+    pub(crate) num_octaves: u32,
+    pub(crate) seed: i32,
+    pub(crate) stitch_tiles: bool,
+    pub(crate) kind: TurbulenceKind,
+}
+
+impl Turbulence {
     /// Identifies the base frequency for the noise function.
     ///
     /// `baseFrequency` in the SVG.
-    pub base_frequency_x: PositiveF32,
+    pub fn base_frequency_x(&self) -> PositiveF32 {
+        self.base_frequency_x
+    }
 
     /// Identifies the base frequency for the noise function.
     ///
     /// `baseFrequency` in the SVG.
-    pub base_frequency_y: PositiveF32,
+    pub fn base_frequency_y(&self) -> PositiveF32 {
+        self.base_frequency_y
+    }
 
     /// Identifies the number of octaves for the noise function.
     ///
     /// `numOctaves` in the SVG.
-    pub num_octaves: u32,
+    pub fn num_octaves(&self) -> u32 {
+        self.num_octaves
+    }
 
     /// The starting number for the pseudo random number generator.
     ///
     /// `seed` in the SVG.
-    pub seed: i32,
+    pub fn seed(&self) -> i32 {
+        self.seed
+    }
 
     /// Smooth transitions at the border of tiles.
     ///
     /// `stitchTiles` in the SVG.
-    pub stitch_tiles: bool,
+    pub fn stitch_tiles(&self) -> bool {
+        self.stitch_tiles
+    }
 
     /// Indicates whether the filter primitive should perform a noise or turbulence function.
     ///
     /// `type` in the SVG.
-    pub kind: TurbulenceKind,
+    pub fn kind(&self) -> TurbulenceKind {
+        self.kind
+    }
 }
 
 /// A turbulence kind for the `feTurbulence` filter.

@@ -10,20 +10,20 @@ use usvg::filter::{ComponentTransfer, TransferFunction};
 /// Input image pixels should have an **unpremultiplied alpha**.
 pub fn apply(fe: &ComponentTransfer, src: ImageRefMut) {
     for pixel in src.data {
-        if !is_dummy(&fe.func_r) {
-            pixel.r = transfer(&fe.func_r, pixel.r);
+        if !is_dummy(fe.func_r()) {
+            pixel.r = transfer(fe.func_r(), pixel.r);
         }
 
-        if !is_dummy(&fe.func_b) {
-            pixel.b = transfer(&fe.func_b, pixel.b);
+        if !is_dummy(fe.func_b()) {
+            pixel.b = transfer(fe.func_b(), pixel.b);
         }
 
-        if !is_dummy(&fe.func_g) {
-            pixel.g = transfer(&fe.func_g, pixel.g);
+        if !is_dummy(fe.func_g()) {
+            pixel.g = transfer(fe.func_g(), pixel.g);
         }
 
-        if !is_dummy(&fe.func_a) {
-            pixel.a = transfer(&fe.func_a, pixel.a);
+        if !is_dummy(fe.func_a()) {
+            pixel.a = transfer(fe.func_a(), pixel.a);
         }
     }
 }

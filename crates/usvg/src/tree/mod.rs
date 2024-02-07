@@ -101,7 +101,6 @@ impl Default for ShapeRendering {
     }
 }
 
-// TODO: remove?
 impl std::str::FromStr for ShapeRendering {
     type Err = &'static str;
 
