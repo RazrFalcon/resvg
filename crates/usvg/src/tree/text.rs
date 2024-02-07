@@ -53,16 +53,34 @@ impl Default for FontStyle {
 /// Text font properties.
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Font {
+    pub(crate) families: Vec<FontFamily>,
+    pub(crate) style: FontStyle,
+    pub(crate) stretch: FontStretch,
+    pub(crate) weight: u16,
+}
+
+impl Font {
     /// A list of family names.
     ///
     /// Never empty. Uses `usvg::Options::font_family` as fallback.
-    pub families: Vec<FontFamily>,
+    pub fn families(&self) -> &[FontFamily] {
+        &self.families
+    }
+
     /// A font style.
-    pub style: FontStyle,
+    pub fn style(&self) -> FontStyle {
+        self.style
+    }
+
     /// A font stretch.
-    pub stretch: FontStretch,
+    pub fn stretch(&self) -> FontStretch {
+        self.stretch
+    }
+
     /// A font width.
-    pub weight: u16,
+    pub fn weight(&self) -> u16 {
+        self.weight
+    }
 }
 
 /// A dominant baseline property.
@@ -152,21 +170,45 @@ impl Default for LengthAdjust {
 /// Also, in SVG you can specify text decoration stroking.
 #[derive(Clone, Debug)]
 pub struct TextDecorationStyle {
+    pub(crate) fill: Option<Fill>,
+    pub(crate) stroke: Option<Stroke>,
+}
+
+impl TextDecorationStyle {
     /// A fill style.
-    pub fill: Option<Fill>,
+    pub fn fill(&self) -> Option<&Fill> {
+        self.fill.as_ref()
+    }
+
     /// A stroke style.
-    pub stroke: Option<Stroke>,
+    pub fn stroke(&self) -> Option<&Stroke> {
+        self.stroke.as_ref()
+    }
 }
 
 /// A text span decoration.
 #[derive(Clone, Debug)]
 pub struct TextDecoration {
+    pub(crate) underline: Option<TextDecorationStyle>,
+    pub(crate) overline: Option<TextDecorationStyle>,
+    pub(crate) line_through: Option<TextDecorationStyle>,
+}
+
+impl TextDecoration {
     /// An optional underline and its style.
-    pub underline: Option<TextDecorationStyle>,
+    pub fn underline(&self) -> Option<&TextDecorationStyle> {
+        self.underline.as_ref()
+    }
+
     /// An optional overline and its style.
-    pub overline: Option<TextDecorationStyle>,
+    pub fn overline(&self) -> Option<&TextDecorationStyle> {
+        self.overline.as_ref()
+    }
+
     /// An optional line-through and its style.
-    pub line_through: Option<TextDecorationStyle>,
+    pub fn line_through(&self) -> Option<&TextDecorationStyle> {
+        self.line_through.as_ref()
+    }
 }
 
 /// A text style span.
@@ -174,52 +216,126 @@ pub struct TextDecoration {
 /// Spans do not overlap inside a text chunk.
 #[derive(Clone, Debug)]
 pub struct TextSpan {
+    pub(crate) start: usize,
+    pub(crate) end: usize,
+    pub(crate) fill: Option<Fill>,
+    pub(crate) stroke: Option<Stroke>,
+    pub(crate) paint_order: PaintOrder,
+    pub(crate) font: Font,
+    pub(crate) font_size: NonZeroPositiveF32,
+    pub(crate) small_caps: bool,
+    pub(crate) apply_kerning: bool,
+    pub(crate) decoration: TextDecoration,
+    pub(crate) dominant_baseline: DominantBaseline,
+    pub(crate) alignment_baseline: AlignmentBaseline,
+    pub(crate) baseline_shift: Vec<BaselineShift>,
+    pub(crate) visibility: Visibility,
+    pub(crate) letter_spacing: f32,
+    pub(crate) word_spacing: f32,
+    pub(crate) text_length: Option<f32>,
+    pub(crate) length_adjust: LengthAdjust,
+}
+
+impl TextSpan {
     /// A span start in bytes.
     ///
     /// Offset is relative to the parent text chunk and not the parent text element.
-    pub start: usize,
+    pub fn start(&self) -> usize {
+        self.start
+    }
+
     /// A span end in bytes.
     ///
     /// Offset is relative to the parent text chunk and not the parent text element.
-    pub end: usize,
+    pub fn end(&self) -> usize {
+        self.end
+    }
+
     /// A fill style.
-    pub fill: Option<Fill>,
+    pub fn fill(&self) -> Option<&Fill> {
+        self.fill.as_ref()
+    }
+
     /// A stroke style.
-    pub stroke: Option<Stroke>,
+    pub fn stroke(&self) -> Option<&Stroke> {
+        self.stroke.as_ref()
+    }
+
     /// A paint order style.
-    pub paint_order: PaintOrder,
+    pub fn paint_order(&self) -> PaintOrder {
+        self.paint_order
+    }
+
     /// A font.
-    pub font: Font,
+    pub fn font(&self) -> &Font {
+        &self.font
+    }
+
     /// A font size.
-    pub font_size: NonZeroPositiveF32,
+    pub fn font_size(&self) -> NonZeroPositiveF32 {
+        self.font_size
+    }
+
     /// Indicates that small caps should be used.
     ///
     /// Set by `font-variant="small-caps"`
-    pub small_caps: bool,
+    pub fn small_caps(&self) -> bool {
+        self.small_caps
+    }
+
     /// Indicates that a kerning should be applied.
     ///
     /// Supports both `kerning` and `font-kerning` properties.
-    pub apply_kerning: bool,
+    pub fn apply_kerning(&self) -> bool {
+        self.apply_kerning
+    }
+
     /// A span decorations.
-    pub decoration: TextDecoration,
+    pub fn decoration(&self) -> &TextDecoration {
+        &self.decoration
+    }
+
     /// A span dominant baseline.
-    pub dominant_baseline: DominantBaseline,
+    pub fn dominant_baseline(&self) -> DominantBaseline {
+        self.dominant_baseline
+    }
+
     /// A span alignment baseline.
-    pub alignment_baseline: AlignmentBaseline,
+    pub fn alignment_baseline(&self) -> AlignmentBaseline {
+        self.alignment_baseline
+    }
+
     /// A list of all baseline shift that should be applied to this span.
     ///
     /// Ordered from `text` element down to the actual `span` element.
-    pub baseline_shift: Vec<BaselineShift>,
+    pub fn baseline_shift(&self) -> &[BaselineShift] {
+        &self.baseline_shift
+    }
+
     /// A visibility property.
-    pub visibility: Visibility,
+    pub fn visibility(&self) -> Visibility {
+        self.visibility
+    }
+
     /// A letter spacing property.
-    pub letter_spacing: f32,
+    pub fn letter_spacing(&self) -> f32 {
+        self.letter_spacing
+    }
+
     /// A word spacing property.
-    pub word_spacing: f32,
+    pub fn word_spacing(&self) -> f32 {
+        self.word_spacing
+    }
+
     /// A text length property.
-    pub text_length: Option<f32>,
+    pub fn text_length(&self) -> Option<f32> {
+        self.text_length
+    }
+
     /// A length adjust property.
-    pub length_adjust: LengthAdjust,
+    pub fn length_adjust(&self) -> LengthAdjust {
+        self.length_adjust
+    }
 }
 
 /// A text chunk anchor property.
@@ -240,18 +356,30 @@ impl Default for TextAnchor {
 /// A path used by text-on-path.
 #[derive(Clone, Debug)]
 pub struct TextPath {
+    pub(crate) id: String,
+    pub(crate) start_offset: f32,
+    pub(crate) path: Rc<tiny_skia_path::Path>,
+}
+
+impl TextPath {
     /// Element's ID.
     ///
     /// Taken from the SVG itself.
-    pub id: String,
+    pub fn id(&self) -> &str {
+        &self.id
+    }
 
     /// A text offset in SVG coordinates.
     ///
     /// Percentage values already resolved.
-    pub start_offset: f32,
+    pub fn start_offset(&self) -> f32 {
+        self.start_offset
+    }
 
     /// A path.
-    pub path: Rc<tiny_skia_path::Path>,
+    pub fn path(&self) -> &tiny_skia_path::Path {
+        &self.path
+    }
 }
 
 /// A text chunk flow property.
@@ -270,18 +398,44 @@ pub enum TextFlow {
 /// Text alignment and BIDI reordering can only be done inside a text chunk.
 #[derive(Clone, Debug)]
 pub struct TextChunk {
+    pub(crate) x: Option<f32>,
+    pub(crate) y: Option<f32>,
+    pub(crate) anchor: TextAnchor,
+    pub(crate) spans: Vec<TextSpan>,
+    pub(crate) text_flow: TextFlow,
+    pub(crate) text: String,
+}
+
+impl TextChunk {
     /// An absolute X axis offset.
-    pub x: Option<f32>,
+    pub fn x(&self) -> Option<f32> {
+        self.x
+    }
+
     /// An absolute Y axis offset.
-    pub y: Option<f32>,
+    pub fn y(&self) -> Option<f32> {
+        self.y
+    }
+
     /// A text anchor.
-    pub anchor: TextAnchor,
+    pub fn anchor(&self) -> TextAnchor {
+        self.anchor
+    }
+
     /// A list of text chunk style spans.
-    pub spans: Vec<TextSpan>,
+    pub fn spans(&self) -> &[TextSpan] {
+        &self.spans
+    }
+
     /// A text chunk flow.
-    pub text_flow: TextFlow,
+    pub fn text_flow(&self) -> TextFlow {
+        self.text_flow.clone()
+    }
+
     /// A text chunk actual text.
-    pub text: String,
+    pub fn text(&self) -> &str {
+        &self.text
+    }
 }
 
 /// A writing mode.
@@ -297,38 +451,68 @@ pub enum WritingMode {
 /// `text` element in SVG.
 #[derive(Clone, Debug)]
 pub struct Text {
+    pub(crate) id: String,
+    pub(crate) rendering_mode: TextRendering,
+    pub(crate) dx: Vec<f32>,
+    pub(crate) dy: Vec<f32>,
+    pub(crate) rotate: Vec<f32>,
+    pub(crate) writing_mode: WritingMode,
+    pub(crate) chunks: Vec<TextChunk>,
+    pub(crate) abs_transform: Transform,
+    pub(crate) bounding_box: Option<NonZeroRect>,
+    pub(crate) abs_bounding_box: Option<NonZeroRect>,
+    pub(crate) stroke_bounding_box: Option<NonZeroRect>,
+    pub(crate) abs_stroke_bounding_box: Option<NonZeroRect>,
+    pub(crate) flattened: Option<Box<Group>>,
+}
+
+impl Text {
     /// Element's ID.
     ///
     /// Taken from the SVG itself.
     /// Isn't automatically generated.
     /// Can be empty.
-    pub id: String,
+    pub fn id(&self) -> &str {
+        &self.id
+    }
 
     /// Rendering mode.
     ///
     /// `text-rendering` in SVG.
-    pub rendering_mode: TextRendering,
+    pub fn rendering_mode(&self) -> TextRendering {
+        self.rendering_mode
+    }
 
     /// A relative X axis offsets.
     ///
     /// One offset for each Unicode codepoint. Aka `char` in Rust.
-    pub dx: Vec<f32>,
+    pub fn dx(&self) -> &[f32] {
+        &self.dx
+    }
 
     /// A relative Y axis offsets.
     ///
     /// One offset for each Unicode codepoint. Aka `char` in Rust.
-    pub dy: Vec<f32>,
+    pub fn dy(&self) -> &[f32] {
+        &self.dy
+    }
 
     /// A list of rotation angles.
     ///
     /// One angle for each Unicode codepoint. Aka `char` in Rust.
-    pub rotate: Vec<f32>,
+    pub fn rotate(&self) -> &[f32] {
+        &self.rotate
+    }
 
     /// A writing mode.
-    pub writing_mode: WritingMode,
+    pub fn writing_mode(&self) -> WritingMode {
+        self.writing_mode
+    }
 
     /// A list of text chunks.
-    pub chunks: Vec<TextChunk>,
+    pub fn chunks(&self) -> &[TextChunk] {
+        &self.chunks
+    }
 
     /// Element's absolute transform.
     ///
@@ -338,7 +522,9 @@ pub struct Text {
     ///
     /// Note that this is not the relative transform present in SVG.
     /// The SVG one would be set only on groups.
-    pub abs_transform: Transform,
+    pub fn abs_transform(&self) -> Transform {
+        self.abs_transform
+    }
 
     /// Element's text bounding box.
     ///
@@ -353,32 +539,40 @@ pub struct Text {
     /// `usvg::PostProcessingSteps::convert_text_into_paths`.
     /// Assuming the `text` build feature of `usvg` was enabled.
     /// This is because we have to perform a text layout before calculating a bounding box.
-    pub bounding_box: Option<NonZeroRect>,
+    pub fn bounding_box(&self) -> Option<NonZeroRect> {
+        self.bounding_box
+    }
 
     /// Element's text bounding box in canvas coordinates.
     ///
     /// `userSpaceOnUse` in SVG terms.
-    pub abs_bounding_box: Option<NonZeroRect>,
+    pub fn abs_bounding_box(&self) -> Option<NonZeroRect> {
+        self.abs_bounding_box
+    }
 
     /// Element's object bounding box including stroke.
     ///
     /// Similar to `bounding_box`, but includes stroke.
     ///
     /// Will have the same value as `bounding_box` when path has no stroke.
-    pub stroke_bounding_box: Option<NonZeroRect>,
+    pub fn stroke_bounding_box(&self) -> Option<NonZeroRect> {
+        self.stroke_bounding_box
+    }
 
     /// Element's bounding box including stroke in canvas coordinates.
-    pub abs_stroke_bounding_box: Option<NonZeroRect>,
+    pub fn abs_stroke_bounding_box(&self) -> Option<NonZeroRect> {
+        self.abs_stroke_bounding_box
+    }
 
     /// Text converted into paths, ready to render.
     ///
     /// Will be set only after calling `usvg::Tree::postprocess` with
     /// `usvg::PostProcessingSteps::convert_text_into_paths`.
     /// Assuming the `text` build feature of `usvg` was enabled.
-    pub flattened: Option<Box<Group>>,
-}
+    pub fn flattened(&self) -> Option<&Group> {
+        self.flattened.as_deref()
+    }
 
-impl Text {
     pub(crate) fn subroots(&self, f: &mut dyn FnMut(&Group)) {
         if let Some(ref flattened) = self.flattened {
             f(flattened);

@@ -223,44 +223,81 @@ impl Default for SpreadMethod {
 /// A generic gradient.
 #[derive(Clone, Debug)]
 pub struct BaseGradient {
+    pub(crate) id: String,
+    pub(crate) units: Units,
+    pub(crate) transform: Transform,
+    pub(crate) spread_method: SpreadMethod,
+    pub(crate) stops: Vec<Stop>,
+}
+
+impl BaseGradient {
     /// Element's ID.
     ///
     /// Taken from the SVG itself.
     /// Used only during SVG writing. `resvg` doesn't rely on this property.
-    pub id: String,
+    pub fn id(&self) -> &str {
+        &self.id
+    }
 
     /// Coordinate system units.
     ///
     /// `gradientUnits` in SVG.
-    pub units: Units,
+    pub fn units(&self) -> Units {
+        self.units
+    }
 
     /// Gradient transform.
     ///
     /// `gradientTransform` in SVG.
-    pub transform: Transform,
+    pub fn transform(&self) -> Transform {
+        self.transform
+    }
 
     /// Gradient spreading method.
     ///
     /// `spreadMethod` in SVG.
-    pub spread_method: SpreadMethod,
+    pub fn spread_method(&self) -> SpreadMethod {
+        self.spread_method
+    }
 
     /// A list of `stop` elements.
-    pub stops: Vec<Stop>,
+    pub fn stops(&self) -> &[Stop] {
+        &self.stops
+    }
 }
 
 /// A linear gradient.
 ///
 /// `linearGradient` element in SVG.
-#[allow(missing_docs)]
 #[derive(Clone, Debug)]
 pub struct LinearGradient {
-    /// Base gradient data.
-    pub base: BaseGradient,
+    pub(crate) base: BaseGradient,
+    pub(crate) x1: f32,
+    pub(crate) y1: f32,
+    pub(crate) x2: f32,
+    pub(crate) y2: f32,
+}
 
-    pub x1: f32,
-    pub y1: f32,
-    pub x2: f32,
-    pub y2: f32,
+impl LinearGradient {
+    /// `x1` coordinate.
+    pub fn x1(&self) -> f32 {
+        self.x1
+    }
+
+    /// `y1` coordinate.
+    pub fn y1(&self) -> f32 {
+        self.y1
+    }
+
+    /// `x2` coordinate.
+    pub fn x2(&self) -> f32 {
+        self.x2
+    }
+
+    /// `y2` coordinate.
+    pub fn y2(&self) -> f32 {
+        self.y2
+    }
 }
 
 impl std::ops::Deref for LinearGradient {
@@ -274,17 +311,41 @@ impl std::ops::Deref for LinearGradient {
 /// A radial gradient.
 ///
 /// `radialGradient` element in SVG.
-#[allow(missing_docs)]
 #[derive(Clone, Debug)]
 pub struct RadialGradient {
-    /// Base gradient data.
-    pub base: BaseGradient,
+    pub(crate) base: BaseGradient,
+    pub(crate) cx: f32,
+    pub(crate) cy: f32,
+    pub(crate) r: PositiveF32,
+    pub(crate) fx: f32,
+    pub(crate) fy: f32,
+}
 
-    pub cx: f32,
-    pub cy: f32,
-    pub r: PositiveF32,
-    pub fx: f32,
-    pub fy: f32,
+impl RadialGradient {
+    /// `cx` coordinate.
+    pub fn cx(&self) -> f32 {
+        self.cx
+    }
+
+    /// `cy` coordinate.
+    pub fn cy(&self) -> f32 {
+        self.cy
+    }
+
+    /// Gradient radius.
+    pub fn r(&self) -> PositiveF32 {
+        self.r
+    }
+
+    /// `fx` coordinate.
+    pub fn fx(&self) -> f32 {
+        self.fx
+    }
+
+    /// `fy` coordinate.
+    pub fn fy(&self) -> f32 {
+        self.fy
+    }
 }
 
 impl std::ops::Deref for RadialGradient {
@@ -303,20 +364,32 @@ pub type StopOffset = NormalizedF32;
 /// `stop` element in SVG.
 #[derive(Clone, Copy, Debug)]
 pub struct Stop {
+    pub(crate) offset: StopOffset,
+    pub(crate) color: Color,
+    pub(crate) opacity: Opacity,
+}
+
+impl Stop {
     /// Gradient stop offset.
     ///
     /// `offset` in SVG.
-    pub offset: StopOffset,
+    pub fn offset(&self) -> StopOffset {
+        self.offset
+    }
 
     /// Gradient stop color.
     ///
     /// `stop-color` in SVG.
-    pub color: Color,
+    pub fn color(&self) -> Color {
+        self.color
+    }
 
     /// Gradient stop opacity.
     ///
     /// `stop-opacity` in SVG.
-    pub opacity: Opacity,
+    pub fn opacity(&self) -> Opacity {
+        self.opacity
+    }
 }
 
 /// A pattern element.
@@ -324,38 +397,62 @@ pub struct Stop {
 /// `pattern` element in SVG.
 #[derive(Clone, Debug)]
 pub struct Pattern {
+    pub(crate) id: String,
+    pub(crate) units: Units,
+    pub(crate) content_units: Units,
+    pub(crate) transform: Transform,
+    pub(crate) rect: NonZeroRect,
+    pub(crate) view_box: Option<ViewBox>,
+    pub(crate) root: Group,
+}
+
+impl Pattern {
     /// Element's ID.
     ///
     /// Taken from the SVG itself.
     /// Used only during SVG writing. `resvg` doesn't rely on this property.
-    pub id: String,
+    pub fn id(&self) -> &str {
+        &self.id
+    }
 
     /// Coordinate system units.
     ///
     /// `patternUnits` in SVG.
-    pub units: Units,
+    pub fn units(&self) -> Units {
+        self.units
+    }
 
     // TODO: should not be accessible when `viewBox` is present.
     /// Content coordinate system units.
     ///
     /// `patternContentUnits` in SVG.
-    pub content_units: Units,
+    pub fn content_units(&self) -> Units {
+        self.content_units
+    }
 
     /// Pattern transform.
     ///
     /// `patternTransform` in SVG.
-    pub transform: Transform,
+    pub fn transform(&self) -> Transform {
+        self.transform
+    }
 
     /// Pattern rectangle.
     ///
     /// `x`, `y`, `width` and `height` in SVG.
-    pub rect: NonZeroRect,
+    pub fn rect(&self) -> NonZeroRect {
+        self.rect
+    }
 
     /// Pattern viewbox.
-    pub view_box: Option<ViewBox>,
+    pub fn view_box(&self) -> Option<ViewBox> {
+        self.view_box
+    }
 
     /// Pattern children.
-    pub root: Group,
+    pub fn root(&self) -> &Group {
+        &self.root
+    }
 }
 
 /// An alias to `NonZeroPositiveF32`.
@@ -443,37 +540,59 @@ impl Default for LineJoin {
 }
 
 /// A stroke style.
-#[allow(missing_docs)]
 #[derive(Clone, Debug)]
 pub struct Stroke {
-    pub paint: Paint,
-    pub dasharray: Option<Vec<f32>>,
-    pub dashoffset: f32,
-    pub miterlimit: StrokeMiterlimit,
-    pub opacity: Opacity,
-    pub width: StrokeWidth,
-    pub linecap: LineCap,
-    pub linejoin: LineJoin,
-}
-
-impl Default for Stroke {
-    fn default() -> Self {
-        Stroke {
-            // The actual default color is `none`,
-            // but to simplify the `Stroke` object creation we use `black`.
-            paint: Paint::Color(Color::black()),
-            dasharray: None,
-            dashoffset: 0.0,
-            miterlimit: StrokeMiterlimit::default(),
-            opacity: Opacity::ONE,
-            width: StrokeWidth::new(1.0).unwrap(),
-            linecap: LineCap::default(),
-            linejoin: LineJoin::default(),
-        }
-    }
+    pub(crate) paint: Paint,
+    pub(crate) dasharray: Option<Vec<f32>>,
+    pub(crate) dashoffset: f32,
+    pub(crate) miterlimit: StrokeMiterlimit,
+    pub(crate) opacity: Opacity,
+    pub(crate) width: StrokeWidth,
+    pub(crate) linecap: LineCap,
+    pub(crate) linejoin: LineJoin,
 }
 
 impl Stroke {
+    /// Stroke paint.
+    pub fn paint(&self) -> &Paint {
+        &self.paint
+    }
+
+    /// Stroke dash array.
+    pub fn dasharray(&self) -> Option<&[f32]> {
+        self.dasharray.as_deref()
+    }
+
+    /// Stroke dash offset.
+    pub fn dashoffset(&self) -> f32 {
+        self.dashoffset
+    }
+
+    /// Stroke miter limit.
+    pub fn miterlimit(&self) -> StrokeMiterlimit {
+        self.miterlimit
+    }
+
+    /// Stroke opacity.
+    pub fn opacity(&self) -> Opacity {
+        self.opacity
+    }
+
+    /// Stroke width.
+    pub fn width(&self) -> StrokeWidth {
+        self.width
+    }
+
+    /// Stroke linecap.
+    pub fn linecap(&self) -> LineCap {
+        self.linecap
+    }
+
+    /// Stroke linejoin.
+    pub fn linejoin(&self) -> LineJoin {
+        self.linejoin
+    }
+
     /// Converts into a `tiny_skia_path::Stroke` type.
     pub fn to_tiny_skia(&self) -> tiny_skia_path::Stroke {
         let mut stroke = tiny_skia_path::Stroke {
@@ -520,23 +639,27 @@ impl Default for FillRule {
 }
 
 /// A fill style.
-#[allow(missing_docs)]
 #[derive(Clone, Debug)]
 pub struct Fill {
-    pub paint: Paint,
-    pub opacity: Opacity,
-    pub rule: FillRule,
+    pub(crate) paint: Paint,
+    pub(crate) opacity: Opacity,
+    pub(crate) rule: FillRule,
 }
 
 impl Fill {
-    /// Creates a `Fill` from `Paint`.
-    ///
-    /// `opacity` and `rule` will be set to default values.
-    pub fn from_paint(paint: Paint) -> Self {
-        Fill {
-            paint,
-            ..Fill::default()
-        }
+    /// Fill paint.
+    pub fn paint(&self) -> &Paint {
+        &self.paint
+    }
+
+    /// Fill opacity.
+    pub fn opacity(&self) -> Opacity {
+        self.opacity
+    }
+
+    /// Fill rule.
+    pub fn rule(&self) -> FillRule {
+        self.rule
     }
 }
 
@@ -624,45 +747,61 @@ impl PartialEq for Paint {
 /// `clipPath` element in SVG.
 #[derive(Clone, Debug)]
 pub struct ClipPath {
-    /// Element's ID.
-    ///
-    /// Taken from the SVG itself.
-    /// Used only during SVG writing. `resvg` doesn't rely on this property.
-    pub id: String,
-
-    /// Coordinate system units.
-    ///
-    /// `clipPathUnits` in SVG.
-    pub units: Units,
-
-    /// Clip path transform.
-    ///
-    /// `transform` in SVG.
-    pub transform: Transform,
-
-    /// Additional clip path.
-    ///
-    /// `clip-path` in SVG.
-    pub clip_path: Option<SharedClipPath>,
-
-    /// Clip path children.
-    pub root: Group,
+    pub(crate) id: String,
+    pub(crate) units: Units,
+    pub(crate) transform: Transform,
+    pub(crate) clip_path: Option<SharedClipPath>,
+    pub(crate) root: Group,
 }
 
-/// An alias for a shared `ClipPath`.
-pub type SharedClipPath = Rc<RefCell<ClipPath>>;
-
-impl Default for ClipPath {
-    fn default() -> Self {
+impl ClipPath {
+    pub(crate) fn empty() -> Self {
         ClipPath {
             id: String::new(),
             units: Units::UserSpaceOnUse,
             transform: Transform::default(),
             clip_path: None,
-            root: Group::default(),
+            root: Group::empty(),
         }
     }
+
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Used only during SVG writing. `resvg` doesn't rely on this property.
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    /// Coordinate system units.
+    ///
+    /// `clipPathUnits` in SVG.
+    pub fn units(&self) -> Units {
+        self.units
+    }
+
+    /// Clip path transform.
+    ///
+    /// `transform` in SVG.
+    pub fn transform(&self) -> Transform {
+        self.transform
+    }
+
+    /// Additional clip path.
+    ///
+    /// `clip-path` in SVG.
+    pub fn clip_path(&self) -> Option<SharedClipPath> {
+        self.clip_path.clone()
+    }
+
+    /// Clip path children.
+    pub fn root(&self) -> &Group {
+        &self.root
+    }
 }
+
+/// An alias for a shared `ClipPath`.
+pub type SharedClipPath = Rc<RefCell<ClipPath>>;
 
 /// A mask type.
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -684,39 +823,63 @@ impl Default for MaskType {
 /// `mask` element in SVG.
 #[derive(Clone, Debug)]
 pub struct Mask {
+    pub(crate) id: String,
+    pub(crate) units: Units,
+    pub(crate) content_units: Units,
+    pub(crate) rect: NonZeroRect,
+    pub(crate) kind: MaskType,
+    pub(crate) mask: Option<SharedMask>,
+    pub(crate) root: Group,
+}
+
+impl Mask {
     /// Element's ID.
     ///
     /// Taken from the SVG itself.
     /// Used only during SVG writing. `resvg` doesn't rely on this property.
-    pub id: String,
+    pub fn id(&self) -> &str {
+        &self.id
+    }
 
     /// Coordinate system units.
     ///
     /// `maskUnits` in SVG.
-    pub units: Units,
+    pub fn units(&self) -> Units {
+        self.units
+    }
 
     /// Content coordinate system units.
     ///
     /// `maskContentUnits` in SVG.
-    pub content_units: Units,
+    pub fn content_units(&self) -> Units {
+        self.content_units
+    }
 
     /// Mask rectangle.
     ///
     /// `x`, `y`, `width` and `height` in SVG.
-    pub rect: NonZeroRect,
+    pub fn rect(&self) -> NonZeroRect {
+        self.rect
+    }
 
     /// Mask type.
     ///
     /// `mask-type` in SVG.
-    pub kind: MaskType,
+    pub fn kind(&self) -> MaskType {
+        self.kind
+    }
 
     /// Additional mask.
     ///
     /// `mask` in SVG.
-    pub mask: Option<SharedMask>,
+    pub fn mask(&self) -> Option<SharedMask> {
+        self.mask.clone()
+    }
 
     /// Mask children.
-    pub root: Group,
+    pub fn root(&self) -> &Group {
+        &self.root
+    }
 }
 
 /// An alias for a shared `Mask`.
@@ -820,7 +983,7 @@ impl Node {
     ///
     /// ```no_run
     /// fn all_nodes(parent: &usvg::Group) {
-    ///     for node in &parent.children {
+    ///     for node in parent.children() {
     ///         // do stuff...
     ///
     ///         if let usvg::Node::Group(ref g) = node {
@@ -862,100 +1025,25 @@ impl Node {
 /// `g` element in SVG.
 #[derive(Clone, Debug)]
 pub struct Group {
-    /// Element's ID.
-    ///
-    /// Taken from the SVG itself.
-    /// Isn't automatically generated.
-    /// Can be empty.
-    pub id: String,
-
-    /// Element's transform.
-    ///
-    /// This is a relative transform. The one that is set via the `transform` attribute in SVG.
-    pub transform: Transform,
-
-    /// Element's absolute transform.
-    ///
-    /// Contains all ancestors transforms.
-    ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
-    ///
-    /// Note that subroots, like clipPaths, masks and patterns, have their own root transform,
-    /// which isn't affected by the node that references this subroot.
-    pub abs_transform: Transform,
-
-    /// Group opacity.
-    ///
-    /// After the group is rendered we should combine
-    /// it with a parent group using the specified opacity.
-    pub opacity: Opacity,
-
-    /// Group blend mode.
-    ///
-    /// `mix-blend-mode` in SVG.
-    pub blend_mode: BlendMode,
-
-    /// Group isolation.
-    ///
-    /// `isolation` in SVG.
-    pub isolate: bool,
-
-    /// Element's clip path.
-    pub clip_path: Option<SharedClipPath>,
-
-    /// Element's mask.
-    pub mask: Option<SharedMask>,
-
-    /// Element's filters.
-    pub filters: Vec<filter::SharedFilter>,
-
-    /// Element's object bounding box.
-    ///
-    /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
-    ///
-    /// Can be set to `None` in case of an empty group.
-    ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
-    pub bounding_box: Option<Rect>,
-
-    /// Element's bounding box in canvas coordinates.
-    ///
-    /// `userSpaceOnUse` in SVG terms.
-    ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
-    pub abs_bounding_box: Option<Rect>,
-
-    /// Element's object bounding box including stroke.
-    ///
-    /// Similar to `bounding_box`, but includes stroke.
-    pub stroke_bounding_box: Option<NonZeroRect>,
-
-    /// Element's bounding box including stroke in user coordinates.
-    ///
-    /// Similar to `abs_bounding_box`, but includes stroke.
-    pub abs_stroke_bounding_box: Option<NonZeroRect>,
-
-    /// Element's "layer" bounding box in object units.
-    ///
-    /// Conceptually, this is `stroke_bounding_box` expanded and/or clipped
-    /// by `filters_bounding_box`, but also including all the children.
-    /// This is the bounding box `resvg` will later use to allocate layers/pixmaps
-    /// during isolated groups rendering.
-    ///
-    /// Only groups have it, because only groups can have filters.
-    /// For other nodes layer bounding box is the same as stroke bounding box.
-    ///
-    /// Unlike other bounding boxes, cannot have zero size.
-    ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
-    pub layer_bounding_box: Option<NonZeroRect>,
-
-    /// Group's children.
-    pub children: Vec<Node>,
+    pub(crate) id: String,
+    pub(crate) transform: Transform,
+    pub(crate) abs_transform: Transform,
+    pub(crate) opacity: Opacity,
+    pub(crate) blend_mode: BlendMode,
+    pub(crate) isolate: bool,
+    pub(crate) clip_path: Option<SharedClipPath>,
+    pub(crate) mask: Option<SharedMask>,
+    pub(crate) filters: Vec<filter::SharedFilter>,
+    pub(crate) bounding_box: Option<Rect>,
+    pub(crate) abs_bounding_box: Option<Rect>,
+    pub(crate) stroke_bounding_box: Option<NonZeroRect>,
+    pub(crate) abs_stroke_bounding_box: Option<NonZeroRect>,
+    pub(crate) layer_bounding_box: Option<NonZeroRect>,
+    pub(crate) children: Vec<Node>,
 }
 
-impl Default for Group {
-    fn default() -> Self {
+impl Group {
+    pub(crate) fn empty() -> Self {
         Group {
             id: String::new(),
             transform: Transform::default(),
@@ -974,9 +1062,128 @@ impl Default for Group {
             children: Vec::new(),
         }
     }
-}
 
-impl Group {
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Isn't automatically generated.
+    /// Can be empty.
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    /// Element's transform.
+    ///
+    /// This is a relative transform. The one that is set via the `transform` attribute in SVG.
+    pub fn transform(&self) -> Transform {
+        self.transform
+    }
+
+    /// Element's absolute transform.
+    ///
+    /// Contains all ancestors transforms.
+    ///
+    /// Will be set after calling `usvg::Tree::postprocess`.
+    ///
+    /// Note that subroots, like clipPaths, masks and patterns, have their own root transform,
+    /// which isn't affected by the node that references this subroot.
+    pub fn abs_transform(&self) -> Transform {
+        self.abs_transform
+    }
+
+    /// Group opacity.
+    ///
+    /// After the group is rendered we should combine
+    /// it with a parent group using the specified opacity.
+    pub fn opacity(&self) -> Opacity {
+        self.opacity
+    }
+
+    /// Group blend mode.
+    ///
+    /// `mix-blend-mode` in SVG.
+    pub fn blend_mode(&self) -> BlendMode {
+        self.blend_mode
+    }
+
+    /// Group isolation.
+    ///
+    /// `isolation` in SVG.
+    pub fn isolate(&self) -> bool {
+        self.isolate
+    }
+
+    /// Element's clip path.
+    pub fn clip_path(&self) -> Option<SharedClipPath> {
+        self.clip_path.clone()
+    }
+
+    /// Element's mask.
+    pub fn mask(&self) -> Option<SharedMask> {
+        self.mask.clone()
+    }
+
+    /// Element's filters.
+    pub fn filters(&self) -> &[filter::SharedFilter] {
+        &self.filters
+    }
+
+    /// Element's object bounding box.
+    ///
+    /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
+    ///
+    /// Can be set to `None` in case of an empty group.
+    ///
+    /// Will be set after calling `usvg::Tree::postprocess`.
+    pub fn bounding_box(&self) -> Option<Rect> {
+        self.bounding_box
+    }
+
+    /// Element's bounding box in canvas coordinates.
+    ///
+    /// `userSpaceOnUse` in SVG terms.
+    ///
+    /// Will be set after calling `usvg::Tree::postprocess`.
+    pub fn abs_bounding_box(&self) -> Option<Rect> {
+        self.abs_bounding_box
+    }
+
+    /// Element's object bounding box including stroke.
+    ///
+    /// Similar to `bounding_box`, but includes stroke.
+    pub fn stroke_bounding_box(&self) -> Option<NonZeroRect> {
+        self.stroke_bounding_box
+    }
+
+    /// Element's bounding box including stroke in user coordinates.
+    ///
+    /// Similar to `abs_bounding_box`, but includes stroke.
+    pub fn abs_stroke_bounding_box(&self) -> Option<NonZeroRect> {
+        self.abs_stroke_bounding_box
+    }
+
+    /// Element's "layer" bounding box in object units.
+    ///
+    /// Conceptually, this is `stroke_bounding_box` expanded and/or clipped
+    /// by `filters_bounding_box`, but also including all the children.
+    /// This is the bounding box `resvg` will later use to allocate layers/pixmaps
+    /// during isolated groups rendering.
+    ///
+    /// Only groups have it, because only groups can have filters.
+    /// For other nodes layer bounding box is the same as stroke bounding box.
+    ///
+    /// Unlike other bounding boxes, cannot have zero size.
+    ///
+    /// Will be set after calling `usvg::Tree::postprocess`.
+    pub fn layer_bounding_box(&self) -> Option<NonZeroRect> {
+        self.layer_bounding_box
+    }
+
+    /// Group's children.
+    pub fn children(&self) -> &[Node] {
+        &self.children
+    }
+
     /// Checks if this group should be isolated during rendering.
     pub fn should_isolate(&self) -> bool {
         self.isolate
@@ -1103,82 +1310,23 @@ impl Default for PaintOrder {
 /// A path element.
 #[derive(Clone, Debug)]
 pub struct Path {
-    /// Element's ID.
-    ///
-    /// Taken from the SVG itself.
-    /// Isn't automatically generated.
-    /// Can be empty.
-    pub id: String,
-
-    /// Element visibility.
-    pub visibility: Visibility,
-
-    /// Fill style.
-    pub fill: Option<Fill>,
-
-    /// Stroke style.
-    pub stroke: Option<Stroke>,
-
-    /// Fill and stroke paint order.
-    ///
-    /// Since markers will be replaced with regular nodes automatically,
-    /// `usvg` doesn't provide the `markers` order type. It's was already done.
-    ///
-    /// `paint-order` in SVG.
-    pub paint_order: PaintOrder,
-
-    /// Rendering mode.
-    ///
-    /// `shape-rendering` in SVG.
-    pub rendering_mode: ShapeRendering,
-
-    /// Segments list.
-    ///
-    /// All segments are in absolute coordinates.
-    pub data: Rc<tiny_skia_path::Path>,
-
-    /// Element's absolute transform.
-    ///
-    /// Contains all ancestors transforms.
-    ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
-    ///
-    /// Note that this is not the relative transform present in SVG.
-    /// The SVG one would be set only on groups.
-    pub abs_transform: Transform,
-
-    /// Element's object bounding box.
-    ///
-    /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
-    ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
-    pub bounding_box: Option<Rect>,
-
-    /// Element's bounding box in canvas coordinates.
-    ///
-    /// `userSpaceOnUse` in SVG terms.
-    ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
-    pub abs_bounding_box: Option<Rect>,
-
-    /// Element's object bounding box including stroke.
-    ///
-    /// Similar to `bounding_box`, but includes stroke.
-    ///
-    /// Will have the same value as `bounding_box` when path has no stroke.
-    pub stroke_bounding_box: Option<NonZeroRect>,
-
-    /// Element's bounding box including stroke in canvas coordinates.
-    ///
-    /// Similar to `abs_bounding_box`, but includes stroke.
-    ///
-    /// Will have the same value as `abs_bounding_box` when path has no stroke.
-    pub abs_stroke_bounding_box: Option<NonZeroRect>,
+    pub(crate) id: String,
+    pub(crate) visibility: Visibility,
+    pub(crate) fill: Option<Fill>,
+    pub(crate) stroke: Option<Stroke>,
+    pub(crate) paint_order: PaintOrder,
+    pub(crate) rendering_mode: ShapeRendering,
+    pub(crate) data: Rc<tiny_skia_path::Path>,
+    pub(crate) abs_transform: Transform,
+    pub(crate) bounding_box: Option<Rect>,
+    pub(crate) abs_bounding_box: Option<Rect>,
+    pub(crate) stroke_bounding_box: Option<NonZeroRect>,
+    pub(crate) abs_stroke_bounding_box: Option<NonZeroRect>,
 }
 
 impl Path {
     /// Creates a new `Path` with default values.
-    pub fn new(data: Rc<tiny_skia_path::Path>) -> Self {
+    pub(crate) fn with_path(data: Rc<tiny_skia_path::Path>) -> Self {
         Path {
             id: String::new(),
             visibility: Visibility::Visible,
@@ -1195,10 +1343,107 @@ impl Path {
         }
     }
 
+    /// Element's ID.
+    ///
+    /// Taken from the SVG itself.
+    /// Isn't automatically generated.
+    /// Can be empty.
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    /// Element visibility.
+    pub fn visibility(&self) -> Visibility {
+        self.visibility
+    }
+
+    /// Fill style.
+    pub fn fill(&self) -> Option<&Fill> {
+        self.fill.as_ref()
+    }
+
+    /// Stroke style.
+    pub fn stroke(&self) -> Option<&Stroke> {
+        self.stroke.as_ref()
+    }
+
+    /// Fill and stroke paint order.
+    ///
+    /// Since markers will be replaced with regular nodes automatically,
+    /// `usvg` doesn't provide the `markers` order type. It's was already done.
+    ///
+    /// `paint-order` in SVG.
+    pub fn paint_order(&self) -> PaintOrder {
+        self.paint_order
+    }
+
+    /// Rendering mode.
+    ///
+    /// `shape-rendering` in SVG.
+    pub fn rendering_mode(&self) -> ShapeRendering {
+        self.rendering_mode
+    }
+
+    // TODO: find a better name
+    /// Segments list.
+    ///
+    /// All segments are in absolute coordinates.
+    pub fn data(&self) -> &tiny_skia_path::Path {
+        self.data.as_ref()
+    }
+
+    /// Element's absolute transform.
+    ///
+    /// Contains all ancestors transforms.
+    ///
+    /// Will be set after calling `usvg::Tree::postprocess`.
+    ///
+    /// Note that this is not the relative transform present in SVG.
+    /// The SVG one would be set only on groups.
+    pub fn abs_transform(&self) -> Transform {
+        self.abs_transform
+    }
+
+    /// Element's object bounding box.
+    ///
+    /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
+    ///
+    /// Will be set after calling `usvg::Tree::postprocess`.
+    pub fn bounding_box(&self) -> Option<Rect> {
+        self.bounding_box
+    }
+
+    /// Element's bounding box in canvas coordinates.
+    ///
+    /// `userSpaceOnUse` in SVG terms.
+    ///
+    /// Will be set after calling `usvg::Tree::postprocess`.
+    pub fn abs_bounding_box(&self) -> Option<Rect> {
+        self.abs_bounding_box
+    }
+
+    /// Element's object bounding box including stroke.
+    ///
+    /// Similar to `bounding_box`, but includes stroke.
+    ///
+    /// Will have the same value as `bounding_box` when path has no stroke.
+    pub fn stroke_bounding_box(&self) -> Option<NonZeroRect> {
+        self.stroke_bounding_box
+    }
+
+    /// Element's bounding box including stroke in canvas coordinates.
+    ///
+    /// Similar to `abs_bounding_box`, but includes stroke.
+    ///
+    /// Will have the same value as `abs_bounding_box` when path has no stroke.
+    pub fn abs_stroke_bounding_box(&self) -> Option<NonZeroRect> {
+        self.abs_stroke_bounding_box
+    }
+
     /// Calculates and sets path's stroke bounding box.
     ///
     /// This operation is expensive.
-    pub fn calculate_stroke_bounding_box(&self) -> Option<NonZeroRect> {
+    pub(crate) fn calculate_stroke_bounding_box(&self) -> Option<NonZeroRect> {
         Self::calculate_stroke_bounding_box_inner(self.stroke.as_ref(), &self.data)
     }
 
@@ -1272,29 +1517,49 @@ impl std::fmt::Debug for ImageKind {
 /// `image` element in SVG.
 #[derive(Clone, Debug)]
 pub struct Image {
+    pub(crate) id: String,
+    pub(crate) visibility: Visibility,
+    pub(crate) view_box: ViewBox,
+    pub(crate) rendering_mode: ImageRendering,
+    pub(crate) kind: ImageKind,
+    pub(crate) abs_transform: Transform,
+    pub(crate) bounding_box: Option<NonZeroRect>,
+}
+
+impl Image {
     /// Element's ID.
     ///
     /// Taken from the SVG itself.
     /// Isn't automatically generated.
     /// Can be empty.
-    pub id: String,
+    pub fn id(&self) -> &str {
+        &self.id
+    }
 
     /// Element visibility.
-    pub visibility: Visibility,
+    pub fn visibility(&self) -> Visibility {
+        self.visibility
+    }
 
     /// An image rectangle in which it should be fit.
     ///
     /// Combination of the `x`, `y`, `width`, `height` and `preserveAspectRatio`
     /// attributes.
-    pub view_box: ViewBox,
+    pub fn view_box(&self) -> ViewBox {
+        self.view_box
+    }
 
     /// Rendering mode.
     ///
     /// `image-rendering` in SVG.
-    pub rendering_mode: ImageRendering,
+    pub fn rendering_mode(&self) -> ImageRendering {
+        self.rendering_mode
+    }
 
     /// Image data.
-    pub kind: ImageKind,
+    pub fn kind(&self) -> &ImageKind {
+        &self.kind
+    }
 
     /// Element's absolute transform.
     ///
@@ -1304,17 +1569,19 @@ pub struct Image {
     ///
     /// Note that this is not the relative transform present in SVG.
     /// The SVG one would be set only on groups.
-    pub abs_transform: Transform,
+    pub fn abs_transform(&self) -> Transform {
+        self.abs_transform
+    }
 
     /// Element's object bounding box.
     ///
     /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
     ///
     /// Will be set after calling `usvg::Tree::postprocess`.
-    pub bounding_box: Option<NonZeroRect>,
-}
+    pub fn bounding_box(&self) -> Option<NonZeroRect> {
+        self.bounding_box
+    }
 
-impl Image {
     fn abs_bounding_box(&self) -> Option<NonZeroRect> {
         self.bounding_box
             .and_then(|r| r.transform(self.abs_transform))
@@ -1337,25 +1604,35 @@ impl Image {
 #[allow(missing_debug_implementations)]
 #[derive(Clone, Debug)]
 pub struct Tree {
+    pub(crate) size: Size,
+    pub(crate) view_box: ViewBox,
+    pub(crate) root: Group,
+}
+
+impl Tree {
     /// Image size.
     ///
     /// Size of an image that should be created to fit the SVG.
     ///
     /// `width` and `height` in SVG.
-    pub size: Size,
+    pub fn size(&self) -> Size {
+        self.size
+    }
 
     /// SVG viewbox.
     ///
     /// Specifies which part of the SVG image should be rendered.
     ///
     /// `viewBox` and `preserveAspectRatio` in SVG.
-    pub view_box: ViewBox,
+    pub fn view_box(&self) -> ViewBox {
+        self.view_box
+    }
 
     /// The root element of the SVG tree.
-    pub root: Group,
-}
+    pub fn root(&self) -> &Group {
+        &self.root
+    }
 
-impl Tree {
     /// Returns a renderable node by ID.
     ///
     /// If an empty ID is provided, than this method will always return `None`.
@@ -1403,14 +1680,14 @@ impl Tree {
     /// Calculates absolute transforms for all nodes in the tree.
     ///
     /// A low-level method. Prefer `usvg::Tree::postprocess` instead.
-    pub fn calculate_abs_transforms(&mut self) {
+    pub(crate) fn calculate_abs_transforms(&mut self) {
         self.root.calculate_abs_transforms(Transform::identity());
     }
 
     /// Calculates bounding boxes for all nodes in the tree.
     ///
     /// A low-level method. Prefer `usvg::Tree::postprocess` instead.
-    pub fn calculate_bounding_boxes(&mut self) {
+    pub(crate) fn calculate_bounding_boxes(&mut self) {
         self.root.calculate_bounding_boxes();
     }
 
@@ -1592,7 +1869,7 @@ impl Group {
     /// Calculates absolute transforms for all children of this group.
     ///
     /// A low-level method. Prefer `usvg::Tree::postprocess` instead.
-    pub fn calculate_abs_transforms(&mut self, transform: Transform) {
+    pub(crate) fn calculate_abs_transforms(&mut self, transform: Transform) {
         for node in &mut self.children {
             match node {
                 Node::Group(ref mut group) => {
@@ -1613,7 +1890,7 @@ impl Group {
     /// Calculates bounding boxes for all children of this group.
     ///
     /// A low-level method. Prefer `usvg::Tree::postprocess` instead.
-    pub fn calculate_bounding_boxes(&mut self) {
+    pub(crate) fn calculate_bounding_boxes(&mut self) {
         for node in &mut self.children {
             match node {
                 Node::Path(ref mut path) => {

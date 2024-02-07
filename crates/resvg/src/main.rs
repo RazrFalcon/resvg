@@ -600,7 +600,7 @@ fn load_fonts(args: &mut Args, fontdb: &mut fontdb::Database) {
 }
 
 fn query_all(tree: &usvg::Tree) -> Result<(), String> {
-    let count = query_all_impl(&tree.root);
+    let count = query_all_impl(tree.root());
 
     if count == 0 {
         return Err("the file has no valid ID's".to_string());
@@ -611,7 +611,7 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
 
 fn query_all_impl(parent: &usvg::Group) -> usize {
     let mut count = 0;
-    for node in &parent.children {
+    for node in parent.children() {
         if node.id().is_empty() {
             if let usvg::Node::Group(ref group) = node {
                 count += query_all_impl(group);
@@ -672,7 +672,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
             }
         }
 
-        let ts = args.fit_to.fit_to_transform(tree.size.to_int_size());
+        let ts = args.fit_to.fit_to_transform(tree.size().to_int_size());
 
         resvg::render_node(node, ts, &mut pixmap.as_mut());
 
@@ -681,7 +681,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
 
             let size = args
                 .fit_to
-                .fit_to_size(tree.size.to_int_size())
+                .fit_to_size(tree.size().to_int_size())
                 .ok_or_else(|| "target size is zero".to_string())?;
 
             // Unwrap is safe, because `size` is already valid.
@@ -706,7 +706,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
     } else {
         let size = args
             .fit_to
-            .fit_to_size(tree.size.to_int_size())
+            .fit_to_size(tree.size().to_int_size())
             .ok_or_else(|| "target size is zero".to_string())?;
 
         // Unwrap is safe, because `size` is already valid.
@@ -716,7 +716,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
             pixmap.fill(svg_to_skia_color(background));
         }
 
-        let ts = args.fit_to.fit_to_transform(tree.size.to_int_size());
+        let ts = args.fit_to.fit_to_transform(tree.size().to_int_size());
 
         resvg::render(tree, ts, &mut pixmap.as_mut());
 
@@ -740,7 +740,7 @@ fn trim_pixmap(
     transform: tiny_skia::Transform,
     pixmap: &tiny_skia::Pixmap,
 ) -> Option<tiny_skia::Pixmap> {
-    let content_area = tree.root.layer_bounding_box?;
+    let content_area = tree.root().layer_bounding_box()?;
 
     let limit = tiny_skia::IntRect::from_xywh(0, 0, pixmap.width(), pixmap.height()).unwrap();
 

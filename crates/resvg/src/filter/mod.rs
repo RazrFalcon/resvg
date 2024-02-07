@@ -362,7 +362,7 @@ fn apply_inner(
     ts: usvg::Transform,
     source: &mut tiny_skia::Pixmap,
 ) -> Result<Image, Error> {
-    let bbox = group.bounding_box;
+    let bbox = group.bounding_box();
     let filter_region = group.filters_bounding_box().ok_or(Error::InvalidRegion)?;
     let region = filter_region
         .transform(ts)
@@ -958,17 +958,13 @@ fn apply_image(
                 aspect: fe.aspect,
             };
 
-            let image = usvg::Image {
-                id: String::new(),
-                visibility: usvg::Visibility::Visible,
+            crate::image::render_inner(
+                kind,
                 view_box,
-                rendering_mode: fe.rendering_mode,
-                kind: kind.clone(),
-                abs_transform: usvg::Transform::default(),
-                bounding_box: Some(view_box.rect),
-            };
-
-            crate::image::render(&image, transform, &mut pixmap.as_mut());
+                transform,
+                fe.rendering_mode,
+                &mut pixmap.as_mut(),
+            );
         }
         usvg::filter::ImageKind::Use(ref node) => {
             let (sx, sy) = ts.get_scale();

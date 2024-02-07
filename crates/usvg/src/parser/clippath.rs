@@ -48,7 +48,7 @@ pub(crate) fn convert(
         units,
         transform,
         clip_path,
-        root: Group::default(),
+        root: Group::empty(),
     };
 
     let mut clip_state = state.clone();

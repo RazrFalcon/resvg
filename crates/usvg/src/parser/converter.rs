@@ -156,7 +156,7 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
     let mut tree = Tree {
         size,
         view_box,
-        root: Group::default(),
+        root: Group::empty(),
     };
 
     if !svg.is_visible_element(opt) {
@@ -623,7 +623,7 @@ fn convert_path(
 
     let mut markers_node = None;
     if super::marker::is_valid(node) && visibility == Visibility::Visible {
-        let mut marker = Group::default();
+        let mut marker = Group::empty();
         super::marker::convert(node, &path, state, cache, &mut marker);
         markers_node = Some(marker);
     }
