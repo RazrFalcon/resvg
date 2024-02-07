@@ -57,7 +57,7 @@ pub struct ViewBox {
 
 /// A bounding box calculator.
 #[derive(Clone, Copy, Debug)]
-pub struct BBox {
+pub(crate) struct BBox {
     left: f32,
     top: f32,
     right: f32,
@@ -119,11 +119,6 @@ impl BBox {
             right: self.right.max(r.right),
             bottom: self.bottom.max(r.bottom),
         }
-    }
-
-    /// Transforms the bounding box.
-    pub fn transform(&self, ts: tiny_skia_path::Transform) -> Option<Self> {
-        self.to_rect()?.transform(ts).map(Self::from)
     }
 
     /// Converts a bounding box into [`Rect`].

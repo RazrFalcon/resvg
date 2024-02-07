@@ -696,7 +696,7 @@ fn convert_image(fe: SvgNode, state: &converter::State, cache: &mut converter::C
     if let Some(node) = fe.try_attribute::<SvgNode>(AId::Href) {
         let mut state = state.clone();
         state.fe_image_link = true;
-        let mut root = Group::default();
+        let mut root = Group::empty();
         super::converter::convert_element(node, &state, cache, &mut root);
         return if root.has_children() {
             // Transfer node id from group's child to the group itself if needed.

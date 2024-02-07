@@ -201,9 +201,9 @@ fn clip_element(
     //   <elem/>
     // </g>
 
-    let mut clip_path = crate::ClipPath::default();
+    let mut clip_path = crate::ClipPath::empty();
 
-    let mut path = Path::new(Rc::new(tiny_skia_path::PathBuilder::from_rect(
+    let mut path = Path::with_path(Rc::new(tiny_skia_path::PathBuilder::from_rect(
         clip_rect.to_rect(),
     )));
     path.fill = Some(crate::Fill::default());
@@ -220,7 +220,7 @@ fn clip_element(
         id,
         transform,
         clip_path: Some(Rc::new(RefCell::new(clip_path))),
-        ..Group::default()
+        ..Group::empty()
     }
 }
 

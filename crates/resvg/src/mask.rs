@@ -12,7 +12,7 @@ pub fn apply(
     pixmap: &mut tiny_skia::Pixmap,
 ) {
     let mut content_transform = tiny_skia::Transform::default();
-    if mask.content_units == usvg::Units::ObjectBoundingBox {
+    if mask.content_units() == usvg::Units::ObjectBoundingBox {
         let object_bbox = match object_bbox.to_non_zero_rect() {
             Some(v) => v,
             None => {
@@ -25,22 +25,22 @@ pub fn apply(
         content_transform = ts;
     }
 
-    if mask.units == usvg::Units::ObjectBoundingBox && object_bbox.to_non_zero_rect().is_none() {
+    if mask.units() == usvg::Units::ObjectBoundingBox && object_bbox.to_non_zero_rect().is_none() {
         // `objectBoundingBox` units and zero-sized bbox? Clear the canvas and return.
         // Technically a UB, but this is what Chrome and Firefox do.
         pixmap.fill(tiny_skia::Color::TRANSPARENT);
         return;
     }
 
-    let region = if mask.units == usvg::Units::ObjectBoundingBox {
+    let region = if mask.units() == usvg::Units::ObjectBoundingBox {
         if let Some(bbox) = object_bbox.to_non_zero_rect() {
-            mask.rect.bbox_transform(bbox)
+            mask.rect().bbox_transform(bbox)
         } else {
             // The actual values does not matter. Will not be used anyway.
             tiny_skia::NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()
         }
     } else {
-        mask.rect
+        mask.rect()
     };
 
     let mut mask_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
@@ -58,7 +58,7 @@ pub fn apply(
 
         let content_transform = transform.pre_concat(content_transform);
         crate::render::render_nodes(
-            &mask.root,
+            mask.root(),
             ctx,
             content_transform,
             None,
@@ -68,11 +68,11 @@ pub fn apply(
         mask_pixmap.apply_mask(&alpha_mask);
     }
 
-    if let Some(ref mask) = mask.mask {
+    if let Some(ref mask) = mask.mask() {
         self::apply(&mask.borrow(), ctx, object_bbox, transform, pixmap);
     }
 
-    let mask_type = match mask.kind {
+    let mask_type = match mask.kind() {
         usvg::MaskType::Luminance => tiny_skia::MaskType::Luminance,
         usvg::MaskType::Alpha => tiny_skia::MaskType::Alpha,
     };

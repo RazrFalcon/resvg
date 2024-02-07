@@ -22,7 +22,7 @@ fn main() {
     let svg_data = std::fs::read("./examples/custom_href_resolver.svg").unwrap();
     let tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
 
-    let pixmap_size = tree.size.to_int_size();
+    let pixmap_size = tree.size().to_int_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
 
     resvg::render(&tree, tiny_skia::Transform::default(), &mut pixmap.as_mut());

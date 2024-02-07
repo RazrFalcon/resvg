@@ -10,8 +10,8 @@ pub fn apply(
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::Pixmap,
 ) {
-    let mut clip_transform = clip.transform;
-    if clip.units == usvg::Units::ObjectBoundingBox {
+    let mut clip_transform = clip.transform();
+    if clip.units() == usvg::Units::ObjectBoundingBox {
         let object_bbox = match object_bbox.to_non_zero_rect() {
             Some(v) => v,
             None => {
@@ -28,14 +28,14 @@ pub fn apply(
     clip_pixmap.fill(tiny_skia::Color::BLACK);
 
     draw_children(
-        &clip.root,
+        clip.root(),
         tiny_skia::BlendMode::Clear,
         object_bbox,
         transform.pre_concat(clip_transform),
         &mut clip_pixmap.as_mut(),
     );
 
-    if let Some(ref clip) = clip.clip_path {
+    if let Some(ref clip) = clip.clip_path() {
         apply(&clip.borrow(), object_bbox, transform, pixmap);
     }
 
@@ -51,10 +51,10 @@ fn draw_children(
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
-    for child in &parent.children {
+    for child in parent.children() {
         match child {
             usvg::Node::Path(ref path) => {
-                if path.visibility != usvg::Visibility::Visible {
+                if path.visibility() != usvg::Visibility::Visible {
                     continue;
                 }
 
@@ -66,14 +66,14 @@ fn draw_children(
                 crate::path::fill_path(path, mode, &ctx, object_bbox, transform, pixmap);
             }
             usvg::Node::Text(ref text) => {
-                if let (Some(flattened), Some(bbox)) = (&text.flattened, text.bounding_box) {
+                if let (Some(flattened), Some(bbox)) = (&text.flattened(), text.bounding_box()) {
                     draw_children(flattened, mode, bbox.to_rect(), transform, pixmap);
                 }
             }
             usvg::Node::Group(ref group) => {
-                let transform = transform.pre_concat(group.transform);
+                let transform = transform.pre_concat(group.transform());
 
-                if let Some(ref clip) = group.clip_path {
+                if let Some(ref clip) = group.clip_path() {
                     // If a `clipPath` child also has a `clip-path`
                     // then we should render this child on a new canvas,
                     // clip it, and only then draw it to the `clipPath`.

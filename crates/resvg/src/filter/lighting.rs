@@ -144,7 +144,7 @@ pub fn diffuse_lighting(
         let k = if normal.normal.approx_zero() {
             light_vector.z
         } else {
-            let mut n = normal.normal * (fe.surface_scale / 255.0);
+            let mut n = normal.normal * (fe.surface_scale() / 255.0);
             n.x *= normal.factor.x;
             n.y *= normal.factor.y;
 
@@ -153,13 +153,13 @@ pub fn diffuse_lighting(
             normal.dot(&light_vector) / normal.length()
         };
 
-        fe.diffuse_constant * k
+        fe.diffuse_constant() * k
     };
 
     apply(
         light_source,
-        fe.surface_scale,
-        fe.lighting_color,
+        fe.surface_scale(),
+        fe.lighting_color(),
         &light_factor,
         calc_diffuse_alpha,
         src,
@@ -195,33 +195,33 @@ pub fn specular_lighting(
 
         let k = if normal.normal.approx_zero() {
             let n_dot_h = h.z / h_length;
-            if fe.specular_exponent.approx_eq_ulps(&1.0, 4) {
+            if fe.specular_exponent().approx_eq_ulps(&1.0, 4) {
                 n_dot_h
             } else {
-                n_dot_h.powf(fe.specular_exponent)
+                n_dot_h.powf(fe.specular_exponent())
             }
         } else {
-            let mut n = normal.normal * (fe.surface_scale / 255.0);
+            let mut n = normal.normal * (fe.surface_scale() / 255.0);
             n.x *= normal.factor.x;
             n.y *= normal.factor.y;
 
             let normal = Vector3::new(n.x, n.y, 1.0);
 
             let n_dot_h = normal.dot(&h) / normal.length() / h_length;
-            if fe.specular_exponent.approx_eq_ulps(&1.0, 4) {
+            if fe.specular_exponent().approx_eq_ulps(&1.0, 4) {
                 n_dot_h
             } else {
-                n_dot_h.powf(fe.specular_exponent)
+                n_dot_h.powf(fe.specular_exponent())
             }
         };
 
-        fe.specular_constant * k
+        fe.specular_constant() * k
     };
 
     apply(
         light_source,
-        fe.surface_scale,
-        fe.lighting_color,
+        fe.surface_scale(),
+        fe.lighting_color(),
         &light_factor,
         calc_specular_alpha,
         src,

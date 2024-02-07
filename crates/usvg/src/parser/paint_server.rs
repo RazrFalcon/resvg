@@ -184,7 +184,7 @@ fn convert_pattern(
         transform,
         rect,
         view_box,
-        root: Group::default(),
+        root: Group::empty(),
     };
 
     converter::convert_children(node_with_children, state, cache, &mut patt.root);

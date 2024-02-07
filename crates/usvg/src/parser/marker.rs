@@ -120,9 +120,9 @@ fn resolve(
             r.size().to_non_zero_rect(0.0, 0.0)
         };
 
-        let mut clip_path = ClipPath::default();
+        let mut clip_path = ClipPath::empty();
 
-        let mut path = Path::new(Rc::new(tiny_skia_path::PathBuilder::from_rect(
+        let mut path = Path::with_path(Rc::new(tiny_skia_path::PathBuilder::from_rect(
             clip_rect.to_rect(),
         )));
         path.fill = Some(Fill::default());
@@ -197,7 +197,7 @@ fn resolve(
         let mut g = Group {
             transform: ts,
             clip_path: clip_path.clone(),
-            ..Group::default()
+            ..Group::empty()
         };
 
         let mut marker_state = state.clone();

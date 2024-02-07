@@ -49,13 +49,16 @@ pub fn render(
     )
     .unwrap();
 
-    let ts =
-        usvg::utils::view_box_to_transform(tree.view_box.rect, tree.view_box.aspect, tree.size);
+    let ts = usvg::utils::view_box_to_transform(
+        tree.view_box().rect,
+        tree.view_box().aspect,
+        tree.size(),
+    );
 
     let root_transform = transform.pre_concat(ts);
 
     let ctx = render::Context { max_bbox };
-    render::render_nodes(&tree.root, &ctx, root_transform, None, pixmap);
+    render::render_nodes(tree.root(), &ctx, root_transform, None, pixmap);
 }
 
 /// Renders a node onto the pixmap.

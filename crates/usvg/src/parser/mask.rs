@@ -67,7 +67,7 @@ pub(crate) fn convert(
         rect,
         kind,
         mask,
-        root: Group::default(),
+        root: Group::empty(),
     };
 
     converter::convert_children(node, state, cache, &mut mask.root);

@@ -48,7 +48,7 @@ fn convert_node(
 
     let mut group = Group {
         id: text.id.clone(),
-        ..Group::default()
+        ..Group::empty()
     };
 
     let rendering_mode = resolve_rendering_mode(text);
@@ -760,7 +760,7 @@ fn convert_decoration(
     let mut path_data = builder.finish()?;
     path_data = path_data.transform(transform)?;
 
-    let mut path = Path::new(Rc::new(path_data));
+    let mut path = Path::with_path(Rc::new(path_data));
     path.visibility = span.visibility;
     path.fill = decoration.fill.take();
     path.stroke = decoration.stroke.take();

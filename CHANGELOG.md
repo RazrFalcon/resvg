@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- All types in `usvg` are immutable now. Meaning that `usvg::Tree` cannot be modified
+  after creation anymore.
+- All struct fields in `usvg` are private now. Use getters instead.
 
 ## [0.39.0] - 2024-02-06
 ### Added

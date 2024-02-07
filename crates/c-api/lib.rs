@@ -612,7 +612,7 @@ pub extern "C" fn resvg_is_image_empty(tree: *const resvg_render_tree) -> bool {
         &*tree
     };
 
-    !tree.0.root.has_children()
+    !tree.0.root().has_children()
 }
 
 /// @brief Returns an image size.
@@ -630,7 +630,7 @@ pub extern "C" fn resvg_get_image_size(tree: *const resvg_render_tree) -> resvg_
         &*tree
     };
 
-    let size = tree.0.size;
+    let size = tree.0.size();
 
     resvg_size {
         width: size.width(),
@@ -651,7 +651,7 @@ pub extern "C" fn resvg_get_image_viewbox(tree: *const resvg_render_tree) -> res
         &*tree
     };
 
-    let r = tree.0.view_box.rect;
+    let r = tree.0.view_box().rect;
 
     resvg_rect {
         x: r.x(),
@@ -680,8 +680,8 @@ pub extern "C" fn resvg_get_image_bbox(
 
     if let Some(r) = tree
         .0
-        .root
-        .abs_bounding_box
+        .root()
+        .abs_bounding_box()
         .and_then(|r| r.to_non_zero_rect())
     {
         unsafe {
