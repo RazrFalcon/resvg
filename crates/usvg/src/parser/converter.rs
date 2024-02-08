@@ -50,7 +50,7 @@ pub struct Cache {
 impl Cache {
     // TODO: macros?
     #[cfg(feature = "text")]
-    pub fn gen_linear_gradient_id(&mut self) -> NonEmptyString {
+    pub(crate) fn gen_linear_gradient_id(&mut self) -> NonEmptyString {
         loop {
             self.linear_gradient_index += 1;
             let new_id = format!("linearGradient{}", self.linear_gradient_index);
@@ -62,7 +62,7 @@ impl Cache {
     }
 
     #[cfg(feature = "text")]
-    pub fn gen_radial_gradient_id(&mut self) -> NonEmptyString {
+    pub(crate) fn gen_radial_gradient_id(&mut self) -> NonEmptyString {
         loop {
             self.radial_gradient_index += 1;
             let new_id = format!("radialGradient{}", self.radial_gradient_index);
@@ -74,7 +74,7 @@ impl Cache {
     }
 
     #[cfg(feature = "text")]
-    pub fn gen_pattern_id(&mut self) -> NonEmptyString {
+    pub(crate) fn gen_pattern_id(&mut self) -> NonEmptyString {
         loop {
             self.pattern_index += 1;
             let new_id = format!("pattern{}", self.pattern_index);
@@ -85,7 +85,7 @@ impl Cache {
         }
     }
 
-    pub fn gen_clip_path_id(&mut self) -> NonEmptyString {
+    pub(crate) fn gen_clip_path_id(&mut self) -> NonEmptyString {
         loop {
             self.clip_path_index += 1;
             let new_id = format!("clipPath{}", self.clip_path_index);
@@ -96,7 +96,7 @@ impl Cache {
         }
     }
 
-    pub fn gen_filter_id(&mut self) -> NonEmptyString {
+    pub(crate) fn gen_filter_id(&mut self) -> NonEmptyString {
         loop {
             self.filter_index += 1;
             let new_id = format!("filter{}", self.filter_index);

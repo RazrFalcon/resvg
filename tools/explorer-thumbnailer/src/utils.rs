@@ -31,8 +31,7 @@ pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvg::Tree, Error> 
     let mut fontdb = fontdb::Database::new();
     fontdb.load_system_fonts();
 
-    let mut tree = usvg::Tree::from_data(&svg_data, &opt).map_err(|e| Error::TreeError(e))?;
-    tree.postprocess(usvg::PostProcessingSteps::default(), &fontdb);
+    let tree = usvg::Tree::from_data(&svg_data, &opt, &fontdb).map_err(|e| Error::TreeError(e))?;
     Ok(tree)
 }
 
