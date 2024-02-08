@@ -13,7 +13,8 @@ use strict_num::PositiveF32;
 use svgtypes::{Length, LengthUnit as Unit};
 
 use crate::{
-    filter, filter::*, ApproxZeroUlps, Color, Group, Node, NonZeroF32, NonZeroRect, Opacity, Units,
+    filter::{self, *},
+    ApproxZeroUlps, Color, Group, Node, NonEmptyString, NonZeroF32, NonZeroRect, Opacity, Units,
 };
 
 use super::converter::{self, SvgColorExt};
@@ -44,35 +45,36 @@ pub(crate) fn convert(
     let mut has_invalid_urls = false;
     let mut filters = Vec::new();
 
-    let create_base_filter_func = |kind, filters: &mut Vec<SharedFilter>| {
-        // Filter functions, unlike `filter` elements, do not have a filter region.
-        // We're currently do not support an unlimited region, so we simply use a fairly large one.
-        // This if far from ideal, but good for now.
-        // TODO: Should be fixed eventually.
-        let rect = match kind {
-            Kind::DropShadow(_) | Kind::GaussianBlur(_) => {
-                NonZeroRect::from_xywh(-0.5, -0.5, 2.0, 2.0).unwrap()
-            }
-            _ => NonZeroRect::from_xywh(-0.1, -0.1, 1.2, 1.2).unwrap(),
-        };
+    let create_base_filter_func =
+        |kind, filters: &mut Vec<SharedFilter>, cache: &mut converter::Cache| {
+            // Filter functions, unlike `filter` elements, do not have a filter region.
+            // We're currently do not support an unlimited region, so we simply use a fairly large one.
+            // This if far from ideal, but good for now.
+            // TODO: Should be fixed eventually.
+            let rect = match kind {
+                Kind::DropShadow(_) | Kind::GaussianBlur(_) => {
+                    NonZeroRect::from_xywh(-0.5, -0.5, 2.0, 2.0).unwrap()
+                }
+                _ => NonZeroRect::from_xywh(-0.1, -0.1, 1.2, 1.2).unwrap(),
+            };
 
-        filters.push(Rc::new(RefCell::new(Filter {
-            id: String::new(),
-            units: Units::ObjectBoundingBox,
-            primitive_units: Units::UserSpaceOnUse,
-            rect,
-            primitives: vec![Primitive {
-                x: None,
-                y: None,
-                width: None,
-                height: None,
-                // Unlike `filter` elements, filter functions use sRGB colors by default.
-                color_interpolation: ColorInterpolation::SRGB,
-                result: "result".to_string(),
-                kind,
-            }],
-        })));
-    };
+            filters.push(Rc::new(RefCell::new(Filter {
+                id: cache.gen_filter_id(),
+                units: Units::ObjectBoundingBox,
+                primitive_units: Units::UserSpaceOnUse,
+                rect,
+                primitives: vec![Primitive {
+                    x: None,
+                    y: None,
+                    width: None,
+                    height: None,
+                    // Unlike `filter` elements, filter functions use sRGB colors by default.
+                    color_interpolation: ColorInterpolation::SRGB,
+                    result: "result".to_string(),
+                    kind,
+                }],
+            })));
+        };
 
     for func in svgtypes::FilterValueListParser::from(value) {
         let func = match func {
@@ -85,9 +87,11 @@ pub(crate) fn convert(
         };
 
         match func {
-            svgtypes::FilterValue::Blur(std_dev) => {
-                create_base_filter_func(convert_blur_function(node, std_dev, state), &mut filters)
-            }
+            svgtypes::FilterValue::Blur(std_dev) => create_base_filter_func(
+                convert_blur_function(node, std_dev, state),
+                &mut filters,
+                cache,
+            ),
             svgtypes::FilterValue::DropShadow {
                 color,
                 dx,
@@ -96,30 +100,31 @@ pub(crate) fn convert(
             } => create_base_filter_func(
                 convert_drop_shadow_function(node, color, dx, dy, std_dev, state),
                 &mut filters,
+                cache,
             ),
             svgtypes::FilterValue::Brightness(amount) => {
-                create_base_filter_func(convert_brightness_function(amount), &mut filters)
+                create_base_filter_func(convert_brightness_function(amount), &mut filters, cache)
             }
             svgtypes::FilterValue::Contrast(amount) => {
-                create_base_filter_func(convert_contrast_function(amount), &mut filters)
+                create_base_filter_func(convert_contrast_function(amount), &mut filters, cache)
             }
             svgtypes::FilterValue::Grayscale(amount) => {
-                create_base_filter_func(convert_grayscale_function(amount), &mut filters)
+                create_base_filter_func(convert_grayscale_function(amount), &mut filters, cache)
             }
             svgtypes::FilterValue::HueRotate(angle) => {
-                create_base_filter_func(convert_hue_rotate_function(angle), &mut filters)
+                create_base_filter_func(convert_hue_rotate_function(angle), &mut filters, cache)
             }
             svgtypes::FilterValue::Invert(amount) => {
-                create_base_filter_func(convert_invert_function(amount), &mut filters)
+                create_base_filter_func(convert_invert_function(amount), &mut filters, cache)
             }
             svgtypes::FilterValue::Opacity(amount) => {
-                create_base_filter_func(convert_opacity_function(amount), &mut filters)
+                create_base_filter_func(convert_opacity_function(amount), &mut filters, cache)
             }
             svgtypes::FilterValue::Sepia(amount) => {
-                create_base_filter_func(convert_sepia_function(amount), &mut filters)
+                create_base_filter_func(convert_sepia_function(amount), &mut filters, cache)
             }
             svgtypes::FilterValue::Saturate(amount) => {
-                create_base_filter_func(convert_saturate_function(amount), &mut filters)
+                create_base_filter_func(convert_saturate_function(amount), &mut filters, cache)
             }
             svgtypes::FilterValue::Url(url) => {
                 if let Some(link) = node.document().element_by_id(url) {
@@ -208,8 +213,10 @@ fn convert_url(
         return Err(());
     }
 
+    let id = NonEmptyString::new(node.element_id().to_string()).ok_or(())?;
+
     let filter = Rc::new(RefCell::new(Filter {
-        id: node.element_id().to_string(),
+        id,
         units,
         primitive_units,
         rect,

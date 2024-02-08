@@ -370,7 +370,7 @@ fn resolve_text_flow(node: SvgNode, state: &converter::State) -> Option<TextFlow
         node.resolve_length(AId::StartOffset, state, 0.0)
     };
 
-    let id = linked_node.element_id().to_string();
+    let id = NonEmptyString::new(linked_node.element_id().to_string())?;
     Some(TextFlow::Path(Rc::new(TextPath {
         id,
         start_offset,

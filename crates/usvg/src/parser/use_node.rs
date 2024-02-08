@@ -45,7 +45,7 @@ pub(crate) fn convert(
         }
 
         if let Some(clip_rect) = get_clip_rect(node, child, state) {
-            let mut g = clip_element(node, clip_rect, orig_ts, state);
+            let mut g = clip_element(node, clip_rect, orig_ts, state, cache);
 
             // Make group for `use`.
             match converter::convert_group(node, state, true, cache) {
@@ -166,7 +166,7 @@ pub(crate) fn convert_svg(
     };
 
     if let Some(clip_rect) = get_clip_rect(node, node, state) {
-        let mut g = clip_element(node, clip_rect, orig_ts, state);
+        let mut g = clip_element(node, clip_rect, orig_ts, state, cache);
         convert_children(node, new_ts, &new_state, cache, &mut g);
         parent.children.push(Node::Group(Box::new(g)));
     } else {
@@ -180,6 +180,7 @@ fn clip_element(
     clip_rect: NonZeroRect,
     transform: Transform,
     state: &converter::State,
+    cache: &mut converter::Cache,
 ) -> Group {
     // We can't set `clip-path` on the element itself,
     // because it will be affected by a possible transform.
@@ -201,7 +202,7 @@ fn clip_element(
     //   <elem/>
     // </g>
 
-    let mut clip_path = crate::ClipPath::empty();
+    let mut clip_path = crate::ClipPath::empty(cache.gen_clip_path_id());
 
     let mut path = Path::with_path(Rc::new(tiny_skia_path::PathBuilder::from_rect(
         clip_rect.to_rect(),

@@ -2,7 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::str::FromStr;
 
@@ -27,12 +28,85 @@ pub struct State<'a> {
     pub(crate) opt: &'a Options,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Cache {
     pub clip_paths: HashMap<String, SharedClipPath>,
     pub masks: HashMap<String, SharedMask>,
     pub filters: HashMap<String, filter::SharedFilter>,
     pub paint: HashMap<String, Paint>,
+
+    // used for ID generation
+    all_ids: HashSet<u64>,
+    linear_gradient_index: usize,
+    radial_gradient_index: usize,
+    pattern_index: usize,
+    clip_path_index: usize,
+    filter_index: usize,
+}
+
+impl Cache {
+    // TODO: macros?
+    pub fn gen_linear_gradient_id(&mut self) -> NonEmptyString {
+        loop {
+            self.linear_gradient_index += 1;
+            let new_id = format!("linearGradient{}", self.linear_gradient_index);
+            let new_hash = string_hash(&new_id);
+            if !self.all_ids.contains(&new_hash) {
+                return NonEmptyString::new(new_id).unwrap();
+            }
+        }
+    }
+
+    pub fn gen_radial_gradient_id(&mut self) -> NonEmptyString {
+        loop {
+            self.radial_gradient_index += 1;
+            let new_id = format!("radialGradient{}", self.radial_gradient_index);
+            let new_hash = string_hash(&new_id);
+            if !self.all_ids.contains(&new_hash) {
+                return NonEmptyString::new(new_id).unwrap();
+            }
+        }
+    }
+
+    pub fn gen_pattern_id(&mut self) -> NonEmptyString {
+        loop {
+            self.pattern_index += 1;
+            let new_id = format!("pattern{}", self.pattern_index);
+            let new_hash = string_hash(&new_id);
+            if !self.all_ids.contains(&new_hash) {
+                return NonEmptyString::new(new_id).unwrap();
+            }
+        }
+    }
+
+    pub fn gen_clip_path_id(&mut self) -> NonEmptyString {
+        loop {
+            self.clip_path_index += 1;
+            let new_id = format!("clipPath{}", self.clip_path_index);
+            let new_hash = string_hash(&new_id);
+            if !self.all_ids.contains(&new_hash) {
+                return NonEmptyString::new(new_id).unwrap();
+            }
+        }
+    }
+
+    pub fn gen_filter_id(&mut self) -> NonEmptyString {
+        loop {
+            self.filter_index += 1;
+            let new_id = format!("filter{}", self.filter_index);
+            let new_hash = string_hash(&new_id);
+            if !self.all_ids.contains(&new_hash) {
+                return NonEmptyString::new(new_id).unwrap();
+            }
+        }
+    }
+}
+
+// TODO: is there a simpler way?
+fn string_hash(s: &str) -> u64 {
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    s.hash(&mut h);
+    h.finish()
 }
 
 impl<'a, 'input: 'a> SvgNode<'a, 'input> {
@@ -157,6 +231,7 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
         size,
         view_box,
         root: Group::empty(),
+        cache: Cache::default(),
     };
 
     if !svg.is_visible_element(opt) {
@@ -172,8 +247,17 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
         opt,
     };
 
-    let mut cache = Cache::default();
-    convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
+    for node in svg_doc.descendants() {
+        if let Some(tag) = node.tag_name() {
+            if matches!(tag, EId::Filter | EId::ClipPath) {
+                if !node.element_id().is_empty() {
+                    tree.cache.all_ids.insert(string_hash(node.element_id()));
+                }
+            }
+        }
+    }
+
+    convert_children(svg_doc.root(), &state, &mut tree.cache, &mut tree.root);
 
     if restore_viewbox {
         tree.calculate_abs_transforms();

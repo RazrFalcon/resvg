@@ -7,7 +7,7 @@ use std::rc::Rc;
 use strict_num::NonZeroPositiveF32;
 pub use svgtypes::FontFamily;
 
-use crate::{Fill, Group, Paint, PaintOrder, Stroke, TextRendering, Visibility};
+use crate::{Fill, Group, NonEmptyString, Paint, PaintOrder, Stroke, TextRendering, Visibility};
 use tiny_skia_path::{NonZeroRect, Transform};
 
 /// A font stretch property.
@@ -356,7 +356,7 @@ impl Default for TextAnchor {
 /// A path used by text-on-path.
 #[derive(Clone, Debug)]
 pub struct TextPath {
-    pub(crate) id: String,
+    pub(crate) id: NonEmptyString,
     pub(crate) start_offset: f32,
     pub(crate) path: Rc<tiny_skia_path::Path>,
 }
@@ -366,7 +366,7 @@ impl TextPath {
     ///
     /// Taken from the SVG itself.
     pub fn id(&self) -> &str {
-        &self.id
+        self.id.get()
     }
 
     /// A text offset in SVG coordinates.

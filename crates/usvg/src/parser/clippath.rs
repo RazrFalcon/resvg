@@ -8,7 +8,7 @@ use std::str::FromStr;
 
 use super::converter;
 use super::svgtree::{AId, EId, SvgNode};
-use crate::{ClipPath, Group, SharedClipPath, Transform, Units};
+use crate::{ClipPath, Group, NonEmptyString, SharedClipPath, Transform, Units};
 
 pub(crate) fn convert(
     node: SvgNode,
@@ -39,12 +39,14 @@ pub(crate) fn convert(
         }
     }
 
+    let id = NonEmptyString::new(node.element_id().to_string())?;
+
     let units = node
         .attribute(AId::ClipPathUnits)
         .unwrap_or(Units::UserSpaceOnUse);
 
     let mut clip = ClipPath {
-        id: node.element_id().to_string(),
+        id,
         units,
         transform,
         clip_path,

@@ -22,6 +22,23 @@ use crate::PostProcessingSteps;
 /// An alias to `NormalizedF32`.
 pub type Opacity = NormalizedF32;
 
+#[derive(Clone, Debug)]
+pub(crate) struct NonEmptyString(String);
+
+impl NonEmptyString {
+    pub(crate) fn new(string: String) -> Option<Self> {
+        if string.trim().is_empty() {
+            return None;
+        }
+
+        Some(NonEmptyString(string))
+    }
+
+    pub(crate) fn get(&self) -> &str {
+        &self.0
+    }
+}
+
 /// A non-zero `f32`.
 ///
 /// Just like `f32` but immutable and guarantee to never be zero.
@@ -222,7 +239,7 @@ impl Default for SpreadMethod {
 /// A generic gradient.
 #[derive(Clone, Debug)]
 pub struct BaseGradient {
-    pub(crate) id: String,
+    pub(crate) id: NonEmptyString,
     pub(crate) units: Units,
     pub(crate) transform: Transform,
     pub(crate) spread_method: SpreadMethod,
@@ -235,7 +252,7 @@ impl BaseGradient {
     /// Taken from the SVG itself.
     /// Used only during SVG writing. `resvg` doesn't rely on this property.
     pub fn id(&self) -> &str {
-        &self.id
+        self.id.get()
     }
 
     /// Coordinate system units.
@@ -396,7 +413,7 @@ impl Stop {
 /// `pattern` element in SVG.
 #[derive(Clone, Debug)]
 pub struct Pattern {
-    pub(crate) id: String,
+    pub(crate) id: NonEmptyString,
     pub(crate) units: Units,
     pub(crate) content_units: Units,
     pub(crate) transform: Transform,
@@ -411,7 +428,7 @@ impl Pattern {
     /// Taken from the SVG itself.
     /// Used only during SVG writing. `resvg` doesn't rely on this property.
     pub fn id(&self) -> &str {
-        &self.id
+        self.id.get()
     }
 
     /// Coordinate system units.
@@ -746,7 +763,7 @@ impl PartialEq for Paint {
 /// `clipPath` element in SVG.
 #[derive(Clone, Debug)]
 pub struct ClipPath {
-    pub(crate) id: String,
+    pub(crate) id: NonEmptyString,
     pub(crate) units: Units,
     pub(crate) transform: Transform,
     pub(crate) clip_path: Option<SharedClipPath>,
@@ -754,9 +771,9 @@ pub struct ClipPath {
 }
 
 impl ClipPath {
-    pub(crate) fn empty() -> Self {
+    pub(crate) fn empty(id: NonEmptyString) -> Self {
         ClipPath {
-            id: String::new(),
+            id,
             units: Units::UserSpaceOnUse,
             transform: Transform::default(),
             clip_path: None,
@@ -769,7 +786,7 @@ impl ClipPath {
     /// Taken from the SVG itself.
     /// Used only during SVG writing. `resvg` doesn't rely on this property.
     pub fn id(&self) -> &str {
-        &self.id
+        self.id.get()
     }
 
     /// Coordinate system units.
@@ -822,7 +839,7 @@ impl Default for MaskType {
 /// `mask` element in SVG.
 #[derive(Clone, Debug)]
 pub struct Mask {
-    pub(crate) id: String,
+    pub(crate) id: NonEmptyString,
     pub(crate) units: Units,
     pub(crate) content_units: Units,
     pub(crate) rect: NonZeroRect,
@@ -837,7 +854,7 @@ impl Mask {
     /// Taken from the SVG itself.
     /// Used only during SVG writing. `resvg` doesn't rely on this property.
     pub fn id(&self) -> &str {
-        &self.id
+        self.id.get()
     }
 
     /// Coordinate system units.
@@ -1601,11 +1618,13 @@ impl Image {
 
 /// A nodes tree container.
 #[allow(missing_debug_implementations)]
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Tree {
     pub(crate) size: Size,
     pub(crate) view_box: ViewBox,
     pub(crate) root: Group,
+
+    pub(crate) cache: crate::parser::Cache,
 }
 
 impl Tree {
@@ -1709,11 +1728,21 @@ impl Tree {
         if steps.convert_text_into_paths {
             #[cfg(feature = "text")]
             {
-                crate::text_to_paths::convert_text(&mut self.root, &fontdb);
+                crate::text_to_paths::convert_text(&mut self.root, &fontdb, &mut self.cache);
             }
         }
 
         self.calculate_bounding_boxes();
+    }
+}
+
+impl std::fmt::Debug for Tree {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Tree")
+            .field("size", &self.size)
+            .field("view_box", &self.view_box)
+            .field("root", &self.root)
+            .finish()
     }
 }
 

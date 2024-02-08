@@ -48,6 +48,8 @@ pub(crate) fn convert(
 
 #[inline(never)]
 fn convert_linear(node: SvgNode, state: &converter::State) -> Option<ServerOrColor> {
+    let id = NonEmptyString::new(node.element_id().to_string())?;
+
     let stops = convert_stops(find_gradient_with_stops(node)?);
     if stops.len() < 2 {
         return stops_to_color(&stops);
@@ -68,7 +70,7 @@ fn convert_linear(node: SvgNode, state: &converter::State) -> Option<ServerOrCol
         ),
         y2: resolve_number(node, AId::Y2, units, state, Length::zero()),
         base: BaseGradient {
-            id: node.element_id().to_string(),
+            id,
             units,
             transform,
             spread_method: convert_spread_method(node),
@@ -83,6 +85,8 @@ fn convert_linear(node: SvgNode, state: &converter::State) -> Option<ServerOrCol
 
 #[inline(never)]
 fn convert_radial(node: SvgNode, state: &converter::State) -> Option<ServerOrColor> {
+    let id = NonEmptyString::new(node.element_id().to_string())?;
+
     let stops = convert_stops(find_gradient_with_stops(node)?);
     if stops.len() < 2 {
         return stops_to_color(&stops);
@@ -129,7 +133,7 @@ fn convert_radial(node: SvgNode, state: &converter::State) -> Option<ServerOrCol
         fx,
         fy,
         base: BaseGradient {
-            id: node.element_id().to_string(),
+            id,
             units,
             transform,
             spread_method,
@@ -149,6 +153,8 @@ fn convert_pattern(
     cache: &mut converter::Cache,
 ) -> Option<ServerOrColor> {
     let node_with_children = find_pattern_with_children(node)?;
+
+    let id = NonEmptyString::new(node.element_id().to_string())?;
 
     let view_box = {
         let n1 = resolve_attr(node, AId::ViewBox);
@@ -178,7 +184,7 @@ fn convert_pattern(
     })?;
 
     let mut patt = Pattern {
-        id: node.element_id().to_string(),
+        id,
         units,
         content_units,
         transform,

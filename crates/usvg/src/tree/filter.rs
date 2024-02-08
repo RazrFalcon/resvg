@@ -10,14 +10,17 @@ use std::rc::Rc;
 use strict_num::PositiveF32;
 use svgtypes::AspectRatio;
 
-use crate::{BlendMode, Color, Group, ImageRendering, NonZeroF32, NonZeroRect, Opacity, Units};
+use crate::{
+    BlendMode, Color, Group, ImageRendering, NonEmptyString, NonZeroF32, NonZeroRect, Opacity,
+    Units,
+};
 
 /// A filter element.
 ///
 /// `filter` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Filter {
-    pub(crate) id: String,
+    pub(crate) id: NonEmptyString,
     pub(crate) units: Units,
     pub(crate) primitive_units: Units,
     pub(crate) rect: NonZeroRect,
@@ -30,7 +33,7 @@ impl Filter {
     /// Taken from the SVG itself.
     /// Used only during SVG writing. `resvg` doesn't rely on this property.
     pub fn id(&self) -> &str {
-        &self.id
+        self.id.get()
     }
 
     /// Region coordinate system units.

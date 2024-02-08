@@ -9,7 +9,7 @@ use svgtypes::{Length, LengthUnit as Unit};
 
 use super::svgtree::{AId, EId, SvgNode};
 use super::{converter, OptionLog};
-use crate::{Group, Mask, MaskType, NonZeroRect, SharedMask, Units};
+use crate::{Group, Mask, MaskType, NonEmptyString, NonZeroRect, SharedMask, Units};
 
 pub(crate) fn convert(
     node: SvgNode,
@@ -25,6 +25,8 @@ pub(crate) fn convert(
     if let Some(mask) = cache.masks.get(node.element_id()) {
         return Some(mask.clone());
     }
+
+    let id = NonEmptyString::new(node.element_id().to_string())?;
 
     let units = node
         .attribute(AId::MaskUnits)
@@ -61,7 +63,7 @@ pub(crate) fn convert(
     };
 
     let mut mask = Mask {
-        id: node.element_id().to_string(),
+        id,
         units,
         content_units,
         rect,

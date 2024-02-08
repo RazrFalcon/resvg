@@ -18,6 +18,7 @@ mod text;
 mod units;
 mod use_node;
 
+pub(crate) use converter::Cache;
 pub use image::{ImageHrefDataResolverFn, ImageHrefResolver, ImageHrefStringResolverFn};
 pub use options::Options;
 pub(crate) use svgtree::{AId, EId};

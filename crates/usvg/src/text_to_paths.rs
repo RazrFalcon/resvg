@@ -17,10 +17,10 @@ use unicode_script::UnicodeScript;
 use crate::*;
 
 /// Converts text nodes into paths.
-pub fn convert_text(root: &mut Group, fontdb: &fontdb::Database) {
+pub fn convert_text(root: &mut Group, fontdb: &fontdb::Database, cache: &mut crate::parser::Cache) {
     for node in &mut root.children {
         if let Node::Text(ref mut text) = node {
-            if let Some((node, bbox, stroke_bbox)) = convert_node(text, fontdb) {
+            if let Some((node, bbox, stroke_bbox)) = convert_node(text, fontdb, cache) {
                 text.bounding_box = Some(bbox);
                 text.abs_bounding_box = bbox.transform(text.abs_transform);
                 // TODO: test
@@ -32,17 +32,18 @@ pub fn convert_text(root: &mut Group, fontdb: &fontdb::Database) {
         }
 
         if let Node::Group(ref mut g) = node {
-            convert_text(g, fontdb);
+            convert_text(g, fontdb, cache);
         }
 
         // We have to update text nodes in clipPaths, masks and patterns as well.
-        node.subroots_mut(|subroot| convert_text(subroot, fontdb))
+        node.subroots_mut(|subroot| convert_text(subroot, fontdb, cache))
     }
 }
 
 fn convert_node(
     text: &Text,
     fontdb: &fontdb::Database,
+    cache: &mut crate::parser::Cache,
 ) -> Option<(Group, NonZeroRect, NonZeroRect)> {
     let (new_paths, bbox, stroke_bbox) = text_to_paths(text, fontdb)?;
 
@@ -53,7 +54,7 @@ fn convert_node(
 
     let rendering_mode = resolve_rendering_mode(text);
     for mut path in new_paths {
-        fix_obj_bounding_box(&mut path, bbox);
+        fix_obj_bounding_box(&mut path, bbox, cache);
         path.rendering_mode = rendering_mode;
         group.children.push(Node::Path(Box::new(path)));
     }
@@ -770,15 +771,18 @@ fn convert_decoration(
 /// By the SVG spec, `tspan` doesn't have a bbox and uses the parent `text` bbox.
 /// Since we converted `text` and `tspan` to `path`, we have to update
 /// all linked paint servers (gradients and patterns) too.
-fn fix_obj_bounding_box(path: &mut Path, bbox: NonZeroRect) {
+fn fix_obj_bounding_box(path: &mut Path, bbox: NonZeroRect, cache: &mut crate::parser::Cache) {
     if let Some(ref mut fill) = path.fill {
-        if let Some(new_paint) = paint_server_to_user_space_on_use(fill.paint.clone(), bbox) {
+        if let Some(new_paint) = paint_server_to_user_space_on_use(fill.paint.clone(), bbox, cache)
+        {
             fill.paint = new_paint;
         }
     }
 
     if let Some(ref mut stroke) = path.stroke {
-        if let Some(new_paint) = paint_server_to_user_space_on_use(stroke.paint.clone(), bbox) {
+        if let Some(new_paint) =
+            paint_server_to_user_space_on_use(stroke.paint.clone(), bbox, cache)
+        {
             stroke.paint = new_paint;
         }
     }
@@ -789,7 +793,11 @@ fn fix_obj_bounding_box(path: &mut Path, bbox: NonZeroRect) {
 /// Creates a deep copy of a selected paint server and returns its ID.
 ///
 /// Returns `None` if a paint server already uses `UserSpaceOnUse`.
-fn paint_server_to_user_space_on_use(paint: Paint, bbox: NonZeroRect) -> Option<Paint> {
+fn paint_server_to_user_space_on_use(
+    paint: Paint,
+    bbox: NonZeroRect,
+    cache: &mut crate::parser::Cache,
+) -> Option<Paint> {
     if paint.units() != Some(Units::ObjectBoundingBox) {
         return None;
     }
@@ -809,7 +817,7 @@ fn paint_server_to_user_space_on_use(paint: Paint, bbox: NonZeroRect) -> Option<
                 x2: lg.x2,
                 y2: lg.y2,
                 base: BaseGradient {
-                    id: String::new(),
+                    id: cache.gen_linear_gradient_id(),
                     units: Units::UserSpaceOnUse,
                     transform,
                     spread_method: lg.spread_method,
@@ -826,7 +834,7 @@ fn paint_server_to_user_space_on_use(paint: Paint, bbox: NonZeroRect) -> Option<
                 fx: rg.fx,
                 fy: rg.fy,
                 base: BaseGradient {
-                    id: String::new(),
+                    id: cache.gen_radial_gradient_id(),
                     units: Units::UserSpaceOnUse,
                     transform,
                     spread_method: rg.spread_method,
@@ -837,7 +845,7 @@ fn paint_server_to_user_space_on_use(paint: Paint, bbox: NonZeroRect) -> Option<
         Paint::Pattern(ref patt) => {
             let transform = patt.borrow().transform.post_concat(ts);
             Paint::Pattern(Rc::new(RefCell::new(Pattern {
-                id: String::new(),
+                id: cache.gen_pattern_id(),
                 units: Units::UserSpaceOnUse,
                 content_units: patt.borrow().content_units,
                 transform,

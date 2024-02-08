@@ -110,6 +110,11 @@ fn preserve_id_clip_path_v2() {
 }
 
 #[test]
+fn preserve_id_for_clip_path_in_pattern() {
+    resave("preserve-id-for-clip-path-in-pattern");
+}
+
+#[test]
 fn generate_id_clip_path_for_symbol() {
     resave("generate-id-clip-path-for-symbol");
 }
