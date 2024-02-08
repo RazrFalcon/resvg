@@ -243,7 +243,20 @@ pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
         resolve_string: Box::new(|_, _| None),
     };
 
-    let mut tree = match Tree::from_data(data, &sub_opt) {
+    // An empty DB is fine. Text will be converted later.
+    let tree = {
+        #[cfg(feature = "text")]
+        {
+            let fontdb = fontdb::Database::new();
+            Tree::from_data(data, &sub_opt, &fontdb)
+        }
+        #[cfg(not(feature = "text"))]
+        {
+            Tree::from_data(data, &sub_opt)
+        }
+    };
+
+    let mut tree = match tree {
         Ok(tree) => tree,
         Err(_) => {
             log::warn!("Failed to load subsvg image.");

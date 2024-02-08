@@ -422,15 +422,11 @@ fn process(args: Args) -> Result<(), String> {
         InputFrom::File(ref path) => std::fs::read(path).map_err(|e| e.to_string()),
     }?;
 
-    let mut tree = usvg::Tree::from_data(&input_svg, &re_opt).map_err(|e| format!("{}", e))?;
-    let steps = usvg::PostProcessingSteps {
-        convert_text_into_paths: !args.preserve_text,
-    };
-
-    tree.postprocess(steps, &fontdb);
+    let tree = usvg::Tree::from_data(&input_svg, &re_opt, &fontdb).map_err(|e| format!("{}", e))?;
 
     let xml_opt = usvg::XmlOptions {
         id_prefix: args.id_prefix,
+        preserve_text: args.preserve_text,
         coordinates_precision: args.coordinates_precision.unwrap_or(8),
         transforms_precision: args.transforms_precision.unwrap_or(8),
         writer_opts: xmlwriter::Options {

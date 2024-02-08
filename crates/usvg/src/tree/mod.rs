@@ -17,7 +17,6 @@ pub use tiny_skia_path;
 
 pub use self::geom::*;
 pub use self::text::*;
-use crate::PostProcessingSteps;
 
 /// An alias to `NormalizedF32`.
 pub type Opacity = NormalizedF32;
@@ -1618,13 +1617,11 @@ impl Image {
 
 /// A nodes tree container.
 #[allow(missing_debug_implementations)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Tree {
     pub(crate) size: Size,
     pub(crate) view_box: ViewBox,
     pub(crate) root: Group,
-
-    pub(crate) cache: crate::parser::Cache,
 }
 
 impl Tree {
@@ -1707,42 +1704,6 @@ impl Tree {
     /// A low-level method. Prefer `usvg::Tree::postprocess` instead.
     pub(crate) fn calculate_bounding_boxes(&mut self) {
         self.root.calculate_bounding_boxes();
-    }
-
-    /// Postprocesses the `usvg::Tree`.
-    ///
-    /// Must be called after parsing a `usvg::Tree`.
-    ///
-    /// `steps` contains a list of _additional_ post-processing steps.
-    /// This methods performs some operations even when `steps` is `PostProcessingSteps::default()`.
-    ///
-    /// `fontdb` is needed only for [`PostProcessingSteps::convert_text_into_paths`].
-    /// Otherwise you can pass just `fontdb::Database::new()`.
-    pub fn postprocess(
-        &mut self,
-        steps: PostProcessingSteps,
-        #[cfg(feature = "text")] fontdb: &fontdb::Database,
-    ) {
-        self.calculate_abs_transforms();
-
-        if steps.convert_text_into_paths {
-            #[cfg(feature = "text")]
-            {
-                crate::text_to_paths::convert_text(&mut self.root, &fontdb, &mut self.cache);
-            }
-        }
-
-        self.calculate_bounding_boxes();
-    }
-}
-
-impl std::fmt::Debug for Tree {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Tree")
-            .field("size", &self.size)
-            .field("view_box", &self.view_box)
-            .field("root", &self.root)
-            .finish()
     }
 }
 

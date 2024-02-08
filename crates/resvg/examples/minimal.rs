@@ -18,13 +18,7 @@ fn main() {
         fontdb.load_system_fonts();
 
         let svg_data = std::fs::read(&args[1]).unwrap();
-        let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
-        let steps = usvg::PostProcessingSteps {
-            // `resvg` cannot render text as is. We have to convert it into paths first.
-            convert_text_into_paths: true,
-        };
-        tree.postprocess(steps, &fontdb);
-        tree
+        usvg::Tree::from_data(&svg_data, &opt, &fontdb).unwrap()
     };
 
     let pixmap_size = tree.size().to_int_size();

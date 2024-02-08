@@ -80,13 +80,13 @@ fn process() -> Result<(), String> {
             .map_err(|e| e.to_string())
     })?;
 
-    let mut tree = timed(args.perf, "SVG Parsing", || {
-        usvg::Tree::from_xmltree(&xml_tree, &args.usvg).map_err(|e| e.to_string())
-    })?;
-
     // fontdb initialization is pretty expensive, so perform it only when needed.
+    let has_text_nodes = xml_tree
+        .descendants()
+        .any(|n| n.has_tag_name(("http://www.w3.org/2000/svg", "text")));
+
     let mut fontdb = fontdb::Database::new();
-    if tree.has_text_nodes() {
+    if has_text_nodes {
         timed(args.perf, "FontDB", || load_fonts(&mut args, &mut fontdb));
         if args.list_fonts {
             for face in fontdb.faces() {
@@ -111,10 +111,9 @@ fn process() -> Result<(), String> {
         }
     }
 
-    timed(args.perf, "Postprocessing", || {
-        let steps = usvg::PostProcessingSteps::default();
-        tree.postprocess(steps, &fontdb);
-    });
+    let tree = timed(args.perf, "SVG Parsing", || {
+        usvg::Tree::from_xmltree(&xml_tree, &args.usvg, &fontdb).map_err(|e| e.to_string())
+    })?;
 
     if args.query_all {
         return query_all(&tree);

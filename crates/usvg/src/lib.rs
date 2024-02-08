@@ -67,21 +67,3 @@ mod text_to_paths;
 pub use fontdb;
 
 pub use writer::XmlOptions;
-
-/// A list of post-processing steps.
-#[derive(Clone, Copy, Debug)]
-pub struct PostProcessingSteps {
-    /// Convert text into paths.
-    ///
-    /// Specifically, it will set `usvg::Text::flattened`, `usvg::Text::bounding_box`
-    /// and `usvg::Text::stroke_bounding_box`.
-    pub convert_text_into_paths: bool,
-}
-
-impl Default for PostProcessingSteps {
-    fn default() -> Self {
-        Self {
-            convert_text_into_paths: true,
-        }
-    }
-}

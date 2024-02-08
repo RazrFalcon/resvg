@@ -27,8 +27,7 @@ fn main() {
     fontdb.load_system_fonts();
 
     let svg_data = std::fs::read(&args[1]).unwrap();
-    let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
-    tree.postprocess(usvg::PostProcessingSteps::default(), &fontdb);
+    let tree = usvg::Tree::from_data(&svg_data, &opt, &fontdb).unwrap();
 
     let mut bboxes = Vec::new();
     let mut stroke_bboxes = Vec::new();

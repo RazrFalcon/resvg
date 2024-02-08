@@ -37,8 +37,11 @@ pub struct Cache {
 
     // used for ID generation
     all_ids: HashSet<u64>,
+    #[cfg(feature = "text")]
     linear_gradient_index: usize,
+    #[cfg(feature = "text")]
     radial_gradient_index: usize,
+    #[cfg(feature = "text")]
     pattern_index: usize,
     clip_path_index: usize,
     filter_index: usize,
@@ -46,6 +49,7 @@ pub struct Cache {
 
 impl Cache {
     // TODO: macros?
+    #[cfg(feature = "text")]
     pub fn gen_linear_gradient_id(&mut self) -> NonEmptyString {
         loop {
             self.linear_gradient_index += 1;
@@ -57,6 +61,7 @@ impl Cache {
         }
     }
 
+    #[cfg(feature = "text")]
     pub fn gen_radial_gradient_id(&mut self) -> NonEmptyString {
         loop {
             self.radial_gradient_index += 1;
@@ -68,6 +73,7 @@ impl Cache {
         }
     }
 
+    #[cfg(feature = "text")]
     pub fn gen_pattern_id(&mut self) -> NonEmptyString {
         loop {
             self.pattern_index += 1;
@@ -216,7 +222,11 @@ impl SvgColorExt for svgtypes::Color {
 ///
 /// - If `Document` doesn't have an SVG node - returns an empty tree.
 /// - If `Document` doesn't have a valid size - returns `Error::InvalidSize`.
-pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<Tree, Error> {
+pub(crate) fn convert_doc(
+    svg_doc: &svgtree::Document,
+    opt: &Options,
+    #[cfg(feature = "text")] fontdb: &fontdb::Database,
+) -> Result<Tree, Error> {
     let svg = svg_doc.root_element();
     let (size, restore_viewbox) = resolve_svg_size(&svg, opt);
     let size = size?;
@@ -231,7 +241,6 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
         size,
         view_box,
         root: Group::empty(),
-        cache: Cache::default(),
     };
 
     if !svg.is_visible_element(opt) {
@@ -247,21 +256,30 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
         opt,
     };
 
+    let mut cache = Cache::default();
+
     for node in svg_doc.descendants() {
         if let Some(tag) = node.tag_name() {
             if matches!(tag, EId::Filter | EId::ClipPath) {
                 if !node.element_id().is_empty() {
-                    tree.cache.all_ids.insert(string_hash(node.element_id()));
+                    cache.all_ids.insert(string_hash(node.element_id()));
                 }
             }
         }
     }
 
-    convert_children(svg_doc.root(), &state, &mut tree.cache, &mut tree.root);
+    convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
+
+    tree.calculate_abs_transforms();
+
+    #[cfg(feature = "text")]
+    {
+        crate::text_to_paths::convert_text(&mut tree.root, fontdb, &mut cache);
+    }
+
+    tree.calculate_bounding_boxes();
 
     if restore_viewbox {
-        tree.calculate_abs_transforms();
-        tree.calculate_bounding_boxes();
         calculate_svg_bbox(&mut tree);
     }
 

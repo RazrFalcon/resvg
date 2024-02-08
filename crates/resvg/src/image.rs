@@ -26,7 +26,7 @@ pub fn render_inner(
     image_kind: &usvg::ImageKind,
     view_box: usvg::ViewBox,
     transform: tiny_skia::Transform,
-    rendering_mode: usvg::ImageRendering,
+    #[allow(unused_variables)] rendering_mode: usvg::ImageRendering,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
     match image_kind {

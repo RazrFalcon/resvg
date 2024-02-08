@@ -38,10 +38,8 @@ pub fn render(name: &str) -> usize {
 
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
-        let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
         let db = GLOBAL_FONTDB.lock().unwrap();
-        tree.postprocess(usvg::PostProcessingSteps::default(), &db);
-        tree
+        usvg::Tree::from_data(&svg_data, &opt, &db).unwrap()
     };
 
     let size = tree
@@ -92,10 +90,8 @@ pub fn render_extra_with_scale(name: &str, scale: f32) -> usize {
 
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
-        let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
         let db = GLOBAL_FONTDB.lock().unwrap();
-        tree.postprocess(usvg::PostProcessingSteps::default(), &db);
-        tree
+        usvg::Tree::from_data(&svg_data, &opt, &db).unwrap()
     };
 
     let size = tree.size().to_int_size().scale_by(scale).unwrap();

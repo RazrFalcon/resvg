@@ -526,23 +526,17 @@ pub extern "C" fn resvg_parse_tree_from_file(
         Err(_) => return resvg_error::FILE_OPEN_FAILED as i32,
     };
 
-    #[allow(unused_mut)]
-    let mut utree = match usvg::Tree::from_data(&file_data, &raw_opt.options) {
+    let utree = usvg::Tree::from_data(
+        &file_data,
+        &raw_opt.options,
+        #[cfg(feature = "text")]
+        &raw_opt.fontdb,
+    );
+
+    let utree = match utree {
         Ok(tree) => tree,
         Err(e) => return convert_error(e) as i32,
     };
-
-    let steps = usvg::PostProcessingSteps::default();
-
-    #[cfg(feature = "text")]
-    {
-        utree.postprocess(steps, &raw_opt.fontdb);
-    }
-
-    #[cfg(not(feature = "text"))]
-    {
-        utree.postprocess(steps);
-    }
 
     let tree_box = Box::new(resvg_render_tree(utree));
     unsafe {
@@ -575,23 +569,17 @@ pub extern "C" fn resvg_parse_tree_from_data(
         &*opt
     };
 
-    #[allow(unused_mut)]
-    let mut utree = match usvg::Tree::from_data(data, &raw_opt.options) {
+    let utree = usvg::Tree::from_data(
+        data,
+        &raw_opt.options,
+        #[cfg(feature = "text")]
+        &raw_opt.fontdb,
+    );
+
+    let utree = match utree {
         Ok(tree) => tree,
         Err(e) => return convert_error(e) as i32,
     };
-
-    let steps = usvg::PostProcessingSteps::default();
-
-    #[cfg(feature = "text")]
-    {
-        utree.postprocess(steps, &raw_opt.fontdb);
-    }
-
-    #[cfg(not(feature = "text"))]
-    {
-        utree.postprocess(steps);
-    }
 
     let tree_box = Box::new(resvg_render_tree(utree));
     unsafe {

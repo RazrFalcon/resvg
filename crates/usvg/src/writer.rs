@@ -32,11 +32,17 @@ impl<T: Default + PartialEq + Copy> IsDefault for T {
     }
 }
 
+// TODO: rename
 /// XML writing options.
 #[derive(Clone, Debug)]
 pub struct XmlOptions {
     /// Used to add a custom prefix to each element ID during writing.
     pub id_prefix: Option<String>,
+
+    /// Do not convert text into paths.
+    ///
+    /// Default: false
+    pub preserve_text: bool,
 
     /// Set the coordinates numeric precision.
     ///
@@ -60,6 +66,7 @@ impl Default for XmlOptions {
     fn default() -> Self {
         Self {
             id_prefix: Default::default(),
+            preserve_text: false,
             coordinates_precision: 8,
             transforms_precision: 8,
             writer_opts: Default::default(),
@@ -651,9 +658,7 @@ fn write_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xm
             write_group_element(g, is_clip_path, opt, xml);
         }
         Node::Text(ref text) => {
-            if let Some(ref flattened) = text.flattened {
-                write_group_element(flattened, is_clip_path, opt, xml);
-            } else {
+            if opt.preserve_text {
                 xml.start_svg_element(EId::Text);
 
                 if !text.id.is_empty() {
@@ -762,6 +767,8 @@ fn write_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xm
 
                 xml.end_element();
                 xml.set_preserve_whitespaces(false);
+            } else if let Some(ref flattened) = text.flattened {
+                write_group_element(flattened, is_clip_path, opt, xml);
             }
         }
     }

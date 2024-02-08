@@ -7,12 +7,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- `usvg::XmlOptions::preserve_text` to control how `usvg` generates an SVG.
+
 ### Changed
 - All types in `usvg` are immutable now. Meaning that `usvg::Tree` cannot be modified
   after creation anymore.
 - All struct fields in `usvg` are private now. Use getters instead.
+- All `usvg::Tree` parsing methods require the `fontdb` argument now.
 - All `defs` children like gradients, patterns, clipPaths, masks and filters are guarantee
   to have a unique, non-empty ID.
+
+### Removed
+- `usvg::Tree::postprocess()` and `usvg::PostProcessingSteps`. No longer needed.
+
+### Fixed
+- Text bounding box is accounted during SVG size resolving.
+  Previously, only paths and images were included.
 
 ## [0.39.0] - 2024-02-06
 ### Added

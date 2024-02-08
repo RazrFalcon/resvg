@@ -9,7 +9,8 @@ fn clippath_with_invalid_child() {
     </svg>
     ";
 
-    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+    let fontdb = usvg::fontdb::Database::new();
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default(), &fontdb).unwrap();
     // clipPath is invalid and should be removed together with rect.
     assert_eq!(tree.root().has_children(), false);
 }
@@ -22,7 +23,8 @@ fn simplify_paths() {
     </svg>
     ";
 
-    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+    let fontdb = usvg::fontdb::Database::new();
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default(), &fontdb).unwrap();
     let path = &tree.root().children()[0];
     match path {
         usvg::Node::Path(ref path) => {
@@ -36,7 +38,8 @@ fn simplify_paths() {
 #[test]
 fn size_detection_1() {
     let svg = "<svg viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'/>";
-    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+    let fontdb = usvg::fontdb::Database::new();
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default(), &fontdb).unwrap();
     assert_eq!(tree.size(), usvg::Size::from_wh(10.0, 20.0).unwrap());
 }
 
@@ -44,7 +47,8 @@ fn size_detection_1() {
 fn size_detection_2() {
     let svg =
         "<svg width='30' height='40' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'/>";
-    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+    let fontdb = usvg::fontdb::Database::new();
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default(), &fontdb).unwrap();
     assert_eq!(tree.size(), usvg::Size::from_wh(30.0, 40.0).unwrap());
 }
 
@@ -52,7 +56,8 @@ fn size_detection_2() {
 fn size_detection_3() {
     let svg =
         "<svg width='50%' height='100%' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'/>";
-    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+    let fontdb = usvg::fontdb::Database::new();
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default(), &fontdb).unwrap();
     assert_eq!(tree.size(), usvg::Size::from_wh(5.0, 20.0).unwrap());
 }
 
@@ -63,7 +68,8 @@ fn size_detection_4() {
         <circle cx='18' cy='18' r='18'/>
     </svg>
     ";
-    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+    let fontdb = usvg::fontdb::Database::new();
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default(), &fontdb).unwrap();
     assert_eq!(tree.size(), usvg::Size::from_wh(36.0, 36.0).unwrap());
     assert_eq!(
         tree.view_box().rect,
@@ -74,13 +80,15 @@ fn size_detection_4() {
 #[test]
 fn size_detection_5() {
     let svg = "<svg xmlns='http://www.w3.org/2000/svg'/>";
-    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+    let fontdb = usvg::fontdb::Database::new();
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default(), &fontdb).unwrap();
     assert_eq!(tree.size(), usvg::Size::from_wh(100.0, 100.0).unwrap());
 }
 
 #[test]
 fn invalid_size_1() {
     let svg = "<svg width='0' height='0' viewBox='0 0 10 20' xmlns='http://www.w3.org/2000/svg'/>";
-    let result = usvg::Tree::from_str(&svg, &usvg::Options::default());
+    let fontdb = usvg::fontdb::Database::new();
+    let result = usvg::Tree::from_str(&svg, &usvg::Options::default(), &fontdb);
     assert!(result.is_err());
 }

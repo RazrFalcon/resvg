@@ -19,8 +19,10 @@ fn main() {
         resolve_string,
     };
 
+    let fontdb = usvg::fontdb::Database::new();
+
     let svg_data = std::fs::read("./examples/custom_href_resolver.svg").unwrap();
-    let tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
+    let tree = usvg::Tree::from_data(&svg_data, &opt, &fontdb).unwrap();
 
     let pixmap_size = tree.size().to_int_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();

@@ -27,17 +27,13 @@ fn resave_impl(name: &str, id_prefix: Option<String>, preserve_text: bool) {
     let input_svg = std::fs::read_to_string(format!("tests/files/{}.svg", name)).unwrap();
 
     let tree = {
+        let fontdb = GLOBAL_FONTDB.lock().unwrap();
         let opt = usvg::Options::default();
-        let mut tree = usvg::Tree::from_str(&input_svg, &opt).unwrap();
-        if !preserve_text {
-            let fontdb = GLOBAL_FONTDB.lock().unwrap();
-            let steps = usvg::PostProcessingSteps::default();
-            tree.postprocess(steps, &fontdb);
-        }
-        tree
+        usvg::Tree::from_str(&input_svg, &opt, &fontdb).unwrap()
     };
     let mut xml_opt = usvg::XmlOptions::default();
     xml_opt.id_prefix = id_prefix;
+    xml_opt.preserve_text = preserve_text;
     xml_opt.coordinates_precision = 4; // Reduce noise and file size.
     xml_opt.transforms_precision = 4;
     let output_svg = tree.to_string(&xml_opt);
