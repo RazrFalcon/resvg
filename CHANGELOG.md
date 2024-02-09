@@ -24,6 +24,7 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - Text bounding box is accounted during SVG size resolving.
   Previously, only paths and images were included.
+- Font selection when an italic font isn't explicitly marked as one.
 
 ## [0.39.0] - 2024-02-06
 ### Added
