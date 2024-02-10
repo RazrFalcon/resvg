@@ -59,8 +59,6 @@ fn convert_node(
         group.children.push(Node::Path(Box::new(path)));
     }
 
-    group.calculate_abs_transforms(Transform::identity());
-
     Some((group, bbox, stroke_bbox))
 }
 

@@ -1097,7 +1097,7 @@ impl Group {
 
     /// Element's absolute transform.
     ///
-    /// Contains all ancestors transforms.
+    /// Contains all ancestors transforms excluding element's transform.
     ///
     /// Note that subroots, like clipPaths, masks and patterns, have their own root transform,
     /// which isn't affected by the node that references this subroot.
@@ -1326,7 +1326,7 @@ pub struct Path {
     pub(crate) rendering_mode: ShapeRendering,
     pub(crate) data: Rc<tiny_skia_path::Path>,
     pub(crate) abs_transform: Transform,
-    pub(crate) bounding_box: Option<Rect>, // TODO: ignore the whole path when None
+    pub(crate) bounding_box: Option<Rect>,
     pub(crate) abs_bounding_box: Option<Rect>,
     pub(crate) stroke_bounding_box: Option<NonZeroRect>,
     pub(crate) abs_stroke_bounding_box: Option<NonZeroRect>,
@@ -1402,7 +1402,7 @@ impl Path {
 
     /// Element's absolute transform.
     ///
-    /// Contains all ancestors transforms.
+    /// Contains all ancestors transforms excluding element's transform.
     ///
     /// Note that this is not the relative transform present in SVG.
     /// The SVG one would be set only on groups.
@@ -1565,7 +1565,7 @@ impl Image {
 
     /// Element's absolute transform.
     ///
-    /// Contains all ancestors transforms.
+    /// Contains all ancestors transforms excluding element's transform.
     ///
     /// Note that this is not the relative transform present in SVG.
     /// The SVG one would be set only on groups.
@@ -1866,25 +1866,6 @@ impl Group {
             if let Node::Group(ref g) = node {
                 g.collect_filters(filters);
             }
-        }
-    }
-
-    /// Calculates absolute transforms for all children of this group.
-    pub(crate) fn calculate_abs_transforms(&mut self, transform: Transform) {
-        for node in &mut self.children {
-            match node {
-                Node::Group(ref mut group) => {
-                    let abs_ts = transform.pre_concat(group.transform);
-                    group.abs_transform = abs_ts;
-                    group.calculate_abs_transforms(abs_ts);
-                }
-                Node::Path(ref mut path) => path.abs_transform = transform,
-                Node::Image(ref mut image) => image.abs_transform = transform,
-                Node::Text(ref mut text) => text.abs_transform = transform,
-            }
-
-            // Yes, subroots are not affected by the node's transform.
-            node.subroots_mut(|root| root.calculate_abs_transforms(Transform::identity()));
         }
     }
 

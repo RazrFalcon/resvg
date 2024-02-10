@@ -129,7 +129,7 @@ pub(crate) fn convert(
         rotate: rotate_list,
         writing_mode,
         chunks,
-        abs_transform: Transform::default(),
+        abs_transform: parent.abs_transform,
         bounding_box: None,
         abs_bounding_box: None,
         stroke_bounding_box: None,

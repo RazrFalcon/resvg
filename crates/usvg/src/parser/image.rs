@@ -8,7 +8,7 @@ use svgtypes::Length;
 
 use super::svgtree::{AId, SvgNode};
 use super::{converter, OptionLog, Options};
-use crate::{Group, Image, ImageKind, Node, NonZeroRect, Size, Transform, Tree, ViewBox};
+use crate::{Group, Image, ImageKind, Node, NonZeroRect, Size, Tree, ViewBox};
 
 /// A shorthand for [ImageHrefResolver]'s data function.
 pub type ImageHrefDataResolverFn =
@@ -177,7 +177,7 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Grou
         view_box,
         rendering_mode,
         kind,
-        abs_transform: Transform::default(),
+        abs_transform: parent.transform,
         bounding_box: None,
     })));
 
@@ -263,7 +263,6 @@ pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
             return None;
         }
     };
-    tree.root.calculate_abs_transforms(Transform::identity());
     tree.root.calculate_bounding_boxes();
 
     Some(ImageKind::SVG(tree))

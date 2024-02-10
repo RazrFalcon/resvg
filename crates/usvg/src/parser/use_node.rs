@@ -48,7 +48,7 @@ pub(crate) fn convert(
             let mut g = clip_element(node, clip_rect, orig_ts, state, cache);
 
             // Make group for `use`.
-            match converter::convert_group(node, state, true, cache) {
+            match converter::convert_group(node, state, parent.abs_transform, true, cache) {
                 converter::GroupKind::Create(mut g2) => {
                     // We must reset transform, because it was already set
                     // to the group with clip-path.
@@ -72,7 +72,7 @@ pub(crate) fn convert(
 
     if linked_to_symbol {
         // Make group for `use`.
-        match converter::convert_group(node, state, false, cache) {
+        match converter::convert_group(node, state, parent.abs_transform, false, cache) {
             converter::GroupKind::Create(mut g) => {
                 g.transform = Transform::default();
                 convert_children(child, orig_ts, state, cache, &mut g);
@@ -233,7 +233,7 @@ fn convert_children(
     parent: &mut Group,
 ) {
     let required = !transform.is_identity();
-    match converter::convert_group(node, state, required, cache) {
+    match converter::convert_group(node, state, parent.abs_transform, required, cache) {
         converter::GroupKind::Create(mut g) => {
             g.transform = transform;
 

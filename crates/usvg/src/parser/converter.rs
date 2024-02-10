@@ -277,7 +277,6 @@ pub(crate) fn convert_doc(
     convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
 
     // The order of operations below is very important. Do not reorder.
-    tree.root.calculate_abs_transforms(Transform::identity());
 
     #[cfg(feature = "text")]
     {
@@ -433,7 +432,7 @@ pub(crate) fn convert_element(node: SvgNode, state: &State, cache: &mut Cache, p
         return;
     }
 
-    match convert_group(node, state, false, cache) {
+    match convert_group(node, state, parent.abs_transform, false, cache) {
         GroupKind::Create(mut g) => {
             convert_element_impl(tag_name, node, state, cache, &mut g);
             parent.children.push(Node::Group(Box::new(g)));
@@ -514,7 +513,7 @@ pub(crate) fn convert_clip_path_elements(
             continue;
         }
 
-        match convert_group(node, state, false, cache) {
+        match convert_group(node, state, parent.abs_transform, false, cache) {
             GroupKind::Create(mut g) => {
                 convert_clip_path_elements_impl(tag_name, node, state, cache, &mut g);
                 parent.children.push(Node::Group(Box::new(g)));
@@ -586,6 +585,7 @@ pub enum GroupKind {
 pub(crate) fn convert_group(
     node: SvgNode,
     state: &State,
+    abs_transform: Transform,
     force: bool,
     cache: &mut Cache,
 ) -> GroupKind {
@@ -680,10 +680,12 @@ pub(crate) fn convert_group(
             String::new()
         };
 
+        let abs_transform = abs_transform.pre_concat(transform);
+
         let g = Group {
             id,
             transform,
-            abs_transform: Transform::identity(),
+            abs_transform,
             opacity,
             blend_mode,
             isolate,
@@ -757,7 +759,7 @@ fn convert_path(
         paint_order,
         rendering_mode,
         data: path,
-        abs_transform: Transform::default(),
+        abs_transform: parent.abs_transform,
         bounding_box: None,
         abs_bounding_box: None,
         stroke_bounding_box: None,
