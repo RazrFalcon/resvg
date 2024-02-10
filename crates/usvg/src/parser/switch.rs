@@ -53,6 +53,7 @@ pub(crate) fn convert(
     match converter::convert_group(node, state, parent.abs_transform, false, cache) {
         converter::GroupKind::Create(mut g) => {
             converter::convert_element(child, state, cache, &mut g);
+            g.calculate_bounding_boxes();
             parent.children.push(Node::Group(Box::new(g)));
         }
         converter::GroupKind::Skip => {

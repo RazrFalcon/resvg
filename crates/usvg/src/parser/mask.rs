@@ -75,6 +75,7 @@ pub(crate) fn convert(
     converter::convert_children(node, state, cache, &mut mask.root);
 
     if mask.root.has_children() {
+        mask.root.calculate_bounding_boxes();
         let mask = Rc::new(RefCell::new(mask));
         cache
             .masks

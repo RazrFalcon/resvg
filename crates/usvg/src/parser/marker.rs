@@ -203,6 +203,7 @@ fn resolve(
         let mut marker_state = state.clone();
         marker_state.parent_markers.push(marker_node);
         converter::convert_children(marker_node, &marker_state, cache, &mut g);
+        g.calculate_bounding_boxes();
 
         if g.has_children() {
             parent.children.push(Node::Group(Box::new(g)));

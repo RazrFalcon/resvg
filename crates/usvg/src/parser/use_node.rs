@@ -55,6 +55,7 @@ pub(crate) fn convert(
                     g2.id = String::new(); // Prevent ID duplication.
                     g2.transform = Transform::default();
                     convert_children(child, new_ts, state, cache, &mut g2);
+                    g2.calculate_bounding_boxes();
                     g.children.push(Node::Group(Box::new(g2)));
                 }
                 converter::GroupKind::Skip => {
@@ -63,6 +64,7 @@ pub(crate) fn convert(
                 converter::GroupKind::Ignore => return None,
             }
 
+            g.calculate_bounding_boxes();
             parent.children.push(Node::Group(Box::new(g)));
             return None;
         }
@@ -76,6 +78,7 @@ pub(crate) fn convert(
             converter::GroupKind::Create(mut g) => {
                 g.transform = Transform::default();
                 convert_children(child, orig_ts, state, cache, &mut g);
+                g.calculate_bounding_boxes();
                 parent.children.push(Node::Group(Box::new(g)));
             }
             converter::GroupKind::Skip => {
@@ -168,6 +171,7 @@ pub(crate) fn convert_svg(
     if let Some(clip_rect) = get_clip_rect(node, node, state) {
         let mut g = clip_element(node, clip_rect, orig_ts, state, cache);
         convert_children(node, new_ts, &new_state, cache, &mut g);
+        g.calculate_bounding_boxes();
         parent.children.push(Node::Group(Box::new(g)));
     } else {
         orig_ts = orig_ts.pre_concat(new_ts);
@@ -244,6 +248,7 @@ fn convert_children(
                 converter::convert_children(node, state, cache, &mut g);
             }
 
+            g.calculate_bounding_boxes();
             parent.children.push(Node::Group(Box::new(g)));
         }
         converter::GroupKind::Skip => {

@@ -1019,18 +1019,6 @@ impl Node {
             Node::Text(ref text) => text.subroots(&mut f),
         }
     }
-
-    /// Calls a closure for each subroot this `Node` has.
-    ///
-    /// A mutable version of `subroots()`.
-    pub(crate) fn subroots_mut<F: FnMut(&mut Group)>(&mut self, mut f: F) {
-        match self {
-            Node::Group(ref mut group) => group.subroots_mut(&mut f),
-            Node::Path(ref mut path) => path.subroots_mut(&mut f),
-            Node::Image(ref mut image) => image.subroots_mut(&mut f),
-            Node::Text(ref mut text) => text.subroots_mut(&mut f),
-        }
-    }
 }
 
 /// A group container.
@@ -1265,34 +1253,6 @@ impl Group {
             }
         }
     }
-
-    fn subroots_mut(&mut self, f: &mut dyn FnMut(&mut Group)) {
-        if let Some(ref clip) = self.clip_path {
-            f(&mut clip.borrow_mut().root);
-
-            if let Some(ref sub_clip) = clip.borrow().clip_path {
-                f(&mut sub_clip.borrow_mut().root);
-            }
-        }
-
-        if let Some(ref mask) = self.mask {
-            f(&mut mask.borrow_mut().root);
-
-            if let Some(ref sub_mask) = mask.borrow_mut().mask {
-                f(&mut sub_mask.borrow_mut().root);
-            }
-        }
-
-        for filter in &mut self.filters {
-            for primitive in &mut filter.borrow_mut().primitives {
-                if let filter::Kind::Image(ref mut image) = primitive.kind {
-                    if let filter::ImageKind::Use(ref mut use_node) = image.data {
-                        f(use_node);
-                    }
-                }
-            }
-        }
-    }
 }
 
 /// Representation of the [`paint-order`] property.
@@ -1500,15 +1460,6 @@ impl Path {
             f(&patt.borrow().root)
         }
     }
-
-    fn subroots_mut(&mut self, f: &mut dyn FnMut(&mut Group)) {
-        if let Some(Paint::Pattern(ref mut patt)) = self.fill.as_mut().map(|f| &mut f.paint) {
-            f(&mut patt.borrow_mut().root)
-        }
-        if let Some(Paint::Pattern(ref mut patt)) = self.stroke.as_mut().map(|f| &mut f.paint) {
-            f(&mut patt.borrow_mut().root)
-        }
-    }
 }
 
 /// An embedded image kind.
@@ -1611,12 +1562,6 @@ impl Image {
     fn subroots(&self, f: &mut dyn FnMut(&Group)) {
         if let ImageKind::SVG(ref tree) = self.kind {
             f(&tree.root)
-        }
-    }
-
-    fn subroots_mut(&mut self, f: &mut dyn FnMut(&mut Group)) {
-        if let ImageKind::SVG(ref mut tree) = self.kind {
-            f(&mut tree.root)
         }
     }
 }
@@ -1870,17 +1815,6 @@ impl Group {
 
     /// Calculates bounding boxes for all children of this group.
     pub(crate) fn calculate_bounding_boxes(&mut self) -> Option<()> {
-        for node in &mut self.children {
-            if let Node::Group(ref mut group) = node {
-                group.calculate_bounding_boxes();
-            }
-
-            // Yes, subroots are not affected by the node's transform.
-            node.subroots_mut(|root| {
-                let _ = root.calculate_bounding_boxes();
-            });
-        }
-
         let mut bbox = BBox::default();
         let mut abs_bbox = BBox::default();
         let mut stroke_bbox = BBox::default();

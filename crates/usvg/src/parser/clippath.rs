@@ -58,6 +58,7 @@ pub(crate) fn convert(
     converter::convert_clip_path_elements(node, &clip_state, cache, &mut clip.root);
 
     if clip.root.has_children() {
+        clip.root.calculate_bounding_boxes();
         let clip = Rc::new(RefCell::new(clip));
         cache
             .clip_paths

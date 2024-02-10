@@ -35,6 +35,7 @@ pub(crate) fn convert(
         group.children.push(Node::Path(Box::new(path)));
     }
 
+    group.calculate_bounding_boxes();
     text.flattened = Box::new(group);
 
     text.bounding_box = bbox.to_rect();

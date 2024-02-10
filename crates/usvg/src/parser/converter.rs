@@ -423,6 +423,7 @@ pub(crate) fn convert_element(node: SvgNode, state: &State, cache: &mut Cache, p
     match convert_group(node, state, parent.abs_transform, false, cache) {
         GroupKind::Create(mut g) => {
             convert_element_impl(tag_name, node, state, cache, &mut g);
+            g.calculate_bounding_boxes();
             parent.children.push(Node::Group(Box::new(g)));
         }
         GroupKind::Skip => convert_element_impl(tag_name, node, state, cache, parent),
@@ -507,6 +508,7 @@ pub(crate) fn convert_clip_path_elements(
         match convert_group(node, state, parent.abs_transform, false, cache) {
             GroupKind::Create(mut g) => {
                 convert_clip_path_elements_impl(tag_name, node, state, cache, &mut g);
+                g.calculate_bounding_boxes();
                 parent.children.push(Node::Group(Box::new(g)));
             }
             GroupKind::Skip => {
@@ -736,6 +738,7 @@ fn convert_path(
     if super::marker::is_valid(node) && visibility == Visibility::Visible {
         let mut marker = Group::empty();
         super::marker::convert(node, &path, state, cache, &mut marker);
+        marker.calculate_bounding_boxes();
         markers_node = Some(marker);
     }
 

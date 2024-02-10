@@ -706,6 +706,7 @@ fn convert_image(fe: SvgNode, state: &converter::State, cache: &mut converter::C
         let mut root = Group::empty();
         super::converter::convert_element(node, &state, cache, &mut root);
         return if root.has_children() {
+            root.calculate_bounding_boxes();
             // Transfer node id from group's child to the group itself if needed.
             if let Some(Node::Group(ref mut g)) = root.children.first_mut() {
                 if let Some(child2) = g.children.first_mut() {

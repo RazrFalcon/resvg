@@ -199,6 +199,8 @@ fn convert_pattern(
         return None;
     }
 
+    patt.root.calculate_bounding_boxes();
+
     Some(ServerOrColor::Server(Paint::Pattern(Rc::new(
         RefCell::new(patt),
     ))))

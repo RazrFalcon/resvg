@@ -301,14 +301,13 @@ pub(crate) fn load_sub_svg(
         #[cfg(feature = "text")]
         fontdb,
     );
-    let mut tree = match tree {
+    let tree = match tree {
         Ok(tree) => tree,
         Err(_) => {
             log::warn!("Failed to load subsvg image.");
             return None;
         }
     };
-    tree.root.calculate_bounding_boxes();
 
     Some(ImageKind::SVG(tree))
 }

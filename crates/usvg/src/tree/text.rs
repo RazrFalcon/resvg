@@ -571,8 +571,4 @@ impl Text {
     pub(crate) fn subroots(&self, f: &mut dyn FnMut(&Group)) {
         f(&self.flattened);
     }
-
-    pub(crate) fn subroots_mut(&mut self, f: &mut dyn FnMut(&mut Group)) {
-        f(&mut self.flattened);
-    }
 }
