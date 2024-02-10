@@ -1098,8 +1098,6 @@ impl Group {
     ///
     /// Contains all ancestors transforms.
     ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
-    ///
     /// Note that subroots, like clipPaths, masks and patterns, have their own root transform,
     /// which isn't affected by the node that references this subroot.
     pub fn abs_transform(&self) -> Transform {
@@ -1148,8 +1146,6 @@ impl Group {
     /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
     ///
     /// Can be set to `None` in case of an empty group.
-    ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
     pub fn bounding_box(&self) -> Option<Rect> {
         self.bounding_box
     }
@@ -1157,8 +1153,6 @@ impl Group {
     /// Element's bounding box in canvas coordinates.
     ///
     /// `userSpaceOnUse` in SVG terms.
-    ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
     pub fn abs_bounding_box(&self) -> Option<Rect> {
         self.abs_bounding_box
     }
@@ -1188,8 +1182,6 @@ impl Group {
     /// For other nodes layer bounding box is the same as stroke bounding box.
     ///
     /// Unlike other bounding boxes, cannot have zero size.
-    ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
     pub fn layer_bounding_box(&self) -> Option<NonZeroRect> {
         self.layer_bounding_box
     }
@@ -1333,7 +1325,7 @@ pub struct Path {
     pub(crate) rendering_mode: ShapeRendering,
     pub(crate) data: Rc<tiny_skia_path::Path>,
     pub(crate) abs_transform: Transform,
-    pub(crate) bounding_box: Option<Rect>,
+    pub(crate) bounding_box: Option<Rect>, // TODO: ignore the whole path when None
     pub(crate) abs_bounding_box: Option<Rect>,
     pub(crate) stroke_bounding_box: Option<NonZeroRect>,
     pub(crate) abs_stroke_bounding_box: Option<NonZeroRect>,
@@ -1411,8 +1403,6 @@ impl Path {
     ///
     /// Contains all ancestors transforms.
     ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
-    ///
     /// Note that this is not the relative transform present in SVG.
     /// The SVG one would be set only on groups.
     pub fn abs_transform(&self) -> Transform {
@@ -1422,8 +1412,6 @@ impl Path {
     /// Element's object bounding box.
     ///
     /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
-    ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
     pub fn bounding_box(&self) -> Option<Rect> {
         self.bounding_box
     }
@@ -1431,8 +1419,6 @@ impl Path {
     /// Element's bounding box in canvas coordinates.
     ///
     /// `userSpaceOnUse` in SVG terms.
-    ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
     pub fn abs_bounding_box(&self) -> Option<Rect> {
         self.abs_bounding_box
     }
@@ -1580,8 +1566,6 @@ impl Image {
     ///
     /// Contains all ancestors transforms.
     ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
-    ///
     /// Note that this is not the relative transform present in SVG.
     /// The SVG one would be set only on groups.
     pub fn abs_transform(&self) -> Transform {
@@ -1591,8 +1575,6 @@ impl Image {
     /// Element's object bounding box.
     ///
     /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
-    ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
     pub fn bounding_box(&self) -> Option<NonZeroRect> {
         self.bounding_box
     }
@@ -1693,15 +1675,11 @@ impl Tree {
     }
 
     /// Calculates absolute transforms for all nodes in the tree.
-    ///
-    /// A low-level method. Prefer `usvg::Tree::postprocess` instead.
     pub(crate) fn calculate_abs_transforms(&mut self) {
         self.root.calculate_abs_transforms(Transform::identity());
     }
 
     /// Calculates bounding boxes for all nodes in the tree.
-    ///
-    /// A low-level method. Prefer `usvg::Tree::postprocess` instead.
     pub(crate) fn calculate_bounding_boxes(&mut self) {
         self.root.calculate_bounding_boxes();
     }
@@ -1856,8 +1834,6 @@ fn loop_over_filters(parent: &Group, f: &mut dyn FnMut(filter::SharedFilter)) {
 
 impl Group {
     /// Calculates absolute transforms for all children of this group.
-    ///
-    /// A low-level method. Prefer `usvg::Tree::postprocess` instead.
     pub(crate) fn calculate_abs_transforms(&mut self, transform: Transform) {
         for node in &mut self.children {
             match node {
@@ -1877,8 +1853,6 @@ impl Group {
     }
 
     /// Calculates bounding boxes for all children of this group.
-    ///
-    /// A low-level method. Prefer `usvg::Tree::postprocess` instead.
     pub(crate) fn calculate_bounding_boxes(&mut self) {
         for node in &mut self.children {
             match node {

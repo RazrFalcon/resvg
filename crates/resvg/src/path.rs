@@ -19,13 +19,7 @@ pub fn render(
 
     let mut object_bbox = match path.bounding_box() {
         Some(v) => v,
-        None => {
-            log::warn!(
-                "Node bounding box should be already calculated. \
-                See `usvg::Tree::postprocess`"
-            );
-            return;
-        }
+        None => return,
     };
 
     if let Some(text_bbox) = text_bbox {

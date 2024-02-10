@@ -518,8 +518,6 @@ impl Text {
     ///
     /// Contains all ancestors transforms.
     ///
-    /// Will be set after calling `usvg::Tree::postprocess`.
-    ///
     /// Note that this is not the relative transform present in SVG.
     /// The SVG one would be set only on groups.
     pub fn abs_transform(&self) -> Transform {
@@ -535,9 +533,7 @@ impl Text {
     ///
     /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
     ///
-    /// Will be set only after calling `usvg::Tree::postprocess` with
-    /// `usvg::PostProcessingSteps::convert_text_into_paths`.
-    /// Assuming the `text` build feature of `usvg` was enabled.
+    /// Returns `None` when the `text` build feature was disabled.
     /// This is because we have to perform a text layout before calculating a bounding box.
     pub fn bounding_box(&self) -> Option<NonZeroRect> {
         self.bounding_box
@@ -566,9 +562,7 @@ impl Text {
 
     /// Text converted into paths, ready to render.
     ///
-    /// Will be set only after calling `usvg::Tree::postprocess` with
-    /// `usvg::PostProcessingSteps::convert_text_into_paths`.
-    /// Assuming the `text` build feature of `usvg` was enabled.
+    /// Returns `None` when the `text` build feature was disabled.
     pub fn flattened(&self) -> Option<&Group> {
         self.flattened.as_deref()
     }
