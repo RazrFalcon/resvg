@@ -2,7 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::cell::RefCell;
 use std::rc::Rc;
 use std::str::FromStr;
 
@@ -201,9 +200,7 @@ fn convert_pattern(
 
     patt.root.calculate_bounding_boxes();
 
-    Some(ServerOrColor::Server(Paint::Pattern(Rc::new(
-        RefCell::new(patt),
-    ))))
+    Some(ServerOrColor::Server(Paint::Pattern(Rc::new(patt))))
 }
 
 fn convert_spread_method(node: SvgNode) -> SpreadMethod {

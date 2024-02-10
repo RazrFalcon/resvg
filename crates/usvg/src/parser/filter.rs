@@ -4,7 +4,6 @@
 
 //! A collection of SVG filters.
 
-use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
 use std::str::FromStr;
@@ -36,7 +35,7 @@ pub(crate) fn convert(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Result<Vec<SharedFilter>, ()> {
+) -> Result<Vec<Rc<Filter>>, ()> {
     let value = match node.attribute::<&str>(AId::Filter) {
         Some(v) => v,
         None => return Ok(Vec::new()),
@@ -46,7 +45,7 @@ pub(crate) fn convert(
     let mut filters = Vec::new();
 
     let create_base_filter_func =
-        |kind, filters: &mut Vec<SharedFilter>, cache: &mut converter::Cache| {
+        |kind, filters: &mut Vec<Rc<Filter>>, cache: &mut converter::Cache| {
             // Filter functions, unlike `filter` elements, do not have a filter region.
             // We're currently do not support an unlimited region, so we simply use a fairly large one.
             // This if far from ideal, but good for now.
@@ -58,7 +57,7 @@ pub(crate) fn convert(
                 _ => NonZeroRect::from_xywh(-0.1, -0.1, 1.2, 1.2).unwrap(),
             };
 
-            filters.push(Rc::new(RefCell::new(Filter {
+            filters.push(Rc::new(Filter {
                 id: cache.gen_filter_id(),
                 units: Units::ObjectBoundingBox,
                 primitive_units: Units::UserSpaceOnUse,
@@ -73,7 +72,7 @@ pub(crate) fn convert(
                     result: "result".to_string(),
                     kind,
                 }],
-            })));
+            }));
         };
 
     for func in svgtypes::FilterValueListParser::from(value) {
@@ -157,7 +156,7 @@ fn convert_url(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Result<Option<SharedFilter>, ()> {
+) -> Result<Option<Rc<Filter>>, ()> {
     if let Some(filter) = cache.filters.get(node.element_id()) {
         return Ok(Some(filter.clone()));
     }
@@ -215,13 +214,13 @@ fn convert_url(
 
     let id = NonEmptyString::new(node.element_id().to_string()).ok_or(())?;
 
-    let filter = Rc::new(RefCell::new(Filter {
+    let filter = Rc::new(Filter {
         id,
         units,
         primitive_units,
         rect,
         primitives,
-    }));
+    });
 
     cache
         .filters

@@ -35,8 +35,8 @@ pub fn apply(
         &mut clip_pixmap.as_mut(),
     );
 
-    if let Some(ref clip) = clip.clip_path() {
-        apply(&clip.borrow(), object_bbox, transform, pixmap);
+    if let Some(clip) = clip.clip_path() {
+        apply(clip, object_bbox, transform, pixmap);
     }
 
     let mut mask = tiny_skia::Mask::from_pixmap(clip_pixmap.as_ref(), tiny_skia::MaskType::Alpha);
@@ -77,11 +77,11 @@ fn draw_children(
             usvg::Node::Group(ref group) => {
                 let transform = transform.pre_concat(group.transform());
 
-                if let Some(ref clip) = group.clip_path() {
+                if let Some(clip) = group.clip_path() {
                     // If a `clipPath` child also has a `clip-path`
                     // then we should render this child on a new canvas,
                     // clip it, and only then draw it to the `clipPath`.
-                    clip_group(group, &clip.borrow(), object_bbox, transform, pixmap);
+                    clip_group(group, clip, object_bbox, transform, pixmap);
                 } else {
                     draw_children(group, mode, object_bbox, transform, pixmap);
                 }

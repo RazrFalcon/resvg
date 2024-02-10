@@ -2,7 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use strict_num::NonZeroPositiveF32;
@@ -129,7 +128,7 @@ fn resolve(
 
         clip_path.root.children.push(Node::Path(Box::new(path)));
 
-        Some(Rc::new(RefCell::new(clip_path)))
+        Some(Rc::new(clip_path))
     } else {
         None
     };

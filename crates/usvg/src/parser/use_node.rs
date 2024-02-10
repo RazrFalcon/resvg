@@ -2,7 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use svgtypes::{Length, LengthUnit};
@@ -225,7 +224,7 @@ fn clip_element(
     Group {
         id,
         transform,
-        clip_path: Some(Rc::new(RefCell::new(clip_path))),
+        clip_path: Some(Rc::new(clip_path)),
         ..Group::empty()
     }
 }

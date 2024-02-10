@@ -4,9 +4,6 @@
 
 //! SVG filter types.
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use strict_num::PositiveF32;
 use svgtypes::AspectRatio;
 
@@ -62,9 +59,6 @@ impl Filter {
         &self.primitives
     }
 }
-
-/// An alias for a shared `Filter`.
-pub type SharedFilter = Rc<RefCell<Filter>>;
 
 /// A filter primitive element.
 #[derive(Clone, Debug)]

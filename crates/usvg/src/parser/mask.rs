@@ -2,20 +2,19 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use svgtypes::{Length, LengthUnit as Unit};
 
 use super::svgtree::{AId, EId, SvgNode};
 use super::{converter, OptionLog};
-use crate::{Group, Mask, MaskType, NonEmptyString, NonZeroRect, SharedMask, Units};
+use crate::{Group, Mask, MaskType, NonEmptyString, NonZeroRect, Units};
 
 pub(crate) fn convert(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Option<SharedMask> {
+) -> Option<Rc<Mask>> {
     // A `mask` attribute must reference a `mask` element.
     if node.tag_name() != Some(EId::Mask) {
         return None;
@@ -76,7 +75,7 @@ pub(crate) fn convert(
 
     if mask.root.has_children() {
         mask.root.calculate_bounding_boxes();
-        let mask = Rc::new(RefCell::new(mask));
+        let mask = Rc::new(mask);
         cache
             .masks
             .insert(node.element_id().to_string(), mask.clone());

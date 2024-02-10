@@ -66,8 +66,7 @@ pub fn fill_path(
             paint.shader = convert_radial_gradient(rg, fill.opacity(), object_bbox)?;
         }
         usvg::Paint::Pattern(ref pattern) => {
-            let (patt_pix, patt_ts) =
-                render_pattern_pixmap(&pattern.borrow(), ctx, transform, object_bbox)?;
+            let (patt_pix, patt_ts) = render_pattern_pixmap(pattern, ctx, transform, object_bbox)?;
 
             pattern_pixmap = patt_pix;
             paint.shader = tiny_skia::Pattern::new(
@@ -111,8 +110,7 @@ fn stroke_path(
             paint.shader = convert_radial_gradient(rg, stroke.opacity(), object_bbox)?;
         }
         usvg::Paint::Pattern(ref pattern) => {
-            let (patt_pix, patt_ts) =
-                render_pattern_pixmap(&pattern.borrow(), ctx, transform, object_bbox)?;
+            let (patt_pix, patt_ts) = render_pattern_pixmap(pattern, ctx, transform, object_bbox)?;
 
             pattern_pixmap = patt_pix;
             paint.shader = tiny_skia::Pattern::new(

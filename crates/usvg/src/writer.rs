@@ -97,7 +97,6 @@ pub(crate) fn convert(tree: &Tree, opt: &XmlOptions) -> String {
 fn write_filters(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
     let mut written_fe_image_nodes: Vec<String> = Vec::new();
     for filter in tree.filters() {
-        let filter = filter.borrow();
         for fe in &filter.primitives {
             if let filter::Kind::Image(ref img) = fe.kind {
                 if let filter::ImageKind::Use(ref node) = img.data {
@@ -483,7 +482,6 @@ fn write_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
     }
 
     for pattern in tree.patterns() {
-        let pattern = pattern.borrow();
         xml.start_svg_element(EId::Pattern);
         xml.write_id_attribute(pattern.id(), opt);
         xml.write_rect_attrs(pattern.rect);
@@ -511,14 +509,13 @@ fn write_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
     write_filters(tree, opt, xml);
 
     for clip in tree.clip_paths() {
-        let clip = clip.borrow();
         xml.start_svg_element(EId::ClipPath);
         xml.write_id_attribute(clip.id(), opt);
         xml.write_units(AId::ClipPathUnits, clip.units, Units::UserSpaceOnUse);
         xml.write_transform(AId::Transform, clip.transform, opt);
 
         if let Some(ref clip) = clip.clip_path {
-            xml.write_func_iri(AId::ClipPath, &clip.borrow().id(), opt);
+            xml.write_func_iri(AId::ClipPath, clip.id(), opt);
         }
 
         write_elements(&clip.root, true, opt, xml);
@@ -527,7 +524,6 @@ fn write_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
     }
 
     for mask in tree.masks() {
-        let mask = mask.borrow();
         xml.start_svg_element(EId::Mask);
         xml.write_id_attribute(mask.id(), opt);
         if mask.kind == MaskType::Alpha {
@@ -542,7 +538,7 @@ fn write_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
         xml.write_rect_attrs(mask.rect);
 
         if let Some(ref mask) = mask.mask {
-            xml.write_func_iri(AId::Mask, &mask.borrow().id(), opt);
+            xml.write_func_iri(AId::Mask, mask.id(), opt);
         }
 
         write_elements(&mask.root, false, opt, xml);
@@ -760,7 +756,7 @@ fn write_group_element(g: &Group, is_clip_path: bool, opt: &XmlOptions, xml: &mu
         // but only the group's children should be written.
         for child in &g.children {
             if let Node::Path(ref path) = child {
-                let clip_id = g.clip_path.as_ref().map(|cp| cp.borrow().id().to_string());
+                let clip_id = g.clip_path.as_ref().map(|cp| cp.id().to_string());
                 write_path(
                     path,
                     is_clip_path,
@@ -780,11 +776,11 @@ fn write_group_element(g: &Group, is_clip_path: bool, opt: &XmlOptions, xml: &mu
     };
 
     if let Some(ref clip) = g.clip_path {
-        xml.write_func_iri(AId::ClipPath, clip.borrow().id(), opt);
+        xml.write_func_iri(AId::ClipPath, clip.id(), opt);
     }
 
     if let Some(ref mask) = g.mask {
-        xml.write_func_iri(AId::Mask, mask.borrow().id(), opt);
+        xml.write_func_iri(AId::Mask, mask.id(), opt);
     }
 
     if !g.filters.is_empty() {
@@ -792,7 +788,7 @@ fn write_group_element(g: &Group, is_clip_path: bool, opt: &XmlOptions, xml: &mu
         let ids: Vec<_> = g
             .filters
             .iter()
-            .map(|filter| format!("url(#{}{})", prefix, filter.borrow().id()))
+            .map(|filter| format!("url(#{}{})", prefix, filter.id()))
             .collect();
         xml.write_svg_attribute(AId::Filter, &ids.join(" "));
     }
@@ -1105,7 +1101,6 @@ fn has_xlink(parent: &Group) -> bool {
             Node::Group(ref g) => {
                 for filter in &g.filters {
                     if filter
-                        .borrow()
                         .primitives
                         .iter()
                         .any(|p| matches!(p.kind, filter::Kind::Image(_)))
@@ -1115,12 +1110,12 @@ fn has_xlink(parent: &Group) -> bool {
                 }
 
                 if let Some(ref mask) = g.mask {
-                    if has_xlink(&mask.borrow().root) {
+                    if has_xlink(mask.root()) {
                         return true;
                     }
 
-                    if let Some(ref sub_mask) = mask.borrow().mask {
-                        if has_xlink(&sub_mask.borrow().root) {
+                    if let Some(ref sub_mask) = mask.mask {
+                        if has_xlink(&sub_mask.root) {
                             return true;
                         }
                     }
@@ -1346,7 +1341,7 @@ fn write_paint(aid: AId, paint: &Paint, opt: &XmlOptions, xml: &mut XmlWriter) {
             xml.write_func_iri(aid, rg.id(), opt);
         }
         Paint::Pattern(ref patt) => {
-            xml.write_func_iri(aid, patt.borrow().id(), opt);
+            xml.write_func_iri(aid, patt.id(), opt);
         }
     }
 }

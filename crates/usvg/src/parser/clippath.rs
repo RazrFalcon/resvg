@@ -2,19 +2,18 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::cell::RefCell;
 use std::rc::Rc;
 use std::str::FromStr;
 
 use super::converter;
 use super::svgtree::{AId, EId, SvgNode};
-use crate::{ClipPath, Group, NonEmptyString, SharedClipPath, Transform, Units};
+use crate::{ClipPath, Group, NonEmptyString, Transform, Units};
 
 pub(crate) fn convert(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Option<SharedClipPath> {
+) -> Option<Rc<ClipPath>> {
     // A `clip-path` attribute must reference a `clipPath` element.
     if node.tag_name() != Some(EId::ClipPath) {
         return None;
@@ -59,7 +58,7 @@ pub(crate) fn convert(
 
     if clip.root.has_children() {
         clip.root.calculate_bounding_boxes();
-        let clip = Rc::new(RefCell::new(clip));
+        let clip = Rc::new(clip);
         cache
             .clip_paths
             .insert(node.element_id().to_string(), clip.clone());

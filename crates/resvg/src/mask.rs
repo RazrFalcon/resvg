@@ -68,8 +68,8 @@ pub fn apply(
         mask_pixmap.apply_mask(&alpha_mask);
     }
 
-    if let Some(ref mask) = mask.mask() {
-        self::apply(&mask.borrow(), ctx, object_bbox, transform, pixmap);
+    if let Some(mask) = mask.mask() {
+        self::apply(mask, ctx, object_bbox, transform, pixmap);
     }
 
     let mask_type = match mask.kind() {

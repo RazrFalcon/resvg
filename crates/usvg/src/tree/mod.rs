@@ -6,7 +6,6 @@ pub mod filter;
 mod geom;
 mod text;
 
-use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -727,7 +726,7 @@ pub enum Paint {
     Color(Color),
     LinearGradient(Rc<LinearGradient>),
     RadialGradient(Rc<RadialGradient>),
-    Pattern(Rc<RefCell<Pattern>>),
+    Pattern(Rc<Pattern>),
 }
 
 impl Paint {
@@ -740,7 +739,7 @@ impl Paint {
             Self::Color(_) => None,
             Self::LinearGradient(ref lg) => Some(lg.units),
             Self::RadialGradient(ref rg) => Some(rg.units),
-            Self::Pattern(ref patt) => Some(patt.borrow().units),
+            Self::Pattern(ref patt) => Some(patt.units),
         }
     }
 }
@@ -766,7 +765,7 @@ pub struct ClipPath {
     pub(crate) id: NonEmptyString,
     pub(crate) units: Units,
     pub(crate) transform: Transform,
-    pub(crate) clip_path: Option<SharedClipPath>,
+    pub(crate) clip_path: Option<Rc<ClipPath>>,
     pub(crate) root: Group,
 }
 
@@ -806,8 +805,8 @@ impl ClipPath {
     /// Additional clip path.
     ///
     /// `clip-path` in SVG.
-    pub fn clip_path(&self) -> Option<SharedClipPath> {
-        self.clip_path.clone()
+    pub fn clip_path(&self) -> Option<&ClipPath> {
+        self.clip_path.as_deref()
     }
 
     /// Clip path children.
@@ -815,9 +814,6 @@ impl ClipPath {
         &self.root
     }
 }
-
-/// An alias for a shared `ClipPath`.
-pub type SharedClipPath = Rc<RefCell<ClipPath>>;
 
 /// A mask type.
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -844,7 +840,7 @@ pub struct Mask {
     pub(crate) content_units: Units,
     pub(crate) rect: NonZeroRect,
     pub(crate) kind: MaskType,
-    pub(crate) mask: Option<SharedMask>,
+    pub(crate) mask: Option<Rc<Mask>>,
     pub(crate) root: Group,
 }
 
@@ -888,8 +884,8 @@ impl Mask {
     /// Additional mask.
     ///
     /// `mask` in SVG.
-    pub fn mask(&self) -> Option<SharedMask> {
-        self.mask.clone()
+    pub fn mask(&self) -> Option<&Mask> {
+        self.mask.as_deref()
     }
 
     /// Mask children.
@@ -897,9 +893,6 @@ impl Mask {
         &self.root
     }
 }
-
-/// An alias for a shared `Mask`.
-pub type SharedMask = Rc<RefCell<Mask>>;
 
 /// Node's kind.
 #[allow(missing_docs)]
@@ -1035,9 +1028,9 @@ pub struct Group {
     pub(crate) opacity: Opacity,
     pub(crate) blend_mode: BlendMode,
     pub(crate) isolate: bool,
-    pub(crate) clip_path: Option<SharedClipPath>,
-    pub(crate) mask: Option<SharedMask>,
-    pub(crate) filters: Vec<filter::SharedFilter>,
+    pub(crate) clip_path: Option<Rc<ClipPath>>,
+    pub(crate) mask: Option<Rc<Mask>>,
+    pub(crate) filters: Vec<Rc<filter::Filter>>,
     pub(crate) bounding_box: Rect,
     pub(crate) abs_bounding_box: Rect,
     pub(crate) stroke_bounding_box: Rect,
@@ -1117,17 +1110,17 @@ impl Group {
     }
 
     /// Element's clip path.
-    pub fn clip_path(&self) -> Option<SharedClipPath> {
-        self.clip_path.clone()
+    pub fn clip_path(&self) -> Option<&ClipPath> {
+        self.clip_path.as_deref()
     }
 
     /// Element's mask.
-    pub fn mask(&self) -> Option<SharedMask> {
-        self.mask.clone()
+    pub fn mask(&self) -> Option<&Mask> {
+        self.mask.as_deref()
     }
 
     /// Element's filters.
-    pub fn filters(&self) -> &[filter::SharedFilter] {
+    pub fn filters(&self) -> &[Rc<filter::Filter>] {
         &self.filters
     }
 
@@ -1210,8 +1203,8 @@ impl Group {
         let mut full_region = BBox::default();
 
         for filter in &self.filters {
-            let mut region = filter.borrow().rect;
-            if filter.borrow().units == Units::ObjectBoundingBox {
+            let mut region = filter.rect;
+            if filter.units == Units::ObjectBoundingBox {
                 if let Some(object_bbox) = self.bounding_box.to_non_zero_rect() {
                     region = region.bbox_transform(object_bbox);
                 } else {
@@ -1228,23 +1221,23 @@ impl Group {
 
     fn subroots(&self, f: &mut dyn FnMut(&Group)) {
         if let Some(ref clip) = self.clip_path {
-            f(&clip.borrow().root);
+            f(&clip.root);
 
-            if let Some(ref sub_clip) = clip.borrow().clip_path {
-                f(&sub_clip.borrow().root);
+            if let Some(ref sub_clip) = clip.clip_path {
+                f(&sub_clip.root);
             }
         }
 
         if let Some(ref mask) = self.mask {
-            f(&mask.borrow().root);
+            f(&mask.root);
 
-            if let Some(ref sub_mask) = mask.borrow().mask {
-                f(&sub_mask.borrow().root);
+            if let Some(ref sub_mask) = mask.mask {
+                f(&sub_mask.root);
             }
         }
 
         for filter in &self.filters {
-            for primitive in &filter.borrow().primitives {
+            for primitive in &filter.primitives {
                 if let filter::Kind::Image(ref image) = primitive.kind {
                     if let filter::ImageKind::Use(ref use_node) = image.data {
                         f(use_node);
@@ -1454,10 +1447,10 @@ impl Path {
 
     fn subroots(&self, f: &mut dyn FnMut(&Group)) {
         if let Some(Paint::Pattern(ref patt)) = self.fill.as_ref().map(|f| &f.paint) {
-            f(&patt.borrow().root)
+            f(patt.root())
         }
         if let Some(Paint::Pattern(ref patt)) = self.stroke.as_ref().map(|f| &f.paint) {
-            f(&patt.borrow().root)
+            f(patt.root())
         }
     }
 }
@@ -1575,10 +1568,10 @@ pub struct Tree {
     pub(crate) root: Group,
     pub(crate) linear_gradients: Vec<Rc<LinearGradient>>,
     pub(crate) radial_gradients: Vec<Rc<RadialGradient>>,
-    pub(crate) patterns: Vec<Rc<RefCell<Pattern>>>,
-    pub(crate) clip_paths: Vec<SharedClipPath>,
-    pub(crate) masks: Vec<SharedMask>,
-    pub(crate) filters: Vec<filter::SharedFilter>,
+    pub(crate) patterns: Vec<Rc<Pattern>>,
+    pub(crate) clip_paths: Vec<Rc<ClipPath>>,
+    pub(crate) masks: Vec<Rc<Mask>>,
+    pub(crate) filters: Vec<Rc<filter::Filter>>,
 }
 
 impl Tree {
@@ -1632,22 +1625,22 @@ impl Tree {
     }
 
     /// Returns a list of all unique [`Pattern`]s in the tree.
-    pub fn patterns(&self) -> &[Rc<RefCell<Pattern>>] {
+    pub fn patterns(&self) -> &[Rc<Pattern>] {
         &self.patterns
     }
 
     /// Returns a list of all unique [`ClipPath`]s in the tree.
-    pub fn clip_paths(&self) -> &[SharedClipPath] {
+    pub fn clip_paths(&self) -> &[Rc<ClipPath>] {
         &self.clip_paths
     }
 
     /// Returns a list of all unique [`Mask`]s in the tree.
-    pub fn masks(&self) -> &[SharedMask] {
+    pub fn masks(&self) -> &[Rc<Mask>] {
         &self.masks
     }
 
     /// Returns a list of all unique [`Filter`](filter::Filter)s in the tree.
-    pub fn filters(&self) -> &[filter::SharedFilter] {
+    pub fn filters(&self) -> &[Rc<filter::Filter>] {
         &self.filters
     }
 
@@ -1747,7 +1740,7 @@ fn loop_over_paint_servers(parent: &Group, f: &mut dyn FnMut(&Paint)) {
 }
 
 impl Group {
-    pub(crate) fn collect_clip_paths(&self, clip_paths: &mut Vec<SharedClipPath>) {
+    pub(crate) fn collect_clip_paths(&self, clip_paths: &mut Vec<Rc<ClipPath>>) {
         for node in self.children() {
             if let Node::Group(ref g) = node {
                 if let Some(ref clip) = g.clip_path {
@@ -1755,7 +1748,7 @@ impl Group {
                         clip_paths.push(clip.clone());
                     }
 
-                    if let Some(ref sub_clip) = clip.borrow().clip_path {
+                    if let Some(ref sub_clip) = clip.clip_path {
                         if !clip_paths.iter().any(|other| Rc::ptr_eq(&sub_clip, other)) {
                             clip_paths.push(sub_clip.clone());
                         }
@@ -1771,7 +1764,7 @@ impl Group {
         }
     }
 
-    pub(crate) fn collect_masks(&self, masks: &mut Vec<SharedMask>) {
+    pub(crate) fn collect_masks(&self, masks: &mut Vec<Rc<Mask>>) {
         for node in self.children() {
             if let Node::Group(ref g) = node {
                 if let Some(ref mask) = g.mask {
@@ -1779,7 +1772,7 @@ impl Group {
                         masks.push(mask.clone());
                     }
 
-                    if let Some(ref sub_mask) = mask.borrow().mask {
+                    if let Some(ref sub_mask) = mask.mask {
                         if !masks.iter().any(|other| Rc::ptr_eq(&sub_mask, other)) {
                             masks.push(sub_mask.clone());
                         }
@@ -1795,7 +1788,7 @@ impl Group {
         }
     }
 
-    pub(crate) fn collect_filters(&self, filters: &mut Vec<filter::SharedFilter>) {
+    pub(crate) fn collect_filters(&self, filters: &mut Vec<Rc<filter::Filter>>) {
         for node in self.children() {
             if let Node::Group(ref g) = node {
                 for filter in g.filters() {

@@ -32,9 +32,9 @@ pub struct State<'a> {
 
 #[derive(Clone, Default)]
 pub struct Cache {
-    pub clip_paths: HashMap<String, SharedClipPath>,
-    pub masks: HashMap<String, SharedMask>,
-    pub filters: HashMap<String, filter::SharedFilter>,
+    pub clip_paths: HashMap<String, Rc<ClipPath>>,
+    pub masks: HashMap<String, Rc<Mask>>,
+    pub filters: HashMap<String, Rc<filter::Filter>>,
     pub paint: HashMap<String, Paint>,
 
     // used for ID generation

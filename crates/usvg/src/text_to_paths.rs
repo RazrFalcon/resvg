@@ -2,7 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::num::NonZeroU16;
 use std::rc::Rc;
@@ -823,16 +822,16 @@ fn paint_server_to_user_space_on_use(
             }))
         }
         Paint::Pattern(ref patt) => {
-            let transform = patt.borrow().transform.post_concat(ts);
-            Paint::Pattern(Rc::new(RefCell::new(Pattern {
+            let transform = patt.transform.post_concat(ts);
+            Paint::Pattern(Rc::new(Pattern {
                 id: cache.gen_pattern_id(),
                 units: Units::UserSpaceOnUse,
-                content_units: patt.borrow().content_units,
+                content_units: patt.content_units,
                 transform,
-                rect: patt.borrow().rect,
-                view_box: patt.borrow().view_box,
-                root: patt.borrow().root.clone(),
-            })))
+                rect: patt.rect,
+                view_box: patt.view_box,
+                root: patt.root.clone(),
+            }))
         }
     };
 
