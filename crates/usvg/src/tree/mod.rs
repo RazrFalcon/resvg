@@ -1023,7 +1023,7 @@ impl Node {
     /// Calls a closure for each subroot this `Node` has.
     ///
     /// A mutable version of `subroots()`.
-    pub fn subroots_mut<F: FnMut(&mut Group)>(&mut self, mut f: F) {
+    pub(crate) fn subroots_mut<F: FnMut(&mut Group)>(&mut self, mut f: F) {
         match self {
             Node::Group(ref mut group) => group.subroots_mut(&mut f),
             Node::Path(ref mut path) => path.subroots_mut(&mut f),
