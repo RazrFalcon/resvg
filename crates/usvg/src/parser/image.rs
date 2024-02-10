@@ -263,8 +263,8 @@ pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
             return None;
         }
     };
-    tree.calculate_abs_transforms();
-    tree.calculate_bounding_boxes();
+    tree.root.calculate_abs_transforms(Transform::identity());
+    tree.root.calculate_bounding_boxes();
 
     Some(ImageKind::SVG(tree))
 }

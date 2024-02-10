@@ -4,7 +4,6 @@
 
 use std::fmt::Display;
 use std::io::Write;
-use std::rc::Rc;
 
 use svgtypes::{parse_font_families, FontFamily};
 use xmlwriter::XmlWriter;
@@ -96,15 +95,8 @@ pub(crate) fn convert(tree: &Tree, opt: &XmlOptions) -> String {
 }
 
 fn write_filters(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
-    let mut filters = Vec::new();
-    tree.filters(|filter| {
-        if !filters.iter().any(|other| Rc::ptr_eq(&filter, other)) {
-            filters.push(filter);
-        }
-    });
-
     let mut written_fe_image_nodes: Vec<String> = Vec::new();
-    for filter in filters {
+    for filter in tree.filters() {
         let filter = filter.borrow();
         for fe in &filter.primitives {
             if let filter::Kind::Image(ref img) = fe.kind {
@@ -536,13 +528,7 @@ fn write_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
 
     write_filters(tree, opt, xml);
 
-    let mut clip_paths = Vec::new();
-    tree.clip_paths(|clip| {
-        if !clip_paths.iter().any(|other| Rc::ptr_eq(&clip, other)) {
-            clip_paths.push(clip);
-        }
-    });
-    for clip in clip_paths {
+    for clip in tree.clip_paths() {
         let clip = clip.borrow();
         xml.start_svg_element(EId::ClipPath);
         xml.write_id_attribute(clip.id(), opt);
@@ -558,13 +544,7 @@ fn write_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
         xml.end_element();
     }
 
-    let mut masks = Vec::new();
-    tree.masks(|mask| {
-        if !masks.iter().any(|other| Rc::ptr_eq(&mask, other)) {
-            masks.push(mask);
-        }
-    });
-    for mask in masks {
+    for mask in tree.masks() {
         let mask = mask.borrow();
         xml.start_svg_element(EId::Mask);
         xml.write_id_attribute(mask.id(), opt);

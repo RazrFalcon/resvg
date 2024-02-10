@@ -1604,6 +1604,9 @@ pub struct Tree {
     pub(crate) size: Size,
     pub(crate) view_box: ViewBox,
     pub(crate) root: Group,
+    pub(crate) clip_paths: Vec<SharedClipPath>,
+    pub(crate) masks: Vec<SharedMask>,
+    pub(crate) filters: Vec<filter::SharedFilter>,
 }
 
 impl Tree {
@@ -1653,35 +1656,19 @@ impl Tree {
         loop_over_paint_servers(&self.root, &mut f)
     }
 
-    /// Calls a closure for each [`ClipPath`] in the tree.
-    ///
-    /// Doesn't guarantee to have unique clip paths. A caller must deduplicate them manually.
-    pub fn clip_paths<F: FnMut(SharedClipPath)>(&self, mut f: F) {
-        loop_over_clip_paths(&self.root, &mut f)
+    /// Returns a list of all unique [`ClipPath`]s in the tree.
+    pub fn clip_paths(&self) -> &[SharedClipPath] {
+        &self.clip_paths
     }
 
-    /// Calls a closure for each [`Mask`] in the tree.
-    ///
-    /// Doesn't guarantee to have unique masks. A caller must deduplicate them manually.
-    pub fn masks<F: FnMut(SharedMask)>(&self, mut f: F) {
-        loop_over_masks(&self.root, &mut f)
+    /// Returns a list of all unique [`Mask`]s in the tree.
+    pub fn masks(&self) -> &[SharedMask] {
+        &self.masks
     }
 
-    /// Calls a closure for each [`Filter`](filter::Filter) in the tree.
-    ///
-    /// Doesn't guarantee to have unique filters. A caller must deduplicate them manually.
-    pub fn filters<F: FnMut(filter::SharedFilter)>(&self, mut f: F) {
-        loop_over_filters(&self.root, &mut f)
-    }
-
-    /// Calculates absolute transforms for all nodes in the tree.
-    pub(crate) fn calculate_abs_transforms(&mut self) {
-        self.root.calculate_abs_transforms(Transform::identity());
-    }
-
-    /// Calculates bounding boxes for all nodes in the tree.
-    pub(crate) fn calculate_bounding_boxes(&mut self) {
-        self.root.calculate_bounding_boxes();
+    /// Returns a list of all unique [`Filter`](filter::Filter)s in the tree.
+    pub fn filters(&self) -> &[filter::SharedFilter] {
+        &self.filters
     }
 }
 
@@ -1774,65 +1761,73 @@ fn loop_over_paint_servers(parent: &Group, f: &mut dyn FnMut(&Paint)) {
     }
 }
 
-fn loop_over_clip_paths(parent: &Group, f: &mut dyn FnMut(SharedClipPath)) {
-    for node in &parent.children {
-        if let Node::Group(ref g) = node {
-            if let Some(ref clip) = g.clip_path {
-                f(clip.clone());
-
-                if let Some(ref sub_clip) = clip.borrow().clip_path {
-                    f(sub_clip.clone());
-                }
-            }
-        }
-
-        node.subroots(|subroot| loop_over_clip_paths(subroot, f));
-
-        if let Node::Group(ref g) = node {
-            loop_over_clip_paths(g, f);
-        }
-    }
-}
-
-fn loop_over_masks(parent: &Group, f: &mut dyn FnMut(SharedMask)) {
-    for node in &parent.children {
-        if let Node::Group(ref g) = node {
-            if let Some(ref mask) = g.mask {
-                f(mask.clone());
-
-                if let Some(ref sub_mask) = mask.borrow().mask {
-                    f(sub_mask.clone());
-                }
-            }
-
-            loop_over_masks(g, f);
-        }
-
-        node.subroots(|subroot| loop_over_masks(subroot, f));
-
-        if let Node::Group(ref g) = node {
-            loop_over_masks(g, f);
-        }
-    }
-}
-
-fn loop_over_filters(parent: &Group, f: &mut dyn FnMut(filter::SharedFilter)) {
-    for node in &parent.children {
-        if let Node::Group(ref g) = node {
-            for filter in &g.filters {
-                f(filter.clone());
-            }
-        }
-
-        node.subroots(|subroot| loop_over_filters(subroot, f));
-
-        if let Node::Group(ref g) = node {
-            loop_over_filters(g, f);
-        }
-    }
-}
-
 impl Group {
+    pub(crate) fn collect_clip_paths(&self, clip_paths: &mut Vec<SharedClipPath>) {
+        for node in self.children() {
+            if let Node::Group(ref g) = node {
+                if let Some(ref clip) = g.clip_path {
+                    if !clip_paths.iter().any(|other| Rc::ptr_eq(&clip, other)) {
+                        clip_paths.push(clip.clone());
+                    }
+
+                    if let Some(ref sub_clip) = clip.borrow().clip_path {
+                        if !clip_paths.iter().any(|other| Rc::ptr_eq(&sub_clip, other)) {
+                            clip_paths.push(sub_clip.clone());
+                        }
+                    }
+                }
+            }
+
+            node.subroots(|subroot| subroot.collect_clip_paths(clip_paths));
+
+            if let Node::Group(ref g) = node {
+                g.collect_clip_paths(clip_paths);
+            }
+        }
+    }
+
+    pub(crate) fn collect_masks(&self, masks: &mut Vec<SharedMask>) {
+        for node in self.children() {
+            if let Node::Group(ref g) = node {
+                if let Some(ref mask) = g.mask {
+                    if !masks.iter().any(|other| Rc::ptr_eq(&mask, other)) {
+                        masks.push(mask.clone());
+                    }
+
+                    if let Some(ref sub_mask) = mask.borrow().mask {
+                        if !masks.iter().any(|other| Rc::ptr_eq(&sub_mask, other)) {
+                            masks.push(sub_mask.clone());
+                        }
+                    }
+                }
+            }
+
+            node.subroots(|subroot| subroot.collect_masks(masks));
+
+            if let Node::Group(ref g) = node {
+                g.collect_masks(masks);
+            }
+        }
+    }
+
+    pub(crate) fn collect_filters(&self, filters: &mut Vec<filter::SharedFilter>) {
+        for node in self.children() {
+            if let Node::Group(ref g) = node {
+                for filter in g.filters() {
+                    if !filters.iter().any(|other| Rc::ptr_eq(&filter, other)) {
+                        filters.push(filter.clone());
+                    }
+                }
+            }
+
+            node.subroots(|subroot| subroot.collect_filters(filters));
+
+            if let Node::Group(ref g) = node {
+                g.collect_filters(filters);
+            }
+        }
+    }
+
     /// Calculates absolute transforms for all children of this group.
     pub(crate) fn calculate_abs_transforms(&mut self, transform: Transform) {
         for node in &mut self.children {
