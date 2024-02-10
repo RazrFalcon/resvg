@@ -171,14 +171,16 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Grou
         String::new()
     };
 
+    let abs_bounding_box = view_box.rect.transform(parent.abs_transform)?;
+
     parent.children.push(Node::Image(Box::new(Image {
         id,
         visibility,
         view_box,
         rendering_mode,
         kind,
-        abs_transform: parent.transform,
-        bounding_box: None,
+        abs_transform: parent.abs_transform,
+        abs_bounding_box,
     })));
 
     Some(())

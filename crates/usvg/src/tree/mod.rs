@@ -930,10 +930,10 @@ impl Node {
     /// This method is cheap since absolute transforms are already resolved.
     pub fn abs_transform(&self) -> Transform {
         match self {
-            Node::Group(ref group) => group.abs_transform,
-            Node::Path(ref path) => path.abs_transform,
-            Node::Image(ref image) => image.abs_transform,
-            Node::Text(ref text) => text.abs_transform,
+            Node::Group(ref group) => group.abs_transform(),
+            Node::Path(ref path) => path.abs_transform(),
+            Node::Image(ref image) => image.abs_transform(),
+            Node::Text(ref text) => text.abs_transform(),
         }
     }
 
@@ -942,10 +942,10 @@ impl Node {
     /// This method is cheap since bounding boxes are already calculated.
     pub fn bounding_box(&self) -> Option<Rect> {
         match self {
-            Node::Group(ref group) => group.bounding_box,
-            Node::Path(ref path) => Some(path.bounding_box),
-            Node::Image(ref image) => image.bounding_box.map(|r| r.to_rect()),
-            Node::Text(ref text) => text.bounding_box.map(|r| r.to_rect()),
+            Node::Group(ref group) => group.bounding_box(),
+            Node::Path(ref path) => Some(path.bounding_box()),
+            Node::Image(ref image) => Some(image.bounding_box().to_rect()),
+            Node::Text(ref text) => text.bounding_box().map(|r| r.to_rect()),
         }
     }
 
@@ -954,10 +954,10 @@ impl Node {
     /// This method is cheap since bounding boxes are already calculated.
     pub fn abs_bounding_box(&self) -> Option<Rect> {
         match self {
-            Node::Group(ref group) => group.abs_bounding_box,
-            Node::Path(ref path) => Some(path.abs_bounding_box),
-            Node::Image(ref image) => image.abs_bounding_box().map(|r| r.to_rect()),
-            Node::Text(ref text) => text.abs_bounding_box.map(|r| r.to_rect()),
+            Node::Group(ref group) => group.abs_bounding_box(),
+            Node::Path(ref path) => Some(path.abs_bounding_box()),
+            Node::Image(ref image) => Some(image.abs_bounding_box().to_rect()),
+            Node::Text(ref text) => text.abs_bounding_box().map(|r| r.to_rect()),
         }
     }
 
@@ -966,11 +966,11 @@ impl Node {
     /// This method is cheap since bounding boxes are already calculated.
     pub fn stroke_bounding_box(&self) -> Option<NonZeroRect> {
         match self {
-            Node::Group(ref group) => group.stroke_bounding_box,
-            Node::Path(ref path) => path.stroke_bounding_box.to_non_zero_rect(),
+            Node::Group(ref group) => group.stroke_bounding_box(),
+            Node::Path(ref path) => path.stroke_bounding_box().to_non_zero_rect(),
             // Image cannot be stroked.
-            Node::Image(ref image) => image.bounding_box,
-            Node::Text(ref text) => text.stroke_bounding_box,
+            Node::Image(ref image) => Some(image.bounding_box()),
+            Node::Text(ref text) => text.stroke_bounding_box(),
         }
     }
 
@@ -979,11 +979,11 @@ impl Node {
     /// This method is cheap since bounding boxes are already calculated.
     pub fn abs_stroke_bounding_box(&self) -> Option<NonZeroRect> {
         match self {
-            Node::Group(ref group) => group.abs_stroke_bounding_box,
-            Node::Path(ref path) => path.abs_stroke_bounding_box.to_non_zero_rect(),
+            Node::Group(ref group) => group.abs_stroke_bounding_box(),
+            Node::Path(ref path) => path.abs_stroke_bounding_box().to_non_zero_rect(),
             // Image cannot be stroked.
-            Node::Image(ref image) => image.abs_bounding_box(),
-            Node::Text(ref text) => text.abs_stroke_bounding_box,
+            Node::Image(ref image) => Some(image.abs_bounding_box()),
+            Node::Text(ref text) => text.abs_stroke_bounding_box(),
         }
     }
 
@@ -1547,7 +1547,7 @@ pub struct Image {
     pub(crate) rendering_mode: ImageRendering,
     pub(crate) kind: ImageKind,
     pub(crate) abs_transform: Transform,
-    pub(crate) bounding_box: Option<NonZeroRect>,
+    pub(crate) abs_bounding_box: NonZeroRect,
 }
 
 impl Image {
@@ -1598,13 +1598,15 @@ impl Image {
     /// Element's object bounding box.
     ///
     /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
-    pub fn bounding_box(&self) -> Option<NonZeroRect> {
-        self.bounding_box
+    pub fn bounding_box(&self) -> NonZeroRect {
+        self.view_box.rect
     }
 
-    fn abs_bounding_box(&self) -> Option<NonZeroRect> {
-        self.bounding_box
-            .and_then(|r| r.transform(self.abs_transform))
+    /// Element's bounding box in canvas coordinates.
+    ///
+    /// `userSpaceOnUse` in SVG terms.
+    pub fn abs_bounding_box(&self) -> NonZeroRect {
+        self.abs_bounding_box
     }
 
     fn subroots(&self, f: &mut dyn FnMut(&Group)) {
@@ -1894,16 +1896,8 @@ impl Group {
     /// Calculates bounding boxes for all children of this group.
     pub(crate) fn calculate_bounding_boxes(&mut self) {
         for node in &mut self.children {
-            match node {
-                Node::Path(_) => {} // already calculated
-                // TODO: should we account for `preserveAspectRatio`?
-                Node::Image(ref mut image) => image.bounding_box = Some(image.view_box.rect),
-                // Have to be handled separately to prevent multiple mutable reference to the tree.
-                Node::Group(ref mut group) => {
-                    group.calculate_bounding_boxes();
-                }
-                // Will be set only during text-to-path conversion.
-                Node::Text(_) => {}
+            if let Node::Group(ref mut group) = node {
+                group.calculate_bounding_boxes();
             }
 
             // Yes, subroots are not affected by the node's transform.

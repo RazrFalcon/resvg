@@ -9,6 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - `usvg::XmlOptions::preserve_text` to control how `usvg` generates an SVG.
+- `usvg::Image::abs_bounding_box`
 
 ### Changed
 - All types in `usvg` are immutable now. Meaning that `usvg::Tree` cannot be modified
@@ -29,6 +30,7 @@ This changelog also contains important changes in dependencies.
   and not `Option<Rect>` now.
 - `usvg::Path::stroke_bounding_box` and `usvg::Path::abs_stroke_bounding_box` return `Rect`
   and not `Option<NonZeroRect>` now.
+- `usvg::Image::bounding_box` returns `NonZeroRect` and not `Option<NonZeroRect>` now.
 
 ### Removed
 - `usvg::Tree::postprocess()` and `usvg::PostProcessingSteps`. No longer needed.
