@@ -762,7 +762,6 @@ impl PartialEq for Paint {
 #[derive(Debug)]
 pub struct ClipPath {
     pub(crate) id: NonEmptyString,
-    pub(crate) units: Units,
     pub(crate) transform: Transform,
     pub(crate) clip_path: Option<Arc<ClipPath>>,
     pub(crate) root: Group,
@@ -772,7 +771,6 @@ impl ClipPath {
     pub(crate) fn empty(id: NonEmptyString) -> Self {
         ClipPath {
             id,
-            units: Units::UserSpaceOnUse,
             transform: Transform::default(),
             clip_path: None,
             root: Group::empty(),
@@ -785,13 +783,6 @@ impl ClipPath {
     /// Used only during SVG writing. `resvg` doesn't rely on this property.
     pub fn id(&self) -> &str {
         self.id.get()
-    }
-
-    /// Coordinate system units.
-    ///
-    /// `clipPathUnits` in SVG.
-    pub fn units(&self) -> Units {
-        self.units
     }
 
     /// Clip path transform.
@@ -1805,7 +1796,22 @@ impl Group {
         }
     }
 
-    /// Calculates bounding boxes for all children of this group.
+    pub(crate) fn calculate_object_bbox(&mut self) -> Option<Rect> {
+        let mut bbox = BBox::default();
+        for child in &self.children {
+            let mut c_bbox = child.bounding_box();
+            if let Node::Group(ref group) = child {
+                if let Some(r) = c_bbox.transform(group.transform) {
+                    c_bbox = r;
+                }
+            }
+
+            bbox = bbox.expand(c_bbox);
+        }
+
+        bbox.to_rect()
+    }
+
     pub(crate) fn calculate_bounding_boxes(&mut self) -> Option<()> {
         let mut bbox = BBox::default();
         let mut abs_bbox = BBox::default();

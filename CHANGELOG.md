@@ -19,6 +19,7 @@ This changelog also contains important changes in dependencies.
 - All `usvg::Tree` parsing methods require the `fontdb` argument now.
 - All `defs` children like gradients, patterns, clipPaths, masks and filters are guarantee
   to have a unique, non-empty ID.
+- `usvg::ClipPath` is always in `userSpaceOnUse` units now.
 - Text nodes will not be parsed when the `text` build feature isn't enabled.
 - `usvg::Tree::clip_paths`, `usvg::Tree::masks`, `usvg::Tree::filters` returns
   a pre-collected slice of unique nodes now.
@@ -37,6 +38,7 @@ This changelog also contains important changes in dependencies.
 
 ### Removed
 - `usvg::Tree::postprocess()` and `usvg::PostProcessingSteps`. No longer needed.
+- `usvg::ClipPath::units()`. It's always `userSpaceOnUse` now.
 
 ### Fixed
 - Text bounding box is accounted during SVG size resolving.

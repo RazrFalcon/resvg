@@ -7,11 +7,12 @@ use std::sync::Arc;
 
 use super::converter;
 use super::svgtree::{AId, EId, SvgNode};
-use crate::{ClipPath, Group, NonEmptyString, Transform, Units};
+use crate::{ClipPath, Group, NonEmptyString, Rect, Transform, Units};
 
 pub(crate) fn convert(
     node: SvgNode,
     state: &converter::State,
+    object_bbox: Option<Rect>,
     cache: &mut converter::Cache,
 ) -> Option<Arc<ClipPath>> {
     // A `clip-path` attribute must reference a `clipPath` element.
@@ -20,17 +21,40 @@ pub(crate) fn convert(
     }
 
     // The whole clip path should be ignored when a transform is invalid.
-    let transform = resolve_clip_path_transform(node, state)?;
+    let mut transform = resolve_clip_path_transform(node, state)?;
+
+    let units = node
+        .attribute(AId::ClipPathUnits)
+        .unwrap_or(Units::UserSpaceOnUse);
 
     // Check if this element was already converted.
-    if let Some(clip) = cache.clip_paths.get(node.element_id()) {
-        return Some(clip.clone());
+    //
+    // Only `userSpaceOnUse` clipPaths can be shared,
+    // because `objectBoundingBox` one will be converted into user one
+    // and will become node-specific.
+    if units == Units::UserSpaceOnUse {
+        if let Some(clip) = cache.clip_paths.get(node.element_id()) {
+            return Some(clip.clone());
+        }
+    }
+
+    if units == Units::ObjectBoundingBox {
+        let object_bbox = match object_bbox?.to_non_zero_rect() {
+            Some(v) => v,
+            None => {
+                log::warn!("Clipping of zero-sized shapes is not allowed.");
+                return None;
+            }
+        };
+
+        let ts = Transform::from_bbox(object_bbox);
+        transform = transform.pre_concat(ts);
     }
 
     // Resolve linked clip path.
     let mut clip_path = None;
     if let Some(link) = node.attribute::<SvgNode>(AId::ClipPath) {
-        clip_path = convert(link, state, cache);
+        clip_path = convert(link, state, object_bbox, cache);
 
         // Linked `clipPath` must be valid.
         if clip_path.is_none() {
@@ -40,13 +64,8 @@ pub(crate) fn convert(
 
     let id = NonEmptyString::new(node.element_id().to_string())?;
 
-    let units = node
-        .attribute(AId::ClipPathUnits)
-        .unwrap_or(Units::UserSpaceOnUse);
-
     let mut clip = ClipPath {
         id,
-        units,
         transform,
         clip_path,
         root: Group::empty(),

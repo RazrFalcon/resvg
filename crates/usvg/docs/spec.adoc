@@ -183,8 +183,6 @@ Doesn't have a `xlink:href` attribute because all attributes and children will b
 * `clip-path` = <<func-iri-type,<FuncIRI> >>? +
   An optional reference to a supplemental `clipPath`. +
   Default: none
-* `clipPathUnits` = `objectBoundingBox`? +
-  Default: userSpaceOnUse
 * `transform` = <<transform-type,<transform> >>?
 
 [[mask-element]]

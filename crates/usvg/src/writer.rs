@@ -511,7 +511,6 @@ fn write_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
     for clip in tree.clip_paths() {
         xml.start_svg_element(EId::ClipPath);
         xml.write_id_attribute(clip.id(), opt);
-        xml.write_units(AId::ClipPathUnits, clip.units, Units::UserSpaceOnUse);
         xml.write_transform(AId::Transform, clip.transform, opt);
 
         if let Some(ref clip) = clip.clip_path {

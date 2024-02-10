@@ -10,20 +10,6 @@ pub fn apply(
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::Pixmap,
 ) {
-    let mut clip_transform = clip.transform();
-    if clip.units() == usvg::Units::ObjectBoundingBox {
-        let object_bbox = match object_bbox.to_non_zero_rect() {
-            Some(v) => v,
-            None => {
-                log::warn!("Clipping of zero-sized shapes is not allowed.");
-                return;
-            }
-        };
-
-        let ts = usvg::Transform::from_bbox(object_bbox);
-        clip_transform = clip_transform.pre_concat(ts);
-    }
-
     let mut clip_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
     clip_pixmap.fill(tiny_skia::Color::BLACK);
 
@@ -31,7 +17,7 @@ pub fn apply(
         clip.root(),
         tiny_skia::BlendMode::Clear,
         object_bbox,
-        transform.pre_concat(clip_transform),
+        transform.pre_concat(clip.transform()),
         &mut clip_pixmap.as_mut(),
     );
 
