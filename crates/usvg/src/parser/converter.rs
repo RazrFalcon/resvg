@@ -241,6 +241,9 @@ pub(crate) fn convert_doc(
         size,
         view_box,
         root: Group::empty(),
+        linear_gradients: Vec::new(),
+        radial_gradients: Vec::new(),
+        patterns: Vec::new(),
         clip_paths: Vec::new(),
         masks: Vec::new(),
         filters: Vec::new(),
@@ -273,15 +276,18 @@ pub(crate) fn convert_doc(
 
     convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
 
-    tree.root.collect_clip_paths(&mut tree.clip_paths);
-    tree.root.collect_masks(&mut tree.masks);
-    tree.root.collect_filters(&mut tree.filters);
+    // The order of operations below is very important. Do not reorder.
     tree.root.calculate_abs_transforms(Transform::identity());
 
     #[cfg(feature = "text")]
     {
         crate::text_to_paths::convert_text(&mut tree.root, fontdb, &mut cache);
     }
+
+    tree.collect_paint_servers();
+    tree.root.collect_clip_paths(&mut tree.clip_paths);
+    tree.root.collect_masks(&mut tree.masks);
+    tree.root.collect_filters(&mut tree.filters);
 
     tree.root.calculate_bounding_boxes();
 

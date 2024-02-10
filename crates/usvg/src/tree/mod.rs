@@ -1604,6 +1604,9 @@ pub struct Tree {
     pub(crate) size: Size,
     pub(crate) view_box: ViewBox,
     pub(crate) root: Group,
+    pub(crate) linear_gradients: Vec<Rc<LinearGradient>>,
+    pub(crate) radial_gradients: Vec<Rc<RadialGradient>>,
+    pub(crate) patterns: Vec<Rc<RefCell<Pattern>>>,
     pub(crate) clip_paths: Vec<SharedClipPath>,
     pub(crate) masks: Vec<SharedMask>,
     pub(crate) filters: Vec<filter::SharedFilter>,
@@ -1649,11 +1652,19 @@ impl Tree {
         has_text_nodes(&self.root)
     }
 
-    /// Calls a closure for each [`Paint`] in the tree.
-    ///
-    /// Doesn't guarantee to have unique paint servers. A caller must deduplicate them manually.
-    pub fn paint_servers<F: FnMut(&Paint)>(&self, mut f: F) {
-        loop_over_paint_servers(&self.root, &mut f)
+    /// Returns a list of all unique [`LinearGradient`]s in the tree.
+    pub fn linear_gradients(&self) -> &[Rc<LinearGradient>] {
+        &self.linear_gradients
+    }
+
+    /// Returns a list of all unique [`RadialGradient`]s in the tree.
+    pub fn radial_gradients(&self) -> &[Rc<RadialGradient>] {
+        &self.radial_gradients
+    }
+
+    /// Returns a list of all unique [`Pattern`]s in the tree.
+    pub fn patterns(&self) -> &[Rc<RefCell<Pattern>>] {
+        &self.patterns
     }
 
     /// Returns a list of all unique [`ClipPath`]s in the tree.
@@ -1669,6 +1680,35 @@ impl Tree {
     /// Returns a list of all unique [`Filter`](filter::Filter)s in the tree.
     pub fn filters(&self) -> &[filter::SharedFilter] {
         &self.filters
+    }
+
+    pub(crate) fn collect_paint_servers(&mut self) {
+        loop_over_paint_servers(&self.root, &mut |paint| match paint {
+            Paint::Color(_) => {}
+            Paint::LinearGradient(lg) => {
+                if !self
+                    .linear_gradients
+                    .iter()
+                    .any(|other| Rc::ptr_eq(&lg, other))
+                {
+                    self.linear_gradients.push(lg.clone());
+                }
+            }
+            Paint::RadialGradient(rg) => {
+                if !self
+                    .radial_gradients
+                    .iter()
+                    .any(|other| Rc::ptr_eq(&rg, other))
+                {
+                    self.radial_gradients.push(rg.clone());
+                }
+            }
+            Paint::Pattern(patt) => {
+                if !self.patterns.iter().any(|other| Rc::ptr_eq(&patt, other)) {
+                    self.patterns.push(patt.clone());
+                }
+            }
+        });
     }
 }
 

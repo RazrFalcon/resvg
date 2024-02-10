@@ -459,71 +459,53 @@ fn write_filters(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
 }
 
 fn write_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
-    // Write gradients and text paths first, because they cannot reference other nodes.
+    for lg in tree.linear_gradients() {
+        xml.start_svg_element(EId::LinearGradient);
+        xml.write_id_attribute(lg.id(), opt);
+        xml.write_svg_attribute(AId::X1, &lg.x1);
+        xml.write_svg_attribute(AId::Y1, &lg.y1);
+        xml.write_svg_attribute(AId::X2, &lg.x2);
+        xml.write_svg_attribute(AId::Y2, &lg.y2);
+        write_base_grad(&lg.base, opt, xml);
+        xml.end_element();
+    }
 
-    let mut paint_servers: Vec<Paint> = Vec::new();
-    tree.paint_servers(|paint| {
-        if !paint_servers.contains(paint) {
-            paint_servers.push(paint.clone());
-        }
-    });
+    for rg in tree.radial_gradients() {
+        xml.start_svg_element(EId::RadialGradient);
+        xml.write_id_attribute(rg.id(), opt);
+        xml.write_svg_attribute(AId::Cx, &rg.cx);
+        xml.write_svg_attribute(AId::Cy, &rg.cy);
+        xml.write_svg_attribute(AId::R, &rg.r.get());
+        xml.write_svg_attribute(AId::Fx, &rg.fx);
+        xml.write_svg_attribute(AId::Fy, &rg.fy);
+        write_base_grad(&rg.base, opt, xml);
+        xml.end_element();
+    }
 
-    for paint in &paint_servers {
-        match paint {
-            Paint::Color(_) => {}
-            Paint::LinearGradient(lg) => {
-                xml.start_svg_element(EId::LinearGradient);
-                xml.write_id_attribute(lg.id(), opt);
-                xml.write_svg_attribute(AId::X1, &lg.x1);
-                xml.write_svg_attribute(AId::Y1, &lg.y1);
-                xml.write_svg_attribute(AId::X2, &lg.x2);
-                xml.write_svg_attribute(AId::Y2, &lg.y2);
-                write_base_grad(&lg.base, opt, xml);
-                xml.end_element();
-            }
-            Paint::RadialGradient(rg) => {
-                xml.start_svg_element(EId::RadialGradient);
-                xml.write_id_attribute(rg.id(), opt);
-                xml.write_svg_attribute(AId::Cx, &rg.cx);
-                xml.write_svg_attribute(AId::Cy, &rg.cy);
-                xml.write_svg_attribute(AId::R, &rg.r.get());
-                xml.write_svg_attribute(AId::Fx, &rg.fx);
-                xml.write_svg_attribute(AId::Fy, &rg.fy);
-                write_base_grad(&rg.base, opt, xml);
-                xml.end_element();
-            }
-            Paint::Pattern(_) => {} // will be written later
+    for pattern in tree.patterns() {
+        let pattern = pattern.borrow();
+        xml.start_svg_element(EId::Pattern);
+        xml.write_id_attribute(pattern.id(), opt);
+        xml.write_rect_attrs(pattern.rect);
+        xml.write_units(AId::PatternUnits, pattern.units, Units::ObjectBoundingBox);
+        xml.write_units(
+            AId::PatternContentUnits,
+            pattern.content_units,
+            Units::UserSpaceOnUse,
+        );
+        xml.write_transform(AId::PatternTransform, pattern.transform, opt);
+
+        if let Some(ref vbox) = pattern.view_box {
+            xml.write_viewbox(vbox);
         }
+
+        write_elements(&pattern.root, false, opt, xml);
+
+        xml.end_element();
     }
 
     if tree.has_text_nodes() {
         write_text_path_paths(&tree.root, opt, xml);
-    }
-
-    // Now write nodes that can reference other nodes.
-
-    for paint in paint_servers {
-        if let Paint::Pattern(pattern) = paint {
-            let pattern = pattern.borrow();
-            xml.start_svg_element(EId::Pattern);
-            xml.write_id_attribute(pattern.id(), opt);
-            xml.write_rect_attrs(pattern.rect);
-            xml.write_units(AId::PatternUnits, pattern.units, Units::ObjectBoundingBox);
-            xml.write_units(
-                AId::PatternContentUnits,
-                pattern.content_units,
-                Units::UserSpaceOnUse,
-            );
-            xml.write_transform(AId::PatternTransform, pattern.transform, opt);
-
-            if let Some(ref vbox) = pattern.view_box {
-                xml.write_viewbox(vbox);
-            }
-
-            write_elements(&pattern.root, false, opt, xml);
-
-            xml.end_element();
-        }
     }
 
     write_filters(tree, opt, xml);

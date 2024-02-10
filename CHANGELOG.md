@@ -20,6 +20,9 @@ This changelog also contains important changes in dependencies.
 - `usvg::Tree::clip_paths`, `usvg::Tree::masks`, `usvg::Tree::filters` returns
   a pre-collected slice of unique nodes now.
   It's no longer a closure and you do not have to deduplicate nodes by yourself.
+- Split `usvg::Tree::paint_servers` into `usvg::Tree::linear_gradients`,
+  `usvg::Tree::radial_gradients`, `usvg::Tree::patterns`.
+  All three returns pre-collected slices now.
 
 ### Removed
 - `usvg::Tree::postprocess()` and `usvg::PostProcessingSteps`. No longer needed.
