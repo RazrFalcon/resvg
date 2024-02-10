@@ -9,7 +9,7 @@ pub fn render(
     path: &usvg::Path,
     blend_mode: tiny_skia::BlendMode,
     ctx: &Context,
-    text_bbox: Option<tiny_skia::NonZeroRect>,
+    text_bbox: Option<tiny_skia::Rect>,
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
@@ -19,7 +19,7 @@ pub fn render(
 
     let mut object_bbox = path.bounding_box();
     if let Some(text_bbox) = text_bbox {
-        object_bbox = text_bbox.to_rect();
+        object_bbox = text_bbox;
     }
 
     if path.paint_order() == usvg::PaintOrder::FillAndStroke {

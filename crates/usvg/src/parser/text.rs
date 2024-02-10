@@ -121,7 +121,7 @@ pub(crate) fn convert(
         String::new()
     };
 
-    let dummy = NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
+    let dummy = Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap();
 
     let mut text = Text {
         id,

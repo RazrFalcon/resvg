@@ -624,16 +624,15 @@ fn query_all_impl(parent: &usvg::Group) -> usize {
             (v * 1000.0).round() / 1000.0
         }
 
-        if let Some(bbox) = node.abs_bounding_box() {
-            println!(
-                "{},{},{},{},{}",
-                node.id(),
-                round_len(bbox.x()),
-                round_len(bbox.y()),
-                round_len(bbox.width()),
-                round_len(bbox.height())
-            );
-        }
+        let bbox = node.abs_bounding_box();
+        println!(
+            "{},{},{},{},{}",
+            node.id(),
+            round_len(bbox.x()),
+            round_len(bbox.y()),
+            round_len(bbox.width()),
+            round_len(bbox.height())
+        );
 
         if let usvg::Node::Group(ref group) = node {
             count += query_all_impl(group);
@@ -654,7 +653,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
 
         let bbox = node
             .abs_bounding_box()
-            .and_then(|r| r.to_non_zero_rect())
+            .to_non_zero_rect()
             .ok_or_else(|| "node has zero size".to_string())?;
 
         let size = args
@@ -739,7 +738,7 @@ fn trim_pixmap(
     transform: tiny_skia::Transform,
     pixmap: &tiny_skia::Pixmap,
 ) -> Option<tiny_skia::Pixmap> {
-    let content_area = tree.root().layer_bounding_box()?;
+    let content_area = tree.root().layer_bounding_box();
 
     let limit = tiny_skia::IntRect::from_xywh(0, 0, pixmap.width(), pixmap.height()).unwrap();
 

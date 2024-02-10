@@ -372,33 +372,14 @@ fn resolve_svg_size(
 ///
 /// Simply iterates over all nodes and calculates a bounding box.
 fn calculate_svg_bbox(tree: &mut Tree) {
-    let mut right = 0.0;
-    let mut bottom = 0.0;
-    calculate_svg_bbox_impl(&tree.root, &mut right, &mut bottom);
+    let bbox = tree.root.abs_bounding_box();
 
-    if let Some(rect) = NonZeroRect::from_xywh(0.0, 0.0, right, bottom) {
+    if let Some(rect) = NonZeroRect::from_xywh(0.0, 0.0, bbox.right(), bbox.bottom()) {
         tree.view_box.rect = rect;
     }
 
-    if let Some(size) = Size::from_wh(right, bottom) {
+    if let Some(size) = Size::from_wh(bbox.right(), bbox.bottom()) {
         tree.size = size;
-    }
-}
-
-fn calculate_svg_bbox_impl(parent: &Group, right: &mut f32, bottom: &mut f32) {
-    for node in &parent.children {
-        if let Node::Group(ref group) = node {
-            calculate_svg_bbox_impl(group, right, bottom);
-        }
-
-        if let Some(bbox) = node.abs_bounding_box() {
-            if bbox.right() > *right {
-                *right = bbox.right();
-            }
-            if bbox.bottom() > *bottom {
-                *bottom = bbox.bottom();
-            }
-        }
     }
 }
 
@@ -695,6 +676,7 @@ pub(crate) fn convert_group(
 
         let abs_transform = abs_transform.pre_concat(transform);
 
+        let dummy = Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap();
         let g = Group {
             id,
             transform,
@@ -705,11 +687,11 @@ pub(crate) fn convert_group(
             clip_path,
             mask,
             filters,
-            bounding_box: None,
-            abs_bounding_box: None,
-            stroke_bounding_box: None,
-            abs_stroke_bounding_box: None,
-            layer_bounding_box: None,
+            bounding_box: dummy,
+            abs_bounding_box: dummy,
+            stroke_bounding_box: dummy,
+            abs_stroke_bounding_box: dummy,
+            layer_bounding_box: NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
             children: Vec::new(),
         };
 

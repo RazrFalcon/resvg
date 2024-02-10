@@ -666,12 +666,7 @@ pub extern "C" fn resvg_get_image_bbox(
         &*tree
     };
 
-    if let Some(r) = tree
-        .0
-        .root()
-        .abs_bounding_box()
-        .and_then(|r| r.to_non_zero_rect())
-    {
+    if let Some(r) = tree.0.root().abs_bounding_box().to_non_zero_rect() {
         unsafe {
             *bbox = resvg_rect {
                 x: r.x(),
@@ -790,16 +785,14 @@ pub extern "C" fn resvg_get_node_stroke_bbox(
     id: *const c_char,
     bbox: *mut resvg_rect,
 ) -> bool {
-    get_node_bbox(tree, id, bbox, &|node| {
-        node.abs_stroke_bounding_box().map(|r| r.to_rect())
-    })
+    get_node_bbox(tree, id, bbox, &|node| node.abs_stroke_bounding_box())
 }
 
 fn get_node_bbox(
     tree: *const resvg_render_tree,
     id: *const c_char,
     bbox: *mut resvg_rect,
-    f: &dyn Fn(&usvg::Node) -> Option<usvg::Rect>,
+    f: &dyn Fn(&usvg::Node) -> usvg::Rect,
 ) -> bool {
     let id = match cstr_to_str(id) {
         Some(v) => v,
@@ -821,20 +814,16 @@ fn get_node_bbox(
 
     match tree.0.node_by_id(id) {
         Some(node) => {
-            if let Some(r) = f(node) {
-                unsafe {
-                    *bbox = resvg_rect {
-                        x: r.x(),
-                        y: r.y(),
-                        width: r.width(),
-                        height: r.height(),
-                    }
+            let r = f(node);
+            unsafe {
+                *bbox = resvg_rect {
+                    x: r.x(),
+                    y: r.y(),
+                    width: r.width(),
+                    height: r.height(),
                 }
-
-                true
-            } else {
-                false
             }
+            true
         }
         None => {
             log::warn!("No node with '{}' ID is in the tree.", id);

@@ -69,14 +69,12 @@ fn collect_bboxes(
             collect_bboxes(group, bboxes, stroke_bboxes);
         }
 
-        if let Some(bbox) = node.abs_bounding_box() {
-            bboxes.push(bbox);
+        let bbox = node.abs_bounding_box();
+        bboxes.push(bbox);
 
-            if let Some(stroke_bbox) = node.abs_stroke_bounding_box() {
-                if bbox != stroke_bbox.to_rect() {
-                    stroke_bboxes.push(stroke_bbox.to_rect());
-                }
-            }
+        let stroke_bbox = node.abs_stroke_bounding_box();
+        if bbox != stroke_bbox {
+            stroke_bboxes.push(stroke_bbox);
         }
     }
 }

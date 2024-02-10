@@ -77,7 +77,7 @@ pub fn render_node(
     mut transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
 ) -> Option<()> {
-    let bbox = node.abs_bounding_box().and_then(|r| r.to_non_zero_rect())?;
+    let bbox = node.abs_bounding_box().to_non_zero_rect()?;
 
     let target_size = tiny_skia::IntSize::from_wh(pixmap.width(), pixmap.height()).unwrap();
     let max_bbox = tiny_skia::IntRect::from_xywh(

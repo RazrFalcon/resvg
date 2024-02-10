@@ -27,14 +27,9 @@ This changelog also contains important changes in dependencies.
   All three returns pre-collected slices now.
 - A `usvg::Path` no longer can have an invalid bbox. Paths with an invalid bbox will be
   rejected during parsing.
-- `usvg::Path::bounding_box` and `usvg::Path::abs_bounding_box` return `Rect`
-  and not `Option<Rect>` now.
-- `usvg::Path::stroke_bounding_box` and `usvg::Path::abs_stroke_bounding_box` return `Rect`
-  and not `Option<NonZeroRect>` now.
-- `usvg::Text::bounding_box`, `usvg::Text::abs_bounding_box`, `usvg::Text::stroke_bounding_box`,
-  `usvg::Text::abs_stroke_bounding_box` return `NonZeroRect` and not `Option<NonZeroRect>` now.
+- All `usvg` methods that return bounding boxes return non-optional `Rect` now.
+  No `NonZeroRect` as well.
 - `usvg::Text::flattened` returns `&Group` and not `Option<&Group>` now.
-- `usvg::Image::bounding_box` returns `NonZeroRect` and not `Option<NonZeroRect>` now.
 - `usvg::ImageHrefDataResolverFn` and `usvg::ImageHrefStringResolverFn`
   require `fontdb::Database` argument.
 

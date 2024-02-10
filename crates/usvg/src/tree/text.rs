@@ -7,8 +7,9 @@ use std::rc::Rc;
 use strict_num::NonZeroPositiveF32;
 pub use svgtypes::FontFamily;
 
-use crate::{Fill, Group, NonEmptyString, PaintOrder, Stroke, TextRendering, Visibility};
-use tiny_skia_path::{NonZeroRect, Transform};
+use crate::{
+    Fill, Group, NonEmptyString, PaintOrder, Rect, Stroke, TextRendering, Transform, Visibility,
+};
 
 /// A font stretch property.
 #[allow(missing_docs)]
@@ -459,10 +460,10 @@ pub struct Text {
     pub(crate) writing_mode: WritingMode,
     pub(crate) chunks: Vec<TextChunk>,
     pub(crate) abs_transform: Transform,
-    pub(crate) bounding_box: NonZeroRect,
-    pub(crate) abs_bounding_box: NonZeroRect,
-    pub(crate) stroke_bounding_box: NonZeroRect,
-    pub(crate) abs_stroke_bounding_box: NonZeroRect,
+    pub(crate) bounding_box: Rect,
+    pub(crate) abs_bounding_box: Rect,
+    pub(crate) stroke_bounding_box: Rect,
+    pub(crate) abs_stroke_bounding_box: Rect,
     pub(crate) flattened: Box<Group>,
 }
 
@@ -535,14 +536,14 @@ impl Text {
     ///
     /// Returns `None` when the `text` build feature was disabled.
     /// This is because we have to perform a text layout before calculating a bounding box.
-    pub fn bounding_box(&self) -> NonZeroRect {
+    pub fn bounding_box(&self) -> Rect {
         self.bounding_box
     }
 
     /// Element's text bounding box in canvas coordinates.
     ///
     /// `userSpaceOnUse` in SVG terms.
-    pub fn abs_bounding_box(&self) -> NonZeroRect {
+    pub fn abs_bounding_box(&self) -> Rect {
         self.abs_bounding_box
     }
 
@@ -551,12 +552,12 @@ impl Text {
     /// Similar to `bounding_box`, but includes stroke.
     ///
     /// Will have the same value as `bounding_box` when path has no stroke.
-    pub fn stroke_bounding_box(&self) -> NonZeroRect {
+    pub fn stroke_bounding_box(&self) -> Rect {
         self.stroke_bounding_box
     }
 
     /// Element's bounding box including stroke in canvas coordinates.
-    pub fn abs_stroke_bounding_box(&self) -> NonZeroRect {
+    pub fn abs_stroke_bounding_box(&self) -> Rect {
         self.abs_stroke_bounding_box
     }
 

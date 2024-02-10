@@ -940,50 +940,50 @@ impl Node {
     /// Returns node's bounding box in object coordinates, if any.
     ///
     /// This method is cheap since bounding boxes are already calculated.
-    pub fn bounding_box(&self) -> Option<Rect> {
+    pub fn bounding_box(&self) -> Rect {
         match self {
             Node::Group(ref group) => group.bounding_box(),
-            Node::Path(ref path) => Some(path.bounding_box()),
-            Node::Image(ref image) => Some(image.bounding_box().to_rect()),
-            Node::Text(ref text) => Some(text.bounding_box().to_rect()),
+            Node::Path(ref path) => path.bounding_box(),
+            Node::Image(ref image) => image.bounding_box(),
+            Node::Text(ref text) => text.bounding_box(),
         }
     }
 
     /// Returns node's bounding box in canvas coordinates, if any.
     ///
     /// This method is cheap since bounding boxes are already calculated.
-    pub fn abs_bounding_box(&self) -> Option<Rect> {
+    pub fn abs_bounding_box(&self) -> Rect {
         match self {
             Node::Group(ref group) => group.abs_bounding_box(),
-            Node::Path(ref path) => Some(path.abs_bounding_box()),
-            Node::Image(ref image) => Some(image.abs_bounding_box().to_rect()),
-            Node::Text(ref text) => Some(text.abs_bounding_box().to_rect()),
+            Node::Path(ref path) => path.abs_bounding_box(),
+            Node::Image(ref image) => image.abs_bounding_box(),
+            Node::Text(ref text) => text.abs_bounding_box(),
         }
     }
 
     /// Returns node's bounding box, including stroke, in object coordinates, if any.
     ///
     /// This method is cheap since bounding boxes are already calculated.
-    pub fn stroke_bounding_box(&self) -> Option<NonZeroRect> {
+    pub fn stroke_bounding_box(&self) -> Rect {
         match self {
             Node::Group(ref group) => group.stroke_bounding_box(),
-            Node::Path(ref path) => path.stroke_bounding_box().to_non_zero_rect(),
+            Node::Path(ref path) => path.stroke_bounding_box(),
             // Image cannot be stroked.
-            Node::Image(ref image) => Some(image.bounding_box()),
-            Node::Text(ref text) => Some(text.stroke_bounding_box()),
+            Node::Image(ref image) => image.bounding_box(),
+            Node::Text(ref text) => text.stroke_bounding_box(),
         }
     }
 
     /// Returns node's bounding box, including stroke, in canvas coordinates, if any.
     ///
     /// This method is cheap since bounding boxes are already calculated.
-    pub fn abs_stroke_bounding_box(&self) -> Option<NonZeroRect> {
+    pub fn abs_stroke_bounding_box(&self) -> Rect {
         match self {
             Node::Group(ref group) => group.abs_stroke_bounding_box(),
-            Node::Path(ref path) => path.abs_stroke_bounding_box().to_non_zero_rect(),
+            Node::Path(ref path) => path.abs_stroke_bounding_box(),
             // Image cannot be stroked.
-            Node::Image(ref image) => Some(image.abs_bounding_box()),
-            Node::Text(ref text) => Some(text.abs_stroke_bounding_box()),
+            Node::Image(ref image) => image.abs_bounding_box(),
+            Node::Text(ref text) => text.abs_stroke_bounding_box(),
         }
     }
 
@@ -1050,16 +1050,17 @@ pub struct Group {
     pub(crate) clip_path: Option<SharedClipPath>,
     pub(crate) mask: Option<SharedMask>,
     pub(crate) filters: Vec<filter::SharedFilter>,
-    pub(crate) bounding_box: Option<Rect>,
-    pub(crate) abs_bounding_box: Option<Rect>,
-    pub(crate) stroke_bounding_box: Option<NonZeroRect>,
-    pub(crate) abs_stroke_bounding_box: Option<NonZeroRect>,
-    pub(crate) layer_bounding_box: Option<NonZeroRect>,
+    pub(crate) bounding_box: Rect,
+    pub(crate) abs_bounding_box: Rect,
+    pub(crate) stroke_bounding_box: Rect,
+    pub(crate) abs_stroke_bounding_box: Rect,
+    pub(crate) layer_bounding_box: NonZeroRect,
     pub(crate) children: Vec<Node>,
 }
 
 impl Group {
     pub(crate) fn empty() -> Self {
+        let dummy = Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap();
         Group {
             id: String::new(),
             transform: Transform::default(),
@@ -1070,11 +1071,11 @@ impl Group {
             clip_path: None,
             mask: None,
             filters: Vec::new(),
-            bounding_box: None,
-            abs_bounding_box: None,
-            stroke_bounding_box: None,
-            abs_stroke_bounding_box: None,
-            layer_bounding_box: None,
+            bounding_box: dummy,
+            abs_bounding_box: dummy,
+            stroke_bounding_box: dummy,
+            abs_stroke_bounding_box: dummy,
+            layer_bounding_box: NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
             children: Vec::new(),
         }
     }
@@ -1147,28 +1148,28 @@ impl Group {
     /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
     ///
     /// Can be set to `None` in case of an empty group.
-    pub fn bounding_box(&self) -> Option<Rect> {
+    pub fn bounding_box(&self) -> Rect {
         self.bounding_box
     }
 
     /// Element's bounding box in canvas coordinates.
     ///
     /// `userSpaceOnUse` in SVG terms.
-    pub fn abs_bounding_box(&self) -> Option<Rect> {
+    pub fn abs_bounding_box(&self) -> Rect {
         self.abs_bounding_box
     }
 
     /// Element's object bounding box including stroke.
     ///
     /// Similar to `bounding_box`, but includes stroke.
-    pub fn stroke_bounding_box(&self) -> Option<NonZeroRect> {
+    pub fn stroke_bounding_box(&self) -> Rect {
         self.stroke_bounding_box
     }
 
     /// Element's bounding box including stroke in user coordinates.
     ///
     /// Similar to `abs_bounding_box`, but includes stroke.
-    pub fn abs_stroke_bounding_box(&self) -> Option<NonZeroRect> {
+    pub fn abs_stroke_bounding_box(&self) -> Rect {
         self.abs_stroke_bounding_box
     }
 
@@ -1183,7 +1184,7 @@ impl Group {
     /// For other nodes layer bounding box is the same as stroke bounding box.
     ///
     /// Unlike other bounding boxes, cannot have zero size.
-    pub fn layer_bounding_box(&self) -> Option<NonZeroRect> {
+    pub fn layer_bounding_box(&self) -> NonZeroRect {
         self.layer_bounding_box
     }
 
@@ -1222,10 +1223,8 @@ impl Group {
 
         for filter in &self.filters {
             let mut region = filter.borrow().rect;
-
             if filter.borrow().units == Units::ObjectBoundingBox {
-                let object_bbox = self.bounding_box.and_then(|bbox| bbox.to_non_zero_rect());
-                if let Some(object_bbox) = object_bbox {
+                if let Some(object_bbox) = self.bounding_box.to_non_zero_rect() {
                     region = region.bbox_transform(object_bbox);
                 } else {
                     // Skip filters with `objectBoundingBox` on nodes without a bbox.
@@ -1598,15 +1597,15 @@ impl Image {
     /// Element's object bounding box.
     ///
     /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
-    pub fn bounding_box(&self) -> NonZeroRect {
-        self.view_box.rect
+    pub fn bounding_box(&self) -> Rect {
+        self.view_box.rect.to_rect()
     }
 
     /// Element's bounding box in canvas coordinates.
     ///
     /// `userSpaceOnUse` in SVG terms.
-    pub fn abs_bounding_box(&self) -> NonZeroRect {
-        self.abs_bounding_box
+    pub fn abs_bounding_box(&self) -> Rect {
+        self.abs_bounding_box.to_rect()
     }
 
     fn subroots(&self, f: &mut dyn FnMut(&Group)) {
@@ -1870,14 +1869,16 @@ impl Group {
     }
 
     /// Calculates bounding boxes for all children of this group.
-    pub(crate) fn calculate_bounding_boxes(&mut self) {
+    pub(crate) fn calculate_bounding_boxes(&mut self) -> Option<()> {
         for node in &mut self.children {
             if let Node::Group(ref mut group) = node {
                 group.calculate_bounding_boxes();
             }
 
             // Yes, subroots are not affected by the node's transform.
-            node.subroots_mut(|root| root.calculate_bounding_boxes());
+            node.subroots_mut(|root| {
+                let _ = root.calculate_bounding_boxes();
+            });
         }
 
         let mut bbox = BBox::default();
@@ -1886,7 +1887,8 @@ impl Group {
         let mut abs_stroke_bbox = BBox::default();
         let mut layer_bbox = BBox::default();
         for child in &self.children {
-            if let Some(mut c_bbox) = child.bounding_box() {
+            {
+                let mut c_bbox = child.bounding_box();
                 if let Node::Group(ref group) = child {
                     if let Some(r) = c_bbox.transform(group.transform) {
                         c_bbox = r;
@@ -1896,11 +1898,10 @@ impl Group {
                 bbox = bbox.expand(c_bbox);
             }
 
-            if let Some(c_bbox) = child.abs_bounding_box() {
-                abs_bbox = abs_bbox.expand(c_bbox);
-            }
+            abs_bbox = abs_bbox.expand(child.abs_bounding_box());
 
-            if let Some(mut c_bbox) = child.stroke_bounding_box() {
+            {
+                let mut c_bbox = child.stroke_bounding_box();
                 if let Node::Group(ref group) = child {
                     if let Some(r) = c_bbox.transform(group.transform) {
                         c_bbox = r;
@@ -1910,32 +1911,35 @@ impl Group {
                 stroke_bbox = stroke_bbox.expand(c_bbox);
             }
 
-            if let Some(c_bbox) = child.abs_stroke_bounding_box() {
-                abs_stroke_bbox = abs_stroke_bbox.expand(c_bbox);
-            }
+            abs_stroke_bbox = abs_stroke_bbox.expand(child.abs_stroke_bounding_box());
 
             if let Node::Group(ref group) = child {
-                if let Some(r) = group.layer_bounding_box {
-                    if let Some(r) = r.transform(group.transform) {
-                        layer_bbox = layer_bbox.expand(r);
-                    }
+                let r = group.layer_bounding_box;
+                if let Some(r) = r.transform(group.transform) {
+                    layer_bbox = layer_bbox.expand(r);
                 }
-            } else if let Some(c_bbox) = child.stroke_bounding_box() {
+            } else {
                 // Not a group - no need to transform.
-                layer_bbox = layer_bbox.expand(c_bbox);
+                layer_bbox = layer_bbox.expand(child.stroke_bounding_box());
             }
         }
 
-        self.bounding_box = bbox.to_rect();
-        self.abs_bounding_box = abs_bbox.to_rect();
-        self.stroke_bounding_box = stroke_bbox.to_non_zero_rect();
-        self.abs_stroke_bounding_box = abs_stroke_bbox.to_non_zero_rect();
+        // `bbox` can be None for empty groups, but we still have to
+        // calculate `layer_bounding_box after` it.
+        if let Some(bbox) = bbox.to_rect() {
+            self.bounding_box = bbox;
+            self.abs_bounding_box = abs_bbox.to_rect()?;
+            self.stroke_bounding_box = stroke_bbox.to_rect()?;
+            self.abs_stroke_bounding_box = abs_stroke_bbox.to_rect()?;
+        }
 
         // Filter bbox has a higher priority than layers bbox.
         if let Some(filter_bbox) = self.filters_bounding_box() {
-            self.layer_bounding_box = Some(filter_bbox);
+            self.layer_bounding_box = filter_bbox;
         } else {
-            self.layer_bounding_box = layer_bbox.to_non_zero_rect();
+            self.layer_bounding_box = layer_bbox.to_non_zero_rect()?;
         }
+
+        Some(())
     }
 }

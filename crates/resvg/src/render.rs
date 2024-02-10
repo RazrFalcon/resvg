@@ -12,7 +12,7 @@ pub fn render_nodes(
     parent: &usvg::Group,
     ctx: &Context,
     transform: tiny_skia::Transform,
-    text_bbox: Option<tiny_skia::NonZeroRect>,
+    text_bbox: Option<tiny_skia::Rect>,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
     for node in parent.children() {
@@ -24,7 +24,7 @@ pub fn render_node(
     node: &usvg::Node,
     ctx: &Context,
     transform: tiny_skia::Transform,
-    text_bbox: Option<tiny_skia::NonZeroRect>,
+    text_bbox: Option<tiny_skia::Rect>,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
     match node {
@@ -60,7 +60,7 @@ fn render_group(
     group: &usvg::Group,
     ctx: &Context,
     transform: tiny_skia::Transform,
-    text_bbox: Option<tiny_skia::NonZeroRect>,
+    text_bbox: Option<tiny_skia::Rect>,
     pixmap: &mut tiny_skia::PixmapMut,
 ) -> Option<()> {
     let transform = transform.pre_concat(group.transform());
@@ -70,7 +70,7 @@ fn render_group(
         return Some(());
     }
 
-    let bbox = group.layer_bounding_box()?.transform(transform)?;
+    let bbox = group.layer_bounding_box().transform(transform)?;
 
     let mut ibbox = if group.filters().is_empty() {
         // Convert group bbox into an integer one, expanding each side outwards by 2px
@@ -122,11 +122,11 @@ fn render_group(
         }
     }
 
-    if let (Some(ref clip_path), Some(object_bbox)) = (&group.clip_path(), group.bounding_box()) {
+    if let (Some(ref clip_path), object_bbox) = (&group.clip_path(), group.bounding_box()) {
         crate::clip::apply(&clip_path.borrow(), object_bbox, transform, &mut sub_pixmap);
     }
 
-    if let (Some(ref mask), Some(object_bbox)) = (&group.mask(), group.bounding_box()) {
+    if let (Some(ref mask), object_bbox) = (&group.mask(), group.bounding_box()) {
         crate::mask::apply(&mask.borrow(), ctx, object_bbox, transform, &mut sub_pixmap);
     }
 

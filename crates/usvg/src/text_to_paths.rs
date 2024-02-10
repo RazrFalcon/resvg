@@ -37,12 +37,12 @@ pub(crate) fn convert(
 
     text.flattened = Box::new(group);
 
-    text.bounding_box = bbox;
-    text.abs_bounding_box = bbox.transform(text.abs_transform)?;
+    text.bounding_box = bbox.to_rect();
+    text.abs_bounding_box = bbox.transform(text.abs_transform)?.to_rect();
     // TODO: test
     // TODO: should we stroke transformed paths?
-    text.stroke_bounding_box = stroke_bbox;
-    text.abs_stroke_bounding_box = stroke_bbox.transform(text.abs_transform)?;
+    text.stroke_bounding_box = stroke_bbox.to_rect();
+    text.abs_stroke_bounding_box = stroke_bbox.transform(text.abs_transform)?.to_rect();
 
     Some(())
 }

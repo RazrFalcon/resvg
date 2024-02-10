@@ -69,7 +69,7 @@ fn draw_children(
                 draw_children(
                     text.flattened(),
                     mode,
-                    text.bounding_box().to_rect(),
+                    text.bounding_box(),
                     transform,
                     pixmap,
                 );
