@@ -945,7 +945,7 @@ impl Node {
             Node::Group(ref group) => group.bounding_box(),
             Node::Path(ref path) => Some(path.bounding_box()),
             Node::Image(ref image) => Some(image.bounding_box().to_rect()),
-            Node::Text(ref text) => text.bounding_box().map(|r| r.to_rect()),
+            Node::Text(ref text) => Some(text.bounding_box().to_rect()),
         }
     }
 
@@ -957,7 +957,7 @@ impl Node {
             Node::Group(ref group) => group.abs_bounding_box(),
             Node::Path(ref path) => Some(path.abs_bounding_box()),
             Node::Image(ref image) => Some(image.abs_bounding_box().to_rect()),
-            Node::Text(ref text) => text.abs_bounding_box().map(|r| r.to_rect()),
+            Node::Text(ref text) => Some(text.abs_bounding_box().to_rect()),
         }
     }
 
@@ -970,7 +970,7 @@ impl Node {
             Node::Path(ref path) => path.stroke_bounding_box().to_non_zero_rect(),
             // Image cannot be stroked.
             Node::Image(ref image) => Some(image.bounding_box()),
-            Node::Text(ref text) => text.stroke_bounding_box(),
+            Node::Text(ref text) => Some(text.stroke_bounding_box()),
         }
     }
 
@@ -983,7 +983,7 @@ impl Node {
             Node::Path(ref path) => path.abs_stroke_bounding_box().to_non_zero_rect(),
             // Image cannot be stroked.
             Node::Image(ref image) => Some(image.abs_bounding_box()),
-            Node::Text(ref text) => text.abs_stroke_bounding_box(),
+            Node::Text(ref text) => Some(text.abs_stroke_bounding_box()),
         }
     }
 
@@ -1794,32 +1794,8 @@ fn loop_over_paint_servers(parent: &Group, f: &mut dyn FnMut(&Paint)) {
                 push(path.stroke.as_ref().map(|f| &f.paint), f);
             }
             Node::Image(_) => {}
-            Node::Text(ref text) => {
-                // A flattened text should be ignored, otherwise we would have duplicates.
-                if text.flattened.is_none() {
-                    for chunk in &text.chunks {
-                        for span in &chunk.spans {
-                            push(span.fill.as_ref().map(|f| &f.paint), f);
-                            push(span.stroke.as_ref().map(|f| &f.paint), f);
-
-                            if let Some(ref underline) = span.decoration.underline {
-                                push(underline.fill.as_ref().map(|f| &f.paint), f);
-                                push(underline.stroke.as_ref().map(|f| &f.paint), f);
-                            }
-
-                            if let Some(ref overline) = span.decoration.overline {
-                                push(overline.fill.as_ref().map(|f| &f.paint), f);
-                                push(overline.stroke.as_ref().map(|f| &f.paint), f);
-                            }
-
-                            if let Some(ref line_through) = span.decoration.line_through {
-                                push(line_through.fill.as_ref().map(|f| &f.paint), f);
-                                push(line_through.stroke.as_ref().map(|f| &f.paint), f);
-                            }
-                        }
-                    }
-                }
-            }
+            // Flattened text would be used instead.
+            Node::Text(_) => {}
         }
 
         node.subroots(|subroot| loop_over_paint_servers(subroot, f));

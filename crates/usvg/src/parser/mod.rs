@@ -14,9 +14,11 @@ mod shapes;
 mod style;
 mod svgtree;
 mod switch;
-mod text;
 mod units;
 mod use_node;
+
+#[cfg(feature = "text")]
+mod text;
 
 #[cfg(feature = "text")]
 pub(crate) use converter::Cache;

@@ -18,6 +18,7 @@ This changelog also contains important changes in dependencies.
 - All `usvg::Tree` parsing methods require the `fontdb` argument now.
 - All `defs` children like gradients, patterns, clipPaths, masks and filters are guarantee
   to have a unique, non-empty ID.
+- Text nodes will not be parsed when the `text` build feature isn't enabled.
 - `usvg::Tree::clip_paths`, `usvg::Tree::masks`, `usvg::Tree::filters` returns
   a pre-collected slice of unique nodes now.
   It's no longer a closure and you do not have to deduplicate nodes by yourself.
@@ -30,7 +31,12 @@ This changelog also contains important changes in dependencies.
   and not `Option<Rect>` now.
 - `usvg::Path::stroke_bounding_box` and `usvg::Path::abs_stroke_bounding_box` return `Rect`
   and not `Option<NonZeroRect>` now.
+- `usvg::Text::bounding_box`, `usvg::Text::abs_bounding_box`, `usvg::Text::stroke_bounding_box`,
+  `usvg::Text::abs_stroke_bounding_box` return `NonZeroRect` and not `Option<NonZeroRect>` now.
+- `usvg::Text::flattened` returns `&Group` and not `Option<&Group>` now.
 - `usvg::Image::bounding_box` returns `NonZeroRect` and not `Option<NonZeroRect>` now.
+- `usvg::ImageHrefDataResolverFn` and `usvg::ImageHrefStringResolverFn`
+  require `fontdb::Database` argument.
 
 ### Removed
 - `usvg::Tree::postprocess()` and `usvg::PostProcessingSteps`. No longer needed.

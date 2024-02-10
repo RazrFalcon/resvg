@@ -727,8 +727,8 @@ fn write_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xm
 
                 xml.end_element();
                 xml.set_preserve_whitespaces(false);
-            } else if let Some(ref flattened) = text.flattened {
-                write_group_element(flattened, is_clip_path, opt, xml);
+            } else {
+                write_group_element(text.flattened(), is_clip_path, opt, xml);
             }
         }
     }

@@ -7,7 +7,7 @@ use std::rc::Rc;
 use strict_num::NonZeroPositiveF32;
 pub use svgtypes::FontFamily;
 
-use crate::{Fill, Group, NonEmptyString, Paint, PaintOrder, Stroke, TextRendering, Visibility};
+use crate::{Fill, Group, NonEmptyString, PaintOrder, Stroke, TextRendering, Visibility};
 use tiny_skia_path::{NonZeroRect, Transform};
 
 /// A font stretch property.
@@ -459,11 +459,11 @@ pub struct Text {
     pub(crate) writing_mode: WritingMode,
     pub(crate) chunks: Vec<TextChunk>,
     pub(crate) abs_transform: Transform,
-    pub(crate) bounding_box: Option<NonZeroRect>,
-    pub(crate) abs_bounding_box: Option<NonZeroRect>,
-    pub(crate) stroke_bounding_box: Option<NonZeroRect>,
-    pub(crate) abs_stroke_bounding_box: Option<NonZeroRect>,
-    pub(crate) flattened: Option<Box<Group>>,
+    pub(crate) bounding_box: NonZeroRect,
+    pub(crate) abs_bounding_box: NonZeroRect,
+    pub(crate) stroke_bounding_box: NonZeroRect,
+    pub(crate) abs_stroke_bounding_box: NonZeroRect,
+    pub(crate) flattened: Box<Group>,
 }
 
 impl Text {
@@ -535,14 +535,14 @@ impl Text {
     ///
     /// Returns `None` when the `text` build feature was disabled.
     /// This is because we have to perform a text layout before calculating a bounding box.
-    pub fn bounding_box(&self) -> Option<NonZeroRect> {
+    pub fn bounding_box(&self) -> NonZeroRect {
         self.bounding_box
     }
 
     /// Element's text bounding box in canvas coordinates.
     ///
     /// `userSpaceOnUse` in SVG terms.
-    pub fn abs_bounding_box(&self) -> Option<NonZeroRect> {
+    pub fn abs_bounding_box(&self) -> NonZeroRect {
         self.abs_bounding_box
     }
 
@@ -551,95 +551,27 @@ impl Text {
     /// Similar to `bounding_box`, but includes stroke.
     ///
     /// Will have the same value as `bounding_box` when path has no stroke.
-    pub fn stroke_bounding_box(&self) -> Option<NonZeroRect> {
+    pub fn stroke_bounding_box(&self) -> NonZeroRect {
         self.stroke_bounding_box
     }
 
     /// Element's bounding box including stroke in canvas coordinates.
-    pub fn abs_stroke_bounding_box(&self) -> Option<NonZeroRect> {
+    pub fn abs_stroke_bounding_box(&self) -> NonZeroRect {
         self.abs_stroke_bounding_box
     }
 
     /// Text converted into paths, ready to render.
     ///
     /// Returns `None` when the `text` build feature was disabled.
-    pub fn flattened(&self) -> Option<&Group> {
-        self.flattened.as_deref()
+    pub fn flattened(&self) -> &Group {
+        &self.flattened
     }
 
     pub(crate) fn subroots(&self, f: &mut dyn FnMut(&Group)) {
-        if let Some(ref flattened) = self.flattened {
-            f(flattened);
-            // Return now, since text chunks would have the same styles
-            // as the flattened text, which would lead to duplicates.
-            return;
-        }
-
-        let mut push_patt = |paint: Option<&Paint>| {
-            if let Some(Paint::Pattern(ref patt)) = paint {
-                f(&patt.borrow().root);
-            }
-        };
-
-        for chunk in &self.chunks {
-            for span in &chunk.spans {
-                push_patt(span.fill.as_ref().map(|f| &f.paint));
-                push_patt(span.stroke.as_ref().map(|f| &f.paint));
-
-                // Each text decoration can have paint.
-                if let Some(ref underline) = span.decoration.underline {
-                    push_patt(underline.fill.as_ref().map(|f| &f.paint));
-                    push_patt(underline.stroke.as_ref().map(|f| &f.paint));
-                }
-
-                if let Some(ref overline) = span.decoration.overline {
-                    push_patt(overline.fill.as_ref().map(|f| &f.paint));
-                    push_patt(overline.stroke.as_ref().map(|f| &f.paint));
-                }
-
-                if let Some(ref line_through) = span.decoration.line_through {
-                    push_patt(line_through.fill.as_ref().map(|f| &f.paint));
-                    push_patt(line_through.stroke.as_ref().map(|f| &f.paint));
-                }
-            }
-        }
+        f(&self.flattened);
     }
 
     pub(crate) fn subroots_mut(&mut self, f: &mut dyn FnMut(&mut Group)) {
-        if let Some(ref mut flattened) = self.flattened {
-            f(flattened);
-            // Return now, since text chunks would have the same styles
-            // as the flattened text, which would lead to duplicates.
-            return;
-        }
-
-        let mut push_patt = |paint: Option<&Paint>| {
-            if let Some(Paint::Pattern(ref patt)) = paint {
-                f(&mut patt.borrow_mut().root);
-            }
-        };
-
-        for chunk in &self.chunks {
-            for span in &chunk.spans {
-                push_patt(span.fill.as_ref().map(|f| &f.paint));
-                push_patt(span.stroke.as_ref().map(|f| &f.paint));
-
-                // Each text decoration can have paint.
-                if let Some(ref underline) = span.decoration.underline {
-                    push_patt(underline.fill.as_ref().map(|f| &f.paint));
-                    push_patt(underline.stroke.as_ref().map(|f| &f.paint));
-                }
-
-                if let Some(ref overline) = span.decoration.overline {
-                    push_patt(overline.fill.as_ref().map(|f| &f.paint));
-                    push_patt(overline.stroke.as_ref().map(|f| &f.paint));
-                }
-
-                if let Some(ref line_through) = span.decoration.line_through {
-                    push_patt(line_through.fill.as_ref().map(|f| &f.paint));
-                    push_patt(line_through.stroke.as_ref().map(|f| &f.paint));
-                }
-            }
-        }
+        f(&mut self.flattened);
     }
 }

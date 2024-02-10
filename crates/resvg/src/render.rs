@@ -45,11 +45,13 @@ pub fn render_node(
             crate::image::render(image, transform, pixmap);
         }
         usvg::Node::Text(ref text) => {
-            if let (Some(bbox), Some(ref flattened)) = (text.bounding_box(), &text.flattened()) {
-                render_group(flattened, ctx, transform, Some(bbox), pixmap);
-            } else {
-                log::warn!("Text nodes should be flattened before rendering.");
-            }
+            render_group(
+                text.flattened(),
+                ctx,
+                transform,
+                Some(text.bounding_box()),
+                pixmap,
+            );
         }
     }
 }

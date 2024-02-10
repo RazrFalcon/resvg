@@ -121,7 +121,9 @@ pub(crate) fn convert(
         String::new()
     };
 
-    let text = Text {
+    let dummy = NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
+
+    let mut text = Text {
         id,
         rendering_mode,
         dx: pos_list.iter().map(|v| v.dx.unwrap_or(0.0)).collect(),
@@ -130,12 +132,18 @@ pub(crate) fn convert(
         writing_mode,
         chunks,
         abs_transform: parent.abs_transform,
-        bounding_box: None,
-        abs_bounding_box: None,
-        stroke_bounding_box: None,
-        abs_stroke_bounding_box: None,
-        flattened: None,
+        // All fields below will be reset by `text_to_paths`.
+        bounding_box: dummy,
+        abs_bounding_box: dummy,
+        stroke_bounding_box: dummy,
+        abs_stroke_bounding_box: dummy,
+        flattened: Box::new(Group::empty()),
     };
+
+    if crate::text_to_paths::convert(&mut text, state.fontdb, cache).is_none() {
+        return;
+    }
+
     parent.children.push(Node::Text(Box::new(text)));
 }
 

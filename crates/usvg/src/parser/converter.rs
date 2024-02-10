@@ -26,6 +26,8 @@ pub struct State<'a> {
     /// Width and height can be set independently.
     pub(crate) use_size: (Option<f32>, Option<f32>),
     pub(crate) opt: &'a Options,
+    #[cfg(feature = "text")]
+    pub(crate) fontdb: &'a fontdb::Database,
 }
 
 #[derive(Clone, Default)]
@@ -228,7 +230,12 @@ pub(crate) fn convert_doc(
     #[cfg(feature = "text")] fontdb: &fontdb::Database,
 ) -> Result<Tree, Error> {
     let svg = svg_doc.root_element();
-    let (size, restore_viewbox) = resolve_svg_size(&svg, opt);
+    let (size, restore_viewbox) = resolve_svg_size(
+        &svg,
+        opt,
+        #[cfg(feature = "text")]
+        fontdb,
+    );
     let size = size?;
     let view_box = ViewBox {
         rect: svg
@@ -260,6 +267,8 @@ pub(crate) fn convert_doc(
         view_box: view_box.rect,
         use_size: (None, None),
         opt,
+        #[cfg(feature = "text")]
+        fontdb,
     };
 
     let mut cache = Cache::default();
@@ -276,18 +285,10 @@ pub(crate) fn convert_doc(
 
     convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
 
-    // The order of operations below is very important. Do not reorder.
-
-    #[cfg(feature = "text")]
-    {
-        crate::text_to_paths::convert_text(&mut tree.root, fontdb, &mut cache);
-    }
-
     tree.collect_paint_servers();
     tree.root.collect_clip_paths(&mut tree.clip_paths);
     tree.root.collect_masks(&mut tree.masks);
     tree.root.collect_filters(&mut tree.filters);
-
     tree.root.calculate_bounding_boxes();
 
     if restore_viewbox {
@@ -297,7 +298,11 @@ pub(crate) fn convert_doc(
     Ok(tree)
 }
 
-fn resolve_svg_size(svg: &SvgNode, opt: &Options) -> (Result<Size, Error>, bool) {
+fn resolve_svg_size(
+    svg: &SvgNode,
+    opt: &Options,
+    #[cfg(feature = "text")] fontdb: &fontdb::Database,
+) -> (Result<Size, Error>, bool) {
     let mut state = State {
         parent_clip_path: None,
         parent_markers: Vec::new(),
@@ -305,6 +310,8 @@ fn resolve_svg_size(svg: &SvgNode, opt: &Options) -> (Result<Size, Error>, bool)
         view_box: NonZeroRect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
         use_size: (None, None),
         opt,
+        #[cfg(feature = "text")]
+        fontdb,
     };
 
     let def = Length::new(100.0, Unit::Percent);
@@ -466,7 +473,10 @@ fn convert_element_impl(
             super::image::convert(node, state, parent);
         }
         EId::Text => {
-            super::text::convert(node, state, cache, parent);
+            #[cfg(feature = "text")]
+            {
+                super::text::convert(node, state, cache, parent);
+            }
         }
         EId::Svg => {
             if node.parent_element().is_some() {
@@ -541,7 +551,10 @@ fn convert_clip_path_elements_impl(
             }
         }
         EId::Text => {
-            super::text::convert(node, state, cache, parent);
+            #[cfg(feature = "text")]
+            {
+                super::text::convert(node, state, cache, parent);
+            }
         }
         _ => {
             log::warn!("'{}' is no a valid 'clip-path' child.", tag_name);

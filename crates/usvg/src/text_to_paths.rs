@@ -16,35 +16,11 @@ use unicode_script::UnicodeScript;
 
 use crate::*;
 
-/// Converts text nodes into paths.
-pub fn convert_text(root: &mut Group, fontdb: &fontdb::Database, cache: &mut crate::parser::Cache) {
-    for node in &mut root.children {
-        if let Node::Text(ref mut text) = node {
-            if let Some((node, bbox, stroke_bbox)) = convert_node(text, fontdb, cache) {
-                text.bounding_box = Some(bbox);
-                text.abs_bounding_box = bbox.transform(text.abs_transform);
-                // TODO: test
-                // TODO: should we stroke transformed paths?
-                text.stroke_bounding_box = Some(stroke_bbox);
-                text.abs_stroke_bounding_box = stroke_bbox.transform(text.abs_transform);
-                text.flattened = Some(Box::new(node));
-            }
-        }
-
-        if let Node::Group(ref mut g) = node {
-            convert_text(g, fontdb, cache);
-        }
-
-        // We have to update text nodes in clipPaths, masks and patterns as well.
-        node.subroots_mut(|subroot| convert_text(subroot, fontdb, cache))
-    }
-}
-
-fn convert_node(
-    text: &Text,
+pub(crate) fn convert(
+    text: &mut Text,
     fontdb: &fontdb::Database,
     cache: &mut crate::parser::Cache,
-) -> Option<(Group, NonZeroRect, NonZeroRect)> {
+) -> Option<()> {
     let (new_paths, bbox, stroke_bbox) = text_to_paths(text, fontdb)?;
 
     let mut group = Group {
@@ -59,7 +35,16 @@ fn convert_node(
         group.children.push(Node::Path(Box::new(path)));
     }
 
-    Some((group, bbox, stroke_bbox))
+    text.flattened = Box::new(group);
+
+    text.bounding_box = bbox;
+    text.abs_bounding_box = bbox.transform(text.abs_transform)?;
+    // TODO: test
+    // TODO: should we stroke transformed paths?
+    text.stroke_bounding_box = stroke_bbox;
+    text.abs_stroke_bounding_box = stroke_bbox.transform(text.abs_transform)?;
+
+    Some(())
 }
 
 trait DatabaseExt {

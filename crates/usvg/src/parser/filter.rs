@@ -737,7 +737,7 @@ fn convert_image(fe: SvgNode, state: &converter::State, cache: &mut converter::C
         }
     };
 
-    let href = super::image::get_href_data(href, state.opt);
+    let href = super::image::get_href_data(href, state);
     let img_data = match href {
         Some(data) => data,
         None => return create_dummy_primitive(),

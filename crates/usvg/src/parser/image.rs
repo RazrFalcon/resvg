@@ -11,9 +11,22 @@ use super::{converter, OptionLog, Options};
 use crate::{Group, Image, ImageKind, Node, NonZeroRect, Size, Tree, ViewBox};
 
 /// A shorthand for [ImageHrefResolver]'s data function.
+#[cfg(feature = "text")]
+pub type ImageHrefDataResolverFn =
+    Box<dyn Fn(&str, Arc<Vec<u8>>, &Options, &fontdb::Database) -> Option<ImageKind> + Send + Sync>;
+
+/// A shorthand for [ImageHrefResolver]'s data function.
+#[cfg(not(feature = "text"))]
 pub type ImageHrefDataResolverFn =
     Box<dyn Fn(&str, Arc<Vec<u8>>, &Options) -> Option<ImageKind> + Send + Sync>;
+
 /// A shorthand for [ImageHrefResolver]'s string function.
+#[cfg(feature = "text")]
+pub type ImageHrefStringResolverFn =
+    Box<dyn Fn(&str, &Options, &fontdb::Database) -> Option<ImageKind> + Send + Sync>;
+
+/// A shorthand for [ImageHrefResolver]'s string function.
+#[cfg(not(feature = "text"))]
 pub type ImageHrefStringResolverFn = Box<dyn Fn(&str, &Options) -> Option<ImageKind> + Send + Sync>;
 
 /// An `xlink:href` resolver for `<image>` elements.
@@ -53,16 +66,29 @@ impl ImageHrefResolver {
     /// The actual images would not be decoded. It's up to the renderer.
     pub fn default_data_resolver() -> ImageHrefDataResolverFn {
         Box::new(
-            move |mime: &str, data: Arc<Vec<u8>>, opts: &Options| match mime {
+            move |mime: &str,
+                  data: Arc<Vec<u8>>,
+                  opts: &Options,
+                  #[cfg(feature = "text")] fontdb: &fontdb::Database| match mime {
                 "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
                 "image/png" => Some(ImageKind::PNG(data)),
                 "image/gif" => Some(ImageKind::GIF(data)),
-                "image/svg+xml" => load_sub_svg(&data, opts),
+                "image/svg+xml" => load_sub_svg(
+                    &data,
+                    opts,
+                    #[cfg(feature = "text")]
+                    fontdb,
+                ),
                 "text/plain" => match get_image_data_format(&data) {
                     Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(data)),
                     Some(ImageFormat::PNG) => Some(ImageKind::PNG(data)),
                     Some(ImageFormat::GIF) => Some(ImageKind::GIF(data)),
-                    _ => load_sub_svg(&data, opts),
+                    _ => load_sub_svg(
+                        &data,
+                        opts,
+                        #[cfg(feature = "text")]
+                        fontdb,
+                    ),
                 },
                 _ => None,
             },
@@ -77,33 +103,42 @@ impl ImageHrefResolver {
     /// Paths have to be absolute or relative to the input SVG file or relative to
     /// [Options::resources_dir](crate::Options::resources_dir).
     pub fn default_string_resolver() -> ImageHrefStringResolverFn {
-        Box::new(move |href: &str, opts: &Options| {
-            let path = opts.get_abs_path(std::path::Path::new(href));
+        Box::new(
+            move |href: &str,
+                  opts: &Options,
+                  #[cfg(feature = "text")] fontdb: &fontdb::Database| {
+                let path = opts.get_abs_path(std::path::Path::new(href));
 
-            if path.exists() {
-                let data = match std::fs::read(&path) {
-                    Ok(data) => data,
-                    Err(_) => {
-                        log::warn!("Failed to load '{}'. Skipped.", href);
-                        return None;
-                    }
-                };
+                if path.exists() {
+                    let data = match std::fs::read(&path) {
+                        Ok(data) => data,
+                        Err(_) => {
+                            log::warn!("Failed to load '{}'. Skipped.", href);
+                            return None;
+                        }
+                    };
 
-                match get_image_file_format(&path, &data) {
-                    Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(Arc::new(data))),
-                    Some(ImageFormat::PNG) => Some(ImageKind::PNG(Arc::new(data))),
-                    Some(ImageFormat::GIF) => Some(ImageKind::GIF(Arc::new(data))),
-                    Some(ImageFormat::SVG) => load_sub_svg(&data, opts),
-                    _ => {
-                        log::warn!("'{}' is not a PNG, JPEG, GIF or SVG(Z) image.", href);
-                        None
+                    match get_image_file_format(&path, &data) {
+                        Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(Arc::new(data))),
+                        Some(ImageFormat::PNG) => Some(ImageKind::PNG(Arc::new(data))),
+                        Some(ImageFormat::GIF) => Some(ImageKind::GIF(Arc::new(data))),
+                        Some(ImageFormat::SVG) => load_sub_svg(
+                            &data,
+                            opts,
+                            #[cfg(feature = "text")]
+                            fontdb,
+                        ),
+                        _ => {
+                            log::warn!("'{}' is not a PNG, JPEG, GIF or SVG(Z) image.", href);
+                            None
+                        }
                     }
+                } else {
+                    log::warn!("'{}' is not a path to an image.", href);
+                    None
                 }
-            } else {
-                log::warn!("'{}' is not a path to an image.", href);
-                None
-            }
-        })
+            },
+        )
     }
 }
 
@@ -126,7 +161,7 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Grou
         .try_attribute(AId::Href)
         .log_none(|| log::warn!("Image lacks the 'xlink:href' attribute. Skipped."))?;
 
-    let kind = get_href_data(href, state.opt)?;
+    let kind = get_href_data(href, state)?;
 
     let visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
     let rendering_mode = node
@@ -186,7 +221,7 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Grou
     Some(())
 }
 
-pub(crate) fn get_href_data(href: &str, opt: &Options) -> Option<ImageKind> {
+pub(crate) fn get_href_data(href: &str, state: &converter::State) -> Option<ImageKind> {
     if let Ok(url) = data_url::DataUrl::process(href) {
         let (data, _) = url.decode_to_vec().ok()?;
 
@@ -196,9 +231,20 @@ pub(crate) fn get_href_data(href: &str, opt: &Options) -> Option<ImageKind> {
             url.mime_type().subtype.as_str()
         );
 
-        (opt.image_href_resolver.resolve_data)(&mime, Arc::new(data), opt)
+        (state.opt.image_href_resolver.resolve_data)(
+            &mime,
+            Arc::new(data),
+            state.opt,
+            #[cfg(feature = "text")]
+            state.fontdb,
+        )
     } else {
-        (opt.image_href_resolver.resolve_string)(href, opt)
+        (state.opt.image_href_resolver.resolve_string)(
+            href,
+            state.opt,
+            #[cfg(feature = "text")]
+            state.fontdb,
+        )
     }
 }
 
@@ -227,7 +273,11 @@ fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
 ///
 /// Unlike `Tree::from_*` methods, this one will also remove all `image` elements
 /// from the loaded SVG, as required by the spec.
-pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
+pub(crate) fn load_sub_svg(
+    data: &[u8],
+    opt: &Options,
+    #[cfg(feature = "text")] fontdb: &fontdb::Database,
+) -> Option<ImageKind> {
     let mut sub_opt = Options::default();
     sub_opt.resources_dir = None;
     sub_opt.dpi = opt.dpi;
@@ -241,23 +291,16 @@ pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
     // The referenced SVG image cannot have any 'image' elements by itself.
     // Not only recursive. Any. Don't know why.
     sub_opt.image_href_resolver = ImageHrefResolver {
-        resolve_data: Box::new(|_, _, _| None),
-        resolve_string: Box::new(|_, _| None),
+        resolve_data: Box::new(|_, _, _, #[cfg(feature = "text")] _| None),
+        resolve_string: Box::new(|_, _, #[cfg(feature = "text")] _| None),
     };
 
-    // An empty DB is fine. Text will be converted later.
-    let tree = {
+    let tree = Tree::from_data(
+        data,
+        &sub_opt,
         #[cfg(feature = "text")]
-        {
-            let fontdb = fontdb::Database::new();
-            Tree::from_data(data, &sub_opt, &fontdb)
-        }
-        #[cfg(not(feature = "text"))]
-        {
-            Tree::from_data(data, &sub_opt)
-        }
-    };
-
+        fontdb,
+    );
     let mut tree = match tree {
         Ok(tree) => tree,
         Err(_) => {

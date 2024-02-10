@@ -66,9 +66,13 @@ fn draw_children(
                 crate::path::fill_path(path, mode, &ctx, object_bbox, transform, pixmap);
             }
             usvg::Node::Text(ref text) => {
-                if let (Some(flattened), Some(bbox)) = (&text.flattened(), text.bounding_box()) {
-                    draw_children(flattened, mode, bbox.to_rect(), transform, pixmap);
-                }
+                draw_children(
+                    text.flattened(),
+                    mode,
+                    text.bounding_box().to_rect(),
+                    transform,
+                    pixmap,
+                );
             }
             usvg::Node::Group(ref group) => {
                 let transform = transform.pre_concat(group.transform());
