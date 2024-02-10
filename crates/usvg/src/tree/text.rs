@@ -354,7 +354,7 @@ impl Default for TextAnchor {
 }
 
 /// A path used by text-on-path.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct TextPath {
     pub(crate) id: NonEmptyString,
     pub(crate) start_offset: f32,

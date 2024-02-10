@@ -18,7 +18,7 @@ use crate::{
 /// A filter element.
 ///
 /// `filter` element in the SVG.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Filter {
     pub(crate) id: NonEmptyString,
     pub(crate) units: Units,

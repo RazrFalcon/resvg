@@ -21,7 +21,8 @@ pub use self::text::*;
 /// An alias to `NormalizedF32`.
 pub type Opacity = NormalizedF32;
 
-#[derive(Clone, Debug)]
+// Must not be clone-able to preserve ID uniqueness.
+#[derive(Debug)]
 pub(crate) struct NonEmptyString(String);
 
 impl NonEmptyString {
@@ -236,7 +237,7 @@ impl Default for SpreadMethod {
 }
 
 /// A generic gradient.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct BaseGradient {
     pub(crate) id: NonEmptyString,
     pub(crate) units: Units,
@@ -284,7 +285,7 @@ impl BaseGradient {
 /// A linear gradient.
 ///
 /// `linearGradient` element in SVG.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct LinearGradient {
     pub(crate) base: BaseGradient,
     pub(crate) x1: f32,
@@ -326,7 +327,7 @@ impl std::ops::Deref for LinearGradient {
 /// A radial gradient.
 ///
 /// `radialGradient` element in SVG.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct RadialGradient {
     pub(crate) base: BaseGradient,
     pub(crate) cx: f32,
@@ -410,7 +411,7 @@ impl Stop {
 /// A pattern element.
 ///
 /// `pattern` element in SVG.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Pattern {
     pub(crate) id: NonEmptyString,
     pub(crate) units: Units,
@@ -760,7 +761,7 @@ impl PartialEq for Paint {
 /// A clip-path element.
 ///
 /// `clipPath` element in SVG.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct ClipPath {
     pub(crate) id: NonEmptyString,
     pub(crate) units: Units,
@@ -836,7 +837,7 @@ impl Default for MaskType {
 /// A mask element.
 ///
 /// `mask` element in SVG.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Mask {
     pub(crate) id: NonEmptyString,
     pub(crate) units: Units,
