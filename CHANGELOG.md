@@ -8,6 +8,7 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
+- `usvg::Tree` is `Send + Sync` compatible now.
 - `usvg::XmlOptions::preserve_text` to control how `usvg` generates an SVG.
 - `usvg::Image::abs_bounding_box`
 
@@ -32,7 +33,7 @@ This changelog also contains important changes in dependencies.
 - `usvg::Text::flattened` returns `&Group` and not `Option<&Group>` now.
 - `usvg::ImageHrefDataResolverFn` and `usvg::ImageHrefStringResolverFn`
   require `fontdb::Database` argument.
-- All shared nodes are stored in `Rc` and not `Rc<RefCell>` now.
+- All shared nodes are stored in `Arc` and not `Rc<RefCell>` now.
 
 ### Removed
 - `usvg::Tree::postprocess()` and `usvg::PostProcessingSteps`. No longer needed.

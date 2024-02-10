@@ -6,7 +6,6 @@ pub mod filter;
 mod geom;
 mod text;
 
-use std::rc::Rc;
 use std::sync::Arc;
 
 pub use strict_num::{self, ApproxEqUlps, NonZeroPositiveF32, NormalizedF32, PositiveF32};
@@ -724,9 +723,9 @@ impl Color {
 #[derive(Clone, Debug)]
 pub enum Paint {
     Color(Color),
-    LinearGradient(Rc<LinearGradient>),
-    RadialGradient(Rc<RadialGradient>),
-    Pattern(Rc<Pattern>),
+    LinearGradient(Arc<LinearGradient>),
+    RadialGradient(Arc<RadialGradient>),
+    Pattern(Arc<Pattern>),
 }
 
 impl Paint {
@@ -749,9 +748,9 @@ impl PartialEq for Paint {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Color(lc), Self::Color(rc)) => lc == rc,
-            (Self::LinearGradient(ref lg1), Self::LinearGradient(ref lg2)) => Rc::ptr_eq(lg1, lg2),
-            (Self::RadialGradient(ref rg1), Self::RadialGradient(ref rg2)) => Rc::ptr_eq(rg1, rg2),
-            (Self::Pattern(ref p1), Self::Pattern(ref p2)) => Rc::ptr_eq(p1, p2),
+            (Self::LinearGradient(ref lg1), Self::LinearGradient(ref lg2)) => Arc::ptr_eq(lg1, lg2),
+            (Self::RadialGradient(ref rg1), Self::RadialGradient(ref rg2)) => Arc::ptr_eq(rg1, rg2),
+            (Self::Pattern(ref p1), Self::Pattern(ref p2)) => Arc::ptr_eq(p1, p2),
             _ => false,
         }
     }
@@ -765,7 +764,7 @@ pub struct ClipPath {
     pub(crate) id: NonEmptyString,
     pub(crate) units: Units,
     pub(crate) transform: Transform,
-    pub(crate) clip_path: Option<Rc<ClipPath>>,
+    pub(crate) clip_path: Option<Arc<ClipPath>>,
     pub(crate) root: Group,
 }
 
@@ -840,7 +839,7 @@ pub struct Mask {
     pub(crate) content_units: Units,
     pub(crate) rect: NonZeroRect,
     pub(crate) kind: MaskType,
-    pub(crate) mask: Option<Rc<Mask>>,
+    pub(crate) mask: Option<Arc<Mask>>,
     pub(crate) root: Group,
 }
 
@@ -1028,9 +1027,9 @@ pub struct Group {
     pub(crate) opacity: Opacity,
     pub(crate) blend_mode: BlendMode,
     pub(crate) isolate: bool,
-    pub(crate) clip_path: Option<Rc<ClipPath>>,
-    pub(crate) mask: Option<Rc<Mask>>,
-    pub(crate) filters: Vec<Rc<filter::Filter>>,
+    pub(crate) clip_path: Option<Arc<ClipPath>>,
+    pub(crate) mask: Option<Arc<Mask>>,
+    pub(crate) filters: Vec<Arc<filter::Filter>>,
     pub(crate) bounding_box: Rect,
     pub(crate) abs_bounding_box: Rect,
     pub(crate) stroke_bounding_box: Rect,
@@ -1120,7 +1119,7 @@ impl Group {
     }
 
     /// Element's filters.
-    pub fn filters(&self) -> &[Rc<filter::Filter>] {
+    pub fn filters(&self) -> &[Arc<filter::Filter>] {
         &self.filters
     }
 
@@ -1276,7 +1275,7 @@ pub struct Path {
     pub(crate) stroke: Option<Stroke>,
     pub(crate) paint_order: PaintOrder,
     pub(crate) rendering_mode: ShapeRendering,
-    pub(crate) data: Rc<tiny_skia_path::Path>,
+    pub(crate) data: Arc<tiny_skia_path::Path>,
     pub(crate) abs_transform: Transform,
     pub(crate) bounding_box: Rect,
     pub(crate) abs_bounding_box: Rect,
@@ -1285,7 +1284,7 @@ pub struct Path {
 }
 
 impl Path {
-    pub(crate) fn new_simple(data: Rc<tiny_skia_path::Path>) -> Option<Self> {
+    pub(crate) fn new_simple(data: Arc<tiny_skia_path::Path>) -> Option<Self> {
         Self::new(
             String::new(),
             Visibility::default(),
@@ -1305,7 +1304,7 @@ impl Path {
         stroke: Option<Stroke>,
         paint_order: PaintOrder,
         rendering_mode: ShapeRendering,
-        data: Rc<tiny_skia_path::Path>,
+        data: Arc<tiny_skia_path::Path>,
         abs_transform: Transform,
     ) -> Option<Self> {
         let bounding_box = data.compute_tight_bounds()?;
@@ -1566,12 +1565,12 @@ pub struct Tree {
     pub(crate) size: Size,
     pub(crate) view_box: ViewBox,
     pub(crate) root: Group,
-    pub(crate) linear_gradients: Vec<Rc<LinearGradient>>,
-    pub(crate) radial_gradients: Vec<Rc<RadialGradient>>,
-    pub(crate) patterns: Vec<Rc<Pattern>>,
-    pub(crate) clip_paths: Vec<Rc<ClipPath>>,
-    pub(crate) masks: Vec<Rc<Mask>>,
-    pub(crate) filters: Vec<Rc<filter::Filter>>,
+    pub(crate) linear_gradients: Vec<Arc<LinearGradient>>,
+    pub(crate) radial_gradients: Vec<Arc<RadialGradient>>,
+    pub(crate) patterns: Vec<Arc<Pattern>>,
+    pub(crate) clip_paths: Vec<Arc<ClipPath>>,
+    pub(crate) masks: Vec<Arc<Mask>>,
+    pub(crate) filters: Vec<Arc<filter::Filter>>,
 }
 
 impl Tree {
@@ -1615,32 +1614,32 @@ impl Tree {
     }
 
     /// Returns a list of all unique [`LinearGradient`]s in the tree.
-    pub fn linear_gradients(&self) -> &[Rc<LinearGradient>] {
+    pub fn linear_gradients(&self) -> &[Arc<LinearGradient>] {
         &self.linear_gradients
     }
 
     /// Returns a list of all unique [`RadialGradient`]s in the tree.
-    pub fn radial_gradients(&self) -> &[Rc<RadialGradient>] {
+    pub fn radial_gradients(&self) -> &[Arc<RadialGradient>] {
         &self.radial_gradients
     }
 
     /// Returns a list of all unique [`Pattern`]s in the tree.
-    pub fn patterns(&self) -> &[Rc<Pattern>] {
+    pub fn patterns(&self) -> &[Arc<Pattern>] {
         &self.patterns
     }
 
     /// Returns a list of all unique [`ClipPath`]s in the tree.
-    pub fn clip_paths(&self) -> &[Rc<ClipPath>] {
+    pub fn clip_paths(&self) -> &[Arc<ClipPath>] {
         &self.clip_paths
     }
 
     /// Returns a list of all unique [`Mask`]s in the tree.
-    pub fn masks(&self) -> &[Rc<Mask>] {
+    pub fn masks(&self) -> &[Arc<Mask>] {
         &self.masks
     }
 
     /// Returns a list of all unique [`Filter`](filter::Filter)s in the tree.
-    pub fn filters(&self) -> &[Rc<filter::Filter>] {
+    pub fn filters(&self) -> &[Arc<filter::Filter>] {
         &self.filters
     }
 
@@ -1651,7 +1650,7 @@ impl Tree {
                 if !self
                     .linear_gradients
                     .iter()
-                    .any(|other| Rc::ptr_eq(&lg, other))
+                    .any(|other| Arc::ptr_eq(&lg, other))
                 {
                     self.linear_gradients.push(lg.clone());
                 }
@@ -1660,13 +1659,13 @@ impl Tree {
                 if !self
                     .radial_gradients
                     .iter()
-                    .any(|other| Rc::ptr_eq(&rg, other))
+                    .any(|other| Arc::ptr_eq(&rg, other))
                 {
                     self.radial_gradients.push(rg.clone());
                 }
             }
             Paint::Pattern(patt) => {
-                if !self.patterns.iter().any(|other| Rc::ptr_eq(&patt, other)) {
+                if !self.patterns.iter().any(|other| Arc::ptr_eq(&patt, other)) {
                     self.patterns.push(patt.clone());
                 }
             }
@@ -1740,16 +1739,16 @@ fn loop_over_paint_servers(parent: &Group, f: &mut dyn FnMut(&Paint)) {
 }
 
 impl Group {
-    pub(crate) fn collect_clip_paths(&self, clip_paths: &mut Vec<Rc<ClipPath>>) {
+    pub(crate) fn collect_clip_paths(&self, clip_paths: &mut Vec<Arc<ClipPath>>) {
         for node in self.children() {
             if let Node::Group(ref g) = node {
                 if let Some(ref clip) = g.clip_path {
-                    if !clip_paths.iter().any(|other| Rc::ptr_eq(&clip, other)) {
+                    if !clip_paths.iter().any(|other| Arc::ptr_eq(&clip, other)) {
                         clip_paths.push(clip.clone());
                     }
 
                     if let Some(ref sub_clip) = clip.clip_path {
-                        if !clip_paths.iter().any(|other| Rc::ptr_eq(&sub_clip, other)) {
+                        if !clip_paths.iter().any(|other| Arc::ptr_eq(&sub_clip, other)) {
                             clip_paths.push(sub_clip.clone());
                         }
                     }
@@ -1764,16 +1763,16 @@ impl Group {
         }
     }
 
-    pub(crate) fn collect_masks(&self, masks: &mut Vec<Rc<Mask>>) {
+    pub(crate) fn collect_masks(&self, masks: &mut Vec<Arc<Mask>>) {
         for node in self.children() {
             if let Node::Group(ref g) = node {
                 if let Some(ref mask) = g.mask {
-                    if !masks.iter().any(|other| Rc::ptr_eq(&mask, other)) {
+                    if !masks.iter().any(|other| Arc::ptr_eq(&mask, other)) {
                         masks.push(mask.clone());
                     }
 
                     if let Some(ref sub_mask) = mask.mask {
-                        if !masks.iter().any(|other| Rc::ptr_eq(&sub_mask, other)) {
+                        if !masks.iter().any(|other| Arc::ptr_eq(&sub_mask, other)) {
                             masks.push(sub_mask.clone());
                         }
                     }
@@ -1788,11 +1787,11 @@ impl Group {
         }
     }
 
-    pub(crate) fn collect_filters(&self, filters: &mut Vec<Rc<filter::Filter>>) {
+    pub(crate) fn collect_filters(&self, filters: &mut Vec<Arc<filter::Filter>>) {
         for node in self.children() {
             if let Node::Group(ref g) = node {
                 for filter in g.filters() {
-                    if !filters.iter().any(|other| Rc::ptr_eq(&filter, other)) {
+                    if !filters.iter().any(|other| Arc::ptr_eq(&filter, other)) {
                         filters.push(filter.clone());
                     }
                 }

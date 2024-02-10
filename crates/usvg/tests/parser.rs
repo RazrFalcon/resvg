@@ -92,3 +92,9 @@ fn invalid_size_1() {
     let result = usvg::Tree::from_str(&svg, &usvg::Options::default(), &fontdb);
     assert!(result.is_err());
 }
+
+#[test]
+fn tree_is_send_and_sync() {
+    fn ensure_send_and_sync<T: Send + Sync>() {}
+    ensure_send_and_sync::<usvg::Tree>();
+}

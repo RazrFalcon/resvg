@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use kurbo::{ParamCurve, ParamCurveArclen};
 use svgtypes::{parse_font_families, FontFamily, Length, LengthUnit};
@@ -363,7 +363,7 @@ fn resolve_text_flow(node: SvgNode, state: &converter::State) -> Option<TextFlow
     let path = if !transform.is_identity() {
         let mut path_copy = path.as_ref().clone();
         path_copy = path_copy.transform(transform)?;
-        Rc::new(path_copy)
+        Arc::new(path_copy)
     } else {
         path
     };
@@ -379,7 +379,7 @@ fn resolve_text_flow(node: SvgNode, state: &converter::State) -> Option<TextFlow
     };
 
     let id = NonEmptyString::new(linked_node.element_id().to_string())?;
-    Some(TextFlow::Path(Rc::new(TextPath {
+    Some(TextFlow::Path(Arc::new(TextPath {
         id,
         start_offset,
         path,

@@ -4,8 +4,8 @@
 
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
-use std::rc::Rc;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind, TransformOrigin};
 
@@ -32,9 +32,9 @@ pub struct State<'a> {
 
 #[derive(Clone, Default)]
 pub struct Cache {
-    pub clip_paths: HashMap<String, Rc<ClipPath>>,
-    pub masks: HashMap<String, Rc<Mask>>,
-    pub filters: HashMap<String, Rc<filter::Filter>>,
+    pub clip_paths: HashMap<String, Arc<ClipPath>>,
+    pub masks: HashMap<String, Arc<Mask>>,
+    pub filters: HashMap<String, Arc<filter::Filter>>,
     pub paint: HashMap<String, Paint>,
 
     // used for ID generation
@@ -705,7 +705,7 @@ pub(crate) fn convert_group(
 
 fn convert_path(
     node: SvgNode,
-    path: Rc<tiny_skia_path::Path>,
+    path: Arc<tiny_skia_path::Path>,
     state: &State,
     cache: &mut Cache,
     parent: &mut Group,

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use svgtypes::{Length, LengthUnit};
 
@@ -207,7 +207,7 @@ fn clip_element(
 
     let mut clip_path = crate::ClipPath::empty(cache.gen_clip_path_id());
 
-    let mut path = Path::new_simple(Rc::new(tiny_skia_path::PathBuilder::from_rect(
+    let mut path = Path::new_simple(Arc::new(tiny_skia_path::PathBuilder::from_rect(
         clip_rect.to_rect(),
     )))
     .unwrap();
@@ -224,7 +224,7 @@ fn clip_element(
     Group {
         id,
         transform,
-        clip_path: Some(Rc::new(clip_path)),
+        clip_path: Some(Arc::new(clip_path)),
         ..Group::empty()
     }
 }
