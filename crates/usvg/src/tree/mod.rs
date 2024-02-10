@@ -943,7 +943,7 @@ impl Node {
     pub fn bounding_box(&self) -> Option<Rect> {
         match self {
             Node::Group(ref group) => group.bounding_box,
-            Node::Path(ref path) => path.bounding_box,
+            Node::Path(ref path) => Some(path.bounding_box),
             Node::Image(ref image) => image.bounding_box.map(|r| r.to_rect()),
             Node::Text(ref text) => text.bounding_box.map(|r| r.to_rect()),
         }
@@ -955,7 +955,7 @@ impl Node {
     pub fn abs_bounding_box(&self) -> Option<Rect> {
         match self {
             Node::Group(ref group) => group.abs_bounding_box,
-            Node::Path(ref path) => path.abs_bounding_box,
+            Node::Path(ref path) => Some(path.abs_bounding_box),
             Node::Image(ref image) => image.abs_bounding_box().map(|r| r.to_rect()),
             Node::Text(ref text) => text.abs_bounding_box.map(|r| r.to_rect()),
         }
@@ -967,7 +967,7 @@ impl Node {
     pub fn stroke_bounding_box(&self) -> Option<NonZeroRect> {
         match self {
             Node::Group(ref group) => group.stroke_bounding_box,
-            Node::Path(ref path) => path.stroke_bounding_box,
+            Node::Path(ref path) => path.stroke_bounding_box.to_non_zero_rect(),
             // Image cannot be stroked.
             Node::Image(ref image) => image.bounding_box,
             Node::Text(ref text) => text.stroke_bounding_box,
@@ -980,7 +980,7 @@ impl Node {
     pub fn abs_stroke_bounding_box(&self) -> Option<NonZeroRect> {
         match self {
             Node::Group(ref group) => group.abs_stroke_bounding_box,
-            Node::Path(ref path) => path.abs_stroke_bounding_box,
+            Node::Path(ref path) => path.abs_stroke_bounding_box.to_non_zero_rect(),
             // Image cannot be stroked.
             Node::Image(ref image) => image.abs_bounding_box(),
             Node::Text(ref text) => text.abs_stroke_bounding_box,
@@ -1326,29 +1326,69 @@ pub struct Path {
     pub(crate) rendering_mode: ShapeRendering,
     pub(crate) data: Rc<tiny_skia_path::Path>,
     pub(crate) abs_transform: Transform,
-    pub(crate) bounding_box: Option<Rect>,
-    pub(crate) abs_bounding_box: Option<Rect>,
-    pub(crate) stroke_bounding_box: Option<NonZeroRect>,
-    pub(crate) abs_stroke_bounding_box: Option<NonZeroRect>,
+    pub(crate) bounding_box: Rect,
+    pub(crate) abs_bounding_box: Rect,
+    pub(crate) stroke_bounding_box: Rect,
+    pub(crate) abs_stroke_bounding_box: Rect,
 }
 
 impl Path {
-    /// Creates a new `Path` with default values.
-    pub(crate) fn with_path(data: Rc<tiny_skia_path::Path>) -> Self {
-        Path {
-            id: String::new(),
-            visibility: Visibility::Visible,
-            fill: None,
-            stroke: None,
-            paint_order: PaintOrder::default(),
-            rendering_mode: ShapeRendering::default(),
+    pub(crate) fn new_simple(data: Rc<tiny_skia_path::Path>) -> Option<Self> {
+        Self::new(
+            String::new(),
+            Visibility::default(),
+            None,
+            None,
+            PaintOrder::default(),
+            ShapeRendering::default(),
             data,
-            abs_transform: Transform::default(),
-            bounding_box: None,
-            abs_bounding_box: None,
-            stroke_bounding_box: None,
-            abs_stroke_bounding_box: None,
+            Transform::default(),
+        )
+    }
+
+    pub(crate) fn new(
+        id: String,
+        visibility: Visibility,
+        fill: Option<Fill>,
+        stroke: Option<Stroke>,
+        paint_order: PaintOrder,
+        rendering_mode: ShapeRendering,
+        data: Rc<tiny_skia_path::Path>,
+        abs_transform: Transform,
+    ) -> Option<Self> {
+        let bounding_box = data.compute_tight_bounds()?;
+        let stroke_bounding_box =
+            Path::calculate_stroke_bbox(stroke.as_ref(), &data).unwrap_or(bounding_box);
+
+        let abs_bounding_box: Rect;
+        let abs_stroke_bounding_box: Rect;
+        if abs_transform.has_skew() {
+            // TODO: avoid re-alloc
+            let path2 = data.as_ref().clone();
+            let path2 = path2.transform(abs_transform)?;
+            abs_bounding_box = path2.compute_tight_bounds()?;
+            abs_stroke_bounding_box =
+                Path::calculate_stroke_bbox(stroke.as_ref(), &path2).unwrap_or(abs_bounding_box);
+        } else {
+            // A transform without a skew can be performed just on a bbox.
+            abs_bounding_box = bounding_box.transform(abs_transform)?;
+            abs_stroke_bounding_box = stroke_bounding_box.transform(abs_transform)?;
         }
+
+        Some(Path {
+            id,
+            visibility,
+            fill,
+            stroke,
+            paint_order,
+            rendering_mode,
+            data,
+            abs_transform,
+            bounding_box,
+            abs_bounding_box,
+            stroke_bounding_box,
+            abs_stroke_bounding_box,
+        })
     }
 
     /// Element's ID.
@@ -1413,46 +1453,32 @@ impl Path {
     /// Element's object bounding box.
     ///
     /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
-    pub fn bounding_box(&self) -> Option<Rect> {
+    pub fn bounding_box(&self) -> Rect {
         self.bounding_box
     }
 
     /// Element's bounding box in canvas coordinates.
     ///
     /// `userSpaceOnUse` in SVG terms.
-    pub fn abs_bounding_box(&self) -> Option<Rect> {
+    pub fn abs_bounding_box(&self) -> Rect {
         self.abs_bounding_box
     }
 
     /// Element's object bounding box including stroke.
     ///
-    /// Similar to `bounding_box`, but includes stroke.
-    ///
     /// Will have the same value as `bounding_box` when path has no stroke.
-    pub fn stroke_bounding_box(&self) -> Option<NonZeroRect> {
+    pub fn stroke_bounding_box(&self) -> Rect {
         self.stroke_bounding_box
     }
 
     /// Element's bounding box including stroke in canvas coordinates.
     ///
-    /// Similar to `abs_bounding_box`, but includes stroke.
-    ///
     /// Will have the same value as `abs_bounding_box` when path has no stroke.
-    pub fn abs_stroke_bounding_box(&self) -> Option<NonZeroRect> {
+    pub fn abs_stroke_bounding_box(&self) -> Rect {
         self.abs_stroke_bounding_box
     }
 
-    /// Calculates and sets path's stroke bounding box.
-    ///
-    /// This operation is expensive.
-    pub(crate) fn calculate_stroke_bounding_box(&self) -> Option<NonZeroRect> {
-        Self::calculate_stroke_bounding_box_inner(self.stroke.as_ref(), &self.data)
-    }
-
-    fn calculate_stroke_bounding_box_inner(
-        stroke: Option<&Stroke>,
-        path: &tiny_skia_path::Path,
-    ) -> Option<NonZeroRect> {
+    fn calculate_stroke_bbox(stroke: Option<&Stroke>, path: &tiny_skia_path::Path) -> Option<Rect> {
         let mut stroke = stroke?.to_tiny_skia();
         // According to the spec, dash should not be accounted during bbox calculation.
         stroke.dash = None;
@@ -1461,11 +1487,7 @@ impl Path {
 
         // Expensive, but there is not much we can do about it.
         if let Some(stroked_path) = path.stroke(&stroke, 1.0) {
-            // A stroked path cannot have zero width or height,
-            // therefore we use `NonZeroRect` here.
-            return stroked_path
-                .compute_tight_bounds()
-                .and_then(|r| r.to_non_zero_rect());
+            return stroked_path.compute_tight_bounds();
         }
 
         None
@@ -1873,37 +1895,7 @@ impl Group {
     pub(crate) fn calculate_bounding_boxes(&mut self) {
         for node in &mut self.children {
             match node {
-                Node::Path(ref mut path) => {
-                    path.bounding_box = path.data.compute_tight_bounds();
-                    path.stroke_bounding_box = path.calculate_stroke_bounding_box();
-
-                    if path.abs_transform.has_skew() {
-                        // TODO: avoid re-alloc
-                        let path2 = path.data.as_ref().clone();
-                        if let Some(path2) = path2.transform(path.abs_transform) {
-                            path.abs_bounding_box = path2.compute_tight_bounds();
-                            path.abs_stroke_bounding_box =
-                                Path::calculate_stroke_bounding_box_inner(
-                                    path.stroke.as_ref(),
-                                    &path2,
-                                );
-                        }
-                    } else {
-                        // A transform without a skew can be performed just on a bbox.
-                        path.abs_bounding_box = path
-                            .bounding_box
-                            .and_then(|r| r.transform(path.abs_transform));
-
-                        path.abs_stroke_bounding_box = path
-                            .stroke_bounding_box
-                            .and_then(|r| r.transform(path.abs_transform));
-                    }
-
-                    if path.stroke_bounding_box.is_none() {
-                        path.stroke_bounding_box =
-                            path.bounding_box.and_then(|r| r.to_non_zero_rect());
-                    }
-                }
+                Node::Path(_) => {} // already calculated
                 // TODO: should we account for `preserveAspectRatio`?
                 Node::Image(ref mut image) => image.bounding_box = Some(image.view_box.rect),
                 // Have to be handled separately to prevent multiple mutable reference to the tree.

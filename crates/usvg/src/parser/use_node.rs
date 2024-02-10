@@ -204,9 +204,10 @@ fn clip_element(
 
     let mut clip_path = crate::ClipPath::empty(cache.gen_clip_path_id());
 
-    let mut path = Path::with_path(Rc::new(tiny_skia_path::PathBuilder::from_rect(
+    let mut path = Path::new_simple(Rc::new(tiny_skia_path::PathBuilder::from_rect(
         clip_rect.to_rect(),
-    )));
+    )))
+    .unwrap();
     path.fill = Some(crate::Fill::default());
     clip_path.root.children.push(Node::Path(Box::new(path)));
 

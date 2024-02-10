@@ -23,6 +23,12 @@ This changelog also contains important changes in dependencies.
 - Split `usvg::Tree::paint_servers` into `usvg::Tree::linear_gradients`,
   `usvg::Tree::radial_gradients`, `usvg::Tree::patterns`.
   All three returns pre-collected slices now.
+- A `usvg::Path` no longer can have an invalid bbox. Paths with an invalid bbox will be
+  rejected during parsing.
+- `usvg::Path::bounding_box` and `usvg::Path::abs_bounding_box` return `Rect`
+  and not `Option<Rect>` now.
+- `usvg::Path::stroke_bounding_box` and `usvg::Path::abs_stroke_bounding_box` return `Rect`
+  and not `Option<NonZeroRect>` now.
 
 ### Removed
 - `usvg::Tree::postprocess()` and `usvg::PostProcessingSteps`. No longer needed.

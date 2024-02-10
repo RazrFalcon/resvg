@@ -517,12 +517,7 @@ fn text_to_paths(
 
             if let Some((path, span_bbox)) = convert_span(span, &mut clusters, span_ts) {
                 bbox = bbox.expand(span_bbox);
-
-                // TODO: find a way to cache it
-                if let Some(s_bbox) = path.calculate_stroke_bounding_box() {
-                    stroke_bbox = stroke_bbox.expand(s_bbox)
-                }
-
+                stroke_bbox = stroke_bbox.expand(path.stroke_bounding_box());
                 new_paths.push(path);
             }
 
@@ -672,20 +667,16 @@ fn convert_span(
 
     let bbox = bboxes.compute_tight_bounds()?.to_non_zero_rect()?;
 
-    let path = Path {
-        id: String::new(),
-        visibility: span.visibility,
+    let path = Path::new(
+        String::new(),
+        span.visibility,
         fill,
-        stroke: span.stroke.clone(),
-        paint_order: span.paint_order,
-        rendering_mode: ShapeRendering::default(),
-        data: Rc::new(path),
-        abs_transform: Transform::default(),
-        bounding_box: None,
-        abs_bounding_box: None,
-        stroke_bounding_box: None,
-        abs_stroke_bounding_box: None,
-    };
+        span.stroke.clone(),
+        span.paint_order,
+        ShapeRendering::default(),
+        Rc::new(path),
+        Transform::default(),
+    )?;
 
     Some((path, bbox))
 }
@@ -759,11 +750,16 @@ fn convert_decoration(
     let mut path_data = builder.finish()?;
     path_data = path_data.transform(transform)?;
 
-    let mut path = Path::with_path(Rc::new(path_data));
-    path.visibility = span.visibility;
-    path.fill = decoration.fill.take();
-    path.stroke = decoration.stroke.take();
-    Some(path)
+    Path::new(
+        String::new(),
+        span.visibility,
+        decoration.fill.take(),
+        decoration.stroke.take(),
+        PaintOrder::default(),
+        ShapeRendering::default(),
+        Rc::new(path_data),
+        Transform::default(),
+    )
 }
 
 /// By the SVG spec, `tspan` doesn't have a bbox and uses the parent `text` bbox.

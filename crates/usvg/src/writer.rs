@@ -558,21 +558,19 @@ fn write_text_path_paths(parent: &Group, opt: &XmlOptions, xml: &mut XmlWriter) 
         } else if let Node::Text(ref text) = node {
             for chunk in &text.chunks {
                 if let TextFlow::Path(ref text_path) = chunk.text_flow {
-                    let path = Path {
-                        id: text_path.id().to_string(),
-                        data: text_path.path.clone(),
-                        visibility: Visibility::default(),
-                        fill: None,
-                        stroke: None,
-                        rendering_mode: ShapeRendering::default(),
-                        paint_order: PaintOrder::default(),
-                        abs_transform: Transform::default(),
-                        bounding_box: None,
-                        abs_bounding_box: None,
-                        stroke_bounding_box: None,
-                        abs_stroke_bounding_box: None,
-                    };
-                    write_path(&path, false, Transform::default(), None, opt, xml);
+                    let path = Path::new(
+                        text_path.id().to_string(),
+                        Visibility::default(),
+                        None,
+                        None,
+                        PaintOrder::default(),
+                        ShapeRendering::default(),
+                        text_path.path.clone(),
+                        Transform::default(),
+                    );
+                    if let Some(ref path) = path {
+                        write_path(path, false, Transform::default(), None, opt, xml);
+                    }
                 }
             }
         }

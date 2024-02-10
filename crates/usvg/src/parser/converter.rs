@@ -751,19 +751,20 @@ fn convert_path(
         String::new()
     };
 
-    let path = Path {
+    let path = Path::new(
         id,
         visibility,
         fill,
         stroke,
         paint_order,
         rendering_mode,
-        data: path,
-        abs_transform: parent.abs_transform,
-        bounding_box: None,
-        abs_bounding_box: None,
-        stroke_bounding_box: None,
-        abs_stroke_bounding_box: None,
+        path,
+        parent.abs_transform,
+    );
+
+    let path = match path {
+        Some(v) => v,
+        None => return,
     };
 
     match raw_paint_order.order {

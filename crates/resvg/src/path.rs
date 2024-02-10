@@ -17,11 +17,7 @@ pub fn render(
         return;
     }
 
-    let mut object_bbox = match path.bounding_box() {
-        Some(v) => v,
-        None => return,
-    };
-
+    let mut object_bbox = path.bounding_box();
     if let Some(text_bbox) = text_bbox {
         object_bbox = text_bbox.to_rect();
     }
