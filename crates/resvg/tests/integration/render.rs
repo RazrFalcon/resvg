@@ -1089,6 +1089,7 @@ use crate::render;
 #[test] fn structure_image_external_svgz() { assert_eq!(render("tests/structure/image/external-svgz"), 0); }
 #[test] fn structure_image_float_size() { assert_eq!(render("tests/structure/image/float-size"), 0); }
 #[test] fn structure_image_image_with_float_size_scaling() { assert_eq!(render("tests/structure/image/image-with-float-size-scaling"), 0); }
+#[test] fn structure_image_no_height_non_square() { assert_eq!(render("tests/structure/image/no-height-non-square"), 0); }
 #[test] fn structure_image_no_height_on_svg() { assert_eq!(render("tests/structure/image/no-height-on-svg"), 0); }
 #[test] fn structure_image_no_height() { assert_eq!(render("tests/structure/image/no-height"), 0); }
 #[test] fn structure_image_no_width_and_height_on_svg() { assert_eq!(render("tests/structure/image/no-width-and-height-on-svg"), 0); }
@@ -1363,6 +1364,7 @@ use crate::render;
 #[test] fn text_dominant_baseline_text_after_edge() { assert_eq!(render("tests/text/dominant-baseline/text-after-edge"), 0); }
 #[test] fn text_dominant_baseline_text_before_edge() { assert_eq!(render("tests/text/dominant-baseline/text-before-edge"), 0); }
 #[test] fn text_dominant_baseline_use_script() { assert_eq!(render("tests/text/dominant-baseline/use-script"), 0); }
+#[test] fn text_font_font_shorthand() { assert_eq!(render("tests/text/font/font-shorthand"), 0); }
 #[test] fn text_font_simple_case() { assert_eq!(render("tests/text/font/simple-case"), 0); }
 #[test] fn text_font_family_bold_sans_serif() { assert_eq!(render("tests/text/font-family/bold-sans-serif"), 0); }
 #[test] fn text_font_family_cursive() { assert_eq!(render("tests/text/font-family/cursive"), 0); }

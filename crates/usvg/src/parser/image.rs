@@ -178,20 +178,32 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Grou
         ImageKind::SVG(ref svg) => svg.size,
     };
 
-    let rect = NonZeroRect::from_xywh(
-        node.convert_user_length(AId::X, state, Length::zero()),
-        node.convert_user_length(AId::Y, state, Length::zero()),
-        node.convert_user_length(
-            AId::Width,
-            state,
-            Length::new_number(actual_size.width() as f64),
-        ),
-        node.convert_user_length(
-            AId::Height,
-            state,
-            Length::new_number(actual_size.height() as f64),
-        ),
+    let x = node.convert_user_length(AId::X, state, Length::zero());
+    let y = node.convert_user_length(AId::Y, state, Length::zero());
+    let mut width = node.convert_user_length(
+        AId::Width,
+        state,
+        Length::new_number(actual_size.width() as f64),
     );
+    let mut height = node.convert_user_length(
+        AId::Height,
+        state,
+        Length::new_number(actual_size.height() as f64),
+    );
+
+    match (node.attribute::<Length>(AId::Width), node.attribute::<Length>(AId::Height)) {
+        (Some(_), None) => {
+            // Only width was defined, so we need to scale height accordingly.
+            height = actual_size.height() * (width / actual_size.width());
+        },
+        (None, Some(_)) => {
+            // Only height was defined, so we need to scale width accordingly.
+            width = actual_size.width() * (height / actual_size.height());
+        }
+        _ => {}
+    };
+
+    let rect = NonZeroRect::from_xywh(x, y, width, height);
     let rect = rect.log_none(|| log::warn!("Image has an invalid size. Skipped."))?;
 
     let view_box = ViewBox {
