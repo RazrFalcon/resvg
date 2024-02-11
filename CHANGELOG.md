@@ -19,7 +19,8 @@ This changelog also contains important changes in dependencies.
 - All `usvg::Tree` parsing methods require the `fontdb` argument now.
 - All `defs` children like gradients, patterns, clipPaths, masks and filters are guarantee
   to have a unique, non-empty ID.
-- `usvg::ClipPath`, `usvg::Mask`, `usvg::Filter` are always in `userSpaceOnUse` units now.
+- All `defs` children like gradients, patterns, clipPaths, masks and filters are guarantee
+  to have `userSpaceOnUse` units now. No `objectBoundingBox` units anymore.
 - `usvg::Mask` is allowed to have no children now.
 - Text nodes will not be parsed when the `text` build feature isn't enabled.
 - `usvg::Tree::clip_paths`, `usvg::Tree::masks`, `usvg::Tree::filters` returns
@@ -44,8 +45,10 @@ This changelog also contains important changes in dependencies.
 ### Removed
 - `usvg::Tree::postprocess()` and `usvg::PostProcessingSteps`. No longer needed.
 - `usvg::ClipPath::units()`, `usvg::Mask::units()`, `usvg::Mask::content_units()`,
-  `usvg::Filter::units()`, `usvg::Filter::content_units()`.
-  They are always `userSpaceOnUse` now.
+  `usvg::Filter::units()`, `usvg::Filter::content_units()`, `usvg::LinearGradient::units()`,
+  `usvg::RadialGradient::units()`, `usvg::Pattern::units()`, `usvg::Pattern::content_units()`
+  and `usvg::Paint::units()`. They are always `userSpaceOnUse` now.
+- `usvg::Units`. No longer needed.
 
 ### Fixed
 - Text bounding box is accounted during SVG size resolving.

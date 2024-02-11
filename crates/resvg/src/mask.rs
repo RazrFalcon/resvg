@@ -28,7 +28,7 @@ pub fn apply(
             transform,
         );
 
-        crate::render::render_nodes(mask.root(), ctx, transform, None, &mut mask_pixmap.as_mut());
+        crate::render::render_nodes(mask.root(), ctx, transform, &mut mask_pixmap.as_mut());
 
         mask_pixmap.apply_mask(&alpha_mask);
     }

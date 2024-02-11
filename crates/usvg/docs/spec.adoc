@@ -19,6 +19,7 @@ Here is the main differences between SVG Full and SVG Micro.
 - No unused elements.
 - No redundant groups.
 - No units.
+- No `objectBoundingBox` units.
 - No `style` attribute, except for `mix-blend-mode` and `isolation`
 - Default attributes are implicit.
 
@@ -118,7 +119,7 @@ children will be resolved.
 * `fy` = <<number-type,<number> >> +
   Guarantee to be inside the circle defined by `cx`, `cy` and `r`.
 * `r` = <<positive-number-type,<positive-number> >>
-* `gradientUnits` = `userSpaceOnUse`?
+* `gradientUnits` = `userSpaceOnUse`
 * `spreadMethod` = `reflect | repeat`?
 * `gradientTransform` = <<transform-type,<transform> >>?
 
@@ -162,10 +163,7 @@ Doesn't have a `xlink:href` attribute because all attributes and children will b
 * `height` = <<positive-number-type,<positive-number> >>
 * `viewBox` = <<viewBox-type,<viewBox> >>?
 * `preserveAspectRatio` = <<preserveAspectRatio-type,<preserveAspectRatio> >>?
-* `patternUnits` = `userSpaceOnUse`? +
-  Default: objectBoundingBox
-* `patternContentUnits` = `objectBoundingBox`? +
-  Default: userSpaceOnUse
+* `patternUnits` = `userSpaceOnUse`
 * `patternTransform` = <<transform-type,<transform> >>?
 
 [[clipPath-element]]

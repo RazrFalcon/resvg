@@ -34,10 +34,6 @@ fn draw_children(
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
-    // The actual value doesn't matter, because it will never be used.
-    // Clip path children are always filled with just a color.
-    let object_bbox = tiny_skia::Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
-
     for child in parent.children() {
         match child {
             usvg::Node::Path(ref path) => {
@@ -50,7 +46,7 @@ fn draw_children(
                     max_bbox: tiny_skia::IntRect::from_xywh(0, 0, 1, 1).unwrap(),
                 };
 
-                crate::path::fill_path(path, mode, &ctx, object_bbox, transform, pixmap);
+                crate::path::fill_path(path, mode, &ctx, transform, pixmap);
             }
             usvg::Node::Text(ref text) => {
                 draw_children(text.flattened(), mode, transform, pixmap);

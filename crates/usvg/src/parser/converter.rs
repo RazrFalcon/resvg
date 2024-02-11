@@ -305,6 +305,13 @@ pub(crate) fn convert_doc(
 
     convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
 
+    // Clear cache to make sure that all `Arc<T>` objects have a single strong reference.
+    cache.clip_paths.clear();
+    cache.masks.clear();
+    cache.filters.clear();
+    cache.paint.clear();
+
+    super::paint_server::to_user_coordinates(&mut tree.root, None, &mut cache);
     tree.collect_paint_servers();
     tree.root.collect_clip_paths(&mut tree.clip_paths);
     tree.root.collect_masks(&mut tree.masks);

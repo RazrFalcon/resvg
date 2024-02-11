@@ -901,7 +901,7 @@ fn apply_image(
                     .unwrap(),
             };
 
-            crate::render::render_nodes(node, &ctx, transform, None, &mut pixmap.as_mut());
+            crate::render::render_nodes(node, &ctx, transform, &mut pixmap.as_mut());
         }
     }
 

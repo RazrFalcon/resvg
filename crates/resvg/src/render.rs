@@ -12,11 +12,10 @@ pub fn render_nodes(
     parent: &usvg::Group,
     ctx: &Context,
     transform: tiny_skia::Transform,
-    text_bbox: Option<tiny_skia::Rect>,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
     for node in parent.children() {
-        render_node(node, ctx, transform, text_bbox, pixmap);
+        render_node(node, ctx, transform, pixmap);
     }
 }
 
@@ -24,19 +23,17 @@ pub fn render_node(
     node: &usvg::Node,
     ctx: &Context,
     transform: tiny_skia::Transform,
-    text_bbox: Option<tiny_skia::Rect>,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
     match node {
         usvg::Node::Group(ref group) => {
-            render_group(group, ctx, transform, text_bbox, pixmap);
+            render_group(group, ctx, transform, pixmap);
         }
         usvg::Node::Path(ref path) => {
             crate::path::render(
                 path,
                 tiny_skia::BlendMode::SourceOver,
                 ctx,
-                text_bbox,
                 transform,
                 pixmap,
             );
@@ -45,13 +42,7 @@ pub fn render_node(
             crate::image::render(image, transform, pixmap);
         }
         usvg::Node::Text(ref text) => {
-            render_group(
-                text.flattened(),
-                ctx,
-                transform,
-                Some(text.bounding_box()),
-                pixmap,
-            );
+            render_group(text.flattened(), ctx, transform, pixmap);
         }
     }
 }
@@ -60,13 +51,12 @@ fn render_group(
     group: &usvg::Group,
     ctx: &Context,
     transform: tiny_skia::Transform,
-    text_bbox: Option<tiny_skia::Rect>,
     pixmap: &mut tiny_skia::PixmapMut,
 ) -> Option<()> {
     let transform = transform.pre_concat(group.transform());
 
     if !group.should_isolate() {
-        render_nodes(group, ctx, transform, text_bbox, pixmap);
+        render_nodes(group, ctx, transform, pixmap);
         return Some(());
     }
 
@@ -114,7 +104,7 @@ fn render_group(
     let mut sub_pixmap = tiny_skia::Pixmap::new(ibbox.width(), ibbox.height())
         .log_none(|| log::warn!("Failed to allocate a group layer for: {:?}.", ibbox))?;
 
-    render_nodes(group, ctx, transform, text_bbox, &mut sub_pixmap.as_mut());
+    render_nodes(group, ctx, transform, &mut sub_pixmap.as_mut());
 
     if !group.filters().is_empty() {
         for filter in group.filters() {

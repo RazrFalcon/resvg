@@ -8,7 +8,7 @@ use std::sync::Arc;
 use strict_num::PositiveF32;
 use svgtypes::{Length, LengthUnit as Unit};
 
-use super::converter::{self, SvgColorExt};
+use super::converter::{self, Cache, SvgColorExt};
 use super::svgtree::{AId, EId, SvgNode};
 use super::OptionLog;
 use crate::*;
@@ -525,5 +525,239 @@ fn stops_to_color(stops: &[Stop]) -> Option<ServerOrColor> {
             color: stops[0].color,
             opacity: stops[0].opacity,
         })
+    }
+}
+
+// Convert object units to user one.
+
+pub fn to_user_coordinates(group: &mut Group, text_bbox: Option<Rect>, cache: &mut Cache) {
+    for child in &mut group.children {
+        node_to_user_coordinates(child, text_bbox, cache);
+    }
+}
+
+// When parsing clipPaths, masks and filters we already know group's bounding box.
+// But with gradients and patterns we don't, because we have to know text bounding box
+// before we even parsed it. Which is impossible.
+// Therefore our only choice is to parse gradients and patterns preserving their units
+// and then replace them with `userSpaceOnUse` after the whole tree parsing is finished.
+// So while gradients and patterns do still store their units,
+// they are not exposed in the public API and for the caller they are always `userSpaceOnUse`.
+fn node_to_user_coordinates(node: &mut Node, text_bbox: Option<Rect>, cache: &mut Cache) {
+    match node {
+        Node::Group(ref mut g) => {
+            // No need to check clip paths, because they cannot have paint servers.
+
+            if let Some(ref mut mask) = g.mask {
+                if let Some(ref mut mask) = Arc::get_mut(mask) {
+                    to_user_coordinates(&mut mask.root, None, cache);
+
+                    if let Some(ref mut sub_mask) = mask.mask {
+                        if let Some(ref mut sub_mask) = Arc::get_mut(sub_mask) {
+                            to_user_coordinates(&mut sub_mask.root, None, cache);
+                        }
+                    }
+                }
+            }
+
+            for filter in &mut g.filters {
+                if let Some(ref mut filter) = Arc::get_mut(filter) {
+                    for primitive in &mut filter.primitives {
+                        if let filter::Kind::Image(ref mut image) = primitive.kind {
+                            if let filter::ImageKind::Use(ref mut use_node) = image.data {
+                                to_user_coordinates(use_node, None, cache);
+                            }
+                        }
+                    }
+                }
+            }
+
+            to_user_coordinates(g, text_bbox, cache);
+        }
+        Node::Path(ref mut path) => {
+            // Paths inside `Text::flattened` are special and must use text's bounding box
+            // instead of their own.
+            let bbox = text_bbox.unwrap_or(path.bounding_box);
+
+            process_fill(&mut path.fill, bbox, cache);
+            process_stroke(&mut path.stroke, bbox, cache);
+        }
+        Node::Image(ref mut image) => {
+            if let ImageKind::SVG(ref mut tree) = image.kind {
+                to_user_coordinates(&mut tree.root, None, cache);
+            }
+        }
+        Node::Text(ref mut text) => {
+            // By the SVG spec, `tspan` doesn't have a bbox and uses the parent `text` bbox.
+            // Therefore we have to use text's bbox when converting tspan and flatted text
+            // paint servers.
+            let bbox = text.bounding_box;
+
+            for chunk in &mut text.chunks {
+                for span in &mut chunk.spans {
+                    process_fill(&mut span.fill, bbox, cache);
+                    process_stroke(&mut span.stroke, bbox, cache);
+                    process_text_decoration(&mut span.decoration.underline, bbox, cache);
+                    process_text_decoration(&mut span.decoration.overline, bbox, cache);
+                    process_text_decoration(&mut span.decoration.line_through, bbox, cache);
+                }
+            }
+
+            to_user_coordinates(&mut text.flattened, Some(bbox), cache);
+        }
+    }
+}
+
+fn process_fill(fill: &mut Option<Fill>, bbox: Rect, cache: &mut Cache) {
+    let mut ok = false;
+    if let Some(ref mut fill) = fill {
+        ok = process_paint(&mut fill.paint, bbox, cache);
+    }
+    if !ok {
+        *fill = None;
+    }
+}
+
+fn process_stroke(stroke: &mut Option<Stroke>, bbox: Rect, cache: &mut Cache) {
+    let mut ok = false;
+    if let Some(ref mut stroke) = stroke {
+        ok = process_paint(&mut stroke.paint, bbox, cache);
+    }
+    if !ok {
+        *stroke = None;
+    }
+}
+
+fn process_paint(paint: &mut Paint, bbox: Rect, cache: &mut Cache) -> bool {
+    if paint.units() == Units::ObjectBoundingBox
+        || paint.content_units() == Units::ObjectBoundingBox
+    {
+        if let Some(p) = paint.to_user_coordinates(bbox, cache) {
+            *paint = p;
+        } else {
+            return false;
+        }
+    }
+
+    if let Paint::Pattern(ref mut patt) = paint {
+        if let Some(ref mut patt) = Arc::get_mut(patt) {
+            to_user_coordinates(&mut patt.root, None, cache);
+        }
+    }
+
+    true
+}
+
+fn process_text_decoration(style: &mut Option<TextDecorationStyle>, bbox: Rect, cache: &mut Cache) {
+    if let Some(ref mut style) = style {
+        process_fill(&mut style.fill, bbox, cache);
+        process_stroke(&mut style.stroke, bbox, cache);
+    }
+}
+
+impl Paint {
+    fn to_user_coordinates(&self, bbox: Rect, cache: &mut Cache) -> Option<Self> {
+        let name = if matches!(self, Paint::Pattern(_)) {
+            "Pattern"
+        } else {
+            "Gradient"
+        };
+        let bbox = bbox
+            .to_non_zero_rect()
+            .log_none(|| log::warn!("{} on zero-sized shapes is not allowed.", name))?;
+
+        let paint = match self {
+            Paint::Color(_) => self.clone(), // unreachable
+            Paint::LinearGradient(ref lg) => {
+                let transform = lg.transform.post_concat(Transform::from_bbox(bbox));
+                Paint::LinearGradient(Arc::new(LinearGradient {
+                    x1: lg.x1,
+                    y1: lg.y1,
+                    x2: lg.x2,
+                    y2: lg.y2,
+                    base: BaseGradient {
+                        id: cache.gen_linear_gradient_id(),
+                        units: Units::UserSpaceOnUse,
+                        transform,
+                        spread_method: lg.spread_method,
+                        stops: lg.stops.clone(),
+                    },
+                }))
+            }
+            Paint::RadialGradient(ref rg) => {
+                let transform = rg.transform.post_concat(Transform::from_bbox(bbox));
+                Paint::RadialGradient(Arc::new(RadialGradient {
+                    cx: rg.cx,
+                    cy: rg.cy,
+                    r: rg.r,
+                    fx: rg.fx,
+                    fy: rg.fy,
+                    base: BaseGradient {
+                        id: cache.gen_radial_gradient_id(),
+                        units: Units::UserSpaceOnUse,
+                        transform,
+                        spread_method: rg.spread_method,
+                        stops: rg.stops.clone(),
+                    },
+                }))
+            }
+            Paint::Pattern(ref patt) => {
+                let rect = if patt.units == Units::ObjectBoundingBox {
+                    patt.rect.bbox_transform(bbox)
+                } else {
+                    patt.rect
+                };
+
+                let root = if patt.content_units == Units::ObjectBoundingBox
+                    && patt.view_box().is_none()
+                {
+                    // No need to shift patterns.
+                    let transform = Transform::from_scale(bbox.width(), bbox.height());
+
+                    let mut g = patt.root.clone();
+                    g.transform = transform;
+                    g.abs_transform = transform;
+
+                    let mut root = Group::empty();
+                    root.children.push(Node::Group(Box::new(g)));
+                    root.calculate_bounding_boxes();
+                    root
+                } else {
+                    patt.root.clone()
+                };
+
+                Paint::Pattern(Arc::new(Pattern {
+                    id: cache.gen_pattern_id(),
+                    units: Units::UserSpaceOnUse,
+                    content_units: Units::UserSpaceOnUse,
+                    transform: patt.transform,
+                    rect,
+                    view_box: patt.view_box,
+                    root,
+                }))
+            }
+        };
+
+        Some(paint)
+    }
+}
+
+impl Paint {
+    #[inline]
+    pub(crate) fn units(&self) -> Units {
+        match self {
+            Self::Color(_) => Units::UserSpaceOnUse,
+            Self::LinearGradient(ref lg) => lg.units,
+            Self::RadialGradient(ref rg) => rg.units,
+            Self::Pattern(ref patt) => patt.units,
+        }
+    }
+
+    #[inline]
+    pub(crate) fn content_units(&self) -> Units {
+        match self {
+            Self::Pattern(ref patt) => patt.content_units,
+            _ => Units::UserSpaceOnUse,
+        }
     }
 }

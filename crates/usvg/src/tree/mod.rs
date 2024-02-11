@@ -61,11 +61,8 @@ impl NonZeroF32 {
     }
 }
 
-// TODO: make private
-/// An element units.
-#[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub enum Units {
+pub(crate) enum Units {
     UserSpaceOnUse,
     ObjectBoundingBox,
 }
@@ -239,7 +236,7 @@ impl Default for SpreadMethod {
 #[derive(Debug)]
 pub struct BaseGradient {
     pub(crate) id: NonEmptyString,
-    pub(crate) units: Units,
+    pub(crate) units: Units, // used only during parsing
     pub(crate) transform: Transform,
     pub(crate) spread_method: SpreadMethod,
     pub(crate) stops: Vec<Stop>,
@@ -252,13 +249,6 @@ impl BaseGradient {
     /// Used only during SVG writing. `resvg` doesn't rely on this property.
     pub fn id(&self) -> &str {
         self.id.get()
-    }
-
-    /// Coordinate system units.
-    ///
-    /// `gradientUnits` in SVG.
-    pub fn units(&self) -> Units {
-        self.units
     }
 
     /// Gradient transform.
@@ -413,8 +403,8 @@ impl Stop {
 #[derive(Debug)]
 pub struct Pattern {
     pub(crate) id: NonEmptyString,
-    pub(crate) units: Units,
-    pub(crate) content_units: Units,
+    pub(crate) units: Units,         // used only during parsing
+    pub(crate) content_units: Units, // used only during parsing
     pub(crate) transform: Transform,
     pub(crate) rect: NonZeroRect,
     pub(crate) view_box: Option<ViewBox>,
@@ -428,21 +418,6 @@ impl Pattern {
     /// Used only during SVG writing. `resvg` doesn't rely on this property.
     pub fn id(&self) -> &str {
         self.id.get()
-    }
-
-    /// Coordinate system units.
-    ///
-    /// `patternUnits` in SVG.
-    pub fn units(&self) -> Units {
-        self.units
-    }
-
-    // TODO: should not be accessible when `viewBox` is present.
-    /// Content coordinate system units.
-    ///
-    /// `patternContentUnits` in SVG.
-    pub fn content_units(&self) -> Units {
-        self.content_units
     }
 
     /// Pattern transform.
@@ -727,21 +702,6 @@ pub enum Paint {
     LinearGradient(Arc<LinearGradient>),
     RadialGradient(Arc<RadialGradient>),
     Pattern(Arc<Pattern>),
-}
-
-impl Paint {
-    /// Returns paint server units.
-    ///
-    /// Returns `None` for `Color`.
-    #[inline]
-    pub fn units(&self) -> Option<Units> {
-        match self {
-            Self::Color(_) => None,
-            Self::LinearGradient(ref lg) => Some(lg.units),
-            Self::RadialGradient(ref rg) => Some(rg.units),
-            Self::Pattern(ref patt) => Some(patt.units),
-        }
-    }
 }
 
 impl PartialEq for Paint {

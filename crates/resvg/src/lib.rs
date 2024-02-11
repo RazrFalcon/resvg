@@ -55,7 +55,7 @@ pub fn render(
     let root_transform = transform.pre_concat(ts);
 
     let ctx = render::Context { max_bbox };
-    render::render_nodes(tree.root(), &ctx, root_transform, None, pixmap);
+    render::render_nodes(tree.root(), &ctx, root_transform, pixmap);
 }
 
 /// Renders a node onto the pixmap.
@@ -87,8 +87,7 @@ pub fn render_node(
     transform = transform.pre_translate(-bbox.x(), -bbox.y());
 
     let ctx = render::Context { max_bbox };
-    // TODO: what to do with `text_bbox`?
-    render::render_node(node, &ctx, transform, None, pixmap);
+    render::render_node(node, &ctx, transform, pixmap);
 
     Some(())
 }

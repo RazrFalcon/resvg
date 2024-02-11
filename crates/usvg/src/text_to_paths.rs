@@ -15,11 +15,7 @@ use unicode_script::UnicodeScript;
 
 use crate::*;
 
-pub(crate) fn convert(
-    text: &mut Text,
-    fontdb: &fontdb::Database,
-    cache: &mut crate::parser::Cache,
-) -> Option<()> {
+pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> {
     let (new_paths, bbox, stroke_bbox) = text_to_paths(text, fontdb)?;
 
     let mut group = Group {
@@ -29,7 +25,6 @@ pub(crate) fn convert(
 
     let rendering_mode = resolve_rendering_mode(text);
     for mut path in new_paths {
-        fix_obj_bounding_box(&mut path, bbox, cache);
         path.rendering_mode = rendering_mode;
         group.children.push(Node::Path(Box::new(path)));
     }
@@ -745,97 +740,6 @@ fn convert_decoration(
         Arc::new(path_data),
         Transform::default(),
     )
-}
-
-/// By the SVG spec, `tspan` doesn't have a bbox and uses the parent `text` bbox.
-/// Since we converted `text` and `tspan` to `path`, we have to update
-/// all linked paint servers (gradients and patterns) too.
-fn fix_obj_bounding_box(path: &mut Path, bbox: NonZeroRect, cache: &mut crate::parser::Cache) {
-    if let Some(ref mut fill) = path.fill {
-        if let Some(new_paint) = paint_server_to_user_space_on_use(fill.paint.clone(), bbox, cache)
-        {
-            fill.paint = new_paint;
-        }
-    }
-
-    if let Some(ref mut stroke) = path.stroke {
-        if let Some(new_paint) =
-            paint_server_to_user_space_on_use(stroke.paint.clone(), bbox, cache)
-        {
-            stroke.paint = new_paint;
-        }
-    }
-}
-
-/// Converts a selected paint server's units to `UserSpaceOnUse`.
-///
-/// Creates a deep copy of a selected paint server and returns its ID.
-///
-/// Returns `None` if a paint server already uses `UserSpaceOnUse`.
-fn paint_server_to_user_space_on_use(
-    paint: Paint,
-    bbox: NonZeroRect,
-    cache: &mut crate::parser::Cache,
-) -> Option<Paint> {
-    if paint.units() != Some(Units::ObjectBoundingBox) {
-        return None;
-    }
-
-    // TODO: is `pattern` copying safe? Maybe we should reset id's on all `pattern` children.
-    // We have to clone a paint server, in case some other element is already using it.
-
-    // Update id, transform and units.
-    let ts = Transform::from_bbox(bbox);
-    let paint = match paint {
-        Paint::Color(_) => paint,
-        Paint::LinearGradient(ref lg) => {
-            let transform = lg.transform.post_concat(ts);
-            Paint::LinearGradient(Arc::new(LinearGradient {
-                x1: lg.x1,
-                y1: lg.y1,
-                x2: lg.x2,
-                y2: lg.y2,
-                base: BaseGradient {
-                    id: cache.gen_linear_gradient_id(),
-                    units: Units::UserSpaceOnUse,
-                    transform,
-                    spread_method: lg.spread_method,
-                    stops: lg.stops.clone(),
-                },
-            }))
-        }
-        Paint::RadialGradient(ref rg) => {
-            let transform = rg.transform.post_concat(ts);
-            Paint::RadialGradient(Arc::new(RadialGradient {
-                cx: rg.cx,
-                cy: rg.cy,
-                r: rg.r,
-                fx: rg.fx,
-                fy: rg.fy,
-                base: BaseGradient {
-                    id: cache.gen_radial_gradient_id(),
-                    units: Units::UserSpaceOnUse,
-                    transform,
-                    spread_method: rg.spread_method,
-                    stops: rg.stops.clone(),
-                },
-            }))
-        }
-        Paint::Pattern(ref patt) => {
-            let transform = patt.transform.post_concat(ts);
-            Paint::Pattern(Arc::new(Pattern {
-                id: cache.gen_pattern_id(),
-                units: Units::UserSpaceOnUse,
-                content_units: patt.content_units,
-                transform,
-                rect: patt.rect,
-                view_box: patt.view_box,
-                root: patt.root.clone(),
-            }))
-        }
-    };
-
-    Some(paint)
 }
 
 /// A text decoration span.
