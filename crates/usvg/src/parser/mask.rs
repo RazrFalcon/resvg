@@ -34,13 +34,12 @@ pub(crate) fn convert(
     // Only `userSpaceOnUse` masks can be shared,
     // because `objectBoundingBox` one will be converted into user one
     // and will become node-specific.
-    if units == Units::UserSpaceOnUse && content_units == Units::UserSpaceOnUse {
+    let cacheable = units == Units::UserSpaceOnUse && content_units == Units::UserSpaceOnUse;
+    if cacheable {
         if let Some(mask) = cache.masks.get(node.element_id()) {
             return Some(mask.clone());
         }
     }
-
-    let id = NonEmptyString::new(node.element_id().to_string())?;
 
     let rect = NonZeroRect::from_xywh(
         node.convert_length(AId::X, units, state, Length::new(-10.0, Unit::Percent)),
@@ -63,15 +62,23 @@ pub(crate) fn convert(
         }
     }
 
+    let mut id = NonEmptyString::new(node.element_id().to_string())?;
+    // Generate ID only when we're parsing `objectBoundingBox` mask for the second time.
+    if !cacheable && cache.masks.contains_key(id.get()) {
+        id = cache.gen_mask_id();
+    }
+    let id_copy = id.get().to_string();
+
     if mask_all {
-        let mask = Mask {
+        let mask = Arc::new(Mask {
             id,
             rect,
             kind: MaskType::Luminance,
             mask: None,
             root: Group::empty(),
-        };
-        return Some(Arc::new(mask));
+        });
+        cache.masks.insert(id_copy, mask.clone());
+        return Some(mask);
     }
 
     // Resolve linked mask.
@@ -139,8 +146,6 @@ pub(crate) fn convert(
     mask.root.calculate_bounding_boxes();
 
     let mask = Arc::new(mask);
-    cache
-        .masks
-        .insert(node.element_id().to_string(), mask.clone());
+    cache.masks.insert(id_copy, mask.clone());
     Some(mask)
 }

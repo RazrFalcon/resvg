@@ -176,7 +176,8 @@ fn convert_url(
     // Only `userSpaceOnUse` clipPaths can be shared,
     // because `objectBoundingBox` one will be converted into user one
     // and will become node-specific.
-    if units == Units::UserSpaceOnUse && primitive_units == Units::UserSpaceOnUse {
+    let cacheable = units == Units::UserSpaceOnUse && primitive_units == Units::UserSpaceOnUse;
+    if cacheable {
         if let Some(filter) = cache.filters.get(node.element_id()) {
             return Ok(Some(filter.clone()));
         }
@@ -247,7 +248,12 @@ fn convert_url(
         return Err(());
     }
 
-    let id = NonEmptyString::new(node.element_id().to_string()).ok_or(())?;
+    let mut id = NonEmptyString::new(node.element_id().to_string()).ok_or(())?;
+    // Generate ID only when we're parsing `objectBoundingBox` filter for the second time.
+    if !cacheable && cache.filters.contains_key(id.get()) {
+        id = cache.gen_filter_id();
+    }
+    let id_copy = id.get().to_string();
 
     let filter = Arc::new(Filter {
         id,
@@ -255,9 +261,7 @@ fn convert_url(
         primitives,
     });
 
-    cache
-        .filters
-        .insert(node.element_id().to_string(), filter.clone());
+    cache.filters.insert(id_copy, filter.clone());
 
     Ok(Some(filter))
 }

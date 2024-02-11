@@ -46,6 +46,7 @@ pub struct Cache {
     #[cfg(feature = "text")]
     pattern_index: usize,
     clip_path_index: usize,
+    mask_index: usize,
     filter_index: usize,
 }
 
@@ -91,6 +92,17 @@ impl Cache {
         loop {
             self.clip_path_index += 1;
             let new_id = format!("clipPath{}", self.clip_path_index);
+            let new_hash = string_hash(&new_id);
+            if !self.all_ids.contains(&new_hash) {
+                return NonEmptyString::new(new_id).unwrap();
+            }
+        }
+    }
+
+    pub(crate) fn gen_mask_id(&mut self) -> NonEmptyString {
+        loop {
+            self.mask_index += 1;
+            let new_id = format!("mask{}", self.mask_index);
             let new_hash = string_hash(&new_id);
             if !self.all_ids.contains(&new_hash) {
                 return NonEmptyString::new(new_id).unwrap();
@@ -275,7 +287,15 @@ pub(crate) fn convert_doc(
 
     for node in svg_doc.descendants() {
         if let Some(tag) = node.tag_name() {
-            if matches!(tag, EId::Filter | EId::ClipPath) {
+            if matches!(
+                tag,
+                EId::ClipPath
+                    | EId::Filter
+                    | EId::LinearGradient
+                    | EId::Mask
+                    | EId::Pattern
+                    | EId::RadialGradient
+            ) {
                 if !node.element_id().is_empty() {
                     cache.all_ids.insert(string_hash(node.element_id()));
                 }

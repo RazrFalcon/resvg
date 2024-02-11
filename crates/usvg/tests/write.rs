@@ -96,6 +96,11 @@ fn filter_id_with_prefix() {
 }
 
 #[test]
+fn filter_with_object_units_multi_use() {
+    resave("filter-with-object-units-multi-use");
+}
+
+#[test]
 fn preserve_id_clip_path_v1() {
     resave("preserve-id-clip-path-v1");
 }
@@ -123,6 +128,16 @@ fn clip_path_with_text() {
 #[test]
 fn clip_path_with_complex_text() {
     resave("clip-path-with-complex-text");
+}
+
+#[test]
+fn clip_path_with_object_units_multi_use() {
+    resave("clip-path-with-object-units-multi-use");
+}
+
+#[test]
+fn mask_with_object_units_multi_use() {
+    resave("mask-with-object-units-multi-use");
 }
 
 #[test]

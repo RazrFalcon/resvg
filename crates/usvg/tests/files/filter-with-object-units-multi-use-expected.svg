@@ -1,0 +1,16 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <filter id="filter1" x="2" y="2" width="96" height="96" filterUnits="userSpaceOnUse">
+            <feGaussianBlur color-interpolation-filters="linearRGB" in="SourceGraphic" stdDeviation="4 4" result="result1"/>
+        </filter>
+        <filter id="filter2" x="102" y="102" width="96" height="96" filterUnits="userSpaceOnUse">
+            <feGaussianBlur color-interpolation-filters="linearRGB" in="SourceGraphic" stdDeviation="4 4" result="result1"/>
+        </filter>
+    </defs>
+    <g filter="url(#filter1)">
+        <path id="rect1" fill="#2e8b57" stroke="none" d="M 10 10 L 90 10 L 90 90 L 10 90 Z"/>
+    </g>
+    <g filter="url(#filter2)">
+        <path id="rect2" fill="#2e8b57" stroke="none" d="M 110 110 L 190 110 L 190 190 L 110 190 Z"/>
+    </g>
+</svg>

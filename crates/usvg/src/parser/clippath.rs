@@ -32,7 +32,8 @@ pub(crate) fn convert(
     // Only `userSpaceOnUse` clipPaths can be shared,
     // because `objectBoundingBox` one will be converted into user one
     // and will become node-specific.
-    if units == Units::UserSpaceOnUse {
+    let cacheable = units == Units::UserSpaceOnUse;
+    if cacheable {
         if let Some(clip) = cache.clip_paths.get(node.element_id()) {
             return Some(clip.clone());
         }
@@ -62,7 +63,12 @@ pub(crate) fn convert(
         }
     }
 
-    let id = NonEmptyString::new(node.element_id().to_string())?;
+    let mut id = NonEmptyString::new(node.element_id().to_string())?;
+    // Generate ID only when we're parsing `objectBoundingBox` clip for the second time.
+    if !cacheable && cache.clip_paths.contains_key(id.get()) {
+        id = cache.gen_clip_path_id();
+    }
+    let id_copy = id.get().to_string();
 
     let mut clip = ClipPath {
         id,
@@ -78,9 +84,7 @@ pub(crate) fn convert(
     if clip.root.has_children() {
         clip.root.calculate_bounding_boxes();
         let clip = Arc::new(clip);
-        cache
-            .clip_paths
-            .insert(node.element_id().to_string(), clip.clone());
+        cache.clip_paths.insert(id_copy, clip.clone());
         Some(clip)
     } else {
         // A clip path without children is invalid.
