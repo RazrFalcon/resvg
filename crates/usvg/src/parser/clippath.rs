@@ -7,12 +7,12 @@ use std::sync::Arc;
 
 use super::converter;
 use super::svgtree::{AId, EId, SvgNode};
-use crate::{ClipPath, Group, NonEmptyString, Rect, Transform, Units};
+use crate::{ClipPath, Group, NonEmptyString, NonZeroRect, Transform, Units};
 
 pub(crate) fn convert(
     node: SvgNode,
     state: &converter::State,
-    object_bbox: Option<Rect>,
+    object_bbox: Option<NonZeroRect>,
     cache: &mut converter::Cache,
 ) -> Option<Arc<ClipPath>> {
     // A `clip-path` attribute must reference a `clipPath` element.
@@ -39,7 +39,7 @@ pub(crate) fn convert(
     }
 
     if units == Units::ObjectBoundingBox {
-        let object_bbox = match object_bbox?.to_non_zero_rect() {
+        let object_bbox = match object_bbox {
             Some(v) => v,
             None => {
                 log::warn!("Clipping of zero-sized shapes is not allowed.");

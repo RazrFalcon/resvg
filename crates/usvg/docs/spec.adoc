@@ -208,10 +208,7 @@ Doesn't have a `xlink:href` attribute because all attributes and children will b
 * `height` = <<positive-number-type,<positive-number> >>
 * `mask-type` = `alpha`? +
   Default: luminance
-* `maskUnits` = `userSpaceOnUse`? +
-  Default: objectBoundingBox
-* `maskContentUnits` = `objectBoundingBox`? +
-  Default: userSpaceOnUse
+* `maskUnits` = `userSpaceOnUse`
 
 [[filter-element]]
 

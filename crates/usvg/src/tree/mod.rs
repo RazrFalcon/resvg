@@ -826,8 +826,6 @@ impl Default for MaskType {
 #[derive(Debug)]
 pub struct Mask {
     pub(crate) id: NonEmptyString,
-    pub(crate) units: Units,
-    pub(crate) content_units: Units,
     pub(crate) rect: NonZeroRect,
     pub(crate) kind: MaskType,
     pub(crate) mask: Option<Arc<Mask>>,
@@ -841,20 +839,6 @@ impl Mask {
     /// Used only during SVG writing. `resvg` doesn't rely on this property.
     pub fn id(&self) -> &str {
         self.id.get()
-    }
-
-    /// Coordinate system units.
-    ///
-    /// `maskUnits` in SVG.
-    pub fn units(&self) -> Units {
-        self.units
-    }
-
-    /// Content coordinate system units.
-    ///
-    /// `maskContentUnits` in SVG.
-    pub fn content_units(&self) -> Units {
-        self.content_units
     }
 
     /// Mask rectangle.
@@ -879,6 +863,8 @@ impl Mask {
     }
 
     /// Mask children.
+    ///
+    /// A mask can have no children, in which case the whole element should be masked out.
     pub fn root(&self) -> &Group {
         &self.root
     }
@@ -1796,7 +1782,7 @@ impl Group {
         }
     }
 
-    pub(crate) fn calculate_object_bbox(&mut self) -> Option<Rect> {
+    pub(crate) fn calculate_object_bbox(&mut self) -> Option<NonZeroRect> {
         let mut bbox = BBox::default();
         for child in &self.children {
             let mut c_bbox = child.bounding_box();
@@ -1809,7 +1795,7 @@ impl Group {
             bbox = bbox.expand(c_bbox);
         }
 
-        bbox.to_rect()
+        bbox.to_non_zero_rect()
     }
 
     pub(crate) fn calculate_bounding_boxes(&mut self) -> Option<()> {

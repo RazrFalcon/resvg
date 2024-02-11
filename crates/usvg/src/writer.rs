@@ -528,11 +528,10 @@ fn write_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
         if mask.kind == MaskType::Alpha {
             xml.write_svg_attribute(AId::MaskType, "alpha");
         }
-        xml.write_units(AId::MaskUnits, mask.units, Units::ObjectBoundingBox);
         xml.write_units(
-            AId::MaskContentUnits,
-            mask.content_units,
+            AId::MaskUnits,
             Units::UserSpaceOnUse,
+            Units::ObjectBoundingBox,
         );
         xml.write_rect_attrs(mask.rect);
 

@@ -626,7 +626,7 @@ pub(crate) fn convert_group(
     let mut mask = None;
     if state.parent_clip_path.is_none() {
         if let Some(link) = node.attribute::<SvgNode>(AId::Mask) {
-            mask = (super::mask::convert)(link, state, cache);
+            mask = super::mask::convert(link, state, object_bbox, cache);
             if mask.is_none() {
                 return None;
             }
