@@ -178,20 +178,45 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Grou
         ImageKind::SVG(ref svg) => svg.size,
     };
 
-    let rect = NonZeroRect::from_xywh(
-        node.convert_user_length(AId::X, state, Length::zero()),
-        node.convert_user_length(AId::Y, state, Length::zero()),
-        node.convert_user_length(
-            AId::Width,
-            state,
-            Length::new_number(actual_size.width() as f64),
-        ),
-        node.convert_user_length(
-            AId::Height,
-            state,
-            Length::new_number(actual_size.height() as f64),
-        ),
-    );
+    let x = node.convert_user_length(AId::X, state, Length::zero());
+    let y = node.convert_user_length(AId::Y, state, Length::zero());
+
+    let (width, height) = match (node.attribute::<Length>(AId::Width), node.attribute::<Length>(AId::Height)) {
+        (None, None) | (Some(_), Some(_)) => {
+            let width = node.convert_user_length(
+                AId::Width,
+                state,
+                Length::new_number(actual_size.width() as f64),
+            );
+
+            let height = node.convert_user_length(
+                AId::Height,
+                state,
+                Length::new_number(actual_size.height() as f64),
+            );
+            (width, height)
+        },
+        (Some(_), None) => {
+            let width = node.convert_user_length(
+                AId::Width,
+                state,
+                Length::new_number(actual_size.width() as f64),
+            );
+            let height = actual_size.height() * (width / actual_size.width());
+            (width, height)
+        },
+        (None, Some(_)) => {
+            let height = node.convert_user_length(
+                AId::Height,
+                state,
+                Length::new_number(actual_size.height() as f64),
+            );
+            let width = actual_size.width() * (height / actual_size.height());
+            (width, height)
+        }
+    };
+
+    let rect = NonZeroRect::from_xywh(x, y, width, height);
     let rect = rect.log_none(|| log::warn!("Image has an invalid size. Skipped."))?;
 
     let view_box = ViewBox {
