@@ -8,7 +8,7 @@ use svgtypes::{Length, LengthUnit};
 
 use super::converter;
 use super::svgtree::{AId, EId, SvgNode};
-use crate::{Group, IsValidLength, Node, NonZeroRect, Path, Size, Transform};
+use crate::{Group, IsValidLength, Node, NonZeroRect, Path, Size, Transform, ViewBox};
 
 pub(crate) fn convert(
     node: SvgNode,
@@ -316,10 +316,11 @@ fn viewbox_transform(
     }
 
     let size = Size::from_wh(w, h)?;
-    let vb = linked.parse_viewbox()?;
+    let rect = linked.parse_viewbox()?;
     let aspect = linked
         .attribute(AId::PreserveAspectRatio)
         .unwrap_or_default();
+    let view_box = ViewBox { rect, aspect };
 
-    Some(crate::utils::view_box_to_transform(vb, aspect, size))
+    Some(view_box.to_transform(size))
 }

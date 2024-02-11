@@ -196,7 +196,7 @@ fn render_pattern_pixmap(
 
     let mut transform = tiny_skia::Transform::from_scale(sx, sy);
     if let Some(vbox) = pattern.view_box() {
-        let ts = usvg::utils::view_box_to_transform(vbox.rect, vbox.aspect, rect.size());
+        let ts = vbox.to_transform(rect.size());
         transform = transform.pre_concat(ts);
     }
 

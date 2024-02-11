@@ -183,7 +183,7 @@ fn resolve(
 
         if let Some(vbox) = view_box {
             let size = Size::from_wh(r.width() * stroke_scale, r.height() * stroke_scale).unwrap();
-            let vbox_ts = crate::utils::view_box_to_transform(vbox.rect, vbox.aspect, size);
+            let vbox_ts = vbox.to_transform(size);
             let (sx, sy) = vbox_ts.get_scale();
             ts = ts.pre_scale(sx, sy);
         } else {

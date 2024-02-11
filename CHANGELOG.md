@@ -41,6 +41,7 @@ This changelog also contains important changes in dependencies.
 - All shared nodes are stored in `Arc` and not `Rc<RefCell>` now.
 - `resvg::render_node` now includes filters bounding box. Meaning that a node with a blur filter
   no longer be clipped.
+- Replace `usvg::utils::view_box_to_transform` with `usvg::ViewBox::to_transform`.
 
 ### Removed
 - `usvg::Tree::postprocess()` and `usvg::PostProcessingSteps`. No longer needed.

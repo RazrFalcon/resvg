@@ -5,7 +5,7 @@
 use strict_num::ApproxEqUlps;
 pub use tiny_skia_path::{NonZeroRect, Rect, Size, Transform};
 
-use crate::AspectRatio;
+use crate::{Align, AspectRatio};
 
 /// Approximate zero equality comparisons.
 pub trait ApproxZeroUlps: ApproxEqUlps {
@@ -53,6 +53,44 @@ pub struct ViewBox {
 
     /// Value of the `preserveAspectRatio` attribute.
     pub aspect: AspectRatio,
+}
+
+impl ViewBox {
+    /// Converts `viewBox` into `Transform`.
+    pub fn to_transform(&self, img_size: Size) -> Transform {
+        let vr = self.rect;
+
+        let sx = img_size.width() / vr.width();
+        let sy = img_size.height() / vr.height();
+
+        let (sx, sy) = if self.aspect.align == Align::None {
+            (sx, sy)
+        } else {
+            let s = if self.aspect.slice {
+                if sx < sy {
+                    sy
+                } else {
+                    sx
+                }
+            } else {
+                if sx > sy {
+                    sy
+                } else {
+                    sx
+                }
+            };
+
+            (s, s)
+        };
+
+        let x = -vr.x() * sx;
+        let y = -vr.y() * sy;
+        let w = img_size.width() - vr.width() * sx;
+        let h = img_size.height() - vr.height() * sy;
+
+        let (tx, ty) = utils::aligned_pos(self.aspect.align, x, y, w, h);
+        Transform::from_row(sx, 0.0, 0.0, sy, tx, ty)
+    }
 }
 
 /// A bounding box calculator.
@@ -142,48 +180,7 @@ impl BBox {
 
 /// Some useful utilities.
 pub mod utils {
-    use super::*;
     use crate::Align;
-
-    /// Converts `viewBox` to `Transform`.
-    pub fn view_box_to_transform(
-        view_box: NonZeroRect,
-        aspect: AspectRatio,
-        img_size: Size,
-    ) -> Transform {
-        let vr = view_box;
-
-        let sx = img_size.width() / vr.width();
-        let sy = img_size.height() / vr.height();
-
-        let (sx, sy) = if aspect.align == Align::None {
-            (sx, sy)
-        } else {
-            let s = if aspect.slice {
-                if sx < sy {
-                    sy
-                } else {
-                    sx
-                }
-            } else {
-                if sx > sy {
-                    sy
-                } else {
-                    sx
-                }
-            };
-
-            (s, s)
-        };
-
-        let x = -vr.x() * sx;
-        let y = -vr.y() * sy;
-        let w = img_size.width() - vr.width() * sx;
-        let h = img_size.height() - vr.height() * sy;
-
-        let (tx, ty) = aligned_pos(aspect.align, x, y, w, h);
-        Transform::from_row(sx, 0.0, 0.0, sy, tx, ty)
-    }
 
     /// Returns object aligned position.
     pub fn aligned_pos(align: Align, x: f32, y: f32, w: f32, h: f32) -> (f32, f32) {
