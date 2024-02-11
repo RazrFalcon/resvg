@@ -39,11 +39,8 @@ pub struct Cache {
 
     // used for ID generation
     all_ids: HashSet<u64>,
-    #[cfg(feature = "text")]
     linear_gradient_index: usize,
-    #[cfg(feature = "text")]
     radial_gradient_index: usize,
-    #[cfg(feature = "text")]
     pattern_index: usize,
     clip_path_index: usize,
     mask_index: usize,
@@ -52,7 +49,6 @@ pub struct Cache {
 
 impl Cache {
     // TODO: macros?
-    #[cfg(feature = "text")]
     pub(crate) fn gen_linear_gradient_id(&mut self) -> NonEmptyString {
         loop {
             self.linear_gradient_index += 1;
@@ -64,7 +60,6 @@ impl Cache {
         }
     }
 
-    #[cfg(feature = "text")]
     pub(crate) fn gen_radial_gradient_id(&mut self) -> NonEmptyString {
         loop {
             self.radial_gradient_index += 1;
@@ -76,7 +71,6 @@ impl Cache {
         }
     }
 
-    #[cfg(feature = "text")]
     pub(crate) fn gen_pattern_id(&mut self) -> NonEmptyString {
         loop {
             self.pattern_index += 1;

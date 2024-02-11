@@ -632,9 +632,7 @@ fn process_paint(paint: &mut Paint, bbox: Rect, cache: &mut Cache) -> bool {
     if paint.units() == Units::ObjectBoundingBox
         || paint.content_units() == Units::ObjectBoundingBox
     {
-        if let Some(p) = paint.to_user_coordinates(bbox, cache) {
-            *paint = p;
-        } else {
+        if paint.to_user_coordinates(bbox, cache).is_none() {
             return false;
         }
     }
@@ -656,7 +654,7 @@ fn process_text_decoration(style: &mut Option<TextDecorationStyle>, bbox: Rect, 
 }
 
 impl Paint {
-    fn to_user_coordinates(&self, bbox: Rect, cache: &mut Cache) -> Option<Self> {
+    fn to_user_coordinates(&mut self, bbox: Rect, cache: &mut Cache) -> Option<()> {
         let name = if matches!(self, Paint::Pattern(_)) {
             "Pattern"
         } else {
@@ -666,79 +664,110 @@ impl Paint {
             .to_non_zero_rect()
             .log_none(|| log::warn!("{} on zero-sized shapes is not allowed.", name))?;
 
-        let paint = match self {
-            Paint::Color(_) => self.clone(), // unreachable
-            Paint::LinearGradient(ref lg) => {
+        // `Arc::get_mut()` allow us to modify some paint servers in-place.
+        // This reduces the amount of cloning and preserves the original ID as well.
+        match self {
+            Paint::Color(_) => {} // unreachable
+            Paint::LinearGradient(ref mut lg) => {
                 let transform = lg.transform.post_concat(Transform::from_bbox(bbox));
-                Paint::LinearGradient(Arc::new(LinearGradient {
-                    x1: lg.x1,
-                    y1: lg.y1,
-                    x2: lg.x2,
-                    y2: lg.y2,
-                    base: BaseGradient {
-                        id: cache.gen_linear_gradient_id(),
-                        units: Units::UserSpaceOnUse,
-                        transform,
-                        spread_method: lg.spread_method,
-                        stops: lg.stops.clone(),
-                    },
-                }))
+                if let Some(ref mut lg) = Arc::get_mut(lg) {
+                    lg.base.transform = transform;
+                    lg.base.units = Units::UserSpaceOnUse;
+                } else {
+                    *lg = Arc::new(LinearGradient {
+                        x1: lg.x1,
+                        y1: lg.y1,
+                        x2: lg.x2,
+                        y2: lg.y2,
+                        base: BaseGradient {
+                            id: cache.gen_linear_gradient_id(),
+                            units: Units::UserSpaceOnUse,
+                            transform,
+                            spread_method: lg.spread_method,
+                            stops: lg.stops.clone(),
+                        },
+                    });
+                }
             }
-            Paint::RadialGradient(ref rg) => {
+            Paint::RadialGradient(ref mut rg) => {
                 let transform = rg.transform.post_concat(Transform::from_bbox(bbox));
-                Paint::RadialGradient(Arc::new(RadialGradient {
-                    cx: rg.cx,
-                    cy: rg.cy,
-                    r: rg.r,
-                    fx: rg.fx,
-                    fy: rg.fy,
-                    base: BaseGradient {
-                        id: cache.gen_radial_gradient_id(),
-                        units: Units::UserSpaceOnUse,
-                        transform,
-                        spread_method: rg.spread_method,
-                        stops: rg.stops.clone(),
-                    },
-                }))
+                if let Some(ref mut rg) = Arc::get_mut(rg) {
+                    rg.base.transform = transform;
+                    rg.base.units = Units::UserSpaceOnUse;
+                } else {
+                    *rg = Arc::new(RadialGradient {
+                        cx: rg.cx,
+                        cy: rg.cy,
+                        r: rg.r,
+                        fx: rg.fx,
+                        fy: rg.fy,
+                        base: BaseGradient {
+                            id: cache.gen_radial_gradient_id(),
+                            units: Units::UserSpaceOnUse,
+                            transform,
+                            spread_method: rg.spread_method,
+                            stops: rg.stops.clone(),
+                        },
+                    });
+                }
             }
-            Paint::Pattern(ref patt) => {
+            Paint::Pattern(ref mut patt) => {
                 let rect = if patt.units == Units::ObjectBoundingBox {
                     patt.rect.bbox_transform(bbox)
                 } else {
                     patt.rect
                 };
 
-                let root = if patt.content_units == Units::ObjectBoundingBox
-                    && patt.view_box().is_none()
-                {
-                    // No need to shift patterns.
-                    let transform = Transform::from_scale(bbox.width(), bbox.height());
+                if let Some(ref mut patt) = Arc::get_mut(patt) {
+                    patt.rect = rect;
+                    patt.units = Units::UserSpaceOnUse;
 
-                    let mut g = patt.root.clone();
-                    g.transform = transform;
-                    g.abs_transform = transform;
+                    if patt.content_units == Units::ObjectBoundingBox && patt.view_box().is_none() {
+                        // No need to shift patterns.
+                        let transform = Transform::from_scale(bbox.width(), bbox.height());
 
-                    let mut root = Group::empty();
-                    root.children.push(Node::Group(Box::new(g)));
-                    root.calculate_bounding_boxes();
-                    root
+                        let mut g = std::mem::replace(&mut patt.root, Group::empty());
+                        g.transform = transform;
+                        g.abs_transform = transform;
+
+                        patt.root.children.push(Node::Group(Box::new(g)));
+                        patt.root.calculate_bounding_boxes();
+                    }
+
+                    patt.content_units = Units::UserSpaceOnUse;
                 } else {
-                    patt.root.clone()
-                };
+                    let root = if patt.content_units == Units::ObjectBoundingBox
+                        && patt.view_box().is_none()
+                    {
+                        // No need to shift patterns.
+                        let transform = Transform::from_scale(bbox.width(), bbox.height());
 
-                Paint::Pattern(Arc::new(Pattern {
-                    id: cache.gen_pattern_id(),
-                    units: Units::UserSpaceOnUse,
-                    content_units: Units::UserSpaceOnUse,
-                    transform: patt.transform,
-                    rect,
-                    view_box: patt.view_box,
-                    root,
-                }))
+                        let mut g = patt.root.clone();
+                        g.transform = transform;
+                        g.abs_transform = transform;
+
+                        let mut root = Group::empty();
+                        root.children.push(Node::Group(Box::new(g)));
+                        root.calculate_bounding_boxes();
+                        root
+                    } else {
+                        patt.root.clone()
+                    };
+
+                    *patt = Arc::new(Pattern {
+                        id: cache.gen_pattern_id(),
+                        units: Units::UserSpaceOnUse,
+                        content_units: Units::UserSpaceOnUse,
+                        transform: patt.transform,
+                        rect,
+                        view_box: patt.view_box,
+                        root,
+                    })
+                }
             }
-        };
+        }
 
-        Some(paint)
+        Some(())
     }
 }
 
