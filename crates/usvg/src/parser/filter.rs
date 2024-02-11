@@ -13,7 +13,8 @@ use svgtypes::{Length, LengthUnit as Unit};
 
 use crate::{
     filter::{self, *},
-    ApproxZeroUlps, Color, Group, Node, NonEmptyString, NonZeroF32, NonZeroRect, Opacity, Units,
+    ApproxZeroUlps, Color, Group, Node, NonEmptyString, NonZeroF32, NonZeroRect, Opacity, Size,
+    Units,
 };
 
 use super::converter::{self, SvgColorExt};
@@ -34,6 +35,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for filter::ColorInterpolation {
 pub(crate) fn convert(
     node: SvgNode,
     state: &converter::State,
+    object_bbox: Option<NonZeroRect>,
     cache: &mut converter::Cache,
 ) -> Result<Vec<Arc<Filter>>, ()> {
     let value = match node.attribute::<&str>(AId::Filter) {
@@ -50,23 +52,31 @@ pub(crate) fn convert(
             // We're currently do not support an unlimited region, so we simply use a fairly large one.
             // This if far from ideal, but good for now.
             // TODO: Should be fixed eventually.
-            let rect = match kind {
+            let mut rect = match kind {
                 Kind::DropShadow(_) | Kind::GaussianBlur(_) => {
                     NonZeroRect::from_xywh(-0.5, -0.5, 2.0, 2.0).unwrap()
                 }
                 _ => NonZeroRect::from_xywh(-0.1, -0.1, 1.2, 1.2).unwrap(),
             };
 
+            let object_bbox = match object_bbox {
+                Some(v) => v,
+                None => {
+                    log::warn!(
+                        "Filter '{}' has an invalid region. Skipped.",
+                        node.element_id()
+                    );
+                    return;
+                }
+            };
+
+            rect = rect.bbox_transform(object_bbox);
+
             filters.push(Arc::new(Filter {
                 id: cache.gen_filter_id(),
-                units: Units::ObjectBoundingBox,
-                primitive_units: Units::UserSpaceOnUse,
                 rect,
                 primitives: vec![Primitive {
-                    x: None,
-                    y: None,
-                    width: None,
-                    height: None,
+                    rect: rect,
                     // Unlike `filter` elements, filter functions use sRGB colors by default.
                     color_interpolation: ColorInterpolation::SRGB,
                     result: "result".to_string(),
@@ -127,7 +137,7 @@ pub(crate) fn convert(
             }
             svgtypes::FilterValue::Url(url) => {
                 if let Some(link) = node.document().element_by_id(url) {
-                    if let Ok(res) = convert_url(link, state, cache) {
+                    if let Ok(res) = convert_url(link, state, object_bbox, cache) {
                         if let Some(f) = res {
                             filters.push(f);
                         }
@@ -155,14 +165,22 @@ pub(crate) fn convert(
 fn convert_url(
     node: SvgNode,
     state: &converter::State,
+    object_bbox: Option<NonZeroRect>,
     cache: &mut converter::Cache,
 ) -> Result<Option<Arc<Filter>>, ()> {
-    if let Some(filter) = cache.filters.get(node.element_id()) {
-        return Ok(Some(filter.clone()));
-    }
-
     let units = convert_units(node, AId::FilterUnits, Units::ObjectBoundingBox);
     let primitive_units = convert_units(node, AId::PrimitiveUnits, Units::UserSpaceOnUse);
+
+    // Check if this element was already converted.
+    //
+    // Only `userSpaceOnUse` clipPaths can be shared,
+    // because `objectBoundingBox` one will be converted into user one
+    // and will become node-specific.
+    if units == Units::UserSpaceOnUse && primitive_units == Units::UserSpaceOnUse {
+        if let Some(filter) = cache.filters.get(node.element_id()) {
+            return Ok(Some(filter.clone()));
+        }
+    }
 
     let rect = NonZeroRect::from_xywh(
         resolve_number(
@@ -194,7 +212,8 @@ fn convert_url(
             Length::new(120.0, Unit::Percent),
         ),
     );
-    let rect = rect
+
+    let mut rect = rect
         .log_none(|| {
             log::warn!(
                 "Filter '{}' has an invalid region. Skipped.",
@@ -203,11 +222,27 @@ fn convert_url(
         })
         .ok_or(())?;
 
+    if units == Units::ObjectBoundingBox {
+        if let Some(object_bbox) = object_bbox {
+            rect = rect.bbox_transform(object_bbox);
+        } else {
+            log::warn!("Filters on zero-sized shapes are not allowed.");
+            return Err(());
+        }
+    }
+
     let node_with_primitives = match find_filter_with_primitives(node) {
         Some(v) => v,
         None => return Err(()),
     };
-    let primitives = collect_children(&node_with_primitives, primitive_units, state, cache);
+    let primitives = collect_children(
+        &node_with_primitives,
+        primitive_units,
+        state,
+        object_bbox,
+        rect,
+        cache,
+    );
     if primitives.is_empty() {
         return Err(());
     }
@@ -216,8 +251,6 @@ fn convert_url(
 
     let filter = Arc::new(Filter {
         id,
-        units,
-        primitive_units,
         rect,
         primitives,
     });
@@ -257,6 +290,8 @@ fn collect_children(
     filter: &SvgNode,
     units: Units,
     state: &converter::State,
+    object_bbox: Option<NonZeroRect>,
+    filter_region: NonZeroRect,
     cache: &mut converter::Cache,
 ) -> Vec<Primitive> {
     let mut primitives = Vec::new();
@@ -264,6 +299,17 @@ fn collect_children(
     let mut results = FilterResults {
         names: HashSet::new(),
         idx: 1,
+    };
+
+    let scale = if units == Units::ObjectBoundingBox {
+        if let Some(object_bbox) = object_bbox {
+            object_bbox.size()
+        } else {
+            // No need to warn. Already checked.
+            return Vec::new();
+        }
+    } else {
+        Size::from_wh(1.0, 1.0).unwrap()
     };
 
     for child in filter.children() {
@@ -274,9 +320,9 @@ fn collect_children(
 
         let kind =
             match tag_name {
-                EId::FeDropShadow => convert_drop_shadow(child, &primitives),
-                EId::FeGaussianBlur => convert_gaussian_blur(child, &primitives),
-                EId::FeOffset => convert_offset(child, &primitives),
+                EId::FeDropShadow => convert_drop_shadow(child, scale, &primitives),
+                EId::FeGaussianBlur => convert_gaussian_blur(child, scale, &primitives),
+                EId::FeOffset => convert_offset(child, scale, &primitives),
                 EId::FeBlend => convert_blend(child, &primitives),
                 EId::FeFlood => convert_flood(child),
                 EId::FeComposite => convert_composite(child, &primitives),
@@ -287,8 +333,8 @@ fn collect_children(
                 EId::FeColorMatrix => convert_color_matrix(child, &primitives),
                 EId::FeConvolveMatrix => convert_convolve_matrix(child, &primitives)
                     .unwrap_or_else(create_dummy_primitive),
-                EId::FeMorphology => convert_morphology(child, &primitives),
-                EId::FeDisplacementMap => convert_displacement_map(child, &primitives),
+                EId::FeMorphology => convert_morphology(child, scale, &primitives),
+                EId::FeDisplacementMap => convert_displacement_map(child, scale, &primitives),
                 EId::FeTurbulence => convert_turbulence(child),
                 EId::FeDiffuseLighting => convert_diffuse_lighting(child, &primitives)
                     .unwrap_or_else(create_dummy_primitive),
@@ -300,8 +346,17 @@ fn collect_children(
                 }
             };
 
-        let fe = convert_primitive(child, kind, units, state, &mut results);
-        primitives.push(fe);
+        if let Some(fe) = convert_primitive(
+            child,
+            kind,
+            units,
+            state,
+            object_bbox,
+            filter_region,
+            &mut results,
+        ) {
+            primitives.push(fe);
+        }
     }
 
     // TODO: remove primitives which results are not used
@@ -314,19 +369,79 @@ fn convert_primitive(
     kind: Kind,
     units: Units,
     state: &converter::State,
+    bbox: Option<NonZeroRect>,
+    filter_region: NonZeroRect,
     results: &mut FilterResults,
-) -> Primitive {
-    Primitive {
-        x: fe.try_convert_length(AId::X, units, state),
-        y: fe.try_convert_length(AId::Y, units, state),
-        // TODO: validate and test
-        width: fe.try_convert_length(AId::Width, units, state),
-        height: fe.try_convert_length(AId::Height, units, state),
-        color_interpolation: fe
-            .find_attribute(AId::ColorInterpolationFilters)
-            .unwrap_or_default(),
+) -> Option<Primitive> {
+    let rect = resolve_primitive_region(fe, &kind, units, state, bbox, filter_region)?;
+
+    let color_interpolation = fe
+        .find_attribute(AId::ColorInterpolationFilters)
+        .unwrap_or_default();
+
+    Some(Primitive {
+        rect,
+        color_interpolation,
         result: gen_result(fe, results),
         kind,
+    })
+}
+
+// TODO: rewrite/simplify/explain/whatever
+fn resolve_primitive_region(
+    fe: SvgNode,
+    kind: &Kind,
+    units: Units,
+    state: &converter::State,
+    bbox: Option<NonZeroRect>,
+    filter_region: NonZeroRect,
+) -> Option<NonZeroRect> {
+    let x = fe.try_convert_length(AId::X, units, state);
+    let y = fe.try_convert_length(AId::Y, units, state);
+    let width = fe.try_convert_length(AId::Width, units, state);
+    let height = fe.try_convert_length(AId::Height, units, state);
+
+    let region = match kind {
+        Kind::Flood(..) | Kind::Image(..) => {
+            // `feImage` uses the object bbox.
+            if units == Units::ObjectBoundingBox {
+                let bbox = bbox?;
+
+                // TODO: wrong
+                // let ts_bbox = tiny_skia::Rect::new(ts.e, ts.f, ts.a, ts.d).unwrap();
+
+                let r = NonZeroRect::from_xywh(
+                    x.unwrap_or(0.0),
+                    y.unwrap_or(0.0),
+                    width.unwrap_or(1.0),
+                    height.unwrap_or(1.0),
+                )?;
+
+                return Some(r.bbox_transform(bbox));
+            } else {
+                filter_region
+            }
+        }
+        _ => filter_region,
+    };
+
+    // TODO: Wrong! Does not account rotate and skew.
+    if units == Units::ObjectBoundingBox {
+        let subregion_bbox = NonZeroRect::from_xywh(
+            x.unwrap_or(0.0),
+            y.unwrap_or(0.0),
+            width.unwrap_or(1.0),
+            height.unwrap_or(1.0),
+        )?;
+
+        Some(region.bbox_transform(subregion_bbox))
+    } else {
+        NonZeroRect::from_xywh(
+            x.unwrap_or(region.x()),
+            y.unwrap_or(region.y()),
+            width.unwrap_or(region.width()),
+            height.unwrap_or(region.height()),
+        )
     }
 }
 
@@ -606,7 +721,7 @@ fn convert_convolve_matrix(fe: SvgNode, primitives: &[Primitive]) -> Option<Kind
     }))
 }
 
-fn convert_displacement_map(fe: SvgNode, primitives: &[Primitive]) -> Kind {
+fn convert_displacement_map(fe: SvgNode, scale: Size, primitives: &[Primitive]) -> Kind {
     let parse_channel = |aid| match fe.attribute(aid).unwrap_or("A") {
         "R" => ColorChannel::R,
         "G" => ColorChannel::G,
@@ -614,17 +729,21 @@ fn convert_displacement_map(fe: SvgNode, primitives: &[Primitive]) -> Kind {
         _ => ColorChannel::A,
     };
 
+    // TODO: should probably split scale to scale_x and scale_y,
+    //       but resvg doesn't support displacement map anyway...
+    let scale = (scale.width() + scale.height()) / 2.0;
+
     Kind::DisplacementMap(DisplacementMap {
         input1: resolve_input(fe, AId::In, primitives),
         input2: resolve_input(fe, AId::In2, primitives),
-        scale: fe.attribute(AId::Scale).unwrap_or(0.0),
+        scale: fe.attribute(AId::Scale).unwrap_or(0.0) * scale,
         x_channel_selector: parse_channel(AId::XChannelSelector),
         y_channel_selector: parse_channel(AId::YChannelSelector),
     })
 }
 
-fn convert_drop_shadow(fe: SvgNode, primitives: &[Primitive]) -> Kind {
-    let (std_dev_x, std_dev_y) = convert_std_dev_attr(fe, "2 2");
+fn convert_drop_shadow(fe: SvgNode, scale: Size, primitives: &[Primitive]) -> Kind {
+    let (std_dev_x, std_dev_y) = convert_std_dev_attr(fe, scale, "2 2");
 
     let (color, opacity) = fe
         .attribute(AId::FloodColor)
@@ -637,8 +756,8 @@ fn convert_drop_shadow(fe: SvgNode, primitives: &[Primitive]) -> Kind {
 
     Kind::DropShadow(DropShadow {
         input: resolve_input(fe, AId::In, primitives),
-        dx: fe.attribute(AId::Dx).unwrap_or(2.0),
-        dy: fe.attribute(AId::Dy).unwrap_or(2.0),
+        dx: fe.attribute(AId::Dx).unwrap_or(2.0) * scale.width(),
+        dy: fe.attribute(AId::Dy).unwrap_or(2.0) * scale.height(),
         std_dev_x,
         std_dev_y,
         color,
@@ -662,8 +781,8 @@ fn convert_flood(fe: SvgNode) -> Kind {
     })
 }
 
-fn convert_gaussian_blur(fe: SvgNode, primitives: &[Primitive]) -> Kind {
-    let (std_dev_x, std_dev_y) = convert_std_dev_attr(fe, "0 0");
+fn convert_gaussian_blur(fe: SvgNode, scale: Size, primitives: &[Primitive]) -> Kind {
+    let (std_dev_x, std_dev_y) = convert_std_dev_attr(fe, scale, "0 0");
     Kind::GaussianBlur(GaussianBlur {
         input: resolve_input(fe, AId::In, primitives),
         std_dev_x,
@@ -671,7 +790,7 @@ fn convert_gaussian_blur(fe: SvgNode, primitives: &[Primitive]) -> Kind {
     })
 }
 
-fn convert_std_dev_attr(fe: SvgNode, default: &str) -> (PositiveF32, PositiveF32) {
+fn convert_std_dev_attr(fe: SvgNode, scale: Size, default: &str) -> (PositiveF32, PositiveF32) {
     let text = fe.attribute(AId::StdDeviation).unwrap_or(default);
     let mut parser = svgtypes::NumberListParser::from(text);
 
@@ -686,6 +805,9 @@ fn convert_std_dev_attr(fe: SvgNode, default: &str) -> (PositiveF32, PositiveF32
         (Some(n1), None, None) => (n1, n1),
         _ => (0.0, 0.0),
     };
+
+    let std_dev_x = (std_dev_x as f32) * scale.width();
+    let std_dev_y = (std_dev_y as f32) * scale.height();
 
     let std_dev_x = PositiveF32::new(std_dev_x as f32).unwrap_or(PositiveF32::ZERO);
     let std_dev_y = PositiveF32::new(std_dev_y as f32).unwrap_or(PositiveF32::ZERO);
@@ -853,14 +975,14 @@ fn convert_merge(fe: SvgNode, primitives: &[Primitive]) -> Kind {
     Kind::Merge(Merge { inputs })
 }
 
-fn convert_morphology(fe: SvgNode, primitives: &[Primitive]) -> Kind {
+fn convert_morphology(fe: SvgNode, scale: Size, primitives: &[Primitive]) -> Kind {
     let operator = match fe.attribute(AId::Operator).unwrap_or("erode") {
         "dilate" => MorphologyOperator::Dilate,
         _ => MorphologyOperator::Erode,
     };
 
-    let mut radius_x = PositiveF32::new(1.0).unwrap();
-    let mut radius_y = PositiveF32::new(1.0).unwrap();
+    let mut radius_x = PositiveF32::new(scale.width()).unwrap();
+    let mut radius_y = PositiveF32::new(scale.height()).unwrap();
     if let Some(list) = fe.attribute::<Vec<f32>>(AId::Radius) {
         let mut rx = 0.0;
         let mut ry = 0.0;
@@ -888,8 +1010,8 @@ fn convert_morphology(fe: SvgNode, primitives: &[Primitive]) -> Kind {
 
         // Both values must be positive.
         if rx.is_sign_positive() && ry.is_sign_positive() {
-            radius_x = PositiveF32::new(rx).unwrap();
-            radius_y = PositiveF32::new(ry).unwrap();
+            radius_x = PositiveF32::new(rx * scale.width()).unwrap();
+            radius_y = PositiveF32::new(ry * scale.height()).unwrap();
         }
     }
 
@@ -901,11 +1023,11 @@ fn convert_morphology(fe: SvgNode, primitives: &[Primitive]) -> Kind {
     })
 }
 
-fn convert_offset(fe: SvgNode, primitives: &[Primitive]) -> Kind {
+fn convert_offset(fe: SvgNode, scale: Size, primitives: &[Primitive]) -> Kind {
     Kind::Offset(Offset {
         input: resolve_input(fe, AId::In, primitives),
-        dx: fe.attribute(AId::Dx).unwrap_or(0.0),
-        dy: fe.attribute(AId::Dy).unwrap_or(0.0),
+        dx: fe.attribute(AId::Dx).unwrap_or(0.0) * scale.width(),
+        dy: fe.attribute(AId::Dy).unwrap_or(0.0) * scale.height(),
     })
 }
 

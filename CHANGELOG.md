@@ -19,12 +19,14 @@ This changelog also contains important changes in dependencies.
 - All `usvg::Tree` parsing methods require the `fontdb` argument now.
 - All `defs` children like gradients, patterns, clipPaths, masks and filters are guarantee
   to have a unique, non-empty ID.
-- `usvg::ClipPath` and `usvg::Mask` are always in `userSpaceOnUse` units now.
+- `usvg::ClipPath`, `usvg::Mask`, `usvg::Filter` are always in `userSpaceOnUse` units now.
 - `usvg::Mask` is allowed to have no children now.
 - Text nodes will not be parsed when the `text` build feature isn't enabled.
 - `usvg::Tree::clip_paths`, `usvg::Tree::masks`, `usvg::Tree::filters` returns
   a pre-collected slice of unique nodes now.
   It's no longer a closure and you do not have to deduplicate nodes by yourself.
+- `usvg::filter::Primitive::x`, `y`, `width` and `height` methods were replaced
+  with `usvg::filter::Primitive::rect`.
 - Split `usvg::Tree::paint_servers` into `usvg::Tree::linear_gradients`,
   `usvg::Tree::radial_gradients`, `usvg::Tree::patterns`.
   All three returns pre-collected slices now.
@@ -39,9 +41,9 @@ This changelog also contains important changes in dependencies.
 
 ### Removed
 - `usvg::Tree::postprocess()` and `usvg::PostProcessingSteps`. No longer needed.
-- `usvg::ClipPath::units()`, `usvg::Mask::units()`, `usvg::Mask::content_units()`.
+- `usvg::ClipPath::units()`, `usvg::Mask::units()`, `usvg::Mask::content_units()`,
+  `usvg::Filter::units()`, `usvg::Filter::content_units()`.
   They are always `userSpaceOnUse` now.
-
 
 ### Fixed
 - Text bounding box is accounted during SVG size resolving.

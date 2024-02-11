@@ -9,7 +9,6 @@ use svgtypes::AspectRatio;
 
 use crate::{
     BlendMode, Color, Group, ImageRendering, NonEmptyString, NonZeroF32, NonZeroRect, Opacity,
-    Units,
 };
 
 /// A filter element.
@@ -18,8 +17,6 @@ use crate::{
 #[derive(Debug)]
 pub struct Filter {
     pub(crate) id: NonEmptyString,
-    pub(crate) units: Units,
-    pub(crate) primitive_units: Units,
     pub(crate) rect: NonZeroRect,
     pub(crate) primitives: Vec<Primitive>,
 }
@@ -31,20 +28,6 @@ impl Filter {
     /// Used only during SVG writing. `resvg` doesn't rely on this property.
     pub fn id(&self) -> &str {
         self.id.get()
-    }
-
-    /// Region coordinate system units.
-    ///
-    /// `filterUnits` in the SVG.
-    pub fn units(&self) -> Units {
-        self.units
-    }
-
-    /// Content coordinate system units.
-    ///
-    /// `primitiveUnits` in the SVG.
-    pub fn primitive_units(&self) -> Units {
-        self.primitive_units
     }
 
     /// Filter region.
@@ -63,34 +46,18 @@ impl Filter {
 /// A filter primitive element.
 #[derive(Clone, Debug)]
 pub struct Primitive {
-    pub(crate) x: Option<f32>,
-    pub(crate) y: Option<f32>,
-    pub(crate) width: Option<f32>,
-    pub(crate) height: Option<f32>,
+    pub(crate) rect: NonZeroRect,
     pub(crate) color_interpolation: ColorInterpolation,
     pub(crate) result: String,
     pub(crate) kind: Kind,
 }
 
 impl Primitive {
-    /// `x` coordinate of the filter subregion.
-    pub fn x(&self) -> Option<f32> {
-        self.x
-    }
-
-    /// `y` coordinate of the filter subregion.
-    pub fn y(&self) -> Option<f32> {
-        self.y
-    }
-
-    /// The filter subregion width.
-    pub fn width(&self) -> Option<f32> {
-        self.width
-    }
-
-    /// The filter subregion height.
-    pub fn height(&self) -> Option<f32> {
-        self.height
+    /// Filter subregion.
+    ///
+    /// `x`, `y`, `width` and `height` in the SVG.
+    pub fn rect(&self) -> NonZeroRect {
+        self.rect
     }
 
     /// Color interpolation mode.

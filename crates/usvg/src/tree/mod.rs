@@ -61,6 +61,7 @@ impl NonZeroF32 {
     }
 }
 
+// TODO: make private
 /// An element units.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -1177,19 +1178,8 @@ impl Group {
     /// This function is very fast, that's why we do not store this bbox as a `Group` field.
     pub fn filters_bounding_box(&self) -> Option<NonZeroRect> {
         let mut full_region = BBox::default();
-
         for filter in &self.filters {
-            let mut region = filter.rect;
-            if filter.units == Units::ObjectBoundingBox {
-                if let Some(object_bbox) = self.bounding_box.to_non_zero_rect() {
-                    region = region.bbox_transform(object_bbox);
-                } else {
-                    // Skip filters with `objectBoundingBox` on nodes without a bbox.
-                    continue;
-                }
-            }
-
-            full_region = full_region.expand(BBox::from(region));
+            full_region = full_region.expand(filter.rect);
         }
 
         full_region.to_non_zero_rect()

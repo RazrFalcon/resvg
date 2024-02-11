@@ -7,7 +7,6 @@ use crate::render::Context;
 pub fn apply(
     mask: &usvg::Mask,
     ctx: &Context,
-    object_bbox: tiny_skia::Rect,
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::Pixmap,
 ) {
@@ -35,7 +34,7 @@ pub fn apply(
     }
 
     if let Some(mask) = mask.mask() {
-        self::apply(mask, ctx, object_bbox, transform, pixmap);
+        self::apply(mask, ctx, transform, pixmap);
     }
 
     let mask_type = match mask.kind() {

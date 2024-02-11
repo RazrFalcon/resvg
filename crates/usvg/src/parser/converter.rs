@@ -639,7 +639,7 @@ pub(crate) fn convert_group(
             if node.attribute(AId::Filter) == Some("none") {
                 // Do nothing.
             } else if node.has_attribute(AId::Filter) {
-                if let Ok(f) = super::filter::convert(node, state, cache) {
+                if let Ok(f) = super::filter::convert(node, state, object_bbox, cache) {
                     filters = f;
                 } else {
                     // A filter that not a link or a filter with a link to a non existing element.

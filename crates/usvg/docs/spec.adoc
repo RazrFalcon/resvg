@@ -228,10 +228,7 @@ Doesn't have a `xlink:href` attribute because all attributes and children will b
 * `y` = <<number-type,<number> >>
 * `width` = <<positive-number-type,<positive-number> >>
 * `height` = <<positive-number-type,<positive-number> >>
-* `filterUnits` = `userSpaceOnUse`? +
-  Default: objectBoundingBox
-* `primitiveUnits` = `objectBoundingBox`? +
-  Default: userSpaceOnUse
+* `filterUnits` = `userSpaceOnUse`
 
 [[g-element]]
 
