@@ -180,40 +180,27 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Grou
 
     let x = node.convert_user_length(AId::X, state, Length::zero());
     let y = node.convert_user_length(AId::Y, state, Length::zero());
+    let mut width = node.convert_user_length(
+        AId::Width,
+        state,
+        Length::new_number(actual_size.width() as f64),
+    );
+    let mut height = node.convert_user_length(
+        AId::Height,
+        state,
+        Length::new_number(actual_size.height() as f64),
+    );
 
-    let (width, height) = match (node.attribute::<Length>(AId::Width), node.attribute::<Length>(AId::Height)) {
-        (None, None) | (Some(_), Some(_)) => {
-            let width = node.convert_user_length(
-                AId::Width,
-                state,
-                Length::new_number(actual_size.width() as f64),
-            );
-
-            let height = node.convert_user_length(
-                AId::Height,
-                state,
-                Length::new_number(actual_size.height() as f64),
-            );
-            (width, height)
-        },
+    match (node.attribute::<Length>(AId::Width), node.attribute::<Length>(AId::Height)) {
         (Some(_), None) => {
-            let width = node.convert_user_length(
-                AId::Width,
-                state,
-                Length::new_number(actual_size.width() as f64),
-            );
-            let height = actual_size.height() * (width / actual_size.width());
-            (width, height)
+            // Only width was defined, so we need to scale height accordingly.
+            height = actual_size.height() * (width / actual_size.width());
         },
         (None, Some(_)) => {
-            let height = node.convert_user_length(
-                AId::Height,
-                state,
-                Length::new_number(actual_size.height() as f64),
-            );
-            let width = actual_size.width() * (height / actual_size.height());
-            (width, height)
+            // Only height was defined, so we need to scale width accordingly.
+            width = actual_size.width() * (height / actual_size.height());
         }
+        _ => {}
     };
 
     let rect = NonZeroRect::from_xywh(x, y, width, height);
