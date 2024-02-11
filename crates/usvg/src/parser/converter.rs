@@ -124,7 +124,13 @@ fn string_hash(s: &str) -> u64 {
 }
 
 impl<'a, 'input: 'a> SvgNode<'a, 'input> {
-    pub fn convert_length(&self, aid: AId, object_units: Units, state: &State, def: Length) -> f32 {
+    pub(crate) fn convert_length(
+        &self,
+        aid: AId,
+        object_units: Units,
+        state: &State,
+        def: Length,
+    ) -> f32 {
         units::convert_length(
             self.attribute(aid).unwrap_or(def),
             *self,
@@ -169,7 +175,12 @@ impl<'a, 'input: 'a> SvgNode<'a, 'input> {
         NonZeroPositiveF32::new(n)
     }
 
-    pub fn try_convert_length(&self, aid: AId, object_units: Units, state: &State) -> Option<f32> {
+    pub(crate) fn try_convert_length(
+        &self,
+        aid: AId,
+        object_units: Units,
+        state: &State,
+    ) -> Option<f32> {
         Some(units::convert_length(
             self.attribute(aid)?,
             *self,
