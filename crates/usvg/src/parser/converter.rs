@@ -624,6 +624,7 @@ pub(crate) fn convert_group(
         stroke_bounding_box: dummy,
         abs_stroke_bounding_box: dummy,
         layer_bounding_box: NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
+        abs_layer_bounding_box: NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
         children: Vec::new(),
     };
     collect_children(cache, &mut g);

@@ -31,9 +31,6 @@ mod render;
 /// `transform` will be used as a root transform.
 /// Can be used to position SVG inside the `pixmap`.
 ///
-/// Text nodes should be already converted into paths using
-/// [`usvg::TreeTextToPath::convert_text`].
-///
 /// The produced content is in the sRGB color space.
 pub fn render(
     tree: &usvg::Tree,
@@ -66,8 +63,7 @@ pub fn render(
 /// `transform` will be used as a root transform.
 /// Can be used to position SVG inside the `pixmap`.
 ///
-/// Text nodes should be already converted into paths using
-/// [`usvg::TreeTextToPath::convert_text`].
+/// The expected pixmap size can be retrieved from `usvg::Node::abs_layer_bounding_box()`.
 ///
 /// Returns `None` when `node` has a zero size.
 ///
@@ -77,7 +73,7 @@ pub fn render_node(
     mut transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
 ) -> Option<()> {
-    let bbox = node.abs_bounding_box().to_non_zero_rect()?;
+    let bbox = node.abs_layer_bounding_box()?;
 
     let target_size = tiny_skia::IntSize::from_wh(pixmap.width(), pixmap.height()).unwrap();
     let max_bbox = tiny_skia::IntRect::from_xywh(

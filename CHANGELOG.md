@@ -38,6 +38,8 @@ This changelog also contains important changes in dependencies.
 - `usvg::ImageHrefDataResolverFn` and `usvg::ImageHrefStringResolverFn`
   require `fontdb::Database` argument.
 - All shared nodes are stored in `Arc` and not `Rc<RefCell>` now.
+- `resvg::render_node` now includes filters bounding box. Meaning that a node with a blur filter
+  no longer be clipped.
 
 ### Removed
 - `usvg::Tree::postprocess()` and `usvg::PostProcessingSteps`. No longer needed.

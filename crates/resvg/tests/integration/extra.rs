@@ -1,4 +1,4 @@
-use crate::{render_extra, render_extra_with_scale};
+use crate::{render_extra, render_extra_with_scale, render_node};
 
 #[test]
 fn group_with_only_transform() {
@@ -66,4 +66,14 @@ fn filter_region_precision() {
 #[test]
 fn translate_outside_viewbox() {
     assert_eq!(render_extra("extra/translate-outside-viewbox"), 0);
+}
+
+#[test]
+fn render_node_filter_on_empty_group() {
+    assert_eq!(render_node("extra/filter-on-empty-group", "g1"), 0);
+}
+
+#[test]
+fn render_node_filter_with_transform_on_shape() {
+    assert_eq!(render_node("extra/filter-with-transform-on-shape", "g1"), 0);
 }

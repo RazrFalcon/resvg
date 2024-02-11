@@ -132,6 +132,51 @@ pub fn render_extra(name: &str) -> usize {
     render_extra_with_scale(name, 1.0)
 }
 
+pub fn render_node(name: &str, id: &str) -> usize {
+    let svg_path = format!("tests/{}.svg", name);
+    let png_path = format!("tests/{}.png", name);
+
+    let opt = usvg::Options::default();
+
+    let tree = {
+        let svg_data = std::fs::read(&svg_path).unwrap();
+        let db = GLOBAL_FONTDB.lock().unwrap();
+        usvg::Tree::from_data(&svg_data, &opt, &db).unwrap()
+    };
+
+    let node = tree.node_by_id(id).unwrap();
+    let size = node.abs_layer_bounding_box().unwrap().size().to_int_size();
+    let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
+    resvg::render_node(node, tiny_skia::Transform::identity(), &mut pixmap.as_mut());
+
+    // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
+
+    let mut rgba = pixmap.take();
+    demultiply_alpha(rgba.as_mut_slice().as_rgba_mut());
+
+    let expected_data = load_png(&png_path);
+    assert_eq!(expected_data.len(), rgba.len());
+
+    let mut pixels_d = 0;
+    for (a, b) in expected_data
+        .as_slice()
+        .as_rgba()
+        .iter()
+        .zip(rgba.as_rgba())
+    {
+        if is_pix_diff(*a, *b) {
+            pixels_d += 1;
+        }
+    }
+
+    // Save diff if needed.
+    // if pixels_d != 0 {
+    //     gen_diff(&name, &expected_data, rgba.as_slice()).unwrap();
+    // }
+
+    pixels_d
+}
+
 fn load_png(path: &str) -> Vec<u8> {
     let data = std::fs::read(path).unwrap();
     let mut decoder = png::Decoder::new(data.as_slice());

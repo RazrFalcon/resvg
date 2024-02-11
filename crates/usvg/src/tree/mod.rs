@@ -908,8 +908,6 @@ impl Node {
     }
 
     /// Returns node's bounding box in object coordinates, if any.
-    ///
-    /// This method is cheap since bounding boxes are already calculated.
     pub fn bounding_box(&self) -> Rect {
         match self {
             Node::Group(ref group) => group.bounding_box(),
@@ -920,8 +918,6 @@ impl Node {
     }
 
     /// Returns node's bounding box in canvas coordinates, if any.
-    ///
-    /// This method is cheap since bounding boxes are already calculated.
     pub fn abs_bounding_box(&self) -> Rect {
         match self {
             Node::Group(ref group) => group.abs_bounding_box(),
@@ -932,8 +928,6 @@ impl Node {
     }
 
     /// Returns node's bounding box, including stroke, in object coordinates, if any.
-    ///
-    /// This method is cheap since bounding boxes are already calculated.
     pub fn stroke_bounding_box(&self) -> Rect {
         match self {
             Node::Group(ref group) => group.stroke_bounding_box(),
@@ -945,8 +939,6 @@ impl Node {
     }
 
     /// Returns node's bounding box, including stroke, in canvas coordinates, if any.
-    ///
-    /// This method is cheap since bounding boxes are already calculated.
     pub fn abs_stroke_bounding_box(&self) -> Rect {
         match self {
             Node::Group(ref group) => group.abs_stroke_bounding_box(),
@@ -954,6 +946,22 @@ impl Node {
             // Image cannot be stroked.
             Node::Image(ref image) => image.abs_bounding_box(),
             Node::Text(ref text) => text.abs_stroke_bounding_box(),
+        }
+    }
+
+    /// Element's "layer" bounding box in canvas units, if any.
+    ///
+    /// For most nodes this is just `abs_bounding_box`,
+    /// but for groups this is `abs_layer_bounding_box`.
+    ///
+    /// See [`Group::layer_bounding_box`] for details.
+    pub fn abs_layer_bounding_box(&self) -> Option<NonZeroRect> {
+        match self {
+            Node::Group(ref group) => Some(group.abs_layer_bounding_box()),
+            // Hor/ver path without stroke can return None. This is expected.
+            Node::Path(ref path) => path.abs_bounding_box().to_non_zero_rect(),
+            Node::Image(ref image) => image.abs_bounding_box().to_non_zero_rect(),
+            Node::Text(ref text) => text.abs_bounding_box().to_non_zero_rect(),
         }
     }
 
@@ -1013,6 +1021,7 @@ pub struct Group {
     pub(crate) stroke_bounding_box: Rect,
     pub(crate) abs_stroke_bounding_box: Rect,
     pub(crate) layer_bounding_box: NonZeroRect,
+    pub(crate) abs_layer_bounding_box: NonZeroRect,
     pub(crate) children: Vec<Node>,
 }
 
@@ -1034,6 +1043,7 @@ impl Group {
             stroke_bounding_box: dummy,
             abs_stroke_bounding_box: dummy,
             layer_bounding_box: NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
+            abs_layer_bounding_box: NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
             children: Vec::new(),
         }
     }
@@ -1144,6 +1154,11 @@ impl Group {
     /// Unlike other bounding boxes, cannot have zero size.
     pub fn layer_bounding_box(&self) -> NonZeroRect {
         self.layer_bounding_box
+    }
+
+    /// Element's "layer" bounding box in canvas units.
+    pub fn abs_layer_bounding_box(&self) -> NonZeroRect {
+        self.abs_layer_bounding_box
     }
 
     /// Group's children.
@@ -1847,6 +1862,8 @@ impl Group {
         } else {
             self.layer_bounding_box = layer_bbox.to_non_zero_rect()?;
         }
+
+        self.abs_layer_bounding_box = self.layer_bounding_box.transform(self.abs_transform)?;
 
         Some(())
     }

@@ -624,7 +624,11 @@ fn query_all_impl(parent: &usvg::Group) -> usize {
             (v * 1000.0).round() / 1000.0
         }
 
-        let bbox = node.abs_bounding_box();
+        let bbox = node
+            .abs_layer_bounding_box()
+            .map(|r| r.to_rect())
+            .unwrap_or(node.abs_bounding_box());
+
         println!(
             "{},{},{},{},{}",
             node.id(),
@@ -652,8 +656,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
         };
 
         let bbox = node
-            .abs_bounding_box()
-            .to_non_zero_rect()
+            .abs_layer_bounding_box()
             .ok_or_else(|| "node has zero size".to_string())?;
 
         let size = args
