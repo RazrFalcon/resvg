@@ -7,7 +7,7 @@
              60 60 0 0 1 40 100 Z"/>
 
     <g id="g1" text-decoration="overline" fill="red" letter-spacing="5">
-        <text id="text1" font-family="Mplus 1p" font-size="22" writing-mode="tb" fill="black">
+        <text id="text1" font-family="'Mplus 1p'" font-size="22" writing-mode="tb" fill="black">
             <textPath id="textPath1" xlink:href="#pathForText1" startOffset="-10">
                 非常に長いテキ
             </textPath>

@@ -29,7 +29,6 @@ For the list of unsupported SVG 2 features see: [svg2-changelog.md](./svg2-chang
 - `color-profile`
 - `color-rendering`
 - `direction`
-- `font` (do not confuse with `font-family`)
 - `font-size-adjust`
 - `font-stretch`
 - `glyph-orientation-horizontal` (removed in the SVG 2)

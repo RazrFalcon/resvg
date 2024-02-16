@@ -1,7 +1,7 @@
 <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
     <defs>
         <path id="rect3" fill="#008000" stroke="none" d="M 36 36 L 156 36 L 156 156 L 36 156 Z"/>
-        <filter id="filter1" x="-0.1" y="-0.1" width="1.2" height="1.2">
+        <filter id="filter1" x="4" y="4" width="192" height="192" filterUnits="userSpaceOnUse">
             <feImage color-interpolation-filters="linearRGB" preserveAspectRatio="xMidYMid" image-rendering="optimizeQuality" xlink:href="#rect3" result="result1"/>
         </filter>
     </defs>

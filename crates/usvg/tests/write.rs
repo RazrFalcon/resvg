@@ -1,20 +1,15 @@
 use once_cell::sync::Lazy;
 
-use usvg::TreeWriting;
-use usvg_parser::TreeParsing;
-use usvg_text_layout::TreeTextToPath;
-
-static GLOBAL_FONTDB: Lazy<std::sync::Mutex<usvg_text_layout::fontdb::Database>> =
-    Lazy::new(|| {
-        let mut fontdb = usvg_text_layout::fontdb::Database::new();
-        fontdb.load_fonts_dir("../resvg/tests/fonts");
-        fontdb.set_serif_family("Noto Serif");
-        fontdb.set_sans_serif_family("Noto Sans");
-        fontdb.set_cursive_family("Yellowtail");
-        fontdb.set_fantasy_family("Sedgwick Ave Display");
-        fontdb.set_monospace_family("Noto Mono");
-        std::sync::Mutex::new(fontdb)
-    });
+static GLOBAL_FONTDB: Lazy<std::sync::Mutex<usvg::fontdb::Database>> = Lazy::new(|| {
+    let mut fontdb = usvg::fontdb::Database::new();
+    fontdb.load_fonts_dir("../resvg/tests/fonts");
+    fontdb.set_serif_family("Noto Serif");
+    fontdb.set_sans_serif_family("Noto Sans");
+    fontdb.set_cursive_family("Yellowtail");
+    fontdb.set_fantasy_family("Sedgwick Ave Display");
+    fontdb.set_monospace_family("Noto Mono");
+    std::sync::Mutex::new(fontdb)
+});
 
 fn resave(name: &str) {
     resave_impl(name, None, false);
@@ -32,16 +27,13 @@ fn resave_impl(name: &str, id_prefix: Option<String>, preserve_text: bool) {
     let input_svg = std::fs::read_to_string(format!("tests/files/{}.svg", name)).unwrap();
 
     let tree = {
-        let opt = usvg_parser::Options::default();
-        let mut tree = usvg_tree::Tree::from_str(&input_svg, &opt).unwrap();
-        if !preserve_text {
-            let fontdb = GLOBAL_FONTDB.lock().unwrap();
-            tree.convert_text(&fontdb);
-        }
-        tree
+        let fontdb = GLOBAL_FONTDB.lock().unwrap();
+        let opt = usvg::Options::default();
+        usvg::Tree::from_str(&input_svg, &opt, &fontdb).unwrap()
     };
     let mut xml_opt = usvg::XmlOptions::default();
     xml_opt.id_prefix = id_prefix;
+    xml_opt.preserve_text = preserve_text;
     xml_opt.coordinates_precision = 4; // Reduce noise and file size.
     xml_opt.transforms_precision = 4;
     let output_svg = tree.to_string(&xml_opt);
@@ -104,6 +96,11 @@ fn filter_id_with_prefix() {
 }
 
 #[test]
+fn filter_with_object_units_multi_use() {
+    resave("filter-with-object-units-multi-use");
+}
+
+#[test]
 fn preserve_id_clip_path_v1() {
     resave("preserve-id-clip-path-v1");
 }
@@ -111,6 +108,11 @@ fn preserve_id_clip_path_v1() {
 #[test]
 fn preserve_id_clip_path_v2() {
     resave("preserve-id-clip-path-v2");
+}
+
+#[test]
+fn preserve_id_for_clip_path_in_pattern() {
+    resave("preserve-id-for-clip-path-in-pattern");
 }
 
 #[test]
@@ -126,6 +128,16 @@ fn clip_path_with_text() {
 #[test]
 fn clip_path_with_complex_text() {
     resave("clip-path-with-complex-text");
+}
+
+#[test]
+fn clip_path_with_object_units_multi_use() {
+    resave("clip-path-with-object-units-multi-use");
+}
+
+#[test]
+fn mask_with_object_units_multi_use() {
+    resave("mask-with-object-units-multi-use");
 }
 
 #[test]

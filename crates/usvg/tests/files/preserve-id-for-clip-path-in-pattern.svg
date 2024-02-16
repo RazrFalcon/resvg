@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+    <clipPath id="clip1">
+        <rect x="0" y="0" width="20" height="20"/>
+    </clipPath>
+    <pattern id="pattern0" patternUnits="userSpaceOnUse" x="0" y="0" width="40" height="40">
+        <rect clip-path="url(#clip1)" fill="green" width="40" height="40"/>
+    </pattern>
+    <rect fill="url(#pattern0)" width="200" height="200"/>
+</svg>

@@ -12,11 +12,10 @@ pub fn render_nodes(
     parent: &usvg::Group,
     ctx: &Context,
     transform: tiny_skia::Transform,
-    text_bbox: Option<tiny_skia::NonZeroRect>,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
-    for node in &parent.children {
-        render_node(node, ctx, transform, text_bbox, pixmap);
+    for node in parent.children() {
+        render_node(node, ctx, transform, pixmap);
     }
 }
 
@@ -24,19 +23,17 @@ pub fn render_node(
     node: &usvg::Node,
     ctx: &Context,
     transform: tiny_skia::Transform,
-    text_bbox: Option<tiny_skia::NonZeroRect>,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
     match node {
         usvg::Node::Group(ref group) => {
-            render_group(group, ctx, transform, text_bbox, pixmap);
+            render_group(group, ctx, transform, pixmap);
         }
         usvg::Node::Path(ref path) => {
             crate::path::render(
                 path,
                 tiny_skia::BlendMode::SourceOver,
                 ctx,
-                text_bbox,
                 transform,
                 pixmap,
             );
@@ -45,11 +42,7 @@ pub fn render_node(
             crate::image::render(image, transform, pixmap);
         }
         usvg::Node::Text(ref text) => {
-            if let (Some(bbox), Some(ref flattened)) = (text.bounding_box, &text.flattened) {
-                render_group(flattened, ctx, transform, Some(bbox), pixmap);
-            } else {
-                log::warn!("Text nodes should be flattened before rendering.");
-            }
+            render_group(text.flattened(), ctx, transform, pixmap);
         }
     }
 }
@@ -58,19 +51,18 @@ fn render_group(
     group: &usvg::Group,
     ctx: &Context,
     transform: tiny_skia::Transform,
-    text_bbox: Option<tiny_skia::NonZeroRect>,
     pixmap: &mut tiny_skia::PixmapMut,
 ) -> Option<()> {
-    let transform = transform.pre_concat(group.transform);
+    let transform = transform.pre_concat(group.transform());
 
     if !group.should_isolate() {
-        render_nodes(group, ctx, transform, text_bbox, pixmap);
+        render_nodes(group, ctx, transform, pixmap);
         return Some(());
     }
 
-    let bbox = group.layer_bounding_box?.transform(transform)?;
+    let bbox = group.layer_bounding_box().transform(transform)?;
 
-    let mut ibbox = if group.filters.is_empty() {
+    let mut ibbox = if group.filters().is_empty() {
         // Convert group bbox into an integer one, expanding each side outwards by 2px
         // to make sure that anti-aliased pixels would not be clipped.
         tiny_skia::IntRect::from_xywh(
@@ -91,7 +83,7 @@ fn render_group(
 
     // Make sure our layer is not bigger than 4x the canvas size.
     // This is required to prevent huge layers.
-    if group.filters.is_empty() {
+    if group.filters().is_empty() {
         ibbox = crate::geom::fit_to_rect(ibbox, ctx.max_bbox)?;
     }
 
@@ -112,25 +104,25 @@ fn render_group(
     let mut sub_pixmap = tiny_skia::Pixmap::new(ibbox.width(), ibbox.height())
         .log_none(|| log::warn!("Failed to allocate a group layer for: {:?}.", ibbox))?;
 
-    render_nodes(group, ctx, transform, text_bbox, &mut sub_pixmap.as_mut());
+    render_nodes(group, ctx, transform, &mut sub_pixmap.as_mut());
 
-    if !group.filters.is_empty() {
-        for filter in &group.filters {
-            crate::filter::apply(group, &filter.borrow(), transform, &mut sub_pixmap);
+    if !group.filters().is_empty() {
+        for filter in group.filters() {
+            crate::filter::apply(filter, transform, &mut sub_pixmap);
         }
     }
 
-    if let (Some(ref clip_path), Some(object_bbox)) = (&group.clip_path, group.bounding_box) {
-        crate::clip::apply(&clip_path.borrow(), object_bbox, transform, &mut sub_pixmap);
+    if let Some(clip_path) = group.clip_path() {
+        crate::clip::apply(clip_path, transform, &mut sub_pixmap);
     }
 
-    if let (Some(ref mask), Some(object_bbox)) = (&group.mask, group.bounding_box) {
-        crate::mask::apply(&mask.borrow(), ctx, object_bbox, transform, &mut sub_pixmap);
+    if let Some(mask) = group.mask() {
+        crate::mask::apply(mask, ctx, transform, &mut sub_pixmap);
     }
 
     let paint = tiny_skia::PixmapPaint {
-        opacity: group.opacity.get(),
-        blend_mode: convert_blend_mode(group.blend_mode),
+        opacity: group.opacity().get(),
+        blend_mode: convert_blend_mode(group.blend_mode()),
         quality: tiny_skia::FilterQuality::Nearest,
     };
 

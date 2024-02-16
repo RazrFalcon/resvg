@@ -8,6 +8,81 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
+- `usvg::Tree` is `Send + Sync` compatible now.
+- `usvg::XmlOptions::preserve_text` to control how `usvg` generates an SVG.
+- `usvg::Image::abs_bounding_box`
+
+### Changed
+- All types in `usvg` are immutable now. Meaning that `usvg::Tree` cannot be modified
+  after creation anymore.
+- All struct fields in `usvg` are private now. Use getters instead.
+- All `usvg::Tree` parsing methods require the `fontdb` argument now.
+- All `defs` children like gradients, patterns, clipPaths, masks and filters are guarantee
+  to have a unique, non-empty ID.
+- All `defs` children like gradients, patterns, clipPaths, masks and filters are guarantee
+  to have `userSpaceOnUse` units now. No `objectBoundingBox` units anymore.
+- `usvg::Mask` is allowed to have no children now.
+- Text nodes will not be parsed when the `text` build feature isn't enabled.
+- `usvg::Tree::clip_paths`, `usvg::Tree::masks`, `usvg::Tree::filters` returns
+  a pre-collected slice of unique nodes now.
+  It's no longer a closure and you do not have to deduplicate nodes by yourself.
+- `usvg::filter::Primitive::x`, `y`, `width` and `height` methods were replaced
+  with `usvg::filter::Primitive::rect`.
+- Split `usvg::Tree::paint_servers` into `usvg::Tree::linear_gradients`,
+  `usvg::Tree::radial_gradients`, `usvg::Tree::patterns`.
+  All three returns pre-collected slices now.
+- A `usvg::Path` no longer can have an invalid bbox. Paths with an invalid bbox will be
+  rejected during parsing.
+- All `usvg` methods that return bounding boxes return non-optional `Rect` now.
+  No `NonZeroRect` as well.
+- `usvg::Text::flattened` returns `&Group` and not `Option<&Group>` now.
+- `usvg::ImageHrefDataResolverFn` and `usvg::ImageHrefStringResolverFn`
+  require `fontdb::Database` argument.
+- All shared nodes are stored in `Arc` and not `Rc<RefCell>` now.
+- `resvg::render_node` now includes filters bounding box. Meaning that a node with a blur filter
+  no longer be clipped.
+- Replace `usvg::utils::view_box_to_transform` with `usvg::ViewBox::to_transform`.
+
+### Removed
+- `usvg::Tree::postprocess()` and `usvg::PostProcessingSteps`. No longer needed.
+- `usvg::ClipPath::units()`, `usvg::Mask::units()`, `usvg::Mask::content_units()`,
+  `usvg::Filter::units()`, `usvg::Filter::content_units()`, `usvg::LinearGradient::units()`,
+  `usvg::RadialGradient::units()`, `usvg::Pattern::units()`, `usvg::Pattern::content_units()`
+  and `usvg::Paint::units()`. They are always `userSpaceOnUse` now.
+- `usvg::Units`. No longer needed.
+
+### Fixed
+- Text bounding box is accounted during SVG size resolving.
+  Previously, only paths and images were included.
+- Font selection when an italic font isn't explicitly marked as one.
+
+## [0.39.0] - 2024-02-06
+### Added
+- `font` shorthand parsing.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
+- `usvg::Group::abs_bounding_box`
+- `usvg::Group::abs_stroke_bounding_box`
+- `usvg::Path::abs_bounding_box`
+- `usvg::Path::abs_stroke_bounding_box`
+- `usvg::Text::abs_bounding_box`
+- `usvg::Text::abs_stroke_bounding_box`
+
+### Changed
+- All `usvg-*` crates merged into one. There is just the `usvg` crate now, as before.
+
+### Removed
+- `usvg::Group::abs_bounding_box()` method. It's a field now.
+- `usvg::Group::abs_filters_bounding_box()`
+- `usvg::TreeParsing`, `usvg::TreePostProc` and `usvg::TreeWriting` traits.
+  They are no longer needed.
+
+### Fixed
+- `font-family` parsing.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
+- Absolute bounding box calculation for paths.
+
+## [0.38.0] - 2024-01-21
+### Added
 - Each `usvg::Node` stores its absolute transform now.
   `Node::abs_transform()` executes in constant time now.
 - `usvg::Tree::calculate_bounding_boxes` to calculate all bounding boxes beforehand.
@@ -18,8 +93,9 @@ This changelog also contains important changes in dependencies.
 - `usvg::Node::abs_stroke_bounding_box` which returns a precalculated node's bounding box,
   including stroke, in canvas coordinates.
 - (c-api) `resvg_get_node_stroke_bbox`
-- `usvg::Node::filters_bounding_box`.
-- `usvg::Node::abs_filters_bounding_box`.
+- `usvg::Node::filters_bounding_box`
+- `usvg::Node::abs_filters_bounding_box`
+- `usvg::Tree::postprocess`
 
 ### Changed
 - `resvg` renders `usvg::Tree` directly again. `resvg::Tree` is gone.
@@ -38,7 +114,15 @@ This changelog also contains important changes in dependencies.
 - `resvg::Tree`. No longer needed. `resvg` can render `usvg::Tree` directly once again.
 - `rctree::Node` methods. The `Node` API is completely different now.
 - `usvg::NodeExt`. No longer needed.
-- `usvg::Node::calculate_bbox`. Use `usvg::Node::abs_bounding_box`.
+- `usvg::Node::calculate_bbox`. Use `usvg::Node::abs_bounding_box` instead.
+- `usvg::Tree::convert_text`. Use `usvg::Tree::postprocess` instead.
+- `usvg::TreeTextToPath` trait. No longer needed.
+
+### Fixed
+- Mark `mask-type` as a presentation attribute.
+- Do not show needless warnings when parsing some attributes.
+- `feImage` rendering with a non-default position.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
 
 ## [0.37.0] - 2023-12-16
 ### Added
@@ -1028,7 +1112,9 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.37.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.39.0...HEAD
+[0.39.0]: https://github.com/RazrFalcon/resvg/compare/v0.38.0...v0.39.0
+[0.38.0]: https://github.com/RazrFalcon/resvg/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/RazrFalcon/resvg/compare/v0.36.0...v0.37.0
 [0.36.0]: https://github.com/RazrFalcon/resvg/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/RazrFalcon/resvg/compare/v0.34.1...v0.35.0

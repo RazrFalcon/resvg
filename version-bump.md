@@ -1,9 +1,6 @@
 - .github/chart.svg
 - .github/chart-svg2.svg
 - CHANGELOG.md
-- crates/usvg-tree/Cargo.toml
-- crates/usvg-parser/Cargo.toml
-- crates/usvg-text-layout/Cargo.toml
 - crates/usvg/Cargo.toml
 - crates/resvg/Cargo.toml
 - crates/c-api/Cargo.toml

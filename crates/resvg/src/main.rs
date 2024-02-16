@@ -6,7 +6,7 @@
 
 use std::path;
 
-use usvg::{fontdb, TreeParsing, TreeTextToPath};
+use usvg::fontdb;
 
 fn main() {
     if let Err(e) = process() {
@@ -80,13 +80,14 @@ fn process() -> Result<(), String> {
             .map_err(|e| e.to_string())
     })?;
 
-    let mut tree = timed(args.perf, "SVG Parsing", || {
-        usvg::Tree::from_xmltree(&xml_tree, &args.usvg).map_err(|e| e.to_string())
-    })?;
-
     // fontdb initialization is pretty expensive, so perform it only when needed.
-    if tree.has_text_nodes() {
-        let fontdb = timed(args.perf, "FontDB", || load_fonts(&mut args));
+    let has_text_nodes = xml_tree
+        .descendants()
+        .any(|n| n.has_tag_name(("http://www.w3.org/2000/svg", "text")));
+
+    let mut fontdb = fontdb::Database::new();
+    if has_text_nodes {
+        timed(args.perf, "FontDB", || load_fonts(&mut args, &mut fontdb));
         if args.list_fonts {
             for face in fontdb.faces() {
                 if let fontdb::Source::File(ref path) = &face.source {
@@ -108,11 +109,11 @@ fn process() -> Result<(), String> {
                 }
             }
         }
-
-        timed(args.perf, "Text Conversion", || tree.convert_text(&fontdb));
     }
 
-    tree.calculate_bounding_boxes();
+    let tree = timed(args.perf, "SVG Parsing", || {
+        usvg::Tree::from_xmltree(&xml_tree, &args.usvg, &fontdb).map_err(|e| e.to_string())
+    })?;
 
     if args.query_all {
         return query_all(&tree);
@@ -572,8 +573,7 @@ fn parse_args() -> Result<Args, String> {
     })
 }
 
-fn load_fonts(args: &mut Args) -> fontdb::Database {
-    let mut fontdb = fontdb::Database::new();
+fn load_fonts(args: &mut Args, fontdb: &mut fontdb::Database) {
     if !args.skip_system_fonts {
         fontdb.load_system_fonts();
     }
@@ -596,12 +596,10 @@ fn load_fonts(args: &mut Args) -> fontdb::Database {
     fontdb.set_cursive_family(take_or(args.cursive_family.take(), "Comic Sans MS"));
     fontdb.set_fantasy_family(take_or(args.fantasy_family.take(), "Impact"));
     fontdb.set_monospace_family(take_or(args.monospace_family.take(), "Courier New"));
-
-    fontdb
 }
 
 fn query_all(tree: &usvg::Tree) -> Result<(), String> {
-    let count = query_all_impl(&tree.root);
+    let count = query_all_impl(tree.root());
 
     if count == 0 {
         return Err("the file has no valid ID's".to_string());
@@ -612,7 +610,7 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
 
 fn query_all_impl(parent: &usvg::Group) -> usize {
     let mut count = 0;
-    for node in &parent.children {
+    for node in parent.children() {
         if node.id().is_empty() {
             if let usvg::Node::Group(ref group) = node {
                 count += query_all_impl(group);
@@ -626,16 +624,19 @@ fn query_all_impl(parent: &usvg::Group) -> usize {
             (v * 1000.0).round() / 1000.0
         }
 
-        if let Some(bbox) = node.abs_bounding_box() {
-            println!(
-                "{},{},{},{},{}",
-                node.id(),
-                round_len(bbox.x()),
-                round_len(bbox.y()),
-                round_len(bbox.width()),
-                round_len(bbox.height())
-            );
-        }
+        let bbox = node
+            .abs_layer_bounding_box()
+            .map(|r| r.to_rect())
+            .unwrap_or(node.abs_bounding_box());
+
+        println!(
+            "{},{},{},{},{}",
+            node.id(),
+            round_len(bbox.x()),
+            round_len(bbox.y()),
+            round_len(bbox.width()),
+            round_len(bbox.height())
+        );
 
         if let usvg::Node::Group(ref group) = node {
             count += query_all_impl(group);
@@ -655,8 +656,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
         };
 
         let bbox = node
-            .abs_bounding_box()
-            .and_then(|r| r.to_non_zero_rect())
+            .abs_layer_bounding_box()
             .ok_or_else(|| "node has zero size".to_string())?;
 
         let size = args
@@ -673,7 +673,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
             }
         }
 
-        let ts = args.fit_to.fit_to_transform(tree.size.to_int_size());
+        let ts = args.fit_to.fit_to_transform(tree.size().to_int_size());
 
         resvg::render_node(node, ts, &mut pixmap.as_mut());
 
@@ -682,7 +682,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
 
             let size = args
                 .fit_to
-                .fit_to_size(tree.size.to_int_size())
+                .fit_to_size(tree.size().to_int_size())
                 .ok_or_else(|| "target size is zero".to_string())?;
 
             // Unwrap is safe, because `size` is already valid.
@@ -707,7 +707,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
     } else {
         let size = args
             .fit_to
-            .fit_to_size(tree.size.to_int_size())
+            .fit_to_size(tree.size().to_int_size())
             .ok_or_else(|| "target size is zero".to_string())?;
 
         // Unwrap is safe, because `size` is already valid.
@@ -717,7 +717,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
             pixmap.fill(svg_to_skia_color(background));
         }
 
-        let ts = args.fit_to.fit_to_transform(tree.size.to_int_size());
+        let ts = args.fit_to.fit_to_transform(tree.size().to_int_size());
 
         resvg::render(tree, ts, &mut pixmap.as_mut());
 
@@ -741,7 +741,7 @@ fn trim_pixmap(
     transform: tiny_skia::Transform,
     pixmap: &tiny_skia::Pixmap,
 ) -> Option<tiny_skia::Pixmap> {
-    let content_area = tree.root.layer_bounding_box?;
+    let content_area = tree.root().layer_bounding_box();
 
     let limit = tiny_skia::IntRect::from_xywh(0, 0, pixmap.width(), pixmap.height()).unwrap();
 

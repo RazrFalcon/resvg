@@ -52,23 +52,18 @@ and can focus just on the rendering part.
 #![warn(missing_debug_implementations)]
 #![warn(missing_copy_implementations)]
 
+mod parser;
+mod tree;
 mod writer;
 
-pub use usvg_parser::*;
+pub use parser::*;
+pub use tree::*;
+
+pub use roxmltree;
+
 #[cfg(feature = "text")]
-pub use usvg_text_layout::*;
-pub use usvg_tree::*;
+mod text_to_paths;
+#[cfg(feature = "text")]
+pub use fontdb;
 
 pub use writer::XmlOptions;
-
-/// A trait to write `usvg::Tree` back to SVG.
-pub trait TreeWriting {
-    /// Writes `usvg::Tree` back to SVG.
-    fn to_string(&self, opt: &XmlOptions) -> String;
-}
-
-impl TreeWriting for usvg_tree::Tree {
-    fn to_string(&self, opt: &XmlOptions) -> String {
-        writer::convert(self, opt)
-    }
-}

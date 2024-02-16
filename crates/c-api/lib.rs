@@ -13,9 +13,9 @@ use std::os::raw::c_char;
 use std::slice;
 
 use resvg::tiny_skia;
-use resvg::usvg::{self, TreeParsing};
+use resvg::usvg;
 #[cfg(feature = "text")]
-use resvg::usvg::{fontdb, TreeTextToPath};
+use resvg::usvg::fontdb;
 
 /// @brief List of possible errors.
 #[repr(C)]
@@ -526,18 +526,17 @@ pub extern "C" fn resvg_parse_tree_from_file(
         Err(_) => return resvg_error::FILE_OPEN_FAILED as i32,
     };
 
-    #[allow(unused_mut)]
-    let mut utree = match usvg::Tree::from_data(&file_data, &raw_opt.options) {
+    let utree = usvg::Tree::from_data(
+        &file_data,
+        &raw_opt.options,
+        #[cfg(feature = "text")]
+        &raw_opt.fontdb,
+    );
+
+    let utree = match utree {
         Ok(tree) => tree,
         Err(e) => return convert_error(e) as i32,
     };
-
-    #[cfg(feature = "text")]
-    {
-        utree.convert_text(&raw_opt.fontdb);
-    }
-
-    utree.calculate_bounding_boxes();
 
     let tree_box = Box::new(resvg_render_tree(utree));
     unsafe {
@@ -570,18 +569,17 @@ pub extern "C" fn resvg_parse_tree_from_data(
         &*opt
     };
 
-    #[allow(unused_mut)]
-    let mut utree = match usvg::Tree::from_data(data, &raw_opt.options) {
+    let utree = usvg::Tree::from_data(
+        data,
+        &raw_opt.options,
+        #[cfg(feature = "text")]
+        &raw_opt.fontdb,
+    );
+
+    let utree = match utree {
         Ok(tree) => tree,
         Err(e) => return convert_error(e) as i32,
     };
-
-    #[cfg(feature = "text")]
-    {
-        utree.convert_text(&raw_opt.fontdb);
-    }
-
-    utree.calculate_bounding_boxes();
 
     let tree_box = Box::new(resvg_render_tree(utree));
     unsafe {
@@ -602,7 +600,7 @@ pub extern "C" fn resvg_is_image_empty(tree: *const resvg_render_tree) -> bool {
         &*tree
     };
 
-    !tree.0.root.has_children()
+    !tree.0.root().has_children()
 }
 
 /// @brief Returns an image size.
@@ -620,7 +618,7 @@ pub extern "C" fn resvg_get_image_size(tree: *const resvg_render_tree) -> resvg_
         &*tree
     };
 
-    let size = tree.0.size;
+    let size = tree.0.size();
 
     resvg_size {
         width: size.width(),
@@ -641,7 +639,7 @@ pub extern "C" fn resvg_get_image_viewbox(tree: *const resvg_render_tree) -> res
         &*tree
     };
 
-    let r = tree.0.view_box.rect;
+    let r = tree.0.view_box().rect;
 
     resvg_rect {
         x: r.x(),
@@ -668,12 +666,7 @@ pub extern "C" fn resvg_get_image_bbox(
         &*tree
     };
 
-    if let Some(r) = tree
-        .0
-        .root
-        .abs_bounding_box()
-        .and_then(|r| r.to_non_zero_rect())
-    {
+    if let Some(r) = tree.0.root().abs_bounding_box().to_non_zero_rect() {
         unsafe {
             *bbox = resvg_rect {
                 x: r.x(),
@@ -799,7 +792,7 @@ fn get_node_bbox(
     tree: *const resvg_render_tree,
     id: *const c_char,
     bbox: *mut resvg_rect,
-    f: &dyn Fn(&usvg::Node) -> Option<usvg::Rect>,
+    f: &dyn Fn(&usvg::Node) -> usvg::Rect,
 ) -> bool {
     let id = match cstr_to_str(id) {
         Some(v) => v,
@@ -821,20 +814,16 @@ fn get_node_bbox(
 
     match tree.0.node_by_id(id) {
         Some(node) => {
-            if let Some(r) = f(node) {
-                unsafe {
-                    *bbox = resvg_rect {
-                        x: r.x(),
-                        y: r.y(),
-                        width: r.width(),
-                        height: r.height(),
-                    }
+            let r = f(node);
+            unsafe {
+                *bbox = resvg_rect {
+                    x: r.x(),
+                    y: r.y(),
+                    width: r.width(),
+                    height: r.height(),
                 }
-
-                true
-            } else {
-                false
             }
+            true
         }
         None => {
             log::warn!("No node with '{}' ID is in the tree.", id);

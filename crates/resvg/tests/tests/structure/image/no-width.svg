@@ -1,9 +1,8 @@
-<svg id="svg1" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>No `width` (SVG 2)</title>
-    <desc>Nothing should be rendered in a SVG 1 conforming renderer.</desc>
+    <title>No `width`</title>
 
-    <image id="image1" x="8" y="8" height="64" xlink:href="../../../resources/image.jpg"/>
+    <image id="image1" x="25" y="25" height="150" xlink:href="../../../resources/image.jpg"/>
 
-    <rect id="frame" x="1" y="1" width="78" height="78" fill="none" stroke="black"/>
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
 </svg>

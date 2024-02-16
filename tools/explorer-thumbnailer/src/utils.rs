@@ -7,7 +7,7 @@ use winapi::um::objidlbase::{LPSTREAM, STATSTG};
 use winapi::um::wingdi::{BI_RGB, BITMAPINFO, BITMAPINFOHEADER, DIB_RGB_COLORS, CreateDIBSection};
 use com::sys::S_OK;
 use resvg::{usvg, tiny_skia};
-use usvg::{fontdb, TreeTextToPath, TreeParsing};
+use usvg::fontdb;
 use crate::error::Error;
 
 pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvg::Tree, Error> {
@@ -31,9 +31,7 @@ pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvg::Tree, Error> 
     let mut fontdb = fontdb::Database::new();
     fontdb.load_system_fonts();
 
-    let mut tree = usvg::Tree::from_data(&svg_data, &opt).map_err(|e| Error::TreeError(e))?;
-    tree.convert_text(&fontdb);
-    tree.calculate_bounding_boxes();
+    let tree = usvg::Tree::from_data(&svg_data, &opt, &fontdb).map_err(|e| Error::TreeError(e))?;
     Ok(tree)
 }
 
@@ -44,15 +42,15 @@ pub fn render_thumbnail(tree: &Option<usvg::Tree>, cx: u32) -> Result<tiny_skia:
 
     let tree = tree.as_ref().ok_or(Error::TreeEmpty)?;
 
-    let size = if tree.size.width() > tree.size.height() {
-        tree.size.to_int_size().scale_to_width(cx)
+    let size = if tree.size().width() > tree.size().height() {
+        tree.size().to_int_size().scale_to_width(cx)
     } else {
-        tree.size.to_int_size().scale_to_height(cx)
+        tree.size().to_int_size().scale_to_height(cx)
     }.ok_or(Error::RenderError)?;
 
     let transform = tiny_skia::Transform::from_scale(
-        size.width() as f32 / tree.size.width() as f32,
-        size.height() as f32 / tree.size.height() as f32,
+        size.width() as f32 / tree.size().width() as f32,
+        size.height() as f32 / tree.size().height() as f32,
     );
 
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();

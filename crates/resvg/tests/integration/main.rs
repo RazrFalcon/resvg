@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use rgb::{FromSlice, RGBA8};
-use usvg::{fontdb, TreeParsing, TreeTextToPath};
+use usvg::fontdb;
 
 #[rustfmt::skip]
 mod render;
@@ -10,6 +10,10 @@ mod extra;
 const IMAGE_SIZE: u32 = 300;
 
 static GLOBAL_FONTDB: Lazy<std::sync::Mutex<fontdb::Database>> = Lazy::new(|| {
+    if let Ok(()) = log::set_logger(&LOGGER) {
+        log::set_max_level(log::LevelFilter::Warn);
+    }
+
     let mut fontdb = fontdb::Database::new();
     fontdb.load_fonts_dir("tests/fonts");
     fontdb.set_serif_family("Noto Serif");
@@ -34,18 +38,19 @@ pub fn render(name: &str) -> usize {
 
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
-        let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
         let db = GLOBAL_FONTDB.lock().unwrap();
-        tree.convert_text(&db);
-        tree.calculate_bounding_boxes();
-        tree
+        usvg::Tree::from_data(&svg_data, &opt, &db).unwrap()
     };
 
-    let size = tree.size.to_int_size().scale_to_width(IMAGE_SIZE).unwrap();
+    let size = tree
+        .size()
+        .to_int_size()
+        .scale_to_width(IMAGE_SIZE)
+        .unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
     let render_ts = tiny_skia::Transform::from_scale(
-        size.width() as f32 / tree.size.width() as f32,
-        size.height() as f32 / tree.size.height() as f32,
+        size.width() as f32 / tree.size().width() as f32,
+        size.height() as f32 / tree.size().height() as f32,
     );
     resvg::render(&tree, render_ts, &mut pixmap.as_mut());
 
@@ -85,12 +90,11 @@ pub fn render_extra_with_scale(name: &str, scale: f32) -> usize {
 
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
-        let mut tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
-        tree.calculate_bounding_boxes();
-        tree
+        let db = GLOBAL_FONTDB.lock().unwrap();
+        usvg::Tree::from_data(&svg_data, &opt, &db).unwrap()
     };
 
-    let size = tree.size.to_int_size().scale_by(scale).unwrap();
+    let size = tree.size().to_int_size().scale_by(scale).unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
 
     let render_ts = tiny_skia::Transform::from_scale(scale, scale);
@@ -126,6 +130,51 @@ pub fn render_extra_with_scale(name: &str, scale: f32) -> usize {
 
 pub fn render_extra(name: &str) -> usize {
     render_extra_with_scale(name, 1.0)
+}
+
+pub fn render_node(name: &str, id: &str) -> usize {
+    let svg_path = format!("tests/{}.svg", name);
+    let png_path = format!("tests/{}.png", name);
+
+    let opt = usvg::Options::default();
+
+    let tree = {
+        let svg_data = std::fs::read(&svg_path).unwrap();
+        let db = GLOBAL_FONTDB.lock().unwrap();
+        usvg::Tree::from_data(&svg_data, &opt, &db).unwrap()
+    };
+
+    let node = tree.node_by_id(id).unwrap();
+    let size = node.abs_layer_bounding_box().unwrap().size().to_int_size();
+    let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
+    resvg::render_node(node, tiny_skia::Transform::identity(), &mut pixmap.as_mut());
+
+    // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
+
+    let mut rgba = pixmap.take();
+    demultiply_alpha(rgba.as_mut_slice().as_rgba_mut());
+
+    let expected_data = load_png(&png_path);
+    assert_eq!(expected_data.len(), rgba.len());
+
+    let mut pixels_d = 0;
+    for (a, b) in expected_data
+        .as_slice()
+        .as_rgba()
+        .iter()
+        .zip(rgba.as_rgba())
+    {
+        if is_pix_diff(*a, *b) {
+            pixels_d += 1;
+        }
+    }
+
+    // Save diff if needed.
+    // if pixels_d != 0 {
+    //     gen_diff(&name, &expected_data, rgba.as_slice()).unwrap();
+    // }
+
+    pixels_d
 }
 
 fn load_png(path: &str) -> Vec<u8> {
@@ -215,4 +264,36 @@ fn demultiply_alpha(data: &mut [RGBA8]) {
         p.g = (p.g as f64 / a + 0.5) as u8;
         p.r = (p.r as f64 / a + 0.5) as u8;
     }
+}
+
+/// A simple stderr logger.
+static LOGGER: SimpleLogger = SimpleLogger;
+struct SimpleLogger;
+impl log::Log for SimpleLogger {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        metadata.level() <= log::LevelFilter::Warn
+    }
+
+    fn log(&self, record: &log::Record) {
+        if self.enabled(record.metadata()) {
+            let target = if !record.target().is_empty() {
+                record.target()
+            } else {
+                record.module_path().unwrap_or_default()
+            };
+
+            let line = record.line().unwrap_or(0);
+            let args = record.args();
+
+            match record.level() {
+                log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, args),
+                log::Level::Warn => eprintln!("Warning (in {}:{}): {}", target, line, args),
+                log::Level::Info => eprintln!("Info (in {}:{}): {}", target, line, args),
+                log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, args),
+                log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, args),
+            }
+        }
+    }
+
+    fn flush(&self) {}
 }
