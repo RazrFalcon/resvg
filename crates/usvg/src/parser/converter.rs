@@ -11,7 +11,7 @@ use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind, TransformOrigin};
 
 use super::svgtree::{self, AId, EId, FromValue, SvgNode};
 use super::units::{self, convert_length};
-use super::{Error, Options};
+use super::{marker, Error, Options};
 use crate::*;
 
 #[derive(Clone)]
@@ -758,18 +758,12 @@ fn convert_path(
     }
 
     let mut marker = None;
-    if super::marker::is_valid(node) && visibility == Visibility::Visible {
-        let mut marker = Group::empty();
-        super::marker::convert(node, &path, state, cache, &mut marker);
-        marker.calculate_bounding_boxes();
-        markers_node = Some(marker);
-    let mut marker = None;
-    if crate::marker::is_valid(node) && visibility == Visibility::Visible {
-        let mut marker_group = Group::default();
+    if marker::is_valid(node) && visibility == Visibility::Visible {
+        let mut marker_group = Group::empty();
         let mut marker_state = state.clone();
         marker_state.context_fill = fill.clone();
         marker_state.context_stroke = stroke.clone();
-        crate::marker::convert(node, &path, &marker_state, cache, &mut marker_group);
+        marker::convert(node, &path, &marker_state, cache, &mut marker_group);
         marker_group.calculate_bounding_boxes();
         marker = Some(marker_group);
     }

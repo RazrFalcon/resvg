@@ -6,8 +6,8 @@ use std::sync::Arc;
 
 use svgtypes::{Length, LengthUnit};
 
-use super::converter;
 use super::svgtree::{AId, EId, SvgNode};
+use super::{converter, style};
 use crate::{Group, IsValidLength, Node, NonZeroRect, Path, Size, Transform, ViewBox};
 
 pub(crate) fn convert(
@@ -29,8 +29,8 @@ pub(crate) fn convert(
     }
 
     let mut use_state = state.clone();
-    use_state.context_fill = crate::style::resolve_fill(node, false, state, cache);
-    use_state.context_stroke = crate::style::resolve_stroke(node, false, state, cache);
+    use_state.context_fill = style::resolve_fill(node, false, state, cache);
+    use_state.context_stroke = style::resolve_stroke(node, false, state, cache);
 
     // We require an original transformation to setup 'clipPath'.
     let mut orig_ts = node.resolve_transform(AId::Transform, state);
