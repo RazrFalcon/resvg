@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.40.0] - 2024-02-17
 ### Added
 - `usvg::Tree` is `Send + Sync` compatible now.
 - `usvg::WriteOptions::preserve_text` to control how `usvg` generates an SVG.
@@ -1115,7 +1117,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.39.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.40.0...HEAD
+[0.40.0]: https://github.com/RazrFalcon/resvg/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/RazrFalcon/resvg/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/RazrFalcon/resvg/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/RazrFalcon/resvg/compare/v0.36.0...v0.37.0
