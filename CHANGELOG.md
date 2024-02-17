@@ -9,7 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Added
 - `usvg::Tree` is `Send + Sync` compatible now.
-- `usvg::XmlOptions::preserve_text` to control how `usvg` generates an SVG.
+- `usvg::WriteOptions::preserve_text` to control how `usvg` generates an SVG.
 - `usvg::Image::abs_bounding_box`
 
 ### Changed
@@ -42,6 +42,7 @@ This changelog also contains important changes in dependencies.
 - `resvg::render_node` now includes filters bounding box. Meaning that a node with a blur filter
   no longer be clipped.
 - Replace `usvg::utils::view_box_to_transform` with `usvg::ViewBox::to_transform`.
+- Rename `usvg::XmlOptions` into `usvg::WriteOptions` and embed `xmlwriter::Options`.
 
 ### Removed
 - `usvg::Tree::postprocess()` and `usvg::PostProcessingSteps`. No longer needed.

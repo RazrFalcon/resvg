@@ -424,16 +424,14 @@ fn process(args: Args) -> Result<(), String> {
 
     let tree = usvg::Tree::from_data(&input_svg, &re_opt, &fontdb).map_err(|e| format!("{}", e))?;
 
-    let xml_opt = usvg::XmlOptions {
+    let xml_opt = usvg::WriteOptions {
         id_prefix: args.id_prefix,
         preserve_text: args.preserve_text,
         coordinates_precision: args.coordinates_precision.unwrap_or(8),
         transforms_precision: args.transforms_precision.unwrap_or(8),
-        writer_opts: xmlwriter::Options {
-            use_single_quote: false,
-            indent: args.indent,
-            attributes_indent: args.attrs_indent,
-        },
+        use_single_quote: false,
+        indent: args.indent,
+        attributes_indent: args.attrs_indent,
     };
 
     let s = tree.to_string(&xml_opt);

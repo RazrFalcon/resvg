@@ -31,7 +31,7 @@ fn resave_impl(name: &str, id_prefix: Option<String>, preserve_text: bool) {
         let opt = usvg::Options::default();
         usvg::Tree::from_str(&input_svg, &opt, &fontdb).unwrap()
     };
-    let mut xml_opt = usvg::XmlOptions::default();
+    let mut xml_opt = usvg::WriteOptions::default();
     xml_opt.id_prefix = id_prefix;
     xml_opt.preserve_text = preserve_text;
     xml_opt.coordinates_precision = 4; // Reduce noise and file size.

@@ -13,7 +13,7 @@ use crate::*;
 
 impl Tree {
     /// Writes `usvg::Tree` back to SVG.
-    pub fn to_string(&self, opt: &XmlOptions) -> String {
+    pub fn to_string(&self, opt: &WriteOptions) -> String {
         convert(self, opt)
     }
 }
@@ -31,10 +31,9 @@ impl<T: Default + PartialEq + Copy> IsDefault for T {
     }
 }
 
-// TODO: rename
 /// XML writing options.
 #[derive(Clone, Debug)]
-pub struct XmlOptions {
+pub struct WriteOptions {
     /// Used to add a custom prefix to each element ID during writing.
     pub id_prefix: Option<String>,
 
@@ -57,24 +56,95 @@ pub struct XmlOptions {
     /// Default: 8
     pub transforms_precision: u8,
 
-    /// `xmlwriter` options.
-    pub writer_opts: xmlwriter::Options,
+    /// Use single quote marks instead of double quote.
+    ///
+    /// # Examples
+    ///
+    /// Before:
+    ///
+    /// ```text
+    /// <rect fill="red"/>
+    /// ```
+    ///
+    /// After:
+    ///
+    /// ```text
+    /// <rect fill='red'/>
+    /// ```
+    ///
+    /// Default: disabled
+    pub use_single_quote: bool,
+
+    /// Set XML nodes indention.
+    ///
+    /// # Examples
+    ///
+    /// `Indent::None`
+    /// Before:
+    ///
+    /// ```text
+    /// <svg>
+    ///     <rect fill="red"/>
+    /// </svg>
+    /// ```
+    ///
+    /// After:
+    ///
+    /// ```text
+    /// <svg><rect fill="red"/></svg>
+    /// ```
+    ///
+    /// Default: 4 spaces
+    pub indent: Indent,
+
+    /// Set XML attributes indention.
+    ///
+    /// # Examples
+    ///
+    /// `Indent::Spaces(2)`
+    ///
+    /// Before:
+    ///
+    /// ```text
+    /// <svg>
+    ///     <rect fill="red" stroke="black"/>
+    /// </svg>
+    /// ```
+    ///
+    /// After:
+    ///
+    /// ```text
+    /// <svg>
+    ///     <rect
+    ///       fill="red"
+    ///       stroke="black"/>
+    /// </svg>
+    /// ```
+    ///
+    /// Default: `None`
+    pub attributes_indent: Indent,
 }
 
-impl Default for XmlOptions {
+impl Default for WriteOptions {
     fn default() -> Self {
         Self {
             id_prefix: Default::default(),
             preserve_text: false,
             coordinates_precision: 8,
             transforms_precision: 8,
-            writer_opts: Default::default(),
+            use_single_quote: false,
+            indent: Indent::Spaces(4),
+            attributes_indent: Indent::None,
         }
     }
 }
 
-pub(crate) fn convert(tree: &Tree, opt: &XmlOptions) -> String {
-    let mut xml = XmlWriter::new(opt.writer_opts);
+pub(crate) fn convert(tree: &Tree, opt: &WriteOptions) -> String {
+    let mut xml = XmlWriter::new(xmlwriter::Options {
+        use_single_quote: opt.use_single_quote,
+        indent: opt.indent,
+        attributes_indent: opt.attributes_indent,
+    });
 
     xml.start_svg_element(EId::Svg);
     xml.write_svg_attribute(AId::Width, &tree.size.width());
@@ -94,7 +164,7 @@ pub(crate) fn convert(tree: &Tree, opt: &XmlOptions) -> String {
     xml.end_document()
 }
 
-fn write_filters(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
+fn write_filters(tree: &Tree, opt: &WriteOptions, xml: &mut XmlWriter) {
     let mut written_fe_image_nodes: Vec<String> = Vec::new();
     for filter in tree.filters() {
         for fe in &filter.primitives {
@@ -456,7 +526,7 @@ fn write_filters(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
     }
 }
 
-fn write_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
+fn write_defs(tree: &Tree, opt: &WriteOptions, xml: &mut XmlWriter) {
     for lg in tree.linear_gradients() {
         xml.start_svg_element(EId::LinearGradient);
         xml.write_id_attribute(lg.id(), opt);
@@ -544,7 +614,7 @@ fn write_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
     }
 }
 
-fn write_text_path_paths(parent: &Group, opt: &XmlOptions, xml: &mut XmlWriter) {
+fn write_text_path_paths(parent: &Group, opt: &WriteOptions, xml: &mut XmlWriter) {
     for node in &parent.children {
         if let Node::Group(ref group) = node {
             write_text_path_paths(group, opt, xml);
@@ -572,13 +642,13 @@ fn write_text_path_paths(parent: &Group, opt: &XmlOptions, xml: &mut XmlWriter) 
     }
 }
 
-fn write_elements(parent: &Group, is_clip_path: bool, opt: &XmlOptions, xml: &mut XmlWriter) {
+fn write_elements(parent: &Group, is_clip_path: bool, opt: &WriteOptions, xml: &mut XmlWriter) {
     for n in &parent.children {
         write_element(n, is_clip_path, opt, xml);
     }
 }
 
-fn write_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut XmlWriter) {
+fn write_element(node: &Node, is_clip_path: bool, opt: &WriteOptions, xml: &mut XmlWriter) {
     match node {
         Node::Path(ref p) => {
             write_path(p, is_clip_path, Transform::default(), None, opt, xml);
@@ -727,7 +797,7 @@ fn write_element(node: &Node, is_clip_path: bool, opt: &XmlOptions, xml: &mut Xm
     }
 }
 
-fn write_group_element(g: &Group, is_clip_path: bool, opt: &XmlOptions, xml: &mut XmlWriter) {
+fn write_group_element(g: &Group, is_clip_path: bool, opt: &WriteOptions, xml: &mut XmlWriter) {
     if is_clip_path {
         // The `clipPath` element in SVG doesn't allow groups, only shapes and text.
         // The problem is that in `usvg` we can set a `clip-path` only on groups.
@@ -833,14 +903,14 @@ fn write_group_element(g: &Group, is_clip_path: bool, opt: &XmlOptions, xml: &mu
 trait XmlWriterExt {
     fn start_svg_element(&mut self, id: EId);
     fn write_svg_attribute<V: Display + ?Sized>(&mut self, id: AId, value: &V);
-    fn write_id_attribute(&mut self, id: &str, opt: &XmlOptions);
+    fn write_id_attribute(&mut self, id: &str, opt: &WriteOptions);
     fn write_color(&mut self, id: AId, color: Color);
     fn write_viewbox(&mut self, view_box: &ViewBox);
     fn write_aspect(&mut self, aspect: AspectRatio);
     fn write_units(&mut self, id: AId, units: Units, def: Units);
-    fn write_transform(&mut self, id: AId, units: Transform, opt: &XmlOptions);
+    fn write_transform(&mut self, id: AId, units: Transform, opt: &WriteOptions);
     fn write_visibility(&mut self, value: Visibility);
-    fn write_func_iri(&mut self, aid: AId, id: &str, opt: &XmlOptions);
+    fn write_func_iri(&mut self, aid: AId, id: &str, opt: &WriteOptions);
     fn write_rect_attrs(&mut self, r: NonZeroRect);
     fn write_numbers(&mut self, aid: AId, list: &[f32]);
     fn write_image_data(&mut self, kind: &ImageKind);
@@ -861,7 +931,7 @@ impl XmlWriterExt for XmlWriter {
     }
 
     #[inline(never)]
-    fn write_id_attribute(&mut self, id: &str, opt: &XmlOptions) {
+    fn write_id_attribute(&mut self, id: &str, opt: &WriteOptions) {
         debug_assert!(!id.is_empty());
 
         if let Some(ref prefix) = opt.id_prefix {
@@ -946,7 +1016,7 @@ impl XmlWriterExt for XmlWriter {
         }
     }
 
-    fn write_transform(&mut self, id: AId, ts: Transform, opt: &XmlOptions) {
+    fn write_transform(&mut self, id: AId, ts: Transform, opt: &WriteOptions) {
         if !ts.is_default() {
             self.write_attribute_raw(id.to_str(), |buf| {
                 buf.extend_from_slice(b"matrix(");
@@ -974,7 +1044,7 @@ impl XmlWriterExt for XmlWriter {
         }
     }
 
-    fn write_func_iri(&mut self, aid: AId, id: &str, opt: &XmlOptions) {
+    fn write_func_iri(&mut self, aid: AId, id: &str, opt: &WriteOptions) {
         debug_assert!(!id.is_empty());
         let prefix = opt.id_prefix.as_deref().unwrap_or_default();
         self.write_attribute_fmt(aid.to_str(), format_args!("url(#{}{})", prefix, id));
@@ -1075,7 +1145,7 @@ impl XmlWriterExt for XmlWriter {
             ImageKind::PNG(ref data) => ("png", data.as_slice()),
             ImageKind::GIF(ref data) => ("gif", data.as_slice()),
             ImageKind::SVG(ref tree) => {
-                svg_string = tree.to_string(&XmlOptions::default());
+                svg_string = tree.to_string(&WriteOptions::default());
                 ("svg+xml", svg_string.as_bytes())
             }
         };
@@ -1148,7 +1218,7 @@ fn has_xlink(parent: &Group) -> bool {
     false
 }
 
-fn write_base_grad(g: &BaseGradient, opt: &XmlOptions, xml: &mut XmlWriter) {
+fn write_base_grad(g: &BaseGradient, opt: &WriteOptions, xml: &mut XmlWriter) {
     xml.write_units(AId::GradientUnits, g.units, Units::ObjectBoundingBox);
     xml.write_transform(AId::GradientTransform, g.transform, opt);
 
@@ -1175,7 +1245,7 @@ fn write_path(
     is_clip_path: bool,
     path_transform: Transform,
     clip_path: Option<&str>,
-    opt: &XmlOptions,
+    opt: &WriteOptions,
     xml: &mut XmlWriter,
 ) {
     xml.start_svg_element(EId::Path);
@@ -1263,7 +1333,7 @@ fn write_path(
     xml.end_element();
 }
 
-fn write_fill(fill: &Option<Fill>, is_clip_path: bool, opt: &XmlOptions, xml: &mut XmlWriter) {
+fn write_fill(fill: &Option<Fill>, is_clip_path: bool, opt: &WriteOptions, xml: &mut XmlWriter) {
     if let Some(ref fill) = fill {
         write_paint(AId::Fill, &fill.paint, opt, xml);
 
@@ -1285,7 +1355,7 @@ fn write_fill(fill: &Option<Fill>, is_clip_path: bool, opt: &XmlOptions, xml: &m
     }
 }
 
-fn write_stroke(stroke: &Option<Stroke>, opt: &XmlOptions, xml: &mut XmlWriter) {
+fn write_stroke(stroke: &Option<Stroke>, opt: &WriteOptions, xml: &mut XmlWriter) {
     if let Some(ref stroke) = stroke {
         write_paint(AId::Stroke, &stroke.paint, opt, xml);
 
@@ -1329,7 +1399,7 @@ fn write_stroke(stroke: &Option<Stroke>, opt: &XmlOptions, xml: &mut XmlWriter) 
     }
 }
 
-fn write_paint(aid: AId, paint: &Paint, opt: &XmlOptions, xml: &mut XmlWriter) {
+fn write_paint(aid: AId, paint: &Paint, opt: &WriteOptions, xml: &mut XmlWriter) {
     match paint {
         Paint::Color(c) => xml.write_color(aid, *c),
         Paint::LinearGradient(ref lg) => {
@@ -1413,7 +1483,7 @@ fn write_num(num: f32, buf: &mut Vec<u8>, precision: u8) {
 /// Write all of the tspan attributes except for decorations.
 fn write_span(
     is_clip_path: bool,
-    opt: &XmlOptions,
+    opt: &WriteOptions,
     xml: &mut XmlWriter,
     chunk: &TextChunk,
     span: &TextSpan,
@@ -1431,7 +1501,7 @@ fn write_span(
             match parse_font_families(s) {
                 Ok(_) => s.clone(),
                 Err(_) => {
-                    if opt.writer_opts.use_single_quote {
+                    if opt.use_single_quote {
                         format!("\"{}\"", s)
                     } else {
                         format!("'{}'", s)

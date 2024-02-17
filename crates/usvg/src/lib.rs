@@ -66,4 +66,5 @@ mod text_to_paths;
 #[cfg(feature = "text")]
 pub use fontdb;
 
-pub use writer::XmlOptions;
+pub use writer::WriteOptions;
+pub use xmlwriter::Indent;
