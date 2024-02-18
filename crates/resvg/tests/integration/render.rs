@@ -644,12 +644,12 @@ use crate::render;
 #[test] fn painting_color_context_in_nested_use_and_marker() { assert_eq!(render("tests/painting/color/context-in-nested-use-and-marker"), 0); }
 #[test] fn painting_color_context_in_nested_use() { assert_eq!(render("tests/painting/color/context-in-nested-use"), 0); }
 #[test] fn painting_color_context_in_use() { assert_eq!(render("tests/painting/color/context-in-use"), 0); }
-// #[test] fn painting_color_context_with_gradient_in_use() { assert_eq!(render("tests/painting/color/context-with-gradient-in-use"), 0); }
-// #[test] fn painting_color_context_with_gradient_on_marker() { assert_eq!(render("tests/painting/color/context-with-gradient-on-marker"), 0); }
-// #[test] fn painting_color_context_with_pattern_and_transform_in_use() { assert_eq!(render("tests/painting/color/context-with-pattern-and-transform-in-use"), 0); }
-// #[test] fn painting_color_context_with_pattern_in_use() { assert_eq!(render("tests/painting/color/context-with-pattern-in-use"), 0); }
-// #[test] fn painting_color_context_with_pattern_objectBoundingBox_in_use() { assert_eq!(render("tests/painting/color/context-with-pattern-objectBoundingBox-in-use"), 0); }
-// #[test] fn painting_color_context_with_pattern_on_marker() { assert_eq!(render("tests/painting/color/context-with-pattern-on-marker"), 0); }
+#[test] fn painting_color_context_with_gradient_in_use() { assert_eq!(render("tests/painting/color/context-with-gradient-in-use"), 0); }
+#[test] fn painting_color_context_with_gradient_on_marker() { assert_eq!(render("tests/painting/color/context-with-gradient-on-marker"), 0); }
+#[test] fn painting_color_context_with_pattern_and_transform_in_use() { assert_eq!(render("tests/painting/color/context-with-pattern-and-transform-in-use"), 0); }
+#[test] fn painting_color_context_with_pattern_in_use() { assert_eq!(render("tests/painting/color/context-with-pattern-in-use"), 0); }
+#[test] fn painting_color_context_with_pattern_objectBoundingBox_in_use() { assert_eq!(render("tests/painting/color/context-with-pattern-objectBoundingBox-in-use"), 0); }
+#[test] fn painting_color_context_with_pattern_on_marker() { assert_eq!(render("tests/painting/color/context-with-pattern-on-marker"), 0); }
 #[test] fn painting_color_context_without_context_element() { assert_eq!(render("tests/painting/color/context-without-context-element"), 0); }
 #[test] fn painting_color_inherit() { assert_eq!(render("tests/painting/color/inherit"), 0); }
 #[test] fn painting_color_recursive_nested_context_without_color() { assert_eq!(render("tests/painting/color/recursive-nested-context-without-color"), 0); }
