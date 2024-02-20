@@ -314,6 +314,7 @@ use crate::render;
 #[test] fn filters_filter_on_a_vertical_line() { assert_eq!(render("tests/filters/filter/on-a-vertical-line"), 0); }
 #[test] fn filters_filter_on_an_empty_group_1() { assert_eq!(render("tests/filters/filter/on-an-empty-group-1"), 0); }
 #[test] fn filters_filter_on_an_empty_group_2() { assert_eq!(render("tests/filters/filter/on-an-empty-group-2"), 0); }
+#[test] fn filters_filter_on_group_with_child_outside_of_canvas() { assert_eq!(render("tests/filters/filter/on-group-with-child-outside-of-canvas"), 0); }
 #[test] fn filters_filter_on_the_root_svg() { assert_eq!(render("tests/filters/filter/on-the-root-svg"), 0); }
 #[test] fn filters_filter_on_zero_sized_shape() { assert_eq!(render("tests/filters/filter/on-zero-sized-shape"), 0); }
 #[test] fn filters_filter_path_bbox() { assert_eq!(render("tests/filters/filter/path-bbox"), 0); }
@@ -344,6 +345,7 @@ use crate::render;
 #[test] fn filters_filter_with_subregion_1() { assert_eq!(render("tests/filters/filter/with-subregion-1"), 0); }
 #[test] fn filters_filter_with_subregion_2() { assert_eq!(render("tests/filters/filter/with-subregion-2"), 0); }
 #[test] fn filters_filter_with_subregion_3() { assert_eq!(render("tests/filters/filter/with-subregion-3"), 0); }
+#[test] fn filters_filter_with_transform_outside_of_canvas() { assert_eq!(render("tests/filters/filter/with-transform-outside-of-canvas"), 0); }
 #[test] fn filters_filter_without_region_and_filterUnits_eq_userSpaceOnUse() { assert_eq!(render("tests/filters/filter/without-region-and-filterUnits=userSpaceOnUse"), 0); }
 #[test] fn filters_filter_zero_sized_subregion() { assert_eq!(render("tests/filters/filter/zero-sized-subregion"), 0); }
 #[test] fn filters_filter_functions_blur_function_mm_value() { assert_eq!(render("tests/filters/filter-functions/blur-function-mm-value"), 0); }
