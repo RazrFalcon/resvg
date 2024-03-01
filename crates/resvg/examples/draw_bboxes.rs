@@ -38,7 +38,8 @@ fn main() {
     let render_ts = tiny_skia::Transform::from_scale(zoom, zoom);
     resvg::render(&tree, render_ts, &mut pixmap.as_mut());
 
-    let stroke = tiny_skia::Stroke::default();
+    let mut stroke = tiny_skia::Stroke::default();
+    stroke.width = 1.0 / zoom; // prevent stroke scaling as well
 
     let mut paint1 = tiny_skia::Paint::default();
     paint1.set_color_rgba8(255, 0, 0, 127);
@@ -46,14 +47,17 @@ fn main() {
     let mut paint2 = tiny_skia::Paint::default();
     paint2.set_color_rgba8(0, 200, 0, 127);
 
+    let root_ts = tree.view_box().to_transform(tree.size());
+    let bbox_ts = render_ts.pre_concat(root_ts);
+
     for bbox in bboxes {
         let path = tiny_skia::PathBuilder::from_rect(bbox);
-        pixmap.stroke_path(&path, &paint1, &stroke, render_ts, None);
+        pixmap.stroke_path(&path, &paint1, &stroke, bbox_ts, None);
     }
 
     for bbox in stroke_bboxes {
         let path = tiny_skia::PathBuilder::from_rect(bbox);
-        pixmap.stroke_path(&path, &paint2, &stroke, render_ts, None);
+        pixmap.stroke_path(&path, &paint2, &stroke, bbox_ts, None);
     }
 
     pixmap.save_png(&args[2]).unwrap();
