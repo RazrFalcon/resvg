@@ -644,6 +644,7 @@ use crate::render;
 #[test] fn painting_color_context_in_nested_use_and_marker() { assert_eq!(render("tests/painting/color/context-in-nested-use-and-marker"), 0); }
 #[test] fn painting_color_context_in_nested_use() { assert_eq!(render("tests/painting/color/context-in-nested-use"), 0); }
 #[test] fn painting_color_context_in_use() { assert_eq!(render("tests/painting/color/context-in-use"), 0); }
+#[test] fn painting_color_context_with_gradient_and_gradient_transform() { assert_eq!(render("tests/painting/color/context-with-gradient-and-gradient-transform"), 0); }
 #[test] fn painting_color_context_with_gradient_in_use() { assert_eq!(render("tests/painting/color/context-with-gradient-in-use"), 0); }
 #[test] fn painting_color_context_with_gradient_on_marker() { assert_eq!(render("tests/painting/color/context-with-gradient-on-marker"), 0); }
 #[test] fn painting_color_context_with_pattern_and_transform_in_use() { assert_eq!(render("tests/painting/color/context-with-pattern-and-transform-in-use"), 0); }
