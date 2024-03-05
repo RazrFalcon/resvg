@@ -8,6 +8,7 @@ use svgtypes::{Length, LengthUnit};
 
 use super::svgtree::{AId, EId, SvgNode};
 use super::{converter, style};
+use crate::tree::ContextElement;
 use crate::{Group, IsValidLength, Node, NonZeroRect, Path, Size, Transform, ViewBox};
 
 pub(crate) fn convert(
@@ -29,14 +30,16 @@ pub(crate) fn convert(
     }
 
     let mut use_state = state.clone();
-    use_state.context_fill = style::resolve_fill(node, true, state, cache).map(|mut f| {
-        f.has_context = true;
-        f
-    });
-    use_state.context_stroke = style::resolve_stroke(node, true, state, cache).map(|mut s| {
-        s.has_context = true;
-        s
-    });
+    use_state.context_element = Some((
+        style::resolve_fill(node, true, state, cache).map(|mut f| {
+            f.context_element = Some(ContextElement::UseNode);
+            f
+        }),
+        style::resolve_stroke(node, true, state, cache).map(|mut s| {
+            s.context_element = Some(ContextElement::UseNode);
+            s
+        }),
+    ));
 
     // We require an original transformation to setup 'clipPath'.
     let mut orig_ts = node.resolve_transform(AId::Transform, state);

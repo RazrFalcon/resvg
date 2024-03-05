@@ -540,7 +540,9 @@ pub struct Stroke {
     pub(crate) width: StrokeWidth,
     pub(crate) linecap: LineCap,
     pub(crate) linejoin: LineJoin,
-    pub(crate) has_context: bool,
+    // Whether the current stroke needs to be resolved relative
+    // to a context element.
+    pub(crate) context_element: Option<ContextElement>,
 }
 
 impl Stroke {
@@ -629,13 +631,29 @@ impl Default for FillRule {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum ContextElement {
+    /// The current context element is a use node. Since we can get
+    /// the bounding box of a use node only once we have converted
+    /// all elements, we need to fix the transform and units of
+    /// the stroke/fill after converting the whole tree.
+    UseNode,
+    /// The current context element is a path node (i.e. only applicable
+    /// if we draw the marker of a path). Since we already know the bounding
+    /// box of the path when rendering the markers, we can convert them directly,
+    /// so we do it while parsing.
+    PathNode(Transform, NonZeroRect),
+}
+
 /// A fill style.
 #[derive(Clone, Debug)]
 pub struct Fill {
     pub(crate) paint: Paint,
     pub(crate) opacity: Opacity,
     pub(crate) rule: FillRule,
-    pub(crate) has_context: bool,
+    // Whether the current fill needs to be resolved relative
+    // to a context element.
+    pub(crate) context_element: Option<ContextElement>,
 }
 
 impl Fill {
@@ -661,7 +679,7 @@ impl Default for Fill {
             paint: Paint::Color(Color::black()),
             opacity: Opacity::ONE,
             rule: FillRule::default(),
-            has_context: false,
+            context_element: None,
         }
     }
 }

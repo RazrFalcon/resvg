@@ -689,9 +689,11 @@ fn process_fill(
 ) {
     let mut ok = false;
     if let Some(ref mut fill) = fill {
+        // Path context elements (i.e. for  markers) have already been resolved,
+        // so we only care about use nodes.
         ok = process_paint(
             &mut fill.paint,
-            fill.has_context,
+            matches!(fill.context_element, Some(ContextElement::UseNode)),
             context_transform,
             context_bbox,
             path_transform,
@@ -714,9 +716,11 @@ fn process_stroke(
 ) {
     let mut ok = false;
     if let Some(ref mut stroke) = stroke {
+        // Path context elements (i.e. for  markers) have already been resolved,
+        // so we only care about use nodes.
         ok = process_paint(
             &mut stroke.paint,
-            stroke.has_context,
+            matches!(stroke.context_element, Some(ContextElement::UseNode)),
             context_transform,
             context_bbox,
             path_transform,
@@ -794,7 +798,7 @@ fn process_context_paint(
 
 fn process_paint(
     paint: &mut Paint,
-    is_context: bool,
+    has_use_node_context: bool,
     context_transform: Transform,
     context_bbox: Option<Rect>,
     path_transform: Transform,
@@ -804,7 +808,7 @@ fn process_paint(
     if paint.units() == Units::ObjectBoundingBox
         || paint.content_units() == Units::ObjectBoundingBox
     {
-        let bbox = if is_context {
+        let bbox = if has_use_node_context {
             let Some(bbox) = context_bbox else {
                 return false;
             };
@@ -824,7 +828,7 @@ fn process_paint(
         }
     }
 
-    if is_context {
+    if has_use_node_context {
         process_context_paint(paint, context_transform, path_transform, cache);
     }
 
