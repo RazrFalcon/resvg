@@ -320,7 +320,7 @@ pub(crate) fn convert_doc(
     cache.filters.clear();
     cache.paint.clear();
 
-    super::paint_server::update_paint_servers(&mut tree.root, None, None, None, &mut cache);
+    super::paint_server::update_paint_servers(&mut tree.root, Transform::default(), None, None, &mut cache);
     tree.collect_paint_servers();
     tree.root.collect_clip_paths(&mut tree.clip_paths);
     tree.root.collect_masks(&mut tree.masks);
