@@ -796,9 +796,9 @@ fn process_context_paint(
     Some(())
 }
 
-fn process_paint(
+pub(crate) fn process_paint(
     paint: &mut Paint,
-    has_use_node_context: bool,
+    has_context: bool,
     context_transform: Transform,
     context_bbox: Option<Rect>,
     path_transform: Transform,
@@ -808,7 +808,7 @@ fn process_paint(
     if paint.units() == Units::ObjectBoundingBox
         || paint.content_units() == Units::ObjectBoundingBox
     {
-        let bbox = if has_use_node_context {
+        let bbox = if has_context {
             let Some(bbox) = context_bbox else {
                 return false;
             };
@@ -828,7 +828,7 @@ fn process_paint(
         }
     }
 
-    if has_use_node_context {
+    if has_context {
         process_context_paint(paint, context_transform, path_transform, cache);
     }
 

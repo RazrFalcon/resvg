@@ -72,7 +72,6 @@ pub fn fill_path(
     paint.blend_mode = blend_mode;
 
     pixmap.fill_path(path.data(), &paint, rule, transform, None);
-
     Some(())
 }
 
@@ -123,12 +122,13 @@ fn convert_linear_gradient(
 ) -> Option<tiny_skia::Shader> {
     let (mode, points) = convert_base_gradient(gradient, opacity)?;
 
+    let t = gradient.transform();
     let shader = tiny_skia::LinearGradient::new(
         (gradient.x1(), gradient.y1()).into(),
         (gradient.x2(), gradient.y2()).into(),
         points,
         mode,
-        gradient.transform(),
+        t,
     )?;
 
     Some(shader)
