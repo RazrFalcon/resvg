@@ -51,7 +51,7 @@ pub(crate) fn convert(
         .children()
         .find(|n| is_condition_passed(*n, state.opt))?;
     if let Some(g) =
-        converter::convert_group(node, state, false, cache, parent, false, &|cache, g| {
+        converter::convert_group(node, state, false, cache, parent, &|cache, g| {
             converter::convert_element(child, state, cache, g);
         })
     {

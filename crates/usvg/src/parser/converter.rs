@@ -464,7 +464,7 @@ pub(crate) fn convert_element(node: SvgNode, state: &State, cache: &mut Cache, p
         return;
     }
 
-    if let Some(g) = convert_group(node, state, false, cache, parent, false, &|cache, g| {
+    if let Some(g) = convert_group(node, state, false, cache, parent, &|cache, g| {
         convert_element_impl(tag_name, node, state, cache, g);
     }) {
         parent.children.push(Node::Group(Box::new(g)));
@@ -545,7 +545,7 @@ pub(crate) fn convert_clip_path_elements(
             continue;
         }
 
-        if let Some(g) = convert_group(node, state, false, cache, parent, false, &|cache, g| {
+        if let Some(g) = convert_group(node, state, false, cache, parent, &|cache, g| {
             convert_clip_path_elements_impl(tag_name, node, state, cache, g);
         }) {
             parent.children.push(Node::Group(Box::new(g)));
@@ -608,7 +608,6 @@ pub(crate) fn convert_group(
     force: bool,
     cache: &mut Cache,
     parent: &mut Group,
-    is_context_element: bool,
     collect_children: &dyn Fn(&mut Cache, &mut Group),
 ) -> Option<Group> {
     // A `clipPath` child cannot have an opacity.
@@ -644,7 +643,7 @@ pub(crate) fn convert_group(
         clip_path: None,
         mask: None,
         filters: Vec::new(),
-        is_context_element,
+        is_context_element: false,
         bounding_box: dummy,
         abs_bounding_box: dummy,
         stroke_bounding_box: dummy,
