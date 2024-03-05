@@ -995,6 +995,7 @@ pub struct Group {
     pub(crate) blend_mode: BlendMode,
     pub(crate) isolate: bool,
     pub(crate) clip_path: Option<Arc<ClipPath>>,
+    /// Whether the group is a context element (i.e. a use node)
     pub(crate) is_context_element: bool,
     pub(crate) mask: Option<Arc<Mask>>,
     pub(crate) filters: Vec<Arc<filter::Filter>>,

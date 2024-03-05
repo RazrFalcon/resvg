@@ -62,7 +62,6 @@ pub(crate) fn convert(
             let mut g = clip_element(node, clip_rect, orig_ts, &use_state, cache);
 
             // Make group for `use`.
-            // TODO: true here as well?
             if let Some(mut g2) = converter::convert_group(
                 node,
                 &use_state,
@@ -95,7 +94,6 @@ pub(crate) fn convert(
 
     if linked_to_symbol {
         // Make group for `use`.
-        //TODO: Same as above
         if let Some(mut g) =
             converter::convert_group(node, &use_state, false, cache, parent, true, &|cache, g| {
                 convert_children(child, orig_ts, &use_state, cache, false, g);

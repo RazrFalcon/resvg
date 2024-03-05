@@ -122,13 +122,12 @@ fn convert_linear_gradient(
 ) -> Option<tiny_skia::Shader> {
     let (mode, points) = convert_base_gradient(gradient, opacity)?;
 
-    let t = gradient.transform();
     let shader = tiny_skia::LinearGradient::new(
         (gradient.x1(), gradient.y1()).into(),
         (gradient.x2(), gradient.y2()).into(),
         points,
         mode,
-        t,
+        gradient.transform(),
     )?;
 
     Some(shader)

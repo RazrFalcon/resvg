@@ -19,6 +19,8 @@ use crate::*;
 pub struct State<'a> {
     pub(crate) parent_clip_path: Option<SvgNode<'a, 'a>>,
     pub(crate) parent_markers: Vec<SvgNode<'a, 'a>>,
+    /// Stores the resolved fill and stroke of a use node
+    /// or a path element (for markers)
     pub(crate) context_element: Option<(Option<Fill>, Option<Stroke>)>,
     pub(crate) fe_image_link: bool,
     /// A viewBox of the parent SVG element.

@@ -529,8 +529,9 @@ fn stops_to_color(stops: &[Stop]) -> Option<ServerOrColor> {
 }
 
 // Update paints servers by doing the following:
-// 1. Replace context fills/strokes with their actual values.
-// 2. Convert object units to UserSpaceOnUse
+// 1. Replace context fills/strokes that are linked to
+// a use node with their actual values.
+// 2. Convert all object units to UserSpaceOnUse
 pub fn update_paint_servers(
     group: &mut Group,
     context_transform: Transform,
@@ -539,7 +540,8 @@ pub fn update_paint_servers(
     cache: &mut Cache,
 ) {
     for child in &mut group.children {
-        // Set context transform and bbox if applicable.
+        // Set context transform and bbox if applicable if the
+        // current group is a use node.
         let (context_transform, context_bbox) = if group.is_context_element {
             (group.abs_transform, Some(group.bounding_box))
         } else {
@@ -739,6 +741,15 @@ fn process_context_paint(
     path_transform: Transform,
     cache: &mut Cache,
 ) -> Option<()> {
+    // The idea is the following: We have a certain context element that has
+    // a transform A, and further below in the tree we have for example a path
+    // whose paint has a transform C. In order to get from A to C, there is some
+    // transformation matrix B such that A x B = C. We now need to figure out
+    // a way to get from C back to A, so that the transformation of the paint
+    // matches the one from the context element, even if B was applied. How
+    // do we do that? We calculate CxB^(-1), which will overall then have
+    // the same effect as A. How do we calculate B^(-1)?
+    // --> (A^(-1)xC)^(-1)
     let rev_transform = context_transform
         .invert()?
         .pre_concat(path_transform)
@@ -837,7 +848,6 @@ pub(crate) fn process_paint(
 
 fn process_text_decoration(style: &mut Option<TextDecorationStyle>, bbox: Rect, cache: &mut Cache) {
     if let Some(ref mut style) = style {
-        // TODO: Support context for text deocoration
         process_fill(
             &mut style.fill,
             Transform::default(),
