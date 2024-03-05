@@ -187,12 +187,12 @@ fn convert_paint(
                             // for painting only when the shape itself has a bbox.
                             //
                             // See SVG spec 7.11 for details.
-                            Some((paint, false))
-                            // if !has_bbox && paint.units() == Units::ObjectBoundingBox {
-                            //     from_fallback(node, fallback, opacity).map(|p| (p, false))
-                            // } else {
-                            //
-                            // }
+
+                            if !has_bbox && paint.units() == Units::ObjectBoundingBox {
+                                from_fallback(node, fallback, opacity).map(|p| (p, false))
+                            } else {
+                                Some((paint, false))
+                            }
                         }
                         Some(paint_server::ServerOrColor::Color { color, opacity: so }) => {
                             *opacity = so;

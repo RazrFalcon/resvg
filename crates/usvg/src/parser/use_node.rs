@@ -29,11 +29,11 @@ pub(crate) fn convert(
     }
 
     let mut use_state = state.clone();
-    use_state.context_fill = style::resolve_fill(node, false, state, cache).map(|mut f| {
+    use_state.context_fill = style::resolve_fill(node, true, state, cache).map(|mut f| {
         f.has_context = true;
         f
     });
-    use_state.context_stroke = style::resolve_stroke(node, false, state, cache).map(|mut s| {
+    use_state.context_stroke = style::resolve_stroke(node, true, state, cache).map(|mut s| {
         s.has_context = true;
         s
     });

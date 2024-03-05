@@ -689,9 +689,15 @@ fn process_fill(
 ) {
     let mut ok = false;
     if let Some(ref mut fill) = fill {
-        ok = process_paint(&mut fill.paint, fill.has_context,
-                           context_transform, context_bbox,
-                           path_transform, bbox, cache);
+        ok = process_paint(
+            &mut fill.paint,
+            fill.has_context,
+            context_transform,
+            context_bbox,
+            path_transform,
+            bbox,
+            cache,
+        );
     }
     if !ok {
         *fill = None;
@@ -708,9 +714,15 @@ fn process_stroke(
 ) {
     let mut ok = false;
     if let Some(ref mut stroke) = stroke {
-        ok = process_paint(&mut stroke.paint, stroke.has_context,
-                           context_transform, context_bbox,
-                           path_transform, bbox, cache);
+        ok = process_paint(
+            &mut stroke.paint,
+            stroke.has_context,
+            context_transform,
+            context_bbox,
+            path_transform,
+            bbox,
+            cache,
+        );
     }
     if !ok {
         *stroke = None;
@@ -729,10 +741,9 @@ fn process_context_paint(
         .invert()?;
 
     match paint {
-        Paint::Color(_) => {},
+        Paint::Color(_) => {}
         Paint::LinearGradient(ref lg) => {
-            let transform = lg.transform
-                .post_concat(rev_transform);
+            let transform = lg.transform.post_concat(rev_transform);
             *paint = Paint::LinearGradient(Arc::new(LinearGradient {
                 x1: lg.x1,
                 y1: lg.y1,
@@ -748,8 +759,7 @@ fn process_context_paint(
             }));
         }
         Paint::RadialGradient(ref rg) => {
-            let transform = rg.transform
-                .post_concat(rev_transform);
+            let transform = rg.transform.post_concat(rev_transform);
             *paint = Paint::RadialGradient(Arc::new(RadialGradient {
                 cx: rg.cx,
                 cy: rg.cy,
@@ -764,10 +774,9 @@ fn process_context_paint(
                     stops: rg.stops.clone(),
                 },
             }))
-        },
+        }
         Paint::Pattern(ref pat) => {
-            let transform = pat.transform
-                .post_concat(rev_transform);
+            let transform = pat.transform.post_concat(rev_transform);
             *paint = Paint::Pattern(Arc::new(Pattern {
                 id: cache.gen_pattern_id(),
                 units: pat.units,
@@ -777,7 +786,7 @@ fn process_context_paint(
                 view_box: pat.view_box,
                 root: pat.root.clone(),
             }))
-        },
+        }
     }
 
     Some(())
@@ -790,18 +799,17 @@ fn process_paint(
     context_bbox: Option<Rect>,
     path_transform: Transform,
     bbox: Rect,
-    cache: &mut Cache) -> bool {
-
+    cache: &mut Cache,
+) -> bool {
     if paint.units() == Units::ObjectBoundingBox
         || paint.content_units() == Units::ObjectBoundingBox
     {
-
         let bbox = if is_context {
             let Some(bbox) = context_bbox else {
                 return false;
             };
             bbox
-        }   else {
+        } else {
             bbox
         };
 
@@ -834,7 +842,14 @@ fn process_text_decoration(style: &mut Option<TextDecorationStyle>, bbox: Rect, 
             bbox,
             cache,
         );
-        process_stroke(&mut style.stroke, Transform::default(), Transform::default(), None, bbox, cache);
+        process_stroke(
+            &mut style.stroke,
+            Transform::default(),
+            Transform::default(),
+            None,
+            bbox,
+            cache,
+        );
     }
 }
 
