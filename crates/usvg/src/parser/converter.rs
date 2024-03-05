@@ -320,7 +320,7 @@ pub(crate) fn convert_doc(
     cache.filters.clear();
     cache.paint.clear();
 
-    super::paint_server::to_user_coordinates(&mut tree.root, None, &mut cache);
+    super::paint_server::to_user_coordinates(&mut tree.root, None, None, &mut cache);
     tree.collect_paint_servers();
     tree.root.collect_clip_paths(&mut tree.clip_paths);
     tree.root.collect_masks(&mut tree.masks);
@@ -458,7 +458,7 @@ pub(crate) fn convert_element(node: SvgNode, state: &State, cache: &mut Cache, p
         return;
     }
 
-    if let Some(g) = convert_group(node, state, false, cache, parent, &|cache, g| {
+    if let Some(g) = convert_group(node, state, false, cache, parent, false, &|cache, g| {
         convert_element_impl(tag_name, node, state, cache, g);
     }) {
         parent.children.push(Node::Group(Box::new(g)));
@@ -539,7 +539,7 @@ pub(crate) fn convert_clip_path_elements(
             continue;
         }
 
-        if let Some(g) = convert_group(node, state, false, cache, parent, &|cache, g| {
+        if let Some(g) = convert_group(node, state, false, cache, parent, false, &|cache, g| {
             convert_clip_path_elements_impl(tag_name, node, state, cache, g);
         }) {
             parent.children.push(Node::Group(Box::new(g)));
@@ -602,6 +602,7 @@ pub(crate) fn convert_group(
     force: bool,
     cache: &mut Cache,
     parent: &mut Group,
+    is_context_element: bool,
     collect_children: &dyn Fn(&mut Cache, &mut Group),
 ) -> Option<Group> {
     // A `clipPath` child cannot have an opacity.
@@ -637,6 +638,7 @@ pub(crate) fn convert_group(
         clip_path: None,
         mask: None,
         filters: Vec::new(),
+        is_context_element,
         bounding_box: dummy,
         abs_bounding_box: dummy,
         stroke_bounding_box: dummy,

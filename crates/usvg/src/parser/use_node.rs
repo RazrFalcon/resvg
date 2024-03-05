@@ -29,8 +29,14 @@ pub(crate) fn convert(
     }
 
     let mut use_state = state.clone();
-    use_state.context_fill = style::resolve_fill(node, false, state, cache);
-    use_state.context_stroke = style::resolve_stroke(node, false, state, cache);
+    use_state.context_fill = style::resolve_fill(node, false, state, cache).map(|mut f| {
+        f.has_context = true;
+        f
+    });
+    use_state.context_stroke = style::resolve_stroke(node, false, state, cache).map(|mut s| {
+        s.has_context = true;
+        s
+    });
 
     // We require an original transformation to setup 'clipPath'.
     let mut orig_ts = node.resolve_transform(AId::Transform, state);
@@ -53,11 +59,18 @@ pub(crate) fn convert(
             let mut g = clip_element(node, clip_rect, orig_ts, &use_state, cache);
 
             // Make group for `use`.
-            if let Some(mut g2) =
-                converter::convert_group(node, &use_state, true, cache, &mut g, &|cache, g2| {
-                    convert_children(child, new_ts, &use_state, cache, g2);
-                })
-            {
+            // TODO: true here as well?
+            if let Some(mut g2) = converter::convert_group(
+                node,
+                &use_state,
+                true,
+                cache,
+                &mut g,
+                true,
+                &|cache, g2| {
+                    convert_children(child, new_ts, &use_state, cache, false, g2);
+                },
+            ) {
                 // We must reset transform, because it was already set
                 // to the group with clip-path.
                 g2.id = String::new(); // Prevent ID duplication.
@@ -79,9 +92,10 @@ pub(crate) fn convert(
 
     if linked_to_symbol {
         // Make group for `use`.
+        //TODO: Same as above
         if let Some(mut g) =
-            converter::convert_group(node, &use_state, false, cache, parent, &|cache, g| {
-                convert_children(child, orig_ts, &use_state, cache, g);
+            converter::convert_group(node, &use_state, false, cache, parent, true, &|cache, g| {
+                convert_children(child, orig_ts, &use_state, cache, false, g);
             })
         {
             g.transform = Transform::default();
@@ -116,9 +130,9 @@ pub(crate) fn convert(
                 use_state.use_size.1 = Some(node.convert_user_length(AId::Height, &use_state, def));
             }
 
-            convert_children(node, orig_ts, &use_state, cache, parent);
+            convert_children(node, orig_ts, &use_state, cache, true, parent);
         } else {
-            convert_children(node, orig_ts, &use_state, cache, parent);
+            convert_children(node, orig_ts, &use_state, cache, true, parent);
         }
     }
 }
@@ -167,12 +181,12 @@ pub(crate) fn convert_svg(
 
     if let Some(clip_rect) = get_clip_rect(node, node, state) {
         let mut g = clip_element(node, clip_rect, orig_ts, state, cache);
-        convert_children(node, new_ts, &new_state, cache, &mut g);
+        convert_children(node, new_ts, &new_state, cache, false, &mut g);
         g.calculate_bounding_boxes();
         parent.children.push(Node::Group(Box::new(g)));
     } else {
         orig_ts = orig_ts.pre_concat(new_ts);
-        convert_children(node, orig_ts, &new_state, cache, parent);
+        convert_children(node, orig_ts, &new_state, cache, false, parent);
     }
 }
 
@@ -232,18 +246,25 @@ fn convert_children(
     transform: Transform,
     state: &converter::State,
     cache: &mut converter::Cache,
+    is_context_element: bool,
     parent: &mut Group,
 ) {
     let required = !transform.is_identity();
-    if let Some(mut g) =
-        converter::convert_group(node, state, required, cache, parent, &|cache, g| {
+    if let Some(mut g) = converter::convert_group(
+        node,
+        state,
+        required,
+        cache,
+        parent,
+        is_context_element,
+        &|cache, g| {
             if state.parent_clip_path.is_some() {
                 converter::convert_clip_path_elements(node, state, cache, g);
             } else {
                 converter::convert_children(node, state, cache, g);
             }
-        })
-    {
+        },
+    ) {
         g.transform = transform;
         parent.children.push(Node::Group(Box::new(g)));
     }

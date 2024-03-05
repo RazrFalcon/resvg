@@ -6,7 +6,7 @@
 
 use std::path;
 
-use usvg::fontdb;
+use usvg::{fontdb, Group, Node};
 
 fn main() {
     if let Err(e) = process() {
@@ -114,6 +114,8 @@ fn process() -> Result<(), String> {
     let tree = timed(args.perf, "SVG Parsing", || {
         usvg::Tree::from_xmltree(&xml_tree, &args.usvg, &fontdb).map_err(|e| e.to_string())
     })?;
+
+    // print_tree(tree.root(), 0);
 
     if args.query_all {
         return query_all(&tree);
@@ -596,6 +598,17 @@ fn load_fonts(args: &mut Args, fontdb: &mut fontdb::Database) {
     fontdb.set_cursive_family(take_or(args.cursive_family.take(), "Comic Sans MS"));
     fontdb.set_fantasy_family(take_or(args.fantasy_family.take(), "Impact"));
     fontdb.set_monospace_family(take_or(args.monospace_family.take(), "Courier New"));
+}
+
+fn print_tree(group: &Group, level: u32) {
+    for child in group.children() {
+        println!("Level {}", level);
+        println!("{:#?}\n", child);
+
+        if let Node::Group(ref g) = child {
+            print_tree(g, level + 1);
+        }
+    }
 }
 
 fn query_all(tree: &usvg::Tree) -> Result<(), String> {

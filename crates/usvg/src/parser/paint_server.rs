@@ -530,9 +530,19 @@ fn stops_to_color(stops: &[Stop]) -> Option<ServerOrColor> {
 
 // Convert object units to user one.
 
-pub fn to_user_coordinates(group: &mut Group, text_bbox: Option<Rect>, cache: &mut Cache) {
+pub fn to_user_coordinates(
+    group: &mut Group,
+    context_transform: Option<Transform>,
+    text_bbox: Option<Rect>,
+    cache: &mut Cache,
+) {
     for child in &mut group.children {
-        node_to_user_coordinates(child, text_bbox, cache);
+        let context_transform = if group.is_context_element {
+            Some(group.abs_transform)
+        } else {
+            context_transform
+        };
+        node_to_user_coordinates(child, context_transform, text_bbox, cache);
     }
 }
 
@@ -543,18 +553,23 @@ pub fn to_user_coordinates(group: &mut Group, text_bbox: Option<Rect>, cache: &m
 // and then replace them with `userSpaceOnUse` after the whole tree parsing is finished.
 // So while gradients and patterns do still store their units,
 // they are not exposed in the public API and for the caller they are always `userSpaceOnUse`.
-fn node_to_user_coordinates(node: &mut Node, text_bbox: Option<Rect>, cache: &mut Cache) {
+fn node_to_user_coordinates(
+    node: &mut Node,
+    context_transform: Option<Transform>,
+    text_bbox: Option<Rect>,
+    cache: &mut Cache,
+) {
     match node {
         Node::Group(ref mut g) => {
             // No need to check clip paths, because they cannot have paint servers.
 
             if let Some(ref mut mask) = g.mask {
                 if let Some(ref mut mask) = Arc::get_mut(mask) {
-                    to_user_coordinates(&mut mask.root, None, cache);
+                    to_user_coordinates(&mut mask.root, context_transform, None, cache);
 
                     if let Some(ref mut sub_mask) = mask.mask {
                         if let Some(ref mut sub_mask) = Arc::get_mut(sub_mask) {
-                            to_user_coordinates(&mut sub_mask.root, None, cache);
+                            to_user_coordinates(&mut sub_mask.root, context_transform, None, cache);
                         }
                     }
                 }
@@ -565,26 +580,38 @@ fn node_to_user_coordinates(node: &mut Node, text_bbox: Option<Rect>, cache: &mu
                     for primitive in &mut filter.primitives {
                         if let filter::Kind::Image(ref mut image) = primitive.kind {
                             if let filter::ImageKind::Use(ref mut use_node) = image.data {
-                                to_user_coordinates(use_node, None, cache);
+                                to_user_coordinates(use_node, context_transform, None, cache);
                             }
                         }
                     }
                 }
             }
 
-            to_user_coordinates(g, text_bbox, cache);
+            to_user_coordinates(g, context_transform, text_bbox, cache);
         }
         Node::Path(ref mut path) => {
             // Paths inside `Text::flattened` are special and must use text's bounding box
             // instead of their own.
             let bbox = text_bbox.unwrap_or(path.bounding_box);
 
-            process_fill(&mut path.fill, bbox, cache);
-            process_stroke(&mut path.stroke, bbox, cache);
+            process_fill(
+                &mut path.fill,
+                path.abs_transform,
+                context_transform,
+                bbox,
+                cache,
+            );
+            process_stroke(
+                &mut path.stroke,
+                path.abs_transform,
+                context_transform,
+                bbox,
+                cache,
+            );
         }
         Node::Image(ref mut image) => {
             if let ImageKind::SVG(ref mut tree) = image.kind {
-                to_user_coordinates(&mut tree.root, None, cache);
+                to_user_coordinates(&mut tree.root, context_transform, None, cache);
             }
         }
         Node::Text(ref mut text) => {
@@ -595,40 +622,90 @@ fn node_to_user_coordinates(node: &mut Node, text_bbox: Option<Rect>, cache: &mu
 
             for chunk in &mut text.chunks {
                 for span in &mut chunk.spans {
-                    process_fill(&mut span.fill, bbox, cache);
-                    process_stroke(&mut span.stroke, bbox, cache);
+                    process_fill(
+                        &mut span.fill,
+                        text.abs_transform,
+                        context_transform,
+                        bbox,
+                        cache,
+                    );
+                    process_stroke(
+                        &mut span.stroke,
+                        text.abs_transform,
+                        context_transform,
+                        bbox,
+                        cache,
+                    );
                     process_text_decoration(&mut span.decoration.underline, bbox, cache);
                     process_text_decoration(&mut span.decoration.overline, bbox, cache);
                     process_text_decoration(&mut span.decoration.line_through, bbox, cache);
                 }
             }
 
-            to_user_coordinates(&mut text.flattened, Some(bbox), cache);
+            to_user_coordinates(&mut text.flattened, context_transform, Some(bbox), cache);
         }
     }
 }
 
-fn process_fill(fill: &mut Option<Fill>, bbox: Rect, cache: &mut Cache) {
+fn process_fill(
+    fill: &mut Option<Fill>,
+    path_transform: Transform,
+    context_transform: Option<Transform>,
+    bbox: Rect,
+    cache: &mut Cache,
+) {
     let mut ok = false;
     if let Some(ref mut fill) = fill {
-        ok = process_paint(&mut fill.paint, bbox, cache);
+        if fill.has_context {
+            fill.paint = fill
+                .paint
+                .get_context_paint(context_transform.unwrap_or_default(), path_transform, cache)
+                .log_none(|| log::warn!("Failed to convert context fill."))
+                .unwrap_or(Paint::Color(Color::black()));
+            return;
+        }
+        ok = process_paint(
+            &mut fill.paint,
+            fill.has_context,
+            context_transform,
+            bbox,
+            cache,
+        );
     }
     if !ok {
         *fill = None;
     }
 }
 
-fn process_stroke(stroke: &mut Option<Stroke>, bbox: Rect, cache: &mut Cache) {
+fn process_stroke(
+    stroke: &mut Option<Stroke>,
+    path_transform: Transform,
+    context_transform: Option<Transform>,
+    bbox: Rect,
+    cache: &mut Cache,
+) {
     let mut ok = false;
     if let Some(ref mut stroke) = stroke {
-        ok = process_paint(&mut stroke.paint, bbox, cache);
+        ok = process_paint(
+            &mut stroke.paint,
+            stroke.has_context,
+            context_transform,
+            bbox,
+            cache,
+        );
     }
     if !ok {
         *stroke = None;
     }
 }
 
-fn process_paint(paint: &mut Paint, bbox: Rect, cache: &mut Cache) -> bool {
+fn process_paint(
+    paint: &mut Paint,
+    has_context: bool,
+    context_transform: Option<Transform>,
+    bbox: Rect,
+    cache: &mut Cache,
+) -> bool {
     if paint.units() == Units::ObjectBoundingBox
         || paint.content_units() == Units::ObjectBoundingBox
     {
@@ -639,7 +716,7 @@ fn process_paint(paint: &mut Paint, bbox: Rect, cache: &mut Cache) -> bool {
 
     if let Paint::Pattern(ref mut patt) = paint {
         if let Some(ref mut patt) = Arc::get_mut(patt) {
-            to_user_coordinates(&mut patt.root, None, cache);
+            to_user_coordinates(&mut patt.root, None, None, cache);
         }
     }
 
@@ -648,12 +725,69 @@ fn process_paint(paint: &mut Paint, bbox: Rect, cache: &mut Cache) -> bool {
 
 fn process_text_decoration(style: &mut Option<TextDecorationStyle>, bbox: Rect, cache: &mut Cache) {
     if let Some(ref mut style) = style {
-        process_fill(&mut style.fill, bbox, cache);
-        process_stroke(&mut style.stroke, bbox, cache);
+        // TODO: Add tests
+        process_fill(&mut style.fill, Transform::default(), None, bbox, cache);
+        process_stroke(&mut style.stroke, Transform::default(), None, bbox, cache);
     }
 }
 
 impl Paint {
+    fn get_context_paint(
+        &self,
+        context_transform: Transform,
+        path_transform: Transform,
+        cache: &mut Cache,
+    ) -> Option<Paint> {
+        let rev_transform = context_transform
+            .invert()?
+            .pre_concat(path_transform)
+            .invert()?;
+
+        match self {
+            Paint::Color(_) => Some(self.clone()),
+            Paint::LinearGradient(ref lg) => {
+                Some(Paint::LinearGradient(Arc::new(LinearGradient {
+                    x1: lg.x1,
+                    y1: lg.y1,
+                    x2: lg.x2,
+                    y2: lg.y2,
+                    base: BaseGradient {
+                        id: cache.gen_linear_gradient_id(),
+                        units: Units::UserSpaceOnUse,
+                        transform: lg.transform.pre_concat(rev_transform),
+                        spread_method: lg.spread_method,
+                        stops: lg.stops.clone(),
+                    },
+                })))
+            }
+            Paint::RadialGradient(ref rg) => {
+                Some(Paint::RadialGradient(Arc::new(RadialGradient {
+                    cx: rg.cx,
+                    cy: rg.cy,
+                    r: rg.r,
+                    fx: rg.fx,
+                    fy: rg.fy,
+                    base: BaseGradient {
+                        id: cache.gen_radial_gradient_id(),
+                        units: Units::UserSpaceOnUse,
+                        transform: rg.transform.pre_concat(rev_transform),
+                        spread_method: rg.spread_method,
+                        stops: rg.stops.clone(),
+                    },
+                })))
+            }
+            Paint::Pattern(ref pat) => Some(Paint::Pattern(Arc::new(Pattern {
+                id: cache.gen_pattern_id(),
+                units: Units::UserSpaceOnUse,
+                content_units: Units::UserSpaceOnUse,
+                transform: pat.transform.pre_concat(rev_transform),
+                rect: pat.rect,
+                view_box: pat.view_box,
+                root: pat.root.clone(),
+            }))),
+        }
+    }
+
     fn to_user_coordinates(&mut self, bbox: Rect, cache: &mut Cache) -> Option<()> {
         let name = if matches!(self, Paint::Pattern(_)) {
             "Pattern"

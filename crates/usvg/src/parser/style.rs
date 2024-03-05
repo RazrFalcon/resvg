@@ -55,15 +55,17 @@ pub(crate) fn resolve_fill(
             paint: Paint::Color(Color::black()),
             opacity: Opacity::ONE,
             rule: node.find_attribute(AId::ClipRule).unwrap_or_default(),
+            has_context: false,
         });
     }
 
     let mut sub_opacity = Opacity::ONE;
-    let paint = if let Some(n) = node.ancestors().find(|n| n.has_attribute(AId::Fill)) {
-        convert_paint(n, AId::Fill, has_bbox, state, &mut sub_opacity, cache)?
-    } else {
-        Paint::Color(Color::black())
-    };
+    let (paint, has_context) =
+        if let Some(n) = node.ancestors().find(|n| n.has_attribute(AId::Fill)) {
+            convert_paint(n, AId::Fill, has_bbox, state, &mut sub_opacity, cache)?
+        } else {
+            (Paint::Color(Color::black()), false)
+        };
 
     let fill_opacity = node
         .find_attribute::<Opacity>(AId::FillOpacity)
@@ -73,6 +75,7 @@ pub(crate) fn resolve_fill(
         paint,
         opacity: sub_opacity * fill_opacity,
         rule: node.find_attribute(AId::FillRule).unwrap_or_default(),
+        has_context,
     })
 }
 
@@ -88,11 +91,12 @@ pub(crate) fn resolve_stroke(
     }
 
     let mut sub_opacity = Opacity::ONE;
-    let paint = if let Some(n) = node.ancestors().find(|n| n.has_attribute(AId::Stroke)) {
-        convert_paint(n, AId::Stroke, has_bbox, state, &mut sub_opacity, cache)?
-    } else {
-        return None;
-    };
+    let (paint, has_context) =
+        if let Some(n) = node.ancestors().find(|n| n.has_attribute(AId::Stroke)) {
+            convert_paint(n, AId::Stroke, has_bbox, state, &mut sub_opacity, cache)?
+        } else {
+            return None;
+        };
 
     let width = node.resolve_valid_length(AId::StrokeWidth, state, 1.0)?;
 
@@ -114,6 +118,7 @@ pub(crate) fn resolve_stroke(
         width,
         linecap: node.find_attribute(AId::StrokeLinecap).unwrap_or_default(),
         linejoin: node.find_attribute(AId::StrokeLinejoin).unwrap_or_default(),
+        has_context,
     };
 
     Some(stroke)
@@ -126,7 +131,7 @@ fn convert_paint(
     state: &converter::State,
     opacity: &mut Opacity,
     cache: &mut converter::Cache,
-) -> Option<Paint> {
+) -> Option<(Paint, bool)> {
     let value: &str = node.attribute(aid)?;
     let paint = match svgtypes::Paint::from_str(value) {
         Ok(v) => v,
@@ -152,20 +157,25 @@ fn convert_paint(
     match paint {
         svgtypes::Paint::None => None,
         svgtypes::Paint::Inherit => None, // already resolved by svgtree
-        svgtypes::Paint::ContextFill => state.context_fill.as_ref().map(|f| f.paint.clone()),
-        svgtypes::Paint::ContextStroke => state.context_stroke.as_ref().map(|s| s.paint.clone()),
+        svgtypes::Paint::ContextFill => {
+            state.context_fill.as_ref().map(|f| (f.paint.clone(), true))
+        }
+        svgtypes::Paint::ContextStroke => state
+            .context_stroke
+            .as_ref()
+            .map(|s| (s.paint.clone(), true)),
         svgtypes::Paint::CurrentColor => {
             let svg_color: svgtypes::Color = node
                 .find_attribute(AId::Color)
                 .unwrap_or_else(svgtypes::Color::black);
             let (color, alpha) = svg_color.split_alpha();
             *opacity = alpha;
-            Some(Paint::Color(color))
+            Some((Paint::Color(color), false))
         }
         svgtypes::Paint::Color(svg_color) => {
             let (color, alpha) = svg_color.split_alpha();
             *opacity = alpha;
-            Some(Paint::Color(color))
+            Some((Paint::Color(color), false))
         }
         svgtypes::Paint::FuncIRI(func_iri, fallback) => {
             if let Some(link) = node.document().element_by_id(func_iri) {
@@ -178,23 +188,23 @@ fn convert_paint(
                             //
                             // See SVG spec 7.11 for details.
                             if !has_bbox && paint.units() == Units::ObjectBoundingBox {
-                                from_fallback(node, fallback, opacity)
+                                from_fallback(node, fallback, opacity).map(|p| (p, false))
                             } else {
-                                Some(paint)
+                                Some((paint, false))
                             }
                         }
                         Some(paint_server::ServerOrColor::Color { color, opacity: so }) => {
                             *opacity = so;
-                            Some(Paint::Color(color))
+                            Some((Paint::Color(color), false))
                         }
-                        None => from_fallback(node, fallback, opacity),
+                        None => from_fallback(node, fallback, opacity).map(|p| (p, false)),
                     }
                 } else {
                     log::warn!("'{}' cannot be used to {} a shape.", tag_name, aid);
                     None
                 }
             } else {
-                from_fallback(node, fallback, opacity)
+                from_fallback(node, fallback, opacity).map(|p| (p, false))
             }
         }
     }

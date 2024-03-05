@@ -540,6 +540,7 @@ pub struct Stroke {
     pub(crate) width: StrokeWidth,
     pub(crate) linecap: LineCap,
     pub(crate) linejoin: LineJoin,
+    pub(crate) has_context: bool,
 }
 
 impl Stroke {
@@ -634,6 +635,7 @@ pub struct Fill {
     pub(crate) paint: Paint,
     pub(crate) opacity: Opacity,
     pub(crate) rule: FillRule,
+    pub(crate) has_context: bool,
 }
 
 impl Fill {
@@ -659,6 +661,7 @@ impl Default for Fill {
             paint: Paint::Color(Color::black()),
             opacity: Opacity::ONE,
             rule: FillRule::default(),
+            has_context: false,
         }
     }
 }
@@ -974,6 +977,7 @@ pub struct Group {
     pub(crate) blend_mode: BlendMode,
     pub(crate) isolate: bool,
     pub(crate) clip_path: Option<Arc<ClipPath>>,
+    pub(crate) is_context_element: bool,
     pub(crate) mask: Option<Arc<Mask>>,
     pub(crate) filters: Vec<Arc<filter::Filter>>,
     pub(crate) bounding_box: Rect,
@@ -998,6 +1002,7 @@ impl Group {
             clip_path: None,
             mask: None,
             filters: Vec::new(),
+            is_context_element: false,
             bounding_box: dummy,
             abs_bounding_box: dummy,
             stroke_bounding_box: dummy,
