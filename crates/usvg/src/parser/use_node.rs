@@ -6,8 +6,9 @@ use std::sync::Arc;
 
 use svgtypes::{Length, LengthUnit};
 
-use super::converter;
 use super::svgtree::{AId, EId, SvgNode};
+use super::{converter, style};
+use crate::tree::ContextElement;
 use crate::{Group, IsValidLength, Node, NonZeroRect, Path, Size, Transform, ViewBox};
 
 pub(crate) fn convert(
@@ -28,34 +29,52 @@ pub(crate) fn convert(
         return;
     }
 
+    let mut use_state = state.clone();
+    use_state.context_element = Some((
+        style::resolve_fill(node, true, state, cache).map(|mut f| {
+            f.context_element = Some(ContextElement::UseNode);
+            f
+        }),
+        style::resolve_stroke(node, true, state, cache).map(|mut s| {
+            s.context_element = Some(ContextElement::UseNode);
+            s
+        }),
+    ));
+
     // We require an original transformation to setup 'clipPath'.
     let mut orig_ts = node.resolve_transform(AId::Transform, state);
     let mut new_ts = Transform::default();
 
     {
-        let x = node.convert_user_length(AId::X, state, Length::zero());
-        let y = node.convert_user_length(AId::Y, state, Length::zero());
+        let x = node.convert_user_length(AId::X, &use_state, Length::zero());
+        let y = node.convert_user_length(AId::Y, &use_state, Length::zero());
         new_ts = new_ts.pre_translate(x, y);
     }
 
     let linked_to_symbol = child.tag_name() == Some(EId::Symbol);
 
     if linked_to_symbol {
-        if let Some(ts) = viewbox_transform(node, child, state) {
+        if let Some(ts) = viewbox_transform(node, child, &use_state) {
             new_ts = new_ts.pre_concat(ts);
         }
 
-        if let Some(clip_rect) = get_clip_rect(node, child, state) {
-            let mut g = clip_element(node, clip_rect, orig_ts, state, cache);
+        if let Some(clip_rect) = get_clip_rect(node, child, &use_state) {
+            let mut g = clip_element(node, clip_rect, orig_ts, &use_state, cache);
 
             // Make group for `use`.
-            if let Some(mut g2) =
-                converter::convert_group(node, state, true, cache, &mut g, &|cache, g2| {
-                    convert_children(child, new_ts, state, cache, g2);
-                })
-            {
+            if let Some(mut g2) = converter::convert_group(
+                node,
+                &use_state,
+                true,
+                cache,
+                &mut g,
+                &|cache, g2| {
+                    convert_children(child, new_ts, &use_state, cache, false, g2);
+                },
+            ) {
                 // We must reset transform, because it was already set
                 // to the group with clip-path.
+                g.is_context_element = true;
                 g2.id = String::new(); // Prevent ID duplication.
                 g2.transform = Transform::default();
                 g.children.push(Node::Group(Box::new(g2)));
@@ -76,10 +95,11 @@ pub(crate) fn convert(
     if linked_to_symbol {
         // Make group for `use`.
         if let Some(mut g) =
-            converter::convert_group(node, state, false, cache, parent, &|cache, g| {
-                convert_children(child, orig_ts, state, cache, g);
+            converter::convert_group(node, &use_state, false, cache, parent, &|cache, g| {
+                convert_children(child, orig_ts, &use_state, cache, false, g);
             })
         {
+            g.is_context_element = true;
             g.transform = Transform::default();
             parent.children.push(Node::Group(Box::new(g)));
         }
@@ -91,8 +111,6 @@ pub(crate) fn convert(
             // instead of `svg` element size.
 
             let def = Length::new(100.0, LengthUnit::Percent);
-
-            let mut state = state.clone();
             // As per usual, the SVG spec doesn't clarify this edge case,
             // but it seems like `use` size has to be reset by each `use`.
             // Meaning if we have two nested `use` elements, where one had set `width` and
@@ -104,19 +122,19 @@ pub(crate) fn convert(
             // <svg id="svg2" x="40" y="40" width="80" height="80" xmlns="http://www.w3.org/2000/svg"/>
             //
             // In this case `svg2` size is 80x100 and not 100x100.
-            state.use_size = (None, None);
+            use_state.use_size = (None, None);
 
             // Width and height can be set independently.
             if node.has_attribute(AId::Width) {
-                state.use_size.0 = Some(node.convert_user_length(AId::Width, &state, def));
+                use_state.use_size.0 = Some(node.convert_user_length(AId::Width, &use_state, def));
             }
             if node.has_attribute(AId::Height) {
-                state.use_size.1 = Some(node.convert_user_length(AId::Height, &state, def));
+                use_state.use_size.1 = Some(node.convert_user_length(AId::Height, &use_state, def));
             }
 
-            convert_children(node, orig_ts, &state, cache, parent);
+            convert_children(node, orig_ts, &use_state, cache, true, parent);
         } else {
-            convert_children(node, orig_ts, state, cache, parent);
+            convert_children(node, orig_ts, &use_state, cache, true, parent);
         }
     }
 }
@@ -165,12 +183,12 @@ pub(crate) fn convert_svg(
 
     if let Some(clip_rect) = get_clip_rect(node, node, state) {
         let mut g = clip_element(node, clip_rect, orig_ts, state, cache);
-        convert_children(node, new_ts, &new_state, cache, &mut g);
+        convert_children(node, new_ts, &new_state, cache, false, &mut g);
         g.calculate_bounding_boxes();
         parent.children.push(Node::Group(Box::new(g)));
     } else {
         orig_ts = orig_ts.pre_concat(new_ts);
-        convert_children(node, orig_ts, &new_state, cache, parent);
+        convert_children(node, orig_ts, &new_state, cache, false, parent);
     }
 }
 
@@ -230,18 +248,25 @@ fn convert_children(
     transform: Transform,
     state: &converter::State,
     cache: &mut converter::Cache,
+    is_context_element: bool,
     parent: &mut Group,
 ) {
     let required = !transform.is_identity();
-    if let Some(mut g) =
-        converter::convert_group(node, state, required, cache, parent, &|cache, g| {
+    if let Some(mut g) = converter::convert_group(
+        node,
+        state,
+        required,
+        cache,
+        parent,
+        &|cache, g| {
             if state.parent_clip_path.is_some() {
                 converter::convert_clip_path_elements(node, state, cache, g);
             } else {
                 converter::convert_children(node, state, cache, g);
             }
-        })
-    {
+        },
+    ) {
+        g.is_context_element = is_context_element;
         g.transform = transform;
         parent.children.push(Node::Group(Box::new(g)));
     }

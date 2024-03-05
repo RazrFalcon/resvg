@@ -72,7 +72,6 @@ pub fn fill_path(
     paint.blend_mode = blend_mode;
 
     pixmap.fill_path(path.data(), &paint, rule, transform, None);
-
     Some(())
 }
 

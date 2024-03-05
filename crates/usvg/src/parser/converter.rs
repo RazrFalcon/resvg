@@ -11,13 +11,17 @@ use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind, TransformOrigin};
 
 use super::svgtree::{self, AId, EId, FromValue, SvgNode};
 use super::units::{self, convert_length};
-use super::{Error, Options};
+use super::{marker, Error, Options};
+use crate::parser::paint_server::process_paint;
 use crate::*;
 
 #[derive(Clone)]
 pub struct State<'a> {
     pub(crate) parent_clip_path: Option<SvgNode<'a, 'a>>,
     pub(crate) parent_markers: Vec<SvgNode<'a, 'a>>,
+    /// Stores the resolved fill and stroke of a use node
+    /// or a path element (for markers)
+    pub(crate) context_element: Option<(Option<Fill>, Option<Stroke>)>,
     pub(crate) fe_image_link: bool,
     /// A viewBox of the parent SVG element.
     pub(crate) view_box: NonZeroRect,
@@ -279,6 +283,7 @@ pub(crate) fn convert_doc(
 
     let state = State {
         parent_clip_path: None,
+        context_element: None,
         parent_markers: Vec::new(),
         fe_image_link: false,
         view_box: view_box.rect,
@@ -316,7 +321,13 @@ pub(crate) fn convert_doc(
     cache.filters.clear();
     cache.paint.clear();
 
-    super::paint_server::to_user_coordinates(&mut tree.root, None, &mut cache);
+    super::paint_server::update_paint_servers(
+        &mut tree.root,
+        Transform::default(),
+        None,
+        None,
+        &mut cache,
+    );
     tree.collect_paint_servers();
     tree.root.collect_clip_paths(&mut tree.clip_paths);
     tree.root.collect_masks(&mut tree.masks);
@@ -337,6 +348,7 @@ fn resolve_svg_size(
 ) -> (Result<Size, Error>, bool) {
     let mut state = State {
         parent_clip_path: None,
+        context_element: None,
         parent_markers: Vec::new(),
         fe_image_link: false,
         view_box: NonZeroRect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
@@ -631,6 +643,7 @@ pub(crate) fn convert_group(
         clip_path: None,
         mask: None,
         filters: Vec::new(),
+        is_context_element: false,
         bounding_box: dummy,
         abs_bounding_box: dummy,
         stroke_bounding_box: dummy,
@@ -722,19 +735,19 @@ pub(crate) fn convert_group(
 
 fn convert_path(
     node: SvgNode,
-    path: Arc<tiny_skia_path::Path>,
+    tiny_skia_path: Arc<tiny_skia_path::Path>,
     state: &State,
     cache: &mut Cache,
     parent: &mut Group,
 ) {
-    debug_assert!(path.len() >= 2);
-    if path.len() < 2 {
+    debug_assert!(tiny_skia_path.len() >= 2);
+    if tiny_skia_path.len() < 2 {
         return;
     }
 
-    let has_bbox = path.bounds().width() > 0.0 && path.bounds().height() > 0.0;
-    let fill = super::style::resolve_fill(node, has_bbox, state, cache);
-    let stroke = super::style::resolve_stroke(node, has_bbox, state, cache);
+    let has_bbox = tiny_skia_path.bounds().width() > 0.0 && tiny_skia_path.bounds().height() > 0.0;
+    let mut fill = super::style::resolve_fill(node, has_bbox, state, cache);
+    let mut stroke = super::style::resolve_stroke(node, has_bbox, state, cache);
     let mut visibility: Visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
     let rendering_mode: ShapeRendering = node
         .find_attribute(AId::ShapeRendering)
@@ -744,6 +757,7 @@ fn convert_path(
     let raw_paint_order: svgtypes::PaintOrder =
         node.find_attribute(AId::PaintOrder).unwrap_or_default();
     let paint_order = svg_paint_order_to_usvg(raw_paint_order);
+    let path_transform = parent.abs_transform;
 
     // If a path doesn't have a fill or a stroke then it's invisible.
     // By setting `visibility` to `hidden` we are disabling rendering of this path.
@@ -751,12 +765,69 @@ fn convert_path(
         visibility = Visibility::Hidden;
     }
 
-    let mut markers_node = None;
-    if super::marker::is_valid(node) && visibility == Visibility::Visible {
-        let mut marker = Group::empty();
-        super::marker::convert(node, &path, state, cache, &mut marker);
-        marker.calculate_bounding_boxes();
-        markers_node = Some(marker);
+    if let Some(fill) = fill.as_mut() {
+        if let Some(ContextElement::PathNode(context_transform, context_bbox)) =
+            fill.context_element
+        {
+            process_paint(
+                &mut fill.paint,
+                true,
+                context_transform,
+                Some(context_bbox.to_rect()),
+                path_transform,
+                tiny_skia_path.bounds(),
+                cache,
+            );
+            fill.context_element = None;
+        }
+    }
+
+    if let Some(stroke) = stroke.as_mut() {
+        if let Some(ContextElement::PathNode(context_transform, context_bbox)) =
+            stroke.context_element
+        {
+            process_paint(
+                &mut stroke.paint,
+                true,
+                context_transform,
+                Some(context_bbox.to_rect()),
+                path_transform,
+                tiny_skia_path.bounds(),
+                cache,
+            );
+            stroke.context_element = None;
+        }
+    }
+
+    let mut marker = None;
+    if marker::is_valid(node) && visibility == Visibility::Visible {
+        let mut marker_group = Group::empty();
+        let mut marker_state = state.clone();
+
+        if let Some(bounding_box) = tiny_skia_path.compute_tight_bounds().and_then(|r| r.to_non_zero_rect()) {
+            let fill = fill.clone().map(|mut f| {
+                f.context_element =
+                    Some(ContextElement::PathNode(path_transform, bounding_box));
+                f
+            });
+
+            let stroke = stroke.clone().map(|mut s| {
+                s.context_element =
+                    Some(ContextElement::PathNode(path_transform, bounding_box));
+                s
+            });
+
+            marker_state.context_element = Some((fill, stroke))
+        }
+        marker::convert(
+            node,
+            &tiny_skia_path,
+            &marker_state,
+            cache,
+            &mut marker_group,
+        );
+        marker_group.calculate_bounding_boxes();
+        marker = Some(marker_group);
     }
 
     // Nodes generated by markers must not have an ID. Otherwise we would have duplicates.
@@ -773,8 +844,8 @@ fn convert_path(
         stroke,
         paint_order,
         rendering_mode,
-        path,
-        parent.abs_transform,
+        tiny_skia_path,
+        path_transform,
     );
 
     let path = match path {
@@ -784,7 +855,7 @@ fn convert_path(
 
     match raw_paint_order.order {
         [PaintOrderKind::Markers, _, _] => {
-            if let Some(markers_node) = markers_node {
+            if let Some(markers_node) = marker {
                 parent.children.push(Node::Group(Box::new(markers_node)));
             }
 
@@ -793,7 +864,7 @@ fn convert_path(
         [first, PaintOrderKind::Markers, last] => {
             append_single_paint_path(first, &path, parent);
 
-            if let Some(markers_node) = markers_node {
+            if let Some(markers_node) = marker {
                 parent.children.push(Node::Group(Box::new(markers_node)));
             }
 
@@ -802,7 +873,7 @@ fn convert_path(
         [_, _, PaintOrderKind::Markers] => {
             parent.children.push(Node::Path(Box::new(path.clone())));
 
-            if let Some(markers_node) = markers_node {
+            if let Some(markers_node) = marker {
                 parent.children.push(Node::Group(Box::new(markers_node)));
             }
         }

@@ -1,0 +1,24 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>`context-fill` with gradient and gradient transform</title>
+    <defs id="defs1">
+        <linearGradient id="lg" gradientTransform="rotate(90)">
+            <stop offset="0" stop-color="white"/>
+            <stop offset="0.25" stop-color="black"/>
+            <stop offset="0.5" stop-color="red"/>
+            <stop offset="0.9" stop-color="green"/>
+        </linearGradient>
+
+        <g id="g1">
+            <rect x="50" y="50" width="100" height="100" fill="context-fill" stroke="context-stroke" />
+            <path id="path1" transform-origin="100 100" transform="rotate(90)" fill="context-fill" stroke="context-stroke"
+                  d="M 100 15 l 50 160 l -130 -100 l 160 0 l -130 100 Z"/>
+            <path id="path1" transform-origin="100 100" transform="scale(0.8 0.8)" fill="context-fill" stroke="context-stroke"
+                  d="M 100 15 l 50 160 l -130 -100 l 160 0 l -130 100 Z"/>
+        </g>
+    </defs>
+
+    <use id="use1" xlink:href="#g1" fill="url(#lg)" stroke="url(#lg)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

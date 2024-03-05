@@ -195,6 +195,7 @@ fn resolve(
         // TODO: do not create a group when no clipPath
         let mut g = Group {
             transform: ts,
+            abs_transform: parent.abs_transform.pre_concat(ts),
             clip_path: clip_path.clone(),
             ..Group::empty()
         };

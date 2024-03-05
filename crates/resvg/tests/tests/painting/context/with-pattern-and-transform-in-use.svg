@@ -1,0 +1,24 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>`context-fill` with pattern and transform</title>
+
+    <pattern id="patt1" patternUnits="userSpaceOnUse" width="20" height="20">
+        <rect id="rect1" x="0" y="0" width="10" height="10" fill="grey"/>
+        <rect id="rect2" x="10" y="10" width="10" height="10" fill="green"/>
+    </pattern>
+
+    <defs id="defs1">
+        <g id="g1" transform="rotate(-45)">
+            <rect x="50" y="50" width="100" height="100" fill="context-fill" stroke="context-stroke" />
+            <path id="path1" transform-origin="100 100" transform="rotate(90)" fill="context-fill" stroke="context-stroke"
+                  d="M 100 15 l 50 160 l -130 -100 l 160 0 l -130 100 Z"/>
+            <path id="path1" transform-origin="100 100" transform="scale(0.8 0.8)" fill="context-fill" stroke="context-stroke"
+                  d="M 100 15 l 50 160 l -130 -100 l 160 0 l -130 100 Z"/>
+        </g>
+    </defs>
+
+    <use id="use1" xlink:href="#g1" transform="rotate(45)" fill="url(#patt1)" stroke="url(#patt1)"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

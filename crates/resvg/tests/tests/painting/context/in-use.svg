@@ -1,0 +1,14 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>`context-fill` and `context-stroke` with use</title>
+
+    <defs id="defs1">
+        <path id="path1" stroke="context-fill" fill="context-stroke"
+              d="M 100 15 l 50 160 l -130 -100 l 160 0 l -130 100 Z"/>
+    </defs>
+
+    <use id="use1" xlink:href="#path1" stroke="green" fill="blue"/>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

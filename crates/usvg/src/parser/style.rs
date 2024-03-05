@@ -5,6 +5,7 @@
 use super::converter::{self, SvgColorExt};
 use super::paint_server;
 use super::svgtree::{AId, FromValue, SvgNode};
+use crate::tree::ContextElement;
 use crate::{
     ApproxEqUlps, Color, Fill, FillRule, LineCap, LineJoin, Opacity, Paint, Stroke,
     StrokeMiterlimit, Units,
@@ -55,15 +56,17 @@ pub(crate) fn resolve_fill(
             paint: Paint::Color(Color::black()),
             opacity: Opacity::ONE,
             rule: node.find_attribute(AId::ClipRule).unwrap_or_default(),
+            context_element: None,
         });
     }
 
     let mut sub_opacity = Opacity::ONE;
-    let paint = if let Some(n) = node.ancestors().find(|n| n.has_attribute(AId::Fill)) {
-        convert_paint(n, AId::Fill, has_bbox, state, &mut sub_opacity, cache)?
-    } else {
-        Paint::Color(Color::black())
-    };
+    let (paint, context_element) =
+        if let Some(n) = node.ancestors().find(|n| n.has_attribute(AId::Fill)) {
+            convert_paint(n, AId::Fill, has_bbox, state, &mut sub_opacity, cache)?
+        } else {
+            (Paint::Color(Color::black()), None)
+        };
 
     let fill_opacity = node
         .find_attribute::<Opacity>(AId::FillOpacity)
@@ -73,6 +76,7 @@ pub(crate) fn resolve_fill(
         paint,
         opacity: sub_opacity * fill_opacity,
         rule: node.find_attribute(AId::FillRule).unwrap_or_default(),
+        context_element,
     })
 }
 
@@ -88,11 +92,12 @@ pub(crate) fn resolve_stroke(
     }
 
     let mut sub_opacity = Opacity::ONE;
-    let paint = if let Some(n) = node.ancestors().find(|n| n.has_attribute(AId::Stroke)) {
-        convert_paint(n, AId::Stroke, has_bbox, state, &mut sub_opacity, cache)?
-    } else {
-        return None;
-    };
+    let (paint, context_element) =
+        if let Some(n) = node.ancestors().find(|n| n.has_attribute(AId::Stroke)) {
+            convert_paint(n, AId::Stroke, has_bbox, state, &mut sub_opacity, cache)?
+        } else {
+            return None;
+        };
 
     let width = node.resolve_valid_length(AId::StrokeWidth, state, 1.0)?;
 
@@ -114,6 +119,7 @@ pub(crate) fn resolve_stroke(
         width,
         linecap: node.find_attribute(AId::StrokeLinecap).unwrap_or_default(),
         linejoin: node.find_attribute(AId::StrokeLinejoin).unwrap_or_default(),
+        context_element,
     };
 
     Some(stroke)
@@ -126,7 +132,7 @@ fn convert_paint(
     state: &converter::State,
     opacity: &mut Opacity,
     cache: &mut converter::Cache,
-) -> Option<Paint> {
+) -> Option<(Paint, Option<ContextElement>)> {
     let value: &str = node.attribute(aid)?;
     let paint = match svgtypes::Paint::from_str(value) {
         Ok(v) => v,
@@ -137,6 +143,12 @@ fn convert_paint(
                     value
                 );
                 svgtypes::Paint::Color(svgtypes::Color::black())
+            } else if aid == AId::Stroke {
+                log::warn!(
+                    "Failed to parse stroke value: '{}'. Fallback to no stroke.",
+                    value
+                );
+                return None;
             } else {
                 return None;
             }
@@ -146,18 +158,30 @@ fn convert_paint(
     match paint {
         svgtypes::Paint::None => None,
         svgtypes::Paint::Inherit => None, // already resolved by svgtree
+        svgtypes::Paint::ContextFill => state
+            .context_element
+            .clone()
+            .map(|(f, _)| f)
+            .flatten()
+            .map(|f| (f.paint, f.context_element)),
+        svgtypes::Paint::ContextStroke => state
+            .context_element
+            .clone()
+            .map(|(_, s)| s)
+            .flatten()
+            .map(|s| (s.paint, s.context_element)),
         svgtypes::Paint::CurrentColor => {
             let svg_color: svgtypes::Color = node
                 .find_attribute(AId::Color)
                 .unwrap_or_else(svgtypes::Color::black);
             let (color, alpha) = svg_color.split_alpha();
             *opacity = alpha;
-            Some(Paint::Color(color))
+            Some((Paint::Color(color), None))
         }
         svgtypes::Paint::Color(svg_color) => {
             let (color, alpha) = svg_color.split_alpha();
             *opacity = alpha;
-            Some(Paint::Color(color))
+            Some((Paint::Color(color), None))
         }
         svgtypes::Paint::FuncIRI(func_iri, fallback) => {
             if let Some(link) = node.document().element_by_id(func_iri) {
@@ -169,28 +193,27 @@ fn convert_paint(
                             // for painting only when the shape itself has a bbox.
                             //
                             // See SVG spec 7.11 for details.
+
                             if !has_bbox && paint.units() == Units::ObjectBoundingBox {
-                                from_fallback(node, fallback, opacity)
+                                from_fallback(node, fallback, opacity).map(|p| (p, None))
                             } else {
-                                Some(paint)
+                                Some((paint, None))
                             }
                         }
                         Some(paint_server::ServerOrColor::Color { color, opacity: so }) => {
                             *opacity = so;
-                            Some(Paint::Color(color))
+                            Some((Paint::Color(color), None))
                         }
-                        None => from_fallback(node, fallback, opacity),
+                        None => from_fallback(node, fallback, opacity).map(|p| (p, None)),
                     }
                 } else {
                     log::warn!("'{}' cannot be used to {} a shape.", tag_name, aid);
                     None
                 }
             } else {
-                from_fallback(node, fallback, opacity)
+                from_fallback(node, fallback, opacity).map(|p| (p, None))
             }
         }
-        // Ignore `context-fill` and `context-stroke for now
-        _ => None,
     }
 }
 
