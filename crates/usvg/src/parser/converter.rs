@@ -773,7 +773,7 @@ fn convert_path(
                 &mut fill.paint,
                 true,
                 context_transform,
-                Some(context_bbox.to_rect()),
+                context_bbox.map(|r| r.to_rect()),
                 path_transform,
                 tiny_skia_path.bounds(),
                 cache,
@@ -790,7 +790,7 @@ fn convert_path(
                 &mut stroke.paint,
                 true,
                 context_transform,
-                Some(context_bbox.to_rect()),
+                context_bbox.map(|r| r.to_rect()),
                 path_transform,
                 tiny_skia_path.bounds(),
                 cache,
@@ -804,21 +804,22 @@ fn convert_path(
         let mut marker_group = Group::empty();
         let mut marker_state = state.clone();
 
-        if let Some(bounding_box) = tiny_skia_path.compute_tight_bounds().and_then(|r| r.to_non_zero_rect()) {
-            let fill = fill.clone().map(|mut f| {
-                f.context_element =
-                    Some(ContextElement::PathNode(path_transform, bounding_box));
-                f
-            });
+        let bbox = tiny_skia_path.compute_tight_bounds().and_then(|r| r.to_non_zero_rect());
 
-            let stroke = stroke.clone().map(|mut s| {
-                s.context_element =
-                    Some(ContextElement::PathNode(path_transform, bounding_box));
-                s
-            });
+        let fill = fill.clone().map(|mut f| {
+            f.context_element =
+                Some(ContextElement::PathNode(path_transform, bbox));
+            f
+        });
 
-            marker_state.context_element = Some((fill, stroke))
-        }
+        let stroke = stroke.clone().map(|mut s| {
+            s.context_element =
+                Some(ContextElement::PathNode(path_transform, bbox));
+            s
+        });
+
+        marker_state.context_element = Some((fill, stroke));
+
         marker::convert(
             node,
             &tiny_skia_path,

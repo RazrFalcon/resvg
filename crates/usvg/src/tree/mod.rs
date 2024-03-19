@@ -642,7 +642,7 @@ pub(crate) enum ContextElement {
     /// if we draw the marker of a path). Since we already know the bounding
     /// box of the path when rendering the markers, we can convert them directly,
     /// so we do it while parsing.
-    PathNode(Transform, NonZeroRect),
+    PathNode(Transform, Option<NonZeroRect>),
 }
 
 /// A fill style.
