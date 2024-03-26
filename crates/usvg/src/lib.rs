@@ -62,7 +62,8 @@ pub use tree::*;
 pub use roxmltree;
 
 #[cfg(feature = "text")]
-mod text_to_paths;
+mod layout;
+
 #[cfg(feature = "text")]
 pub use fontdb;
 
