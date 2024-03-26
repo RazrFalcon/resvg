@@ -140,7 +140,7 @@ pub(crate) fn convert(
         flattened: Box::new(Group::empty()),
     };
 
-    if layout::convert(&mut text, state.fontdb).is_none() {
+    if text::convert(&mut text, state.fontdb).is_none() {
         return;
     }
 
