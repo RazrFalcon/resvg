@@ -7,6 +7,7 @@ use std::sync::Arc;
 use strict_num::NonZeroPositiveF32;
 pub use svgtypes::FontFamily;
 
+use crate::text::PositionedTextFragment;
 use crate::{
     Fill, Group, NonEmptyString, PaintOrder, Rect, Stroke, TextRendering, Transform, Visibility,
 };
@@ -465,6 +466,7 @@ pub struct Text {
     pub(crate) stroke_bounding_box: Rect,
     pub(crate) abs_stroke_bounding_box: Rect,
     pub(crate) flattened: Box<Group>,
+    pub(crate) layouted: Vec<PositionedTextFragment>,
 }
 
 impl Text {

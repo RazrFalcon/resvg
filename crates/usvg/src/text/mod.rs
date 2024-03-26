@@ -2,12 +2,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+mod layout;
+
 use std::collections::HashMap;
 use std::num::NonZeroU16;
 use std::sync::Arc;
 
 use fontdb::{Database, ID};
 use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
+pub(crate) use layout::*;
 use rustybuzz::ttf_parser;
 use svgtypes::FontFamily;
 use ttf_parser::GlyphId;
