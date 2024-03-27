@@ -9,7 +9,11 @@ pub mod old;
 mod outline;
 
 pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> {
+    println!("NEW");
     layout::convert(text, fontdb);
-    outline::convert(text, fontdb)
-    // old::convert(text, fontdb)
+    outline::convert(text, fontdb);
+    println!("OLD");
+    // old::convert(text, fontdb);
+
+    Some(())
 }

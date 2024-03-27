@@ -31,6 +31,7 @@ pub(crate) struct GlyphCluster {
     pub(crate) has_relative_shift: bool,
     pub(crate) glyphs: Vec<PositionedGlyph>,
     pub(crate) transform: Transform,
+    pub(crate) path_transform: Transform,
     pub(crate) visible: bool,
 }
 
@@ -699,9 +700,7 @@ fn apply_writing_mode(writing_mode: WritingMode, clusters: &mut [GlyphCluster]) 
             ts = ts.pre_rotate(-90.0);
             ts = ts.pre_translate(-cluster.width / 2.0, -dy);
 
-            for glyph in &mut cluster.glyphs {
-                glyph.transform = glyph.transform.pre_concat(ts);
-            }
+            cluster.path_transform = ts;
 
             // Move "baseline" to the middle and make height equal to width.
             cluster.ascent = cluster.width / 2.0;
@@ -830,6 +829,7 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
         x_height: font.x_height(font_size),
         has_relative_shift: false,
         transform: Transform::default(),
+        path_transform: Transform::default(),
         glyphs: positioned_glyphs,
         visible: true,
     }

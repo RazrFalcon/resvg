@@ -18,7 +18,7 @@ use crate::*;
 pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> {
     let (new_paths, bbox, stroke_bbox) = text_to_paths(text, fontdb)?;
 
-    println!("{:?}", new_paths);
+    // println!("{:?}", new_paths);
 
     let mut group = Group {
         id: text.id.clone(),
@@ -428,7 +428,7 @@ fn text_to_paths(
             continue;
         }
 
-        apply_writing_mode(text_node.writing_mode, &mut clusters);
+        // apply_writing_mode(text_node.writing_mode, &mut clusters);
         apply_letter_spacing(chunk, &mut clusters);
         apply_word_spacing(chunk, &mut clusters);
         apply_length_adjust(chunk, &mut clusters);
@@ -1712,6 +1712,8 @@ fn apply_writing_mode(writing_mode: WritingMode, clusters: &mut [OutlinedCluster
             ts = ts.pre_translate(cluster.width / 2.0, 0.0);
             ts = ts.pre_rotate(-90.0);
             ts = ts.pre_translate(-cluster.width / 2.0, -dy);
+
+            println!("{:?}", ts);
 
             if let Some(path) = cluster.path.take() {
                 cluster.path = path.transform(ts);

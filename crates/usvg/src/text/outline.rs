@@ -37,7 +37,10 @@ pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> 
                     }
 
                     if let Some(cluster_path) = cluster_builder.finish() {
-                        if let Some(cluster_path) = cluster_path.transform(cluster.transform) {
+                        if let Some(cluster_path) = cluster_path
+                            .transform(cluster.path_transform)
+                            .and_then(|p| p.transform(cluster.transform))
+                        {
                             span_builder.push_path(&cluster_path);
                         }
                     }
