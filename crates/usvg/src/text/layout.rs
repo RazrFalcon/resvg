@@ -71,16 +71,21 @@ pub enum PositionedTextFragment {
 }
 
 pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> {
-    let text_fragments = layout_text(text, fontdb)?;
+    let (text_fragments, bbox) = layout_text(text, fontdb)?;
 
     // TODO: test
     // TODO: should we stroke transformed paths?
     text.layouted = text_fragments;
+    text.bounding_box = bbox.to_rect();
+    text.abs_bounding_box = bbox.transform(text.abs_transform)?.to_rect();
 
     Some(())
 }
 
-fn layout_text(text_node: &Text, fontdb: &fontdb::Database) -> Option<Vec<PositionedTextFragment>> {
+fn layout_text(
+    text_node: &Text,
+    fontdb: &fontdb::Database,
+) -> Option<(Vec<PositionedTextFragment>, NonZeroRect)> {
     let mut fonts_cache: FontsCache = HashMap::new();
 
     for chunk in &text_node.chunks {
@@ -97,6 +102,7 @@ fn layout_text(text_node: &Text, fontdb: &fontdb::Database) -> Option<Vec<Positi
     let mut char_offset = 0;
     let mut last_x = 0.0;
     let mut last_y = 0.0;
+    let mut bbox = BBox::default();
     for chunk in &text_node.chunks {
         let (x, y) = match chunk.text_flow {
             TextFlow::Linear => (chunk.x.unwrap_or(last_x), chunk.y.unwrap_or(last_y)),
@@ -162,6 +168,7 @@ fn layout_text(text_node: &Text, fontdb: &fontdb::Database) -> Option<Vec<Positi
                 if let Some(path) =
                     convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
                 {
+                    bbox = bbox.expand(path.data.bounds());
                     text_fragments.push(PositionedTextFragment::Path(path));
                 }
             }
@@ -175,6 +182,7 @@ fn layout_text(text_node: &Text, fontdb: &fontdb::Database) -> Option<Vec<Positi
                 if let Some(path) =
                     convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
                 {
+                    bbox = bbox.expand(path.data.bounds());
                     text_fragments.push(PositionedTextFragment::Path(path));
                 }
             }
@@ -189,16 +197,18 @@ fn layout_text(text_node: &Text, fontdb: &fontdb::Database) -> Option<Vec<Positi
                 fill.rule = FillRule::NonZero;
             }
 
-            let span_fragments = convert_span(span, &clusters);
-            text_fragments.push(PositionedTextFragment::Span(PositionedSpan {
-                fill,
-                stroke: span.stroke.clone(),
-                paint_order: span.paint_order,
-                font_size: span.font_size,
-                visibility: span.visibility,
-                transform: span_ts,
-                glyph_clusters: span_fragments,
-            }));
+            if let Some((span_fragments, span_bbox)) = convert_span(span, &clusters, span_ts) {
+                bbox = bbox.expand(span_bbox);
+                text_fragments.push(PositionedTextFragment::Span(PositionedSpan {
+                    fill,
+                    stroke: span.stroke.clone(),
+                    paint_order: span.paint_order,
+                    font_size: span.font_size,
+                    visibility: span.visibility,
+                    transform: span_ts,
+                    glyph_clusters: span_fragments,
+                }));
+            }
 
             if let Some(decoration) = span.decoration.line_through.clone() {
                 let offset = match text_node.writing_mode {
@@ -209,6 +219,7 @@ fn layout_text(text_node: &Text, fontdb: &fontdb::Database) -> Option<Vec<Positi
                 if let Some(path) =
                     convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
                 {
+                    bbox = bbox.expand(path.data.bounds());
                     text_fragments.push(PositionedTextFragment::Path(path));
                 }
             }
@@ -226,11 +237,18 @@ fn layout_text(text_node: &Text, fontdb: &fontdb::Database) -> Option<Vec<Positi
         last_y = y + curr_pos.1;
     }
 
-    Some(text_fragments)
+    let bbox = bbox.to_non_zero_rect()?;
+
+    Some((text_fragments, bbox))
 }
 
-fn convert_span(span: &TextSpan, clusters: &[GlyphCluster]) -> Vec<GlyphCluster> {
+fn convert_span(
+    span: &TextSpan,
+    clusters: &[GlyphCluster],
+    text_ts: Transform,
+) -> Option<(Vec<GlyphCluster>, NonZeroRect)> {
     let mut span_clusters = vec![];
+    let mut bboxes_builder = tiny_skia_path::PathBuilder::new();
 
     for cluster in clusters {
         if !cluster.visible {
@@ -240,9 +258,25 @@ fn convert_span(span: &TextSpan, clusters: &[GlyphCluster]) -> Vec<GlyphCluster>
         if span_contains(span, cluster.byte_idx) {
             span_clusters.push(cluster.clone());
         }
+
+        let mut advance = cluster.advance;
+        if advance <= 0.0 {
+            advance = 1.0;
+        }
+
+        // We have to calculate text bbox using font metrics and not glyph shape.
+        if let Some(r) = NonZeroRect::from_xywh(0.0, -cluster.ascent, advance, cluster.height()) {
+            if let Some(r) = r.transform(cluster.transform()) {
+                bboxes_builder.push_rect(r.to_rect());
+            }
+        }
     }
 
-    span_clusters
+    let mut bboxes = bboxes_builder.finish()?;
+    bboxes = bboxes.transform(text_ts)?;
+    let bbox = bboxes.compute_tight_bounds()?.to_non_zero_rect()?;
+
+    Some((span_clusters, bbox))
 }
 
 fn collect_decoration_spans(span: &TextSpan, clusters: &[GlyphCluster]) -> Vec<DecorationSpan> {
