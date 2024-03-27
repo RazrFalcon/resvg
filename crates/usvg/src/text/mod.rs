@@ -4,9 +4,10 @@
 
 use crate::Text;
 
-pub mod layout;
-pub mod old;
+mod layout;
 mod outline;
+
+pub use layout::{PositionedGlyph, Span, TextFragment};
 
 pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> {
     println!("NEW");

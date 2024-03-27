@@ -7,9 +7,9 @@ use std::sync::Arc;
 use strict_num::NonZeroPositiveF32;
 pub use svgtypes::FontFamily;
 
-use crate::text::layout::{PositionedSpan, PositionedTextFragment};
 use crate::{
-    Fill, Group, NonEmptyString, PaintOrder, Rect, Stroke, TextRendering, Transform, Visibility,
+    Fill, Group, NonEmptyString, PaintOrder, Rect, Stroke, TextFragment, TextRendering, Transform,
+    Visibility,
 };
 
 /// A font stretch property.
@@ -466,7 +466,7 @@ pub struct Text {
     pub(crate) stroke_bounding_box: Rect,
     pub(crate) abs_stroke_bounding_box: Rect,
     pub(crate) flattened: Box<Group>,
-    pub(crate) layouted: Vec<PositionedTextFragment>,
+    pub(crate) layouted: Vec<TextFragment>,
 }
 
 impl Text {
@@ -564,13 +564,16 @@ impl Text {
     }
 
     /// Text converted into paths, ready to render.
-    ///
-    /// Returns `None` when the `text` build feature was disabled.
     pub fn flattened(&self) -> &Group {
         &self.flattened
     }
 
-    pub fn layouted(&self) -> &Vec<PositionedTextFragment> {
+    /// The positioned glyphs and decoration spans of the text.
+    ///
+    /// This should only be used if you need more low-level access
+    /// to the glyphs that make up the text. If you just need the
+    /// outlines of the text, you should use `flattened` instead.
+    pub fn layouted(&self) -> &Vec<TextFragment> {
         &self.layouted
     }
 

@@ -651,6 +651,7 @@ fn node_to_user_coordinates(
             // 2. The fills/strokes of the layouted elements of the text.
             // 3. The fills/strokes of the outlined text.
 
+            // 1.
             for chunk in &mut text.chunks {
                 for span in &mut chunk.spans {
                     process_fill(
@@ -675,8 +676,49 @@ fn node_to_user_coordinates(
                 }
             }
 
-            // TODO: 2)
+            // 2.
+            for fragment in &mut text.layouted {
+                match fragment {
+                    TextFragment::Span(ref mut span) => {
+                        process_fill(
+                            &mut span.fill,
+                            text.abs_transform,
+                            context_transform,
+                            context_bbox,
+                            bbox,
+                            cache,
+                        );
+                        process_stroke(
+                            &mut span.stroke,
+                            text.abs_transform,
+                            context_transform,
+                            context_bbox,
+                            bbox,
+                            cache,
+                        );
+                    }
+                    TextFragment::Path(ref mut path) => {
+                        process_fill(
+                            &mut path.fill,
+                            text.abs_transform,
+                            context_transform,
+                            context_bbox,
+                            bbox,
+                            cache,
+                        );
+                        process_stroke(
+                            &mut path.stroke,
+                            text.abs_transform,
+                            context_transform,
+                            context_bbox,
+                            bbox,
+                            cache,
+                        );
+                    }
+                }
+            }
 
+            // 3.
             update_paint_servers(
                 &mut text.flattened,
                 context_transform,

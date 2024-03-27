@@ -1,25 +1,35 @@
-use crate::text::layout::PositionedTextFragment;
-use crate::text::old::DatabaseExt;
+use crate::text::layout::TextFragment;
 use crate::tree::BBox;
-use crate::{Group, Node, Path, ShapeRendering, Text};
+use crate::{Group, Node, Path, ShapeRendering, Text, TextRendering};
+use fontdb::{Database, ID};
+use rustybuzz::ttf_parser;
+use rustybuzz::ttf_parser::GlyphId;
 use std::sync::Arc;
 use tiny_skia_path::Transform;
+
+pub(crate) fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
+    match text.rendering_mode {
+        TextRendering::OptimizeSpeed => ShapeRendering::CrispEdges,
+        TextRendering::OptimizeLegibility => ShapeRendering::GeometricPrecision,
+        TextRendering::GeometricPrecision => ShapeRendering::GeometricPrecision,
+    }
+}
 
 pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> {
     let mut new_paths = vec![];
 
     let mut stroke_bbox = BBox::default();
-    let rendering_mode = crate::text::old::resolve_rendering_mode(text);
+    let rendering_mode = resolve_rendering_mode(text);
 
     for span in &text.layouted {
         match span {
-            PositionedTextFragment::Path(path) => {
+            TextFragment::Path(path) => {
                 stroke_bbox = stroke_bbox.expand(path.data.bounds());
                 let mut path = path.clone();
                 path.rendering_mode = rendering_mode;
                 new_paths.push(path);
             }
-            PositionedTextFragment::Span(span) => {
+            TextFragment::Span(span) => {
                 let mut span_builder = tiny_skia_path::PathBuilder::new();
 
                 for glyph in &span.positioned_glyphs {
@@ -68,4 +78,49 @@ pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> 
     text.abs_stroke_bounding_box = stroke_bbox.transform(text.abs_transform)?.to_rect();
 
     Some(())
+}
+
+struct PathBuilder {
+    builder: tiny_skia_path::PathBuilder,
+}
+
+impl ttf_parser::OutlineBuilder for PathBuilder {
+    fn move_to(&mut self, x: f32, y: f32) {
+        self.builder.move_to(x, y);
+    }
+
+    fn line_to(&mut self, x: f32, y: f32) {
+        self.builder.line_to(x, y);
+    }
+
+    fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
+        self.builder.quad_to(x1, y1, x, y);
+    }
+
+    fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
+        self.builder.cubic_to(x1, y1, x2, y2, x, y);
+    }
+
+    fn close(&mut self) {
+        self.builder.close();
+    }
+}
+
+pub(crate) trait DatabaseExt {
+    fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tiny_skia_path::Path>;
+}
+
+impl DatabaseExt for Database {
+    #[inline(never)]
+    fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tiny_skia_path::Path> {
+        self.with_face_data(id, |data, face_index| -> Option<tiny_skia_path::Path> {
+            let font = ttf_parser::Face::parse(data, face_index).ok()?;
+
+            let mut builder = PathBuilder {
+                builder: tiny_skia_path::PathBuilder::new(),
+            };
+            font.outline_glyph(glyph_id, &mut builder)?;
+            builder.builder.finish()
+        })?
+    }
 }
