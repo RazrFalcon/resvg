@@ -55,15 +55,15 @@ and can focus just on the rendering part.
 mod parser;
 mod tree;
 mod writer;
+#[cfg(feature = "text")]
+mod text;
 
 pub use parser::*;
+#[cfg(feature = "text")]
 pub use text::*;
 pub use tree::*;
 
 pub use roxmltree;
-
-#[cfg(feature = "text")]
-mod text;
 
 #[cfg(feature = "text")]
 pub use fontdb;
