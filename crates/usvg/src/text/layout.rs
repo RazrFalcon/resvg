@@ -1,11 +1,11 @@
 use crate::text::{
-    chunk_span_at, shape_text, span_contains, ByteIndex, DatabaseExt, FontsCache, Glyph,
-    GlyphClusters, OutlinedCluster, ResolvedFont,
+    chunk_span_at, script_supports_letter_spacing, shape_text, span_contains, ByteIndex,
+    DatabaseExt, FontsCache, Glyph, GlyphClusters, OutlinedCluster, ResolvedFont,
 };
-use crate::tree::BBox;
+use crate::tree::{BBox, IsValidLength};
 use crate::{
-    Fill, Font, FontStretch, FontStyle, Group, Node, PaintOrder, Path, ShapeRendering, Stroke,
-    Text, TextChunk, TextFlow, TextRendering, Visibility, WritingMode,
+    ApproxZeroUlps, Fill, Font, FontStretch, FontStyle, Group, Node, PaintOrder, Path,
+    ShapeRendering, Stroke, Text, TextChunk, TextFlow, TextRendering, Visibility, WritingMode,
 };
 use rustybuzz::ttf_parser::GlyphId;
 use std::collections::HashMap;
@@ -13,6 +13,7 @@ use std::sync::Arc;
 use strict_num::NonZeroPositiveF32;
 use svgtypes::FontFamily;
 use tiny_skia_path::{NonZeroRect, Transform};
+use unicode_script::UnicodeScript;
 
 #[derive(Clone, Debug)]
 struct GlyphCluster {
@@ -109,7 +110,7 @@ fn layout_text(
         }
 
         apply_writing_mode(text_node.writing_mode, &mut clusters);
-        //     apply_letter_spacing(chunk, &mut clusters);
+        apply_letter_spacing(chunk, &mut clusters);
         //     apply_word_spacing(chunk, &mut clusters);
         //     apply_length_adjust(chunk, &mut clusters);
         //     let mut curr_pos = resolve_clusters_positions(
@@ -312,6 +313,46 @@ fn apply_writing_mode(writing_mode: WritingMode, clusters: &mut [GlyphCluster]) 
             // but this is how other applications are shifting the "rotated" characters
             // in the top-to-bottom mode.
             cluster.transform = cluster.transform.pre_translate(0.0, cluster.x_height / 2.0);
+        }
+    }
+}
+
+/// Applies the `letter-spacing` property to a text chunk clusters.
+///
+/// [In the CSS spec](https://www.w3.org/TR/css-text-3/#letter-spacing-property).
+fn apply_letter_spacing(chunk: &TextChunk, clusters: &mut [GlyphCluster]) {
+    // At least one span should have a non-zero spacing.
+    if !chunk
+        .spans
+        .iter()
+        .any(|span| !span.letter_spacing.approx_zero_ulps(4))
+    {
+        return;
+    }
+
+    let num_clusters = clusters.len();
+    for (i, cluster) in clusters.iter_mut().enumerate() {
+        // Spacing must be applied only to characters that belongs to the script
+        // that supports spacing.
+        // We are checking only the first code point, since it should be enough.
+        // https://www.w3.org/TR/css-text-3/#cursive-tracking
+        let script = cluster.codepoint.script();
+        if script_supports_letter_spacing(script) {
+            if let Some(span) = chunk_span_at(chunk, cluster.byte_idx) {
+                // A space after the last cluster should be ignored,
+                // since it affects the bbox and text alignment.
+                if i != num_clusters - 1 {
+                    cluster.advance += span.letter_spacing;
+                }
+
+                // If the cluster advance became negative - clear it.
+                // This is an UB so we can do whatever we want, and we mimic Chrome's behavior.
+                if !cluster.advance.is_valid_length() {
+                    cluster.width = 0.0;
+                    cluster.advance = 0.0;
+                    cluster.glyphs = vec![];
+                }
+            }
         }
     }
 }
