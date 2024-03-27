@@ -677,6 +677,7 @@ fn node_to_user_coordinates(
             }
 
             // 2.
+            #[cfg(feature = "text")]
             for fragment in &mut text.layouted {
                 match fragment {
                     TextFragment::Span(ref mut span) => {

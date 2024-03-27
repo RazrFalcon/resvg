@@ -53,10 +53,10 @@ and can focus just on the rendering part.
 #![warn(missing_copy_implementations)]
 
 mod parser;
-mod tree;
-mod writer;
 #[cfg(feature = "text")]
 mod text;
+mod tree;
+mod writer;
 
 pub use parser::*;
 #[cfg(feature = "text")]

@@ -8,9 +8,11 @@ use strict_num::NonZeroPositiveF32;
 pub use svgtypes::FontFamily;
 
 use crate::{
-    Fill, Group, NonEmptyString, PaintOrder, Rect, Stroke, TextFragment, TextRendering, Transform,
-    Visibility,
+    Fill, Group, NonEmptyString, PaintOrder, Rect, Stroke, TextRendering, Transform, Visibility,
 };
+
+#[cfg(feature = "text")]
+use crate::TextFragment;
 
 /// A font stretch property.
 #[allow(missing_docs)]
@@ -466,6 +468,7 @@ pub struct Text {
     pub(crate) stroke_bounding_box: Rect,
     pub(crate) abs_stroke_bounding_box: Rect,
     pub(crate) flattened: Box<Group>,
+    #[cfg(feature = "text")]
     pub(crate) layouted: Vec<TextFragment>,
 }
 
@@ -573,6 +576,7 @@ impl Text {
     /// This should only be used if you need more low-level access
     /// to the glyphs that make up the text. If you just need the
     /// outlines of the text, you should use `flattened` instead.
+    #[cfg(feature = "text")]
     pub fn layouted(&self) -> &Vec<TextFragment> {
         &self.layouted
     }
