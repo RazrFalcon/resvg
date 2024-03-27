@@ -169,21 +169,19 @@ fn layout_text(
                     text_fragments.push(PositionedTextFragment::Path(path));
                 }
             }
-            //
-            //         if let Some(decoration) = span.decoration.overline.clone() {
-            //             let offset = match text_node.writing_mode {
-            //                 WritingMode::LeftToRight => -font.ascent(span.font_size.get()),
-            //                 WritingMode::TopToBottom => -font.height(span.font_size.get()) / 2.0,
-            //             };
-            //
-            //             if let Some(path) =
-            //                 convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
-            //             {
-            //                 bbox = bbox.expand(path.data.bounds());
-            //                 stroke_bbox = stroke_bbox.expand(path.data.bounds());
-            //                 new_paths.push(path);
-            //             }
-            //         }
+
+            if let Some(decoration) = span.decoration.overline.clone() {
+                let offset = match text_node.writing_mode {
+                    WritingMode::LeftToRight => -font.ascent(span.font_size.get()),
+                    WritingMode::TopToBottom => -font.height(span.font_size.get()) / 2.0,
+                };
+
+                if let Some(path) =
+                    convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
+                {
+                    text_fragments.push(PositionedTextFragment::Path(path));
+                }
+            }
             //
             //         if let Some((path, span_bbox)) = convert_span(span, &mut clusters, span_ts) {
             //             bbox = bbox.expand(span_bbox);
@@ -191,20 +189,18 @@ fn layout_text(
             //             new_paths.push(path);
             //         }
             //
-            //         if let Some(decoration) = span.decoration.line_through.clone() {
-            //             let offset = match text_node.writing_mode {
-            //                 WritingMode::LeftToRight => -font.line_through_position(span.font_size.get()),
-            //                 WritingMode::TopToBottom => 0.0,
-            //             };
-            //
-            //             if let Some(path) =
-            //                 convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
-            //             {
-            //                 bbox = bbox.expand(path.data.bounds());
-            //                 stroke_bbox = stroke_bbox.expand(path.data.bounds());
-            //                 new_paths.push(path);
-            //             }
-            //         }
+            if let Some(decoration) = span.decoration.line_through.clone() {
+                let offset = match text_node.writing_mode {
+                    WritingMode::LeftToRight => -font.line_through_position(span.font_size.get()),
+                    WritingMode::TopToBottom => 0.0,
+                };
+
+                if let Some(path) =
+                    convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
+                {
+                    text_fragments.push(PositionedTextFragment::Path(path));
+                }
+            }
         }
         //
         //     char_offset += chunk.text.chars().count();
