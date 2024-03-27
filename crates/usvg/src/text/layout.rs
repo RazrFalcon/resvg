@@ -30,14 +30,18 @@ pub(crate) struct GlyphCluster {
     pub(crate) x_height: f32,
     pub(crate) has_relative_shift: bool,
     pub(crate) glyphs: Vec<PositionedGlyph>,
-    pub(crate) transform: Transform,
-    pub(crate) path_transform: Transform,
+    transform: Transform,
+    path_transform: Transform,
     pub(crate) visible: bool,
 }
 
 impl GlyphCluster {
     pub(crate) fn height(&self) -> f32 {
         self.ascent - self.descent
+    }
+
+    pub(crate) fn transform(&self) -> Transform {
+        self.path_transform.post_concat(self.transform)
     }
 }
 

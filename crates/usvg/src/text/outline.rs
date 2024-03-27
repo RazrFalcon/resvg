@@ -37,10 +37,7 @@ pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> 
                     }
 
                     if let Some(cluster_path) = cluster_builder.finish() {
-                        if let Some(cluster_path) = cluster_path
-                            .transform(cluster.path_transform)
-                            .and_then(|p| p.transform(cluster.transform))
-                        {
+                        if let Some(cluster_path) = cluster_path.transform(cluster.transform()) {
                             span_builder.push_path(&cluster_path);
                         }
                     }
@@ -54,7 +51,7 @@ pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> 
                     if let Some(r) =
                         NonZeroRect::from_xywh(0.0, -cluster.ascent, advance, cluster.height())
                     {
-                        if let Some(r) = r.transform(cluster.transform) {
+                        if let Some(r) = r.transform(cluster.transform()) {
                             bboxes_builder.push_rect(r.to_rect());
                         }
                     }
