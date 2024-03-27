@@ -174,9 +174,19 @@ fn layout_text(text_node: &Text, fontdb: &fontdb::Database) -> Option<Vec<Positi
                 }
             }
 
+            let mut fill = span.fill.clone();
+            if let Some(ref mut fill) = fill {
+                // The `fill-rule` should be ignored.
+                // https://www.w3.org/TR/SVG2/text.html#TextRenderingOrder
+                //
+                // 'Since the fill-rule property does not apply to SVG text elements,
+                // the specific order of the subpaths within the equivalent path does not matter.'
+                fill.rule = FillRule::NonZero;
+            }
+
             let span_fragments = convert_span(span, &clusters);
             text_fragments.push(PositionedTextFragment::Span(PositionedSpan {
-                fill: span.fill.clone(),
+                fill,
                 stroke: span.stroke.clone(),
                 paint_order: span.paint_order,
                 font: font.id,
