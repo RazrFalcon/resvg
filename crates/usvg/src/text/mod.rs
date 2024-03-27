@@ -11,4 +11,5 @@ mod outline;
 pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> {
     layout::convert(text, fontdb);
     outline::convert(text, fontdb)
+    // old::convert(text, fontdb)
 }

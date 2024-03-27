@@ -42,13 +42,15 @@ pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> 
                         }
                     }
 
+                    let mut advance = cluster.advance;
+                    if advance <= 0.0 {
+                        advance = 1.0;
+                    }
+
                     // We have to calculate text bbox using font metrics and not glyph shape.
-                    if let Some(r) = NonZeroRect::from_xywh(
-                        0.0,
-                        -cluster.ascent,
-                        cluster.advance,
-                        cluster.height(),
-                    ) {
+                    if let Some(r) =
+                        NonZeroRect::from_xywh(0.0, -cluster.ascent, advance, cluster.height())
+                    {
                         if let Some(r) = r.transform(cluster.transform) {
                             bboxes_builder.push_rect(r.to_rect());
                         }
@@ -84,6 +86,8 @@ pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> 
             }
         }
     }
+
+    // println!("{:?}", new_paths);
 
     let mut group = Group {
         id: text.id.clone(),

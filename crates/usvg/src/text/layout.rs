@@ -233,12 +233,6 @@ fn convert_span(span: &TextSpan, clusters: &[GlyphCluster]) -> Vec<GlyphCluster>
         }
 
         if span_contains(span, cluster.byte_idx) {
-            // TODO: make sure `advance` is never negative beforehand.
-            let mut advance = cluster.advance;
-            if advance <= 0.0 {
-                advance = 1.0;
-            }
-
             span_clusters.push(cluster.clone());
         }
     }

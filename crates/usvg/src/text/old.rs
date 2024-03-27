@@ -18,6 +18,8 @@ use crate::*;
 pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> {
     let (new_paths, bbox, stroke_bbox) = text_to_paths(text, fontdb)?;
 
+    println!("{:?}", new_paths);
+
     let mut group = Group {
         id: text.id.clone(),
         ..Group::empty()
