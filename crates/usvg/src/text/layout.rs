@@ -1,11 +1,11 @@
 use crate::text::{
     chunk_span_at, shape_text, span_contains, ByteIndex, DatabaseExt, FontsCache, Glyph,
-    GlyphClusters, ResolvedFont,
+    GlyphClusters, OutlinedCluster, ResolvedFont,
 };
 use crate::tree::BBox;
 use crate::{
     Fill, Font, FontStretch, FontStyle, Group, Node, PaintOrder, Path, ShapeRendering, Stroke,
-    Text, TextChunk, TextFlow, TextRendering, Visibility,
+    Text, TextChunk, TextFlow, TextRendering, Visibility, WritingMode,
 };
 use rustybuzz::ttf_parser::GlyphId;
 use std::collections::HashMap;
@@ -107,8 +107,8 @@ fn layout_text(
             char_offset += chunk.text.chars().count();
             continue;
         }
-        //
-        //     apply_writing_mode(text_node.writing_mode, &mut clusters);
+
+        apply_writing_mode(text_node.writing_mode, &mut clusters);
         //     apply_letter_spacing(chunk, &mut clusters);
         //     apply_word_spacing(chunk, &mut clusters);
         //     apply_length_adjust(chunk, &mut clusters);
@@ -281,6 +281,41 @@ fn process_chunk(
     clusters
 }
 
+/// Rotates clusters according to
+/// [Unicode Vertical_Orientation Property](https://www.unicode.org/reports/tr50/tr50-19.html).
+fn apply_writing_mode(writing_mode: WritingMode, clusters: &mut [GlyphCluster]) {
+    if writing_mode != WritingMode::TopToBottom {
+        return;
+    }
+
+    for cluster in clusters {
+        let orientation = unicode_vo::char_orientation(cluster.codepoint);
+        if orientation == unicode_vo::Orientation::Upright {
+            // Additional offset. Not sure why.
+            let dy = cluster.width - cluster.height();
+
+            // Rotate a cluster 90deg counter clockwise by the center.
+            let mut ts = Transform::default();
+            ts = ts.pre_translate(cluster.width / 2.0, 0.0);
+            ts = ts.pre_rotate(-90.0);
+            ts = ts.pre_translate(-cluster.width / 2.0, -dy);
+
+            for glyph in &mut cluster.glyphs {
+                glyph.transform = glyph.transform.pre_concat(ts);
+            }
+
+            // Move "baseline" to the middle and make height equal to width.
+            cluster.ascent = cluster.width / 2.0;
+            cluster.descent = -cluster.width / 2.0;
+        } else {
+            // Could not find a spec that explains this,
+            // but this is how other applications are shifting the "rotated" characters
+            // in the top-to-bottom mode.
+            cluster.transform = cluster.transform.pre_translate(0.0, cluster.x_height / 2.0);
+        }
+    }
+}
+
 fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphCluster {
     debug_assert!(!glyphs.is_empty());
 
@@ -292,7 +327,6 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
     for glyph in glyphs {
         let sx = glyph.font.scale(font_size);
 
-        // By default, glyphs are upside-down, so we have to mirror them.
         let mut ts = Transform::from_scale(sx, sx);
 
         // Apply offset.
