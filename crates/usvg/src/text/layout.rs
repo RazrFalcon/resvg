@@ -6,10 +6,11 @@ use crate::text::{
 };
 use crate::tree::{BBox, IsValidLength};
 use crate::{
-    ApproxZeroUlps, Fill, Font, FontStretch, FontStyle, Group, LengthAdjust, Node, PaintOrder,
-    Path, ShapeRendering, Stroke, Text, TextChunk, TextFlow, TextPath, TextRendering, TextSpan,
-    Visibility, WritingMode,
+    ApproxZeroUlps, Fill, FillRule, Font, FontStretch, FontStyle, Group, LengthAdjust, Node,
+    PaintOrder, Path, ShapeRendering, Stroke, Text, TextChunk, TextFlow, TextPath, TextRendering,
+    TextSpan, Visibility, WritingMode,
 };
+use fontdb::ID;
 use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
 use rustybuzz::ttf_parser::GlyphId;
 use std::collections::HashMap;
@@ -52,7 +53,7 @@ pub struct PositionedSpan {
     pub(crate) fill: Option<Fill>,
     pub(crate) stroke: Option<Stroke>,
     pub(crate) paint_order: PaintOrder,
-    pub(crate) font: Font,
+    pub(crate) font: ID,
     pub(crate) font_size: NonZeroPositiveF32,
     pub(crate) visibility: Visibility,
     pub(crate) transform: Transform,
@@ -182,13 +183,19 @@ fn layout_text(
                     text_fragments.push(PositionedTextFragment::Path(path));
                 }
             }
-            //
-            //         if let Some((path, span_bbox)) = convert_span(span, &mut clusters, span_ts) {
-            //             bbox = bbox.expand(span_bbox);
-            //             stroke_bbox = stroke_bbox.expand(path.stroke_bounding_box());
-            //             new_paths.push(path);
-            //         }
-            //
+
+            let span_fragments = convert_span(span, &clusters);
+            text_fragments.push(PositionedTextFragment::Span(PositionedSpan {
+                fill: span.fill.clone(),
+                stroke: span.stroke.clone(),
+                paint_order: span.paint_order,
+                font: font.id,
+                font_size: span.font_size,
+                visibility: span.visibility,
+                transform: span_ts,
+                glyph_clusters: span_fragments,
+            }));
+
             if let Some(decoration) = span.decoration.line_through.clone() {
                 let offset = match text_node.writing_mode {
                     WritingMode::LeftToRight => -font.line_through_position(span.font_size.get()),
@@ -202,22 +209,44 @@ fn layout_text(
                 }
             }
         }
-        //
-        //     char_offset += chunk.text.chars().count();
-        //
-        //     if text_node.writing_mode == WritingMode::TopToBottom {
-        //         if let TextFlow::Linear = chunk.text_flow {
-        //             std::mem::swap(&mut curr_pos.0, &mut curr_pos.1);
-        //         }
-        //     }
-        //
-        //     last_x = x + curr_pos.0;
-        //     last_y = y + curr_pos.1;
+
+        char_offset += chunk.text.chars().count();
+
+        if text_node.writing_mode == WritingMode::TopToBottom {
+            if let TextFlow::Linear = chunk.text_flow {
+                std::mem::swap(&mut curr_pos.0, &mut curr_pos.1);
+            }
+        }
+
+        last_x = x + curr_pos.0;
+        last_y = y + curr_pos.1;
     }
 
     let bbox = bbox.to_non_zero_rect()?;
     let stroke_bbox = stroke_bbox.to_non_zero_rect().unwrap_or(bbox);
     Some((text_fragments, bbox, stroke_bbox))
+}
+
+fn convert_span(span: &TextSpan, clusters: &[GlyphCluster]) -> Vec<GlyphCluster> {
+    let mut span_clusters = vec![];
+
+    for cluster in clusters {
+        if !cluster.visible {
+            continue;
+        }
+
+        if span_contains(span, cluster.byte_idx) {
+            // TODO: make sure `advance` is never negative beforehand.
+            let mut advance = cluster.advance;
+            if advance <= 0.0 {
+                advance = 1.0;
+            }
+
+            span_clusters.push(cluster.clone());
+        }
+    }
+
+    span_clusters
 }
 
 fn collect_decoration_spans(span: &TextSpan, clusters: &[GlyphCluster]) -> Vec<DecorationSpan> {
