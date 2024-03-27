@@ -473,7 +473,6 @@ pub(crate) fn resolve_baseline(
     writing_mode: WritingMode,
 ) -> f32 {
     let mut shift = -resolve_baseline_shift(&span.baseline_shift, font, span.font_size.get());
-    println!("{:?}", font.units_per_em);
 
     // TODO: support vertical layout as well
     if writing_mode == WritingMode::LeftToRight {

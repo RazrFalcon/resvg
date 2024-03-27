@@ -54,9 +54,9 @@ pub fn render(name: &str) -> usize {
     );
     resvg::render(&tree, render_ts, &mut pixmap.as_mut());
 
-    //pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
+    // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
 
-    let mut rgba = pixmap.clone().take();
+    let mut rgba = pixmap.take();
     demultiply_alpha(rgba.as_mut_slice().as_rgba_mut());
 
     let expected_data = load_png(&png_path);
@@ -75,13 +75,9 @@ pub fn render(name: &str) -> usize {
     }
 
     // Save diff if needed.
-    if pixels_d != 0 {
-        // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
-        // gen_diff(&name, &expected_data, rgba.as_slice()).unwrap();
-        // pixmap
-        //     .save_png(&format!("tests/{}-actual.png", name))
-        //     .unwrap();
-    }
+    // if pixels_d != 0 {
+    //     gen_diff(&name, &expected_data, rgba.as_slice()).unwrap();
+    // }
 
     pixels_d
 }

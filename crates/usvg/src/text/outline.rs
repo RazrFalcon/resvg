@@ -7,7 +7,7 @@ use rustybuzz::ttf_parser::GlyphId;
 use std::sync::Arc;
 use tiny_skia_path::{NonZeroRect, Transform};
 
-pub(crate) fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
+fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
     match text.rendering_mode {
         TextRendering::OptimizeSpeed => ShapeRendering::CrispEdges,
         TextRendering::OptimizeLegibility => ShapeRendering::GeometricPrecision,
@@ -15,7 +15,10 @@ pub(crate) fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
     }
 }
 
-pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Group, NonZeroRect)> {
+pub(crate) fn outline_text(
+    text: &mut Text,
+    fontdb: &fontdb::Database,
+) -> Option<(Group, NonZeroRect)> {
     let mut new_paths = vec![];
 
     let mut stroke_bbox = BBox::default();
