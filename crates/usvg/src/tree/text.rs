@@ -7,7 +7,7 @@ use std::sync::Arc;
 use strict_num::NonZeroPositiveF32;
 pub use svgtypes::FontFamily;
 
-use crate::text::layout::PositionedTextFragment;
+use crate::text::layout::{PositionedSpan, PositionedTextFragment};
 use crate::{
     Fill, Group, NonEmptyString, PaintOrder, Rect, Stroke, TextRendering, Transform, Visibility,
 };
@@ -568,6 +568,10 @@ impl Text {
     /// Returns `None` when the `text` build feature was disabled.
     pub fn flattened(&self) -> &Group {
         &self.flattened
+    }
+
+    pub fn layouted(&self) -> &Vec<PositionedTextFragment> {
+        &self.layouted
     }
 
     pub(crate) fn subroots(&self, f: &mut dyn FnMut(&Group)) {

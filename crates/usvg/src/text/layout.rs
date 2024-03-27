@@ -13,6 +13,7 @@ use fontdb::ID;
 use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
 use rustybuzz::ttf_parser::GlyphId;
 use std::collections::HashMap;
+use std::mem::transmute;
 use std::sync::Arc;
 use strict_num::NonZeroPositiveF32;
 use svgtypes::FontFamily;
@@ -20,34 +21,9 @@ use tiny_skia_path::{NonZeroRect, Transform};
 use unicode_script::UnicodeScript;
 
 #[derive(Clone, Debug)]
-pub(crate) struct GlyphCluster {
-    pub(crate) byte_idx: ByteIndex,
-    pub(crate) codepoint: char,
-    pub(crate) width: f32,
-    pub(crate) advance: f32,
-    pub(crate) ascent: f32,
-    pub(crate) descent: f32,
-    pub(crate) x_height: f32,
-    pub(crate) has_relative_shift: bool,
-    pub(crate) glyphs: Vec<PositionedGlyph>,
-    transform: Transform,
-    path_transform: Transform,
-    pub(crate) visible: bool,
-}
-
-impl GlyphCluster {
-    pub(crate) fn height(&self) -> f32 {
-        self.ascent - self.descent
-    }
-
-    pub(crate) fn transform(&self) -> Transform {
-        self.path_transform.post_concat(self.transform)
-    }
-}
-
-#[derive(Clone, Debug)]
 pub struct PositionedGlyph {
     pub(crate) transform: Transform,
+    pub(crate) cluster_transform: Transform,
     pub(crate) glyph_id: GlyphId,
     pub(crate) font: ID,
     byte_idx: ByteIndex,
@@ -61,13 +37,39 @@ pub struct PositionedSpan {
     pub(crate) font_size: NonZeroPositiveF32,
     pub(crate) visibility: Visibility,
     pub(crate) transform: Transform,
-    pub(crate) glyph_clusters: Vec<GlyphCluster>,
+    pub(crate) positioned_glyphs: Vec<PositionedGlyph>,
 }
 
 #[derive(Clone, Debug)]
 pub enum PositionedTextFragment {
     Span(PositionedSpan),
     Path(Path),
+}
+
+#[derive(Clone, Debug)]
+struct GlyphCluster {
+    byte_idx: ByteIndex,
+    codepoint: char,
+    width: f32,
+    advance: f32,
+    ascent: f32,
+    descent: f32,
+    x_height: f32,
+    has_relative_shift: bool,
+    glyphs: Vec<PositionedGlyph>,
+    transform: Transform,
+    path_transform: Transform,
+    visible: bool,
+}
+
+impl GlyphCluster {
+    pub(crate) fn height(&self) -> f32 {
+        self.ascent - self.descent
+    }
+
+    pub(crate) fn transform(&self) -> Transform {
+        self.path_transform.post_concat(self.transform)
+    }
 }
 
 pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> {
@@ -197,8 +199,20 @@ fn layout_text(
                 fill.rule = FillRule::NonZero;
             }
 
-            if let Some((span_fragments, span_bbox)) = convert_span(span, &clusters, span_ts) {
+            if let Some((mut span_fragments, span_bbox)) = convert_span(span, &clusters, span_ts) {
                 bbox = bbox.expand(span_bbox);
+
+                let mut positioned_glyphs = span_fragments
+                    .into_iter()
+                    .flat_map(|mut gc| {
+                        let ts = gc.transform();
+                        gc.glyphs
+                            .iter_mut()
+                            .for_each(|pg| pg.cluster_transform = ts);
+                        gc.glyphs
+                    })
+                    .collect();
+
                 text_fragments.push(PositionedTextFragment::Span(PositionedSpan {
                     fill,
                     stroke: span.stroke.clone(),
@@ -206,7 +220,7 @@ fn layout_text(
                     font_size: span.font_size,
                     visibility: span.visibility,
                     transform: span_ts,
-                    glyph_clusters: span_fragments,
+                    positioned_glyphs,
                 }));
             }
 
@@ -285,6 +299,7 @@ fn collect_decoration_spans(span: &TextSpan, clusters: &[GlyphCluster]) -> Vec<D
     let mut started = false;
     let mut width = 0.0;
     let mut transform = Transform::default();
+
     for cluster in clusters {
         if span_contains(span, cluster.byte_idx) {
             if started && cluster.has_relative_shift {
@@ -845,6 +860,9 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
             font: glyph.font.id,
             glyph_id: glyph.id,
             byte_idx: glyph.byte_idx,
+
+            // Will be set later
+            cluster_transform: Transform::default(),
         });
 
         x += glyph.width as f32;

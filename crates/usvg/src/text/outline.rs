@@ -22,36 +22,32 @@ pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> 
             PositionedTextFragment::Span(span) => {
                 let mut span_builder = tiny_skia_path::PathBuilder::new();
 
-                for cluster in &span.glyph_clusters {
-                    for glyph in &cluster.glyphs {
-                        if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
-                            let mut ts = Transform::from_scale(1.0, -1.0);
-                            ts = ts
-                                .pre_concat(glyph.transform)
-                                .post_concat(cluster.transform())
-                                .post_concat(span.transform);
+                for glyph in &span.positioned_glyphs {
+                    if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
+                        let mut ts = Transform::from_scale(1.0, -1.0);
+                        ts = ts
+                            .pre_concat(glyph.transform)
+                            .post_concat(glyph.cluster_transform)
+                            .post_concat(span.transform);
 
-                            if let Some(outline) = outline.transform(ts) {
-                                span_builder.push_path(&outline);
-                            }
+                        if let Some(outline) = outline.transform(ts) {
+                            span_builder.push_path(&outline);
                         }
                     }
                 }
 
-                if let Some(path) = span_builder
-                    .finish()
-                    .and_then(|p| {
-                        Path::new(
-                            String::new(),
-                            span.visibility,
-                            span.fill.clone(),
-                            span.stroke.clone(),
-                            span.paint_order,
-                            rendering_mode,
-                            Arc::new(p),
-                            Transform::default(),
-                        )
-                    }) {
+                if let Some(path) = span_builder.finish().and_then(|p| {
+                    Path::new(
+                        String::new(),
+                        span.visibility,
+                        span.fill.clone(),
+                        span.stroke.clone(),
+                        span.paint_order,
+                        rendering_mode,
+                        Arc::new(p),
+                        Transform::default(),
+                    )
+                }) {
                     stroke_bbox = stroke_bbox.expand(path.stroke_bounding_box());
                     new_paths.push(path);
                 }
