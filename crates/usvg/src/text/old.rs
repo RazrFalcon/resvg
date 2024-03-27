@@ -343,7 +343,7 @@ impl ByteIndex {
     }
 }
 
-fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
+pub(crate) fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
     match text.rendering_mode {
         TextRendering::OptimizeSpeed => ShapeRendering::CrispEdges,
         TextRendering::OptimizeLegibility => ShapeRendering::GeometricPrecision,

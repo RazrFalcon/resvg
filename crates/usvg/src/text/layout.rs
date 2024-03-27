@@ -20,18 +20,18 @@ use tiny_skia_path::{NonZeroRect, Transform};
 use unicode_script::UnicodeScript;
 
 #[derive(Clone, Debug)]
-struct GlyphCluster {
-    byte_idx: ByteIndex,
-    codepoint: char,
-    width: f32,
-    advance: f32,
-    ascent: f32,
-    descent: f32,
-    x_height: f32,
-    has_relative_shift: bool,
-    glyphs: Vec<PositionedGlyph>,
-    transform: Transform,
-    visible: bool,
+pub(crate) struct GlyphCluster {
+    pub(crate) byte_idx: ByteIndex,
+    pub(crate) codepoint: char,
+    pub(crate) width: f32,
+    pub(crate) advance: f32,
+    pub(crate) ascent: f32,
+    pub(crate) descent: f32,
+    pub(crate) x_height: f32,
+    pub(crate) has_relative_shift: bool,
+    pub(crate) glyphs: Vec<PositionedGlyph>,
+    pub(crate) transform: Transform,
+    pub(crate) visible: bool,
 }
 
 impl GlyphCluster {
@@ -66,23 +66,16 @@ pub enum PositionedTextFragment {
 }
 
 pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> {
-    let (text_fragments, bbox, stroke_bbox) = layout_text(text, fontdb)?;
+    let text_fragments = layout_text(text, fontdb)?;
 
-    text.bounding_box = bbox.to_rect();
-    text.abs_bounding_box = bbox.transform(text.abs_transform)?.to_rect();
     // TODO: test
     // TODO: should we stroke transformed paths?
-    text.stroke_bounding_box = stroke_bbox.to_rect();
-    text.abs_stroke_bounding_box = stroke_bbox.transform(text.abs_transform)?.to_rect();
     text.layouted = text_fragments;
 
     Some(())
 }
 
-fn layout_text(
-    text_node: &Text,
-    fontdb: &fontdb::Database,
-) -> Option<(Vec<PositionedTextFragment>, NonZeroRect, NonZeroRect)> {
+fn layout_text(text_node: &Text, fontdb: &fontdb::Database) -> Option<Vec<PositionedTextFragment>> {
     let mut fonts_cache: FontsCache = HashMap::new();
 
     for chunk in &text_node.chunks {
@@ -96,8 +89,6 @@ fn layout_text(
     }
 
     let mut text_fragments = vec![];
-    let mut bbox = BBox::default();
-    let mut stroke_bbox = BBox::default();
     let mut char_offset = 0;
     let mut last_x = 0.0;
     let mut last_y = 0.0;
@@ -221,9 +212,7 @@ fn layout_text(
         last_y = y + curr_pos.1;
     }
 
-    let bbox = bbox.to_non_zero_rect()?;
-    let stroke_bbox = stroke_bbox.to_non_zero_rect().unwrap_or(bbox);
-    Some((text_fragments, bbox, stroke_bbox))
+    Some(text_fragments)
 }
 
 fn convert_span(span: &TextSpan, clusters: &[GlyphCluster]) -> Vec<GlyphCluster> {

@@ -6,7 +6,9 @@ use crate::Text;
 
 pub mod layout;
 pub mod old;
+mod outline;
 
 pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> {
-    old::convert(text, fontdb)
+    layout::convert(text, fontdb);
+    outline::convert(text, fontdb)
 }
