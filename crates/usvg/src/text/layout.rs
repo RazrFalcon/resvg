@@ -1,8 +1,7 @@
-use crate::text::{
+use crate::text::old::{
     chunk_span_at, convert_decoration, is_word_separator_characters, process_anchor,
     resolve_baseline, script_supports_letter_spacing, shape_text, span_contains, ByteIndex,
-    DatabaseExt, DecorationSpan, FontsCache, Glyph, GlyphClusters, OutlinedCluster, PathNormal,
-    ResolvedFont,
+    DatabaseExt, DecorationSpan, FontsCache, Glyph, GlyphClusters, PathNormal, ResolvedFont,
 };
 use crate::tree::{BBox, IsValidLength};
 use crate::{

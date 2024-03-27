@@ -7,7 +7,7 @@ use std::sync::Arc;
 use strict_num::NonZeroPositiveF32;
 pub use svgtypes::FontFamily;
 
-use crate::text::PositionedTextFragment;
+use crate::text::layout::PositionedTextFragment;
 use crate::{
     Fill, Group, NonEmptyString, PaintOrder, Rect, Stroke, TextRendering, Transform, Visibility,
 };
