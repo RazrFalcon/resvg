@@ -1,11 +1,13 @@
 use crate::text::{
-    chunk_span_at, script_supports_letter_spacing, shape_text, span_contains, ByteIndex,
-    DatabaseExt, FontsCache, Glyph, GlyphClusters, OutlinedCluster, ResolvedFont,
+    chunk_span_at, is_word_separator_characters, script_supports_letter_spacing, shape_text,
+    span_contains, ByteIndex, DatabaseExt, FontsCache, Glyph, GlyphClusters, OutlinedCluster,
+    ResolvedFont,
 };
 use crate::tree::{BBox, IsValidLength};
 use crate::{
-    ApproxZeroUlps, Fill, Font, FontStretch, FontStyle, Group, Node, PaintOrder, Path,
-    ShapeRendering, Stroke, Text, TextChunk, TextFlow, TextRendering, Visibility, WritingMode,
+    ApproxZeroUlps, Fill, Font, FontStretch, FontStyle, Group, LengthAdjust, Node, PaintOrder,
+    Path, ShapeRendering, Stroke, Text, TextChunk, TextFlow, TextRendering, Visibility,
+    WritingMode,
 };
 use rustybuzz::ttf_parser::GlyphId;
 use std::collections::HashMap;
@@ -111,8 +113,9 @@ fn layout_text(
 
         apply_writing_mode(text_node.writing_mode, &mut clusters);
         apply_letter_spacing(chunk, &mut clusters);
-        //     apply_word_spacing(chunk, &mut clusters);
-        //     apply_length_adjust(chunk, &mut clusters);
+        apply_word_spacing(chunk, &mut clusters);
+
+        apply_length_adjust(chunk, &mut clusters);
         //     let mut curr_pos = resolve_clusters_positions(
         //         text_node,
         //         chunk,
@@ -282,6 +285,66 @@ fn process_chunk(
     clusters
 }
 
+fn apply_length_adjust(chunk: &TextChunk, clusters: &mut [GlyphCluster]) {
+    let is_horizontal = matches!(chunk.text_flow, TextFlow::Linear);
+
+    for span in &chunk.spans {
+        let target_width = match span.text_length {
+            Some(v) => v,
+            None => continue,
+        };
+
+        let mut width = 0.0;
+        let mut cluster_indexes = Vec::new();
+        for i in span.start..span.end {
+            if let Some(index) = clusters.iter().position(|c| c.byte_idx.value() == i) {
+                cluster_indexes.push(index);
+            }
+        }
+        // Complex scripts can have mutli-codepoint clusters therefore we have to remove duplicates.
+        cluster_indexes.sort();
+        cluster_indexes.dedup();
+
+        for i in &cluster_indexes {
+            // Use the original cluster `width` and not `advance`.
+            // This method essentially discards any `word-spacing` and `letter-spacing`.
+            width += clusters[*i].width;
+        }
+
+        if cluster_indexes.is_empty() {
+            continue;
+        }
+
+        if span.length_adjust == LengthAdjust::Spacing {
+            let factor = if cluster_indexes.len() > 1 {
+                (target_width - width) / (cluster_indexes.len() - 1) as f32
+            } else {
+                0.0
+            };
+
+            for i in cluster_indexes {
+                clusters[i].advance = clusters[i].width + factor;
+            }
+        } else {
+            let factor = target_width / width;
+            // Prevent multiplying by zero.
+            if factor < 0.001 {
+                continue;
+            }
+
+            for i in cluster_indexes {
+                clusters[i].transform = clusters[i].transform.pre_scale(factor, 1.0);
+
+                // Technically just a hack to support the current text-on-path algorithm.
+                if !is_horizontal {
+                    clusters[i].advance *= factor;
+                    clusters[i].width *= factor;
+                }
+            }
+        }
+    }
+}
+
 /// Rotates clusters according to
 /// [Unicode Vertical_Orientation Property](https://www.unicode.org/reports/tr50/tr50-19.html).
 fn apply_writing_mode(writing_mode: WritingMode, clusters: &mut [GlyphCluster]) {
@@ -352,6 +415,33 @@ fn apply_letter_spacing(chunk: &TextChunk, clusters: &mut [GlyphCluster]) {
                     cluster.advance = 0.0;
                     cluster.glyphs = vec![];
                 }
+            }
+        }
+    }
+}
+
+/// Applies the `word-spacing` property to a text chunk clusters.
+///
+/// [In the CSS spec](https://www.w3.org/TR/css-text-3/#propdef-word-spacing).
+fn apply_word_spacing(chunk: &TextChunk, clusters: &mut [GlyphCluster]) {
+    // At least one span should have a non-zero spacing.
+    if !chunk
+        .spans
+        .iter()
+        .any(|span| !span.word_spacing.approx_zero_ulps(4))
+    {
+        return;
+    }
+
+    for cluster in clusters {
+        if is_word_separator_characters(cluster.codepoint) {
+            if let Some(span) = chunk_span_at(chunk, cluster.byte_idx) {
+                // Technically, word spacing 'should be applied half on each
+                // side of the character', but it doesn't affect us in any way,
+                // so we are ignoring this.
+                cluster.advance += span.word_spacing;
+
+                // After word spacing, `advance` can be negative.
             }
         }
     }
