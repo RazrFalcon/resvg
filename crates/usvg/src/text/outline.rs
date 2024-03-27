@@ -1,16 +1,26 @@
 use crate::text::layout::PositionedTextFragment;
 use crate::text::old::DatabaseExt;
+use crate::tree::BBox;
 use crate::{Group, Node, Path, ShapeRendering, Text};
 use std::sync::Arc;
-use tiny_skia_path::Transform;
+use tiny_skia_path::{NonZeroRect, Transform};
 
 pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> {
     let mut new_paths = vec![];
+
+    let mut bbox = BBox::default();
+    let mut stroke_bbox = BBox::default();
+
     for span in &text.layouted {
         match span {
-            PositionedTextFragment::Path(path) => new_paths.push(path.clone()),
+            PositionedTextFragment::Path(path) => {
+                bbox = bbox.expand(path.data.bounds());
+                stroke_bbox = stroke_bbox.expand(path.data.bounds());
+                new_paths.push(path.clone());
+            }
             PositionedTextFragment::Span(span) => {
                 let mut span_builder = tiny_skia_path::PathBuilder::new();
+                let mut bboxes_builder = tiny_skia_path::PathBuilder::new();
 
                 for cluster in &span.glyph_clusters {
                     let mut cluster_builder = tiny_skia_path::PathBuilder::new();
@@ -31,6 +41,18 @@ pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> 
                             span_builder.push_path(&cluster_path);
                         }
                     }
+
+                    // We have to calculate text bbox using font metrics and not glyph shape.
+                    if let Some(r) = NonZeroRect::from_xywh(
+                        0.0,
+                        -cluster.ascent,
+                        cluster.advance,
+                        cluster.height(),
+                    ) {
+                        if let Some(r) = r.transform(cluster.transform) {
+                            bboxes_builder.push_rect(r.to_rect());
+                        }
+                    }
                 }
 
                 if let Some(span_path) = span_builder.finish() {
@@ -45,9 +67,19 @@ pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> 
                             Arc::new(span_path),
                             Transform::default(),
                         ) {
+                            stroke_bbox = stroke_bbox.expand(path.stroke_bounding_box());
                             new_paths.push(path);
                         }
                     }
+                }
+
+                if let Some(span_bbox) = bboxes_builder
+                    .finish()
+                    .and_then(|p| p.transform(span.transform))
+                    .and_then(|p| p.compute_tight_bounds())
+                    .and_then(|p| p.to_non_zero_rect())
+                {
+                    bbox = bbox.expand(span_bbox);
                 }
             }
         }
@@ -66,6 +98,16 @@ pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> 
 
     group.calculate_bounding_boxes();
     text.flattened = Box::new(group);
+
+    let bbox = bbox.to_non_zero_rect()?;
+    let stroke_bbox = stroke_bbox.to_non_zero_rect()?;
+
+    text.bounding_box = bbox.to_rect();
+    text.abs_bounding_box = bbox.transform(text.abs_transform)?.to_rect();
+    // TODO: test
+    // TODO: should we stroke transformed paths?
+    text.stroke_bounding_box = stroke_bbox.to_rect();
+    text.abs_stroke_bounding_box = stroke_bbox.transform(text.abs_transform)?.to_rect();
 
     Some(())
 }

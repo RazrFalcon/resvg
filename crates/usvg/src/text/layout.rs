@@ -35,7 +35,7 @@ pub(crate) struct GlyphCluster {
 }
 
 impl GlyphCluster {
-    fn height(&self) -> f32 {
+    pub(crate) fn height(&self) -> f32 {
         self.ascent - self.descent
     }
 }
