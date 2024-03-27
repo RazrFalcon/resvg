@@ -44,6 +44,7 @@ impl GlyphCluster {
 pub struct PositionedGlyph {
     pub(crate) transform: Transform,
     pub(crate) glyph_id: GlyphId,
+    pub(crate) font: ID,
     byte_idx: ByteIndex,
 }
 
@@ -52,7 +53,6 @@ pub struct PositionedSpan {
     pub(crate) fill: Option<Fill>,
     pub(crate) stroke: Option<Stroke>,
     pub(crate) paint_order: PaintOrder,
-    pub(crate) font: ID,
     pub(crate) font_size: NonZeroPositiveF32,
     pub(crate) visibility: Visibility,
     pub(crate) transform: Transform,
@@ -189,7 +189,6 @@ fn layout_text(text_node: &Text, fontdb: &fontdb::Database) -> Option<Vec<Positi
                 fill,
                 stroke: span.stroke.clone(),
                 paint_order: span.paint_order,
-                font: font.id,
                 font_size: span.font_size,
                 visibility: span.visibility,
                 transform: span_ts,
@@ -812,6 +811,7 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
 
         positioned_glyphs.push(PositionedGlyph {
             transform: ts,
+            font: glyph.font.id,
             glyph_id: glyph.id,
             byte_idx: glyph.byte_idx,
         });

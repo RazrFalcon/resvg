@@ -26,7 +26,7 @@ pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> 
                     let mut cluster_builder = tiny_skia_path::PathBuilder::new();
 
                     for glyph in &cluster.glyphs {
-                        if let Some(outline) = fontdb.outline(span.font, glyph.glyph_id) {
+                        if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
                             let mut ts = Transform::from_scale(1.0, -1.0);
                             ts = ts.pre_concat(glyph.transform);
 
