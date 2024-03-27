@@ -321,7 +321,7 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
 /// A read-only text index in bytes.
 ///
 /// Guarantee to be on a char boundary and in text bounds.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 struct ByteIndex(usize);
 
 impl ByteIndex {

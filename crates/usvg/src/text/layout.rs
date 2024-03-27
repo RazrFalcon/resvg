@@ -1,9 +1,13 @@
-use crate::text::{DatabaseExt, FontsCache, ResolvedFont};
+use crate::text::{
+    chunk_span_at, shape_text, span_contains, ByteIndex, DatabaseExt, FontsCache, Glyph,
+    GlyphClusters, ResolvedFont,
+};
 use crate::tree::BBox;
 use crate::{
     Fill, Font, FontStretch, FontStyle, Group, Node, PaintOrder, Path, ShapeRendering, Stroke,
-    Text, TextRendering, Visibility,
+    Text, TextChunk, TextFlow, TextRendering, Visibility,
 };
+use rustybuzz::ttf_parser::GlyphId;
 use std::collections::HashMap;
 use std::sync::Arc;
 use strict_num::NonZeroPositiveF32;
@@ -11,9 +15,31 @@ use svgtypes::FontFamily;
 use tiny_skia_path::{NonZeroRect, Transform};
 
 #[derive(Clone, Debug)]
+struct GlyphCluster {
+    byte_idx: ByteIndex,
+    codepoint: char,
+    width: f32,
+    advance: f32,
+    ascent: f32,
+    descent: f32,
+    x_height: f32,
+    has_relative_shift: bool,
+    glyphs: Vec<PositionedGlyph>,
+    transform: Transform,
+    visible: bool,
+}
+
+impl GlyphCluster {
+    fn height(&self) -> f32 {
+        self.ascent - self.descent
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct PositionedGlyph {
     pub(crate) transform: Transform,
-    pub(crate) glyph_id: u16,
+    pub(crate) glyph_id: GlyphId,
+    byte_idx: ByteIndex,
 }
 
 #[derive(Clone, Debug)]
@@ -25,7 +51,7 @@ pub struct PositionedSpan {
     pub(crate) font_size: NonZeroPositiveF32,
     pub(crate) visibility: Visibility,
     pub(crate) transform: Transform,
-    pub(crate) glyphs: Vec<PositionedGlyph>,
+    pub(crate) glyph_clusters: Vec<GlyphCluster>,
 }
 
 #[derive(Clone, Debug)]
@@ -67,132 +93,245 @@ fn layout_text(
     let mut text_fragments = vec![];
     let mut bbox = BBox::default();
     let mut stroke_bbox = BBox::default();
-    // let mut char_offset = 0;
-    // let mut last_x = 0.0;
-    // let mut last_y = 0.0;
-    // let mut new_paths = Vec::new();
-    // for chunk in &text_node.chunks {
-    //     let (x, y) = match chunk.text_flow {
-    //         TextFlow::Linear => (chunk.x.unwrap_or(last_x), chunk.y.unwrap_or(last_y)),
-    //         TextFlow::Path(_) => (0.0, 0.0),
-    //     };
-    //
-    //     let mut clusters = outline_chunk(chunk, &fonts_cache, fontdb);
-    //     if clusters.is_empty() {
-    //         char_offset += chunk.text.chars().count();
-    //         continue;
-    //     }
-    //
-    //     apply_writing_mode(text_node.writing_mode, &mut clusters);
-    //     apply_letter_spacing(chunk, &mut clusters);
-    //     apply_word_spacing(chunk, &mut clusters);
-    //     apply_length_adjust(chunk, &mut clusters);
-    //     let mut curr_pos = resolve_clusters_positions(
-    //         text_node,
-    //         chunk,
-    //         char_offset,
-    //         text_node.writing_mode,
-    //         &fonts_cache,
-    //         &mut clusters,
-    //     );
-    //
-    //     let mut text_ts = Transform::default();
-    //     if text_node.writing_mode == WritingMode::TopToBottom {
-    //         if let TextFlow::Linear = chunk.text_flow {
-    //             text_ts = text_ts.pre_rotate_at(90.0, x, y);
-    //         }
-    //     }
-    //
-    //     for span in &chunk.spans {
-    //         let font = match fonts_cache.get(&span.font) {
-    //             Some(v) => v,
-    //             None => continue,
-    //         };
-    //
-    //         let decoration_spans = collect_decoration_spans(span, &clusters);
-    //
-    //         let mut span_ts = text_ts;
-    //         span_ts = span_ts.pre_translate(x, y);
-    //         if let TextFlow::Linear = chunk.text_flow {
-    //             let shift = resolve_baseline(span, font, text_node.writing_mode);
-    //
-    //             // In case of a horizontal flow, shift transform and not clusters,
-    //             // because clusters can be rotated and an additional shift will lead
-    //             // to invalid results.
-    //             span_ts = span_ts.pre_translate(0.0, shift);
-    //         }
-    //
-    //         if let Some(decoration) = span.decoration.underline.clone() {
-    //             // TODO: No idea what offset should be used for top-to-bottom layout.
-    //             // There is
-    //             // https://www.w3.org/TR/css-text-decor-3/#text-underline-position-property
-    //             // but it doesn't go into details.
-    //             let offset = match text_node.writing_mode {
-    //                 WritingMode::LeftToRight => -font.underline_position(span.font_size.get()),
-    //                 WritingMode::TopToBottom => font.height(span.font_size.get()) / 2.0,
-    //             };
-    //
-    //             if let Some(path) =
-    //                 convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
-    //             {
-    //                 bbox = bbox.expand(path.data.bounds());
-    //                 stroke_bbox = stroke_bbox.expand(path.data.bounds());
-    //                 new_paths.push(path);
-    //             }
-    //         }
-    //
-    //         if let Some(decoration) = span.decoration.overline.clone() {
-    //             let offset = match text_node.writing_mode {
-    //                 WritingMode::LeftToRight => -font.ascent(span.font_size.get()),
-    //                 WritingMode::TopToBottom => -font.height(span.font_size.get()) / 2.0,
-    //             };
-    //
-    //             if let Some(path) =
-    //                 convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
-    //             {
-    //                 bbox = bbox.expand(path.data.bounds());
-    //                 stroke_bbox = stroke_bbox.expand(path.data.bounds());
-    //                 new_paths.push(path);
-    //             }
-    //         }
-    //
-    //         if let Some((path, span_bbox)) = convert_span(span, &mut clusters, span_ts) {
-    //             bbox = bbox.expand(span_bbox);
-    //             stroke_bbox = stroke_bbox.expand(path.stroke_bounding_box());
-    //             new_paths.push(path);
-    //         }
-    //
-    //         if let Some(decoration) = span.decoration.line_through.clone() {
-    //             let offset = match text_node.writing_mode {
-    //                 WritingMode::LeftToRight => -font.line_through_position(span.font_size.get()),
-    //                 WritingMode::TopToBottom => 0.0,
-    //             };
-    //
-    //             if let Some(path) =
-    //                 convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
-    //             {
-    //                 bbox = bbox.expand(path.data.bounds());
-    //                 stroke_bbox = stroke_bbox.expand(path.data.bounds());
-    //                 new_paths.push(path);
-    //             }
-    //         }
-    //     }
-    //
-    //     char_offset += chunk.text.chars().count();
-    //
-    //     if text_node.writing_mode == WritingMode::TopToBottom {
-    //         if let TextFlow::Linear = chunk.text_flow {
-    //             std::mem::swap(&mut curr_pos.0, &mut curr_pos.1);
-    //         }
-    //     }
-    //
-    //     last_x = x + curr_pos.0;
-    //     last_y = y + curr_pos.1;
-    // }
-    //
+    let mut char_offset = 0;
+    let mut last_x = 0.0;
+    let mut last_y = 0.0;
+    for chunk in &text_node.chunks {
+        let (x, y) = match chunk.text_flow {
+            TextFlow::Linear => (chunk.x.unwrap_or(last_x), chunk.y.unwrap_or(last_y)),
+            TextFlow::Path(_) => (0.0, 0.0),
+        };
+
+        let mut clusters = process_chunk(chunk, &fonts_cache, fontdb);
+        if clusters.is_empty() {
+            char_offset += chunk.text.chars().count();
+            continue;
+        }
+        //
+        //     apply_writing_mode(text_node.writing_mode, &mut clusters);
+        //     apply_letter_spacing(chunk, &mut clusters);
+        //     apply_word_spacing(chunk, &mut clusters);
+        //     apply_length_adjust(chunk, &mut clusters);
+        //     let mut curr_pos = resolve_clusters_positions(
+        //         text_node,
+        //         chunk,
+        //         char_offset,
+        //         text_node.writing_mode,
+        //         &fonts_cache,
+        //         &mut clusters,
+        //     );
+        //
+        //     let mut text_ts = Transform::default();
+        //     if text_node.writing_mode == WritingMode::TopToBottom {
+        //         if let TextFlow::Linear = chunk.text_flow {
+        //             text_ts = text_ts.pre_rotate_at(90.0, x, y);
+        //         }
+        //     }
+        //
+        //     for span in &chunk.spans {
+        //         let font = match fonts_cache.get(&span.font) {
+        //             Some(v) => v,
+        //             None => continue,
+        //         };
+        //
+        //         let decoration_spans = collect_decoration_spans(span, &clusters);
+        //
+        //         let mut span_ts = text_ts;
+        //         span_ts = span_ts.pre_translate(x, y);
+        //         if let TextFlow::Linear = chunk.text_flow {
+        //             let shift = resolve_baseline(span, font, text_node.writing_mode);
+        //
+        //             // In case of a horizontal flow, shift transform and not clusters,
+        //             // because clusters can be rotated and an additional shift will lead
+        //             // to invalid results.
+        //             span_ts = span_ts.pre_translate(0.0, shift);
+        //         }
+        //
+        //         if let Some(decoration) = span.decoration.underline.clone() {
+        //             // TODO: No idea what offset should be used for top-to-bottom layout.
+        //             // There is
+        //             // https://www.w3.org/TR/css-text-decor-3/#text-underline-position-property
+        //             // but it doesn't go into details.
+        //             let offset = match text_node.writing_mode {
+        //                 WritingMode::LeftToRight => -font.underline_position(span.font_size.get()),
+        //                 WritingMode::TopToBottom => font.height(span.font_size.get()) / 2.0,
+        //             };
+        //
+        //             if let Some(path) =
+        //                 convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
+        //             {
+        //                 bbox = bbox.expand(path.data.bounds());
+        //                 stroke_bbox = stroke_bbox.expand(path.data.bounds());
+        //                 new_paths.push(path);
+        //             }
+        //         }
+        //
+        //         if let Some(decoration) = span.decoration.overline.clone() {
+        //             let offset = match text_node.writing_mode {
+        //                 WritingMode::LeftToRight => -font.ascent(span.font_size.get()),
+        //                 WritingMode::TopToBottom => -font.height(span.font_size.get()) / 2.0,
+        //             };
+        //
+        //             if let Some(path) =
+        //                 convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
+        //             {
+        //                 bbox = bbox.expand(path.data.bounds());
+        //                 stroke_bbox = stroke_bbox.expand(path.data.bounds());
+        //                 new_paths.push(path);
+        //             }
+        //         }
+        //
+        //         if let Some((path, span_bbox)) = convert_span(span, &mut clusters, span_ts) {
+        //             bbox = bbox.expand(span_bbox);
+        //             stroke_bbox = stroke_bbox.expand(path.stroke_bounding_box());
+        //             new_paths.push(path);
+        //         }
+        //
+        //         if let Some(decoration) = span.decoration.line_through.clone() {
+        //             let offset = match text_node.writing_mode {
+        //                 WritingMode::LeftToRight => -font.line_through_position(span.font_size.get()),
+        //                 WritingMode::TopToBottom => 0.0,
+        //             };
+        //
+        //             if let Some(path) =
+        //                 convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
+        //             {
+        //                 bbox = bbox.expand(path.data.bounds());
+        //                 stroke_bbox = stroke_bbox.expand(path.data.bounds());
+        //                 new_paths.push(path);
+        //             }
+        //         }
+        //     }
+        //
+        //     char_offset += chunk.text.chars().count();
+        //
+        //     if text_node.writing_mode == WritingMode::TopToBottom {
+        //         if let TextFlow::Linear = chunk.text_flow {
+        //             std::mem::swap(&mut curr_pos.0, &mut curr_pos.1);
+        //         }
+        //     }
+        //
+        //     last_x = x + curr_pos.0;
+        //     last_y = y + curr_pos.1;
+    }
+
     let bbox = bbox.to_non_zero_rect()?;
     let stroke_bbox = stroke_bbox.to_non_zero_rect().unwrap_or(bbox);
     Some((text_fragments, bbox, stroke_bbox))
+}
+
+/// Converts a text chunk into a list of outlined clusters.
+///
+/// This function will do the BIDI reordering, text shaping and glyphs outlining,
+/// but not the text layouting. So all clusters are in the 0x0 position.
+fn process_chunk(
+    chunk: &TextChunk,
+    fonts_cache: &FontsCache,
+    fontdb: &fontdb::Database,
+) -> Vec<GlyphCluster> {
+    let mut glyphs = Vec::new();
+
+    for span in &chunk.spans {
+        let font = match fonts_cache.get(&span.font) {
+            Some(v) => v.clone(),
+            None => continue,
+        };
+
+        let tmp_glyphs = shape_text(
+            &chunk.text,
+            font,
+            span.small_caps,
+            span.apply_kerning,
+            fontdb,
+        );
+
+        // Do nothing with the first run.
+        if glyphs.is_empty() {
+            glyphs = tmp_glyphs;
+            continue;
+        }
+
+        // We assume, that shaping with an any font will produce the same amount of glyphs.
+        // Otherwise an error.
+        if glyphs.len() != tmp_glyphs.len() {
+            log::warn!("Text layouting failed.");
+            return Vec::new();
+        }
+
+        // Copy span's glyphs.
+        for (i, glyph) in tmp_glyphs.iter().enumerate() {
+            if span_contains(span, glyph.byte_idx) {
+                glyphs[i] = glyph.clone();
+            }
+        }
+    }
+
+    // Convert glyphs to clusters.
+    let mut clusters = Vec::new();
+    for (range, byte_idx) in GlyphClusters::new(&glyphs) {
+        if let Some(span) = chunk_span_at(chunk, byte_idx) {
+            clusters.push(form_glyph_clusters(
+                &glyphs[range],
+                &chunk.text,
+                span.font_size.get(),
+            ));
+        }
+    }
+
+    clusters
+}
+
+fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphCluster {
+    debug_assert!(!glyphs.is_empty());
+
+    let mut width = 0.0;
+    let mut x: f32 = 0.0;
+
+    let mut positioned_glyphs = vec![];
+
+    for glyph in glyphs {
+        let sx = glyph.font.scale(font_size);
+
+        // By default, glyphs are upside-down, so we have to mirror them.
+        let mut ts = Transform::from_scale(sx, sx);
+
+        // Apply offset.
+        //
+        // The first glyph in the cluster will have an offset from 0x0,
+        // but the later one will have an offset from the "current position".
+        // So we have to keep an advance.
+        // TODO: should be done only inside a single text span
+        ts = ts.pre_translate(x + glyph.dx as f32, glyph.dy as f32);
+
+        positioned_glyphs.push(PositionedGlyph {
+            transform: ts,
+            glyph_id: glyph.id,
+            byte_idx: glyph.byte_idx,
+        });
+
+        x += glyph.width as f32;
+
+        let glyph_width = glyph.width as f32 * sx;
+        if glyph_width > width {
+            width = glyph_width;
+        }
+    }
+
+    let byte_idx = glyphs[0].byte_idx;
+    let font = glyphs[0].font.clone();
+    GlyphCluster {
+        byte_idx,
+        codepoint: byte_idx.char_from(text),
+        width,
+        advance: width,
+        ascent: font.ascent(font_size),
+        descent: font.descent(font_size),
+        x_height: font.x_height(font_size),
+        has_relative_shift: false,
+        transform: Transform::default(),
+        glyphs: positioned_glyphs,
+        visible: true,
+    }
 }
 
 fn resolve_font(font: &Font, fontdb: &fontdb::Database) -> Option<ResolvedFont> {
