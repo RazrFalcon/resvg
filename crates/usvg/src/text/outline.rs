@@ -5,7 +5,7 @@ use fontdb::{Database, ID};
 use rustybuzz::ttf_parser;
 use rustybuzz::ttf_parser::GlyphId;
 use std::sync::Arc;
-use tiny_skia_path::Transform;
+use tiny_skia_path::{NonZeroRect, Transform};
 
 pub(crate) fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
     match text.rendering_mode {
@@ -15,7 +15,7 @@ pub(crate) fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
     }
 }
 
-pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> {
+pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Group, NonZeroRect)> {
     let mut new_paths = vec![];
 
     let mut stroke_bbox = BBox::default();
@@ -69,15 +69,7 @@ pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> 
     }
 
     group.calculate_bounding_boxes();
-    text.flattened = Box::new(group);
-    let stroke_bbox = stroke_bbox.to_non_zero_rect()?;
-
-    // TODO: test
-    // TODO: should we stroke transformed paths?
-    text.stroke_bounding_box = stroke_bbox.to_rect();
-    text.abs_stroke_bounding_box = stroke_bbox.transform(text.abs_transform)?.to_rect();
-
-    Some(())
+    Some((group, stroke_bbox.to_non_zero_rect()?))
 }
 
 struct PathBuilder {

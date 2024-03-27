@@ -88,19 +88,7 @@ impl GlyphCluster {
     }
 }
 
-pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> {
-    let (text_fragments, bbox) = layout_text(text, fontdb)?;
-
-    // TODO: test
-    // TODO: should we stroke transformed paths?
-    text.layouted = text_fragments;
-    text.bounding_box = bbox.to_rect();
-    text.abs_bounding_box = bbox.transform(text.abs_transform)?.to_rect();
-
-    Some(())
-}
-
-fn layout_text(
+pub(crate) fn layout_text(
     text_node: &Text,
     fontdb: &fontdb::Database,
 ) -> Option<(Vec<TextFragment>, NonZeroRect)> {
