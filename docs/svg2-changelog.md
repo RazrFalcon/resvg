@@ -6,7 +6,7 @@ Somewhat similar to [Changes from SVG 1.1](https://www.w3.org/TR/SVG2/changes.ht
 
 This document contains changes only to the static SVG subset. No animations, events and scripting.
 
-A checkbox indicates that the related feature is implemented in `resvg`.
+A checkbox indicates that the related feature is implemented in `svgr`.
 
 NOTE: This list is not final. This just things I was able to find so far. Patches are welcome.
 

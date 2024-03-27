@@ -1,5 +1,5 @@
 [package]
-name = "resvg-capi"
+name = "svgr-capi"
 version = "0.40.0"
 authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster", "c-api"]
@@ -8,21 +8,21 @@ edition = "2021"
 workspace = "../.."
 
 [lib]
-name = "resvg"
+name = "svgr"
 path = "lib.rs"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 log = "0.4"
-resvg = { path = "../resvg", default-features = false }
+svgr = { path = "../svgr", default-features = false }
 
 [features]
 default = ["text", "system-fonts", "memmap-fonts", "raster-images"]
 # enables SVG Text support
 # adds around 500KiB to your binary
-text = ["resvg/text"]
+text = ["svgr/text"]
 # enables system fonts loading (only for `text`)
-system-fonts = ["resvg/system-fonts"]
+system-fonts = ["svgr/system-fonts"]
 # enables font files memmaping for faster loading (only for `text`)
-memmap-fonts = ["resvg/memmap-fonts"]
-raster-images = ["resvg/raster-images"]
+memmap-fonts = ["svgr/memmap-fonts"]
+raster-images = ["svgr/raster-images"]

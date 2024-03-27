@@ -4,7 +4,7 @@ use crate::WINLOG_SOURCE;
 use com::co_class;
 use com::sys::{HRESULT, IID, S_OK};
 use log::error;
-use resvg::usvg;
+use svgr::usvgr;
 use std::cell::RefCell;
 use winapi::shared::minwindef::{DWORD, UINT};
 use winapi::shared::windef::HBITMAP;
@@ -20,7 +20,7 @@ pub const CLSID_THUMBNAIL_PROVIDER_CLASS: IID = IID {
 
 #[co_class(implements(IThumbnailProvider, IInitializeWithStream))]
 pub struct ThumbnailProvider {
-    tree: RefCell<Option<usvg::Tree>>,
+    tree: RefCell<Option<usvgr::Tree>>,
 }
 
 impl IInitializeWithStream for ThumbnailProvider {

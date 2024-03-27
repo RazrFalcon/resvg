@@ -1,6 +1,6 @@
 # viewsvg
 
-A simple SVG viewer using resvg-qt.
+A simple SVG viewer using svgr-qt.
 
 ## Dependencies
 

@@ -6,11 +6,11 @@ use winapi::shared::windef::{HBITMAP, HDC};
 use winapi::um::objidlbase::{LPSTREAM, STATSTG};
 use winapi::um::wingdi::{BI_RGB, BITMAPINFO, BITMAPINFOHEADER, DIB_RGB_COLORS, CreateDIBSection};
 use com::sys::S_OK;
-use resvg::{usvg, tiny_skia};
-use usvg::fontdb;
+use svgr::{usvgr, tiny_skia};
+use usvgr::fontdb;
 use crate::error::Error;
 
-pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvg::Tree, Error> {
+pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvgr::Tree, Error> {
     let mut stat: STATSTG = Default::default();
     let stat_res = (*pstream).Stat(&mut stat, 0);
     if stat_res != S_OK {
@@ -26,16 +26,16 @@ pub unsafe fn tree_from_istream(pstream: LPSTREAM) -> Result<usvg::Tree, Error> 
     }
     svg_data.set_len(len as usize);
 
-    let opt = usvg::Options::default();
+    let opt = usvgr::Options::default();
 
     let mut fontdb = fontdb::Database::new();
     fontdb.load_system_fonts();
 
-    let tree = usvg::Tree::from_data(&svg_data, &opt, &fontdb).map_err(|e| Error::TreeError(e))?;
+    let tree = usvgr::Tree::from_data(&svg_data, &opt, &fontdb).map_err(|e| Error::TreeError(e))?;
     Ok(tree)
 }
 
-pub fn render_thumbnail(tree: &Option<usvg::Tree>, cx: u32) -> Result<tiny_skia::Pixmap, Error> {
+pub fn render_thumbnail(tree: &Option<usvgr::Tree>, cx: u32) -> Result<tiny_skia::Pixmap, Error> {
     if cx == 0 {
         return Err(Error::RenderError);
     }
@@ -54,7 +54,7 @@ pub fn render_thumbnail(tree: &Option<usvg::Tree>, cx: u32) -> Result<tiny_skia:
     );
 
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
-    resvg::render(&tree, transform, &mut pixmap.as_mut());
+    svgr::render(&tree, transform, &mut pixmap.as_mut());
     Ok(pixmap)
 }
 

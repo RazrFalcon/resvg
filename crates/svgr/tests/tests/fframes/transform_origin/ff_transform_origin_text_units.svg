@@ -1,0 +1,7 @@
+<svg id="svg1" font-family="Noto Sans" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+ <title>`Rotate text with origin defined as units`</title>
+ <text x="50%" y="50%" font-size="24" fill="white" transform="rotate(45)" transform-origin="2em 2cm" text-anchor="middle"> 
+        Rotate me 
+    </text>
+</svg>
+

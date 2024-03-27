@@ -1,0 +1,14 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>`rotate(angle)`</title>
+
+    <rect 
+        transform="translate(100 100) rotate(45) translate(-100 -100)"
+        id="rect0" x="0" y="0" width="120" height="120"
+        fill="red"
+    />
+    <rect transform="rotate(45)" transform-origin="center center" id="rect1" x="0" y="0" width="120" height="120"
+        fill="green" />
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black" />
+</svg>

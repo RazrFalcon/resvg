@@ -1,0 +1,7 @@
+<svg id="svg1" viewBox="0 0 63 63" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>Resizing svg image if only width or width is provided</title>
+ <desc>In the result you should observe a slightly cut image from the right</desc>
+ <image id="image1" width="63"
+           xlink:href="../../../resources/image-63x61.png"/>
+</svg>

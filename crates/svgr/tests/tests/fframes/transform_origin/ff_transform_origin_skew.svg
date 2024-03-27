@@ -1,0 +1,14 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>`skew(angle)`</title>
+
+    <rect 
+        transform="translate(100) skewX(30) translate(-100)"
+        id="rect0" x="0" y="0" width="120" height="120"
+        fill="red"
+    />
+    <rect transform="skewX(30)" transform-origin="top center" id="rect1" x="0" y="0" width="120" height="120"
+        fill="green" />
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black" />
+</svg>

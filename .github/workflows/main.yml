@@ -24,12 +24,12 @@ jobs:
       working-directory: crates/c-api
       run: cargo build --no-default-features
 
-    - name: Build resvg without default support
-      working-directory: crates/resvg
+    - name: Build svgr without default support
+      working-directory: crates/svgr
       run: cargo check --no-default-features
 
-    - name: Build usvg without default support
-      working-directory: crates/usvg
+    - name: Build usvgr without default support
+      working-directory: crates/usvgr
       run: cargo check --no-default-features
 
   msrv:

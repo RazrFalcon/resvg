@@ -5,9 +5,9 @@
  */
 
 /**
- * @file resvg.h
+ * @file svgr.h
  *
- * resvg C API
+ * svgr C API
  */
 
 #ifndef RESVG_H
@@ -57,7 +57,7 @@ typedef enum {
      * Failed to parse an SVG data.
      */
     RESVG_ERROR_PARSING_FAILED,
-} resvg_error;
+} svgr_error;
 
 /**
  * @brief A image rendering method.
@@ -65,7 +65,7 @@ typedef enum {
 typedef enum {
     RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY,
     RESVG_IMAGE_RENDERING_OPTIMIZE_SPEED,
-} resvg_image_rendering;
+} svgr_image_rendering;
 
 /**
  * @brief A shape rendering method.
@@ -74,7 +74,7 @@ typedef enum {
     RESVG_SHAPE_RENDERING_OPTIMIZE_SPEED,
     RESVG_SHAPE_RENDERING_CRISP_EDGES,
     RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION,
-} resvg_shape_rendering;
+} svgr_shape_rendering;
 
 /**
  * @brief A text rendering method.
@@ -83,20 +83,20 @@ typedef enum {
     RESVG_TEXT_RENDERING_OPTIMIZE_SPEED,
     RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY,
     RESVG_TEXT_RENDERING_GEOMETRIC_PRECISION,
-} resvg_text_rendering;
+} svgr_text_rendering;
 
 /**
- * @brief An SVG to #resvg_render_tree conversion options.
+ * @brief An SVG to #svgr_render_tree conversion options.
  *
  * Also, contains a fonts database used during text to path conversion.
  * The database is empty by default.
  */
-typedef struct resvg_options resvg_options;
+typedef struct svgr_options svgr_options;
 
 /**
  * @brief An opaque pointer to the rendering tree.
  */
-typedef struct resvg_render_tree resvg_render_tree;
+typedef struct svgr_render_tree svgr_render_tree;
 
 /**
  * @brief A 2D transform representation.
@@ -108,7 +108,7 @@ typedef struct {
     float d;
     float e;
     float f;
-} resvg_transform;
+} svgr_transform;
 
 /**
  * @brief A size representation.
@@ -116,7 +116,7 @@ typedef struct {
 typedef struct {
     float width;
     float height;
-} resvg_size;
+} svgr_size;
 
 /**
  * @brief A rectangle representation.
@@ -126,7 +126,7 @@ typedef struct {
     float y;
     float width;
     float height;
-} resvg_rect;
+} svgr_rect;
 
 #ifdef __cplusplus
 extern "C" {
@@ -135,7 +135,7 @@ extern "C" {
 /**
  * @brief Creates an identity transform.
  */
-resvg_transform resvg_transform_identity(void);
+svgr_transform svgr_transform_identity(void);
 
 /**
  * @brief Initializes the library log.
@@ -146,14 +146,14 @@ resvg_transform resvg_transform_identity(void);
  *
  * All warnings will be printed to the `stderr`.
  */
-void resvg_init_log(void);
+void svgr_init_log(void);
 
 /**
- * @brief Creates a new #resvg_options object.
+ * @brief Creates a new #svgr_options object.
  *
- * Should be destroyed via #resvg_options_destroy.
+ * Should be destroyed via #svgr_options_destroy.
  */
-resvg_options *resvg_options_create(void);
+svgr_options *svgr_options_create(void);
 
 /**
  * @brief Sets a directory that will be used during relative paths resolving.
@@ -165,7 +165,7 @@ resvg_options *resvg_options_create(void);
  *
  * Default: NULL
  */
-void resvg_options_set_resources_dir(resvg_options *opt, const char *path);
+void svgr_options_set_resources_dir(svgr_options *opt, const char *path);
 
 /**
  * @brief Sets the target DPI.
@@ -174,7 +174,7 @@ void resvg_options_set_resources_dir(resvg_options *opt, const char *path);
  *
  * Default: 96
  */
-void resvg_options_set_dpi(resvg_options *opt, float dpi);
+void svgr_options_set_dpi(svgr_options *opt, float dpi);
 
 /**
  * @brief Sets the default font family.
@@ -185,7 +185,7 @@ void resvg_options_set_dpi(resvg_options *opt, float dpi);
  *
  * Default: Times New Roman
  */
-void resvg_options_set_font_family(resvg_options *opt, const char *family);
+void svgr_options_set_font_family(svgr_options *opt, const char *family);
 
 /**
  * @brief Sets the default font size.
@@ -194,7 +194,7 @@ void resvg_options_set_font_family(resvg_options *opt, const char *family);
  *
  * Default: 12
  */
-void resvg_options_set_font_size(resvg_options *opt, float size);
+void svgr_options_set_font_size(svgr_options *opt, float size);
 
 /**
  * @brief Sets the `serif` font family.
@@ -205,7 +205,7 @@ void resvg_options_set_font_size(resvg_options *opt, float size);
  *
  * Default: Times New Roman
  */
-void resvg_options_set_serif_family(resvg_options *opt, const char *family);
+void svgr_options_set_serif_family(svgr_options *opt, const char *family);
 
 /**
  * @brief Sets the `sans-serif` font family.
@@ -216,7 +216,7 @@ void resvg_options_set_serif_family(resvg_options *opt, const char *family);
  *
  * Default: Arial
  */
-void resvg_options_set_sans_serif_family(resvg_options *opt, const char *family);
+void svgr_options_set_sans_serif_family(svgr_options *opt, const char *family);
 
 /**
  * @brief Sets the `cursive` font family.
@@ -227,7 +227,7 @@ void resvg_options_set_sans_serif_family(resvg_options *opt, const char *family)
  *
  * Default: Comic Sans MS
  */
-void resvg_options_set_cursive_family(resvg_options *opt, const char *family);
+void svgr_options_set_cursive_family(svgr_options *opt, const char *family);
 
 /**
  * @brief Sets the `fantasy` font family.
@@ -238,7 +238,7 @@ void resvg_options_set_cursive_family(resvg_options *opt, const char *family);
  *
  * Default: Papyrus on macOS, Impact on other OS'es
  */
-void resvg_options_set_fantasy_family(resvg_options *opt, const char *family);
+void svgr_options_set_fantasy_family(svgr_options *opt, const char *family);
 
 /**
  * @brief Sets the `monospace` font family.
@@ -249,7 +249,7 @@ void resvg_options_set_fantasy_family(resvg_options *opt, const char *family);
  *
  * Default: Courier New
  */
-void resvg_options_set_monospace_family(resvg_options *opt, const char *family);
+void svgr_options_set_monospace_family(svgr_options *opt, const char *family);
 
 /**
  * @brief Sets a comma-separated list of languages.
@@ -262,7 +262,7 @@ void resvg_options_set_monospace_family(resvg_options *opt, const char *family);
  *
  * Default: en
  */
-void resvg_options_set_languages(resvg_options *opt, const char *languages);
+void svgr_options_set_languages(svgr_options *opt, const char *languages);
 
 /**
  * @brief Sets the default shape rendering method.
@@ -271,7 +271,7 @@ void resvg_options_set_languages(resvg_options *opt, const char *languages);
  *
  * Default: `RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION`
  */
-void resvg_options_set_shape_rendering_mode(resvg_options *opt, resvg_shape_rendering mode);
+void svgr_options_set_shape_rendering_mode(svgr_options *opt, svgr_shape_rendering mode);
 
 /**
  * @brief Sets the default text rendering method.
@@ -280,7 +280,7 @@ void resvg_options_set_shape_rendering_mode(resvg_options *opt, resvg_shape_rend
  *
  * Default: `RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY`
  */
-void resvg_options_set_text_rendering_mode(resvg_options *opt, resvg_text_rendering mode);
+void svgr_options_set_text_rendering_mode(svgr_options *opt, svgr_text_rendering mode);
 
 /**
  * @brief Sets the default image rendering method.
@@ -289,7 +289,7 @@ void resvg_options_set_text_rendering_mode(resvg_options *opt, resvg_text_render
  *
  * Default: `RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY`
  */
-void resvg_options_set_image_rendering_mode(resvg_options *opt, resvg_image_rendering mode);
+void svgr_options_set_image_rendering_mode(svgr_options *opt, svgr_image_rendering mode);
 
 /**
  * @brief Loads a font data into the internal fonts database.
@@ -298,7 +298,7 @@ void resvg_options_set_image_rendering_mode(resvg_options *opt, resvg_image_rend
  *
  * Has no effect when the `text` feature is not enabled.
  */
-void resvg_options_load_font_data(resvg_options *opt, const char *data, uintptr_t len);
+void svgr_options_load_font_data(svgr_options *opt, const char *data, uintptr_t len);
 
 /**
  * @brief Loads a font file into the internal fonts database.
@@ -307,16 +307,16 @@ void resvg_options_load_font_data(resvg_options *opt, const char *data, uintptr_
  *
  * Has no effect when the `text` feature is not enabled.
  *
- * @return #resvg_error with RESVG_OK, RESVG_ERROR_NOT_AN_UTF8_STR or RESVG_ERROR_FILE_OPEN_FAILED
+ * @return #svgr_error with RESVG_OK, RESVG_ERROR_NOT_AN_UTF8_STR or RESVG_ERROR_FILE_OPEN_FAILED
  */
-int32_t resvg_options_load_font_file(resvg_options *opt, const char *file_path);
+int32_t svgr_options_load_font_file(svgr_options *opt, const char *file_path);
 
 /**
  * @brief Loads system fonts into the internal fonts database.
  *
  * This method is very IO intensive.
  *
- * This method should be executed only once per #resvg_options.
+ * This method should be executed only once per #svgr_options.
  *
  * The system scanning is not perfect, so some fonts may be omitted.
  * Please send a bug report in this case.
@@ -325,44 +325,44 @@ int32_t resvg_options_load_font_file(resvg_options *opt, const char *file_path);
  *
  * Has no effect when the `text` feature is not enabled.
  */
-void resvg_options_load_system_fonts(resvg_options *opt);
+void svgr_options_load_system_fonts(svgr_options *opt);
 
 /**
- * @brief Destroys the #resvg_options.
+ * @brief Destroys the #svgr_options.
  */
-void resvg_options_destroy(resvg_options *opt);
+void svgr_options_destroy(svgr_options *opt);
 
 /**
- * @brief Creates #resvg_render_tree from file.
+ * @brief Creates #svgr_render_tree from file.
  *
  * .svg and .svgz files are supported.
  *
- * See #resvg_is_image_empty for details.
+ * See #svgr_is_image_empty for details.
  *
  * @param file_path UTF-8 file path.
  * @param opt Rendering options. Must not be NULL.
- * @param tree Parsed render tree. Should be destroyed via #resvg_tree_destroy.
- * @return #resvg_error
+ * @param tree Parsed render tree. Should be destroyed via #svgr_tree_destroy.
+ * @return #svgr_error
  */
-int32_t resvg_parse_tree_from_file(const char *file_path,
-                                   const resvg_options *opt,
-                                   resvg_render_tree **tree);
+int32_t svgr_parse_tree_from_file(const char *file_path,
+                                   const svgr_options *opt,
+                                   svgr_render_tree **tree);
 
 /**
- * @brief Creates #resvg_render_tree from data.
+ * @brief Creates #svgr_render_tree from data.
  *
- * See #resvg_is_image_empty for details.
+ * See #svgr_is_image_empty for details.
  *
  * @param data SVG data. Can contain SVG string or gzip compressed data. Must not be NULL.
  * @param len Data length.
  * @param opt Rendering options. Must not be NULL.
- * @param tree Parsed render tree. Should be destroyed via #resvg_tree_destroy.
- * @return #resvg_error
+ * @param tree Parsed render tree. Should be destroyed via #svgr_tree_destroy.
+ * @return #svgr_error
  */
-int32_t resvg_parse_tree_from_data(const char *data,
+int32_t svgr_parse_tree_from_data(const char *data,
                                    uintptr_t len,
-                                   const resvg_options *opt,
-                                   resvg_render_tree **tree);
+                                   const svgr_options *opt,
+                                   svgr_render_tree **tree);
 
 /**
  * @brief Checks that tree has any nodes.
@@ -370,7 +370,7 @@ int32_t resvg_parse_tree_from_data(const char *data,
  * @param tree Render tree.
  * @return Returns `true` if tree has no nodes.
  */
-bool resvg_is_image_empty(const resvg_render_tree *tree);
+bool svgr_is_image_empty(const svgr_render_tree *tree);
 
 /**
  * @brief Returns an image size.
@@ -382,7 +382,7 @@ bool resvg_is_image_empty(const resvg_render_tree *tree);
  * @param tree Render tree.
  * @return Image size.
  */
-resvg_size resvg_get_image_size(const resvg_render_tree *tree);
+svgr_size svgr_get_image_size(const svgr_render_tree *tree);
 
 /**
  * @brief Returns an image viewbox.
@@ -392,7 +392,7 @@ resvg_size resvg_get_image_size(const resvg_render_tree *tree);
  * @param tree Render tree.
  * @return Image viewbox.
  */
-resvg_rect resvg_get_image_viewbox(const resvg_render_tree *tree);
+svgr_rect svgr_get_image_viewbox(const svgr_render_tree *tree);
 
 /**
  * @brief Returns an image bounding box.
@@ -403,7 +403,7 @@ resvg_rect resvg_get_image_viewbox(const resvg_render_tree *tree);
  * @param bbox Image's bounding box.
  * @return `false` if an image has no elements.
  */
-bool resvg_get_image_bbox(const resvg_render_tree *tree, resvg_rect *bbox);
+bool svgr_get_image_bbox(const svgr_render_tree *tree, svgr_rect *bbox);
 
 /**
  * @brief Returns `true` if a renderable node with such an ID exists.
@@ -414,7 +414,7 @@ bool resvg_get_image_bbox(const resvg_render_tree *tree, resvg_rect *bbox);
  * @return `false` if a node doesn't exist or ID isn't a UTF-8 string.
  * @return `false` if a node exists, but not renderable.
  */
-bool resvg_node_exists(const resvg_render_tree *tree, const char *id);
+bool svgr_node_exists(const svgr_render_tree *tree, const char *id);
 
 /**
  * @brief Returns node's transform by ID.
@@ -426,9 +426,9 @@ bool resvg_node_exists(const resvg_render_tree *tree, const char *id);
  * @return `false` if a node doesn't exist or ID isn't a UTF-8 string.
  * @return `false` if a node exists, but not renderable.
  */
-bool resvg_get_node_transform(const resvg_render_tree *tree,
+bool svgr_get_node_transform(const svgr_render_tree *tree,
                               const char *id,
-                              resvg_transform *transform);
+                              svgr_transform *transform);
 
 /**
  * @brief Returns node's bounding box in canvas coordinates by ID.
@@ -440,7 +440,7 @@ bool resvg_get_node_transform(const resvg_render_tree *tree,
  * @return `false` if ID isn't a UTF-8 string.
  * @return `false` if ID is an empty string
  */
-bool resvg_get_node_bbox(const resvg_render_tree *tree, const char *id, resvg_rect *bbox);
+bool svgr_get_node_bbox(const svgr_render_tree *tree, const char *id, svgr_rect *bbox);
 
 /**
  * @brief Returns node's bounding box, including stroke, in canvas coordinates by ID.
@@ -452,15 +452,15 @@ bool resvg_get_node_bbox(const resvg_render_tree *tree, const char *id, resvg_re
  * @return `false` if ID isn't a UTF-8 string.
  * @return `false` if ID is an empty string
  */
-bool resvg_get_node_stroke_bbox(const resvg_render_tree *tree, const char *id, resvg_rect *bbox);
+bool svgr_get_node_stroke_bbox(const svgr_render_tree *tree, const char *id, svgr_rect *bbox);
 
 /**
- * @brief Destroys the #resvg_render_tree.
+ * @brief Destroys the #svgr_render_tree.
  */
-void resvg_tree_destroy(resvg_render_tree *tree);
+void svgr_tree_destroy(svgr_render_tree *tree);
 
 /**
- * @brief Renders the #resvg_render_tree onto the pixmap.
+ * @brief Renders the #svgr_render_tree onto the pixmap.
  *
  * @param tree A render tree.
  * @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
@@ -469,8 +469,8 @@ void resvg_tree_destroy(resvg_render_tree *tree);
  * @param pixmap Pixmap data. Should have width*height*4 size and contain
  *               premultiplied RGBA8888 pixels.
  */
-void resvg_render(const resvg_render_tree *tree,
-                  resvg_transform transform,
+void svgr_render(const svgr_render_tree *tree,
+                  svgr_transform transform,
                   uint32_t width,
                   uint32_t height,
                   char *pixmap);
@@ -489,9 +489,9 @@ void resvg_render(const resvg_render_tree *tree,
  * @return `false` when the selected `id` is not present.
  * @return `false` when an element has a zero bbox.
  */
-bool resvg_render_node(const resvg_render_tree *tree,
+bool svgr_render_node(const svgr_render_tree *tree,
                        const char *id,
-                       resvg_transform transform,
+                       svgr_transform transform,
                        uint32_t width,
                        uint32_t height,
                        char *pixmap);

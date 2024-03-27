@@ -16,8 +16,8 @@ HEADERS += \
 FORMS += \
     mainwindow.ui
 
-CONFIG(release, debug|release): LIBS += -L$$PWD/../../target/release/ -lresvg
-else:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../target/debug/ -lresvg
+CONFIG(release, debug|release): LIBS += -L$$PWD/../../target/release/ -lsvgr
+else:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../target/debug/ -lsvgr
 
 windows:LIBS += -lWs2_32 -lAdvapi32 -lBcrypt -lUserenv -lNtdll
 

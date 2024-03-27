@@ -1,0 +1,8 @@
+<svg id="svg1" font-family="Noto Sans" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+ <title>`Rotate text`</title>
+ <text x="50%" y="50%" fill="white" font-size="24" transform="rotate(45)" transform-origin="center center" text-anchor="middle"> 
+        Rotate me 
+    </text>
+ <line x1="0" x2="200" y1="0" y2="200" stroke="white" stroke-width="1" />
+</svg>
+

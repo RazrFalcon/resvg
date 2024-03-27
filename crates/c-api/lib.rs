@@ -12,15 +12,15 @@ use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::slice;
 
-use resvg::tiny_skia;
-use resvg::usvg;
+use svgr::tiny_skia;
+use svgr::usvgr;
 #[cfg(feature = "text")]
-use resvg::usvg::fontdb;
+use svgr::usvgr::fontdb;
 
 /// @brief List of possible errors.
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub enum resvg_error {
+pub enum svgr_error {
     /// Everything is ok.
     OK = 0,
     /// Only UTF-8 content are supported.
@@ -45,7 +45,7 @@ pub enum resvg_error {
 #[repr(C)]
 #[allow(missing_docs)]
 #[derive(Copy, Clone)]
-pub struct resvg_rect {
+pub struct svgr_rect {
     pub x: f32,
     pub y: f32,
     pub width: f32,
@@ -56,7 +56,7 @@ pub struct resvg_rect {
 #[repr(C)]
 #[allow(missing_docs)]
 #[derive(Copy, Clone)]
-pub struct resvg_size {
+pub struct svgr_size {
     pub width: f32,
     pub height: f32,
 }
@@ -65,7 +65,7 @@ pub struct resvg_size {
 #[repr(C)]
 #[allow(missing_docs)]
 #[derive(Copy, Clone)]
-pub struct resvg_transform {
+pub struct svgr_transform {
     pub a: f32,
     pub b: f32,
     pub c: f32,
@@ -74,7 +74,7 @@ pub struct resvg_transform {
     pub f: f32,
 }
 
-impl resvg_transform {
+impl svgr_transform {
     #[inline]
     fn to_tiny_skia(&self) -> tiny_skia::Transform {
         tiny_skia::Transform::from_row(self.a, self.b, self.c, self.d, self.e, self.f)
@@ -83,8 +83,8 @@ impl resvg_transform {
 
 /// @brief Creates an identity transform.
 #[no_mangle]
-pub extern "C" fn resvg_transform_identity() -> resvg_transform {
-    resvg_transform {
+pub extern "C" fn svgr_transform_identity() -> svgr_transform {
+    svgr_transform {
         a: 1.0,
         b: 0.0,
         c: 0.0,
@@ -102,36 +102,36 @@ pub extern "C" fn resvg_transform_identity() -> resvg_transform {
 ///
 /// All warnings will be printed to the `stderr`.
 #[no_mangle]
-pub extern "C" fn resvg_init_log() {
+pub extern "C" fn svgr_init_log() {
     if let Ok(()) = log::set_logger(&LOGGER) {
         log::set_max_level(log::LevelFilter::Warn);
     }
 }
 
-/// @brief An SVG to #resvg_render_tree conversion options.
+/// @brief An SVG to #svgr_render_tree conversion options.
 ///
 /// Also, contains a fonts database used during text to path conversion.
 /// The database is empty by default.
-pub struct resvg_options {
-    options: usvg::Options,
+pub struct svgr_options {
+    options: usvgr::Options,
     #[cfg(feature = "text")]
     fontdb: fontdb::Database,
 }
 
-/// @brief Creates a new #resvg_options object.
+/// @brief Creates a new #svgr_options object.
 ///
-/// Should be destroyed via #resvg_options_destroy.
+/// Should be destroyed via #svgr_options_destroy.
 #[no_mangle]
-pub extern "C" fn resvg_options_create() -> *mut resvg_options {
-    Box::into_raw(Box::new(resvg_options {
-        options: usvg::Options::default(),
+pub extern "C" fn svgr_options_create() -> *mut svgr_options {
+    Box::into_raw(Box::new(svgr_options {
+        options: usvgr::Options::default(),
         #[cfg(feature = "text")]
         fontdb: fontdb::Database::new(),
     }))
 }
 
 #[inline]
-fn cast_opt(opt: *mut resvg_options) -> &'static mut usvg::Options {
+fn cast_opt(opt: *mut svgr_options) -> &'static mut usvgr::Options {
     unsafe {
         assert!(!opt.is_null());
         &mut (*opt).options
@@ -140,7 +140,7 @@ fn cast_opt(opt: *mut resvg_options) -> &'static mut usvg::Options {
 
 #[cfg(feature = "text")]
 #[inline]
-fn cast_fontdb(opt: *mut resvg_options) -> &'static mut fontdb::Database {
+fn cast_fontdb(opt: *mut svgr_options) -> &'static mut fontdb::Database {
     unsafe {
         assert!(!opt.is_null());
         &mut (*opt).fontdb
@@ -156,7 +156,7 @@ fn cast_fontdb(opt: *mut resvg_options) -> &'static mut fontdb::Database {
 ///
 /// Default: NULL
 #[no_mangle]
-pub extern "C" fn resvg_options_set_resources_dir(opt: *mut resvg_options, path: *const c_char) {
+pub extern "C" fn svgr_options_set_resources_dir(opt: *mut svgr_options, path: *const c_char) {
     if path.is_null() {
         cast_opt(opt).resources_dir = None;
     } else {
@@ -170,7 +170,7 @@ pub extern "C" fn resvg_options_set_resources_dir(opt: *mut resvg_options, path:
 ///
 /// Default: 96
 #[no_mangle]
-pub extern "C" fn resvg_options_set_dpi(opt: *mut resvg_options, dpi: f32) {
+pub extern "C" fn svgr_options_set_dpi(opt: *mut svgr_options, dpi: f32) {
     cast_opt(opt).dpi = dpi as f32;
 }
 
@@ -182,7 +182,7 @@ pub extern "C" fn resvg_options_set_dpi(opt: *mut resvg_options, dpi: f32) {
 ///
 /// Default: Times New Roman
 #[no_mangle]
-pub extern "C" fn resvg_options_set_font_family(opt: *mut resvg_options, family: *const c_char) {
+pub extern "C" fn svgr_options_set_font_family(opt: *mut svgr_options, family: *const c_char) {
     cast_opt(opt).font_family = cstr_to_str(family).unwrap().to_string();
 }
 
@@ -192,7 +192,7 @@ pub extern "C" fn resvg_options_set_font_family(opt: *mut resvg_options, family:
 ///
 /// Default: 12
 #[no_mangle]
-pub extern "C" fn resvg_options_set_font_size(opt: *mut resvg_options, size: f32) {
+pub extern "C" fn svgr_options_set_font_size(opt: *mut svgr_options, size: f32) {
     cast_opt(opt).font_size = size;
 }
 
@@ -205,7 +205,7 @@ pub extern "C" fn resvg_options_set_font_size(opt: *mut resvg_options, size: f32
 /// Default: Times New Roman
 #[no_mangle]
 #[allow(unused_variables)]
-pub extern "C" fn resvg_options_set_serif_family(opt: *mut resvg_options, family: *const c_char) {
+pub extern "C" fn svgr_options_set_serif_family(opt: *mut svgr_options, family: *const c_char) {
     #[cfg(feature = "text")]
     {
         cast_fontdb(opt).set_serif_family(cstr_to_str(family).unwrap().to_string());
@@ -221,8 +221,8 @@ pub extern "C" fn resvg_options_set_serif_family(opt: *mut resvg_options, family
 /// Default: Arial
 #[no_mangle]
 #[allow(unused_variables)]
-pub extern "C" fn resvg_options_set_sans_serif_family(
-    opt: *mut resvg_options,
+pub extern "C" fn svgr_options_set_sans_serif_family(
+    opt: *mut svgr_options,
     family: *const c_char,
 ) {
     #[cfg(feature = "text")]
@@ -240,7 +240,7 @@ pub extern "C" fn resvg_options_set_sans_serif_family(
 /// Default: Comic Sans MS
 #[no_mangle]
 #[allow(unused_variables)]
-pub extern "C" fn resvg_options_set_cursive_family(opt: *mut resvg_options, family: *const c_char) {
+pub extern "C" fn svgr_options_set_cursive_family(opt: *mut svgr_options, family: *const c_char) {
     #[cfg(feature = "text")]
     {
         cast_fontdb(opt).set_cursive_family(cstr_to_str(family).unwrap().to_string());
@@ -256,7 +256,7 @@ pub extern "C" fn resvg_options_set_cursive_family(opt: *mut resvg_options, fami
 /// Default: Papyrus on macOS, Impact on other OS'es
 #[no_mangle]
 #[allow(unused_variables)]
-pub extern "C" fn resvg_options_set_fantasy_family(opt: *mut resvg_options, family: *const c_char) {
+pub extern "C" fn svgr_options_set_fantasy_family(opt: *mut svgr_options, family: *const c_char) {
     #[cfg(feature = "text")]
     {
         cast_fontdb(opt).set_fantasy_family(cstr_to_str(family).unwrap().to_string());
@@ -272,10 +272,7 @@ pub extern "C" fn resvg_options_set_fantasy_family(opt: *mut resvg_options, fami
 /// Default: Courier New
 #[no_mangle]
 #[allow(unused_variables)]
-pub extern "C" fn resvg_options_set_monospace_family(
-    opt: *mut resvg_options,
-    family: *const c_char,
-) {
+pub extern "C" fn svgr_options_set_monospace_family(opt: *mut svgr_options, family: *const c_char) {
     #[cfg(feature = "text")]
     {
         cast_fontdb(opt).set_monospace_family(cstr_to_str(family).unwrap().to_string());
@@ -292,7 +289,7 @@ pub extern "C" fn resvg_options_set_monospace_family(
 ///
 /// Default: en
 #[no_mangle]
-pub extern "C" fn resvg_options_set_languages(opt: *mut resvg_options, languages: *const c_char) {
+pub extern "C" fn svgr_options_set_languages(opt: *mut svgr_options, languages: *const c_char) {
     if languages.is_null() {
         cast_opt(opt).languages = Vec::new();
         return;
@@ -315,7 +312,7 @@ pub extern "C" fn resvg_options_set_languages(opt: *mut resvg_options, languages
 #[repr(C)]
 #[allow(missing_docs)]
 #[derive(Copy, Clone)]
-pub enum resvg_shape_rendering {
+pub enum svgr_shape_rendering {
     OPTIMIZE_SPEED,
     CRISP_EDGES,
     GEOMETRIC_PRECISION,
@@ -327,14 +324,14 @@ pub enum resvg_shape_rendering {
 ///
 /// Default: `RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION`
 #[no_mangle]
-pub extern "C" fn resvg_options_set_shape_rendering_mode(
-    opt: *mut resvg_options,
-    mode: resvg_shape_rendering,
+pub extern "C" fn svgr_options_set_shape_rendering_mode(
+    opt: *mut svgr_options,
+    mode: svgr_shape_rendering,
 ) {
     cast_opt(opt).shape_rendering = match mode as i32 {
-        0 => usvg::ShapeRendering::OptimizeSpeed,
-        1 => usvg::ShapeRendering::CrispEdges,
-        2 => usvg::ShapeRendering::GeometricPrecision,
+        0 => usvgr::ShapeRendering::OptimizeSpeed,
+        1 => usvgr::ShapeRendering::CrispEdges,
+        2 => usvgr::ShapeRendering::GeometricPrecision,
         _ => return,
     }
 }
@@ -343,7 +340,7 @@ pub extern "C" fn resvg_options_set_shape_rendering_mode(
 #[repr(C)]
 #[allow(missing_docs)]
 #[derive(Copy, Clone)]
-pub enum resvg_text_rendering {
+pub enum svgr_text_rendering {
     OPTIMIZE_SPEED,
     OPTIMIZE_LEGIBILITY,
     GEOMETRIC_PRECISION,
@@ -355,14 +352,14 @@ pub enum resvg_text_rendering {
 ///
 /// Default: `RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY`
 #[no_mangle]
-pub extern "C" fn resvg_options_set_text_rendering_mode(
-    opt: *mut resvg_options,
-    mode: resvg_text_rendering,
+pub extern "C" fn svgr_options_set_text_rendering_mode(
+    opt: *mut svgr_options,
+    mode: svgr_text_rendering,
 ) {
     cast_opt(opt).text_rendering = match mode as i32 {
-        0 => usvg::TextRendering::OptimizeSpeed,
-        1 => usvg::TextRendering::OptimizeLegibility,
-        2 => usvg::TextRendering::GeometricPrecision,
+        0 => usvgr::TextRendering::OptimizeSpeed,
+        1 => usvgr::TextRendering::OptimizeLegibility,
+        2 => usvgr::TextRendering::GeometricPrecision,
         _ => return,
     }
 }
@@ -371,7 +368,7 @@ pub extern "C" fn resvg_options_set_text_rendering_mode(
 #[repr(C)]
 #[allow(missing_docs)]
 #[derive(Copy, Clone)]
-pub enum resvg_image_rendering {
+pub enum svgr_image_rendering {
     OPTIMIZE_QUALITY,
     OPTIMIZE_SPEED,
 }
@@ -382,13 +379,13 @@ pub enum resvg_image_rendering {
 ///
 /// Default: `RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY`
 #[no_mangle]
-pub extern "C" fn resvg_options_set_image_rendering_mode(
-    opt: *mut resvg_options,
-    mode: resvg_image_rendering,
+pub extern "C" fn svgr_options_set_image_rendering_mode(
+    opt: *mut svgr_options,
+    mode: svgr_image_rendering,
 ) {
     cast_opt(opt).image_rendering = match mode as i32 {
-        0 => usvg::ImageRendering::OptimizeQuality,
-        1 => usvg::ImageRendering::OptimizeSpeed,
+        0 => usvgr::ImageRendering::OptimizeQuality,
+        1 => usvgr::ImageRendering::OptimizeSpeed,
         _ => return,
     }
 }
@@ -400,8 +397,8 @@ pub extern "C" fn resvg_options_set_image_rendering_mode(
 /// Has no effect when the `text` feature is not enabled.
 #[no_mangle]
 #[allow(unused_variables)]
-pub extern "C" fn resvg_options_load_font_data(
-    opt: *mut resvg_options,
+pub extern "C" fn svgr_options_load_font_data(
+    opt: *mut svgr_options,
     data: *const c_char,
     len: usize,
 ) {
@@ -424,18 +421,18 @@ pub extern "C" fn resvg_options_load_font_data(
 ///
 /// Has no effect when the `text` feature is not enabled.
 ///
-/// @return #resvg_error with RESVG_OK, RESVG_ERROR_NOT_AN_UTF8_STR or RESVG_ERROR_FILE_OPEN_FAILED
+/// @return #svgr_error with RESVG_OK, RESVG_ERROR_NOT_AN_UTF8_STR or RESVG_ERROR_FILE_OPEN_FAILED
 #[no_mangle]
 #[allow(unused_variables)]
-pub extern "C" fn resvg_options_load_font_file(
-    opt: *mut resvg_options,
+pub extern "C" fn svgr_options_load_font_file(
+    opt: *mut svgr_options,
     file_path: *const c_char,
 ) -> i32 {
     #[cfg(feature = "text")]
     {
         let file_path = match cstr_to_str(file_path) {
             Some(v) => v,
-            None => return resvg_error::NOT_AN_UTF8_STR as i32,
+            None => return svgr_error::NOT_AN_UTF8_STR as i32,
         };
 
         let opt = unsafe {
@@ -444,15 +441,15 @@ pub extern "C" fn resvg_options_load_font_file(
         };
 
         if opt.fontdb.load_font_file(file_path).is_ok() {
-            resvg_error::OK as i32
+            svgr_error::OK as i32
         } else {
-            resvg_error::FILE_OPEN_FAILED as i32
+            svgr_error::FILE_OPEN_FAILED as i32
         }
     }
 
     #[cfg(not(feature = "text"))]
     {
-        resvg_error::OK as i32
+        svgr_error::OK as i32
     }
 }
 
@@ -460,7 +457,7 @@ pub extern "C" fn resvg_options_load_font_file(
 ///
 /// This method is very IO intensive.
 ///
-/// This method should be executed only once per #resvg_options.
+/// This method should be executed only once per #svgr_options.
 ///
 /// The system scanning is not perfect, so some fonts may be omitted.
 /// Please send a bug report in this case.
@@ -470,7 +467,7 @@ pub extern "C" fn resvg_options_load_font_file(
 /// Has no effect when the `text` feature is not enabled.
 #[no_mangle]
 #[allow(unused_variables)]
-pub extern "C" fn resvg_options_load_system_fonts(opt: *mut resvg_options) {
+pub extern "C" fn svgr_options_load_system_fonts(opt: *mut svgr_options) {
     #[cfg(feature = "text")]
     {
         let opt = unsafe {
@@ -482,38 +479,38 @@ pub extern "C" fn resvg_options_load_system_fonts(opt: *mut resvg_options) {
     }
 }
 
-/// @brief Destroys the #resvg_options.
+/// @brief Destroys the #svgr_options.
 #[no_mangle]
-pub extern "C" fn resvg_options_destroy(opt: *mut resvg_options) {
+pub extern "C" fn svgr_options_destroy(opt: *mut svgr_options) {
     unsafe {
         assert!(!opt.is_null());
         let _ = Box::from_raw(opt);
     };
 }
 
-// TODO: use resvg::Tree
+// TODO: use svgr::Tree
 /// @brief An opaque pointer to the rendering tree.
-pub struct resvg_render_tree(pub usvg::Tree);
+pub struct svgr_render_tree(pub usvgr::Tree);
 
-/// @brief Creates #resvg_render_tree from file.
+/// @brief Creates #svgr_render_tree from file.
 ///
 /// .svg and .svgz files are supported.
 ///
-/// See #resvg_is_image_empty for details.
+/// See #svgr_is_image_empty for details.
 ///
 /// @param file_path UTF-8 file path.
 /// @param opt Rendering options. Must not be NULL.
-/// @param tree Parsed render tree. Should be destroyed via #resvg_tree_destroy.
-/// @return #resvg_error
+/// @param tree Parsed render tree. Should be destroyed via #svgr_tree_destroy.
+/// @return #svgr_error
 #[no_mangle]
-pub extern "C" fn resvg_parse_tree_from_file(
+pub extern "C" fn svgr_parse_tree_from_file(
     file_path: *const c_char,
-    opt: *const resvg_options,
-    tree: *mut *mut resvg_render_tree,
+    opt: *const svgr_options,
+    tree: *mut *mut svgr_render_tree,
 ) -> i32 {
     let file_path = match cstr_to_str(file_path) {
         Some(v) => v,
-        None => return resvg_error::NOT_AN_UTF8_STR as i32,
+        None => return svgr_error::NOT_AN_UTF8_STR as i32,
     };
 
     let raw_opt = unsafe {
@@ -523,10 +520,10 @@ pub extern "C" fn resvg_parse_tree_from_file(
 
     let file_data = match std::fs::read(file_path) {
         Ok(tree) => tree,
-        Err(_) => return resvg_error::FILE_OPEN_FAILED as i32,
+        Err(_) => return svgr_error::FILE_OPEN_FAILED as i32,
     };
 
-    let utree = usvg::Tree::from_data(
+    let utree = usvgr::Tree::from_data(
         &file_data,
         &raw_opt.options,
         #[cfg(feature = "text")]
@@ -538,29 +535,29 @@ pub extern "C" fn resvg_parse_tree_from_file(
         Err(e) => return convert_error(e) as i32,
     };
 
-    let tree_box = Box::new(resvg_render_tree(utree));
+    let tree_box = Box::new(svgr_render_tree(utree));
     unsafe {
         *tree = Box::into_raw(tree_box);
     }
 
-    resvg_error::OK as i32
+    svgr_error::OK as i32
 }
 
-/// @brief Creates #resvg_render_tree from data.
+/// @brief Creates #svgr_render_tree from data.
 ///
-/// See #resvg_is_image_empty for details.
+/// See #svgr_is_image_empty for details.
 ///
 /// @param data SVG data. Can contain SVG string or gzip compressed data. Must not be NULL.
 /// @param len Data length.
 /// @param opt Rendering options. Must not be NULL.
-/// @param tree Parsed render tree. Should be destroyed via #resvg_tree_destroy.
-/// @return #resvg_error
+/// @param tree Parsed render tree. Should be destroyed via #svgr_tree_destroy.
+/// @return #svgr_error
 #[no_mangle]
-pub extern "C" fn resvg_parse_tree_from_data(
+pub extern "C" fn svgr_parse_tree_from_data(
     data: *const c_char,
     len: usize,
-    opt: *const resvg_options,
-    tree: *mut *mut resvg_render_tree,
+    opt: *const svgr_options,
+    tree: *mut *mut svgr_render_tree,
 ) -> i32 {
     let data = unsafe { slice::from_raw_parts(data as *const u8, len) };
 
@@ -569,7 +566,7 @@ pub extern "C" fn resvg_parse_tree_from_data(
         &*opt
     };
 
-    let utree = usvg::Tree::from_data(
+    let utree = usvgr::Tree::from_data(
         data,
         &raw_opt.options,
         #[cfg(feature = "text")]
@@ -581,12 +578,12 @@ pub extern "C" fn resvg_parse_tree_from_data(
         Err(e) => return convert_error(e) as i32,
     };
 
-    let tree_box = Box::new(resvg_render_tree(utree));
+    let tree_box = Box::new(svgr_render_tree(utree));
     unsafe {
         *tree = Box::into_raw(tree_box);
     }
 
-    resvg_error::OK as i32
+    svgr_error::OK as i32
 }
 
 /// @brief Checks that tree has any nodes.
@@ -594,7 +591,7 @@ pub extern "C" fn resvg_parse_tree_from_data(
 /// @param tree Render tree.
 /// @return Returns `true` if tree has no nodes.
 #[no_mangle]
-pub extern "C" fn resvg_is_image_empty(tree: *const resvg_render_tree) -> bool {
+pub extern "C" fn svgr_is_image_empty(tree: *const svgr_render_tree) -> bool {
     let tree = unsafe {
         assert!(!tree.is_null());
         &*tree
@@ -612,7 +609,7 @@ pub extern "C" fn resvg_is_image_empty(tree: *const resvg_render_tree) -> bool {
 /// @param tree Render tree.
 /// @return Image size.
 #[no_mangle]
-pub extern "C" fn resvg_get_image_size(tree: *const resvg_render_tree) -> resvg_size {
+pub extern "C" fn svgr_get_image_size(tree: *const svgr_render_tree) -> svgr_size {
     let tree = unsafe {
         assert!(!tree.is_null());
         &*tree
@@ -620,7 +617,7 @@ pub extern "C" fn resvg_get_image_size(tree: *const resvg_render_tree) -> resvg_
 
     let size = tree.0.size();
 
-    resvg_size {
+    svgr_size {
         width: size.width(),
         height: size.height(),
     }
@@ -633,7 +630,7 @@ pub extern "C" fn resvg_get_image_size(tree: *const resvg_render_tree) -> resvg_
 /// @param tree Render tree.
 /// @return Image viewbox.
 #[no_mangle]
-pub extern "C" fn resvg_get_image_viewbox(tree: *const resvg_render_tree) -> resvg_rect {
+pub extern "C" fn svgr_get_image_viewbox(tree: *const svgr_render_tree) -> svgr_rect {
     let tree = unsafe {
         assert!(!tree.is_null());
         &*tree
@@ -641,7 +638,7 @@ pub extern "C" fn resvg_get_image_viewbox(tree: *const resvg_render_tree) -> res
 
     let r = tree.0.view_box().rect;
 
-    resvg_rect {
+    svgr_rect {
         x: r.x(),
         y: r.y(),
         width: r.width(),
@@ -657,10 +654,7 @@ pub extern "C" fn resvg_get_image_viewbox(tree: *const resvg_render_tree) -> res
 /// @param bbox Image's bounding box.
 /// @return `false` if an image has no elements.
 #[no_mangle]
-pub extern "C" fn resvg_get_image_bbox(
-    tree: *const resvg_render_tree,
-    bbox: *mut resvg_rect,
-) -> bool {
+pub extern "C" fn svgr_get_image_bbox(tree: *const svgr_render_tree, bbox: *mut svgr_rect) -> bool {
     let tree = unsafe {
         assert!(!tree.is_null());
         &*tree
@@ -668,7 +662,7 @@ pub extern "C" fn resvg_get_image_bbox(
 
     if let Some(r) = tree.0.root().abs_bounding_box().to_non_zero_rect() {
         unsafe {
-            *bbox = resvg_rect {
+            *bbox = svgr_rect {
                 x: r.x(),
                 y: r.y(),
                 width: r.width(),
@@ -690,7 +684,7 @@ pub extern "C" fn resvg_get_image_bbox(
 /// @return `false` if a node doesn't exist or ID isn't a UTF-8 string.
 /// @return `false` if a node exists, but not renderable.
 #[no_mangle]
-pub extern "C" fn resvg_node_exists(tree: *const resvg_render_tree, id: *const c_char) -> bool {
+pub extern "C" fn svgr_node_exists(tree: *const svgr_render_tree, id: *const c_char) -> bool {
     let id = match cstr_to_str(id) {
         Some(v) => v,
         None => {
@@ -716,10 +710,10 @@ pub extern "C" fn resvg_node_exists(tree: *const resvg_render_tree, id: *const c
 /// @return `false` if a node doesn't exist or ID isn't a UTF-8 string.
 /// @return `false` if a node exists, but not renderable.
 #[no_mangle]
-pub extern "C" fn resvg_get_node_transform(
-    tree: *const resvg_render_tree,
+pub extern "C" fn svgr_get_node_transform(
+    tree: *const svgr_render_tree,
     id: *const c_char,
-    transform: *mut resvg_transform,
+    transform: *mut svgr_transform,
 ) -> bool {
     let id = match cstr_to_str(id) {
         Some(v) => v,
@@ -738,7 +732,7 @@ pub extern "C" fn resvg_get_node_transform(
         let abs_ts = node.abs_transform();
 
         unsafe {
-            *transform = resvg_transform {
+            *transform = svgr_transform {
                 a: abs_ts.sx,
                 b: abs_ts.ky,
                 c: abs_ts.kx,
@@ -763,10 +757,10 @@ pub extern "C" fn resvg_get_node_transform(
 /// @return `false` if ID isn't a UTF-8 string.
 /// @return `false` if ID is an empty string
 #[no_mangle]
-pub extern "C" fn resvg_get_node_bbox(
-    tree: *const resvg_render_tree,
+pub extern "C" fn svgr_get_node_bbox(
+    tree: *const svgr_render_tree,
     id: *const c_char,
-    bbox: *mut resvg_rect,
+    bbox: *mut svgr_rect,
 ) -> bool {
     get_node_bbox(tree, id, bbox, &|node| node.abs_bounding_box())
 }
@@ -780,19 +774,19 @@ pub extern "C" fn resvg_get_node_bbox(
 /// @return `false` if ID isn't a UTF-8 string.
 /// @return `false` if ID is an empty string
 #[no_mangle]
-pub extern "C" fn resvg_get_node_stroke_bbox(
-    tree: *const resvg_render_tree,
+pub extern "C" fn svgr_get_node_stroke_bbox(
+    tree: *const svgr_render_tree,
     id: *const c_char,
-    bbox: *mut resvg_rect,
+    bbox: *mut svgr_rect,
 ) -> bool {
     get_node_bbox(tree, id, bbox, &|node| node.abs_stroke_bounding_box())
 }
 
 fn get_node_bbox(
-    tree: *const resvg_render_tree,
+    tree: *const svgr_render_tree,
     id: *const c_char,
-    bbox: *mut resvg_rect,
-    f: &dyn Fn(&usvg::Node) -> usvg::Rect,
+    bbox: *mut svgr_rect,
+    f: &dyn Fn(&usvgr::Node) -> usvgr::Rect,
 ) -> bool {
     let id = match cstr_to_str(id) {
         Some(v) => v,
@@ -816,7 +810,7 @@ fn get_node_bbox(
         Some(node) => {
             let r = f(node);
             unsafe {
-                *bbox = resvg_rect {
+                *bbox = svgr_rect {
                     x: r.x(),
                     y: r.y(),
                     width: r.width(),
@@ -832,9 +826,9 @@ fn get_node_bbox(
     }
 }
 
-/// @brief Destroys the #resvg_render_tree.
+/// @brief Destroys the #svgr_render_tree.
 #[no_mangle]
-pub extern "C" fn resvg_tree_destroy(tree: *mut resvg_render_tree) {
+pub extern "C" fn svgr_tree_destroy(tree: *mut svgr_render_tree) {
     unsafe {
         assert!(!tree.is_null());
         let _ = Box::from_raw(tree);
@@ -850,17 +844,17 @@ fn cstr_to_str(text: *const c_char) -> Option<&'static str> {
     text.to_str().ok()
 }
 
-fn convert_error(e: usvg::Error) -> resvg_error {
+fn convert_error(e: usvgr::Error) -> svgr_error {
     match e {
-        usvg::Error::NotAnUtf8Str => resvg_error::NOT_AN_UTF8_STR,
-        usvg::Error::MalformedGZip => resvg_error::MALFORMED_GZIP,
-        usvg::Error::ElementsLimitReached => resvg_error::ELEMENTS_LIMIT_REACHED,
-        usvg::Error::InvalidSize => resvg_error::INVALID_SIZE,
-        usvg::Error::ParsingFailed(_) => resvg_error::PARSING_FAILED,
+        usvgr::Error::NotAnUtf8Str => svgr_error::NOT_AN_UTF8_STR,
+        usvgr::Error::MalformedGZip => svgr_error::MALFORMED_GZIP,
+        usvgr::Error::ElementsLimitReached => svgr_error::ELEMENTS_LIMIT_REACHED,
+        usvgr::Error::InvalidSize => svgr_error::INVALID_SIZE,
+        usvgr::Error::ParsingFailed(_) => svgr_error::PARSING_FAILED,
     }
 }
 
-/// @brief Renders the #resvg_render_tree onto the pixmap.
+/// @brief Renders the #svgr_render_tree onto the pixmap.
 ///
 /// @param tree A render tree.
 /// @param transform A root SVG transform. Can be used to position SVG inside the `pixmap`.
@@ -869,9 +863,9 @@ fn convert_error(e: usvg::Error) -> resvg_error {
 /// @param pixmap Pixmap data. Should have width*height*4 size and contain
 ///               premultiplied RGBA8888 pixels.
 #[no_mangle]
-pub extern "C" fn resvg_render(
-    tree: *const resvg_render_tree,
-    transform: resvg_transform,
+pub extern "C" fn svgr_render(
+    tree: *const svgr_render_tree,
+    transform: svgr_transform,
     width: u32,
     height: u32,
     pixmap: *mut c_char,
@@ -886,7 +880,7 @@ pub extern "C" fn resvg_render(
         unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
     let mut pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
 
-    resvg::render(&tree.0, transform.to_tiny_skia(), &mut pixmap)
+    svgr::render(&tree.0, transform.to_tiny_skia(), &mut pixmap)
 }
 
 /// @brief Renders a Node by ID onto the image.
@@ -902,10 +896,10 @@ pub extern "C" fn resvg_render(
 /// @return `false` when the selected `id` is not present.
 /// @return `false` when an element has a zero bbox.
 #[no_mangle]
-pub extern "C" fn resvg_render_node(
-    tree: *const resvg_render_tree,
+pub extern "C" fn svgr_render_node(
+    tree: *const svgr_render_tree,
     id: *const c_char,
-    transform: resvg_transform,
+    transform: svgr_transform,
     width: u32,
     height: u32,
     pixmap: *mut c_char,
@@ -931,7 +925,7 @@ pub extern "C" fn resvg_render_node(
             unsafe { std::slice::from_raw_parts_mut(pixmap as *mut u8, pixmap_len) };
         let mut pixmap = tiny_skia::PixmapMut::from_bytes(pixmap, width, height).unwrap();
 
-        resvg::render_node(node, transform.to_tiny_skia(), &mut pixmap).is_some()
+        svgr::render_node(node, transform.to_tiny_skia(), &mut pixmap).is_some()
     } else {
         log::warn!("A node with '{}' ID wasn't found.", id);
         false

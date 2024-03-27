@@ -22,9 +22,9 @@ jobs:
           tag_name: ${{ github.ref }}
           release_name: ${{ github.ref }}
           body: |
-            - `viewsvg` is a simple application that showcases *resvg* capabilities
-            - `resvg-0.*.0.tar.xz` is a sources archive with vendored Rust dependencies
-            - `resvg-explorer-extension.exe` is an SVG thumbnailer for Windows Explorer
+            - `viewsvg` is a simple application that showcases *svgr* capabilities
+            - `svgr-0.*.0.tar.xz` is a sources archive with vendored Rust dependencies
+            - `svgr-explorer-extension.exe` is an SVG thumbnailer for Windows Explorer
           draft: false
           prerelease: false
     outputs:
@@ -38,23 +38,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Build resvg
+      - name: Build svgr
         run: cargo build --release
 
-      - name: Build usvg
-        working-directory: crates/usvg
+      - name: Build usvgr
+        working-directory: crates/usvgr
         run: cargo build --release
 
       - name: Collect
         working-directory: target/release
         run: |
-          strip -s resvg
-          strip -s usvg
-          tar czf resvg-linux-x86_64.tar.gz resvg
-          tar czf usvg-linux-x86_64.tar.gz usvg
+          strip -s svgr
+          strip -s usvgr
+          tar czf svgr-linux-x86_64.tar.gz svgr
+          tar czf usvgr-linux-x86_64.tar.gz usvgr
           mkdir ../../bin
-          cp resvg-linux-x86_64.tar.gz ../../bin/
-          cp usvg-linux-x86_64.tar.gz ../../bin/
+          cp svgr-linux-x86_64.tar.gz ../../bin/
+          cp usvgr-linux-x86_64.tar.gz ../../bin/
 
       - name: Get version
         id: get_version
@@ -64,19 +64,19 @@ jobs:
         run: |
           VERSION=${{ steps.get_version.outputs.version-without-v }}
           echo $VERSION
-          git clone https://github.com/RazrFalcon/resvg resvg-$VERSION
-          cd resvg-"$VERSION"
+          git clone https://github.com/RazrFalcon/svgr svgr-$VERSION
+          cd svgr-"$VERSION"
           mkdir -p .cargo
           cargo vendor > .cargo/config
           cd ..
           env XZ_OPT="-9e" tar \
               --exclude=".git" \
               --exclude=".gitignore" \
-              --exclude="resvg-$VERSION/.github" \
-              --exclude="resvg-$VERSION/version-bump.md" \
-              --exclude="resvg-$VERSION/docs" \
-              -cJf resvg-"$VERSION".tar.xz resvg-"$VERSION"
-          cp resvg-"$VERSION".tar.xz bin/
+              --exclude="svgr-$VERSION/.github" \
+              --exclude="svgr-$VERSION/version-bump.md" \
+              --exclude="svgr-$VERSION/docs" \
+              -cJf svgr-"$VERSION".tar.xz svgr-"$VERSION"
+          cp svgr-"$VERSION".tar.xz bin/
 
       - name: Upload binaries
         uses: alexellis/upload-assets@0.2.2
@@ -95,13 +95,13 @@ jobs:
 
       # Toolchain is stable-x86_64-pc-windows-msvc by default. No need to change it.
 
-      - name: Build resvg
+      - name: Build svgr
         env:
           RUSTFLAGS: -Ctarget-feature=+crt-static # make sure it's static
         run: cargo build --release
 
-      - name: Build usvg
-        working-directory: crates/usvg
+      - name: Build usvgr
+        working-directory: crates/usvgr
         env:
           RUSTFLAGS: -Ctarget-feature=+crt-static # make sure it's static
         run: cargo build --release
@@ -110,8 +110,8 @@ jobs:
         working-directory: target/release
         shell: cmd
         run: |
-          7z a -tzip -mx9 resvg-win64.zip resvg.exe
-          7z a -tzip -mx9 usvg-win64.zip usvg.exe
+          7z a -tzip -mx9 svgr-win64.zip svgr.exe
+          7z a -tzip -mx9 usvgr-win64.zip usvgr.exe
 
       - name: Build thumbnailer
         working-directory: tools/explorer-thumbnailer
@@ -158,9 +158,9 @@ jobs:
       - name: Collect
         run: |
           mkdir bin
-          cp target/release/resvg-win64.zip bin/
-          cp target/release/usvg-win64.zip bin/
-          cp tools/explorer-thumbnailer/install/resvg-explorer-extension.exe bin/
+          cp target/release/svgr-win64.zip bin/
+          cp target/release/usvgr-win64.zip bin/
+          cp tools/explorer-thumbnailer/install/svgr-explorer-extension.exe bin/
           cp tools/viewsvg/viewsvg-bin/viewsvg-win64.zip bin/
 
       - name: Upload binaries
@@ -182,18 +182,18 @@ jobs:
       - name: Install latest stable toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build resvg
+      - name: Build svgr
         run: cargo build --release
 
-      - name: Build usvg
-        working-directory: crates/usvg
+      - name: Build usvgr
+        working-directory: crates/usvgr
         run: cargo build --release
 
       - name: Compress
         working-directory: target/release
         run: |
-          7z a -tzip -mx9 resvg-macos-x86_64.zip resvg
-          7z a -tzip -mx9 usvg-macos-x86_64.zip usvg
+          7z a -tzip -mx9 svgr-macos-x86_64.zip svgr
+          7z a -tzip -mx9 usvgr-macos-x86_64.zip usvgr
 
       - name: Build C API
         working-directory: crates/c-api
@@ -217,8 +217,8 @@ jobs:
       - name: Collect
         run: |
           mkdir bin
-          cp target/release/resvg-macos-x86_64.zip bin/
-          cp target/release/usvg-macos-x86_64.zip bin/
+          cp target/release/svgr-macos-x86_64.zip bin/
+          cp target/release/usvgr-macos-x86_64.zip bin/
           cp tools/viewsvg/viewsvg-macos-x86_64.zip bin/
 
       - name: Upload binaries

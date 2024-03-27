@@ -1,4 +1,4 @@
-A simple example that shows how to use *resvg* through C API to render on a Cairo context.
+A simple example that shows how to use *svgr* through C API to render on a Cairo context.
 
 ## Run
 

@@ -1,4 +1,4 @@
-project(resvgthumbnailer)
+project(svgrthumbnailer)
 
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
@@ -18,16 +18,16 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../../crates/c-api
 )
 
-set(resvgthumbnailer_PART_SRCS
-    resvgthumbnailer.cpp
+set(svgrthumbnailer_PART_SRCS
+    svgrthumbnailer.cpp
 )
 
-add_library(resvgthumbnailer MODULE ${resvgthumbnailer_PART_SRCS})
+add_library(svgrthumbnailer MODULE ${svgrthumbnailer_PART_SRCS})
 
-target_link_libraries(resvgthumbnailer KF5::KIOWidgets KF5::KIOCore KF5::I18n KF5::ConfigCore KF5::ConfigGui resvg)
+target_link_libraries(svgrthumbnailer KF5::KIOWidgets KF5::KIOCore KF5::I18n KF5::ConfigCore KF5::ConfigGui svgr)
 
-install(TARGETS resvgthumbnailer DESTINATION ${PLUGIN_INSTALL_DIR})
+install(TARGETS svgrthumbnailer DESTINATION ${PLUGIN_INSTALL_DIR})
 
 ########### install files ###############
 
-install(FILES resvgthumbnailer.desktop DESTINATION ${SERVICES_INSTALL_DIR})
+install(FILES svgrthumbnailer.desktop DESTINATION ${SERVICES_INSTALL_DIR})

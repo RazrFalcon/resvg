@@ -1,12 +1,12 @@
 use com::sys::{E_POINTER, HRESULT, S_FALSE};
-use resvg::usvg;
+use svgr::usvgr;
 use Error::*;
 
 #[derive(Debug)]
 pub enum Error {
     IStreamStat(HRESULT),
     IStreamRead(HRESULT),
-    TreeError(usvg::Error),
+    TreeError(usvgr::Error),
     TreeEmpty,
     CreateDIBSectionError,
     RenderError,
@@ -20,7 +20,7 @@ impl std::fmt::Display for Error {
             TreeError(err) => write!(f, "Tree::from_data failed with error \"{}\"", err),
             TreeEmpty => write!(f, "SVG tree was not initialized"),
             CreateDIBSectionError => write!(f, "CreateDIBSection failed"),
-            RenderError => write!(f, "resvg::render returned None"),
+            RenderError => write!(f, "svgr::render returned None"),
         }
     }
 }

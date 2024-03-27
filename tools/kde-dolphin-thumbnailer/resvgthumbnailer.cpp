@@ -1,4 +1,4 @@
-#include "resvgthumbnailer.h"
+#include "svgrthumbnailer.h"
 
 #include <QPainter>
 

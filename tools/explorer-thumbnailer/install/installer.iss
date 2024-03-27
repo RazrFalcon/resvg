@@ -1,11 +1,11 @@
 [Setup]
-AppName="resvg Explorer Extension"
+AppName="svgr Explorer Extension"
 AppVersion="0.40.0"
 VersionInfoVersion="0.0.40.0"
-AppVerName="resvg Explorer Extension 0.40.0"
+AppVerName="svgr Explorer Extension 0.40.0"
 AppPublisher="Yevhenii Reizner"
-AppPublisherURL=https://github.com/RazrFalcon/resvg
-DefaultDirName="{pf}\resvg Explorer Extension"
+AppPublisherURL=https://github.com/RazrFalcon/svgr
+DefaultDirName="{pf}\svgr Explorer Extension"
 Compression=lzma
 SolidCompression=yes
 ChangesAssociations=yes
@@ -13,7 +13,7 @@ DisableDirPage=yes
 DisableProgramGroupPage=yes
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
-OutputBaseFilename="resvg-explorer-extension"
+OutputBaseFilename="svgr-explorer-extension"
 OutputDir=.
 
 [Languages]
@@ -30,5 +30,5 @@ Root: HKCR; Subkey: "CLSID\{{4432C229-DFD0-4B18-8C4D-F58932AF6105}\InprocServer3
 Root: HKCR; Subkey: ".svg\shellex"; Flags: uninsdeletekeyifempty
 Root: HKCR; Subkey: ".svg\shellex\{{E357FCCD-A995-4576-B01F-234630154E96}"; Flags: uninsdeletekey
 Root: HKCR; Subkey: ".svg\shellex\{{E357FCCD-A995-4576-B01F-234630154E96}"; ValueType: string; ValueData: "{{4432C229-DFD0-4B18-8C4D-F58932AF6105}"
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Services\EventLog\Application\resvg Thumbnailer"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Services\EventLog\Application\resvg Thumbnailer"; ValueType: string; ValueName: "EventMessageFile"; ValueData: "{app}\server.dll"
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Services\EventLog\Application\svgr Thumbnailer"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Services\EventLog\Application\svgr Thumbnailer"; ValueType: string; ValueName: "EventMessageFile"; ValueData: "{app}\server.dll"

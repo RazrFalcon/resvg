@@ -1,8 +1,8 @@
 [workspace]
 members = [
-    "crates/resvg",
-    "crates/usvg",
+    "crates/svgr",
+    "crates/usvgr",
     "crates/c-api",
 ]
-default-members = ["crates/resvg"]
+default-members = ["crates/svgr"]
 resolver = "2"

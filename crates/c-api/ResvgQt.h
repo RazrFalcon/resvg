@@ -7,7 +7,7 @@
 /**
  * @file ResvgQt.h
  *
- * An idiomatic Qt API for resvg.
+ * An idiomatic Qt API for svgr.
  */
 
 #ifndef RESVG_QT_H
@@ -31,7 +31,7 @@
 #include <QString>
 #include <QTransform>
 
-#include <resvg.h>
+#include <svgr.h>
 
 namespace ResvgPrivate {
 
@@ -48,7 +48,7 @@ public:
         clear();
     }
 
-    resvg_render_tree *tree = nullptr;
+    svgr_render_tree *tree = nullptr;
     QSizeF size;
     QRectF viewBox;
     QString errMsg;
@@ -59,7 +59,7 @@ private:
         // No need to deallocate opt.font_family, because it is a constant.
 
         if (tree) {
-            resvg_tree_destroy(tree);
+            svgr_tree_destroy(tree);
             tree = nullptr;
         }
 
@@ -102,11 +102,11 @@ public:
      * @brief Constructs a new options set.
      */
     ResvgOptions()
-        : d(resvg_options_create())
+        : d(svgr_options_create())
     {
         // Do not set the default font via QFont::family()
         // because it will return a dummy one on Windows.
-        // See https://github.com/RazrFalcon/resvg/issues/159
+        // See https://github.com/RazrFalcon/svgr/issues/159
 
         setLanguages({ QLocale().bcp47Name() });
     }
@@ -123,11 +123,11 @@ public:
     {
         Q_ASSERT(QFileInfo(path).isDir());
         if (path.isEmpty()) {
-            resvg_options_set_resources_dir(d, nullptr);
+            svgr_options_set_resources_dir(d, nullptr);
         } else {
             auto pathC = path.toUtf8();
             pathC.append('\0');
-            resvg_options_set_resources_dir(d, pathC.constData());
+            svgr_options_set_resources_dir(d, pathC.constData());
         }
     }
 
@@ -140,7 +140,7 @@ public:
      */
     void setDpi(const float dpi)
     {
-        resvg_options_set_dpi(d, dpi);
+        svgr_options_set_dpi(d, dpi);
     }
 
     /**
@@ -158,7 +158,7 @@ public:
 
         auto familyC = family.toUtf8();
         familyC.append('\0');
-        resvg_options_set_font_family(d, familyC.constData());
+        svgr_options_set_font_family(d, familyC.constData());
     }
 
     /**
@@ -170,7 +170,7 @@ public:
      */
     void setFontSize(const float size)
     {
-        resvg_options_set_font_size(d, size);
+        svgr_options_set_font_size(d, size);
     }
 
     /**
@@ -185,11 +185,11 @@ public:
     void setLanguages(const QStringList &languages)
     {
         if (languages.isEmpty()) {
-            resvg_options_set_languages(d, nullptr);
+            svgr_options_set_languages(d, nullptr);
         } else {
             auto languagesC = languages.join(',').toUtf8();
             languagesC.append('\0');
-            resvg_options_set_languages(d, languagesC.constData());
+            svgr_options_set_languages(d, languagesC.constData());
         }
     }
 
@@ -200,9 +200,9 @@ public:
      *
      * Default: `RESVG_SHAPE_RENDERING_GEOMETRIC_PRECISION`
      */
-    void setShapeRenderingMode(const resvg_shape_rendering mode)
+    void setShapeRenderingMode(const svgr_shape_rendering mode)
     {
-        resvg_options_set_shape_rendering_mode(d, mode);
+        svgr_options_set_shape_rendering_mode(d, mode);
     }
 
     /**
@@ -212,9 +212,9 @@ public:
      *
      * Default: `RESVG_TEXT_RENDERING_OPTIMIZE_LEGIBILITY`
      */
-    void setTextRenderingMode(const resvg_text_rendering mode)
+    void setTextRenderingMode(const svgr_text_rendering mode)
     {
-        resvg_options_set_text_rendering_mode(d, mode);
+        svgr_options_set_text_rendering_mode(d, mode);
     }
 
     /**
@@ -224,9 +224,9 @@ public:
      *
      * Default: `RESVG_IMAGE_RENDERING_OPTIMIZE_QUALITY`
      */
-    void setImageRenderingMode(const resvg_image_rendering mode)
+    void setImageRenderingMode(const svgr_image_rendering mode)
     {
-        resvg_options_set_image_rendering_mode(d, mode);
+        svgr_options_set_image_rendering_mode(d, mode);
     }
 
     /**
@@ -236,7 +236,7 @@ public:
      */
     void loadFontData(const QByteArray &data)
     {
-        resvg_options_load_font_data(d, data.constData(), data.size());
+        svgr_options_load_font_data(d, data.constData(), data.size());
     }
 
     /**
@@ -248,7 +248,7 @@ public:
     {
         auto pathC = path.toUtf8();
         pathC.append('\0');
-        return resvg_options_load_font_file(d, pathC.constData());
+        return svgr_options_load_font_file(d, pathC.constData());
     }
 
     /**
@@ -256,7 +256,7 @@ public:
      *
      * This method is very IO intensive.
      *
-     * This method should be executed only once per #resvg_options.
+     * This method should be executed only once per #svgr_options.
      *
      * The system scanning is not perfect, so some fonts may be omitted.
      * Please send a bug report in this case.
@@ -265,7 +265,7 @@ public:
      */
     void loadSystemFonts()
     {
-        resvg_options_load_system_fonts(d);
+        svgr_options_load_system_fonts(d);
     }
 
     /**
@@ -273,17 +273,17 @@ public:
      */
     ~ResvgOptions()
     {
-        resvg_options_destroy(d);
+        svgr_options_destroy(d);
     }
 
     friend class ResvgRenderer;
 
 private:
-    resvg_options * const d;
+    svgr_options * const d;
 };
 
 /**
- * @brief QSvgRenderer-like wrapper for resvg.
+ * @brief QSvgRenderer-like wrapper for svgr.
  */
 class ResvgRenderer {
 public:
@@ -332,16 +332,16 @@ public:
         auto filePathC = filePath.toUtf8();
         filePathC.append('\0');
 
-        const auto err = resvg_parse_tree_from_file(filePathC.constData(), opt.d, &d->tree);
+        const auto err = svgr_parse_tree_from_file(filePathC.constData(), opt.d, &d->tree);
         if (err != RESVG_OK) {
             d->errMsg = ResvgPrivate::errorToString(err);
             return false;
         }
 
-        const auto r = resvg_get_image_viewbox(d->tree);
+        const auto r = svgr_get_image_viewbox(d->tree);
         d->viewBox = QRectF(r.x, r.y, r.width, r.height);
 
-        const auto s = resvg_get_image_size(d->tree);
+        const auto s = svgr_get_image_size(d->tree);
         d->size = QSizeF(s.width, s.height);
 
         return true;
@@ -354,16 +354,16 @@ public:
     {
         d->reset();
 
-        const auto err = resvg_parse_tree_from_data(data.constData(), data.size(), opt.d, &d->tree);
+        const auto err = svgr_parse_tree_from_data(data.constData(), data.size(), opt.d, &d->tree);
         if (err != RESVG_OK) {
             d->errMsg = ResvgPrivate::errorToString(err);
             return false;
         }
 
-        const auto r = resvg_get_image_viewbox(d->tree);
+        const auto r = svgr_get_image_viewbox(d->tree);
         d->viewBox = QRectF(r.x, r.y, r.width, r.height);
 
-        const auto s = resvg_get_image_size(d->tree);
+        const auto s = svgr_get_image_size(d->tree);
         d->size = QSizeF(s.width, s.height);
 
         return true;
@@ -397,7 +397,7 @@ public:
     bool isEmpty() const
     {
         if (d->tree)
-            return resvg_is_image_empty(d->tree);
+            return svgr_is_image_empty(d->tree);
         else
             return true;
     }
@@ -460,8 +460,8 @@ public:
 
         const auto utf8Str = id.toUtf8();
         const auto rawId = utf8Str.constData();
-        resvg_rect bbox;
-        if (resvg_get_node_bbox(d->tree, rawId, &bbox))
+        svgr_rect bbox;
+        if (svgr_get_node_bbox(d->tree, rawId, &bbox))
             return QRectF(bbox.x, bbox.y, bbox.width, bbox.height);
 
         return QRectF();
@@ -475,8 +475,8 @@ public:
         if (!d->tree)
             return QRectF();
 
-        resvg_rect bbox;
-        if (resvg_get_image_bbox(d->tree, &bbox))
+        svgr_rect bbox;
+        if (svgr_get_image_bbox(d->tree, &bbox))
             return QRectF(bbox.x, bbox.y, bbox.width, bbox.height);
 
         return QRectF();
@@ -492,7 +492,7 @@ public:
 
         const auto utf8Str = id.toUtf8();
         const auto rawId = utf8Str.constData();
-        return resvg_node_exists(d->tree, rawId);
+        return svgr_node_exists(d->tree, rawId);
     }
 
     /**
@@ -505,8 +505,8 @@ public:
 
         const auto utf8Str = id.toUtf8();
         const auto rawId = utf8Str.constData();
-        resvg_transform ts;
-        if (resvg_get_node_transform(d->tree, rawId, &ts))
+        svgr_transform ts;
+        if (svgr_get_node_transform(d->tree, rawId, &ts))
             return QTransform(ts.a, ts.b, ts.c, ts.d, ts.e, ts.f);
 
         return QTransform();
@@ -521,7 +521,7 @@ public:
      */
     QImage renderToImage(const QSize &size = QSize()) const
     {
-        resvg_transform ts = resvg_transform_identity();
+        svgr_transform ts = svgr_transform_identity();
         if (size.isValid()) {
             // TODO: support height too.
             auto sizef = defaultSizeF();
@@ -536,9 +536,9 @@ public:
 
         QImage qImg(svgSize.width(), svgSize.height(), QImage::Format_ARGB32_Premultiplied);
         qImg.fill(Qt::transparent);
-        resvg_render(d->tree, ts, qImg.width(), qImg.height(), (char*)qImg.bits());
+        svgr_render(d->tree, ts, qImg.width(), qImg.height(), (char*)qImg.bits());
 
-        // resvg renders onto the RGBA canvas, while QImage is ARGB.
+        // svgr renders onto the RGBA canvas, while QImage is ARGB.
         // std::move is required to call inplace version of rgbSwapped().
         return std::move(qImg).rgbSwapped();
     }
@@ -554,7 +554,7 @@ public:
      */
     static void initLog()
     {
-        resvg_init_log();
+        svgr_init_log();
     }
 
 private:

@@ -6,10 +6,10 @@ An SVG thumbnails generator for the KDE's
 ## Build
 
 ```bash
-# build and install C-API first in case you don't have resvg intalled already
+# build and install C-API first in case you don't have svgr intalled already
 cargo build --release --manifest-path ../../crates/c-api/Cargo.toml
-strip -s ../../target/release/libresvg.so # optional, but recommended
-sudo cp ../../target/release/libresvg.so /usr/lib64/
+strip -s ../../target/release/libsvgr.so # optional, but recommended
+sudo cp ../../target/release/libsvgr.so /usr/lib64/
 
 # build
 mkdir build
@@ -24,7 +24,7 @@ sudo make install
 ## Enable
 
 In Dolphin, go to the Settings -> Configure Dolphin -> General -> Previews.
-Then disable *SVG Images* and enable *SVG Images (resvg)*.
+Then disable *SVG Images* and enable *SVG Images (svgr)*.
 
 Also, it's a good idea to reset the thumbnails cache:
 

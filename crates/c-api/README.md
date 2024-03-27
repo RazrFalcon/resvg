@@ -1,4 +1,4 @@
-# C API for resvg
+# C API for svgr
 
 ## Build
 
@@ -10,5 +10,5 @@ This will produce dynamic and static C libraries that can be found at `../target
 
 ## Header generation
 
-The `resvg.h` is generated via [cbindgen](https://github.com/eqrion/cbindgen)
+The `svgr.h` is generated via [cbindgen](https://github.com/eqrion/cbindgen)
 and then manually edited a bit.

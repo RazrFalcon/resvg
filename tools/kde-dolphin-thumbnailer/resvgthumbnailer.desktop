@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Service
-Name=SVG Images (resvg)
+Name=SVG Images (svgr)
 X-KDE-ServiceTypes=ThumbCreator
 MimeType=image/svg+xml;image/svg+xml-compressed;
-X-KDE-Library=resvgthumbnailer
+X-KDE-Library=svgrthumbnailer
 ServiceTypes=ThumbCreator
 CacheThumbnail=true
