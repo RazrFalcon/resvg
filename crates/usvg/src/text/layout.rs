@@ -22,20 +22,20 @@ use unicode_script::UnicodeScript;
 
 #[derive(Clone, Debug)]
 pub struct PositionedGlyph {
-    pub(crate) transform: Transform,
-    pub(crate) glyph_id: GlyphId,
-    pub(crate) font: ID,
+    pub transform: Transform,
+    pub glyph_id: GlyphId,
+    pub font: ID,
     byte_idx: ByteIndex,
 }
 
 #[derive(Clone, Debug)]
 pub struct PositionedSpan {
-    pub(crate) fill: Option<Fill>,
-    pub(crate) stroke: Option<Stroke>,
-    pub(crate) paint_order: PaintOrder,
-    pub(crate) font_size: NonZeroPositiveF32,
-    pub(crate) visibility: Visibility,
-    pub(crate) positioned_glyphs: Vec<PositionedGlyph>,
+    pub fill: Option<Fill>,
+    pub stroke: Option<Stroke>,
+    pub paint_order: PaintOrder,
+    pub font_size: NonZeroPositiveF32,
+    pub visibility: Visibility,
+    pub positioned_glyphs: Vec<PositionedGlyph>,
 }
 
 #[derive(Clone, Debug)]
@@ -204,11 +204,9 @@ fn layout_text(
                     .into_iter()
                     .flat_map(|mut gc| {
                         let cluster_ts = gc.transform();
-                        gc.glyphs
-                            .iter_mut()
-                            .for_each(|pg| pg.transform = pg.transform
-                                .post_concat(cluster_ts)
-                                .post_concat(span_ts));
+                        gc.glyphs.iter_mut().for_each(|pg| {
+                            pg.transform = pg.transform.post_concat(cluster_ts).post_concat(span_ts)
+                        });
                         gc.glyphs
                     })
                     .collect();

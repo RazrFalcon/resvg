@@ -57,6 +57,7 @@ mod tree;
 mod writer;
 
 pub use parser::*;
+pub use text::*;
 pub use tree::*;
 
 pub use roxmltree;
