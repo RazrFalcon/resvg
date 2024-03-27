@@ -23,7 +23,6 @@ use unicode_script::UnicodeScript;
 #[derive(Clone, Debug)]
 pub struct PositionedGlyph {
     pub(crate) transform: Transform,
-    pub(crate) cluster_transform: Transform,
     pub(crate) glyph_id: GlyphId,
     pub(crate) font: ID,
     byte_idx: ByteIndex,
@@ -36,7 +35,6 @@ pub struct PositionedSpan {
     pub(crate) paint_order: PaintOrder,
     pub(crate) font_size: NonZeroPositiveF32,
     pub(crate) visibility: Visibility,
-    pub(crate) transform: Transform,
     pub(crate) positioned_glyphs: Vec<PositionedGlyph>,
 }
 
@@ -205,10 +203,12 @@ fn layout_text(
                 let mut positioned_glyphs = span_fragments
                     .into_iter()
                     .flat_map(|mut gc| {
-                        let ts = gc.transform();
+                        let cluster_ts = gc.transform();
                         gc.glyphs
                             .iter_mut()
-                            .for_each(|pg| pg.cluster_transform = ts);
+                            .for_each(|pg| pg.transform = pg.transform
+                                .post_concat(cluster_ts)
+                                .post_concat(span_ts));
                         gc.glyphs
                     })
                     .collect();
@@ -219,7 +219,6 @@ fn layout_text(
                     paint_order: span.paint_order,
                     font_size: span.font_size,
                     visibility: span.visibility,
-                    transform: span_ts,
                     positioned_glyphs,
                 }));
             }
@@ -845,7 +844,11 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
     for glyph in glyphs {
         let sx = glyph.font.scale(font_size);
 
-        let mut ts = Transform::from_scale(sx, sx);
+        // By default, glyphs are upside-down, so we have to mirror them.
+        let mut ts = Transform::from_scale(1.0, -1.0);
+
+        // Scale to font-size.
+        ts = ts.pre_scale(sx, sx);
 
         // Apply offset.
         //
@@ -860,9 +863,6 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
             font: glyph.font.id,
             glyph_id: glyph.id,
             byte_idx: glyph.byte_idx,
-
-            // Will be set later
-            cluster_transform: Transform::default(),
         });
 
         x += glyph.width as f32;

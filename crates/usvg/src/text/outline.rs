@@ -24,13 +24,7 @@ pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> 
 
                 for glyph in &span.positioned_glyphs {
                     if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
-                        let mut ts = Transform::from_scale(1.0, -1.0);
-                        ts = ts
-                            .pre_concat(glyph.transform)
-                            .post_concat(glyph.cluster_transform)
-                            .post_concat(span.transform);
-
-                        if let Some(outline) = outline.transform(ts) {
+                        if let Some(outline) = outline.transform(glyph.transform) {
                             span_builder.push_path(&outline);
                         }
                     }
