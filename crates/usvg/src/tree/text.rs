@@ -577,7 +577,7 @@ impl Text {
     /// to the glyphs that make up the text. If you just need the
     /// outlines of the text, you should use `flattened` instead.
     #[cfg(feature = "text")]
-    pub fn layouted(&self) -> &Vec<TextFragment> {
+    pub fn layouted(&self) -> &[TextFragment] {
         &self.layouted
     }
 
