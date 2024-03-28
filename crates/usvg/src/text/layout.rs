@@ -54,18 +54,15 @@ pub struct Span {
     pub visibility: Visibility,
     /// The glyphs that make up the span.
     pub positioned_glyphs: Vec<PositionedGlyph>,
-}
-
-/// A text fragment is a component of a text element.
-///
-/// It can either be a span (which contains a number of layouted glyphs that share
-/// some properties) or a path (which is a layouted decoration span).
-#[derive(Clone, Debug)]
-pub enum TextFragment {
-    /// A text span.
-    Span(Span),
-    /// A path.
-    Path(Path),
+    /// An underline text decoration of the span.
+    /// Needs to be rendered before all glyphs.
+    pub underline: Option<Path>,
+    /// An overline text decoration of the span.
+    /// Needs to be rendered before all glyphs.
+    pub overline: Option<Path>,
+    /// A line-through text decoration of the span.
+    /// Needs to be rendered after all glyphs.
+    pub line_through: Option<Path>,
 }
 
 #[derive(Clone, Debug)]
@@ -97,7 +94,7 @@ impl GlyphCluster {
 pub(crate) fn layout_text(
     text_node: &Text,
     fontdb: &fontdb::Database,
-) -> Option<(Vec<TextFragment>, NonZeroRect)> {
+) -> Option<(Vec<Span>, NonZeroRect)> {
     let mut fonts_cache: FontsCache = HashMap::new();
 
     for chunk in &text_node.chunks {
@@ -110,7 +107,7 @@ pub(crate) fn layout_text(
         }
     }
 
-    let mut text_fragments = vec![];
+    let mut spans = vec![];
     let mut char_offset = 0;
     let mut last_x = 0.0;
     let mut last_y = 0.0;
@@ -167,6 +164,10 @@ pub(crate) fn layout_text(
                 span_ts = span_ts.pre_translate(0.0, shift);
             }
 
+            let mut underline = None;
+            let mut overline = None;
+            let mut line_through = None;
+
             if let Some(decoration) = span.decoration.underline.clone() {
                 // TODO: No idea what offset should be used for top-to-bottom layout.
                 // There is
@@ -181,7 +182,7 @@ pub(crate) fn layout_text(
                     convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
                 {
                     bbox = bbox.expand(path.data.bounds());
-                    text_fragments.push(TextFragment::Path(path));
+                    underline = Some(path);
                 }
             }
 
@@ -195,7 +196,21 @@ pub(crate) fn layout_text(
                     convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
                 {
                     bbox = bbox.expand(path.data.bounds());
-                    text_fragments.push(TextFragment::Path(path));
+                    overline = Some(path);
+                }
+            }
+
+            if let Some(decoration) = span.decoration.line_through.clone() {
+                let offset = match text_node.writing_mode {
+                    WritingMode::LeftToRight => -font.line_through_position(span.font_size.get()),
+                    WritingMode::TopToBottom => 0.0,
+                };
+
+                if let Some(path) =
+                    convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
+                {
+                    bbox = bbox.expand(path.data.bounds());
+                    line_through = Some(path);
                 }
             }
 
@@ -223,28 +238,17 @@ pub(crate) fn layout_text(
                     })
                     .collect();
 
-                text_fragments.push(TextFragment::Span(Span {
+                spans.push(Span {
                     fill,
                     stroke: span.stroke.clone(),
                     paint_order: span.paint_order,
                     font_size: span.font_size,
                     visibility: span.visibility,
                     positioned_glyphs,
-                }));
-            }
-
-            if let Some(decoration) = span.decoration.line_through.clone() {
-                let offset = match text_node.writing_mode {
-                    WritingMode::LeftToRight => -font.line_through_position(span.font_size.get()),
-                    WritingMode::TopToBottom => 0.0,
-                };
-
-                if let Some(path) =
-                    convert_decoration(offset, span, font, decoration, &decoration_spans, span_ts)
-                {
-                    bbox = bbox.expand(path.data.bounds());
-                    text_fragments.push(TextFragment::Path(path));
-                }
+                    underline,
+                    overline,
+                    line_through,
+                });
             }
         }
 
@@ -262,7 +266,7 @@ pub(crate) fn layout_text(
 
     let bbox = bbox.to_non_zero_rect()?;
 
-    Some((text_fragments, bbox))
+    Some((spans, bbox))
 }
 
 fn convert_span(

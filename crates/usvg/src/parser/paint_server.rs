@@ -11,8 +11,6 @@ use svgtypes::{Length, LengthUnit as Unit};
 use super::converter::{self, Cache, SvgColorExt};
 use super::svgtree::{AId, EId, SvgNode};
 use super::OptionLog;
-#[cfg(feature = "text")]
-use crate::layout::*;
 use crate::*;
 
 pub(crate) enum ServerOrColor {
@@ -680,44 +678,53 @@ fn node_to_user_coordinates(
 
             // 2.
             #[cfg(feature = "text")]
-            for fragment in &mut text.layouted {
-                match fragment {
-                    TextFragment::Span(ref mut span) => {
-                        process_fill(
-                            &mut span.fill,
-                            text.abs_transform,
-                            context_transform,
-                            context_bbox,
-                            bbox,
-                            cache,
-                        );
-                        process_stroke(
-                            &mut span.stroke,
-                            text.abs_transform,
-                            context_transform,
-                            context_bbox,
-                            bbox,
-                            cache,
-                        );
-                    }
-                    TextFragment::Path(ref mut path) => {
-                        process_fill(
-                            &mut path.fill,
-                            text.abs_transform,
-                            context_transform,
-                            context_bbox,
-                            bbox,
-                            cache,
-                        );
-                        process_stroke(
-                            &mut path.stroke,
-                            text.abs_transform,
-                            context_transform,
-                            context_bbox,
-                            bbox,
-                            cache,
-                        );
-                    }
+            for span in &mut text.layouted {
+                process_fill(
+                    &mut span.fill,
+                    text.abs_transform,
+                    context_transform,
+                    context_bbox,
+                    bbox,
+                    cache,
+                );
+                process_stroke(
+                    &mut span.stroke,
+                    text.abs_transform,
+                    context_transform,
+                    context_bbox,
+                    bbox,
+                    cache,
+                );
+
+                let mut process_decoration = |path: &mut Path| {
+                    process_fill(
+                        &mut path.fill,
+                        text.abs_transform,
+                        context_transform,
+                        context_bbox,
+                        bbox,
+                        cache,
+                    );
+                    process_stroke(
+                        &mut path.stroke,
+                        text.abs_transform,
+                        context_transform,
+                        context_bbox,
+                        bbox,
+                        cache,
+                    );
+                };
+
+                if let Some(ref mut path) = span.overline {
+                    process_decoration(path);
+                }
+
+                if let Some(ref mut path) = span.underline {
+                    process_decoration(path);
+                }
+
+                if let Some(ref mut path) = span.line_through {
+                    process_decoration(path);
                 }
             }
 

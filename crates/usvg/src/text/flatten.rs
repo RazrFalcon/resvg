@@ -8,7 +8,6 @@ use rustybuzz::ttf_parser::GlyphId;
 use std::sync::Arc;
 use tiny_skia_path::{NonZeroRect, Transform};
 
-use crate::text::layout::TextFragment;
 use crate::tree::BBox;
 use crate::{Group, Node, Path, ShapeRendering, Text, TextRendering};
 
@@ -27,40 +26,51 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
     let rendering_mode = resolve_rendering_mode(text);
 
     for span in &text.layouted {
-        match span {
-            TextFragment::Path(path) => {
-                stroke_bbox = stroke_bbox.expand(path.data.bounds());
-                let mut path = path.clone();
-                path.rendering_mode = rendering_mode;
-                new_paths.push(path);
-            }
-            TextFragment::Span(span) => {
-                let mut span_builder = tiny_skia_path::PathBuilder::new();
+        if let Some(path) = span.overline.as_ref() {
+            stroke_bbox = stroke_bbox.expand(path.data.bounds());
+            let mut path = path.clone();
+            path.rendering_mode = rendering_mode;
+            new_paths.push(path);
+        }
 
-                for glyph in &span.positioned_glyphs {
-                    if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
-                        if let Some(outline) = outline.transform(glyph.transform) {
-                            span_builder.push_path(&outline);
-                        }
-                    }
-                }
+        if let Some(path) = span.underline.as_ref() {
+            stroke_bbox = stroke_bbox.expand(path.data.bounds());
+            let mut path = path.clone();
+            path.rendering_mode = rendering_mode;
+            new_paths.push(path);
+        }
 
-                if let Some(path) = span_builder.finish().and_then(|p| {
-                    Path::new(
-                        String::new(),
-                        span.visibility,
-                        span.fill.clone(),
-                        span.stroke.clone(),
-                        span.paint_order,
-                        rendering_mode,
-                        Arc::new(p),
-                        Transform::default(),
-                    )
-                }) {
-                    stroke_bbox = stroke_bbox.expand(path.stroke_bounding_box());
-                    new_paths.push(path);
+        let mut span_builder = tiny_skia_path::PathBuilder::new();
+
+        for glyph in &span.positioned_glyphs {
+            if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
+                if let Some(outline) = outline.transform(glyph.transform) {
+                    span_builder.push_path(&outline);
                 }
             }
+        }
+
+        if let Some(path) = span_builder.finish().and_then(|p| {
+            Path::new(
+                String::new(),
+                span.visibility,
+                span.fill.clone(),
+                span.stroke.clone(),
+                span.paint_order,
+                rendering_mode,
+                Arc::new(p),
+                Transform::default(),
+            )
+        }) {
+            stroke_bbox = stroke_bbox.expand(path.stroke_bounding_box());
+            new_paths.push(path);
+        }
+
+        if let Some(path) = span.line_through.as_ref() {
+            stroke_bbox = stroke_bbox.expand(path.data.bounds());
+            let mut path = path.clone();
+            path.rendering_mode = rendering_mode;
+            new_paths.push(path);
         }
     }
 
