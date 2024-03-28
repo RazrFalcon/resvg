@@ -2,14 +2,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::text::layout::TextFragment;
-use crate::tree::BBox;
-use crate::{Group, Node, Path, ShapeRendering, Text, TextRendering};
 use fontdb::{Database, ID};
 use rustybuzz::ttf_parser;
 use rustybuzz::ttf_parser::GlyphId;
 use std::sync::Arc;
 use tiny_skia_path::{NonZeroRect, Transform};
+
+use crate::text::layout::TextFragment;
+use crate::tree::BBox;
+use crate::{Group, Node, Path, ShapeRendering, Text, TextRendering};
 
 fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
     match text.rendering_mode {
@@ -19,10 +20,7 @@ fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
     }
 }
 
-pub(crate) fn flatten(
-    text: &mut Text,
-    fontdb: &fontdb::Database,
-) -> Option<(Group, NonZeroRect)> {
+pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Group, NonZeroRect)> {
     let mut new_paths = vec![];
 
     let mut stroke_bbox = BBox::default();

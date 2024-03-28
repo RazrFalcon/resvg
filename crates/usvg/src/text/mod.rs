@@ -4,8 +4,8 @@
 
 use crate::Text;
 
-mod layout;
 mod flatten;
+mod layout;
 
 pub use layout::{PositionedGlyph, Span, TextFragment};
 

@@ -2,6 +2,19 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::collections::HashMap;
+use std::num::NonZeroU16;
+use std::sync::Arc;
+
+use fontdb::{Database, ID};
+use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
+use rustybuzz::ttf_parser;
+use rustybuzz::ttf_parser::GlyphId;
+use strict_num::NonZeroPositiveF32;
+use svgtypes::FontFamily;
+use tiny_skia_path::{NonZeroRect, Transform};
+use unicode_script::UnicodeScript;
+
 use crate::tree::{BBox, IsValidLength};
 use crate::{
     AlignmentBaseline, ApproxZeroUlps, BaselineShift, DominantBaseline, Fill, FillRule, Font,
@@ -9,17 +22,6 @@ use crate::{
     TextAnchor, TextChunk, TextDecorationStyle, TextFlow, TextPath, TextSpan, Visibility,
     WritingMode,
 };
-use fontdb::{Database, ID};
-use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
-use rustybuzz::ttf_parser;
-use rustybuzz::ttf_parser::GlyphId;
-use std::collections::HashMap;
-use std::num::NonZeroU16;
-use std::sync::Arc;
-use strict_num::NonZeroPositiveF32;
-use svgtypes::FontFamily;
-use tiny_skia_path::{NonZeroRect, Transform};
-use unicode_script::UnicodeScript;
 
 /// A glyph that has already been positioned correctly.
 ///
