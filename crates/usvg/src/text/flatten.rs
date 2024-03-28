@@ -19,7 +19,7 @@ fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
     }
 }
 
-pub(crate) fn outline_text(
+pub(crate) fn flatten(
     text: &mut Text,
     fontdb: &fontdb::Database,
 ) -> Option<(Group, NonZeroRect)> {

@@ -5,7 +5,7 @@
 use crate::Text;
 
 mod layout;
-mod outline;
+mod flatten;
 
 pub use layout::{PositionedGlyph, Span, TextFragment};
 
@@ -20,7 +20,7 @@ pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> 
     text.bounding_box = bbox.to_rect();
     text.abs_bounding_box = bbox.transform(text.abs_transform)?.to_rect();
 
-    let (group, stroke_bbox) = outline::outline_text(text, fontdb)?;
+    let (group, stroke_bbox) = flatten::flatten(text, fontdb)?;
     text.flattened = Box::new(group);
     text.stroke_bounding_box = stroke_bbox.to_rect();
     text.abs_stroke_bounding_box = stroke_bbox.transform(text.abs_transform)?.to_rect();
