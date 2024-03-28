@@ -5,9 +5,9 @@
 use crate::Text;
 
 mod flatten;
-mod layout;
 
-pub use layout::{PositionedGlyph, Span, TextFragment};
+/// Provides access to the layout of a text node.
+pub mod layout;
 
 /// Convert a text into its paths. This is done in two steps:
 /// 1. We convert the text into glyphs and position them according to the rules specified in the

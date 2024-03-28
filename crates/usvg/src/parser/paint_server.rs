@@ -11,6 +11,8 @@ use svgtypes::{Length, LengthUnit as Unit};
 use super::converter::{self, Cache, SvgColorExt};
 use super::svgtree::{AId, EId, SvgNode};
 use super::OptionLog;
+#[cfg(feature = "text")]
+use crate::layout::*;
 use crate::*;
 
 pub(crate) enum ServerOrColor {

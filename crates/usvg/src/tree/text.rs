@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[cfg(feature = "text")]
-use crate::TextFragment;
+use crate::layout::TextFragment;
 
 /// A font stretch property.
 #[allow(missing_docs)]
