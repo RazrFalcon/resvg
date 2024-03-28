@@ -646,6 +646,12 @@ fn node_to_user_coordinates(
             // paint servers.
             let bbox = text.bounding_box;
 
+            // We need to update three things:
+            // 1. The fills/strokes of the original elements in the usvg tree.
+            // 2. The fills/strokes of the layouted elements of the text.
+            // 3. The fills/strokes of the outlined text.
+
+            // 1.
             for chunk in &mut text.chunks {
                 for span in &mut chunk.spans {
                     process_fill(
@@ -670,6 +676,59 @@ fn node_to_user_coordinates(
                 }
             }
 
+            // 2.
+            #[cfg(feature = "text")]
+            for span in &mut text.layouted {
+                process_fill(
+                    &mut span.fill,
+                    text.abs_transform,
+                    context_transform,
+                    context_bbox,
+                    bbox,
+                    cache,
+                );
+                process_stroke(
+                    &mut span.stroke,
+                    text.abs_transform,
+                    context_transform,
+                    context_bbox,
+                    bbox,
+                    cache,
+                );
+
+                let mut process_decoration = |path: &mut Path| {
+                    process_fill(
+                        &mut path.fill,
+                        text.abs_transform,
+                        context_transform,
+                        context_bbox,
+                        bbox,
+                        cache,
+                    );
+                    process_stroke(
+                        &mut path.stroke,
+                        text.abs_transform,
+                        context_transform,
+                        context_bbox,
+                        bbox,
+                        cache,
+                    );
+                };
+
+                if let Some(ref mut path) = span.overline {
+                    process_decoration(path);
+                }
+
+                if let Some(ref mut path) = span.underline {
+                    process_decoration(path);
+                }
+
+                if let Some(ref mut path) = span.line_through {
+                    process_decoration(path);
+                }
+            }
+
+            // 3.
             update_paint_servers(
                 &mut text.flattened,
                 context_transform,

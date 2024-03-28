@@ -804,17 +804,17 @@ fn convert_path(
         let mut marker_group = Group::empty();
         let mut marker_state = state.clone();
 
-        let bbox = tiny_skia_path.compute_tight_bounds().and_then(|r| r.to_non_zero_rect());
+        let bbox = tiny_skia_path
+            .compute_tight_bounds()
+            .and_then(|r| r.to_non_zero_rect());
 
         let fill = fill.clone().map(|mut f| {
-            f.context_element =
-                Some(ContextElement::PathNode(path_transform, bbox));
+            f.context_element = Some(ContextElement::PathNode(path_transform, bbox));
             f
         });
 
         let stroke = stroke.clone().map(|mut s| {
-            s.context_element =
-                Some(ContextElement::PathNode(path_transform, bbox));
+            s.context_element = Some(ContextElement::PathNode(path_transform, bbox));
             s
         });
 

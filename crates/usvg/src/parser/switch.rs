@@ -50,11 +50,9 @@ pub(crate) fn convert(
     let child = node
         .children()
         .find(|n| is_condition_passed(*n, state.opt))?;
-    if let Some(g) =
-        converter::convert_group(node, state, false, cache, parent, &|cache, g| {
-            converter::convert_element(child, state, cache, g);
-        })
-    {
+    if let Some(g) = converter::convert_group(node, state, false, cache, parent, &|cache, g| {
+        converter::convert_element(child, state, cache, g);
+    }) {
         parent.children.push(Node::Group(Box::new(g)));
     }
 
