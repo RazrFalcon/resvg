@@ -1468,6 +1468,7 @@ pub(crate) struct Glyph {
     /// We use it to match a glyph with a character in the text chunk and therefore with the style.
     pub(crate) byte_idx: ByteIndex,
 
+    /// The text from the original string that corresponds to that glyph.
     pub(crate) text: String,
 
     /// The glyph offset in font units.
