@@ -1318,9 +1318,9 @@ fn shape_text_with_font(
                 let info = infos[i];
                 let idx = run.start + info.cluster as usize;
 
-                let mut start = info.cluster as usize;
+                let start = info.cluster as usize;
 
-                let mut end = if ltr { i.checked_add(1) } else { i.checked_sub(1) }
+                let end = if ltr { i.checked_add(1) } else { i.checked_sub(1) }
                     .and_then(|last| infos.get(last))
                     .map_or(sub_text.len(), |info| info.cluster as usize);
 
