@@ -138,9 +138,10 @@ pub(crate) fn convert(
         stroke_bounding_box: dummy,
         abs_stroke_bounding_box: dummy,
         flattened: Box::new(Group::empty()),
+        layouted: vec![],
     };
 
-    if crate::text_to_paths::convert(&mut text, state.fontdb).is_none() {
+    if text::convert(&mut text, state.fontdb).is_none() {
         return;
     }
 

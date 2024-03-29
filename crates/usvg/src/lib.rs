@@ -53,16 +53,18 @@ and can focus just on the rendering part.
 #![warn(missing_copy_implementations)]
 
 mod parser;
+#[cfg(feature = "text")]
+mod text;
 mod tree;
 mod writer;
 
 pub use parser::*;
+#[cfg(feature = "text")]
+pub use text::*;
 pub use tree::*;
 
 pub use roxmltree;
 
-#[cfg(feature = "text")]
-mod text_to_paths;
 #[cfg(feature = "text")]
 pub use fontdb;
 
