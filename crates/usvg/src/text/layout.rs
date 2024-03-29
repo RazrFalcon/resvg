@@ -27,13 +27,15 @@ use crate::{
 ///
 /// Note that the transform already takes the font size into consideration, so applying the
 /// transform to the outline of the glyphs is all that is necessary to display it correctly.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct PositionedGlyph {
     /// The transform of the glyph. This transform should be applied to the _glyph outlines_, meaning
     /// that paint servers referenced by the glyph's span should not be affected by it.
     pub transform: Transform,
     /// The ID of the glyph.
     pub glyph_id: GlyphId,
+    /// The text from the original string that corresponds to that glyph.
+    pub text: String,
     /// The ID of the font the glyph should be taken from.
     pub font: ID,
 }
@@ -990,6 +992,7 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
         positioned_glyphs.push(PositionedGlyph {
             transform: ts,
             font: glyph.font.id,
+            text: glyph.text.clone(),
             glyph_id: glyph.id,
         });
 
@@ -1277,10 +1280,11 @@ fn shape_text_with_font(
                 continue;
             }
 
-            let hb_direction = if levels[run.start].is_rtl() {
-                rustybuzz::Direction::RightToLeft
-            } else {
+            let ltr = levels[run.start].is_ltr();
+            let hb_direction = if ltr {
                 rustybuzz::Direction::LeftToRight
+            } else {
+                rustybuzz::Direction::RightToLeft
             };
 
             let mut buffer = rustybuzz::UnicodeBuffer::new();
@@ -1309,12 +1313,20 @@ fn shape_text_with_font(
             let positions = output.glyph_positions();
             let infos = output.glyph_infos();
 
-            for (pos, info) in positions.iter().zip(infos) {
+            for i in 0..output.len() {
+                let pos = positions[i];
+                let info = infos[i];
                 let idx = run.start + info.cluster as usize;
-                debug_assert!(text.get(idx..).is_some());
+
+                let mut start = info.cluster as usize;
+
+                let mut end = if ltr { i.checked_add(1) } else { i.checked_sub(1) }
+                    .and_then(|last| infos.get(last))
+                    .map_or(sub_text.len(), |info| info.cluster as usize);
 
                 glyphs.push(Glyph {
                     byte_idx: ByteIndex::new(idx),
+                    text: sub_text[start..end].to_string(),
                     id: GlyphId(info.glyph_id as u16),
                     dx: pos.x_offset,
                     dy: pos.y_offset,
@@ -1455,6 +1467,8 @@ pub(crate) struct Glyph {
     ///
     /// We use it to match a glyph with a character in the text chunk and therefore with the style.
     pub(crate) byte_idx: ByteIndex,
+
+    pub(crate) text: String,
 
     /// The glyph offset in font units.
     pub(crate) dx: i32,
