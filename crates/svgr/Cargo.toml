@@ -24,6 +24,8 @@ rgb = "0.8"
 tiny-skia = "0.11.4"
 usvgr = { path = "../usvgr", version = "0.40.0", default-features = false }
 svgrtypes = { path = "../svgrtypes" }
+lru = "0.12.3"
+ahash = "0.8.11"
 
 [dev-dependencies]
 image = "0.25.0"

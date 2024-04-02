@@ -1,22 +1,82 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
+#![allow(missing_docs)]
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 use std::str::FromStr;
 
 #[rustfmt::skip] mod names;
-mod parse;
+/// FFrames: parser should be available publicly for the svg macro
+pub mod parse;
 mod text;
 
+use roxmltree::StringStorage;
 use tiny_skia_path::Transform;
 
 use crate::{
     BlendMode, ImageRendering, Opacity, ShapeRendering, SpreadMethod, TextRendering, Units,
     Visibility,
 };
-pub use names::{AId, EId};
+pub use names::{AId, EId, ATTRIBUTES};
+pub use roxmltree;
+
+#[cfg(feature = "proc-macro")]
+pub use self_rust_tokenize::*;
+
+#[derive(Debug, Clone)]
+/// FFrames specific composable svg document that flattens in runtime
+pub struct NestedSvgDocument<'input, TNode = NestedNodeData<'input>> {
+    /// Nodes of the SVG document.
+    pub nodes: Vec<Option<TNode>>,
+    marker: std::marker::PhantomData<&'input ()>,
+}
+
+impl<'input> NestedSvgDocument<'input> {
+    /// Create new document from a vec of nodes
+    pub fn from_nodes(nodes: Vec<Option<NestedNodeData<'input>>>) -> Self {
+        Self {
+            nodes,
+            marker: std::marker::PhantomData,
+        }
+    }
+}
+
+#[allow(clippy::derivable_impls)]
+impl Default for NestedSvgDocument<'_> {
+    fn default() -> Self {
+        Self {
+            nodes: vec![],
+            marker: std::marker::PhantomData,
+        }
+    }
+}
+
+impl NestedNodeData<'_> {
+    pub(crate) fn find_recursively(
+        &self,
+        predicate: &impl Fn(&NestedNodeData) -> bool,
+    ) -> Option<&NestedNodeData> {
+        for node in self.children.iter().flatten() {
+            if predicate(node) {
+                return Some(node);
+            }
+
+            if let Some(res) = node.find_recursively(predicate) {
+                return Some(res);
+            }
+        }
+
+        None
+    }
+}
+
+/// Used for svg macro in FFramea
+pub mod macro_prelude {
+    pub use super::*;
+    pub use roxmltree;
+    pub use strict_num::NormalizedF64;
+}
 
 /// An SVG tree container.
 ///
@@ -70,6 +130,40 @@ impl<'input> Document<'input> {
             id,
             d: &self.nodes[id.get_usize()],
             doc: self,
+        }
+    }
+
+    fn insert_attribute(
+        &mut self,
+        aid: AId,
+        value: &'input str,
+        attrs_start_idx: usize,
+        parent_id: NodeId,
+        tag_name: EId,
+    ) {
+        // Check that attribute already exists.
+        let idx = &self.attrs[attrs_start_idx..]
+            .iter_mut()
+            .position(|a| a.name == aid);
+
+        // Append an attribute as usual.
+        let added = parse::append_attribute(
+            parent_id,
+            tag_name,
+            aid,
+            StringStorage::Borrowed(value),
+            self,
+        );
+
+        // Check that attribute was actually added, because it could be skipped.
+        if added {
+            if let Some(idx) = idx {
+                // Swap the last attribute with an existing one.
+                let last_idx = self.attrs.len() - 1;
+                self.attrs.swap(attrs_start_idx + idx, last_idx);
+                // Remove last.
+                self.attrs.pop();
+            }
         }
     }
 }
@@ -198,8 +292,53 @@ struct NodeData {
     kind: NodeKind,
 }
 
+#[derive(Debug, PartialEq, Clone)]
+#[allow(missing_docs)]
+/// FFrames change: NestedNodeKind used to construct trees in macro
+pub enum NestedNodeKind<'a> {
+    Root,
+    Element { tag_name: EId },
+    Text(roxmltree::StringStorage<'a>),
+}
+
+#[cfg(feature = "proc-macro")]
+impl quote::ToTokens for NestedNodeKind<'_> {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        match self {
+            NestedNodeKind::Root => quote! { NestedNodeKind::Root },
+            NestedNodeKind::Element { tag_name } => {
+                let tag_name = tag_name.to_tokens();
+                quote! {
+                    NestedNodeKind::Element {
+                        tag_name: #tag_name,
+                    }
+                }
+            }
+            // the trick here: when we convert totokens we never need to own the string
+            NestedNodeKind::Text(roxmltree::StringStorage::Owned(value)) => {
+                use std::ops::Deref;
+                let value = value.deref();
+                quote! { NestedNodeKind::Text(roxmltree::StringStorage::Borrowed(#value)) }
+            }
+            NestedNodeKind::Text(roxmltree::StringStorage::Borrowed(value)) => {
+                quote! { NestedNodeKind::Text(roxmltree::StringStorage::Borrowed(#value)) }
+            }
+        }
+        .to_tokens(tokens)
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+#[allow(missing_docs)]
+/// FFrames change: NestedNodeDataused to construct trees in macro
+pub struct NestedNodeData<'input> {
+    pub kind: NestedNodeKind<'input>,
+    pub attrs: Vec<Attribute<'input>>,
+    pub children: Vec<Option<NestedNodeData<'input>>>,
+}
+
 /// An attribute.
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Attribute<'input> {
     /// Attribute's name.
     pub name: AId,

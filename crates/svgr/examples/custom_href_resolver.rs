@@ -8,15 +8,12 @@ fn main() {
 
     let preloaded_data = std::collections::HashMap::from([(
         "ferris_image".to_owned(),
-        std::sync::Arc::new(
-            PreloadedImageData::new(
-                "png".to_string(),
-                ferris_image.width(),
-                ferris_image.height(),
-                &ferris_image.to_rgba8().into_raw(),
-            )
-            .unwrap(),
-        ),
+        std::sync::Arc::new(PreloadedImageData::new(
+            "png".to_string(),
+            ferris_image.width(),
+            ferris_image.height(),
+            &ferris_image.to_rgba8().into_raw(),
+        )),
     )]);
 
     opt.image_data = Some(&preloaded_data);

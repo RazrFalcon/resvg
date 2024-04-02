@@ -74,15 +74,12 @@ fn load_image(path: &str) -> Arc<usvgr::PreloadedImageData> {
     let image_data = std::fs::read(path).unwrap();
     let png_image = image::load_from_memory(image_data.as_slice()).unwrap();
 
-    Arc::new(
-        usvgr::PreloadedImageData::new(
-            path.to_string(),
-            png_image.width(),
-            png_image.height(),
-            &png_image.to_rgba8().into_raw(),
-        )
-        .unwrap(),
-    )
+    Arc::new(usvgr::PreloadedImageData::new(
+        path.to_string(),
+        png_image.width(),
+        png_image.height(),
+        &png_image.to_rgba8().into_raw(),
+    ))
 }
 
 pub fn render(name: &str) -> usize {

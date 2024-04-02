@@ -24,7 +24,9 @@ pub struct PreloadedImageData {
     /// of static resource linking for rendering.
     pub data: Cow<'static, [u8]>,
     /// The width of image in pixels
-    pub size: Size,
+    pub width: u32,
+    /// The height of image in pixels
+    pub height: u32,
     /// Original id used to resolve the image
     pub id: String,
 }
@@ -52,29 +54,26 @@ impl PreloadedImageData {
     }
 
     /// Creates a new `PreloadedImageData` from the given rgba8 buffer and blends all the semi transparent colors.
-    pub fn new(id: String, width: u32, height: u32, rgba_data: &[u8]) -> Option<Self> {
-        Some(Self {
+    pub fn new(id: String, width: u32, height: u32, rgba_data: &[u8]) -> Self {
+        Self {
             id,
             data: Cow::Owned(Self::blend_rgba_slice(rgba_data)),
-            size: Size::from_wh(width as f32, height as f32)?,
-        })
+            width,
+            height,
+        }
     }
 
     /// Creates a new `PreloadedImageData` from the given rgba8 buffer
     /// which is meant to be already blended for semi transparent colors.
     ///
     /// You can use `PreloadedImageData::blend_rgba_slice` to blend the colors in advance.
-    pub fn new_blended(
-        id: String,
-        width: f32,
-        height: f32,
-        rgba_data: &'static [u8],
-    ) -> Option<Self> {
-        Some(Self {
+    pub fn new_blended(id: String, width: u32, height: u32, rgba_data: &'static [u8]) -> Self {
+        Self {
             id,
             data: Cow::Borrowed(rgba_data),
-            size: Size::from_wh(width, height)?,
-        })
+            width,
+            height,
+        }
     }
 }
 
@@ -91,7 +90,7 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Grou
         .unwrap_or(state.opt.image_rendering);
 
     let actual_size = match kind {
-        ImageKind::DATA(ref data) => data.size,
+        ImageKind::DATA(ref data) => Size::from_wh(data.width as f32, data.height as f32)?,
         ImageKind::SVG(ref tree) => tree.size,
     };
 

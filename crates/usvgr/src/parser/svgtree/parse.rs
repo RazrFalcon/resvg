@@ -8,9 +8,13 @@ use roxmltree::Error;
 use simplecss::Declaration;
 use svgrtypes::FontShorthand;
 
-use super::{AId, Attribute, Document, EId, NodeData, NodeId, NodeKind, ShortRange};
+use super::{
+    AId, Attribute, Document, EId, NestedNodeData, NestedNodeKind, NestedSvgDocument, NodeData,
+    NodeId, NodeKind, ShortRange,
+};
 
-const SVG_NS: &str = "http://www.w3.org/2000/svg";
+/// SVG namespace.
+pub const SVG_NS: &str = "http://www.w3.org/2000/svg";
 const XLINK_NS: &str = "http://www.w3.org/1999/xlink";
 const XML_NAMESPACE_NS: &str = "http://www.w3.org/XML/1998/namespace";
 
@@ -351,7 +355,7 @@ pub(crate) fn parse_svg_element<'input>(
     Ok(node_id)
 }
 
-fn append_attribute<'input>(
+pub(crate) fn append_attribute<'input>(
     parent_id: NodeId,
     tag_name: EId,
     aid: AId,
@@ -742,5 +746,221 @@ fn fix_recursive_fe_image(doc: &mut Document) {
     for id in ids {
         let idx = doc.get(id).attribute_id(AId::Filter).unwrap();
         doc.attrs[idx].value = roxmltree::StringStorage::Borrowed("none");
+    }
+}
+
+impl<'a> TryFrom<&'a NestedSvgDocument<'a>> for Document<'a> {
+    type Error = Error;
+
+    fn try_from(nested_doc: &'a NestedSvgDocument<'a>) -> Result<Self, Self::Error> {
+        let mut doc = Document {
+            nodes: Vec::new(),
+            attrs: Vec::new(),
+            links: HashMap::new(),
+        };
+
+        // Add a root node.
+        doc.nodes.push(NodeData {
+            parent: None,
+            next_sibling: None,
+            children: None,
+            kind: NodeKind::Root,
+        });
+
+        let parent_id = doc.root().id;
+        flatten_nested_svg_tree(&mut doc, nested_doc, parent_id, &nested_doc.nodes);
+
+        prepare_raw_svgtree(&mut doc)?;
+        Ok(doc)
+    }
+}
+
+fn prepare_raw_svgtree(doc: &mut Document) -> Result<(), Error> {
+    // Check that the root element is `svg`.
+    match doc.root().first_element_child() {
+        Some(child) => {
+            if child.tag_name() != Some(EId::Svg) {
+                return Err(roxmltree::Error::NoRootNode.into());
+            }
+        }
+        None => return Err(roxmltree::Error::NoRootNode.into()),
+    }
+
+    // Collect all elements with `id` attribute.
+    let mut links = HashMap::new();
+    for node in doc.descendants() {
+        if let Some(id) = node.attribute::<&str>(AId::Id) {
+            links.insert(id.to_string(), node.id);
+        }
+    }
+
+    doc.links = links;
+    fix_recursive_patterns(doc);
+    fix_recursive_links(EId::ClipPath, AId::ClipPath, doc);
+    fix_recursive_links(EId::Mask, AId::Mask, doc);
+    fix_recursive_links(EId::Filter, AId::Filter, doc);
+    fix_recursive_fe_image(doc);
+
+    Ok(())
+}
+
+fn flatten_nested_svg_tree<'a>(
+    doc: &mut Document<'a>,
+    nested_doc: &'a NestedSvgDocument<'a>,
+    parent_id: NodeId,
+    nodes: &'a [Option<super::NestedNodeData<'a>>],
+) {
+    for node in nodes.iter().flatten() {
+        match &node.kind {
+            NestedNodeKind::Element { tag_name, .. } => {
+                append_nested_element(doc, nested_doc, node, node, parent_id, *tag_name, false);
+            }
+            NestedNodeKind::Text(value) => {
+                doc.append(parent_id, NodeKind::Text(value.to_string()));
+            }
+            NestedNodeKind::Root => {
+                let parent_id = doc.append(parent_id, NodeKind::Root);
+                flatten_nested_svg_tree(doc, nested_doc, parent_id, &node.children)
+            }
+        };
+    }
+}
+
+fn append_nested_element<'a>(
+    doc: &mut Document<'a>,
+    nested_doc: &'a NestedSvgDocument<'a>,
+    node: &'a NestedNodeData<'a>,
+    use_origin: &NestedNodeData<'a>,
+    parent_id: NodeId,
+    tag_name: EId,
+    ignore_ids: bool,
+) {
+    let attrs_start_idx = doc.attrs.len() as u32;
+    for attr in node.attrs.iter() {
+        if let (AId::Style, style) = (&attr.name, &attr.value) {
+            for declaration in simplecss::DeclarationTokenizer::from(style.as_str()) {
+                if let Some(aid) = AId::from_str(declaration.name) {
+                    // Parse only the presentation attributes.
+                    if aid.is_presentation() {
+                        doc.insert_attribute(
+                            aid,
+                            declaration.value,
+                            attrs_start_idx as usize,
+                            parent_id,
+                            tag_name,
+                        );
+                    }
+                }
+            }
+
+            continue;
+        }
+
+        if attr.name == AId::Id && ignore_ids {
+            continue;
+        }
+
+        doc.attrs.push(attr.clone());
+    }
+
+    let attributes = ShortRange {
+        start: attrs_start_idx,
+        end: doc.attrs.len() as u32,
+    };
+
+    if tag_name == EId::Use {
+        let node_id = doc.append(
+            parent_id,
+            NodeKind::Element {
+                tag_name,
+                attributes,
+            },
+        );
+
+        resolve_nested_use_element(doc, nested_doc, node_id, node, use_origin, attributes);
+    } else {
+        let node_id = doc.append(
+            parent_id,
+            NodeKind::Element {
+                tag_name,
+                attributes,
+            },
+        );
+
+        flatten_nested_svg_tree(doc, nested_doc, node_id, &node.children)
+    }
+}
+
+fn resolve_linked_node<'a>(
+    href: &Attribute,
+    nested_doc: &'a NestedSvgDocument,
+) -> Option<&'a NestedNodeData<'a>> {
+    let link_id = href.value.as_str();
+    let link_node = nested_doc
+        .nodes
+        .first()?
+        .as_ref()?
+        .find_recursively(&|node| {
+            node.attrs
+                .iter()
+                .any(|attr| attr.name == AId::Id && attr.value.as_str() == link_id)
+        })?;
+
+    Some(link_node)
+}
+
+fn resolve_nested_use_element<'a>(
+    doc: &mut Document<'a>,
+    nested_doc: &'a NestedSvgDocument<'a>,
+    parent_id: NodeId,
+    parent_node: &NestedNodeData<'a>,
+    origin: &NestedNodeData<'a>,
+    attributes_range: ShortRange,
+) -> Option<()> {
+    let href = doc.attrs[attributes_range.to_urange()]
+        .iter()
+        .find(|attr| attr.name == AId::Href)?;
+    let link_node = resolve_linked_node(href, nested_doc)?;
+
+    // prevents stack overflow for recursive use elements
+    if link_node == parent_node || link_node == origin {
+        return None;
+    };
+
+    let is_recursive = link_node
+        .find_recursively(&|node| match node.kind {
+            NestedNodeKind::Element { tag_name } if tag_name == EId::Use => {
+                let link2 = node.attrs.iter().find(|attr| attr.name == AId::Href);
+
+                if let Some(href2) = link2 {
+                    if let Some(link_node2) = resolve_linked_node(href2, nested_doc) {
+                        return link_node2 == parent_node || link_node2 == link_node;
+                    }
+                }
+
+                false
+            }
+            _ => false,
+        })
+        .is_some();
+
+    if is_recursive {
+        return None;
+    }
+
+    match link_node.kind {
+        NestedNodeKind::Element { tag_name, .. } => {
+            append_nested_element(
+                doc,
+                nested_doc,
+                link_node,
+                parent_node,
+                parent_id,
+                tag_name,
+                true,
+            );
+            Some(())
+        }
+        _ => None,
     }
 }

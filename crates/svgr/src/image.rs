@@ -97,11 +97,7 @@ pub fn draw_raster(
     pixmap: &mut tiny_skia::PixmapMut,
 ) -> Option<()> {
     let img_bytes = img.data.clone();
-    let raster = tiny_skia::PixmapRef::from_bytes(
-        &img_bytes,
-        img.size.width() as u32,
-        img.size.height() as u32,
-    )?;
+    let raster = tiny_skia::PixmapRef::from_bytes(&img_bytes, img.width, img.height)?;
 
     let img_size = tiny_skia::IntSize::from_wh(raster.width(), raster.height())?;
     let rect = image_rect(&view_box, img_size);

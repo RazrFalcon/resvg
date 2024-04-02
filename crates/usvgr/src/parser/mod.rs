@@ -12,11 +12,12 @@ mod options;
 mod paint_server;
 mod shapes;
 mod style;
-mod svgtree;
 mod switch;
 mod units;
 mod use_node;
 
+/// FFRAMES: make svgree publcic
+pub mod svgtree;
 #[cfg(feature = "text")]
 mod text;
 
@@ -155,6 +156,27 @@ impl crate::Tree {
             #[cfg(feature = "text")]
             fontdb,
         )
+    }
+
+    /// Parses `Tree` from `svgtree::NestedSvgDocument`.
+    pub fn from_nested_svgtree(
+        doc: &svgtree::NestedSvgDocument,
+        opt: &Options,
+        #[cfg(feature = "text")] fontdb: &fontdb::Database,
+    ) -> Result<Self, Error> {
+        let doc = svgtree::Document::try_from(doc)?;
+        Self::from_svgtree(doc, opt, fontdb)
+    }
+
+    /// Parses `Tree` from the `svgtree::Document`.
+    ///
+    /// An empty `Tree` will be returned on any error.
+    pub fn from_svgtree(
+        doc: svgtree::Document,
+        opt: &Options,
+        #[cfg(feature = "text")] fontdb: &fontdb::Database,
+    ) -> Result<Self, Error> {
+        self::converter::convert_doc(&doc, opt, fontdb)
     }
 }
 
