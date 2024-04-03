@@ -18,11 +18,11 @@ name = "usvg"
 required-features = ["text", "system-fonts", "memmap-fonts"]
 
 [dependencies]
-base64 = "0.21" # for embedded images
+base64 = "0.22" # for embedded images
 log = "0.4"
 pico-args = { version = "0.5", features = ["eq-separator"] }
 strict-num = "0.1.1"
-svgtypes = "0.14.0"
+svgtypes = "0.15.0"
 tiny-skia-path = "0.11.4"
 xmlwriter = "0.1"
 
@@ -30,14 +30,14 @@ xmlwriter = "0.1"
 data-url = "0.3" # for href parsing
 flate2 = { version = "1.0", default-features = false, features = ["rust_backend"] } # SVGZ decoding
 imagesize = "0.12" # raster images size detection
-kurbo = "0.9" # Bezier curves utils
+kurbo = "0.11" # Bezier curves utils
 roxmltree = "0.19"
 simplecss = "0.2"
-siphasher = "0.3" # perfect hash implementation
+siphasher = "1.0" # perfect hash implementation
 
 # text
 fontdb = { version = "0.16.1", default-features = false, optional = true }
-rustybuzz = { version = "0.12", optional = true }
+rustybuzz = { version = "0.13", optional = true }
 unicode-bidi = { version = "0.3", optional = true }
 unicode-script = { version = "0.5", optional = true }
 unicode-vo = { version = "0.1", optional = true }

@@ -15,13 +15,13 @@ name = "resvg"
 required-features = ["text", "system-fonts", "memmap-fonts"]
 
 [dependencies]
-gif = { version = "0.12", optional = true }
+gif = { version = "0.13", optional = true }
 jpeg-decoder = { version = "0.3", default-features = false, features = ["platform_independent"], optional = true }
 log = "0.4"
 pico-args = { version = "0.5", features = ["eq-separator"] }
 png = { version = "0.17", optional = true }
 rgb = "0.8"
-svgtypes = "0.14.0"
+svgtypes = "0.15.0"
 tiny-skia = "0.11.4"
 usvg = { path = "../usvg", version = "0.40.0", default-features = false }
 
