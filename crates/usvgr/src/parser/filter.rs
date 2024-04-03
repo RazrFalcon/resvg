@@ -847,6 +847,7 @@ fn convert_image(fe: SvgNode, state: &converter::State, cache: &mut converter::C
 
             Kind::Image(Image {
                 aspect,
+                original_href: None,
                 rendering_mode,
                 data: ImageKind::Use(Box::new(root)),
             })
@@ -863,13 +864,14 @@ fn convert_image(fe: SvgNode, state: &converter::State, cache: &mut converter::C
         }
     };
 
-    let href = super::image::get_href_data(href, state);
-    let img_data = match href {
+    let href_data = super::image::get_href_data(href, state);
+    let img_data = match href_data {
         Some(data) => data,
         None => return create_dummy_primitive(),
     };
 
     Kind::Image(Image {
+        original_href: Some(href.to_owned()),
         aspect,
         rendering_mode,
         data: ImageKind::Image(img_data),

@@ -13,6 +13,7 @@ pub use svgrtypes::{Align, AspectRatio};
 
 pub use tiny_skia_path;
 
+use crate::hashers::CustomHash;
 use crate::PreloadedImageData;
 
 pub use self::geom::*;
@@ -22,7 +23,7 @@ pub use self::text::*;
 pub type Opacity = NormalizedF32;
 
 // Must not be clone-able to preserve ID uniqueness.
-#[derive(Debug)]
+#[derive(Debug, Hash)]
 pub(crate) struct NonEmptyString(String);
 
 impl NonEmptyString {
@@ -45,6 +46,12 @@ impl NonEmptyString {
 #[derive(Clone, Copy, Debug)]
 pub struct NonZeroF32(f32);
 
+impl std::hash::Hash for NonZeroF32 {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.to_bits().hash(state);
+    }
+}
+
 impl NonZeroF32 {
     /// Creates a new `NonZeroF32` value.
     #[inline]
@@ -63,7 +70,7 @@ impl NonZeroF32 {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub(crate) enum Units {
     UserSpaceOnUse,
     ObjectBoundingBox,
@@ -75,7 +82,7 @@ pub(crate) enum Units {
 ///
 /// `visibility` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum Visibility {
     Visible,
     Hidden,
@@ -91,7 +98,7 @@ impl Default for Visibility {
 /// A shape rendering method.
 ///
 /// `shape-rendering` attribute in the SVG.
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 #[allow(missing_docs)]
 pub enum ShapeRendering {
     OptimizeSpeed,
@@ -133,7 +140,7 @@ impl std::str::FromStr for ShapeRendering {
 ///
 /// `text-rendering` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum TextRendering {
     OptimizeSpeed,
     OptimizeLegibility,
@@ -163,7 +170,7 @@ impl std::str::FromStr for TextRendering {
 ///
 /// `image-rendering` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum ImageRendering {
     OptimizeQuality,
     OptimizeSpeed,
@@ -191,7 +198,7 @@ impl std::str::FromStr for ImageRendering {
 ///
 /// `mix-blend-mode` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum BlendMode {
     Normal,
     Multiply,
@@ -221,7 +228,7 @@ impl Default for BlendMode {
 ///
 /// `spreadMethod` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum SpreadMethod {
     Pad,
     Reflect,
@@ -242,6 +249,15 @@ pub struct BaseGradient {
     pub(crate) transform: Transform,
     pub(crate) spread_method: SpreadMethod,
     pub(crate) stops: Vec<Stop>,
+}
+
+impl std::hash::Hash for BaseGradient {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        self.transform.custom_hash(state);
+        self.spread_method.hash(state);
+        self.stops.hash(state);
+    }
 }
 
 impl BaseGradient {
@@ -283,6 +299,17 @@ pub struct LinearGradient {
     pub(crate) y1: f32,
     pub(crate) x2: f32,
     pub(crate) y2: f32,
+}
+
+impl std::hash::Hash for LinearGradient {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        self.x1.to_bits().hash(state);
+        self.y1.to_bits().hash(state);
+        self.x2.to_bits().hash(state);
+        self.y2.to_bits().hash(state);
+        self.base.hash(state);
+    }
 }
 
 impl LinearGradient {
@@ -328,6 +355,18 @@ pub struct RadialGradient {
     pub(crate) fy: f32,
 }
 
+impl std::hash::Hash for RadialGradient {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        self.cx.to_bits().hash(state);
+        self.cy.to_bits().hash(state);
+        self.r.hash(state);
+        self.fx.to_bits().hash(state);
+        self.fy.to_bits().hash(state);
+        self.base.hash(state);
+    }
+}
+
 impl RadialGradient {
     /// `cx` coordinate.
     pub fn cx(&self) -> f32 {
@@ -369,7 +408,7 @@ pub type StopOffset = NormalizedF32;
 /// Gradient's stop element.
 ///
 /// `stop` element in SVG.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Hash)]
 pub struct Stop {
     pub(crate) offset: StopOffset,
     pub(crate) color: Color,
@@ -411,6 +450,16 @@ pub struct Pattern {
     pub(crate) rect: NonZeroRect,
     pub(crate) view_box: Option<ViewBox>,
     pub(crate) root: Group,
+}
+
+impl std::hash::Hash for Pattern {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        self.transform.custom_hash(state);
+        self.rect.custom_hash(state);
+        self.view_box.hash(state);
+        self.root.hash(state);
+    }
 }
 
 impl Pattern {
@@ -500,7 +549,7 @@ impl PartialEq for StrokeMiterlimit {
 ///
 /// `stroke-linecap` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum LineCap {
     Butt,
     Round,
@@ -517,7 +566,7 @@ impl Default for LineCap {
 ///
 /// `stroke-linejoin` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum LineJoin {
     Miter,
     MiterClip,
@@ -545,6 +594,23 @@ pub struct Stroke {
     // Whether the current stroke needs to be resolved relative
     // to a context element.
     pub(crate) context_element: Option<ContextElement>,
+}
+
+impl std::hash::Hash for Stroke {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.paint.hash(state);
+        self.dasharray
+            .as_ref()
+            .map(|vec| vec.iter().map(|v| v.to_bits()).collect::<Vec<_>>())
+            .hash(state);
+        self.dashoffset.to_bits().hash(state);
+
+        self.miterlimit.0.to_bits().hash(state);
+        self.opacity.hash(state);
+        self.width.hash(state);
+        self.linecap.hash(state);
+        self.linejoin.hash(state);
+    }
 }
 
 impl Stroke {
@@ -621,7 +687,7 @@ impl Stroke {
 ///
 /// `fill-rule` attribute in the SVG.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum FillRule {
     NonZero,
     EvenOdd,
@@ -647,8 +713,24 @@ pub(crate) enum ContextElement {
     PathNode(Transform, Option<NonZeroRect>),
 }
 
+impl std::hash::Hash for ContextElement {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            ContextElement::UseNode => 0.hash(state),
+            ContextElement::PathNode(transform, rect) => {
+                1.hash(state);
+                transform.custom_hash(state);
+
+                if let Some(rect) = rect {
+                    rect.custom_hash(state);
+                }
+            }
+        }
+    }
+}
+
 /// A fill style.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct Fill {
     pub(crate) paint: Paint,
     pub(crate) opacity: Opacity,
@@ -687,8 +769,8 @@ impl Default for Fill {
 }
 
 /// A 8-bit RGB color.
-#[derive(Clone, Copy, PartialEq, Debug)]
 #[allow(missing_docs)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash)]
 pub struct Color {
     pub red: u8,
     pub green: u8,
@@ -740,6 +822,17 @@ impl PartialEq for Paint {
     }
 }
 
+impl std::hash::Hash for Paint {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Paint::Color(color) => color.hash(state),
+            Paint::LinearGradient(gradient) => gradient.id.hash(state),
+            Paint::RadialGradient(gradient) => gradient.id.hash(state),
+            Paint::Pattern(pattern) => pattern.id.hash(state),
+        }
+    }
+}
+
 /// A clip-path element.
 ///
 /// `clipPath` element in SVG.
@@ -749,6 +842,15 @@ pub struct ClipPath {
     pub(crate) transform: Transform,
     pub(crate) clip_path: Option<Arc<ClipPath>>,
     pub(crate) root: Group,
+}
+
+impl std::hash::Hash for ClipPath {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        self.transform.custom_hash(state);
+        self.clip_path.hash(state);
+        self.root.hash(state);
+    }
 }
 
 impl ClipPath {
@@ -790,7 +892,7 @@ impl ClipPath {
 }
 
 /// A mask type.
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum MaskType {
     /// Indicates that the luminance values of the mask should be used.
     Luminance,
@@ -814,6 +916,16 @@ pub struct Mask {
     pub(crate) kind: MaskType,
     pub(crate) mask: Option<Arc<Mask>>,
     pub(crate) root: Group,
+}
+
+impl std::hash::Hash for Mask {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        self.rect.custom_hash(state);
+        self.kind.hash(state);
+        self.mask.hash(state);
+        self.root.hash(state);
+    }
 }
 
 impl Mask {
@@ -856,7 +968,7 @@ impl Mask {
 
 /// Node's kind.
 #[allow(missing_docs)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub enum Node {
     Group(Box<Group>),
     Path(Box<Path>),
@@ -1008,6 +1120,27 @@ pub struct Group {
     pub(crate) layer_bounding_box: NonZeroRect,
     pub(crate) abs_layer_bounding_box: NonZeroRect,
     pub(crate) children: Vec<Node>,
+}
+
+impl std::hash::Hash for Group {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        self.transform.custom_hash(state);
+        self.abs_transform.custom_hash(state);
+        self.opacity.hash(state);
+        self.blend_mode.hash(state);
+        self.isolate.hash(state);
+        self.clip_path.hash(state);
+        self.mask.hash(state);
+        self.filters.hash(state);
+        self.bounding_box.custom_hash(state);
+        self.abs_bounding_box.custom_hash(state);
+        self.stroke_bounding_box.custom_hash(state);
+        self.abs_stroke_bounding_box.custom_hash(state);
+        self.layer_bounding_box.custom_hash(state);
+        self.abs_layer_bounding_box.custom_hash(state);
+        self.children.hash(state);
+    }
 }
 
 impl Group {
@@ -1221,7 +1354,7 @@ impl Group {
 /// therefore we provide only `fill` and `stroke` variants.
 ///
 /// [`paint-order`]: https://www.w3.org/TR/SVG2/painting.html#PaintOrder
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 #[allow(missing_docs)]
 pub enum PaintOrder {
     FillAndStroke,
@@ -1249,6 +1382,25 @@ pub struct Path {
     pub(crate) abs_bounding_box: Rect,
     pub(crate) stroke_bounding_box: Rect,
     pub(crate) abs_stroke_bounding_box: Rect,
+}
+
+impl std::hash::Hash for Path {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        use crate::hashers::CustomHash;
+
+        self.id.hash(state);
+        self.visibility.hash(state);
+        self.fill.hash(state);
+        self.stroke.hash(state);
+        self.paint_order.hash(state);
+        self.rendering_mode.hash(state);
+        self.data.custom_hash(state);
+        self.abs_transform.custom_hash(state);
+        self.bounding_box.custom_hash(state);
+        self.abs_bounding_box.custom_hash(state);
+        self.stroke_bounding_box.custom_hash(state);
+        self.abs_stroke_bounding_box.custom_hash(state);
+    }
 }
 
 impl Path {
@@ -1428,14 +1580,17 @@ pub enum ImageKind {
     /// Contains preloaded decoded image data
     DATA(Arc<PreloadedImageData>),
     /// A preprocessed SVG tree. Can be rendered as is.
-    SVG(Arc<Tree>),
+    SVG {
+        original_href: String,
+        tree: Arc<Tree>,
+    },
 }
 
 impl std::fmt::Debug for ImageKind {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             ImageKind::DATA(_) => f.write_str("ImageKind::DATA(..)"),
-            ImageKind::SVG(_) => f.write_str("ImageKind::SVG(..)"),
+            ImageKind::SVG { .. } => f.write_str("ImageKind::SVG(..)"),
         }
     }
 }
@@ -1449,9 +1604,25 @@ pub struct Image {
     pub(crate) visibility: Visibility,
     pub(crate) view_box: ViewBox,
     pub(crate) rendering_mode: ImageRendering,
-    pub(crate) kind: ImageKind,
     pub(crate) abs_transform: Transform,
     pub(crate) abs_bounding_box: NonZeroRect,
+    /// Used for hasihing to skip hashing of the image data itself
+    pub(crate) origin_href: String,
+    pub(crate) kind: ImageKind,
+}
+
+impl std::hash::Hash for Image {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        use crate::hashers::CustomHash;
+
+        // Do not hash the id and the kind
+        self.visibility.hash(state);
+        self.view_box.hash(state);
+        self.rendering_mode.hash(state);
+        self.abs_transform.custom_hash(state);
+        self.abs_bounding_box.custom_hash(state);
+        self.origin_href.hash(state);
+    }
 }
 
 impl Image {
@@ -1514,7 +1685,7 @@ impl Image {
     }
 
     fn subroots(&self, f: &mut dyn FnMut(&Group)) {
-        if let ImageKind::SVG(ref tree) = self.kind {
+        if let ImageKind::SVG { ref tree, .. } = self.kind {
             f(&tree.root)
         }
     }
@@ -1660,7 +1831,7 @@ fn has_text_nodes(root: &Group) -> bool {
         let mut has_text = false;
 
         if let Node::Image(ref image) = node {
-            if let ImageKind::SVG(ref tree) = image.kind {
+            if let ImageKind::SVG { ref tree, .. } = image.kind {
                 if has_text_nodes(&tree.root) {
                     has_text = true;
                 }

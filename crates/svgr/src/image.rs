@@ -4,12 +4,18 @@
 
 use std::sync::Arc;
 
-use crate::render::TinySkiaPixmapMutExt;
+use tiny_skia::PixmapPaint;
+
+use crate::{
+    cache::{FromPixmap, SvgrCache},
+    render::{Context, TinySkiaPixmapMutExt},
+};
 
 pub fn render(
     image: &usvgr::Image,
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
+    cache: &mut crate::cache::SvgrCache,
 ) {
     if image.visibility() != usvgr::Visibility::Visible {
         return;
@@ -21,6 +27,7 @@ pub fn render(
         transform,
         image.rendering_mode(),
         pixmap,
+        cache,
     );
 }
 
@@ -30,10 +37,14 @@ pub fn render_inner(
     transform: tiny_skia::Transform,
     #[allow(unused_variables)] rendering_mode: usvgr::ImageRendering,
     pixmap: &mut tiny_skia::PixmapMut,
+    cache: &mut crate::cache::SvgrCache,
 ) {
     match image_kind {
-        usvgr::ImageKind::SVG(ref tree) => {
-            render_vector(tree, &view_box, transform, pixmap);
+        usvgr::ImageKind::SVG {
+            ref tree,
+            ref original_href,
+        } => {
+            render_vector(tree, original_href, &view_box, transform, pixmap, cache);
         }
         usvgr::ImageKind::DATA(ref data) => {
             draw_raster(data, view_box, rendering_mode, transform, pixmap);
@@ -43,36 +54,47 @@ pub fn render_inner(
 
 fn render_vector(
     tree: &usvgr::Tree,
+    original_href: &str,
     view_box: &usvgr::ViewBox,
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
+    cache: &mut crate::cache::SvgrCache,
 ) -> Option<()> {
-    let img_size = tree.size().to_int_size();
-    let (ts, clip) = crate::geom::view_box_to_transform_with_clip(view_box, img_size);
-
-    let mut sub_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
-
-    let source_transform = transform;
-    let transform = transform.pre_concat(ts);
-
-    crate::render(tree, transform, &mut sub_pixmap.as_mut());
-
-    let mask = if let Some(clip) = clip {
-        pixmap.create_rect_mask(source_transform, clip.to_rect())
-    } else {
-        None
+    let context = Context {
+        // We could use any values here. They will not be used anyway.
+        max_bbox: tiny_skia::IntRect::from_xywh(0, 0, 1, 1).unwrap(),
+        cache_policy: crate::render::CachePolicy::Cache,
     };
 
-    pixmap.draw_pixmap(
-        0,
-        0,
-        sub_pixmap.as_ref(),
-        &tiny_skia::PixmapPaint::default(),
-        tiny_skia::Transform::identity(),
-        mask.as_ref(),
-    );
+    let width = pixmap.width();
+    let height = pixmap.height();
+    cache.with_subpixmap_cache(&context, pixmap, &original_href, |_, _| {
+        let img_size = tree.size().to_int_size();
+        let (ts, clip) = crate::geom::view_box_to_transform_with_clip(view_box, img_size);
 
-    Some(())
+        let mut sub_pixmap = tiny_skia::Pixmap::new(width, height).unwrap();
+
+        let source_transform = transform;
+        let transform = transform.pre_concat(ts);
+        let pixmap_mut = &mut sub_pixmap.as_mut();
+
+        crate::render(tree, transform, pixmap_mut, &mut SvgrCache::none());
+
+        let mask = if let Some(clip) = clip {
+            pixmap_mut.create_rect_mask(source_transform, clip.to_rect())
+        } else {
+            None
+        };
+
+        Some(FromPixmap {
+            tx: 0,
+            ty: 0,
+            paint: PixmapPaint::default(),
+            transform: tiny_skia::Transform::identity(),
+            pixmap: sub_pixmap,
+            mask,
+        })
+    })
 }
 
 /// Calculates an image rect depending on the provided view box.

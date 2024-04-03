@@ -91,7 +91,7 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Grou
 
     let actual_size = match kind {
         ImageKind::DATA(ref data) => Size::from_wh(data.width as f32, data.height as f32)?,
-        ImageKind::SVG(ref tree) => tree.size,
+        ImageKind::SVG { ref tree, .. } => tree.size,
     };
 
     let x = node.convert_user_length(AId::X, state, Length::zero());
@@ -140,6 +140,7 @@ pub(crate) fn convert(node: SvgNode, state: &converter::State, parent: &mut Grou
     let abs_bounding_box = view_box.rect.transform(parent.abs_transform)?;
 
     parent.children.push(Node::Image(Box::new(Image {
+        origin_href: href.to_string(),
         id,
         visibility,
         view_box,
@@ -159,7 +160,10 @@ pub(crate) fn get_href_data(href: &str, state: &converter::State) -> Option<Imag
     }
 
     if let Some(sub_svg) = state.opt.sub_svg_data?.get(href) {
-        return Some(ImageKind::SVG(Arc::clone(sub_svg)));
+        return Some(ImageKind::SVG {
+            tree: Arc::clone(sub_svg),
+            original_href: href.to_string(),
+        });
     }
 
     return None;

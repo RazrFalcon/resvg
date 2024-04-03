@@ -275,7 +275,10 @@ struct Image {
 }
 
 impl Image {
-    fn from_image(image: tiny_skia::Pixmap, color_space: usvgr::filter::ColorInterpolation) -> Self {
+    fn from_image(
+        image: tiny_skia::Pixmap,
+        color_space: usvgr::filter::ColorInterpolation,
+    ) -> Self {
         let (w, h) = (image.width(), image.height());
         Image {
             image: Rc::new(image),
@@ -337,8 +340,9 @@ pub fn apply(
     filter: &usvgr::filter::Filter,
     ts: tiny_skia::Transform,
     source: &mut tiny_skia::Pixmap,
+    cache: &mut crate::cache::SvgrCache,
 ) {
-    let result = apply_inner(filter, ts, source);
+    let result = apply_inner(filter, ts, source, cache);
     let result = result.and_then(|image| apply_to_canvas(image, source));
 
     // Clear on error.
@@ -359,6 +363,7 @@ fn apply_inner(
     filter: &usvgr::filter::Filter,
     ts: usvgr::Transform,
     source: &mut tiny_skia::Pixmap,
+    cache: &mut crate::cache::SvgrCache,
 ) -> Result<Image, Error> {
     let region = filter
         .rect()
@@ -415,7 +420,7 @@ fn apply_inner(
                 let input = get_input(fe.input(), region, source, &results)?;
                 apply_tile(input, region)
             }
-            usvgr::filter::Kind::Image(ref fe) => apply_image(fe, region, subregion, ts),
+            usvgr::filter::Kind::Image(ref fe) => apply_image(fe, region, subregion, ts, cache),
             usvgr::filter::Kind::ComponentTransfer(ref fe) => {
                 let input = get_input(fe.input(), region, source, &results)?;
                 apply_component_transfer(fe, cs, input)
@@ -551,7 +556,12 @@ fn get_input(
             } else {
                 // Technically unreachable.
                 log::warn!("Unknown filter primitive reference '{}'.", name);
-                get_input(&usvgr::filter::Input::SourceGraphic, region, source, results)
+                get_input(
+                    &usvgr::filter::Input::SourceGraphic,
+                    region,
+                    source,
+                    results,
+                )
             }
         }
     }
@@ -857,6 +867,7 @@ fn apply_image(
     region: IntRect,
     subregion: IntRect,
     ts: usvgr::Transform,
+    cache: &mut crate::cache::SvgrCache,
 ) -> Result<Image, Error> {
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
 
@@ -882,6 +893,7 @@ fn apply_image(
                 transform,
                 fe.rendering_mode(),
                 &mut pixmap.as_mut(),
+                cache,
             );
         }
         usvgr::filter::ImageKind::Use(ref node) => {
@@ -897,11 +909,12 @@ fn apply_image(
             );
 
             let ctx = crate::render::Context {
+                cache_policy: crate::render::CachePolicy::Skip,
                 max_bbox: tiny_skia::IntRect::from_xywh(0, 0, region.width(), region.height())
                     .unwrap(),
             };
 
-            crate::render::render_nodes(node, &ctx, transform, &mut pixmap.as_mut());
+            crate::render::render_nodes(node, &ctx, transform, &mut pixmap.as_mut(), cache);
         }
     }
 

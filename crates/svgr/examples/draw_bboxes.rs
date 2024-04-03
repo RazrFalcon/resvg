@@ -1,3 +1,4 @@
+use svgr::SvgrCache;
 use usvgr::fontdb;
 
 fn main() {
@@ -36,7 +37,12 @@ fn main() {
     let pixmap_size = tree.size().to_int_size().scale_by(zoom).unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
     let render_ts = tiny_skia::Transform::from_scale(zoom, zoom);
-    svgr::render(&tree, render_ts, &mut pixmap.as_mut());
+    svgr::render(
+        &tree,
+        render_ts,
+        &mut pixmap.as_mut(),
+        &mut SvgrCache::none(),
+    );
 
     let mut stroke = tiny_skia::Stroke::default();
     stroke.width = 1.0 / zoom; // prevent stroke scaling as well

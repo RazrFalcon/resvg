@@ -15,9 +15,11 @@
 #![allow(clippy::upper_case_acronyms)]
 #![allow(clippy::wrong_self_convention)]
 
+use render::CachePolicy;
 pub use tiny_skia;
 pub use usvgr;
 
+mod cache;
 mod clip;
 mod filter;
 mod geom;
@@ -25,6 +27,8 @@ mod image;
 mod mask;
 mod path;
 mod render;
+
+pub use cache::*;
 
 /// Renders a tree onto the pixmap.
 ///
@@ -36,6 +40,7 @@ pub fn render(
     tree: &usvgr::Tree,
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
+    cache: &mut cache::SvgrCache,
 ) {
     let target_size = tiny_skia::IntSize::from_wh(pixmap.width(), pixmap.height()).unwrap();
     let max_bbox = tiny_skia::IntRect::from_xywh(
@@ -49,8 +54,12 @@ pub fn render(
     let ts = tree.view_box().to_transform(tree.size());
     let root_transform = transform.pre_concat(ts);
 
-    let ctx = render::Context { max_bbox };
-    render::render_nodes(tree.root(), &ctx, root_transform, pixmap);
+    let ctx = render::Context {
+        max_bbox,
+        cache_policy: CachePolicy::Cache,
+    };
+
+    render::render_nodes(tree.root(), &ctx, root_transform, pixmap, cache);
 }
 
 /// Renders a node onto the pixmap.
@@ -67,6 +76,7 @@ pub fn render_node(
     node: &usvgr::Node,
     mut transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
+    cache: &mut cache::SvgrCache,
 ) -> Option<()> {
     let bbox = node.abs_layer_bounding_box()?;
 
@@ -81,8 +91,11 @@ pub fn render_node(
 
     transform = transform.pre_translate(-bbox.x(), -bbox.y());
 
-    let ctx = render::Context { max_bbox };
-    render::render_node(node, &ctx, transform, pixmap);
+    let ctx = render::Context {
+        max_bbox,
+        cache_policy: CachePolicy::SkipRoot,
+    };
+    render::render_node(node, &ctx, transform, pixmap, cache);
 
     Some(())
 }

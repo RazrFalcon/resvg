@@ -86,7 +86,7 @@ impl Font {
 
 /// A dominant baseline property.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum DominantBaseline {
     Auto,
     UseScript,
@@ -110,7 +110,7 @@ impl Default for DominantBaseline {
 
 /// An alignment baseline property.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum AlignmentBaseline {
     Auto,
     Baseline,
@@ -142,6 +142,17 @@ pub enum BaselineShift {
     Number(f32),
 }
 
+impl std::hash::Hash for BaselineShift {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            BaselineShift::Baseline => 0.hash(state),
+            BaselineShift::Subscript => 1.hash(state),
+            BaselineShift::Superscript => 2.hash(state),
+            BaselineShift::Number(v) => (3 + v.to_bits()).hash(state),
+        }
+    }
+}
+
 impl Default for BaselineShift {
     #[inline]
     fn default() -> BaselineShift {
@@ -151,7 +162,7 @@ impl Default for BaselineShift {
 
 /// A length adjust property.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum LengthAdjust {
     Spacing,
     SpacingAndGlyphs,
@@ -169,7 +180,7 @@ impl Default for LengthAdjust {
 /// So you can have black text and green underline.
 ///
 /// Also, in SVG you can specify text decoration stroking.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct TextDecorationStyle {
     pub(crate) fill: Option<Fill>,
     pub(crate) stroke: Option<Stroke>,
@@ -188,7 +199,7 @@ impl TextDecorationStyle {
 }
 
 /// A text span decoration.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct TextDecoration {
     pub(crate) underline: Option<TextDecorationStyle>,
     pub(crate) overline: Option<TextDecorationStyle>,
@@ -235,6 +246,29 @@ pub struct TextSpan {
     pub(crate) word_spacing: f32,
     pub(crate) text_length: Option<f32>,
     pub(crate) length_adjust: LengthAdjust,
+}
+
+impl std::hash::Hash for TextSpan {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.start.hash(state);
+        self.end.hash(state);
+        self.fill.hash(state);
+        self.stroke.hash(state);
+        self.paint_order.hash(state);
+        self.font.hash(state);
+        self.font_size.hash(state);
+        self.small_caps.hash(state);
+        self.apply_kerning.hash(state);
+        self.decoration.hash(state);
+        self.dominant_baseline.hash(state);
+        self.alignment_baseline.hash(state);
+        self.baseline_shift.hash(state);
+        self.visibility.hash(state);
+        self.letter_spacing.to_bits().hash(state);
+        self.word_spacing.to_bits().hash(state);
+        self.text_length.map(|f| f.to_bits()).hash(state);
+        self.length_adjust.hash(state);
+    }
 }
 
 impl TextSpan {
@@ -341,7 +375,7 @@ impl TextSpan {
 
 /// A text chunk anchor property.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum TextAnchor {
     Start,
     Middle,
@@ -360,6 +394,16 @@ pub struct TextPath {
     pub(crate) id: NonEmptyString,
     pub(crate) start_offset: f32,
     pub(crate) path: Arc<tiny_skia_path::Path>,
+}
+
+impl std::hash::Hash for TextPath {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        use crate::hashers::CustomHash;
+
+        self.id.hash(state);
+        self.start_offset.to_bits().hash(state);
+        self.path.custom_hash(state);
+    }
 }
 
 impl TextPath {
@@ -384,7 +428,7 @@ impl TextPath {
 }
 
 /// A text chunk flow property.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub enum TextFlow {
     /// A linear layout.
     ///
@@ -405,6 +449,17 @@ pub struct TextChunk {
     pub(crate) spans: Vec<TextSpan>,
     pub(crate) text_flow: TextFlow,
     pub(crate) text: String,
+}
+
+impl std::hash::Hash for TextChunk {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.x.map(|f| f.to_bits()).hash(state);
+        self.y.map(|f| f.to_bits()).hash(state);
+        self.anchor.hash(state);
+        self.spans.hash(state);
+        self.text_flow.hash(state);
+        self.text.hash(state);
+    }
 }
 
 impl TextChunk {
@@ -441,7 +496,7 @@ impl TextChunk {
 
 /// A writing mode.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum WritingMode {
     LeftToRight,
     TopToBottom,
@@ -465,6 +520,39 @@ pub struct Text {
     pub(crate) stroke_bounding_box: Rect,
     pub(crate) abs_stroke_bounding_box: Rect,
     pub(crate) flattened: Box<Group>,
+}
+
+impl std::hash::Hash for Text {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        use crate::hashers::CustomHash;
+
+        self.id.hash(state);
+        self.rendering_mode.hash(state);
+        self.dx
+            .iter()
+            .map(|x| x.to_bits())
+            .collect::<Vec<_>>()
+            .hash(state);
+        self.dy
+            .iter()
+            .map(|y| y.to_bits())
+            .collect::<Vec<_>>()
+            .hash(state);
+        self.rotate
+            .iter()
+            .map(|y| y.to_bits())
+            .collect::<Vec<_>>()
+            .hash(state);
+
+        self.writing_mode.hash(state);
+        self.chunks.hash(state);
+        self.abs_transform.custom_hash(state);
+        self.bounding_box.custom_hash(state);
+        self.abs_bounding_box.custom_hash(state);
+        self.stroke_bounding_box.custom_hash(state);
+        self.abs_stroke_bounding_box.custom_hash(state);
+        self.flattened.hash(state);
+    }
 }
 
 impl Text {

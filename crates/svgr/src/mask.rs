@@ -9,6 +9,7 @@ pub fn apply(
     ctx: &Context,
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::Pixmap,
+    cache: &mut crate::cache::SvgrCache,
 ) {
     if mask.root().children().is_empty() {
         pixmap.fill(tiny_skia::Color::TRANSPARENT);
@@ -28,13 +29,19 @@ pub fn apply(
             transform,
         );
 
-        crate::render::render_nodes(mask.root(), ctx, transform, &mut mask_pixmap.as_mut());
+        crate::render::render_nodes(
+            mask.root(),
+            ctx,
+            transform,
+            &mut mask_pixmap.as_mut(),
+            cache,
+        );
 
         mask_pixmap.apply_mask(&alpha_mask);
     }
 
     if let Some(mask) = mask.mask() {
-        self::apply(mask, ctx, transform, pixmap);
+        self::apply(mask, ctx, transform, pixmap, cache);
     }
 
     let mask_type = match mask.kind() {

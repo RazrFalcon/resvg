@@ -55,6 +55,7 @@ and can focus just on the rendering part.
 mod parser;
 mod tree;
 mod writer;
+mod hashers;
 
 pub use parser::*;
 pub use tree::*;

@@ -21,6 +21,16 @@ pub struct Filter {
     pub(crate) primitives: Vec<Primitive>,
 }
 
+impl std::hash::Hash for Filter {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        use crate::hashers::CustomHash;
+
+        self.id.hash(state);
+        self.rect.custom_hash(state);
+        self.primitives.hash(state);
+    }
+}
+
 impl Filter {
     /// Element's ID.
     ///
@@ -50,6 +60,17 @@ pub struct Primitive {
     pub(crate) color_interpolation: ColorInterpolation,
     pub(crate) result: String,
     pub(crate) kind: Kind,
+}
+
+impl std::hash::Hash for Primitive {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        use crate::hashers::CustomHash;
+
+        self.rect.custom_hash(state);
+        self.color_interpolation.hash(state);
+        self.result.hash(state);
+        self.kind.hash(state);
+    }
 }
 
 impl Primitive {
@@ -82,7 +103,7 @@ impl Primitive {
 
 /// A filter kind.
 #[allow(missing_docs)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub enum Kind {
     Blend(Blend),
     ColorMatrix(ColorMatrix),
@@ -130,7 +151,7 @@ impl Kind {
 
 /// Identifies input for a filter primitive.
 #[allow(missing_docs)]
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Hash)]
 pub enum Input {
     SourceGraphic,
     SourceAlpha,
@@ -139,7 +160,7 @@ pub enum Input {
 
 /// A color interpolation mode.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum ColorInterpolation {
     SRGB,
     LinearRGB,
@@ -154,7 +175,7 @@ impl Default for ColorInterpolation {
 /// A blend filter primitive.
 ///
 /// `feBlend` element in the SVG.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct Blend {
     pub(crate) input1: Input,
     pub(crate) input2: Input,
@@ -187,7 +208,7 @@ impl Blend {
 /// A color matrix filter primitive.
 ///
 /// `feColorMatrix` element in the SVG.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct ColorMatrix {
     pub(crate) input: Input,
     pub(crate) kind: ColorMatrixKind,
@@ -219,6 +240,27 @@ pub enum ColorMatrixKind {
     LuminanceToAlpha,
 }
 
+impl std::hash::Hash for ColorMatrixKind {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            ColorMatrixKind::Matrix(m) => {
+                for v in m {
+                    v.to_bits().hash(state);
+                }
+            }
+            ColorMatrixKind::Saturate(v) => {
+                v.get().to_bits().hash(state);
+            }
+            ColorMatrixKind::HueRotate(v) => {
+                v.to_bits().hash(state);
+            }
+            ColorMatrixKind::LuminanceToAlpha => {
+                0u8.hash(state);
+            }
+        }
+    }
+}
+
 impl Default for ColorMatrixKind {
     fn default() -> Self {
         ColorMatrixKind::Matrix(vec![
@@ -231,7 +273,7 @@ impl Default for ColorMatrixKind {
 /// A component-wise remapping filter primitive.
 ///
 /// `feComponentTransfer` element in the SVG.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct ComponentTransfer {
     pub(crate) input: Input,
     pub(crate) func_r: TransferFunction,
@@ -300,10 +342,49 @@ pub enum TransferFunction {
     },
 }
 
+impl std::hash::Hash for TransferFunction {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            TransferFunction::Identity => 0.hash(state),
+            TransferFunction::Table(values) => {
+                1u8.hash(state);
+                values
+                    .iter()
+                    .map(|f| f.to_bits().hash(state))
+                    .collect::<Vec<_>>()
+                    .hash(state);
+            }
+            TransferFunction::Discrete(values) => {
+                2u8.hash(state);
+                values
+                    .iter()
+                    .map(|f| f.to_bits().hash(state))
+                    .collect::<Vec<_>>()
+                    .hash(state);
+            }
+            TransferFunction::Linear { slope, intercept } => {
+                3u8.hash(state);
+                slope.to_bits().hash(state);
+                intercept.to_bits().hash(state);
+            }
+            TransferFunction::Gamma {
+                amplitude,
+                exponent,
+                offset,
+            } => {
+                4u8.hash(state);
+                amplitude.to_bits().hash(state);
+                exponent.to_bits().hash(state);
+                offset.to_bits().hash(state);
+            }
+        }
+    }
+}
+
 /// A composite filter primitive.
 ///
 /// `feComposite` element in the SVG.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct Composite {
     pub(crate) input1: Input,
     pub(crate) input2: Input,
@@ -345,6 +426,35 @@ pub enum CompositeOperator {
     Arithmetic { k1: f32, k2: f32, k3: f32, k4: f32 },
 }
 
+impl std::hash::Hash for CompositeOperator {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            CompositeOperator::Over => {
+                0u8.hash(state);
+            }
+            CompositeOperator::In => {
+                1u8.hash(state);
+            }
+            CompositeOperator::Out => {
+                2u8.hash(state);
+            }
+            CompositeOperator::Atop => {
+                3u8.hash(state);
+            }
+            CompositeOperator::Xor => {
+                4u8.hash(state);
+            }
+            CompositeOperator::Arithmetic { k1, k2, k3, k4 } => {
+                5u8.hash(state);
+                k1.to_bits().hash(state);
+                k2.to_bits().hash(state);
+                k3.to_bits().hash(state);
+                k4.to_bits().hash(state);
+            }
+        }
+    }
+}
+
 /// A matrix convolution filter primitive.
 ///
 /// `feConvolveMatrix` element in the SVG.
@@ -356,6 +466,17 @@ pub struct ConvolveMatrix {
     pub(crate) bias: f32,
     pub(crate) edge_mode: EdgeMode,
     pub(crate) preserve_alpha: bool,
+}
+
+impl std::hash::Hash for ConvolveMatrix {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.input.hash(state);
+        self.matrix.hash(state);
+        self.divisor.hash(state);
+        self.bias.to_bits().hash(state);
+        self.edge_mode.hash(state);
+        self.preserve_alpha.hash(state);
+    }
 }
 
 impl ConvolveMatrix {
@@ -410,6 +531,20 @@ pub struct ConvolveMatrixData {
     pub(crate) columns: u32,
     pub(crate) rows: u32,
     pub(crate) data: Vec<f32>,
+}
+
+impl std::hash::Hash for ConvolveMatrixData {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.target_x.hash(state);
+        self.target_y.hash(state);
+        self.columns.hash(state);
+        self.rows.hash(state);
+        self.data
+            .iter()
+            .map(|f| f.to_bits())
+            .collect::<Vec<_>>()
+            .hash(state);
+    }
 }
 
 impl ConvolveMatrixData {
@@ -487,7 +622,7 @@ impl ConvolveMatrixData {
 
 /// An edges processing mode.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum EdgeMode {
     None,
     Duplicate,
@@ -504,6 +639,16 @@ pub struct DisplacementMap {
     pub(crate) scale: f32,
     pub(crate) x_channel_selector: ColorChannel,
     pub(crate) y_channel_selector: ColorChannel,
+}
+
+impl std::hash::Hash for DisplacementMap {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.input1.hash(state);
+        self.input2.hash(state);
+        self.scale.to_bits().hash(state);
+        self.x_channel_selector.hash(state);
+        self.y_channel_selector.hash(state);
+    }
 }
 
 impl DisplacementMap {
@@ -545,7 +690,7 @@ impl DisplacementMap {
 
 /// A color channel.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum ColorChannel {
     R,
     G,
@@ -567,6 +712,18 @@ pub struct DropShadow {
     pub(crate) std_dev_y: PositiveF32,
     pub(crate) color: Color,
     pub(crate) opacity: Opacity,
+}
+
+impl std::hash::Hash for DropShadow {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.input.hash(state);
+        self.dx.to_bits().hash(state);
+        self.dy.to_bits().hash(state);
+        self.std_dev_x.hash(state);
+        self.std_dev_y.hash(state);
+        self.color.hash(state);
+        self.opacity.hash(state);
+    }
 }
 
 impl DropShadow {
@@ -619,7 +776,7 @@ impl DropShadow {
 /// A flood filter primitive.
 ///
 /// `feFlood` element in the SVG.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Hash)]
 pub struct Flood {
     pub(crate) color: Color,
     pub(crate) opacity: Opacity,
@@ -644,7 +801,7 @@ impl Flood {
 /// A Gaussian blur filter primitive.
 ///
 /// `feGaussianBlur` element in the SVG.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct GaussianBlur {
     pub(crate) input: Input,
     pub(crate) std_dev_x: PositiveF32,
@@ -679,9 +836,19 @@ impl GaussianBlur {
 /// `feImage` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Image {
+    pub(crate) original_href: Option<String>,
     pub(crate) aspect: AspectRatio,
     pub(crate) rendering_mode: ImageRendering,
     pub(crate) data: ImageKind,
+}
+
+impl std::hash::Hash for Image {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // do not hash the data
+        self.original_href.hash(state);
+        self.aspect.hash(state);
+        self.rendering_mode.hash(state);
+    }
 }
 
 impl Image {
@@ -723,6 +890,16 @@ pub struct DiffuseLighting {
     pub(crate) diffuse_constant: f32,
     pub(crate) lighting_color: Color,
     pub(crate) light_source: LightSource,
+}
+
+impl std::hash::Hash for DiffuseLighting {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.input.hash(state);
+        self.surface_scale.to_bits().hash(state);
+        self.diffuse_constant.to_bits().hash(state);
+        self.lighting_color.hash(state);
+        self.light_source.hash(state);
+    }
 }
 
 impl DiffuseLighting {
@@ -773,6 +950,17 @@ pub struct SpecularLighting {
     pub(crate) light_source: LightSource,
 }
 
+impl std::hash::Hash for SpecularLighting {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.input.hash(state);
+        self.surface_scale.to_bits().hash(state);
+        self.specular_constant.to_bits().hash(state);
+        self.specular_exponent.to_bits().hash(state);
+        self.lighting_color.hash(state);
+        self.light_source.hash(state);
+    }
+}
+
 impl SpecularLighting {
     /// Identifies input for the given filter primitive.
     ///
@@ -819,7 +1007,7 @@ impl SpecularLighting {
 
 /// A light source kind.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Hash)]
 pub enum LightSource {
     DistantLight(DistantLight),
     PointLight(PointLight),
@@ -910,10 +1098,38 @@ pub struct SpotLight {
     pub limiting_cone_angle: Option<f32>,
 }
 
+impl std::hash::Hash for DistantLight {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.azimuth.to_bits().hash(state);
+        self.elevation.to_bits().hash(state);
+    }
+}
+
+impl std::hash::Hash for PointLight {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.x.to_bits().hash(state);
+        self.y.to_bits().hash(state);
+        self.z.to_bits().hash(state);
+    }
+}
+
+impl std::hash::Hash for SpotLight {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.x.to_bits().hash(state);
+        self.y.to_bits().hash(state);
+        self.z.to_bits().hash(state);
+        self.points_at_x.to_bits().hash(state);
+        self.points_at_y.to_bits().hash(state);
+        self.points_at_z.to_bits().hash(state);
+        self.specular_exponent.hash(state);
+        self.limiting_cone_angle.map(|v| v.to_bits().hash(state));
+    }
+}
+
 /// A merge filter primitive.
 ///
 /// `feMerge` element in the SVG.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct Merge {
     pub(crate) inputs: Vec<Input>,
 }
@@ -930,7 +1146,7 @@ impl Merge {
 /// A morphology filter primitive.
 ///
 /// `feMorphology` element in the SVG.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct Morphology {
     pub(crate) input: Input,
     pub(crate) operator: MorphologyOperator,
@@ -974,7 +1190,7 @@ impl Morphology {
 
 /// A morphology operation.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum MorphologyOperator {
     Erode,
     Dilate,
@@ -988,6 +1204,14 @@ pub struct Offset {
     pub(crate) input: Input,
     pub(crate) dx: f32,
     pub(crate) dy: f32,
+}
+
+impl std::hash::Hash for Offset {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.input.hash(state);
+        self.dx.to_bits().hash(state);
+        self.dy.to_bits().hash(state);
+    }
 }
 
 impl Offset {
@@ -1012,7 +1236,7 @@ impl Offset {
 /// A tile filter primitive.
 ///
 /// `feTile` element in the SVG.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct Tile {
     pub(crate) input: Input,
 }
@@ -1029,7 +1253,7 @@ impl Tile {
 /// A turbulence generation filter primitive.
 ///
 /// `feTurbulence` element in the SVG.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Hash)]
 pub struct Turbulence {
     pub(crate) base_frequency_x: PositiveF32,
     pub(crate) base_frequency_y: PositiveF32,
@@ -1085,7 +1309,7 @@ impl Turbulence {
 
 /// A turbulence kind for the `feTurbulence` filter.
 #[allow(missing_docs)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Hash, Eq)]
 pub enum TurbulenceKind {
     FractalNoise,
     Turbulence,

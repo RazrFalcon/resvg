@@ -55,6 +55,15 @@ pub struct ViewBox {
     pub aspect: AspectRatio,
 }
 
+impl std::hash::Hash for ViewBox {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        use crate::hashers::CustomHash;
+
+        self.rect.custom_hash(state);
+        self.aspect.hash(state);
+    }
+}
+
 impl ViewBox {
     /// Converts `viewBox` into `Transform`.
     pub fn to_transform(&self, img_size: Size) -> Transform {
@@ -72,12 +81,10 @@ impl ViewBox {
                 } else {
                     sx
                 }
+            } else if sx > sy {
+                sy
             } else {
-                if sx > sy {
-                    sy
-                } else {
-                    sx
-                }
+                sx
             };
 
             (s, s)

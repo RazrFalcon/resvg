@@ -10,18 +10,21 @@ pub fn render(
     ctx: &Context,
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
+    cache: &mut crate::cache::SvgrCache,
 ) {
     if path.visibility() != usvgr::Visibility::Visible {
         return;
     }
 
-    if path.paint_order() == usvgr::PaintOrder::FillAndStroke {
-        fill_path(path, blend_mode, ctx, transform, pixmap);
-        stroke_path(path, blend_mode, ctx, transform, pixmap);
-    } else {
-        stroke_path(path, blend_mode, ctx, transform, pixmap);
-        fill_path(path, blend_mode, ctx, transform, pixmap);
-    }
+    cache.with_cache(ctx, pixmap, path, |pixmap, cache, ctx| {
+        if path.paint_order() == usvgr::PaintOrder::FillAndStroke {
+            fill_path(path, blend_mode, ctx, transform, pixmap, cache);
+            stroke_path(path, blend_mode, ctx, transform, pixmap, cache);
+        } else {
+            stroke_path(path, blend_mode, ctx, transform, pixmap, cache);
+            fill_path(path, blend_mode, ctx, transform, pixmap, cache);
+        }
+    })
 }
 
 pub fn fill_path(
@@ -30,6 +33,7 @@ pub fn fill_path(
     ctx: &Context,
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
+    cache: &mut crate::cache::SvgrCache,
 ) -> Option<()> {
     let fill = path.fill()?;
 
@@ -56,7 +60,7 @@ pub fn fill_path(
             paint.shader = convert_radial_gradient(rg, fill.opacity())?;
         }
         usvgr::Paint::Pattern(ref pattern) => {
-            let (patt_pix, patt_ts) = render_pattern_pixmap(pattern, ctx, transform)?;
+            let (patt_pix, patt_ts) = render_pattern_pixmap(pattern, ctx, transform, cache)?;
 
             pattern_pixmap = patt_pix;
             paint.shader = tiny_skia::Pattern::new(
@@ -81,6 +85,7 @@ fn stroke_path(
     ctx: &Context,
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
+    cache: &mut crate::cache::SvgrCache,
 ) -> Option<()> {
     let stroke = path.stroke()?;
     let pattern_pixmap;
@@ -96,7 +101,7 @@ fn stroke_path(
             paint.shader = convert_radial_gradient(rg, stroke.opacity())?;
         }
         usvgr::Paint::Pattern(ref pattern) => {
-            let (patt_pix, patt_ts) = render_pattern_pixmap(pattern, ctx, transform)?;
+            let (patt_pix, patt_ts) = render_pattern_pixmap(pattern, ctx, transform, cache)?;
 
             pattern_pixmap = patt_pix;
             paint.shader = tiny_skia::Pattern::new(
@@ -180,6 +185,7 @@ fn render_pattern_pixmap(
     pattern: &usvgr::Pattern,
     ctx: &Context,
     transform: tiny_skia::Transform,
+    cache: &mut crate::cache::SvgrCache,
 ) -> Option<(tiny_skia::Pixmap, tiny_skia::Transform)> {
     let (sx, sy) = {
         let ts2 = transform.pre_concat(pattern.transform());
@@ -199,7 +205,7 @@ fn render_pattern_pixmap(
         transform = transform.pre_concat(ts);
     }
 
-    crate::render::render_nodes(pattern.root(), ctx, transform, &mut pixmap.as_mut());
+    crate::render::render_nodes(pattern.root(), ctx, transform, &mut pixmap.as_mut(), cache);
 
     let mut ts = tiny_skia::Transform::default();
     ts = ts.pre_concat(pattern.transform());
