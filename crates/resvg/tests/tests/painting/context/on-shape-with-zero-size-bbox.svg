@@ -1,11 +1,11 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>`context-stroke` on shape with zero-size bbox</title>
+    <title>`context-stroke` on shape with zero-size bbox (SVG 2)</title>
 
     <marker id="marker1" refX="10" refY="10" markerWidth="20" markerHeight="20">
         <path id="path-marker" d="M 10 0 16 20 H 4 Z" fill="context-stroke"/>
     </marker>
-    <path id="path1" stroke="green" d="M 100 25 L 100 175"
-          marker-end="url(#marker1)"/>
+    <path id="path1" stroke="green" d="M 100 25 L 100 175" marker-end="url(#marker1)"/>
+
     <!-- image frame -->
     <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
 </svg>

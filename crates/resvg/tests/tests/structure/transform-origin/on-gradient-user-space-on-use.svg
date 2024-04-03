@@ -1,5 +1,5 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>on `gradient` with `gradientUnits` `userSpaceOnUse`</title>
+    <title>on `gradient` with `gradientUnits=userSpaceOnUse` (SVG 2)</title>
 
     <radialGradient id="rg1" gradientUnits="userSpaceOnUse" gradientTransform="scale(2)" transform-origin="center">
         <stop offset="0" stop-color="black"/>

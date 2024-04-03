@@ -1,5 +1,5 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>on `clipPath`</title>
+    <title>on `clipPath` (SVG 2)</title>
 
     <clipPath id="clip1" transform="rotate(36)" transform-origin="center">
         <path id="path1" d="M 100 15 l 50 160 l -130 -100 l 160 0 l -130 100 z"/>

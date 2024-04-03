@@ -1,9 +1,10 @@
-<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>With x and y</title>
+    <title>With x and y and protruding subregion (1)</title>
+
     <defs>
-        <rect fill="green" id="rect3" width="100" height="100"/>
-        <filter id="filter1" >
+        <rect id="rect3" fill="green" width="100" height="100"/>
+        <filter id="filter1">
             <feImage xlink:href="#rect3" x="60" y="90"/>
         </filter>
     </defs>

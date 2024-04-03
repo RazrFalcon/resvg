@@ -1,7 +1,8 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>on `pattern` with `userSpaceOnUse`</title>
+    <title>on `pattern` with `userSpaceOnUse` (SVG 2)</title>
 
-    <pattern id="patt1" patternUnits="userSpaceOnUse" width="200" height="200" patternTransform="scale(2)" transform-origin="center">
+    <pattern id="patt1" patternUnits="userSpaceOnUse" width="200" height="200"
+             patternTransform="scale(2)" transform-origin="center">
         <rect id="rect1" x="50" y="50" width="50" height="50" fill="grey"/>
         <rect id="rect2" x="100" y="100" width="50" height="50" fill="green"/>
     </pattern>

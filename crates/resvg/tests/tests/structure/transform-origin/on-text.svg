@@ -1,6 +1,6 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
      font-family="Noto Sans" font-size="64">
-    <title>on `text`</title>
+    <title>on `text` (SVG 2)</title>
 
     <path id="crosshair" d="M 20 100 L 180 100 M 100 20 L 100 180"
           stroke="gray" stroke-width="0.5"/>

@@ -1,10 +1,12 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>`right` + `bottom`</title>
+    <title>`right` + `bottom` (SVG 2)</title>
 
     <!-- should be covered -->
-    <path id="path1" transform="translate(200 200) rotate(45) translate(-200 -200)" d="M 80 80 L 120 80 L 120 120 L 80 120" fill="red"/>
+    <path id="path1" fill="red" d="M 80 80 L 120 80 L 120 120 L 80 120"
+          transform="translate(200 200) rotate(45) translate(-200 -200)"/>
 
-    <rect id="rect1" transform="rotate(45)" transform-origin="right bottom" x="80" y="80" width="40" height="40" fill="green"/>
+    <rect id="rect1" x="80" y="80" width="40" height="40" fill="green"
+          transform="rotate(45)" transform-origin="right bottom" />
 
     <!-- image frame -->
     <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>

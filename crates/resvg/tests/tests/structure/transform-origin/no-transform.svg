@@ -1,5 +1,5 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>no transform</title>
+    <title>no transform (SVG 2)</title>
 
     <!-- should be covered -->
     <path id="path1"  d="M 80 80 L 120 80 L 120 120 L 80 120" fill="red"/>

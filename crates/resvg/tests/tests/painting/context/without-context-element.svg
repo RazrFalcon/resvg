@@ -1,5 +1,5 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>`context-fill` and `context-stroke` without context element</title>
+    <title>`context-fill` and `context-stroke` without context element (SVG 2)</title>
 
     <rect x="20" y="20" width="160" height="160" fill="context-fill" stroke="context-stroke"/>
 

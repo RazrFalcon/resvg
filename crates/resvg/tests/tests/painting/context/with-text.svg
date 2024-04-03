@@ -1,7 +1,9 @@
-<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>`context-fill` on text with decoration</title>
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>`context-fill` on text with decoration (SVG 2)</title>
+
     <defs id="defs1">
-        <linearGradient id="lg">
+        <linearGradient id="lg1">
             <stop offset="0" stop-color="white"/>
             <stop offset="0.25" stop-color="black"/>
             <stop offset="0.5" stop-color="red"/>
@@ -9,12 +11,14 @@
         </linearGradient>
 
         <g id="g1">
-            <rect x="25" y="25" width="150" height="150" fill="context-fill" stroke="context-stroke" />
-            <text id="text1" x="100" y="100" font-family="Noto Sans" stroke-width="2" text-anchor="middle" font-size="64" stroke="black" fill="context-fill" text-decoration="underline">Text</text>
+            <rect x="25" y="25" width="150" height="150" fill="context-fill" stroke="context-stroke"/>
+            <text id="text1" x="100" y="100" font-family="Noto Sans" font-size="64"
+                  text-anchor="middle" text-decoration="underline"
+                  fill="context-fill" stroke="black" stroke-width="2">Text</text>
         </g>
     </defs>
 
-    <use id="use1" xlink:href="#g1" fill="url(#lg)" stroke="url(#lg)"/>
+    <use id="use1" xlink:href="#g1" fill="url(#lg1)" stroke="url(#lg1)"/>
 
     <!-- image frame -->
     <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>

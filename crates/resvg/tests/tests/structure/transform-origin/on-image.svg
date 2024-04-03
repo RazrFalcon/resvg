@@ -1,6 +1,6 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>on `image`</title>
+    <title>on `image` (SVG 2)</title>
 
     <image id="image1" x="60" y="60" width="80" transform="rotate(90)" transform-origin="center" height="80" xlink:href="data:image/png;base64,
 iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAAliAAAJYgFi28+MAAAA

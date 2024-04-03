@@ -1,6 +1,6 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>`context-fill` and `context-stroke` in nested context elements without defined fill or stroke</title>
+    <title>Recursive nested context without color (SVG 2)</title>
 
     <defs id="defs1">
         <rect id="rect1" x="20" y="20" width="160" height="160" stroke="context-fill" fill="context-stroke"/>

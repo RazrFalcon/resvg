@@ -1,5 +1,5 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>on `group`</title>
+    <title>on `group` (SVG 2)</title>
 
     <g transform="rotate(45)" transform-origin="center" >
         <rect id="rect1" x="60" y="60" width="80" height="80" fill="green"/>

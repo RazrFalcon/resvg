@@ -1,5 +1,7 @@
-<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>`context-fill` with gradient in use</title>
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>`context-fill` with gradient in use (SVG 2)</title>
+
     <defs id="defs1">
         <linearGradient id="lg">
             <stop offset="0" stop-color="white"/>
@@ -9,10 +11,12 @@
         </linearGradient>
 
         <g id="g1">
-            <rect x="50" y="50" width="100" height="100" fill="context-fill" stroke="context-stroke" />
-            <path id="path1" transform-origin="100 100" transform="rotate(90)" fill="context-fill" stroke="context-stroke"
+            <rect id="rect1" x="50" y="50" width="100" height="100" fill="context-fill" stroke="context-stroke" />
+            <path id="path1" transform-origin="100 100" transform="rotate(90)"
+                  fill="context-fill" stroke="context-stroke"
                   d="M 100 15 l 50 160 l -130 -100 l 160 0 l -130 100 Z"/>
-            <path id="path1" transform-origin="100 100" transform="scale(0.8 0.8)" fill="context-fill" stroke="context-stroke"
+            <path id="path1" transform-origin="100 100" transform="scale(0.8 0.8)"
+                  fill="context-fill" stroke="context-stroke"
                   d="M 100 15 l 50 160 l -130 -100 l 160 0 l -130 100 Z"/>
         </g>
     </defs>

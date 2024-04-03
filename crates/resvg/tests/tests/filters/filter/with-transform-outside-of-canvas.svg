@@ -1,15 +1,17 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 200">
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>With transform outside of canvas</title>
+
     <defs>
-        <filter id="filter-1" x="0" y="0">
+        <filter id="filter1" x="0" y="0">
             <feImage xlink:href="#filter-image"/>
         </filter>
-        <g id="filter-image" >
-            <rect fill="blue" x="200" y="200" width="100" height="100" />
+        <g id="filter-image">
+            <rect id="rect1" fill="seagreen" x="200" y="200" width="100" height="100"/>
         </g>
     </defs>
-    <g filter="url(#filter-1)" transform="translate(-150, -150)">
-        <rect x="0" y="0" width="300" height="300"/>
+    <g filter="url(#filter1)" transform="translate(-150 -150)">
+        <rect id="rect2" x="0" y="0" width="300" height="300"/>
     </g>
 
     <!-- image frame -->

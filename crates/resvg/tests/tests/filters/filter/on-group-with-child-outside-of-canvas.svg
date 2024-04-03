@@ -1,15 +1,17 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 200">
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>On group with child outside of canvas</title>
+
     <defs>
-        <filter id="filter-1" x="0" y="0">
+        <filter id="filter1" x="0" y="0">
             <feImage xlink:href="#filter-image"/>
         </filter>
-        <g id="filter-image" >
-            <rect fill="blue" x="100" y="100" width="100" height="100" />
+        <g id="filter-image">
+            <rect id="rect1" fill="seagreen" x="100" y="100" width="100" height="100"/>
         </g>
     </defs>
-    <g filter="url(#filter-1)" >
-        <rect x="-50" y="-50" width="200" height="200"/>
+    <g filter="url(#filter1)" >
+        <rect id="rect2" x="-50" y="-50" width="200" height="200"/>
     </g>
 
     <!-- image frame -->

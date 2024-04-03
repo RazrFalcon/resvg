@@ -1,6 +1,6 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>No `height` on a rectangle</title>
+    <title>No `height` non square</title>
 
     <image id="image1" x="25" y="62.5" width="150" xlink:href="data:image/png;base64,
     iVBORw0KGgoAAAANSUhEUgAAACAAAAAQCAIAAAD4YuoOAAAAHUlEQVR4AWOgB5DbSCM0MiwYtWDUgl

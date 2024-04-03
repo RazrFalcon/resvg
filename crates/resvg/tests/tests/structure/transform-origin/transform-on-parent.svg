@@ -1,11 +1,12 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>no transform</title>
+    <title>no transform (SVG 2)</title>
 
     <!-- should be covered -->
     <path id="path1"  d="M 80 80 L 120 80 L 120 120 L 80 120" fill="red"/>
 
     <g transform="scale(2 2)">
-        <rect id="rect1" transform-origin="bottom right" x="40" y="40" width="20" height="20" fill="green"/>
+        <rect id="rect1" x="40" y="40" width="20" height="20" fill="green"
+              transform-origin="bottom right"/>
     </g>
 
     <!-- image frame -->

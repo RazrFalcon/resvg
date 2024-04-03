@@ -1,5 +1,5 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <title>`context-fill` with pattern on marker</title>
+    <title>`context-fill` with pattern on marker (SVG 2)</title>
 
     <pattern id="patt1" patternUnits="userSpaceOnUse" width="20" height="20">
         <rect id="rect1" x="0" y="0" width="10" height="10" fill="grey"/>
@@ -7,9 +7,7 @@
     </pattern>
 
     <marker id="marker1" refX="10" refY="10" markerWidth="20" markerHeight="20" orient="0.25turn">
-        <g >
-            <path id="path-marker" d="M 10 0 16 20 H 4 Z" fill="context-fill"/>
-        </g>
+        <path id="path-marker" d="M 10 0 16 20 H 4 Z" fill="context-fill"/>
     </marker>
 
     <path id="path1" fill="url(#patt1)" d="M 100 15 l 50 160 l -130 -100 l 160 0 l -130 100 Z"

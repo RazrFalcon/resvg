@@ -1,6 +1,6 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>`context-fill` and `context-stroke` with use</title>
+    <title>`context-fill` and `context-stroke` with use (SVG 2)</title>
 
     <defs id="defs1">
         <path id="path1" stroke="context-fill" fill="context-stroke"
