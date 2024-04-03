@@ -521,7 +521,7 @@ impl Text {
 
     /// Element's absolute transform.
     ///
-    /// Contains all ancestors transforms excluding element's transform.
+    /// Contains all ancestors transforms including elements's transform.
     ///
     /// Note that this is not the relative transform present in SVG.
     /// The SVG one would be set only on groups.

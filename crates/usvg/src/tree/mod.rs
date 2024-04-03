@@ -1050,7 +1050,7 @@ impl Group {
 
     /// Element's absolute transform.
     ///
-    /// Contains all ancestors transforms excluding element's transform.
+    /// Contains all ancestors transforms including group's transform.
     ///
     /// Note that subroots, like clipPaths, masks and patterns, have their own root transform,
     /// which isn't affected by the node that references this subroot.
@@ -1359,7 +1359,7 @@ impl Path {
 
     /// Element's absolute transform.
     ///
-    /// Contains all ancestors transforms excluding element's transform.
+    /// Contains all ancestors transforms including elements's transform.
     ///
     /// Note that this is not the relative transform present in SVG.
     /// The SVG one would be set only on groups.
@@ -1495,7 +1495,7 @@ impl Image {
 
     /// Element's absolute transform.
     ///
-    /// Contains all ancestors transforms excluding element's transform.
+    /// Contains all ancestors transforms including elements's transform.
     ///
     /// Note that this is not the relative transform present in SVG.
     /// The SVG one would be set only on groups.

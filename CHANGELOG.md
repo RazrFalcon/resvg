@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- Absolute transform propagation during `use` resolving.
+- `Node::abs_transform` documentation. The current element's transform _is_ included.
 
 ## [0.40.0] - 2024-02-17
 ### Added

@@ -98,3 +98,115 @@ fn tree_is_send_and_sync() {
     fn ensure_send_and_sync<T: Send + Sync>() {}
     ensure_send_and_sync::<usvg::Tree>();
 }
+
+#[test]
+fn path_transform() {
+    let svg = "
+    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+        <path transform='translate(10)' d='M 0 0 L 10 10'/>
+    </svg>
+    ";
+
+    let fontdb = usvg::fontdb::Database::new();
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default(), &fontdb).unwrap();
+    assert_eq!(tree.root().children().len(), 1);
+
+    let group_node = &tree.root().children()[0];
+    assert!(matches!(group_node, usvg::Node::Group(_)));
+    assert_eq!(group_node.abs_transform(), usvg::Transform::from_translate(10.0, 0.0));
+
+    let group = match group_node {
+        usvg::Node::Group(ref g) => g,
+        _ => unreachable!(),
+    };
+
+    let path = &group.children()[0];
+    assert!(matches!(path, usvg::Node::Path(_)));
+    assert_eq!(path.abs_transform(), usvg::Transform::from_translate(10.0, 0.0));
+}
+
+#[test]
+fn path_transform_nested() {
+    let svg = "
+    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+        <g transform='translate(20)'>
+            <path transform='translate(10)' d='M 0 0 L 10 10'/>
+        </g>
+    </svg>
+    ";
+
+    let fontdb = usvg::fontdb::Database::new();
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default(), &fontdb).unwrap();
+    assert_eq!(tree.root().children().len(), 1);
+
+    let group_node1 = &tree.root().children()[0];
+    assert!(matches!(group_node1, usvg::Node::Group(_)));
+    assert_eq!(group_node1.abs_transform(), usvg::Transform::from_translate(20.0, 0.0));
+
+    let group1 = match group_node1 {
+        usvg::Node::Group(ref g) => g,
+        _ => unreachable!(),
+    };
+
+    let group_node2 = &group1.children()[0];
+    assert!(matches!(group_node2, usvg::Node::Group(_)));
+    assert_eq!(group_node2.abs_transform(), usvg::Transform::from_translate(30.0, 0.0));
+
+    let group2 = match group_node2 {
+        usvg::Node::Group(ref g) => g,
+        _ => unreachable!(),
+    };
+
+    let path = &group2.children()[0];
+    assert!(matches!(path, usvg::Node::Path(_)));
+    assert_eq!(path.abs_transform(), usvg::Transform::from_translate(30.0, 0.0));
+}
+
+#[test]
+fn path_transform_in_symbol() {
+    let svg = "
+    <svg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>
+        <defs>
+            <symbol id='symbol1' overflow='visible'>
+                <rect id='rect1' x='0' y='0' width='10' height='10'/>
+            </symbol>
+        </defs>
+        <use id='use1' xlink:href='#symbol1' x='20'/>
+    </svg>
+    ";
+
+    // Will be parsed as:
+    // <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    //     <g id="use1">
+    //         <g transform="matrix(1 0 0 1 20 0)">
+    //             <path fill="#000000" stroke="none" d="M 0 0 L 10 0 L 10 10 L 0 10 Z"/>
+    //         </g>
+    //     </g>
+    // </svg>
+
+    let fontdb = usvg::fontdb::Database::new();
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default(), &fontdb).unwrap();
+
+    let group_node1 = &tree.root().children()[0];
+    assert!(matches!(group_node1, usvg::Node::Group(_)));
+    assert_eq!(group_node1.id(), "use1");
+    assert_eq!(group_node1.abs_transform(), usvg::Transform::default());
+
+    let group1 = match group_node1 {
+        usvg::Node::Group(ref g) => g,
+        _ => unreachable!(),
+    };
+
+    let group_node2 = &group1.children()[0];
+    assert!(matches!(group_node2, usvg::Node::Group(_)));
+    assert_eq!(group_node2.abs_transform(), usvg::Transform::from_translate(20.0, 0.0));
+
+    let group2 = match group_node2 {
+        usvg::Node::Group(ref g) => g,
+        _ => unreachable!(),
+    };
+
+    let path = &group2.children()[0];
+    assert!(matches!(path, usvg::Node::Path(_)));
+    assert_eq!(path.abs_transform(), usvg::Transform::from_translate(20.0, 0.0));
+}
