@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.41.0] - 2024-04-03
+### Added
+- `context-fill` and `context-stroke` support.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
+- `usvg::Text::layouted()`, which returns a list of glyph IDs.
+  It can be used to manually draw glyphs, unlike with `usvg::Text::flattened()`, which returns
+  just vector paths.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
+
 ### Fixed
 - Missing text when a `text` element uses multiple fonts and one of them produces ligatures.
 - Absolute transform propagation during `use` resolving.
@@ -1122,7 +1132,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.40.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.41.0...HEAD
+[0.41.0]: https://github.com/RazrFalcon/resvg/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/RazrFalcon/resvg/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/RazrFalcon/resvg/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/RazrFalcon/resvg/compare/v0.37.0...v0.38.0

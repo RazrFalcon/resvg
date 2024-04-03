@@ -875,9 +875,6 @@ impl Node {
 
     /// Returns node's absolute transform.
     ///
-    /// If a current node doesn't support transformation - a default
-    /// transform will be returned.
-    ///
     /// This method is cheap since absolute transforms are already resolved.
     pub fn abs_transform(&self) -> Transform {
         match self {
