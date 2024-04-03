@@ -60,6 +60,7 @@ pub(crate) fn convert(
 
         if let Some(clip_rect) = get_clip_rect(node, child, &use_state) {
             let mut g = clip_element(node, clip_rect, orig_ts, &use_state, cache);
+            g.abs_transform = parent.abs_transform;
 
             // Make group for `use`.
             if let Some(mut g2) =
@@ -178,6 +179,7 @@ pub(crate) fn convert_svg(
 
     if let Some(clip_rect) = get_clip_rect(node, node, state) {
         let mut g = clip_element(node, clip_rect, orig_ts, state, cache);
+        g.abs_transform = parent.abs_transform;
         convert_children(node, new_ts, &new_state, cache, false, &mut g);
         g.calculate_bounding_boxes();
         parent.children.push(Node::Group(Box::new(g)));
