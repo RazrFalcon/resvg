@@ -752,8 +752,38 @@ fn process_chunk(
     fonts_cache: &FontsCache,
     fontdb: &fontdb::Database,
 ) -> Vec<GlyphCluster> {
-    let mut glyphs = Vec::new();
+    // The way this function works is a bit tricky.
+    //
+    // The first problem is BIDI reordering.
+    // We cannot shape text span-by-span, because glyph clusters are not guarantee to be continuous.
+    //
+    // For example:
+    // <text>Hel<tspan fill="url(#lg1)">lo של</tspan>ום.</text>
+    //
+    // Would be shaped as:
+    // H e l l o   ש ל  ו  ם .   (characters)
+    // 0 1 2 3 4 5 12 10 8 6 14  (cluster indices in UTF-8)
+    //       ---         ---     (green span)
+    //
+    // As you can see, our continuous `lo של` span was split into two separated one.
+    // So our 3 spans: black - green - black, become 5 spans: black - green - black - green - black.
+    // If we shape `Hel`, then `lo של` an then `ום` separately - we would get an incorrect output.
+    // To properly handle this we simply shape the whole chunk.
+    //
+    // But this introduces another issue - what to do when we have multiple fonts?
+    // The easy solution would be to simply shape text with each font,
+    // where the first font output is used as a base one and all others overwrite it.
+    // This way in case of:
+    // <text font-family="Arial">Hello <tspan font-family="Helvetica">world</tspan></text>
+    // we would replace Arial glyphs for `world` with Helvetica one. Pretty simple.
+    //
+    // Well, it would work most of the time, but not always.
+    // This is because different fonts can produce different amount of glyphs for the same text.
+    // The most common example are ligatures. Some fonts can shape `fi` as two glyphs `f` and `i`,
+    // but some can use `ﬁ` (U+FB01) instead.
+    // Meaning that during merging we have to overwrite not individual glyphs, but clusters.
 
+    let mut glyphs = Vec::new();
     for span in &chunk.spans {
         let font = match fonts_cache.get(&span.font) {
             Some(v) => v.clone(),
@@ -774,18 +804,35 @@ fn process_chunk(
             continue;
         }
 
-        // We assume, that shaping with an any font will produce the same amount of glyphs.
-        // Otherwise an error.
-        if glyphs.len() != tmp_glyphs.len() {
-            log::warn!("Text layouting failed.");
-            return Vec::new();
-        }
-
-        // Copy span's glyphs.
-        for (i, glyph) in tmp_glyphs.iter().enumerate() {
-            if span_contains(span, glyph.byte_idx) {
-                glyphs[i] = glyph.clone();
+        // Overwrite span's glyphs.
+        let mut iter = tmp_glyphs.into_iter();
+        while let Some(new_glyph) = iter.next() {
+            if !span_contains(span, new_glyph.byte_idx) {
+                continue;
             }
+
+            let Some(idx) = glyphs.iter().position(|g| g.byte_idx == new_glyph.byte_idx) else {
+                continue;
+            };
+
+            let prev_cluster_len = glyphs[idx].cluster_len;
+            if prev_cluster_len < new_glyph.cluster_len {
+                // If the new font represents the same cluster with fewer glyphs
+                // then remove remaining glyphs.
+                for _ in 1..new_glyph.cluster_len {
+                    glyphs.remove(idx + 1);
+                }
+            } else if prev_cluster_len > new_glyph.cluster_len {
+                // If the new font represents the same cluster with more glyphs
+                // then insert them after the current one.
+                for j in 1..prev_cluster_len {
+                    if let Some(g) = iter.next() {
+                        glyphs.insert(idx + j, g);
+                    }
+                }
+            }
+
+            glyphs[idx] = new_glyph;
         }
     }
 
@@ -1326,6 +1373,7 @@ fn shape_text_with_font(
 
                 glyphs.push(Glyph {
                     byte_idx: ByteIndex::new(idx),
+                    cluster_len: end.checked_sub(start).unwrap_or(0), // TODO: can fail?
                     text: sub_text[start..end].to_string(),
                     id: GlyphId(info.glyph_id as u16),
                     dx: pos.x_offset,
@@ -1467,6 +1515,9 @@ pub(crate) struct Glyph {
     ///
     /// We use it to match a glyph with a character in the text chunk and therefore with the style.
     pub(crate) byte_idx: ByteIndex,
+
+    // The length of the cluster in bytes.
+    pub(crate) cluster_len: usize,
 
     /// The text from the original string that corresponds to that glyph.
     pub(crate) text: String,

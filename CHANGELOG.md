@@ -8,6 +8,7 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Fixed
+- Missing text when a `text` element uses multiple fonts and one of them produces ligatures.
 - Absolute transform propagation during `use` resolving.
 - Absolute transform propagation during nested `svg` resolving.
 - `Node::abs_transform` documentation. The current element's transform _is_ included.
