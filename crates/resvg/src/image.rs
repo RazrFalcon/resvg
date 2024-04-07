@@ -2,8 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::render::TinySkiaPixmapMutExt;
-
 pub fn render(
     image: &usvg::Image,
     transform: tiny_skia::Transform,
@@ -13,29 +11,22 @@ pub fn render(
         return;
     }
 
-    render_inner(
-        image.kind(),
-        image.view_box(),
-        transform,
-        image.rendering_mode(),
-        pixmap,
-    );
+    render_inner(image.kind(), transform, image.rendering_mode(), pixmap);
 }
 
 pub fn render_inner(
     image_kind: &usvg::ImageKind,
-    view_box: usvg::ViewBox,
     transform: tiny_skia::Transform,
     #[allow(unused_variables)] rendering_mode: usvg::ImageRendering,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
     match image_kind {
         usvg::ImageKind::SVG(ref tree) => {
-            render_vector(tree, &view_box, transform, pixmap);
+            render_vector(tree, transform, pixmap);
         }
         #[cfg(feature = "raster-images")]
         _ => {
-            raster_images::render_raster(image_kind, view_box, transform, rendering_mode, pixmap);
+            raster_images::render_raster(image_kind, transform, rendering_mode, pixmap);
         }
         #[cfg(not(feature = "raster-images"))]
         _ => {
@@ -46,33 +37,18 @@ pub fn render_inner(
 
 fn render_vector(
     tree: &usvg::Tree,
-    view_box: &usvg::ViewBox,
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
 ) -> Option<()> {
-    let img_size = tree.size().to_int_size();
-    let (ts, clip) = crate::geom::view_box_to_transform_with_clip(&view_box, img_size);
-
     let mut sub_pixmap = tiny_skia::Pixmap::new(pixmap.width(), pixmap.height()).unwrap();
-
-    let source_transform = transform;
-    let transform = transform.pre_concat(ts);
-
     crate::render(tree, transform, &mut sub_pixmap.as_mut());
-
-    let mask = if let Some(clip) = clip {
-        pixmap.create_rect_mask(source_transform, clip.to_rect())
-    } else {
-        None
-    };
-
     pixmap.draw_pixmap(
         0,
         0,
         sub_pixmap.as_ref(),
         &tiny_skia::PixmapPaint::default(),
-        tiny_skia::Transform::identity(),
-        mask.as_ref(),
+        tiny_skia::Transform::default(),
+        None,
     );
 
     Some(())
@@ -80,7 +56,6 @@ fn render_vector(
 
 #[cfg(feature = "raster-images")]
 mod raster_images {
-    use crate::render::TinySkiaPixmapMutExt;
     use crate::OptionLog;
 
     fn decode_raster(image: &usvg::ImageKind) -> Option<tiny_skia::Pixmap> {
@@ -180,24 +155,14 @@ mod raster_images {
 
     pub(crate) fn render_raster(
         image: &usvg::ImageKind,
-        view_box: usvg::ViewBox,
         transform: tiny_skia::Transform,
         rendering_mode: usvg::ImageRendering,
         pixmap: &mut tiny_skia::PixmapMut,
     ) -> Option<()> {
         let raster = decode_raster(image)?;
 
-        let img_size = tiny_skia::IntSize::from_wh(raster.width(), raster.height())?;
-        let rect = image_rect(&view_box, img_size);
-
-        let ts = tiny_skia::Transform::from_row(
-            rect.width() / raster.width() as f32,
-            0.0,
-            0.0,
-            rect.height() / raster.height() as f32,
-            rect.x(),
-            rect.y(),
-        );
+        let rect = tiny_skia::Size::from_wh(raster.width() as f32, raster.height() as f32)?
+            .to_rect(0.0, 0.0)?;
 
         let mut quality = tiny_skia::FilterQuality::Bicubic;
         if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
@@ -209,36 +174,13 @@ mod raster_images {
             tiny_skia::SpreadMode::Pad,
             quality,
             1.0,
-            ts,
+            tiny_skia::Transform::default(),
         );
         let mut paint = tiny_skia::Paint::default();
         paint.shader = pattern;
 
-        let mask = if view_box.aspect.slice {
-            pixmap.create_rect_mask(transform, view_box.rect.to_rect())
-        } else {
-            None
-        };
-
-        pixmap.fill_rect(rect.to_rect(), &paint, transform, mask.as_ref());
+        pixmap.fill_rect(rect, &paint, transform, None);
 
         Some(())
-    }
-
-    /// Calculates an image rect depending on the provided view box.
-    fn image_rect(
-        view_box: &usvg::ViewBox,
-        img_size: tiny_skia::IntSize,
-    ) -> tiny_skia::NonZeroRect {
-        let new_size = crate::geom::fit_view_box(img_size.to_size(), view_box);
-        let (x, y) = usvg::utils::aligned_pos(
-            view_box.aspect.align,
-            view_box.rect.x(),
-            view_box.rect.y(),
-            view_box.rect.width() - new_size.width(),
-            view_box.rect.height() - new_size.height(),
-        );
-
-        new_size.to_non_zero_rect(x, y)
     }
 }

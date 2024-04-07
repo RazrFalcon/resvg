@@ -642,10 +642,8 @@ fn write_element(node: &Node, is_clip_path: bool, opt: &WriteOptions, xml: &mut 
                 xml.write_id_attribute(&img.id, opt);
             }
 
-            xml.write_rect_attrs(img.view_box.rect);
-            if !img.view_box.aspect.is_default() {
-                xml.write_aspect(img.view_box.aspect);
-            }
+            xml.write_svg_attribute(AId::Width, &img.size().width());
+            xml.write_svg_attribute(AId::Height, &img.size().height());
 
             xml.write_visibility(img.visibility);
 

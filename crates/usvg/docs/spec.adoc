@@ -336,11 +336,8 @@ A group will have at least one of the attributes present.
   An optional, but never empty, element ID.
 * `xlink:href` = <<iri-type,<IRI> >> +
   The IRI contains a base64 encoded image.
-* `x` = <<number-type,<number> >>
-* `y` = <<number-type,<number> >>
 * `width` = <<positive-number-type,<positive-number> >>
 * `height` = <<positive-number-type,<positive-number> >>
-* `preserveAspectRatio` = <<preserveAspectRatio-type,<preserveAspectRatio> >>?
 * `image-rendering` = `optimizeSpeed`? +
   Default: optimizeQuality
 * `visibility` = `hidden | collapse`? +

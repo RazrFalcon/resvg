@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- `image` element viewbox flattening.<br>
+  Instead of having `usvg::Image::view_box` that the caller should handle themselves,
+  we instead replace it with `transform` and optional `clip-path`.
+  This greatly simplifies `image` rendering.
+- `usvg::Image::size`
+
 ### Changed
 - Always represent `feImage` content as a link to an element.<br>
   In SVG, `feImage` can contain a link to an element or a base64 image data, just like `image`.
@@ -29,6 +36,7 @@ This changelog also contains important changes in dependencies.
 - `usvg::filter::Image::aspect`. No longer needed.
 - `usvg::filter::Image::rendering_mode`. No longer needed.
 - `usvg::filter::Image::data`. Use `usvg::filter::Image::root` instead.
+- `usvg::Image::view_box`
 
 ## [0.41.0] - 2024-04-03
 ### Added

@@ -16,6 +16,8 @@ pub use tiny_skia_path;
 pub use self::geom::*;
 pub use self::text::*;
 
+use crate::OptionLog;
+
 /// An alias to `NormalizedF32`.
 pub type Opacity = NormalizedF32;
 
@@ -1432,6 +1434,20 @@ pub enum ImageKind {
     SVG(Tree),
 }
 
+impl ImageKind {
+    pub(crate) fn actual_size(&self) -> Option<Size> {
+        match self {
+            ImageKind::JPEG(ref data) | ImageKind::PNG(ref data) | ImageKind::GIF(ref data) => {
+                imagesize::blob_size(data)
+                    .ok()
+                    .and_then(|size| Size::from_wh(size.width as f32, size.height as f32))
+                    .log_none(|| log::warn!("Image has an invalid size. Skipped."))
+            }
+            ImageKind::SVG(ref svg) => Some(svg.size),
+        }
+    }
+}
+
 impl std::fmt::Debug for ImageKind {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
@@ -1450,7 +1466,7 @@ impl std::fmt::Debug for ImageKind {
 pub struct Image {
     pub(crate) id: String,
     pub(crate) visibility: Visibility,
-    pub(crate) view_box: ViewBox,
+    pub(crate) size: Size,
     pub(crate) rendering_mode: ImageRendering,
     pub(crate) kind: ImageKind,
     pub(crate) abs_transform: Transform,
@@ -1472,12 +1488,12 @@ impl Image {
         self.visibility
     }
 
-    /// An image rectangle in which it should be fit.
+    /// The actual image size.
     ///
-    /// Combination of the `x`, `y`, `width`, `height` and `preserveAspectRatio`
-    /// attributes.
-    pub fn view_box(&self) -> ViewBox {
-        self.view_box
+    /// This is not `width` and `height` attributes,
+    /// but rather the actual PNG/JPEG/GIF/SVG image size.
+    pub fn size(&self) -> Size {
+        self.size
     }
 
     /// Rendering mode.
@@ -1506,7 +1522,7 @@ impl Image {
     ///
     /// `objectBoundingBox` in SVG terms. Meaning it doesn't affected by parent transforms.
     pub fn bounding_box(&self) -> Rect {
-        self.view_box.rect.to_rect()
+        self.size.to_rect(0.0, 0.0).unwrap()
     }
 
     /// Element's bounding box in canvas coordinates.

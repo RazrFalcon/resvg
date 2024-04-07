@@ -505,7 +505,7 @@ fn convert_element_impl(
             }
         }
         EId::Image => {
-            super::image::convert(node, state, parent);
+            super::image::convert(node, state, cache, parent);
         }
         EId::Text => {
             #[cfg(feature = "text")]

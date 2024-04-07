@@ -9,12 +9,12 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use strict_num::PositiveF32;
-use svgtypes::{Length, LengthUnit as Unit};
+use svgtypes::{AspectRatio, Length, LengthUnit as Unit};
 
 use crate::{
     filter::{self, *},
     ApproxZeroUlps, Color, Group, Node, NonEmptyString, NonZeroF32, NonZeroRect, Opacity, Size,
-    Transform, Units,
+    Units,
 };
 
 use super::converter::{self, SvgColorExt};
@@ -825,7 +825,6 @@ fn convert_image_inner(
     state: &converter::State,
     cache: &mut converter::Cache,
 ) -> Option<Kind> {
-    let aspect = fe.attribute(AId::PreserveAspectRatio).unwrap_or_default();
     let rendering_mode = fe
         .find_attribute(AId::ImageRendering)
         .unwrap_or(state.opt.image_rendering);
@@ -860,24 +859,22 @@ fn convert_image_inner(
         log::warn!("The 'feImage' element lacks the 'xlink:href' attribute. Skipped.")
     })?;
     let img_data = super::image::get_href_data(href, state)?;
+    let actual_size = img_data.actual_size()?;
 
-    let view_box = crate::ViewBox {
-        rect: filter_subregion.translate_to(0.0, 0.0)?,
-        aspect,
-    };
-
-    let image = crate::Image {
-        id: cache.gen_image_id().take(),
-        visibility: crate::Visibility::Visible,
-        view_box,
-        rendering_mode,
-        kind: img_data,
-        abs_transform: Transform::default(),
-        abs_bounding_box: view_box.rect,
-    };
+    let aspect: AspectRatio = fe.attribute(AId::PreserveAspectRatio).unwrap_or_default();
 
     let mut root = Group::empty();
-    root.children.push(Node::Image(Box::new(image)));
+    super::image::convert_inner(
+        img_data,
+        cache.gen_image_id().take(),
+        crate::Visibility::Visible,
+        rendering_mode,
+        aspect,
+        actual_size,
+        filter_subregion.translate_to(0.0, 0.0)?,
+        cache,
+        &mut root,
+    );
     root.calculate_bounding_boxes();
 
     Some(Kind::Image(Image { root }))

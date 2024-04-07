@@ -77,7 +77,7 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-trait OptionLog {
+pub(crate) trait OptionLog {
     fn log_none<F: FnOnce()>(self, f: F) -> Self;
 }
 
