@@ -1,4 +1,4 @@
-<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
     <defs>
         <mask id="mask1" maskUnits="userSpaceOnUse" x="-10" y="-10" width="120.00001" height="120.00001">
             <g transform="matrix(100 0 0 100 0 0)">

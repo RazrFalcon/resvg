@@ -1544,7 +1544,6 @@ impl Image {
 #[derive(Clone, Debug)]
 pub struct Tree {
     pub(crate) size: Size,
-    pub(crate) view_box: ViewBox,
     pub(crate) root: Group,
     pub(crate) linear_gradients: Vec<Arc<LinearGradient>>,
     pub(crate) radial_gradients: Vec<Arc<RadialGradient>>,
@@ -1562,15 +1561,6 @@ impl Tree {
     /// `width` and `height` in SVG.
     pub fn size(&self) -> Size {
         self.size
-    }
-
-    /// SVG viewbox.
-    ///
-    /// Specifies which part of the SVG image should be rendered.
-    ///
-    /// `viewBox` and `preserveAspectRatio` in SVG.
-    pub fn view_box(&self) -> ViewBox {
-        self.view_box
     }
 
     /// The root element of the SVG tree.

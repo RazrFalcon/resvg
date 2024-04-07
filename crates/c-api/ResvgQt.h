@@ -50,7 +50,6 @@ public:
 
     resvg_render_tree *tree = nullptr;
     QSizeF size;
-    QRectF viewBox;
     QString errMsg;
 
 private:
@@ -64,7 +63,6 @@ private:
         }
 
         size = QSizeF();
-        viewBox = QRectF();
         errMsg = QString();
     }
 };
@@ -338,9 +336,6 @@ public:
             return false;
         }
 
-        const auto r = resvg_get_image_viewbox(d->tree);
-        d->viewBox = QRectF(r.x, r.y, r.width, r.height);
-
         const auto s = resvg_get_image_size(d->tree);
         d->size = QSizeF(s.width, s.height);
 
@@ -359,9 +354,6 @@ public:
             d->errMsg = ResvgPrivate::errorToString(err);
             return false;
         }
-
-        const auto r = resvg_get_image_viewbox(d->tree);
-        d->viewBox = QRectF(r.x, r.y, r.width, r.height);
 
         const auto s = resvg_get_image_size(d->tree);
         d->size = QSizeF(s.width, s.height);
@@ -428,24 +420,23 @@ public:
     /**
      * @brief Returns an SVG viewbox.
      *
-     * The `viewBox` attribute in SVG.
+     * `resvg` flattens the `viewbox`, therefore this method returns
+     * the same value as \b size.
      */
     QRect viewBox() const
     {
-        return viewBoxF().toRect();
+        return QRect(0, 0, d->size.width(), d->size.height());
     }
 
     /**
      * @brief Returns an SVG viewbox.
      *
-     * The `viewBox` attribute in SVG.
+     * `resvg` flattens the `viewbox`, therefore this method returns
+     * the same value as \b size.
      */
     QRectF viewBoxF() const
     {
-        if (d->tree)
-            return d->viewBox;
-        else
-            return QRectF();
+        return QRectF(0, 0, d->size.width(), d->size.height());
     }
 
     /**

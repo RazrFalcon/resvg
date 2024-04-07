@@ -46,11 +46,8 @@ pub fn render(
     )
     .unwrap();
 
-    let ts = tree.view_box().to_transform(tree.size());
-    let root_transform = transform.pre_concat(ts);
-
     let ctx = render::Context { max_bbox };
-    render::render_nodes(tree.root(), &ctx, root_transform, pixmap);
+    render::render_nodes(tree.root(), &ctx, transform, pixmap);
 }
 
 /// Renders a node onto the pixmap.

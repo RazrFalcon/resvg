@@ -149,7 +149,6 @@ pub(crate) fn convert(tree: &Tree, opt: &WriteOptions) -> String {
     xml.start_svg_element(EId::Svg);
     xml.write_svg_attribute(AId::Width, &tree.size.width());
     xml.write_svg_attribute(AId::Height, &tree.size.height());
-    xml.write_viewbox(&tree.view_box);
     xml.write_attribute("xmlns", "http://www.w3.org/2000/svg");
     if has_xlink(&tree.root) {
         xml.write_attribute("xmlns:xlink", "http://www.w3.org/1999/xlink");

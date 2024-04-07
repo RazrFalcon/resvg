@@ -49,8 +49,6 @@ It's defined only once and can't be nested, unlike by the SVG spec.
   The width of the rectangular region into which the referenced document is placed.
 * `height` = <<positive-number-type,<positive-number> >> +
   The height of the rectangular region into which the referenced document is placed.
-* `viewBox` = <<viewBox-type,<viewBox> >>
-* `preserveAspectRatio` = <<preserveAspectRatio-type,<preserveAspectRatio> >>?
 
 [[defs-element]]
 

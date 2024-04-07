@@ -385,16 +385,6 @@ bool resvg_is_image_empty(const resvg_render_tree *tree);
 resvg_size resvg_get_image_size(const resvg_render_tree *tree);
 
 /**
- * @brief Returns an image viewbox.
- *
- * The `viewBox` attribute in SVG.
- *
- * @param tree Render tree.
- * @return Image viewbox.
- */
-resvg_rect resvg_get_image_viewbox(const resvg_render_tree *tree);
-
-/**
  * @brief Returns an image bounding box.
  *
  * Can be smaller or bigger than a `viewbox`.

@@ -279,7 +279,6 @@ pub(crate) fn convert_doc(
 
     let mut tree = Tree {
         size,
-        view_box,
         root: Group::empty(),
         linear_gradients: Vec::new(),
         radial_gradients: Vec::new(),
@@ -326,7 +325,16 @@ pub(crate) fn convert_doc(
         }
     }
 
-    convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
+    let root_ts = view_box.to_transform(tree.size());
+    if root_ts.is_identity() {
+        convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
+    } else {
+        let mut g = Group::empty();
+        g.transform = root_ts;
+        g.abs_transform = root_ts;
+        convert_children(svg_doc.root(), &state, &mut cache, &mut g);
+        tree.root.children.push(Node::Group(Box::new(g)));
+    }
 
     // Clear cache to make sure that all `Arc<T>` objects have a single strong reference.
     cache.clip_paths.clear();
@@ -430,11 +438,6 @@ fn resolve_svg_size(
 /// Simply iterates over all nodes and calculates a bounding box.
 fn calculate_svg_bbox(tree: &mut Tree) {
     let bbox = tree.root.abs_bounding_box();
-
-    if let Some(rect) = NonZeroRect::from_xywh(0.0, 0.0, bbox.right(), bbox.bottom()) {
-        tree.view_box.rect = rect;
-    }
-
     if let Some(size) = Size::from_wh(bbox.right(), bbox.bottom()) {
         tree.size = size;
     }

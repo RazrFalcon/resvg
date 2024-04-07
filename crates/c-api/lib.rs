@@ -626,29 +626,6 @@ pub extern "C" fn resvg_get_image_size(tree: *const resvg_render_tree) -> resvg_
     }
 }
 
-/// @brief Returns an image viewbox.
-///
-/// The `viewBox` attribute in SVG.
-///
-/// @param tree Render tree.
-/// @return Image viewbox.
-#[no_mangle]
-pub extern "C" fn resvg_get_image_viewbox(tree: *const resvg_render_tree) -> resvg_rect {
-    let tree = unsafe {
-        assert!(!tree.is_null());
-        &*tree
-    };
-
-    let r = tree.0.view_box().rect;
-
-    resvg_rect {
-        x: r.x(),
-        y: r.y(),
-        width: r.width(),
-        height: r.height(),
-    }
-}
-
 /// @brief Returns an image bounding box.
 ///
 /// Can be smaller or bigger than a `viewbox`.

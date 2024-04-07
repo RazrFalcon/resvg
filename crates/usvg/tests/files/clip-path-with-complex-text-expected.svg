@@ -1,4 +1,4 @@
-<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
     <defs>
         <clipPath id="my-clip">
             <path fill="#000000" stroke="none" d="M 40 124.8 L 162.88 124.8 L 162.88 128 L 40 128 Z"/>

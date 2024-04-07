@@ -13,6 +13,8 @@ This changelog also contains important changes in dependencies.
   we instead replace it with `transform` and optional `clip-path`.
   This greatly simplifies `image` rendering.
 - `usvg::Image::size`
+- Tree viewbox flattening.<br>
+  Similar to `image` above, but affects the root `svg` element instead.
 
 ### Changed
 - Always represent `feImage` content as a link to an element.<br>
@@ -36,7 +38,9 @@ This changelog also contains important changes in dependencies.
 - `usvg::filter::Image::aspect`. No longer needed.
 - `usvg::filter::Image::rendering_mode`. No longer needed.
 - `usvg::filter::Image::data`. Use `usvg::filter::Image::root` instead.
-- `usvg::Image::view_box`
+- `usvg::Tree::view_box`. No longer needed.
+- `usvg::Image::view_box`. No longer needed.
+- (c-api) `resvg_get_image_viewbox`. Use `resvg_get_image_size` instead.
 
 ## [0.41.0] - 2024-04-03
 ### Added

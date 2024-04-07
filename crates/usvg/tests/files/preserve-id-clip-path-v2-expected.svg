@@ -1,4 +1,4 @@
-<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
     <defs>
         <clipPath id="my-clip">
             <path id="path1" fill="#000000" clip-rule="evenodd" stroke="none" clip-path="url(#my-clip-nested)" d="M 100 15 L 150 175 L 20 75 L 180 75 L 50 175 Z"/>
