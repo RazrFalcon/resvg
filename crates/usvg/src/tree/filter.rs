@@ -5,11 +5,8 @@
 //! SVG filter types.
 
 use strict_num::PositiveF32;
-use svgtypes::AspectRatio;
 
-use crate::{
-    BlendMode, Color, Group, ImageRendering, NonEmptyString, NonZeroF32, NonZeroRect, Opacity,
-};
+use crate::{BlendMode, Color, Group, NonEmptyString, NonZeroF32, NonZeroRect, Opacity};
 
 /// A filter element.
 ///
@@ -679,38 +676,14 @@ impl GaussianBlur {
 /// `feImage` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Image {
-    pub(crate) aspect: AspectRatio,
-    pub(crate) rendering_mode: ImageRendering,
-    pub(crate) data: ImageKind,
+    pub(crate) root: Group,
 }
 
 impl Image {
-    /// Value of the `preserveAspectRatio` attribute.
-    pub fn aspect(&self) -> AspectRatio {
-        self.aspect
+    /// `feImage` children.
+    pub fn root(&self) -> &Group {
+        &self.root
     }
-
-    /// Rendering method.
-    ///
-    /// `image-rendering` in SVG.
-    pub fn rendering_mode(&self) -> ImageRendering {
-        self.rendering_mode
-    }
-
-    /// Image data.
-    pub fn data(&self) -> &ImageKind {
-        &self.data
-    }
-}
-
-/// Kind of the `feImage` data.
-#[derive(Clone, Debug)]
-pub enum ImageKind {
-    /// An image data.
-    Image(crate::ImageKind),
-
-    /// An SVG node.
-    Use(Box<Group>),
 }
 
 /// A diffuse lighting filter primitive.

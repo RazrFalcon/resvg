@@ -49,6 +49,7 @@ pub struct Cache {
     clip_path_index: usize,
     mask_index: usize,
     filter_index: usize,
+    image_index: usize,
 }
 
 impl Cache {
@@ -112,6 +113,17 @@ impl Cache {
         loop {
             self.filter_index += 1;
             let new_id = format!("filter{}", self.filter_index);
+            let new_hash = string_hash(&new_id);
+            if !self.all_ids.contains(&new_hash) {
+                return NonEmptyString::new(new_id).unwrap();
+            }
+        }
+    }
+
+    pub(crate) fn gen_image_id(&mut self) -> NonEmptyString {
+        loop {
+            self.image_index += 1;
+            let new_id = format!("image{}", self.image_index);
             let new_hash = string_hash(&new_id);
             if !self.all_ids.contains(&new_hash) {
                 return NonEmptyString::new(new_id).unwrap();
@@ -305,6 +317,7 @@ pub(crate) fn convert_doc(
                     | EId::Mask
                     | EId::Pattern
                     | EId::RadialGradient
+                    | EId::Image
             ) {
                 if !node.element_id().is_empty() {
                     cache.all_ids.insert(string_hash(node.element_id()));

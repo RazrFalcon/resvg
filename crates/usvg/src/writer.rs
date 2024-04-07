@@ -169,12 +169,10 @@ fn write_filters(tree: &Tree, opt: &WriteOptions, xml: &mut XmlWriter) {
     for filter in tree.filters() {
         for fe in &filter.primitives {
             if let filter::Kind::Image(ref img) = fe.kind {
-                if let filter::ImageKind::Use(ref node) = img.data {
-                    if let Some(child) = node.children.first() {
-                        if !written_fe_image_nodes.iter().any(|id| id == child.id()) {
-                            write_element(child, false, opt, xml);
-                            written_fe_image_nodes.push(child.id().to_string());
-                        }
+                if let Some(child) = img.root().children.first() {
+                    if !written_fe_image_nodes.iter().any(|id| id == child.id()) {
+                        write_element(child, false, opt, xml);
+                        written_fe_image_nodes.push(child.id().to_string());
                     }
                 }
             }
@@ -314,27 +312,12 @@ fn write_filters(tree: &Tree, opt: &WriteOptions, xml: &mut XmlWriter) {
                 filter::Kind::Image(ref img) => {
                     xml.start_svg_element(EId::FeImage);
                     xml.write_filter_primitive_attrs(filter.rect(), fe);
-                    xml.write_aspect(img.aspect);
-                    xml.write_svg_attribute(
-                        AId::ImageRendering,
-                        match img.rendering_mode {
-                            ImageRendering::OptimizeQuality => "optimizeQuality",
-                            ImageRendering::OptimizeSpeed => "optimizeSpeed",
-                        },
-                    );
-                    match img.data {
-                        filter::ImageKind::Image(ref kind) => {
-                            xml.write_image_data(kind);
-                        }
-                        filter::ImageKind::Use(ref node) => {
-                            if let Some(child) = node.children.first() {
-                                let prefix = opt.id_prefix.as_deref().unwrap_or_default();
-                                xml.write_attribute_fmt(
-                                    "xlink:href",
-                                    format_args!("#{}{}", prefix, child.id()),
-                                );
-                            }
-                        }
+                    if let Some(child) = img.root.children.first() {
+                        let prefix = opt.id_prefix.as_deref().unwrap_or_default();
+                        xml.write_attribute_fmt(
+                            "xlink:href",
+                            format_args!("#{}{}", prefix, child.id()),
+                        );
                     }
 
                     xml.write_svg_attribute(AId::Result, &fe.result);

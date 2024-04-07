@@ -1367,9 +1367,13 @@ fn shape_text_with_font(
 
                 let start = info.cluster as usize;
 
-                let end = if ltr { i.checked_add(1) } else { i.checked_sub(1) }
-                    .and_then(|last| infos.get(last))
-                    .map_or(sub_text.len(), |info| info.cluster as usize);
+                let end = if ltr {
+                    i.checked_add(1)
+                } else {
+                    i.checked_sub(1)
+                }
+                .and_then(|last| infos.get(last))
+                .map_or(sub_text.len(), |info| info.cluster as usize);
 
                 glyphs.push(Glyph {
                     byte_idx: ByteIndex::new(idx),

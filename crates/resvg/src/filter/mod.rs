@@ -860,50 +860,21 @@ fn apply_image(
 ) -> Result<Image, Error> {
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
 
-    match fe.data() {
-        usvg::filter::ImageKind::Image(ref kind) => {
-            let dx = (subregion.x() - region.x()) as f32;
-            let dy = (subregion.y() - region.y()) as f32;
-            let transform = tiny_skia::Transform::from_translate(dx, dy);
+    let (sx, sy) = ts.get_scale();
+    let transform = tiny_skia::Transform::from_row(
+        sx,
+        0.0,
+        0.0,
+        sy,
+        subregion.x() as f32,
+        subregion.y() as f32,
+    );
 
-            let view_box = usvg::ViewBox {
-                rect: subregion
-                    .translate_to(0, 0)
-                    .unwrap()
-                    .to_rect()
-                    .to_non_zero_rect()
-                    .unwrap(),
-                aspect: fe.aspect(),
-            };
+    let ctx = crate::render::Context {
+        max_bbox: tiny_skia::IntRect::from_xywh(0, 0, region.width(), region.height()).unwrap(),
+    };
 
-            crate::image::render_inner(
-                kind,
-                view_box,
-                transform,
-                fe.rendering_mode(),
-                &mut pixmap.as_mut(),
-            );
-        }
-        usvg::filter::ImageKind::Use(ref node) => {
-            let (sx, sy) = ts.get_scale();
-
-            let transform = tiny_skia::Transform::from_row(
-                sx,
-                0.0,
-                0.0,
-                sy,
-                subregion.x() as f32,
-                subregion.y() as f32,
-            );
-
-            let ctx = crate::render::Context {
-                max_bbox: tiny_skia::IntRect::from_xywh(0, 0, region.width(), region.height())
-                    .unwrap(),
-            };
-
-            crate::render::render_nodes(node, &ctx, transform, &mut pixmap.as_mut());
-        }
-    }
+    crate::render::render_nodes(fe.root(), &ctx, transform, &mut pixmap.as_mut());
 
     Ok(Image::from_image(
         pixmap,

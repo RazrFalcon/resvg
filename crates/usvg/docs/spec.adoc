@@ -540,11 +540,9 @@ Only one of:
 
 *Attributes:*
 
-* `preserveAspectRatio` = <<preserveAspectRatio-type,<preserveAspectRatio> >>
-* `image-rendering` = `optimizeSpeed`? +
-  Default: optimizeQuality
 * `xlink:href` = <<iri-type,<IRI> >> +
-  The IRI contains a base64 encoded image or a link to an element (like `use`).
+  The IRI contains a link to an element (like `use`).
+  base64 encoded is not allowed and will be represented as a link to an `image`.
 * <<Filter primitive attributes>>
 
 === Filter primitive `feMerge`

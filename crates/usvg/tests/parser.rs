@@ -113,7 +113,10 @@ fn path_transform() {
 
     let group_node = &tree.root().children()[0];
     assert!(matches!(group_node, usvg::Node::Group(_)));
-    assert_eq!(group_node.abs_transform(), usvg::Transform::from_translate(10.0, 0.0));
+    assert_eq!(
+        group_node.abs_transform(),
+        usvg::Transform::from_translate(10.0, 0.0)
+    );
 
     let group = match group_node {
         usvg::Node::Group(ref g) => g,
@@ -122,7 +125,10 @@ fn path_transform() {
 
     let path = &group.children()[0];
     assert!(matches!(path, usvg::Node::Path(_)));
-    assert_eq!(path.abs_transform(), usvg::Transform::from_translate(10.0, 0.0));
+    assert_eq!(
+        path.abs_transform(),
+        usvg::Transform::from_translate(10.0, 0.0)
+    );
 }
 
 #[test]
@@ -141,7 +147,10 @@ fn path_transform_nested() {
 
     let group_node1 = &tree.root().children()[0];
     assert!(matches!(group_node1, usvg::Node::Group(_)));
-    assert_eq!(group_node1.abs_transform(), usvg::Transform::from_translate(20.0, 0.0));
+    assert_eq!(
+        group_node1.abs_transform(),
+        usvg::Transform::from_translate(20.0, 0.0)
+    );
 
     let group1 = match group_node1 {
         usvg::Node::Group(ref g) => g,
@@ -150,7 +159,10 @@ fn path_transform_nested() {
 
     let group_node2 = &group1.children()[0];
     assert!(matches!(group_node2, usvg::Node::Group(_)));
-    assert_eq!(group_node2.abs_transform(), usvg::Transform::from_translate(30.0, 0.0));
+    assert_eq!(
+        group_node2.abs_transform(),
+        usvg::Transform::from_translate(30.0, 0.0)
+    );
 
     let group2 = match group_node2 {
         usvg::Node::Group(ref g) => g,
@@ -159,7 +171,10 @@ fn path_transform_nested() {
 
     let path = &group2.children()[0];
     assert!(matches!(path, usvg::Node::Path(_)));
-    assert_eq!(path.abs_transform(), usvg::Transform::from_translate(30.0, 0.0));
+    assert_eq!(
+        path.abs_transform(),
+        usvg::Transform::from_translate(30.0, 0.0)
+    );
 }
 
 #[test]
@@ -199,7 +214,10 @@ fn path_transform_in_symbol_no_clip() {
 
     let group_node2 = &group1.children()[0];
     assert!(matches!(group_node2, usvg::Node::Group(_)));
-    assert_eq!(group_node2.abs_transform(), usvg::Transform::from_translate(20.0, 0.0));
+    assert_eq!(
+        group_node2.abs_transform(),
+        usvg::Transform::from_translate(20.0, 0.0)
+    );
 
     let group2 = match group_node2 {
         usvg::Node::Group(ref g) => g,
@@ -208,7 +226,10 @@ fn path_transform_in_symbol_no_clip() {
 
     let path = &group2.children()[0];
     assert!(matches!(path, usvg::Node::Path(_)));
-    assert_eq!(path.abs_transform(), usvg::Transform::from_translate(20.0, 0.0));
+    assert_eq!(
+        path.abs_transform(),
+        usvg::Transform::from_translate(20.0, 0.0)
+    );
 }
 
 #[test]
@@ -264,7 +285,10 @@ fn path_transform_in_symbol_with_clip() {
 
     let group_node3 = &group2.children()[0];
     assert!(matches!(group_node3, usvg::Node::Group(_)));
-    assert_eq!(group_node3.abs_transform(), usvg::Transform::from_translate(20.0, 0.0));
+    assert_eq!(
+        group_node3.abs_transform(),
+        usvg::Transform::from_translate(20.0, 0.0)
+    );
 
     let group3 = match group_node3 {
         usvg::Node::Group(ref g) => g,
@@ -273,7 +297,10 @@ fn path_transform_in_symbol_with_clip() {
 
     let path = &group3.children()[0];
     assert!(matches!(path, usvg::Node::Path(_)));
-    assert_eq!(path.abs_transform(), usvg::Transform::from_translate(20.0, 0.0));
+    assert_eq!(
+        path.abs_transform(),
+        usvg::Transform::from_translate(20.0, 0.0)
+    );
 }
 
 #[test]
@@ -308,7 +335,10 @@ fn path_transform_in_svg() {
     let group_node1 = &tree.root().children()[0];
     assert!(matches!(group_node1, usvg::Node::Group(_)));
     assert_eq!(group_node1.id(), "g1");
-    assert_eq!(group_node1.abs_transform(), usvg::Transform::from_translate(100.0, 150.0));
+    assert_eq!(
+        group_node1.abs_transform(),
+        usvg::Transform::from_translate(100.0, 150.0)
+    );
 
     let group1 = match group_node1 {
         usvg::Node::Group(ref g) => g,
@@ -318,7 +348,10 @@ fn path_transform_in_svg() {
     let group_node2 = &group1.children()[0];
     assert!(matches!(group_node2, usvg::Node::Group(_)));
     assert_eq!(group_node2.id(), "svg1");
-    assert_eq!(group_node2.abs_transform(), usvg::Transform::from_translate(100.0, 150.0));
+    assert_eq!(
+        group_node2.abs_transform(),
+        usvg::Transform::from_translate(100.0, 150.0)
+    );
 
     let group2 = match group_node2 {
         usvg::Node::Group(ref g) => g,
@@ -327,5 +360,8 @@ fn path_transform_in_svg() {
 
     let path = &group2.children()[0];
     assert!(matches!(path, usvg::Node::Path(_)));
-    assert_eq!(path.abs_transform(), usvg::Transform::from_translate(100.0, 150.0));
+    assert_eq!(
+        path.abs_transform(),
+        usvg::Transform::from_translate(100.0, 150.0)
+    );
 }

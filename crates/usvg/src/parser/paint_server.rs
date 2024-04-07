@@ -597,15 +597,13 @@ fn node_to_user_coordinates(
                 if let Some(ref mut filter) = Arc::get_mut(filter) {
                     for primitive in &mut filter.primitives {
                         if let filter::Kind::Image(ref mut image) = primitive.kind {
-                            if let filter::ImageKind::Use(ref mut use_node) = image.data {
-                                update_paint_servers(
-                                    use_node,
-                                    context_transform,
-                                    context_bbox,
-                                    None,
-                                    cache,
-                                );
-                            }
+                            update_paint_servers(
+                                &mut image.root,
+                                context_transform,
+                                context_bbox,
+                                None,
+                                cache,
+                            );
                         }
                     }
                 }

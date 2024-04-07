@@ -14,7 +14,7 @@ use svgtypes::{Length, LengthUnit as Unit};
 use crate::{
     filter::{self, *},
     ApproxZeroUlps, Color, Group, Node, NonEmptyString, NonZeroF32, NonZeroRect, Opacity, Size,
-    Units,
+    Transform, Units,
 };
 
 use super::converter::{self, SvgColorExt};
@@ -322,6 +322,18 @@ fn collect_children(
             None => continue,
         };
 
+        let filter_subregion = match resolve_primitive_region(
+            child,
+            tag_name,
+            units,
+            state,
+            object_bbox,
+            filter_region,
+        ) {
+            Some(v) => v,
+            None => break,
+        };
+
         let kind =
             match tag_name {
                 EId::FeDropShadow => convert_drop_shadow(child, scale, &primitives),
@@ -332,7 +344,7 @@ fn collect_children(
                 EId::FeComposite => convert_composite(child, &primitives),
                 EId::FeMerge => convert_merge(child, &primitives),
                 EId::FeTile => convert_tile(child, &primitives),
-                EId::FeImage => convert_image(child, state, cache),
+                EId::FeImage => convert_image(child, filter_subregion, state, cache),
                 EId::FeComponentTransfer => convert_component_transfer(child, &primitives),
                 EId::FeColorMatrix => convert_color_matrix(child, &primitives),
                 EId::FeConvolveMatrix => convert_convolve_matrix(child, &primitives)
@@ -350,17 +362,16 @@ fn collect_children(
                 }
             };
 
-        if let Some(fe) = convert_primitive(
-            child,
+        let color_interpolation = child
+            .find_attribute(AId::ColorInterpolationFilters)
+            .unwrap_or_default();
+
+        primitives.push(Primitive {
+            rect: filter_subregion,
+            color_interpolation,
+            result: gen_result(child, &mut results),
             kind,
-            units,
-            state,
-            object_bbox,
-            filter_region,
-            &mut results,
-        ) {
-            primitives.push(fe);
-        }
+        });
     }
 
     // TODO: remove primitives which results are not used
@@ -368,33 +379,10 @@ fn collect_children(
     primitives
 }
 
-fn convert_primitive(
-    fe: SvgNode,
-    kind: Kind,
-    units: Units,
-    state: &converter::State,
-    bbox: Option<NonZeroRect>,
-    filter_region: NonZeroRect,
-    results: &mut FilterResults,
-) -> Option<Primitive> {
-    let rect = resolve_primitive_region(fe, &kind, units, state, bbox, filter_region)?;
-
-    let color_interpolation = fe
-        .find_attribute(AId::ColorInterpolationFilters)
-        .unwrap_or_default();
-
-    Some(Primitive {
-        rect,
-        color_interpolation,
-        result: gen_result(fe, results),
-        kind,
-    })
-}
-
 // TODO: rewrite/simplify/explain/whatever
 fn resolve_primitive_region(
     fe: SvgNode,
-    kind: &Kind,
+    kind: EId,
     units: Units,
     state: &converter::State,
     bbox: Option<NonZeroRect>,
@@ -406,7 +394,7 @@ fn resolve_primitive_region(
     let height = fe.try_convert_length(AId::Height, units, state);
 
     let region = match kind {
-        Kind::Flood(..) | Kind::Image(..) => {
+        EId::FeFlood | EId::FeImage => {
             // `feImage` uses the object bbox.
             if units == Units::ObjectBoundingBox {
                 let bbox = bbox?;
@@ -819,7 +807,24 @@ fn convert_std_dev_attr(fe: SvgNode, scale: Size, default: &str) -> (PositiveF32
     (std_dev_x, std_dev_y)
 }
 
-fn convert_image(fe: SvgNode, state: &converter::State, cache: &mut converter::Cache) -> Kind {
+fn convert_image(
+    fe: SvgNode,
+    filter_subregion: NonZeroRect,
+    state: &converter::State,
+    cache: &mut converter::Cache,
+) -> Kind {
+    match convert_image_inner(fe, filter_subregion, state, cache) {
+        Some(kind) => kind,
+        None => create_dummy_primitive(),
+    }
+}
+
+fn convert_image_inner(
+    fe: SvgNode,
+    filter_subregion: NonZeroRect,
+    state: &converter::State,
+    cache: &mut converter::Cache,
+) -> Option<Kind> {
     let aspect = fe.attribute(AId::PreserveAspectRatio).unwrap_or_default();
     let rendering_mode = fe
         .find_attribute(AId::ImageRendering)
@@ -845,35 +850,37 @@ fn convert_image(fe: SvgNode, state: &converter::State, cache: &mut converter::C
                 }
             }
 
-            Kind::Image(Image {
-                aspect,
-                rendering_mode,
-                data: ImageKind::Use(Box::new(root)),
-            })
+            Some(Kind::Image(Image { root }))
         } else {
-            create_dummy_primitive()
+            None
         };
     }
 
-    let href = match fe.try_attribute(AId::Href) {
-        Some(s) => s,
-        _ => {
-            log::warn!("The 'feImage' element lacks the 'xlink:href' attribute. Skipped.");
-            return create_dummy_primitive();
-        }
-    };
+    let href = fe.try_attribute(AId::Href).log_none(|| {
+        log::warn!("The 'feImage' element lacks the 'xlink:href' attribute. Skipped.")
+    })?;
+    let img_data = super::image::get_href_data(href, state)?;
 
-    let href = super::image::get_href_data(href, state);
-    let img_data = match href {
-        Some(data) => data,
-        None => return create_dummy_primitive(),
-    };
-
-    Kind::Image(Image {
+    let view_box = crate::ViewBox {
+        rect: filter_subregion.translate_to(0.0, 0.0)?,
         aspect,
+    };
+
+    let image = crate::Image {
+        id: cache.gen_image_id().take(),
+        visibility: crate::Visibility::Visible,
+        view_box,
         rendering_mode,
-        data: ImageKind::Image(img_data),
-    })
+        kind: img_data,
+        abs_transform: Transform::default(),
+        abs_bounding_box: view_box.rect,
+    };
+
+    let mut root = Group::empty();
+    root.children.push(Node::Image(Box::new(image)));
+    root.calculate_bounding_boxes();
+
+    Some(Kind::Image(Image { root }))
 }
 
 fn convert_diffuse_lighting(fe: SvgNode, primitives: &[Primitive]) -> Option<Kind> {

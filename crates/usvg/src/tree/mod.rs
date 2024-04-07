@@ -35,6 +35,10 @@ impl NonEmptyString {
     pub(crate) fn get(&self) -> &str {
         &self.0
     }
+
+    pub(crate) fn take(self) -> String {
+        self.0
+    }
 }
 
 /// A non-zero `f32`.
@@ -1201,9 +1205,7 @@ impl Group {
         for filter in &self.filters {
             for primitive in &filter.primitives {
                 if let filter::Kind::Image(ref image) = primitive.kind {
-                    if let filter::ImageKind::Use(ref use_node) = image.data {
-                        f(use_node);
-                    }
+                    f(image.root());
                 }
             }
         }

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Changed
+- Always represent `feImage` content as a link to an element.<br>
+  In SVG, `feImage` can contain a link to an element or a base64 image data, just like `image`.
+  From now, the inlined base64 data will always be represented by a link to an actual `image` element.
+  ```xml
+  <filter>
+    <feImage xlink:href="data:image/png;base64,..."/>
+  </filter>
+  ```
+  will be parsed as
+  ```xml
+  <image id="image1" xlink:href="data:image/png;base64,..."/>
+  <filter>
+    <feImage xlink:href="#image1"/>
+  </filter>
+  ```
+  This simplifies `feImage` rendering, since we don't have to handle both cases now.
+
+### Removed
+- `usvg::filter::Image::aspect`. No longer needed.
+- `usvg::filter::Image::rendering_mode`. No longer needed.
+- `usvg::filter::Image::data`. Use `usvg::filter::Image::root` instead.
 
 ## [0.41.0] - 2024-04-03
 ### Added
