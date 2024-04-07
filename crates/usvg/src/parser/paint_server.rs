@@ -192,10 +192,28 @@ fn convert_pattern(
         root: Group::empty(),
     };
 
-    converter::convert_children(node_with_children, state, cache, &mut patt.root);
+    // We can apply viewbox transform only for user space coordinates.
+    // Otherwise we need a bounding box, which is unknown at this point.
+    if patt.view_box.is_some()
+        && patt.units == Units::UserSpaceOnUse
+        && patt.content_units == Units::UserSpaceOnUse
+    {
+        let mut g = Group::empty();
+        g.transform = view_box.unwrap().to_transform(rect.size());
+        g.abs_transform = g.transform;
 
-    if !patt.root.has_children() {
-        return None;
+        converter::convert_children(node_with_children, state, cache, &mut g);
+        if !g.has_children() {
+            return None;
+        }
+
+        g.calculate_bounding_boxes();
+        patt.root.children.push(Node::Group(Box::new(g)));
+    } else {
+        converter::convert_children(node_with_children, state, cache, &mut patt.root);
+        if !patt.root.has_children() {
+            return None;
+        }
     }
 
     patt.root.calculate_bounding_boxes();
@@ -993,37 +1011,34 @@ impl Paint {
                     patt.rect = rect;
                     patt.units = Units::UserSpaceOnUse;
 
-                    if patt.content_units == Units::ObjectBoundingBox && patt.view_box().is_none() {
+                    if patt.content_units == Units::ObjectBoundingBox && patt.view_box.is_none() {
                         // No need to shift patterns.
                         let transform = Transform::from_scale(bbox.width(), bbox.height());
+                        push_pattern_transform(&mut patt.root, transform);
+                    }
 
-                        let mut g = std::mem::replace(&mut patt.root, Group::empty());
-                        g.transform = transform;
-                        g.abs_transform = transform;
-
-                        patt.root.children.push(Node::Group(Box::new(g)));
-                        patt.root.calculate_bounding_boxes();
+                    if let Some(view_box) = patt.view_box {
+                        push_pattern_transform(&mut patt.root, view_box.to_transform(rect.size()));
                     }
 
                     patt.content_units = Units::UserSpaceOnUse;
                 } else {
-                    let root = if patt.content_units == Units::ObjectBoundingBox
-                        && patt.view_box().is_none()
+                    let mut root = if patt.content_units == Units::ObjectBoundingBox
+                        && patt.view_box.is_none()
                     {
                         // No need to shift patterns.
                         let transform = Transform::from_scale(bbox.width(), bbox.height());
 
                         let mut g = patt.root.clone();
-                        g.transform = transform;
-                        g.abs_transform = transform;
-
-                        let mut root = Group::empty();
-                        root.children.push(Node::Group(Box::new(g)));
-                        root.calculate_bounding_boxes();
-                        root
+                        push_pattern_transform(&mut g, transform);
+                        g
                     } else {
                         patt.root.clone()
                     };
+
+                    if let Some(view_box) = patt.view_box {
+                        push_pattern_transform(&mut root, view_box.to_transform(rect.size()));
+                    }
 
                     *patt = Arc::new(Pattern {
                         id: cache.gen_pattern_id(),
@@ -1040,6 +1055,16 @@ impl Paint {
 
         Some(())
     }
+}
+
+fn push_pattern_transform(root: &mut Group, transform: Transform) {
+    // TODO: we should update abs_transform in all descendants as well
+    let mut g = std::mem::replace(root, Group::empty());
+    g.transform = transform;
+    g.abs_transform = transform;
+
+    root.children.push(Node::Group(Box::new(g)));
+    root.calculate_bounding_boxes();
 }
 
 impl Paint {

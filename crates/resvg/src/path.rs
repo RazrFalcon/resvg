@@ -193,12 +193,7 @@ fn render_pattern_pixmap(
     )?;
     let mut pixmap = tiny_skia::Pixmap::new(img_size.width(), img_size.height())?;
 
-    let mut transform = tiny_skia::Transform::from_scale(sx, sy);
-    if let Some(vbox) = pattern.view_box() {
-        let ts = vbox.to_transform(rect.size());
-        transform = transform.pre_concat(ts);
-    }
-
+    let transform = tiny_skia::Transform::from_scale(sx, sy);
     crate::render::render_nodes(pattern.root(), ctx, transform, &mut pixmap.as_mut());
 
     let mut ts = tiny_skia::Transform::default();

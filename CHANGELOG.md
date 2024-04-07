@@ -15,6 +15,8 @@ This changelog also contains important changes in dependencies.
 - `usvg::Image::size`
 - Tree viewbox flattening.<br>
   Similar to `image` above, but affects the root `svg` element instead.
+- `pattern` viewbox flattening.<br>
+  Similar to `image` above, but for patterns.
 
 ### Changed
 - Always represent `feImage` content as a link to an element.<br>
@@ -35,11 +37,14 @@ This changelog also contains important changes in dependencies.
   This simplifies `feImage` rendering, since we don't have to handle both cases now.
 
 ### Removed
+- `usvg::ViewBox`, `usvg::AspectRatio`, `usvg::Align` types. Nol longer used.
 - `usvg::filter::Image::aspect`. No longer needed.
 - `usvg::filter::Image::rendering_mode`. No longer needed.
 - `usvg::filter::Image::data`. Use `usvg::filter::Image::root` instead.
 - `usvg::Tree::view_box`. No longer needed.
 - `usvg::Image::view_box`. No longer needed.
+- `usvg::Image::pattern`. No longer needed.
+- `usvg::utils::align_pos`. No longer needed.
 - (c-api) `resvg_get_image_viewbox`. Use `resvg_get_image_size` instead.
 
 ## [0.41.0] - 2024-04-03

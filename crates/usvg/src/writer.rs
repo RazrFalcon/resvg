@@ -544,10 +544,6 @@ fn write_defs(tree: &Tree, opt: &WriteOptions, xml: &mut XmlWriter) {
         );
         xml.write_transform(AId::PatternTransform, pattern.transform, opt);
 
-        if let Some(ref vbox) = pattern.view_box {
-            xml.write_viewbox(vbox);
-        }
-
         write_elements(&pattern.root, false, opt, xml);
 
         xml.end_element();
@@ -885,8 +881,6 @@ trait XmlWriterExt {
     fn write_svg_attribute<V: Display + ?Sized>(&mut self, id: AId, value: &V);
     fn write_id_attribute(&mut self, id: &str, opt: &WriteOptions);
     fn write_color(&mut self, id: AId, color: Color);
-    fn write_viewbox(&mut self, view_box: &ViewBox);
-    fn write_aspect(&mut self, aspect: AspectRatio);
     fn write_units(&mut self, id: AId, units: Units, def: Units);
     fn write_transform(&mut self, id: AId, units: Transform, opt: &WriteOptions);
     fn write_visibility(&mut self, value: Visibility);
@@ -937,49 +931,6 @@ impl XmlWriterExt for XmlWriter {
 
         self.write_attribute_raw(id.to_str(), |buf| {
             buf.extend_from_slice(&[b'#', r1, r2, g1, g2, b1, b2])
-        });
-    }
-
-    fn write_viewbox(&mut self, view_box: &ViewBox) {
-        let r = view_box.rect;
-        self.write_attribute_fmt(
-            AId::ViewBox.to_str(),
-            format_args!("{} {} {} {}", r.x(), r.y(), r.width(), r.height()),
-        );
-
-        if !view_box.aspect.is_default() {
-            self.write_aspect(view_box.aspect);
-        }
-    }
-
-    fn write_aspect(&mut self, aspect: AspectRatio) {
-        let mut value = Vec::new();
-
-        if aspect.defer {
-            value.extend_from_slice(b"defer ");
-        }
-
-        let align = match aspect.align {
-            Align::None => "none",
-            Align::XMinYMin => "xMinYMin",
-            Align::XMidYMin => "xMidYMin",
-            Align::XMaxYMin => "xMaxYMin",
-            Align::XMinYMid => "xMinYMid",
-            Align::XMidYMid => "xMidYMid",
-            Align::XMaxYMid => "xMaxYMid",
-            Align::XMinYMax => "xMinYMax",
-            Align::XMidYMax => "xMidYMax",
-            Align::XMaxYMax => "xMaxYMax",
-        };
-
-        value.extend_from_slice(align.as_bytes());
-
-        if aspect.slice {
-            value.extend_from_slice(b" slice");
-        }
-
-        self.write_attribute_raw(AId::PreserveAspectRatio.to_str(), |buf| {
-            buf.extend_from_slice(&value)
         });
     }
 

@@ -71,10 +71,7 @@ fn size_detection_4() {
     let fontdb = usvg::fontdb::Database::new();
     let tree = usvg::Tree::from_str(&svg, &usvg::Options::default(), &fontdb).unwrap();
     assert_eq!(tree.size(), usvg::Size::from_wh(36.0, 36.0).unwrap());
-    assert_eq!(
-        tree.size(),
-        usvg::Size::from_wh(36.0, 36.0).unwrap()
-    );
+    assert_eq!(tree.size(), usvg::Size::from_wh(36.0, 36.0).unwrap());
 }
 
 #[test]

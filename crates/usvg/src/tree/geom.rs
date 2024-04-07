@@ -3,9 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use strict_num::ApproxEqUlps;
+use svgtypes::{Align, AspectRatio};
 pub use tiny_skia_path::{NonZeroRect, Rect, Size, Transform};
-
-use crate::{Align, AspectRatio};
 
 /// Approximate zero equality comparisons.
 pub trait ApproxZeroUlps: ApproxEqUlps {
@@ -47,7 +46,7 @@ impl IsValidLength for f64 {
 
 /// View box.
 #[derive(Clone, Copy, Debug)]
-pub struct ViewBox {
+pub(crate) struct ViewBox {
     /// Value of the `viewBox` attribute.
     pub rect: NonZeroRect,
 
@@ -88,7 +87,7 @@ impl ViewBox {
         let w = img_size.width() - vr.width() * sx;
         let h = img_size.height() - vr.height() * sy;
 
-        let (tx, ty) = utils::aligned_pos(self.aspect.align, x, y, w, h);
+        let (tx, ty) = aligned_pos(self.aspect.align, x, y, w, h);
         Transform::from_row(sx, 0.0, 0.0, sy, tx, ty)
     }
 }
@@ -178,23 +177,18 @@ impl BBox {
     }
 }
 
-/// Some useful utilities.
-pub mod utils {
-    use crate::Align;
-
-    /// Returns object aligned position.
-    pub fn aligned_pos(align: Align, x: f32, y: f32, w: f32, h: f32) -> (f32, f32) {
-        match align {
-            Align::None => (x, y),
-            Align::XMinYMin => (x, y),
-            Align::XMidYMin => (x + w / 2.0, y),
-            Align::XMaxYMin => (x + w, y),
-            Align::XMinYMid => (x, y + h / 2.0),
-            Align::XMidYMid => (x + w / 2.0, y + h / 2.0),
-            Align::XMaxYMid => (x + w, y + h / 2.0),
-            Align::XMinYMax => (x, y + h),
-            Align::XMidYMax => (x + w / 2.0, y + h),
-            Align::XMaxYMax => (x + w, y + h),
-        }
+/// Returns object aligned position.
+pub(crate) fn aligned_pos(align: Align, x: f32, y: f32, w: f32, h: f32) -> (f32, f32) {
+    match align {
+        Align::None => (x, y),
+        Align::XMinYMin => (x, y),
+        Align::XMidYMin => (x + w / 2.0, y),
+        Align::XMaxYMin => (x + w, y),
+        Align::XMinYMid => (x, y + h / 2.0),
+        Align::XMidYMid => (x + w / 2.0, y + h / 2.0),
+        Align::XMaxYMid => (x + w, y + h / 2.0),
+        Align::XMinYMax => (x, y + h),
+        Align::XMidYMax => (x + w / 2.0, y + h),
+        Align::XMaxYMax => (x + w, y + h),
     }
 }

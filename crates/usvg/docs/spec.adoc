@@ -20,6 +20,7 @@ Here is the main differences between SVG Full and SVG Micro.
 - No redundant groups.
 - No units.
 - No `objectBoundingBox` units.
+- No `viewBox` and `preserveAspectRatio` attributes.
 - No `style` attribute, except for `mix-blend-mode` and `isolation`
 - Default attributes are implicit.
 
@@ -159,8 +160,6 @@ Doesn't have a `xlink:href` attribute because all attributes and children will b
 * `y` = <<number-type,<number> >>
 * `width` = <<positive-number-type,<positive-number> >>
 * `height` = <<positive-number-type,<positive-number> >>
-* `viewBox` = <<viewBox-type,<viewBox> >>?
-* `preserveAspectRatio` = <<preserveAspectRatio-type,<preserveAspectRatio> >>?
 * `patternUnits` = `userSpaceOnUse`
 * `patternTransform` = <<transform-type,<transform> >>?
 
@@ -710,20 +709,6 @@ filter-input ::= SourceGraphic | SourceAlpha | <string>
 ```
 
 We do not support `FillPaint`, `StrokePaint`, `BackgroundImage` and `BackgroundAlpha`.
-
-
-[[viewBox-type]]
-
-*<viewBox>* - Defines an element viewBox.
-`viewBox ::= <number> " " <number> " " <positive-number> " " <positive-number>`
-
-
-[[preserveAspectRatio-type]]
-
-*<preserveAspectRatio>* - A scaling method definition.
-Works exactly the same
-https://www.w3.org/TR/SVG11/coords.html#PreserveAspectRatioAttribute[as described]
-in the SVG spec.
 
 
 [[transform-type]]

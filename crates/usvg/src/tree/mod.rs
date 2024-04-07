@@ -9,7 +9,6 @@ mod text;
 use std::sync::Arc;
 
 pub use strict_num::{self, ApproxEqUlps, NonZeroPositiveF32, NormalizedF32, PositiveF32};
-pub use svgtypes::{Align, AspectRatio};
 
 pub use tiny_skia_path;
 
@@ -438,11 +437,6 @@ impl Pattern {
     /// `x`, `y`, `width` and `height` in SVG.
     pub fn rect(&self) -> NonZeroRect {
         self.rect
-    }
-
-    /// Pattern viewbox.
-    pub fn view_box(&self) -> Option<ViewBox> {
-        self.view_box
     }
 
     /// Pattern children.

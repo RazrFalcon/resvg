@@ -4,13 +4,13 @@
 
 use std::sync::Arc;
 
-use svgtypes::Length;
+use svgtypes::{AspectRatio, Length};
 
 use super::svgtree::{AId, SvgNode};
 use super::{converter, OptionLog, Options};
 use crate::{
-    AspectRatio, ClipPath, Group, Image, ImageKind, ImageRendering, Node, NonZeroRect, Path, Size,
-    Transform, Tree, Visibility,
+    ClipPath, Group, Image, ImageKind, ImageRendering, Node, NonZeroRect, Path, Size, Transform,
+    Tree, Visibility,
 };
 
 /// A shorthand for [ImageHrefResolver]'s data function.
@@ -243,7 +243,7 @@ pub(crate) fn convert_inner(
     parent: &mut Group,
 ) -> Option<()> {
     let aligned_size = fit_view_box(actual_size, rect, aspect);
-    let (aligned_x, aligned_y) = crate::utils::aligned_pos(
+    let (aligned_x, aligned_y) = crate::aligned_pos(
         aspect.align,
         rect.x(),
         rect.y(),
