@@ -29,15 +29,45 @@ use crate::{
 /// transform to the outline of the glyphs is all that is necessary to display it correctly.
 #[derive(Clone, Debug)]
 pub struct PositionedGlyph {
-    /// The transform of the glyph. This transform should be applied to the _glyph outlines_, meaning
-    /// that paint servers referenced by the glyph's span should not be affected by it.
-    pub transform: Transform,
+    /// Returns the transform of the glyph itself within the cluster. For example,
+    /// for zalgo text, it contains the transform to position the glyphs above/below
+    /// the main glyph.
+    glyph_ts: Transform,
+    /// Returns the transform of the whole cluster that the glyph is part of.
+    cluster_ts: Transform,
+    /// Returns the transform of the span that the glyph is a part of.
+    span_ts: Transform,
+    /// The units per em of the font the glyph belongs to.
+    pub units_per_em: u16,
     /// The ID of the glyph.
     pub glyph_id: GlyphId,
     /// The text from the original string that corresponds to that glyph.
     pub text: String,
     /// The ID of the font the glyph should be taken from.
     pub font: ID,
+}
+
+impl PositionedGlyph {
+    /// Returns the transform of glyph, taking into account the font size as well
+    /// as whether the glyph outlines need to be mirrored. It assumes that the glyph
+    /// outlines are mapped to a 1x1 size.
+    pub fn transform(&self, font_size: f32, mirrored: bool) -> Transform {
+        let mut ts = Transform::identity();
+
+        if mirrored {
+            ts = ts.pre_scale(1.0, -1.0);
+        }
+
+        let sx = font_size / self.units_per_em as f32;
+
+        ts = ts.pre_scale(sx, sx);
+        ts = ts
+            .pre_concat(self.glyph_ts)
+            .post_concat(self.cluster_ts)
+            .post_concat(self.span_ts);
+
+        ts
+    }
 }
 
 /// A span contains a number of layouted glyphs that share the same fill, stroke, paint order and
@@ -234,7 +264,8 @@ pub(crate) fn layout_text(
                     .flat_map(|mut gc| {
                         let cluster_ts = gc.transform();
                         gc.glyphs.iter_mut().for_each(|pg| {
-                            pg.transform = pg.transform.post_concat(cluster_ts).post_concat(span_ts)
+                            pg.cluster_ts = cluster_ts;
+                            pg.span_ts = span_ts;
                         });
                         gc.glyphs
                     })
@@ -1022,22 +1053,21 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
     for glyph in glyphs {
         let sx = glyph.font.scale(font_size);
 
-        // By default, glyphs are upside-down, so we have to mirror them.
-        let mut ts = Transform::from_scale(1.0, -1.0);
-
-        // Scale to font-size.
-        ts = ts.pre_scale(sx, sx);
-
         // Apply offset.
         //
         // The first glyph in the cluster will have an offset from 0x0,
         // but the later one will have an offset from the "current position".
         // So we have to keep an advance.
         // TODO: should be done only inside a single text span
-        ts = ts.pre_translate(x + glyph.dx as f32, glyph.dy as f32);
+        let ts = Transform::from_translate(x + glyph.dx as f32, glyph.dy as f32);
 
         positioned_glyphs.push(PositionedGlyph {
-            transform: ts,
+            glyph_ts: ts,
+            // Will be set later.
+            cluster_ts: Transform::default(),
+            // Will be set later.
+            span_ts: Transform::default(),
+            units_per_em: glyph.font.units_per_em.get(),
             font: glyph.font.id,
             text: glyph.text.clone(),
             glyph_id: glyph.id,

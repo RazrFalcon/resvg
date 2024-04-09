@@ -44,7 +44,9 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
 
         for glyph in &span.positioned_glyphs {
             if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
-                if let Some(outline) = outline.transform(glyph.transform) {
+                if let Some(outline) =
+                    outline.transform(glyph.transform(span.font_size.get(), true))
+                {
                     span_builder.push_path(&outline);
                 }
             }
