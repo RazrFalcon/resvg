@@ -45,9 +45,9 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
 
 
         for glyph in &span.positioned_glyphs {
-            if let Some((raster, x, y, pixels_per_em, descender)) = fontdb.raster(glyph.font, glyph.glyph_id) {
+            if let Some((raster, x, y, pixels_per_em, units_per_em, underline_position)) = fontdb.raster(glyph.font, glyph.glyph_id) {
                 let mut group = Group {
-                    transform: glyph.raster_transform(x, y, raster.size.height(), pixels_per_em, descender),
+                    transform: glyph.raster_transform(x, y, raster.size.height(), pixels_per_em, underline_position),
                     ..Group::empty()
                 };
                 group.children.push(Node::Image(Box::new(raster)));
@@ -124,7 +124,7 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
 
 pub(crate) trait DatabaseExt {
     fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tiny_skia_path::Path>;
-    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<(Image, i16, i16, u16, i16)>;
+    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<(Image, i16, i16, u16, u16, i16)>;
 }
 
 impl DatabaseExt for Database {
@@ -141,13 +141,16 @@ impl DatabaseExt for Database {
         })?
     }
 
-    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<(Image, i16, i16, u16, i16)> {
-        self.with_face_data(id, |data, face_index| -> Option<(Image, i16, i16, u16, i16)> {
+    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<(Image, i16, i16, u16, u16, i16)> {
+        self.with_face_data(id, |data, face_index| -> Option<(Image, i16, i16, u16, u16, i16)> {
             let font = ttf_parser::Face::parse(data, face_index).ok()?;
             let image = font.glyph_raster_image(glyph_id, u16::MAX)?;
+            // std::fs::write(format!("out-{:?}.png", id), image.data);
 
-            println!("{:?}, {:?}, {:?},{:?}", font.capital_height(), font.descender(), font.units_per_em(), font.glyph_bounding_box(glyph_id));
-            println!("{:?}, {:?}, {:?}, {:?}, {:?}", image.x, image.y, image.width, image.height, image.pixels_per_em);
+            // println!("{:?}", font.glyph_);
+
+            // println!("{:?}, {:?}, {:?},{:?}", font.capital_height(), font.descender(), font.units_per_em(), font.glyph_bounding_box(glyph_id));
+            // println!("{:?}, {:?}, {:?}, {:?}, {:?}", image.x, image.y, image.width, image.height, image.pixels_per_em);
 
             if image.format == RasterImageFormat::PNG {
                 return Some((Image {
@@ -158,7 +161,7 @@ impl DatabaseExt for Database {
                     kind: ImageKind::PNG(Arc::new(image.data.into())),
                     abs_transform: Transform::default(),
                     abs_bounding_box: NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
-                }, image.x, image.y, image.pixels_per_em, font.descender()));
+                }, image.x, image.y, image.pixels_per_em, font.units_per_em(), font.underline_metrics().map(|m| m.position).unwrap()));
             }
 
             None

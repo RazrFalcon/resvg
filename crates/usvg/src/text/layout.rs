@@ -68,11 +68,15 @@ impl PositionedGlyph {
         ts
     }
 
-    pub fn raster_transform(&self, x: i16, y: i16, height: f32, pixels_per_em: u16, descender: i16) -> Transform {
+    pub fn raster_transform(&self, x: i16, y: i16, height: f32, pixels_per_em: u16, underline_position: i16) -> Transform {
         self.span_ts
             .pre_concat(self.cluster_ts)
-            .pre_concat(Transform::from_scale(self.font_size / pixels_per_em as f32, self.font_size / pixels_per_em as f32))
+            .pre_concat(Transform::from_translate(0.0, (100.0 as f32) * self.font_size / self.units_per_em as f32))
+            // .pre_concat(Transform::from_translate(x as f32 * self.font_size / self.units_per_em as f32, y as f32 * self.font_size / self.units_per_em as f32))
+            .pre_concat(Transform::from_scale(1.0 / pixels_per_em as f32, 1.0 / pixels_per_em as f32))
+            .pre_concat(Transform::from_scale(self.font_size, self.font_size))
             .pre_translate(0.0, -height)
+
     }
 }
 
