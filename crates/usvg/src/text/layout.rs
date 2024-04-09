@@ -68,7 +68,7 @@ impl PositionedGlyph {
         ts
     }
 
-    pub fn raster_transform(&self, x: u16, y: u16, pixels_per_em: u16) -> Transform {
+    pub fn raster_transform(&self, x: i16, y: i16, height: f32, pixels_per_em: u16) -> Transform {
         let mut ts = Transform::from_scale(
             self.font_size / pixels_per_em as f32,
             self.font_size / pixels_per_em as f32,
@@ -76,6 +76,7 @@ impl PositionedGlyph {
 
         ts = ts
             .pre_concat(Transform::from_translate(x as f32, y as f32))
+            .pre_translate(0.0, -height)
             .post_concat(self.cluster_ts)
             .post_concat(self.span_ts);
 

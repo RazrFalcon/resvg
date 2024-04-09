@@ -46,6 +46,15 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
         let mut span_builder = tiny_skia_path::PathBuilder::new();
 
         for glyph in &span.positioned_glyphs {
+            if let Some((raster, x, y, pixels_per_em)) = fontdb.raster(glyph.font, glyph.glyph_id) {
+                let mut group = Group {
+                    transform: glyph.raster_transform(x, y, raster.size.height(), pixels_per_em),
+                    ..Group::empty()
+                };
+
+                group.children.push(Node::Image(Box::new(raster)));
+                new_children.push(Node::Group(Box::new(group)));
+            }
             if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
                 if let Some(outline) = outline.transform(glyph.outline_transform()) {
                     span_builder.push_path(&outline);
@@ -118,7 +127,7 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
 
 pub(crate) trait DatabaseExt {
     fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tiny_skia_path::Path>;
-    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<Image>;
+    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<(Image, i16, i16, u16)>;
 }
 
 impl DatabaseExt for Database {
@@ -135,13 +144,13 @@ impl DatabaseExt for Database {
         })?
     }
 
-    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<Image> {
-        self.with_face_data(id, |data, face_index| -> Option<Image> {
+    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<(Image, i16, i16, u16)> {
+        self.with_face_data(id, |data, face_index| -> Option<(Image, i16, i16, u16)> {
             let font = ttf_parser::Face::parse(data, face_index).ok()?;
             let image = font.glyph_raster_image(glyph_id, u16::MAX)?;
 
             if image.format == RasterImageFormat::PNG {
-                return Some(Image {
+                return Some((Image {
                     id: String::new(),
                     visibility: Visibility::Visible,
                     size: Size::from_wh(image.width as f32, image.height as f32)?,
@@ -149,7 +158,7 @@ impl DatabaseExt for Database {
                     kind: ImageKind::PNG(Arc::new(image.data.into())),
                     abs_transform: Transform::default(),
                     abs_bounding_box: NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
-                });
+                }, image.x, image.y, image.pixels_per_em));
             }
 
             None
