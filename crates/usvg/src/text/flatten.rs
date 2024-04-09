@@ -50,8 +50,10 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
                     transform: glyph.raster_transform(x, y, raster.size.height(), pixels_per_em, bbox),
                     ..Group::empty()
                 };
-
                 group.children.push(Node::Image(Box::new(raster)));
+                group.calculate_bounding_boxes();
+
+                stroke_bbox = stroke_bbox.expand(group.stroke_bounding_box);
                 new_children.push(Node::Group(Box::new(group)));
             } else if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
                 if let Some(path) = outline.transform(glyph.outline_transform())
