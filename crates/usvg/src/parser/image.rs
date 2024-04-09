@@ -53,7 +53,7 @@ impl ImageHrefResolver<'_> {
     ///
     /// base64 encoded data is already decoded.
     ///
-    /// The default implementation would try to load JPEG, PNG, GIF, SVG and SVGZ types.
+    /// The default implementation would try to load JPEG, PNG, GIF, WebP, SVG and SVGZ types.
     /// Note that it will simply match the `mime` or data's magic.
     /// The actual images would not be decoded. It's up to the renderer.
     pub fn default_data_resolver() -> ImageHrefDataResolverFn<'static> {
@@ -62,11 +62,13 @@ impl ImageHrefResolver<'_> {
                 "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
                 "image/png" => Some(ImageKind::PNG(data)),
                 "image/gif" => Some(ImageKind::GIF(data)),
+                "image/webp" => Some(ImageKind::WEBP(data)),
                 "image/svg+xml" => load_sub_svg(&data, opts),
                 "text/plain" => match get_image_data_format(&data) {
                     Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(data)),
                     Some(ImageFormat::PNG) => Some(ImageKind::PNG(data)),
                     Some(ImageFormat::GIF) => Some(ImageKind::GIF(data)),
+                    Some(ImageFormat::WEBP) => Some(ImageKind::WEBP(data)),
                     _ => load_sub_svg(&data, opts),
                 },
                 _ => None,
@@ -98,9 +100,10 @@ impl ImageHrefResolver<'_> {
                     Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(Arc::new(data))),
                     Some(ImageFormat::PNG) => Some(ImageKind::PNG(Arc::new(data))),
                     Some(ImageFormat::GIF) => Some(ImageKind::GIF(Arc::new(data))),
+                    Some(ImageFormat::WEBP) => Some(ImageKind::WEBP(Arc::new(data))),
                     Some(ImageFormat::SVG) => load_sub_svg(&data, opts),
                     _ => {
-                        log::warn!("'{}' is not a PNG, JPEG, GIF or SVG(Z) image.", href);
+                        log::warn!("'{}' is not a PNG, JPEG, GIF, WebP or SVG(Z) image.", href);
                         None
                     }
                 }
@@ -123,6 +126,7 @@ enum ImageFormat {
     PNG,
     JPEG,
     GIF,
+    WEBP,
     SVG,
 }
 
@@ -298,7 +302,7 @@ pub(crate) fn get_href_data(href: &str, state: &converter::State) -> Option<Imag
     }
 }
 
-/// Checks that file has a PNG, a GIF or a JPEG magic bytes.
+/// Checks that file has a PNG, a GIF, a JPEG or a WebP magic bytes.
 /// Or an SVG(Z) extension.
 fn get_image_file_format(path: &std::path::Path, data: &[u8]) -> Option<ImageFormat> {
     let ext = path.extension().and_then(|e| e.to_str())?.to_lowercase();
@@ -309,12 +313,13 @@ fn get_image_file_format(path: &std::path::Path, data: &[u8]) -> Option<ImageFor
     get_image_data_format(data)
 }
 
-/// Checks that file has a PNG, a GIF or a JPEG magic bytes.
+/// Checks that file has a PNG, a GIF, a JPEG or a WebP magic bytes.
 fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
     match imagesize::image_type(data).ok()? {
         imagesize::ImageType::Gif => Some(ImageFormat::GIF),
         imagesize::ImageType::Jpeg => Some(ImageFormat::JPEG),
         imagesize::ImageType::Png => Some(ImageFormat::PNG),
+        imagesize::ImageType::Webp => Some(ImageFormat::WEBP),
         _ => None,
     }
 }

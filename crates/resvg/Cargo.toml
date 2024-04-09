@@ -16,6 +16,7 @@ required-features = ["text", "system-fonts", "memmap-fonts"]
 
 [dependencies]
 gif = { version = "0.13", optional = true }
+image-webp = { version = "0.1.3", optional = true }
 log = "0.4"
 pico-args = { version = "0.5", features = ["eq-separator"] }
 rgb = "0.8"
@@ -40,4 +41,4 @@ memmap-fonts = ["usvg/memmap-fonts"]
 # Enables decoding and rendering of raster images.
 # When disabled, `image` elements with SVG data will still be rendered.
 # Adds around 200KiB to your binary.
-raster-images = ["gif", "dep:zune-jpeg"]
+raster-images = ["gif", "image-webp", "dep:zune-jpeg"]
