@@ -38,7 +38,8 @@ pub struct PositionedGlyph {
     /// Returns the transform of the span that the glyph is a part of.
     span_ts: Transform,
     /// The units per em of the font the glyph belongs to.
-    pub units_per_em: u16,
+    units_per_em: u16,
+    font_size: f32,
     /// The ID of the glyph.
     pub glyph_id: GlyphId,
     /// The text from the original string that corresponds to that glyph.
@@ -48,21 +49,33 @@ pub struct PositionedGlyph {
 }
 
 impl PositionedGlyph {
-    /// Returns the transform of glyph, taking into account the font size as well
-    /// as whether the glyph outlines need to be mirrored. It assumes that the glyph
-    /// outlines are mapped to a 1x1 size.
-    pub fn transform(&self, font_size: f32, mirrored: bool) -> Transform {
+    /// Returns the transform of glyph, assuming that an outline
+    /// glyph is being used (i.e. from the `glyf` or `CFF/CFF2` table).
+    pub fn outline_transform(&self) -> Transform {
         let mut ts = Transform::identity();
 
-        if mirrored {
-            ts = ts.pre_scale(1.0, -1.0);
-        }
+        // Outlines are mirrored by default.
+        ts = ts.pre_scale(1.0, -1.0);
 
-        let sx = font_size / self.units_per_em as f32;
+        let sx = self.font_size / self.units_per_em as f32;
 
         ts = ts.pre_scale(sx, sx);
         ts = ts
             .pre_concat(self.glyph_ts)
+            .post_concat(self.cluster_ts)
+            .post_concat(self.span_ts);
+
+        ts
+    }
+
+    pub fn raster_transform(&self, x: u16, y: u16, pixels_per_em: u16) -> Transform {
+        let mut ts = Transform::from_scale(
+            self.font_size / pixels_per_em as f32,
+            self.font_size / pixels_per_em as f32,
+        );
+
+        ts = ts
+            .pre_concat(Transform::from_translate(x as f32, y as f32))
             .post_concat(self.cluster_ts)
             .post_concat(self.span_ts);
 
@@ -1068,6 +1081,7 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
             // Will be set later.
             span_ts: Transform::default(),
             units_per_em: glyph.font.units_per_em.get(),
+            font_size,
             font: glyph.font.id,
             text: glyph.text.clone(),
             glyph_id: glyph.id,

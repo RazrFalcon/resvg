@@ -4,12 +4,15 @@
 
 use fontdb::{Database, ID};
 use rustybuzz::ttf_parser;
-use rustybuzz::ttf_parser::GlyphId;
+use rustybuzz::ttf_parser::{GlyphId, RasterGlyphImage, RasterImageFormat};
 use std::sync::Arc;
-use tiny_skia_path::{NonZeroRect, Transform};
+use tiny_skia_path::{NonZeroRect, Size, Transform};
 
 use crate::tree::BBox;
-use crate::{Group, Node, Path, ShapeRendering, Text, TextRendering};
+use crate::{
+    Group, Image, ImageKind, ImageRendering, Node, Path, ShapeRendering, Text, TextRendering,
+    Visibility,
+};
 
 fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
     match text.rendering_mode {
@@ -44,9 +47,7 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
 
         for glyph in &span.positioned_glyphs {
             if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
-                if let Some(outline) =
-                    outline.transform(glyph.transform(span.font_size.get(), true))
-                {
+                if let Some(outline) = outline.transform(glyph.outline_transform()) {
                     span_builder.push_path(&outline);
                 }
             }
@@ -117,6 +118,7 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
 
 pub(crate) trait DatabaseExt {
     fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tiny_skia_path::Path>;
+    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<Image>;
 }
 
 impl DatabaseExt for Database {
@@ -130,6 +132,27 @@ impl DatabaseExt for Database {
             };
             font.outline_glyph(glyph_id, &mut builder)?;
             builder.builder.finish()
+        })?
+    }
+
+    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<Image> {
+        self.with_face_data(id, |data, face_index| -> Option<Image> {
+            let font = ttf_parser::Face::parse(data, face_index).ok()?;
+            let image = font.glyph_raster_image(glyph_id, u16::MAX)?;
+
+            if image.format == RasterImageFormat::PNG {
+                return Some(Image {
+                    id: String::new(),
+                    visibility: Visibility::Visible,
+                    size: Size::from_wh(image.width as f32, image.height as f32)?,
+                    rendering_mode: ImageRendering::OptimizeQuality,
+                    kind: ImageKind::PNG(Arc::new(image.data.into())),
+                    abs_transform: Transform::default(),
+                    abs_bounding_box: NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
+                });
+            }
+
+            None
         })?
     }
 }
