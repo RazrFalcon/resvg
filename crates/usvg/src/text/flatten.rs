@@ -23,7 +23,7 @@ fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
 }
 
 pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Group, NonZeroRect)> {
-    let mut new_paths = vec![];
+    let mut new_children = vec![];
 
     let mut stroke_bbox = BBox::default();
     let rendering_mode = resolve_rendering_mode(text);
@@ -33,14 +33,14 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
             stroke_bbox = stroke_bbox.expand(path.data.bounds());
             let mut path = path.clone();
             path.rendering_mode = rendering_mode;
-            new_paths.push(path);
+            new_children.push(Node::Path(Box::new(path)));
         }
 
         if let Some(path) = span.underline.as_ref() {
             stroke_bbox = stroke_bbox.expand(path.data.bounds());
             let mut path = path.clone();
             path.rendering_mode = rendering_mode;
-            new_paths.push(path);
+            new_children.push(Node::Path(Box::new(path)));
         }
 
         let mut span_builder = tiny_skia_path::PathBuilder::new();
@@ -66,14 +66,14 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
             )
         }) {
             stroke_bbox = stroke_bbox.expand(path.stroke_bounding_box());
-            new_paths.push(path);
+            new_children.push(Node::Path(Box::new(path)));
         }
 
         if let Some(path) = span.line_through.as_ref() {
             stroke_bbox = stroke_bbox.expand(path.data.bounds());
             let mut path = path.clone();
             path.rendering_mode = rendering_mode;
-            new_paths.push(path);
+            new_children.push(Node::Path(Box::new(path)));
         }
     }
 
@@ -82,8 +82,8 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
         ..Group::empty()
     };
 
-    for path in new_paths {
-        group.children.push(Node::Path(Box::new(path)));
+    for child in new_children {
+        group.children.push(child);
     }
 
     group.calculate_bounding_boxes();
