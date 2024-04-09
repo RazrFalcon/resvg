@@ -146,7 +146,7 @@ impl DatabaseExt for Database {
             let font = ttf_parser::Face::parse(data, face_index).ok()?;
             let image = font.glyph_raster_image(glyph_id, u16::MAX)?;
 
-            println!("{:?}, {:?}, {:?},{:?}", font.ascender(), font.descender(), font.units_per_em(), font.glyph_bounding_box(glyph_id));
+            println!("{:?}, {:?}, {:?},{:?}", font.capital_height(), font.descender(), font.units_per_em(), font.glyph_bounding_box(glyph_id));
             println!("{:?}, {:?}, {:?}, {:?}, {:?}", image.x, image.y, image.width, image.height, image.pixels_per_em);
 
             if image.format == RasterImageFormat::PNG {
