@@ -56,7 +56,7 @@ pub fn render(name: &str) -> usize {
 
     // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
 
-    let mut rgba = pixmap.take();
+    let mut rgba = pixmap.clone().take();
     demultiply_alpha(rgba.as_mut_slice().as_rgba_mut());
 
     let expected_data = load_png(&png_path);
@@ -75,9 +75,10 @@ pub fn render(name: &str) -> usize {
     }
 
     // Save diff if needed.
-    // if pixels_d != 0 {
+    if pixels_d != 0 {
+        pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
     //     gen_diff(&name, &expected_data, rgba.as_slice()).unwrap();
-    // }
+    }
 
     pixels_d
 }
