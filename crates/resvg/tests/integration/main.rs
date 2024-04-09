@@ -75,10 +75,9 @@ pub fn render(name: &str) -> usize {
     }
 
     // Save diff if needed.
-    if pixels_d != 0 {
-        pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
+    // if pixels_d != 0 {
     //     gen_diff(&name, &expected_data, rgba.as_slice()).unwrap();
-    }
+    // }
 
     pixels_d
 }
