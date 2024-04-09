@@ -68,11 +68,9 @@ impl PositionedGlyph {
         ts
     }
 
-    pub fn raster_transform(&self, x: i16, y: i16, height: f32, pixels_per_em: u16, bbox: Option<ttf_parser::Rect>) -> Transform {
-        let bbox_ts = bbox.map(|b| Transform::from_translate(b.x_min as f32, b.y_min as f32)).unwrap_or(Transform::identity());
+    pub fn raster_transform(&self, x: i16, y: i16, height: f32, pixels_per_em: u16, descender: i16) -> Transform {
         self.span_ts
             .pre_concat(self.cluster_ts)
-            // .pre_concat(Transform::from_translate(x as f32, y as f32))
             .pre_concat(Transform::from_scale(self.font_size / pixels_per_em as f32, self.font_size / pixels_per_em as f32))
             .pre_translate(0.0, -height)
     }
