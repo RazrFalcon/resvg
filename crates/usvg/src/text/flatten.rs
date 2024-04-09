@@ -43,39 +43,34 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
             new_children.push(Node::Path(Box::new(path)));
         }
 
-        let mut span_builder = tiny_skia_path::PathBuilder::new();
 
         for glyph in &span.positioned_glyphs {
-            if let Some((raster, x, y, pixels_per_em)) = fontdb.raster(glyph.font, glyph.glyph_id) {
+            if let Some((raster, x, y, pixels_per_em, bbox)) = fontdb.raster(glyph.font, glyph.glyph_id) {
                 let mut group = Group {
-                    transform: glyph.raster_transform(x, y, raster.size.height(), pixels_per_em),
+                    transform: glyph.raster_transform(x, y, raster.size.height(), pixels_per_em, bbox),
                     ..Group::empty()
                 };
 
                 group.children.push(Node::Image(Box::new(raster)));
                 new_children.push(Node::Group(Box::new(group)));
-            }
-            if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
-                if let Some(outline) = outline.transform(glyph.outline_transform()) {
-                    span_builder.push_path(&outline);
+            } else if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
+                if let Some(path) = outline.transform(glyph.outline_transform())
+                    .and_then(|p| {
+                        Path::new(
+                            String::new(),
+                            span.visibility,
+                            span.fill.clone(),
+                            span.stroke.clone(),
+                            span.paint_order,
+                            rendering_mode,
+                            Arc::new(p),
+                            Transform::default(),
+                        )
+                    }){
+                    stroke_bbox = stroke_bbox.expand(path.stroke_bounding_box());
+                    new_children.push(Node::Path(Box::new(path)));
                 }
             }
-        }
-
-        if let Some(path) = span_builder.finish().and_then(|p| {
-            Path::new(
-                String::new(),
-                span.visibility,
-                span.fill.clone(),
-                span.stroke.clone(),
-                span.paint_order,
-                rendering_mode,
-                Arc::new(p),
-                Transform::default(),
-            )
-        }) {
-            stroke_bbox = stroke_bbox.expand(path.stroke_bounding_box());
-            new_children.push(Node::Path(Box::new(path)));
         }
 
         if let Some(path) = span.line_through.as_ref() {
@@ -127,7 +122,7 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
 
 pub(crate) trait DatabaseExt {
     fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tiny_skia_path::Path>;
-    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<(Image, i16, i16, u16)>;
+    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<(Image, i16, i16, u16, Option<ttf_parser::Rect>)>;
 }
 
 impl DatabaseExt for Database {
@@ -144,8 +139,8 @@ impl DatabaseExt for Database {
         })?
     }
 
-    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<(Image, i16, i16, u16)> {
-        self.with_face_data(id, |data, face_index| -> Option<(Image, i16, i16, u16)> {
+    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<(Image, i16, i16, u16, Option<ttf_parser::Rect>)> {
+        self.with_face_data(id, |data, face_index| -> Option<(Image, i16, i16, u16, Option<ttf_parser::Rect>)> {
             let font = ttf_parser::Face::parse(data, face_index).ok()?;
             let image = font.glyph_raster_image(glyph_id, u16::MAX)?;
 
@@ -158,7 +153,7 @@ impl DatabaseExt for Database {
                     kind: ImageKind::PNG(Arc::new(image.data.into())),
                     abs_transform: Transform::default(),
                     abs_bounding_box: NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
-                }, image.x, image.y, image.pixels_per_em));
+                }, image.x, image.y, image.pixels_per_em, font.glyph_bounding_box(glyph_id)));
             }
 
             None
