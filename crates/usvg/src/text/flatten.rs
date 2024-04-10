@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::mem;
 use fontdb::{Database, ID};
 use rustybuzz::ttf_parser;
 use rustybuzz::ttf_parser::{GlyphId, RasterImageFormat};
@@ -43,19 +44,15 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
             new_children.push(Node::Path(Box::new(path)));
         }
 
+        let mut span_builder = tiny_skia_path::PathBuilder::new();
+
         for glyph in &span.positioned_glyphs {
             if let Some((raster, x, y, pixels_per_em)) = fontdb.raster(glyph.font, glyph.glyph_id) {
-                let mut group = Group {
-                    transform: glyph.raster_transform(x as f32, y as f32, pixels_per_em as f32),
-                    ..Group::empty()
-                };
-                group.children.push(Node::Image(Box::new(raster)));
-                group.calculate_bounding_boxes();
 
-                stroke_bbox = stroke_bbox.expand(group.stroke_bounding_box);
-                new_children.push(Node::Group(Box::new(group)));
-            } else if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
-                if let Some(path) = outline.transform(glyph.outline_transform()).and_then(|p| {
+                // Push all outlines that have been created up until now
+                let builder = mem::replace(&mut span_builder, tiny_skia_path::PathBuilder::new());
+
+                if let Some(path) = builder.finish().and_then(|p| {
                     Path::new(
                         String::new(),
                         span.visibility,
@@ -70,7 +67,41 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
                     stroke_bbox = stroke_bbox.expand(path.stroke_bounding_box());
                     new_children.push(Node::Path(Box::new(path)));
                 }
+
+                let mut group = Group {
+                    transform: glyph.raster_transform(x as f32, y as f32, pixels_per_em as f32),
+                    ..Group::empty()
+                };
+                group.children.push(Node::Image(Box::new(raster)));
+                group.calculate_bounding_boxes();
+
+                stroke_bbox = stroke_bbox.expand(group.stroke_bounding_box);
+                new_children.push(Node::Group(Box::new(group)));
+            } else if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
+                if let Some(outline) = outline.transform(glyph.outline_transform()) {
+                    span_builder.push_path(&outline);
+                }
             }
+        }
+
+        // Push all outlines that have been created up until now
+        // TODO: remove duplication
+        let builder = mem::replace(&mut span_builder, tiny_skia_path::PathBuilder::new());
+
+        if let Some(path) = builder.finish().and_then(|p| {
+            Path::new(
+                String::new(),
+                span.visibility,
+                span.fill.clone(),
+                span.stroke.clone(),
+                span.paint_order,
+                rendering_mode,
+                Arc::new(p),
+                Transform::default(),
+            )
+        }) {
+            stroke_bbox = stroke_bbox.expand(path.stroke_bounding_box());
+            new_children.push(Node::Path(Box::new(path)));
         }
 
         if let Some(path) = span.line_through.as_ref() {
