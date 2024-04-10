@@ -68,15 +68,28 @@ impl PositionedGlyph {
         ts
     }
 
-    pub fn raster_transform(&self, x: i16, y: i16, height: f32, pixels_per_em: u16, underline_position: i16) -> Transform {
+    /// Returns the transform for the glyph, assuming that a bitmap glyph
+    /// is being used.
+    pub fn raster_transform(&self, x: f32, y: f32, pixels_per_em: f32) -> Transform {
         self.span_ts
             .pre_concat(self.cluster_ts)
-            .pre_concat(Transform::from_translate(0.0, (100.0 as f32) * self.font_size / self.units_per_em as f32))
-            // .pre_concat(Transform::from_translate(x as f32 * self.font_size / self.units_per_em as f32, y as f32 * self.font_size / self.units_per_em as f32))
-            .pre_concat(Transform::from_scale(1.0 / pixels_per_em as f32, 1.0 / pixels_per_em as f32))
-            .pre_concat(Transform::from_scale(self.font_size, self.font_size))
-            .pre_translate(0.0, -height)
-
+            .pre_concat(self.glyph_ts)
+            // This seems to work for Apple Color Emoji
+            // .pre_concat(Transform::from_translate(0.0, (1.0 / 8.0) * self.font_size))
+            // Apply x/y offset. x and y are in glyph space units (?), so we need to
+            // divide by units per em and multiply by font size.
+            .pre_concat(Transform::from_translate(
+                x * self.font_size / self.units_per_em as f32,
+                -y * self.font_size / self.units_per_em as f32,
+            ))
+            .pre_concat(Transform::from_scale(
+                self.font_size / pixels_per_em,
+                self.font_size / pixels_per_em,
+            ))
+            // Right now, the top-left corner of the image would be placed in
+            // on the "text cursor", but we want the bottom-left corner to be there,
+            // so we need to shift it up.;
+            .pre_translate(0.0, -(pixels_per_em))
     }
 }
 
