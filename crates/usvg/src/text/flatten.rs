@@ -8,9 +8,7 @@ use rustybuzz::ttf_parser::{GlyphId, RasterImageFormat};
 use std::mem;
 use std::sync::Arc;
 use tiny_skia_path::{NonZeroRect, Size, Transform};
-use xmlwriter::XmlWriter;
 
-use crate::tree::BBox;
 use crate::{
     Color, Fill, FillRule, Group, Image, ImageKind, ImageRendering, Node, Opacity, Options, Paint,
     PaintOrder, Path, ShapeRendering, Text, TextRendering, Tree, Visibility,
@@ -27,19 +25,16 @@ fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
 pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Group, NonZeroRect)> {
     let mut new_children = vec![];
 
-    let mut stroke_bbox = BBox::default();
     let rendering_mode = resolve_rendering_mode(text);
 
     for span in &text.layouted {
         if let Some(path) = span.overline.as_ref() {
-            stroke_bbox = stroke_bbox.expand(path.data.bounds());
             let mut path = path.clone();
             path.rendering_mode = rendering_mode;
             new_children.push(Node::Path(Box::new(path)));
         }
 
         if let Some(path) = span.underline.as_ref() {
-            stroke_bbox = stroke_bbox.expand(path.data.bounds());
             let mut path = path.clone();
             path.rendering_mode = rendering_mode;
             new_children.push(Node::Path(Box::new(path)));
@@ -62,7 +57,6 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
                 }
                 group.calculate_bounding_boxes();
 
-                stroke_bbox = stroke_bbox.expand(group.stroke_bounding_box);
                 new_children.push(Node::Group(Box::new(group)));
             } else if let Some(tree) = fontdb.svg(glyph.font, glyph.glyph_id) {
                 let mut group = Group {
@@ -73,7 +67,6 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
                 group.children.push(Node::Group(Box::new(tree.root)));
                 group.calculate_bounding_boxes();
 
-                stroke_bbox = stroke_bbox.expand(group.stroke_bounding_box);
                 new_children.push(Node::Group(Box::new(group)));
             } else if let Some((raster, x, y, pixels_per_em)) =
                 fontdb.raster(glyph.font, glyph.glyph_id)
@@ -93,7 +86,6 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
                         Transform::default(),
                     )
                 }) {
-                    stroke_bbox = stroke_bbox.expand(path.stroke_bounding_box());
                     new_children.push(Node::Path(Box::new(path)));
                 }
 
@@ -104,7 +96,6 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
                 group.children.push(Node::Image(Box::new(raster)));
                 group.calculate_bounding_boxes();
 
-                stroke_bbox = stroke_bbox.expand(group.stroke_bounding_box);
                 new_children.push(Node::Group(Box::new(group)));
             } else if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
                 if let Some(outline) = outline.transform(glyph.outline_transform()) {
@@ -129,12 +120,10 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
                 Transform::default(),
             )
         }) {
-            stroke_bbox = stroke_bbox.expand(path.stroke_bounding_box());
             new_children.push(Node::Path(Box::new(path)));
         }
 
         if let Some(path) = span.line_through.as_ref() {
-            stroke_bbox = stroke_bbox.expand(path.data.bounds());
             let mut path = path.clone();
             path.rendering_mode = rendering_mode;
             new_children.push(Node::Path(Box::new(path)));
@@ -151,7 +140,8 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
     }
 
     group.calculate_bounding_boxes();
-    Some((group, stroke_bbox.to_non_zero_rect()?))
+    let stroke_bbox =group.stroke_bounding_box().to_non_zero_rect()?;
+    Some((group, stroke_bbox))
 }
 
 struct PathBuilder {
