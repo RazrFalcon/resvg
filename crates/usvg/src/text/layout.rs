@@ -92,6 +92,8 @@ impl PositionedGlyph {
             .pre_translate(0.0, -(pixels_per_em))
     }
 
+    /// Returns the transform for the glyph, assuming that an SVG glyph is
+    /// being used.
     pub fn svg_transform(&self) -> Transform {
         let mut ts = Transform::identity();
 
@@ -104,6 +106,12 @@ impl PositionedGlyph {
             .post_concat(self.span_ts);
 
         ts
+    }
+
+    /// Returns the transform for the glyph, assuming that a COLRv0 glyph is
+    /// being used.
+    pub fn colrv0_transform(&self) -> Transform {
+        self.outline_transform()
     }
 }
 

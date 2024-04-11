@@ -9,6 +9,7 @@ use std::mem;
 use std::sync::Arc;
 use tiny_skia_path::{NonZeroRect, Size, Transform};
 
+use crate::layout::Span;
 use crate::{
     Color, Fill, FillRule, Group, Image, ImageKind, ImageRendering, Node, Opacity, Options, Paint,
     PaintOrder, Path, ShapeRendering, Text, TextRendering, Tree, Visibility,
@@ -19,6 +20,30 @@ fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
         TextRendering::OptimizeSpeed => ShapeRendering::CrispEdges,
         TextRendering::OptimizeLegibility => ShapeRendering::GeometricPrecision,
         TextRendering::GeometricPrecision => ShapeRendering::GeometricPrecision,
+    }
+}
+
+fn push_paths(
+    span: &Span,
+    builder: &mut tiny_skia_path::PathBuilder,
+    new_children: &mut Vec<Node>,
+    rendering_mode: ShapeRendering,
+) {
+    let builder = mem::replace(builder, tiny_skia_path::PathBuilder::new());
+
+    if let Some(path) = builder.finish().and_then(|p| {
+        Path::new(
+            String::new(),
+            span.visibility,
+            span.fill.clone(),
+            span.stroke.clone(),
+            span.paint_order,
+            rendering_mode,
+            Arc::new(p),
+            Transform::default(),
+        )
+    }) {
+        new_children.push(Node::Path(Box::new(path)));
     }
 }
 
@@ -40,14 +65,21 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
             new_children.push(Node::Path(Box::new(path)));
         }
 
+        // Instead of always processing each glyph separately, we always collect
+        // as many outline glyphs as possible by pushing them into the span_builder
+        // and only if we encounter a different glyph, or we reach the very end of the
+        // span to we push the actual paths into new_children. This way, we don't need
+        // to create a new path for every glyph id we have many consecutive glyphs
+        // with just outlines (which is the most common case).
         let mut span_builder = tiny_skia_path::PathBuilder::new();
 
         for glyph in &span.positioned_glyphs {
-            // TODO: similar to below, push all outline paths up until now.
-
+            // A COLRv0 glyph. Will return a vector of paths that make up the glyph description.
             if let Some(paths) = fontdb.colr(glyph.font, glyph.glyph_id, Color::black()) {
+                push_paths(span, &mut span_builder, &mut new_children, rendering_mode);
+
                 let mut group = Group {
-                    transform: glyph.outline_transform(),
+                    transform: glyph.colrv0_transform(),
                     ..Group::empty()
                 };
 
@@ -58,7 +90,11 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
                 group.calculate_bounding_boxes();
 
                 new_children.push(Node::Group(Box::new(group)));
-            } else if let Some(tree) = fontdb.svg(glyph.font, glyph.glyph_id) {
+            }
+            // An SVG glyph. Will return the usvg tree containing the glyph descriptions.
+            else if let Some(tree) = fontdb.svg(glyph.font, glyph.glyph_id) {
+                push_paths(span, &mut span_builder, &mut new_children, rendering_mode);
+
                 let mut group = Group {
                     transform: glyph.svg_transform(),
                     ..Group::empty()
@@ -68,26 +104,12 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
                 group.calculate_bounding_boxes();
 
                 new_children.push(Node::Group(Box::new(group)));
-            } else if let Some((raster, x, y, pixels_per_em)) =
+            }
+            // A bitmap glyph. The baseline doesn't seem to be right at the moment.
+            else if let Some((raster, x, y, pixels_per_em)) =
                 fontdb.raster(glyph.font, glyph.glyph_id)
             {
-                // Push all outlines that have been created up until now
-                let builder = mem::replace(&mut span_builder, tiny_skia_path::PathBuilder::new());
-
-                if let Some(path) = builder.finish().and_then(|p| {
-                    Path::new(
-                        String::new(),
-                        span.visibility,
-                        span.fill.clone(),
-                        span.stroke.clone(),
-                        span.paint_order,
-                        rendering_mode,
-                        Arc::new(p),
-                        Transform::default(),
-                    )
-                }) {
-                    new_children.push(Node::Path(Box::new(path)));
-                }
+                push_paths(span, &mut span_builder, &mut new_children, rendering_mode);
 
                 let mut group = Group {
                     transform: glyph.raster_transform(x as f32, y as f32, pixels_per_em as f32),
@@ -97,31 +119,15 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
                 group.calculate_bounding_boxes();
 
                 new_children.push(Node::Group(Box::new(group)));
-            } else if let Some(outline) = fontdb.outline(glyph.font, glyph.glyph_id) {
-                if let Some(outline) = outline.transform(glyph.outline_transform()) {
-                    span_builder.push_path(&outline);
-                }
+            } else if let Some(outline) = fontdb
+                .outline(glyph.font, glyph.glyph_id)
+                .and_then(|p| p.transform(glyph.outline_transform()))
+            {
+                span_builder.push_path(&outline);
             }
         }
 
-        // Push all outlines that have been created up until now
-        // TODO: remove duplication
-        let builder = mem::replace(&mut span_builder, tiny_skia_path::PathBuilder::new());
-
-        if let Some(path) = builder.finish().and_then(|p| {
-            Path::new(
-                String::new(),
-                span.visibility,
-                span.fill.clone(),
-                span.stroke.clone(),
-                span.paint_order,
-                rendering_mode,
-                Arc::new(p),
-                Transform::default(),
-            )
-        }) {
-            new_children.push(Node::Path(Box::new(path)));
-        }
+        push_paths(span, &mut span_builder, &mut new_children, rendering_mode);
 
         if let Some(path) = span.line_through.as_ref() {
             let mut path = path.clone();
@@ -140,7 +146,7 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
     }
 
     group.calculate_bounding_boxes();
-    let stroke_bbox =group.stroke_bounding_box().to_non_zero_rect()?;
+    let stroke_bbox = group.stroke_bounding_box().to_non_zero_rect()?;
     Some((group, stroke_bbox))
 }
 
