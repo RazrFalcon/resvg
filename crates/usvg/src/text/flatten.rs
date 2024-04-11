@@ -8,11 +8,12 @@ use rustybuzz::ttf_parser::{GlyphId, RasterImageFormat};
 use std::mem;
 use std::sync::Arc;
 use tiny_skia_path::{NonZeroRect, Size, Transform};
+use xmlwriter::XmlWriter;
 
 use crate::tree::BBox;
 use crate::{
-    Group, Image, ImageKind, ImageRendering, Node, Options, Path, ShapeRendering, Text,
-    TextRendering, Tree, Visibility,
+    Color, Fill, FillRule, Group, Image, ImageKind, ImageRendering, Node, Opacity, Options, Paint,
+    PaintOrder, Path, ShapeRendering, Text, TextRendering, Tree, Visibility,
 };
 
 fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
@@ -49,7 +50,21 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
         for glyph in &span.positioned_glyphs {
             // TODO: similar to below, push all outline paths up until now.
 
-            if let Some(tree) = fontdb.svg(glyph.font, glyph.glyph_id) {
+            if let Some(paths) = fontdb.colr(glyph.font, glyph.glyph_id, Color::black()) {
+                let mut group = Group {
+                    transform: glyph.outline_transform(),
+                    ..Group::empty()
+                };
+
+                for path in paths {
+                    // TODO: Probably need to update abs_transform of children?
+                    group.children.push(Node::Path(Box::new(path)));
+                }
+                group.calculate_bounding_boxes();
+
+                stroke_bbox = stroke_bbox.expand(group.stroke_bounding_box);
+                new_children.push(Node::Group(Box::new(group)));
+            } else if let Some(tree) = fontdb.svg(glyph.font, glyph.glyph_id) {
                 let mut group = Group {
                     transform: glyph.svg_transform(),
                     ..Group::empty()
@@ -169,6 +184,7 @@ pub(crate) trait DatabaseExt {
     fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tiny_skia_path::Path>;
     fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<(Image, i16, i16, u16)>;
     fn svg(&self, id: ID, glyph_id: GlyphId) -> Option<Tree>;
+    fn colr(&self, id: ID, glyph_id: GlyphId, text_color: Color) -> Option<Vec<Path>>;
 }
 
 impl DatabaseExt for Database {
@@ -222,5 +238,82 @@ impl DatabaseExt for Database {
             let image = font.glyph_svg_image(glyph_id)?;
             Tree::from_data(image.data, &Options::default(), &fontdb::Database::new()).ok()
         })?
+    }
+
+    fn colr(&self, id: ID, glyph_id: GlyphId, text_color: Color) -> Option<Vec<Path>> {
+        self.with_face_data(id, |data, face_index| -> Option<Vec<Path>> {
+            let font = ttf_parser::Face::parse(data, face_index).ok()?;
+
+            let mut paths = vec![];
+            let mut glyph_painter = GlyphPainter {
+                face: &font,
+                paths: &mut paths,
+                builder: PathBuilder {
+                    builder: tiny_skia_path::PathBuilder::new(),
+                },
+                foreground: text_color,
+            };
+
+            font.paint_color_glyph(glyph_id, 0, &mut glyph_painter)?;
+
+            Some(paths)
+        })?
+    }
+}
+
+struct GlyphPainter<'a> {
+    face: &'a ttf_parser::Face<'a>,
+    paths: &'a mut Vec<Path>,
+    builder: PathBuilder,
+    foreground: Color,
+}
+
+impl ttf_parser::colr::Painter for GlyphPainter<'_> {
+    fn outline(&mut self, glyph_id: ttf_parser::GlyphId) {
+        let builder = &mut self.builder;
+        match self.face.outline_glyph(glyph_id, builder) {
+            Some(v) => v,
+            None => return,
+        };
+    }
+
+    fn paint_foreground(&mut self) {
+        self.paint_color(ttf_parser::RgbaColor::new(
+            self.foreground.red,
+            self.foreground.green,
+            self.foreground.blue,
+            255,
+        ));
+    }
+
+    fn paint_color(&mut self, color: ttf_parser::RgbaColor) {
+        let builder = mem::replace(
+            &mut self.builder,
+            PathBuilder {
+                builder: tiny_skia_path::PathBuilder::new(),
+            },
+        );
+
+        if let Some(path) = builder.builder.finish().and_then(|p| {
+            let fill = Fill {
+                paint: Paint::Color(Color::new_rgb(color.red, color.green, color.blue)),
+                opacity: Opacity::new(f32::from(color.alpha) / 255.0).unwrap(),
+                rule: FillRule::NonZero,
+                context_element: None,
+            };
+
+            Path::new(
+                String::new(),
+                Visibility::Visible,
+                Some(fill),
+                None,
+                PaintOrder::FillAndStroke,
+                ShapeRendering::GeometricPrecision,
+                Arc::new(p),
+                Transform::default(),
+            )
+        }) {
+            self.paths.push(path)
+        }
     }
 }
