@@ -91,6 +91,20 @@ impl PositionedGlyph {
             // so we need to shift it up.;
             .pre_translate(0.0, -(pixels_per_em))
     }
+
+    pub fn svg_transform(&self) -> Transform {
+        let mut ts = Transform::identity();
+
+        let sx = self.font_size / self.units_per_em as f32;
+
+        ts = ts.pre_scale(sx, sx);
+        ts = ts
+            .pre_concat(self.glyph_ts)
+            .post_concat(self.cluster_ts)
+            .post_concat(self.span_ts);
+
+        ts
+    }
 }
 
 /// A span contains a number of layouted glyphs that share the same fill, stroke, paint order and

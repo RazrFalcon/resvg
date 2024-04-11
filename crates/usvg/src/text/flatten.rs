@@ -2,17 +2,17 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::mem;
 use fontdb::{Database, ID};
 use rustybuzz::ttf_parser;
 use rustybuzz::ttf_parser::{GlyphId, RasterImageFormat};
+use std::mem;
 use std::sync::Arc;
 use tiny_skia_path::{NonZeroRect, Size, Transform};
 
 use crate::tree::BBox;
 use crate::{
-    Group, Image, ImageKind, ImageRendering, Node, Path, ShapeRendering, Text, TextRendering,
-    Visibility,
+    Group, Image, ImageKind, ImageRendering, Node, Options, Path, ShapeRendering, Text,
+    TextRendering, Tree, Visibility,
 };
 
 fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
@@ -47,8 +47,22 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
         let mut span_builder = tiny_skia_path::PathBuilder::new();
 
         for glyph in &span.positioned_glyphs {
-            if let Some((raster, x, y, pixels_per_em)) = fontdb.raster(glyph.font, glyph.glyph_id) {
+            // TODO: similar to below, push all outline paths up until now.
 
+            if let Some(tree) = fontdb.svg(glyph.font, glyph.glyph_id) {
+                let mut group = Group {
+                    transform: glyph.svg_transform(),
+                    ..Group::empty()
+                };
+                // TODO: Probably need to update abs_transform of children?
+                group.children.push(Node::Group(Box::new(tree.root)));
+                group.calculate_bounding_boxes();
+
+                stroke_bbox = stroke_bbox.expand(group.stroke_bounding_box);
+                new_children.push(Node::Group(Box::new(group)));
+            } else if let Some((raster, x, y, pixels_per_em)) =
+                fontdb.raster(glyph.font, glyph.glyph_id)
+            {
                 // Push all outlines that have been created up until now
                 let builder = mem::replace(&mut span_builder, tiny_skia_path::PathBuilder::new());
 
@@ -154,6 +168,7 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
 pub(crate) trait DatabaseExt {
     fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tiny_skia_path::Path>;
     fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<(Image, i16, i16, u16)>;
+    fn svg(&self, id: ID, glyph_id: GlyphId) -> Option<Tree>;
 }
 
 impl DatabaseExt for Database {
@@ -195,6 +210,17 @@ impl DatabaseExt for Database {
             }
 
             None
+        })?
+    }
+
+    fn svg(&self, id: ID, glyph_id: GlyphId) -> Option<Tree> {
+        // TODO: Technically not accurate because the SVG format in a OTF font
+        // is actually a subset/superset of a normal SVG, but it seems to work fine
+        // for Twitter Color Emoji, so might as well use what we already have.
+        self.with_face_data(id, |data, face_index| -> Option<Tree> {
+            let font = ttf_parser::Face::parse(data, face_index).ok()?;
+            let image = font.glyph_svg_image(glyph_id)?;
+            Tree::from_data(image.data, &Options::default(), &fontdb::Database::new()).ok()
         })?
     }
 }
