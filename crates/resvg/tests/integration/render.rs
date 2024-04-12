@@ -1361,6 +1361,12 @@ use crate::render;
 #[test] fn text_baseline_shift_super() { assert_eq!(render("tests/text/baseline-shift/super"), 0); }
 #[test] fn text_baseline_shift_with_rotate() { assert_eq!(render("tests/text/baseline-shift/with-rotate"), 0); }
 #[test] fn text_color_font_sbix_simple_case() { assert_eq!(render("tests/text/color-font/sbix/simple-case"), 0); }
+#[test] fn text_color_font_svg_compound_emojis_and_coordinates_list() { assert_eq!(render("tests/text/color-font/svg/compound-emojis-and-coordinates-list"), 0); }
+#[test] fn text_color_font_svg_compound_emojis() { assert_eq!(render("tests/text/color-font/svg/compound-emojis"), 0); }
+#[test] fn text_color_font_svg_dominant_baseline() { assert_eq!(render("tests/text/color-font/svg/dominant-baseline"), 0); }
+#[test] fn text_color_font_svg_glyph_orientation_vertical() { assert_eq!(render("tests/text/color-font/svg/glyph-orientation-vertical"), 0); }
+#[test] fn text_color_font_svg_mixed_text_rtl() { assert_eq!(render("tests/text/color-font/svg/mixed-text-rtl"), 0); }
+#[test] fn text_color_font_svg_mixed_text() { assert_eq!(render("tests/text/color-font/svg/mixed-text"), 0); }
 #[test] fn text_color_font_svg_simple_case() { assert_eq!(render("tests/text/color-font/svg/simple-case"), 0); }
 #[test] fn text_direction_rtl_with_vertical_writing_mode() { assert_eq!(render("tests/text/direction/rtl-with-vertical-writing-mode"), 0); }
 #[test] fn text_direction_rtl() { assert_eq!(render("tests/text/direction/rtl"), 0); }
@@ -1467,14 +1473,11 @@ use crate::render;
 #[test] fn text_text_complex_grapheme_split_by_tspan() { assert_eq!(render("tests/text/text/complex-grapheme-split-by-tspan"), 0); }
 #[test] fn text_text_complex_graphemes_and_coordinates_list() { assert_eq!(render("tests/text/text/complex-graphemes-and-coordinates-list"), 0); }
 #[test] fn text_text_complex_graphemes() { assert_eq!(render("tests/text/text/complex-graphemes"), 0); }
-#[test] fn text_text_compound_emojis_and_coordinates_list() { assert_eq!(render("tests/text/text/compound-emojis-and-coordinates-list"), 0); }
-#[test] fn text_text_compound_emojis() { assert_eq!(render("tests/text/text/compound-emojis"), 0); }
 #[test] fn text_text_dx_and_dy_instead_of_x_and_y() { assert_eq!(render("tests/text/text/dx-and-dy-instead-of-x-and-y"), 0); }
 #[test] fn text_text_dx_and_dy_with_less_values_than_characters() { assert_eq!(render("tests/text/text/dx-and-dy-with-less-values-than-characters"), 0); }
 #[test] fn text_text_dx_and_dy_with_more_values_than_characters() { assert_eq!(render("tests/text/text/dx-and-dy-with-more-values-than-characters"), 0); }
 #[test] fn text_text_dx_and_dy_with_multiple_values() { assert_eq!(render("tests/text/text/dx-and-dy-with-multiple-values"), 0); }
 #[test] fn text_text_em_and_ex_coordinates() { assert_eq!(render("tests/text/text/em-and-ex-coordinates"), 0); }
-#[test] fn text_text_emojis() { assert_eq!(render("tests/text/text/emojis"), 0); }
 #[test] fn text_text_escaped_text_1() { assert_eq!(render("tests/text/text/escaped-text-1"), 0); }
 #[test] fn text_text_escaped_text_2() { assert_eq!(render("tests/text/text/escaped-text-2"), 0); }
 #[test] fn text_text_escaped_text_3() { assert_eq!(render("tests/text/text/escaped-text-3"), 0); }
