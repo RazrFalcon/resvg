@@ -1360,6 +1360,8 @@ use crate::render;
 #[test] fn text_baseline_shift_sub() { assert_eq!(render("tests/text/baseline-shift/sub"), 0); }
 #[test] fn text_baseline_shift_super() { assert_eq!(render("tests/text/baseline-shift/super"), 0); }
 #[test] fn text_baseline_shift_with_rotate() { assert_eq!(render("tests/text/baseline-shift/with-rotate"), 0); }
+#[test] fn text_color_font_sbix_simple_case() { assert_eq!(render("tests/text/color-font/sbix/simple-case"), 0); }
+#[test] fn text_color_font_svg_simple_case() { assert_eq!(render("tests/text/color-font/svg/simple-case"), 0); }
 #[test] fn text_direction_rtl_with_vertical_writing_mode() { assert_eq!(render("tests/text/direction/rtl-with-vertical-writing-mode"), 0); }
 #[test] fn text_direction_rtl() { assert_eq!(render("tests/text/direction/rtl"), 0); }
 #[test] fn text_dominant_baseline_alignment_baseline_and_baseline_shift_on_tspans() { assert_eq!(render("tests/text/dominant-baseline/alignment-baseline-and-baseline-shift-on-tspans"), 0); }
