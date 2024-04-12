@@ -80,7 +80,7 @@ pub fn render(name: &str) -> usize {
 
     // Save diff if needed.
     // if pixels_d != 0 {
-    // gen_diff(&name, &expected_data, rgba.as_slice()).unwrap();
+    //     gen_diff(&name, &expected_data, rgba.as_slice()).unwrap();
     // }
 
     pixels_d
