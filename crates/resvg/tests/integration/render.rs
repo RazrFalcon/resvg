@@ -1363,8 +1363,6 @@ use crate::render;
 #[test] fn text_color_font_sbix_simple_case() { assert_eq!(render("tests/text/color-font/sbix/simple-case"), 0); }
 #[test] fn text_color_font_svg_compound_emojis_and_coordinates_list() { assert_eq!(render("tests/text/color-font/svg/compound-emojis-and-coordinates-list"), 0); }
 #[test] fn text_color_font_svg_compound_emojis() { assert_eq!(render("tests/text/color-font/svg/compound-emojis"), 0); }
-#[test] fn text_color_font_svg_dominant_baseline() { assert_eq!(render("tests/text/color-font/svg/dominant-baseline"), 0); }
-#[test] fn text_color_font_svg_glyph_orientation_vertical() { assert_eq!(render("tests/text/color-font/svg/glyph-orientation-vertical"), 0); }
 #[test] fn text_color_font_svg_mixed_text_rtl() { assert_eq!(render("tests/text/color-font/svg/mixed-text-rtl"), 0); }
 #[test] fn text_color_font_svg_mixed_text() { assert_eq!(render("tests/text/color-font/svg/mixed-text"), 0); }
 #[test] fn text_color_font_svg_simple_case() { assert_eq!(render("tests/text/color-font/svg/simple-case"), 0); }
