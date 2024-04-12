@@ -1,5 +1,6 @@
 use once_cell::sync::Lazy;
 use rgb::{FromSlice, RGBA8};
+use std::process::Command;
 use usvg::fontdb;
 
 #[rustfmt::skip]
@@ -55,6 +56,9 @@ pub fn render(name: &str) -> usize {
     resvg::render(&tree, render_ts, &mut pixmap.as_mut());
 
     // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
+    // Command::new("oxipng")
+    //     .args(["-o".to_owned(), "6".to_owned(), "-Z".to_owned(), format!("tests/{}.png", name)])
+    //     .output().unwrap();
 
     let mut rgba = pixmap.take();
     demultiply_alpha(rgba.as_mut_slice().as_rgba_mut());
