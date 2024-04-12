@@ -75,7 +75,6 @@ struct GlyphCluster {
     advance: f32,
     ascent: f32,
     descent: f32,
-    x_height: f32,
     has_relative_shift: bool,
     glyphs: Vec<PositionedGlyph>,
     transform: Transform,
@@ -939,7 +938,9 @@ fn apply_writing_mode(writing_mode: WritingMode, clusters: &mut [GlyphCluster]) 
             // Could not find a spec that explains this,
             // but this is how other applications are shifting the "rotated" characters
             // in the top-to-bottom mode.
-            cluster.transform = cluster.transform.pre_translate(0.0, cluster.x_height / 2.0);
+            cluster.transform = cluster
+                .transform
+                .pre_translate(0.0, (cluster.ascent + cluster.descent) / 2.0);
         }
     }
 }
@@ -1060,7 +1061,6 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
         advance: width,
         ascent: font.ascent(font_size),
         descent: font.descent(font_size),
-        x_height: font.x_height(font_size),
         has_relative_shift: false,
         transform: Transform::default(),
         path_transform: Transform::default(),
