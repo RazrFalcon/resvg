@@ -112,7 +112,7 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
                 push_paths(span, &mut span_builder, &mut new_children, rendering_mode);
 
                 let mut group = Group {
-                    transform: glyph.raster_transform(x as f32, y as f32, pixels_per_em as f32),
+                    transform: glyph.raster_transform(x as f32, y as f32, pixels_per_em as f32, raster.size.height()),
                     ..Group::empty()
                 };
                 group.children.push(Node::Image(Box::new(raster)));

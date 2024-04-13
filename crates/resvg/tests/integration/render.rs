@@ -1360,6 +1360,7 @@ use crate::render;
 #[test] fn text_baseline_shift_sub() { assert_eq!(render("tests/text/baseline-shift/sub"), 0); }
 #[test] fn text_baseline_shift_super() { assert_eq!(render("tests/text/baseline-shift/super"), 0); }
 #[test] fn text_baseline_shift_with_rotate() { assert_eq!(render("tests/text/baseline-shift/with-rotate"), 0); }
+#[test] fn text_color_font_cbdt() { assert_eq!(render("tests/text/color-font/cbdt"), 0); }
 #[test] fn text_color_font_colrv0() { assert_eq!(render("tests/text/color-font/colrv0"), 0); }
 #[test] fn text_color_font_compound_emojis_and_coordinates_list() { assert_eq!(render("tests/text/color-font/compound-emojis-and-coordinates-list"), 0); }
 #[test] fn text_color_font_compound_emojis() { assert_eq!(render("tests/text/color-font/compound-emojis"), 0); }
