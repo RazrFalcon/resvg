@@ -1,6 +1,6 @@
-use std::path::Path;
 use once_cell::sync::Lazy;
 use rgb::{FromSlice, RGBA8};
+use std::path::Path;
 use std::process::Command;
 use usvg::fontdb;
 
@@ -59,8 +59,14 @@ pub fn render(name: &str) -> usize {
     if !Path::new(&png_path).exists() {
         pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
         Command::new("oxipng")
-            .args(["-o".to_owned(), "6".to_owned(), "-Z".to_owned(), format!("tests/{}.png", name)])
-            .output().unwrap();
+            .args([
+                "-o".to_owned(),
+                "6".to_owned(),
+                "-Z".to_owned(),
+                format!("tests/{}.png", name),
+            ])
+            .output()
+            .unwrap();
     }
 
     let mut rgba = pixmap.clone().take();
@@ -83,7 +89,6 @@ pub fn render(name: &str) -> usize {
 
     // Save diff if needed.
     if pixels_d != 0 {
-
         // gen_diff(&name, &expected_data, rgba.as_slice()).unwrap();
     }
 
