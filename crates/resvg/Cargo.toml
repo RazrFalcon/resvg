@@ -22,7 +22,7 @@ pico-args = { version = "0.5", features = ["eq-separator"] }
 png = { version = "0.17", optional = true }
 rgb = "0.8"
 svgtypes = "0.15.0"
-tiny-skia = "0.11.4"
+tiny-skia = { version = "0.11.4", default-features = false, features = ["std", "simd"] }
 usvg = { path = "../usvg", version = "0.41.0", default-features = false }
 
 [dev-dependencies]
@@ -40,4 +40,13 @@ memmap-fonts = ["usvg/memmap-fonts"]
 # Enables decoding and rendering of raster images.
 # When disabled, `image` elements with SVG data will still be rendered.
 # Adds around 200KiB to your binary.
-raster-images = ["gif", "jpeg-decoder", "png"]
+raster-images = ["gif", "jpeg", "png"]
+
+# Enables rasterization.
+raster = []
+# Enables rasterization in GIF.
+gif = ["raster", "dep:gif"]
+# Enables rasterization in JPEG.
+jpeg = ["raster", "jpeg-decoder"]
+# Enables rasterization in PNG.
+png = ["raster", "dep:png", "tiny-skia/png-format"]

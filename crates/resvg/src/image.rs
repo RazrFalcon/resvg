@@ -24,11 +24,11 @@ pub fn render_inner(
         usvg::ImageKind::SVG(ref tree) => {
             render_vector(tree, transform, pixmap);
         }
-        #[cfg(feature = "raster-images")]
+        #[cfg(feature = "raster")]
         _ => {
-            raster_images::render_raster(image_kind, transform, rendering_mode, pixmap);
+            raster::render(image_kind, transform, rendering_mode, pixmap);
         }
-        #[cfg(not(feature = "raster-images"))]
+        #[cfg(not(feature = "raster"))]
         _ => {
             log::warn!("Images decoding was disabled by a build feature.");
         }
@@ -54,29 +54,65 @@ fn render_vector(
     Some(())
 }
 
-#[cfg(feature = "raster-images")]
-mod raster_images {
+#[cfg(feature = "raster")]
+mod raster {
     use crate::OptionLog;
 
-    fn decode_raster(image: &usvg::ImageKind) -> Option<tiny_skia::Pixmap> {
+    pub fn render(
+        image: &usvg::ImageKind,
+        transform: tiny_skia::Transform,
+        rendering_mode: usvg::ImageRendering,
+        pixmap: &mut tiny_skia::PixmapMut,
+    ) -> Option<()> {
+        let raster = decode(image)?;
+
+        let rect = tiny_skia::Size::from_wh(raster.width() as f32, raster.height() as f32)?
+            .to_rect(0.0, 0.0)?;
+
+        let mut quality = tiny_skia::FilterQuality::Bicubic;
+        if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
+            quality = tiny_skia::FilterQuality::Nearest;
+        }
+
+        let pattern = tiny_skia::Pattern::new(
+            raster.as_ref(),
+            tiny_skia::SpreadMode::Pad,
+            quality,
+            1.0,
+            tiny_skia::Transform::default(),
+        );
+        let mut paint = tiny_skia::Paint::default();
+        paint.shader = pattern;
+
+        pixmap.fill_rect(rect, &paint, transform, None);
+
+        Some(())
+    }
+
+    fn decode(image: &usvg::ImageKind) -> Option<tiny_skia::Pixmap> {
         match image {
-            usvg::ImageKind::SVG(_) => None,
-            usvg::ImageKind::JPEG(ref data) => {
-                decode_jpeg(data).log_none(|| log::warn!("Failed to decode a JPEG image."))
-            }
-            usvg::ImageKind::PNG(ref data) => {
-                decode_png(data).log_none(|| log::warn!("Failed to decode a PNG image."))
-            }
+            #[cfg(feature = "gif")]
             usvg::ImageKind::GIF(ref data) => {
                 decode_gif(data).log_none(|| log::warn!("Failed to decode a GIF image."))
             }
+            #[cfg(feature = "jpeg")]
+            usvg::ImageKind::JPEG(ref data) => {
+                decode_jpeg(data).log_none(|| log::warn!("Failed to decode a JPEG image."))
+            }
+            #[cfg(feature = "png")]
+            usvg::ImageKind::PNG(ref data) => {
+                decode_png(data).log_none(|| log::warn!("Failed to decode a PNG image."))
+            }
+            _ => None,
         }
     }
 
+    #[cfg(feature = "png")]
     fn decode_png(data: &[u8]) -> Option<tiny_skia::Pixmap> {
         tiny_skia::Pixmap::decode_png(data).ok()
     }
 
+    #[cfg(feature = "jpeg")]
     fn decode_jpeg(data: &[u8]) -> Option<tiny_skia::Pixmap> {
         let mut decoder = jpeg_decoder::Decoder::new(data);
         let img_data = decoder.decode().ok()?;
@@ -105,6 +141,7 @@ mod raster_images {
         Some(pixmap)
     }
 
+    #[cfg(feature = "gif")]
     fn decode_gif(data: &[u8]) -> Option<tiny_skia::Pixmap> {
         let mut decoder = gif::DecodeOptions::new();
         decoder.set_color_output(gif::ColorOutput::RGBA);
@@ -122,6 +159,7 @@ mod raster_images {
         Some(pixmap)
     }
 
+    #[cfg(feature = "jpeg")]
     fn rgb_to_pixmap(data: &[u8], pixmap: &mut tiny_skia::Pixmap) {
         use rgb::FromSlice;
 
@@ -137,6 +175,7 @@ mod raster_images {
         }
     }
 
+    #[cfg(feature = "gif")]
     fn rgba_to_pixmap(data: &[u8], pixmap: &mut tiny_skia::Pixmap) {
         use rgb::FromSlice;
 
@@ -151,36 +190,5 @@ mod raster_images {
 
             i += tiny_skia::BYTES_PER_PIXEL;
         }
-    }
-
-    pub(crate) fn render_raster(
-        image: &usvg::ImageKind,
-        transform: tiny_skia::Transform,
-        rendering_mode: usvg::ImageRendering,
-        pixmap: &mut tiny_skia::PixmapMut,
-    ) -> Option<()> {
-        let raster = decode_raster(image)?;
-
-        let rect = tiny_skia::Size::from_wh(raster.width() as f32, raster.height() as f32)?
-            .to_rect(0.0, 0.0)?;
-
-        let mut quality = tiny_skia::FilterQuality::Bicubic;
-        if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
-            quality = tiny_skia::FilterQuality::Nearest;
-        }
-
-        let pattern = tiny_skia::Pattern::new(
-            raster.as_ref(),
-            tiny_skia::SpreadMode::Pad,
-            quality,
-            1.0,
-            tiny_skia::Transform::default(),
-        );
-        let mut paint = tiny_skia::Paint::default();
-        paint.shader = pattern;
-
-        pixmap.fill_rect(rect, &paint, transform, None);
-
-        Some(())
     }
 }
