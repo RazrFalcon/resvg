@@ -5,9 +5,10 @@
 use fontdb::{Database, ID};
 use rustybuzz::ttf_parser;
 use rustybuzz::ttf_parser::{GlyphId, RasterImageFormat};
+use tiny_skia_path::{NonZeroRect, Size, Transform};
+
 use std::mem;
 use std::sync::Arc;
-use tiny_skia_path::{NonZeroRect, Size, Transform};
 
 use crate::layout::Span;
 use crate::{
@@ -23,7 +24,7 @@ fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
     }
 }
 
-fn push_paths(
+fn push_outline_paths(
     span: &Span,
     builder: &mut tiny_skia_path::PathBuilder,
     new_children: &mut Vec<Node>,
@@ -68,22 +69,24 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
         // Instead of always processing each glyph separately, we always collect
         // as many outline glyphs as possible by pushing them into the span_builder
         // and only if we encounter a different glyph, or we reach the very end of the
-        // span to we push the actual paths into new_children. This way, we don't need
-        // to create a new path for every glyph id we have many consecutive glyphs
+        // span to we push the actual outline paths into new_children. This way, we don't need
+        // to create a new path for every glyph if we have many consecutive glyphs
         // with just outlines (which is the most common case).
         let mut span_builder = tiny_skia_path::PathBuilder::new();
 
         for glyph in &span.positioned_glyphs {
             // A COLRv0 glyph. Will return a vector of paths that make up the glyph description.
-            if let Some(paths) = fontdb.colr(glyph.font, glyph.glyph_id, Color::black()) {
-                push_paths(span, &mut span_builder, &mut new_children, rendering_mode);
+            // TODO: Don't use black for foreground color? But not sure whether to use fill or stroke
+            // color.
+            if let Some(layers) = fontdb.colr(glyph.font, glyph.id, Color::black()) {
+                push_outline_paths(span, &mut span_builder, &mut new_children, rendering_mode);
 
                 let mut group = Group {
                     transform: glyph.colr_transform(),
                     ..Group::empty()
                 };
 
-                for path in paths {
+                for path in layers {
                     // TODO: Probably need to update abs_transform of children?
                     group.children.push(Node::Path(Box::new(path)));
                 }
@@ -92,8 +95,8 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
                 new_children.push(Node::Group(Box::new(group)));
             }
             // An SVG glyph. Will return the usvg tree containing the glyph descriptions.
-            else if let Some(tree) = fontdb.svg(glyph.font, glyph.glyph_id) {
-                push_paths(span, &mut span_builder, &mut new_children, rendering_mode);
+            else if let Some(tree) = fontdb.svg(glyph.font, glyph.id) {
+                push_outline_paths(span, &mut span_builder, &mut new_children, rendering_mode);
 
                 let mut group = Group {
                     transform: glyph.svg_transform(),
@@ -106,8 +109,9 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
                 new_children.push(Node::Group(Box::new(group)));
             }
             // A bitmap glyph.
-            else if let Some(img) = fontdb.raster(glyph.font, glyph.glyph_id) {
-                push_paths(span, &mut span_builder, &mut new_children, rendering_mode);
+            else if let Some(img) = fontdb.raster(glyph.font, glyph.id) {
+                push_outline_paths(span, &mut span_builder, &mut new_children, rendering_mode);
+
                 let transform = if img.is_sbix {
                     glyph.sbix_transform(
                         img.x as f32,
@@ -135,14 +139,14 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
 
                 new_children.push(Node::Group(Box::new(group)));
             } else if let Some(outline) = fontdb
-                .outline(glyph.font, glyph.glyph_id)
+                .outline(glyph.font, glyph.id)
                 .and_then(|p| p.transform(glyph.outline_transform()))
             {
                 span_builder.push_path(&outline);
             }
         }
 
-        push_paths(span, &mut span_builder, &mut new_children, rendering_mode);
+        push_outline_paths(span, &mut span_builder, &mut new_children, rendering_mode);
 
         if let Some(path) = span.line_through.as_ref() {
             let mut path = path.clone();
@@ -236,14 +240,14 @@ impl DatabaseExt for Database {
                         rendering_mode: ImageRendering::OptimizeQuality,
                         kind: ImageKind::PNG(Arc::new(image.data.into())),
                         abs_transform: Transform::default(),
-                        // TODO: Change
+                        // TODO: What to change to?
                         abs_bounding_box: NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
                     },
                     x: image.x,
                     y: image.y,
                     pixels_per_em: image.pixels_per_em,
                     glyph_bbox: font.glyph_bounding_box(glyph_id),
-                    // ttf-parser always checks sbix first, so if this table exists, this was used.
+                    // ttf-parser always checks sbix first, so if this table exists, it was used.
                     is_sbix: font.tables().sbix.is_some(),
                 };
 
@@ -255,7 +259,7 @@ impl DatabaseExt for Database {
     }
 
     fn svg(&self, id: ID, glyph_id: GlyphId) -> Option<Tree> {
-        // TODO: Technically not accurate because the SVG format in a OTF font
+        // TODO: Technically not 100% accurate because the SVG format in a OTF font
         // is actually a subset/superset of a normal SVG, but it seems to work fine
         // for Twitter Color Emoji, so might as well use what we already have.
         self.with_face_data(id, |data, face_index| -> Option<Tree> {

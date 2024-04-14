@@ -39,9 +39,10 @@ pub struct PositionedGlyph {
     span_ts: Transform,
     /// The units per em of the font the glyph belongs to.
     units_per_em: u16,
+    /// The font size the glyph should be scaled to.
     font_size: f32,
     /// The ID of the glyph.
-    pub glyph_id: GlyphId,
+    pub id: GlyphId,
     /// The text from the original string that corresponds to that glyph.
     pub text: String,
     /// The ID of the font the glyph should be taken from.
@@ -1036,7 +1037,11 @@ fn apply_writing_mode(writing_mode: WritingMode, clusters: &mut [GlyphCluster]) 
             // Position glyph in the center of vertical axis.
             ts = ts.pre_translate(0.0, (cluster.ascent + cluster.descent) / 2.0);
             // Rotate by 90 degrees in the center.
-            ts = ts.pre_rotate_at(-90.0, cluster.width / 2.0, -(cluster.ascent + cluster.descent) / 2.0);
+            ts = ts.pre_rotate_at(
+                -90.0,
+                cluster.width / 2.0,
+                -(cluster.ascent + cluster.descent) / 2.0,
+            );
 
             cluster.path_transform = ts;
 
@@ -1150,7 +1155,7 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
             font_size,
             font: glyph.font.id,
             text: glyph.text.clone(),
-            glyph_id: glyph.id,
+            id: glyph.id,
         });
 
         x += glyph.width as f32;
