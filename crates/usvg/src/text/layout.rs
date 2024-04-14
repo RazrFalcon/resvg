@@ -68,12 +68,44 @@ impl PositionedGlyph {
         ts
     }
 
-    /// Returns the transform for the glyph, assuming that a bitmap glyph
+    /// Returns the transform for the glyph, assuming that a CBTD-based raster glyph
     /// is being used.
-    pub fn raster_transform(&self, x: f32, y: f32, pixels_per_em: f32, height: f32) -> Transform {
+    pub fn cbdt_transform(&self, x: f32, y: f32, pixels_per_em: f32, height: f32) -> Transform {
         self.span_ts
             .pre_concat(self.cluster_ts)
             .pre_concat(self.glyph_ts)
+            .pre_concat(Transform::from_scale(
+                self.font_size / pixels_per_em,
+                self.font_size / pixels_per_em,
+            ))
+            // Right now, the top-left corner of the image would be placed in
+            // on the "text cursor", but we want the bottom-left corner to be there,
+            // so we need to shift it up and also apply the x/y offset.
+            .pre_translate(x, -height - y)
+    }
+
+    /// Returns the transform for the glyph, assuming that a sbix-based raster glyph
+    /// is being used.
+    pub fn sbix_transform(
+        &self,
+        x: f32,
+        y: f32,
+        x_min: f32,
+        y_min: f32,
+        pixels_per_em: f32,
+        height: f32,
+    ) -> Transform {
+        self.span_ts
+            .pre_concat(self.cluster_ts)
+            .pre_concat(self.glyph_ts)
+            // In contrast to CBDT, we also need to look at the outline bbox of the glyph and add a shift if necessary.
+            // For unknown reasons, using Apple Color Emoji will lead to a vertical shift on MacOS, but this shift
+            // doesn't seem to be coming from the font and most likely is somehow hardcoded into CoreText. But we
+            // ignore this. See also https://github.com/harfbuzz/harfbuzz/issues/2679#issuecomment-1345595425
+            .pre_concat(Transform::from_translate(
+                self.font_size * (-x_min / self.units_per_em as f32),
+                self.font_size * (-y_min / self.units_per_em as f32),
+            ))
             .pre_concat(Transform::from_scale(
                 self.font_size / pixels_per_em,
                 self.font_size / pixels_per_em,
@@ -100,9 +132,9 @@ impl PositionedGlyph {
         ts
     }
 
-    /// Returns the transform for the glyph, assuming that a COLRv0 glyph is
+    /// Returns the transform for the glyph, assuming that a COLR glyph is
     /// being used.
-    pub fn colrv0_transform(&self) -> Transform {
+    pub fn colr_transform(&self) -> Transform {
         self.outline_transform()
     }
 }

@@ -79,7 +79,7 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
                 push_paths(span, &mut span_builder, &mut new_children, rendering_mode);
 
                 let mut group = Group {
-                    transform: glyph.colrv0_transform(),
+                    transform: glyph.colr_transform(),
                     ..Group::empty()
                 };
 
@@ -105,17 +105,32 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
 
                 new_children.push(Node::Group(Box::new(group)));
             }
-            // A bitmap glyph. The baseline doesn't seem to be right at the moment.
-            else if let Some((raster, x, y, pixels_per_em)) =
-                fontdb.raster(glyph.font, glyph.glyph_id)
-            {
+            // A bitmap glyph.
+            else if let Some(img) = fontdb.raster(glyph.font, glyph.glyph_id) {
                 push_paths(span, &mut span_builder, &mut new_children, rendering_mode);
+                let transform = if img.is_sbix {
+                    glyph.sbix_transform(
+                        img.x as f32,
+                        img.y as f32,
+                        img.glyph_bbox.map(|bbox| bbox.x_min).unwrap_or(0) as f32,
+                        img.glyph_bbox.map(|bbox| bbox.y_min).unwrap_or(0) as f32,
+                        img.pixels_per_em as f32,
+                        img.image.size.height(),
+                    )
+                } else {
+                    glyph.cbdt_transform(
+                        img.x as f32,
+                        img.y as f32,
+                        img.pixels_per_em as f32,
+                        img.image.size.height(),
+                    )
+                };
 
                 let mut group = Group {
-                    transform: glyph.raster_transform(x as f32, y as f32, pixels_per_em as f32, raster.size.height()),
+                    transform,
                     ..Group::empty()
                 };
-                group.children.push(Node::Image(Box::new(raster)));
+                group.children.push(Node::Image(Box::new(img.image)));
                 group.calculate_bounding_boxes();
 
                 new_children.push(Node::Group(Box::new(group)));
@@ -178,9 +193,18 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
 
 pub(crate) trait DatabaseExt {
     fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tiny_skia_path::Path>;
-    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<(Image, i16, i16, u16)>;
+    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<BitmapImage>;
     fn svg(&self, id: ID, glyph_id: GlyphId) -> Option<Tree>;
     fn colr(&self, id: ID, glyph_id: GlyphId, text_color: Color) -> Option<Vec<Path>>;
+}
+
+pub(crate) struct BitmapImage {
+    image: Image,
+    x: i16,
+    y: i16,
+    pixels_per_em: u16,
+    glyph_bbox: Option<ttf_parser::Rect>,
+    is_sbix: bool,
 }
 
 impl DatabaseExt for Database {
@@ -198,14 +222,14 @@ impl DatabaseExt for Database {
         })?
     }
 
-    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<(Image, i16, i16, u16)> {
-        self.with_face_data(id, |data, face_index| -> Option<(Image, i16, i16, u16)> {
+    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<BitmapImage> {
+        self.with_face_data(id, |data, face_index| -> Option<BitmapImage> {
             let font = ttf_parser::Face::parse(data, face_index).ok()?;
             let image = font.glyph_raster_image(glyph_id, u16::MAX)?;
 
             if image.format == RasterImageFormat::PNG {
-                return Some((
-                    Image {
+                let bitmap_image = BitmapImage {
+                    image: Image {
                         id: String::new(),
                         visibility: Visibility::Visible,
                         size: Size::from_wh(image.width as f32, image.height as f32)?,
@@ -215,10 +239,15 @@ impl DatabaseExt for Database {
                         // TODO: Change
                         abs_bounding_box: NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
                     },
-                    image.x,
-                    image.y,
-                    image.pixels_per_em,
-                ));
+                    x: image.x,
+                    y: image.y,
+                    pixels_per_em: image.pixels_per_em,
+                    glyph_bbox: font.glyph_bounding_box(glyph_id),
+                    // ttf-parser always checks sbix first, so if this table exists, this was used.
+                    is_sbix: font.tables().sbix.is_some(),
+                };
+
+                return Some(bitmap_image);
             }
 
             None
