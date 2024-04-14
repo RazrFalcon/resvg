@@ -1032,14 +1032,11 @@ fn apply_writing_mode(writing_mode: WritingMode, clusters: &mut [GlyphCluster]) 
     for cluster in clusters {
         let orientation = unicode_vo::char_orientation(cluster.codepoint);
         if orientation == unicode_vo::Orientation::Upright {
-            // Additional offset. Not sure why.
-            let dy = cluster.width - cluster.height();
-
-            // Rotate a cluster 90deg counter clockwise by the center.
             let mut ts = Transform::default();
-            ts = ts.pre_translate(cluster.width / 2.0, 0.0);
-            ts = ts.pre_rotate(-90.0);
-            ts = ts.pre_translate(-cluster.width / 2.0, -dy);
+            // Position glyph in the center of vertical axis.
+            ts = ts.pre_translate(0.0, (cluster.ascent + cluster.descent) / 2.0);
+            // Rotate by 90 degrees in the center.
+            ts = ts.pre_rotate_at(-90.0, cluster.width / 2.0, -(cluster.ascent + cluster.descent) / 2.0);
 
             cluster.path_transform = ts;
 

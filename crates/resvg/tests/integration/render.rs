@@ -1368,6 +1368,7 @@ use crate::render;
 #[test] fn text_color_font_mixed_text() { assert_eq!(render("tests/text/color-font/mixed-text"), 0); }
 #[test] fn text_color_font_sbix() { assert_eq!(render("tests/text/color-font/sbix"), 0); }
 #[test] fn text_color_font_svg() { assert_eq!(render("tests/text/color-font/svg"), 0); }
+#[test] fn text_color_font_writing_mode_eq_tb() { assert_eq!(render("tests/text/color-font/writing-mode=tb"), 0); }
 #[test] fn text_direction_rtl_with_vertical_writing_mode() { assert_eq!(render("tests/text/direction/rtl-with-vertical-writing-mode"), 0); }
 #[test] fn text_direction_rtl() { assert_eq!(render("tests/text/direction/rtl"), 0); }
 #[test] fn text_dominant_baseline_alignment_baseline_and_baseline_shift_on_tspans() { assert_eq!(render("tests/text/dominant-baseline/alignment-baseline-and-baseline-shift-on-tspans"), 0); }
