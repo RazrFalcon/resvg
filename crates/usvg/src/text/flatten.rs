@@ -2,19 +2,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::mem;
+use std::sync::Arc;
+
 use fontdb::{Database, ID};
 use rustybuzz::ttf_parser;
 use rustybuzz::ttf_parser::{GlyphId, RasterImageFormat};
 use tiny_skia_path::{NonZeroRect, Size, Transform};
 
-use std::mem;
-use std::sync::Arc;
-
-use crate::layout::Span;
-use crate::{
-    Color, Fill, FillRule, Group, Image, ImageKind, ImageRendering, Node, Opacity, Options, Paint,
-    PaintOrder, Path, ShapeRendering, Text, TextRendering, Tree, Visibility,
-};
+use crate::*;
 
 fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
     match text.rendering_mode {
@@ -25,7 +21,7 @@ fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
 }
 
 fn push_outline_paths(
-    span: &Span,
+    span: &layout::Span,
     builder: &mut tiny_skia_path::PathBuilder,
     new_children: &mut Vec<Node>,
     rendering_mode: ShapeRendering,
@@ -240,8 +236,12 @@ impl DatabaseExt for Database {
                         rendering_mode: ImageRendering::OptimizeQuality,
                         kind: ImageKind::PNG(Arc::new(image.data.into())),
                         abs_transform: Transform::default(),
-                        // TODO: What to change to?
-                        abs_bounding_box: NonZeroRect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap(),
+                        abs_bounding_box: NonZeroRect::from_xywh(
+                            0.0,
+                            0.0,
+                            image.width as f32,
+                            image.height as f32,
+                        )?,
                     },
                     x: image.x,
                     y: image.y,
