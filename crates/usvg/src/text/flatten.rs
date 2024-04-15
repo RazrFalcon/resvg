@@ -74,7 +74,7 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
             // A COLRv0 glyph. Will return a vector of paths that make up the glyph description.
             // TODO: Don't use black for foreground color? But not sure whether to use fill or stroke
             // color.
-            if let Some(layers) = fontdb.colr(glyph.font, glyph.id, Color::black()) {
+            if let Some(layers) = fontdb.colr(glyph.font, glyph.id) {
                 push_outline_paths(span, &mut span_builder, &mut new_children, rendering_mode);
 
                 let mut group = Group {
@@ -195,7 +195,7 @@ pub(crate) trait DatabaseExt {
     fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tiny_skia_path::Path>;
     fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<BitmapImage>;
     fn svg(&self, id: ID, glyph_id: GlyphId) -> Option<Tree>;
-    fn colr(&self, id: ID, glyph_id: GlyphId, text_color: Color) -> Option<Vec<Path>>;
+    fn colr(&self, id: ID, glyph_id: GlyphId) -> Option<Vec<Path>>;
 }
 
 pub(crate) struct BitmapImage {
@@ -269,7 +269,7 @@ impl DatabaseExt for Database {
         })?
     }
 
-    fn colr(&self, id: ID, glyph_id: GlyphId, text_color: Color) -> Option<Vec<Path>> {
+    fn colr(&self, id: ID, glyph_id: GlyphId) -> Option<Vec<Path>> {
         self.with_face_data(id, |data, face_index| -> Option<Vec<Path>> {
             let font = ttf_parser::Face::parse(data, face_index).ok()?;
 
@@ -280,7 +280,6 @@ impl DatabaseExt for Database {
                 builder: PathBuilder {
                     builder: tiny_skia_path::PathBuilder::new(),
                 },
-                foreground: text_color,
             };
 
             font.paint_color_glyph(glyph_id, 0, &mut glyph_painter)?;
@@ -294,7 +293,6 @@ struct GlyphPainter<'a> {
     face: &'a ttf_parser::Face<'a>,
     paths: &'a mut Vec<Path>,
     builder: PathBuilder,
-    foreground: Color,
 }
 
 impl ttf_parser::colr::Painter for GlyphPainter<'_> {
@@ -307,12 +305,7 @@ impl ttf_parser::colr::Painter for GlyphPainter<'_> {
     }
 
     fn paint_foreground(&mut self) {
-        self.paint_color(ttf_parser::RgbaColor::new(
-            self.foreground.red,
-            self.foreground.green,
-            self.foreground.blue,
-            255,
-        ));
+        self.paint_color(ttf_parser::RgbaColor::new(0, 0, 0, 255));
     }
 
     fn paint_color(&mut self, color: ttf_parser::RgbaColor) {
