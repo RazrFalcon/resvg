@@ -29,15 +29,127 @@ use crate::{
 /// transform to the outline of the glyphs is all that is necessary to display it correctly.
 #[derive(Clone, Debug)]
 pub struct PositionedGlyph {
-    /// The transform of the glyph. This transform should be applied to the _glyph outlines_, meaning
-    /// that paint servers referenced by the glyph's span should not be affected by it.
-    pub transform: Transform,
+    /// Returns the transform of the glyph itself within the cluster. For example,
+    /// for zalgo text, it contains the transform to position the glyphs above/below
+    /// the main glyph.
+    glyph_ts: Transform,
+    /// Returns the transform of the whole cluster that the glyph is part of.
+    cluster_ts: Transform,
+    /// Returns the transform of the span that the glyph is a part of.
+    span_ts: Transform,
+    /// The units per em of the font the glyph belongs to.
+    units_per_em: u16,
+    /// The font size the glyph should be scaled to.
+    font_size: f32,
     /// The ID of the glyph.
-    pub glyph_id: GlyphId,
+    pub id: GlyphId,
     /// The text from the original string that corresponds to that glyph.
     pub text: String,
     /// The ID of the font the glyph should be taken from.
     pub font: ID,
+}
+
+impl PositionedGlyph {
+    /// Returns the transform of glyph, assuming that an outline
+    /// glyph is being used (i.e. from the `glyf` or `CFF/CFF2` table).
+    pub fn outline_transform(&self) -> Transform {
+        let mut ts = Transform::identity();
+
+        // Outlines are mirrored by default.
+        ts = ts.pre_scale(1.0, -1.0);
+
+        let sx = self.font_size / self.units_per_em as f32;
+
+        ts = ts.pre_scale(sx, sx);
+        ts = ts
+            .pre_concat(self.glyph_ts)
+            .post_concat(self.cluster_ts)
+            .post_concat(self.span_ts);
+
+        ts
+    }
+
+    /// Returns the transform for the glyph, assuming that a CBTD-based raster glyph
+    /// is being used.
+    pub fn cbdt_transform(&self, x: f32, y: f32, pixels_per_em: f32, height: f32) -> Transform {
+        self.span_ts
+            .pre_concat(self.cluster_ts)
+            .pre_concat(self.glyph_ts)
+            .pre_concat(Transform::from_scale(
+                self.font_size / pixels_per_em,
+                self.font_size / pixels_per_em,
+            ))
+            // Right now, the top-left corner of the image would be placed in
+            // on the "text cursor", but we want the bottom-left corner to be there,
+            // so we need to shift it up and also apply the x/y offset.
+            .pre_translate(x, -height - y)
+    }
+
+    /// Returns the transform for the glyph, assuming that a sbix-based raster glyph
+    /// is being used.
+    pub fn sbix_transform(
+        &self,
+        x: f32,
+        y: f32,
+        x_min: f32,
+        y_min: f32,
+        pixels_per_em: f32,
+        height: f32,
+    ) -> Transform {
+        // In contrast to CBDT, we also need to look at the outline bbox of the glyph and add a shift if necessary.
+        let bbox_x_shift = self.font_size * (-x_min / self.units_per_em as f32);
+
+        let bbox_y_shift = if y_min.approx_zero_ulps(4) {
+            // For unknown reasons, using Apple Color Emoji will lead to a vertical shift on MacOS, but this shift
+            // doesn't seem to be coming from the font and most likely is somehow hardcoded. On Windows,
+            // this shift will not be applied. However, if this shift is not applied the emojis are a bit
+            // too high up when being together with other text, so we try to imitate this.
+            // See also https://github.com/harfbuzz/harfbuzz/issues/2679#issuecomment-1345595425
+            // So whenever the y-shift is 0, we approximate this vertical shift that seems to be produced by it.
+            // This value seems to be pretty close to what is happening on MacOS.
+            // We can still remove this if it turns out to be a problem, but Apple Color Emoji is pretty
+            // much the only `sbix` font out there and they all seem to have a y-shift of 0, so it
+            // makes sense to keep it.
+            0.128 * self.font_size
+        } else {
+            self.font_size * (-y_min / self.units_per_em as f32)
+        };
+
+        self.span_ts
+            .pre_concat(self.cluster_ts)
+            .pre_concat(self.glyph_ts)
+            .pre_concat(Transform::from_translate(bbox_x_shift, bbox_y_shift))
+            .pre_concat(Transform::from_scale(
+                self.font_size / pixels_per_em,
+                self.font_size / pixels_per_em,
+            ))
+            // Right now, the top-left corner of the image would be placed in
+            // on the "text cursor", but we want the bottom-left corner to be there,
+            // so we need to shift it up and also apply the x/y offset.
+            .pre_translate(x, -height - y)
+    }
+
+    /// Returns the transform for the glyph, assuming that an SVG glyph is
+    /// being used.
+    pub fn svg_transform(&self) -> Transform {
+        let mut ts = Transform::identity();
+
+        let sx = self.font_size / self.units_per_em as f32;
+
+        ts = ts.pre_scale(sx, sx);
+        ts = ts
+            .pre_concat(self.glyph_ts)
+            .post_concat(self.cluster_ts)
+            .post_concat(self.span_ts);
+
+        ts
+    }
+
+    /// Returns the transform for the glyph, assuming that a COLR glyph is
+    /// being used.
+    pub fn colr_transform(&self) -> Transform {
+        self.outline_transform()
+    }
 }
 
 /// A span contains a number of layouted glyphs that share the same fill, stroke, paint order and
@@ -233,7 +345,8 @@ pub(crate) fn layout_text(
                     .flat_map(|mut gc| {
                         let cluster_ts = gc.transform();
                         gc.glyphs.iter_mut().for_each(|pg| {
-                            pg.transform = pg.transform.post_concat(cluster_ts).post_concat(span_ts)
+                            pg.cluster_ts = cluster_ts;
+                            pg.span_ts = span_ts;
                         });
                         gc.glyphs
                     })
@@ -920,14 +1033,15 @@ fn apply_writing_mode(writing_mode: WritingMode, clusters: &mut [GlyphCluster]) 
     for cluster in clusters {
         let orientation = unicode_vo::char_orientation(cluster.codepoint);
         if orientation == unicode_vo::Orientation::Upright {
-            // Additional offset. Not sure why.
-            let dy = cluster.width - cluster.height();
-
-            // Rotate a cluster 90deg counter clockwise by the center.
             let mut ts = Transform::default();
-            ts = ts.pre_translate(cluster.width / 2.0, 0.0);
-            ts = ts.pre_rotate(-90.0);
-            ts = ts.pre_translate(-cluster.width / 2.0, -dy);
+            // Position glyph in the center of vertical axis.
+            ts = ts.pre_translate(0.0, (cluster.ascent + cluster.descent) / 2.0);
+            // Rotate by 90 degrees in the center.
+            ts = ts.pre_rotate_at(
+                -90.0,
+                cluster.width / 2.0,
+                -(cluster.ascent + cluster.descent) / 2.0,
+            );
 
             cluster.path_transform = ts;
 
@@ -1023,25 +1137,25 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
     for glyph in glyphs {
         let sx = glyph.font.scale(font_size);
 
-        // By default, glyphs are upside-down, so we have to mirror them.
-        let mut ts = Transform::from_scale(1.0, -1.0);
-
-        // Scale to font-size.
-        ts = ts.pre_scale(sx, sx);
-
         // Apply offset.
         //
         // The first glyph in the cluster will have an offset from 0x0,
         // but the later one will have an offset from the "current position".
         // So we have to keep an advance.
         // TODO: should be done only inside a single text span
-        ts = ts.pre_translate(x + glyph.dx as f32, glyph.dy as f32);
+        let ts = Transform::from_translate(x + glyph.dx as f32, glyph.dy as f32);
 
         positioned_glyphs.push(PositionedGlyph {
-            transform: ts,
+            glyph_ts: ts,
+            // Will be set later.
+            cluster_ts: Transform::default(),
+            // Will be set later.
+            span_ts: Transform::default(),
+            units_per_em: glyph.font.units_per_em.get(),
+            font_size,
             font: glyph.font.id,
             text: glyph.text.clone(),
-            glyph_id: glyph.id,
+            id: glyph.id,
         });
 
         x += glyph.width as f32;
