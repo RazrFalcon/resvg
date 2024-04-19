@@ -77,7 +77,7 @@ on ARM macOS - the produced image will be identical. Each pixel would have the s
 - No native text rendering<br>
   `resvg` doesn't rely on any system libraries, which implies that we cannot use native text rendering.
   Nevertheless, native text rendering is optimized for small horizontal text, which is not
-  that common is SVG.
+  that common in SVG.
 - Unicode-only<br>
   It's the 21st century. Text files that aren't UTF-8 encoded are no longer relevant.
 
