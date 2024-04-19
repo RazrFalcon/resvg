@@ -817,7 +817,11 @@ fn convert_path(
 
     let mut marker = None;
     if marker::is_valid(node) && visibility == Visibility::Visible {
-        let mut marker_group = Group::empty();
+        let mut marker_group = Group {
+            abs_transform: parent.abs_transform,
+            ..Group::empty()
+        };
+
         let mut marker_state = state.clone();
 
         let bbox = tiny_skia_path
