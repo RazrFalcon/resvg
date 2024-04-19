@@ -291,3 +291,12 @@ Basically everything from [CSS Text Module Level 3](https://www.w3.org/TR/css-te
 - A `font-face-uri` element.
 - A `font-face-format` element.
 - A `font-face-name` element.
+
+## svg-next
+
+Deferred these features to [a future version of SVG](https://svgwg.org/svg2-draft), see svgwg [#449](https://github.com/w3c/svgwg/issues/449#issuecomment-390740441).
+
+- `<solidcolor>` element and the `solid-color` and `solid-opacity` properties.
+- `<hatch>` and `<hatchpath>` elements.
+- Mesh gradients, including `<mesh>`, `<meshrow>`, and `<meshpath>` elements.
+- `<cursor>` element.
