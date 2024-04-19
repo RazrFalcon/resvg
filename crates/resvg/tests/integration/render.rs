@@ -659,6 +659,7 @@ use crate::render;
 #[test] fn painting_context_with_pattern_objectBoundingBox_in_use() { assert_eq!(render("tests/painting/context/with-pattern-objectBoundingBox-in-use"), 0); }
 #[test] fn painting_context_with_pattern_on_marker() { assert_eq!(render("tests/painting/context/with-pattern-on-marker"), 0); }
 #[test] fn painting_context_with_text() { assert_eq!(render("tests/painting/context/with-text"), 0); }
+#[test] fn painting_context_with_viewbox() { assert_eq!(render("tests/painting/context/with-viewbox"), 0); }
 #[test] fn painting_context_without_context_element() { assert_eq!(render("tests/painting/context/without-context-element"), 0); }
 #[test] fn painting_display_bBox_impact() { assert_eq!(render("tests/painting/display/bBox-impact"), 0); }
 #[test] fn painting_display_none_on_clipPath() { assert_eq!(render("tests/painting/display/none-on-clipPath"), 0); }
