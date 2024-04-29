@@ -494,15 +494,15 @@ fn parse_args() -> Result<Args, String> {
     }
 
     if args.input == "-" && args.resources_dir.is_none() {
-        println!("Warning: Make sure to set --resources-dir when reading SVG from stdin.");
+        eprintln!("Warning: Make sure to set --resources-dir when reading SVG from stdin.");
     }
 
     if args.export_area_page && args.export_id.is_none() {
-        println!("Warning: --export-area-page has no effect without --export-id.");
+        eprintln!("Warning: --export-area-page has no effect without --export-id.");
     }
 
     if args.export_area_drawing && args.export_id.is_some() {
-        println!("Warning: --export-area-drawing has no effect when --export-id is set.");
+        eprintln!("Warning: --export-area-drawing has no effect when --export-id is set.");
     }
 
     let export_id = args.export_id.as_ref().map(|v| v.to_string());
