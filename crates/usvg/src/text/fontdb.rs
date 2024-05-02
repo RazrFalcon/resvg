@@ -4,12 +4,12 @@ use rustybuzz::ttf_parser;
 use svgtypes::FontFamily;
 use crate::{Font, FontProvider, FontStretch, FontStyle, ResolvedFont};
 
-impl FontProvider<ID, FontDBResolvedFont> for Database {
+impl FontProvider for Database {
     fn with_face_data<P, T>(&self, id: fontdb::ID, p: P) -> Option<T> where P: FnOnce(&[u8], u32) -> T {
         self.with_face_data(id, p)
     }
 
-    fn resolve_font(&self, font: &Font) -> Option<FontDBResolvedFont> {
+    fn resolve_font(&self, font: &Font) -> Option<ResolvedFont> {
         let mut name_list = Vec::new();
         for family in &font.families {
             name_list.push(match family {
@@ -65,7 +65,7 @@ impl FontProvider<ID, FontDBResolvedFont> for Database {
         self.load_font(id?)
     }
 
-    fn find_font_for_char(&self, c: char, exclude_fonts: &[ID]) -> Option<FontDBResolvedFont> {
+    fn find_font_for_char(&self, c: char, exclude_fonts: &[ID]) -> Option<ResolvedFont> {
         let base_font_id = exclude_fonts[0];
 
         // Iterate over fonts and check if any of them support the specified char.
@@ -108,80 +108,15 @@ impl FontProvider<ID, FontDBResolvedFont> for Database {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct FontDBResolvedFont {
-    pub id: ID,
-
-    units_per_em: NonZeroU16,
-
-    // All values below are in font units.
-    ascent: i16,
-    descent: i16,
-    x_height: NonZeroU16,
-
-    underline_position: i16,
-    underline_thickness: NonZeroU16,
-
-    // line-through thickness should be the the same as underline thickness
-    // according to the TrueType spec:
-    // https://docs.microsoft.com/en-us/typography/opentype/spec/os2#ystrikeoutsize
-    line_through_position: i16,
-
-    subscript_offset: i16,
-    superscript_offset: i16,
-}
-
-impl ResolvedFont<ID> for FontDBResolvedFont {
-    fn id(&self) -> ID {
-        self.id
-    }
-
-    fn units_per_em(&self) -> NonZeroU16 {
-        self.units_per_em
-    }
-
-    fn ascent(&self) -> i16 {
-        self.ascent
-    }
-
-    fn descent(&self) -> i16 {
-        self.descent
-    }
-
-    fn x_height(&self) -> NonZeroU16 {
-        self.x_height
-    }
-
-    fn underline_position(&self) -> i16 {
-        self.underline_position
-    }
-
-    fn underline_thickness(&self) -> NonZeroU16 {
-       self.underline_thickness
-    }
-
-    fn line_through_position(&self) -> i16 {
-        self.line_through_position
-    }
-
-    fn subscript_offset(&self) -> i16 {
-        self.subscript_offset
-    }
-
-    fn superscript_offset(&self) -> i16 {
-        self.superscript_offset
-    }
-}
-
 pub(crate) trait DatabaseExt {
-    fn load_font(&self, id: ID) -> Option<FontDBResolvedFont>;
+    fn load_font(&self, id: ID) -> Option<ResolvedFont>;
     fn has_char(&self, id: ID, c: char) -> bool;
 }
 
 impl DatabaseExt for Database {
     #[inline(never)]
-    fn load_font(&self, id: ID) -> Option<FontDBResolvedFont> {
-        self.with_face_data(id, |data, face_index| -> Option<FontDBResolvedFont> {
+    fn load_font(&self, id: ID) -> Option<ResolvedFont> {
+        self.with_face_data(id, |data, face_index| -> Option<ResolvedFont> {
             let font = ttf_parser::Face::parse(data, face_index).ok()?;
 
             let units_per_em = NonZeroU16::new(font.units_per_em())?;
@@ -237,7 +172,7 @@ impl DatabaseExt for Database {
                 superscript_offset = metrics.y_offset;
             }
 
-            Some(FontDBResolvedFont {
+            Some(ResolvedFont {
                 id,
                 units_per_em,
                 ascent,

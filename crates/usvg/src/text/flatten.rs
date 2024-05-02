@@ -5,7 +5,7 @@
 use std::mem;
 use std::sync::Arc;
 
-use fontdb::{Database, ID};
+use fontdb::ID;
 use rustybuzz::ttf_parser;
 use rustybuzz::ttf_parser::{GlyphId, RasterImageFormat};
 use tiny_skia_path::{NonZeroRect, Size, Transform};
@@ -44,7 +44,7 @@ fn push_outline_paths(
     }
 }
 
-pub(crate) fn flatten<T, RF: ResolvedFont<T>>(text: &mut Text, font_provider: &impl FontProvider<T, RF>) -> Option<(Group, NonZeroRect)> {
+pub(crate) fn flatten(text: &mut Text, font_provider: &impl FontProvider) -> Option<(Group, NonZeroRect)> {
     let mut new_children = vec![];
 
     let rendering_mode = resolve_rendering_mode(text);
@@ -74,7 +74,7 @@ pub(crate) fn flatten<T, RF: ResolvedFont<T>>(text: &mut Text, font_provider: &i
             // A COLRv0 glyph. Will return a vector of paths that make up the glyph description.
             // TODO: Don't use black for foreground color? But not sure whether to use fill or stroke
             // color.
-            if let Some(layers) = fontdb.colr(glyph.font, glyph.id) {
+            if let Some(layers) = colr(glyph.font, glyph.id, font_provider) {
                 push_outline_paths(span, &mut span_builder, &mut new_children, rendering_mode);
 
                 let mut group = Group {
@@ -91,7 +91,7 @@ pub(crate) fn flatten<T, RF: ResolvedFont<T>>(text: &mut Text, font_provider: &i
                 new_children.push(Node::Group(Box::new(group)));
             }
             // An SVG glyph. Will return the usvg tree containing the glyph descriptions.
-            else if let Some(tree) = fontdb.svg(glyph.font, glyph.id) {
+            else if let Some(tree) = svg(glyph.font, glyph.id, font_provider) {
                 push_outline_paths(span, &mut span_builder, &mut new_children, rendering_mode);
 
                 let mut group = Group {
@@ -105,7 +105,7 @@ pub(crate) fn flatten<T, RF: ResolvedFont<T>>(text: &mut Text, font_provider: &i
                 new_children.push(Node::Group(Box::new(group)));
             }
             // A bitmap glyph.
-            else if let Some(img) = fontdb.raster(glyph.font, glyph.id) {
+            else if let Some(img) = raster(glyph.font, glyph.id, font_provider) {
                 push_outline_paths(span, &mut span_builder, &mut new_children, rendering_mode);
 
                 let transform = if img.is_sbix {
@@ -134,8 +134,7 @@ pub(crate) fn flatten<T, RF: ResolvedFont<T>>(text: &mut Text, font_provider: &i
                 group.calculate_bounding_boxes();
 
                 new_children.push(Node::Group(Box::new(group)));
-            } else if let Some(outline) = fontdb
-                .outline(glyph.font, glyph.id)
+            } else if let Some(outline) = outline(glyph.font, glyph.id, font_provider)
                 .and_then(|p| p.transform(glyph.outline_transform()))
             {
                 span_builder.push_path(&outline);
@@ -191,13 +190,6 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
     }
 }
 
-pub(crate) trait DatabaseExt {
-    fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tiny_skia_path::Path>;
-    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<BitmapImage>;
-    fn svg(&self, id: ID, glyph_id: GlyphId) -> Option<Tree>;
-    fn colr(&self, id: ID, glyph_id: GlyphId) -> Option<Vec<Path>>;
-}
-
 pub(crate) struct BitmapImage {
     image: Image,
     x: i16,
@@ -207,86 +199,83 @@ pub(crate) struct BitmapImage {
     is_sbix: bool,
 }
 
-impl DatabaseExt for Database {
-    #[inline(never)]
-    fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tiny_skia_path::Path> {
-        self.with_face_data(id, |data, face_index| -> Option<tiny_skia_path::Path> {
-            let font = ttf_parser::Face::parse(data, face_index).ok()?;
+fn outline(id: ID, glyph_id: GlyphId, font_provider: &impl FontProvider) -> Option<tiny_skia_path::Path> {
+    font_provider.with_face_data(id, |data, face_index| -> Option<tiny_skia_path::Path> {
+        let font = ttf_parser::Face::parse(data, face_index).ok()?;
 
-            let mut builder = PathBuilder {
-                builder: tiny_skia_path::PathBuilder::new(),
-            };
+        let mut builder = PathBuilder {
+            builder: tiny_skia_path::PathBuilder::new(),
+        };
 
-            font.outline_glyph(glyph_id, &mut builder)?;
-            builder.builder.finish()
-        })?
-    }
+        font.outline_glyph(glyph_id, &mut builder)?;
+        builder.builder.finish()
+    })?
+}
 
-    fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<BitmapImage> {
-        self.with_face_data(id, |data, face_index| -> Option<BitmapImage> {
-            let font = ttf_parser::Face::parse(data, face_index).ok()?;
-            let image = font.glyph_raster_image(glyph_id, u16::MAX)?;
+fn raster(id: ID, glyph_id: GlyphId, font_provider: &impl FontProvider) -> Option<BitmapImage> {
+    font_provider.with_face_data(id, |data, face_index| -> Option<BitmapImage> {
+        let font = ttf_parser::Face::parse(data, face_index).ok()?;
+        let image = font.glyph_raster_image(glyph_id, u16::MAX)?;
 
-            if image.format == RasterImageFormat::PNG {
-                let bitmap_image = BitmapImage {
-                    image: Image {
-                        id: String::new(),
-                        visibility: Visibility::Visible,
-                        size: Size::from_wh(image.width as f32, image.height as f32)?,
-                        rendering_mode: ImageRendering::OptimizeQuality,
-                        kind: ImageKind::PNG(Arc::new(image.data.into())),
-                        abs_transform: Transform::default(),
-                        abs_bounding_box: NonZeroRect::from_xywh(
-                            0.0,
-                            0.0,
-                            image.width as f32,
-                            image.height as f32,
-                        )?,
-                    },
-                    x: image.x,
-                    y: image.y,
-                    pixels_per_em: image.pixels_per_em,
-                    glyph_bbox: font.glyph_bounding_box(glyph_id),
-                    // ttf-parser always checks sbix first, so if this table exists, it was used.
-                    is_sbix: font.tables().sbix.is_some(),
-                };
-
-                return Some(bitmap_image);
-            }
-
-            None
-        })?
-    }
-
-    fn svg(&self, id: ID, glyph_id: GlyphId) -> Option<Tree> {
-        // TODO: Technically not 100% accurate because the SVG format in a OTF font
-        // is actually a subset/superset of a normal SVG, but it seems to work fine
-        // for Twitter Color Emoji, so might as well use what we already have.
-        self.with_face_data(id, |data, face_index| -> Option<Tree> {
-            let font = ttf_parser::Face::parse(data, face_index).ok()?;
-            let image = font.glyph_svg_image(glyph_id)?;
-            Tree::from_data(image.data, &Options::default(), &fontdb::Database::new()).ok()
-        })?
-    }
-
-    fn colr(&self, id: ID, glyph_id: GlyphId) -> Option<Vec<Path>> {
-        self.with_face_data(id, |data, face_index| -> Option<Vec<Path>> {
-            let font = ttf_parser::Face::parse(data, face_index).ok()?;
-
-            let mut paths = vec![];
-            let mut glyph_painter = GlyphPainter {
-                face: &font,
-                paths: &mut paths,
-                builder: PathBuilder {
-                    builder: tiny_skia_path::PathBuilder::new(),
+        if image.format == RasterImageFormat::PNG {
+            let bitmap_image = BitmapImage {
+                image: Image {
+                    id: String::new(),
+                    visibility: Visibility::Visible,
+                    size: Size::from_wh(image.width as f32, image.height as f32)?,
+                    rendering_mode: ImageRendering::OptimizeQuality,
+                    kind: ImageKind::PNG(Arc::new(image.data.into())),
+                    abs_transform: Transform::default(),
+                    abs_bounding_box: NonZeroRect::from_xywh(
+                        0.0,
+                        0.0,
+                        image.width as f32,
+                        image.height as f32,
+                    )?,
                 },
+                x: image.x,
+                y: image.y,
+                pixels_per_em: image.pixels_per_em,
+                glyph_bbox: font.glyph_bounding_box(glyph_id),
+                // ttf-parser always checks sbix first, so if this table exists, it was used.
+                is_sbix: font.tables().sbix.is_some(),
             };
 
-            font.paint_color_glyph(glyph_id, 0, &mut glyph_painter)?;
+            return Some(bitmap_image);
+        }
 
-            Some(paths)
-        })?
-    }
+        None
+    })?
+}
+
+fn svg(id: ID, glyph_id: GlyphId, font_provider: &impl FontProvider) -> Option<Tree> {
+    // TODO: Technically not 100% accurate because the SVG format in a OTF font
+    // is actually a subset/superset of a normal SVG, but it seems to work fine
+    // for Twitter Color Emoji, so might as well use what we already have.
+    font_provider.with_face_data(id, |data, face_index| -> Option<Tree> {
+        let font = ttf_parser::Face::parse(data, face_index).ok()?;
+        let image = font.glyph_svg_image(glyph_id)?;
+        Tree::from_data(image.data, &Options::default(), &fontdb::Database::new()).ok()
+    })?
+}
+
+fn colr(id: ID, glyph_id: GlyphId, font_provider: &impl FontProvider) -> Option<Vec<Path>> {
+    font_provider.with_face_data(id, |data, face_index| -> Option<Vec<Path>> {
+        let font = ttf_parser::Face::parse(data, face_index).ok()?;
+
+        let mut paths = vec![];
+        let mut glyph_painter = GlyphPainter {
+            face: &font,
+            paths: &mut paths,
+            builder: PathBuilder {
+                builder: tiny_skia_path::PathBuilder::new(),
+            },
+        };
+
+        font.paint_color_glyph(glyph_id, 0, &mut glyph_painter)?;
+
+        Some(paths)
+    })?
 }
 
 struct GlyphPainter<'a> {

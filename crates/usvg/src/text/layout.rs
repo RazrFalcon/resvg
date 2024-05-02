@@ -3,20 +3,17 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::collections::HashMap;
-use std::num::NonZeroU16;
 use std::sync::Arc;
 
-use fontdb::{Database, ID};
+use fontdb::ID;
 use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
-use rustybuzz::ttf_parser;
 use rustybuzz::ttf_parser::GlyphId;
 use strict_num::NonZeroPositiveF32;
-use svgtypes::FontFamily;
 use tiny_skia_path::{NonZeroRect, Transform};
 use unicode_script::UnicodeScript;
 
 use crate::tree::{BBox, IsValidLength};
-use crate::{AlignmentBaseline, ApproxZeroUlps, BaselineShift, DominantBaseline, Fill, FillRule, Font, FontProvider, FontStretch, FontStyle, LengthAdjust, PaintOrder, Path, ResolvedFont, ShapeRendering, Stroke, Text, TextAnchor, TextChunk, TextDecorationStyle, TextFlow, TextPath, TextSpan, Visibility, WritingMode};
+use crate::{AlignmentBaseline, ApproxZeroUlps, BaselineShift, DominantBaseline, Fill, FillRule, Font, FontProvider, FontStyle, LengthAdjust, PaintOrder, Path, ResolvedFont, ShapeRendering, Stroke, Text, TextAnchor, TextChunk, TextDecorationStyle, TextFlow, TextPath, TextSpan, Visibility, WritingMode};
 
 /// A glyph that has already been positioned correctly.
 ///
@@ -199,9 +196,9 @@ impl GlyphCluster {
     }
 }
 
-pub(crate) fn layout_text<T, RF: ResolvedFont<T>>(
+pub(crate) fn layout_text(
     text_node: &Text,
-    font_provider: &impl FontProvider<T, RF>,
+    font_provider: &impl FontProvider,
 ) -> Option<(Vec<Span>, NonZeroRect)> {
     let mut fonts_cache: FontsCache = HashMap::new();
 
@@ -854,10 +851,10 @@ fn collect_normals(
 ///
 /// This function will do the BIDI reordering, text shaping and glyphs outlining,
 /// but not the text layouting. So all clusters are in the 0x0 position.
-fn process_chunk<T, RF: ResolvedFont<T>>(
+fn process_chunk(
     chunk: &TextChunk,
-    fonts_cache: &FontsCache<T>,
-    font_provider: &impl FontProvider<T, RF>,
+    fonts_cache: &FontsCache,
+    font_provider: &impl FontProvider,
 ) -> Vec<GlyphCluster> {
     // The way this function works is a bit tricky.
     //
@@ -1179,18 +1176,18 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
 }
 
 /// Text shaping with font fallback.
-pub(crate) fn shape_text<T, RF: ResolvedFont<T>>(
+pub(crate) fn shape_text(
     text: &str,
-    font: Arc<RF>,
+    font: Arc<ResolvedFont>,
     small_caps: bool,
     apply_kerning: bool,
-    font_provider: &impl FontProvider<T, RF>,
-) -> Vec<Glyph<T>> {
+    font_provider: &impl FontProvider,
+) -> Vec<Glyph> {
     let mut glyphs = shape_text_with_font(text, font.clone(), small_caps, apply_kerning, font_provider)
         .unwrap_or_default();
 
     // Remember all fonts used for shaping.
-    let mut used_fonts = vec![font.id()];
+    let mut used_fonts = vec![font.id];
 
     // Loop until all glyphs become resolved or until no more fonts are left.
     'outer: loop {
@@ -1266,14 +1263,14 @@ pub(crate) fn shape_text<T, RF: ResolvedFont<T>>(
 /// Converts a text into a list of glyph IDs.
 ///
 /// This function will do the BIDI reordering and text shaping.
-fn shape_text_with_font<T, RF: ResolvedFont<T>>(
+fn shape_text_with_font(
     text: &str,
-    font: Arc<RF>,
+    font: Arc<ResolvedFont>,
     small_caps: bool,
     apply_kerning: bool,
-    font_provider: &impl FontProvider<T, RF>,
-) -> Option<Vec<Glyph<T>>> {
-    font_provider.with_face_data(font.id(), |font_data, face_index| -> Option<Vec<Glyph>> {
+    font_provider: &impl FontProvider,
+) -> Option<Vec<Glyph>> {
+    font_provider.with_face_data(font.id, |font_data, face_index| -> Option<Vec<Glyph>> {
         let rb_font = rustybuzz::Face::from_slice(font_data, face_index)?;
 
         let bidi_info = unicode_bidi::BidiInfo::new(text, Some(unicode_bidi::Level::ltr()));
@@ -1358,18 +1355,18 @@ fn shape_text_with_font<T, RF: ResolvedFont<T>>(
 ///
 /// Input:  0 2 2 2 3 4 4 5 5
 /// Result: 0 1     4 5   7
-pub(crate) struct GlyphClusters<'a, T> {
-    data: &'a [Glyph<T>],
+pub(crate) struct GlyphClusters<'a> {
+    data: &'a [Glyph],
     idx: usize,
 }
 
-impl<'a, T> GlyphClusters<'a, T> {
-    pub(crate) fn new(data: &'a [Glyph<T>]) -> Self {
+impl<'a> GlyphClusters<'a> {
+    pub(crate) fn new(data: &'a [Glyph]) -> Self {
         GlyphClusters { data, idx: 0 }
     }
 }
 
-impl<'a, T> Iterator for GlyphClusters<'a, T> {
+impl<'a> Iterator for GlyphClusters<'a> {
     type Item = (std::ops::Range<usize>, ByteIndex);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1424,7 +1421,7 @@ pub(crate) fn script_supports_letter_spacing(script: unicode_script::Script) -> 
 ///
 /// Basically, a glyph ID and it's metrics.
 #[derive(Clone)]
-pub(crate) struct Glyph<T> {
+pub(crate) struct Glyph {
     /// The glyph ID in the font.
     pub(crate) id: GlyphId,
 
@@ -1451,7 +1448,7 @@ pub(crate) struct Glyph<T> {
     /// Reference to the source font.
     ///
     /// Each glyph can have it's own source font.
-    pub(crate) font: Arc<dyn ResolvedFont<T>>,
+    pub(crate) font: Arc<ResolvedFont>,
 }
 
 impl Glyph {
@@ -1603,7 +1600,7 @@ impl ResolvedFont {
     }
 }
 
-pub(crate) type FontsCache<T> = HashMap<Font, Arc<impl ResolvedFont<T>>>;
+pub(crate) type FontsCache = HashMap<Font, Arc<ResolvedFont>>;
 
 /// A read-only text index in bytes.
 ///

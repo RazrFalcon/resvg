@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::num::NonZeroU16;
+use ::fontdb::ID;
 use crate::{Font, Text};
 
 mod flatten;
@@ -16,7 +17,7 @@ mod fontdb;
 /// SVG specifiation. While doing so, we also calculate the text bbox (which is not based on the
 /// outlines of a glyph, but instead the glyph metrics as well as decoration spans).
 /// 2. We convert all of the positioned glyphs into outlines.
-pub(crate) fn convert<T, RF: ResolvedFont<T>>(text: &mut Text, font_provider: &impl FontProvider<T, RF>) -> Option<()> {
+pub(crate) fn convert(text: &mut Text, font_provider: &impl FontProvider) -> Option<()> {
     let (text_fragments, bbox) = layout::layout_text(text, font_provider)?;
     text.layouted = text_fragments;
     text.bounding_box = bbox.to_rect();
@@ -30,29 +31,30 @@ pub(crate) fn convert<T, RF: ResolvedFont<T>>(text: &mut Text, font_provider: &i
     Some(())
 }
 
-pub trait FontProvider<ID, RF: ResolvedFont<ID>> {
+pub trait FontProvider {
     fn with_face_data<P, T>(&self, id: ID, p: P) -> Option<T>
         where
             P: FnOnce(&[u8], u32) -> T;
 
-    fn resolve_font(&self, font: &Font) -> Option<RF>;
+    fn resolve_font(&self, font: &Font) -> Option<ResolvedFont>;
 
     fn find_font_for_char(
         &self,
         c: char,
         exclude_fonts: &[ID],
-    ) -> Option<RF>;
+    ) -> Option<ResolvedFont>;
 }
 
-pub trait ResolvedFont<ID> {
-    fn id(&self) -> ID;
-    fn units_per_em(&self) -> NonZeroU16;
-    fn ascent(&self) -> i16;
-    fn descent(&self) -> i16;
-    fn x_height(&self) -> NonZeroU16;
-    fn underline_position(&self) -> i16;
-    fn underline_thickness(&self) -> NonZeroU16;
-    fn line_through_position(&self) -> i16;
-    fn subscript_offset(&self) -> i16;
-    fn superscript_offset(&self) -> i16;
+#[derive(Clone, Copy, Debug)]
+pub struct ResolvedFont {
+    pub id: ID,
+    pub units_per_em: NonZeroU16,
+    pub ascent: i16,
+    pub descent: i16,
+    pub x_height: NonZeroU16,
+    pub underline_position: i16,
+    pub underline_thickness: NonZeroU16,
+    pub line_through_position: i16,
+    pub subscript_offset: i16,
+    pub superscript_offset: i16,
 }
