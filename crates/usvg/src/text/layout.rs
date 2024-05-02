@@ -16,12 +16,7 @@ use tiny_skia_path::{NonZeroRect, Transform};
 use unicode_script::UnicodeScript;
 
 use crate::tree::{BBox, IsValidLength};
-use crate::{
-    AlignmentBaseline, ApproxZeroUlps, BaselineShift, DominantBaseline, Fill, FillRule, Font,
-    FontStretch, FontStyle, LengthAdjust, PaintOrder, Path, ShapeRendering, Stroke, Text,
-    TextAnchor, TextChunk, TextDecorationStyle, TextFlow, TextPath, TextSpan, Visibility,
-    WritingMode,
-};
+use crate::{AlignmentBaseline, ApproxZeroUlps, BaselineShift, DominantBaseline, Fill, FillRule, Font, FontProvider, FontStretch, FontStyle, LengthAdjust, PaintOrder, Path, ResolvedFont, ShapeRendering, Stroke, Text, TextAnchor, TextChunk, TextDecorationStyle, TextFlow, TextPath, TextSpan, Visibility, WritingMode};
 
 /// A glyph that has already been positioned correctly.
 ///
@@ -204,16 +199,16 @@ impl GlyphCluster {
     }
 }
 
-pub(crate) fn layout_text(
+pub(crate) fn layout_text<T, RF: ResolvedFont<T>>(
     text_node: &Text,
-    fontdb: &fontdb::Database,
+    font_provider: &impl FontProvider<T, RF>,
 ) -> Option<(Vec<Span>, NonZeroRect)> {
     let mut fonts_cache: FontsCache = HashMap::new();
 
     for chunk in &text_node.chunks {
         for span in &chunk.spans {
             if !fonts_cache.contains_key(&span.font) {
-                if let Some(font) = resolve_font(&span.font, fontdb) {
+                if let Some(font) = font_provider.resolve_font(&span.font) {
                     fonts_cache.insert(span.font.clone(), Arc::new(font));
                 }
             }
@@ -231,7 +226,7 @@ pub(crate) fn layout_text(
             TextFlow::Path(_) => (0.0, 0.0),
         };
 
-        let mut clusters = process_chunk(chunk, &fonts_cache, fontdb);
+        let mut clusters = process_chunk(chunk, &fonts_cache, font_provider);
         if clusters.is_empty() {
             char_offset += chunk.text.chars().count();
             continue;
@@ -859,10 +854,10 @@ fn collect_normals(
 ///
 /// This function will do the BIDI reordering, text shaping and glyphs outlining,
 /// but not the text layouting. So all clusters are in the 0x0 position.
-fn process_chunk(
+fn process_chunk<T, RF: ResolvedFont<T>>(
     chunk: &TextChunk,
-    fonts_cache: &FontsCache,
-    fontdb: &fontdb::Database,
+    fonts_cache: &FontsCache<T>,
+    font_provider: &impl FontProvider<T, RF>,
 ) -> Vec<GlyphCluster> {
     // The way this function works is a bit tricky.
     //
@@ -907,7 +902,7 @@ fn process_chunk(
             font,
             span.small_caps,
             span.apply_kerning,
-            fontdb,
+            font_provider,
         );
 
         // Do nothing with the first run.
@@ -1183,166 +1178,19 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
     }
 }
 
-fn resolve_font(font: &Font, fontdb: &fontdb::Database) -> Option<ResolvedFont> {
-    let mut name_list = Vec::new();
-    for family in &font.families {
-        name_list.push(match family {
-            FontFamily::Serif => fontdb::Family::Serif,
-            FontFamily::SansSerif => fontdb::Family::SansSerif,
-            FontFamily::Cursive => fontdb::Family::Cursive,
-            FontFamily::Fantasy => fontdb::Family::Fantasy,
-            FontFamily::Monospace => fontdb::Family::Monospace,
-            FontFamily::Named(s) => fontdb::Family::Name(s),
-        });
-    }
-
-    // Use the default font as fallback.
-    name_list.push(fontdb::Family::Serif);
-
-    let stretch = match font.stretch {
-        FontStretch::UltraCondensed => fontdb::Stretch::UltraCondensed,
-        FontStretch::ExtraCondensed => fontdb::Stretch::ExtraCondensed,
-        FontStretch::Condensed => fontdb::Stretch::Condensed,
-        FontStretch::SemiCondensed => fontdb::Stretch::SemiCondensed,
-        FontStretch::Normal => fontdb::Stretch::Normal,
-        FontStretch::SemiExpanded => fontdb::Stretch::SemiExpanded,
-        FontStretch::Expanded => fontdb::Stretch::Expanded,
-        FontStretch::ExtraExpanded => fontdb::Stretch::ExtraExpanded,
-        FontStretch::UltraExpanded => fontdb::Stretch::UltraExpanded,
-    };
-
-    let style = match font.style {
-        FontStyle::Normal => fontdb::Style::Normal,
-        FontStyle::Italic => fontdb::Style::Italic,
-        FontStyle::Oblique => fontdb::Style::Oblique,
-    };
-
-    let query = fontdb::Query {
-        families: &name_list,
-        weight: fontdb::Weight(font.weight),
-        stretch,
-        style,
-    };
-
-    let id = fontdb.query(&query);
-    if id.is_none() {
-        log::warn!(
-            "No match for '{}' font-family.",
-            font.families
-                .iter()
-                .map(|f| f.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        );
-    }
-
-    fontdb.load_font(id?)
-}
-
-pub(crate) trait DatabaseExt {
-    fn load_font(&self, id: ID) -> Option<ResolvedFont>;
-    fn has_char(&self, id: ID, c: char) -> bool;
-}
-
-impl DatabaseExt for Database {
-    #[inline(never)]
-    fn load_font(&self, id: ID) -> Option<ResolvedFont> {
-        self.with_face_data(id, |data, face_index| -> Option<ResolvedFont> {
-            let font = ttf_parser::Face::parse(data, face_index).ok()?;
-
-            let units_per_em = NonZeroU16::new(font.units_per_em())?;
-
-            let ascent = font.ascender();
-            let descent = font.descender();
-
-            let x_height = font
-                .x_height()
-                .and_then(|x| u16::try_from(x).ok())
-                .and_then(NonZeroU16::new);
-            let x_height = match x_height {
-                Some(height) => height,
-                None => {
-                    // If not set - fallback to height * 45%.
-                    // 45% is what Firefox uses.
-                    u16::try_from((f32::from(ascent - descent) * 0.45) as i32)
-                        .ok()
-                        .and_then(NonZeroU16::new)?
-                }
-            };
-
-            let line_through = font.strikeout_metrics();
-            let line_through_position = match line_through {
-                Some(metrics) => metrics.position,
-                None => x_height.get() as i16 / 2,
-            };
-
-            let (underline_position, underline_thickness) = match font.underline_metrics() {
-                Some(metrics) => {
-                    let thickness = u16::try_from(metrics.thickness)
-                        .ok()
-                        .and_then(NonZeroU16::new)
-                        // `ttf_parser` guarantees that units_per_em is >= 16
-                        .unwrap_or_else(|| NonZeroU16::new(units_per_em.get() / 12).unwrap());
-
-                    (metrics.position, thickness)
-                }
-                None => (
-                    -(units_per_em.get() as i16) / 9,
-                    NonZeroU16::new(units_per_em.get() / 12).unwrap(),
-                ),
-            };
-
-            // 0.2 and 0.4 are generic offsets used by some applications (Inkscape/librsvg).
-            let mut subscript_offset = (units_per_em.get() as f32 / 0.2).round() as i16;
-            let mut superscript_offset = (units_per_em.get() as f32 / 0.4).round() as i16;
-            if let Some(metrics) = font.subscript_metrics() {
-                subscript_offset = metrics.y_offset;
-            }
-
-            if let Some(metrics) = font.superscript_metrics() {
-                superscript_offset = metrics.y_offset;
-            }
-
-            Some(ResolvedFont {
-                id,
-                units_per_em,
-                ascent,
-                descent,
-                x_height,
-                underline_position,
-                underline_thickness,
-                line_through_position,
-                subscript_offset,
-                superscript_offset,
-            })
-        })?
-    }
-
-    #[inline(never)]
-    fn has_char(&self, id: ID, c: char) -> bool {
-        let res = self.with_face_data(id, |font_data, face_index| -> Option<bool> {
-            let font = ttf_parser::Face::parse(font_data, face_index).ok()?;
-            font.glyph_index(c)?;
-            Some(true)
-        });
-
-        res == Some(Some(true))
-    }
-}
-
 /// Text shaping with font fallback.
-pub(crate) fn shape_text(
+pub(crate) fn shape_text<T, RF: ResolvedFont<T>>(
     text: &str,
-    font: Arc<ResolvedFont>,
+    font: Arc<RF>,
     small_caps: bool,
     apply_kerning: bool,
-    fontdb: &fontdb::Database,
-) -> Vec<Glyph> {
-    let mut glyphs = shape_text_with_font(text, font.clone(), small_caps, apply_kerning, fontdb)
+    font_provider: &impl FontProvider<T, RF>,
+) -> Vec<Glyph<T>> {
+    let mut glyphs = shape_text_with_font(text, font.clone(), small_caps, apply_kerning, font_provider)
         .unwrap_or_default();
 
     // Remember all fonts used for shaping.
-    let mut used_fonts = vec![font.id];
+    let mut used_fonts = vec![font.id()];
 
     // Loop until all glyphs become resolved or until no more fonts are left.
     'outer: loop {
@@ -1355,7 +1203,7 @@ pub(crate) fn shape_text(
         }
 
         if let Some(c) = missing {
-            let fallback_font = match find_font_for_char(c, &used_fonts, fontdb) {
+            let fallback_font = match font_provider.find_font_for_char(c, &used_fonts) {
                 Some(v) => Arc::new(v),
                 None => break 'outer,
             };
@@ -1366,7 +1214,7 @@ pub(crate) fn shape_text(
                 fallback_font.clone(),
                 small_caps,
                 apply_kerning,
-                fontdb,
+                font_provider,
             )
             .unwrap_or_default();
 
@@ -1418,14 +1266,14 @@ pub(crate) fn shape_text(
 /// Converts a text into a list of glyph IDs.
 ///
 /// This function will do the BIDI reordering and text shaping.
-fn shape_text_with_font(
+fn shape_text_with_font<T, RF: ResolvedFont<T>>(
     text: &str,
-    font: Arc<ResolvedFont>,
+    font: Arc<RF>,
     small_caps: bool,
     apply_kerning: bool,
-    fontdb: &fontdb::Database,
-) -> Option<Vec<Glyph>> {
-    fontdb.with_face_data(font.id, |font_data, face_index| -> Option<Vec<Glyph>> {
+    font_provider: &impl FontProvider<T, RF>,
+) -> Option<Vec<Glyph<T>>> {
+    font_provider.with_face_data(font.id(), |font_data, face_index| -> Option<Vec<Glyph>> {
         let rb_font = rustybuzz::Face::from_slice(font_data, face_index)?;
 
         let bidi_info = unicode_bidi::BidiInfo::new(text, Some(unicode_bidi::Level::ltr()));
@@ -1506,71 +1354,22 @@ fn shape_text_with_font(
     })?
 }
 
-/// Finds a font with a specified char.
-///
-/// This is a rudimentary font fallback algorithm.
-fn find_font_for_char(
-    c: char,
-    exclude_fonts: &[fontdb::ID],
-    fontdb: &fontdb::Database,
-) -> Option<ResolvedFont> {
-    let base_font_id = exclude_fonts[0];
-
-    // Iterate over fonts and check if any of them support the specified char.
-    for face in fontdb.faces() {
-        // Ignore fonts, that were used for shaping already.
-        if exclude_fonts.contains(&face.id) {
-            continue;
-        }
-
-        // Check that the new face has the same style.
-        let base_face = fontdb.face(base_font_id)?;
-        if base_face.style != face.style
-            && base_face.weight != face.weight
-            && base_face.stretch != face.stretch
-        {
-            continue;
-        }
-
-        if !fontdb.has_char(face.id, c) {
-            continue;
-        }
-
-        let base_family = base_face
-            .families
-            .iter()
-            .find(|f| f.1 == fontdb::Language::English_UnitedStates)
-            .unwrap_or(&base_face.families[0]);
-
-        let new_family = face
-            .families
-            .iter()
-            .find(|f| f.1 == fontdb::Language::English_UnitedStates)
-            .unwrap_or(&base_face.families[0]);
-
-        log::warn!("Fallback from {} to {}.", base_family.0, new_family.0);
-        return fontdb.load_font(face.id);
-    }
-
-    None
-}
-
 /// An iterator over glyph clusters.
 ///
 /// Input:  0 2 2 2 3 4 4 5 5
 /// Result: 0 1     4 5   7
-pub(crate) struct GlyphClusters<'a> {
-    data: &'a [Glyph],
+pub(crate) struct GlyphClusters<'a, T> {
+    data: &'a [Glyph<T>],
     idx: usize,
 }
 
-impl<'a> GlyphClusters<'a> {
-    pub(crate) fn new(data: &'a [Glyph]) -> Self {
+impl<'a, T> GlyphClusters<'a, T> {
+    pub(crate) fn new(data: &'a [Glyph<T>]) -> Self {
         GlyphClusters { data, idx: 0 }
     }
 }
 
-impl<'a> Iterator for GlyphClusters<'a> {
+impl<'a, T> Iterator for GlyphClusters<'a, T> {
     type Item = (std::ops::Range<usize>, ByteIndex);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1625,7 +1424,7 @@ pub(crate) fn script_supports_letter_spacing(script: unicode_script::Script) -> 
 ///
 /// Basically, a glyph ID and it's metrics.
 #[derive(Clone)]
-pub(crate) struct Glyph {
+pub(crate) struct Glyph<T> {
     /// The glyph ID in the font.
     pub(crate) id: GlyphId,
 
@@ -1652,7 +1451,7 @@ pub(crate) struct Glyph {
     /// Reference to the source font.
     ///
     /// Each glyph can have it's own source font.
-    pub(crate) font: Arc<ResolvedFont>,
+    pub(crate) font: Arc<dyn ResolvedFont<T>>,
 }
 
 impl Glyph {
@@ -1661,28 +1460,8 @@ impl Glyph {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct ResolvedFont {
-    pub(crate) id: ID,
 
-    units_per_em: NonZeroU16,
 
-    // All values below are in font units.
-    ascent: i16,
-    descent: i16,
-    x_height: NonZeroU16,
-
-    underline_position: i16,
-    underline_thickness: NonZeroU16,
-
-    // line-through thickness should be the the same as underline thickness
-    // according to the TrueType spec:
-    // https://docs.microsoft.com/en-us/typography/opentype/spec/os2#ystrikeoutsize
-    line_through_position: i16,
-
-    subscript_offset: i16,
-    superscript_offset: i16,
-}
 
 pub(crate) fn chunk_span_at(chunk: &TextChunk, byte_offset: ByteIndex) -> Option<&TextSpan> {
     chunk
@@ -1824,7 +1603,7 @@ impl ResolvedFont {
     }
 }
 
-pub(crate) type FontsCache = HashMap<Font, Arc<ResolvedFont>>;
+pub(crate) type FontsCache<T> = HashMap<Font, Arc<impl ResolvedFont<T>>>;
 
 /// A read-only text index in bytes.
 ///

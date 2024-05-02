@@ -44,7 +44,7 @@ fn push_outline_paths(
     }
 }
 
-pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Group, NonZeroRect)> {
+pub(crate) fn flatten<T, RF: ResolvedFont<T>>(text: &mut Text, font_provider: &impl FontProvider<T, RF>) -> Option<(Group, NonZeroRect)> {
     let mut new_children = vec![];
 
     let rendering_mode = resolve_rendering_mode(text);
