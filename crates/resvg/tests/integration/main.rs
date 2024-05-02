@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use once_cell::sync::Lazy;
 use rgb::{FromSlice, RGBA8};
 use std::process::Command;
@@ -40,7 +41,7 @@ pub fn render(name: &str) -> usize {
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
         let db = GLOBAL_FONTDB.lock().unwrap();
-        usvg::Tree::from_data(&svg_data, &opt, &db).unwrap()
+        usvg::Tree::from_data(&svg_data, &opt, db.deref()).unwrap()
     };
 
     let size = tree
@@ -95,7 +96,7 @@ pub fn render_extra_with_scale(name: &str, scale: f32) -> usize {
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
         let db = GLOBAL_FONTDB.lock().unwrap();
-        usvg::Tree::from_data(&svg_data, &opt, &db).unwrap()
+        usvg::Tree::from_data(&svg_data, &opt, db.deref()).unwrap()
     };
 
     let size = tree.size().to_int_size().scale_by(scale).unwrap();
@@ -145,7 +146,7 @@ pub fn render_node(name: &str, id: &str) -> usize {
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
         let db = GLOBAL_FONTDB.lock().unwrap();
-        usvg::Tree::from_data(&svg_data, &opt, &db).unwrap()
+        usvg::Tree::from_data(&svg_data, &opt, db.deref()).unwrap()
     };
 
     let node = tree.node_by_id(id).unwrap();

@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use once_cell::sync::Lazy;
 
 static GLOBAL_FONTDB: Lazy<std::sync::Mutex<usvg::fontdb::Database>> = Lazy::new(|| {
@@ -29,7 +30,7 @@ fn resave_impl(name: &str, id_prefix: Option<String>, preserve_text: bool) {
     let tree = {
         let fontdb = GLOBAL_FONTDB.lock().unwrap();
         let opt = usvg::Options::default();
-        usvg::Tree::from_str(&input_svg, &opt, &fontdb).unwrap()
+        usvg::Tree::from_str(&input_svg, &opt, fontdb.deref()).unwrap()
     };
     let mut xml_opt = usvg::WriteOptions::default();
     xml_opt.id_prefix = id_prefix;

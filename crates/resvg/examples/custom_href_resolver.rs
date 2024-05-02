@@ -5,13 +5,13 @@ fn main() {
 
     // We know that our SVG won't have DataUrl hrefs, just return None for such case.
     let resolve_data = Box::new(
-        |_: &str, _: std::sync::Arc<Vec<u8>>, _: &usvg::Options, _: &usvg::fontdb::Database| None,
+        |_: &str, _: std::sync::Arc<Vec<u8>>, _: &usvg::Options, _: &dyn usvg::FontProvider| None,
     );
 
     // Here we handle xlink:href attribute as string,
     // let's use already loaded Ferris image to match that string.
     let resolve_string = Box::new(
-        move |href: &str, _: &usvg::Options, _: &usvg::fontdb::Database| match href {
+        move |href: &str, _: &usvg::Options, _: &dyn usvg::FontProvider| match href {
             "ferris_image" => Some(usvg::ImageKind::PNG(ferris_image.clone())),
             _ => None,
         },
