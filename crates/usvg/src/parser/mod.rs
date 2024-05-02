@@ -20,6 +20,7 @@ mod use_node;
 #[cfg(feature = "text")]
 mod text;
 
+use crate::FontProvider;
 pub use image::{ImageHrefDataResolverFn, ImageHrefResolver, ImageHrefStringResolverFn};
 pub use options::Options;
 pub(crate) use svgtree::{AId, EId};
@@ -98,7 +99,7 @@ impl crate::Tree {
     pub fn from_data(
         data: &[u8],
         opt: &Options,
-        #[cfg(feature = "text")] fontdb: &fontdb::Database,
+        #[cfg(feature = "text")] font_provider: &dyn FontProvider,
     ) -> Result<Self, Error> {
         if data.starts_with(&[0x1f, 0x8b]) {
             let data = decompress_svgz(data)?;
@@ -107,7 +108,7 @@ impl crate::Tree {
                 text,
                 opt,
                 #[cfg(feature = "text")]
-                fontdb,
+                font_provider,
             )
         } else {
             let text = std::str::from_utf8(data).map_err(|_| Error::NotAnUtf8Str)?;
@@ -115,7 +116,7 @@ impl crate::Tree {
                 text,
                 opt,
                 #[cfg(feature = "text")]
-                fontdb,
+                font_provider,
             )
         }
     }
@@ -124,7 +125,7 @@ impl crate::Tree {
     pub fn from_str(
         text: &str,
         opt: &Options,
-        #[cfg(feature = "text")] fontdb: &fontdb::Database,
+        #[cfg(feature = "text")] font_provider: &dyn FontProvider,
     ) -> Result<Self, Error> {
         let xml_opt = roxmltree::ParsingOptions {
             allow_dtd: true,
@@ -138,7 +139,7 @@ impl crate::Tree {
             &doc,
             opt,
             #[cfg(feature = "text")]
-            fontdb,
+            font_provider,
         )
     }
 
@@ -146,14 +147,14 @@ impl crate::Tree {
     pub fn from_xmltree(
         doc: &roxmltree::Document,
         opt: &Options,
-        #[cfg(feature = "text")] fontdb: &fontdb::Database,
+        #[cfg(feature = "text")] font_provider: &dyn FontProvider,
     ) -> Result<Self, Error> {
         let doc = svgtree::Document::parse_tree(doc)?;
         self::converter::convert_doc(
             &doc,
             opt,
             #[cfg(feature = "text")]
-            fontdb,
+            font_provider,
         )
     }
 }

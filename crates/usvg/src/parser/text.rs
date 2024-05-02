@@ -141,7 +141,7 @@ pub(crate) fn convert(
         layouted: vec![],
     };
 
-    if text::convert(&mut text, state.fontdb).is_none() {
+    if text::convert(&mut text, state.font_provider).is_none() {
         return;
     }
 

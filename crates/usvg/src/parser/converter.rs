@@ -31,7 +31,7 @@ pub struct State<'a> {
     pub(crate) use_size: (Option<f32>, Option<f32>),
     pub(crate) opt: &'a Options,
     #[cfg(feature = "text")]
-    pub(crate) fontdb: &'a fontdb::Database,
+    pub(crate) font_provider: &'a dyn FontProvider,
 }
 
 #[derive(Clone, Default)]
@@ -260,14 +260,14 @@ impl SvgColorExt for svgtypes::Color {
 pub(crate) fn convert_doc(
     svg_doc: &svgtree::Document,
     opt: &Options,
-    #[cfg(feature = "text")] fontdb: &fontdb::Database,
+    #[cfg(feature = "text")] font_provider: &dyn FontProvider,
 ) -> Result<Tree, Error> {
     let svg = svg_doc.root_element();
     let (size, restore_viewbox) = resolve_svg_size(
         &svg,
         opt,
         #[cfg(feature = "text")]
-        fontdb,
+        font_provider,
     );
     let size = size?;
     let view_box = ViewBox {
@@ -301,7 +301,7 @@ pub(crate) fn convert_doc(
         use_size: (None, None),
         opt,
         #[cfg(feature = "text")]
-        fontdb,
+        font_provider,
     };
 
     let mut cache = Cache::default();
@@ -365,7 +365,7 @@ pub(crate) fn convert_doc(
 fn resolve_svg_size(
     svg: &SvgNode,
     opt: &Options,
-    #[cfg(feature = "text")] fontdb: &fontdb::Database,
+    #[cfg(feature = "text")] font_provider: &dyn FontProvider,
 ) -> (Result<Size, Error>, bool) {
     let mut state = State {
         parent_clip_path: None,
@@ -376,7 +376,7 @@ fn resolve_svg_size(
         use_size: (None, None),
         opt,
         #[cfg(feature = "text")]
-        fontdb,
+        font_provider,
     };
 
     let def = Length::new(100.0, Unit::Percent);

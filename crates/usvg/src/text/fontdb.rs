@@ -1,14 +1,10 @@
-use std::num::NonZeroU16;
+use crate::{Font, FontProvider, FontStretch, FontStyle, ResolvedFont};
 use fontdb::{Database, ID};
 use rustybuzz::ttf_parser;
+use std::num::NonZeroU16;
 use svgtypes::FontFamily;
-use crate::{Font, FontProvider, FontStretch, FontStyle, ResolvedFont};
 
 impl FontProvider for Database {
-    fn with_face_data<P, T>(&self, id: fontdb::ID, p: P) -> Option<T> where P: FnOnce(&[u8], u32) -> T {
-        self.with_face_data(id, p)
-    }
-
     fn resolve_font(&self, font: &Font) -> Option<ResolvedFont> {
         let mut name_list = Vec::new();
         for family in &font.families {
@@ -53,13 +49,13 @@ impl FontProvider for Database {
         let id = self.query(&query);
         if id.is_none() {
             log::warn!(
-            "No match for '{}' font-family.",
-            font.families
-                .iter()
-                .map(|f| f.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        );
+                "No match for '{}' font-family.",
+                font.families
+                    .iter()
+                    .map(|f| f.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
         }
 
         self.load_font(id?)
@@ -105,6 +101,10 @@ impl FontProvider for Database {
         }
 
         None
+    }
+
+    fn fontdb(&self) -> &Database {
+        &self
     }
 }
 

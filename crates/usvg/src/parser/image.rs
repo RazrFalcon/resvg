@@ -9,14 +9,14 @@ use svgtypes::{AspectRatio, Length};
 use super::svgtree::{AId, SvgNode};
 use super::{converter, OptionLog, Options};
 use crate::{
-    ClipPath, Group, Image, ImageKind, ImageRendering, Node, NonZeroRect, Path, Size, Transform,
-    Tree, Visibility,
+    ClipPath, FontProvider, Group, Image, ImageKind, ImageRendering, Node, NonZeroRect, Path, Size,
+    Transform, Tree, Visibility,
 };
 
 /// A shorthand for [ImageHrefResolver]'s data function.
 #[cfg(feature = "text")]
 pub type ImageHrefDataResolverFn =
-    Box<dyn Fn(&str, Arc<Vec<u8>>, &Options, &fontdb::Database) -> Option<ImageKind> + Send + Sync>;
+    Box<dyn Fn(&str, Arc<Vec<u8>>, &Options, &dyn FontProvider) -> Option<ImageKind> + Send + Sync>;
 
 /// A shorthand for [ImageHrefResolver]'s data function.
 #[cfg(not(feature = "text"))]
@@ -26,7 +26,7 @@ pub type ImageHrefDataResolverFn =
 /// A shorthand for [ImageHrefResolver]'s string function.
 #[cfg(feature = "text")]
 pub type ImageHrefStringResolverFn =
-    Box<dyn Fn(&str, &Options, &fontdb::Database) -> Option<ImageKind> + Send + Sync>;
+    Box<dyn Fn(&str, &Options, &dyn FontProvider) -> Option<ImageKind> + Send + Sync>;
 
 /// A shorthand for [ImageHrefResolver]'s string function.
 #[cfg(not(feature = "text"))]
@@ -72,7 +72,8 @@ impl ImageHrefResolver {
             move |mime: &str,
                   data: Arc<Vec<u8>>,
                   opts: &Options,
-                  #[cfg(feature = "text")] fontdb: &fontdb::Database| match mime {
+                  #[cfg(feature = "text")] font_provider: &dyn FontProvider| match mime
+            {
                 "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
                 "image/png" => Some(ImageKind::PNG(data)),
                 "image/gif" => Some(ImageKind::GIF(data)),
@@ -80,7 +81,7 @@ impl ImageHrefResolver {
                     &data,
                     opts,
                     #[cfg(feature = "text")]
-                    fontdb,
+                    font_provider,
                 ),
                 "text/plain" => match get_image_data_format(&data) {
                     Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(data)),
@@ -90,7 +91,7 @@ impl ImageHrefResolver {
                         &data,
                         opts,
                         #[cfg(feature = "text")]
-                        fontdb,
+                        font_provider,
                     ),
                 },
                 _ => None,
@@ -109,7 +110,7 @@ impl ImageHrefResolver {
         Box::new(
             move |href: &str,
                   opts: &Options,
-                  #[cfg(feature = "text")] fontdb: &fontdb::Database| {
+                  #[cfg(feature = "text")] font_provider: &dyn FontProvider| {
                 let path = opts.get_abs_path(std::path::Path::new(href));
 
                 if path.exists() {
@@ -129,7 +130,7 @@ impl ImageHrefResolver {
                             &data,
                             opts,
                             #[cfg(feature = "text")]
-                            fontdb,
+                            font_provider,
                         ),
                         _ => {
                             log::warn!("'{}' is not a PNG, JPEG, GIF or SVG(Z) image.", href);
@@ -328,14 +329,14 @@ pub(crate) fn get_href_data(href: &str, state: &converter::State) -> Option<Imag
             Arc::new(data),
             state.opt,
             #[cfg(feature = "text")]
-            state.fontdb,
+            state.font_provider,
         )
     } else {
         (state.opt.image_href_resolver.resolve_string)(
             href,
             state.opt,
             #[cfg(feature = "text")]
-            state.fontdb,
+            state.font_provider,
         )
     }
 }
@@ -368,7 +369,7 @@ fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
 pub(crate) fn load_sub_svg(
     data: &[u8],
     opt: &Options,
-    #[cfg(feature = "text")] fontdb: &fontdb::Database,
+    #[cfg(feature = "text")] font_provider: &dyn FontProvider,
 ) -> Option<ImageKind> {
     let mut sub_opt = Options::default();
     sub_opt.resources_dir = None;
@@ -391,7 +392,7 @@ pub(crate) fn load_sub_svg(
         data,
         &sub_opt,
         #[cfg(feature = "text")]
-        fontdb,
+        font_provider,
     );
     let tree = match tree {
         Ok(tree) => tree,
