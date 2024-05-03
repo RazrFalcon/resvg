@@ -2,12 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{Font, Text};
 use ::fontdb::{Database, ID};
-use std::num::NonZeroU16;
+
+use crate::{Font, Text};
 
 mod flatten;
-
 mod fontdb;
 /// Provides access to the layout of a text node.
 pub mod layout;
@@ -32,23 +31,9 @@ pub(crate) fn convert(text: &mut Text, font_provider: &dyn FontProvider) -> Opti
 }
 
 pub trait FontProvider {
-    fn resolve_font(&self, font: &Font) -> Option<ResolvedFont>;
+    fn find_font(&self, font: &Font) -> Option<ID>;
 
-    fn find_font_for_char(&self, c: char, exclude_fonts: &[ID]) -> Option<ResolvedFont>;
+    fn find_fallback_font(&self, c: char, base_font_id: ID, used_fonts: &[ID]) -> Option<ID>;
 
     fn fontdb(&self) -> &Database;
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct ResolvedFont {
-    pub id: ID,
-    pub units_per_em: NonZeroU16,
-    pub ascent: i16,
-    pub descent: i16,
-    pub x_height: NonZeroU16,
-    pub underline_position: i16,
-    pub underline_thickness: NonZeroU16,
-    pub line_through_position: i16,
-    pub subscript_offset: i16,
-    pub superscript_offset: i16,
 }

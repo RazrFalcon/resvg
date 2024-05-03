@@ -1,11 +1,12 @@
-use crate::{Font, FontProvider, FontStretch, FontStyle, ResolvedFont};
+use crate::layout::ResolvedFont;
+use crate::{Font, FontProvider, FontStretch, FontStyle};
 use fontdb::{Database, ID};
 use rustybuzz::ttf_parser;
 use std::num::NonZeroU16;
 use svgtypes::FontFamily;
 
 impl FontProvider for Database {
-    fn resolve_font(&self, font: &Font) -> Option<ResolvedFont> {
+    fn find_font(&self, font: &Font) -> Option<ID> {
         let mut name_list = Vec::new();
         for family in &font.families {
             name_list.push(match family {
@@ -58,16 +59,14 @@ impl FontProvider for Database {
             );
         }
 
-        self.load_font(id?)
+        id
     }
 
-    fn find_font_for_char(&self, c: char, exclude_fonts: &[ID]) -> Option<ResolvedFont> {
-        let base_font_id = exclude_fonts[0];
-
+    fn find_fallback_font(&self, c: char, base_font_id: ID, used_fonts: &[ID]) -> Option<ID> {
         // Iterate over fonts and check if any of them support the specified char.
         for face in self.faces() {
             // Ignore fonts, that were used for shaping already.
-            if exclude_fonts.contains(&face.id) {
+            if used_fonts.contains(&face.id) {
                 continue;
             }
 
@@ -97,7 +96,7 @@ impl FontProvider for Database {
                 .unwrap_or(&base_face.families[0]);
 
             log::warn!("Fallback from {} to {}.", base_family.0, new_family.0);
-            return self.load_font(face.id);
+            return Some(face.id);
         }
 
         None

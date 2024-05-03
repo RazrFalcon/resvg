@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::collections::HashMap;
+use std::num::NonZeroU16;
 use std::sync::Arc;
 
 use fontdb::ID;
@@ -12,12 +13,12 @@ use strict_num::NonZeroPositiveF32;
 use tiny_skia_path::{NonZeroRect, Transform};
 use unicode_script::UnicodeScript;
 
+use crate::text::fontdb::DatabaseExt;
 use crate::tree::{BBox, IsValidLength};
 use crate::{
     AlignmentBaseline, ApproxZeroUlps, BaselineShift, DominantBaseline, Fill, FillRule, Font,
-    FontProvider, LengthAdjust, PaintOrder, Path, ResolvedFont, ShapeRendering, Stroke, Text,
-    TextAnchor, TextChunk, TextDecorationStyle, TextFlow, TextPath, TextSpan, Visibility,
-    WritingMode,
+    FontProvider, LengthAdjust, PaintOrder, Path, ShapeRendering, Stroke, Text, TextAnchor,
+    TextChunk, TextDecorationStyle, TextFlow, TextPath, TextSpan, Visibility, WritingMode,
 };
 
 /// A glyph that has already been positioned correctly.
@@ -210,7 +211,10 @@ pub(crate) fn layout_text(
     for chunk in &text_node.chunks {
         for span in &chunk.spans {
             if !fonts_cache.contains_key(&span.font) {
-                if let Some(font) = font_provider.resolve_font(&span.font) {
+                if let Some(font) = font_provider
+                    .find_font(&span.font)
+                    .and_then(|id| font_provider.fontdb().load_font(id))
+                {
                     fonts_cache.insert(span.font.clone(), Arc::new(font));
                 }
             }
@@ -1206,7 +1210,10 @@ pub(crate) fn shape_text(
         }
 
         if let Some(c) = missing {
-            let fallback_font = match font_provider.find_font_for_char(c, &used_fonts) {
+            let fallback_font = match font_provider
+                .find_fallback_font(c, used_fonts[0], &used_fonts)
+                .and_then(|id| font_provider.fontdb().load_font(id))
+            {
                 Some(v) => Arc::new(v),
                 None => break 'outer,
             };
@@ -1464,6 +1471,25 @@ impl Glyph {
     fn is_missing(&self) -> bool {
         self.id.0 == 0
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct ResolvedFont {
+    pub(crate) id: ID,
+    pub(crate) units_per_em: NonZeroU16,
+    // All values below are in font units.
+    pub(crate) ascent: i16,
+    pub(crate) descent: i16,
+    pub(crate) x_height: NonZeroU16,
+    pub(crate) underline_position: i16,
+    pub(crate) underline_thickness: NonZeroU16,
+
+    // line-through thickness should be the the same as underline thickness
+    // according to the TrueType spec:
+    // https://docs.microsoft.com/en-us/typography/opentype/spec/os2#ystrikeoutsize
+    pub(crate) line_through_position: i16,
+    pub(crate) subscript_offset: i16,
+    pub(crate) superscript_offset: i16,
 }
 
 pub(crate) fn chunk_span_at(chunk: &TextChunk, byte_offset: ByteIndex) -> Option<&TextSpan> {

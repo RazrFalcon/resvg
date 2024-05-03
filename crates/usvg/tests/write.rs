@@ -1,5 +1,5 @@
-use std::ops::Deref;
 use once_cell::sync::Lazy;
+use std::ops::Deref;
 
 static GLOBAL_FONTDB: Lazy<std::sync::Mutex<usvg::fontdb::Database>> = Lazy::new(|| {
     let mut fontdb = usvg::fontdb::Database::new();

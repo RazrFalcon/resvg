@@ -1,6 +1,6 @@
-use std::ops::Deref;
 use once_cell::sync::Lazy;
 use rgb::{FromSlice, RGBA8};
+use std::ops::Deref;
 use std::process::Command;
 use usvg::fontdb;
 
