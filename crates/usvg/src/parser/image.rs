@@ -6,10 +6,13 @@ use std::sync::Arc;
 
 use svgtypes::{AspectRatio, Length};
 
+#[cfg(feature = "text")]
+use crate::FontProvider;
+
 use super::svgtree::{AId, SvgNode};
 use super::{converter, OptionLog, Options};
 use crate::{
-    ClipPath, FontProvider, Group, Image, ImageKind, ImageRendering, Node, NonZeroRect, Path, Size,
+    ClipPath, Group, Image, ImageKind, ImageRendering, Node, NonZeroRect, Path, Size,
     Transform, Tree, Visibility,
 };
 

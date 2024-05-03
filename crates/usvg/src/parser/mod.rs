@@ -19,7 +19,7 @@ mod use_node;
 
 #[cfg(feature = "text")]
 mod text;
-
+#[cfg(feature = "text")]
 use crate::FontProvider;
 pub use image::{ImageHrefDataResolverFn, ImageHrefResolver, ImageHrefStringResolverFn};
 pub use options::Options;
