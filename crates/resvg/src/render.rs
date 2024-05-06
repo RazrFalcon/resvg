@@ -138,29 +138,6 @@ fn render_group(
     Some(())
 }
 
-pub trait TinySkiaPixmapMutExt {
-    fn create_rect_mask(
-        &self,
-        transform: tiny_skia::Transform,
-        rect: tiny_skia::Rect,
-    ) -> Option<tiny_skia::Mask>;
-}
-
-impl TinySkiaPixmapMutExt for tiny_skia::PixmapMut<'_> {
-    fn create_rect_mask(
-        &self,
-        transform: tiny_skia::Transform,
-        rect: tiny_skia::Rect,
-    ) -> Option<tiny_skia::Mask> {
-        let path = tiny_skia::PathBuilder::from_rect(rect);
-
-        let mut mask = tiny_skia::Mask::new(self.width(), self.height())?;
-        mask.fill_path(&path, tiny_skia::FillRule::Winding, true, transform);
-
-        Some(mask)
-    }
-}
-
 pub fn convert_blend_mode(mode: usvg::BlendMode) -> tiny_skia::BlendMode {
     match mode {
         usvg::BlendMode::Normal => tiny_skia::BlendMode::SourceOver,
