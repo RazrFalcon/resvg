@@ -140,7 +140,9 @@ pub(crate) fn convert(
         flattened: Box::new(Group::empty()),
     };
 
-    if crate::text_to_paths::convert(&mut text, state.fontdb).is_none() {
+    if crate::text_to_paths::convert(&mut text, state.fontdb, state.opt.fonts_cache.clone())
+        .is_none()
+    {
         return;
     }
 
