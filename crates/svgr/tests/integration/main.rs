@@ -2,6 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use once_cell::sync::Lazy;
 use rgb::{FromSlice, RGBA8};
+use svgr::SvgrCache;
 use usvgr::fontdb;
 
 #[rustfmt::skip]
@@ -108,11 +109,18 @@ pub fn render(name: &str) -> usize {
         .scale_to_width(IMAGE_SIZE)
         .unwrap();
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
+    let ctx = svgr::Context::new_from_pixmap(&pixmap);
     let render_ts = tiny_skia::Transform::from_scale(
         size.width() as f32 / tree.size().width() as f32,
         size.height() as f32 / tree.size().height() as f32,
     );
-    svgr::render(&tree, render_ts, &mut pixmap.as_mut());
+    svgr::render(
+        &tree,
+        render_ts,
+        &mut pixmap.as_mut(),
+        &mut SvgrCache::none(),
+        &ctx,
+    );
 
     pixmap
         .save_png(&format!("tests/{}-actual.png", name))
@@ -160,7 +168,14 @@ pub fn render_extra_with_scale(name: &str, scale: f32) -> usize {
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
 
     let render_ts = tiny_skia::Transform::from_scale(scale, scale);
-    svgr::render(&tree, render_ts, &mut pixmap.as_mut());
+    let ctx = svgr::Context::new_from_pixmap(&pixmap);
+    svgr::render(
+        &tree,
+        render_ts,
+        &mut pixmap.as_mut(),
+        &mut SvgrCache::none(),
+        &ctx,
+    );
 
     // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
 
@@ -209,9 +224,16 @@ pub fn render_node(name: &str, id: &str) -> usize {
     let node = tree.node_by_id(id).unwrap();
     let size = node.abs_layer_bounding_box().unwrap().size().to_int_size();
     let mut pixmap = tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
-    svgr::render_node(node, tiny_skia::Transform::identity(), &mut pixmap.as_mut());
+    let ctx = svgr::Context::new_from_pixmap(&pixmap);
+    svgr::render_node(
+        node,
+        tiny_skia::Transform::identity(),
+        &mut pixmap.as_mut(),
+        &mut SvgrCache::none(),
+        &ctx,
+    );
 
-    // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
+    //pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
 
     let mut rgba = pixmap.take();
     demultiply_alpha(rgba.as_mut_slice().as_rgba_mut());
@@ -232,9 +254,9 @@ pub fn render_node(name: &str, id: &str) -> usize {
     }
 
     // Save diff if needed.
-    // if pixels_d != 0 {
-    //     gen_diff(&name, &expected_data, rgba.as_slice()).unwrap();
-    // }
+    if pixels_d != 0 {
+        gen_diff(&name, &expected_data, rgba.as_slice()).unwrap();
+    }
 
     pixels_d
 }

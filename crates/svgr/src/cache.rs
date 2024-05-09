@@ -69,7 +69,6 @@ impl<THashBuilder: BuildHasher + Default> SvgrCache<THashBuilder> {
         mut f: impl FnMut(&'a mut Self) -> Option<(Pixmap, &'a mut Self)>,
     ) -> Option<Cow<'a, Pixmap>> {
         if let None = self.0 {
-            println!("Cache is disabled");
             return f(self).map(|(value, _)| Cow::Owned(value));
         }
 

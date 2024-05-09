@@ -15,8 +15,8 @@ use crate::{Group, Image, ImageKind, Node, NonZeroRect, Size, ViewBox};
 pub type ImageHrefDataResolverFn =
     Box<dyn Fn(&str, Arc<Vec<u8>>, &Options, &fontdb::Database) -> Option<ImageKind> + Send + Sync>;
 
-/// Use this struct to preload, decode and cache images for the upcoming rendering.
 #[derive(Debug)]
+/// Preloaded decoded raster image data
 pub struct PreloadedImageData {
     /// The decoded image data in RGBA format with blended semi trsparent color.
     /// Make sure that if you submit the data directly it must be blended for semi transparent colors.

@@ -2,28 +2,36 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::{cache::FromPixmap, OptionLog};
+use crate::OptionLog;
 
-#[derive(Debug, Clone, Copy)]
-pub enum CachePolicy {
-    SkipRoot,
-    Skip,
-    Cache,
-}
-
-impl CachePolicy {
-    pub fn should_skip(self) -> (bool, Self) {
-        match self {
-            CachePolicy::Skip => (true, CachePolicy::Skip),
-            CachePolicy::SkipRoot => (true, CachePolicy::Cache),
-            CachePolicy::Cache => (false, CachePolicy::Cache),
-        }
-    }
-}
-
+/// General context for the rendering.
 pub struct Context {
+    /// The max bounding box for the whole SVG.
     pub max_bbox: tiny_skia::IntRect,
-    pub cache_policy: CachePolicy,
+}
+
+impl Context {
+    /// Default implementation of the max bounding box is 4 times the size of the pixmap.
+    pub fn new_from_pixmap(pixmap: &tiny_skia::Pixmap) -> Self {
+        let target_size = tiny_skia::IntSize::from_wh(pixmap.width(), pixmap.height()).unwrap();
+        let max_bbox = tiny_skia::IntRect::from_xywh(
+            -(target_size.width() as i32) * 2,
+            -(target_size.height() as i32) * 2,
+            target_size.width() * 4,
+            target_size.height() * 4,
+        )
+        .unwrap();
+
+        Self { max_bbox }
+    }
+
+    /// Unsafe but faster max bbox which might cut some filters and masks.
+    pub fn new_from_pixmap_unsafe(pixmap: &tiny_skia::Pixmap) -> Self {
+        let max_bbox =
+            tiny_skia::IntRect::from_xywh(0, 0, pixmap.width(), pixmap.height()).unwrap();
+
+        Self { max_bbox }
+    }
 }
 
 pub fn render_nodes(
@@ -80,28 +88,27 @@ fn render_group(
     if !group.should_isolate() {
         render_nodes(group, ctx, transform, pixmap, cache);
     } else {
-        cache.with_subpixmap_cache(ctx, pixmap, group, |ctx, cache| {
-            let bbox = group.layer_bounding_box().transform(transform)?;
+        let bbox = group.layer_bounding_box().transform(transform)?;
+        let mut ibbox = if group.filters().is_empty() {
+            // Convert group bbox into an integer one, expanding each side outwards by 2px
+            // to make sure that anti-aliased pixels would not be clipped.
+            tiny_skia::IntRect::from_xywh(
+                bbox.x().floor() as i32 - 2,
+                bbox.y().floor() as i32 - 2,
+                bbox.width().ceil() as u32 + 4,
+                bbox.height().ceil() as u32 + 4,
+            )?
+            // The bounding box for groups with filters is special and should not be expanded by 2px,
+        } else {
+            // because it's already acting as a clipping region.
+            let bbox = bbox.to_int_rect();
+            // Make sure our filter region is not bigger than 4x the canvas size.
+            // This is required mainly to prevent huge filter regions that would tank the performance.
+            // It should not affect the final result in any way.
+            crate::geom::fit_to_rect(bbox, ctx.max_bbox)?
+        };
 
-            let mut ibbox = if group.filters().is_empty() {
-                // Convert group bbox into an integer one, expanding each side outwards by 2px
-                // to make sure that anti-aliased pixels would not be clipped.
-                tiny_skia::IntRect::from_xywh(
-                    bbox.x().floor() as i32 - 2,
-                    bbox.y().floor() as i32 - 2,
-                    bbox.width().ceil() as u32 + 4,
-                    bbox.height().ceil() as u32 + 4,
-                )?
-            } else {
-                // The bounding box for groups with filters is special and should not be expanded by 2px,
-                // because it's already acting as a clipping region.
-                let bbox = bbox.to_int_rect();
-                // Make sure our filter region is not bigger than 4x the canvas size.
-                // This is required mainly to prevent huge filter regions that would tank the performance.
-                // It should not affect the final result in any way.
-                crate::geom::fit_to_rect(bbox, ctx.max_bbox)?
-            };
-
+        let sub_pixmap = cache.with_subpixmap_cache(group, |cache| {
             // Make sure our layer is not bigger than 4x the canvas size.
             // This is required to prevent huge layers.
             if group.filters().is_empty() {
@@ -141,29 +148,23 @@ fn render_group(
                 crate::mask::apply(mask, ctx, transform, &mut sub_pixmap, cache);
             }
 
-            let paint = tiny_skia::PixmapPaint {
-                opacity: group.opacity().get(),
-                blend_mode: convert_blend_mode(group.blend_mode()),
-                quality: tiny_skia::FilterQuality::Nearest,
-            };
+            Some((sub_pixmap, cache))
+        })?;
 
-            // pixmap.draw_pixmap(
-            //     ibbox.x(),
-            //     ibbox.y(),
-            //     sub_pixmap.as_ref(),
-            //     &paint,
-            //     tiny_skia::Transform::identity(),
-            //     None,
-            // );
-            Some(FromPixmap {
-                tx: ibbox.x(),
-                ty: ibbox.y(),
-                pixmap: sub_pixmap,
-                transform: tiny_skia::Transform::identity(),
-                paint,
-                mask: None,
-            })
-        });
+        let paint = tiny_skia::PixmapPaint {
+            opacity: group.opacity().get(),
+            blend_mode: convert_blend_mode(group.blend_mode()),
+            quality: tiny_skia::FilterQuality::Nearest,
+        };
+
+        pixmap.draw_pixmap(
+            ibbox.x(),
+            ibbox.y(),
+            sub_pixmap.as_ref().as_ref(),
+            &paint,
+            tiny_skia::Transform::identity(),
+            None,
+        );
     }
 
     Some(())

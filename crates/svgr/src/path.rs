@@ -16,15 +16,15 @@ pub fn render(
         return;
     }
 
-    cache.with_cache(ctx, pixmap, path, |pixmap, cache, ctx| {
-        if path.paint_order() == usvgr::PaintOrder::FillAndStroke {
-            fill_path(path, blend_mode, ctx, transform, pixmap, cache);
-            stroke_path(path, blend_mode, ctx, transform, pixmap, cache);
-        } else {
-            stroke_path(path, blend_mode, ctx, transform, pixmap, cache);
-            fill_path(path, blend_mode, ctx, transform, pixmap, cache);
-        }
-    })
+    //cache.with_cache(ctx, pixmap, path, |pixmap, cache, ctx| {
+    if path.paint_order() == usvgr::PaintOrder::FillAndStroke {
+        fill_path(path, blend_mode, ctx, transform, pixmap, cache);
+        stroke_path(path, blend_mode, ctx, transform, pixmap, cache);
+    } else {
+        stroke_path(path, blend_mode, ctx, transform, pixmap, cache);
+        fill_path(path, blend_mode, ctx, transform, pixmap, cache);
+    }
+    //})
 }
 
 pub fn fill_path(
@@ -117,7 +117,6 @@ fn stroke_path(
     paint.blend_mode = blend_mode;
 
     pixmap.stroke_path(path.data(), &paint, &stroke.to_tiny_skia(), transform, None);
-
     Some(())
 }
 

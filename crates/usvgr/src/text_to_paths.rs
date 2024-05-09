@@ -2,9 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::collections::HashMap;
 use std::num::NonZeroU16;
-use std::sync::{Arc, RwLock};
-use std::{collections::HashMap, sync::RwLockReadGuard};
+use std::sync::Arc;
 
 use fontdb::{Database, ID};
 use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
@@ -15,12 +15,8 @@ use unicode_script::UnicodeScript;
 
 use crate::*;
 
-pub(crate) fn convert(
-    text: &mut Text,
-    fontdb: &fontdb::Database,
-    fonts_cache: FontsCache,
-) -> Option<()> {
-    let (new_paths, bbox, stroke_bbox) = text_to_paths(text, fontdb, fonts_cache)?;
+pub(crate) fn convert(text: &mut Text, fontdb: &fontdb::Database) -> Option<()> {
+    let (new_paths, bbox, stroke_bbox) = text_to_paths(text, fontdb)?;
 
     let mut group = Group {
         id: text.id.clone(),
@@ -393,28 +389,9 @@ fn resolve_baseline(span: &TextSpan, font: &ResolvedFont, writing_mode: WritingM
 
 type FontsCacheInner = HashMap<Font, Arc<ResolvedFont>>;
 
-#[derive(Clone, Debug, Default)]
-pub struct FontsCache(Arc<RwLock<FontsCacheInner>>);
-
-impl FontsCache {
-    /// Creates a new empty cache.
-    pub fn new() -> Self {
-        FontsCache(Arc::new(RwLock::new(HashMap::new())))
-    }
-
-    pub fn read(&self) -> std::sync::RwLockReadGuard<FontsCacheInner> {
-        self.0.read().unwrap()
-    }
-
-    pub fn write(&self) -> std::sync::RwLockWriteGuard<FontsCacheInner> {
-        self.0.write().unwrap()
-    }
-}
-
 fn text_to_paths(
     text_node: &Text,
     fontdb: &fontdb::Database,
-    fonts_cache: FontsCache,
 ) -> Option<(Vec<Path>, NonZeroRect, NonZeroRect)> {
     let mut fonts_cache: FontsCacheInner = HashMap::new();
     for chunk in &text_node.chunks {

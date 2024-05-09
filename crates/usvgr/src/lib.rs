@@ -47,15 +47,14 @@ and can focus just on the rendering part.
 [SVG]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 */
 
-#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_copy_implementations)]
 
+mod hashers;
 mod parser;
 mod tree;
 mod writer;
-mod hashers;
 
 pub use parser::*;
 pub use tree::*;

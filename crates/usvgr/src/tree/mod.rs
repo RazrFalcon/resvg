@@ -1127,8 +1127,9 @@ impl std::hash::Hash for Group {
         self.id.hash(state);
         self.transform.custom_hash(state);
         self.abs_transform.custom_hash(state);
-        self.opacity.hash(state);
-        self.blend_mode.hash(state);
+        // do not hash opacity and blend_mode it is used after caching
+        // self.opacity.hash(state);
+        // self.blend_mode.hash(state);
         self.isolate.hash(state);
         self.clip_path.hash(state);
         self.mask.hash(state);
@@ -1386,8 +1387,6 @@ pub struct Path {
 
 impl std::hash::Hash for Path {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        use crate::hashers::CustomHash;
-
         self.id.hash(state);
         self.visibility.hash(state);
         self.fill.hash(state);
@@ -1581,7 +1580,9 @@ pub enum ImageKind {
     DATA(Arc<PreloadedImageData>),
     /// A preprocessed SVG tree. Can be rendered as is.
     SVG {
+        /// Original href of the image.
         original_href: String,
+        /// Parsed and converted SVG tree.
         tree: Arc<Tree>,
     },
 }
@@ -1613,8 +1614,6 @@ pub struct Image {
 
 impl std::hash::Hash for Image {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        use crate::hashers::CustomHash;
-
         // Do not hash the id and the kind
         self.visibility.hash(state);
         self.view_box.hash(state);

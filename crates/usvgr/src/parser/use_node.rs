@@ -62,16 +62,11 @@ pub(crate) fn convert(
             let mut g = clip_element(node, clip_rect, orig_ts, &use_state, cache);
 
             // Make group for `use`.
-            if let Some(mut g2) = converter::convert_group(
-                node,
-                &use_state,
-                true,
-                cache,
-                &mut g,
-                &|cache, g2| {
+            if let Some(mut g2) =
+                converter::convert_group(node, &use_state, true, cache, &mut g, &|cache, g2| {
                     convert_children(child, new_ts, &use_state, cache, false, g2);
-                },
-            ) {
+                })
+            {
                 // We must reset transform, because it was already set
                 // to the group with clip-path.
                 g.is_context_element = true;
@@ -252,20 +247,15 @@ fn convert_children(
     parent: &mut Group,
 ) {
     let required = !transform.is_identity();
-    if let Some(mut g) = converter::convert_group(
-        node,
-        state,
-        required,
-        cache,
-        parent,
-        &|cache, g| {
+    if let Some(mut g) =
+        converter::convert_group(node, state, required, cache, parent, &|cache, g| {
             if state.parent_clip_path.is_some() {
                 converter::convert_clip_path_elements(node, state, cache, g);
             } else {
                 converter::convert_children(node, state, cache, g);
             }
-        },
-    ) {
+        })
+    {
         g.is_context_element = is_context_element;
         g.transform = transform;
         parent.children.push(Node::Group(Box::new(g)));

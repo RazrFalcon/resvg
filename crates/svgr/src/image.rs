@@ -2,14 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use crate::{cache::SvgrCache, render::TinySkiaPixmapMutExt};
 use std::sync::Arc;
-
-use tiny_skia::PixmapPaint;
-
-use crate::{
-    cache::{FromPixmap, SvgrCache},
-    render::{Context, TinySkiaPixmapMutExt},
-};
 
 pub fn render(
     image: &usvgr::Image,
@@ -60,15 +54,9 @@ fn render_vector(
     pixmap: &mut tiny_skia::PixmapMut,
     cache: &mut crate::cache::SvgrCache,
 ) -> Option<()> {
-    let context = Context {
-        // We could use any values here. They will not be used anyway.
-        max_bbox: tiny_skia::IntRect::from_xywh(0, 0, 1, 1).unwrap(),
-        cache_policy: crate::render::CachePolicy::Cache,
-    };
-
     let width = pixmap.width();
     let height = pixmap.height();
-    cache.with_subpixmap_cache(&context, pixmap, &original_href, |_, _| {
+    let sub_pixamp = cache.with_subpixmap_cache(&original_href, |cache| {
         let img_size = tree.size().to_int_size();
         let (ts, clip) = crate::geom::view_box_to_transform_with_clip(view_box, img_size);
 
@@ -76,25 +64,30 @@ fn render_vector(
 
         let source_transform = transform;
         let transform = transform.pre_concat(ts);
+        let ctx = crate::render::Context::new_from_pixmap(&sub_pixmap);
+
         let pixmap_mut = &mut sub_pixmap.as_mut();
+        crate::render(tree, transform, pixmap_mut, &mut SvgrCache::none(), &ctx);
 
-        crate::render(tree, transform, pixmap_mut, &mut SvgrCache::none());
+        if let Some(mask) =
+            clip.and_then(|clip| pixmap_mut.create_rect_mask(source_transform, clip.to_rect()))
+        {
+            pixmap_mut.apply_mask(&mask);
+        }
 
-        let mask = if let Some(clip) = clip {
-            pixmap_mut.create_rect_mask(source_transform, clip.to_rect())
-        } else {
-            None
-        };
+        Some((sub_pixmap, cache))
+    })?;
 
-        Some(FromPixmap {
-            tx: 0,
-            ty: 0,
-            paint: PixmapPaint::default(),
-            transform: tiny_skia::Transform::identity(),
-            pixmap: sub_pixmap,
-            mask,
-        })
-    })
+    pixmap.draw_pixmap(
+        0,
+        0,
+        sub_pixamp.as_ref().as_ref(),
+        &tiny_skia::PixmapPaint::default(),
+        tiny_skia::Transform::identity(),
+        None,
+    );
+
+    Some(())
 }
 
 /// Calculates an image rect depending on the provided view box.

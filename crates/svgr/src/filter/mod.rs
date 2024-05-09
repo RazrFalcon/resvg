@@ -909,7 +909,6 @@ fn apply_image(
             );
 
             let ctx = crate::render::Context {
-                cache_policy: crate::render::CachePolicy::Skip,
                 max_bbox: tiny_skia::IntRect::from_xywh(0, 0, region.width(), region.height())
                     .unwrap(),
             };

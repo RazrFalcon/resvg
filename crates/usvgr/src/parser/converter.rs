@@ -34,7 +34,7 @@ pub struct State<'a> {
     pub(crate) fontdb: &'a fontdb::Database,
 }
 
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct Cache {
     pub clip_paths: HashMap<String, Arc<ClipPath>>,
     pub masks: HashMap<String, Arc<Mask>>,

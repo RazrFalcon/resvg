@@ -23,6 +23,14 @@ fn main() {
 
     let pixmap_size = tree.size().to_int_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
-    svgr::render(&tree, tiny_skia::Transform::default(), &mut pixmap.as_mut());
+    let mut cache = svgr::SvgrCache::none();
+    let ctx = svgr::Context::new_from_pixmap(&pixmap);
+    svgr::render(
+        &tree,
+        tiny_skia::Transform::default(),
+        &mut pixmap.as_mut(),
+        &mut cache,
+        &ctx,
+    );
     pixmap.save_png(&args[2]).unwrap();
 }
