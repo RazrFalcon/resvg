@@ -6,6 +6,7 @@ use crate::Text;
 
 mod flatten;
 
+mod colr;
 /// Provides access to the layout of a text node.
 pub mod layout;
 
