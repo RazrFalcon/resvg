@@ -10,7 +10,7 @@ Noto Color Emoji (CBDT)
 
 Noto COLOR Emoji (COLRv1)
 1. Download: https://fonts.google.com/noto/specimen/Noto+Color+Emoji
-2. Run `fonttools subset NotoColorEmoji-Regular.ttf --unicodes="U+1F436,U+1F41D,U+1F313,U+1F313" --output-file=NotoColorEmojiCOLR.subset.ttf`
+2. Run `fonttools subset NotoColorEmoji-Regular.ttf --unicodes="U+1F436,U+1F41D,U+1F313,U+1F973" --output-file=NotoColorEmojiCOLR.subset.ttf`
 3. Run `fonttools ttx NotoColorEmojiCOLR.subset.ttf`
 4. Go to the <name> section and rename all instances of "Noto Color Emoji" to "Noto Color Emoji COLR" (so that
 we can distinguish them from CBDT in tests).
