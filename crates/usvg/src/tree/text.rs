@@ -565,7 +565,9 @@ impl Text {
         self.abs_stroke_bounding_box
     }
 
-    /// Text converted into paths, ready to render. Note that this is only a
+    /// Text converted into paths, ready to render.
+    ///
+    /// Note that this is only a
     /// "best-effort" attempt: The text will be converted into group/paths/image
     /// primitives, so that they can be rendered with the existing infrastructure.
     /// This process is in general lossless and should lead to correct output, with
