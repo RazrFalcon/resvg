@@ -7,9 +7,11 @@ use std::sync::Arc;
 
 use fontdb::{Database, ID};
 use rustybuzz::ttf_parser;
-use rustybuzz::ttf_parser::{GlyphId, RasterImageFormat};
+use rustybuzz::ttf_parser::{GlyphId, RasterImageFormat, RgbaColor};
 use tiny_skia_path::{NonZeroRect, Size, Transform};
+use xmlwriter::XmlWriter;
 
+use crate::text::colr::GlyphPainter;
 use crate::*;
 
 fn resolve_rendering_mode(text: &Text) -> ShapeRendering {
@@ -71,21 +73,14 @@ pub(crate) fn flatten(text: &mut Text, fontdb: &fontdb::Database) -> Option<(Gro
         let mut span_builder = tiny_skia_path::PathBuilder::new();
 
         for glyph in &span.positioned_glyphs {
-            // A COLRv0 glyph. Will return a vector of paths that make up the glyph description.
-            // TODO: Don't use black for foreground color? But not sure whether to use fill or stroke
-            // color.
-            if let Some(layers) = fontdb.colr(glyph.font, glyph.id) {
-                push_outline_paths(span, &mut span_builder, &mut new_children, rendering_mode);
-
+            // A (best-effort conversion of a) COLR glyph.
+            if let Some(tree) = fontdb.colr(glyph.font, glyph.id) {
                 let mut group = Group {
                     transform: glyph.colr_transform(),
                     ..Group::empty()
                 };
-
-                for path in layers {
-                    // TODO: Probably need to update abs_transform of children?
-                    group.children.push(Node::Path(Box::new(path)));
-                }
+                // TODO: Probably need to update abs_transform of children?
+                group.children.push(Node::Group(Box::new(tree.root)));
                 group.calculate_bounding_boxes();
 
                 new_children.push(Node::Group(Box::new(group)));
@@ -195,7 +190,7 @@ pub(crate) trait DatabaseExt {
     fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tiny_skia_path::Path>;
     fn raster(&self, id: ID, glyph_id: GlyphId) -> Option<BitmapImage>;
     fn svg(&self, id: ID, glyph_id: GlyphId) -> Option<Tree>;
-    fn colr(&self, id: ID, glyph_id: GlyphId) -> Option<Vec<Path>>;
+    fn colr(&self, id: ID, glyph_id: GlyphId) -> Option<Tree>;
 }
 
 pub(crate) struct BitmapImage {
@@ -269,73 +264,48 @@ impl DatabaseExt for Database {
         })?
     }
 
-    fn colr(&self, id: ID, glyph_id: GlyphId) -> Option<Vec<Path>> {
-        self.with_face_data(id, |data, face_index| -> Option<Vec<Path>> {
-            let font = ttf_parser::Face::parse(data, face_index).ok()?;
+    fn colr(&self, id: ID, glyph_id: GlyphId) -> Option<Tree> {
+        self.with_face_data(id, |data, face_index| -> Option<Tree> {
+            let face = ttf_parser::Face::parse(data, face_index).ok()?;
 
-            let mut paths = vec![];
+            let mut svg = XmlWriter::new(xmlwriter::Options::default());
+
+            svg.start_element("svg");
+            svg.write_attribute("xmlns", "http://www.w3.org/2000/svg");
+            svg.write_attribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+
+            let mut path_buf = String::with_capacity(256);
+            let gradient_index = 1;
+            let clip_path_index = 1;
+
+            svg.start_element("g");
+
             let mut glyph_painter = GlyphPainter {
-                face: &font,
-                paths: &mut paths,
-                builder: PathBuilder {
-                    builder: tiny_skia_path::PathBuilder::new(),
-                },
+                face: &face,
+                svg: &mut svg,
+                path_buf: &mut path_buf,
+                gradient_index,
+                clip_path_index,
+                palette_index: 0,
+                transform: ttf_parser::Transform::default(),
+                outline_transform: ttf_parser::Transform::default(),
+                transforms_stack: vec![ttf_parser::Transform::default()],
             };
 
-            font.paint_color_glyph(glyph_id, 0, &mut glyph_painter)?;
+            face.paint_color_glyph(
+                glyph_id,
+                0,
+                RgbaColor::new(0, 0, 0, 255),
+                &mut glyph_painter,
+            )?;
+            svg.end_element();
 
-            Some(paths)
-        })?
-    }
-}
-
-struct GlyphPainter<'a> {
-    face: &'a ttf_parser::Face<'a>,
-    paths: &'a mut Vec<Path>,
-    builder: PathBuilder,
-}
-
-impl ttf_parser::colr::Painter for GlyphPainter<'_> {
-    fn outline(&mut self, glyph_id: ttf_parser::GlyphId) {
-        let builder = &mut self.builder;
-        match self.face.outline_glyph(glyph_id, builder) {
-            Some(v) => v,
-            None => return,
-        };
-    }
-
-    fn paint_foreground(&mut self) {
-        self.paint_color(ttf_parser::RgbaColor::new(0, 0, 0, 255));
-    }
-
-    fn paint_color(&mut self, color: ttf_parser::RgbaColor) {
-        let builder = mem::replace(
-            &mut self.builder,
-            PathBuilder {
-                builder: tiny_skia_path::PathBuilder::new(),
-            },
-        );
-
-        if let Some(path) = builder.builder.finish().and_then(|p| {
-            let fill = Fill {
-                paint: Paint::Color(Color::new_rgb(color.red, color.green, color.blue)),
-                opacity: Opacity::new(f32::from(color.alpha) / 255.0).unwrap(),
-                rule: FillRule::NonZero,
-                context_element: None,
-            };
-
-            Path::new(
-                String::new(),
-                Visibility::Visible,
-                Some(fill),
-                None,
-                PaintOrder::FillAndStroke,
-                ShapeRendering::GeometricPrecision,
-                Arc::new(p),
-                Transform::default(),
+            Tree::from_data(
+                &svg.end_document().as_bytes(),
+                &Options::default(),
+                &fontdb::Database::new(),
             )
-        }) {
-            self.paths.push(path)
-        }
+            .ok()
+        })?
     }
 }

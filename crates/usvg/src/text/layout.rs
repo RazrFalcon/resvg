@@ -9,7 +9,7 @@ use std::sync::Arc;
 use fontdb::{Database, ID};
 use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
 use rustybuzz::ttf_parser;
-use rustybuzz::ttf_parser::GlyphId;
+use rustybuzz::ttf_parser::{GlyphId, Tag};
 use strict_num::NonZeroPositiveF32;
 use svgtypes::FontFamily;
 use tiny_skia_path::{NonZeroRect, Transform};
@@ -1454,19 +1454,11 @@ fn shape_text_with_font(
 
             let mut features = Vec::new();
             if small_caps {
-                features.push(rustybuzz::Feature::new(
-                    rustybuzz::Tag::from_bytes(b"smcp"),
-                    1,
-                    ..,
-                ));
+                features.push(rustybuzz::Feature::new(Tag::from_bytes(b"smcp"), 1, ..));
             }
 
             if !apply_kerning {
-                features.push(rustybuzz::Feature::new(
-                    rustybuzz::Tag::from_bytes(b"kern"),
-                    0,
-                    ..,
-                ));
+                features.push(rustybuzz::Feature::new(Tag::from_bytes(b"kern"), 0, ..));
             }
 
             let output = rustybuzz::shape(&rb_font, &features, buffer);
