@@ -17,6 +17,8 @@ This changelog also contains important changes in dependencies.
   Similar to `image` above, but affects the root `svg` element instead.
 - `pattern` viewbox flattening.<br>
   Similar to `image` above, but for patterns.
+- The `--list-fonts` resvg argument can be used without providing an SVG file now.
+  Can simply call `resvg --list-fonts` now.
 
 ### Changed
 - Always represent `feImage` content as a link to an element.<br>
@@ -35,6 +37,7 @@ This changelog also contains important changes in dependencies.
   </filter>
   ```
   This simplifies `feImage` rendering, since we don't have to handle both cases now.
+- The `--list-fonts` resvg argument includes generic font family names as well now.
 
 ### Removed
 - `usvg::ViewBox`, `usvg::AspectRatio`, `usvg::Align` types. Nol longer used.

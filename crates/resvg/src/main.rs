@@ -30,7 +30,7 @@ where
 }
 
 fn process() -> Result<(), String> {
-    let mut args = match parse_args() {
+    let args = match parse_args() {
         Ok(args) => args,
         Err(e) => {
             println!("{}", HELP);
@@ -87,28 +87,9 @@ fn process() -> Result<(), String> {
 
     let mut fontdb = fontdb::Database::new();
     if has_text_nodes {
-        timed(args.perf, "FontDB", || load_fonts(&mut args, &mut fontdb));
-        if args.list_fonts {
-            for face in fontdb.faces() {
-                if let fontdb::Source::File(ref path) = &face.source {
-                    let families: Vec<_> = face
-                        .families
-                        .iter()
-                        .map(|f| format!("{} ({}, {})", f.0, f.1.primary_language(), f.1.region()))
-                        .collect();
-
-                    println!(
-                        "{}: '{}', {}, {:?}, {:?}, {:?}",
-                        path.display(),
-                        families.join("', '"),
-                        face.index,
-                        face.style,
-                        face.weight.0,
-                        face.stretch
-                    );
-                }
-            }
-        }
+        timed(args.perf, "FontDB", || {
+            load_fonts(&args.raw_args, &mut fontdb)
+        });
     }
 
     let tree = timed(args.perf, "SVG Parsing", || {
@@ -267,7 +248,7 @@ struct CliArgs {
     perf: bool,
     quiet: bool,
 
-    input: String,
+    input: Option<String>,
     output: Option<String>,
 }
 
@@ -330,7 +311,7 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
         perf: input.contains("--perf"),
         quiet: input.contains("--quiet"),
 
-        input: input.free_from_str()?,
+        input: input.opt_free_from_str()?,
         output: input.opt_free_from_str()?,
     })
 }
@@ -438,6 +419,38 @@ impl FitTo {
     }
 }
 
+fn list_fonts(args: &CliArgs) {
+    let mut fontdb = fontdb::Database::new();
+    load_fonts(&args, &mut fontdb);
+
+    use fontdb::Family;
+    println!("serif: {}", fontdb.family_name(&Family::Serif));
+    println!("sans-serif: {}", fontdb.family_name(&Family::SansSerif));
+    println!("cursive: {}", fontdb.family_name(&Family::Cursive));
+    println!("fantasy: {}", fontdb.family_name(&Family::Fantasy));
+    println!("monospace: {}", fontdb.family_name(&Family::Monospace));
+
+    for face in fontdb.faces() {
+        if let fontdb::Source::File(ref path) = &face.source {
+            let families: Vec<_> = face
+                .families
+                .iter()
+                .map(|f| format!("{} ({}, {})", f.0, f.1.primary_language(), f.1.region()))
+                .collect();
+
+            println!(
+                "{}: '{}', {}, {:?}, {:?}, {:?}",
+                path.display(),
+                families.join("', '"),
+                face.index,
+                face.style,
+                face.weight.0,
+                face.stretch
+            );
+        }
+    }
+}
+
 struct Args {
     in_svg: InputFrom,
     out_png: Option<OutputTo>,
@@ -450,23 +463,22 @@ struct Args {
     usvg: usvg::Options,
     fit_to: FitTo,
     background: Option<svgtypes::Color>,
-
-    serif_family: Option<String>,
-    sans_serif_family: Option<String>,
-    cursive_family: Option<String>,
-    fantasy_family: Option<String>,
-    monospace_family: Option<String>,
-    font_files: Vec<path::PathBuf>,
-    font_dirs: Vec<path::PathBuf>,
-    skip_system_fonts: bool,
-    list_fonts: bool,
+    raw_args: CliArgs, // TODO: find a better way
 }
 
 fn parse_args() -> Result<Args, String> {
-    let mut args = collect_args().map_err(|e| e.to_string())?;
+    let args = collect_args().map_err(|e| e.to_string())?;
+
+    if args.list_fonts {
+        list_fonts(&args);
+        std::process::exit(0);
+    }
 
     let (in_svg, out_png) = {
-        let in_svg = args.input.as_str();
+        let in_svg = match args.input {
+            Some(ref v) => v,
+            None => return Err("input file is missing".to_string()),
+        };
 
         let svg_from = if in_svg == "-" {
             InputFrom::Stdin
@@ -493,7 +505,7 @@ fn parse_args() -> Result<Args, String> {
         return Err("<out-png> must be set".to_string());
     }
 
-    if args.input == "-" && args.resources_dir.is_none() {
+    if in_svg == InputFrom::Stdin && args.resources_dir.is_none() {
         eprintln!("Warning: Make sure to set --resources-dir when reading SVG from stdin.");
     }
 
@@ -523,14 +535,17 @@ fn parse_args() -> Result<Args, String> {
     }
 
     let resources_dir = match args.resources_dir {
-        Some(v) => Some(v),
-        None if args.input != "-" => {
-            // Get input file absolute directory.
-            std::fs::canonicalize(args.input)
-                .ok()
-                .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+        Some(ref v) => Some(v.clone()),
+        None => {
+            if let InputFrom::File(ref input) = in_svg {
+                // Get input file absolute directory.
+                std::fs::canonicalize(input)
+                    .ok()
+                    .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+            } else {
+                None
+            }
         }
-        None => None,
     };
 
     let usvg = usvg::Options {
@@ -538,10 +553,10 @@ fn parse_args() -> Result<Args, String> {
         dpi: args.dpi as f32,
         font_family: args
             .font_family
-            .take()
+            .clone()
             .unwrap_or_else(|| "Times New Roman".to_string()),
         font_size: args.font_size as f32,
-        languages: args.languages,
+        languages: args.languages.clone(),
         shape_rendering: args.shape_rendering,
         text_rendering: args.text_rendering,
         image_rendering: args.image_rendering,
@@ -561,19 +576,11 @@ fn parse_args() -> Result<Args, String> {
         usvg,
         fit_to,
         background: args.background,
-        serif_family: args.serif_family,
-        sans_serif_family: args.sans_serif_family,
-        cursive_family: args.cursive_family,
-        fantasy_family: args.fantasy_family,
-        monospace_family: args.monospace_family,
-        font_files: args.font_files,
-        font_dirs: args.font_dirs,
-        skip_system_fonts: args.skip_system_fonts,
-        list_fonts: args.list_fonts,
+        raw_args: args,
     })
 }
 
-fn load_fonts(args: &mut Args, fontdb: &mut fontdb::Database) {
+fn load_fonts(args: &CliArgs, fontdb: &mut fontdb::Database) {
     if !args.skip_system_fonts {
         fontdb.load_system_fonts();
     }
@@ -588,14 +595,11 @@ fn load_fonts(args: &mut Args, fontdb: &mut fontdb::Database) {
         fontdb.load_fonts_dir(path);
     }
 
-    let take_or =
-        |family: Option<String>, fallback: &str| family.unwrap_or_else(|| fallback.to_string());
-
-    fontdb.set_serif_family(take_or(args.serif_family.take(), "Times New Roman"));
-    fontdb.set_sans_serif_family(take_or(args.sans_serif_family.take(), "Arial"));
-    fontdb.set_cursive_family(take_or(args.cursive_family.take(), "Comic Sans MS"));
-    fontdb.set_fantasy_family(take_or(args.fantasy_family.take(), "Impact"));
-    fontdb.set_monospace_family(take_or(args.monospace_family.take(), "Courier New"));
+    fontdb.set_serif_family(args.serif_family.as_deref().unwrap_or("Times New Roman"));
+    fontdb.set_sans_serif_family(args.sans_serif_family.as_deref().unwrap_or("Arial"));
+    fontdb.set_cursive_family(args.cursive_family.as_deref().unwrap_or("Comic Sans MS"));
+    fontdb.set_fantasy_family(args.fantasy_family.as_deref().unwrap_or("Impact"));
+    fontdb.set_monospace_family(args.monospace_family.as_deref().unwrap_or("Courier New"));
 }
 
 fn query_all(tree: &usvg::Tree) -> Result<(), String> {
