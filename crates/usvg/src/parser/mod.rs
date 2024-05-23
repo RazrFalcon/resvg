@@ -95,37 +95,19 @@ impl crate::Tree {
     /// Parses `Tree` from an SVG data.
     ///
     /// Can contain an SVG string or a gzip compressed data.
-    pub fn from_data(
-        data: &[u8],
-        opt: &Options,
-        #[cfg(feature = "text")] fontdb: &fontdb::Database,
-    ) -> Result<Self, Error> {
+    pub fn from_data(data: &[u8], opt: &Options) -> Result<Self, Error> {
         if data.starts_with(&[0x1f, 0x8b]) {
             let data = decompress_svgz(data)?;
             let text = std::str::from_utf8(&data).map_err(|_| Error::NotAnUtf8Str)?;
-            Self::from_str(
-                text,
-                opt,
-                #[cfg(feature = "text")]
-                fontdb,
-            )
+            Self::from_str(text, opt)
         } else {
             let text = std::str::from_utf8(data).map_err(|_| Error::NotAnUtf8Str)?;
-            Self::from_str(
-                text,
-                opt,
-                #[cfg(feature = "text")]
-                fontdb,
-            )
+            Self::from_str(text, opt)
         }
     }
 
     /// Parses `Tree` from an SVG string.
-    pub fn from_str(
-        text: &str,
-        opt: &Options,
-        #[cfg(feature = "text")] fontdb: &fontdb::Database,
-    ) -> Result<Self, Error> {
+    pub fn from_str(text: &str, opt: &Options) -> Result<Self, Error> {
         let xml_opt = roxmltree::ParsingOptions {
             allow_dtd: true,
             ..Default::default()
@@ -134,27 +116,13 @@ impl crate::Tree {
         let doc =
             roxmltree::Document::parse_with_options(text, xml_opt).map_err(Error::ParsingFailed)?;
 
-        Self::from_xmltree(
-            &doc,
-            opt,
-            #[cfg(feature = "text")]
-            fontdb,
-        )
+        Self::from_xmltree(&doc, opt)
     }
 
     /// Parses `Tree` from `roxmltree::Document`.
-    pub fn from_xmltree(
-        doc: &roxmltree::Document,
-        opt: &Options,
-        #[cfg(feature = "text")] fontdb: &fontdb::Database,
-    ) -> Result<Self, Error> {
+    pub fn from_xmltree(doc: &roxmltree::Document, opt: &Options) -> Result<Self, Error> {
         let doc = svgtree::Document::parse_tree(doc)?;
-        self::converter::convert_doc(
-            &doc,
-            opt,
-            #[cfg(feature = "text")]
-            fontdb,
-        )
+        self::converter::convert_doc(&doc, opt)
     }
 }
 

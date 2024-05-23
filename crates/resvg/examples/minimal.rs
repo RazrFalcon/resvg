@@ -1,5 +1,3 @@
-use usvg::fontdb;
-
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 3 {
@@ -14,11 +12,10 @@ fn main() {
             .ok()
             .and_then(|p| p.parent().map(|p| p.to_path_buf()));
 
-        let mut fontdb = fontdb::Database::new();
-        fontdb.load_system_fonts();
+        opt.fontdb_mut().load_system_fonts();
 
         let svg_data = std::fs::read(&args[1]).unwrap();
-        usvg::Tree::from_data(&svg_data, &opt, &fontdb).unwrap()
+        usvg::Tree::from_data(&svg_data, &opt).unwrap()
     };
 
     let pixmap_size = tree.size().to_int_size();

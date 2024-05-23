@@ -2,6 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#[cfg(feature = "text")]
+use std::sync::Arc;
+
 use crate::{ImageHrefResolver, ImageRendering, ShapeRendering, Size, TextRendering};
 
 /// Processing options.
@@ -76,6 +79,10 @@ pub struct Options {
     ///
     /// Default: see type's documentation for details
     pub image_href_resolver: ImageHrefResolver,
+
+    /// A database of fonts usable by text.
+    #[cfg(feature = "text")]
+    pub fontdb: Arc<fontdb::Database>,
 }
 
 impl Default for Options {
@@ -92,6 +99,8 @@ impl Default for Options {
             image_rendering: ImageRendering::default(),
             default_size: Size::from_wh(100.0, 100.0).unwrap(),
             image_href_resolver: ImageHrefResolver::default(),
+            #[cfg(feature = "text")]
+            fontdb: Arc::new(fontdb::Database::new()),
         }
     }
 }
@@ -105,5 +114,13 @@ impl Options {
             Some(ref dir) => dir.join(rel_path),
             None => rel_path.into(),
         }
+    }
+
+    /// Mutably acquires the database.
+    ///
+    /// This clones the database if it is currently shared.
+    #[cfg(feature = "text")]
+    pub fn fontdb_mut(&mut self) -> &mut fontdb::Database {
+        Arc::make_mut(&mut self.fontdb)
     }
 }

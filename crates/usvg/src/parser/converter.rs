@@ -30,8 +30,6 @@ pub struct State<'a> {
     /// Width and height can be set independently.
     pub(crate) use_size: (Option<f32>, Option<f32>),
     pub(crate) opt: &'a Options,
-    #[cfg(feature = "text")]
-    pub(crate) fontdb: &'a fontdb::Database,
 }
 
 #[derive(Clone, Default)]
@@ -257,18 +255,9 @@ impl SvgColorExt for svgtypes::Color {
 ///
 /// - If `Document` doesn't have an SVG node - returns an empty tree.
 /// - If `Document` doesn't have a valid size - returns `Error::InvalidSize`.
-pub(crate) fn convert_doc(
-    svg_doc: &svgtree::Document,
-    opt: &Options,
-    #[cfg(feature = "text")] fontdb: &fontdb::Database,
-) -> Result<Tree, Error> {
+pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<Tree, Error> {
     let svg = svg_doc.root_element();
-    let (size, restore_viewbox) = resolve_svg_size(
-        &svg,
-        opt,
-        #[cfg(feature = "text")]
-        fontdb,
-    );
+    let (size, restore_viewbox) = resolve_svg_size(&svg, opt);
     let size = size?;
     let view_box = ViewBox {
         rect: svg
@@ -300,8 +289,6 @@ pub(crate) fn convert_doc(
         view_box: view_box.rect,
         use_size: (None, None),
         opt,
-        #[cfg(feature = "text")]
-        fontdb,
     };
 
     let mut cache = Cache::default();
@@ -362,11 +349,7 @@ pub(crate) fn convert_doc(
     Ok(tree)
 }
 
-fn resolve_svg_size(
-    svg: &SvgNode,
-    opt: &Options,
-    #[cfg(feature = "text")] fontdb: &fontdb::Database,
-) -> (Result<Size, Error>, bool) {
+fn resolve_svg_size(svg: &SvgNode, opt: &Options) -> (Result<Size, Error>, bool) {
     let mut state = State {
         parent_clip_path: None,
         context_element: None,
@@ -375,8 +358,6 @@ fn resolve_svg_size(
         view_box: NonZeroRect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
         use_size: (None, None),
         opt,
-        #[cfg(feature = "text")]
-        fontdb,
     };
 
     let def = Length::new(100.0, Unit::Percent);

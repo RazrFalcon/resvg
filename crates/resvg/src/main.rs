@@ -5,6 +5,7 @@
 #![allow(clippy::uninlined_format_args)]
 
 use std::path;
+use std::sync::Arc;
 
 use usvg::fontdb;
 
@@ -30,7 +31,7 @@ where
 }
 
 fn process() -> Result<(), String> {
-    let args = match parse_args() {
+    let mut args = match parse_args() {
         Ok(args) => args,
         Err(e) => {
             println!("{}", HELP);
@@ -85,15 +86,14 @@ fn process() -> Result<(), String> {
         .descendants()
         .any(|n| n.has_tag_name(("http://www.w3.org/2000/svg", "text")));
 
-    let mut fontdb = fontdb::Database::new();
     if has_text_nodes {
         timed(args.perf, "FontDB", || {
-            load_fonts(&args.raw_args, &mut fontdb)
+            load_fonts(&args.raw_args, args.usvg.fontdb_mut())
         });
     }
 
     let tree = timed(args.perf, "SVG Parsing", || {
-        usvg::Tree::from_xmltree(&xml_tree, &args.usvg, &fontdb).map_err(|e| e.to_string())
+        usvg::Tree::from_xmltree(&xml_tree, &args.usvg).map_err(|e| e.to_string())
     })?;
 
     if args.query_all {
@@ -562,6 +562,7 @@ fn parse_args() -> Result<Args, String> {
         image_rendering: args.image_rendering,
         default_size,
         image_href_resolver: usvg::ImageHrefResolver::default(),
+        fontdb: Arc::new(fontdb::Database::new()),
     };
 
     Ok(Args {

@@ -1,5 +1,3 @@
-use usvg::fontdb;
-
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if !(args.len() == 3 || args.len() == 5) {
@@ -23,11 +21,10 @@ fn main() {
         .ok()
         .and_then(|p| p.parent().map(|p| p.to_path_buf()));
 
-    let mut fontdb = fontdb::Database::new();
-    fontdb.load_system_fonts();
+    opt.fontdb_mut().load_system_fonts();
 
     let svg_data = std::fs::read(&args[1]).unwrap();
-    let tree = usvg::Tree::from_data(&svg_data, &opt, &fontdb).unwrap();
+    let tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
 
     let mut bboxes = Vec::new();
     let mut stroke_bboxes = Vec::new();
