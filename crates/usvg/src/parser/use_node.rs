@@ -145,11 +145,9 @@ pub(crate) fn convert_svg(
     let mut orig_ts = node.resolve_transform(AId::Transform, state);
     let mut new_ts = Transform::default();
 
-    {
-        let x = node.convert_user_length(AId::X, state, Length::zero());
-        let y = node.convert_user_length(AId::Y, state, Length::zero());
-        new_ts = new_ts.pre_translate(x, y);
-    }
+    let x = node.convert_user_length(AId::X, state, Length::zero());
+    let y = node.convert_user_length(AId::Y, state, Length::zero());
+    new_ts = new_ts.pre_translate(x, y);
 
     if let Some(ts) = viewbox_transform(node, node, state) {
         new_ts = new_ts.pre_concat(ts);
@@ -163,17 +161,15 @@ pub(crate) fn convert_svg(
             vb
         } else {
             // No `viewBox` attribute? Then use `x`, `y`, `width` and `height` instead.
-            let x = node.convert_user_length(AId::X, &new_state, Length::zero());
-            let y = node.convert_user_length(AId::Y, &new_state, Length::zero());
-            let (mut w, mut h) = use_node_size(node, &new_state);
+            let (mut w, mut h) = use_node_size(node, &state);
 
             // If attributes `width` and/or `height` are provided on the `use` element,
             // then these values will override the corresponding attributes
             // on the `svg` in the generated tree.
-            w = new_state.use_size.0.unwrap_or(w);
-            h = new_state.use_size.1.unwrap_or(h);
+            w = state.use_size.0.unwrap_or(w);
+            h = state.use_size.1.unwrap_or(h);
 
-            NonZeroRect::from_xywh(x, y, w, h).unwrap_or(new_state.view_box)
+            NonZeroRect::from_xywh(x, y, w, h).unwrap_or(state.view_box)
         }
     };
 
