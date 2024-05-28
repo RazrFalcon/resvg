@@ -1424,6 +1424,8 @@ pub enum ImageKind {
     PNG(Arc<Vec<u8>>),
     /// A reference to raw GIF data. Should be decoded by the caller.
     GIF(Arc<Vec<u8>>),
+    /// A reference to raw WebP data. Should be decoded by the caller.
+    WEBP(Arc<Vec<u8>>),
     /// A preprocessed SVG tree. Can be rendered as is.
     SVG(Tree),
 }
@@ -1431,12 +1433,13 @@ pub enum ImageKind {
 impl ImageKind {
     pub(crate) fn actual_size(&self) -> Option<Size> {
         match self {
-            ImageKind::JPEG(ref data) | ImageKind::PNG(ref data) | ImageKind::GIF(ref data) => {
-                imagesize::blob_size(data)
-                    .ok()
-                    .and_then(|size| Size::from_wh(size.width as f32, size.height as f32))
-                    .log_none(|| log::warn!("Image has an invalid size. Skipped."))
-            }
+            ImageKind::JPEG(ref data)
+            | ImageKind::PNG(ref data)
+            | ImageKind::GIF(ref data)
+            | ImageKind::WEBP(ref data) => imagesize::blob_size(data)
+                .ok()
+                .and_then(|size| Size::from_wh(size.width as f32, size.height as f32))
+                .log_none(|| log::warn!("Image has an invalid size. Skipped.")),
             ImageKind::SVG(ref svg) => Some(svg.size),
         }
     }
@@ -1448,6 +1451,7 @@ impl std::fmt::Debug for ImageKind {
             ImageKind::JPEG(_) => f.write_str("ImageKind::JPEG(..)"),
             ImageKind::PNG(_) => f.write_str("ImageKind::PNG(..)"),
             ImageKind::GIF(_) => f.write_str("ImageKind::GIF(..)"),
+            ImageKind::WEBP(_) => f.write_str("ImageKind::WEBP(..)"),
             ImageKind::SVG(_) => f.write_str("ImageKind::SVG(..)"),
         }
     }

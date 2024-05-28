@@ -70,6 +70,9 @@ mod raster_images {
             usvg::ImageKind::GIF(ref data) => {
                 decode_gif(data).log_none(|| log::warn!("Failed to decode a GIF image."))
             }
+            usvg::ImageKind::WEBP(ref data) => {
+                decode_webp(data).log_none(|| log::warn!("Failed to decode a WebP image."))
+            }
         }
     }
 
@@ -119,6 +122,23 @@ mod raster_images {
         let (w, h) = size.dimensions();
         let mut pixmap = tiny_skia::Pixmap::new(w, h)?;
         rgba_to_pixmap(&first_frame.buffer, &mut pixmap);
+        Some(pixmap)
+    }
+
+    fn decode_webp(data: &[u8]) -> Option<tiny_skia::Pixmap> {
+        let mut decoder = image_webp::WebPDecoder::new(std::io::Cursor::new(data)).ok()?;
+        let mut first_frame = vec![0; decoder.output_buffer_size()?];
+        decoder.read_image(&mut first_frame).ok()?;
+
+        let (w, h) = decoder.dimensions();
+        let mut pixmap = tiny_skia::Pixmap::new(w, h)?;
+
+        if decoder.has_alpha() {
+            rgba_to_pixmap(&first_frame, &mut pixmap);
+        } else {
+            rgb_to_pixmap(&first_frame, &mut pixmap);
+        }
+
         Some(pixmap)
     }
 
