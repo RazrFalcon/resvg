@@ -154,8 +154,6 @@ impl PositionedGlyph {
 /// visibility.
 #[derive(Clone, Debug)]
 pub struct Span {
-    /// The database which contains the fonts referenced by this span.
-    pub fontdb: Arc<fontdb::Database>,
     /// The fill of the span.
     pub fill: Option<Fill>,
     /// The stroke of the span.
@@ -356,7 +354,6 @@ pub(crate) fn layout_text(
                     .collect();
 
                 spans.push(Span {
-                    fontdb: fontdb.clone(),
                     fill,
                     stroke: span.stroke.clone(),
                     paint_order: span.paint_order,

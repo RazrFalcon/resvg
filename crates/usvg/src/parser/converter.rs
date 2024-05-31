@@ -303,6 +303,8 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
         clip_paths: Vec::new(),
         masks: Vec::new(),
         filters: Vec::new(),
+        #[cfg(feature = "text")]
+        fontdb: opt.fontdb.clone(),
     };
 
     if !svg.is_visible_element(opt) {
@@ -372,6 +374,13 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
     tree.root.collect_masks(&mut tree.masks);
     tree.root.collect_filters(&mut tree.filters);
     tree.root.calculate_bounding_boxes();
+
+    // The fontdb might have been mutated and we want to apply these changes to
+    // the tree's fontdb.
+    #[cfg(feature = "text")]
+    {
+        tree.fontdb = cache.fontdb;
+    }
 
     if restore_viewbox {
         calculate_svg_bbox(&mut tree);
