@@ -416,8 +416,8 @@ fn process(args: Args) -> Result<(), String> {
         default_size: usvg::Size::from_wh(args.default_width as f32, args.default_height as f32)
             .unwrap(),
         image_href_resolver: usvg::ImageHrefResolver::default(),
-        fontdb: Arc::new(fontdb),
         font_resolver: usvg::FontResolver::default(),
+        fontdb: Arc::new(fontdb),
     };
 
     let input_svg = match in_svg {

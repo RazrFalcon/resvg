@@ -331,7 +331,11 @@ pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
     sub_opt.text_rendering = opt.text_rendering;
     sub_opt.image_rendering = opt.image_rendering;
     sub_opt.default_size = opt.default_size;
-    sub_opt.fontdb = opt.fontdb.clone();
+
+    #[cfg(feature = "text")]
+    {
+        sub_opt.fontdb = opt.fontdb.clone();
+    }
 
     // The referenced SVG image cannot have any 'image' elements by itself.
     // Not only recursive. Any. Don't know why.

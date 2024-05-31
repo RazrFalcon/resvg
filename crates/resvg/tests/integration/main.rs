@@ -1,5 +1,6 @@
 use once_cell::sync::Lazy;
 use rgb::{FromSlice, RGBA8};
+use std::process::Command;
 use std::sync::Arc;
 use usvg::fontdb;
 
