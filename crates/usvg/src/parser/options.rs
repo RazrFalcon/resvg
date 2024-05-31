@@ -11,7 +11,7 @@ use crate::{ImageHrefResolver, ImageRendering, ShapeRendering, Size, TextRenderi
 
 /// Processing options.
 #[derive(Debug)]
-pub struct Options {
+pub struct Options<'a> {
     /// Directory that will be used during relative paths resolving.
     ///
     /// Expected to be the same as the directory that contains the SVG file,
@@ -80,19 +80,19 @@ pub struct Options {
     /// Specifies the way `xlink:href` in `<image>` elements should be handled.
     ///
     /// Default: see type's documentation for details
-    pub image_href_resolver: ImageHrefResolver,
+    pub image_href_resolver: ImageHrefResolver<'a>,
 
     /// Specifies how fonts should be resolved and loaded.
     #[cfg(feature = "text")]
-    pub font_resolver: FontResolver,
+    pub font_resolver: FontResolver<'a>,
 
     /// A database of fonts usable by text.
     #[cfg(feature = "text")]
     pub fontdb: Arc<fontdb::Database>,
 }
 
-impl Default for Options {
-    fn default() -> Options {
+impl Default for Options<'_> {
+    fn default() -> Options<'static> {
         Options {
             resources_dir: None,
             dpi: 96.0,
@@ -113,7 +113,7 @@ impl Default for Options {
     }
 }
 
-impl Options {
+impl Options<'_> {
     /// Converts a relative path into absolute relative to the SVG file itself.
     ///
     /// If `Options::resources_dir` is not set, returns itself.

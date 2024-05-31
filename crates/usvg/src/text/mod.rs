@@ -17,11 +17,12 @@ mod colr;
 pub mod layout;
 
 /// A shorthand for [FontResolver]'s font selection function.
-pub type FontSelectionFn = Box<dyn Fn(&Font, &mut Arc<Database>) -> Option<ID> + Send + Sync>;
+pub type FontSelectionFn<'a> =
+    Box<dyn Fn(&Font, &mut Arc<Database>) -> Option<ID> + Send + Sync + 'a>;
 
 /// A shorthand for [FontResolver]'s fallback selection function.
-pub type FallbackSelectionFn =
-    Box<dyn Fn(char, &[ID], &mut Arc<Database>) -> Option<ID> + Send + Sync>;
+pub type FallbackSelectionFn<'a> =
+    Box<dyn Fn(char, &[ID], &mut Arc<Database>) -> Option<ID> + Send + Sync + 'a>;
 
 /// A font resolver for `<text>` elements.
 ///
@@ -30,17 +31,17 @@ pub type FallbackSelectionFn =
 /// [`Options::fontdb`](crate::Options::fontdb) will be used. This type allows
 /// you to load additional fonts on-demand and customize the font selection
 /// process.
-pub struct FontResolver {
+pub struct FontResolver<'a> {
     /// Resolver function that will be used when selecting a specific font
     /// for a generic [`Font`] specification.
-    pub select_font: FontSelectionFn,
+    pub select_font: FontSelectionFn<'a>,
 
     /// Resolver function that will be used when selecting a fallback font for a
     /// character.
-    pub select_fallback: FallbackSelectionFn,
+    pub select_fallback: FallbackSelectionFn<'a>,
 }
 
-impl Default for FontResolver {
+impl Default for FontResolver<'_> {
     fn default() -> Self {
         FontResolver {
             select_font: FontResolver::default_font_selector(),
@@ -49,13 +50,13 @@ impl Default for FontResolver {
     }
 }
 
-impl FontResolver {
+impl FontResolver<'_> {
     /// Creates a default font selection resolver.
     ///
     /// The default implementation forwards to
     /// [`query`](fontdb::Database::query) on the font database specified in the
     /// [`Options`](crate::Options).
-    pub fn default_font_selector() -> FontSelectionFn {
+    pub fn default_font_selector() -> FontSelectionFn<'static> {
         Box::new(move |font, fontdb| {
             let mut name_list = Vec::new();
             for family in &font.families {
@@ -114,7 +115,7 @@ impl FontResolver {
     }
 
     /// Creates a default font fallback selection resolver.
-    pub fn default_fallback_selector() -> FallbackSelectionFn {
+    pub fn default_fallback_selector() -> FallbackSelectionFn<'static> {
         Box::new(|c, exclude_fonts, fontdb| {
             let base_font_id = exclude_fonts[0];
 
@@ -159,7 +160,7 @@ impl FontResolver {
     }
 }
 
-impl std::fmt::Debug for FontResolver {
+impl std::fmt::Debug for FontResolver<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("FontResolver { .. }")
     }

@@ -460,7 +460,7 @@ struct Args {
     export_area_drawing: bool,
     perf: bool,
     quiet: bool,
-    usvg: usvg::Options,
+    usvg: usvg::Options<'static>,
     fit_to: FitTo,
     background: Option<svgtypes::Color>,
     raw_args: CliArgs, // TODO: find a better way

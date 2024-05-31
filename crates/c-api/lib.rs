@@ -111,7 +111,7 @@ pub extern "C" fn resvg_init_log() {
 /// Also, contains a fonts database used during text to path conversion.
 /// The database is empty by default.
 pub struct resvg_options {
-    options: usvg::Options,
+    options: usvg::Options<'static>,
 }
 
 /// @brief Creates a new #resvg_options object.
@@ -125,7 +125,7 @@ pub extern "C" fn resvg_options_create() -> *mut resvg_options {
 }
 
 #[inline]
-fn cast_opt(opt: *mut resvg_options) -> &'static mut usvg::Options {
+fn cast_opt(opt: *mut resvg_options) -> &'static mut usvg::Options<'static> {
     unsafe {
         assert!(!opt.is_null());
         &mut (*opt).options

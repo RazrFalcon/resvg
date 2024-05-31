@@ -30,7 +30,7 @@ pub struct State<'a> {
     /// Used only during nested `svg` size resolving.
     /// Width and height can be set independently.
     pub(crate) use_size: (Option<f32>, Option<f32>),
-    pub(crate) opt: &'a Options,
+    pub(crate) opt: &'a Options<'a>,
 }
 
 #[derive(Clone)]

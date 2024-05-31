@@ -14,29 +14,30 @@ use crate::{
 };
 
 /// A shorthand for [ImageHrefResolver]'s data function.
-pub type ImageHrefDataResolverFn =
-    Box<dyn Fn(&str, Arc<Vec<u8>>, &Options) -> Option<ImageKind> + Send + Sync>;
+pub type ImageHrefDataResolverFn<'a> =
+    Box<dyn Fn(&str, Arc<Vec<u8>>, &Options) -> Option<ImageKind> + Send + Sync + 'a>;
 
 /// A shorthand for [ImageHrefResolver]'s string function.
-pub type ImageHrefStringResolverFn = Box<dyn Fn(&str, &Options) -> Option<ImageKind> + Send + Sync>;
+pub type ImageHrefStringResolverFn<'a> =
+    Box<dyn Fn(&str, &Options) -> Option<ImageKind> + Send + Sync + 'a>;
 
 /// An `xlink:href` resolver for `<image>` elements.
 ///
 /// This type can be useful if you want to have an alternative `xlink:href` handling
 /// to the default one. For example, you can forbid access to local files (which is allowed by default)
 /// or add support for resolving actual URLs (usvg doesn't do any network requests).
-pub struct ImageHrefResolver {
+pub struct ImageHrefResolver<'a> {
     /// Resolver function that will be used when `xlink:href` contains a
     /// [Data URL](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs).
     ///
     /// A function would be called with mime, decoded base64 data and parsing options.
-    pub resolve_data: ImageHrefDataResolverFn,
+    pub resolve_data: ImageHrefDataResolverFn<'a>,
 
     /// Resolver function that will be used to handle an arbitrary string in `xlink:href`.
-    pub resolve_string: ImageHrefStringResolverFn,
+    pub resolve_string: ImageHrefStringResolverFn<'a>,
 }
 
-impl Default for ImageHrefResolver {
+impl Default for ImageHrefResolver<'_> {
     fn default() -> Self {
         ImageHrefResolver {
             resolve_data: ImageHrefResolver::default_data_resolver(),
@@ -45,7 +46,7 @@ impl Default for ImageHrefResolver {
     }
 }
 
-impl ImageHrefResolver {
+impl ImageHrefResolver<'_> {
     /// Creates a default
     /// [Data URL](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs)
     /// resolver closure.
@@ -55,7 +56,7 @@ impl ImageHrefResolver {
     /// The default implementation would try to load JPEG, PNG, GIF, SVG and SVGZ types.
     /// Note that it will simply match the `mime` or data's magic.
     /// The actual images would not be decoded. It's up to the renderer.
-    pub fn default_data_resolver() -> ImageHrefDataResolverFn {
+    pub fn default_data_resolver() -> ImageHrefDataResolverFn<'static> {
         Box::new(
             move |mime: &str, data: Arc<Vec<u8>>, opts: &Options| match mime {
                 "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
@@ -80,7 +81,7 @@ impl ImageHrefResolver {
     ///
     /// Paths have to be absolute or relative to the input SVG file or relative to
     /// [Options::resources_dir](crate::Options::resources_dir).
-    pub fn default_string_resolver() -> ImageHrefStringResolverFn {
+    pub fn default_string_resolver() -> ImageHrefStringResolverFn<'static> {
         Box::new(move |href: &str, opts: &Options| {
             let path = opts.get_abs_path(std::path::Path::new(href));
 
@@ -111,7 +112,7 @@ impl ImageHrefResolver {
     }
 }
 
-impl std::fmt::Debug for ImageHrefResolver {
+impl std::fmt::Debug for ImageHrefResolver<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("ImageHrefResolver { .. }")
     }
