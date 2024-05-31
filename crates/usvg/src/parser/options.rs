@@ -5,6 +5,8 @@
 #[cfg(feature = "text")]
 use std::sync::Arc;
 
+#[cfg(feature = "text")]
+use crate::FontResolver;
 use crate::{ImageHrefResolver, ImageRendering, ShapeRendering, Size, TextRendering};
 
 /// Processing options.
@@ -80,6 +82,10 @@ pub struct Options {
     /// Default: see type's documentation for details
     pub image_href_resolver: ImageHrefResolver,
 
+    /// Specifies how fonts should be resolved and loaded.
+    #[cfg(feature = "text")]
+    pub font_resolver: FontResolver,
+
     /// A database of fonts usable by text.
     #[cfg(feature = "text")]
     pub fontdb: Arc<fontdb::Database>,
@@ -99,6 +105,8 @@ impl Default for Options {
             image_rendering: ImageRendering::default(),
             default_size: Size::from_wh(100.0, 100.0).unwrap(),
             image_href_resolver: ImageHrefResolver::default(),
+            #[cfg(feature = "text")]
+            font_resolver: FontResolver::default(),
             #[cfg(feature = "text")]
             fontdb: Arc::new(fontdb::Database::new()),
         }

@@ -11,16 +11,14 @@ use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
 use rustybuzz::ttf_parser;
 use rustybuzz::ttf_parser::{GlyphId, Tag};
 use strict_num::NonZeroPositiveF32;
-use svgtypes::FontFamily;
 use tiny_skia_path::{NonZeroRect, Transform};
 use unicode_script::UnicodeScript;
 
 use crate::tree::{BBox, IsValidLength};
 use crate::{
     AlignmentBaseline, ApproxZeroUlps, BaselineShift, DominantBaseline, Fill, FillRule, Font,
-    FontStretch, FontStyle, LengthAdjust, PaintOrder, Path, ShapeRendering, Stroke, Text,
-    TextAnchor, TextChunk, TextDecorationStyle, TextFlow, TextPath, TextSpan, Visibility,
-    WritingMode,
+    FontResolver, LengthAdjust, PaintOrder, Path, ShapeRendering, Stroke, Text, TextAnchor,
+    TextChunk, TextDecorationStyle, TextFlow, TextPath, TextSpan, Visibility, WritingMode,
 };
 
 /// A glyph that has already been positioned correctly.
@@ -156,6 +154,8 @@ impl PositionedGlyph {
 /// visibility.
 #[derive(Clone, Debug)]
 pub struct Span {
+    /// The database which contains the fonts referenced by this span.
+    pub fontdb: Arc<fontdb::Database>,
     /// The fill of the span.
     pub fill: Option<Fill>,
     /// The stroke of the span.
@@ -206,14 +206,17 @@ impl GlyphCluster {
 
 pub(crate) fn layout_text(
     text_node: &Text,
-    fontdb: &fontdb::Database,
+    resolver: &FontResolver,
+    fontdb: &mut Arc<fontdb::Database>,
 ) -> Option<(Vec<Span>, NonZeroRect)> {
     let mut fonts_cache: FontsCache = HashMap::new();
 
     for chunk in &text_node.chunks {
         for span in &chunk.spans {
             if !fonts_cache.contains_key(&span.font) {
-                if let Some(font) = resolve_font(&span.font, fontdb) {
+                if let Some(font) =
+                    (resolver.select_font)(&span.font, fontdb).and_then(|id| fontdb.load_font(id))
+                {
                     fonts_cache.insert(span.font.clone(), Arc::new(font));
                 }
             }
@@ -231,7 +234,7 @@ pub(crate) fn layout_text(
             TextFlow::Path(_) => (0.0, 0.0),
         };
 
-        let mut clusters = process_chunk(chunk, &fonts_cache, fontdb);
+        let mut clusters = process_chunk(chunk, &fonts_cache, resolver, fontdb);
         if clusters.is_empty() {
             char_offset += chunk.text.chars().count();
             continue;
@@ -353,6 +356,7 @@ pub(crate) fn layout_text(
                     .collect();
 
                 spans.push(Span {
+                    fontdb: fontdb.clone(),
                     fill,
                     stroke: span.stroke.clone(),
                     paint_order: span.paint_order,
@@ -862,7 +866,8 @@ fn collect_normals(
 fn process_chunk(
     chunk: &TextChunk,
     fonts_cache: &FontsCache,
-    fontdb: &fontdb::Database,
+    resolver: &FontResolver,
+    fontdb: &mut Arc<fontdb::Database>,
 ) -> Vec<GlyphCluster> {
     // The way this function works is a bit tricky.
     //
@@ -907,6 +912,7 @@ fn process_chunk(
             font,
             span.small_caps,
             span.apply_kerning,
+            resolver,
             fontdb,
         );
 
@@ -1183,62 +1189,6 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
     }
 }
 
-fn resolve_font(font: &Font, fontdb: &fontdb::Database) -> Option<ResolvedFont> {
-    let mut name_list = Vec::new();
-    for family in &font.families {
-        name_list.push(match family {
-            FontFamily::Serif => fontdb::Family::Serif,
-            FontFamily::SansSerif => fontdb::Family::SansSerif,
-            FontFamily::Cursive => fontdb::Family::Cursive,
-            FontFamily::Fantasy => fontdb::Family::Fantasy,
-            FontFamily::Monospace => fontdb::Family::Monospace,
-            FontFamily::Named(s) => fontdb::Family::Name(s),
-        });
-    }
-
-    // Use the default font as fallback.
-    name_list.push(fontdb::Family::Serif);
-
-    let stretch = match font.stretch {
-        FontStretch::UltraCondensed => fontdb::Stretch::UltraCondensed,
-        FontStretch::ExtraCondensed => fontdb::Stretch::ExtraCondensed,
-        FontStretch::Condensed => fontdb::Stretch::Condensed,
-        FontStretch::SemiCondensed => fontdb::Stretch::SemiCondensed,
-        FontStretch::Normal => fontdb::Stretch::Normal,
-        FontStretch::SemiExpanded => fontdb::Stretch::SemiExpanded,
-        FontStretch::Expanded => fontdb::Stretch::Expanded,
-        FontStretch::ExtraExpanded => fontdb::Stretch::ExtraExpanded,
-        FontStretch::UltraExpanded => fontdb::Stretch::UltraExpanded,
-    };
-
-    let style = match font.style {
-        FontStyle::Normal => fontdb::Style::Normal,
-        FontStyle::Italic => fontdb::Style::Italic,
-        FontStyle::Oblique => fontdb::Style::Oblique,
-    };
-
-    let query = fontdb::Query {
-        families: &name_list,
-        weight: fontdb::Weight(font.weight),
-        stretch,
-        style,
-    };
-
-    let id = fontdb.query(&query);
-    if id.is_none() {
-        log::warn!(
-            "No match for '{}' font-family.",
-            font.families
-                .iter()
-                .map(|f| f.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        );
-    }
-
-    fontdb.load_font(id?)
-}
-
 pub(crate) trait DatabaseExt {
     fn load_font(&self, id: ID) -> Option<ResolvedFont>;
     fn has_char(&self, id: ID, c: char) -> bool;
@@ -1336,7 +1286,8 @@ pub(crate) fn shape_text(
     font: Arc<ResolvedFont>,
     small_caps: bool,
     apply_kerning: bool,
-    fontdb: &fontdb::Database,
+    resolver: &FontResolver,
+    fontdb: &mut Arc<fontdb::Database>,
 ) -> Vec<Glyph> {
     let mut glyphs = shape_text_with_font(text, font.clone(), small_caps, apply_kerning, fontdb)
         .unwrap_or_default();
@@ -1355,7 +1306,9 @@ pub(crate) fn shape_text(
         }
 
         if let Some(c) = missing {
-            let fallback_font = match find_font_for_char(c, &used_fonts, fontdb) {
+            let fallback_font = match (resolver.select_fallback)(c, &used_fonts, fontdb)
+                .and_then(|id| fontdb.load_font(id))
+            {
                 Some(v) => Arc::new(v),
                 None => break 'outer,
             };
@@ -1496,55 +1449,6 @@ fn shape_text_with_font(
 
         Some(glyphs)
     })?
-}
-
-/// Finds a font with a specified char.
-///
-/// This is a rudimentary font fallback algorithm.
-fn find_font_for_char(
-    c: char,
-    exclude_fonts: &[fontdb::ID],
-    fontdb: &fontdb::Database,
-) -> Option<ResolvedFont> {
-    let base_font_id = exclude_fonts[0];
-
-    // Iterate over fonts and check if any of them support the specified char.
-    for face in fontdb.faces() {
-        // Ignore fonts, that were used for shaping already.
-        if exclude_fonts.contains(&face.id) {
-            continue;
-        }
-
-        // Check that the new face has the same style.
-        let base_face = fontdb.face(base_font_id)?;
-        if base_face.style != face.style
-            && base_face.weight != face.weight
-            && base_face.stretch != face.stretch
-        {
-            continue;
-        }
-
-        if !fontdb.has_char(face.id, c) {
-            continue;
-        }
-
-        let base_family = base_face
-            .families
-            .iter()
-            .find(|f| f.1 == fontdb::Language::English_UnitedStates)
-            .unwrap_or(&base_face.families[0]);
-
-        let new_family = face
-            .families
-            .iter()
-            .find(|f| f.1 == fontdb::Language::English_UnitedStates)
-            .unwrap_or(&base_face.families[0]);
-
-        log::warn!("Fallback from {} to {}.", base_family.0, new_family.0);
-        return fontdb.load_font(face.id);
-    }
-
-    None
 }
 
 /// An iterator over glyph clusters.

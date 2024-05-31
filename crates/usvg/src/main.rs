@@ -417,6 +417,7 @@ fn process(args: Args) -> Result<(), String> {
             .unwrap(),
         image_href_resolver: usvg::ImageHrefResolver::default(),
         fontdb: Arc::new(fontdb),
+        font_resolver: usvg::FontResolver::default(),
     };
 
     let input_svg = match in_svg {

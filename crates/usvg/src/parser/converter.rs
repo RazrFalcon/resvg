@@ -7,6 +7,7 @@ use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 use std::sync::Arc;
 
+use fontdb::Database;
 use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind, TransformOrigin};
 
 use super::svgtree::{self, AId, EId, FromValue, SvgNode};
@@ -32,8 +33,12 @@ pub struct State<'a> {
     pub(crate) opt: &'a Options,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct Cache {
+    /// This fontdb is initialized from [`Options::fontdb`] and then populated
+    /// over the course of conversion.
+    pub fontdb: Arc<Database>,
+
     pub clip_paths: HashMap<String, Arc<ClipPath>>,
     pub masks: HashMap<String, Arc<Mask>>,
     pub filters: HashMap<String, Arc<filter::Filter>>,
@@ -51,6 +56,26 @@ pub struct Cache {
 }
 
 impl Cache {
+    pub(crate) fn new(fontdb: Arc<Database>) -> Self {
+        Self {
+            fontdb,
+
+            clip_paths: HashMap::new(),
+            masks: HashMap::new(),
+            filters: HashMap::new(),
+            paint: HashMap::new(),
+
+            all_ids: HashSet::new(),
+            linear_gradient_index: 0,
+            radial_gradient_index: 0,
+            pattern_index: 0,
+            clip_path_index: 0,
+            mask_index: 0,
+            filter_index: 0,
+            image_index: 0,
+        }
+    }
+
     // TODO: macros?
     pub(crate) fn gen_linear_gradient_id(&mut self) -> NonEmptyString {
         loop {
@@ -291,7 +316,7 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
         opt,
     };
 
-    let mut cache = Cache::default();
+    let mut cache = Cache::new(opt.fontdb.clone());
 
     for node in svg_doc.descendants() {
         if let Some(tag) = node.tag_name() {
