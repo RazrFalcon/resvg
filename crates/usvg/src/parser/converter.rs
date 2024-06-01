@@ -785,7 +785,8 @@ fn convert_path(
     let has_bbox = tiny_skia_path.bounds().width() > 0.0 && tiny_skia_path.bounds().height() > 0.0;
     let mut fill = super::style::resolve_fill(node, has_bbox, state, cache);
     let mut stroke = super::style::resolve_stroke(node, has_bbox, state, cache);
-    let mut visibility: Visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
+    let visibility: Visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
+    let mut visible = visibility == Visibility::Visible;
     let rendering_mode: ShapeRendering = node
         .find_attribute(AId::ShapeRendering)
         .unwrap_or(state.opt.shape_rendering);
@@ -799,7 +800,7 @@ fn convert_path(
     // If a path doesn't have a fill or a stroke then it's invisible.
     // By setting `visibility` to `hidden` we are disabling rendering of this path.
     if fill.is_none() && stroke.is_none() {
-        visibility = Visibility::Hidden;
+        visible = false;
     }
 
     if let Some(fill) = fill.as_mut() {
@@ -881,7 +882,7 @@ fn convert_path(
 
     let path = Path::new(
         id,
-        visibility,
+        visible,
         fill,
         stroke,
         paint_order,

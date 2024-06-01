@@ -273,6 +273,8 @@ fn collect_text_chunks_impl(
             }
         }
 
+        let visibility: Visibility = parent.find_attribute(AId::Visibility).unwrap_or_default();
+
         let span = TextSpan {
             start: 0,
             end: 0,
@@ -284,7 +286,7 @@ fn collect_text_chunks_impl(
             small_caps: parent.find_attribute::<&str>(AId::FontVariant) == Some("small-caps"),
             apply_kerning,
             decoration: resolve_decoration(parent, state, cache),
-            visibility: parent.find_attribute(AId::Visibility).unwrap_or_default(),
+            visible: visibility == Visibility::Visible,
             dominant_baseline,
             alignment_baseline: parent
                 .find_attribute(AId::AlignmentBaseline)

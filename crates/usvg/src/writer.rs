@@ -601,7 +601,7 @@ fn write_text_path_paths(parent: &Group, opt: &WriteOptions, xml: &mut XmlWriter
                 if let TextFlow::Path(ref text_path) = chunk.text_flow {
                     let path = Path::new(
                         text_path.id().to_string(),
-                        Visibility::default(),
+                        true,
                         None,
                         None,
                         PaintOrder::default(),
@@ -640,7 +640,7 @@ fn write_element(node: &Node, is_clip_path: bool, opt: &WriteOptions, xml: &mut 
             xml.write_svg_attribute(AId::Width, &img.size().width());
             xml.write_svg_attribute(AId::Height, &img.size().height());
 
-            xml.write_visibility(img.visibility);
+            xml.write_visibility(img.visible);
 
             match img.rendering_mode {
                 ImageRendering::OptimizeQuality => {}
@@ -883,7 +883,7 @@ trait XmlWriterExt {
     fn write_color(&mut self, id: AId, color: Color);
     fn write_units(&mut self, id: AId, units: Units, def: Units);
     fn write_transform(&mut self, id: AId, units: Transform, opt: &WriteOptions);
-    fn write_visibility(&mut self, value: Visibility);
+    fn write_visibility(&mut self, value: bool);
     fn write_func_iri(&mut self, aid: AId, id: &str, opt: &WriteOptions);
     fn write_rect_attrs(&mut self, r: NonZeroRect);
     fn write_numbers(&mut self, aid: AId, list: &[f32]);
@@ -967,11 +967,9 @@ impl XmlWriterExt for XmlWriter {
         }
     }
 
-    fn write_visibility(&mut self, value: Visibility) {
-        match value {
-            Visibility::Visible => {}
-            Visibility::Hidden => self.write_attribute(AId::Visibility.to_str(), "hidden"),
-            Visibility::Collapse => self.write_attribute(AId::Visibility.to_str(), "collapse"),
+    fn write_visibility(&mut self, value: bool) {
+        if !value {
+            self.write_attribute(AId::Visibility.to_str(), "hidden");
         }
     }
 
@@ -1187,7 +1185,7 @@ fn write_path(
     write_fill(&path.fill, is_clip_path, opt, xml);
     write_stroke(&path.stroke, opt, xml);
 
-    xml.write_visibility(path.visibility);
+    xml.write_visibility(path.visible);
 
     if path.paint_order == PaintOrder::StrokeAndFill {
         xml.write_svg_attribute(AId::PaintOrder, "stroke");
@@ -1480,11 +1478,7 @@ fn write_span(
 
     xml.write_svg_attribute(AId::FontSize, &span.font_size);
 
-    match span.visibility {
-        Visibility::Visible => {}
-        Visibility::Hidden => xml.write_svg_attribute(AId::Visibility, "hidden"),
-        Visibility::Collapse => xml.write_svg_attribute(AId::Visibility, "collapse"),
-    }
+    xml.write_visibility(span.visible);
 
     if span.letter_spacing != 0.0 {
         xml.write_svg_attribute(AId::LetterSpacing, &span.letter_spacing);

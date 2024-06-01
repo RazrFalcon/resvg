@@ -37,7 +37,7 @@ fn draw_children(
     for child in parent.children() {
         match child {
             usvg::Node::Path(ref path) => {
-                if path.visibility() != usvg::Visibility::Visible {
+                if !path.is_visible() {
                     continue;
                 }
 

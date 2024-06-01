@@ -7,7 +7,7 @@ pub fn render(
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
-    if image.visibility() != usvg::Visibility::Visible {
+    if !image.is_visible() {
         return;
     }
 

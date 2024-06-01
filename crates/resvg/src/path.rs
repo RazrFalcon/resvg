@@ -11,7 +11,7 @@ pub fn render(
     transform: tiny_skia::Transform,
     pixmap: &mut tiny_skia::PixmapMut,
 ) {
-    if path.visibility() != usvg::Visibility::Visible {
+    if !path.is_visible() {
         return;
     }
 

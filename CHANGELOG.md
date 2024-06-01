@@ -32,6 +32,10 @@ This changelog also contains important changes in dependencies.
 - `usvg::fontdb::Database` should be set in `usvg::Options` and not passed
   to the parser separately now.
 - `usvg::Options` and `usvg::ImageHrefResolver` have a lifetime now.
+- Replace `usvg::Visibility` enum with just `bool`.
+- `usvg::Path::visibility()` is replaced with `usvg::Path::is_visible()`
+- `usvg::Image::visibility()` is replaced with `usvg::Image::is_visible()`
+- `usvg::TextSpan::visibility()` is replaced with `usvg::TextSpan::is_visible()`
 - Always represent `feImage` content as a link to an element.<br>
   In SVG, `feImage` can contain a link to an element or a base64 image data, just like `image`.
   From now, the inlined base64 data will always be represented by a link to an actual `image` element.
@@ -63,6 +67,7 @@ This changelog also contains important changes in dependencies.
 - `usvg::Image::view_box`. No longer needed.
 - `usvg::Image::pattern`. No longer needed.
 - `usvg::utils::align_pos`. No longer needed.
+- `usvg::Visibility`. No longer needed.
 - (c-api) `resvg_get_image_viewbox`. Use `resvg_get_image_size` instead.
 
 ### Fixed

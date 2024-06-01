@@ -79,7 +79,7 @@ pub(crate) enum Units {
 /// `visibility` attribute in the SVG.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub enum Visibility {
+pub(crate) enum Visibility {
     Visible,
     Hidden,
     Collapse,
@@ -1231,7 +1231,7 @@ impl Default for PaintOrder {
 #[derive(Clone, Debug)]
 pub struct Path {
     pub(crate) id: String,
-    pub(crate) visibility: Visibility,
+    pub(crate) visible: bool,
     pub(crate) fill: Option<Fill>,
     pub(crate) stroke: Option<Stroke>,
     pub(crate) paint_order: PaintOrder,
@@ -1248,7 +1248,7 @@ impl Path {
     pub(crate) fn new_simple(data: Arc<tiny_skia_path::Path>) -> Option<Self> {
         Self::new(
             String::new(),
-            Visibility::default(),
+            true,
             None,
             None,
             PaintOrder::default(),
@@ -1260,7 +1260,7 @@ impl Path {
 
     pub(crate) fn new(
         id: String,
-        visibility: Visibility,
+        visible: bool,
         fill: Option<Fill>,
         stroke: Option<Stroke>,
         paint_order: PaintOrder,
@@ -1289,7 +1289,7 @@ impl Path {
 
         Some(Path {
             id,
-            visibility,
+            visible,
             fill,
             stroke,
             paint_order,
@@ -1313,8 +1313,8 @@ impl Path {
     }
 
     /// Element visibility.
-    pub fn visibility(&self) -> Visibility {
-        self.visibility
+    pub fn is_visible(&self) -> bool {
+        self.visible
     }
 
     /// Fill style.
@@ -1459,7 +1459,7 @@ impl std::fmt::Debug for ImageKind {
 #[derive(Clone, Debug)]
 pub struct Image {
     pub(crate) id: String,
-    pub(crate) visibility: Visibility,
+    pub(crate) visible: bool,
     pub(crate) size: Size,
     pub(crate) rendering_mode: ImageRendering,
     pub(crate) kind: ImageKind,
@@ -1478,8 +1478,8 @@ impl Image {
     }
 
     /// Element visibility.
-    pub fn visibility(&self) -> Visibility {
-        self.visibility
+    pub fn is_visible(&self) -> bool {
+        self.visible
     }
 
     /// The actual image size.

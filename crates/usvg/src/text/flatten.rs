@@ -33,7 +33,7 @@ fn push_outline_paths(
     if let Some(path) = builder.finish().and_then(|p| {
         Path::new(
             String::new(),
-            span.visibility,
+            span.visible,
             span.fill.clone(),
             span.stroke.clone(),
             span.paint_order,
@@ -226,7 +226,7 @@ impl DatabaseExt for Database {
                 let bitmap_image = BitmapImage {
                     image: Image {
                         id: String::new(),
-                        visibility: Visibility::Visible,
+                        visible: true,
                         size: Size::from_wh(image.width as f32, image.height as f32)?,
                         rendering_mode: ImageRendering::OptimizeQuality,
                         kind: ImageKind::PNG(Arc::new(image.data.into())),

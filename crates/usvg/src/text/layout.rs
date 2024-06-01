@@ -18,7 +18,7 @@ use crate::tree::{BBox, IsValidLength};
 use crate::{
     AlignmentBaseline, ApproxZeroUlps, BaselineShift, DominantBaseline, Fill, FillRule, Font,
     FontResolver, LengthAdjust, PaintOrder, Path, ShapeRendering, Stroke, Text, TextAnchor,
-    TextChunk, TextDecorationStyle, TextFlow, TextPath, TextSpan, Visibility, WritingMode,
+    TextChunk, TextDecorationStyle, TextFlow, TextPath, TextSpan, WritingMode,
 };
 
 /// A glyph that has already been positioned correctly.
@@ -164,7 +164,7 @@ pub struct Span {
     /// The font size of the span.
     pub font_size: NonZeroPositiveF32,
     /// The visibility of the span.
-    pub visibility: Visibility,
+    pub visible: bool,
     /// The glyphs that make up the span.
     pub positioned_glyphs: Vec<PositionedGlyph>,
     /// An underline text decoration of the span.
@@ -359,7 +359,7 @@ pub(crate) fn layout_text(
                     stroke: span.stroke.clone(),
                     paint_order: span.paint_order,
                     font_size: span.font_size,
-                    visibility: span.visibility,
+                    visible: span.visible,
                     positioned_glyphs,
                     underline,
                     overline,
@@ -494,7 +494,7 @@ pub(crate) fn convert_decoration(
 
     Path::new(
         String::new(),
-        span.visibility,
+        span.visible,
         decoration.fill.take(),
         decoration.stroke.take(),
         PaintOrder::default(),

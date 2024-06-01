@@ -9,9 +9,7 @@ pub use svgtypes::FontFamily;
 
 #[cfg(feature = "text")]
 use crate::layout::Span;
-use crate::{
-    Fill, Group, NonEmptyString, PaintOrder, Rect, Stroke, TextRendering, Transform, Visibility,
-};
+use crate::{Fill, Group, NonEmptyString, PaintOrder, Rect, Stroke, TextRendering, Transform};
 
 /// A font stretch property.
 #[allow(missing_docs)]
@@ -232,7 +230,7 @@ pub struct TextSpan {
     pub(crate) dominant_baseline: DominantBaseline,
     pub(crate) alignment_baseline: AlignmentBaseline,
     pub(crate) baseline_shift: Vec<BaselineShift>,
-    pub(crate) visibility: Visibility,
+    pub(crate) visible: bool,
     pub(crate) letter_spacing: f32,
     pub(crate) word_spacing: f32,
     pub(crate) text_length: Option<f32>,
@@ -316,8 +314,8 @@ impl TextSpan {
     }
 
     /// A visibility property.
-    pub fn visibility(&self) -> Visibility {
-        self.visibility
+    pub fn is_visible(&self) -> bool {
+        self.visible
     }
 
     /// A letter spacing property.

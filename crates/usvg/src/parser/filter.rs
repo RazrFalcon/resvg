@@ -867,7 +867,7 @@ fn convert_image_inner(
     super::image::convert_inner(
         img_data,
         cache.gen_image_id().take(),
-        crate::Visibility::Visible,
+        true,
         rendering_mode,
         aspect,
         actual_size,

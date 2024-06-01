@@ -138,7 +138,9 @@ pub(crate) fn convert(
 
     let kind = get_href_data(href, state)?;
 
-    let visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
+    let visibility: Visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
+    let visible = visibility == Visibility::Visible;
+
     let rendering_mode = node
         .find_attribute(AId::ImageRendering)
         .unwrap_or(state.opt.image_rendering);
@@ -188,7 +190,7 @@ pub(crate) fn convert(
     convert_inner(
         kind,
         id,
-        visibility,
+        visible,
         rendering_mode,
         aspect,
         actual_size,
@@ -201,7 +203,7 @@ pub(crate) fn convert(
 pub(crate) fn convert_inner(
     kind: ImageKind,
     id: String,
-    visibility: Visibility,
+    visible: bool,
     rendering_mode: ImageRendering,
     aspect: AspectRatio,
     actual_size: Size,
@@ -235,7 +237,7 @@ pub(crate) fn convert_inner(
     g.id = id;
     g.children.push(Node::Image(Box::new(Image {
         id: String::new(),
-        visibility,
+        visible,
         size: actual_size,
         rendering_mode,
         kind,
