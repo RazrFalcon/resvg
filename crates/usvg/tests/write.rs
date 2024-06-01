@@ -1,6 +1,8 @@
+use std::sync::Arc;
+
 use once_cell::sync::Lazy;
 
-static GLOBAL_FONTDB: Lazy<std::sync::Mutex<usvg::fontdb::Database>> = Lazy::new(|| {
+static GLOBAL_FONTDB: Lazy<Arc<usvg::fontdb::Database>> = Lazy::new(|| {
     let mut fontdb = usvg::fontdb::Database::new();
     fontdb.load_fonts_dir("../resvg/tests/fonts");
     fontdb.set_serif_family("Noto Serif");
@@ -8,7 +10,7 @@ static GLOBAL_FONTDB: Lazy<std::sync::Mutex<usvg::fontdb::Database>> = Lazy::new
     fontdb.set_cursive_family("Yellowtail");
     fontdb.set_fantasy_family("Sedgwick Ave Display");
     fontdb.set_monospace_family("Noto Mono");
-    std::sync::Mutex::new(fontdb)
+    Arc::new(fontdb)
 });
 
 fn resave(name: &str) {
@@ -27,9 +29,11 @@ fn resave_impl(name: &str, id_prefix: Option<String>, preserve_text: bool) {
     let input_svg = std::fs::read_to_string(format!("tests/files/{}.svg", name)).unwrap();
 
     let tree = {
-        let fontdb = GLOBAL_FONTDB.lock().unwrap();
-        let opt = usvg::Options::default();
-        usvg::Tree::from_str(&input_svg, &opt, &fontdb).unwrap()
+        let opt = usvg::Options {
+            fontdb: GLOBAL_FONTDB.clone(),
+            ..Default::default()
+        };
+        usvg::Tree::from_str(&input_svg, &opt).unwrap()
     };
     let mut xml_opt = usvg::WriteOptions::default();
     xml_opt.id_prefix = id_prefix;

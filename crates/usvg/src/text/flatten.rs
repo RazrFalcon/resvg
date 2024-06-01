@@ -260,7 +260,7 @@ impl DatabaseExt for Database {
         self.with_face_data(id, |data, face_index| -> Option<Tree> {
             let font = ttf_parser::Face::parse(data, face_index).ok()?;
             let image = font.glyph_svg_image(glyph_id)?;
-            Tree::from_data(image.data, &Options::default(), &fontdb::Database::new()).ok()
+            Tree::from_data(image.data, &Options::default()).ok()
         })?
     }
 
@@ -300,12 +300,7 @@ impl DatabaseExt for Database {
             )?;
             svg.end_element();
 
-            Tree::from_data(
-                &svg.end_document().as_bytes(),
-                &Options::default(),
-                &fontdb::Database::new(),
-            )
-            .ok()
+            Tree::from_data(&svg.end_document().as_bytes(), &Options::default()).ok()
         })?
     }
 }

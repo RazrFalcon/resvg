@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
 use std::process;
+use std::sync::Arc;
 
 use pico_args::Arguments;
 
@@ -415,6 +416,8 @@ fn process(args: Args) -> Result<(), String> {
         default_size: usvg::Size::from_wh(args.default_width as f32, args.default_height as f32)
             .unwrap(),
         image_href_resolver: usvg::ImageHrefResolver::default(),
+        font_resolver: usvg::FontResolver::default(),
+        fontdb: Arc::new(fontdb),
     };
 
     let input_svg = match in_svg {
@@ -422,7 +425,7 @@ fn process(args: Args) -> Result<(), String> {
         InputFrom::File(ref path) => std::fs::read(path).map_err(|e| e.to_string()),
     }?;
 
-    let tree = usvg::Tree::from_data(&input_svg, &re_opt, &fontdb).map_err(|e| format!("{}", e))?;
+    let tree = usvg::Tree::from_data(&input_svg, &re_opt).map_err(|e| format!("{}", e))?;
 
     let xml_opt = usvg::WriteOptions {
         id_prefix: args.id_prefix,

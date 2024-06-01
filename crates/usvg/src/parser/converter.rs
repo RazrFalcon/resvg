@@ -7,6 +7,8 @@ use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 use std::sync::Arc;
 
+#[cfg(feature = "text")]
+use fontdb::Database;
 use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind, TransformOrigin};
 
 use super::svgtree::{self, AId, EId, FromValue, SvgNode};
@@ -29,13 +31,16 @@ pub struct State<'a> {
     /// Used only during nested `svg` size resolving.
     /// Width and height can be set independently.
     pub(crate) use_size: (Option<f32>, Option<f32>),
-    pub(crate) opt: &'a Options,
-    #[cfg(feature = "text")]
-    pub(crate) fontdb: &'a fontdb::Database,
+    pub(crate) opt: &'a Options<'a>,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct Cache {
+    /// This fontdb is initialized from [`Options::fontdb`] and then populated
+    /// over the course of conversion.
+    #[cfg(feature = "text")]
+    pub fontdb: Arc<Database>,
+
     pub clip_paths: HashMap<String, Arc<ClipPath>>,
     pub masks: HashMap<String, Arc<Mask>>,
     pub filters: HashMap<String, Arc<filter::Filter>>,
@@ -53,6 +58,27 @@ pub struct Cache {
 }
 
 impl Cache {
+    pub(crate) fn new(#[cfg(feature = "text")] fontdb: Arc<Database>) -> Self {
+        Self {
+            #[cfg(feature = "text")]
+            fontdb,
+
+            clip_paths: HashMap::new(),
+            masks: HashMap::new(),
+            filters: HashMap::new(),
+            paint: HashMap::new(),
+
+            all_ids: HashSet::new(),
+            linear_gradient_index: 0,
+            radial_gradient_index: 0,
+            pattern_index: 0,
+            clip_path_index: 0,
+            mask_index: 0,
+            filter_index: 0,
+            image_index: 0,
+        }
+    }
+
     // TODO: macros?
     pub(crate) fn gen_linear_gradient_id(&mut self) -> NonEmptyString {
         loop {
@@ -257,18 +283,9 @@ impl SvgColorExt for svgtypes::Color {
 ///
 /// - If `Document` doesn't have an SVG node - returns an empty tree.
 /// - If `Document` doesn't have a valid size - returns `Error::InvalidSize`.
-pub(crate) fn convert_doc(
-    svg_doc: &svgtree::Document,
-    opt: &Options,
-    #[cfg(feature = "text")] fontdb: &fontdb::Database,
-) -> Result<Tree, Error> {
+pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<Tree, Error> {
     let svg = svg_doc.root_element();
-    let (size, restore_viewbox) = resolve_svg_size(
-        &svg,
-        opt,
-        #[cfg(feature = "text")]
-        fontdb,
-    );
+    let (size, restore_viewbox) = resolve_svg_size(&svg, opt);
     let size = size?;
     let view_box = ViewBox {
         rect: svg
@@ -286,6 +303,8 @@ pub(crate) fn convert_doc(
         clip_paths: Vec::new(),
         masks: Vec::new(),
         filters: Vec::new(),
+        #[cfg(feature = "text")]
+        fontdb: opt.fontdb.clone(),
     };
 
     if !svg.is_visible_element(opt) {
@@ -300,11 +319,12 @@ pub(crate) fn convert_doc(
         view_box: view_box.rect,
         use_size: (None, None),
         opt,
-        #[cfg(feature = "text")]
-        fontdb,
     };
 
-    let mut cache = Cache::default();
+    let mut cache = Cache::new(
+        #[cfg(feature = "text")]
+        opt.fontdb.clone(),
+    );
 
     for node in svg_doc.descendants() {
         if let Some(tag) = node.tag_name() {
@@ -355,6 +375,13 @@ pub(crate) fn convert_doc(
     tree.root.collect_filters(&mut tree.filters);
     tree.root.calculate_bounding_boxes();
 
+    // The fontdb might have been mutated and we want to apply these changes to
+    // the tree's fontdb.
+    #[cfg(feature = "text")]
+    {
+        tree.fontdb = cache.fontdb;
+    }
+
     if restore_viewbox {
         calculate_svg_bbox(&mut tree);
     }
@@ -362,11 +389,7 @@ pub(crate) fn convert_doc(
     Ok(tree)
 }
 
-fn resolve_svg_size(
-    svg: &SvgNode,
-    opt: &Options,
-    #[cfg(feature = "text")] fontdb: &fontdb::Database,
-) -> (Result<Size, Error>, bool) {
+fn resolve_svg_size(svg: &SvgNode, opt: &Options) -> (Result<Size, Error>, bool) {
     let mut state = State {
         parent_clip_path: None,
         context_element: None,
@@ -375,8 +398,6 @@ fn resolve_svg_size(
         view_box: NonZeroRect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
         use_size: (None, None),
         opt,
-        #[cfg(feature = "text")]
-        fontdb,
     };
 
     let def = Length::new(100.0, Unit::Percent);
