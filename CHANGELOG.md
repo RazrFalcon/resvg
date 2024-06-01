@@ -8,6 +8,14 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 ### Added
+- `resvg` can render color fonts now, aka Emojis.<br>
+  In TrueType terms, `COLRv0`, `COLRv1` (mostly), `sbix`, `CBDT` and `SVG` tables are supported.<br>
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
+- Fonts matching and fallback can be controlled by the caller via `usvg::FontResolver` now.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
+- `usvg::Options::font_resolver`. Similar to `usvg::Options::image_href_resolver` we already had.
+- `usvg::Options::fontdb`
+- Support double-quoted FuncIRIs, aka `url("#id")`.
 - `image` element viewbox flattening.<br>
   Instead of having `usvg::Image::view_box` that the caller should handle themselves,
   we instead replace it with `transform` and optional `clip-path`.
@@ -17,10 +25,13 @@ This changelog also contains important changes in dependencies.
   Similar to `image` above, but affects the root `svg` element instead.
 - `pattern` viewbox flattening.<br>
   Similar to `image` above, but for patterns.
-- The `--list-fonts` resvg argument can be used without providing an SVG file now.
-  Can simply call `resvg --list-fonts` now.
+- Improve vertical text rendering.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
 
 ### Changed
+- `usvg::fontdb::Database` should be set in `usvg::Options` and not passed
+  to the parser separately now.
+- `usvg::Options` and `usvg::ImageHrefResolver` have a lifetime now.
 - Always represent `feImage` content as a link to an element.<br>
   In SVG, `feImage` can contain a link to an element or a base64 image data, just like `image`.
   From now, the inlined base64 data will always be represented by a link to an actual `image` element.
@@ -37,7 +48,11 @@ This changelog also contains important changes in dependencies.
   </filter>
   ```
   This simplifies `feImage` rendering, since we don't have to handle both cases now.
+- The `--list-fonts` resvg argument can be used without providing an SVG file now.
+  Can simply call `resvg --list-fonts` now.
 - The `--list-fonts` resvg argument includes generic font family names as well now.
+- Make sure all warning and errors are printed to stderr.
+  Thanks to [@ahaoboy](https://github.com/ahaoboy).
 
 ### Removed
 - `usvg::ViewBox`, `usvg::AspectRatio`, `usvg::Align` types. Nol longer used.
@@ -49,6 +64,10 @@ This changelog also contains important changes in dependencies.
 - `usvg::Image::pattern`. No longer needed.
 - `usvg::utils::align_pos`. No longer needed.
 - (c-api) `resvg_get_image_viewbox`. Use `resvg_get_image_size` instead.
+
+### Fixed
+- `context-fill` handling.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
 
 ## [0.41.0] - 2024-04-03
 ### Added
