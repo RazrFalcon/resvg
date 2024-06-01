@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.42.0] - 2024-06-01
 ### Added
 - `resvg` can render color fonts now, aka Emojis.<br>
   In TrueType terms, `COLRv0`, `COLRv1` (mostly), `sbix`, `CBDT` and `SVG` tables are supported.<br>
@@ -1198,7 +1200,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.41.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.42.0...HEAD
+[0.42.0]: https://github.com/RazrFalcon/resvg/compare/v0.41.0...v0.42.0
 [0.41.0]: https://github.com/RazrFalcon/resvg/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/RazrFalcon/resvg/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/RazrFalcon/resvg/compare/v0.38.0...v0.39.0

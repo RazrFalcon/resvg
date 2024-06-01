@@ -20,7 +20,7 @@ fail at this (see [SVG support](https://github.com/RazrFalcon/resvg#svg-support)
 Yes, unlike `resvg`, browsers do support dynamic SVG features like animations and scripting.
 But using a browser to render SVG _correctly_ is sadly not an option.
 
-To prove its correctness, `resvg` has a vast test suite that includes around 1500 tests.
+To prove its correctness, `resvg` has a vast test suite that includes around 1600 tests.
 And those are only SVG-to-PNG regression tests. This doesn't include tests in `resvg` dependencies.
 And the best thing is that `resvg` test suite is available to everyone. It's not tied to `resvg`
 in any way. Which should help people who plan to develop their own SVG libraries.
