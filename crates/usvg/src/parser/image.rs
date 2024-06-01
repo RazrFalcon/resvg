@@ -332,17 +332,27 @@ pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
     sub_opt.image_rendering = opt.image_rendering;
     sub_opt.default_size = opt.default_size;
 
-    #[cfg(feature = "text")]
-    {
-        sub_opt.fontdb = opt.fontdb.clone();
-    }
-
     // The referenced SVG image cannot have any 'image' elements by itself.
     // Not only recursive. Any. Don't know why.
     sub_opt.image_href_resolver = ImageHrefResolver {
         resolve_data: Box::new(|_, _, _| None),
         resolve_string: Box::new(|_, _| None),
     };
+
+    #[cfg(feature = "text")]
+    {
+        // In the referenced SVG, we start with the unmodified user-provided
+        // fontdb, not the one from the cache.
+        sub_opt.fontdb = opt.fontdb.clone();
+
+        // Can't clone the resolver, so we create a new one that forwards to it.
+        sub_opt.font_resolver = crate::FontResolver {
+            select_font: Box::new(|font, db| (opt.font_resolver.select_font)(font, db)),
+            select_fallback: Box::new(|c, used_fonts, db| {
+                (opt.font_resolver.select_fallback)(c, used_fonts, db)
+            }),
+        };
+    }
 
     let tree = Tree::from_data(data, &sub_opt);
     let tree = match tree {
