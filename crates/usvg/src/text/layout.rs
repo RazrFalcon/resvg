@@ -43,7 +43,8 @@ pub struct PositionedGlyph {
     pub id: GlyphId,
     /// The text from the original string that corresponds to that glyph.
     pub text: String,
-    /// The ID of the font the glyph should be taken from.
+    /// The ID of the font the glyph should be taken from. Can be used with the
+    /// [font database of the tree](crate::Tree::fontdb) this glyph is part of.
     pub font: ID,
 }
 

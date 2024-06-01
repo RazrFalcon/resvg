@@ -87,6 +87,13 @@ pub struct Options<'a> {
     pub font_resolver: FontResolver<'a>,
 
     /// A database of fonts usable by text.
+    ///
+    /// This is a base database. If a custom `font_resolver` is specified,
+    /// additional fonts can be loaded during parsing. Those will be added to a
+    /// copy of this database. The full database containing all fonts referenced
+    /// in a `Tree` becomes available as [`Tree::fontdb`](crate::Tree::fontdb)
+    /// after parsing. If no fonts were loaded dynamically, that database will
+    /// be the same as this one.
     #[cfg(feature = "text")]
     pub fontdb: Arc<fontdb::Database>,
 }

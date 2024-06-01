@@ -17,10 +17,37 @@ mod colr;
 pub mod layout;
 
 /// A shorthand for [FontResolver]'s font selection function.
+///
+/// This function receives a font specification (families + a style, weight,
+/// stretch triple) and a font database and should return the ID of the font
+/// that shall be used (if any).
+///
+/// In the basic case, the function will search the existing fonts in the
+/// database to find a good match, e.g. via
+/// [`Database::query`](fontdb::Database::query). This is what the [default
+/// implementation](FontResolver::default_font_selector) does.
+///
+/// Users with more complex requirements can mutate the database to load
+/// additional fonts dynamically. To perform mutation, it is recommended to call
+/// `Arc::make_mut` on the provided database. (This call is not done outside of
+/// the callback to not needless clone an underlying shared database if no
+/// mutation will be performed.) It is important that the database is only
+/// mutated additively. Removing fonts or replacing the entire database will
+/// break things.
 pub type FontSelectionFn<'a> =
     Box<dyn Fn(&Font, &mut Arc<Database>) -> Option<ID> + Send + Sync + 'a>;
 
 /// A shorthand for [FontResolver]'s fallback selection function.
+///
+/// This function receives a specific character, a list of already used fonts,
+/// and a font database. It should return the ID of a font that
+/// - is not any of the already used fonts
+/// - is as close as possible to the first already used font (if any)
+/// - supports the given character
+///
+/// The function can search the existing database, but can also load additional
+/// fonts dynamically. See the documentation of [`FontSelectionFn`] for more
+/// details.
 pub type FallbackSelectionFn<'a> =
     Box<dyn Fn(char, &[ID], &mut Arc<Database>) -> Option<ID> + Send + Sync + 'a>;
 
@@ -115,6 +142,9 @@ impl FontResolver<'_> {
     }
 
     /// Creates a default font fallback selection resolver.
+    ///
+    /// The default implementation searches through the entire `fontdb`
+    /// to find a font that has the correct style and supports the character.
     pub fn default_fallback_selector() -> FallbackSelectionFn<'static> {
         Box::new(|c, exclude_fonts, fontdb| {
             let base_font_id = exclude_fonts[0];
