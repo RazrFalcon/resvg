@@ -25,9 +25,8 @@ jobs:
             - `viewsvg` is a simple application that showcases *resvg* capabilities
             - `resvg-0.*.0.tar.xz` is a sources archive with vendored Rust dependencies
             - `resvg-explorer-extension.exe` is an SVG thumbnailer for Windows Explorer
-            
+
             Check [CHANGELOG](https://github.com/RazrFalcon/resvg/blob/${{ github.ref }}/CHANGELOG.md).
-          generate_release_notes: true
           draft: false
           prerelease: false
     outputs:
