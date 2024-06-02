@@ -314,7 +314,7 @@ A group will have at least one of the attributes present.
   Available only inside the <<clipPath-element,clipPath>>.
 * `shape-rendering` = `optimizeSpeed | crispEdges`? +
   Default: geometricPrecision
-* `visibility` = `hidden | collapse`? +
+* `visibility` = `hidden`? +
   Default: visible
 * `transform` = <<transform-type,<transform> >>? +
   Can only be set on paths inside of `clipPath`.
@@ -337,7 +337,7 @@ A group will have at least one of the attributes present.
 * `height` = <<positive-number-type,<positive-number> >>
 * `image-rendering` = `optimizeSpeed`? +
   Default: optimizeQuality
-* `visibility` = `hidden | collapse`? +
+* `visibility` = `hidden`? +
   Default: visible
 
 == Filter primitives
@@ -354,7 +354,7 @@ The attributes below are the same for all filter primitives.
 * `height` = <<number-type,<number> >>?
 * `result` = <<string-type,<string> >>
 
-The `x`, `y`, `width` and `height` attributes can be omited.
+The `x`, `y`, `width` and `height` attributes can be omitted.
 SVG has a pretty complex
 https://www.w3.org/TR/SVG11/filters.html#FilterPrimitiveSubRegion[rules of resolving them]
 and I don't fully understand them yet.
