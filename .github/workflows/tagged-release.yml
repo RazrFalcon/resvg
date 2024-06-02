@@ -15,16 +15,19 @@ jobs:
     steps:
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
+          name: ${{ github.ref }}
           body: |
             - `viewsvg` is a simple application that showcases *resvg* capabilities
             - `resvg-0.*.0.tar.xz` is a sources archive with vendored Rust dependencies
             - `resvg-explorer-extension.exe` is an SVG thumbnailer for Windows Explorer
+            
+            Check [CHANGELOG](https://github.com/RazrFalcon/resvg/blob/${{ github.ref }}/CHANGELOG.md).
+          generate_release_notes: true
           draft: false
           prerelease: false
     outputs:
