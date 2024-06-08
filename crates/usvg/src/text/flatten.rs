@@ -271,14 +271,11 @@ impl DatabaseExt for Database {
             let node = if image.start_glyph_id == image.end_glyph_id {
                 Node::Group(Box::new(tree.root))
             } else {
-                tree.root
-                    .children
-                    .iter()
-                    .find(|n| n.id() == format!("glyph{}", glyph_id.0))
-                    .cloned()
+                tree.node_by_id(&format!("glyph{}", glyph_id.0))
                     .log_none(|| {
                         log::warn!("Failed to find SVG glyph node for glyph {}", glyph_id.0)
-                    })?
+                    })
+                    .cloned()?
             };
 
             Some(node)
