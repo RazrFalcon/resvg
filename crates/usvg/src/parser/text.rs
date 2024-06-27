@@ -141,11 +141,13 @@ pub(crate) fn convert(
         layouted: vec![],
     };
 
-    if text::convert(&mut text, &state.opt.font_resolver, &mut cache.fontdb).is_none() {
-        return;
-    }
+    if let Some(ref font_resolver) = state.opt.font_resolver {
+        if text::convert(&mut text, font_resolver, &mut cache.fontdb).is_none() {
+            return;
+        }
 
-    parent.children.push(Node::Text(Box::new(text)));
+        parent.children.push(Node::Text(Box::new(text)));
+    }
 }
 
 struct IterState {

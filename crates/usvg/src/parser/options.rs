@@ -84,7 +84,7 @@ pub struct Options<'a> {
 
     /// Specifies how fonts should be resolved and loaded.
     #[cfg(feature = "text")]
-    pub font_resolver: FontResolver<'a>,
+    pub font_resolver: Option<FontResolver<'a>>,
 
     /// A database of fonts usable by text.
     ///
@@ -113,7 +113,7 @@ impl Default for Options<'_> {
             default_size: Size::from_wh(100.0, 100.0).unwrap(),
             image_href_resolver: ImageHrefResolver::default(),
             #[cfg(feature = "text")]
-            font_resolver: FontResolver::default(),
+            font_resolver: None,
             #[cfg(feature = "text")]
             fontdb: Arc::new(fontdb::Database::new()),
         }
