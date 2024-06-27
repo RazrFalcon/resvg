@@ -1,3 +1,5 @@
+use usvg::{InjectedStylesheet, WriteOptions};
+
 #[test]
 fn clippath_with_invalid_child() {
     let svg = "
@@ -13,6 +15,36 @@ fn clippath_with_invalid_child() {
     // clipPath is invalid and should be removed together with rect.
     assert_eq!(tree.root().has_children(), false);
 }
+
+// #[test]
+// fn stylesheet_injection_with_no_override() {
+//     let svg = "<svg id='svg1' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>
+//     <style>
+//         #rect3 {
+//         fill: #FF0000
+//         }
+//     </style>
+//     <rect id='rect1' x='25' y='25' style='fill: #0000FF' width='50' height='150'/>
+//     <rect id='rect2' x='75' y='25' fill='#00FF00' width='50' height='150'/>
+//     <rect id='rect3' x='125' y='25' width='50' height='150'/>
+// </svg>
+// ";
+//
+//     let stylesheet = "rect { fill: #FF00FF }";
+//
+//     let options = usvg::Options {
+//         injected_stylesheet: Some(InjectedStylesheet {
+//             override_css: true,
+//             style_sheet: stylesheet
+//         }),
+//         ..usvg::Options::default()
+//     };
+//
+//     let tree = usvg::Tree::from_str(&svg, &options).unwrap();
+//     eprintln!("{}", tree.to_string(&WriteOptions::default()));
+//
+//     assert!(false);
+// }
 
 #[test]
 fn simplify_paths() {

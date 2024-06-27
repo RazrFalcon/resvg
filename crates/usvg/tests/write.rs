@@ -42,11 +42,11 @@ fn resave_impl(name: &str, id_prefix: Option<String>, preserve_text: bool) {
     xml_opt.transforms_precision = 4;
     let output_svg = tree.to_string(&xml_opt);
 
-    // std::fs::write(
-    //     format!("tests/files/{}-expected.svg", name),
-    //     output_svg.clone(),
-    // )
-    // .unwrap();
+    std::fs::write(
+        format!("tests/files/{}-expected.svg", name),
+        output_svg.clone(),
+    )
+    .unwrap();
 
     let expected_svg =
         std::fs::read_to_string(format!("tests/files/{}-expected.svg", name)).unwrap();

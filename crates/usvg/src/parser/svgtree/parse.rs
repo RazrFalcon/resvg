@@ -5,9 +5,9 @@
 use std::collections::HashMap;
 
 use roxmltree::Error;
-use simplecss::Declaration;
+use simplecss::{Declaration, StyleSheet};
 use svgtypes::FontShorthand;
-
+use crate::InjectedStylesheet;
 use super::{AId, Attribute, Document, EId, NodeData, NodeId, NodeKind, ShortRange};
 
 const SVG_NS: &str = "http://www.w3.org/2000/svg";
@@ -16,9 +16,10 @@ const XML_NAMESPACE_NS: &str = "http://www.w3.org/XML/1998/namespace";
 
 impl<'input> Document<'input> {
     /// Parses a [`Document`] from a [`roxmltree::Document`].
-    pub fn parse_tree(xml: &roxmltree::Document<'input>) -> Result<Document<'input>, Error> {
-        parse(xml)
+    pub fn parse_tree(xml: &roxmltree::Document<'input>, injected_stylesheet: Option<&InjectedStylesheet<'input>>) -> Result<Document<'input>, Error> {
+        parse(xml, injected_stylesheet)
     }
+
 
     pub(crate) fn append(&mut self, parent_id: NodeId, kind: NodeKind) -> NodeId {
         let new_child_id = NodeId::from(self.nodes.len());
@@ -51,7 +52,7 @@ impl<'input> Document<'input> {
     }
 }
 
-fn parse<'input>(xml: &roxmltree::Document<'input>) -> Result<Document<'input>, Error> {
+fn parse<'input>(xml: &roxmltree::Document<'input>, injected_stylesheet: Option<&InjectedStylesheet<'input>>) -> Result<Document<'input>, Error> {
     let mut doc = Document {
         nodes: Vec::new(),
         attrs: Vec::new(),

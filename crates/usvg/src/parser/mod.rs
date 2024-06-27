@@ -121,7 +121,7 @@ impl crate::Tree {
 
     /// Parses `Tree` from `roxmltree::Document`.
     pub fn from_xmltree(doc: &roxmltree::Document, opt: &Options) -> Result<Self, Error> {
-        let doc = svgtree::Document::parse_tree(doc)?;
+        let doc = svgtree::Document::parse_tree(doc, opt.injected_stylesheet.as_ref())?;
         self::converter::convert_doc(&doc, opt)
     }
 }
@@ -151,4 +151,19 @@ pub(crate) fn f32_bound(min: f32, val: f32, max: f32) -> f32 {
     } else {
         val
     }
+}
+
+#[derive(Clone, Debug)]
+pub enum StylesheetPriority {
+    None,
+    Low,
+    Medium,
+    High
+}
+
+/// An injected stylesheet.
+#[derive(Clone, Debug)]
+pub struct InjectedStylesheet<'a> {
+    pub priority: StylesheetPriority,
+    pub style_sheet:&'a str
 }
