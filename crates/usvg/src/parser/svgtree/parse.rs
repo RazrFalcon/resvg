@@ -322,19 +322,15 @@ pub(crate) fn parse_svg_element<'input>(
     };
 
     // Apply CSS.
-    for rule in &style_sheet.rules {
-        if rule.selector.matches(&XmlNode(xml_node)) {
-            for declaration in &rule.declarations {
-                write_declaration(declaration);
-            }
-        }
-    }
+    let css_declarations = style_sheet.rules.iter()
+        .filter(|r| r.selector.matches(&XmlNode(xml_node)))
+        .flat_map(|r| r.declarations.clone());
 
-    // Split a `style` attribute.
-    if let Some(value) = xml_node.attribute("style") {
-        for declaration in simplecss::DeclarationTokenizer::from(value) {
-            write_declaration(&declaration);
-        }
+    let style_declarations = xml_node.attribute("style")
+        .map(|v| simplecss::DeclarationTokenizer::from(v).collect::<Vec<_>>()).unwrap_or_default();
+
+    for declaration in css_declarations.into_iter().chain(style_declarations.into_iter()) {
+        write_declaration(&declaration);
     }
 
     if doc.nodes.len() > 1_000_000 {
