@@ -376,8 +376,12 @@ pub(crate) fn parse_svg_element<'input>(
                 .collect::<Vec<Declaration>>();
 
             if iss.has_priority {
+                // Injected stylesheet should have priority, meaning we just add the declarations
+                // to the end of the vector. Later-appearing declarations will override previous ones.
                 declarations.extend(injected_declarations)
             } else {
+                // In this case, we prepend the injected declarations so that they will be overwritten
+                // by the ones defined in the SVG.
                 injected_declarations.extend(declarations);
                 declarations = injected_declarations;
             }
