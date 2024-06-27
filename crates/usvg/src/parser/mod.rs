@@ -153,17 +153,11 @@ pub(crate) fn f32_bound(min: f32, val: f32, max: f32) -> f32 {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum StylesheetPriority {
-    None,
-    Low,
-    Medium,
-    High
-}
-
 /// An injected stylesheet.
 #[derive(Clone, Debug)]
 pub struct InjectedStylesheet<'a> {
-    pub priority: StylesheetPriority,
-    pub style_sheet:&'a str
+    /// Whether the injected stylesheet should take priority over existing declarations in the SVG.
+    pub has_priority: bool,
+    /// The stylesheet that should be injected.
+    pub style_sheet: &'a str,
 }
