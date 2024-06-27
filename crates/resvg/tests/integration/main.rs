@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use rgb::{FromSlice, RGBA8};
 use std::sync::Arc;
-use usvg::fontdb;
+use usvg::{fontdb, DefaultFontResolver};
 
 #[rustfmt::skip]
 mod render;
@@ -36,6 +36,7 @@ pub fn render(name: &str) -> usize {
             .unwrap()
             .to_owned(),
     );
+    opt.font_resolver = Some(&DefaultFontResolver);
     opt.fontdb = GLOBAL_FONTDB.clone();
 
     let tree = {

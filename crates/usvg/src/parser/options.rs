@@ -7,9 +7,7 @@ use std::sync::Arc;
 
 #[cfg(feature = "text")]
 use crate::FontResolver;
-use crate::{
-    DefaultFontResolver, ImageHrefResolver, ImageRendering, ShapeRendering, Size, TextRendering,
-};
+use crate::{ImageHrefResolver, ImageRendering, ShapeRendering, Size, TextRendering};
 
 /// Processing options.
 #[derive(Debug)]
@@ -85,6 +83,10 @@ pub struct Options<'a> {
     pub image_href_resolver: ImageHrefResolver<'a>,
 
     /// Specifies how fonts should be resolved and loaded.
+    ///
+    /// By default this is `None`. To successfully process text in SVGs, use
+    /// [`DefaultFontResolver`](crate::DefaultFontResolver) or a custom
+    /// [`FontResolver`].
     #[cfg(feature = "text")]
     pub font_resolver: Option<&'a dyn FontResolver>,
 
@@ -115,7 +117,7 @@ impl Default for Options<'_> {
             default_size: Size::from_wh(100.0, 100.0).unwrap(),
             image_href_resolver: ImageHrefResolver::default(),
             #[cfg(feature = "text")]
-            font_resolver: Some(&DefaultFontResolver),
+            font_resolver: None,
             #[cfg(feature = "text")]
             fontdb: Arc::new(fontdb::Database::new()),
         }
