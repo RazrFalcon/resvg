@@ -233,7 +233,7 @@ fn parse_xml_node<'input>(
     Ok(())
 }
 
-pub(crate) fn parse_svg_element<'input, 'a>(
+pub(crate) fn parse_svg_element<'input>(
     xml_node: roxmltree::Node<'_, 'input>,
     parent_id: NodeId,
     tag_name: EId,
