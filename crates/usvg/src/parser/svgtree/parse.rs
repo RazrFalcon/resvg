@@ -216,34 +216,30 @@ pub(crate) fn parse_svg_element<'input>(
 ) -> Result<NodeId, Error> {
     let attrs_start_idx = doc.attrs.len();
 
-    let presentational_attributes = xml_node.attributes().filter_map(|attr| {
+    // Copy presentational attributes first.
+    for attr in xml_node.attributes() {
         match attr.namespace() {
             None | Some(SVG_NS) | Some(XLINK_NS) | Some(XML_NAMESPACE_NS) => {}
-            _ => return None,
+            _ => continue,
         }
 
         let aid = match AId::from_str(attr.name()) {
             Some(v) => v,
-            None => return None,
+            None => continue,
         };
 
         // During a `use` resolving, all `id` attributes must be ignored.
         // Otherwise we will get elements with duplicated id's.
         if ignore_ids && aid == AId::Id {
-            return None;
+            continue;
         }
 
         // For some reason those properties are allowed only inside a `style` attribute and CSS.
         if matches!(aid, AId::MixBlendMode | AId::Isolation | AId::FontKerning) {
-            return None;
+            continue;
         }
 
-        Some((aid, attr.value_storage().clone()))
-    });
-
-    // Copy presentational attributes first.
-    for (aid, value) in presentational_attributes {
-        append_attribute(parent_id, tag_name, aid, value, doc);
+        append_attribute(parent_id, tag_name, aid, attr.value_storage().clone(), doc);
     }
 
     let mut insert_attribute = |aid, value: &str| {
