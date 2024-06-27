@@ -24,8 +24,11 @@ fn stylesheet_injection_with_no_priority() {
         fill: #FF0000
         }
     </style>
+    <-- Fill should be overwritten, because it's defined as a presentational attribute. -->
     <rect id='rect2' x='75' y='25' fill='#00FF00' width='50' height='150'/>
+    <-- Fill should not be overwritten, because injected stylesheet has no priority. -->
     <rect id='rect1' x='25' y='25' style='fill: #0000FF' width='50' height='150'/>
+    <-- Fill should not be overwritten, because injected stylesheet has no priority. -->
     <rect id='rect3' x='125' y='25' width='50' height='150'/>
 </svg>
 ";
@@ -75,8 +78,11 @@ fn stylesheet_injection_with_priority() {
         fill: #FF0000
         }
     </style>
+    <-- Fill should be overwritten, because it's defined as a presentational attribute. -->
     <rect id='rect2' x='75' y='25' fill='#00FF00' width='50' height='150'/>
+    <-- Fill should be overwritten, because injected stylesheet has priority. -->
     <rect id='rect1' x='25' y='25' style='fill: #0000FF' width='50' height='150'/>
+    <-- Fill should be overwritten, because injected stylesheet has priority. -->
     <rect id='rect3' x='125' y='25' width='50' height='150'/>
 </svg>
 ";
