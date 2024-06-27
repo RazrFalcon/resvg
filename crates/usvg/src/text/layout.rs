@@ -205,7 +205,7 @@ impl GlyphCluster {
 
 pub(crate) fn layout_text(
     text_node: &Text,
-    resolver: &FontResolver,
+    resolver: &dyn FontResolver,
     fontdb: &mut Arc<fontdb::Database>,
 ) -> Option<(Vec<Span>, NonZeroRect)> {
     let mut fonts_cache: FontsCache = HashMap::new();
@@ -213,8 +213,9 @@ pub(crate) fn layout_text(
     for chunk in &text_node.chunks {
         for span in &chunk.spans {
             if !fonts_cache.contains_key(&span.font) {
-                if let Some(font) =
-                    (resolver.select_font)(&span.font, fontdb).and_then(|id| fontdb.load_font(id))
+                if let Some(font) = resolver
+                    .select_font(&span.font, fontdb)
+                    .and_then(|id| fontdb.load_font(id))
                 {
                     fonts_cache.insert(span.font.clone(), Arc::new(font));
                 }
@@ -864,7 +865,7 @@ fn collect_normals(
 fn process_chunk(
     chunk: &TextChunk,
     fonts_cache: &FontsCache,
-    resolver: &FontResolver,
+    resolver: &dyn FontResolver,
     fontdb: &mut Arc<fontdb::Database>,
 ) -> Vec<GlyphCluster> {
     // The way this function works is a bit tricky.
@@ -1284,7 +1285,7 @@ pub(crate) fn shape_text(
     font: Arc<ResolvedFont>,
     small_caps: bool,
     apply_kerning: bool,
-    resolver: &FontResolver,
+    resolver: &dyn FontResolver,
     fontdb: &mut Arc<fontdb::Database>,
 ) -> Vec<Glyph> {
     let mut glyphs = shape_text_with_font(text, font.clone(), small_caps, apply_kerning, fontdb)
@@ -1304,7 +1305,8 @@ pub(crate) fn shape_text(
         }
 
         if let Some(c) = missing {
-            let fallback_font = match (resolver.select_fallback)(c, &used_fonts, fontdb)
+            let fallback_font = match resolver
+                .select_fallback(c, &used_fonts, fontdb)
                 .and_then(|id| fontdb.load_font(id))
             {
                 Some(v) => Arc::new(v),
