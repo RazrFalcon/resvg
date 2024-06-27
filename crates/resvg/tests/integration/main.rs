@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use rgb::{FromSlice, RGBA8};
-use usvg::{fontdb, DefaultFontResolver};
+use usvg::fontdb;
 
 #[rustfmt::skip]
 mod render;
@@ -28,8 +28,6 @@ pub fn render(name: &str) -> usize {
     let svg_path = format!("tests/{}.svg", name);
     let png_path = format!("tests/{}.png", name);
 
-    let font_resolver = DefaultFontResolver::new(GLOBAL_FONTDB.clone());
-
     let mut opt = usvg::Options::default();
     opt.resources_dir = Some(
         std::path::PathBuf::from(&svg_path)
@@ -37,7 +35,7 @@ pub fn render(name: &str) -> usize {
             .unwrap()
             .to_owned(),
     );
-    opt.font_resolver = Some(&font_resolver);
+    opt.font_resolver = Some(&*GLOBAL_FONTDB);
 
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
@@ -91,9 +89,8 @@ pub fn render_extra_with_scale(name: &str, scale: f32) -> usize {
     let svg_path = format!("tests/{}.svg", name);
     let png_path = format!("tests/{}.png", name);
 
-    let font_resolver = DefaultFontResolver::new(GLOBAL_FONTDB.clone());
     let mut opt = usvg::Options::default();
-    opt.font_resolver = Some(&font_resolver);
+    opt.font_resolver = Some(&*GLOBAL_FONTDB);
 
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
@@ -142,9 +139,8 @@ pub fn render_node(name: &str, id: &str) -> usize {
     let svg_path = format!("tests/{}.svg", name);
     let png_path = format!("tests/{}.png", name);
 
-    let font_resolver = DefaultFontResolver::new(GLOBAL_FONTDB.clone());
     let mut opt = usvg::Options::default();
-    opt.font_resolver = Some(&font_resolver);
+    opt.font_resolver = Some(&*GLOBAL_FONTDB);
 
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();

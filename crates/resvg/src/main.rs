@@ -92,8 +92,7 @@ fn process() -> Result<(), String> {
         });
     }
 
-    let font_resolver = usvg::DefaultFontResolver::new(fontdb);
-    let options = args.usvg(&font_resolver);
+    let options = args.usvg(&fontdb);
     let tree = timed(args.perf, "SVG Parsing", || {
         usvg::Tree::from_xmltree(&xml_tree, &options).map_err(|e| e.to_string())
     })?;

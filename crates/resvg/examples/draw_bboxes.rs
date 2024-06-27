@@ -15,14 +15,15 @@ fn main() {
         1.0
     };
 
-    let font_resolver = usvg::DefaultFontResolver::with_system_fonts();
+    let mut fontdb = usvg::fontdb::Database::new();
+    fontdb.load_system_fonts();
 
     let mut opt = usvg::Options::default();
     // Get file's absolute directory.
     opt.resources_dir = std::fs::canonicalize(&args[1])
         .ok()
         .and_then(|p| p.parent().map(|p| p.to_path_buf()));
-    opt.font_resolver = Some(&font_resolver);
+    opt.font_resolver = Some(&fontdb);
 
     let svg_data = std::fs::read(&args[1]).unwrap();
     let tree = usvg::Tree::from_data(&svg_data, &opt).unwrap();
