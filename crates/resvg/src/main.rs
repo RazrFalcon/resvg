@@ -5,9 +5,8 @@
 #![allow(clippy::uninlined_format_args)]
 
 use std::path;
-use std::sync::Arc;
 
-use usvg::fontdb;
+use usvg::{fontdb, FontResolver};
 
 fn main() {
     if let Err(e) = process() {
@@ -31,7 +30,7 @@ where
 }
 
 fn process() -> Result<(), String> {
-    let mut args = match parse_args() {
+    let args = match parse_args() {
         Ok(args) => args,
         Err(e) => {
             println!("{}", HELP);
@@ -86,14 +85,17 @@ fn process() -> Result<(), String> {
         .descendants()
         .any(|n| n.has_tag_name(("http://www.w3.org/2000/svg", "text")));
 
+    let mut fontdb = fontdb::Database::new();
     if has_text_nodes {
         timed(args.perf, "FontDB", || {
-            load_fonts(&args.raw_args, args.usvg.fontdb_mut())
+            load_fonts(&args.raw_args, &mut fontdb)
         });
     }
 
+    let font_resolver = usvg::DefaultFontResolver::new(fontdb);
+    let options = args.usvg(&font_resolver);
     let tree = timed(args.perf, "SVG Parsing", || {
-        usvg::Tree::from_xmltree(&xml_tree, &args.usvg).map_err(|e| e.to_string())
+        usvg::Tree::from_xmltree(&xml_tree, &options).map_err(|e| e.to_string())
     })?;
 
     if args.query_all {
@@ -460,8 +462,8 @@ struct Args {
     export_area_drawing: bool,
     perf: bool,
     quiet: bool,
-    usvg: usvg::Options<'static>,
     fit_to: FitTo,
+    default_size: usvg::Size,
     background: Option<svgtypes::Color>,
     raw_args: CliArgs, // TODO: find a better way
 }
@@ -534,38 +536,6 @@ fn parse_args() -> Result<Args, String> {
         fit_to = FitTo::Zoom(z);
     }
 
-    let resources_dir = match args.resources_dir {
-        Some(ref v) => Some(v.clone()),
-        None => {
-            if let InputFrom::File(ref input) = in_svg {
-                // Get input file absolute directory.
-                std::fs::canonicalize(input)
-                    .ok()
-                    .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-            } else {
-                None
-            }
-        }
-    };
-
-    let usvg = usvg::Options {
-        resources_dir,
-        dpi: args.dpi as f32,
-        font_family: args
-            .font_family
-            .clone()
-            .unwrap_or_else(|| "Times New Roman".to_string()),
-        font_size: args.font_size as f32,
-        languages: args.languages.clone(),
-        shape_rendering: args.shape_rendering,
-        text_rendering: args.text_rendering,
-        image_rendering: args.image_rendering,
-        default_size,
-        image_href_resolver: usvg::ImageHrefResolver::default(),
-        font_resolver: Some(&usvg::DefaultFontResolver),
-        fontdb: Arc::new(fontdb::Database::new()),
-    };
-
     Ok(Args {
         in_svg,
         out_png,
@@ -575,11 +545,47 @@ fn parse_args() -> Result<Args, String> {
         export_area_drawing: args.export_area_drawing,
         perf: args.perf,
         quiet: args.quiet,
-        usvg,
         fit_to,
+        default_size,
         background: args.background,
         raw_args: args,
     })
+}
+
+impl Args {
+    fn usvg<'a>(&self, font_resolver: &'a dyn FontResolver) -> usvg::Options<'a> {
+        let resources_dir = match self.raw_args.resources_dir {
+            Some(ref v) => Some(v.clone()),
+            None => {
+                if let InputFrom::File(ref input) = self.in_svg {
+                    // Get input file absolute directory.
+                    std::fs::canonicalize(input)
+                        .ok()
+                        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+                } else {
+                    None
+                }
+            }
+        };
+
+        usvg::Options {
+            resources_dir,
+            dpi: self.raw_args.dpi as f32,
+            font_family: self
+                .raw_args
+                .font_family
+                .clone()
+                .unwrap_or_else(|| "Times New Roman".to_string()),
+            font_size: self.raw_args.font_size as f32,
+            languages: self.raw_args.languages.clone(),
+            shape_rendering: self.raw_args.shape_rendering,
+            text_rendering: self.raw_args.text_rendering,
+            image_rendering: self.raw_args.image_rendering,
+            default_size: self.default_size,
+            image_href_resolver: usvg::ImageHrefResolver::default(),
+            font_resolver: Some(font_resolver),
+        }
+    }
 }
 
 fn load_fonts(args: &CliArgs, fontdb: &mut fontdb::Database) {

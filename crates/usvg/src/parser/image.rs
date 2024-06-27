@@ -345,7 +345,6 @@ pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
     {
         // In the referenced SVG, we start with the unmodified user-provided
         // fontdb, not the one from the cache.
-        sub_opt.fontdb = opt.fontdb.clone();
         sub_opt.font_resolver = opt.font_resolver;
     }
 

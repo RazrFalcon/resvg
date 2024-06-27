@@ -206,7 +206,6 @@ impl GlyphCluster {
 pub(crate) fn layout_text(
     text_node: &Text,
     resolver: &dyn FontResolver,
-    fontdb: &mut Arc<fontdb::Database>,
 ) -> Option<(Vec<Span>, NonZeroRect)> {
     let mut fonts_cache: FontsCache = HashMap::new();
 
@@ -214,8 +213,8 @@ pub(crate) fn layout_text(
         for span in &chunk.spans {
             if !fonts_cache.contains_key(&span.font) {
                 if let Some(font) = resolver
-                    .select_font(&span.font, fontdb)
-                    .and_then(|id| fontdb.load_font(id))
+                    .select_font(&span.font)
+                    .and_then(|id| resolver.fontdb().load_font(id))
                 {
                     fonts_cache.insert(span.font.clone(), Arc::new(font));
                 }
@@ -234,7 +233,7 @@ pub(crate) fn layout_text(
             TextFlow::Path(_) => (0.0, 0.0),
         };
 
-        let mut clusters = process_chunk(chunk, &fonts_cache, resolver, fontdb);
+        let mut clusters = process_chunk(chunk, &fonts_cache, resolver);
         if clusters.is_empty() {
             char_offset += chunk.text.chars().count();
             continue;
@@ -866,7 +865,6 @@ fn process_chunk(
     chunk: &TextChunk,
     fonts_cache: &FontsCache,
     resolver: &dyn FontResolver,
-    fontdb: &mut Arc<fontdb::Database>,
 ) -> Vec<GlyphCluster> {
     // The way this function works is a bit tricky.
     //
@@ -912,7 +910,6 @@ fn process_chunk(
             span.small_caps,
             span.apply_kerning,
             resolver,
-            fontdb,
         );
 
         // Do nothing with the first run.
@@ -1286,10 +1283,15 @@ pub(crate) fn shape_text(
     small_caps: bool,
     apply_kerning: bool,
     resolver: &dyn FontResolver,
-    fontdb: &mut Arc<fontdb::Database>,
 ) -> Vec<Glyph> {
-    let mut glyphs = shape_text_with_font(text, font.clone(), small_caps, apply_kerning, fontdb)
-        .unwrap_or_default();
+    let mut glyphs = shape_text_with_font(
+        text,
+        font.clone(),
+        small_caps,
+        apply_kerning,
+        resolver.fontdb(),
+    )
+    .unwrap_or_default();
 
     // Remember all fonts used for shaping.
     let mut used_fonts = vec![font.id];
@@ -1306,8 +1308,8 @@ pub(crate) fn shape_text(
 
         if let Some(c) = missing {
             let fallback_font = match resolver
-                .select_fallback(c, &used_fonts, fontdb)
-                .and_then(|id| fontdb.load_font(id))
+                .select_fallback(c, &used_fonts)
+                .and_then(|id| resolver.fontdb().load_font(id))
             {
                 Some(v) => Arc::new(v),
                 None => break 'outer,
@@ -1319,7 +1321,7 @@ pub(crate) fn shape_text(
                 fallback_font.clone(),
                 small_caps,
                 apply_kerning,
-                fontdb,
+                resolver.fontdb(),
             )
             .unwrap_or_default();
 

@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::fmt::Debug;
-use std::sync::Arc;
 
 use fontdb::{Database, ID};
 use svgtypes::FontFamily;
@@ -25,6 +24,9 @@ pub mod layout;
 /// you to load additional fonts on-demand and customize the font selection
 /// process.
 pub trait FontResolver: Debug + Sync {
+    /// Provide access to the font [`Database`]
+    fn fontdb(&self) -> &Database;
+
     /// Resolver function that will be used when selecting a specific font
     /// for a generic [`Font`] specification.
     ///
@@ -44,7 +46,7 @@ pub trait FontResolver: Debug + Sync {
     /// mutation will be performed.) It is important that the database is only
     /// mutated additively. Removing fonts or replacing the entire database will
     /// break things.
-    fn select_font(&self, font: &Font, fontdb: &mut Arc<Database>) -> Option<ID>;
+    fn select_font(&self, font: &Font) -> Option<ID>;
 
     /// Resolver function that will be used when selecting a fallback font for a
     /// character.
@@ -58,12 +60,7 @@ pub trait FontResolver: Debug + Sync {
     /// The function can search the existing database, but can also load additional
     /// fonts dynamically. See the documentation of [`FontSelectionFn`] for more
     /// details.
-    fn select_fallback(
-        &self,
-        c: char,
-        exclude_fonts: &[ID],
-        fontdb: &mut Arc<Database>,
-    ) -> Option<ID>;
+    fn select_fallback(&self, c: char, exclude_fonts: &[ID]) -> Option<ID>;
 }
 
 /// Default font resolver
@@ -74,10 +71,37 @@ pub trait FontResolver: Debug + Sync {
 ///
 /// The default fallback selector searches through the entire `fontdb`
 /// to find a font that has the correct style and supports the character.
-#[derive(Clone, Copy, Debug)]
-pub struct DefaultFontResolver;
+#[derive(Clone, Debug, Default)]
+pub struct DefaultFontResolver {
+    fontdb: Database,
+}
+
+impl DefaultFontResolver {
+    /// Construct from an existing [`Database`]
+    pub fn new(fontdb: Database) -> Self {
+        DefaultFontResolver { fontdb }
+    }
+
+    /// Construct, loading system fonts
+    #[cfg(feature = "system-fonts")]
+    pub fn with_system_fonts() -> Self {
+        let mut fontdb = fontdb::Database::new();
+        fontdb.load_system_fonts();
+        DefaultFontResolver { fontdb }
+    }
+
+    /// Deconstruct, taking the [`Database`]
+    pub fn take_db(self) -> Database {
+        self.fontdb
+    }
+}
+
 impl FontResolver for DefaultFontResolver {
-    fn select_font(&self, font: &Font, fontdb: &mut Arc<Database>) -> Option<ID> {
+    fn fontdb(&self) -> &Database {
+        &self.fontdb
+    }
+
+    fn select_font(&self, font: &Font) -> Option<ID> {
         let mut name_list = Vec::new();
         for family in &font.families {
             name_list.push(match family {
@@ -118,7 +142,7 @@ impl FontResolver for DefaultFontResolver {
             style,
         };
 
-        let id = fontdb.query(&query);
+        let id = self.fontdb.query(&query);
         if id.is_none() {
             log::warn!(
                 "No match for '{}' font-family.",
@@ -133,23 +157,18 @@ impl FontResolver for DefaultFontResolver {
         id
     }
 
-    fn select_fallback(
-        &self,
-        c: char,
-        exclude_fonts: &[ID],
-        fontdb: &mut Arc<Database>,
-    ) -> Option<ID> {
+    fn select_fallback(&self, c: char, exclude_fonts: &[ID]) -> Option<ID> {
         let base_font_id = exclude_fonts[0];
 
         // Iterate over fonts and check if any of them support the specified char.
-        for face in fontdb.faces() {
+        for face in self.fontdb.faces() {
             // Ignore fonts, that were used for shaping already.
             if exclude_fonts.contains(&face.id) {
                 continue;
             }
 
             // Check that the new face has the same style.
-            let base_face = fontdb.face(base_font_id)?;
+            let base_face = self.fontdb.face(base_font_id)?;
             if base_face.style != face.style
                 && base_face.weight != face.weight
                 && base_face.stretch != face.stretch
@@ -157,7 +176,7 @@ impl FontResolver for DefaultFontResolver {
                 continue;
             }
 
-            if !fontdb.has_char(face.id, c) {
+            if !self.fontdb.has_char(face.id, c) {
                 continue;
             }
 
@@ -186,17 +205,13 @@ impl FontResolver for DefaultFontResolver {
 /// SVG specifiation. While doing so, we also calculate the text bbox (which is not based on the
 /// outlines of a glyph, but instead the glyph metrics as well as decoration spans).
 /// 2. We convert all of the positioned glyphs into outlines.
-pub(crate) fn convert(
-    text: &mut Text,
-    resolver: &dyn FontResolver,
-    fontdb: &mut Arc<fontdb::Database>,
-) -> Option<()> {
-    let (text_fragments, bbox) = layout::layout_text(text, resolver, fontdb)?;
+pub(crate) fn convert(text: &mut Text, resolver: &dyn FontResolver) -> Option<()> {
+    let (text_fragments, bbox) = layout::layout_text(text, resolver)?;
     text.layouted = text_fragments;
     text.bounding_box = bbox.to_rect();
     text.abs_bounding_box = bbox.transform(text.abs_transform)?.to_rect();
 
-    let (group, stroke_bbox) = flatten::flatten(text, fontdb)?;
+    let (group, stroke_bbox) = flatten::flatten(text, resolver.fontdb())?;
     text.flattened = Box::new(group);
     text.stroke_bounding_box = stroke_bbox.to_rect();
     text.abs_stroke_bounding_box = stroke_bbox.transform(text.abs_transform)?.to_rect();

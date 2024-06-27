@@ -142,7 +142,7 @@ pub(crate) fn convert(
     };
 
     if let Some(ref font_resolver) = state.opt.font_resolver {
-        if text::convert(&mut text, *font_resolver, &mut cache.fontdb).is_none() {
+        if text::convert(&mut text, *font_resolver).is_none() {
             return;
         }
 

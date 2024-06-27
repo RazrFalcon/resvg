@@ -7,8 +7,6 @@ use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 use std::sync::Arc;
 
-#[cfg(feature = "text")]
-use fontdb::Database;
 use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind, TransformOrigin};
 
 use super::svgtree::{self, AId, EId, FromValue, SvgNode};
@@ -36,11 +34,6 @@ pub struct State<'a> {
 
 #[derive(Clone)]
 pub struct Cache {
-    /// This fontdb is initialized from [`Options::fontdb`] and then populated
-    /// over the course of conversion.
-    #[cfg(feature = "text")]
-    pub fontdb: Arc<Database>,
-
     pub clip_paths: HashMap<String, Arc<ClipPath>>,
     pub masks: HashMap<String, Arc<Mask>>,
     pub filters: HashMap<String, Arc<filter::Filter>>,
@@ -58,11 +51,8 @@ pub struct Cache {
 }
 
 impl Cache {
-    pub(crate) fn new(#[cfg(feature = "text")] fontdb: Arc<Database>) -> Self {
+    pub(crate) fn new() -> Self {
         Self {
-            #[cfg(feature = "text")]
-            fontdb,
-
             clip_paths: HashMap::new(),
             masks: HashMap::new(),
             filters: HashMap::new(),
@@ -319,10 +309,7 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
         opt,
     };
 
-    let mut cache = Cache::new(
-        #[cfg(feature = "text")]
-        opt.fontdb.clone(),
-    );
+    let mut cache = Cache::new();
 
     for node in svg_doc.descendants() {
         if let Some(tag) = node.tag_name() {

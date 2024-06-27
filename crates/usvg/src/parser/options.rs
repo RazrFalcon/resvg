@@ -3,9 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #[cfg(feature = "text")]
-use std::sync::Arc;
-
-#[cfg(feature = "text")]
 use crate::FontResolver;
 use crate::{ImageHrefResolver, ImageRendering, ShapeRendering, Size, TextRendering};
 
@@ -82,24 +79,13 @@ pub struct Options<'a> {
     /// Default: see type's documentation for details
     pub image_href_resolver: ImageHrefResolver<'a>,
 
-    /// Specifies how fonts should be resolved and loaded.
+    /// Provides access to the [`fontdb::Database`] and resolves font properties into fonts
     ///
     /// By default this is `None`. To successfully process text in SVGs, use
     /// [`DefaultFontResolver`](crate::DefaultFontResolver) or a custom
     /// [`FontResolver`].
     #[cfg(feature = "text")]
     pub font_resolver: Option<&'a dyn FontResolver>,
-
-    /// A database of fonts usable by text.
-    ///
-    /// This is a base database. If a custom `font_resolver` is specified,
-    /// additional fonts can be loaded during parsing. Those will be added to a
-    /// copy of this database. The full database containing all fonts referenced
-    /// in a `Tree` becomes available as [`Tree::fontdb`](crate::Tree::fontdb)
-    /// after parsing. If no fonts were loaded dynamically, that database will
-    /// be the same as this one.
-    #[cfg(feature = "text")]
-    pub fontdb: Arc<fontdb::Database>,
 }
 
 impl Default for Options<'_> {
@@ -118,8 +104,6 @@ impl Default for Options<'_> {
             image_href_resolver: ImageHrefResolver::default(),
             #[cfg(feature = "text")]
             font_resolver: None,
-            #[cfg(feature = "text")]
-            fontdb: Arc::new(fontdb::Database::new()),
         }
     }
 }
@@ -133,13 +117,5 @@ impl Options<'_> {
             Some(ref dir) => dir.join(rel_path),
             None => rel_path.into(),
         }
-    }
-
-    /// Mutably acquires the database.
-    ///
-    /// This clones the database if it is currently shared.
-    #[cfg(feature = "text")]
-    pub fn fontdb_mut(&mut self) -> &mut fontdb::Database {
-        Arc::make_mut(&mut self.fontdb)
     }
 }
