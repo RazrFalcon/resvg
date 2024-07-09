@@ -78,31 +78,16 @@ mod raster_images {
     }
 
     fn decode_jpeg(data: &[u8]) -> Option<tiny_skia::Pixmap> {
-        let mut decoder = jpeg_decoder::Decoder::new(data);
+        use zune_jpeg::zune_core::colorspace::ColorSpace;
+        use zune_jpeg::zune_core::options::DecoderOptions;
+
+        let options = DecoderOptions::default().jpeg_set_out_colorspace(ColorSpace::RGBA);
+        let mut decoder = zune_jpeg::JpegDecoder::new_with_options(data, options);
         let img_data = decoder.decode().ok()?;
         let info = decoder.info()?;
 
         let size = tiny_skia::IntSize::from_wh(info.width as u32, info.height as u32)?;
-
-        let data = match info.pixel_format {
-            jpeg_decoder::PixelFormat::RGB24 => img_data,
-            jpeg_decoder::PixelFormat::L8 => {
-                let mut rgb_data: Vec<u8> = Vec::with_capacity(img_data.len() * 3);
-                for gray in img_data {
-                    rgb_data.push(gray);
-                    rgb_data.push(gray);
-                    rgb_data.push(gray);
-                }
-
-                rgb_data
-            }
-            _ => return None,
-        };
-
-        let (w, h) = size.dimensions();
-        let mut pixmap = tiny_skia::Pixmap::new(w, h)?;
-        rgb_to_pixmap(&data, &mut pixmap);
-        Some(pixmap)
+        tiny_skia::Pixmap::from_vec(img_data, size)
     }
 
     fn decode_gif(data: &[u8]) -> Option<tiny_skia::Pixmap> {
@@ -120,21 +105,6 @@ mod raster_images {
         let mut pixmap = tiny_skia::Pixmap::new(w, h)?;
         rgba_to_pixmap(&first_frame.buffer, &mut pixmap);
         Some(pixmap)
-    }
-
-    fn rgb_to_pixmap(data: &[u8], pixmap: &mut tiny_skia::Pixmap) {
-        use rgb::FromSlice;
-
-        let mut i = 0;
-        let dst = pixmap.data_mut();
-        for p in data.as_rgb() {
-            dst[i + 0] = p.r;
-            dst[i + 1] = p.g;
-            dst[i + 2] = p.b;
-            dst[i + 3] = 255;
-
-            i += tiny_skia::BYTES_PER_PIXEL;
-        }
     }
 
     fn rgba_to_pixmap(data: &[u8], pixmap: &mut tiny_skia::Pixmap) {
