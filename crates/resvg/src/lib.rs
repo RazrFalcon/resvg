@@ -41,8 +41,8 @@ pub fn render(
     let max_bbox = tiny_skia::IntRect::from_xywh(
         -(target_size.width() as i32) * 2,
         -(target_size.height() as i32) * 2,
-        target_size.width() * 4,
-        target_size.height() * 4,
+        target_size.width() * 5,
+        target_size.height() * 5,
     )
     .unwrap();
 
@@ -71,8 +71,8 @@ pub fn render_node(
     let max_bbox = tiny_skia::IntRect::from_xywh(
         -(target_size.width() as i32) * 2,
         -(target_size.height() as i32) * 2,
-        target_size.width() * 4,
-        target_size.height() * 4,
+        target_size.width() * 5,
+        target_size.height() * 5,
     )
     .unwrap();
 

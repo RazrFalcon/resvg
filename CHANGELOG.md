@@ -8,6 +8,9 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 
+### Fixed
+- Canvas size limits calculation.
+
 ## [0.42.0] - 2024-06-01
 ### Added
 - `resvg` can render color fonts now, aka Emojis.<br>
