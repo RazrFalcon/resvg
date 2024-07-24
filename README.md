@@ -2,7 +2,7 @@
 ![Build Status](https://github.com/RazrFalcon/resvg/workflows/Build/badge.svg)
 [![Crates.io](https://img.shields.io/crates/v/resvg.svg)](https://crates.io/crates/resvg)
 [![Documentation](https://docs.rs/resvg/badge.svg)](https://docs.rs/resvg)
-[![Rust 1.65+](https://img.shields.io/badge/rust-1.65+-orange.svg)](https://www.rust-lang.org)
+[![Rust 1.67.1+](https://img.shields.io/badge/rust-1.67.1+-orange.svg)](https://www.rust-lang.org)
 
 *resvg* is an [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) rendering library.
 
