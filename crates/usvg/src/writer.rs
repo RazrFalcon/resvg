@@ -1073,6 +1073,7 @@ impl XmlWriterExt for XmlWriter {
             ImageKind::JPEG(ref data) => ("jpeg", data.as_slice()),
             ImageKind::PNG(ref data) => ("png", data.as_slice()),
             ImageKind::GIF(ref data) => ("gif", data.as_slice()),
+            ImageKind::WEBP(ref data) => ("webp", data.as_slice()),
             ImageKind::SVG(ref tree) => {
                 svg_string = tree.to_string(&WriteOptions::default());
                 ("svg+xml", svg_string.as_bytes())
