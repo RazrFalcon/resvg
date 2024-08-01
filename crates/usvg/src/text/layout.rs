@@ -49,34 +49,31 @@ pub struct PositionedGlyph {
 }
 
 impl PositionedGlyph {
+    /// Returns the transform of glyph.
+    pub fn transform(&self) -> Transform {
+        let sx = self.font_size / self.units_per_em as f32;
+
+        self.span_ts
+            .pre_concat(self.cluster_ts)
+            .pre_concat(Transform::from_scale(sx, sx))
+            .pre_concat(self.glyph_ts)
+    }
+
     /// Returns the transform of glyph, assuming that an outline
     /// glyph is being used (i.e. from the `glyf` or `CFF/CFF2` table).
     pub fn outline_transform(&self) -> Transform {
-        let mut ts = Transform::identity();
-
         // Outlines are mirrored by default.
-        ts = ts.pre_scale(1.0, -1.0);
-
-        let sx = self.font_size / self.units_per_em as f32;
-
-        ts = ts.pre_scale(sx, sx);
-        ts = ts
-            .pre_concat(self.glyph_ts)
-            .post_concat(self.cluster_ts)
-            .post_concat(self.span_ts);
-
-        ts
+        self.transform()
+            .pre_concat(Transform::from_scale(1.0, -1.0))
     }
 
     /// Returns the transform for the glyph, assuming that a CBTD-based raster glyph
     /// is being used.
     pub fn cbdt_transform(&self, x: f32, y: f32, pixels_per_em: f32, height: f32) -> Transform {
-        self.span_ts
-            .pre_concat(self.cluster_ts)
-            .pre_concat(self.glyph_ts)
+        self.transform()
             .pre_concat(Transform::from_scale(
-                self.font_size / pixels_per_em,
-                self.font_size / pixels_per_em,
+                self.units_per_em as f32 / pixels_per_em,
+                self.units_per_em as f32 / pixels_per_em,
             ))
             // Right now, the top-left corner of the image would be placed in
             // on the "text cursor", but we want the bottom-left corner to be there,
@@ -96,7 +93,7 @@ impl PositionedGlyph {
         height: f32,
     ) -> Transform {
         // In contrast to CBDT, we also need to look at the outline bbox of the glyph and add a shift if necessary.
-        let bbox_x_shift = self.font_size * (-x_min / self.units_per_em as f32);
+        let bbox_x_shift = -x_min;
 
         let bbox_y_shift = if y_min.approx_zero_ulps(4) {
             // For unknown reasons, using Apple Color Emoji will lead to a vertical shift on MacOS, but this shift
@@ -109,18 +106,16 @@ impl PositionedGlyph {
             // We can still remove this if it turns out to be a problem, but Apple Color Emoji is pretty
             // much the only `sbix` font out there and they all seem to have a y-shift of 0, so it
             // makes sense to keep it.
-            0.128 * self.font_size
+            0.128 * self.units_per_em as f32
         } else {
-            self.font_size * (-y_min / self.units_per_em as f32)
+            -y_min
         };
 
-        self.span_ts
-            .pre_concat(self.cluster_ts)
-            .pre_concat(self.glyph_ts)
+        self.transform()
             .pre_concat(Transform::from_translate(bbox_x_shift, bbox_y_shift))
             .pre_concat(Transform::from_scale(
-                self.font_size / pixels_per_em,
-                self.font_size / pixels_per_em,
+                self.units_per_em as f32 / pixels_per_em,
+                self.units_per_em as f32 / pixels_per_em,
             ))
             // Right now, the top-left corner of the image would be placed in
             // on the "text cursor", but we want the bottom-left corner to be there,
@@ -131,17 +126,7 @@ impl PositionedGlyph {
     /// Returns the transform for the glyph, assuming that an SVG glyph is
     /// being used.
     pub fn svg_transform(&self) -> Transform {
-        let mut ts = Transform::identity();
-
-        let sx = self.font_size / self.units_per_em as f32;
-
-        ts = ts.pre_scale(sx, sx);
-        ts = ts
-            .pre_concat(self.glyph_ts)
-            .post_concat(self.cluster_ts)
-            .post_concat(self.span_ts);
-
-        ts
+        self.transform()
     }
 
     /// Returns the transform for the glyph, assuming that a COLR glyph is
@@ -1147,7 +1132,7 @@ fn form_glyph_clusters(glyphs: &[Glyph], text: &str, font_size: f32) -> GlyphClu
         // but the later one will have an offset from the "current position".
         // So we have to keep an advance.
         // TODO: should be done only inside a single text span
-        let ts = Transform::from_translate(x + glyph.dx as f32, glyph.dy as f32);
+        let ts = Transform::from_translate(x + glyph.dx as f32, -glyph.dy as f32);
 
         positioned_glyphs.push(PositionedGlyph {
             glyph_ts: ts,
