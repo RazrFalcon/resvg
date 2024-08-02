@@ -4,9 +4,9 @@
 
 #![allow(clippy::comparison_chain)]
 
-use roxmltree::Error;
-
 use super::{AId, Document, EId, NodeId, NodeKind, SvgNode};
+use crate::InjectedStylesheet;
+use roxmltree::Error;
 
 const XLINK_NS: &str = "http://www.w3.org/1999/xlink";
 
@@ -14,6 +14,7 @@ pub(crate) fn parse_svg_text_element<'input>(
     parent: roxmltree::Node<'_, 'input>,
     parent_id: NodeId,
     style_sheet: &simplecss::StyleSheet,
+    injected_style_sheet: Option<&InjectedStylesheet>,
     doc: &mut Document<'input>,
 ) -> Result<(), Error> {
     debug_assert_eq!(parent.tag_name().name(), "text");
@@ -32,7 +33,14 @@ pub(crate) fn parse_svg_text_element<'input>(
         }
     };
 
-    parse_svg_text_element_impl(parent, parent_id, style_sheet, space, doc)?;
+    parse_svg_text_element_impl(
+        parent,
+        parent_id,
+        style_sheet,
+        injected_style_sheet,
+        space,
+        doc,
+    )?;
 
     trim_text_nodes(parent_id, space, doc);
     Ok(())
@@ -42,6 +50,7 @@ fn parse_svg_text_element_impl<'input>(
     parent: roxmltree::Node<'_, 'input>,
     parent_id: NodeId,
     style_sheet: &simplecss::StyleSheet,
+    injected_style_sheet: Option<&InjectedStylesheet>,
     space: XmlSpace,
     doc: &mut Document<'input>,
 ) -> Result<(), Error> {
@@ -78,8 +87,15 @@ fn parse_svg_text_element_impl<'input>(
             is_tref = true;
         }
 
-        let node_id =
-            super::parse::parse_svg_element(node, parent_id, tag_name, style_sheet, false, doc)?;
+        let node_id = super::parse::parse_svg_element(
+            node,
+            parent_id,
+            tag_name,
+            style_sheet,
+            injected_style_sheet,
+            false,
+            doc,
+        )?;
         let space = get_xmlspace(doc, node_id, space);
 
         if is_tref {
@@ -94,7 +110,14 @@ fn parse_svg_text_element_impl<'input>(
                 }
             }
         } else {
-            parse_svg_text_element_impl(node, node_id, style_sheet, space, doc)?;
+            parse_svg_text_element_impl(
+                node,
+                node_id,
+                style_sheet,
+                injected_style_sheet,
+                space,
+                doc,
+            )?;
         }
     }
 
