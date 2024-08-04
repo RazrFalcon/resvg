@@ -1070,18 +1070,21 @@ impl XmlWriterExt for XmlWriter {
     fn write_image_data(&mut self, kind: &ImageKind) {
         let svg_string;
         let (mime, data) = match kind {
-            ImageKind::JPEG(ref data) => ("jpeg", data.as_slice()),
-            ImageKind::PNG(ref data) => ("png", data.as_slice()),
-            ImageKind::GIF(ref data) => ("gif", data.as_slice()),
-            ImageKind::WEBP(ref data) => ("webp", data.as_slice()),
+            ImageKind::JPEG(ref data) => ("image/jpeg", data.as_slice()),
+            ImageKind::PNG(ref data) => ("image/png", data.as_slice()),
+            ImageKind::GIF(ref data) => ("image/gif", data.as_slice()),
+            ImageKind::WEBP(ref data) => ("image/webp", data.as_slice()),
+            ImageKind::RAW(RawImage { size: _, ref data }) => {
+                ("application/octet-stream", data.as_slice())
+            }
             ImageKind::SVG(ref tree) => {
                 svg_string = tree.to_string(&WriteOptions::default());
-                ("svg+xml", svg_string.as_bytes())
+                ("image/svg+xml", svg_string.as_bytes())
             }
         };
 
         self.write_attribute_raw("xlink:href", |buf| {
-            buf.extend_from_slice(b"data:image/");
+            buf.extend_from_slice(b"data:");
             buf.extend_from_slice(mime.as_bytes());
             buf.extend_from_slice(b";base64, ");
 

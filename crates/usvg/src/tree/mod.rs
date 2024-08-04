@@ -1415,6 +1415,13 @@ impl Path {
     }
 }
 
+// Raw RGBA image data
+#[derive(Clone)]
+pub struct RawImage {
+    pub data: Arc<Vec<u8>>,
+    pub size: Size,
+}
+
 /// An embedded image kind.
 #[derive(Clone)]
 pub enum ImageKind {
@@ -1426,6 +1433,7 @@ pub enum ImageKind {
     GIF(Arc<Vec<u8>>),
     /// A reference to raw WebP data. Should be decoded by the caller.
     WEBP(Arc<Vec<u8>>),
+    RAW(RawImage),
     /// A preprocessed SVG tree. Can be rendered as is.
     SVG(Tree),
 }
@@ -1440,6 +1448,7 @@ impl ImageKind {
                 .ok()
                 .and_then(|size| Size::from_wh(size.width as f32, size.height as f32))
                 .log_none(|| log::warn!("Image has an invalid size. Skipped.")),
+            ImageKind::RAW(RawImage { size, data: _ }) => (*size).into(),
             ImageKind::SVG(ref svg) => Some(svg.size),
         }
     }
@@ -1452,6 +1461,7 @@ impl std::fmt::Debug for ImageKind {
             ImageKind::PNG(_) => f.write_str("ImageKind::PNG(..)"),
             ImageKind::GIF(_) => f.write_str("ImageKind::GIF(..)"),
             ImageKind::WEBP(_) => f.write_str("ImageKind::WEBP(..)"),
+            ImageKind::RAW(_) => f.write_str("ImageKind::RAW(..)"),
             ImageKind::SVG(_) => f.write_str("ImageKind::SVG(..)"),
         }
     }

@@ -56,6 +56,8 @@ fn render_vector(
 
 #[cfg(feature = "raster-images")]
 mod raster_images {
+    use usvg::RawImage;
+
     use crate::OptionLog;
 
     fn decode_raster(image: &usvg::ImageKind) -> Option<tiny_skia::Pixmap> {
@@ -72,6 +74,9 @@ mod raster_images {
             }
             usvg::ImageKind::WEBP(ref data) => {
                 decode_webp(data).log_none(|| log::warn!("Failed to decode a WebP image."))
+            }
+            usvg::ImageKind::RAW(RawImage { size, ref data }) => {
+                tiny_skia::Pixmap::from_vec(data.to_vec(), size.to_int_size()).into()
             }
         }
     }
