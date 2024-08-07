@@ -350,15 +350,7 @@ pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
     {
         // In the referenced SVG, we start with the unmodified user-provided
         // fontdb, not the one from the cache.
-        sub_opt.fontdb = opt.fontdb.clone();
-
-        // Can't clone the resolver, so we create a new one that forwards to it.
-        sub_opt.font_resolver = crate::FontResolver {
-            select_font: Box::new(|font, db| (opt.font_resolver.select_font)(font, db)),
-            select_fallback: Box::new(|c, used_fonts, db| {
-                (opt.font_resolver.select_fallback)(c, used_fonts, db)
-            }),
-        };
+        sub_opt.font_resolver = opt.font_resolver;
     }
 
     let tree = Tree::from_data(data, &sub_opt);
