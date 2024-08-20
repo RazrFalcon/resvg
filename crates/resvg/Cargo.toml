@@ -20,7 +20,7 @@ image-webp = { version = "0.1.3", optional = true }
 log = "0.4"
 pico-args = { version = "0.5", features = ["eq-separator"] }
 rgb = "0.8"
-svgtypes = "0.15.1"
+svgtypes = "0.15.2"
 tiny-skia = "0.11.4"
 usvg = { path = "../usvg", version = "0.43.0", default-features = false }
 zune-jpeg = { version = "0.4", optional = true }

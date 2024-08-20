@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- (svgtypes) Path parsing with `S` or `T` segments after `A`.
 
 ## [0.43.0] - 2024-08-10
 ### Added
