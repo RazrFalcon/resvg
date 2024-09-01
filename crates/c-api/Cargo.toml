@@ -26,3 +26,10 @@ system-fonts = ["resvg/system-fonts"]
 # enables font files memmaping for faster loading (only for `text`)
 memmap-fonts = ["resvg/memmap-fonts"]
 raster-images = ["resvg/raster-images"]
+capi = []
+
+[package.metadata.capi.header]
+generation = false
+
+[package.metadata.capi.install.include]
+asset = [{ from="resvg.h" }]
