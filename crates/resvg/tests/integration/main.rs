@@ -1,6 +1,5 @@
 use once_cell::sync::Lazy;
 use rgb::{FromSlice, RGBA8};
-use std::sync::Arc;
 use usvg::fontdb;
 
 #[rustfmt::skip]
@@ -10,7 +9,7 @@ mod extra;
 
 const IMAGE_SIZE: u32 = 300;
 
-static GLOBAL_FONTDB: Lazy<Arc<fontdb::Database>> = Lazy::new(|| {
+static GLOBAL_FONTDB: Lazy<fontdb::Database> = Lazy::new(|| {
     if let Ok(()) = log::set_logger(&LOGGER) {
         log::set_max_level(log::LevelFilter::Warn);
     }
@@ -22,7 +21,7 @@ static GLOBAL_FONTDB: Lazy<Arc<fontdb::Database>> = Lazy::new(|| {
     fontdb.set_cursive_family("Yellowtail");
     fontdb.set_fantasy_family("Sedgwick Ave Display");
     fontdb.set_monospace_family("Noto Mono");
-    Arc::new(fontdb)
+    fontdb
 });
 
 pub fn render(name: &str) -> usize {
@@ -36,7 +35,7 @@ pub fn render(name: &str) -> usize {
             .unwrap()
             .to_owned(),
     );
-    opt.fontdb = GLOBAL_FONTDB.clone();
+    opt.font_resolver = Some(&*GLOBAL_FONTDB);
 
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
@@ -91,7 +90,7 @@ pub fn render_extra_with_scale(name: &str, scale: f32) -> usize {
     let png_path = format!("tests/{}.png", name);
 
     let mut opt = usvg::Options::default();
-    opt.fontdb = GLOBAL_FONTDB.clone();
+    opt.font_resolver = Some(&*GLOBAL_FONTDB);
 
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
@@ -141,7 +140,7 @@ pub fn render_node(name: &str, id: &str) -> usize {
     let png_path = format!("tests/{}.png", name);
 
     let mut opt = usvg::Options::default();
-    opt.fontdb = GLOBAL_FONTDB.clone();
+    opt.font_resolver = Some(&*GLOBAL_FONTDB);
 
     let tree = {
         let svg_data = std::fs::read(&svg_path).unwrap();
