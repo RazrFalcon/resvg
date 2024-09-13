@@ -1165,6 +1165,9 @@ use crate::render;
 #[test] fn structure_style_attribute_simple_case() { assert_eq!(render("tests/structure/style-attribute/simple-case"), 0); }
 #[test] fn structure_style_attribute_transform() { assert_eq!(render("tests/structure/style-attribute/transform"), 0); }
 #[test] fn structure_svg_attribute_value_via_ENTITY_reference() { assert_eq!(render("tests/structure/svg/attribute-value-via-ENTITY-reference"), 0); }
+#[test] fn structure_svg_background_color_with_opacity() { assert_eq!(render("tests/structure/svg/background-color-with-opacity"), 0); }
+#[test] fn structure_svg_background_color_with_viewbox() { assert_eq!(render("tests/structure/svg/background-color-with-viewbox"), 0); }
+#[test] fn structure_svg_background_color() { assert_eq!(render("tests/structure/svg/background-color"), 0); }
 #[test] fn structure_svg_deeply_nested_svg() { assert_eq!(render("tests/structure/svg/deeply-nested-svg"), 0); }
 #[test] fn structure_svg_elements_via_ENTITY_reference_1() { assert_eq!(render("tests/structure/svg/elements-via-ENTITY-reference-1"), 0); }
 #[test] fn structure_svg_elements_via_ENTITY_reference_2() { assert_eq!(render("tests/structure/svg/elements-via-ENTITY-reference-2"), 0); }
