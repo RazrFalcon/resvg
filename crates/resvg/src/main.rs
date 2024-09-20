@@ -144,6 +144,8 @@ OPTIONS:
                                 [default: 96] [possible values: 10..4000 (inclusive)]
   --background COLOR            Sets the background color
                                 Examples: red, #fff, #fff000
+  --stylesheet PATH             Inject a stylesheet that should be used when resolving
+                                CSS attributes.
 
   --languages LANG              Sets a comma-separated list of languages that
                                 will be used during the 'systemLanguage'
@@ -204,8 +206,6 @@ OPTIONS:
 
   --export-area-drawing         Use drawing's tight bounding box instead of image size.
                                 Used during normal rendering and not during --export-id
-  --stylesheet                  Inject a stylesheet that should be used when resolving
-                                CSS attributes.
 
   --perf                        Prints performance stats
   --quiet                       Disables warnings

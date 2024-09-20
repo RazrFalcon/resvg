@@ -26,6 +26,8 @@ OPTIONS:
 
   --dpi DPI                         Sets the resolution
                                     [default: 96] [possible values: 10..4000 (inclusive)]
+  --stylesheet PATH                 Inject a stylesheet that should be used when resolving
+                                    CSS attributes.
   --languages LANG                  Sets a comma-separated list of languages that
                                     will be used during the 'systemLanguage'
                                     attribute resolving
@@ -102,8 +104,6 @@ OPTIONS:
                                     Smaller precision can lead to a malformed output in some cases
                                     [values: 2..8 (inclusive)] [default: 8]
   --quiet                           Disables warnings
-  --stylesheet                      Inject a stylesheet that should be used when resolving
-                                    CSS attributes.
 
 ARGS:
   <in-svg>                          Input file
