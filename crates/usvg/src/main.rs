@@ -404,7 +404,7 @@ fn process(args: Args) -> Result<(), String> {
         }
     };
 
-    let style_sheet = match args.style_sheet {
+    let style_sheet = match args.style_sheet.as_ref() {
         Some(p) => Some(
             std::fs::read(&p)
                 .ok()

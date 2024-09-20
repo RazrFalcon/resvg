@@ -204,6 +204,8 @@ OPTIONS:
 
   --export-area-drawing         Use drawing's tight bounding box instead of image size.
                                 Used during normal rendering and not during --export-id
+  --stylesheet                  Inject a stylesheet that should be used when resolving
+                                CSS attributes.
 
   --perf                        Prints performance stats
   --quiet                       Disables warnings
@@ -238,6 +240,7 @@ struct CliArgs {
     font_dirs: Vec<path::PathBuf>,
     skip_system_fonts: bool,
     list_fonts: bool,
+    style_sheet: Option<path::PathBuf>,
 
     query_all: bool,
     export_id: Option<String>,
@@ -307,6 +310,7 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
         export_area_page: input.contains("--export-area-page"),
 
         export_area_drawing: input.contains("--export-area-drawing"),
+        style_sheet: input.opt_value_from_str("--stylesheet").unwrap_or_default(),
 
         perf: input.contains("--perf"),
         quiet: input.contains("--quiet"),
@@ -548,6 +552,16 @@ fn parse_args() -> Result<Args, String> {
         }
     };
 
+    let style_sheet = match args.style_sheet.as_ref() {
+        Some(p) => Some(
+            std::fs::read(&p)
+                .ok()
+                .and_then(|s| std::str::from_utf8(&s).ok().map(|s| s.to_string()))
+                .ok_or("failed to read stylesheet".to_string())?,
+        ),
+        None => None,
+    };
+
     let usvg = usvg::Options {
         resources_dir,
         dpi: args.dpi as f32,
@@ -564,7 +578,7 @@ fn parse_args() -> Result<Args, String> {
         image_href_resolver: usvg::ImageHrefResolver::default(),
         font_resolver: usvg::FontResolver::default(),
         fontdb: Arc::new(fontdb::Database::new()),
-        style_sheet: None,
+        style_sheet,
     };
 
     Ok(Args {
