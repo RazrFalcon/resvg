@@ -4,8 +4,9 @@
 
 #![allow(clippy::comparison_chain)]
 
-use super::{AId, Document, EId, NodeId, NodeKind, SvgNode};
 use roxmltree::Error;
+
+use super::{AId, Document, EId, NodeId, NodeKind, SvgNode};
 
 const XLINK_NS: &str = "http://www.w3.org/1999/xlink";
 

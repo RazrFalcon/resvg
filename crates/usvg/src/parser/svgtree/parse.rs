@@ -4,10 +4,11 @@
 
 use std::collections::HashMap;
 
-use super::{AId, Attribute, Document, EId, NodeData, NodeId, NodeKind, ShortRange};
 use roxmltree::Error;
 use simplecss::Declaration;
 use svgtypes::FontShorthand;
+
+use super::{AId, Attribute, Document, EId, NodeData, NodeId, NodeKind, ShortRange};
 
 const SVG_NS: &str = "http://www.w3.org/2000/svg";
 const XLINK_NS: &str = "http://www.w3.org/1999/xlink";
