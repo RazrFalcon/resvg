@@ -1,6 +1,6 @@
 [package]
 name = "resvg-capi"
-version = "0.42.0"
+version = "0.43.0"
 authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster", "c-api"]
 license = "MPL-2.0"
@@ -26,3 +26,10 @@ system-fonts = ["resvg/system-fonts"]
 # enables font files memmaping for faster loading (only for `text`)
 memmap-fonts = ["resvg/memmap-fonts"]
 raster-images = ["resvg/raster-images"]
+capi = []
+
+[package.metadata.capi.header]
+generation = false
+
+[package.metadata.capi.install.include]
+asset = [{ from="resvg.h" }]

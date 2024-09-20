@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Fixed
+- (svgtypes) Path parsing with `S` or `T` segments after `A`.
+
+## [0.43.0] - 2024-08-10
+### Added
+- Support WebP images.
+  Thanks to [@notjosh](https://github.com/notjosh).
+
+### Changed
+- Use `zune-jpeg` instead of `jpeg-decoder`.
+  Thanks to [@mattfbacon](https://github.com/mattfbacon).
+- Update dependencies.
+
+### Fixed
+- Canvas size limits calculation.
+- SVG fonts handling.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
+- Transforms in COLR fonts.
+  Thanks to [@LaurenzV](https://github.com/LaurenzV).
 
 ## [0.42.0] - 2024-06-01
 ### Added
@@ -1200,7 +1219,8 @@ This changelog also contains important changes in dependencies.
 ### Fixed
 - `font-size` attribute inheritance during `use` resolving.
 
-[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.42.0...HEAD
+[Unreleased]: https://github.com/RazrFalcon/resvg/compare/v0.43.0...HEAD
+[0.43.0]: https://github.com/RazrFalcon/resvg/compare/v0.42.0...v0.43.0
 [0.42.0]: https://github.com/RazrFalcon/resvg/compare/v0.41.0...v0.42.0
 [0.41.0]: https://github.com/RazrFalcon/resvg/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/RazrFalcon/resvg/compare/v0.39.0...v0.40.0

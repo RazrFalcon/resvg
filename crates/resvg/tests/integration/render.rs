@@ -975,6 +975,8 @@ use crate::render;
 #[test] fn shapes_line_simple_case() { assert_eq!(render("tests/shapes/line/simple-case"), 0); }
 #[test] fn shapes_line_with_transform() { assert_eq!(render("tests/shapes/line/with-transform"), 0); }
 #[test] fn shapes_path_A() { assert_eq!(render("tests/shapes/path/A"), 0); }
+#[test] fn shapes_path_M_A_s() { assert_eq!(render("tests/shapes/path/M-A-s"), 0); }
+#[test] fn shapes_path_M_A_t() { assert_eq!(render("tests/shapes/path/M-A-t"), 0); }
 #[test] fn shapes_path_M_A_trimmed() { assert_eq!(render("tests/shapes/path/M-A-trimmed"), 0); }
 #[test] fn shapes_path_M_A() { assert_eq!(render("tests/shapes/path/M-A"), 0); }
 #[test] fn shapes_path_M_C_S() { assert_eq!(render("tests/shapes/path/M-C-S"), 0); }
@@ -1101,12 +1103,14 @@ use crate::render;
 #[test] fn structure_image_embedded_svg_without_mime() { assert_eq!(render("tests/structure/image/embedded-svg-without-mime"), 0); }
 #[test] fn structure_image_embedded_svg() { assert_eq!(render("tests/structure/image/embedded-svg"), 0); }
 #[test] fn structure_image_embedded_svgz() { assert_eq!(render("tests/structure/image/embedded-svgz"), 0); }
+#[test] fn structure_image_embedded_webp() { assert_eq!(render("tests/structure/image/embedded-webp"), 0); }
 #[test] fn structure_image_external_gif() { assert_eq!(render("tests/structure/image/external-gif"), 0); }
 #[test] fn structure_image_external_jpeg() { assert_eq!(render("tests/structure/image/external-jpeg"), 0); }
 #[test] fn structure_image_external_png() { assert_eq!(render("tests/structure/image/external-png"), 0); }
 #[test] fn structure_image_external_svg_with_transform() { assert_eq!(render("tests/structure/image/external-svg-with-transform"), 0); }
 #[test] fn structure_image_external_svg() { assert_eq!(render("tests/structure/image/external-svg"), 0); }
 #[test] fn structure_image_external_svgz() { assert_eq!(render("tests/structure/image/external-svgz"), 0); }
+#[test] fn structure_image_external_webp() { assert_eq!(render("tests/structure/image/external-webp"), 0); }
 #[test] fn structure_image_float_size() { assert_eq!(render("tests/structure/image/float-size"), 0); }
 #[test] fn structure_image_image_with_float_size_scaling() { assert_eq!(render("tests/structure/image/image-with-float-size-scaling"), 0); }
 #[test] fn structure_image_no_height_non_square() { assert_eq!(render("tests/structure/image/no-height-non-square"), 0); }

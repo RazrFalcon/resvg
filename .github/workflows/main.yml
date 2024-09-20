@@ -41,7 +41,7 @@ jobs:
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.65.0
+          toolchain: 1.67.1
 
       - name: Build
         run: cargo build
@@ -62,7 +62,7 @@ jobs:
         run: cargo build
 
       - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+        uses: jurplel/install-qt-action@v4
         with:
           version: '5.15.2'
 
