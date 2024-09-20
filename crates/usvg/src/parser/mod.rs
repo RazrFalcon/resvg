@@ -121,7 +121,7 @@ impl crate::Tree {
 
     /// Parses `Tree` from `roxmltree::Document`.
     pub fn from_xmltree(doc: &roxmltree::Document, opt: &Options) -> Result<Self, Error> {
-        let doc = svgtree::Document::parse_tree(doc, opt.style_sheet.as_ref().map(|s| s.as_str()))?;
+        let doc = svgtree::Document::parse_tree(doc, opt.style_sheet.as_deref())?;
         self::converter::convert_doc(&doc, opt)
     }
 }
