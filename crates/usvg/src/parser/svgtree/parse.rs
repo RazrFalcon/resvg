@@ -326,23 +326,19 @@ pub(crate) fn parse_svg_element<'input>(
     };
 
     // Apply CSS.
-    let mut declarations = style_sheet
-        .rules
-        .iter()
-        .filter(|r| r.selector.matches(&XmlNode(xml_node)))
-        .flat_map(|r| r.declarations.clone())
-        .collect::<Vec<Declaration>>();
-    // Extend by inline declarations in `style`. They take precedence over declarations from style
-    // sheets.
-    declarations.extend(
-        xml_node
-            .attribute("style")
-            .map(|v| simplecss::DeclarationTokenizer::from(v).collect::<Vec<_>>())
-            .unwrap_or_default(),
-    );
+    for rule in &style_sheet.rules {
+        if rule.selector.matches(&XmlNode(xml_node)) {
+            for declaration in &rule.declarations {
+                write_declaration(declaration);
+            }
+        }
+    }
 
-    for declaration in declarations {
-        write_declaration(&declaration);
+    // Split a `style` attribute.
+    if let Some(value) = xml_node.attribute("style") {
+        for declaration in simplecss::DeclarationTokenizer::from(value) {
+            write_declaration(&declaration);
+        }
     }
 
     if doc.nodes.len() > 1_000_000 {
