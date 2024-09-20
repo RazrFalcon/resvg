@@ -1,4 +1,4 @@
-use usvg::{Color, InjectedStylesheet};
+use usvg::Color;
 
 #[test]
 fn clippath_with_invalid_child() {
@@ -17,29 +17,24 @@ fn clippath_with_invalid_child() {
 }
 
 #[test]
-fn stylesheet_injection_with_no_priority() {
-    let svg = "<svg id='svg1' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>
+fn stylesheet_injection() {
+    let svg = "<svg id='svg1' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'>
     <style>
-        #rect3 {
-        fill: #FF0000
+        #rect4 {
+            fill: green
         }
     </style>
-    <-- Fill should be overwritten, because it's defined as a presentational attribute. -->
-    <rect id='rect2' x='75' y='25' fill='#00FF00' width='50' height='150'/>
-    <-- Fill should not be overwritten, because injected stylesheet has no priority. -->
-    <rect id='rect1' x='25' y='25' style='fill: #0000FF' width='50' height='150'/>
-    <-- Fill should not be overwritten, because injected stylesheet has no priority. -->
-    <rect id='rect3' x='125' y='25' width='50' height='150'/>
+    <rect id='rect1' x='20' y='20' width='60' height='60'/>
+    <rect id='rect2' x='120' y='20' width='60' height='60' fill='green'/>
+    <rect id='rect3' x='20' y='120' width='60' height='60' style='fill: green'/>
+    <rect id='rect4' x='120' y='120' width='60' height='60'/>
 </svg>
 ";
 
-    let stylesheet = "rect { fill: #FF00FF }";
+    let stylesheet = "rect { fill: red }".to_string();
 
     let options = usvg::Options {
-        injected_stylesheet: Some(InjectedStylesheet {
-            has_priority: false,
-            style_sheet: stylesheet,
-        }),
+        style_sheet: Some(stylesheet),
         ..usvg::Options::default()
     };
 
@@ -48,71 +43,19 @@ fn stylesheet_injection_with_no_priority() {
     let usvg::Node::Path(ref first) = &tree.root().children()[0] else {
         unreachable!()
     };
+
+    // Only the rects with no CSS attributes should be overridden.
     assert_eq!(
         first.fill().unwrap().paint(),
-        &usvg::Paint::Color(Color::new_rgb(255, 0, 255))
-    );
-
-    let usvg::Node::Path(ref second) = &tree.root().children()[1] else {
-        unreachable!()
-    };
-    assert_eq!(
-        second.fill().unwrap().paint(),
-        &usvg::Paint::Color(Color::new_rgb(0, 0, 255))
-    );
-
-    let usvg::Node::Path(ref third) = &tree.root().children()[2] else {
-        unreachable!()
-    };
-    assert_eq!(
-        third.fill().unwrap().paint(),
         &usvg::Paint::Color(Color::new_rgb(255, 0, 0))
     );
-}
-
-#[test]
-fn stylesheet_injection_with_priority() {
-    let svg = "<svg id='svg1' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>
-    <style>
-        #rect3 {
-        fill: #FF0000
-        }
-    </style>
-    <-- Fill should be overwritten, because it's defined as a presentational attribute. -->
-    <rect id='rect2' x='75' y='25' fill='#00FF00' width='50' height='150'/>
-    <-- Fill should be overwritten, because injected stylesheet has priority. -->
-    <rect id='rect1' x='25' y='25' style='fill: #0000FF' width='50' height='150'/>
-    <-- Fill should be overwritten, because injected stylesheet has priority. -->
-    <rect id='rect3' x='125' y='25' width='50' height='150'/>
-</svg>
-";
-
-    let stylesheet = "rect { fill: #FF00FF }";
-
-    let options = usvg::Options {
-        injected_stylesheet: Some(InjectedStylesheet {
-            has_priority: true,
-            style_sheet: stylesheet,
-        }),
-        ..usvg::Options::default()
-    };
-
-    let tree = usvg::Tree::from_str(&svg, &options).unwrap();
-
-    let usvg::Node::Path(ref first) = &tree.root().children()[0] else {
-        unreachable!()
-    };
-    assert_eq!(
-        first.fill().unwrap().paint(),
-        &usvg::Paint::Color(Color::new_rgb(255, 0, 255))
-    );
 
     let usvg::Node::Path(ref second) = &tree.root().children()[1] else {
         unreachable!()
     };
     assert_eq!(
         second.fill().unwrap().paint(),
-        &usvg::Paint::Color(Color::new_rgb(255, 0, 255))
+        &usvg::Paint::Color(Color::new_rgb(255, 0, 0))
     );
 
     let usvg::Node::Path(ref third) = &tree.root().children()[2] else {
@@ -120,7 +63,15 @@ fn stylesheet_injection_with_priority() {
     };
     assert_eq!(
         third.fill().unwrap().paint(),
-        &usvg::Paint::Color(Color::new_rgb(255, 0, 255))
+        &usvg::Paint::Color(Color::new_rgb(0, 128, 0))
+    );
+
+    let usvg::Node::Path(ref third) = &tree.root().children()[3] else {
+        unreachable!()
+    };
+    assert_eq!(
+        third.fill().unwrap().paint(),
+        &usvg::Paint::Color(Color::new_rgb(0, 128, 0))
     );
 }
 

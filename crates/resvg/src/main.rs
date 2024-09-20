@@ -564,7 +564,7 @@ fn parse_args() -> Result<Args, String> {
         image_href_resolver: usvg::ImageHrefResolver::default(),
         font_resolver: usvg::FontResolver::default(),
         fontdb: Arc::new(fontdb::Database::new()),
-        injected_stylesheet: None,
+        style_sheet: None,
     };
 
     Ok(Args {

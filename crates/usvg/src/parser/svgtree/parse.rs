@@ -5,7 +5,6 @@
 use std::collections::HashMap;
 
 use super::{AId, Attribute, Document, EId, NodeData, NodeId, NodeKind, ShortRange};
-use crate::InjectedStylesheet;
 use roxmltree::Error;
 use simplecss::Declaration;
 use svgtypes::FontShorthand;
@@ -18,7 +17,7 @@ impl<'input> Document<'input> {
     /// Parses a [`Document`] from a [`roxmltree::Document`].
     pub fn parse_tree(
         xml: &roxmltree::Document<'input>,
-        injected_stylesheet: Option<&InjectedStylesheet<'input>>,
+        injected_stylesheet: Option<&'input str>,
     ) -> Result<Document<'input>, Error> {
         parse(xml, injected_stylesheet)
     }
@@ -56,7 +55,7 @@ impl<'input> Document<'input> {
 
 fn parse<'input>(
     xml: &roxmltree::Document<'input>,
-    injected_stylesheet: Option<&InjectedStylesheet<'input>>,
+    injected_stylesheet: Option<&'input str>,
 ) -> Result<Document<'input>, Error> {
     let mut doc = Document {
         nodes: Vec::new(),
@@ -82,14 +81,13 @@ fn parse<'input>(
         kind: NodeKind::Root,
     });
 
-    let style_sheet = resolve_css(xml);
+    let style_sheet = resolve_css(xml, injected_stylesheet);
 
     parse_xml_node_children(
         xml.root(),
         xml.root(),
         doc.root().id,
         &style_sheet,
-        injected_stylesheet,
         false,
         0,
         &mut doc,
@@ -141,7 +139,6 @@ fn parse_xml_node_children<'input>(
     origin: roxmltree::Node,
     parent_id: NodeId,
     style_sheet: &simplecss::StyleSheet,
-    injected_style_sheet: Option<&InjectedStylesheet>,
     ignore_ids: bool,
     depth: u32,
     doc: &mut Document<'input>,
@@ -153,7 +150,6 @@ fn parse_xml_node_children<'input>(
             origin,
             parent_id,
             style_sheet,
-            injected_style_sheet,
             ignore_ids,
             depth,
             doc,
@@ -169,7 +165,6 @@ fn parse_xml_node<'input>(
     origin: roxmltree::Node,
     parent_id: NodeId,
     style_sheet: &simplecss::StyleSheet,
-    injected_style_sheet: Option<&InjectedStylesheet>,
     ignore_ids: bool,
     depth: u32,
     doc: &mut Document<'input>,
@@ -194,35 +189,17 @@ fn parse_xml_node<'input>(
         tag_name = EId::G;
     }
 
-    let node_id = parse_svg_element(
-        node,
-        parent_id,
-        tag_name,
-        style_sheet,
-        injected_style_sheet,
-        ignore_ids,
-        doc,
-    )?;
+    let node_id = parse_svg_element(node, parent_id, tag_name, style_sheet, ignore_ids, doc)?;
     if tag_name == EId::Text {
-        super::text::parse_svg_text_element(node, node_id, style_sheet, injected_style_sheet, doc)?;
+        super::text::parse_svg_text_element(node, node_id, style_sheet, doc)?;
     } else if tag_name == EId::Use {
-        parse_svg_use_element(
-            node,
-            origin,
-            node_id,
-            style_sheet,
-            injected_style_sheet,
-            depth + 1,
-            doc,
-            id_map,
-        )?;
+        parse_svg_use_element(node, origin, node_id, style_sheet, depth + 1, doc, id_map)?;
     } else {
         parse_xml_node_children(
             node,
             origin,
             node_id,
             style_sheet,
-            injected_style_sheet,
             ignore_ids,
             depth + 1,
             doc,
@@ -238,7 +215,6 @@ pub(crate) fn parse_svg_element<'input>(
     parent_id: NodeId,
     tag_name: EId,
     style_sheet: &simplecss::StyleSheet,
-    injected_style_sheet: Option<&InjectedStylesheet>,
     ignore_ids: bool,
     doc: &mut Document<'input>,
 ) -> Result<NodeId, Error> {
@@ -364,30 +340,6 @@ pub(crate) fn parse_svg_element<'input>(
             .map(|v| simplecss::DeclarationTokenizer::from(v).collect::<Vec<_>>())
             .unwrap_or_default(),
     );
-
-    match injected_style_sheet {
-        Some(iss) => {
-            let sheet = simplecss::StyleSheet::parse(iss.style_sheet);
-            let mut injected_declarations = sheet
-                .rules
-                .iter()
-                .filter(|r| r.selector.matches(&XmlNode(xml_node)))
-                .flat_map(|r| r.declarations.clone())
-                .collect::<Vec<Declaration>>();
-
-            if iss.has_priority {
-                // Injected stylesheet should have priority, meaning we just add the declarations
-                // to the end of the vector. Later-appearing declarations will override previous ones.
-                declarations.extend(injected_declarations)
-            } else {
-                // In this case, we prepend the injected declarations so that they will be overwritten
-                // by the ones defined in the SVG.
-                injected_declarations.extend(declarations);
-                declarations = injected_declarations;
-            }
-        }
-        None => {}
-    }
 
     for declaration in declarations {
         write_declaration(&declaration);
@@ -549,7 +501,6 @@ fn parse_svg_use_element<'input>(
     origin: roxmltree::Node,
     parent_id: NodeId,
     style_sheet: &simplecss::StyleSheet,
-    injected_style_sheet: Option<&InjectedStylesheet>,
     depth: u32,
     doc: &mut Document<'input>,
     id_map: &HashMap<&str, roxmltree::Node<'_, 'input>>,
@@ -616,7 +567,6 @@ fn parse_svg_use_element<'input>(
         node,
         parent_id,
         style_sheet,
-        injected_style_sheet,
         true,
         depth + 1,
         doc,
@@ -624,8 +574,17 @@ fn parse_svg_use_element<'input>(
     )
 }
 
-fn resolve_css<'a>(xml: &'a roxmltree::Document<'a>) -> simplecss::StyleSheet<'a> {
+fn resolve_css<'a>(
+    xml: &'a roxmltree::Document<'a>,
+    style_sheet: Option<&'a str>,
+) -> simplecss::StyleSheet<'a> {
     let mut sheet = simplecss::StyleSheet::new();
+
+    // Injected style sheets do not override internal ones (we mimic the logic of rsvg-convert),
+    // so we need to parse it first.
+    if let Some(style_sheet) = style_sheet {
+        sheet.parse_more(style_sheet);
+    }
 
     for node in xml.descendants().filter(|n| n.has_tag_name("style")) {
         match node.attribute("type") {

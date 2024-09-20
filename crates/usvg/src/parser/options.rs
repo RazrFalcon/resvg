@@ -7,9 +7,7 @@ use std::sync::Arc;
 
 #[cfg(feature = "text")]
 use crate::FontResolver;
-use crate::{
-    ImageHrefResolver, ImageRendering, InjectedStylesheet, ShapeRendering, Size, TextRendering,
-};
+use crate::{ImageHrefResolver, ImageRendering, ShapeRendering, Size, TextRendering};
 
 /// Processing options.
 #[derive(Debug)]
@@ -100,7 +98,7 @@ pub struct Options<'a> {
     pub fontdb: Arc<fontdb::Database>,
     /// A CSS stylesheet that should be injected into the SVG. Can be used to overwrite
     /// certain attributes.
-    pub injected_stylesheet: Option<InjectedStylesheet<'a>>,
+    pub style_sheet: Option<String>,
 }
 
 impl Default for Options<'_> {
@@ -121,7 +119,7 @@ impl Default for Options<'_> {
             font_resolver: FontResolver::default(),
             #[cfg(feature = "text")]
             fontdb: Arc::new(fontdb::Database::new()),
-            injected_stylesheet: None,
+            style_sheet: None,
         }
     }
 }
