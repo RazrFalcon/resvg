@@ -26,6 +26,8 @@ OPTIONS:
 
   --dpi DPI                         Sets the resolution
                                     [default: 96] [possible values: 10..4000 (inclusive)]
+  --stylesheet PATH                 Inject a stylesheet that should be used when resolving
+                                    CSS attributes.
   --languages LANG                  Sets a comma-separated list of languages that
                                     will be used during the 'systemLanguage'
                                     attribute resolving
@@ -137,6 +139,7 @@ struct Args {
     attrs_indent: xmlwriter::Indent,
     coordinates_precision: Option<u8>,
     transforms_precision: Option<u8>,
+    style_sheet: Option<PathBuf>,
 
     quiet: bool,
 
@@ -206,6 +209,7 @@ fn collect_args() -> Result<Args, pico_args::Error> {
         coordinates_precision: input
             .opt_value_from_fn("--coordinates-precision", parse_precision)?,
         transforms_precision: input.opt_value_from_fn("--transforms-precision", parse_precision)?,
+        style_sheet: input.opt_value_from_str("--stylesheet").unwrap_or_default(),
 
         quiet: input.contains("--quiet"),
 
@@ -400,6 +404,16 @@ fn process(args: Args) -> Result<(), String> {
         }
     };
 
+    let style_sheet = match args.style_sheet.as_ref() {
+        Some(p) => Some(
+            std::fs::read(&p)
+                .ok()
+                .and_then(|s| std::str::from_utf8(&s).ok().map(|s| s.to_string()))
+                .ok_or("failed to read stylesheet".to_string())?,
+        ),
+        None => None,
+    };
+
     let re_opt = usvg::Options {
         resources_dir,
         dpi: args.dpi as f32,
@@ -418,6 +432,7 @@ fn process(args: Args) -> Result<(), String> {
         image_href_resolver: usvg::ImageHrefResolver::default(),
         font_resolver: usvg::FontResolver::default(),
         fontdb: Arc::new(fontdb),
+        style_sheet,
     };
 
     let input_svg = match in_svg {
