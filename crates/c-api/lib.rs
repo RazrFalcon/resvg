@@ -612,7 +612,8 @@ pub extern "C" fn resvg_get_image_bbox(
         &*tree
     };
 
-    if let Some(r) = tree.0.root().abs_bounding_box().to_non_zero_rect() {
+    if tree.0.root().abs_bounding_box().to_non_zero_rect().is_some() {
+        let r = tree.0.root().abs_layer_bounding_box();
         unsafe {
             *bbox = resvg_rect {
                 x: r.x(),

@@ -9,6 +9,7 @@ This changelog also contains important changes in dependencies.
 ## [Unreleased]
 ### Fixed
 - (svgtypes) Path parsing with `S` or `T` segments after `A`.
+- (c-api) `resvg_get_image_bbox` returns correct bounding box.
 
 ## [0.43.0] - 2024-08-10
 ### Added
