@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- (c-api) `resvg_get_object_bbox`
+
+### Changed
+- (c-api) `resvg_get_image_bbox` returns a _layer_ and not _object_ bounding box now.
+  Use `resvg_get_object_bbox` to preserve the old behavior.
+
 ### Fixed
 - (svgtypes) Path parsing with `S` or `T` segments after `A`.
 

@@ -467,7 +467,7 @@ public:
             return QRectF();
 
         resvg_rect bbox;
-        if (resvg_get_image_bbox(d->tree, &bbox))
+        if (resvg_get_object_bbox(d->tree, &bbox))
             return QRectF(bbox.x, bbox.y, bbox.width, bbox.height);
 
         return QRectF();

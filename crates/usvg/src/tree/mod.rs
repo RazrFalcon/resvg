@@ -1133,6 +1133,8 @@ impl Group {
     /// For other nodes layer bounding box is the same as stroke bounding box.
     ///
     /// Unlike other bounding boxes, cannot have zero size.
+    ///
+    /// Returns 0x0x1x1 for empty groups.
     pub fn layer_bounding_box(&self) -> NonZeroRect {
         self.layer_bounding_box
     }

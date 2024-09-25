@@ -574,9 +574,10 @@ pub extern "C" fn resvg_is_image_empty(tree: *const resvg_render_tree) -> bool {
 
 /// @brief Returns an image size.
 ///
-/// The size of a canvas that required to render this SVG.
+/// The size of an image that is required to render this SVG.
 ///
-/// The `width` and `height` attributes in SVG.
+/// Note that elements outside the viewbox will be clipped. This is by design.
+/// If you want to render the whole SVG content, use #resvg_get_image_bbox instead.
 ///
 /// @param tree Render tree.
 /// @return Image size.
@@ -595,9 +596,47 @@ pub extern "C" fn resvg_get_image_size(tree: *const resvg_render_tree) -> resvg_
     }
 }
 
+/// @brief Returns an object bounding box.
+///
+/// This bounding box does not include objects stroke and filter regions.
+/// This is what SVG calls "absolute object bonding box".
+///
+/// If you're looking for a "complete" bounding box see #resvg_get_image_bbox
+///
+/// @param tree Render tree.
+/// @param bbox Image's object bounding box.
+/// @return `false` if an image has no elements.
+#[no_mangle]
+pub extern "C" fn resvg_get_object_bbox(
+    tree: *const resvg_render_tree,
+    bbox: *mut resvg_rect,
+) -> bool {
+    let tree = unsafe {
+        assert!(!tree.is_null());
+        &*tree
+    };
+
+    if let Some(r) = tree.0.root().abs_bounding_box().to_non_zero_rect() {
+        unsafe {
+            *bbox = resvg_rect {
+                x: r.x(),
+                y: r.y(),
+                width: r.width(),
+                height: r.height(),
+            }
+        }
+
+        true
+    } else {
+        false
+    }
+}
+
 /// @brief Returns an image bounding box.
 ///
-/// Can be smaller or bigger than a `viewbox`.
+/// This bounding box contains the maximum SVG dimensions.
+/// It's size can be bigger or smaller than #resvg_get_image_size
+/// Use it when you want to avoid clipping of elements that are outside the SVG viewbox.
 ///
 /// @param tree Render tree.
 /// @param bbox Image's bounding box.
@@ -612,7 +651,9 @@ pub extern "C" fn resvg_get_image_bbox(
         &*tree
     };
 
-    if let Some(r) = tree.0.root().abs_bounding_box().to_non_zero_rect() {
+    // `abs_layer_bounding_box` returns 0x0x1x1 for empty groups, so we need additional checks.
+    if tree.0.root().has_children() || !tree.0.root().filters().is_empty() {
+        let r = tree.0.root().abs_layer_bounding_box();
         unsafe {
             *bbox = resvg_rect {
                 x: r.x(),
