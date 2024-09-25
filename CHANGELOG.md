@@ -16,6 +16,7 @@ This changelog also contains important changes in dependencies.
 
 ### Fixed
 - (svgtypes) Path parsing with `S` or `T` segments after `A`.
+- Bounding box calculation for the root group used for `viewBox` flattening.
 
 ## [0.43.0] - 2024-08-10
 ### Added

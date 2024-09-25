@@ -353,6 +353,7 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
         g.transform = root_ts;
         g.abs_transform = root_ts;
         convert_children(svg_doc.root(), &state, &mut cache, &mut g);
+        g.calculate_bounding_boxes();
         tree.root.children.push(Node::Group(Box::new(g)));
     }
 
