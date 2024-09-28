@@ -661,7 +661,7 @@ impl std::fmt::Display for AId {
 struct Map<V: 'static> {
     pub key: u64,
     pub disps: &'static [(u32, u32)],
-    pub entries: &'static[(&'static str, V)],
+    pub entries: &'static [(&'static str, V)],
 }
 
 impl<V: PartialEq> Map<V> {
