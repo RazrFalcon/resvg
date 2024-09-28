@@ -174,7 +174,7 @@ jobs:
 
   release-macos:
     name: Release macOS
-    runs-on: macos-latest
+    runs-on: macos-13
     needs: ["create-release"]
     steps:
       - name: Checkout
