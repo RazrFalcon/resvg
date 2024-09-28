@@ -240,7 +240,7 @@ checksum = "a993555f31e5a609f617c12db6250dedcac1b0a85076912c436e6fc9b2c8e6a3"
 
 [[package]]
 name = "resvg"
-version = "0.43.0"
+version = "0.44.0"
 dependencies = [
  "gif",
  "image-webp",
@@ -257,7 +257,7 @@ dependencies = [
 
 [[package]]
 name = "resvg-capi"
-version = "0.43.0"
+version = "0.44.0"
 dependencies = [
  "log",
  "resvg",
@@ -439,7 +439,7 @@ checksum = "b1d386ff53b415b7fe27b50bb44679e2cc4660272694b7b6f3326d8480823a94"
 
 [[package]]
 name = "usvg"
-version = "0.43.0"
+version = "0.44.0"
 dependencies = [
  "base64",
  "data-url",
