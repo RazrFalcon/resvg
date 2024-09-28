@@ -7,15 +7,16 @@ use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 use std::sync::Arc;
 
+#[cfg(feature = "text")]
+use fontdb::Database;
+use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind, TransformOrigin};
+use tiny_skia_path::PathBuilder;
+
 use super::svgtree::{self, AId, EId, FromValue, SvgNode};
 use super::units::{self, convert_length};
 use super::{marker, Error, Options};
 use crate::parser::paint_server::process_paint;
 use crate::*;
-#[cfg(feature = "text")]
-use fontdb::Database;
-use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind, TransformOrigin};
-use tiny_skia_path::PathBuilder;
 
 #[derive(Clone)]
 pub struct State<'a> {
@@ -405,11 +406,7 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
 }
 
 fn background_path(background_color: svgtypes::Color, area: Rect) -> Option<Path> {
-    let path = {
-        let mut builder = PathBuilder::new();
-        builder.push_rect(area);
-        builder.finish()
-    }?;
+    let path = PathBuilder::from_rect(area);
 
     let fill = Fill {
         paint: Paint::Color(Color::new_rgb(

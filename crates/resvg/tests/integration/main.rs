@@ -57,7 +57,7 @@ pub fn render(name: &str) -> usize {
     );
     resvg::render(&tree, render_ts, &mut pixmap.as_mut());
 
-    if !Path::new(&png_path).exists() {
+    if option_env!("REPLACE").is_some() {
         pixmap.save_png(&png_path).unwrap();
         Command::new("oxipng")
             .args(["-o".to_owned(), "6".to_owned(), "-Z".to_owned(), png_path])
