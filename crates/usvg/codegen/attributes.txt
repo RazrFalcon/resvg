@@ -1,6 +1,7 @@
 alignment-baseline
 amplitude
 azimuth
+background-color
 baseFrequency
 baseline-shift
 bias

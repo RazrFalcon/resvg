@@ -10,6 +10,7 @@ use std::sync::Arc;
 #[cfg(feature = "text")]
 use fontdb::Database;
 use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind, TransformOrigin};
+use tiny_skia_path::PathBuilder;
 
 use super::svgtree::{self, AId, EId, FromValue, SvgNode};
 use super::units::{self, convert_length};
@@ -294,6 +295,14 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
         aspect: svg.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
 
+    let background_color = svg
+        .attribute::<&str>(AId::BackgroundColor)
+        .and_then(|s| svgtypes::Paint::from_str(s).ok())
+        .and_then(|paint| match paint {
+            svgtypes::Paint::Color(c) => Some(c),
+            _ => None,
+        });
+
     let mut tree = Tree {
         size,
         root: Group::empty(),
@@ -346,10 +355,17 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
     }
 
     let root_ts = view_box.to_transform(tree.size());
-    if root_ts.is_identity() {
+    if root_ts.is_identity() && background_color.is_none() {
         convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
     } else {
         let mut g = Group::empty();
+
+        if let Some(background_color) = background_color {
+            if let Some(path) = background_path(background_color, view_box.rect.to_rect()) {
+                g.children.push(Node::Path(Box::new(path)));
+            }
+        }
+
         g.transform = root_ts;
         g.abs_transform = root_ts;
         convert_children(svg_doc.root(), &state, &mut cache, &mut g);
@@ -388,6 +404,25 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
     }
 
     Ok(tree)
+}
+
+fn background_path(background_color: svgtypes::Color, area: Rect) -> Option<Path> {
+    let path = PathBuilder::from_rect(area);
+
+    let fill = Fill {
+        paint: Paint::Color(Color::new_rgb(
+            background_color.red,
+            background_color.green,
+            background_color.blue,
+        )),
+        opacity: NormalizedF32::new(background_color.alpha as f32 / 255.0)?,
+        ..Default::default()
+    };
+
+    let mut path = Path::new_simple(Arc::new(path))?;
+    path.fill = Some(fill);
+
+    Some(path)
 }
 
 fn resolve_svg_size(svg: &SvgNode, opt: &Options) -> (Result<Size, Error>, bool) {

@@ -674,6 +674,7 @@ impl AId {
             self,
             AId::AlignmentBaseline
                 | AId::BaselineShift
+                | AId::BackgroundColor // non-standard SVG attribute
                 | AId::ClipPath
                 | AId::ClipRule
                 | AId::Color

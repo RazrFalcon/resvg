@@ -1,5 +1,7 @@
 use once_cell::sync::Lazy;
 use rgb::{FromSlice, RGBA8};
+use std::path::Path;
+use std::process::Command;
 use std::sync::Arc;
 use usvg::fontdb;
 
@@ -55,10 +57,14 @@ pub fn render(name: &str) -> usize {
     );
     resvg::render(&tree, render_ts, &mut pixmap.as_mut());
 
-    // pixmap.save_png(&format!("tests/{}.png", name)).unwrap();
-    // Command::new("oxipng")
-    //     .args(["-o".to_owned(), "6".to_owned(), "-Z".to_owned(), format!("tests/{}.png", name)])
-    //     .output().unwrap();
+    if option_env!("REPLACE").is_some() {
+        pixmap.save_png(&png_path).unwrap();
+        Command::new("oxipng")
+            .args(["-o".to_owned(), "6".to_owned(), "-Z".to_owned(), png_path])
+            .output()
+            .unwrap();
+        panic!("new reference image created");
+    }
 
     let mut rgba = pixmap.take();
     demultiply_alpha(rgba.as_mut_slice().as_rgba_mut());
