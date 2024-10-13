@@ -10,6 +10,7 @@ use super::svgtree::{AId, EId, SvgNode};
 use super::{converter, style};
 use crate::tree::ContextElement;
 use crate::{Group, IsValidLength, Node, NonZeroRect, Path, Size, Transform, ViewBox};
+use crate::parser::converter::State;
 
 pub(crate) fn convert(
     node: SvgNode,
@@ -53,7 +54,33 @@ pub(crate) fn convert(
 
     let linked_to_symbol = child.tag_name() == Some(EId::Symbol);
 
+    let set_use_size = |use_state: &mut State| {
+        let def = Length::new(100.0, LengthUnit::Percent);
+        // As per usual, the SVG spec doesn't clarify this edge case,
+        // but it seems like `use` size has to be reset by each `use`.
+        // Meaning if we have two nested `use` elements, where one had set `width` and
+        // other set `height`, we have to ignore the first `width`.
+        //
+        // Example:
+        // <use id="use1" xlink:href="#use2" width="100"/>
+        // <use id="use2" xlink:href="#svg2" height="100"/>
+        // <svg id="svg2" x="40" y="40" width="80" height="80" xmlns="http://www.w3.org/2000/svg"/>
+        //
+        // In this case `svg2` size is 80x100 and not 100x100.
+        use_state.use_size = (None, None);
+
+        // Width and height can be set independently.
+        if node.has_attribute(AId::Width) {
+            use_state.use_size.0 = Some(node.convert_user_length(AId::Width, &use_state, def));
+        }
+        if node.has_attribute(AId::Height) {
+            use_state.use_size.1 = Some(node.convert_user_length(AId::Height, &use_state, def));
+        }
+    };
+
     if linked_to_symbol {
+        set_use_size(&mut use_state);
+
         if let Some(ts) = viewbox_transform(node, child, &use_state) {
             new_ts = new_ts.pre_concat(ts);
         }
@@ -105,28 +132,7 @@ pub(crate) fn convert(
             // When a `use` element references a `svg` element,
             // we have to remember `use` element size and use it
             // instead of `svg` element size.
-
-            let def = Length::new(100.0, LengthUnit::Percent);
-            // As per usual, the SVG spec doesn't clarify this edge case,
-            // but it seems like `use` size has to be reset by each `use`.
-            // Meaning if we have two nested `use` elements, where one had set `width` and
-            // other set `height`, we have to ignore the first `width`.
-            //
-            // Example:
-            // <use id="use1" xlink:href="#use2" width="100"/>
-            // <use id="use2" xlink:href="#svg2" height="100"/>
-            // <svg id="svg2" x="40" y="40" width="80" height="80" xmlns="http://www.w3.org/2000/svg"/>
-            //
-            // In this case `svg2` size is 80x100 and not 100x100.
-            use_state.use_size = (None, None);
-
-            // Width and height can be set independently.
-            if node.has_attribute(AId::Width) {
-                use_state.use_size.0 = Some(node.convert_user_length(AId::Width, &use_state, def));
-            }
-            if node.has_attribute(AId::Height) {
-                use_state.use_size.1 = Some(node.convert_user_length(AId::Height, &use_state, def));
-            }
+            set_use_size(&mut use_state);
 
             convert_children(node, orig_ts, &use_state, cache, true, parent);
         } else {
