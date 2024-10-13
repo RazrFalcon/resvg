@@ -8,9 +8,9 @@ use svgtypes::{Length, LengthUnit};
 
 use super::svgtree::{AId, EId, SvgNode};
 use super::{converter, style};
+use crate::parser::converter::State;
 use crate::tree::ContextElement;
 use crate::{Group, IsValidLength, Node, NonZeroRect, Path, Size, Transform, ViewBox};
-use crate::parser::converter::State;
 
 pub(crate) fn convert(
     node: SvgNode,
