@@ -79,6 +79,10 @@ pub(crate) fn convert(
     };
 
     if linked_to_symbol {
+        // If a `use` element has a width/height attribute and references a symbol
+        // then relative units (like percentages) should be resolved relative
+        // to the width/height of the `use` element, and not the original SVG.
+        // This is why we need to set the `use_size` here.
         set_use_size(&mut use_state);
 
         if let Some(ts) = viewbox_transform(node, child, &use_state) {
