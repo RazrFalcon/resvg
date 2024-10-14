@@ -54,6 +54,32 @@ pub(crate) fn convert(
     let linked_to_symbol = child.tag_name() == Some(EId::Symbol);
 
     if linked_to_symbol {
+        // If a `use` element has a width/height attribute and references a symbol
+        // then relative units (like percentages) should be resolved relative
+        // to the width/height of the `use` element, and not the original SVG.
+        // This is why we need to (potentially) adapt the view box here.
+        use_state.view_box = {
+            let def = Length::new(100.0, LengthUnit::Percent);
+            let x = use_state.view_box.x();
+            let y = use_state.view_box.y();
+
+            let width = if node.has_attribute(AId::Width) {
+                node.convert_user_length(AId::Width, &use_state, def)
+            } else {
+                use_state.view_box.width()
+            };
+
+            let height = if node.has_attribute(AId::Height) {
+                node.convert_user_length(AId::Height, &use_state, def)
+            } else {
+                use_state.view_box.height()
+            };
+
+            NonZeroRect::from_xywh(x, y, width, height)
+                // Fail silently if the rect is not valid.
+                .unwrap_or(use_state.view_box)
+        };
+
         if let Some(ts) = viewbox_transform(node, child, &use_state) {
             new_ts = new_ts.pre_concat(ts);
         }

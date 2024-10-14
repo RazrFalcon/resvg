@@ -1227,6 +1227,7 @@ use crate::render;
 #[test] fn structure_symbol_unused_symbol() { assert_eq!(render("tests/structure/symbol/unused-symbol"), 0); }
 #[test] fn structure_symbol_with_custom_use_size() { assert_eq!(render("tests/structure/symbol/with-custom-use-size"), 0); }
 #[test] fn structure_symbol_with_overflow_visible() { assert_eq!(render("tests/structure/symbol/with-overflow-visible"), 0); }
+#[test] fn structure_symbol_with_size_on_use_and_relative_units() { assert_eq!(render("tests/structure/symbol/with-size-on-use-and-relative-units"), 0); }
 #[test] fn structure_symbol_with_transform_on_use_no_size() { assert_eq!(render("tests/structure/symbol/with-transform-on-use-no-size"), 0); }
 #[test] fn structure_symbol_with_transform_on_use() { assert_eq!(render("tests/structure/symbol/with-transform-on-use"), 0); }
 #[test] fn structure_symbol_with_transform() { assert_eq!(render("tests/structure/symbol/with-transform"), 0); }
