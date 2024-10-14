@@ -190,6 +190,10 @@ impl std::str::FromStr for ImageRendering {
         match s {
             "optimizeQuality" => Ok(ImageRendering::OptimizeQuality),
             "optimizeSpeed" => Ok(ImageRendering::OptimizeSpeed),
+            "smooth" => Ok(ImageRendering::Smooth),
+            "high-quality" => Ok(ImageRendering::HighQuality),
+            "crisp-edges" => Ok(ImageRendering::CrispEdges),
+            "pixelated" => Ok(ImageRendering::Pixelated),
             _ => Err("invalid"),
         }
     }
