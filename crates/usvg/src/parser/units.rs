@@ -31,9 +31,8 @@ pub(crate) fn convert_length(
             if object_units == Units::ObjectBoundingBox {
                 n / 100.0
             } else {
-                // Prefer the dimensions of a `use` node, if existing.
-                let viewbox_width = state.use_size.0.unwrap_or(state.view_box.width());
-                let viewbox_height = state.use_size.1.unwrap_or(state.view_box.height());
+                let width = state.use_size.0.unwrap_or(state.view_box.width());
+                let height = state.use_size.1.unwrap_or(state.view_box.height());
 
                 match aid {
                     AId::Cx
@@ -45,7 +44,7 @@ pub(crate) fn convert_length(
                     | AId::Width
                     | AId::X
                     | AId::X1
-                    | AId::X2 => convert_percent(length, viewbox_width),
+                    | AId::X2 => convert_percent(length, width),
                     AId::Cy
                     | AId::Dy
                     | AId::Fy
@@ -55,9 +54,9 @@ pub(crate) fn convert_length(
                     | AId::Ry
                     | AId::Y
                     | AId::Y1
-                    | AId::Y2 => convert_percent(length, viewbox_height),
+                    | AId::Y2 => convert_percent(length, height),
                     _ => {
-                        let mut vb_len = viewbox_width.powi(2) + viewbox_height.powi(2);
+                        let mut vb_len = width.powi(2) + height.powi(2);
                         vb_len = (vb_len / 2.0).sqrt();
                         convert_percent(length, vb_len)
                     }
