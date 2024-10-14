@@ -131,6 +131,7 @@ pub(crate) fn convert(
             // When a `use` element references a `svg` element,
             // we have to remember `use` element size and use it
             // instead of `svg` element size.
+
             let def = Length::new(100.0, LengthUnit::Percent);
             // As per usual, the SVG spec doesn't clarify this edge case,
             // but it seems like `use` size has to be reset by each `use`.
