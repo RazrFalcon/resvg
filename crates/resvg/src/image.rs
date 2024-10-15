@@ -57,6 +57,7 @@ fn render_vector(
 #[cfg(feature = "raster-images")]
 mod raster_images {
     use crate::OptionLog;
+    use usvg::ImageRendering;
 
     fn decode_raster(image: &usvg::ImageKind) -> Option<tiny_skia::Pixmap> {
         match image {
@@ -169,10 +170,14 @@ mod raster_images {
         let rect = tiny_skia::Size::from_wh(raster.width() as f32, raster.height() as f32)?
             .to_rect(0.0, 0.0)?;
 
-        let mut quality = tiny_skia::FilterQuality::Bicubic;
-        if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
-            quality = tiny_skia::FilterQuality::Nearest;
-        }
+        let quality = match rendering_mode {
+            ImageRendering::OptimizeQuality => tiny_skia::FilterQuality::Bicubic,
+            ImageRendering::OptimizeSpeed => tiny_skia::FilterQuality::Nearest,
+            ImageRendering::Smooth => tiny_skia::FilterQuality::Bilinear,
+            ImageRendering::HighQuality => tiny_skia::FilterQuality::Bicubic,
+            ImageRendering::CrispEdges => tiny_skia::FilterQuality::Nearest,
+            ImageRendering::Pixelated => tiny_skia::FilterQuality::Nearest,
+        };
 
         let pattern = tiny_skia::Pattern::new(
             raster.as_ref(),

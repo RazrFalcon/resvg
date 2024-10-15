@@ -170,6 +170,11 @@ impl std::str::FromStr for TextRendering {
 pub enum ImageRendering {
     OptimizeQuality,
     OptimizeSpeed,
+    // The following can only appear as presentation attributes.
+    Smooth,
+    HighQuality,
+    CrispEdges,
+    Pixelated,
 }
 
 impl Default for ImageRendering {
@@ -185,6 +190,10 @@ impl std::str::FromStr for ImageRendering {
         match s {
             "optimizeQuality" => Ok(ImageRendering::OptimizeQuality),
             "optimizeSpeed" => Ok(ImageRendering::OptimizeSpeed),
+            "smooth" => Ok(ImageRendering::Smooth),
+            "high-quality" => Ok(ImageRendering::HighQuality),
+            "crisp-edges" => Ok(ImageRendering::CrispEdges),
+            "pixelated" => Ok(ImageRendering::Pixelated),
             _ => Err("invalid"),
         }
     }

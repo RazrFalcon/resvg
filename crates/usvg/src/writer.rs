@@ -647,6 +647,18 @@ fn write_element(node: &Node, is_clip_path: bool, opt: &WriteOptions, xml: &mut 
                 ImageRendering::OptimizeSpeed => {
                     xml.write_svg_attribute(AId::ImageRendering, "optimizeSpeed");
                 }
+                ImageRendering::Smooth => {
+                    xml.write_attribute(AId::Style.to_str(), "image-rendering:smooth");
+                }
+                ImageRendering::HighQuality => {
+                    xml.write_attribute(AId::Style.to_str(), "image-rendering:high-quality");
+                }
+                ImageRendering::CrispEdges => {
+                    xml.write_attribute(AId::Style.to_str(), "image-rendering:crisp-edges");
+                }
+                ImageRendering::Pixelated => {
+                    xml.write_attribute(AId::Style.to_str(), "image-rendering:pixelated");
+                }
             }
 
             xml.write_image_data(&img.kind);

@@ -43,7 +43,7 @@ OPTIONS:
                                     geometricPrecision]
   --image-rendering HINT            Selects the default image rendering method
                                     [default: optimizeQuality]
-                                    [possible values: optimizeQuality, optimizeSpeed]
+                                    [possible values: optimizeQuality, optimizeSpeed, smooth, high-quality, crisp-edges, pixelated]
   --resources-dir DIR               Sets a directory that will be used during
                                     relative paths resolving.
                                     Expected to be the same as the directory that

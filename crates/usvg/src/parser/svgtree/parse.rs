@@ -242,6 +242,13 @@ pub(crate) fn parse_svg_element<'input>(
         // For some reason those properties are allowed only inside a `style` attribute and CSS.
         if matches!(aid, AId::MixBlendMode | AId::Isolation | AId::FontKerning) {
             continue;
+        } else if aid == AId::ImageRendering
+            && matches!(
+                attr.value(),
+                "smooth" | "high-quality" | "crisp-edges" | "pixelated"
+            )
+        {
+            continue;
         }
 
         append_attribute(parent_id, tag_name, aid, attr.value_storage().clone(), doc);

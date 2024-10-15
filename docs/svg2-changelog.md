@@ -196,7 +196,7 @@ Basically everything from [CSS Text Module Level 3](https://www.w3.org/TR/css-te
 - [x] An [`isolation`](https://www.w3.org/TR/compositing-1/#isolation) property.
 - [ ] `left`, `center` and `right` variants to `refX` and `refY` properties of the [`marker`](https://www.w3.org/TR/SVG2/painting.html#MarkerElement) element.
 - [x] An `auto-start-reverse` variant to [`orient`](https://www.w3.org/TR/SVG2/painting.html#OrientAttribute) property of the [`marker`](https://www.w3.org/TR/SVG2/painting.html#MarkerElement) element
-
+- [x] The `image-rendering` can appear as a presentation attribute with additional possible values. Currently, there is only best-effort support for "pixelated".
 ### Changed
 
 - [x] Markers can be set on all shapes and not only on `path`.

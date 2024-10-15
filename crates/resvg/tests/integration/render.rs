@@ -740,6 +740,7 @@ use crate::render;
 #[test] fn painting_fill_opacity_with_pattern() { assert_eq!(render("tests/painting/fill-opacity/with-pattern"), 0); }
 #[test] fn painting_fill_rule_evenodd() { assert_eq!(render("tests/painting/fill-rule/evenodd"), 0); }
 #[test] fn painting_fill_rule_nonzero() { assert_eq!(render("tests/painting/fill-rule/nonzero"), 0); }
+#[test] fn painting_image_rendering_high_quality() { assert_eq!(render("tests/painting/image-rendering/high-quality"), 0); }
 #[test] fn painting_image_rendering_on_feImage() { assert_eq!(render("tests/painting/image-rendering/on-feImage"), 0); }
 #[test] fn painting_image_rendering_optimizeSpeed_on_SVG() { assert_eq!(render("tests/painting/image-rendering/optimizeSpeed-on-SVG"), 0); }
 #[test] fn painting_image_rendering_optimizeSpeed() { assert_eq!(render("tests/painting/image-rendering/optimizeSpeed"), 0); }

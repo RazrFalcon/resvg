@@ -1020,6 +1020,10 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for ImageRendering {
         match value {
             "auto" | "optimizeQuality" => Some(ImageRendering::OptimizeQuality),
             "optimizeSpeed" => Some(ImageRendering::OptimizeSpeed),
+            "smooth" => Some(ImageRendering::Smooth),
+            "high-quality" => Some(ImageRendering::HighQuality),
+            "crisp-edges" => Some(ImageRendering::CrispEdges),
+            "pixelated" => Some(ImageRendering::Pixelated),
             _ => None,
         }
     }
