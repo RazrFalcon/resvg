@@ -102,7 +102,7 @@ SVG 2 only results:
 ![](./.github/chart-svg2.svg)
 
 You can find a complete table of supported features
-[here](https://razrfalcon.github.io/resvg-test-suite/svg-support-table.html).
+[here](https://linebender.org/resvg-test-suite/svg-support-table.html).
 It also includes some alternative libraries.
 
 We're not testing against all SVG libraries since many of them are pretty bad.
