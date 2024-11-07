@@ -5,6 +5,7 @@ authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster"]
 license = "MPL-2.0"
 edition = "2021"
+rust-version = "1.67.1"
 description = "An SVG rendering library."
 repository = "https://github.com/RazrFalcon/resvg"
 exclude = ["tests"]
