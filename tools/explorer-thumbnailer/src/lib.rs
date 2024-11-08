@@ -1,3 +1,6 @@
+// Copyright 2020 the Resvg Authors
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 use com::registration::{RegistryKeyInfo, dll_register_server, dll_unregister_server};
 use thumbnail_provider::{CLSID_THUMBNAIL_PROVIDER_CLASS, ThumbnailProvider};
 

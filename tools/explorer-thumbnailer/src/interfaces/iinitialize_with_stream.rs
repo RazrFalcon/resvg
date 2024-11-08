@@ -1,3 +1,6 @@
+// Copyright 2020 the Resvg Authors
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 use com::{com_interface, interfaces::iunknown::IUnknown, sys::HRESULT};
 use winapi::shared::minwindef::DWORD;
 use winapi::um::objidlbase::LPSTREAM;
