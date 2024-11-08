@@ -5,6 +5,10 @@ license.workspace = true
 edition = "2021"
 publish = false
 
+# TODO: Remove this workspace.package section when this package is part of the repo's workspace.
+[workspace.package]
+license = "Apache-2.0 OR MIT"
+
 [dependencies]
 com = "0.2"
 winapi = { version = "0.3.9", features = ["impl-default", "objidlbase", "windef", "wingdi"] }
