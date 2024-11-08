@@ -291,41 +291,44 @@ pub(crate) fn parse_svg_element<'input>(
 
     let mut write_declaration = |declaration: &Declaration| {
         // TODO: perform XML attribute normalization
+        let imp = declaration.important;
+        let val = declaration.value;
+
         if declaration.name == "marker" {
-            insert_attribute(AId::MarkerStart, declaration.value, declaration.important);
-            insert_attribute(AId::MarkerMid, declaration.value, declaration.important);
-            insert_attribute(AId::MarkerEnd, declaration.value, declaration.important);
+            insert_attribute(AId::MarkerStart, val, imp);
+            insert_attribute(AId::MarkerMid, val, imp);
+            insert_attribute(AId::MarkerEnd, val, imp);
         } else if declaration.name == "font" {
-            if let Ok(shorthand) = FontShorthand::from_str(declaration.value) {
+            if let Ok(shorthand) = FontShorthand::from_str(val) {
                 // First we need to reset all values to their default.
-                insert_attribute(AId::FontStyle, "normal", declaration.important);
-                insert_attribute(AId::FontVariant, "normal", declaration.important);
-                insert_attribute(AId::FontWeight, "normal", declaration.important);
-                insert_attribute(AId::FontStretch, "normal", declaration.important);
-                insert_attribute(AId::LineHeight, "normal", declaration.important);
-                insert_attribute(AId::FontSizeAdjust, "none", declaration.important);
-                insert_attribute(AId::FontKerning, "auto", declaration.important);
-                insert_attribute(AId::FontVariantCaps, "normal", declaration.important);
-                insert_attribute(AId::FontVariantLigatures, "normal", declaration.important);
-                insert_attribute(AId::FontVariantNumeric, "normal", declaration.important);
-                insert_attribute(AId::FontVariantEastAsian, "normal", declaration.important);
-                insert_attribute(AId::FontVariantPosition, "normal", declaration.important);
+                insert_attribute(AId::FontStyle, "normal", imp);
+                insert_attribute(AId::FontVariant, "normal", imp);
+                insert_attribute(AId::FontWeight, "normal", imp);
+                insert_attribute(AId::FontStretch, "normal", imp);
+                insert_attribute(AId::LineHeight, "normal", imp);
+                insert_attribute(AId::FontSizeAdjust, "none", imp);
+                insert_attribute(AId::FontKerning, "auto", imp);
+                insert_attribute(AId::FontVariantCaps, "normal", imp);
+                insert_attribute(AId::FontVariantLigatures, "normal", imp);
+                insert_attribute(AId::FontVariantNumeric, "normal", imp);
+                insert_attribute(AId::FontVariantEastAsian, "normal", imp);
+                insert_attribute(AId::FontVariantPosition, "normal", imp);
 
                 // Then, we set the properties that have been declared.
                 shorthand
                     .font_stretch
-                    .map(|s| insert_attribute(AId::FontStretch, s, declaration.important));
+                    .map(|s| insert_attribute(AId::FontStretch, s, imp));
                 shorthand
                     .font_weight
-                    .map(|s| insert_attribute(AId::FontWeight, s, declaration.important));
+                    .map(|s| insert_attribute(AId::FontWeight, s, imp));
                 shorthand
                     .font_variant
-                    .map(|s| insert_attribute(AId::FontVariant, s, declaration.important));
+                    .map(|s| insert_attribute(AId::FontVariant, s, imp));
                 shorthand
                     .font_style
-                    .map(|s| insert_attribute(AId::FontStyle, s, declaration.important));
-                insert_attribute(AId::FontSize, shorthand.font_size, declaration.important);
-                insert_attribute(AId::FontFamily, shorthand.font_family, declaration.important);
+                    .map(|s| insert_attribute(AId::FontStyle, s, imp));
+                insert_attribute(AId::FontSize, shorthand.font_size, imp);
+                insert_attribute(AId::FontFamily, shorthand.font_family, imp);
             } else {
                 log::warn!(
                     "Failed to parse {} value: '{}'",
@@ -336,7 +339,7 @@ pub(crate) fn parse_svg_element<'input>(
         } else if let Some(aid) = AId::from_str(declaration.name) {
             // Parse only the presentation attributes.
             if aid.is_presentation() {
-                insert_attribute(aid, declaration.value, declaration.important);
+                insert_attribute(aid, val, imp);
             }
         }
     };
