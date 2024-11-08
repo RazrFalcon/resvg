@@ -4,7 +4,7 @@ members = [
     "crates/resvg",
     "crates/usvg",
     "crates/usvg/codegen",
-    "tools/explorer-thumbnailer",
+    #"tools/explorer-thumbnailer",
 ]
 default-members = ["crates/resvg"]
 resolver = "2"
