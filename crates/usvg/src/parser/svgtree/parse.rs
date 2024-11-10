@@ -49,8 +49,17 @@ impl<'input> Document<'input> {
         new_child_id
     }
 
-    fn append_attribute(&mut self, name: AId, value: roxmltree::StringStorage<'input>, important: bool) {
-        self.attrs.push(Attribute { name, value, important });
+    fn append_attribute(
+        &mut self,
+        name: AId,
+        value: roxmltree::StringStorage<'input>,
+        important: bool,
+    ) {
+        self.attrs.push(Attribute {
+            name,
+            value,
+            important,
+        });
     }
 }
 
@@ -251,7 +260,14 @@ pub(crate) fn parse_svg_element<'input>(
             continue;
         }
 
-        append_attribute(parent_id, tag_name, aid, attr.value_storage().clone(), false, doc);
+        append_attribute(
+            parent_id,
+            tag_name,
+            aid,
+            attr.value_storage().clone(),
+            false,
+            doc,
+        );
     }
 
     let mut insert_attribute = |aid, value: &str, important: bool| {
@@ -276,10 +292,24 @@ pub(crate) fn parse_svg_element<'input>(
                 let last_idx = doc.attrs.len() - 1;
                 let existing_idx = attrs_start_idx + idx;
 
-                // Swap the last attribute with an existing one. However, if the currently existing
-                // attribute is important and the new one not, we don't want to overwrite it, since
-                // the important one takes precedence.
-                if !(doc.attrs[existing_idx].important && !doc.attrs[last_idx].important) {
+                // See https://developer.mozilla.org/en-US/docs/Web/CSS/important
+                // When a declaration is important, the order of precedence is reversed.
+                // Declarations marked as important in the user-agent style sheets override
+                // all important declarations in the user style sheets. Similarly, all important
+                // declarations in the user style sheets override all important declarations in the
+                // author's style sheets. Finally, all important declarations take precedence over
+                // all animations.
+                //
+                // Which means:
+                // 1) Existing is not important, new is not important -> swap
+                // 2) Existing is important, new is not important -> don't swap
+                // 3) Existing is not important, new is important -> swap
+                // 4) Existing is important, new is important -> don't swap (since the order
+                // is reversed, so existing important attributes take precedence over new
+                // important attributes)
+                let has_precedence = !doc.attrs[existing_idx].important;
+
+                if has_precedence {
                     doc.attrs.swap(existing_idx, last_idx);
                 }
 
@@ -424,7 +454,7 @@ fn resolve_inherit(parent_id: NodeId, aid: AId, doc: &mut Document) -> bool {
                 doc.attrs.push(Attribute {
                     name: aid,
                     value: attr.value,
-                    important: attr.important
+                    important: attr.important,
                 });
 
                 return true;
@@ -442,7 +472,7 @@ fn resolve_inherit(parent_id: NodeId, aid: AId, doc: &mut Document) -> bool {
             doc.attrs.push(Attribute {
                 name: aid,
                 value: attr.value,
-                important: attr.important
+                important: attr.important,
             });
 
             return true;

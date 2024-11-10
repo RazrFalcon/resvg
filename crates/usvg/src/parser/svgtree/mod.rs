@@ -206,7 +206,7 @@ pub struct Attribute<'input> {
     /// Attribute's value.
     pub value: roxmltree::StringStorage<'input>,
     /// Attribute's importance
-    pub important: bool
+    pub important: bool,
 }
 
 impl std::fmt::Debug for Attribute<'_> {

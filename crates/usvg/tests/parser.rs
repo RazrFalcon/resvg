@@ -28,6 +28,7 @@ fn stylesheet_injection() {
     <rect id='rect2' x='120' y='20' width='60' height='60' fill='green'/>
     <rect id='rect3' x='20' y='120' width='60' height='60' style='fill: green'/>
     <rect id='rect4' x='120' y='120' width='60' height='60'/>
+    <rect id='rect5' x='70' y='70' width='60' height='60' style='fill: green !important'/>
 </svg>
 ";
 
@@ -73,6 +74,14 @@ fn stylesheet_injection() {
         third.fill().unwrap().paint(),
         &usvg::Paint::Color(Color::new_rgb(0, 128, 0))
     );
+
+    let usvg::Node::Path(ref third) = &tree.root().children()[3] else {
+        unreachable!()
+    };
+    assert_eq!(
+        third.fill().unwrap().paint(),
+        &usvg::Paint::Color(Color::new_rgb(0, 128, 0))
+    );
 }
 
 #[test]
@@ -87,6 +96,7 @@ fn stylesheet_injection_with_important() {
     <rect id='rect2' x='120' y='20' width='60' height='60' fill='green'/>
     <rect id='rect3' x='20' y='120' width='60' height='60' style='fill: green'/>
     <rect id='rect4' x='120' y='120' width='60' height='60'/>
+    <rect id='rect5' x='70' y='70' width='60' height='60' style='fill: green !important'/>
 </svg>
 ";
 
@@ -126,6 +136,14 @@ fn stylesheet_injection_with_important() {
     );
 
     let usvg::Node::Path(ref third) = &tree.root().children()[3] else {
+        unreachable!()
+    };
+    assert_eq!(
+        third.fill().unwrap().paint(),
+        &usvg::Paint::Color(Color::new_rgb(255, 0, 0))
+    );
+
+    let usvg::Node::Path(ref third) = &tree.root().children()[4] else {
         unreachable!()
     };
     assert_eq!(
