@@ -67,7 +67,7 @@ And then place it into the `png` dir.
 ## resvg tests vs resvg-test-suite tests
 
 resvg tests are stored in two repos: this one and in
-[resvg-test-suite](https://github.com/RazrFalcon/resvg-test-suite).
+[resvg-test-suite](https://github.com/linebender/resvg-test-suite).
 Which can be a bit confusing.
 
 `resvg-test-suite` is the source of truth. It contains the latest version of the tests

@@ -101,7 +101,7 @@ public:
     {
         // Do not set the default font via QFont::family()
         // because it will return a dummy one on Windows.
-        // See https://github.com/RazrFalcon/resvg/issues/159
+        // See https://github.com/linebender/resvg/issues/159
 
         setLanguages({ QLocale().bcp47Name() });
     }

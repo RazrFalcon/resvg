@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 /*!
-[resvg](https://github.com/RazrFalcon/resvg) is an SVG rendering library.
+[resvg](https://github.com/linebender/resvg) is an SVG rendering library.
 */
 
 #![forbid(unsafe_code)]

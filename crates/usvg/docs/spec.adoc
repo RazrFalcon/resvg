@@ -25,7 +25,7 @@ Here is the main differences between SVG Full and SVG Micro.
 - Default attributes are implicit.
 
 You can use
-https://github.com/RazrFalcon/resvg/tree/master/crates/usvg[usvg]
+https://github.com/linebender/resvg/tree/main/crates/usvg[usvg]
 to convert a random SVG into a SVG Micro almost losslessly.
 
 == Elements

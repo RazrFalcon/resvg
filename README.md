@@ -1,5 +1,5 @@
 ## resvg
-![Build Status](https://github.com/RazrFalcon/resvg/workflows/Build/badge.svg)
+![Build Status](https://github.com/linebender/resvg/workflows/Build/badge.svg)
 [![Crates.io](https://img.shields.io/crates/v/resvg.svg)](https://crates.io/crates/resvg)
 [![Documentation](https://docs.rs/resvg/badge.svg)](https://docs.rs/resvg)
 [![Rust 1.67.1+](https://img.shields.io/badge/rust-1.67.1+-orange.svg)](https://www.rust-lang.org)
@@ -16,7 +16,7 @@ The core idea is to make a fast, small, portable SVG library with the goal to su
 
 SVG is a very complicated format with a large specification (SVG 1.1 is almost 900 pages).
 You basically need a web browser to handle all of it. But the truth is that even browsers
-fail at this (see [SVG support](https://github.com/RazrFalcon/resvg#svg-support)).
+fail at this (see [SVG support](https://github.com/linebender/resvg#svg-support)).
 Yes, unlike `resvg`, browsers do support dynamic SVG features like animations and scripting.
 But using a browser to render SVG _correctly_ is sadly not an option.
 
@@ -88,12 +88,12 @@ SVG subset; i.e. no `a`, `script`, `view` or `cursor` elements, no events and no
 
 [SVG 2](https://www.w3.org/TR/SVG2/) support is being worked on.
 You can search for relevant issues with the
-[svg2 tag](https://github.com/RazrFalcon/resvg/issues?q=is%3Aissue+is%3Aopen+label%3Asvg2)
-or our [SVG 2 changelog](https://github.com/RazrFalcon/resvg/blob/master/docs/svg2-changelog.md).
+[svg2 tag](https://github.com/linebender/resvg/issues?q=is%3Aissue+is%3Aopen+label%3Asvg2)
+or our [SVG 2 changelog](https://github.com/linebender/resvg/blob/main/docs/svg2-changelog.md).
 
 [SVG Tiny 1.2](https://www.w3.org/TR/SVGTiny12/) is not supported and support is also not planned.
 
-Results of the [resvg test suite](https://github.com/RazrFalcon/resvg-test-suite):
+Results of the [resvg test suite](https://github.com/linebender/resvg-test-suite):
 
 ![](./.github/chart.svg)
 
@@ -146,12 +146,12 @@ The [Rust code of conduct] applies.
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be licensed as above, without any additional terms or conditions.
 
-[usvg]: https://github.com/RazrFalcon/resvg/tree/master/crates/usvg
-[rustybuzz]: https://github.com/RazrFalcon/rustybuzz
-[tiny-skia]: https://github.com/RazrFalcon/tiny-skia
-[ttf-parser]: https://github.com/RazrFalcon/ttf-parser
+[usvg]: https://github.com/linebender/resvg/tree/main/crates/usvg
+[rustybuzz]: https://github.com/harfbuzz/rustybuzz
+[tiny-skia]: https://github.com/linebender/tiny-skia
+[ttf-parser]: https://github.com/harfbuzz/ttf-parser
 [roxmltree]: https://github.com/RazrFalcon/roxmltree
-[simplecss]: https://github.com/RazrFalcon/simplecss
+[simplecss]: https://github.com/linebender/simplecss
 [fontdb]: https://github.com/RazrFalcon/fontdb
 [pico-args]: https://github.com/RazrFalcon/pico-args
 [Rust Code of Conduct]: https://www.rust-lang.org/policies/code-of-conduct
