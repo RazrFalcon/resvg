@@ -2,7 +2,7 @@
      xmlns:xlink="http://www.w3.org/1999/xlink">
     <title>`dy` with tiny coordinates</title>
     <desc>
-        https://github.com/RazrFalcon/resvg/pull/291
+        https://github.com/linebender/resvg/pull/291
     </desc>
 
     <g id="g1" transform="scale(100)">

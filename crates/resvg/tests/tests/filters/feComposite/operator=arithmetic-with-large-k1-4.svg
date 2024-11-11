@@ -1,6 +1,6 @@
 <svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
     <title>operator=arithmetic with large `k1-4`</title>
-    <desc>https://github.com/RazrFalcon/resvg/issues/170</desc>
+    <desc>https://github.com/linebender/resvg/issues/170</desc>
 
     <filter id="filter1">
         <feFlood flood-color="blue"/>
