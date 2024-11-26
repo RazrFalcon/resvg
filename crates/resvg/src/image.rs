@@ -89,17 +89,20 @@ mod raster_images {
         let mut decoder = zune_jpeg::JpegDecoder::new_with_options(data, options);
         decoder.decode_headers().ok()?;
         let output_cs = decoder.get_output_colorspace()?;
-        
+
         let img_data = {
             let data = decoder.decode().ok()?;
             match output_cs {
                 ColorSpace::RGBA => data,
                 // For some reason zune jpeg won't coerce luma JPEGs into RGBA, so we do it manually.
-                ColorSpace::Luma => data.into_iter().flat_map(|p| [p, p, p, 255]).collect::<Vec<_>>(),
-                _ => return None
+                ColorSpace::Luma => data
+                    .into_iter()
+                    .flat_map(|p| [p, p, p, 255])
+                    .collect::<Vec<_>>(),
+                _ => return None,
             }
         };
-        
+
         let info = decoder.info()?;
 
         let size = tiny_skia::IntSize::from_wh(info.width as u32, info.height as u32)?;
